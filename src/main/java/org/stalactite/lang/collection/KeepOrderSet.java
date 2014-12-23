@@ -1,5 +1,6 @@
 package org.stalactite.lang.collection;
 
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.LinkedHashSet;
@@ -13,11 +14,8 @@ public class KeepOrderSet<E> implements Iterable<E> {
 	
 	private LinkedHashSet<E> delegate = new LinkedHashSet<>();
 	
-	public KeepOrderSet() {
-	}
-	
-	public KeepOrderSet(E e) {
-		this.delegate.add(e);
+	public KeepOrderSet(E ... e) {
+		this.delegate.addAll(Arrays.asList(e));
 	}
 	
 	public int size() {

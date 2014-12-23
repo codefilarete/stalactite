@@ -84,7 +84,6 @@ public class Table {
 	 */
 	public class Column {
 		private String name;
-		private Integer jdbcType;
 		private Class javaType;
 		private boolean primaryKey;
 
@@ -95,14 +94,6 @@ public class Table {
 			this.name = name;
 			this.javaType = javaType;
 			getTable().add(this);
-		}
-
-		/**
-		 * Crée une colonne et l'ajoute à la table englobante
-		 */
-		public Column(String name, Class javaType, int jdbcType) {
-			this(name, javaType);
-			this.jdbcType = jdbcType;
 		}
 
 		public Table getTable() {
@@ -119,10 +110,6 @@ public class Table {
 		 */
 		public String getAbsoluteName() {
 			return getTable().getName() + "." + getName();
-		}
-
-		public Integer getJdbcType() {
-			return jdbcType;
 		}
 
 		public Class getJavaType() {
@@ -174,11 +161,7 @@ public class Table {
 			super(name, javaType);
 			this.size = size;
 		}
-		public SizedColumn(String name, Class javaType, int jdbcType, int size) {
-			super(name, javaType, jdbcType);
-			this.size = size;
-		}
-
+		
 		public int getSize() {
 			return size;
 		}
