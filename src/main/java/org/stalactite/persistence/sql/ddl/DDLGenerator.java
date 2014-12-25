@@ -3,7 +3,6 @@ package org.stalactite.persistence.sql.ddl;
 import org.stalactite.lang.StringAppender;
 import org.stalactite.lang.collection.Iterables;
 import org.stalactite.lang.collection.Iterables.ForEach;
-import org.stalactite.lang.collection.KeepOrderSet;
 import org.stalactite.persistence.structure.ForeignKey;
 import org.stalactite.persistence.structure.Index;
 import org.stalactite.persistence.structure.Table;
@@ -61,7 +60,7 @@ public class DDLGenerator {
 		return sqlCreateFK.cat(")").toString();
 	}
 	
-	public static void catWithComma(KeepOrderSet<Column> targetColumns, StringAppender sqlCreateFK) {
+	public static void catWithComma(Iterable<Column> targetColumns, StringAppender sqlCreateFK) {
 		cat(sqlCreateFK, targetColumns, FOREACH_COLUMNNAME).cutTail(2);
 	}
 	
