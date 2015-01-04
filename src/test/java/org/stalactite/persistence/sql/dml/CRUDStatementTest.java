@@ -64,8 +64,8 @@ public class CRUDStatementTest {
 		
 		CRUDStatement testInstance = new CRUDStatement(Maps.fastMap(colA, 1).put(colB, 2).getMap(), "insert into Toto(A, B) values ?, ?");
 		PersistentValues values = new PersistentValues();
-		values.putUpsert(colA, 123);
-		values.putUpsert(colB, 456);
+		values.putUpsertValue(colA, 123);
+		values.putUpsertValue(colB, 456);
 		PreparedStatement statement = testInstance.apply(values, connection);
 		statement.execute();
 		
@@ -75,8 +75,8 @@ public class CRUDStatementTest {
 		Assert.assertEquals(resultSet.getInt("b"), 456);
 		
 		// second insert
-		values.putUpsert(colA, 789);
-		values.putUpsert(colB, 0);
+		values.putUpsertValue(colA, 789);
+		values.putUpsertValue(colB, 0);
 		testInstance.apply(values, connection);
 		statement.execute();
 		

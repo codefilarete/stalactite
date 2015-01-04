@@ -23,11 +23,11 @@ public class PersistentValues {
 		this.whereValues = whereValues;
 	}
 	
-	public void putUpsert(Column column, Object value) {
+	public void putUpsertValue(Column column, Object value) {
 		this.upsertValues.put(column, value);
 	}
 	
-	public void putWhere(Column column, Object value) {
+	public void putWhereValue(Column column, Object value) {
 		this.whereValues.put(column, value);
 	}
 	

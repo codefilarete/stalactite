@@ -8,7 +8,7 @@ import java.util.*;
 public class Arrays {
 	
 	public static <T> List<T> asList(T... a) {
-		return java.util.Arrays.asList(a);
+		return new ArrayList<>(java.util.Arrays.asList(a));
 	}
 	
 	public static <T> LinkedHashSet<T> asSet(T ... a) {

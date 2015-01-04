@@ -3,6 +3,8 @@ package org.stalactite.persistence.structure;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.stalactite.lang.collection.Iterables;
+import org.stalactite.lang.collection.Iterables.Finder;
 import org.stalactite.lang.collection.KeepOrderSet;
 import org.stalactite.persistence.structure.Database.Schema;
 
@@ -46,12 +48,12 @@ public class Table {
 
 	public Column getPrimaryKey() {
 		if (primaryKey == null) {
-			for (Column column : columns) {
-				if (column.isPrimaryKey()) {
-					this.primaryKey = column;
-					break;
+			this.primaryKey = Iterables.filter(columns, new Finder<Column>() {
+				@Override
+				public boolean accept(Column column) {
+					return column.isPrimaryKey();
 				}
-			}
+			});
 		}
 		return primaryKey;
 	}
