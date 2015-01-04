@@ -60,8 +60,8 @@ public class DDLGenerator {
 		return sqlCreateFK.cat(")").toString();
 	}
 	
-	public static void catWithComma(Iterable<Column> targetColumns, StringAppender sqlCreateFK) {
-		cat(sqlCreateFK, targetColumns, FOREACH_COLUMNNAME).cutTail(2);
+	public static void catWithComma(Iterable<Column> targetColumns, StringAppender sql) {
+		cat(sql, targetColumns, FOREACH_COLUMNNAME).cutTail(2);
 	}
 	
 	public static class ForEachColumnName extends ForEach<Column, String> {

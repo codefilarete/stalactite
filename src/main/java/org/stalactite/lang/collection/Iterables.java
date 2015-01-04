@@ -8,6 +8,8 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.SortedMap;
 
+import javax.annotation.Nonnull;
+
 /**
  * @author mary
  */
@@ -58,7 +60,7 @@ public class Iterables {
 	 * @param visitor un visiteur de collection
 	 * @return le résultat de la visite de <i>c</i> par <i>visitor</i>, null si <i>c</i> est null   
 	 */
-	public static <E, O> List<O> visit(Iterable<E> c, IVisitor<E, O> visitor) {
+	public static <E, O> List<O> visit(Iterable<E> c, @Nonnull IVisitor<E, O> visitor) {
 		if (c != null) {
 			Iterator<E> iterator = c.iterator();
 			return visit(iterator, visitor);
@@ -73,7 +75,7 @@ public class Iterables {
 	 * @param visitor un visiteur de collection
 	 * @return le résultat de la visite de <i>iterator</i> par <i>visitor</i>, null si <i>iterator</i> est null   
 	 */
-	public static <E, O> List<O> visit(Iterator<E> iterator, IVisitor<E, O> visitor) {
+	public static <E, O> List<O> visit(@Nonnull Iterator<E> iterator, @Nonnull IVisitor<E, O> visitor) {
 		List<O> result = new ArrayList<>();
 		boolean pursue = true;
 		while (pursue && iterator.hasNext()) {
@@ -90,8 +92,23 @@ public class Iterables {
 	 * @param visitor un visiteur de collection
 	 * @return le résultat alimenté par le <i>visitor</i> (null sans doute si c est null)
 	 */
-	public static <E, O> O find(Iterable<E> c, IResultVisitor<E, O> visitor) {
-		visit(c, visitor);
+	public static <E, O> O filter(Iterable<E> c, @Nonnull IResultVisitor<E, O> visitor) {
+		if (c != null) {
+			visit(c, visitor);
+			return visitor.getResult();
+		} else {
+			return null;
+		}
+	}
+
+	/**
+	 * Visite chaque élément de <i>iterator</i> pour y appliquer <i>visitor</i> afin de ramener un résultat
+	 * @param iterator une collection au sens large, null accepté, dans ce cas ne fait rien
+	 * @param visitor un visiteur de collection
+	 * @return le résultat alimenté par le <i>visitor</i> (null sans doute si iterator est null)
+	 */
+	public static <E, O> O filter(@Nonnull Iterator<E> iterator, @Nonnull IResultVisitor<E, O> visitor) {
+		visit(iterator, visitor);
 		return visitor.getResult();
 	}
 
@@ -111,27 +128,60 @@ public class Iterables {
 	public static interface IResultVisitor<E, O> extends IVisitor<E, O> {
 		O getResult();
 	}
+	
+	private abstract static class AbstractFilter<E, T> implements IResultVisitor<E, T> {
 
-	public abstract static class Finder<E> implements IResultVisitor<E, E> {
+		protected T foundElements;
+		
+		@Override
+		public T visit(E e) {
+			boolean accept = accept(e);
+			if (accept) {
+				onAccepted(e);
+			}
+			return foundElements;
+		}
+		
+		@Override
+		public T getResult() {
+			return foundElements;
+		}
+		
+		protected abstract void onAccepted(E e);
+		
+		public abstract boolean accept(E e);
+	}
+	
+	public abstract static class Filter<E> extends AbstractFilter<E, List<E>> {
+		
+		public Filter() {
+			super.foundElements = new ArrayList<>();
+		}
+		
+		@Override
+		public final boolean pursue() {
+			return true;
+		}
+		
+		@Override
+		protected final void onAccepted(E e) {
+			this.foundElements.add(e);
+		}
+	}
 
-		private E foundElement;
+	public abstract static class Finder<E> extends AbstractFilter<E, E> {
+
 		private boolean pursue = true;
 		
 		@Override
-		public E visit(E e) {
-			boolean accept = accept(e);
-			if (accept) {
-				this.foundElement = e;
-				this.pursue = false;
-			}
-			return foundElement;
+		public final boolean pursue() {
+			return pursue;
 		}
-
+		
 		@Override
-		public E getResult() {
-			return foundElement;
+		protected final void onAccepted(E e) {
+			this.foundElements = e;
+			this.pursue = false;
 		}
-
-		public abstract boolean accept(E e);
 	}
 }
