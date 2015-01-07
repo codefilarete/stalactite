@@ -24,10 +24,7 @@ public class CollectionColumnedMappingStrategy<C extends Collection<T>, T> imple
 	
 	private Set<Column> columns;
 	
-//	private Table targetTable;
-	
 	public CollectionColumnedMappingStrategy(@Nonnull Table targetTable, String columnsPrefix, @Nonnull Class<T> collectionGenericType, int nbCol) {
-//		this.targetTable = targetTable;
 		Map<String, Column> existingColumns = targetTable.mapColumnsOnName();
 		columns = new LinkedHashSet<>(nbCol, 1);
 		for (int i = 1; i <= nbCol; i++) {
@@ -67,9 +64,9 @@ public class CollectionColumnedMappingStrategy<C extends Collection<T>, T> imple
 		PairIterator<Column, Entry<T, T>> valueColumnPairIterator = new PairIterator<>(columns.iterator(), untilBothIterator);
 		Iterables.visit(valueColumnPairIterator, new ForEach<Entry<Column,Entry<T,T>>, Void>() {
 			@Override
-			public Void visit(Entry<Column, Entry<T, T>> columnEntryEntry) {
-				Column column = columnEntryEntry.getKey();
-				Entry<T, T> toBeCompared = columnEntryEntry.getValue();
+			public Void visit(Entry<Column, Entry<T, T>> diffEntry) {
+				Column column = diffEntry.getKey();
+				Entry<T, T> toBeCompared = diffEntry.getValue();
 				if (!Objects.equalsWithNull(toBeCompared.getKey(), toBeCompared.getValue())) {
 					toReturn.putUpsertValue(column, toBeCompared.getKey());
 				}
