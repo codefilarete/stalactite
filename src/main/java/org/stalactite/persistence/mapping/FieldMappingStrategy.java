@@ -6,6 +6,7 @@ import java.util.Map.Entry;
 
 import javax.annotation.Nonnull;
 
+import org.stalactite.lang.Reflections;
 import org.stalactite.lang.bean.Objects;
 import org.stalactite.lang.collection.Iterables;
 import org.stalactite.lang.collection.Iterables.Finder;
@@ -22,7 +23,7 @@ public class FieldMappingStrategy<T> implements IMappingStrategy<T> {
 	private Map<Field, Column> fieldToColumn;
 	
 	private Field primaryKeyField;
-	private Table targetTable;
+	private final Table targetTable;
 	
 	public FieldMappingStrategy(@Nonnull Map<Field, Column> fieldToColumn) {
 		this.fieldToColumn = fieldToColumn;
@@ -37,17 +38,27 @@ public class FieldMappingStrategy<T> implements IMappingStrategy<T> {
 		if (primaryKeyEntry != null) {
 			this.primaryKeyField = primaryKeyEntry.getKey();
 		} else {
-			throw new UnsupportedOperationException("No primary key found for " + targetTable.getName());
+			throw new UnsupportedOperationException("No primary key field for " + targetTable.getName());
 		}
 	}
 	
+//	public FieldMappingStrategy(@Nonnull Table targetTable, @Nonnull Field primaryKeyField) {
+//		this.fieldToColumn = new HashMap<>();
+//		this.targetTable = targetTable;
+//		if (primaryKeyField == null) {
+//			throw new UnsupportedOperationException("No primary key field for " + targetTable.getName());
+//		}
+//		this.primaryKeyField = primaryKeyField;
+//	}
+	
+	@Override
 	public Table getTargetTable() {
 		return targetTable;
 	}
 	
 	private void ensureFieldsAreAccessible() {
 		for (Field field : fieldToColumn.keySet()) {
-			field.setAccessible(true);
+			Reflections.ensureAccessible(field);
 		}
 	}
 	

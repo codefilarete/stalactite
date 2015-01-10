@@ -2,6 +2,8 @@ package org.stalactite.persistence.mapping;
 
 import javax.annotation.Nonnull;
 
+import org.stalactite.persistence.structure.Table;
+
 /**
  * @author mary
  */
@@ -16,4 +18,6 @@ public interface IMappingStrategy<T> {
 	PersistentValues getSelectValues(@Nonnull T t);
 	
 	PersistentValues getVersionedKeyValues(@Nonnull T t);
+	
+	Table getTargetTable();
 }

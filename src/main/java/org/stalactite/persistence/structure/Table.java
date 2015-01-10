@@ -17,7 +17,7 @@ public class Table {
 
 	private String name;
 
-	private KeepOrderSet<Column> columns = new KeepOrderSet<Column>();
+	private KeepOrderSet<Column> columns = new KeepOrderSet<>();
 
 	private Column primaryKey;
 	
@@ -39,7 +39,7 @@ public class Table {
 	}
 
 	public Map<String, Column> mapColumnsOnName() {
-		Map<String, Column> mapColumnsOnName = new HashMap<String, Column>(columns.size());
+		Map<String, Column> mapColumnsOnName = new HashMap<>(columns.size());
 		for (Column column : columns) {
 			mapColumnsOnName.put(column.getName(), column);
 		}
@@ -153,6 +153,12 @@ public class Table {
 			int result = getTable().hashCode();
 			result = 31 * result + name.toUpperCase().hashCode();
 			return result;
+		}
+		
+		/** Overriden only for simple print (debug) */
+		@Override
+		public String toString() {
+			return getTable().getName() + "." + getName();
 		}
 	}
 

@@ -18,26 +18,28 @@ public class FieldMappingStrategyTest {
 	private static final String GET_UPDATE_VALUES_DATA = "testGetUpdateValuesData";
 	private static final String GET_INSERT_VALUES_DATA = "testGetInsertValuesData";
 	
-	private Map<Field, Column> totoClassMapping;
 	private Column colA;
 	private Column colB;
 	private Column colC;
+	private FieldMappingStrategy<Toto> testInstance;
 	
 	@BeforeTest
 	public void setUp() {
 		PersistentFieldHarverster persistentFieldHarverster = new PersistentFieldHarverster();
 		List<Field> fields = persistentFieldHarverster.getFields(Toto.class);
 		
-		totoClassMapping = new HashMap<>(5);
-		Table xClassTable = new Table(null, "Toto");
+		Map<Field, Column> totoClassMapping = new HashMap<>(5);
+		Table totoClassTable = new Table(null, "Toto");
 		for (Field field : fields) {
-			totoClassMapping.put(field, xClassTable.new Column(field.getName(), Integer.class));
+			totoClassMapping.put(field, totoClassTable.new Column(field.getName(), Integer.class));
 		}
-		Map<String, Column> columns = xClassTable.mapColumnsOnName();
+		Map<String, Column> columns = totoClassTable.mapColumnsOnName();
 		colA = columns.get("a");
 		colA.setPrimaryKey(true);
 		colB = columns.get("b");
 		colC = columns.get("c");
+		
+		testInstance = new FieldMappingStrategy<>(totoClassMapping);
 	}
 	
 	@DataProvider(name = GET_INSERT_VALUES_DATA)
@@ -51,7 +53,6 @@ public class FieldMappingStrategyTest {
 	
 	@Test(dataProvider = GET_INSERT_VALUES_DATA)
 	public void testGetInsertValues(Toto modified, Map<Column, Object> expectedResult) throws Exception {
-		FieldMappingStrategy<Toto> testInstance = new FieldMappingStrategy<>(totoClassMapping);
 		PersistentValues valuesToInsert = testInstance.getInsertValues(modified);
 		
 		Assert.assertEquals(valuesToInsert.getUpsertValues(), expectedResult);
@@ -73,7 +74,6 @@ public class FieldMappingStrategyTest {
 	
 	@Test(dataProvider = GET_UPDATE_VALUES_DATA)
 	public void testGetUpdateValues(Toto modified, Toto unmodified, Map<Column, Object> expectedResult) throws Exception {
-		FieldMappingStrategy<Toto> testInstance = new FieldMappingStrategy<>(totoClassMapping);
 		PersistentValues valuesToInsert = testInstance.getUpdateValues(modified, unmodified);
 		
 		Assert.assertEquals(valuesToInsert.getUpsertValues(), expectedResult);
@@ -82,21 +82,18 @@ public class FieldMappingStrategyTest {
 	
 	@Test
 	public void testGetDeleteValues() throws Exception {
-		FieldMappingStrategy<Toto> testInstance = new FieldMappingStrategy<>(totoClassMapping);
 		PersistentValues versionedKeyValues = testInstance.getDeleteValues(new Toto(1, 2, 3));
 		Assert.assertEquals(versionedKeyValues.getWhereValues(), Maps.fastMap(colA, 1).getMap());
 	}
 	
 	@Test
 	public void testGetSelectValues() throws Exception {
-		FieldMappingStrategy<Toto> testInstance = new FieldMappingStrategy<>(totoClassMapping);
 		PersistentValues versionedKeyValues = testInstance.getSelectValues(new Toto(1, 2, 3));
 		Assert.assertEquals(versionedKeyValues.getWhereValues(), Maps.fastMap(colA, 1).getMap());
 	}
 	
 	@Test
 	public void testGetVersionedKeyValues() throws Exception {
-		FieldMappingStrategy<Toto> testInstance = new FieldMappingStrategy<>(totoClassMapping);
 		PersistentValues versionedKeyValues = testInstance.getVersionedKeyValues(new Toto(1, 2, 3));
 		
 		Assert.assertEquals(versionedKeyValues.getWhereValues(), Maps.fastMap(colA, 1).getMap());

@@ -3,6 +3,7 @@ package org.stalactite.persistence.mapping;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertTrue;
 
+import java.util.LinkedHashSet;
 import java.util.Map;
 
 import org.stalactite.lang.collection.Maps;
@@ -25,10 +26,30 @@ public class MapMappingStrategyTest {
 	@BeforeTest
 	public void setUp() throws Exception {
 		toto = new Table(null, "Toto");
-		testInstance = new MapMappingStrategy<Map<Integer, String>, Integer, String, String>(toto, "col_", String.class, 5) {
+		testInstance = new MapMappingStrategy<Map<Integer, String>, Integer, String, String>(toto, String.class) {
+			protected LinkedHashSet<Column> initTargetColumns() {
+				int nbCol = 5;
+				String columnsPrefix = "col_";
+				Map<String, Column> existingColumns = getTargetTable().mapColumnsOnName();
+				LinkedHashSet<Column> toReturn = new LinkedHashSet<>(nbCol, 1);
+				for (int i = 1; i <= nbCol; i++) {
+					String columnName = getColumnName(columnsPrefix, i);
+					Column column = existingColumns.get(columnName);
+					if (column == null) {
+						column = getTargetTable().new Column(columnName, getPersistentType());
+					}
+					toReturn.add(column);
+				}
+		
+				return toReturn;
+			}
+
 			@Override
-			protected String getColumnName(Integer i) {
-				return "col_"+i;
+			protected Column getColumn(Integer key) {
+				if (key > 5) {
+					throw new IllegalArgumentException("Unknown key " + key);
+				}
+				return getTargetTable().mapColumnsOnName().get("col_"+key);
 			}
 			
 			@Override

@@ -1,5 +1,6 @@
 package org.stalactite.persistence.mapping;
 
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.Map;
@@ -9,6 +10,7 @@ import java.util.Set;
 import javax.annotation.Nonnull;
 
 import org.stalactite.lang.bean.Objects;
+import org.stalactite.lang.collection.Collections;
 import org.stalactite.lang.collection.Iterables;
 import org.stalactite.lang.collection.Iterables.ForEach;
 import org.stalactite.persistence.structure.Table;
@@ -19,22 +21,23 @@ import org.stalactite.persistence.structure.Table.Column;
  */
 public abstract class MapMappingStrategy<C extends Map<K, V>, K, V, T> implements IMappingStrategy<C> {
 	
-	private Set<Column> columns;
+	private final Table targetTable;
+	private final Set<Column> columns;
+	private final Class<T> persistentType;
 	
-	private Map<String, Column> namedColumns;
+	public MapMappingStrategy(@Nonnull Table targetTable, @Nonnull Class<T> persistentType) {
+		this.targetTable = targetTable;
+		this.columns = initTargetColumns();
+		this.persistentType = persistentType;
+	}
 	
-	public MapMappingStrategy(@Nonnull Table targetTable, String columnsPrefix, @Nonnull Class<T> collectionGenericType, int nbCol) {
-		Map<String, Column> existingColumns = targetTable.mapColumnsOnName();
-		columns = new LinkedHashSet<>(nbCol, 1);
-		for (int i = 1; i <= nbCol; i++) {
-			String columnName = getColumnName(columnsPrefix, i);
-			Column column = existingColumns.get(columnName);
-			if (column == null) {
-				column = targetTable.new Column(columnName, collectionGenericType);
-			}
-			columns.add(column);
-		}
-		namedColumns = targetTable.mapColumnsOnName();
+	@Override
+	public Table getTargetTable() {
+		return targetTable;
+	}
+	
+	public Class<T> getPersistentType() {
+		return persistentType;
 	}
 	
 	protected String getColumnName(String columnsPrefix, int i) {
@@ -44,11 +47,14 @@ public abstract class MapMappingStrategy<C extends Map<K, V>, K, V, T> implement
 	@Override
 	public PersistentValues getInsertValues(@Nonnull C c) {
 		final PersistentValues toReturn = new PersistentValues();
-		Iterables.visit(c.entrySet(), new ForEach<Entry<K, V>, Void>() {
+		Map<K, V> toIterate = c;
+		if (Collections.isEmpty(c)) {
+			toIterate = new HashMap<>();
+		}
+		Iterables.visit(toIterate.entrySet(), new ForEach<Entry<K, V>, Void>() {
 			@Override
 			public Void visit(Entry<K, V> mapEntry) {
-				String columnName = getColumnName(mapEntry.getKey());
-				Column column = namedColumns.get(columnName);
+				Column column = getColumn(mapEntry.getKey());
 				toReturn.putUpsertValue(column, convertMapValue(mapEntry.getValue()));
 				return null;
 			}
@@ -70,8 +76,7 @@ public abstract class MapMappingStrategy<C extends Map<K, V>, K, V, T> implement
 			K modifiedKey = modifiedEntry.getKey();
 			V modifiedValue = modifiedEntry.getValue();
 			if (!Objects.equalsWithNull(modifiedValue, unmodified.get(modifiedKey))) {
-				String columnName = getColumnName(modifiedKey);
-				Column column = namedColumns.get(columnName);
+				Column column = getColumn(modifiedKey);
 				toReturn.putUpsertValue(column, modifiedValue);
 			}
 		}
@@ -79,8 +84,7 @@ public abstract class MapMappingStrategy<C extends Map<K, V>, K, V, T> implement
 		HashSet<K> missingInModified = new HashSet<>(unmodified.keySet());
 		missingInModified.removeAll(modified.keySet());
 		for (K k : missingInModified) {
-			String columnName = getColumnName(k);
-			Column column = namedColumns.get(columnName);
+			Column column = getColumn(k);
 			toReturn.putUpsertValue(column, modified.get(k));
 		}
 		return toReturn;
@@ -104,7 +108,9 @@ public abstract class MapMappingStrategy<C extends Map<K, V>, K, V, T> implement
 		return new PersistentValues();
 	}
 	
-	protected abstract String getColumnName(K k);
+	protected abstract LinkedHashSet<Column> initTargetColumns();
+	
+	protected abstract Column getColumn(K k);
 	
 	protected abstract T convertMapValue(V v);
 }

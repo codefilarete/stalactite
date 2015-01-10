@@ -18,7 +18,7 @@ public class PersistentValues {
 		this(new HashMap<Column, Object>(), new HashMap<Column, Object>());
 	}
 	
-	private PersistentValues(HashMap<Column, Object> upsertValues, HashMap<Column, Object> whereValues) {
+	private PersistentValues(Map<Column, Object> upsertValues, Map<Column, Object> whereValues) {
 		this.upsertValues = upsertValues;
 		this.whereValues = whereValues;
 	}

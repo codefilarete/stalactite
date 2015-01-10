@@ -3,6 +3,7 @@ package org.stalactite.persistence.mapping;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertTrue;
 
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 
@@ -16,7 +17,7 @@ import org.testng.annotations.Test;
 
 public class CollectionColumnedMappingStrategyTest {
 	
-	private Table toto;
+	private Table totoTable;
 	private CollectionColumnedMappingStrategy<List<String>, String> testInstance;
 	private Column col1;
 	private Column col2;
@@ -26,10 +27,28 @@ public class CollectionColumnedMappingStrategyTest {
 	
 	@BeforeTest
 	public void setUp() throws Exception {
-		toto = new Table(null, "Toto");
+		totoTable = new Table(null, "Toto");
 		
-		testInstance = new CollectionColumnedMappingStrategy<>(toto, "col_", String.class, 5);
-		Map<String, Column> namedColumns = toto.mapColumnsOnName();
+		testInstance = new CollectionColumnedMappingStrategy<List<String>, String>(totoTable, String.class) {
+			@Override
+			protected LinkedHashSet<Column> initTargetColumns() {
+				int nbCol = 5;
+				String columnsPrefix = "col_";
+				Map<String, Column> existingColumns = getTargetTable().mapColumnsOnName();
+				LinkedHashSet<Column> toReturn = new LinkedHashSet<>(nbCol, 1);
+				for (int i = 1; i <= nbCol; i++) {
+					String columnName = columnsPrefix + i;
+					Column column = existingColumns.get(columnName);
+					if (column == null) {
+						column = getTargetTable().new Column(columnName, getPersistentType());
+					}
+					toReturn.add(column);
+				}
+		
+				return toReturn;
+			}
+		};
+		Map<String, Column> namedColumns = totoTable.mapColumnsOnName();
 		col1 = namedColumns.get("col_1");
 		col1.setPrimaryKey(true);
 		col2 = namedColumns.get("col_2");

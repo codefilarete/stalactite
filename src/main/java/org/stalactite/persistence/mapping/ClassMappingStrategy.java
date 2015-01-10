@@ -1,0 +1,80 @@
+package org.stalactite.persistence.mapping;
+
+import java.lang.reflect.Field;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Map.Entry;
+
+import javax.annotation.Nonnull;
+
+import org.stalactite.lang.Reflections;
+import org.stalactite.persistence.structure.Table;
+import org.stalactite.persistence.structure.Table.Column;
+
+/**
+ * @author mary
+ */
+public class ClassMappingStrategy<T> implements IMappingStrategy<T> {
+	
+	private Class<T> classToPersist;
+	
+	private FieldMappingStrategy<T> defaultMappingStrategy;
+	
+	private final Table targetTable;
+	
+	private Map<Field, IMappingStrategy> mappingStrategies;
+	
+	public ClassMappingStrategy(@Nonnull Class<T> classToPersist, @Nonnull Table targetTable, Map<Field, Column> fieldToColumn) {
+		this.classToPersist = classToPersist;
+		this.targetTable = targetTable;
+		this.defaultMappingStrategy = new FieldMappingStrategy<>(fieldToColumn);
+		this.mappingStrategies = new HashMap<>();
+	}
+	
+	@Override
+	public PersistentValues getInsertValues(@Nonnull T t) {
+		PersistentValues insertValues = defaultMappingStrategy.getInsertValues(t);
+		for (Entry<Field, IMappingStrategy> fieldStrategyEntry : mappingStrategies.entrySet()) {
+			Object fieldValue;
+			try {
+				fieldValue = fieldStrategyEntry.getKey().get(t);
+			} catch (IllegalAccessException e) {
+				// Shouldn't happen
+				throw new RuntimeException(e);
+			}
+			PersistentValues fieldInsertValues = fieldStrategyEntry.getValue().getInsertValues(fieldValue);
+			insertValues.getUpsertValues().putAll(fieldInsertValues.getUpsertValues());
+		}
+		return insertValues;
+	}
+	
+	@Override
+	public PersistentValues getUpdateValues(@Nonnull T modified, @Nonnull T unmodified) {
+		return null;
+	}
+	
+	@Override
+	public PersistentValues getDeleteValues(@Nonnull T t) {
+		return null;
+	}
+	
+	@Override
+	public PersistentValues getSelectValues(@Nonnull T t) {
+		return null;
+	}
+	
+	@Override
+	public PersistentValues getVersionedKeyValues(@Nonnull T t) {
+		return null;
+	}
+	
+	@Override
+	public Table getTargetTable() {
+		return targetTable;
+	}
+	
+	public void put(Field field, IMappingStrategy mappingStrategy) {
+		mappingStrategies.put(field, mappingStrategy);
+		Reflections.ensureAccessible(field);
+	}
+}

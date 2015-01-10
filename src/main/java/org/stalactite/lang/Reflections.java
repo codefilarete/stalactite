@@ -11,6 +11,10 @@ import org.stalactite.lang.collection.ReadOnlyIterator;
  */
 public final class Reflections {
 	
+	public static void ensureAccessible(Field field) {
+		field.setAccessible(true);
+	}
+	
 	/**
 	 * Parcoureur de la hiérarchie d'une classe
 	 */
@@ -47,10 +51,6 @@ public final class Reflections {
 		
 		public FieldIterator(@Nonnull Class currentClass) {
 			this(new ClassIterator(currentClass));
-		}
-		
-		public FieldIterator(@Nonnull Class currentClass, @Nonnull Class topBoundAncestor) {
-			this(new ClassIterator(currentClass, topBoundAncestor));
 		}
 		
 		public FieldIterator(ClassIterator classIterator) {
