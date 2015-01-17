@@ -18,6 +18,8 @@ import org.testng.annotations.Test;
 public class ClassMappingStrategyTest {
 	
 	private static final String GET_INSERT_VALUES_DATA = "testGetInsertValuesData";
+	private static final String GET_UPDATE_VALUES_DIFF_ONLY_DATA = "testGetUpdateValuesDiffOnlyData";
+	private static final String GET_UPDATE_VALUES_ALL_COLUMNS_DATA = "testGetUpdateValuesAllColumnsData";
 	
 	private Column colA;
 	private Column colB;
@@ -119,16 +121,16 @@ public class ClassMappingStrategyTest {
 	@DataProvider(name = GET_INSERT_VALUES_DATA)
 	public Object[][] testGetInsertValuesData() throws Exception {
 		return new Object[][] {
-				{ new Toto(1, 2, 3), Maps.fastMap(colA, 1).put(colB, 2).put(colC, 3)
-						.put(colD1, null).put(colD2, null).put(colE1, null).put(colE2, null).getMap() },
-				{ new Toto(null, null, null), Maps.fastMap(colA, null).put(colB, null).put(colC, null)
-						.put(colD1, null).put(colD2, null).put(colE1, null).put(colE2, null).getMap() },
-				{ new Toto(null, 2, 3), Maps.fastMap(colA, null).put(colB, 2).put(colC, 3)
-						.put(colD1, null).put(colD2, null).put(colE1, null).put(colE2, null).getMap() },
-				{ new Toto(1, 2, 3, Arrays.asList("a")), Maps.fastMap(colA, (Object) 1).put(colB, 2).put(colC, 3)
-						.put(colD1, "a").put(colD2, null).put(colE1, null).put(colE2, null).getMap() },
-				{ new Toto(1, 2, 3, Maps.fastMap("x", "y").getMap()), Maps.fastMap(colA, (Object) 1).put(colB, 2).put(colC, 3)
-						.put(colD1, null).put(colD2, null).put(colE1, "y").put(colE2, null).getMap() },
+				{ new Toto(1, 2, 3), Maps.asMap(colA, 1).add(colB, 2).add(colC, 3)
+						.add(colD1, null).add(colD2, null).add(colE1, null).add(colE2, null) },
+				{ new Toto(null, null, null), Maps.asMap(colA, null).add(colB, null).add(colC, null)
+						.add(colD1, null).add(colD2, null).add(colE1, null).add(colE2, null) },
+				{ new Toto(null, 2, 3), Maps.asMap(colA, null).add(colB, 2).add(colC, 3)
+						.add(colD1, null).add(colD2, null).add(colE1, null).add(colE2, null) },
+				{ new Toto(1, 2, 3, Arrays.asList("a")), Maps.asMap(colA, (Object) 1).add(colB, 2).add(colC, 3)
+						.add(colD1, "a").add(colD2, null).add(colE1, null).add(colE2, null) },
+				{ new Toto(1, 2, 3, Maps.asMap("x", "y")), Maps.asMap(colA, (Object) 1).add(colB, 2).add(colC, 3)
+						.add(colD1, null).add(colD2, null).add(colE1, "y").add(colE2, null) },
 		};
 	}
 	
@@ -139,6 +141,70 @@ public class ClassMappingStrategyTest {
 		Assert.assertEquals(valuesToInsert.getUpsertValues(), expectedResult);
 	}
 	
+	@DataProvider(name = GET_UPDATE_VALUES_DIFF_ONLY_DATA)
+	public Object[][] testGetUpdateValues_diffOnlyData() throws Exception {
+		return new Object[][] {
+				{ new Toto(1, 2, 3), new Toto(1, 5, 6), Maps.asMap(colB, 2).add(colC, 3)}, 
+				{ new Toto(1, 2, 3), new Toto(1, null, null), Maps.asMap(colB, 2).add(colC, 3) },
+				{ new Toto(1, 2, 3), new Toto(1, 2, 42), Maps.asMap(colC, 3) },
+				{ new Toto(1, null, null), new Toto(1, 2, 3), Maps.asMap(colB, null).add(colC, null) },
+				{ new Toto(null, null, null), new Toto(null, 2, 3), Maps.asMap(colB, null).add(colC, null) },
+				{ new Toto(1, 2, 3), new Toto(1, 2, 3), new HashMap<>() },
+				{ new Toto(null, null, null), new Toto(null, null, null), new HashMap<>() },
+				{ new Toto(1, 2, 3), null, Maps.asMap(colB, 2).add(colC, 3) },
+				{ new Toto(1, 2, 3, Arrays.asList("a")), new Toto(1, 5, 6, Arrays.asList("b")),
+						Maps.asMap(colB, (Object) 2).add(colC, 3).add(colD1, "a") },
+				{ new Toto(1, 2, 3, Maps.asMap("x", "y")), new Toto(1, 5, 6, Maps.asMap("x", "z")),
+						Maps.asMap(colB, (Object) 2).add(colC, 3).add(colE1, "y") },
+				{ new Toto(1, 2, 3, Arrays.asList("a"), Maps.asMap("x", "y")), null,
+						Maps.asMap(colB, (Object) 2).add(colC, 3).add(colD1, "a").add(colE1, "y") },
+		};
+	}
+	
+	@Test(dataProvider = GET_UPDATE_VALUES_DIFF_ONLY_DATA)
+	public void testGetUpdateValues_diffOnly(Toto modified, Toto unmodified, Map<Column, Object> expectedResult) throws Exception {
+		PersistentValues valuesToUpdate = testInstance.getUpdateValues(modified, unmodified, false);
+		
+		Assert.assertEquals(valuesToUpdate.getUpsertValues(), expectedResult);
+		Assert.assertEquals(valuesToUpdate.getWhereValues(), Maps.asMap(colA, modified.a));
+	}
+	
+	@DataProvider(name = GET_UPDATE_VALUES_ALL_COLUMNS_DATA)
+	public Object[][] testGetUpdateValues_allColumnsData() throws Exception {
+		return new Object[][] {
+				{ new Toto(1, 2, 3), new Toto(1, 5, 6),
+						Maps.asMap(colB, 2).add(colC, 3).add(colD1, null).add(colD2, null).add(colE1, null).add(colE2, null)},
+				{ new Toto(1, 2, 3), new Toto(1, null, null),
+						Maps.asMap(colB, 2).add(colC, 3).add(colD1, null).add(colD2, null).add(colE1, null).add(colE2, null)},
+				{ new Toto(1, 2, 3), new Toto(1, 2, 42),
+						Maps.asMap(colB, 2).add(colC, 3).add(colD1, null).add(colD2, null).add(colE1, null).add(colE2, null)},
+				{ new Toto(1, null, null), new Toto(1, 2, 3),
+						Maps.asMap(colB, null).add(colC, null).add(colD1, null).add(colD2, null).add(colE1, null).add(colE2, null)},
+				{ new Toto(null, null, null), new Toto(null, 2, 3),
+						Maps.asMap(colB, null).add(colC, null).add(colD1, null).add(colD2, null).add(colE1, null).add(colE2, null)},
+				{ new Toto(1, 2, 3), new Toto(1, 2, 3),
+						new HashMap<>()},
+				{ new Toto(null, null, null), new Toto(null, null, null),
+						new HashMap<>()},
+				{ new Toto(1, 2, 3), null,
+						Maps.asMap(colB, 2).add(colC, 3).add(colD1, null).add(colD2, null).add(colE1, null).add(colE2, null)},
+				{ new Toto(1, 2, 3, Arrays.asList("a")), new Toto(1, 5, 6, Arrays.asList("b")),
+						Maps.asMap(colB, (Object) 2).add(colC, 3).add(colD1, "a").add(colD2, null).add(colE1, null).add(colE2, null)},
+				{ new Toto(1, 2, 3, Maps.asMap("x", "y")), new Toto(1, 5, 6, Maps.asMap("x", "z")),
+						Maps.asMap(colB, (Object) 2).add(colC, 3).add(colD1, null).add(colD2, null).add(colE1, "y").add(colE2, null)},
+				{ new Toto(1, 2, 3, Arrays.asList("a"), Maps.asMap("x", "y")), null,
+						Maps.asMap(colB, (Object) 2).add(colC, 3).add(colD1, "a").add(colD2, null).add(colE1, "y").add(colE2, null)},
+		};
+	}
+	
+	@Test(dataProvider = GET_UPDATE_VALUES_ALL_COLUMNS_DATA)
+	public void testGetUpdateValues_allColumns(Toto modified, Toto unmodified, Map<Column, Object> expectedResult) throws Exception {
+		PersistentValues valuesToUpdate = testInstance.getUpdateValues(modified, unmodified, true);
+		
+		Assert.assertEquals(valuesToUpdate.getUpsertValues(), expectedResult);
+		Assert.assertEquals(valuesToUpdate.getWhereValues(), Maps.asMap(colA, modified.a));
+	}
+	
 	private static class Toto {
 		private Integer a, b, c;
 		
@@ -147,19 +213,30 @@ public class ClassMappingStrategyTest {
 		private Map<String, String> e;
 		
 		public Toto(Integer a, Integer b, Integer c) {
-			this.a = a;
-			this.b = b;
-			this.c = c;
+			this(a, b, c, null, null);
 		}
 		
 		public Toto(Integer a, Integer b, Integer c, List<String> d) {
-			this(a, b, c);
-			this.d = d;
+			this(a, b, c, d, null);
 		}
 		
 		public Toto(Integer a, Integer b, Integer c, Map<String, String> e) {
-			this(a, b, c);
+			this(a, b, c, null, e);
+		}
+		
+		public Toto(Integer a, Integer b, Integer c, List<String> d, Map<String, String> e) {
+			this.a = a;
+			this.b = b;
+			this.c = c;
+			this.d = d;
 			this.e = e;
+		}
+		
+		@Override
+		public String toString() {
+			return getClass().getSimpleName() + "["
+					+ Maps.asMap("a", (Object) a).add("b", b).add("c", c).add("d", d).add("e", e)
+					+ "]";
 		}
 	}
 }

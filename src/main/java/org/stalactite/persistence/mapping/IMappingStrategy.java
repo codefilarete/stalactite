@@ -1,17 +1,21 @@
 package org.stalactite.persistence.mapping;
 
+import java.io.Serializable;
+import java.util.Set;
+
 import javax.annotation.Nonnull;
 
 import org.stalactite.persistence.structure.Table;
+import org.stalactite.persistence.structure.Table.Column;
 
 /**
  * @author mary
  */
 public interface IMappingStrategy<T> {
 	
-	PersistentValues getInsertValues(@Nonnull T t);
+	PersistentValues getInsertValues(T t);
 	
-	PersistentValues getUpdateValues(@Nonnull T modified, @Nonnull T unmodified);
+	PersistentValues getUpdateValues(T modified, T unmodified, boolean allColumns);
 	
 	PersistentValues getDeleteValues(@Nonnull T t);
 	
@@ -20,4 +24,8 @@ public interface IMappingStrategy<T> {
 	PersistentValues getVersionedKeyValues(@Nonnull T t);
 	
 	Table getTargetTable();
+	
+	Serializable getId(T t);
+	
+	Set<Column> getColumns();
 }

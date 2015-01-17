@@ -1,8 +1,12 @@
 package org.stalactite.persistence.mapping;
 
+import java.io.Serializable;
 import java.lang.reflect.Field;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Set;
 
 import javax.annotation.Nonnull;
 
@@ -42,18 +46,14 @@ public class FieldMappingStrategy<T> implements IMappingStrategy<T> {
 		}
 	}
 	
-//	public FieldMappingStrategy(@Nonnull Table targetTable, @Nonnull Field primaryKeyField) {
-//		this.fieldToColumn = new HashMap<>();
-//		this.targetTable = targetTable;
-//		if (primaryKeyField == null) {
-//			throw new UnsupportedOperationException("No primary key field for " + targetTable.getName());
-//		}
-//		this.primaryKeyField = primaryKeyField;
-//	}
-	
 	@Override
 	public Table getTargetTable() {
 		return targetTable;
+	}
+	
+	@Override
+	public Set<Column> getColumns() {
+		return new HashSet<>(fieldToColumn.values());
 	}
 	
 	private void ensureFieldsAreAccessible() {
@@ -69,22 +69,37 @@ public class FieldMappingStrategy<T> implements IMappingStrategy<T> {
 			protected void visitField(Entry<Field, Column> fieldColumnEntry) throws IllegalAccessException {
 				toReturn.putUpsertValue(fieldColumnEntry.getValue(), fieldColumnEntry.getKey().get(t));
 			}
-		});
+		}, true);	// primary key must be inserted (not if DB gives it but it's not implemented yet)
 	}
 	
 	@Override
-	public PersistentValues getUpdateValues(@Nonnull final T modified, @Nonnull final T unmodified) {
-		return foreachField(new FieldVisitor() {
+	public PersistentValues getUpdateValues(@Nonnull final T modified, final T unmodified, final boolean allColumns) {
+		final Map<Column, Object> unmodifiedColumns = new LinkedHashMap<>();
+		// getting differences
+		PersistentValues toReturn = foreachField(new FieldVisitor() {
 			@Override
 			protected void visitField(Entry<Field, Column> fieldColumnEntry) throws IllegalAccessException {
-				Object modifiedValue = fieldColumnEntry.getKey().get(modified);
-				Object unmodifiedValue = fieldColumnEntry.getKey().get(unmodified);
+				Field field = fieldColumnEntry.getKey();
+				Object modifiedValue = field.get(modified);
+				Object unmodifiedValue = unmodified == null ? null : field.get(unmodified);
+				Column fieldColumn = fieldColumnEntry.getValue();
 				if (!Objects.equalsWithNull(modifiedValue, unmodifiedValue)) {
-					toReturn.putUpsertValue(fieldColumnEntry.getValue(), modifiedValue);
+					toReturn.putUpsertValue(fieldColumn, modifiedValue);
+				} else {
+					unmodifiedColumns.put(fieldColumn, modifiedValue);
 				}
-				putVersionedKeyValues(unmodified, toReturn);
 			}
-		});
+		}, false);	// primary key mustn't be updated
+		
+		// adding complementary columns if necessary
+		if (allColumns && !toReturn.getUpsertValues().isEmpty()) {
+			for (Entry<Column, Object> unmodifiedField : unmodifiedColumns.entrySet()) {
+				toReturn.putUpsertValue(unmodifiedField.getKey(), unmodifiedField.getValue());
+			}
+		}
+		
+		putVersionedKeyValues(modified, toReturn);
+		return toReturn;
 	}
 	
 	@Override
@@ -108,17 +123,28 @@ public class FieldMappingStrategy<T> implements IMappingStrategy<T> {
 		return toReturn;
 	}
 	
-	private PersistentValues foreachField(final FieldVisitor visitor) {
-		Iterables.visit(this.fieldToColumn.entrySet(), visitor);
+	@Override
+	public Serializable getId(T t) {
+		try {
+			return (Serializable) primaryKeyField.get(t);
+		} catch (IllegalAccessException e) {
+			Exceptions.throwAsRuntimeException(e);
+			// unjoinable code
+			return null;
+		}
+	}
+	
+	private PersistentValues foreachField(final FieldVisitor visitor, boolean withPK) {
+		Map<Field, Column> fieldsTobeVisited = new LinkedHashMap<>(this.fieldToColumn);
+		if (!withPK) {
+			fieldsTobeVisited.remove(this.primaryKeyField);
+		}
+		Iterables.visit(fieldsTobeVisited.entrySet(), visitor);
 		return visitor.toReturn;
 	}
 	
 	protected void putVersionedKeyValues(T t, PersistentValues toReturn) {
-		try {
-			toReturn.putWhereValue(this.targetTable.getPrimaryKey(), primaryKeyField.get(t));
-		} catch (IllegalAccessException e) {
-			Exceptions.throwAsRuntimeException(e);
-		}
+		toReturn.putWhereValue(this.targetTable.getPrimaryKey(), getId(t));
 	}
 	
 	private static abstract class FieldVisitor extends ForEach<Entry<Field, Column>, Void> {

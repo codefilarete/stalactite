@@ -8,6 +8,10 @@ import java.util.NoSuchElementException;
 import javax.annotation.Nonnull;
 
 /**
+ * Iterator de 2 autres sous la forme de {@link Entry}. A des éléments tant que les 2 Iterators délégués ont des élements.
+ * 
+ * @param <K>
+ * @param <V>
  * @author mary
  */
 public class PairIterator<K, V> implements Iterator<Entry<K, V>> {
@@ -40,6 +44,14 @@ public class PairIterator<K, V> implements Iterator<Entry<K, V>> {
 		iterator2.remove();
 	}
 	
+	/**
+	 * Iterator d'une paire qui continue tant que au moins un des 2 Iterators délégués a encore des éléments.
+	 * S'arrête donc quand les 2 Iterators sont épuisés.
+	 * Renvoie la paire sous la forme d'une {@link Entry}.
+	 * 
+	 * @param <K>
+	 * @param <V>
+	 */
 	public static class UntilBothIterator<K, V> extends PairIterator<K, V> {
 		
 		public UntilBothIterator(Iterable<K> iterator1, Iterable<V> iterator2) {
@@ -81,6 +93,12 @@ public class PairIterator<K, V> implements Iterator<Entry<K, V>> {
 		}
 	}
 	
+	/**
+	 * Iterator à l'infini, commence par renvoyer les éléments d'un Iterator délégué, puis renvoie ce que {@link #getMissingElement()}
+	 * renvoie (null par défaut).
+	 * 
+	 * @param <E>
+	 */
 	public static class InfiniteIterator<E> implements Iterator<E> {
 		
 		private Iterator<E> delegate;
@@ -110,6 +128,28 @@ public class PairIterator<K, V> implements Iterator<Entry<K, V>> {
 		
 		public E getMissingElement() {
 			return null;
+		}
+	}
+	
+	/**
+	 * Itérateur qui n'a aucun élément. Simple bouchon pour les API qui ont besoin d'un Iterator.
+	 * @param <E>
+	 */
+	public static class EmptyIterator<E> implements Iterator<E> {
+		
+		@Override
+		public boolean hasNext() {
+			return false;
+		}
+		
+		@Override
+		public E next() {
+			throw new NoSuchElementException();
+		}
+		
+		@Override
+		public void remove() {
+			
 		}
 	}
 }

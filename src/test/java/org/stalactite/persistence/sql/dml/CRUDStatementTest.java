@@ -62,7 +62,7 @@ public class CRUDStatementTest {
 		
 		connection.prepareStatement(createTotoTable).execute();
 		
-		CRUDStatement testInstance = new CRUDStatement(Maps.fastMap(colA, 1).put(colB, 2).getMap(), "insert into Toto(A, B) values ?, ?");
+		CRUDStatement testInstance = new CRUDStatement(Maps.asMap(colA, 1).add(colB, 2), "insert into Toto(A, B) values ?, ?");
 		PersistentValues values = new PersistentValues();
 		values.putUpsertValue(colA, 123);
 		values.putUpsertValue(colB, 456);

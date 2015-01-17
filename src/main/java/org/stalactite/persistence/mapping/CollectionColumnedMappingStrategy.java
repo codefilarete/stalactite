@@ -1,8 +1,12 @@
 package org.stalactite.persistence.mapping;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
+import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 
@@ -13,6 +17,7 @@ import org.stalactite.lang.collection.Collections;
 import org.stalactite.lang.collection.Iterables;
 import org.stalactite.lang.collection.Iterables.ForEach;
 import org.stalactite.lang.collection.PairIterator;
+import org.stalactite.lang.collection.PairIterator.EmptyIterator;
 import org.stalactite.lang.collection.PairIterator.InfiniteIterator;
 import org.stalactite.lang.collection.PairIterator.UntilBothIterator;
 import org.stalactite.persistence.structure.Table;
@@ -27,20 +32,6 @@ public abstract class CollectionColumnedMappingStrategy<C extends Collection<T>,
 	private final Set<Column> columns;
 	private final Class<T> persistentType;
 	
-//	public CollectionColumnedMappingStrategy(@Nonnull Table targetTable, String columnsPrefix, @Nonnull Class<T> collectionGenericType, int nbCol) {
-//		this.targetTable = targetTable;
-//		Map<String, Column> existingColumns = this.targetTable.mapColumnsOnName();
-//		columns = new LinkedHashSet<>(nbCol, 1);
-//		for (int i = 1; i <= nbCol; i++) {
-//			String columnName = getColumnName(columnsPrefix, i);
-//			Column column = existingColumns.get(columnName);
-//			if (column == null) {
-//				column = targetTable.new Column(columnName, collectionGenericType);
-//			}
-//			columns.add(column);
-//		}
-//	}
-	
 	public CollectionColumnedMappingStrategy(@Nonnull Table targetTable, @Nonnull Class<T> persistentType) {
 		this.targetTable = targetTable;
 		this.columns = initTargetColumns();
@@ -52,12 +43,17 @@ public abstract class CollectionColumnedMappingStrategy<C extends Collection<T>,
 		return targetTable;
 	}
 	
+	@Override
+	public Set<Column> getColumns() {
+		return columns;
+	}
+	
 	public Class<T> getPersistentType() {
 		return persistentType;
 	}
 	
 	@Override
-	public PersistentValues getInsertValues(@Nonnull C c) {
+	public PersistentValues getInsertValues(C c) {
 		final PersistentValues toReturn = new PersistentValues();
 		Collection<T> toIterate = c;
 		if (Collections.isEmpty(c)) {
@@ -77,21 +73,43 @@ public abstract class CollectionColumnedMappingStrategy<C extends Collection<T>,
 	}
 	
 	@Override
-	public PersistentValues getUpdateValues(@Nonnull C modified, @Nonnull C unmodified) {
+	public PersistentValues getUpdateValues(C modified, C unmodified, boolean allColumns) {
 		final PersistentValues toReturn = new PersistentValues();
-		UntilBothIterator<T, T> untilBothIterator = new UntilBothIterator<>(modified, unmodified);
-		PairIterator<Column, Entry<T, T>> valueColumnPairIterator = new PairIterator<>(columns.iterator(), untilBothIterator);
-		Iterables.visit(valueColumnPairIterator, new ForEach<Entry<Column,Entry<T,T>>, Void>() {
-			@Override
-			public Void visit(Entry<Column, Entry<T, T>> diffEntry) {
-				Column column = diffEntry.getKey();
-				Entry<T, T> toBeCompared = diffEntry.getValue();
-				if (!Objects.equalsWithNull(toBeCompared.getKey(), toBeCompared.getValue())) {
-					toReturn.putUpsertValue(column, getValue(toBeCompared.getKey()));
+		if (modified != null) {
+			// getting differences
+			final Map<Column, Object> unmodifiedColumns = new LinkedHashMap<>();
+			final Iterator<T> unmodifiedIterator = unmodified == null ? new EmptyIterator<T>() : unmodified.iterator();
+			UntilBothIterator<T, T> untilBothIterator = new UntilBothIterator<>(modified.iterator(), unmodifiedIterator);
+			PairIterator<Column, Entry<T, T>> valueColumnPairIterator = new PairIterator<>(columns.iterator(), untilBothIterator);
+			Iterables.visit(valueColumnPairIterator, new ForEach<Entry<Column, Entry<T, T>>, Void>() {
+				@Override
+				public Void visit(Entry<Column, Entry<T, T>> diffEntry) {
+					Column fieldColumn = diffEntry.getKey();
+					Entry<T, T> toBeCompared = diffEntry.getValue();
+					if (!Objects.equalsWithNull(toBeCompared.getKey(), toBeCompared.getValue())) {
+						toReturn.putUpsertValue(fieldColumn, getValue(toBeCompared.getKey()));
+					} else {
+						unmodifiedColumns.put(fieldColumn, toBeCompared.getKey());
+					}
+					return null;
 				}
-				return null;
+			});
+			
+			// adding complementary columns if necessary
+			if (allColumns && !toReturn.getUpsertValues().isEmpty()) {
+				Set<Column> missingColumns = new LinkedHashSet<>(columns);
+				missingColumns.removeAll(toReturn.getUpsertValues().keySet());
+				for (Column missingColumn : missingColumns) {
+					Object missingValue = unmodifiedColumns.get(missingColumn);
+					toReturn.putUpsertValue(missingColumn, missingValue);
+				}
 			}
-		});
+		} else if (allColumns && unmodified != null) {
+			for (Column column : columns) {
+				toReturn.putUpsertValue(column, null);
+			}
+		}
+		
 		return toReturn;
 	}
 	
@@ -111,6 +129,11 @@ public abstract class CollectionColumnedMappingStrategy<C extends Collection<T>,
 	public PersistentValues getVersionedKeyValues(@Nonnull C c) {
 		// Pas de valeur pour la clé versionnée
 		return new PersistentValues();
+	}
+	
+	@Override
+	public Serializable getId(C ts) {
+		return new UnsupportedOperationException("Collection strategy can't give id");
 	}
 	
 	protected abstract LinkedHashSet<Column> initTargetColumns();

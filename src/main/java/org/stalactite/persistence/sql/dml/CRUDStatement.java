@@ -10,6 +10,9 @@ import java.util.Map.Entry;
 
 import javax.annotation.Nonnull;
 
+import org.stalactite.lang.collection.Iterables;
+import org.stalactite.lang.collection.Iterables.ForEach;
+import org.stalactite.lang.exception.Exceptions;
 import org.stalactite.persistence.mapping.PersistentValues;
 import org.stalactite.persistence.structure.Table.Column;
 
@@ -66,6 +69,10 @@ public class CRUDStatement {
 		return sql;
 	}
 	
+	public PreparedStatement getStatement() {
+		return statement;
+	}
+	
 	public void setUpsertValue(@Nonnull Column column, Object value) throws SQLException {
 		set(upsertIndexes, column, value);
 	}
@@ -116,18 +123,67 @@ public class CRUDStatement {
 		}
 	}
 	
+	/**
+	 * Apply upsert and where values of PersistentValues to internal PreparedStatement created from Connection.
+	 * Don't execute statement as we don't know if it's a select or not so return would be different.
+	 * 
+	 * @param values values to set to PreparedStatement
+	 * @param connection a JDBC connection to create a PreparedStatement
+	 * @return the created PreparedStatement from Connection
+	 * @throws SQLException
+	 */
 	public PreparedStatement apply(@Nonnull PersistentValues values, @Nonnull Connection connection) throws SQLException {
 		prepare(connection);
+		applyValues(values);
+		return this.statement;
+	}
+	
+	/**
+	 * Massive version of {@link #apply(PersistentValues, Connection)}. Dedicated to non-select statement since each
+	 * PersistentValues is added as batch to the preparedStatement, so use {@link PreparedStatement#executeBatch()} afterward.
+	 * 
+	 * @param values values to set to PreparedStatement
+	 * @param connection a JDBC connection to create a PreparedStatement
+	 * @return the created PreparedStatement from Connection
+	 * @throws SQLException
+	 */
+	public PreparedStatement apply(@Nonnull Iterable<PersistentValues> values, @Nonnull Connection connection) throws SQLException {
+		prepare(connection);
+		try {
+			Iterables.visit(values, new ForEach<PersistentValues, Void>() {
+				@Override
+				public Void visit(PersistentValues values) {
+					try {
+						applyValues(values);
+						CRUDStatement.this.statement.addBatch();
+					} catch (SQLException e) {
+						Exceptions.throwAsRuntimeException(e);
+					}
+					return null;
+				}
+			});
+		} catch (RuntimeException e) {
+			// rethrow SQLException that was thrown as RuntimeException in loop
+			Throwable t = e.getCause();
+			if (t instanceof SQLException) {
+				throw (SQLException) t;
+			} else {
+				throw e;
+			}
+		}
+		return this.statement;
+	}
+	
+	protected void applyValues(PersistentValues values) throws SQLException {
 		for (Entry<Column, Object> colToValues : values.getUpsertValues().entrySet()) {
 			setUpsertValue(colToValues.getKey(), colToValues.getValue());
 		}
 		for (Entry<Column, Object> colToValues : values.getWhereValues().entrySet()) {
 			setWhereValue(colToValues.getKey(), colToValues.getValue());
 		}
-		return this.statement;
 	}
 	
-	public void prepare(Connection connection) throws SQLException {
+	protected void prepare(Connection connection) throws SQLException {
 		if (statement == null) {
 			statement = connection.prepareStatement(sql);
 		}

@@ -3,12 +3,14 @@ package org.stalactite.persistence.mapping;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertTrue;
 
+import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 
 import org.stalactite.lang.collection.Arrays;
 import org.stalactite.lang.collection.Maps;
+import org.stalactite.lang.collection.Maps.ChainingMap;
 import org.stalactite.persistence.structure.Table;
 import org.stalactite.persistence.structure.Table.Column;
 import org.testng.annotations.BeforeTest;
@@ -16,6 +18,10 @@ import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
 public class CollectionColumnedMappingStrategyTest {
+	
+	private static final String GET_INSERT_VALUES_DATA = "testGetInsertValuesData";
+	private static final String GET_UPDATE_VALUES_DIFF_ONLY_DATA = "testGetUpdateValuesDiffOnlyData";
+	private static final String GET_UPDATE_VALUES_ALL_COLUMNS_DATA = "testGetUpdateValuesAllColumnsData";
 	
 	private Table totoTable;
 	private CollectionColumnedMappingStrategy<List<String>, String> testInstance;
@@ -57,32 +63,69 @@ public class CollectionColumnedMappingStrategyTest {
 		col5 = namedColumns.get("col_5");
 	}
 	
-	@Test
-	public void testGetInsertValues() throws Exception {
-		PersistentValues insertValues = testInstance.getInsertValues(Arrays.asList("a", "b", "c"));
-		assertEquals(insertValues.getUpsertValues(), 
-				Maps.fastMap(col1, "a").put(col2, "b").put(col3, "c").put(col4, null).put(col5, null).getMap());
-	}
 	
-	@DataProvider
-	private Object[][] testGetUpdateValuesData() {
+	@DataProvider(name = GET_INSERT_VALUES_DATA)
+	public Object[][] testGetInsertValuesData() throws Exception {
 		return new Object[][] {
-				{ Arrays.asList("a", "b", "c"), Arrays.asList("x", "y", "x"),
-						Maps.fastMap(col1, "a").put(col2, "b").put(col3, "c").getMap() },
-				{ Arrays.asList("a", "b"), Arrays.asList("x", "y", "x"),
-						Maps.fastMap(col1, "a").put(col2, "b").put(col3, null).getMap() },
-				{ Arrays.asList("a", "b", "c"), Arrays.asList("x", "y"),
-						Maps.fastMap(col1, "a").put(col2, "b").put(col3, "c").getMap() },
-				{ Arrays.asList("x", "b"), Arrays.asList("x", "y"),
-						Maps.fastMap(col2, "b").getMap() },
-				{ Arrays.asList("x", "b", null), Arrays.asList("x", "y", "z"),
-						Maps.fastMap(col2, "b").put(col3, null).getMap() },
+				{ Arrays.asList("a", "b", "c"), Maps.asMap(col1, "a").add(col2, "b").add(col3, "c").add(col4, null).add(col5, null) },
+				{ Arrays.asList("a", "b", null), Maps.asMap(col1, "a").add(col2, "b").add(col3, null).add(col4, null).add(col5, null) },
+				{ null, Maps.asMap(col1, null).add(col2, null).add(col3, null).add(col4, null).add(col5, null) },
 		};
 	}
 	
-	@Test(dataProvider = "testGetUpdateValuesData")
-	public void testGetUpdateValues(List<String> modified, List<String> unmodified, Map<Column, String> expected) throws Exception {
-		PersistentValues insertValues = testInstance.getUpdateValues(modified, unmodified);
+	@Test(dataProvider = GET_INSERT_VALUES_DATA)
+	public void testGetInsertValues(List<String> toInsert, ChainingMap<Column, String> expected) throws Exception {
+		PersistentValues insertValues = testInstance.getInsertValues(toInsert);
+		assertEquals(insertValues.getUpsertValues(), expected);
+	}
+	
+	@DataProvider(name = GET_UPDATE_VALUES_DIFF_ONLY_DATA)
+	private Object[][] testGetUpdateValues_diffOnlyData() {
+		return new Object[][] {
+				{ Arrays.asList("a", "b", "c"), Arrays.asList("x", "y", "x"),
+						Maps.asMap(col1, "a").add(col2, "b").add(col3, "c") },
+				{ Arrays.asList("a", "b"), Arrays.asList("x", "y", "x"),
+						Maps.asMap(col1, "a").add(col2, "b").add(col3, null) },
+				{ Arrays.asList("a", "b", "c"), Arrays.asList("x", "y"),
+						Maps.asMap(col1, "a").add(col2, "b").add(col3, "c") },
+				{ Arrays.asList("x", "b"), Arrays.asList("x", "y"),
+						Maps.asMap(col2, "b") },
+				{ Arrays.asList("x", "b", null), Arrays.asList("x", "y", "z"),
+						Maps.asMap(col2, "b").add(col3, null) },
+				{ Arrays.asList("x", "b", null), null,
+						Maps.asMap(col1, "x").add(col2, "b") },
+		};
+	}
+	
+	@Test(dataProvider = GET_UPDATE_VALUES_DIFF_ONLY_DATA)
+	public void testGetUpdateValues_diffOnly(List<String> modified, List<String> unmodified, Map<Column, String> expected) throws Exception {
+		PersistentValues insertValues = testInstance.getUpdateValues(modified, unmodified, false);
+		assertEquals(insertValues.getUpsertValues(), expected);
+	}
+	
+	@DataProvider(name = GET_UPDATE_VALUES_ALL_COLUMNS_DATA)
+	private Object[][] testGetUpdateValues_allColumnsData() {
+		return new Object[][] {
+				{ Arrays.asList("a", "b", "c"), Arrays.asList("x", "y", "x"),
+						Maps.asMap(col1, "a").add(col2, "b").add(col3, "c").add(col4, null).add(col5, null) },
+				{ Arrays.asList("a", "b"), Arrays.asList("x", "y", "x"),
+						Maps.asMap(col1, "a").add(col2, "b").add(col3, null).add(col4, null).add(col5, null) },
+				{ Arrays.asList("a", "b", "c"), Arrays.asList("x", "y"),
+						Maps.asMap(col1, "a").add(col2, "b").add(col3, "c").add(col4, null).add(col5, null) },
+				{ Arrays.asList("x", "b"), Arrays.asList("x", "y"),
+						Maps.asMap(col1, "x").add(col2, "b").add(col3, null).add(col4, null).add(col5, null) },
+				{ Arrays.asList("x", "b", null), Arrays.asList("x", "y", "z"),
+						Maps.asMap(col1, "x").add(col2, "b").add(col3, null).add(col4, null).add(col5, null) },
+				{ Arrays.asList("x", "b", null), null,
+						Maps.asMap(col1, "x").add(col2, "b").add(col3, null).add(col4, null).add(col5, null) },
+				{ Arrays.asList("a", "b", "c"), Arrays.asList("a", "b", "c"),
+						new HashMap<>() },
+		};
+	}
+	
+	@Test(dataProvider = GET_UPDATE_VALUES_ALL_COLUMNS_DATA)
+	public void testGetUpdateValues_allColumns(List<String> modified, List<String> unmodified, Map<Column, String> expected) throws Exception {
+		PersistentValues insertValues = testInstance.getUpdateValues(modified, unmodified, true);
 		assertEquals(insertValues.getUpsertValues(), expected);
 	}
 	
