@@ -2,7 +2,6 @@ package org.stalactite.persistence.mapping;
 
 import java.lang.reflect.Field;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 import org.stalactite.lang.collection.Maps;
@@ -27,13 +26,8 @@ public class FieldMappingStrategyTest {
 	@BeforeTest
 	public void setUp() {
 		PersistentFieldHarverster persistentFieldHarverster = new PersistentFieldHarverster();
-		List<Field> fields = persistentFieldHarverster.getFields(Toto.class);
-		
-		Map<Field, Column> totoClassMapping = new HashMap<>(5);
 		Table totoClassTable = new Table(null, "Toto");
-		for (Field field : fields) {
-			totoClassMapping.put(field, totoClassTable.new Column(field.getName(), Integer.class));
-		}
+		Map<Field, Column> totoClassMapping = persistentFieldHarverster.mapFields(Toto.class, totoClassTable);
 		Map<String, Column> columns = totoClassTable.mapColumnsOnName();
 		colA = columns.get("a");
 		colA.setPrimaryKey(true);

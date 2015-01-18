@@ -24,7 +24,7 @@ public class PersistentFieldHarversterTest {
 	}
 	
 	@Test(dataProvider = NEXT_METHODS_DATA)
-	public void testNextMethods(Class clazz, List<String> expectedFields) throws Exception {
+	public void testGetFields(Class clazz, List<String> expectedFields) throws Exception {
 		PersistentFieldHarverster testInstance = new PersistentFieldHarverster();
 		Iterable<Field> fields = testInstance.getFields(clazz);
 		Iterator<Field> fieldsIterator = fields.iterator();

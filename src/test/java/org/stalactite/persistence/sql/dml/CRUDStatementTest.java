@@ -3,11 +3,8 @@ package org.stalactite.persistence.sql.dml;
 import java.lang.reflect.Field;
 import java.sql.Connection;
 import java.sql.DriverManager;
-import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 import org.stalactite.lang.collection.Maps;
@@ -37,14 +34,9 @@ public class CRUDStatementTest {
 		this.connection = DriverManager.getConnection("jdbc:hsqldb:mem:bdt", "sa", "");
 		
 		PersistentFieldHarverster persistentFieldHarverster = new PersistentFieldHarverster();
-		List<Field> fields = persistentFieldHarverster.getFields(Toto.class);
-		
-		totoClassMapping = new HashMap<>(5);
-		Table totoTable = new Table(null, "Toto");
-		for (Field field : fields) {
-			totoClassMapping.put(field, totoTable.new Column(field.getName(), Integer.class));
-		}
-		Map<String, Column> columns = totoTable.mapColumnsOnName();
+		Table totoClassTable = new Table(null, "Toto");
+		totoClassMapping = persistentFieldHarverster.mapFields(Toto.class, totoClassTable);
+		Map<String, Column> columns = totoClassTable.mapColumnsOnName();
 		colA = columns.get("a");
 		colA.setPrimaryKey(true);
 		colB = columns.get("b");
@@ -62,12 +54,12 @@ public class CRUDStatementTest {
 		
 		connection.prepareStatement(createTotoTable).execute();
 		
-		CRUDStatement testInstance = new CRUDStatement(Maps.asMap(colA, 1).add(colB, 2), "insert into Toto(A, B) values ?, ?");
+		CRUDStatement testInstance = new CRUDStatement(Maps.asMap(colA, 1).add(colB, 2), "insert into Toto(A, B) values (?, ?)");
 		PersistentValues values = new PersistentValues();
 		values.putUpsertValue(colA, 123);
 		values.putUpsertValue(colB, 456);
-		PreparedStatement statement = testInstance.apply(values, connection);
-		statement.execute();
+		testInstance.apply(values, connection);
+		testInstance.executeWrite();
 		
 		ResultSet resultSet = connection.prepareStatement("select A, B from Toto").executeQuery();
 		resultSet.next();
@@ -78,7 +70,7 @@ public class CRUDStatementTest {
 		values.putUpsertValue(colA, 789);
 		values.putUpsertValue(colB, 0);
 		testInstance.apply(values, connection);
-		statement.execute();
+		testInstance.executeWrite();
 		
 		resultSet = connection.prepareStatement("select A, B from Toto").executeQuery();
 		resultSet.next();

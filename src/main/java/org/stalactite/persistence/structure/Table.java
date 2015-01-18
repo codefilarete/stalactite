@@ -1,6 +1,6 @@
 package org.stalactite.persistence.structure;
 
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 import org.stalactite.lang.collection.Iterables;
@@ -39,7 +39,7 @@ public class Table {
 	}
 
 	public Map<String, Column> mapColumnsOnName() {
-		Map<String, Column> mapColumnsOnName = new HashMap<>(columns.size());
+		Map<String, Column> mapColumnsOnName = new LinkedHashMap<>(columns.size());
 		for (Column column : columns) {
 			mapColumnsOnName.put(column.getName(), column);
 		}

@@ -25,14 +25,13 @@ public class DDLGenerator {
 		StringAppender sqlCreateTable = new StringAppender("create table ", table.getName(), "(");
 		for (Column column : table.getColumns()) {
 			sqlCreateTable.cat(column.getName(), " ", getSqlType(column));
-			if (column.isPrimaryKey()) {
-				sqlCreateTable.cat(" primary key");
-			} else if (!column.isNullable()) {
-				sqlCreateTable.cat(" not null");
-			}
-			sqlCreateTable.cat(", ");
+			sqlCreateTable.catIf(!column.isNullable(), " not null").cat(", ");
 		}
-		sqlCreateTable.cutTail(2).cat(")");
+		sqlCreateTable.cutTail(2);
+		if (table.getPrimaryKey() != null) {
+			sqlCreateTable.cat(", primary key (", table.getPrimaryKey().getName(), ")");
+		}
+		sqlCreateTable.cat(")");
 //			sqlCreateTable.cat(" ROW_FORMAT=COMPRESSED");
 		return sqlCreateTable.toString();
 	}

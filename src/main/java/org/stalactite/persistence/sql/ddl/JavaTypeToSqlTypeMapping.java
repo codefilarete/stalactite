@@ -13,6 +13,9 @@ import org.stalactite.persistence.structure.Table.Column;
 import org.stalactite.persistence.structure.Table.SizedColumn;
 
 /**
+ * Mapping between Java classes and Sql Types.
+ * Near Hibernate Dialect::register types principles.
+ * 
  * @author mary
  */
 public class JavaTypeToSqlTypeMapping {

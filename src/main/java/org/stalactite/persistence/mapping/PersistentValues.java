@@ -1,6 +1,6 @@
 package org.stalactite.persistence.mapping;
 
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 import org.stalactite.persistence.structure.Table.Column;
@@ -15,7 +15,7 @@ public class PersistentValues {
 	private Map<Column, Object> whereValues;
 	
 	public PersistentValues() {
-		this(new HashMap<Column, Object>(), new HashMap<Column, Object>());
+		this(new LinkedHashMap<Column, Object>(), new LinkedHashMap<Column, Object>());
 	}
 	
 	private PersistentValues(Map<Column, Object> upsertValues, Map<Column, Object> whereValues) {

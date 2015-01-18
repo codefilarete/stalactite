@@ -31,11 +31,11 @@ public class DDLGeneratorTest {
 		
 		t.new Column("C", String.class).setPrimaryKey(true);
 		generatedCreateTable = testInstance.generateCreateTable(t);
-		Assert.assertEquals(generatedCreateTable, "create table Toto(A type, B type, C type primary key)");
+		Assert.assertEquals(generatedCreateTable, "create table Toto(A type, B type, C type, primary key (C))");
 		
 		t.new Column("D", Integer.TYPE);	// test isNullable
 		generatedCreateTable = testInstance.generateCreateTable(t);
-		Assert.assertEquals(generatedCreateTable, "create table Toto(A type, B type, C type primary key, D type not null)");
+		Assert.assertEquals(generatedCreateTable, "create table Toto(A type, B type, C type, D type not null, primary key (C))");
 	}
 	
 	@Test

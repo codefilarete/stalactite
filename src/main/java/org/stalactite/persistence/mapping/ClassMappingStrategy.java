@@ -38,6 +38,10 @@ public class ClassMappingStrategy<T> implements IMappingStrategy<T> {
 		this.mappingStrategies = new HashMap<>();
 	}
 	
+	public Class<T> getClassToPersist() {
+		return classToPersist;
+	}
+	
 	@Override
 	public Table getTargetTable() {
 		return targetTable;
@@ -135,5 +139,23 @@ public class ClassMappingStrategy<T> implements IMappingStrategy<T> {
 		Reflections.ensureAccessible(field);
 		// update columns list
 		columns.addAll(mappingStrategy.getColumns());
+	}
+	
+	/**
+	 * Indicates if ID is givent by database (througt auto increment column, or trigger, etc.)
+	 * @return true for id given by database, false otherwise
+	 */
+	public boolean isIdGivenByDatabase() {
+		// TODO: to implement according to id generator
+		return false;
+	}
+	
+	/**
+	 * Fix object id.
+	 * 
+	 * @param t
+	 */
+	public void fixId(T t) {
+		// TODO: To implement according id generator strategy
 	}
 }

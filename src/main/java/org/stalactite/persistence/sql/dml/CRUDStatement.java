@@ -10,6 +10,7 @@ import java.util.Map.Entry;
 
 import javax.annotation.Nonnull;
 
+import org.stalactite.lang.collection.Arrays;
 import org.stalactite.lang.collection.Iterables;
 import org.stalactite.lang.collection.Iterables.ForEach;
 import org.stalactite.lang.exception.Exceptions;
@@ -132,10 +133,8 @@ public class CRUDStatement {
 	 * @return the created PreparedStatement from Connection
 	 * @throws SQLException
 	 */
-	public PreparedStatement apply(@Nonnull PersistentValues values, @Nonnull Connection connection) throws SQLException {
-		prepare(connection);
-		applyValues(values);
-		return this.statement;
+	public void apply(@Nonnull PersistentValues values, @Nonnull Connection connection) throws SQLException {
+		apply(Arrays.asList(values), connection);
 	}
 	
 	/**
@@ -147,7 +146,7 @@ public class CRUDStatement {
 	 * @return the created PreparedStatement from Connection
 	 * @throws SQLException
 	 */
-	public PreparedStatement apply(@Nonnull Iterable<PersistentValues> values, @Nonnull Connection connection) throws SQLException {
+	public void apply(@Nonnull Iterable<PersistentValues> values, @Nonnull Connection connection) throws SQLException {
 		prepare(connection);
 		try {
 			Iterables.visit(values, new ForEach<PersistentValues, Void>() {
@@ -171,7 +170,10 @@ public class CRUDStatement {
 				throw e;
 			}
 		}
-		return this.statement;
+	}
+	
+	public int[] executeWrite() throws SQLException {
+		return this.statement.executeBatch();
 	}
 	
 	protected void applyValues(PersistentValues values) throws SQLException {
