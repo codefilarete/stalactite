@@ -26,12 +26,15 @@ public class ClassMappingStrategy<T> implements IMappingStrategy<T> {
 	
 	private final Table targetTable;
 	
+	private final Set<Column> columns;
+	
 	private Map<Field, IMappingStrategy> mappingStrategies;
 	
 	public ClassMappingStrategy(@Nonnull Class<T> classToPersist, @Nonnull Table targetTable, Map<Field, Column> fieldToColumn) {
 		this.classToPersist = classToPersist;
 		this.targetTable = targetTable;
 		this.defaultMappingStrategy = new FieldMappingStrategy<>(fieldToColumn);
+		this.columns = new HashSet<>(defaultMappingStrategy.getColumns());
 		this.mappingStrategies = new HashMap<>();
 	}
 	
@@ -42,10 +45,6 @@ public class ClassMappingStrategy<T> implements IMappingStrategy<T> {
 	
 	@Override
 	public Set<Column> getColumns() {
-		Set<Column> columns = new HashSet<>(defaultMappingStrategy.getColumns());
-		for (IMappingStrategy iMappingStrategy : mappingStrategies.values()) {
-			columns.addAll(iMappingStrategy.getColumns());
-		}
 		return columns;
 	}
 	
@@ -126,8 +125,15 @@ public class ClassMappingStrategy<T> implements IMappingStrategy<T> {
 		return defaultMappingStrategy.getId(t);
 	}
 	
+	/**
+	 * Indique une stratégie spécifique pour un attribut donnée
+	 * @param field
+	 * @param mappingStrategy
+	 */
 	public void put(Field field, IMappingStrategy mappingStrategy) {
 		mappingStrategies.put(field, mappingStrategy);
 		Reflections.ensureAccessible(field);
+		// update columns list
+		columns.addAll(mappingStrategy.getColumns());
 	}
 }

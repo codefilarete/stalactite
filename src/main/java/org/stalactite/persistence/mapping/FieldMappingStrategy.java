@@ -26,8 +26,11 @@ public class FieldMappingStrategy<T> implements IMappingStrategy<T> {
 	
 	private Map<Field, Column> fieldToColumn;
 	
-	private Field primaryKeyField;
+	private final Field primaryKeyField;
+	
 	private final Table targetTable;
+	
+	private final Set<Column> columns;
 	
 	public FieldMappingStrategy(@Nonnull Map<Field, Column> fieldToColumn) {
 		this.fieldToColumn = fieldToColumn;
@@ -44,6 +47,7 @@ public class FieldMappingStrategy<T> implements IMappingStrategy<T> {
 		} else {
 			throw new UnsupportedOperationException("No primary key field for " + targetTable.getName());
 		}
+		this.columns = new HashSet<>(fieldToColumn.values());
 	}
 	
 	@Override
@@ -53,7 +57,7 @@ public class FieldMappingStrategy<T> implements IMappingStrategy<T> {
 	
 	@Override
 	public Set<Column> getColumns() {
-		return new HashSet<>(fieldToColumn.values());
+		return columns;
 	}
 	
 	private void ensureFieldsAreAccessible() {
