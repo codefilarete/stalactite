@@ -21,7 +21,7 @@ import org.stalactite.persistence.structure.Table.Column;
 import org.testng.annotations.BeforeTest;
 import org.testng.annotations.Test;
 
-public class CRUDStatementTest {
+public class CRUDOperationTest {
 	
 	private Connection connection;
 	
@@ -68,7 +68,7 @@ public class CRUDStatementTest {
 //		when(dataSource.getConnection()).thenReturn(connection);
 		
 		
-		CRUDStatement testInstance = new CRUDStatement(Maps.asMap(colA, 1).add(colB, 2), "insert into Toto(A, B) values (?, ?)");
+		CRUDOperation testInstance = new CRUDOperation(Maps.asMap(colA, 1).add(colB, 2), "insert into Toto(A, B) values (?, ?)");
 		PersistentValues values = new PersistentValues();
 		values.putUpsertValue(colA, 123);
 		values.putUpsertValue(colB, 456);

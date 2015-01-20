@@ -12,7 +12,7 @@ import org.stalactite.lang.exception.Exceptions;
 import org.stalactite.persistence.mapping.ClassMappingStrategy;
 import org.stalactite.persistence.mapping.PersistentValues;
 import org.stalactite.persistence.sql.ddl.DDLGenerator;
-import org.stalactite.persistence.sql.dml.CRUDStatement;
+import org.stalactite.persistence.sql.dml.CRUDOperation;
 import org.stalactite.persistence.sql.dml.DMLGenerator;
 import org.stalactite.persistence.structure.Table;
 import org.stalactite.persistence.structure.Table.Column;
@@ -55,7 +55,7 @@ public class Persister<T> {
 				if (!mappingStrategy.isIdGivenByDatabase()) {
 					mappingStrategy.fixId(t);
 				}
-				CRUDStatement insertStatement = dmlGenerator.buildInsert(mappingStrategy.getTargetTable().getColumns());
+				CRUDOperation insertStatement = dmlGenerator.buildInsert(mappingStrategy.getTargetTable().getColumns());
 				PersistentValues insertValues = mappingStrategy.getInsertValues(t);
 				execute(insertStatement, insertValues);
 			} else {
@@ -65,16 +65,16 @@ public class Persister<T> {
 				// we shouldn't update pirmary key
 				LinkedHashSet<Column> columnsToUpdate = columns.asSet();
 				columnsToUpdate.remove(mappingStrategy.getTargetTable().getPrimaryKey());
-				CRUDStatement crudStatement = dmlGenerator.buildUpdate(columnsToUpdate, updateValues.getWhereValues().keySet());
-				execute(crudStatement, updateValues);
+				CRUDOperation crudOperation = dmlGenerator.buildUpdate(columnsToUpdate, updateValues.getWhereValues().keySet());
+				execute(crudOperation, updateValues);
 			}
 		}
 	}
 	
-	protected void execute(CRUDStatement crudStatement, PersistentValues insertValues) {
+	protected void execute(CRUDOperation crudOperation, PersistentValues insertValues) {
 		try {
-			crudStatement.apply(insertValues, getConnection());
-			crudStatement.executeWrite();
+			crudOperation.apply(insertValues, getConnection());
+			crudOperation.executeWrite();
 		} catch (SQLException e) {
 			Exceptions.throwAsRuntimeException(e);
 		}
@@ -87,7 +87,7 @@ public class Persister<T> {
 		} else {
 			Serializable id = mappingStrategy.getId(t);
 			if (id != null) {
-				CRUDStatement deleteStatement = dmlGenerator.buildDelete(mappingStrategy.getTargetTable(),
+				CRUDOperation deleteStatement = dmlGenerator.buildDelete(mappingStrategy.getTargetTable(),
 												Arrays.asList(mappingStrategy.getTargetTable().getPrimaryKey()));
 				PersistentValues deleteValues = mappingStrategy.getDeleteValues(t);
 				execute(deleteStatement, deleteValues);
@@ -101,7 +101,7 @@ public class Persister<T> {
 			throw new IllegalArgumentException("Unmapped entity " + clazz);
 		} else {
 			if (id != null) {
-				CRUDStatement deleteStatement = dmlGenerator.buildSelect(mappingStrategy.getTargetTable(),
+				CRUDOperation deleteStatement = dmlGenerator.buildSelect(mappingStrategy.getTargetTable(),
 												mappingStrategy.getTargetTable().getColumns().asSet(),
 												Arrays.asList(mappingStrategy.getTargetTable().getPrimaryKey()));
 				PersistentValues deleteValues = mappingStrategy.getSelectValues(id);

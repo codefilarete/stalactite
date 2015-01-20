@@ -23,7 +23,7 @@ import org.stalactite.persistence.structure.Table.Column;
  * 
  * @author mary
  */
-public class CRUDStatement {
+public class CRUDOperation {
 	
 	private final String sql;
 	
@@ -41,7 +41,7 @@ public class CRUDStatement {
 	 * @param upsertIndexes
 	 * @param sql
 	 */
-	public CRUDStatement(Map<Column, Integer> upsertIndexes, String sql) {
+	public CRUDOperation(Map<Column, Integer> upsertIndexes, String sql) {
 		this(upsertIndexes, sql, Collections.<Column, Integer>emptyMap());
 	}
 	
@@ -51,7 +51,7 @@ public class CRUDStatement {
 	 * @param sql
 	 * @param whereIndexes
 	 */
-	public CRUDStatement(String sql, Map<Column, Integer> whereIndexes) {
+	public CRUDOperation(String sql, Map<Column, Integer> whereIndexes) {
 		this(Collections.<Column, Integer>emptyMap(), sql, whereIndexes);
 	}
 	
@@ -61,7 +61,7 @@ public class CRUDStatement {
 	 * @param sql
 	 * @param whereIndexes
 	 */
-	public CRUDStatement(Map<Column, Integer> upsertIndexes, String sql, Map<Column, Integer> whereIndexes) {
+	public CRUDOperation(Map<Column, Integer> upsertIndexes, String sql, Map<Column, Integer> whereIndexes) {
 		this.upsertIndexes = upsertIndexes;
 		this.sql = sql;
 		this.whereIndexes = whereIndexes;
@@ -155,7 +155,7 @@ public class CRUDStatement {
 				public Void visit(PersistentValues values) {
 					try {
 						applyValues(values);
-						CRUDStatement.this.statement.addBatch();
+						CRUDOperation.this.statement.addBatch();
 					} catch (SQLException e) {
 						Exceptions.throwAsRuntimeException(e);
 					}
