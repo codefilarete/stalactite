@@ -19,7 +19,7 @@ public interface IMappingStrategy<T> {
 	
 	PersistentValues getDeleteValues(@Nonnull T t);
 	
-	PersistentValues getSelectValues(@Nonnull T t);
+	PersistentValues getSelectValues(@Nonnull Serializable id);
 	
 	PersistentValues getVersionedKeyValues(@Nonnull T t);
 	

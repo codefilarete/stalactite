@@ -147,7 +147,7 @@ public abstract class MapMappingStrategy<C extends Map<K, V>, K, V, T> implement
 	}
 	
 	@Override
-	public PersistentValues getSelectValues(@Nonnull C c) {
+	public PersistentValues getSelectValues(@Nonnull Serializable id) {
 		// Pas de valeur pour le where de sélection
 		return new PersistentValues();
 	}

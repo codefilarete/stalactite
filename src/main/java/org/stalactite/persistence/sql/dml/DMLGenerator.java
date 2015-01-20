@@ -1,7 +1,6 @@
 package org.stalactite.persistence.sql.dml;
 
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 import org.stalactite.lang.StringAppender;
@@ -40,7 +39,7 @@ public class DMLGenerator {
 			upsertIndexes.put(column, positionCounter++);
 		}
 		sqlUpdate.cutTail(2);
-		Map<Column, Integer> whereIndexes = catWhere(where, sqlUpdate);
+		Map<Column, Integer> whereIndexes = catWhere(where, sqlUpdate, positionCounter);
 		String sql = sqlUpdate.toString();
 		return new CRUDStatement(upsertIndexes, sql, whereIndexes);
 	}
@@ -51,7 +50,7 @@ public class DMLGenerator {
 		return new CRUDStatement(sqlDelete.toString(), whereIndexes);
 	}
 	
-	public CRUDStatement buildSelect(Table table, List<Column> columns, Iterable<Column> where) {
+	public CRUDStatement buildSelect(Table table, Iterable<Column> columns, Iterable<Column> where) {
 		StringAppender sqlSelect = new StringAppender("select ");
 		for (Column column : columns) {
 			sqlSelect.cat(column.getName(), ", ");
@@ -62,10 +61,13 @@ public class DMLGenerator {
 	}
 	
 	private Map<Column, Integer> catWhere(Iterable<Column> where, StringAppender sql) {
+		return catWhere(where, sql, 1);
+	}
+	
+	private Map<Column, Integer> catWhere(Iterable<Column> where, StringAppender sql, int positionCounter) {
 		Map<Column, Integer> colToIndexes = new HashMap<>(2, 1);
 		if (where.iterator().hasNext()) {
 			sql.cat(" where ");
-			int positionCounter = 1;
 			for (Column column : where) {
 				sql.cat(column.getName(), " = ? and ");
 				colToIndexes.put(column, positionCounter++);

@@ -14,11 +14,24 @@ import org.stalactite.persistence.sql.Dialect;
 public class PersistenceContext {
 	
 	private Dialect dialect;
-	private Map<Class, ClassMappingStrategy> mappingStrategies = new HashMap<>(50);
 	private DataSource dataSource;
+	private Map<Class, ClassMappingStrategy> mappingStrategies = new HashMap<>(50);
 	
 	public PersistenceContext(DataSource dataSource) {
+		this(dataSource, determineDialect(dataSource));
+	}
+	
+	public PersistenceContext(DataSource dataSource, Dialect dialect) {
 		this.dataSource = dataSource;
+		this.dialect = dialect;
+	}
+	
+	public static Dialect determineDialect(DataSource dataSource) {
+		return null;
+	}
+	
+	public Dialect getDialect() {
+		return dialect;
 	}
 	
 	public DataSource getDataSource() {

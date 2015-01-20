@@ -4,6 +4,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Timestamp;
+import java.util.Collections;
 import java.util.Date;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -41,7 +42,7 @@ public class CRUDStatement {
 	 * @param sql
 	 */
 	public CRUDStatement(Map<Column, Integer> upsertIndexes, String sql) {
-		this(upsertIndexes, sql, null);
+		this(upsertIndexes, sql, Collections.<Column, Integer>emptyMap());
 	}
 	
 	/**
@@ -51,7 +52,7 @@ public class CRUDStatement {
 	 * @param whereIndexes
 	 */
 	public CRUDStatement(String sql, Map<Column, Integer> whereIndexes) {
-		this(null, sql, whereIndexes);
+		this(Collections.<Column, Integer>emptyMap(), sql, whereIndexes);
 	}
 	
 	/**

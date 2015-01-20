@@ -15,10 +15,10 @@ public class DDLGenerator {
 	
 	public static final ForEach<Column, String> FOREACH_COLUMNNAME = new ForEachColumnName();
 	
-	private final JavaTypeToSqlTypeMapping dialect;
+	private final JavaTypeToSqlTypeMapping typeMapping;
 	
-	public DDLGenerator(JavaTypeToSqlTypeMapping dialect) {
-		this.dialect = dialect;
+	public DDLGenerator(JavaTypeToSqlTypeMapping typeMapping) {
+		this.typeMapping = typeMapping;
 	}
 
 	public String generateCreateTable(Table table) {
@@ -37,7 +37,7 @@ public class DDLGenerator {
 	}
 
 	protected String getSqlType(Column column) {
-		return dialect.getTypeName(column);
+		return typeMapping.getTypeName(column);
 	}
 
 	public String generateCreateIndex(Index index) {

@@ -102,7 +102,7 @@ public class FieldMappingStrategyTest {
 	
 	@Test
 	public void testGetSelectValues() throws Exception {
-		PersistentValues versionedKeyValues = testInstance.getSelectValues(new Toto(1, 2, 3));
+		PersistentValues versionedKeyValues = testInstance.getSelectValues(1);
 		Assert.assertEquals(versionedKeyValues.getWhereValues(), Maps.asMap(colA, 1));
 	}
 	

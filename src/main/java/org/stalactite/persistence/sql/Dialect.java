@@ -1,15 +1,19 @@
 package org.stalactite.persistence.sql;
 
-import org.stalactite.persistence.sql.ddl.DDLGenerator;
-import org.stalactite.persistence.structure.Table.Column;
+import org.stalactite.persistence.sql.ddl.JavaTypeToSqlTypeMapping;
 
 /**
  * @author mary
  */
-public abstract class Dialect {
+public class Dialect {
 	
-	public abstract String getTypeName(Column column);
+	private JavaTypeToSqlTypeMapping javaTypeToSqlTypeMapping;
 	
-	public abstract DDLGenerator getDDlGenerator();
+	public Dialect(JavaTypeToSqlTypeMapping javaTypeToSqlTypeMapping) {
+		this.javaTypeToSqlTypeMapping = javaTypeToSqlTypeMapping;
+	}
 	
+	public JavaTypeToSqlTypeMapping getJavaTypeToSqlTypeMapping() {
+		return javaTypeToSqlTypeMapping;
+	}
 }

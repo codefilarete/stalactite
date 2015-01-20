@@ -138,7 +138,7 @@ public class CollectionColumnedMappingStrategyTest {
 	@Test
 	public void testGetSelectValues() throws Exception {
 		// Pas de suppression de ligne avec cette stratégie en colonne
-		assertTrue(testInstance.getSelectValues(Arrays.asList("a", "b")).getWhereValues().isEmpty());
+		assertTrue(testInstance.getSelectValues(1).getWhereValues().isEmpty());
 	}
 	
 	@Test

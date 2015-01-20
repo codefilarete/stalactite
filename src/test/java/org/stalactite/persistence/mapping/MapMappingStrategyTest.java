@@ -146,7 +146,7 @@ public class MapMappingStrategyTest {
 	@Test
 	public void testGetSelectValues() throws Exception {
 		// Pas de sélection de ligne avec cette stratégie en colonne
-		assertTrue(testInstance.getSelectValues(Maps.asMap(1, "a").add(2, "b")).getWhereValues().isEmpty());
+		assertTrue(testInstance.getSelectValues(1).getWhereValues().isEmpty());
 	}
 	
 	@Test

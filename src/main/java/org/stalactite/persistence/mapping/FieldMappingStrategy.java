@@ -114,9 +114,9 @@ public class FieldMappingStrategy<T> implements IMappingStrategy<T> {
 	}
 	
 	@Override
-	public PersistentValues getSelectValues(@Nonnull T t) {
+	public PersistentValues getSelectValues(@Nonnull Serializable id) {
 		PersistentValues toReturn = new PersistentValues();
-		putVersionedKeyValues(t, toReturn);
+		toReturn.putWhereValue(this.targetTable.getPrimaryKey(), id);
 		return toReturn;
 	}
 	

@@ -53,4 +53,12 @@ public class KeepOrderSet<E> implements Iterable<E> {
 	public int hashCode() {
 		return delegate.hashCode();
 	}
+	
+	/**
+	 * Renvoie l'équivalent de cette instance sous la forme d'un vrai Set (cloné)
+	 * @return le contenu de cette instance dans un LinkedHashSet
+	 */
+	public LinkedHashSet<E> asSet() {
+		return new LinkedHashSet<>(delegate);
+	}
 }

@@ -102,21 +102,8 @@ public class ClassMappingStrategy<T> implements IMappingStrategy<T> {
 	}
 	
 	@Override
-	public PersistentValues getSelectValues(@Nonnull T t) {
-		PersistentValues selectValues = defaultMappingStrategy.getSelectValues(t);
-		for (Entry<Field, IMappingStrategy> fieldStrategyEntry : mappingStrategies.entrySet()) {
-			Object fieldValue;
-			try {
-				fieldValue = fieldStrategyEntry.getKey().get(t);
-			} catch (IllegalAccessException e) {
-				// Shouldn't happen
-				throw new RuntimeException(e);
-			}
-			PersistentValues fieldSelectValues = fieldStrategyEntry.getValue().getSelectValues(fieldValue);
-			selectValues.getUpsertValues().putAll(fieldSelectValues.getUpsertValues());
-			selectValues.getWhereValues().putAll(fieldSelectValues.getWhereValues());
-		}
-		return selectValues;
+	public PersistentValues getSelectValues(@Nonnull Serializable id) {
+		return defaultMappingStrategy.getSelectValues(id);
 	}
 	
 	@Override
