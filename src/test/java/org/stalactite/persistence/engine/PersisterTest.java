@@ -109,7 +109,7 @@ public class PersisterTest {
 	public void testSelect() throws Exception {
 		testInstance.select(Toto.class, 7);
 		
-		verify(preparedStatement, times(1)).addBatch();
+		verify(preparedStatement, times(1)).executeQuery();
 		verify(preparedStatement, times(1)).setInt(indexCaptor.capture(), valueCaptor.capture());
 		assertEquals("select a, b, c from Toto where a = ?", argumentCaptor.getValue());
 		assertEquals(Arrays.asList(1), indexCaptor.getAllValues());

@@ -14,7 +14,7 @@ import org.stalactite.persistence.structure.Table.Column;
  */
 public class DMLGenerator {
 	
-	public CRUDOperation buildInsert(Iterable<Column> columns) {
+	public InsertOperation buildInsert(Iterable<Column> columns) {
 		Table table = Iterables.first(columns).getTable();
 		StringAppender sqlInsert = new StringAppender("insert into ", table.getName(), "(");
 		DDLGenerator.catWithComma(columns, sqlInsert);
@@ -26,10 +26,10 @@ public class DMLGenerator {
 			upsertIndexes.put(column, positionCounter++);
 		}
 		String sql = sqlInsert.cutTail(2).cat(")").toString();
-		return new CRUDOperation(upsertIndexes, sql);
+		return new InsertOperation(sql, upsertIndexes);
 	}
 
-	public CRUDOperation buildUpdate(Iterable<Column> columns, Iterable<Column> where) {
+	public UpdateOperation buildUpdate(Iterable<Column> columns, Iterable<Column> where) {
 		Table table = Iterables.first(columns).getTable();
 		StringAppender sqlUpdate = new StringAppender("update ", table.getName(), " set ");
 		Map<Column, Integer> upsertIndexes = new HashMap<>(10);
@@ -41,23 +41,23 @@ public class DMLGenerator {
 		sqlUpdate.cutTail(2);
 		Map<Column, Integer> whereIndexes = catWhere(where, sqlUpdate, positionCounter);
 		String sql = sqlUpdate.toString();
-		return new CRUDOperation(upsertIndexes, sql, whereIndexes);
+		return new UpdateOperation(sql, upsertIndexes, whereIndexes);
 	}
 	
-	public CRUDOperation buildDelete(Table table, Iterable<Column> where) {
+	public DeleteOperation buildDelete(Table table, Iterable<Column> where) {
 		StringAppender sqlDelete = new StringAppender("delete ", table.getName());
 		Map<Column, Integer> whereIndexes = catWhere(where, sqlDelete);
-		return new CRUDOperation(sqlDelete.toString(), whereIndexes);
+		return new DeleteOperation(sqlDelete.toString(), whereIndexes);
 	}
 	
-	public CRUDOperation buildSelect(Table table, Iterable<Column> columns, Iterable<Column> where) {
+	public SelectOperation buildSelect(Table table, Iterable<Column> columns, Iterable<Column> where) {
 		StringAppender sqlSelect = new StringAppender("select ");
 		for (Column column : columns) {
 			sqlSelect.cat(column.getName(), ", ");
 		}
 		sqlSelect.cutTail(2).cat(" from ", table.getName());
 		Map<Column, Integer> whereIndexes = catWhere(where, sqlSelect);
-		return new CRUDOperation(sqlSelect.toString(), whereIndexes);
+		return new SelectOperation(sqlSelect.toString(), whereIndexes);
 	}
 	
 	private Map<Column, Integer> catWhere(Iterable<Column> where, StringAppender sql) {

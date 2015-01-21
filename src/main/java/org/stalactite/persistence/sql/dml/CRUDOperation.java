@@ -4,10 +4,8 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Timestamp;
-import java.util.Collections;
 import java.util.Date;
 import java.util.Map;
-import java.util.Map.Entry;
 
 import javax.annotation.Nonnull;
 
@@ -23,48 +21,18 @@ import org.stalactite.persistence.structure.Table.Column;
  * 
  * @author mary
  */
-public class CRUDOperation {
+public abstract class CRUDOperation<R> {
 	
 	private final String sql;
 	
 	private PreparedStatement statement;
 	
-	/** Column indexes for written columns of inserts and updates */
-	private Map<Column, Integer> upsertIndexes;
-	
-	/** Column indexes for where part of updates, deletes and selects */
-	private Map<Column, Integer> whereIndexes;
-	
 	/**
-	 * Constructor for inserts
-	 * 
-	 * @param upsertIndexes
-	 * @param sql
-	 */
-	public CRUDOperation(Map<Column, Integer> upsertIndexes, String sql) {
-		this(upsertIndexes, sql, Collections.<Column, Integer>emptyMap());
-	}
-	
-	/**
-	 * Constructor for selects and deletes
 	 * 
 	 * @param sql
-	 * @param whereIndexes
 	 */
-	public CRUDOperation(String sql, Map<Column, Integer> whereIndexes) {
-		this(Collections.<Column, Integer>emptyMap(), sql, whereIndexes);
-	}
-	
-	/**
-	 * Constructor for updates
-	 * @param upsertIndexes
-	 * @param sql
-	 * @param whereIndexes
-	 */
-	public CRUDOperation(Map<Column, Integer> upsertIndexes, String sql, Map<Column, Integer> whereIndexes) {
-		this.upsertIndexes = upsertIndexes;
+	public CRUDOperation(String sql) {
 		this.sql = sql;
-		this.whereIndexes = whereIndexes;
 	}
 	
 	public String getSql() {
@@ -75,15 +43,7 @@ public class CRUDOperation {
 		return statement;
 	}
 	
-	public void setUpsertValue(@Nonnull Column column, Object value) throws SQLException {
-		set(upsertIndexes, column, value);
-	}
-	
-	public void setWhereValue(@Nonnull Column column, Object value) throws SQLException {
-		set(whereIndexes, column, value);
-	}
-	
-	private void set(Map<Column, Integer> colToIndexes, Column column, Object value) throws SQLException {
+	protected void set(Map<Column, Integer> colToIndexes, Column column, Object value) throws SQLException {
 		Integer index = colToIndexes.get(column);
 		if (index == null) {
 			throw new IllegalArgumentException();
@@ -155,7 +115,6 @@ public class CRUDOperation {
 				public Void visit(PersistentValues values) {
 					try {
 						applyValues(values);
-						CRUDOperation.this.statement.addBatch();
 					} catch (SQLException e) {
 						Exceptions.throwAsRuntimeException(e);
 					}
@@ -173,18 +132,9 @@ public class CRUDOperation {
 		}
 	}
 	
-	public int[] executeWrite() throws SQLException {
-		return this.statement.executeBatch();
-	}
+	protected abstract void applyValues(PersistentValues values) throws SQLException;
 	
-	protected void applyValues(PersistentValues values) throws SQLException {
-		for (Entry<Column, Object> colToValues : values.getUpsertValues().entrySet()) {
-			setUpsertValue(colToValues.getKey(), colToValues.getValue());
-		}
-		for (Entry<Column, Object> colToValues : values.getWhereValues().entrySet()) {
-			setWhereValue(colToValues.getKey(), colToValues.getValue());
-		}
-	}
+	protected abstract R execute() throws SQLException;
 	
 	protected void prepare(Connection connection) throws SQLException {
 		if (statement == null) {

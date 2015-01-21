@@ -12,8 +12,12 @@ import org.stalactite.lang.exception.Exceptions;
 import org.stalactite.persistence.mapping.ClassMappingStrategy;
 import org.stalactite.persistence.mapping.PersistentValues;
 import org.stalactite.persistence.sql.ddl.DDLGenerator;
-import org.stalactite.persistence.sql.dml.CRUDOperation;
 import org.stalactite.persistence.sql.dml.DMLGenerator;
+import org.stalactite.persistence.sql.dml.DeleteOperation;
+import org.stalactite.persistence.sql.dml.InsertOperation;
+import org.stalactite.persistence.sql.dml.SelectOperation;
+import org.stalactite.persistence.sql.dml.UpdateOperation;
+import org.stalactite.persistence.sql.dml.WriteOperation;
 import org.stalactite.persistence.structure.Table;
 import org.stalactite.persistence.structure.Table.Column;
 
@@ -24,11 +28,12 @@ public class Persister<T> {
 	
 	private PersistenceContext persistenceContext;
 	
-	private final DMLGenerator dmlGenerator = new DMLGenerator();
+	private final DMLGenerator dmlGenerator;
 	private final DDLGenerator ddlGenerator;
 	
 	public Persister(PersistenceContext persistenceContext) {
 		this.persistenceContext = persistenceContext;
+		this.dmlGenerator = new DMLGenerator();
 		this.ddlGenerator = new DDLGenerator(persistenceContext.getDialect().getJavaTypeToSqlTypeMapping());
 	}
 	
@@ -55,7 +60,7 @@ public class Persister<T> {
 				if (!mappingStrategy.isIdGivenByDatabase()) {
 					mappingStrategy.fixId(t);
 				}
-				CRUDOperation insertStatement = dmlGenerator.buildInsert(mappingStrategy.getTargetTable().getColumns());
+				InsertOperation insertStatement = dmlGenerator.buildInsert(mappingStrategy.getTargetTable().getColumns());
 				PersistentValues insertValues = mappingStrategy.getInsertValues(t);
 				execute(insertStatement, insertValues);
 			} else {
@@ -65,16 +70,25 @@ public class Persister<T> {
 				// we shouldn't update pirmary key
 				LinkedHashSet<Column> columnsToUpdate = columns.asSet();
 				columnsToUpdate.remove(mappingStrategy.getTargetTable().getPrimaryKey());
-				CRUDOperation crudOperation = dmlGenerator.buildUpdate(columnsToUpdate, updateValues.getWhereValues().keySet());
+				UpdateOperation crudOperation = dmlGenerator.buildUpdate(columnsToUpdate, updateValues.getWhereValues().keySet());
 				execute(crudOperation, updateValues);
 			}
 		}
 	}
 	
-	protected void execute(CRUDOperation crudOperation, PersistentValues insertValues) {
+	protected void execute(WriteOperation operation, PersistentValues writeValues) {
 		try {
-			crudOperation.apply(insertValues, getConnection());
-			crudOperation.executeWrite();
+			operation.apply(writeValues, getConnection());
+			operation.execute();
+		} catch (SQLException e) {
+			Exceptions.throwAsRuntimeException(e);
+		}
+	}
+	
+	protected void execute(SelectOperation operation, PersistentValues insertValues) {
+		try {
+			operation.apply(insertValues, getConnection());
+			operation.execute();
 		} catch (SQLException e) {
 			Exceptions.throwAsRuntimeException(e);
 		}
@@ -87,7 +101,7 @@ public class Persister<T> {
 		} else {
 			Serializable id = mappingStrategy.getId(t);
 			if (id != null) {
-				CRUDOperation deleteStatement = dmlGenerator.buildDelete(mappingStrategy.getTargetTable(),
+				DeleteOperation deleteStatement = dmlGenerator.buildDelete(mappingStrategy.getTargetTable(),
 												Arrays.asList(mappingStrategy.getTargetTable().getPrimaryKey()));
 				PersistentValues deleteValues = mappingStrategy.getDeleteValues(t);
 				execute(deleteStatement, deleteValues);
@@ -101,11 +115,11 @@ public class Persister<T> {
 			throw new IllegalArgumentException("Unmapped entity " + clazz);
 		} else {
 			if (id != null) {
-				CRUDOperation deleteStatement = dmlGenerator.buildSelect(mappingStrategy.getTargetTable(),
+				SelectOperation selectStatement = dmlGenerator.buildSelect(mappingStrategy.getTargetTable(),
 												mappingStrategy.getTargetTable().getColumns().asSet(),
 												Arrays.asList(mappingStrategy.getTargetTable().getPrimaryKey()));
 				PersistentValues deleteValues = mappingStrategy.getSelectValues(id);
-				execute(deleteStatement, deleteValues);
+				execute(selectStatement, deleteValues);
 			}
 		}
 	}

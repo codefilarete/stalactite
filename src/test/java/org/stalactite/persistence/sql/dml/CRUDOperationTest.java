@@ -68,12 +68,12 @@ public class CRUDOperationTest {
 //		when(dataSource.getConnection()).thenReturn(connection);
 		
 		
-		CRUDOperation testInstance = new CRUDOperation(Maps.asMap(colA, 1).add(colB, 2), "insert into Toto(A, B) values (?, ?)");
+		InsertOperation testInstance = new InsertOperation("insert into Toto(A, B) values (?, ?)", Maps.asMap(colA, 1).add(colB, 2));
 		PersistentValues values = new PersistentValues();
 		values.putUpsertValue(colA, 123);
 		values.putUpsertValue(colB, 456);
 		testInstance.apply(values, connection);
-		testInstance.executeWrite();
+		testInstance.execute();
 		
 		verify(preparedStatement, times(1)).addBatch();
 		verify(preparedStatement, times(2)).setInt(indexCaptor.capture(), valueCaptor.capture());
@@ -94,7 +94,7 @@ public class CRUDOperationTest {
 		values.putUpsertValue(colA, 789);
 		values.putUpsertValue(colB, 0);
 		testInstance.apply(values, connection);
-		testInstance.executeWrite();
+		testInstance.execute();
 		
 		
 		verify(preparedStatement, times(1)).addBatch();
