@@ -3,9 +3,11 @@ package org.stalactite.persistence.sql.dml;
 import java.sql.SQLException;
 
 /**
+ * Abstract class for write operation to database. Expose batching method and updated line count after execution.
+ * 
  * @author mary
  */
-public abstract class WriteOperation extends CRUDOperation<int[]> {
+public abstract class WriteOperation extends CRUDOperation {
 	
 	/**
 	 * 

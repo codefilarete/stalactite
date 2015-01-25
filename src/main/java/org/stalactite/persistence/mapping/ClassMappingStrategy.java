@@ -117,7 +117,7 @@ public class ClassMappingStrategy<T> implements IMappingStrategy<T> {
 	}
 	
 	/**
-	 * Indique une stratégie spécifique pour un attribut donnée
+	 * Indique une stratégie spécifique pour un attribut donné
 	 * @param field
 	 * @param mappingStrategy
 	 */

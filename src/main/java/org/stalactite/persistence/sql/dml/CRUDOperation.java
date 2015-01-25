@@ -21,7 +21,7 @@ import org.stalactite.persistence.structure.Table.Column;
  * 
  * @author mary
  */
-public abstract class CRUDOperation<R> {
+public abstract class CRUDOperation {
 	
 	private final String sql;
 	
@@ -133,8 +133,6 @@ public abstract class CRUDOperation<R> {
 	}
 	
 	protected abstract void applyValues(PersistentValues values) throws SQLException;
-	
-	protected abstract R execute() throws SQLException;
 	
 	protected void prepare(Connection connection) throws SQLException {
 		if (statement == null) {
