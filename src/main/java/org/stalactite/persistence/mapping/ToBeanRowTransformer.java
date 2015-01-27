@@ -3,8 +3,6 @@ package org.stalactite.persistence.mapping;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
-import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -13,17 +11,19 @@ import org.stalactite.lang.Reflections.FieldIterator;
 import org.stalactite.lang.collection.Iterables;
 import org.stalactite.lang.collection.Iterables.ForEach;
 import org.stalactite.lang.exception.Exceptions;
+import org.stalactite.persistence.sql.result.IRowTransformer;
+import org.stalactite.persistence.sql.result.Row;
 import org.stalactite.reflection.AccessorByField;
 
 /**
  * @author mary
  */
-public class ResultSetTransformer<E> implements IResultSetTransformer<E> {
+public class ToBeanRowTransformer<T> implements IRowTransformer<T> {
 	
-	private final Constructor<E> constructor;
+	private final Constructor<T> constructor;
 	private final Map<String, AccessorByField> columnToField;
 	
-	public ResultSetTransformer(Class<E> clazz) throws NoSuchMethodException {
+	public ToBeanRowTransformer(Class<T> clazz) throws NoSuchMethodException {
 		this.constructor = clazz.getConstructor();
 		this.constructor.setAccessible(true);
 		this.columnToField = new HashMap<>(10);
@@ -37,22 +37,21 @@ public class ResultSetTransformer<E> implements IResultSetTransformer<E> {
 		});
 	}
 	
-	public ResultSetTransformer(Constructor<E> constructor, Map<String, AccessorByField> columnToField) {
+	public ToBeanRowTransformer(Constructor<T> constructor, Map<String, AccessorByField> columnToField) {
 		this.constructor = constructor;
 		this.constructor.setAccessible(true);
 		this.columnToField = columnToField;
 	}
 	
 	@Override
-	public E transform(ResultSet resultSet) {
-		new ResultSetIterator(resultSet).next();
-		E bean = newRowInstance();
-		convertColumnsToProperties(resultSet, bean);
+	public T transform(Row row) {
+		T bean = newRowInstance();
+		convertColumnsToProperties(row, bean);
 		return bean;
 	}
 	
-	protected E newRowInstance() {
-		E rowBean = null;
+	protected T newRowInstance() {
+		T rowBean = null;
 		try {
 			rowBean = constructor.newInstance();
 		} catch (IllegalAccessException|InstantiationException|InvocationTargetException e) {
@@ -61,14 +60,13 @@ public class ResultSetTransformer<E> implements IResultSetTransformer<E> {
 		return rowBean;
 	}
 	
-	@Override
-	public void convertColumnsToProperties(ResultSet resultSet, E rowBean) {
+	public void convertColumnsToProperties(Row row, T rowBean) {
 		try {
 			for (Entry<String, AccessorByField> columnFieldEntry : columnToField.entrySet()) {
-				Object object = resultSet.getObject(columnFieldEntry.getKey());
+				Object object = row.get(columnFieldEntry.getKey());
 				columnFieldEntry.getValue().set(rowBean, object);
 			}
-		} catch(IllegalAccessException | SQLException e){
+		} catch(IllegalAccessException e){
 			Exceptions.throwAsRuntimeException(e);
 		}
 	}

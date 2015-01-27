@@ -2,6 +2,8 @@ package org.stalactite.persistence.mapping;
 
 import java.io.Serializable;
 import java.lang.reflect.Field;
+import java.sql.SQLException;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.Map;
@@ -15,6 +17,7 @@ import org.stalactite.lang.collection.Iterables;
 import org.stalactite.lang.collection.Iterables.Finder;
 import org.stalactite.lang.collection.Iterables.ForEach;
 import org.stalactite.lang.exception.Exceptions;
+import org.stalactite.persistence.sql.result.Row;
 import org.stalactite.persistence.structure.Table;
 import org.stalactite.persistence.structure.Table.Column;
 import org.stalactite.reflection.AccessorByField;
@@ -24,6 +27,8 @@ import org.stalactite.reflection.AccessorByField;
  */
 public class FieldMappingStrategy<T> implements IMappingStrategy<T> {
 	
+	private final Class<T> classToPersist;
+	
 	private final Map<AccessorByField, Column> fieldToColumn;
 	
 	private final AccessorByField<T, Serializable> primaryKeyField;
@@ -32,12 +37,35 @@ public class FieldMappingStrategy<T> implements IMappingStrategy<T> {
 	
 	private final Set<Column> columns;
 	
+	private final ToBeanRowTransformer<T> resultSetTransformer;
+	
+	/**
+	 * Build a FieldMappingStrategy from a mapping between Field and Column.
+	 * Fields are expected to be from same class.
+	 * Columns are expected to be from same table.
+	 * No control is done about that, caller must be aware of it.
+	 * First entry of <tt>fieldToColumn</tt> is used to pick up persisted class and target table.
+	 * 
+	 * @param fieldToColumn a mapping between Field and Column, expected to be coherent (fields of same class, column of same table)
+	 */
 	public FieldMappingStrategy(@Nonnull Map<Field, Column> fieldToColumn) {
 		this.fieldToColumn = new LinkedHashMap<>(fieldToColumn.size());
+		Map<String, AccessorByField> columnToField = new HashMap<>();
 		for (Entry<Field, Column> fieldColumnEntry : fieldToColumn.entrySet()) {
-			this.fieldToColumn.put(new AccessorByField(fieldColumnEntry.getKey()), fieldColumnEntry.getValue());
+			Column column = fieldColumnEntry.getValue();
+			AccessorByField accessorByField = new AccessorByField(fieldColumnEntry.getKey());
+			this.fieldToColumn.put(accessorByField, column);
+			columnToField.put(column.getName(), accessorByField);
 		}
-		this.targetTable = Iterables.firstValue(fieldToColumn).getTable();
+		Entry<Field, Column> firstEntry = Iterables.first(fieldToColumn);
+		this.targetTable = firstEntry.getValue().getTable();
+		this.classToPersist = (Class<T>) firstEntry.getKey().getDeclaringClass();
+		try {
+			this.resultSetTransformer = new ToBeanRowTransformer<T>(classToPersist.getConstructor(), columnToField);
+		} catch (NoSuchMethodException e) {
+			throw new UnsupportedOperationException("Class " + classToPersist.getName() + " don't have default constructor");
+		}
+		
 		Entry<AccessorByField, Column> primaryKeyEntry = Iterables.filter(this.fieldToColumn.entrySet(), new Finder<Entry<AccessorByField, Column>>() {
 			@Override
 			public boolean accept(Entry<AccessorByField, Column> fieldColumnEntry) {
@@ -145,6 +173,10 @@ public class FieldMappingStrategy<T> implements IMappingStrategy<T> {
 	
 	protected void putVersionedKeyValues(T t, PersistentValues toReturn) {
 		toReturn.putWhereValue(this.targetTable.getPrimaryKey(), getId(t));
+	}
+	
+	public T transform(Row row) {
+		return this.resultSetTransformer.transform(row);
 	}
 	
 	private static abstract class FieldVisitor extends ForEach<Entry<AccessorByField, Column>, Void> {

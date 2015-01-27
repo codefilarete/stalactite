@@ -12,6 +12,7 @@ import java.util.Set;
 import javax.annotation.Nonnull;
 
 import org.stalactite.lang.Reflections;
+import org.stalactite.persistence.sql.result.Row;
 import org.stalactite.persistence.structure.Table;
 import org.stalactite.persistence.structure.Table.Column;
 
@@ -144,5 +145,9 @@ public class ClassMappingStrategy<T> implements IMappingStrategy<T> {
 	 */
 	public void fixId(T t) {
 		// TODO: To implement according id generator strategy
+	}
+	
+	public T transform(Row row) {
+		return defaultMappingStrategy.transform(row);
 	}
 }

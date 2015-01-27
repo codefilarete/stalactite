@@ -11,7 +11,6 @@ import org.stalactite.lang.collection.KeepOrderSet;
 import org.stalactite.lang.exception.Exceptions;
 import org.stalactite.persistence.mapping.ClassMappingStrategy;
 import org.stalactite.persistence.mapping.PersistentValues;
-import org.stalactite.persistence.mapping.ResultSetTransformer;
 import org.stalactite.persistence.sql.ddl.DDLGenerator;
 import org.stalactite.persistence.sql.dml.DMLGenerator;
 import org.stalactite.persistence.sql.dml.DeleteOperation;
@@ -19,6 +18,7 @@ import org.stalactite.persistence.sql.dml.InsertOperation;
 import org.stalactite.persistence.sql.dml.SelectOperation;
 import org.stalactite.persistence.sql.dml.UpdateOperation;
 import org.stalactite.persistence.sql.dml.WriteOperation;
+import org.stalactite.persistence.sql.result.RowIterator;
 import org.stalactite.persistence.structure.Table;
 import org.stalactite.persistence.structure.Table.Column;
 
@@ -100,21 +100,22 @@ public class Persister<T> {
 											mappingStrategy.getTargetTable().getColumns().asSet(),
 											Arrays.asList(mappingStrategy.getTargetTable().getPrimaryKey()));
 			PersistentValues deleteValues = mappingStrategy.getSelectValues(id);
-			return execute(selectStatement, deleteValues, clazz);
+			return execute(selectStatement, deleteValues, mappingStrategy);
 		} else {
 			throw new IllegalArgumentException("Non selectable entity " + clazz + " because of null id");
 		}
 	}
 	
-	protected T execute(SelectOperation operation, PersistentValues insertValues, Class<T> clazz) {
+	protected T execute(SelectOperation operation, PersistentValues insertValues, ClassMappingStrategy<T> classMappingStrategy) {
 		try {
 			operation.apply(insertValues, getConnection());
-			return operation.execute(new ResultSetTransformer<>(clazz));
+			RowIterator rowIterator = operation.execute();
+			if (rowIterator.hasNext()) {
+				return classMappingStrategy.transform(rowIterator.next());
+			} else {
+				return null;
+			}
 		} catch (SQLException e) {
-			Exceptions.throwAsRuntimeException(e);
-			// unreachable code
-			return null;
-		} catch (NoSuchMethodException e) {
 			Exceptions.throwAsRuntimeException(e);
 			// unreachable code
 			return null;

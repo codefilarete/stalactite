@@ -9,6 +9,7 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.sql.SQLFeatureNotSupportedException;
 import java.util.Map;
@@ -113,7 +114,14 @@ public class PersisterTest {
 	@Test
 	public void testSelect() throws Exception {
 		// mocking executeQuery not to return null because select method will use the ResultSet
-		when(preparedStatement.executeQuery()).thenReturn(mock(ResultSet.class));
+		ResultSet resultSetMock = mock(ResultSet.class);
+		when(preparedStatement.executeQuery()).thenReturn(resultSetMock);
+		ResultSetMetaData metaDataMock = mock(ResultSetMetaData.class);
+		when(resultSetMock.getMetaData()).thenReturn(metaDataMock);
+		when(metaDataMock.getColumnCount()).thenReturn(3);
+		when(metaDataMock.getColumnName(1)).thenReturn("a");
+		when(metaDataMock.getColumnName(2)).thenReturn("b");
+		when(metaDataMock.getColumnName(3)).thenReturn("c");
 		
 		testInstance.select(Toto.class, 7);
 		
@@ -125,7 +133,7 @@ public class PersisterTest {
 	}
 	
 	@Test
-	public void toto() throws SQLException {
+	public void testSelect_hsqldb() throws SQLException {
 		
 		final Connection connection = DriverManager.getConnection("jdbc:hsqldb:mem:test", "sa", "");
 		persistenceContext.setDataSource(new DataSource() {

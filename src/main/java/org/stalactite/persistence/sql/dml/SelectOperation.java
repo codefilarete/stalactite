@@ -1,5 +1,6 @@
 package org.stalactite.persistence.sql.dml;
 
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -7,7 +8,7 @@ import java.util.Map.Entry;
 import javax.annotation.Nonnull;
 
 import org.stalactite.persistence.mapping.PersistentValues;
-import org.stalactite.persistence.mapping.ResultSetTransformer;
+import org.stalactite.persistence.sql.result.RowIterator;
 import org.stalactite.persistence.structure.Table.Column;
 
 /**
@@ -32,8 +33,9 @@ public class SelectOperation extends CRUDOperation {
 		set(whereIndexes, column, value);
 	}
 	
-	public <T> T execute(ResultSetTransformer<T> resultSetTransformer) throws SQLException {
-		return resultSetTransformer.transform(getStatement().executeQuery());
+	public RowIterator execute() throws SQLException {
+		ResultSet resultSet = getStatement().executeQuery();
+		return new RowIterator(resultSet);
 	}
 	
 	protected void applyValues(PersistentValues values) throws SQLException {
