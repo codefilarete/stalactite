@@ -5,6 +5,7 @@ import java.util.Set;
 
 import javax.annotation.Nonnull;
 
+import org.stalactite.persistence.sql.result.Row;
 import org.stalactite.persistence.structure.Table;
 import org.stalactite.persistence.structure.Table.Column;
 
@@ -28,4 +29,6 @@ public interface IMappingStrategy<T> {
 	Serializable getId(T t);
 	
 	Set<Column> getColumns();
+	
+	public T transform(Row row);
 }

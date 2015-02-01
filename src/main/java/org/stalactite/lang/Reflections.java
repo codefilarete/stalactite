@@ -1,5 +1,7 @@
 package org.stalactite.lang;
 
+import java.lang.reflect.AccessibleObject;
+import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 
 import javax.annotation.Nonnull;
@@ -11,8 +13,16 @@ import org.stalactite.lang.collection.ReadOnlyIterator;
  */
 public final class Reflections {
 	
-	public static void ensureAccessible(Field field) {
-		field.setAccessible(true);
+	public static void ensureAccessible(AccessibleObject accessibleObject) {
+		accessibleObject.setAccessible(true);
+	}
+	
+	public static <T> Constructor<T> getDefaultConstructor(Class<T> clazz) {
+		try {
+			return clazz.getConstructor();
+		} catch (NoSuchMethodException e) {
+			throw new UnsupportedOperationException("Class " + clazz.getName() + " doesn't have a default constructor");
+		}
 	}
 	
 	/**

@@ -9,6 +9,7 @@ import java.util.Map;
 
 import org.stalactite.lang.collection.Maps;
 import org.stalactite.lang.collection.Maps.ChainingMap;
+import org.stalactite.persistence.sql.result.Row;
 import org.stalactite.persistence.structure.Table;
 import org.stalactite.persistence.structure.Table.Column;
 import org.testng.annotations.BeforeTest;
@@ -32,7 +33,7 @@ public class MapMappingStrategyTest {
 	@BeforeTest
 	public void setUp() throws Exception {
 		totoTable = new Table(null, "Toto");
-		testInstance = new MapMappingStrategy<Map<Integer, String>, Integer, String, String>(totoTable, String.class) {
+		testInstance = new MapMappingStrategy<Map<Integer, String>, Integer, String, String>(totoTable, String.class, HashMap.class) {
 			protected LinkedHashSet<Column> initTargetColumns() {
 				int nbCol = 5;
 				String columnsPrefix = "col_";
@@ -59,8 +60,18 @@ public class MapMappingStrategyTest {
 			}
 			
 			@Override
-			protected String convertMapValue(String s) {
+			protected Integer getKey(String columnName) {
+				return Integer.valueOf(columnName.substring("col_".length()));
+			}
+			
+			@Override
+			protected String toDatabaseValue(String s) {
 				return s;
+			}
+			
+			@Override
+			protected String toMapValue(Object s) {
+				return s.toString();
 			}
 		};
 		Map<String, Column> namedColumns = totoTable.mapColumnsOnName();
@@ -106,7 +117,7 @@ public class MapMappingStrategyTest {
 	}
 	
 	@Test(dataProvider = GET_UPDATE_VALUES_DIFF_ONLY_DATA)
-	public void testGetUpdateValues_diffOnly(Map<Integer, String> modified, Map<Integer, String> unmodified, Map<Integer, String> expected) throws Exception {
+	public void testGetUpdateValues_diffOnly(HashMap<Integer, String> modified, HashMap<Integer, String> unmodified, Map<Integer, String> expected) throws Exception {
 		PersistentValues updateValues = testInstance.getUpdateValues(modified, unmodified, false);
 		assertEquals(updateValues.getUpsertValues(),expected);
 	}
@@ -132,7 +143,7 @@ public class MapMappingStrategyTest {
 	}
 	
 	@Test(dataProvider = GET_UPDATE_VALUES_ALL_COLUMNS_DATA)
-	public void testGetUpdateValues_allColumns(Map<Integer, String> modified, Map<Integer, String> unmodified, Map<Integer, String> expected) throws Exception {
+	public void testGetUpdateValues_allColumns(HashMap<Integer, String> modified, HashMap<Integer, String> unmodified, Map<Integer, String> expected) throws Exception {
 		PersistentValues updateValues = testInstance.getUpdateValues(modified, unmodified, true);
 		assertEquals(updateValues.getUpsertValues(),expected);
 	}
@@ -153,5 +164,17 @@ public class MapMappingStrategyTest {
 	public void testGetVersionedKeyValues() throws Exception {
 		// Pas de clé versionnée avec cette stratégie en colonne
 		assertTrue(testInstance.getVersionedKeyValues(Maps.asMap(1, "a").add(2, "b")).getWhereValues().isEmpty());
+	}
+	
+	@Test
+	public void testTransform() throws Exception {
+		Row row = new Row();
+		row.put(col1.getName(), "a");
+		row.put(col2.getName(), "b");
+		row.put(col3.getName(), "c");
+		Map<Integer, String> toto = testInstance.transform(row);
+		assertEquals(toto.get(1), "a");
+		assertEquals(toto.get(2), "b");
+		assertEquals(toto.get(3), "c");
 	}
 }

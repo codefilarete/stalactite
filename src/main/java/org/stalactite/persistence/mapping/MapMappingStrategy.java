@@ -1,6 +1,7 @@
 package org.stalactite.persistence.mapping;
 
 import java.io.Serializable;
+import java.lang.reflect.Constructor;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -11,10 +12,12 @@ import java.util.Set;
 
 import javax.annotation.Nonnull;
 
+import org.stalactite.lang.Reflections;
 import org.stalactite.lang.bean.Objects;
 import org.stalactite.lang.collection.Collections;
 import org.stalactite.lang.collection.Iterables;
 import org.stalactite.lang.collection.Iterables.ForEach;
+import org.stalactite.persistence.sql.result.Row;
 import org.stalactite.persistence.structure.Table;
 import org.stalactite.persistence.structure.Table.Column;
 
@@ -26,11 +29,30 @@ public abstract class MapMappingStrategy<C extends Map<K, V>, K, V, T> implement
 	private final Table targetTable;
 	private final Set<Column> columns;
 	private final Class<T> persistentType;
+	private final ToMapRowTransformer<C> rowTransformer;
 	
-	public MapMappingStrategy(@Nonnull Table targetTable, @Nonnull Class<T> persistentType) {
+	/**
+	 * Constructor 
+	 * 
+	 * @param targetTable table to persist in
+	 * @param persistentType type of columns for map values
+	 * @param rowClass Class to instanciate for select from database, expected to be C but can't be typed due to generic complexity
+	 */
+	public MapMappingStrategy(@Nonnull Table targetTable, @Nonnull Class<T> persistentType, Class<? extends Map> rowClass) {
 		this.targetTable = targetTable;
 		this.columns = initTargetColumns();
 		this.persistentType = persistentType;
+		// wierd cast cause of generics
+		Constructor defaultConstructor = (Constructor) Reflections.getDefaultConstructor(rowClass);
+		this.rowTransformer = new ToMapRowTransformer<C>(defaultConstructor) {
+			/** We bind conversion on MapMappingStrategy conversion methods */
+			@Override
+			protected void convertRowContentToMap(Row row, C map) {
+				for (Entry<String, Object> contentEntry : row.getContent().entrySet()) {
+					map.put(getKey(contentEntry.getKey()), toMapValue(contentEntry.getValue()));
+				}
+			}
+		};
 	}
 	
 	@Override
@@ -62,7 +84,7 @@ public abstract class MapMappingStrategy<C extends Map<K, V>, K, V, T> implement
 			@Override
 			public Void visit(Entry<K, V> mapEntry) {
 				Column column = getColumn(mapEntry.getKey());
-				toReturn.putUpsertValue(column, convertMapValue(mapEntry.getValue()));
+				toReturn.putUpsertValue(column, toDatabaseValue(mapEntry.getValue()));
 				return null;
 			}
 		});
@@ -117,29 +139,6 @@ public abstract class MapMappingStrategy<C extends Map<K, V>, K, V, T> implement
 		return toReturn;
 	}
 	
-	protected PersistentValues getDifferences(C modified, C unmodified) {
-		final PersistentValues toReturn = new PersistentValues();
-		if (modified != null) {
-			// Toutes celles appartenant à modified et différentes dans unmodified
-			for (Entry<K, V> modifiedEntry : modified.entrySet()) {
-				K modifiedKey = modifiedEntry.getKey();
-				V modifiedValue = modifiedEntry.getValue();
-				if (!Objects.equalsWithNull(modifiedValue, unmodified == null ? null : unmodified.get(modifiedKey))) {
-					Column column = getColumn(modifiedKey);
-					toReturn.putUpsertValue(column, modifiedValue);
-				}
-			}
-			// Toutes celles de unmodified absentes de modified
-			HashSet<K> missingInModified = unmodified == null ? new HashSet<K>() : new HashSet<>(unmodified.keySet());
-			missingInModified.removeAll(modified.keySet());
-			for (K k : missingInModified) {
-				Column column = getColumn(k);
-				toReturn.putUpsertValue(column, modified.get(k));
-			}
-		}
-		return toReturn;
-	}
-	
 	@Override
 	public PersistentValues getDeleteValues(@Nonnull C c) {
 		// Pas de valeur pour le where de suppression
@@ -160,12 +159,31 @@ public abstract class MapMappingStrategy<C extends Map<K, V>, K, V, T> implement
 	
 	@Override
 	public Serializable getId(C t) {
-		return new UnsupportedOperationException("Map strategy can't give id");
+		return new UnsupportedOperationException("Map strategy can't provide id");
 	}
 	
 	protected abstract LinkedHashSet<Column> initTargetColumns();
 	
 	protected abstract Column getColumn(K k);
 	
-	protected abstract T convertMapValue(V v);
+	protected abstract T toDatabaseValue(V v);
+	
+	/**
+	 * Reverse of {@link #getColumn(Object)}: give a map key from a column name
+	 * @param columnName
+	 * @return a key for a Map
+	 */
+	protected abstract K getKey(String columnName);
+	
+	/**
+	 * Reverse of {@link #toDatabaseValue(Object)}: give a map value from a database selected value
+	 * @param t
+	 * @return a value for a Map
+	 */
+	protected abstract V toMapValue(Object t);
+
+	@Override
+	public C transform(Row row) {
+		return this.rowTransformer.transform(row);
+	}
 }

@@ -1,13 +1,15 @@
 package org.stalactite.persistence.mapping;
 
+import static org.testng.Assert.assertEquals;
+
 import java.lang.reflect.Field;
 import java.util.HashMap;
 import java.util.Map;
 
 import org.stalactite.lang.collection.Maps;
+import org.stalactite.persistence.sql.result.Row;
 import org.stalactite.persistence.structure.Table;
 import org.stalactite.persistence.structure.Table.Column;
-import org.testng.Assert;
 import org.testng.annotations.BeforeTest;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
@@ -50,7 +52,7 @@ public class FieldMappingStrategyTest {
 	public void testGetInsertValues(Toto modified, Map<Column, Object> expectedResult) throws Exception {
 		PersistentValues valuesToInsert = testInstance.getInsertValues(modified);
 		
-		Assert.assertEquals(valuesToInsert.getUpsertValues(), expectedResult);
+		assertEquals(valuesToInsert.getUpsertValues(), expectedResult);
 	}
 	
 	@DataProvider(name = GET_UPDATE_VALUES_DIFF_ONLY_DATA)
@@ -72,8 +74,8 @@ public class FieldMappingStrategyTest {
 	public void testGetUpdateValues_diffOnly(Toto modified, Toto unmodified, Map<Column, Object> expectedResult) throws Exception {
 		PersistentValues valuesToInsert = testInstance.getUpdateValues(modified, unmodified, false);
 		
-		Assert.assertEquals(valuesToInsert.getUpsertValues(), expectedResult);
-		Assert.assertEquals(valuesToInsert.getWhereValues(), Maps.asMap(colA, modified.a));
+		assertEquals(valuesToInsert.getUpsertValues(), expectedResult);
+		assertEquals(valuesToInsert.getWhereValues(), Maps.asMap(colA, modified.a));
 	}
 	
 	@DataProvider(name = GET_UPDATE_VALUES_ALL_COLUMNS_DATA)
@@ -90,31 +92,46 @@ public class FieldMappingStrategyTest {
 	public void testGetUpdateValues_allColumns(Toto modified, Toto unmodified, Map<Column, Object> expectedResult) throws Exception {
 		PersistentValues valuesToInsert = testInstance.getUpdateValues(modified, unmodified, true);
 		
-		Assert.assertEquals(valuesToInsert.getUpsertValues(), expectedResult);
-		Assert.assertEquals(valuesToInsert.getWhereValues(), Maps.asMap(colA, modified.a));
+		assertEquals(valuesToInsert.getUpsertValues(), expectedResult);
+		assertEquals(valuesToInsert.getWhereValues(), Maps.asMap(colA, modified.a));
 	}
 	
 	@Test
 	public void testGetDeleteValues() throws Exception {
 		PersistentValues versionedKeyValues = testInstance.getDeleteValues(new Toto(1, 2, 3));
-		Assert.assertEquals(versionedKeyValues.getWhereValues(), Maps.asMap(colA, 1));
+		assertEquals(versionedKeyValues.getWhereValues(), Maps.asMap(colA, 1));
 	}
 	
 	@Test
 	public void testGetSelectValues() throws Exception {
 		PersistentValues versionedKeyValues = testInstance.getSelectValues(1);
-		Assert.assertEquals(versionedKeyValues.getWhereValues(), Maps.asMap(colA, 1));
+		assertEquals(versionedKeyValues.getWhereValues(), Maps.asMap(colA, 1));
 	}
 	
 	@Test
 	public void testGetVersionedKeyValues() throws Exception {
 		PersistentValues versionedKeyValues = testInstance.getVersionedKeyValues(new Toto(1, 2, 3));
-		
-		Assert.assertEquals(versionedKeyValues.getWhereValues(), Maps.asMap(colA, 1));
+		assertEquals(versionedKeyValues.getWhereValues(), Maps.asMap(colA, 1));
+	}
+	
+	@Test
+	public void testTransform() throws Exception {
+		Row row = new Row();
+		row.put("a", 1);
+		row.put("b", 2);
+		row.put("c", 3);
+		Toto toto = testInstance.transform(row);
+		assertEquals((int) toto.a, 1);
+		assertEquals((int) toto.b, 2);
+		assertEquals((int) toto.c, 3);
 	}
 	
 	private static class Toto {
 		private Integer a, b, c;
+		
+		public Toto() {
+			
+		}
 		
 		public Toto(Integer a, Integer b, Integer c) {
 			this.a = a;

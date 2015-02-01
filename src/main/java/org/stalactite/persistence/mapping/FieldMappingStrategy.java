@@ -2,7 +2,6 @@ package org.stalactite.persistence.mapping;
 
 import java.io.Serializable;
 import java.lang.reflect.Field;
-import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -12,6 +11,7 @@ import java.util.Set;
 
 import javax.annotation.Nonnull;
 
+import org.stalactite.lang.Reflections;
 import org.stalactite.lang.bean.Objects;
 import org.stalactite.lang.collection.Iterables;
 import org.stalactite.lang.collection.Iterables.Finder;
@@ -37,7 +37,7 @@ public class FieldMappingStrategy<T> implements IMappingStrategy<T> {
 	
 	private final Set<Column> columns;
 	
-	private final ToBeanRowTransformer<T> resultSetTransformer;
+	private final ToBeanRowTransformer<T> rowTransformer;
 	
 	/**
 	 * Build a FieldMappingStrategy from a mapping between Field and Column.
@@ -60,11 +60,7 @@ public class FieldMappingStrategy<T> implements IMappingStrategy<T> {
 		Entry<Field, Column> firstEntry = Iterables.first(fieldToColumn);
 		this.targetTable = firstEntry.getValue().getTable();
 		this.classToPersist = (Class<T>) firstEntry.getKey().getDeclaringClass();
-		try {
-			this.resultSetTransformer = new ToBeanRowTransformer<T>(classToPersist.getConstructor(), columnToField);
-		} catch (NoSuchMethodException e) {
-			throw new UnsupportedOperationException("Class " + classToPersist.getName() + " don't have default constructor");
-		}
+		this.rowTransformer = new ToBeanRowTransformer<>(Reflections.getDefaultConstructor(classToPersist), columnToField);
 		
 		Entry<AccessorByField, Column> primaryKeyEntry = Iterables.filter(this.fieldToColumn.entrySet(), new Finder<Entry<AccessorByField, Column>>() {
 			@Override
@@ -175,8 +171,9 @@ public class FieldMappingStrategy<T> implements IMappingStrategy<T> {
 		toReturn.putWhereValue(this.targetTable.getPrimaryKey(), getId(t));
 	}
 	
+	@Override
 	public T transform(Row row) {
-		return this.resultSetTransformer.transform(row);
+		return this.rowTransformer.transform(row);
 	}
 	
 	private static abstract class FieldVisitor extends ForEach<Entry<AccessorByField, Column>, Void> {

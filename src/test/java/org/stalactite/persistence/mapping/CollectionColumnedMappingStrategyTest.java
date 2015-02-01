@@ -11,6 +11,7 @@ import java.util.Map;
 import org.stalactite.lang.collection.Arrays;
 import org.stalactite.lang.collection.Maps;
 import org.stalactite.lang.collection.Maps.ChainingMap;
+import org.stalactite.persistence.sql.result.Row;
 import org.stalactite.persistence.structure.Table;
 import org.stalactite.persistence.structure.Table.Column;
 import org.testng.annotations.BeforeTest;
@@ -52,6 +53,11 @@ public class CollectionColumnedMappingStrategyTest {
 				}
 		
 				return toReturn;
+			}
+			
+			@Override
+			public List<String> transform(Row row) {
+				throw new UnsupportedOperationException("Not used in this test");
 			}
 		};
 		Map<String, Column> namedColumns = totoTable.mapColumnsOnName();

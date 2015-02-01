@@ -133,7 +133,7 @@ public abstract class CollectionColumnedMappingStrategy<C extends Collection<T>,
 	
 	@Override
 	public Serializable getId(C ts) {
-		return new UnsupportedOperationException("Collection strategy can't give id");
+		return new UnsupportedOperationException("Collection strategy can't provide id");
 	}
 	
 	protected abstract LinkedHashSet<Column> initTargetColumns();

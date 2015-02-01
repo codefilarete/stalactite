@@ -8,6 +8,7 @@ import java.util.Map;
 
 import org.stalactite.lang.collection.Arrays;
 import org.stalactite.lang.collection.Maps;
+import org.stalactite.persistence.sql.result.Row;
 import org.stalactite.persistence.structure.Table;
 import org.stalactite.persistence.structure.Table.Column;
 import org.testng.Assert;
@@ -66,8 +67,14 @@ public class ClassMappingStrategyTest {
 		
 				return toReturn;
 			}
+			
+			@Override
+			public List<String> transform(Row row) {
+				throw new UnsupportedOperationException("Not used in this test");
+			}
 		});
-		testInstance.put(e, new MapMappingStrategy<Map<String, String>, String, String, String>(totoClassTable, String.class) {
+		testInstance.put(e, new MapMappingStrategy<HashMap<String, String>, String, String, String>(totoClassTable, String.class,
+				HashMap.class) {
 			
 			@Override
 			protected LinkedHashSet<Column> initTargetColumns() {
@@ -101,8 +108,18 @@ public class ClassMappingStrategyTest {
 			}
 			
 			@Override
-			protected String convertMapValue(String s) {
+			protected String getKey(String columnName) {
+				return null;
+			}
+			
+			@Override
+			protected String toDatabaseValue(String s) {
 				return s;
+			}
+			
+			@Override
+			protected String toMapValue(Object s) {
+				return s.toString();
 			}
 		});
 		
@@ -206,6 +223,9 @@ public class ClassMappingStrategyTest {
 		private List<String> d;
 		
 		private Map<String, String> e;
+		
+		public Toto() {
+		}
 		
 		public Toto(Integer a, Integer b, Integer c) {
 			this(a, b, c, null, null);

@@ -12,9 +12,11 @@ import java.util.Set;
 import javax.annotation.Nonnull;
 
 import org.stalactite.lang.Reflections;
+import org.stalactite.lang.exception.Exceptions;
 import org.stalactite.persistence.sql.result.Row;
 import org.stalactite.persistence.structure.Table;
 import org.stalactite.persistence.structure.Table.Column;
+import org.stalactite.reflection.AccessorByField;
 
 /**
  * @author mary
@@ -29,7 +31,7 @@ public class ClassMappingStrategy<T> implements IMappingStrategy<T> {
 	
 	private final Set<Column> columns;
 	
-	private Map<Field, IMappingStrategy> mappingStrategies;
+	private Map<AccessorByField, IMappingStrategy> mappingStrategies;
 	
 	public ClassMappingStrategy(@Nonnull Class<T> classToPersist, @Nonnull Table targetTable, Map<Field, Column> fieldToColumn) {
 		this.classToPersist = classToPersist;
@@ -56,7 +58,7 @@ public class ClassMappingStrategy<T> implements IMappingStrategy<T> {
 	@Override
 	public PersistentValues getInsertValues(@Nonnull T t) {
 		PersistentValues insertValues = defaultMappingStrategy.getInsertValues(t);
-		for (Entry<Field, IMappingStrategy> fieldStrategyEntry : mappingStrategies.entrySet()) {
+		for (Entry<AccessorByField, IMappingStrategy> fieldStrategyEntry : mappingStrategies.entrySet()) {
 			Object fieldValue;
 			try {
 				fieldValue = fieldStrategyEntry.getKey().get(t);
@@ -73,10 +75,10 @@ public class ClassMappingStrategy<T> implements IMappingStrategy<T> {
 	@Override
 	public PersistentValues getUpdateValues(@Nonnull T modified, T unmodified, boolean allColumns) {
 		PersistentValues toReturn = defaultMappingStrategy.getUpdateValues(modified, unmodified, allColumns);
-		for (Entry<Field, IMappingStrategy> fieldStrategyEntry : mappingStrategies.entrySet()) {
+		for (Entry<AccessorByField, IMappingStrategy> fieldStrategyEntry : mappingStrategies.entrySet()) {
 			Object modifiedValue, unmodifiedValue;
 			try {
-				Field field = fieldStrategyEntry.getKey();
+				AccessorByField field = fieldStrategyEntry.getKey();
 				modifiedValue = field.get(modified);
 				unmodifiedValue = unmodified == null ?  null : field.get(unmodified);
 			} catch (IllegalAccessException e) {
@@ -123,7 +125,7 @@ public class ClassMappingStrategy<T> implements IMappingStrategy<T> {
 	 * @param mappingStrategy
 	 */
 	public void put(Field field, IMappingStrategy mappingStrategy) {
-		mappingStrategies.put(field, mappingStrategy);
+		mappingStrategies.put(new AccessorByField(field), mappingStrategy);
 		Reflections.ensureAccessible(field);
 		// update columns list
 		columns.addAll(mappingStrategy.getColumns());
@@ -147,7 +149,16 @@ public class ClassMappingStrategy<T> implements IMappingStrategy<T> {
 		// TODO: To implement according id generator strategy
 	}
 	
+	@Override
 	public T transform(Row row) {
-		return defaultMappingStrategy.transform(row);
+		T toReturn = defaultMappingStrategy.transform(row);
+		for (Entry<AccessorByField, IMappingStrategy> mappingStrategyEntry : mappingStrategies.entrySet()) {
+			try {
+				mappingStrategyEntry.getKey().set(toReturn, mappingStrategyEntry.getValue().transform(row));
+			} catch (IllegalAccessException e) {
+				Exceptions.throwAsRuntimeException(e);
+			}
+		}
+		return toReturn;
 	}
 }
