@@ -1,6 +1,7 @@
 package org.stalactite.persistence.mapping;
 
 import java.lang.reflect.Field;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -8,7 +9,6 @@ import java.util.Map;
 
 import org.stalactite.lang.collection.Arrays;
 import org.stalactite.lang.collection.Maps;
-import org.stalactite.persistence.sql.result.Row;
 import org.stalactite.persistence.structure.Table;
 import org.stalactite.persistence.structure.Table.Column;
 import org.testng.Assert;
@@ -49,7 +49,7 @@ public class ClassMappingStrategyTest {
 		Field e = Toto.class.getDeclaredField("e");
 		totoClassMapping.remove(e);
 		testInstance = new ClassMappingStrategy<>(Toto.class, totoClassTable, totoClassMapping);
-		testInstance.put(d, new CollectionColumnedMappingStrategy<List<String>, String>(totoClassTable, String.class) {
+		testInstance.put(d, new CollectionColumnedMappingStrategy<List<String>, String>(totoClassTable, String.class, ArrayList.class) {
 			@Override
 			protected LinkedHashSet<Column> initTargetColumns() {
 				int nbCol = 2;
@@ -69,12 +69,11 @@ public class ClassMappingStrategyTest {
 			}
 			
 			@Override
-			public List<String> transform(Row row) {
-				throw new UnsupportedOperationException("Not used in this test");
+			protected String toCollectionValue(Object t) {
+				return t.toString();
 			}
 		});
-		testInstance.put(e, new MapMappingStrategy<HashMap<String, String>, String, String, String>(totoClassTable, String.class,
-				HashMap.class) {
+		testInstance.put(e, new MapMappingStrategy<Map<String, String>, String, String, String>(totoClassTable, String.class, HashMap.class) {
 			
 			@Override
 			protected LinkedHashSet<Column> initTargetColumns() {
@@ -108,7 +107,7 @@ public class ClassMappingStrategyTest {
 			}
 			
 			@Override
-			protected String getKey(String columnName) {
+			protected String getKey(Column column) {
 				return null;
 			}
 			

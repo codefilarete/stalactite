@@ -20,6 +20,7 @@ import org.stalactite.lang.collection.PairIterator;
 import org.stalactite.lang.collection.PairIterator.EmptyIterator;
 import org.stalactite.lang.collection.PairIterator.InfiniteIterator;
 import org.stalactite.lang.collection.PairIterator.UntilBothIterator;
+import org.stalactite.persistence.sql.result.Row;
 import org.stalactite.persistence.structure.Table;
 import org.stalactite.persistence.structure.Table.Column;
 
@@ -31,11 +32,23 @@ public abstract class CollectionColumnedMappingStrategy<C extends Collection<T>,
 	private final Table targetTable;
 	private final Set<Column> columns;
 	private final Class<T> persistentType;
+	private final ToCollectionRowTransformer<C> rowTransformer;
 	
-	public CollectionColumnedMappingStrategy(@Nonnull Table targetTable, @Nonnull Class<T> persistentType) {
+	public CollectionColumnedMappingStrategy(@Nonnull Table targetTable, @Nonnull Class<T> persistentType, Class<? extends Collection> rowClass) {
 		this.targetTable = targetTable;
 		this.columns = initTargetColumns();
 		this.persistentType = persistentType;
+		// weird cast cause of generics
+		this.rowTransformer = new ToCollectionRowTransformer<C>((Class<C>) rowClass) {
+			/** We bind conversion on CollectionColumnedMappingStrategy conversion methods */
+			@Override
+			protected void convertRowContentToMap(Row row, C collection) {
+				for (Column column : getColumns()) {
+					Object value = row.get(column.getName());
+					collection.add(toCollectionValue(value));
+				}
+			}
+		};
 	}
 	
 	@Override
@@ -65,7 +78,7 @@ public abstract class CollectionColumnedMappingStrategy<C extends Collection<T>,
 		Iterables.visit(valueColumnPairIterator, new ForEach<Entry<Column, T>, Void>() {
 			@Override
 			public Void visit(Entry<Column, T> valueEntry) {
-				toReturn.putUpsertValue(valueEntry.getKey(), getValue(valueEntry.getValue()));
+				toReturn.putUpsertValue(valueEntry.getKey(), toDatabaseValue(valueEntry.getValue()));
 				return null;
 			}
 			});
@@ -76,7 +89,7 @@ public abstract class CollectionColumnedMappingStrategy<C extends Collection<T>,
 	public PersistentValues getUpdateValues(C modified, C unmodified, boolean allColumns) {
 		final PersistentValues toReturn = new PersistentValues();
 		if (modified != null) {
-			// getting differences
+			// getting differences side by side
 			final Map<Column, Object> unmodifiedColumns = new LinkedHashMap<>();
 			final Iterator<T> unmodifiedIterator = unmodified == null ? new EmptyIterator<T>() : unmodified.iterator();
 			UntilBothIterator<T, T> untilBothIterator = new UntilBothIterator<>(modified.iterator(), unmodifiedIterator);
@@ -87,7 +100,7 @@ public abstract class CollectionColumnedMappingStrategy<C extends Collection<T>,
 					Column fieldColumn = diffEntry.getKey();
 					Entry<T, T> toBeCompared = diffEntry.getValue();
 					if (!Objects.equalsWithNull(toBeCompared.getKey(), toBeCompared.getValue())) {
-						toReturn.putUpsertValue(fieldColumn, getValue(toBeCompared.getKey()));
+						toReturn.putUpsertValue(fieldColumn, toDatabaseValue(toBeCompared.getKey()));
 					} else {
 						unmodifiedColumns.put(fieldColumn, toBeCompared.getKey());
 					}
@@ -138,7 +151,19 @@ public abstract class CollectionColumnedMappingStrategy<C extends Collection<T>,
 	
 	protected abstract LinkedHashSet<Column> initTargetColumns();
 	
-	protected Object getValue(T t) {
+	protected Object toDatabaseValue(T t) {
 		return t;
+	}
+	
+	/**
+	 * Reverse of {@link #toDatabaseValue(Object)}: give a map value from a database selected value
+	 * @param t
+	 * @return a value for a Map
+	 */
+	protected abstract T toCollectionValue(Object t);
+	
+	@Override
+	public C transform(Row row) {
+		return this.rowTransformer.transform(row);
 	}
 }

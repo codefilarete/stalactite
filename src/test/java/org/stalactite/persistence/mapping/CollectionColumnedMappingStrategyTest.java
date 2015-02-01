@@ -1,8 +1,8 @@
 package org.stalactite.persistence.mapping;
 
-import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.assertTrue;
+import static org.testng.Assert.*;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -36,7 +36,7 @@ public class CollectionColumnedMappingStrategyTest {
 	public void setUp() throws Exception {
 		totoTable = new Table(null, "Toto");
 		
-		testInstance = new CollectionColumnedMappingStrategy<List<String>, String>(totoTable, String.class) {
+		testInstance = new CollectionColumnedMappingStrategy<List<String>, String>(totoTable, String.class, ArrayList.class) {
 			@Override
 			protected LinkedHashSet<Column> initTargetColumns() {
 				int nbCol = 5;
@@ -56,8 +56,8 @@ public class CollectionColumnedMappingStrategyTest {
 			}
 			
 			@Override
-			public List<String> transform(Row row) {
-				throw new UnsupportedOperationException("Not used in this test");
+			protected String toCollectionValue(Object t) {
+				return t == null ?  null : t.toString();
 			}
 		};
 		Map<String, Column> namedColumns = totoTable.mapColumnsOnName();
@@ -151,5 +151,22 @@ public class CollectionColumnedMappingStrategyTest {
 	public void testGetVersionedKeyValues() throws Exception {
 		// Pas de suppression de ligne avec cette stratégie en colonne
 		assertTrue(testInstance.getVersionedKeyValues(Arrays.asList("a", "b")).getWhereValues().isEmpty());
+	}
+	
+	@Test
+	public void testTransform() throws Exception {
+		Row row = new Row();
+		row.put(col1.getName(), "a");
+		row.put(col2.getName(), "b");
+		row.put(col3.getName(), "c");
+		List<String> toto = testInstance.transform(row);
+		// all 5th first element should be filled
+		assertEquals(toto.get(0), "a");
+		assertEquals(toto.get(1), "b");
+		assertEquals(toto.get(2), "c");
+		assertEquals(toto.get(3), null);
+		assertEquals(toto.get(4), null);
+		// there's not more element since mapping used 5 columns
+		assertEquals(toto.size(), 5);
 	}
 }

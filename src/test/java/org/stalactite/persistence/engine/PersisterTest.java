@@ -190,7 +190,6 @@ public class PersisterTest {
 		assertEquals(1, (Object) t.a);
 		assertEquals(2, (Object) t.b);
 		assertEquals(3, (Object) t.c);
-		System.out.println(t);
 	}
 	
 	private static class Toto {

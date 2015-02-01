@@ -1,7 +1,6 @@
 package org.stalactite.persistence.mapping;
 
 import java.io.Serializable;
-import java.lang.reflect.Constructor;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -12,7 +11,6 @@ import java.util.Set;
 
 import javax.annotation.Nonnull;
 
-import org.stalactite.lang.Reflections;
 import org.stalactite.lang.bean.Objects;
 import org.stalactite.lang.collection.Collections;
 import org.stalactite.lang.collection.Iterables;
@@ -42,14 +40,14 @@ public abstract class MapMappingStrategy<C extends Map<K, V>, K, V, T> implement
 		this.targetTable = targetTable;
 		this.columns = initTargetColumns();
 		this.persistentType = persistentType;
-		// wierd cast cause of generics
-		Constructor defaultConstructor = (Constructor) Reflections.getDefaultConstructor(rowClass);
-		this.rowTransformer = new ToMapRowTransformer<C>(defaultConstructor) {
+		// weird cast cause of generics
+		this.rowTransformer = new ToMapRowTransformer<C>((Class<C>) rowClass) {
 			/** We bind conversion on MapMappingStrategy conversion methods */
 			@Override
 			protected void convertRowContentToMap(Row row, C map) {
-				for (Entry<String, Object> contentEntry : row.getContent().entrySet()) {
-					map.put(getKey(contentEntry.getKey()), toMapValue(contentEntry.getValue()));
+				for (Column column : columns) {
+					String columnName = column.getName();
+					map.put(getKey(column), toMapValue(row.get(columnName)));
 				}
 			}
 		};
@@ -170,10 +168,10 @@ public abstract class MapMappingStrategy<C extends Map<K, V>, K, V, T> implement
 	
 	/**
 	 * Reverse of {@link #getColumn(Object)}: give a map key from a column name
-	 * @param columnName
+	 * @param column
 	 * @return a key for a Map
 	 */
-	protected abstract K getKey(String columnName);
+	protected abstract K getKey(Column column);
 	
 	/**
 	 * Reverse of {@link #toDatabaseValue(Object)}: give a map value from a database selected value

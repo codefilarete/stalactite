@@ -60,8 +60,8 @@ public class MapMappingStrategyTest {
 			}
 			
 			@Override
-			protected Integer getKey(String columnName) {
-				return Integer.valueOf(columnName.substring("col_".length()));
+			protected Integer getKey(Column column) {
+				return Integer.valueOf(column.getName().substring("col_".length()));
 			}
 			
 			@Override
@@ -71,7 +71,7 @@ public class MapMappingStrategyTest {
 			
 			@Override
 			protected String toMapValue(Object s) {
-				return s.toString();
+				return s == null ? null : s.toString();
 			}
 		};
 		Map<String, Column> namedColumns = totoTable.mapColumnsOnName();
@@ -176,5 +176,11 @@ public class MapMappingStrategyTest {
 		assertEquals(toto.get(1), "a");
 		assertEquals(toto.get(2), "b");
 		assertEquals(toto.get(3), "c");
+		assertTrue(toto.containsKey(4));
+		assertEquals(toto.get(4), null);
+		assertTrue(toto.containsKey(5));
+		assertEquals(toto.get(5), null);
+		// there's not more element since mapping used 5 columns
+		assertEquals(toto.size(), 5);
 	}
 }

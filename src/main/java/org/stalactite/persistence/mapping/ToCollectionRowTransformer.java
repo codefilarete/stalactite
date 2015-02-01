@@ -2,7 +2,7 @@ package org.stalactite.persistence.mapping;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
-import java.util.Map;
+import java.util.Collection;
 
 import org.stalactite.lang.Reflections;
 import org.stalactite.lang.exception.Exceptions;
@@ -12,15 +12,15 @@ import org.stalactite.persistence.sql.result.Row;
 /**
  * @author mary
  */
-public abstract class ToMapRowTransformer<T extends Map> implements IRowTransformer<T> {
+public abstract class ToCollectionRowTransformer<T extends Collection> implements IRowTransformer<T> {
 	
 	private final Constructor<T> constructor;
 	
-	public ToMapRowTransformer(Class<T> clazz) {
+	public ToCollectionRowTransformer(Class<T> clazz) {
 		this(Reflections.getDefaultConstructor(clazz));
 	}
 	
-	protected ToMapRowTransformer(Constructor<T> constructor) {
+	protected ToCollectionRowTransformer(Constructor<T> constructor) {
 		this.constructor = constructor;
 		Reflections.ensureAccessible(constructor);
 	}
