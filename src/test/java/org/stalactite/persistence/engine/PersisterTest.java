@@ -182,8 +182,8 @@ public class PersisterTest {
 				return false;
 			}
 		});
+		persistenceContext.deployDDL();
 		testInstance = new Persister<>(persistenceContext);
-		testInstance.create(Toto.class);
 		connection.prepareStatement("insert into Toto(a, b, c) values (1, 2, 3)").execute();
 		connection.commit();
 		Toto t = testInstance.select(Toto.class, 1);

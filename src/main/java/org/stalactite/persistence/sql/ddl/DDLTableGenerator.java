@@ -3,8 +3,8 @@ package org.stalactite.persistence.sql.ddl;
 import org.stalactite.lang.StringAppender;
 import org.stalactite.lang.collection.Iterables;
 import org.stalactite.lang.collection.Iterables.ForEach;
-import org.stalactite.persistence.structure.ForeignKey;
-import org.stalactite.persistence.structure.Index;
+import org.stalactite.persistence.structure.Table.ForeignKey;
+import org.stalactite.persistence.structure.Table.Index;
 import org.stalactite.persistence.structure.Table;
 import org.stalactite.persistence.structure.Table.Column;
 
@@ -41,7 +41,7 @@ public class DDLTableGenerator {
 	}
 
 	public String generateCreateIndex(Index index) {
-		Table table = index.getTargetTable();
+		Table table = index.getTable();
 		StringAppender sqlCreateIndex = new StringAppender("create")
 				.catIf(index.isUnique(), " unique")
 				.cat(" index ", index.getName(), " on ", table.getName(), "(");
@@ -50,7 +50,7 @@ public class DDLTableGenerator {
 	}
 
 	public String generateCreateForeignKey(ForeignKey foreignKey) {
-		Table table = foreignKey.getTargetTable();
+		Table table = foreignKey.getTable();
 		StringAppender sqlCreateFK = new StringAppender("alter table ", table.getName())
 				.cat(" add constraint ", foreignKey.getName(), " foreign key(");
 		catWithComma(foreignKey.getColumns(), sqlCreateFK);

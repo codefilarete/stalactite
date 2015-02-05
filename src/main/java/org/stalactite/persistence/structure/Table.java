@@ -1,7 +1,9 @@
 package org.stalactite.persistence.structure;
 
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Set;
 
 import org.stalactite.lang.collection.Iterables;
 import org.stalactite.lang.collection.Iterables.Finder;
@@ -20,6 +22,10 @@ public class Table {
 	private KeepOrderSet<Column> columns = new KeepOrderSet<>();
 
 	private Column primaryKey;
+	
+	private Set<Index> indexes = new HashSet<>();
+	
+	private Set<ForeignKey> foreignKeys = new HashSet<>();
 	
 	public Table(Schema schema, String name) {
 		this.schema = schema;
@@ -57,7 +63,23 @@ public class Table {
 		}
 		return primaryKey;
 	}
-
+	
+	public Set<Index> getIndexes() {
+		return indexes;
+	}
+	
+	public void add(Index index) {
+		this.indexes.add(index);
+	}
+	
+	public Set<ForeignKey> getForeignKeys() {
+		return foreignKeys;
+	}
+	
+	public void add(ForeignKey foreignKey) {
+		this.foreignKeys.add(foreignKey);
+	}
+	
 	/**
 	 * Implémentation basée sur la comparaison du nom. Surchargé pour les comparaisons dans les Collections
 	 * @param o un Object
@@ -172,6 +194,87 @@ public class Table {
 		
 		public int getSize() {
 			return size;
+		}
+	}
+	
+	/**
+	 * @author mary
+	 */
+	public class Index {
+		private KeepOrderSet<Column> columns;
+		private String name;
+		private boolean unique = false;
+	
+		public Index(Column column, String name) {
+			this(new KeepOrderSet<>(column), name);
+		}
+	
+		public Index(KeepOrderSet<Column> columns, String name) {
+			this.columns = columns;
+			this.name = name;
+			getTable().add(this);
+		}
+	
+		public KeepOrderSet<Column> getColumns() {
+			return columns;
+		}
+	
+		public String getName() {
+			return name;
+		}
+	
+		public boolean isUnique() {
+			return unique;
+		}
+	
+		public void setUnique(boolean unique) {
+			this.unique = unique;
+		}
+		
+		public Table getTable() {
+			return Table.this;
+		}
+	}
+	
+	/**
+	 * @author mary
+	 */
+	public class ForeignKey {
+		private KeepOrderSet<Column> columns;
+		private String name;
+		private KeepOrderSet<Column> targetColumns;
+		private Table targetTable;
+	
+		public ForeignKey(Column column, String name, Column targetColumn) {
+			this(new KeepOrderSet<>(column), name, new KeepOrderSet<>(targetColumn));
+		}
+	
+		public ForeignKey(KeepOrderSet<Column> columns, String name, KeepOrderSet<Column> targetColumns) {
+			this.columns = columns;
+			this.name = name;
+			this.targetColumns = targetColumns;
+			this.targetTable = Iterables.first(targetColumns).getTable();
+			getTable().add(this);
+		}
+	
+		public KeepOrderSet<Column> getColumns() {
+			return columns;
+		}
+	
+		public String getName() {
+			return name;
+		}
+	
+		public KeepOrderSet<Column> getTargetColumns() {
+			return targetColumns;
+		}
+		
+		public Table getTable() {
+			return Table.this;
+		}
+		
+		public Table getTargetTable() {
+			return targetTable;
 		}
 	}
 }

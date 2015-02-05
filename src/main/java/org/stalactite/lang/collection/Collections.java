@@ -1,6 +1,8 @@
 package org.stalactite.lang.collection;
 
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -28,5 +30,11 @@ public class Collections {
 		return m == null || m.isEmpty();
 	}
 
-	
+	public static <E> List<E> cat(Collection<E> ... collections) {
+		List<E> toReturn = new ArrayList<>(collections.length * 10);	// arbitrary size, ArrayList.addAll will adapt
+		for (Collection<E> collection : collections) {
+			toReturn.addAll(collection);
+		}
+		return toReturn;
+	}
 }
