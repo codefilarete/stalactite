@@ -49,4 +49,8 @@ public class PersistenceContext {
 	public void add(ClassMappingStrategy classMappingStrategy) {
 		mappingStrategies.put(classMappingStrategy.getClassToPersist(), classMappingStrategy);
 	}
+	
+	public Map<Class, ClassMappingStrategy> getMappingStrategies() {
+		return mappingStrategies;
+	}
 }

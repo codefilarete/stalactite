@@ -8,11 +8,11 @@ import org.stalactite.persistence.structure.Table.Column;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
-public class DDLGeneratorTest {
+public class DDLTableGeneratorTest {
 	
 	@Test
 	public void testGenerateCreateTable() throws Exception {
-		DDLGenerator testInstance = new DDLGenerator(null) {
+		DDLTableGenerator testInstance = new DDLTableGenerator(null) {
 			@Override
 			protected String getSqlType(Column column) {
 				return "type";
@@ -40,7 +40,7 @@ public class DDLGeneratorTest {
 	
 	@Test
 	public void testGenerateCreateIndex() throws Exception {
-		DDLGenerator testInstance = new DDLGenerator(null);
+		DDLTableGenerator testInstance = new DDLTableGenerator(null);
 		
 		Table t = new Table(null, "Toto");
 		Column colA = t.new Column("A", String.class);
@@ -57,7 +57,7 @@ public class DDLGeneratorTest {
 	
 	@Test
 	public void testGenerateCreateForeignKey() throws Exception {
-		DDLGenerator testInstance = new DDLGenerator(null);
+		DDLTableGenerator testInstance = new DDLTableGenerator(null);
 		
 		Table toto = new Table(null, "Toto");
 		Column colA = toto.new Column("A", String.class);

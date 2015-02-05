@@ -5,13 +5,16 @@ import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Set;
 
 import org.stalactite.lang.collection.Arrays;
 import org.stalactite.lang.collection.KeepOrderSet;
 import org.stalactite.lang.exception.Exceptions;
 import org.stalactite.persistence.mapping.ClassMappingStrategy;
 import org.stalactite.persistence.mapping.PersistentValues;
-import org.stalactite.persistence.sql.ddl.DDLGenerator;
+import org.stalactite.persistence.sql.ddl.DDLTableGenerator;
+import org.stalactite.persistence.sql.ddl.DDLParticipant;
 import org.stalactite.persistence.sql.dml.DMLGenerator;
 import org.stalactite.persistence.sql.dml.DeleteOperation;
 import org.stalactite.persistence.sql.dml.InsertOperation;
@@ -30,12 +33,17 @@ public class Persister<T> {
 	private PersistenceContext persistenceContext;
 	
 	private final DMLGenerator dmlGenerator;
-	private final DDLGenerator ddlGenerator;
+	private final DDLTableGenerator ddlTableGenerator;
+	private final Set<DDLParticipant> ddlParticipants = new LinkedHashSet<>();
 	
 	public Persister(PersistenceContext persistenceContext) {
 		this.persistenceContext = persistenceContext;
 		this.dmlGenerator = new DMLGenerator();
-		this.ddlGenerator = new DDLGenerator(persistenceContext.getDialect().getJavaTypeToSqlTypeMapping());
+		this.ddlTableGenerator = new DDLTableGenerator(persistenceContext.getDialect().getJavaTypeToSqlTypeMapping());
+	}
+	
+	public void add(DDLParticipant ddlParticipant) {
+		this.ddlParticipants.add(ddlParticipant);
 	}
 	
 	public void create(Class<T> clazz) throws SQLException {
@@ -44,9 +52,36 @@ public class Persister<T> {
 	}
 	
 	public void create(Table table) throws SQLException {
-		String sqlCreateTable = this.ddlGenerator.generateCreateTable(table);
+		String sqlCreateTable = this.ddlTableGenerator.generateCreateTable(table);
+		execute(sqlCreateTable);
+	}
+	
+	public void deployDDL() throws SQLException {
+		deployTables();
+		deployDDLParticipants();
+		
+	}
+	
+	protected void deployTables() throws SQLException {
+		// create basic structure: table for entities
+		for (Class aClass : persistenceContext.getMappingStrategies().keySet()) {
+			create(aClass);
+		}
+	}
+	
+	protected void deployDDLParticipants() throws SQLException {
+		// execute DDLParticipants SQL
+		for (DDLParticipant ddlParticipant : ddlParticipants) {
+			List<String> sqls = ddlParticipant.generateCreateScripts();
+			for (String sql : sqls) {
+				execute(sql);
+			}
+		}
+	}
+	
+	protected void execute(String sql) throws SQLException {
 		try(Statement statement = getConnection().createStatement()) {
-			statement.execute(sqlCreateTable);
+			statement.execute(sql);
 		}
 	}
 	

@@ -11,13 +11,13 @@ import org.stalactite.persistence.structure.Table.Column;
 /**
  * @author mary
  */
-public class DDLGenerator {
+public class DDLTableGenerator {
 	
 	public static final ForEach<Column, String> FOREACH_COLUMNNAME = new ForEachColumnName();
 	
 	private final JavaTypeToSqlTypeMapping typeMapping;
 	
-	public DDLGenerator(JavaTypeToSqlTypeMapping typeMapping) {
+	public DDLTableGenerator(JavaTypeToSqlTypeMapping typeMapping) {
 		this.typeMapping = typeMapping;
 	}
 

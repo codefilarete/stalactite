@@ -5,7 +5,7 @@ import java.util.Map;
 
 import org.stalactite.lang.StringAppender;
 import org.stalactite.lang.collection.Iterables;
-import org.stalactite.persistence.sql.ddl.DDLGenerator;
+import org.stalactite.persistence.sql.ddl.DDLTableGenerator;
 import org.stalactite.persistence.structure.Table;
 import org.stalactite.persistence.structure.Table.Column;
 
@@ -17,7 +17,7 @@ public class DMLGenerator {
 	public InsertOperation buildInsert(Iterable<Column> columns) {
 		Table table = Iterables.first(columns).getTable();
 		StringAppender sqlInsert = new StringAppender("insert into ", table.getName(), "(");
-		DDLGenerator.catWithComma(columns, sqlInsert);
+		DDLTableGenerator.catWithComma(columns, sqlInsert);
 		sqlInsert.cat(") values (");
 		Map<Column, Integer> upsertIndexes = new HashMap<>(10);
 		int positionCounter = 1;
