@@ -31,7 +31,9 @@ public abstract class ResultSetIterator<T> extends ReadOnlyIterator<T> {
 	@Override
 	public boolean hasNext() {
 		try {
-			return !rs.isLast();
+			// NB: utiliser isLast ne permet pas de gérer les résultats vides
+			boolean isEmpty = !rs.isBeforeFirst() && rs.getRow() == 0;
+			return !isEmpty && !rs.isLast();
 		} catch (SQLException e) {
 			Exceptions.throwAsRuntimeException(e);
 			return false;
