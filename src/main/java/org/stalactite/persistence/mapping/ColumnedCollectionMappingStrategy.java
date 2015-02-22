@@ -27,13 +27,13 @@ import org.stalactite.persistence.structure.Table.Column;
 /**
  * @author mary
  */
-public abstract class CollectionColumnedMappingStrategy<C extends Collection<T>, T> implements IMappingStrategy<C> {
+public abstract class ColumnedCollectionMappingStrategy<C extends Collection<T>, T> implements IMappingStrategy<C> {
 	
 	private final Table targetTable;
 	private final Set<Column> columns;
 	private final ToCollectionRowTransformer<C> rowTransformer;
 	
-	public CollectionColumnedMappingStrategy(@Nonnull Table targetTable, Set<Column> columns, Class<? extends Collection> rowClass) {
+	public ColumnedCollectionMappingStrategy(@Nonnull Table targetTable, Set<Column> columns, Class<? extends Collection> rowClass) {
 		this.targetTable = targetTable;
 		this.columns = columns;
 		// weird cast cause of generics

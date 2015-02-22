@@ -61,7 +61,7 @@ public class ClassMappingStrategyTest {
 			String columnName = "cold_" + i;
 			collectionColumn.add(totoClassTable.new Column(columnName, String.class));
 		}
-		testInstance.put(d, new CollectionColumnedMappingStrategy<List<String>, String>(totoClassTable, collectionColumn, ArrayList.class) {
+		testInstance.put(d, new ColumnedCollectionMappingStrategy<List<String>, String>(totoClassTable, collectionColumn, ArrayList.class) {
 			
 			@Override
 			protected String toCollectionValue(Object t) {
@@ -82,7 +82,7 @@ public class ClassMappingStrategyTest {
 					break;
 			}
 		}
-		testInstance.put(e, new MapMappingStrategy<Map<String, String>, String, String, String>(totoClassTable, mappedColumnsOnKey.values(), HashMap.class) {
+		testInstance.put(e, new ColumnedMapMappingStrategy<Map<String, String>, String, String, String>(totoClassTable, mappedColumnsOnKey.values(), HashMap.class) {
 			
 			@Override
 			protected Column getColumn(String key) {

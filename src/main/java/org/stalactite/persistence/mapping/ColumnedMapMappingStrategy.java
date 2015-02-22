@@ -22,7 +22,7 @@ import org.stalactite.persistence.structure.Table.Column;
 /**
  * @author mary
  */
-public abstract class MapMappingStrategy<C extends Map<K, V>, K, V, T> implements IMappingStrategy<C> {
+public abstract class ColumnedMapMappingStrategy<C extends Map<K, V>, K, V, T> implements IMappingStrategy<C> {
 	
 	private final Table targetTable;
 	private final Set<Column> columns;
@@ -35,7 +35,7 @@ public abstract class MapMappingStrategy<C extends Map<K, V>, K, V, T> implement
 	 * @param columns columns that will be used for persistent of Maps, expected to be a subset of targetTable columns    
 	 * @param rowClass Class to instanciate for select from database, expected to be C but can't be typed due to generic complexity
 	 */
-	public MapMappingStrategy(@Nonnull Table targetTable, Set<Column> columns, Class<? extends Map> rowClass) {
+	public ColumnedMapMappingStrategy(@Nonnull Table targetTable, Set<Column> columns, Class<? extends Map> rowClass) {
 		this.targetTable = targetTable;
 		this.columns = columns;
 		// weird cast cause of generics
