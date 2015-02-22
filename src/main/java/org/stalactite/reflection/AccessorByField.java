@@ -18,7 +18,7 @@ public class AccessorByField<C, T> extends PropertyAccessor<C, T, Field> {
 	@Override
 	public T get(C c) throws IllegalAccessException {
 		try {
-			return returnType.cast(getAccessor().get(c));
+			return (T) getAccessor().get(c);
 		} catch (NullPointerException npe) {
 			throw new NullPointerException("Cannot access " + getAccessor().toString() + " on null instance");
 		}

@@ -19,7 +19,7 @@ public class AccessorByMethod<C, T> extends PropertyAccessor<C, T, Method> {
 	@Override
 	public T get(C c) throws IllegalAccessException, InvocationTargetException {
 		try {
-			return returnType.cast(getAccessor().invoke(c));
+			return (T) getAccessor().invoke(c);
 		} catch (NullPointerException npe) {
 			throw new NullPointerException("Cannot access " + getAccessor().toString() + " on null instance");
 		}
