@@ -4,9 +4,10 @@ import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertTrue;
 
 import java.util.HashMap;
-import java.util.LinkedHashSet;
 import java.util.Map;
 
+import org.apache.commons.collections4.BidiMap;
+import org.apache.commons.collections4.bidimap.DualHashBidiMap;
 import org.stalactite.lang.collection.Maps;
 import org.stalactite.lang.collection.Maps.ChainingMap;
 import org.stalactite.persistence.sql.result.Row;
@@ -33,44 +34,35 @@ public class MapMappingStrategyTest {
 	@BeforeTest
 	public void setUp() throws Exception {
 		totoTable = new Table(null, "Toto");
-		testInstance = new MapMappingStrategy<Map<Integer, String>, Integer, String, String>(totoTable, String.class, HashMap.class) {
-			protected LinkedHashSet<Column> initTargetColumns() {
-				int nbCol = 5;
-				String columnsPrefix = "col_";
-				Map<String, Column> existingColumns = getTargetTable().mapColumnsOnName();
-				LinkedHashSet<Column> toReturn = new LinkedHashSet<>(nbCol, 1);
-				for (int i = 1; i <= nbCol; i++) {
-					String columnName = getColumnName(columnsPrefix, i);
-					Column column = existingColumns.get(columnName);
-					if (column == null) {
-						column = getTargetTable().new Column(columnName, getPersistentType());
-					}
-					toReturn.add(column);
-				}
+		final int nbCol = 5;
+		final BidiMap<Integer, Column> mappedColumnsOnKey = new DualHashBidiMap<>();
+		for (int i = 1; i <= nbCol; i++) {
+			String columnName = "col_" + i;
+			Column column = totoTable.new Column(columnName, String.class);
+			mappedColumnsOnKey.put(i, column);
+		}
 		
-				return toReturn;
-			}
-
+		testInstance = new MapMappingStrategy<Map<Integer, String>, Integer, String, String>(totoTable, totoTable.getColumns().asSet(), HashMap.class) {
 			@Override
 			protected Column getColumn(Integer key) {
 				if (key > 5) {
 					throw new IllegalArgumentException("Unknown key " + key);
 				}
-				return getTargetTable().mapColumnsOnName().get("col_"+key);
+				return mappedColumnsOnKey.get(key);
 			}
 			
 			@Override
 			protected Integer getKey(Column column) {
-				return Integer.valueOf(column.getName().substring("col_".length()));
+				return mappedColumnsOnKey.getKey(column);
 			}
 			
 			@Override
-			protected String toDatabaseValue(String s) {
+			protected String toDatabaseValue(Integer key, String s) {
 				return s;
 			}
 			
 			@Override
-			protected String toMapValue(Object s) {
+			protected String toMapValue(Integer key, Object s) {
 				return s == null ? null : s.toString();
 			}
 		};

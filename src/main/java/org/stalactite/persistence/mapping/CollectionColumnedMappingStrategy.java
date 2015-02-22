@@ -31,13 +31,11 @@ public abstract class CollectionColumnedMappingStrategy<C extends Collection<T>,
 	
 	private final Table targetTable;
 	private final Set<Column> columns;
-	private final Class<T> persistentType;
 	private final ToCollectionRowTransformer<C> rowTransformer;
 	
-	public CollectionColumnedMappingStrategy(@Nonnull Table targetTable, @Nonnull Class<T> persistentType, Class<? extends Collection> rowClass) {
+	public CollectionColumnedMappingStrategy(@Nonnull Table targetTable, Set<Column> columns, Class<? extends Collection> rowClass) {
 		this.targetTable = targetTable;
-		this.columns = initTargetColumns();
-		this.persistentType = persistentType;
+		this.columns = columns;
 		// weird cast cause of generics
 		this.rowTransformer = new ToCollectionRowTransformer<C>((Class<C>) rowClass) {
 			/** We bind conversion on CollectionColumnedMappingStrategy conversion methods */
@@ -59,10 +57,6 @@ public abstract class CollectionColumnedMappingStrategy<C extends Collection<T>,
 	@Override
 	public Set<Column> getColumns() {
 		return columns;
-	}
-	
-	public Class<T> getPersistentType() {
-		return persistentType;
 	}
 	
 	@Override
@@ -153,8 +147,6 @@ public abstract class CollectionColumnedMappingStrategy<C extends Collection<T>,
 	public void setId(C t, Serializable identifier) {
 		throw new UnsupportedOperationException("Collection strategy can't set id");
 	}
-	
-	protected abstract LinkedHashSet<Column> initTargetColumns();
 	
 	protected Object toDatabaseValue(T t) {
 		return t;

@@ -6,7 +6,10 @@ import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
+import org.apache.commons.collections4.BidiMap;
+import org.apache.commons.collections4.bidimap.DualHashBidiMap;
 import org.stalactite.lang.collection.Arrays;
 import org.stalactite.lang.collection.Maps;
 import org.stalactite.persistence.structure.Table;
@@ -51,61 +54,44 @@ public class ClassMappingStrategyTest {
 		// création de l'instance à tester
 		// NB: pas de générateur d'id car ce n'est pas ce qu'on teste (à changer si besoin)
 		testInstance = new ClassMappingStrategy<>(Toto.class, totoClassTable, totoClassMapping, null);
-		testInstance.put(d, new CollectionColumnedMappingStrategy<List<String>, String>(totoClassTable, String.class, ArrayList.class) {
-			@Override
-			protected LinkedHashSet<Column> initTargetColumns() {
-				int nbCol = 2;
-				String columnsPrefix = "cold_";
-				Map<String, Column> existingColumns = getTargetTable().mapColumnsOnName();
-				LinkedHashSet<Column> toReturn = new LinkedHashSet<>(nbCol, 1);
-				for (int i = 1; i <= nbCol; i++) {
-					String columnName = columnsPrefix + i;
-					Column column = existingColumns.get(columnName);
-					if (column == null) {
-						column = getTargetTable().new Column(columnName, getPersistentType());
-					}
-					toReturn.add(column);
-				}
 		
-				return toReturn;
-			}
+		final int nbCol = 2;
+		Set<Column> collectionColumn = new LinkedHashSet<>(nbCol);
+		for (int i = 1; i <= nbCol; i++) {
+			String columnName = "cold_" + i;
+			collectionColumn.add(totoClassTable.new Column(columnName, String.class));
+		}
+		testInstance.put(d, new CollectionColumnedMappingStrategy<List<String>, String>(totoClassTable, collectionColumn, ArrayList.class) {
 			
 			@Override
 			protected String toCollectionValue(Object t) {
 				return t.toString();
 			}
 		});
-		testInstance.put(e, new MapMappingStrategy<Map<String, String>, String, String, String>(totoClassTable, String.class, HashMap.class) {
-			
-			@Override
-			protected LinkedHashSet<Column> initTargetColumns() {
-				int nbCol = 2;
-				String columnsPrefix = "cole_";
-				Map<String, Column> existingColumns = getTargetTable().mapColumnsOnName();
-				LinkedHashSet<Column> toReturn = new LinkedHashSet<>(nbCol, 1);
-				for (int i = 1; i <= nbCol; i++) {
-					String columnName = getColumnName(columnsPrefix, i);
-					Column column = existingColumns.get(columnName);
-					if (column == null) {
-						column = getTargetTable().new Column(columnName, getPersistentType());
-					}
-					toReturn.add(column);
-				}
 		
-				return toReturn;
+		final BidiMap<String, Column> mappedColumnsOnKey = new DualHashBidiMap<>();
+		for (int i = 1; i <= 2; i++) {
+			String columnName = "cole_" + i;
+			Column column = totoClassTable.new Column(columnName, String.class);
+			switch (i) {
+				case 1:
+					mappedColumnsOnKey.put("x", column);
+					break;
+				case 2:
+					mappedColumnsOnKey.put("y", column);
+					break;
 			}
+		}
+		testInstance.put(e, new MapMappingStrategy<Map<String, String>, String, String, String>(totoClassTable, mappedColumnsOnKey.values(), HashMap.class) {
 			
 			@Override
 			protected Column getColumn(String key) {
-				String columnName;
-				switch (key) {
-					case "x":
-						columnName = "cole_1";
-						break;
-					default:
+				Column column = mappedColumnsOnKey.get(key);
+				if (column == null) {
 					throw new IllegalArgumentException("Unknown key " + key);
+				} else {
+					return column;
 				}
-				return getTargetTable().mapColumnsOnName().get(columnName);
 			}
 			
 			@Override
@@ -114,12 +100,12 @@ public class ClassMappingStrategyTest {
 			}
 			
 			@Override
-			protected String toDatabaseValue(String s) {
+			protected String toDatabaseValue(String key, String s) {
 				return s;
 			}
 			
 			@Override
-			protected String toMapValue(Object s) {
+			protected String toMapValue(String key, Object s) {
 				return s.toString();
 			}
 		});

@@ -26,28 +26,27 @@ public abstract class MapMappingStrategy<C extends Map<K, V>, K, V, T> implement
 	
 	private final Table targetTable;
 	private final Set<Column> columns;
-	private final Class<T> persistentType;
 	private final ToMapRowTransformer<C> rowTransformer;
 	
 	/**
 	 * Constructor 
 	 * 
 	 * @param targetTable table to persist in
-	 * @param persistentType type of columns for map values
+	 * @param columns columns that will be used for persistent of Maps, expected to be a subset of targetTable columns    
 	 * @param rowClass Class to instanciate for select from database, expected to be C but can't be typed due to generic complexity
 	 */
-	public MapMappingStrategy(@Nonnull Table targetTable, @Nonnull Class<T> persistentType, Class<? extends Map> rowClass) {
+	public MapMappingStrategy(@Nonnull Table targetTable, Set<Column> columns, Class<? extends Map> rowClass) {
 		this.targetTable = targetTable;
-		this.columns = initTargetColumns();
-		this.persistentType = persistentType;
+		this.columns = columns;
 		// weird cast cause of generics
 		this.rowTransformer = new ToMapRowTransformer<C>((Class<C>) rowClass) {
 			/** We bind conversion on MapMappingStrategy conversion methods */
 			@Override
 			protected void convertRowContentToMap(Row row, C map) {
-				for (Column column : columns) {
+				for (Column column : getColumns()) {
 					String columnName = column.getName();
-					map.put(getKey(column), toMapValue(row.get(columnName)));
+					K key = getKey(column);
+					map.put(key, toMapValue(key, row.get(columnName)));
 				}
 			}
 		};
@@ -61,10 +60,6 @@ public abstract class MapMappingStrategy<C extends Map<K, V>, K, V, T> implement
 	@Override
 	public Set<Column> getColumns() {
 		return columns;
-	}
-	
-	public Class<T> getPersistentType() {
-		return persistentType;
 	}
 	
 	protected String getColumnName(String columnsPrefix, int i) {
@@ -82,7 +77,7 @@ public abstract class MapMappingStrategy<C extends Map<K, V>, K, V, T> implement
 			@Override
 			public Void visit(Entry<K, V> mapEntry) {
 				Column column = getColumn(mapEntry.getKey());
-				toReturn.putUpsertValue(column, toDatabaseValue(mapEntry.getValue()));
+				toReturn.putUpsertValue(column, toDatabaseValue(mapEntry.getKey(), mapEntry.getValue()));
 				return null;
 			}
 		});
@@ -165,11 +160,15 @@ public abstract class MapMappingStrategy<C extends Map<K, V>, K, V, T> implement
 		throw new UnsupportedOperationException("Map strategy can't set id");
 	}
 	
-	protected abstract LinkedHashSet<Column> initTargetColumns();
-	
 	protected abstract Column getColumn(K k);
 	
-	protected abstract T toDatabaseValue(V v);
+	/**
+	 * Expected to return the persisted value for v of key k 
+	 * @param k the key being persisted, help to determine how to convert v
+	 * @param v the value to be persisted
+	 * @return the dabase value to be persisted
+	 */
+	protected abstract T toDatabaseValue(K k, V v);
 	
 	/**
 	 * Reverse of {@link #getColumn(Object)}: give a map key from a column name
@@ -179,11 +178,12 @@ public abstract class MapMappingStrategy<C extends Map<K, V>, K, V, T> implement
 	protected abstract K getKey(Column column);
 	
 	/**
-	 * Reverse of {@link #toDatabaseValue(Object)}: give a map value from a database selected value
-	 * @param t
+	 * Reverse of {@link #toDatabaseValue(Object, Object)}: give a map value from a database selected value
+	 * @param k the key being read, help to determine how to convert t
+	 * @param t the data from the database
 	 * @return a value for a Map
 	 */
-	protected abstract V toMapValue(Object t);
+	protected abstract V toMapValue(K k, Object t);
 
 	@Override
 	public C transform(Row row) {
