@@ -118,6 +118,11 @@ public class Iterables {
 		boolean pursue();
 	}
 	
+	/**
+	 * Visiteur utilisé pour ceux qui doivent parcourir tous les éléments d'un Iterator
+	 * @param <E>
+	 * @param <R>
+	 */
 	public static abstract class ForEach<E, R> implements IVisitor<E, R> {
 		@Override
 		public final boolean pursue() {
@@ -125,6 +130,11 @@ public class Iterables {
 		}
 	}
 	
+	/**
+	 * Parent de tous les IVisitor qui ramène un résultat
+	 * @param <E>
+	 * @param <O>
+	 */
 	public static interface IResultVisitor<E, O> extends IVisitor<E, O> {
 		O getResult();
 	}
@@ -152,6 +162,11 @@ public class Iterables {
 		public abstract boolean accept(E e);
 	}
 	
+	/**
+	 * Visiteur dédié à la recherche de plusieurs éléments dans un Iterator. Parcourt tous les éléments de l'Iterator.
+	 * 
+	 * @param <E>
+	 */
 	public abstract static class Filter<E> extends AbstractFilter<E, List<E>> {
 		
 		public Filter() {
@@ -168,7 +183,12 @@ public class Iterables {
 			this.foundElements.add(e);
 		}
 	}
-
+	
+	/**
+	 * Visiteur dédié à la recherche d'un élément dans un Iterator. S'arrête dès que l'objet est trouvé.
+	 * 
+	 * @param <E>
+	 */
 	public abstract static class Finder<E> extends AbstractFilter<E, E> {
 
 		private boolean pursue = true;
@@ -183,5 +203,50 @@ public class Iterables {
 			this.foundElements = e;
 			this.pursue = false;
 		}
+	}
+	
+	/**
+	 * Visiteur dédié à la récupération d'une propriété de chaque élément d'un Iterator. Le résultat est une Map
+	 * de chaque valeur vers chaque élément de l'Iterator parcouru
+	 * 
+	 * @param <K>
+	 * @param <E>
+	 */
+	public abstract static class Mapper<K, E> implements IResultVisitor<E, Map<K, E>> {
+
+		protected  Map<K, E> foundElements;
+		
+		public Mapper(Map<K, E> resultContainer) {
+			this.foundElements = resultContainer;
+		}
+		
+		@Override
+		public Map<K, E> visit(E e) {
+			boolean accept = accept(e);
+			if (accept) {
+				onAccepted(e);
+			}
+			return foundElements;
+		}
+		
+		@Override
+		public Map<K, E> getResult() {
+			return foundElements;
+		}
+		
+		protected void onAccepted(E e) {
+			foundElements.put(getKey(e), e);
+		}
+		
+		@Override
+		public boolean pursue() {
+			return true;
+		}
+		
+		public boolean accept(E e) {
+			return true;
+		}
+		
+		protected abstract K getKey(E e);
 	}
 }

@@ -28,6 +28,8 @@ public interface IMappingStrategy<T> {
 	
 	Serializable getId(T t);
 	
+	void setId(T t, Serializable identifier);
+	
 	Set<Column> getColumns();
 	
 	public T transform(Row row);

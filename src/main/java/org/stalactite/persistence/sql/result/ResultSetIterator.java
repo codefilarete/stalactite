@@ -3,6 +3,7 @@ package org.stalactite.persistence.sql.result;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
+import org.stalactite.lang.bean.IConverter;
 import org.stalactite.lang.collection.ReadOnlyIterator;
 import org.stalactite.lang.exception.Exceptions;
 
@@ -11,7 +12,7 @@ import org.stalactite.lang.exception.Exceptions;
  * 
  * @author mary
  */
-public abstract class ResultSetIterator<T> extends ReadOnlyIterator<T> {
+public abstract class ResultSetIterator<T> extends ReadOnlyIterator<T> implements IConverter<ResultSet, T> {
 	
 	protected final ResultSet rs;
 
@@ -51,5 +52,5 @@ public abstract class ResultSetIterator<T> extends ReadOnlyIterator<T> {
 		}
 	}
 	
-	protected abstract T convert(ResultSet rs) throws SQLException;
+	public abstract T convert(ResultSet rs);
 }

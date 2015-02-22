@@ -158,6 +158,15 @@ public class FieldMappingStrategy<T> implements IMappingStrategy<T> {
 		}
 	}
 	
+	@Override
+	public void setId(T t, Serializable identifier) {
+		try {
+			primaryKeyField.set(t, identifier);
+		} catch (IllegalAccessException e) {
+			Exceptions.throwAsRuntimeException(e);
+		}
+	}
+	
 	private PersistentValues foreachField(final FieldVisitor visitor, boolean withPK) {
 		Map<AccessorByField, Column> fieldsTobeVisited = new LinkedHashMap<>(this.fieldToColumn);
 		if (!withPK) {

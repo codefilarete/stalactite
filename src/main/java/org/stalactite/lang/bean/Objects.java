@@ -23,4 +23,8 @@ public class Objects {
 			return o1.equals(o2);
 		}
 	}
+	
+	public static <E> E preventNull(E value, E nullValue) {
+		return value == null ? nullValue : value;
+	}
 }

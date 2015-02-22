@@ -157,7 +157,12 @@ public abstract class MapMappingStrategy<C extends Map<K, V>, K, V, T> implement
 	
 	@Override
 	public Serializable getId(C t) {
-		return new UnsupportedOperationException("Map strategy can't provide id");
+		throw new UnsupportedOperationException("Map strategy can't provide id");
+	}
+	
+	@Override
+	public void setId(C t, Serializable identifier) {
+		throw new UnsupportedOperationException("Map strategy can't set id");
 	}
 	
 	protected abstract LinkedHashSet<Column> initTargetColumns();

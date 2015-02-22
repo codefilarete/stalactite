@@ -48,7 +48,9 @@ public class ClassMappingStrategyTest {
 		// Remplacement du mapping par défaut pour la Map (attribut e) par une strategy adhoc
 		Field e = Toto.class.getDeclaredField("e");
 		totoClassMapping.remove(e);
-		testInstance = new ClassMappingStrategy<>(Toto.class, totoClassTable, totoClassMapping);
+		// création de l'instance à tester
+		// NB: pas de générateur d'id car ce n'est pas ce qu'on teste (à changer si besoin)
+		testInstance = new ClassMappingStrategy<>(Toto.class, totoClassTable, totoClassMapping, null);
 		testInstance.put(d, new CollectionColumnedMappingStrategy<List<String>, String>(totoClassTable, String.class, ArrayList.class) {
 			@Override
 			protected LinkedHashSet<Column> initTargetColumns() {

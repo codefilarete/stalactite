@@ -32,7 +32,7 @@ public class ResultSetIteratorTest {
 		
 		ResultSetIterator<ResultSet> resultSetIterator = new ResultSetIterator<ResultSet>(selectStmntRs) {
 			@Override
-			protected ResultSet convert(ResultSet rs) throws SQLException {
+			public ResultSet convert(ResultSet rs) {
 				return rs;
 			}
 		};
@@ -49,7 +49,7 @@ public class ResultSetIteratorTest {
 		
 		ResultSetIterator<ResultSet> resultSetIterator = new ResultSetIterator<ResultSet>(selectStmntRs) {
 			@Override
-			protected ResultSet convert(ResultSet rs) throws SQLException {
+			public ResultSet convert(ResultSet rs) {
 				return rs;
 			}
 		};

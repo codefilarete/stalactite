@@ -3,9 +3,13 @@ package org.stalactite.lang;
 import java.lang.reflect.AccessibleObject;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
+import java.util.LinkedHashMap;
+import java.util.Map;
 
 import javax.annotation.Nonnull;
 
+import org.stalactite.lang.collection.Iterables;
+import org.stalactite.lang.collection.Iterables.Mapper;
 import org.stalactite.lang.collection.ReadOnlyIterator;
 
 /**
@@ -19,10 +23,20 @@ public final class Reflections {
 	
 	public static <T> Constructor<T> getDefaultConstructor(Class<T> clazz) {
 		try {
-			return clazz.getConstructor();
+			return clazz.getDeclaredConstructor();
 		} catch (NoSuchMethodException e) {
 			throw new UnsupportedOperationException("Class " + clazz.getName() + " doesn't have a default constructor");
 		}
+	}
+	
+	public static Map<String, Field> mapFieldsOnName(Class clazz) {
+		Mapper<String, Field> fieldVisitor = new Mapper<String, Field>(new LinkedHashMap<String, Field>()) {
+			@Override
+			protected String getKey(Field field) {
+				return field.getName();
+			}
+		};
+		return Iterables.filter(new FieldIterator(clazz), fieldVisitor);
 	}
 	
 	/**

@@ -8,8 +8,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import javax.sql.DataSource;
-
+import org.stalactite.persistence.engine.TransactionManager.JdbcOperation;
 import org.stalactite.persistence.mapping.ClassMappingStrategy;
 import org.stalactite.persistence.sql.Dialect;
 import org.stalactite.persistence.sql.ddl.DDLGenerator;
@@ -20,33 +19,35 @@ import org.stalactite.persistence.structure.Table;
  */
 public class PersistenceContext {
 	
-	private Dialect dialect;
-	private DataSource dataSource;
-	private final Map<Class, ClassMappingStrategy> mappingStrategies = new HashMap<>(50);
+	private static final ThreadLocal<PersistenceContext> CURRENT_CONTEXT = new ThreadLocal<>();
 	
-	public PersistenceContext(DataSource dataSource) {
-		this(dataSource, determineDialect(dataSource));
+	public static PersistenceContext getCurrent() {
+		PersistenceContext currentContext = CURRENT_CONTEXT.get();
+		if (currentContext == null) {
+			throw new IllegalStateException("No context found for current thread");
+		}
+		return currentContext;
 	}
 	
-	public PersistenceContext(DataSource dataSource, Dialect dialect) {
-		this.dataSource = dataSource;
+	public static void setCurrent(PersistenceContext context) {
+		CURRENT_CONTEXT.set(context);
+	}
+	
+	private Dialect dialect;
+	private TransactionManager transactionManager;
+	private final Map<Class, ClassMappingStrategy> mappingStrategies = new HashMap<>(50);
+	
+	public PersistenceContext(TransactionManager transactionManager, Dialect dialect) {
+		this.transactionManager = transactionManager;
 		this.dialect = dialect;
 	}
 	
-	public static Dialect determineDialect(DataSource dataSource) {
-		return null;
+	public TransactionManager getTransactionManager() {
+		return transactionManager;
 	}
 	
 	public Dialect getDialect() {
 		return dialect;
-	}
-	
-	public DataSource getDataSource() {
-		return dataSource;
-	}
-	
-	public void setDataSource(DataSource dataSource) {
-		this.dataSource = dataSource;
 	}
 	
 	public void deployDDL() throws SQLException {
@@ -56,7 +57,7 @@ public class PersistenceContext {
 		}
 	}
 	
-	protected DDLGenerator getDDLGenerator() {
+	public DDLGenerator getDDLGenerator() {
 		List<Table> tablesToCreate = getTables();
 		return new DDLGenerator(tablesToCreate, getDialect());
 	}
@@ -70,7 +71,7 @@ public class PersistenceContext {
 	}
 	
 	protected void execute(String sql) throws SQLException {
-		try(Statement statement = getConnection().createStatement()) {
+		try(Statement statement = getCurrentConnection().createStatement()) {
 			statement.execute(sql);
 		}
 	}
@@ -87,7 +88,24 @@ public class PersistenceContext {
 		return mappingStrategies;
 	}
 	
-	public Connection getConnection() throws SQLException {
-		return getDataSource().getConnection();
+	public Connection getCurrentConnection() throws SQLException {
+		return transactionManager.getCurrentConnection();
+	}
+	
+	public void executeInNewTransaction(JdbcOperation jdbcOperation) {
+		transactionManager.executeInNewTransaction(jdbcOperation);
+	}
+	
+	public <T> Persister<T> getPersister(Class<T> clazz) {
+		return new Persister<>(this, ensureMappedClass(clazz));
+	}
+	
+	protected <T> ClassMappingStrategy<T> ensureMappedClass(Class<T> clazz) {
+		ClassMappingStrategy<T> mappingStrategy = getMappingStrategy(clazz);
+		if (mappingStrategy == null) {
+			throw new IllegalArgumentException("Unmapped entity " + clazz);
+		} else {
+			return mappingStrategy;
+		}
 	}
 }

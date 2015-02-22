@@ -3,29 +3,29 @@ package org.stalactite.persistence.engine;
 import static junit.framework.Assert.assertEquals;
 import static org.mockito.Mockito.*;
 
-import java.io.PrintWriter;
+import java.io.Serializable;
 import java.lang.reflect.Field;
 import java.sql.Connection;
-import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
-import java.sql.SQLFeatureNotSupportedException;
 import java.util.Map;
-import java.util.logging.Logger;
 
 import javax.sql.DataSource;
 
 import org.mockito.ArgumentCaptor;
 import org.stalactite.lang.collection.Arrays;
 import org.stalactite.lang.collection.Maps;
+import org.stalactite.persistence.id.IdentifierGenerator;
 import org.stalactite.persistence.mapping.ClassMappingStrategy;
 import org.stalactite.persistence.mapping.PersistentFieldHarverster;
 import org.stalactite.persistence.sql.Dialect;
 import org.stalactite.persistence.sql.ddl.JavaTypeToSqlTypeMapping;
 import org.stalactite.persistence.structure.Table;
 import org.stalactite.persistence.structure.Table.Column;
+import org.stalactite.test.HSQLDBInMemoryDataSource;
+import org.stalactite.test.JdbcTransactionManager;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.BeforeTest;
 import org.testng.annotations.Test;
@@ -38,6 +38,7 @@ public class PersisterTest {
 	private ArgumentCaptor<Integer> valueCaptor;
 	private ArgumentCaptor<Integer> indexCaptor;
 	private ArgumentCaptor<String> argumentCaptor;
+	private JdbcTransactionManager transactionManager;
 	
 	@BeforeTest
 	public void setUp() throws SQLException {
@@ -47,17 +48,13 @@ public class PersisterTest {
 		Map<String, Column> columns = totoClassTable.mapColumnsOnName();
 		columns.get("a").setPrimaryKey(true);
 		
-		ClassMappingStrategy<Toto> totoClassMappingStrategy = new ClassMappingStrategy<Toto>(Toto.class, totoClassTable, totoClassMapping) {
-			@Override
-			public void fixId(Toto toto) {
-				toto.a = 1;
-			}
-		};
+		ClassMappingStrategy<Toto> totoClassMappingStrategy = new ClassMappingStrategy<>(Toto.class, totoClassTable, totoClassMapping, new TotoClassIdGenerator());
 		
 		JavaTypeToSqlTypeMapping simpleTypeMapping = new JavaTypeToSqlTypeMapping();
 		simpleTypeMapping.put(Integer.class, "int");
 		
-		persistenceContext = new PersistenceContext(null, new Dialect(simpleTypeMapping));
+		transactionManager = new JdbcTransactionManager(null);
+		persistenceContext = new PersistenceContext(transactionManager, new Dialect(simpleTypeMapping));
 		persistenceContext.add(totoClassMappingStrategy);
 	}
 	
@@ -74,8 +71,8 @@ public class PersisterTest {
 		
 		DataSource dataSource = mock(DataSource.class);
 		when(dataSource.getConnection()).thenReturn(connection);
-		persistenceContext.setDataSource(dataSource);
-		testInstance = new Persister<>(persistenceContext);
+		transactionManager.setDataSource(dataSource);
+		testInstance = persistenceContext.getPersister(Toto.class);
 	}
 	
 	@Test
@@ -123,7 +120,7 @@ public class PersisterTest {
 		when(metaDataMock.getColumnName(2)).thenReturn("b");
 		when(metaDataMock.getColumnName(3)).thenReturn("c");
 		
-		testInstance.select(Toto.class, 7);
+		testInstance.select(7);
 		
 		verify(preparedStatement, times(1)).executeQuery();
 		verify(preparedStatement, times(1)).setInt(indexCaptor.capture(), valueCaptor.capture());
@@ -134,59 +131,13 @@ public class PersisterTest {
 	
 	@Test
 	public void testSelect_hsqldb() throws SQLException {
-		
-		final Connection connection = DriverManager.getConnection("jdbc:hsqldb:mem:test", "sa", "");
-		persistenceContext.setDataSource(new DataSource() {
-			@Override
-			public Connection getConnection() throws SQLException {
-				return connection;
-			}
-			
-			@Override
-			public Connection getConnection(String username, String password) throws SQLException {
-				return null;
-			}
-			
-			@Override
-			public PrintWriter getLogWriter() throws SQLException {
-				return null;
-			}
-			
-			@Override
-			public void setLogWriter(PrintWriter out) throws SQLException {
-				
-			}
-			
-			@Override
-			public void setLoginTimeout(int seconds) throws SQLException {
-				
-			}
-			
-			@Override
-			public int getLoginTimeout() throws SQLException {
-				return 0;
-			}
-			
-			@Override
-			public Logger getParentLogger() throws SQLFeatureNotSupportedException {
-				return null;
-			}
-			
-			@Override
-			public <T> T unwrap(Class<T> iface) throws SQLException {
-				return null;
-			}
-			
-			@Override
-			public boolean isWrapperFor(Class<?> iface) throws SQLException {
-				return false;
-			}
-		});
+		transactionManager.setDataSource(new HSQLDBInMemoryDataSource());
 		persistenceContext.deployDDL();
-		testInstance = new Persister<>(persistenceContext);
+		testInstance = persistenceContext.getPersister(Toto.class);
+		Connection connection = persistenceContext.getCurrentConnection();
 		connection.prepareStatement("insert into Toto(a, b, c) values (1, 2, 3)").execute();
 		connection.commit();
-		Toto t = testInstance.select(Toto.class, 1);
+		Toto t = testInstance.select(1);
 		assertEquals(1, (Object) t.a);
 		assertEquals(2, (Object) t.b);
 		assertEquals(3, (Object) t.c);
@@ -216,4 +167,21 @@ public class PersisterTest {
 					+ "]";
 		}
 	}
+	
+	/**
+	 * Simple générateur d'id pour nos tests. Se contente de renvoyer 1 systématiquement
+	 */
+	private static class TotoClassIdGenerator implements IdentifierGenerator {
+		
+		@Override
+		public Serializable generate() {
+			return 1;
+		}
+		
+		@Override
+		public void configure(Map<String, Object> configuration) {
+			
+		}
+	}
+	
 }

@@ -1,13 +1,14 @@
 package org.stalactite.persistence.id;
 
 import java.io.Serializable;
-
-import org.stalactite.persistence.engine.PersistenceContext;
+import java.util.Map;
 
 /**
  * @author mary
  */
 public interface IdentifierGenerator {
 	
-	Serializable generate(PersistenceContext context, Object persistentBean);
+	Serializable generate();
+	
+	void configure(Map<String, Object> configuration);
 }

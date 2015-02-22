@@ -5,6 +5,8 @@ import java.sql.SQLException;
 import java.util.HashSet;
 import java.util.Set;
 
+import org.stalactite.lang.exception.Exceptions;
+
 /**
  * @author mary
  */
@@ -30,10 +32,14 @@ public class RowIterator extends ResultSetIterator<Row> {
 	}
 	
 	@Override
-	protected Row convert(ResultSet rs) throws SQLException {
+	public Row convert(ResultSet rs) {
 		Row toReturn = new Row();
-		for (String columnName : columnNames) {
-			toReturn.put(columnName, rs.getObject(columnName));
+		try {
+			for (String columnName : columnNames) {
+				toReturn.put(columnName, rs.getObject(columnName));
+			}
+		} catch (SQLException e) {
+			Exceptions.throwAsRuntimeException(e);
 		}
 		return toReturn;
 	}
