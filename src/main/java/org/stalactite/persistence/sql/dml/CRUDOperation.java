@@ -1,14 +1,7 @@
 package org.stalactite.persistence.sql.dml;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.SQLException;
-import java.sql.Timestamp;
-import java.util.Date;
-import java.util.Map;
-
-import javax.annotation.Nonnull;
-
+import org.stalactite.ILogger;
+import org.stalactite.Logger;
 import org.stalactite.lang.collection.Arrays;
 import org.stalactite.lang.collection.Iterables;
 import org.stalactite.lang.collection.Iterables.ForEach;
@@ -16,12 +9,22 @@ import org.stalactite.lang.exception.Exceptions;
 import org.stalactite.persistence.mapping.PersistentValues;
 import org.stalactite.persistence.structure.Table.Column;
 
+import javax.annotation.Nonnull;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
+import java.sql.Timestamp;
+import java.util.Date;
+import java.util.Map;
+
 /**
  * Class for basic CRUD operations, not for complex select with joins nor update with subselect
  * 
  * @author mary
  */
 public abstract class CRUDOperation {
+	
+	protected static final ILogger LOGGER = Logger.getLogger(CRUDOperation.class);
 	
 	private final String sql;
 	
@@ -43,19 +46,32 @@ public abstract class CRUDOperation {
 		return statement;
 	}
 	
+	protected void applyUpsertValues(Map<Column, Integer> colToIndexes, PersistentValues values) throws SQLException {
+		LOGGER.trace("upsert values {}", values.getUpsertValues());
+		applyValues(colToIndexes, values.getUpsertValues());
+	}
+	
+	protected void applyWhereValues(Map<Column, Integer> colToIndexes, PersistentValues values) throws SQLException {
+		LOGGER.trace("where values {}", values.getWhereValues());
+		applyValues(colToIndexes, values.getWhereValues());
+	}
+	
+	protected void applyValues(Map<Column, Integer> colToIndexes, Map<Column, Object> colToValuesMap) throws SQLException {
+		for (Map.Entry<Column, Object> colToValues : colToValuesMap.entrySet()) {
+			set(colToIndexes, colToValues.getKey(), colToValues.getValue());
+		}
+	}
+	
 	protected void set(Map<Column, Integer> colToIndexes, Column column, Object value) throws SQLException {
 		Integer index = colToIndexes.get(column);
 		if (index == null) {
 			throw new IllegalArgumentException();
 		} else {
-			set(index, value);
+			set(index, value, column);
 		}
 	}
 	
-	public void set(int valueIndex, Object value) throws SQLException {
-		if (statement == null) {
-			throw new IllegalStateException("Statement is not prepared, call prepare(Connection) before set(..)");
-		}
+	public void set(int valueIndex, Object value, Column column) throws SQLException {
 		if (value == null) {
 			statement.setObject(valueIndex, null);
 			// TODO: à implémenter avec un parsing de la requête, cf AbstractQueryImpl#expandParameterList
@@ -66,8 +82,8 @@ public abstract class CRUDOperation {
 			Double doubleParam = (Double) value;
 			statement.setDouble(valueIndex, doubleParam);
 		} else if (value instanceof Float) {
-			Float doubleParam = (Float) value;
-			statement.setFloat(valueIndex, doubleParam);
+			Float floatParam = (Float) value;
+			statement.setFloat(valueIndex, floatParam);
 		} else if (value instanceof Integer) {
 			Integer integerParam = (Integer) value;
 			statement.setInt(valueIndex, integerParam);
@@ -91,7 +107,6 @@ public abstract class CRUDOperation {
 	 * 
 	 * @param values values to set to PreparedStatement
 	 * @param connection a JDBC connection to create a PreparedStatement
-	 * @return the created PreparedStatement from Connection
 	 * @throws SQLException
 	 */
 	public void apply(@Nonnull PersistentValues values, @Nonnull Connection connection) throws SQLException {
@@ -104,12 +119,12 @@ public abstract class CRUDOperation {
 	 * 
 	 * @param values values to set to PreparedStatement
 	 * @param connection a JDBC connection to create a PreparedStatement
-	 * @return the created PreparedStatement from Connection
 	 * @throws SQLException
 	 */
 	public void apply(@Nonnull Iterable<PersistentValues> values, @Nonnull Connection connection) throws SQLException {
 		prepare(connection);
 		try {
+			LOGGER.debug(getSql());
 			Iterables.visit(values, new ForEach<PersistentValues, Void>() {
 				@Override
 				public Void visit(PersistentValues values) {

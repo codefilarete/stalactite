@@ -1,13 +1,10 @@
 package org.stalactite.persistence.sql.dml;
 
-import java.sql.SQLException;
-import java.util.Map;
-import java.util.Map.Entry;
-
-import javax.annotation.Nonnull;
-
 import org.stalactite.persistence.mapping.PersistentValues;
 import org.stalactite.persistence.structure.Table.Column;
+
+import java.sql.SQLException;
+import java.util.Map;
 
 /**
  * @author mary
@@ -31,21 +28,10 @@ public class UpdateOperation extends WriteOperation {
 		this.whereIndexes = whereIndexes;
 	}
 	
-	public void setUpdateValue(@Nonnull Column column, Object value) throws SQLException {
-		set(updateIndexes, column, value);
-	}
-	
-	public void setWhereValue(@Nonnull Column column, Object value) throws SQLException {
-		set(whereIndexes, column, value);
-	}
-	
+	@Override
 	protected void applyValues(PersistentValues values) throws SQLException {
-		for (Entry<Column, Object> colToValues : values.getUpsertValues().entrySet()) {
-			setUpdateValue(colToValues.getKey(), colToValues.getValue());
-		}
-		for (Entry<Column, Object> colToValues : values.getWhereValues().entrySet()) {
-			setWhereValue(colToValues.getKey(), colToValues.getValue());
-		}
+		applyUpsertValues(updateIndexes, values);
+		applyWhereValues(whereIndexes, values);
 		addBatch();
 	}
 }
