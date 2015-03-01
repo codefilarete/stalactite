@@ -53,6 +53,19 @@ public class Iterables {
 		Entry<?, V> firstEntry = first(iterable);
 		return firstEntry == null ? null : firstEntry.getValue();
 	}
+
+	/**
+	 * Crée une copie du Iterable en tant que List
+	 * @param iterable un Iterable, non null
+	 * @return une List<E> qui contient tous les éléments de <t>iterable</t>
+	 */
+	public static <E> List<E> copy(@Nonnull Iterable<E> iterable) {
+		List<E> result = new ArrayList<>();
+		for (E e : iterable) {
+			result.add(e);
+		}
+		return result;
+	}
 	
 	/**
 	 * Visite chaque élément de <i>c</i> pour y appliquer <i>visitor</i>

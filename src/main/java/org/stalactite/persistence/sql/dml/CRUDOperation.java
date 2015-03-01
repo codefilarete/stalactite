@@ -1,21 +1,21 @@
 package org.stalactite.persistence.sql.dml;
 
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
+import java.util.Map;
+
+import javax.annotation.Nonnull;
+
 import org.stalactite.ILogger;
 import org.stalactite.Logger;
 import org.stalactite.lang.collection.Arrays;
 import org.stalactite.lang.collection.Iterables;
 import org.stalactite.lang.collection.Iterables.ForEach;
 import org.stalactite.lang.exception.Exceptions;
+import org.stalactite.persistence.engine.PersistenceContext;
 import org.stalactite.persistence.mapping.PersistentValues;
 import org.stalactite.persistence.structure.Table.Column;
-
-import javax.annotation.Nonnull;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.SQLException;
-import java.sql.Timestamp;
-import java.util.Date;
-import java.util.Map;
 
 /**
  * Class for basic CRUD operations, not for complex select with joins nor update with subselect
@@ -70,35 +70,24 @@ public abstract class CRUDOperation {
 			set(index, value, column);
 		}
 	}
-	
+
+	/**
+	 * Fixe au statement la valeur value du paramètre valueIndex.
+	 * La difficulté réside dans le choix de la bonne méthode Statement.setXXX(..) à appeler en fonction du type
+	 * de la valeur. Un algorithme relativement simple à base de if instanceof est possible mais parfois insuffisant pour des
+	 * cas fins en fonction des tables ou des colonnes, c'est pourquoi l'information column est passée en paramètre à titre
+	 * informatif car elle permet de savoir qu'elle est exactement la colonne cible, ce que ne permet pas valueIndex.
+	 * 
+	 * Cette implémentation délègue ce traitement au Dialect courant (via {@link PersistenceContext#getCurrent()} ce qui permet
+	 * une meilleure adaptation en fonction de la base de donnée cible.
+	 * 
+	 * @param valueIndex l'index du paramètre à fixer, à utiliser en premier paramètre de Statement.setXXX(..)
+	 * @param value la valeur à passer en second paramètre de Statement.setXXX(..)
+	 * @param column la colonne ciblée par valueIndex, autorise un ciblage plus fin que le type de value, informatif
+	 * @throws SQLException
+	 */
 	public void set(int valueIndex, Object value, Column column) throws SQLException {
-		if (value == null) {
-			statement.setObject(valueIndex, null);
-			// TODO: à implémenter avec un parsing de la requête, cf AbstractQueryImpl#expandParameterList
-//		} else if (value instanceof Collection) {
-//			Collection listParam = (Collection) value;
-//			statement.setParameterList(valueIndex, listParam);
-		} else if (value instanceof Double) {
-			Double doubleParam = (Double) value;
-			statement.setDouble(valueIndex, doubleParam);
-		} else if (value instanceof Float) {
-			Float floatParam = (Float) value;
-			statement.setFloat(valueIndex, floatParam);
-		} else if (value instanceof Integer) {
-			Integer integerParam = (Integer) value;
-			statement.setInt(valueIndex, integerParam);
-		} else if (value instanceof Long) {
-			Long longParam = (Long) value;
-			statement.setLong(valueIndex, longParam);
-		} else if (value instanceof Date) {
-			Date dateParam = (Date) value;
-			statement.setTimestamp(valueIndex, new Timestamp(dateParam.getTime()));
-		} else if (value instanceof String) {
-			String strParam = (String) value;
-			statement.setString(valueIndex, strParam);
-		} else {
-			throw new UnsupportedOperationException("Type "+value.getClass() + " is not implemented");
-		}
+		PersistenceContext.getCurrent().getDialect().getJdbcParameterBinder().set(valueIndex, value, column, statement);
 	}
 	
 	/**

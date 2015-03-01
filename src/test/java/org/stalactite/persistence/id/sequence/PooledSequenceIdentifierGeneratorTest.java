@@ -10,6 +10,7 @@ import org.stalactite.persistence.sql.Dialect;
 import org.stalactite.persistence.sql.ddl.JavaTypeToSqlTypeMapping;
 import org.stalactite.test.HSQLDBInMemoryDataSource;
 import org.stalactite.test.JdbcTransactionManager;
+import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
@@ -24,6 +25,11 @@ public class PooledSequenceIdentifierGeneratorTest {
 		simpleTypeMapping.put(String.class, "VARCHAR(255)");
 		
 		PersistenceContext.setCurrent(new PersistenceContext(new JdbcTransactionManager(new HSQLDBInMemoryDataSource()), new Dialect(simpleTypeMapping)));
+	}
+	
+	@AfterMethod
+	public void tearDown() {
+		PersistenceContext.clearCurrent();
 	}
 	
 	@Test

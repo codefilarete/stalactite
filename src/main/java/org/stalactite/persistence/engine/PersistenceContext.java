@@ -33,6 +33,10 @@ public class PersistenceContext {
 		CURRENT_CONTEXT.set(context);
 	}
 	
+	public static void clearCurrent() {
+		CURRENT_CONTEXT.remove();
+	}
+	
 	private Dialect dialect;
 	private TransactionManager transactionManager;
 	private final Map<Class, ClassMappingStrategy> mappingStrategies = new HashMap<>(50);

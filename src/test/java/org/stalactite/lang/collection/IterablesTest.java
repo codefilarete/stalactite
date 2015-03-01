@@ -2,11 +2,9 @@ package org.stalactite.lang.collection;
 
 import static org.mockito.Mockito.*;
 import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertNotSame;
 
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import org.stalactite.lang.collection.Iterables.Filter;
 import org.stalactite.lang.collection.Iterables.Finder;
@@ -45,6 +43,19 @@ public class IterablesTest {
 		// test sur nullité
 		Assert.assertNull(Iterables.first(new HashMap()));
 		Assert.assertNull(Iterables.first((Map) null));
+	}
+	
+	@Test
+	public void testCopy() {
+		// test de contenu
+		Set<String> aSet = new LinkedHashSet<>();
+		aSet.add("d");
+		aSet.add("a");
+		assertEquals(Iterables.copy(aSet), Arrays.asList("d", "a"));
+		// test que la copie n'est pas la même instance que l'original
+		assertNotSame(Iterables.copy(aSet), aSet);
+		// test sur cas limite: contenu vide
+		assertEquals(Iterables.copy(Arrays.asList()), Arrays.asList());
 	}
 	
 	@Test

@@ -57,7 +57,7 @@ public class DMLGenerator {
 		}
 		sqlSelect.cutTail(2).cat(" from ", table.getName());
 		Map<Column, Integer> whereIndexes = catWhere(where, sqlSelect);
-		return new SelectOperation(sqlSelect.toString(), whereIndexes);
+		return new SelectOperation(sqlSelect.toString(), whereIndexes, Iterables.copy(columns));
 	}
 	
 	private Map<Column, Integer> catWhere(Iterable<Column> where, StringAppender sql) {

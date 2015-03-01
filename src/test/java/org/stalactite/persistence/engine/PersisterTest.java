@@ -73,6 +73,7 @@ public class PersisterTest {
 		when(dataSource.getConnection()).thenReturn(connection);
 		transactionManager.setDataSource(dataSource);
 		testInstance = persistenceContext.getPersister(Toto.class);
+		PersistenceContext.setCurrent(persistenceContext);
 	}
 	
 	@Test

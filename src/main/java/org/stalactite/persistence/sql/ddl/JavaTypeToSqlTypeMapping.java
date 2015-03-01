@@ -20,13 +20,13 @@ import org.stalactite.persistence.structure.Table.SizedColumn;
  */
 public class JavaTypeToSqlTypeMapping {
 	
-	private Map<Class, SortedMap<Integer, String>> javaTypeToSQLType = new EntryFactoryHashMap<Class, SortedMap<Integer, String>>() {
+	private final Map<Class, SortedMap<Integer, String>> javaTypeToSQLType = new EntryFactoryHashMap<Class, SortedMap<Integer, String>>() {
 		@Override
 		public TreeMap<Integer, String> createInstance(Class input) {
 			return new TreeMap<>();
 		}
 	};
-	private Map<Class, String> defaultJavaTypeToSQLType = new HashMap<>();
+	private final Map<Class, String> defaultJavaTypeToSQLType = new HashMap<>();
 	
 	public void put(@Nonnull Class clazz, @Nonnull String sqlType) {
 		defaultJavaTypeToSQLType.put(clazz, sqlType);
