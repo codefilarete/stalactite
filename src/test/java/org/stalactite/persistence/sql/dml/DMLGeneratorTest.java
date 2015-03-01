@@ -2,31 +2,45 @@ package org.stalactite.persistence.sql.dml;
 
 import static org.testng.Assert.assertEquals;
 
-import java.lang.reflect.Field;
+import java.util.AbstractMap;
 import java.util.Arrays;
 import java.util.Map;
 
 import org.stalactite.lang.collection.Maps;
+import org.stalactite.persistence.engine.PersistenceContext;
+import org.stalactite.persistence.sql.Dialect;
+import org.stalactite.persistence.sql.ddl.JavaTypeToSqlTypeMapping;
+import org.stalactite.persistence.sql.dml.binder.ParameterBinder;
 import org.stalactite.persistence.structure.Table;
 import org.stalactite.persistence.structure.Table.Column;
+import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 public class DMLGeneratorTest {
+
+	private ParameterBinder stringBinder;
+
+	@BeforeMethod
+	public void setUp() {
+		// Nécessaire aux CRUDOperations et RowIterator qui ont besoin du ParamaterBinderRegistry
+		Dialect currentDialect = new Dialect(new JavaTypeToSqlTypeMapping());
+		PersistenceContext.setCurrent(new PersistenceContext(null, currentDialect));
+		stringBinder = currentDialect.getParameterBinderRegistry().getBinder(String.class);
+	}
 	
 	@Test
 	public void testBuildInsert() throws Exception {
 		Table toto = new Table(null, "Toto");
 		Column colA = toto.new Column("A", String.class);
 		Column colB = toto.new Column("B", String.class);
-		
+
 		DMLGenerator testInstance = new DMLGenerator();
 		InsertOperation buildedInsert = testInstance.buildInsert(toto.getColumns());
 		assertEquals(buildedInsert.getSql(), "insert into Toto(A, B) values (?, ?)");
-		
-		Field insertIndexesField = buildedInsert.getClass().getDeclaredField("insertIndexes");
-		insertIndexesField.setAccessible(true);
-		Map<Column, Integer> upsertIndexes = (Map<Column, Integer>) insertIndexesField.get(buildedInsert);
-		assertEquals(upsertIndexes, Maps.asMap(colA, 1).add(colB, 2));
+
+		Map<Column, Map.Entry<Integer, ParameterBinder>> upsertIndexes = buildedInsert.getInsertIndexes();
+		assertEquals(upsertIndexes, Maps.asMap(colA, new AbstractMap.SimpleEntry<>(1, stringBinder))
+									.add(colB, new AbstractMap.SimpleEntry<>(2, stringBinder)));
 	}
 	
 	@Test
@@ -39,15 +53,12 @@ public class DMLGeneratorTest {
 		UpdateOperation buildedUpdate = testInstance.buildUpdate(toto.getColumns(), Arrays.asList(colA));
 		assertEquals(buildedUpdate.getSql(), "update Toto set A = ?, B = ? where A = ?");
 
-		Field upsertIndexesField = buildedUpdate.getClass().getDeclaredField("updateIndexes");
-		upsertIndexesField.setAccessible(true);
-		Map<Column, Integer> upsertIndexes = (Map<Column, Integer>) upsertIndexesField.get(buildedUpdate);
-		assertEquals(upsertIndexes, Maps.asMap(colA, 1).add(colB, 2));
+		Map<Column, Map.Entry<Integer, ParameterBinder>> upsertIndexes = buildedUpdate.getUpdateIndexes();
+		assertEquals(upsertIndexes, Maps.asMap(colA, new AbstractMap.SimpleEntry<>(1, stringBinder))
+									.add(colB, new AbstractMap.SimpleEntry<>(2, stringBinder)));
 		
-		Field whereIndexesField = buildedUpdate.getClass().getDeclaredField("whereIndexes");
-		whereIndexesField.setAccessible(true);
-		Map<Column, Integer> whereIndexes = (Map<Column, Integer>) whereIndexesField.get(buildedUpdate);
-		assertEquals(whereIndexes, Maps.asMap(colA, 3));
+		Map<Column, Map.Entry<Integer, ParameterBinder>> whereIndexes = buildedUpdate.getWhereIndexes();
+		assertEquals(whereIndexes, Maps.asMap(colA, new AbstractMap.SimpleEntry<>(3, stringBinder)));
 	}
 	
 	@Test
@@ -60,10 +71,8 @@ public class DMLGeneratorTest {
 		DeleteOperation buildedDelete = testInstance.buildDelete(toto, Arrays.asList(colA));
 		assertEquals(buildedDelete.getSql(), "delete Toto where A = ?");
 		
-		Field whereIndexesField = buildedDelete.getClass().getDeclaredField("whereIndexes");
-		whereIndexesField.setAccessible(true);
-		Map<Column, Integer> whereIndexes = (Map<Column, Integer>) whereIndexesField.get(buildedDelete);
-		assertEquals(whereIndexes, Maps.asMap(colA, 1));
+		Map<Column, Map.Entry<Integer, ParameterBinder>> whereIndexes = buildedDelete.getWhereIndexes();
+		assertEquals(whereIndexes, Maps.asMap(colA, new AbstractMap.SimpleEntry<>(1, stringBinder)));
 	}
 	
 	@Test
@@ -76,9 +85,7 @@ public class DMLGeneratorTest {
 		SelectOperation buildedSelect = testInstance.buildSelect(toto, Arrays.asList(colA, colB), Arrays.asList(colA));
 		assertEquals(buildedSelect.getSql(), "select A, B from Toto where A = ?");
 		
-		Field whereIndexesField = buildedSelect.getClass().getDeclaredField("whereIndexes");
-		whereIndexesField.setAccessible(true);
-		Map<Column, Integer> whereIndexes = (Map<Column, Integer>) whereIndexesField.get(buildedSelect);
-		assertEquals(whereIndexes, Maps.asMap(colA, 1));
+		Map<Column, Map.Entry<Integer, ParameterBinder>> whereIndexes = buildedSelect.getWhereIndexes();
+		assertEquals(whereIndexes, Maps.asMap(colA, new AbstractMap.SimpleEntry<>(1, stringBinder)));
 	}
 }

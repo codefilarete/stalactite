@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.stalactite.persistence.mapping.PersistentValues;
+import org.stalactite.persistence.sql.dml.binder.ParameterBinder;
 import org.stalactite.persistence.sql.result.RowIterator;
 import org.stalactite.persistence.structure.Table.Column;
 
@@ -15,7 +16,7 @@ import org.stalactite.persistence.structure.Table.Column;
 public class SelectOperation extends CRUDOperation {
 	
 	/** Column indexes for where columns */
-	private final Map<Column, Integer> whereIndexes;
+	private final Map<Column, Map.Entry<Integer, ParameterBinder>> whereIndexes;
 	private final List<Column> selectedColumns;
 
 	/**
@@ -26,7 +27,7 @@ public class SelectOperation extends CRUDOperation {
 	 */
 	public SelectOperation(String sql, Map<Column, Integer> whereIndexes, List<Column> selectedColumns) {
 		super(sql);
-		this.whereIndexes = whereIndexes;
+		this.whereIndexes = getBinders(whereIndexes);
 		this.selectedColumns = selectedColumns;
 	}
 	
@@ -34,7 +35,11 @@ public class SelectOperation extends CRUDOperation {
 		ResultSet resultSet = getStatement().executeQuery();
 		return new RowIterator(resultSet, selectedColumns);
 	}
-	
+
+	public Map<Column,Map.Entry<Integer,ParameterBinder>> getWhereIndexes() {
+		return whereIndexes;
+	}
+
 	@Override
 	protected void applyValues(PersistentValues values) throws SQLException {
 		applyWhereValues(whereIndexes, values);

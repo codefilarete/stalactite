@@ -1,7 +1,7 @@
 package org.stalactite.persistence.sql;
 
 import org.stalactite.persistence.sql.ddl.JavaTypeToSqlTypeMapping;
-import org.stalactite.persistence.sql.dml.JDBCParameterBinder;
+import org.stalactite.persistence.sql.dml.binder.ParameterBinderRegistry;
 
 /**
  * @author mary
@@ -10,22 +10,22 @@ public class Dialect {
 	
 	private JavaTypeToSqlTypeMapping javaTypeToSqlTypeMapping;
 	
-	private JDBCParameterBinder jdbcParameterBinder;
+	private ParameterBinderRegistry parameterBinderRegistry;
 	
 	public Dialect(JavaTypeToSqlTypeMapping javaTypeToSqlTypeMapping) {
-		this(javaTypeToSqlTypeMapping, new JDBCParameterBinder());
+		this(javaTypeToSqlTypeMapping, new ParameterBinderRegistry());
 	}
 
-	public Dialect(JavaTypeToSqlTypeMapping javaTypeToSqlTypeMapping, JDBCParameterBinder jdbcParameterBinder) {
+	public Dialect(JavaTypeToSqlTypeMapping javaTypeToSqlTypeMapping, ParameterBinderRegistry parameterBinderRegistry) {
 		this.javaTypeToSqlTypeMapping = javaTypeToSqlTypeMapping;
-		this.jdbcParameterBinder = jdbcParameterBinder;
+		this.parameterBinderRegistry = parameterBinderRegistry;
 	}
 
 	public JavaTypeToSqlTypeMapping getJavaTypeToSqlTypeMapping() {
 		return javaTypeToSqlTypeMapping;
 	}
 
-	public JDBCParameterBinder getJdbcParameterBinder() {
-		return jdbcParameterBinder;
+	public ParameterBinderRegistry getParameterBinderRegistry() {
+		return parameterBinderRegistry;
 	}
 }

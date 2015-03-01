@@ -1,11 +1,12 @@
 package org.stalactite.persistence.sql.dml;
 
-import org.stalactite.persistence.mapping.PersistentValues;
-import org.stalactite.persistence.structure.Table.Column;
-
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.Map;
+
+import org.stalactite.persistence.mapping.PersistentValues;
+import org.stalactite.persistence.sql.dml.binder.ParameterBinder;
+import org.stalactite.persistence.structure.Table.Column;
 
 /**
  * @author mary
@@ -13,7 +14,7 @@ import java.util.Map;
 public class InsertOperation extends WriteOperation {
 	
 	/** Column indexes for written columns */
-	private Map<Column, Integer> insertIndexes;
+	private Map<Column, Map.Entry<Integer, ParameterBinder>> insertIndexes;
 	
 	/**
 	 * 
@@ -22,9 +23,13 @@ public class InsertOperation extends WriteOperation {
 	 */
 	public InsertOperation(String sql, Map<Column, Integer> insertIndexes) {
 		super(sql);
-		this.insertIndexes = insertIndexes;
+		this.insertIndexes = getBinders(insertIndexes);
 	}
-	
+
+	public Map<Column, Map.Entry<Integer, ParameterBinder>> getInsertIndexes() {
+		return insertIndexes;
+	}
+
 	@Override
 	protected void applyValues(PersistentValues values) throws SQLException {
 		applyUpsertValues(insertIndexes, values);

@@ -3,6 +3,8 @@ package org.stalactite.persistence.sql.dml;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
+import java.util.AbstractMap;
+import java.util.HashMap;
 import java.util.Map;
 
 import javax.annotation.Nonnull;
@@ -15,6 +17,8 @@ import org.stalactite.lang.collection.Iterables.ForEach;
 import org.stalactite.lang.exception.Exceptions;
 import org.stalactite.persistence.engine.PersistenceContext;
 import org.stalactite.persistence.mapping.PersistentValues;
+import org.stalactite.persistence.sql.dml.binder.ParameterBinder;
+import org.stalactite.persistence.sql.dml.binder.ParameterBinderRegistry;
 import org.stalactite.persistence.structure.Table.Column;
 
 /**
@@ -45,49 +49,53 @@ public abstract class CRUDOperation {
 	public PreparedStatement getStatement() {
 		return statement;
 	}
+
+	/**
+	 * Récupère les {@link ParameterBinder} de chaque couple colonne-indice à partir de la {@link ParameterBinderRegistry}.
+	 * Méthode appelée par les classes filles à partir de leur correspondance colonne-indice.
+	 * 
+	 * @param colToIndexes la partie "upsert" ou where d'une opération SQL
+	 * @return les {@link ParameterBinder} de chaque colonne-indice
+	 */
+	protected Map<Column, Map.Entry<Integer, ParameterBinder>> getBinders(Map<Column, Integer> colToIndexes) {
+		HashMap<Column, Map.Entry<Integer, ParameterBinder>> binders = new HashMap<>(colToIndexes.size());
+		ParameterBinderRegistry parameterBinderRegistry = PersistenceContext.getCurrent().getDialect().getParameterBinderRegistry();
+		for (Map.Entry<Column, Integer> colToIndex : colToIndexes.entrySet()) {
+			Column column = colToIndex.getKey();
+			Integer value = colToIndex.getValue();
+			ParameterBinder parameterBinder = parameterBinderRegistry.getBinder(column);
+			binders.put(column, new AbstractMap.SimpleEntry<>(value, parameterBinder));
+		}
+		return binders;
+	}
 	
-	protected void applyUpsertValues(Map<Column, Integer> colToIndexes, PersistentValues values) throws SQLException {
+	protected void applyUpsertValues(Map<Column, Map.Entry<Integer, ParameterBinder>> colToIndexes, PersistentValues values) throws SQLException {
 		LOGGER.trace("upsert values {}", values.getUpsertValues());
 		applyValues(colToIndexes, values.getUpsertValues());
 	}
 	
-	protected void applyWhereValues(Map<Column, Integer> colToIndexes, PersistentValues values) throws SQLException {
+	protected void applyWhereValues(Map<Column, Map.Entry<Integer, ParameterBinder>> colToIndexes, PersistentValues values) throws SQLException {
 		LOGGER.trace("where values {}", values.getWhereValues());
 		applyValues(colToIndexes, values.getWhereValues());
 	}
 	
-	protected void applyValues(Map<Column, Integer> colToIndexes, Map<Column, Object> colToValuesMap) throws SQLException {
-		for (Map.Entry<Column, Object> colToValues : colToValuesMap.entrySet()) {
-			set(colToIndexes, colToValues.getKey(), colToValues.getValue());
+	protected void applyValues(Map<Column, Map.Entry<Integer, ParameterBinder>> colToIndexes, Map<Column, Object> colToValues) throws SQLException {
+		for (Map.Entry<Column, Object> colToValue : colToValues.entrySet()) {
+			set(colToIndexes, colToValue.getKey(), colToValue.getValue());
 		}
 	}
 	
-	protected void set(Map<Column, Integer> colToIndexes, Column column, Object value) throws SQLException {
-		Integer index = colToIndexes.get(column);
+	protected void set(Map<Column, Map.Entry<Integer, ParameterBinder>> colToIndexes, Column column, Object value) throws SQLException {
+		Map.Entry<Integer, ParameterBinder> index = colToIndexes.get(column);
 		if (index == null) {
 			throw new IllegalArgumentException();
 		} else {
-			set(index, value, column);
+			bind(index.getKey(), value, index.getValue());
 		}
 	}
 
-	/**
-	 * Fixe au statement la valeur value du paramètre valueIndex.
-	 * La difficulté réside dans le choix de la bonne méthode Statement.setXXX(..) à appeler en fonction du type
-	 * de la valeur. Un algorithme relativement simple à base de if instanceof est possible mais parfois insuffisant pour des
-	 * cas fins en fonction des tables ou des colonnes, c'est pourquoi l'information column est passée en paramètre à titre
-	 * informatif car elle permet de savoir qu'elle est exactement la colonne cible, ce que ne permet pas valueIndex.
-	 * 
-	 * Cette implémentation délègue ce traitement au Dialect courant (via {@link PersistenceContext#getCurrent()} ce qui permet
-	 * une meilleure adaptation en fonction de la base de donnée cible.
-	 * 
-	 * @param valueIndex l'index du paramètre à fixer, à utiliser en premier paramètre de Statement.setXXX(..)
-	 * @param value la valeur à passer en second paramètre de Statement.setXXX(..)
-	 * @param column la colonne ciblée par valueIndex, autorise un ciblage plus fin que le type de value, informatif
-	 * @throws SQLException
-	 */
-	public void set(int valueIndex, Object value, Column column) throws SQLException {
-		PersistenceContext.getCurrent().getDialect().getJdbcParameterBinder().set(valueIndex, value, column, statement);
+	protected void bind(int valueIndex, Object value, ParameterBinder binder) throws SQLException {
+		binder.set(valueIndex, value, statement);
 	}
 	
 	/**

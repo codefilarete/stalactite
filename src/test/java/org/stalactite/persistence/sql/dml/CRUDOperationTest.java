@@ -1,15 +1,7 @@
 package org.stalactite.persistence.sql.dml;
 
-import org.mockito.ArgumentCaptor;
-import org.mockito.Mockito;
-import org.stalactite.lang.collection.Arrays;
-import org.stalactite.lang.collection.Maps;
-import org.stalactite.persistence.mapping.PersistentFieldHarverster;
-import org.stalactite.persistence.mapping.PersistentValues;
-import org.stalactite.persistence.structure.Table;
-import org.stalactite.persistence.structure.Table.Column;
-import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.Test;
+import static junit.framework.Assert.assertEquals;
+import static org.mockito.Mockito.*;
 
 import java.lang.reflect.Field;
 import java.sql.Connection;
@@ -17,8 +9,19 @@ import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.Map;
 
-import static junit.framework.Assert.assertEquals;
-import static org.mockito.Mockito.*;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Mockito;
+import org.stalactite.lang.collection.Arrays;
+import org.stalactite.lang.collection.Maps;
+import org.stalactite.persistence.engine.PersistenceContext;
+import org.stalactite.persistence.mapping.PersistentFieldHarverster;
+import org.stalactite.persistence.mapping.PersistentValues;
+import org.stalactite.persistence.sql.Dialect;
+import org.stalactite.persistence.sql.ddl.JavaTypeToSqlTypeMapping;
+import org.stalactite.persistence.structure.Table;
+import org.stalactite.persistence.structure.Table.Column;
+import org.testng.annotations.BeforeMethod;
+import org.testng.annotations.Test;
 
 public class CRUDOperationTest {
 	
@@ -29,7 +32,6 @@ public class CRUDOperationTest {
 	private Column colB;
 	private Column colC;
 	private PreparedStatement preparedStatement;
-	private Connection connection1;
 	private ArgumentCaptor<Integer> valueCaptor;
 	private ArgumentCaptor<Integer> indexCaptor;
 	private ArgumentCaptor<String> sqlCaptor;
@@ -37,6 +39,9 @@ public class CRUDOperationTest {
 
 	@BeforeMethod
 	public void setUp() throws SQLException {
+		// Nécessaire aux CRUDOperations et RowIterator qui ont besoin du ParamaterBinderRegistry
+		PersistenceContext.setCurrent(new PersistenceContext(null, new Dialect(new JavaTypeToSqlTypeMapping())));
+		
 		PersistentFieldHarverster persistentFieldHarverster = new PersistentFieldHarverster();
 		Table totoClassTable = new Table(null, "Toto");
 		totoClassMapping = persistentFieldHarverster.mapFields(Toto.class, totoClassTable);
