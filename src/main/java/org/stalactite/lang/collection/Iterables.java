@@ -60,9 +60,18 @@ public class Iterables {
 	 * @return une List<E> qui contient tous les éléments de <t>iterable</t>
 	 */
 	public static <E> List<E> copy(@Nonnull Iterable<E> iterable) {
+		return copy(iterable.iterator());
+	}
+	
+	/**
+	 * Crée une copie du Iterator en tant que List
+	 * @param iterator un Iterator, non null
+	 * @return une List<E> qui contient tous les éléments de <t>iterator</t>
+	 */
+	public static <E> List<E> copy(@Nonnull Iterator<E> iterator) {
 		List<E> result = new ArrayList<>();
-		for (E e : iterable) {
-			result.add(e);
+		for (; iterator.hasNext();) {
+			result.add(iterator.next());
 		}
 		return result;
 	}

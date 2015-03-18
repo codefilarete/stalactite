@@ -6,16 +6,14 @@ import java.sql.SQLException;
 import java.util.Date;
 import java.util.WeakHashMap;
 
-import javax.annotation.Nonnull;
-
 import org.stalactite.persistence.structure.Table;
 
 /**
  * Classe d'accès aux méthodes PreparedStatement.setXXX(..) et ResultSet.getXXX(..) en fonction du type des colonnes
  * écrites ou lues.
- * Les méthodes {@link #setNotNull(int, Object, Table.Column, PreparedStatement)} et {@link #getNotNull(Table.Column, ResultSet)}
+ * Les méthodes {@link #set(int, Object, PreparedStatement)} et {@link #getNotNull(Table.Column, ResultSet)}
  * peuvent être surchargées pour implémenter le codage/décodage d'un type particulier.
- * Les méthodes {@link #getBinder(Object, Table.Column)} et {@link #getBinder(Table.Column)} peuvent être
+ * Les méthodes {@link #getBinder(Class)} et {@link #getBinder(Table.Column)} peuvent être
  * adaptées pour aiguiller une colonne vers un type particulier.
  * 
  * @author mary
@@ -62,6 +60,7 @@ public class ParameterBinderRegistry {
 	}
 	
 	protected boolean isNull(Table.Column column, ResultSet resultSet) throws SQLException {
+		// wasNull est utilisable également, mais getObject(String) est également supporté. protected au cas où.
 		return resultSet.getObject(column.getName()) == null;
 	}
 
@@ -78,6 +77,21 @@ public class ParameterBinderRegistry {
 		return toReturn;
 	}
 	
+	public void set(int index, Object value, PreparedStatement preparedStatement) throws SQLException {
+		if (value == null) {
+			// Attention, pas mal de débat autour de l'utilisation de setObject(int, null) sur le Net, mais finalement
+			// il semble que ça soit de plus en plus supporté.
+			preparedStatement.setObject(index, null);
+		} else {
+			ParameterBinder parameterBinder = getBinder(value.getClass());
+			if (parameterBinder != null) {
+				parameterBinder.set(index, value, preparedStatement);
+			} else {
+				throwMissingBinderException(value.getClass());
+			}
+		}
+	}
+	
 	public ParameterBinder getBinder(Table.Column column) {
 		return getBinder(column.getJavaType());
 	}
@@ -88,6 +102,10 @@ public class ParameterBinderRegistry {
 
 	private void throwMissingBinderException(Table.Column column) {
 		throw new UnsupportedOperationException("No parameter binder found for column " + column.getAbsoluteName());
+	}
+	
+	private void throwMissingBinderException(Class clazz) {
+		throw new UnsupportedOperationException("No parameter binder found for type " + clazz.getName());
 	}
 
 }

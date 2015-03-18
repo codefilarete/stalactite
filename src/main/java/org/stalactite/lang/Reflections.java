@@ -8,6 +8,7 @@ import java.util.Map;
 
 import javax.annotation.Nonnull;
 
+import org.stalactite.lang.collection.ArrayIterator;
 import org.stalactite.lang.collection.Iterables;
 import org.stalactite.lang.collection.Iterables.Mapper;
 import org.stalactite.lang.collection.ReadOnlyIterator;
@@ -95,27 +96,5 @@ public final class Reflections {
 			}
 			return fieldIterator.next();
 		}
-		
-		private class ArrayIterator<O> extends ReadOnlyIterator<O> {
-			
-			private O[] array;
-			private int currentIndex = 0, maxIndex;
-			
-			public ArrayIterator(O[] array) {
-				this.array = array;
-				this.maxIndex = array.length;
-			}
-			
-			@Override
-			public boolean hasNext() {
-				return currentIndex < maxIndex;
-			}
-			
-			@Override
-			protected O getNext() {
-				return this.array[currentIndex++];
-			}
-		}
-		
 	}
 }
