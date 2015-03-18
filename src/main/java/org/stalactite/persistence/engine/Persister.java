@@ -124,16 +124,16 @@ public class Persister<T> {
 			SelectOperation selectStatement = dmlGenerator.buildSelect(targetTable,
 					targetTable.getColumns().asSet(),
 					Arrays.asList(targetTable.getPrimaryKey()));
-			PersistentValues deleteValues = mappingStrategy.getSelectValues(id);
-			return execute(selectStatement, deleteValues, mappingStrategy);
+			PersistentValues selectValues = mappingStrategy.getSelectValues(id);
+			return execute(selectStatement, selectValues, mappingStrategy);
 		} else {
 			throw new IllegalArgumentException("Non selectable entity " + mappingStrategy.getClassToPersist() + " because of null id");
 		}
 	}
 	
-	protected T execute(SelectOperation operation, PersistentValues insertValues, ClassMappingStrategy<T> classMappingStrategy) {
+	protected T execute(SelectOperation operation, PersistentValues whereValues, ClassMappingStrategy<T> classMappingStrategy) {
 		try {
-			operation.apply(insertValues, getConnection());
+			operation.apply(whereValues, getConnection());
 			RowIterator rowIterator = operation.execute();
 			if (rowIterator.hasNext()) {
 				return classMappingStrategy.transform(rowIterator.next());
