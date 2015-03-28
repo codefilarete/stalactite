@@ -3,25 +3,19 @@ package org.stalactite.query.model;
 import org.stalactite.persistence.structure.Table.Column;
 
 /**
- * @author mary
+ * @author Guillaume Mary
  */
-public class Criteria {
-
-	public enum LogicalOperator {
-		And,
-		Or,
-	}
-
+public class ColumnCriterion extends AbstractCriterion {
+	
 	private final Column column;
 	private final String condition;
-	private final LogicalOperator operator;
-
-	public Criteria(Column column, String condition) {
+	
+	public ColumnCriterion(Column column, String condition) {
 		this(null, column, condition);
 	}
 
-	public Criteria(LogicalOperator operator, Column column, String condition) {
-		this.operator = operator;
+	public ColumnCriterion(LogicalOperator operator, Column column, String condition) {
+		super(operator);
 		this.column = column;
 		this.condition = condition;
 	}
@@ -33,8 +27,5 @@ public class Criteria {
 	public String getCondition() {
 		return condition;
 	}
-
-	public LogicalOperator getOperator() {
-		return operator;
-	}
+	
 }

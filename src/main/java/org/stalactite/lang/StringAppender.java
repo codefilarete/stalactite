@@ -5,9 +5,9 @@ import java.io.Serializable;
 /**
  * @author mary
  */
-public class StringAppender implements Serializable {
+public class StringAppender implements Serializable, CharSequence {
 	
-	private StringBuilder appender;
+	private final StringBuilder appender;
 	
 	public StringAppender() {
 		appender = new StringBuilder();
@@ -17,24 +17,24 @@ public class StringAppender implements Serializable {
 		appender = new StringBuilder(capacity);
 	}
 	
-	public StringAppender(String ... s) {
+	public StringAppender(CharSequence ... s) {
 		this();
 		cat(s);
 	}
 
-	public StringAppender cat(String s) {
+	public StringAppender cat(CharSequence s) {
 		appender.append(s);
 		return this;
 	}
 	
-	public StringAppender cat(String ... ss) {
-		for (String s : ss) {
+	public StringAppender cat(CharSequence ... ss) {
+		for (CharSequence s : ss) {
 			cat(s);
 		}
 		return this;
 	}
 	
-	public StringAppender catIf(boolean condition, String ... ss) {
+	public StringAppender catIf(boolean condition, CharSequence ... ss) {
 		if (condition) {
 			cat(ss);
 		}
@@ -44,10 +44,10 @@ public class StringAppender implements Serializable {
 	public StringAppender ccat(Object ... s) {
 		Object[] dest = new Object[s.length - 1];
 		System.arraycopy(s, 0, dest, 0, s.length - 1);
-		return ccat(dest, (String) s[s.length-1]);
+		return ccat(dest, (CharSequence) s[s.length-1]);
 	}
 	
-	public StringAppender ccat(Object[] s, String sep) {
+	public StringAppender ccat(Object[] s, CharSequence sep) {
 		if (s.length>0) {
 			for (Object arg : s) {
 				appender.append(arg).append(sep);
@@ -57,22 +57,18 @@ public class StringAppender implements Serializable {
 		return this;
 	}
 	
-	public StringAppender wrap(String open, String close) {
+	public StringAppender wrap(CharSequence open, CharSequence close) {
 		appender.insert(0, open).append(close);
 		return this;
 	}
-
+	
 	@Override
 	public String toString() {
 		return appender.toString();
 	}
 
-	public int getLength() {
-		return appender.length();
-	}
-
 	public StringAppender cutTail(int nbChar) {
-		appender.setLength(getLength()-nbChar);
+		appender.setLength(length() - nbChar);
 		return this;
 	}
 	
@@ -80,4 +76,20 @@ public class StringAppender implements Serializable {
 		appender.delete(0, nbChar);
 		return this;
 	}
+	
+	@Override
+	public int length() {
+		return appender.length();
+	}
+	
+	@Override
+	public char charAt(int index) {
+		return appender.charAt(index);
+	}
+	
+	@Override
+	public CharSequence subSequence(int start, int end) {
+		return appender.subSequence(start, end);
+	}
+	
 }

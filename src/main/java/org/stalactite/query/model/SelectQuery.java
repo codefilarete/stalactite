@@ -1,5 +1,8 @@
 package org.stalactite.query.model;
 
+import static org.stalactite.query.model.AbstractCriterion.LogicalOperator.And;
+import static org.stalactite.query.model.AbstractCriterion.LogicalOperator.Or;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -34,6 +37,10 @@ public class SelectQuery {
 
 	public Where getWhere() {
 		return where;
+	}
+
+	public GroupBy getGroupBy() {
+		return groupBy;
 	}
 
 	public FluentSelect select(String selectable) {
@@ -237,6 +244,10 @@ public class SelectQuery {
 			return SelectQuery.this.where.and(criteriaSuite);
 		}
 		
+		public FluentWhere where(Object ... criterion) {
+			return SelectQuery.this.where.and(criterion);
+		}
+		
 		public GroupBy groupBy(Column column) {
 			return SelectQuery.this.groupBy.add(column);
 		}
@@ -272,6 +283,16 @@ public class SelectQuery {
 			return super.or(criteriaSuite);
 		}
 		
+		@Override
+		public FluentWhere and(Object... columns) {
+			return add(new RawCriterion(And, columns));
+		}
+		
+		@Override
+		public FluentWhere or(Object... columns) {
+			return add(new RawCriterion(Or, columns));
+		}
+		
 		public GroupBy groupBy(Column column) {
 			return SelectQuery.this.groupBy.add(column);
 		}
@@ -286,6 +307,7 @@ public class SelectQuery {
 	}
 
 	public static class GroupBy {
+		/** Column, String */
 		private final List<Object> groups = new ArrayList<>();
 		private final Having having = new Having();
 
@@ -321,37 +343,44 @@ public class SelectQuery {
 		}
 		
 		public Having having(Column column, String condition) {
-			return this.having.add(column, condition);
+			return this.having.and(column, condition);
 		}
 		
-		public Having having(String ... columns) {
-			return this.having.add(columns);
+		public Having having(Object ... columns) {
+			return this.having.and(columns);
 		}
 	}
 	
-	public static class Having {
-		private List<Object> clause = new ArrayList<>();
-
-		private Having add(Object table) {
-			this.clause.add(table);
-			return this;
+	public static class Having extends CriteriaSuite<Having> {
+		
+		@Override
+		public Having and(Column column, String condition) {
+			return super.and(column, condition);
 		}
-
-		public List<Object> getClause() {
-			return clause;
+	
+		@Override
+		public Having or(Column column, String condition) {
+			return super.or(column, condition);
 		}
-
-		public Having add(Column column, String condition) {
-			return add(new Criteria(column, condition));
+	
+		@Override
+		public Having and(CriteriaSuite criteriaSuite) {
+			return super.and(criteriaSuite);
+		}
+	
+		@Override
+		public Having or(CriteriaSuite criteriaSuite) {
+			return super.or(criteriaSuite);
 		}
 		
-		public Having add(String ... columns) {
-			for (String col : columns) {
-				add(col);
-			}
-			return this;
+		@Override
+		public Having and(Object... columns) {
+			return add(new RawCriterion(And, columns));
 		}
 		
-		
+		@Override
+		public Having or(Object... columns) {
+			return add(new RawCriterion(Or, columns));
+		}
 	}
 }
