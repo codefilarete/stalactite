@@ -7,11 +7,14 @@ import java.util.Iterator;
 import java.util.List;
 
 import org.stalactite.persistence.structure.Table.Column;
+import org.stalactite.query.model.Criteria.LogicalOperator;
 
 /**
  * @author mary
  */
-public abstract class CriteriaSuite<C extends CriteriaSuite> implements Iterable<Object> {
+public class CriteriaSuite<C extends CriteriaSuite> implements Iterable<Object> {
+	
+	private LogicalOperator operator;
 	
 	/** Criteria, ClosedCriteria */
 	protected List<Object> conditions = new ArrayList<>();
@@ -23,6 +26,14 @@ public abstract class CriteriaSuite<C extends CriteriaSuite> implements Iterable
 		add(new Criteria(column, condition));
 	}
 
+	public LogicalOperator getOperator() {
+		return operator;
+	}
+
+	protected void setOperator(LogicalOperator operator) {
+		this.operator = operator;
+	}
+	
 	public List<Object> getConditions() {
 		return conditions;
 	}
@@ -40,14 +51,14 @@ public abstract class CriteriaSuite<C extends CriteriaSuite> implements Iterable
 		return add(new Criteria(Or, column, condition));
 	}
 
-	public C and(ClosedCriteria closedCriteria) {
-		closedCriteria.setOperator(And);
-		return add(closedCriteria);
+	public C and(CriteriaSuite criteriaSuite) {
+		criteriaSuite.setOperator(And);
+		return add(criteriaSuite);
 	}
 
-	public C or(ClosedCriteria closedCriteria) {
-		closedCriteria.setOperator(Or);
-		return add(closedCriteria);
+	public C or(CriteriaSuite criteriaSuite) {
+		criteriaSuite.setOperator(Or);
+		return add(criteriaSuite);
 	}
 
 	@Override

@@ -5,7 +5,6 @@ import java.util.Map;
 
 import org.stalactite.lang.StringAppender;
 import org.stalactite.persistence.structure.Table;
-import org.stalactite.query.model.ClosedCriteria;
 import org.stalactite.query.model.Criteria;
 import org.stalactite.query.model.Criteria.LogicalOperator;
 import org.stalactite.query.model.CriteriaSuite;
@@ -41,8 +40,8 @@ public class WhereBuilder extends AbstractDMLBuilder {
 				catString((String) o, sql);
 			} else if (o instanceof Criteria) {
 				cat((Criteria) o, sql);
-			} else if (o instanceof ClosedCriteria) {
-				cat((ClosedCriteria) o, sql);
+			} else if (o instanceof CriteriaSuite) {
+				cat((CriteriaSuite) o, sql);
 			}
 		}
 		// il y a toujours un espace en trop en tête, on le supprime
@@ -61,9 +60,9 @@ public class WhereBuilder extends AbstractDMLBuilder {
 		sql.cat(" ", getName(criteria.getColumn()), " ", criteria.getCondition());
 	}
 
-	protected void cat(ClosedCriteria closedCriteria, StringAppender sql) {
-		WhereBuilder whereBuilder = new WhereBuilder(closedCriteria, tableAliases);
-		sql.cat(" ", getName(closedCriteria.getOperator()), " (", whereBuilder.toSQL(), ")");
+	protected void cat(CriteriaSuite criteriaSuite, StringAppender sql) {
+		WhereBuilder whereBuilder = new WhereBuilder(criteriaSuite, tableAliases);
+		sql.cat(" ", getName(criteriaSuite.getOperator()), " (", whereBuilder.toSQL(), ")");
 	}
 
 	private String getName(LogicalOperator operator) {

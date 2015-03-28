@@ -25,12 +25,12 @@ public class Where<C extends Where> extends CriteriaSuite<C> {
 	}
 
 	@Override
-	public C and(ClosedCriteria closedCriteria) {
-		return super.and(closedCriteria);
+	public C and(CriteriaSuite criteriaSuite) {
+		return super.and(criteriaSuite);
 	}
 
 	@Override
-	public C or(ClosedCriteria closedCriteria) {
-		return super.or(closedCriteria);
+	public C or(CriteriaSuite criteriaSuite) {
+		return super.or(criteriaSuite);
 	}
 }

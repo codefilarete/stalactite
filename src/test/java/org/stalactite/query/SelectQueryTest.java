@@ -2,7 +2,7 @@ package org.stalactite.query;
 
 import org.stalactite.persistence.structure.Table;
 import org.stalactite.persistence.structure.Table.Column;
-import org.stalactite.query.model.ClosedCriteria;
+import org.stalactite.query.model.CriteriaSuite;
 import org.stalactite.query.model.SelectQuery;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
@@ -49,7 +49,7 @@ public class SelectQueryTest {
 	public void testSelect_where() {
 		SelectQuery testInstance = new SelectQuery();
 		testInstance.select("fds").from(columnX, columnY).where(columnX, "= ?").and(columnY, " = ?")
-				.or(columnY, " = ?").or(new ClosedCriteria(columnY, "= 12").and(columnX, "= 4"))
+				.or(columnY, " = ?").or(new CriteriaSuite(columnY, "= 12").and(columnX, "= 4"))
 				.groupBy(columnX);
 		testInstance.groupBy(columnX, columnY).add(columnY).having(columnX, "> 2");
 	}

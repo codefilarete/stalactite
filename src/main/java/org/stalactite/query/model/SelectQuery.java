@@ -91,8 +91,8 @@ public class SelectQuery {
 		return this.where.and(column, condition);
 	}
 
-	public FluentWhere where(ClosedCriteria closedCriteria) {
-		return this.where.and(closedCriteria);
+	public FluentWhere where(CriteriaSuite criteriaSuite) {
+		return this.where.and(criteriaSuite);
 	}
 	
 	public GroupBy groupBy(Column column) {
@@ -233,8 +233,8 @@ public class SelectQuery {
 			return SelectQuery.this.where.and(column, condition);
 		}
 		
-		public FluentWhere where(ClosedCriteria closedCriteria) {
-			return SelectQuery.this.where.and(closedCriteria);
+		public FluentWhere where(CriteriaSuite criteriaSuite) {
+			return SelectQuery.this.where.and(criteriaSuite);
 		}
 		
 		public GroupBy groupBy(Column column) {
@@ -263,13 +263,13 @@ public class SelectQuery {
 		}
 	
 		@Override
-		public FluentWhere and(ClosedCriteria closedCriteria) {
-			return super.and(closedCriteria);
+		public FluentWhere and(CriteriaSuite criteriaSuite) {
+			return super.and(criteriaSuite);
 		}
 	
 		@Override
-		public FluentWhere or(ClosedCriteria closedCriteria) {
-			return super.or(closedCriteria);
+		public FluentWhere or(CriteriaSuite criteriaSuite) {
+			return super.or(criteriaSuite);
 		}
 		
 		public GroupBy groupBy(Column column) {
