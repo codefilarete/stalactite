@@ -54,7 +54,7 @@ public class WhereBuilder extends AbstractDMLBuilder {
 			} else if (criterion instanceof ColumnCriterion) {
 				cat((ColumnCriterion) criterion, sql);
 			} else if (criterion instanceof Criteria) {
-				sql.cat(" (");
+				sql.cat("(");
 				cat((Criteria) criterion, sql);
 				sql.cat(")");
 			}
