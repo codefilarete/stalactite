@@ -9,7 +9,7 @@ import org.stalactite.persistence.structure.Table.Column;
 import org.stalactite.query.model.AbstractCriterion;
 import org.stalactite.query.model.AbstractCriterion.LogicalOperator;
 import org.stalactite.query.model.ColumnCriterion;
-import org.stalactite.query.model.CriteriaSuite;
+import org.stalactite.query.model.Criteria;
 import org.stalactite.query.model.RawCriterion;
 
 /**
@@ -27,9 +27,9 @@ public class WhereBuilder extends AbstractDMLBuilder {
 		LOGICAL_OPERATOR_NAMES.put(LogicalOperator.Or, OR);
 	}
 	
-	private final CriteriaSuite where;
+	private final Criteria where;
 
-	public WhereBuilder(CriteriaSuite where, Map<Table, String> tableAliases) {
+	public WhereBuilder(Criteria where, Map<Table, String> tableAliases) {
 		super(tableAliases);
 		this.where = where;
 	}
@@ -41,9 +41,9 @@ public class WhereBuilder extends AbstractDMLBuilder {
 		return sql.toString();
 	}
 	
-	protected void cat(CriteriaSuite criteriaSuite, StringAppender sql) {
+	protected void cat(Criteria criteria, StringAppender sql) {
 		boolean isNotFirst = false;
-		for (Object criterion : criteriaSuite) {
+		for (Object criterion : criteria) {
 			if (isNotFirst) {
 				cat(((AbstractCriterion) criterion).getOperator(), sql);
 			} else {
@@ -53,9 +53,9 @@ public class WhereBuilder extends AbstractDMLBuilder {
 				cat((RawCriterion) criterion, sql);
 			} else if (criterion instanceof ColumnCriterion) {
 				cat((ColumnCriterion) criterion, sql);
-			} else if (criterion instanceof CriteriaSuite) {
+			} else if (criterion instanceof Criteria) {
 				sql.cat(" (");
-				cat((CriteriaSuite) criterion, sql);
+				cat((Criteria) criterion, sql);
 				sql.cat(")");
 			}
 		}
@@ -83,7 +83,7 @@ public class WhereBuilder extends AbstractDMLBuilder {
 		}
 	}
 	
-//	protected void cat(CriteriaSuite criteriaSuite, StringAppender sql) {
+//	protected void cat(Criteria criteriaSuite, StringAppender sql) {
 //		WhereBuilder whereBuilder = new WhereBuilder(criteriaSuite, tableAliases);
 //		sql.cat("(", whereBuilder.toSQL(), ")");
 //	}

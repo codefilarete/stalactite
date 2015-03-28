@@ -12,15 +12,15 @@ import org.stalactite.persistence.structure.Table.Column;
 /**
  * @author Guillaume Mary
  */
-public class CriteriaSuite<C extends CriteriaSuite> extends AbstractCriterion implements Iterable<AbstractCriterion> {
+public class Criteria<C extends Criteria> extends AbstractCriterion implements Iterable<AbstractCriterion> {
 	
 	/** Criteria, ClosedCriteria */
 	protected List<AbstractCriterion> conditions = new ArrayList<>();
 
-	public CriteriaSuite() {
+	public Criteria() {
 	}
 
-	public CriteriaSuite(Column column, String condition) {
+	public Criteria(Column column, String condition) {
 		add(new ColumnCriterion(column, condition));
 	}
 
@@ -45,14 +45,14 @@ public class CriteriaSuite<C extends CriteriaSuite> extends AbstractCriterion im
 		return add(new ColumnCriterion(Or, column, condition));
 	}
 
-	public C and(CriteriaSuite criteriaSuite) {
-		criteriaSuite.setOperator(And);
-		return add(criteriaSuite);
+	public C and(Criteria criteria) {
+		criteria.setOperator(And);
+		return add(criteria);
 	}
 
-	public C or(CriteriaSuite criteriaSuite) {
-		criteriaSuite.setOperator(Or);
-		return add(criteriaSuite);
+	public C or(Criteria criteria) {
+		criteria.setOperator(Or);
+		return add(criteria);
 	}
 	
 	public C and(Object ... columns) {

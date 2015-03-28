@@ -98,8 +98,8 @@ public class SelectQuery {
 		return this.where.and(column, condition);
 	}
 
-	public FluentWhere where(CriteriaSuite criteriaSuite) {
-		return this.where.and(criteriaSuite);
+	public FluentWhere where(Criteria criteria) {
+		return this.where.and(criteria);
 	}
 	
 	public GroupBy groupBy(Column column) {
@@ -240,8 +240,8 @@ public class SelectQuery {
 			return SelectQuery.this.where.and(column, condition);
 		}
 		
-		public FluentWhere where(CriteriaSuite criteriaSuite) {
-			return SelectQuery.this.where.and(criteriaSuite);
+		public FluentWhere where(Criteria criteria) {
+			return SelectQuery.this.where.and(criteria);
 		}
 		
 		public FluentWhere where(Object ... criterion) {
@@ -274,13 +274,13 @@ public class SelectQuery {
 		}
 	
 		@Override
-		public FluentWhere and(CriteriaSuite criteriaSuite) {
-			return super.and(criteriaSuite);
+		public FluentWhere and(Criteria criteria) {
+			return super.and(criteria);
 		}
 	
 		@Override
-		public FluentWhere or(CriteriaSuite criteriaSuite) {
-			return super.or(criteriaSuite);
+		public FluentWhere or(Criteria criteria) {
+			return super.or(criteria);
 		}
 		
 		@Override
@@ -351,7 +351,7 @@ public class SelectQuery {
 		}
 	}
 	
-	public static class Having extends CriteriaSuite<Having> {
+	public static class Having extends Criteria<Having> {
 		
 		@Override
 		public Having and(Column column, String condition) {
@@ -364,13 +364,13 @@ public class SelectQuery {
 		}
 	
 		@Override
-		public Having and(CriteriaSuite criteriaSuite) {
-			return super.and(criteriaSuite);
+		public Having and(Criteria criteria) {
+			return super.and(criteria);
 		}
 	
 		@Override
-		public Having or(CriteriaSuite criteriaSuite) {
-			return super.or(criteriaSuite);
+		public Having or(Criteria criteria) {
+			return super.or(criteria);
 		}
 		
 		@Override

@@ -8,7 +8,7 @@ import org.stalactite.persistence.structure.Table.Column;
 /**
  * @author mary
  */
-public class Where<C extends Where> extends CriteriaSuite<C> {
+public class Where<C extends Where> extends Criteria<C> {
 
 	public Where() {
 	}
@@ -28,13 +28,13 @@ public class Where<C extends Where> extends CriteriaSuite<C> {
 	}
 
 	@Override
-	public C and(CriteriaSuite criteriaSuite) {
-		return super.and(criteriaSuite);
+	public C and(Criteria criteria) {
+		return super.and(criteria);
 	}
 
 	@Override
-	public C or(CriteriaSuite criteriaSuite) {
-		return super.or(criteriaSuite);
+	public C or(Criteria criteria) {
+		return super.or(criteria);
 	}
 	
 	@Override
