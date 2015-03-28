@@ -22,9 +22,14 @@ public class StringAppender implements Serializable {
 		cat(s);
 	}
 
+	public StringAppender cat(String s) {
+		appender.append(s);
+		return this;
+	}
+	
 	public StringAppender cat(String ... ss) {
 		for (String s : ss) {
-			appender.append(s);
+			cat(s);
 		}
 		return this;
 	}
@@ -68,6 +73,11 @@ public class StringAppender implements Serializable {
 
 	public StringAppender cutTail(int nbChar) {
 		appender.setLength(getLength()-nbChar);
+		return this;
+	}
+	
+	public StringAppender cutHead(int nbChar) {
+		appender.delete(0, nbChar);
 		return this;
 	}
 }
