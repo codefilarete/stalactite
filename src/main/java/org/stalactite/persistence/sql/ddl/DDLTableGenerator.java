@@ -59,6 +59,11 @@ public class DDLTableGenerator {
 		return sqlCreateFK.cat(")").toString();
 	}
 	
+	public String generateDropTable(Table table) {
+		StringAppender sqlCreateTable = new StringAppender("drop table if exists ", table.getName());
+		return sqlCreateTable.toString();
+	}
+	
 	public static void catWithComma(Iterable<Column> targetColumns, StringAppender sql) {
 		cat(sql, targetColumns, FOREACH_COLUMNNAME).cutTail(2);
 	}

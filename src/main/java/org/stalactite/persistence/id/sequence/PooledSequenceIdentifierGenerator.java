@@ -47,6 +47,11 @@ public class PooledSequenceIdentifierGenerator implements IdentifierGenerator, D
 	}
 	
 	@Override
+	public List<String> getDropScripts() {
+		return pooledSequencePersister.getDropScripts();
+	}
+	
+	@Override
 	public synchronized Serializable generate() {
 		if (sequenceState == null) {
 			PooledSequence existingSequence = this.pooledSequencePersister.select(getSequenceName());

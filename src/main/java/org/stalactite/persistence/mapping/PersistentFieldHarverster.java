@@ -25,9 +25,14 @@ public class PersistentFieldHarverster {
 	
 	public Map<Field, Column> mapFields(Class clazz, Table targetTable) {
 		List<Field> fields = getFields(clazz);
+		Map<String, Column> mapColumnsOnName = targetTable.mapColumnsOnName();
 		Map<Field, Column> fieldToColumn = new LinkedHashMap<>(5);
 		for (Field field : fields) {
-			fieldToColumn.put(field, targetTable.new Column(getColumnName(field), Integer.class));
+			Column column = mapColumnsOnName.get(field.getName());
+			if (column == null) {
+				column = targetTable.new Column(getColumnName(field), field.getType());
+			}
+			fieldToColumn.put(field, column);
 		}
 		return fieldToColumn;
 	}
@@ -48,7 +53,7 @@ public class PersistentFieldHarverster {
 	public static class FieldFilter extends Filter<Field> {
 		@Override
 		public boolean accept(Field field) {
-			return true;
+			return !(Iterable.class.isAssignableFrom(field.getType()) && Map.class.isAssignableFrom(field.getType()));
 		}
 	}
 }

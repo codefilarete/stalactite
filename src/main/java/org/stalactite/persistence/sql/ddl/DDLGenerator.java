@@ -43,10 +43,10 @@ public class DDLGenerator implements DDLParticipant {
 	@Override
 	public List<String> getCreationScripts() {
 		// DDLParticipants is supposed to be post treatments (creation of sequences, triggers, ...)
-		return Collections.cat(generateTableScripts(), generateDDLParticipantsScripts());
+		return Collections.cat(generateTableCreationScripts(), generateDDLParticipantsCreationScripts());
 	}
 	
-	protected List<String> generateDDLParticipantsScripts() {
+	protected List<String> generateDDLParticipantsCreationScripts() {
 		List<String> participantsScripts = new ArrayList<>();
 		for (DDLParticipant ddlParticipant : ddlParticipants) {
 			participantsScripts.addAll(ddlParticipant.getCreationScripts());
@@ -54,22 +54,22 @@ public class DDLGenerator implements DDLParticipant {
 		return participantsScripts;
 	}
 	
-	protected List<String> generateTableScripts() {
+	protected List<String> generateTableCreationScripts() {
 		List<String> tableCreationScripts = new ArrayList<>();
 		List<String> foreignKeysCreationScripts = new ArrayList<>();
 		List<String> indexesCreationScripts = new ArrayList<>();
 		
 		for (Table table : tables) {
 			tableCreationScripts.add(this.ddlTableGenerator.generateCreateTable(table));
-			foreignKeysCreationScripts.addAll(getForeignKeyScripts(table));
-			indexesCreationScripts.addAll(generateIndexScripts(table));
+			foreignKeysCreationScripts.addAll(getForeignKeyCreationScripts(table));
+			indexesCreationScripts.addAll(generateIndexCreationScripts(table));
 		}
 		
 		// foreign keys must be after table scripts, index is fine tuning
 		return Collections.cat(tableCreationScripts, foreignKeysCreationScripts, indexesCreationScripts);
 	}
 	
-	protected List<String> generateIndexScripts(Table table) {
+	protected List<String> generateIndexCreationScripts(Table table) {
 		List<String> indexesCreationScripts = new ArrayList<>();
 		for (Index index : table.getIndexes()) {
 			indexesCreationScripts.add(this.ddlTableGenerator.generateCreateIndex(index));
@@ -77,11 +77,38 @@ public class DDLGenerator implements DDLParticipant {
 		return indexesCreationScripts;
 	}
 	
-	protected List<String> getForeignKeyScripts(Table table) {
+	protected List<String> getForeignKeyCreationScripts(Table table) {
 		List<String> foreignKeysCreationScripts = new ArrayList<>();
 		for (ForeignKey foreignKey : table.getForeignKeys()) {
 			foreignKeysCreationScripts.add(this.ddlTableGenerator.generateCreateForeignKey(foreignKey));
 		}
 		return foreignKeysCreationScripts;
 	}
+
+	@Override
+	public List<String> getDropScripts() {
+		// DDLParticipants is supposed to be post treatments (creation of sequences, triggers, ...)
+		return Collections.cat(generateTableDropScripts(), generateDDLParticipantsDropScripts());
+	}
+	
+	protected List<String> generateTableDropScripts() {
+		List<String> tableCreationScripts = new ArrayList<>();
+		
+		for (Table table : tables) {
+			tableCreationScripts.add(this.ddlTableGenerator.generateDropTable(table));
+		}
+		
+		// foreign keys must be after table scripts, index is fine tuning
+		return tableCreationScripts;
+	}
+	
+	protected List<String> generateDDLParticipantsDropScripts() {
+		List<String> participantsScripts = new ArrayList<>();
+		for (DDLParticipant ddlParticipant : ddlParticipants) {
+			participantsScripts.addAll(ddlParticipant.getDropScripts());
+		}
+		return participantsScripts;
+	}
+	
+	
 }

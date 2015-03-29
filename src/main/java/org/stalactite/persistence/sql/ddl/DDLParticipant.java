@@ -8,4 +8,6 @@ import java.util.List;
 public interface DDLParticipant {
 	
 	List<String> getCreationScripts();
+	
+	List<String> getDropScripts();
 }

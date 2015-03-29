@@ -8,6 +8,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.stalactite.ILogger;
+import org.stalactite.Logger;
 import org.stalactite.persistence.engine.TransactionManager.JdbcOperation;
 import org.stalactite.persistence.mapping.ClassMappingStrategy;
 import org.stalactite.persistence.sql.Dialect;
@@ -19,7 +21,10 @@ import org.stalactite.persistence.structure.Table;
  */
 public class PersistenceContext {
 	
+	private static final ILogger LOGGER = Logger.getLogger(PersistenceContext.class);
+	
 	private static final ThreadLocal<PersistenceContext> CURRENT_CONTEXT = new ThreadLocal<>();
+	private List<Table> tables;
 	
 	public static PersistenceContext getCurrent() {
 		PersistenceContext currentContext = CURRENT_CONTEXT.get();
@@ -61,21 +66,35 @@ public class PersistenceContext {
 		}
 	}
 	
+	public void dropDDL() throws SQLException {
+		DDLGenerator ddlTableGenerator = getDDLGenerator();
+		for (String sql : ddlTableGenerator.getDropScripts()) {
+			execute(sql);
+		}
+	}
+	
 	public DDLGenerator getDDLGenerator() {
 		List<Table> tablesToCreate = getTables();
 		return new DDLGenerator(tablesToCreate, getDialect());
 	}
 	
-	private List<Table> getTables() {
-		List<Table> tablesToCreate = new ArrayList<>(this.mappingStrategies.size());
-		for (ClassMappingStrategy classMappingStrategy : getMappingStrategies().values()) {
-			tablesToCreate.add(classMappingStrategy.getTargetTable());
+	public List<Table> getTables() {
+		if (this.tables == null) {
+			lookupTables();
 		}
-		return tablesToCreate;
+		return tables;
+	}
+	
+	private void lookupTables() {
+		tables = new ArrayList<>(this.mappingStrategies.size());
+		for (ClassMappingStrategy classMappingStrategy : getMappingStrategies().values()) {
+			tables.add(classMappingStrategy.getTargetTable());
+		}
 	}
 	
 	protected void execute(String sql) throws SQLException {
 		try(Statement statement = getCurrentConnection().createStatement()) {
+			LOGGER.debug(sql);
 			statement.execute(sql);
 		}
 	}

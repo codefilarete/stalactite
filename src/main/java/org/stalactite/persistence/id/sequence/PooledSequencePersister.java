@@ -53,6 +53,11 @@ public class PooledSequencePersister extends Persister<PooledSequence> implement
 		return getPersistenceContext().getDDLGenerator().getCreationScripts();
 	}
 	
+	@Override
+	public List<String> getDropScripts() {
+		return getPersistenceContext().getDDLGenerator().getDropScripts();
+	}
+	
 	public long reservePool(String sequenceName, int poolSize) {
 		SequenceBoundJdbcOperation jdbcOperation = new SequenceBoundJdbcOperation(sequenceName, poolSize);
 		// on exécute l'opération dans une nouvelle et commitante transaction afin de gérer les accès concurrents

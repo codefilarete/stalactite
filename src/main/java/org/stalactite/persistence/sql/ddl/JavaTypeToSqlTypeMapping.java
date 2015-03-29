@@ -9,6 +9,7 @@ import javax.annotation.Nonnull;
 
 import org.stalactite.lang.collection.EntryFactoryHashMap;
 import org.stalactite.lang.collection.Iterables;
+import org.stalactite.persistence.engine.PersistenceContext;
 import org.stalactite.persistence.structure.Table.Column;
 import org.stalactite.persistence.structure.Table.SizedColumn;
 
@@ -51,7 +52,11 @@ public class JavaTypeToSqlTypeMapping {
 	 * @return
 	 */
 	public String getTypeName(Class javaType) {
-		return defaultJavaTypeToSQLType.get(javaType);
+		String type = defaultJavaTypeToSQLType.get(javaType);
+		if (type == null) {
+			throw new IllegalArgumentException("No sql type defined for "+javaType+" in dialect "+ PersistenceContext.getCurrent().getDialect().getClass().getName());
+		}
+		return type;
 	}
 	
 	/**
