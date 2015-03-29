@@ -26,6 +26,14 @@ public class SelectQueryBuilderTest {
 		
 		return new Object[][] {
 				// NB: utilisation du {{ }} cat il faut renvoyer un SelectQuery, en fluent on peut pas
+				{ new SelectQuery() {{ select(colTotoA, colTotoB).from(tableToto); }},
+					"select Toto.a, Toto.b from Toto" },
+				{ new SelectQuery() {{ select(colTotoA, colTotoB).from(tableToto, "t"); }},
+					"select t.a, t.b from Toto as t" },
+				{ new SelectQuery() {{ select(colTotoA, colTotoB, colTataA, colTataB).from(tableToto, "to").crossJoin(tableTata); }},
+					"select to.a, to.b, Tata.a, Tata.b from Toto as to cross join Tata" },
+				{ new SelectQuery() {{ select(colTotoA, colTotoB, colTataA, colTataB).from(tableToto, "to").crossJoin(tableTata, "ta"); }},
+					"select to.a, to.b, ta.a, ta.b from Toto as to cross join Tata as ta" },
 				{ new SelectQuery() {{ select(colTotoA, colTataB).from(tableToto, tableTata, "x = y"); }},
 					"select Toto.a, Tata.b from Toto inner join Tata on x = y" },
 				{ new SelectQuery() {{ select(colTotoA, colTataB).from(tableToto, tableTata, "x = y").where(colTotoB, "= 1"); }},

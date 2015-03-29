@@ -7,13 +7,9 @@ import java.util.TreeSet;
 
 import org.stalactite.lang.StringAppender;
 import org.stalactite.lang.Strings;
-import org.stalactite.lang.collection.Iterables;
 import org.stalactite.persistence.structure.Table;
 import org.stalactite.query.model.From;
-import org.stalactite.query.model.From.AliasedTable;
-import org.stalactite.query.model.From.ColumnJoin;
-import org.stalactite.query.model.From.Join;
-import org.stalactite.query.model.From.RawTableJoin;
+import org.stalactite.query.model.From.*;
 
 /**
  * @author Guillaume Mary
@@ -40,21 +36,37 @@ public class FromBuilder extends AbstractDMLBuilder implements SQLBuilder {
 			// invalid SQL
 			throw new IllegalArgumentException("Empty from");
 		} else {
-			// on ajoute le point de départ des jointures: la première table
-			Join headJoin = Iterables.first(from.getJoins());
-			Table firstTable = headJoin.getLeftTable().getTable();
-			cat(firstTable, sql);
-			// la suite ne traite que les clauses de jointure
-			Join previousJoin = null;	// nécessaire pour déterminer la prochaine table de jointure
-			for (Join join : from) {
-				Table previousTable = previousJoin == null ? join.getRightTable().getTable() : diff(previousJoin, join);
-				if (join instanceof RawTableJoin) {
-					cat(previousTable, join.getJoinDirection(), ((RawTableJoin) join).getJoinClause(), sql);
-				} else if (join instanceof ColumnJoin) {
-					String joinClause = getName(((ColumnJoin) join).getLeftColumn()) + " = " + getName(((ColumnJoin) join).getRightColumn());
-					cat(previousTable, join.getJoinDirection(), joinClause, sql);
+			// nécessaire pour déterminer la prochaine table de jointure
+			AbstractJoin previousJoin = null;
+			boolean isFirst = true;
+			for (AbstractJoin abstractJoin : from) {
+				if (isFirst) {
+					cat(abstractJoin.getLeftTable().getTable(), sql);
 				}
-				previousJoin = join;
+				if (abstractJoin instanceof Join) {
+					Join localPreviousJoin = null;
+					if (previousJoin instanceof CrossJoin) {
+						sql.cat(" cross join ");
+						cat(abstractJoin.getLeftTable().getTable(), sql);
+					} else {
+						localPreviousJoin = (Join) previousJoin;
+					}
+					Join join = (Join) abstractJoin;
+					Table joinTable = localPreviousJoin == null ? join.getRightTable().getTable() : diff(localPreviousJoin, join);
+					if (join instanceof RawTableJoin) {
+						cat(joinTable, join.getJoinDirection(), ((RawTableJoin) join).getJoinClause(), sql);
+					} else if (join instanceof ColumnJoin) {
+						String joinClause = getName(((ColumnJoin) join).getLeftColumn()) + " = " + getName(((ColumnJoin) join).getRightColumn());
+						cat(joinTable, join.getJoinDirection(), joinClause, sql);
+					}
+				} else if (abstractJoin instanceof CrossJoin) {
+					if (!isFirst) {
+						sql.cat(" cross join ");
+						cat(abstractJoin.getLeftTable().getTable(), sql);
+					}
+				}
+				previousJoin = abstractJoin;
+				isFirst = false;
 			}
 			
 		}

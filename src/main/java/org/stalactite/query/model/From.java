@@ -6,21 +6,21 @@ import org.stalactite.lang.Strings;
 import org.stalactite.lang.bean.Objects;
 import org.stalactite.persistence.structure.Table;
 import org.stalactite.persistence.structure.Table.Column;
-import org.stalactite.query.model.From.Join;
+import org.stalactite.query.model.From.AbstractJoin;
 
 /**
  * @author Guillaume Mary
  */
-public class From implements Iterable<Join> {
+public class From implements Iterable<AbstractJoin> {
 	
-	private final List<Join> joins = new ArrayList<>();
+	private final List<AbstractJoin> joins = new ArrayList<>();
 	
 	private final Map<Table, String> tableAliases = new HashMap<>(4);
 
 	public From() {
 	}
 
-	public List<Join> getJoins() {
+	public List<AbstractJoin> getJoins() {
 		return joins;
 	}
 
@@ -79,12 +79,24 @@ public class From implements Iterable<Join> {
 	public From rightOuterJoin(Table leftTable, String leftTableAlias, Table rigTable, String rightTableAlias, String joinClause) {
 		return addNewJoin(leftTable, leftTableAlias, rigTable, rightTableAlias, joinClause, true);
 	}
+	
+	public CrossJoin add(Table table) {
+		CrossJoin crossJoin = new CrossJoin(table);
+		add(crossJoin);
+		return crossJoin;
+	}
+	
+	public CrossJoin add(Table table, String tableAlias) {
+		CrossJoin crossJoin = new CrossJoin(table, tableAlias);
+		add(crossJoin);
+		return crossJoin;
+	}
 
 	private From addNewJoin(Table leftTable, String leftTableAlias, Table rigTable, String rightTableAlias, String joinClause, Boolean joinDirection) {
 		return add(new RawTableJoin(leftTable, leftTableAlias, rigTable, rightTableAlias, joinClause, joinDirection));
 	}
 
-	From add(Join o) {
+	From add(AbstractJoin o) {
 		this.joins.add(o);
 		return this;
 	}
@@ -96,7 +108,7 @@ public class From implements Iterable<Join> {
 	}
 
 	@Override
-	public Iterator<Join> iterator() {
+	public Iterator<AbstractJoin> iterator() {
 		return this.joins.iterator();
 	}
 
@@ -131,7 +143,12 @@ public class From implements Iterable<Join> {
 		}
 	}
 	
-	public abstract static class Join {
+	public abstract static class AbstractJoin {
+		
+		public abstract AliasedTable getLeftTable();
+	}
+	
+	public abstract static class Join extends AbstractJoin {
 		/** null = inner, false = left, true = right */
 		protected final Boolean joinDirection;
 
@@ -155,8 +172,60 @@ public class From implements Iterable<Join> {
 			return joinDirection != null && joinDirection;
 		}
 		
-		public abstract AliasedTable getLeftTable();
 		public abstract AliasedTable getRightTable();
+	}
+	
+	public class CrossJoin extends AbstractJoin {
+		
+		private final AliasedTable leftTable;
+		
+		public CrossJoin(Table leftTable) {
+			this(new AliasedTable(leftTable));
+		}
+		
+		public CrossJoin(Table table, String tableAlias) {
+			this(new AliasedTable(table, tableAlias));
+		}
+		
+		public CrossJoin(AliasedTable leftTable) {
+			this.leftTable = leftTable;
+		}
+		
+		@Override
+		public AliasedTable getLeftTable() {
+			return this.leftTable;
+		}
+		
+		public CrossJoin crossJoin(Table table) {
+			CrossJoin crossJoin = new CrossJoin(table);
+			From.this.add(crossJoin);
+			return crossJoin;
+		}
+		
+		public CrossJoin crossJoin(Table table, String alias) {
+			CrossJoin crossJoin = new CrossJoin(table, alias);
+			From.this.add(crossJoin);
+			return crossJoin;
+		}
+		
+		public RawTableJoin innerJoin(Table table, String condition) {
+			return replaceThisByJoin(table, condition, null);
+		}
+		
+		public RawTableJoin leftOuterJoin(Table table, String condition) {
+			return replaceThisByJoin(table, condition, false);
+		}
+		
+		public RawTableJoin rightOuterJoin(Table table, String condition) {
+			return replaceThisByJoin(table, condition, true);
+		}
+		
+		private RawTableJoin replaceThisByJoin(Table table, String condition, Boolean joinDirection) {
+			int thisIndex = From.this.joins.indexOf(this);
+			RawTableJoin newJoin = new RawTableJoin(getLeftTable().getTable(), getLeftTable().getAlias(), table, null, condition, joinDirection);
+			From.this.joins.set(thisIndex, newJoin);
+			return newJoin;
+		}
 	}
 	
 	public class RawTableJoin extends Join {

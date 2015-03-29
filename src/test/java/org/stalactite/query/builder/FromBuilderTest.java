@@ -17,13 +17,13 @@ public class FromBuilderTest {
 
 	@DataProvider(name = TEST_TO_SQL_DATA)
 	public Object[][] testToSQL_data() {
-		Table tableToto = new Table(null, "Toto");
+		final Table tableToto = new Table(null, "Toto");
 		Column colTotoA = tableToto.new Column("a", String.class);
 		Column colTotoB = tableToto.new Column("b", String.class);
-		Table tableTata = new Table(null, "Tata");
+		final Table tableTata = new Table(null, "Tata");
 		Column colTataA = tableTata.new Column("a", String.class);
 		Column colTataB = tableTata.new Column("b", String.class);
-		Table tableTutu = new Table(null, "Tutu");
+		final Table tableTutu = new Table(null, "Tutu");
 		Column colTutuA = tableTutu.new Column("a", String.class);
 		Column colTutuB = tableTutu.new Column("b", String.class);
 		
@@ -67,6 +67,24 @@ public class FromBuilderTest {
 				// mix par Table et par Column
 				{ new From().innerJoin(tableToto, tableTata, "Toto.a = Tata.a").innerJoin(colTotoB, colTutuB),
 						"Toto inner join Tata on Toto.a = Tata.a inner join Tutu on Toto.b = Tutu.b" },
+				
+				// NB: {{ }} necessary to return From instance type, not crossJoin() return type
+				{ new From() {{ add(tableToto); }},
+						"Toto" },
+				{ new From() {{ add(tableToto).crossJoin(tableTata); }},
+						"Toto cross join Tata" },
+				{ new From() {{ add(tableToto).innerJoin(tableTata, "id = id"); }},
+						"Toto inner join Tata on id = id" },
+				{ new From() {{ add(tableToto).crossJoin(tableTata).innerJoin(tableTutu, "id = id"); }},
+						"Toto cross join Tata inner join Tutu on id = id" },
+				{ new From() {{ add(tableToto).leftOuterJoin(tableTata, "id = id"); }},
+						"Toto left outer join Tata on id = id" },
+				{ new From() {{ add(tableToto).crossJoin(tableTata).leftOuterJoin(tableTutu, "id = id"); }},
+						"Toto cross join Tata left outer join Tutu on id = id" },
+				{ new From() {{ add(tableToto).rightOuterJoin(tableTata, "id = id"); }},
+						"Toto right outer join Tata on id = id" },
+				{ new From() {{ add(tableToto).crossJoin(tableTata).rightOuterJoin(tableTutu, "id = id"); }},
+						"Toto cross join Tata right outer join Tutu on id = id" },
 
 		};
 		

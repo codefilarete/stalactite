@@ -9,6 +9,7 @@ import java.util.Map;
 
 import org.stalactite.persistence.structure.Table;
 import org.stalactite.persistence.structure.Table.Column;
+import org.stalactite.query.model.From.CrossJoin;
 
 /**
  * @author mary
@@ -139,6 +140,14 @@ public class SelectQuery {
 		public FluentSelect add(Map<Column, String> aliasedColumns) {
 			super.add(aliasedColumns);
 			return this;
+		}
+		
+		public CrossJoin from(Table leftTable) {
+			return SelectQuery.this.from.add(leftTable);
+		}
+		
+		public CrossJoin from(Table leftTable, String alias) {
+			return SelectQuery.this.from.add(leftTable, alias);
 		}
 		
 		public FluentFrom from(Table leftTable, Table rightTable, String joinCondition) {
