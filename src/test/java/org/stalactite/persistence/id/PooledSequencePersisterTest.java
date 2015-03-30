@@ -42,9 +42,12 @@ public class PooledSequencePersisterTest {
 	public void testGetCreationScripts() throws Exception {
 		List<String> creationScripts = testInstance.getCreationScripts();
 		assertEquals(creationScripts, Arrays.asList("create table sequence_table(sequence_name VARCHAR(255), next_val int, primary key (sequence_name))"));
-		
-		PooledSequencePersister customizedInstance = new PooledSequencePersister(new PooledSequencePersistenceOptions("myTable", "mySequenceNameCol", "myNextValCol"));
-		creationScripts = customizedInstance.getCreationScripts();
+	}
+	
+	@Test
+	public void testGetCreationScripts_customized() throws Exception {
+		testInstance = new PooledSequencePersister(new PooledSequencePersistenceOptions("myTable", "mySequenceNameCol", "myNextValCol"));
+		List<String> creationScripts = creationScripts = testInstance.getCreationScripts();
 		assertEquals(creationScripts, Arrays.asList("create table myTable(mySequenceNameCol VARCHAR(255), myNextValCol int, primary key (mySequenceNameCol))"));
 	}
 	

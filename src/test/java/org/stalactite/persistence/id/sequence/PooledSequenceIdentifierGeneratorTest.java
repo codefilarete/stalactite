@@ -37,21 +37,21 @@ public class PooledSequenceIdentifierGeneratorTest {
 		testInstance = new PooledSequenceIdentifierGenerator(new PooledSequenceIdentifierGeneratorOptions(10, "Toto", PooledSequencePersistenceOptions.DEFAULT));
 		PersistenceContext.getCurrent().deployDDL();
 		// on vérifie que l'incrémentation se fait sans erreur depuis une base vierge
-		for (int i = 1; i < 45; i++) {
+		for (int i = 0; i < 45; i++) {
 			Serializable newId = testInstance.generate();
 			assertEquals(newId, (long) i);
 		}
 		
 		// on vérifie que l'incrémentation se fait sans erreur avec une nouvelle sequence sur la même table
 		testInstance = new PooledSequenceIdentifierGenerator(new PooledSequenceIdentifierGeneratorOptions(10, "Tata", PooledSequencePersistenceOptions.DEFAULT));
-		for (int i = 1; i < 45; i++) {
+		for (int i = 0; i < 45; i++) {
 			Serializable newId = testInstance.generate();
 			assertEquals(newId, (long) i);
 		}
 		
 		// on vérifie que l'incrémentation se fait sans erreur avec sequence existante
 		testInstance = new PooledSequenceIdentifierGenerator(new PooledSequenceIdentifierGeneratorOptions(10, "Toto", PooledSequencePersistenceOptions.DEFAULT));
-		for (int i = 1; i < 45; i++) {
+		for (int i = 0; i < 45; i++) {
 			Serializable newId = testInstance.generate();
 			assertEquals(newId, (long) 50+i);
 		}

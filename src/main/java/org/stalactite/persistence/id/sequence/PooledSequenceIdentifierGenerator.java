@@ -56,16 +56,14 @@ public class PooledSequenceIdentifierGenerator implements IdentifierGenerator, D
 		if (sequenceState == null) {
 			PooledSequence existingSequence = this.pooledSequencePersister.select(getSequenceName());
 			long initialValue = existingSequence == null ? 0 : existingSequence.getUpperBound();
-			this.sequenceState = new LongPool(options.getPoolSize(), initialValue) {
+			this.sequenceState = new LongPool(options.getPoolSize(), --initialValue) {
 				@Override
 				void onBoundReached() {
 					pooledSequencePersister.reservePool(getSequenceName(), getPoolSize());
 				}
 			};
 			// if no sequence exist, should consider that's a new boundary reached (so insert initial state is done)
-			if (existingSequence == null) {
-				sequenceState.onBoundReached();
-			}
+			sequenceState.onBoundReached();
 		}
 		return sequenceState.nextValue();
 	}
@@ -107,11 +105,11 @@ public class PooledSequenceIdentifierGenerator implements IdentifierGenerator, D
 		 * @return le nombre entier suivant.
 		 */
 		public long nextValue() {
-			currentValue++;
 			if (currentValue == upperBound) {
 				onBoundReached();
 				nextBound();
 			}
+			currentValue++;
 			return currentValue;
 		}
 		

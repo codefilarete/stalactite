@@ -37,9 +37,13 @@ public class ParameterBinderRegistry {
 	protected void registerParameterBinders() {
 		register(String.class, new StringBinder());
 		register(Double.class, new DoubleBinder());
+		register(Double.TYPE, new DoubleBinder());
 		register(Float.class, new FloatBinder());
+		register(Float.TYPE, new FloatBinder());
 		register(Long.class, new LongBinder());
+		register(Long.TYPE, new LongBinder());
 		register(Integer.class, new IntegerBinder());
+		register(Integer.TYPE, new IntegerBinder());
 		register(Date.class, new DateBinder());
 	}
 
