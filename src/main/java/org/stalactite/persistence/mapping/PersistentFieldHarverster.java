@@ -1,6 +1,7 @@
 package org.stalactite.persistence.mapping;
 
 import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -53,7 +54,7 @@ public class PersistentFieldHarverster {
 	public static class FieldFilter extends Filter<Field> {
 		@Override
 		public boolean accept(Field field) {
-			return !(Iterable.class.isAssignableFrom(field.getType()) && Map.class.isAssignableFrom(field.getType()));
+			return !Modifier.isStatic(field.getModifiers()) && !(Iterable.class.isAssignableFrom(field.getType()) || Map.class.isAssignableFrom(field.getType()));
 		}
 	}
 }

@@ -25,6 +25,7 @@ public class PersistenceContext {
 	
 	private static final ThreadLocal<PersistenceContext> CURRENT_CONTEXT = new ThreadLocal<>();
 	private List<Table> tables;
+	private int jdbcBatchSize = 100;
 	
 	public static PersistenceContext getCurrent() {
 		PersistenceContext currentContext = CURRENT_CONTEXT.get();
@@ -130,5 +131,13 @@ public class PersistenceContext {
 		} else {
 			return mappingStrategy;
 		}
+	}
+	
+	public int getJDBCBatchSize() {
+		return jdbcBatchSize;
+	}
+	
+	public void setJDBCBatchSize(int jdbcBatchSize) {
+		this.jdbcBatchSize = jdbcBatchSize;
 	}
 }

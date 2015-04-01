@@ -3,22 +3,20 @@ package org.stalactite.persistence.engine;
 import java.io.Serializable;
 import java.sql.Connection;
 import java.sql.SQLException;
+import java.util.Collections;
 import java.util.LinkedHashSet;
 
+import org.stalactite.Logger;
 import org.stalactite.lang.collection.Arrays;
 import org.stalactite.lang.collection.KeepOrderSet;
+import org.stalactite.lang.collection.SteppingIterator;
 import org.stalactite.lang.exception.Exceptions;
 import org.stalactite.persistence.id.AutoAssignedIdentifierGenerator;
 import org.stalactite.persistence.id.IdentifierGenerator;
 import org.stalactite.persistence.id.PostInsertIdentifierGenerator;
 import org.stalactite.persistence.mapping.ClassMappingStrategy;
 import org.stalactite.persistence.mapping.PersistentValues;
-import org.stalactite.persistence.sql.dml.DMLGenerator;
-import org.stalactite.persistence.sql.dml.DeleteOperation;
-import org.stalactite.persistence.sql.dml.InsertOperation;
-import org.stalactite.persistence.sql.dml.SelectOperation;
-import org.stalactite.persistence.sql.dml.UpdateOperation;
-import org.stalactite.persistence.sql.dml.WriteOperation;
+import org.stalactite.persistence.sql.dml.*;
 import org.stalactite.persistence.sql.result.RowIterator;
 import org.stalactite.persistence.structure.Table;
 import org.stalactite.persistence.structure.Table.Column;
@@ -28,18 +26,26 @@ import org.stalactite.persistence.structure.Table.Column;
  */
 public class Persister<T> {
 	
+	private static Logger LOGGER = Logger.getLogger(Persister.class);
+	
 	private PersistenceContext persistenceContext;
 	private DMLGenerator dmlGenerator;
 	private ClassMappingStrategy<T> mappingStrategy;
+	private int batchSize = 100;
 	
 	public Persister(PersistenceContext persistenceContext, ClassMappingStrategy<T> mappingStrategy) {
 		this.persistenceContext = persistenceContext;
 		this.mappingStrategy = mappingStrategy;
 		this.dmlGenerator = new DMLGenerator();
+		this.batchSize = persistenceContext.getJDBCBatchSize();
 	}
 	
 	public PersistenceContext getPersistenceContext() {
 		return persistenceContext;
+	}
+	
+	public int getBatchSize() {
+		return batchSize;
 	}
 	
 	/**
@@ -60,16 +66,33 @@ public class Persister<T> {
 	}
 	
 	protected void insert(T t) {
+		insert(Collections.singletonList(t));
+	}
+	
+	public void insert(Iterable<T> objects) {
 		// preparing identifier instance 
+		final InsertOperation insertStatement = dmlGenerator.buildInsert(mappingStrategy.getTargetTable().getColumns());
 		IdentifierGenerator identifierGenerator = mappingStrategy.getIdentifierGenerator();
+		IIdentifierFixer identifierFixer;
 		if (!(identifierGenerator instanceof AutoAssignedIdentifierGenerator)
 				&& !(identifierGenerator instanceof PostInsertIdentifierGenerator)) {
-			Serializable identifier = identifierGenerator.generate();
-			mappingStrategy.setId(t, identifier);
+			identifierFixer = new IdentifierFixer(identifierGenerator);
+		} else {
+			identifierFixer = NoopIdentifierFixer.INSTANCE;
 		}
-		InsertOperation insertStatement = dmlGenerator.buildInsert(mappingStrategy.getTargetTable().getColumns());
-		PersistentValues insertValues = mappingStrategy.getInsertValues(t);
-		execute(insertStatement, insertValues);
+		SteppingIterator<T> objectsIterator = new SteppingIterator<T>(objects, getBatchSize()) {
+			@Override
+			protected void onStep() {
+				LOGGER.debug("Triggering batch");
+				execute(insertStatement);
+			}
+		};
+		while(objectsIterator.hasNext()) {
+			T t = objectsIterator.next();
+			identifierFixer.fixId(t);
+			PersistentValues insertValues = mappingStrategy.getInsertValues(t);
+			apply(insertStatement, insertValues);
+		}
 		/*
 		if (identifierGenerator instanceof PostInsertIdentifierGenerator) {
 			// TODO: lire le résultat de l'exécution et injecter l'identifiant sur le bean
@@ -98,8 +121,20 @@ public class Persister<T> {
 	}
 	
 	protected int[] execute(WriteOperation operation, PersistentValues writeValues) {
+		apply(operation, writeValues);
+		return execute(operation);
+	}
+	
+	protected void apply(WriteOperation operation, PersistentValues writeValues) {
 		try {
 			operation.apply(writeValues, getConnection());
+		} catch (SQLException e) {
+			Exceptions.throwAsRuntimeException(e);
+		}
+	}
+	
+	protected int[] execute(WriteOperation operation) {
+		try {
 			return operation.execute();
 		} catch (SQLException e) {
 			Exceptions.throwAsRuntimeException(e);
@@ -149,5 +184,37 @@ public class Persister<T> {
 	
 	public Connection getConnection() throws SQLException {
 		return getPersistenceContext().getCurrentConnection();
+	}
+	
+	private interface IIdentifierFixer<T> {
+		
+		void fixId(T t);
+		
+	}
+	
+	private class IdentifierFixer implements IIdentifierFixer<T> {
+		
+		private IdentifierGenerator identifierGenerator;
+		
+		private IdentifierFixer(IdentifierGenerator identifierGenerator) {
+			this.identifierGenerator = identifierGenerator;
+		}
+		
+		public void fixId(T t) {
+			mappingStrategy.setId(t, this.identifierGenerator.generate());
+		}
+	}
+	
+	private static class NoopIdentifierFixer implements IIdentifierFixer {
+		
+		public static final NoopIdentifierFixer INSTANCE = new NoopIdentifierFixer();
+		
+		private NoopIdentifierFixer() {
+			super();
+		}
+		
+		@Override
+		public final void fixId(Object o) {
+		}
 	}
 }
