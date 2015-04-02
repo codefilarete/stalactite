@@ -3,8 +3,10 @@ package org.stalactite.persistence.engine;
 import java.io.Serializable;
 import java.sql.Connection;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedHashSet;
+import java.util.List;
 
 import org.stalactite.Logger;
 import org.stalactite.lang.collection.Arrays;
@@ -31,7 +33,7 @@ public class Persister<T> {
 	private PersistenceContext persistenceContext;
 	private DMLGenerator dmlGenerator;
 	private ClassMappingStrategy<T> mappingStrategy;
-	private int batchSize = 100;
+	private int batchSize;
 	
 	public Persister(PersistenceContext persistenceContext, ClassMappingStrategy<T> mappingStrategy) {
 		this.persistenceContext = persistenceContext;
@@ -65,13 +67,31 @@ public class Persister<T> {
 		}
 	}
 	
+	public void persist(Iterable<T> iterable) {
+		// determine insert or update operation
+		List<T> toInsert = new ArrayList<>(20);
+		List<T> toUpdate = new ArrayList<>(20);
+		for (T t : iterable) {
+			if (isNew(t)) {
+				toInsert.add(t);
+			} else {
+				toUpdate.add(t);
+			}
+		}
+		if (!toInsert.isEmpty()) {
+			insert(toInsert);
+		}
+		if (!toUpdate.isEmpty()) {
+			update(toUpdate);
+		}
+	}
+	
 	protected void insert(T t) {
 		insert(Collections.singletonList(t));
 	}
 	
-	public void insert(Iterable<T> objects) {
+	public void insert(Iterable<T> iterable) {
 		// preparing identifier instance 
-		final InsertOperation insertStatement = dmlGenerator.buildInsert(mappingStrategy.getTargetTable().getColumns());
 		IdentifierGenerator identifierGenerator = mappingStrategy.getIdentifierGenerator();
 		IIdentifierFixer identifierFixer;
 		if (!(identifierGenerator instanceof AutoAssignedIdentifierGenerator)
@@ -80,18 +100,13 @@ public class Persister<T> {
 		} else {
 			identifierFixer = NoopIdentifierFixer.INSTANCE;
 		}
-		SteppingIterator<T> objectsIterator = new SteppingIterator<T>(objects, getBatchSize()) {
-			@Override
-			protected void onStep() {
-				LOGGER.debug("Triggering batch");
-				execute(insertStatement);
-			}
-		};
+		final InsertOperation insertOperation = dmlGenerator.buildInsert(mappingStrategy.getTargetTable().getColumns());
+		SteppingIterator<T> objectsIterator = new BatchingIterator<T>(iterable, insertOperation);
 		while(objectsIterator.hasNext()) {
 			T t = objectsIterator.next();
 			identifierFixer.fixId(t);
 			PersistentValues insertValues = mappingStrategy.getInsertValues(t);
-			apply(insertStatement, insertValues);
+			apply(insertOperation, insertValues);
 		}
 		/*
 		if (identifierGenerator instanceof PostInsertIdentifierGenerator) {
@@ -101,14 +116,22 @@ public class Persister<T> {
 	}
 	
 	protected void update(T t) {
-		PersistentValues updateValues = mappingStrategy.getUpdateValues(t, null, true);
+		update(Collections.singletonList(t));
+	}
+	
+	public void update(Iterable<T> iterable) {
 		Table targetTable = mappingStrategy.getTargetTable();
 		KeepOrderSet<Column> columns = targetTable.getColumns();
 		// we never update primary key (by principle and for persistent bean cache based on id (on what else ?)) 
 		LinkedHashSet<Column> columnsToUpdate = columns.asSet();
 		columnsToUpdate.remove(targetTable.getPrimaryKey());
-		UpdateOperation crudOperation = dmlGenerator.buildUpdate(columnsToUpdate, updateValues.getWhereValues().keySet());
-		execute(crudOperation, updateValues);
+		final UpdateOperation updateOperation = dmlGenerator.buildUpdate(columnsToUpdate, mappingStrategy.getVersionedKeys());
+		SteppingIterator<T> objectsIterator = new BatchingIterator<T>(iterable, updateOperation);
+		while(objectsIterator.hasNext()) {
+			T t = objectsIterator.next();
+			PersistentValues updateValues = mappingStrategy.getUpdateValues(t, null, true);
+			apply(updateOperation, updateValues);
+		}
 	}
 	
 	/**
@@ -143,13 +166,20 @@ public class Persister<T> {
 	}
 	
 	public void delete(T t) {
-		Serializable id = mappingStrategy.getId(t);
-		if (id != null) {
-			Table targetTable = mappingStrategy.getTargetTable();
-			DeleteOperation deleteStatement = dmlGenerator.buildDelete(targetTable,
-											Arrays.asList(targetTable.getPrimaryKey()));
-			PersistentValues deleteValues = mappingStrategy.getDeleteValues(t);
-			execute(deleteStatement, deleteValues);
+		delete(Collections.singletonList(t));
+	}
+	
+	public void delete(Iterable<T> iterable) {
+		Table targetTable = mappingStrategy.getTargetTable();
+		final DeleteOperation deleteOperation = dmlGenerator.buildDelete(targetTable, mappingStrategy.getVersionedKeys());
+		SteppingIterator<T> objectsIterator = new BatchingIterator<T>(iterable, deleteOperation);
+		while(objectsIterator.hasNext()) {
+			T t = objectsIterator.next();
+			PersistentValues id = mappingStrategy.getVersionedKeyValues(t);
+			if (!id.getWhereValues().isEmpty()) {
+				PersistentValues deleteValues = mappingStrategy.getDeleteValues(t);
+				apply(deleteOperation, deleteValues);
+			}
 		}
 	}
 	
@@ -215,6 +245,24 @@ public class Persister<T> {
 		
 		@Override
 		public final void fixId(Object o) {
+		}
+	}
+	
+	/**
+	 * Classe qui permet d'itérer en déclenchant un batch JDBC à intervalle régulier.
+	 */
+	private class BatchingIterator<E> extends SteppingIterator<E> {
+		private final WriteOperation writeOperation;
+		
+		public BatchingIterator(Iterable<E> iterable, WriteOperation writeOperation) {
+			super(iterable, Persister.this.getBatchSize());
+			this.writeOperation = writeOperation;
+		}
+		
+		@Override
+		protected void onStep() {
+			LOGGER.debug("Triggering batch");
+			execute(writeOperation);
 		}
 	}
 }

@@ -39,6 +39,7 @@ public class PersisterTest {
 	private ArgumentCaptor<Integer> indexCaptor;
 	private ArgumentCaptor<String> argumentCaptor;
 	private JdbcTransactionManager transactionManager;
+	private TotoClassIdGenerator identifierGenerator;
 	
 	@BeforeTest
 	public void setUp() throws SQLException {
@@ -48,18 +49,23 @@ public class PersisterTest {
 		Map<String, Column> columns = totoClassTable.mapColumnsOnName();
 		columns.get("a").setPrimaryKey(true);
 		
-		ClassMappingStrategy<Toto> totoClassMappingStrategy = new ClassMappingStrategy<>(Toto.class, totoClassTable, totoClassMapping, new TotoClassIdGenerator());
+		identifierGenerator = new TotoClassIdGenerator();
+		ClassMappingStrategy<Toto> totoClassMappingStrategy = new ClassMappingStrategy<>(Toto.class, totoClassTable, totoClassMapping, identifierGenerator);
 		
 		JavaTypeToSqlTypeMapping simpleTypeMapping = new JavaTypeToSqlTypeMapping();
 		simpleTypeMapping.put(Integer.class, "int");
 		
 		transactionManager = new JdbcTransactionManager(null);
 		persistenceContext = new PersistenceContext(transactionManager, new Dialect(simpleTypeMapping));
+		persistenceContext.setJDBCBatchSize(3);
 		persistenceContext.add(totoClassMappingStrategy);
 	}
 	
 	@BeforeMethod
 	public void setUpTest() throws SQLException {
+		// reset id counter between 2 tests else id "overflow"
+		identifierGenerator.idCounter = 0;
+		
 		preparedStatement = mock(PreparedStatement.class);
 		
 		Connection connection = mock(Connection.class);
@@ -81,6 +87,7 @@ public class PersisterTest {
 		testInstance.persist(new Toto(17, 23));
 		
 		verify(preparedStatement, times(1)).addBatch();
+		verify(preparedStatement, times(1)).executeBatch();
 		verify(preparedStatement, times(3)).setInt(indexCaptor.capture(), valueCaptor.capture());
 		assertEquals("insert into Toto(a, b, c) values (?, ?, ?)", argumentCaptor.getValue());
 		assertEquals(Arrays.asList(1, 2, 3), indexCaptor.getAllValues());
@@ -88,10 +95,23 @@ public class PersisterTest {
 	}
 	
 	@Test
+	public void testInsert_multiple() throws Exception {
+		testInstance.insert(Arrays.asList(new Toto(17, 23), new Toto(29, 31), new Toto(37, 41), new Toto(43, 53)));
+		
+		verify(preparedStatement, times(4)).addBatch();
+		verify(preparedStatement, times(2)).executeBatch();
+		verify(preparedStatement, times(12)).setInt(indexCaptor.capture(), valueCaptor.capture());
+		assertEquals("insert into Toto(a, b, c) values (?, ?, ?)", argumentCaptor.getValue());
+		assertEquals(Arrays.asList(1, 2, 3, 1, 2, 3, 1, 2, 3, 1, 2, 3), indexCaptor.getAllValues());
+		assertEquals(Arrays.asList(1, 17, 23, 2, 29, 31, 3, 37, 41, 4, 43, 53), valueCaptor.getAllValues());
+	}
+	
+	@Test
 	public void testPersist_update() throws Exception {
 		testInstance.persist(new Toto(7, 17, 23));
 		
 		verify(preparedStatement, times(1)).addBatch();
+		verify(preparedStatement, times(1)).executeBatch();
 		verify(preparedStatement, times(3)).setInt(indexCaptor.capture(), valueCaptor.capture());
 		assertEquals("update Toto set b = ?, c = ? where a = ?", argumentCaptor.getValue());
 		assertEquals(Arrays.asList(1, 2, 3), indexCaptor.getAllValues());
@@ -99,15 +119,41 @@ public class PersisterTest {
 	}
 	
 	@Test
+	public void testUpdate_multiple() throws Exception {
+		testInstance.update(Arrays.asList(new Toto(1, 17, 23), new Toto(2, 29, 31), new Toto(3, 37, 41), new Toto(4, 43, 53)));
+		
+		verify(preparedStatement, times(4)).addBatch();
+		verify(preparedStatement, times(2)).executeBatch();
+		verify(preparedStatement, times(12)).setInt(indexCaptor.capture(), valueCaptor.capture());
+		assertEquals("update Toto set b = ?, c = ? where a = ?", argumentCaptor.getValue());
+		assertEquals(Arrays.asList(1, 2, 3, 1, 2, 3, 1, 2, 3, 1, 2, 3), indexCaptor.getAllValues());
+		assertEquals(Arrays.asList(17, 23, 1, 29, 31, 2, 37, 41, 3, 43, 53, 4), valueCaptor.getAllValues());
+	}
+	
+	@Test
 	public void testDelete() throws Exception {
 		testInstance.delete(new Toto(7, 17, 23));
 		
 		verify(preparedStatement, times(1)).addBatch();
+		verify(preparedStatement, times(1)).executeBatch();
 		verify(preparedStatement, times(1)).setInt(indexCaptor.capture(), valueCaptor.capture());
 		assertEquals("delete Toto where a = ?", argumentCaptor.getValue());
 		assertEquals(Arrays.asList(1), indexCaptor.getAllValues());
 		assertEquals(Arrays.asList(7), valueCaptor.getAllValues());
 	}
+	
+	@Test
+	public void testDelete_multiple() throws Exception {
+		testInstance.delete(Arrays.asList(new Toto(1, 17, 23), new Toto(2, 29, 31), new Toto(3, 37, 41), new Toto(4, 43, 53)));
+		
+		verify(preparedStatement, times(4)).addBatch();
+		verify(preparedStatement, times(2)).executeBatch();
+		verify(preparedStatement, times(4)).setInt(indexCaptor.capture(), valueCaptor.capture());
+		assertEquals("delete Toto where a = ?", argumentCaptor.getValue());
+		assertEquals(Arrays.asList(1, 1, 1, 1), indexCaptor.getAllValues());
+		assertEquals(Arrays.asList(1, 2, 3, 4), valueCaptor.getAllValues());
+	}
+	
 	
 	@Test
 	public void testSelect() throws Exception {
@@ -174,9 +220,11 @@ public class PersisterTest {
 	 */
 	private static class TotoClassIdGenerator implements IdentifierGenerator {
 		
+		private int idCounter = 0;
+		
 		@Override
 		public Serializable generate() {
-			return 1;
+			return ++idCounter;
 		}
 		
 		@Override

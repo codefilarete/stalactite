@@ -134,6 +134,10 @@ public class ClassMappingStrategy<T> implements IMappingStrategy<T> {
 		return defaultMappingStrategy.getVersionedKeyValues(t);
 	}
 	
+	public Iterable<Column> getVersionedKeys() {
+		return defaultMappingStrategy.getVersionedKeys();
+	}
+	
 	@Override
 	public Serializable getId(T t) {
 		return defaultMappingStrategy.getId(t);

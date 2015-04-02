@@ -2,12 +2,8 @@ package org.stalactite.persistence.mapping;
 
 import java.io.Serializable;
 import java.lang.reflect.Field;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
-import java.util.Map;
+import java.util.*;
 import java.util.Map.Entry;
-import java.util.Set;
 
 import javax.annotation.Nonnull;
 
@@ -38,6 +34,8 @@ public class FieldMappingStrategy<T> implements IMappingStrategy<T> {
 	private final Set<Column> columns;
 	
 	private final ToBeanRowTransformer<T> rowTransformer;
+	
+	private Iterable<Column> versionedKeys;
 	
 	/**
 	 * Build a FieldMappingStrategy from a mapping between Field and Column.
@@ -74,6 +72,7 @@ public class FieldMappingStrategy<T> implements IMappingStrategy<T> {
 			throw new UnsupportedOperationException("No primary key field for " + targetTable.getName());
 		}
 		this.columns = new LinkedHashSet<>(fieldToColumn.values());
+		this.versionedKeys = Collections.unmodifiableSet(org.stalactite.lang.collection.Arrays.asSet(targetTable.getPrimaryKey()));
 	}
 	
 	@Override
@@ -145,6 +144,10 @@ public class FieldMappingStrategy<T> implements IMappingStrategy<T> {
 		PersistentValues toReturn = new PersistentValues();
 		putVersionedKeyValues(t, toReturn);
 		return toReturn;
+	}
+	
+	public Iterable<Column> getVersionedKeys() {
+		return versionedKeys;
 	}
 	
 	@Override
