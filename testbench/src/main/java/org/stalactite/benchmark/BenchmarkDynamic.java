@@ -50,7 +50,7 @@ public class BenchmarkDynamic extends AbstractBenchmark<DynamicEntity> {
 		@Override
 		public DynamicEntity call() throws Exception {
 			DynamicEntity dynamicEntity = dynamicClassMappingBuilder.dynamicType.newInstance();
-			for (Field field : dynamicClassMappingBuilder.fields) {
+			for (Field field : dynamicClassMappingBuilder.fields.values()) {
 				Object value = dataGenerator.randomInteger(null);
 				field.set(dynamicEntity, value);
 			}

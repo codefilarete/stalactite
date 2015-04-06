@@ -9,7 +9,7 @@ public class HSQLBDDialect extends Dialect {
 	
 	public HSQLBDDialect() {
 		super(new DefaultTypeMapping() {{
-			// pour éviter "length must be specified in type definition: VARCHAR"
+			// pour Ã©viter "length must be specified in type definition: VARCHAR"
 			put(String.class, "varchar(255)");
 		}});
 	}

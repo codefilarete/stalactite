@@ -2,8 +2,7 @@ package org.stalactite.benchmark;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.HashMap;
 import java.util.Map;
 
 import org.apache.commons.collections4.BidiMap;
@@ -27,7 +26,7 @@ public class DynamicClassMappingBuilder implements IMappingBuilder {
 	
 	private DynamicTable targetTable;
 	Class<? extends DynamicEntity> dynamicType;
-	List<Field> fields;
+	Map<String, Field> fields;
 	
 	@Override
 	public ClassMappingStrategy getClassMappingStrategy() {
@@ -46,12 +45,12 @@ public class DynamicClassMappingBuilder implements IMappingBuilder {
 				.load(getClass().getClassLoader(), ClassLoadingStrategy.Default.WRAPPER)
 				.getLoaded();
 
-		fields = new ArrayList<>();
+		fields = new HashMap<>();
 		Field[] declaredFields = dynamicType.getDeclaredFields();
 		for (Field declaredField : declaredFields) {
 			if (declaredField.getName().startsWith("q")) {
 				declaredField.setAccessible(true);
-				fields.add(declaredField);
+				fields.put(declaredField.getName(), declaredField);
 			}
 		}
 		
