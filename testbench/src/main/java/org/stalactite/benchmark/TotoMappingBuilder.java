@@ -19,10 +19,11 @@ import org.stalactite.persistence.structure.Table.Column;
 /**
  * @author Guillaume Mary
  */
-public class TotoMappingBuilder {
+public class TotoMappingBuilder implements IMappingBuilder {
 	
 	private TotoTable targetTable;
 	
+	@Override
 	public ClassMappingStrategy getClassMappingStrategy() {
 		targetTable = new TotoTable();
 		PersistentFieldHarverster persistentFieldHarverster = new PersistentFieldHarverster();

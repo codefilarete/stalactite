@@ -23,12 +23,13 @@ import net.bytebuddy.dynamic.DynamicType.Builder;
 /**
  * @author Guillaume Mary
  */
-public class DynamicClassMappingBuilder {
+public class DynamicClassMappingBuilder implements IMappingBuilder {
 	
 	private DynamicTable targetTable;
 	Class<? extends DynamicEntity> dynamicType;
 	List<Field> fields;
 	
+	@Override
 	public ClassMappingStrategy getClassMappingStrategy() {
 		targetTable = new DynamicTable("DynamicTable");
 		
