@@ -18,7 +18,7 @@ public class VerboseDataSource implements DataSource {
 	private final Map<String, String> properties;
 	private final DataSource delegate;
 	
-	VerboseDataSource(String url, Map<String, String> properties, DataSource delegate) {
+	public VerboseDataSource(String url, Map<String, String> properties, DataSource delegate) {
 		this.url = url;
 		this.properties = properties;
 		this.delegate = delegate;

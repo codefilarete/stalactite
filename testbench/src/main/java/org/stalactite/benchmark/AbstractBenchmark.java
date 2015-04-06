@@ -2,13 +2,13 @@ package org.stalactite.benchmark;
 
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.EnumMap;
 import java.util.List;
 import java.util.concurrent.*;
 
 import javax.sql.DataSource;
 
 import org.springframework.jdbc.datasource.DataSourceTransactionManager;
-import org.springframework.jdbc.datasource.DriverManagerDataSource;
 import org.springframework.transaction.TransactionStatus;
 import org.springframework.transaction.support.TransactionCallbackWithoutResult;
 import org.springframework.transaction.support.TransactionTemplate;
@@ -16,6 +16,8 @@ import org.stalactite.Logger;
 import org.stalactite.lang.collection.Collections;
 import org.stalactite.lang.exception.Exceptions;
 import org.stalactite.lang.trace.Chrono;
+import org.stalactite.benchmark.connection.MySQLDataSourceFactory;
+import org.stalactite.benchmark.connection.MySQLDataSourceFactory.Property;
 import org.stalactite.persistence.engine.PersistenceContext;
 
 import com.zaxxer.hikari.HikariDataSource;
@@ -41,19 +43,7 @@ public abstract class AbstractBenchmark<Data> {
 	}
 	
 	public void run() throws SQLException, ExecutionException, InterruptedException {
-//		DriverManagerDataSource dataSource = new DriverManagerDataSource("jdbc:hsqldb:mem:test", "sa", "");
-//		DataSource dataSource = new DriverManagerDataSource("jdbc:mysql://localhost:3306/sandbox", "appadmin", "Interview?!");
-//		IsolationLevelDataSourceAdapter x = new IsolationLevelDataSourceAdapter();
-//		x.setTargetDataSource(dataSource);
-//		x.setIsolationLevel(TransactionDefinition.ISOLATION_READ_UNCOMMITTED);
-//		dataSource = x;
-//		DataSource dataSource = new SimpleDriverDataSource(new Driver(), "jdbc:mysql://localhost:3306/sandbox", "appadmin", "Interview?!");
-		DataSource dataSource = new DriverManagerDataSource("jdbc:mysql://localhost:3306/sandbox?rewriteBatchStatements=true", "appadmin", "Interview?!") {
-			@Override
-			public void setLoginTimeout(int timeout) throws SQLException {
-				
-			}
-		};
+		DataSource dataSource = new MySQLDataSourceFactory().newDataSource("localhost:3306", "sandbox", "appadmin", "Interview?!", new EnumMap<>(Property.class));
 		HikariDataSource pooledDataSource = new HikariDataSource();
 		pooledDataSource.setDataSource(dataSource);
 		dataSource = pooledDataSource;
