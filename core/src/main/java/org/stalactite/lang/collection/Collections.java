@@ -37,4 +37,34 @@ public class Collections {
 		}
 		return toReturn;
 	}
+	
+	/**
+	 * Découpe une collection en paquets
+	 * 
+	 * @param data
+	 * @param blockSize
+	 * @return une collection en paquets
+	 */
+	public static <E> List<List<E>> parcel(Collection<E> data, int blockSize) {
+		final List<List<E>> blocks = new ArrayList<>();
+		// on s'assure d'avoir une liste pour permettre l'utilisation de subList ensuite
+		List<E> dataAsList;
+		if (data instanceof List) {
+			dataAsList = (List<E>) data;
+		} else {
+			dataAsList = new ArrayList<>(data);
+		}
+		int i = 0;
+		int dataSize = dataAsList.size();
+		int blockCount = dataSize / blockSize;
+		// si reliquat, alors un bloc en plus
+		if (dataSize % blockSize != 0) {
+			blockCount++;
+		}
+		// découpage
+		while(i < blockCount) {
+			blocks.add(dataAsList.subList(i*blockSize, Math.min(dataSize, ++i*blockSize)));
+		}
+		return blocks;
+	}
 }

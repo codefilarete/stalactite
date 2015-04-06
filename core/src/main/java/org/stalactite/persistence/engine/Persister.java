@@ -160,7 +160,11 @@ public class Persister<T> {
 		try {
 			return operation.execute();
 		} catch (SQLException e) {
-			Exceptions.throwAsRuntimeException(e);
+			if (e.getMessage() != null && e.getMessage().contains("Deadlock")) {
+				execute(operation);
+			} else {
+				Exceptions.throwAsRuntimeException(e);
+			}
 			return null;
 		}
 	}
