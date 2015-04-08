@@ -1,9 +1,6 @@
 package org.stalactite.persistence.structure;
 
-import java.util.HashSet;
-import java.util.LinkedHashMap;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 import org.stalactite.lang.collection.Iterables;
 import org.stalactite.lang.collection.Iterables.Finder;
@@ -37,6 +34,12 @@ public class Table {
 	}
 
 	public KeepOrderSet<Column> getColumns() {
+		return columns;
+	}
+	
+	public Set<Column> getColumnsNoPrimaryKey() {
+		LinkedHashSet<Column> columns = this.columns.asSet();
+		columns.remove(getPrimaryKey());
 		return columns;
 	}
 

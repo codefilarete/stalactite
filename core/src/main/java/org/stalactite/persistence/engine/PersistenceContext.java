@@ -97,6 +97,8 @@ public class PersistenceContext {
 		try(Statement statement = getCurrentConnection().createStatement()) {
 			LOGGER.debug(sql);
 			statement.execute(sql);
+		} catch (Throwable t) {
+			throw new RuntimeException("Error executing \"" + sql + "\"", t);
 		}
 	}
 	

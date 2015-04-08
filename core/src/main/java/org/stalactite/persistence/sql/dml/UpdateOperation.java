@@ -39,6 +39,7 @@ public class UpdateOperation extends WriteOperation {
 
 	@Override
 	protected void applyValues(PersistentValues values) throws SQLException {
+		super.applyValues(values);
 		applyUpsertValues(updateIndexes, values);
 		applyWhereValues(whereIndexes, values);
 		addBatch();

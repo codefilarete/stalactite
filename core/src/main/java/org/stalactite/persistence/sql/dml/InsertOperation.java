@@ -32,6 +32,7 @@ public class InsertOperation extends WriteOperation {
 
 	@Override
 	protected void applyValues(PersistentValues values) throws SQLException {
+		super.applyValues(values);
 		applyUpsertValues(insertIndexes, values);
 		addBatch();
 	}

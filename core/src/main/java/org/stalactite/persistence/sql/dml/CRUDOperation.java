@@ -86,11 +86,21 @@ public abstract class CRUDOperation {
 	}
 	
 	protected void set(Map<Column, Map.Entry<Integer, ParameterBinder>> colToIndexes, Column column, Object value) throws SQLException {
-		Map.Entry<Integer, ParameterBinder> index = colToIndexes.get(column);
-		if (index == null) {
+		Map.Entry<Integer, ParameterBinder> indexBinder = colToIndexes.get(column);
+		if (indexBinder == null) {
 			throw new IllegalArgumentException("No parameter found for column " + (column == null ? null : column.getAbsoluteName()));
 		} else {
-			bind(index.getKey(), value, index.getValue());
+			try {
+				bind(indexBinder.getKey(), value, indexBinder.getValue());
+			} catch (NullPointerException e) {
+				if (indexBinder.getKey() == null) {
+					throw new NullPointerException("Null index for column " + column.getAbsoluteName() + " (" + column.getJavaType().getSimpleName() + ") on " + getSql());
+				} else if (indexBinder.getValue() == null) {
+					throw new NullPointerException("No parameter binder for column " + column.getAbsoluteName() + " (" + column.getJavaType().getSimpleName() + ") on " + getSql());
+				} else {
+					throw e;
+				}
+			}
 		}
 	}
 

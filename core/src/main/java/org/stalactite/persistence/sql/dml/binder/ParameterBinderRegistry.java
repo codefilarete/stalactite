@@ -45,6 +45,8 @@ public class ParameterBinderRegistry {
 		register(Integer.class, new IntegerBinder());
 		register(Integer.TYPE, new IntegerBinder());
 		register(Date.class, new DateBinder());
+		register(Boolean.class, new BooleanBinder());
+		register(Boolean.TYPE, new BooleanBinder());
 	}
 
 	/**

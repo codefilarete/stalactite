@@ -68,7 +68,10 @@ public class StringAppender implements Serializable, CharSequence {
 	}
 
 	public StringAppender cutTail(int nbChar) {
-		appender.setLength(length() - nbChar);
+		int newLength = length() - nbChar;
+		if (newLength > -1) {
+			appender.setLength(newLength);
+		}
 		return this;
 	}
 	

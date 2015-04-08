@@ -31,6 +31,7 @@ public class DeleteOperation extends WriteOperation {
 
 	@Override
 	protected void applyValues(PersistentValues values) throws SQLException {
+		super.applyValues(values);
 		applyWhereValues(whereIndexes, values);
 		addBatch();
 	}
