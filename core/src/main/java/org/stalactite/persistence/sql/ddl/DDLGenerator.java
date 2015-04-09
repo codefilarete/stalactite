@@ -1,13 +1,11 @@
 package org.stalactite.persistence.sql.ddl;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 
 import org.stalactite.lang.collection.Collections;
-import org.stalactite.persistence.sql.Dialect;
 import org.stalactite.persistence.structure.Table;
 import org.stalactite.persistence.structure.Table.ForeignKey;
 import org.stalactite.persistence.structure.Table.Index;
@@ -17,17 +15,13 @@ import org.stalactite.persistence.structure.Table.Index;
  */
 public class DDLGenerator implements DDLParticipant {
 	
-	private final Collection<Table> tables;
+	private final Iterable<Table> tables;
 	
 	private final DDLTableGenerator ddlTableGenerator;
 	
 	private final Set<DDLParticipant> ddlParticipants = new LinkedHashSet<>();
 	
-	public DDLGenerator(List<Table> tablesToCreate, Dialect dialect) {
-		this(tablesToCreate, dialect.getJavaTypeToSqlTypeMapping());
-	}
-	
-	public DDLGenerator(Collection<Table> tablesToCreate, JavaTypeToSqlTypeMapping typeMapping) {
+	public DDLGenerator(Iterable<Table> tablesToCreate, JavaTypeToSqlTypeMapping typeMapping) {
 		this.tables = tablesToCreate;
 		this.ddlTableGenerator = newDDLTableGenerator(typeMapping);
 	}

@@ -52,6 +52,7 @@ public class CRUDOperationTest {
 		colC = columns.get("c");
 		
 		preparedStatement = mock(PreparedStatement.class);
+		when(preparedStatement.executeBatch()).thenReturn(new int[] {1});
 		connection = mock(Connection.class);
 		sqlCaptor = ArgumentCaptor.forClass(String.class);
 		when(connection.prepareStatement(sqlCaptor.capture())).thenReturn(preparedStatement);

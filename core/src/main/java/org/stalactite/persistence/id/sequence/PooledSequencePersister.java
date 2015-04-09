@@ -6,6 +6,7 @@ import java.util.Map;
 
 import org.stalactite.lang.Reflections;
 import org.stalactite.lang.collection.Maps;
+import org.stalactite.persistence.engine.DDLDeployer;
 import org.stalactite.persistence.engine.PersistenceContext;
 import org.stalactite.persistence.engine.Persister;
 import org.stalactite.persistence.engine.TransactionManager.JdbcOperation;
@@ -50,12 +51,14 @@ public class PooledSequencePersister extends Persister<PooledSequence> implement
 	
 	@Override
 	public List<String> getCreationScripts() {
-		return getPersistenceContext().getDDLGenerator().getCreationScripts();
+		DDLDeployer ddlDeployer = new DDLDeployer(getPersistenceContext());
+		return ddlDeployer.getDDLGenerator().getCreationScripts();
 	}
 	
 	@Override
 	public List<String> getDropScripts() {
-		return getPersistenceContext().getDDLGenerator().getDropScripts();
+		DDLDeployer ddlDeployer = new DDLDeployer(getPersistenceContext());
+		return ddlDeployer.getDDLGenerator().getDropScripts();
 	}
 	
 	public long reservePool(String sequenceName, int poolSize) {

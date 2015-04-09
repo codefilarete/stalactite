@@ -2,29 +2,19 @@ package org.stalactite.persistence.engine;
 
 import java.sql.Connection;
 import java.sql.SQLException;
-import java.sql.Statement;
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
-import org.stalactite.ILogger;
-import org.stalactite.Logger;
 import org.stalactite.persistence.engine.TransactionManager.JdbcOperation;
 import org.stalactite.persistence.mapping.ClassMappingStrategy;
 import org.stalactite.persistence.sql.Dialect;
-import org.stalactite.persistence.sql.ddl.DDLGenerator;
-import org.stalactite.persistence.structure.Table;
 
 /**
  * @author mary
  */
 public class PersistenceContext {
 	
-	private static final ILogger LOGGER = Logger.getLogger(PersistenceContext.class);
-	
 	private static final ThreadLocal<PersistenceContext> CURRENT_CONTEXT = new ThreadLocal<>();
-	private List<Table> tables;
 	private int jdbcBatchSize = 100;
 	
 	public static PersistenceContext getCurrent() {
@@ -58,48 +48,6 @@ public class PersistenceContext {
 	
 	public Dialect getDialect() {
 		return dialect;
-	}
-	
-	public void deployDDL() throws SQLException {
-		DDLGenerator ddlTableGenerator = getDDLGenerator();
-		for (String sql : ddlTableGenerator.getCreationScripts()) {
-			execute(sql);
-		}
-	}
-	
-	public void dropDDL() throws SQLException {
-		DDLGenerator ddlTableGenerator = getDDLGenerator();
-		for (String sql : ddlTableGenerator.getDropScripts()) {
-			execute(sql);
-		}
-	}
-	
-	public DDLGenerator getDDLGenerator() {
-		List<Table> tablesToCreate = getTables();
-		return new DDLGenerator(tablesToCreate, getDialect());
-	}
-	
-	public List<Table> getTables() {
-		if (this.tables == null) {
-			lookupTables();
-		}
-		return tables;
-	}
-	
-	private void lookupTables() {
-		tables = new ArrayList<>(this.mappingStrategies.size());
-		for (ClassMappingStrategy classMappingStrategy : getMappingStrategies().values()) {
-			tables.add(classMappingStrategy.getTargetTable());
-		}
-	}
-	
-	protected void execute(String sql) throws SQLException {
-		try(Statement statement = getCurrentConnection().createStatement()) {
-			LOGGER.debug(sql);
-			statement.execute(sql);
-		} catch (Throwable t) {
-			throw new RuntimeException("Error executing \"" + sql + "\"", t);
-		}
 	}
 	
 	public <T> ClassMappingStrategy<T> getMappingStrategy(Class<T> aClass) {

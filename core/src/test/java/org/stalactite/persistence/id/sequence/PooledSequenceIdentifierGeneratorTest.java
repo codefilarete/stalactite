@@ -5,6 +5,7 @@ import static org.testng.Assert.assertEquals;
 import java.io.Serializable;
 import java.sql.SQLException;
 
+import org.stalactite.persistence.engine.DDLDeployer;
 import org.stalactite.persistence.engine.PersistenceContext;
 import org.stalactite.persistence.sql.Dialect;
 import org.stalactite.persistence.sql.ddl.JavaTypeToSqlTypeMapping;
@@ -35,7 +36,8 @@ public class PooledSequenceIdentifierGeneratorTest {
 	@Test
 	public void testGenerate() throws SQLException {
 		testInstance = new PooledSequenceIdentifierGenerator(new PooledSequenceIdentifierGeneratorOptions(10, "Toto", PooledSequencePersistenceOptions.DEFAULT));
-		PersistenceContext.getCurrent().deployDDL();
+		DDLDeployer ddlDeployer = new DDLDeployer(PersistenceContext.getCurrent());
+		ddlDeployer.deployDDL();
 		// on vérifie que l'incrémentation se fait sans erreur depuis une base vierge
 		for (int i = 0; i < 45; i++) {
 			Serializable newId = testInstance.generate();

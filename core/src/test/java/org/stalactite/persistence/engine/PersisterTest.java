@@ -67,6 +67,7 @@ public class PersisterTest {
 		identifierGenerator.idCounter = 0;
 		
 		preparedStatement = mock(PreparedStatement.class);
+		when(preparedStatement.executeBatch()).thenReturn(new int[] {1});
 		
 		Connection connection = mock(Connection.class);
 		argumentCaptor = ArgumentCaptor.forClass(String.class);
@@ -179,7 +180,8 @@ public class PersisterTest {
 	@Test
 	public void testSelect_hsqldb() throws SQLException {
 		transactionManager.setDataSource(new HSQLDBInMemoryDataSource());
-		persistenceContext.deployDDL();
+		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+		ddlDeployer.deployDDL();
 		testInstance = persistenceContext.getPersister(Toto.class);
 		Connection connection = persistenceContext.getCurrentConnection();
 		connection.prepareStatement("insert into Toto(a, b, c) values (1, 2, 3)").execute();

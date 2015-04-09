@@ -8,6 +8,7 @@ import java.sql.Statement;
 import java.util.List;
 
 import org.stalactite.lang.collection.Arrays;
+import org.stalactite.persistence.engine.DDLDeployer;
 import org.stalactite.persistence.engine.PersistenceContext;
 import org.stalactite.persistence.id.sequence.PooledSequencePersistenceOptions;
 import org.stalactite.persistence.id.sequence.PooledSequencePersister;
@@ -47,13 +48,14 @@ public class PooledSequencePersisterTest {
 	@Test
 	public void testGetCreationScripts_customized() throws Exception {
 		testInstance = new PooledSequencePersister(new PooledSequencePersistenceOptions("myTable", "mySequenceNameCol", "myNextValCol"));
-		List<String> creationScripts = creationScripts = testInstance.getCreationScripts();
+		List<String> creationScripts = testInstance.getCreationScripts();
 		assertEquals(creationScripts, Arrays.asList("create table myTable(mySequenceNameCol VARCHAR(255), myNextValCol int, primary key (mySequenceNameCol))"));
 	}
 	
 	@Test
 	public void testReservePool_emptyDatabase() throws Exception {
-		testInstance.getPersistenceContext().deployDDL();
+		DDLDeployer ddlDeployer = new DDLDeployer(testInstance.getPersistenceContext());
+		ddlDeployer.deployDDL();
 		long identifier = testInstance.reservePool("toto", 10);
 		assertEquals(identifier, 10);
 		Connection currentConnection = PersistenceContext.getCurrent().getCurrentConnection();
