@@ -6,27 +6,33 @@ import java.lang.reflect.Method;
 /**
  * @author mary
  */
-public class AccessorByMethod<C, T> extends PropertyAccessor<C, T, Method> {
+public class AccessorByMethod<C, T> extends PropertyAccessor<C, T> {
 	
-	private final Class<T> returnType;
+	private final Method getter, setter;
 	
-	public AccessorByMethod(Method method) {
-		super(method);
-		method.setAccessible(true);
-		this.returnType = (Class<T>) getAccessor().getReturnType();
+	public AccessorByMethod(Method getter, Method setter) {
+		super();
+		this.getter = getter;
+		this.setter = setter;
+		this.getter.setAccessible(true);
+		this.setter.setAccessible(true);
+	}
+	
+	public Method getGetter() {
+		return getter;
+	}
+	
+	public Method getSetter() {
+		return setter;
 	}
 	
 	@Override
-	public T get(C c) throws IllegalAccessException, InvocationTargetException {
-		try {
-			return (T) getAccessor().invoke(c);
-		} catch (NullPointerException npe) {
-			throw new NullPointerException("Cannot access " + getAccessor().toString() + " on null instance");
-		}
+	protected T doGet(C c) throws IllegalAccessException, InvocationTargetException {
+		return (T) getGetter().invoke(c);
 	}
 	
 	@Override
-	public void set(C c, T t) throws IllegalAccessException, InvocationTargetException {
-		getAccessor().invoke(c, t);
+	protected void doSet(C c, T t) throws IllegalAccessException, InvocationTargetException {
+		getSetter().invoke(c, t);
 	}
 }

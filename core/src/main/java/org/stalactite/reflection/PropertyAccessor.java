@@ -3,22 +3,40 @@ package org.stalactite.reflection;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Member;
 
+import org.stalactite.lang.exception.Exceptions;
+
 /**
  * @author mary
  */
-public abstract class PropertyAccessor<C, T, M extends Member> {
+public abstract class PropertyAccessor<C, T> {
 	
-	private final M accessor;
-	
-	public PropertyAccessor(M accessor) {
-		this.accessor = accessor;
+	public PropertyAccessor() {
 	}
 	
-	public M getAccessor() {
-		return accessor;
+	public abstract Member getGetter();
+	
+	public abstract Member getSetter();
+	
+	public T get(C c) throws IllegalAccessException {
+		try {
+			return doGet(c);
+		} catch (NullPointerException npe) {
+			throw new NullPointerException("Cannot access " + getGetter().toString() + " on null instance");
+		} catch (InvocationTargetException e) {
+			Exceptions.throwAsRuntimeException(e.getCause());
+			return null;
+		}
 	}
 	
-	public abstract T get(C c) throws IllegalAccessException, InvocationTargetException;
+	protected abstract T doGet(C c) throws IllegalAccessException, InvocationTargetException;
 	
-	public abstract void set(C c, T t) throws IllegalAccessException, InvocationTargetException;
+	public void set(C c, T t) throws IllegalAccessException {
+		try {
+			doSet(c, t);
+		} catch (InvocationTargetException e) {
+			Exceptions.throwAsRuntimeException(e.getCause());
+		}
+	}
+	
+	protected abstract void doSet(C c, T t) throws IllegalAccessException, InvocationTargetException;
 }

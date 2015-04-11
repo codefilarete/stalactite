@@ -1,31 +1,38 @@
 package org.stalactite.reflection;
 
 import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
 
 /**
  * @author mary
  */
-public class AccessorByField<C, T> extends PropertyAccessor<C, T, Field> {
+public class AccessorByField<C, T> extends PropertyAccessor<C, T> {
 	
-	private final Class<T> returnType;
+	private final Field field;
 	
 	public AccessorByField(Field field) {
-		super(field);
-		field.setAccessible(true);
-		this.returnType = (Class<T>) field.getType();
+		super();
+		this.field = field;
+		this.field.setAccessible(true);
 	}
 	
 	@Override
-	public T get(C c) throws IllegalAccessException {
-		try {
-			return (T) getAccessor().get(c);
-		} catch (NullPointerException npe) {
-			throw new NullPointerException("Cannot access " + getAccessor().toString() + " on null instance");
-		}
+	public Field getGetter() {
+		return field;
 	}
 	
 	@Override
-	public void set(C c, T t) throws IllegalAccessException {
-		getAccessor().set(c, t);
+	public Field getSetter() {
+		return field;
+	}
+	
+	@Override
+	protected T doGet(C c) throws IllegalAccessException, InvocationTargetException {
+		return (T) getGetter().get(c);
+	}
+	
+	@Override
+	protected void doSet(C c, T t) throws IllegalAccessException, InvocationTargetException {
+		getGetter().set(c, t);
 	}
 }
