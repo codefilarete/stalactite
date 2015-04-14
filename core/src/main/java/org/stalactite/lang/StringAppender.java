@@ -36,6 +36,14 @@ public class StringAppender implements Serializable, CharSequence {
 		return this;
 	}
 	
+	public StringAppender cat(int index, CharSequence ... ss) {
+		for (CharSequence s : ss) {
+			appender.insert(index, s);
+			index+=s.length();
+		}
+		return this;
+	}
+	
 	public StringAppender catIf(boolean condition, CharSequence ... ss) {
 		if (condition) {
 			cat(ss);
