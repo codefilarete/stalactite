@@ -54,7 +54,7 @@ public class DDLGenerator implements DDLParticipant {
 		List<String> indexesCreationScripts = new ArrayList<>();
 		
 		for (Table table : tables) {
-			tableCreationScripts.add(this.ddlTableGenerator.generateCreateTable(table));
+			tableCreationScripts.add(generateCreationScript(table));
 			foreignKeysCreationScripts.addAll(getForeignKeyCreationScripts(table));
 			indexesCreationScripts.addAll(generateIndexCreationScripts(table));
 		}
@@ -63,22 +63,34 @@ public class DDLGenerator implements DDLParticipant {
 		return Collections.cat(tableCreationScripts, foreignKeysCreationScripts, indexesCreationScripts);
 	}
 	
+	protected String generateCreationScript(Table table) {
+		return this.ddlTableGenerator.generateCreateTable(table);
+	}
+	
 	protected List<String> generateIndexCreationScripts(Table table) {
 		List<String> indexesCreationScripts = new ArrayList<>();
 		for (Index index : table.getIndexes()) {
-			indexesCreationScripts.add(this.ddlTableGenerator.generateCreateIndex(index));
+			indexesCreationScripts.add(generateCreationScript(index));
 		}
 		return indexesCreationScripts;
+	}
+	
+	protected String generateCreationScript(Index index) {
+		return this.ddlTableGenerator.generateCreateIndex(index);
 	}
 	
 	protected List<String> getForeignKeyCreationScripts(Table table) {
 		List<String> foreignKeysCreationScripts = new ArrayList<>();
 		for (ForeignKey foreignKey : table.getForeignKeys()) {
-			foreignKeysCreationScripts.add(this.ddlTableGenerator.generateCreateForeignKey(foreignKey));
+			foreignKeysCreationScripts.add(generateCreationScript(foreignKey));
 		}
 		return foreignKeysCreationScripts;
 	}
-
+	
+	protected String generateCreationScript(ForeignKey foreignKey) {
+		return this.ddlTableGenerator.generateCreateForeignKey(foreignKey);
+	}
+	
 	@Override
 	public List<String> getDropScripts() {
 		// DDLParticipants is supposed to be post treatments (creation of sequences, triggers, ...)
@@ -99,7 +111,10 @@ public class DDLGenerator implements DDLParticipant {
 	protected List<String> generateDDLParticipantsDropScripts() {
 		List<String> participantsScripts = new ArrayList<>();
 		for (DDLParticipant ddlParticipant : ddlParticipants) {
-			participantsScripts.addAll(ddlParticipant.getDropScripts());
+			List<String> dropScripts = ddlParticipant.getDropScripts();
+			if (!Collections.isEmpty(dropScripts)) {
+				participantsScripts.addAll(dropScripts);
+			}
 		}
 		return participantsScripts;
 	}
