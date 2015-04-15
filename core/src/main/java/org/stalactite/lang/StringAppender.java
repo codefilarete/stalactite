@@ -3,6 +3,8 @@ package org.stalactite.lang;
 import java.io.Serializable;
 
 /**
+ * Sorte de StringBuilder en plus pratique ... ou pas !
+ *
  * @author mary
  */
 public class StringAppender implements Serializable, CharSequence {
