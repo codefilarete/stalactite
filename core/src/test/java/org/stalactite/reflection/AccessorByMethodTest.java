@@ -19,7 +19,7 @@ public class AccessorByMethodTest {
 	
 	@Test
 	public void testGet() throws Exception {
-		AccessorByMethod testInstance = new AccessorByMethod(Reflections.getMethod(Toto.class, "getA"), Reflections.getMethod(Toto.class, "setA"));
+		AccessorByMethod testInstance = new AccessorByMethod(Reflections.getMethod(Toto.class, "getA"), Reflections.getMethod(Toto.class, "setA", Integer.TYPE));
 		Toto toto = new Toto();
 		toto.a = 42;
 		assertEquals(42, testInstance.get(toto));

@@ -18,6 +18,7 @@ import org.stalactite.lang.exception.Exceptions;
 import org.stalactite.lang.trace.Chrono;
 import org.stalactite.benchmark.connection.MySQLDataSourceFactory;
 import org.stalactite.benchmark.connection.MySQLDataSourceFactory.Property;
+import org.stalactite.persistence.engine.DDLDeployer;
 import org.stalactite.persistence.engine.PersistenceContext;
 
 import com.zaxxer.hikari.HikariDataSource;
@@ -61,8 +62,9 @@ public abstract class AbstractBenchmark<Data> {
 			@Override
 			protected void doInTransactionWithoutResult(TransactionStatus status) {
 				try {
-					persistenceContext.dropDDL();
-					persistenceContext.deployDDL();
+					DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+					ddlDeployer.dropDDL();
+					ddlDeployer.deployDDL();
 				} catch (SQLException e) {
 					Exceptions.throwAsRuntimeException(e);
 				}
