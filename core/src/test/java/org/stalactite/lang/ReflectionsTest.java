@@ -49,9 +49,17 @@ public class ReflectionsTest {
 		assertNotNull(totoMethod);
 		assertEquals(0, totoMethod.getParameterTypes().length);
 		
+		Method toto2Method = Reflections.getMethod(Toto.class, "toto2");
+		assertNotNull(toto2Method);
+		assertEquals(0, toto2Method.getParameterTypes().length);
+		
 		Method totoMethodWithParams = Reflections.getMethod(Toto.class, "toto", Integer.TYPE);
 		assertNotNull(totoMethodWithParams);
 		assertEquals(1, totoMethodWithParams.getParameterTypes().length);
+		
+		Method toto2MethodWithParams = Reflections.getMethod(Toto.class, "toto2", Integer.TYPE);
+		assertNotNull(toto2MethodWithParams);
+		assertEquals(1, toto2MethodWithParams.getParameterTypes().length);
 	}
 	
 	private static class Toto {
@@ -59,11 +67,17 @@ public class ReflectionsTest {
 		private String b;
 		
 		private void toto() {
-			
 		}
 		
 		private void toto(int a) {
-			
+		}
+		
+		// méthodes toto2() déclarées en ordre inverse des toto() pour tester la robustesse au jdk
+		// (open jdk ne renvoie pas dans le même ordre)  
+		private void toto2(int a) {
+		}
+		
+		private void toto2() {
 		}
 	}
 	

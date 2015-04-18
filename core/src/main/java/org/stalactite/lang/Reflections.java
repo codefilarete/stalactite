@@ -57,8 +57,7 @@ public final class Reflections {
 		Finder<Method> methodVisitor = new Finder<Method>() {
 			@Override
 			public boolean accept(Method method) {
-				return method.getName().equals(name)
-						&& ((argTypes.length != 0 && Arrays.equals(method.getParameterTypes(), argTypes)) || argTypes.length == 0);
+				return method.getName().equals(name) && Arrays.equals(method.getParameterTypes(), argTypes);
 			}
 		};
 		return Iterables.filter(new MethodIterator(clazz), methodVisitor);
