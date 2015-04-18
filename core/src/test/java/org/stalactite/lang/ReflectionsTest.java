@@ -1,12 +1,10 @@
 package org.stalactite.lang;
 
-import static org.testng.AssertJUnit.assertEquals;
-import static org.testng.AssertJUnit.assertNotNull;
-
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 
+import static org.testng.AssertJUnit.*;
 import org.testng.annotations.Test;
 
 /**
@@ -47,18 +45,22 @@ public class ReflectionsTest {
 	public void testGetMethod() throws Exception {
 		Method totoMethod = Reflections.getMethod(Toto.class, "toto");
 		assertNotNull(totoMethod);
+		assertEquals("toto", totoMethod.getName());
 		assertEquals(0, totoMethod.getParameterTypes().length);
 		
 		Method toto2Method = Reflections.getMethod(Toto.class, "toto2");
 		assertNotNull(toto2Method);
+		assertEquals("toto2", toto2Method.getName());
 		assertEquals(0, toto2Method.getParameterTypes().length);
 		
 		Method totoMethodWithParams = Reflections.getMethod(Toto.class, "toto", Integer.TYPE);
 		assertNotNull(totoMethodWithParams);
+		assertEquals("toto", totoMethodWithParams.getName());
 		assertEquals(1, totoMethodWithParams.getParameterTypes().length);
 		
 		Method toto2MethodWithParams = Reflections.getMethod(Toto.class, "toto2", Integer.TYPE);
 		assertNotNull(toto2MethodWithParams);
+		assertEquals("toto2", toto2MethodWithParams.getName());
 		assertEquals(1, toto2MethodWithParams.getParameterTypes().length);
 	}
 	
@@ -72,8 +74,8 @@ public class ReflectionsTest {
 		private void toto(int a) {
 		}
 		
-		// méthodes toto2() déclarées en ordre inverse des toto() pour tester la robustesse au jdk
-		// (open jdk ne renvoie pas dans le même ordre)  
+		// mÃ©thodes toto2() dÃ©clarÃ©es en ordre inverse des toto() pour tester la robustesse au jdk
+		// (open jdk ne renvoie pas dans le mÃªme ordre)  
 		private void toto2(int a) {
 		}
 		

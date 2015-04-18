@@ -7,7 +7,6 @@ import java.lang.reflect.Method;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.Map;
-
 import javax.annotation.Nonnull;
 
 import org.stalactite.lang.collection.ArrayIterator;
