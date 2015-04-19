@@ -5,23 +5,23 @@ import java.util.ArrayList;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.concurrent.*;
-
 import javax.sql.DataSource;
 
+import com.zaxxer.hikari.HikariDataSource;
 import org.springframework.jdbc.datasource.DataSourceTransactionManager;
 import org.springframework.transaction.TransactionStatus;
 import org.springframework.transaction.support.TransactionCallbackWithoutResult;
 import org.springframework.transaction.support.TransactionTemplate;
 import org.stalactite.Logger;
+import org.stalactite.benchmark.connection.MySQLDataSourceFactory;
+import org.stalactite.benchmark.connection.MySQLDataSourceFactory.Property;
 import org.stalactite.lang.collection.Collections;
 import org.stalactite.lang.exception.Exceptions;
 import org.stalactite.lang.trace.Chrono;
-import org.stalactite.benchmark.connection.MySQLDataSourceFactory;
-import org.stalactite.benchmark.connection.MySQLDataSourceFactory.Property;
 import org.stalactite.persistence.engine.DDLDeployer;
 import org.stalactite.persistence.engine.PersistenceContext;
-
-import com.zaxxer.hikari.HikariDataSource;
+import org.stalactite.persistence.sql.ddl.DDLGenerator;
+import org.stalactite.persistence.structure.Table;
 
 /**
  * @author Guillaume Mary
@@ -62,9 +62,7 @@ public abstract class AbstractBenchmark<Data> {
 			@Override
 			protected void doInTransactionWithoutResult(TransactionStatus status) {
 				try {
-					DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
-					ddlDeployer.dropDDL();
-					ddlDeployer.deployDDL();
+					dropAndDeployDDL(persistenceContext);
 				} catch (SQLException e) {
 					Exceptions.throwAsRuntimeException(e);
 				}
@@ -76,6 +74,26 @@ public abstract class AbstractBenchmark<Data> {
 			insertData(data);
 		}
 	}
+	
+	protected void dropAndDeployDDL(PersistenceContext persistenceContext) throws SQLException {
+		DDLGenerator ddlGenerator = new DDLGenerator(DDLDeployer.lookupTables(persistenceContext), persistenceContext.getDialect().getJavaTypeToSqlTypeMapping()) {
+			@Override
+			protected String generateCreationScript(Table table) {
+				String creationScript = super.generateCreationScript(table);
+//				creationScript += "engine=tokuDB";
+				return creationScript;
+			}
+		};
+		DDLDeployer ddlDeployer = new DDLDeployer(ddlGenerator);
+		ddlDeployer.dropDDL();
+		ddlDeployer.deployDDL();
+	}
+	
+	protected void appendMappingStrategy(PersistenceContext persistenceContext) {
+		IMappingBuilder totoMappingBuilder = newMappingBuilder();
+		persistenceContext.add(totoMappingBuilder.getClassMappingStrategy());
+	}
+	
 	
 	private void insertData(List<Data> data) throws InterruptedException, ExecutionException {
 		ExecutorService dataInserterExecutor = Executors.newFixedThreadPool(4);
@@ -133,12 +151,12 @@ public abstract class AbstractBenchmark<Data> {
 	
 	protected abstract Callable<Void> newCallableDataPersister(List<Data> data);
 	
-	public abstract class CallableDataPersister<Data> implements Callable<Void> {
+	public abstract class CallableDataPersister<D> implements Callable<Void> {
 		
-		private final List<Data> data;
+		private final List<D> data;
 		protected final PersistenceContext persistenceContext;
 		
-		public CallableDataPersister(List<Data> data, PersistenceContext persistenceContext) {
+		public CallableDataPersister(List<D> data, PersistenceContext persistenceContext) {
 			this.data = data;
 			this.persistenceContext = persistenceContext;
 		}
@@ -160,7 +178,7 @@ public abstract class AbstractBenchmark<Data> {
 			return null;
 		}
 		
-		protected abstract void persist(PersistenceContext persistenceContext, List<Data> data);
+		protected abstract void persist(PersistenceContext persistenceContext, List<D> data);
 	}
 	
 }
