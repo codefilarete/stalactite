@@ -3,7 +3,7 @@ package org.stalactite.lang.bean.safemodel;
 /**
  * @author Guillaume Mary
  */
-public class Phone {
+public interface IMetaModelTransformer<R> {
 	
-	String number;
+	R transform(MetaModel metaModel);
 }

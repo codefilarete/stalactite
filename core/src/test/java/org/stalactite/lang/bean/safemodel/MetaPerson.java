@@ -1,18 +1,18 @@
 package org.stalactite.lang.bean.safemodel;
 
-import org.stalactite.reflection.PropertyAccessor;
+import org.stalactite.lang.bean.safemodel.model.Person;
 
 /**
  * @author Guillaume Mary
  */
 public class MetaPerson<O extends MetaModel> extends MetaModel<O> {
 	
-	MetaAddress<MetaPerson> address = new MetaAddress<>(getDeclaredField(Person.class, "address"));
+	public MetaAddress<MetaPerson> address = new MetaAddress<>(newDescription(Person.class, "address"));
 	
 	public MetaPerson() {
 	}
 	
-	public MetaPerson(PropertyAccessor accessor) {
+	public MetaPerson(FieldDescription accessor) {
 		super(accessor);
 		fixFieldsOwner();
 //		this.address.setOwner(this);

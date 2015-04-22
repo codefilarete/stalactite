@@ -1,4 +1,4 @@
-package org.stalactite.lang.bean.safemodel;
+package org.stalactite.lang.bean.safemodel.model;
 
 import java.util.Collection;
 

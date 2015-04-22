@@ -1,18 +1,18 @@
 package org.stalactite.lang.bean.safemodel;
 
-import org.stalactite.reflection.PropertyAccessor;
+import org.stalactite.lang.bean.safemodel.model.Phone;
 
 /**
  * @author Guillaume Mary
  */
 public class MetaPhone<O extends MetaModel> extends MetaModel<O> {
 	
-	MetaModel<MetaPhone> number = new MetaModel<>(getDeclaredField(Phone.class, "number"));
+	public MetaModel<MetaPhone> number = new MetaModel<>(newDescription(Phone.class, "number"));
 	
 	public MetaPhone() {
 	}
 	
-	public MetaPhone(PropertyAccessor accessor) {
+	public MetaPhone(AbstractMemberDescription accessor) {
 		super(accessor);
 		fixFieldsOwner();
 //		number.setOwner(this);

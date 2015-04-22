@@ -1,6 +1,6 @@
 package org.stalactite.lang.bean.safemodel;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.*;
 
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
@@ -8,7 +8,7 @@ import org.testng.annotations.Test;
 /**
  * @author Guillaume Mary
  */
-public class MetaModelTest {
+public class MetaModelPathBuilderTest {
 	
 	private static final String TEST_PATH_DATA = "testPathData";
 	
@@ -23,6 +23,7 @@ public class MetaModelTest {
 	
 	@Test(dataProvider = TEST_PATH_DATA)
 	public void testPath(MetaModel metaModel, String expected) throws Exception {
-		assertEquals(expected, MetaModel.path(metaModel));
+		MetaModelPathBuilder testInstance = new MetaModelPathBuilder();
+		assertEquals(expected, testInstance.transform(metaModel));
 	}
 }

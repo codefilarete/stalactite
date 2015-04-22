@@ -1,20 +1,19 @@
 package org.stalactite.lang.bean.safemodel;
 
-import org.stalactite.reflection.AccessorForList;
-import org.stalactite.reflection.PropertyAccessor;
+import org.stalactite.lang.bean.safemodel.model.Address;
 
 /**
  * @author Guillaume Mary
  */
 public class MetaAddress<O extends MetaModel> extends MetaModel<O> {
 	
-	MetaCity<MetaAddress> city = new MetaCity<>(getDeclaredField(Address.class, "city"));
-	MetaPhone<MetaAddress> phones = new MetaPhone<>(getDeclaredField(Address.class, "phones"));
+	public MetaCity<MetaAddress> city = new MetaCity<>(newDescription(Address.class, "city"));
+	public MetaPhone<MetaAddress> phones = new MetaPhone<>(newDescription(Address.class, "phones"));
 	
 	public MetaAddress() {
 	}
 	
-	public MetaAddress(PropertyAccessor accessor) {
+	public MetaAddress(FieldDescription accessor) {
 		super(accessor);
 		fixFieldsOwner();
 //		this.city.setOwner(this);
@@ -22,10 +21,9 @@ public class MetaAddress<O extends MetaModel> extends MetaModel<O> {
 	}
 	
 	public MetaPhone<MetaModel> phones(int i) {
-		AccessorForList accessor = new AccessorForList();
-		accessor.setIndex(i);
-		MetaPhone<MetaModel> metaModelMetaPhone = new MetaPhone<>(accessor);
-		metaModelMetaPhone.setOwner(phones);
-		return metaModelMetaPhone;
+		ListGetMethod accessor = new ListGetMethod(i);
+		MetaPhone<MetaModel> metaPhone = new MetaPhone<>(accessor);
+		metaPhone.setOwner(phones);
+		return metaPhone;
 	}
 }
