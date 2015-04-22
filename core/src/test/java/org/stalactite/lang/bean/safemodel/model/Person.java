@@ -5,5 +5,5 @@ package org.stalactite.lang.bean.safemodel.model;
  */
 public class Person {
 	
-	Address address;
+	private Address address;
 }

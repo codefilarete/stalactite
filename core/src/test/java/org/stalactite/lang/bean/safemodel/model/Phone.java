@@ -5,5 +5,9 @@ package org.stalactite.lang.bean.safemodel.model;
  */
 public class Phone {
 	
-	String number;
+	private String number;
+	
+	public String getNumber() {
+		return number;
+	}
 }

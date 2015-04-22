@@ -1,5 +1,6 @@
-package org.stalactite.lang.bean.safemodel;
+package org.stalactite.lang.bean.safemodel.metamodel;
 
+import org.stalactite.lang.bean.safemodel.MetaModel;
 import org.stalactite.lang.bean.safemodel.model.Phone;
 
 /**
@@ -7,7 +8,7 @@ import org.stalactite.lang.bean.safemodel.model.Phone;
  */
 public class MetaPhone<O extends MetaModel> extends MetaModel<O> {
 	
-	public MetaModel<MetaPhone> number = new MetaModel<>(newDescription(Phone.class, "number"));
+	public MetaModel<MetaPhone> number = new MetaModel<>(field(Phone.class, "number"));
 	
 	public MetaPhone() {
 	}
@@ -16,5 +17,9 @@ public class MetaPhone<O extends MetaModel> extends MetaModel<O> {
 		super(accessor);
 		fixFieldsOwner();
 //		number.setOwner(this);
+	}
+	
+	public MetaModel<MetaPhone> getNumber() {
+		return new MetaModel<MetaPhone>(method(Phone.class, "getNumber"), this);
 	}
 }

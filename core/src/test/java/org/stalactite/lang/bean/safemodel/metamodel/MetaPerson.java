@@ -1,5 +1,6 @@
-package org.stalactite.lang.bean.safemodel;
+package org.stalactite.lang.bean.safemodel.metamodel;
 
+import org.stalactite.lang.bean.safemodel.MetaModel;
 import org.stalactite.lang.bean.safemodel.model.Person;
 
 /**
@@ -7,7 +8,7 @@ import org.stalactite.lang.bean.safemodel.model.Person;
  */
 public class MetaPerson<O extends MetaModel> extends MetaModel<O> {
 	
-	public MetaAddress<MetaPerson> address = new MetaAddress<>(newDescription(Person.class, "address"));
+	public MetaAddress<MetaPerson> address = new MetaAddress<>(field(Person.class, "address"));
 	
 	public MetaPerson() {
 	}

@@ -23,7 +23,9 @@ public class MetaModelPathBuilder implements IMetaModelTransformer<String> {
 				for (Object parameter : methodParams) {
 					accessorDescription.cat(String.valueOf(parameter), ", ");
 				}
-				accessorDescription.cutTail(2);
+				if (methodParams.length > 0) {
+					accessorDescription.cutTail(2);
+				}
 				accessorDescription.cat(")");
 			}
 			path.cat(0, ".", accessorDescription);

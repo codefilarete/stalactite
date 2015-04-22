@@ -1,4 +1,6 @@
-package org.stalactite.lang.bean.safemodel;
+package org.stalactite.lang.bean.safemodel.metamodel;
+
+import org.stalactite.lang.bean.safemodel.MetaModel;
 
 /**
  * @author Guillaume Mary

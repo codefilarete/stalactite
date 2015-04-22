@@ -1,5 +1,7 @@
-package org.stalactite.lang.bean.safemodel;
+package org.stalactite.lang.bean.safemodel.metamodel;
 
+import org.stalactite.lang.bean.safemodel.ListGetMethod;
+import org.stalactite.lang.bean.safemodel.MetaModel;
 import org.stalactite.lang.bean.safemodel.model.Address;
 
 /**
@@ -7,8 +9,8 @@ import org.stalactite.lang.bean.safemodel.model.Address;
  */
 public class MetaAddress<O extends MetaModel> extends MetaModel<O> {
 	
-	public MetaCity<MetaAddress> city = new MetaCity<>(newDescription(Address.class, "city"));
-	public MetaPhone<MetaAddress> phones = new MetaPhone<>(newDescription(Address.class, "phones"));
+	public MetaCity<MetaAddress> city = new MetaCity<>(field(Address.class, "city"));
+	public MetaPhone<MetaAddress> phones = new MetaPhone<>(field(Address.class, "phones"));
 	
 	public MetaAddress() {
 	}

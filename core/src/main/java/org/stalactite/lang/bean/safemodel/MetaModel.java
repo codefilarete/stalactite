@@ -9,11 +9,11 @@ import org.stalactite.lang.exception.Exceptions;
  */
 public class MetaModel<O extends MetaModel> {
 	
-	protected static FieldDescription newDescription(Class clazz, String name) {
+	protected static FieldDescription field(Class clazz, String name) {
 		return new FieldDescription(clazz, name);
 	}
 	
-	protected static MethodDescription newMethodDescription(Class clazz, String name, Class ... parameters) {
+	protected static MethodDescription method(Class clazz, String name, Class... parameters) {
 		return new MethodDescription(clazz, name, parameters);
 	}
 	
@@ -26,6 +26,11 @@ public class MetaModel<O extends MetaModel> {
 	
 	public MetaModel(AbstractMemberDescription description) {
 		this.description = description;
+	}
+	
+	public MetaModel(AbstractMemberDescription description, O owner) {
+		this.description = description;
+		this.owner = owner;
 	}
 	
 	protected void fixFieldsOwner() {

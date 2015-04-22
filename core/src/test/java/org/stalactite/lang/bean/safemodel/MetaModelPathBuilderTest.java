@@ -2,6 +2,7 @@ package org.stalactite.lang.bean.safemodel;
 
 import static org.junit.Assert.*;
 
+import org.stalactite.lang.bean.safemodel.metamodel.MetaPerson;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
@@ -18,6 +19,7 @@ public class MetaModelPathBuilderTest {
 				{ new MetaPerson<>().address.city, "address.city" },
 				{ new MetaPerson<>().address.phones.number, "address.phones.number" },
 				{ new MetaPerson<>().address.phones(2).number, "address.phones.get(2).number" },
+				{ new MetaPerson<>().address.phones(2).getNumber(), "address.phones.get(2).getNumber()" },
 		};
 	}
 	

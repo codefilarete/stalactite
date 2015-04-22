@@ -7,7 +7,7 @@ import java.util.Collection;
  */
 public class Address {
 	
-	City city;
+	private City city;
 	
-	Collection<Phone> phones;
+	private Collection<Phone> phones;
 }
