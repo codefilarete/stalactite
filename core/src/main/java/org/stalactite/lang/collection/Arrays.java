@@ -16,4 +16,8 @@ public class Arrays {
 		java.util.Collections.addAll(toReturn, a);
 		return toReturn;
 	}
+	
+	public static boolean isEmpty(Object[] array) {
+		return array == null || array.length == 0;
+	}
 }
