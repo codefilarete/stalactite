@@ -23,9 +23,10 @@ public class MetaAddress<O extends MetaModel> extends MetaModel<O> {
 	}
 	
 	public MetaPhone<MetaModel> phones(int i) {
-		ListElementAccessDefinition accessor = new ListElementAccessDefinition(i);
+		ListElementAccessDefinition accessor = new ListElementAccessDefinition();
 		MetaPhone<MetaModel> metaPhone = new MetaPhone<>(accessor);
 		metaPhone.setOwner(phones);
+		metaPhone.setMemberParameter(i);
 		return metaPhone;
 	}
 }

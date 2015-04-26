@@ -13,13 +13,15 @@ public class MetaModel<O extends MetaModel> {
 		return new FieldDescription(clazz, name);
 	}
 	
-	protected static MethodDescription method(Class clazz, String name, Object... parameters) {
-		return new MethodDescription(clazz, name, parameters);
+	protected static MethodDescription method(Class clazz, String name, Class ... parameterTypes) {
+		return new MethodDescription(clazz, name, parameterTypes);
 	}
 	
 	private AbstractMemberDescription description;
 	
 	private O owner;
+	
+	private Object memberParameter;
 	
 	public MetaModel() {
 	}
@@ -58,6 +60,14 @@ public class MetaModel<O extends MetaModel> {
 		this.owner = owner;
 	}
 	
+	public Object getMemberParameter() {
+		return memberParameter;
+	}
+	
+	public void setMemberParameter(Object memberParameter) {
+		this.memberParameter = memberParameter;
+	}
+	
 	public static abstract class AbstractMemberDescription {
 		
 		private final Class declaringClass;
@@ -86,29 +96,22 @@ public class MetaModel<O extends MetaModel> {
 	
 	public static class ArrayDescription extends AbstractMemberDescription {
 		
-		private final int index;
-		
-		public ArrayDescription(Class declaringClass, String name, int index) {
+		public ArrayDescription(Class declaringClass, String name) {
 			super(declaringClass, name);
-			this.index = index;
-		}
-		
-		public int getIndex() {
-			return index;
 		}
 	}
 	
 	public static class MethodDescription extends AbstractMemberDescription {
 		
-		private final Object[] parameters;
+		private final Class[] parameterTypes;
 		
-		public MethodDescription(Class declaringClass, String name, Object ... parameters) {
+		public MethodDescription(Class declaringClass, String name, Class ... parameterTypes) {
 			super(declaringClass, name);
-			this.parameters = parameters;
+			this.parameterTypes = parameterTypes;
 		}
 		
-		public Object[] getParameters() {
-			return parameters;
+		public Class[] getParameterTypes() {
+			return parameterTypes;
 		}
 	}
 	
@@ -116,8 +119,8 @@ public class MetaModel<O extends MetaModel> {
 		
 		private final String setterName;
 		
-		public AccessorDescription(Class declaringClass, String getterName, String setterName, Object parameter) {
-			super(declaringClass, getterName, parameter);
+		public AccessorDescription(Class declaringClass, String getterName, String setterName, Class ... parameterTypes) {
+			super(declaringClass, getterName, parameterTypes);
 			this.setterName = setterName;
 		}
 		

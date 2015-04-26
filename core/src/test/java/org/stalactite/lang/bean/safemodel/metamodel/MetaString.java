@@ -16,14 +16,16 @@ public class MetaString<O extends MetaModel> extends MetaModel<O> {
 	}
 	
 	public MetaModel charAt(int index) {
-		MetaModel<MetaModel> chartAt = new MetaModel<>(method(String.class, "charAt", index));
+		MetaModel<MetaModel> chartAt = new MetaModel<>(method(String.class, "charAt", Integer.TYPE));
+		chartAt.setMemberParameter(index);
 		chartAt.setOwner(this);
 		return chartAt;
 	}
 	
 	public MetaModel charAt_array(int index) {
-		MetaModel<MetaModel> toCharArray = new MetaModel<>(new ArrayDescription(String.class, "toCharArray()", index));
+		MetaModel<MetaModel> toCharArray = new MetaModel<>(new ArrayDescription(String.class, "toCharArray()"));
 		toCharArray.setOwner(this);
+		toCharArray.setMemberParameter(index);
 		return toCharArray;
 	}
 	

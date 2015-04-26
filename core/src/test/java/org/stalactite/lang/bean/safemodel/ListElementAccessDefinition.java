@@ -9,7 +9,7 @@ import org.stalactite.lang.bean.safemodel.MetaModel.AccessorDescription;
  */
 public class ListElementAccessDefinition extends AccessorDescription {
 	
-	public ListElementAccessDefinition(int index) {
-		super(List.class, "get", "set", index );
+	public ListElementAccessDefinition() {
+		super(List.class, "get", "set", Integer.TYPE );
 	}
 }

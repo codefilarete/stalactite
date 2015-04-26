@@ -81,7 +81,7 @@ public final class Reflections {
 		
 		@Override
 		public boolean hasNext() {
-			return !currentClass.equals(topBoundAncestor);
+			return currentClass != null && !currentClass.equals(topBoundAncestor);
 		}
 		
 		@Override

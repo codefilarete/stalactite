@@ -13,7 +13,7 @@ import org.stalactite.lang.collection.Iterables.ForEach;
 import org.stalactite.lang.exception.Exceptions;
 import org.stalactite.persistence.sql.result.IRowTransformer;
 import org.stalactite.persistence.sql.result.Row;
-import org.stalactite.reflection.AccessorByField;
+import org.stalactite.reflection.PropertyAccessor;
 
 /**
  * @author mary
@@ -21,7 +21,7 @@ import org.stalactite.reflection.AccessorByField;
 public class ToBeanRowTransformer<T> implements IRowTransformer<T> {
 	
 	private final Constructor<T> constructor;
-	private final Map<String, AccessorByField> columnToField;
+	private final Map<String, PropertyAccessor> columnToField;
 	
 	public ToBeanRowTransformer(Class<T> clazz) throws NoSuchMethodException {
 		this.constructor = clazz.getConstructor();
@@ -31,13 +31,13 @@ public class ToBeanRowTransformer<T> implements IRowTransformer<T> {
 		Iterables.visit(fieldIterator, new ForEach<Field, Void>() {
 			@Override
 			public Void visit(Field field) {
-				columnToField.put(field.getName(), new AccessorByField(field));
+				columnToField.put(field.getName(), PropertyAccessor.forProperty(field.getDeclaringClass(), field.getName()));
 				return null;
 			}
 		});
 	}
 	
-	public ToBeanRowTransformer(Constructor<T> constructor, Map<String, AccessorByField> columnToField) {
+	public ToBeanRowTransformer(Constructor<T> constructor, Map<String, PropertyAccessor> columnToField) {
 		this.constructor = constructor;
 		this.constructor.setAccessible(true);
 		this.columnToField = columnToField;
@@ -62,7 +62,7 @@ public class ToBeanRowTransformer<T> implements IRowTransformer<T> {
 	
 	public void convertColumnsToProperties(Row row, T rowBean) {
 		try {
-			for (Entry<String, AccessorByField> columnFieldEntry : columnToField.entrySet()) {
+			for (Entry<String, PropertyAccessor> columnFieldEntry : columnToField.entrySet()) {
 				Object object = row.get(columnFieldEntry.getKey());
 				columnFieldEntry.getValue().set(rowBean, object);
 			}

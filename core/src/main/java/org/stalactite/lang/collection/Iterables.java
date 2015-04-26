@@ -29,6 +29,14 @@ public final class Iterables {
 		}
 	}
 	
+	public static <E> E first(List<E> iterable) {
+		if (Collections.isEmpty(iterable)) {
+			return null;
+		} else {
+			return iterable.get(0);
+		}
+	}
+	
 	/**
 	 * Renvoie la première entrée d'une Map, intéressant pour une {@link SortedMap} ou une {@link LinkedHashMap}
 	 * 
@@ -53,7 +61,15 @@ public final class Iterables {
 		Entry<?, V> firstEntry = first(iterable);
 		return firstEntry == null ? null : firstEntry.getValue();
 	}
-
+	
+	public static <E> E last(List<E> iterable) {
+		if (iterable == null) {
+			return null;
+		} else {
+			return iterable.get(iterable.size()-1);
+		}
+	}
+	
 	/**
 	 * Crée une copie du Iterable en tant que List
 	 * @param iterable un Iterable, non null

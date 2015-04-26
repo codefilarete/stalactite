@@ -1,41 +1,32 @@
 package org.stalactite.reflection;
 
-import org.stalactite.lang.Reflections;
-import org.stalactite.lang.Strings;
-
-import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+
+import org.stalactite.lang.Reflections;
+import org.stalactite.lang.Strings;
 
 /**
  * @author mary
  */
-public class AccessorByMethod<C, T> extends PropertyAccessor<C, T> {
+public class AccessorByMethod<C, T> extends AbstractAccessor<C, T> implements AccessorByMember<Method> {
 	
-	private final Method getter, setter;
+	private final Method getter;
 	
 	public static AccessorByMethod forProperty(Class clazz, String propertyName) {
-		Field propertyField = Reflections.getField(clazz, propertyName);
 		String capitalizedProperty = Strings.capitalize(propertyName);
 		Method getter = Reflections.getMethod(clazz, "get" + capitalizedProperty);
-		Method setter = Reflections.getMethod(clazz, "set" + capitalizedProperty, propertyField.getType());
-		return new AccessorByMethod(getter, setter);
+		return getter == null ? null : new AccessorByMethod(getter);
 	}
 	
-	public AccessorByMethod(Method getter, Method setter) {
-		super();
+	public AccessorByMethod(Method getter) {
 		this.getter = getter;
-		this.setter = setter;
 		this.getter.setAccessible(true);
-		this.setter.setAccessible(true);
 	}
 	
+	@Override
 	public Method getGetter() {
 		return getter;
-	}
-	
-	public Method getSetter() {
-		return setter;
 	}
 	
 	@Override
@@ -44,7 +35,7 @@ public class AccessorByMethod<C, T> extends PropertyAccessor<C, T> {
 	}
 	
 	@Override
-	protected void doSet(C c, T t) throws IllegalAccessException, InvocationTargetException {
-		getSetter().invoke(c, t);
+	protected String getGetterDescription() {
+		return getGetter().getDeclaringClass().getName() + "." + getGetter().getName() + "()";
 	}
 }

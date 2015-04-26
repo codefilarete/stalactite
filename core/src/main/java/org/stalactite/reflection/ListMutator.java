@@ -8,12 +8,12 @@ import org.stalactite.lang.Reflections;
 /**
  * @author Guillaume Mary
  */
-public class AccessorForList<C extends List<T>, T> extends AccessorByMethod<C, T> {
+public class ListMutator<C extends List<T>, T> extends MutatorByMethod<C, T> {
 	
 	private int index;
 	
-	public AccessorForList() {
-		super(Reflections.getMethod(List.class, "get", Integer.TYPE));
+	public ListMutator() {
+		super(Reflections.getMethod(List.class, "set", Integer.TYPE, Object.class));
 	}
 	
 	public void setIndex(int index) {
@@ -25,7 +25,7 @@ public class AccessorForList<C extends List<T>, T> extends AccessorByMethod<C, T
 	}
 	
 	@Override
-	protected T doGet(C c) throws IllegalAccessException, InvocationTargetException {
-		return c.get(getIndex());
+	protected void doSet(C c, T t) throws IllegalAccessException, InvocationTargetException {
+		c.set(getIndex(), t);	// plus rapide que invoke
 	}
 }

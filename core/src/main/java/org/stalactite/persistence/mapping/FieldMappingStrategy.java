@@ -2,8 +2,13 @@ package org.stalactite.persistence.mapping;
 
 import java.io.Serializable;
 import java.lang.reflect.Field;
-import java.util.*;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
+import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Set;
 
 import javax.annotation.Nonnull;
 
@@ -16,7 +21,7 @@ import org.stalactite.lang.exception.Exceptions;
 import org.stalactite.persistence.sql.result.Row;
 import org.stalactite.persistence.structure.Table;
 import org.stalactite.persistence.structure.Table.Column;
-import org.stalactite.reflection.AccessorByField;
+import org.stalactite.reflection.PropertyAccessor;
 
 /**
  * @author mary
@@ -25,9 +30,9 @@ public class FieldMappingStrategy<T> implements IMappingStrategy<T> {
 	
 	private final Class<T> classToPersist;
 	
-	private final Map<AccessorByField, Column> fieldToColumn;
+	private final Map<PropertyAccessor, Column> fieldToColumn;
 	
-	private final AccessorByField<T, Serializable> primaryKeyField;
+	private final PropertyAccessor<T, Serializable> primaryKeyField;
 	
 	private final Table targetTable;
 	
@@ -48,10 +53,10 @@ public class FieldMappingStrategy<T> implements IMappingStrategy<T> {
 	 */
 	public FieldMappingStrategy(@Nonnull Map<Field, Column> fieldToColumn) {
 		this.fieldToColumn = new LinkedHashMap<>(fieldToColumn.size());
-		Map<String, AccessorByField> columnToField = new HashMap<>();
+		Map<String, PropertyAccessor> columnToField = new HashMap<>();
 		for (Entry<Field, Column> fieldColumnEntry : fieldToColumn.entrySet()) {
 			Column column = fieldColumnEntry.getValue();
-			AccessorByField accessorByField = new AccessorByField(fieldColumnEntry.getKey());
+			PropertyAccessor accessorByField = PropertyAccessor.forProperty(fieldColumnEntry.getKey().getDeclaringClass(), fieldColumnEntry.getKey().getName());
 			this.fieldToColumn.put(accessorByField, column);
 			columnToField.put(column.getName(), accessorByField);
 		}
@@ -60,9 +65,9 @@ public class FieldMappingStrategy<T> implements IMappingStrategy<T> {
 		this.classToPersist = (Class<T>) firstEntry.getKey().getDeclaringClass();
 		this.rowTransformer = new ToBeanRowTransformer<>(Reflections.getDefaultConstructor(classToPersist), columnToField);
 		
-		Entry<AccessorByField, Column> primaryKeyEntry = Iterables.filter(this.fieldToColumn.entrySet(), new Finder<Entry<AccessorByField, Column>>() {
+		Entry<PropertyAccessor, Column> primaryKeyEntry = Iterables.filter(this.fieldToColumn.entrySet(), new Finder<Entry<PropertyAccessor, Column>>() {
 			@Override
-			public boolean accept(Entry<AccessorByField, Column> fieldColumnEntry) {
+			public boolean accept(Entry<PropertyAccessor, Column> fieldColumnEntry) {
 				return fieldColumnEntry.getValue().isPrimaryKey();
 			}
 		});
@@ -89,7 +94,7 @@ public class FieldMappingStrategy<T> implements IMappingStrategy<T> {
 	public PersistentValues getInsertValues(@Nonnull final T t) {
 		return foreachField(new FieldVisitor() {
 			@Override
-			protected void visitField(Entry<AccessorByField, Column> fieldColumnEntry) throws IllegalAccessException {
+			protected void visitField(Entry<PropertyAccessor, Column> fieldColumnEntry) throws IllegalAccessException {
 				toReturn.putUpsertValue(fieldColumnEntry.getValue(), fieldColumnEntry.getKey().get(t));
 			}
 		}, true);	// primary key must be inserted (not if DB gives it but it's not implemented yet)
@@ -101,8 +106,8 @@ public class FieldMappingStrategy<T> implements IMappingStrategy<T> {
 		// getting differences
 		PersistentValues toReturn = foreachField(new FieldVisitor() {
 			@Override
-			protected void visitField(Entry<AccessorByField, Column> fieldColumnEntry) throws IllegalAccessException {
-				AccessorByField<T, Object> field = fieldColumnEntry.getKey();
+			protected void visitField(Entry<PropertyAccessor, Column> fieldColumnEntry) throws IllegalAccessException {
+				PropertyAccessor<T, Object> field = fieldColumnEntry.getKey();
 				Object modifiedValue = field.get(modified);
 				Object unmodifiedValue = unmodified == null ? null : field.get(unmodified);
 				Column fieldColumn = fieldColumnEntry.getValue();
@@ -171,7 +176,7 @@ public class FieldMappingStrategy<T> implements IMappingStrategy<T> {
 	}
 	
 	private PersistentValues foreachField(final FieldVisitor visitor, boolean withPK) {
-		Map<AccessorByField, Column> fieldsTobeVisited = new LinkedHashMap<>(this.fieldToColumn);
+		Map<PropertyAccessor, Column> fieldsTobeVisited = new LinkedHashMap<>(this.fieldToColumn);
 		if (!withPK) {
 			fieldsTobeVisited.remove(this.primaryKeyField);
 		}
@@ -188,12 +193,12 @@ public class FieldMappingStrategy<T> implements IMappingStrategy<T> {
 		return this.rowTransformer.transform(row);
 	}
 	
-	private static abstract class FieldVisitor extends ForEach<Entry<AccessorByField, Column>, Void> {
+	private static abstract class FieldVisitor extends ForEach<Entry<PropertyAccessor, Column>, Void> {
 		
 		protected PersistentValues toReturn = new PersistentValues();
 		
 		@Override
-		public final Void visit(Entry<AccessorByField, Column> fieldColumnEntry) {
+		public final Void visit(Entry<PropertyAccessor, Column> fieldColumnEntry) {
 			try {
 				visitField(fieldColumnEntry);
 			} catch (IllegalAccessException e) {
@@ -202,6 +207,6 @@ public class FieldMappingStrategy<T> implements IMappingStrategy<T> {
 			return null;
 		}
 		
-		protected abstract void visitField(Entry<AccessorByField, Column> fieldColumnEntry) throws IllegalAccessException;
+		protected abstract void visitField(Entry<PropertyAccessor, Column> fieldColumnEntry) throws IllegalAccessException;
 	}
 }

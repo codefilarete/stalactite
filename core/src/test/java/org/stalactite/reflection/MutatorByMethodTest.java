@@ -1,0 +1,39 @@
+package org.stalactite.reflection;
+
+import static org.testng.AssertJUnit.*;
+
+import org.stalactite.lang.Reflections;
+import org.testng.annotations.Test;
+
+/**
+ * @author Guillaume Mary
+ */
+public class MutatorByMethodTest {
+	
+	@Test
+	public void testForProperty() throws Exception {
+		MutatorByMethod testInstance = MutatorByMethod.forProperty(Toto.class, "a");
+		assertEquals(testInstance.getSetter(), Reflections.getMethod(Toto.class, "setA", Integer.TYPE));
+	}
+	
+	@Test
+	public void testSet() throws Exception {
+		MutatorByMethod<Toto, Integer> testInstance = new MutatorByMethod<>(Reflections.getMethod(Toto.class, "setA", Integer.TYPE));
+		Toto toto = new Toto();
+		testInstance.set(toto, 42);
+		assertEquals(42, toto.a);
+	}
+	
+	private static class Toto {
+		private int a;
+		
+		public int getA() {
+			return a;
+		}
+		
+		public void setA(int a) {
+			this.a = a;
+		}
+	}
+	
+}

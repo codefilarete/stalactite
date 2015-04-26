@@ -1,7 +1,8 @@
 package org.stalactite.reflection;
 
-import org.stalactite.lang.Reflections;
 import static org.testng.AssertJUnit.*;
+
+import org.stalactite.lang.Reflections;
 import org.testng.annotations.Test;
 
 /**
@@ -11,26 +12,16 @@ public class AccessorByMethodTest {
 	
 	@Test
 	public void testForProperty() throws Exception {
-		AccessorByMethod accessorByMethodForFieldA = AccessorByMethod.forProperty(Toto.class, "a");
-		AccessorByMethod testInstance = new AccessorByMethod(Reflections.getMethod(Toto.class, "getA"), Reflections.getMethod(Toto.class, "setA", Integer.TYPE));
-		testInstance.getGetter().equals(accessorByMethodForFieldA.getGetter());
-		testInstance.getSetter().equals(accessorByMethodForFieldA.getSetter());
+		AccessorByMethod testInstance = AccessorByMethod.forProperty(Toto.class, "a");
+		assertEquals(testInstance.getGetter(), Reflections.getMethod(Toto.class, "getA"));
 	}
 	
 	@Test
 	public void testGet() throws Exception {
-		AccessorByMethod testInstance = new AccessorByMethod(Reflections.getMethod(Toto.class, "getA"), Reflections.getMethod(Toto.class, "setA", Integer.TYPE));
+		AccessorByMethod<Toto, Integer> testInstance = new AccessorByMethod<>(Reflections.getMethod(Toto.class, "getA"));
 		Toto toto = new Toto();
 		toto.a = 42;
-		assertEquals(42, testInstance.get(toto));
-	}
-	
-	@Test
-	public void testSet() throws Exception {
-		AccessorByMethod testInstance = new AccessorByMethod(Reflections.getMethod(Toto.class, "getA"), Reflections.getMethod(Toto.class, "setA", Integer.TYPE));
-		Toto toto = new Toto();
-		testInstance.set(toto, 42);
-		assertEquals(42, toto.a);
+		assertEquals((Object) 42, testInstance.get(toto));
 	}
 	
 	private static class Toto {
