@@ -19,7 +19,11 @@ public class MetaPhone<O extends MetaModel> extends MetaModel<O> {
 //		number.setOwner(this);
 	}
 	
-	public MetaModel<MetaPhone> getNumber() {
-		return new MetaModel<MetaPhone>(method(Phone.class, "getNumber"), this);
+	public MetaModel<?> getNumber() {
+		return new MetaModel<>(method(Phone.class, "getNumber"), this);
+	}
+	
+	public MetaString<MetaPhone> getNumber2() {
+		return new MetaString<MetaPhone>(getNumber().getDescription(), this);
 	}
 }

@@ -1,8 +1,14 @@
 package org.stalactite.lang.bean.safemodel;
 
+import java.util.ArrayList;
+import java.util.Iterator;
+
 import org.stalactite.lang.StringAppender;
 import org.stalactite.lang.bean.safemodel.MetaModel.AbstractMemberDescription;
+import org.stalactite.lang.bean.safemodel.MetaModel.ArrayDescription;
 import org.stalactite.lang.bean.safemodel.MetaModel.MethodDescription;
+import org.stalactite.lang.collection.Arrays;
+import org.stalactite.lang.collection.Iterables;
 
 /**
  * @author Guillaume Mary
@@ -11,27 +17,48 @@ public class MetaModelPathBuilder implements IMetaModelTransformer<String> {
 	
 	@Override
 	public String transform(MetaModel metaModel) {
+		Iterator<MetaModel> modelPathIterator = buildMetaModelIterator(metaModel);
 		StringAppender path = new StringAppender(100);
-		MetaModel owner = metaModel;
-		while (owner != null && owner.getDescription() != null) {
-			AbstractMemberDescription description = owner.getDescription();
-			StringAppender accessorDescription = new StringAppender(50);
-			accessorDescription.cat(description.getName());
+		while (modelPathIterator.hasNext()) {
+			MetaModel childModel = modelPathIterator.next();
+			AbstractMemberDescription description = childModel.getDescription();
+			path.cat(description.getName());
 			if (description instanceof MethodDescription) {
-				accessorDescription.cat("(");
-				Object[] methodParams = ((MethodDescription) description).getParameters();
-				for (Object parameter : methodParams) {
-					accessorDescription.cat(String.valueOf(parameter), ", ");
-				}
-				if (methodParams.length > 0) {
-					accessorDescription.cutTail(2);
-				}
-				accessorDescription.cat(")");
+				cat((MethodDescription) description, path);
+			} else if (description instanceof ArrayDescription) {
+				cat((ArrayDescription) description, path);
 			}
-			path.cat(0, ".", accessorDescription);
+			path.cat(".");
+		}
+		path.cutTail(1);
+		return path.toString();
+	}
+	
+	private Iterator<MetaModel> buildMetaModelIterator(MetaModel metaModel) {
+		// le paramètre d'entrée est le dernier fils, il faut inverser la relation
+		// pour se simplifier la construction du chemin
+		ArrayList<MetaModel> modelPath = new ArrayList<>(10);
+		MetaModel owner = metaModel;
+		while (owner != null) {
+			modelPath.add(owner);
 			owner = owner.getOwner();
 		}
-		path.cutHead(1);
-		return path.toString();
+		return Iterables.reverseIterator(modelPath);
+	}
+	
+	private void cat(MethodDescription description, StringAppender path) {
+		path.cat("(");
+		Object[] methodParams = description.getParameters();
+		if (!Arrays.isEmpty(methodParams)) {
+			for (Object parameter : methodParams) {
+				path.cat(String.valueOf(parameter), ", ");
+			}
+			path.cutTail(2);
+		}
+		path.cat(")");
+	}
+	
+	private void cat(ArrayDescription description, StringAppender path) {
+		path.cat("[", String.valueOf(description.getIndex()), "]");
 	}
 }

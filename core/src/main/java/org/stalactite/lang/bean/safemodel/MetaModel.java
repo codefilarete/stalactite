@@ -13,7 +13,7 @@ public class MetaModel<O extends MetaModel> {
 		return new FieldDescription(clazz, name);
 	}
 	
-	protected static MethodDescription method(Class clazz, String name, Class... parameters) {
+	protected static MethodDescription method(Class clazz, String name, Object... parameters) {
 		return new MethodDescription(clazz, name, parameters);
 	}
 	
@@ -84,17 +84,48 @@ public class MetaModel<O extends MetaModel> {
 		}
 	}
 	
+	public static class ArrayDescription extends AbstractMemberDescription {
+		
+		private final int index;
+		
+		public ArrayDescription(Class declaringClass, String name, int index) {
+			super(declaringClass, name);
+			this.index = index;
+		}
+		
+		public int getIndex() {
+			return index;
+		}
+	}
+	
 	public static class MethodDescription extends AbstractMemberDescription {
 		
 		private final Object[] parameters;
 		
-		public MethodDescription(Class declaringClass, String name, Object[] parameters) {
+		public MethodDescription(Class declaringClass, String name, Object ... parameters) {
 			super(declaringClass, name);
 			this.parameters = parameters;
 		}
 		
 		public Object[] getParameters() {
 			return parameters;
+		}
+	}
+	
+	public static class AccessorDescription extends MethodDescription {
+		
+		private final String setterName;
+		
+		public AccessorDescription(Class declaringClass, String getterName, String setterName, Object parameter) {
+			super(declaringClass, getterName, parameter);
+			this.setterName = setterName;
+		}
+		
+		public String getGetterName() {
+			return getName();
+		}
+		public String getSetterName() {
+			return setterName;
 		}
 	}
 }

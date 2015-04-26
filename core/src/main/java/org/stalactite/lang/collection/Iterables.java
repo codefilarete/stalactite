@@ -11,9 +11,9 @@ import java.util.SortedMap;
 import javax.annotation.Nonnull;
 
 /**
- * @author mary
+ * @author Guillaume Mary
  */
-public class Iterables {
+public final class Iterables {
 	
 	/**
 	 * Renvoie la première valeur d'une Iterable
@@ -76,6 +76,10 @@ public class Iterables {
 		return result;
 	}
 	
+	public static <E> Iterator<E> reverseIterator(List<E> list) {
+		return new ReverseListIterator<>(list);
+	}
+	
 	/**
 	 * Visite chaque élément de <i>c</i> pour y appliquer <i>visitor</i>
 	 * @param c une collection au sens large, null accepté, dans ce cas ne fait rien
@@ -134,7 +138,7 @@ public class Iterables {
 		return visitor.getResult();
 	}
 
-	public static interface IVisitor<E, R> {
+	public interface IVisitor<E, R> {
 		R visit(E e);
 		
 		boolean pursue();
@@ -157,7 +161,7 @@ public class Iterables {
 	 * @param <E>
 	 * @param <O>
 	 */
-	public static interface IResultVisitor<E, O> extends IVisitor<E, O> {
+	public interface IResultVisitor<E, O> extends IVisitor<E, O> {
 		O getResult();
 	}
 	
@@ -271,4 +275,6 @@ public class Iterables {
 		
 		protected abstract K getKey(E e);
 	}
+	
+	private Iterables() {}
 }
