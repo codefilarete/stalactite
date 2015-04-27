@@ -6,4 +6,8 @@ package org.stalactite.lang.bean.safemodel.model;
 public class Person {
 	
 	private Address address;
+	
+	public Person(Address address) {
+		this.address = address;
+	}
 }

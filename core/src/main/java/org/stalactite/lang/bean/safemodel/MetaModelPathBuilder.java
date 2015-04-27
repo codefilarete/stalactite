@@ -3,7 +3,7 @@ package org.stalactite.lang.bean.safemodel;
 import java.util.Iterator;
 
 import org.stalactite.lang.StringAppender;
-import org.stalactite.lang.bean.safemodel.MetaModel.ArrayDescription;
+import org.stalactite.lang.bean.safemodel.MetaModel.FieldDescription;
 import org.stalactite.lang.bean.safemodel.MetaModel.MethodDescription;
 import org.stalactite.lang.collection.Arrays;
 
@@ -35,16 +35,20 @@ public class MetaModelPathBuilder implements IMetaModelTransformer<String> {
 		path = new StringAppender(100);
 		while (modelPathIterator.hasNext()) {
 			modelPathIterator.next();
-			path.cat(".");
 		}
-		return path.cutTail(1).toString();
+		if (path.charAt(0) == '.') {
+			path.cutHead(1);
+		}
+		return path.toString();
 	}
 	
 	protected void catField(MetaModel model) {
-		path.cat(model.getDescription().getName());
+		path.cat(".");
+		path.cat(((FieldDescription) model.getDescription()).getName());
 	}
 	
 	protected void catMethod(MetaModel model) {
+		path.cat(".");
 		MethodDescription description = (MethodDescription) model.getDescription();
 		path.cat(description.getName());
 		path.cat("(");
@@ -62,8 +66,6 @@ public class MetaModelPathBuilder implements IMetaModelTransformer<String> {
 	}
 	
 	protected void catArray(MetaModel model) {
-		ArrayDescription description = (ArrayDescription) model.getDescription();
-		path.cat(description.getName());
 		path.cat("[", String.valueOf(model.getMemberParameter()), "]");
 	}
 }

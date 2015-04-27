@@ -64,22 +64,37 @@ public class MetaModel<O extends MetaModel> {
 		return memberParameter;
 	}
 	
-	public void setMemberParameter(Object memberParameter) {
+	public void setParameter(Object memberParameter) {
 		this.memberParameter = memberParameter;
 	}
 	
 	public static abstract class AbstractMemberDescription {
 		
 		private final Class declaringClass;
-		private final String name;
 		
-		public AbstractMemberDescription(Class declaringClass, String name) {
+		public AbstractMemberDescription(Class declaringClass) {
 			this.declaringClass = declaringClass;
-			this.name = name;
 		}
 		
 		public Class getDeclaringClass() {
 			return declaringClass;
+		}
+	}
+	
+	public static class ArrayDescription extends AbstractMemberDescription {
+		
+		public ArrayDescription(Class declaringClass) {
+			super(declaringClass);
+		}
+	}
+	
+	public static abstract class AbstracNamedtMemberDescription extends AbstractMemberDescription {
+		
+		private final String name;
+		
+		public AbstracNamedtMemberDescription(Class declaringClass, String name) {
+			super(declaringClass);
+			this.name = name;
 		}
 		
 		public String getName() {
@@ -87,21 +102,14 @@ public class MetaModel<O extends MetaModel> {
 		}
 	}
 	
-	public static class FieldDescription extends AbstractMemberDescription {
+	public static class FieldDescription extends AbstracNamedtMemberDescription {
 		
 		public FieldDescription(Class declaringClass, String name) {
 			super(declaringClass, name);
 		}
 	}
 	
-	public static class ArrayDescription extends AbstractMemberDescription {
-		
-		public ArrayDescription(Class declaringClass, String name) {
-			super(declaringClass, name);
-		}
-	}
-	
-	public static class MethodDescription extends AbstractMemberDescription {
+	public static class MethodDescription extends AbstracNamedtMemberDescription {
 		
 		private final Class[] parameterTypes;
 		
@@ -115,11 +123,11 @@ public class MetaModel<O extends MetaModel> {
 		}
 	}
 	
-	public static class AccessorDescription extends MethodDescription {
+	public static class GetterSetterDescription extends MethodDescription {
 		
 		private final String setterName;
 		
-		public AccessorDescription(Class declaringClass, String getterName, String setterName, Class ... parameterTypes) {
+		public GetterSetterDescription(Class declaringClass, String getterName, String setterName, Class... parameterTypes) {
 			super(declaringClass, getterName, parameterTypes);
 			this.setterName = setterName;
 		}

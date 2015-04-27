@@ -30,8 +30,28 @@ public class AccessorByMethod<C, T> extends AbstractAccessor<C, T> implements Ac
 	}
 	
 	@Override
-	protected T doGet(C c) throws IllegalAccessException, InvocationTargetException {
-		return (T) getGetter().invoke(c);
+	public T get(C c) {
+		return get(c, new Object[]{});
+	}
+	
+	public T get(C c, Object ... args) {
+		try {
+			return doGet(c, args);
+		} catch (Throwable t) {
+			handleException(t, c, args);
+			// shouldn't happen
+			return null;
+		}
+	}
+	
+	@Override
+	// NB: set final to force override doGet(C, Object ...) and so to avoid mistake
+	protected final T doGet(C c) throws IllegalAccessException, InvocationTargetException {
+		return doGet(c, new Object[] {});
+	}
+	
+	protected T doGet(C c, Object ... args) throws IllegalAccessException, InvocationTargetException {
+		return (T) getGetter().invoke(c, args);
 	}
 	
 	@Override

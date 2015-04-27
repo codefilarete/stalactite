@@ -8,11 +8,11 @@ import org.stalactite.lang.Reflections;
 /**
  * @author Guillaume Mary
  */
-public class AccessorForList<C extends List<T>, T> extends AccessorByMethod<C, T> {
+public class ListAccessor<C extends List<T>, T> extends AccessorByMethod<C, T> {
 	
 	private int index;
 	
-	public AccessorForList() {
+	public ListAccessor() {
 		super(Reflections.getMethod(List.class, "get", Integer.TYPE));
 	}
 	
@@ -25,7 +25,12 @@ public class AccessorForList<C extends List<T>, T> extends AccessorByMethod<C, T
 	}
 	
 	@Override
-	protected T doGet(C c) throws IllegalAccessException, InvocationTargetException {
+	protected T doGet(C c, Object ... args) throws IllegalAccessException, InvocationTargetException {
 		return c.get(getIndex());
+	}
+	
+	@Override
+	protected String getGetterDescription() {
+		return "java.util.List.get(int)";
 	}
 }

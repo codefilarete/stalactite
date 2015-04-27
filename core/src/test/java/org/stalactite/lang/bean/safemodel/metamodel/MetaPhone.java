@@ -8,7 +8,7 @@ import org.stalactite.lang.bean.safemodel.model.Phone;
  */
 public class MetaPhone<O extends MetaModel> extends MetaModel<O> {
 	
-	public MetaModel<MetaPhone> number = new MetaModel<>(field(Phone.class, "number"));
+	public MetaString<MetaPhone> number = new MetaString<>(field(Phone.class, "number"));
 	
 	public MetaPhone() {
 	}
@@ -19,8 +19,8 @@ public class MetaPhone<O extends MetaModel> extends MetaModel<O> {
 //		number.setOwner(this);
 	}
 	
-	public MetaModel<?> getNumber() {
-		return new MetaModel<>(method(Phone.class, "getNumber"), this);
+	public MetaString<?> getNumber() {
+		return new MetaString<>(method(Phone.class, "getNumber"), this);
 	}
 	
 	public MetaString<MetaPhone> getNumber2() {

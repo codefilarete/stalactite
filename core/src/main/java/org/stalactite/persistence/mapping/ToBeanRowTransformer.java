@@ -61,13 +61,9 @@ public class ToBeanRowTransformer<T> implements IRowTransformer<T> {
 	}
 	
 	public void convertColumnsToProperties(Row row, T rowBean) {
-		try {
-			for (Entry<String, PropertyAccessor> columnFieldEntry : columnToField.entrySet()) {
-				Object object = row.get(columnFieldEntry.getKey());
-				columnFieldEntry.getValue().set(rowBean, object);
-			}
-		} catch(IllegalAccessException e){
-			Exceptions.throwAsRuntimeException(e);
+		for (Entry<String, PropertyAccessor> columnFieldEntry : columnToField.entrySet()) {
+			Object object = row.get(columnFieldEntry.getKey());
+			columnFieldEntry.getValue().set(rowBean, object);
 		}
 	}
 }

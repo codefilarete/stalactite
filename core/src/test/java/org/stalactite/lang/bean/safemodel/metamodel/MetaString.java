@@ -7,6 +7,9 @@ import org.stalactite.lang.bean.safemodel.MetaModel;
  */
 public class MetaString<O extends MetaModel> extends MetaModel<O> {
 	
+	public MetaString() {
+	}
+	
 	public MetaString(AbstractMemberDescription description) {
 		super(description);
 	}
@@ -17,15 +20,17 @@ public class MetaString<O extends MetaModel> extends MetaModel<O> {
 	
 	public MetaModel charAt(int index) {
 		MetaModel<MetaModel> chartAt = new MetaModel<>(method(String.class, "charAt", Integer.TYPE));
-		chartAt.setMemberParameter(index);
+		chartAt.setParameter(index);
 		chartAt.setOwner(this);
 		return chartAt;
 	}
 	
 	public MetaModel charAt_array(int index) {
-		MetaModel<MetaModel> toCharArray = new MetaModel<>(new ArrayDescription(String.class, "toCharArray()"));
-		toCharArray.setOwner(this);
-		toCharArray.setMemberParameter(index);
+		MetaModel<MetaModel> chartAt = new MetaModel<>(method(String.class, "toCharArray"));
+		chartAt.setOwner(this);
+		MetaModel<MetaModel> toCharArray = new MetaModel<>(new ArrayDescription(String.class));
+		toCharArray.setOwner(chartAt);
+		toCharArray.setParameter(index);
 		return toCharArray;
 	}
 	

@@ -1,6 +1,6 @@
 package org.stalactite.lang.bean.safemodel.metamodel;
 
-import org.stalactite.lang.bean.safemodel.ListElementAccessDefinition;
+import org.stalactite.lang.bean.safemodel.ListElementAccessDescription;
 import org.stalactite.lang.bean.safemodel.MetaModel;
 import org.stalactite.lang.bean.safemodel.model.Address;
 
@@ -23,10 +23,10 @@ public class MetaAddress<O extends MetaModel> extends MetaModel<O> {
 	}
 	
 	public MetaPhone<MetaModel> phones(int i) {
-		ListElementAccessDefinition accessor = new ListElementAccessDefinition();
+		ListElementAccessDescription accessor = new ListElementAccessDescription();
 		MetaPhone<MetaModel> metaPhone = new MetaPhone<>(accessor);
 		metaPhone.setOwner(phones);
-		metaPhone.setMemberParameter(i);
+		metaPhone.setParameter(i);
 		return metaPhone;
 	}
 }

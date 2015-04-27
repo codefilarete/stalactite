@@ -10,11 +10,11 @@ import org.testng.annotations.Test;
 /**
  * @author Guillaume Mary
  */
-public class AccessorForListTest {
+public class ListAccessorTest {
 	
 	@Test
 	public void testGet() throws Exception {
-		AccessorForList<List<String>, String> testInstance = new AccessorForList<>();
+		ListAccessor<List<String>, String> testInstance = new ListAccessor<>();
 		List<String> sample = Arrays.asList("a", "b", "c");
 		
 		testInstance.setIndex(0);
@@ -27,7 +27,7 @@ public class AccessorForListTest {
 	
 	@Test(expectedExceptions = ArrayIndexOutOfBoundsException.class)
 	public void testGet_ArrayIndexOutOfBoundsException() throws Exception {
-		AccessorForList<List<String>, String> testInstance = new AccessorForList<>();
+		ListAccessor<List<String>, String> testInstance = new ListAccessor<>();
 		List<String> sample = Arrays.asList("a", "b", "c");
 		
 		testInstance.setIndex(-1);

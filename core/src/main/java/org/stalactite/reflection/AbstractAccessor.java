@@ -2,21 +2,18 @@ package org.stalactite.reflection;
 
 import java.lang.reflect.InvocationTargetException;
 
-import org.stalactite.lang.exception.Exceptions;
-
 /**
  * @author Guillaume Mary
  */
-public abstract class AbstractAccessor<C, T> implements IAccessor<C, T> {
+public abstract class AbstractAccessor<C, T> extends AbstractReflector<C, T> implements IAccessor<C, T> {
 	
 	@Override
-	public T get(C c) throws IllegalAccessException {
+	public T get(C c) {
 		try {
 			return doGet(c);
-		} catch (NullPointerException npe) {
-			throw new NullPointerException("Cannot call " + getGetterDescription() + " on null instance");
-		} catch (InvocationTargetException e) {
-			Exceptions.throwAsRuntimeException(e.getCause());
+		} catch (Throwable t) {
+			handleException(t, c);
+			// shouldn't happen
 			return null;
 		}
 	}

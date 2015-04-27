@@ -157,22 +157,12 @@ public class FieldMappingStrategy<T> implements IMappingStrategy<T> {
 	
 	@Override
 	public Serializable getId(T t) {
-		try {
-			return primaryKeyField.get(t);
-		} catch (IllegalAccessException e) {
-			Exceptions.throwAsRuntimeException(e);
-			// unjoinable code
-			return null;
-		}
+		return primaryKeyField.get(t);
 	}
 	
 	@Override
 	public void setId(T t, Serializable identifier) {
-		try {
-			primaryKeyField.set(t, identifier);
-		} catch (IllegalAccessException e) {
-			Exceptions.throwAsRuntimeException(e);
-		}
+		primaryKeyField.set(t, identifier);
 	}
 	
 	private PersistentValues foreachField(final FieldVisitor visitor, boolean withPK) {

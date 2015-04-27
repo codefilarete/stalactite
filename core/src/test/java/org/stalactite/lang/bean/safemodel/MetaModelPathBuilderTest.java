@@ -11,10 +11,10 @@ import org.testng.annotations.Test;
  */
 public class MetaModelPathBuilderTest {
 	
-	private static final String TEST_PATH_DATA = "testPathData";
+	private static final String TEST_PATH_DATA = "testTransformData";
 	
 	@DataProvider(name = TEST_PATH_DATA)
-	public Object[][] testPathData() {
+	public Object[][] testTransformData() {
 		return new Object[][] {
 				{ new MetaPerson<>().address.city, "address.city" },
 				{ new MetaPerson<>().address.phones.number, "address.phones.number" },
@@ -26,7 +26,7 @@ public class MetaModelPathBuilderTest {
 	}
 	
 	@Test(dataProvider = TEST_PATH_DATA)
-	public void testPath(MetaModel metaModel, String expected) throws Exception {
+	public void testTransform(MetaModel metaModel, String expected) throws Exception {
 		MetaModelPathBuilder testInstance = new MetaModelPathBuilder();
 		assertEquals(expected, testInstance.transform(metaModel));
 	}

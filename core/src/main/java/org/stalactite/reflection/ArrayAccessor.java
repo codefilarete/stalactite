@@ -1,11 +1,13 @@
 package org.stalactite.reflection;
 
+import java.lang.reflect.Array;
 import java.lang.reflect.InvocationTargetException;
 
 /**
  * @author Guillaume Mary
  */
-public class ArrayAccessor<C> extends AbstractAccessor<C[], C> {
+// NB: pas réussi à faire AbstractAccessor<C[], C> sans que ça génère un "C cannot be cast to Object[]" par MetaModelAccessorBuilder
+public class ArrayAccessor<C> extends AbstractAccessor<C, C> {
 	
 	private int index;
 	
@@ -24,9 +26,27 @@ public class ArrayAccessor<C> extends AbstractAccessor<C[], C> {
 		this.index = index;
 	}
 	
+	/**
+	 * Equivalent pour get(C) mais en accès direct par un tableau de C
+	 */
+	public C get(C[] c) {
+		return get((C) c);
+	}
+	
 	@Override
-	protected C doGet(C[] cs) throws IllegalAccessException, InvocationTargetException {
-		return cs[index];
+	public C get(C c) {
+		try {
+			return doGet(c);
+		} catch (Throwable t) {
+			handleException(t, c);
+			// shouldn't happen
+			return null;
+		}
+	}
+	
+	@Override
+	protected C doGet(C cs) throws IllegalAccessException, InvocationTargetException {
+		return (C) Array.get(cs, getIndex());
 	}
 	
 	@Override

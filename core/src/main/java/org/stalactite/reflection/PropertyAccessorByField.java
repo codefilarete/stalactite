@@ -8,7 +8,7 @@ import java.lang.reflect.Field;
 public class PropertyAccessorByField<C, T> extends PropertyAccessor<C, T> {
 	
 	public PropertyAccessorByField(Field field) {
-		super(new AccessorByField<C, T>(field), new FieldMutator<C, T>(field));
+		super(new AccessorByField<C, T>(field), new MutatorByField<C, T>(field));
 	}
 	
 }

@@ -6,11 +6,11 @@ import java.lang.reflect.InvocationTargetException;
 /**
  * @author mary
  */
-public class FieldMutator<C, T> extends AbstractMutator<C, T> implements MutatorByMember<Field> {
+public class MutatorByField<C, T> extends AbstractMutator<C, T> implements MutatorByMember<Field> {
 	
 	private final Field field;
 	
-	public FieldMutator(Field field) {
+	public MutatorByField(Field field) {
 		super();
 		this.field = field;
 		this.field.setAccessible(true);

@@ -20,7 +20,7 @@ public class PropertyAccessor<C, T> implements IAccessor<C, T>, IMutator<C, T> {
 		}
 		IMutator<C, T> propertySetter = MutatorByMethod.forProperty(clazz, propertyName);
 		if (propertySetter == null) {
-			propertySetter = new FieldMutator<>(Reflections.getField(clazz, propertyName));
+			propertySetter = new MutatorByField<>(Reflections.getField(clazz, propertyName));
 		}
 		return new PropertyAccessor<>(propertyGetter, propertySetter);
 	}
@@ -43,11 +43,11 @@ public class PropertyAccessor<C, T> implements IAccessor<C, T>, IMutator<C, T> {
 	}
 	
 	@Override
-	public T get(C c) throws IllegalAccessException {
+	public T get(C c) {
 		return this.accessor.get(c);
 	}
 	
-	public void set(C c, T t) throws IllegalAccessException {
+	public void set(C c, T t) {
 		this.mutator.set(c, t);
 	}
 }
