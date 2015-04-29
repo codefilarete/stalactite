@@ -21,8 +21,12 @@ public final class Iterables {
 	 * @return null s'il n'y a pas de valeur dans l'Iterable
 	 */
 	public static <E> E first(Iterable<E> iterable) {
+		return first(iterable, null);
+	}
+	
+	public static <E> E first(Iterable<E> iterable, E defaultValue) {
 		if (iterable == null) {
-			return null;
+			return defaultValue;
 		} else {
 			Iterator<E> iterator = iterable.iterator();
 			return iterator.hasNext() ? iterator.next() : null;
@@ -30,8 +34,12 @@ public final class Iterables {
 	}
 	
 	public static <E> E first(List<E> iterable) {
+		return first(iterable, null);
+	}
+	
+	public static <E> E first(List<E> iterable, E defaultValue) {
 		if (Collections.isEmpty(iterable)) {
-			return null;
+			return defaultValue;
 		} else {
 			return iterable.get(0);
 		}
@@ -44,8 +52,12 @@ public final class Iterables {
 	 * @return la première entrée de la Map, null si iterable est null
 	 */
 	public static <K, V> Map.Entry<K, V> first(Map<K, V> iterable) {
+		return first(iterable, null);
+	}
+	
+	public static <K, V> Map.Entry<K, V> first(Map<K, V> iterable, Map.Entry<K, V> defaultValue) {
 		if (iterable == null) {
-			return null;
+			return defaultValue;
 		} else {
 			return first(iterable.entrySet());
 		}
@@ -58,13 +70,21 @@ public final class Iterables {
 	 * @return la première valeur de la Map, null si iterable est null ou s'il n'y a pas d'entrée dans la Map
 	 */
 	public static <V> V firstValue(Map<?, V> iterable) {
+		return firstValue(iterable, null);
+	}
+	
+	public static <V> V firstValue(Map<?, V> iterable, V defaultValue) {
 		Entry<?, V> firstEntry = first(iterable);
-		return firstEntry == null ? null : firstEntry.getValue();
+		return firstEntry == null ? defaultValue : firstEntry.getValue();
 	}
 	
 	public static <E> E last(List<E> iterable) {
+		return last(iterable, null);
+	}
+	
+	public static <E> E last(List<E> iterable, E defaultValue) {
 		if (iterable == null) {
-			return null;
+			return defaultValue;
 		} else {
 			return iterable.get(iterable.size()-1);
 		}
