@@ -27,6 +27,6 @@ public class AccessorByField<C, T> extends AbstractAccessor<C, T> implements Acc
 	
 	@Override
 	public String getGetterDescription() {
-		return getGetter().toString();
+		return "accessor for field " + getGetter().toString();
 	}
 }

@@ -18,6 +18,15 @@ public abstract class Strings {
 		});
 	}
 	
+	public static String uncapitalize(final CharSequence cs) {
+		return (String) doWithDelegate(cs, new DefaultNullOrEmptyDelegate() {
+			@Override
+			public CharSequence onNotNullNotEmpty() {
+				return Character.toLowerCase(cs.charAt(0)) + tail(cs, cs.length() - 1).toString();
+			}
+		});
+	}
+	
 	public static CharSequence head(final CharSequence cs, final int headSize) {
 		return doWithDelegate(cs, new DefaultNullOrEmptyDelegate() {
 			@Override

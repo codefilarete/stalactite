@@ -25,7 +25,7 @@ public class MetaString<O extends MetaModel> extends MetaModel<O> {
 		return chartAt;
 	}
 	
-	public MetaModel charAt_array(int index) {
+	public MetaModel toCharArray(int index) {
 		MetaModel<MetaModel> chartAt = new MetaModel<>(method(String.class, "toCharArray"));
 		chartAt.setOwner(this);
 		MetaModel<MetaModel> toCharArray = new MetaModel<>(new ArrayDescription(String.class));

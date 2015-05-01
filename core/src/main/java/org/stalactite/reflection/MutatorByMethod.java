@@ -1,12 +1,9 @@
 package org.stalactite.reflection;
 
-import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 
-import org.stalactite.lang.Reflections;
 import org.stalactite.lang.StringAppender;
-import org.stalactite.lang.Strings;
 
 /**
  * @author mary
@@ -14,13 +11,6 @@ import org.stalactite.lang.Strings;
 public class MutatorByMethod<C, T> extends AbstractMutator<C, T> implements MutatorByMember<Method> {
 	
 	private final Method setter;
-	
-	public static MutatorByMethod forProperty(Class clazz, String propertyName) {
-		Field propertyField = Reflections.getField(clazz, propertyName);
-		String capitalizedProperty = Strings.capitalize(propertyName);
-		Method setter = Reflections.getMethod(clazz, "set" + capitalizedProperty, propertyField.getType());
-		return setter == null ? null : new MutatorByMethod(setter);
-	}
 	
 	public MutatorByMethod(Method setter) {
 		super();

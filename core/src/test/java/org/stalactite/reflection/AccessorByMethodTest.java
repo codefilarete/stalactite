@@ -12,7 +12,7 @@ public class AccessorByMethodTest {
 	
 	@Test
 	public void testForProperty() throws Exception {
-		AccessorByMethod testInstance = AccessorByMethod.forProperty(Toto.class, "a");
+		AccessorByMethod testInstance = Accessors.accessorByMethod(Toto.class, "a");
 		assertEquals(testInstance.getGetter(), Reflections.getMethod(Toto.class, "getA"));
 	}
 	

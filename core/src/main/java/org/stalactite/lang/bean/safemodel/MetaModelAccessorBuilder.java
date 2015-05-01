@@ -1,27 +1,25 @@
 package org.stalactite.lang.bean.safemodel;
 
 import java.lang.reflect.Method;
-import java.util.ArrayList;
 import java.util.Iterator;
-import java.util.List;
 
 import org.stalactite.lang.Reflections;
 import org.stalactite.lang.bean.safemodel.MetaModel.FieldDescription;
 import org.stalactite.lang.bean.safemodel.MetaModel.MethodDescription;
 import org.stalactite.reflection.AccessorByField;
 import org.stalactite.reflection.AccessorByMethod;
+import org.stalactite.reflection.AccessorChain;
 import org.stalactite.reflection.ArrayAccessor;
-import org.stalactite.reflection.IAccessor;
 
 /**
  * @author Guillaume Mary
  */
-public class MetaModelAccessorBuilder implements IMetaModelTransformer<List<IAccessor>> {
+public class MetaModelAccessorBuilder<C, T> implements IMetaModelTransformer<AccessorChain<C, T>> {
 	
-	private List<IAccessor> accessorChain;
+	private AccessorChain<C, T> accessorChain;
 	
 	@Override
-	public List<IAccessor> transform(MetaModel metaModel) {
+	public AccessorChain<C, T> transform(MetaModel metaModel) {
 		Iterator<MetaModel> modelPathIterator = new MetaModelPathIterator(metaModel) {
 			@Override
 			protected void onFieldDescription(MetaModel model) {
@@ -38,13 +36,11 @@ public class MetaModelAccessorBuilder implements IMetaModelTransformer<List<IAcc
 				addArrayAccessor(model);
 			}
 		};
-		accessorChain = new ArrayList<>(5);
+		accessorChain = new AccessorChain<>();
+		// on parcourt tout les éléments, simplement pour déclencher les méthodes onXXXX() de l'Iterator
 		while (modelPathIterator.hasNext()) {
 			modelPathIterator.next();
 		}
-//		if (Iterables.last(accessorChain) instanceof AccessorByMethod) {
-//			accessorChain.set(accessorChain.size()-1, addAccessorMutator());
-//		}
 		return accessorChain;
 	}
 	
@@ -75,12 +71,6 @@ public class MetaModelAccessorBuilder implements IMetaModelTransformer<List<IAcc
 		this.accessorChain.add(accessorByMethod);
 	}
 	
-//	private void addAccessorMutator(MethodDescription description) {
-//		this.accessorChain.add(new AccessorByMethod(
-//				Reflections.getMethod(description.getDeclaringClass(), description.getName(), description.getParameterTypes()),
-//				null));
-//	}
-//	
 	private void addArrayAccessor(MetaModel model) {
 		this.accessorChain.add(new ArrayAccessor<>((int) model.getMemberParameter()));
 	}

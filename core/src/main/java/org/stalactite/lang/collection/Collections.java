@@ -38,6 +38,14 @@ public class Collections {
 		return toReturn;
 	}
 	
+	public static <E> List<E> cutHead(List<E> list) {
+		return new ArrayList<>(list.subList(1, list.size()));
+	}
+	
+	public static <E> List<E> cutTail(List<E> list) {
+		return new ArrayList<>(list.subList(0, list.size()-1));
+	}
+	
 	/**
 	 * Découpe une collection en paquets
 	 * 

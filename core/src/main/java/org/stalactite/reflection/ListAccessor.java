@@ -16,6 +16,11 @@ public class ListAccessor<C extends List<T>, T> extends AccessorByMethod<C, T> {
 		super(Reflections.getMethod(List.class, "get", Integer.TYPE));
 	}
 	
+	public ListAccessor(int index) {
+		this();
+		setIndex(index);
+	}
+	
 	public void setIndex(int index) {
 		this.index = index;
 	}

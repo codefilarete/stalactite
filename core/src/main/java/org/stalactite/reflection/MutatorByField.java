@@ -28,6 +28,6 @@ public class MutatorByField<C, T> extends AbstractMutator<C, T> implements Mutat
 	
 	@Override
 	protected String getSetterDescription() {
-		return getSetter().toString();
+		return "mutator for field " + getSetter().toString();
 	}
 }

@@ -12,7 +12,7 @@ public class MutatorByMethodTest {
 	
 	@Test
 	public void testForProperty() throws Exception {
-		MutatorByMethod testInstance = MutatorByMethod.forProperty(Toto.class, "a");
+		MutatorByMethod testInstance = Accessors.mutatorByMethod(Toto.class, "a");
 		assertEquals(testInstance.getSetter(), Reflections.getMethod(Toto.class, "setA", Integer.TYPE));
 	}
 	

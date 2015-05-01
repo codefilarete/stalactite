@@ -16,6 +16,11 @@ public class ListMutator<C extends List<T>, T> extends MutatorByMethod<C, T> {
 		super(Reflections.getMethod(List.class, "set", Integer.TYPE, Object.class));
 	}
 	
+	public ListMutator(int index) {
+		this();
+		setIndex(index);
+	}
+	
 	public void setIndex(int index) {
 		this.index = index;
 	}

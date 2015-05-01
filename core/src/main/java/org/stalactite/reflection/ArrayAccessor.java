@@ -29,8 +29,8 @@ public class ArrayAccessor<C> extends AbstractAccessor<C, C> {
 	/**
 	 * Equivalent pour get(C) mais en accès direct par un tableau de C
 	 */
-	public C get(C[] c) {
-		return get((C) c);
+	public C get(C[] cs) {
+		return cs[getIndex()];
 	}
 	
 	@Override
@@ -51,6 +51,6 @@ public class ArrayAccessor<C> extends AbstractAccessor<C, C> {
 	
 	@Override
 	protected String getGetterDescription() {
-		return "array index";
+		return "array index accessor";
 	}
 }
