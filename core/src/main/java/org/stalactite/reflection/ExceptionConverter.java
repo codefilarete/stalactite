@@ -10,21 +10,21 @@ import org.stalactite.lang.exception.Exceptions;
 /**
  * @author Guillaume Mary
  */
-public class ExceptionHandler<C> {
+public class ExceptionConverter<C> {
 	
-	protected void handleException(Throwable t, C c, AbstractReflector reflector, Object... args) {
+	protected void convertException(Throwable t, C c, AbstractReflector reflector, Object... args) {
 		if (t instanceof NullPointerException) {
 			throw new NullPointerException("Cannot call " + getReflectorDescription(reflector) + " on null instance");
 		} else if (t instanceof InvocationTargetException || t instanceof IllegalAccessException) {
 			Exceptions.throwAsRuntimeException(t.getCause());
 		} else if (t instanceof IllegalArgumentException) {
 			if ("wrong number of arguments".equals(t.getMessage())) {
-				handleWrongNumberOfArguments(reflector, args);
+				convertWrongNumberOfArguments(reflector, args);
 			} else if("object is not an instance of declaring class".equals(t.getMessage())) {
-				handleObjectIsNotAnInstanceOfDeclaringClass(c, reflector);
+				convertObjectIsNotAnInstanceOfDeclaringClass(c, reflector);
 			} else if(reflector instanceof AccessorByMember
 					&& !((AccessorByMember) reflector).getGetter().getDeclaringClass().isAssignableFrom(c.getClass())) {
-				handleCannotSetFieldToObject(c, (AccessorByMember) reflector);
+				convertCannotSetFieldToObject(c, (AccessorByMember) reflector);
 			} else {
 				Exceptions.throwAsRuntimeException(t);
 			}
@@ -33,7 +33,7 @@ public class ExceptionHandler<C> {
 		}
 	}
 	
-	private void handleWrongNumberOfArguments(AbstractReflector reflector, Object... args) {
+	private void convertWrongNumberOfArguments(AbstractReflector reflector, Object... args) {
 		String message = "wrong number of arguments for " + getReflectorDescription(reflector);
 		if (reflector instanceof AccessorByMethod) {
 			Class<?>[] parameterTypes = ((AccessorByMethod) reflector).getGetter().getParameterTypes();
@@ -46,7 +46,7 @@ public class ExceptionHandler<C> {
 		throw new IllegalArgumentException(message);
 	}
 	
-	private void handleObjectIsNotAnInstanceOfDeclaringClass(C c, AbstractReflector reflector) {
+	private void convertObjectIsNotAnInstanceOfDeclaringClass(C c, AbstractReflector reflector) {
 		String message = "object is not an instance of declaring class";
 		if (reflector instanceof AccessorByMember) {
 			Class<?> declaringClass = ((AccessorByMember) reflector).getGetter().getDeclaringClass();
@@ -55,7 +55,7 @@ public class ExceptionHandler<C> {
 		throw new IllegalArgumentException(message);
 	}
 	
-	private void handleCannotSetFieldToObject(C c, AccessorByMember reflector) {
+	private void convertCannotSetFieldToObject(C c, AccessorByMember reflector) {
 		// Modification du message par défaut qui n'est pas très clair "Can not set ... to ... "
 		Field getter = (Field) reflector.getGetter();
 		throw new IllegalArgumentException(c.getClass() + " doesn't have field " + getter.getName());

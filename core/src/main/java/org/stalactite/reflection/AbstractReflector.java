@@ -6,6 +6,6 @@ package org.stalactite.reflection;
 public class AbstractReflector<C> {
 	
 	protected void handleException(Throwable t, C target, Object... args) {
-		new ExceptionHandler<C>().handleException(t, target, this, args);
+		new ExceptionConverter<C>().convertException(t, target, this, args);
 	}
 }

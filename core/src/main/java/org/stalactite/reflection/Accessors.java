@@ -11,8 +11,6 @@ import org.stalactite.lang.Strings;
  */
 public final class Accessors {
 	
-	// TODO: voir si vraiment tout ça est nécessaire
-	
 	public static <C, T> AccessorByMethod<C, T> accessorByMethod(Field field) {
 		return accessorByMethod(field.getDeclaringClass(), field.getName());
 	}
