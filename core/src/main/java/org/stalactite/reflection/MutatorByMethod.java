@@ -12,10 +12,15 @@ public class MutatorByMethod<C, T> extends AbstractMutator<C, T> implements Muta
 	
 	private final Method setter;
 	
+	protected final Object[] methodParameters;
+	
 	public MutatorByMethod(Method setter) {
 		super();
 		this.setter = setter;
 		this.setter.setAccessible(true);
+		int parametersLength = this.setter.getParameterTypes().length;
+		// method parameters instanciation to avoid extra array instanciation on each set(..) call 
+		this.methodParameters = new Object[parametersLength];
 	}
 	
 	@Override
@@ -25,7 +30,12 @@ public class MutatorByMethod<C, T> extends AbstractMutator<C, T> implements Muta
 	
 	@Override
 	protected void doSet(C c, T t) throws IllegalAccessException, InvocationTargetException {
-		getSetter().invoke(c, t);
+		fixMethodParameters(t);
+		getSetter().invoke(c, methodParameters);
+	}
+	
+	protected void fixMethodParameters(T t) {
+		this.methodParameters[0] = t;
 	}
 	
 	@Override

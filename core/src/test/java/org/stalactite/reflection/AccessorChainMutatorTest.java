@@ -103,26 +103,24 @@ public class AccessorChainMutatorTest {
 		assertEquals(expected, AccessorChainMutator.getMutator(accessor));
 	}
 	
+	public List<IAccessor> list(IAccessor ... accessors) {
+		return Arrays.asList(accessors);
+	}
 	@DataProvider(name = TEST_SET_DATA)
 	public Object[][] testSetData() {
 		return new Object[][] {
-				{Arrays.asList((IAccessor) cityNameAccessor),
-						new City("Toto"), "Tata"},
-				{Arrays.asList((IAccessor) addressCityAccessor, cityNameAccessor),
-						new Address(new City("Toto"), null), "Tata"},
-				{Arrays.asList((IAccessor) personAddressAccessor, addressCityAccessor, cityNameAccessor),
-						new Person(new Address(new City("Toto"), null)), "Tata"},
-				{Arrays.asList((IAccessor) personAddressAccessor, addressPhonesAccessor, phoneListAccessor, phoneNumberAccessor),
-						new Person(new Address(null, Arrays.asList(new Phone("123"), new Phone("456"), new Phone("789")))), "000"},
-				{Arrays.asList((IAccessor) personAddressAccessor, addressPhonesAccessor, phoneListAccessor, phoneNumberMethodAccessor),
-						new Person(new Address(null, Arrays.asList(new Phone("123"), new Phone("456"), new Phone("789")))), "000"},
-				// TODO: à réactiver quand les paramètres seront disponibles sur MethodAccessor/Mutator
-//				{Arrays.asList((IAccessor) personAddressAccessor, addressPhonesAccessor, phoneListAccessor, phoneNumberMethodAccessor, charAtAccessor),
-//						new Person(new Address(null, Arrays.asList(new Phone("123"), new Phone("456"), new Phone("789")))), '0'},
-//				{Arrays.asList((IAccessor) personAddressAccessor, addressPhonesAccessor, phoneListAccessor, phoneNumberMethodAccessor, toCharArrayAccessor, charArrayAccessor),
-//						new Person(new Address(null, Arrays.asList(new Phone("123"), new Phone("456"), new Phone("789")))), '0'},
-//				{Arrays.asList((IAccessor) toCharArrayAccessor, charArrayAccessor),
-//						"123", '0'},
+				{ list(cityNameAccessor),
+						new City("Toto"), "Tata" },
+				{ list(addressCityAccessor, cityNameAccessor),
+						new Address(new City("Toto"), null), "Tata" },
+				{ list(personAddressAccessor, addressCityAccessor, cityNameAccessor),
+						new Person(new Address(new City("Toto"), null)), "Tata" },
+				{ list(personAddressAccessor, addressPhonesAccessor, phoneListAccessor, phoneNumberAccessor),
+						new Person(new Address(null, Arrays.asList(new Phone("123"), new Phone("456"), new Phone("789")))), "000" },
+				{ list(personAddressAccessor, addressPhonesAccessor, phoneListAccessor, phoneNumberMethodAccessor),
+						new Person(new Address(null, Arrays.asList(new Phone("123"), new Phone("456"), new Phone("789")))), "000" },
+				{ list(charArrayAccessor),
+						new char[] { '1', '2', '3' }, '0' },
 		};
 	}
 	

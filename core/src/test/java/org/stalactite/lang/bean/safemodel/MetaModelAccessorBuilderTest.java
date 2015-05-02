@@ -65,7 +65,7 @@ public class MetaModelAccessorBuilderTest {
 	public Object[][] testTransformData() {
 		return new Object[][] {
 				{ new MetaCity<>().name,
-						list(cityNameAccessor)},
+						list(cityNameAccessor) },
 				{ new MetaAddress<>().city.name,
 						list(addressCityAccessor, cityNameAccessor) },
 				{ new MetaPerson<>().address.city.name,

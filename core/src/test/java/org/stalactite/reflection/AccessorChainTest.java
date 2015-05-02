@@ -46,25 +46,28 @@ public class AccessorChainTest {
 		charArrayAccessor = new ArrayAccessor<>(2);
 	}
 	
+	public List<IAccessor> list(IAccessor ... accessors) {
+		return Arrays.asList(accessors);
+	}
+	
 	@DataProvider(name = TEST_GET_DATA)
 	public Object[][] testGetData() {
 		return new Object[][] {
-				{ Arrays.asList((IAccessor) cityNameAccessor),
+				{ list(cityNameAccessor),
 						new City("Toto"), "Toto" },
-				{ Arrays.asList((IAccessor) addressCityAccessor, cityNameAccessor),
+				{ list(addressCityAccessor, cityNameAccessor),
 						new Address(new City("Toto"), null), "Toto" },
-				{ Arrays.asList((IAccessor) personAddressAccessor, addressCityAccessor, cityNameAccessor),
+				{ list(personAddressAccessor, addressCityAccessor, cityNameAccessor),
 						new Person(new Address(new City("Toto"), null)), "Toto" },
-				{ Arrays.asList((IAccessor) personAddressAccessor, addressPhonesAccessor, phoneListAccessor, phoneNumberAccessor),
+				{ list(personAddressAccessor, addressPhonesAccessor, phoneListAccessor, phoneNumberAccessor),
 						new Person(new Address(null, Arrays.asList(new Phone("123"), new Phone("456"), new Phone("789")))), "789" },
-				{ Arrays.asList((IAccessor) personAddressAccessor, addressPhonesAccessor, phoneListAccessor, phoneNumberMethodAccessor),
+				{ list(personAddressAccessor, addressPhonesAccessor, phoneListAccessor, phoneNumberMethodAccessor),
 						new Person(new Address(null, Arrays.asList(new Phone("123"), new Phone("456"), new Phone("789")))), "789" },
-				// TODO: à réactiver, mais pour ça il faut ajouter des paramètres au IMutator/IAccessor pour qu'on puisse faire get(i) notamment
-//				{ Arrays.asList((IAccessor) personAddressAccessor, addressPhonesAccessor, phoneListAccessor, phoneNumberMethodAccessor, charAtAccessor),
-//						new Person(new Address(null, Arrays.asList(new Phone("123"), new Phone("456"), new Phone("789")))), '9' },
-				{ Arrays.asList((IAccessor) personAddressAccessor, addressPhonesAccessor, phoneListAccessor, phoneNumberMethodAccessor, toCharArrayAccessor, charArrayAccessor),
+				{ list(personAddressAccessor, addressPhonesAccessor, phoneListAccessor, phoneNumberMethodAccessor, charAtAccessor.setParameters(2)),
 						new Person(new Address(null, Arrays.asList(new Phone("123"), new Phone("456"), new Phone("789")))), '9' },
-				{ Arrays.asList((IAccessor) toCharArrayAccessor, charArrayAccessor),
+				{ list(personAddressAccessor, addressPhonesAccessor, phoneListAccessor, phoneNumberMethodAccessor, toCharArrayAccessor, charArrayAccessor),
+						new Person(new Address(null, Arrays.asList(new Phone("123"), new Phone("456"), new Phone("789")))), '9' },
+				{ list(toCharArrayAccessor, charArrayAccessor),
 						"123", '3' },
 		};
 	}
@@ -75,15 +78,12 @@ public class AccessorChainTest {
 		assertEquals(expected, accessorChain.get(object));
 	}
 	
-	// TODO: à réactiver, mais pour ça il faut ajouter des paramètres au IMutator/IAccessor pour qu'on puisse faire get(i) notamment
-	
-//	@Test(expectedExceptions = IllegalArgumentException.class)
-//	public void testGet_IllegalArgumentException() throws Exception {
-//		// field "number" doesn't exist on Collection "phones" => get(..) should throw IllegalArgumentException
-//		MetaModel metaModel = new MetaPerson<>().address.phones.number;
-//		Object object = new Person(new Address(null, Arrays.asList(new Phone("0123456789"))));
-//		MetaModelAccessorBuilder<Object, Object> testInstance = new MetaModelAccessorBuilder<>();
-//		AccessorChain<Object, Object> accessors = testInstance.transform(metaModel);
-//		accessors.get(object);
-//	}
+	@Test(expectedExceptions = IllegalArgumentException.class)
+	public void testGet_IllegalArgumentException() throws Exception {
+		// field "number" doesn't exist on Collection "phones" => get(..) should throw IllegalArgumentException
+		List<IAccessor> accessors = list(personAddressAccessor, addressPhonesAccessor, phoneNumberAccessor);
+		Object object = new Person(new Address(null, Arrays.asList(new Phone("123"))));
+		AccessorChain<Object, Object > accessorChain = new AccessorChain<>(accessors);
+		accessorChain.get(object);
+	}
 }

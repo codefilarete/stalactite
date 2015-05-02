@@ -55,13 +55,9 @@ public class MetaModelAccessorBuilder<C, T> implements IMetaModelTransformer<Acc
 		AccessorByMethod accessorByMethod;
 		if (description.getParameterTypes().length > 0) {
 			if (model.getMemberParameter() != null) {
-				// the get(Object) method is wired to the get(Object, args) method in order to pass MetaModel arguments
-				accessorByMethod = new AccessorByMethod<Object, Object>(method) {
-					@Override
-					public Object get(Object o) {
-						return super.get(o, model.getMemberParameter());
-					}
-				};
+				accessorByMethod = new AccessorByMethod<>(method);
+				// Passing MetaModel arguments to Accessor
+				accessorByMethod.setParameters(model.getMemberParameter());
 			} else {
 				throw new IllegalArgumentException("Expected parameter but none was given (" + description.getDeclaringClass().getName() + "." + description.getName() + ")");
 			}
