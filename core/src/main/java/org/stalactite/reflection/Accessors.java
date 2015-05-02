@@ -59,12 +59,12 @@ public final class Accessors {
 		return mutatorByField(propertyField);
 	}
 	
-	public static Field field(AccessorByMethod accessorByMethod) {
+	public static Field wrappedField(AccessorByMethod accessorByMethod) {
 		Method getter = accessorByMethod.getGetter();
-		return field(getter);
+		return wrappedField(getter);
 	}
 	
-	public static Field field(Method fieldWrapper) {
+	public static Field wrappedField(Method fieldWrapper) {
 		String propertyName = getPropertyName(fieldWrapper);
 		return Reflections.getField(fieldWrapper.getDeclaringClass(), propertyName);
 	}

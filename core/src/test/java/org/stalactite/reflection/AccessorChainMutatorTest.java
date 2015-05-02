@@ -127,11 +127,17 @@ public class AccessorChainMutatorTest {
 	@Test(dataProvider = TEST_SET_DATA)
 	public void testSet(List<IAccessor> accessors, Object object, Object expected) {
 		AccessorChain<Object, Object> accessorChain = new AccessorChain<>(accessors);
-		
 		AccessorChainMutator testInstance = AccessorChainMutator.toAccessorChainMutator(accessorChain.getAccessors());
 		testInstance.set(object, expected);
-		
 		assertEquals(expected, accessorChain.get(object));
+	}
+	
+	@Test(expectedExceptions = NullPointerException.class)
+	public void testSet_NullPointerException() throws Exception {
+		List<IAccessor> accessors = list(personAddressAccessor, addressPhonesAccessor);
+		Object object = new Person(null);
+		AccessorChainMutator testInstance = AccessorChainMutator.toAccessorChainMutator(accessors);
+		testInstance.set(object, new Address(new City("Toto"), null));
 	}
 	
 }

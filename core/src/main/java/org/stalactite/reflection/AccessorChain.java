@@ -2,6 +2,7 @@ package org.stalactite.reflection;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Iterator;
 import java.util.List;
 
 import org.stalactite.lang.collection.Arrays;
@@ -40,9 +41,27 @@ public class AccessorChain<C, T> implements IAccessor<C, T>{
 	@Override
 	public T get(C c) {
 		Object target = c;
-		for (IAccessor accessor : accessors) {
+		Object previousTarget;
+		Iterator<IAccessor> iterator = accessors.iterator();
+		while (iterator.hasNext()) {
+			IAccessor accessor = iterator.next();
+			previousTarget = target;
 			target = accessor.get(target);
+			if (target == null && iterator.hasNext()) {
+				throwNullPointerException(previousTarget, accessor);
+			}
 		}
 		return (T) target;
+	}
+	
+	public void throwNullPointerException(Object previousTarget, IAccessor accessor) {
+		String accessorDescription = accessor.toString();
+		String exceptionMessage;
+		if (accessor instanceof AccessorByField) {
+			exceptionMessage = previousTarget + " has null value on field " + ((AccessorByField) accessor).getGetter().getName();
+		} else {
+			exceptionMessage = "Call of " + accessorDescription + " on " + previousTarget + " returned null";
+		}
+		throw new NullPointerException(exceptionMessage);
 	}
 }

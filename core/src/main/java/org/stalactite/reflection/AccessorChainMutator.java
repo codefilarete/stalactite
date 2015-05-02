@@ -73,6 +73,9 @@ public class AccessorChainMutator<C, X, T> extends AccessorChain<C, X> implement
 	@Override
 	public void set(C c, T t) {
 		X target = get(c);
+		if (target == null) {
+			throwNullPointerException(c, Iterables.last(getAccessors()));
+		}
 		lastMutator.set(target, t);
 	}
 }

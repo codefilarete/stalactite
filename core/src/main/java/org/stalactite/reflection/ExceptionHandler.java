@@ -2,7 +2,6 @@ package org.stalactite.reflection;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Member;
 
 import org.stalactite.lang.StringAppender;
 import org.stalactite.lang.collection.Arrays;
@@ -58,12 +57,8 @@ public class ExceptionHandler<C> {
 	
 	private void handleCannotSetFieldToObject(C c, AccessorByMember reflector) {
 		// Modification du message par défaut qui n'est pas très clair "Can not set ... to ... "
-		Member getter = reflector.getGetter();
-		String getterDescription = getter.getDeclaringClass().getName() + "." + getter.getName();
-		if (getter instanceof Field) {
-			getterDescription += " of type " + ((Field) getter).getType().getName();
-		}
-		throw new IllegalArgumentException(getterDescription + " cannot be applied to " + c.getClass().getName());
+		Field getter = (Field) reflector.getGetter();
+		throw new IllegalArgumentException(c.getClass() + " doesn't have field " + getter.getName());
 	}
 	
 	private String getReflectorDescription(AbstractReflector reflector) {
