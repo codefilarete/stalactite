@@ -95,12 +95,12 @@ public class AccessorChainMutatorTest {
 	
 	@Test(dataProvider = TEST_GET_MUTATOR_DATA)
 	public void testGetMutator(IAccessor accessor, IMutator expected) throws Exception {
-		assertEquals(expected, AccessorChainMutator.getMutator(accessor));
+		assertEquals(expected, accessor.toMutator());
 	}
 	
 	@Test(dataProvider = TEST_GET_MUTATOR_DATA_EXCEPTION, expectedExceptions = IllegalArgumentException.class)
 	public void testGetMutator_exception(IAccessor accessor, IMutator expected) throws Exception {
-		assertEquals(expected, AccessorChainMutator.getMutator(accessor));
+		assertEquals(expected, accessor.toMutator());
 	}
 	
 	public List<IAccessor> list(IAccessor ... accessors) {
@@ -127,7 +127,7 @@ public class AccessorChainMutatorTest {
 	@Test(dataProvider = TEST_SET_DATA)
 	public void testSet(List<IAccessor> accessors, Object object, Object expected) {
 		AccessorChain<Object, Object> accessorChain = new AccessorChain<>(accessors);
-		AccessorChainMutator testInstance = AccessorChainMutator.toAccessorChainMutator(accessorChain.getAccessors());
+		AccessorChainMutator testInstance = accessorChain.toMutator();
 		testInstance.set(object, expected);
 		assertEquals(expected, accessorChain.get(object));
 	}
@@ -136,7 +136,7 @@ public class AccessorChainMutatorTest {
 	public void testSet_NullPointerException() throws Exception {
 		List<IAccessor> accessors = list(personAddressAccessor, addressPhonesAccessor);
 		Object object = new Person(null);
-		AccessorChainMutator testInstance = AccessorChainMutator.toAccessorChainMutator(accessors);
+		AccessorChainMutator testInstance = new AccessorChain(accessors).toMutator();
 		testInstance.set(object, new Address(new City("Toto"), null));
 	}
 	

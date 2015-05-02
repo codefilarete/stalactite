@@ -6,6 +6,8 @@ import java.util.Iterator;
 import java.util.List;
 
 import org.stalactite.lang.collection.Arrays;
+import org.stalactite.lang.collection.Collections;
+import org.stalactite.lang.collection.Iterables;
 
 /**
  * @author Guillaume Mary
@@ -63,5 +65,12 @@ public class AccessorChain<C, T> implements IAccessor<C, T>{
 			exceptionMessage = "Call of " + accessorDescription + " on " + previousTarget + " returned null";
 		}
 		throw new NullPointerException(exceptionMessage);
+	}
+	
+	@Override
+	public AccessorChainMutator<C, Object, T> toMutator() {
+		IAccessor lastAccessor = Iterables.last(getAccessors());
+		IMutator<Object, T> lastMutator = lastAccessor.toMutator();
+		return new AccessorChainMutator<>(Collections.cutTail(getAccessors()), lastMutator);
 	}
 }

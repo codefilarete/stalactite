@@ -1,6 +1,7 @@
 package org.stalactite.reflection;
 
 import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Member;
 import java.lang.reflect.Method;
 
 import org.stalactite.lang.StringAppender;
@@ -8,7 +9,7 @@ import org.stalactite.lang.StringAppender;
 /**
  * @author mary
  */
-public class MutatorByMethod<C, T> extends AbstractMutator<C, T> implements MutatorByMember<Method> {
+public class MutatorByMethod<C, T> extends AbstractMutator<C, T> implements MutatorByMember<C, T, Method> {
 	
 	private final Method setter;
 	
@@ -50,5 +51,17 @@ public class MutatorByMethod<C, T> extends AbstractMutator<C, T> implements Muta
 			description.cutTail(2).cat(")");
 		}
 		return description.toString();
+	}
+	
+	@Override
+	public AccessorByMember<C, T, ? extends Member> toAccessor() {
+		Class<?> declaringClass = getSetter().getDeclaringClass();
+		String propertyName = Accessors.getPropertyName(getSetter());
+		AccessorByMethod<C, T> accessorByMethod = Accessors.accessorByMethod(declaringClass, propertyName);
+		if (accessorByMethod == null) {
+			return Accessors.accessorByField(declaringClass, propertyName);
+		} else {
+			return accessorByMethod;
+		}
 	}
 }

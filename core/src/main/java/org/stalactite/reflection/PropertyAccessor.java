@@ -50,4 +50,16 @@ public class PropertyAccessor<C, T> implements IAccessor<C, T>, IMutator<C, T> {
 	public void set(C c, T t) {
 		this.mutator.set(c, t);
 	}
+	
+	@Override
+	public IAccessor<C, T> toAccessor() {
+		return getAccessor();
+	}
+	
+	@Override
+	public IMutator<C, T> toMutator() {
+		return getMutator();
+	}
+	
+	
 }

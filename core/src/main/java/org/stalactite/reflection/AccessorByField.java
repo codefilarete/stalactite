@@ -6,7 +6,7 @@ import java.lang.reflect.InvocationTargetException;
 /**
  * @author mary
  */
-public class AccessorByField<C, T> extends AbstractAccessor<C, T> implements AccessorByMember<Field> {
+public class AccessorByField<C, T> extends AbstractAccessor<C, T> implements AccessorByMember<C, T, Field> {
 	
 	private final Field field;
 	
@@ -28,5 +28,10 @@ public class AccessorByField<C, T> extends AbstractAccessor<C, T> implements Acc
 	@Override
 	public String getGetterDescription() {
 		return "accessor for field " + getGetter().toString();
+	}
+	
+	@Override
+	public MutatorByField<C, T> toMutator() {
+		return new MutatorByField<>(getGetter());
 	}
 }

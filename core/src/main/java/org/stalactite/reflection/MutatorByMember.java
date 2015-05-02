@@ -5,7 +5,7 @@ import java.lang.reflect.Member;
 /**
  * @author Guillaume Mary
  */
-public interface MutatorByMember<M extends Member> {
+public interface MutatorByMember<C, T, M extends Member> extends IMutator<C, T> {
 	
 	M getSetter();
 }

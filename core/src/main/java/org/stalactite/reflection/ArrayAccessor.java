@@ -53,4 +53,9 @@ public class ArrayAccessor<C> extends AbstractAccessor<C, C> {
 	protected String getGetterDescription() {
 		return "array index accessor";
 	}
+	
+	@Override
+	public ArrayMutator<C> toMutator() {
+		return new ArrayMutator<>(getIndex());
+	}
 }

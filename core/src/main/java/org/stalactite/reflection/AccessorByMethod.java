@@ -1,12 +1,13 @@
 package org.stalactite.reflection;
 
 import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Member;
 import java.lang.reflect.Method;
 
 /**
  * @author mary
  */
-public class AccessorByMethod<C, T> extends AbstractAccessor<C, T> implements AccessorByMember<Method> {
+public class AccessorByMethod<C, T> extends AbstractAccessor<C, T> implements AccessorByMember<C, T, Method> {
 	
 	private final Method getter;
 	
@@ -73,5 +74,17 @@ public class AccessorByMethod<C, T> extends AbstractAccessor<C, T> implements Ac
 	@Override
 	protected String getGetterDescription() {
 		return getGetter().getDeclaringClass().getName() + "." + getGetter().getName() + "()";
+	}
+	
+	@Override
+	public MutatorByMember<C, T, ? extends Member> toMutator() {
+		Class<?> declaringClass = getGetter().getDeclaringClass();
+		String propertyName = Accessors.getPropertyName(getGetter());
+		MutatorByMethod<C, T> mutatorByMethod = Accessors.mutatorByMethod(declaringClass, propertyName);
+		if (mutatorByMethod == null) {
+			return Accessors.mutatorByField(declaringClass, propertyName);
+		} else {
+			return mutatorByMethod;
+		}
 	}
 }

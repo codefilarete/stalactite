@@ -38,4 +38,9 @@ public class ListAccessor<C extends List<T>, T> extends AccessorByMethod<C, T> {
 	protected String getGetterDescription() {
 		return "java.util.List.get(int)";
 	}
+	
+	@Override
+	public ListMutator<C, T> toMutator() {
+		return new ListMutator<>(getIndex());
+	}
 }

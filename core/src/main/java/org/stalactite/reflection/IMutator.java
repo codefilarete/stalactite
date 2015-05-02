@@ -5,4 +5,6 @@ package org.stalactite.reflection;
  */
 public interface IMutator<C, T> {
 	void set(C c, T t);
+	
+	IAccessor<C, T> toAccessor();
 }

@@ -33,4 +33,9 @@ public class ListMutator<C extends List<T>, T> extends MutatorByMethod<C, T> {
 	protected void doSet(C c, T t) throws IllegalAccessException, InvocationTargetException {
 		c.set(getIndex(), t);	// plus rapide que invoke
 	}
+	
+	@Override
+	public ListAccessor<C, T> toAccessor() {
+		return new ListAccessor<>(getIndex());
+	}
 }
