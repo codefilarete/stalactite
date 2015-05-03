@@ -13,7 +13,7 @@ import org.gama.lang.collection.Iterables.ForEach;
 import org.gama.lang.exception.Exceptions;
 import org.stalactite.persistence.sql.result.IRowTransformer;
 import org.stalactite.persistence.sql.result.Row;
-import org.stalactite.reflection.PropertyAccessor;
+import org.gama.reflection.PropertyAccessor;
 
 /**
  * @author mary

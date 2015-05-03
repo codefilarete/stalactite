@@ -22,7 +22,7 @@ import org.gama.lang.exception.Exceptions;
 import org.stalactite.persistence.sql.result.Row;
 import org.stalactite.persistence.structure.Table;
 import org.stalactite.persistence.structure.Table.Column;
-import org.stalactite.reflection.PropertyAccessor;
+import org.gama.reflection.PropertyAccessor;
 
 /**
  * @author mary

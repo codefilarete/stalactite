@@ -6,10 +6,10 @@ import java.util.Iterator;
 import org.gama.lang.Reflections;
 import org.gama.safemodel.MetaModel.FieldDescription;
 import org.gama.safemodel.MetaModel.MethodDescription;
-import org.stalactite.reflection.AccessorByField;
-import org.stalactite.reflection.AccessorByMethod;
-import org.stalactite.reflection.AccessorChain;
-import org.stalactite.reflection.ArrayAccessor;
+import org.gama.reflection.AccessorByField;
+import org.gama.reflection.AccessorByMethod;
+import org.gama.reflection.AccessorChain;
+import org.gama.reflection.ArrayAccessor;
 
 /**
  * @author Guillaume Mary
