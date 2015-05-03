@@ -1,7 +1,5 @@
 package org.gama.safemodel;
 
-import static org.junit.Assert.*;
-
 import org.gama.safemodel.metamodel.MetaPerson;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
