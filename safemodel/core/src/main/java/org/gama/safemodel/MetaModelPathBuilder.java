@@ -4,6 +4,8 @@ import java.util.Iterator;
 
 import org.gama.lang.StringAppender;
 import org.gama.lang.collection.Arrays;
+import org.gama.safemodel.description.FieldDescription;
+import org.gama.safemodel.description.MethodDescription;
 
 /**
  * @author Guillaume Mary

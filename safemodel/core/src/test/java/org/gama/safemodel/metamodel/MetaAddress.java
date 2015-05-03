@@ -1,7 +1,7 @@
 package org.gama.safemodel.metamodel;
 
-import org.gama.safemodel.FieldDescription;
-import org.gama.safemodel.ListElementAccessDescription;
+import org.gama.safemodel.description.FieldDescription;
+import org.gama.safemodel.description.ListElementAccessDescription;
 import org.gama.safemodel.MetaModel;
 import org.gama.safemodel.model.Address;
 

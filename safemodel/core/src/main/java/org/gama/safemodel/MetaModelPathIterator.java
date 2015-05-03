@@ -5,6 +5,10 @@ import java.util.Iterator;
 
 import org.gama.lang.collection.Iterables;
 import org.gama.lang.collection.ReadOnlyIterator;
+import org.gama.safemodel.description.AbstractMemberDescription;
+import org.gama.safemodel.description.ArrayDescription;
+import org.gama.safemodel.description.FieldDescription;
+import org.gama.safemodel.description.MethodDescription;
 
 /**
  * @author Guillaume Mary

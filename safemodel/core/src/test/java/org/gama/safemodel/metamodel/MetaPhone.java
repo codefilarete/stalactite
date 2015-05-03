@@ -1,6 +1,6 @@
 package org.gama.safemodel.metamodel;
 
-import org.gama.safemodel.AbstractMemberDescription;
+import org.gama.safemodel.description.AbstractMemberDescription;
 import org.gama.safemodel.MetaModel;
 import org.gama.safemodel.model.Phone;
 

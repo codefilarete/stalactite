@@ -3,6 +3,9 @@ package org.gama.safemodel;
 import java.lang.reflect.Field;
 
 import org.gama.lang.exception.Exceptions;
+import org.gama.safemodel.description.AbstractMemberDescription;
+import org.gama.safemodel.description.FieldDescription;
+import org.gama.safemodel.description.MethodDescription;
 
 /**
  * @author Guillaume Mary

@@ -4,12 +4,12 @@ import java.lang.reflect.Method;
 import java.util.Iterator;
 
 import org.gama.lang.Reflections;
-import org.gama.safemodel.MetaModel.FieldDescription;
-import org.gama.safemodel.MetaModel.MethodDescription;
 import org.gama.reflection.AccessorByField;
 import org.gama.reflection.AccessorByMethod;
 import org.gama.reflection.AccessorChain;
 import org.gama.reflection.ArrayAccessor;
+import org.gama.safemodel.description.FieldDescription;
+import org.gama.safemodel.description.MethodDescription;
 
 /**
  * @author Guillaume Mary

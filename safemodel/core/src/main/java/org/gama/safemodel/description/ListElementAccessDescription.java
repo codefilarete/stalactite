@@ -1,4 +1,4 @@
-package org.gama.safemodel;
+package org.gama.safemodel.description;
 
 import java.util.List;
 

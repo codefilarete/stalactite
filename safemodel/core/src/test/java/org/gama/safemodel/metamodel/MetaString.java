@@ -1,7 +1,7 @@
 package org.gama.safemodel.metamodel;
 
-import org.gama.safemodel.AbstractMemberDescription;
-import org.gama.safemodel.ArrayDescription;
+import org.gama.safemodel.description.AbstractMemberDescription;
+import org.gama.safemodel.description.ArrayDescription;
 import org.gama.safemodel.MetaModel;
 
 /**
