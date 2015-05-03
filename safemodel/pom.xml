@@ -30,6 +30,11 @@
 			<artifactId>tools</artifactId>
 			<version>${project.version}</version>
 		</dependency>
+		<dependency>
+			<groupId>org.gama</groupId>
+			<artifactId>reflection</artifactId>
+			<version>${project.version}</version>
+		</dependency>
 	</dependencies>
 
 </project>

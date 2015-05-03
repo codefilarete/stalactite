@@ -5,10 +5,10 @@ import static org.junit.Assert.*;
 import java.util.List;
 
 import org.gama.lang.Reflections;
-import org.gama.safemodel.model.Address;
-import org.gama.safemodel.model.City;
-import org.gama.safemodel.model.Person;
-import org.gama.safemodel.model.Phone;
+import org.gama.reflection.model.Address;
+import org.gama.reflection.model.City;
+import org.gama.reflection.model.Person;
+import org.gama.reflection.model.Phone;
 import org.gama.lang.collection.Arrays;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.DataProvider;

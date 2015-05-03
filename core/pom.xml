@@ -72,6 +72,11 @@
 			<artifactId>mariadb-java-client</artifactId>
 			<version>1.1.7</version>
 		</dependency>
+		<dependency>
+			<groupId>org.gama</groupId>
+			<artifactId>reflection</artifactId>
+			<version>${project.version}</version>
+		</dependency>
 	</dependencies>
 
 </project>
