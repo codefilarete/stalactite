@@ -6,16 +6,18 @@
 	
 	<parent>
 		<groupId>org.gama</groupId>
-		<artifactId>stalactite</artifactId>
+		<artifactId>safemodel</artifactId>
 		<version>1.0-SNAPSHOT</version>
 	</parent>
 	
-	<artifactId>safemodel</artifactId>
-	<packaging>pom</packaging>
+	<artifactId>safemodel-core</artifactId>
 	
-	<modules>
-		<module>core</module>
-		<module>reflection</module>
-	</modules>
-	
+	<dependencies>
+		<dependency>
+			<groupId>org.gama</groupId>
+			<artifactId>tools</artifactId>
+			<version>${project.version}</version>
+		</dependency>
+	</dependencies>
+
 </project>
