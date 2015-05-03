@@ -5,17 +5,15 @@
 	<modelVersion>4.0.0</modelVersion>
 	
 	<parent>
-		<groupId>org.stalactite</groupId>
+		<groupId>org.gama</groupId>
 		<artifactId>stalactite</artifactId>
 		<version>1.0-SNAPSHOT</version>
 	</parent>
 	
-	<groupId>org.gama</groupId>
 	<artifactId>tools</artifactId>
 	
 	<properties>
 		<jsr305.version>3.0.0</jsr305.version>
-		<testng.version>6.8.7</testng.version>
 		<mockito.version>1.10.19</mockito.version>
 	</properties>
 	
@@ -24,12 +22,6 @@
 			<groupId>com.google.code.findbugs</groupId>
 			<artifactId>jsr305</artifactId>
 			<version>${jsr305.version}</version>
-		</dependency>
-		<dependency>
-			<groupId>org.testng</groupId>
-			<artifactId>testng</artifactId>
-			<version>${testng.version}</version>
-			<scope>test</scope>
 		</dependency>
 		<dependency>
 			<groupId>org.mockito</groupId>
