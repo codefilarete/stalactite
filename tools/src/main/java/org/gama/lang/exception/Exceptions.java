@@ -1,13 +1,13 @@
 package org.gama.lang.exception;
 
 import java.lang.ref.SoftReference;
+import java.lang.reflect.Field;
 import java.util.NoSuchElementException;
 
-import org.gama.lang.collection.ReadOnlyIterator;
 import org.gama.lang.Reflections;
 import org.gama.lang.collection.Iterables;
 import org.gama.lang.collection.Iterables.Finder;
-import org.stalactite.reflection.AccessorByField;
+import org.gama.lang.collection.ReadOnlyIterator;
 
 /**
  * 
@@ -28,18 +28,18 @@ public abstract class Exceptions {
 		}
 	}
 	
-	private static volatile SoftReference<AccessorByField<Throwable, String>> MESSAGE_ACCESSOR;
+	private static volatile SoftReference<Field> MESSAGE_ACCESSOR;
 	
 	/**
 	 * Renvoie un accesseur à l'attribut "detailMessage" de Throwable. Nécessaire parfois quand des classes d'Exception
 	 * surcharge getMessage() et qu'il est impossible d'avoir le message unique de l'erreur.
 	 * @return
 	 */
-	public static AccessorByField<Throwable, String> getDetailMessageGetter() {
-		AccessorByField<Throwable, String> detailMessageAccessor = MESSAGE_ACCESSOR == null ? null : MESSAGE_ACCESSOR.get();
+	public static Field getDetailMessageGetter() {
+		Field detailMessageAccessor = MESSAGE_ACCESSOR == null ? null : MESSAGE_ACCESSOR.get();
 		if (detailMessageAccessor == null) {
 			synchronized (Exceptions.class) {
-				MESSAGE_ACCESSOR = new SoftReference<>(new AccessorByField<Throwable, String>(Reflections.getField(Throwable.class, "detailMessage")));
+				MESSAGE_ACCESSOR = new SoftReference<>(Reflections.getField(Throwable.class, "detailMessage"));
 			}
 		}
 		return MESSAGE_ACCESSOR.get();
@@ -126,7 +126,13 @@ public abstract class Exceptions {
 		
 		@Override
 		public boolean accept(Throwable t) {
-			return super.accept(t) && targetMessage.equalsIgnoreCase(getDetailMessageGetter().get(t));
+			String throwableMessage = null;
+			try {
+				throwableMessage = (String) getDetailMessageGetter().get(t);
+			} catch (IllegalAccessException e) {
+				Exceptions.throwAsRuntimeException(e);
+			}
+			return super.accept(t) && targetMessage.equalsIgnoreCase(throwableMessage);
 		}
 	}
 	

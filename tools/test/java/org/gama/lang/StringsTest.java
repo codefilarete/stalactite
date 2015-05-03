@@ -1,8 +1,8 @@
 package org.gama.lang;
 
-import org.testng.annotations.Test;
-
 import static org.junit.Assert.*;
+
+import org.testng.annotations.Test;
 
 
 /**
