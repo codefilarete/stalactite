@@ -6,7 +6,7 @@ import java.util.Map;
 
 import org.apache.commons.collections4.BidiMap;
 import org.apache.commons.collections4.bidimap.DualHashBidiMap;
-import org.stalactite.lang.exception.Exceptions;
+import org.gama.lang.exception.Exceptions;
 import org.stalactite.persistence.id.sequence.PooledSequenceIdentifierGenerator;
 import org.stalactite.persistence.id.sequence.PooledSequenceIdentifierGeneratorOptions;
 import org.stalactite.persistence.id.sequence.PooledSequencePersistenceOptions;

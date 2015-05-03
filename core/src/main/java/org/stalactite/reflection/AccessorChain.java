@@ -5,9 +5,9 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 
-import org.stalactite.lang.collection.Arrays;
-import org.stalactite.lang.collection.Collections;
-import org.stalactite.lang.collection.Iterables;
+import org.gama.lang.collection.Arrays;
+import org.gama.lang.collection.Collections;
+import org.gama.lang.collection.Iterables;
 
 /**
  * @author Guillaume Mary

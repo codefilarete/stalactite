@@ -2,7 +2,7 @@ package org.stalactite.reflection;
 
 import java.lang.reflect.Field;
 
-import org.stalactite.lang.Reflections;
+import org.gama.lang.Reflections;
 
 /**
  * @author Guillaume Mary

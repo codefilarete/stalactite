@@ -1,6 +1,6 @@
 package org.stalactite.persistence.sql.ddl;
 
-import org.stalactite.lang.collection.KeepOrderSet;
+import org.gama.lang.collection.KeepOrderSet;
 import org.stalactite.persistence.structure.Table.ForeignKey;
 import org.stalactite.persistence.structure.Table.Index;
 import org.stalactite.persistence.structure.Table;

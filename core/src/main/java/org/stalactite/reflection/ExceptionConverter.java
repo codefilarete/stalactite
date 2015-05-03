@@ -3,9 +3,9 @@ package org.stalactite.reflection;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 
-import org.stalactite.lang.StringAppender;
-import org.stalactite.lang.collection.Arrays;
-import org.stalactite.lang.exception.Exceptions;
+import org.gama.lang.StringAppender;
+import org.gama.lang.collection.Arrays;
+import org.gama.lang.exception.Exceptions;
 
 /**
  * @author Guillaume Mary

@@ -4,12 +4,12 @@ import static org.junit.Assert.*;
 
 import java.util.List;
 
-import org.stalactite.lang.Reflections;
-import org.stalactite.lang.bean.safemodel.model.Address;
-import org.stalactite.lang.bean.safemodel.model.City;
-import org.stalactite.lang.bean.safemodel.model.Person;
-import org.stalactite.lang.bean.safemodel.model.Phone;
-import org.stalactite.lang.collection.Arrays;
+import org.gama.lang.Reflections;
+import org.gama.safemodel.model.Address;
+import org.gama.safemodel.model.City;
+import org.gama.safemodel.model.Person;
+import org.gama.safemodel.model.Phone;
+import org.gama.lang.collection.Arrays;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;

@@ -4,7 +4,7 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.stalactite.lang.exception.MultiCauseException;
+import org.gama.lang.exception.MultiCauseException;
 import org.stalactite.persistence.mapping.PersistentValues;
 
 /**

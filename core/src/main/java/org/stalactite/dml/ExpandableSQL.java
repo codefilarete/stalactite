@@ -5,9 +5,9 @@ import java.util.Map.Entry;
 
 import org.stalactite.dml.SQLParameterParser.Parameter;
 import org.stalactite.dml.SQLParameterParser.ParsedSQL;
-import org.stalactite.lang.StringAppender;
-import org.stalactite.lang.collection.ArrayIterator;
-import org.stalactite.lang.collection.PairIterator;
+import org.gama.lang.StringAppender;
+import org.gama.lang.collection.ArrayIterator;
+import org.gama.lang.collection.PairIterator;
 
 /**
  * Classe qui permet la création d'un ordre SQL de type PreparedStatement à partir du résultat du parsing d'un ordre

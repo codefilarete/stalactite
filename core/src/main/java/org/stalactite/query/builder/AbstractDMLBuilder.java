@@ -2,7 +2,7 @@ package org.stalactite.query.builder;
 
 import java.util.Map;
 
-import org.stalactite.lang.Strings;
+import org.gama.lang.Strings;
 import org.stalactite.persistence.structure.Table;
 import org.stalactite.persistence.structure.Table.Column;
 

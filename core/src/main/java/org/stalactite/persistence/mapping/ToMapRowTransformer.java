@@ -4,8 +4,8 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.util.Map;
 
-import org.stalactite.lang.Reflections;
-import org.stalactite.lang.exception.Exceptions;
+import org.gama.lang.Reflections;
+import org.gama.lang.exception.Exceptions;
 import org.stalactite.persistence.sql.result.IRowTransformer;
 import org.stalactite.persistence.sql.result.Row;
 

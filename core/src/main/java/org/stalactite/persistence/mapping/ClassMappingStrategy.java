@@ -11,7 +11,7 @@ import java.util.Set;
 
 import javax.annotation.Nonnull;
 
-import org.stalactite.lang.Reflections;
+import org.gama.lang.Reflections;
 import org.stalactite.persistence.id.IdentifierGenerator;
 import org.stalactite.persistence.sql.result.Row;
 import org.stalactite.persistence.structure.Table;

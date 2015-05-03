@@ -9,10 +9,10 @@ import java.util.Map.Entry;
 import org.stalactite.dml.ExpandableSQL.ExpandableParameter;
 import org.stalactite.dml.SQLParameterParser.Parameter;
 import org.stalactite.dml.SQLParameterParser.ParsedSQL;
-import org.stalactite.lang.collection.Arrays;
-import org.stalactite.lang.collection.EntryFactoryHashMap;
-import org.stalactite.lang.collection.Iterables;
-import org.stalactite.lang.collection.Maps;
+import org.gama.lang.collection.Arrays;
+import org.gama.lang.collection.EntryFactoryHashMap;
+import org.gama.lang.collection.Iterables;
+import org.gama.lang.collection.Maps;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 

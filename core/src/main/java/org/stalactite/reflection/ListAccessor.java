@@ -3,7 +3,7 @@ package org.stalactite.reflection;
 import java.lang.reflect.InvocationTargetException;
 import java.util.List;
 
-import org.stalactite.lang.Reflections;
+import org.gama.lang.Reflections;
 
 /**
  * @author Guillaume Mary

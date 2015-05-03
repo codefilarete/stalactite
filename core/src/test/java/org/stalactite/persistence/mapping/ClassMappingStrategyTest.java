@@ -10,8 +10,8 @@ import java.util.Set;
 
 import org.apache.commons.collections4.BidiMap;
 import org.apache.commons.collections4.bidimap.DualHashBidiMap;
-import org.stalactite.lang.collection.Arrays;
-import org.stalactite.lang.collection.Maps;
+import org.gama.lang.collection.Arrays;
+import org.gama.lang.collection.Maps;
 import org.stalactite.persistence.structure.Table;
 import org.stalactite.persistence.structure.Table.Column;
 import org.testng.Assert;

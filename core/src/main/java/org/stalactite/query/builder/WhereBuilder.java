@@ -3,7 +3,7 @@ package org.stalactite.query.builder;
 import java.util.EnumMap;
 import java.util.Map;
 
-import org.stalactite.lang.StringAppender;
+import org.gama.lang.StringAppender;
 import org.stalactite.persistence.structure.Table;
 import org.stalactite.persistence.structure.Table.Column;
 import org.stalactite.query.model.AbstractCriterion;

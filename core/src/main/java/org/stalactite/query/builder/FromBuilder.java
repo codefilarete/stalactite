@@ -5,8 +5,8 @@ import java.util.Iterator;
 import java.util.Set;
 import java.util.TreeSet;
 
-import org.stalactite.lang.StringAppender;
-import org.stalactite.lang.Strings;
+import org.gama.lang.StringAppender;
+import org.gama.lang.Strings;
 import org.stalactite.persistence.structure.Table;
 import org.stalactite.query.model.From;
 import org.stalactite.query.model.From.*;

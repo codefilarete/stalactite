@@ -2,9 +2,9 @@ package org.stalactite.persistence.structure;
 
 import java.util.*;
 
-import org.stalactite.lang.collection.Iterables;
-import org.stalactite.lang.collection.Iterables.Finder;
-import org.stalactite.lang.collection.KeepOrderSet;
+import org.gama.lang.collection.Iterables;
+import org.gama.lang.collection.Iterables.Finder;
+import org.gama.lang.collection.KeepOrderSet;
 import org.stalactite.persistence.structure.Database.Schema;
 
 /**

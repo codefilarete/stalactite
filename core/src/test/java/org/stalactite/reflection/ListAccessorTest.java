@@ -4,7 +4,7 @@ import static org.junit.Assert.assertEquals;
 
 import java.util.List;
 
-import org.stalactite.lang.collection.Arrays;
+import org.gama.lang.collection.Arrays;
 import org.testng.annotations.Test;
 
 /**

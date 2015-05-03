@@ -11,8 +11,8 @@ import java.util.Map;
 
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
-import org.stalactite.lang.collection.Arrays;
-import org.stalactite.lang.collection.Maps;
+import org.gama.lang.collection.Arrays;
+import org.gama.lang.collection.Maps;
 import org.stalactite.persistence.engine.PersistenceContext;
 import org.stalactite.persistence.mapping.PersistentFieldHarverster;
 import org.stalactite.persistence.mapping.PersistentValues;

@@ -2,7 +2,7 @@ package org.stalactite.query.model;
 
 import java.util.List;
 
-import org.stalactite.lang.collection.Arrays;
+import org.gama.lang.collection.Arrays;
 
 /**
  * Classe pour modéliser les critères non exprimable par {@link ColumnCriterion}, par exemple des critères avec fonction,

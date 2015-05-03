@@ -3,8 +3,8 @@ package org.stalactite.persistence.sql.dml;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.stalactite.lang.StringAppender;
-import org.stalactite.lang.collection.Iterables;
+import org.gama.lang.StringAppender;
+import org.gama.lang.collection.Iterables;
 import org.stalactite.persistence.sql.ddl.DDLTableGenerator;
 import org.stalactite.persistence.structure.Table;
 import org.stalactite.persistence.structure.Table.Column;

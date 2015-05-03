@@ -7,10 +7,10 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 
-import org.stalactite.lang.Reflections.FieldIterator;
-import org.stalactite.lang.collection.Iterables;
-import org.stalactite.lang.collection.Iterables.ForEach;
-import org.stalactite.lang.exception.Exceptions;
+import org.gama.lang.Reflections.FieldIterator;
+import org.gama.lang.collection.Iterables;
+import org.gama.lang.collection.Iterables.ForEach;
+import org.gama.lang.exception.Exceptions;
 import org.stalactite.persistence.sql.result.IRowTransformer;
 import org.stalactite.persistence.sql.result.Row;
 import org.stalactite.reflection.PropertyAccessor;

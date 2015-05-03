@@ -11,10 +11,10 @@ import java.util.Set;
 
 import javax.annotation.Nonnull;
 
-import org.stalactite.lang.bean.Objects;
-import org.stalactite.lang.collection.Collections;
-import org.stalactite.lang.collection.Iterables;
-import org.stalactite.lang.collection.Iterables.ForEach;
+import org.gama.lang.bean.Objects;
+import org.gama.lang.collection.Collections;
+import org.gama.lang.collection.Iterables;
+import org.gama.lang.collection.Iterables.ForEach;
 import org.stalactite.persistence.sql.result.Row;
 import org.stalactite.persistence.structure.Table;
 import org.stalactite.persistence.structure.Table.Column;

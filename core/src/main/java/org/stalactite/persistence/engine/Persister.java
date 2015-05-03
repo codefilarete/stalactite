@@ -9,9 +9,9 @@ import java.util.List;
 import java.util.Set;
 
 import org.stalactite.Logger;
-import org.stalactite.lang.collection.Arrays;
-import org.stalactite.lang.collection.SteppingIterator;
-import org.stalactite.lang.exception.Exceptions;
+import org.gama.lang.collection.Arrays;
+import org.gama.lang.collection.SteppingIterator;
+import org.gama.lang.exception.Exceptions;
 import org.stalactite.persistence.id.AutoAssignedIdentifierGenerator;
 import org.stalactite.persistence.id.IdentifierGenerator;
 import org.stalactite.persistence.id.PostInsertIdentifierGenerator;

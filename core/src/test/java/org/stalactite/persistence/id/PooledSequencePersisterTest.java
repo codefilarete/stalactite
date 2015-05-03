@@ -7,7 +7,7 @@ import java.sql.ResultSet;
 import java.sql.Statement;
 import java.util.List;
 
-import org.stalactite.lang.collection.Arrays;
+import org.gama.lang.collection.Arrays;
 import org.stalactite.persistence.engine.DDLDeployer;
 import org.stalactite.persistence.engine.PersistenceContext;
 import org.stalactite.persistence.id.sequence.PooledSequencePersistenceOptions;

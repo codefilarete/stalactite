@@ -24,6 +24,11 @@
 	
 	<dependencies>
 		<dependency>
+			<groupId>org.gama</groupId>
+			<artifactId>tools</artifactId>
+			<version>${project.version}</version>
+		</dependency>
+		<dependency>
 			<groupId>org.apache.commons</groupId>
 			<artifactId>commons-collections4</artifactId>
 			<version>${commons-collections4.version}</version>

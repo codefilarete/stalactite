@@ -5,7 +5,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 
-import org.stalactite.lang.collection.Collections;
+import org.gama.lang.collection.Collections;
 import org.stalactite.persistence.structure.Table;
 import org.stalactite.persistence.structure.Table.ForeignKey;
 import org.stalactite.persistence.structure.Table.Index;

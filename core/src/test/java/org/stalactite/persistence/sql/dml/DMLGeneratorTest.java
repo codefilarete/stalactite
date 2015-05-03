@@ -6,7 +6,7 @@ import java.util.AbstractMap;
 import java.util.Arrays;
 import java.util.Map;
 
-import org.stalactite.lang.collection.Maps;
+import org.gama.lang.collection.Maps;
 import org.stalactite.persistence.engine.PersistenceContext;
 import org.stalactite.persistence.sql.Dialect;
 import org.stalactite.persistence.sql.ddl.JavaTypeToSqlTypeMapping;

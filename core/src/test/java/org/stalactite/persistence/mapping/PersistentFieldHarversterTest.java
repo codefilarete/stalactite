@@ -6,7 +6,7 @@ import java.lang.reflect.Field;
 import java.util.Iterator;
 import java.util.List;
 
-import org.stalactite.lang.collection.Arrays;
+import org.gama.lang.collection.Arrays;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 

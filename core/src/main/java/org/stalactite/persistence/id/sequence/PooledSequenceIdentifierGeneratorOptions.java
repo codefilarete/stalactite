@@ -2,8 +2,8 @@ package org.stalactite.persistence.id.sequence;
 
 import java.util.Map;
 
-import org.stalactite.lang.bean.Converter;
-import org.stalactite.lang.bean.Objects;
+import org.gama.lang.bean.Converter;
+import org.gama.lang.bean.Objects;
 
 /**
  * Classe de stockage de la configuration de {@link PooledSequenceIdentifierGenerator}

@@ -1,8 +1,8 @@
 package org.stalactite.persistence.sql.ddl;
 
-import org.stalactite.lang.StringAppender;
-import org.stalactite.lang.collection.Iterables;
-import org.stalactite.lang.collection.Iterables.ForEach;
+import org.gama.lang.StringAppender;
+import org.gama.lang.collection.Iterables;
+import org.gama.lang.collection.Iterables.ForEach;
 import org.stalactite.persistence.structure.Table.ForeignKey;
 import org.stalactite.persistence.structure.Table.Index;
 import org.stalactite.persistence.structure.Table;

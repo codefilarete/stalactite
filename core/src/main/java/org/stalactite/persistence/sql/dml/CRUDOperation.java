@@ -11,10 +11,10 @@ import javax.annotation.Nonnull;
 
 import org.stalactite.ILogger;
 import org.stalactite.Logger;
-import org.stalactite.lang.collection.Arrays;
-import org.stalactite.lang.collection.Iterables;
-import org.stalactite.lang.collection.Iterables.ForEach;
-import org.stalactite.lang.exception.Exceptions;
+import org.gama.lang.collection.Arrays;
+import org.gama.lang.collection.Iterables;
+import org.gama.lang.collection.Iterables.ForEach;
+import org.gama.lang.exception.Exceptions;
 import org.stalactite.persistence.engine.PersistenceContext;
 import org.stalactite.persistence.mapping.PersistentValues;
 import org.stalactite.persistence.sql.dml.binder.ParameterBinder;

@@ -12,12 +12,13 @@ import java.util.Set;
 
 import javax.annotation.Nonnull;
 
-import org.stalactite.lang.Reflections;
-import org.stalactite.lang.bean.Objects;
-import org.stalactite.lang.collection.Iterables;
-import org.stalactite.lang.collection.Iterables.Finder;
-import org.stalactite.lang.collection.Iterables.ForEach;
-import org.stalactite.lang.exception.Exceptions;
+import org.gama.lang.collection.Arrays;
+import org.gama.lang.Reflections;
+import org.gama.lang.bean.Objects;
+import org.gama.lang.collection.Iterables;
+import org.gama.lang.collection.Iterables.Finder;
+import org.gama.lang.collection.Iterables.ForEach;
+import org.gama.lang.exception.Exceptions;
 import org.stalactite.persistence.sql.result.Row;
 import org.stalactite.persistence.structure.Table;
 import org.stalactite.persistence.structure.Table.Column;
@@ -77,7 +78,7 @@ public class FieldMappingStrategy<T> implements IMappingStrategy<T> {
 			throw new UnsupportedOperationException("No primary key field for " + targetTable.getName());
 		}
 		this.columns = new LinkedHashSet<>(fieldToColumn.values());
-		this.versionedKeys = Collections.unmodifiableSet(org.stalactite.lang.collection.Arrays.asSet(targetTable.getPrimaryKey()));
+		this.versionedKeys = Collections.unmodifiableSet(Arrays.asSet(targetTable.getPrimaryKey()));
 	}
 	
 	@Override

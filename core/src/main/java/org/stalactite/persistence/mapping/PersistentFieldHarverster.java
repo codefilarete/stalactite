@@ -8,9 +8,9 @@ import java.util.Map;
 
 import javax.annotation.Nonnull;
 
-import org.stalactite.lang.Reflections.FieldIterator;
-import org.stalactite.lang.collection.Iterables;
-import org.stalactite.lang.collection.Iterables.Filter;
+import org.gama.lang.Reflections.FieldIterator;
+import org.gama.lang.collection.Iterables;
+import org.gama.lang.collection.Iterables.Filter;
 import org.stalactite.persistence.structure.Table;
 import org.stalactite.persistence.structure.Table.Column;
 

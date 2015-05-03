@@ -3,7 +3,7 @@ package org.stalactite.reflection;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.stalactite.lang.collection.Iterables;
+import org.gama.lang.collection.Iterables;
 
 /**
  * @author Guillaume Mary

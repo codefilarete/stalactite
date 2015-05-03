@@ -7,8 +7,8 @@ import java.util.TreeMap;
 
 import javax.annotation.Nonnull;
 
-import org.stalactite.lang.collection.EntryFactoryHashMap;
-import org.stalactite.lang.collection.Iterables;
+import org.gama.lang.collection.EntryFactoryHashMap;
+import org.gama.lang.collection.Iterables;
 import org.stalactite.persistence.engine.PersistenceContext;
 import org.stalactite.persistence.structure.Table.Column;
 import org.stalactite.persistence.structure.Table.SizedColumn;

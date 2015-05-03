@@ -4,8 +4,8 @@ import java.lang.reflect.Field;
 import java.util.List;
 import java.util.Map;
 
-import org.stalactite.lang.Reflections;
-import org.stalactite.lang.collection.Maps;
+import org.gama.lang.Reflections;
+import org.gama.lang.collection.Maps;
 import org.stalactite.persistence.engine.DDLDeployer;
 import org.stalactite.persistence.engine.PersistenceContext;
 import org.stalactite.persistence.engine.Persister;

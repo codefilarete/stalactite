@@ -8,8 +8,8 @@ import java.util.Map.Entry;
 
 import javax.sql.DataSource;
 
-import org.stalactite.lang.bean.Objects;
-import org.stalactite.lang.exception.Exceptions;
+import org.gama.lang.bean.Objects;
+import org.gama.lang.exception.Exceptions;
 import org.stalactite.benchmark.connection.MySQLDataSourceFactory.Property;
 
 import com.mysql.jdbc.jdbc2.optional.MysqlDataSource;

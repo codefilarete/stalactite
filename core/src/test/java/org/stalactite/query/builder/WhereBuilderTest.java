@@ -5,7 +5,7 @@ import static org.junit.Assert.assertEquals;
 import java.util.Collections;
 import java.util.Map;
 
-import org.stalactite.lang.collection.Maps;
+import org.gama.lang.collection.Maps;
 import org.stalactite.persistence.structure.Table;
 import org.stalactite.persistence.structure.Table.Column;
 import org.stalactite.query.model.Criteria;

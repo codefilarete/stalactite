@@ -4,7 +4,7 @@ import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import org.stalactite.lang.collection.EntryFactoryHashMap;
+import org.gama.lang.collection.EntryFactoryHashMap;
 
 /**
  * @author mary

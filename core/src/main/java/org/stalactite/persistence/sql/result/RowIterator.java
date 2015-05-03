@@ -6,7 +6,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 
-import org.stalactite.lang.exception.Exceptions;
+import org.gama.lang.exception.Exceptions;
 import org.stalactite.persistence.engine.PersistenceContext;
 import org.stalactite.persistence.sql.dml.binder.ParameterBinder;
 import org.stalactite.persistence.sql.dml.binder.ParameterBinderRegistry;

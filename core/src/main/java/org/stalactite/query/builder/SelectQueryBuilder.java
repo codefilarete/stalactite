@@ -1,6 +1,6 @@
 package org.stalactite.query.builder;
 
-import org.stalactite.lang.StringAppender;
+import org.gama.lang.StringAppender;
 import org.stalactite.persistence.structure.Table.Column;
 import org.stalactite.query.model.SelectQuery;
 import org.stalactite.query.model.SelectQuery.GroupBy;

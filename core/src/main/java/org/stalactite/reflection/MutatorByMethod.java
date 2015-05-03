@@ -4,7 +4,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Member;
 import java.lang.reflect.Method;
 
-import org.stalactite.lang.StringAppender;
+import org.gama.lang.StringAppender;
 
 /**
  * @author mary

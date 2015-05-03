@@ -2,8 +2,8 @@ package org.stalactite.query.model;
 
 import java.util.*;
 
-import org.stalactite.lang.Strings;
-import org.stalactite.lang.bean.Objects;
+import org.gama.lang.Strings;
+import org.gama.lang.bean.Objects;
 import org.stalactite.persistence.structure.Table;
 import org.stalactite.persistence.structure.Table.Column;
 import org.stalactite.query.model.From.AbstractJoin;

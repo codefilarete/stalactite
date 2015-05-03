@@ -2,7 +2,7 @@ package org.stalactite.reflection;
 
 import static org.testng.AssertJUnit.*;
 
-import org.stalactite.lang.Reflections;
+import org.gama.lang.Reflections;
 import org.testng.annotations.Test;
 
 /**

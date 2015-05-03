@@ -3,9 +3,9 @@ package org.stalactite.persistence.sql.result;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
-import org.stalactite.lang.bean.IConverter;
-import org.stalactite.lang.collection.ReadOnlyIterator;
-import org.stalactite.lang.exception.Exceptions;
+import org.gama.lang.bean.IConverter;
+import org.gama.lang.collection.ReadOnlyIterator;
+import org.gama.lang.exception.Exceptions;
 
 /**
  * ResultSet iterator with convert method

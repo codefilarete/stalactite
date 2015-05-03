@@ -11,8 +11,8 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 
 import org.stalactite.benchmark.DynamicAndComplementaryClassMappingBuilder.DynamicEntity;
-import org.stalactite.lang.collection.EntryFactoryHashMap;
-import org.stalactite.lang.exception.Exceptions;
+import org.gama.lang.collection.EntryFactoryHashMap;
+import org.gama.lang.exception.Exceptions;
 import org.stalactite.persistence.engine.DDLDeployer;
 import org.stalactite.persistence.engine.NoopPersisterListener;
 import org.stalactite.persistence.engine.PersistenceContext;

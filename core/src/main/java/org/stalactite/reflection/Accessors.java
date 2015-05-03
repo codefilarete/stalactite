@@ -3,8 +3,8 @@ package org.stalactite.reflection;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 
-import org.stalactite.lang.Reflections;
-import org.stalactite.lang.Strings;
+import org.gama.lang.Reflections;
+import org.gama.lang.Strings;
 
 /**
  * @author Guillaume Mary
