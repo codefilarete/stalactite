@@ -3,8 +3,6 @@ package org.gama.safemodel;
 import java.util.Iterator;
 
 import org.gama.lang.StringAppender;
-import org.gama.safemodel.MetaModel.FieldDescription;
-import org.gama.safemodel.MetaModel.MethodDescription;
 import org.gama.lang.collection.Arrays;
 
 /**
