@@ -15,7 +15,6 @@
 	<properties>
 		<jsr305.version>3.0.0</jsr305.version>
 		<mockito.version>1.10.19</mockito.version>
-		<commons-collections4.version>4.0</commons-collections4.version>
 		<hsqldb.version>2.3.2</hsqldb.version>
 		<slf4j-api.version>1.7.10</slf4j-api.version>
 		<log4j.version>2.2</log4j.version>
@@ -26,11 +25,6 @@
 			<groupId>org.gama</groupId>
 			<artifactId>tools</artifactId>
 			<version>${project.version}</version>
-		</dependency>
-		<dependency>
-			<groupId>org.apache.commons</groupId>
-			<artifactId>commons-collections4</artifactId>
-			<version>${commons-collections4.version}</version>
 		</dependency>
 		<dependency>
 			<groupId>com.google.code.findbugs</groupId>

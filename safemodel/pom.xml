@@ -16,6 +16,7 @@
 	<modules>
 		<module>core</module>
 		<module>reflection</module>
+		<module>wicket</module>
 	</modules>
 	
 </project>
