@@ -10,12 +10,11 @@ import org.gama.lang.collection.ArrayIterator;
 import org.gama.lang.collection.PairIterator;
 
 /**
- * Classe qui permet la création d'un ordre SQL de type PreparedStatement à partir du résultat du parsing d'un ordre
- * SQL paramétré. Facilite la gestion des index des paramètres dans le PreparedStatement.
- * Gère également l'extension de l'ordre SQL en cas de valeur de type Collection, cas pour lequel on ajoute autant
- * de '?' que nécessaire et on adapte le calcul des index.
+ * Class that creates a PreparedStatement from an SQL String with named parameters. Eases index of named parameters as
+ * it manages SQL expansion for parameters that have Collection value: '?' are added as many as necessary.
+ * Kind of wrapper over {@link ParsedSQL}, delegates parsing to {@link SQLParameterParser}.
  * 
- * @author mary
+ * @author Guillaume Mary
  */
 public class ExpandableSQL {
 
@@ -63,13 +62,20 @@ public class ExpandableSQL {
 	public String getPreparedSQL() {
 		return preparedSQL;
 	}
-
+	
+	/**
+	 * Class that represents a named parameter in a SQL statement.
+	 * It allows extension of single parameter mark (coded as a question mark '?') to multiple ones in case of
+	 * Collection value. This is done on the {@link #toParameterizedSQL()} method.
+	 */
 	public static class ExpandableParameter implements Iterable<Entry<Integer, Object>> {
 
 		private static final String SQL_PARAMETER_MARK = "?";
 
 		private static final String SQL_PARAMETER_MARK_1 = SQL_PARAMETER_MARK + ", ";
-
+		
+		private static final int SQL_PARAMETER_MARK_1_LENGTH = SQL_PARAMETER_MARK_1.length();
+		
 		private static final String SQL_PARAMETER_MARK_10 =
 				SQL_PARAMETER_MARK_1 + SQL_PARAMETER_MARK_1 +
 						SQL_PARAMETER_MARK_1 + SQL_PARAMETER_MARK_1 +
@@ -83,11 +89,16 @@ public class ExpandableSQL {
 						SQL_PARAMETER_MARK_10 + SQL_PARAMETER_MARK_10 +
 						SQL_PARAMETER_MARK_10 + SQL_PARAMETER_MARK_10 +
 						SQL_PARAMETER_MARK_10 + SQL_PARAMETER_MARK_10;
-
+		
+		/** The parameter value */
 		private final Object value;
+		/** The parameter name */
 		private final String parameterName;
+		/** Preceding parameter, for index computation, overall used in case of Collection valued parameters */
 		private final ExpandableParameter precedingParameter;
+		/** PreparedStatement parameter mark count for this parameter, 1 for single value, N for Collection value */
 		private final int markCount;
+		/** Index of the parameter in the PreparedStatement, the first one for Collection value */
 		private Integer index;
 
 		private ExpandableParameter(Object value, String parameterName, ExpandableParameter precedingParameter) {
@@ -97,7 +108,7 @@ public class ExpandableSQL {
 			if (value instanceof Collection) {
 				this.markCount = ((Collection) value).size();
 				if (this.markCount == 0) {
-					// génèrera un SQL sans doute invalide: "in ()" => on lève une exception avant
+					// this case will throw an invalid SQL statement: "in ()" => we throw one before.
 					throw new IllegalArgumentException("Empty collection for sql parameter " + parameterName);
 				}
 			} else {
@@ -108,7 +119,12 @@ public class ExpandableSQL {
 		public String getParameterName() {
 			return parameterName;
 		}
-
+		
+		/**
+		 * Gives all indexes of this instance.
+		 * 
+		 * @return a one-sized array for single value parameter, a n-sized array for n-sized collection value parameter
+		 */
 		public Integer[] getMarkIndexes() {
 			Integer[] indexes = new Integer[markCount];
 			int startIndex = getIndex();
@@ -117,7 +133,12 @@ public class ExpandableSQL {
 			}
 			return indexes;
 		}
-
+		
+		/**
+		 * Compute (from preceding parameter) and return the parameter index.
+		 * 
+		 * @return the parameter index
+		 */
 		public int getIndex() {
 			if (this.index == null) {
 				if (this.precedingParameter != null) {
@@ -128,12 +149,16 @@ public class ExpandableSQL {
 			}
 			return this.index;
 		}
-
+		
+		/**
+		 * 
+		 * @return an iterator over index-value parameters
+		 */
 		@Override
 		public Iterator<Entry<Integer, Object>> iterator() {
 			Iterator<Object> valueIterator;
 			if (value instanceof Iterable) {
-				valueIterator = ((Iterable) value).iterator();
+				valueIterator = ((Iterable<Object>) value).iterator();
 			} else {
 				valueIterator = Collections.singletonList(value).iterator();
 			}
@@ -142,27 +167,35 @@ public class ExpandableSQL {
 
 		public String toParameterizedSQL() {
 			if (value instanceof Collection) {
-				StringAppender sqlParameter = new StringAppender(((Collection) value).size() * SQL_PARAMETER_MARK_1.length());
-				int collectionSize = ((Collection) value).size();
-				// on optimise en traitant la concaténation par bloc, empirique mais sans doute plus efficace que 1 par 1
-				int packet100 = collectionSize / 100;
-				for (int i = 0; i < packet100; i++) {
-					sqlParameter.cat(SQL_PARAMETER_MARK_100);
-				}
-				int packetMod100 = collectionSize % 100;
-				int packet10 = packetMod100 / 10;
-				for (int i = 0; i < packet10; i++) {
-					sqlParameter.cat(SQL_PARAMETER_MARK_10);
-				}
-				int packet1 = packetMod100 % 10;
-				for (int i = 0; i < packet1; i++) {
-					sqlParameter.cat(SQL_PARAMETER_MARK_1);
-				}
-				sqlParameter.cutTail(2);
-				return sqlParameter.toString();
+				return expandParameters();
 			} else {
 				return SQL_PARAMETER_MARK;
 			}
+		}
+		
+		/**
+		 * Convert the single valued parameter to a multiple one: add as many '?' as necessary 
+		 * @return the changed sql
+		 */
+		protected String expandParameters() {
+			Collection values = (Collection) this.value;
+			int collectionSize = values.size();
+			StringAppender sqlParameter = new StringAppender(collectionSize * SQL_PARAMETER_MARK_1_LENGTH);
+			// on optimise en traitant la concaténation par bloc, empirique mais sans doute plus efficace que 1 par 1
+			int packet100Count = collectionSize / 100;
+			for (int i = 0; i < packet100Count; i++) {
+				sqlParameter.cat(SQL_PARAMETER_MARK_100);
+			}
+			int packetMod100 = collectionSize % 100;
+			int packet10Count = packetMod100 / 10;
+			for (int i = 0; i < packet10Count; i++) {
+				sqlParameter.cat(SQL_PARAMETER_MARK_10);
+			}
+			int packet1Count = packetMod100 % 10;
+			for (int i = 0; i < packet1Count; i++) {
+				sqlParameter.cat(SQL_PARAMETER_MARK_1);
+			}
+			return sqlParameter.cutTail(2).toString();
 		}
 	}
 }
