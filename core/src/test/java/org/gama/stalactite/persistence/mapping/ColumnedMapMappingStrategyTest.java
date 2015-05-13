@@ -1,13 +1,10 @@
 package org.gama.stalactite.persistence.mapping;
 
-import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.assertTrue;
+import static org.testng.Assert.*;
 
 import java.util.HashMap;
 import java.util.Map;
 
-import org.apache.commons.collections4.BidiMap;
-import org.apache.commons.collections4.bidimap.DualHashBidiMap;
 import org.gama.lang.collection.Maps;
 import org.gama.lang.collection.Maps.ChainingMap;
 import org.gama.stalactite.persistence.sql.result.Row;
@@ -35,11 +32,13 @@ public class ColumnedMapMappingStrategyTest {
 	public void setUp() throws Exception {
 		totoTable = new Table(null, "Toto");
 		final int nbCol = 5;
-		final BidiMap<Integer, Column> mappedColumnsOnKey = new DualHashBidiMap<>();
+		final Map<Integer, Column> mappedColumnsOnKey = new HashMap<>();
+		final Map<Column, Integer> mappedKeyOnColumn = new HashMap<>();
 		for (int i = 1; i <= nbCol; i++) {
 			String columnName = "col_" + i;
 			Column column = totoTable.new Column(columnName, String.class);
 			mappedColumnsOnKey.put(i, column);
+			mappedKeyOnColumn.put(column, i);
 		}
 		
 		testInstance = new ColumnedMapMappingStrategy<Map<Integer, String>, Integer, String, String>(totoTable, totoTable.getColumns().asSet(), HashMap.class) {
@@ -53,7 +52,7 @@ public class ColumnedMapMappingStrategyTest {
 			
 			@Override
 			protected Integer getKey(Column column) {
-				return mappedColumnsOnKey.getKey(column);
+				return mappedKeyOnColumn.get(column);
 			}
 			
 			@Override

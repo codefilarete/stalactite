@@ -3,13 +3,12 @@ package org.gama.stalactite.persistence.mapping;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import org.apache.commons.collections4.BidiMap;
-import org.apache.commons.collections4.bidimap.DualHashBidiMap;
 import org.gama.lang.collection.Arrays;
 import org.gama.lang.collection.Maps;
 import org.gama.stalactite.persistence.structure.Table;
@@ -69,7 +68,7 @@ public class ClassMappingStrategyTest {
 			}
 		});
 		
-		final BidiMap<String, Column> mappedColumnsOnKey = new DualHashBidiMap<>();
+		final Map<String, Column> mappedColumnsOnKey = new HashMap<>();
 		for (int i = 1; i <= 2; i++) {
 			String columnName = "cole_" + i;
 			Column column = totoClassTable.new Column(columnName, String.class);
@@ -82,7 +81,7 @@ public class ClassMappingStrategyTest {
 					break;
 			}
 		}
-		testInstance.put(e, new ColumnedMapMappingStrategy<Map<String, String>, String, String, String>(totoClassTable, mappedColumnsOnKey.values(), HashMap.class) {
+		testInstance.put(e, new ColumnedMapMappingStrategy<Map<String, String>, String, String, String>(totoClassTable, new HashSet<>(mappedColumnsOnKey.values()), HashMap.class) {
 			
 			@Override
 			protected Column getColumn(String key) {
