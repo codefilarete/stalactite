@@ -10,9 +10,9 @@ import java.util.Map.Entry;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 
-import org.gama.stalactite.benchmark.DynamicAndComplementaryClassMappingBuilder.DynamicEntity;
-import org.gama.lang.collection.EntryFactoryHashMap;
+import org.gama.lang.collection.ValueFactoryHashMap;
 import org.gama.lang.exception.Exceptions;
+import org.gama.stalactite.benchmark.DynamicAndComplementaryClassMappingBuilder.DynamicEntity;
 import org.gama.stalactite.persistence.engine.DDLDeployer;
 import org.gama.stalactite.persistence.engine.NoopPersisterListener;
 import org.gama.stalactite.persistence.engine.PersistenceContext;
@@ -85,7 +85,7 @@ public class BenchmarkDynamicComplementaryTables extends AbstractBenchmark<Dynam
 		return this.dynamicClassMappingBuilder;
 	}
 	
-	private static final Map<DynamicEntity, Map<Field, DynamicEntity>> X = new EntryFactoryHashMap<DynamicEntity, Map<Field, DynamicEntity>>() {
+	private static final Map<DynamicEntity, Map<Field, DynamicEntity>> indexFieldValue = new ValueFactoryHashMap<DynamicEntity, Map<Field, DynamicEntity>>() {
 		@Override
 		public Map<Field, DynamicEntity> createInstance(DynamicEntity input) {
 			return new HashMap<>();
@@ -113,8 +113,8 @@ public class BenchmarkDynamicComplementaryTables extends AbstractBenchmark<Dynam
 						Field field1 = classToPersist.getField(field.getName());
 						Object indexInstance = classToPersist.newInstance();
 						field1.set(indexInstance, value);
-						synchronized (X) {
-							X.get(dynamicEntity).put(field, (DynamicEntity) indexInstance);
+						synchronized (indexFieldValue) {
+							indexFieldValue.get(dynamicEntity).put(field, (DynamicEntity) indexInstance);
 						}
 					}
 				}
@@ -134,7 +134,7 @@ public class BenchmarkDynamicComplementaryTables extends AbstractBenchmark<Dynam
 			dynamicTypePersister.setPersisterListener(new NoopPersisterListener<D>() {
 				@Override
 				public void afterInsert(Iterable<D> iterables) {
-					Map<Field, List<DynamicEntity>> indexDynamicEntities = new EntryFactoryHashMap<Field, List<DynamicEntity>>(10) {
+					Map<Field, List<DynamicEntity>> indexDynamicEntities = new ValueFactoryHashMap<Field, List<DynamicEntity>>(10) {
 						@Override
 						public List<DynamicEntity> createInstance(Field input) {
 							return new ArrayList<>(500);
@@ -142,7 +142,7 @@ public class BenchmarkDynamicComplementaryTables extends AbstractBenchmark<Dynam
 					};
 					for (D dynamicEntity : iterables) {
 						try {
-							Map<Field, DynamicEntity> localIndexDynamicEntity = X.get(dynamicEntity);
+							Map<Field, DynamicEntity> localIndexDynamicEntity = indexFieldValue.get(dynamicEntity);
 							for (Entry<Field, DynamicEntity> dynamicEntityEntry : localIndexDynamicEntity.entrySet()) {
 //								dynamicClassMappingBuilder.getClassMappingStrategy_indexes().get(dynamicEntityEntry.getKey())
 								DynamicEntity indexDynamicEntity = dynamicEntityEntry.getValue();

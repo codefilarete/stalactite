@@ -5,8 +5,6 @@ import java.lang.reflect.Modifier;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.apache.commons.collections4.BidiMap;
-import org.apache.commons.collections4.bidimap.DualHashBidiMap;
 import org.gama.stalactite.persistence.id.sequence.PooledSequenceIdentifierGenerator;
 import org.gama.stalactite.persistence.id.sequence.PooledSequenceIdentifierGeneratorOptions;
 import org.gama.stalactite.persistence.id.sequence.PooledSequencePersistenceOptions;
@@ -63,7 +61,7 @@ public class DynamicClassMappingBuilder implements IMappingBuilder {
 	public static class DynamicTable extends Table {
 		
 		public final Column id;
-		public final BidiMap<Long, Column> dynamicColumns = new DualHashBidiMap<>();
+		public final Map<Long, Column> dynamicColumns = new HashMap<>();
 		
 		public DynamicTable(String tableName) {
 			super(null, tableName);

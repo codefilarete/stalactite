@@ -2,10 +2,9 @@ package org.gama.stalactite.benchmark;
 
 import java.lang.reflect.Field;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 
-import org.apache.commons.collections4.BidiMap;
-import org.apache.commons.collections4.bidimap.DualHashBidiMap;
 import org.gama.lang.exception.Exceptions;
 import org.gama.stalactite.persistence.id.sequence.PooledSequenceIdentifierGenerator;
 import org.gama.stalactite.persistence.id.sequence.PooledSequenceIdentifierGeneratorOptions;
@@ -35,7 +34,7 @@ public class TotoMappingBuilder implements IMappingBuilder {
 		} catch (NoSuchFieldException e) {
 			Exceptions.throwAsRuntimeException(e);
 		}
-		classMappingStrategy.put(answersField, new ColumnedMapMappingStrategy<Map<Long, Object>, Long, Object, Object>(targetTable, targetTable.dynamicColumns.values(), HashMap.class) {
+		classMappingStrategy.put(answersField, new ColumnedMapMappingStrategy<Map<Long, Object>, Long, Object, Object>(targetTable, new HashSet<>(targetTable.dynamicColumns.values()), HashMap.class) {
 			@Override
 			protected Column getColumn(Long key) {
 				return targetTable.dynamicColumns.get(key);
@@ -48,7 +47,7 @@ public class TotoMappingBuilder implements IMappingBuilder {
 			
 			@Override
 			protected Long getKey(Column column) {
-				return targetTable.dynamicColumns.inverseBidiMap().get(column);
+				return targetTable.dynamicIndexes.get(column);
 			}
 			
 			@Override
@@ -72,7 +71,8 @@ public class TotoMappingBuilder implements IMappingBuilder {
 		public final Column id;
 //		public final Column a;
 //		public final Column b;
-		public final BidiMap<Long, Column> dynamicColumns = new DualHashBidiMap<>();
+		public final Map<Long, Column> dynamicColumns = new HashMap<>();
+		public final Map<Column, Long> dynamicIndexes = new HashMap<>();
 		
 		public TotoTable() {
 			super(null, "Toto");
@@ -89,6 +89,7 @@ public class TotoMappingBuilder implements IMappingBuilder {
 //				}
 				Column column = new Column("q" + i, columnType);
 				dynamicColumns.put((long) i, column);
+				dynamicIndexes.put(column, (long) i);
 				if (i%5==0) {
 					new Index(column, "idx_" + column.getName());
 				}
