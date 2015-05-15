@@ -10,7 +10,7 @@ import org.gama.stalactite.dml.ExpandableSQL.ExpandableParameter;
 import org.gama.stalactite.dml.SQLParameterParser.Parameter;
 import org.gama.stalactite.dml.SQLParameterParser.ParsedSQL;
 import org.gama.lang.collection.Arrays;
-import org.gama.lang.collection.EntryFactoryHashMap;
+import org.gama.lang.collection.ValueFactoryHashMap;
 import org.gama.lang.collection.Iterables;
 import org.gama.lang.collection.Maps;
 import org.testng.annotations.DataProvider;
@@ -68,7 +68,7 @@ public class ExpandableSQLTest {
 		ExpandableSQL testInstance = new ExpandableSQL(parsedSQL, values);
 		assertEquals(expectedPreparedSql, testInstance.getPreparedSQL());
 
-		Map<String, List<ExpandableParameter>> mappedParameter = new EntryFactoryHashMap<String, List<ExpandableParameter>>(2) {
+		Map<String, List<ExpandableParameter>> mappedParameter = new ValueFactoryHashMap<String, List<ExpandableParameter>>(2) {
 			@Override
 			public List<ExpandableParameter> createInstance(String input) {
 				return new ArrayList<>();

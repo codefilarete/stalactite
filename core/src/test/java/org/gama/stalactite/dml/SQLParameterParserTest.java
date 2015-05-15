@@ -86,8 +86,8 @@ public class SQLParameterParserTest {
 	public void testParse_in(String sql, ParsedSQL expectedResult) {
 		SQLParameterParser testInstance = new SQLParameterParser(sql);
 		ParsedSQL parsedSQL = testInstance.parse();
-		org.junit.Assert.assertEquals(parsedSQL.getSqlSnippets(), expectedResult.getSqlSnippets());
-		org.junit.Assert.assertEquals(parsedSQL.getParametersMap(), expectedResult.getParametersMap());
+		org.junit.Assert.assertEquals(expectedResult.getSqlSnippets(), parsedSQL.getSqlSnippets());
+		org.junit.Assert.assertEquals(expectedResult.getParametersMap(), parsedSQL.getParametersMap());
 	}
 	
 	@Test(expectedExceptions = IllegalArgumentException.class, expectedExceptionsMessageRegExp = "Parameter name can't be empty at position 30")

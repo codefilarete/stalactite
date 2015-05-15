@@ -7,7 +7,7 @@ import java.util.TreeMap;
 
 import javax.annotation.Nonnull;
 
-import org.gama.lang.collection.EntryFactoryHashMap;
+import org.gama.lang.collection.ValueFactoryHashMap;
 import org.gama.lang.collection.Iterables;
 import org.gama.stalactite.persistence.engine.PersistenceContext;
 import org.gama.stalactite.persistence.structure.Table.Column;
@@ -21,7 +21,7 @@ import org.gama.stalactite.persistence.structure.Table.SizedColumn;
  */
 public class JavaTypeToSqlTypeMapping {
 	
-	private final Map<Class, SortedMap<Integer, String>> javaTypeToSQLType = new EntryFactoryHashMap<Class, SortedMap<Integer, String>>() {
+	private final Map<Class, SortedMap<Integer, String>> javaTypeToSQLType = new ValueFactoryHashMap<Class, SortedMap<Integer, String>>() {
 		@Override
 		public TreeMap<Integer, String> createInstance(Class input) {
 			return new TreeMap<>();

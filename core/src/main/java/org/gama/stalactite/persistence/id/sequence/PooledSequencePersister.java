@@ -141,7 +141,7 @@ public class PooledSequencePersister extends Persister<PooledSequence> implement
 			pool = readBound(sequenceName);
 			if (pool != null) {
 				pool.setUpperBound(pool.getUpperBound() + poolSize);
-				update(pool);
+				updateRoughly(pool);
 			} else {
 				pool = new PooledSequence(sequenceName);
 				pool.setUpperBound(poolSize);
