@@ -22,7 +22,7 @@ import org.gama.stalactite.persistence.id.AutoAssignedIdentifierGenerator;
 import org.gama.stalactite.persistence.id.IdentifierGenerator;
 import org.gama.stalactite.persistence.id.PostInsertIdentifierGenerator;
 import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
-import org.gama.stalactite.persistence.mapping.PersistentValues;
+import org.gama.stalactite.persistence.mapping.StatementValues;
 import org.gama.stalactite.persistence.sql.dml.DMLGenerator;
 import org.gama.stalactite.persistence.sql.dml.DeleteOperation;
 import org.gama.stalactite.persistence.sql.dml.InsertOperation;
@@ -138,12 +138,12 @@ public class Persister<T> {
 	public void insert(Iterable<T> iterable) {
 		persisterListener.beforeInsert(iterable);
 		final InsertOperation insertOperation = dmlGenerator.buildInsert(mappingStrategy.getTargetTable().getColumns());
-		List<PersistentValues> persistentValues = new ArrayList<>();
+		List<StatementValues> statementValues = new ArrayList<>();
 		for (T t : iterable) {
 			identifierFixer.fixId(t);
-			persistentValues.add(mappingStrategy.getInsertValues(t));
+			statementValues.add(mappingStrategy.getInsertValues(t));
 		}
-		applyValuesToOperation(insertOperation, persistentValues);
+		applyValuesToOperation(insertOperation, statementValues);
 		/*
 		if (identifierGenerator instanceof PostInsertIdentifierGenerator) {
 			// TODO: lire le résultat de l'exécution et injecter l'identifiant sur le bean
@@ -166,11 +166,11 @@ public class Persister<T> {
 		// we never update primary key (by principle and for persistent bean cache based on id (on what else ?)) 
 		Set<Column> columnsToUpdate = targetTable.getColumnsNoPrimaryKey();
 		final UpdateOperation updateOperation = dmlGenerator.buildUpdate(columnsToUpdate, mappingStrategy.getVersionedKeys());
-		List<PersistentValues> persistentValues = new ArrayList<>();
+		List<StatementValues> statementValues = new ArrayList<>();
 		for (T t : iterable) {
-			persistentValues.add(mappingStrategy.getUpdateValues(t, null, true));
+			statementValues.add(mappingStrategy.getUpdateValues(t, null, true));
 		}
-		applyValuesToOperation(updateOperation, persistentValues);
+		applyValuesToOperation(updateOperation, statementValues);
 		persisterListener.afterUpdateRoughly(iterable);
 	}
 	
@@ -198,10 +198,10 @@ public class Persister<T> {
 		};
 		// UpdateOperations and values to apply
 		// NB: LinkedHashMap is used to keep order of treatment, not as a huge requirement, rather for simplicity and unit test assert
-		LinkedHashMap<UpdateOperation, List<PersistentValues>> delegateStorage = new LinkedHashMap<>(50);
-		Map<UpdateOperation, List<PersistentValues>> operationsToApply = new ValueFactoryMap<UpdateOperation, List<PersistentValues>>(delegateStorage) {
+		LinkedHashMap<UpdateOperation, List<StatementValues>> delegateStorage = new LinkedHashMap<>(50);
+		Map<UpdateOperation, List<StatementValues>> operationsToApply = new ValueFactoryMap<UpdateOperation, List<StatementValues>>(delegateStorage) {
 			@Override
-			public List<PersistentValues> createInstance(UpdateOperation input) {
+			public List<StatementValues> createInstance(UpdateOperation input) {
 				return new ArrayList<>();
 			}
 		};
@@ -211,7 +211,7 @@ public class Persister<T> {
 			T modified = next.getKey();
 			T unmodified = next.getValue();
 			// finding differences between modified instance and unmodified one
-			PersistentValues updateValues = mappingStrategy.getUpdateValues(modified, unmodified, allColumnsStatement);
+			StatementValues updateValues = mappingStrategy.getUpdateValues(modified, unmodified, allColumnsStatement);
 			Set<Column> columnsToUpdate = updateValues.getUpsertValues().keySet();
 			if (!columnsToUpdate.isEmpty()) {
 				UpdateOperation updateOperation = updateOperationCache.get(columnsToUpdate);
@@ -220,7 +220,7 @@ public class Persister<T> {
 		}
 		
 		// applying all update operations
-		for (Entry<UpdateOperation, List<PersistentValues>> updateOperationEntry : operationsToApply.entrySet()) {
+		for (Entry<UpdateOperation, List<StatementValues>> updateOperationEntry : operationsToApply.entrySet()) {
 			applyValuesToOperation(updateOperationEntry.getKey(), updateOperationEntry.getValue());
 		}
 		persisterListener.afterUpdate(differencesIterable);
@@ -234,11 +234,11 @@ public class Persister<T> {
 		persisterListener.beforeDelete(iterable);
 		Table targetTable = mappingStrategy.getTargetTable();
 		final DeleteOperation deleteOperation = dmlGenerator.buildDelete(targetTable, mappingStrategy.getVersionedKeys());
-		List<PersistentValues> persistentValues = new ArrayList<>();
+		List<StatementValues> statementValues = new ArrayList<>();
 		for (T t : iterable) {
-			persistentValues.add(mappingStrategy.getDeleteValues(t));
+			statementValues.add(mappingStrategy.getDeleteValues(t));
 		}
-		applyValuesToOperation(deleteOperation, persistentValues);
+		applyValuesToOperation(deleteOperation, statementValues);
 		persisterListener.afterDelete(iterable);
 	}
 	
@@ -251,20 +251,20 @@ public class Persister<T> {
 		return mappingStrategy.getId(t) == null;
 	}
 	
-	protected int[] execute(WriteOperation operation, PersistentValues writeValues) {
+	protected int[] execute(WriteOperation operation, StatementValues writeValues) {
 		apply(operation, writeValues);
 		return execute(operation);
 	}
 	
-	protected void applyValuesToOperation(WriteOperation writeOperation, List<PersistentValues> persistentValues) {
-		SteppingIterator<PersistentValues> valuesIterator = new BatchingIterator<>(persistentValues, writeOperation);
+	protected void applyValuesToOperation(WriteOperation writeOperation, List<StatementValues> statementValues) {
+		SteppingIterator<StatementValues> valuesIterator = new BatchingIterator<>(statementValues, writeOperation);
 		while(valuesIterator.hasNext()) {
-			PersistentValues updateValues = valuesIterator.next();
+			StatementValues updateValues = valuesIterator.next();
 			apply(writeOperation, updateValues);
 		}
 	}
 	
-	protected void apply(WriteOperation operation, PersistentValues writeValues) {
+	protected void apply(WriteOperation operation, StatementValues writeValues) {
 		try {
 			operation.apply(writeValues, getConnection());
 		} catch (SQLException e) {
@@ -292,7 +292,7 @@ public class Persister<T> {
 			SelectOperation selectStatement = dmlGenerator.buildSelect(targetTable,
 					targetTable.getColumns().asSet(),
 					Arrays.asList(targetTable.getPrimaryKey()));
-			PersistentValues selectValues = mappingStrategy.getSelectValues(id);
+			StatementValues selectValues = mappingStrategy.getSelectValues(id);
 			T result = execute(selectStatement, selectValues, mappingStrategy);
 			persisterListener.afterSelect(result);
 			return result;
@@ -301,7 +301,7 @@ public class Persister<T> {
 		}
 	}
 	
-	protected T execute(SelectOperation operation, PersistentValues whereValues, ClassMappingStrategy<T> classMappingStrategy) {
+	protected T execute(SelectOperation operation, StatementValues whereValues, ClassMappingStrategy<T> classMappingStrategy) {
 		try {
 			operation.apply(whereValues, getConnection());
 			RowIterator rowIterator = operation.execute();

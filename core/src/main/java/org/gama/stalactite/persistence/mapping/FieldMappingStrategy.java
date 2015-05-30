@@ -92,7 +92,7 @@ public class FieldMappingStrategy<T> implements IMappingStrategy<T> {
 	}
 	
 	@Override
-	public PersistentValues getInsertValues(@Nonnull final T t) {
+	public StatementValues getInsertValues(@Nonnull final T t) {
 		return foreachField(new FieldVisitor() {
 			@Override
 			protected void visitField(Entry<PropertyAccessor, Column> fieldColumnEntry) throws IllegalAccessException {
@@ -102,10 +102,10 @@ public class FieldMappingStrategy<T> implements IMappingStrategy<T> {
 	}
 	
 	@Override
-	public PersistentValues getUpdateValues(@Nonnull final T modified, final T unmodified, final boolean allColumns) {
+	public StatementValues getUpdateValues(@Nonnull final T modified, final T unmodified, final boolean allColumns) {
 		final Map<Column, Object> unmodifiedColumns = new LinkedHashMap<>();
 		// getting differences
-		PersistentValues toReturn = foreachField(new FieldVisitor() {
+		StatementValues toReturn = foreachField(new FieldVisitor() {
 			@Override
 			protected void visitField(Entry<PropertyAccessor, Column> fieldColumnEntry) throws IllegalAccessException {
 				PropertyAccessor<T, Object> field = fieldColumnEntry.getKey();
@@ -132,22 +132,22 @@ public class FieldMappingStrategy<T> implements IMappingStrategy<T> {
 	}
 	
 	@Override
-	public PersistentValues getDeleteValues(@Nonnull T t) {
-		PersistentValues toReturn = new PersistentValues();
+	public StatementValues getDeleteValues(@Nonnull T t) {
+		StatementValues toReturn = new StatementValues();
 		putVersionedKeyValues(t, toReturn);
 		return toReturn;
 	}
 	
 	@Override
-	public PersistentValues getSelectValues(@Nonnull Serializable id) {
-		PersistentValues toReturn = new PersistentValues();
+	public StatementValues getSelectValues(@Nonnull Serializable id) {
+		StatementValues toReturn = new StatementValues();
 		toReturn.putWhereValue(this.targetTable.getPrimaryKey(), id);
 		return toReturn;
 	}
 	
 	@Override
-	public PersistentValues getVersionedKeyValues(@Nonnull T t) {
-		PersistentValues toReturn = new PersistentValues();
+	public StatementValues getVersionedKeyValues(@Nonnull T t) {
+		StatementValues toReturn = new StatementValues();
 		putVersionedKeyValues(t, toReturn);
 		return toReturn;
 	}
@@ -166,7 +166,7 @@ public class FieldMappingStrategy<T> implements IMappingStrategy<T> {
 		primaryKeyField.set(t, identifier);
 	}
 	
-	private PersistentValues foreachField(final FieldVisitor visitor, boolean withPK) {
+	private StatementValues foreachField(final FieldVisitor visitor, boolean withPK) {
 		Map<PropertyAccessor, Column> fieldsTobeVisited = new LinkedHashMap<>(this.fieldToColumn);
 		if (!withPK) {
 			fieldsTobeVisited.remove(this.primaryKeyField);
@@ -175,7 +175,7 @@ public class FieldMappingStrategy<T> implements IMappingStrategy<T> {
 		return visitor.toReturn;
 	}
 	
-	protected void putVersionedKeyValues(T t, PersistentValues toReturn) {
+	protected void putVersionedKeyValues(T t, StatementValues toReturn) {
 		toReturn.putWhereValue(this.targetTable.getPrimaryKey(), getId(t));
 	}
 	
@@ -186,7 +186,7 @@ public class FieldMappingStrategy<T> implements IMappingStrategy<T> {
 	
 	private static abstract class FieldVisitor extends ForEach<Entry<PropertyAccessor, Column>, Void> {
 		
-		protected PersistentValues toReturn = new PersistentValues();
+		protected StatementValues toReturn = new StatementValues();
 		
 		@Override
 		public final Void visit(Entry<PropertyAccessor, Column> fieldColumnEntry) {

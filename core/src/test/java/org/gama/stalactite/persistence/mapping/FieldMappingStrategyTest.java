@@ -50,7 +50,7 @@ public class FieldMappingStrategyTest {
 	
 	@Test(dataProvider = GET_INSERT_VALUES_DATA)
 	public void testGetInsertValues(Toto modified, Map<Column, Object> expectedResult) throws Exception {
-		PersistentValues valuesToInsert = testInstance.getInsertValues(modified);
+		StatementValues valuesToInsert = testInstance.getInsertValues(modified);
 		
 		assertEquals(valuesToInsert.getUpsertValues(), expectedResult);
 	}
@@ -72,7 +72,7 @@ public class FieldMappingStrategyTest {
 	
 	@Test(dataProvider = GET_UPDATE_VALUES_DIFF_ONLY_DATA)
 	public void testGetUpdateValues_diffOnly(Toto modified, Toto unmodified, Map<Column, Object> expectedResult) throws Exception {
-		PersistentValues valuesToInsert = testInstance.getUpdateValues(modified, unmodified, false);
+		StatementValues valuesToInsert = testInstance.getUpdateValues(modified, unmodified, false);
 		
 		assertEquals(valuesToInsert.getUpsertValues(), expectedResult);
 		assertEquals(valuesToInsert.getWhereValues(), Maps.asMap(colA, modified.a));
@@ -90,7 +90,7 @@ public class FieldMappingStrategyTest {
 	
 	@Test(dataProvider = GET_UPDATE_VALUES_ALL_COLUMNS_DATA)
 	public void testGetUpdateValues_allColumns(Toto modified, Toto unmodified, Map<Column, Object> expectedResult) throws Exception {
-		PersistentValues valuesToInsert = testInstance.getUpdateValues(modified, unmodified, true);
+		StatementValues valuesToInsert = testInstance.getUpdateValues(modified, unmodified, true);
 		
 		assertEquals(valuesToInsert.getUpsertValues(), expectedResult);
 		assertEquals(valuesToInsert.getWhereValues(), Maps.asMap(colA, modified.a));
@@ -98,19 +98,19 @@ public class FieldMappingStrategyTest {
 	
 	@Test
 	public void testGetDeleteValues() throws Exception {
-		PersistentValues versionedKeyValues = testInstance.getDeleteValues(new Toto(1, 2, 3));
+		StatementValues versionedKeyValues = testInstance.getDeleteValues(new Toto(1, 2, 3));
 		assertEquals(versionedKeyValues.getWhereValues(), Maps.asMap(colA, 1));
 	}
 	
 	@Test
 	public void testGetSelectValues() throws Exception {
-		PersistentValues versionedKeyValues = testInstance.getSelectValues(1);
+		StatementValues versionedKeyValues = testInstance.getSelectValues(1);
 		assertEquals(versionedKeyValues.getWhereValues(), Maps.asMap(colA, 1));
 	}
 	
 	@Test
 	public void testGetVersionedKeyValues() throws Exception {
-		PersistentValues versionedKeyValues = testInstance.getVersionedKeyValues(new Toto(1, 2, 3));
+		StatementValues versionedKeyValues = testInstance.getVersionedKeyValues(new Toto(1, 2, 3));
 		assertEquals(versionedKeyValues.getWhereValues(), Maps.asMap(colA, 1));
 	}
 	

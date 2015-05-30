@@ -3,7 +3,7 @@ package org.gama.stalactite.persistence.sql.dml;
 import java.sql.SQLException;
 import java.util.Map;
 
-import org.gama.stalactite.persistence.mapping.PersistentValues;
+import org.gama.stalactite.persistence.mapping.StatementValues;
 import org.gama.stalactite.persistence.sql.dml.binder.ParameterBinder;
 import org.gama.stalactite.persistence.structure.Table.Column;
 
@@ -38,7 +38,7 @@ public class UpdateOperation extends WriteOperation {
 	}
 
 	@Override
-	protected void applyValues(PersistentValues values) throws SQLException {
+	protected void applyValues(StatementValues values) throws SQLException {
 		super.applyValues(values);
 		applyUpsertValues(updateIndexes, values);
 		applyWhereValues(whereIndexes, values);

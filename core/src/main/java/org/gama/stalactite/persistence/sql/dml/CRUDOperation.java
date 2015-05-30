@@ -16,7 +16,7 @@ import org.gama.lang.collection.Iterables;
 import org.gama.lang.collection.Iterables.ForEach;
 import org.gama.lang.exception.Exceptions;
 import org.gama.stalactite.persistence.engine.PersistenceContext;
-import org.gama.stalactite.persistence.mapping.PersistentValues;
+import org.gama.stalactite.persistence.mapping.StatementValues;
 import org.gama.stalactite.persistence.sql.dml.binder.ParameterBinder;
 import org.gama.stalactite.persistence.sql.dml.binder.ParameterBinderRegistry;
 import org.gama.stalactite.persistence.structure.Table.Column;
@@ -69,12 +69,12 @@ public abstract class CRUDOperation {
 		return binders;
 	}
 	
-	protected void applyUpsertValues(Map<Column, Map.Entry<Integer, ParameterBinder>> colToIndexes, PersistentValues values) throws SQLException {
+	protected void applyUpsertValues(Map<Column, Map.Entry<Integer, ParameterBinder>> colToIndexes, StatementValues values) throws SQLException {
 		LOGGER.trace("upsert values {}", values.getUpsertValues());
 		applyValues(colToIndexes, values.getUpsertValues());
 	}
 	
-	protected void applyWhereValues(Map<Column, Map.Entry<Integer, ParameterBinder>> colToIndexes, PersistentValues values) throws SQLException {
+	protected void applyWhereValues(Map<Column, Map.Entry<Integer, ParameterBinder>> colToIndexes, StatementValues values) throws SQLException {
 		LOGGER.trace("where values {}", values.getWhereValues());
 		applyValues(colToIndexes, values.getWhereValues());
 	}
@@ -109,32 +109,32 @@ public abstract class CRUDOperation {
 	}
 	
 	/**
-	 * Apply upsert and where values of PersistentValues to internal PreparedStatement created from Connection.
+	 * Apply upsert and where values of StatementValues to internal PreparedStatement created from Connection.
 	 * Don't execute statement as we don't know if it's a select or not so return would be different.
 	 * 
 	 * @param values values to set to PreparedStatement
 	 * @param connection a JDBC connection to create a PreparedStatement
 	 * @throws SQLException
 	 */
-	public void apply(@Nonnull PersistentValues values, @Nonnull Connection connection) throws SQLException {
+	public void apply(@Nonnull StatementValues values, @Nonnull Connection connection) throws SQLException {
 		apply(Arrays.asList(values), connection);
 	}
 	
 	/**
-	 * Massive version of {@link #apply(PersistentValues, Connection)}. Dedicated to non-select statement since each
-	 * PersistentValues is added as batch to the preparedStatement, so use {@link PreparedStatement#executeBatch()} afterward.
+	 * Massive version of {@link #apply(StatementValues, Connection)}. Dedicated to non-select statement since each
+	 * StatementValues is added as batch to the preparedStatement, so use {@link PreparedStatement#executeBatch()} afterward.
 	 * 
 	 * @param values values to set to PreparedStatement
 	 * @param connection a JDBC connection to create a PreparedStatement
 	 * @throws SQLException
 	 */
-	public void apply(@Nonnull Iterable<PersistentValues> values, @Nonnull Connection connection) throws SQLException {
+	public void apply(@Nonnull Iterable<StatementValues> values, @Nonnull Connection connection) throws SQLException {
 		prepare(connection);
 		try {
 			LOGGER.debug(getSql());
-			Iterables.visit(values, new ForEach<PersistentValues, Void>() {
+			Iterables.visit(values, new ForEach<StatementValues, Void>() {
 				@Override
-				public Void visit(PersistentValues values) {
+				public Void visit(StatementValues values) {
 					try {
 						applyValues(values);
 					} catch (SQLException e) {
@@ -154,7 +154,7 @@ public abstract class CRUDOperation {
 		}
 	}
 	
-	protected abstract void applyValues(PersistentValues values) throws SQLException;
+	protected abstract void applyValues(StatementValues values) throws SQLException;
 	
 	protected void prepare(Connection connection) throws SQLException {
 		if (statement == null) {

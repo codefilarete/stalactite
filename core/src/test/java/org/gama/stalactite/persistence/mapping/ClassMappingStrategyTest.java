@@ -134,7 +134,7 @@ public class ClassMappingStrategyTest {
 	
 	@Test(dataProvider = GET_INSERT_VALUES_DATA)
 	public void testGetInsertValues(Toto modified, Map<Column, Object> expectedResult) throws Exception {
-		PersistentValues valuesToInsert = testInstance.getInsertValues(modified);
+		StatementValues valuesToInsert = testInstance.getInsertValues(modified);
 		
 		Assert.assertEquals(valuesToInsert.getUpsertValues(), expectedResult);
 	}
@@ -161,7 +161,7 @@ public class ClassMappingStrategyTest {
 	
 	@Test(dataProvider = GET_UPDATE_VALUES_DIFF_ONLY_DATA)
 	public void testGetUpdateValues_diffOnly(Toto modified, Toto unmodified, Map<Column, Object> expectedResult) throws Exception {
-		PersistentValues valuesToUpdate = testInstance.getUpdateValues(modified, unmodified, false);
+		StatementValues valuesToUpdate = testInstance.getUpdateValues(modified, unmodified, false);
 		
 		Assert.assertEquals(valuesToUpdate.getUpsertValues(), expectedResult);
 		Assert.assertEquals(valuesToUpdate.getWhereValues(), Maps.asMap(colA, modified.a));
@@ -197,7 +197,7 @@ public class ClassMappingStrategyTest {
 	
 	@Test(dataProvider = GET_UPDATE_VALUES_ALL_COLUMNS_DATA)
 	public void testGetUpdateValues_allColumns(Toto modified, Toto unmodified, Map<Column, Object> expectedResult) throws Exception {
-		PersistentValues valuesToUpdate = testInstance.getUpdateValues(modified, unmodified, true);
+		StatementValues valuesToUpdate = testInstance.getUpdateValues(modified, unmodified, true);
 		
 		Assert.assertEquals(valuesToUpdate.getUpsertValues(), expectedResult);
 		Assert.assertEquals(valuesToUpdate.getWhereValues(), Maps.asMap(colA, modified.a));

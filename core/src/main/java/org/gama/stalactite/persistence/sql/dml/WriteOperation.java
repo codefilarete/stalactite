@@ -5,7 +5,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.gama.lang.exception.MultiCauseException;
-import org.gama.stalactite.persistence.mapping.PersistentValues;
+import org.gama.stalactite.persistence.mapping.StatementValues;
 
 /**
  * Abstract class for write operation to database. Expose batching method and updated line count after execution.
@@ -15,7 +15,7 @@ import org.gama.stalactite.persistence.mapping.PersistentValues;
 public abstract class WriteOperation extends CRUDOperation {
 	
 	/** Used essentially for logging */
-	private final List<PersistentValues> batchedPersistentValues = new ArrayList<>(100);	// should be near BatchSize
+	private final List<StatementValues> batchedStatementValues = new ArrayList<>(100);	// should be near BatchSize
 	
 	/**
 	 * 
@@ -28,7 +28,7 @@ public abstract class WriteOperation extends CRUDOperation {
 	public int[] execute() throws SQLException {
 		int[] updatedRowCount = getStatement().executeBatch();
 		checkUpdatedRowCount(updatedRowCount);
-		this.batchedPersistentValues.clear();
+		this.batchedStatementValues.clear();
 		return updatedRowCount;
 	}
 	
@@ -36,14 +36,14 @@ public abstract class WriteOperation extends CRUDOperation {
 		MultiCauseException exception = new MultiCauseException();
 		for (int rowCount : updatedRowCount) {
 			if (rowCount == 0) {
-				exception.addCause(new IllegalStateException("Expected row update but no row updated for " + batchedPersistentValues.get(rowCount).getWhereValues()));
+				exception.addCause(new IllegalStateException("Expected row update but no row updated for " + batchedStatementValues.get(rowCount).getWhereValues()));
 			}
 		}
 		exception.throwIfNotEmpty();
 	}
 	
-	protected void applyValues(PersistentValues values) throws SQLException {
-		this.batchedPersistentValues.add(values);
+	protected void applyValues(StatementValues values) throws SQLException {
+		this.batchedStatementValues.add(values);
 	}
 	
 	protected void addBatch() throws SQLException {

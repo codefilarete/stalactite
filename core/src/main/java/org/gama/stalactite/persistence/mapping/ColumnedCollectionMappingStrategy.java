@@ -60,8 +60,8 @@ public abstract class ColumnedCollectionMappingStrategy<C extends Collection<T>,
 	}
 	
 	@Override
-	public PersistentValues getInsertValues(C c) {
-		final PersistentValues toReturn = new PersistentValues();
+	public StatementValues getInsertValues(C c) {
+		final StatementValues toReturn = new StatementValues();
 		Collection<T> toIterate = c;
 		if (Collections.isEmpty(c)) {
 			toIterate = new ArrayList<>();
@@ -80,8 +80,8 @@ public abstract class ColumnedCollectionMappingStrategy<C extends Collection<T>,
 	}
 	
 	@Override
-	public PersistentValues getUpdateValues(C modified, C unmodified, boolean allColumns) {
-		final PersistentValues toReturn = new PersistentValues();
+	public StatementValues getUpdateValues(C modified, C unmodified, boolean allColumns) {
+		final StatementValues toReturn = new StatementValues();
 		if (modified != null) {
 			// getting differences side by side
 			final Map<Column, Object> unmodifiedColumns = new LinkedHashMap<>();
@@ -121,21 +121,21 @@ public abstract class ColumnedCollectionMappingStrategy<C extends Collection<T>,
 	}
 	
 	@Override
-	public PersistentValues getDeleteValues(@Nonnull C c) {
+	public StatementValues getDeleteValues(@Nonnull C c) {
 		// Pas de valeur pour le where de suppression
-		return new PersistentValues();
+		return new StatementValues();
 	}
 	
 	@Override
-	public PersistentValues getSelectValues(@Nonnull Serializable id) {
+	public StatementValues getSelectValues(@Nonnull Serializable id) {
 		// Pas de valeur pour le where de sélection
-		return new PersistentValues();
+		return new StatementValues();
 	}
 	
 	@Override
-	public PersistentValues getVersionedKeyValues(@Nonnull C c) {
+	public StatementValues getVersionedKeyValues(@Nonnull C c) {
 		// Pas de valeur pour la clé versionnée
-		return new PersistentValues();
+		return new StatementValues();
 	}
 	
 	@Override

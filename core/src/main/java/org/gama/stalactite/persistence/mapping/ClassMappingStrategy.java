@@ -75,24 +75,24 @@ public class ClassMappingStrategy<T> implements IMappingStrategy<T> {
 	}
 	
 	@Override
-	public PersistentValues getInsertValues(@Nonnull T t) {
-		PersistentValues insertValues = defaultMappingStrategy.getInsertValues(t);
+	public StatementValues getInsertValues(@Nonnull T t) {
+		StatementValues insertValues = defaultMappingStrategy.getInsertValues(t);
 		for (Entry<PropertyAccessor, IMappingStrategy> fieldStrategyEntry : mappingStrategies.entrySet()) {
 			Object fieldValue = fieldStrategyEntry.getKey().get(t);
-			PersistentValues fieldInsertValues = fieldStrategyEntry.getValue().getInsertValues(fieldValue);
+			StatementValues fieldInsertValues = fieldStrategyEntry.getValue().getInsertValues(fieldValue);
 			insertValues.getUpsertValues().putAll(fieldInsertValues.getUpsertValues());
 		}
 		return insertValues;
 	}
 	
 	@Override
-	public PersistentValues getUpdateValues(@Nonnull T modified, T unmodified, boolean allColumns) {
-		PersistentValues toReturn = defaultMappingStrategy.getUpdateValues(modified, unmodified, allColumns);
+	public StatementValues getUpdateValues(@Nonnull T modified, T unmodified, boolean allColumns) {
+		StatementValues toReturn = defaultMappingStrategy.getUpdateValues(modified, unmodified, allColumns);
 		for (Entry<PropertyAccessor, IMappingStrategy> fieldStrategyEntry : mappingStrategies.entrySet()) {
 			PropertyAccessor field = fieldStrategyEntry.getKey();
 			Object modifiedValue = field.get(modified);
 			Object unmodifiedValue = unmodified == null ?  null : field.get(unmodified);
-			PersistentValues fieldUpdateValues = fieldStrategyEntry.getValue().getUpdateValues(modifiedValue, unmodifiedValue, allColumns);
+			StatementValues fieldUpdateValues = fieldStrategyEntry.getValue().getUpdateValues(modifiedValue, unmodifiedValue, allColumns);
 			toReturn.getUpsertValues().putAll(fieldUpdateValues.getUpsertValues());
 		}
 		if (allColumns && !toReturn.getUpsertValues().isEmpty()) {
@@ -107,17 +107,17 @@ public class ClassMappingStrategy<T> implements IMappingStrategy<T> {
 	}
 	
 	@Override
-	public PersistentValues getDeleteValues(@Nonnull T t) {
+	public StatementValues getDeleteValues(@Nonnull T t) {
 		return defaultMappingStrategy.getDeleteValues(t);
 	}
 	
 	@Override
-	public PersistentValues getSelectValues(@Nonnull Serializable id) {
+	public StatementValues getSelectValues(@Nonnull Serializable id) {
 		return defaultMappingStrategy.getSelectValues(id);
 	}
 	
 	@Override
-	public PersistentValues getVersionedKeyValues(@Nonnull T t) {
+	public StatementValues getVersionedKeyValues(@Nonnull T t) {
 		return defaultMappingStrategy.getVersionedKeyValues(t);
 	}
 	

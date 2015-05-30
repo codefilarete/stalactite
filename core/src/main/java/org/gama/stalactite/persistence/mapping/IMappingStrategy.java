@@ -14,15 +14,15 @@ import org.gama.stalactite.persistence.structure.Table.Column;
  */
 public interface IMappingStrategy<T> {
 	
-	PersistentValues getInsertValues(T t);
+	StatementValues getInsertValues(T t);
 	
-	PersistentValues getUpdateValues(T modified, T unmodified, boolean allColumns);
+	StatementValues getUpdateValues(T modified, T unmodified, boolean allColumns);
 	
-	PersistentValues getDeleteValues(@Nonnull T t);
+	StatementValues getDeleteValues(@Nonnull T t);
 	
-	PersistentValues getSelectValues(@Nonnull Serializable id);
+	StatementValues getSelectValues(@Nonnull Serializable id);
 	
-	PersistentValues getVersionedKeyValues(@Nonnull T t);
+	StatementValues getVersionedKeyValues(@Nonnull T t);
 	
 	Table getTargetTable();
 	
