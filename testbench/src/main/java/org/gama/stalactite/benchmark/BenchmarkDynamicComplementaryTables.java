@@ -14,9 +14,9 @@ import org.gama.lang.collection.ValueFactoryHashMap;
 import org.gama.lang.exception.Exceptions;
 import org.gama.stalactite.benchmark.DynamicAndComplementaryClassMappingBuilder.DynamicEntity;
 import org.gama.stalactite.persistence.engine.DDLDeployer;
-import org.gama.stalactite.persistence.engine.NoopPersisterListener;
 import org.gama.stalactite.persistence.engine.PersistenceContext;
 import org.gama.stalactite.persistence.engine.Persister;
+import org.gama.stalactite.persistence.engine.listening.NoopInsertListener;
 import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
 import org.gama.stalactite.persistence.sql.ddl.DDLParticipant;
 import org.gama.stalactite.persistence.sql.ddl.DDLTableGenerator;
@@ -131,7 +131,7 @@ public class BenchmarkDynamicComplementaryTables extends AbstractBenchmark<Dynam
 		
 		protected void persist(final PersistenceContext persistenceContext, final List<D> data) {
 			final Persister<D> dynamicTypePersister = persistenceContext.getPersister((Class<D>) dynamicClassMappingBuilder.dynamicType);
-			dynamicTypePersister.setPersisterListener(new NoopPersisterListener<D>() {
+			dynamicTypePersister.getPersisterListener().setInsertListener(new NoopInsertListener<D>() {
 				@Override
 				public void afterInsert(Iterable<D> iterables) {
 					Map<Field, List<DynamicEntity>> indexDynamicEntities = new ValueFactoryHashMap<Field, List<DynamicEntity>>(10) {

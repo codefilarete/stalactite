@@ -18,6 +18,12 @@ import org.gama.lang.collection.ValueFactoryHashMap;
 import org.gama.lang.collection.ValueFactoryMap;
 import org.gama.lang.exception.Exceptions;
 import org.gama.stalactite.Logger;
+import org.gama.stalactite.persistence.engine.listening.IDeleteListener;
+import org.gama.stalactite.persistence.engine.listening.IInsertListener;
+import org.gama.stalactite.persistence.engine.listening.ISelectListener;
+import org.gama.stalactite.persistence.engine.listening.IUpdateListener;
+import org.gama.stalactite.persistence.engine.listening.IUpdateRouglyListener;
+import org.gama.stalactite.persistence.engine.listening.PersisterListener;
 import org.gama.stalactite.persistence.id.AutoAssignedIdentifierGenerator;
 import org.gama.stalactite.persistence.id.IdentifierGenerator;
 import org.gama.stalactite.persistence.id.PostInsertIdentifierGenerator;
@@ -47,8 +53,7 @@ public class Persister<T> {
 	private ClassMappingStrategy<T> mappingStrategy;
 	private int batchSize;
 	private IIdentifierFixer<T> identifierFixer;
-	/** should never be null for simplicity and performance (skip "if" on each CRUD method) */
-	private IPersisterListener<T> persisterListener = new NoopPersisterListener<>();
+	private PersisterListener<T> persisterListener = new PersisterListener<>();
 	
 	public Persister(PersistenceContext persistenceContext, ClassMappingStrategy<T> mappingStrategy) {
 		this.persistenceContext = persistenceContext;
@@ -95,12 +100,19 @@ public class Persister<T> {
 		} // else // rare cases but necessary
 	}
 	
-	public void setPersisterListener(IPersisterListener<T> persisterListener) {
+	public void setPersisterListener(PersisterListener<T> persisterListener) {
 		// prevent from null instance
-		if (persisterListener == null) {
-			persisterListener = new NoopPersisterListener<>();
+		if (persisterListener != null) {
+			this.persisterListener = persisterListener;
 		}
-		this.persisterListener = persisterListener;
+	}
+	
+	/** should never be null for simplicity and performance (skip "if" on each CRUD method) */ /**
+	 * 
+	 * @return not null
+	 */
+	public PersisterListener<T> getPersisterListener() {
+		return persisterListener;
 	}
 	
 	public void persist(T t) {
@@ -136,7 +148,8 @@ public class Persister<T> {
 	}
 	
 	public void insert(Iterable<T> iterable) {
-		persisterListener.beforeInsert(iterable);
+		IInsertListener<T> insertListener = getPersisterListener().getInsertListener();
+		insertListener.beforeInsert(iterable);
 		final InsertOperation insertOperation = dmlGenerator.buildInsert(mappingStrategy.getTargetTable().getColumns());
 		List<StatementValues> statementValues = new ArrayList<>();
 		for (T t : iterable) {
@@ -149,7 +162,7 @@ public class Persister<T> {
 			// TODO: lire le résultat de l'exécution et injecter l'identifiant sur le bean
 		}
 		*/
-		persisterListener.afterInsert(iterable);
+		insertListener.afterInsert(iterable);
 	}
 	
 	public void updateRoughly(T t) {
@@ -161,7 +174,8 @@ public class Persister<T> {
 	 * @param iterable iterable of instances
 	 */
 	public void updateRoughly(Iterable<T> iterable) {
-		persisterListener.beforeUpdateRoughly(iterable);
+		IUpdateRouglyListener<T> updateRouglyListener = getPersisterListener().getUpdateRouglyListener();
+		updateRouglyListener.beforeUpdateRoughly(iterable);
 		Table targetTable = mappingStrategy.getTargetTable();
 		// we never update primary key (by principle and for persistent bean cache based on id (on what else ?)) 
 		Set<Column> columnsToUpdate = targetTable.getColumnsNoPrimaryKey();
@@ -171,7 +185,7 @@ public class Persister<T> {
 			statementValues.add(mappingStrategy.getUpdateValues(t, null, true));
 		}
 		applyValuesToOperation(updateOperation, statementValues);
-		persisterListener.afterUpdateRoughly(iterable);
+		updateRouglyListener.afterUpdateRoughly(iterable);
 	}
 	
 	public void update(T modified, T unmodified, boolean allColumnsStatement) {
@@ -188,7 +202,8 @@ public class Persister<T> {
 	 *                            Pass true gives more chance for JDBC batch to be used. 
 	 */
 	public void update(Iterable<Entry<T, T>> differencesIterable, boolean allColumnsStatement) {
-		persisterListener.beforeUpdate(differencesIterable);
+		IUpdateListener<T> updateListener = getPersisterListener().getUpdateListener();
+		updateListener.beforeUpdate(differencesIterable);
 		// cache for UpdateOperation instances according to Columns to be updated
 		Map<Set<Column>, UpdateOperation> updateOperationCache = new ValueFactoryHashMap<Set<Column>, UpdateOperation>() {
 			@Override
@@ -223,7 +238,7 @@ public class Persister<T> {
 		for (Entry<UpdateOperation, List<StatementValues>> updateOperationEntry : operationsToApply.entrySet()) {
 			applyValuesToOperation(updateOperationEntry.getKey(), updateOperationEntry.getValue());
 		}
-		persisterListener.afterUpdate(differencesIterable);
+		updateListener.afterUpdate(differencesIterable);
 	}
 	
 	public void delete(T t) {
@@ -231,7 +246,8 @@ public class Persister<T> {
 	}
 	
 	public void delete(Iterable<T> iterable) {
-		persisterListener.beforeDelete(iterable);
+		IDeleteListener<T> deleteListener = getPersisterListener().getDeleteListener();
+		deleteListener.beforeDelete(iterable);
 		Table targetTable = mappingStrategy.getTargetTable();
 		final DeleteOperation deleteOperation = dmlGenerator.buildDelete(targetTable, mappingStrategy.getVersionedKeys());
 		List<StatementValues> statementValues = new ArrayList<>();
@@ -239,7 +255,7 @@ public class Persister<T> {
 			statementValues.add(mappingStrategy.getDeleteValues(t));
 		}
 		applyValuesToOperation(deleteOperation, statementValues);
-		persisterListener.afterDelete(iterable);
+		deleteListener.afterDelete(iterable);
 	}
 	
 	/**
@@ -287,14 +303,15 @@ public class Persister<T> {
 	
 	public T select(Serializable id) {
 		if (id != null) {
-			persisterListener.beforeSelect(id);
+			ISelectListener<T> selectListener = getPersisterListener().getSelectListener();
+			selectListener.beforeSelect(id);
 			Table targetTable = mappingStrategy.getTargetTable();
 			SelectOperation selectStatement = dmlGenerator.buildSelect(targetTable,
 					targetTable.getColumns().asSet(),
 					Arrays.asList(targetTable.getPrimaryKey()));
 			StatementValues selectValues = mappingStrategy.getSelectValues(id);
 			T result = execute(selectStatement, selectValues, mappingStrategy);
-			persisterListener.afterSelect(result);
+			selectListener.afterSelect(result);
 			return result;
 		} else {
 			throw new IllegalArgumentException("Non selectable entity " + mappingStrategy.getClassToPersist() + " because of null id");
