@@ -1,6 +1,6 @@
 package org.gama.stalactite.persistence.engine;
 
-import static junit.framework.Assert.*;
+import static org.junit.Assert.*;
 import static org.mockito.Mockito.*;
 
 import java.io.Serializable;
@@ -10,17 +10,12 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.Map.Entry;
 
 import javax.sql.DataSource;
 
 import org.gama.lang.collection.Arrays;
-import org.gama.lang.collection.Iterables;
 import org.gama.lang.collection.Maps;
 import org.gama.lang.collection.PairIterator;
 import org.gama.stalactite.persistence.id.IdentifierGenerator;
@@ -32,6 +27,7 @@ import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.persistence.structure.Table.Column;
 import org.gama.stalactite.test.HSQLDBInMemoryDataSource;
 import org.gama.stalactite.test.JdbcTransactionManager;
+import org.gama.stalactite.test.PairSet;
 import org.mockito.ArgumentCaptor;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.BeforeTest;
@@ -100,9 +96,8 @@ public class PersisterTest {
 		verify(preparedStatement, times(1)).executeBatch();
 		verify(preparedStatement, times(3)).setInt(indexCaptor.capture(), valueCaptor.capture());
 		assertEquals("insert into Toto(a, b, c) values (?, ?, ?)", statementArgCaptor.getValue());
-		PairIterator<Integer, Integer> expectedPairs = new PairIterator<>(
-				Arrays.asList(1, 2, 3),
-				Arrays.asList(1, 17, 23));
+		PairSet<Integer, Integer> expectedPairs = PairSet.
+				of(1, 1).add(2, 17).add(3, 23);
 		assertCapturedPairsEqual(expectedPairs);
 	}
 	
@@ -114,9 +109,11 @@ public class PersisterTest {
 		verify(preparedStatement, times(2)).executeBatch();
 		verify(preparedStatement, times(12)).setInt(indexCaptor.capture(), valueCaptor.capture());
 		assertEquals("insert into Toto(a, b, c) values (?, ?, ?)", statementArgCaptor.getValue());
-		PairIterator<Integer, Integer> expectedPairs = new PairIterator<>(
-				Arrays.asList(1, 2, 3, 1, 2, 3, 1, 2, 3, 1, 2, 3),
-				Arrays.asList(1, 17, 23, 2, 29, 31, 3, 37, 41, 4, 43, 53));
+		PairSet<Integer, Integer> expectedPairs = PairSet.
+				of(1, 1).add(2, 17).add(3, 23)
+				.add(1, 2).add(2, 29).add(3, 31)
+				.add(1, 3).add(2, 37).add(3, 41)
+				.add(1, 4).add(2, 43).add(3, 53);
 		assertCapturedPairsEqual(expectedPairs);
 	}
 	
@@ -128,9 +125,8 @@ public class PersisterTest {
 		verify(preparedStatement, times(1)).executeBatch();
 		verify(preparedStatement, times(3)).setInt(indexCaptor.capture(), valueCaptor.capture());
 		assertEquals("update Toto set b = ?, c = ? where a = ?", statementArgCaptor.getValue());
-		PairIterator<Integer, Integer> expectedPairs = new PairIterator<>(
-				Arrays.asList(1, 2, 3),
-				Arrays.asList(17, 23, 7));
+		PairSet<Integer, Integer> expectedPairs = PairSet.
+				of(1, 17).add(2, 23).add(3, 7);
 		assertCapturedPairsEqual(expectedPairs);
 	}
 	
@@ -142,9 +138,11 @@ public class PersisterTest {
 		verify(preparedStatement, times(2)).executeBatch();
 		verify(preparedStatement, times(12)).setInt(indexCaptor.capture(), valueCaptor.capture());
 		assertEquals("update Toto set b = ?, c = ? where a = ?", statementArgCaptor.getValue());
-		PairIterator<Integer, Integer> expectedPairs = new PairIterator<>(
-				Arrays.asList(1, 2, 3, 1, 2, 3, 1, 2, 3, 1, 2, 3),
-				Arrays.asList(17, 23, 1, 29, 31, 2, 37, 41, 3, 43, 53, 4));
+		PairSet<Integer, Integer> expectedPairs = PairSet.
+				of(1, 17).add(2, 23).add(3, 1)
+				.add(1, 29).add(2, 31).add(3, 2)
+				.add(1, 37).add(2, 41).add(3, 3)
+				.add(1, 43).add(2, 53).add(3, 4);
 		assertCapturedPairsEqual(expectedPairs);
 	}
 	
@@ -154,53 +152,50 @@ public class PersisterTest {
 				// extreme case: no differences
 				{ 	Arrays.asList(new Toto(1, 1, 1), new Toto(2, 2, 2)), 
 					Arrays.asList(new Toto(1, 1, 1), new Toto(2, 2, 2)),
-					new ExpectedResult_TestUpdate_diff(0, 0, 0, Collections.EMPTY_LIST, Collections.EMPTY_LIST, Collections.EMPTY_LIST)},
+					new ExpectedResult_TestUpdate_diff(0, 0, 0, Collections.EMPTY_LIST, new PairSet<Integer, Integer>()) },
 				// case: always the same kind of modification: only "b" field
 				{ 	Arrays.asList(new Toto(1, 1, 1), new Toto(2, 2, 2), new Toto(3, 3, 3)), 
 					Arrays.asList(new Toto(1, 2, 1), new Toto(2, 3, 2), new Toto(3, 4, 3)),
 					new ExpectedResult_TestUpdate_diff(3, 1, 6,
 							Arrays.asList("update Toto set b = ? where a = ?"),
-							Arrays.asList(1, 2, 1, 2, 1, 2),
-							Arrays.asList(2, 1, 3, 2, 4, 3)) },
+							PairSet.of(1, 2).add(2, 1).add(1, 3).add(2, 2).add(1, 4).add(2, 3)) },
 				// case: always the same kind of modification: only "b" field, but batch should be called twice
 				{ 	Arrays.asList(new Toto(1, 1, 1), new Toto(2, 2, 2), new Toto(3, 3, 3), new Toto(4, 4, 4)),
 					Arrays.asList(new Toto(1, 2, 1), new Toto(2, 3, 2), new Toto(3, 4, 3), new Toto(4, 5, 4)),
 					new ExpectedResult_TestUpdate_diff(4, 2, 8,
 							Arrays.asList("update Toto set b = ? where a = ?"),
-							Arrays.asList(1, 2, 1, 2, 1, 2, 1, 2),
-							Arrays.asList(2, 1, 3, 2, 4, 3, 5, 4)) },
+							PairSet.of(1, 2).add(2, 1).add(1, 3).add(2, 2).add(1, 4).add(2, 3).add(1, 5).add(2, 4)) },
 				// case: always the same kind of modification: "b" + "c" fields
 				{ 	Arrays.asList(new Toto(1, 1, 1), new Toto(2, 2, 2), new Toto(3, 3, 3), new Toto(4, 4, 4)),
 					Arrays.asList(new Toto(1, 11, 11), new Toto(2, 22, 22), new Toto(3, 33, 33), new Toto(4, 44, 44)),
 					new ExpectedResult_TestUpdate_diff(4, 2, 12,
 							Arrays.asList("update Toto set b = ?, c = ? where a = ?"),
-							Arrays.asList(1, 2, 3, 1, 2, 3, 1, 2, 3, 1, 2, 3),
-							Arrays.asList(11, 11, 1, 22, 22, 2, 33, 33, 3, 44, 44, 4)) },
+							PairSet.of(1, 11).add(2, 11).add(3, 1).add(1, 22).add(2, 22).add(3, 2).add(1, 33).add(2, 33).add(3, 3).add(1, 44).add(2, 44).add(3, 4)) },
 				// more complex case: mix of modification sort, with batch updates
 				{ 	Arrays.asList(new Toto(1, 1, 1), new Toto(2, 2, 2), new Toto(3, 3, 3), new Toto(4, 4, 4), new Toto(5, 5, 5), new Toto(6, 6, 6), new Toto(7, 7, 7)),
-					Arrays.asList(new Toto(1, 11, 1), new Toto(2, 22, 2), new Toto(3, 33, 3), new Toto(4, 44, 44), new Toto(5, 55, 55), new Toto(6, 66, 66), new Toto(7, 7, 7)),
+					Arrays.asList(new Toto(1, 11, 1), new Toto(2, 22, 2), new Toto(3, 33, 3), new Toto(4, 44, 444), new Toto(5, 55, 555), new Toto(6, 66, 666), new Toto(7, 7, 7)),
 					new ExpectedResult_TestUpdate_diff(6, 2, 15,
 							Arrays.asList("update Toto set b = ? where a = ?", "update Toto set b = ?, c = ? where a = ?"),
-							Arrays.asList(1, 2, 1, 2, 1, 2, 1, 2, 3, 1, 2, 3, 1, 2, 3),
-							Arrays.asList(11, 1, 22, 2, 33, 3, 44, 44, 4, 55, 55, 5, 66, 66, 6)) },
+							PairSet.of(1, 11).add(2, 1).add(1, 22).add(2, 2).add(1, 33).add(2, 3)
+									.add(1, 44).add(2, 444).add(3, 4)
+									.add(1, 55).add(2, 555).add(3, 5)
+									.add(1, 66).add(2, 666).add(3, 6)) },
 		};
 	}
 	
 	private static class ExpectedResult_TestUpdate_diff {
-		private int addBatchCallCount;
-		private int executeBatchCallCount;
-		private int setIntCallCount;
-		private List<String> updateStatements;
-		private List<Integer> indexes;
-		private List<Integer> values;
+		private final int addBatchCallCount;
+		private final int executeBatchCallCount;
+		private final int setIntCallCount;
+		private final List<String> updateStatements;
+		private final PairSet<Integer, Integer> statementValues;
 		
-		public ExpectedResult_TestUpdate_diff(int addBatchCallCount, int executeBatchCallCount, int setIntCallCount, List<String> updateStatements, List<Integer> indexes, List<Integer> values) {
+		public ExpectedResult_TestUpdate_diff(int addBatchCallCount, int executeBatchCallCount, int setIntCallCount, List<String> updateStatements, PairSet<Integer, Integer> statementValues) {
 			this.addBatchCallCount = addBatchCallCount;
 			this.executeBatchCallCount = executeBatchCallCount;
 			this.setIntCallCount = setIntCallCount;
 			this.updateStatements = updateStatements;
-			this.indexes = indexes;
-			this.values = values;
+			this.statementValues = statementValues;
 		}
 	}
 	
@@ -217,8 +212,7 @@ public class PersisterTest {
 		verify(preparedStatement, times(expectedResult.executeBatchCallCount)).executeBatch();
 		verify(preparedStatement, times(expectedResult.setIntCallCount)).setInt(indexCaptor.capture(), valueCaptor.capture());
 		assertEquals(expectedResult.updateStatements, statementArgCaptor.getAllValues());
-		assertEquals(expectedResult.indexes, indexCaptor.getAllValues());
-		assertEquals(expectedResult.values, valueCaptor.getAllValues());
+		assertCapturedPairsEqual(expectedResult.statementValues);
 	}
 	
 	@Test
@@ -235,10 +229,12 @@ public class PersisterTest {
 		verify(preparedStatement, times(4)).addBatch();
 		verify(preparedStatement, times(2)).executeBatch();
 		verify(preparedStatement, times(12)).setInt(indexCaptor.capture(), valueCaptor.capture());
-		assertEquals(Arrays.asList("update Toto set c = ?, b = ? where a = ?"), statementArgCaptor.getAllValues());
-		PairIterator<Integer, Integer> expectedPairs = new PairIterator<>(
-				Arrays.asList(1, 2, 3, 1, 2, 3, 1, 2, 3, 1, 2, 3),
-				Arrays.asList(123, 17, 1, 31, 129, 2, 141, 137, 3, 153, 143, 4));
+		assertEquals(Arrays.asList("update Toto set b = ?, c = ? where a = ?"), statementArgCaptor.getAllValues());
+		PairSet<Integer, Integer> expectedPairs = PairSet.
+				of(1, 17).add(2, 123).add(3, 1)
+				.add(1, 129).add(2, 31).add(3, 2)
+				.add(1, 137).add(2, 141).add(3, 3)
+				.add(1, 143).add(2, 153).add(3, 4);
 		assertCapturedPairsEqual(expectedPairs);
 	}
 	
@@ -250,7 +246,7 @@ public class PersisterTest {
 		verify(preparedStatement, times(1)).executeBatch();
 		verify(preparedStatement, times(1)).setInt(indexCaptor.capture(), valueCaptor.capture());
 		assertEquals("delete Toto where a = ?", statementArgCaptor.getValue());
-		PairIterator<Integer, Integer> expectedPairs = new PairIterator<>(Arrays.asList(1), Arrays.asList(7));
+		PairSet<Integer, Integer> expectedPairs = PairSet.of(1, 7);
 		assertCapturedPairsEqual(expectedPairs);
 	}
 	
@@ -262,9 +258,7 @@ public class PersisterTest {
 		verify(preparedStatement, times(2)).executeBatch();
 		verify(preparedStatement, times(4)).setInt(indexCaptor.capture(), valueCaptor.capture());
 		assertEquals("delete Toto where a = ?", statementArgCaptor.getValue());
-		PairIterator<Integer, Integer> expectedPairs = new PairIterator<>(
-				Arrays.asList(1, 1, 1, 1),
-				Arrays.asList(1, 2, 3, 4));
+		PairSet<Integer, Integer> expectedPairs = PairSet.of(1, 1).add(1, 2).add(1, 3).add(1, 4);
 		assertCapturedPairsEqual(expectedPairs);
 	}
 	
@@ -286,13 +280,13 @@ public class PersisterTest {
 		verify(preparedStatement, times(1)).executeQuery();
 		verify(preparedStatement, times(1)).setInt(indexCaptor.capture(), valueCaptor.capture());
 		assertEquals("select a, b, c from Toto where a = ?", statementArgCaptor.getValue());
-		PairIterator<Integer, Integer> expectedPairs = new PairIterator<>(Arrays.asList(1), Arrays.asList(7));
+		PairSet<Integer, Integer> expectedPairs = PairSet.of(1, 7);
 		assertCapturedPairsEqual(expectedPairs);
 	}
 	
-	public void assertCapturedPairsEqual(PairIterator<Integer, Integer> expectedPairs) {
-		PairIterator<Integer, Integer> obtainedPairs = new PairIterator<>(indexCaptor.getAllValues(), valueCaptor.getAllValues());
-		assertEquals(new HashSet<>(Iterables.copy(expectedPairs)), new HashSet<>(Iterables.copy(obtainedPairs)));
+	public void assertCapturedPairsEqual(PairSet<Integer, Integer> expectedPairs) {
+		LinkedHashSet<Entry<Integer, Integer>> obtainedPairs = PairSet.toPairs(indexCaptor.getAllValues(), valueCaptor.getAllValues());
+		assertEquals(expectedPairs.asSet(), obtainedPairs);
 	}
 	
 	@Test

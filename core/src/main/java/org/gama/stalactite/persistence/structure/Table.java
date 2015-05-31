@@ -175,9 +175,7 @@ public class Table {
 
 		@Override
 		public int hashCode() {
-			int result = getTable().hashCode();
-			result = 31 * result + name.toUpperCase().hashCode();
-			return result;
+			return getAbsoluteName().toUpperCase().hashCode();
 		}
 		
 		/** Overriden only for simple print (debug) */

@@ -204,7 +204,7 @@ public class Persister<T> {
 	public void update(Iterable<Entry<T, T>> differencesIterable, boolean allColumnsStatement) {
 		IUpdateListener<T> updateListener = getPersisterListener().getUpdateListener();
 		updateListener.beforeUpdate(differencesIterable);
-		// cache for UpdateOperation instances according to Columns to be updated
+		// cache for UpdateOperation instances : key is Columns to be updated
 		Map<Set<Column>, UpdateOperation> updateOperationCache = new ValueFactoryHashMap<Set<Column>, UpdateOperation>() {
 			@Override
 			public UpdateOperation createInstance(Set<Column> input) {
@@ -212,7 +212,7 @@ public class Persister<T> {
 			}
 		};
 		// UpdateOperations and values to apply
-		// NB: LinkedHashMap is used to keep order of treatment, not as a huge requirement, rather for simplicity and unit test assert
+		// NB: LinkedHashMap is used to keep order of treatment, not a huge requirement, rather for simplicity and unit test assert
 		LinkedHashMap<UpdateOperation, List<StatementValues>> delegateStorage = new LinkedHashMap<>(50);
 		Map<UpdateOperation, List<StatementValues>> operationsToApply = new ValueFactoryMap<UpdateOperation, List<StatementValues>>(delegateStorage) {
 			@Override

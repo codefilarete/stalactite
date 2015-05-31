@@ -9,8 +9,8 @@ import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.*;
 
-import org.gama.lang.collection.PairIterator;
 import org.gama.stalactite.persistence.mapping.StatementValues;
+import org.gama.stalactite.test.PairSet;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
 import org.gama.lang.collection.Arrays;
@@ -28,7 +28,6 @@ public class CRUDOperationTest {
 	
 	private Connection connection;
 	
-	private Map<Field, Column> totoClassMapping;
 	private Column colA;
 	private Column colB;
 	private Column colC;
@@ -45,7 +44,7 @@ public class CRUDOperationTest {
 		
 		PersistentFieldHarverster persistentFieldHarverster = new PersistentFieldHarverster();
 		Table totoClassTable = new Table(null, "Toto");
-		totoClassMapping = persistentFieldHarverster.mapFields(Toto.class, totoClassTable);
+		Map<Field, Column> totoClassMapping = persistentFieldHarverster.mapFields(Toto.class, totoClassTable);
 		Map<String, Column> columns = totoClassTable.mapColumnsOnName();
 		colA = columns.get("a");
 		colA.setPrimaryKey(true);
@@ -75,8 +74,8 @@ public class CRUDOperationTest {
 		verify(preparedStatement, times(1)).addBatch();
 		verify(preparedStatement, times(2)).setInt(indexCaptor.capture(), valueCaptor.capture());
 		assertEquals("insert into Toto(A, B) values (?, ?)", sqlCaptor.getValue());
-		Set<Map.Entry<Integer, Integer>> indexValuePairs = buildPairs(indexCaptor.getAllValues(), valueCaptor.getAllValues());
-		assertEquals(pairChain(1, 123)._(2, 456)._(), indexValuePairs);
+		Set<Map.Entry<Integer, Integer>> indexValuePairs = PairSet.toPairs(indexCaptor.getAllValues(), valueCaptor.getAllValues());
+		assertEquals(PairSet.of(1, 123).add(2, 456).asSet(), indexValuePairs);
 		
 		// a second insert must'nt a second PreparedStatement
 		Mockito.reset(connection, preparedStatement);	// clear counters of sensors
@@ -103,35 +102,10 @@ public class CRUDOperationTest {
 		verify(preparedStatement, times(3)).addBatch();
 		verify(preparedStatement, times(6)).setInt(indexCaptor.capture(), valueCaptor.capture());
 		assertEquals("insert into Toto(A, B) values (?, ?)", sqlCaptor.getValue());
-		Set<Map.Entry<Integer, Integer>> indexValuePairs = buildPairs(indexCaptor.getAllValues(), valueCaptor.getAllValues());
-		assertEquals(pairChain(1, 1)._(2, 2)._(1, 3)._(2, 4)._(1, 5)._(2, 6)._(), indexValuePairs);
+		Set<Map.Entry<Integer, Integer>> indexValuePairs = PairSet.toPairs(indexCaptor.getAllValues(), valueCaptor.getAllValues());
+		assertEquals(PairSet.of(1, 1).add(2, 2).add(1, 3).add(2, 4).add(1, 5).add(2, 6).asSet(), indexValuePairs);
 	}
 	
-	private static <K, V> LinkedHashSet<Map.Entry<K, V>> buildPairs(Iterable<K> values1, Iterable<V> values2) {
-		LinkedHashSet<Map.Entry<K, V>> indexValuePairs = new LinkedHashSet<>();
-		PairIterator<K, V> pairIterator = new PairIterator<>(values1, values2);
-		while (pairIterator.hasNext()) {
-			Map.Entry<K, V> pair = pairIterator.next();
-			indexValuePairs.add(new AbstractMap.SimpleEntry<>(pair.getKey(), pair.getValue()));
-		}
-		return indexValuePairs;
-	}
-	
-	private static <K, V> PairChain<K,V> pairChain(K k, V v) {
-		return new PairChain<K, V>()._(k, v);
-	}
-	
-	private static class PairChain<K, V> {
-		Set<Map.Entry<K, V>> toReturn = new HashSet<>();
-		public PairChain<K, V> _(K k, V v) {
-			toReturn.add(new AbstractMap.SimpleEntry<>(k, v));
-			return this;
-		}
-		public Set<Map.Entry<K, V>> _() {
-			return toReturn;
-		}
-	}
-
 	private static class Toto {
 		private Integer a, b, c;
 	}
