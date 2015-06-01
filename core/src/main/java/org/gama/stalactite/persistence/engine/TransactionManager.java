@@ -11,8 +11,8 @@ public interface TransactionManager {
 	
 	void executeInNewTransaction(JdbcOperation jdbcOperation);
 	
-	public interface JdbcOperation {
+	interface JdbcOperation {
 		
-		public abstract void execute();
+		void execute();
 	}
 }
