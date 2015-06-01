@@ -1,7 +1,5 @@
 package org.gama.stalactite.persistence.engine.listening;
 
-import org.gama.stalactite.persistence.engine.NoopDeleteListener;
-
 /**
  * Simple class that centralize persistence event listening. Delegates listening to encapsulated instance.
  * 
@@ -9,64 +7,54 @@ import org.gama.stalactite.persistence.engine.NoopDeleteListener;
  */
 public class PersisterListener<T> {
 	
-	private IInsertListener<T> insertListener = new NoopInsertListener<>();
-	private IUpdateRouglyListener<T> updateRouglyListener = new NoopUpdateRouglyListener<>();
-	private IUpdateListener<T> updateListener = new NoopUpdateListener<>();
-	private IDeleteListener<T> deleteListener = new NoopDeleteListener<>();
-	private ISelectListener<T> selectListener = new NoopSelectListener<>();
+	private InsertListenerCollection<T> insertListener = new InsertListenerCollection<>();
+	private UpdateRouglyListenerCollection<T> updateRouglyListener = new UpdateRouglyListenerCollection<>();
+	private UpdateListenerCollection<T> updateListener = new UpdateListenerCollection<>();
+	private DeleteListenerCollection<T> deleteListener = new DeleteListenerCollection<>();
+	private SelectListenerCollection<T> selectListener = new SelectListenerCollection<>();
 	
-	public IInsertListener<T> getInsertListener() {
+	public InsertListenerCollection<T> getInsertListener() {
 		return insertListener;
 	}
 	
-	public PersisterListener<T> setInsertListener(IInsertListener<T> insertListener) {
-		if (insertListener != null) {	// prevent null as specified in interface
-			this.insertListener = insertListener;
-		}
+	public PersisterListener<T> addInsertListener(IInsertListener<T> insertListener) {
+		this.insertListener.add(insertListener);
 		return this;
 	}
 	
-	public IUpdateRouglyListener<T> getUpdateRouglyListener() {
+	public UpdateRouglyListenerCollection<T> getUpdateRouglyListener() {
 		return updateRouglyListener;
 	}
 	
-	public PersisterListener<T> setUpdateRouglyListener(IUpdateRouglyListener<T> updateRouglyListener) {
-		if (updateRouglyListener != null) {    // prevent null as specified in interface
-			this.updateRouglyListener = updateRouglyListener;
-		}
+	public PersisterListener<T> addUpdateRouglyListener(IUpdateRouglyListener<T> updateRouglyListener) {
+		this.updateRouglyListener.add(updateRouglyListener);
 		return this;
 	}
 	
-	public IUpdateListener<T> getUpdateListener() {
+	public UpdateListenerCollection<T> getUpdateListener() {
 		return updateListener;
 	}
 	
-	public PersisterListener<T> setUpdateListener(IUpdateListener<T> updateListener) {
-		if (updateListener != null) {    // prevent null as specified in interface
-			this.updateListener = updateListener;
-		}
+	public PersisterListener<T> addUpdateListener(IUpdateListener<T> updateListener) {
+		this.updateListener.add(updateListener);
 		return this;
 	}
 	
-	public IDeleteListener<T> getDeleteListener() {
+	public DeleteListenerCollection<T> getDeleteListener() {
 		return deleteListener;
 	}
 	
-	public PersisterListener<T> setDeleteListener(IDeleteListener<T> deleteListener) {
-		if (deleteListener != null) {    // prevent null as specified in interface
-			this.deleteListener = deleteListener;
-		}
+	public PersisterListener<T> addDeleteListener(IDeleteListener<T> deleteListener) {
+		this.deleteListener.add(deleteListener);
 		return this;
 	}
 	
-	public ISelectListener<T> getSelectListener() {
+	public SelectListenerCollection<T> getSelectListener() {
 		return selectListener;
 	}
 	
-	public PersisterListener<T> setSelectListener(ISelectListener<T> selectListener) {
-		if (selectListener != null) {    // prevent null as specified in interface
-			this.selectListener = selectListener;
-		}
+	public PersisterListener<T> addSelectListener(ISelectListener<T> selectListener) {
+		this.selectListener.add(selectListener);
 		return this;
 	}
 }

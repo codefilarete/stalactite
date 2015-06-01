@@ -1,6 +1,4 @@
-package org.gama.stalactite.persistence.engine;
-
-import org.gama.stalactite.persistence.engine.listening.IDeleteListener;
+package org.gama.stalactite.persistence.engine.listening;
 
 /**
  * @author Guillaume Mary
