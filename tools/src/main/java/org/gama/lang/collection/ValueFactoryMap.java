@@ -1,10 +1,10 @@
 package org.gama.lang.collection;
 
+import org.gama.lang.bean.IFactory;
+
 import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
-
-import org.gama.lang.bean.IFactory;
 
 /**
  * Map that self puts a newly created value when the requested ({@link #get(Object)}) key is not found (null is
@@ -18,13 +18,25 @@ public abstract class ValueFactoryMap<K, V> implements Map<K, V>, IFactory<K, V>
 	
 	private final Map<K, V> delegate;
 	
+//	private final IFactory<K, V> factoryDelegate;
+	
 	/**
-	 * 
+	 *
 	 * @param delegate the wrapped instance
 	 */
 	public ValueFactoryMap(Map<K, V> delegate) {
 		this.delegate = delegate;
 	}
+//	
+//	/**
+//	 *
+//	 * @param delegate the wrapped instance
+//	 * @param factoryDelegate the wrapped factory instance
+//	 */
+//	public ValueFactoryMap(Map<K, V> delegate, IFactory<K, V> factoryDelegate) {
+//		this.delegate = delegate;
+//		this.factoryDelegate = factoryDelegate;
+//	}
 	
 	@Override
 	public int size() {

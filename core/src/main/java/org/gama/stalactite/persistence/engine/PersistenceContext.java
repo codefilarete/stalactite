@@ -1,21 +1,31 @@
 package org.gama.stalactite.persistence.engine;
 
+import org.gama.lang.collection.ValueFactoryHashMap;
+import org.gama.stalactite.persistence.engine.TransactionManager.JdbcOperation;
+import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
+import org.gama.stalactite.persistence.sql.Dialect;
+
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.gama.stalactite.persistence.engine.TransactionManager.JdbcOperation;
-import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
-import org.gama.stalactite.persistence.sql.Dialect;
-
 /**
- * @author mary
+ * Entry point for persistence in a database. Mix of configuration (Transaction, Dialect, ...) and registry for {@link
+ * Persister}s.
+ *
+ * @author Guillaume Mary
  */
 public class PersistenceContext {
 	
 	private static final ThreadLocal<PersistenceContext> CURRENT_CONTEXT = new ThreadLocal<>();
 	private int jdbcBatchSize = 100;
+	private Map<Class<?>, Persister> persisterCache = new ValueFactoryHashMap<Class<?>, Persister>() {
+		@Override
+		public Persister<?> createInstance(Class<?> clazz) {
+			return newPersister(clazz);
+		}
+	};
 	
 	public static PersistenceContext getCurrent() {
 		PersistenceContext currentContext = CURRENT_CONTEXT.get();
@@ -71,7 +81,11 @@ public class PersistenceContext {
 	}
 	
 	public <T> Persister<T> getPersister(Class<T> clazz) {
-		return new Persister<>(this, ensureMappedClass(clazz));
+		return persisterCache.get(clazz);
+	}
+	
+	protected <T> Persister<T> newPersister(Class<T> clazz) {
+		return new Persister<>(PersistenceContext.this, ensureMappedClass(clazz));
 	}
 	
 	protected <T> ClassMappingStrategy<T> ensureMappedClass(Class<T> clazz) {
