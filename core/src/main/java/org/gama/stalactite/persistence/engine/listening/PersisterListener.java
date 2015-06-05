@@ -1,5 +1,9 @@
 package org.gama.stalactite.persistence.engine.listening;
 
+import org.gama.lang.bean.IDelegate;
+
+import java.util.Map.Entry;
+
 /**
  * Simple class that centralize persistence event listening. Delegates listening to encapsulated instance.
  * 
@@ -22,6 +26,12 @@ public class PersisterListener<T> {
 		return this;
 	}
 	
+	public void doWithInsertListener(Iterable<T> iterable, IDelegate delegate) {
+		insertListener.beforeInsert(iterable);
+		delegate.execute();
+		insertListener.afterInsert(iterable);
+	}
+	
 	public UpdateRouglyListenerCollection<T> getUpdateRouglyListener() {
 		return updateRouglyListener;
 	}
@@ -29,6 +39,12 @@ public class PersisterListener<T> {
 	public PersisterListener<T> addUpdateRouglyListener(IUpdateRouglyListener<T> updateRouglyListener) {
 		this.updateRouglyListener.add(updateRouglyListener);
 		return this;
+	}
+	
+	public void doWithUpdateRouglyListener(Iterable<T> iterable, IDelegate delegate) {
+		updateRouglyListener.beforeUpdateRoughly(iterable);
+		delegate.execute();
+		updateRouglyListener.afterUpdateRoughly(iterable);
 	}
 	
 	public UpdateListenerCollection<T> getUpdateListener() {
@@ -40,6 +56,12 @@ public class PersisterListener<T> {
 		return this;
 	}
 	
+	public void doWithUpdateListener(Iterable<Entry<T, T>> differencesIterable, IDelegate delegate) {
+		updateListener.beforeUpdate(differencesIterable);
+		delegate.execute();
+		updateListener.afterUpdate(differencesIterable);
+	}
+	
 	public DeleteListenerCollection<T> getDeleteListener() {
 		return deleteListener;
 	}
@@ -47,6 +69,12 @@ public class PersisterListener<T> {
 	public PersisterListener<T> addDeleteListener(IDeleteListener<T> deleteListener) {
 		this.deleteListener.add(deleteListener);
 		return this;
+	}
+	
+	public void doWithDeleteListener(Iterable<T> iterable, IDelegate delegate) {
+		deleteListener.beforeDelete(iterable);
+		delegate.execute();
+		deleteListener.afterDelete(iterable);
 	}
 	
 	public SelectListenerCollection<T> getSelectListener() {

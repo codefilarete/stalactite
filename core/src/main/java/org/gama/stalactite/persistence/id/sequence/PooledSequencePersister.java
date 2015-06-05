@@ -1,9 +1,5 @@
 package org.gama.stalactite.persistence.id.sequence;
 
-import java.lang.reflect.Field;
-import java.util.List;
-import java.util.Map;
-
 import org.gama.lang.Reflections;
 import org.gama.lang.collection.Maps;
 import org.gama.stalactite.persistence.engine.DDLDeployer;
@@ -16,6 +12,10 @@ import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
 import org.gama.stalactite.persistence.sql.ddl.DDLParticipant;
 import org.gama.stalactite.persistence.structure.Database.Schema;
 import org.gama.stalactite.persistence.structure.Table;
+
+import java.lang.reflect.Field;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Persister dédié aux réservoirs d'identifiant par entité.
@@ -35,18 +35,8 @@ public class PooledSequencePersister extends Persister<PooledSequence> implement
 	
 	public PooledSequencePersister(PooledSequencePersistenceOptions storageOptions) {
 		// on réutilise le context par défaut, la stratégie est mise plus bas 
-		super(PersistenceContext.getCurrent(), null);
-		
-		// création de la table de stockage des séquences
-		SequenceTable sequenceTable = new SequenceTable(null, storageOptions.getTable(), storageOptions.getSequenceNameColumn(), storageOptions.getValueColumn());
-		// Construction de la stratégie
-		// NB: pas de générateur d'id car c'est nous qui gérons les identifiants (cf reservePool)
-		ClassMappingStrategy<PooledSequence> mappingStrategy = new ClassMappingStrategy<>(PooledSequence.class,
-				sequenceTable,
-				sequenceTable.getPooledSequenceFieldMapping(),
-				new AutoAssignedIdentifierGenerator());
-		setMappingStrategy(mappingStrategy);
-		getPersistenceContext().add(mappingStrategy);
+		super(PersistenceContext.getCurrent(), new PooledSequencePersisterConfigurer().buildConfiguration(storageOptions));
+		getPersistenceContext().add(getMappingStrategy());
 	}
 	
 	@Override
@@ -151,6 +141,21 @@ public class PooledSequencePersister extends Persister<PooledSequence> implement
 		
 		public long getUpperBound() {
 			return pool.getUpperBound();
+		}
+	}
+	
+	private static class PooledSequencePersisterConfigurer {
+		
+		private ClassMappingStrategy<PooledSequence> buildConfiguration(PooledSequencePersistenceOptions storageOptions) {
+			// Sequence storage table creation
+			SequenceTable sequenceTable = new SequenceTable(null, storageOptions.getTable(), storageOptions.getSequenceNameColumn(), storageOptions.getValueColumn());
+			// Strategy building
+			// NB: no id generator here because we manage ids (see reservePool)
+			ClassMappingStrategy<PooledSequence> mappingStrategy = new ClassMappingStrategy<>(PooledSequence.class,
+					sequenceTable,
+					sequenceTable.getPooledSequenceFieldMapping(),
+					new AutoAssignedIdentifierGenerator());
+			return mappingStrategy;
 		}
 	}
 }
