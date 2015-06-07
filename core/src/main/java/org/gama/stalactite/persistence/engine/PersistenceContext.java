@@ -1,5 +1,6 @@
 package org.gama.stalactite.persistence.engine;
 
+import org.gama.lang.bean.IFactory;
 import org.gama.lang.collection.ValueFactoryHashMap;
 import org.gama.stalactite.persistence.engine.TransactionManager.JdbcOperation;
 import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
@@ -20,12 +21,12 @@ public class PersistenceContext {
 	
 	private static final ThreadLocal<PersistenceContext> CURRENT_CONTEXT = new ThreadLocal<>();
 	private int jdbcBatchSize = 100;
-	private Map<Class<?>, Persister> persisterCache = new ValueFactoryHashMap<Class<?>, Persister>() {
+	private Map<Class<?>, Persister> persisterCache = new ValueFactoryHashMap<>(10, new IFactory<Class<?>, Persister>() {
 		@Override
-		public Persister<?> createInstance(Class<?> clazz) {
-			return newPersister(clazz);
+		public Persister createInstance(Class<?> input) {
+			return newPersister(input);
 		}
-	};
+	});
 	
 	public static PersistenceContext getCurrent() {
 		PersistenceContext currentContext = CURRENT_CONTEXT.get();

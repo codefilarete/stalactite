@@ -1,5 +1,6 @@
 package org.gama.stalactite.persistence.engine;
 
+import org.gama.lang.bean.IFactory;
 import org.gama.lang.collection.Arrays;
 import org.gama.lang.collection.SteppingIterator;
 import org.gama.lang.collection.ValueFactoryHashMap;
@@ -89,21 +90,21 @@ public class PersisterExecutor<T> {
 	 */
 	public void update(Iterable<Entry<T, T>> differencesIterable, boolean allColumnsStatement) {
 		// cache for UpdateOperation instances : key is Columns to be updated
-		Map<Set<Column>, UpdateOperation> updateOperationCache = new ValueFactoryHashMap<Set<Column>, UpdateOperation>() {
+		Map<Set<Column>, UpdateOperation> updateOperationCache = new ValueFactoryHashMap<>(new IFactory<Set<Column>, UpdateOperation>() {
 			@Override
 			public UpdateOperation createInstance(Set<Column> input) {
 				return dmlGenerator.buildUpdate(input, mappingStrategy.getVersionedKeys());
 			}
-		};
+		});
 		// UpdateOperations and values to apply
 		// NB: LinkedHashMap is used to keep order of treatment, not a huge requirement, rather for simplicity and unit test assert
 		LinkedHashMap<UpdateOperation, List<StatementValues>> delegateStorage = new LinkedHashMap<>(50);
-		Map<UpdateOperation, List<StatementValues>> operationsToApply = new ValueFactoryMap<UpdateOperation, List<StatementValues>>(delegateStorage) {
+		Map<UpdateOperation, List<StatementValues>> operationsToApply = new ValueFactoryMap<>(delegateStorage, new IFactory<UpdateOperation, List<StatementValues>>() {
 			@Override
 			public List<StatementValues> createInstance(UpdateOperation input) {
 				return new ArrayList<>();
 			}
-		};
+		});
 		
 		// building UpdateOperations and update values
 		for (Entry<T, T> next : differencesIterable) {

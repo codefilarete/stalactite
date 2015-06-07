@@ -1,5 +1,6 @@
 package org.gama.stalactite.benchmark;
 
+import org.gama.lang.bean.IFactory;
 import org.gama.lang.collection.ValueFactoryHashMap;
 import org.gama.lang.exception.Exceptions;
 import org.gama.stalactite.benchmark.DynamicAndComplementaryClassMappingBuilder.DynamicEntity;
@@ -85,12 +86,12 @@ public class BenchmarkDynamicComplementaryTables extends AbstractBenchmark<Dynam
 		return this.dynamicClassMappingBuilder;
 	}
 	
-	private static final Map<DynamicEntity, Map<Field, DynamicEntity>> indexFieldValue = new ValueFactoryHashMap<DynamicEntity, Map<Field, DynamicEntity>>() {
+	private static final Map<DynamicEntity, Map<Field, DynamicEntity>> indexFieldValue = new ValueFactoryHashMap<>(new IFactory<DynamicEntity, Map<Field, DynamicEntity>>() {
 		@Override
 		public Map<Field, DynamicEntity> createInstance(DynamicEntity input) {
 			return new HashMap<>();
 		}
-	};
+	});
 	
 	public class CallableDataGenerator implements Callable<DynamicEntity> {
 		
@@ -134,12 +135,12 @@ public class BenchmarkDynamicComplementaryTables extends AbstractBenchmark<Dynam
 			dynamicTypePersister.getPersisterListener().addInsertListener(new NoopInsertListener<D>() {
 				@Override
 				public void afterInsert(Iterable<D> iterables) {
-					Map<Field, List<DynamicEntity>> indexDynamicEntities = new ValueFactoryHashMap<Field, List<DynamicEntity>>(10) {
+					Map<Field, List<DynamicEntity>> indexDynamicEntities = new ValueFactoryHashMap<>(10, new IFactory<Field, List<DynamicEntity>>() {
 						@Override
 						public List<DynamicEntity> createInstance(Field input) {
 							return new ArrayList<>(500);
 						}
-					};
+					});
 					for (D dynamicEntity : iterables) {
 						try {
 							Map<Field, DynamicEntity> localIndexDynamicEntity = indexFieldValue.get(dynamicEntity);

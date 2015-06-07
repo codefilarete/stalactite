@@ -1,20 +1,24 @@
 package org.gama.stalactite.dml;
 
-import static org.junit.Assert.*;
-
-import java.util.*;
-import java.util.AbstractMap.SimpleEntry;
-import java.util.Map.Entry;
-
+import org.gama.lang.bean.IFactory;
+import org.gama.lang.collection.Arrays;
+import org.gama.lang.collection.Iterables;
+import org.gama.lang.collection.Maps;
+import org.gama.lang.collection.ValueFactoryHashMap;
 import org.gama.stalactite.dml.ExpandableSQL.ExpandableParameter;
 import org.gama.stalactite.dml.SQLParameterParser.Parameter;
 import org.gama.stalactite.dml.SQLParameterParser.ParsedSQL;
-import org.gama.lang.collection.Arrays;
-import org.gama.lang.collection.ValueFactoryHashMap;
-import org.gama.lang.collection.Iterables;
-import org.gama.lang.collection.Maps;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
+
+import java.util.AbstractMap.SimpleEntry;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+
+import static org.junit.Assert.*;
 
 /**
  * @author mary
@@ -68,12 +72,12 @@ public class ExpandableSQLTest {
 		ExpandableSQL testInstance = new ExpandableSQL(parsedSQL, values);
 		assertEquals(expectedPreparedSql, testInstance.getPreparedSQL());
 
-		Map<String, List<ExpandableParameter>> mappedParameter = new ValueFactoryHashMap<String, List<ExpandableParameter>>(2) {
+		Map<String, List<ExpandableParameter>> mappedParameter = new ValueFactoryHashMap<>(2, new IFactory<String, List<ExpandableParameter>>() {
 			@Override
 			public List<ExpandableParameter> createInstance(String input) {
 				return new ArrayList<>();
 			}
-		};
+		});
 		for (ExpandableParameter expandableParameter : testInstance.getExpandableParameters()) {
 			mappedParameter.get(expandableParameter.getParameterName()).add(expandableParameter);
 		}

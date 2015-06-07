@@ -1,17 +1,17 @@
 package org.gama.stalactite.persistence.sql.ddl;
 
+import org.gama.lang.bean.IFactory;
+import org.gama.lang.collection.Iterables;
+import org.gama.lang.collection.ValueFactoryHashMap;
+import org.gama.stalactite.persistence.engine.PersistenceContext;
+import org.gama.stalactite.persistence.structure.Table.Column;
+import org.gama.stalactite.persistence.structure.Table.SizedColumn;
+
+import javax.annotation.Nonnull;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.SortedMap;
 import java.util.TreeMap;
-
-import javax.annotation.Nonnull;
-
-import org.gama.lang.collection.ValueFactoryHashMap;
-import org.gama.lang.collection.Iterables;
-import org.gama.stalactite.persistence.engine.PersistenceContext;
-import org.gama.stalactite.persistence.structure.Table.Column;
-import org.gama.stalactite.persistence.structure.Table.SizedColumn;
 
 /**
  * Mapping between Java classes and Sql Types.
@@ -21,12 +21,12 @@ import org.gama.stalactite.persistence.structure.Table.SizedColumn;
  */
 public class JavaTypeToSqlTypeMapping {
 	
-	private final Map<Class, SortedMap<Integer, String>> javaTypeToSQLType = new ValueFactoryHashMap<Class, SortedMap<Integer, String>>() {
+	private final Map<Class, SortedMap<Integer, String>> javaTypeToSQLType = new ValueFactoryHashMap<>(new IFactory<Class, SortedMap<Integer, String>>() {
 		@Override
-		public TreeMap<Integer, String> createInstance(Class input) {
+		public SortedMap<Integer, String> createInstance(Class input) {
 			return new TreeMap<>();
 		}
-	};
+	});
 	private final Map<Class, String> defaultJavaTypeToSQLType = new HashMap<>();
 	
 	public void put(@Nonnull Class clazz, @Nonnull String sqlType) {

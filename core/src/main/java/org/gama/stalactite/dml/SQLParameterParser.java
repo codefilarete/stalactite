@@ -1,10 +1,11 @@
 package org.gama.stalactite.dml;
 
+import org.gama.lang.bean.IFactory;
+import org.gama.lang.collection.ValueFactoryHashMap;
+
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
-import org.gama.lang.collection.ValueFactoryHashMap;
 
 /**
  * Parser for SQL String with named parameters.
@@ -168,12 +169,12 @@ public class SQLParameterParser {
 		private List<Object /* String or Parameter */> sqlSnippets = new ArrayList<>(10);
 		
 		/** Parameters mapped on their names */
-		private Map<String, Parameter> parametersMap = new ValueFactoryHashMap<String, Parameter>() {
+		private Map<String, Parameter> parametersMap = new ValueFactoryHashMap<>(new IFactory<String, Parameter>() {
 			@Override
 			public Parameter createInstance(String input) {
 				return new Parameter(input);
 			}
-		};
+		});
 
 		public ParsedSQL() {
 		}

@@ -14,29 +14,21 @@ import java.util.Set;
  * 
  * @author Guillaume Mary
  */
-public abstract class ValueFactoryMap<K, V> implements Map<K, V>, IFactory<K, V> {
+public class ValueFactoryMap<K, V> implements Map<K, V>, IFactory<K, V> {
 	
 	private final Map<K, V> delegate;
 	
-//	private final IFactory<K, V> factoryDelegate;
+	private final IFactory<K, V> factoryDelegate;
 	
 	/**
 	 *
 	 * @param delegate the wrapped instance
+	 * @param factoryDelegate the wrapped factory instance
 	 */
-	public ValueFactoryMap(Map<K, V> delegate) {
+	public ValueFactoryMap(Map<K, V> delegate, IFactory<K, V> factoryDelegate) {
 		this.delegate = delegate;
+		this.factoryDelegate = factoryDelegate;
 	}
-//	
-//	/**
-//	 *
-//	 * @param delegate the wrapped instance
-//	 * @param factoryDelegate the wrapped factory instance
-//	 */
-//	public ValueFactoryMap(Map<K, V> delegate, IFactory<K, V> factoryDelegate) {
-//		this.delegate = delegate;
-//		this.factoryDelegate = factoryDelegate;
-//	}
 	
 	@Override
 	public int size() {
@@ -107,5 +99,10 @@ public abstract class ValueFactoryMap<K, V> implements Map<K, V>, IFactory<K, V>
 	@Override
 	public Set<Entry<K, V>> entrySet() {
 		return delegate.entrySet();
+	}
+	
+	@Override
+	public V createInstance(K input) {
+		return factoryDelegate.createInstance(input);
 	}
 }
