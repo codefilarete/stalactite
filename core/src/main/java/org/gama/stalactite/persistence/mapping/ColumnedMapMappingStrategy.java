@@ -35,7 +35,7 @@ public abstract class ColumnedMapMappingStrategy<C extends Map<K, V>, K, V, T> i
 		this.rowTransformer = new ToMapRowTransformer<C>((Class<C>) rowClass) {
 			/** We bind conversion on MapMappingStrategy conversion methods */
 			@Override
-			protected void convertRowContentToMap(Row row, C map) {
+			protected void applyRowToBean(Row row, C map) {
 				for (Column column : getColumns()) {
 					String columnName = column.getName();
 					K key = getKey(column);

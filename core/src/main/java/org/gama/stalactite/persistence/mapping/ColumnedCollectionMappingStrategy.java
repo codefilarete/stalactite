@@ -32,7 +32,7 @@ public abstract class ColumnedCollectionMappingStrategy<C extends Collection<T>,
 		this.rowTransformer = new ToCollectionRowTransformer<C>((Class<C>) rowClass) {
 			/** We bind conversion on CollectionColumnedMappingStrategy conversion methods */
 			@Override
-			protected void convertRowContentToMap(Row row, C collection) {
+			protected void applyRowToBean(Row row, C collection) {
 				for (Column column : getColumns()) {
 					Object value = row.get(column.getName());
 					collection.add(toCollectionValue(value));

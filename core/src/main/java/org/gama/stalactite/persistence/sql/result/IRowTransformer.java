@@ -3,9 +3,11 @@ package org.gama.stalactite.persistence.sql.result;
 import java.sql.SQLException;
 
 /**
- * @author mary
+ * Interface for classes capable of transforming a ResultSet row (represented by {@link Row} into any "more Object" instance.
+ * 
+ * @author Guillaume Mary
  */
 public interface IRowTransformer<T> {
 	
-	public T transform(Row row) throws SQLException;
+	T transform(Row row) throws SQLException;
 }
