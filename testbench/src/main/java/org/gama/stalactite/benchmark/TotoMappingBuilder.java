@@ -1,10 +1,5 @@
 package org.gama.stalactite.benchmark;
 
-import java.lang.reflect.Field;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-
 import org.gama.lang.exception.Exceptions;
 import org.gama.stalactite.persistence.id.sequence.PooledSequenceIdentifierGenerator;
 import org.gama.stalactite.persistence.id.sequence.PooledSequenceIdentifierGeneratorOptions;
@@ -14,6 +9,11 @@ import org.gama.stalactite.persistence.mapping.ColumnedMapMappingStrategy;
 import org.gama.stalactite.persistence.mapping.PersistentFieldHarverster;
 import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.persistence.structure.Table.Column;
+
+import java.lang.reflect.Field;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
 
 /**
  * @author Guillaume Mary
@@ -27,7 +27,9 @@ public class TotoMappingBuilder implements IMappingBuilder {
 		targetTable = new TotoTable();
 		PersistentFieldHarverster persistentFieldHarverster = new PersistentFieldHarverster();
 		Map<Field, Column> fieldColumnMap = persistentFieldHarverster.mapFields(Toto.class, targetTable);
-		ClassMappingStrategy<Toto> classMappingStrategy = new ClassMappingStrategy<>(Toto.class, targetTable, fieldColumnMap, new PooledSequenceIdentifierGenerator(new PooledSequenceIdentifierGeneratorOptions(100, "Toto", PooledSequencePersistenceOptions.DEFAULT)));
+		ClassMappingStrategy<Toto> classMappingStrategy = new ClassMappingStrategy<>(Toto.class, targetTable,
+				fieldColumnMap, persistentFieldHarverster.getField("id"),
+				new PooledSequenceIdentifierGenerator(new PooledSequenceIdentifierGeneratorOptions(100, "Toto", PooledSequencePersistenceOptions.DEFAULT)));
 		Field answersField = null;
 		try {
 			answersField = Toto.class.getDeclaredField("answers");

@@ -1,11 +1,5 @@
 package org.gama.stalactite.persistence.mapping;
 
-import static org.testng.Assert.assertEquals;
-
-import java.lang.reflect.Field;
-import java.util.HashMap;
-import java.util.Map;
-
 import org.gama.lang.collection.Maps;
 import org.gama.stalactite.persistence.sql.result.Row;
 import org.gama.stalactite.persistence.structure.Table;
@@ -13,6 +7,12 @@ import org.gama.stalactite.persistence.structure.Table.Column;
 import org.testng.annotations.BeforeTest;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
+
+import java.lang.reflect.Field;
+import java.util.HashMap;
+import java.util.Map;
+
+import static org.testng.Assert.assertEquals;
 
 public class FieldMappingStrategyTest {
 	
@@ -36,7 +36,7 @@ public class FieldMappingStrategyTest {
 		colB = columns.get("b");
 		colC = columns.get("c");
 		
-		testInstance = new FieldMappingStrategy<>(totoClassMapping);
+		testInstance = new FieldMappingStrategy<>(totoClassMapping, persistentFieldHarverster.getField("a"));
 	}
 	
 	@DataProvider(name = GET_INSERT_VALUES_DATA)

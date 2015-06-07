@@ -1,25 +1,20 @@
 package org.gama.stalactite.persistence.mapping;
 
-import java.io.Serializable;
-import java.lang.reflect.Field;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedHashSet;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Set;
-
-import javax.annotation.Nonnull;
-
 import org.gama.lang.Reflections;
+import org.gama.reflection.PropertyAccessor;
 import org.gama.stalactite.persistence.id.IdentifierGenerator;
 import org.gama.stalactite.persistence.sql.result.Row;
 import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.persistence.structure.Table.Column;
-import org.gama.reflection.PropertyAccessor;
+
+import javax.annotation.Nonnull;
+import java.io.Serializable;
+import java.lang.reflect.Field;
+import java.util.*;
+import java.util.Map.Entry;
 
 /**
- * @author mary
+ * @author Guillaume Mary
  */
 public class ClassMappingStrategy<T> implements IMappingStrategy<T> {
 	
@@ -31,14 +26,15 @@ public class ClassMappingStrategy<T> implements IMappingStrategy<T> {
 	
 	private final Set<Column> columns;
 	
-	private Map<PropertyAccessor, IMappingStrategy> mappingStrategies;
+	private Map<PropertyAccessor, IEmbeddedBeanMapper> mappingStrategies;
 	
 	private final IdentifierGenerator identifierGenerator;
 	
-	public ClassMappingStrategy(@Nonnull Class<T> classToPersist, @Nonnull Table targetTable, Map<Field, Column> fieldToColumn, IdentifierGenerator identifierGenerator) {
+	public ClassMappingStrategy(@Nonnull Class<T> classToPersist, @Nonnull Table targetTable,
+								Map<Field, Column> fieldToColumn, Field identifierField, IdentifierGenerator identifierGenerator) {
 		this.classToPersist = classToPersist;
 		this.targetTable = targetTable;
-		this.defaultMappingStrategy = new FieldMappingStrategy<>(fieldToColumn);
+		this.defaultMappingStrategy = new FieldMappingStrategy<>(fieldToColumn, identifierField);
 		this.columns = new HashSet<>(defaultMappingStrategy.getColumns());
 		this.mappingStrategies = new HashMap<>();
 		this.identifierGenerator = identifierGenerator;
@@ -63,7 +59,7 @@ public class ClassMappingStrategy<T> implements IMappingStrategy<T> {
 	 * @param field
 	 * @param mappingStrategy
 	 */
-	public void put(Field field, IMappingStrategy mappingStrategy) {
+	public void put(Field field, IEmbeddedBeanMapper mappingStrategy) {
 		mappingStrategies.put(PropertyAccessor.forProperty(field), mappingStrategy);
 		Reflections.ensureAccessible(field);
 		// update columns list
@@ -77,7 +73,7 @@ public class ClassMappingStrategy<T> implements IMappingStrategy<T> {
 	@Override
 	public StatementValues getInsertValues(@Nonnull T t) {
 		StatementValues insertValues = defaultMappingStrategy.getInsertValues(t);
-		for (Entry<PropertyAccessor, IMappingStrategy> fieldStrategyEntry : mappingStrategies.entrySet()) {
+		for (Entry<PropertyAccessor, IEmbeddedBeanMapper> fieldStrategyEntry : mappingStrategies.entrySet()) {
 			Object fieldValue = fieldStrategyEntry.getKey().get(t);
 			StatementValues fieldInsertValues = fieldStrategyEntry.getValue().getInsertValues(fieldValue);
 			insertValues.getUpsertValues().putAll(fieldInsertValues.getUpsertValues());
@@ -88,7 +84,7 @@ public class ClassMappingStrategy<T> implements IMappingStrategy<T> {
 	@Override
 	public StatementValues getUpdateValues(@Nonnull T modified, T unmodified, boolean allColumns) {
 		StatementValues toReturn = defaultMappingStrategy.getUpdateValues(modified, unmodified, allColumns);
-		for (Entry<PropertyAccessor, IMappingStrategy> fieldStrategyEntry : mappingStrategies.entrySet()) {
+		for (Entry<PropertyAccessor, IEmbeddedBeanMapper> fieldStrategyEntry : mappingStrategies.entrySet()) {
 			PropertyAccessor field = fieldStrategyEntry.getKey();
 			Object modifiedValue = field.get(modified);
 			Object unmodifiedValue = unmodified == null ?  null : field.get(unmodified);
@@ -144,7 +140,7 @@ public class ClassMappingStrategy<T> implements IMappingStrategy<T> {
 	@Override
 	public T transform(Row row) {
 		T toReturn = defaultMappingStrategy.transform(row);
-		for (Entry<PropertyAccessor, IMappingStrategy> mappingStrategyEntry : mappingStrategies.entrySet()) {
+		for (Entry<PropertyAccessor, IEmbeddedBeanMapper> mappingStrategyEntry : mappingStrategies.entrySet()) {
 			mappingStrategyEntry.getKey().set(toReturn, mappingStrategyEntry.getValue().transform(row));
 		}
 		return toReturn;

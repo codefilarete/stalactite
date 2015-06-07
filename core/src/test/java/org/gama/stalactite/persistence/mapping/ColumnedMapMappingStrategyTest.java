@@ -1,10 +1,5 @@
 package org.gama.stalactite.persistence.mapping;
 
-import static org.testng.Assert.*;
-
-import java.util.HashMap;
-import java.util.Map;
-
 import org.gama.lang.collection.Maps;
 import org.gama.lang.collection.Maps.ChainingMap;
 import org.gama.stalactite.persistence.sql.result.Row;
@@ -13,6 +8,12 @@ import org.gama.stalactite.persistence.structure.Table.Column;
 import org.testng.annotations.BeforeTest;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
+
+import java.util.HashMap;
+import java.util.Map;
+
+import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertTrue;
 
 public class ColumnedMapMappingStrategyTest {
 	
@@ -137,24 +138,6 @@ public class ColumnedMapMappingStrategyTest {
 	public void testGetUpdateValues_allColumns(HashMap<Integer, String> modified, HashMap<Integer, String> unmodified, Map<Integer, String> expected) throws Exception {
 		StatementValues updateValues = testInstance.getUpdateValues(modified, unmodified, true);
 		assertEquals(updateValues.getUpsertValues(),expected);
-	}
-	
-	@Test
-	public void testGetDeleteValues() throws Exception {
-		// Pas de suppression de ligne avec cette stratégie en colonne
-		assertTrue(testInstance.getDeleteValues(Maps.asMap(1, "a").add(2, "b")).getWhereValues().isEmpty());
-	}
-	
-	@Test
-	public void testGetSelectValues() throws Exception {
-		// Pas de sélection de ligne avec cette stratégie en colonne
-		assertTrue(testInstance.getSelectValues(1).getWhereValues().isEmpty());
-	}
-	
-	@Test
-	public void testGetVersionedKeyValues() throws Exception {
-		// Pas de clé versionnée avec cette stratégie en colonne
-		assertTrue(testInstance.getVersionedKeyValues(Maps.asMap(1, "a").add(2, "b")).getWhereValues().isEmpty());
 	}
 	
 	@Test

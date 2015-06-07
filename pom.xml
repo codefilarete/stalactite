@@ -14,12 +14,15 @@
 		<module>safemodel</module>
 		<module>reflection</module>
 		<module>core</module>
+		<module>orm</module>
 		<module>testbench</module>
 	</modules>
 	
 	<properties>
 		<encoding>UTF-8</encoding>
 		<testng.version>6.8.7</testng.version>
+		<mockito.version>1.10.19</mockito.version>
+		<slf4j-api.version>1.7.12</slf4j-api.version>
 	</properties>
 	
 	<dependencies>

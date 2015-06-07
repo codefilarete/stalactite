@@ -1,8 +1,8 @@
 package org.gama.stalactite.persistence.engine;
 
 import org.gama.lang.bean.IDelegate;
-import org.gama.stalactite.Logger;
-import org.gama.stalactite.persistence.engine.listening.*;
+import org.gama.lang.bean.IDelegateWithResult;
+import org.gama.stalactite.persistence.engine.listening.PersisterListener;
 import org.gama.stalactite.persistence.id.AutoAssignedIdentifierGenerator;
 import org.gama.stalactite.persistence.id.IdentifierGenerator;
 import org.gama.stalactite.persistence.id.PostInsertIdentifierGenerator;
@@ -22,12 +22,10 @@ import java.util.Map.Entry;
  */
 public class Persister<T> {
 	
-	private static Logger LOGGER = Logger.getLogger(Persister.class);
-	
 	private PersistenceContext persistenceContext;
 	private ClassMappingStrategy<T> mappingStrategy;
 	private PersisterListener<T> persisterListener = new PersisterListener<>();
-	private final PersisterExecutor<T> persisterExecutor;
+	private PersisterExecutor<T> persisterExecutor;
 	
 	public Persister(PersistenceContext persistenceContext, ClassMappingStrategy<T> mappingStrategy) {
 		this.persistenceContext = persistenceContext;
@@ -50,7 +48,7 @@ public class Persister<T> {
 			IdentifierGenerator identifierGenerator = mappingStrategy.getIdentifierGenerator();
 			if (!(identifierGenerator instanceof AutoAssignedIdentifierGenerator)
 					&& !(identifierGenerator instanceof PostInsertIdentifierGenerator)) {
-				identifierFixer = new IdentifierFixer(identifierGenerator);
+				identifierFixer = new IdentifierFixer<T>(identifierGenerator, mappingStrategy);
 			} else {
 				identifierFixer = NoopIdentifierFixer.INSTANCE;
 			}
@@ -110,9 +108,13 @@ public class Persister<T> {
 		getPersisterListener().doWithInsertListener(iterable, new IDelegate() {
 			@Override
 			public void execute() {
-				persisterExecutor.insert(iterable);
+				doInsert(iterable);
 			}
 		});
+	}
+	
+	protected void doInsert(Iterable<T> iterable) {
+		persisterExecutor.insert(iterable);
 	}
 	
 	public void updateRoughly(T t) {
@@ -127,9 +129,13 @@ public class Persister<T> {
 		getPersisterListener().doWithUpdateRouglyListener(iterable, new IDelegate() {
 			@Override
 			public void execute() {
-				persisterExecutor.updateRoughly(iterable);
+				doUpdateRoughly(iterable);
 			}
 		});
+	}
+	
+	protected void doUpdateRoughly(Iterable<T> iterable) {
+		persisterExecutor.updateRoughly(iterable);
 	}
 	
 	public void update(T modified, T unmodified, boolean allColumnsStatement) {
@@ -149,9 +155,13 @@ public class Persister<T> {
 		getPersisterListener().doWithUpdateListener(differencesIterable, new IDelegate() {
 			@Override
 			public void execute() {
-				persisterExecutor.update(differencesIterable, allColumnsStatement);
+				doUpdate(differencesIterable, allColumnsStatement);
 			}
 		});
+	}
+	
+	protected void doUpdate(Iterable<Entry<T, T>> differencesIterable, boolean allColumnsStatement) {
+		persisterExecutor.update(differencesIterable, allColumnsStatement);
 	}
 	
 	public void delete(T t) {
@@ -162,9 +172,13 @@ public class Persister<T> {
 		getPersisterListener().doWithDeleteListener(iterable, new IDelegate() {
 			@Override
 			public void execute() {
-				persisterExecutor.delete(iterable);
+				doDelete(iterable);
 			}
 		});
+	}
+	
+	protected void doDelete(Iterable<T> iterable) {
+		persisterExecutor.delete(iterable);
 	}
 	
 	/**
@@ -176,15 +190,25 @@ public class Persister<T> {
 		return mappingStrategy.getId(t) == null;
 	}
 	
-	public T select(Serializable id) {
-		if (id != null) {
-			ISelectListener<T> selectListener = getPersisterListener().getSelectListener();
-			T result = persisterExecutor.select(id);
-			selectListener.afterSelect(result);
-			return result;
+	public T select(final Serializable id) {
+		return select(Collections.singleton(id)).get(0);
+	}
+	
+	public List<T> select(final Iterable<Serializable> ids) {
+		if (!org.gama.lang.collection.Iterables.isEmpty(ids)) {
+			return getPersisterListener().doWithSelectListener(ids, new IDelegateWithResult<List<T>>() {
+				@Override
+				public List<T> execute() {
+					return doSelect(ids);
+				}
+			});
 		} else {
 			throw new IllegalArgumentException("Non selectable entity " + mappingStrategy.getClassToPersist() + " because of null id");
 		}
+	}
+	
+	protected List<T> doSelect(Iterable<Serializable> ids) {
+		return persisterExecutor.select(ids);
 	}
 	
 	protected interface IIdentifierFixer<T> {
@@ -193,12 +217,15 @@ public class Persister<T> {
 		
 	}
 	
-	protected class IdentifierFixer implements IIdentifierFixer<T> {
+	protected static class IdentifierFixer<T> implements IIdentifierFixer<T> {
 		
 		private IdentifierGenerator identifierGenerator;
 		
-		private IdentifierFixer(IdentifierGenerator identifierGenerator) {
+		private ClassMappingStrategy<T> mappingStrategy;
+		
+		private IdentifierFixer(IdentifierGenerator identifierGenerator, ClassMappingStrategy<T> mappingStrategy) {
 			this.identifierGenerator = identifierGenerator;
+			this.mappingStrategy = mappingStrategy;
 		}
 		
 		public void fixId(T t) {

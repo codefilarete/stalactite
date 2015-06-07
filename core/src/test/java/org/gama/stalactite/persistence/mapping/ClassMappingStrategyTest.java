@@ -1,14 +1,5 @@
 package org.gama.stalactite.persistence.mapping;
 
-import java.lang.reflect.Field;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-
 import org.gama.lang.collection.Arrays;
 import org.gama.lang.collection.Maps;
 import org.gama.stalactite.persistence.structure.Table;
@@ -17,6 +8,9 @@ import org.testng.Assert;
 import org.testng.annotations.BeforeTest;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
+
+import java.lang.reflect.Field;
+import java.util.*;
 
 public class ClassMappingStrategyTest {
 	
@@ -52,7 +46,7 @@ public class ClassMappingStrategyTest {
 		totoClassMapping.remove(e);
 		// création de l'instance à tester
 		// NB: pas de générateur d'id car ce n'est pas ce qu'on teste (à changer si besoin)
-		testInstance = new ClassMappingStrategy<>(Toto.class, totoClassTable, totoClassMapping, null);
+		testInstance = new ClassMappingStrategy<>(Toto.class, totoClassTable, totoClassMapping, persistentFieldHarverster.getField("a"), null);
 		
 		final int nbCol = 2;
 		Set<Column> collectionColumn = new LinkedHashSet<>(nbCol);

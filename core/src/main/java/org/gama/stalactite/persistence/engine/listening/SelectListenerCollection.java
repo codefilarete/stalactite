@@ -12,14 +12,14 @@ public class SelectListenerCollection<T> implements ISelectListener<T> {
 	private List<ISelectListener<T>> selectListeners = new ArrayList<>();
 	
 	@Override
-	public void beforeSelect(Serializable id) {
+	public void beforeSelect(Iterable<Serializable> ids) {
 		for (ISelectListener<T> selectListener : selectListeners) {
-			selectListener.beforeSelect(id);
+			selectListener.beforeSelect(ids);
 		}
 	}
 	
 	@Override
-	public void afterSelect(T result) {
+	public void afterSelect(Iterable<T> result) {
 		for (ISelectListener<T> selectListener : selectListeners) {
 			selectListener.afterSelect(result);
 		}

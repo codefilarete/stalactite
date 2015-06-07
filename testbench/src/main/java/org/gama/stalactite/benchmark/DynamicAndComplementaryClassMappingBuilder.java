@@ -1,17 +1,8 @@
 package org.gama.stalactite.benchmark;
 
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import java.lang.annotation.Target;
-import java.lang.reflect.Field;
-import java.lang.reflect.Modifier;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Random;
-
+import net.bytebuddy.ByteBuddy;
+import net.bytebuddy.dynamic.ClassLoadingStrategy;
+import net.bytebuddy.dynamic.DynamicType.Builder;
 import org.gama.stalactite.persistence.id.AutoAssignedIdentifierGenerator;
 import org.gama.stalactite.persistence.id.sequence.PooledSequenceIdentifierGenerator;
 import org.gama.stalactite.persistence.id.sequence.PooledSequenceIdentifierGeneratorOptions;
@@ -21,9 +12,13 @@ import org.gama.stalactite.persistence.mapping.PersistentFieldHarverster;
 import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.persistence.structure.Table.Column;
 
-import net.bytebuddy.ByteBuddy;
-import net.bytebuddy.dynamic.ClassLoadingStrategy;
-import net.bytebuddy.dynamic.DynamicType.Builder;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
+import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
+import java.util.*;
 
 /**
  * @author Guillaume Mary
@@ -59,7 +54,8 @@ public class DynamicAndComplementaryClassMappingBuilder implements IMappingBuild
 		
 		PooledSequenceIdentifierGeneratorOptions options = new PooledSequenceIdentifierGeneratorOptions(100, targetTable.getName(), PooledSequencePersistenceOptions.DEFAULT);
 		PooledSequenceIdentifierGenerator identifierGenerator = new PooledSequenceIdentifierGenerator(options);
-		ClassMappingStrategy<?> classMappingStrategy = new ClassMappingStrategy<>(dynamicType, targetTable, fieldColumnMap, identifierGenerator);
+		ClassMappingStrategy<?> classMappingStrategy = new ClassMappingStrategy<>(dynamicType, targetTable,
+				fieldColumnMap, persistentFieldHarverster.getField("id"), identifierGenerator);
 		getClassMappingStrategy_nil();
 		getClassMappingStrategy_indexes();
 		return classMappingStrategy;
@@ -82,7 +78,8 @@ public class DynamicAndComplementaryClassMappingBuilder implements IMappingBuild
 		}
 		
 		// NB: AutoAssignedIdentifierGenerator car l'id vient de l'instance de DynamicType
-		classMappingStrategyNil = new ClassMappingStrategy<>(nilDynamicType, targetNilTable, fieldColumnMap, new AutoAssignedIdentifierGenerator());
+		classMappingStrategyNil = new ClassMappingStrategy<>(nilDynamicType, targetNilTable,
+				fieldColumnMap, persistentFieldHarverster.getField("id"), new AutoAssignedIdentifierGenerator());
 		return classMappingStrategyNil;
 	}
 	
@@ -100,7 +97,8 @@ public class DynamicAndComplementaryClassMappingBuilder implements IMappingBuild
 			PersistentFieldHarverster persistentFieldHarverster = new PersistentFieldHarverster();
 			Map<Field, Column> fieldColumnMap = persistentFieldHarverster.mapFields(indexDynamicType, indexTable);
 			
-			ClassMappingStrategy<?> classMappingStrategy = new ClassMappingStrategy<>(indexDynamicType, indexTable, fieldColumnMap, new AutoAssignedIdentifierGenerator());
+			ClassMappingStrategy<?> classMappingStrategy = new ClassMappingStrategy<>(indexDynamicType, indexTable,
+					fieldColumnMap, persistentFieldHarverster.getField("id"), new AutoAssignedIdentifierGenerator());
 			indexDynamicTypes.put(columnToIndex, classMappingStrategy);
 		}
 		return indexDynamicTypes;

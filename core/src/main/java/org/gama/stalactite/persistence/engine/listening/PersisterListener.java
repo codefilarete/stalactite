@@ -1,7 +1,10 @@
 package org.gama.stalactite.persistence.engine.listening;
 
 import org.gama.lang.bean.IDelegate;
+import org.gama.lang.bean.IDelegateWithResult;
 
+import java.io.Serializable;
+import java.util.List;
 import java.util.Map.Entry;
 
 /**
@@ -85,4 +88,12 @@ public class PersisterListener<T> {
 		this.selectListener.add(selectListener);
 		return this;
 	}
+	
+	public List<T> doWithSelectListener(Iterable<Serializable> ids, IDelegateWithResult<List<T>> delegate) {
+		selectListener.beforeSelect(ids);
+		List<T> tList = delegate.execute();
+		selectListener.afterSelect(tList);
+		return tList;
+	}
+	
 }

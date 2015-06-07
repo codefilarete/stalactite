@@ -1,20 +1,5 @@
 package org.gama.stalactite.persistence.engine;
 
-import static org.junit.Assert.*;
-import static org.mockito.Mockito.*;
-
-import java.io.Serializable;
-import java.lang.reflect.Field;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.ResultSetMetaData;
-import java.sql.SQLException;
-import java.util.*;
-import java.util.Map.Entry;
-
-import javax.sql.DataSource;
-
 import org.gama.lang.collection.Arrays;
 import org.gama.lang.collection.Maps;
 import org.gama.lang.collection.PairIterator;
@@ -34,6 +19,17 @@ import org.testng.annotations.BeforeTest;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
+import javax.sql.DataSource;
+import java.io.Serializable;
+import java.lang.reflect.Field;
+import java.sql.*;
+import java.util.*;
+import java.util.Map.Entry;
+import java.util.concurrent.atomic.AtomicInteger;
+
+import static org.junit.Assert.assertEquals;
+import static org.mockito.Mockito.*;
+
 public class PersisterTest {
 	
 	public static final String TEST_UPDATE_DIFF_DATA = "testUpdate_diff";
@@ -44,7 +40,7 @@ public class PersisterTest {
 	private ArgumentCaptor<Integer> indexCaptor;
 	private ArgumentCaptor<String> statementArgCaptor;
 	private JdbcTransactionManager transactionManager;
-	private InMemoryIdGenerator identifierGenerator;
+	private InMemoryCounterIdentifierGenerator identifierGenerator;
 	
 	@BeforeTest
 	public void setUp() throws SQLException {
@@ -54,8 +50,9 @@ public class PersisterTest {
 		Map<String, Column> columns = totoClassTable.mapColumnsOnName();
 		columns.get("a").setPrimaryKey(true);
 		
-		identifierGenerator = new InMemoryIdGenerator();
-		ClassMappingStrategy<Toto> totoClassMappingStrategy = new ClassMappingStrategy<>(Toto.class, totoClassTable, totoClassMapping, identifierGenerator);
+		identifierGenerator = new InMemoryCounterIdentifierGenerator();
+		ClassMappingStrategy<Toto> totoClassMappingStrategy = new ClassMappingStrategy<>(Toto.class, totoClassTable,
+				totoClassMapping, persistentFieldHarverster.getField("a"), identifierGenerator);
 		
 		JavaTypeToSqlTypeMapping simpleTypeMapping = new JavaTypeToSqlTypeMapping();
 		simpleTypeMapping.put(Integer.class, "int");
@@ -69,7 +66,7 @@ public class PersisterTest {
 	@BeforeMethod
 	public void setUpTest() throws SQLException {
 		// reset id counter between 2 tests else id "overflow"
-		identifierGenerator.idCounter = 0;
+		identifierGenerator.idCounter.set(0);
 		
 		preparedStatement = mock(PreparedStatement.class);
 		when(preparedStatement.executeBatch()).thenReturn(new int[] {1});
@@ -332,13 +329,13 @@ public class PersisterTest {
 	/**
 	 * Simple id gnerator for our tests : increments a in-memory counter..
 	 */
-	private static class InMemoryIdGenerator implements IdentifierGenerator {
+	public static class InMemoryCounterIdentifierGenerator implements IdentifierGenerator {
 		
-		private int idCounter = 0;
+		private AtomicInteger idCounter = new AtomicInteger(0);
 		
 		@Override
 		public Serializable generate() {
-			return ++idCounter;
+			return idCounter.addAndGet(1);
 		}
 		
 		@Override

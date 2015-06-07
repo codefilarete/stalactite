@@ -1,13 +1,5 @@
 package org.gama.stalactite.persistence.mapping;
 
-import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.assertTrue;
-
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
 import org.gama.lang.collection.Arrays;
 import org.gama.lang.collection.Maps;
 import org.gama.lang.collection.Maps.ChainingMap;
@@ -17,6 +9,13 @@ import org.gama.stalactite.persistence.structure.Table.Column;
 import org.testng.annotations.BeforeTest;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import static org.testng.Assert.assertEquals;
 
 public class ColumnedCollectionMappingStrategyTest {
 	
@@ -120,24 +119,6 @@ public class ColumnedCollectionMappingStrategyTest {
 	public void testGetUpdateValues_allColumns(List<String> modified, List<String> unmodified, Map<Column, String> expected) throws Exception {
 		StatementValues insertValues = testInstance.getUpdateValues(modified, unmodified, true);
 		assertEquals(insertValues.getUpsertValues(), expected);
-	}
-	
-	@Test
-	public void testGetDeleteValues() throws Exception {
-		// Pas de suppression de ligne avec cette stratégie en colonne
-		assertTrue(testInstance.getDeleteValues(Arrays.asList("a", "b")).getWhereValues().isEmpty());
-	}
-	
-	@Test
-	public void testGetSelectValues() throws Exception {
-		// Pas de suppression de ligne avec cette stratégie en colonne
-		assertTrue(testInstance.getSelectValues(1).getWhereValues().isEmpty());
-	}
-	
-	@Test
-	public void testGetVersionedKeyValues() throws Exception {
-		// Pas de suppression de ligne avec cette stratégie en colonne
-		assertTrue(testInstance.getVersionedKeyValues(Arrays.asList("a", "b")).getWhereValues().isEmpty());
 	}
 	
 	@Test

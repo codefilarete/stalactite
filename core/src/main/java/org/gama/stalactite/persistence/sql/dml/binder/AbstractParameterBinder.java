@@ -1,13 +1,12 @@
 package org.gama.stalactite.persistence.sql.dml.binder;
 
+import javax.annotation.Nonnull;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
-import javax.annotation.Nonnull;
-
 /**
- * @author mary
+ * @author Guillaume Mary
  */
 public abstract class AbstractParameterBinder<T> implements ParameterBinder<T> {
 	
@@ -30,10 +29,6 @@ public abstract class AbstractParameterBinder<T> implements ParameterBinder<T> {
 	public void set(int valueIndex, T value, PreparedStatement statement) throws SQLException {
 		if (value == null) {
 			setNull(valueIndex, statement);
-			// TODO: à implémenter avec un parsing de la requête, cf AbstractQueryImpl#expandParameterList
-//		} else if (value instanceof Collection) {
-//			Collection listParam = (Collection) value;
-//			statement.setParameterList(valueIndex, listParam);
 		} else {
 			setNotNull(valueIndex, value, statement);
 		}

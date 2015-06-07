@@ -1,17 +1,5 @@
 package org.gama.stalactite.persistence.mapping;
 
-import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Set;
-
-import javax.annotation.Nonnull;
-
 import org.gama.lang.bean.Objects;
 import org.gama.lang.collection.Collections;
 import org.gama.lang.collection.Iterables;
@@ -24,10 +12,14 @@ import org.gama.stalactite.persistence.sql.result.Row;
 import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.persistence.structure.Table.Column;
 
+import javax.annotation.Nonnull;
+import java.util.*;
+import java.util.Map.Entry;
+
 /**
  * @author mary
  */
-public abstract class ColumnedCollectionMappingStrategy<C extends Collection<T>, T> implements IMappingStrategy<C> {
+public abstract class ColumnedCollectionMappingStrategy<C extends Collection<T>, T> implements IEmbeddedBeanMapper<C> {
 	
 	private final Table targetTable;
 	private final Set<Column> columns;
@@ -47,11 +39,6 @@ public abstract class ColumnedCollectionMappingStrategy<C extends Collection<T>,
 				}
 			}
 		};
-	}
-	
-	@Override
-	public Table getTargetTable() {
-		return targetTable;
 	}
 	
 	@Override
@@ -118,34 +105,6 @@ public abstract class ColumnedCollectionMappingStrategy<C extends Collection<T>,
 		}
 		
 		return toReturn;
-	}
-	
-	@Override
-	public StatementValues getDeleteValues(@Nonnull C c) {
-		// Pas de valeur pour le where de suppression
-		return new StatementValues();
-	}
-	
-	@Override
-	public StatementValues getSelectValues(@Nonnull Serializable id) {
-		// Pas de valeur pour le where de sélection
-		return new StatementValues();
-	}
-	
-	@Override
-	public StatementValues getVersionedKeyValues(@Nonnull C c) {
-		// Pas de valeur pour la clé versionnée
-		return new StatementValues();
-	}
-	
-	@Override
-	public Serializable getId(C t) {
-		throw new UnsupportedOperationException("Collection strategy can't provide id");
-	}
-	
-	@Override
-	public void setId(C t, Serializable identifier) {
-		throw new UnsupportedOperationException("Collection strategy can't set id");
 	}
 	
 	protected Object toDatabaseValue(T t) {

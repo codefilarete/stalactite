@@ -14,11 +14,25 @@
 	
 	<properties>
 		<jsr305.version>3.0.0</jsr305.version>
-		<mockito.version>1.10.19</mockito.version>
 		<hsqldb.version>2.3.2</hsqldb.version>
-		<slf4j-api.version>1.7.10</slf4j-api.version>
-		<log4j.version>2.2</log4j.version>
 	</properties>
+	
+	<build>
+		<plugins>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-jar-plugin</artifactId>
+				<version>2.6</version>
+				<executions>
+					<execution>
+						<goals>
+							<goal>test-jar</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
+		</plugins>
+	</build>
 	
 	<dependencies>
 		<dependency>

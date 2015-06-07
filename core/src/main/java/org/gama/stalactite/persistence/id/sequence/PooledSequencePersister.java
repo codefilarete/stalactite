@@ -18,23 +18,24 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Persister dédié aux réservoirs d'identifiant par entité.
- * La même instance peut être partagé par plusieurs IdentifierGenerator du moment que chacun appelle {@link #reservePool(String, int)}
- * avec des paramètres différents, il n'y a pas de risque de collision.
+ * Persister dedicated to pooled entity identifiers.
+ * The same instance can be shared by multiple IdentifierGenerator, as long as each calls {@link #reservePool(String, int)}
+ * with different parameters, there's no risk of identifier collision.
  * 
- * @author mary
+ * @author Guillaume Mary
  */
 public class PooledSequencePersister extends Persister<PooledSequence> implements DDLParticipant {
 	
 	/**
-	 * Constructeur avec noms de table et colonne par défaut
+	 * Constructor with default table and column names.
+	 * @see PooledSequencePersistenceOptions#DEFAULT
 	 */
 	public PooledSequencePersister() {
 		this(PooledSequencePersistenceOptions.DEFAULT);
 	}
 	
 	public PooledSequencePersister(PooledSequencePersistenceOptions storageOptions) {
-		// on réutilise le context par défaut, la stratégie est mise plus bas 
+		// we reuse default PersistentContext
 		super(PersistenceContext.getCurrent(), new PooledSequencePersisterConfigurer().buildConfiguration(storageOptions));
 		getPersistenceContext().add(getMappingStrategy());
 	}
@@ -53,7 +54,7 @@ public class PooledSequencePersister extends Persister<PooledSequence> implement
 	
 	public long reservePool(String sequenceName, int poolSize) {
 		SequenceBoundJdbcOperation jdbcOperation = new SequenceBoundJdbcOperation(sequenceName, poolSize);
-		// on exécute l'opération dans une nouvelle et commitante transaction afin de gérer les accès concurrents
+		// the operation is executed in a new and parallel transaction in order to manage concurrent accesses
 		getPersistenceContext().executeInNewTransaction(jdbcOperation);
 		return jdbcOperation.getUpperBound();
 	}
@@ -81,7 +82,7 @@ public class PooledSequencePersister extends Persister<PooledSequence> implement
 	}
 	
 	/**
-	 * POJO qui représente une ligne de la table des séquences
+	 * POJO which represents a line in the sequence table
 	 */
 	public static class PooledSequence {
 		
@@ -114,7 +115,7 @@ public class PooledSequencePersister extends Persister<PooledSequence> implement
 	}
 	
 	/**
-	 * Classe qui concentre les opérations de mise à jour des PooledSequences.
+	 * Class aimed at executing update operations of PooledSequences.
 	 */
 	private class SequenceBoundJdbcOperation implements JdbcOperation {
 		private final String sequenceName;
@@ -147,13 +148,14 @@ public class PooledSequencePersister extends Persister<PooledSequence> implement
 	private static class PooledSequencePersisterConfigurer {
 		
 		private ClassMappingStrategy<PooledSequence> buildConfiguration(PooledSequencePersistenceOptions storageOptions) {
-			// Sequence storage table creation
+			// Sequence table creation
 			SequenceTable sequenceTable = new SequenceTable(null, storageOptions.getTable(), storageOptions.getSequenceNameColumn(), storageOptions.getValueColumn());
 			// Strategy building
 			// NB: no id generator here because we manage ids (see reservePool)
 			ClassMappingStrategy<PooledSequence> mappingStrategy = new ClassMappingStrategy<>(PooledSequence.class,
 					sequenceTable,
 					sequenceTable.getPooledSequenceFieldMapping(),
+					PooledSequence.SEQUENCE_NAME_FIELD,
 					new AutoAssignedIdentifierGenerator());
 			return mappingStrategy;
 		}

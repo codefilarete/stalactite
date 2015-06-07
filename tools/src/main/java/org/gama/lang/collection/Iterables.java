@@ -1,14 +1,8 @@
 package org.gama.lang.collection;
 
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.SortedMap;
-
 import javax.annotation.Nonnull;
+import java.util.*;
+import java.util.Map.Entry;
 
 /**
  * @author Guillaume Mary
@@ -78,6 +72,11 @@ public final class Iterables {
 		return firstEntry == null ? defaultValue : firstEntry.getValue();
 	}
 	
+	public static boolean isEmpty(Iterable iterable) {
+		return iterable == null
+				|| ((iterable instanceof Collection) ? ((Collection) iterable).isEmpty() : iterable.iterator().hasNext()) ;
+	}
+	
 	public static <E> E last(List<E> iterable) {
 		return last(iterable, null);
 	}
@@ -96,7 +95,7 @@ public final class Iterables {
 	 * @return une List<E> qui contient tous les éléments de <t>iterable</t>
 	 */
 	public static <E> List<E> copy(@Nonnull Iterable<E> iterable) {
-		return copy(iterable.iterator());
+		return (iterable instanceof Collection) ? new ArrayList<>((Collection<E>) iterable) : copy(iterable.iterator());
 	}
 	
 	/**
@@ -173,7 +172,7 @@ public final class Iterables {
 		visit(iterator, visitor);
 		return visitor.getResult();
 	}
-
+	
 	public interface IVisitor<E, R> {
 		R visit(E e);
 		

@@ -8,12 +8,12 @@ import java.io.Serializable;
 public class NoopSelectListener<T> implements ISelectListener<T> {
 	
 	@Override
-	public void beforeSelect(Serializable id) {
+	public void beforeSelect(Iterable<Serializable> ids) {
 		
 	}
 	
 	@Override
-	public void afterSelect(T result) {
+	public void afterSelect(Iterable<T> result) {
 		
 	}
 }

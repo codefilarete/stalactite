@@ -168,18 +168,17 @@ public class PersisterExecutor<T> {
 		}
 	}
 	
-	/**
-	 * 
-	 * @param id supposed to be not null as checked by {@link Persister}
-	 * @return
-	 */
-	public T select(Serializable id) {
-			Table targetTable = mappingStrategy.getTargetTable();
-			SelectOperation selectStatement = dmlGenerator.buildSelect(targetTable,
-					targetTable.getColumns().asSet(),
-					Arrays.asList(targetTable.getPrimaryKey()));
+	public List<T> select(Iterable<Serializable> ids) {
+		Table targetTable = mappingStrategy.getTargetTable();
+		SelectOperation selectStatement = dmlGenerator.buildSelect(targetTable,
+				targetTable.getColumns().asSet(),
+				Arrays.asList(targetTable.getPrimaryKey()));
+		List<T> toReturn = new ArrayList<>(50);
+		for (Serializable id : ids) {
 			StatementValues selectValues = mappingStrategy.getSelectValues(id);
-		return execute(selectStatement, selectValues, mappingStrategy);
+			toReturn.add(execute(selectStatement, selectValues, mappingStrategy));
+		}
+		return toReturn;
 	}
 	
 	protected T execute(SelectOperation operation, StatementValues whereValues, ClassMappingStrategy<T> classMappingStrategy) {

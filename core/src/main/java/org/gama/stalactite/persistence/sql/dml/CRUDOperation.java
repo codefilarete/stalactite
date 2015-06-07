@@ -1,5 +1,18 @@
 package org.gama.stalactite.persistence.sql.dml;
 
+import org.gama.lang.collection.Arrays;
+import org.gama.lang.collection.Iterables;
+import org.gama.lang.collection.Iterables.ForEach;
+import org.gama.lang.exception.Exceptions;
+import org.gama.stalactite.ILogger;
+import org.gama.stalactite.Logger;
+import org.gama.stalactite.persistence.engine.PersistenceContext;
+import org.gama.stalactite.persistence.mapping.StatementValues;
+import org.gama.stalactite.persistence.sql.dml.binder.ParameterBinder;
+import org.gama.stalactite.persistence.sql.dml.binder.ParameterBinderRegistry;
+import org.gama.stalactite.persistence.structure.Table.Column;
+
+import javax.annotation.Nonnull;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
@@ -7,24 +20,10 @@ import java.util.AbstractMap;
 import java.util.HashMap;
 import java.util.Map;
 
-import javax.annotation.Nonnull;
-
-import org.gama.stalactite.ILogger;
-import org.gama.stalactite.Logger;
-import org.gama.lang.collection.Arrays;
-import org.gama.lang.collection.Iterables;
-import org.gama.lang.collection.Iterables.ForEach;
-import org.gama.lang.exception.Exceptions;
-import org.gama.stalactite.persistence.engine.PersistenceContext;
-import org.gama.stalactite.persistence.mapping.StatementValues;
-import org.gama.stalactite.persistence.sql.dml.binder.ParameterBinder;
-import org.gama.stalactite.persistence.sql.dml.binder.ParameterBinderRegistry;
-import org.gama.stalactite.persistence.structure.Table.Column;
-
 /**
  * Class for basic CRUD operations, not for complex select with joins nor update with subselect
  * 
- * @author mary
+ * @author Guillaume Mary
  */
 public abstract class CRUDOperation {
 	
@@ -51,11 +50,13 @@ public abstract class CRUDOperation {
 	}
 
 	/**
-	 * Récupère les {@link ParameterBinder} de chaque couple colonne-indice à partir de la {@link ParameterBinderRegistry}.
-	 * Méthode appelée par les classes filles à partir de leur correspondance colonne-indice.
+	 * Find {@link ParameterBinder} of each couple column-index from {@link ParameterBinderRegistry}.
+	 * This method is called by children classes with their column-index map.
+	 * If no matching {@link ParameterBinder} is found for a column, then no exception is thrown: the return Map will
+	 * contain null as a {@link ParameterBinder} value.
 	 * 
-	 * @param colToIndexes la partie "upsert" ou where d'une opération SQL
-	 * @return les {@link ParameterBinder} de chaque colonne-indice
+	 * @param colToIndexes the "upsert" or where part of an SQL operation
+	 * @return {@link ParameterBinder}s for each column-index couple
 	 */
 	protected Map<Column, Map.Entry<Integer, ParameterBinder>> getBinders(Map<Column, Integer> colToIndexes) {
 		HashMap<Column, Map.Entry<Integer, ParameterBinder>> binders = new HashMap<>(colToIndexes.size());
@@ -105,7 +106,11 @@ public abstract class CRUDOperation {
 	}
 
 	protected void bind(int valueIndex, Object value, ParameterBinder binder) throws SQLException {
-		binder.set(valueIndex, value, statement);
+		try {
+			binder.set(valueIndex, value, statement);
+		} catch (Throwable t) {
+			throw new RuntimeException("Error while binding parameter number " +valueIndex + " of value " + value + " on \"" + getSql() + "\"", t);
+		}
 	}
 	
 	/**

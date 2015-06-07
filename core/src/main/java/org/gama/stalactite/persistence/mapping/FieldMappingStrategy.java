@@ -1,28 +1,21 @@
 package org.gama.stalactite.persistence.mapping;
 
-import java.io.Serializable;
-import java.lang.reflect.Field;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Set;
-
-import javax.annotation.Nonnull;
-
-import org.gama.lang.collection.Arrays;
 import org.gama.lang.Reflections;
 import org.gama.lang.bean.Objects;
+import org.gama.lang.collection.Arrays;
 import org.gama.lang.collection.Iterables;
-import org.gama.lang.collection.Iterables.Finder;
 import org.gama.lang.collection.Iterables.ForEach;
 import org.gama.lang.exception.Exceptions;
+import org.gama.reflection.PropertyAccessor;
 import org.gama.stalactite.persistence.sql.result.Row;
 import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.persistence.structure.Table.Column;
-import org.gama.reflection.PropertyAccessor;
+
+import javax.annotation.Nonnull;
+import java.io.Serializable;
+import java.lang.reflect.Field;
+import java.util.*;
+import java.util.Map.Entry;
 
 /**
  * @author mary
@@ -33,7 +26,7 @@ public class FieldMappingStrategy<T> implements IMappingStrategy<T> {
 	
 	private final Map<PropertyAccessor, Column> fieldToColumn;
 	
-	private final PropertyAccessor<T, Serializable> primaryKeyField;
+	private PropertyAccessor<T, Serializable> identifierAccessor;
 	
 	private final Table targetTable;
 	
@@ -51,8 +44,9 @@ public class FieldMappingStrategy<T> implements IMappingStrategy<T> {
 	 * First entry of <tt>fieldToColumn</tt> is used to pick up persisted class and target table.
 	 * 
 	 * @param fieldToColumn a mapping between Field and Column, expected to be coherent (fields of same class, column of same table)
+	 * @param identifierField the field that store entity identifier   
 	 */
-	public FieldMappingStrategy(@Nonnull Map<Field, Column> fieldToColumn) {
+	public FieldMappingStrategy(@Nonnull Map<Field, Column> fieldToColumn, Field identifierField) {
 		this.fieldToColumn = new LinkedHashMap<>(fieldToColumn.size());
 		Map<String, PropertyAccessor> columnToField = new HashMap<>();
 		for (Entry<Field, Column> fieldColumnEntry : fieldToColumn.entrySet()) {
@@ -60,23 +54,21 @@ public class FieldMappingStrategy<T> implements IMappingStrategy<T> {
 			PropertyAccessor accessorByField = PropertyAccessor.forProperty(fieldColumnEntry.getKey().getDeclaringClass(), fieldColumnEntry.getKey().getName());
 			this.fieldToColumn.put(accessorByField, column);
 			columnToField.put(column.getName(), accessorByField);
+			if (fieldColumnEntry.getKey().equals(identifierField)) {
+				if (!column.isPrimaryKey()) {
+					throw new UnsupportedOperationException("Field " + identifierField.getDeclaringClass().getName()+"."+identifierField.getName()
+							+ " is declared as identifier but mapped column " + column.toString() + " is not the primary key of table");
+				}
+				this.identifierAccessor = accessorByField;
+			}
 		}
 		Entry<Field, Column> firstEntry = Iterables.first(fieldToColumn);
 		this.targetTable = firstEntry.getValue().getTable();
-		this.classToPersist = (Class<T>) firstEntry.getKey().getDeclaringClass();
-		this.rowTransformer = new ToBeanRowTransformer<>(Reflections.getDefaultConstructor(classToPersist), columnToField);
-		
-		Entry<PropertyAccessor, Column> primaryKeyEntry = Iterables.filter(this.fieldToColumn.entrySet(), new Finder<Entry<PropertyAccessor, Column>>() {
-			@Override
-			public boolean accept(Entry<PropertyAccessor, Column> fieldColumnEntry) {
-				return fieldColumnEntry.getValue().isPrimaryKey();
-			}
-		});
-		if (primaryKeyEntry != null) {
-			this.primaryKeyField = primaryKeyEntry.getKey();
-		} else {
+		if (this.identifierAccessor == null) {
 			throw new UnsupportedOperationException("No primary key field for " + targetTable.getName());
 		}
+		this.classToPersist = (Class<T>) identifierField.getDeclaringClass();
+		this.rowTransformer = new ToBeanRowTransformer<>(Reflections.getDefaultConstructor(classToPersist), columnToField);
 		this.columns = new LinkedHashSet<>(fieldToColumn.values());
 		this.versionedKeys = Collections.unmodifiableSet(Arrays.asSet(targetTable.getPrimaryKey()));
 	}
@@ -158,18 +150,18 @@ public class FieldMappingStrategy<T> implements IMappingStrategy<T> {
 	
 	@Override
 	public Serializable getId(T t) {
-		return primaryKeyField.get(t);
+		return identifierAccessor.get(t);
 	}
 	
 	@Override
 	public void setId(T t, Serializable identifier) {
-		primaryKeyField.set(t, identifier);
+		identifierAccessor.set(t, identifier);
 	}
 	
 	private StatementValues foreachField(final FieldVisitor visitor, boolean withPK) {
 		Map<PropertyAccessor, Column> fieldsTobeVisited = new LinkedHashMap<>(this.fieldToColumn);
 		if (!withPK) {
-			fieldsTobeVisited.remove(this.primaryKeyField);
+			fieldsTobeVisited.remove(this.identifierAccessor);
 		}
 		Iterables.visit(fieldsTobeVisited.entrySet(), visitor);
 		return visitor.toReturn;

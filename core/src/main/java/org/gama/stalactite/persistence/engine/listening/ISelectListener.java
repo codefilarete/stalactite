@@ -7,8 +7,8 @@ import java.io.Serializable;
  */
 public interface ISelectListener<T> {
 	
-	void beforeSelect(Serializable id);
+	void beforeSelect(Iterable<Serializable> ids);
 	
-	void afterSelect(T result);
+	void afterSelect(Iterable<T> result);
 	
 }

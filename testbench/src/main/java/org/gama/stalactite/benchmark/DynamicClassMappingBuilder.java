@@ -1,10 +1,8 @@
 package org.gama.stalactite.benchmark;
 
-import java.lang.reflect.Field;
-import java.lang.reflect.Modifier;
-import java.util.HashMap;
-import java.util.Map;
-
+import net.bytebuddy.ByteBuddy;
+import net.bytebuddy.dynamic.ClassLoadingStrategy;
+import net.bytebuddy.dynamic.DynamicType.Builder;
 import org.gama.stalactite.persistence.id.sequence.PooledSequenceIdentifierGenerator;
 import org.gama.stalactite.persistence.id.sequence.PooledSequenceIdentifierGeneratorOptions;
 import org.gama.stalactite.persistence.id.sequence.PooledSequencePersistenceOptions;
@@ -13,9 +11,10 @@ import org.gama.stalactite.persistence.mapping.PersistentFieldHarverster;
 import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.persistence.structure.Table.Column;
 
-import net.bytebuddy.ByteBuddy;
-import net.bytebuddy.dynamic.ClassLoadingStrategy;
-import net.bytebuddy.dynamic.DynamicType.Builder;
+import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * @author Guillaume Mary
@@ -54,7 +53,9 @@ public class DynamicClassMappingBuilder implements IMappingBuilder {
 		
 		PersistentFieldHarverster persistentFieldHarverster = new PersistentFieldHarverster();
 		Map<Field, Column> fieldColumnMap = persistentFieldHarverster.mapFields(dynamicType, targetTable);
-		ClassMappingStrategy<?> classMappingStrategy = new ClassMappingStrategy<>(dynamicType, targetTable, fieldColumnMap, new PooledSequenceIdentifierGenerator(new PooledSequenceIdentifierGeneratorOptions(100, "Toto", PooledSequencePersistenceOptions.DEFAULT)));
+		ClassMappingStrategy<?> classMappingStrategy = new ClassMappingStrategy<>(dynamicType, targetTable,
+				fieldColumnMap, persistentFieldHarverster.getField("id"),
+				new PooledSequenceIdentifierGenerator(new PooledSequenceIdentifierGeneratorOptions(100, "Toto", PooledSequencePersistenceOptions.DEFAULT)));
 		return classMappingStrategy;
 	}
 	
