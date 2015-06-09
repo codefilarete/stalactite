@@ -1,67 +1,76 @@
 package org.gama.lang;
 
+import org.testng.annotations.DataProvider;
+import org.testng.annotations.Test;
+
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 
-import static org.testng.AssertJUnit.*;
-import org.testng.annotations.Test;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 
 /**
  * @author Guillaume Mary
  */
 public class ReflectionsTest {
 	
+	public static final String TEST_GET_FIELD_DATA = "testGetField_data";
+	public static final String TEST_GET_METHOD_DATA = "testGetMethod_data";
+	
 	@Test
-	public void testGetDefaultConstructor() throws Exception {
+	public void testGetDefaultConstructor() {
 		Constructor<Toto> defaultConstructor = Reflections.getDefaultConstructor(Toto.class);
 		assertNotNull(defaultConstructor);
 	}
 	
-	@Test
-	public void testGetField() throws Exception {
-		Field fieldA = Reflections.getField(Toto.class, "a");
-		assertNotNull(fieldA);
-		assertEquals("a", fieldA.getName());
-		
-		Field fieldB = Reflections.getField(Toto.class, "b");
-		assertNotNull(fieldB);
-		assertEquals("b", fieldB.getName());
+	@DataProvider(name = TEST_GET_FIELD_DATA)
+	public Object[][] testGetFieldData() {
+		return new Object[][] {
+				{ Toto.class, "a", Toto.class },
+				{ Toto.class, "b", Toto.class },
+				// inheritance test
+				{ Tutu.class, "a", Toto.class },
+				{ Tutu.class, "b", Tata.class },
+		};
 	}
 	
-	@Test
-	public void testGetField_inheritance() throws Exception {
-		Field fieldA = Reflections.getField(Tata.class, "a");
-		assertNotNull(fieldA);
-		assertEquals("a", fieldA.getName());
-		
-		Field fieldB = Reflections.getField(Tata.class, "b");
-		assertNotNull(fieldB);
-		assertEquals("b", fieldB.getName());
-		assertEquals(Tata.class, fieldB.getDeclaringClass());
+	@Test(dataProvider = TEST_GET_FIELD_DATA)
+	public void testGetField(Class<Toto> fieldClass, String fieldName, Class expectedDeclaringClass) {
+		Field field = Reflections.getField(fieldClass, fieldName);
+		assertNotNull(field);
+		assertEquals(fieldName, field.getName());
+		assertEquals(expectedDeclaringClass, field.getDeclaringClass());
 	}
 	
-	@Test
-	public void testGetMethod() throws Exception {
-		Method totoMethod = Reflections.getMethod(Toto.class, "toto");
-		assertNotNull(totoMethod);
-		assertEquals("toto", totoMethod.getName());
-		assertEquals(0, totoMethod.getParameterTypes().length);
-		
-		Method toto2Method = Reflections.getMethod(Toto.class, "toto2");
-		assertNotNull(toto2Method);
-		assertEquals("toto2", toto2Method.getName());
-		assertEquals(0, toto2Method.getParameterTypes().length);
-		
-		Method totoMethodWithParams = Reflections.getMethod(Toto.class, "toto", Integer.TYPE);
-		assertNotNull(totoMethodWithParams);
-		assertEquals("toto", totoMethodWithParams.getName());
-		assertEquals(1, totoMethodWithParams.getParameterTypes().length);
-		
-		Method toto2MethodWithParams = Reflections.getMethod(Toto.class, "toto2", Integer.TYPE);
-		assertNotNull(toto2MethodWithParams);
-		assertEquals("toto2", toto2MethodWithParams.getName());
-		assertEquals(1, toto2MethodWithParams.getParameterTypes().length);
+	@DataProvider(name = TEST_GET_METHOD_DATA)
+	public Object[][] testGetMethodData() {
+		return new Object[][] {
+				{ Toto.class, "toto", null, Toto.class, 0 },
+				{ Toto.class, "toto2", null, Toto.class, 0 },
+				// with parameter
+				{ Toto.class, "toto", Integer.TYPE, Toto.class, 1 },
+				{ Toto.class, "toto2", Integer.TYPE, Toto.class, 1 },
+				// inheritance test
+				{ Tutu.class, "toto", null, Toto.class, 0 },
+				{ Tutu.class, "toto2", null, Toto.class, 0 },
+				{ Tutu.class, "toto", Integer.TYPE, Toto.class, 1 },
+				{ Tutu.class, "toto2", Integer.TYPE, Toto.class, 1 },
+		};
+	}
+	
+	@Test(dataProvider = TEST_GET_METHOD_DATA)
+	public void testGetMethod(Class<Toto> methodClass, String methodName, Class parameterType, Class expectedDeclaringClass, int exectedParameterCount) {
+		Method method;
+		if (parameterType == null) {
+			method = Reflections.getMethod(methodClass, methodName);
+		} else {
+			method = Reflections.getMethod(methodClass, methodName, parameterType);
+		}
+		assertNotNull(method);
+		assertEquals(methodName, method.getName());
+		assertEquals(expectedDeclaringClass, method.getDeclaringClass());
+		assertEquals(exectedParameterCount, method.getParameterTypes().length);
 	}
 	
 	private static class Toto {
@@ -85,5 +94,13 @@ public class ReflectionsTest {
 	
 	private static class Tata extends Toto {
 		private String b;
+	}
+	
+	private static class Titi extends Tata {
+		// no field, no method, for no member traversal check
+	}
+	
+	private static class Tutu extends Titi {
+		// no field, no method, for no member traversal check
 	}
 }

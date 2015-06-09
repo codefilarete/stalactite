@@ -1,5 +1,12 @@
 package org.gama.lang;
 
+import org.gama.lang.collection.ArrayIterator;
+import org.gama.lang.collection.Iterables;
+import org.gama.lang.collection.Iterables.Finder;
+import org.gama.lang.collection.Iterables.Mapper;
+import org.gama.lang.collection.ReadOnlyIterator;
+
+import javax.annotation.Nonnull;
 import java.lang.reflect.AccessibleObject;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
@@ -7,13 +14,6 @@ import java.lang.reflect.Method;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.Map;
-import javax.annotation.Nonnull;
-
-import org.gama.lang.collection.ArrayIterator;
-import org.gama.lang.collection.Iterables;
-import org.gama.lang.collection.Iterables.Finder;
-import org.gama.lang.collection.Iterables.Mapper;
-import org.gama.lang.collection.ReadOnlyIterator;
 
 /**
  * @author mary
@@ -108,15 +108,23 @@ public final class Reflections {
 		
 		@Override
 		public boolean hasNext() {
-			return fieldIterator.hasNext() || this.classIterator.hasNext();
+			if (fieldIterator.hasNext()) {
+				return true;
+			} else {
+				while (!fieldIterator.hasNext()) {
+					if (classIterator.hasNext()) {
+						Field[] declaredFields = classIterator.next().getDeclaredFields();
+						fieldIterator = new ArrayIterator<>(declaredFields);
+					} else {
+						return false;
+					}
+				}
+				return fieldIterator.hasNext();
+			}
 		}
 		
 		@Override
 		protected Field getNext() {
-			if (!fieldIterator.hasNext()) {
-				Field[] declaredFields = classIterator.next().getDeclaredFields();
-				fieldIterator = new ArrayIterator<>(declaredFields);
-			}
 			return fieldIterator.next();
 		}
 	}
@@ -137,15 +145,23 @@ public final class Reflections {
 		
 		@Override
 		public boolean hasNext() {
-			return methodIterator.hasNext() || this.classIterator.hasNext();
+			if (methodIterator.hasNext()) {
+				return true;
+			} else {
+				while (!methodIterator.hasNext()) {
+					if (classIterator.hasNext()) {
+						Method[] declaredMethods = classIterator.next().getDeclaredMethods();
+						methodIterator = new ArrayIterator<>(declaredMethods);
+					} else {
+						return false;
+					}
+				}
+				return methodIterator.hasNext();
+			}
 		}
 		
 		@Override
 		protected Method getNext() {
-			if (!methodIterator.hasNext()) {
-				Method[] declaredMethods = classIterator.next().getDeclaredMethods();
-				methodIterator = new ArrayIterator<>(declaredMethods);
-			}
 			return methodIterator.next();
 		}
 	}
