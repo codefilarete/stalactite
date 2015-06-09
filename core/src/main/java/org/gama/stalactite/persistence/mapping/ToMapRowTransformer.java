@@ -1,7 +1,5 @@
 package org.gama.stalactite.persistence.mapping;
 
-import org.gama.lang.Reflections;
-
 import java.util.Map;
 
 /**
@@ -12,7 +10,7 @@ import java.util.Map;
 public abstract class ToMapRowTransformer<T extends Map> extends AbstractTransformer<T> {
 	
 	public ToMapRowTransformer(Class<T> clazz) {
-		super(Reflections.getDefaultConstructor(clazz));
+		super(clazz);
 	}
 	
 }

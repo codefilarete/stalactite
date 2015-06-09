@@ -14,6 +14,10 @@ import java.lang.reflect.InvocationTargetException;
 public abstract  class AbstractTransformer<T> implements IRowTransformer<T> {
 	protected final Constructor<T> constructor;
 	
+	public AbstractTransformer(Class<T> clazz) {
+		this(Reflections.getDefaultConstructor(clazz));
+	}
+	
 	public AbstractTransformer(Constructor<T> constructor) {
 		this.constructor = constructor;
 		Reflections.ensureAccessible(constructor);

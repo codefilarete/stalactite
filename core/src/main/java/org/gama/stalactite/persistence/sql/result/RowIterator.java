@@ -1,36 +1,22 @@
 package org.gama.stalactite.persistence.sql.result;
 
+import org.gama.lang.exception.Exceptions;
+import org.gama.stalactite.persistence.sql.dml.binder.ParameterBinder;
+
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 
-import org.gama.lang.exception.Exceptions;
-import org.gama.stalactite.persistence.engine.PersistenceContext;
-import org.gama.stalactite.persistence.sql.dml.binder.ParameterBinder;
-import org.gama.stalactite.persistence.sql.dml.binder.ParameterBinderRegistry;
-import org.gama.stalactite.persistence.structure.Table;
-import org.gama.stalactite.persistence.structure.Table.Column;
-
 /**
- * @author mary
+ * {@link ResultSetIterator} specialized in {@link Row} building for each Resulset line.
+ *
+ * @author Guillaume Mary
  */
 public class RowIterator extends ResultSetIterator<Row> {
 	
-	private Map<String, ParameterBinder> columnNameBinders;
-
-	/**
-	 * Constructeur de ResultSetIterator.
-	 *
-	 * @param rs un ResultSet à encapsuler dans un <t>Iterator</t>
-	 * @param columnsToRead les colonnes à lire dans le <t>ResultSet</t>
-	 */
-	public RowIterator(ResultSet rs, Iterable<Table.Column> columnsToRead) throws SQLException {
-		this(rs, new HashMap<String, ParameterBinder>());
-		buildBinders(columnsToRead);
-	}
-
+	private final Map<String, ParameterBinder> columnNameBinders;
+	
 	/**
 	 * Constructeur de ResultSetIterator.
 	 *
@@ -42,13 +28,6 @@ public class RowIterator extends ResultSetIterator<Row> {
 		this.columnNameBinders = columnNameBinders;
 	}
 	
-	protected void buildBinders(Iterable<Column> columnsToRead) {
-		ParameterBinderRegistry currentDialect = PersistenceContext.getCurrent().getDialect().getParameterBinderRegistry();
-		for (Column column : columnsToRead) {
-			columnNameBinders.put(column.getName(), currentDialect.getBinder(column));
-		}
-	}
-
 	@Override
 	public Row convert(ResultSet rs) {
 		Row toReturn = new Row();

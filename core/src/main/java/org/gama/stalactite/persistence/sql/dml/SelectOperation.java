@@ -1,23 +1,26 @@
 package org.gama.stalactite.persistence.sql.dml;
 
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.util.List;
-import java.util.Map;
-
+import org.gama.stalactite.persistence.engine.PersistenceContext;
 import org.gama.stalactite.persistence.mapping.StatementValues;
 import org.gama.stalactite.persistence.sql.dml.binder.ParameterBinder;
+import org.gama.stalactite.persistence.sql.dml.binder.ParameterBinderRegistry;
 import org.gama.stalactite.persistence.sql.result.RowIterator;
 import org.gama.stalactite.persistence.structure.Table.Column;
 
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
 /**
- * @author mary
+ * @author Guillaume Mary
  */
 public class SelectOperation extends CRUDOperation {
 	
 	/** Column indexes for where columns */
 	private final Map<Column, Map.Entry<Integer, ParameterBinder>> whereIndexes;
-	private final List<Column> selectedColumns;
+	private final Map<String, ParameterBinder> columnBinders = new HashMap<>();
 
 	/**
 	 * 
@@ -28,12 +31,15 @@ public class SelectOperation extends CRUDOperation {
 	public SelectOperation(String sql, Map<Column, Integer> whereIndexes, List<Column> selectedColumns) {
 		super(sql);
 		this.whereIndexes = getBinders(whereIndexes);
-		this.selectedColumns = selectedColumns;
+		ParameterBinderRegistry currentDialect = PersistenceContext.getCurrent().getDialect().getParameterBinderRegistry();
+		for (Column column : selectedColumns) {
+			columnBinders.put(column.getName(), currentDialect.getBinder(column));
+		}
 	}
 	
 	public RowIterator execute() throws SQLException {
 		ResultSet resultSet = getStatement().executeQuery();
-		return new RowIterator(resultSet, selectedColumns);
+		return new RowIterator(resultSet, columnBinders);
 	}
 
 	public Map<Column,Map.Entry<Integer,ParameterBinder>> getWhereIndexes() {
