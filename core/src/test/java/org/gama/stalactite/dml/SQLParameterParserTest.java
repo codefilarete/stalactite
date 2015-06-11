@@ -1,19 +1,19 @@
 package org.gama.stalactite.dml;
 
-import java.util.HashMap;
-import java.util.regex.Matcher;
-
+import org.gama.lang.collection.Arrays;
+import org.gama.lang.collection.Maps;
 import org.gama.stalactite.dml.SQLParameterParser.CollectionParameter;
 import org.gama.stalactite.dml.SQLParameterParser.Parameter;
 import org.gama.stalactite.dml.SQLParameterParser.ParsedSQL;
-import org.gama.lang.collection.Arrays;
-import org.gama.lang.collection.Maps;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
+import java.util.HashMap;
+import java.util.regex.Matcher;
+
 /**
- * @author mary
+ * @author Guillaume Mary
  */
 public class SQLParameterParserTest {
 	
@@ -26,16 +26,16 @@ public class SQLParameterParserTest {
 		Parameter paramB = new Parameter("B");
 		Parameter paramC = new Parameter("C");
 		return new Object[][] {
-				// ne doit rien casser si aucun paramètre
+				// should not break anything since no parameter
 				{"select a from Toto where b = 1", new ParsedSQL(Arrays.asList((Object) "select a from Toto where b = 1"),
 						new HashMap<String, Parameter>())},
-				// un seul paramètre, à la fin
+				// only one parameter, at the end
 				{"select a from Toto where b = :B", new ParsedSQL(Arrays.asList("select a from Toto where b = ", paramB),
 						Maps.asMap("B", paramB))},
-				// un seul paramètre, pas à la fin
+				// only one parameter, not at the end
 				{"select a from Toto where b = :B and c = 1", new ParsedSQL(Arrays.asList("select a from Toto where b = ", paramB, " and c = 1"),
 						Maps.asMap("B", paramB))},
-				// 2 paramètres
+				// 2 parameters
 				{"select a from Toto where b = :B and c = :C", new ParsedSQL(Arrays.asList("select a from Toto where b = ", paramB, " and c = ", paramC),
 						Maps.asMap("B", paramB).add("C", paramC))},
 		};
@@ -73,10 +73,10 @@ public class SQLParameterParserTest {
 		CollectionParameter paramB = new CollectionParameter("B");
 		CollectionParameter paramC = new CollectionParameter("C");
 		return new Object[][] {
-				// un seul paramètre, à la fin
+				// only one parameter, at the end
 				{"select a from Toto where b in (:B)", new ParsedSQL(Arrays.asList("select a from Toto where b in (", paramB, ")"),
 						Maps.asMap("B", (Parameter) paramB))},
-				// 2 paramètres
+				// 2 parameters
 				{"select a from Toto where b in (:B) and c in (:C)", new ParsedSQL(Arrays.asList("select a from Toto where b in (", paramB, ") and c in (", paramC, ")"),
 						Maps.asMap("B", (Parameter) paramB).add("C", paramC))},
 		};
@@ -92,7 +92,7 @@ public class SQLParameterParserTest {
 	
 	@Test(expectedExceptions = IllegalArgumentException.class, expectedExceptionsMessageRegExp = "Parameter name can't be empty at position 30")
 	public void testParse_error_causeEmptyParamName() throws Exception {
-		// un paramètre sans nom => erreur
+		// a parameter without name => error
 		String sql = "select a from Toto where b = :";
 		SQLParameterParser testInstance = new SQLParameterParser(sql);
 		testInstance.parse();

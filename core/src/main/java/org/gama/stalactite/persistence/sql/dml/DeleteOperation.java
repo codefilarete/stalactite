@@ -1,14 +1,14 @@
 package org.gama.stalactite.persistence.sql.dml;
 
-import java.sql.SQLException;
-import java.util.Map;
-
 import org.gama.stalactite.persistence.mapping.StatementValues;
 import org.gama.stalactite.persistence.sql.dml.binder.ParameterBinder;
 import org.gama.stalactite.persistence.structure.Table.Column;
 
+import java.sql.SQLException;
+import java.util.Map;
+
 /**
- * @author mary
+ * @author Guillaume Mary
  */
 public class DeleteOperation extends WriteOperation {
 	

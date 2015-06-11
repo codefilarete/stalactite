@@ -1,9 +1,9 @@
 package org.gama.lang.collection;
 
 /**
- * Encapsule un tableau dans un Iterator. Permet la réutilisation d'un tableau dans l'API des Iterators.
+ * Wraps an array into an Iterator. Allows reuse of an array in the Iterators API.
  * 
- * @author mary
+ * @author Guillaume Mary
  */
 public class ArrayIterator<O> extends ReadOnlyIterator<O> {
 

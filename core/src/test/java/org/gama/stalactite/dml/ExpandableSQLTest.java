@@ -21,7 +21,7 @@ import java.util.Map.Entry;
 import static org.junit.Assert.*;
 
 /**
- * @author mary
+ * @author Guillaume Mary
  */
 public class ExpandableSQLTest {
 
@@ -52,9 +52,13 @@ public class ExpandableSQLTest {
 						"select a from Toto where b = ?, ?, ? and c = ?",
 						Maps.asMap("B", asEntries(1, 20, 2, 30, 3, 40)).add("C", asEntries(4, 23)) },
 				{ Arrays.asList("select a from Toto where b = ", paramB, " and c = ", paramC, " and b = ", paramB),
-						Maps.asMap("B", (Object) Arrays.asList(20, 30, 40)).add("C", 23),
+						Maps.asMap("B", (Object) Arrays.asList(20, 30, 40)).add("C", 17),
 						"select a from Toto where b = ?, ?, ? and c = ? and b = ?, ?, ?",
-						Maps.asMap("B", asEntries(1, 20, 2, 30, 3, 40, 5, 20, 6, 30, 7, 40)).add("C", asEntries(4, 23)) },
+						Maps.asMap("B", asEntries(1, 20, 2, 30, 3, 40, 5, 20, 6, 30, 7, 40)).add("C", asEntries(4, 17)) },
+				{ Arrays.asList("select a from Toto where b = ", paramB, " and c = ", paramC, " and b = ", paramB, " and c = ", paramC),
+						Maps.asMap("B", (Object) Arrays.asList(20, 30, 40)).add("C", Arrays.asList(17, 23)),
+						"select a from Toto where b = ?, ?, ? and c = ?, ? and b = ?, ?, ? and c = ?, ?",
+						Maps.asMap("B", asEntries(1, 20, 2, 30, 3, 40, 6, 20, 7, 30, 8, 40)).add("C", asEntries(4, 17, 5, 23, 9, 17, 10, 23)) },
 		};
 	}
 
@@ -89,8 +93,8 @@ public class ExpandableSQLTest {
 			assertFalse(expParams.isEmpty());
 			List<Entry<Integer, Object>> indexes = new ArrayList<>();
 			for (ExpandableParameter expParam : expParams) {
-				// NB: on passe par Copy pour un ajout plus facile (sinon ajout par Iterator)
-				indexes.addAll(Iterables.copy(expParam.iterator()));
+				// NB: we use Copy to benefit from addAll optimisation, either we would use add + iterator which is not optimal
+				indexes.addAll(Iterables.copy(expParam));
 			}
 			assertEquals(expectedIndexedValues.get(expectedParam.getName()), indexes);
 		}

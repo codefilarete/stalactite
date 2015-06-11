@@ -31,7 +31,7 @@ public abstract class CRUDOperation {
 	
 	private final String sql;
 	
-	private PreparedStatement statement;
+	protected PreparedStatement statement;
 	
 	/**
 	 * 
@@ -135,6 +135,10 @@ public abstract class CRUDOperation {
 	 */
 	public void apply(@Nonnull Iterable<StatementValues> values, @Nonnull Connection connection) throws SQLException {
 		prepare(connection);
+		applyValues(values);
+	}
+	
+	protected void applyValues(@Nonnull Iterable<StatementValues> values) throws SQLException {
 		try {
 			LOGGER.debug(getSql());
 			Iterables.visit(values, new ForEach<StatementValues, Void>() {

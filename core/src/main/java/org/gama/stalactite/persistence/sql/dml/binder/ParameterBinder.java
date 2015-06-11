@@ -5,26 +5,26 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 
 /**
- * @author mary
+ * @author Guillaume Mary
  */
 public interface ParameterBinder<T> {
 	
 	/**
-	 * Lit la colonne <t>columnName</t> ramenée par <t>resultSet</t>
+	 * Read column <t>columnName</t> returned by <t>resultSet</t>
 	 * 
 	 * @param columnName
 	 * @param resultSet
-	 * @return le contenu de la colonne <t>columnName</t>, typé en fonction de <t>column</t>
+	 * @return content of <t>columnName</t>, typed according to <t>column</t>
 	 * @throws SQLException
 	 */
 	T get(String columnName, ResultSet resultSet) throws SQLException;
 
 	/**
-	 * Méthode chargée d'appliquer la valeur <t>value</t> à l'index <t>valueIndex</t> sur <t>statement</t>.
+	 * Applies <t>value</t> at position <t>valueIndex</t> on <t>statement</t>.
 	 * 
-	 * @param valueIndex l'index du paramètre à fixer, à utiliser en premier paramètre de <t>Statement.setXXX(..)</t>
-	 * @param value la valeur à passer en second paramètre de <t>Statement.setXXX(..)</t>
-	 * @param statement le PreparedStatement à utiliser
+	 * @param valueIndex parameter index to be set, value for first parameter of methods <t>Statement.setXXX(..)</t>
+	 * @param value value to be passed as second argument of methods <t>Statement.setXXX(..)</t>
+	 * @param statement PreparedStatement to be used
 	 * @throws SQLException
 	 */
 	void set(int valueIndex, T value, PreparedStatement statement) throws SQLException;

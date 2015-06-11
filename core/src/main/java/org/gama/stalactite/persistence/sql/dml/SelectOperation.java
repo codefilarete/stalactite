@@ -24,9 +24,9 @@ public class SelectOperation extends CRUDOperation {
 
 	/**
 	 * 
-	 * @param sql le SQL de selection, attendu que ce soit un select .. from .. where ..
-	 * @param whereIndexes les indices des colonnes dans le where
-	 * @param selectedColumns
+	 * @param sql the select SQL, expected to be select .. from .. where ..
+	 * @param whereIndexes indexes of clumns in the where part
+	 * @param selectedColumns selected columns in the select part
 	 */
 	public SelectOperation(String sql, Map<Column, Integer> whereIndexes, List<Column> selectedColumns) {
 		super(sql);
@@ -48,6 +48,7 @@ public class SelectOperation extends CRUDOperation {
 
 	@Override
 	protected void applyValues(StatementValues values) throws SQLException {
+		// only where part can contains parameters, so only apply this part
 		applyWhereValues(whereIndexes, values);
 	}
 }
