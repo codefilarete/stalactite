@@ -1,7 +1,7 @@
 package org.gama.lang;
 
 /**
- * @author guillaume.mary
+ * @author Guillaume Mary
  */
 public abstract class Strings {
 	
@@ -13,7 +13,7 @@ public abstract class Strings {
 		return (String) doWithDelegate(cs, new DefaultNullOrEmptyDelegate() {
 			@Override
 			public CharSequence onNotNullNotEmpty() {
-				return Character.toUpperCase(cs.charAt(0)) + tail(cs, cs.length() - 1).toString();
+				return Character.toUpperCase(cs.charAt(0)) + cs.subSequence(1, cs.length()).toString();
 			}
 		});
 	}
@@ -22,11 +22,56 @@ public abstract class Strings {
 		return (String) doWithDelegate(cs, new DefaultNullOrEmptyDelegate() {
 			@Override
 			public CharSequence onNotNullNotEmpty() {
-				return Character.toLowerCase(cs.charAt(0)) + tail(cs, cs.length() - 1).toString();
+				return Character.toLowerCase(cs.charAt(0)) + cs.subSequence(1, cs.length()).toString();
 			}
 		});
 	}
 	
+	/**
+	 * Concatenate count (positive) times parameter s.
+	 * Optional Strings in prebuildStrings are used to speed concatenation for large count numbers if you already have
+	 * large snippets of s pre-concatenated. For instance, you want 3456 times "a" and you already got constants with
+	 * a*500, a*100, a*10, then this method will only cat 6*a*500, 4*a*100, 5*a*10 and 6*a. Instead of 3456 times "a".
+	 *
+	 * @param count expected repeatition of s
+	 * @param s the String to be concatenated
+	 * @param prebuiltStrings optional pre-concatenated "s" strings, <b>in descent size order</b>.
+	 * @return s repeated count times
+	 */
+	public static StringBuilder repeat(int count, CharSequence s, String... prebuiltStrings) {
+		StringBuilder result = new StringBuilder(count * s.length());
+		repeat(result, count, s, prebuiltStrings);
+		return result;
+	}
+	
+	/**
+	 * Concatenate count (positive) times parameter s.
+	 * Optional Strings in prebuildStrings are used to speed concatenation for large count numbers if you already have
+	 * large snippets of s pre-concatenated. For instance, you want 3456 times "a" and you already got constants with
+	 * a*500, a*100, a*10, then this method will only cat 6*a*500, 4*a*100, 5*a*10 and 6*a. Instead of 3456 times "a".
+	 *
+	 * @param result destination of the concatenation
+	 * @param count expected repeatition of s
+	 * @param s the String to be concatenated
+	 * @param prebuiltStrings optional pre-concatenated "s" strings, <b>in descent size order</b>.
+	 * @return s repeated count times
+	 */
+	public static StringBuilder repeat(StringBuilder result, int count, CharSequence s, String... prebuiltStrings) {
+		int snippetCount, remainer = count;
+		for (String snippet : prebuiltStrings) {
+			int snippetLength = snippet.length();
+			snippetCount = remainer / snippetLength;
+			for (int i = 0; i < snippetCount; i++) {
+				result.append(snippet);
+			}
+			remainer = remainer % snippetLength;
+		}
+		for (int i = 0; i < remainer; i++) {
+			result.append(s);
+		}
+		return result;
+	}
+		
 	public static CharSequence head(final CharSequence cs, final int headSize) {
 		return doWithDelegate(cs, new DefaultNullOrEmptyDelegate() {
 			@Override

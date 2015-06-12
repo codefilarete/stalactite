@@ -98,6 +98,14 @@ public class StringAppender implements Serializable, CharSequence {
 		return this;
 	}
 	
+	/**
+	 * Gives access to delegate appender, because it can be usefull to append directly to the standat API StringBuilder
+	 * @return the underlying appender
+	 */
+	public StringBuilder getAppender() {
+		return appender;
+	}
+	
 	@Override
 	public int length() {
 		return appender.length();

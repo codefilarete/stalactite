@@ -1,13 +1,13 @@
 package org.gama.stalactite.dml;
 
-import java.util.*;
-import java.util.Map.Entry;
-
-import org.gama.stalactite.dml.SQLParameterParser.Parameter;
-import org.gama.stalactite.dml.SQLParameterParser.ParsedSQL;
-import org.gama.lang.StringAppender;
+import org.gama.lang.Strings;
 import org.gama.lang.collection.ArrayIterator;
 import org.gama.lang.collection.PairIterator;
+import org.gama.stalactite.dml.SQLParameterParser.Parameter;
+import org.gama.stalactite.dml.SQLParameterParser.ParsedSQL;
+
+import java.util.*;
+import java.util.Map.Entry;
 
 /**
  * Class that creates a PreparedStatement from an SQL String with named parameters. Eases index of named parameters as
@@ -43,7 +43,7 @@ public class ExpandableSQL {
 					Object value = values.get(parameterName);
 					ExpandableParameter snippetToAdd = new ExpandableParameter(value, parameterName, precedingParameter);
 					this.expandableParameters.add(snippetToAdd);
-					preparedSQLBuilder.append(snippetToAdd.toParameterizedSQL());
+					snippetToAdd.catParameterizedSQL(preparedSQLBuilder);
 					// prepare next iteration
 					precedingParameter = snippetToAdd;
 				}
@@ -66,15 +66,13 @@ public class ExpandableSQL {
 	/**
 	 * Class that represents a named parameter in a SQL statement.
 	 * It allows extension of single parameter mark (coded as a question mark '?') to multiple ones in case of
-	 * Collection value. This is done on the {@link #toParameterizedSQL()} method.
+	 * Collection value. This is done on the {@link #catParameterizedSQL(StringBuilder)} method.
 	 */
 	public static class ExpandableParameter implements Iterable<Entry<Integer, Object>> {
 
 		private static final String SQL_PARAMETER_MARK = "?";
 
 		private static final String SQL_PARAMETER_MARK_1 = SQL_PARAMETER_MARK + ", ";
-		
-		private static final int SQL_PARAMETER_MARK_1_LENGTH = SQL_PARAMETER_MARK_1.length();
 		
 		private static final String SQL_PARAMETER_MARK_10 =
 				SQL_PARAMETER_MARK_1 + SQL_PARAMETER_MARK_1 +
@@ -165,37 +163,25 @@ public class ExpandableSQL {
 			return new PairIterator<>(new ArrayIterator<>(getMarkIndexes()), valueIterator);
 		}
 
-		public String toParameterizedSQL() {
+		public StringBuilder catParameterizedSQL(StringBuilder stringBuilder) {
 			if (value instanceof Collection) {
-				return expandParameters();
+				return expandParameters(stringBuilder);
 			} else {
-				return SQL_PARAMETER_MARK;
+				return stringBuilder.append(SQL_PARAMETER_MARK);
 			}
 		}
 		
 		/**
 		 * Convert the single valued parameter to a multiple one: add as many '?' as necessary 
 		 * @return the changed sql
+		 * @param stringBuilder
 		 */
-		protected String expandParameters() {
+		protected StringBuilder expandParameters(StringBuilder stringBuilder) {
 			Collection values = (Collection) this.value;
 			int collectionSize = values.size();
-			StringAppender sqlParameter = new StringAppender(collectionSize * SQL_PARAMETER_MARK_1_LENGTH);
-			// on optimise en traitant la concaténation par bloc, empirique mais sans doute plus efficace que 1 par 1
-			int packet100Count = collectionSize / 100;
-			for (int i = 0; i < packet100Count; i++) {
-				sqlParameter.cat(SQL_PARAMETER_MARK_100);
-			}
-			int packetMod100 = collectionSize % 100;
-			int packet10Count = packetMod100 / 10;
-			for (int i = 0; i < packet10Count; i++) {
-				sqlParameter.cat(SQL_PARAMETER_MARK_10);
-			}
-			int packet1Count = packetMod100 % 10;
-			for (int i = 0; i < packet1Count; i++) {
-				sqlParameter.cat(SQL_PARAMETER_MARK_1);
-			}
-			return sqlParameter.cutTail(2).toString();
+			StringBuilder sqlParameters = Strings.repeat(stringBuilder, collectionSize, SQL_PARAMETER_MARK_1, SQL_PARAMETER_MARK_100, SQL_PARAMETER_MARK_10);
+			sqlParameters.setLength(sqlParameters.length() - 2);
+			return sqlParameters;
 		}
 	}
 }
