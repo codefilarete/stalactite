@@ -4,12 +4,12 @@ import org.gama.lang.collection.Arrays;
 import org.gama.lang.collection.Iterables;
 import org.gama.lang.collection.Iterables.ForEach;
 import org.gama.lang.exception.Exceptions;
+import org.gama.sql.binder.ParameterBinder;
 import org.gama.stalactite.ILogger;
 import org.gama.stalactite.Logger;
 import org.gama.stalactite.persistence.engine.PersistenceContext;
 import org.gama.stalactite.persistence.mapping.StatementValues;
-import org.gama.stalactite.persistence.sql.dml.binder.ParameterBinder;
-import org.gama.stalactite.persistence.sql.dml.binder.ParameterBinderRegistry;
+import org.gama.stalactite.persistence.sql.dml.binder.ColumnBinderRegistry;
 import org.gama.stalactite.persistence.structure.Table.Column;
 
 import javax.annotation.Nonnull;
@@ -50,7 +50,7 @@ public abstract class CRUDOperation {
 	}
 
 	/**
-	 * Find {@link ParameterBinder} of each couple column-index from {@link ParameterBinderRegistry}.
+	 * Find {@link ParameterBinder} of each couple column-index from {@link ColumnBinderRegistry}.
 	 * This method is called by children classes with their column-index map.
 	 * If no matching {@link ParameterBinder} is found for a column, then no exception is thrown: the return Map will
 	 * contain null as a {@link ParameterBinder} value.
@@ -60,11 +60,11 @@ public abstract class CRUDOperation {
 	 */
 	protected Map<Column, Map.Entry<Integer, ParameterBinder>> getBinders(Map<Column, Integer> colToIndexes) {
 		HashMap<Column, Map.Entry<Integer, ParameterBinder>> binders = new HashMap<>(colToIndexes.size());
-		ParameterBinderRegistry parameterBinderRegistry = PersistenceContext.getCurrent().getDialect().getParameterBinderRegistry();
+		ColumnBinderRegistry columnBinderRegistry = PersistenceContext.getCurrent().getDialect().getColumnBinderRegistry();
 		for (Map.Entry<Column, Integer> colToIndex : colToIndexes.entrySet()) {
 			Column column = colToIndex.getKey();
 			Integer value = colToIndex.getValue();
-			ParameterBinder parameterBinder = parameterBinderRegistry.getBinder(column);
+			ParameterBinder parameterBinder = columnBinderRegistry.getBinder(column);
 			binders.put(column, new AbstractMap.SimpleEntry<>(value, parameterBinder));
 		}
 		return binders;

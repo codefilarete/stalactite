@@ -16,6 +16,7 @@
 		<module>core</module>
 		<module>orm</module>
 		<module>testbench</module>
+		<module>sql</module>
 	</modules>
 	
 	<properties>

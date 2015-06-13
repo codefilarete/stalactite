@@ -1,10 +1,10 @@
-package org.gama.stalactite.dml;
+package org.gama.sql.dml;
 
 import org.gama.lang.collection.Arrays;
 import org.gama.lang.collection.Maps;
-import org.gama.stalactite.dml.SQLParameterParser.CollectionParameter;
-import org.gama.stalactite.dml.SQLParameterParser.Parameter;
-import org.gama.stalactite.dml.SQLParameterParser.ParsedSQL;
+import org.gama.sql.dml.SQLParameterParser.CollectionParameter;
+import org.gama.sql.dml.SQLParameterParser.Parameter;
+import org.gama.sql.dml.SQLParameterParser.ParsedSQL;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;

@@ -1,7 +1,7 @@
 package org.gama.stalactite.persistence.sql.result;
 
 import org.gama.lang.exception.Exceptions;
-import org.gama.stalactite.persistence.sql.dml.binder.ParameterBinder;
+import org.gama.sql.binder.ParameterBinder;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;

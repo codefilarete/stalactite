@@ -1,7 +1,7 @@
 package org.gama.stalactite.persistence.sql.dml;
 
 import org.gama.stalactite.persistence.mapping.StatementValues;
-import org.gama.stalactite.persistence.sql.dml.binder.ParameterBinder;
+import org.gama.sql.binder.ParameterBinder;
 import org.gama.stalactite.persistence.structure.Table.Column;
 
 import java.sql.SQLException;

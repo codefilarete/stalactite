@@ -1,20 +1,20 @@
 package org.gama.stalactite.persistence.sql.dml;
 
-import static org.testng.Assert.assertEquals;
+import org.gama.lang.collection.Maps;
+import org.gama.sql.binder.ParameterBinder;
+import org.gama.stalactite.persistence.engine.PersistenceContext;
+import org.gama.stalactite.persistence.sql.Dialect;
+import org.gama.stalactite.persistence.sql.ddl.JavaTypeToSqlTypeMapping;
+import org.gama.stalactite.persistence.structure.Table;
+import org.gama.stalactite.persistence.structure.Table.Column;
+import org.testng.annotations.BeforeMethod;
+import org.testng.annotations.Test;
 
 import java.util.AbstractMap;
 import java.util.Arrays;
 import java.util.Map;
 
-import org.gama.lang.collection.Maps;
-import org.gama.stalactite.persistence.engine.PersistenceContext;
-import org.gama.stalactite.persistence.sql.Dialect;
-import org.gama.stalactite.persistence.sql.ddl.JavaTypeToSqlTypeMapping;
-import org.gama.stalactite.persistence.sql.dml.binder.ParameterBinder;
-import org.gama.stalactite.persistence.structure.Table;
-import org.gama.stalactite.persistence.structure.Table.Column;
-import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.Test;
+import static org.testng.Assert.assertEquals;
 
 public class DMLGeneratorTest {
 
@@ -25,7 +25,7 @@ public class DMLGeneratorTest {
 		// Nécessaire aux CRUDOperations et RowIterator qui ont besoin du ParamaterBinderRegistry
 		Dialect currentDialect = new Dialect(new JavaTypeToSqlTypeMapping());
 		PersistenceContext.setCurrent(new PersistenceContext(null, currentDialect));
-		stringBinder = currentDialect.getParameterBinderRegistry().getBinder(String.class);
+		stringBinder = currentDialect.getColumnBinderRegistry().getBinder(String.class);
 	}
 	
 	@Test

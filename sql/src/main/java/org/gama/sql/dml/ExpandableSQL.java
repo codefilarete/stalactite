@@ -1,13 +1,11 @@
-package org.gama.stalactite.dml;
+package org.gama.sql.dml;
 
 import org.gama.lang.Strings;
 import org.gama.lang.collection.ArrayIterator;
-import org.gama.lang.collection.PairIterator;
-import org.gama.stalactite.dml.SQLParameterParser.Parameter;
-import org.gama.stalactite.dml.SQLParameterParser.ParsedSQL;
+import org.gama.sql.dml.SQLParameterParser.Parameter;
+import org.gama.sql.dml.SQLParameterParser.ParsedSQL;
 
 import java.util.*;
-import java.util.Map.Entry;
 
 /**
  * Class that creates a PreparedStatement from an SQL String with named parameters. Eases index of named parameters as
@@ -68,7 +66,7 @@ public class ExpandableSQL {
 	 * It allows extension of single parameter mark (coded as a question mark '?') to multiple ones in case of
 	 * Collection value. This is done on the {@link #catParameterizedSQL(StringBuilder)} method.
 	 */
-	public static class ExpandableParameter implements Iterable<Entry<Integer, Object>> {
+	public static class ExpandableParameter implements Iterable<Integer> {
 
 		private static final String SQL_PARAMETER_MARK = "?";
 
@@ -89,7 +87,7 @@ public class ExpandableSQL {
 						SQL_PARAMETER_MARK_10 + SQL_PARAMETER_MARK_10;
 		
 		/** The parameter value */
-		private final Object value;
+		private final int valueSize;
 		/** The parameter name */
 		private final String parameterName;
 		/** Preceding parameter, for index computation, overall used in case of Collection valued parameters */
@@ -100,7 +98,7 @@ public class ExpandableSQL {
 		private Integer index;
 
 		private ExpandableParameter(Object value, String parameterName, ExpandableParameter precedingParameter) {
-			this.value = value;
+			this.valueSize = value instanceof Collection ? ((Collection) value).size() : 1;
 			this.parameterName = parameterName;
 			this.precedingParameter = precedingParameter;
 			if (value instanceof Collection) {
@@ -125,7 +123,7 @@ public class ExpandableSQL {
 		 */
 		public Integer[] getMarkIndexes() {
 			Integer[] indexes = new Integer[markCount];
-			int startIndex = getIndex();
+			int startIndex = getFirstIndex();
 			for (int i = 0; i < markCount; i++) {
 				indexes[i] = startIndex + i;
 			}
@@ -137,34 +135,19 @@ public class ExpandableSQL {
 		 * 
 		 * @return the parameter index
 		 */
-		public int getIndex() {
+		public int getFirstIndex() {
 			if (this.index == null) {
 				if (this.precedingParameter != null) {
-					this.index = this.precedingParameter.getIndex() + this.precedingParameter.markCount;
+					this.index = this.precedingParameter.getFirstIndex() + this.precedingParameter.markCount;
 				} else {
 					this.index = 1;
 				}
 			}
 			return this.index;
 		}
-		
-		/**
-		 * 
-		 * @return an iterator over index-value parameters
-		 */
-		@Override
-		public Iterator<Entry<Integer, Object>> iterator() {
-			Iterator<Object> valueIterator;
-			if (value instanceof Iterable) {
-				valueIterator = ((Iterable<Object>) value).iterator();
-			} else {
-				valueIterator = Collections.singletonList(value).iterator();
-			}
-			return new PairIterator<>(new ArrayIterator<>(getMarkIndexes()), valueIterator);
-		}
 
 		public StringBuilder catParameterizedSQL(StringBuilder stringBuilder) {
-			if (value instanceof Collection) {
+			if (valueSize > 1) {
 				return expandParameters(stringBuilder);
 			} else {
 				return stringBuilder.append(SQL_PARAMETER_MARK);
@@ -177,11 +160,14 @@ public class ExpandableSQL {
 		 * @param stringBuilder
 		 */
 		protected StringBuilder expandParameters(StringBuilder stringBuilder) {
-			Collection values = (Collection) this.value;
-			int collectionSize = values.size();
-			StringBuilder sqlParameters = Strings.repeat(stringBuilder, collectionSize, SQL_PARAMETER_MARK_1, SQL_PARAMETER_MARK_100, SQL_PARAMETER_MARK_10);
+			StringBuilder sqlParameters = Strings.repeat(stringBuilder, valueSize, SQL_PARAMETER_MARK_1, SQL_PARAMETER_MARK_100, SQL_PARAMETER_MARK_10);
 			sqlParameters.setLength(sqlParameters.length() - 2);
 			return sqlParameters;
+		}
+		
+		@Override
+		public Iterator<Integer> iterator() {
+			return new ArrayIterator<>(getMarkIndexes());
 		}
 	}
 }

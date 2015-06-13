@@ -2,8 +2,8 @@ package org.gama.stalactite.persistence.sql.dml;
 
 import org.gama.stalactite.persistence.engine.PersistenceContext;
 import org.gama.stalactite.persistence.mapping.StatementValues;
-import org.gama.stalactite.persistence.sql.dml.binder.ParameterBinder;
-import org.gama.stalactite.persistence.sql.dml.binder.ParameterBinderRegistry;
+import org.gama.sql.binder.ParameterBinder;
+import org.gama.stalactite.persistence.sql.dml.binder.ColumnBinderRegistry;
 import org.gama.stalactite.persistence.sql.result.RowIterator;
 import org.gama.stalactite.persistence.structure.Table.Column;
 
@@ -31,7 +31,7 @@ public class SelectOperation extends CRUDOperation {
 	public SelectOperation(String sql, Map<Column, Integer> whereIndexes, List<Column> selectedColumns) {
 		super(sql);
 		this.whereIndexes = getBinders(whereIndexes);
-		ParameterBinderRegistry currentDialect = PersistenceContext.getCurrent().getDialect().getParameterBinderRegistry();
+		ColumnBinderRegistry currentDialect = PersistenceContext.getCurrent().getDialect().getColumnBinderRegistry();
 		for (Column column : selectedColumns) {
 			columnBinders.put(column.getName(), currentDialect.getBinder(column));
 		}

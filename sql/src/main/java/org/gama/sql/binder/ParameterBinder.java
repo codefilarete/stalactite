@@ -1,4 +1,4 @@
-package org.gama.stalactite.persistence.sql.dml.binder;
+package org.gama.sql.binder;
 
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;

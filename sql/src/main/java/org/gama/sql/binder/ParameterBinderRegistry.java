@@ -1,4 +1,4 @@
-package org.gama.stalactite.persistence.sql.dml.binder;
+package org.gama.sql.binder;
 
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -6,17 +6,10 @@ import java.sql.SQLException;
 import java.util.Date;
 import java.util.WeakHashMap;
 
-import org.gama.stalactite.persistence.structure.Table;
-
 /**
- * Classe d'accès aux méthodes PreparedStatement.setXXX(..) et ResultSet.getXXX(..) en fonction du type des colonnes
- * écrites ou lues.
- * Les méthodes {@link #set(int, Object, PreparedStatement)} et {@link #getNotNull(Table.Column, ResultSet)}
- * peuvent être surchargées pour implémenter le codage/décodage d'un type particulier.
- * Les méthodes {@link #getBinder(Class)} et {@link #getBinder(Table.Column)} peuvent être
- * adaptées pour aiguiller une colonne vers un type particulier.
- * 
- * @author mary
+ * Registry for {@link ParameterBinder}s according to their binding class.
+ *
+ * @author Guillaume Mary
  */
 public class ParameterBinderRegistry {
 	
@@ -25,7 +18,7 @@ public class ParameterBinderRegistry {
 	public ParameterBinderRegistry() {
 		registerParameterBinders();
 	}
-
+	
 	public WeakHashMap<Class, ParameterBinder> getParameterBinders() {
 		return parameterBinders;
 	}
@@ -33,7 +26,7 @@ public class ParameterBinderRegistry {
 	public <T> void register(Class<T> clazz, ParameterBinder<T> parameterBinder) {
 		parameterBinders.put(clazz, parameterBinder);
 	}
-
+	
 	protected void registerParameterBinders() {
 		register(String.class, new StringBinder());
 		register(Double.class, new DoubleBinder());
@@ -48,48 +41,49 @@ public class ParameterBinderRegistry {
 		register(Boolean.class, new BooleanBinder());
 		register(Boolean.TYPE, new BooleanBinder());
 	}
-
+	
 	/**
-	 * Lit la colonne <t>column</t> ramenée par <t>resultSet</t>
-	 * 
-	 * @param column
-	 * @param resultSet
-	 * @return le contenu de la colonne <t>column</t>, typé en fonction de <t>column</t>
+	 * Read the <t>columnName</t> retrieved by <t>resultSet</t>
+	 *
+	 * @param columnName the name of the column to be read
+	 * @param expectedClass the expected type of return object
+	 * @param resultSet the result set to read
+	 * @return <t>columnName</t> content, typed as <t>expectedClass</t>
 	 * @throws SQLException
+	 * @throws UnsupportedOperationException if <t>expectedClass</t> is unknown from registry
 	 */
-	public Object get(Table.Column column, ResultSet resultSet) throws SQLException {
-		if (!isNull(column, resultSet)) {
-			return getNotNull(column, resultSet);
+	public <T> T get(String columnName, Class<T> expectedClass, ResultSet resultSet) throws SQLException {
+		if (!isNull(columnName, resultSet)) {
+			return getNotNull(columnName, expectedClass, resultSet);
 		} else {
 			return null;
 		}
 	}
 	
-	protected boolean isNull(Table.Column column, ResultSet resultSet) throws SQLException {
+	protected boolean isNull(String columnName, ResultSet resultSet) throws SQLException {
 		// wasNull est utilisable également, mais getObject(String) est également supporté. protected au cas où.
-		return resultSet.getObject(column.getName()) == null;
+		return resultSet.getObject(columnName) == null;
 	}
-
-	protected Object getNotNull(Table.Column column, ResultSet resultSet) throws SQLException {
-		String columnName = column.getName();
-		Object toReturn;
-		ParameterBinder parameterBinder = getBinder(column);
+	
+	protected <T> T getNotNull(String columnName, Class<T> expectedClass, ResultSet resultSet) throws SQLException {
+		T toReturn;
+		ParameterBinder<T> parameterBinder = getBinder(expectedClass);
 		if (parameterBinder != null) {
 			toReturn = parameterBinder.get(columnName, resultSet);
 		} else {
-			throwMissingBinderException(column);
+			throwMissingBinderException(expectedClass);
 			return null;	// unreachable code
 		}
 		return toReturn;
 	}
 	
-	public void set(int index, Object value, PreparedStatement preparedStatement) throws SQLException {
+	public <T> void set(int index, T value, PreparedStatement preparedStatement) throws SQLException {
 		if (value == null) {
 			// Attention, pas mal de débat autour de l'utilisation de setObject(int, null) sur le Net, mais finalement
 			// il semble que ça soit de plus en plus supporté.
 			preparedStatement.setObject(index, null);
 		} else {
-			ParameterBinder parameterBinder = getBinder(value.getClass());
+			ParameterBinder<T> parameterBinder = (ParameterBinder<T>) getBinder(value.getClass());
 			if (parameterBinder != null) {
 				parameterBinder.set(index, value, preparedStatement);
 			} else {
@@ -98,20 +92,12 @@ public class ParameterBinderRegistry {
 		}
 	}
 	
-	public ParameterBinder getBinder(Table.Column column) {
-		return getBinder(column.getJavaType());
-	}
-
-	public ParameterBinder getBinder(Class clazz) {
+	public <T> ParameterBinder<T> getBinder(Class<T> clazz) {
 		return getParameterBinders().get(clazz);
-	}
-
-	private void throwMissingBinderException(Table.Column column) {
-		throw new UnsupportedOperationException("No parameter binder found for column " + column.getAbsoluteName());
 	}
 	
 	private void throwMissingBinderException(Class clazz) {
 		throw new UnsupportedOperationException("No parameter binder found for type " + clazz.getName());
 	}
-
+	
 }

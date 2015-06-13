@@ -1,4 +1,4 @@
-package org.gama.stalactite.dml;
+package org.gama.sql.dml;
 
 import org.gama.lang.bean.IFactory;
 import org.gama.lang.collection.ValueFactoryHashMap;

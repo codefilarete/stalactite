@@ -1,7 +1,7 @@
 package org.gama.stalactite.persistence.sql;
 
 import org.gama.stalactite.persistence.sql.ddl.JavaTypeToSqlTypeMapping;
-import org.gama.stalactite.persistence.sql.dml.binder.ParameterBinderRegistry;
+import org.gama.stalactite.persistence.sql.dml.binder.ColumnBinderRegistry;
 
 /**
  * @author mary
@@ -10,22 +10,22 @@ public class Dialect {
 	
 	private JavaTypeToSqlTypeMapping javaTypeToSqlTypeMapping;
 	
-	private ParameterBinderRegistry parameterBinderRegistry;
+	private ColumnBinderRegistry columnBinderRegistry;
 	
 	public Dialect(JavaTypeToSqlTypeMapping javaTypeToSqlTypeMapping) {
-		this(javaTypeToSqlTypeMapping, new ParameterBinderRegistry());
+		this(javaTypeToSqlTypeMapping, new ColumnBinderRegistry());
 	}
 
-	public Dialect(JavaTypeToSqlTypeMapping javaTypeToSqlTypeMapping, ParameterBinderRegistry parameterBinderRegistry) {
+	public Dialect(JavaTypeToSqlTypeMapping javaTypeToSqlTypeMapping, ColumnBinderRegistry columnBinderRegistry) {
 		this.javaTypeToSqlTypeMapping = javaTypeToSqlTypeMapping;
-		this.parameterBinderRegistry = parameterBinderRegistry;
+		this.columnBinderRegistry = columnBinderRegistry;
 	}
 
 	public JavaTypeToSqlTypeMapping getJavaTypeToSqlTypeMapping() {
 		return javaTypeToSqlTypeMapping;
 	}
 
-	public ParameterBinderRegistry getParameterBinderRegistry() {
-		return parameterBinderRegistry;
+	public ColumnBinderRegistry getColumnBinderRegistry() {
+		return columnBinderRegistry;
 	}
 }
