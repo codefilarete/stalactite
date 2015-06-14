@@ -11,11 +11,12 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Map.Entry;
 
 /**
  * @author Guillaume Mary
  */
-public class ParameterizedSQL {
+public abstract class ParameterizedSQL {
 	
 	private final String originalSQL;
 	
@@ -23,7 +24,7 @@ public class ParameterizedSQL {
 	
 	private final Map<String, ParameterBinder> parameterBinders;
 	
-	private PreparedStatement preparedStatement;
+	protected PreparedStatement preparedStatement;
 	
 	private final ParsedSQL parsedSQL;
 	private ExpandableSQL expandableSQL;
@@ -35,18 +36,23 @@ public class ParameterizedSQL {
 		this.parsedSQL = sqlParameterParser.parse();
 	}
 	
+	public void set(Map<String, Object> values) {
+		// NB: don't replace instance, putAll since Map can be cleared by clearValues()
+		this.values.putAll(values);
+	}
+	
+	public void set(Iterable<Entry<String, Object>> values) {
+		for (Entry<String, Object> valueEntry : values) {
+			set(valueEntry.getKey(), valueEntry.getValue());
+		}
+	}
+	
+	public void set(String paramName, Object value) {
+		this.values.put(paramName, value);
+	}
+	
 	public void clearValues() {
 		this.values.clear();
-	}
-	
-	public void set(String param, Object o) {
-		this.values.put(param, o);
-	}
-	
-	public int executeWrite(Connection connection) throws SQLException {
-		prepareStatement(connection);
-		applyValues();
-		return this.preparedStatement.executeUpdate();
 	}
 	
 	public ResultSet executeRead(Connection connection) throws SQLException {
@@ -56,7 +62,7 @@ public class ParameterizedSQL {
 	}
 	
 	private void prepareStatement(Connection connection) throws SQLException {
-		expandableSQL = new ExpandableSQL(parsedSQL, values);
+		expandableSQL = new ExpandableSQL(parsedSQL, ExpandableSQL.sizes(values));
 		if (this.preparedStatement == null || this.preparedStatement.getConnection() != connection) {
 			this.preparedStatement = connection.prepareStatement(expandableSQL.getPreparedSQL());
 		}

@@ -61,7 +61,7 @@ public class ExpandableSQLTest {
 		}
 
 		ParsedSQL parsedSQL = new ParsedSQL(sqlSnippets, params);
-		ExpandableSQL testInstance = new ExpandableSQL(parsedSQL, values);
+		ExpandableSQL testInstance = new ExpandableSQL(parsedSQL, ExpandableSQL.sizes(values));
 		assertEquals(expectedPreparedSql, testInstance.getPreparedSQL());
 
 		Map<String, List<ExpandableParameter>> mappedParameter = new ValueFactoryHashMap<>(2, new IFactory<String, List<ExpandableParameter>>() {

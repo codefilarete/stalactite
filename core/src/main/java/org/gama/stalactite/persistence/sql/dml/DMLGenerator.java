@@ -1,15 +1,16 @@
 package org.gama.stalactite.persistence.sql.dml;
 
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.TreeSet;
-
 import org.gama.lang.StringAppender;
+import org.gama.lang.Strings;
 import org.gama.lang.collection.Iterables;
 import org.gama.stalactite.persistence.sql.ddl.DDLTableGenerator;
 import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.persistence.structure.Table.Column;
+
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.TreeSet;
 
 /**
  * Class for DML generation.
@@ -22,6 +23,22 @@ public class DMLGenerator {
 	/** Comparator used to have  */
 	public static final ColumnNameComparator COLUMN_NAME_COMPARATOR = new ColumnNameComparator();
 	
+	private static final String SQL_PARAMETER_MARK_1 = "?, ";
+	
+	private static final String SQL_PARAMETER_MARK_10 =
+					SQL_PARAMETER_MARK_1 + SQL_PARAMETER_MARK_1 +
+					SQL_PARAMETER_MARK_1 + SQL_PARAMETER_MARK_1 +
+					SQL_PARAMETER_MARK_1 + SQL_PARAMETER_MARK_1 +
+					SQL_PARAMETER_MARK_1 + SQL_PARAMETER_MARK_1 +
+					SQL_PARAMETER_MARK_1 + SQL_PARAMETER_MARK_1;
+	
+	private static final String SQL_PARAMETER_MARK_100 =
+					SQL_PARAMETER_MARK_10 + SQL_PARAMETER_MARK_10 +
+					SQL_PARAMETER_MARK_10 + SQL_PARAMETER_MARK_10 +
+					SQL_PARAMETER_MARK_10 + SQL_PARAMETER_MARK_10 +
+					SQL_PARAMETER_MARK_10 + SQL_PARAMETER_MARK_10 +
+					SQL_PARAMETER_MARK_10 + SQL_PARAMETER_MARK_10;
+	
 	public InsertOperation buildInsert(Iterable<Column> columns) {
 		columns = sort(columns);
 		Table table = Iterables.first(columns).getTable();
@@ -31,7 +48,7 @@ public class DMLGenerator {
 		Map<Column, Integer> upsertIndexes = new HashMap<>(10);
 		int positionCounter = 1;
 		for (Column column : columns) {
-			sqlInsert.cat("?, ");
+			sqlInsert.cat(SQL_PARAMETER_MARK_1);
 			upsertIndexes.put(column, positionCounter++);
 		}
 		String sql = sqlInsert.cutTail(2).cat(")").toString();
@@ -45,7 +62,7 @@ public class DMLGenerator {
 		Map<Column, Integer> upsertIndexes = new HashMap<>(10);
 		int positionCounter = 1;
 		for (Column column : columns) {
-			sqlUpdate.cat(column.getName(), " = ?, ");
+			sqlUpdate.cat(column.getName(), " = ", SQL_PARAMETER_MARK_1);
 			upsertIndexes.put(column, positionCounter++);
 		}
 		sqlUpdate.cutTail(2);
@@ -60,6 +77,14 @@ public class DMLGenerator {
 		return new DeleteOperation(sqlDelete.toString(), whereIndexes);
 	}
 	
+	public DeleteOperation buildMassiveDelete(Table table, Column keyColumnName, int whereValuesCount) {
+		StringAppender sqlDelete = new StringAppender("delete ", table.getName());
+		sqlDelete.cat(" where ", keyColumnName.getName(), " in (");
+		Strings.repeat(sqlDelete.getAppender(), whereValuesCount, SQL_PARAMETER_MARK_1, SQL_PARAMETER_MARK_100, SQL_PARAMETER_MARK_10);
+		sqlDelete.cat(")");
+		return new DeleteOperation(sqlDelete.toString(), null);
+	}
+	
 	public SelectOperation buildSelect(Table table, Iterable<Column> columns, Iterable<Column> where) {
 		columns = sort(columns);
 		StringAppender sqlSelect = new StringAppender("select ");
@@ -67,6 +92,17 @@ public class DMLGenerator {
 		sqlSelect.cat(" from ", table.getName());
 		Map<Column, Integer> whereIndexes = catWhere(where, sqlSelect);
 		return new SelectOperation(sqlSelect.toString(), whereIndexes, Iterables.copy(columns));
+	}
+	
+	public SelectOperation buildMAssiveSelect(Table table, Iterable<Column> columns, Column keyColumnName, int whereValuesCount) {
+		columns = sort(columns);
+		StringAppender sqlSelect = new StringAppender("select ");
+		DDLTableGenerator.catWithComma(columns, sqlSelect);
+		sqlSelect.cat(" from ", table.getName());
+		sqlSelect.cat(" where ", keyColumnName.getName(), " in (");
+		Strings.repeat(sqlSelect.getAppender(), whereValuesCount, SQL_PARAMETER_MARK_1, SQL_PARAMETER_MARK_100, SQL_PARAMETER_MARK_10);
+		sqlSelect.cat(")");
+		return new SelectOperation(sqlSelect.toString(), null, Iterables.copy(columns));
 	}
 	
 	/**

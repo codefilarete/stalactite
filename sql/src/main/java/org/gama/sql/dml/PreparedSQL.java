@@ -4,16 +4,22 @@ import org.gama.sql.binder.ParameterBinder;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
-import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 
 /**
+ * Class aimed at easing SQL prepared statement execution: simplification comes from {@link ParameterBinder}s because
+ * you don't need to call the good setXXX() method.
+ * {@link #prepareStatement(Connection)} must be called before {@link #applyValues()}
+ * 
+ * @see PreparedSQLForReading
+ * @see PreparedSQLForWriting 
+ * 
  * @author Guillaume Mary
  */
-public class PreparedSQL {
+public abstract class PreparedSQL {
 	
 	private final String sql;
 	
@@ -21,53 +27,61 @@ public class PreparedSQL {
 	
 	private final Map<Integer, ParameterBinder> parameterBinders;
 	
-	private PreparedStatement preparedStatement;
+	protected PreparedStatement preparedStatement;
 	
 	public PreparedSQL(String sql, Map<Integer, ParameterBinder> parameterBinders) {
 		this.sql = sql;
 		this.parameterBinders = parameterBinders;
 	}
 	
-	public void clearValues() {
-		this.values.clear();
-	}
-	
-	public void set(int index, Object o) {
-		this.values.put(index, o);
-	}
-	
-	public int executeWrite(Connection connection) throws SQLException {
-		prepareStatement(connection);
-		applyValues();
-		return this.preparedStatement.executeUpdate();
-	}
-	
-	public ResultSet executeRead(Connection connection) throws SQLException {
-		prepareStatement(connection);
-		applyValues();
-		return this.preparedStatement.executeQuery();
-	}
-	
-	private void prepareStatement(Connection connection) throws SQLException {
+	/**
+	 * Build an internal {@link PreparedStatement} from the {@link Connection} given (if never called or connection
+	 * has changed since last call)
+	 * Must be called before {@link #applyValues()}
+	 * 
+	 * @param connection
+	 * @throws SQLException
+	 */
+	public void prepareStatement(Connection connection) throws SQLException {
 		if (this.preparedStatement == null || this.preparedStatement.getConnection() != connection) {
 			this.preparedStatement = connection.prepareStatement(sql);
 		}
 	}
 	
-	private void applyValues() throws SQLException {
-		for (Entry<Integer, Object> valueEntry : values.entrySet()) {
-			applyValue(valueEntry);
+	public void set(Map<Integer, Object> values) {
+		// NB: don't replace instance, putAll since Map can be cleared by clearValues()
+		this.values.putAll(values);
+	}
+	
+	public void set(Iterable<Entry<Integer, Object>> values) {
+		for (Entry<Integer, Object> valueEntry : values) {
+			set(valueEntry.getKey(), valueEntry.getValue());
 		}
 	}
-
-	private void applyValue(Entry<Integer, Object> valueEntry) throws SQLException {
-		Object value = valueEntry.getValue();
-		Integer index = valueEntry.getKey();
-		ParameterBinder paramBinder = parameterBinders.get(index);
-		if (paramBinder == null) {
-			throw new IllegalArgumentException("Can't find a "+ParameterBinder.class.getName() + " for index " + index + " of value " + value
-			+ " on sql : " + sql);
+	
+	public void set(int index, Object value) {
+		this.values.put(index, value);
+	}
+	
+	public void clearValues() {
+		this.values.clear();
+	}
+	
+	/**
+	 * Calls all setXXX {@link PreparedStatement} methods according to {@link ParameterBinder}s given in constructor.
+	 * Hence {@link #prepareStatement(Connection)} must be called before.
+	 * @throws SQLException
+	 */
+	public void applyValues() throws SQLException {
+		for (Entry<Integer, Object> indexToValue : values.entrySet()) {
+			Integer index = indexToValue.getKey();
+			Object value = indexToValue.getValue();
+			ParameterBinder paramBinder = parameterBinders.get(index);
+			if (paramBinder == null) {
+				throw new IllegalArgumentException("Can't find a "+ParameterBinder.class.getName() + " for index " + index + " of value " + value
+						+ " on sql : " + sql);
+			}
+			paramBinder.set(index, value, preparedStatement);
 		}
-		paramBinder.set(index, value, preparedStatement);
 	}
 }

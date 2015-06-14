@@ -6,25 +6,34 @@ import org.gama.sql.dml.SQLParameterParser.Parameter;
 import org.gama.sql.dml.SQLParameterParser.ParsedSQL;
 
 import java.util.*;
+import java.util.Map.Entry;
 
 /**
- * Class that creates a PreparedStatement from an SQL String with named parameters. Eases index of named parameters as
+ * Class that helps to adapt an SQL String with named parameters according . Eases index of named parameters as
  * it manages SQL expansion for parameters that have Collection value: '?' are added as many as necessary.
  * Kind of wrapper over {@link ParsedSQL}, delegates parsing to {@link SQLParameterParser}.
  * 
  * @author Guillaume Mary
  */
 public class ExpandableSQL {
+	
+	public static Map<String, Integer> sizes(Map<String, Object> values) {
+		HashMap<String, Integer> toReturn = new HashMap<>();
+		for (Entry<String, Object> entry : values.entrySet()) {
+			toReturn.put(entry.getKey(), entry.getValue() instanceof Collection ? ((Collection) entry.getValue()).size() : 1);
+		}
+		return toReturn;
+	}
 
 	private final List<ExpandableParameter> expandableParameters;
 	private final ParsedSQL parsedSQL;
 
 	private String preparedSQL;
-	private final Map<String, Object> values;
+	private final Map<String, Integer> parameterValuesSize;
 
-	public ExpandableSQL(ParsedSQL parsedSQL, Map<String, Object> values) {
+	public ExpandableSQL(ParsedSQL parsedSQL, Map<String, Integer> parameterValuesSize) {
 		this.parsedSQL = parsedSQL;
-		this.values = values;
+		this.parameterValuesSize = parameterValuesSize;
 		this.expandableParameters = new ArrayList<>(this.parsedSQL.getSqlSnippets().size() / 2);
 		convertParsedParametersToExpandableParameters();
 	}
@@ -35,11 +44,11 @@ public class ExpandableSQL {
 		for (Object sqlSnippet : parsedSQL.getSqlSnippets()) {
 			if (sqlSnippet instanceof Parameter) {
 				String parameterName = ((Parameter) sqlSnippet).getName();
-				if (!values.containsKey(parameterName)) {
+				if (!parameterValuesSize.containsKey(parameterName)) {
 					throw new IllegalArgumentException("Parameter " + parameterName + " is not set");
 				} else {
-					Object value = values.get(parameterName);
-					ExpandableParameter snippetToAdd = new ExpandableParameter(value, parameterName, precedingParameter);
+					Integer valueSize = parameterValuesSize.get(parameterName);
+					ExpandableParameter snippetToAdd = new ExpandableParameter(valueSize, parameterName, precedingParameter);
 					this.expandableParameters.add(snippetToAdd);
 					snippetToAdd.catParameterizedSQL(preparedSQLBuilder);
 					// prepare next iteration
@@ -86,8 +95,6 @@ public class ExpandableSQL {
 						SQL_PARAMETER_MARK_10 + SQL_PARAMETER_MARK_10 +
 						SQL_PARAMETER_MARK_10 + SQL_PARAMETER_MARK_10;
 		
-		/** The parameter value */
-		private final int valueSize;
 		/** The parameter name */
 		private final String parameterName;
 		/** Preceding parameter, for index computation, overall used in case of Collection valued parameters */
@@ -97,18 +104,13 @@ public class ExpandableSQL {
 		/** Index of the parameter in the PreparedStatement, the first one for Collection value */
 		private Integer index;
 
-		private ExpandableParameter(Object value, String parameterName, ExpandableParameter precedingParameter) {
-			this.valueSize = value instanceof Collection ? ((Collection) value).size() : 1;
+		private ExpandableParameter(int valueSize, String parameterName, ExpandableParameter precedingParameter) {
 			this.parameterName = parameterName;
 			this.precedingParameter = precedingParameter;
-			if (value instanceof Collection) {
-				this.markCount = ((Collection) value).size();
-				if (this.markCount == 0) {
-					// this case will throw an invalid SQL statement: "in ()" => we throw one before.
-					throw new IllegalArgumentException("Empty collection for sql parameter " + parameterName);
-				}
-			} else {
-				this.markCount = 1;
+			this.markCount = valueSize;
+			if (this.markCount == 0) {
+				// this case will throw an invalid SQL statement: "in ()" => we throw one before.
+				throw new IllegalArgumentException("Empty collection for sql parameter " + parameterName);
 			}
 		}
 
@@ -147,7 +149,7 @@ public class ExpandableSQL {
 		}
 
 		public StringBuilder catParameterizedSQL(StringBuilder stringBuilder) {
-			if (valueSize > 1) {
+			if (markCount > 1) {
 				return expandParameters(stringBuilder);
 			} else {
 				return stringBuilder.append(SQL_PARAMETER_MARK);
@@ -160,11 +162,15 @@ public class ExpandableSQL {
 		 * @param stringBuilder
 		 */
 		protected StringBuilder expandParameters(StringBuilder stringBuilder) {
-			StringBuilder sqlParameters = Strings.repeat(stringBuilder, valueSize, SQL_PARAMETER_MARK_1, SQL_PARAMETER_MARK_100, SQL_PARAMETER_MARK_10);
+			StringBuilder sqlParameters = Strings.repeat(stringBuilder, markCount, SQL_PARAMETER_MARK_1, SQL_PARAMETER_MARK_100, SQL_PARAMETER_MARK_10);
 			sqlParameters.setLength(sqlParameters.length() - 2);
 			return sqlParameters;
 		}
 		
+		/**
+		 * Iterates over indexes of this parameter
+		 * @return an {@link ArrayIterator} over indexes 
+		 */
 		@Override
 		public Iterator<Integer> iterator() {
 			return new ArrayIterator<>(getMarkIndexes());
