@@ -40,7 +40,11 @@ public class SQLParameterParser {
 		this.currentPos = -1;
 		this.parsedSQL = new ParsedSQL();
 	}
-
+	
+	public String getSql() {
+		return sql;
+	}
+	
 	public ParsedSQL parse() {
 		this.sqlSnippet = new StringBuilder(50);
 		while (currentPos < sqlLength) {
@@ -183,7 +187,11 @@ public class SQLParameterParser {
 			this.sqlSnippets = sqlSnippets;
 			this.parametersMap = parametersMap;
 		}
-
+		
+		/**
+		 * Gives found SQL elements: mix of Strings and Parameters. Expected to be in found order.
+		 * @return a mix of Strings and Parameters, in order of finding
+		 */
 		public List<Object> getSqlSnippets() {
 			return sqlSnippets;
 		}

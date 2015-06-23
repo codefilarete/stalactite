@@ -1,19 +1,19 @@
 package org.gama.stalactite.persistence.id.sequence;
 
-import static org.testng.Assert.assertEquals;
-
-import java.io.Serializable;
-import java.sql.SQLException;
-
+import org.gama.sql.test.HSQLDBInMemoryDataSource;
 import org.gama.stalactite.persistence.engine.DDLDeployer;
 import org.gama.stalactite.persistence.engine.PersistenceContext;
 import org.gama.stalactite.persistence.sql.Dialect;
 import org.gama.stalactite.persistence.sql.ddl.JavaTypeToSqlTypeMapping;
-import org.gama.stalactite.test.HSQLDBInMemoryDataSource;
 import org.gama.stalactite.test.JdbcTransactionManager;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
+
+import java.io.Serializable;
+import java.sql.SQLException;
+
+import static org.testng.Assert.assertEquals;
 
 public class PooledSequenceIdentifierGeneratorTest {
 	

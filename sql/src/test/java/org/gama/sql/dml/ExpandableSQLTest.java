@@ -1,22 +1,18 @@
 package org.gama.sql.dml;
 
-import org.gama.lang.bean.IFactory;
 import org.gama.lang.collection.Arrays;
-import org.gama.lang.collection.Iterables;
 import org.gama.lang.collection.Maps;
-import org.gama.lang.collection.ValueFactoryHashMap;
 import org.gama.sql.dml.ExpandableSQL.ExpandableParameter;
 import org.gama.sql.dml.SQLParameterParser.Parameter;
 import org.gama.sql.dml.SQLParameterParser.ParsedSQL;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
 
 /**
  * @author Guillaume Mary
@@ -46,7 +42,17 @@ public class ExpandableSQLTest {
 				{ Arrays.asList("select a from Toto where b = ", paramB, " and c = ", paramC, " and b = ", paramB, " and c = ", paramC),
 						Maps.asMap("B", (Object) Arrays.asList(20, 30, 40)).add("C", Arrays.asList(17, 23)),
 						"select a from Toto where b = ?, ?, ? and c = ?, ? and b = ?, ?, ? and c = ?, ?",
-						Maps.asMap("B", Arrays.asList(1, 2, 3, 6, 7 ,8)).add("C", Arrays.asList(4, 5, 9, 10)) },
+						Maps.asMap("B", Arrays.asList(1, 2, 3, 6, 7, 8)).add("C", Arrays.asList(4, 5, 9, 10)) },
+				// same parameter twice, next to each other
+				{ Arrays.asList("select a from Toto where b = ", paramB, " and b = ", paramB, " and c = ", paramC),
+						Maps.asMap("B", (Object) Arrays.asList(20, 30, 40)).add("C", Arrays.asList(17, 23)),
+						"select a from Toto where b = ?, ?, ? and b = ?, ?, ? and c = ?, ?",
+						Maps.asMap("B", Arrays.asList(1, 2, 3, 4, 5, 6)).add("C", Arrays.asList(7, 8)) },
+				// same parameter twice, next to each other, other order
+				{ Arrays.asList("select a from Toto where c = ", paramC, " and b = ", paramB, " and b = ", paramB),
+						Maps.asMap("B", (Object) Arrays.asList(20, 30, 40)).add("C", Arrays.asList(17, 23)),
+						"select a from Toto where c = ?, ? and b = ?, ?, ? and b = ?, ?, ?",
+						Maps.asMap("B", Arrays.asList(3, 4, 5, 6, 7, 8)).add("C", Arrays.asList(1, 2)) },
 		};
 	}
 
@@ -64,27 +70,13 @@ public class ExpandableSQLTest {
 		ExpandableSQL testInstance = new ExpandableSQL(parsedSQL, ExpandableSQL.sizes(values));
 		assertEquals(expectedPreparedSql, testInstance.getPreparedSQL());
 
-		Map<String, List<ExpandableParameter>> mappedParameter = new ValueFactoryHashMap<>(2, new IFactory<String, List<ExpandableParameter>>() {
-			@Override
-			public List<ExpandableParameter> createInstance(String input) {
-				return new ArrayList<>();
-			}
-		});
-		for (ExpandableParameter expandableParameter : testInstance.getExpandableParameters()) {
-			mappedParameter.get(expandableParameter.getParameterName()).add(expandableParameter);
-		}
-
 		List<Parameter> expectedParams = Arrays.asList(paramB, paramC);
 		for (Parameter expectedParam : expectedParams) {
-			List<ExpandableParameter> expParams = mappedParameter.get(expectedParam.getName());
-			assertNotNull(expParams);
-			assertFalse(expParams.isEmpty());
-			List<Integer> indexes = new ArrayList<>();
-			for (ExpandableParameter expParam : expParams) {
-				// NB: we use Copy to benefit from addAll optimisation, either we would use add + iterator which is not optimal
-				indexes.addAll(Iterables.copy(expParam));
+			ExpandableParameter expandableParameter = testInstance.getExpandableParameters().get(expectedParam.getName());
+			int i = 0;
+			for (Integer expectedIndex : expectedIndexedValues.get(expectedParam.getName())) {
+				assertEquals((int) expectedIndex, expandableParameter.getMarkIndexes()[i++]);
 			}
-			assertEquals(expectedIndexedValues.get(expectedParam.getName()), indexes);
 		}
 	}
 }

@@ -1,11 +1,12 @@
 package org.gama.sql.dml;
 
 import org.gama.lang.Strings;
-import org.gama.lang.collection.ArrayIterator;
 import org.gama.sql.dml.SQLParameterParser.Parameter;
 import org.gama.sql.dml.SQLParameterParser.ParsedSQL;
 
-import java.util.*;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Map.Entry;
 
 /**
@@ -25,34 +26,30 @@ public class ExpandableSQL {
 		return toReturn;
 	}
 
-	private final List<ExpandableParameter> expandableParameters;
+	private final Map<String, ExpandableParameter> expandableParameters;
 	private final ParsedSQL parsedSQL;
 
 	private String preparedSQL;
-	private final Map<String, Integer> parameterValuesSize;
 
 	public ExpandableSQL(ParsedSQL parsedSQL, Map<String, Integer> parameterValuesSize) {
 		this.parsedSQL = parsedSQL;
-		this.parameterValuesSize = parameterValuesSize;
-		this.expandableParameters = new ArrayList<>(this.parsedSQL.getSqlSnippets().size() / 2);
-		convertParsedParametersToExpandableParameters();
+		this.expandableParameters = new HashMap<>(this.parsedSQL.getSqlSnippets().size() / 2);
+		convertParsedParametersToExpandableParameters(parameterValuesSize);
 	}
 
-	private void convertParsedParametersToExpandableParameters() {
-		ExpandableParameter precedingParameter = null;
+	private void convertParsedParametersToExpandableParameters(Map<String, Integer> parameterValuesSize) {
 		StringBuilder preparedSQLBuilder = new StringBuilder();
+		// index for prepared statement mark (?), used to compute mark indexes of parameters
+		int markIndex = 1;
 		for (Object sqlSnippet : parsedSQL.getSqlSnippets()) {
 			if (sqlSnippet instanceof Parameter) {
 				String parameterName = ((Parameter) sqlSnippet).getName();
-				if (!parameterValuesSize.containsKey(parameterName)) {
-					throw new IllegalArgumentException("Parameter " + parameterName + " is not set");
+				Integer valueSize = parameterValuesSize.get(parameterName);
+				if (valueSize == null) {
+					throw new IllegalArgumentException("Size is not given for parameter " + parameterName + " hence expansion is not possible");
 				} else {
-					Integer valueSize = parameterValuesSize.get(parameterName);
-					ExpandableParameter snippetToAdd = new ExpandableParameter(valueSize, parameterName, precedingParameter);
-					this.expandableParameters.add(snippetToAdd);
-					snippetToAdd.catParameterizedSQL(preparedSQLBuilder);
-					// prepare next iteration
-					precedingParameter = snippetToAdd;
+					buildParameter(parameterName, valueSize, markIndex, preparedSQLBuilder);
+					markIndex += valueSize;
 				}
 			} else {
 				// sql snippet
@@ -61,8 +58,18 @@ public class ExpandableSQL {
 		}
 		this.preparedSQL = preparedSQLBuilder.toString();
 	}
-
-	public List<ExpandableParameter> getExpandableParameters() {
+	
+	private void buildParameter(String parameterName, Integer valueSize, int firstIndex, StringBuilder preparedSQLBuilder) {
+		ExpandableParameter expandableParameter = this.expandableParameters.get(parameterName);
+		if (expandableParameter == null) {
+			expandableParameter = new ExpandableParameter(parameterName, valueSize);
+			this.expandableParameters.put(parameterName, expandableParameter);
+		}
+		expandableParameter.buildMarkIndexes(firstIndex);
+		expandableParameter.catParameterMarks(preparedSQLBuilder);
+	}
+	
+	public Map<String, ExpandableParameter> getExpandableParameters() {
 		return expandableParameters;
 	}
 
@@ -73,9 +80,9 @@ public class ExpandableSQL {
 	/**
 	 * Class that represents a named parameter in a SQL statement.
 	 * It allows extension of single parameter mark (coded as a question mark '?') to multiple ones in case of
-	 * Collection value. This is done on the {@link #catParameterizedSQL(StringBuilder)} method.
+	 * Collection value. This is done on the {@link #catParameterMarks(StringBuilder)} method.
 	 */
-	public static class ExpandableParameter implements Iterable<Integer> {
+	public static class ExpandableParameter {
 
 		private static final String SQL_PARAMETER_MARK = "?";
 
@@ -97,21 +104,14 @@ public class ExpandableSQL {
 		
 		/** The parameter name */
 		private final String parameterName;
-		/** Preceding parameter, for index computation, overall used in case of Collection valued parameters */
-		private final ExpandableParameter precedingParameter;
 		/** PreparedStatement parameter mark count for this parameter, 1 for single value, N for Collection value */
 		private final int markCount;
 		/** Index of the parameter in the PreparedStatement, the first one for Collection value */
-		private Integer index;
-
-		private ExpandableParameter(int valueSize, String parameterName, ExpandableParameter precedingParameter) {
+		private int[] indexes;
+		
+		private ExpandableParameter(String parameterName, Integer markCount) {
 			this.parameterName = parameterName;
-			this.precedingParameter = precedingParameter;
-			this.markCount = valueSize;
-			if (this.markCount == 0) {
-				// this case will throw an invalid SQL statement: "in ()" => we throw one before.
-				throw new IllegalArgumentException("Empty collection for sql parameter " + parameterName);
-			}
+			this.markCount = markCount;
 		}
 
 		public String getParameterName() {
@@ -123,32 +123,29 @@ public class ExpandableSQL {
 		 * 
 		 * @return a one-sized array for single value parameter, a n-sized array for n-sized collection value parameter
 		 */
-		public Integer[] getMarkIndexes() {
-			Integer[] indexes = new Integer[markCount];
-			int startIndex = getFirstIndex();
-			for (int i = 0; i < markCount; i++) {
-				indexes[i] = startIndex + i;
-			}
+		public int[] getMarkIndexes() {
 			return indexes;
 		}
 		
-		/**
-		 * Compute (from preceding parameter) and return the parameter index.
-		 * 
-		 * @return the parameter index
-		 */
-		public int getFirstIndex() {
-			if (this.index == null) {
-				if (this.precedingParameter != null) {
-					this.index = this.precedingParameter.getFirstIndex() + this.precedingParameter.markCount;
-				} else {
-					this.index = 1;
-				}
+		private void buildMarkIndexes(int startIndex) {
+			int offset;
+			if (indexes == null) {
+				offset = 0;
+				indexes = new int[markCount];
+			} else {
+				// parameter already has indexes: we keep them (what a nice array copy !)
+				offset = indexes.length;
+				int[] newIndexes = new int[offset + markCount];
+				System.arraycopy(indexes, 0, newIndexes, 0, offset);
+				indexes = newIndexes;
 			}
-			return this.index;
+			// build mark indexes
+			for (int i=0; i < markCount; i++) {
+				indexes[i+offset] = startIndex++;
+			}
 		}
-
-		public StringBuilder catParameterizedSQL(StringBuilder stringBuilder) {
+		
+		private StringBuilder catParameterMarks(StringBuilder stringBuilder) {
 			if (markCount > 1) {
 				return expandParameters(stringBuilder);
 			} else {
@@ -165,15 +162,6 @@ public class ExpandableSQL {
 			StringBuilder sqlParameters = Strings.repeat(stringBuilder, markCount, SQL_PARAMETER_MARK_1, SQL_PARAMETER_MARK_100, SQL_PARAMETER_MARK_10);
 			sqlParameters.setLength(sqlParameters.length() - 2);
 			return sqlParameters;
-		}
-		
-		/**
-		 * Iterates over indexes of this parameter
-		 * @return an {@link ArrayIterator} over indexes 
-		 */
-		@Override
-		public Iterator<Integer> iterator() {
-			return new ArrayIterator<>(getMarkIndexes());
 		}
 	}
 }

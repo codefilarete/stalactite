@@ -72,6 +72,7 @@ public class SQLParameterParserTest {
 	private Object[][] testParse_in_data() {
 		CollectionParameter paramB = new CollectionParameter("B");
 		CollectionParameter paramC = new CollectionParameter("C");
+		Parameter paramD = new Parameter("D");
 		return new Object[][] {
 				// only one parameter, at the end
 				{"select a from Toto where b in (:B)", new ParsedSQL(Arrays.asList("select a from Toto where b in (", paramB, ")"),
@@ -79,6 +80,9 @@ public class SQLParameterParserTest {
 				// 2 parameters
 				{"select a from Toto where b in (:B) and c in (:C)", new ParsedSQL(Arrays.asList("select a from Toto where b in (", paramB, ") and c in (", paramC, ")"),
 						Maps.asMap("B", (Parameter) paramB).add("C", paramC))},
+				// 2 parameters "in" and "=" mix
+				{"select a from Toto where b in (:B) and d = :D", new ParsedSQL(Arrays.asList("select a from Toto where b in (", paramB, ") and d = ", paramD),
+						Maps.asMap("B", (Parameter) paramB).add("D", paramD))},
 		};
 	}
 

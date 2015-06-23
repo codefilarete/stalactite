@@ -1,4 +1,4 @@
-package org.gama.stalactite.test;
+package org.gama.sql.test;
 
 import org.hsqldb.jdbc.JDBCDataSource;
 
