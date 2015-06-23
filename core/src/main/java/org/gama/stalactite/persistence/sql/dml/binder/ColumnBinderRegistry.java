@@ -3,55 +3,71 @@ package org.gama.stalactite.persistence.sql.dml.binder;
 import org.gama.sql.binder.ParameterBinder;
 import org.gama.sql.binder.ParameterBinderRegistry;
 import org.gama.stalactite.persistence.structure.Table;
+import org.gama.stalactite.persistence.structure.Table.Column;
 
-import java.sql.ResultSet;
-import java.sql.SQLException;
+import java.sql.PreparedStatement;
+import java.util.HashMap;
 
 /**
- * Class to simplify access to method PreparedStatement.setXXX(..) and ResultSet.getXXX(..) according to Column type.
- * Methods {@link #getBinder(Class)} and {@link #getBinder(Table.Column)} can be overriden to implement a better match
- * on a more adapted {@link ParameterBinder}.
- * 
- * @author mary
+ * Registry of {@link ParameterBinder}s used pickup the best suited Column to simplify access to method {@link
+ * PreparedStatement}.
+ * Use {@link #register(Column, ParameterBinder)} or {@link #register(Class, ParameterBinder)} to specify the best
+ * binder for a column or type.
+ *
+ * @author Guillaume Mary
  */
 public class ColumnBinderRegistry {
 	
+	/**
+	 * Registry for types
+	 */
 	private ParameterBinderRegistry parameterBinderRegistry = new ParameterBinderRegistry();
+	
+	/**
+	 * Registry for Columns
+	 */
+	private final HashMap<String /* column absolute name */, ParameterBinder> parameterBinders = new HashMap<>();
 	
 	public ColumnBinderRegistry() {
 	}
-
+	
+	public <T> void register(Column column, ParameterBinder<T> parameterBinder) {
+		this.parameterBinders.put(column.getAbsoluteName(), parameterBinder);
+	}
+	
 	public <T> void register(Class<T> clazz, ParameterBinder<T> parameterBinder) {
 		this.parameterBinderRegistry.register(clazz, parameterBinder);
 	}
 	
 	/**
-	 * Lit la colonne <t>column</t> ramenée par <t>resultSet</t>
-	 * 
+	 * Gives the {@link ParameterBinder} of a column is exists, else gives it for the Java type of the Column
+	 *
 	 * @param column
-	 * @param resultSet
-	 * @return le contenu de la colonne <t>column</t>, typé en fonction de <t>column</t>
-	 * @throws SQLException
+	 * @return the binder for the column or for its Java type
+	 * @throws UnsupportedOperationException if the binder doesn't exist
 	 */
-	public Object get(Table.Column column, ResultSet resultSet) throws SQLException {
+	public ParameterBinder getBinder(Table.Column column) {
+		ParameterBinder columnBinder = parameterBinders.get(column.getAbsoluteName());
 		try {
-			return parameterBinderRegistry.get(column.getName(), column.getJavaType(), resultSet);
+			return columnBinder != null ? columnBinder : getBinder(column.getJavaType());
 		} catch (UnsupportedOperationException e) {
-			// transforming the exception for message rewriting
+			// basic exception is replaced by a better message
 			throwMissingBinderException(column);
-			// unreachable
-			return null;
+			return null;	// unreachable
 		}
 	}
-
-	public ParameterBinder getBinder(Table.Column column) {
-		return getBinder(column.getJavaType());
-	}
-
+	
+	/**
+	 * Gives the registered {@link ParameterBinder} for the given type.
+	 *
+	 * @param clazz a class
+	 * @return the registered {@link ParameterBinder} for the given type
+	 * @throws UnsupportedOperationException if the binder doesn't exist
+	 */
 	public ParameterBinder getBinder(Class clazz) {
 		return this.parameterBinderRegistry.getBinder(clazz);
 	}
-
+	
 	private void throwMissingBinderException(Table.Column column) {
 		throw new UnsupportedOperationException("No parameter binder found for column " + column.getAbsoluteName() + " (type " + column.getJavaType() + ")");
 	}

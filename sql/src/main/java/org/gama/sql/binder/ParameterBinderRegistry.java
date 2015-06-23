@@ -1,8 +1,5 @@
 package org.gama.sql.binder;
 
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.util.Date;
 import java.util.WeakHashMap;
 
@@ -43,57 +40,18 @@ public class ParameterBinderRegistry {
 	}
 	
 	/**
-	 * Read the <t>columnName</t> retrieved by <t>resultSet</t>
-	 *
-	 * @param columnName the name of the column to be read
-	 * @param expectedClass the expected type of return object
-	 * @param resultSet the result set to read
-	 * @return <t>columnName</t> content, typed as <t>expectedClass</t>
-	 * @throws SQLException
-	 * @throws UnsupportedOperationException if <t>expectedClass</t> is unknown from registry
+	 * Gives the registered {@link ParameterBinder} for the given type.
+	 * 
+	 * @param clazz a class
+	 * @return the registered {@link ParameterBinder} for the given type
+	 * @throws UnsupportedOperationException if the binder doesn't exist
 	 */
-	public <T> T get(String columnName, Class<T> expectedClass, ResultSet resultSet) throws SQLException {
-		if (!isNull(columnName, resultSet)) {
-			return getNotNull(columnName, expectedClass, resultSet);
-		} else {
-			return null;
-		}
-	}
-	
-	protected boolean isNull(String columnName, ResultSet resultSet) throws SQLException {
-		// wasNull est utilisable également, mais getObject(String) est également supporté. protected au cas où.
-		return resultSet.getObject(columnName) == null;
-	}
-	
-	protected <T> T getNotNull(String columnName, Class<T> expectedClass, ResultSet resultSet) throws SQLException {
-		T toReturn;
-		ParameterBinder<T> parameterBinder = getBinder(expectedClass);
-		if (parameterBinder != null) {
-			toReturn = parameterBinder.get(columnName, resultSet);
-		} else {
-			throwMissingBinderException(expectedClass);
-			return null;	// unreachable code
-		}
-		return toReturn;
-	}
-	
-	public <T> void set(int index, T value, PreparedStatement preparedStatement) throws SQLException {
-		if (value == null) {
-			// Attention, pas mal de débat autour de l'utilisation de setObject(int, null) sur le Net, mais finalement
-			// il semble que ça soit de plus en plus supporté.
-			preparedStatement.setObject(index, null);
-		} else {
-			ParameterBinder<T> parameterBinder = (ParameterBinder<T>) getBinder(value.getClass());
-			if (parameterBinder != null) {
-				parameterBinder.set(index, value, preparedStatement);
-			} else {
-				throwMissingBinderException(value.getClass());
-			}
-		}
-	}
-	
 	public <T> ParameterBinder<T> getBinder(Class<T> clazz) {
-		return getParameterBinders().get(clazz);
+		ParameterBinder<T> parameterBinder = getParameterBinders().get(clazz);
+		if (parameterBinder == null) {
+			throwMissingBinderException(clazz);
+		}
+		return parameterBinder;
 	}
 	
 	private void throwMissingBinderException(Class clazz) {
