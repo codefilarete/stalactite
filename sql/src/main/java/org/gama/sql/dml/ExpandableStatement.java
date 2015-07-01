@@ -3,7 +3,6 @@ package org.gama.sql.dml;
 import org.gama.sql.binder.ParameterBinder;
 
 import java.sql.PreparedStatement;
-import java.sql.SQLException;
 import java.util.Map;
 
 /**
@@ -41,14 +40,6 @@ public abstract class ExpandableStatement<ParamType> extends SQLStatement<ParamT
 			for (Object v : (Iterable) value) {
 				doApplyValue(firstIndex++, v, parameterBinder, statement);
 			}
-		}
-	}
-	
-	private void doApplyValue(int index, Object value, ParameterBinder parameterBinder, PreparedStatement statement) {
-		try {
-			parameterBinder.set(index, value, statement);
-		} catch (SQLException e) {
-			throw new RuntimeException("Error while setting value " + value + " for parameter " + index + " on statement " + getSQL(), e);
 		}
 	}
 	

@@ -6,7 +6,6 @@ import org.gama.lang.collection.*;
 import org.gama.sql.IConnectionProvider;
 import org.gama.sql.dml.ReadOperation;
 import org.gama.sql.dml.WriteOperation;
-import org.gama.stalactite.Logger;
 import org.gama.stalactite.persistence.engine.Persister.IIdentifierFixer;
 import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
 import org.gama.stalactite.persistence.mapping.StatementValues;
@@ -33,8 +32,6 @@ import java.util.Map.Entry;
  * @author Guillaume Mary
  */
 public class PersisterExecutor<T> {
-	
-	private static Logger LOGGER = Logger.getLogger(PersisterExecutor.class);
 	
 	private final DMLGenerator dmlGenerator;
 	private final ClassMappingStrategy<T> mappingStrategy;

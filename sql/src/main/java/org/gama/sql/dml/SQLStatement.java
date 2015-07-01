@@ -3,6 +3,7 @@ package org.gama.sql.dml;
 import org.gama.sql.binder.ParameterBinder;
 
 import java.sql.PreparedStatement;
+import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -77,5 +78,29 @@ public abstract class SQLStatement<ParamType> {
 		return parameterBinders.get(parameter);
 	}
 	
+	/**
+	 * Applies a value of a parameter to a statement. Implementation is let to children classes because it depends
+	 * on {@link ParamType} and type of value.
+	 * 
+	 * @param key the parameter
+	 * @param value the value of the parameter
+	 * @param statement the statement to use
+	 */
 	protected abstract void doApplyValue(ParamType key, Object value, PreparedStatement statement);
+	
+	/**
+	 * Applies a value at an index of a statement according to a binder. Accessible from children classes.
+	 * 
+	 * @param index the index of the parameter
+	 * @param value the value of the parameter
+	 * @param paramBinder the binder of the parameter on the statement
+	 * @param statement the statement to use
+	 */
+	protected void doApplyValue(int index, Object value, ParameterBinder paramBinder, PreparedStatement statement) {
+		try {
+			paramBinder.set(index, value, statement);
+		} catch (SQLException e) {
+			throw new RuntimeException("Error while setting value " + value + " for parameter " + index + " on statement " + getSQL(), e);
+		}
+	}
 }
