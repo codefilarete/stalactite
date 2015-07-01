@@ -26,13 +26,13 @@ public class ColumnBinderRegistry {
 	/**
 	 * Registry for Columns
 	 */
-	private final HashMap<String /* column absolute name */, ParameterBinder> parameterBinders = new HashMap<>();
+	private final HashMap<Column, ParameterBinder> parameterBinders = new HashMap<>();
 	
 	public ColumnBinderRegistry() {
 	}
 	
 	public <T> void register(Column column, ParameterBinder<T> parameterBinder) {
-		this.parameterBinders.put(column.getAbsoluteName(), parameterBinder);
+		this.parameterBinders.put(column, parameterBinder);
 	}
 	
 	public <T> void register(Class<T> clazz, ParameterBinder<T> parameterBinder) {
@@ -40,14 +40,14 @@ public class ColumnBinderRegistry {
 	}
 	
 	/**
-	 * Gives the {@link ParameterBinder} of a column is exists, else gives it for the Java type of the Column
+	 * Gives the {@link ParameterBinder} of a column if exists, else gives it for the Java type of the Column
 	 *
 	 * @param column
 	 * @return the binder for the column or for its Java type
 	 * @throws UnsupportedOperationException if the binder doesn't exist
 	 */
 	public ParameterBinder getBinder(Table.Column column) {
-		ParameterBinder columnBinder = parameterBinders.get(column.getAbsoluteName());
+		ParameterBinder columnBinder = parameterBinders.get(column);
 		try {
 			return columnBinder != null ? columnBinder : getBinder(column.getJavaType());
 		} catch (UnsupportedOperationException e) {

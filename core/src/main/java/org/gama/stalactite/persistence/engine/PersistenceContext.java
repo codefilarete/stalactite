@@ -7,7 +7,6 @@ import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
 import org.gama.stalactite.persistence.sql.Dialect;
 
 import java.sql.Connection;
-import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -73,7 +72,7 @@ public class PersistenceContext {
 		return mappingStrategies;
 	}
 	
-	public Connection getCurrentConnection() throws SQLException {
+	public Connection getCurrentConnection() {
 		return transactionManager.getCurrentConnection();
 	}
 	

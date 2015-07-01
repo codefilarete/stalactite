@@ -2,6 +2,7 @@ package org.gama.stalactite.persistence.engine;
 
 import org.gama.lang.bean.IDelegate;
 import org.gama.lang.bean.IDelegateWithResult;
+import org.gama.lang.collection.Iterables;
 import org.gama.stalactite.persistence.engine.listening.PersisterListener;
 import org.gama.stalactite.persistence.id.AutoAssignedIdentifierGenerator;
 import org.gama.stalactite.persistence.id.IdentifierGenerator;
@@ -30,7 +31,9 @@ public class Persister<T> {
 	public Persister(PersistenceContext persistenceContext, ClassMappingStrategy<T> mappingStrategy) {
 		this.persistenceContext = persistenceContext;
 		this.mappingStrategy = mappingStrategy;
-		this.persisterExecutor = new PersisterExecutor<>(mappingStrategy, configureIdentifierFixer(mappingStrategy), persistenceContext.getJDBCBatchSize(), persistenceContext.getTransactionManager());
+		this.persisterExecutor = new PersisterExecutor<>(mappingStrategy, configureIdentifierFixer(mappingStrategy),
+				persistenceContext.getJDBCBatchSize(), persistenceContext.getTransactionManager(),
+				persistenceContext.getDialect().getColumnBinderRegistry());
 	}
 	
 	public PersistenceContext getPersistenceContext() {
@@ -191,11 +194,11 @@ public class Persister<T> {
 	}
 	
 	public T select(final Serializable id) {
-		return select(Collections.singleton(id)).get(0);
+		return Iterables.first(select(Collections.singleton(id)));
 	}
 	
 	public List<T> select(final Iterable<Serializable> ids) {
-		if (!org.gama.lang.collection.Iterables.isEmpty(ids)) {
+		if (!Iterables.isEmpty(ids)) {
 			return getPersisterListener().doWithSelectListener(ids, new IDelegateWithResult<List<T>>() {
 				@Override
 				public List<T> execute() {
@@ -211,6 +214,10 @@ public class Persister<T> {
 		return persisterExecutor.select(ids);
 	}
 	
+	/**
+	 * Internal interface to specify contract of classes that can fix an identifier to an instance.
+	 * @param <T>
+	 */
 	protected interface IIdentifierFixer<T> {
 		
 		void fixId(T t);

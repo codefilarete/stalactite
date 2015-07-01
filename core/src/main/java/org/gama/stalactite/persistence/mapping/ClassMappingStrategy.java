@@ -92,14 +92,29 @@ public class ClassMappingStrategy<T> implements IMappingStrategy<T> {
 			toReturn.getUpsertValues().putAll(fieldUpdateValues.getUpsertValues());
 		}
 		if (allColumns && !toReturn.getUpsertValues().isEmpty()) {
-			Set<Column> missingColumns = new LinkedHashSet<>(getColumns());
-			missingColumns.remove(getTargetTable().getPrimaryKey());	// primary key is never updated
+			Set<Column> missingColumns = buildUpdatableColumns();
 			missingColumns.removeAll(toReturn.getUpsertValues().keySet());
 			for (Column missingColumn : missingColumns) {
 				toReturn.putUpsertValue(missingColumn, null);
 			}
 		}
 		return toReturn;
+	}
+	
+	/**
+	 * Gives columns that can be updated: columns minus keys
+	 * @return columns aff all mapping strategies without getKeys()
+	 */
+	public Set<Column> buildUpdatableColumns() {
+		Set<Column> missingColumns = new LinkedHashSet<>(getColumns());
+		for (IEmbeddedBeanMapper<?> iEmbeddedBeanMapper : mappingStrategies.values()) {
+			missingColumns.addAll(iEmbeddedBeanMapper.getColumns());
+		}
+		// keys are never updated
+		for (Column column : getKeys()) {
+			missingColumns.remove(column);
+		}
+		return missingColumns;
 	}
 	
 	@Override
@@ -119,6 +134,18 @@ public class ClassMappingStrategy<T> implements IMappingStrategy<T> {
 	
 	public Iterable<Column> getVersionedKeys() {
 		return defaultMappingStrategy.getVersionedKeys();
+	}
+	
+	public Iterable<Column> getKeys() {
+		return defaultMappingStrategy.getKeys();
+	}
+	
+	public boolean isSingleColumnKey() {
+		return defaultMappingStrategy.isSingleColumnKey();
+	}
+	
+	public Column getSingleColumnKey() {
+		return defaultMappingStrategy.getSingleColumnKey();
 	}
 	
 	@Override

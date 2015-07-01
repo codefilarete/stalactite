@@ -5,6 +5,9 @@ import org.gama.lang.collection.Iterables;
 import org.gama.stalactite.persistence.engine.PersistenceContext;
 import org.gama.stalactite.persistence.engine.Persister;
 import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
+import org.gama.stalactite.persistence.sql.Dialect;
+import org.gama.stalactite.persistence.sql.ddl.JavaTypeToSqlTypeMapping;
+import org.gama.stalactite.persistence.sql.dml.binder.ColumnBinderRegistry;
 import org.testng.annotations.Test;
 
 import java.sql.SQLException;
@@ -14,6 +17,7 @@ import java.util.List;
 
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 /**
  * @author Guillaume Mary
@@ -23,7 +27,9 @@ public class InsertToBeforeInsertCascaderTest extends CascaderTest {
 	@Test
 	public void testBeforeInsert() throws SQLException {
 		// Necessary Persister to be passed to the InsertToBeforeInsertCascader tested instance
-		Persister<Tata> persisterMock = new Persister<Tata>(mock(PersistenceContext.class), mock(ClassMappingStrategy.class)) {
+		PersistenceContext persistenceContextMock = mock(PersistenceContext.class);
+		when(persistenceContextMock.getDialect()).thenReturn(new Dialect(new JavaTypeToSqlTypeMapping(), new ColumnBinderRegistry()));
+		Persister<Tata> persisterMock = new Persister<Tata>(persistenceContextMock, mock(ClassMappingStrategy.class)) {
 			@Override
 			protected void doInsert(Iterable<Tata> iterable) {
 				// Overriden to do no action, because default super action is complex to mock

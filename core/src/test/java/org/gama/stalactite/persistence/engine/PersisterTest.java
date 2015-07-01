@@ -72,6 +72,9 @@ public class PersisterTest {
 		when(preparedStatement.executeBatch()).thenReturn(new int[] {1});
 		
 		Connection connection = mock(Connection.class);
+		// PreparedStatement.getConnection() must gives that instance of connection because of SQLOperation that checks
+		// weither or not it should prepare statement
+		when(preparedStatement.getConnection()).thenReturn(connection);
 		statementArgCaptor = ArgumentCaptor.forClass(String.class);
 		when(connection.prepareStatement(statementArgCaptor.capture())).thenReturn(preparedStatement);
 		
@@ -239,10 +242,9 @@ public class PersisterTest {
 	public void testDelete() throws Exception {
 		testInstance.delete(new Toto(7, 17, 23));
 		
-		verify(preparedStatement, times(1)).addBatch();
-		verify(preparedStatement, times(1)).executeBatch();
+		verify(preparedStatement, times(1)).executeUpdate();
 		verify(preparedStatement, times(1)).setInt(indexCaptor.capture(), valueCaptor.capture());
-		assertEquals("delete Toto where a = ?", statementArgCaptor.getValue());
+		assertEquals("delete Toto where a in (?)", statementArgCaptor.getValue());
 		PairSet<Integer, Integer> expectedPairs = PairSet.of(1, 7);
 		assertCapturedPairsEqual(expectedPairs);
 	}
@@ -251,33 +253,43 @@ public class PersisterTest {
 	public void testDelete_multiple() throws Exception {
 		testInstance.delete(Arrays.asList(new Toto(1, 17, 23), new Toto(2, 29, 31), new Toto(3, 37, 41), new Toto(4, 43, 53)));
 		
-		verify(preparedStatement, times(4)).addBatch();
-		verify(preparedStatement, times(2)).executeBatch();
+		assertEquals(Arrays.asList("delete Toto where a in (?, ?, ?)", "delete Toto where a in (?)"), statementArgCaptor.getAllValues());
+		verify(preparedStatement, times(1)).addBatch();
+		verify(preparedStatement, times(1)).executeBatch();
+		verify(preparedStatement, times(1)).executeUpdate();
 		verify(preparedStatement, times(4)).setInt(indexCaptor.capture(), valueCaptor.capture());
-		assertEquals("delete Toto where a = ?", statementArgCaptor.getValue());
-		PairSet<Integer, Integer> expectedPairs = PairSet.of(1, 1).add(1, 2).add(1, 3).add(1, 4);
+		PairSet<Integer, Integer> expectedPairs = PairSet.of(1, 1).add(2, 2).add(3, 3).add(1, 4);
 		assertCapturedPairsEqual(expectedPairs);
 	}
 	
 	
 	@Test
-	public void testSelect() throws Exception {
+	public void testSelect_one() throws Exception {
 		// mocking executeQuery not to return null because select method will use the ResultSet
 		ResultSet resultSetMock = mock(ResultSet.class);
 		when(preparedStatement.executeQuery()).thenReturn(resultSetMock);
-		ResultSetMetaData metaDataMock = mock(ResultSetMetaData.class);
-		when(resultSetMock.getMetaData()).thenReturn(metaDataMock);
-		when(metaDataMock.getColumnCount()).thenReturn(3);
-		when(metaDataMock.getColumnName(1)).thenReturn("a");
-		when(metaDataMock.getColumnName(2)).thenReturn("b");
-		when(metaDataMock.getColumnName(3)).thenReturn("c");
 		
 		testInstance.select(7);
 		
 		verify(preparedStatement, times(1)).executeQuery();
 		verify(preparedStatement, times(1)).setInt(indexCaptor.capture(), valueCaptor.capture());
-		assertEquals("select a, b, c from Toto where a = ?", statementArgCaptor.getValue());
+		assertEquals("select a, b, c from Toto where a in (?)", statementArgCaptor.getValue());
 		PairSet<Integer, Integer> expectedPairs = PairSet.of(1, 7);
+		assertCapturedPairsEqual(expectedPairs);
+	}
+	
+	@Test
+	public void testSelect_multiple() throws Exception {
+		// mocking executeQuery not to return null because select method will use the ResultSet
+		ResultSet resultSetMock = mock(ResultSet.class);
+		when(preparedStatement.executeQuery()).thenReturn(resultSetMock);
+
+		testInstance.select(Arrays.asList((Serializable) 11, 13, 17, 23));
+		
+		verify(preparedStatement, times(2)).executeQuery();
+		verify(preparedStatement, times(4)).setInt(indexCaptor.capture(), valueCaptor.capture());
+		assertEquals(Arrays.asList("select a, b, c from Toto where a in (?, ?, ?)", "select a, b, c from Toto where a in (?)"), statementArgCaptor.getAllValues());
+		PairSet<Integer, Integer> expectedPairs = PairSet.of(1, 11).add(2, 13).add(3, 17).add(1, 23);
 		assertCapturedPairsEqual(expectedPairs);
 	}
 	
@@ -288,17 +300,28 @@ public class PersisterTest {
 	
 	@Test
 	public void testSelect_hsqldb() throws SQLException {
-		transactionManager.setDataSource(new HSQLDBInMemoryDataSource());
+		HSQLDBInMemoryDataSource dataSource = new HSQLDBInMemoryDataSource();
+		transactionManager.setDataSource(dataSource);
 		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
 		ddlDeployer.deployDDL();
 		testInstance = persistenceContext.getPersister(Toto.class);
-		Connection connection = persistenceContext.getCurrentConnection();
-		connection.prepareStatement("insert into Toto(a, b, c) values (1, 2, 3)").execute();
+		Connection connection = dataSource.getConnection();
+		connection.prepareStatement("insert into Toto(a, b, c) values (1, 10, 100)").execute();
+		connection.prepareStatement("insert into Toto(a, b, c) values (2, 20, 200)").execute();
+		connection.prepareStatement("insert into Toto(a, b, c) values (3, 30, 300)").execute();
+		connection.prepareStatement("insert into Toto(a, b, c) values (4, 40, 400)").execute();
 		connection.commit();
 		Toto t = testInstance.select(1);
 		assertEquals(1, (Object) t.a);
-		assertEquals(2, (Object) t.b);
-		assertEquals(3, (Object) t.c);
+		assertEquals(10, (Object) t.b);
+		assertEquals(100, (Object) t.c);
+		List<Toto> totos = testInstance.select(Arrays.asList((Serializable) 2, 3, 4));
+		for (int i = 2; i <= 4; i++) {
+			t = totos.get(i-2);
+			assertEquals(i, (Object) t.a);
+			assertEquals(10*i, (Object) t.b);
+			assertEquals(100*i, (Object) t.c);
+		}
 	}
 	
 	private static class Toto {

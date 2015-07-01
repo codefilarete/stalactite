@@ -34,7 +34,11 @@ public class FieldMappingStrategy<T> implements IMappingStrategy<T> {
 	
 	private final ToBeanRowTransformer<T> rowTransformer;
 	
-	private Iterable<Column> versionedKeys;
+	private final Iterable<Column> keys;
+	
+	private final boolean singleColumnKey;
+	
+	private final Iterable<Column> versionedKeys;
 	
 	/**
 	 * Build a FieldMappingStrategy from a mapping between Field and Column.
@@ -70,6 +74,9 @@ public class FieldMappingStrategy<T> implements IMappingStrategy<T> {
 		this.classToPersist = (Class<T>) identifierField.getDeclaringClass();
 		this.rowTransformer = new ToBeanRowTransformer<>(Reflections.getDefaultConstructor(classToPersist), columnToField);
 		this.columns = new LinkedHashSet<>(fieldToColumn.values());
+		// TODO: distinguish key from version, implement id with multiple column/field
+		this.keys = Collections.unmodifiableSet(Arrays.asSet(targetTable.getPrimaryKey()));
+		this.singleColumnKey = true;
 		this.versionedKeys = Collections.unmodifiableSet(Arrays.asSet(targetTable.getPrimaryKey()));
 	}
 	
@@ -146,6 +153,21 @@ public class FieldMappingStrategy<T> implements IMappingStrategy<T> {
 	
 	public Iterable<Column> getVersionedKeys() {
 		return versionedKeys;
+	}
+	
+	public Iterable<Column> getKeys() {
+		return keys;
+	}
+	
+	public boolean isSingleColumnKey() {
+		return singleColumnKey;
+	}
+	
+	public Column getSingleColumnKey() {
+		if (!singleColumnKey) {
+			throw new UnsupportedOperationException("Can't give only when key when several exist");
+		}
+		return Iterables.first(keys);
 	}
 	
 	@Override

@@ -4,7 +4,9 @@ import org.gama.sql.binder.ParameterBinder;
 
 import java.sql.PreparedStatement;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 
 /**
@@ -55,10 +57,25 @@ public abstract class SQLStatement<ParamType> {
 	public abstract String getSQL();
 	
 	/**
-	 * Calls right setXXX method (accoding to {@link ParameterBinder} given at contructor) on the given
+	 * Calls right setXXX method (according to {@link ParameterBinder} given at contructor) on the given
 	 * {@link PreparedStatement}. Called by {@link SQLOperation} classes.
 	 * 
 	 * @param statement
 	 */
-	public abstract void applyValues(PreparedStatement statement);
+	public void applyValues(PreparedStatement statement) {
+		if (!values.keySet().containsAll(indexes)) {
+			HashSet<ParamType> missingIndexes = new HashSet<>(indexes);
+			missingIndexes.removeAll(values.keySet());
+			throw new IllegalArgumentException("Missing value for indexes " + missingIndexes + " in values " + values + " for \"" + getSQL() + "\"");
+		}
+		for (Entry<ParamType, Object> indexToValue : values.entrySet()) {
+			doApplyValue(indexToValue.getKey(), indexToValue.getValue(), statement);
+		}
+	}
+	
+	public ParameterBinder getParameterBinder(ParamType parameter) {
+		return parameterBinders.get(parameter);
+	}
+	
+	protected abstract void doApplyValue(ParamType key, Object value, PreparedStatement statement);
 }

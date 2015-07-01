@@ -6,7 +6,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * @author mary
+ * @author Guillaume Mary
  */
 public class Collections {
 	
@@ -53,14 +53,14 @@ public class Collections {
 	 * @param blockSize
 	 * @return une collection en paquets
 	 */
-	public static <E> List<List<E>> parcel(Collection<E> data, int blockSize) {
+	public static <E> List<List<E>> parcel(Iterable<E> data, int blockSize) {
 		final List<List<E>> blocks = new ArrayList<>();
 		// on s'assure d'avoir une liste pour permettre l'utilisation de subList ensuite
 		List<E> dataAsList;
 		if (data instanceof List) {
 			dataAsList = (List<E>) data;
 		} else {
-			dataAsList = new ArrayList<>(data);
+			dataAsList = Iterables.copy(data);
 		}
 		int i = 0;
 		int dataSize = dataAsList.size();

@@ -1,31 +1,31 @@
 package org.gama.stalactite.persistence.sql.dml;
 
-import org.gama.lang.collection.Maps;
 import org.gama.sql.binder.ParameterBinder;
 import org.gama.stalactite.persistence.engine.PersistenceContext;
 import org.gama.stalactite.persistence.sql.Dialect;
 import org.gama.stalactite.persistence.sql.ddl.JavaTypeToSqlTypeMapping;
+import org.gama.stalactite.persistence.sql.dml.PreparedUpdate.UpwhereColumn;
 import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.persistence.structure.Table.Column;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
-import java.util.AbstractMap;
 import java.util.Arrays;
-import java.util.Map;
 
-import static org.testng.Assert.assertEquals;
+import static org.junit.Assert.assertEquals;
 
 public class DMLGeneratorTest {
 
 	private ParameterBinder stringBinder;
-
+	private DMLGenerator testInstance;
+	
 	@BeforeMethod
 	public void setUp() {
 		// Nécessaire aux CRUDOperations et RowIterator qui ont besoin du ParamaterBinderRegistry
 		Dialect currentDialect = new Dialect(new JavaTypeToSqlTypeMapping());
 		PersistenceContext.setCurrent(new PersistenceContext(null, currentDialect));
 		stringBinder = currentDialect.getColumnBinderRegistry().getBinder(String.class);
+		testInstance = new DMLGenerator(currentDialect.getColumnBinderRegistry());
 	}
 	
 	@Test
@@ -34,13 +34,13 @@ public class DMLGeneratorTest {
 		Column colA = toto.new Column("A", String.class);
 		Column colB = toto.new Column("B", String.class);
 
-		DMLGenerator testInstance = new DMLGenerator();
-		InsertOperation buildedInsert = testInstance.buildInsert(toto.getColumns());
-		assertEquals(buildedInsert.getSql(), "insert into Toto(A, B) values (?, ?)");
-
-		Map<Column, Map.Entry<Integer, ParameterBinder>> upsertIndexes = buildedInsert.getInsertIndexes();
-		assertEquals(upsertIndexes, Maps.asMap(colA, new AbstractMap.SimpleEntry<>(1, stringBinder))
-									.add(colB, new AbstractMap.SimpleEntry<>(2, stringBinder)));
+		ColumnPreparedSQL buildedInsert = testInstance.buildInsert(toto.getColumns());
+		assertEquals(buildedInsert.getSQL(), "insert into Toto(A, B) values (?, ?)");
+		
+		assertEquals(1, buildedInsert.getIndexes(colA)[0]);
+		assertEquals(2, buildedInsert.getIndexes(colB)[0]);
+		assertEquals(stringBinder, buildedInsert.getParameterBinder(colA));
+		assertEquals(stringBinder, buildedInsert.getParameterBinder(colB));
 	}
 	
 	@Test
@@ -49,16 +49,16 @@ public class DMLGeneratorTest {
 		Column colA = toto.new Column("A", String.class);
 		Column colB = toto.new Column("B", String.class);
 		
-		DMLGenerator testInstance = new DMLGenerator();
-		UpdateOperation buildedUpdate = testInstance.buildUpdate(toto.getColumns(), Arrays.asList(colA));
-		assertEquals(buildedUpdate.getSql(), "update Toto set A = ?, B = ? where A = ?");
+		PreparedUpdate buildedUpdate = testInstance.buildUpdate(toto.getColumns(), Arrays.asList(colA));
+		assertEquals(buildedUpdate.getSQL(), "update Toto set A = ?, B = ? where A = ?");
 
-		Map<Column, Map.Entry<Integer, ParameterBinder>> upsertIndexes = buildedUpdate.getUpdateIndexes();
-		assertEquals(upsertIndexes, Maps.asMap(colA, new AbstractMap.SimpleEntry<>(1, stringBinder))
-									.add(colB, new AbstractMap.SimpleEntry<>(2, stringBinder)));
+		assertEquals(1, buildedUpdate.getIndex(new UpwhereColumn(colA, true)));
+		assertEquals(2, buildedUpdate.getIndex(new UpwhereColumn(colB, true)));
+		assertEquals(3, buildedUpdate.getIndex(new UpwhereColumn(colA, false)));
 		
-		Map<Column, Map.Entry<Integer, ParameterBinder>> whereIndexes = buildedUpdate.getWhereIndexes();
-		assertEquals(whereIndexes, Maps.asMap(colA, new AbstractMap.SimpleEntry<>(3, stringBinder)));
+		assertEquals(stringBinder, buildedUpdate.getParameterBinder(new UpwhereColumn(colA, true)));
+		assertEquals(stringBinder, buildedUpdate.getParameterBinder(new UpwhereColumn(colB, true)));
+		assertEquals(stringBinder, buildedUpdate.getParameterBinder(new UpwhereColumn(colA, false)));
 	}
 	
 	@Test
@@ -67,12 +67,24 @@ public class DMLGeneratorTest {
 		Column colA = toto.new Column("A", String.class);
 		toto.new Column("B", String.class);
 		
-		DMLGenerator testInstance = new DMLGenerator();
-		DeleteOperation buildedDelete = testInstance.buildDelete(toto, Arrays.asList(colA));
-		assertEquals(buildedDelete.getSql(), "delete Toto where A = ?");
+		ColumnPreparedSQL buildedDelete = testInstance.buildDelete(toto, Arrays.asList(colA));
+		assertEquals(buildedDelete.getSQL(), "delete Toto where A = ?");
 		
-		Map<Column, Map.Entry<Integer, ParameterBinder>> whereIndexes = buildedDelete.getWhereIndexes();
-		assertEquals(whereIndexes, Maps.asMap(colA, new AbstractMap.SimpleEntry<>(1, stringBinder)));
+		assertEquals(1, buildedDelete.getIndexes(colA)[0]);
+		assertEquals(stringBinder, buildedDelete.getParameterBinder(colA));
+	}
+	
+	@Test
+	public void testBuildMassiveDelete() throws Exception {
+		Table toto = new Table(null, "Toto");
+		Column colA = toto.new Column("A", String.class);
+		toto.new Column("B", String.class);
+		
+		ColumnPreparedSQL buildedDelete = testInstance.buildMassiveDelete(toto, colA, 1);
+		assertEquals(buildedDelete.getSQL(), "delete Toto where A in (?)");
+		
+		assertEquals(1, buildedDelete.getIndexes(colA)[0]);
+		assertEquals(stringBinder, buildedDelete.getParameterBinder(colA));
 	}
 	
 	@Test
@@ -81,11 +93,23 @@ public class DMLGeneratorTest {
 		Column colA = toto.new Column("A", String.class);
 		Column colB = toto.new Column("B", String.class);
 		
-		DMLGenerator testInstance = new DMLGenerator();
-		SelectOperation buildedSelect = testInstance.buildSelect(toto, Arrays.asList(colA, colB), Arrays.asList(colA));
-		assertEquals(buildedSelect.getSql(), "select A, B from Toto where A = ?");
+		ColumnPreparedSQL buildedSelect = testInstance.buildSelect(toto, Arrays.asList(colA, colB), Arrays.asList(colA));
+		assertEquals(buildedSelect.getSQL(), "select A, B from Toto where A = ?");
 		
-		Map<Column, Map.Entry<Integer, ParameterBinder>> whereIndexes = buildedSelect.getWhereIndexes();
-		assertEquals(whereIndexes, Maps.asMap(colA, new AbstractMap.SimpleEntry<>(1, stringBinder)));
+		assertEquals(1, buildedSelect.getIndexes(colA)[0]);
+		assertEquals(stringBinder, buildedSelect.getParameterBinder(colA));
+	}
+	
+	@Test
+	public void testBuildMassiveSelect() throws Exception {
+		Table toto = new Table(null, "Toto");
+		Column colA = toto.new Column("A", String.class);
+		Column colB = toto.new Column("B", String.class);
+		
+		ColumnPreparedSQL buildedSelect = testInstance.buildMassiveSelect(toto, Arrays.asList(colA, colB), colA, 5);
+		assertEquals(buildedSelect.getSQL(), "select A, B from Toto where A in (?, ?, ?, ?, ?)");
+		
+		assertEquals(1, buildedSelect.getIndexes(colA)[0]);
+		assertEquals(stringBinder, buildedSelect.getParameterBinder(colA));
 	}
 }

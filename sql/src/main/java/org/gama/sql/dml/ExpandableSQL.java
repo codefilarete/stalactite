@@ -84,18 +84,18 @@ public class ExpandableSQL {
 	 */
 	public static class ExpandableParameter {
 
-		private static final String SQL_PARAMETER_MARK = "?";
-
-		private static final String SQL_PARAMETER_MARK_1 = SQL_PARAMETER_MARK + ", ";
+		public static final String SQL_PARAMETER_MARK = "?";
 		
-		private static final String SQL_PARAMETER_MARK_10 =
+		public static final String SQL_PARAMETER_MARK_1 = SQL_PARAMETER_MARK + ", ";
+		
+		public static final String SQL_PARAMETER_MARK_10 =
 				SQL_PARAMETER_MARK_1 + SQL_PARAMETER_MARK_1 +
 						SQL_PARAMETER_MARK_1 + SQL_PARAMETER_MARK_1 +
 						SQL_PARAMETER_MARK_1 + SQL_PARAMETER_MARK_1 +
 						SQL_PARAMETER_MARK_1 + SQL_PARAMETER_MARK_1 +
 						SQL_PARAMETER_MARK_1 + SQL_PARAMETER_MARK_1;
-
-		private static final String SQL_PARAMETER_MARK_100 =
+		
+		public static final String SQL_PARAMETER_MARK_100 =
 				SQL_PARAMETER_MARK_10 + SQL_PARAMETER_MARK_10 +
 						SQL_PARAMETER_MARK_10 + SQL_PARAMETER_MARK_10 +
 						SQL_PARAMETER_MARK_10 + SQL_PARAMETER_MARK_10 +
