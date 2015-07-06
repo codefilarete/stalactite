@@ -1,27 +1,27 @@
 package org.gama.stalactite.benchmark;
 
+import com.zaxxer.hikari.HikariDataSource;
+import org.gama.lang.collection.Collections;
+import org.gama.lang.exception.Exceptions;
+import org.gama.lang.trace.Chrono;
+import org.gama.stalactite.Logger;
+import org.gama.stalactite.benchmark.connection.MySQLDataSourceFactory;
+import org.gama.stalactite.benchmark.connection.MySQLDataSourceFactory.Property;
+import org.gama.stalactite.persistence.engine.DDLDeployer;
+import org.gama.stalactite.persistence.engine.PersistenceContext;
+import org.gama.stalactite.persistence.sql.ddl.DDLGenerator;
+import org.gama.stalactite.persistence.structure.Table;
+import org.springframework.jdbc.datasource.DataSourceTransactionManager;
+import org.springframework.transaction.TransactionStatus;
+import org.springframework.transaction.support.TransactionCallbackWithoutResult;
+import org.springframework.transaction.support.TransactionTemplate;
+
+import javax.sql.DataSource;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.concurrent.*;
-import javax.sql.DataSource;
-
-import com.zaxxer.hikari.HikariDataSource;
-import org.springframework.jdbc.datasource.DataSourceTransactionManager;
-import org.springframework.transaction.TransactionStatus;
-import org.springframework.transaction.support.TransactionCallbackWithoutResult;
-import org.springframework.transaction.support.TransactionTemplate;
-import org.gama.stalactite.Logger;
-import org.gama.stalactite.benchmark.connection.MySQLDataSourceFactory;
-import org.gama.stalactite.benchmark.connection.MySQLDataSourceFactory.Property;
-import org.gama.lang.collection.Collections;
-import org.gama.lang.exception.Exceptions;
-import org.gama.lang.trace.Chrono;
-import org.gama.stalactite.persistence.engine.DDLDeployer;
-import org.gama.stalactite.persistence.engine.PersistenceContext;
-import org.gama.stalactite.persistence.sql.ddl.DDLGenerator;
-import org.gama.stalactite.persistence.structure.Table;
 
 /**
  * @author Guillaume Mary
@@ -44,7 +44,7 @@ public abstract class AbstractBenchmark<Data> {
 	}
 	
 	public void run() throws SQLException, ExecutionException, InterruptedException {
-		DataSource dataSource = new MySQLDataSourceFactory().newDataSource("localhost:3306", "sandbox", "appadmin", "Interview?!", new EnumMap<>(Property.class));
+		DataSource dataSource = new MySQLDataSourceFactory().newDataSource("localhost:3306", "sandbox", "sandbox", "sandbox", new EnumMap<>(Property.class));
 		HikariDataSource pooledDataSource = new HikariDataSource();
 		pooledDataSource.setDataSource(dataSource);
 		dataSource = pooledDataSource;
