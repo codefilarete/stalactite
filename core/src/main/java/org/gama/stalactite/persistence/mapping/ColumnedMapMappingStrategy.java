@@ -45,6 +45,10 @@ public abstract class ColumnedMapMappingStrategy<C extends Map<K, V>, K, V, T> i
 		};
 	}
 	
+	public Table getTargetTable() {
+		return targetTable;
+	}
+	
 	@Override
 	public Set<Column> getColumns() {
 		return columns;
@@ -55,8 +59,8 @@ public abstract class ColumnedMapMappingStrategy<C extends Map<K, V>, K, V, T> i
 	}
 	
 	@Override
-	public StatementValues getInsertValues(@Nonnull C c) {
-		final StatementValues toReturn = new StatementValues();
+	public Map<Column, Object> getInsertValues(@Nonnull C c) {
+		final Map<Column, Object> toReturn = new HashMap<>();
 		Map<K, V> toIterate = c;
 		if (Collections.isEmpty(c)) {
 			toIterate = new HashMap<>();
@@ -65,23 +69,23 @@ public abstract class ColumnedMapMappingStrategy<C extends Map<K, V>, K, V, T> i
 			@Override
 			public Void visit(Entry<K, V> mapEntry) {
 				Column column = getColumn(mapEntry.getKey());
-				toReturn.putUpsertValue(column, toDatabaseValue(mapEntry.getKey(), mapEntry.getValue()));
+				toReturn.put(column, toDatabaseValue(mapEntry.getKey(), mapEntry.getValue()));
 				return null;
 			}
 		});
 		// NB: on remplit les valeurs pour en avoir une par Column: celles en surplus auront une valeur null
 		for (Column column : columns) {
-			if (!toReturn.getUpsertValues().containsKey(column)) {
-				toReturn.putUpsertValue(column, null);
+			if (!toReturn.containsKey(column)) {
+				toReturn.put(column, null);
 			}
 		}
 		return toReturn;
 	}
 	
 	@Override
-	public StatementValues getUpdateValues(final C modified, C unmodified, boolean allColumns) {
+	public Map<Column, Object> getUpdateValues(final C modified, C unmodified, boolean allColumns) {
 		final Map<Column, Object> unmodifiedColumns = new LinkedHashMap<>();
-		final StatementValues toReturn = new StatementValues();
+		final Map<Column, Object> toReturn = new HashMap<>();
 		if (modified != null) {
 			// getting differences
 			// - all of modified but different in unmodified
@@ -90,7 +94,7 @@ public abstract class ColumnedMapMappingStrategy<C extends Map<K, V>, K, V, T> i
 				V modifiedValue = modifiedEntry.getValue();
 				Column column = getColumn(modifiedKey);
 				if (!Objects.equalsWithNull(modifiedValue, unmodified == null ? null : unmodified.get(modifiedKey))) {
-					toReturn.putUpsertValue(column, modifiedValue);
+					toReturn.put(column, modifiedValue);
 				} else {
 					unmodifiedColumns.put(column, modifiedValue);
 				}
@@ -100,21 +104,21 @@ public abstract class ColumnedMapMappingStrategy<C extends Map<K, V>, K, V, T> i
 			missingInModified.removeAll(modified.keySet());
 			for (K k : missingInModified) {
 				Column column = getColumn(k);
-				toReturn.putUpsertValue(column, modified.get(k));
+				toReturn.put(column, modified.get(k));
 			}
 			
 			// adding complementary columns if necessary
-			if (allColumns && !toReturn.getUpsertValues().isEmpty()) {
+			if (allColumns && !toReturn.isEmpty()) {
 				Set<Column> missingColumns = new LinkedHashSet<>(columns);
-				missingColumns.removeAll(toReturn.getUpsertValues().keySet());
+				missingColumns.removeAll(toReturn.keySet());
 				for (Column missingColumn : missingColumns) {
 					Object missingValue = unmodifiedColumns.get(missingColumn);
-					toReturn.putUpsertValue(missingColumn, missingValue);
+					toReturn.put(missingColumn, missingValue);
 				}
 			}
 		} else if (allColumns && unmodified != null) {
 			for (Column column : columns) {
-				toReturn.putUpsertValue(column, null);
+				toReturn.put(column, null);
 			}
 		}
 		return toReturn;

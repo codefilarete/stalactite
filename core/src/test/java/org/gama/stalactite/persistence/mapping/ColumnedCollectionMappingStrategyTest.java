@@ -67,8 +67,8 @@ public class ColumnedCollectionMappingStrategyTest {
 	
 	@Test(dataProvider = GET_INSERT_VALUES_DATA)
 	public void testGetInsertValues(List<String> toInsert, ChainingMap<Column, String> expected) throws Exception {
-		StatementValues insertValues = testInstance.getInsertValues(toInsert);
-		assertEquals(insertValues.getUpsertValues(), expected);
+		Map<Column, Object> insertValues = testInstance.getInsertValues(toInsert);
+		assertEquals(insertValues, expected);
 	}
 	
 	@DataProvider(name = GET_UPDATE_VALUES_DIFF_ONLY_DATA)
@@ -91,8 +91,8 @@ public class ColumnedCollectionMappingStrategyTest {
 	
 	@Test(dataProvider = GET_UPDATE_VALUES_DIFF_ONLY_DATA)
 	public void testGetUpdateValues_diffOnly(List<String> modified, List<String> unmodified, Map<Column, String> expected) throws Exception {
-		StatementValues insertValues = testInstance.getUpdateValues(modified, unmodified, false);
-		assertEquals(insertValues.getUpsertValues(), expected);
+		Map<Column, Object> insertValues = testInstance.getUpdateValues(modified, unmodified, false);
+		assertEquals(insertValues, expected);
 	}
 	
 	@DataProvider(name = GET_UPDATE_VALUES_ALL_COLUMNS_DATA)
@@ -117,8 +117,8 @@ public class ColumnedCollectionMappingStrategyTest {
 	
 	@Test(dataProvider = GET_UPDATE_VALUES_ALL_COLUMNS_DATA)
 	public void testGetUpdateValues_allColumns(List<String> modified, List<String> unmodified, Map<Column, String> expected) throws Exception {
-		StatementValues insertValues = testInstance.getUpdateValues(modified, unmodified, true);
-		assertEquals(insertValues.getUpsertValues(), expected);
+		Map<Column, Object> insertValues = testInstance.getUpdateValues(modified, unmodified, true);
+		assertEquals(insertValues, expected);
 	}
 	
 	@Test

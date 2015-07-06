@@ -7,6 +7,7 @@ import org.gama.lang.collection.Iterables;
 import org.gama.lang.collection.Iterables.ForEach;
 import org.gama.lang.exception.Exceptions;
 import org.gama.reflection.PropertyAccessor;
+import org.gama.stalactite.persistence.sql.dml.PreparedUpdate.UpwhereColumn;
 import org.gama.stalactite.persistence.sql.result.Row;
 import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.persistence.structure.Table.Column;
@@ -91,62 +92,65 @@ public class FieldMappingStrategy<T> implements IMappingStrategy<T> {
 	}
 	
 	@Override
-	public StatementValues getInsertValues(@Nonnull final T t) {
-		return foreachField(new FieldVisitor() {
+	public Map<Column, Object> getInsertValues(@Nonnull final T t) {
+		return foreachField(new FieldVisitor<Column>() {
 			@Override
 			protected void visitField(Entry<PropertyAccessor, Column> fieldColumnEntry) throws IllegalAccessException {
-				toReturn.putUpsertValue(fieldColumnEntry.getValue(), fieldColumnEntry.getKey().get(t));
+				toReturn.put(fieldColumnEntry.getValue(), fieldColumnEntry.getKey().get(t));
 			}
 		}, true);	// primary key must be inserted (not if DB gives it but it's not implemented yet)
 	}
 	
 	@Override
-	public StatementValues getUpdateValues(@Nonnull final T modified, final T unmodified, final boolean allColumns) {
+	public Map<UpwhereColumn, Object> getUpdateValues(@Nonnull final T modified, final T unmodified, final boolean allColumns) {
 		final Map<Column, Object> unmodifiedColumns = new LinkedHashMap<>();
 		// getting differences
-		StatementValues toReturn = foreachField(new FieldVisitor() {
+		Map<UpwhereColumn, Object> toReturn = foreachField(new FieldVisitor<UpwhereColumn>() {
 			@Override
 			protected void visitField(Entry<PropertyAccessor, Column> fieldColumnEntry) throws IllegalAccessException {
-				PropertyAccessor<T, Object> field = fieldColumnEntry.getKey();
-				Object modifiedValue = field.get(modified);
-				Object unmodifiedValue = unmodified == null ? null : field.get(unmodified);
+				PropertyAccessor<T, Object> accessor = fieldColumnEntry.getKey();
+				Object modifiedValue = accessor.get(modified);
+				Object unmodifiedValue = unmodified == null ? null : accessor.get(unmodified);
 				Column fieldColumn = fieldColumnEntry.getValue();
 				if (!Objects.equalsWithNull(modifiedValue, unmodifiedValue)) {
-					toReturn.putUpsertValue(fieldColumn, modifiedValue);
+					toReturn.put(new UpwhereColumn(fieldColumn, true), modifiedValue);
 				} else {
 					unmodifiedColumns.put(fieldColumn, modifiedValue);
 				}
 			}
 		}, false);	// primary key mustn't be updated
 		
-		// adding complementary columns if necessary
-		if (allColumns && !toReturn.getUpsertValues().isEmpty()) {
-			for (Entry<Column, Object> unmodifiedField : unmodifiedColumns.entrySet()) {
-				toReturn.putUpsertValue(unmodifiedField.getKey(), unmodifiedField.getValue());
+		if (!toReturn.isEmpty()) {
+			// adding complementary columns if necessary
+			if (allColumns) {
+				for (Entry<Column, Object> unmodifiedField : unmodifiedColumns.entrySet()) {
+					toReturn.put(new UpwhereColumn(unmodifiedField.getKey(), true), unmodifiedField.getValue());
+				}
+			}
+			for (Entry<Column, Object> entry : getVersionedKeyValues(modified).entrySet()) {
+				toReturn.put(new UpwhereColumn(entry.getKey(), false), entry.getValue());
 			}
 		}
-		
-		putVersionedKeyValues(modified, toReturn);
 		return toReturn;
 	}
 	
 	@Override
-	public StatementValues getDeleteValues(@Nonnull T t) {
-		StatementValues toReturn = new StatementValues();
+	public Map<Column, Object> getDeleteValues(@Nonnull T t) {
+		Map<Column, Object> toReturn = new HashMap<>();
 		putVersionedKeyValues(t, toReturn);
 		return toReturn;
 	}
 	
 	@Override
-	public StatementValues getSelectValues(@Nonnull Serializable id) {
-		StatementValues toReturn = new StatementValues();
-		toReturn.putWhereValue(this.targetTable.getPrimaryKey(), id);
+	public Map<Column, Object> getSelectValues(@Nonnull Serializable id) {
+		Map<Column, Object> toReturn = new HashMap<>();
+		toReturn.put(this.targetTable.getPrimaryKey(), id);
 		return toReturn;
 	}
 	
 	@Override
-	public StatementValues getVersionedKeyValues(@Nonnull T t) {
-		StatementValues toReturn = new StatementValues();
+	public Map<Column, Object> getVersionedKeyValues(@Nonnull T t) {
+		Map<Column, Object> toReturn = new HashMap<>();
 		putVersionedKeyValues(t, toReturn);
 		return toReturn;
 	}
@@ -180,7 +184,7 @@ public class FieldMappingStrategy<T> implements IMappingStrategy<T> {
 		identifierAccessor.set(t, identifier);
 	}
 	
-	private StatementValues foreachField(final FieldVisitor visitor, boolean withPK) {
+	private <K> Map<K, Object> foreachField(final FieldVisitor<K> visitor, boolean withPK) {
 		Map<PropertyAccessor, Column> fieldsTobeVisited = new LinkedHashMap<>(this.fieldToColumn);
 		if (!withPK) {
 			fieldsTobeVisited.remove(this.identifierAccessor);
@@ -189,8 +193,8 @@ public class FieldMappingStrategy<T> implements IMappingStrategy<T> {
 		return visitor.toReturn;
 	}
 	
-	protected void putVersionedKeyValues(T t, StatementValues toReturn) {
-		toReturn.putWhereValue(this.targetTable.getPrimaryKey(), getId(t));
+	protected void putVersionedKeyValues(T t, Map<Column, Object> toReturn) {
+		toReturn.put(this.targetTable.getPrimaryKey(), getId(t));
 	}
 	
 	@Override
@@ -198,12 +202,12 @@ public class FieldMappingStrategy<T> implements IMappingStrategy<T> {
 		return this.rowTransformer.transform(row);
 	}
 	
-	private static abstract class FieldVisitor extends ForEach<Entry<PropertyAccessor, Column>, Void> {
+	private static abstract class FieldVisitor<K> extends ForEach<Entry<PropertyAccessor, Column>, Map<K, Object>> {
 		
-		protected StatementValues toReturn = new StatementValues();
+		protected Map<K, Object> toReturn = new HashMap<>();
 		
 		@Override
-		public final Void visit(Entry<PropertyAccessor, Column> fieldColumnEntry) {
+		public final Map<K, Object> visit(Entry<PropertyAccessor, Column> fieldColumnEntry) {
 			try {
 				visitField(fieldColumnEntry);
 			} catch (IllegalAccessException e) {

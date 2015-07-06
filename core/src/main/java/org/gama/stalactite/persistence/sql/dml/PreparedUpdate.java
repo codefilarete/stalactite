@@ -6,7 +6,11 @@ import org.gama.stalactite.persistence.sql.dml.PreparedUpdate.UpwhereColumn;
 import org.gama.stalactite.persistence.structure.Table.Column;
 
 import java.sql.PreparedStatement;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Set;
 
 /**
  * Statement dedicated to updates: a parameter can be in the where clause and the update one with different values.
@@ -44,7 +48,42 @@ public class PreparedUpdate extends SQLStatement<UpwhereColumn> {
 		return columnIndexes.get(column);
 	}
 	
+	/**
+	 * Wrapper for Column placed in an update statement so it can distinguish if it's for the Update or Where part 
+	 */
 	public static class UpwhereColumn {
+		
+		public static Set<Column> getUpdateColumns(Set<UpwhereColumn> set) {
+			Set<Column> updateColumns = new HashSet<>();
+			for (UpwhereColumn upwhereColumn : set) {
+				if (upwhereColumn.update) {
+					updateColumns.add(upwhereColumn.column);
+				}
+			}
+			return updateColumns;
+		}
+		
+		public static Map<Column, Object> getUpdateColumns(Map<UpwhereColumn, Object> map) {
+			Map<Column, Object> updateColumns = new HashMap<>();
+			for (Entry<UpwhereColumn, Object> entry : map.entrySet()) {
+				UpwhereColumn upwhereColumn = entry.getKey();
+				if (upwhereColumn.update) {
+					updateColumns.put(upwhereColumn.column, entry.getValue());
+				}
+			}
+			return updateColumns;
+		}
+		
+		public static Map<Column, Object> getWhereColumns(Map<UpwhereColumn, Object> map) {
+			Map<Column, Object> updateColumns = new HashMap<>();
+			for (Entry<UpwhereColumn, Object> entry : map.entrySet()) {
+				UpwhereColumn upwhereColumn = entry.getKey();
+				if (!upwhereColumn.update) {
+					updateColumns.put(upwhereColumn.column, entry.getValue());
+				}
+			}
+			return updateColumns;
+		}
 		
 		private final Column column;
 		private final boolean update;

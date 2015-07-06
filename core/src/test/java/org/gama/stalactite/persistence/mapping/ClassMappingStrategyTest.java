@@ -2,15 +2,17 @@ package org.gama.stalactite.persistence.mapping;
 
 import org.gama.lang.collection.Arrays;
 import org.gama.lang.collection.Maps;
+import org.gama.stalactite.persistence.sql.dml.PreparedUpdate.UpwhereColumn;
 import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.persistence.structure.Table.Column;
-import org.testng.Assert;
 import org.testng.annotations.BeforeTest;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
 import java.lang.reflect.Field;
 import java.util.*;
+
+import static org.junit.Assert.assertEquals;
 
 public class ClassMappingStrategyTest {
 	
@@ -128,9 +130,9 @@ public class ClassMappingStrategyTest {
 	
 	@Test(dataProvider = GET_INSERT_VALUES_DATA)
 	public void testGetInsertValues(Toto modified, Map<Column, Object> expectedResult) throws Exception {
-		StatementValues valuesToInsert = testInstance.getInsertValues(modified);
+		Map<Column, Object> valuesToInsert = testInstance.getInsertValues(modified);
 		
-		Assert.assertEquals(valuesToInsert.getUpsertValues(), expectedResult);
+		assertEquals(expectedResult, valuesToInsert);
 	}
 	
 	@DataProvider(name = GET_UPDATE_VALUES_DIFF_ONLY_DATA)
@@ -155,10 +157,14 @@ public class ClassMappingStrategyTest {
 	
 	@Test(dataProvider = GET_UPDATE_VALUES_DIFF_ONLY_DATA)
 	public void testGetUpdateValues_diffOnly(Toto modified, Toto unmodified, Map<Column, Object> expectedResult) throws Exception {
-		StatementValues valuesToUpdate = testInstance.getUpdateValues(modified, unmodified, false);
+		Map<UpwhereColumn, Object> valuesToUpdate = testInstance.getUpdateValues(modified, unmodified, false);
 		
-		Assert.assertEquals(valuesToUpdate.getUpsertValues(), expectedResult);
-		Assert.assertEquals(valuesToUpdate.getWhereValues(), Maps.asMap(colA, modified.a));
+		assertEquals(expectedResult, UpwhereColumn.getUpdateColumns(valuesToUpdate));
+		if (!expectedResult.isEmpty()) {
+			assertEquals(Maps.asMap(colA, modified.a), UpwhereColumn.getWhereColumns(valuesToUpdate));
+		} else {
+			assertEquals(new HashMap<Column, Object>(), UpwhereColumn.getWhereColumns(valuesToUpdate));
+		}
 	}
 	
 	@DataProvider(name = GET_UPDATE_VALUES_ALL_COLUMNS_DATA)
@@ -191,10 +197,14 @@ public class ClassMappingStrategyTest {
 	
 	@Test(dataProvider = GET_UPDATE_VALUES_ALL_COLUMNS_DATA)
 	public void testGetUpdateValues_allColumns(Toto modified, Toto unmodified, Map<Column, Object> expectedResult) throws Exception {
-		StatementValues valuesToUpdate = testInstance.getUpdateValues(modified, unmodified, true);
+		Map<UpwhereColumn, Object> valuesToUpdate = testInstance.getUpdateValues(modified, unmodified, true);
 		
-		Assert.assertEquals(valuesToUpdate.getUpsertValues(), expectedResult);
-		Assert.assertEquals(valuesToUpdate.getWhereValues(), Maps.asMap(colA, modified.a));
+		assertEquals(expectedResult, UpwhereColumn.getUpdateColumns(valuesToUpdate));
+		if (!expectedResult.isEmpty()) {
+			assertEquals(Maps.asMap(colA, modified.a), UpwhereColumn.getWhereColumns(valuesToUpdate));
+		} else {
+			assertEquals(new HashMap<Column, Object>(), UpwhereColumn.getWhereColumns(valuesToUpdate));
+		}
 	}
 	
 	private static class Toto {

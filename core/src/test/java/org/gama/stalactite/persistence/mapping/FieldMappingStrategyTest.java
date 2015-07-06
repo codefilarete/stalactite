@@ -1,6 +1,7 @@
 package org.gama.stalactite.persistence.mapping;
 
 import org.gama.lang.collection.Maps;
+import org.gama.stalactite.persistence.sql.dml.PreparedUpdate.UpwhereColumn;
 import org.gama.stalactite.persistence.sql.result.Row;
 import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.persistence.structure.Table.Column;
@@ -12,7 +13,7 @@ import java.lang.reflect.Field;
 import java.util.HashMap;
 import java.util.Map;
 
-import static org.testng.Assert.assertEquals;
+import static org.junit.Assert.assertEquals;
 
 public class FieldMappingStrategyTest {
 	
@@ -50,9 +51,9 @@ public class FieldMappingStrategyTest {
 	
 	@Test(dataProvider = GET_INSERT_VALUES_DATA)
 	public void testGetInsertValues(Toto modified, Map<Column, Object> expectedResult) throws Exception {
-		StatementValues valuesToInsert = testInstance.getInsertValues(modified);
+		Map<Column, Object> valuesToInsert = testInstance.getInsertValues(modified);
 		
-		assertEquals(valuesToInsert.getUpsertValues(), expectedResult);
+		assertEquals(expectedResult, valuesToInsert);
 	}
 	
 	@DataProvider(name = GET_UPDATE_VALUES_DIFF_ONLY_DATA)
@@ -72,10 +73,14 @@ public class FieldMappingStrategyTest {
 	
 	@Test(dataProvider = GET_UPDATE_VALUES_DIFF_ONLY_DATA)
 	public void testGetUpdateValues_diffOnly(Toto modified, Toto unmodified, Map<Column, Object> expectedResult) throws Exception {
-		StatementValues valuesToInsert = testInstance.getUpdateValues(modified, unmodified, false);
+		Map<UpwhereColumn, Object> valuesToInsert = testInstance.getUpdateValues(modified, unmodified, false);
 		
-		assertEquals(valuesToInsert.getUpsertValues(), expectedResult);
-		assertEquals(valuesToInsert.getWhereValues(), Maps.asMap(colA, modified.a));
+		assertEquals(expectedResult, UpwhereColumn.getUpdateColumns(valuesToInsert));
+		if (!expectedResult.isEmpty()) {
+			assertEquals(Maps.asMap(colA, modified.a), UpwhereColumn.getWhereColumns(valuesToInsert));
+		} else {
+			assertEquals(new HashMap<Column, Object>(), UpwhereColumn.getWhereColumns(valuesToInsert));
+		}
 	}
 	
 	@DataProvider(name = GET_UPDATE_VALUES_ALL_COLUMNS_DATA)
@@ -90,28 +95,32 @@ public class FieldMappingStrategyTest {
 	
 	@Test(dataProvider = GET_UPDATE_VALUES_ALL_COLUMNS_DATA)
 	public void testGetUpdateValues_allColumns(Toto modified, Toto unmodified, Map<Column, Object> expectedResult) throws Exception {
-		StatementValues valuesToInsert = testInstance.getUpdateValues(modified, unmodified, true);
+		Map<UpwhereColumn, Object> valuesToInsert = testInstance.getUpdateValues(modified, unmodified, true);
 		
-		assertEquals(valuesToInsert.getUpsertValues(), expectedResult);
-		assertEquals(valuesToInsert.getWhereValues(), Maps.asMap(colA, modified.a));
+		assertEquals(expectedResult, UpwhereColumn.getUpdateColumns(valuesToInsert));
+		if (!expectedResult.isEmpty()) {
+			assertEquals(Maps.asMap(colA, modified.a), UpwhereColumn.getWhereColumns(valuesToInsert));
+		} else {
+			assertEquals(new HashMap<Column, Object>(), UpwhereColumn.getWhereColumns(valuesToInsert));
+		}
 	}
 	
 	@Test
 	public void testGetDeleteValues() throws Exception {
-		StatementValues versionedKeyValues = testInstance.getDeleteValues(new Toto(1, 2, 3));
-		assertEquals(versionedKeyValues.getWhereValues(), Maps.asMap(colA, 1));
+		Map<Column, Object> versionedKeyValues = testInstance.getDeleteValues(new Toto(1, 2, 3));
+		assertEquals(versionedKeyValues, Maps.asMap(colA, 1));
 	}
 	
 	@Test
 	public void testGetSelectValues() throws Exception {
-		StatementValues versionedKeyValues = testInstance.getSelectValues(1);
-		assertEquals(versionedKeyValues.getWhereValues(), Maps.asMap(colA, 1));
+		Map<Column, Object> versionedKeyValues = testInstance.getSelectValues(1);
+		assertEquals(versionedKeyValues, Maps.asMap(colA, 1));
 	}
 	
 	@Test
 	public void testGetVersionedKeyValues() throws Exception {
-		StatementValues versionedKeyValues = testInstance.getVersionedKeyValues(new Toto(1, 2, 3));
-		assertEquals(versionedKeyValues.getWhereValues(), Maps.asMap(colA, 1));
+		Map<Column, Object> versionedKeyValues = testInstance.getVersionedKeyValues(new Toto(1, 2, 3));
+		assertEquals(versionedKeyValues, Maps.asMap(colA, 1));
 	}
 	
 	@Test

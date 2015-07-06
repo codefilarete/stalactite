@@ -3,6 +3,7 @@ package org.gama.stalactite.persistence.mapping;
 import org.gama.stalactite.persistence.sql.result.Row;
 import org.gama.stalactite.persistence.structure.Table.Column;
 
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -12,9 +13,9 @@ import java.util.Set;
  */
 public interface IEmbeddedBeanMapper<T> {
 	
-	StatementValues getInsertValues(T t);
+	Map<Column, Object> getInsertValues(T t);
 	
-	StatementValues getUpdateValues(T modified, T unmodified, boolean allColumns);
+	Map<Column, Object> getUpdateValues(T modified, T unmodified, boolean allColumns);
 	
 	Set<Column> getColumns();
 	

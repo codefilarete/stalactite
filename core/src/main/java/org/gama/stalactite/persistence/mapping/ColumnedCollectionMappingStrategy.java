@@ -17,7 +17,7 @@ import java.util.*;
 import java.util.Map.Entry;
 
 /**
- * @author mary
+ * @author Guillaume Mary
  */
 public abstract class ColumnedCollectionMappingStrategy<C extends Collection<T>, T> implements IEmbeddedBeanMapper<C> {
 	
@@ -41,25 +41,29 @@ public abstract class ColumnedCollectionMappingStrategy<C extends Collection<T>,
 		};
 	}
 	
+	public Table getTargetTable() {
+		return targetTable;
+	}
+	
 	@Override
 	public Set<Column> getColumns() {
 		return columns;
 	}
 	
 	@Override
-	public StatementValues getInsertValues(C c) {
-		final StatementValues toReturn = new StatementValues();
+	public Map<Column, Object> getInsertValues(C c) {
+		final Map<Column, Object> toReturn = new HashMap<>();
 		Collection<T> toIterate = c;
 		if (Collections.isEmpty(c)) {
 			toIterate = new ArrayList<>();
 		}
-		// NB: on englobe c.iterator() dans un InfiniteIterator pour avoir toutes les colonnes générées: celles en
-		// surplus auront une valeur null (cf InfiniteIterator#getValue)
+		// NB: we wrap c.iterator() in an InfiniteIterator to get all columns generated: overflow columns will have
+		// null value (see 	InfiniteIterator#getValue)
 		PairIterator<Column, T> valueColumnPairIterator = new PairIterator<>(columns.iterator(), new InfiniteIterator<>(toIterate.iterator()));
 		Iterables.visit(valueColumnPairIterator, new ForEach<Entry<Column, T>, Void>() {
 			@Override
 			public Void visit(Entry<Column, T> valueEntry) {
-				toReturn.putUpsertValue(valueEntry.getKey(), toDatabaseValue(valueEntry.getValue()));
+				toReturn.put(valueEntry.getKey(), toDatabaseValue(valueEntry.getValue()));
 				return null;
 			}
 			});
@@ -67,8 +71,8 @@ public abstract class ColumnedCollectionMappingStrategy<C extends Collection<T>,
 	}
 	
 	@Override
-	public StatementValues getUpdateValues(C modified, C unmodified, boolean allColumns) {
-		final StatementValues toReturn = new StatementValues();
+	public Map<Column, Object> getUpdateValues(C modified, C unmodified, boolean allColumns) {
+		final Map<Column, Object> toReturn = new HashMap<>();
 		if (modified != null) {
 			// getting differences side by side
 			final Map<Column, Object> unmodifiedColumns = new LinkedHashMap<>();
@@ -81,7 +85,7 @@ public abstract class ColumnedCollectionMappingStrategy<C extends Collection<T>,
 					Column fieldColumn = diffEntry.getKey();
 					Entry<T, T> toBeCompared = diffEntry.getValue();
 					if (!Objects.equalsWithNull(toBeCompared.getKey(), toBeCompared.getValue())) {
-						toReturn.putUpsertValue(fieldColumn, toDatabaseValue(toBeCompared.getKey()));
+						toReturn.put(fieldColumn, toDatabaseValue(toBeCompared.getKey()));
 					} else {
 						unmodifiedColumns.put(fieldColumn, toBeCompared.getKey());
 					}
@@ -90,17 +94,17 @@ public abstract class ColumnedCollectionMappingStrategy<C extends Collection<T>,
 			});
 			
 			// adding complementary columns if necessary
-			if (allColumns && !toReturn.getUpsertValues().isEmpty()) {
+			if (allColumns && !toReturn.isEmpty()) {
 				Set<Column> missingColumns = new LinkedHashSet<>(columns);
-				missingColumns.removeAll(toReturn.getUpsertValues().keySet());
+				missingColumns.removeAll(toReturn.keySet());
 				for (Column missingColumn : missingColumns) {
 					Object missingValue = unmodifiedColumns.get(missingColumn);
-					toReturn.putUpsertValue(missingColumn, missingValue);
+					toReturn.put(missingColumn, missingValue);
 				}
 			}
 		} else if (allColumns && unmodified != null) {
 			for (Column column : columns) {
-				toReturn.putUpsertValue(column, null);
+				toReturn.put(column, null);
 			}
 		}
 		

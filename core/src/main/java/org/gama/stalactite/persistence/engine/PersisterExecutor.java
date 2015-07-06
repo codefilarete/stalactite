@@ -8,7 +8,6 @@ import org.gama.sql.dml.ReadOperation;
 import org.gama.sql.dml.WriteOperation;
 import org.gama.stalactite.persistence.engine.Persister.IIdentifierFixer;
 import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
-import org.gama.stalactite.persistence.mapping.StatementValues;
 import org.gama.stalactite.persistence.sql.dml.ColumnPreparedSQL;
 import org.gama.stalactite.persistence.sql.dml.DMLGenerator;
 import org.gama.stalactite.persistence.sql.dml.PreparedSelect;
@@ -59,8 +58,8 @@ public class PersisterExecutor<T> {
 		while(jdbcBatchingIterator.hasNext()) {
 			T t = jdbcBatchingIterator.next();
 			identifierFixer.fixId(t);
-			StatementValues insertValues = mappingStrategy.getInsertValues(t);
-			writeOperation.addBatch(insertValues.getUpsertValues());
+			Map<Column, Object> insertValues = mappingStrategy.getInsertValues(t);
+			writeOperation.addBatch(insertValues);
 		}
 		/*
 		if (identifierGenerator instanceof PostInsertIdentifierGenerator) {
@@ -83,8 +82,8 @@ public class PersisterExecutor<T> {
 		JDBCBatchingIterator<T> jdbcBatchingIterator = new JDBCBatchingIterator<>(iterable, writeOperation);
 		while(jdbcBatchingIterator.hasNext()) {
 			T t = jdbcBatchingIterator.next();
-			StatementValues updateValues = mappingStrategy.getUpdateValues(t, null, true);
-			writeOperation.addBatch(asUpWhereColumnMap(updateValues));
+			Map<UpwhereColumn, Object> updateValues = mappingStrategy.getUpdateValues(t, null, true);
+			writeOperation.addBatch(updateValues);
 		}
 	}
 	
@@ -137,10 +136,10 @@ public class PersisterExecutor<T> {
 		
 		final ConnectionProvider connectionProvider = new ConnectionProvider();
 		// cache for WriteOperation instances (key is Columns to be updated) for batch use
-		Map<Set<Column>, JDBCBatchingOperation<UpwhereColumn>> updateOperationCache = new ValueFactoryHashMap<>(new IFactory<Set<Column>, JDBCBatchingOperation<UpwhereColumn>>() {
+		Map<Set<UpwhereColumn>, JDBCBatchingOperation<UpwhereColumn>> updateOperationCache = new ValueFactoryHashMap<>(new IFactory<Set<UpwhereColumn>, JDBCBatchingOperation<UpwhereColumn>>() {
 			@Override
-			public JDBCBatchingOperation<UpwhereColumn> createInstance(Set<Column> input) {
-				PreparedUpdate preparedUpdate = dmlGenerator.buildUpdate(input, mappingStrategy.getVersionedKeys());
+			public JDBCBatchingOperation<UpwhereColumn> createInstance(Set<UpwhereColumn> input) {
+				PreparedUpdate preparedUpdate = dmlGenerator.buildUpdate(UpwhereColumn.getUpdateColumns(input), mappingStrategy.getVersionedKeys());
 				return new JDBCBatchingOperation<>(new WriteOperation<>(preparedUpdate, connectionProvider));
 			}
 		});
@@ -149,11 +148,10 @@ public class PersisterExecutor<T> {
 			T modified = next.getKey();
 			T unmodified = next.getValue();
 			// finding differences between modified instances and unmodified ones
-			StatementValues updateValues = mappingStrategy.getUpdateValues(modified, unmodified, false);
-			Set<Column> columnsToUpdate = updateValues.getUpsertValues().keySet();
-			if (!columnsToUpdate.isEmpty()) {
-				JDBCBatchingOperation<UpwhereColumn> writeOperation = updateOperationCache.get(columnsToUpdate);
-				writeOperation.setValues(asUpWhereColumnMap(updateValues));
+			Map<UpwhereColumn, Object> updateValues = mappingStrategy.getUpdateValues(modified, unmodified, false);
+			if (!updateValues.isEmpty()) {
+				JDBCBatchingOperation<UpwhereColumn> writeOperation = updateOperationCache.get(updateValues.keySet());
+				writeOperation.setValues(updateValues);
 			} // else nothing to do (no modification)
 		}
 		// treating remaining values not yet executed
@@ -172,7 +170,7 @@ public class PersisterExecutor<T> {
 	 */
 	public void updateFully(Iterable<Entry<T, T>> differencesIterable) {
 		ConnectionProvider connectionProvider = new ConnectionProvider();
-		PreparedUpdate preparedUpdate = dmlGenerator.buildUpdate(mappingStrategy.buildUpdatableColumns(), mappingStrategy.getVersionedKeys());
+		PreparedUpdate preparedUpdate = dmlGenerator.buildUpdate(mappingStrategy.getUpdatableColumns(), mappingStrategy.getVersionedKeys());
 		WriteOperation<UpwhereColumn> writeOperation = new WriteOperation<>(preparedUpdate, connectionProvider);
 		
 		// Since all columns are updated we can benefit from JDBC batch
@@ -182,23 +180,11 @@ public class PersisterExecutor<T> {
 			T modified = entry.getKey();
 			T unmodified = entry.getValue();
 			// finding differences between modified instance and unmodified one
-			StatementValues updateValues = mappingStrategy.getUpdateValues(modified, unmodified, true);
-			Set<Column> columnsToUpdate = updateValues.getUpsertValues().keySet();
-			if (!columnsToUpdate.isEmpty()) {
-				writeOperation.addBatch(asUpWhereColumnMap(updateValues));
+			Map<UpwhereColumn, Object> updateValues = mappingStrategy.getUpdateValues(modified, unmodified, true);
+			if (!updateValues.isEmpty()) {
+				writeOperation.addBatch(updateValues);
 			} // else nothing to do (no modification)
 		}
-	}
-	
-	private Map<UpwhereColumn, Object> asUpWhereColumnMap(StatementValues updateValues) {
-		Map<UpwhereColumn, Object> values = new HashMap<>();
-		for (Entry<Column, Object> entry : updateValues.getUpsertValues().entrySet()) {
-			values.put(new UpwhereColumn(entry.getKey(), true), entry.getValue());
-		}
-		for (Entry<Column, Object> entry : updateValues.getWhereValues().entrySet()) {
-			values.put(new UpwhereColumn(entry.getKey(), false), entry.getValue());
-		}
-		return values;
 	}
 	
 	public void delete(Iterable<T> iterable) {
@@ -211,7 +197,7 @@ public class PersisterExecutor<T> {
 			JDBCBatchingIterator<T> jdbcBatchingIterator = new JDBCBatchingIterator<>(iterable, writeOperation);
 			while(jdbcBatchingIterator.hasNext()) {
 				T t = jdbcBatchingIterator.next();
-				writeOperation.addBatch(mappingStrategy.getDeleteValues(t).getWhereValues());
+				writeOperation.addBatch(mappingStrategy.getDeleteValues(t));
 			}
 		}
 	}

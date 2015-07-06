@@ -1,28 +1,29 @@
 package org.gama.stalactite.persistence.mapping;
 
-import java.io.Serializable;
-import java.util.Set;
-
-import javax.annotation.Nonnull;
-
+import org.gama.stalactite.persistence.sql.dml.PreparedUpdate.UpwhereColumn;
 import org.gama.stalactite.persistence.sql.result.Row;
 import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.persistence.structure.Table.Column;
+
+import javax.annotation.Nonnull;
+import java.io.Serializable;
+import java.util.Map;
+import java.util.Set;
 
 /**
  * @author mary
  */
 public interface IMappingStrategy<T> {
 	
-	StatementValues getInsertValues(T t);
+	Map<Column, Object> getInsertValues(T t);
 	
-	StatementValues getUpdateValues(T modified, T unmodified, boolean allColumns);
+	Map<UpwhereColumn, Object> getUpdateValues(T modified, T unmodified, boolean allColumns);
 	
-	StatementValues getDeleteValues(@Nonnull T t);
+	Map<Column, Object> getDeleteValues(@Nonnull T t);
 	
-	StatementValues getSelectValues(@Nonnull Serializable id);
+	Map<Column, Object> getSelectValues(@Nonnull Serializable id);
 	
-	StatementValues getVersionedKeyValues(@Nonnull T t);
+	Map<Column, Object> getVersionedKeyValues(@Nonnull T t);
 	
 	Table getTargetTable();
 	
