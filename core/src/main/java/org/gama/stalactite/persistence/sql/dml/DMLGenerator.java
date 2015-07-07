@@ -2,9 +2,11 @@ package org.gama.stalactite.persistence.sql.dml;
 
 import org.gama.lang.StringAppender;
 import org.gama.lang.Strings;
+import org.gama.lang.collection.ISorter;
 import org.gama.lang.collection.Iterables;
 import org.gama.lang.collection.Iterables.ForEach;
 import org.gama.sql.binder.ParameterBinder;
+import org.gama.stalactite.persistence.engine.PersisterExecutor;
 import org.gama.stalactite.persistence.sql.ddl.DDLTableGenerator;
 import org.gama.stalactite.persistence.sql.dml.PreparedUpdate.UpwhereColumn;
 import org.gama.stalactite.persistence.sql.dml.binder.ColumnBinderRegistry;
@@ -19,8 +21,7 @@ import java.util.TreeSet;
 import static org.gama.sql.dml.ExpandableSQL.ExpandableParameter.*;
 
 /**
- * Class for DML generation.
- * No rocket science here.
+ * Class for DML generation dedicated to {@link PersisterExecutor}. Not expected to be used elsewhere.
  * 
  * @author Guillaume Mary
  */
@@ -31,8 +32,15 @@ public class DMLGenerator {
 	
 	private final ColumnBinderRegistry columnBinderRegistry;
 	
+	private final ISorter<Iterable<Column>> columnSorter;
+	
 	public DMLGenerator(ColumnBinderRegistry columnBinderRegistry) {
+		this(columnBinderRegistry, NoopSorter.INSTANCE);
+	}
+	
+	public DMLGenerator(ColumnBinderRegistry columnBinderRegistry, ISorter<Iterable<Table.Column>> columnSorter) {
 		this.columnBinderRegistry = columnBinderRegistry;
+		this.columnSorter = columnSorter;
 	}
 	
 	public ColumnPreparedSQL buildInsert(Iterable<Column> columns) {
@@ -89,10 +97,11 @@ public class DMLGenerator {
 		final Map<Column, ParameterBinder> parameterBinders = new HashMap<>();
 		Iterables.visit(where, new ForEach<Column, Object>() {
 			private int positionCounter = 1;
+			
 			@Override
 			public Object visit(Column column) {
 				sqlDelete.cat(column.getName(), " = ? and ");
-				columnToIndex.put(column, new int[] { positionCounter++ });
+				columnToIndex.put(column, new int[]{positionCounter++});
 				parameterBinders.put(column, columnBinderRegistry.getBinder(column));
 				// return value doesn't matter
 				return null;
@@ -127,10 +136,11 @@ public class DMLGenerator {
 		final Map<Column, ParameterBinder> parameterBinders = new HashMap<>();
 		Iterables.visit(where, new ForEach<Column, Object>() {
 			private int positionCounter = 1;
+			
 			@Override
 			public Object visit(Column column) {
 				sqlSelect.cat(column.getName(), " = ? and ");
-				columnToIndex.put(column, new int[] { positionCounter++ });
+				columnToIndex.put(column, new int[]{positionCounter++});
 				parameterBinders.put(column, columnBinderRegistry.getBinder(column));
 				// return value doesn't matter
 				return null;
@@ -163,38 +173,38 @@ public class DMLGenerator {
 		return new PreparedSelect(sqlSelect.toString(), columnToIndex, parameterBinders, selectParameterBinders);
 	}
 	
+	private Iterable<Column> sort(Iterable<Column> columns) {
+		return this.columnSorter.sort(columns);
+	}
+	
+	public static class NoopSorter implements ISorter<Iterable<Column>> {
+		
+		public static final NoopSorter INSTANCE = new NoopSorter();
+		
+		@Override
+		public Iterable<Column> sort(Iterable<Column> columns) {
+			return columns;
+		}
+	}
+	
 	/**
 	 * Sort columns passed as arguments.
 	 * Optional action since it's used in appending String operation.
 	 * Usefull for unit tests and debug operations : give steady (and logical) column places in SQL, without this, order
 	 * is given by Column hashcode and HashMap algorithm.
-	 *
-	 * @param columns
-	 * @return
 	 */
-	protected Iterable<Column> sort(Iterable<Column> columns) {
-		TreeSet<Column> sorter = new TreeSet<>(COLUMN_NAME_COMPARATOR);
-		for (Column column : columns) {
-			sorter.add(column);
-		}
-		return sorter;
-	}
-	
-	private Map<Column, Integer> catWhere(Iterable<Column> where, StringAppender sql) {
-		return catWhere(where, sql, 1);
-	}
-	
-	private Map<Column, Integer> catWhere(Iterable<Column> where, StringAppender sql, int positionCounter) {
-		Map<Column, Integer> colToIndexes = new HashMap<>(2, 1);
-		if (where.iterator().hasNext()) {
-			sql.cat(" where ");
-			for (Column column : where) {
-				sql.cat(column.getName(), " = :", column.getName(), " and ");
-				colToIndexes.put(column, positionCounter++);
+	public static class CaseSensitiveSorter implements ISorter<Iterable<Column>> {
+		
+		public static final NoopSorter INSTANCE = new NoopSorter();
+		
+		@Override
+		public Iterable<Column> sort(Iterable<Column> columns) {
+			TreeSet<Column> result = new TreeSet<>(COLUMN_NAME_COMPARATOR);
+			for (Column column : columns) {
+				result.add(column);
 			}
-			sql.cutTail(5);
+			return result;
 		}
-		return colToIndexes;
 	}
 	
 	private static class ColumnNameComparator implements Comparator<Column> {

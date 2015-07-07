@@ -7,6 +7,13 @@ import org.gama.lang.exception.Exceptions;
  * @author Guillaume Mary
  */
 public abstract class Retrier {
+	
+	public static final Retrier NO_RETRY = new Retrier(0, 0) {
+		@Override
+		protected boolean shouldRetry(Throwable t) {
+			return false;
+		}
+	};
 
 	private int tryCount = 0;
 	private final int maxRetries;

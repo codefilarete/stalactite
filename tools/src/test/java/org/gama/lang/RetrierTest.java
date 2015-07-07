@@ -19,7 +19,7 @@ public class RetrierTest {
 				return true;
 			}
 		};
-
+		
 		final int[] callTimes = new int[1];
 		try {
 			testInstance.execute(new IDelegateWithReturnAndThrows<Object>() {
@@ -35,7 +35,7 @@ public class RetrierTest {
 		}
 		assertEquals(3, callTimes[0]);
 	}
-
+	
 	@Test
 	public void testExecute_worksLastAttempt() throws Throwable {
 		Retrier testInstance = new Retrier(3, 5) {
@@ -44,7 +44,7 @@ public class RetrierTest {
 				return true;
 			}
 		};
-
+		
 		final int[] callTimes = new int[1];
 		try {
 			testInstance.execute(new IDelegateWithReturnAndThrows<Object>() {
@@ -62,7 +62,7 @@ public class RetrierTest {
 		}
 		assertEquals(2, callTimes[0]);
 	}
-
+	
 	@Test
 	public void testExecute_worksFirstAttempt() throws Throwable {
 		Retrier testInstance = new Retrier(3, 5) {
@@ -71,7 +71,7 @@ public class RetrierTest {
 				return true;
 			}
 		};
-
+		
 		final int[] callTimes = new int[1];
 		try {
 			testInstance.execute(new IDelegateWithReturnAndThrows<Object>() {
@@ -86,7 +86,7 @@ public class RetrierTest {
 		}
 		assertEquals(1, callTimes[0]);
 	}
-
+	
 	@Test
 	public void testExecute_throwUnexpected() throws Throwable {
 		Retrier testInstance = new Retrier(3, 5) {
@@ -95,7 +95,7 @@ public class RetrierTest {
 				return t.getMessage().equals("retry");
 			}
 		};
-
+		
 		final int[] callTimes = new int[1];
 		try {
 			testInstance.execute(new IDelegateWithReturnAndThrows<Object>() {
@@ -113,5 +113,26 @@ public class RetrierTest {
 			assertEquals("Unepected error", t.getMessage());
 		}
 		assertEquals(3, callTimes[0]);
+	}
+	
+	@Test
+	public void testExecute_noRetryAsked() throws Throwable {
+		Retrier testInstance = Retrier.NO_RETRY;
+		
+		final int[] callTimes = new int[1];
+		String result = null;
+		try {
+			result = (String) testInstance.execute(new IDelegateWithReturnAndThrows<Object>() {
+				@Override
+				public Object execute() throws Throwable {
+					callTimes[0]++;
+					return "OK";
+				}
+			}, "test");
+		} catch (Throwable t) {
+			fail("No exception should be thrown");
+		}
+		assertEquals(1, callTimes[0]);
+		assertEquals("OK", result);
 	}
 }

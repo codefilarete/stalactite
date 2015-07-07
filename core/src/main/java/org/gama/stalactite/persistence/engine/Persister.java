@@ -2,12 +2,15 @@ package org.gama.stalactite.persistence.engine;
 
 import org.gama.lang.bean.IDelegate;
 import org.gama.lang.bean.IDelegateWithReturn;
+import org.gama.lang.collection.ISorter;
 import org.gama.lang.collection.Iterables;
 import org.gama.stalactite.persistence.engine.listening.PersisterListener;
 import org.gama.stalactite.persistence.id.AutoAssignedIdentifierGenerator;
 import org.gama.stalactite.persistence.id.IdentifierGenerator;
 import org.gama.stalactite.persistence.id.PostInsertIdentifierGenerator;
 import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
+import org.gama.stalactite.persistence.sql.dml.DMLGenerator;
+import org.gama.stalactite.persistence.structure.Table;
 
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -29,11 +32,15 @@ public class Persister<T> {
 	private PersisterExecutor<T> persisterExecutor;
 	
 	public Persister(PersistenceContext persistenceContext, ClassMappingStrategy<T> mappingStrategy) {
+		this(persistenceContext, mappingStrategy, DMLGenerator.NoopSorter.INSTANCE);
+	}
+	
+	public Persister(PersistenceContext persistenceContext, ClassMappingStrategy<T> mappingStrategy, ISorter<Iterable<Table.Column>> columnSorter) {
 		this.persistenceContext = persistenceContext;
 		this.mappingStrategy = mappingStrategy;
 		this.persisterExecutor = new PersisterExecutor<>(mappingStrategy, configureIdentifierFixer(mappingStrategy),
 				persistenceContext.getJDBCBatchSize(), persistenceContext.getTransactionManager(),
-				persistenceContext.getDialect().getColumnBinderRegistry());
+				new DMLGenerator(persistenceContext.getDialect().getColumnBinderRegistry(), columnSorter));
 	}
 	
 	public PersistenceContext getPersistenceContext() {

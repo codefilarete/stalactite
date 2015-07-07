@@ -9,6 +9,7 @@ import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
 import org.gama.stalactite.persistence.mapping.PersistentFieldHarverster;
 import org.gama.stalactite.persistence.sql.Dialect;
 import org.gama.stalactite.persistence.sql.ddl.JavaTypeToSqlTypeMapping;
+import org.gama.stalactite.persistence.sql.dml.DMLGenerator;
 import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.persistence.structure.Table.Column;
 import org.gama.stalactite.test.JdbcTransactionManager;
@@ -84,7 +85,7 @@ public class PersisterTest {
 		DataSource dataSource = mock(DataSource.class);
 		when(dataSource.getConnection()).thenReturn(connection);
 		transactionManager.setDataSource(dataSource);
-		testInstance = persistenceContext.getPersister(Toto.class);
+		testInstance = new Persister<>(persistenceContext, persistenceContext.getMappingStrategy(Toto.class), new DMLGenerator.CaseSensitiveSorter());
 		PersistenceContext.setCurrent(persistenceContext);
 	}
 	

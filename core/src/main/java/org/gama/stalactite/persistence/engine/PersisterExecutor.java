@@ -6,6 +6,7 @@ import org.gama.lang.collection.*;
 import org.gama.sql.IConnectionProvider;
 import org.gama.sql.dml.ReadOperation;
 import org.gama.sql.dml.WriteOperation;
+import org.gama.sql.result.RowIterator;
 import org.gama.stalactite.persistence.engine.Persister.IIdentifierFixer;
 import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
 import org.gama.stalactite.persistence.sql.dml.ColumnPreparedSQL;
@@ -13,8 +14,6 @@ import org.gama.stalactite.persistence.sql.dml.DMLGenerator;
 import org.gama.stalactite.persistence.sql.dml.PreparedSelect;
 import org.gama.stalactite.persistence.sql.dml.PreparedUpdate;
 import org.gama.stalactite.persistence.sql.dml.PreparedUpdate.UpwhereColumn;
-import org.gama.stalactite.persistence.sql.dml.binder.ColumnBinderRegistry;
-import org.gama.sql.result.RowIterator;
 import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.persistence.structure.Table.Column;
 
@@ -38,12 +37,13 @@ public class PersisterExecutor<T> {
 	private final IIdentifierFixer<T> identifierFixer;
 	private final TransactionManager transactionManager;
 	
-	public PersisterExecutor(ClassMappingStrategy<T> mappingStrategy, IIdentifierFixer<T> identifierFixer, int batchSize, TransactionManager transactionManager, ColumnBinderRegistry columnBinderRegistry) {
+	public PersisterExecutor(ClassMappingStrategy<T> mappingStrategy, IIdentifierFixer<T> identifierFixer, int batchSize,
+							 TransactionManager transactionManager, DMLGenerator dmlGenerator) {
 		this.mappingStrategy = mappingStrategy;
 		this.identifierFixer = identifierFixer;
 		this.batchSize = batchSize;
 		this.transactionManager = transactionManager;
-		this.dmlGenerator = new DMLGenerator(columnBinderRegistry);
+		this.dmlGenerator = dmlGenerator;
 	}
 	
 	public ClassMappingStrategy<T> getMappingStrategy() {
@@ -297,6 +297,9 @@ public class PersisterExecutor<T> {
 		}
 	}
 	
+	/**
+	 * Implementation based on TransactionManager.getCurrentConnection()
+	 */
 	private class ConnectionProvider implements IConnectionProvider {
 		
 		private final Connection currentConnection;

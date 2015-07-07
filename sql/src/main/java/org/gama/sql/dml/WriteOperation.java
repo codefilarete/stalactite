@@ -3,7 +3,6 @@ package org.gama.sql.dml;
 import org.gama.lang.Retrier;
 import org.gama.lang.bean.IDelegateWithReturnAndThrows;
 import org.gama.lang.exception.Exceptions;
-import org.gama.lang.exception.MultiCauseException;
 import org.gama.sql.IConnectionProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -14,7 +13,7 @@ import java.util.Map;
 
 /**
  * {@link SQLOperation} dedicated to Inserts, Updates, Deletes ... so all operations that return number of affected rows
- * 
+ *
  * @author Guillaume Mary
  */
 public class WriteOperation<ParamType> extends SQLOperation<ParamType> {
@@ -24,8 +23,16 @@ public class WriteOperation<ParamType> extends SQLOperation<ParamType> {
 	/** JDBC Batch row count, for logging */
 	private int batchRowCount = 0;
 	
+	/** Instance that helps to retry update statements on error, default is no {@link Retrier#NO_RETRY} */
+	private final Retrier retrier;
+	
 	public WriteOperation(SQLStatement<ParamType> sqlGenerator, IConnectionProvider connectionProvider) {
+		this(sqlGenerator, connectionProvider, Retrier.NO_RETRY);
+	}
+	
+	public WriteOperation(SQLStatement<ParamType> sqlGenerator, IConnectionProvider connectionProvider, Retrier retrier) {
 		super(sqlGenerator, connectionProvider);
+		this.retrier = retrier;
 	}
 	
 	/**
@@ -49,7 +56,6 @@ public class WriteOperation<ParamType> extends SQLOperation<ParamType> {
 	public int[] executeBatch() {
 		LOGGER.debug("Batching " + batchRowCount + " rows");
 		int[] updatedRowCount = doExecuteBatch();
-		checkUpdatedRowCount(updatedRowCount);
 		batchRowCount = 0;
 		return updatedRowCount;
 	}
@@ -61,7 +67,7 @@ public class WriteOperation<ParamType> extends SQLOperation<ParamType> {
 			public Object execute() throws Throwable {
 				return preparedStatement.executeUpdate();
 			}
-		}, 3, 5);
+		});
 	}
 	
 	private int[] doExecuteBatch() {
@@ -71,44 +77,21 @@ public class WriteOperation<ParamType> extends SQLOperation<ParamType> {
 			public Object execute() throws Throwable {
 				return preparedStatement.executeBatch();
 			}
-		}, 3, 5);
+		});
 	}
-
-	private <T> T doWithRetry(IDelegateWithReturnAndThrows<T> delegateWithResult, int retryMaxCount, int retryDelay) {
-		Retrier testInstance = new Retrier(retryMaxCount, retryDelay) {
-			@Override
-			protected boolean shouldRetry(Throwable t) {
-				return isDeadlock(t);
-			}
-		};
+	
+	private <T> T doWithRetry(IDelegateWithReturnAndThrows<T> delegateWithResult) {
 		try {
-			return testInstance.execute(delegateWithResult, getSQL());
+			return retrier.execute(delegateWithResult, getSQL());
 		} catch (Throwable t) {
 			Exceptions.throwAsRuntimeException(t);
 			return null; // unreachable
 		}
 	}
-
-	private boolean isDeadlock(Throwable t) {
-		boolean isDeadlock = t != null && t.getMessage() != null && t.getMessage().contains("Deadlock");
-		if (!isDeadlock) {
-			Exceptions.throwAsRuntimeException(t);
-		}
-		return isDeadlock;
-	}
-	
-	protected void checkUpdatedRowCount(int[] updatedRowCount) {
-		MultiCauseException exception = new MultiCauseException();
-		for (int rowCount : updatedRowCount) {
-			if (rowCount == 0) {
-				exception.addCause(new IllegalStateException("No row updated for " + getSQL()));
-			}
-		}
-		exception.throwIfNotEmpty();
-	}
 	
 	/**
 	 * Shortcut for {@link #setValues(Map)} + {@link #addBatch(Map)}
+	 *
 	 * @param values
 	 * @throws SQLException
 	 */

@@ -25,7 +25,7 @@ public class DMLGeneratorTest {
 		Dialect currentDialect = new Dialect(new JavaTypeToSqlTypeMapping());
 		PersistenceContext.setCurrent(new PersistenceContext(null, currentDialect));
 		stringBinder = currentDialect.getColumnBinderRegistry().getBinder(String.class);
-		testInstance = new DMLGenerator(currentDialect.getColumnBinderRegistry());
+		testInstance = new DMLGenerator(currentDialect.getColumnBinderRegistry(), new DMLGenerator.CaseSensitiveSorter());
 	}
 	
 	@Test
