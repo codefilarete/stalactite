@@ -2,8 +2,8 @@ package org.gama.stalactite.persistence.mapping;
 
 import org.gama.lang.collection.Arrays;
 import org.gama.lang.collection.Maps;
-import org.gama.stalactite.persistence.sql.result.IRowTransformer;
-import org.gama.stalactite.persistence.sql.result.Row;
+import org.gama.sql.result.IRowTransformer;
+import org.gama.sql.result.Row;
 import org.testng.annotations.Test;
 
 import java.util.ArrayList;

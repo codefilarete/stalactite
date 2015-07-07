@@ -4,7 +4,7 @@ import org.gama.lang.Reflections.FieldIterator;
 import org.gama.lang.collection.Iterables;
 import org.gama.lang.collection.Iterables.ForEach;
 import org.gama.reflection.PropertyAccessor;
-import org.gama.stalactite.persistence.sql.result.Row;
+import org.gama.sql.result.Row;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;

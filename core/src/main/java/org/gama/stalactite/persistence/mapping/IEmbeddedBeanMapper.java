@@ -1,6 +1,6 @@
 package org.gama.stalactite.persistence.mapping;
 
-import org.gama.stalactite.persistence.sql.result.Row;
+import org.gama.sql.result.Row;
 import org.gama.stalactite.persistence.structure.Table.Column;
 
 import java.util.Map;

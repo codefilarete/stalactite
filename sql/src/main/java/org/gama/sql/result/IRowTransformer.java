@@ -1,4 +1,4 @@
-package org.gama.stalactite.persistence.sql.result;
+package org.gama.sql.result;
 
 import java.sql.SQLException;
 

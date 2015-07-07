@@ -8,7 +8,7 @@ import org.gama.lang.collection.PairIterator;
 import org.gama.lang.collection.PairIterator.EmptyIterator;
 import org.gama.lang.collection.PairIterator.InfiniteIterator;
 import org.gama.lang.collection.PairIterator.UntilBothIterator;
-import org.gama.stalactite.persistence.sql.result.Row;
+import org.gama.sql.result.Row;
 import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.persistence.structure.Table.Column;
 

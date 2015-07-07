@@ -1,4 +1,4 @@
-package org.gama.stalactite.persistence.sql.result;
+package org.gama.sql.result;
 
 import org.gama.lang.exception.Exceptions;
 import org.gama.sql.binder.ParameterBinder;

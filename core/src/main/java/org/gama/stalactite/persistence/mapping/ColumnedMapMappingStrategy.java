@@ -4,7 +4,7 @@ import org.gama.lang.bean.Objects;
 import org.gama.lang.collection.Collections;
 import org.gama.lang.collection.Iterables;
 import org.gama.lang.collection.Iterables.ForEach;
-import org.gama.stalactite.persistence.sql.result.Row;
+import org.gama.sql.result.Row;
 import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.persistence.structure.Table.Column;
 

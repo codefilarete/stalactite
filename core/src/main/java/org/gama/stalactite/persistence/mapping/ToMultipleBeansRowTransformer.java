@@ -1,8 +1,8 @@
 package org.gama.stalactite.persistence.mapping;
 
-import org.gama.stalactite.persistence.sql.result.IRowTransformer;
-import org.gama.stalactite.persistence.sql.result.Row;
-import org.gama.stalactite.persistence.sql.result.RowIterator;
+import org.gama.sql.result.IRowTransformer;
+import org.gama.sql.result.Row;
+import org.gama.sql.result.RowIterator;
 
 import java.sql.SQLException;
 import java.util.Map;

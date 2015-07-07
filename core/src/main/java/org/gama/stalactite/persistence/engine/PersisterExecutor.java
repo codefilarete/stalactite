@@ -14,7 +14,7 @@ import org.gama.stalactite.persistence.sql.dml.PreparedSelect;
 import org.gama.stalactite.persistence.sql.dml.PreparedUpdate;
 import org.gama.stalactite.persistence.sql.dml.PreparedUpdate.UpwhereColumn;
 import org.gama.stalactite.persistence.sql.dml.binder.ColumnBinderRegistry;
-import org.gama.stalactite.persistence.sql.result.RowIterator;
+import org.gama.sql.result.RowIterator;
 import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.persistence.structure.Table.Column;
 

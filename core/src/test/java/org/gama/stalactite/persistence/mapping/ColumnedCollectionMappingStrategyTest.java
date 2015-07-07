@@ -3,7 +3,7 @@ package org.gama.stalactite.persistence.mapping;
 import org.gama.lang.collection.Arrays;
 import org.gama.lang.collection.Maps;
 import org.gama.lang.collection.Maps.ChainingMap;
-import org.gama.stalactite.persistence.sql.result.Row;
+import org.gama.sql.result.Row;
 import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.persistence.structure.Table.Column;
 import org.testng.annotations.BeforeTest;
