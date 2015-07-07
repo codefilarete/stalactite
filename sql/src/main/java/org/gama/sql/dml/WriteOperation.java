@@ -1,7 +1,7 @@
 package org.gama.sql.dml;
 
 import org.gama.lang.Retrier;
-import org.gama.lang.bean.IDelegateWithResult;
+import org.gama.lang.bean.IDelegateWithReturnAndThrows;
 import org.gama.lang.exception.Exceptions;
 import org.gama.lang.exception.MultiCauseException;
 import org.gama.sql.IConnectionProvider;
@@ -45,7 +45,6 @@ public class WriteOperation<ParamType> extends SQLOperation<ParamType> {
 	 * To be used if you used {@link #addBatch(Map)}
 	 *
 	 * @return the number of updated rows in database for each call to {@link #addBatch(Map)}
-	 * @throws SQLException
 	 */
 	public int[] executeBatch() {
 		LOGGER.debug("Batching " + batchRowCount + " rows");
@@ -57,7 +56,7 @@ public class WriteOperation<ParamType> extends SQLOperation<ParamType> {
 	
 	private int doExecuteUpdate() {
 		LOGGER.debug(getSQL());
-		return (int) doWithRetry(new IDelegateWithResult() {
+		return (int) doWithRetry(new IDelegateWithReturnAndThrows() {
 			@Override
 			public Object execute() throws Throwable {
 				return preparedStatement.executeUpdate();
@@ -67,7 +66,7 @@ public class WriteOperation<ParamType> extends SQLOperation<ParamType> {
 	
 	private int[] doExecuteBatch() {
 		LOGGER.debug(getSQL());
-		return (int[]) doWithRetry(new IDelegateWithResult() {
+		return (int[]) doWithRetry(new IDelegateWithReturnAndThrows() {
 			@Override
 			public Object execute() throws Throwable {
 				return preparedStatement.executeBatch();
@@ -75,7 +74,7 @@ public class WriteOperation<ParamType> extends SQLOperation<ParamType> {
 		}, 3, 5);
 	}
 
-	private <T> T doWithRetry(IDelegateWithResult<T> delegateWithResult, int retryMaxCount, int retryDelay) {
+	private <T> T doWithRetry(IDelegateWithReturnAndThrows<T> delegateWithResult, int retryMaxCount, int retryDelay) {
 		Retrier testInstance = new Retrier(retryMaxCount, retryDelay) {
 			@Override
 			protected boolean shouldRetry(Throwable t) {

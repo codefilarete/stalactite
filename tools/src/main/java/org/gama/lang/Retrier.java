@@ -1,6 +1,7 @@
 package org.gama.lang;
 
-import org.gama.lang.bean.IDelegateWithResult;
+import org.gama.lang.bean.IDelegateWithReturnAndThrows;
+import org.gama.lang.exception.Exceptions;
 
 /**
  * @author Guillaume Mary
@@ -16,24 +17,22 @@ public abstract class Retrier {
 		this.retryDelay = retryDelay;
 	}
 
-	public <T> T execute(IDelegateWithResult<T> delegateWithResult, String description) throws Throwable {
-		while(tryCount < maxRetries) {
-			try {
-				return delegateWithResult.execute();
-			} catch (Throwable t) {
-				if (shouldRetry(t)) {
-					tryCount++;
+	public <T> T execute(IDelegateWithReturnAndThrows<T> delegateWithResult, String description) throws Throwable {
+		try {
+			tryCount++;
+			return delegateWithResult.execute();
+		} catch (Throwable t) {
+			if (shouldRetry(t)) {
+				if (tryCount < maxRetries) {
 					waitRetryDelay();
 					return execute(delegateWithResult, description);
 				} else {
-					throw t;
+					throw new RetryException(description, tryCount, retryDelay, t);
 				}
+			} else {
+				throw t;
 			}
 		}
-		if (tryCount == maxRetries) {
-			throw new RetryException("Action " + description + " was executed " + tryCount + " times every "+ retryDelay + "ms and always failed");
-		}
-		return null;
 	}
 
 	protected abstract boolean shouldRetry(Throwable t);
@@ -41,14 +40,15 @@ public abstract class Retrier {
 	private void waitRetryDelay() {
 		try {
 			Thread.sleep(retryDelay);
-		} catch (InterruptedException ignored) {
+		} catch (InterruptedException ie) {
+			Exceptions.throwAsRuntimeException(ie);
 		}
 	}
 
 	public static class RetryException extends Exception {
 
-		public RetryException(String s) {
-			super(s);
+		public RetryException(String action, int tryCount,  long retryDelay, Throwable cause) {
+			super("Action \"" + action + "\" has been executed " + tryCount + " times every " + retryDelay + "ms and always failed", cause);
 		}
 	}
 }

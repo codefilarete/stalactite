@@ -1,7 +1,7 @@
 package org.gama.stalactite.persistence.engine;
 
 import org.gama.lang.bean.IDelegate;
-import org.gama.lang.bean.IDelegateWithResult;
+import org.gama.lang.bean.IDelegateWithReturn;
 import org.gama.lang.collection.Iterables;
 import org.gama.stalactite.persistence.engine.listening.PersisterListener;
 import org.gama.stalactite.persistence.id.AutoAssignedIdentifierGenerator;
@@ -199,7 +199,7 @@ public class Persister<T> {
 	
 	public List<T> select(final Iterable<Serializable> ids) {
 		if (!Iterables.isEmpty(ids)) {
-			return getPersisterListener().doWithSelectListener(ids, new IDelegateWithResult<List<T>>() {
+			return getPersisterListener().doWithSelectListener(ids, new IDelegateWithReturn<List<T>>() {
 				@Override
 				public List<T> execute() {
 					return doSelect(ids);

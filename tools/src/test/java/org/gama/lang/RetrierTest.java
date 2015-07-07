@@ -1,6 +1,6 @@
 package org.gama.lang;
 
-import org.gama.lang.bean.IDelegateWithResult;
+import org.gama.lang.bean.IDelegateWithReturnAndThrows;
 import org.testng.annotations.Test;
 
 import static org.junit.Assert.assertEquals;
@@ -22,7 +22,7 @@ public class RetrierTest {
 
 		final int[] callTimes = new int[1];
 		try {
-			testInstance.execute(new IDelegateWithResult<Object>() {
+			testInstance.execute(new IDelegateWithReturnAndThrows<Object>() {
 				@Override
 				public Object execute() throws Throwable {
 					callTimes[0]++;
@@ -30,7 +30,8 @@ public class RetrierTest {
 				}
 			}, "test");
 		} catch (Throwable t) {
-			assertEquals("Action test was executed 3 times every 5ms and always failed", t.getMessage());
+			assertEquals("Action \"test\" has been executed 3 times every 5ms and always failed", t.getMessage());
+			assertEquals("Never works !", t.getCause().getMessage());
 		}
 		assertEquals(3, callTimes[0]);
 	}
@@ -46,7 +47,7 @@ public class RetrierTest {
 
 		final int[] callTimes = new int[1];
 		try {
-			testInstance.execute(new IDelegateWithResult<Object>() {
+			testInstance.execute(new IDelegateWithReturnAndThrows<Object>() {
 				@Override
 				public Object execute() throws Throwable {
 					callTimes[0]++;
@@ -73,7 +74,7 @@ public class RetrierTest {
 
 		final int[] callTimes = new int[1];
 		try {
-			testInstance.execute(new IDelegateWithResult<Object>() {
+			testInstance.execute(new IDelegateWithReturnAndThrows<Object>() {
 				@Override
 				public Object execute() throws Throwable {
 					callTimes[0]++;
@@ -97,7 +98,7 @@ public class RetrierTest {
 
 		final int[] callTimes = new int[1];
 		try {
-			testInstance.execute(new IDelegateWithResult<Object>() {
+			testInstance.execute(new IDelegateWithReturnAndThrows<Object>() {
 				@Override
 				public Object execute() throws Throwable {
 					callTimes[0]++;
