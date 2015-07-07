@@ -3,7 +3,7 @@ package org.gama.lang.collection;
 import java.util.*;
 
 /**
- * @author mary
+ * @author Guillaume Mary
  */
 public class Arrays {
 	

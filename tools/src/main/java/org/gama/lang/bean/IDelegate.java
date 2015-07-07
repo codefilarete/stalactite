@@ -5,5 +5,5 @@ package org.gama.lang.bean;
  */
 public interface IDelegate {
 	
-	void execute();
+	void execute() throws Throwable;
 }

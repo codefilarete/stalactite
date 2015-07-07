@@ -1,5 +1,7 @@
 package org.gama.sql.dml;
 
+import org.gama.lang.Retrier;
+import org.gama.lang.bean.IDelegateWithResult;
 import org.gama.lang.exception.Exceptions;
 import org.gama.lang.exception.MultiCauseException;
 import org.gama.sql.IConnectionProvider;
@@ -54,33 +56,40 @@ public class WriteOperation<ParamType> extends SQLOperation<ParamType> {
 	}
 	
 	private int doExecuteUpdate() {
-		Throwable t = null;
-		do {
-			LOGGER.debug(getSQL());
-			try {
-				return this.preparedStatement.executeUpdate();
-			} catch (SQLException e) {
-				t = e;
+		LOGGER.debug(getSQL());
+		return (int) doWithRetry(new IDelegateWithResult() {
+			@Override
+			public Object execute() throws Throwable {
+				return preparedStatement.executeUpdate();
 			}
-		} while(isDeadlock(t));
-		Exceptions.throwAsRuntimeException(t);
-		return 0;	// unreachable
+		}, 3, 5);
 	}
 	
 	private int[] doExecuteBatch() {
-		Throwable t = null;
-		do {
-			LOGGER.debug(getSQL());
-			try {
-				return this.preparedStatement.executeBatch();
-			} catch (SQLException e) {
-				t = e;
+		LOGGER.debug(getSQL());
+		return (int[]) doWithRetry(new IDelegateWithResult() {
+			@Override
+			public Object execute() throws Throwable {
+				return preparedStatement.executeBatch();
 			}
-		} while(isDeadlock(t));
-		Exceptions.throwAsRuntimeException(t);
-		return null;	// unreachable
+		}, 3, 5);
 	}
-	
+
+	private <T> T doWithRetry(IDelegateWithResult<T> delegateWithResult, int retryMaxCount, int retryDelay) {
+		Retrier testInstance = new Retrier(retryMaxCount, retryDelay) {
+			@Override
+			protected boolean shouldRetry(Throwable t) {
+				return isDeadlock(t);
+			}
+		};
+		try {
+			return testInstance.execute(delegateWithResult, getSQL());
+		} catch (Throwable t) {
+			Exceptions.throwAsRuntimeException(t);
+			return null; // unreachable
+		}
+	}
+
 	private boolean isDeadlock(Throwable t) {
 		boolean isDeadlock = t != null && t.getMessage() != null && t.getMessage().contains("Deadlock");
 		if (!isDeadlock) {

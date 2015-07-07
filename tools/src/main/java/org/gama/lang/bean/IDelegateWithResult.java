@@ -5,5 +5,5 @@ package org.gama.lang.bean;
  */
 public interface IDelegateWithResult<E> {
 	
-	E execute();
+	E execute() throws Throwable;
 }
