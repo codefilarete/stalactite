@@ -37,6 +37,10 @@ public abstract class SQLOperation<ParamType> implements AutoCloseable {
 		return sqlStatement;
 	}
 	
+	public IConnectionProvider getConnectionProvider() {
+		return connectionProvider;
+	}
+	
 	/**
 	 * Simple wrap to {@link SQLStatement#setValues(Map)}
 	 * @param values

@@ -1,5 +1,6 @@
 package org.gama.stalactite.persistence.engine;
 
+import org.gama.lang.Retryer;
 import org.gama.lang.collection.Arrays;
 import org.gama.lang.collection.Maps;
 import org.gama.lang.collection.PairIterator;
@@ -85,7 +86,8 @@ public class PersisterTest {
 		DataSource dataSource = mock(DataSource.class);
 		when(dataSource.getConnection()).thenReturn(connection);
 		transactionManager.setDataSource(dataSource);
-		testInstance = new Persister<>(persistenceContext, persistenceContext.getMappingStrategy(Toto.class), new DMLGenerator.CaseSensitiveSorter());
+		testInstance = new Persister<>(persistenceContext, persistenceContext.getMappingStrategy(Toto.class), new DMLGenerator.CaseSensitiveSorter(),
+				Retryer.NO_RETRY, 3);
 		PersistenceContext.setCurrent(persistenceContext);
 	}
 	
@@ -253,7 +255,7 @@ public class PersisterTest {
 	@Test
 	public void testDelete_multiple() throws Exception {
 		testInstance.delete(Arrays.asList(new Toto(1, 17, 23), new Toto(2, 29, 31), new Toto(3, 37, 41), new Toto(4, 43, 53)));
-		
+		// 2 statements because in operator is bounded to 3 values (see testInstance creation)
 		assertEquals(Arrays.asList("delete Toto where a in (?, ?, ?)", "delete Toto where a in (?)"), statementArgCaptor.getAllValues());
 		verify(preparedStatement, times(1)).addBatch();
 		verify(preparedStatement, times(1)).executeBatch();
@@ -287,6 +289,7 @@ public class PersisterTest {
 
 		testInstance.select(Arrays.asList((Serializable) 11, 13, 17, 23));
 		
+		// two queries because in operator is bounded to 3 values
 		verify(preparedStatement, times(2)).executeQuery();
 		verify(preparedStatement, times(4)).setInt(indexCaptor.capture(), valueCaptor.capture());
 		assertEquals(Arrays.asList("select a, b, c from Toto where a in (?, ?, ?)", "select a, b, c from Toto where a in (?)"), statementArgCaptor.getAllValues());

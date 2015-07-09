@@ -36,7 +36,9 @@ public class PooledSequencePersister extends Persister<PooledSequence> implement
 	
 	public PooledSequencePersister(PooledSequencePersistenceOptions storageOptions) {
 		// we reuse default PersistentContext
-		super(PersistenceContext.getCurrent(), new PooledSequencePersisterConfigurer().buildConfiguration(storageOptions));
+		super(PersistenceContext.getCurrent(), new PooledSequencePersisterConfigurer().buildConfiguration(storageOptions),
+				PersistenceContext.getCurrent().getDialect().getWriteOperationRetryer(),
+				PersistenceContext.getCurrent().getDialect().getInOperatorMaxSize());
 		getPersistenceContext().add(getMappingStrategy());
 	}
 	

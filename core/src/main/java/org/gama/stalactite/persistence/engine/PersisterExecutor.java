@@ -1,10 +1,12 @@
 package org.gama.stalactite.persistence.engine;
 
+import org.gama.lang.Retryer;
 import org.gama.lang.bean.IFactory;
 import org.gama.lang.collection.Collections;
 import org.gama.lang.collection.*;
 import org.gama.sql.IConnectionProvider;
 import org.gama.sql.dml.ReadOperation;
+import org.gama.sql.dml.SQLStatement;
 import org.gama.sql.dml.WriteOperation;
 import org.gama.sql.result.RowIterator;
 import org.gama.stalactite.persistence.engine.Persister.IIdentifierFixer;
@@ -31,19 +33,24 @@ import java.util.Map.Entry;
  */
 public class PersisterExecutor<T> {
 	
-	private final DMLGenerator dmlGenerator;
 	private final ClassMappingStrategy<T> mappingStrategy;
-	private final int batchSize;
 	private final IIdentifierFixer<T> identifierFixer;
+	private final int batchSize;
 	private final TransactionManager transactionManager;
+	private final DMLGenerator dmlGenerator;
+	private final Retryer writeOperationRetryer;
+	private final int inOperatorMaxSize;
 	
 	public PersisterExecutor(ClassMappingStrategy<T> mappingStrategy, IIdentifierFixer<T> identifierFixer, int batchSize,
-							 TransactionManager transactionManager, DMLGenerator dmlGenerator) {
+							 TransactionManager transactionManager, DMLGenerator dmlGenerator, Retryer writeOperationRetryer,
+							 int inOperatorMaxSize) {
 		this.mappingStrategy = mappingStrategy;
 		this.identifierFixer = identifierFixer;
 		this.batchSize = batchSize;
 		this.transactionManager = transactionManager;
 		this.dmlGenerator = dmlGenerator;
+		this.writeOperationRetryer = writeOperationRetryer;
+		this.inOperatorMaxSize = inOperatorMaxSize;
 	}
 	
 	public ClassMappingStrategy<T> getMappingStrategy() {
@@ -52,7 +59,7 @@ public class PersisterExecutor<T> {
 	
 	public void insert(Iterable<T> iterable) {
 		ColumnPreparedSQL insertStatement = dmlGenerator.buildInsert(mappingStrategy.getTargetTable().getColumns());
-		WriteOperation<Column> writeOperation = new WriteOperation<>(insertStatement, new ConnectionProvider());
+		WriteOperation<Column> writeOperation = newWriteOperation(insertStatement, new ConnectionProvider());
 		
 		JDBCBatchingIterator<T> jdbcBatchingIterator = new JDBCBatchingIterator<>(iterable, writeOperation);
 		while(jdbcBatchingIterator.hasNext()) {
@@ -77,7 +84,7 @@ public class PersisterExecutor<T> {
 		// we never update primary key (by principle and for persistent bean cache based on id (on what else ?)) 
 		Set<Column> columnsToUpdate = targetTable.getColumnsNoPrimaryKey();
 		PreparedUpdate updateOperation = dmlGenerator.buildUpdate(columnsToUpdate, mappingStrategy.getVersionedKeys());
-		WriteOperation<UpwhereColumn> writeOperation = new WriteOperation<>(updateOperation, new ConnectionProvider());
+		WriteOperation<UpwhereColumn> writeOperation = newWriteOperation(updateOperation, new ConnectionProvider());
 		
 		JDBCBatchingIterator<T> jdbcBatchingIterator = new JDBCBatchingIterator<>(iterable, writeOperation);
 		while(jdbcBatchingIterator.hasNext()) {
@@ -140,7 +147,7 @@ public class PersisterExecutor<T> {
 			@Override
 			public JDBCBatchingOperation<UpwhereColumn> createInstance(Set<UpwhereColumn> input) {
 				PreparedUpdate preparedUpdate = dmlGenerator.buildUpdate(UpwhereColumn.getUpdateColumns(input), mappingStrategy.getVersionedKeys());
-				return new JDBCBatchingOperation<>(new WriteOperation<>(preparedUpdate, connectionProvider));
+				return new JDBCBatchingOperation<>(newWriteOperation(preparedUpdate, connectionProvider));
 			}
 		});
 		// building UpdateOperations and update values
@@ -169,9 +176,8 @@ public class PersisterExecutor<T> {
 	 * @param differencesIterable iterable of instances
 	 */
 	public void updateFully(Iterable<Entry<T, T>> differencesIterable) {
-		ConnectionProvider connectionProvider = new ConnectionProvider();
 		PreparedUpdate preparedUpdate = dmlGenerator.buildUpdate(mappingStrategy.getUpdatableColumns(), mappingStrategy.getVersionedKeys());
-		WriteOperation<UpwhereColumn> writeOperation = new WriteOperation<>(preparedUpdate, connectionProvider);
+		WriteOperation<UpwhereColumn> writeOperation = newWriteOperation(preparedUpdate, new ConnectionProvider());
 		
 		// Since all columns are updated we can benefit from JDBC batch
 		JDBCBatchingIterator<Entry<T, T>> jdbcBatchingIterator = new JDBCBatchingIterator<>(differencesIterable, writeOperation);
@@ -193,7 +199,7 @@ public class PersisterExecutor<T> {
 			deleteRoughly(iterable);
 		} else {
 			ColumnPreparedSQL deleteStatement = dmlGenerator.buildDelete(mappingStrategy.getTargetTable(), mappingStrategy.getVersionedKeys());
-			WriteOperation<Column> writeOperation = new WriteOperation<>(deleteStatement, new ConnectionProvider());
+			WriteOperation<Column> writeOperation = newWriteOperation(deleteStatement, new ConnectionProvider());
 			JDBCBatchingIterator<T> jdbcBatchingIterator = new JDBCBatchingIterator<>(iterable, writeOperation);
 			while(jdbcBatchingIterator.hasNext()) {
 				T t = jdbcBatchingIterator.next();
@@ -217,7 +223,7 @@ public class PersisterExecutor<T> {
 	public void deleteRoughlyById(Iterable<Serializable> ids) {
 		// NB: ConnectionProvider must provide the same connection over all blocks
 		ConnectionProvider connectionProvider = new ConnectionProvider();
-		int blockSize = 3;
+		int blockSize = this.inOperatorMaxSize;
 		List<List<Serializable>> parcels = Collections.parcel(ids, blockSize);
 		List<Serializable> lastBlock = Iterables.last(parcels);
 		ColumnPreparedSQL deleteStatement;
@@ -226,7 +232,7 @@ public class PersisterExecutor<T> {
 		Column keyColumn = mappingStrategy.getSingleColumnKey();
 		if (parcels.size() > 1) {
 			deleteStatement = dmlGenerator.buildMassiveDelete(targetTable, keyColumn, blockSize);
-			writeOperation = new WriteOperation<>(deleteStatement, connectionProvider);
+			writeOperation = newWriteOperation(deleteStatement, connectionProvider);
 			if (lastBlock.size() != blockSize) {
 				parcels = parcels.subList(0, parcels.size() - 1);
 			}
@@ -236,18 +242,23 @@ public class PersisterExecutor<T> {
 				writeOperation.addBatch(Maps.asMap(keyColumn, (Object) updateValues));
 			}
 		}
+		// treat remaining block
 		if (lastBlock.size() > 0) {
 			deleteStatement = dmlGenerator.buildMassiveDelete(targetTable, keyColumn, lastBlock.size());
-			writeOperation = new WriteOperation<>(deleteStatement, connectionProvider);
+			writeOperation = newWriteOperation(deleteStatement, connectionProvider);
 			writeOperation.setValue(keyColumn, lastBlock);
 			writeOperation.execute();
 		}
 	}
 	
+	private <C> WriteOperation<C> newWriteOperation(SQLStatement<C> statement, ConnectionProvider connectionProvider) {
+		return new WriteOperation<>(statement, connectionProvider, writeOperationRetryer);
+	}
+	
 	public List<T> select(Iterable<Serializable> ids) {
 		ConnectionProvider connectionProvider = new ConnectionProvider();
 		List<T> toReturn = new ArrayList<>(50);
-		int blockSize = 3;
+		int blockSize = this.inOperatorMaxSize;
 		List<List<Serializable>> parcels = Collections.parcel(ids, blockSize);
 		List<Serializable> lastBlock = Iterables.last(parcels);
 		PreparedSelect selectStatement;
@@ -256,7 +267,7 @@ public class PersisterExecutor<T> {
 		Set<Column> columnsToRead = targetTable.getColumns().asSet();
 		if (parcels.size() > 1) {
 			selectStatement = dmlGenerator.buildMassiveSelect(targetTable, columnsToRead, mappingStrategy.getSingleColumnKey(), blockSize);
-			readOperation = new ReadOperation<>(selectStatement, connectionProvider);
+			readOperation = newReadOperation(selectStatement, connectionProvider);
 			if (lastBlock.size() != blockSize) {
 				parcels = parcels.subList(0, parcels.size() - 1);
 			}
@@ -266,10 +277,14 @@ public class PersisterExecutor<T> {
 		}
 		if (lastBlock.size() > 0) {
 			selectStatement = dmlGenerator.buildMassiveSelect(targetTable, columnsToRead, mappingStrategy.getSingleColumnKey(), lastBlock.size());
-			readOperation = new ReadOperation<>(selectStatement, connectionProvider);
+			readOperation = newReadOperation(selectStatement, connectionProvider);
 			toReturn.addAll(execute(readOperation, mappingStrategy.getSingleColumnKey(), lastBlock));
 		}
 		return toReturn;
+	}
+	
+	private <C> ReadOperation<C> newReadOperation(SQLStatement<C> statement, ConnectionProvider connectionProvider) {
+		return new ReadOperation<>(statement, connectionProvider);
 	}
 	
 	protected List<T> execute(ReadOperation<Column> operation, Column column, Collection<Serializable> values) {

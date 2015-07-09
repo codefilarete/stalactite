@@ -1,5 +1,6 @@
 package org.gama.stalactite.persistence.engine;
 
+import org.gama.lang.Retryer;
 import org.gama.lang.bean.IDelegate;
 import org.gama.lang.bean.IDelegateWithReturn;
 import org.gama.lang.collection.ISorter;
@@ -31,16 +32,18 @@ public class Persister<T> {
 	private PersisterListener<T> persisterListener = new PersisterListener<>();
 	private PersisterExecutor<T> persisterExecutor;
 	
-	public Persister(PersistenceContext persistenceContext, ClassMappingStrategy<T> mappingStrategy) {
-		this(persistenceContext, mappingStrategy, DMLGenerator.NoopSorter.INSTANCE);
+	public Persister(PersistenceContext persistenceContext, ClassMappingStrategy<T> mappingStrategy, Retryer writeOperationRetryer, int inOperatorMaxSize) {
+		this(persistenceContext, mappingStrategy, DMLGenerator.NoopSorter.INSTANCE, writeOperationRetryer, inOperatorMaxSize);
 	}
 	
-	public Persister(PersistenceContext persistenceContext, ClassMappingStrategy<T> mappingStrategy, ISorter<Iterable<Table.Column>> columnSorter) {
+	public Persister(PersistenceContext persistenceContext, ClassMappingStrategy<T> mappingStrategy, ISorter<Iterable<Table.Column>> columnSorter,
+					 Retryer writeOperationRetryer, int inOperatorMaxSize) {
 		this.persistenceContext = persistenceContext;
 		this.mappingStrategy = mappingStrategy;
 		this.persisterExecutor = new PersisterExecutor<>(mappingStrategy, configureIdentifierFixer(mappingStrategy),
 				persistenceContext.getJDBCBatchSize(), persistenceContext.getTransactionManager(),
-				new DMLGenerator(persistenceContext.getDialect().getColumnBinderRegistry(), columnSorter));
+				new DMLGenerator(persistenceContext.getDialect().getColumnBinderRegistry(), columnSorter),
+				writeOperationRetryer, inOperatorMaxSize);
 	}
 	
 	public PersistenceContext getPersistenceContext() {

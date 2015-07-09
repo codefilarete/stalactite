@@ -31,7 +31,9 @@ public class UpdateToAfterUpdateCascaderTest extends CascaderTest {
 		// Necessary Persister to be passed to the InsertToBeforeInsertCascader tested instance
 		PersistenceContext persistenceContextMock = mock(PersistenceContext.class);
 		when(persistenceContextMock.getDialect()).thenReturn(new Dialect(new JavaTypeToSqlTypeMapping(), new ColumnBinderRegistry()));
-		Persister<Tata> persisterMock = new Persister<Tata>(persistenceContextMock, mock(ClassMappingStrategy.class)) {
+		Persister<Tata> persisterMock = new Persister<Tata>(persistenceContextMock, mock(ClassMappingStrategy.class),
+				persistenceContextMock.getDialect().getWriteOperationRetryer(),
+				persistenceContextMock.getDialect().getInOperatorMaxSize()) {
 			@Override
 			protected void doUpdate(Iterable<Entry<Tata, Tata>> differencesIterable, boolean allColumnsStatement) {
 				// Overriden to do no action, because default super action is complex to mock

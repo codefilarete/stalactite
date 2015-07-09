@@ -29,7 +29,9 @@ public class DeleteToAfterDeleteCascaderTest extends CascaderTest {
 		// Necessary Persister to be passed to the InsertToBeforeInsertCascader tested instance
 		PersistenceContext persistenceContextMock = mock(PersistenceContext.class);
 		when(persistenceContextMock.getDialect()).thenReturn(new Dialect(new JavaTypeToSqlTypeMapping(), new ColumnBinderRegistry()));
-		Persister<Tata> persisterMock = new Persister<Tata>(persistenceContextMock, mock(ClassMappingStrategy.class)) {
+		Persister<Tata> persisterMock = new Persister<Tata>(persistenceContextMock, mock(ClassMappingStrategy.class),
+				persistenceContextMock.getDialect().getWriteOperationRetryer(),
+				persistenceContextMock.getDialect().getInOperatorMaxSize()) {
 			@Override
 			protected void doDelete(Iterable<Tata> iterable) {
 				// Overriden to do no action, because default super action is complex to mock
