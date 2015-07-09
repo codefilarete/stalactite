@@ -6,9 +6,9 @@ import org.gama.lang.exception.Exceptions;
 /**
  * @author Guillaume Mary
  */
-public abstract class Retrier {
+public abstract class Retryer {
 	
-	public static final Retrier NO_RETRY = new Retrier(0, 0) {
+	public static final Retryer NO_RETRY = new Retryer(0, 0) {
 		@Override
 		protected boolean shouldRetry(Throwable t) {
 			return false;
@@ -19,7 +19,7 @@ public abstract class Retrier {
 	private final int maxRetries;
 	private final long retryDelay;
 
-	public Retrier(int maxRetries, long retryDelay) {
+	public Retryer(int maxRetries, long retryDelay) {
 		this.maxRetries = maxRetries;
 		this.retryDelay = retryDelay;
 	}

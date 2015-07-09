@@ -1,6 +1,6 @@
 package org.gama.sql.dml;
 
-import org.gama.lang.Retrier;
+import org.gama.lang.Retryer;
 import org.gama.lang.bean.IDelegateWithReturnAndThrows;
 import org.gama.lang.exception.Exceptions;
 import org.gama.sql.IConnectionProvider;
@@ -23,16 +23,16 @@ public class WriteOperation<ParamType> extends SQLOperation<ParamType> {
 	/** JDBC Batch row count, for logging */
 	private int batchRowCount = 0;
 	
-	/** Instance that helps to retry update statements on error, default is no {@link Retrier#NO_RETRY} */
-	private final Retrier retrier;
+	/** Instance that helps to retry update statements on error, default is no {@link Retryer#NO_RETRY} */
+	private final Retryer retryer;
 	
 	public WriteOperation(SQLStatement<ParamType> sqlGenerator, IConnectionProvider connectionProvider) {
-		this(sqlGenerator, connectionProvider, Retrier.NO_RETRY);
+		this(sqlGenerator, connectionProvider, Retryer.NO_RETRY);
 	}
 	
-	public WriteOperation(SQLStatement<ParamType> sqlGenerator, IConnectionProvider connectionProvider, Retrier retrier) {
+	public WriteOperation(SQLStatement<ParamType> sqlGenerator, IConnectionProvider connectionProvider, Retryer retryer) {
 		super(sqlGenerator, connectionProvider);
-		this.retrier = retrier;
+		this.retryer = retryer;
 	}
 	
 	/**
@@ -82,7 +82,7 @@ public class WriteOperation<ParamType> extends SQLOperation<ParamType> {
 	
 	private <T> T doWithRetry(IDelegateWithReturnAndThrows<T> delegateWithResult) {
 		try {
-			return retrier.execute(delegateWithResult, getSQL());
+			return retryer.execute(delegateWithResult, getSQL());
 		} catch (Throwable t) {
 			Exceptions.throwAsRuntimeException(t);
 			return null; // unreachable

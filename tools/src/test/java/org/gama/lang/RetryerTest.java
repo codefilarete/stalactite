@@ -9,11 +9,11 @@ import static org.junit.Assert.fail;
 /**
  * @author Guillaume Mary
  */
-public class RetrierTest {
+public class RetryerTest {
 	
 	@Test
 	public void testExecute_neverWorks() throws Throwable {
-		Retrier testInstance = new Retrier(3, 5) {
+		Retryer testInstance = new Retryer(3, 5) {
 			@Override
 			protected boolean shouldRetry(Throwable t) {
 				return true;
@@ -38,7 +38,7 @@ public class RetrierTest {
 	
 	@Test
 	public void testExecute_worksLastAttempt() throws Throwable {
-		Retrier testInstance = new Retrier(3, 5) {
+		Retryer testInstance = new Retryer(3, 5) {
 			@Override
 			protected boolean shouldRetry(Throwable t) {
 				return true;
@@ -65,7 +65,7 @@ public class RetrierTest {
 	
 	@Test
 	public void testExecute_worksFirstAttempt() throws Throwable {
-		Retrier testInstance = new Retrier(3, 5) {
+		Retryer testInstance = new Retryer(3, 5) {
 			@Override
 			protected boolean shouldRetry(Throwable t) {
 				return true;
@@ -89,7 +89,7 @@ public class RetrierTest {
 	
 	@Test
 	public void testExecute_throwUnexpected() throws Throwable {
-		Retrier testInstance = new Retrier(3, 5) {
+		Retryer testInstance = new Retryer(3, 5) {
 			@Override
 			protected boolean shouldRetry(Throwable t) {
 				return t.getMessage().equals("retry");
@@ -117,7 +117,7 @@ public class RetrierTest {
 	
 	@Test
 	public void testExecute_noRetryAsked() throws Throwable {
-		Retrier testInstance = Retrier.NO_RETRY;
+		Retryer testInstance = Retryer.NO_RETRY;
 		
 		final int[] callTimes = new int[1];
 		String result = null;
