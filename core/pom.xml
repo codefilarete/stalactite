@@ -15,6 +15,7 @@
 	<properties>
 		<jsr305.version>3.0.0</jsr305.version>
 		<hsqldb.version>2.3.2</hsqldb.version>
+		<derby.version>10.11.1.1</derby.version>
 	</properties>
 	
 	<build>
@@ -89,6 +90,12 @@
 			<groupId>org.gama</groupId>
 			<artifactId>reflection</artifactId>
 			<version>${project.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>org.apache.derby</groupId>
+			<artifactId>derby</artifactId>
+			<version>${derby.version}</version>
+			<scope>test</scope>
 		</dependency>
 	</dependencies>
 

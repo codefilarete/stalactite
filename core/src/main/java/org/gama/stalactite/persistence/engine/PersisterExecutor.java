@@ -2,8 +2,10 @@ package org.gama.stalactite.persistence.engine;
 
 import org.gama.lang.Retryer;
 import org.gama.lang.bean.IFactory;
+import org.gama.lang.collection.Arrays;
 import org.gama.lang.collection.Collections;
 import org.gama.lang.collection.*;
+import org.gama.lang.exception.Exceptions;
 import org.gama.sql.IConnectionProvider;
 import org.gama.sql.dml.ReadOperation;
 import org.gama.sql.dml.SQLStatement;
@@ -57,17 +59,18 @@ public class PersisterExecutor<T> {
 		return mappingStrategy;
 	}
 	
-	public void insert(Iterable<T> iterable) {
+	public int insert(Iterable<T> iterable) {
 		ColumnPreparedSQL insertStatement = dmlGenerator.buildInsert(mappingStrategy.getTargetTable().getColumns());
 		WriteOperation<Column> writeOperation = newWriteOperation(insertStatement, new ConnectionProvider());
 		
-		JDBCBatchingIterator<T> jdbcBatchingIterator = new JDBCBatchingIterator<>(iterable, writeOperation);
+		JDBCBatchingIterator<T> jdbcBatchingIterator = new JDBCBatchingIterator<>(iterable, writeOperation, PersisterExecutor.this.batchSize);
 		while(jdbcBatchingIterator.hasNext()) {
 			T t = jdbcBatchingIterator.next();
 			identifierFixer.fixId(t);
 			Map<Column, Object> insertValues = mappingStrategy.getInsertValues(t);
 			writeOperation.addBatch(insertValues);
 		}
+		return jdbcBatchingIterator.getUpdatedRowCount();
 		/*
 		if (identifierGenerator instanceof PostInsertIdentifierGenerator) {
 			// TODO: lire le résultat de l'exécution et injecter l'identifiant sur le bean
@@ -79,35 +82,34 @@ public class PersisterExecutor<T> {
 	 * Update roughly some instances: no difference are computed, only update statements (all columns) are applied.
 	 * @param iterable iterable of instances
 	 */
-	public void updateRoughly(Iterable<T> iterable) {
+	public int updateRoughly(Iterable<T> iterable) {
 		Table targetTable = mappingStrategy.getTargetTable();
 		// we never update primary key (by principle and for persistent bean cache based on id (on what else ?)) 
 		Set<Column> columnsToUpdate = targetTable.getColumnsNoPrimaryKey();
 		PreparedUpdate updateOperation = dmlGenerator.buildUpdate(columnsToUpdate, mappingStrategy.getVersionedKeys());
 		WriteOperation<UpwhereColumn> writeOperation = newWriteOperation(updateOperation, new ConnectionProvider());
 		
-		JDBCBatchingIterator<T> jdbcBatchingIterator = new JDBCBatchingIterator<>(iterable, writeOperation);
+		JDBCBatchingIterator<T> jdbcBatchingIterator = new JDBCBatchingIterator<>(iterable, writeOperation, PersisterExecutor.this.batchSize);
 		while(jdbcBatchingIterator.hasNext()) {
 			T t = jdbcBatchingIterator.next();
 			Map<UpwhereColumn, Object> updateValues = mappingStrategy.getUpdateValues(t, null, true);
 			writeOperation.addBatch(updateValues);
 		}
+		return jdbcBatchingIterator.getUpdatedRowCount();
 	}
 	
 	/**
 	 * Update instances that have changes.
 	 * Groups statements to benefit from JDBC batch. Usefull overall when allColumnsStatement
 	 * is set to false.
-	 * 
-	 * @param differencesIterable pairs of modified-unmodified instances, used to compute differences side by side
+	 *  @param differencesIterable pairs of modified-unmodified instances, used to compute differences side by side
 	 * @param allColumnsStatement true if all columns must be in the SQL statement, false if only modified ones should be..
-	 *                            Pass true gives more chance for JDBC batch to be used. 
 	 */
-	public void update(Iterable<Entry<T, T>> differencesIterable, boolean allColumnsStatement) {
+	public int update(Iterable<Entry<T, T>> differencesIterable, boolean allColumnsStatement) {
 		if (allColumnsStatement) {
-			updateFully(differencesIterable);
+			return updateFully(differencesIterable);
 		} else {
-			updatePartially(differencesIterable);
+			return updatePartially(differencesIterable);
 		}
 	}
 	
@@ -117,98 +119,43 @@ public class PersisterExecutor<T> {
 	 *
 	 * @param differencesIterable pairs of modified-unmodified instances, used to compute differences side by side
 	 */
-	public void updatePartially(Iterable<Entry<T, T>> differencesIterable) {
-		// Facility to trigger JDBC Batch when number of setted values is reached
-		class JDBCBatchingOperation<P> {
-			private final WriteOperation<P> writeOperation;
-			private long stepCounter = 0;
-			
-			private JDBCBatchingOperation(WriteOperation<P> writeOperation) {
-				this.writeOperation = writeOperation;
-			}
-			
-			private void setValues(Map<P, Object> values) {
-				this.writeOperation.addBatch(values);
-				this.stepCounter++;
-				executeBatchIfNecessary();
-			}
-			
-			private void  executeBatchIfNecessary() {
-				if (stepCounter == PersisterExecutor.this.batchSize) {
-					writeOperation.executeBatch();
-					stepCounter = 0;
-				}
-			}
-		}
-		
-		final ConnectionProvider connectionProvider = new ConnectionProvider();
-		// cache for WriteOperation instances (key is Columns to be updated) for batch use
-		Map<Set<UpwhereColumn>, JDBCBatchingOperation<UpwhereColumn>> updateOperationCache = new ValueFactoryHashMap<>(new IFactory<Set<UpwhereColumn>, JDBCBatchingOperation<UpwhereColumn>>() {
-			@Override
-			public JDBCBatchingOperation<UpwhereColumn> createInstance(Set<UpwhereColumn> input) {
-				PreparedUpdate preparedUpdate = dmlGenerator.buildUpdate(UpwhereColumn.getUpdateColumns(input), mappingStrategy.getVersionedKeys());
-				return new JDBCBatchingOperation<>(newWriteOperation(preparedUpdate, connectionProvider));
-			}
-		});
-		// building UpdateOperations and update values
-		for (Entry<T, T> next : differencesIterable) {
-			T modified = next.getKey();
-			T unmodified = next.getValue();
-			// finding differences between modified instances and unmodified ones
-			Map<UpwhereColumn, Object> updateValues = mappingStrategy.getUpdateValues(modified, unmodified, false);
-			if (!updateValues.isEmpty()) {
-				JDBCBatchingOperation<UpwhereColumn> writeOperation = updateOperationCache.get(updateValues.keySet());
-				writeOperation.setValues(updateValues);
-			} // else nothing to do (no modification)
-		}
-		// treating remaining values not yet executed
-		for (JDBCBatchingOperation<UpwhereColumn> entryUpwhereColumnJDBCBatchingOperation : updateOperationCache.values()) {
-			if (entryUpwhereColumnJDBCBatchingOperation.stepCounter != 0) {
-				entryUpwhereColumnJDBCBatchingOperation.writeOperation.executeBatch();
-			}
-		}
+	public int updatePartially(Iterable<Entry<T, T>> differencesIterable) {
+		ConnectionProvider connectionProvider = new ConnectionProvider();
+		return new Updater(new JDBCBatchingOperationCache(connectionProvider), false).update(differencesIterable);
 	}
 	
 	/**
 	 * Update instances that have changes. All columns are updated.
 	 * Groups statements to benefit from JDBC batch.
-	 * 
+	 *
 	 * @param differencesIterable iterable of instances
 	 */
-	public void updateFully(Iterable<Entry<T, T>> differencesIterable) {
+	public int updateFully(Iterable<Entry<T, T>> differencesIterable) {
 		PreparedUpdate preparedUpdate = dmlGenerator.buildUpdate(mappingStrategy.getUpdatableColumns(), mappingStrategy.getVersionedKeys());
 		WriteOperation<UpwhereColumn> writeOperation = newWriteOperation(preparedUpdate, new ConnectionProvider());
-		
 		// Since all columns are updated we can benefit from JDBC batch
-		JDBCBatchingIterator<Entry<T, T>> jdbcBatchingIterator = new JDBCBatchingIterator<>(differencesIterable, writeOperation);
-		while(jdbcBatchingIterator.hasNext()) {
-			Entry<T, T> entry = jdbcBatchingIterator.next();
-			T modified = entry.getKey();
-			T unmodified = entry.getValue();
-			// finding differences between modified instance and unmodified one
-			Map<UpwhereColumn, Object> updateValues = mappingStrategy.getUpdateValues(modified, unmodified, true);
-			if (!updateValues.isEmpty()) {
-				writeOperation.addBatch(updateValues);
-			} // else nothing to do (no modification)
-		}
+		JDBCBatchingOperation jdbcBatchingOperation = new JDBCBatchingOperation(writeOperation, PersisterExecutor.this.batchSize);
+		
+		return new Updater(new MonoJDBCBatchingOperation(jdbcBatchingOperation), true).update(differencesIterable);
 	}
 	
-	public void delete(Iterable<T> iterable) {
+	public int delete(Iterable<T> iterable) {
 		// Check if delete can be optimized
 		if (mappingStrategy.isSingleColumnKey()) {
-			deleteRoughly(iterable);
+			return deleteRoughly(iterable);
 		} else {
 			ColumnPreparedSQL deleteStatement = dmlGenerator.buildDelete(mappingStrategy.getTargetTable(), mappingStrategy.getVersionedKeys());
 			WriteOperation<Column> writeOperation = newWriteOperation(deleteStatement, new ConnectionProvider());
-			JDBCBatchingIterator<T> jdbcBatchingIterator = new JDBCBatchingIterator<>(iterable, writeOperation);
+			JDBCBatchingIterator<T> jdbcBatchingIterator = new JDBCBatchingIterator<>(iterable, writeOperation, PersisterExecutor.this.batchSize);
 			while(jdbcBatchingIterator.hasNext()) {
 				T t = jdbcBatchingIterator.next();
 				writeOperation.addBatch(mappingStrategy.getDeleteValues(t));
 			}
+			return jdbcBatchingIterator.getUpdatedRowCount();
 		}
 	}
 	
-	public void deleteRoughly(Iterable<T> iterable) {
+	public int deleteRoughly(Iterable<T> iterable) {
 		if (!mappingStrategy.isSingleColumnKey()) {
 			throw new UnsupportedOperationException("Roughly delete is only supported with single column key");
 		}
@@ -217,10 +164,10 @@ public class PersisterExecutor<T> {
 		for (T t : iterable) {
 			ids.add(mappingStrategy.getId(t));
 		}
-		deleteRoughlyById(ids);
+		return deleteRoughlyById(ids);
 	}
 	
-	public void deleteRoughlyById(Iterable<Serializable> ids) {
+	public int deleteRoughlyById(Iterable<Serializable> ids) {
 		// NB: ConnectionProvider must provide the same connection over all blocks
 		ConnectionProvider connectionProvider = new ConnectionProvider();
 		int blockSize = this.inOperatorMaxSize;
@@ -230,25 +177,29 @@ public class PersisterExecutor<T> {
 		WriteOperation<Column> writeOperation;
 		Table targetTable = mappingStrategy.getTargetTable();
 		Column keyColumn = mappingStrategy.getSingleColumnKey();
+		int updatedRowCounter = 0;
 		if (parcels.size() > 1) {
 			deleteStatement = dmlGenerator.buildMassiveDelete(targetTable, keyColumn, blockSize);
-			writeOperation = newWriteOperation(deleteStatement, connectionProvider);
 			if (lastBlock.size() != blockSize) {
 				parcels = parcels.subList(0, parcels.size() - 1);
 			}
-			JDBCBatchingIterator<List<Serializable>> jdbcBatchingIterator = new JDBCBatchingIterator<>(parcels, writeOperation);
+			writeOperation = newWriteOperation(deleteStatement, connectionProvider);
+			JDBCBatchingIterator<List<Serializable>> jdbcBatchingIterator = new JDBCBatchingIterator<>(parcels, writeOperation, PersisterExecutor.this.batchSize);
 			while(jdbcBatchingIterator.hasNext()) {
 				List<Serializable> updateValues = jdbcBatchingIterator.next();
 				writeOperation.addBatch(Maps.asMap(keyColumn, (Object) updateValues));
 			}
+			updatedRowCounter = jdbcBatchingIterator.updatedRowCount;
 		}
-		// treat remaining block
+		// remaining block treatment
 		if (lastBlock.size() > 0) {
 			deleteStatement = dmlGenerator.buildMassiveDelete(targetTable, keyColumn, lastBlock.size());
 			writeOperation = newWriteOperation(deleteStatement, connectionProvider);
 			writeOperation.setValue(keyColumn, lastBlock);
-			writeOperation.execute();
+			int updatedRowCount = writeOperation.execute();
+			updatedRowCounter += updatedRowCount;
 		}
+		return updatedRowCounter;
 	}
 	
 	private <C> WriteOperation<C> newWriteOperation(SQLStatement<C> statement, ConnectionProvider connectionProvider) {
@@ -267,10 +218,10 @@ public class PersisterExecutor<T> {
 		Set<Column> columnsToRead = targetTable.getColumns().asSet();
 		if (parcels.size() > 1) {
 			selectStatement = dmlGenerator.buildMassiveSelect(targetTable, columnsToRead, mappingStrategy.getSingleColumnKey(), blockSize);
-			readOperation = newReadOperation(selectStatement, connectionProvider);
 			if (lastBlock.size() != blockSize) {
 				parcels = parcels.subList(0, parcels.size() - 1);
 			}
+			readOperation = newReadOperation(selectStatement, connectionProvider);
 			for (List<Serializable> parcel : parcels) {
 				toReturn.addAll(execute(readOperation, mappingStrategy.getSingleColumnKey(), parcel));
 			}
@@ -289,26 +240,165 @@ public class PersisterExecutor<T> {
 	
 	protected List<T> execute(ReadOperation<Column> operation, Column column, Collection<Serializable> values) {
 		List<T> toReturn = new ArrayList<>(values.size());
-		operation.setValue(column, values);
-		ResultSet resultSet = operation.execute();
-		RowIterator rowIterator = new RowIterator(resultSet, ((PreparedSelect) operation.getSqlStatement()).getSelectParameterBinders());
-		while(rowIterator.hasNext()) {
-			toReturn.add(mappingStrategy.transform(rowIterator.next()));
+		try(ReadOperation<Column> closeableOperation = operation) {
+			operation.setValue(column, values);
+			ResultSet resultSet = closeableOperation.execute();
+			RowIterator rowIterator = new RowIterator(resultSet, ((PreparedSelect) closeableOperation.getSqlStatement()).getSelectParameterBinders());
+			while (rowIterator.hasNext()) {
+				toReturn.add(mappingStrategy.transform(rowIterator.next()));
+			}
+		} catch (Exception e) {
+			Exceptions.throwAsRuntimeException(e);
 		}
 		return toReturn;
 	}
 	
-	private class JDBCBatchingIterator<E> extends SteppingIterator<E> {
+	/**
+	 * Iterator that triggers batch execution every batch size step.
+	 * Usefull for insert and delete statements.
+	 */
+	private static class JDBCBatchingIterator<E> extends SteppingIterator<E> {
 		private final WriteOperation writeOperation;
+		private int updatedRowCount;
 		
-		public JDBCBatchingIterator(Iterable<E> iterable, WriteOperation writeOperation) {
-			super(iterable, PersisterExecutor.this.batchSize);
+		public JDBCBatchingIterator(Iterable<E> iterable, WriteOperation writeOperation, int batchSize) {
+			super(iterable, batchSize);
 			this.writeOperation = writeOperation;
 		}
 		
 		@Override
 		protected void onStep() {
-			writeOperation.executeBatch();
+			this.updatedRowCount += writeOperation.executeBatch();
+		}
+		
+		public int getUpdatedRowCount() {
+			return this.updatedRowCount;
+		}
+	}
+	
+	/**
+	 * Facility to trigger JDBC Batch when number of setted values is reached. Usefull for update statements.
+	 * Its principle is near to JDBCBatchingIterator but update methods have to compute differences on each couple so
+	 * they generate multiple statements according to differences, hence an Iterator is not a good candidate for design.
+	 */
+	private static class JDBCBatchingOperation {
+		private final WriteOperation<UpwhereColumn> writeOperation;
+		private final int batchSize;
+		private long stepCounter = 0;
+		private int updatedRowCount;
+		
+		private JDBCBatchingOperation(WriteOperation<UpwhereColumn> writeOperation, int batchSize) {
+			this.writeOperation = writeOperation;
+			this.batchSize = batchSize;
+		}
+		
+		private void setValues(Map<UpwhereColumn, Object> values) {
+			this.writeOperation.addBatch(values);
+			this.stepCounter++;
+			executeBatchIfNecessary();
+		}
+		
+		private void executeBatchIfNecessary() {
+			if (stepCounter == batchSize) {
+				executeBatch();
+				stepCounter = 0;
+			}
+		}
+		
+		private void executeBatch() {
+			this.updatedRowCount += writeOperation.executeBatch();
+		}
+		
+		public int getUpdatedRowCount() {
+			return updatedRowCount;
+		}
+	}
+	
+	/**
+	 * Littel classe to mutualize code of {@link #updatePartially(Iterable)} and {@link #updateFully(Iterable)}.
+	 */
+	private class Updater {
+		
+		private final IJDBCBatchingOperationProvider batchingOperationProvider;
+		private final boolean allColumns;
+		
+		Updater(IJDBCBatchingOperationProvider batchingOperationProvider, boolean allColumns) {
+			this.batchingOperationProvider = batchingOperationProvider;
+			this.allColumns = allColumns;
+		}
+		
+		private int update(Iterable<Entry<T, T>> differencesIterable) {
+			// building UpdateOperations and update values
+			for (Entry<T, T> next : differencesIterable) {
+				T modified = next.getKey();
+				T unmodified = next.getValue();
+				// finding differences between modified instances and unmodified ones
+				Map<UpwhereColumn, Object> updateValues = mappingStrategy.getUpdateValues(modified, unmodified, allColumns);
+				if (!updateValues.isEmpty()) {
+					JDBCBatchingOperation writeOperation = batchingOperationProvider.getJdbcBatchingOperation(updateValues.keySet());
+					writeOperation.setValues(updateValues);
+				} // else nothing to do (no modification)
+			}
+			// treating remaining values not yet executed
+			int updatedRowCount = 0;
+			for (JDBCBatchingOperation jdbcBatchingOperation : batchingOperationProvider.getJdbcBatchingOperations()) {
+				if (jdbcBatchingOperation.stepCounter != 0) {
+					jdbcBatchingOperation.executeBatch();
+				}
+				updatedRowCount += jdbcBatchingOperation.getUpdatedRowCount();
+			}
+			return updatedRowCount;
+		}
+		
+	}
+	
+	private static interface IJDBCBatchingOperationProvider {
+		JDBCBatchingOperation getJdbcBatchingOperation(Set<UpwhereColumn> upwhereColumns);
+		Iterable<JDBCBatchingOperation> getJdbcBatchingOperations();
+	}
+	
+	private class MonoJDBCBatchingOperation implements IJDBCBatchingOperationProvider {
+		
+		private final JDBCBatchingOperation jdbcBatchingOperation;
+		
+		private MonoJDBCBatchingOperation(JDBCBatchingOperation jdbcBatchingOperation) {
+			this.jdbcBatchingOperation = jdbcBatchingOperation;
+		}
+		
+		@Override
+		public JDBCBatchingOperation getJdbcBatchingOperation(Set<UpwhereColumn> upwhereColumns) {
+			return this.jdbcBatchingOperation;
+		}
+		
+		@Override
+		public Iterable<JDBCBatchingOperation> getJdbcBatchingOperations() {
+			return Arrays.asList(this.jdbcBatchingOperation);
+		}
+	}
+	
+	private class JDBCBatchingOperationCache implements IJDBCBatchingOperationProvider {
+		
+		private final Map<Set<UpwhereColumn>, JDBCBatchingOperation> updateOperationCache;
+		
+		private JDBCBatchingOperationCache(final ConnectionProvider connectionProvider) {
+			// cache for WriteOperation instances (key is Columns to be updated) for batch use
+			updateOperationCache = new ValueFactoryHashMap<>(new IFactory<Set<UpwhereColumn>, JDBCBatchingOperation>() {
+				@Override
+				public JDBCBatchingOperation createInstance(Set<UpwhereColumn> input) {
+					PreparedUpdate preparedUpdate = dmlGenerator.buildUpdate(UpwhereColumn.getUpdateColumns(input), mappingStrategy.getVersionedKeys());
+					return new JDBCBatchingOperation(newWriteOperation(preparedUpdate, connectionProvider), PersisterExecutor.this.batchSize);
+				}
+			});
+		}
+		
+		@Override
+		public JDBCBatchingOperation getJdbcBatchingOperation(Set<UpwhereColumn> upwhereColumns) {
+			return updateOperationCache.get(upwhereColumns);
+		}
+		
+		@Override
+		public Iterable<JDBCBatchingOperation> getJdbcBatchingOperations() {
+			return updateOperationCache.values();
 		}
 	}
 	

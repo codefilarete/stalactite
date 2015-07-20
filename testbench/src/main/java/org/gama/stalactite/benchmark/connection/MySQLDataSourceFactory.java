@@ -1,18 +1,15 @@
 package org.gama.stalactite.benchmark.connection;
 
-import java.sql.SQLException;
-import java.util.EnumMap;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Map.Entry;
-
-import javax.sql.DataSource;
-
+import com.mysql.jdbc.jdbc2.optional.MysqlDataSource;
 import org.gama.lang.bean.Objects;
 import org.gama.lang.exception.Exceptions;
+import org.gama.sql.UrlAwareDataSource;
 import org.gama.stalactite.benchmark.connection.MySQLDataSourceFactory.Property;
 
-import com.mysql.jdbc.jdbc2.optional.MysqlDataSource;
+import javax.sql.DataSource;
+import java.sql.SQLException;
+import java.util.EnumMap;
+import java.util.Map.Entry;
 
 /**
  * @author Guillaume Mary
@@ -36,7 +33,7 @@ public class MySQLDataSourceFactory implements IDataSourceFactory<Property> {
 	}
 	
 	@Override
-	public VerboseDataSource newDataSource(String host, String schema, String user, String password, EnumMap<Property, Object> properties) {
+	public UrlAwareDataSource newDataSource(String host, String schema, String user, String password, EnumMap<Property, Object> properties) {
 		DataSource delegate = null;
 		String url = "jdbc:mysql://" + host + "/" + schema;
 		try {
@@ -53,7 +50,7 @@ public class MySQLDataSourceFactory implements IDataSourceFactory<Property> {
 		} catch (SQLException e) {
 			Exceptions.throwAsRuntimeException(e);
 		}
-		return new VerboseDataSource(url, toString(properties), delegate);
+		return new UrlAwareDataSource(url, delegate);
 	}
 	
 	private void applyProperties(MysqlDataSource mysqlDataSource, EnumMap<Property, Object> properties) throws SQLException {
@@ -73,13 +70,5 @@ public class MySQLDataSourceFactory implements IDataSourceFactory<Property> {
 					break;
 			}
 		}
-	}
-	
-	private Map<String, String> toString(EnumMap<Property, Object> properties) {
-		Map<String, String> result = new HashMap<>(properties.size());
-		for (Entry<Property, Object> entry : properties.entrySet()) {
-			result.put(entry.getKey().name(), String.valueOf(entry.getValue()));
-		}
-		return result;
 	}
 }

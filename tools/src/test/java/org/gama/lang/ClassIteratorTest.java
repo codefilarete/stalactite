@@ -1,16 +1,15 @@
 package org.gama.lang;
 
-import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.assertFalse;
-import static org.testng.Assert.assertTrue;
-
-import java.util.List;
-import java.util.NoSuchElementException;
-
-import org.gama.lang.collection.Arrays;
 import org.gama.lang.Reflections.ClassIterator;
+import org.gama.lang.collection.Arrays;
+import org.gama.lang.collection.PairIterator;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
+
+import java.util.List;
+import java.util.Map;
+
+import static org.junit.Assert.*;
 
 public class ClassIteratorTest {
 	
@@ -27,11 +26,11 @@ public class ClassIteratorTest {
 	@Test(dataProvider = NEXT_METHODS_DATA)
 	public void testNextMethods(Class clazz, List<Class> expectedClasses) throws Exception {
 		ClassIterator testInstance = new ClassIterator(clazz);
-		assertTrue(testInstance.hasNext());
-		for (Class expectedClass : expectedClasses) {
-			assertEquals(testInstance.next(), expectedClass);
+		PairIterator<Class, Class> expectationComparator = new PairIterator.UntilBothIterator<>(expectedClasses.iterator(), testInstance);
+		while(expectationComparator.hasNext()) {
+			Map.Entry<Class, Class> next = expectationComparator.next();
+			assertEquals(next.getKey(), next.getValue());
 		}
-		assertFalse(testInstance.hasNext());
 	}
 	
 	@Test
@@ -39,15 +38,15 @@ public class ClassIteratorTest {
 		ClassIterator testInstance = new ClassIterator(Z.class, X.class);
 		assertTrue(testInstance.hasNext());
 		for (Class expectedClass : Arrays.asList((Class) Z.class, Y.class)) {
-			assertEquals(testInstance.next(), expectedClass);
+			assertEquals(expectedClass, testInstance.next());
 		}
 		assertFalse(testInstance.hasNext());
 	}
 	
-	@Test(expectedExceptions = NoSuchElementException.class)
-	public void testHasNext_Exception() throws Exception {
+	@Test
+	public void testHasNext_false() throws Exception {
 		ClassIterator testInstance = new ClassIterator(X.class, X.class);
-		testInstance.next();
+		assertFalse(testInstance.hasNext());
 	}
 	
 	static class X { }

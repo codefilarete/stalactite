@@ -2,6 +2,7 @@ package org.gama.stalactite.persistence.engine;
 
 import org.gama.lang.Retryer;
 import org.gama.lang.collection.Arrays;
+import org.gama.lang.collection.Iterables;
 import org.gama.lang.collection.Maps;
 import org.gama.lang.collection.PairIterator;
 import org.gama.sql.test.HSQLDBInMemoryDataSource;
@@ -9,6 +10,7 @@ import org.gama.stalactite.persistence.id.IdentifierGenerator;
 import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
 import org.gama.stalactite.persistence.mapping.PersistentFieldHarverster;
 import org.gama.stalactite.persistence.sql.Dialect;
+import org.gama.stalactite.persistence.sql.ddl.DDLGenerator;
 import org.gama.stalactite.persistence.sql.ddl.JavaTypeToSqlTypeMapping;
 import org.gama.stalactite.persistence.sql.dml.DMLGenerator;
 import org.gama.stalactite.persistence.structure.Table;
@@ -24,7 +26,10 @@ import org.testng.annotations.Test;
 import javax.sql.DataSource;
 import java.io.Serializable;
 import java.lang.reflect.Field;
-import java.sql.*;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.*;
 import java.util.Map.Entry;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -32,37 +37,38 @@ import java.util.concurrent.atomic.AtomicInteger;
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.*;
 
-public class PersisterTest {
+public class PersisterExecutorTest {
 	
-	public static final String TEST_UPDATE_DIFF_DATA = "testUpdate_diff";
-	private Persister<Toto> testInstance;
-	private PersistenceContext persistenceContext;
+	private static final String TEST_UPDATE_DIFF_DATA = "testUpdate_diff";
+	
+	private PersisterExecutor<Toto> testInstance;
 	private PreparedStatement preparedStatement;
 	private ArgumentCaptor<Integer> valueCaptor;
 	private ArgumentCaptor<Integer> indexCaptor;
 	private ArgumentCaptor<String> statementArgCaptor;
 	private JdbcTransactionManager transactionManager;
 	private InMemoryCounterIdentifierGenerator identifierGenerator;
+	private ClassMappingStrategy<Toto> totoClassMappingStrategy;
+	private Dialect dialect;
+	private Table totoClassTable;
 	
 	@BeforeTest
 	public void setUp() throws SQLException {
-		Table totoClassTable = new Table(null, "Toto");
+		totoClassTable = new Table(null, "Toto");
 		PersistentFieldHarverster persistentFieldHarverster = new PersistentFieldHarverster();
 		Map<Field, Column> totoClassMapping = persistentFieldHarverster.mapFields(Toto.class, totoClassTable);
 		Map<String, Column> columns = totoClassTable.mapColumnsOnName();
 		columns.get("a").setPrimaryKey(true);
 		
 		identifierGenerator = new InMemoryCounterIdentifierGenerator();
-		ClassMappingStrategy<Toto> totoClassMappingStrategy = new ClassMappingStrategy<>(Toto.class, totoClassTable,
+		totoClassMappingStrategy = new ClassMappingStrategy<>(Toto.class, totoClassTable,
 				totoClassMapping, persistentFieldHarverster.getField("a"), identifierGenerator);
 		
 		JavaTypeToSqlTypeMapping simpleTypeMapping = new JavaTypeToSqlTypeMapping();
 		simpleTypeMapping.put(Integer.class, "int");
 		
 		transactionManager = new JdbcTransactionManager(null);
-		persistenceContext = new PersistenceContext(transactionManager, new Dialect(simpleTypeMapping));
-		persistenceContext.setJDBCBatchSize(3);
-		persistenceContext.add(totoClassMappingStrategy);
+		dialect = new Dialect(simpleTypeMapping);
 	}
 	
 	@BeforeMethod
@@ -86,22 +92,9 @@ public class PersisterTest {
 		DataSource dataSource = mock(DataSource.class);
 		when(dataSource.getConnection()).thenReturn(connection);
 		transactionManager.setDataSource(dataSource);
-		testInstance = new Persister<>(persistenceContext, persistenceContext.getMappingStrategy(Toto.class), new DMLGenerator.CaseSensitiveSorter(),
+		testInstance = new PersisterExecutor<>(totoClassMappingStrategy, new Persister.IdentifierFixer<>(totoClassMappingStrategy.getIdentifierGenerator(), totoClassMappingStrategy),
+				3, transactionManager, new DMLGenerator(dialect.getColumnBinderRegistry() , new DMLGenerator.CaseSensitiveSorter()),
 				Retryer.NO_RETRY, 3);
-		PersistenceContext.setCurrent(persistenceContext);
-	}
-	
-	@Test
-	public void testPersist_insert() throws Exception {
-		testInstance.persist(new Toto(17, 23));
-		
-		verify(preparedStatement, times(1)).addBatch();
-		verify(preparedStatement, times(1)).executeBatch();
-		verify(preparedStatement, times(3)).setInt(indexCaptor.capture(), valueCaptor.capture());
-		assertEquals("insert into Toto(a, b, c) values (?, ?, ?)", statementArgCaptor.getValue());
-		PairSet<Integer, Integer> expectedPairs = PairSet.
-				of(1, 1).add(2, 17).add(3, 23);
-		assertCapturedPairsEqual(expectedPairs);
 	}
 	
 	@Test
@@ -117,19 +110,6 @@ public class PersisterTest {
 				.add(1, 2).add(2, 29).add(3, 31)
 				.add(1, 3).add(2, 37).add(3, 41)
 				.add(1, 4).add(2, 43).add(3, 53);
-		assertCapturedPairsEqual(expectedPairs);
-	}
-	
-	@Test
-	public void testPersist_update() throws Exception {
-		testInstance.persist(new Toto(7, 17, 23));
-		
-		verify(preparedStatement, times(1)).addBatch();
-		verify(preparedStatement, times(1)).executeBatch();
-		verify(preparedStatement, times(3)).setInt(indexCaptor.capture(), valueCaptor.capture());
-		assertEquals("update Toto set b = ?, c = ? where a = ?", statementArgCaptor.getValue());
-		PairSet<Integer, Integer> expectedPairs = PairSet.
-				of(1, 17).add(2, 23).add(3, 7);
 		assertCapturedPairsEqual(expectedPairs);
 	}
 	
@@ -243,11 +223,11 @@ public class PersisterTest {
 	
 	@Test
 	public void testDelete() throws Exception {
-		testInstance.delete(new Toto(7, 17, 23));
+		testInstance.delete(Arrays.asList(new Toto(7, 17, 23)));
 		
 		verify(preparedStatement, times(1)).executeUpdate();
 		verify(preparedStatement, times(1)).setInt(indexCaptor.capture(), valueCaptor.capture());
-		assertEquals("delete Toto where a in (?)", statementArgCaptor.getValue());
+		assertEquals("delete from Toto where a in (?)", statementArgCaptor.getValue());
 		PairSet<Integer, Integer> expectedPairs = PairSet.of(1, 7);
 		assertCapturedPairsEqual(expectedPairs);
 	}
@@ -256,7 +236,7 @@ public class PersisterTest {
 	public void testDelete_multiple() throws Exception {
 		testInstance.delete(Arrays.asList(new Toto(1, 17, 23), new Toto(2, 29, 31), new Toto(3, 37, 41), new Toto(4, 43, 53)));
 		// 2 statements because in operator is bounded to 3 values (see testInstance creation)
-		assertEquals(Arrays.asList("delete Toto where a in (?, ?, ?)", "delete Toto where a in (?)"), statementArgCaptor.getAllValues());
+		assertEquals(Arrays.asList("delete from Toto where a in (?, ?, ?)", "delete from Toto where a in (?)"), statementArgCaptor.getAllValues());
 		verify(preparedStatement, times(1)).addBatch();
 		verify(preparedStatement, times(1)).executeBatch();
 		verify(preparedStatement, times(1)).executeUpdate();
@@ -272,7 +252,7 @@ public class PersisterTest {
 		ResultSet resultSetMock = mock(ResultSet.class);
 		when(preparedStatement.executeQuery()).thenReturn(resultSetMock);
 		
-		testInstance.select(7);
+		testInstance.select(Arrays.asList((Serializable) 7));
 		
 		verify(preparedStatement, times(1)).executeQuery();
 		verify(preparedStatement, times(1)).setInt(indexCaptor.capture(), valueCaptor.capture());
@@ -304,28 +284,82 @@ public class PersisterTest {
 	
 	@Test
 	public void testSelect_hsqldb() throws SQLException {
-		HSQLDBInMemoryDataSource dataSource = new HSQLDBInMemoryDataSource();
+		final HSQLDBInMemoryDataSource dataSource = new HSQLDBInMemoryDataSource();
 		transactionManager.setDataSource(dataSource);
-		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+		DDLDeployer ddlDeployer = new DDLDeployer(new DDLGenerator(Arrays.asList(totoClassTable), dialect.getJavaTypeToSqlTypeMapping())) {
+			@Override
+			protected Connection getCurrentConnection() throws SQLException {
+				return dataSource.getConnection();
+			}
+		};
 		ddlDeployer.deployDDL();
-		testInstance = persistenceContext.getPersister(Toto.class);
 		Connection connection = dataSource.getConnection();
 		connection.prepareStatement("insert into Toto(a, b, c) values (1, 10, 100)").execute();
 		connection.prepareStatement("insert into Toto(a, b, c) values (2, 20, 200)").execute();
 		connection.prepareStatement("insert into Toto(a, b, c) values (3, 30, 300)").execute();
 		connection.prepareStatement("insert into Toto(a, b, c) values (4, 40, 400)").execute();
 		connection.commit();
-		Toto t = testInstance.select(1);
+		List<Toto> totos = testInstance.select(Arrays.asList((Serializable) 1));
+		Toto t = Iterables.first(totos);
 		assertEquals(1, (Object) t.a);
 		assertEquals(10, (Object) t.b);
 		assertEquals(100, (Object) t.c);
-		List<Toto> totos = testInstance.select(Arrays.asList((Serializable) 2, 3, 4));
+		totos = testInstance.select(Arrays.asList((Serializable) 2, 3, 4));
 		for (int i = 2; i <= 4; i++) {
-			t = totos.get(i-2);
+			t = totos.get(i - 2);
 			assertEquals(i, (Object) t.a);
-			assertEquals(10*i, (Object) t.b);
-			assertEquals(100*i, (Object) t.c);
+			assertEquals(10 * i, (Object) t.b);
+			assertEquals(100 * i, (Object) t.c);
 		}
+	}
+	
+	@Test
+	public void testSelect_hsqldb_updateRowCount() throws SQLException {
+		final HSQLDBInMemoryDataSource dataSource = new HSQLDBInMemoryDataSource();
+		transactionManager.setDataSource(dataSource);
+		DDLDeployer ddlDeployer = new DDLDeployer(new DDLGenerator(Arrays.asList(totoClassTable), dialect.getJavaTypeToSqlTypeMapping())) {
+			@Override
+			protected Connection getCurrentConnection() throws SQLException {
+				return dataSource.getConnection();
+			}
+		};
+		ddlDeployer.deployDDL();
+		
+		
+		// check inserted row count
+		int insertedRowCount = testInstance.insert(Arrays.asList(new Toto(1, 10, 100)));
+		assertEquals(1, insertedRowCount);
+		insertedRowCount = testInstance.insert(Arrays.asList(new Toto(2, 20, 200), new Toto(3, 30, 300), new Toto(4, 40, 400)));
+		assertEquals(3, insertedRowCount);
+		
+		// check updated row count roughly
+		int updatedRoughlyRowCount = testInstance.updateRoughly(Arrays.asList(new Toto(1, 10, 100)));
+		assertEquals(1, updatedRoughlyRowCount);
+		updatedRoughlyRowCount = testInstance.insert(Arrays.asList(new Toto(2, 20, 200), new Toto(3, 30, 300), new Toto(4, 40, 400)));
+		assertEquals(3, updatedRoughlyRowCount);
+		updatedRoughlyRowCount = testInstance.updateRoughly(Arrays.asList(new Toto(-1, 10, 100)));
+		assertEquals(0, updatedRoughlyRowCount);
+		
+		// check updated row count
+		int updatedFullyRowCount = testInstance.updateFully(Arrays.asList((Map.Entry<Toto, Toto>)
+				new AbstractMap.SimpleEntry<>(new Toto(1, 10, 100), new Toto(1, 10, 101))));
+		assertEquals(1, updatedFullyRowCount);
+		updatedFullyRowCount = testInstance.updateFully(Arrays.asList((Map.Entry<Toto, Toto>)
+				new AbstractMap.SimpleEntry<>(new Toto(1, 10, 101), new Toto(1, 10, 101))));
+		assertEquals(0, updatedFullyRowCount);
+		updatedFullyRowCount = testInstance.updateFully(Arrays.asList((Map.Entry<Toto, Toto>)
+				new AbstractMap.SimpleEntry<>(new Toto(2, 20, 200), new Toto(2, 20, 201)),
+				new AbstractMap.SimpleEntry<>(new Toto(3, 30, 300), new Toto(3, 30, 301)),
+				new AbstractMap.SimpleEntry<>(new Toto(4, 40, 400), new Toto(4, 40, 401))));
+		assertEquals(3, updatedFullyRowCount);
+		
+		// check deleted row count
+		int deleteRowCount = testInstance.delete(Arrays.asList(new Toto(1, 10, 100)));
+		assertEquals(1, deleteRowCount);
+		deleteRowCount = testInstance.delete(Arrays.asList(new Toto(1, 10, 100), new Toto(2, 20, 200), new Toto(3, 30, 300), new Toto(4, 40, 400)));
+		assertEquals(3, deleteRowCount);
+		deleteRowCount = testInstance.delete(Arrays.asList(new Toto(1, 10, 100), new Toto(2, 20, 200), new Toto(3, 30, 300), new Toto(4, 40, 400)));
+		assertEquals(0, deleteRowCount);
 	}
 	
 	private static class Toto {
@@ -354,7 +388,7 @@ public class PersisterTest {
 	}
 	
 	/**
-	 * Simple id gnerator for our tests : increments a in-memory counter..
+	 * Simple id gnerator for our tests : increments a in-memory counter.
 	 */
 	public static class InMemoryCounterIdentifierGenerator implements IdentifierGenerator {
 		

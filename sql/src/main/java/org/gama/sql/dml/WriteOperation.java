@@ -9,6 +9,7 @@ import org.slf4j.LoggerFactory;
 
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.Map;
 
 /**
@@ -20,8 +21,8 @@ public class WriteOperation<ParamType> extends SQLOperation<ParamType> {
 	
 	protected static final Logger LOGGER = LoggerFactory.getLogger(WriteOperation.class);
 	
-	/** JDBC Batch row count, for logging */
-	private int batchRowCount = 0;
+	/** JDBC Batch statement count, for logging */
+	private int batchedStatementCount = 0;
 	
 	/** Instance that helps to retry update statements on error, default is no {@link Retryer#NO_RETRY} */
 	private final Retryer retryer;
@@ -39,8 +40,7 @@ public class WriteOperation<ParamType> extends SQLOperation<ParamType> {
 	 * Executes the statement, wraps {@link PreparedStatement#executeUpdate()}.
 	 * To be used if you don't used {@link #addBatch(Map)}
 	 *
-	 * @return the number of updated rows in database
-	 * @throws SQLException
+	 * @return the same as {@link PreparedStatement#executeUpdate()}
 	 */
 	public int execute() {
 		applyValuesToEnsuredStatement();
@@ -51,13 +51,15 @@ public class WriteOperation<ParamType> extends SQLOperation<ParamType> {
 	 * Executes the statement, wraps {@link PreparedStatement#executeBatch()}.
 	 * To be used if you used {@link #addBatch(Map)}
 	 *
-	 * @return the number of updated rows in database for each call to {@link #addBatch(Map)}
+	 * @return {@link Statement#SUCCESS_NO_INFO} or {@link Statement#EXECUTE_FAILED} if one {@link PreparedStatement#executeBatch()}
 	 */
-	public int[] executeBatch() {
-		LOGGER.debug("Batching " + batchRowCount + " rows");
-		int[] updatedRowCount = doExecuteBatch();
-		batchRowCount = 0;
-		return updatedRowCount;
+	public int executeBatch() {
+		LOGGER.debug("Batching " + batchedStatementCount + " statements");
+		try {
+			return computeUpdatedRowCount(doExecuteBatch());
+		} finally {
+			batchedStatementCount = 0;
+		}
 	}
 	
 	private int doExecuteUpdate() {
@@ -69,6 +71,32 @@ public class WriteOperation<ParamType> extends SQLOperation<ParamType> {
 			}
 		});
 	}
+	
+	/**
+	 * Tries to simplify values returned by {@link Statement#executeBatch()}: returns only one int instead of an array.
+	 * Main purpose is to return the sum of all updated rows count, but it takes into account drivers that conform
+	 * to the {@link Statement#executeBatch()} specifications: it returns {@link Statement#SUCCESS_NO_INFO} if one of
+	 * the updates did, same for {@link Statement#EXECUTE_FAILED}.
+	 * This operation is only here to make {@link #executeBatch()} looks like {@link #execute()}, added that I don't
+	 * see interest of upper layer to have fine grained result as int[]. 
+	 * 
+	 * @return {@link Statement#SUCCESS_NO_INFO}, {@link Statement#EXECUTE_FAILED}, or the sum of all ints
+	 */
+	protected int computeUpdatedRowCount(int[] updatedRowCounts) {
+		int updatedRowCountSum = 0;
+		for (int updatedRowCount : updatedRowCounts) {
+			switch (updatedRowCount) {
+				// first two cases are for drivers that conform to Statement.executeBatch specification
+				case Statement.SUCCESS_NO_INFO:
+					return Statement.SUCCESS_NO_INFO;
+				case Statement.EXECUTE_FAILED:
+					return Statement.EXECUTE_FAILED;
+				default:	// 0 or really updated row count
+					updatedRowCountSum += updatedRowCount;
+			}
+		}
+		return updatedRowCountSum;
+	} 
 	
 	private int[] doExecuteBatch() {
 		LOGGER.debug(getSQL());
@@ -90,17 +118,16 @@ public class WriteOperation<ParamType> extends SQLOperation<ParamType> {
 	}
 	
 	/**
-	 * Shortcut for {@link #setValues(Map)} + {@link #addBatch(Map)}
+	 * Add values as a batched statement
 	 *
-	 * @param values
-	 * @throws SQLException
+	 * @param values values to be added as batch
 	 */
 	public void addBatch(Map<ParamType, Object> values) {
 		// Necessary to call setValues() BEFORE ensureStatement() because in case of ParameterizedSQL statement is built
 		// thanks to values (the expansion of parameters needs the values)
 		setValues(values);
 		applyValuesToEnsuredStatement();
-		batchRowCount++;
+		batchedStatementCount++;
 		try {
 			this.preparedStatement.addBatch();
 		} catch (SQLException e) {

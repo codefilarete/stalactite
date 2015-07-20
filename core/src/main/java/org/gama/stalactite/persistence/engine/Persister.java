@@ -240,7 +240,7 @@ public class Persister<T> {
 		
 		private ClassMappingStrategy<T> mappingStrategy;
 		
-		private IdentifierFixer(IdentifierGenerator identifierGenerator, ClassMappingStrategy<T> mappingStrategy) {
+		protected IdentifierFixer(IdentifierGenerator identifierGenerator, ClassMappingStrategy<T> mappingStrategy) {
 			this.identifierGenerator = identifierGenerator;
 			this.mappingStrategy = mappingStrategy;
 		}

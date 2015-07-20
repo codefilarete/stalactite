@@ -15,7 +15,8 @@ import java.sql.SQLException;
 public abstract class ResultSetIterator<T> extends ReadOnlyIterator<T> implements IConverter<ResultSet, T> {
 	
 	protected final ResultSet rs;
-
+	private boolean nextCalled = false;
+	
 	/**
 	 * Constructor for ResultSetIterator.
 	 * @param rs a ResultSet to be wrapped in an Iterator.
@@ -32,23 +33,22 @@ public abstract class ResultSetIterator<T> extends ReadOnlyIterator<T> implement
 	@Override
 	public boolean hasNext() {
 		try {
-			// NB: isLast() doesn't manage empty ResultSet
-			boolean isEmpty = !rs.isBeforeFirst() && rs.getRow() == 0;
-			return !isEmpty && !rs.isLast();
+			return !nextCalled && rs.next();
 		} catch (SQLException e) {
 			Exceptions.throwAsRuntimeException(e);
+			// unreachable
 			return false;
+		} finally {
+			nextCalled = true;
 		}
 	}
 	
 	@Override
-	protected T getNext() {
+	public T next() {
 		try {
-			rs.next();
 			return convert(rs);
-		} catch (SQLException e) {
-			Exceptions.throwAsRuntimeException(e);
-			return null;
+		} finally {
+			nextCalled = false;
 		}
 	}
 	

@@ -1,14 +1,11 @@
 package org.gama.stalactite.benchmark.connection;
 
-import java.util.EnumMap;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Map.Entry;
+import org.gama.sql.UrlAwareDataSource;
+import org.gama.stalactite.benchmark.connection.MySQLDataSourceFactory.Property;
+import org.mariadb.jdbc.MySQLDataSource;
 
 import javax.sql.DataSource;
-
-import org.mariadb.jdbc.MySQLDataSource;
-import org.gama.stalactite.benchmark.connection.MySQLDataSourceFactory.Property;
+import java.util.EnumMap;
 
 /**
  * @author Guillaume Mary
@@ -16,7 +13,7 @@ import org.gama.stalactite.benchmark.connection.MySQLDataSourceFactory.Property;
 public class MariaDBDataSourceFactory implements IDataSourceFactory<Property> {
 	
 	@Override
-	public VerboseDataSource newDataSource(String host, String schema, String user, String password, EnumMap<Property, Object> properties) {
+	public UrlAwareDataSource newDataSource(String host, String schema, String user, String password, EnumMap<Property, Object> properties) {
 		DataSource delegate = null;
 		String url = "jdbc:mariadb://" + host + "/" + schema;
 		MySQLDataSource mariadbDataSource = new MySQLDataSource();
@@ -24,14 +21,6 @@ public class MariaDBDataSourceFactory implements IDataSourceFactory<Property> {
 		mariadbDataSource.setUser(user);
 		mariadbDataSource.setPassword(password);
 		delegate = mariadbDataSource;
-		return new VerboseDataSource(url, toString(properties), delegate);
-	}
-	
-	private Map<String, String> toString(EnumMap<Property, Object> properties) {
-		Map<String, String> result = new HashMap<>(properties.size());
-		for (Entry<Property, Object> entry : properties.entrySet()) {
-			result.put(entry.getKey().name(), String.valueOf(entry.getValue()));
-		}
-		return result;
+		return new UrlAwareDataSource(url, delegate);
 	}
 }

@@ -91,7 +91,7 @@ public class DMLGenerator {
 	}
 	
 	public ColumnPreparedSQL buildDelete(Table table, final Iterable<Column> where) {
-		final StringAppender sqlDelete = new StringAppender("delete ", table.getName());
+		final StringAppender sqlDelete = new StringAppender("delete from ", table.getName());
 		sqlDelete.cat(" where ");
 		final Map<Column, int[]> columnToIndex = new HashMap<>();
 		final Map<Column, ParameterBinder> parameterBinders = new HashMap<>();
@@ -112,7 +112,7 @@ public class DMLGenerator {
 	}
 	
 	public ColumnPreparedSQL buildMassiveDelete(Table table, Column keyColumn, int whereValuesCount) {
-		StringAppender sqlDelete = new StringAppender("delete ", table.getName());
+		StringAppender sqlDelete = new StringAppender("delete from ", table.getName());
 		sqlDelete.cat(" where ", keyColumn.getName(), " in (");
 		Strings.repeat(sqlDelete.getAppender(), whereValuesCount, SQL_PARAMETER_MARK_1, SQL_PARAMETER_MARK_100, SQL_PARAMETER_MARK_10);
 		sqlDelete.cutTail(2).cat(")");

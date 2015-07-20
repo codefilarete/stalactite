@@ -1,15 +1,17 @@
 package org.gama.lang;
 
-import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.assertFalse;
-import static org.testng.Assert.assertTrue;
 
-import java.util.List;
-
-import org.gama.lang.collection.Arrays;
 import org.gama.lang.Reflections.FieldIterator;
+import org.gama.lang.collection.Arrays;
+import org.gama.lang.collection.PairIterator;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
+
+import java.lang.reflect.Field;
+import java.util.List;
+import java.util.Map;
+
+import static org.junit.Assert.*;
 
 public class FieldIteratorTest {
 	
@@ -27,11 +29,11 @@ public class FieldIteratorTest {
 	@Test(dataProvider = NEXT_METHODS_DATA)
 	public void testNextMethods(Class clazz, List<String> expectedFields) throws Exception {
 		FieldIterator testInstance = new FieldIterator(clazz);
-		assertTrue(testInstance.hasNext());
-		for (String expectedField : expectedFields) {
-			assertEquals(testInstance.next().getName(), expectedField);
+		PairIterator<String, Field> expectationComparator = new PairIterator.UntilBothIterator<>(expectedFields.iterator(), testInstance);
+		while(expectationComparator.hasNext()) {
+			Map.Entry<String, Field> next = expectationComparator.next();
+			assertEquals(next.getKey(), next.getValue().getName());
 		}
-		assertFalse(testInstance.hasNext());
 	}
 	
 	static class X { private String f1; }

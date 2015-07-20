@@ -1,9 +1,9 @@
 package org.gama.stalactite.benchmark.connection;
 
-import java.util.EnumMap;
-import java.util.HashMap;
-
+import org.gama.sql.UrlAwareDataSource;
 import org.hsqldb.jdbc.JDBCDataSource;
+
+import java.util.EnumMap;
 
 /**
  * @author Guillaume Mary
@@ -11,12 +11,12 @@ import org.hsqldb.jdbc.JDBCDataSource;
 public class HSQLInMemoryDataSourceFactory implements IDataSourceFactory {
 	
 	@Override
-	public VerboseDataSource newDataSource(String host /* ignored */, String schema, String user, String password, EnumMap properties) {
+	public UrlAwareDataSource newDataSource(String host /* ignored */, String schema, String user, String password, EnumMap properties) {
 		String url = "jdbc:hsqldb:mem:" + schema;
 		JDBCDataSource jdbcDataSource = new JDBCDataSource();
 		jdbcDataSource.setUrl(url);
 		jdbcDataSource.setUser(user);
 		jdbcDataSource.setPassword(password);
-		return new VerboseDataSource(url, new HashMap<String, String>(), jdbcDataSource);
+		return new UrlAwareDataSource(url, jdbcDataSource);
 	}
 }

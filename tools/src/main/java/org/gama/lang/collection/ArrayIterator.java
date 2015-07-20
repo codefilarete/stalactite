@@ -21,7 +21,7 @@ public class ArrayIterator<O> extends ReadOnlyIterator<O> {
 	}
 
 	@Override
-	protected O getNext() {
+	public O next() {
 		return this.array[currentIndex++];
 	}
 }

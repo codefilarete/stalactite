@@ -1,5 +1,7 @@
 package org.gama.stalactite.benchmark.connection;
 
+import org.gama.sql.UrlAwareDataSource;
+
 import java.util.EnumMap;
 
 /**
@@ -7,5 +9,5 @@ import java.util.EnumMap;
  */
 public interface IDataSourceFactory<E extends Enum<E>> {
 	
-	VerboseDataSource newDataSource(String host, String schema, String user, String password, EnumMap<E, Object> properties);
+	UrlAwareDataSource newDataSource(String host, String schema, String user, String password, EnumMap<E, Object> properties);
 }

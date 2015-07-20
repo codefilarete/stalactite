@@ -54,11 +54,11 @@ public class ResultSetIteratorTest {
 			}
 		};
 		assertTrue(resultSetIterator.hasNext());
-		resultSetIterator.getNext();
+		resultSetIterator.next();
 		assertTrue(resultSetIterator.hasNext());
-		resultSetIterator.getNext();
+		resultSetIterator.next();
 		assertTrue(resultSetIterator.hasNext());
-		resultSetIterator.getNext();
+		resultSetIterator.next();
 		assertFalse(resultSetIterator.hasNext());
 	}
 }

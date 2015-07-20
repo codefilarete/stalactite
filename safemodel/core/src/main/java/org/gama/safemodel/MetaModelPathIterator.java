@@ -1,14 +1,14 @@
 package org.gama.safemodel;
 
-import java.util.ArrayList;
-import java.util.Iterator;
-
 import org.gama.lang.collection.Iterables;
 import org.gama.lang.collection.ReadOnlyIterator;
 import org.gama.safemodel.description.AbstractMemberDescription;
 import org.gama.safemodel.description.ArrayDescription;
 import org.gama.safemodel.description.FieldDescription;
 import org.gama.safemodel.description.MethodDescription;
+
+import java.util.ArrayList;
+import java.util.Iterator;
 
 /**
  * @author Guillaume Mary
@@ -27,7 +27,7 @@ public abstract class MetaModelPathIterator extends ReadOnlyIterator<MetaModel> 
 	}
 	
 	@Override
-	public MetaModel getNext() {
+	public MetaModel next() {
 		MetaModel childModel = modelPathIterator.next();
 		AbstractMemberDescription description = childModel.getDescription();
 		if (description instanceof FieldDescription) {

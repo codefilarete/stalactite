@@ -68,7 +68,7 @@ public class DMLGeneratorTest {
 		toto.new Column("B", String.class);
 		
 		ColumnPreparedSQL buildedDelete = testInstance.buildDelete(toto, Arrays.asList(colA));
-		assertEquals(buildedDelete.getSQL(), "delete Toto where A = ?");
+		assertEquals("delete from Toto where A = ?", buildedDelete.getSQL());
 		
 		assertEquals(1, buildedDelete.getIndexes(colA)[0]);
 		assertEquals(stringBinder, buildedDelete.getParameterBinder(colA));
@@ -81,7 +81,7 @@ public class DMLGeneratorTest {
 		toto.new Column("B", String.class);
 		
 		ColumnPreparedSQL buildedDelete = testInstance.buildMassiveDelete(toto, colA, 1);
-		assertEquals(buildedDelete.getSQL(), "delete Toto where A in (?)");
+		assertEquals("delete from Toto where A in (?)", buildedDelete.getSQL());
 		
 		assertEquals(1, buildedDelete.getIndexes(colA)[0]);
 		assertEquals(stringBinder, buildedDelete.getParameterBinder(colA));

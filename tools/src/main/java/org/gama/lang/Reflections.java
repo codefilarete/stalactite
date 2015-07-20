@@ -85,7 +85,7 @@ public final class Reflections {
 		}
 		
 		@Override
-		protected Class getNext() {
+		public Class next() {
 			Class next = currentClass;
 			currentClass = currentClass.getSuperclass();
 			return next;
@@ -124,7 +124,7 @@ public final class Reflections {
 		}
 		
 		@Override
-		protected Field getNext() {
+		public Field next() {
 			return fieldIterator.next();
 		}
 	}
@@ -161,7 +161,7 @@ public final class Reflections {
 		}
 		
 		@Override
-		protected Method getNext() {
+		public Method next() {
 			return methodIterator.next();
 		}
 	}

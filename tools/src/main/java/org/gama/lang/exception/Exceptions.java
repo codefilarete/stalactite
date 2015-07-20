@@ -88,7 +88,7 @@ public abstract class Exceptions {
 		}
 		
 		@Override
-		public Throwable getNext() {
+		public Throwable next() {
 			try {
 				currentThrowable = currentThrowable.getCause();
 			} catch (NullPointerException e) {

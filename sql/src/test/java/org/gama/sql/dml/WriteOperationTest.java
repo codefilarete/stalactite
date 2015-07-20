@@ -58,13 +58,12 @@ public class WriteOperationTest {
 		
 		WriteOperation<Integer> testInstance = new WriteOperation<>(new PreparedSQL("insert into Toto(id, name) values(?, ?)", parameterBinders), connectionProvider);
 		testInstance.addBatch(Maps.asMap(1, (Object) 1L).add(2, "Tata"));
-		int[] executeMultiple = testInstance.executeBatch();
-		assertEquals(1, executeMultiple[0]);
+		int executeMultiple = testInstance.executeBatch();
+		assertEquals(1, executeMultiple);
 		testInstance.addBatch(Maps.asMap(1, (Object) 2L).add(2, "Tata"));
 		testInstance.addBatch(Maps.asMap(1, (Object) 3L).add(2, "Tata"));
 		executeMultiple = testInstance.executeBatch();
-		assertEquals(1, executeMultiple[0]);
-		assertEquals(1, executeMultiple[1]);
+		assertEquals(2, executeMultiple);
 	}
 	
 	@Test
@@ -83,8 +82,8 @@ public class WriteOperationTest {
 		parameterBinders.put("ids", new LongBinder());
 		WriteOperation<String> testInstanceForDelete = new WriteOperation<>(new ParameterizedSQL("delete from Toto where id in (:ids)", parameterBinders), connectionProvider);
 		testInstanceForDelete.addBatch(Maps.asMap("ids", (Object) Arrays.asList(1L, 2L, 3L)));
-		int[] executeMultiple = testInstanceForDelete.executeBatch();
-		assertEquals(1, executeMultiple[0]);
+		int executeMultiple = testInstanceForDelete.executeBatch();
+		assertEquals(1, executeMultiple);
 	}
 	
 	@Test
@@ -95,12 +94,11 @@ public class WriteOperationTest {
 		
 		WriteOperation<String> testInstance = new WriteOperation<>(new ParameterizedSQL("insert into Toto(id, name) values(:id, :name)", parameterBinders), connectionProvider);
 		testInstance.addBatch(Maps.asMap("id", (Object) 1L).add("name", "Tata"));
-		int[] executeMultiple = testInstance.executeBatch();
-		assertEquals(1, executeMultiple[0]);
+		int executeMultiple = testInstance.executeBatch();
+		assertEquals(1, executeMultiple);
 		testInstance.addBatch(Maps.asMap("id", (Object) 2L).add("name", "Tata"));
 		testInstance.addBatch(Maps.asMap("id", (Object) 3L).add("name", "Tata"));
 		executeMultiple = testInstance.executeBatch();
-		assertEquals(1, executeMultiple[0]);
-		assertEquals(1, executeMultiple[1]);
+		assertEquals(2, executeMultiple);
 	}
 }

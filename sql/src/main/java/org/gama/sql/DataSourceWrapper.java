@@ -1,35 +1,24 @@
-package org.gama.stalactite.benchmark.connection;
+package org.gama.sql;
 
+import javax.sql.DataSource;
 import java.io.PrintWriter;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.SQLFeatureNotSupportedException;
-import java.util.Map;
 import java.util.logging.Logger;
-
-import javax.sql.DataSource;
 
 /**
  * @author Guillaume Mary
  */
-public class VerboseDataSource implements DataSource {
+public class DataSourceWrapper implements DataSource {
 	
-	private final String url;
-	private final Map<String, String> properties;
-	private final DataSource delegate;
+	private DataSource delegate;
 	
-	public VerboseDataSource(String url, Map<String, String> properties, DataSource delegate) {
-		this.url = url;
-		this.properties = properties;
+	public DataSourceWrapper() {
+	}
+	
+	public void setDelegate(DataSource delegate) {
 		this.delegate = delegate;
-	}
-	
-	public String getUrl() {
-		return url;
-	}
-	
-	public Map<String, String> getProperties() {
-		return properties;
 	}
 	
 	@Override
