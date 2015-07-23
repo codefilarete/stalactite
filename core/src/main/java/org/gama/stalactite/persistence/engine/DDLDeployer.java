@@ -1,17 +1,17 @@
 package org.gama.stalactite.persistence.engine;
 
+import org.gama.stalactite.ILogger;
+import org.gama.stalactite.Logger;
+import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
+import org.gama.stalactite.persistence.sql.ddl.DDLSchemaGenerator;
+import org.gama.stalactite.persistence.structure.Table;
+
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-
-import org.gama.stalactite.ILogger;
-import org.gama.stalactite.Logger;
-import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
-import org.gama.stalactite.persistence.sql.ddl.DDLGenerator;
-import org.gama.stalactite.persistence.structure.Table;
 
 /**
  * @author Guillaume Mary
@@ -29,17 +29,17 @@ public class DDLDeployer {
 		return tables;
 	}
 	
-	private final DDLGenerator ddlTableGenerator;
+	private final DDLSchemaGenerator ddlTableGenerator;
 	
 	public DDLDeployer(PersistenceContext persistenceContext) {
-		this(new DDLGenerator(lookupTables(persistenceContext), persistenceContext.getDialect().getJavaTypeToSqlTypeMapping()));
+		this(persistenceContext.getDialect().getDDLSchemaGenerator(lookupTables(persistenceContext)));
 	}
 	
-	public DDLDeployer(DDLGenerator ddlTableGenerator) {
+	public DDLDeployer(DDLSchemaGenerator ddlTableGenerator) {
 		this.ddlTableGenerator = ddlTableGenerator;
 	}
 	
-	public DDLGenerator getDDLGenerator() {
+	public DDLSchemaGenerator getDDLGenerator() {
 		return ddlTableGenerator;
 	}
 	

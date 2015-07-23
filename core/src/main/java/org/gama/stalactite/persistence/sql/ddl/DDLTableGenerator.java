@@ -9,7 +9,7 @@ import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.persistence.structure.Table.Column;
 
 /**
- * @author mary
+ * @author Guillaume Mary
  */
 public class DDLTableGenerator {
 	
@@ -48,7 +48,7 @@ public class DDLTableGenerator {
 		catWithComma(index.getColumns(), sqlCreateIndex);
 		return sqlCreateIndex.cat(")").toString();
 	}
-
+	
 	public String generateCreateForeignKey(ForeignKey foreignKey) {
 		Table table = foreignKey.getTable();
 		StringAppender sqlCreateFK = new StringAppender("alter table ", table.getName())
@@ -59,9 +59,32 @@ public class DDLTableGenerator {
 		return sqlCreateFK.cat(")").toString();
 	}
 	
+	public String generateAddColumn(Column column) {
+		StringAppender sqladdColumn = new StringAppender("alter table ", column.getTable().getName(),
+				" add column ", column.getName(), " ", getSqlType(column));
+		return sqladdColumn.toString();
+	}
+	
 	public String generateDropTable(Table table) {
 		StringAppender sqlCreateTable = new StringAppender("drop table if exists ", table.getName());
 		return sqlCreateTable.toString();
+	}
+	
+	public String generateDropIndex(Index index) {
+		StringAppender sqlCreateTable = new StringAppender("drop index ", index.getName());
+		return sqlCreateTable.toString();
+	}
+	
+	public String generateDropForeignKey(ForeignKey foreignKey) {
+		StringAppender sqlCreateTable = new StringAppender("alter table ", foreignKey.getTable().getName(),
+				" drop constraint ", foreignKey.getName());
+		return sqlCreateTable.toString();
+	}
+	
+	public String generateDropColumn(Column column) {
+		StringAppender sqlDropColumn = new StringAppender("alter table ", column.getTable().getName(),
+				" drop column ", column.getName());
+		return sqlDropColumn.toString();
 	}
 	
 	public static void catWithComma(Iterable<Column> targetColumns, StringAppender sql) {

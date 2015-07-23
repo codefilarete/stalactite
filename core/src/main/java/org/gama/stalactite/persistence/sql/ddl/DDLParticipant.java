@@ -3,7 +3,7 @@ package org.gama.stalactite.persistence.sql.ddl;
 import java.util.List;
 
 /**
- * @author mary
+ * @author Guillaume Mary
  */
 public interface DDLParticipant {
 	

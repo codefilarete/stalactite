@@ -6,11 +6,11 @@ import org.gama.lang.collection.Iterables;
 import org.gama.lang.collection.Maps;
 import org.gama.sql.test.DerbyInMemoryDataSource;
 import org.gama.sql.test.HSQLDBInMemoryDataSource;
+import org.gama.sql.test.MariaDBInMemoryDataSource;
 import org.gama.stalactite.persistence.id.IdentifierGenerator;
 import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
 import org.gama.stalactite.persistence.mapping.PersistentFieldHarverster;
 import org.gama.stalactite.persistence.sql.Dialect;
-import org.gama.stalactite.persistence.sql.ddl.DDLGenerator;
 import org.gama.stalactite.persistence.sql.ddl.JavaTypeToSqlTypeMapping;
 import org.gama.stalactite.persistence.sql.dml.DMLGenerator;
 import org.gama.stalactite.persistence.structure.Table;
@@ -79,13 +79,14 @@ public class PersisterExecutorDatabaseTest {
 		return new Object[][] {
 				{ new HSQLDBInMemoryDataSource() },
 				{ new DerbyInMemoryDataSource() },
+				{ new MariaDBInMemoryDataSource() },
 		};
 	}
 	
 	@Test(dataProvider = DATASOURCES_DATAPROVIDER_NAME)
 	public void testSelect(final DataSource dataSource) throws SQLException {
 		transactionManager.setDataSource(dataSource);
-		DDLDeployer ddlDeployer = new DDLDeployer(new DDLGenerator(Arrays.asList(totoClassTable), dialect.getJavaTypeToSqlTypeMapping())) {
+		DDLDeployer ddlDeployer = new DDLDeployer(dialect.getDDLSchemaGenerator(Arrays.asList(totoClassTable))) {
 			@Override
 			protected Connection getCurrentConnection() throws SQLException {
 				return dataSource.getConnection();
@@ -115,7 +116,7 @@ public class PersisterExecutorDatabaseTest {
 	@Test(dataProvider = DATASOURCES_DATAPROVIDER_NAME)
 	public void testSelect_updateRowCount(final DataSource dataSource) throws SQLException {
 		transactionManager.setDataSource(dataSource);
-		DDLDeployer ddlDeployer = new DDLDeployer(new DDLGenerator(Arrays.asList(totoClassTable), dialect.getJavaTypeToSqlTypeMapping())) {
+		DDLDeployer ddlDeployer = new DDLDeployer(dialect.getDDLSchemaGenerator(Arrays.asList(totoClassTable))) {
 			@Override
 			protected Connection getCurrentConnection() throws SQLException {
 				return dataSource.getConnection();

@@ -10,7 +10,6 @@ import org.gama.stalactite.persistence.id.IdentifierGenerator;
 import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
 import org.gama.stalactite.persistence.mapping.PersistentFieldHarverster;
 import org.gama.stalactite.persistence.sql.Dialect;
-import org.gama.stalactite.persistence.sql.ddl.DDLGenerator;
 import org.gama.stalactite.persistence.sql.ddl.JavaTypeToSqlTypeMapping;
 import org.gama.stalactite.persistence.sql.dml.DMLGenerator;
 import org.gama.stalactite.persistence.structure.Table;
@@ -286,7 +285,7 @@ public class PersisterExecutorTest {
 	public void testSelect_hsqldb() throws SQLException {
 		final HSQLDBInMemoryDataSource dataSource = new HSQLDBInMemoryDataSource();
 		transactionManager.setDataSource(dataSource);
-		DDLDeployer ddlDeployer = new DDLDeployer(new DDLGenerator(Arrays.asList(totoClassTable), dialect.getJavaTypeToSqlTypeMapping())) {
+		DDLDeployer ddlDeployer = new DDLDeployer(dialect.getDDLSchemaGenerator(Arrays.asList(totoClassTable))) {
 			@Override
 			protected Connection getCurrentConnection() throws SQLException {
 				return dataSource.getConnection();
@@ -317,7 +316,7 @@ public class PersisterExecutorTest {
 	public void testSelect_hsqldb_updateRowCount() throws SQLException {
 		final HSQLDBInMemoryDataSource dataSource = new HSQLDBInMemoryDataSource();
 		transactionManager.setDataSource(dataSource);
-		DDLDeployer ddlDeployer = new DDLDeployer(new DDLGenerator(Arrays.asList(totoClassTable), dialect.getJavaTypeToSqlTypeMapping())) {
+		DDLDeployer ddlDeployer = new DDLDeployer(dialect.getDDLSchemaGenerator(Arrays.asList(totoClassTable))) {
 			@Override
 			protected Connection getCurrentConnection() throws SQLException {
 				return dataSource.getConnection();

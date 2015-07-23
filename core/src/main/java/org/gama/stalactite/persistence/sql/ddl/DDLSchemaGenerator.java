@@ -1,19 +1,19 @@
 package org.gama.stalactite.persistence.sql.ddl;
 
-import java.util.ArrayList;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Set;
-
 import org.gama.lang.collection.Collections;
 import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.persistence.structure.Table.ForeignKey;
 import org.gama.stalactite.persistence.structure.Table.Index;
 
+import java.util.ArrayList;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Set;
+
 /**
- * @author mary
+ * @author Guillaume Mary
  */
-public class DDLGenerator implements DDLParticipant {
+public class DDLSchemaGenerator implements DDLParticipant {
 	
 	private final Iterable<Table> tables;
 	
@@ -21,7 +21,7 @@ public class DDLGenerator implements DDLParticipant {
 	
 	private final Set<DDLParticipant> ddlParticipants = new LinkedHashSet<>();
 	
-	public DDLGenerator(Iterable<Table> tablesToCreate, JavaTypeToSqlTypeMapping typeMapping) {
+	public DDLSchemaGenerator(Iterable<Table> tablesToCreate, JavaTypeToSqlTypeMapping typeMapping) {
 		this.tables = tablesToCreate;
 		this.ddlTableGenerator = newDDLTableGenerator(typeMapping);
 	}
@@ -118,6 +118,4 @@ public class DDLGenerator implements DDLParticipant {
 		}
 		return participantsScripts;
 	}
-	
-	
 }

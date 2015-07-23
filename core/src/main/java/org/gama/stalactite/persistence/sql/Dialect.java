@@ -1,8 +1,10 @@
 package org.gama.stalactite.persistence.sql;
 
 import org.gama.lang.Retryer;
+import org.gama.stalactite.persistence.sql.ddl.DDLSchemaGenerator;
 import org.gama.stalactite.persistence.sql.ddl.JavaTypeToSqlTypeMapping;
 import org.gama.stalactite.persistence.sql.dml.binder.ColumnBinderRegistry;
+import org.gama.stalactite.persistence.structure.Table;
 
 /**
  * @author Guillaume Mary
@@ -24,6 +26,10 @@ public class Dialect {
 	public Dialect(JavaTypeToSqlTypeMapping javaTypeToSqlTypeMapping, ColumnBinderRegistry columnBinderRegistry) {
 		this.javaTypeToSqlTypeMapping = javaTypeToSqlTypeMapping;
 		this.columnBinderRegistry = columnBinderRegistry;
+	}
+	
+	public DDLSchemaGenerator getDDLSchemaGenerator(Iterable<Table> tablesToCreate) {
+		return new DDLSchemaGenerator(tablesToCreate, getJavaTypeToSqlTypeMapping());
 	}
 	
 	public JavaTypeToSqlTypeMapping getJavaTypeToSqlTypeMapping() {

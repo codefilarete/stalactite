@@ -9,7 +9,7 @@ import org.gama.stalactite.benchmark.connection.MySQLDataSourceFactory;
 import org.gama.stalactite.benchmark.connection.MySQLDataSourceFactory.Property;
 import org.gama.stalactite.persistence.engine.DDLDeployer;
 import org.gama.stalactite.persistence.engine.PersistenceContext;
-import org.gama.stalactite.persistence.sql.ddl.DDLGenerator;
+import org.gama.stalactite.persistence.sql.ddl.DDLSchemaGenerator;
 import org.gama.stalactite.persistence.structure.Table;
 import org.springframework.jdbc.datasource.DataSourceTransactionManager;
 import org.springframework.transaction.TransactionStatus;
@@ -76,7 +76,7 @@ public abstract class AbstractBenchmark<Data> {
 	}
 	
 	protected void dropAndDeployDDL(PersistenceContext persistenceContext) throws SQLException {
-		DDLGenerator ddlGenerator = new DDLGenerator(DDLDeployer.lookupTables(persistenceContext), persistenceContext.getDialect().getJavaTypeToSqlTypeMapping()) {
+		DDLSchemaGenerator ddlSchemaGenerator = new DDLSchemaGenerator(DDLDeployer.lookupTables(persistenceContext), persistenceContext.getDialect().getJavaTypeToSqlTypeMapping()) {
 			@Override
 			protected String generateCreationScript(Table table) {
 				String creationScript = super.generateCreationScript(table);
@@ -84,7 +84,7 @@ public abstract class AbstractBenchmark<Data> {
 				return creationScript;
 			}
 		};
-		DDLDeployer ddlDeployer = new DDLDeployer(ddlGenerator);
+		DDLDeployer ddlDeployer = new DDLDeployer(ddlSchemaGenerator);
 		ddlDeployer.dropDDL();
 		ddlDeployer.deployDDL();
 	}
