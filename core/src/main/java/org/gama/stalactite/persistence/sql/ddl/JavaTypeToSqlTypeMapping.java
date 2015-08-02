@@ -38,11 +38,15 @@ public class JavaTypeToSqlTypeMapping {
 	}
 	
 	public String getTypeName(Column column) {
+		Class javaType = column.getJavaType();
+		if (javaType == null) {
+			throw new IllegalArgumentException("Can't give sql type for column "+column.getAbsoluteName()+" because its type is null");
+		}
 		if (column instanceof SizedColumn) {
 			int size = ((SizedColumn) column).getSize();
-			return getTypeName(column.getJavaType(), size);
+			return getTypeName(javaType, size);
 		} else {
-			return getTypeName(column.getJavaType());
+			return getTypeName(javaType);
 		}
 	}
 	

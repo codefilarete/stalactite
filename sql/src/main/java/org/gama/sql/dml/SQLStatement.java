@@ -37,6 +37,9 @@ public abstract class SQLStatement<ParamType> {
 	 * @param values
 	 */
 	public void setValues(Map<ParamType, Object> values) {
+		if (values.containsKey(null)) {
+			throw new IllegalArgumentException("Parameter should not be null (parameter's value = " + values.get(null) + ")");
+		}
 		this.values.putAll(values);
 	}
 	
@@ -48,6 +51,9 @@ public abstract class SQLStatement<ParamType> {
 	 * @param value
 	 */
 	public void setValue(ParamType index, Object value) {
+		if (index == null) {
+			throw new IllegalArgumentException("Parameter should not be null (parameter's value = " + value + ")");
+		}
 		this.values.put(index, value);
 	}
 	
@@ -64,9 +70,10 @@ public abstract class SQLStatement<ParamType> {
 	 * @param statement
 	 */
 	public void applyValues(PreparedStatement statement) {
-		if (!values.keySet().containsAll(indexes)) {
+		Set<ParamType> paramTypes = values.keySet();
+		if (!paramTypes.containsAll(indexes)) {
 			HashSet<ParamType> missingIndexes = new HashSet<>(indexes);
-			missingIndexes.removeAll(values.keySet());
+			missingIndexes.removeAll(paramTypes);
 			throw new IllegalArgumentException("Missing value for indexes " + missingIndexes + " in values " + values + " for \"" + getSQL() + "\"");
 		}
 		for (Entry<ParamType, Object> indexToValue : values.entrySet()) {

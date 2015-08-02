@@ -9,6 +9,12 @@ import java.util.*;
  */
 public class Randomizer {
 	
+	public static final Randomizer INSTANCE = new Randomizer();
+	
+	private static final String BASE64CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+	
+	private static final String HEXCHARS = "ABCDEFGH0123456789";
+
 	private final IRandomGenerator random;
 	
 	public Randomizer() {
@@ -23,76 +29,96 @@ public class Randomizer {
 		this.random = random;
 	}
 	
-	public double randomDouble() {
+	public double drawDouble() {
 		return this.random.randomDouble();
 	}
 	
-	public double randomDouble(double lowBound, double highBound) {
-		return (highBound -lowBound) * randomDouble() + lowBound;
+	public double drawDouble(double lowBound, double highBound) {
+		return (highBound -lowBound) * drawDouble() + lowBound;
 	}
 	
-	public long randomLong(long lowBound, long highBound) {
-		return (long) ((highBound -lowBound) * randomDouble() + lowBound);
+	public long drawLong(long lowBound, long highBound) {
+		return (long) ((highBound -lowBound) * drawDouble() + lowBound);
 	}
 	
-	public int randomInt(int lowBound, int highBound) {
-		return (int) ((highBound -lowBound) * randomDouble() + lowBound);
+	public int drawInt(int lowBound, int highBound) {
+		return (int) ((highBound -lowBound) * drawDouble() + lowBound);
 	}
 	
-	public boolean randomBoolean() {
-		return randomDouble() > 0.5;
+	public boolean drawBoolean() {
+		return drawDouble() > 0.5;
 	}
 	
-	public Date randomDate(Date lowBound, Date highBound) {
-		return new Date(randomLong(lowBound.getTime(), highBound.getTime()));
+	public Date drawDate(Date lowBound, Date highBound) {
+		return new Date(drawLong(lowBound.getTime(), highBound.getTime()));
 	}
 	
-	public String randomString(String hat, int maxLength) {
+	public String drawString(String hat, int maxLength) {
 		int hatLength = hat.length();
-		int startIndex = randomInt(0, hatLength);
-		int length = randomInt(0, maxLength);
+		int startIndex = drawInt(0, hatLength);
+		int length = drawInt(0, maxLength);
 		return hat.substring(startIndex, Math.min(startIndex+length, hatLength));
 	}
 	
-	public <E> List<E> randomElements(Iterable<E> hat, int count) {
+	public <E> List<E> drawElements(Iterable<E> hat, int count) {
 		List<E> toReturn = new ArrayList<>(count);
 		Iterator<E> hatIterator = hat.iterator();
 		while(toReturn.size() < count && hatIterator.hasNext()) {
-			if (randomBoolean()) {
+			if (drawBoolean()) {
 				toReturn.add(hatIterator.next());
 			}
 		}
 		return toReturn;
 	}
 	
-	public <E> List<E> randomElements(List<E> hat, int count) {
+	public <E> List<E> drawElements(List<E> hat, int count) {
 		int hatSize = hat.size();
-		if (count >= hatSize) {
-			return new ArrayList<>(hat);
-		} else {
-			List<E> toReturn = new ArrayList<>(count);
-			Set<Integer> drawnIndexes = new HashSet<>();
-			while (toReturn.size() < count) {
-				int drawnIndex;
-				do {
-					drawnIndex = randomInt(0, hatSize);
-				} while(drawnIndexes.contains(drawnIndex));
-				drawnIndexes.add(drawnIndex);
-				toReturn.add(hat.get(drawnIndex));
-			}
-			return toReturn;
+		// Anti overflow
+		count = Math.min(hatSize, count);
+		
+		List<E> toReturn = new ArrayList<>(count);
+		Set<Integer> drawnIndexes = new HashSet<>();
+		while (toReturn.size() < count) {
+			int drawnIndex;
+			do {
+				drawnIndex = drawInt(0, hatSize);
+			} while(drawnIndexes.contains(drawnIndex));
+			drawnIndexes.add(drawnIndex);
+			toReturn.add(hat.get(drawnIndex));
 		}
+		return toReturn;
 	}
 	
-	public <E> E randomElement(List<E> hat) {
+	public <E> E drawElement(List<E> hat) {
 		int hatSize = hat.size();
 		if (hatSize < 2) {
 			return Iterables.first(hat);
 		} else {
-			int drawnIndex = randomInt(0, hatSize);
+			int drawnIndex = drawInt(0, hatSize);
 			return hat.get(drawnIndex);
 		}
 	}
+	
+	public char drawChar(String hat) {
+		return hat.charAt(drawInt(0, hat.length()));
+	}
+	
+	public String randomHexString(int length) {
+		return randomHexString(length, HEXCHARS);
+	}
+	
+	public String randomBase64String(int length) {
+		return randomHexString(length, BASE64CHARS);
+	}
+	
+	private String randomHexString(int length, String hat) {
+		StringBuilder randomHexString = new StringBuilder(length);
+		for (int i = 0; i < length; i++) {
+			randomHexString.append(drawChar(hat));
+		}
+		return randomHexString.toString();
+	}
+	
 	
 	private interface IRandomGenerator {
 		double randomDouble();

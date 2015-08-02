@@ -139,8 +139,8 @@ public class WriteOperation<ParamType> extends SQLOperation<ParamType> {
 		try {
 			ensureStatement();
 			this.sqlStatement.applyValues(preparedStatement);
-		} catch (SQLException e) {
-			Exceptions.throwAsRuntimeException(e);
+		} catch (Throwable t) {
+			throw new RuntimeException(getSQL() +" / " + this.sqlStatement.values, t);
 		}
 	}
 }

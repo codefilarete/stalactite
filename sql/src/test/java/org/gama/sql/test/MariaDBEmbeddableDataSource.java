@@ -6,6 +6,8 @@ import org.gama.lang.exception.Exceptions;
 import org.gama.sql.UrlAwareDataSource;
 import org.mariadb.jdbc.MySQLDataSource;
 
+import java.io.Closeable;
+import java.io.IOException;
 import java.util.Random;
 
 /**
@@ -13,7 +15,7 @@ import java.util.Random;
  *
  * @author Guillaume Mary
  */
-public class MariaDBInMemoryDataSource extends UrlAwareDataSource {
+public class MariaDBEmbeddableDataSource extends UrlAwareDataSource implements Closeable {
 	
 	public static final int PORT = 3306;
 	
@@ -32,12 +34,12 @@ public class MariaDBInMemoryDataSource extends UrlAwareDataSource {
 		}
 	}
 	
-	public MariaDBInMemoryDataSource() {
-		// URL "aléatoire" pour éviter des percussions dans les tests
+	public MariaDBEmbeddableDataSource() {
+		// "random" URL to avoid collision in tests
 		this(PORT, "test" + Integer.toHexString(new Random().nextInt()));
 	}
 	
-	private MariaDBInMemoryDataSource(int port, String databaseName) {
+	private MariaDBEmbeddableDataSource(int port, String databaseName) {
 		super("jdbc:mariadb://localhost:" + port + "/" + databaseName);
 		MySQLDataSource delegate = new MySQLDataSource("localhost", port, databaseName);
 		setDelegate(delegate);
@@ -51,5 +53,14 @@ public class MariaDBInMemoryDataSource extends UrlAwareDataSource {
 	@Override
 	public String toString() {
 		return getUrl();
+	}
+	
+	@Override
+	public void close() throws IOException {
+		try {
+			db.stop();
+		} catch (ManagedProcessException e) {
+			throw new IOException(e);
+		}
 	}
 }

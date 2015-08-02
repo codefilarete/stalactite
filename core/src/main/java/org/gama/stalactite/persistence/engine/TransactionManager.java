@@ -3,7 +3,7 @@ package org.gama.stalactite.persistence.engine;
 import java.sql.Connection;
 
 /**
- * @author mary
+ * @author Guillaume Mary
  */
 public interface TransactionManager {
 	

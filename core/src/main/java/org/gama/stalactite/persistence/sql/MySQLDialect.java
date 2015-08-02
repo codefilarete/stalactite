@@ -7,10 +7,16 @@ import org.gama.stalactite.persistence.sql.ddl.JavaTypeToSqlTypeMapping;
 import org.gama.stalactite.persistence.sql.dml.binder.ColumnBinderRegistry;
 import org.gama.stalactite.persistence.structure.Table;
 
+import java.util.Date;
+
 /**
  * @author Guillaume Mary
  */
 public class MySQLDialect extends Dialect {
+	
+	public MySQLDialect() {
+		this(new MySQLTypeMapping());
+	}
 	
 	public MySQLDialect(JavaTypeToSqlTypeMapping javaTypeToSqlTypeMapping) {
 		super(javaTypeToSqlTypeMapping);
@@ -38,5 +44,25 @@ public class MySQLDialect extends Dialect {
 				};
 			}
 		};
+	}
+	
+	public static class MySQLTypeMapping extends JavaTypeToSqlTypeMapping {
+		
+		public MySQLTypeMapping() {
+			super();
+			put(Boolean.class, "bit");
+			put(Boolean.TYPE, "bit");
+			put(Double.class, "double");
+			put(Double.TYPE, "double");
+			put(Float.class, "float");
+			put(Float.TYPE, "float");
+			put(Long.class, "bigint");
+			put(Long.TYPE, "bigint");
+			put(Integer.class, "integer");
+			put(Integer.TYPE, "integer");
+			put(Date.class, "timestamp null");	// null allows nullable in MySQL, else current time is inserted by default
+			put(String.class, "varchar(255)");
+			put(String.class, 16383, "varchar($l)");
+		}
 	}
 }

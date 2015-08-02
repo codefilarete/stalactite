@@ -1,19 +1,18 @@
 package org.gama.stalactite.test;
 
+import org.gama.stalactite.persistence.engine.TransactionManager;
+
+import javax.sql.DataSource;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.ArrayDeque;
 import java.util.Deque;
 
-import javax.sql.DataSource;
-
-import org.gama.stalactite.persistence.engine.TransactionManager;
-
 /**
  * Very simple TransactionManager for JDBC connection.
  * Not for production use. Mono-threaded.
  * 
- * @author mary
+ * @author Guillaume Mary
  */
 public class JdbcTransactionManager implements TransactionManager {
 	

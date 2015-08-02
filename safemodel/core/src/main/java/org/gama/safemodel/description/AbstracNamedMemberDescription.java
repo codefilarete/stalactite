@@ -3,11 +3,11 @@ package org.gama.safemodel.description;
 /**
  * @author Guillaume Mary
  */
-public abstract class AbstracNamedtMemberDescription extends AbstractMemberDescription {
+public abstract class AbstracNamedMemberDescription extends AbstractMemberDescription {
 	
 	private final String name;
 	
-	public AbstracNamedtMemberDescription(Class declaringClass, String name) {
+	public AbstracNamedMemberDescription(Class declaringClass, String name) {
 		super(declaringClass);
 		this.name = name;
 	}

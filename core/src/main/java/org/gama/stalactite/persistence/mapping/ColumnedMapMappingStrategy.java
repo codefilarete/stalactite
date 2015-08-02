@@ -31,6 +31,10 @@ public abstract class ColumnedMapMappingStrategy<C extends Map<K, V>, K, V, T> i
 	public ColumnedMapMappingStrategy(@Nonnull Table targetTable, Set<Column> columns, Class<? extends Map> rowClass) {
 		this.targetTable = targetTable;
 		this.columns = columns;
+		if (columns.contains(targetTable.getPrimaryKey())) {
+			// bad usage, if we leave it, it corrupts/overrides primary key assignment in ClassMappingStrategy#getInsertValues(T)
+			throw new IllegalArgumentException("Primary key should not be mapped by " + ColumnedMapMappingStrategy.class);
+		}
 		// weird cast cause of generics
 		this.rowTransformer = new ToMapRowTransformer<C>((Class<C>) rowClass) {
 			/** We bind conversion on MapMappingStrategy conversion methods */
@@ -68,12 +72,11 @@ public abstract class ColumnedMapMappingStrategy<C extends Map<K, V>, K, V, T> i
 		Iterables.visit(toIterate.entrySet(), new ForEach<Entry<K, V>, Void>() {
 			@Override
 			public Void visit(Entry<K, V> mapEntry) {
-				Column column = getColumn(mapEntry.getKey());
-				toReturn.put(column, toDatabaseValue(mapEntry.getKey(), mapEntry.getValue()));
+				addUpsertValues(mapEntry.getKey(), mapEntry.getValue(), toReturn);
 				return null;
 			}
 		});
-		// NB: on remplit les valeurs pour en avoir une par Column: celles en surplus auront une valeur null
+		// NB: we must return all columns: we complete non-valued columns with null 
 		for (Column column : columns) {
 			if (!toReturn.containsKey(column)) {
 				toReturn.put(column, null);
@@ -103,8 +106,7 @@ public abstract class ColumnedMapMappingStrategy<C extends Map<K, V>, K, V, T> i
 			HashSet<K> missingInModified = unmodified == null ? new HashSet<K>() : new HashSet<>(unmodified.keySet());
 			missingInModified.removeAll(modified.keySet());
 			for (K k : missingInModified) {
-				Column column = getColumn(k);
-				toReturn.put(column, modified.get(k));
+				addUpsertValues(k, modified.get(k), toReturn);
 			}
 			
 			// adding complementary columns if necessary
@@ -122,6 +124,20 @@ public abstract class ColumnedMapMappingStrategy<C extends Map<K, V>, K, V, T> i
 			}
 		}
 		return toReturn;
+	}
+	
+	/**
+	 * Add values to valuesToBePersisted according to key and value.
+	 * Calls {@link #toDatabaseValue(Object, Object)} to transform value to the persisted Object
+	 * 
+	 * @param key the key to be persisted
+	 * @param value the value ok key in the Map, may be transformed to be persisted
+	 * @param valuesToBePersisted Map to populate
+	 */
+	protected void addUpsertValues(K key, V value, Map<Column, Object> valuesToBePersisted) {
+		T t = toDatabaseValue(key, value);
+		Column column = getColumn(key);
+		valuesToBePersisted.put(column, t);
 	}
 	
 	protected abstract Column getColumn(K k);

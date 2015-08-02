@@ -3,7 +3,7 @@ package org.gama.safemodel.description;
 /**
  * @author Guillaume Mary
  */
-public class MethodDescription extends AbstracNamedtMemberDescription {
+public class MethodDescription extends AbstracNamedMemberDescription {
 	
 	private final Class[] parameterTypes;
 	

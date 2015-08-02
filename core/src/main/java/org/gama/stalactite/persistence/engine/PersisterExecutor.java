@@ -89,7 +89,7 @@ public class PersisterExecutor<T> {
 		PreparedUpdate updateOperation = dmlGenerator.buildUpdate(columnsToUpdate, mappingStrategy.getVersionedKeys());
 		WriteOperation<UpwhereColumn> writeOperation = newWriteOperation(updateOperation, new ConnectionProvider());
 		
-		JDBCBatchingIterator<T> jdbcBatchingIterator = new JDBCBatchingIterator<>(iterable, writeOperation, PersisterExecutor.this.batchSize);
+		JDBCBatchingIterator<T> jdbcBatchingIterator = new JDBCBatchingIterator<>(iterable, writeOperation, this.batchSize);
 		while(jdbcBatchingIterator.hasNext()) {
 			T t = jdbcBatchingIterator.next();
 			Map<UpwhereColumn, Object> updateValues = mappingStrategy.getUpdateValues(t, null, true);

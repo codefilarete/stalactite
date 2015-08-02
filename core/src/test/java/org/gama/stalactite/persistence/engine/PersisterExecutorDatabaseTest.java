@@ -6,7 +6,7 @@ import org.gama.lang.collection.Iterables;
 import org.gama.lang.collection.Maps;
 import org.gama.sql.test.DerbyInMemoryDataSource;
 import org.gama.sql.test.HSQLDBInMemoryDataSource;
-import org.gama.sql.test.MariaDBInMemoryDataSource;
+import org.gama.sql.test.MariaDBEmbeddableDataSource;
 import org.gama.stalactite.persistence.id.IdentifierGenerator;
 import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
 import org.gama.stalactite.persistence.mapping.PersistentFieldHarverster;
@@ -79,7 +79,7 @@ public class PersisterExecutorDatabaseTest {
 		return new Object[][] {
 				{ new HSQLDBInMemoryDataSource() },
 				{ new DerbyInMemoryDataSource() },
-				{ new MariaDBInMemoryDataSource() },
+				{ new MariaDBEmbeddableDataSource() },
 		};
 	}
 	
