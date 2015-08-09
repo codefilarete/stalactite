@@ -9,17 +9,13 @@ import org.gama.stalactite.persistence.engine.PersistenceContext;
 import org.gama.stalactite.persistence.engine.Persister;
 import org.gama.stalactite.persistence.engine.listening.NoopInsertListener;
 import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
-import org.gama.stalactite.persistence.sql.ddl.DDLParticipant;
+import org.gama.stalactite.persistence.sql.ddl.DDLGenerator;
 import org.gama.stalactite.persistence.sql.ddl.DDLTableGenerator;
 import org.gama.stalactite.persistence.structure.Table;
 
 import java.lang.reflect.Field;
 import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
+import java.util.*;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 
@@ -41,10 +37,10 @@ public class BenchmarkDynamicComplementaryTables extends AbstractBenchmark<Dynam
 	@Override
 	protected void dropAndDeployDDL(final PersistenceContext persistenceContext) throws SQLException {
 		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
-		ddlDeployer.getDDLGenerator().add(new DDLParticipant() {
+		ddlDeployer.getDdlSchemaGenerator().addDDLGenerators(new DDLGenerator() {
 			@Override
 			public List<String> getCreationScripts() {
-				return null;
+				return Collections.emptyList();
 			}
 			
 			@Override
@@ -68,6 +64,71 @@ public class BenchmarkDynamicComplementaryTables extends AbstractBenchmark<Dynam
 		for (ClassMappingStrategy classMappingStrategy : dynamicClassMappingBuilder.indexDynamicTypes.values()) {
 			persistenceContext.add(classMappingStrategy);
 		}
+		addListener(persistenceContext);
+	}
+	
+	private <D extends DynamicEntity> void addListener(final PersistenceContext persistenceContext) {
+		final Persister<D> dynamicTypePersister = persistenceContext.getPersister((Class<D>) dynamicClassMappingBuilder.dynamicType);
+		dynamicTypePersister.getPersisterListener().addInsertListener(new NoopInsertListener<D>() {
+			@Override
+			public void afterInsert(Iterable<D> iterables) {
+				Map<Field, List<DynamicEntity>> indexDynamicEntities = new ValueFactoryHashMap<>(10, new IFactory<Field, List<DynamicEntity>>() {
+					@Override
+					public List<DynamicEntity> createInstance(Field input) {
+						return new ArrayList<>(500);
+					}
+				});
+				for (D dynamicEntity : iterables) {
+					try {
+						Map<Field, DynamicEntity> localIndexDynamicEntity = indexFieldValue.get(dynamicEntity);
+						for (Map.Entry<Field, DynamicEntity> dynamicEntityEntry : localIndexDynamicEntity.entrySet()) {
+//								dynamicClassMappingBuilder.getClassMappingStrategy_indexes().get(dynamicEntityEntry.getKey())
+							DynamicEntity indexDynamicEntity = dynamicEntityEntry.getValue();
+							indexDynamicEntity.setId(dynamicEntity.getId());
+							indexDynamicEntities.get(dynamicEntityEntry.getKey()).add(indexDynamicEntity);
+							
+						}
+					} catch (Throwable t) {
+						Exceptions.throwAsRuntimeException(t);
+					}
+				}
+				// NB: on force insert car ... on le sait
+				// NB2: le système ne cherchera pas à générer un id car c'est configurer en AutoAssignedIdentifierGenerator
+				for (Field field : indexDynamicEntities.keySet()) {
+					Class<DynamicEntity> classToPersist = (Class<DynamicEntity>) dynamicClassMappingBuilder.indexDynamicTypes.get(field).getClassToPersist();
+					persistenceContext.getPersister(classToPersist).insert(indexDynamicEntities.get(field));
+				}
+			}
+		});
+		
+		dynamicTypePersister.getPersisterListener().addInsertListener(new NoopInsertListener<D>() {
+			@Override
+			public void afterInsert(Iterable<D> iterables) {
+				List<DynamicEntity> nilDynamicEntities = new ArrayList<>(500);
+				for (D dynamicEntity : iterables) {
+					try {
+						DynamicEntity nilDynamicEntity = dynamicClassMappingBuilder.nilDynamicType.newInstance();
+						for (Field nilDynamicTypeField : dynamicClassMappingBuilder.nilDynamicTypeFields.values()) {
+							Field dynamicTypeField = dynamicClassMappingBuilder.dynamicTypeFields.get(nilDynamicTypeField.getName());
+							dynamicTypeField.setAccessible(true);
+							Object value = dynamicTypeField.get(dynamicEntity);
+							if (!dynamicTypeField.isAnnotationPresent(DynamicAndComplementaryClassMappingBuilder.Id.class)) {
+								// question_id transformé en boolean
+								value = ((int) value) < 0;
+							}
+							nilDynamicTypeField.setAccessible(true);
+							nilDynamicTypeField.set(nilDynamicEntity, value);
+						}
+						nilDynamicEntities.add(nilDynamicEntity);
+					} catch (Throwable t) {
+						Exceptions.throwAsRuntimeException(t);
+					}
+				}
+				// NB: on force insert car ... on le sait
+				// NB2: le système ne cherchera pas à générer un id car c'est configurer en AutoAssignedIdentifierGenerator
+				persistenceContext.getPersister((Class<DynamicEntity>) dynamicClassMappingBuilder.nilDynamicType).insert(nilDynamicEntities);
+				}
+			});
 	}
 	
 	@Override
@@ -130,39 +191,39 @@ public class BenchmarkDynamicComplementaryTables extends AbstractBenchmark<Dynam
 			super(data, persistenceContext);
 		}
 		
-		protected void persist(final PersistenceContext persistenceContext, final List<D> data) {
+		protected void persist(final PersistenceContext persistenceContext, List<D> data) {
 			final Persister<D> dynamicTypePersister = persistenceContext.getPersister((Class<D>) dynamicClassMappingBuilder.dynamicType);
-			dynamicTypePersister.getPersisterListener().addInsertListener(new NoopInsertListener<D>() {
-				@Override
-				public void afterInsert(Iterable<D> iterables) {
-					Map<Field, List<DynamicEntity>> indexDynamicEntities = new ValueFactoryHashMap<>(10, new IFactory<Field, List<DynamicEntity>>() {
-						@Override
-						public List<DynamicEntity> createInstance(Field input) {
-							return new ArrayList<>(500);
-						}
-					});
-					for (D dynamicEntity : iterables) {
-						try {
-							Map<Field, DynamicEntity> localIndexDynamicEntity = indexFieldValue.get(dynamicEntity);
-							for (Entry<Field, DynamicEntity> dynamicEntityEntry : localIndexDynamicEntity.entrySet()) {
-//								dynamicClassMappingBuilder.getClassMappingStrategy_indexes().get(dynamicEntityEntry.getKey())
-								DynamicEntity indexDynamicEntity = dynamicEntityEntry.getValue();
-								indexDynamicEntity.setId(dynamicEntity.getId());
-								indexDynamicEntities.get(dynamicEntityEntry.getKey()).add(indexDynamicEntity);
-								
-							}
-						} catch (Throwable t) {
-							Exceptions.throwAsRuntimeException(t);
-						}
-					}
-					// NB: on force insert car ... on le sait
-					// NB2: le système ne cherchera pas à générer un id car c'est configurer en AutoAssignedIdentifierGenerator
-					for (Field field : indexDynamicEntities.keySet()) {
-						Class<DynamicEntity> classToPersist = (Class<DynamicEntity>) dynamicClassMappingBuilder.indexDynamicTypes.get(field).getClassToPersist();
-						persistenceContext.getPersister(classToPersist).insert(indexDynamicEntities.get(field));
-					}
-				}
-			});
+//			dynamicTypePersister.getPersisterListener().addInsertListener(new NoopInsertListener<D>() {
+//				@Override
+//				public void afterInsert(Iterable<D> iterables) {
+//					Map<Field, List<DynamicEntity>> indexDynamicEntities = new ValueFactoryHashMap<>(10, new IFactory<Field, List<DynamicEntity>>() {
+//						@Override
+//						public List<DynamicEntity> createInstance(Field input) {
+//							return new ArrayList<>(500);
+//						}
+//					});
+//					for (D dynamicEntity : iterables) {
+//						try {
+//							Map<Field, DynamicEntity> localIndexDynamicEntity = indexFieldValue.get(dynamicEntity);
+//							for (Entry<Field, DynamicEntity> dynamicEntityEntry : localIndexDynamicEntity.entrySet()) {
+////								dynamicClassMappingBuilder.getClassMappingStrategy_indexes().get(dynamicEntityEntry.getKey())
+//								DynamicEntity indexDynamicEntity = dynamicEntityEntry.getValue();
+//								indexDynamicEntity.setId(dynamicEntity.getId());
+//								indexDynamicEntities.get(dynamicEntityEntry.getKey()).add(indexDynamicEntity);
+//								
+//							}
+//						} catch (Throwable t) {
+//							Exceptions.throwAsRuntimeException(t);
+//						}
+//					}
+//					// NB: on force insert car ... on le sait
+//					// NB2: le système ne cherchera pas à générer un id car c'est configurer en AutoAssignedIdentifierGenerator
+//					for (Field field : indexDynamicEntities.keySet()) {
+//						Class<DynamicEntity> classToPersist = (Class<DynamicEntity>) dynamicClassMappingBuilder.indexDynamicTypes.get(field).getClassToPersist();
+//						persistenceContext.getPersister(classToPersist).insert(indexDynamicEntities.get(field));
+//					}
+//				}
+//			});
 //			dynamicTypePersister.setPersisterListener(new NoopPersisterListener<D>() {
 //				@Override
 //				public void afterInsert(Iterable<D> iterables) {

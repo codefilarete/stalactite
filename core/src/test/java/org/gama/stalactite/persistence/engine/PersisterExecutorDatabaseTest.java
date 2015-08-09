@@ -86,12 +86,13 @@ public class PersisterExecutorDatabaseTest {
 	@Test(dataProvider = DATASOURCES_DATAPROVIDER_NAME)
 	public void testSelect(final DataSource dataSource) throws SQLException {
 		transactionManager.setDataSource(dataSource);
-		DDLDeployer ddlDeployer = new DDLDeployer(dialect.getDDLSchemaGenerator(Arrays.asList(totoClassTable))) {
+		DDLDeployer ddlDeployer = new DDLDeployer(dialect.getDdlSchemaGenerator(), transactionManager) {
 			@Override
 			protected Connection getCurrentConnection() throws SQLException {
 				return dataSource.getConnection();
 			}
 		};
+		ddlDeployer.getDdlSchemaGenerator().setTables(Arrays.asList(totoClassTable));
 		ddlDeployer.deployDDL();
 		Connection connection = dataSource.getConnection();
 		connection.prepareStatement("insert into Toto(a, b, c) values (1, 10, 100)").execute();
@@ -116,12 +117,13 @@ public class PersisterExecutorDatabaseTest {
 	@Test(dataProvider = DATASOURCES_DATAPROVIDER_NAME)
 	public void testSelect_updateRowCount(final DataSource dataSource) throws SQLException {
 		transactionManager.setDataSource(dataSource);
-		DDLDeployer ddlDeployer = new DDLDeployer(dialect.getDDLSchemaGenerator(Arrays.asList(totoClassTable))) {
+		DDLDeployer ddlDeployer = new DDLDeployer(dialect.getDdlSchemaGenerator(), transactionManager) {
 			@Override
 			protected Connection getCurrentConnection() throws SQLException {
 				return dataSource.getConnection();
 			}
 		};
+		ddlDeployer.getDdlSchemaGenerator().setTables(Arrays.asList(totoClassTable));
 		ddlDeployer.deployDDL();
 		
 		

@@ -29,9 +29,9 @@ public class SelectToAfterSelectCascaderTest extends CascaderTest {
 	public void testAfterSelect() throws SQLException {
 		PersistenceContext persistenceContextMock = mock(PersistenceContext.class);
 		when(persistenceContextMock.getDialect()).thenReturn(new Dialect(new JavaTypeToSqlTypeMapping(), new ColumnBinderRegistry()));
-		Persister<Tata> persisterMock = new Persister<Tata>(persistenceContextMock, mock(ClassMappingStrategy.class),
-				persistenceContextMock.getDialect().getWriteOperationRetryer(),
-				persistenceContextMock.getDialect().getInOperatorMaxSize()) {
+		Persister<Tata> persisterMock = new Persister<Tata>(mock(ClassMappingStrategy.class),
+				persistenceContextMock.getDialect(),
+				null, 10) {
 			@Override
 			protected List<Tata> doSelect(Iterable<Serializable> ids) {
 				List<Tata> selectedTarget = new ArrayList<>();

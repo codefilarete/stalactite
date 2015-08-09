@@ -1,16 +1,13 @@
 package org.gama.stalactite.persistence.engine;
 
-import org.gama.lang.Retryer;
 import org.gama.lang.bean.IDelegate;
 import org.gama.lang.bean.IDelegateWithReturn;
-import org.gama.lang.collection.ISorter;
 import org.gama.lang.collection.Iterables;
 import org.gama.stalactite.persistence.engine.listening.PersisterListener;
 import org.gama.stalactite.persistence.id.BeforeInsertIdentifierGenerator;
 import org.gama.stalactite.persistence.id.IdentifierGenerator;
 import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
-import org.gama.stalactite.persistence.sql.dml.DMLGenerator;
-import org.gama.stalactite.persistence.structure.Table;
+import org.gama.stalactite.persistence.sql.Dialect;
 
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -26,27 +23,20 @@ import java.util.Map.Entry;
  */
 public class Persister<T> {
 	
-	private PersistenceContext persistenceContext;
 	private ClassMappingStrategy<T> mappingStrategy;
 	private PersisterListener<T> persisterListener = new PersisterListener<>();
 	private PersisterExecutor<T> persisterExecutor;
 	
-	public Persister(PersistenceContext persistenceContext, ClassMappingStrategy<T> mappingStrategy, Retryer writeOperationRetryer, int inOperatorMaxSize) {
-		this(persistenceContext, mappingStrategy, DMLGenerator.NoopSorter.INSTANCE, writeOperationRetryer, inOperatorMaxSize);
+	public Persister(PersistenceContext persistenceContext, ClassMappingStrategy<T> mappingStrategy) {
+		this(mappingStrategy, persistenceContext.getDialect(), persistenceContext.getTransactionManager(), persistenceContext.getJDBCBatchSize());
 	}
 	
-	public Persister(PersistenceContext persistenceContext, ClassMappingStrategy<T> mappingStrategy, ISorter<Iterable<Table.Column>> columnSorter,
-					 Retryer writeOperationRetryer, int inOperatorMaxSize) {
-		this.persistenceContext = persistenceContext;
+	public Persister(ClassMappingStrategy<T> mappingStrategy, Dialect dialect, TransactionManager transactionManager, int jdbcBatchSize) {
 		this.mappingStrategy = mappingStrategy;
 		this.persisterExecutor = new PersisterExecutor<>(mappingStrategy, configureIdentifierFixer(mappingStrategy),
-				persistenceContext.getJDBCBatchSize(), persistenceContext.getTransactionManager(),
-				new DMLGenerator(persistenceContext.getDialect().getColumnBinderRegistry(), columnSorter),
-				writeOperationRetryer, inOperatorMaxSize);
-	}
-	
-	public PersistenceContext getPersistenceContext() {
-		return persistenceContext;
+				jdbcBatchSize, transactionManager,
+				dialect.getDmlGenerator(),
+				dialect.getWriteOperationRetryer(), dialect.getInOperatorMaxSize());
 	}
 	
 	public ClassMappingStrategy<T> getMappingStrategy() {

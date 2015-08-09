@@ -27,23 +27,20 @@ public class MySQLDialect extends Dialect {
 	}
 	
 	@Override
-	public DDLSchemaGenerator getDDLSchemaGenerator(Iterable<Table> tablesToCreate) {
-		return new DDLSchemaGenerator(tablesToCreate, getJavaTypeToSqlTypeMapping()) {
+	public DDLSchemaGenerator getDdlSchemaGenerator() {
+		DDLSchemaGenerator ddlSchemaGenerator = super.getDdlSchemaGenerator();
+		ddlSchemaGenerator.setDdlTableGenerator(new DDLTableGenerator(getJavaTypeToSqlTypeMapping()) {
+			/**
+			 * Overriden to change "drop constraint" into "drop foreign key", MySQL specific
+			 */
 			@Override
-			protected DDLTableGenerator newDDLTableGenerator(JavaTypeToSqlTypeMapping typeMapping) {
-				return new DDLTableGenerator(getJavaTypeToSqlTypeMapping()) {
-					/**
-					 * Overriden to change "drop constraint" into "drop foreign key", MySQL specific
-					 */
-					@Override
-					public String generateDropForeignKey(Table.ForeignKey foreignKey) {
-						StringAppender sqlCreateTable = new StringAppender("alter table ", foreignKey.getTable().getName(),
-								" drop foreign key ", foreignKey.getName());
-						return sqlCreateTable.toString();
-					}
-				};
+			public String generateDropForeignKey(Table.ForeignKey foreignKey) {
+				StringAppender sqlCreateTable = new StringAppender("alter table ", foreignKey.getTable().getName(),
+						" drop foreign key ", foreignKey.getName());
+				return sqlCreateTable.toString();
 			}
-		};
+		});
+		return ddlSchemaGenerator;
 	}
 	
 	public static class MySQLTypeMapping extends JavaTypeToSqlTypeMapping {

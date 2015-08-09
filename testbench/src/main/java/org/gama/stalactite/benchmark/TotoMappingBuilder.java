@@ -1,6 +1,7 @@
 package org.gama.stalactite.benchmark;
 
 import org.gama.lang.exception.Exceptions;
+import org.gama.stalactite.persistence.engine.PersistenceContext;
 import org.gama.stalactite.persistence.id.sequence.PooledSequenceIdentifierGenerator;
 import org.gama.stalactite.persistence.id.sequence.PooledSequenceIdentifierGeneratorOptions;
 import org.gama.stalactite.persistence.id.sequence.PooledSequencePersistenceOptions;
@@ -29,7 +30,8 @@ public class TotoMappingBuilder implements IMappingBuilder {
 		Map<Field, Column> fieldColumnMap = persistentFieldHarverster.mapFields(Toto.class, targetTable);
 		ClassMappingStrategy<Toto> classMappingStrategy = new ClassMappingStrategy<>(Toto.class, targetTable,
 				fieldColumnMap, persistentFieldHarverster.getField("id"),
-				new PooledSequenceIdentifierGenerator(new PooledSequenceIdentifierGeneratorOptions(100, "Toto", PooledSequencePersistenceOptions.DEFAULT)));
+				new PooledSequenceIdentifierGenerator(new PooledSequenceIdentifierGeneratorOptions(100, "Toto", PooledSequencePersistenceOptions.DEFAULT),
+						PersistenceContext.getCurrent().getDialect(), PersistenceContext.getCurrent().getTransactionManager(), PersistenceContext.getCurrent().getJDBCBatchSize()));
 		Field answersField = null;
 		try {
 			answersField = Toto.class.getDeclaredField("answers");

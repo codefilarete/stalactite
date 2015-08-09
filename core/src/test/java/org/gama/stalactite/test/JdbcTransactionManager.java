@@ -1,5 +1,6 @@
 package org.gama.stalactite.test;
 
+import org.gama.lang.exception.Exceptions;
 import org.gama.stalactite.persistence.engine.TransactionManager;
 
 import javax.sql.DataSource;
@@ -70,9 +71,9 @@ public class JdbcTransactionManager implements TransactionManager {
 			if (connection != null) {
 				try {
 					connection.rollback();
-					throw new RuntimeException(e);
+					Exceptions.throwAsRuntimeException(e);
 				} catch (SQLException e1) {
-					throw new RuntimeException(e1);
+					Exceptions.throwAsRuntimeException(e1);
 				}
 			}
 		} finally {

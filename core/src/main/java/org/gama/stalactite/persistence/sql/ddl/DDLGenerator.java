@@ -5,7 +5,7 @@ import java.util.List;
 /**
  * @author Guillaume Mary
  */
-public interface DDLParticipant {
+public interface DDLGenerator {
 	
 	List<String> getCreationScripts();
 	

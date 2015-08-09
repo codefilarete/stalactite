@@ -9,8 +9,6 @@ import org.gama.stalactite.benchmark.connection.MySQLDataSourceFactory;
 import org.gama.stalactite.benchmark.connection.MySQLDataSourceFactory.Property;
 import org.gama.stalactite.persistence.engine.DDLDeployer;
 import org.gama.stalactite.persistence.engine.PersistenceContext;
-import org.gama.stalactite.persistence.sql.ddl.DDLSchemaGenerator;
-import org.gama.stalactite.persistence.structure.Table;
 import org.springframework.jdbc.datasource.DataSourceTransactionManager;
 import org.springframework.transaction.TransactionStatus;
 import org.springframework.transaction.support.TransactionCallbackWithoutResult;
@@ -44,7 +42,7 @@ public abstract class AbstractBenchmark<Data> {
 	}
 	
 	public void run() throws SQLException, ExecutionException, InterruptedException {
-		DataSource dataSource = new MySQLDataSourceFactory().newDataSource("localhost:3306", "sandbox", "sandbox", "sandbox", new EnumMap<>(Property.class));
+		DataSource dataSource = new MySQLDataSourceFactory().newDataSource("localhost:3306", "sandbox", "dev", "dev", new EnumMap<>(Property.class));
 		HikariDataSource pooledDataSource = new HikariDataSource();
 		pooledDataSource.setDataSource(dataSource);
 		dataSource = pooledDataSource;
@@ -54,8 +52,7 @@ public abstract class AbstractBenchmark<Data> {
 		final PersistenceContext persistenceContext = new PersistenceContext(transactionManager, new HSQLBDDialect());
 		PersistenceContext.setCurrent(persistenceContext);
 		
-		IMappingBuilder totoMappingBuilder = newMappingBuilder();
-		persistenceContext.add(totoMappingBuilder.getClassMappingStrategy());
+		appendMappingStrategy(persistenceContext);
 		
 		TransactionTemplate transactionTemplate = new TransactionTemplate(dataSourceTransactionManager);
 		transactionTemplate.execute(new TransactionCallbackWithoutResult() {
@@ -76,15 +73,7 @@ public abstract class AbstractBenchmark<Data> {
 	}
 	
 	protected void dropAndDeployDDL(PersistenceContext persistenceContext) throws SQLException {
-		DDLSchemaGenerator ddlSchemaGenerator = new DDLSchemaGenerator(DDLDeployer.lookupTables(persistenceContext), persistenceContext.getDialect().getJavaTypeToSqlTypeMapping()) {
-			@Override
-			protected String generateCreationScript(Table table) {
-				String creationScript = super.generateCreationScript(table);
-//				creationScript += "engine=tokuDB";
-				return creationScript;
-			}
-		};
-		DDLDeployer ddlDeployer = new DDLDeployer(ddlSchemaGenerator);
+		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
 		ddlDeployer.dropDDL();
 		ddlDeployer.deployDDL();
 	}

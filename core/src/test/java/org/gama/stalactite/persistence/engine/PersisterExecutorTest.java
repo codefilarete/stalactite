@@ -285,12 +285,8 @@ public class PersisterExecutorTest {
 	public void testSelect_hsqldb() throws SQLException {
 		final HSQLDBInMemoryDataSource dataSource = new HSQLDBInMemoryDataSource();
 		transactionManager.setDataSource(dataSource);
-		DDLDeployer ddlDeployer = new DDLDeployer(dialect.getDDLSchemaGenerator(Arrays.asList(totoClassTable))) {
-			@Override
-			protected Connection getCurrentConnection() throws SQLException {
-				return dataSource.getConnection();
-			}
-		};
+		DDLDeployer ddlDeployer = new DDLDeployer(dialect.getDdlSchemaGenerator(), transactionManager);
+		ddlDeployer.getDdlSchemaGenerator().addTables(totoClassTable);
 		ddlDeployer.deployDDL();
 		Connection connection = dataSource.getConnection();
 		connection.prepareStatement("insert into Toto(a, b, c) values (1, 10, 100)").execute();
@@ -316,12 +312,8 @@ public class PersisterExecutorTest {
 	public void testSelect_hsqldb_updateRowCount() throws SQLException {
 		final HSQLDBInMemoryDataSource dataSource = new HSQLDBInMemoryDataSource();
 		transactionManager.setDataSource(dataSource);
-		DDLDeployer ddlDeployer = new DDLDeployer(dialect.getDDLSchemaGenerator(Arrays.asList(totoClassTable))) {
-			@Override
-			protected Connection getCurrentConnection() throws SQLException {
-				return dataSource.getConnection();
-			}
-		};
+		DDLDeployer ddlDeployer = new DDLDeployer(dialect.getDdlSchemaGenerator(), transactionManager);
+		ddlDeployer.getDdlSchemaGenerator().setTables(Arrays.asList(totoClassTable));
 		ddlDeployer.deployDDL();
 		
 		

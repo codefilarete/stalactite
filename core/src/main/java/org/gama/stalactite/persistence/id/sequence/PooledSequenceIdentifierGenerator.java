@@ -1,11 +1,11 @@
 package org.gama.stalactite.persistence.id.sequence;
 
+import org.gama.stalactite.persistence.engine.TransactionManager;
 import org.gama.stalactite.persistence.id.BeforeInsertIdentifierGenerator;
 import org.gama.stalactite.persistence.id.sequence.PooledSequencePersister.PooledSequence;
-import org.gama.stalactite.persistence.sql.ddl.DDLParticipant;
+import org.gama.stalactite.persistence.sql.Dialect;
 
 import java.io.Serializable;
-import java.util.List;
 import java.util.Map;
 
 /**
@@ -16,7 +16,7 @@ import java.util.Map;
  * 
  * @author mary
  */
-public class PooledSequenceIdentifierGenerator implements BeforeInsertIdentifierGenerator, DDLParticipant {
+public class PooledSequenceIdentifierGenerator implements BeforeInsertIdentifierGenerator {
 	
 	private LongPool sequenceState;
 	
@@ -24,10 +24,14 @@ public class PooledSequenceIdentifierGenerator implements BeforeInsertIdentifier
 	
 	private PooledSequenceIdentifierGeneratorOptions options;
 	
-	public PooledSequenceIdentifierGenerator() {
-	}
+	private final Dialect dialect;
+	private final TransactionManager transactionManager;
+	private final int jdbcBatchSize;
 	
-	public PooledSequenceIdentifierGenerator(PooledSequenceIdentifierGeneratorOptions options) {
+	public PooledSequenceIdentifierGenerator(PooledSequenceIdentifierGeneratorOptions options, Dialect dialect, TransactionManager transactionManager, int jdbcBatchSize) {
+		this.dialect = dialect;
+		this.transactionManager = transactionManager;
+		this.jdbcBatchSize = jdbcBatchSize;
 		configure(options);
 	}
 	
@@ -37,23 +41,22 @@ public class PooledSequenceIdentifierGenerator implements BeforeInsertIdentifier
 	}
 	
 	public void configure(PooledSequenceIdentifierGeneratorOptions options) {
-		this.pooledSequencePersister = new PooledSequencePersister(options.getStorageOptions());
+		this.pooledSequencePersister = new PooledSequencePersister(options.getStorageOptions(), dialect, transactionManager, jdbcBatchSize);
 		this.options = options;
 	}
 	
-	@Override
-	public List<String> getCreationScripts() {
-		return pooledSequencePersister.getCreationScripts();
+	public PooledSequencePersister getPooledSequencePersister() {
+		return pooledSequencePersister;
 	}
 	
-	@Override
-	public List<String> getDropScripts() {
-		return pooledSequencePersister.getDropScripts();
+	public PooledSequenceIdentifierGeneratorOptions getOptions() {
+		return options;
 	}
 	
 	@Override
 	public synchronized Serializable generate() {
 		if (sequenceState == null) {
+			// No state yet so we create one
 			PooledSequence existingSequence = this.pooledSequencePersister.select(getSequenceName());
 			long initialValue = existingSequence == null ? 0 : existingSequence.getUpperBound();
 			this.sequenceState = new LongPool(options.getPoolSize(), --initialValue) {
@@ -62,8 +65,10 @@ public class PooledSequenceIdentifierGenerator implements BeforeInsertIdentifier
 					pooledSequencePersister.reservePool(getSequenceName(), getPoolSize());
 				}
 			};
-			// if no sequence exist, should consider that's a new boundary reached (so insert initial state is done)
-			sequenceState.onBoundReached();
+			// if no sequence exists we consider that a new boundary is reached in order to insert initial state
+			if (existingSequence == null) {
+				sequenceState.onBoundReached();
+			}
 		}
 		return sequenceState.nextValue();
 	}

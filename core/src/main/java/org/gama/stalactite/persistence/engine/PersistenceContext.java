@@ -85,8 +85,7 @@ public class PersistenceContext {
 	}
 	
 	protected <T> Persister<T> newPersister(Class<T> clazz) {
-		return new Persister<>(PersistenceContext.this, ensureMappedClass(clazz),
-				getDialect().getWriteOperationRetryer(), getDialect().getInOperatorMaxSize());
+		return new Persister<>(PersistenceContext.this, ensureMappedClass(clazz));
 	}
 	
 	protected <T> ClassMappingStrategy<T> ensureMappedClass(Class<T> clazz) {

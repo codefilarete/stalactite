@@ -10,8 +10,8 @@ import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
-import java.util.Map;
 
 /**
  * @author Guillaume Mary
@@ -21,36 +21,39 @@ public class DDLDeployer {
 	private static final ILogger LOGGER = Logger.getLogger(DDLDeployer.class);
 	
 	public static List<Table> lookupTables(PersistenceContext persistenceContext) {
-		Map<Class, ClassMappingStrategy> mappingStrategies = persistenceContext.getMappingStrategies();
+		Collection<ClassMappingStrategy> mappingStrategies = persistenceContext.getMappingStrategies().values();
 		List<Table> tables = new ArrayList<>(mappingStrategies.size());
-		for (ClassMappingStrategy classMappingStrategy : mappingStrategies.values()) {
+		for (ClassMappingStrategy classMappingStrategy : mappingStrategies) {
 			tables.add(classMappingStrategy.getTargetTable());
 		}
 		return tables;
 	}
 	
-	private final DDLSchemaGenerator ddlTableGenerator;
+	private final DDLSchemaGenerator ddlSchemaGenerator;
+	private final TransactionManager transactionManager;
 	
 	public DDLDeployer(PersistenceContext persistenceContext) {
-		this(persistenceContext.getDialect().getDDLSchemaGenerator(lookupTables(persistenceContext)));
+		this(persistenceContext.getDialect().getDdlSchemaGenerator(), persistenceContext.getTransactionManager());
+		getDdlSchemaGenerator().setTables(lookupTables(persistenceContext));
 	}
 	
-	public DDLDeployer(DDLSchemaGenerator ddlTableGenerator) {
-		this.ddlTableGenerator = ddlTableGenerator;
+	public DDLDeployer(DDLSchemaGenerator ddlSchemaGenerator, TransactionManager transactionManager) {
+		this.ddlSchemaGenerator = ddlSchemaGenerator;
+		this.transactionManager = transactionManager;
 	}
 	
-	public DDLSchemaGenerator getDDLGenerator() {
-		return ddlTableGenerator;
+	public DDLSchemaGenerator getDdlSchemaGenerator() {
+		return ddlSchemaGenerator;
 	}
 	
 	public void deployDDL() throws SQLException {
-		for (String sql : getDDLGenerator().getCreationScripts()) {
+		for (String sql : getDdlSchemaGenerator().getCreationScripts()) {
 			execute(sql);
 		}
 	}
 	
 	public void dropDDL() throws SQLException {
-		for (String sql : getDDLGenerator().getDropScripts()) {
+		for (String sql : getDdlSchemaGenerator().getDropScripts()) {
 			execute(sql);
 		}
 	}
@@ -65,7 +68,7 @@ public class DDLDeployer {
 	}
 	
 	protected Connection getCurrentConnection() throws SQLException {
-		return PersistenceContext.getCurrent().getCurrentConnection();
+		return transactionManager.getCurrentConnection();
 	}
 	
 }

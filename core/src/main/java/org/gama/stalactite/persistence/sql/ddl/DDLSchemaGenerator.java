@@ -5,33 +5,48 @@ import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.persistence.structure.Table.ForeignKey;
 import org.gama.stalactite.persistence.structure.Table.Index;
 
-import java.util.ArrayList;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 /**
  * @author Guillaume Mary
  */
-public class DDLSchemaGenerator implements DDLParticipant {
+public class DDLSchemaGenerator implements DDLGenerator {
 	
-	private final Iterable<Table> tables;
+	private Collection<Table> tables = new LinkedHashSet<>();
 	
-	private final DDLTableGenerator ddlTableGenerator;
+	private Collection<DDLGenerator> ddlGenerators = new LinkedHashSet<>();
 	
-	private final Set<DDLParticipant> ddlParticipants = new LinkedHashSet<>();
+	private DDLTableGenerator ddlTableGenerator;
 	
-	public DDLSchemaGenerator(Iterable<Table> tablesToCreate, JavaTypeToSqlTypeMapping typeMapping) {
-		this.tables = tablesToCreate;
-		this.ddlTableGenerator = newDDLTableGenerator(typeMapping);
+	public DDLSchemaGenerator(JavaTypeToSqlTypeMapping typeMapping) {
+		this.tables = new ArrayList<>();
+		this.ddlTableGenerator = new DDLTableGenerator(typeMapping);
 	}
 	
-	protected DDLTableGenerator newDDLTableGenerator(JavaTypeToSqlTypeMapping typeMapping) {
-		return new DDLTableGenerator(typeMapping);
+	public DDLTableGenerator getDdlTableGenerator() {
+		return ddlTableGenerator;
 	}
 	
-	public void add(DDLParticipant ddlParticipant) {
-		this.ddlParticipants.add(ddlParticipant);
+	public void setDdlTableGenerator(DDLTableGenerator ddlTableGenerator) {
+		this.ddlTableGenerator = ddlTableGenerator;
+	}
+	
+	public void setTables(Collection<Table> tables) {
+		this.tables = tables;
+	}
+	
+	public void addTables(Table table, Table ... tables) {
+		this.tables.add(table);
+		this.tables.addAll(Arrays.asList(tables));
+	}
+	
+	public void setDDLGenerators(Collection<DDLGenerator> ddlParticipants) {
+		this.ddlGenerators = ddlParticipants;
+	}
+	
+	public void addDDLGenerators(DDLGenerator ddlGenerator, DDLGenerator... ddlGenerators) {
+		this.ddlGenerators.add(ddlGenerator);
+		this.ddlGenerators.addAll(Arrays.asList(ddlGenerators));
 	}
 	
 	@Override
@@ -42,8 +57,8 @@ public class DDLSchemaGenerator implements DDLParticipant {
 	
 	protected List<String> generateDDLParticipantsCreationScripts() {
 		List<String> participantsScripts = new ArrayList<>();
-		for (DDLParticipant ddlParticipant : ddlParticipants) {
-			participantsScripts.addAll(ddlParticipant.getCreationScripts());
+		for (DDLGenerator ddlGenerator : ddlGenerators) {
+			participantsScripts.addAll(ddlGenerator.getCreationScripts());
 		}
 		return participantsScripts;
 	}
@@ -110,8 +125,8 @@ public class DDLSchemaGenerator implements DDLParticipant {
 	
 	protected List<String> generateDDLParticipantsDropScripts() {
 		List<String> participantsScripts = new ArrayList<>();
-		for (DDLParticipant ddlParticipant : ddlParticipants) {
-			List<String> dropScripts = ddlParticipant.getDropScripts();
+		for (DDLGenerator ddlGenerator : ddlGenerators) {
+			List<String> dropScripts = ddlGenerator.getDropScripts();
 			if (!Collections.isEmpty(dropScripts)) {
 				participantsScripts.addAll(dropScripts);
 			}

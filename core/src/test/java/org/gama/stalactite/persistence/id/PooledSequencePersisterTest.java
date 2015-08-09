@@ -23,6 +23,8 @@ import static org.testng.Assert.assertEquals;
 public class PooledSequencePersisterTest {
 	
 	private PooledSequencePersister testInstance;
+	private Dialect dialect;
+	private PersistenceContext persistenceContext;
 	
 	@BeforeMethod
 	public void setUp() {
@@ -30,8 +32,9 @@ public class PooledSequencePersisterTest {
 		simpleTypeMapping.put(Long.class, "int");
 		simpleTypeMapping.put(String.class, "VARCHAR(255)");
 		
-		PersistenceContext.setCurrent(new PersistenceContext(new JdbcTransactionManager(new HSQLDBInMemoryDataSource()), new Dialect(simpleTypeMapping)));
-		testInstance = new PooledSequencePersister();
+		dialect = new Dialect(simpleTypeMapping);
+		persistenceContext = new PersistenceContext(new JdbcTransactionManager(new HSQLDBInMemoryDataSource()), dialect);
+		testInstance = new PooledSequencePersister(dialect, persistenceContext.getTransactionManager(), persistenceContext.getJDBCBatchSize());
 	}
 	
 	@AfterMethod
@@ -41,24 +44,28 @@ public class PooledSequencePersisterTest {
 	
 	@Test
 	public void testGetCreationScripts() throws Exception {
-		List<String> creationScripts = testInstance.getCreationScripts();
+		dialect.getDdlSchemaGenerator().addTables(testInstance.getMappingStrategy().getTargetTable());
+		List<String> creationScripts = dialect.getDdlSchemaGenerator().getCreationScripts();
 		assertEquals(creationScripts, Arrays.asList("create table sequence_table(sequence_name VARCHAR(255), next_val int, primary key (sequence_name))"));
 	}
 	
 	@Test
 	public void testGetCreationScripts_customized() throws Exception {
-		testInstance = new PooledSequencePersister(new PooledSequencePersistenceOptions("myTable", "mySequenceNameCol", "myNextValCol"));
-		List<String> creationScripts = testInstance.getCreationScripts();
+		testInstance = new PooledSequencePersister(new PooledSequencePersistenceOptions("myTable", "mySequenceNameCol", "myNextValCol"),
+				dialect, persistenceContext.getTransactionManager(), persistenceContext.getJDBCBatchSize());
+		dialect.getDdlSchemaGenerator().addTables(testInstance.getMappingStrategy().getTargetTable());
+		List<String> creationScripts = dialect.getDdlSchemaGenerator().getCreationScripts();
 		assertEquals(creationScripts, Arrays.asList("create table myTable(mySequenceNameCol VARCHAR(255), myNextValCol int, primary key (mySequenceNameCol))"));
 	}
 	
 	@Test
 	public void testReservePool_emptyDatabase() throws Exception {
-		DDLDeployer ddlDeployer = new DDLDeployer(testInstance.getPersistenceContext());
+		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+		ddlDeployer.getDdlSchemaGenerator().setTables(Arrays.asList(testInstance.getMappingStrategy().getTargetTable()));
 		ddlDeployer.deployDDL();
 		long identifier = testInstance.reservePool("toto", 10);
 		assertEquals(identifier, 10);
-		Connection currentConnection = PersistenceContext.getCurrent().getCurrentConnection();
+		Connection currentConnection = persistenceContext.getCurrentConnection();
 		Statement statement = currentConnection.createStatement();
 		ResultSet resultSet = statement.executeQuery("select next_val from sequence_table where sequence_name = 'toto'");
 		resultSet.next();

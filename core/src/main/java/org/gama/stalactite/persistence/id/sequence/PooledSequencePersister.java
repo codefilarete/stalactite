@@ -2,19 +2,17 @@ package org.gama.stalactite.persistence.id.sequence;
 
 import org.gama.lang.Reflections;
 import org.gama.lang.collection.Maps;
-import org.gama.stalactite.persistence.engine.DDLDeployer;
-import org.gama.stalactite.persistence.engine.PersistenceContext;
 import org.gama.stalactite.persistence.engine.Persister;
+import org.gama.stalactite.persistence.engine.TransactionManager;
 import org.gama.stalactite.persistence.engine.TransactionManager.JdbcOperation;
 import org.gama.stalactite.persistence.id.AutoAssignedIdentifierGenerator;
 import org.gama.stalactite.persistence.id.sequence.PooledSequencePersister.PooledSequence;
 import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
-import org.gama.stalactite.persistence.sql.ddl.DDLParticipant;
+import org.gama.stalactite.persistence.sql.Dialect;
 import org.gama.stalactite.persistence.structure.Database.Schema;
 import org.gama.stalactite.persistence.structure.Table;
 
 import java.lang.reflect.Field;
-import java.util.List;
 import java.util.Map;
 
 /**
@@ -24,40 +22,30 @@ import java.util.Map;
  * 
  * @author Guillaume Mary
  */
-public class PooledSequencePersister extends Persister<PooledSequence> implements DDLParticipant {
+public class PooledSequencePersister extends Persister<PooledSequence> {
+	
+	private final TransactionManager transactionManager;
 	
 	/**
 	 * Constructor with default table and column names.
 	 * @see PooledSequencePersistenceOptions#DEFAULT
+	 * @param dialect
 	 */
-	public PooledSequencePersister() {
-		this(PooledSequencePersistenceOptions.DEFAULT);
+	public PooledSequencePersister(Dialect dialect, TransactionManager transactionManager, int jdbcBatchSize) {
+		this(PooledSequencePersistenceOptions.DEFAULT, dialect, transactionManager, jdbcBatchSize);
 	}
 	
-	public PooledSequencePersister(PooledSequencePersistenceOptions storageOptions) {
+	public PooledSequencePersister(PooledSequencePersistenceOptions storageOptions, Dialect dialect, TransactionManager transactionManager, int jdbcBatchSize) {
 		// we reuse default PersistentContext
-		super(PersistenceContext.getCurrent(), new PooledSequencePersisterConfigurer().buildConfiguration(storageOptions),
-				PersistenceContext.getCurrent().getDialect().getWriteOperationRetryer(),
-				PersistenceContext.getCurrent().getDialect().getInOperatorMaxSize());
-		getPersistenceContext().add(getMappingStrategy());
-	}
-	
-	@Override
-	public List<String> getCreationScripts() {
-		DDLDeployer ddlDeployer = new DDLDeployer(getPersistenceContext());
-		return ddlDeployer.getDDLGenerator().getCreationScripts();
-	}
-	
-	@Override
-	public List<String> getDropScripts() {
-		DDLDeployer ddlDeployer = new DDLDeployer(getPersistenceContext());
-		return ddlDeployer.getDDLGenerator().getDropScripts();
+		super(new PooledSequencePersisterConfigurer().buildConfiguration(storageOptions),
+				dialect, transactionManager, jdbcBatchSize);
+		this.transactionManager = transactionManager;
 	}
 	
 	public long reservePool(String sequenceName, int poolSize) {
 		SequenceBoundJdbcOperation jdbcOperation = new SequenceBoundJdbcOperation(sequenceName, poolSize);
 		// the operation is executed in a new and parallel transaction in order to manage concurrent accesses
-		getPersistenceContext().executeInNewTransaction(jdbcOperation);
+		transactionManager.executeInNewTransaction(jdbcOperation);
 		return jdbcOperation.getUpperBound();
 	}
 	
