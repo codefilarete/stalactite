@@ -8,6 +8,8 @@ import org.mariadb.jdbc.MySQLDataSource;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Random;
 
 /**
@@ -17,30 +19,28 @@ import java.util.Random;
  */
 public class MariaDBEmbeddableDataSource extends UrlAwareDataSource implements Closeable {
 	
-	public static final int PORT = 3306;
+	public static final int DEFAULT_PORT = 3306;
 	
-	private static DB db;
+	private static final Map<Integer, DB> usedPorts = new HashMap<>();
 	
-	/**
-	 * We start only one database to have faster tests.
-	 * This is done statically to be simplier. We rely on MariaDB4J to close things properly.
-	 */
-	static {
-		try {
-			db = DB.newEmbeddedDB(PORT);
-			db.start();
-		} catch (ManagedProcessException e) {
-			Exceptions.throwAsRuntimeException(e);
-		}
-	}
+	private DB db;
+	
+	/** DB port. Stored because configuration of DB is not accessible. */
+	private int port;
 	
 	public MariaDBEmbeddableDataSource() {
+		this(DEFAULT_PORT);
+	}
+	
+	public MariaDBEmbeddableDataSource(int port) {
 		// "random" URL to avoid collision in tests
-		this(PORT, "test" + Integer.toHexString(new Random().nextInt()));
+		this(port, "test" + Integer.toHexString(new Random().nextInt()));
 	}
 	
 	private MariaDBEmbeddableDataSource(int port, String databaseName) {
 		super("jdbc:mariadb://localhost:" + port + "/" + databaseName);
+		this.port = port;
+		start();
 		MySQLDataSource delegate = new MySQLDataSource("localhost", port, databaseName);
 		setDelegate(delegate);
 		try {
@@ -55,10 +55,25 @@ public class MariaDBEmbeddableDataSource extends UrlAwareDataSource implements C
 		return getUrl();
 	}
 	
+	private void start() {
+		db = usedPorts.get(port);
+		if (db == null) {
+			try {
+				db = DB.newEmbeddedDB(port);
+				db.start();
+				usedPorts.put(port, db);
+			} catch (ManagedProcessException e) {
+				Exceptions.throwAsRuntimeException(e);
+			}
+		}
+	}
+	
 	@Override
 	public void close() throws IOException {
+		 // NB: if something goes wrong, we rely on MariaDB4J to close things properly.
 		try {
 			db.stop();
+			usedPorts.remove(port);
 		} catch (ManagedProcessException e) {
 			throw new IOException(e);
 		}

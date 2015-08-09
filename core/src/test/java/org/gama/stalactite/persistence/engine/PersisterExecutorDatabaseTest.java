@@ -79,7 +79,7 @@ public class PersisterExecutorDatabaseTest {
 		return new Object[][] {
 				{ new HSQLDBInMemoryDataSource() },
 				{ new DerbyInMemoryDataSource() },
-				{ new MariaDBEmbeddableDataSource() },
+				{ new MariaDBEmbeddableDataSource(3406) },
 		};
 	}
 	
