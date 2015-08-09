@@ -4,10 +4,11 @@ import java.io.Serializable;
 import java.util.Map;
 
 /**
- * Classe marqueuse pour les générateurs d'identifiant ... qu'il ne faut pas appeler car l'entité a positionné elle-même
- * son identifiant avant l'insert.
+ * Marker class for identifier generators that mustn't be called ! because entity has already set its identifier
+ * by itself.
+ * Shouldn't be combined with {@link BeforeInsertIdentifierGenerator} not {@link AfterInsertIdentifierGenerator}.
  * 
- * @author mary
+ * @author Guillaume Mary
  */
 public class AutoAssignedIdentifierGenerator implements IdentifierGenerator {
 	@Override

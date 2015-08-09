@@ -72,7 +72,7 @@ public class PersisterExecutor<T> {
 		}
 		return jdbcBatchingIterator.getUpdatedRowCount();
 		/*
-		if (identifierGenerator instanceof PostInsertIdentifierGenerator) {
+		if (identifierGenerator instanceof AfterInsertIdentifierGenerator) {
 			// TODO: lire le résultat de l'exécution et injecter l'identifiant sur le bean
 		}
 		*/

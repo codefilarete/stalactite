@@ -1,12 +1,12 @@
 package org.gama.stalactite.persistence.id.sequence;
 
+import org.gama.stalactite.persistence.id.BeforeInsertIdentifierGenerator;
+import org.gama.stalactite.persistence.id.sequence.PooledSequencePersister.PooledSequence;
+import org.gama.stalactite.persistence.sql.ddl.DDLParticipant;
+
 import java.io.Serializable;
 import java.util.List;
 import java.util.Map;
-
-import org.gama.stalactite.persistence.id.IdentifierGenerator;
-import org.gama.stalactite.persistence.id.sequence.PooledSequencePersister.PooledSequence;
-import org.gama.stalactite.persistence.sql.ddl.DDLParticipant;
 
 /**
  * Générateur d'identifiant Long par table/classe (une séquence par table).
@@ -16,7 +16,7 @@ import org.gama.stalactite.persistence.sql.ddl.DDLParticipant;
  * 
  * @author mary
  */
-public class PooledSequenceIdentifierGenerator implements IdentifierGenerator, DDLParticipant {
+public class PooledSequenceIdentifierGenerator implements BeforeInsertIdentifierGenerator, DDLParticipant {
 	
 	private LongPool sequenceState;
 	

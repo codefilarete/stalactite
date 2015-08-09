@@ -6,9 +6,8 @@ import org.gama.lang.bean.IDelegateWithReturn;
 import org.gama.lang.collection.ISorter;
 import org.gama.lang.collection.Iterables;
 import org.gama.stalactite.persistence.engine.listening.PersisterListener;
-import org.gama.stalactite.persistence.id.AutoAssignedIdentifierGenerator;
+import org.gama.stalactite.persistence.id.BeforeInsertIdentifierGenerator;
 import org.gama.stalactite.persistence.id.IdentifierGenerator;
-import org.gama.stalactite.persistence.id.PostInsertIdentifierGenerator;
 import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
 import org.gama.stalactite.persistence.sql.dml.DMLGenerator;
 import org.gama.stalactite.persistence.structure.Table;
@@ -59,10 +58,10 @@ public class Persister<T> {
 		// preparing identifier instance 
 		if (mappingStrategy != null) {
 			IdentifierGenerator identifierGenerator = mappingStrategy.getIdentifierGenerator();
-			if (!(identifierGenerator instanceof AutoAssignedIdentifierGenerator)
-					&& !(identifierGenerator instanceof PostInsertIdentifierGenerator)) {
-				identifierFixer = new IdentifierFixer<T>(identifierGenerator, mappingStrategy);
+			if (identifierGenerator instanceof BeforeInsertIdentifierGenerator) {
+				identifierFixer = new IdentifierFixer<>(identifierGenerator, mappingStrategy);
 			} else {
+				// cases AfterInsertIdentifierGenerator, AutoAssignedIdentifierGenerator => nothing to do
 				identifierFixer = NoopIdentifierFixer.INSTANCE;
 			}
 		} // else // rare cases but necessary
