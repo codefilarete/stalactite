@@ -25,8 +25,6 @@ public class ClassMappingStrategy<T> implements IMappingStrategy<T> {
 	
 	private final Table targetTable;
 	
-	private final Set<Column> columns;
-	
 	private final Set<Column> updatableColumns;
 	
 	private Map<PropertyAccessor, IEmbeddedBeanMapper> mappingStrategies;
@@ -38,7 +36,6 @@ public class ClassMappingStrategy<T> implements IMappingStrategy<T> {
 		this.classToPersist = classToPersist;
 		this.targetTable = targetTable;
 		this.defaultMappingStrategy = new FieldMappingStrategy<>(fieldToColumn, identifierField);
-		this.columns = new HashSet<>(defaultMappingStrategy.getColumns());
 		this.updatableColumns = new LinkedHashSet<>();
 		this.mappingStrategies = new HashMap<>();
 		this.identifierGenerator = identifierGenerator;
@@ -52,11 +49,6 @@ public class ClassMappingStrategy<T> implements IMappingStrategy<T> {
 	@Override
 	public Table getTargetTable() {
 		return targetTable;
-	}
-	
-	@Override
-	public Set<Column> getColumns() {
-		return columns;
 	}
 	
 	/**
@@ -80,7 +72,6 @@ public class ClassMappingStrategy<T> implements IMappingStrategy<T> {
 	}
 	
 	private void updateColumnsLists(IEmbeddedBeanMapper mappingStrategy) {
-		columns.addAll(mappingStrategy.getColumns());
 		fillUpdatableColumns(mappingStrategy);
 	}
 	
@@ -126,7 +117,7 @@ public class ClassMappingStrategy<T> implements IMappingStrategy<T> {
 	 */
 	private void fillUpdatableColumns() {
 		updatableColumns.clear();
-		updatableColumns.addAll(getColumns());
+		updatableColumns.addAll(defaultMappingStrategy.getColumns());
 		for (IEmbeddedBeanMapper<?> iEmbeddedBeanMapper : mappingStrategies.values()) {
 			fillUpdatableColumns(iEmbeddedBeanMapper);
 		}

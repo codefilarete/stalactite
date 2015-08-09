@@ -1,14 +1,13 @@
 package org.gama.stalactite.persistence.mapping;
 
-import org.gama.stalactite.persistence.sql.dml.PreparedUpdate.UpwhereColumn;
 import org.gama.sql.result.Row;
+import org.gama.stalactite.persistence.sql.dml.PreparedUpdate.UpwhereColumn;
 import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.persistence.structure.Table.Column;
 
 import javax.annotation.Nonnull;
 import java.io.Serializable;
 import java.util.Map;
-import java.util.Set;
 
 /**
  * @author mary
@@ -31,7 +30,5 @@ public interface IMappingStrategy<T> {
 	
 	void setId(T t, Serializable identifier);
 	
-	Set<Column> getColumns();
-	
-	public T transform(Row row);
+	T transform(Row row);
 }

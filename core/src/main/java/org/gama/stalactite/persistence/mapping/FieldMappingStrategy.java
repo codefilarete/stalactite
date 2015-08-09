@@ -86,7 +86,6 @@ public class FieldMappingStrategy<T> implements IMappingStrategy<T> {
 		return targetTable;
 	}
 	
-	@Override
 	public Set<Column> getColumns() {
 		return columns;
 	}
