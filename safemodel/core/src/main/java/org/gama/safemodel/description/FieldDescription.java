@@ -7,12 +7,20 @@ import java.lang.reflect.Field;
 /**
  * @author Guillaume Mary
  */
-public class FieldDescription extends AbstracNamedMemberDescription {
+public class FieldDescription<R> extends AbstracNamedMemberDescription<Field> {
 	
 	public final Field field;
 	
 	public FieldDescription(Class declaringClass, String name) {
-		super(declaringClass, name);
-		this.field = Reflections.getField(declaringClass, name);
+		this(Reflections.getField(declaringClass, name));
+	}
+	
+	public FieldDescription(Field field) {
+		super(field);
+		this.field = field;
+	}
+	
+	public Class<R> getFieldType() {
+		return (Class<R>) field.getType();
 	}
 }

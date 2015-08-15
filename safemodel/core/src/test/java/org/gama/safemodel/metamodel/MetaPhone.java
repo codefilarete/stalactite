@@ -2,29 +2,28 @@ package org.gama.safemodel.metamodel;
 
 import org.gama.safemodel.description.AbstractMemberDescription;
 import org.gama.safemodel.MetaModel;
+import org.gama.safemodel.description.FieldDescription;
+import org.gama.safemodel.description.MethodDescription;
 import org.gama.safemodel.model.Phone;
 
 /**
  * @author Guillaume Mary
  */
-public class MetaPhone<O extends MetaModel> extends MetaModel<O> {
+public class MetaPhone<O extends MetaModel, M extends AbstractMemberDescription> extends MetaModel<O, M> {
 	
-	public MetaString<MetaPhone> number = new MetaString<>(field(Phone.class, "number"));
+	public MetaString<MetaPhone, FieldDescription<String>> number = new MetaString<>(field(Phone.class, "number", String.class));
 	
 	public MetaPhone() {
 	}
 	
-	public MetaPhone(AbstractMemberDescription accessor) {
+	public MetaPhone(M accessor) {
 		super(accessor);
 		fixFieldsOwner();
 //		number.setOwner(this);
 	}
 	
-	public MetaString<?> getNumber() {
-		return new MetaString<>(method(Phone.class, "getNumber"), this);
+	public MetaString<MetaPhone, MethodDescription<String>> getNumber() {
+		return new MetaString<MetaPhone, MethodDescription<String>>(method(Phone.class, "getNumber", String.class), this);
 	}
 	
-	public MetaString<MetaPhone> getNumber2() {
-		return new MetaString<MetaPhone>(getNumber().getDescription(), this);
-	}
 }

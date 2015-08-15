@@ -1,18 +1,8 @@
 package org.gama.safemodel;
 
-import static org.junit.Assert.*;
-
-import java.util.ArrayList;
-import java.util.List;
-
 import org.gama.lang.Reflections;
 import org.gama.lang.collection.Arrays;
-import org.gama.reflection.AccessorByField;
-import org.gama.reflection.AccessorByMethod;
-import org.gama.reflection.AccessorChain;
-import org.gama.reflection.Accessors;
-import org.gama.reflection.ArrayAccessor;
-import org.gama.reflection.IAccessor;
+import org.gama.reflection.*;
 import org.gama.safemodel.metamodel.MetaAddress;
 import org.gama.safemodel.metamodel.MetaCity;
 import org.gama.safemodel.metamodel.MetaPerson;
@@ -24,6 +14,11 @@ import org.gama.safemodel.model.Phone;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import static org.junit.Assert.assertEquals;
 
 /**
  * @author Guillaume Mary
@@ -74,9 +69,9 @@ public class MetaModelAccessorBuilderTest {
 						list(personAddressAccessor, addressPhonesAccessor, phoneListAccessor, phoneNumberAccessor) },
 				{ new MetaPerson<>().address.phones(2).getNumber(),
 						list(personAddressAccessor, addressPhonesAccessor, phoneListAccessor, phoneNumberMethodAccessor) },
-				{ new MetaPerson<>().address.phones(2).getNumber2().charAt(2),
+				{ new MetaPerson<>().address.phones(2).getNumber().charAt(2),
 						list(personAddressAccessor, addressPhonesAccessor, phoneListAccessor, phoneNumberMethodAccessor, charAtAccessor) },
-				{ new MetaPerson<>().address.phones(2).getNumber2().toCharArray(2),
+				{ new MetaPerson<>().address.phones(2).getNumber().toCharArray(2),
 						list(personAddressAccessor, addressPhonesAccessor, phoneListAccessor, phoneNumberMethodAccessor, toCharAccessor, charAtArrayAccessor) },
 				{ new MetaString().toCharArray(2),
 						list(toCharAccessor, charAtArrayAccessor) },

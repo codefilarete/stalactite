@@ -1,10 +1,10 @@
 package org.gama.safemodel;
 
-import static org.junit.Assert.assertEquals;
-
 import org.gama.safemodel.metamodel.MetaPerson;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
+
+import static org.junit.Assert.assertEquals;
 
 /**
  * @author Guillaume Mary
@@ -20,8 +20,8 @@ public class MetaModelPathBuilderTest {
 				{ new MetaPerson<>().address.phones.number, "address.phones.number" },
 				{ new MetaPerson<>().address.phones(2).number, "address.phones.get(2).number" },
 				{ new MetaPerson<>().address.phones(2).getNumber(), "address.phones.get(2).getNumber()" },
-				{ new MetaPerson<>().address.phones(2).getNumber2().charAt(2), "address.phones.get(2).getNumber().charAt(2)" },
-				{ new MetaPerson<>().address.phones(2).getNumber2().toCharArray(2), "address.phones.get(2).getNumber().toCharArray()[2]" },
+				{ new MetaPerson<>().address.phones(2).getNumber().charAt(2), "address.phones.get(2).getNumber().charAt(2)" },
+				{ new MetaPerson<>().address.phones(2).getNumber().toCharArray(2), "address.phones.get(2).getNumber().toCharArray()[2]" },
 		};
 	}
 	

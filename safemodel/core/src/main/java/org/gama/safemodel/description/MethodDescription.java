@@ -1,18 +1,30 @@
 package org.gama.safemodel.description;
 
+import org.gama.lang.Reflections;
+
+import java.lang.reflect.Method;
+
 /**
  * @author Guillaume Mary
  */
-public class MethodDescription extends AbstracNamedMemberDescription {
+public class MethodDescription<R> extends AbstracNamedMemberDescription<Method> {
 	
-	private final Class[] parameterTypes;
+	public final Method method;
 	
 	public MethodDescription(Class declaringClass, String name, Class... parameterTypes) {
-		super(declaringClass, name);
-		this.parameterTypes = parameterTypes;
+		this(Reflections.getMethod(declaringClass, name, parameterTypes));
+	}
+	
+	public MethodDescription(Method method) {
+		super(method);
+		this.method = method;
 	}
 	
 	public Class[] getParameterTypes() {
-		return parameterTypes;
+		return method.getParameterTypes();
+	}
+	
+	public Class<R> getReturnType() {
+		return (Class<R>) method.getReturnType();
 	}
 }

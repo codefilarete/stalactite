@@ -2,27 +2,21 @@ package org.gama.safemodel.lang;
 
 import org.gama.safemodel.MetaModel;
 import org.gama.safemodel.description.AbstractMemberDescription;
+import org.gama.safemodel.description.MethodDescription;
 
 /**
  * @author Guillaume Mary
  */
-public class MetaDate<O extends MetaModel> extends MetaModel<O> {
+public class MetaDate<O extends MetaModel, M extends AbstractMemberDescription> extends MetaModel<O, M> {
 	
-	private MetaModel<MetaModel> time = new MetaModel<>(method(String.class, "time"));
+	private MetaLong<MetaDate, MethodDescription<Long>> time = new MetaLong<>(method(String.class, "time", Long.class));
 	
-	public MetaDate() {
+	public MetaDate(M description) {
+		super(description);
 		time.setOwner(this);
 	}
 	
-	public MetaDate(AbstractMemberDescription description) {
-		super(description);
-	}
-	
-	public MetaDate(AbstractMemberDescription description, O owner) {
-		super(description, owner);
-	}
-	
-	public MetaModel getTime() {
+	public MetaLong<MetaDate, MethodDescription<Long>> getTime() {
 		return time;
 	}
 }

@@ -1,15 +1,23 @@
 package org.gama.safemodel.description;
 
+import org.gama.lang.Reflections;
+
+import java.lang.reflect.Method;
+
 /**
  * @author Guillaume Mary
  */
 public class GetterSetterDescription extends MethodDescription {
 	
-	private final String setterName;
+	public final Method setter;
 	
 	public GetterSetterDescription(Class declaringClass, String getterName, String setterName, Class... parameterTypes) {
-		super(declaringClass, getterName, parameterTypes);
-		this.setterName = setterName;
+		this(Reflections.getMethod(declaringClass, getterName, parameterTypes), Reflections.getMethod(declaringClass, setterName, parameterTypes));
+	}
+	
+	public GetterSetterDescription(Method getter, Method setter) {
+		super(getter);
+		this.setter = setter;
 	}
 	
 	public String getGetterName() {
@@ -17,6 +25,6 @@ public class GetterSetterDescription extends MethodDescription {
 	}
 	
 	public String getSetterName() {
-		return setterName;
+		return setter.getName();
 	}
 }
