@@ -8,6 +8,7 @@ import org.gama.stalactite.persistence.id.BeforeInsertIdentifierGenerator;
 import org.gama.stalactite.persistence.id.IdentifierGenerator;
 import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
 import org.gama.stalactite.persistence.sql.Dialect;
+import org.gama.stalactite.persistence.structure.Table;
 
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -33,7 +34,11 @@ public class Persister<T> {
 	
 	public Persister(ClassMappingStrategy<T> mappingStrategy, Dialect dialect, TransactionManager transactionManager, int jdbcBatchSize) {
 		this.mappingStrategy = mappingStrategy;
-		this.persisterExecutor = new PersisterExecutor<>(mappingStrategy, configureIdentifierFixer(mappingStrategy),
+		this.persisterExecutor = newPersisterExecutor(mappingStrategy, dialect, transactionManager, jdbcBatchSize);
+	}
+	
+	protected PersisterExecutor<T> newPersisterExecutor(ClassMappingStrategy<T> mappingStrategy, Dialect dialect, TransactionManager transactionManager, int jdbcBatchSize) {
+		return new PersisterExecutor<>(mappingStrategy, configureIdentifierFixer(mappingStrategy),
 				jdbcBatchSize, transactionManager,
 				dialect.getDmlGenerator(),
 				dialect.getWriteOperationRetryer(), dialect.getInOperatorMaxSize());
@@ -41,6 +46,14 @@ public class Persister<T> {
 	
 	public ClassMappingStrategy<T> getMappingStrategy() {
 		return mappingStrategy;
+	}
+	
+	protected PersisterExecutor<T> getPersisterExecutor() {
+		return persisterExecutor;
+	}
+	
+	public Table getTargetTable() {
+		return getMappingStrategy().getTargetTable();
 	}
 	
 	protected IIdentifierFixer<T> configureIdentifierFixer(ClassMappingStrategy<T> mappingStrategy) {

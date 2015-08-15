@@ -6,11 +6,8 @@ import org.gama.stalactite.persistence.sql.dml.PreparedUpdate.UpwhereColumn;
 import org.gama.stalactite.persistence.structure.Table.Column;
 
 import java.sql.PreparedStatement;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
+import java.util.*;
 import java.util.Map.Entry;
-import java.util.Set;
 
 /**
  * Statement dedicated to updates: a parameter can be in the where clause and the update one with different values.

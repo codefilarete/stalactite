@@ -37,7 +37,7 @@ public class FieldMappingStrategyTest {
 		colB = columns.get("b");
 		colC = columns.get("c");
 		
-		testInstance = new FieldMappingStrategy<>(totoClassMapping, persistentFieldHarverster.getField("a"));
+		testInstance = new FieldMappingStrategy<>(totoClassTable, totoClassMapping, persistentFieldHarverster.getField("a"));
 	}
 	
 	@DataProvider(name = GET_INSERT_VALUES_DATA)

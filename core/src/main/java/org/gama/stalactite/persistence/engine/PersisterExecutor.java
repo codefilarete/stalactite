@@ -405,7 +405,7 @@ public class PersisterExecutor<T> {
 	/**
 	 * Implementation based on TransactionManager.getCurrentConnection()
 	 */
-	private class ConnectionProvider implements IConnectionProvider {
+	protected class ConnectionProvider implements IConnectionProvider {
 		
 		private final Connection currentConnection;
 		

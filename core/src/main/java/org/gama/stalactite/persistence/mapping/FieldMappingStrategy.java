@@ -19,7 +19,7 @@ import java.util.*;
 import java.util.Map.Entry;
 
 /**
- * @author mary
+ * @author Guillaume Mary
  */
 public class FieldMappingStrategy<T> implements IMappingStrategy<T> {
 	
@@ -47,38 +47,39 @@ public class FieldMappingStrategy<T> implements IMappingStrategy<T> {
 	 * Columns are expected to be from same table.
 	 * No control is done about that, caller must be aware of it.
 	 * First entry of <tt>fieldToColumn</tt> is used to pick up persisted class and target table.
-	 * 
+	 *
+	 * @param targetTable
 	 * @param fieldToColumn a mapping between Field and Column, expected to be coherent (fields of same class, column of same table)
 	 * @param identifierField the field that store entity identifier   
 	 */
-	public FieldMappingStrategy(@Nonnull Map<Field, Column> fieldToColumn, Field identifierField) {
-		this.fieldToColumn = new LinkedHashMap<>(fieldToColumn.size());
+	public FieldMappingStrategy(Table targetTable, @Nonnull Map<Field, Column> fieldToColumn, Field identifierField) {
+		this.targetTable = targetTable;
+		this.fieldToColumn = new HashMap<>(fieldToColumn.size());
+		if (identifierField == null) {
+			throw new UnsupportedOperationException("No identifier field for " + targetTable.getName());
+		}
 		Map<String, PropertyAccessor> columnToField = new HashMap<>();
 		for (Entry<Field, Column> fieldColumnEntry : fieldToColumn.entrySet()) {
 			Column column = fieldColumnEntry.getValue();
-			PropertyAccessor accessorByField = PropertyAccessor.forProperty(fieldColumnEntry.getKey().getDeclaringClass(), fieldColumnEntry.getKey().getName());
+			PropertyAccessor accessorByField = PropertyAccessor.forProperty(fieldColumnEntry.getKey());
 			this.fieldToColumn.put(accessorByField, column);
 			columnToField.put(column.getName(), accessorByField);
 			if (fieldColumnEntry.getKey().equals(identifierField)) {
+				// identifierAccessor must be the same instance as those stored in fieldToColumn for Map.remove method used in foreach()
+				this.identifierAccessor = accessorByField;
 				if (!column.isPrimaryKey()) {
 					throw new UnsupportedOperationException("Field " + identifierField.getDeclaringClass().getName()+"."+identifierField.getName()
 							+ " is declared as identifier but mapped column " + column.toString() + " is not the primary key of table");
 				}
-				this.identifierAccessor = accessorByField;
 			}
-		}
-		Entry<Field, Column> firstEntry = Iterables.first(fieldToColumn);
-		this.targetTable = firstEntry.getValue().getTable();
-		if (this.identifierAccessor == null) {
-			throw new UnsupportedOperationException("No primary key field for " + targetTable.getName());
 		}
 		this.classToPersist = (Class<T>) identifierField.getDeclaringClass();
 		this.rowTransformer = new ToBeanRowTransformer<>(Reflections.getDefaultConstructor(classToPersist), columnToField);
 		this.columns = new LinkedHashSet<>(fieldToColumn.values());
 		// TODO: distinguish key from version, implement id with multiple column/field
-		this.keys = Collections.unmodifiableSet(Arrays.asSet(targetTable.getPrimaryKey()));
+		this.keys = Collections.unmodifiableSet(Arrays.asSet(this.targetTable.getPrimaryKey()));
 		this.singleColumnKey = true;
-		this.versionedKeys = Collections.unmodifiableSet(Arrays.asSet(targetTable.getPrimaryKey()));
+		this.versionedKeys = Collections.unmodifiableSet(Arrays.asSet(this.targetTable.getPrimaryKey()));
 	}
 	
 	@Override
@@ -86,8 +87,16 @@ public class FieldMappingStrategy<T> implements IMappingStrategy<T> {
 		return targetTable;
 	}
 	
+	/**
+	 * Gives mapped columns (can be a subset of the target table)
+	 * @return
+	 */
 	public Set<Column> getColumns() {
 		return columns;
+	}
+	
+	public ToBeanRowTransformer<T> getRowTransformer() {
+		return rowTransformer;
 	}
 	
 	@Override
@@ -184,7 +193,7 @@ public class FieldMappingStrategy<T> implements IMappingStrategy<T> {
 	}
 	
 	private <K> Map<K, Object> foreachField(final FieldVisitor<K> visitor, boolean withPK) {
-		Map<PropertyAccessor, Column> fieldsTobeVisited = new LinkedHashMap<>(this.fieldToColumn);
+		Map<PropertyAccessor, Column> fieldsTobeVisited = new HashMap<>(this.fieldToColumn);
 		if (!withPK) {
 			fieldsTobeVisited.remove(this.identifierAccessor);
 		}

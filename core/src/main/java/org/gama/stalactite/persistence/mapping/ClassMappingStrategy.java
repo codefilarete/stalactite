@@ -1,16 +1,19 @@
 package org.gama.stalactite.persistence.mapping;
 
-import org.gama.lang.Reflections;
-import org.gama.reflection.PropertyAccessor;
+import org.gama.reflection.AccessorByField;
+import org.gama.reflection.AccessorByMember;
+import org.gama.reflection.AccessorByMethod;
+import org.gama.sql.result.Row;
 import org.gama.stalactite.persistence.id.IdentifierGenerator;
 import org.gama.stalactite.persistence.sql.dml.PreparedUpdate.UpwhereColumn;
-import org.gama.sql.result.Row;
 import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.persistence.structure.Table.Column;
 
 import javax.annotation.Nonnull;
 import java.io.Serializable;
 import java.lang.reflect.Field;
+import java.lang.reflect.Member;
+import java.lang.reflect.Method;
 import java.util.*;
 import java.util.Map.Entry;
 
@@ -27,7 +30,7 @@ public class ClassMappingStrategy<T> implements IMappingStrategy<T> {
 	
 	private final Set<Column> updatableColumns;
 	
-	private Map<PropertyAccessor, IEmbeddedBeanMapper> mappingStrategies;
+	private Map<AccessorByMember, IEmbeddedBeanMapper> mappingStrategies;
 	
 	private final IdentifierGenerator identifierGenerator;
 	
@@ -35,7 +38,7 @@ public class ClassMappingStrategy<T> implements IMappingStrategy<T> {
 								Map<Field, Column> fieldToColumn, Field identifierField, IdentifierGenerator identifierGenerator) {
 		this.classToPersist = classToPersist;
 		this.targetTable = targetTable;
-		this.defaultMappingStrategy = new FieldMappingStrategy<>(fieldToColumn, identifierField);
+		this.defaultMappingStrategy = new FieldMappingStrategy<>(targetTable, fieldToColumn, identifierField);
 		this.updatableColumns = new LinkedHashSet<>();
 		this.mappingStrategies = new HashMap<>();
 		this.identifierGenerator = identifierGenerator;
@@ -51,6 +54,10 @@ public class ClassMappingStrategy<T> implements IMappingStrategy<T> {
 		return targetTable;
 	}
 	
+	public FieldMappingStrategy<T> getDefaultMappingStrategy() {
+		return defaultMappingStrategy;
+	}
+	
 	/**
 	 * Gives columns that can be updated: columns minus keys
 	 * @return columns aff all mapping strategies without getKeys()
@@ -59,14 +66,23 @@ public class ClassMappingStrategy<T> implements IMappingStrategy<T> {
 		return updatableColumns;
 	}
 	
+	public ToBeanRowTransformer<T> getRowTransformer() {
+		return defaultMappingStrategy.getRowTransformer();
+	}
+	
 	/**
 	 * Indique une stratégie spécifique pour un attribut donné
-	 * @param field
-	 * @param mappingStrategy
+	 * @param member a {@link Field} or {@link Method}
+	 * @param mappingStrategy the strategy that should be used to persist the member
 	 */
-	public void put(Field field, IEmbeddedBeanMapper mappingStrategy) {
-		mappingStrategies.put(PropertyAccessor.forProperty(field), mappingStrategy);
-		Reflections.ensureAccessible(field);
+	public void put(Member member, IEmbeddedBeanMapper mappingStrategy) {
+		AccessorByMember accessorByMember;
+		if (member instanceof Field) {
+			accessorByMember = new AccessorByField<>((Field) member);
+		} else {
+			accessorByMember = new AccessorByMethod((Method) member);
+		}
+		mappingStrategies.put(accessorByMember, mappingStrategy);
 		// update columns list
 		updateColumnsLists(mappingStrategy);
 	}
@@ -82,7 +98,7 @@ public class ClassMappingStrategy<T> implements IMappingStrategy<T> {
 	@Override
 	public Map<Column, Object> getInsertValues(@Nonnull T t) {
 		Map<Column, Object> insertValues = defaultMappingStrategy.getInsertValues(t);
-		for (Entry<PropertyAccessor, IEmbeddedBeanMapper> fieldStrategyEntry : mappingStrategies.entrySet()) {
+		for (Entry<AccessorByMember, IEmbeddedBeanMapper> fieldStrategyEntry : mappingStrategies.entrySet()) {
 			Object fieldValue = fieldStrategyEntry.getKey().get(t);
 			Map<Column, Object> fieldInsertValues = fieldStrategyEntry.getValue().getInsertValues(fieldValue);
 			insertValues.putAll(fieldInsertValues);
@@ -93,8 +109,8 @@ public class ClassMappingStrategy<T> implements IMappingStrategy<T> {
 	@Override
 	public Map<UpwhereColumn, Object> getUpdateValues(@Nonnull T modified, T unmodified, boolean allColumns) {
 		Map<UpwhereColumn, Object> toReturn = defaultMappingStrategy.getUpdateValues(modified, unmodified, allColumns);
-		for (Entry<PropertyAccessor, IEmbeddedBeanMapper> fieldStrategyEntry : mappingStrategies.entrySet()) {
-			PropertyAccessor<T, Object> accessor = fieldStrategyEntry.getKey();
+		for (Entry<AccessorByMember, IEmbeddedBeanMapper> fieldStrategyEntry : mappingStrategies.entrySet()) {
+			AccessorByMember<T, Object, ?> accessor = fieldStrategyEntry.getKey();
 			Object modifiedValue = accessor.get(modified);
 			Object unmodifiedValue = unmodified == null ?  null : accessor.get(unmodified);
 			Map<Column, Object> fieldUpdateValues = fieldStrategyEntry.getValue().getUpdateValues(modifiedValue, unmodifiedValue, allColumns);
@@ -181,8 +197,8 @@ public class ClassMappingStrategy<T> implements IMappingStrategy<T> {
 	@Override
 	public T transform(Row row) {
 		T toReturn = defaultMappingStrategy.transform(row);
-		for (Entry<PropertyAccessor, IEmbeddedBeanMapper> mappingStrategyEntry : mappingStrategies.entrySet()) {
-			mappingStrategyEntry.getKey().set(toReturn, mappingStrategyEntry.getValue().transform(row));
+		for (Entry<AccessorByMember, IEmbeddedBeanMapper> mappingStrategyEntry : mappingStrategies.entrySet()) {
+			mappingStrategyEntry.getKey().toMutator().set(toReturn, mappingStrategyEntry.getValue().transform(row));
 		}
 		return toReturn;
 	}
