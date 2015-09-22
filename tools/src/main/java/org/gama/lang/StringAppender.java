@@ -3,9 +3,9 @@ package org.gama.lang;
 import java.io.Serializable;
 
 /**
- * Sorte de StringBuilder en plus pratique ... ou pas !
+ * Kind of StringBuilder aimed at being simpler by its API.
  *
- * @author mary
+ * @author Guillaume Mary
  */
 public class StringAppender implements Serializable, CharSequence {
 	
@@ -76,7 +76,7 @@ public class StringAppender implements Serializable, CharSequence {
 	}
 	
 	public StringAppender wrap(CharSequence open, CharSequence close) {
-		appender.insert(0, open).append(close);
+		cat(0, open).cat(close);
 		return this;
 	}
 	

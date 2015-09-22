@@ -1,11 +1,11 @@
 package org.gama.safemodel;
 
-import java.util.Iterator;
-
 import org.gama.lang.StringAppender;
 import org.gama.lang.collection.Arrays;
 import org.gama.safemodel.description.FieldDescription;
 import org.gama.safemodel.description.MethodDescription;
+
+import java.util.Iterator;
 
 /**
  * @author Guillaume Mary
@@ -43,15 +43,13 @@ public class MetaModelPathBuilder implements IMetaModelTransformer<String> {
 	}
 	
 	protected void catField(MetaModel model) {
-		path.cat(".");
-		path.cat(((FieldDescription) model.getDescription()).getName());
+		path.cat(".", ((FieldDescription) model.getDescription()).getName());
 	}
 	
 	protected void catMethod(MetaModel model) {
 		path.cat(".");
 		MethodDescription description = (MethodDescription) model.getDescription();
-		path.cat(description.getName());
-		path.cat("(");
+		path.cat(description.getName(), "(");
 		Object memberParameter = model.getMemberParameter();
 		if (memberParameter != null) {
 			Object[] methodParams = memberParameter.getClass().isArray() ? (Object[]) memberParameter : new Object[]{memberParameter};
