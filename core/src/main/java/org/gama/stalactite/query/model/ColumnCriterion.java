@@ -8,13 +8,13 @@ import org.gama.stalactite.persistence.structure.Table.Column;
 public class ColumnCriterion extends AbstractCriterion {
 	
 	private final Column column;
-	private final String condition;
+	private final CharSequence condition;
 	
-	public ColumnCriterion(Column column, String condition) {
+	public ColumnCriterion(Column column, CharSequence condition) {
 		this(null, column, condition);
 	}
 
-	public ColumnCriterion(LogicalOperator operator, Column column, String condition) {
+	public ColumnCriterion(LogicalOperator operator, Column column, CharSequence condition) {
 		super(operator);
 		this.column = column;
 		this.condition = condition;
@@ -24,7 +24,7 @@ public class ColumnCriterion extends AbstractCriterion {
 		return column;
 	}
 
-	public String getCondition() {
+	public CharSequence getCondition() {
 		return condition;
 	}
 	

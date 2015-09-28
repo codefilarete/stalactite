@@ -1,13 +1,13 @@
 package org.gama.stalactite.query.model;
 
-import static org.gama.stalactite.query.model.AbstractCriterion.LogicalOperator.And;
-import static org.gama.stalactite.query.model.AbstractCriterion.LogicalOperator.Or;
+import org.gama.stalactite.persistence.structure.Table.Column;
 
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
-import org.gama.stalactite.persistence.structure.Table.Column;
+import static org.gama.stalactite.query.model.AbstractCriterion.LogicalOperator.And;
+import static org.gama.stalactite.query.model.AbstractCriterion.LogicalOperator.Or;
 
 /**
  * @author Guillaume Mary
@@ -20,7 +20,7 @@ public class Criteria<C extends Criteria> extends AbstractCriterion implements I
 	public Criteria() {
 	}
 
-	public Criteria(Column column, String condition) {
+	public Criteria(Column column, CharSequence condition) {
 		add(new ColumnCriterion(column, condition));
 	}
 
@@ -37,11 +37,11 @@ public class Criteria<C extends Criteria> extends AbstractCriterion implements I
 		return (C) this;
 	}
 
-	public C and(Column column, String condition) {
+	public C and(Column column, CharSequence condition) {
 		return add(new ColumnCriterion(And, column, condition));
 	}
 
-	public C or(Column column, String condition) {
+	public C or(Column column, CharSequence condition) {
 		return add(new ColumnCriterion(Or, column, condition));
 	}
 

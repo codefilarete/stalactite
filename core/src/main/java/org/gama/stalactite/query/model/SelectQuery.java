@@ -1,15 +1,15 @@
 package org.gama.stalactite.query.model;
 
-import static org.gama.stalactite.query.model.AbstractCriterion.LogicalOperator.And;
-import static org.gama.stalactite.query.model.AbstractCriterion.LogicalOperator.Or;
+import org.gama.stalactite.persistence.structure.Table;
+import org.gama.stalactite.persistence.structure.Table.Column;
+import org.gama.stalactite.query.model.From.CrossJoin;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-import org.gama.stalactite.persistence.structure.Table;
-import org.gama.stalactite.persistence.structure.Table.Column;
-import org.gama.stalactite.query.model.From.CrossJoin;
+import static org.gama.stalactite.query.model.AbstractCriterion.LogicalOperator.And;
+import static org.gama.stalactite.query.model.AbstractCriterion.LogicalOperator.Or;
 
 /**
  * @author mary
@@ -95,7 +95,7 @@ public class SelectQuery {
 //		return this.from.rightOuterJoin(colA, colB);
 //	}
 
-	public FluentWhere where(Column column, String condition) {
+	public FluentWhere where(Column column, CharSequence condition) {
 		return this.where.and(column, condition);
 	}
 
@@ -273,12 +273,12 @@ public class SelectQuery {
 	public class FluentWhere extends Where<FluentWhere> {
 		
 		@Override
-		public FluentWhere and(Column column, String condition) {
+		public FluentWhere and(Column column, CharSequence condition) {
 			return super.and(column, condition);
 		}
 	
 		@Override
-		public FluentWhere or(Column column, String condition) {
+		public FluentWhere or(Column column, CharSequence condition) {
 			return super.or(column, condition);
 		}
 	
@@ -363,12 +363,12 @@ public class SelectQuery {
 	public static class Having extends Criteria<Having> {
 		
 		@Override
-		public Having and(Column column, String condition) {
+		public Having and(Column column, CharSequence condition) {
 			return super.and(column, condition);
 		}
 	
 		@Override
-		public Having or(Column column, String condition) {
+		public Having or(Column column, CharSequence condition) {
 			return super.or(column, condition);
 		}
 	
