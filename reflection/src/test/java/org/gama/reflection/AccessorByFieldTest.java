@@ -12,7 +12,7 @@ public class AccessorByFieldTest {
 	
 	@Test
 	public void testGet() throws Exception {
-		AccessorByField<Toto, Integer> testInstance = new AccessorByField<>(Reflections.getField(Toto.class, "a"));
+		AccessorByField<Toto, Integer> testInstance = new AccessorByField<>(Reflections.findField(Toto.class, "a"));
 		Toto toto = new Toto();
 		toto.a = 42;
 		assertEquals((Object) 42, testInstance.get(toto));

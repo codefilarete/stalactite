@@ -12,16 +12,16 @@ public class UpdateListenerCollection<T> implements IUpdateListener<T> {
 	private List<IUpdateListener<T>> updateListeners = new ArrayList<>();
 	
 	@Override
-	public void beforeUpdate(Iterable<Entry<T, T>> iterables) {
+	public void beforeUpdate(Iterable<Entry<T, T>> iterables, boolean allColumnsStatement) {
 		for (IUpdateListener<T> updateListener : updateListeners) {
-			updateListener.beforeUpdate(iterables);
+			updateListener.beforeUpdate(iterables, allColumnsStatement);
 		}
 	}
 	
 	@Override
-	public void afterUpdate(Iterable<Entry<T, T>> iterables) {
+	public void afterUpdate(Iterable<Entry<T, T>> iterables, boolean allColumnsStatement) {
 		for (IUpdateListener<T> updateListener : updateListeners) {
-			updateListener.afterUpdate(iterables);
+			updateListener.afterUpdate(iterables, allColumnsStatement);
 		}
 	}
 	

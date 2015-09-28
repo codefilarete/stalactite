@@ -22,7 +22,7 @@ public class DDLTableGenerator {
 	}
 
 	public String generateCreateTable(Table table) {
-		StringAppender sqlCreateTable = new StringAppender("create table ", table.getName(), "(");
+		StringAppender sqlCreateTable = new StringAppender("create table ", table.getAbsoluteName(), "(");
 		for (Column column : table.getColumns()) {
 			sqlCreateTable.cat(column.getName(), " ", getSqlType(column));
 			sqlCreateTable.catIf(!column.isNullable(), " not null").cat(", ");
@@ -44,14 +44,14 @@ public class DDLTableGenerator {
 		Table table = index.getTable();
 		StringAppender sqlCreateIndex = new StringAppender("create")
 				.catIf(index.isUnique(), " unique")
-				.cat(" index ", index.getName(), " on ", table.getName(), "(");
+				.cat(" index ", index.getName(), " on ", table.getAbsoluteName(), "(");
 		catWithComma(index.getColumns(), sqlCreateIndex);
 		return sqlCreateIndex.cat(")").toString();
 	}
 	
 	public String generateCreateForeignKey(ForeignKey foreignKey) {
 		Table table = foreignKey.getTable();
-		StringAppender sqlCreateFK = new StringAppender("alter table ", table.getName())
+		StringAppender sqlCreateFK = new StringAppender("alter table ", table.getAbsoluteName())
 				.cat(" add constraint ", foreignKey.getName(), " foreign key(");
 		catWithComma(foreignKey.getColumns(), sqlCreateFK);
 		sqlCreateFK.cat(") references ", foreignKey.getTargetTable().getName(), "(");
@@ -60,13 +60,13 @@ public class DDLTableGenerator {
 	}
 	
 	public String generateAddColumn(Column column) {
-		StringAppender sqladdColumn = new StringAppender("alter table ", column.getTable().getName(),
+		StringAppender sqladdColumn = new StringAppender("alter table ", column.getTable().getAbsoluteName(),
 				" add column ", column.getName(), " ", getSqlType(column));
 		return sqladdColumn.toString();
 	}
 	
 	public String generateDropTable(Table table) {
-		StringAppender sqlCreateTable = new StringAppender("drop table if exists ", table.getName());
+		StringAppender sqlCreateTable = new StringAppender("drop table if exists ", table.getAbsoluteName());
 		return sqlCreateTable.toString();
 	}
 	
@@ -76,13 +76,13 @@ public class DDLTableGenerator {
 	}
 	
 	public String generateDropForeignKey(ForeignKey foreignKey) {
-		StringAppender sqlCreateTable = new StringAppender("alter table ", foreignKey.getTable().getName(),
+		StringAppender sqlCreateTable = new StringAppender("alter table ", foreignKey.getTable().getAbsoluteName(),
 				" drop constraint ", foreignKey.getName());
 		return sqlCreateTable.toString();
 	}
 	
 	public String generateDropColumn(Column column) {
-		StringAppender sqlDropColumn = new StringAppender("alter table ", column.getTable().getName(),
+		StringAppender sqlDropColumn = new StringAppender("alter table ", column.getTable().getAbsoluteName(),
 				" drop column ", column.getName());
 		return sqlDropColumn.toString();
 	}

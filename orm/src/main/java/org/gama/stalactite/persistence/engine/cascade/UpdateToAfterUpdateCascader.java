@@ -16,12 +16,12 @@ public abstract class UpdateToAfterUpdateCascader<Trigger, Target> extends NoopU
 	private Persister<Target> persister;
 	private boolean allColumnsStatement;
 	
-	UpdateToAfterUpdateCascader(Persister<Target> persister, boolean allColumnsStatement) {
+	UpdateToAfterUpdateCascader(Persister<Target> persister, final boolean allColumnsStatement) {
 		this.persister = persister;
 		this.persister.getPersisterListener().addUpdateListener(new NoopUpdateListener<Target>() {
 			@Override
-			public void afterUpdate(Iterable<Map.Entry<Target, Target>> iterables) {
-				super.afterUpdate(iterables);
+			public void afterUpdate(Iterable<Map.Entry<Target, Target>> iterables, boolean allColumnsStatement) {
+				super.afterUpdate(iterables, allColumnsStatement);
 				postTargetUpdate(iterables);
 			}
 		});
@@ -30,12 +30,12 @@ public abstract class UpdateToAfterUpdateCascader<Trigger, Target> extends NoopU
 	
 	/**
 	 * Supposing Trigger owns the relationship, it seems more intuitive that Target updates happen after Trigger
-	 * update. So {@link IUpdateListener#afterUpdate(Iterable)} is overriden.
+	 * update. So {@link IUpdateListener#afterUpdate(Iterable, boolean)} is overriden.
 	 *
 	 * @param iterables
 	 */
 	@Override
-	public void afterUpdate(Iterable<Map.Entry<Trigger, Trigger>> iterables) {
+	public void afterUpdate(Iterable<Map.Entry<Trigger, Trigger>> iterables, boolean allColumnsStatement) {
 		List<Map.Entry<Target, Target>> targets = new ArrayList<>(50);
 		for (Map.Entry<Trigger, Trigger> trigger : iterables) {
 			Trigger modifiedTrigger = trigger.getKey();

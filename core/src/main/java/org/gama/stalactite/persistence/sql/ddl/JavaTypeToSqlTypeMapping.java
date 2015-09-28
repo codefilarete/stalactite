@@ -3,7 +3,6 @@ package org.gama.stalactite.persistence.sql.ddl;
 import org.gama.lang.bean.IFactory;
 import org.gama.lang.collection.Iterables;
 import org.gama.lang.collection.ValueFactoryHashMap;
-import org.gama.stalactite.persistence.engine.PersistenceContext;
 import org.gama.stalactite.persistence.structure.Table.Column;
 import org.gama.stalactite.persistence.structure.Table.SizedColumn;
 
@@ -58,7 +57,7 @@ public class JavaTypeToSqlTypeMapping {
 	public String getTypeName(Class javaType) {
 		String type = defaultJavaTypeToSQLType.get(javaType);
 		if (type == null) {
-			throw new IllegalArgumentException("No sql type defined for "+javaType+" in dialect "+ PersistenceContext.getCurrent().getDialect().getClass().getName());
+			throw new IllegalArgumentException("No sql type defined for "+javaType);
 		}
 		return type;
 	}

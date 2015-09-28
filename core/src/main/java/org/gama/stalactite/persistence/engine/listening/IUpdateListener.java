@@ -7,8 +7,8 @@ import java.util.Map.Entry;
  */
 public interface IUpdateListener<T> {
 	
-	void beforeUpdate(Iterable<Entry<T, T>> iterables);
+	void beforeUpdate(Iterable<Entry<T, T>> iterables, boolean allColumnsStatement);
 	
-	void afterUpdate(Iterable<Entry<T, T>> iterables);
+	void afterUpdate(Iterable<Entry<T, T>> iterables, boolean allColumnsStatement);
 	
 }

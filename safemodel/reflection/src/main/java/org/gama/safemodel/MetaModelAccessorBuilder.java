@@ -46,12 +46,12 @@ public class MetaModelAccessorBuilder<C, T> implements IMetaModelTransformer<Acc
 	
 	private void addFieldAccessor(MetaModel model) {
 		FieldDescription description = (FieldDescription) model.getDescription();
-		this.accessorChain.add(new AccessorByField(Reflections.getField(description.getDeclaringClass(), description.getName())));
+		this.accessorChain.add(new AccessorByField(Reflections.findField(description.getDeclaringClass(), description.getName())));
 	}
 	
 	private void addMethodAccessor(final MetaModel model) {
 		MethodDescription description = (MethodDescription) model.getDescription();
-		Method method = Reflections.getMethod(description.getDeclaringClass(), description.getName(), description.getParameterTypes());
+		Method method = Reflections.findMethod(description.getDeclaringClass(), description.getName(), description.getParameterTypes());
 		AccessorByMethod accessorByMethod;
 		if (description.getParameterTypes().length > 0) {
 			if (model.getMemberParameter() != null) {

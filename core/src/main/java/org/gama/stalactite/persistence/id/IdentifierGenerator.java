@@ -4,7 +4,7 @@ import java.io.Serializable;
 import java.util.Map;
 
 /**
- * @author mary
+ * @author Guillaume Mary
  */
 public interface IdentifierGenerator {
 	

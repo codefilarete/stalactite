@@ -13,7 +13,7 @@ public class ListMutator<C extends List<T>, T> extends MutatorByMethod<C, T> {
 	private int index;
 	
 	public ListMutator() {
-		super(Reflections.getMethod(List.class, "set", Integer.TYPE, Object.class));
+		super(Reflections.findMethod(List.class, "set", Integer.TYPE, Object.class));
 	}
 	
 	public ListMutator(int index) {

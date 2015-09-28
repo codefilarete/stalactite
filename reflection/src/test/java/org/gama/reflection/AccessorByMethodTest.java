@@ -13,12 +13,12 @@ public class AccessorByMethodTest {
 	@Test
 	public void testForProperty() throws Exception {
 		AccessorByMethod testInstance = Accessors.accessorByMethod(Toto.class, "a");
-		assertEquals(testInstance.getGetter(), Reflections.getMethod(Toto.class, "getA"));
+		assertEquals(testInstance.getGetter(), Reflections.findMethod(Toto.class, "getA"));
 	}
 	
 	@Test
 	public void testGet() throws Exception {
-		AccessorByMethod<Toto, Integer> testInstance = new AccessorByMethod<>(Reflections.getMethod(Toto.class, "getA"));
+		AccessorByMethod<Toto, Integer> testInstance = new AccessorByMethod<>(Reflections.findMethod(Toto.class, "getA"));
 		Toto toto = new Toto();
 		toto.a = 42;
 		assertEquals((Object) 42, testInstance.get(toto));

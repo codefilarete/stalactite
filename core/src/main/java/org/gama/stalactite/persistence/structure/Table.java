@@ -22,6 +22,8 @@ public class Table {
 	
 	private String name;
 	
+	private String absoluteName;
+	
 	private KeepOrderSet<Column> columns = new KeepOrderSet<>();
 	
 	private Column primaryKey;
@@ -30,13 +32,22 @@ public class Table {
 	
 	private Set<ForeignKey> foreignKeys = new HashSet<>();
 	
+	public Table(String name) {
+		this(null, name);
+	}
+	
 	public Table(Schema schema, String name) {
 		this.schema = schema;
 		this.name = name;
+		this.absoluteName = (schema == null ? "" : (schema.getName() + ".")) + name;
 	}
 	
 	public String getName() {
 		return name;
+	}
+	
+	public String getAbsoluteName() {
+		return absoluteName;
 	}
 	
 	public KeepOrderSet<Column> getColumns() {
@@ -119,6 +130,7 @@ public class Table {
 	public class Column {
 		private final String name;
 		private final String absoluteName;
+		private final String alias;
 		private final Class javaType;
 		private boolean primaryKey;
 		
@@ -129,6 +141,7 @@ public class Table {
 			this.name = name;
 			this.javaType = javaType;
 			this.absoluteName = getTable().getName() + "." + getName();
+			this.alias = getTable().getName() + "_" + getName();
 			getTable().add(this);
 		}
 		
@@ -147,6 +160,14 @@ public class Table {
 		 */
 		public String getAbsoluteName() {
 			return absoluteName;
+		}
+		
+		/**
+		 * Provides a default alias usable for select clause
+		 * @return getTable().getName() +"_" + getName()
+		 */
+		public String getAlias() {
+			return alias;
 		}
 		
 		public Class getJavaType() {

@@ -13,7 +13,7 @@ public class ListAccessor<C extends List<T>, T> extends AccessorByMethod<C, T> {
 	private int index;
 	
 	public ListAccessor() {
-		super(Reflections.getMethod(List.class, "get", Integer.TYPE));
+		super(Reflections.findMethod(List.class, "get", Integer.TYPE));
 	}
 	
 	public ListAccessor(int index) {

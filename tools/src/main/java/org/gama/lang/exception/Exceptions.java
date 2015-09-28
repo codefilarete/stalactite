@@ -39,18 +39,18 @@ public abstract class Exceptions {
 		Field detailMessageAccessor = MESSAGE_ACCESSOR == null ? null : MESSAGE_ACCESSOR.get();
 		if (detailMessageAccessor == null) {
 			synchronized (Exceptions.class) {
-				MESSAGE_ACCESSOR = new SoftReference<>(Reflections.getField(Throwable.class, "detailMessage"));
+				MESSAGE_ACCESSOR = new SoftReference<>(Reflections.findField(Throwable.class, "detailMessage"));
 			}
 		}
 		return MESSAGE_ACCESSOR.get();
 	}
 	
-	public static Throwable findExceptionInHierarchy(Throwable t, Class<Throwable> throwableClass) {
-		return findExceptionInHierarchy(t, new ClassExceptionFilter(throwableClass));
+	public static <T> T findExceptionInHierarchy(Throwable t, Class<T> throwableClass) {
+		return (T) findExceptionInHierarchy(t, new ClassExceptionFilter<>(throwableClass));
 	}
 	
-	public static Throwable findExceptionInHierarchy(Throwable t, Class<Throwable> throwableClass, String message) {
-		return findExceptionInHierarchy(t, new ClassAndMessageExceptionFilter(throwableClass, message));
+	public static <T> T findExceptionInHierarchy(Throwable t, Class<T> throwableClass, String message) {
+		return (T) findExceptionInHierarchy(t, new ClassAndMessageExceptionFilter<>(throwableClass, message));
 	}
 	
 	/**
@@ -84,7 +84,7 @@ public abstract class Exceptions {
 		
 		@Override
 		public boolean hasNext() {
-			return currentThrowable.getCause() == null;
+			return currentThrowable.getCause() != null;
 		}
 		
 		@Override
@@ -102,11 +102,11 @@ public abstract class Exceptions {
 		boolean accept(Throwable t);
 	}
 	
-	public static class ClassExceptionFilter implements IExceptionFilter {
+	public static class ClassExceptionFilter<T> implements IExceptionFilter {
 		
-		private final Class<Throwable> targetClass;
+		private final Class<T> targetClass;
 		
-		public ClassExceptionFilter(Class<Throwable> c) {
+		public ClassExceptionFilter(Class<T> c) {
 			this.targetClass = c;
 		}
 		
@@ -115,11 +115,11 @@ public abstract class Exceptions {
 		}
 	}
 	
-	private static class ClassAndMessageExceptionFilter extends ClassExceptionFilter {
+	private static class ClassAndMessageExceptionFilter<T> extends ClassExceptionFilter<T> {
 		
 		private final String targetMessage;
 		
-		public ClassAndMessageExceptionFilter(Class<Throwable> c, String message) {
+		public ClassAndMessageExceptionFilter(Class<T> c, String message) {
 			super(c);
 			this.targetMessage = message;
 		}

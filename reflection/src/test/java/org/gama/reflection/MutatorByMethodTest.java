@@ -13,12 +13,12 @@ public class MutatorByMethodTest {
 	@Test
 	public void testForProperty() throws Exception {
 		MutatorByMethod testInstance = Accessors.mutatorByMethod(Toto.class, "a");
-		assertEquals(testInstance.getSetter(), Reflections.getMethod(Toto.class, "setA", Integer.TYPE));
+		assertEquals(testInstance.getSetter(), Reflections.findMethod(Toto.class, "setA", Integer.TYPE));
 	}
 	
 	@Test
 	public void testSet() throws Exception {
-		MutatorByMethod<Toto, Integer> testInstance = new MutatorByMethod<>(Reflections.getMethod(Toto.class, "setA", Integer.TYPE));
+		MutatorByMethod<Toto, Integer> testInstance = new MutatorByMethod<>(Reflections.findMethod(Toto.class, "setA", Integer.TYPE));
 		Toto toto = new Toto();
 		testInstance.set(toto, 42);
 		assertEquals(42, toto.a);

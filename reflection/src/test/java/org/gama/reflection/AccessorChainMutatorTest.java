@@ -54,8 +54,8 @@ public class AccessorChainMutatorTest {
 		phoneListAccessor = new ListAccessor<>(2);
 		phoneNumberAccessor = Accessors.accessorByField(Phone.class, "number");
 		phoneNumberMethodAccessor = Accessors.accessorByMethod(Phone.class, "number");
-		charAtAccessor = new AccessorByMethod<>(Reflections.getMethod(String.class, "charAt", Integer.TYPE));
-		toCharArrayAccessor = new AccessorByMethod<>(Reflections.getMethod(String.class, "toCharArray"));
+		charAtAccessor = new AccessorByMethod<>(Reflections.findMethod(String.class, "charAt", Integer.TYPE));
+		toCharArrayAccessor = new AccessorByMethod<>(Reflections.findMethod(String.class, "toCharArray"));
 		charArrayAccessor = new ArrayAccessor<>(2);
 		
 		cityNameMutator = Accessors.mutatorByField(City.class, "name");
@@ -65,8 +65,8 @@ public class AccessorChainMutatorTest {
 		phoneListMutator = new ListMutator<>(2);
 		phoneNumberMutator = Accessors.mutatorByField(Phone.class, "number");
 		phoneNumberMethodMutator = Accessors.mutatorByMethod(Phone.class, "number");
-		charAtMutator = new MutatorByMethod<>(Reflections.getMethod(String.class, "charAt", Integer.TYPE));
-		toCharArrayMutator = new MutatorByMethod<>(Reflections.getMethod(String.class, "toCharArray"));
+		charAtMutator = new MutatorByMethod<>(Reflections.findMethod(String.class, "charAt", Integer.TYPE));
+		toCharArrayMutator = new MutatorByMethod<>(Reflections.findMethod(String.class, "toCharArray"));
 		charArrayMutator = new ArrayMutator<>(2);
 	}
 	

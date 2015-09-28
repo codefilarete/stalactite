@@ -59,10 +59,10 @@ public class PersisterListener<T> {
 		return this;
 	}
 	
-	public void doWithUpdateListener(Iterable<Entry<T, T>> differencesIterable, IDelegate delegate) {
-		updateListener.beforeUpdate(differencesIterable);
+	public void doWithUpdateListener(Iterable<Entry<T, T>> differencesIterable, boolean allColumnsStatement, IDelegate delegate) {
+		updateListener.beforeUpdate(differencesIterable, allColumnsStatement);
 		delegate.execute();
-		updateListener.afterUpdate(differencesIterable);
+		updateListener.afterUpdate(differencesIterable, allColumnsStatement);
 	}
 	
 	public DeleteListenerCollection<T> getDeleteListener() {

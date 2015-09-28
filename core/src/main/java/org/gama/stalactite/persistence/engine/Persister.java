@@ -1,5 +1,6 @@
 package org.gama.stalactite.persistence.engine;
 
+import org.gama.lang.Retryer;
 import org.gama.lang.bean.IDelegate;
 import org.gama.lang.bean.IDelegateWithReturn;
 import org.gama.lang.collection.Iterables;
@@ -8,6 +9,7 @@ import org.gama.stalactite.persistence.id.BeforeInsertIdentifierGenerator;
 import org.gama.stalactite.persistence.id.IdentifierGenerator;
 import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
 import org.gama.stalactite.persistence.sql.Dialect;
+import org.gama.stalactite.persistence.sql.dml.DMLGenerator;
 import org.gama.stalactite.persistence.structure.Table;
 
 import java.io.Serializable;
@@ -33,15 +35,26 @@ public class Persister<T> {
 	}
 	
 	public Persister(ClassMappingStrategy<T> mappingStrategy, Dialect dialect, TransactionManager transactionManager, int jdbcBatchSize) {
-		this.mappingStrategy = mappingStrategy;
-		this.persisterExecutor = newPersisterExecutor(mappingStrategy, dialect, transactionManager, jdbcBatchSize);
+		this(mappingStrategy, transactionManager, configureIdentifierFixer(mappingStrategy), dialect.getDmlGenerator(),
+				dialect.getWriteOperationRetryer(), jdbcBatchSize, dialect.getInOperatorMaxSize());
 	}
 	
-	protected PersisterExecutor<T> newPersisterExecutor(ClassMappingStrategy<T> mappingStrategy, Dialect dialect, TransactionManager transactionManager, int jdbcBatchSize) {
-		return new PersisterExecutor<>(mappingStrategy, configureIdentifierFixer(mappingStrategy),
-				jdbcBatchSize, transactionManager,
-				dialect.getDmlGenerator(),
-				dialect.getWriteOperationRetryer(), dialect.getInOperatorMaxSize());
+	protected Persister(ClassMappingStrategy<T> mappingStrategy, TransactionManager transactionManager, IIdentifierFixer<T> identifierFixer,
+						DMLGenerator dmlGenerator, Retryer writeOperationRetryer, int jdbcBatchSize, int inOperatorMaxSize) {
+		this.mappingStrategy = mappingStrategy;
+		this.persisterExecutor = newPersisterExecutor(mappingStrategy, identifierFixer, transactionManager, dmlGenerator,
+				writeOperationRetryer, jdbcBatchSize, inOperatorMaxSize);
+	}
+	
+	protected PersisterExecutor<T> newPersisterExecutor(ClassMappingStrategy<T> mappingStrategy,
+														IIdentifierFixer<T> identifierFixer,
+														TransactionManager transactionManager,
+														DMLGenerator dmlGenerator,
+														Retryer writeOperationRetryer,
+														int jdbcBatchSize,
+														int inOperatorMaxSize) {
+		return new PersisterExecutor<>(mappingStrategy, identifierFixer, transactionManager, dmlGenerator,
+				writeOperationRetryer, jdbcBatchSize, inOperatorMaxSize);
 	}
 	
 	public ClassMappingStrategy<T> getMappingStrategy() {
@@ -56,7 +69,7 @@ public class Persister<T> {
 		return getMappingStrategy().getTargetTable();
 	}
 	
-	protected IIdentifierFixer<T> configureIdentifierFixer(ClassMappingStrategy<T> mappingStrategy) {
+	protected static <T> IIdentifierFixer<T> configureIdentifierFixer(ClassMappingStrategy<T> mappingStrategy) {
 		IIdentifierFixer<T> identifierFixer = null;
 		// preparing identifier instance 
 		if (mappingStrategy != null) {
@@ -167,7 +180,7 @@ public class Persister<T> {
 	 *                            Pass true gives more chance for JDBC batch to be used. 
 	 */
 	public void update(final Iterable<Entry<T, T>> differencesIterable, final boolean allColumnsStatement) {
-		getPersisterListener().doWithUpdateListener(differencesIterable, new IDelegate() {
+		getPersisterListener().doWithUpdateListener(differencesIterable, allColumnsStatement, new IDelegate() {
 			@Override
 			public void execute() {
 				doUpdate(differencesIterable, allColumnsStatement);

@@ -84,6 +84,10 @@ public class PersistenceContext {
 		return persisterCache.get(clazz);
 	}
 	
+	public <T> void setPersister(Persister<T> persister) {
+		persisterCache.put(persister.getMappingStrategy().getClassToPersist(), persister);
+	}
+	
 	protected <T> Persister<T> newPersister(Class<T> clazz) {
 		return new Persister<>(PersistenceContext.this, ensureMappedClass(clazz));
 	}

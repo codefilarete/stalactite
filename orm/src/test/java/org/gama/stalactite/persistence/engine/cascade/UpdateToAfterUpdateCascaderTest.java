@@ -66,7 +66,7 @@ public class UpdateToAfterUpdateCascaderTest extends CascaderTest {
 		testInstance.afterUpdate(Arrays.asList((Entry<Toto, Toto>) 
 				new SimpleEntry<>(triggeringInstance1_modfied, triggeringInstance1),
 				new SimpleEntry<>(triggeringInstance2_modified, triggeringInstance2)
-		));
+		), true);
 		
 		// check actions are done in good order
 		assertEquals(Arrays.asList("getTargets", "getTargets", "postTargetUpdate"), actions);

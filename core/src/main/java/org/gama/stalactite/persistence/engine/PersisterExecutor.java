@@ -2,9 +2,8 @@ package org.gama.stalactite.persistence.engine;
 
 import org.gama.lang.Retryer;
 import org.gama.lang.bean.IFactory;
-import org.gama.lang.collection.Arrays;
-import org.gama.lang.collection.Collections;
 import org.gama.lang.collection.*;
+import org.gama.lang.collection.Collections;
 import org.gama.lang.exception.Exceptions;
 import org.gama.sql.IConnectionProvider;
 import org.gama.sql.dml.ReadOperation;
@@ -43,9 +42,9 @@ public class PersisterExecutor<T> {
 	private final Retryer writeOperationRetryer;
 	private final int inOperatorMaxSize;
 	
-	public PersisterExecutor(ClassMappingStrategy<T> mappingStrategy, IIdentifierFixer<T> identifierFixer, int batchSize,
+	public PersisterExecutor(ClassMappingStrategy<T> mappingStrategy, IIdentifierFixer<T> identifierFixer,
 							 TransactionManager transactionManager, DMLGenerator dmlGenerator, Retryer writeOperationRetryer,
-							 int inOperatorMaxSize) {
+							 int batchSize, int inOperatorMaxSize) {
 		this.mappingStrategy = mappingStrategy;
 		this.identifierFixer = identifierFixer;
 		this.batchSize = batchSize;
@@ -59,11 +58,35 @@ public class PersisterExecutor<T> {
 		return mappingStrategy;
 	}
 	
+	public IIdentifierFixer<T> getIdentifierFixer() {
+		return identifierFixer;
+	}
+	
+	public int getBatchSize() {
+		return batchSize;
+	}
+	
+	public TransactionManager getTransactionManager() {
+		return transactionManager;
+	}
+	
+	public DMLGenerator getDmlGenerator() {
+		return dmlGenerator;
+	}
+	
+	public Retryer getWriteOperationRetryer() {
+		return writeOperationRetryer;
+	}
+	
+	public int getInOperatorMaxSize() {
+		return inOperatorMaxSize;
+	}
+	
 	public int insert(Iterable<T> iterable) {
 		ColumnPreparedSQL insertStatement = dmlGenerator.buildInsert(mappingStrategy.getTargetTable().getColumns());
 		WriteOperation<Column> writeOperation = newWriteOperation(insertStatement, new ConnectionProvider());
 		
-		JDBCBatchingIterator<T> jdbcBatchingIterator = new JDBCBatchingIterator<>(iterable, writeOperation, PersisterExecutor.this.batchSize);
+		JDBCBatchingIterator<T> jdbcBatchingIterator = new JDBCBatchingIterator<>(iterable, writeOperation, this.batchSize);
 		while(jdbcBatchingIterator.hasNext()) {
 			T t = jdbcBatchingIterator.next();
 			identifierFixer.fixId(t);
@@ -315,7 +338,7 @@ public class PersisterExecutor<T> {
 	}
 	
 	/**
-	 * Littel classe to mutualize code of {@link #updatePartially(Iterable)} and {@link #updateFully(Iterable)}.
+	 * Little class to mutualize code of {@link #updatePartially(Iterable)} and {@link #updateFully(Iterable)}.
 	 */
 	private class Updater {
 		
@@ -352,27 +375,34 @@ public class PersisterExecutor<T> {
 		
 	}
 	
-	private static interface IJDBCBatchingOperationProvider {
+	private interface IJDBCBatchingOperationProvider {
 		JDBCBatchingOperation getJdbcBatchingOperation(Set<UpwhereColumn> upwhereColumns);
 		Iterable<JDBCBatchingOperation> getJdbcBatchingOperations();
 	}
 	
-	private class MonoJDBCBatchingOperation implements IJDBCBatchingOperationProvider {
+	private class MonoJDBCBatchingOperation implements IJDBCBatchingOperationProvider, Iterable<JDBCBatchingOperation> {
 		
-		private final JDBCBatchingOperation jdbcBatchingOperation;
+		private final JDBCBatchingOperation[] jdbcBatchingOperation = new JDBCBatchingOperation[1];
+		
+		private final ArrayIterator<JDBCBatchingOperation> operationIterator = new ArrayIterator<>(jdbcBatchingOperation);
 		
 		private MonoJDBCBatchingOperation(JDBCBatchingOperation jdbcBatchingOperation) {
-			this.jdbcBatchingOperation = jdbcBatchingOperation;
+			this.jdbcBatchingOperation[0] = jdbcBatchingOperation;
 		}
 		
 		@Override
 		public JDBCBatchingOperation getJdbcBatchingOperation(Set<UpwhereColumn> upwhereColumns) {
-			return this.jdbcBatchingOperation;
+			return this.jdbcBatchingOperation[0];
 		}
 		
 		@Override
 		public Iterable<JDBCBatchingOperation> getJdbcBatchingOperations() {
-			return Arrays.asList(this.jdbcBatchingOperation);
+			return this;
+		}
+		
+		@Override
+		public Iterator<JDBCBatchingOperation> iterator() {
+			return operationIterator;
 		}
 	}
 	

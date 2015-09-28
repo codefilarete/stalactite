@@ -37,7 +37,7 @@ public class ReflectionsTest {
 	
 	@Test(dataProvider = TEST_GET_FIELD_DATA)
 	public void testGetField(Class<Toto> fieldClass, String fieldName, Class expectedDeclaringClass) {
-		Field field = Reflections.getField(fieldClass, fieldName);
+		Field field = Reflections.findField(fieldClass, fieldName);
 		assertNotNull(field);
 		assertEquals(fieldName, field.getName());
 		assertEquals(expectedDeclaringClass, field.getDeclaringClass());
@@ -63,9 +63,9 @@ public class ReflectionsTest {
 	public void testGetMethod(Class<Toto> methodClass, String methodName, Class parameterType, Class expectedDeclaringClass, int exectedParameterCount) {
 		Method method;
 		if (parameterType == null) {
-			method = Reflections.getMethod(methodClass, methodName);
+			method = Reflections.findMethod(methodClass, methodName);
 		} else {
-			method = Reflections.getMethod(methodClass, methodName, parameterType);
+			method = Reflections.findMethod(methodClass, methodName, parameterType);
 		}
 		assertNotNull(method);
 		assertEquals(methodName, method.getName());

@@ -41,8 +41,8 @@ public class AccessorChainTest {
 		phoneListAccessor = new ListAccessor<>(2);
 		phoneNumberAccessor = Accessors.accessorByField(Phone.class, "number");
 		phoneNumberMethodAccessor = Accessors.accessorByMethod(Phone.class, "number");
-		charAtAccessor = new AccessorByMethod<>(Reflections.getMethod(String.class, "charAt", Integer.TYPE));
-		toCharArrayAccessor = new AccessorByMethod<>(Reflections.getMethod(String.class, "toCharArray"));
+		charAtAccessor = new AccessorByMethod<>(Reflections.findMethod(String.class, "charAt", Integer.TYPE));
+		toCharArrayAccessor = new AccessorByMethod<>(Reflections.findMethod(String.class, "toCharArray"));
 		charArrayAccessor = new ArrayAccessor<>(2);
 	}
 	

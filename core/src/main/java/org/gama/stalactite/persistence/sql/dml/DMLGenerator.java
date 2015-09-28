@@ -46,7 +46,7 @@ public class DMLGenerator {
 	public ColumnPreparedSQL buildInsert(Iterable<Column> columns) {
 		columns = sort(columns);
 		Table table = Iterables.first(columns).getTable();
-		final StringAppender sqlInsert = new StringAppender("insert into ", table.getName(), "(");
+		final StringAppender sqlInsert = new StringAppender("insert into ", table.getAbsoluteName(), "(");
 		DDLTableGenerator.catWithComma(columns, sqlInsert);
 		sqlInsert.cat(") values (");
 		
@@ -70,7 +70,7 @@ public class DMLGenerator {
 	public PreparedUpdate buildUpdate(Iterable<Column> columns, Iterable<Column> where) {
 		columns = sort(columns);
 		Table table = Iterables.first(columns).getTable();
-		StringAppender sqlUpdate = new StringAppender("update ", table.getName(), " set ");
+		StringAppender sqlUpdate = new StringAppender("update ", table.getAbsoluteName(), " set ");
 		Map<UpwhereColumn, Integer> upsertIndexes = new HashMap<>(10);
 		Map<UpwhereColumn, ParameterBinder> parameterBinders = new HashMap<>();
 		int positionCounter = 1;
@@ -91,7 +91,7 @@ public class DMLGenerator {
 	}
 	
 	public ColumnPreparedSQL buildDelete(Table table, final Iterable<Column> where) {
-		final StringAppender sqlDelete = new StringAppender("delete from ", table.getName());
+		final StringAppender sqlDelete = new StringAppender("delete from ", table.getAbsoluteName());
 		sqlDelete.cat(" where ");
 		final Map<Column, int[]> columnToIndex = new HashMap<>();
 		final Map<Column, ParameterBinder> parameterBinders = new HashMap<>();
@@ -112,7 +112,7 @@ public class DMLGenerator {
 	}
 	
 	public ColumnPreparedSQL buildMassiveDelete(Table table, Column keyColumn, int whereValuesCount) {
-		StringAppender sqlDelete = new StringAppender("delete from ", table.getName());
+		StringAppender sqlDelete = new StringAppender("delete from ", table.getAbsoluteName());
 		sqlDelete.cat(" where ", keyColumn.getName(), " in (");
 		Strings.repeat(sqlDelete.getAppender(), whereValuesCount, SQL_PARAMETER_MARK_1, SQL_PARAMETER_MARK_100, SQL_PARAMETER_MARK_10);
 		sqlDelete.cutTail(2).cat(")");
@@ -131,7 +131,7 @@ public class DMLGenerator {
 		columns = sort(columns);
 		final StringAppender sqlSelect = new StringAppender("select ");
 		DDLTableGenerator.catWithComma(columns, sqlSelect);
-		sqlSelect.cat(" from ", table.getName(), " where ");
+		sqlSelect.cat(" from ", table.getAbsoluteName(), " where ");
 		final Map<Column, int[]> columnToIndex = new HashMap<>();
 		final Map<Column, ParameterBinder> parameterBinders = new HashMap<>();
 		Iterables.visit(where, new ForEach<Column, Object>() {
@@ -159,7 +159,7 @@ public class DMLGenerator {
 			sqlSelect.cat(selectedColumnName, ", ");
 			selectParameterBinders.put(selectedColumnName, columnBinderRegistry.getBinder(column));
 		}
-		sqlSelect.cutTail(2).cat(" from ", table.getName(), " where ", keyColumn.getName(), " in (");
+		sqlSelect.cutTail(2).cat(" from ", table.getAbsoluteName(), " where ", keyColumn.getName(), " in (");
 		Strings.repeat(sqlSelect.getAppender(), whereValuesCount, SQL_PARAMETER_MARK_1, SQL_PARAMETER_MARK_100, SQL_PARAMETER_MARK_10);
 		sqlSelect.cutTail(2).cat(")");
 		Map<Column, int[]> columnToIndex = new HashMap<>();

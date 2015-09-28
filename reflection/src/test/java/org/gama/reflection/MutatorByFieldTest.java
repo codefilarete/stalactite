@@ -12,7 +12,7 @@ public class MutatorByFieldTest {
 	
 	@Test
 	public void testSet() throws Exception {
-		MutatorByField<Toto, Integer> testInstance = new MutatorByField<>(Reflections.getField(Toto.class, "a"));
+		MutatorByField<Toto, Integer> testInstance = new MutatorByField<>(Reflections.findField(Toto.class, "a"));
 		Toto toto = new Toto();
 		testInstance.set(toto, 42);
 		assertEquals(42, toto.a);

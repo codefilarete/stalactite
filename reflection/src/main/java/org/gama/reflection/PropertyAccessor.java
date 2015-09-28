@@ -16,11 +16,11 @@ public class PropertyAccessor<C, T> implements IAccessor<C, T>, IMutator<C, T> {
 	public static <C, T> PropertyAccessor<C, T> forProperty(Class<C> clazz, String propertyName) {
 		IAccessor<C, T> propertyGetter = Accessors.accessorByMethod(clazz, propertyName);
 		if (propertyGetter == null) {
-			propertyGetter = new AccessorByField<>(Reflections.getField(clazz, propertyName));
+			propertyGetter = new AccessorByField<>(Reflections.findField(clazz, propertyName));
 		}
 		IMutator<C, T> propertySetter = Accessors.mutatorByMethod(clazz, propertyName);
 		if (propertySetter == null) {
-			propertySetter = new MutatorByField<>(Reflections.getField(clazz, propertyName));
+			propertySetter = new MutatorByField<>(Reflections.findField(clazz, propertyName));
 		}
 		return new PropertyAccessor<>(propertyGetter, propertySetter);
 	}

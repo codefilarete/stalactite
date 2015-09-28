@@ -17,12 +17,12 @@ public final class Accessors {
 	
 	public static <C, T> AccessorByMethod<C, T> accessorByMethod(Class clazz, String propertyName) {
 		String capitalizedProperty = Strings.capitalize(propertyName);
-		Method getter = Reflections.getMethod(clazz, "get" + capitalizedProperty);
+		Method getter = Reflections.findMethod(clazz, "get" + capitalizedProperty);
 		if (getter == null) {
 			// try for boolean
-			Field field = Reflections.getField(clazz, propertyName);
+			Field field = Reflections.findField(clazz, propertyName);
 			if (field != null && Boolean.class.isAssignableFrom(field.getType())) {
-				getter = Reflections.getMethod(clazz, "is" + capitalizedProperty);
+				getter = Reflections.findMethod(clazz, "is" + capitalizedProperty);
 			} // nothing found : neither get nor is => return null
 		}
 		return getter == null ? null : new AccessorByMethod<C, T>(getter);
@@ -33,7 +33,7 @@ public final class Accessors {
 	}
 	
 	public static <C, T> AccessorByField<C, T> accessorByField(Class clazz, String propertyName) {
-		Field propertyField = Reflections.getField(clazz, propertyName);
+		Field propertyField = Reflections.findField(clazz, propertyName);
 		return accessorByField(propertyField);
 	}
 	
@@ -42,9 +42,9 @@ public final class Accessors {
 	}
 	
 	public static <C, T> MutatorByMethod<C, T> mutatorByMethod(Class clazz, String propertyName) {
-		Field propertyField = Reflections.getField(clazz, propertyName);
+		Field propertyField = Reflections.findField(clazz, propertyName);
 		String capitalizedProperty = Strings.capitalize(propertyName);
-		Method setter = Reflections.getMethod(clazz, "set" + capitalizedProperty, propertyField.getType());
+		Method setter = Reflections.findMethod(clazz, "set" + capitalizedProperty, propertyField.getType());
 		return setter == null ? null : new MutatorByMethod<C, T>(setter);
 	}
 	
@@ -53,7 +53,7 @@ public final class Accessors {
 	}
 	
 	public static <C, T> MutatorByField<C, T> mutatorByField(Class clazz, String propertyName) {
-		Field propertyField = Reflections.getField(clazz, propertyName);
+		Field propertyField = Reflections.findField(clazz, propertyName);
 		return mutatorByField(propertyField);
 	}
 	
@@ -64,7 +64,7 @@ public final class Accessors {
 	
 	public static Field wrappedField(Method fieldWrapper) {
 		String propertyName = getPropertyName(fieldWrapper);
-		return Reflections.getField(fieldWrapper.getDeclaringClass(), propertyName);
+		return Reflections.findField(fieldWrapper.getDeclaringClass(), propertyName);
 	}
 	
 	public static String getPropertyName(Method fieldWrapper) {

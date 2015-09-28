@@ -44,11 +44,11 @@ public class MetaModelAccessorBuilderTest {
 		addressCityAccessor = Accessors.accessorByField(Address.class, "city");
 		personAddressAccessor = Accessors.accessorByField(Person.class, "address");
 		addressPhonesAccessor = Accessors.accessorByField(Address.class, "phones");
-		phoneListAccessor = new AccessorByMethod<>(Reflections.getMethod(List.class, "get", Integer.TYPE));
+		phoneListAccessor = new AccessorByMethod<>(Reflections.findMethod(List.class, "get", Integer.TYPE));
 		phoneNumberAccessor = Accessors.accessorByField(Phone.class, "number");
 		phoneNumberMethodAccessor = Accessors.accessorByMethod(Phone.class, "number");
-		charAtAccessor = new AccessorByMethod<>(Reflections.getMethod(String.class, "charAt", Integer.TYPE));
-		toCharAccessor = new AccessorByMethod<>(Reflections.getMethod(String.class, "toCharArray"));
+		charAtAccessor = new AccessorByMethod<>(Reflections.findMethod(String.class, "charAt", Integer.TYPE));
+		toCharAccessor = new AccessorByMethod<>(Reflections.findMethod(String.class, "toCharArray"));
 		charAtArrayAccessor = new ArrayAccessor<>(0);
 	}
 	

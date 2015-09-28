@@ -1,10 +1,12 @@
 package org.gama.stalactite.persistence.sql;
 
 import org.gama.lang.Retryer;
+import org.gama.lang.bean.Objects;
 import org.gama.stalactite.persistence.sql.ddl.DDLSchemaGenerator;
 import org.gama.stalactite.persistence.sql.ddl.JavaTypeToSqlTypeMapping;
 import org.gama.stalactite.persistence.sql.dml.DMLGenerator;
 import org.gama.stalactite.persistence.sql.dml.binder.ColumnBinderRegistry;
+import org.springframework.util.Assert;
 
 /**
  * @author Guillaume Mary
@@ -63,7 +65,7 @@ public class Dialect {
 	}
 	
 	public void setWriteOperationRetryer(Retryer writeOperationRetryer) {
-		this.writeOperationRetryer = writeOperationRetryer;
+		this.writeOperationRetryer = Objects.preventNull(writeOperationRetryer, Retryer.NO_RETRY);
 	}
 	
 	public int getInOperatorMaxSize() {
@@ -71,6 +73,7 @@ public class Dialect {
 	}
 	
 	public void setInOperatorMaxSize(int inOperatorMaxSize) {
+		Assert.isTrue(inOperatorMaxSize > 0, "SQL operator 'in' must contain at least 1 element");
 		this.inOperatorMaxSize = inOperatorMaxSize;
 	}
 }

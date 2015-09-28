@@ -8,12 +8,12 @@ import java.util.Map.Entry;
 public class NoopUpdateListener<T> implements IUpdateListener<T> {
 	
 	@Override
-	public void beforeUpdate(Iterable<Entry<T, T>> iterables) {
+	public void beforeUpdate(Iterable<Entry<T, T>> iterables, boolean allColumnsStatement) {
 		
 	}
 	
 	@Override
-	public void afterUpdate(Iterable<Entry<T, T>> iterables) {
+	public void afterUpdate(Iterable<Entry<T, T>> iterables, boolean allColumnsStatement) {
 		
 	}
 }

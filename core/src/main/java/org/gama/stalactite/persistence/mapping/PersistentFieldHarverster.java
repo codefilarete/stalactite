@@ -28,20 +28,22 @@ public class PersistentFieldHarverster {
 		return Iterables.filter(new FieldIterator(clazz), fieldVisitor);
 	}
 	
+	public Map<Field, Column> getFieldToColumn() {
+		return fieldToColumn;
+	}
+	
 	public Map<Field, Column> mapFields(Class clazz, Table targetTable) {
-		if (fieldToColumn == null) {
-			List<Field> fields = getFields(clazz);
-			Map<String, Column> mapColumnsOnName = targetTable.mapColumnsOnName();
-			fieldToColumn = new LinkedHashMap<>(5);
-			nameTofield = new HashMap<>(5);
-			for (Field field : fields) {
-				Column column = mapColumnsOnName.get(field.getName());
-				if (column == null) {
-					column = newColumn(targetTable, field);
-				} // else column already exists, skip it to avoid duplicate column (even if type is different)
-				fieldToColumn.put(field, column);
-				nameTofield.put(field.getName(), field);
-			}
+		List<Field> fields = getFields(clazz);
+		Map<String, Column> mapColumnsOnName = targetTable.mapColumnsOnName();
+		fieldToColumn = new LinkedHashMap<>(5);
+		nameTofield = new HashMap<>(5);
+		for (Field field : fields) {
+			Column column = mapColumnsOnName.get(field.getName());
+			if (column == null) {
+				column = newColumn(targetTable, field);
+			} // else column already exists, skip it to avoid duplicate column (even if type is different)
+			fieldToColumn.put(field, column);
+			nameTofield.put(field.getName(), field);
 		}
 		return fieldToColumn;
 	}

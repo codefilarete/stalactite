@@ -70,8 +70,8 @@ public class PersisterExecutorDatabaseTest {
 		identifierGenerator.idCounter.set(0);
 		
 		testInstance = new PersisterExecutor<>(totoClassMappingStrategy, new Persister.IdentifierFixer<>(totoClassMappingStrategy.getIdentifierGenerator(), totoClassMappingStrategy),
-				3, transactionManager, new DMLGenerator(dialect.getColumnBinderRegistry() , new DMLGenerator.CaseSensitiveSorter()),
-				Retryer.NO_RETRY, 3);
+				transactionManager, new DMLGenerator(dialect.getColumnBinderRegistry() , new DMLGenerator.CaseSensitiveSorter()), Retryer.NO_RETRY, 3,
+				3);
 	}
 	
 	@DataProvider(name = DATASOURCES_DATAPROVIDER_NAME)

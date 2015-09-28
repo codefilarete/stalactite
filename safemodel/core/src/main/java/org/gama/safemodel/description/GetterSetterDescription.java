@@ -12,7 +12,7 @@ public class GetterSetterDescription extends MethodDescription {
 	public final Method setter;
 	
 	public GetterSetterDescription(Class declaringClass, String getterName, String setterName, Class... parameterTypes) {
-		this(Reflections.getMethod(declaringClass, getterName, parameterTypes), Reflections.getMethod(declaringClass, setterName, parameterTypes));
+		this(Reflections.findMethod(declaringClass, getterName, parameterTypes), Reflections.findMethod(declaringClass, setterName, parameterTypes));
 	}
 	
 	public GetterSetterDescription(Method getter, Method setter) {

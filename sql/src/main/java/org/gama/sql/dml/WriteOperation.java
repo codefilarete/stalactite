@@ -7,6 +7,8 @@ import org.gama.sql.IConnectionProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.annotation.Nonnegative;
+import javax.annotation.Nonnull;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Statement;
@@ -22,16 +24,18 @@ public class WriteOperation<ParamType> extends SQLOperation<ParamType> {
 	protected static final Logger LOGGER = LoggerFactory.getLogger(WriteOperation.class);
 	
 	/** JDBC Batch statement count, for logging */
+	@Nonnegative
 	private int batchedStatementCount = 0;
 	
-	/** Instance that helps to retry update statements on error, default is no {@link Retryer#NO_RETRY} */
+	/** Instance that helps to retry update statements on error, default is no {@link Retryer#NO_RETRY}, should not be null */
+	@Nonnull
 	private final Retryer retryer;
 	
 	public WriteOperation(SQLStatement<ParamType> sqlGenerator, IConnectionProvider connectionProvider) {
 		this(sqlGenerator, connectionProvider, Retryer.NO_RETRY);
 	}
 	
-	public WriteOperation(SQLStatement<ParamType> sqlGenerator, IConnectionProvider connectionProvider, Retryer retryer) {
+	public WriteOperation(SQLStatement<ParamType> sqlGenerator, IConnectionProvider connectionProvider, @Nonnull Retryer retryer) {
 		super(sqlGenerator, connectionProvider);
 		this.retryer = retryer;
 	}
@@ -100,12 +104,16 @@ public class WriteOperation<ParamType> extends SQLOperation<ParamType> {
 	
 	private int[] doExecuteBatch() {
 		LOGGER.debug(getSQL());
-		return (int[]) doWithRetry(new IDelegateWithReturnAndThrows() {
-			@Override
-			public Object execute() throws Throwable {
-				return preparedStatement.executeBatch();
-			}
-		});
+		try {
+			return (int[]) doWithRetry(new IDelegateWithReturnAndThrows() {
+				@Override
+				public Object execute() throws Throwable {
+					return preparedStatement.executeBatch();
+				}
+			});
+		} catch (Throwable t) {
+			throw new RuntimeException("Error during " + getSQL(), t);
+		}
 	}
 	
 	private <T> T doWithRetry(IDelegateWithReturnAndThrows<T> delegateWithResult) {

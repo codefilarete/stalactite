@@ -55,9 +55,10 @@ public class MySQLDialect extends Dialect {
 			put(Float.TYPE, "float");
 			put(Long.class, "bigint");
 			put(Long.TYPE, "bigint");
-			put(Integer.class, "integer");
-			put(Integer.TYPE, "integer");
+			put(Integer.class, "int");
+			put(Integer.TYPE, "int");
 			put(Date.class, "timestamp null");	// null allows nullable in MySQL, else current time is inserted by default
+//			put(Date.class, "datetime null");	// null allows nullable in MySQL, else current time is inserted by default
 			put(String.class, "varchar(255)");
 			put(String.class, 16383, "varchar($l)");
 		}

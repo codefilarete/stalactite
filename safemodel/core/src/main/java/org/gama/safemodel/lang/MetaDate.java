@@ -4,12 +4,14 @@ import org.gama.safemodel.MetaModel;
 import org.gama.safemodel.description.AbstractMemberDescription;
 import org.gama.safemodel.description.MethodDescription;
 
+import java.util.Date;
+
 /**
  * @author Guillaume Mary
  */
 public class MetaDate<O extends MetaModel, M extends AbstractMemberDescription> extends MetaModel<O, M> {
 	
-	private MetaLong<MetaDate, MethodDescription<Long>> time = new MetaLong<>(method(String.class, "time", Long.class));
+	private MetaLong<MetaDate, MethodDescription<Long>> time = new MetaLong<>(method(Date.class, "getTime", Long.TYPE));
 	
 	public MetaDate(M description) {
 		super(description);

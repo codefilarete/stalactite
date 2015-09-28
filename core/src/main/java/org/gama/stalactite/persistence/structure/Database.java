@@ -13,6 +13,10 @@ public class Database {
 			this.name = name;
 		}
 		
+		public String getName() {
+			return name;
+		}
+		
 		public Database getDatabase() {
 			return Database.this;
 		}
