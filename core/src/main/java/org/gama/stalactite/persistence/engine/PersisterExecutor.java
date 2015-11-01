@@ -5,7 +5,7 @@ import org.gama.lang.bean.IFactory;
 import org.gama.lang.collection.*;
 import org.gama.lang.collection.Collections;
 import org.gama.lang.exception.Exceptions;
-import org.gama.sql.IConnectionProvider;
+import org.gama.sql.SimpleConnectionProvider;
 import org.gama.sql.dml.ReadOperation;
 import org.gama.sql.dml.SQLStatement;
 import org.gama.sql.dml.WriteOperation;
@@ -21,7 +21,6 @@ import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.persistence.structure.Table.Column;
 
 import java.io.Serializable;
-import java.sql.Connection;
 import java.sql.ResultSet;
 import java.util.*;
 import java.util.Map.Entry;
@@ -159,7 +158,7 @@ public class PersisterExecutor<T> {
 		// Since all columns are updated we can benefit from JDBC batch
 		JDBCBatchingOperation jdbcBatchingOperation = new JDBCBatchingOperation(writeOperation, PersisterExecutor.this.batchSize);
 		
-		return new Updater(new MonoJDBCBatchingOperation(jdbcBatchingOperation), true).update(differencesIterable);
+		return new Updater(new SingleJDBCBatchingOperation(jdbcBatchingOperation), true).update(differencesIterable);
 	}
 	
 	public int delete(Iterable<T> iterable) {
@@ -380,13 +379,13 @@ public class PersisterExecutor<T> {
 		Iterable<JDBCBatchingOperation> getJdbcBatchingOperations();
 	}
 	
-	private class MonoJDBCBatchingOperation implements IJDBCBatchingOperationProvider, Iterable<JDBCBatchingOperation> {
+	private class SingleJDBCBatchingOperation implements IJDBCBatchingOperationProvider, Iterable<JDBCBatchingOperation> {
 		
 		private final JDBCBatchingOperation[] jdbcBatchingOperation = new JDBCBatchingOperation[1];
 		
 		private final ArrayIterator<JDBCBatchingOperation> operationIterator = new ArrayIterator<>(jdbcBatchingOperation);
 		
-		private MonoJDBCBatchingOperation(JDBCBatchingOperation jdbcBatchingOperation) {
+		private SingleJDBCBatchingOperation(JDBCBatchingOperation jdbcBatchingOperation) {
 			this.jdbcBatchingOperation[0] = jdbcBatchingOperation;
 		}
 		
@@ -433,19 +432,12 @@ public class PersisterExecutor<T> {
 	}
 	
 	/**
-	 * Implementation based on TransactionManager.getCurrentConnection()
+	 * Implementation that gives the TransactionManager.getCurrentConnection() of instanciation time
 	 */
-	protected class ConnectionProvider implements IConnectionProvider {
-		
-		private final Connection currentConnection;
+	protected class ConnectionProvider extends SimpleConnectionProvider {
 		
 		public ConnectionProvider() {
-			currentConnection = transactionManager.getCurrentConnection();
-		}
-		
-		@Override
-		public Connection getConnection() {
-			return currentConnection;
+			super(transactionManager.getCurrentConnection());
 		}
 	}
 }
