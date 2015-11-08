@@ -1,12 +1,12 @@
 package org.gama.stalactite.query.model;
 
-import java.util.*;
-
 import org.gama.lang.Strings;
 import org.gama.lang.bean.Objects;
 import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.persistence.structure.Table.Column;
 import org.gama.stalactite.query.model.From.AbstractJoin;
+
+import java.util.*;
 
 /**
  * @author Guillaume Mary
@@ -78,6 +78,18 @@ public class From implements Iterable<AbstractJoin> {
 
 	public From rightOuterJoin(Table leftTable, String leftTableAlias, Table rigTable, String rightTableAlias, String joinClause) {
 		return addNewJoin(leftTable, leftTableAlias, rigTable, rightTableAlias, joinClause, true);
+	}
+	
+	public From crossJoin(Table table) {
+		CrossJoin crossJoin = new CrossJoin(table);
+		add(crossJoin);
+		return this;
+	}
+	
+	public From crossJoin(Table table, String tableAlias) {
+		CrossJoin crossJoin = new CrossJoin(table, tableAlias);
+		add(crossJoin);
+		return this;
 	}
 	
 	public CrossJoin add(Table table) {

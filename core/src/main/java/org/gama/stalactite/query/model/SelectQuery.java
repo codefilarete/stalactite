@@ -2,7 +2,6 @@ package org.gama.stalactite.query.model;
 
 import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.persistence.structure.Table.Column;
-import org.gama.stalactite.query.model.From.CrossJoin;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -75,25 +74,18 @@ public class SelectQuery {
 	public FluentFrom from(Column leftColumn, String leftColumnAlias, Column rightColumn, String rightColumnAlias) {
 		return this.from.innerJoin(leftColumn, leftColumnAlias, rightColumn, rightColumnAlias);
 	}
-
+	
 	public FluentFrom from(Table leftTable, Table rightTable, String joinCondition) {
 		return this.from.innerJoin(leftTable, rightTable, joinCondition);
 	}
-
+	
+	public FluentFrom from(Table leftTable, String tableAlias) {
+		return this.from.crossJoin(leftTable, tableAlias);
+	}
+	
 	public FluentFrom from(Table leftTable, String leftTableAlias, Table rightTable, String rightTableAlias, String joinCondition) {
 		return this.from.innerJoin(leftTable, leftTableAlias, rightTable, rightTableAlias, joinCondition);
 	}
-
-//	public FluentFrom innerJoin(Column colA, Column colB) {
-//		return this.from.innerJoin(colA, colB);
-//	}
-//	public FluentFrom leftOuterJoin(Column colA, Column colB) {
-//		return this.from.leftOuterJoin(colA, colB);
-//	}
-//
-//	public FluentFrom rightOuterJoin(Column colA, Column colB) {
-//		return this.from.rightOuterJoin(colA, colB);
-//	}
 
 	public FluentWhere where(Column column, CharSequence condition) {
 		return this.where.and(column, condition);
@@ -142,12 +134,12 @@ public class SelectQuery {
 			return this;
 		}
 		
-		public CrossJoin from(Table leftTable) {
-			return SelectQuery.this.from.add(leftTable);
+		public FluentFrom from(Table leftTable) {
+			return SelectQuery.this.from.from(leftTable);
 		}
 		
-		public CrossJoin from(Table leftTable, String alias) {
-			return SelectQuery.this.from.add(leftTable, alias);
+		public FluentFrom from(Table leftTable, String alias) {
+			return SelectQuery.this.from.from(leftTable, alias);
 		}
 		
 		public FluentFrom from(Table leftTable, Table rightTable, String joinCondition) {
@@ -185,6 +177,26 @@ public class SelectQuery {
 	}
 	
 	public class FluentFrom extends From {
+		public FluentFrom from(Table leftTable) {
+			super.add(leftTable);
+			return this;
+		}
+
+		public FluentFrom from(Table leftTable, String alias) {
+			super.add(leftTable, alias);
+			return this;
+		}
+		
+		public FluentFrom crossJoin(Table table) {
+			super.crossJoin(table);
+			return this;
+		}
+		
+		public FluentFrom crossJoin(Table table, String tableAlias) {
+			super.crossJoin(table, tableAlias);
+			return this;
+		}
+		
 		public FluentFrom innerJoin(Column leftColumn, Column rightColumn) {
 			super.innerJoin(leftColumn, rightColumn);
 			return this;
