@@ -32,13 +32,20 @@ public abstract class ExpandableStatement<ParamType> extends SQLStatement<ParamT
 					+ " on sql : " + getSQL());
 		}
 		int[] markIndexes = getIndexes(paramType);
-		if (markIndexes.length == 1 && !(value instanceof Iterable)) {
-			int index = markIndexes[0];
-			doApplyValue(index, value, parameterBinder, statement);
+		if (value instanceof Iterable) {
+			// we have several mark indexes : one per value, and one per parameter in query ("id = :id or id = :id)
+			// so we loop twice
+			for (int i = 0; i < markIndexes.length;) {
+				for (Object v : (Iterable) value) {
+					int markIndex = markIndexes[i];
+					doApplyValue(markIndex, v, parameterBinder, statement);
+					i++;
+				}
+			}
 		} else {
-			int firstIndex = markIndexes[0];
-			for (Object v : (Iterable) value) {
-				doApplyValue(firstIndex++, v, parameterBinder, statement);
+			// simple case: value is single, we loop on indexes
+			for (int markIndex : markIndexes) {
+				doApplyValue(markIndex, value, parameterBinder, statement);
 			}
 		}
 	}

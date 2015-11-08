@@ -17,6 +17,7 @@ public class ParameterizedSQL extends ExpandableStatement<String> {
 	
 	private final ParsedSQL parsedSQL;
 	private ExpandableSQL expandableSQL;
+	private boolean expandableSQLExpired = false;
 	
 	public ParameterizedSQL(String originalSQL, Map<String, ParameterBinder> parameterBinders) {
 		this(new SQLParameterParser(originalSQL).parse(), parameterBinders);
@@ -28,14 +29,27 @@ public class ParameterizedSQL extends ExpandableStatement<String> {
 	}
 	
 	@Override
+	public void setValues(Map<String, Object> values) {
+		super.setValues(values);
+		expandableSQLExpired = true;
+	}
+	
+	@Override
+	public void setValue(String index, Object value) {
+		super.setValue(index, value);
+		expandableSQLExpired = true;
+	}
+	
+	@Override
 	public String getSQL() {
 		ensureExpandableSQL(values);
 		return expandableSQL.getPreparedSQL();
 	}
 	
 	protected void ensureExpandableSQL(Map<String, Object> values) {
-		if (expandableSQL == null) {
+		if (expandableSQL == null || expandableSQLExpired) {
 			expandableSQL = new ExpandableSQL(this.parsedSQL, getValuesSizes(values));
+			expandableSQLExpired = false;
 		}
 	}
 	

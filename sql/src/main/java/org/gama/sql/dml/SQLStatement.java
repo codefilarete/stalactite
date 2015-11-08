@@ -77,7 +77,12 @@ public abstract class SQLStatement<ParamType> {
 			throw new IllegalArgumentException("Missing value for indexes " + missingIndexes + " in values " + values + " for \"" + getSQL() + "\"");
 		}
 		for (Entry<ParamType, Object> indexToValue : values.entrySet()) {
-			doApplyValue(indexToValue.getKey(), indexToValue.getValue(), statement);
+			try {
+				doApplyValue(indexToValue.getKey(), indexToValue.getValue(), statement);
+			} catch (Throwable t) {
+				throw (RuntimeException) new RuntimeException("Error while applying value " + indexToValue.getValue() + " on parameter " + indexToValue.getKey()
+						+ " on statement \"" + getSQL() + "\"").initCause(t);
+			}
 		}
 	}
 	

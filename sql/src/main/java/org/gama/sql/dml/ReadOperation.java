@@ -1,12 +1,14 @@
 package org.gama.sql.dml;
 
 import org.gama.sql.IConnectionProvider;
+import org.gama.sql.result.ResultSetIterator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.List;
 
 /**
  * {@link SQLOperation} dedicated to Selectes ... so all operations that return a ResultSet
@@ -22,10 +24,9 @@ public class ReadOperation<ParamType> extends SQLOperation<ParamType> {
 	}
 	
 	/**
-	 * Executed the statement, wraps {@link PreparedStatement#executeQuery()}
+	 * Execute the statement, wraps {@link PreparedStatement#executeQuery()}
 	 *
 	 * @return the {@link ResultSet} from the database
-	 * @throws SQLException
 	 */
 	public ResultSet execute() {
 		try {
@@ -36,6 +37,16 @@ public class ReadOperation<ParamType> extends SQLOperation<ParamType> {
 		} catch (SQLException e) {
 			throw new RuntimeException("Error running \"" + getSQL() + "\"", e);
 		}
+	}
+	
+	/**
+	 * Execute the statement and return the transformed result by resultSetIterator
+	 *
+	 * @return the transformed result by resultSetIterator
+	 */
+	public <T> List<T> execute(ResultSetIterator<T> resultSetIterator) {
+		resultSetIterator.setResultSet(execute());
+		return resultSetIterator.convert();
 	}
 	
 }
