@@ -9,19 +9,14 @@ import java.sql.PreparedStatement;
 import java.util.HashMap;
 
 /**
- * Registry of {@link ParameterBinder}s used pickup the best suited Column to simplify access to method {@link
+ * Registry of {@link ParameterBinder}s used to pickup the best suited Column to simplify access to method of {@link
  * PreparedStatement}.
  * Use {@link #register(Column, ParameterBinder)} or {@link #register(Class, ParameterBinder)} to specify the best
  * binder for a column or type.
  *
  * @author Guillaume Mary
  */
-public class ColumnBinderRegistry {
-	
-	/**
-	 * Registry for types
-	 */
-	private ParameterBinderRegistry parameterBinderRegistry = new ParameterBinderRegistry();
+public class ColumnBinderRegistry extends ParameterBinderRegistry {
 	
 	/**
 	 * Registry for Columns
@@ -33,10 +28,6 @@ public class ColumnBinderRegistry {
 	
 	public <T> void register(Column column, ParameterBinder<T> parameterBinder) {
 		this.parameterBinders.put(column, parameterBinder);
-	}
-	
-	public <T> void register(Class<T> clazz, ParameterBinder<T> parameterBinder) {
-		this.parameterBinderRegistry.register(clazz, parameterBinder);
 	}
 	
 	/**
@@ -55,17 +46,6 @@ public class ColumnBinderRegistry {
 			throwMissingBinderException(column);
 			return null;	// unreachable
 		}
-	}
-	
-	/**
-	 * Gives the registered {@link ParameterBinder} for the given type.
-	 *
-	 * @param clazz a class
-	 * @return the registered {@link ParameterBinder} for the given type
-	 * @throws UnsupportedOperationException if the binder doesn't exist
-	 */
-	public ParameterBinder getBinder(Class clazz) {
-		return this.parameterBinderRegistry.getBinder(clazz);
 	}
 	
 	private void throwMissingBinderException(Table.Column column) {
