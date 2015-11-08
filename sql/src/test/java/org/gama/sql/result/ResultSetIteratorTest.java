@@ -1,5 +1,6 @@
 package org.gama.sql.result;
 
+import org.gama.lang.exception.Exceptions;
 import org.gama.sql.test.HSQLDBInMemoryDataSource;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
@@ -30,10 +31,14 @@ public class ResultSetIteratorTest {
 	public void testHasNext_emptyResultSet() throws Exception {
 		ResultSet selectStmntRs = selectStmnt.executeQuery();
 		
-		ResultSetIterator<ResultSet> resultSetIterator = new ResultSetIterator<ResultSet>(selectStmntRs) {
+		ResultSetIterator<String> resultSetIterator = new ResultSetIterator<String>(selectStmntRs) {
 			@Override
-			public ResultSet convert(ResultSet rs) {
-				return rs;
+			public String convert(ResultSet rs) {
+				try {
+					return rs.getString(1);
+				} catch (SQLException e) {
+					throw Exceptions.asRuntimeException(e);
+				}
 			}
 		};
 		assertFalse(resultSetIterator.hasNext());
@@ -47,10 +52,14 @@ public class ResultSetIteratorTest {
 		
 		ResultSet selectStmntRs = selectStmnt.executeQuery();
 		
-		ResultSetIterator<ResultSet> resultSetIterator = new ResultSetIterator<ResultSet>(selectStmntRs) {
+		ResultSetIterator<String> resultSetIterator = new ResultSetIterator<String>(selectStmntRs) {
 			@Override
-			public ResultSet convert(ResultSet rs) {
-				return rs;
+			public String convert(ResultSet rs) {
+				try {
+					return rs.getString(1);
+				} catch (SQLException e) {
+					throw Exceptions.asRuntimeException(e);
+				}
 			}
 		};
 		assertTrue(resultSetIterator.hasNext());

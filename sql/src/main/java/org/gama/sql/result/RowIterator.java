@@ -15,15 +15,24 @@ import java.util.Map.Entry;
  */
 public class RowIterator extends ResultSetIterator<Row> {
 	
-	private final Map<String, ParameterBinder> columnNameBinders;
+	private final Map<String, ? extends ParameterBinder> columnNameBinders;
 	
 	/**
-	 * Constructeur de ResultSetIterator.
+	 * ResultSetIterator constructor
 	 *
-	 * @param rs un ResultSet à encapsuler dans un <t>Iterator</t>
-	 * @param columnNameBinders les colonnes et {@link ParameterBinder} à utiliser pour lire le <t>ResultSet</t>
+	 * @param columnNameBinders columns and associated {@link ParameterBinder} to use for <t>ResultSet</t> reading
 	 */
-	public RowIterator(ResultSet rs, Map<String, ParameterBinder> columnNameBinders) {
+	public RowIterator(Map<String, ? extends ParameterBinder> columnNameBinders) {
+		this(null, columnNameBinders);
+	}
+	
+	/**
+	 * ResultSetIterator constructor
+	 *
+	 * @param rs a ResultSet to wrap into an <t>Iterator</t>
+	 * @param columnNameBinders columns and associated {@link ParameterBinder} to use for <t>ResultSet</t> reading
+	 */
+	public RowIterator(ResultSet rs, Map<String, ? extends ParameterBinder> columnNameBinders) {
 		super(rs);
 		this.columnNameBinders = columnNameBinders;
 	}
@@ -32,7 +41,7 @@ public class RowIterator extends ResultSetIterator<Row> {
 	public Row convert(ResultSet rs) {
 		Row toReturn = new Row();
 		try {
-			for (Entry<String, ParameterBinder> columnEntry : columnNameBinders.entrySet()) {
+			for (Entry<String, ? extends ParameterBinder> columnEntry : columnNameBinders.entrySet()) {
 				String columnName = columnEntry.getKey();
 				toReturn.put(columnName, columnEntry.getValue().get(columnName, rs));
 			}

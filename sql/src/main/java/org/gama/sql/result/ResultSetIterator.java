@@ -6,6 +6,8 @@ import org.gama.lang.exception.Exceptions;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * ResultSet iterator with convert method
@@ -14,17 +16,37 @@ import java.sql.SQLException;
  */
 public abstract class ResultSetIterator<T> extends ReadOnlyIterator<T> implements IConverter<ResultSet, T> {
 	
-	protected final ResultSet rs;
+	public static <T> List<T> convert(ResultSet resultSet, final IConverter<ResultSet, T> converter) {
+		return new ResultSetIterator<T>(resultSet) {
+			@Override
+			public T convert(ResultSet rs) {
+				return converter.convert(rs);
+			}
+		}.convert();
+	}
+	
+	
+	private ResultSet resultSet;
 	private boolean nextCalled = false;
 	
 	/**
 	 * Constructor for ResultSetIterator.
-	 * @param rs a ResultSet to be wrapped in an Iterator.
 	 */
-	public ResultSetIterator(ResultSet rs) {
-		this.rs = rs;
+	public ResultSetIterator() {
 	}
-
+	
+	/**
+	 * Constructor for ResultSetIterator.
+	 * @param resultSet a ResultSet to be wrapped in an Iterator.
+	 */
+	public ResultSetIterator(ResultSet resultSet) {
+		this.resultSet = resultSet;
+	}
+	
+	public void setResultSet(ResultSet resultSet) {
+		this.resultSet = resultSet;
+	}
+	
 	/**
 	 * Returns true if there are more rows in the ResultSet.
 	 * @return boolean true if there are more rows
@@ -33,7 +55,7 @@ public abstract class ResultSetIterator<T> extends ReadOnlyIterator<T> implement
 	@Override
 	public boolean hasNext() {
 		try {
-			return !nextCalled && rs.next();
+			return !nextCalled && resultSet.next();
 		} catch (SQLException e) {
 			Exceptions.throwAsRuntimeException(e);
 			// unreachable
@@ -46,11 +68,29 @@ public abstract class ResultSetIterator<T> extends ReadOnlyIterator<T> implement
 	@Override
 	public T next() {
 		try {
-			return convert(rs);
+			return convert(resultSet);
 		} finally {
 			nextCalled = false;
 		}
 	}
 	
+	/**
+	 * Convert all rows of the ResultSet
+	 * @return a List of objects transformed by {@link #convert(ResultSet)}
+	 */
+	public List<T> convert() {
+		List<T> result = new ArrayList<>();
+		while(hasNext()) {
+			result.add(convert(resultSet));
+		}
+		return result;
+	}
+	
+	/**
+	 * Convert current row of the ResultSet
+	 * @param rs the ResultSet given at constructor or {@link #setResultSet}
+	 * @return
+	 */
 	public abstract T convert(ResultSet rs);
+	
 }
