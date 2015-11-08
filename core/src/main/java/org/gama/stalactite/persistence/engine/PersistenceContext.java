@@ -2,13 +2,14 @@ package org.gama.stalactite.persistence.engine;
 
 import org.gama.lang.bean.IFactory;
 import org.gama.lang.collection.ValueFactoryHashMap;
-import org.gama.stalactite.persistence.engine.TransactionManager.JdbcOperation;
 import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
 import org.gama.stalactite.persistence.sql.Dialect;
 
 import java.sql.Connection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * Entry point for persistence in a database. Mix of configuration (Transaction, Dialect, ...) and registry for {@link
@@ -76,8 +77,9 @@ public class PersistenceContext {
 		return transactionManager.getCurrentConnection();
 	}
 	
-	public void executeInNewTransaction(JdbcOperation jdbcOperation) {
-		transactionManager.executeInNewTransaction(jdbcOperation);
+	public Set<Persister> getPersisters() {
+		// copy the Set because values() is backed by the Map and getPersisters() is not expected to permit such modifications
+		return new HashSet<>(persisterCache.values());
 	}
 	
 	public <T> Persister<T> getPersister(Class<T> clazz) {
