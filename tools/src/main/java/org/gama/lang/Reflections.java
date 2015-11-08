@@ -5,12 +5,10 @@ import org.gama.lang.collection.Iterables;
 import org.gama.lang.collection.Iterables.Finder;
 import org.gama.lang.collection.Iterables.Mapper;
 import org.gama.lang.collection.ReadOnlyIterator;
+import org.gama.lang.exception.Exceptions;
 
 import javax.annotation.Nonnull;
-import java.lang.reflect.AccessibleObject;
-import java.lang.reflect.Constructor;
-import java.lang.reflect.Field;
-import java.lang.reflect.Method;
+import java.lang.reflect.*;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -108,6 +106,14 @@ public final class Reflections {
 			throw new MemberNotFoundException("Method " + name + "(" + new StringAppender().ccat(argTypes, ", ").toString() + ") on " + clazz.getName() + " was not found");
 		}
 		return method;
+	}
+	
+	public static <E> E newInstance(Class<E> clazz) {
+		try {
+			return getDefaultConstructor(clazz).newInstance();
+		} catch (Throwable t) {
+			throw Exceptions.asRuntimeException(t);
+		}
 	}
 	
 	

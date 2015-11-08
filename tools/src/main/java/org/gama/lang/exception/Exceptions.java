@@ -21,10 +21,14 @@ public abstract class Exceptions {
 	 * @throws t si c'est une RuntimeException, sinon une nouvelle RuntimeException avec <tt>t</tt> en tant que cause
 	 */
 	public static void throwAsRuntimeException(Throwable t) {
+		throw asRuntimeException(t);
+	}
+	
+	public static RuntimeException asRuntimeException(Throwable t) {
 		if (t instanceof RuntimeException) {
-			throw (RuntimeException) t;
+			return  (RuntimeException) t;
 		} else {
-			throw new RuntimeException(t);
+			return new RuntimeException(t);
 		}
 	}
 	
@@ -40,6 +44,7 @@ public abstract class Exceptions {
 		if (detailMessageAccessor == null) {
 			synchronized (Exceptions.class) {
 				MESSAGE_ACCESSOR = new SoftReference<>(Reflections.findField(Throwable.class, "detailMessage"));
+				MESSAGE_ACCESSOR.get().setAccessible(true);
 			}
 		}
 		return MESSAGE_ACCESSOR.get();

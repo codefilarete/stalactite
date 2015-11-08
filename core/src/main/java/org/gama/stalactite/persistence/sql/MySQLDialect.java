@@ -1,12 +1,15 @@
 package org.gama.stalactite.persistence.sql;
 
+import org.gama.lang.Retryer;
 import org.gama.lang.StringAppender;
+import org.gama.lang.exception.Exceptions;
 import org.gama.stalactite.persistence.sql.ddl.DDLSchemaGenerator;
 import org.gama.stalactite.persistence.sql.ddl.DDLTableGenerator;
 import org.gama.stalactite.persistence.sql.ddl.JavaTypeToSqlTypeMapping;
 import org.gama.stalactite.persistence.sql.dml.binder.ColumnBinderRegistry;
 import org.gama.stalactite.persistence.structure.Table;
 
+import java.sql.SQLException;
 import java.util.Date;
 
 /**
@@ -19,11 +22,19 @@ public class MySQLDialect extends Dialect {
 	}
 	
 	public MySQLDialect(JavaTypeToSqlTypeMapping javaTypeToSqlTypeMapping) {
-		super(javaTypeToSqlTypeMapping);
+		this(javaTypeToSqlTypeMapping, new ColumnBinderRegistry());
 	}
 	
 	public MySQLDialect(JavaTypeToSqlTypeMapping javaTypeToSqlTypeMapping, ColumnBinderRegistry columnBinderRegistry) {
 		super(javaTypeToSqlTypeMapping, columnBinderRegistry);
+		
+		setWriteOperationRetryer(new Retryer(3, 200) {
+			@Override
+			protected boolean shouldRetry(Throwable t) {
+				SQLException sqlException = Exceptions.findExceptionInHierarchy(t, SQLException.class, "Lock wait timeout exceeded; try restarting transaction");
+				return sqlException != null;
+			}
+		});
 	}
 	
 	@Override

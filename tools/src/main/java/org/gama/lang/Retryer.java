@@ -8,14 +8,8 @@ import org.gama.lang.exception.Exceptions;
  */
 public abstract class Retryer {
 	
-	public static final Retryer NO_RETRY = new Retryer(0, 0) {
-		@Override
-		protected boolean shouldRetry(Throwable t) {
-			return false;
-		}
-	};
+	public static final Retryer NO_RETRY = new NoRetryer();
 
-	private int tryCount = 0;
 	private final int maxRetries;
 	private final long retryDelay;
 
@@ -25,21 +19,8 @@ public abstract class Retryer {
 	}
 
 	public <T> T execute(IDelegateWithReturnAndThrows<T> delegateWithResult, String description) throws Throwable {
-		try {
-			tryCount++;
-			return delegateWithResult.execute();
-		} catch (Throwable t) {
-			if (shouldRetry(t)) {
-				if (tryCount < maxRetries) {
-					waitRetryDelay();
-					return execute(delegateWithResult, description);
-				} else {
-					throw new RetryException(description, tryCount, retryDelay, t);
-				}
-			} else {
-				throw t;
-			}
-		}
+		Executor<T> executor = new Executor(delegateWithResult, description);
+		return executor.execute();
 	}
 
 	protected abstract boolean shouldRetry(Throwable t);
@@ -56,6 +37,48 @@ public abstract class Retryer {
 
 		public RetryException(String action, int tryCount,  long retryDelay, Throwable cause) {
 			super("Action \"" + action + "\" has been executed " + tryCount + " times every " + retryDelay + "ms and always failed", cause);
+		}
+	}
+	
+	/**
+	 * Internal méthode ofr execution in order to make "tryCount" thread-safe
+	 * @param <T>
+	 */
+	private final class Executor<T> {
+		private int tryCount = 0;
+		private final IDelegateWithReturnAndThrows<T> delegateWithResult;
+		private final String description;
+		private Executor(IDelegateWithReturnAndThrows<T> delegateWithResult, String description) {
+			this.delegateWithResult = delegateWithResult;
+			this.description = description;
+		}
+		public T execute() throws Throwable {
+			try {
+				tryCount++;
+				return delegateWithResult.execute();
+			} catch (Throwable t) {
+				if (shouldRetry(t)) {
+					if (tryCount < maxRetries) {
+						waitRetryDelay();
+						return execute();
+					} else {
+						throw new RetryException(description, tryCount, retryDelay, t);
+					}
+				} else {
+					throw t;
+				}
+			}
+		}
+	}
+	
+	private static final class NoRetryer extends Retryer {
+		public NoRetryer() {
+			super(0, 0);
+		}
+		
+		@Override
+		protected boolean shouldRetry(Throwable t) {
+			return false;
 		}
 	}
 }
