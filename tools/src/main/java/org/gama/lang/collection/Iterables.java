@@ -39,6 +39,18 @@ public final class Iterables {
 		}
 	}
 	
+	public static <E> E first(E[] iterable) {
+		return first(iterable, null);
+	}
+	
+	public static <E> E first(E[] iterable, E defaultValue) {
+		if (Arrays.isEmpty(iterable)) {
+			return defaultValue;
+		} else {
+			return iterable[0];
+		}
+	}
+	
 	/**
 	 * Renvoie la première entrée d'une Map, intéressant pour une {@link SortedMap} ou une {@link LinkedHashMap}
 	 * 

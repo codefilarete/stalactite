@@ -71,20 +71,43 @@ public class Randomizer {
 		return toReturn;
 	}
 	
-	public <E> List<E> drawElements(List<E> hat, int count) {
+	public <E> List<E> drawElements(Collection<E> hat, int count) {
 		int hatSize = hat.size();
 		// Anti overflow
 		count = Math.min(hatSize, count);
 		
 		List<E> toReturn = new ArrayList<>(count);
 		Set<Integer> drawnIndexes = new HashSet<>();
-		while (toReturn.size() < count) {
+		while (drawnIndexes.size() < count) {
 			int drawnIndex;
 			do {
 				drawnIndex = drawInt(0, hatSize);
 			} while(drawnIndexes.contains(drawnIndex));
 			drawnIndexes.add(drawnIndex);
-			toReturn.add(hat.get(drawnIndex));
+		}
+		toReturn.addAll(getElementsByIndex(hat, new TreeSet<>(drawnIndexes)));
+		return toReturn;
+	}
+	
+	static <E> List<E> getElementsByIndex(Iterable<E> iterable, TreeSet<Integer> indexes) {
+		List<E> toReturn;
+		if (iterable instanceof List) {
+			toReturn = new ArrayList<>(((List) iterable).size());
+			for (Integer index : indexes) {
+				toReturn.add(((List<E>) iterable).get(index));
+			}
+		} else {
+			toReturn = new ArrayList<>();
+			int i = 0;
+			Iterator<E> iterator = iterable.iterator();
+			for (int index : indexes) {
+				E next;
+				do {
+					next = iterator.next();
+					i++;
+				} while(i <= index && iterator.hasNext());
+				toReturn.add(next);
+			}
 		}
 		return toReturn;
 	}
