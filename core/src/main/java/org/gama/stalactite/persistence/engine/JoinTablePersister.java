@@ -13,7 +13,7 @@ import org.gama.sql.result.RowIterator;
 import org.gama.stalactite.persistence.engine.listening.*;
 import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
 import org.gama.stalactite.persistence.sql.Dialect;
-import org.gama.stalactite.persistence.sql.dml.PreparedSelect;
+import org.gama.stalactite.persistence.sql.dml.ColumnParamedSelect;
 import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.query.builder.SelectQueryBuilder;
 import org.gama.stalactite.query.model.SelectQuery;
@@ -124,8 +124,6 @@ public class JoinTablePersister<T> extends Persister<T> {
 		SelectExecutor selectExecutor = new SelectExecutor();
 		// creating query with join of all tables
 		selectExecutor.addComplementaryTables();
-		// adding "in" identifiers to where clause
-		selectExecutor.addInClause();
 		return selectExecutor.select(ids);
 	}
 	
@@ -159,10 +157,9 @@ public class JoinTablePersister<T> extends Persister<T> {
 			}
 		}
 		
-		public void addInClause() {
-			int whereValuesCount = blockSize;
-			int[] indexes = new int[whereValuesCount];
-			for (int i = 0; i < whereValuesCount;) {
+		private void bindInClause(int inSize) {
+			int[] indexes = new int[inSize];
+			for (int i = 0; i < inSize;) {
 				indexes[i] = ++i;
 			}
 			inOperatorValueIndexes.put(keyColumn, indexes);
@@ -195,11 +192,14 @@ public class JoinTablePersister<T> extends Persister<T> {
 			if (!parcels.isEmpty()) {
 				// change parameter mark count to adapt "in" operator values
 				condition.setParamMarkCount(blockSize);
+				// adding "in" identifiers to where clause
+				bindInClause(blockSize);
 				execute(connectionProvider, queryBuilder, parcels);
 			}
 			if (!lastBlock.isEmpty()) {
 				// change parameter mark count to adapt "in" operator values
 				condition.setParamMarkCount(lastBlock.size());
+				bindInClause(lastBlock.size());
 				execute(connectionProvider, queryBuilder, java.util.Collections.singleton(lastBlock));
 			}
 			return result;
@@ -208,7 +208,7 @@ public class JoinTablePersister<T> extends Persister<T> {
 		private void execute(PersisterExecutor.ConnectionProvider connectionProvider,
 								SelectQueryBuilder queryBuilder,
 								Iterable<? extends Iterable<Serializable>> idsParcels) {
-			PreparedSelect preparedSelect = new PreparedSelect(queryBuilder.toSQL(), inOperatorValueIndexes, parameterBinders, selectParameterBinders);
+			ColumnParamedSelect preparedSelect = new ColumnParamedSelect(queryBuilder.toSQL(), inOperatorValueIndexes, parameterBinders, selectParameterBinders);
 			ReadOperation<Table.Column> columnReadOperation = new ReadOperation<>(preparedSelect, connectionProvider);
 			for (Iterable<Serializable> parcel : idsParcels) {
 				execute(columnReadOperation, parcel);
@@ -219,7 +219,7 @@ public class JoinTablePersister<T> extends Persister<T> {
 			try(ReadOperation<Table.Column> closeableOperation = operation) {
 				operation.setValue(keyColumn, ids);
 				ResultSet resultSet = closeableOperation.execute();
-				RowIterator rowIterator = new RowIterator(resultSet, ((PreparedSelect) closeableOperation.getSqlStatement()).getSelectParameterBinders());
+				RowIterator rowIterator = new RowIterator(resultSet, ((ColumnParamedSelect) closeableOperation.getSqlStatement()).getSelectParameterBinders());
 				while (rowIterator.hasNext()) {
 					result.add(transform(rowIterator));
 				}

@@ -131,7 +131,7 @@ public class WriteOperation<ParamType> extends SQLOperation<ParamType> {
 	 * @param values values to be added as batch
 	 */
 	public void addBatch(Map<ParamType, Object> values) {
-		// Necessary to call setValues() BEFORE ensureStatement() because in case of ParameterizedSQL statement is built
+		// Necessary to call setValues() BEFORE ensureStatement() because in case of StringParamedSQL statement is built
 		// thanks to values (the expansion of parameters needs the values)
 		setValues(values);
 		applyValuesToEnsuredStatement();

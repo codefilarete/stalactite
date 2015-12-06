@@ -12,9 +12,9 @@ import org.gama.sql.dml.WriteOperation;
 import org.gama.sql.result.RowIterator;
 import org.gama.stalactite.persistence.engine.Persister.IIdentifierFixer;
 import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
-import org.gama.stalactite.persistence.sql.dml.ColumnPreparedSQL;
+import org.gama.stalactite.persistence.sql.dml.ColumnParamedSQL;
 import org.gama.stalactite.persistence.sql.dml.DMLGenerator;
-import org.gama.stalactite.persistence.sql.dml.PreparedSelect;
+import org.gama.stalactite.persistence.sql.dml.ColumnParamedSelect;
 import org.gama.stalactite.persistence.sql.dml.PreparedUpdate;
 import org.gama.stalactite.persistence.sql.dml.PreparedUpdate.UpwhereColumn;
 import org.gama.stalactite.persistence.structure.Table;
@@ -82,7 +82,7 @@ public class PersisterExecutor<T> {
 	}
 	
 	public int insert(Iterable<T> iterable) {
-		ColumnPreparedSQL insertStatement = dmlGenerator.buildInsert(mappingStrategy.getTargetTable().getColumns());
+		ColumnParamedSQL insertStatement = dmlGenerator.buildInsert(mappingStrategy.getTargetTable().getColumns());
 		WriteOperation<Column> writeOperation = newWriteOperation(insertStatement, new ConnectionProvider());
 		
 		JDBCBatchingIterator<T> jdbcBatchingIterator = new JDBCBatchingIterator<>(iterable, writeOperation, this.batchSize);
@@ -166,7 +166,7 @@ public class PersisterExecutor<T> {
 		if (mappingStrategy.isSingleColumnKey()) {
 			return deleteRoughly(iterable);
 		} else {
-			ColumnPreparedSQL deleteStatement = dmlGenerator.buildDelete(mappingStrategy.getTargetTable(), mappingStrategy.getVersionedKeys());
+			ColumnParamedSQL deleteStatement = dmlGenerator.buildDelete(mappingStrategy.getTargetTable(), mappingStrategy.getVersionedKeys());
 			WriteOperation<Column> writeOperation = newWriteOperation(deleteStatement, new ConnectionProvider());
 			JDBCBatchingIterator<T> jdbcBatchingIterator = new JDBCBatchingIterator<>(iterable, writeOperation, PersisterExecutor.this.batchSize);
 			while(jdbcBatchingIterator.hasNext()) {
@@ -195,7 +195,7 @@ public class PersisterExecutor<T> {
 		int blockSize = this.inOperatorMaxSize;
 		List<List<Serializable>> parcels = Collections.parcel(ids, blockSize);
 		List<Serializable> lastBlock = Iterables.last(parcels);
-		ColumnPreparedSQL deleteStatement;
+		ColumnParamedSQL deleteStatement;
 		WriteOperation<Column> writeOperation;
 		Table targetTable = mappingStrategy.getTargetTable();
 		Column keyColumn = mappingStrategy.getSingleColumnKey();
@@ -234,7 +234,7 @@ public class PersisterExecutor<T> {
 		int blockSize = this.inOperatorMaxSize;
 		List<List<Serializable>> parcels = Collections.parcel(ids, blockSize);
 		List<Serializable> lastBlock = Iterables.last(parcels);
-		PreparedSelect selectStatement;
+		ColumnParamedSelect selectStatement;
 		ReadOperation<Column> readOperation;
 		Table targetTable = mappingStrategy.getTargetTable();
 		Set<Column> columnsToRead = targetTable.getColumns().asSet();
@@ -265,7 +265,7 @@ public class PersisterExecutor<T> {
 		try(ReadOperation<Column> closeableOperation = operation) {
 			operation.setValue(column, values);
 			ResultSet resultSet = closeableOperation.execute();
-			RowIterator rowIterator = new RowIterator(resultSet, ((PreparedSelect) closeableOperation.getSqlStatement()).getSelectParameterBinders());
+			RowIterator rowIterator = new RowIterator(resultSet, ((ColumnParamedSelect) closeableOperation.getSqlStatement()).getSelectParameterBinders());
 			while (rowIterator.hasNext()) {
 				toReturn.add(mappingStrategy.transform(rowIterator.next()));
 			}
