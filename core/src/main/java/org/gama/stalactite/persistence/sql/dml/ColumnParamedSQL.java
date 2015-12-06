@@ -12,11 +12,11 @@ import java.util.Map;
  * 
  * @author Guillaume Mary
  */
-public class ColumnPreparedSQL extends ExpandableStatement<Column> {
+public class ColumnParamedSQL extends ExpandableStatement<Column> {
 	
 	private final Map<Column, int[]> columnIndexes;
 	
-	public ColumnPreparedSQL(String sql, Map<Column, int[]> columnIndexes, Map<Column, ParameterBinder> parameterBinders) {
+	public ColumnParamedSQL(String sql, Map<Column, int[]> columnIndexes, Map<Column, ParameterBinder> parameterBinders) {
 		super(sql, parameterBinders);
 		this.columnIndexes = columnIndexes;
 	}

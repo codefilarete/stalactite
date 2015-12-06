@@ -34,7 +34,7 @@ public class DMLGeneratorTest {
 		Column colA = toto.new Column("A", String.class);
 		Column colB = toto.new Column("B", String.class);
 
-		ColumnPreparedSQL buildedInsert = testInstance.buildInsert(toto.getColumns());
+		ColumnParamedSQL buildedInsert = testInstance.buildInsert(toto.getColumns());
 		assertEquals(buildedInsert.getSQL(), "insert into Toto(A, B) values (?, ?)");
 		
 		assertEquals(1, buildedInsert.getIndexes(colA)[0]);
@@ -67,7 +67,7 @@ public class DMLGeneratorTest {
 		Column colA = toto.new Column("A", String.class);
 		toto.new Column("B", String.class);
 		
-		ColumnPreparedSQL buildedDelete = testInstance.buildDelete(toto, Arrays.asList(colA));
+		ColumnParamedSQL buildedDelete = testInstance.buildDelete(toto, Arrays.asList(colA));
 		assertEquals("delete from Toto where A = ?", buildedDelete.getSQL());
 		
 		assertEquals(1, buildedDelete.getIndexes(colA)[0]);
@@ -80,7 +80,7 @@ public class DMLGeneratorTest {
 		Column colA = toto.new Column("A", String.class);
 		toto.new Column("B", String.class);
 		
-		ColumnPreparedSQL buildedDelete = testInstance.buildMassiveDelete(toto, colA, 1);
+		ColumnParamedSQL buildedDelete = testInstance.buildMassiveDelete(toto, colA, 1);
 		assertEquals("delete from Toto where A in (?)", buildedDelete.getSQL());
 		
 		assertEquals(1, buildedDelete.getIndexes(colA)[0]);
@@ -93,7 +93,7 @@ public class DMLGeneratorTest {
 		Column colA = toto.new Column("A", String.class);
 		Column colB = toto.new Column("B", String.class);
 		
-		ColumnPreparedSQL buildedSelect = testInstance.buildSelect(toto, Arrays.asList(colA, colB), Arrays.asList(colA));
+		ColumnParamedSQL buildedSelect = testInstance.buildSelect(toto, Arrays.asList(colA, colB), Arrays.asList(colA));
 		assertEquals(buildedSelect.getSQL(), "select A, B from Toto where A = ?");
 		
 		assertEquals(1, buildedSelect.getIndexes(colA)[0]);
@@ -106,7 +106,7 @@ public class DMLGeneratorTest {
 		Column colA = toto.new Column("A", String.class);
 		Column colB = toto.new Column("B", String.class);
 		
-		ColumnPreparedSQL buildedSelect = testInstance.buildMassiveSelect(toto, Arrays.asList(colA, colB), colA, 5);
+		ColumnParamedSQL buildedSelect = testInstance.buildMassiveSelect(toto, Arrays.asList(colA, colB), colA, 5);
 		assertEquals(buildedSelect.getSQL(), "select A, B from Toto where A in (?, ?, ?, ?, ?)");
 		
 		assertEquals(1, buildedSelect.getIndexes(colA)[0]);

@@ -72,7 +72,7 @@ public class WriteOperationTest {
 		parameterBinders.put("id", new LongBinder());
 		parameterBinders.put("name", new StringBinder());
 		
-		WriteOperation<String> testInstance = new WriteOperation<>(new ParameterizedSQL("insert into Toto(id, name) values(:id, :name)", parameterBinders), connectionProvider);
+		WriteOperation<String> testInstance = new WriteOperation<>(new StringParamedSQL("insert into Toto(id, name) values(:id, :name)", parameterBinders), connectionProvider);
 		testInstance.setValue("id", 1L);
 		testInstance.setValue("name", "tata");
 		int executeOne = testInstance.execute();
@@ -80,7 +80,7 @@ public class WriteOperationTest {
 		
 		parameterBinders.clear();
 		parameterBinders.put("ids", new LongBinder());
-		WriteOperation<String> testInstanceForDelete = new WriteOperation<>(new ParameterizedSQL("delete from Toto where id in (:ids)", parameterBinders), connectionProvider);
+		WriteOperation<String> testInstanceForDelete = new WriteOperation<>(new StringParamedSQL("delete from Toto where id in (:ids)", parameterBinders), connectionProvider);
 		testInstanceForDelete.addBatch(Maps.asMap("ids", (Object) Arrays.asList(1L, 2L, 3L)));
 		int executeMultiple = testInstanceForDelete.executeBatch();
 		assertEquals(1, executeMultiple);
@@ -92,7 +92,7 @@ public class WriteOperationTest {
 		parameterBinders.put("id", new LongBinder());
 		parameterBinders.put("name", new StringBinder());
 		
-		WriteOperation<String> testInstance = new WriteOperation<>(new ParameterizedSQL("insert into Toto(id, name) values(:id, :name)", parameterBinders), connectionProvider);
+		WriteOperation<String> testInstance = new WriteOperation<>(new StringParamedSQL("insert into Toto(id, name) values(:id, :name)", parameterBinders), connectionProvider);
 		testInstance.addBatch(Maps.asMap("id", (Object) 1L).add("name", "Tata"));
 		int executeMultiple = testInstance.executeBatch();
 		assertEquals(1, executeMultiple);

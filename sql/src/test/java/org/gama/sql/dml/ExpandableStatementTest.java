@@ -63,7 +63,7 @@ public class ExpandableStatementTest {
 	@Test(dataProvider = TEST_EXPANDABLE_PARAMETERS_DATA)
 	public void testDoApplyValue(final String sql, Map<String, Object> paramValues, Map<String, ParameterBinder> binders, Map<Integer, Integer> expectedIndexes) {
 		final Map<Integer, Object> appliedIndexedValues = new HashMap<>();
-		ExpandableStatement<String> testInstance = new ParameterizedSQL(sql, binders) {
+		ExpandableStatement<String> testInstance = new StringParamedSQL(sql, binders) {
 			@Override
 			protected void doApplyValue(int index, Object value, ParameterBinder paramBinder, PreparedStatement statement) {
 				appliedIndexedValues.put(index, value);

@@ -13,17 +13,17 @@ import java.util.Map;
  * 
  * @author Guillaume Mary
  */
-public class ParameterizedSQL extends ExpandableStatement<String> {
+public class StringParamedSQL extends ExpandableStatement<String> {
 	
 	private final ParsedSQL parsedSQL;
 	private ExpandableSQL expandableSQL;
 	private boolean expandableSQLExpired = false;
 	
-	public ParameterizedSQL(String originalSQL, Map<String, ParameterBinder> parameterBinders) {
+	public StringParamedSQL(String originalSQL, Map<String, ParameterBinder> parameterBinders) {
 		this(new SQLParameterParser(originalSQL).parse(), parameterBinders);
 	}
 	
-	public ParameterizedSQL(ParsedSQL parsedSQL, Map<String, ParameterBinder> parameterBinders) {
+	public StringParamedSQL(ParsedSQL parsedSQL, Map<String, ParameterBinder> parameterBinders) {
 		super(null, parameterBinders);
 		this.parsedSQL = parsedSQL;
 	}

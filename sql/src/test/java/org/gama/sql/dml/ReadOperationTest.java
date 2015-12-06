@@ -57,7 +57,7 @@ public class ReadOperationTest {
 		parameterBinders.put("id", new LongBinder());
 		parameterBinders.put("name", new StringBinder());
 		
-		ReadOperation<String> testInstance = new ReadOperation<>(new ParameterizedSQL("select count(*) from Toto where id = :id and name = :name", parameterBinders), connectionProvider);
+		ReadOperation<String> testInstance = new ReadOperation<>(new StringParamedSQL("select count(*) from Toto where id = :id and name = :name", parameterBinders), connectionProvider);
 		testInstance.setValue("id", 1L);
 		testInstance.setValue("name", "tata");
 		ResultSet resultSet = testInstance.execute();
