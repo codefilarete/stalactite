@@ -6,6 +6,6 @@ package org.gama.reflection;
 public class AbstractReflector<C> {
 	
 	protected void handleException(Throwable t, C target, Object... args) {
-		new ExceptionConverter<C>().convertException(t, target, this, args);
+		new ExceptionConverter().convertException(t, target, this, args);
 	}
 }

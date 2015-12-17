@@ -12,7 +12,7 @@ public abstract class AbstractMutator<C, T> extends AbstractReflector<C> impleme
 		try {
 			doSet(c, t);
 		} catch (Throwable throwable) {
-			handleException(throwable, c);
+			handleException(throwable, c, t);
 		}
 	}
 	
