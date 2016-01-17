@@ -24,7 +24,22 @@ public class Objects {
 		}
 	}
 	
+	public static <T, U> boolean equalsWithNull(T t, U u, BiPredicate<T, U> equalsNonNullDelegate) {
+		if (t == null && u == null) {
+			return true;
+		} else if (t != null ^ u != null) {
+			return false;
+		} else {
+			return equalsNonNullDelegate.test(t, u);
+		}
+	}
+	
 	public static <E> E preventNull(E value, E nullValue) {
 		return value == null ? nullValue : value;
+	}
+	
+	/** To be replaced by Java 8 BiPredicate */
+	public interface BiPredicate<T, U> {
+		boolean test(T t, U u);
 	}
 }
