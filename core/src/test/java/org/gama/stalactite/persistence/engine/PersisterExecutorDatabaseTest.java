@@ -7,7 +7,6 @@ import org.gama.lang.collection.Maps;
 import org.gama.sql.test.DerbyInMemoryDataSource;
 import org.gama.sql.test.HSQLDBInMemoryDataSource;
 import org.gama.sql.test.MariaDBEmbeddableDataSource;
-import org.gama.stalactite.persistence.id.IdentifierGenerator;
 import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
 import org.gama.stalactite.persistence.mapping.PersistentFieldHarverster;
 import org.gama.stalactite.persistence.sql.Dialect;
@@ -30,7 +29,6 @@ import java.util.AbstractMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.Assert.assertEquals;
 
@@ -67,7 +65,7 @@ public class PersisterExecutorDatabaseTest {
 	@BeforeMethod
 	public void setUpTest() throws SQLException {
 		// reset id counter between 2 tests else id "overflow"
-		identifierGenerator.idCounter.set(0);
+		identifierGenerator.reset();
 		
 		testInstance = new PersisterExecutor<>(totoClassMappingStrategy, new Persister.IdentifierFixer<>(totoClassMappingStrategy.getIdentifierGenerator(), totoClassMappingStrategy),
 				transactionManager, new DMLGenerator(dialect.getColumnBinderRegistry() , new DMLGenerator.CaseSensitiveSorter()), Retryer.NO_RETRY, 3,
@@ -187,23 +185,4 @@ public class PersisterExecutorDatabaseTest {
 					+ "]";
 		}
 	}
-	
-	/**
-	 * Simple id gnerator for our tests : increments a in-memory counter.
-	 */
-	public static class InMemoryCounterIdentifierGenerator implements IdentifierGenerator {
-		
-		private AtomicInteger idCounter = new AtomicInteger(0);
-		
-		@Override
-		public Serializable generate() {
-			return idCounter.addAndGet(1);
-		}
-		
-		@Override
-		public void configure(Map<String, Object> configuration) {
-			
-		}
-	}
-	
 }

@@ -6,7 +6,6 @@ import org.gama.lang.collection.Iterables;
 import org.gama.lang.collection.Maps;
 import org.gama.lang.collection.PairIterator;
 import org.gama.sql.test.HSQLDBInMemoryDataSource;
-import org.gama.stalactite.persistence.id.BeforeInsertIdentifierGenerator;
 import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
 import org.gama.stalactite.persistence.mapping.PersistentFieldHarverster;
 import org.gama.stalactite.persistence.sql.Dialect;
@@ -31,7 +30,6 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.*;
 import java.util.Map.Entry;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.*;
@@ -380,28 +378,6 @@ public class PersisterExecutorTest {
 			return getClass().getSimpleName() + "["
 					+ Maps.asMap("a", (Object) a).add("b", b).add("c", c)
 					+ "]";
-		}
-	}
-	
-	/**
-	 * Simple id gnerator for our tests : increments a in-memory counter.
-	 */
-	public static class InMemoryCounterIdentifierGenerator implements BeforeInsertIdentifierGenerator {
-		
-		private AtomicInteger idCounter = new AtomicInteger(0);
-		
-		@Override
-		public Serializable generate() {
-			return idCounter.addAndGet(1);
-		}
-		
-		public void reset() {
-			idCounter.set(0);
-		}
-		
-		@Override
-		public void configure(Map<String, Object> configuration) {
-			
 		}
 	}
 	

@@ -38,7 +38,7 @@ public class JoinTablePersisterTest {
 	private ArgumentCaptor<Integer> indexCaptor;
 	private ArgumentCaptor<String> statementArgCaptor;
 	private JdbcTransactionManager transactionManager;
-	private PersisterExecutorTest.InMemoryCounterIdentifierGenerator identifierGenerator;
+	private InMemoryCounterIdentifierGenerator identifierGenerator;
 	private ClassMappingStrategy<Toto> totoClassMappingStrategy1, totoClassMappingStrategy2;
 	private Dialect dialect;
 	private Table totoClassTable1, totoClassTable2;
@@ -72,7 +72,7 @@ public class JoinTablePersisterTest {
 		Map<Field, Table.Column> totoClassMapping2 = Maps.asMap(fieldId, columnMap2.get("id")).add(fieldX, columnMap2.get("x")).add(fieldY, columnMap2.get("y")).add(fieldZ, columnMap2.get("z"));
 		
 		
-		identifierGenerator = new PersisterExecutorTest.InMemoryCounterIdentifierGenerator();
+		identifierGenerator = new InMemoryCounterIdentifierGenerator();
 		totoClassMappingStrategy1 = new ClassMappingStrategy<>(Toto.class, totoClassTable1,
 				totoClassMapping1, fieldId, identifierGenerator);
 		totoClassMappingStrategy2 = new ClassMappingStrategy<>(Toto.class, totoClassTable2,
