@@ -69,7 +69,7 @@ public class ExceptionConverter {
 		if (Reflections.findField(target.getClass(), getter.getName()) == null) {
 			throw new IllegalArgumentException(target.getClass() + " doesn't have field " + getter.getName());
 		} else if (!getter.getType().isInstance(arg)) {
-			String fieldDescription = getter.getDeclaringClass().getTypeName() + "." + getter.getName();
+			String fieldDescription = getter.getDeclaringClass().getName() + "." + getter.getName();
 			throw new IllegalArgumentException("Field " + fieldDescription + " of type " + getter.getType().getName() + " can't be used with " + arg.getClass().getName());
 		} else {
 			throw new RuntimeException("Can't convert exception");
