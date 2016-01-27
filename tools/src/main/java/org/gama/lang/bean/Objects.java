@@ -1,7 +1,7 @@
 package org.gama.lang.bean;
 
 /**
- * @author mary
+ * @author Guillaume Mary
  */
 public class Objects {
 	
@@ -41,5 +41,10 @@ public class Objects {
 	/** To be replaced by Java 8 BiPredicate */
 	public interface BiPredicate<T, U> {
 		boolean test(T t, U u);
+	}
+	
+	/** To be replaced by Java 8 Function */
+	public interface Function<T, R> {
+		R apply(T t);
 	}
 }

@@ -3,7 +3,7 @@ package org.gama.lang.bean;
 /**
  * @author Guillaume Mary
  */
-public interface IDelegate {
+public interface IDelegate<R, T extends Throwable> {
 	
-	void execute();
+	R execute() throws T;
 }

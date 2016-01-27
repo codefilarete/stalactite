@@ -1,6 +1,6 @@
 package org.gama.lang;
 
-import org.gama.lang.bean.IDelegateWithReturnAndThrows;
+import org.gama.lang.bean.IDelegate;
 import org.gama.lang.exception.Exceptions;
 
 /**
@@ -18,8 +18,8 @@ public abstract class Retryer {
 		this.retryDelay = retryDelay;
 	}
 
-	public <T> T execute(IDelegateWithReturnAndThrows<T> delegateWithResult, String description) throws Throwable {
-		Executor<T> executor = new Executor(delegateWithResult, description);
+	public <T> T execute(IDelegate<T, ?> delegate, String description) throws Throwable {
+		Executor<T> executor = new Executor<>(delegate, description);
 		return executor.execute();
 	}
 
@@ -42,17 +42,17 @@ public abstract class Retryer {
 	
 	/**
 	 * Internal méthode ofr execution in order to make "tryCount" thread-safe
-	 * @param <T>
+	 * @param <R>
 	 */
-	private final class Executor<T> {
+	private final class Executor<R> {
 		private int tryCount = 0;
-		private final IDelegateWithReturnAndThrows<T> delegateWithResult;
+		private final IDelegate<R, ?> delegateWithResult;
 		private final String description;
-		private Executor(IDelegateWithReturnAndThrows<T> delegateWithResult, String description) {
+		private Executor(IDelegate<R, ?> delegateWithResult, String description) {
 			this.delegateWithResult = delegateWithResult;
 			this.description = description;
 		}
-		public T execute() throws Throwable {
+		public R execute() throws Throwable {
 			try {
 				tryCount++;
 				return delegateWithResult.execute();

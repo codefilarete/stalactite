@@ -6,7 +6,7 @@ import org.gama.lang.collection.ISorter;
 import org.gama.lang.collection.Iterables;
 import org.gama.lang.collection.Iterables.ForEach;
 import org.gama.sql.binder.ParameterBinder;
-import org.gama.stalactite.persistence.engine.PersisterExecutor;
+import org.gama.stalactite.persistence.engine.DMLExecutor;
 import org.gama.stalactite.persistence.sql.ddl.DDLTableGenerator;
 import org.gama.stalactite.persistence.sql.dml.PreparedUpdate.UpwhereColumn;
 import org.gama.stalactite.persistence.sql.dml.binder.ColumnBinderRegistry;
@@ -21,14 +21,11 @@ import java.util.TreeSet;
 import static org.gama.sql.dml.ExpandableSQL.ExpandableParameter.*;
 
 /**
- * Class for DML generation dedicated to {@link PersisterExecutor}. Not expected to be used elsewhere.
+ * Class for DML generation dedicated to {@link DMLExecutor}. Not expected to be used elsewhere.
  * 
  * @author Guillaume Mary
  */
 public class DMLGenerator {
-	
-	/** Comparator used to have  */
-	public static final ColumnNameComparator COLUMN_NAME_COMPARATOR = new ColumnNameComparator();
 	
 	private final ColumnBinderRegistry columnBinderRegistry;
 	
@@ -195,11 +192,11 @@ public class DMLGenerator {
 	 */
 	public static class CaseSensitiveSorter implements ISorter<Iterable<Column>> {
 		
-		public static final NoopSorter INSTANCE = new NoopSorter();
+		public static final CaseSensitiveSorter INSTANCE = new CaseSensitiveSorter();
 		
 		@Override
 		public Iterable<Column> sort(Iterable<Column> columns) {
-			TreeSet<Column> result = new TreeSet<>(COLUMN_NAME_COMPARATOR);
+			TreeSet<Column> result = new TreeSet<>(ColumnNameComparator.INSTANCE);
 			for (Column column : columns) {
 				result.add(column);
 			}
@@ -208,6 +205,9 @@ public class DMLGenerator {
 	}
 	
 	private static class ColumnNameComparator implements Comparator<Column> {
+		
+		private static final ColumnNameComparator INSTANCE = new ColumnNameComparator();
+		
 		@Override
 		public int compare(Column o1, Column o2) {
 			return String.CASE_INSENSITIVE_ORDER.compare(o1.getAbsoluteName(), o2.getAbsoluteName());

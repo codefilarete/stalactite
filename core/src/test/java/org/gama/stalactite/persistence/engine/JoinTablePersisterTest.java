@@ -1,6 +1,7 @@
 package org.gama.stalactite.persistence.engine;
 
 import org.gama.lang.Reflections;
+import org.gama.lang.bean.Objects;
 import org.gama.lang.collection.Arrays;
 import org.gama.lang.collection.Maps;
 import org.gama.stalactite.persistence.id.AutoAssignedIdentifierGenerator;
@@ -39,7 +40,7 @@ public class JoinTablePersisterTest {
 	private ArgumentCaptor<String> statementArgCaptor;
 	private JdbcTransactionManager transactionManager;
 	private InMemoryCounterIdentifierGenerator identifierGenerator;
-	private ClassMappingStrategy<Toto> totoClassMappingStrategy1, totoClassMappingStrategy2;
+	private ClassMappingStrategy<Toto> totoClassMappingStrategy_ontoTable1, totoClassMappingStrategy2_ontoTable2;
 	private Dialect dialect;
 	private Table totoClassTable1, totoClassTable2;
 	
@@ -73,9 +74,9 @@ public class JoinTablePersisterTest {
 		
 		
 		identifierGenerator = new InMemoryCounterIdentifierGenerator();
-		totoClassMappingStrategy1 = new ClassMappingStrategy<>(Toto.class, totoClassTable1,
+		totoClassMappingStrategy_ontoTable1 = new ClassMappingStrategy<>(Toto.class, totoClassTable1,
 				totoClassMapping1, fieldId, identifierGenerator);
-		totoClassMappingStrategy2 = new ClassMappingStrategy<>(Toto.class, totoClassTable2,
+		totoClassMappingStrategy2_ontoTable2 = new ClassMappingStrategy<>(Toto.class, totoClassTable2,
 				totoClassMapping2, fieldId, AutoAssignedIdentifierGenerator.INSTANCE);
 		
 		JavaTypeToSqlTypeMapping simpleTypeMapping = new JavaTypeToSqlTypeMapping();
@@ -107,8 +108,14 @@ public class JoinTablePersisterTest {
 		DataSource dataSource = mock(DataSource.class);
 		when(dataSource.getConnection()).thenReturn(connection);
 		transactionManager.setDataSource(dataSource);
-		testInstance = new JoinTablePersister<>(totoClassMappingStrategy1, dialect, transactionManager, 3);
-		testInstance.setMappingStrategies(Arrays.asList(totoClassMappingStrategy2));
+		testInstance = new JoinTablePersister<>(totoClassMappingStrategy_ontoTable1, dialect, transactionManager, 3);
+		testInstance.addMappingStrategy(totoClassMappingStrategy2_ontoTable2, new Objects.Function<Iterable<Toto>, Iterable<Toto>>() {
+			@Override
+			public Iterable<Toto> apply(Iterable<Toto> totos) {
+				// since we only want a replicate of totos in table2, we only need to return them
+				return totos;
+			}
+		});
 	}
 	
 	public void assertCapturedPairsEqual(PairSetList<Integer, Integer> expectedPairs) {

@@ -33,8 +33,9 @@ public class DeleteToAfterDeleteCascaderTest extends CascaderTest {
 				persistenceContextMock.getDialect(),
 				null, 10) {
 			@Override
-			protected void doDelete(Iterable<Tata> iterable) {
+			protected int doDelete(Iterable<Tata> iterable) {
 				// Overriden to do no action, because default super action is complex to mock
+				return 0;
 			}
 		};
 		

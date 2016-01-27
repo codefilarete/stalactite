@@ -33,8 +33,9 @@ public class InsertToBeforeInsertCascaderTest extends CascaderTest {
 				persistenceContextMock.getDialect(),
 				null, 10) {
 			@Override
-			protected void doInsert(Iterable<Tata> iterable) {
+			protected int doInsert(Iterable<Tata> iterable) {
 				// Overriden to do no action, because default super action is complex to mock
+				return 0;
 			}
 		};
 		

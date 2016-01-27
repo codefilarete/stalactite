@@ -2,10 +2,14 @@ package org.gama.stalactite.persistence.engine;
 
 import org.gama.lang.StringAppender;
 import org.gama.lang.Strings;
+import org.gama.lang.bean.Objects;
 import org.gama.lang.collection.Collections;
 import org.gama.lang.collection.Iterables;
 import org.gama.lang.collection.KeepOrderSet;
+import org.gama.lang.collection.PairIterator;
 import org.gama.lang.exception.Exceptions;
+import org.gama.sql.IConnectionProvider;
+import org.gama.sql.SimpleConnectionProvider;
 import org.gama.sql.binder.ParameterBinder;
 import org.gama.sql.dml.ReadOperation;
 import org.gama.sql.result.Row;
@@ -27,7 +31,7 @@ import static org.gama.sql.dml.ExpandableSQL.ExpandableParameter.*;
 /**
  * Persister for entity with multiple joined tables by primary key.
  * A main table is defined by the {@link ClassMappingStrategy} passed to constructor. Complementary tables are defined
- * with {@link #setMappingStrategies(Collection)}.
+ * with {@link #addMappingStrategy(ClassMappingStrategy, Objects.Function)}.
  * Entity load is defined by a select that joins all tables, each {@link ClassMappingStrategy} is called to complete
  * entity loading.
  * 
@@ -35,8 +39,8 @@ import static org.gama.sql.dml.ExpandableSQL.ExpandableParameter.*;
  */
 public class JoinTablePersister<T> extends Persister<T> {
 	
-	/** Strategies and executors that must be applied, LinkedHashMap to keep order of {@link #setMappingStrategies(Collection)} parameter */
-	private Map<ClassMappingStrategy<T>, PersisterExecutor<T>> executorPerStrategy = new LinkedHashMap<>();
+	/** Strategies and executors that must be applied, LinkedHashMap to keep order of {@link #addMappingStrategy(ClassMappingStrategy, Objects.Function)} parameter */
+	private Set<ClassMappingStrategy> strategies = new LinkedHashSet<>();
 	private final Dialect dialect;
 	
 	public JoinTablePersister(PersistenceContext persistenceContext, ClassMappingStrategy<T> mainMappingStrategy) {
@@ -51,67 +55,113 @@ public class JoinTablePersister<T> extends Persister<T> {
 	}
 	
 	/**
-	 * Set additionnal mapping strategies to apply for persistence. They will be called after the main strategy
+	 * Add a mapping strategy to be applied for persistence. It will be called after the main strategy
 	 * (passed in constructor), in order of the Collection, or in reverse order for delete actions to take into account
 	 * potential foreign keys.
-	 * 
-	 * @param mappingStrategies
+	 *
 	 */
-	public void setMappingStrategies(Collection<ClassMappingStrategy<T>> mappingStrategies) {
-		this.executorPerStrategy.clear();
-		for (ClassMappingStrategy<T> mappingStrategy : mappingStrategies) {
-			// NB: we force a NoopIdentifierFixer instance because secondary tables must use same key as main table
-			final PersisterExecutor<T> persisterExecutor = newPersisterExecutor(
-					mappingStrategy,
-					NoopIdentifierFixer.INSTANCE,
-					getPersisterExecutor().getTransactionManager(),
-					getPersisterExecutor().getDmlGenerator(),
-					getPersisterExecutor().getWriteOperationRetryer(),
-					getPersisterExecutor().getBatchSize(),
-					getPersisterExecutor().getInOperatorMaxSize());
-			this.executorPerStrategy.put(mappingStrategy, persisterExecutor);
-			PersisterListener<T> persisterListener = getPersisterListener();
-			persisterListener.addInsertListener(new NoopInsertListener<T>() {
-				@Override
-				public void afterInsert(Iterable<T> iterable) {
-					persisterExecutor.insert(iterable);
-				}
-			});
-			persisterListener.addUpdateListener(new NoopUpdateListener<T>() {
-				@Override
-				public void afterUpdate(Iterable<Map.Entry<T, T>> iterables, boolean allColumnsStatement) {
-					persisterExecutor.update(iterables, allColumnsStatement);
-				}
-			});
-			persisterListener.addUpdateRouglyListener(new NoopUpdateRouglyListener<T>() {
-				@Override
-				public void afterUpdateRoughly(Iterable<T> iterables) {
-					persisterExecutor.updateRoughly(iterables);
-				}
-			});
-			persisterListener.addDeleteListener(new NoopDeleteListener<T>() {
-				@Override
-				public void beforeDelete(Iterable<T> iterables) {
-					persisterExecutor.delete(iterables);
-				}
-			});
-		}
+	public <U> void addMappingStrategy(ClassMappingStrategy<U> mappingStrategy, Objects.Function<Iterable<T>, Iterable<U>> complementaryInstancesProvider) {
+		this.strategies.add(mappingStrategy);
+		addInsertExecutor(mappingStrategy, complementaryInstancesProvider);
+		addUpdateExecutor(mappingStrategy, complementaryInstancesProvider);
+		addUpdateRoughlyExecutor(mappingStrategy, complementaryInstancesProvider);
+		addDeleteExecutor(mappingStrategy, complementaryInstancesProvider);
 	}
 	
-	public Set<ClassMappingStrategy<T>> getMappingStrategies() {
-		return executorPerStrategy.keySet();
+	private <U> void addInsertExecutor(ClassMappingStrategy<U> mappingStrategy, final Objects.Function<Iterable<T>, Iterable<U>> complementaryInstancesProvider) {
+		final InsertExecutor insertExecutor = newInsertExecutor(
+				mappingStrategy,
+				NoopIdentifierFixer.INSTANCE,
+				getTransactionManager(),
+				getDmlGenerator(),
+				getWriteOperationRetryer(),
+				getBatchSize(),
+				getInOperatorMaxSize());
+		getPersisterListener().addInsertListener(new NoopInsertListener<T>() {
+			@Override
+			public void afterInsert(Iterable<T> iterables) {
+				insertExecutor.insert(complementaryInstancesProvider.apply(iterables));
+			}
+		});
+	}
+	
+	private <U> void addUpdateExecutor(ClassMappingStrategy<U> mappingStrategy, final Objects.Function<Iterable<T>, Iterable<U>> complementaryInstancesProvider) {
+		final UpdateExecutor updateExecutor = newUpdateExecutor(
+				mappingStrategy,
+				NoopIdentifierFixer.INSTANCE,
+				getTransactionManager(),
+				getDmlGenerator(),
+				getWriteOperationRetryer(),
+				getBatchSize(),
+				getInOperatorMaxSize());
+		getPersisterListener().addUpdateListener(new NoopUpdateListener<T>() {
+			@Override
+			public void afterUpdate(Iterable<Map.Entry<T, T>> iterables, boolean allColumnsStatement) {
+				// Creation of an Entry<U, U> iterator from the Entry<T, T> iterator by applying complementaryInstancesProvider on each.
+				// Not really optimized since we create 2 lists but I couldn't find better without changing method signature
+				// or calling numerous time complementaryInstancesProvider.apply(..) (one time per T instance)
+				List<T> keysIterable = new ArrayList<>();
+				List<T> valuesIterable = new ArrayList<>();
+				for (Map.Entry<T, T> entry : iterables) {
+					keysIterable.add(entry.getKey());
+					valuesIterable.add(entry.getValue());
+				}
+				final PairIterator<U, U> x = new PairIterator<>(complementaryInstancesProvider.apply(keysIterable), complementaryInstancesProvider.apply(valuesIterable));
+				
+				updateExecutor.update(new Iterable<Map.Entry<U, U>>() {
+					@Override
+					public Iterator<Map.Entry<U, U>> iterator() {
+						return x;
+					}
+				}, allColumnsStatement);
+			}
+		});
+	}
+	
+	private <U> void addUpdateRoughlyExecutor(ClassMappingStrategy<U> mappingStrategy, final Objects.Function<Iterable<T>, Iterable<U>> complementaryInstancesProvider) {
+		final UpdateExecutor updateExecutor = newUpdateExecutor(
+				mappingStrategy,
+				NoopIdentifierFixer.INSTANCE,
+				getTransactionManager(),
+				getDmlGenerator(),
+				getWriteOperationRetryer(),
+				getBatchSize(),
+				getInOperatorMaxSize());
+		getPersisterListener().addUpdateRouglyListener(new NoopUpdateRouglyListener<T>() {
+			@Override
+			public void afterUpdateRoughly(Iterable<T> iterables) {
+				updateExecutor.updateRoughly(complementaryInstancesProvider.apply(iterables));
+			}
+		});
+	}
+	
+	private <U> void addDeleteExecutor(ClassMappingStrategy<U> mappingStrategy, final Objects.Function<Iterable<T>, Iterable<U>> complementaryInstancesProvider) {
+		final DeleteExecutor deleteExecutor = newDeleteExecutor(
+				mappingStrategy,
+				NoopIdentifierFixer.INSTANCE,
+				getTransactionManager(),
+				getDmlGenerator(),
+				getWriteOperationRetryer(),
+				getBatchSize(),
+				getInOperatorMaxSize());
+		getPersisterListener().addDeleteListener(new NoopDeleteListener<T>() {
+			@Override
+			public void beforeDelete(Iterable<T> iterables) {
+				deleteExecutor.delete(complementaryInstancesProvider.apply(iterables));
+			}
+		});
+	}
+	
+	public Set<ClassMappingStrategy> getMappingStrategies() {
+		return strategies;
 	}
 	
 	public Set<Table> getTables() {
 		Set<Table> tables  = new LinkedHashSet<>();
-		for (ClassMappingStrategy<T> classMappingStrategy : getMappingStrategies()) {
+		for (ClassMappingStrategy classMappingStrategy : getMappingStrategies()) {
 			tables.add(classMappingStrategy.getTargetTable());
 		}
 		return tables;
-	}
-	
-	private Collection<PersisterExecutor<T>> getPersisterExecutors() {
-		return executorPerStrategy.values();
 	}
 	
 	/**
@@ -135,18 +185,18 @@ public class JoinTablePersister<T> extends Persister<T> {
 		private final Map<String, ParameterBinder> selectParameterBinders = new HashMap<>();
 		private final Map<Table.Column, ParameterBinder> parameterBinders = new HashMap<>();
 		private final Map<Table.Column, int[]> inOperatorValueIndexes = new HashMap<>();
-		private final int blockSize = getPersisterExecutor().getInOperatorMaxSize();
+		private final int blockSize = getInOperatorMaxSize();
 		private final Table.Column keyColumn = getTargetTable().getPrimaryKey();
 		
 		private List<T> result;
 		
 		public void addComplementaryTables() {
 			Table previousTable = getTargetTable();
-			addColumnsToSelect(getPersisterExecutor().getMappingStrategy().getTargetTable().getColumns(), selectQuery, selectParameterBinders);
+			addColumnsToSelect(getMappingStrategy().getTargetTable().getColumns(), selectQuery, selectParameterBinders);
 			// looping on secondary tables by joining them and adding their columns to select
 			SelectQuery.FluentFrom from = null;
-			for (PersisterExecutor<T> complementaryExecutor : getPersisterExecutors()) {
-				Table complementaryTable = complementaryExecutor.getMappingStrategy().getTargetTable();
+			for (ClassMappingStrategy complementaryStrategy : getMappingStrategies()) {
+				Table complementaryTable = complementaryStrategy.getTargetTable();
 				addColumnsToSelect(complementaryTable.getColumns(), selectQuery, selectParameterBinders);
 				if (from == null) {
 					// initialization of from with first encountered table
@@ -179,7 +229,7 @@ public class JoinTablePersister<T> extends Persister<T> {
 			result = new ArrayList<>(parcels.size() * blockSize);
 			
 			// Use same Connection for all operations
-			PersisterExecutor.ConnectionProvider connectionProvider = getPersisterExecutor().new ConnectionProvider();
+			IConnectionProvider connectionProvider = new SimpleConnectionProvider(getTransactionManager().getCurrentConnection());
 			// Creation of the where clause: we use a dynamic "in" operator clause to avoid multiple SelectQuery instanciation
 			DynamicInClause condition = new DynamicInClause();
 			selectQuery.where(keyColumn, condition);
@@ -205,7 +255,7 @@ public class JoinTablePersister<T> extends Persister<T> {
 			return result;
 		}
 		
-		private void execute(PersisterExecutor.ConnectionProvider connectionProvider,
+		private void execute(IConnectionProvider connectionProvider,
 								SelectQueryBuilder queryBuilder,
 								Iterable<? extends Iterable<Serializable>> idsParcels) {
 			ColumnParamedSelect preparedSelect = new ColumnParamedSelect(queryBuilder.toSQL(), inOperatorValueIndexes, parameterBinders, selectParameterBinders);
@@ -231,9 +281,9 @@ public class JoinTablePersister<T> extends Persister<T> {
 		private T transform(RowIterator rowIterator) {
 			Row row = rowIterator.next();
 			// get entity from main mapping stategy
-			T t = getPersisterExecutor().getMappingStrategy().transform(row);
+			T t = getMappingStrategy().transform(row);
 			// complete entity load with complementary mapping strategy
-			for (ClassMappingStrategy<T> classMappingStrategy : executorPerStrategy.keySet()) {
+			for (ClassMappingStrategy<T> classMappingStrategy : strategies) {
 				classMappingStrategy.getRowTransformer().applyRowToBean(row, t);
 			}
 			return t;

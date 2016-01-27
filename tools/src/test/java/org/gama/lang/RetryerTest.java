@@ -1,6 +1,6 @@
 package org.gama.lang;
 
-import org.gama.lang.bean.IDelegateWithReturnAndThrows;
+import org.gama.lang.bean.ISilentDelegate;
 import org.testng.annotations.Test;
 
 import static org.junit.Assert.assertEquals;
@@ -22,9 +22,9 @@ public class RetryerTest {
 		
 		final int[] callTimes = new int[1];
 		try {
-			testInstance.execute(new IDelegateWithReturnAndThrows<Object>() {
+			testInstance.execute(new ISilentDelegate<Object>() {
 				@Override
-				public Object execute() throws Throwable {
+				public Object execute() {
 					callTimes[0]++;
 					throw new RuntimeException("Never works !");
 				}
@@ -47,9 +47,9 @@ public class RetryerTest {
 		
 		final int[] callTimes = new int[1];
 		try {
-			testInstance.execute(new IDelegateWithReturnAndThrows<Object>() {
+			testInstance.execute(new ISilentDelegate<Object>() {
 				@Override
-				public Object execute() throws Throwable {
+				public Object execute() {
 					callTimes[0]++;
 					if (callTimes[0] < 2) {
 						throw new RuntimeException("Never works !");
@@ -74,9 +74,9 @@ public class RetryerTest {
 		
 		final int[] callTimes = new int[1];
 		try {
-			testInstance.execute(new IDelegateWithReturnAndThrows<Object>() {
+			testInstance.execute(new ISilentDelegate<Object>() {
 				@Override
-				public Object execute() throws Throwable {
+				public Object execute() {
 					callTimes[0]++;
 					return null;
 				}
@@ -98,9 +98,9 @@ public class RetryerTest {
 		
 		final int[] callTimes = new int[1];
 		try {
-			testInstance.execute(new IDelegateWithReturnAndThrows<Object>() {
+			testInstance.execute(new ISilentDelegate<Object>() {
 				@Override
-				public Object execute() throws Throwable {
+				public Object execute() {
 					callTimes[0]++;
 					if (callTimes[0] < 3) {
 						throw new RuntimeException("retry");
@@ -122,9 +122,9 @@ public class RetryerTest {
 		final int[] callTimes = new int[1];
 		String result = null;
 		try {
-			result = (String) testInstance.execute(new IDelegateWithReturnAndThrows<Object>() {
+			result = (String) testInstance.execute(new ISilentDelegate<Object>() {
 				@Override
-				public Object execute() throws Throwable {
+				public Object execute() {
 					callTimes[0]++;
 					return "OK";
 				}

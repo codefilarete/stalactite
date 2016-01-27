@@ -1,7 +1,6 @@
 package org.gama.stalactite.persistence.engine.listening;
 
-import org.gama.lang.bean.IDelegate;
-import org.gama.lang.bean.IDelegateWithReturn;
+import org.gama.lang.bean.ISilentDelegate;
 
 import java.io.Serializable;
 import java.util.List;
@@ -29,10 +28,11 @@ public class PersisterListener<T> {
 		return this;
 	}
 	
-	public void doWithInsertListener(Iterable<T> iterable, IDelegate delegate) {
+	public <R> R doWithInsertListener(Iterable<T> iterable, ISilentDelegate<R> delegate) {
 		insertListener.beforeInsert(iterable);
-		delegate.execute();
+		R result = delegate.execute();
 		insertListener.afterInsert(iterable);
+		return result;
 	}
 	
 	public UpdateRouglyListenerCollection<T> getUpdateRouglyListener() {
@@ -44,10 +44,11 @@ public class PersisterListener<T> {
 		return this;
 	}
 	
-	public void doWithUpdateRouglyListener(Iterable<T> iterable, IDelegate delegate) {
+	public <R> R doWithUpdateRouglyListener(Iterable<T> iterable, ISilentDelegate<R> delegate) {
 		updateRouglyListener.beforeUpdateRoughly(iterable);
-		delegate.execute();
+		R result = delegate.execute();
 		updateRouglyListener.afterUpdateRoughly(iterable);
+		return result;
 	}
 	
 	public UpdateListenerCollection<T> getUpdateListener() {
@@ -59,10 +60,11 @@ public class PersisterListener<T> {
 		return this;
 	}
 	
-	public void doWithUpdateListener(Iterable<Entry<T, T>> differencesIterable, boolean allColumnsStatement, IDelegate delegate) {
+	public <R> R doWithUpdateListener(Iterable<Entry<T, T>> differencesIterable, boolean allColumnsStatement, ISilentDelegate<R> delegate) {
 		updateListener.beforeUpdate(differencesIterable, allColumnsStatement);
-		delegate.execute();
+		R result = delegate.execute();
 		updateListener.afterUpdate(differencesIterable, allColumnsStatement);
+		return result;
 	}
 	
 	public DeleteListenerCollection<T> getDeleteListener() {
@@ -74,10 +76,11 @@ public class PersisterListener<T> {
 		return this;
 	}
 	
-	public void doWithDeleteListener(Iterable<T> iterable, IDelegate delegate) {
+	public <R> R doWithDeleteListener(Iterable<T> iterable, ISilentDelegate<R> delegate) {
 		deleteListener.beforeDelete(iterable);
-		delegate.execute();
+		R result = delegate.execute();
 		deleteListener.afterDelete(iterable);
+		return result;
 	}
 	
 	public SelectListenerCollection<T> getSelectListener() {
@@ -89,11 +92,11 @@ public class PersisterListener<T> {
 		return this;
 	}
 	
-	public List<T> doWithSelectListener(Iterable<Serializable> ids, IDelegateWithReturn<List<T>> delegate) {
+	public List<T> doWithSelectListener(Iterable<Serializable> ids, ISilentDelegate<List<T>> delegate) {
 		selectListener.beforeSelect(ids);
-		List<T> tList = delegate.execute();
-		selectListener.afterSelect(tList);
-		return tList;
+		List<T> toReturn = delegate.execute();
+		selectListener.afterSelect(toReturn);
+		return toReturn;
 	}
 	
 }

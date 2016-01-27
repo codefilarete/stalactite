@@ -32,11 +32,11 @@ import java.util.Map.Entry;
 
 import static org.junit.Assert.assertEquals;
 
-public class PersisterExecutorDatabaseTest {
+public class PersisterDatabaseTest {
 	
 	private static final String DATASOURCES_DATAPROVIDER_NAME = "datasources";
 	
-	private PersisterExecutor<Toto> testInstance;
+	private Persister<Toto> testInstance;
 	private JdbcTransactionManager transactionManager;
 	private InMemoryCounterIdentifierGenerator identifierGenerator;
 	private ClassMappingStrategy<Toto> totoClassMappingStrategy;
@@ -67,9 +67,9 @@ public class PersisterExecutorDatabaseTest {
 		// reset id counter between 2 tests else id "overflow"
 		identifierGenerator.reset();
 		
-		testInstance = new PersisterExecutor<>(totoClassMappingStrategy, new Persister.IdentifierFixer<>(totoClassMappingStrategy.getIdentifierGenerator(), totoClassMappingStrategy),
-				transactionManager, new DMLGenerator(dialect.getColumnBinderRegistry() , new DMLGenerator.CaseSensitiveSorter()), Retryer.NO_RETRY, 3,
-				3);
+		testInstance = new Persister<>(totoClassMappingStrategy, transactionManager,
+				new Persister.IdentifierFixer<>(totoClassMappingStrategy.getIdentifierGenerator(), totoClassMappingStrategy),
+				new DMLGenerator(dialect.getColumnBinderRegistry() , DMLGenerator.CaseSensitiveSorter.INSTANCE), Retryer.NO_RETRY, 3, 3);
 	}
 	
 	@DataProvider(name = DATASOURCES_DATAPROVIDER_NAME)
@@ -113,7 +113,7 @@ public class PersisterExecutorDatabaseTest {
 	}
 	
 	@Test(dataProvider = DATASOURCES_DATAPROVIDER_NAME)
-	public void testSelect_updateRowCount(final DataSource dataSource) throws SQLException {
+	public void testSelect_rowCount(final DataSource dataSource) throws SQLException {
 		transactionManager.setDataSource(dataSource);
 		DDLDeployer ddlDeployer = new DDLDeployer(dialect.getDdlSchemaGenerator(), transactionManager) {
 			@Override
@@ -126,7 +126,7 @@ public class PersisterExecutorDatabaseTest {
 		
 		
 		// check inserted row count
-		int insertedRowCount = testInstance.insert(Arrays.asList(new Toto(1, 10, 100)));
+		int insertedRowCount = testInstance.insert(new Toto(1, 10, 100));
 		assertEquals(1, insertedRowCount);
 		insertedRowCount = testInstance.insert(Arrays.asList(new Toto(2, 20, 200), new Toto(3, 30, 300), new Toto(4, 40, 400)));
 		assertEquals(3, insertedRowCount);
@@ -140,16 +140,16 @@ public class PersisterExecutorDatabaseTest {
 		assertEquals(0, updatedRoughlyRowCount);
 		
 		// check updated row count
-		int updatedFullyRowCount = testInstance.updateFully(Arrays.asList((Entry<Toto, Toto>)
-				new AbstractMap.SimpleEntry<>(new Toto(1, 10, 100), new Toto(1, 10, 101))));
+		int updatedFullyRowCount = testInstance.update(Arrays.asList((Entry<Toto, Toto>)
+				new AbstractMap.SimpleEntry<>(new Toto(1, 10, 100), new Toto(1, 10, 101))), true);
 		assertEquals(1, updatedFullyRowCount);
-		updatedFullyRowCount = testInstance.updateFully(Arrays.asList((Entry<Toto, Toto>)
-				new AbstractMap.SimpleEntry<>(new Toto(1, 10, 101), new Toto(1, 10, 101))));
+		updatedFullyRowCount = testInstance.update(Arrays.asList((Entry<Toto, Toto>)
+				new AbstractMap.SimpleEntry<>(new Toto(1, 10, 101), new Toto(1, 10, 101))), true);
 		assertEquals(0, updatedFullyRowCount);
-		updatedFullyRowCount = testInstance.updateFully(Arrays.asList((Entry<Toto, Toto>)
+		updatedFullyRowCount = testInstance.update(Arrays.asList((Entry<Toto, Toto>)
 				new AbstractMap.SimpleEntry<>(new Toto(2, 20, 200), new Toto(2, 20, 201)),
 				new AbstractMap.SimpleEntry<>(new Toto(3, 30, 300), new Toto(3, 30, 301)),
-				new AbstractMap.SimpleEntry<>(new Toto(4, 40, 400), new Toto(4, 40, 401))));
+				new AbstractMap.SimpleEntry<>(new Toto(4, 40, 400), new Toto(4, 40, 401))), true);
 		assertEquals(3, updatedFullyRowCount);
 		
 		// check deleted row count

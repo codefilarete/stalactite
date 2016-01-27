@@ -1,7 +1,7 @@
 package org.gama.sql.dml;
 
 import org.gama.lang.Retryer;
-import org.gama.lang.bean.IDelegateWithReturnAndThrows;
+import org.gama.lang.bean.IDelegate;
 import org.gama.lang.exception.Exceptions;
 import org.gama.sql.IConnectionProvider;
 import org.slf4j.Logger;
@@ -48,7 +48,7 @@ public class WriteOperation<ParamType> extends SQLOperation<ParamType> {
 	 */
 	public int execute() {
 		applyValuesToEnsuredStatement();
-		return doExecuteUpdate();
+		return executeUpdate();
 	}
 	
 	/**
@@ -66,14 +66,18 @@ public class WriteOperation<ParamType> extends SQLOperation<ParamType> {
 		}
 	}
 	
-	private int doExecuteUpdate() {
+	private int executeUpdate() {
 		LOGGER.debug(getSQL());
-		return (int) doWithRetry(new IDelegateWithReturnAndThrows() {
+		return doWithRetry(new IDelegate<Integer, SQLException>() {
 			@Override
-			public Object execute() throws Throwable {
-				return preparedStatement.executeUpdate();
+			public Integer execute() throws SQLException {
+				return doExecuteUpdate();
 			}
 		});
+	}
+	
+	private int doExecuteUpdate() throws SQLException {
+		return preparedStatement.executeUpdate();
 	}
 	
 	/**
@@ -82,7 +86,7 @@ public class WriteOperation<ParamType> extends SQLOperation<ParamType> {
 	 * to the {@link Statement#executeBatch()} specifications: it returns {@link Statement#SUCCESS_NO_INFO} if one of
 	 * the updates did, same for {@link Statement#EXECUTE_FAILED}.
 	 * This operation is only here to make {@link #executeBatch()} looks like {@link #execute()}, added that I don't
-	 * see interest of upper layer to have fine grained result as int[]. 
+	 * see interest for upper layer to have fine grained result as int[]. 
 	 * 
 	 * @return {@link Statement#SUCCESS_NO_INFO}, {@link Statement#EXECUTE_FAILED}, or the sum of all ints
 	 */
@@ -105,9 +109,9 @@ public class WriteOperation<ParamType> extends SQLOperation<ParamType> {
 	private int[] doExecuteBatch() {
 		LOGGER.debug(getSQL());
 		try {
-			return (int[]) doWithRetry(new IDelegateWithReturnAndThrows() {
+			return (int[]) doWithRetry(new IDelegate<Object, SQLException>() {
 				@Override
-				public Object execute() throws Throwable {
+				public Object execute() throws SQLException {
 					return preparedStatement.executeBatch();
 				}
 			});
@@ -116,7 +120,7 @@ public class WriteOperation<ParamType> extends SQLOperation<ParamType> {
 		}
 	}
 	
-	private <T> T doWithRetry(IDelegateWithReturnAndThrows<T> delegateWithResult) {
+	private <T> T doWithRetry(IDelegate<T, ?> delegateWithResult) {
 		try {
 			return retryer.execute(delegateWithResult, getSQL());
 		} catch (Throwable t) {

@@ -35,8 +35,9 @@ public class UpdateToAfterUpdateCascaderTest extends CascaderTest {
 				persistenceContextMock.getDialect(),
 				null, 10) {
 			@Override
-			protected void doUpdate(Iterable<Entry<Tata, Tata>> differencesIterable, boolean allColumnsStatement) {
+			protected int doUpdate(Iterable<Entry<Tata, Tata>> differencesIterable, boolean allColumnsStatement) {
 				// Overriden to do no action, because default super action is complex to mock
+				return 0;
 			}
 		};
 		
