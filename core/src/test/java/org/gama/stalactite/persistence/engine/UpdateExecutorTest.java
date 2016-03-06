@@ -31,9 +31,8 @@ public class UpdateExecutorTest extends DMLExecutorTest {
 	@BeforeMethod
 	public void setUpTest() throws SQLException {
 		super.setUpTest();
-		Persister.IdentifierFixer<Toto> totoIdentifierFixer = new Persister.IdentifierFixer<>(totoClassMappingStrategy.getIdentifierGenerator(), totoClassMappingStrategy);
 		DMLGenerator dmlGenerator = new DMLGenerator(dialect.getColumnBinderRegistry(), new DMLGenerator.CaseSensitiveSorter());
-		testInstance = new UpdateExecutor<>(totoClassMappingStrategy, totoIdentifierFixer, transactionManager, dmlGenerator, Retryer.NO_RETRY, 3, 3);
+		testInstance = new UpdateExecutor<>(persistenceConfiguration.classMappingStrategy, transactionManager, dmlGenerator, Retryer.NO_RETRY, 3, 3);
 	}
 	
 	@Test

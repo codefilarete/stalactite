@@ -1,5 +1,7 @@
 package org.gama.lang.collection;
 
+import org.gama.lang.bean.Objects;
+
 import javax.annotation.Nonnull;
 import java.util.*;
 import java.util.Map.Entry;
@@ -22,9 +24,16 @@ public final class Iterables {
 		if (iterable == null) {
 			return defaultValue;
 		} else {
-			Iterator<E> iterator = iterable.iterator();
-			return iterator.hasNext() ? iterator.next() : null;
+			return first(iterable.iterator());
 		}
+	}
+	
+	public static <E> E first(Iterator<E> iterator) {
+		return first(iterator, null);
+	}
+	
+	public static <E> E first(Iterator<E> iterator, E defaultValue) {
+		return iterator.hasNext() ? iterator.next() : defaultValue;
 	}
 	
 	public static <E> E first(List<E> iterable) {
@@ -121,6 +130,18 @@ public final class Iterables {
 			result.add(iterator.next());
 		}
 		return result;
+	}
+	
+	public static <E> Iterable<E> filter(Iterable<E> iterable, Objects.Predicate<E> predicate) {
+		Iterator<E> iterator = iterable.iterator();
+		while (iterator.hasNext()) {
+			E e = iterator.next();
+			if (!predicate.test(e)) {
+				iterator.remove();
+			}
+			
+		}
+		return iterable;
 	}
 	
 	public static <E> Iterator<E> reverseIterator(List<E> list) {

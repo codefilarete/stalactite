@@ -9,7 +9,6 @@ import org.gama.stalactite.persistence.id.sequence.PooledSequencePersister;
 import org.gama.stalactite.persistence.sql.Dialect;
 import org.gama.stalactite.persistence.sql.ddl.JavaTypeToSqlTypeMapping;
 import org.gama.stalactite.test.JdbcTransactionManager;
-import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
@@ -35,11 +34,6 @@ public class PooledSequencePersisterTest {
 		dialect = new Dialect(simpleTypeMapping);
 		persistenceContext = new PersistenceContext(new JdbcTransactionManager(new HSQLDBInMemoryDataSource()), dialect);
 		testInstance = new PooledSequencePersister(dialect, persistenceContext.getTransactionManager(), persistenceContext.getJDBCBatchSize());
-	}
-	
-	@AfterMethod
-	public void tearDown() {
-		PersistenceContext.clearCurrent();
 	}
 	
 	@Test

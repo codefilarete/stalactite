@@ -4,8 +4,6 @@ import org.gama.lang.Retryer;
 import org.gama.lang.bean.ISilentDelegate;
 import org.gama.lang.collection.Iterables;
 import org.gama.stalactite.persistence.engine.listening.PersisterListener;
-import org.gama.stalactite.persistence.id.BeforeInsertIdentifierGenerator;
-import org.gama.stalactite.persistence.id.IdentifierGenerator;
 import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
 import org.gama.stalactite.persistence.sql.Dialect;
 import org.gama.stalactite.persistence.sql.dml.DMLGenerator;
@@ -42,11 +40,11 @@ public class Persister<T> {
 	}
 	
 	public Persister(ClassMappingStrategy<T> mappingStrategy, Dialect dialect, TransactionManager transactionManager, int jdbcBatchSize) {
-		this(mappingStrategy, transactionManager, configureIdentifierFixer(mappingStrategy), dialect.getDmlGenerator(),
+		this(mappingStrategy, transactionManager, dialect.getDmlGenerator(),
 				dialect.getWriteOperationRetryer(), jdbcBatchSize, dialect.getInOperatorMaxSize());
 	}
 	
-	protected Persister(ClassMappingStrategy<T> mappingStrategy, TransactionManager transactionManager, IIdentifierFixer<T> identifierFixer,
+	protected Persister(ClassMappingStrategy<T> mappingStrategy, TransactionManager transactionManager,
 						DMLGenerator dmlGenerator, Retryer writeOperationRetryer, int jdbcBatchSize, int inOperatorMaxSize) {
 		this.mappingStrategy = mappingStrategy;
 		this.transactionManager = transactionManager;
@@ -54,45 +52,42 @@ public class Persister<T> {
 		this.writeOperationRetryer = writeOperationRetryer;
 		this.batchSize = jdbcBatchSize;
 		this.inOperatorMaxSize = inOperatorMaxSize;
-		this.insertExecutor = newInsertExecutor(mappingStrategy, identifierFixer, transactionManager, dmlGenerator,
+		this.insertExecutor = newInsertExecutor(mappingStrategy, transactionManager, dmlGenerator,
 				writeOperationRetryer, jdbcBatchSize, inOperatorMaxSize);
-		this.updateExecutor = newUpdateExecutor(mappingStrategy, identifierFixer, transactionManager, dmlGenerator,
+		this.updateExecutor = newUpdateExecutor(mappingStrategy, transactionManager, dmlGenerator,
 				writeOperationRetryer, jdbcBatchSize, inOperatorMaxSize);
-		this.deleteExecutor = newDeleteExecutor(mappingStrategy, identifierFixer, transactionManager, dmlGenerator,
+		this.deleteExecutor = newDeleteExecutor(mappingStrategy, transactionManager, dmlGenerator,
 				writeOperationRetryer, jdbcBatchSize, inOperatorMaxSize);
 		this.selectExecutor = newSelectExecutor(mappingStrategy, transactionManager, dmlGenerator, inOperatorMaxSize);
 	}
 	
 	protected <U> InsertExecutor<U> newInsertExecutor(ClassMappingStrategy<U> mappingStrategy,
-												IIdentifierFixer<U> identifierFixer,
-												TransactionManager transactionManager,
-												DMLGenerator dmlGenerator,
-												Retryer writeOperationRetryer,
-												int jdbcBatchSize,
-												int inOperatorMaxSize) {
-		return new InsertExecutor<>(mappingStrategy, identifierFixer, transactionManager, dmlGenerator,
+													  TransactionManager transactionManager,
+													  DMLGenerator dmlGenerator,
+													  Retryer writeOperationRetryer,
+													  int jdbcBatchSize,
+													  int inOperatorMaxSize) {
+		return new InsertExecutor<>(mappingStrategy, transactionManager, dmlGenerator,
 				writeOperationRetryer, jdbcBatchSize, inOperatorMaxSize);
 	}
 	
 	protected <U> UpdateExecutor<U> newUpdateExecutor(ClassMappingStrategy<U> mappingStrategy,
-											   IIdentifierFixer<U> identifierFixer,
-											   TransactionManager transactionManager,
-											   DMLGenerator dmlGenerator,
-											   Retryer writeOperationRetryer,
-											   int jdbcBatchSize,
-											   int inOperatorMaxSize) {
-		return new UpdateExecutor<>(mappingStrategy, identifierFixer, transactionManager, dmlGenerator,
+													  TransactionManager transactionManager,
+													  DMLGenerator dmlGenerator,
+													  Retryer writeOperationRetryer,
+													  int jdbcBatchSize,
+													  int inOperatorMaxSize) {
+		return new UpdateExecutor<>(mappingStrategy, transactionManager, dmlGenerator,
 				writeOperationRetryer, jdbcBatchSize, inOperatorMaxSize);
 	}
 	
 	protected <U> DeleteExecutor<U> newDeleteExecutor(ClassMappingStrategy<U> mappingStrategy,
-											   IIdentifierFixer<U> identifierFixer,
 											   TransactionManager transactionManager,
 											   DMLGenerator dmlGenerator,
 											   Retryer writeOperationRetryer,
 											   int jdbcBatchSize,
 											   int inOperatorMaxSize) {
-		return new DeleteExecutor<>(mappingStrategy, identifierFixer, transactionManager, dmlGenerator,
+		return new DeleteExecutor<>(mappingStrategy, transactionManager, dmlGenerator,
 				writeOperationRetryer, jdbcBatchSize, inOperatorMaxSize);
 	}
 	
@@ -282,57 +277,5 @@ public class Persister<T> {
 	
 	protected List<T> doSelect(Iterable<Serializable> ids) {
 		return selectExecutor.select(ids);
-	}
-	
-	/**
-	 * Internal interface to specify contract of classes that can fix an identifier to an instance.
-	 * @param <T>
-	 */
-	protected interface IIdentifierFixer<T> {
-		
-		void fixId(T t);
-		
-	}
-	
-	protected static <T> IIdentifierFixer<T> configureIdentifierFixer(ClassMappingStrategy<T> mappingStrategy) {
-		IIdentifierFixer<T> identifierFixer = null;
-		// preparing identifier instance 
-		IdentifierGenerator identifierGenerator = mappingStrategy.getIdentifierGenerator();
-		if (identifierGenerator instanceof BeforeInsertIdentifierGenerator) {
-			identifierFixer = new IdentifierFixer<>(identifierGenerator, mappingStrategy);
-		} else {
-			// cases AfterInsertIdentifierGenerator, AutoAssignedIdentifierGenerator => nothing to do
-			identifierFixer = NoopIdentifierFixer.INSTANCE;
-		}
-		return identifierFixer;
-	}
-	
-	protected static class IdentifierFixer<T> implements IIdentifierFixer<T> {
-		
-		private IdentifierGenerator identifierGenerator;
-		
-		private ClassMappingStrategy<T> mappingStrategy;
-		
-		protected IdentifierFixer(IdentifierGenerator identifierGenerator, ClassMappingStrategy<T> mappingStrategy) {
-			this.identifierGenerator = identifierGenerator;
-			this.mappingStrategy = mappingStrategy;
-		}
-		
-		public void fixId(T t) {
-			mappingStrategy.setId(t, this.identifierGenerator.generate());
-		}
-	}
-	
-	protected static class NoopIdentifierFixer implements IIdentifierFixer {
-		
-		public static final NoopIdentifierFixer INSTANCE = new NoopIdentifierFixer();
-		
-		private NoopIdentifierFixer() {
-			super();
-		}
-		
-		@Override
-		public final void fixId(Object o) {
-		}
 	}
 }

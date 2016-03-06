@@ -28,7 +28,9 @@ public abstract class ExpandableStatement<ParamType> extends SQLStatement<ParamT
 	protected void doApplyValue(ParamType paramType, Object value, PreparedStatement statement) {
 		ParameterBinder parameterBinder = getParameterBinder(paramType);
 		if (parameterBinder == null) {
-			throw new IllegalArgumentException("Can't find a "+ParameterBinder.class.getName() + " for parameter " + getParameterName(paramType) + " of value " + value
+			throw new IllegalArgumentException("Can't find binder for parameter " + getParameterName(paramType)
+					+ " of type " + (value == null ? "unkown" : value.getClass().getName())
+					+ " (value = " + value + ")"
 					+ " on sql : " + getSQL());
 		}
 		int[] markIndexes = getIndexes(paramType);

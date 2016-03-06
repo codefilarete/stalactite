@@ -14,21 +14,15 @@ import org.gama.stalactite.persistence.sql.dml.DMLGenerator;
  */
 public abstract class WriteExecutor<T> extends DMLExecutor<T> {
 	
-	private final Persister.IIdentifierFixer<T> identifierFixer;
 	private final int batchSize;
 	private final Retryer writeOperationRetryer;
 	
-	public WriteExecutor(ClassMappingStrategy<T> mappingStrategy, Persister.IIdentifierFixer<T> identifierFixer,
+	public WriteExecutor(ClassMappingStrategy<T> mappingStrategy,
 						 TransactionManager transactionManager, DMLGenerator dmlGenerator, Retryer writeOperationRetryer,
 						 int batchSize, int inOperatorMaxSize) {
 		super(mappingStrategy, transactionManager, dmlGenerator, inOperatorMaxSize);
-		this.identifierFixer = identifierFixer;
 		this.batchSize = batchSize;
 		this.writeOperationRetryer = writeOperationRetryer;
-	}
-	
-	public Persister.IIdentifierFixer<T> getIdentifierFixer() {
-		return identifierFixer;
 	}
 	
 	public int getBatchSize() {
@@ -59,6 +53,10 @@ public abstract class WriteExecutor<T> extends DMLExecutor<T> {
 		@Override
 		protected void onStep() {
 			this.updatedRowCount += writeOperation.executeBatch();
+		}
+		
+		public WriteOperation getWriteOperation() {
+			return writeOperation;
 		}
 		
 		public int getUpdatedRowCount() {

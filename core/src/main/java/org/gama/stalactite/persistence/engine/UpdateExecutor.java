@@ -19,12 +19,12 @@ import java.util.Set;
  * 
  * @author Guillaume Mary
  */
-public class UpdateExecutor<T> extends WriteExecutor<T> {
+public class UpdateExecutor<T> extends UpsertExecutor<T> {
 	
-	public UpdateExecutor(ClassMappingStrategy<T> mappingStrategy, Persister.IIdentifierFixer<T> identifierFixer,
-						  TransactionManager transactionManager, DMLGenerator dmlGenerator, Retryer writeOperationRetryer,
+	public UpdateExecutor(ClassMappingStrategy<T> mappingStrategy, TransactionManager transactionManager,
+						  DMLGenerator dmlGenerator, Retryer writeOperationRetryer,
 						  int batchSize, int inOperatorMaxSize) {
-		super(mappingStrategy, identifierFixer, transactionManager, dmlGenerator, writeOperationRetryer, batchSize, inOperatorMaxSize);
+		super(mappingStrategy, transactionManager, dmlGenerator, writeOperationRetryer, batchSize, inOperatorMaxSize);
 	}
 	
 	/**

@@ -1,6 +1,5 @@
 package org.gama.stalactite.persistence.id;
 
-import java.io.Serializable;
 import java.util.Map;
 
 /**
@@ -13,11 +12,6 @@ import java.util.Map;
 public class AutoAssignedIdentifierGenerator implements IdentifierGenerator {
 	
 	public static final AutoAssignedIdentifierGenerator INSTANCE = new AutoAssignedIdentifierGenerator();
-	
-	@Override
-	public Serializable generate() {
-		return null;
-	}
 	
 	@Override
 	public void configure(Map<String, Object> configuration) {

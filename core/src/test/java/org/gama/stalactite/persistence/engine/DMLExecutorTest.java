@@ -9,6 +9,7 @@ import org.gama.stalactite.persistence.structure.Table.Column;
 import org.gama.stalactite.test.JdbcTransactionManager;
 import org.gama.stalactite.test.PairSetList;
 import org.mockito.ArgumentCaptor;
+import org.testng.annotations.BeforeClass;
 import org.testng.annotations.BeforeMethod;
 
 import javax.sql.DataSource;
@@ -18,6 +19,7 @@ import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.*;
 
+import static org.gama.lang.bean.Objects.BiFunction;
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -27,43 +29,114 @@ import static org.mockito.Mockito.when;
  */
 public abstract class DMLExecutorTest {
 	
+	protected static Dialect dialect;
+	
+	protected PersistenceConfiguration persistenceConfiguration;
+	
 	protected PreparedStatement preparedStatement;
 	protected ArgumentCaptor<Integer> valueCaptor;
 	protected ArgumentCaptor<Integer> indexCaptor;
 	protected ArgumentCaptor<String> statementArgCaptor;
 	protected JdbcTransactionManager transactionManager;
+	protected Connection connection;
 	private InMemoryCounterIdentifierGenerator identifierGenerator;
-	protected ClassMappingStrategy<Toto> totoClassMappingStrategy;
-	protected Dialect dialect;
-	protected Table totoClassTable;
 	
-	@BeforeMethod
-	public void setUp() throws SQLException {
-		totoClassTable = new Table("Toto");
-		PersistentFieldHarverster persistentFieldHarverster = new PersistentFieldHarverster();
-		Map<Field, Column> totoClassMapping = persistentFieldHarverster.mapFields(Toto.class, totoClassTable);
-		Map<String, Column> columns = totoClassTable.mapColumnsOnName();
-		columns.get("a").setPrimaryKey(true);
+	protected static class PersistenceConfiguration<T> {
 		
-		identifierGenerator = new InMemoryCounterIdentifierGenerator();
-		totoClassMappingStrategy = new ClassMappingStrategy<>(Toto.class, totoClassTable,
-				totoClassMapping, persistentFieldHarverster.getField("a"), identifierGenerator);
+		protected ClassMappingStrategy<T> classMappingStrategy;
+		protected Table targetTable;
+	}
+	
+	protected static class PersistenceConfigurationBuilder<T> {
 		
+		private Class<T> mappedClass;
+		private BiFunction<TableAndClass<T>, Field, ClassMappingStrategy<T>> classMappingStrategyBuilder;
+		private String tableName;
+		private String primaryKeyFieldName;
+		
+		public PersistenceConfigurationBuilder withTableAndClass(String tableName, Class<T> mappedClass, BiFunction<TableAndClass<T>, Field, ClassMappingStrategy<T>> classMappingStrategyBuilder) {
+			this.tableName = tableName;
+			this.mappedClass = mappedClass;
+			this.classMappingStrategyBuilder = classMappingStrategyBuilder;
+			return this;
+		}
+		
+		public PersistenceConfigurationBuilder withPrimaryKeyFieldName(String primaryKeyFieldName) {
+			this.primaryKeyFieldName = primaryKeyFieldName;
+			return this;
+		}
+		
+		protected PersistenceConfiguration build() {
+			PersistenceConfiguration toReturn = new PersistenceConfiguration();
+			
+			final TableAndClass<T> tableAndClass = map(mappedClass, tableName);
+			final Field primaryKeyField = tableAndClass.configurePrimaryKey(primaryKeyFieldName);
+			
+			toReturn.classMappingStrategy = classMappingStrategyBuilder.apply(tableAndClass, primaryKeyField);
+			toReturn.targetTable = tableAndClass.targetTable;
+			
+			return toReturn;
+		}
+		
+		protected TableAndClass<T> map(Class<T> mappedClass, String tableName) {
+			Table targetTable = new Table(tableName);
+			PersistentFieldHarverster persistentFieldHarverster = new PersistentFieldHarverster();
+			Map<Field, Column> fieldsMapping = persistentFieldHarverster.mapFields(mappedClass, targetTable);
+			return new TableAndClass<>(targetTable, mappedClass, persistentFieldHarverster);
+		}
+		
+		protected static class TableAndClass<T> {
+			
+			protected final Table targetTable;
+			protected final Class<T> mappedClass;
+			protected final PersistentFieldHarverster persistentFieldHarverster;
+			public TableAndClass(Table targetTable, Class<T> mappedClass, PersistentFieldHarverster persistentFieldHarverster) {
+				this.targetTable = targetTable;
+				this.mappedClass = mappedClass;
+				this.persistentFieldHarverster = persistentFieldHarverster;
+			}
+			
+			protected Field configurePrimaryKey(String primaryKeyFieldName) {
+				Field primaryKeyField = persistentFieldHarverster.getField(primaryKeyFieldName);
+				Column primaryKey = persistentFieldHarverster.getColumn(primaryKeyField);
+				primaryKey.setPrimaryKey(true);
+				return primaryKeyField;
+			}
+		}
+		
+	}
+	
+	@BeforeClass
+	public void setUpClass() throws SQLException {
 		JavaTypeToSqlTypeMapping simpleTypeMapping = new JavaTypeToSqlTypeMapping();
 		simpleTypeMapping.put(Integer.class, "int");
 		
-		transactionManager = new JdbcTransactionManager(null);
 		dialect = new Dialect(simpleTypeMapping);
+		
+		PersistenceConfigurationBuilder persistenceConfigurationBuilder = newPersistenceConfigurationBuilder();
+		persistenceConfiguration = persistenceConfigurationBuilder.build();
 	}
 	
+	protected PersistenceConfigurationBuilder newPersistenceConfigurationBuilder() {
+		identifierGenerator = new InMemoryCounterIdentifierGenerator();
+		return new PersistenceConfigurationBuilder<Toto>()
+				.withTableAndClass("Toto", Toto.class, new BiFunction<PersistenceConfigurationBuilder.TableAndClass<Toto>, Field, ClassMappingStrategy<Toto>>() {
+					@Override
+					public ClassMappingStrategy<Toto> apply(PersistenceConfigurationBuilder.TableAndClass<Toto> mappedClass, Field primaryKeyField) {
+						return new ClassMappingStrategy<>(mappedClass.mappedClass, mappedClass.targetTable,
+								mappedClass.persistentFieldHarverster.getFieldToColumn(), primaryKeyField, identifierGenerator);
+					}
+				})
+				.withPrimaryKeyFieldName("a");
+	}
+	
+	@BeforeMethod
 	public void setUpTest() throws SQLException {
-		// reset id counter between 2 tests to keep independency between them
-		identifierGenerator.reset();
 		
 		preparedStatement = mock(PreparedStatement.class);
 		when(preparedStatement.executeBatch()).thenReturn(new int[] {1});
 		
-		Connection connection = mock(Connection.class);
+		connection = mock(Connection.class);
 		// PreparedStatement.getConnection() must gives that instance of connection because of SQLOperation that checks
 		// weither or not it should prepare statement
 		when(preparedStatement.getConnection()).thenReturn(connection);
@@ -75,7 +148,7 @@ public abstract class DMLExecutorTest {
 		
 		DataSource dataSource = mock(DataSource.class);
 		when(dataSource.getConnection()).thenReturn(connection);
-		transactionManager.setDataSource(dataSource);
+		transactionManager = new JdbcTransactionManager(dataSource);
 	}
 	
 	public void assertCapturedPairsEqual(PairSetList<Integer, Integer> expectedPairs) {

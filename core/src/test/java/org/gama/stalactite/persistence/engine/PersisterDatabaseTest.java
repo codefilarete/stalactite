@@ -64,11 +64,10 @@ public class PersisterDatabaseTest {
 	
 	@BeforeMethod
 	public void setUpTest() throws SQLException {
-		// reset id counter between 2 tests else id "overflow"
+		// reset id counter between 2 tests else id "overflows"
 		identifierGenerator.reset();
 		
 		testInstance = new Persister<>(totoClassMappingStrategy, transactionManager,
-				new Persister.IdentifierFixer<>(totoClassMappingStrategy.getIdentifierGenerator(), totoClassMappingStrategy),
 				new DMLGenerator(dialect.getColumnBinderRegistry() , DMLGenerator.CaseSensitiveSorter.INSTANCE), Retryer.NO_RETRY, 3, 3);
 	}
 	

@@ -14,7 +14,10 @@ import org.gama.sql.binder.ParameterBinder;
 import org.gama.sql.dml.ReadOperation;
 import org.gama.sql.result.Row;
 import org.gama.sql.result.RowIterator;
-import org.gama.stalactite.persistence.engine.listening.*;
+import org.gama.stalactite.persistence.engine.listening.NoopDeleteListener;
+import org.gama.stalactite.persistence.engine.listening.NoopInsertListener;
+import org.gama.stalactite.persistence.engine.listening.NoopUpdateListener;
+import org.gama.stalactite.persistence.engine.listening.NoopUpdateRouglyListener;
 import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
 import org.gama.stalactite.persistence.sql.Dialect;
 import org.gama.stalactite.persistence.sql.dml.ColumnParamedSelect;
@@ -49,7 +52,7 @@ public class JoinTablePersister<T> extends Persister<T> {
 	}
 	
 	public JoinTablePersister(ClassMappingStrategy<T> mainMappingStrategy, Dialect dialect, TransactionManager transactionManager, int jdbcBatchSize) {
-		super(mainMappingStrategy, transactionManager, configureIdentifierFixer(mainMappingStrategy), dialect.getDmlGenerator(),
+		super(mainMappingStrategy, transactionManager, dialect.getDmlGenerator(),
 				dialect.getWriteOperationRetryer(), jdbcBatchSize, dialect.getInOperatorMaxSize());
 		this.dialect = dialect;
 	}
@@ -69,9 +72,7 @@ public class JoinTablePersister<T> extends Persister<T> {
 	}
 	
 	private <U> void addInsertExecutor(ClassMappingStrategy<U> mappingStrategy, final Objects.Function<Iterable<T>, Iterable<U>> complementaryInstancesProvider) {
-		final InsertExecutor insertExecutor = newInsertExecutor(
-				mappingStrategy,
-				NoopIdentifierFixer.INSTANCE,
+		final InsertExecutor insertExecutor = newInsertExecutor(mappingStrategy,
 				getTransactionManager(),
 				getDmlGenerator(),
 				getWriteOperationRetryer(),
@@ -88,7 +89,6 @@ public class JoinTablePersister<T> extends Persister<T> {
 	private <U> void addUpdateExecutor(ClassMappingStrategy<U> mappingStrategy, final Objects.Function<Iterable<T>, Iterable<U>> complementaryInstancesProvider) {
 		final UpdateExecutor updateExecutor = newUpdateExecutor(
 				mappingStrategy,
-				NoopIdentifierFixer.INSTANCE,
 				getTransactionManager(),
 				getDmlGenerator(),
 				getWriteOperationRetryer(),
@@ -121,7 +121,6 @@ public class JoinTablePersister<T> extends Persister<T> {
 	private <U> void addUpdateRoughlyExecutor(ClassMappingStrategy<U> mappingStrategy, final Objects.Function<Iterable<T>, Iterable<U>> complementaryInstancesProvider) {
 		final UpdateExecutor updateExecutor = newUpdateExecutor(
 				mappingStrategy,
-				NoopIdentifierFixer.INSTANCE,
 				getTransactionManager(),
 				getDmlGenerator(),
 				getWriteOperationRetryer(),
@@ -138,7 +137,6 @@ public class JoinTablePersister<T> extends Persister<T> {
 	private <U> void addDeleteExecutor(ClassMappingStrategy<U> mappingStrategy, final Objects.Function<Iterable<T>, Iterable<U>> complementaryInstancesProvider) {
 		final DeleteExecutor deleteExecutor = newDeleteExecutor(
 				mappingStrategy,
-				NoopIdentifierFixer.INSTANCE,
 				getTransactionManager(),
 				getDmlGenerator(),
 				getWriteOperationRetryer(),

@@ -1,5 +1,7 @@
 package org.gama.stalactite.persistence.id;
 
+import java.io.Serializable;
+
 /**
  * Marker interface for identifier generators that must be called before insert statement building.
  * Shouldn't be combined with {@link AfterInsertIdentifierGenerator} not {@link AutoAssignedIdentifierGenerator}.
@@ -8,5 +10,5 @@ package org.gama.stalactite.persistence.id;
  */
 public interface BeforeInsertIdentifierGenerator extends IdentifierGenerator {
 	
-	// Nothing special (marker interface)
+	Serializable generate();
 }

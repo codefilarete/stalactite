@@ -38,13 +38,82 @@ public class Objects {
 		return value == null ? nullValue : value;
 	}
 	
+	/** To be replaced by Java 8 Predicate */
+	public interface Consumer<T> {
+		void accept(T t);
+	}
+	
+	/** To be replaced by Java 8 Predicate */
+	public interface BiConsumer<T, U> {
+		void accept(T t, U u);
+	}
+	
+	/** To be replaced by Java 8 Predicate */
+	public interface Predicate<T> {
+		boolean test(T t);
+	}
+	
 	/** To be replaced by Java 8 BiPredicate */
 	public interface BiPredicate<T, U> {
 		boolean test(T t, U u);
+	
 	}
 	
 	/** To be replaced by Java 8 Function */
 	public interface Function<T, R> {
 		R apply(T t);
+	
+	}
+	
+	/** To be replaced by Java 8 BiFunction */
+	public interface BiFunction<T, U, R> {
+		R apply(T t, U u);
+
+	}
+	
+	/** To be replaced by Java 8 BiFunction */
+	public interface Supplier<T> {
+		T get();
+	}
+	
+	/** To be replaced by Java 8 BiFunction */
+	public static class Optional<T> {
+		
+		public static <T> Optional<T> of(T value) {
+			if (value == null) throw new NullPointerException();
+			return new Optional<>(value);
+		}
+		
+		public static <T> Optional<T> ofNullable() {
+			return new Optional<>();
+		}
+		
+		private final T value;
+		
+		public Optional() {
+			this(null);
+		}
+		
+		private Optional(T value) {
+			this.value = value;
+		}
+		
+		public T get() {
+			return value;
+		}
+		
+		public T orElseGet(T anotherValue) {
+			return isPresent() ? get() : anotherValue;
+		}
+		
+		public boolean isPresent() {
+			return value != null;
+		}
+		
+		public void ifPresent(Consumer<? super T> consumer) {
+			if (isPresent()) {
+				consumer.accept(value);
+			}
+		}
 	}
 }

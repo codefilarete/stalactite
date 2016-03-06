@@ -49,19 +49,23 @@ public class PersistentFieldHarverster {
 	}
 	
 	protected Column newColumn(Table targetTable, Field field) {
-		return newColumn(targetTable, getColumnName(field), field.getType());
+		return newColumn(targetTable, buildColumnName(field), field.getType());
 	}
 	
 	protected Column newColumn(Table targetTable, String fieldName, Class type) {
 		return targetTable.new Column(fieldName, type);
 	}
 	
-	protected String getColumnName(Field field) {
+	protected String buildColumnName(Field field) {
 		return field.getName();
 	}
 	
 	public Field getField(String name) {
 		return nameTofield.get(name);
+	}
+	
+	public Column getColumn(Field field) {
+		return fieldToColumn.get(field);
 	}
 	
 	/**

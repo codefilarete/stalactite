@@ -7,7 +7,7 @@ public interface IConverter<I, O> {
 	
 	O convert(I input);
 	
-	public static abstract class NullAwareConverter<I, O> implements IConverter<I, O> {
+	abstract class NullAwareConverter<I, O> implements IConverter<I, O> {
 		
 		@Override
 		public O convert(I input) {

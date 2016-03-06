@@ -1,5 +1,7 @@
 package org.gama.stalactite.persistence.id;
 
+import java.util.Map;
+
 /**
  * Marker interface for identifier generators which get identifiers from JDBC insert statements thanks to
  * {@link java.sql.PreparedStatement#getGeneratedKeys()}.
@@ -9,5 +11,5 @@ package org.gama.stalactite.persistence.id;
  */
 public interface AfterInsertIdentifierGenerator extends IdentifierGenerator {
 	
-	// TODO: add contract methods
+	Object get(Map<String, Object> generatedKeys);
 }

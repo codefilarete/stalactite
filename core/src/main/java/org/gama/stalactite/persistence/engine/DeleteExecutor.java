@@ -21,10 +21,10 @@ import java.util.List;
  */
 public class DeleteExecutor<T> extends WriteExecutor<T> {
 	
-	public DeleteExecutor(ClassMappingStrategy<T> mappingStrategy, Persister.IIdentifierFixer<T> identifierFixer,
-						  TransactionManager transactionManager, DMLGenerator dmlGenerator, Retryer writeOperationRetryer,
+	public DeleteExecutor(ClassMappingStrategy<T> mappingStrategy, TransactionManager transactionManager,
+						  DMLGenerator dmlGenerator, Retryer writeOperationRetryer,
 						  int batchSize, int inOperatorMaxSize) {
-		super(mappingStrategy, identifierFixer, transactionManager, dmlGenerator, writeOperationRetryer, batchSize, inOperatorMaxSize);
+		super(mappingStrategy, transactionManager, dmlGenerator, writeOperationRetryer, batchSize, inOperatorMaxSize);
 	}
 	
 	public int delete(Iterable<T> iterable) {

@@ -31,7 +31,10 @@ public abstract class SteppingIterator<E> implements Iterator<E> {
 	@Override
 	public boolean hasNext() {
 		boolean hasNext = delegate.hasNext();
-		if (stepCounter == step || (!hasNext && stepCounter != 0)) {
+		if (	// step reached
+				stepCounter == step
+				// or has remainings (end reached and not started)
+				|| (!hasNext && stepCounter != 0)) {
 			onStep();
 			stepCounter = 0;
 		}

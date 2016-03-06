@@ -28,7 +28,7 @@ public class SelectExecutorTest extends DMLExecutorTest {
 	public void setUpTest() throws SQLException {
 		super.setUpTest();
 		DMLGenerator dmlGenerator = new DMLGenerator(dialect.getColumnBinderRegistry(), new DMLGenerator.CaseSensitiveSorter());
-		testInstance = new SelectExecutor<>(totoClassMappingStrategy, transactionManager, dmlGenerator, 3);
+		testInstance = new SelectExecutor<>(persistenceConfiguration.classMappingStrategy, transactionManager, dmlGenerator, 3);
 	}
 	
 	@Test
@@ -77,7 +77,7 @@ public class SelectExecutorTest extends DMLExecutorTest {
 		final HSQLDBInMemoryDataSource dataSource = new HSQLDBInMemoryDataSource();
 		transactionManager.setDataSource(dataSource);
 		DDLDeployer ddlDeployer = new DDLDeployer(dialect.getDdlSchemaGenerator(), transactionManager);
-		ddlDeployer.getDdlSchemaGenerator().addTables(totoClassTable);
+		ddlDeployer.getDdlSchemaGenerator().addTables(persistenceConfiguration.targetTable);
 		ddlDeployer.deployDDL();
 		Connection connection = dataSource.getConnection();
 		connection.prepareStatement("insert into Toto(a, b, c) values (1, 10, 100)").execute();

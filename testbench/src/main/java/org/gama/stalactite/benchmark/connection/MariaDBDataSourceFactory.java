@@ -1,10 +1,12 @@
 package org.gama.stalactite.benchmark.connection;
 
+import org.gama.lang.exception.Exceptions;
 import org.gama.sql.UrlAwareDataSource;
 import org.gama.stalactite.benchmark.connection.MySQLDataSourceFactory.Property;
 import org.mariadb.jdbc.MySQLDataSource;
 
 import javax.sql.DataSource;
+import java.sql.SQLException;
 import java.util.EnumMap;
 
 /**
@@ -17,7 +19,11 @@ public class MariaDBDataSourceFactory implements IDataSourceFactory<Property> {
 		DataSource delegate = null;
 		String url = "jdbc:mariadb://" + host + "/" + schema;
 		MySQLDataSource mariadbDataSource = new MySQLDataSource();
-		mariadbDataSource.setUrl(url);
+		try {
+			mariadbDataSource.setUrl(url);
+		} catch (SQLException e) {
+			throw Exceptions.asRuntimeException(e);
+		}
 		mariadbDataSource.setUser(user);
 		mariadbDataSource.setPassword(password);
 		delegate = mariadbDataSource;

@@ -63,8 +63,12 @@ public abstract class SQLOperation<ParamType> implements AutoCloseable {
 	protected void ensureStatement() throws SQLException {
 		Connection connection = this.connectionProvider.getConnection();
 		if (this.preparedStatement == null || this.preparedStatement.getConnection() != connection) {
-			this.preparedStatement = connection.prepareStatement(getSQL());
+			prepareStatement(connection);
 		}
+	}
+	
+	protected void prepareStatement(Connection connection) throws SQLException {
+		this.preparedStatement = connection.prepareStatement(getSQL());
 	}
 	
 	/**

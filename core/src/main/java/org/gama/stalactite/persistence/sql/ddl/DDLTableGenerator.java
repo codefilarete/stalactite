@@ -24,18 +24,28 @@ public class DDLTableGenerator {
 	public String generateCreateTable(Table table) {
 		StringAppender sqlCreateTable = new StringAppender("create table ", table.getAbsoluteName(), "(");
 		for (Column column : table.getColumns()) {
-			sqlCreateTable.cat(column.getName(), " ", getSqlType(column));
-			sqlCreateTable.catIf(!column.isNullable(), " not null").cat(", ");
+			generateCreateColumn(column, sqlCreateTable);
+			sqlCreateTable.cat(", ");
 		}
 		sqlCreateTable.cutTail(2);
 		if (table.getPrimaryKey() != null) {
-			sqlCreateTable.cat(", primary key (", table.getPrimaryKey().getName(), ")");
+			generateCreatePrimaryKey(table, sqlCreateTable);
 		}
 		sqlCreateTable.cat(")");
 //			sqlCreateTable.cat(" ROW_FORMAT=COMPRESSED");
 		return sqlCreateTable.toString();
 	}
-
+	
+	protected void generateCreatePrimaryKey(Table table, StringAppender sqlCreateTable) {
+		sqlCreateTable.cat(", primary key (", table.getPrimaryKey().getName(), ")");
+	}
+	
+	protected void generateCreateColumn(Column column, StringAppender sqlCreateTable) {
+		sqlCreateTable.cat(column.getName(), " ", getSqlType(column))
+				.catIf(!column.isNullable(), " not null");
+		
+	}
+	
 	protected String getSqlType(Column column) {
 		return typeMapping.getTypeName(column);
 	}

@@ -23,6 +23,10 @@ public class WriteOperation<ParamType> extends SQLOperation<ParamType> {
 	
 	protected static final Logger LOGGER = LoggerFactory.getLogger(WriteOperation.class);
 	
+	/** Updated row count of the last executed batch statement */
+	@Nonnegative
+	private int updatedRowCount = 0;
+	
 	/** JDBC Batch statement count, for logging */
 	@Nonnegative
 	private int batchedStatementCount = 0;
@@ -38,6 +42,10 @@ public class WriteOperation<ParamType> extends SQLOperation<ParamType> {
 	public WriteOperation(SQLStatement<ParamType> sqlGenerator, IConnectionProvider connectionProvider, @Nonnull Retryer retryer) {
 		super(sqlGenerator, connectionProvider);
 		this.retryer = retryer;
+	}
+	
+	public int getUpdatedRowCount() {
+		return updatedRowCount;
 	}
 	
 	/**
@@ -60,7 +68,8 @@ public class WriteOperation<ParamType> extends SQLOperation<ParamType> {
 	public int executeBatch() {
 		LOGGER.debug("Batching " + batchedStatementCount + " statements");
 		try {
-			return computeUpdatedRowCount(doExecuteBatch());
+			updatedRowCount = computeUpdatedRowCount(doExecuteBatch());
+			return updatedRowCount;
 		} finally {
 			batchedStatementCount = 0;
 		}
@@ -152,7 +161,7 @@ public class WriteOperation<ParamType> extends SQLOperation<ParamType> {
 			ensureStatement();
 			this.sqlStatement.applyValues(preparedStatement);
 		} catch (Throwable t) {
-			throw new RuntimeException(getSQL() +" / " + this.sqlStatement.values, t);
+			throw new RuntimeException("Error while applying values " + this.sqlStatement.values + " on statement " + getSQL(), t);
 		}
 	}
 }
