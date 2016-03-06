@@ -4,10 +4,11 @@ import ch.vorburger.exec.ManagedProcessException;
 import ch.vorburger.mariadb4j.DB;
 import org.gama.lang.exception.Exceptions;
 import org.gama.sql.UrlAwareDataSource;
-import org.mariadb.jdbc.MySQLDataSource;
+import org.mariadb.jdbc.MariaDbDataSource;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
@@ -41,7 +42,12 @@ public class MariaDBEmbeddableDataSource extends UrlAwareDataSource implements C
 		super("jdbc:mariadb://localhost:" + port + "/" + databaseName);
 		this.port = port;
 		start();
-		MySQLDataSource delegate = new MySQLDataSource("localhost", port, databaseName);
+		MariaDbDataSource delegate = null;
+		try {
+			delegate = new MariaDbDataSource("localhost", port, databaseName);
+		} catch (SQLException e) {
+			Exceptions.throwAsRuntimeException(e);
+		}
 		setDelegate(delegate);
 		try {
 			db.createDB(databaseName);
