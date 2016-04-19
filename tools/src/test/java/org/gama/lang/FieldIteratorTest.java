@@ -3,15 +3,14 @@ package org.gama.lang;
 
 import org.gama.lang.Reflections.FieldIterator;
 import org.gama.lang.collection.Arrays;
-import org.gama.lang.collection.PairIterator;
+import org.gama.lang.collection.Iterables;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
 import java.lang.reflect.Field;
 import java.util.List;
-import java.util.Map;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
 
 public class FieldIteratorTest {
 	
@@ -29,11 +28,13 @@ public class FieldIteratorTest {
 	@Test(dataProvider = NEXT_METHODS_DATA)
 	public void testNextMethods(Class clazz, List<String> expectedFields) throws Exception {
 		FieldIterator testInstance = new FieldIterator(clazz);
-		PairIterator<String, Field> expectationComparator = new PairIterator.UntilBothIterator<>(expectedFields.iterator(), testInstance);
-		while(expectationComparator.hasNext()) {
-			Map.Entry<String, Field> next = expectationComparator.next();
-			assertEquals(next.getKey(), next.getValue().getName());
-		}
+		assertEquals(expectedFields, Iterables.visit(testInstance, new Iterables.ForEach<Field, String>() {
+			
+			@Override
+			public String visit(Field field) {
+				return field.getName();
+			}
+		}));
 	}
 	
 	static class X { private String f1; }
