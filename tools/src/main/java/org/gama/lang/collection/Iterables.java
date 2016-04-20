@@ -103,7 +103,7 @@ public final class Iterables {
 	}
 	
 	public static <E> E last(List<E> iterable, E defaultValue) {
-		if (iterable == null) {
+		if (iterable == null || iterable.isEmpty()) {
 			return defaultValue;
 		} else {
 			return iterable.get(iterable.size()-1);

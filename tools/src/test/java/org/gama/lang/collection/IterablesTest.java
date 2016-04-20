@@ -1,26 +1,31 @@
 package org.gama.lang.collection;
 
-import static org.mockito.Mockito.*;
-import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.assertNotSame;
-
-import java.util.*;
-
 import org.gama.lang.collection.Iterables.Filter;
 import org.gama.lang.collection.Iterables.Finder;
 import org.gama.lang.collection.Iterables.IVisitor;
-import org.testng.Assert;
 import org.testng.annotations.Test;
 
+import java.util.*;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotSame;
+import static org.junit.Assert.assertNull;
+import static org.mockito.Mockito.*;
+
+/**
+ * @author Guillaume Mary
+ */
 public class IterablesTest {
 	
 	@Test
 	public void testFirst_iterable() {
 		List<String> strings = Arrays.asList("a", "b");
 		assertEquals(Iterables.first(strings), "a");
+		strings = Arrays.asList("a");
+		assertEquals(Iterables.first(strings), "a");
 		// test sur nullité
-		Assert.assertNull(Iterables.first(Arrays.asList()));
-		Assert.assertNull(Iterables.first((Iterable) null));
+		assertNull(Iterables.first(Arrays.asList()));
+		assertNull(Iterables.first((Iterable) null));
 	}
 	
 	@Test
@@ -30,8 +35,8 @@ public class IterablesTest {
 		aMap.put("a", 14);
 		assertEquals(Iterables.first(aMap), new LinkedHashMap.SimpleEntry<>("d", 25));
 		// test sur nullité
-		Assert.assertNull(Iterables.first(new HashMap()));
-		Assert.assertNull(Iterables.first((Map) null));
+		assertNull(Iterables.first(new HashMap()));
+		assertNull(Iterables.first((Map) null));
 	}
 	
 	@Test
@@ -41,8 +46,19 @@ public class IterablesTest {
 		aMap.put("a", 14);
 		assertEquals((int) Iterables.firstValue(aMap), 25);
 		// test sur nullité
-		Assert.assertNull(Iterables.first(new HashMap()));
-		Assert.assertNull(Iterables.first((Map) null));
+		assertNull(Iterables.first(new HashMap()));
+		assertNull(Iterables.first((Map) null));
+	}
+	
+	@Test
+	public void testLast() {
+		List<String> strings = Arrays.asList("a", "b");
+		assertEquals(Iterables.last(strings), "b");
+		strings = Arrays.asList("a");
+		assertEquals(Iterables.last(strings), "a");
+		// test sur nullité
+		assertNull(Iterables.last(Arrays.asList()));
+		assertNull(Iterables.last(null));
 	}
 	
 	@Test
@@ -78,7 +94,7 @@ public class IterablesTest {
 		assertEquals(visitResult.size(), 0);
 		
 		// test sur nullité
-		Assert.assertNull(Iterables.visit((Iterable) null, iVisitorMock));
+		assertNull(Iterables.visit((Iterable) null, iVisitorMock));
 	}
 	
 	@Test
