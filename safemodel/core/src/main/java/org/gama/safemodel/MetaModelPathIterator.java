@@ -2,8 +2,8 @@ package org.gama.safemodel;
 
 import org.gama.lang.collection.Iterables;
 import org.gama.lang.collection.ReadOnlyIterator;
-import org.gama.safemodel.description.AbstractMemberDescription;
 import org.gama.safemodel.description.ArrayDescription;
+import org.gama.safemodel.description.ContainerDescription;
 import org.gama.safemodel.description.FieldDescription;
 import org.gama.safemodel.description.MethodDescription;
 
@@ -29,7 +29,7 @@ public abstract class MetaModelPathIterator extends ReadOnlyIterator<MetaModel> 
 	@Override
 	public MetaModel next() {
 		MetaModel childModel = modelPathIterator.next();
-		AbstractMemberDescription description = childModel.getDescription();
+		ContainerDescription description = childModel.getDescription();
 		if (description instanceof FieldDescription) {
 			onFieldDescription(childModel);
 		} else if (description instanceof MethodDescription) {
