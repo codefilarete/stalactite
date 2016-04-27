@@ -1,9 +1,10 @@
 package org.gama.safemodel;
 
+import java.lang.reflect.Field;
+
+import org.gama.lang.Reflections;
 import org.gama.lang.exception.Exceptions;
 import org.gama.safemodel.description.ContainerDescription;
-
-import java.lang.reflect.Field;
 
 /**
  * @author Guillaume Mary
@@ -35,17 +36,19 @@ public class MetaModel<O extends MetaModel, D extends ContainerDescription> {
 	 * its own fields. So parent fields will be "owned" several times (but with the same value).
 	 */
 	protected void fixFieldsOwner() {
-		for (Field field : this.getClass().getDeclaredFields()) {
+		Reflections.FieldIterator fieldIterator = new Reflections.FieldIterator(getClass());
+		while(fieldIterator.hasNext()) {
+			Field field = fieldIterator.next();
 			if (MetaModel.class.isAssignableFrom(field.getType())) {
 				try {
-					MetaModel<MetaModel, D> o = (MetaModel) field.get(this);
-					// NB: o can be null if an instance calls fixFieldsOwner() before its subclass part is totally initialized.
+					MetaModel o = (MetaModel) field.get(this);
+					// NB: o can be null if an instance calls fixFieldsOwner() before that its subclass part is totally initialized.
 					// This can occur with inheritance with a super constructor calling fixFieldsOwner()
 					if (o != null) {
 						o.setOwner(this);
 					}
 				} catch (IllegalAccessException e) {
-					Exceptions.throwAsRuntimeException(e);
+					throw Exceptions.asRuntimeException(e);
 				}
 			}
 		}
