@@ -15,6 +15,7 @@
 	
 	<modules>
 		<module>core</module>
+		<module>bean</module>
 		<module>reflection</module>
 		<module>wicket</module>
 	</modules>

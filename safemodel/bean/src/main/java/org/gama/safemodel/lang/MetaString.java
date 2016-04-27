@@ -1,5 +1,6 @@
 package org.gama.safemodel.lang;
 
+import org.gama.safemodel.MetaMember;
 import org.gama.safemodel.MetaModel;
 import org.gama.safemodel.description.AbstractMemberDescription;
 import org.gama.safemodel.description.MethodDescription;
@@ -9,7 +10,7 @@ import org.gama.safemodel.description.MethodDescription;
  */
 public class MetaString<O extends MetaModel, M extends AbstractMemberDescription> extends MetaModel<O, M> {
 	
-	private MetaModel<MetaString, MethodDescription<Integer>> length = new MetaModel<>(method(String.class, "length", Integer.TYPE));
+	private MetaModel<MetaString, MethodDescription<Integer>> length = new MetaModel<>(MetaMember.method(String.class, "length", Integer.TYPE));
 	
 	public MetaString(M description) {
 		super(description);

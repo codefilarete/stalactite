@@ -2,8 +2,6 @@ package org.gama.safemodel;
 
 import org.gama.lang.exception.Exceptions;
 import org.gama.safemodel.description.ContainerDescription;
-import org.gama.safemodel.description.FieldDescription;
-import org.gama.safemodel.description.MethodDescription;
 
 import java.lang.reflect.Field;
 
@@ -11,22 +9,6 @@ import java.lang.reflect.Field;
  * @author Guillaume Mary
  */
 public class MetaModel<O extends MetaModel, D extends ContainerDescription> {
-	
-	protected static <R> FieldDescription<R> field(Class clazz, String name, Class<R> fieldType) {
-		FieldDescription<R> fieldDescription = new FieldDescription<>(clazz, name);
-		if (!fieldDescription.getFieldType().equals(fieldType)) {
-			throw new IllegalArgumentException("Wrong field type given: declared "+fieldType.getName() + " but is " + fieldDescription.getFieldType().getName());
-		}
-		return fieldDescription;
-	}
-	
-	protected static <R> MethodDescription<R> method(Class clazz, String name, Class<R> returnType, Class ... parameterTypes) {
-		MethodDescription<R> methodDescription = new MethodDescription<>(clazz, name, parameterTypes);
-		if (!methodDescription.getReturnType().equals(returnType)) {
-			throw new IllegalArgumentException("Wrong return type given: declared "+returnType.getName() + " but is " + methodDescription.getReturnType().getName());
-		}
-		return methodDescription;
-	}
 	
 	private D description;
 	

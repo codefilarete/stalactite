@@ -1,5 +1,6 @@
 package org.gama.safemodel.metamodel;
 
+import org.gama.safemodel.MetaMember;
 import org.gama.safemodel.MetaModel;
 import org.gama.safemodel.description.AbstractMemberDescription;
 import org.gama.safemodel.description.FieldDescription;
@@ -14,8 +15,8 @@ import java.util.Collection;
  */
 public class MetaAddress<O extends MetaModel, M extends AbstractMemberDescription> extends MetaModel<O, M> {
 	
-	public MetaCity<MetaAddress, FieldDescription<City>> city = new MetaCity<>(field(Address.class, "city", City.class));
-	public MetaPhone<MetaAddress, FieldDescription<Collection>> phones = new MetaPhone<>(field(Address.class, "phones", Collection.class));
+	public MetaCity<MetaAddress, FieldDescription<City>> city = new MetaCity<>(MetaMember.field(Address.class, "city", City.class));
+	public MetaPhone<MetaAddress, FieldDescription<Collection>> phones = new MetaPhone<>(MetaMember.field(Address.class, "phones", Collection.class));
 	
 	public MetaAddress() {
 	}
