@@ -17,7 +17,7 @@ public class ExceptionConverter {
 		if (t instanceof NullPointerException) {
 			throw new NullPointerException("Cannot call " + getReflectorDescription(reflector) + " on null instance");
 		} else if (t instanceof InvocationTargetException || t instanceof IllegalAccessException) {
-			Exceptions.throwAsRuntimeException(t.getCause());
+			throw Exceptions.asRuntimeException(t.getCause());
 		} else if (t instanceof IllegalArgumentException) {
 			if ("wrong number of arguments".equals(t.getMessage())) {
 				convertWrongNumberOfArguments(reflector, args);
@@ -26,10 +26,10 @@ public class ExceptionConverter {
 			} else if(t.getMessage().startsWith("Can not set")) {
 				convertCannotSetFieldToObject(target, reflector, args.length > 0 ? args[0] : null);
 			} else {
-				Exceptions.throwAsRuntimeException(t);
+				throw Exceptions.asRuntimeException(t);
 			}
 		} else {
-			Exceptions.throwAsRuntimeException(t);
+			throw Exceptions.asRuntimeException(t);
 		}
 	}
 	

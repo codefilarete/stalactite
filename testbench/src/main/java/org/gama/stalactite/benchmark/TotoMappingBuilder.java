@@ -36,7 +36,7 @@ public class TotoMappingBuilder implements IMappingBuilder {
 		try {
 			answersField = Toto.class.getDeclaredField("answers");
 		} catch (NoSuchFieldException e) {
-			Exceptions.throwAsRuntimeException(e);
+			throw Exceptions.asRuntimeException(e);
 		}
 		classMappingStrategy.put(answersField, new ColumnedMapMappingStrategy<Map<Long, Object>, Long, Object, Object>(targetTable, new HashSet<>(targetTable.dynamicColumns.values()), HashMap.class) {
 			@Override

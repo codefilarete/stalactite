@@ -48,7 +48,7 @@ public class GeneratedKeysReader {
 					try {
 						fillRow(toReturn, rs);
 					} catch (SQLException e) {
-						Exceptions.throwAsRuntimeException(e);
+						throw Exceptions.asRuntimeException(e);
 					}
 					return toReturn;
 				}

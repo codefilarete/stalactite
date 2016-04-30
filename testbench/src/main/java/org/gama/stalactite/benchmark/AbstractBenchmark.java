@@ -61,7 +61,7 @@ public abstract class AbstractBenchmark<Data> {
 				try {
 					dropAndDeployDDL(persistenceContext);
 				} catch (SQLException e) {
-					Exceptions.throwAsRuntimeException(e);
+					throw Exceptions.asRuntimeException(e);
 				}
 			}
 		});
@@ -96,7 +96,7 @@ public abstract class AbstractBenchmark<Data> {
 		try {
 			futures = dataInserterExecutor.invokeAll(dataInserters);
 		} catch (InterruptedException e) {
-			Exceptions.throwAsRuntimeException(e);
+			throw Exceptions.asRuntimeException(e);
 		}
 		try {
 			for (Future<Void> future : futures) {
@@ -121,7 +121,7 @@ public abstract class AbstractBenchmark<Data> {
 		try {
 			futures = dataGeneratorExecutor.invokeAll(dataGenerators);
 		} catch (InterruptedException e) {
-			Exceptions.throwAsRuntimeException(e);
+			throw Exceptions.asRuntimeException(e);
 		}
 		try {
 			for (Future<Data> future : futures) {

@@ -46,7 +46,7 @@ public class RowIterator extends ResultSetIterator<Row> {
 				toReturn.put(columnName, columnEntry.getValue().get(columnName, rs));
 			}
 		} catch (SQLException e) {
-			Exceptions.throwAsRuntimeException(e);
+			throw Exceptions.asRuntimeException(e);
 		}
 		return toReturn;
 	}

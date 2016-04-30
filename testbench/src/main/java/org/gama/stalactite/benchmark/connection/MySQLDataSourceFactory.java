@@ -48,7 +48,7 @@ public class MySQLDataSourceFactory implements IDataSourceFactory<Property> {
 			applyProperties(mysqlDataSource, propertiesToApply);
 			delegate = mysqlDataSource;
 		} catch (SQLException e) {
-			Exceptions.throwAsRuntimeException(e);
+			throw Exceptions.asRuntimeException(e);
 		}
 		return new UrlAwareDataSource(url, delegate);
 	}

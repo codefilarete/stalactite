@@ -272,7 +272,7 @@ public class JoinTablePersister<T> extends Persister<T> {
 					result.add(transform(rowIterator));
 				}
 			} catch (Exception e) {
-				Exceptions.throwAsRuntimeException(e);
+				throw Exceptions.asRuntimeException(e);
 			}
 		}
 		

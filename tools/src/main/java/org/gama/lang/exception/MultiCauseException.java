@@ -29,7 +29,7 @@ public class MultiCauseException extends RuntimeException {
 	public void throwIfNotEmpty() {
 		if (!this.causes.isEmpty()) {
 			if (this.causes.size() == 1) {
-				Exceptions.throwAsRuntimeException(this.causes.get(0));
+				throw Exceptions.asRuntimeException(this.causes.get(0));
 			} else {
 				throw this;
 			}

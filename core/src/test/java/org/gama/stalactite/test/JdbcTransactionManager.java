@@ -71,9 +71,9 @@ public class JdbcTransactionManager implements TransactionManager {
 			if (connection != null) {
 				try {
 					connection.rollback();
-					Exceptions.throwAsRuntimeException(e);
+					throw Exceptions.asRuntimeException(e);
 				} catch (SQLException e1) {
-					Exceptions.throwAsRuntimeException(e1);
+					throw Exceptions.asRuntimeException(e1);
 				}
 			}
 		} finally {

@@ -29,7 +29,7 @@ public abstract class Retryer {
 		try {
 			Thread.sleep(retryDelay);
 		} catch (InterruptedException ie) {
-			Exceptions.throwAsRuntimeException(ie);
+			throw Exceptions.asRuntimeException(ie);
 		}
 	}
 

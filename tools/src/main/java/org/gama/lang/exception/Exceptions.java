@@ -16,14 +16,14 @@ import org.gama.lang.collection.ReadOnlyIterator;
 public abstract class Exceptions {
 	
 	/**
-	 * Fait en sorte de toujours lever une RuntimeException même si t n'en est pas une.
-	 * @param t 
-	 * @throws t si c'est une RuntimeException, sinon une nouvelle RuntimeException avec <tt>t</tt> en tant que cause
+	 * Convert a {@link Throwable} into a {@link RuntimeException}. Do nothing if the {@link Throwable} is already a {@link RuntimeException},
+	 * else instanciate a {@link RuntimeException} with the exception as the init cause.
+	 * <b>Please use with caution because doing this can be considered as a bad practice.</b>
+	 *
+	 * @param t any kinf of exception
+	 * @return the {@link Throwable} itself if it's already a {@link RuntimeException},
+	 * 			else a {@link RuntimeException} whose cause is the {@link Throwable} argument
 	 */
-	public static void throwAsRuntimeException(Throwable t) {
-		throw asRuntimeException(t);
-	}
-	
 	public static RuntimeException asRuntimeException(Throwable t) {
 		if (t instanceof RuntimeException) {
 			return  (RuntimeException) t;
@@ -35,9 +35,9 @@ public abstract class Exceptions {
 	private static volatile SoftReference<Field> MESSAGE_ACCESSOR;
 	
 	/**
-	 * Renvoie un accesseur à l'attribut "detailMessage" de Throwable. Nécessaire parfois quand des classes d'Exception
-	 * surcharge getMessage() et qu'il est impossible d'avoir le message unique de l'erreur.
-	 * @return
+	 * Return the {@link Throwable#detailMessage} accessor. It's sometimes necessary to have it when Exception's subclasses override
+	 * {@link Throwable#getMessage()} which then disallow access to the original error message.
+	 * @return the {@link Field} that represents {@link Throwable#getMessage()}
 	 */
 	public static Field getDetailMessageGetter() {
 		Field detailMessageAccessor = MESSAGE_ACCESSOR == null ? null : MESSAGE_ACCESSOR.get();
@@ -59,12 +59,11 @@ public abstract class Exceptions {
 	}
 	
 	/**
-	 * Recherche un Throwable dans la hiérarchie des causes de <i>t</i> en fonction
-	 * de l'acceptation de <i>filter</i>
+	 * Look up a {@link Throwable} in the causes hierarchy of the {@link Throwable} argument according to a {@link IExceptionFilter} 
 	 *
-	 * @param t la source initiale d'erreur
-	 * @param filter
-	 * @return null si non trouvé
+	 * @param t the initial stack error
+	 * @param filter a filter
+	 * @return null if not found
 	 */
 	public static Throwable findExceptionInHierarchy(Throwable t, final IExceptionFilter filter) {
 		Finder<Throwable> finder = new Finder<Throwable>() {
@@ -77,7 +76,7 @@ public abstract class Exceptions {
 	}
 	
 	/**
-	 * Iterator de hiérarchie d'exception
+	 * Iterator on {@link Throwable} causes
 	 */
 	public static class ExceptionHierarchyIterator extends ReadOnlyIterator<Throwable> {
 		
@@ -131,11 +130,11 @@ public abstract class Exceptions {
 		
 		@Override
 		public boolean accept(Throwable t) {
-			String throwableMessage = null;
+			String throwableMessage;
 			try {
 				throwableMessage = (String) getDetailMessageGetter().get(t);
 			} catch (IllegalAccessException e) {
-				Exceptions.throwAsRuntimeException(e);
+				throw Exceptions.asRuntimeException(e);
 			}
 			return super.accept(t) && targetMessage.equalsIgnoreCase(throwableMessage);
 		}

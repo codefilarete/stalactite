@@ -89,7 +89,7 @@ public class BenchmarkDynamicComplementaryTables extends AbstractBenchmark<Dynam
 							
 						}
 					} catch (Throwable t) {
-						Exceptions.throwAsRuntimeException(t);
+						throw Exceptions.asRuntimeException(t);
 					}
 				}
 				// NB: on force insert car ... on le sait
@@ -121,7 +121,7 @@ public class BenchmarkDynamicComplementaryTables extends AbstractBenchmark<Dynam
 						}
 						nilDynamicEntities.add(nilDynamicEntity);
 					} catch (Throwable t) {
-						Exceptions.throwAsRuntimeException(t);
+						throw Exceptions.asRuntimeException(t);
 					}
 				}
 				// NB: on force insert car ... on le sait
@@ -213,7 +213,7 @@ public class BenchmarkDynamicComplementaryTables extends AbstractBenchmark<Dynam
 //								
 //							}
 //						} catch (Throwable t) {
-//							Exceptions.throwAsRuntimeException(t);
+//							throw Exceptions.asRuntimeException(t);
 //						}
 //					}
 //					// NB: on force insert car ... on le sait
@@ -242,7 +242,7 @@ public class BenchmarkDynamicComplementaryTables extends AbstractBenchmark<Dynam
 //							}
 //							nilDynamicEntities.add(nilDynamicEntity);
 //						} catch (Throwable t) {
-//							Exceptions.throwAsRuntimeException(t);
+//							throw Exceptions.asRuntimeException(t);
 //						}
 //					}
 //					// NB: on force insert car ... on le sait

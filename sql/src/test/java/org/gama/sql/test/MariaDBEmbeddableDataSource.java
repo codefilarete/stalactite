@@ -46,13 +46,13 @@ public class MariaDBEmbeddableDataSource extends UrlAwareDataSource implements C
 		try {
 			delegate = new MariaDbDataSource("localhost", port, databaseName);
 		} catch (SQLException e) {
-			Exceptions.throwAsRuntimeException(e);
+			throw Exceptions.asRuntimeException(e);
 		}
 		setDelegate(delegate);
 		try {
 			db.createDB(databaseName);
 		} catch (ManagedProcessException e) {
-			Exceptions.throwAsRuntimeException(e);
+			throw Exceptions.asRuntimeException(e);
 		}
 	}
 	
@@ -69,7 +69,7 @@ public class MariaDBEmbeddableDataSource extends UrlAwareDataSource implements C
 				db.start();
 				usedPorts.put(port, db);
 			} catch (ManagedProcessException e) {
-				Exceptions.throwAsRuntimeException(e);
+				throw Exceptions.asRuntimeException(e);
 			}
 		}
 	}

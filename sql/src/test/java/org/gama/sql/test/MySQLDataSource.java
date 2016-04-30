@@ -57,7 +57,7 @@ public class MySQLDataSource extends UrlAwareDataSource {
 			applyProperties(mysqlDataSource, propertiesToApply);
 			setDelegate(mysqlDataSource);
 		} catch (SQLException e) {
-			Exceptions.throwAsRuntimeException(e);
+			throw Exceptions.asRuntimeException(e);
 		}
 	}
 	

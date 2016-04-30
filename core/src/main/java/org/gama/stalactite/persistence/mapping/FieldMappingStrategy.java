@@ -223,7 +223,7 @@ public class FieldMappingStrategy<T> implements IMappingStrategy<T> {
 			try {
 				visitField(fieldColumnEntry);
 			} catch (IllegalAccessException e) {
-				Exceptions.throwAsRuntimeException(e);
+				throw Exceptions.asRuntimeException(e);
 			}
 			return null;
 		}

@@ -1,13 +1,13 @@
 package org.gama.sql.result;
 
-import org.gama.lang.bean.IConverter;
-import org.gama.lang.collection.ReadOnlyIterator;
-import org.gama.lang.exception.Exceptions;
-
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
+
+import org.gama.lang.bean.IConverter;
+import org.gama.lang.collection.ReadOnlyIterator;
+import org.gama.lang.exception.Exceptions;
 
 /**
  * ResultSet iterator with convert method
@@ -57,9 +57,7 @@ public abstract class ResultSetIterator<T> extends ReadOnlyIterator<T> implement
 		try {
 			return !nextCalled && resultSet.next();
 		} catch (SQLException e) {
-			Exceptions.throwAsRuntimeException(e);
-			// unreachable
-			return false;
+			throw Exceptions.asRuntimeException(e);
 		} finally {
 			nextCalled = true;
 		}

@@ -1,18 +1,18 @@
 package org.gama.sql.dml;
 
-import org.gama.lang.Retryer;
-import org.gama.lang.bean.IDelegate;
-import org.gama.lang.exception.Exceptions;
-import org.gama.sql.IConnectionProvider;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import javax.annotation.Nonnegative;
 import javax.annotation.Nonnull;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.Map;
+
+import org.gama.lang.Retryer;
+import org.gama.lang.bean.IDelegate;
+import org.gama.lang.exception.Exceptions;
+import org.gama.sql.IConnectionProvider;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * {@link SQLOperation} dedicated to Inserts, Updates, Deletes ... so all operations that return number of affected rows
@@ -133,8 +133,7 @@ public class WriteOperation<ParamType> extends SQLOperation<ParamType> {
 		try {
 			return retryer.execute(delegateWithResult, getSQL());
 		} catch (Throwable t) {
-			Exceptions.throwAsRuntimeException(t);
-			return null; // unreachable
+			throw Exceptions.asRuntimeException(t);
 		}
 	}
 	
@@ -152,7 +151,7 @@ public class WriteOperation<ParamType> extends SQLOperation<ParamType> {
 		try {
 			this.preparedStatement.addBatch();
 		} catch (SQLException e) {
-			Exceptions.throwAsRuntimeException(e);
+			throw Exceptions.asRuntimeException(e);
 		}
 	}
 	

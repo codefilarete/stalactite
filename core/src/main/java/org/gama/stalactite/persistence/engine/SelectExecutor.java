@@ -72,7 +72,7 @@ public class SelectExecutor<T> extends DMLExecutor<T> {
 				toReturn.add(getMappingStrategy().transform(rowIterator.next()));
 			}
 		} catch (Exception e) {
-			Exceptions.throwAsRuntimeException(e);
+			throw Exceptions.asRuntimeException(e);
 		}
 		return toReturn;
 	}
