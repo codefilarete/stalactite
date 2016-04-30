@@ -22,6 +22,5 @@ public class MetaPerson<O extends MetaModel, M extends AbstractMemberDescription
 	public MetaPerson(M accessor) {
 		super(accessor);
 		fixFieldsOwner();
-//		this.address.setOwner(this);
 	}
 }

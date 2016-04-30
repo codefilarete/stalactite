@@ -1,5 +1,9 @@
 package org.gama.stalactite.persistence.engine;
 
+import java.io.Serializable;
+import java.sql.ResultSet;
+import java.util.*;
+
 import org.gama.lang.StringAppender;
 import org.gama.lang.Strings;
 import org.gama.lang.bean.Objects;
@@ -24,10 +28,6 @@ import org.gama.stalactite.persistence.sql.dml.ColumnParamedSelect;
 import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.query.builder.SelectQueryBuilder;
 import org.gama.stalactite.query.model.SelectQuery;
-
-import java.io.Serializable;
-import java.sql.ResultSet;
-import java.util.*;
 
 import static org.gama.sql.dml.ExpandableSQL.ExpandableParameter.*;
 
@@ -315,6 +315,11 @@ public class JoinTablePersister<T> extends Persister<T> {
 		@Override
 		public CharSequence subSequence(int start, int end) {
 			return dynamicIn.subSequence(start, end);
+		}
+		
+		@Override
+		public String toString() {
+			return dynamicIn;
 		}
 	}
 }

@@ -25,8 +25,6 @@ public class MetaAddress<O extends MetaModel, M extends AbstractMemberDescriptio
 	public MetaAddress(M accessor) {
 		super(accessor);
 		fixFieldsOwner();
-//		this.city.setOwner(this);
-//		this.phones.setOwner(this);
 	}
 	
 	public MetaPhone<MetaModel, ListElementAccessDescription> phones(int i) {

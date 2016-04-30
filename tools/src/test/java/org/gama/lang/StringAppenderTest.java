@@ -54,7 +54,7 @@ public class StringAppenderTest {
 	@Test
 	public void testCutAndInsert() {
 		StringAppender testInstance = new StringAppender();
-		testInstance.cat("headache").cutHead(4).cat(0, "sstom").cutHead(1);
+		testInstance.cat("headache").cutHead(4).catAt(0, "sstom").cutHead(1);
 		assertEquals("stomache", testInstance.toString());
 	}
 }

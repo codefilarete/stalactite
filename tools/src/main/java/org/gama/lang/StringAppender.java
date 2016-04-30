@@ -19,40 +19,41 @@ public class StringAppender implements Serializable, CharSequence {
 		appender = new StringBuilder(capacity);
 	}
 	
-	public StringAppender(CharSequence ... s) {
+	public StringAppender(Object ... s) {
 		this();
 		cat(s);
 	}
 
-	public StringAppender cat(CharSequence s) {
-		appender.append(s);
+	public StringAppender cat(Object s) {
+		appender.append(toString(s));
 		return this;
 	}
 	
-	public StringAppender cat(CharSequence s1, CharSequence s2) {
+	public StringAppender cat(Object s1, Object s2) {
 		return cat(s1).cat(s2);
 	}
 	
-	public StringAppender cat(CharSequence s1, CharSequence s2, CharSequence s3) {
+	public StringAppender cat(Object s1, Object s2, Object s3) {
 		return cat(s1,s2).cat(s3);
 	}
 	
-	public StringAppender cat(CharSequence ... ss) {
-		for (CharSequence s : ss) {
-			cat(s);
+	public StringAppender cat(Object ... ss) {
+		for (Object s : ss) {
+			cat(toString(s));
 		}
 		return this;
 	}
 	
-	public StringAppender cat(int index, CharSequence ... ss) {
-		for (CharSequence s : ss) {
-			appender.insert(index, s);
-			index+=s.length();
+	public StringAppender catAt(int index, Object ... ss) {
+		for (Object s : ss) {
+			CharSequence cs = toString(s);
+			appender.insert(index, cs);
+			index+=cs.length();
 		}
 		return this;
 	}
 	
-	public StringAppender catIf(boolean condition, CharSequence ... ss) {
+	public StringAppender catIf(boolean condition, Object ... ss) {
 		if (condition) {
 			cat(ss);
 		}
@@ -68,21 +69,26 @@ public class StringAppender implements Serializable, CharSequence {
 	public StringAppender ccat(Object[] s, CharSequence sep) {
 		if (s.length>0) {
 			for (Object arg : s) {
-				appender.append(arg).append(sep);
+				appender.append(toString(arg)).append(sep);
 			}
 			cutTail(sep.length());
 		}
 		return this;
 	}
 	
-	public StringAppender wrap(CharSequence open, CharSequence close) {
-		cat(0, open).cat(close);
+	public StringAppender wrap(Object open, Object close) {
+		catAt(0, open).cat(close);
 		return this;
 	}
 	
 	@Override
 	public String toString() {
 		return appender.toString();
+	}
+	
+	protected CharSequence toString(Object o) {
+		// Concatenated objects are not supposed to be null, so a toString() on it is sufficient and skip a "if null" check
+		return o.toString();
 	}
 
 	public StringAppender cutTail(int nbChar) {

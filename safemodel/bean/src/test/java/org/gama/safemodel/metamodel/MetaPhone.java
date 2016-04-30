@@ -23,7 +23,6 @@ public class MetaPhone<O extends MetaModel, M extends AbstractMemberDescription>
 	public MetaPhone(M accessor) {
 		super(accessor);
 		fixFieldsOwner();
-//		number.setOwner(this);
 	}
 	
 	public MetaString<MetaPhone, MethodDescription<String>> getNumber() {

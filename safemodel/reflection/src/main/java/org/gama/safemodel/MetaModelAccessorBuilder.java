@@ -8,6 +8,8 @@ import org.gama.reflection.AccessorByField;
 import org.gama.reflection.AccessorByMethod;
 import org.gama.reflection.AccessorChain;
 import org.gama.reflection.ArrayAccessor;
+import org.gama.safemodel.description.ArrayDescription;
+import org.gama.safemodel.description.ContainerDescription;
 import org.gama.safemodel.description.FieldDescription;
 import org.gama.safemodel.description.MethodDescription;
 
@@ -19,38 +21,38 @@ public class MetaModelAccessorBuilder<C, T> implements IMetaModelTransformer<Acc
 	private AccessorChain<C, T> accessorChain;
 	
 	@Override
-	public AccessorChain<C, T> transform(MetaModel metaModel) {
+	public AccessorChain<C, T> transform(MetaModel<? extends MetaModel, ? extends ContainerDescription> metaModel) {
 		Iterator<MetaModel> modelPathIterator = new MetaModelPathIterator(metaModel) {
 			@Override
-			protected void onFieldDescription(MetaModel model) {
+			protected void onFieldDescription(MetaModel<MetaModel, FieldDescription> model) {
 				addFieldAccessor(model);
 			}
 			
 			@Override
-			protected void onMethodDescription(MetaModel model) {
+			protected void onMethodDescription(MetaModel<MetaModel, MethodDescription> model) {
 				addMethodAccessor(model);
 			}
 			
 			@Override
-			protected void onArrayDescription(MetaModel model) {
+			protected void onArrayDescription(MetaModel<MetaModel, ArrayDescription> model) {
 				addArrayAccessor(model);
 			}
 		};
 		accessorChain = new AccessorChain<>();
-		// on parcourt tout les éléments, simplement pour déclencher les méthodes onXXXX() de l'Iterator
+		// we iterate over all elements, only in order to invoke dedicated onXXXX() iterator's methods
 		while (modelPathIterator.hasNext()) {
 			modelPathIterator.next();
 		}
 		return accessorChain;
 	}
 	
-	private void addFieldAccessor(MetaModel model) {
-		FieldDescription description = (FieldDescription) model.getDescription();
+	private void addFieldAccessor(MetaModel<MetaModel, FieldDescription> model) {
+		FieldDescription description = model.getDescription();
 		this.accessorChain.add(new AccessorByField(Reflections.findField(description.getDeclaringClass(), description.getName())));
 	}
 	
-	private void addMethodAccessor(final MetaModel model) {
-		MethodDescription description = (MethodDescription) model.getDescription();
+	private void addMethodAccessor(MetaModel<MetaModel, MethodDescription> model) {
+		MethodDescription description = model.getDescription();
 		Method method = Reflections.findMethod(description.getDeclaringClass(), description.getName(), description.getParameterTypes());
 		AccessorByMethod accessorByMethod;
 		if (description.getParameterTypes().length > 0) {
@@ -67,7 +69,7 @@ public class MetaModelAccessorBuilder<C, T> implements IMetaModelTransformer<Acc
 		this.accessorChain.add(accessorByMethod);
 	}
 	
-	private void addArrayAccessor(MetaModel model) {
+	private void addArrayAccessor(MetaModel<MetaModel, ArrayDescription> model) {
 		this.accessorChain.add(new ArrayAccessor<>((int) model.getMemberParameter()));
 	}
 }

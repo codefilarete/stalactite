@@ -1,24 +1,40 @@
 package org.gama.safemodel;
 
-import org.gama.lang.collection.Iterables;
+import java.util.ArrayList;
+import java.util.Iterator;
+
 import org.gama.lang.collection.ReadOnlyIterator;
 import org.gama.safemodel.description.ArrayDescription;
 import org.gama.safemodel.description.ContainerDescription;
 import org.gama.safemodel.description.FieldDescription;
 import org.gama.safemodel.description.MethodDescription;
 
-import java.util.ArrayList;
-import java.util.Iterator;
-
 /**
+ * A class that iterates over {@link MetaModel}s. On each Specialized methods are invoked according to the type of 
+ * 
  * @author Guillaume Mary
  */
 public abstract class MetaModelPathIterator extends ReadOnlyIterator<MetaModel> {
 	
-	private final Iterator<MetaModel> modelPathIterator;
+	private final Iterator<MetaModel<? extends MetaModel, ? extends ContainerDescription>> modelPathIterator;
 	
-	public MetaModelPathIterator(MetaModel metaModel) {
-		modelPathIterator = buildMetaModelIterator(metaModel);
+	/**
+	 * Constructeur who you pass a "leaf" of a MetaModel. The iteration will be done from the root {@link MetaModel} to this leaf.
+	 * 
+	 * @param metaModel the last
+	 */
+	public MetaModelPathIterator(MetaModel<? extends MetaModel, ? extends ContainerDescription> metaModel) {
+		this(buildMetaModelIterator(metaModel));
+	}
+	
+	/**
+	 * Detailed constructor whom you passed the exact {@link Iterator} you like.
+	 * So you may use only a part of a {@link MetaModel} path, for instance.
+	 * 
+	 * @param modelPathIterator a {@link MetaModel} {@link Iterator}
+	 */
+	public MetaModelPathIterator(Iterator<MetaModel<? extends MetaModel, ? extends ContainerDescription>> modelPathIterator) {
+		this.modelPathIterator = modelPathIterator;
 	}
 	
 	@Override
@@ -28,33 +44,32 @@ public abstract class MetaModelPathIterator extends ReadOnlyIterator<MetaModel> 
 	
 	@Override
 	public MetaModel next() {
-		MetaModel childModel = modelPathIterator.next();
+		MetaModel<? extends MetaModel, ? extends ContainerDescription> childModel = modelPathIterator.next();
 		ContainerDescription description = childModel.getDescription();
 		if (description instanceof FieldDescription) {
-			onFieldDescription(childModel);
+			onFieldDescription((MetaModel<MetaModel, FieldDescription>) childModel);
 		} else if (description instanceof MethodDescription) {
-			onMethodDescription(childModel);
+			onMethodDescription((MetaModel<MetaModel, MethodDescription>) childModel);
 		} else if (description instanceof ArrayDescription) {
-			onArrayDescription(childModel);
+			onArrayDescription((MetaModel<MetaModel, ArrayDescription>) childModel);
 		}
 		return childModel;
 	}
 	
-	private Iterator<MetaModel> buildMetaModelIterator(MetaModel metaModel) {
-		// le paramètre d'entrée est le dernier fils, il faut inverser la relation
-		// pour se simplifier la construction du chemin
-		ArrayList<MetaModel> modelPath = new ArrayList<>(10);
-		MetaModel owner = metaModel;
+	private static Iterator<MetaModel<? extends MetaModel, ? extends ContainerDescription>> buildMetaModelIterator(MetaModel<? extends MetaModel, ? extends ContainerDescription> metaModel) {
+		// The passed argument is the last child, we must invert the relation to simplify path building
+		ArrayList<MetaModel<? extends MetaModel, ? extends ContainerDescription>> modelPath = new ArrayList<>(10);
+		MetaModel<? extends MetaModel, ? extends ContainerDescription> owner = metaModel;
 		while (owner != null) {
-			modelPath.add(owner);
+			modelPath.add(0, owner);
 			owner = owner.getOwner();
 		}
-		return Iterables.reverseIterator(modelPath);
+		return modelPath.iterator();
 	}
 	
-	protected abstract void onFieldDescription(MetaModel childModel);
+	protected abstract void onFieldDescription(MetaModel<MetaModel, FieldDescription> childModel);
 	
-	protected abstract void onMethodDescription(MetaModel childModel);
+	protected abstract void onMethodDescription(MetaModel<MetaModel, MethodDescription> childModel);
 	
-	protected abstract void onArrayDescription(MetaModel childModel);
+	protected abstract void onArrayDescription(MetaModel<MetaModel, ArrayDescription> childModel);
 }
