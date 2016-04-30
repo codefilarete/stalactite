@@ -22,6 +22,7 @@ public class MetaModelPathBuilderTest {
 				{ new MetaPerson<>().address.phones(2).getNumber(), "address.phones.get(2).getNumber()" },
 				{ new MetaPerson<>().address.phones(2).getNumber().charAt(2), "address.phones.get(2).getNumber().charAt(2)" },
 				{ new MetaPerson<>().address.phones(2).getNumber().toCharArray(2), "address.phones.get(2).getNumber().toCharArray()[2]" },
+				{ new MetaPerson<>().address.phones(2).getNumber().length(), "address.phones.get(2).getNumber().length()" },
 		};
 	}
 	

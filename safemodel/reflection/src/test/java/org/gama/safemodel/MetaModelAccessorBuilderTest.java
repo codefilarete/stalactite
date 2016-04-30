@@ -1,12 +1,15 @@
 package org.gama.safemodel;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import org.gama.lang.Reflections;
 import org.gama.lang.collection.Arrays;
 import org.gama.reflection.*;
+import org.gama.safemodel.lang.MetaString;
 import org.gama.safemodel.metamodel.MetaAddress;
 import org.gama.safemodel.metamodel.MetaCity;
 import org.gama.safemodel.metamodel.MetaPerson;
-import org.gama.safemodel.metamodel.MetaString;
 import org.gama.safemodel.model.Address;
 import org.gama.safemodel.model.City;
 import org.gama.safemodel.model.Person;
@@ -14,9 +17,6 @@ import org.gama.safemodel.model.Phone;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
-
-import java.util.ArrayList;
-import java.util.List;
 
 import static org.junit.Assert.assertEquals;
 
@@ -73,7 +73,7 @@ public class MetaModelAccessorBuilderTest {
 						list(personAddressAccessor, addressPhonesAccessor, phoneListAccessor, phoneNumberMethodAccessor, charAtAccessor) },
 				{ new MetaPerson<>().address.phones(2).getNumber().toCharArray(2),
 						list(personAddressAccessor, addressPhonesAccessor, phoneListAccessor, phoneNumberMethodAccessor, toCharAccessor, charAtArrayAccessor) },
-				{ new MetaString().toCharArray(2),
+				{ new MetaString<>().toCharArray(2),
 						list(toCharAccessor, charAtArrayAccessor) },
 		};
 	}

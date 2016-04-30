@@ -4,10 +4,11 @@ import org.gama.safemodel.MetaModel;
 import org.gama.safemodel.description.AbstractMemberDescription;
 import org.gama.safemodel.description.FieldDescription;
 import org.gama.safemodel.description.MethodDescription;
+import org.gama.safemodel.lang.MetaString;
 import org.gama.safemodel.model.Phone;
 
-import static org.gama.safemodel.description.FieldDescription.*;
-import static org.gama.safemodel.description.MethodDescription.*;
+import static org.gama.safemodel.description.FieldDescription.field;
+import static org.gama.safemodel.description.MethodDescription.method;
 
 /**
  * @author Guillaume Mary
