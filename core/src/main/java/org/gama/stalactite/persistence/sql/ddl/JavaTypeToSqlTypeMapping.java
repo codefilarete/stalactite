@@ -1,16 +1,15 @@
 package org.gama.stalactite.persistence.sql.ddl;
 
+import java.util.HashMap;
+import java.util.Map;
+import java.util.SortedMap;
+import java.util.TreeMap;
+
 import org.gama.lang.bean.IFactory;
 import org.gama.lang.collection.Iterables;
 import org.gama.lang.collection.ValueFactoryHashMap;
 import org.gama.stalactite.persistence.structure.Table.Column;
 import org.gama.stalactite.persistence.structure.Table.SizedColumn;
-
-import javax.annotation.Nonnull;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.SortedMap;
-import java.util.TreeMap;
 
 /**
  * Mapping between Java classes and Sql Types.
@@ -28,11 +27,11 @@ public class JavaTypeToSqlTypeMapping {
 	});
 	private final Map<Class, String> defaultJavaTypeToSQLType = new HashMap<>();
 	
-	public void put(@Nonnull Class clazz, @Nonnull String sqlType) {
+	public void put(Class clazz, String sqlType) {
 		defaultJavaTypeToSQLType.put(clazz, sqlType);
 	}
 	
-	public void put(@Nonnull Class clazz, int size, @Nonnull String sqlType) {
+	public void put(Class clazz, int size, String sqlType) {
 		javaTypeToSQLType.get(clazz).put(size, sqlType);
 	}
 	

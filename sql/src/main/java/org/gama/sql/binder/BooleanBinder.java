@@ -4,8 +4,6 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
-import javax.annotation.Nonnull;
-
 /**
  * {@link AbstractParameterBinder} dédié aux Integers
  * 
@@ -14,7 +12,7 @@ import javax.annotation.Nonnull;
 public class BooleanBinder extends AbstractParameterBinder<Boolean> {
 
 	@Override
-	public void setNotNull(int valueIndex, @Nonnull Boolean value, PreparedStatement statement) throws SQLException {
+	public void setNotNull(int valueIndex, Boolean value, PreparedStatement statement) throws SQLException {
 		statement.setBoolean(valueIndex, value);
 	}
 

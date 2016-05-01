@@ -1,6 +1,5 @@
 package org.gama.stalactite.persistence.mapping;
 
-import javax.annotation.Nonnull;
 import java.util.*;
 import java.util.Map.Entry;
 
@@ -28,7 +27,7 @@ public abstract class ColumnedMapMappingStrategy<C extends Map<K, V>, K, V, T> i
 	 * @param columns columns that will be used for persistent of Maps, expected to be a subset of targetTable columns    
 	 * @param rowClass Class to instanciate for select from database, expected to be C but can't be typed due to generic complexity
 	 */
-	public ColumnedMapMappingStrategy(@Nonnull Table targetTable, Set<Column> columns, Class<? extends Map> rowClass) {
+	public ColumnedMapMappingStrategy(Table targetTable, Set<Column> columns, Class<? extends Map> rowClass) {
 		this.targetTable = targetTable;
 		this.columns = columns;
 		// weird cast cause of generics
@@ -59,7 +58,7 @@ public abstract class ColumnedMapMappingStrategy<C extends Map<K, V>, K, V, T> i
 	}
 	
 	@Override
-	public Map<Column, Object> getInsertValues(@Nonnull C c) {
+	public Map<Column, Object> getInsertValues(C c) {
 		final Map<Column, Object> toReturn = new HashMap<>();
 		Map<K, V> toIterate = c;
 		if (Collections.isEmpty(c)) {

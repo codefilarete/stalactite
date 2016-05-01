@@ -4,8 +4,6 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
-import javax.annotation.Nonnull;
-
 /**
  * {@link AbstractParameterBinder} dédié aux Strings
  * 
@@ -14,7 +12,7 @@ import javax.annotation.Nonnull;
 public class StringBinder extends AbstractParameterBinder<String> {
 
 	@Override
-	public void setNotNull(int valueIndex, @Nonnull String value, PreparedStatement statement) throws SQLException {
+	public void setNotNull(int valueIndex, String value, PreparedStatement statement) throws SQLException {
 		statement.setString(valueIndex, value);
 	}
 

@@ -1,5 +1,10 @@
 package org.gama.stalactite.persistence.mapping;
 
+import java.io.Serializable;
+import java.lang.reflect.Field;
+import java.util.*;
+import java.util.Map.Entry;
+
 import org.gama.lang.Reflections;
 import org.gama.lang.bean.Objects;
 import org.gama.lang.collection.Arrays;
@@ -7,16 +12,10 @@ import org.gama.lang.collection.Iterables;
 import org.gama.lang.collection.Iterables.ForEach;
 import org.gama.lang.exception.Exceptions;
 import org.gama.reflection.PropertyAccessor;
-import org.gama.stalactite.persistence.sql.dml.PreparedUpdate.UpwhereColumn;
 import org.gama.sql.result.Row;
+import org.gama.stalactite.persistence.sql.dml.PreparedUpdate.UpwhereColumn;
 import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.persistence.structure.Table.Column;
-
-import javax.annotation.Nonnull;
-import java.io.Serializable;
-import java.lang.reflect.Field;
-import java.util.*;
-import java.util.Map.Entry;
 
 /**
  * @author Guillaume Mary
@@ -52,7 +51,7 @@ public class FieldMappingStrategy<T> implements IMappingStrategy<T> {
 	 * @param fieldToColumn a mapping between Field and Column, expected to be coherent (fields of same class, column of same table)
 	 * @param identifierField the field that store entity identifier   
 	 */
-	public FieldMappingStrategy(Table targetTable, @Nonnull Map<Field, Column> fieldToColumn, Field identifierField) {
+	public FieldMappingStrategy(Table targetTable, Map<Field, Column> fieldToColumn, Field identifierField) {
 		this.targetTable = targetTable;
 		this.fieldToColumn = new HashMap<>(fieldToColumn.size());
 		if (identifierField == null) {
@@ -104,7 +103,7 @@ public class FieldMappingStrategy<T> implements IMappingStrategy<T> {
 	}
 	
 	@Override
-	public Map<Column, Object> getInsertValues(@Nonnull final T t) {
+	public Map<Column, Object> getInsertValues(final T t) {
 		return foreachField(new FieldVisitor<Column>() {
 			@Override
 			protected void visitField(Entry<PropertyAccessor, Column> fieldColumnEntry) throws IllegalAccessException {
@@ -114,7 +113,7 @@ public class FieldMappingStrategy<T> implements IMappingStrategy<T> {
 	}
 	
 	@Override
-	public Map<UpwhereColumn, Object> getUpdateValues(@Nonnull final T modified, final T unmodified, final boolean allColumns) {
+	public Map<UpwhereColumn, Object> getUpdateValues(final T modified, final T unmodified, final boolean allColumns) {
 		final Map<Column, Object> unmodifiedColumns = new LinkedHashMap<>();
 		// getting differences
 		Map<UpwhereColumn, Object> toReturn = foreachField(new FieldVisitor<UpwhereColumn>() {
@@ -147,21 +146,21 @@ public class FieldMappingStrategy<T> implements IMappingStrategy<T> {
 	}
 	
 	@Override
-	public Map<Column, Object> getDeleteValues(@Nonnull T t) {
+	public Map<Column, Object> getDeleteValues(T t) {
 		Map<Column, Object> toReturn = new HashMap<>();
 		putVersionedKeyValues(t, toReturn);
 		return toReturn;
 	}
 	
 	@Override
-	public Map<Column, Object> getSelectValues(@Nonnull Serializable id) {
+	public Map<Column, Object> getSelectValues(Serializable id) {
 		Map<Column, Object> toReturn = new HashMap<>();
 		toReturn.put(this.targetTable.getPrimaryKey(), id);
 		return toReturn;
 	}
 	
 	@Override
-	public Map<Column, Object> getVersionedKeyValues(@Nonnull T t) {
+	public Map<Column, Object> getVersionedKeyValues(T t) {
 		Map<Column, Object> toReturn = new HashMap<>();
 		putVersionedKeyValues(t, toReturn);
 		return toReturn;

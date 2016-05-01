@@ -4,8 +4,6 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
-import javax.annotation.Nonnull;
-
 /**
  * {@link AbstractParameterBinder} dédié aux Floats
  * 
@@ -14,7 +12,7 @@ import javax.annotation.Nonnull;
 public class FloatBinder extends AbstractParameterBinder<Float> {
 
 	@Override
-	public void setNotNull(int valueIndex, @Nonnull Float value, PreparedStatement statement) throws SQLException {
+	public void setNotNull(int valueIndex, Float value, PreparedStatement statement) throws SQLException {
 		statement.setFloat(valueIndex, value);
 	}
 

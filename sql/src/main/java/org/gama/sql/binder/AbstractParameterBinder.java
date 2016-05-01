@@ -1,6 +1,5 @@
 package org.gama.sql.binder;
 
-import javax.annotation.Nonnull;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -48,5 +47,5 @@ public abstract class AbstractParameterBinder<T> implements ParameterBinder<T> {
 		statement.setObject(valueIndex, null);
 	}
 
-	public abstract void setNotNull(int valueIndex, @Nonnull T value, PreparedStatement statement) throws SQLException;
+	public abstract void setNotNull(int valueIndex, T value, PreparedStatement statement) throws SQLException;
 }

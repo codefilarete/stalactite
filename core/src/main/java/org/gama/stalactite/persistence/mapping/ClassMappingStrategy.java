@@ -1,5 +1,12 @@
 package org.gama.stalactite.persistence.mapping;
 
+import java.io.Serializable;
+import java.lang.reflect.Field;
+import java.lang.reflect.Member;
+import java.lang.reflect.Method;
+import java.util.*;
+import java.util.Map.Entry;
+
 import org.gama.reflection.AccessorByField;
 import org.gama.reflection.AccessorByMember;
 import org.gama.reflection.AccessorByMethod;
@@ -9,14 +16,6 @@ import org.gama.stalactite.persistence.id.IdentifierGenerator;
 import org.gama.stalactite.persistence.sql.dml.PreparedUpdate.UpwhereColumn;
 import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.persistence.structure.Table.Column;
-
-import javax.annotation.Nonnull;
-import java.io.Serializable;
-import java.lang.reflect.Field;
-import java.lang.reflect.Member;
-import java.lang.reflect.Method;
-import java.util.*;
-import java.util.Map.Entry;
 
 /**
  * @author Guillaume Mary
@@ -39,12 +38,12 @@ public class ClassMappingStrategy<T> implements IMappingStrategy<T> {
 	
 	private final GeneratedKeysReader generatedKeysReader;
 	
-	public ClassMappingStrategy(@Nonnull Class<T> classToPersist, @Nonnull Table targetTable,
+	public ClassMappingStrategy(Class<T> classToPersist, Table targetTable,
 								Map<Field, Column> fieldToColumn, Field identifierField, IdentifierGenerator identifierGenerator) {
 		this(classToPersist, targetTable, fieldToColumn, identifierField, identifierGenerator, null);
 	}
 	
-	public ClassMappingStrategy(@Nonnull Class<T> classToPersist, @Nonnull Table targetTable,
+	public ClassMappingStrategy(Class<T> classToPersist, Table targetTable,
 								Map<Field, Column> fieldToColumn, Field identifierField, IdentifierGenerator identifierGenerator, GeneratedKeysReader generatedKeysReader) {
 		this.classToPersist = classToPersist;
 		this.targetTable = targetTable;
@@ -121,7 +120,7 @@ public class ClassMappingStrategy<T> implements IMappingStrategy<T> {
 	}
 	
 	@Override
-	public Map<Column, Object> getInsertValues(@Nonnull T t) {
+	public Map<Column, Object> getInsertValues(T t) {
 		Map<Column, Object> insertValues = defaultMappingStrategy.getInsertValues(t);
 		for (Entry<AccessorByMember, IEmbeddedBeanMapper> fieldStrategyEntry : mappingStrategies.entrySet()) {
 			Object fieldValue = fieldStrategyEntry.getKey().get(t);
@@ -132,7 +131,7 @@ public class ClassMappingStrategy<T> implements IMappingStrategy<T> {
 	}
 	
 	@Override
-	public Map<UpwhereColumn, Object> getUpdateValues(@Nonnull T modified, T unmodified, boolean allColumns) {
+	public Map<UpwhereColumn, Object> getUpdateValues(T modified, T unmodified, boolean allColumns) {
 		Map<UpwhereColumn, Object> toReturn = defaultMappingStrategy.getUpdateValues(modified, unmodified, allColumns);
 		for (Entry<AccessorByMember, IEmbeddedBeanMapper> fieldStrategyEntry : mappingStrategies.entrySet()) {
 			AccessorByMember<T, Object, ?> accessor = fieldStrategyEntry.getKey();
@@ -190,17 +189,17 @@ public class ClassMappingStrategy<T> implements IMappingStrategy<T> {
 	}
 	
 	@Override
-	public Map<Column, Object> getDeleteValues(@Nonnull T t) {
+	public Map<Column, Object> getDeleteValues(T t) {
 		return defaultMappingStrategy.getDeleteValues(t);
 	}
 	
 	@Override
-	public Map<Column, Object> getSelectValues(@Nonnull Serializable id) {
+	public Map<Column, Object> getSelectValues(Serializable id) {
 		return defaultMappingStrategy.getSelectValues(id);
 	}
 	
 	@Override
-	public Map<Column, Object> getVersionedKeyValues(@Nonnull T t) {
+	public Map<Column, Object> getVersionedKeyValues(T t) {
 		return defaultMappingStrategy.getVersionedKeyValues(t);
 	}
 	

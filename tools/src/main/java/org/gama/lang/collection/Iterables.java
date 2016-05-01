@@ -1,10 +1,9 @@
 package org.gama.lang.collection;
 
-import org.gama.lang.bean.Objects;
-
-import javax.annotation.Nonnull;
 import java.util.*;
 import java.util.Map.Entry;
+
+import org.gama.lang.bean.Objects;
 
 /**
  * @author Guillaume Mary
@@ -115,7 +114,7 @@ public final class Iterables {
 	 * @param iterable un Iterable, non null
 	 * @return une List<E> qui contient tous les éléments de <t>iterable</t>
 	 */
-	public static <E> List<E> copy(@Nonnull Iterable<E> iterable) {
+	public static <E> List<E> copy(Iterable<E> iterable) {
 		return (iterable instanceof Collection) ? new ArrayList<>((Collection<E>) iterable) : copy(iterable.iterator());
 	}
 	
@@ -124,7 +123,7 @@ public final class Iterables {
 	 * @param iterator un Iterator, non null
 	 * @return une List<E> qui contient tous les éléments de <t>iterator</t>
 	 */
-	public static <E> List<E> copy(@Nonnull Iterator<E> iterator) {
+	public static <E> List<E> copy(Iterator<E> iterator) {
 		List<E> result = new ArrayList<>();
 		for (; iterator.hasNext();) {
 			result.add(iterator.next());
@@ -154,7 +153,7 @@ public final class Iterables {
 	 * @param visitor un visiteur de collection
 	 * @return le résultat de la visite de <i>c</i> par <i>visitor</i>, null si <i>c</i> est null   
 	 */
-	public static <E, O> List<O> visit(Iterable<E> c, @Nonnull IVisitor<E, O> visitor) {
+	public static <E, O> List<O> visit(Iterable<E> c, IVisitor<E, O> visitor) {
 		if (c != null) {
 			Iterator<E> iterator = c.iterator();
 			return visit(iterator, visitor);
@@ -169,7 +168,7 @@ public final class Iterables {
 	 * @param visitor un visiteur de collection
 	 * @return le résultat de la visite de <i>iterator</i> par <i>visitor</i>, null si <i>iterator</i> est null   
 	 */
-	public static <E, O> List<O> visit(@Nonnull Iterator<E> iterator, @Nonnull IVisitor<E, O> visitor) {
+	public static <E, O> List<O> visit(Iterator<E> iterator, IVisitor<E, O> visitor) {
 		List<O> result = new ArrayList<>();
 		boolean pursue = true;
 		while (pursue && iterator.hasNext()) {
@@ -186,7 +185,7 @@ public final class Iterables {
 	 * @param visitor un visiteur de collection
 	 * @return le résultat alimenté par le <i>visitor</i> (null sans doute si c est null)
 	 */
-	public static <E, O> O filter(Iterable<E> c, @Nonnull IResultVisitor<E, O> visitor) {
+	public static <E, O> O filter(Iterable<E> c, IResultVisitor<E, O> visitor) {
 		if (c != null) {
 			visit(c, visitor);
 			return visitor.getResult();
@@ -201,7 +200,7 @@ public final class Iterables {
 	 * @param visitor un visiteur de collection
 	 * @return le résultat alimenté par le <i>visitor</i> (null sans doute si iterator est null)
 	 */
-	public static <E, O> O filter(@Nonnull Iterator<E> iterator, @Nonnull IResultVisitor<E, O> visitor) {
+	public static <E, O> O filter(Iterator<E> iterator, IResultVisitor<E, O> visitor) {
 		visit(iterator, visitor);
 		return visitor.getResult();
 	}

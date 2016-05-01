@@ -4,8 +4,6 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
-import javax.annotation.Nonnull;
-
 /**
  * {@link AbstractParameterBinder} dédié aux Doubles
  * 
@@ -14,7 +12,7 @@ import javax.annotation.Nonnull;
 public class DoubleBinder extends AbstractParameterBinder<Double> {
 
 	@Override
-	public void setNotNull(int valueIndex, @Nonnull Double value, PreparedStatement statement) throws SQLException {
+	public void setNotNull(int valueIndex, Double value, PreparedStatement statement) throws SQLException {
 		statement.setDouble(valueIndex, value);
 	}
 

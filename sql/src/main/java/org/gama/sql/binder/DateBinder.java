@@ -6,8 +6,6 @@ import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.util.Date;
 
-import javax.annotation.Nonnull;
-
 /**
  * {@link AbstractParameterBinder} dédié aux Dates
  * 
@@ -16,7 +14,7 @@ import javax.annotation.Nonnull;
 public class DateBinder extends AbstractParameterBinder<Date> {
 
 	@Override
-	public void setNotNull(int valueIndex, @Nonnull Date value, PreparedStatement statement) throws SQLException {
+	public void setNotNull(int valueIndex, Date value, PreparedStatement statement) throws SQLException {
 		statement.setTimestamp(valueIndex, new Timestamp(value.getTime()));
 	}
 

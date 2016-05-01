@@ -1,17 +1,19 @@
 package org.gama.lang;
 
+import java.lang.reflect.AccessibleObject;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.Field;
+import java.lang.reflect.Method;
+import java.util.Arrays;
+import java.util.LinkedHashMap;
+import java.util.Map;
+
 import org.gama.lang.collection.ArrayIterator;
 import org.gama.lang.collection.Iterables;
 import org.gama.lang.collection.Iterables.Finder;
 import org.gama.lang.collection.Iterables.Mapper;
 import org.gama.lang.collection.ReadOnlyIterator;
 import org.gama.lang.exception.Exceptions;
-
-import javax.annotation.Nonnull;
-import java.lang.reflect.*;
-import java.util.Arrays;
-import java.util.LinkedHashMap;
-import java.util.Map;
 
 /**
  * @author Guillaume Mary
@@ -124,11 +126,11 @@ public final class Reflections {
 		
 		private Class currentClass, topBoundAncestor;
 		
-		public ClassIterator(@Nonnull Class currentClass) {
+		public ClassIterator(Class currentClass) {
 			this(currentClass, Object.class);
 		}
 		
-		public ClassIterator(@Nonnull Class currentClass, @Nonnull Class topBoundAncestor) {
+		public ClassIterator(Class currentClass, Class topBoundAncestor) {
 			this.currentClass = currentClass;
 			this.topBoundAncestor = topBoundAncestor;
 		}
@@ -151,7 +153,7 @@ public final class Reflections {
 		private ClassIterator classIterator;
 		private ArrayIterator<Field> fieldIterator;
 		
-		public FieldIterator(@Nonnull Class currentClass) {
+		public FieldIterator(Class currentClass) {
 			this(new ClassIterator(currentClass));
 		}
 		
@@ -188,7 +190,7 @@ public final class Reflections {
 		private ClassIterator classIterator;
 		private ArrayIterator<Method> methodIterator;
 		
-		public MethodIterator(@Nonnull Class currentClass) {
+		public MethodIterator(Class currentClass) {
 			this(new ClassIterator(currentClass));
 		}
 		
