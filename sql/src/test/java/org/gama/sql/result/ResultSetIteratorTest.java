@@ -1,24 +1,24 @@
 package org.gama.sql.result;
 
-import org.gama.lang.exception.Exceptions;
-import org.gama.sql.test.HSQLDBInMemoryDataSource;
-import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.Test;
-
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
-import static org.testng.Assert.assertFalse;
-import static org.testng.Assert.assertTrue;
+import org.gama.lang.exception.Exceptions;
+import org.gama.sql.test.HSQLDBInMemoryDataSource;
+import org.junit.Before;
+import org.junit.Test;
+
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 public class ResultSetIteratorTest {
 	
 	private Connection connection;
 	private PreparedStatement selectStmnt;
 	
-	@BeforeMethod
+	@Before
 	public void setUp() throws SQLException {
 		HSQLDBInMemoryDataSource hsqldbInMemoryDataSource = new HSQLDBInMemoryDataSource();
 		connection = hsqldbInMemoryDataSource.getConnection();

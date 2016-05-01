@@ -3,7 +3,7 @@ package org.gama.lang.collection;
 import org.gama.lang.collection.Iterables.Filter;
 import org.gama.lang.collection.Iterables.Finder;
 import org.gama.lang.collection.Iterables.IVisitor;
-import org.testng.annotations.Test;
+import org.junit.Test;
 
 import java.util.*;
 

@@ -1,47 +1,58 @@
 package org.gama.stalactite.persistence.mapping;
 
-import org.gama.lang.collection.Maps;
-import org.gama.stalactite.persistence.sql.dml.PreparedUpdate.UpwhereColumn;
-import org.gama.sql.result.Row;
-import org.gama.stalactite.persistence.structure.Table;
-import org.gama.stalactite.persistence.structure.Table.Column;
-import org.testng.annotations.BeforeTest;
-import org.testng.annotations.DataProvider;
-import org.testng.annotations.Test;
-
 import java.lang.reflect.Field;
 import java.util.HashMap;
 import java.util.Map;
 
+import com.tngtech.java.junit.dataprovider.DataProvider;
+import com.tngtech.java.junit.dataprovider.DataProviderRunner;
+import com.tngtech.java.junit.dataprovider.UseDataProvider;
+import org.gama.lang.collection.Maps;
+import org.gama.sql.result.Row;
+import org.gama.stalactite.persistence.sql.dml.PreparedUpdate.UpwhereColumn;
+import org.gama.stalactite.persistence.structure.Table;
+import org.gama.stalactite.persistence.structure.Table.Column;
+import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+
 import static org.junit.Assert.assertEquals;
 
+/**
+ * @author Guillaume Mary
+ */
+@RunWith(DataProviderRunner.class)
 public class FieldMappingStrategyTest {
 	
-	private static final String GET_INSERT_VALUES_DATA = "testGetInsertValuesData";
-	private static final String GET_UPDATE_VALUES_DIFF_ONLY_DATA = "testGetUpdateValuesDiffOnlyData";
-	private static final String GET_UPDATE_VALUES_ALL_COLUMNS_DATA = "testGetUpdateValuesAllColumnsData";
+	private static Table targetTable;
+	private static Column colA;
+	private static Column colB;
+	private static Column colC;
+	private static Map<Field, Column> classMapping;
+	private static PersistentFieldHarverster persistentFieldHarverster;
 	
-	private Column colA;
-	private Column colB;
-	private Column colC;
-	private FieldMappingStrategy<Toto> testInstance;
-	
-	@BeforeTest
-	public void setUp() {
-		PersistentFieldHarverster persistentFieldHarverster = new PersistentFieldHarverster();
-		Table totoClassTable = new Table(null, "Toto");
-		Map<Field, Column> totoClassMapping = persistentFieldHarverster.mapFields(Toto.class, totoClassTable);
-		Map<String, Column> columns = totoClassTable.mapColumnsOnName();
+	@BeforeClass
+	public static void setUpClass() {
+		persistentFieldHarverster = new PersistentFieldHarverster();
+		targetTable = new Table("Toto");
+		classMapping = persistentFieldHarverster.mapFields(Toto.class, targetTable);
+		Map<String, Column> columns = targetTable.mapColumnsOnName();
 		colA = columns.get("a");
 		colA.setPrimaryKey(true);
 		colB = columns.get("b");
 		colC = columns.get("c");
-		
-		testInstance = new FieldMappingStrategy<>(totoClassTable, totoClassMapping, persistentFieldHarverster.getField("a"));
 	}
 	
-	@DataProvider(name = GET_INSERT_VALUES_DATA)
-	public Object[][] testGetInsertValuesData() throws Exception {
+	private FieldMappingStrategy<Toto> testInstance;
+	
+	@Before
+	public void setUp() {
+		testInstance = new FieldMappingStrategy<>(targetTable, classMapping, persistentFieldHarverster.getField("a"));
+	}
+	
+	@DataProvider
+	public static Object[][] testGetInsertValuesData() {
 		return new Object[][] {
 				{ new Toto(1, 2, 3), Maps.asMap(colA, 1).add(colB, 2).add(colC, 3) },
 				{ new Toto(null, null, null), Maps.asMap(colA, null).add(colB, null).add(colC, null) },
@@ -49,15 +60,16 @@ public class FieldMappingStrategyTest {
 		};
 	}
 	
-	@Test(dataProvider = GET_INSERT_VALUES_DATA)
-	public void testGetInsertValues(Toto modified, Map<Column, Object> expectedResult) throws Exception {
+	@Test
+	@UseDataProvider("testGetInsertValuesData")
+	public void testGetInsertValues(Toto modified, Map<Column, Object> expectedResult) {
 		Map<Column, Object> valuesToInsert = testInstance.getInsertValues(modified);
 		
 		assertEquals(expectedResult, valuesToInsert);
 	}
 	
-	@DataProvider(name = GET_UPDATE_VALUES_DIFF_ONLY_DATA)
-	public Object[][] testGetUpdateValues_diffOnlyData() throws Exception {
+	@DataProvider
+	public static Object[][] testGetUpdateValues_diffOnlyData() {
 		return new Object[][] {
 				{ new Toto(1, 2, 3), new Toto(1, 5, 6), Maps.asMap(colB, 2).add(colC, 3) },
 				{ new Toto(1, 2, 3), new Toto(1, null, null), Maps.asMap(colB, 2).add(colC, 3) },
@@ -71,8 +83,9 @@ public class FieldMappingStrategyTest {
 		};
 	}
 	
-	@Test(dataProvider = GET_UPDATE_VALUES_DIFF_ONLY_DATA)
-	public void testGetUpdateValues_diffOnly(Toto modified, Toto unmodified, Map<Column, Object> expectedResult) throws Exception {
+	@Test
+	@UseDataProvider("testGetUpdateValues_diffOnlyData")
+	public void testGetUpdateValues_diffOnly(Toto modified, Toto unmodified, Map<Column, Object> expectedResult) {
 		Map<UpwhereColumn, Object> valuesToInsert = testInstance.getUpdateValues(modified, unmodified, false);
 		
 		assertEquals(expectedResult, UpwhereColumn.getUpdateColumns(valuesToInsert));
@@ -83,8 +96,8 @@ public class FieldMappingStrategyTest {
 		}
 	}
 	
-	@DataProvider(name = GET_UPDATE_VALUES_ALL_COLUMNS_DATA)
-	public Object[][] testGetUpdateValues_allColumnsData() throws Exception {
+	@DataProvider
+	public static Object[][] testGetUpdateValues_allColumnsData() {
 		return new Object[][] {
 				{ new Toto(1, 2, 3), new Toto(1, 2, 42), Maps.asMap(colB, 2).add(colC, 3) },
 				{ new Toto(null, null, null), new Toto(null, null, null), new HashMap<>() },
@@ -93,8 +106,9 @@ public class FieldMappingStrategyTest {
 		};
 	}
 	
-	@Test(dataProvider = GET_UPDATE_VALUES_ALL_COLUMNS_DATA)
-	public void testGetUpdateValues_allColumns(Toto modified, Toto unmodified, Map<Column, Object> expectedResult) throws Exception {
+	@Test
+	@UseDataProvider("testGetUpdateValues_allColumnsData")
+	public void testGetUpdateValues_allColumns(Toto modified, Toto unmodified, Map<Column, Object> expectedResult) {
 		Map<UpwhereColumn, Object> valuesToInsert = testInstance.getUpdateValues(modified, unmodified, true);
 		
 		assertEquals(expectedResult, UpwhereColumn.getUpdateColumns(valuesToInsert));
@@ -106,33 +120,33 @@ public class FieldMappingStrategyTest {
 	}
 	
 	@Test
-	public void testGetDeleteValues() throws Exception {
+	public void testGetDeleteValues() {
 		Map<Column, Object> versionedKeyValues = testInstance.getDeleteValues(new Toto(1, 2, 3));
-		assertEquals(versionedKeyValues, Maps.asMap(colA, 1));
+		assertEquals(Maps.asMap(colA, 1), versionedKeyValues);
 	}
 	
 	@Test
-	public void testGetSelectValues() throws Exception {
+	public void testGetSelectValues() {
 		Map<Column, Object> versionedKeyValues = testInstance.getSelectValues(1);
-		assertEquals(versionedKeyValues, Maps.asMap(colA, 1));
+		assertEquals(Maps.asMap(colA, 1), versionedKeyValues);
 	}
 	
 	@Test
-	public void testGetVersionedKeyValues() throws Exception {
+	public void testGetVersionedKeyValues() {
 		Map<Column, Object> versionedKeyValues = testInstance.getVersionedKeyValues(new Toto(1, 2, 3));
-		assertEquals(versionedKeyValues, Maps.asMap(colA, 1));
+		assertEquals(Maps.asMap(colA, 1), versionedKeyValues);
 	}
 	
 	@Test
-	public void testTransform() throws Exception {
+	public void testTransform() {
 		Row row = new Row();
 		row.put("a", 1);
 		row.put("b", 2);
 		row.put("c", 3);
 		Toto toto = testInstance.transform(row);
-		assertEquals((int) toto.a, 1);
-		assertEquals((int) toto.b, 2);
-		assertEquals((int) toto.c, 3);
+		assertEquals(1, (int) toto.a);
+		assertEquals(2, (int) toto.b);
+		assertEquals(3, (int) toto.c);
 	}
 	
 	private static class Toto {

@@ -1,21 +1,21 @@
 package org.gama.stalactite.persistence.sql.ddl;
 
-import org.testng.Assert;
-import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.DataProvider;
-import org.testng.annotations.Test;
+import com.tngtech.java.junit.dataprovider.DataProvider;
+import com.tngtech.java.junit.dataprovider.DataProviderRunner;
+import com.tngtech.java.junit.dataprovider.UseDataProvider;
+import org.junit.Test;
+import org.junit.runner.RunWith;
 
+import static org.junit.Assert.assertEquals;
+
+/**
+ * @author Guillaume Mary
+ */
+@RunWith(DataProviderRunner.class)
 public class JavaTypeToSqlTypeMappingTest {
 	
-	public static final String SINGLETON_GET_TYPE_NAME_DATA = "singletonGetTypeNameData";
-	public static final String MULTI_GET_TYPE_NAME_DATA = "multiGetTypeNameData";
-	
-	@BeforeMethod
-	public void setUp() {
-	}
-	
-	@DataProvider(name = SINGLETON_GET_TYPE_NAME_DATA)
-	public Object[][] testSingletonGetTypeNameData() {
+	@DataProvider
+	public static Object[][] testSingletonGetTypeNameData() {
 		JavaTypeToSqlTypeMapping testInstance1 = new JavaTypeToSqlTypeMapping();
 		testInstance1.put(String.class, "VARCHAR");
 		JavaTypeToSqlTypeMapping testInstance2 = new JavaTypeToSqlTypeMapping();
@@ -26,13 +26,14 @@ public class JavaTypeToSqlTypeMappingTest {
 		};
 	}
 	
-	@Test(dataProvider = SINGLETON_GET_TYPE_NAME_DATA)
+	@Test
+	@UseDataProvider("testSingletonGetTypeNameData")
 	public void testGetTypeName_WithSingleton(JavaTypeToSqlTypeMapping testInstance, Class javaType, Integer size, String expected) throws Exception {
-		Assert.assertEquals(testInstance.getTypeName(javaType, size), expected);
+		assertEquals(expected, testInstance.getTypeName(javaType, size));
 	}
 	
-	@DataProvider(name = MULTI_GET_TYPE_NAME_DATA)
-	public Object[][] testMultiGetTypeNameData() {
+	@DataProvider
+	public static Object[][] testMultiGetTypeNameData() {
 		JavaTypeToSqlTypeMapping testInstance = new JavaTypeToSqlTypeMapping();
 		testInstance.put(String.class, "VARCHAR");
 		testInstance.put(String.class, 10, "CHAR($l)");
@@ -44,9 +45,9 @@ public class JavaTypeToSqlTypeMappingTest {
 		};
 	}
 	
-	@Test(dataProvider = MULTI_GET_TYPE_NAME_DATA)
+	@Test
+	@UseDataProvider("testMultiGetTypeNameData")
 	public void testGetTypeName(JavaTypeToSqlTypeMapping testInstance, Class javaType, Integer size, String expected) throws Exception {
-//		System.out.println(testInstance.getJavaTypeToSQLType());
-		Assert.assertEquals(testInstance.getTypeName(javaType, size), expected);
+		assertEquals(expected, testInstance.getTypeName(javaType, size));
 	}
 }

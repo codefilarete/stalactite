@@ -1,18 +1,17 @@
 package org.gama.stalactite.persistence.engine;
 
-import org.gama.lang.collection.Arrays;
-import org.gama.lang.collection.Iterables;
-import org.gama.sql.test.HSQLDBInMemoryDataSource;
-import org.gama.stalactite.persistence.sql.dml.DMLGenerator;
-import org.gama.stalactite.test.PairSetList;
-import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.Test;
-
 import java.io.Serializable;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.*;
+
+import org.gama.lang.collection.Arrays;
+import org.gama.lang.collection.Iterables;
+import org.gama.sql.test.HSQLDBInMemoryDataSource;
+import org.gama.stalactite.persistence.sql.dml.DMLGenerator;
+import org.gama.stalactite.test.PairSetList;
+import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.*;
@@ -24,7 +23,6 @@ public class SelectExecutorTest extends DMLExecutorTest {
 	
 	private SelectExecutor<Toto> testInstance;
 	
-	@BeforeMethod
 	public void setUpTest() throws SQLException {
 		super.setUpTest();
 		DMLGenerator dmlGenerator = new DMLGenerator(dialect.getColumnBinderRegistry(), new DMLGenerator.CaseSensitiveSorter());

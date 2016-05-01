@@ -1,5 +1,7 @@
 package org.gama.stalactite.persistence.sql.dml;
 
+import java.util.Arrays;
+
 import org.gama.sql.binder.ParameterBinder;
 import org.gama.stalactite.persistence.engine.PersistenceContext;
 import org.gama.stalactite.persistence.sql.Dialect;
@@ -7,10 +9,8 @@ import org.gama.stalactite.persistence.sql.ddl.JavaTypeToSqlTypeMapping;
 import org.gama.stalactite.persistence.sql.dml.PreparedUpdate.UpwhereColumn;
 import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.persistence.structure.Table.Column;
-import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.Test;
-
-import java.util.Arrays;
+import org.junit.Before;
+import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
 
@@ -19,7 +19,7 @@ public class DMLGeneratorTest {
 	private ParameterBinder stringBinder;
 	private DMLGenerator testInstance;
 	
-	@BeforeMethod
+	@Before
 	public void setUp() {
 		// Nécessaire aux CRUDOperations et RowIterator qui ont besoin du ParamaterBinderRegistry
 		Dialect currentDialect = new Dialect(new JavaTypeToSqlTypeMapping());

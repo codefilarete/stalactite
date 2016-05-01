@@ -1,52 +1,52 @@
 package org.gama.reflection;
 
-import static org.junit.Assert.*;
-
 import java.util.List;
 
+import com.tngtech.java.junit.dataprovider.DataProvider;
+import com.tngtech.java.junit.dataprovider.DataProviderRunner;
+import com.tngtech.java.junit.dataprovider.UseDataProvider;
 import org.gama.lang.Reflections;
+import org.gama.lang.collection.Arrays;
 import org.gama.reflection.model.Address;
 import org.gama.reflection.model.City;
 import org.gama.reflection.model.Person;
 import org.gama.reflection.model.Phone;
-import org.gama.lang.collection.Arrays;
-import org.testng.annotations.BeforeClass;
-import org.testng.annotations.DataProvider;
-import org.testng.annotations.Test;
+import org.junit.BeforeClass;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+
+import static org.junit.Assert.assertEquals;
 
 /**
  * @author Guillaume Mary
  */
+@RunWith(DataProviderRunner.class)
 public class AccessorChainMutatorTest {
 	
-	private static final String TEST_GET_MUTATOR_DATA = "testGetMutatorData";
-	private static final String TEST_GET_MUTATOR_DATA_EXCEPTION = "testGetMutatorDataException";
-	private static final String TEST_SET_DATA = "testSetData";
+	private static AccessorByField<City, String> cityNameAccessor;
+	private static AccessorByField<Address, City> addressCityAccessor;
+	private static AccessorByField<Person, Address> personAddressAccessor;
+	private static AccessorByField<Address, List> addressPhonesAccessor;
+	private static AccessorByMethod<? extends List, Phone> phoneListAccessor;
+	private static AccessorByField<Phone, String> phoneNumberAccessor;
+	private static AccessorByMethod<Phone, String> phoneNumberMethodAccessor;
+	private static AccessorByMethod<String, Character> charAtAccessor;
+	private static AccessorByMethod<String, Character[]> toCharArrayAccessor;
+	private static ArrayAccessor<String> charArrayAccessor;
 	
-	private AccessorByField<City, String> cityNameAccessor;
-	private AccessorByField<Address, City> addressCityAccessor;
-	private AccessorByField<Person, Address> personAddressAccessor;
-	private AccessorByField<Address, List> addressPhonesAccessor;
-	private AccessorByMethod<? extends List, Phone> phoneListAccessor;
-	private AccessorByField<Phone, String> phoneNumberAccessor;
-	private AccessorByMethod<Phone, String> phoneNumberMethodAccessor;
-	private AccessorByMethod<String, Character> charAtAccessor;
-	private AccessorByMethod<String, Character[]> toCharArrayAccessor;
-	private ArrayAccessor<String> charArrayAccessor;
-	
-	private MutatorByField<City, String> cityNameMutator;
-	private MutatorByField<Address, City> addressCityMutator;
-	private MutatorByField<Person, Address> personAddressMutator;
-	private MutatorByField<Address, List> addressPhonesMutator;
-	private MutatorByMethod<? extends List, Phone> phoneListMutator;
-	private MutatorByField<Phone, String> phoneNumberMutator;
-	private MutatorByMethod<Phone, String> phoneNumberMethodMutator;
-	private MutatorByMethod<String, Character> charAtMutator;
-	private MutatorByMethod<String, Character[]> toCharArrayMutator;
-	private ArrayMutator<String> charArrayMutator;
+	private static MutatorByField<City, String> cityNameMutator;
+	private static MutatorByField<Address, City> addressCityMutator;
+	private static MutatorByField<Person, Address> personAddressMutator;
+	private static MutatorByField<Address, List> addressPhonesMutator;
+	private static MutatorByMethod<? extends List, Phone> phoneListMutator;
+	private static MutatorByField<Phone, String> phoneNumberMutator;
+	private static MutatorByMethod<Phone, String> phoneNumberMethodMutator;
+	private static MutatorByMethod<String, Character> charAtMutator;
+	private static MutatorByMethod<String, Character[]> toCharArrayMutator;
+	private static ArrayMutator<String> charArrayMutator;
 	
 	@BeforeClass
-	public void init() {
+	public static void init() {
 		cityNameAccessor = Accessors.accessorByField(City.class, "name");
 		addressCityAccessor = Accessors.accessorByField(Address.class, "city");
 		personAddressAccessor = Accessors.accessorByField(Person.class, "address");
@@ -70,8 +70,8 @@ public class AccessorChainMutatorTest {
 		charArrayMutator = new ArrayMutator<>(2);
 	}
 	
-	@DataProvider(name = TEST_GET_MUTATOR_DATA)
-	public Object[][] testGetMutatorData() {
+	@DataProvider
+	public static Object[][] testGetMutatorData() {
 		return new Object[][]{
 				{cityNameAccessor, cityNameMutator},
 				{addressCityAccessor, addressCityMutator},
@@ -85,29 +85,32 @@ public class AccessorChainMutatorTest {
 		};
 	}
 	
-	@DataProvider(name = TEST_GET_MUTATOR_DATA_EXCEPTION)
-	public Object[][] testGetMutator_exception_data() {
+	@DataProvider
+	public static Object[][] testGetMutator_exception_data() {
 		return new Object[][]{
 				{charAtAccessor, charAtMutator},    // chartAt() has no mutator equivalent
 				{toCharArrayAccessor, toCharArrayMutator},    // toCharArray() has no mutator equivalent
 		};
 	}
 	
-	@Test(dataProvider = TEST_GET_MUTATOR_DATA)
+	@Test
+	@UseDataProvider("testGetMutatorData")
 	public void testGetMutator(IAccessor accessor, IMutator expected) throws Exception {
 		assertEquals(expected, accessor.toMutator());
 	}
 	
-	@Test(dataProvider = TEST_GET_MUTATOR_DATA_EXCEPTION, expectedExceptions = IllegalArgumentException.class)
+	@Test(expected = IllegalArgumentException.class)
+	@UseDataProvider("testGetMutator_exception_data")
 	public void testGetMutator_exception(IAccessor accessor, IMutator expected) throws Exception {
 		assertEquals(expected, accessor.toMutator());
 	}
 	
-	public List<IAccessor> list(IAccessor ... accessors) {
+	public static List<IAccessor> list(IAccessor ... accessors) {
 		return Arrays.asList(accessors);
 	}
-	@DataProvider(name = TEST_SET_DATA)
-	public Object[][] testSetData() {
+	
+	@DataProvider
+	public static Object[][] testSetData() {
 		return new Object[][] {
 				{ list(cityNameAccessor),
 						new City("Toto"), "Tata" },
@@ -124,7 +127,8 @@ public class AccessorChainMutatorTest {
 		};
 	}
 	
-	@Test(dataProvider = TEST_SET_DATA)
+	@Test
+	@UseDataProvider("testSetData")
 	public void testSet(List<IAccessor> accessors, Object object, Object expected) {
 		AccessorChain<Object, Object> accessorChain = new AccessorChain<>(accessors);
 		AccessorChainMutator testInstance = accessorChain.toMutator();
@@ -132,7 +136,7 @@ public class AccessorChainMutatorTest {
 		assertEquals(expected, accessorChain.get(object));
 	}
 	
-	@Test(expectedExceptions = NullPointerException.class)
+	@Test(expected = NullPointerException.class)
 	public void testSet_NullPointerException() throws Exception {
 		List<IAccessor> accessors = list(personAddressAccessor, addressPhonesAccessor);
 		Object object = new Person(null);

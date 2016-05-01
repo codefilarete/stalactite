@@ -1,5 +1,12 @@
 package org.gama.stalactite.persistence.engine;
 
+import javax.sql.DataSource;
+import java.lang.reflect.Field;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
+import java.util.*;
+
 import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
 import org.gama.stalactite.persistence.mapping.PersistentFieldHarverster;
 import org.gama.stalactite.persistence.sql.Dialect;
@@ -8,16 +15,9 @@ import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.persistence.structure.Table.Column;
 import org.gama.stalactite.test.JdbcTransactionManager;
 import org.gama.stalactite.test.PairSetList;
+import org.junit.Before;
+import org.junit.BeforeClass;
 import org.mockito.ArgumentCaptor;
-import org.testng.annotations.BeforeClass;
-import org.testng.annotations.BeforeMethod;
-
-import javax.sql.DataSource;
-import java.lang.reflect.Field;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.SQLException;
-import java.util.*;
 
 import static org.gama.lang.bean.Objects.BiFunction;
 import static org.junit.Assert.assertEquals;
@@ -107,31 +107,17 @@ public abstract class DMLExecutorTest {
 	}
 	
 	@BeforeClass
-	public void setUpClass() throws SQLException {
+	public static void setUpClass() {
 		JavaTypeToSqlTypeMapping simpleTypeMapping = new JavaTypeToSqlTypeMapping();
 		simpleTypeMapping.put(Integer.class, "int");
 		
 		dialect = new Dialect(simpleTypeMapping);
-		
+	}
+	
+	@Before
+	public void setUpTest() throws SQLException {
 		PersistenceConfigurationBuilder persistenceConfigurationBuilder = newPersistenceConfigurationBuilder();
 		persistenceConfiguration = persistenceConfigurationBuilder.build();
-	}
-	
-	protected PersistenceConfigurationBuilder newPersistenceConfigurationBuilder() {
-		identifierGenerator = new InMemoryCounterIdentifierGenerator();
-		return new PersistenceConfigurationBuilder<Toto>()
-				.withTableAndClass("Toto", Toto.class, new BiFunction<PersistenceConfigurationBuilder.TableAndClass<Toto>, Field, ClassMappingStrategy<Toto>>() {
-					@Override
-					public ClassMappingStrategy<Toto> apply(PersistenceConfigurationBuilder.TableAndClass<Toto> mappedClass, Field primaryKeyField) {
-						return new ClassMappingStrategy<>(mappedClass.mappedClass, mappedClass.targetTable,
-								mappedClass.persistentFieldHarverster.getFieldToColumn(), primaryKeyField, identifierGenerator);
-					}
-				})
-				.withPrimaryKeyFieldName("a");
-	}
-	
-	@BeforeMethod
-	public void setUpTest() throws SQLException {
 		
 		preparedStatement = mock(PreparedStatement.class);
 		when(preparedStatement.executeBatch()).thenReturn(new int[] {1});
@@ -149,6 +135,19 @@ public abstract class DMLExecutorTest {
 		DataSource dataSource = mock(DataSource.class);
 		when(dataSource.getConnection()).thenReturn(connection);
 		transactionManager = new JdbcTransactionManager(dataSource);
+	}
+	
+	protected PersistenceConfigurationBuilder newPersistenceConfigurationBuilder() {
+		identifierGenerator = new InMemoryCounterIdentifierGenerator();
+		return new PersistenceConfigurationBuilder<Toto>()
+				.withTableAndClass("Toto", Toto.class, new BiFunction<PersistenceConfigurationBuilder.TableAndClass<Toto>, Field, ClassMappingStrategy<Toto>>() {
+					@Override
+					public ClassMappingStrategy<Toto> apply(PersistenceConfigurationBuilder.TableAndClass<Toto> mappedClass, Field primaryKeyField) {
+						return new ClassMappingStrategy<>(mappedClass.mappedClass, mappedClass.targetTable,
+								mappedClass.persistentFieldHarverster.getFieldToColumn(), primaryKeyField, identifierGenerator);
+					}
+				})
+				.withPrimaryKeyFieldName("a");
 	}
 	
 	public void assertCapturedPairsEqual(PairSetList<Integer, Integer> expectedPairs) {

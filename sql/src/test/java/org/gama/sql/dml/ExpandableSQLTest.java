@@ -1,31 +1,33 @@
 package org.gama.sql.dml;
 
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import com.tngtech.java.junit.dataprovider.DataProvider;
+import com.tngtech.java.junit.dataprovider.DataProviderRunner;
+import com.tngtech.java.junit.dataprovider.UseDataProvider;
 import org.gama.lang.collection.Arrays;
 import org.gama.lang.collection.Maps;
 import org.gama.sql.dml.ExpandableSQL.ExpandableParameter;
 import org.gama.sql.dml.SQLParameterParser.Parameter;
 import org.gama.sql.dml.SQLParameterParser.ParsedSQL;
-import org.testng.annotations.DataProvider;
-import org.testng.annotations.Test;
-
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import org.junit.Test;
+import org.junit.runner.RunWith;
 
 import static org.junit.Assert.assertEquals;
 
 /**
  * @author Guillaume Mary
  */
+@RunWith(DataProviderRunner.class)
 public class ExpandableSQLTest {
 
-	private static final String TEST_EXPANDABLE_PARAMETERS_DATA = "testExpandableParametersData";
+	private static Parameter paramB = new Parameter("B");
+	private static Parameter paramC = new Parameter("C");
 	
-	private Parameter paramB = new Parameter("B");
-	private Parameter paramC = new Parameter("C");
-	
-	@DataProvider(name = TEST_EXPANDABLE_PARAMETERS_DATA)
-	public Object[][] testExpandableParameters_data() {
+	@DataProvider
+	public static Object[][] testExpandableParameters_data() {
 		return new Object[][] {
 				{ Arrays.asList("select a from Toto where b = ", paramB, " and c = ", paramC),
 						Maps.asMap("B", 18).add("C", 23),
@@ -56,7 +58,8 @@ public class ExpandableSQLTest {
 		};
 	}
 
-	@Test(dataProvider = TEST_EXPANDABLE_PARAMETERS_DATA)
+	@Test
+	@UseDataProvider("testExpandableParameters_data")
 	public void testExpandableParameters(List<Object> sqlSnippets, Map<String, Object> values,
 										 String expectedPreparedSql, Map<String, Iterable<Integer>> expectedIndexedValues) {
 		Map<String, Parameter> params = new HashMap<>();

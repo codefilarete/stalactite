@@ -1,11 +1,14 @@
 package org.gama.lang;
 
-import org.testng.annotations.DataProvider;
-import org.testng.annotations.Test;
-
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+
+import com.tngtech.java.junit.dataprovider.DataProvider;
+import com.tngtech.java.junit.dataprovider.DataProviderRunner;
+import com.tngtech.java.junit.dataprovider.UseDataProvider;
+import org.junit.Test;
+import org.junit.runner.RunWith;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -13,10 +16,8 @@ import static org.junit.Assert.assertNotNull;
 /**
  * @author Guillaume Mary
  */
+@RunWith(DataProviderRunner.class)
 public class ReflectionsTest {
-	
-	public static final String TEST_GET_FIELD_DATA = "testGetField_data";
-	public static final String TEST_GET_METHOD_DATA = "testGetMethod_data";
 	
 	@Test
 	public void testGetDefaultConstructor() {
@@ -24,8 +25,8 @@ public class ReflectionsTest {
 		assertNotNull(defaultConstructor);
 	}
 	
-	@DataProvider(name = TEST_GET_FIELD_DATA)
-	public Object[][] testGetFieldData() {
+	@DataProvider
+	public static Object[][] testGetFieldData() {
 		return new Object[][] {
 				{ Toto.class, "a", Toto.class },
 				{ Toto.class, "b", Toto.class },
@@ -35,7 +36,8 @@ public class ReflectionsTest {
 		};
 	}
 	
-	@Test(dataProvider = TEST_GET_FIELD_DATA)
+	@Test
+	@UseDataProvider("testGetFieldData")
 	public void testGetField(Class<Toto> fieldClass, String fieldName, Class expectedDeclaringClass) {
 		Field field = Reflections.findField(fieldClass, fieldName);
 		assertNotNull(field);
@@ -43,8 +45,8 @@ public class ReflectionsTest {
 		assertEquals(expectedDeclaringClass, field.getDeclaringClass());
 	}
 	
-	@DataProvider(name = TEST_GET_METHOD_DATA)
-	public Object[][] testGetMethodData() {
+	@DataProvider
+	public static Object[][] testGetMethodData() {
 		return new Object[][] {
 				{ Toto.class, "toto", null, Toto.class, 0 },
 				{ Toto.class, "toto2", null, Toto.class, 0 },
@@ -59,7 +61,8 @@ public class ReflectionsTest {
 		};
 	}
 	
-	@Test(dataProvider = TEST_GET_METHOD_DATA)
+	@Test
+	@UseDataProvider("testGetMethodData")
 	public void testGetMethod(Class<Toto> methodClass, String methodName, Class parameterType, Class expectedDeclaringClass, int exectedParameterCount) {
 		Method method;
 		if (parameterType == null) {

@@ -1,15 +1,15 @@
 package org.gama.stalactite.persistence.mapping;
 
-import org.gama.lang.collection.Arrays;
-import org.gama.lang.collection.Maps;
-import org.gama.sql.result.IRowTransformer;
-import org.gama.sql.result.Row;
-import org.testng.annotations.Test;
-
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+
+import org.gama.lang.collection.Arrays;
+import org.gama.lang.collection.Maps;
+import org.gama.sql.result.IRowTransformer;
+import org.gama.sql.result.Row;
+import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
 

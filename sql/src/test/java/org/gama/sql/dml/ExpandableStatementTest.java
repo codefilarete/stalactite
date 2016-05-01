@@ -1,28 +1,30 @@
 package org.gama.sql.dml;
 
+import java.sql.PreparedStatement;
+import java.util.HashMap;
+import java.util.Map;
+
+import com.tngtech.java.junit.dataprovider.DataProvider;
+import com.tngtech.java.junit.dataprovider.DataProviderRunner;
+import com.tngtech.java.junit.dataprovider.UseDataProvider;
 import org.gama.lang.NoopInvocationHandler;
 import org.gama.lang.collection.Arrays;
 import org.gama.lang.collection.Maps;
 import org.gama.sql.binder.IntegerBinder;
 import org.gama.sql.binder.ParameterBinder;
-import org.testng.annotations.DataProvider;
-import org.testng.annotations.Test;
-
-import java.sql.PreparedStatement;
-import java.util.HashMap;
-import java.util.Map;
+import org.junit.Test;
+import org.junit.runner.RunWith;
 
 import static org.junit.Assert.assertEquals;
 
 /**
- * @author Guillaume
+ * @author Guillaume Mary
  */
+@RunWith(DataProviderRunner.class)
 public class ExpandableStatementTest {
 	
-	private static final String TEST_EXPANDABLE_PARAMETERS_DATA = "testDoApplyValueData";
-	
-	@DataProvider(name = TEST_EXPANDABLE_PARAMETERS_DATA)
-	public Object[][] testDoApplyValue_data() {
+	@DataProvider
+	public static Object[][] testDoApplyValue_data() {
 		return new Object[][] {
 				{ "select * from Toto where id = :a",
 						Maps.asMap("a", 17), Maps.asMap("a", (ParameterBinder) new IntegerBinder()),
@@ -60,7 +62,8 @@ public class ExpandableStatementTest {
 		};
 	}
 	
-	@Test(dataProvider = TEST_EXPANDABLE_PARAMETERS_DATA)
+	@Test
+	@UseDataProvider("testDoApplyValue_data")
 	public void testDoApplyValue(final String sql, Map<String, Object> paramValues, Map<String, ParameterBinder> binders, Map<Integer, Integer> expectedIndexes) {
 		final Map<Integer, Object> appliedIndexedValues = new HashMap<>();
 		ExpandableStatement<String> testInstance = new StringParamedSQL(sql, binders) {

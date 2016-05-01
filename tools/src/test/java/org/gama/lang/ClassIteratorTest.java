@@ -1,29 +1,35 @@
 package org.gama.lang;
 
+import java.util.List;
+
+import com.tngtech.java.junit.dataprovider.DataProvider;
+import com.tngtech.java.junit.dataprovider.DataProviderRunner;
+import com.tngtech.java.junit.dataprovider.UseDataProvider;
 import org.gama.lang.Reflections.ClassIterator;
 import org.gama.lang.collection.Arrays;
 import org.gama.lang.collection.Iterables;
-import org.testng.annotations.DataProvider;
-import org.testng.annotations.Test;
-
-import java.util.List;
+import org.junit.Test;
+import org.junit.runner.RunWith;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 
+/**
+ * @author Guillaume Mary
+ */
+@RunWith(DataProviderRunner.class)
 public class ClassIteratorTest {
 	
-	public static final String NEXT_METHODS_DATA = "testNextMethodsData";
-	
-	@DataProvider(name = NEXT_METHODS_DATA)
-	private Object[][] testNextMethodsData() {
+	@DataProvider
+	public static Object[][] testNextMethodsData() {
 		return new Object[][] {
 				{ X.class, Arrays.asList((Class) X.class) },
 				{ Y.class, Arrays.asList((Class) Y.class, X.class) }
 		};
 	}
 	
-	@Test(dataProvider = NEXT_METHODS_DATA)
+	@Test
+	@UseDataProvider("testNextMethodsData")
 	public void testNextMethods(Class clazz, List<Class> expectedClasses) throws Exception {
 		ClassIterator testInstance = new ClassIterator(clazz);
 		assertEquals(expectedClasses, Iterables.copy(testInstance));

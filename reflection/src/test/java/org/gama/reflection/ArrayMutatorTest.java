@@ -1,8 +1,8 @@
 package org.gama.reflection;
 
-import static org.junit.Assert.*;
+import org.junit.Test;
 
-import org.testng.annotations.Test;
+import static org.junit.Assert.assertArrayEquals;
 
 /**
  * @author Guillaume Mary
@@ -25,7 +25,7 @@ public class ArrayMutatorTest {
 		assertArrayEquals(sample, new String[]{"x", "y", "z"});
 	}
 	
-	@Test(expectedExceptions = ArrayIndexOutOfBoundsException.class)
+	@Test(expected = ArrayIndexOutOfBoundsException.class)
 	public void testSet_ArrayIndexOutOfBoundsException() throws Exception {
 		ArrayMutator<String> testInstance = new ArrayMutator<>();
 		String[] sample = { "a", "b", "c" };

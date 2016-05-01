@@ -3,7 +3,7 @@ package org.gama.safemodel.description;
 import java.lang.reflect.Field;
 
 import org.gama.lang.Reflections;
-import org.testng.annotations.Test;
+import org.junit.Test;
 
 import static org.gama.safemodel.description.FieldDescription.field;
 import static org.junit.Assert.assertEquals;
@@ -34,12 +34,12 @@ public class FieldDescriptionTest {
 		assertEquals(expectedField, fieldDescription.getField());
 	}
 	
-	@Test(expectedExceptions = Reflections.MemberNotFoundException.class)
+	@Test(expected = Reflections.MemberNotFoundException.class)
 	public void testField_fieldNotFound() {
 		field(TestFieldTargetClass.class, "tata", String.class);
 	}
 	
-	@Test(expectedExceptions = IllegalArgumentException.class)
+	@Test(expected = IllegalArgumentException.class)
 	public void testField_wrongType() {
 		field(TestFieldTargetClass.class, "toto", Long.class);
 	}

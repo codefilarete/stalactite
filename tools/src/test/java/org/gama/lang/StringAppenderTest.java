@@ -1,6 +1,6 @@
 package org.gama.lang;
 
-import org.testng.annotations.Test;
+import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
 

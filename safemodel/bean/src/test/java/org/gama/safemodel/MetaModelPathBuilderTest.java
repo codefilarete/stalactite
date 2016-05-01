@@ -1,20 +1,22 @@
 package org.gama.safemodel;
 
+import com.tngtech.java.junit.dataprovider.DataProvider;
+import com.tngtech.java.junit.dataprovider.DataProviderRunner;
+import com.tngtech.java.junit.dataprovider.UseDataProvider;
 import org.gama.safemodel.metamodel.MetaPerson;
-import org.testng.annotations.DataProvider;
-import org.testng.annotations.Test;
+import org.junit.Test;
+import org.junit.runner.RunWith;
 
 import static org.junit.Assert.assertEquals;
 
 /**
  * @author Guillaume Mary
  */
+@RunWith(DataProviderRunner.class)
 public class MetaModelPathBuilderTest {
 	
-	private static final String TEST_PATH_DATA = "testTransformData";
-	
-	@DataProvider(name = TEST_PATH_DATA)
-	public Object[][] testTransformData() {
+	@DataProvider
+	public static Object[][] testTransformData() {
 		return new Object[][] {
 				{ new MetaPerson<>().address.city, "address.city" },
 				{ new MetaPerson<>().address.phones.number, "address.phones.number" },
@@ -26,7 +28,8 @@ public class MetaModelPathBuilderTest {
 		};
 	}
 	
-	@Test(dataProvider = TEST_PATH_DATA)
+	@Test
+	@UseDataProvider("testTransformData")
 	public void testTransform(MetaModel metaModel, String expected) throws Exception {
 		MetaModelPathBuilder testInstance = new MetaModelPathBuilder();
 		assertEquals(expected, testInstance.transform(metaModel));

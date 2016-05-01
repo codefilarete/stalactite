@@ -1,5 +1,18 @@
 package org.gama.stalactite.persistence.engine;
 
+import javax.sql.DataSource;
+import java.io.Serializable;
+import java.lang.reflect.Field;
+import java.sql.Connection;
+import java.sql.SQLException;
+import java.util.AbstractMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+
+import com.tngtech.java.junit.dataprovider.DataProvider;
+import com.tngtech.java.junit.dataprovider.DataProviderRunner;
+import com.tngtech.java.junit.dataprovider.UseDataProvider;
 import org.gama.lang.Retryer;
 import org.gama.lang.collection.Arrays;
 import org.gama.lang.collection.Iterables;
@@ -15,26 +28,17 @@ import org.gama.stalactite.persistence.sql.dml.DMLGenerator;
 import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.persistence.structure.Table.Column;
 import org.gama.stalactite.test.JdbcTransactionManager;
-import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.BeforeTest;
-import org.testng.annotations.DataProvider;
-import org.testng.annotations.Test;
-
-import javax.sql.DataSource;
-import java.io.Serializable;
-import java.lang.reflect.Field;
-import java.sql.Connection;
-import java.sql.SQLException;
-import java.util.AbstractMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
 
 import static org.junit.Assert.assertEquals;
 
+/**
+ * @author Guillaume Mary
+ */
+@RunWith(DataProviderRunner.class)
 public class PersisterDatabaseTest {
-	
-	private static final String DATASOURCES_DATAPROVIDER_NAME = "datasources";
 	
 	private Persister<Toto> testInstance;
 	private JdbcTransactionManager transactionManager;
@@ -43,7 +47,7 @@ public class PersisterDatabaseTest {
 	private Dialect dialect;
 	private Table totoClassTable;
 	
-	@BeforeTest
+	@Before
 	public void setUp() throws SQLException {
 		totoClassTable = new Table(null, "Toto");
 		PersistentFieldHarverster persistentFieldHarverster = new PersistentFieldHarverster();
@@ -60,10 +64,7 @@ public class PersisterDatabaseTest {
 		
 		transactionManager = new JdbcTransactionManager(null);
 		dialect = new Dialect(simpleTypeMapping);
-	}
-	
-	@BeforeMethod
-	public void setUpTest() throws SQLException {
+		
 		// reset id counter between 2 tests else id "overflows"
 		identifierGenerator.reset();
 		
@@ -71,8 +72,8 @@ public class PersisterDatabaseTest {
 				new DMLGenerator(dialect.getColumnBinderRegistry() , DMLGenerator.CaseSensitiveSorter.INSTANCE), Retryer.NO_RETRY, 3, 3);
 	}
 	
-	@DataProvider(name = DATASOURCES_DATAPROVIDER_NAME)
-	public Object[][] dataSources() {
+	@DataProvider
+	public static Object[][] dataSources() {
 		return new Object[][] {
 				{ new HSQLDBInMemoryDataSource() },
 				{ new DerbyInMemoryDataSource() },
@@ -80,7 +81,8 @@ public class PersisterDatabaseTest {
 		};
 	}
 	
-	@Test(dataProvider = DATASOURCES_DATAPROVIDER_NAME)
+	@Test
+	@UseDataProvider("dataSources")
 	public void testSelect(final DataSource dataSource) throws SQLException {
 		transactionManager.setDataSource(dataSource);
 		DDLDeployer ddlDeployer = new DDLDeployer(dialect.getDdlSchemaGenerator(), transactionManager) {
@@ -111,7 +113,8 @@ public class PersisterDatabaseTest {
 		}
 	}
 	
-	@Test(dataProvider = DATASOURCES_DATAPROVIDER_NAME)
+	@Test
+	@UseDataProvider("dataSources")
 	public void testSelect_rowCount(final DataSource dataSource) throws SQLException {
 		transactionManager.setDataSource(dataSource);
 		DDLDeployer ddlDeployer = new DDLDeployer(dialect.getDdlSchemaGenerator(), transactionManager) {

@@ -1,22 +1,24 @@
 package org.gama.stalactite.query.builder;
 
-import static org.junit.Assert.assertEquals;
-
+import com.tngtech.java.junit.dataprovider.DataProvider;
+import com.tngtech.java.junit.dataprovider.DataProviderRunner;
+import com.tngtech.java.junit.dataprovider.UseDataProvider;
 import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.persistence.structure.Table.Column;
 import org.gama.stalactite.query.model.SelectQuery;
-import org.testng.annotations.DataProvider;
-import org.testng.annotations.Test;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+
+import static org.junit.Assert.assertEquals;
 
 /**
  * @author Guillaume Mary
  */
+@RunWith(DataProviderRunner.class)
 public class SelectQueryBuilderTest {
 	
-	private static final String TEST_TO_SQL_DATA = "testToSQLData";
-	
-	@DataProvider(name = TEST_TO_SQL_DATA)
-	public Object[][] testToSQL_data() {
+	@DataProvider
+	public static Object[][] testToSQL_data() {
 		final Table tableToto = new Table(null, "Toto");
 		final Column colTotoA = tableToto.new Column("a", String.class);
 		final Column colTotoB = tableToto.new Column("b", String.class);
@@ -47,7 +49,8 @@ public class SelectQueryBuilderTest {
 		};
 	}
 	
-	@Test(dataProvider = TEST_TO_SQL_DATA)
+	@Test
+	@UseDataProvider("testToSQL_data")
 	public void testToSQL(SelectQuery selectQuery, String expected) {
 		SelectQueryBuilder testInstance = new SelectQueryBuilder(selectQuery);
 		assertEquals(expected, testInstance.toSQL());

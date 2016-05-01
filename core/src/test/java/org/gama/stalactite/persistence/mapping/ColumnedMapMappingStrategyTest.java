@@ -1,59 +1,77 @@
 package org.gama.stalactite.persistence.mapping;
 
+import java.util.HashMap;
+import java.util.Map;
+
+import com.tngtech.java.junit.dataprovider.DataProvider;
+import com.tngtech.java.junit.dataprovider.DataProviderRunner;
+import com.tngtech.java.junit.dataprovider.UseDataProvider;
 import org.gama.lang.collection.Maps;
 import org.gama.lang.collection.Maps.ChainingMap;
 import org.gama.sql.result.Row;
 import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.persistence.structure.Table.Column;
-import org.testng.annotations.BeforeTest;
-import org.testng.annotations.DataProvider;
-import org.testng.annotations.Test;
+import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.Test;
+import org.junit.runner.RunWith;
 
-import java.util.HashMap;
-import java.util.Map;
+import static junit.framework.TestCase.assertTrue;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
 
-import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.assertTrue;
-
+/**
+ * @author Guillaume Mary
+ */
+@RunWith(DataProviderRunner.class)
 public class ColumnedMapMappingStrategyTest {
 	
-	private static final String GET_INSERT_VALUES_DATA = "testGetInsertValuesData";
-	private static final String GET_UPDATE_VALUES_DIFF_ONLY_DATA = "testGetUpdateValuesDiffOnlyData";
-	private static final String GET_UPDATE_VALUES_ALL_COLUMNS_DATA = "testGetUpdateValuesAllColumnsData";
+	private static Table totoTable;
+	private static Column col1;
+	private static Column col2;
+	private static Column col3;
+	private static Column col4;
+	private static Column col5;
+	private static Map<Integer, Column> columnToKey;
+	private static Map<Column, Integer> keyToColumn;
 	
-	private Table totoTable;
-	private ColumnedMapMappingStrategy<Map<Integer, String>, Integer, String, String> testInstance;
-	private Column col1;
-	private Column col2;
-	private Column col3;
-	private Column col4;
-	private Column col5;
-	
-	@BeforeTest
-	public void setUp() throws Exception {
+	@BeforeClass
+	public static void setUpClass() {
 		totoTable = new Table(null, "Toto");
 		final int nbCol = 5;
-		final Map<Integer, Column> mappedColumnsOnKey = new HashMap<>();
-		final Map<Column, Integer> mappedKeyOnColumn = new HashMap<>();
+		columnToKey = new HashMap<>();
+		keyToColumn = new HashMap<>();
 		for (int i = 1; i <= nbCol; i++) {
 			String columnName = "col_" + i;
 			Column column = totoTable.new Column(columnName, String.class);
-			mappedColumnsOnKey.put(i, column);
-			mappedKeyOnColumn.put(column, i);
+			columnToKey.put(i, column);
+			keyToColumn.put(column, i);
 		}
-		
+		Map<String, Column> namedColumns = totoTable.mapColumnsOnName();
+		col1 = namedColumns.get("col_1");
+		col1.setPrimaryKey(true);
+		col2 = namedColumns.get("col_2");
+		col3 = namedColumns.get("col_3");
+		col4 = namedColumns.get("col_4");
+		col5 = namedColumns.get("col_5");
+	}
+	
+	private ColumnedMapMappingStrategy<Map<Integer, String>, Integer, String, String> testInstance;
+	
+	@Before
+	public void setUp() {
 		testInstance = new ColumnedMapMappingStrategy<Map<Integer, String>, Integer, String, String>(totoTable, totoTable.getColumns().asSet(), HashMap.class) {
 			@Override
 			protected Column getColumn(Integer key) {
 				if (key > 5) {
 					throw new IllegalArgumentException("Unknown key " + key);
 				}
-				return mappedColumnsOnKey.get(key);
+				return columnToKey.get(key);
 			}
 			
 			@Override
 			protected Integer getKey(Column column) {
-				return mappedKeyOnColumn.get(column);
+				return keyToColumn.get(column);
 			}
 			
 			@Override
@@ -66,17 +84,11 @@ public class ColumnedMapMappingStrategyTest {
 				return s == null ? null : s.toString();
 			}
 		};
-		Map<String, Column> namedColumns = totoTable.mapColumnsOnName();
-		col1 = namedColumns.get("col_1");
-		col1.setPrimaryKey(true);
-		col2 = namedColumns.get("col_2");
-		col3 = namedColumns.get("col_3");
-		col4 = namedColumns.get("col_4");
-		col5 = namedColumns.get("col_5");
+		
 	}
 	
-	@DataProvider(name = GET_INSERT_VALUES_DATA)
-	public Object[][] testGetInsertValuesData() throws Exception {
+	@DataProvider
+	public static Object[][] testGetInsertValuesData() {
 		return new Object[][] {
 				{ Maps.asMap(1, "a").add(2, "b").add(3, "c"), Maps.asMap(col1, "a").add(col2, "b").add(col3, "c").add(col4, null).add(col5, null) },
 				{ Maps.asMap(1, "a").add(2, "b").add(3, null), Maps.asMap(col1, "a").add(col2, "b").add(col3, null).add(col4, null).add(col5, null) },
@@ -84,14 +96,15 @@ public class ColumnedMapMappingStrategyTest {
 		};
 	}
 	
-	@Test(dataProvider = GET_INSERT_VALUES_DATA)
-	public void testGetInsertValues(ChainingMap<Integer, String> toInsert, ChainingMap<Column, String> expected) throws Exception {
+	@Test
+	@UseDataProvider("testGetInsertValuesData")
+	public void testGetInsertValues(ChainingMap<Integer, String> toInsert, ChainingMap<Column, String> expected) {
 		Map<Column, Object> insertValues = testInstance.getInsertValues(toInsert);
-		assertEquals(insertValues, expected);
+		assertEquals(expected, insertValues);
 	}
 	
-	@DataProvider(name = GET_UPDATE_VALUES_DIFF_ONLY_DATA)
-	private Object[][] testGetUpdateValues_diffOnlyData() {
+	@DataProvider
+	public static Object[][] testGetUpdateValues_diffOnlyData() {
 		return new Object[][] {
 				{ Maps.asMap(1, "a").add(2, "b").add(3, "c"), Maps.asMap(1, "x").add(2, "y").add(3, "z"),
 						Maps.asMap(col1, "a").add(col2, "b").add(col3, "c") },
@@ -108,14 +121,15 @@ public class ColumnedMapMappingStrategyTest {
 		};
 	}
 	
-	@Test(dataProvider = GET_UPDATE_VALUES_DIFF_ONLY_DATA)
-	public void testGetUpdateValues_diffOnly(HashMap<Integer, String> modified, HashMap<Integer, String> unmodified, Map<Integer, String> expected) throws Exception {
+	@Test
+	@UseDataProvider("testGetUpdateValues_diffOnlyData")
+	public void testGetUpdateValues_diffOnly(HashMap<Integer, String> modified, HashMap<Integer, String> unmodified, Map<Column, String> expected) {
 		Map<Column, Object> updateValues = testInstance.getUpdateValues(modified, unmodified, false);
-		assertEquals(updateValues, expected);
+		assertEquals(expected, updateValues);
 	}
 	
-	@DataProvider(name = GET_UPDATE_VALUES_ALL_COLUMNS_DATA)
-	private Object[][] testGetUpdateValues_allColumnsData() {
+	@DataProvider
+	public static Object[][] testGetUpdateValues_allColumnsData() {
 		return new Object[][] {
 				{ Maps.asMap(1, "a").add(2, "b").add(3, "c"), Maps.asMap(1, "x").add(2, "y").add(3, "z"),
 						Maps.asMap(col1, "a").add(col2, "b").add(col3, "c").add(col4, null).add(col5, null) },
@@ -134,27 +148,28 @@ public class ColumnedMapMappingStrategyTest {
 		};
 	}
 	
-	@Test(dataProvider = GET_UPDATE_VALUES_ALL_COLUMNS_DATA)
-	public void testGetUpdateValues_allColumns(HashMap<Integer, String> modified, HashMap<Integer, String> unmodified, Map<Integer, String> expected) throws Exception {
+	@Test
+	@UseDataProvider("testGetUpdateValues_allColumnsData")
+	public void testGetUpdateValues_allColumns(HashMap<Integer, String> modified, HashMap<Integer, String> unmodified, Map<Column, String> expected) {
 		Map<Column, Object> updateValues = testInstance.getUpdateValues(modified, unmodified, true);
-		assertEquals(updateValues, expected);
+		assertEquals(expected, updateValues);
 	}
 	
 	@Test
-	public void testTransform() throws Exception {
+	public void testTransform() {
 		Row row = new Row();
 		row.put(col1.getName(), "a");
 		row.put(col2.getName(), "b");
 		row.put(col3.getName(), "c");
 		Map<Integer, String> toto = testInstance.transform(row);
-		assertEquals(toto.get(1), "a");
-		assertEquals(toto.get(2), "b");
-		assertEquals(toto.get(3), "c");
+		assertEquals("a", toto.get(1));
+		assertEquals("b", toto.get(2));
+		assertEquals("c", toto.get(3));
 		assertTrue(toto.containsKey(4));
-		assertEquals(toto.get(4), null);
+		assertNull(toto.get(4));
 		assertTrue(toto.containsKey(5));
-		assertEquals(toto.get(5), null);
+		assertNull(toto.get(5));
 		// there's not more element since mapping used 5 columns
-		assertEquals(toto.size(), 5);
+		assertEquals(5, toto.size());
 	}
 }

@@ -1,11 +1,11 @@
 package org.gama.safemodel;
 
-import org.testng.annotations.Test;
+import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
 
 /**
- * @author Guillaume
+ * @author Guillaume Mary
  */
 public class MetaModelTest {
 	
@@ -27,7 +27,7 @@ public class MetaModelTest {
 		assertEquals(testInstance, testInstance.field3.getOwner());
 	}
 	
-	@Test(expectedExceptions = Exception.class)	// setting owner on private field in not expected to work
+	@Test(expected = Exception.class)	// setting owner on private field in not expected to work
 	public void testFixFieldsOwner_privateField() throws Exception {
 		FixFieldsOwnerTestMetaModel_privateField testInstance = new FixFieldsOwnerTestMetaModel_privateField();
 	}

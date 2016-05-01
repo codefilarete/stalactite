@@ -1,10 +1,10 @@
 package org.gama.lang.bean;
 
-import org.gama.lang.collection.Arrays;
-import org.testng.annotations.Test;
-
 import java.util.List;
 import java.util.TreeSet;
+
+import org.gama.lang.collection.Arrays;
+import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
 

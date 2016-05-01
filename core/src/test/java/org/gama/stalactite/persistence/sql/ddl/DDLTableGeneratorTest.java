@@ -1,12 +1,13 @@
 package org.gama.stalactite.persistence.sql.ddl;
 
 import org.gama.lang.collection.KeepOrderSet;
-import org.gama.stalactite.persistence.structure.Table.ForeignKey;
-import org.gama.stalactite.persistence.structure.Table.Index;
 import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.persistence.structure.Table.Column;
-import org.testng.Assert;
-import org.testng.annotations.Test;
+import org.gama.stalactite.persistence.structure.Table.ForeignKey;
+import org.gama.stalactite.persistence.structure.Table.Index;
+import org.junit.Test;
+
+import static org.junit.Assert.assertEquals;
 
 public class DDLTableGeneratorTest {
 	
@@ -23,19 +24,19 @@ public class DDLTableGeneratorTest {
 		
 		t.new Column("A", String.class);
 		String generatedCreateTable = testInstance.generateCreateTable(t);
-		Assert.assertEquals(generatedCreateTable, "create table Toto(A type)");
+		assertEquals("create table Toto(A type)", generatedCreateTable);
 		
 		t.new Column("B", String.class);
 		generatedCreateTable = testInstance.generateCreateTable(t);
-		Assert.assertEquals(generatedCreateTable, "create table Toto(A type, B type)");
+		assertEquals("create table Toto(A type, B type)", generatedCreateTable);
 		
 		t.new Column("C", String.class).setPrimaryKey(true);
 		generatedCreateTable = testInstance.generateCreateTable(t);
-		Assert.assertEquals(generatedCreateTable, "create table Toto(A type, B type, C type, primary key (C))");
+		assertEquals("create table Toto(A type, B type, C type, primary key (C))", generatedCreateTable);
 		
 		t.new Column("D", Integer.TYPE);	// test isNullable
 		generatedCreateTable = testInstance.generateCreateTable(t);
-		Assert.assertEquals(generatedCreateTable, "create table Toto(A type, B type, C type, D type not null, primary key (C))");
+		assertEquals("create table Toto(A type, B type, C type, D type not null, primary key (C))", generatedCreateTable);
 	}
 	
 	@Test
@@ -48,11 +49,11 @@ public class DDLTableGeneratorTest {
 		
 		Index idx1 = t.new Index(colA, "Idx1");
 		String generatedCreateIndex = testInstance.generateCreateIndex(idx1);
-		Assert.assertEquals(generatedCreateIndex, "create index Idx1 on Toto(A)");
+		assertEquals("create index Idx1 on Toto(A)", generatedCreateIndex);
 		
 		Index idx2 = t.new Index(new KeepOrderSet<>(colA, colB), "Idx2");
 		generatedCreateIndex = testInstance.generateCreateIndex(idx2);
-		Assert.assertEquals(generatedCreateIndex, "create index Idx2 on Toto(A, B)");
+		assertEquals("create index Idx2 on Toto(A, B)", generatedCreateIndex);
 	}
 	
 	@Test
@@ -69,10 +70,10 @@ public class DDLTableGeneratorTest {
 		
 		ForeignKey foreignKey = toto.new ForeignKey(colA, "FK1", colA2);
 		String generatedCreateIndex = testInstance.generateCreateForeignKey(foreignKey);
-		Assert.assertEquals(generatedCreateIndex, "alter table Toto add constraint FK1 foreign key(A) references Titi(A)");
+		assertEquals("alter table Toto add constraint FK1 foreign key(A) references Titi(A)", generatedCreateIndex);
 		
 		foreignKey = toto.new ForeignKey(new KeepOrderSet<>(colA, colB), "FK1", new KeepOrderSet<>(colA2, colB2));
 		generatedCreateIndex = testInstance.generateCreateForeignKey(foreignKey);
-		Assert.assertEquals(generatedCreateIndex, "alter table Toto add constraint FK1 foreign key(A, B) references Titi(A, B)");
+		assertEquals("alter table Toto add constraint FK1 foreign key(A, B) references Titi(A, B)", generatedCreateIndex);
 	}
 }

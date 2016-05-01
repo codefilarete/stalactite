@@ -1,62 +1,82 @@
 package org.gama.stalactite.persistence.mapping;
 
+import java.lang.reflect.Field;
+import java.util.*;
+
+import com.tngtech.java.junit.dataprovider.DataProvider;
+import com.tngtech.java.junit.dataprovider.DataProviderRunner;
+import com.tngtech.java.junit.dataprovider.UseDataProvider;
 import org.gama.lang.collection.Arrays;
 import org.gama.lang.collection.Maps;
 import org.gama.stalactite.persistence.sql.dml.PreparedUpdate.UpwhereColumn;
 import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.persistence.structure.Table.Column;
-import org.testng.annotations.BeforeTest;
-import org.testng.annotations.DataProvider;
-import org.testng.annotations.Test;
-
-import java.lang.reflect.Field;
-import java.util.*;
+import org.junit.BeforeClass;
+import org.junit.Test;
+import org.junit.runner.RunWith;
 
 import static org.junit.Assert.assertEquals;
 
+/**
+ * @author Guillaume Mary
+ */
+@RunWith(DataProviderRunner.class)
 public class ClassMappingStrategyTest {
 	
-	private static final String GET_INSERT_VALUES_DATA = "testGetInsertValuesData";
-	private static final String GET_UPDATE_VALUES_DIFF_ONLY_DATA = "testGetUpdateValuesDiffOnlyData";
-	private static final String GET_UPDATE_VALUES_ALL_COLUMNS_DATA = "testGetUpdateValuesAllColumnsData";
+	private static Column colA;
+	private static Column colB;
+	private static Column colC;
+	private static Column colD1;
+	private static Column colD2;
+	private static Column colE1;
+	private static Column colE2;
+	private static Map<Field, Column> classMapping;
+	private static Table targetTable;
+	private static PersistentFieldHarverster persistentFieldHarverster;
+	private static Map<String, Column> columnMapOnName;
+	private static Field myListField;
+	private static Field myMapField;
 	
-	private Column colA;
-	private Column colB;
-	private Column colC;
-	private Column colD1;
-	private Column colD2;
-	private Column colE1;
-	private Column colE2;
-	private ClassMappingStrategy<Toto> testInstance;
+	private static ClassMappingStrategy<Toto> testInstance;
 	
-	@BeforeTest
-	public void setUp() throws NoSuchFieldException {
-		PersistentFieldHarverster persistentFieldHarverster = new PersistentFieldHarverster();
-		Table totoClassTable = new Table(null, "Toto");
-		Map<Field, Column> totoClassMapping = persistentFieldHarverster.mapFields(Toto.class, totoClassTable);
-		Map<String, Column> columns = totoClassTable.mapColumnsOnName();
-		colA = columns.get("a");
+	@BeforeClass
+	public static void setUpClass() throws NoSuchFieldException {
+		persistentFieldHarverster = new PersistentFieldHarverster();
+		targetTable = new Table("Toto");
+		classMapping = persistentFieldHarverster.mapFields(Toto.class, targetTable);
+		
+		
+		columnMapOnName = targetTable.mapColumnsOnName();
+		colA = columnMapOnName.get("a");
 		colA.setPrimaryKey(true);
-		colB = columns.get("b");
-		colC = columns.get("c");
+		colB = columnMapOnName.get("b");
+		colC = columnMapOnName.get("c");
 		
-		// Remplacement du mapping par défaut pour la List (attribut d) par une strategy adhoc
-		Field d = Toto.class.getDeclaredField("d");
-		totoClassMapping.remove(d);
-		// Remplacement du mapping par défaut pour la Map (attribut e) par une strategy adhoc
-		Field e = Toto.class.getDeclaredField("e");
-		totoClassMapping.remove(e);
-		// création de l'instance à tester
-		// NB: pas de générateur d'id car ce n'est pas ce qu'on teste (à changer si besoin)
-		testInstance = new ClassMappingStrategy<>(Toto.class, totoClassTable, totoClassMapping, persistentFieldHarverster.getField("a"), null);
+		// Remplacement du mapping par défaut pour la List (attribut myListField) par une strategy adhoc
+		myListField = Toto.class.getDeclaredField("myList");
+		classMapping.remove(myListField);
+		// Remplacement du mapping par défaut pour la Map (attribut myMapField) par une strategy adhoc
+		myMapField = Toto.class.getDeclaredField("myMap");
+		classMapping.remove(myMapField);
 		
-		final int nbCol = 2;
+		setUpTestInstance();
+	}
+	
+	public static void setUpTestInstance() {
+		// instance to test building
+		// The basic mapping will be altered to add special mapping for field "myListField" (a Collection) and "myMapField" (a Map)
+		// Basic mapping (no id generator here because it's not the goal of our test)
+		testInstance = new ClassMappingStrategy<>(Toto.class, targetTable, classMapping, persistentFieldHarverster.getField("a"), null);
+		
+		
+		// Additionnal mapping: the list is mapped to 2 additionnal columns
+		int nbCol = 2;
 		Set<Column> collectionColumn = new LinkedHashSet<>(nbCol);
 		for (int i = 1; i <= nbCol; i++) {
 			String columnName = "cold_" + i;
-			collectionColumn.add(totoClassTable.new Column(columnName, String.class));
+			collectionColumn.add(targetTable.new Column(columnName, String.class));
 		}
-		testInstance.put(d, new ColumnedCollectionMappingStrategy<List<String>, String>(totoClassTable, collectionColumn, ArrayList.class) {
+		testInstance.put(myListField, new ColumnedCollectionMappingStrategy<List<String>, String>(targetTable, collectionColumn, ArrayList.class) {
 			
 			@Override
 			protected String toCollectionValue(Object t) {
@@ -64,10 +84,11 @@ public class ClassMappingStrategyTest {
 			}
 		});
 		
+		// Additionnal mapping: the map is mapped to 2 additionnal columns
 		final Map<String, Column> mappedColumnsOnKey = new HashMap<>();
 		for (int i = 1; i <= 2; i++) {
 			String columnName = "cole_" + i;
-			Column column = totoClassTable.new Column(columnName, String.class);
+			Column column = targetTable.new Column(columnName, String.class);
 			switch (i) {
 				case 1:
 					mappedColumnsOnKey.put("x", column);
@@ -77,7 +98,7 @@ public class ClassMappingStrategyTest {
 					break;
 			}
 		}
-		testInstance.put(e, new ColumnedMapMappingStrategy<Map<String, String>, String, String, String>(totoClassTable, new HashSet<>(mappedColumnsOnKey.values()), HashMap.class) {
+		testInstance.put(myMapField, new ColumnedMapMappingStrategy<Map<String, String>, String, String, String>(targetTable, new HashSet<>(mappedColumnsOnKey.values()), HashMap.class) {
 			
 			@Override
 			protected Column getColumn(String key) {
@@ -105,15 +126,15 @@ public class ClassMappingStrategyTest {
 			}
 		});
 		
-		columns = totoClassTable.mapColumnsOnName();
-		colD1 = columns.get("cold_1");
-		colD2 = columns.get("cold_2");
-		colE1 = columns.get("cole_1");
-		colE2 = columns.get("cole_2");
+		columnMapOnName = targetTable.mapColumnsOnName();
+		colD1 = columnMapOnName.get("cold_1");
+		colD2 = columnMapOnName.get("cold_2");
+		colE1 = columnMapOnName.get("cole_1");
+		colE2 = columnMapOnName.get("cole_2");
 	}
 	
-	@DataProvider(name = GET_INSERT_VALUES_DATA)
-	public Object[][] testGetInsertValuesData() throws Exception {
+	@DataProvider
+	public static Object[][] testGetInsertValuesData() {
 		return new Object[][] {
 				{ new Toto(1, 2, 3), Maps.asMap(colA, 1).add(colB, 2).add(colC, 3)
 						.add(colD1, null).add(colD2, null).add(colE1, null).add(colE2, null) },
@@ -128,15 +149,16 @@ public class ClassMappingStrategyTest {
 		};
 	}
 	
-	@Test(dataProvider = GET_INSERT_VALUES_DATA)
-	public void testGetInsertValues(Toto modified, Map<Column, Object> expectedResult) throws Exception {
+	@Test
+	@UseDataProvider("testGetInsertValuesData")
+	public void testGetInsertValues(Toto modified, Map<Column, Object> expectedResult) {
 		Map<Column, Object> valuesToInsert = testInstance.getInsertValues(modified);
 		
 		assertEquals(expectedResult, valuesToInsert);
 	}
 	
-	@DataProvider(name = GET_UPDATE_VALUES_DIFF_ONLY_DATA)
-	public Object[][] testGetUpdateValues_diffOnlyData() throws Exception {
+	@DataProvider
+	public static Object[][] testGetUpdateValues_diffOnlyData() {
 		return new Object[][] {
 				{ new Toto(1, 2, 3), new Toto(1, 5, 6), Maps.asMap(colB, 2).add(colC, 3)}, 
 				{ new Toto(1, 2, 3), new Toto(1, null, null), Maps.asMap(colB, 2).add(colC, 3) },
@@ -155,8 +177,9 @@ public class ClassMappingStrategyTest {
 		};
 	}
 	
-	@Test(dataProvider = GET_UPDATE_VALUES_DIFF_ONLY_DATA)
-	public void testGetUpdateValues_diffOnly(Toto modified, Toto unmodified, Map<Column, Object> expectedResult) throws Exception {
+	@Test
+	@UseDataProvider("testGetUpdateValues_diffOnlyData")
+	public void testGetUpdateValues_diffOnly(Toto modified, Toto unmodified, Map<Column, Object> expectedResult) {
 		Map<UpwhereColumn, Object> valuesToUpdate = testInstance.getUpdateValues(modified, unmodified, false);
 		
 		assertEquals(expectedResult, UpwhereColumn.getUpdateColumns(valuesToUpdate));
@@ -167,8 +190,8 @@ public class ClassMappingStrategyTest {
 		}
 	}
 	
-	@DataProvider(name = GET_UPDATE_VALUES_ALL_COLUMNS_DATA)
-	public Object[][] testGetUpdateValues_allColumnsData() throws Exception {
+	@DataProvider
+	public static Object[][] testGetUpdateValues_allColumnsData() {
 		return new Object[][] {
 				{ new Toto(1, 2, 3), new Toto(1, 5, 6),
 						Maps.asMap(colB, 2).add(colC, 3).add(colD1, null).add(colD2, null).add(colE1, null).add(colE2, null)},
@@ -195,8 +218,9 @@ public class ClassMappingStrategyTest {
 		};
 	}
 	
-	@Test(dataProvider = GET_UPDATE_VALUES_ALL_COLUMNS_DATA)
-	public void testGetUpdateValues_allColumns(Toto modified, Toto unmodified, Map<Column, Object> expectedResult) throws Exception {
+	@Test
+	@UseDataProvider("testGetUpdateValues_allColumnsData")
+	public void testGetUpdateValues_allColumns(Toto modified, Toto unmodified, Map<Column, Object> expectedResult) {
 		Map<UpwhereColumn, Object> valuesToUpdate = testInstance.getUpdateValues(modified, unmodified, true);
 		
 		assertEquals(expectedResult, UpwhereColumn.getUpdateColumns(valuesToUpdate));
@@ -210,9 +234,9 @@ public class ClassMappingStrategyTest {
 	private static class Toto {
 		private Integer a, b, c;
 		
-		private List<String> d;
+		private List<String> myList;
 		
-		private Map<String, String> e;
+		private Map<String, String> myMap;
 		
 		public Toto() {
 		}
@@ -221,26 +245,26 @@ public class ClassMappingStrategyTest {
 			this(a, b, c, null, null);
 		}
 		
-		public Toto(Integer a, Integer b, Integer c, List<String> d) {
-			this(a, b, c, d, null);
+		public Toto(Integer a, Integer b, Integer c, List<String> myList) {
+			this(a, b, c, myList, null);
 		}
 		
-		public Toto(Integer a, Integer b, Integer c, Map<String, String> e) {
-			this(a, b, c, null, e);
+		public Toto(Integer a, Integer b, Integer c, Map<String, String> myMap) {
+			this(a, b, c, null, myMap);
 		}
 		
-		public Toto(Integer a, Integer b, Integer c, List<String> d, Map<String, String> e) {
+		public Toto(Integer a, Integer b, Integer c, List<String> myList, Map<String, String> myMap) {
 			this.a = a;
 			this.b = b;
 			this.c = c;
-			this.d = d;
-			this.e = e;
+			this.myList = myList;
+			this.myMap = myMap;
 		}
 		
 		@Override
 		public String toString() {
 			return getClass().getSimpleName() + "["
-					+ Maps.asMap("a", (Object) a).add("b", b).add("c", c).add("d", d).add("e", e)
+					+ Maps.asMap("a", (Object) a).add("b", b).add("c", c).add("myList", myList).add("myMap", myMap)
 					+ "]";
 		}
 	}

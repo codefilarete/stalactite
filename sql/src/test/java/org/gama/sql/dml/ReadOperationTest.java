@@ -1,14 +1,5 @@
 package org.gama.sql.dml;
 
-import org.gama.sql.IConnectionProvider;
-import org.gama.sql.SimpleConnectionProvider;
-import org.gama.sql.binder.LongBinder;
-import org.gama.sql.binder.ParameterBinder;
-import org.gama.sql.binder.StringBinder;
-import org.gama.sql.test.HSQLDBInMemoryDataSource;
-import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.Test;
-
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -16,18 +7,30 @@ import java.sql.Statement;
 import java.util.HashMap;
 import java.util.Map;
 
+import com.tngtech.java.junit.dataprovider.DataProviderRunner;
+import org.gama.sql.IConnectionProvider;
+import org.gama.sql.SimpleConnectionProvider;
+import org.gama.sql.binder.LongBinder;
+import org.gama.sql.binder.ParameterBinder;
+import org.gama.sql.binder.StringBinder;
+import org.gama.sql.test.HSQLDBInMemoryDataSource;
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 /**
  * @author Guillaume Mary
  */
+@RunWith(DataProviderRunner.class)
 public class ReadOperationTest {
 	
 	private IConnectionProvider connectionProvider;
 	
-	@BeforeMethod
-	protected void setUp() throws SQLException {
+	@Before
+	public void setUp() throws SQLException {
 		// Connection provider
 		HSQLDBInMemoryDataSource hsqldbInMemoryDataSource = new HSQLDBInMemoryDataSource();
 		Connection connection = hsqldbInMemoryDataSource.getConnection();

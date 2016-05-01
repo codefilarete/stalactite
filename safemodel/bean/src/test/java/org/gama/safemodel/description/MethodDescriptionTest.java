@@ -3,7 +3,7 @@ package org.gama.safemodel.description;
 import java.lang.reflect.Method;
 
 import org.gama.lang.Reflections;
-import org.testng.annotations.Test;
+import org.junit.Test;
 
 import static org.gama.safemodel.description.MethodDescription.method;
 import static org.junit.Assert.assertEquals;
@@ -34,12 +34,12 @@ public class MethodDescriptionTest {
 		assertEquals(expectedMethod, methodDescription.getMethod());
 	}
 	
-	@Test(expectedExceptions = Reflections.MemberNotFoundException.class)
+	@Test(expected = Reflections.MemberNotFoundException.class)
 	public void testMethod_methodNotFound() {
 		method(TestMethodTargetClass.class, "tata", String.class);
 	}
 	
-	@Test(expectedExceptions = IllegalArgumentException.class)
+	@Test(expected = IllegalArgumentException.class)
 	public void testMethod_wrongType() {
 		method(TestMethodTargetClass.class, "toto", Long.class);
 	}

@@ -1,9 +1,9 @@
 package org.gama.reflection;
 
-import static org.testng.AssertJUnit.*;
-
 import org.gama.lang.Reflections;
-import org.testng.annotations.Test;
+import org.junit.Test;
+
+import static org.junit.Assert.assertEquals;
 
 /**
  * @author Guillaume Mary

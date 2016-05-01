@@ -1,7 +1,7 @@
 package org.gama.lang;
 
 import org.gama.lang.bean.ISilentDelegate;
-import org.testng.annotations.Test;
+import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;

@@ -1,5 +1,8 @@
 package org.gama.stalactite.persistence.id.sequence;
 
+import java.io.Serializable;
+import java.sql.SQLException;
+
 import org.gama.lang.collection.Arrays;
 import org.gama.sql.test.HSQLDBInMemoryDataSource;
 import org.gama.stalactite.persistence.engine.DDLDeployer;
@@ -7,21 +10,18 @@ import org.gama.stalactite.persistence.engine.PersistenceContext;
 import org.gama.stalactite.persistence.sql.Dialect;
 import org.gama.stalactite.persistence.sql.ddl.JavaTypeToSqlTypeMapping;
 import org.gama.stalactite.test.JdbcTransactionManager;
-import org.testng.annotations.AfterMethod;
-import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.Test;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
 
-import java.io.Serializable;
-import java.sql.SQLException;
-
-import static org.testng.Assert.assertEquals;
+import static org.junit.Assert.assertEquals;
 
 public class PooledSequenceIdentifierGeneratorTest {
 	
 	private PooledSequenceIdentifierGenerator testInstance;
 	private PersistenceContext persistenceContext;
 	
-	@BeforeMethod
+	@Before
 	public void setUp() throws SQLException {
 		JavaTypeToSqlTypeMapping simpleTypeMapping = new JavaTypeToSqlTypeMapping();
 		simpleTypeMapping.put(Long.class, "int");
@@ -30,7 +30,7 @@ public class PooledSequenceIdentifierGeneratorTest {
 		persistenceContext = new PersistenceContext(new JdbcTransactionManager(new HSQLDBInMemoryDataSource()), new Dialect(simpleTypeMapping));
 	}
 	
-	@AfterMethod
+	@After
 	public void tearDown() {
 		PersistenceContext.clearCurrent();
 	}
@@ -45,7 +45,7 @@ public class PooledSequenceIdentifierGeneratorTest {
 		// on vérifie que l'incrémentation se fait sans erreur depuis une base vierge
 		for (int i = 0; i < 45; i++) {
 			Serializable newId = testInstance.generate();
-			assertEquals(newId, (long) i);
+			assertEquals((long) i, newId);
 		}
 		
 		// on vérifie que l'incrémentation se fait sans erreur avec une nouvelle sequence sur la même table
@@ -53,7 +53,7 @@ public class PooledSequenceIdentifierGeneratorTest {
 				persistenceContext.getDialect(), persistenceContext.getTransactionManager(), persistenceContext.getJDBCBatchSize());
 		for (int i = 0; i < 45; i++) {
 			Serializable newId = testInstance.generate();
-			assertEquals(newId, (long) i);
+			assertEquals((long) i, newId);
 		}
 		
 		// on vérifie que l'incrémentation se fait sans erreur avec sequence existante
@@ -61,7 +61,7 @@ public class PooledSequenceIdentifierGeneratorTest {
 				persistenceContext.getDialect(), persistenceContext.getTransactionManager(), persistenceContext.getJDBCBatchSize());
 		for (int i = 0; i < 45; i++) {
 			Serializable newId = testInstance.generate();
-			assertEquals(newId, (long) 50+i);
+			assertEquals((long) 50+i, newId);
 		}
 	}
 }

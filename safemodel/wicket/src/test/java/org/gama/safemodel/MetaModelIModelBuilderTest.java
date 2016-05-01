@@ -1,7 +1,8 @@
 package org.gama.safemodel;
 
-import static org.junit.Assert.*;
-
+import com.tngtech.java.junit.dataprovider.DataProvider;
+import com.tngtech.java.junit.dataprovider.DataProviderRunner;
+import com.tngtech.java.junit.dataprovider.UseDataProvider;
 import org.apache.wicket.model.ChainingModel;
 import org.gama.lang.collection.Arrays;
 import org.gama.safemodel.metamodel.MetaAddress;
@@ -11,18 +12,19 @@ import org.gama.safemodel.model.Address;
 import org.gama.safemodel.model.City;
 import org.gama.safemodel.model.Person;
 import org.gama.safemodel.model.Phone;
-import org.testng.annotations.DataProvider;
-import org.testng.annotations.Test;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+
+import static org.junit.Assert.assertEquals;
 
 /**
  * @author Guillaume Mary
  */
+@RunWith(DataProviderRunner.class)
 public class MetaModelIModelBuilderTest {
 	
-	private static final String TEST_TRANSFORM_DATA = "testTransformData";
-	
-	@DataProvider(name = TEST_TRANSFORM_DATA)
-	public Object[][] testTransformData() {
+	@DataProvider
+	public static Object[][] testTransformData() {
 		return new Object[][] {
 				{ new MetaCity<>().name,
 						new City("Toto"), "Toto" },
@@ -37,7 +39,8 @@ public class MetaModelIModelBuilderTest {
 		};
 	}
 	
-	@Test(dataProvider = TEST_TRANSFORM_DATA)
+	@Test
+	@UseDataProvider("testTransformData")
 	public void testTransform(MetaModel metaModel, Object object, Object expected) throws Exception {
 		MetaModelIModelBuilder<Object> testInstance = new MetaModelIModelBuilder<>(object);
 		ChainingModel<Object> chainingModel = testInstance.transform(metaModel);

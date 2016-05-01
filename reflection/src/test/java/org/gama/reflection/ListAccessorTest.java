@@ -1,11 +1,11 @@
 package org.gama.reflection;
 
-import static org.junit.Assert.assertEquals;
-
 import java.util.List;
 
 import org.gama.lang.collection.Arrays;
-import org.testng.annotations.Test;
+import org.junit.Test;
+
+import static org.junit.Assert.assertEquals;
 
 /**
  * @author Guillaume Mary
@@ -25,7 +25,7 @@ public class ListAccessorTest {
 		assertEquals("c", testInstance.get(sample));
 	}
 	
-	@Test(expectedExceptions = ArrayIndexOutOfBoundsException.class)
+	@Test(expected = ArrayIndexOutOfBoundsException.class)
 	public void testGet_ArrayIndexOutOfBoundsException() throws Exception {
 		ListAccessor<List<String>, String> testInstance = new ListAccessor<>();
 		List<String> sample = Arrays.asList("a", "b", "c");

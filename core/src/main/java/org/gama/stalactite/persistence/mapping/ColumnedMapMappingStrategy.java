@@ -1,5 +1,9 @@
 package org.gama.stalactite.persistence.mapping;
 
+import javax.annotation.Nonnull;
+import java.util.*;
+import java.util.Map.Entry;
+
 import org.gama.lang.bean.Objects;
 import org.gama.lang.collection.Collections;
 import org.gama.lang.collection.Iterables;
@@ -7,10 +11,6 @@ import org.gama.lang.collection.Iterables.ForEach;
 import org.gama.sql.result.Row;
 import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.persistence.structure.Table.Column;
-
-import javax.annotation.Nonnull;
-import java.util.*;
-import java.util.Map.Entry;
 
 /**
  * @author Guillaume Mary
@@ -31,10 +31,6 @@ public abstract class ColumnedMapMappingStrategy<C extends Map<K, V>, K, V, T> i
 	public ColumnedMapMappingStrategy(@Nonnull Table targetTable, Set<Column> columns, Class<? extends Map> rowClass) {
 		this.targetTable = targetTable;
 		this.columns = columns;
-		if (columns.contains(targetTable.getPrimaryKey())) {
-			// bad usage, if we leave it, it corrupts/overrides primary key assignment in ClassMappingStrategy#getInsertValues(T)
-			throw new IllegalArgumentException("Primary key should not be mapped by " + ColumnedMapMappingStrategy.class);
-		}
 		// weird cast cause of generics
 		this.rowTransformer = new ToMapRowTransformer<C>((Class<C>) rowClass) {
 			/** We bind conversion on MapMappingStrategy conversion methods */

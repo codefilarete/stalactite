@@ -1,13 +1,12 @@
 package org.gama.stalactite.persistence.engine;
 
+import java.sql.SQLException;
+
 import org.gama.lang.Retryer;
 import org.gama.lang.collection.Arrays;
 import org.gama.stalactite.persistence.sql.dml.DMLGenerator;
 import org.gama.stalactite.test.PairSetList;
-import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.Test;
-
-import java.sql.SQLException;
+import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.times;
@@ -17,7 +16,6 @@ public class DeleteExecutorTest extends DMLExecutorTest {
 	
 	private DeleteExecutor<Toto> testInstance;
 	
-	@BeforeMethod
 	public void setUpTest() throws SQLException {
 		super.setUpTest();
 		DMLGenerator dmlGenerator = new DMLGenerator(dialect.getColumnBinderRegistry(), new DMLGenerator.CaseSensitiveSorter());

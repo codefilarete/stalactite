@@ -1,39 +1,41 @@
 package org.gama.reflection;
 
-import static org.junit.Assert.*;
-
 import java.util.List;
 
+import com.tngtech.java.junit.dataprovider.DataProvider;
+import com.tngtech.java.junit.dataprovider.DataProviderRunner;
+import com.tngtech.java.junit.dataprovider.UseDataProvider;
 import org.gama.lang.Reflections;
+import org.gama.lang.collection.Arrays;
 import org.gama.reflection.model.Address;
 import org.gama.reflection.model.City;
 import org.gama.reflection.model.Person;
 import org.gama.reflection.model.Phone;
-import org.gama.lang.collection.Arrays;
-import org.testng.annotations.BeforeClass;
-import org.testng.annotations.DataProvider;
-import org.testng.annotations.Test;
+import org.junit.BeforeClass;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+
+import static org.junit.Assert.assertEquals;
 
 /**
  * @author Guillaume Mary
  */
+@RunWith(DataProviderRunner.class)
 public class AccessorChainTest {
 	
-	private static final String TEST_GET_DATA = "testGetData";
-	
-	private AccessorByField<City, String> cityNameAccessor;
-	private AccessorByField<Address, City> addressCityAccessor;
-	private AccessorByField<Person, Address> personAddressAccessor;
-	private AccessorByField<Address, List> addressPhonesAccessor;
-	private AccessorByMethod<? extends List, Phone> phoneListAccessor;
-	private AccessorByField<Phone, String> phoneNumberAccessor;
-	private AccessorByMethod<Phone, String> phoneNumberMethodAccessor;
-	private AccessorByMethod<String, Character> charAtAccessor;
-	private AccessorByMethod<String, Character[]> toCharArrayAccessor;
-	private ArrayAccessor<String> charArrayAccessor;
+	private static AccessorByField<City, String> cityNameAccessor;
+	private static AccessorByField<Address, City> addressCityAccessor;
+	private static AccessorByField<Person, Address> personAddressAccessor;
+	private static AccessorByField<Address, List> addressPhonesAccessor;
+	private static AccessorByMethod<? extends List, Phone> phoneListAccessor;
+	private static AccessorByField<Phone, String> phoneNumberAccessor;
+	private static AccessorByMethod<Phone, String> phoneNumberMethodAccessor;
+	private static AccessorByMethod<String, Character> charAtAccessor;
+	private static AccessorByMethod<String, Character[]> toCharArrayAccessor;
+	private static ArrayAccessor<String> charArrayAccessor;
 	
 	@BeforeClass
-	public void init() {
+	public static void init() {
 		cityNameAccessor = Accessors.accessorByField(City.class, "name");
 		addressCityAccessor = Accessors.accessorByField(Address.class, "city");
 		personAddressAccessor = Accessors.accessorByField(Person.class, "address");
@@ -46,12 +48,12 @@ public class AccessorChainTest {
 		charArrayAccessor = new ArrayAccessor<>(2);
 	}
 	
-	public List<IAccessor> list(IAccessor ... accessors) {
+	public static List<IAccessor> list(IAccessor ... accessors) {
 		return Arrays.asList(accessors);
 	}
 	
-	@DataProvider(name = TEST_GET_DATA)
-	public Object[][] testGetData() {
+	@DataProvider
+	public static Object[][] testGetData() {
 		return new Object[][] {
 				{ list(cityNameAccessor),
 						new City("Toto"), "Toto" },
@@ -72,13 +74,14 @@ public class AccessorChainTest {
 		};
 	}
 	
-	@Test(dataProvider = TEST_GET_DATA)
+	@Test
+	@UseDataProvider("testGetData")
 	public void testGet(List<IAccessor> accessors, Object object, Object expected) {
 		AccessorChain<Object, Object> accessorChain = new AccessorChain<>(accessors);
 		assertEquals(expected, accessorChain.get(object));
 	}
 	
-	@Test(expectedExceptions = IllegalArgumentException.class)
+	@Test(expected = IllegalArgumentException.class)
 	public void testGet_IllegalArgumentException() throws Exception {
 		// field "number" doesn't exist on Collection "phones" => get(..) should throw IllegalArgumentException
 		List<IAccessor> accessors = list(personAddressAccessor, addressPhonesAccessor, phoneNumberAccessor);
@@ -87,7 +90,7 @@ public class AccessorChainTest {
 		testInstance.get(object);
 	}
 	
-	@Test(expectedExceptions = NullPointerException.class)
+	@Test(expected = NullPointerException.class)
 	public void testGet_NullPointerException() throws Exception {
 		List<IAccessor> accessors = list(personAddressAccessor, addressPhonesAccessor, phoneNumberAccessor);
 		Object object = new Person(new Address(null, null));

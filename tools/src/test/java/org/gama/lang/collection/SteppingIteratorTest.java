@@ -1,14 +1,12 @@
 package org.gama.lang.collection;
 
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-
 import java.util.Iterator;
 
 import org.junit.Assert;
+import org.junit.Test;
 import org.mockito.Mockito;
-import org.testng.annotations.Test;
+
+import static org.mockito.Mockito.*;
 
 /**
  * @author Guillaume Mary

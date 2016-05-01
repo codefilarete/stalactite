@@ -1,19 +1,21 @@
 package org.gama.stalactite.persistence.engine;
 
-import org.gama.lang.Retryer;
-import org.gama.lang.collection.Arrays;
-import org.gama.lang.collection.PairIterator;
-import org.gama.stalactite.persistence.sql.dml.DMLGenerator;
-import org.gama.stalactite.test.PairSetList;
-import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.DataProvider;
-import org.testng.annotations.Test;
-
 import java.sql.SQLException;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+
+import com.tngtech.java.junit.dataprovider.DataProvider;
+import com.tngtech.java.junit.dataprovider.DataProviderRunner;
+import com.tngtech.java.junit.dataprovider.UseDataProvider;
+import org.gama.lang.Retryer;
+import org.gama.lang.collection.Arrays;
+import org.gama.lang.collection.PairIterator;
+import org.gama.stalactite.persistence.sql.dml.DMLGenerator;
+import org.gama.stalactite.test.PairSetList;
+import org.junit.Test;
+import org.junit.runner.RunWith;
 
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.times;
@@ -22,13 +24,11 @@ import static org.mockito.Mockito.verify;
 /**
  * @author Guillaume Mary
  */
+@RunWith(DataProviderRunner.class)
 public class UpdateExecutorTest extends DMLExecutorTest {
-	
-	private static final String TEST_UPDATE_DIFF_DATA = "testUpdate_diff";
 	
 	private UpdateExecutor<Toto> testInstance;
 	
-	@BeforeMethod
 	public void setUpTest() throws SQLException {
 		super.setUpTest();
 		DMLGenerator dmlGenerator = new DMLGenerator(dialect.getColumnBinderRegistry(), new DMLGenerator.CaseSensitiveSorter());
@@ -51,8 +51,8 @@ public class UpdateExecutorTest extends DMLExecutorTest {
 		assertCapturedPairsEqual(expectedPairs);
 	}
 	
-	@DataProvider(name = TEST_UPDATE_DIFF_DATA)
-	public Object[][] testUpdate_diff_data() {
+	@DataProvider
+	public static Object[][] testUpdate_diff_data() {
 		return new Object[][] {
 				// extreme case: no differences
 				{ 	Arrays.asList(new Toto(1, 1, 1), new Toto(2, 2, 2)),
@@ -104,7 +104,8 @@ public class UpdateExecutorTest extends DMLExecutorTest {
 		}
 	}
 	
-	@Test(dataProvider = TEST_UPDATE_DIFF_DATA)
+	@Test
+	@UseDataProvider("testUpdate_diff_data")
 	public void testUpdate_diff(final List<Toto> originalInstances, final List<Toto> modifiedInstances, ExpectedResult_TestUpdate_diff expectedResult) throws Exception {
 		testInstance.update(new Iterable<Map.Entry<Toto, Toto>>() {
 			@Override

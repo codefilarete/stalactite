@@ -1,27 +1,29 @@
 package org.gama.stalactite.query.builder;
 
-import static org.junit.Assert.assertEquals;
-
 import java.util.Collections;
 import java.util.Map;
 
+import com.tngtech.java.junit.dataprovider.DataProvider;
+import com.tngtech.java.junit.dataprovider.DataProviderRunner;
+import com.tngtech.java.junit.dataprovider.UseDataProvider;
 import org.gama.lang.collection.Maps;
 import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.persistence.structure.Table.Column;
 import org.gama.stalactite.query.model.Criteria;
 import org.gama.stalactite.query.model.Where;
-import org.testng.annotations.DataProvider;
-import org.testng.annotations.Test;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+
+import static org.junit.Assert.assertEquals;
 
 /**
- * @author guillaume.mary
+ * @author Guillaume Mary
  */
+@RunWith(DataProviderRunner.class)
 public class WhereBuilderTest {
 
-	private static final String TEST_TO_SQL_DATA = "testToSQLData";
-	
-	@DataProvider(name = TEST_TO_SQL_DATA)
-	public Object[][] testToSQL_data() {
+	@DataProvider
+	public static Object[][] testToSQL_data() {
 		Table tableToto = new Table(null, "Toto");
 		Column colA = tableToto.new Column("a", String.class);
 		Column colB = tableToto.new Column("b", String.class);
@@ -50,7 +52,8 @@ public class WhereBuilderTest {
 		
 	}
 	
-	@Test(dataProvider = TEST_TO_SQL_DATA)
+	@Test
+	@UseDataProvider("testToSQL_data")
 	public void testToSQL(Criteria where, Map<Table, String> tableAliases, String expected) {
 		WhereBuilder testInstance = new WhereBuilder(where, tableAliases);
 		assertEquals(expected, testInstance.toSQL());

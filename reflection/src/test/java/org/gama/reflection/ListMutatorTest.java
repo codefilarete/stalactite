@@ -1,11 +1,11 @@
 package org.gama.reflection;
 
-import static org.junit.Assert.*;
-
 import java.util.List;
 
 import org.gama.lang.collection.Arrays;
-import org.testng.annotations.Test;
+import org.junit.Test;
+
+import static org.junit.Assert.assertEquals;
 
 /**
  * @author Guillaume Mary
@@ -28,7 +28,7 @@ public class ListMutatorTest {
 		assertEquals(sample, Arrays.asList("x", "y", "z"));
 	}
 	
-	@Test(expectedExceptions = ArrayIndexOutOfBoundsException.class)
+	@Test(expected = ArrayIndexOutOfBoundsException.class)
 	public void testSet_ArrayIndexOutOfBoundsException() throws Exception {
 		ListMutator<List<String>, String> testInstance = new ListMutator<>();
 		List<String> sample = Arrays.asList("a", "b", "c");

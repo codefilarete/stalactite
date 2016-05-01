@@ -1,15 +1,5 @@
 package org.gama.stalactite.persistence.engine;
 
-import org.gama.lang.Retryer;
-import org.gama.lang.bean.Objects;
-import org.gama.lang.collection.Arrays;
-import org.gama.stalactite.persistence.id.AfterInsertIdentifierGenerator;
-import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
-import org.gama.stalactite.persistence.sql.dml.DMLGenerator;
-import org.gama.stalactite.test.PairSetList;
-import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.Test;
-
 import java.io.Serializable;
 import java.lang.reflect.Field;
 import java.sql.ResultSet;
@@ -17,6 +7,15 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.List;
 import java.util.Map;
+
+import org.gama.lang.Retryer;
+import org.gama.lang.bean.Objects;
+import org.gama.lang.collection.Arrays;
+import org.gama.stalactite.persistence.id.AfterInsertIdentifierGenerator;
+import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
+import org.gama.stalactite.persistence.sql.dml.DMLGenerator;
+import org.gama.stalactite.test.PairSetList;
+import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Matchers.anyString;
@@ -30,7 +29,6 @@ public class InsertExecutorTest extends DMLExecutorTest {
 	
 	private InsertExecutor<Toto> testInstance;
 	
-	@BeforeMethod
 	public void setUpTest() throws SQLException {
 		super.setUpTest();
 		DMLGenerator dmlGenerator = new DMLGenerator(dialect.getColumnBinderRegistry(), new DMLGenerator.CaseSensitiveSorter());

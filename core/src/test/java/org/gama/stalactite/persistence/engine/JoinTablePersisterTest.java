@@ -1,5 +1,14 @@
 package org.gama.stalactite.persistence.engine;
 
+import javax.sql.DataSource;
+import java.io.Serializable;
+import java.lang.reflect.Field;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.*;
+
 import org.gama.lang.Reflections;
 import org.gama.lang.bean.Objects;
 import org.gama.lang.collection.Arrays;
@@ -11,19 +20,9 @@ import org.gama.stalactite.persistence.sql.ddl.JavaTypeToSqlTypeMapping;
 import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.test.JdbcTransactionManager;
 import org.gama.stalactite.test.PairSetList;
+import org.junit.Before;
+import org.junit.Test;
 import org.mockito.ArgumentCaptor;
-import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.BeforeTest;
-import org.testng.annotations.Test;
-
-import javax.sql.DataSource;
-import java.io.Serializable;
-import java.lang.reflect.Field;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.util.*;
 
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.*;
@@ -44,8 +43,13 @@ public class JoinTablePersisterTest {
 	private Dialect dialect;
 	private Table totoClassTable1, totoClassTable2;
 	
-	@BeforeTest
+	@Before
 	public void setUp() throws SQLException {
+		initData();
+		initTest();
+	}
+	
+	protected void initData() throws SQLException {
 		Field fieldId = Reflections.getField(Toto.class, "id");
 		Field fieldA = Reflections.getField(Toto.class, "a");
 		Field fieldB = Reflections.getField(Toto.class, "b");
@@ -87,8 +91,7 @@ public class JoinTablePersisterTest {
 		dialect.setInOperatorMaxSize(3);
 	}
 	
-	@BeforeMethod
-	public void setUpTest() throws SQLException {
+	protected void initTest() throws SQLException {
 		// reset id counter between 2 tests to keep independency between them
 		identifierGenerator.reset();
 		
