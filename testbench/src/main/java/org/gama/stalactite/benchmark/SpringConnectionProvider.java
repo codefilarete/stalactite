@@ -2,22 +2,22 @@ package org.gama.stalactite.benchmark;
 
 import java.sql.Connection;
 
+import org.gama.stalactite.persistence.engine.ConnectionProvider;
 import org.springframework.jdbc.datasource.DataSourceTransactionManager;
 import org.springframework.jdbc.datasource.DataSourceUtils;
 import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.TransactionStatus;
 import org.springframework.transaction.support.TransactionCallbackWithoutResult;
 import org.springframework.transaction.support.TransactionTemplate;
-import org.gama.stalactite.persistence.engine.TransactionManager;
 
 /**
  * @author Guillaume Mary
  */
-public class SpringTransactionManager implements TransactionManager {
+public class SpringConnectionProvider implements ConnectionProvider {
 	
 	private final DataSourceTransactionManager transactionManager;
 	
-	public SpringTransactionManager(DataSourceTransactionManager dataSourceTransactionManager) {
+	public SpringConnectionProvider(DataSourceTransactionManager dataSourceTransactionManager) {
 		this.transactionManager = dataSourceTransactionManager;
 	}
 	

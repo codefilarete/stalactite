@@ -18,9 +18,9 @@ public abstract class WriteExecutor<T> extends DMLExecutor<T> {
 	private final Retryer writeOperationRetryer;
 	
 	public WriteExecutor(ClassMappingStrategy<T> mappingStrategy,
-						 TransactionManager transactionManager, DMLGenerator dmlGenerator, Retryer writeOperationRetryer,
+						 org.gama.stalactite.persistence.engine.ConnectionProvider connectionProvider, DMLGenerator dmlGenerator, Retryer writeOperationRetryer,
 						 int batchSize, int inOperatorMaxSize) {
-		super(mappingStrategy, transactionManager, dmlGenerator, inOperatorMaxSize);
+		super(mappingStrategy, connectionProvider, dmlGenerator, inOperatorMaxSize);
 		this.batchSize = batchSize;
 		this.writeOperationRetryer = writeOperationRetryer;
 	}

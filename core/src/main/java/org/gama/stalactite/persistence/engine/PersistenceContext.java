@@ -45,16 +45,16 @@ public class PersistenceContext {
 	}
 	
 	private Dialect dialect;
-	private TransactionManager transactionManager;
+	private ConnectionProvider connectionProvider;
 	private final Map<Class, ClassMappingStrategy> mappingStrategies = new HashMap<>(50);
 	
-	public PersistenceContext(TransactionManager transactionManager, Dialect dialect) {
-		this.transactionManager = transactionManager;
+	public PersistenceContext(ConnectionProvider connectionProvider, Dialect dialect) {
+		this.connectionProvider = connectionProvider;
 		this.dialect = dialect;
 	}
 	
-	public TransactionManager getTransactionManager() {
-		return transactionManager;
+	public ConnectionProvider getConnectionProvider() {
+		return connectionProvider;
 	}
 	
 	public Dialect getDialect() {
@@ -74,7 +74,7 @@ public class PersistenceContext {
 	}
 	
 	public Connection getCurrentConnection() {
-		return transactionManager.getCurrentConnection();
+		return connectionProvider.getCurrentConnection();
 	}
 	
 	public Set<Persister> getPersisters() {

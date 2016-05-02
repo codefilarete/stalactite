@@ -11,9 +11,9 @@ import org.gama.stalactite.persistence.sql.dml.DMLGenerator;
  */
 public class UpsertExecutor<T> extends WriteExecutor<T> {
 	
-	public UpsertExecutor(ClassMappingStrategy<T> mappingStrategy, TransactionManager transactionManager,
+	public UpsertExecutor(ClassMappingStrategy<T> mappingStrategy, org.gama.stalactite.persistence.engine.ConnectionProvider connectionProvider,
 						  DMLGenerator dmlGenerator, Retryer writeOperationRetryer,
 						  int batchSize, int inOperatorMaxSize) {
-		super(mappingStrategy, transactionManager, dmlGenerator, writeOperationRetryer, batchSize, inOperatorMaxSize);
+		super(mappingStrategy, connectionProvider, dmlGenerator, writeOperationRetryer, batchSize, inOperatorMaxSize);
 	}
 }

@@ -27,7 +27,7 @@ import org.gama.stalactite.persistence.sql.ddl.JavaTypeToSqlTypeMapping;
 import org.gama.stalactite.persistence.sql.dml.DMLGenerator;
 import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.persistence.structure.Table.Column;
-import org.gama.stalactite.test.JdbcTransactionManager;
+import org.gama.stalactite.test.JdbcConnectionProvider;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -41,7 +41,7 @@ import static org.junit.Assert.assertEquals;
 public class PersisterDatabaseTest {
 	
 	private Persister<Toto> testInstance;
-	private JdbcTransactionManager transactionManager;
+	private JdbcConnectionProvider transactionManager;
 	private InMemoryCounterIdentifierGenerator identifierGenerator;
 	private ClassMappingStrategy<Toto> totoClassMappingStrategy;
 	private Dialect dialect;
@@ -62,7 +62,7 @@ public class PersisterDatabaseTest {
 		JavaTypeToSqlTypeMapping simpleTypeMapping = new JavaTypeToSqlTypeMapping();
 		simpleTypeMapping.put(Integer.class, "int");
 		
-		transactionManager = new JdbcTransactionManager(null);
+		transactionManager = new JdbcConnectionProvider(null);
 		dialect = new Dialect(simpleTypeMapping);
 		
 		// reset id counter between 2 tests else id "overflows"

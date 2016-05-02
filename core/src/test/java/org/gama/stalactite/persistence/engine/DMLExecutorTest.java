@@ -13,7 +13,7 @@ import org.gama.stalactite.persistence.sql.Dialect;
 import org.gama.stalactite.persistence.sql.ddl.JavaTypeToSqlTypeMapping;
 import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.persistence.structure.Table.Column;
-import org.gama.stalactite.test.JdbcTransactionManager;
+import org.gama.stalactite.test.JdbcConnectionProvider;
 import org.gama.stalactite.test.PairSetList;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -37,7 +37,7 @@ public abstract class DMLExecutorTest {
 	protected ArgumentCaptor<Integer> valueCaptor;
 	protected ArgumentCaptor<Integer> indexCaptor;
 	protected ArgumentCaptor<String> statementArgCaptor;
-	protected JdbcTransactionManager transactionManager;
+	protected JdbcConnectionProvider transactionManager;
 	protected Connection connection;
 	private InMemoryCounterIdentifierGenerator identifierGenerator;
 	
@@ -134,7 +134,7 @@ public abstract class DMLExecutorTest {
 		
 		DataSource dataSource = mock(DataSource.class);
 		when(dataSource.getConnection()).thenReturn(connection);
-		transactionManager = new JdbcTransactionManager(dataSource);
+		transactionManager = new JdbcConnectionProvider(dataSource);
 	}
 	
 	protected PersistenceConfigurationBuilder newPersistenceConfigurationBuilder() {

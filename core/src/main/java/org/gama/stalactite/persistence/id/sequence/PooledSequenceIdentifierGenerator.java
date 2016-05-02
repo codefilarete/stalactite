@@ -1,6 +1,6 @@
 package org.gama.stalactite.persistence.id.sequence;
 
-import org.gama.stalactite.persistence.engine.TransactionManager;
+import org.gama.stalactite.persistence.engine.ConnectionProvider;
 import org.gama.stalactite.persistence.id.BeforeInsertIdentifierGenerator;
 import org.gama.stalactite.persistence.id.sequence.PooledSequencePersister.PooledSequence;
 import org.gama.stalactite.persistence.sql.Dialect;
@@ -25,12 +25,12 @@ public class PooledSequenceIdentifierGenerator implements BeforeInsertIdentifier
 	private PooledSequenceIdentifierGeneratorOptions options;
 	
 	private final Dialect dialect;
-	private final TransactionManager transactionManager;
+	private final ConnectionProvider connectionProvider;
 	private final int jdbcBatchSize;
 	
-	public PooledSequenceIdentifierGenerator(PooledSequenceIdentifierGeneratorOptions options, Dialect dialect, TransactionManager transactionManager, int jdbcBatchSize) {
+	public PooledSequenceIdentifierGenerator(PooledSequenceIdentifierGeneratorOptions options, Dialect dialect, ConnectionProvider connectionProvider, int jdbcBatchSize) {
 		this.dialect = dialect;
-		this.transactionManager = transactionManager;
+		this.connectionProvider = connectionProvider;
 		this.jdbcBatchSize = jdbcBatchSize;
 		configure(options);
 	}
@@ -41,7 +41,7 @@ public class PooledSequenceIdentifierGenerator implements BeforeInsertIdentifier
 	}
 	
 	public void configure(PooledSequenceIdentifierGeneratorOptions options) {
-		this.pooledSequencePersister = new PooledSequencePersister(options.getStorageOptions(), dialect, transactionManager, jdbcBatchSize);
+		this.pooledSequencePersister = new PooledSequencePersister(options.getStorageOptions(), dialect, connectionProvider, jdbcBatchSize);
 		this.options = options;
 	}
 	

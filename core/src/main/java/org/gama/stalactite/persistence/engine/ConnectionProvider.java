@@ -5,7 +5,7 @@ import java.sql.Connection;
 /**
  * @author Guillaume Mary
  */
-public interface TransactionManager {
+public interface ConnectionProvider {
 	
 	Connection getCurrentConnection();
 	

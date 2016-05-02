@@ -21,10 +21,10 @@ import java.util.Set;
  */
 public class UpdateExecutor<T> extends UpsertExecutor<T> {
 	
-	public UpdateExecutor(ClassMappingStrategy<T> mappingStrategy, TransactionManager transactionManager,
+	public UpdateExecutor(ClassMappingStrategy<T> mappingStrategy, org.gama.stalactite.persistence.engine.ConnectionProvider connectionProvider,
 						  DMLGenerator dmlGenerator, Retryer writeOperationRetryer,
 						  int batchSize, int inOperatorMaxSize) {
-		super(mappingStrategy, transactionManager, dmlGenerator, writeOperationRetryer, batchSize, inOperatorMaxSize);
+		super(mappingStrategy, connectionProvider, dmlGenerator, writeOperationRetryer, batchSize, inOperatorMaxSize);
 	}
 	
 	/**

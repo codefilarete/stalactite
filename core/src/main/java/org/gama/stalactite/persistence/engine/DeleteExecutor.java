@@ -21,10 +21,10 @@ import java.util.List;
  */
 public class DeleteExecutor<T> extends WriteExecutor<T> {
 	
-	public DeleteExecutor(ClassMappingStrategy<T> mappingStrategy, TransactionManager transactionManager,
+	public DeleteExecutor(ClassMappingStrategy<T> mappingStrategy, org.gama.stalactite.persistence.engine.ConnectionProvider connectionProvider,
 						  DMLGenerator dmlGenerator, Retryer writeOperationRetryer,
 						  int batchSize, int inOperatorMaxSize) {
-		super(mappingStrategy, transactionManager, dmlGenerator, writeOperationRetryer, batchSize, inOperatorMaxSize);
+		super(mappingStrategy, connectionProvider, dmlGenerator, writeOperationRetryer, batchSize, inOperatorMaxSize);
 	}
 	
 	public int delete(Iterable<T> iterable) {

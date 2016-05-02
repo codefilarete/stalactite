@@ -55,7 +55,7 @@ public class DynamicAndComplementaryClassMappingBuilder implements IMappingBuild
 		
 		PooledSequenceIdentifierGeneratorOptions options = new PooledSequenceIdentifierGeneratorOptions(100, targetTable.getName(), PooledSequencePersistenceOptions.DEFAULT);
 		PooledSequenceIdentifierGenerator identifierGenerator = new PooledSequenceIdentifierGenerator(options,
-				PersistenceContext.getCurrent().getDialect(), PersistenceContext.getCurrent().getTransactionManager(), PersistenceContext.getCurrent().getJDBCBatchSize());
+				PersistenceContext.getCurrent().getDialect(), PersistenceContext.getCurrent().getConnectionProvider(), PersistenceContext.getCurrent().getJDBCBatchSize());
 //		PersistenceContext.getCurrent().add(identifierGenerator.getPooledSequencePersister().getMappingStrategy());
 		ClassMappingStrategy<?> classMappingStrategy = new ClassMappingStrategy<>(dynamicType, targetTable,
 				fieldColumnMap, persistentFieldHarverster.getField("id"), identifierGenerator);

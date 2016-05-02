@@ -31,7 +31,7 @@ public class TotoMappingBuilder implements IMappingBuilder {
 		ClassMappingStrategy<Toto> classMappingStrategy = new ClassMappingStrategy<>(Toto.class, targetTable,
 				fieldColumnMap, persistentFieldHarverster.getField("id"),
 				new PooledSequenceIdentifierGenerator(new PooledSequenceIdentifierGeneratorOptions(100, "Toto", PooledSequencePersistenceOptions.DEFAULT),
-						PersistenceContext.getCurrent().getDialect(), PersistenceContext.getCurrent().getTransactionManager(), PersistenceContext.getCurrent().getJDBCBatchSize()));
+						PersistenceContext.getCurrent().getDialect(), PersistenceContext.getCurrent().getConnectionProvider(), PersistenceContext.getCurrent().getJDBCBatchSize()));
 		Field answersField = null;
 		try {
 			answersField = Toto.class.getDeclaredField("answers");

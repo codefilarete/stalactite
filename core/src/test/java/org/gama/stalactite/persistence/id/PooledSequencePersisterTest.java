@@ -13,7 +13,7 @@ import org.gama.stalactite.persistence.id.sequence.PooledSequencePersistenceOpti
 import org.gama.stalactite.persistence.id.sequence.PooledSequencePersister;
 import org.gama.stalactite.persistence.sql.Dialect;
 import org.gama.stalactite.persistence.sql.ddl.JavaTypeToSqlTypeMapping;
-import org.gama.stalactite.test.JdbcTransactionManager;
+import org.gama.stalactite.test.JdbcConnectionProvider;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -32,8 +32,8 @@ public class PooledSequencePersisterTest {
 		simpleTypeMapping.put(String.class, "VARCHAR(255)");
 		
 		dialect = new Dialect(simpleTypeMapping);
-		persistenceContext = new PersistenceContext(new JdbcTransactionManager(new HSQLDBInMemoryDataSource()), dialect);
-		testInstance = new PooledSequencePersister(dialect, persistenceContext.getTransactionManager(), persistenceContext.getJDBCBatchSize());
+		persistenceContext = new PersistenceContext(new JdbcConnectionProvider(new HSQLDBInMemoryDataSource()), dialect);
+		testInstance = new PooledSequencePersister(dialect, persistenceContext.getConnectionProvider(), persistenceContext.getJDBCBatchSize());
 	}
 	
 	@Test
@@ -46,7 +46,7 @@ public class PooledSequencePersisterTest {
 	@Test
 	public void testGetCreationScripts_customized() throws Exception {
 		testInstance = new PooledSequencePersister(new PooledSequencePersistenceOptions("myTable", "mySequenceNameCol", "myNextValCol"),
-				dialect, persistenceContext.getTransactionManager(), persistenceContext.getJDBCBatchSize());
+				dialect, persistenceContext.getConnectionProvider(), persistenceContext.getJDBCBatchSize());
 		dialect.getDdlSchemaGenerator().addTables(testInstance.getMappingStrategy().getTargetTable());
 		List<String> creationScripts = dialect.getDdlSchemaGenerator().getCreationScripts();
 		assertEquals(Arrays.asList("create table myTable(mySequenceNameCol VARCHAR(255), myNextValCol int, primary key (mySequenceNameCol))"), creationScripts);

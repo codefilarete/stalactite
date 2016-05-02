@@ -57,7 +57,7 @@ public class DynamicClassMappingBuilder implements IMappingBuilder {
 		ClassMappingStrategy<?> classMappingStrategy = new ClassMappingStrategy<>(dynamicType, targetTable,
 				fieldColumnMap, persistentFieldHarverster.getField("id"),
 				new PooledSequenceIdentifierGenerator(new PooledSequenceIdentifierGeneratorOptions(100, "Toto", PooledSequencePersistenceOptions.DEFAULT),
-				PersistenceContext.getCurrent().getDialect(), PersistenceContext.getCurrent().getTransactionManager(), PersistenceContext.getCurrent().getJDBCBatchSize()));
+				PersistenceContext.getCurrent().getDialect(), PersistenceContext.getCurrent().getConnectionProvider(), PersistenceContext.getCurrent().getJDBCBatchSize()));
 		return classMappingStrategy;
 	}
 	

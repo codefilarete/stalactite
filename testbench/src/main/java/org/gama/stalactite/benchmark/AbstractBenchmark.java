@@ -48,7 +48,7 @@ public abstract class AbstractBenchmark<Data> {
 		dataSource = pooledDataSource;
 		dataSourceTransactionManager = new DataSourceTransactionManager(dataSource);
 		
-		SpringTransactionManager transactionManager = new SpringTransactionManager(dataSourceTransactionManager);
+		SpringConnectionProvider transactionManager = new SpringConnectionProvider(dataSourceTransactionManager);
 		final PersistenceContext persistenceContext = new PersistenceContext(transactionManager, new HSQLBDDialect());
 		PersistenceContext.setCurrent(persistenceContext);
 		
