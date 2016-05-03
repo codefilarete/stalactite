@@ -8,11 +8,4 @@ import java.sql.Connection;
 public interface ConnectionProvider {
 	
 	Connection getCurrentConnection();
-	
-	void executeInNewTransaction(JdbcOperation jdbcOperation);
-	
-	interface JdbcOperation {
-		
-		void execute();
-	}
 }

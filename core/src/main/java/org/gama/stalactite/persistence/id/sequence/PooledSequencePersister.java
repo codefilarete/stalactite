@@ -5,9 +5,8 @@ import java.util.Map;
 
 import org.gama.lang.Reflections;
 import org.gama.lang.collection.Maps;
-import org.gama.stalactite.persistence.engine.ConnectionProvider;
-import org.gama.stalactite.persistence.engine.ConnectionProvider.JdbcOperation;
 import org.gama.stalactite.persistence.engine.Persister;
+import org.gama.stalactite.persistence.engine.SeparateTransactionExecutor;
 import org.gama.stalactite.persistence.id.AutoAssignedIdentifierGenerator;
 import org.gama.stalactite.persistence.id.sequence.PooledSequencePersister.PooledSequence;
 import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
@@ -24,28 +23,25 @@ import org.gama.stalactite.persistence.structure.Table;
  */
 public class PooledSequencePersister extends Persister<PooledSequence> {
 	
-	private final ConnectionProvider connectionProvider;
-	
 	/**
 	 * Constructor with default table and column names.
 	 * @see PooledSequencePersistenceOptions#DEFAULT
 	 * @param dialect
 	 */
-	public PooledSequencePersister(Dialect dialect, ConnectionProvider connectionProvider, int jdbcBatchSize) {
-		this(PooledSequencePersistenceOptions.DEFAULT, dialect, connectionProvider, jdbcBatchSize);
+	public PooledSequencePersister(Dialect dialect, SeparateTransactionExecutor separateTransactionExecutor, int jdbcBatchSize) {
+		this(PooledSequencePersistenceOptions.DEFAULT, dialect, separateTransactionExecutor, jdbcBatchSize);
 	}
 	
-	public PooledSequencePersister(PooledSequencePersistenceOptions storageOptions, Dialect dialect, ConnectionProvider connectionProvider, int jdbcBatchSize) {
+	public PooledSequencePersister(PooledSequencePersistenceOptions storageOptions, Dialect dialect, SeparateTransactionExecutor separateTransactionExecutor, int jdbcBatchSize) {
 		// we reuse default PersistentContext
 		super(new PooledSequencePersisterConfigurer().buildConfiguration(storageOptions),
-				dialect, connectionProvider, jdbcBatchSize);
-		this.connectionProvider = connectionProvider;
+				dialect, separateTransactionExecutor, jdbcBatchSize);
 	}
 	
 	public long reservePool(String sequenceName, int poolSize) {
 		SequenceBoundJdbcOperation jdbcOperation = new SequenceBoundJdbcOperation(sequenceName, poolSize);
 		// the operation is executed in a new and parallel transaction in order to manage concurrent accesses
-		connectionProvider.executeInNewTransaction(jdbcOperation);
+		((SeparateTransactionExecutor) getConnectionProvider()).executeInNewTransaction(jdbcOperation);
 		return jdbcOperation.getUpperBound();
 	}
 	
@@ -107,7 +103,7 @@ public class PooledSequencePersister extends Persister<PooledSequence> {
 	/**
 	 * Class aimed at executing update operations of PooledSequences.
 	 */
-	private class SequenceBoundJdbcOperation implements JdbcOperation {
+	private class SequenceBoundJdbcOperation implements SeparateTransactionExecutor.JdbcOperation {
 		private final String sequenceName;
 		private final int poolSize;
 		private PooledSequence pool;

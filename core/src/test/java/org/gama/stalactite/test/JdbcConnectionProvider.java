@@ -1,13 +1,13 @@
 package org.gama.stalactite.test;
 
-import org.gama.lang.exception.Exceptions;
-import org.gama.stalactite.persistence.engine.ConnectionProvider;
-
 import javax.sql.DataSource;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.ArrayDeque;
 import java.util.Deque;
+
+import org.gama.lang.exception.Exceptions;
+import org.gama.stalactite.persistence.engine.SeparateTransactionExecutor;
 
 /**
  * Very simple ConnectionProvider for JDBC connection.
@@ -15,7 +15,7 @@ import java.util.Deque;
  * 
  * @author Guillaume Mary
  */
-public class JdbcConnectionProvider implements ConnectionProvider {
+public class JdbcConnectionProvider implements SeparateTransactionExecutor {
 	
 	private DataSource dataSource;
 	/** LIFO stack of used connection. Don't support multi-thread access */
@@ -60,7 +60,7 @@ public class JdbcConnectionProvider implements ConnectionProvider {
 	}
 	
 	@Override
-	public void executeInNewTransaction(JdbcOperation jdbcOperation) {
+	public void executeInNewTransaction(SeparateTransactionExecutor.JdbcOperation jdbcOperation) {
 		offerNewConnection();	// force new connection in queue
 		Connection connection = null;
 		try {

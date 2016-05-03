@@ -1,12 +1,12 @@
 package org.gama.stalactite.persistence.id.sequence;
 
-import org.gama.stalactite.persistence.engine.ConnectionProvider;
+import java.io.Serializable;
+import java.util.Map;
+
+import org.gama.stalactite.persistence.engine.SeparateTransactionExecutor;
 import org.gama.stalactite.persistence.id.BeforeInsertIdentifierGenerator;
 import org.gama.stalactite.persistence.id.sequence.PooledSequencePersister.PooledSequence;
 import org.gama.stalactite.persistence.sql.Dialect;
-
-import java.io.Serializable;
-import java.util.Map;
 
 /**
  * Générateur d'identifiant Long par table/classe (une séquence par table).
@@ -14,7 +14,7 @@ import java.util.Map;
  * Chaque séquence peut avoir une taille de paquet différent.
  * Inspiré du mécanisme "enhanced table generator" avec Hilo Optimizer d'Hibernate.
  * 
- * @author mary
+ * @author Guillaume Mary
  */
 public class PooledSequenceIdentifierGenerator implements BeforeInsertIdentifierGenerator {
 	
@@ -25,12 +25,12 @@ public class PooledSequenceIdentifierGenerator implements BeforeInsertIdentifier
 	private PooledSequenceIdentifierGeneratorOptions options;
 	
 	private final Dialect dialect;
-	private final ConnectionProvider connectionProvider;
+	private final SeparateTransactionExecutor separateTransactionExecutor;
 	private final int jdbcBatchSize;
 	
-	public PooledSequenceIdentifierGenerator(PooledSequenceIdentifierGeneratorOptions options, Dialect dialect, ConnectionProvider connectionProvider, int jdbcBatchSize) {
+	public PooledSequenceIdentifierGenerator(PooledSequenceIdentifierGeneratorOptions options, Dialect dialect, SeparateTransactionExecutor separateTransactionExecutor, int jdbcBatchSize) {
 		this.dialect = dialect;
-		this.connectionProvider = connectionProvider;
+		this.separateTransactionExecutor = separateTransactionExecutor;
 		this.jdbcBatchSize = jdbcBatchSize;
 		configure(options);
 	}
@@ -41,7 +41,7 @@ public class PooledSequenceIdentifierGenerator implements BeforeInsertIdentifier
 	}
 	
 	public void configure(PooledSequenceIdentifierGeneratorOptions options) {
-		this.pooledSequencePersister = new PooledSequencePersister(options.getStorageOptions(), dialect, connectionProvider, jdbcBatchSize);
+		this.pooledSequencePersister = new PooledSequencePersister(options.getStorageOptions(), dialect, separateTransactionExecutor, jdbcBatchSize);
 		this.options = options;
 	}
 	

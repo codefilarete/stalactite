@@ -1,9 +1,18 @@
 package org.gama.stalactite.benchmark;
 
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
+import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
+import java.util.*;
+
 import net.bytebuddy.ByteBuddy;
 import net.bytebuddy.dynamic.ClassLoadingStrategy;
 import net.bytebuddy.dynamic.DynamicType.Builder;
 import org.gama.stalactite.persistence.engine.PersistenceContext;
+import org.gama.stalactite.persistence.engine.SeparateTransactionExecutor;
 import org.gama.stalactite.persistence.id.AutoAssignedIdentifierGenerator;
 import org.gama.stalactite.persistence.id.sequence.PooledSequenceIdentifierGenerator;
 import org.gama.stalactite.persistence.id.sequence.PooledSequenceIdentifierGeneratorOptions;
@@ -12,14 +21,6 @@ import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
 import org.gama.stalactite.persistence.mapping.PersistentFieldHarverster;
 import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.persistence.structure.Table.Column;
-
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import java.lang.annotation.Target;
-import java.lang.reflect.Field;
-import java.lang.reflect.Modifier;
-import java.util.*;
 
 /**
  * @author Guillaume Mary
@@ -55,7 +56,7 @@ public class DynamicAndComplementaryClassMappingBuilder implements IMappingBuild
 		
 		PooledSequenceIdentifierGeneratorOptions options = new PooledSequenceIdentifierGeneratorOptions(100, targetTable.getName(), PooledSequencePersistenceOptions.DEFAULT);
 		PooledSequenceIdentifierGenerator identifierGenerator = new PooledSequenceIdentifierGenerator(options,
-				PersistenceContext.getCurrent().getDialect(), PersistenceContext.getCurrent().getConnectionProvider(), PersistenceContext.getCurrent().getJDBCBatchSize());
+				PersistenceContext.getCurrent().getDialect(), (SeparateTransactionExecutor) PersistenceContext.getCurrent().getConnectionProvider(), PersistenceContext.getCurrent().getJDBCBatchSize());
 //		PersistenceContext.getCurrent().add(identifierGenerator.getPooledSequencePersister().getMappingStrategy());
 		ClassMappingStrategy<?> classMappingStrategy = new ClassMappingStrategy<>(dynamicType, targetTable,
 				fieldColumnMap, persistentFieldHarverster.getField("id"), identifierGenerator);
