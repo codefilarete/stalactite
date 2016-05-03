@@ -1,25 +1,23 @@
 package org.gama.stalactite.persistence.engine;
 
-import org.gama.lang.bean.IFactory;
-import org.gama.lang.collection.ValueFactoryHashMap;
-import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
-import org.gama.stalactite.persistence.sql.Dialect;
-
 import java.sql.Connection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
+import org.gama.lang.bean.IFactory;
+import org.gama.lang.collection.ValueFactoryHashMap;
+import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
+import org.gama.stalactite.persistence.sql.Dialect;
+
 /**
- * Entry point for persistence in a database. Mix of configuration (Transaction, Dialect, ...) and registry for {@link
- * Persister}s.
+ * Entry point for persistence in a database. Mix of configuration (Transaction, Dialect, ...) and registry for {@link Persister}s.
  *
  * @author Guillaume Mary
  */
 public class PersistenceContext {
 	
-	private static final ThreadLocal<PersistenceContext> CURRENT_CONTEXT = new ThreadLocal<>();
 	private int jdbcBatchSize = 100;
 	private Map<Class<?>, Persister> persisterCache = new ValueFactoryHashMap<>(10, new IFactory<Class<?>, Persister>() {
 		@Override
@@ -27,22 +25,6 @@ public class PersistenceContext {
 			return newPersister(input);
 		}
 	});
-	
-	public static PersistenceContext getCurrent() {
-		PersistenceContext currentContext = CURRENT_CONTEXT.get();
-		if (currentContext == null) {
-			throw new IllegalStateException("No context found for current thread");
-		}
-		return currentContext;
-	}
-	
-	public static void setCurrent(PersistenceContext context) {
-		CURRENT_CONTEXT.set(context);
-	}
-	
-	public static void clearCurrent() {
-		CURRENT_CONTEXT.remove();
-	}
 	
 	private Dialect dialect;
 	private ConnectionProvider connectionProvider;

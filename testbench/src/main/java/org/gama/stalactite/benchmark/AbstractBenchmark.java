@@ -50,7 +50,7 @@ public abstract class AbstractBenchmark<Data> {
 		
 		SpringConnectionProvider transactionManager = new SpringConnectionProvider(dataSourceTransactionManager);
 		final PersistenceContext persistenceContext = new PersistenceContext(transactionManager, new HSQLBDDialect());
-		PersistenceContext.setCurrent(persistenceContext);
+		PersistenceContexts.setCurrent(persistenceContext);
 		
 		appendMappingStrategy(persistenceContext);
 		
@@ -152,17 +152,17 @@ public abstract class AbstractBenchmark<Data> {
 		
 		@Override
 		public Void call() throws Exception {
-			PersistenceContext.setCurrent(persistenceContext);
+			PersistenceContexts.setCurrent(persistenceContext);
 			try {
 				TransactionTemplate transactionTemplate = new TransactionTemplate(dataSourceTransactionManager);
 				transactionTemplate.execute(new TransactionCallbackWithoutResult() {
 					@Override
 					protected void doInTransactionWithoutResult(TransactionStatus status) {
-						persist(PersistenceContext.getCurrent(), data);
+						persist(PersistenceContexts.getCurrent(), data);
 					}
 				});
 			} finally {
-				PersistenceContext.clearCurrent();
+				PersistenceContexts.clearCurrent();
 			}
 			return null;
 		}

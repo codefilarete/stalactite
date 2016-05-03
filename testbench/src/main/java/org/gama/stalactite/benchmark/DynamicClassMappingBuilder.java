@@ -8,7 +8,6 @@ import java.util.Map;
 import net.bytebuddy.ByteBuddy;
 import net.bytebuddy.dynamic.ClassLoadingStrategy;
 import net.bytebuddy.dynamic.DynamicType.Builder;
-import org.gama.stalactite.persistence.engine.PersistenceContext;
 import org.gama.stalactite.persistence.engine.SeparateTransactionExecutor;
 import org.gama.stalactite.persistence.id.sequence.PooledSequenceIdentifierGenerator;
 import org.gama.stalactite.persistence.id.sequence.PooledSequenceIdentifierGeneratorOptions;
@@ -58,7 +57,7 @@ public class DynamicClassMappingBuilder implements IMappingBuilder {
 		ClassMappingStrategy<?> classMappingStrategy = new ClassMappingStrategy<>(dynamicType, targetTable,
 				fieldColumnMap, persistentFieldHarverster.getField("id"),
 				new PooledSequenceIdentifierGenerator(new PooledSequenceIdentifierGeneratorOptions(100, "Toto", PooledSequencePersistenceOptions.DEFAULT),
-				PersistenceContext.getCurrent().getDialect(), (SeparateTransactionExecutor) PersistenceContext.getCurrent().getConnectionProvider(), PersistenceContext.getCurrent().getJDBCBatchSize()));
+				PersistenceContexts.getCurrent().getDialect(), (SeparateTransactionExecutor) PersistenceContexts.getCurrent().getConnectionProvider(), PersistenceContexts.getCurrent().getJDBCBatchSize()));
 		return classMappingStrategy;
 	}
 	

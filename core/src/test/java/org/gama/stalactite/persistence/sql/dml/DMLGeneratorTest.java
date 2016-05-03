@@ -3,7 +3,6 @@ package org.gama.stalactite.persistence.sql.dml;
 import java.util.Arrays;
 
 import org.gama.sql.binder.ParameterBinder;
-import org.gama.stalactite.persistence.engine.PersistenceContext;
 import org.gama.stalactite.persistence.sql.Dialect;
 import org.gama.stalactite.persistence.sql.ddl.JavaTypeToSqlTypeMapping;
 import org.gama.stalactite.persistence.sql.dml.PreparedUpdate.UpwhereColumn;
@@ -23,7 +22,6 @@ public class DMLGeneratorTest {
 	public void setUp() {
 		// Nécessaire aux CRUDOperations et RowIterator qui ont besoin du ParamaterBinderRegistry
 		Dialect currentDialect = new Dialect(new JavaTypeToSqlTypeMapping());
-		PersistenceContext.setCurrent(new PersistenceContext(null, currentDialect));
 		stringBinder = currentDialect.getColumnBinderRegistry().getBinder(String.class);
 		testInstance = new DMLGenerator(currentDialect.getColumnBinderRegistry(), new DMLGenerator.CaseSensitiveSorter());
 	}

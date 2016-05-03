@@ -31,7 +31,7 @@ public class BenchmarkDynamic extends AbstractBenchmark<DynamicEntity> {
 	
 	@Override
 	protected Callable<Void> newCallableDataPersister(List<DynamicEntity> data) {
-		return new CallableDataInsert(data, PersistenceContext.getCurrent());
+		return new CallableDataInsert(data, PersistenceContexts.getCurrent());
 	}
 	
 	@Override

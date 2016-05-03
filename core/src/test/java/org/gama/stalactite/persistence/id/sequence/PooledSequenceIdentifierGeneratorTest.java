@@ -11,7 +11,6 @@ import org.gama.stalactite.persistence.engine.SeparateTransactionExecutor;
 import org.gama.stalactite.persistence.sql.Dialect;
 import org.gama.stalactite.persistence.sql.ddl.JavaTypeToSqlTypeMapping;
 import org.gama.stalactite.test.JdbcConnectionProvider;
-import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -29,11 +28,6 @@ public class PooledSequenceIdentifierGeneratorTest {
 		simpleTypeMapping.put(String.class, "VARCHAR(255)");
 		
 		persistenceContext = new PersistenceContext(new JdbcConnectionProvider(new HSQLDBInMemoryDataSource()), new Dialect(simpleTypeMapping));
-	}
-	
-	@After
-	public void tearDown() {
-		PersistenceContext.clearCurrent();
 	}
 	
 	@Test

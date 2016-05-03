@@ -28,7 +28,7 @@ public class Benchmark extends AbstractBenchmark<Toto> {
 	
 	@Override
 	protected Callable<Void> newCallableDataPersister(List<Toto> data) {
-		return new CallableDataInsert(data, PersistenceContext.getCurrent());
+		return new CallableDataInsert(data, PersistenceContexts.getCurrent());
 	}
 	
 	@Override
