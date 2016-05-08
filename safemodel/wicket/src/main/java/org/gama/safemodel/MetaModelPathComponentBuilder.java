@@ -5,6 +5,7 @@ import java.util.Iterator;
 import org.gama.lang.StringAppender;
 import org.gama.lang.collection.Iterables;
 import org.gama.safemodel.description.ContainerDescription;
+import org.gama.safemodel.description.ContainerDescriptionPathIterator;
 
 /**
  * A path builder to be used with the {@link org.apache.wicket.Component#get(String)} method. 

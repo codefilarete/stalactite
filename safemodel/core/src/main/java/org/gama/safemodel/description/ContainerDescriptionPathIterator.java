@@ -1,7 +1,7 @@
-package org.gama.safemodel;
+package org.gama.safemodel.description;
 
 import org.gama.lang.collection.ReadOnlyIterator;
-import org.gama.safemodel.description.ContainerDescription;
+import org.gama.safemodel.MetaModel;
 
 /**
  * Iterator of {@link ContainerDescription} to ease building of MetaModel path. It recusrses until root MetaModel (no owner) starting from a leaf one.

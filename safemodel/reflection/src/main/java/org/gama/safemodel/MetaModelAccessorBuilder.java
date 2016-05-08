@@ -22,7 +22,7 @@ public class MetaModelAccessorBuilder<C, T> implements IMetaModelTransformer<Acc
 	
 	@Override
 	public AccessorChain<C, T> transform(MetaModel<? extends MetaModel, ? extends ContainerDescription> metaModel) {
-		Iterator<MetaModel> modelPathIterator = new MetaModelPathIterator(metaModel) {
+		Iterator<MetaModel> modelPathIterator = new MetaMemberPathIterator(metaModel) {
 			@Override
 			protected void onFieldDescription(MetaModel<MetaModel, FieldDescription> model) {
 				addFieldAccessor(model);

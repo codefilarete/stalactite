@@ -1,9 +1,7 @@
 package org.gama.safemodel;
 
-import java.util.ArrayList;
 import java.util.Iterator;
 
-import org.gama.lang.collection.ReadOnlyIterator;
 import org.gama.safemodel.description.ArrayDescription;
 import org.gama.safemodel.description.ContainerDescription;
 import org.gama.safemodel.description.FieldDescription;
@@ -14,27 +12,14 @@ import org.gama.safemodel.description.MethodDescription;
  * 
  * @author Guillaume Mary
  */
-public abstract class MetaModelPathIterator extends ReadOnlyIterator<MetaModel> {
-	
-	private final Iterator<MetaModel<? extends MetaModel, ? extends ContainerDescription>> modelPathIterator;
-	
-	public static Iterator<MetaModel<? extends MetaModel, ? extends ContainerDescription>> buildIteratorFromRootTo(MetaModel<? extends MetaModel, ? extends ContainerDescription> leafMetaModel) {
-		// The passed argument is the last child, we must invert the relation to simplify path building
-		ArrayList<MetaModel<? extends MetaModel, ? extends ContainerDescription>> modelPath = new ArrayList<>(10);
-		MetaModel<? extends MetaModel, ? extends ContainerDescription> owner = leafMetaModel;
-		while (owner != null) {
-			modelPath.add(0, owner);
-			owner = owner.getOwner();
-		}
-		return modelPath.iterator();
-	}
+public abstract class MetaMemberPathIterator extends MetaModelPathIterator {
 	
 	/**
 	 * Constructeur who you pass a "leaf" of a MetaModel. The iteration will be done from the root {@link MetaModel} to this leaf.
 	 * 
 	 * @param metaModel the last
 	 */
-	public MetaModelPathIterator(MetaModel<? extends MetaModel, ? extends ContainerDescription> metaModel) {
+	public MetaMemberPathIterator(MetaModel metaModel) {
 		this(buildIteratorFromRootTo(metaModel));
 	}
 	
@@ -44,18 +29,13 @@ public abstract class MetaModelPathIterator extends ReadOnlyIterator<MetaModel> 
 	 * 
 	 * @param modelPathIterator a {@link MetaModel} {@link Iterator}
 	 */
-	public MetaModelPathIterator(Iterator<MetaModel<? extends MetaModel, ? extends ContainerDescription>> modelPathIterator) {
-		this.modelPathIterator = modelPathIterator;
-	}
-	
-	@Override
-	public boolean hasNext() {
-		return modelPathIterator.hasNext();
+	public MetaMemberPathIterator(Iterator<MetaModel<?, ?>> modelPathIterator) {
+		super(modelPathIterator);
 	}
 	
 	@Override
 	public MetaModel next() {
-		MetaModel<? extends MetaModel, ? extends ContainerDescription> childModel = modelPathIterator.next();
+		MetaModel childModel = super.next();
 		ContainerDescription description = childModel.getDescription();
 		if (description instanceof FieldDescription) {
 			onFieldDescription((MetaModel<MetaModel, FieldDescription>) childModel);

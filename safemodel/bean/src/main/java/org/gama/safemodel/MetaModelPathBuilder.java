@@ -31,7 +31,7 @@ public class MetaModelPathBuilder implements IMetaModelTransformer<String> {
 	@Override
 	public String transform(MetaModel<? extends MetaModel, ? extends ContainerDescription> metaModel) {
 		// we use an iterator bound to our catXXX method, so we'll only have to call its next() method to be notified for adhoc concatenation 
-		Iterator<MetaModel> modelPathIterator = new MetaModelPathIterator(metaModel) {
+		Iterator<MetaModel> modelPathIterator = new MetaMemberPathIterator(metaModel) {
 			@Override
 			protected void onFieldDescription(MetaModel<MetaModel, FieldDescription> model) {
 				catField(model);
