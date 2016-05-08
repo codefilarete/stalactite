@@ -11,9 +11,9 @@ import org.gama.safemodel.description.ContainerDescription;
  */
 public class MetaModel<O extends MetaModel, D extends ContainerDescription> {
 	
-	private D description;
-	
 	private O owner;
+	
+	private D description;
 	
 	private Object memberParameter;
 	
@@ -54,16 +54,16 @@ public class MetaModel<O extends MetaModel, D extends ContainerDescription> {
 		}
 	}
 	
-	public D getDescription() {
-		return description;
-	}
-	
 	public O getOwner() {
 		return owner;
 	}
 	
 	public void setOwner(O owner) {
 		this.owner = owner;
+	}
+	
+	public D getDescription() {
+		return description;
 	}
 	
 	public Object getMemberParameter() {

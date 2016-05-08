@@ -4,7 +4,6 @@ import java.util.Iterator;
 
 import org.gama.lang.StringAppender;
 import org.gama.lang.collection.Iterables;
-import org.gama.lang.collection.ReadOnlyIterator;
 import org.gama.safemodel.description.ContainerDescription;
 
 /**
@@ -25,7 +24,7 @@ public class MetaModelPathComponentBuilder implements IMetaModelTransformer<Stri
 	@Override
 	public String transform(MetaModel<? extends MetaModel, ? extends ContainerDescription> metaModel) {
 		Iterator<ContainerDescription> modelPathIterator = Iterables.reverseIterator(
-				Iterables.copy((Iterator<ContainerDescription>) new DescriptionIterator<>(metaModel)));
+				Iterables.copy((Iterator<ContainerDescription>) new ContainerDescriptionPathIterator<>(metaModel)));
 		path = new StringAppender(100);
 		// we iterate over all elements, only in order to invoke dedicated onXXXX() iterator's methods
 		while (modelPathIterator.hasNext()) {
@@ -39,24 +38,4 @@ public class MetaModelPathComponentBuilder implements IMetaModelTransformer<Stri
 		return path.toString();
 	}
 	
-	private static class DescriptionIterator<C extends ContainerDescription> extends ReadOnlyIterator<C> {
-		
-		private MetaModel<? extends MetaModel, C> x;
-		
-		public DescriptionIterator(MetaModel<? extends MetaModel, C> leafMetaModel) {
-			x = leafMetaModel;
-		}
-		
-		@Override
-		public boolean hasNext() {
-			return x != null && x.getDescription() != null;
-		}
-		
-		@Override
-		public C next() {
-			MetaModel next = x;
-			x = x.getOwner();
-			return (C) next.getDescription();
-		}
-	}
 }

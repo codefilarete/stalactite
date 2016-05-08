@@ -18,13 +18,24 @@ public abstract class MetaModelPathIterator extends ReadOnlyIterator<MetaModel> 
 	
 	private final Iterator<MetaModel<? extends MetaModel, ? extends ContainerDescription>> modelPathIterator;
 	
+	public static Iterator<MetaModel<? extends MetaModel, ? extends ContainerDescription>> buildIteratorFromRootTo(MetaModel<? extends MetaModel, ? extends ContainerDescription> leafMetaModel) {
+		// The passed argument is the last child, we must invert the relation to simplify path building
+		ArrayList<MetaModel<? extends MetaModel, ? extends ContainerDescription>> modelPath = new ArrayList<>(10);
+		MetaModel<? extends MetaModel, ? extends ContainerDescription> owner = leafMetaModel;
+		while (owner != null) {
+			modelPath.add(0, owner);
+			owner = owner.getOwner();
+		}
+		return modelPath.iterator();
+	}
+	
 	/**
 	 * Constructeur who you pass a "leaf" of a MetaModel. The iteration will be done from the root {@link MetaModel} to this leaf.
 	 * 
 	 * @param metaModel the last
 	 */
 	public MetaModelPathIterator(MetaModel<? extends MetaModel, ? extends ContainerDescription> metaModel) {
-		this(buildMetaModelIterator(metaModel));
+		this(buildIteratorFromRootTo(metaModel));
 	}
 	
 	/**
@@ -54,17 +65,6 @@ public abstract class MetaModelPathIterator extends ReadOnlyIterator<MetaModel> 
 			onArrayDescription((MetaModel<MetaModel, ArrayDescription>) childModel);
 		}
 		return childModel;
-	}
-	
-	private static Iterator<MetaModel<? extends MetaModel, ? extends ContainerDescription>> buildMetaModelIterator(MetaModel<? extends MetaModel, ? extends ContainerDescription> metaModel) {
-		// The passed argument is the last child, we must invert the relation to simplify path building
-		ArrayList<MetaModel<? extends MetaModel, ? extends ContainerDescription>> modelPath = new ArrayList<>(10);
-		MetaModel<? extends MetaModel, ? extends ContainerDescription> owner = metaModel;
-		while (owner != null) {
-			modelPath.add(0, owner);
-			owner = owner.getOwner();
-		}
-		return modelPath.iterator();
 	}
 	
 	protected abstract void onFieldDescription(MetaModel<MetaModel, FieldDescription> childModel);
