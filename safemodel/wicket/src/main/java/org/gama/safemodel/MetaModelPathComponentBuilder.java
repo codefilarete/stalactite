@@ -8,12 +8,20 @@ import org.gama.lang.collection.ReadOnlyIterator;
 import org.gama.safemodel.description.ContainerDescription;
 
 /**
+ * A path builder to be used with the {@link org.apache.wicket.Component#get(String)} method. 
+ * 
  * @author Guillaume Mary
  */
 public class MetaModelPathComponentBuilder implements IMetaModelTransformer<String> {
 	
 	private StringAppender path;
 	
+	/**
+	 * Concatenate {@link ComponentDescription#getName()} with colon from root MetaComponent to this passed as argument.
+	 * 
+	 * @param metaModel the leaf model
+	 * @return a String representing the path of wicket component (wicketIds)
+	 */
 	@Override
 	public String transform(MetaModel<? extends MetaModel, ? extends ContainerDescription> metaModel) {
 		Iterator<ContainerDescription> modelPathIterator = Iterables.reverseIterator(
@@ -46,7 +54,6 @@ public class MetaModelPathComponentBuilder implements IMetaModelTransformer<Stri
 		
 		@Override
 		public C next() {
-//			path.cat(":", ((ComponentDescription) x.getDescription()).getName());
 			MetaModel next = x;
 			x = x.getOwner();
 			return (C) next.getDescription();
