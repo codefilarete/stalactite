@@ -23,7 +23,7 @@ public class MetaModelPathComponentBuilder implements IMetaModelTransformer<Stri
 	 * @return a String representing the path of wicket component (wicketIds)
 	 */
 	@Override
-	public String transform(MetaModel<? extends MetaModel, ? extends ContainerDescription> metaModel) {
+	public String transform(MetaModel metaModel) {
 		Iterator<ContainerDescription> modelPathIterator = Iterables.reverseIterator(
 				Iterables.copy((Iterator<ContainerDescription>) new ContainerDescriptionPathIterator<>(metaModel)));
 		path = new StringAppender(100);

@@ -10,17 +10,17 @@ import org.gama.lang.collection.ReadOnlyIterator;
  * 
  * @author Guillaume Mary
  */
-public abstract class MetaModelPathIterator extends ReadOnlyIterator<MetaModel> {
+public abstract class MetaModelPathIterator<C extends MetaModel> extends ReadOnlyIterator<C> {
 	
-	private final Iterator<? extends MetaModel> modelPathIterator;
+	private final Iterator<C> modelPathIterator;
 	
-	public static Iterator<MetaModel<?, ?>> buildIteratorFromRootTo(MetaModel leafMetaModel) {
+	public static <T extends MetaModel> Iterator<T> buildIteratorFromRootTo(T leafMetaModel) {
 		// The passed argument is the last child, we must invert the relation to simplify path building
-		ArrayList<MetaModel<?, ?>> modelPath = new ArrayList<>(10);
-		MetaModel owner = leafMetaModel;
+		ArrayList<T> modelPath = new ArrayList<>(10);
+		T owner = leafMetaModel;
 		while (owner != null) {
 			modelPath.add(0, owner);
-			owner = owner.getOwner();
+			owner = (T) owner.getOwner();
 		}
 		return modelPath.iterator();
 	}
@@ -30,7 +30,7 @@ public abstract class MetaModelPathIterator extends ReadOnlyIterator<MetaModel> 
 	 * 
 	 * @param metaModel the last
 	 */
-	public MetaModelPathIterator(MetaModel metaModel) {
+	public MetaModelPathIterator(C metaModel) {
 		this(buildIteratorFromRootTo(metaModel));
 	}
 	
@@ -40,7 +40,7 @@ public abstract class MetaModelPathIterator extends ReadOnlyIterator<MetaModel> 
 	 * 
 	 * @param modelPathIterator a {@link MetaModel} {@link Iterator}
 	 */
-	public MetaModelPathIterator(Iterator<MetaModel<?, ?>> modelPathIterator) {
+	public MetaModelPathIterator(Iterator<C> modelPathIterator) {
 		this.modelPathIterator = modelPathIterator;
 	}
 	
@@ -50,7 +50,7 @@ public abstract class MetaModelPathIterator extends ReadOnlyIterator<MetaModel> 
 	}
 	
 	@Override
-	public MetaModel next() {
+	public C next() {
 		return modelPathIterator.next();
 	}
 }
