@@ -1,6 +1,6 @@
 package org.gama.stalactite.persistence.mapping;
 
-import org.gama.lang.Reflections.FieldIterator;
+import org.gama.lang.bean.FieldIterator;
 import org.gama.lang.collection.Iterables;
 import org.gama.lang.collection.Iterables.ForEach;
 import org.gama.reflection.PropertyAccessor;

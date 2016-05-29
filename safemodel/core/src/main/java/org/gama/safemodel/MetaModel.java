@@ -2,7 +2,7 @@ package org.gama.safemodel;
 
 import java.lang.reflect.Field;
 
-import org.gama.lang.Reflections;
+import org.gama.lang.bean.FieldIterator;
 import org.gama.lang.exception.Exceptions;
 import org.gama.safemodel.description.ContainerDescription;
 
@@ -36,7 +36,7 @@ public class MetaModel<O extends MetaModel, D extends ContainerDescription> {
 	 * its own fields. So parent fields will be "owned" several times (but with the same value).
 	 */
 	protected void fixFieldsOwner() {
-		Reflections.FieldIterator fieldIterator = new Reflections.FieldIterator(getClass());
+		FieldIterator fieldIterator = new FieldIterator(getClass());
 		while(fieldIterator.hasNext()) {
 			Field field = fieldIterator.next();
 			if (MetaModel.class.isAssignableFrom(field.getType())) {

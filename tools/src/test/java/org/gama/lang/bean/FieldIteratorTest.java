@@ -1,4 +1,4 @@
-package org.gama.lang;
+package org.gama.lang.bean;
 
 import java.lang.reflect.Field;
 import java.util.List;
@@ -6,7 +6,6 @@ import java.util.List;
 import com.tngtech.java.junit.dataprovider.DataProvider;
 import com.tngtech.java.junit.dataprovider.DataProviderRunner;
 import com.tngtech.java.junit.dataprovider.UseDataProvider;
-import org.gama.lang.Reflections.FieldIterator;
 import org.gama.lang.collection.Arrays;
 import org.gama.lang.collection.Iterables;
 import org.junit.Test;

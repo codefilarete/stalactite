@@ -8,11 +8,11 @@ import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-import org.gama.lang.collection.ArrayIterator;
+import org.gama.lang.bean.FieldIterator;
+import org.gama.lang.bean.MethodIterator;
 import org.gama.lang.collection.Iterables;
 import org.gama.lang.collection.Iterables.Finder;
 import org.gama.lang.collection.Iterables.Mapper;
-import org.gama.lang.collection.ReadOnlyIterator;
 import org.gama.lang.exception.Exceptions;
 
 /**
@@ -118,118 +118,6 @@ public final class Reflections {
 		}
 	}
 	
-	
-	/**
-	 * Parcoureur de la hiérarchie d'une classe
-	 */
-	public static class ClassIterator extends ReadOnlyIterator<Class> {
-		
-		private Class currentClass, topBoundAncestor;
-		
-		public ClassIterator(Class currentClass) {
-			this(currentClass, Object.class);
-		}
-		
-		public ClassIterator(Class currentClass, Class topBoundAncestor) {
-			this.currentClass = currentClass;
-			this.topBoundAncestor = topBoundAncestor;
-		}
-		
-		@Override
-		public boolean hasNext() {
-			return currentClass != null && !currentClass.equals(topBoundAncestor);
-		}
-		
-		@Override
-		public Class next() {
-			Class next = currentClass;
-			currentClass = currentClass.getSuperclass();
-			return next;
-		}
-	}
-	
-	public static class FieldIterator extends ReadOnlyIterator<Field> {
-		
-		private ClassIterator classIterator;
-		private ArrayIterator<Field> fieldIterator;
-		
-		public FieldIterator(Class currentClass) {
-			this(new ClassIterator(currentClass));
-		}
-		
-		public FieldIterator(ClassIterator classIterator) {
-			this.classIterator = classIterator;
-			this.fieldIterator = new ArrayIterator<>(getFields(classIterator.next()));
-		}
-		
-		/**
-		 * Gives fields of a class. Default is {@link Class#getDeclaredFields()}.
-		 * Can be overriden to filter fields for instance.
-		 * @param clazz the class for which fields must be given
-		 * @return an array of Field, not null
-		 */
-		protected Field[] getFields(Class clazz) {
-			return clazz.getDeclaredFields();
-		}
-		
-		@Override
-		public boolean hasNext() {
-			if (fieldIterator.hasNext()) {
-				// simple case
-				return true;
-			} else {
-				// no more field for the current iterator => we must scan upper classes if they have fields
-				while (classIterator.hasNext() && !fieldIterator.hasNext()) {
-					// transforming the class fields to an Iterator
-					Field[] declaredFields = getFields(classIterator.next());
-					fieldIterator = new ArrayIterator<>(declaredFields);
-				}
-				return fieldIterator.hasNext();
-			}
-		}
-		
-		@Override
-		public Field next() {
-			return fieldIterator.next();
-		}
-	}
-	
-	public static class MethodIterator extends ReadOnlyIterator<Method> {
-		
-		private ClassIterator classIterator;
-		private ArrayIterator<Method> methodIterator;
-		
-		public MethodIterator(Class currentClass) {
-			this(new ClassIterator(currentClass));
-		}
-		
-		public MethodIterator(ClassIterator classIterator) {
-			this.classIterator = classIterator;
-			this.methodIterator = new ArrayIterator<>(classIterator.next().getDeclaredMethods());
-		}
-		
-		@Override
-		public boolean hasNext() {
-			if (methodIterator.hasNext()) {
-				return true;
-			} else {
-				while (!methodIterator.hasNext()) {
-					if (classIterator.hasNext()) {
-						Method[] declaredMethods = classIterator.next().getDeclaredMethods();
-						methodIterator = new ArrayIterator<>(declaredMethods);
-					} else {
-						return false;
-					}
-				}
-				return methodIterator.hasNext();
-			}
-		}
-		
-		@Override
-		public Method next() {
-			return methodIterator.next();
-		}
-	}
 	
 	public static class MemberNotFoundException extends RuntimeException {
 		public MemberNotFoundException(String message) {
