@@ -1,10 +1,10 @@
 package org.gama.lang;
 
-import org.gama.lang.collection.Iterables;
-
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
+
+import org.gama.lang.collection.Iterables;
 
 /**
  * InvocationHandler that does nothing. Usefull to create no-operation proxy (for mocking services) or intercept a
@@ -27,7 +27,7 @@ public class NoopInvocationHandler implements InvocationHandler {
 	}
 
 	/**
-	 * Implemented to do nothing, always return null
+	 * Implemented to do nothing, always return null, excepte for equals() and hashCode() methods
 	 * @param proxy
 	 * @param method
 	 * @param args
@@ -39,7 +39,7 @@ public class NoopInvocationHandler implements InvocationHandler {
 		Object toReturn = null;
 		if (isEqualsMethod(method)) {
 			// Only consider equal when proxies are identical.
-			toReturn = (proxy == args[0]);
+			toReturn = proxy == args[0];
 		} else if (isHashCodeMethod(method)) {
 			// Use hashCode of reference proxy.
 			toReturn = System.identityHashCode(proxy);
@@ -51,13 +51,13 @@ public class NoopInvocationHandler implements InvocationHandler {
 	 * Determine whether the given method is an "equals" method.
 	 */
 	public static boolean isEqualsMethod(Method method) {
-		return method != null && method.getName().equals("equals") && Iterables.first(method.getParameterTypes()) == Object.class;
+		return method.getName().equals("equals") && Iterables.first(method.getParameterTypes()) == Object.class && method.getReturnType() == boolean.class;
 	}
 	
 	/**
 	 * Determine whether the given method is a "hashCode" method.
 	 */
 	public static boolean isHashCodeMethod(Method method) {
-		return method != null && method.getName().equals("hashCode") && method.getParameterTypes().length == 0;
+		return method.getName().equals("hashCode") && method.getParameterTypes().length == 0 && method.getReturnType() == int.class;
 	}
 }
