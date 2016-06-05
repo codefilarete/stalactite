@@ -1,6 +1,9 @@
 package org.gama.lang.collection;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.function.Function;
 
 /**
  * @author Guillaume Mary
@@ -19,5 +22,16 @@ public class Arrays {
 	
 	public static boolean isEmpty(Object[] array) {
 		return array == null || array.length == 0;
+	}
+	
+	/**
+	 * Method that can be used as a method reference for array index access.
+	 * 
+	 * @param index index of the array to return
+	 * @param <C> type of the array to use
+	 * @return a function that can be used as a reference for array index acccess
+	 */
+	public static <C> Function<C[], C> get(int index) {
+		return cs -> cs[index];
 	}
 }
