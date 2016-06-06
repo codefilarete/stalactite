@@ -45,13 +45,21 @@ public class MethodIteratorTest {
 		}));
 	}
 	
-	static class X { private void m1() {} }
+	static class X {
+		private void m1() {
+		}
+	}
 	
-	static class Y extends X { private void m2() {} }
+	static class Y extends X {
+		private void m2() {
+		}
+	}
 	
-	static class Z extends Y { private void m2() {} }
+	static class Z extends Y {
+		private void m2() {
+		}
+	}
 	
 	static class NoMethod extends X {
-		
 	}
 }

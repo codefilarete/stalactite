@@ -45,13 +45,18 @@ public class FieldIteratorTest {
 		}));
 	}
 	
-	static class X { private Object f1; }
+	static class X {
+		private Object f1;
+	}
 	
-	static class Y extends X { private Object f2; }
+	static class Y extends X {
+		private Object f2;
+	}
 	
-	static class Z extends Y { private Object f2; }
+	static class Z extends Y {
+		private Object f2;
+	}
 	
 	static class NoField extends X {
-		
 	}
 }
