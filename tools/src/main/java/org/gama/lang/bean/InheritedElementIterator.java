@@ -11,6 +11,10 @@ public abstract class InheritedElementIterator<T> extends ReadOnlyIterator<T> {
 	private ClassIterator classIterator;
 	private ArrayIterator<T> inheritedElementIterator;
 	
+	public InheritedElementIterator(Class aClass) {
+		this(new ClassIterator(aClass));
+	}
+	
 	public InheritedElementIterator(ClassIterator classIterator) {
 		this.classIterator = classIterator;
 	}

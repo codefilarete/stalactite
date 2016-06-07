@@ -2,6 +2,8 @@ package org.gama.lang.collection;
 
 import java.util.*;
 import java.util.Map.Entry;
+import java.util.function.Function;
+import java.util.function.Predicate;
 
 import org.gama.lang.bean.Objects;
 
@@ -141,6 +143,67 @@ public final class Iterables {
 			
 		}
 		return iterable;
+	}
+	
+	/**
+	 * Find the first non null value (according to mapper) into the {@link Iterator} of an {@link Iterable}
+	 * 
+	 * @param iterable the {@link Iterable} to scan
+	 * @param mapper the mapper to extract the value to test
+	 * @param <I> input type
+	 * @param <O> output type
+	 * @return null if all mapped values are null
+	 */
+	public static <I, O> O find(Iterable<I> iterable, Function<I, O> mapper) {
+		return find(iterable.iterator(), mapper, java.util.Objects::isNull);
+	}
+	
+	/**
+	 * Find the first non null value (according to mapper) into an {@link Iterator}
+	 * 
+	 * @param iterator the {@link Iterator} to scan
+	 * @param mapper the mapper to extract the value to test
+	 * @param <I> input type
+	 * @param <O> output type
+	 * @return null if all mapped values are null
+	 */
+	public static <I, O> O find(Iterator<I> iterator, Function<I, O> mapper) {
+		return find(iterator, mapper, java.util.Objects::nonNull);
+	}
+	
+	/**
+	 * Find the first predicate-matching value (according to mapper) into the {@link Iterator} of an {@link Iterable}
+	 *
+	 * @param iterable the {@link Iterable} to scan
+	 * @param mapper the mapper to extract the value to test
+	 * @param <I> input type
+	 * @param <O> output type
+	 * @return null if no mapped values matches the predicate
+	 */
+	public static <I, O> O find(Iterable<I> iterable, Function<I, O> mapper, Predicate<O> predicate) {
+		return find(iterable.iterator(), mapper, predicate);
+	}
+	
+	/**
+	 * Find the first predicate-matching value (according to mapper) into an {@link Iterator}
+	 * 
+	 * @param iterator the {@link Iterator} to scan
+	 * @param mapper the mapper to extract the value to test
+	 * @param <I> input type
+	 * @param <O> output type
+	 * @return null if no mapped values matches the predicate
+	 */
+	public static <I, O> O find(Iterator<I> iterator, Function<I, O> mapper, Predicate<O> predicate) {
+		O foundObject = null;
+		boolean found = false;
+		while (iterator.hasNext() && !found) {
+			I step = iterator.next();
+			O mapperResult = mapper.apply(step);
+			if (found = predicate.test(mapperResult)) {
+				foundObject = mapperResult;
+			}
+		}
+		return foundObject;
 	}
 	
 	public static <E> Iterator<E> reverseIterator(List<E> list) {
