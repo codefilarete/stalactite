@@ -126,8 +126,17 @@ public final class Iterables {
 	 * @return une List<E> qui contient tous les éléments de <t>iterator</t>
 	 */
 	public static <E> List<E> copy(Iterator<E> iterator) {
-		List<E> result = new ArrayList<>();
-		for (; iterator.hasNext();) {
+		return copy(iterator, new ArrayList<>());
+	}
+	
+	/**
+	 * Ajoute tous les élément de l'Iterator dans une List
+	 * @param iterator un Iterator, non null
+	 * @param result the target of the copy
+	 * @return the result instance
+	 */
+	public static <E> List<E> copy(Iterator<E> iterator, List<E> result) {
+		while (iterator.hasNext()) {
 			result.add(iterator.next());
 		}
 		return result;

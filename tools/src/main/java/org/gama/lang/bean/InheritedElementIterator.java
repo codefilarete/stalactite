@@ -1,30 +1,31 @@
 package org.gama.lang.bean;
 
+import java.util.Collections;
+import java.util.Iterator;
+
 import org.gama.lang.collection.ArrayIterator;
 import org.gama.lang.collection.ReadOnlyIterator;
 
 /**
+ * An {@link java.util.Iterator} that gets its informations from each class of a hierarchy.
+ * 
  * @author Guillaume Mary
  */
 public abstract class InheritedElementIterator<T> extends ReadOnlyIterator<T> {
 	
-	private ClassIterator classIterator;
-	private ArrayIterator<T> inheritedElementIterator;
+	protected Iterator<Class> classIterator;
+	protected Iterator<T> inheritedElementIterator = Collections.emptyIterator();
 	
 	public InheritedElementIterator(Class aClass) {
 		this(new ClassIterator(aClass));
 	}
 	
-	public InheritedElementIterator(ClassIterator classIterator) {
+	public InheritedElementIterator(Iterator<Class> classIterator) {
 		this.classIterator = classIterator;
 	}
 	
 	@Override
 	public boolean hasNext() {
-		// take first time into account
-		if (inheritedElementIterator == null) {
-			this.inheritedElementIterator = new ArrayIterator<>(getElements(classIterator.next()));
-		}
 		// simple case
 		if (inheritedElementIterator.hasNext()) {
 			return true;
@@ -32,11 +33,14 @@ public abstract class InheritedElementIterator<T> extends ReadOnlyIterator<T> {
 			// no more element for the current iterator => we must scan upper classes if they have some
 			while (classIterator.hasNext() && !inheritedElementIterator.hasNext()) {
 				// transforming the class elements to an Iterator
-				T[] methods = getElements(classIterator.next());
-				inheritedElementIterator = new ArrayIterator<>(methods);
+				inheritedElementIterator = nextInheritedElementIterator(classIterator.next());
 			}
 			return inheritedElementIterator.hasNext();
 		}
+	}
+	
+	protected Iterator<T> nextInheritedElementIterator(Class clazz) {
+		return new ArrayIterator<>(getElements(clazz));
 	}
 	
 	@Override

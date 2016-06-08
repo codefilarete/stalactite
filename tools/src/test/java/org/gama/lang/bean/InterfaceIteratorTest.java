@@ -3,7 +3,10 @@ package org.gama.lang.bean;
 import java.io.ByteArrayInputStream;
 import java.io.Closeable;
 import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
+import java.util.RandomAccess;
 
 import com.tngtech.java.junit.dataprovider.DataProvider;
 import com.tngtech.java.junit.dataprovider.DataProviderRunner;
@@ -30,9 +33,15 @@ public class InterfaceIteratorTest {
 				{ String.class, Arrays.asList(Serializable.class, Comparable.class, CharSequence.class) },
 				// test for far inherited annotation
 				{ RuntimeException.class, Arrays.asList(Serializable.class) },
-				{ ByteArrayInputStream.class, Arrays.asList(Closeable.class) },
+				{ ByteArrayInputStream.class, Arrays.asList(Closeable.class, AutoCloseable.class) },
 				// test for many annotations by inheritance
 				{ StringBuffer.class, Arrays.asList(Serializable.class, CharSequence.class, Appendable.class, CharSequence.class) },
+				{ ArrayList.class, Arrays.asList(
+						List.class, RandomAccess.class, Cloneable.class, Serializable.class,	// directly on ArrayList
+						Collection.class, Iterable.class,	// from List of previous interface list
+						List.class, Collection.class, Iterable.class,	// from AbstractList, parent of ArrayList, then List's interaces
+						Collection.class, Iterable.class	// from AbstractCollection, parent of AbstractList
+				) },
 		};
 	}
 	

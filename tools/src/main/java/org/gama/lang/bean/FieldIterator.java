@@ -1,6 +1,7 @@
 package org.gama.lang.bean;
 
 import java.lang.reflect.Field;
+import java.util.Iterator;
 
 /**
  * @author Guillaume Mary
@@ -11,7 +12,7 @@ public class FieldIterator extends InheritedElementIterator<Field> {
 		this(new ClassIterator(aClass));
 	}
 	
-	public FieldIterator(ClassIterator classIterator) {
+	public FieldIterator(Iterator<Class> classIterator) {
 		super(classIterator);
 	}
 	

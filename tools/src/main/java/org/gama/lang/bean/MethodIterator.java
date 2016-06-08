@@ -1,6 +1,7 @@
 package org.gama.lang.bean;
 
 import java.lang.reflect.Method;
+import java.util.Iterator;
 
 /**
  * Iterator over (declared) methods of a class hierarchy
@@ -13,7 +14,7 @@ public class MethodIterator extends InheritedElementIterator<Method> {
 		this(new ClassIterator(aClass));
 	}
 	
-	public MethodIterator(ClassIterator classIterator) {
+	public MethodIterator(Iterator<Class> classIterator) {
 		super(classIterator);
 	}
 	
