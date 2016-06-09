@@ -34,4 +34,12 @@ public class Arrays {
 	public static <C> Function<C[], C> get(int index) {
 		return cs -> cs[index];
 	}
+	
+	public static <C> C first(C[] args) {
+		return args[0];
+	}
+	
+	public static <C> C last(C[] args) {
+		return args[args.length-1];
+	}
 }
