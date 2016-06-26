@@ -43,9 +43,21 @@ public class ArraysTest {
 	
 	@Test
 	public void get() throws Exception {
-		assertEquals("a", Arrays.get(0).apply(new String[] { "a", "b", "c" }));
-		assertEquals("b", Arrays.get(1).apply(new String[] { "a", "b", "c" }));
-		assertEquals("c", Arrays.get(2).apply(new String[] { "a", "b", "c" }));
+		String[] testData = { "a", "b", "c" };
+		assertEquals("a", Arrays.get(0).apply(testData));
+		assertEquals("b", Arrays.get(1).apply(testData));
+		assertEquals("c", Arrays.get(2).apply(testData));
+	}
+	
+	@Test
+	public void get_outOfBoundsAware() throws Exception {
+		String[] testData = { "a", "b", "c" };
+		// out of bound cases
+		assertEquals("toto", Arrays.get(-1, () -> "toto").apply(testData));
+		assertEquals("toto", Arrays.get(3, () -> "toto").apply(testData));
+		// in-bound case
+		assertEquals("a", Arrays.get(0, () -> "toto").apply(testData));
+		assertEquals("c", Arrays.get(2, () -> "toto").apply(testData));
 	}
 	
 	@Test
