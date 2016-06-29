@@ -72,7 +72,7 @@ public abstract class Strings {
 		return result;
 	}
 		
-	public static CharSequence head(final CharSequence cs, final int headSize) {
+	public static CharSequence head(CharSequence cs, int headSize) {
 		return doWithDelegate(cs, new DefaultNullOrEmptyDelegate() {
 			@Override
 			public CharSequence onNotNullNotEmpty() {
@@ -81,11 +81,29 @@ public abstract class Strings {
 		});
 	}
 	
-	public static CharSequence tail(final CharSequence cs, final int tailSize) {
+	public static CharSequence cutHead(CharSequence cs, int headSize) {
+		return doWithDelegate(cs, new DefaultNullOrEmptyDelegate() {
+			@Override
+			public CharSequence onNotNullNotEmpty() {
+				return cs.subSequence(Math.min(preventNegative(headSize), cs.length()), cs.length());
+			}
+		});
+	}
+	
+	public static CharSequence tail(CharSequence cs, int tailSize) {
 		return doWithDelegate(cs, new DefaultNullOrEmptyDelegate() {
 			@Override
 			public CharSequence onNotNullNotEmpty() {
 				return cs.subSequence(Math.max(0, cs.length() - preventNegative(tailSize)), cs.length());
+			}
+		});
+	}
+	
+	public static CharSequence cutTail(CharSequence cs, int tailSize) {
+		return doWithDelegate(cs, new DefaultNullOrEmptyDelegate() {
+			@Override
+			public CharSequence onNotNullNotEmpty() {
+				return cs.subSequence(0, preventNegative(cs.length() - preventNegative(tailSize)));
 			}
 		});
 	}

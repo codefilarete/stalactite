@@ -4,6 +4,8 @@ import java.util.*;
 import java.util.Map.Entry;
 import java.util.function.Function;
 import java.util.function.Predicate;
+import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 import org.gama.lang.bean.Objects;
 
@@ -140,6 +142,29 @@ public final class Iterables {
 			result.add(iterator.next());
 		}
 		return result;
+	}
+	
+	/**
+	 * Convert an {@link Iterator} to a {@link Stream}.
+	 * If the {@link Iterator} comes from a {@link Collection}, then prefer usage of {@link Collection#stream()}
+	 * 
+	 * @param iterator an {@link Iterator}, not null
+	 * @return a {@link Stream} than will iterate over the {@link Iterator} passed as arguemnt
+	 */
+	public static <E> Stream<E> stream(Iterator<E> iterator) {
+		return stream(() -> iterator);
+	}
+	
+	/**
+	 * Convert an {@link Iterable} to a {@link Stream}.
+	 * If the {@link Iterable} is a {@link Collection}, then prefer usage of {@link Collection#stream()}
+	 * 
+	 * @param iterable an {@link Iterable}, not null
+	 * @return a {@link Stream} than will iterate over the {@link Iterable} passed as arguemnt
+	 */
+	public static <E> Stream<E> stream(Iterable<E> iterable) {
+		// StreamSupport knows how to convert an Iterable to a stream
+		return StreamSupport.stream(iterable.spliterator(), false);
 	}
 	
 	public static <E> Iterable<E> filter(Iterable<E> iterable, Objects.Predicate<E> predicate) {
