@@ -13,7 +13,7 @@ public class ComponentDescription<C extends Component> extends ContainerDescript
 		return new ComponentDescription<>(declaringContainer, name);
 	}
 	
-	public final String name;
+	private final String name;
 	
 	public ComponentDescription(Class<C> declaringContainer, String name) {
 		super(declaringContainer);
