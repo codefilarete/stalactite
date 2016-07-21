@@ -16,7 +16,7 @@ import org.gama.safemodel.description.MethodDescription;
 /**
  * @author Guillaume Mary
  */
-public class MetaModelAccessorBuilder<C, T> implements IMetaModelTransformer<AccessorChain<C, T>> {
+public class MetaModelAccessorBuilder<C, T> implements IMetaModelTransformer<AccessorChain<C, T>, MetaModel> {
 	
 	private AccessorChain<C, T> accessorChain;
 	

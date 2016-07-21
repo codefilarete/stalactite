@@ -11,7 +11,7 @@ import org.gama.safemodel.description.*;
  * 
  * @author Guillaume Mary
  */
-public class MetaModelPathBuilder implements IMetaModelTransformer<String> {
+public class MetaModelPathBuilder implements IMetaModelTransformer<String, MetaModel> {
 	
 	private StringAppender path;
 	

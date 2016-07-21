@@ -3,7 +3,9 @@ package org.gama.safemodel;
 import com.tngtech.java.junit.dataprovider.DataProvider;
 import com.tngtech.java.junit.dataprovider.DataProviderRunner;
 import com.tngtech.java.junit.dataprovider.UseDataProvider;
-import org.gama.safemodel.metamodel.*;
+import org.gama.safemodel.metamodel.MetaAddressComponent;
+import org.gama.safemodel.metamodel.MetaPersonComponent;
+import org.gama.safemodel.metamodel.MetaPhoneComponent;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -28,7 +30,7 @@ public class MetaModelPathComponentBuilderTest {
 	
 	@Test
 	@UseDataProvider("testTransformData")
-	public void testTransform(MetaModel metaModel, String expected) throws Exception {
+	public void testTransform(MetaComponent metaModel, String expected) throws Exception {
 		MetaModelPathComponentBuilder testInstance = new MetaModelPathComponentBuilder();
 		assertEquals(expected, testInstance.transform(metaModel));
 	}

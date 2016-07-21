@@ -6,21 +6,32 @@ import org.gama.safemodel.description.ContainerDescription;
 /**
  * @author Guillaume Mary
  */
-public class ComponentDescription<C extends Component> extends ContainerDescription<Class<C>> {
-	
-	/** Shortcut for constructor */
-	public static <C extends Component> ComponentDescription<C> component(Class<C> declaringContainer, String name) {
-		return new ComponentDescription<>(declaringContainer, name);
-	}
+public class ComponentDescription<C extends Component, T extends Component> extends ContainerDescription<Class<C>> {
 	
 	private final String name;
+	private final Class<T> type;
 	
 	public ComponentDescription(Class<C> declaringContainer, String name) {
-		super(declaringContainer);
-		this.name = name;
+		this(declaringContainer, name, null);
 	}
 	
+	public ComponentDescription(Class<C> declaringContainer, String name, Class<T> type) {
+		super(declaringContainer);
+		this.name = name;
+		this.type = type;
+	}
+	
+	/**
+	 * @return the wicket identifier of the represented {@link Component}
+	 */
 	public String getName() {
 		return name;
+	}
+	
+	/**
+	 * @return the type of the represented {@link Component}
+	 */
+	public Class<T> getType() {
+		return type;
 	}
 }
