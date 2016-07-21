@@ -1,7 +1,5 @@
 package org.gama.sql.dml;
 
-import javax.annotation.Nonnegative;
-import javax.annotation.Nonnull;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Statement;
@@ -24,22 +22,19 @@ public class WriteOperation<ParamType> extends SQLOperation<ParamType> {
 	protected static final Logger LOGGER = LoggerFactory.getLogger(WriteOperation.class);
 	
 	/** Updated row count of the last executed batch statement */
-	@Nonnegative
 	private int updatedRowCount = 0;
 	
 	/** JDBC Batch statement count, for logging */
-	@Nonnegative
 	private int batchedStatementCount = 0;
 	
 	/** Instance that helps to retry update statements on error, default is no {@link Retryer#NO_RETRY}, should not be null */
-	@Nonnull
 	private final Retryer retryer;
 	
 	public WriteOperation(SQLStatement<ParamType> sqlGenerator, IConnectionProvider connectionProvider) {
 		this(sqlGenerator, connectionProvider, Retryer.NO_RETRY);
 	}
 	
-	public WriteOperation(SQLStatement<ParamType> sqlGenerator, IConnectionProvider connectionProvider, @Nonnull Retryer retryer) {
+	public WriteOperation(SQLStatement<ParamType> sqlGenerator, IConnectionProvider connectionProvider, Retryer retryer) {
 		super(sqlGenerator, connectionProvider);
 		this.retryer = retryer;
 	}

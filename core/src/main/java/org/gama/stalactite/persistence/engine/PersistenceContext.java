@@ -1,25 +1,23 @@
 package org.gama.stalactite.persistence.engine;
 
-import org.gama.lang.bean.IFactory;
-import org.gama.lang.collection.ValueFactoryHashMap;
-import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
-import org.gama.stalactite.persistence.sql.Dialect;
-
 import java.sql.Connection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
+import org.gama.lang.bean.IFactory;
+import org.gama.lang.collection.ValueFactoryHashMap;
+import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
+import org.gama.stalactite.persistence.sql.Dialect;
+
 /**
- * Entry point for persistence in a database. Mix of configuration (Transaction, Dialect, ...) and registry for {@link
- * Persister}s.
+ * Entry point for persistence in a database. Mix of configuration (Transaction, Dialect, ...) and registry for {@link Persister}s.
  *
  * @author Guillaume Mary
  */
 public class PersistenceContext {
 	
-	private static final ThreadLocal<PersistenceContext> CURRENT_CONTEXT = new ThreadLocal<>();
 	private int jdbcBatchSize = 100;
 	private Map<Class<?>, Persister> persisterCache = new ValueFactoryHashMap<>(10, new IFactory<Class<?>, Persister>() {
 		@Override
@@ -28,33 +26,17 @@ public class PersistenceContext {
 		}
 	});
 	
-	public static PersistenceContext getCurrent() {
-		PersistenceContext currentContext = CURRENT_CONTEXT.get();
-		if (currentContext == null) {
-			throw new IllegalStateException("No context found for current thread");
-		}
-		return currentContext;
-	}
-	
-	public static void setCurrent(PersistenceContext context) {
-		CURRENT_CONTEXT.set(context);
-	}
-	
-	public static void clearCurrent() {
-		CURRENT_CONTEXT.remove();
-	}
-	
 	private Dialect dialect;
-	private TransactionManager transactionManager;
+	private ConnectionProvider connectionProvider;
 	private final Map<Class, ClassMappingStrategy> mappingStrategies = new HashMap<>(50);
 	
-	public PersistenceContext(TransactionManager transactionManager, Dialect dialect) {
-		this.transactionManager = transactionManager;
+	public PersistenceContext(ConnectionProvider connectionProvider, Dialect dialect) {
+		this.connectionProvider = connectionProvider;
 		this.dialect = dialect;
 	}
 	
-	public TransactionManager getTransactionManager() {
-		return transactionManager;
+	public ConnectionProvider getConnectionProvider() {
+		return connectionProvider;
 	}
 	
 	public Dialect getDialect() {
@@ -74,7 +56,7 @@ public class PersistenceContext {
 	}
 	
 	public Connection getCurrentConnection() {
-		return transactionManager.getCurrentConnection();
+		return connectionProvider.getCurrentConnection();
 	}
 	
 	public Set<Persister> getPersisters() {

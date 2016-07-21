@@ -14,6 +14,7 @@
 	<properties>
 		<wicket-core.version>6.18.0</wicket-core.version>
 		<slf4j-api.version>1.7.10</slf4j-api.version>
+		<servlet-api.version>2.5</servlet-api.version>
 	</properties>
 
 	<dependencies>
@@ -44,6 +45,13 @@
 			<groupId>org.slf4j</groupId>
 			<artifactId>slf4j-log4j12</artifactId>
 			<version>${slf4j-api.version}</version>
+			<scope>test</scope>
+		</dependency>
+		<!-- servlet-api for WicketTester -->
+		<dependency>
+			<groupId>javax.servlet</groupId>
+			<artifactId>servlet-api</artifactId>
+			<version>${servlet-api.version}</version>
 			<scope>test</scope>
 		</dependency>
 	</dependencies>

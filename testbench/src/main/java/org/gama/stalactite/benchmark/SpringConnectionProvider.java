@@ -2,22 +2,22 @@ package org.gama.stalactite.benchmark;
 
 import java.sql.Connection;
 
+import org.gama.stalactite.persistence.engine.SeparateTransactionExecutor;
 import org.springframework.jdbc.datasource.DataSourceTransactionManager;
 import org.springframework.jdbc.datasource.DataSourceUtils;
 import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.TransactionStatus;
 import org.springframework.transaction.support.TransactionCallbackWithoutResult;
 import org.springframework.transaction.support.TransactionTemplate;
-import org.gama.stalactite.persistence.engine.TransactionManager;
 
 /**
  * @author Guillaume Mary
  */
-public class SpringTransactionManager implements TransactionManager {
+public class SpringConnectionProvider implements SeparateTransactionExecutor {
 	
 	private final DataSourceTransactionManager transactionManager;
 	
-	public SpringTransactionManager(DataSourceTransactionManager dataSourceTransactionManager) {
+	public SpringConnectionProvider(DataSourceTransactionManager dataSourceTransactionManager) {
 		this.transactionManager = dataSourceTransactionManager;
 	}
 	
@@ -28,7 +28,7 @@ public class SpringTransactionManager implements TransactionManager {
 	}
 	
 	@Override
-	public void executeInNewTransaction(final JdbcOperation jdbcOperation) {
+	public void executeInNewTransaction(final SeparateTransactionExecutor.JdbcOperation jdbcOperation) {
 		TransactionTemplate transactionTemplate = new TransactionTemplate(this.transactionManager);
 		transactionTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
 		transactionTemplate.execute(new TransactionCallbackWithoutResult() {

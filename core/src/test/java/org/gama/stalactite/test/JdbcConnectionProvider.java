@@ -1,27 +1,27 @@
 package org.gama.stalactite.test;
 
-import org.gama.lang.exception.Exceptions;
-import org.gama.stalactite.persistence.engine.TransactionManager;
-
 import javax.sql.DataSource;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.ArrayDeque;
 import java.util.Deque;
 
+import org.gama.lang.exception.Exceptions;
+import org.gama.stalactite.persistence.engine.SeparateTransactionExecutor;
+
 /**
- * Very simple TransactionManager for JDBC connection.
+ * Very simple ConnectionProvider for JDBC connection.
  * Not for production use. Mono-threaded.
  * 
  * @author Guillaume Mary
  */
-public class JdbcTransactionManager implements TransactionManager {
+public class JdbcConnectionProvider implements SeparateTransactionExecutor {
 	
 	private DataSource dataSource;
 	/** LIFO stack of used connection. Don't support multi-thread access */
 	private Deque<Connection> currentConnection = new ArrayDeque<>();
 	
-	public JdbcTransactionManager(DataSource dataSource) {
+	public JdbcConnectionProvider(DataSource dataSource) {
 		this.dataSource = dataSource;
 	}
 	
@@ -60,7 +60,7 @@ public class JdbcTransactionManager implements TransactionManager {
 	}
 	
 	@Override
-	public void executeInNewTransaction(JdbcOperation jdbcOperation) {
+	public void executeInNewTransaction(SeparateTransactionExecutor.JdbcOperation jdbcOperation) {
 		offerNewConnection();	// force new connection in queue
 		Connection connection = null;
 		try {

@@ -18,7 +18,7 @@ import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
 import org.gama.stalactite.persistence.sql.Dialect;
 import org.gama.stalactite.persistence.sql.ddl.JavaTypeToSqlTypeMapping;
 import org.gama.stalactite.persistence.structure.Table;
-import org.gama.stalactite.test.JdbcTransactionManager;
+import org.gama.stalactite.test.JdbcConnectionProvider;
 import org.gama.stalactite.test.PairSetList;
 import org.junit.Before;
 import org.junit.Test;
@@ -37,7 +37,7 @@ public class JoinTablePersisterTest {
 	private ArgumentCaptor<Integer> valueCaptor;
 	private ArgumentCaptor<Integer> indexCaptor;
 	private ArgumentCaptor<String> statementArgCaptor;
-	private JdbcTransactionManager transactionManager;
+	private JdbcConnectionProvider transactionManager;
 	private InMemoryCounterIdentifierGenerator identifierGenerator;
 	private ClassMappingStrategy<Toto> totoClassMappingStrategy_ontoTable1, totoClassMappingStrategy2_ontoTable2;
 	private Dialect dialect;
@@ -86,7 +86,7 @@ public class JoinTablePersisterTest {
 		JavaTypeToSqlTypeMapping simpleTypeMapping = new JavaTypeToSqlTypeMapping();
 		simpleTypeMapping.put(Integer.class, "int");
 		
-		transactionManager = new JdbcTransactionManager(null);
+		transactionManager = new JdbcConnectionProvider(null);
 		dialect = new Dialect(simpleTypeMapping);
 		dialect.setInOperatorMaxSize(3);
 	}

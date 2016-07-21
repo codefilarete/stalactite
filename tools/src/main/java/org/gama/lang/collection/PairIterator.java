@@ -5,8 +5,6 @@ import java.util.Iterator;
 import java.util.Map.Entry;
 import java.util.NoSuchElementException;
 
-import javax.annotation.Nonnull;
-
 /**
  * Iterator de 2 autres sous la forme de {@link Entry}. A des éléments tant que les 2 Iterators délégués ont des élements.
  * 
@@ -103,7 +101,7 @@ public class PairIterator<K, V> implements Iterator<Entry<K, V>> {
 		
 		private Iterator<E> delegate;
 		
-		public InfiniteIterator(@Nonnull Iterator<E> delegate) {
+		public InfiniteIterator(Iterator<E> delegate) {
 			this.delegate = delegate;
 		}
 		

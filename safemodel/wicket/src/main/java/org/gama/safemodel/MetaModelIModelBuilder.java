@@ -8,7 +8,7 @@ import org.gama.reflection.AccessorChainMutator;
 /**
  * @author Guillaume Mary
  */
-public class MetaModelIModelBuilder<T> implements IMetaModelTransformer<IModel<T>> {
+public class MetaModelIModelBuilder<T> implements IMetaModelTransformer<IModel<T>, MetaModel> {
 	
 	/** Any model object (which may or may not implement IModel) */
 	private Object target;

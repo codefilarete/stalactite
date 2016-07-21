@@ -8,21 +8,22 @@ import org.gama.reflection.AccessorByField;
 import org.gama.reflection.AccessorByMethod;
 import org.gama.reflection.AccessorChain;
 import org.gama.reflection.ArrayAccessor;
+import org.gama.safemodel.description.AbstractMemberDescription;
 import org.gama.safemodel.description.ArrayDescription;
-import org.gama.safemodel.description.ContainerDescription;
 import org.gama.safemodel.description.FieldDescription;
 import org.gama.safemodel.description.MethodDescription;
 
 /**
  * @author Guillaume Mary
  */
-public class MetaModelAccessorBuilder<C, T> implements IMetaModelTransformer<AccessorChain<C, T>> {
+public class MetaModelAccessorBuilder<C, T> implements IMetaModelTransformer<AccessorChain<C, T>, MetaModel> {
 	
 	private AccessorChain<C, T> accessorChain;
 	
 	@Override
-	public AccessorChain<C, T> transform(MetaModel<? extends MetaModel, ? extends ContainerDescription> metaModel) {
-		Iterator<MetaModel> modelPathIterator = new MetaModelPathIterator(metaModel) {
+	public AccessorChain<C, T> transform(MetaModel metaModel) {
+		Iterator<MetaModel<MetaModel, ? extends AbstractMemberDescription>> modelPathIterator
+				= new MetaMemberPathIterator<MetaModel<MetaModel, ? extends AbstractMemberDescription>>((MetaModel<MetaModel, ? extends AbstractMemberDescription>) metaModel) {
 			@Override
 			protected void onFieldDescription(MetaModel<MetaModel, FieldDescription> model) {
 				addFieldAccessor(model);

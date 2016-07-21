@@ -4,17 +4,14 @@ import java.util.Iterator;
 
 import org.gama.lang.StringAppender;
 import org.gama.lang.collection.Arrays;
-import org.gama.safemodel.description.ArrayDescription;
-import org.gama.safemodel.description.ContainerDescription;
-import org.gama.safemodel.description.FieldDescription;
-import org.gama.safemodel.description.MethodDescription;
+import org.gama.safemodel.description.*;
 
 /**
  * A class that gives a printable description of the path of a MetaModel
  * 
  * @author Guillaume Mary
  */
-public class MetaModelPathBuilder implements IMetaModelTransformer<String> {
+public class MetaModelPathBuilder implements IMetaModelTransformer<String, MetaModel> {
 	
 	private StringAppender path;
 	
@@ -29,9 +26,10 @@ public class MetaModelPathBuilder implements IMetaModelTransformer<String> {
 	 * @see #catArray(MetaModel) 
 	 */
 	@Override
-	public String transform(MetaModel<? extends MetaModel, ? extends ContainerDescription> metaModel) {
+	public String transform(MetaModel metaModel) {
 		// we use an iterator bound to our catXXX method, so we'll only have to call its next() method to be notified for adhoc concatenation 
-		Iterator<MetaModel> modelPathIterator = new MetaModelPathIterator(metaModel) {
+		Iterator<MetaModel<MetaModel, ? extends AbstractMemberDescription>> modelPathIterator
+				= new MetaMemberPathIterator<MetaModel<MetaModel, ? extends AbstractMemberDescription>>((MetaModel<MetaModel, ? extends AbstractMemberDescription>) metaModel) {
 			@Override
 			protected void onFieldDescription(MetaModel<MetaModel, FieldDescription> model) {
 				catField(model);

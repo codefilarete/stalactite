@@ -1,19 +1,18 @@
 package org.gama.stalactite.persistence.id.sequence;
 
+import java.lang.reflect.Field;
+import java.util.Map;
+
 import org.gama.lang.Reflections;
 import org.gama.lang.collection.Maps;
 import org.gama.stalactite.persistence.engine.Persister;
-import org.gama.stalactite.persistence.engine.TransactionManager;
-import org.gama.stalactite.persistence.engine.TransactionManager.JdbcOperation;
+import org.gama.stalactite.persistence.engine.SeparateTransactionExecutor;
 import org.gama.stalactite.persistence.id.AutoAssignedIdentifierGenerator;
 import org.gama.stalactite.persistence.id.sequence.PooledSequencePersister.PooledSequence;
 import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
 import org.gama.stalactite.persistence.sql.Dialect;
 import org.gama.stalactite.persistence.structure.Database.Schema;
 import org.gama.stalactite.persistence.structure.Table;
-
-import java.lang.reflect.Field;
-import java.util.Map;
 
 /**
  * Persister dedicated to pooled entity identifiers.
@@ -24,28 +23,25 @@ import java.util.Map;
  */
 public class PooledSequencePersister extends Persister<PooledSequence> {
 	
-	private final TransactionManager transactionManager;
-	
 	/**
 	 * Constructor with default table and column names.
 	 * @see PooledSequencePersistenceOptions#DEFAULT
 	 * @param dialect
 	 */
-	public PooledSequencePersister(Dialect dialect, TransactionManager transactionManager, int jdbcBatchSize) {
-		this(PooledSequencePersistenceOptions.DEFAULT, dialect, transactionManager, jdbcBatchSize);
+	public PooledSequencePersister(Dialect dialect, SeparateTransactionExecutor separateTransactionExecutor, int jdbcBatchSize) {
+		this(PooledSequencePersistenceOptions.DEFAULT, dialect, separateTransactionExecutor, jdbcBatchSize);
 	}
 	
-	public PooledSequencePersister(PooledSequencePersistenceOptions storageOptions, Dialect dialect, TransactionManager transactionManager, int jdbcBatchSize) {
+	public PooledSequencePersister(PooledSequencePersistenceOptions storageOptions, Dialect dialect, SeparateTransactionExecutor separateTransactionExecutor, int jdbcBatchSize) {
 		// we reuse default PersistentContext
 		super(new PooledSequencePersisterConfigurer().buildConfiguration(storageOptions),
-				dialect, transactionManager, jdbcBatchSize);
-		this.transactionManager = transactionManager;
+				dialect, separateTransactionExecutor, jdbcBatchSize);
 	}
 	
 	public long reservePool(String sequenceName, int poolSize) {
 		SequenceBoundJdbcOperation jdbcOperation = new SequenceBoundJdbcOperation(sequenceName, poolSize);
 		// the operation is executed in a new and parallel transaction in order to manage concurrent accesses
-		transactionManager.executeInNewTransaction(jdbcOperation);
+		((SeparateTransactionExecutor) getConnectionProvider()).executeInNewTransaction(jdbcOperation);
 		return jdbcOperation.getUpperBound();
 	}
 	
@@ -107,7 +103,7 @@ public class PooledSequencePersister extends Persister<PooledSequence> {
 	/**
 	 * Class aimed at executing update operations of PooledSequences.
 	 */
-	private class SequenceBoundJdbcOperation implements JdbcOperation {
+	private class SequenceBoundJdbcOperation implements SeparateTransactionExecutor.JdbcOperation {
 		private final String sequenceName;
 		private final int poolSize;
 		private PooledSequence pool;

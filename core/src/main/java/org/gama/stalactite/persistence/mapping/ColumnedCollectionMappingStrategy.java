@@ -1,5 +1,8 @@
 package org.gama.stalactite.persistence.mapping;
 
+import java.util.*;
+import java.util.Map.Entry;
+
 import org.gama.lang.bean.Objects;
 import org.gama.lang.collection.Collections;
 import org.gama.lang.collection.Iterables;
@@ -12,10 +15,6 @@ import org.gama.sql.result.Row;
 import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.persistence.structure.Table.Column;
 
-import javax.annotation.Nonnull;
-import java.util.*;
-import java.util.Map.Entry;
-
 /**
  * @author Guillaume Mary
  */
@@ -25,7 +24,7 @@ public abstract class ColumnedCollectionMappingStrategy<C extends Collection<T>,
 	private final Set<Column> columns;
 	private final ToCollectionRowTransformer<C> rowTransformer;
 	
-	public ColumnedCollectionMappingStrategy(@Nonnull Table targetTable, Set<Column> columns, Class<? extends Collection> rowClass) {
+	public ColumnedCollectionMappingStrategy(Table targetTable, Set<Column> columns, Class<? extends Collection> rowClass) {
 		this.targetTable = targetTable;
 		this.columns = columns;
 		// weird cast cause of generics

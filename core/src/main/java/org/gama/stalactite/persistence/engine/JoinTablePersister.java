@@ -47,12 +47,12 @@ public class JoinTablePersister<T> extends Persister<T> {
 	private final Dialect dialect;
 	
 	public JoinTablePersister(PersistenceContext persistenceContext, ClassMappingStrategy<T> mainMappingStrategy) {
-		this(mainMappingStrategy, persistenceContext.getDialect(), persistenceContext.getTransactionManager(),
+		this(mainMappingStrategy, persistenceContext.getDialect(), persistenceContext.getConnectionProvider(),
 				persistenceContext.getJDBCBatchSize());
 	}
 	
-	public JoinTablePersister(ClassMappingStrategy<T> mainMappingStrategy, Dialect dialect, TransactionManager transactionManager, int jdbcBatchSize) {
-		super(mainMappingStrategy, transactionManager, dialect.getDmlGenerator(),
+	public JoinTablePersister(ClassMappingStrategy<T> mainMappingStrategy, Dialect dialect, ConnectionProvider connectionProvider, int jdbcBatchSize) {
+		super(mainMappingStrategy, connectionProvider, dialect.getDmlGenerator(),
 				dialect.getWriteOperationRetryer(), jdbcBatchSize, dialect.getInOperatorMaxSize());
 		this.dialect = dialect;
 	}
@@ -73,7 +73,7 @@ public class JoinTablePersister<T> extends Persister<T> {
 	
 	private <U> void addInsertExecutor(ClassMappingStrategy<U> mappingStrategy, final Objects.Function<Iterable<T>, Iterable<U>> complementaryInstancesProvider) {
 		final InsertExecutor insertExecutor = newInsertExecutor(mappingStrategy,
-				getTransactionManager(),
+				getConnectionProvider(),
 				getDmlGenerator(),
 				getWriteOperationRetryer(),
 				getBatchSize(),
@@ -89,7 +89,7 @@ public class JoinTablePersister<T> extends Persister<T> {
 	private <U> void addUpdateExecutor(ClassMappingStrategy<U> mappingStrategy, final Objects.Function<Iterable<T>, Iterable<U>> complementaryInstancesProvider) {
 		final UpdateExecutor updateExecutor = newUpdateExecutor(
 				mappingStrategy,
-				getTransactionManager(),
+				getConnectionProvider(),
 				getDmlGenerator(),
 				getWriteOperationRetryer(),
 				getBatchSize(),
@@ -121,7 +121,7 @@ public class JoinTablePersister<T> extends Persister<T> {
 	private <U> void addUpdateRoughlyExecutor(ClassMappingStrategy<U> mappingStrategy, final Objects.Function<Iterable<T>, Iterable<U>> complementaryInstancesProvider) {
 		final UpdateExecutor updateExecutor = newUpdateExecutor(
 				mappingStrategy,
-				getTransactionManager(),
+				getConnectionProvider(),
 				getDmlGenerator(),
 				getWriteOperationRetryer(),
 				getBatchSize(),
@@ -137,7 +137,7 @@ public class JoinTablePersister<T> extends Persister<T> {
 	private <U> void addDeleteExecutor(ClassMappingStrategy<U> mappingStrategy, final Objects.Function<Iterable<T>, Iterable<U>> complementaryInstancesProvider) {
 		final DeleteExecutor deleteExecutor = newDeleteExecutor(
 				mappingStrategy,
-				getTransactionManager(),
+				getConnectionProvider(),
 				getDmlGenerator(),
 				getWriteOperationRetryer(),
 				getBatchSize(),
@@ -227,7 +227,7 @@ public class JoinTablePersister<T> extends Persister<T> {
 			result = new ArrayList<>(parcels.size() * blockSize);
 			
 			// Use same Connection for all operations
-			IConnectionProvider connectionProvider = new SimpleConnectionProvider(getTransactionManager().getCurrentConnection());
+			IConnectionProvider connectionProvider = new SimpleConnectionProvider(getConnectionProvider().getCurrentConnection());
 			// Creation of the where clause: we use a dynamic "in" operator clause to avoid multiple SelectQuery instanciation
 			DynamicInClause condition = new DynamicInClause();
 			selectQuery.where(keyColumn, condition);

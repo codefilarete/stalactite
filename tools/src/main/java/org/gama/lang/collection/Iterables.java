@@ -1,10 +1,13 @@
 package org.gama.lang.collection;
 
-import org.gama.lang.bean.Objects;
-
-import javax.annotation.Nonnull;
 import java.util.*;
 import java.util.Map.Entry;
+import java.util.function.Function;
+import java.util.function.Predicate;
+import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
+
+import org.gama.lang.bean.Objects;
 
 /**
  * @author Guillaume Mary
@@ -115,7 +118,7 @@ public final class Iterables {
 	 * @param iterable un Iterable, non null
 	 * @return une List<E> qui contient tous les éléments de <t>iterable</t>
 	 */
-	public static <E> List<E> copy(@Nonnull Iterable<E> iterable) {
+	public static <E> List<E> copy(Iterable<E> iterable) {
 		return (iterable instanceof Collection) ? new ArrayList<>((Collection<E>) iterable) : copy(iterable.iterator());
 	}
 	
@@ -124,12 +127,44 @@ public final class Iterables {
 	 * @param iterator un Iterator, non null
 	 * @return une List<E> qui contient tous les éléments de <t>iterator</t>
 	 */
-	public static <E> List<E> copy(@Nonnull Iterator<E> iterator) {
-		List<E> result = new ArrayList<>();
-		for (; iterator.hasNext();) {
+	public static <E> List<E> copy(Iterator<E> iterator) {
+		return copy(iterator, new ArrayList<>());
+	}
+	
+	/**
+	 * Ajoute tous les élément de l'Iterator dans une List
+	 * @param iterator un Iterator, non null
+	 * @param result the target of the copy
+	 * @return the result instance
+	 */
+	public static <E> List<E> copy(Iterator<E> iterator, List<E> result) {
+		while (iterator.hasNext()) {
 			result.add(iterator.next());
 		}
 		return result;
+	}
+	
+	/**
+	 * Convert an {@link Iterator} to a {@link Stream}.
+	 * If the {@link Iterator} comes from a {@link Collection}, then prefer usage of {@link Collection#stream()}
+	 * 
+	 * @param iterator an {@link Iterator}, not null
+	 * @return a {@link Stream} than will iterate over the {@link Iterator} passed as arguemnt
+	 */
+	public static <E> Stream<E> stream(Iterator<E> iterator) {
+		return stream(() -> iterator);
+	}
+	
+	/**
+	 * Convert an {@link Iterable} to a {@link Stream}.
+	 * If the {@link Iterable} is a {@link Collection}, then prefer usage of {@link Collection#stream()}
+	 * 
+	 * @param iterable an {@link Iterable}, not null
+	 * @return a {@link Stream} than will iterate over the {@link Iterable} passed as arguemnt
+	 */
+	public static <E> Stream<E> stream(Iterable<E> iterable) {
+		// StreamSupport knows how to convert an Iterable to a stream
+		return StreamSupport.stream(iterable.spliterator(), false);
 	}
 	
 	public static <E> Iterable<E> filter(Iterable<E> iterable, Objects.Predicate<E> predicate) {
@@ -144,6 +179,67 @@ public final class Iterables {
 		return iterable;
 	}
 	
+	/**
+	 * Find the first non null value (according to mapper) into the {@link Iterator} of an {@link Iterable}
+	 * 
+	 * @param iterable the {@link Iterable} to scan
+	 * @param mapper the mapper to extract the value to test
+	 * @param <I> input type
+	 * @param <O> output type
+	 * @return null if all mapped values are null
+	 */
+	public static <I, O> O find(Iterable<I> iterable, Function<I, O> mapper) {
+		return find(iterable.iterator(), mapper, java.util.Objects::isNull);
+	}
+	
+	/**
+	 * Find the first non null value (according to mapper) into an {@link Iterator}
+	 * 
+	 * @param iterator the {@link Iterator} to scan
+	 * @param mapper the mapper to extract the value to test
+	 * @param <I> input type
+	 * @param <O> output type
+	 * @return null if all mapped values are null
+	 */
+	public static <I, O> O find(Iterator<I> iterator, Function<I, O> mapper) {
+		return find(iterator, mapper, java.util.Objects::nonNull);
+	}
+	
+	/**
+	 * Find the first predicate-matching value (according to mapper) into the {@link Iterator} of an {@link Iterable}
+	 *
+	 * @param iterable the {@link Iterable} to scan
+	 * @param mapper the mapper to extract the value to test
+	 * @param <I> input type
+	 * @param <O> output type
+	 * @return null if no mapped values matches the predicate
+	 */
+	public static <I, O> O find(Iterable<I> iterable, Function<I, O> mapper, Predicate<O> predicate) {
+		return find(iterable.iterator(), mapper, predicate);
+	}
+	
+	/**
+	 * Find the first predicate-matching value (according to mapper) into an {@link Iterator}
+	 * 
+	 * @param iterator the {@link Iterator} to scan
+	 * @param mapper the mapper to extract the value to test
+	 * @param <I> input type
+	 * @param <O> output type
+	 * @return null if no mapped values matches the predicate
+	 */
+	public static <I, O> O find(Iterator<I> iterator, Function<I, O> mapper, Predicate<O> predicate) {
+		O foundObject = null;
+		boolean found = false;
+		while (iterator.hasNext() && !found) {
+			I step = iterator.next();
+			O mapperResult = mapper.apply(step);
+			if (found = predicate.test(mapperResult)) {
+				foundObject = mapperResult;
+			}
+		}
+		return foundObject;
+	}
+	
 	public static <E> Iterator<E> reverseIterator(List<E> list) {
 		return new ReverseListIterator<>(list);
 	}
@@ -154,7 +250,7 @@ public final class Iterables {
 	 * @param visitor un visiteur de collection
 	 * @return le résultat de la visite de <i>c</i> par <i>visitor</i>, null si <i>c</i> est null   
 	 */
-	public static <E, O> List<O> visit(Iterable<E> c, @Nonnull IVisitor<E, O> visitor) {
+	public static <E, O> List<O> visit(Iterable<E> c, IVisitor<E, O> visitor) {
 		if (c != null) {
 			Iterator<E> iterator = c.iterator();
 			return visit(iterator, visitor);
@@ -169,7 +265,7 @@ public final class Iterables {
 	 * @param visitor un visiteur de collection
 	 * @return le résultat de la visite de <i>iterator</i> par <i>visitor</i>, null si <i>iterator</i> est null   
 	 */
-	public static <E, O> List<O> visit(@Nonnull Iterator<E> iterator, @Nonnull IVisitor<E, O> visitor) {
+	public static <E, O> List<O> visit(Iterator<E> iterator, IVisitor<E, O> visitor) {
 		List<O> result = new ArrayList<>();
 		boolean pursue = true;
 		while (pursue && iterator.hasNext()) {
@@ -186,7 +282,7 @@ public final class Iterables {
 	 * @param visitor un visiteur de collection
 	 * @return le résultat alimenté par le <i>visitor</i> (null sans doute si c est null)
 	 */
-	public static <E, O> O filter(Iterable<E> c, @Nonnull IResultVisitor<E, O> visitor) {
+	public static <E, O> O filter(Iterable<E> c, IResultVisitor<E, O> visitor) {
 		if (c != null) {
 			visit(c, visitor);
 			return visitor.getResult();
@@ -201,7 +297,7 @@ public final class Iterables {
 	 * @param visitor un visiteur de collection
 	 * @return le résultat alimenté par le <i>visitor</i> (null sans doute si iterator est null)
 	 */
-	public static <E, O> O filter(@Nonnull Iterator<E> iterator, @Nonnull IResultVisitor<E, O> visitor) {
+	public static <E, O> O filter(Iterator<E> iterator, IResultVisitor<E, O> visitor) {
 		visit(iterator, visitor);
 		return visitor.getResult();
 	}

@@ -30,16 +30,16 @@ public class DDLDeployer {
 	}
 	
 	private final DDLSchemaGenerator ddlSchemaGenerator;
-	private final TransactionManager transactionManager;
+	private final ConnectionProvider connectionProvider;
 	
 	public DDLDeployer(PersistenceContext persistenceContext) {
-		this(persistenceContext.getDialect().getDdlSchemaGenerator(), persistenceContext.getTransactionManager());
+		this(persistenceContext.getDialect().getDdlSchemaGenerator(), persistenceContext.getConnectionProvider());
 		getDdlSchemaGenerator().setTables(lookupTables(persistenceContext));
 	}
 	
-	public DDLDeployer(DDLSchemaGenerator ddlSchemaGenerator, TransactionManager transactionManager) {
+	public DDLDeployer(DDLSchemaGenerator ddlSchemaGenerator, ConnectionProvider connectionProvider) {
 		this.ddlSchemaGenerator = ddlSchemaGenerator;
-		this.transactionManager = transactionManager;
+		this.connectionProvider = connectionProvider;
 	}
 	
 	public DDLSchemaGenerator getDdlSchemaGenerator() {
@@ -68,7 +68,7 @@ public class DDLDeployer {
 	}
 	
 	protected Connection getCurrentConnection() throws SQLException {
-		return transactionManager.getCurrentConnection();
+		return connectionProvider.getCurrentConnection();
 	}
 	
 }

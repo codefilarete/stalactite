@@ -138,7 +138,7 @@ public class BenchmarkDynamicComplementaryTables extends AbstractBenchmark<Dynam
 	
 	@Override
 	protected Callable<Void> newCallableDataPersister(List<DynamicEntity> data) {
-		return new CallableDataInsert(data, PersistenceContext.getCurrent());
+		return new CallableDataInsert(data, PersistenceContexts.getCurrent());
 	}
 	
 	@Override

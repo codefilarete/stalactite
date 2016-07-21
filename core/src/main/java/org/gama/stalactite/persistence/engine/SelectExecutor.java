@@ -25,8 +25,8 @@ import java.util.Set;
  */
 public class SelectExecutor<T> extends DMLExecutor<T> {
 	
-	public SelectExecutor(ClassMappingStrategy<T> mappingStrategy, TransactionManager transactionManager, DMLGenerator dmlGenerator, int inOperatorMaxSize) {
-		super(mappingStrategy, transactionManager, dmlGenerator, inOperatorMaxSize);
+	public SelectExecutor(ClassMappingStrategy<T> mappingStrategy, org.gama.stalactite.persistence.engine.ConnectionProvider connectionProvider, DMLGenerator dmlGenerator, int inOperatorMaxSize) {
+		super(mappingStrategy, connectionProvider, dmlGenerator, inOperatorMaxSize);
 	}
 	
 	

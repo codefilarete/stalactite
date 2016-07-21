@@ -1,11 +1,9 @@
 package org.gama.safemodel;
 
-import org.gama.safemodel.description.ContainerDescription;
-
 /**
  * @author Guillaume Mary
  */
-public interface IMetaModelTransformer<R> {
+public interface IMetaModelTransformer<R, M extends MetaModel> {
 	
-	R transform(MetaModel<? extends MetaModel, ? extends ContainerDescription> metaModel);
+	R transform(M metaModel);
 }

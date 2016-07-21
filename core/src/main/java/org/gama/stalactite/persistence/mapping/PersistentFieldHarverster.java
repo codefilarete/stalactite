@@ -1,18 +1,17 @@
 package org.gama.stalactite.persistence.mapping;
 
-import org.gama.lang.Reflections.FieldIterator;
-import org.gama.lang.collection.Iterables;
-import org.gama.lang.collection.Iterables.Filter;
-import org.gama.stalactite.persistence.structure.Table;
-import org.gama.stalactite.persistence.structure.Table.Column;
-
-import javax.annotation.Nonnull;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+
+import org.gama.lang.bean.FieldIterator;
+import org.gama.lang.collection.Iterables;
+import org.gama.lang.collection.Iterables.Filter;
+import org.gama.stalactite.persistence.structure.Table;
+import org.gama.stalactite.persistence.structure.Table.Column;
 
 /**
  * @author Guillaume Mary
@@ -72,7 +71,6 @@ public class PersistentFieldHarverster {
 	 * To ovveride to exclude unecessary Fields. Implemented to exclude static, Iterable and Map fields.
 	 * @return a {@link FieldFilter}
 	 */
-	@Nonnull
 	protected FieldFilter getFieldVisitor() {
 		return new FieldFilter();
 	}

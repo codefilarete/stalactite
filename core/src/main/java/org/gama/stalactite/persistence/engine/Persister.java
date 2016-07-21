@@ -23,7 +23,7 @@ import java.util.Map.Entry;
  */
 public class Persister<T> {
 	
-	private final TransactionManager transactionManager;
+	private final ConnectionProvider connectionProvider;
 	private final DMLGenerator dmlGenerator;
 	private final Retryer writeOperationRetryer;
 	private final int batchSize;
@@ -36,70 +36,70 @@ public class Persister<T> {
 	private SelectExecutor<T> selectExecutor;
 	
 	public Persister(PersistenceContext persistenceContext, ClassMappingStrategy<T> mappingStrategy) {
-		this(mappingStrategy, persistenceContext.getDialect(), persistenceContext.getTransactionManager(), persistenceContext.getJDBCBatchSize());
+		this(mappingStrategy, persistenceContext.getDialect(), persistenceContext.getConnectionProvider(), persistenceContext.getJDBCBatchSize());
 	}
 	
-	public Persister(ClassMappingStrategy<T> mappingStrategy, Dialect dialect, TransactionManager transactionManager, int jdbcBatchSize) {
-		this(mappingStrategy, transactionManager, dialect.getDmlGenerator(),
+	public Persister(ClassMappingStrategy<T> mappingStrategy, Dialect dialect, ConnectionProvider connectionProvider, int jdbcBatchSize) {
+		this(mappingStrategy, connectionProvider, dialect.getDmlGenerator(),
 				dialect.getWriteOperationRetryer(), jdbcBatchSize, dialect.getInOperatorMaxSize());
 	}
 	
-	protected Persister(ClassMappingStrategy<T> mappingStrategy, TransactionManager transactionManager,
+	protected Persister(ClassMappingStrategy<T> mappingStrategy, ConnectionProvider connectionProvider,
 						DMLGenerator dmlGenerator, Retryer writeOperationRetryer, int jdbcBatchSize, int inOperatorMaxSize) {
 		this.mappingStrategy = mappingStrategy;
-		this.transactionManager = transactionManager;
+		this.connectionProvider = connectionProvider;
 		this.dmlGenerator = dmlGenerator;
 		this.writeOperationRetryer = writeOperationRetryer;
 		this.batchSize = jdbcBatchSize;
 		this.inOperatorMaxSize = inOperatorMaxSize;
-		this.insertExecutor = newInsertExecutor(mappingStrategy, transactionManager, dmlGenerator,
+		this.insertExecutor = newInsertExecutor(mappingStrategy, connectionProvider, dmlGenerator,
 				writeOperationRetryer, jdbcBatchSize, inOperatorMaxSize);
-		this.updateExecutor = newUpdateExecutor(mappingStrategy, transactionManager, dmlGenerator,
+		this.updateExecutor = newUpdateExecutor(mappingStrategy, connectionProvider, dmlGenerator,
 				writeOperationRetryer, jdbcBatchSize, inOperatorMaxSize);
-		this.deleteExecutor = newDeleteExecutor(mappingStrategy, transactionManager, dmlGenerator,
+		this.deleteExecutor = newDeleteExecutor(mappingStrategy, connectionProvider, dmlGenerator,
 				writeOperationRetryer, jdbcBatchSize, inOperatorMaxSize);
-		this.selectExecutor = newSelectExecutor(mappingStrategy, transactionManager, dmlGenerator, inOperatorMaxSize);
+		this.selectExecutor = newSelectExecutor(mappingStrategy, connectionProvider, dmlGenerator, inOperatorMaxSize);
 	}
 	
 	protected <U> InsertExecutor<U> newInsertExecutor(ClassMappingStrategy<U> mappingStrategy,
-													  TransactionManager transactionManager,
+													  ConnectionProvider connectionProvider,
 													  DMLGenerator dmlGenerator,
 													  Retryer writeOperationRetryer,
 													  int jdbcBatchSize,
 													  int inOperatorMaxSize) {
-		return new InsertExecutor<>(mappingStrategy, transactionManager, dmlGenerator,
+		return new InsertExecutor<>(mappingStrategy, connectionProvider, dmlGenerator,
 				writeOperationRetryer, jdbcBatchSize, inOperatorMaxSize);
 	}
 	
 	protected <U> UpdateExecutor<U> newUpdateExecutor(ClassMappingStrategy<U> mappingStrategy,
-													  TransactionManager transactionManager,
+													  ConnectionProvider connectionProvider,
 													  DMLGenerator dmlGenerator,
 													  Retryer writeOperationRetryer,
 													  int jdbcBatchSize,
 													  int inOperatorMaxSize) {
-		return new UpdateExecutor<>(mappingStrategy, transactionManager, dmlGenerator,
+		return new UpdateExecutor<>(mappingStrategy, connectionProvider, dmlGenerator,
 				writeOperationRetryer, jdbcBatchSize, inOperatorMaxSize);
 	}
 	
 	protected <U> DeleteExecutor<U> newDeleteExecutor(ClassMappingStrategy<U> mappingStrategy,
-											   TransactionManager transactionManager,
+											   ConnectionProvider connectionProvider,
 											   DMLGenerator dmlGenerator,
 											   Retryer writeOperationRetryer,
 											   int jdbcBatchSize,
 											   int inOperatorMaxSize) {
-		return new DeleteExecutor<>(mappingStrategy, transactionManager, dmlGenerator,
+		return new DeleteExecutor<>(mappingStrategy, connectionProvider, dmlGenerator,
 				writeOperationRetryer, jdbcBatchSize, inOperatorMaxSize);
 	}
 	
 	protected <U> SelectExecutor<U> newSelectExecutor(ClassMappingStrategy<U> mappingStrategy,
-												TransactionManager transactionManager,
+												ConnectionProvider connectionProvider,
 												DMLGenerator dmlGenerator,
 												int inOperatorMaxSize) {
-		return new SelectExecutor<>(mappingStrategy, transactionManager, dmlGenerator, inOperatorMaxSize);
+		return new SelectExecutor<>(mappingStrategy, connectionProvider, dmlGenerator, inOperatorMaxSize);
 	}
 	
-	public TransactionManager getTransactionManager() {
-		return transactionManager;
+	public ConnectionProvider getConnectionProvider() {
+		return connectionProvider;
 	}
 	
 	public DMLGenerator getDmlGenerator() {

@@ -35,12 +35,30 @@ public class StringsTest {
 	}
 	
 	@Test
+	public void testCutHead() {
+		assertEquals("ake", Strings.cutHead("snake", 2));
+		assertEquals("ke", Strings.cutHead("snake", 3));
+		assertEquals("", Strings.cutHead("snake", 42));
+		assertEquals("snake", Strings.cutHead("snake", -42));
+		assertEquals(null, Strings.cutHead(null, 2));
+	}
+	
+	@Test
 	public void testTail() {
 		assertEquals("ke", Strings.tail("snake", 2));
 		assertEquals("ake", Strings.tail("snake", 3));
 		assertEquals("snake", Strings.tail("snake", 42));
 		assertEquals("", Strings.tail("snake", -42));
 		assertEquals(null, Strings.tail(null, 2));
+	}
+	
+	@Test
+	public void testCutTail() {
+		assertEquals("sna", Strings.cutTail("snake", 2));
+		assertEquals("sn", Strings.cutTail("snake", 3));
+		assertEquals("", Strings.cutTail("snake", 42));
+		assertEquals("snake", Strings.cutTail("snake", -42));
+		assertEquals(null, Strings.cutTail(null, 2));
 	}
 	
 	@Test
