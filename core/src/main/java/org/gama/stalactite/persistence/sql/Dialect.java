@@ -6,7 +6,6 @@ import org.gama.stalactite.persistence.sql.ddl.DDLSchemaGenerator;
 import org.gama.stalactite.persistence.sql.ddl.JavaTypeToSqlTypeMapping;
 import org.gama.stalactite.persistence.sql.dml.DMLGenerator;
 import org.gama.stalactite.persistence.sql.dml.binder.ColumnBinderRegistry;
-import org.springframework.util.Assert;
 
 /**
  * @author Guillaume Mary
@@ -73,7 +72,9 @@ public class Dialect {
 	}
 	
 	public void setInOperatorMaxSize(int inOperatorMaxSize) {
-		Assert.isTrue(inOperatorMaxSize > 0, "SQL operator 'in' must contain at least 1 element");
+		if (inOperatorMaxSize <= 0) {
+			throw new IllegalArgumentException("SQL operator 'in' must contain at least 1 element");
+		}
 		this.inOperatorMaxSize = inOperatorMaxSize;
 	}
 }
