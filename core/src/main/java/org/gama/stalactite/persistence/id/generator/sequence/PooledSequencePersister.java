@@ -1,4 +1,4 @@
-package org.gama.stalactite.persistence.id.sequence;
+package org.gama.stalactite.persistence.id.generator.sequence;
 
 import java.lang.reflect.Field;
 import java.util.Map;
@@ -7,8 +7,8 @@ import org.gama.lang.Reflections;
 import org.gama.lang.collection.Maps;
 import org.gama.stalactite.persistence.engine.Persister;
 import org.gama.stalactite.persistence.engine.SeparateTransactionExecutor;
-import org.gama.stalactite.persistence.id.AutoAssignedIdentifierGenerator;
-import org.gama.stalactite.persistence.id.sequence.PooledSequencePersister.PooledSequence;
+import org.gama.stalactite.persistence.id.generator.AutoAssignedIdentifierGenerator;
+import org.gama.stalactite.persistence.id.generator.sequence.PooledSequencePersister.PooledSequence;
 import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
 import org.gama.stalactite.persistence.sql.Dialect;
 import org.gama.stalactite.persistence.structure.Database.Schema;

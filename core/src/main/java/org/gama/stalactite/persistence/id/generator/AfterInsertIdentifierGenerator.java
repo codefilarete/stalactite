@@ -1,4 +1,4 @@
-package org.gama.stalactite.persistence.id;
+package org.gama.stalactite.persistence.id.generator;
 
 import java.util.Map;
 

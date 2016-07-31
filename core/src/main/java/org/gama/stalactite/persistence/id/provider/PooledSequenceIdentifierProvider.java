@@ -7,8 +7,8 @@ import java.util.List;
 import java.util.concurrent.Executor;
 
 import org.gama.stalactite.persistence.engine.SeparateTransactionExecutor;
-import org.gama.stalactite.persistence.id.sequence.PooledSequenceIdentifierGenerator;
-import org.gama.stalactite.persistence.id.sequence.PooledSequenceIdentifierGeneratorOptions;
+import org.gama.stalactite.persistence.id.generator.sequence.PooledSequenceIdentifierGenerator;
+import org.gama.stalactite.persistence.id.generator.sequence.PooledSequenceIdentifierGeneratorOptions;
 import org.gama.stalactite.persistence.sql.Dialect;
 
 /**

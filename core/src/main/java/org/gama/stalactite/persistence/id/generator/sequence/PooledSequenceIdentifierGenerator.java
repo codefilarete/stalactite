@@ -1,11 +1,11 @@
-package org.gama.stalactite.persistence.id.sequence;
+package org.gama.stalactite.persistence.id.generator.sequence;
 
 import java.io.Serializable;
 import java.util.Map;
 
 import org.gama.stalactite.persistence.engine.SeparateTransactionExecutor;
-import org.gama.stalactite.persistence.id.IdentifierGenerator;
-import org.gama.stalactite.persistence.id.sequence.PooledSequencePersister.PooledSequence;
+import org.gama.stalactite.persistence.id.generator.IdentifierGenerator;
+import org.gama.stalactite.persistence.id.generator.sequence.PooledSequencePersister.PooledSequence;
 import org.gama.stalactite.persistence.sql.Dialect;
 
 /**

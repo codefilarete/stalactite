@@ -1,6 +1,6 @@
 package org.gama.stalactite.persistence.engine;
 
-import org.gama.stalactite.persistence.id.BeforeInsertIdentifierGenerator;
+import org.gama.stalactite.persistence.id.generator.BeforeInsertIdentifierGenerator;
 
 import java.io.Serializable;
 import java.util.Map;

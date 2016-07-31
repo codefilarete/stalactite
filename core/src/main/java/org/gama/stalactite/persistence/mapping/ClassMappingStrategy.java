@@ -19,7 +19,7 @@ import org.gama.reflection.AccessorByMember;
 import org.gama.reflection.AccessorByMethod;
 import org.gama.reflection.PropertyAccessor;
 import org.gama.sql.result.Row;
-import org.gama.stalactite.persistence.id.IdentifierGenerator;
+import org.gama.stalactite.persistence.id.generator.IdentifierGenerator;
 import org.gama.stalactite.persistence.sql.dml.PreparedUpdate.UpwhereColumn;
 import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.persistence.structure.Table.Column;

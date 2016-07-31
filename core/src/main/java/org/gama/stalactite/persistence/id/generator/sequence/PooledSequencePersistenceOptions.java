@@ -1,4 +1,4 @@
-package org.gama.stalactite.persistence.id.sequence;
+package org.gama.stalactite.persistence.id.generator.sequence;
 
 /**
  * @author mary
