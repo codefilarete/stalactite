@@ -1,13 +1,18 @@
 package org.gama.stalactite.persistence.mapping;
 
-import java.util.*;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashSet;
+import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Set;
 
 import org.gama.lang.bean.Objects;
 import org.gama.lang.collection.Collections;
 import org.gama.lang.collection.Iterables;
 import org.gama.lang.collection.Iterables.ForEach;
 import org.gama.sql.result.Row;
+import org.gama.stalactite.persistence.sql.dml.PreparedUpdate.UpwhereColumn;
 import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.persistence.structure.Table.Column;
 
@@ -44,6 +49,7 @@ public abstract class ColumnedMapMappingStrategy<C extends Map<K, V>, K, V, T> i
 		};
 	}
 	
+	@Override
 	public Table getTargetTable() {
 		return targetTable;
 	}
@@ -59,7 +65,7 @@ public abstract class ColumnedMapMappingStrategy<C extends Map<K, V>, K, V, T> i
 	
 	@Override
 	public Map<Column, Object> getInsertValues(C c) {
-		final Map<Column, Object> toReturn = new HashMap<>();
+		Map<Column, Object> toReturn = new HashMap<>();
 		Map<K, V> toIterate = c;
 		if (Collections.isEmpty(c)) {
 			toIterate = new HashMap<>();
@@ -81,9 +87,9 @@ public abstract class ColumnedMapMappingStrategy<C extends Map<K, V>, K, V, T> i
 	}
 	
 	@Override
-	public Map<Column, Object> getUpdateValues(final C modified, C unmodified, boolean allColumns) {
-		final Map<Column, Object> unmodifiedColumns = new LinkedHashMap<>();
-		final Map<Column, Object> toReturn = new HashMap<>();
+	public Map<UpwhereColumn, Object> getUpdateValues(C modified, C unmodified, boolean allColumns) {
+		Map<Column, Object> unmodifiedColumns = new HashMap<>();
+		Map<Column, Object> toReturn = new HashMap<>();
 		if (modified != null) {
 			// getting differences
 			// - all of modified but different in unmodified
@@ -98,7 +104,7 @@ public abstract class ColumnedMapMappingStrategy<C extends Map<K, V>, K, V, T> i
 				}
 			}
 			// - all from unmodified missing in modified
-			HashSet<K> missingInModified = unmodified == null ? new HashSet<K>() : new HashSet<>(unmodified.keySet());
+			HashSet<K> missingInModified = unmodified == null ? new HashSet<>() : new HashSet<>(unmodified.keySet());
 			missingInModified.removeAll(modified.keySet());
 			for (K k : missingInModified) {
 				addUpsertValues(k, modified.get(k), toReturn);
@@ -118,7 +124,13 @@ public abstract class ColumnedMapMappingStrategy<C extends Map<K, V>, K, V, T> i
 				toReturn.put(column, null);
 			}
 		}
-		return toReturn;
+		return convertToUpwhereColumn(toReturn);
+	}
+	
+	private Map<UpwhereColumn, Object> convertToUpwhereColumn(Map<Column, Object> map) {
+		Map<UpwhereColumn, Object> convertion = new HashMap<>();
+		map.forEach((c, s) -> convertion.put(new UpwhereColumn(c, true), s));
+		return convertion;
 	}
 	
 	/**

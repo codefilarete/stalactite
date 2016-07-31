@@ -6,25 +6,25 @@ import java.util.List;
 /**
  * @author Guillaume Mary
  */
-public class UpdateRouglyListenerCollection<T> implements IUpdateRouglyListener<T> {
+public class UpdateRoughlyListenerCollection<T> implements IUpdateRoughlyListener<T> {
 	
-	private List<IUpdateRouglyListener<T>> updateRouglyListeners = new ArrayList<>();
+	private List<IUpdateRoughlyListener<T>> updateRouglyListeners = new ArrayList<>();
 	
 	@Override
 	public void beforeUpdateRoughly(Iterable<T> iterables) {
-		for (IUpdateRouglyListener<T> updateRouglyListener : updateRouglyListeners) {
+		for (IUpdateRoughlyListener<T> updateRouglyListener : updateRouglyListeners) {
 			updateRouglyListener.beforeUpdateRoughly(iterables);
 		}
 	}
 	
 	@Override
 	public void afterUpdateRoughly(Iterable<T> iterables) {
-		for (IUpdateRouglyListener<T> updateRouglyListener : updateRouglyListeners) {
+		for (IUpdateRoughlyListener<T> updateRouglyListener : updateRouglyListeners) {
 			updateRouglyListener.afterUpdateRoughly(iterables);
 		}
 	}
 	
-	public void add(IUpdateRouglyListener<T> updateRouglyListener) {
+	public void add(IUpdateRoughlyListener<T> updateRouglyListener) {
 		if (updateRouglyListener != null) {    // prevent null as specified in interface
 			this.updateRouglyListeners.add(updateRouglyListener);
 		}

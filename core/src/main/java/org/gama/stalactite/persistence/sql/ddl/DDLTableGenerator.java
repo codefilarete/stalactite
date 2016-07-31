@@ -32,7 +32,6 @@ public class DDLTableGenerator {
 			generateCreatePrimaryKey(table, sqlCreateTable);
 		}
 		sqlCreateTable.cat(")");
-//			sqlCreateTable.cat(" ROW_FORMAT=COMPRESSED");
 		return sqlCreateTable.toString();
 	}
 	

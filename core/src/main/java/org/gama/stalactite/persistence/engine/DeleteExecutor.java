@@ -1,5 +1,9 @@
 package org.gama.stalactite.persistence.engine;
 
+import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.List;
+
 import org.gama.lang.Retryer;
 import org.gama.lang.collection.Collections;
 import org.gama.lang.collection.Iterables;
@@ -9,10 +13,6 @@ import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
 import org.gama.stalactite.persistence.sql.dml.ColumnParamedSQL;
 import org.gama.stalactite.persistence.sql.dml.DMLGenerator;
 import org.gama.stalactite.persistence.structure.Table;
-
-import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.List;
 
 /**
  * Class dedicated to delete statement execution
@@ -28,25 +28,17 @@ public class DeleteExecutor<T> extends WriteExecutor<T> {
 	}
 	
 	public int delete(Iterable<T> iterable) {
-		// Check if delete can be optimized
-		if (getMappingStrategy().isSingleColumnKey()) {
-			return deleteRoughly(iterable);
-		} else {
-			ColumnParamedSQL deleteStatement = getDmlGenerator().buildDelete(getMappingStrategy().getTargetTable(), getMappingStrategy().getVersionedKeys());
-			WriteOperation<Table.Column> writeOperation = newWriteOperation(deleteStatement, new ConnectionProvider());
-			JDBCBatchingIterator<T> jdbcBatchingIterator = new JDBCBatchingIterator<>(iterable, writeOperation, getBatchSize());
-			while(jdbcBatchingIterator.hasNext()) {
-				T t = jdbcBatchingIterator.next();
-				writeOperation.addBatch(getMappingStrategy().getDeleteValues(t));
-			}
-			return jdbcBatchingIterator.getUpdatedRowCount();
+		ColumnParamedSQL deleteStatement = getDmlGenerator().buildDelete(getMappingStrategy().getTargetTable(), getMappingStrategy().getVersionedKeys());
+		WriteOperation<Table.Column> writeOperation = newWriteOperation(deleteStatement, new ConnectionProvider());
+		JDBCBatchingIterator<T> jdbcBatchingIterator = new JDBCBatchingIterator<>(iterable, writeOperation, getBatchSize());
+		while(jdbcBatchingIterator.hasNext()) {
+			T t = jdbcBatchingIterator.next();
+			writeOperation.addBatch(getMappingStrategy().getVersionedKeyValues(t));
 		}
+		return jdbcBatchingIterator.getUpdatedRowCount();
 	}
 	
 	public int deleteRoughly(Iterable<T> iterable) {
-		if (!getMappingStrategy().isSingleColumnKey()) {
-			throw new UnsupportedOperationException("Roughly delete is only supported with single column key");
-		}
 		// get ids before passing them to deleteRoughlyById
 		List<Serializable> ids = new ArrayList<>();
 		for (T t : iterable) {
@@ -75,7 +67,7 @@ public class DeleteExecutor<T> extends WriteExecutor<T> {
 			JDBCBatchingIterator<List<Serializable>> jdbcBatchingIterator = new JDBCBatchingIterator<>(parcels, writeOperation, getBatchSize());
 			while(jdbcBatchingIterator.hasNext()) {
 				List<Serializable> updateValues = jdbcBatchingIterator.next();
-				writeOperation.addBatch(Maps.asMap(keyColumn, (Object) updateValues));
+				writeOperation.addBatch(Maps.asMap(keyColumn, updateValues));
 			}
 			updatedRowCounter = jdbcBatchingIterator.getUpdatedRowCount();
 		}

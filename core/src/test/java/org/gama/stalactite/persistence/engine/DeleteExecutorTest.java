@@ -26,6 +26,33 @@ public class DeleteExecutorTest extends DMLExecutorTest {
 	public void testDelete() throws Exception {
 		testInstance.delete(Arrays.asList(new Toto(7, 17, 23)));
 		
+		verify(preparedStatement, times(1)).addBatch();
+		verify(preparedStatement, times(1)).executeBatch();
+		verify(preparedStatement, times(0)).executeUpdate();
+		verify(preparedStatement, times(1)).setInt(indexCaptor.capture(), valueCaptor.capture());
+		assertEquals("delete from Toto where a = ?", statementArgCaptor.getValue());
+		PairSetList<Integer, Integer> expectedPairs = new PairSetList<Integer, Integer>().of(1, 7);
+		assertCapturedPairsEqual(expectedPairs);
+	}
+	
+	@Test
+	public void testDelete_multiple() throws Exception {
+		testInstance.delete(Arrays.asList(new Toto(1, 17, 23), new Toto(2, 29, 31), new Toto(3, 37, 41), new Toto(4, 43, 53)));
+		assertEquals(Arrays.asList("delete from Toto where a = ?"), statementArgCaptor.getAllValues());
+		verify(preparedStatement, times(4)).addBatch();
+		verify(preparedStatement, times(2)).executeBatch();
+		verify(preparedStatement, times(0)).executeUpdate();
+		verify(preparedStatement, times(4)).setInt(indexCaptor.capture(), valueCaptor.capture());
+		PairSetList<Integer, Integer> expectedPairs = new PairSetList<Integer, Integer>().of(1, 1).add(1, 2).add(1, 3).of(1, 4);
+		assertCapturedPairsEqual(expectedPairs);
+	}
+	
+	@Test
+	public void testDeleteRoughly() throws Exception {
+		testInstance.deleteRoughly(Arrays.asList(new Toto(7, 17, 23)));
+		
+		verify(preparedStatement, times(0)).addBatch();
+		verify(preparedStatement, times(0)).executeBatch();
 		verify(preparedStatement, times(1)).executeUpdate();
 		verify(preparedStatement, times(1)).setInt(indexCaptor.capture(), valueCaptor.capture());
 		assertEquals("delete from Toto where a in (?)", statementArgCaptor.getValue());
@@ -34,8 +61,8 @@ public class DeleteExecutorTest extends DMLExecutorTest {
 	}
 	
 	@Test
-	public void testDelete_multiple() throws Exception {
-		testInstance.delete(Arrays.asList(new Toto(1, 17, 23), new Toto(2, 29, 31), new Toto(3, 37, 41), new Toto(4, 43, 53)));
+	public void testDeleteRoughly_multiple() throws Exception {
+		testInstance.deleteRoughly(Arrays.asList(new Toto(1, 17, 23), new Toto(2, 29, 31), new Toto(3, 37, 41), new Toto(4, 43, 53)));
 		// 2 statements because in operator is bounded to 3 values (see testInstance creation)
 		assertEquals(Arrays.asList("delete from Toto where a in (?, ?, ?)", "delete from Toto where a in (?)"), statementArgCaptor.getAllValues());
 		verify(preparedStatement, times(1)).addBatch();

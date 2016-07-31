@@ -3,7 +3,7 @@ package org.gama.stalactite.persistence.engine.listening;
 /**
  * @author Guillaume Mary
  */
-public class NoopUpdateRouglyListener<T> implements IUpdateRouglyListener<T> {
+public class NoopUpdateRoughlyListener<T> implements IUpdateRoughlyListener<T> {
 	
 	@Override
 	public void beforeUpdateRoughly(Iterable<T> iterables) {

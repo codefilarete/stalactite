@@ -3,7 +3,7 @@ package org.gama.stalactite.persistence.engine.listening;
 /**
  * @author Guillaume Mary
  */
-public interface IUpdateRouglyListener<T> {
+public interface IUpdateRoughlyListener<T> {
 	
 	void beforeUpdateRoughly(Iterable<T> iterables);
 	

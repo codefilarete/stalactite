@@ -1,12 +1,11 @@
 package org.gama.stalactite.persistence.mapping;
 
+import java.util.Map;
+import java.util.Map.Entry;
+
 import org.gama.sql.result.IRowTransformer;
 import org.gama.sql.result.Row;
 import org.gama.sql.result.RowIterator;
-
-import java.sql.SQLException;
-import java.util.Map;
-import java.util.Map.Entry;
 
 /**
  * Class for transforming columns into multiple beans.
@@ -35,7 +34,7 @@ public abstract class ToMultipleBeansRowTransformer<T> implements IRowTransforme
 	}
 	
 	@Override
-	public T transform(Row row) throws SQLException {
+	public T transform(Row row) {
 		// Array of built instances on this row
 		Object[] tranformedRow = new Object[this.beanTransformers.size()];
 		int i = 0;

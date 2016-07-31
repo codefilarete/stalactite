@@ -179,9 +179,11 @@ public class JoinTablePersisterTest {
 	public void testDelete() throws Exception {
 		testInstance.delete(Arrays.asList(new Toto(7, 17, 23, 117, 123, -117)));
 		
-		verify(preparedStatement, times(2)).executeUpdate();
+		assertEquals(Arrays.asList("delete from Toto2 where id = ?", "delete from Toto1 where id = ?"), statementArgCaptor.getAllValues());
+		verify(preparedStatement, times(2)).addBatch();
+		verify(preparedStatement, times(2)).executeBatch();
+		verify(preparedStatement, times(0)).executeUpdate();
 		verify(preparedStatement, times(2)).setInt(indexCaptor.capture(), valueCaptor.capture());
-		assertEquals(Arrays.asList("delete from Toto2 where id in (?)", "delete from Toto1 where id in (?)"), statementArgCaptor.getAllValues());
 		PairSetList<Integer, Integer> expectedPairs = new PairSetList<Integer, Integer>()
 				.of(1, 7)
 				.of(1, 7);
@@ -191,6 +193,35 @@ public class JoinTablePersisterTest {
 	@Test
 	public void testDelete_multiple() throws Exception {
 		testInstance.delete(Arrays.asList(new Toto(1, 17, 23, 117, 123, -117), new Toto(2, 29, 31, 129, 131, -129), new Toto(3, 37, 41, 137, 141, -137), new Toto(4, 43, 53, 143, 153, -143)));
+		// 4 statements because in operator is bounded to 3 values (see testInstance creation)
+		assertEquals(Arrays.asList("delete from Toto2 where id = ?", "delete from Toto1 where id = ?"), statementArgCaptor.getAllValues());
+		verify(preparedStatement, times(8)).addBatch();
+		verify(preparedStatement, times(4)).executeBatch();
+		verify(preparedStatement, times(0)).executeUpdate();
+		verify(preparedStatement, times(8)).setInt(indexCaptor.capture(), valueCaptor.capture());
+		PairSetList<Integer, Integer> expectedPairs = new PairSetList<Integer, Integer>()
+				.of(1, 1).add(1, 2).add(1, 3)
+				.of(1, 4)
+				.of(1, 1).add(1, 2).add(1, 3)
+				.of(1, 4);
+		assertCapturedPairsEqual(expectedPairs);
+	}
+	
+	@Test
+	public void testDeleteRoughly() throws Exception {
+		testInstance.deleteRoughly(Arrays.asList(new Toto(7, 17, 23, 117, 123, -117)));
+		
+		assertEquals(Arrays.asList("delete from Toto2 where id in (?)", "delete from Toto1 where id in (?)"), statementArgCaptor.getAllValues());
+		verify(preparedStatement, times(2)).executeUpdate();
+		verify(preparedStatement, times(2)).setInt(indexCaptor.capture(), valueCaptor.capture());
+		PairSetList<Integer, Integer> expectedPairs = new PairSetList<Integer, Integer>()
+				.of(1, 7);
+		assertCapturedPairsEqual(expectedPairs);
+	}
+	
+	@Test
+	public void testDeleteRoughly_multiple() throws Exception {
+		testInstance.deleteRoughly(Arrays.asList(new Toto(1, 17, 23, 117, 123, -117), new Toto(2, 29, 31, 129, 131, -129), new Toto(3, 37, 41, 137, 141, -137), new Toto(4, 43, 53, 143, 153, -143)));
 		// 4 statements because in operator is bounded to 3 values (see testInstance creation)
 		assertEquals(Arrays.asList("delete from Toto2 where id in (?, ?, ?)", "delete from Toto2 where id in (?)", "delete from Toto1 where id in (?, ?, ?)", "delete from Toto1 where id in (?)"), statementArgCaptor.getAllValues());
 		verify(preparedStatement, times(2)).addBatch();

@@ -12,6 +12,7 @@ import org.gama.lang.collection.Arrays;
 import org.gama.lang.collection.Maps;
 import org.gama.lang.collection.Maps.ChainingMap;
 import org.gama.sql.result.Row;
+import org.gama.stalactite.persistence.sql.dml.PreparedUpdate.UpwhereColumn;
 import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.persistence.structure.Table.Column;
 import org.junit.Before;
@@ -101,8 +102,10 @@ public class ColumnedCollectionMappingStrategyTest {
 	@Test
 	@UseDataProvider("testGetUpdateValues_diffOnlyData")
 	public void testGetUpdateValues_diffOnly(List<String> modified, List<String> unmodified, Map<Column, String> expected) {
-		Map<Column, Object> insertValues = testInstance.getUpdateValues(modified, unmodified, false);
-		assertEquals(insertValues, expected);
+		Map<UpwhereColumn, Object> updateValues = testInstance.getUpdateValues(modified, unmodified, false);
+		Map<UpwhereColumn, Object> expectationWithUpwhereColumn = new HashMap<>();
+		expected.forEach((c, s) -> expectationWithUpwhereColumn.put(new UpwhereColumn(c, true), s));
+		assertEquals(expectationWithUpwhereColumn, updateValues);
 	}
 	
 	@DataProvider
@@ -128,8 +131,10 @@ public class ColumnedCollectionMappingStrategyTest {
 	@Test
 	@UseDataProvider("testGetUpdateValues_allColumnsData")
 	public void testGetUpdateValues_allColumns(List<String> modified, List<String> unmodified, Map<Column, String> expected) {
-		Map<Column, Object> insertValues = testInstance.getUpdateValues(modified, unmodified, true);
-		assertEquals(insertValues, expected);
+		Map<UpwhereColumn, Object> updateValues = testInstance.getUpdateValues(modified, unmodified, true);
+		Map<UpwhereColumn, Object> expectationWithUpwhereColumn = new HashMap<>();
+		expected.forEach((c, s) -> expectationWithUpwhereColumn.put(new UpwhereColumn(c, true), s));
+		assertEquals(expectationWithUpwhereColumn, updateValues);
 	}
 	
 	@Test

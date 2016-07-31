@@ -1,5 +1,9 @@
 package org.gama.stalactite.persistence.engine;
 
+import java.util.Iterator;
+import java.util.Map;
+import java.util.Set;
+
 import org.gama.lang.Retryer;
 import org.gama.lang.bean.IFactory;
 import org.gama.lang.collection.ArrayIterator;
@@ -9,10 +13,6 @@ import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
 import org.gama.stalactite.persistence.sql.dml.DMLGenerator;
 import org.gama.stalactite.persistence.sql.dml.PreparedUpdate;
 import org.gama.stalactite.persistence.structure.Table;
-
-import java.util.Iterator;
-import java.util.Map;
-import java.util.Set;
 
 /**
  * Class dedicated to update statement execution
@@ -32,9 +32,7 @@ public class UpdateExecutor<T> extends UpsertExecutor<T> {
 	 * @param iterable iterable of instances
 	 */
 	public int updateRoughly(Iterable<T> iterable) {
-		Table targetTable = getMappingStrategy().getTargetTable();
-		// we never update primary key (by principle and for persistent bean cache based on id (on what else ?)) 
-		Set<Table.Column> columnsToUpdate = targetTable.getColumnsNoPrimaryKey();
+		Set<Table.Column> columnsToUpdate = getMappingStrategy().getUpdatableColumns();
 		PreparedUpdate updateOperation = getDmlGenerator().buildUpdate(columnsToUpdate, getMappingStrategy().getVersionedKeys());
 		WriteOperation<PreparedUpdate.UpwhereColumn> writeOperation = newWriteOperation(updateOperation, new ConnectionProvider());
 		

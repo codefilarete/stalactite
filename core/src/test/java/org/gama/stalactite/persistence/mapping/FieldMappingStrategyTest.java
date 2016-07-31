@@ -7,6 +7,7 @@ import java.util.Map;
 import com.tngtech.java.junit.dataprovider.DataProvider;
 import com.tngtech.java.junit.dataprovider.DataProviderRunner;
 import com.tngtech.java.junit.dataprovider.UseDataProvider;
+import org.gama.lang.Reflections;
 import org.gama.lang.collection.Maps;
 import org.gama.sql.result.Row;
 import org.gama.stalactite.persistence.sql.dml.PreparedUpdate.UpwhereColumn;
@@ -30,25 +31,23 @@ public class FieldMappingStrategyTest {
 	private static Column colB;
 	private static Column colC;
 	private static Map<Field, Column> classMapping;
-	private static PersistentFieldHarverster persistentFieldHarverster;
 	
 	@BeforeClass
 	public static void setUpClass() {
-		persistentFieldHarverster = new PersistentFieldHarverster();
 		targetTable = new Table("Toto");
-		classMapping = persistentFieldHarverster.mapFields(Toto.class, targetTable);
-		Map<String, Column> columns = targetTable.mapColumnsOnName();
-		colA = columns.get("a");
-		colA.setPrimaryKey(true);
-		colB = columns.get("b");
-		colC = columns.get("c");
+		colA = targetTable.new Column("a", Integer.class);
+		colB = targetTable.new Column("b", Integer.class);
+		colC = targetTable.new Column("c", Integer.class);
+		classMapping = Maps.asMap(Reflections.findField(Toto.class, "a"), colA)
+				.add(Reflections.findField(Toto.class, "b"), colB)
+				.add(Reflections.findField(Toto.class, "c"), colC);
 	}
 	
 	private FieldMappingStrategy<Toto> testInstance;
 	
 	@Before
 	public void setUp() {
-		testInstance = new FieldMappingStrategy<>(targetTable, classMapping, persistentFieldHarverster.getField("a"));
+		testInstance = new FieldMappingStrategy<>(Toto.class, targetTable, classMapping);
 	}
 	
 	@DataProvider
@@ -79,7 +78,7 @@ public class FieldMappingStrategyTest {
 				{ new Toto(null, null, null), new Toto(null, 2, 3), Maps.asMap(colB, null).add(colC, null) },
 				{ new Toto(1, 2, 3), new Toto(1, 2, 3), new HashMap<>() },
 				{ new Toto(null, null, null), new Toto(null, null, null), new HashMap<>() },
-				{ new Toto(1, 2, 3), null, Maps.asMap(colB, 2).add(colC, 3) },
+				{ new Toto(1, 2, 3), null, Maps.asMap(colA, 1).add(colB, 2).add(colC, 3) },
 		};
 	}
 	
@@ -89,19 +88,15 @@ public class FieldMappingStrategyTest {
 		Map<UpwhereColumn, Object> valuesToInsert = testInstance.getUpdateValues(modified, unmodified, false);
 		
 		assertEquals(expectedResult, UpwhereColumn.getUpdateColumns(valuesToInsert));
-		if (!expectedResult.isEmpty()) {
-			assertEquals(Maps.asMap(colA, modified.a), UpwhereColumn.getWhereColumns(valuesToInsert));
-		} else {
-			assertEquals(new HashMap<Column, Object>(), UpwhereColumn.getWhereColumns(valuesToInsert));
-		}
+		assertEquals(new HashMap<Column, Object>(), UpwhereColumn.getWhereColumns(valuesToInsert));
 	}
 	
 	@DataProvider
 	public static Object[][] testGetUpdateValues_allColumnsData() {
 		return new Object[][] {
-				{ new Toto(1, 2, 3), new Toto(1, 2, 42), Maps.asMap(colB, 2).add(colC, 3) },
+				{ new Toto(1, 2, 3), new Toto(1, 2, 42), Maps.asMap(colA, 1).add(colB, 2).add(colC, 3) },
 				{ new Toto(null, null, null), new Toto(null, null, null), new HashMap<>() },
-				{ new Toto(1, 2, 3), null, Maps.asMap(colB, 2).add(colC, 3) },
+				{ new Toto(1, 2, 3), null, Maps.asMap(colA, 1).add(colB, 2).add(colC, 3) },
 				{ new Toto(1, 2, 3), new Toto(1, 2, 3), new HashMap<>() },
 		};
 	}
@@ -112,29 +107,7 @@ public class FieldMappingStrategyTest {
 		Map<UpwhereColumn, Object> valuesToInsert = testInstance.getUpdateValues(modified, unmodified, true);
 		
 		assertEquals(expectedResult, UpwhereColumn.getUpdateColumns(valuesToInsert));
-		if (!expectedResult.isEmpty()) {
-			assertEquals(Maps.asMap(colA, modified.a), UpwhereColumn.getWhereColumns(valuesToInsert));
-		} else {
-			assertEquals(new HashMap<Column, Object>(), UpwhereColumn.getWhereColumns(valuesToInsert));
-		}
-	}
-	
-	@Test
-	public void testGetDeleteValues() {
-		Map<Column, Object> versionedKeyValues = testInstance.getDeleteValues(new Toto(1, 2, 3));
-		assertEquals(Maps.asMap(colA, 1), versionedKeyValues);
-	}
-	
-	@Test
-	public void testGetSelectValues() {
-		Map<Column, Object> versionedKeyValues = testInstance.getSelectValues(1);
-		assertEquals(Maps.asMap(colA, 1), versionedKeyValues);
-	}
-	
-	@Test
-	public void testGetVersionedKeyValues() {
-		Map<Column, Object> versionedKeyValues = testInstance.getVersionedKeyValues(new Toto(1, 2, 3));
-		assertEquals(Maps.asMap(colA, 1), versionedKeyValues);
+		assertEquals(new HashMap<Column, Object>(), UpwhereColumn.getWhereColumns(valuesToInsert));
 	}
 	
 	@Test

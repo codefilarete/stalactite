@@ -19,9 +19,10 @@ import org.gama.sql.dml.ReadOperation;
 import org.gama.sql.result.Row;
 import org.gama.sql.result.RowIterator;
 import org.gama.stalactite.persistence.engine.listening.NoopDeleteListener;
+import org.gama.stalactite.persistence.engine.listening.NoopDeleteRoughlyListener;
 import org.gama.stalactite.persistence.engine.listening.NoopInsertListener;
 import org.gama.stalactite.persistence.engine.listening.NoopUpdateListener;
-import org.gama.stalactite.persistence.engine.listening.NoopUpdateRouglyListener;
+import org.gama.stalactite.persistence.engine.listening.NoopUpdateRoughlyListener;
 import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
 import org.gama.stalactite.persistence.sql.Dialect;
 import org.gama.stalactite.persistence.sql.dml.ColumnParamedSelect;
@@ -69,10 +70,11 @@ public class JoinTablePersister<T> extends Persister<T> {
 		addUpdateExecutor(mappingStrategy, complementaryInstancesProvider);
 		addUpdateRoughlyExecutor(mappingStrategy, complementaryInstancesProvider);
 		addDeleteExecutor(mappingStrategy, complementaryInstancesProvider);
+		addDeleteRoughlyExecutor(mappingStrategy, complementaryInstancesProvider);
 	}
 	
-	private <U> void addInsertExecutor(ClassMappingStrategy<U> mappingStrategy, final Objects.Function<Iterable<T>, Iterable<U>> complementaryInstancesProvider) {
-		final InsertExecutor insertExecutor = newInsertExecutor(mappingStrategy,
+	private <U> void addInsertExecutor(ClassMappingStrategy<U> mappingStrategy, Objects.Function<Iterable<T>, Iterable<U>> complementaryInstancesProvider) {
+		InsertExecutor<U> insertExecutor = newInsertExecutor(mappingStrategy,
 				getConnectionProvider(),
 				getDmlGenerator(),
 				getWriteOperationRetryer(),
@@ -86,8 +88,8 @@ public class JoinTablePersister<T> extends Persister<T> {
 		});
 	}
 	
-	private <U> void addUpdateExecutor(ClassMappingStrategy<U> mappingStrategy, final Objects.Function<Iterable<T>, Iterable<U>> complementaryInstancesProvider) {
-		final UpdateExecutor updateExecutor = newUpdateExecutor(
+	private <U> void addUpdateExecutor(ClassMappingStrategy<U> mappingStrategy, Objects.Function<Iterable<T>, Iterable<U>> complementaryInstancesProvider) {
+		UpdateExecutor updateExecutor = newUpdateExecutor(
 				mappingStrategy,
 				getConnectionProvider(),
 				getDmlGenerator(),
@@ -106,7 +108,7 @@ public class JoinTablePersister<T> extends Persister<T> {
 					keysIterable.add(entry.getKey());
 					valuesIterable.add(entry.getValue());
 				}
-				final PairIterator<U, U> x = new PairIterator<>(complementaryInstancesProvider.apply(keysIterable), complementaryInstancesProvider.apply(valuesIterable));
+				PairIterator<U, U> x = new PairIterator<>(complementaryInstancesProvider.apply(keysIterable), complementaryInstancesProvider.apply(valuesIterable));
 				
 				updateExecutor.update(new Iterable<Map.Entry<U, U>>() {
 					@Override
@@ -118,15 +120,15 @@ public class JoinTablePersister<T> extends Persister<T> {
 		});
 	}
 	
-	private <U> void addUpdateRoughlyExecutor(ClassMappingStrategy<U> mappingStrategy, final Objects.Function<Iterable<T>, Iterable<U>> complementaryInstancesProvider) {
-		final UpdateExecutor updateExecutor = newUpdateExecutor(
+	private <U> void addUpdateRoughlyExecutor(ClassMappingStrategy<U> mappingStrategy, Objects.Function<Iterable<T>, Iterable<U>> complementaryInstancesProvider) {
+		UpdateExecutor<U> updateExecutor = newUpdateExecutor(
 				mappingStrategy,
 				getConnectionProvider(),
 				getDmlGenerator(),
 				getWriteOperationRetryer(),
 				getBatchSize(),
 				getInOperatorMaxSize());
-		getPersisterListener().addUpdateRouglyListener(new NoopUpdateRouglyListener<T>() {
+		getPersisterListener().addUpdateRouglyListener(new NoopUpdateRoughlyListener<T>() {
 			@Override
 			public void afterUpdateRoughly(Iterable<T> iterables) {
 				updateExecutor.updateRoughly(complementaryInstancesProvider.apply(iterables));
@@ -134,8 +136,8 @@ public class JoinTablePersister<T> extends Persister<T> {
 		});
 	}
 	
-	private <U> void addDeleteExecutor(ClassMappingStrategy<U> mappingStrategy, final Objects.Function<Iterable<T>, Iterable<U>> complementaryInstancesProvider) {
-		final DeleteExecutor deleteExecutor = newDeleteExecutor(
+	private <U> void addDeleteExecutor(ClassMappingStrategy<U> mappingStrategy, Objects.Function<Iterable<T>, Iterable<U>> complementaryInstancesProvider) {
+		DeleteExecutor<U> deleteExecutor = newDeleteExecutor(
 				mappingStrategy,
 				getConnectionProvider(),
 				getDmlGenerator(),
@@ -146,6 +148,22 @@ public class JoinTablePersister<T> extends Persister<T> {
 			@Override
 			public void beforeDelete(Iterable<T> iterables) {
 				deleteExecutor.delete(complementaryInstancesProvider.apply(iterables));
+			}
+		});
+	}
+	
+	private <U> void addDeleteRoughlyExecutor(ClassMappingStrategy<U> mappingStrategy, Objects.Function<Iterable<T>, Iterable<U>> complementaryInstancesProvider) {
+		DeleteExecutor<U> deleteExecutor = newDeleteExecutor(
+				mappingStrategy,
+				getConnectionProvider(),
+				getDmlGenerator(),
+				getWriteOperationRetryer(),
+				getBatchSize(),
+				getInOperatorMaxSize());
+		getPersisterListener().addDeleteRoughlyListener(new NoopDeleteRoughlyListener<T>() {
+			@Override
+			public void beforeDeleteRoughly(Iterable<T> iterables) {
+				deleteExecutor.deleteRoughly(complementaryInstancesProvider.apply(iterables));
 			}
 		});
 	}
@@ -282,7 +300,7 @@ public class JoinTablePersister<T> extends Persister<T> {
 			T t = getMappingStrategy().transform(row);
 			// complete entity load with complementary mapping strategy
 			for (ClassMappingStrategy<T> classMappingStrategy : strategies) {
-				classMappingStrategy.getRowTransformer().applyRowToBean(row, t);
+				classMappingStrategy.getDefaultMappingStrategy().getRowTransformer().applyRowToBean(row, t);
 			}
 			return t;
 		}

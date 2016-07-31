@@ -1,7 +1,14 @@
 package org.gama.stalactite.persistence.mapping;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
+import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Set;
 
 import org.gama.lang.bean.Objects;
 import org.gama.lang.collection.Collections;
@@ -12,6 +19,7 @@ import org.gama.lang.collection.PairIterator.EmptyIterator;
 import org.gama.lang.collection.PairIterator.InfiniteIterator;
 import org.gama.lang.collection.PairIterator.UntilBothIterator;
 import org.gama.sql.result.Row;
+import org.gama.stalactite.persistence.sql.dml.PreparedUpdate.UpwhereColumn;
 import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.persistence.structure.Table.Column;
 
@@ -40,6 +48,7 @@ public abstract class ColumnedCollectionMappingStrategy<C extends Collection<T>,
 		};
 	}
 	
+	@Override
 	public Table getTargetTable() {
 		return targetTable;
 	}
@@ -70,12 +79,12 @@ public abstract class ColumnedCollectionMappingStrategy<C extends Collection<T>,
 	}
 	
 	@Override
-	public Map<Column, Object> getUpdateValues(C modified, C unmodified, boolean allColumns) {
-		final Map<Column, Object> toReturn = new HashMap<>();
+	public Map<UpwhereColumn, Object> getUpdateValues(C modified, C unmodified, boolean allColumns) {
+		Map<Column, Object> toReturn = new HashMap<>();
 		if (modified != null) {
 			// getting differences side by side
-			final Map<Column, Object> unmodifiedColumns = new LinkedHashMap<>();
-			final Iterator<T> unmodifiedIterator = unmodified == null ? new EmptyIterator<T>() : unmodified.iterator();
+			Map<Column, Object> unmodifiedColumns = new LinkedHashMap<>();
+			Iterator<T> unmodifiedIterator = unmodified == null ? new EmptyIterator<>() : unmodified.iterator();
 			UntilBothIterator<T, T> untilBothIterator = new UntilBothIterator<>(modified.iterator(), unmodifiedIterator);
 			PairIterator<Column, Entry<T, T>> valueColumnPairIterator = new PairIterator<>(columns.iterator(), untilBothIterator);
 			Iterables.visit(valueColumnPairIterator, new ForEach<Entry<Column, Entry<T, T>>, Void>() {
@@ -107,7 +116,13 @@ public abstract class ColumnedCollectionMappingStrategy<C extends Collection<T>,
 			}
 		}
 		
-		return toReturn;
+		return convertToUpwhereColumn(toReturn);
+	}
+	
+	private Map<UpwhereColumn, Object> convertToUpwhereColumn(Map<Column, Object> map) {
+		Map<UpwhereColumn, Object> convertion = new HashMap<>();
+		map.forEach((c, s) -> convertion.put(new UpwhereColumn(c, true), s));
+		return convertion;
 	}
 	
 	protected Object toDatabaseValue(T t) {

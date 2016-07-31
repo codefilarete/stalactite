@@ -4,6 +4,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.LinkedHashSet;
+import java.util.stream.Stream;
 
 /**
  * Faux Set qui doit conserver l'ordre d'insertion
@@ -52,6 +53,10 @@ public class KeepOrderSet<E> implements Iterable<E> {
 	
 	public int hashCode() {
 		return delegate.hashCode();
+	}
+	
+	public Stream<E> stream() {
+		return this.delegate.stream();
 	}
 	
 	/**

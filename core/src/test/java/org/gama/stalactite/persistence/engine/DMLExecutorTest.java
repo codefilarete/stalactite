@@ -31,7 +31,7 @@ public abstract class DMLExecutorTest {
 	
 	protected static Dialect dialect;
 	
-	protected PersistenceConfiguration persistenceConfiguration;
+	protected PersistenceConfiguration<Toto> persistenceConfiguration;
 	
 	protected PreparedStatement preparedStatement;
 	protected ArgumentCaptor<Integer> valueCaptor;

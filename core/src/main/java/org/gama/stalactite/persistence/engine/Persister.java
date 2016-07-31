@@ -1,5 +1,12 @@
 package org.gama.stalactite.persistence.engine;
 
+import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map.Entry;
+
 import org.gama.lang.Retryer;
 import org.gama.lang.bean.ISilentDelegate;
 import org.gama.lang.collection.Iterables;
@@ -8,13 +15,6 @@ import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
 import org.gama.stalactite.persistence.sql.Dialect;
 import org.gama.stalactite.persistence.sql.dml.DMLGenerator;
 import org.gama.stalactite.persistence.structure.Table;
-
-import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map.Entry;
 
 /**
  * CRUD Persistent features dedicated to an entity class. Entry point for persistent operations on entities.
@@ -174,7 +174,7 @@ public class Persister<T> {
 		return insert(Collections.singletonList(t));
 	}
 	
-	public int insert(final Iterable<T> iterable) {
+	public int insert(Iterable<T> iterable) {
 		return getPersisterListener().doWithInsertListener(iterable, new ISilentDelegate<Integer>() {
 			@Override
 			public Integer execute() {
@@ -195,7 +195,7 @@ public class Persister<T> {
 	 * Update roughly some instances: no difference are computed, only update statements (full column) are applied.
 	 * @param iterable iterable of instances
 	 */
-	public int updateRoughly(final Iterable<T> iterable) {
+	public int updateRoughly(Iterable<T> iterable) {
 		return getPersisterListener().doWithUpdateRouglyListener(iterable, new ISilentDelegate<Integer>() {
 			@Override
 			public Integer execute() {
@@ -209,7 +209,7 @@ public class Persister<T> {
 	}
 	
 	public int update(T modified, T unmodified, boolean allColumnsStatement) {
-		return update(Collections.singletonList((Entry<T, T>) new HashMap.SimpleImmutableEntry<>(modified, unmodified)), allColumnsStatement);
+		return update(Collections.singletonList(new HashMap.SimpleImmutableEntry<>(modified, unmodified)), allColumnsStatement);
 	}
 	
 	/**
@@ -219,7 +219,7 @@ public class Persister<T> {
 	 *  @param differencesIterable pairs of modified-unmodified instances, used to compute differences side by side
 	 * @param allColumnsStatement true if all columns must be in the SQL statement, false if only modified ones should be..
 	 */
-	public Integer update(final Iterable<Entry<T, T>> differencesIterable, final boolean allColumnsStatement) {
+	public Integer update(Iterable<Entry<T, T>> differencesIterable, boolean allColumnsStatement) {
 		return getPersisterListener().doWithUpdateListener(differencesIterable, allColumnsStatement, new ISilentDelegate<Integer>() {
 			@Override
 			public Integer execute() {
@@ -236,7 +236,7 @@ public class Persister<T> {
 		return delete(Collections.singletonList(t));
 	}
 	
-	public int delete(final Iterable<T> iterable) {
+	public int delete(Iterable<T> iterable) {
 		return getPersisterListener().doWithDeleteListener(iterable, new ISilentDelegate<Integer>() {
 			@Override
 			public Integer execute() {
@@ -249,6 +249,23 @@ public class Persister<T> {
 		return deleteExecutor.delete(iterable);
 	}
 	
+	public int deleteRougly(T t) {
+		return deleteRoughly(Collections.singletonList(t));
+	}
+	
+	public int deleteRoughly(Iterable<T> iterable) {
+		return getPersisterListener().doWithDeleteRoughlyListener(iterable, new ISilentDelegate<Integer>() {
+			@Override
+			public Integer execute() {
+				return doDeleteRoughly(iterable);
+			}
+		});
+	}
+	
+	protected int doDeleteRoughly(Iterable<T> iterable) {
+		return deleteExecutor.deleteRoughly(iterable);
+	}
+	
 	/**
 	 * Indicates if a bean is persisted or not, implemented on null identifier 
 	 * @param t a bean
@@ -258,11 +275,11 @@ public class Persister<T> {
 		return mappingStrategy.getId(t) == null;
 	}
 	
-	public T select(final Serializable id) {
+	public T select(Serializable id) {
 		return Iterables.first(select(Collections.singleton(id)));
 	}
 	
-	public List<T> select(final Iterable<Serializable> ids) {
+	public List<T> select(Iterable<Serializable> ids) {
 		if (!Iterables.isEmpty(ids)) {
 			return getPersisterListener().doWithSelectListener(ids, new ISilentDelegate<List<T>>() {
 				@Override
