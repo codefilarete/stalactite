@@ -6,9 +6,11 @@ import java.util.Map;
 import java.util.Set;
 
 import org.gama.lang.Retryer;
+import org.gama.lang.bean.Objects;
 import org.gama.sql.dml.SQLStatement;
 import org.gama.sql.dml.WriteOperation;
 import org.gama.stalactite.persistence.id.AutoAssignedIdentifierGenerator;
+import org.gama.stalactite.persistence.id.BeforeInsertIdentifierGenerator;
 import org.gama.stalactite.persistence.id.IdentifierGenerator;
 import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
 import org.gama.stalactite.persistence.sql.dml.ColumnParamedSQL;
@@ -51,8 +53,11 @@ public class InsertExecutor<T> extends UpsertExecutor<T> {
 	}
 	
 	private JDBCBatchingIterator<T> buildJdbcBatchingIterator(Iterable<T> iterable, WriteOperation<Table.Column> writeOperation) {
-		JDBCBatchingIterator<T> jdbcBatchingIterator;IdentifierGenerator identifierGenerator = getMappingStrategy().getIdentifierGenerator();
-		if (identifierGenerator instanceof AutoAssignedIdentifierGenerator) {
+		JDBCBatchingIterator<T> jdbcBatchingIterator;
+		IdentifierGenerator identifierGenerator = getMappingStrategy().getIdentifierGenerator();
+		if (identifierGenerator instanceof BeforeInsertIdentifierGenerator) {
+			jdbcBatchingIterator = new JDBCBatchingIteratorIdAware(iterable, writeOperation, getBatchSize(), new BeforeInsertIdentifierFixer());
+		} else if (identifierGenerator instanceof AutoAssignedIdentifierGenerator) {
 			jdbcBatchingIterator = new JDBCBatchingIterator<>(iterable, writeOperation, getBatchSize());
 		} else {
 			throw new UnsupportedOperationException("Identifier generator is not supported : "
@@ -60,6 +65,30 @@ public class InsertExecutor<T> extends UpsertExecutor<T> {
 			);
 		}
 		return jdbcBatchingIterator;
+	}
+	
+	private class JDBCBatchingIteratorIdAware extends JDBCBatchingIterator<T> {
+		
+		private final Objects.Consumer<T> identifierFixer;
+		
+		public JDBCBatchingIteratorIdAware(Iterable<T> iterable, WriteOperation writeOperation, int batchSize, Objects.Consumer<T> identifierFixer) {
+			super(iterable, writeOperation, batchSize);
+			this.identifierFixer = identifierFixer;
+		}
+		
+		@Override
+		public T next() {
+			T next = super.next();
+			identifierFixer.accept(next);
+			return next;
+		}
+	}
+	
+	private class BeforeInsertIdentifierFixer implements Objects.Consumer<T> {
+		@Override
+		public void accept(T t) {
+			getMappingStrategy().setId(t, ((BeforeInsertIdentifierGenerator) getMappingStrategy().getIdentifierGenerator()).generate());
+		}
 	}
 }
 
