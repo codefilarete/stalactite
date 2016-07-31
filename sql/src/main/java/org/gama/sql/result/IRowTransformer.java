@@ -1,7 +1,5 @@
 package org.gama.sql.result;
 
-import java.sql.SQLException;
-
 /**
  * Interface for classes capable of transforming a ResultSet row (represented by {@link Row} into any "more Object" instance.
  * 
@@ -9,5 +7,5 @@ import java.sql.SQLException;
  */
 public interface IRowTransformer<T> {
 	
-	T transform(Row row) throws SQLException;
+	T transform(Row row);
 }
