@@ -3,6 +3,7 @@ package org.gama.reflection;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Member;
 import java.lang.reflect.Method;
+import java.util.Arrays;
 
 /**
  * @author mary
@@ -11,7 +12,7 @@ public class AccessorByMethod<C, T> extends AbstractAccessor<C, T> implements Ac
 	
 	private final Method getter;
 	
-	protected final Object[] methodParameters;
+	private final Object[] methodParameters;
 	
 	public AccessorByMethod(Method getter) {
 		this.getter = getter;
@@ -28,7 +29,6 @@ public class AccessorByMethod<C, T> extends AbstractAccessor<C, T> implements Ac
 	
 	@Override
 	public T get(C c) {
-		fixMethodParameters();
 		return get(c, methodParameters);
 	}
 	
@@ -42,13 +42,6 @@ public class AccessorByMethod<C, T> extends AbstractAccessor<C, T> implements Ac
 	public AccessorByMethod<C, T> setParameter(int index, Object value) {
 		this.methodParameters[index] = value;
 		return this;
-	}
-	
-	/**
-	 * To override for complex arguments building
-	 */
-	protected void fixMethodParameters() {
-		
 	}
 	
 	public T get(C c, Object ... params) {
@@ -80,11 +73,24 @@ public class AccessorByMethod<C, T> extends AbstractAccessor<C, T> implements Ac
 	public MutatorByMember<C, T, ? extends Member> toMutator() {
 		Class<?> declaringClass = getGetter().getDeclaringClass();
 		String propertyName = Accessors.getPropertyName(getGetter());
-		MutatorByMethod<C, T> mutatorByMethod = Accessors.mutatorByMethod(declaringClass, propertyName);
+		MutatorByMethod<C, T> mutatorByMethod = Accessors.mutatorByMethod((Class<C>) declaringClass, propertyName);
 		if (mutatorByMethod == null) {
 			return Accessors.mutatorByField(declaringClass, propertyName);
 		} else {
 			return mutatorByMethod;
 		}
+	}
+	
+	@Override
+	public boolean equals(Object other) {
+		return this == other || 
+				(other instanceof AccessorByMethod
+						&& getGetter().equals(((AccessorByMethod) other).getGetter())
+						&& Arrays.equals(methodParameters, ((AccessorByMethod) other).methodParameters));
+	}
+	
+	@Override
+	public int hashCode() {
+		return 31 * getGetter().hashCode() + Arrays.hashCode(methodParameters);
 	}
 }

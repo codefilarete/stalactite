@@ -1,12 +1,12 @@
 package org.gama.reflection;
 
+import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
+
 import org.gama.lang.Reflections;
 import org.gama.lang.StringAppender;
 import org.gama.lang.collection.Arrays;
 import org.gama.lang.exception.Exceptions;
-
-import java.lang.reflect.Field;
-import java.lang.reflect.InvocationTargetException;
 
 /**
  * @author Guillaume Mary
@@ -56,7 +56,7 @@ public class ExceptionConverter {
 	}
 	
 	private void convertCannotSetFieldToObject(Object target, AbstractReflector reflector, Object arg) {
-		// Modification du message par défaut qui n'est pas très clair "Can not set ... to ... "
+		// Modifying default message because it's not really understandable "Can not set ... to ... "
 		Field getter = null;
 		if (reflector instanceof AccessorByField) {
 			getter = ((AccessorByField) reflector).getGetter();
@@ -64,7 +64,7 @@ public class ExceptionConverter {
 		if (reflector instanceof MutatorByField) {
 			getter = ((MutatorByField) reflector).getSetter();
 		}
-		// 2 cases happen here: Object is of wrong type and as no matching field, or boxing of value is wrong
+		// 2 cases happen here: Object is of wrong type and has no matching field, or boxing of value is wrong
 		// (cf https://docs.oracle.com/javase/tutorial/reflect/member/fieldTrouble.html) but we can't distinguish cases
 		if (Reflections.findField(target.getClass(), getter.getName()) == null) {
 			throw new IllegalArgumentException(target.getClass() + " doesn't have field " + getter.getName());

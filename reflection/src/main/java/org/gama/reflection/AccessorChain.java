@@ -17,7 +17,7 @@ public class AccessorChain<C, T> implements IAccessor<C, T>{
 	private final List<IAccessor> accessors;
 	
 	public AccessorChain() {
-		this(new ArrayList<IAccessor>(5));
+		this(new ArrayList<>(5));
 	}
 	
 	public AccessorChain(List<IAccessor> accessors) {

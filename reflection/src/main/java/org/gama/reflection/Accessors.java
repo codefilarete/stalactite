@@ -1,6 +1,7 @@
 package org.gama.reflection;
 
 import java.lang.reflect.Field;
+import java.lang.reflect.Member;
 import java.lang.reflect.Method;
 
 import org.gama.lang.Reflections;
@@ -25,27 +26,27 @@ public final class Accessors {
 				getter = Reflections.findMethod(clazz, "is" + capitalizedProperty);
 			} // nothing found : neither get nor is => return null
 		}
-		return getter == null ? null : new AccessorByMethod<C, T>(getter);
+		return getter == null ? null : new AccessorByMethod<>(getter);
 	}
 	
 	public static <C, T> AccessorByField<C, T> accessorByField(Field field) {
 		return new AccessorByField<>(field);
 	}
 	
-	public static <C, T> AccessorByField<C, T> accessorByField(Class clazz, String propertyName) {
+	public static <C, T> AccessorByField<C, T> accessorByField(Class<C> clazz, String propertyName) {
 		Field propertyField = Reflections.findField(clazz, propertyName);
 		return accessorByField(propertyField);
 	}
 	
 	public static <C, T> MutatorByMethod<C, T> mutatorByMethod(Field field) {
-		return mutatorByMethod(field.getDeclaringClass(), field.getName());
+		return mutatorByMethod((Class<C>) field.getDeclaringClass(), field.getName());
 	}
 	
-	public static <C, T> MutatorByMethod<C, T> mutatorByMethod(Class clazz, String propertyName) {
+	public static <C, T> MutatorByMethod<C, T> mutatorByMethod(Class<C> clazz, String propertyName) {
 		Field propertyField = Reflections.findField(clazz, propertyName);
 		String capitalizedProperty = Strings.capitalize(propertyName);
 		Method setter = Reflections.findMethod(clazz, "set" + capitalizedProperty, propertyField.getType());
-		return setter == null ? null : new MutatorByMethod<C, T>(setter);
+		return setter == null ? null : new MutatorByMethod<>(setter);
 	}
 	
 	public static <C, T> MutatorByField<C, T> mutatorByField(Field field) {
@@ -78,6 +79,16 @@ public final class Accessors {
 		}
 		propertyName = Strings.uncapitalize(propertyName);
 		return propertyName;
+	}
+	
+	public static IAccessor of(Member member) {
+		if (member instanceof Field) {
+			return new AccessorByField((Field) member);
+		} else if (member instanceof Method) {
+			return new AccessorByMethod((Method) member);
+		} else {
+			throw new IllegalArgumentException("Member cannot be used as an accessor : " + member);
+		}
 	}
 	
 	private Accessors() {

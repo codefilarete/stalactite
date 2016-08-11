@@ -34,4 +34,15 @@ public class AccessorByField<C, T> extends AbstractAccessor<C, T> implements Acc
 	public MutatorByField<C, T> toMutator() {
 		return new MutatorByField<>(getGetter());
 	}
+	
+	@Override
+	public boolean equals(Object other) {
+		return this == other
+				|| (other instanceof AccessorByField && getGetter().equals(((AccessorByField) other).getGetter()));
+	}
+	
+	@Override
+	public int hashCode() {
+		return getGetter().hashCode();
+	}
 }

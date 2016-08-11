@@ -59,7 +59,7 @@ public class MutatorByMethod<C, T> extends AbstractMutator<C, T> implements Muta
 		String propertyName = Accessors.getPropertyName(getSetter());
 		AccessorByMethod<C, T> accessorByMethod = Accessors.accessorByMethod(declaringClass, propertyName);
 		if (accessorByMethod == null) {
-			return Accessors.accessorByField(declaringClass, propertyName);
+			return Accessors.accessorByField((Class<C>) declaringClass, propertyName);
 		} else {
 			return accessorByMethod;
 		}
