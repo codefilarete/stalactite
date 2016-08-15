@@ -1,13 +1,19 @@
 package org.gama.stalactite.persistence.mapping;
 
-import java.lang.reflect.Field;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 import com.tngtech.java.junit.dataprovider.DataProvider;
 import com.tngtech.java.junit.dataprovider.DataProviderRunner;
 import com.tngtech.java.junit.dataprovider.UseDataProvider;
 import org.gama.lang.collection.Arrays;
 import org.gama.lang.collection.Maps;
+import org.gama.reflection.PropertyAccessor;
 import org.gama.stalactite.persistence.sql.dml.PreparedUpdate.UpwhereColumn;
 import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.persistence.structure.Table.Column;
@@ -30,12 +36,12 @@ public class ClassMappingStrategyTest {
 	private static Column colD2;
 	private static Column colE1;
 	private static Column colE2;
-	private static Map<Field, Column> classMapping;
+	private static Map<PropertyAccessor, Column> classMapping;
 	private static Table targetTable;
 	private static PersistentFieldHarverster persistentFieldHarverster;
 	private static Map<String, Column> columnMapOnName;
-	private static Field myListField;
-	private static Field myMapField;
+	private static PropertyAccessor myListField;
+	private static PropertyAccessor myMapField;
 	
 	private static ClassMappingStrategy<Toto> testInstance;
 	
@@ -53,10 +59,10 @@ public class ClassMappingStrategyTest {
 		colC = columnMapOnName.get("c");
 		
 		// Remplacement du mapping par défaut pour la List (attribut myListField) par une strategy adhoc
-		myListField = Toto.class.getDeclaredField("myList");
+		myListField = PropertyAccessor.forProperty(Toto.class.getDeclaredField("myList"));
 		classMapping.remove(myListField);
 		// Remplacement du mapping par défaut pour la Map (attribut myMapField) par une strategy adhoc
-		myMapField = Toto.class.getDeclaredField("myMap");
+		myMapField = PropertyAccessor.forProperty(Toto.class.getDeclaredField("myMap"));
 		classMapping.remove(myMapField);
 		
 		setUpTestInstance();
@@ -66,7 +72,7 @@ public class ClassMappingStrategyTest {
 		// instance to test building
 		// The basic mapping will be altered to add special mapping for field "myListField" (a Collection) and "myMapField" (a Map)
 		// Basic mapping (no id generator here because it's not the goal of our test)
-		testInstance = new ClassMappingStrategy<>(Toto.class, targetTable, classMapping, persistentFieldHarverster.getField("a"), null);
+		testInstance = new ClassMappingStrategy<>(Toto.class, targetTable, classMapping, PropertyAccessor.forProperty(persistentFieldHarverster.getField("a")), null);
 		
 		
 		// Additionnal mapping: the list is mapped to 2 additionnal columns

@@ -1,14 +1,11 @@
 package org.gama.stalactite.persistence.engine;
 
 import javax.sql.DataSource;
-import java.io.Serializable;
-import java.lang.reflect.Field;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.AbstractMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 
 import com.tngtech.java.junit.dataprovider.DataProvider;
 import com.tngtech.java.junit.dataprovider.DataProviderRunner;
@@ -17,6 +14,7 @@ import org.gama.lang.Retryer;
 import org.gama.lang.collection.Arrays;
 import org.gama.lang.collection.Iterables;
 import org.gama.lang.collection.Maps;
+import org.gama.reflection.PropertyAccessor;
 import org.gama.sql.test.DerbyInMemoryDataSource;
 import org.gama.sql.test.HSQLDBInMemoryDataSource;
 import org.gama.sql.test.MariaDBEmbeddableDataSource;
@@ -51,13 +49,13 @@ public class PersisterDatabaseTest {
 	public void setUp() throws SQLException {
 		totoClassTable = new Table(null, "Toto");
 		PersistentFieldHarverster persistentFieldHarverster = new PersistentFieldHarverster();
-		Map<Field, Column> totoClassMapping = persistentFieldHarverster.mapFields(Toto.class, totoClassTable);
+		Map<PropertyAccessor, Column> totoClassMapping = persistentFieldHarverster.mapFields(Toto.class, totoClassTable);
 		Map<String, Column> columns = totoClassTable.mapColumnsOnName();
 		columns.get("a").setPrimaryKey(true);
 		
 		identifierGenerator = new InMemoryCounterIdentifierGenerator();
 		totoClassMappingStrategy = new ClassMappingStrategy<>(Toto.class, totoClassTable,
-				totoClassMapping, persistentFieldHarverster.getField("a"), identifierGenerator);
+				totoClassMapping, PropertyAccessor.forProperty(persistentFieldHarverster.getField("a")), identifierGenerator);
 		
 		JavaTypeToSqlTypeMapping simpleTypeMapping = new JavaTypeToSqlTypeMapping();
 		simpleTypeMapping.put(Integer.class, "int");
@@ -99,12 +97,12 @@ public class PersisterDatabaseTest {
 		connection.prepareStatement("insert into Toto(a, b, c) values (3, 30, 300)").execute();
 		connection.prepareStatement("insert into Toto(a, b, c) values (4, 40, 400)").execute();
 		connection.commit();
-		List<Toto> totos = testInstance.select(Arrays.asList((Serializable) 1));
+		List<Toto> totos = testInstance.select(Arrays.asList(1));
 		Toto t = Iterables.first(totos);
 		assertEquals(1, (Object) t.a);
 		assertEquals(10, (Object) t.b);
 		assertEquals(100, (Object) t.c);
-		totos = testInstance.select(Arrays.asList((Serializable) 2, 3, 4));
+		totos = testInstance.select(Arrays.asList(2, 3, 4));
 		for (int i = 2; i <= 4; i++) {
 			t = totos.get(i - 2);
 			assertEquals(i, (Object) t.a);
@@ -142,13 +140,13 @@ public class PersisterDatabaseTest {
 		assertEquals(0, updatedRoughlyRowCount);
 		
 		// check updated row count
-		int updatedFullyRowCount = testInstance.update(Arrays.asList((Entry<Toto, Toto>)
+		int updatedFullyRowCount = testInstance.update(Arrays.asList(
 				new AbstractMap.SimpleEntry<>(new Toto(1, 10, 100), new Toto(1, 10, 101))), true);
 		assertEquals(1, updatedFullyRowCount);
-		updatedFullyRowCount = testInstance.update(Arrays.asList((Entry<Toto, Toto>)
+		updatedFullyRowCount = testInstance.update(Arrays.asList(
 				new AbstractMap.SimpleEntry<>(new Toto(1, 10, 101), new Toto(1, 10, 101))), true);
 		assertEquals(0, updatedFullyRowCount);
-		updatedFullyRowCount = testInstance.update(Arrays.asList((Entry<Toto, Toto>)
+		updatedFullyRowCount = testInstance.update(Arrays.asList(
 				new AbstractMap.SimpleEntry<>(new Toto(2, 20, 200), new Toto(2, 20, 201)),
 				new AbstractMap.SimpleEntry<>(new Toto(3, 30, 300), new Toto(3, 30, 301)),
 				new AbstractMap.SimpleEntry<>(new Toto(4, 40, 400), new Toto(4, 40, 401))), true);

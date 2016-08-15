@@ -1,12 +1,18 @@
 package org.gama.stalactite.persistence.engine;
 
 import javax.sql.DataSource;
+import java.io.Serializable;
 import java.lang.reflect.Field;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
+import org.gama.reflection.PropertyAccessor;
 import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
 import org.gama.stalactite.persistence.mapping.PersistentFieldHarverster;
 import org.gama.stalactite.persistence.sql.Dialect;
@@ -50,11 +56,11 @@ public abstract class DMLExecutorTest {
 	protected static class PersistenceConfigurationBuilder<T> {
 		
 		private Class<T> mappedClass;
-		private BiFunction<TableAndClass<T>, Field, ClassMappingStrategy<T>> classMappingStrategyBuilder;
+		private BiFunction<TableAndClass<T>, PropertyAccessor<T, Serializable>, ClassMappingStrategy<T>> classMappingStrategyBuilder;
 		private String tableName;
 		private String primaryKeyFieldName;
 		
-		public PersistenceConfigurationBuilder withTableAndClass(String tableName, Class<T> mappedClass, BiFunction<TableAndClass<T>, Field, ClassMappingStrategy<T>> classMappingStrategyBuilder) {
+		public PersistenceConfigurationBuilder withTableAndClass(String tableName, Class<T> mappedClass, BiFunction<TableAndClass<T>, PropertyAccessor<T, Serializable>, ClassMappingStrategy<T>> classMappingStrategyBuilder) {
 			this.tableName = tableName;
 			this.mappedClass = mappedClass;
 			this.classMappingStrategyBuilder = classMappingStrategyBuilder;
@@ -70,7 +76,7 @@ public abstract class DMLExecutorTest {
 			PersistenceConfiguration toReturn = new PersistenceConfiguration();
 			
 			final TableAndClass<T> tableAndClass = map(mappedClass, tableName);
-			final Field primaryKeyField = tableAndClass.configurePrimaryKey(primaryKeyFieldName);
+			final PropertyAccessor<T, Serializable> primaryKeyField = PropertyAccessor.forProperty(tableAndClass.configurePrimaryKey(primaryKeyFieldName));
 			
 			toReturn.classMappingStrategy = classMappingStrategyBuilder.apply(tableAndClass, primaryKeyField);
 			toReturn.targetTable = tableAndClass.targetTable;
@@ -81,7 +87,7 @@ public abstract class DMLExecutorTest {
 		protected TableAndClass<T> map(Class<T> mappedClass, String tableName) {
 			Table targetTable = new Table(tableName);
 			PersistentFieldHarverster persistentFieldHarverster = new PersistentFieldHarverster();
-			Map<Field, Column> fieldsMapping = persistentFieldHarverster.mapFields(mappedClass, targetTable);
+			Map<PropertyAccessor, Column> fieldsMapping = persistentFieldHarverster.mapFields(mappedClass, targetTable);
 			return new TableAndClass<>(targetTable, mappedClass, persistentFieldHarverster);
 		}
 		
@@ -98,7 +104,7 @@ public abstract class DMLExecutorTest {
 			
 			protected Field configurePrimaryKey(String primaryKeyFieldName) {
 				Field primaryKeyField = persistentFieldHarverster.getField(primaryKeyFieldName);
-				Column primaryKey = persistentFieldHarverster.getColumn(primaryKeyField);
+				Column primaryKey = persistentFieldHarverster.getColumn(PropertyAccessor.forProperty(primaryKeyField));
 				primaryKey.setPrimaryKey(true);
 				return primaryKeyField;
 			}
@@ -140,13 +146,8 @@ public abstract class DMLExecutorTest {
 	protected PersistenceConfigurationBuilder newPersistenceConfigurationBuilder() {
 		identifierGenerator = new InMemoryCounterIdentifierGenerator();
 		return new PersistenceConfigurationBuilder<Toto>()
-				.withTableAndClass("Toto", Toto.class, new BiFunction<PersistenceConfigurationBuilder.TableAndClass<Toto>, Field, ClassMappingStrategy<Toto>>() {
-					@Override
-					public ClassMappingStrategy<Toto> apply(PersistenceConfigurationBuilder.TableAndClass<Toto> mappedClass, Field primaryKeyField) {
-						return new ClassMappingStrategy<>(mappedClass.mappedClass, mappedClass.targetTable,
-								mappedClass.persistentFieldHarverster.getFieldToColumn(), primaryKeyField, identifierGenerator);
-					}
-				})
+				.withTableAndClass("Toto", Toto.class, (mappedClass, primaryKeyField) -> new ClassMappingStrategy<>(mappedClass.mappedClass, mappedClass.targetTable,
+						mappedClass.persistentFieldHarverster.getFieldToColumn(), primaryKeyField, identifierGenerator))
 				.withPrimaryKeyFieldName("a");
 	}
 	

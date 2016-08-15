@@ -1,14 +1,13 @@
 package org.gama.stalactite.persistence.mapping;
 
-import java.lang.reflect.Field;
 import java.util.HashMap;
 import java.util.Map;
 
 import com.tngtech.java.junit.dataprovider.DataProvider;
 import com.tngtech.java.junit.dataprovider.DataProviderRunner;
 import com.tngtech.java.junit.dataprovider.UseDataProvider;
-import org.gama.lang.Reflections;
 import org.gama.lang.collection.Maps;
+import org.gama.reflection.PropertyAccessor;
 import org.gama.sql.result.Row;
 import org.gama.stalactite.persistence.sql.dml.PreparedUpdate.UpwhereColumn;
 import org.gama.stalactite.persistence.structure.Table;
@@ -24,13 +23,13 @@ import static org.junit.Assert.assertEquals;
  * @author Guillaume Mary
  */
 @RunWith(DataProviderRunner.class)
-public class FieldMappingStrategyTest {
+public class EmbeddedBeanMappingStrategyTest {
 	
 	private static Table targetTable;
 	private static Column colA;
 	private static Column colB;
 	private static Column colC;
-	private static Map<Field, Column> classMapping;
+	private static Map<PropertyAccessor, Column> classMapping;
 	
 	@BeforeClass
 	public static void setUpClass() {
@@ -38,16 +37,16 @@ public class FieldMappingStrategyTest {
 		colA = targetTable.new Column("a", Integer.class);
 		colB = targetTable.new Column("b", Integer.class);
 		colC = targetTable.new Column("c", Integer.class);
-		classMapping = Maps.asMap(Reflections.findField(Toto.class, "a"), colA)
-				.add(Reflections.findField(Toto.class, "b"), colB)
-				.add(Reflections.findField(Toto.class, "c"), colC);
+		classMapping = Maps.asMap((PropertyAccessor) PropertyAccessor.forProperty(Toto.class, "a"), colA)
+				.add(PropertyAccessor.forProperty(Toto.class, "b"), colB)
+				.add(PropertyAccessor.forProperty(Toto.class, "c"), colC);
 	}
 	
-	private FieldMappingStrategy<Toto> testInstance;
+	private EmbeddedBeanMappingStrategy<Toto> testInstance;
 	
 	@Before
 	public void setUp() {
-		testInstance = new FieldMappingStrategy<>(Toto.class, targetTable, classMapping);
+		testInstance = new EmbeddedBeanMappingStrategy<>(Toto.class, targetTable, classMapping);
 	}
 	
 	@DataProvider

@@ -5,6 +5,7 @@ import java.util.Map;
 
 import org.gama.lang.Reflections;
 import org.gama.lang.collection.Maps;
+import org.gama.reflection.PropertyAccessor;
 import org.gama.stalactite.persistence.engine.Persister;
 import org.gama.stalactite.persistence.engine.SeparateTransactionExecutor;
 import org.gama.stalactite.persistence.id.generator.AutoAssignedIdentifierGenerator;
@@ -61,9 +62,9 @@ public class PooledSequencePersister extends Persister<PooledSequence> {
 			nextValColumn = new Column(nextValColName, Long.class);
 		}
 		
-		public Map<Field, Column> getPooledSequenceFieldMapping() {
-			return Maps.asMap(PooledSequence.SEQUENCE_NAME_FIELD, sequenceNameColumn)
-						.add(PooledSequence.UPPER_BOUND_FIELD, nextValColumn);
+		public Map<PropertyAccessor<PooledSequence, Object>, Column> getPooledSequenceFieldMapping() {
+			return Maps.asMap(PropertyAccessor.<PooledSequence, Object>of(PooledSequence.SEQUENCE_NAME_FIELD), sequenceNameColumn)
+						.add(PropertyAccessor.of(PooledSequence.UPPER_BOUND_FIELD), nextValColumn);
 		}
 	}
 	
@@ -138,10 +139,10 @@ public class PooledSequencePersister extends Persister<PooledSequence> {
 			SequenceTable sequenceTable = new SequenceTable(null, storageOptions.getTable(), storageOptions.getSequenceNameColumn(), storageOptions.getValueColumn());
 			// Strategy building
 			// NB: no id generator here because we manage ids (see reservePool)
-			ClassMappingStrategy<PooledSequence> mappingStrategy = new ClassMappingStrategy<>(PooledSequence.class,
+			ClassMappingStrategy<PooledSequence> mappingStrategy = new ClassMappingStrategy(PooledSequence.class,
 					sequenceTable,
 					sequenceTable.getPooledSequenceFieldMapping(),
-					PooledSequence.SEQUENCE_NAME_FIELD,
+					PropertyAccessor.<PooledSequence, Object>of(PooledSequence.SEQUENCE_NAME_FIELD),
 					new AutoAssignedIdentifierGenerator());
 			return mappingStrategy;
 		}
