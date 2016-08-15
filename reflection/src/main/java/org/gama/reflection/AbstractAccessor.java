@@ -22,9 +22,19 @@ public abstract class AbstractAccessor<C, T> extends AbstractReflector<C> implem
 	
 	protected abstract String getGetterDescription();
 	
+	/**
+	 * Default implementation based on getter description
+	 * @param obj the reference object with which to compare.
+	 * @return true if this object has the same description as the other one, false otherwise
+	 */
 	@Override
 	public boolean equals(Object obj) {
-		return obj instanceof AbstractAccessor && getGetterDescription().equals(((AbstractAccessor) obj).getGetterDescription());
+		return this == obj || (obj instanceof AbstractAccessor && getGetterDescription().equals(((AbstractAccessor) obj).getGetterDescription()));
+	}
+	
+	@Override
+	public int hashCode() {
+		return getGetterDescription().hashCode();
 	}
 	
 	@Override

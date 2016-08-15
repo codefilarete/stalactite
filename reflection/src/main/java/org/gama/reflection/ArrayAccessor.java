@@ -6,7 +6,7 @@ import java.lang.reflect.InvocationTargetException;
 /**
  * @author Guillaume Mary
  */
-// NB: pas réussi à faire AbstractAccessor<C[], C> sans que ça génère un "C cannot be cast to Object[]" par MetaModelAccessorBuilder
+// NB: I didn't manage to create AbstractAccessor<C[], C> without having a "C cannot be cast to Object[]" from MetaModelAccessorBuilder
 public class ArrayAccessor<C> extends AbstractAccessor<C, C> {
 	
 	private int index;
@@ -27,7 +27,7 @@ public class ArrayAccessor<C> extends AbstractAccessor<C, C> {
 	}
 	
 	/**
-	 * Equivalent pour get(C) mais en accès direct par un tableau de C
+	 * Same as {@link #get(Object)} but using a direct access to the array
 	 */
 	public C get(C[] cs) {
 		return cs[getIndex()];
@@ -51,7 +51,7 @@ public class ArrayAccessor<C> extends AbstractAccessor<C, C> {
 	
 	@Override
 	protected String getGetterDescription() {
-		return "array index accessor";
+		return "array accessor to index " + index;
 	}
 	
 	@Override

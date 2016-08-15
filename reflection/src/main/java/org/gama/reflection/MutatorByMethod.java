@@ -3,6 +3,7 @@ package org.gama.reflection;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Member;
 import java.lang.reflect.Method;
+import java.util.Arrays;
 
 import org.gama.lang.StringAppender;
 
@@ -63,5 +64,21 @@ public class MutatorByMethod<C, T> extends AbstractMutator<C, T> implements Muta
 		} else {
 			return accessorByMethod;
 		}
+	}
+	
+	
+	@Override
+	public boolean equals(Object other) {
+		// we base our implementation on the setter description because a setAccessible() call on the member changes its internal state
+		// and I don't think it sould be taken into account for comparison
+		return this == other ||
+				(other instanceof MutatorByMethod
+						&& getSetterDescription().equals(((MutatorByMethod) other).getSetterDescription())
+						&& Arrays.equals(methodParameters, ((MutatorByMethod) other).methodParameters));
+	}
+	
+	@Override
+	public int hashCode() {
+		return 31 * getSetter().hashCode() + Arrays.hashCode(methodParameters);
 	}
 }

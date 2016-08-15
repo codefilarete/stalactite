@@ -10,7 +10,7 @@ import static org.junit.Assert.assertArrayEquals;
 public class ArrayMutatorTest {
 	
 	@Test
-	public void testSet() throws Exception {
+	public void testSet() {
 		ArrayMutator<String> testInstance = new ArrayMutator<>();
 		String[] sample = { "a", "b", "c" };
 		
@@ -26,7 +26,7 @@ public class ArrayMutatorTest {
 	}
 	
 	@Test(expected = ArrayIndexOutOfBoundsException.class)
-	public void testSet_ArrayIndexOutOfBoundsException() throws Exception {
+	public void testSet_ArrayIndexOutOfBoundsException() {
 		ArrayMutator<String> testInstance = new ArrayMutator<>();
 		String[] sample = { "a", "b", "c" };
 		

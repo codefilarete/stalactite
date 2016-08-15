@@ -20,9 +20,19 @@ public abstract class AbstractMutator<C, T> extends AbstractReflector<C> impleme
 	
 	protected abstract String getSetterDescription();
 	
+	/**
+	 * Default implementation based on setter description
+	 * @param obj the reference object with which to compare.
+	 * @return true if this object has the same description as the other one, false otherwise
+	 */
 	@Override
 	public boolean equals(Object obj) {
-		return obj instanceof AbstractMutator && getSetterDescription().equals(((AbstractMutator) obj).getSetterDescription());
+		return this == obj || (obj instanceof AbstractMutator && getSetterDescription().equals(((AbstractMutator) obj).getSetterDescription()));
+	}
+	
+	@Override
+	public int hashCode() {
+		return getSetterDescription().hashCode();
 	}
 	
 	@Override

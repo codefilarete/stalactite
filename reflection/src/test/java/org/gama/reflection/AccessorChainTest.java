@@ -82,7 +82,7 @@ public class AccessorChainTest {
 	}
 	
 	@Test(expected = IllegalArgumentException.class)
-	public void testGet_IllegalArgumentException() throws Exception {
+	public void testGet_IllegalArgumentException() {
 		// field "number" doesn't exist on Collection "phones" => get(..) should throw IllegalArgumentException
 		List<IAccessor> accessors = list(personAddressAccessor, addressPhonesAccessor, phoneNumberAccessor);
 		Object object = new Person(new Address(null, Arrays.asList(new Phone("123"))));
@@ -91,7 +91,7 @@ public class AccessorChainTest {
 	}
 	
 	@Test(expected = NullPointerException.class)
-	public void testGet_NullPointerException() throws Exception {
+	public void testGet_NullPointerException() {
 		List<IAccessor> accessors = list(personAddressAccessor, addressPhonesAccessor, phoneNumberAccessor);
 		Object object = new Person(new Address(null, null));
 		AccessorChain<Object, Object > testInstance = new AccessorChain<>(accessors);

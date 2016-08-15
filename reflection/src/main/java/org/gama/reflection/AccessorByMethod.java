@@ -83,9 +83,11 @@ public class AccessorByMethod<C, T> extends AbstractAccessor<C, T> implements Ac
 	
 	@Override
 	public boolean equals(Object other) {
+		// we base our implementation on the setter description because a setAccessible() call on the member changes its internal state
+		// and I don't think it sould be taken into account for comparison
 		return this == other || 
 				(other instanceof AccessorByMethod
-						&& getGetter().equals(((AccessorByMethod) other).getGetter())
+						&& getGetterDescription().equals(((AccessorByMethod) other).getGetterDescription())
 						&& Arrays.equals(methodParameters, ((AccessorByMethod) other).methodParameters));
 	}
 	

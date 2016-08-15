@@ -11,7 +11,7 @@ import static org.junit.Assert.assertEquals;
 public class AccessorByFieldTest {
 	
 	@Test
-	public void testGet() throws Exception {
+	public void testGet() {
 		AccessorByField<Toto, Integer> testInstance = new AccessorByField<>(Reflections.findField(Toto.class, "a"));
 		Toto toto = new Toto();
 		toto.a = 42;

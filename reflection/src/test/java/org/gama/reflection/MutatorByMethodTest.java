@@ -11,13 +11,13 @@ import static org.junit.Assert.assertEquals;
 public class MutatorByMethodTest {
 	
 	@Test
-	public void testForProperty() throws Exception {
+	public void testForProperty() {
 		MutatorByMethod testInstance = Accessors.mutatorByMethod(Toto.class, "a");
 		assertEquals(testInstance.getSetter(), Reflections.findMethod(Toto.class, "setA", Integer.TYPE));
 	}
 	
 	@Test
-	public void testSet() throws Exception {
+	public void testSet() {
 		MutatorByMethod<Toto, Integer> testInstance = new MutatorByMethod<>(Reflections.findMethod(Toto.class, "setA", Integer.TYPE));
 		Toto toto = new Toto();
 		testInstance.set(toto, 42);

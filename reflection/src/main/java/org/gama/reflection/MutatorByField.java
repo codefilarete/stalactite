@@ -35,4 +35,17 @@ public class MutatorByField<C, T> extends AbstractMutator<C, T> implements Mutat
 	public AccessorByField<C, T> toAccessor() {
 		return new AccessorByField<>(getSetter());
 	}
+	
+	@Override
+	public boolean equals(Object other) {
+		// we base our implementation on the setter description because a setAccessible() call on the member changes its internal state
+		// and I don't think it sould be taken into account for comparison
+		return this == other
+				|| (other instanceof MutatorByField && getSetterDescription().equals(((MutatorByField) other).getSetterDescription()));
+	}
+	
+	@Override
+	public int hashCode() {
+		return getSetter().hashCode();
+	}
 }

@@ -13,7 +13,7 @@ import static org.junit.Assert.assertEquals;
 public class ListMutatorTest {
 	
 	@Test
-	public void testSet() throws Exception {
+	public void testSet() {
 		ListMutator<List<String>, String> testInstance = new ListMutator<>();
 		List<String> sample = Arrays.asList("a", "b", "c");
 		
@@ -29,7 +29,7 @@ public class ListMutatorTest {
 	}
 	
 	@Test(expected = ArrayIndexOutOfBoundsException.class)
-	public void testSet_ArrayIndexOutOfBoundsException() throws Exception {
+	public void testSet_ArrayIndexOutOfBoundsException() {
 		ListMutator<List<String>, String> testInstance = new ListMutator<>();
 		List<String> sample = Arrays.asList("a", "b", "c");
 		

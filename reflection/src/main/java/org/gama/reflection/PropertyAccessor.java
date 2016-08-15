@@ -5,6 +5,7 @@ import java.lang.reflect.Member;
 import java.lang.reflect.Method;
 
 import org.gama.lang.Reflections;
+import org.gama.lang.bean.Objects;
 
 /**
  * @author Guillaume Mary
@@ -12,7 +13,7 @@ import org.gama.lang.Reflections;
 public class PropertyAccessor<C, T> implements IAccessor<C, T>, IMutator<C, T> {
 	
 	public static <C, T> PropertyAccessor<C, T> forProperty(Field field) {
-		return forProperty((Class<C>) field.getDeclaringClass(), field.getName());
+		return new PropertyAccessor<>(new AccessorByField<>(field), new MutatorByField<>(field));
 	}
 	
 	public static <C, T> PropertyAccessor<C, T> forProperty(Class<C> clazz, String propertyName) {
@@ -97,5 +98,21 @@ public class PropertyAccessor<C, T> implements IAccessor<C, T>, IMutator<C, T> {
 		return getMutator();
 	}
 	
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj) {
+			return true;
+		} else if (!(obj instanceof PropertyAccessor)) {
+			return super.equals(obj);
+		} else {
+			return Objects.equalsWithNull(this.getAccessor(), ((PropertyAccessor) obj).getAccessor())
+					&& Objects.equalsWithNull(this.getMutator(), ((PropertyAccessor) obj).getMutator());
+		}
+	}
 	
+	@Override
+	public int hashCode() {
+		// Implementation based on both accessor and mutator. Accessor is taken first but it doesn't matter
+		return 31 * getAccessor().hashCode() + getMutator().hashCode();
+	}
 }

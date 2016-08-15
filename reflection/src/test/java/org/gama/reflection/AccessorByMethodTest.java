@@ -11,13 +11,13 @@ import static org.junit.Assert.assertEquals;
 public class AccessorByMethodTest {
 	
 	@Test
-	public void testForProperty() throws Exception {
+	public void testForProperty() {
 		AccessorByMethod testInstance = Accessors.accessorByMethod(Toto.class, "a");
 		assertEquals(testInstance.getGetter(), Reflections.findMethod(Toto.class, "getA"));
 	}
 	
 	@Test
-	public void testGet() throws Exception {
+	public void testGet() {
 		AccessorByMethod<Toto, Integer> testInstance = new AccessorByMethod<>(Reflections.findMethod(Toto.class, "getA"));
 		Toto toto = new Toto();
 		toto.a = 42;

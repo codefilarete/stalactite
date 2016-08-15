@@ -11,7 +11,7 @@ import static org.junit.Assert.assertEquals;
 public class MutatorByFieldTest {
 	
 	@Test
-	public void testSet() throws Exception {
+	public void testSet() {
 		MutatorByField<Toto, Integer> testInstance = new MutatorByField<>(Reflections.findField(Toto.class, "a"));
 		Toto toto = new Toto();
 		testInstance.set(toto, 42);

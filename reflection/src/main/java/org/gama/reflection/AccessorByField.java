@@ -37,8 +37,10 @@ public class AccessorByField<C, T> extends AbstractAccessor<C, T> implements Acc
 	
 	@Override
 	public boolean equals(Object other) {
+		// we base our implementation on the setter description because a setAccessible() call on the member changes its internal state
+		// and I don't think it sould be taken into account for comparison
 		return this == other
-				|| (other instanceof AccessorByField && getGetter().equals(((AccessorByField) other).getGetter()));
+				|| (other instanceof AccessorByField && getGetterDescription().equals(((AccessorByField) other).getGetterDescription()));
 	}
 	
 	@Override

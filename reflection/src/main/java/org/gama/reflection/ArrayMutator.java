@@ -6,7 +6,7 @@ import java.lang.reflect.InvocationTargetException;
 /**
  * @author Guillaume Mary
  */
-// NB: pas réussi à faire AbstractMutator<C[], C> sans que ça génère un "C cannot be cast to Object[]" par MetaModelAccessorBuilder
+// NB: I didn't manage to create AbstractMutator<C[], C> without having a "C cannot be cast to Object[]" from MetaModelAccessorBuilder
 public class ArrayMutator<C> extends AbstractMutator<C, C> {
 	
 	private int index;
@@ -27,7 +27,7 @@ public class ArrayMutator<C> extends AbstractMutator<C, C> {
 	}
 	
 	/**
-	 * Equivalent pour set(C, C) mais en accès direct par un tableau de C
+	 * Same as {@link #set(Object, Object)} but using a direct access to the array
 	 */
 	public void set(C[] cs, C c) {
 		cs[index] = c;
@@ -49,7 +49,7 @@ public class ArrayMutator<C> extends AbstractMutator<C, C> {
 	
 	@Override
 	protected String getSetterDescription() {
-		return "array index mutator";
+		return "array mutator on index " + index;
 	}
 	
 	@Override

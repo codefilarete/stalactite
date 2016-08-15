@@ -13,7 +13,7 @@ import static org.junit.Assert.assertEquals;
 public class ListAccessorTest {
 	
 	@Test
-	public void testGet() throws Exception {
+	public void testGet() {
 		ListAccessor<List<String>, String> testInstance = new ListAccessor<>();
 		List<String> sample = Arrays.asList("a", "b", "c");
 		
@@ -26,7 +26,7 @@ public class ListAccessorTest {
 	}
 	
 	@Test(expected = ArrayIndexOutOfBoundsException.class)
-	public void testGet_ArrayIndexOutOfBoundsException() throws Exception {
+	public void testGet_ArrayIndexOutOfBoundsException() {
 		ListAccessor<List<String>, String> testInstance = new ListAccessor<>();
 		List<String> sample = Arrays.asList("a", "b", "c");
 		
