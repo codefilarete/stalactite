@@ -6,12 +6,10 @@ import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
+import java.util.function.Consumer;
 
 import org.gama.lang.Reflections;
 import org.gama.lang.bean.Objects;
-import org.gama.lang.collection.Iterables;
-import org.gama.lang.collection.Iterables.ForEach;
-import org.gama.lang.exception.Exceptions;
 import org.gama.reflection.PropertyAccessor;
 import org.gama.sql.result.Row;
 import org.gama.stalactite.persistence.sql.dml.PreparedUpdate.UpwhereColumn;
@@ -82,7 +80,7 @@ public class EmbeddedBeanMappingStrategy<T> implements IEmbeddedBeanMapper<T> {
 	public Map<Column, Object> getInsertValues(final T t) {
 		return foreachField(new FieldVisitor<Column>() {
 			@Override
-			protected void visitField(Entry<PropertyAccessor, Column> fieldColumnEntry) throws IllegalAccessException {
+			protected void visitField(Entry<PropertyAccessor, Column> fieldColumnEntry) {
 				toReturn.put(fieldColumnEntry.getValue(), fieldColumnEntry.getKey().get(t));
 			}
 		});
@@ -94,7 +92,7 @@ public class EmbeddedBeanMappingStrategy<T> implements IEmbeddedBeanMapper<T> {
 		// getting differences
 		Map<UpwhereColumn, Object> toReturn = foreachField(new FieldVisitor<UpwhereColumn>() {
 			@Override
-			protected void visitField(Entry<PropertyAccessor, Column> fieldColumnEntry) throws IllegalAccessException {
+			protected void visitField(Entry<PropertyAccessor, Column> fieldColumnEntry) {
 				PropertyAccessor<T, Object> accessor = fieldColumnEntry.getKey();
 				Object modifiedValue = accessor.get(modified);
 				Object unmodifiedValue = unmodified == null ? null : accessor.get(unmodified);
@@ -117,8 +115,7 @@ public class EmbeddedBeanMappingStrategy<T> implements IEmbeddedBeanMapper<T> {
 	}
 	
 	private <K> Map<K, Object> foreachField(FieldVisitor<K> visitor) {
-		Map<PropertyAccessor, Column> fieldsTobeVisited = new HashMap<>(this.fieldToColumn);
-		Iterables.visit(fieldsTobeVisited.entrySet(), visitor);
+		this.fieldToColumn.entrySet().forEach(visitor::visitField);
 		return visitor.toReturn;
 	}
 	
@@ -127,20 +124,15 @@ public class EmbeddedBeanMappingStrategy<T> implements IEmbeddedBeanMapper<T> {
 		return this.rowTransformer.transform(row);
 	}
 	
-	private static abstract class FieldVisitor<K> extends ForEach<Entry<PropertyAccessor, Column>, Map<K, Object>> {
+	private static abstract class FieldVisitor<K> implements Consumer<Entry<PropertyAccessor, Column>> {
 		
 		protected Map<K, Object> toReturn = new HashMap<>();
 		
 		@Override
-		public final Map<K, Object> visit(Entry<PropertyAccessor, Column> fieldColumnEntry) {
-			try {
-				visitField(fieldColumnEntry);
-			} catch (IllegalAccessException e) {
-				throw Exceptions.asRuntimeException(e);
-			}
-			return null;
+		public final void accept(Entry<PropertyAccessor, Column> fieldColumnEntry) {
+			visitField(fieldColumnEntry);
 		}
-		
-		protected abstract void visitField(Entry<PropertyAccessor, Column> fieldColumnEntry) throws IllegalAccessException;
+
+		protected abstract void visitField(Entry<PropertyAccessor, Column> fieldColumnEntry);
 	}
 }
