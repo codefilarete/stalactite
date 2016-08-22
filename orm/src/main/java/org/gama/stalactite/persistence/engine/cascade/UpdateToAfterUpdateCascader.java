@@ -1,10 +1,13 @@
 package org.gama.stalactite.persistence.engine.cascade;
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
+
 import org.gama.stalactite.persistence.engine.Persister;
 import org.gama.stalactite.persistence.engine.listening.IUpdateListener;
 import org.gama.stalactite.persistence.engine.listening.NoopUpdateListener;
-
-import java.util.*;
 
 /**
  * Cascader for update, written for @OneToOne style of cascade where Trigger owns the relationship with Target
@@ -13,10 +16,10 @@ import java.util.*;
  */
 public abstract class UpdateToAfterUpdateCascader<Trigger, Target> extends NoopUpdateListener<Trigger> {
 	
-	private Persister<Target> persister;
+	private Persister<Target, Object> persister;
 	private boolean allColumnsStatement;
 	
-	UpdateToAfterUpdateCascader(Persister<Target> persister, final boolean allColumnsStatement) {
+	UpdateToAfterUpdateCascader(Persister<Target, Object> persister, final boolean allColumnsStatement) {
 		this.persister = persister;
 		this.persister.getPersisterListener().addUpdateListener(new NoopUpdateListener<Target>() {
 			@Override

@@ -1,13 +1,13 @@
 package org.gama.stalactite.persistence.mapping;
 
-import java.io.Serializable;
-
 /**
- * @author mary
+ * The interface defining methods necessary to persist an entity (ie an object with an id)
+ * 
+ * @author Guillaume Mary
  */
-public interface IEntityMappingStrategy<T> extends IMappingStrategy<T> {
+public interface IEntityMappingStrategy<T, S> extends IMappingStrategy<T> {
 	
-	Serializable getId(T t);
+	S getId(T t);
 	
-	void setId(T t, Serializable identifier);
+	void setId(T t, S identifier);
 }

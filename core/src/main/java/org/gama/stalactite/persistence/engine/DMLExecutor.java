@@ -10,14 +10,14 @@ import org.gama.stalactite.persistence.sql.dml.DMLGenerator;
  * 
  * @author Guillaume Mary
  */
-public abstract class DMLExecutor<T> {
+public abstract class DMLExecutor<T, I> {
 	
-	private final ClassMappingStrategy<T> mappingStrategy;
+	private final ClassMappingStrategy<T, I> mappingStrategy;
 	private final org.gama.stalactite.persistence.engine.ConnectionProvider connectionProvider;
 	private final DMLGenerator dmlGenerator;
 	private final int inOperatorMaxSize;
 	
-	public DMLExecutor(ClassMappingStrategy<T> mappingStrategy, org.gama.stalactite.persistence.engine.ConnectionProvider connectionProvider,
+	public DMLExecutor(ClassMappingStrategy<T, I> mappingStrategy, org.gama.stalactite.persistence.engine.ConnectionProvider connectionProvider,
 					   DMLGenerator dmlGenerator, int inOperatorMaxSize) {
 		this.mappingStrategy = mappingStrategy;
 		this.connectionProvider = connectionProvider;
@@ -25,7 +25,7 @@ public abstract class DMLExecutor<T> {
 		this.inOperatorMaxSize = inOperatorMaxSize;
 	}
 	
-	public ClassMappingStrategy<T> getMappingStrategy() {
+	public ClassMappingStrategy<T, I> getMappingStrategy() {
 		return mappingStrategy;
 	}
 	

@@ -1,13 +1,11 @@
 package org.gama.stalactite.persistence.engine.listening;
 
-import java.io.Serializable;
-
 /**
  * @author Guillaume Mary
  */
-public interface ISelectListener<T> {
+public interface ISelectListener<T, I> {
 	
-	void beforeSelect(Iterable<Serializable> ids);
+	void beforeSelect(Iterable<I> ids);
 	
 	void afterSelect(Iterable<T> result);
 	

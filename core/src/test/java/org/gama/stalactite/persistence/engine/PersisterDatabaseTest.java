@@ -38,10 +38,10 @@ import static org.junit.Assert.assertEquals;
 @RunWith(DataProviderRunner.class)
 public class PersisterDatabaseTest {
 	
-	private Persister<Toto> testInstance;
+	private Persister<Toto, Integer> testInstance;
 	private JdbcConnectionProvider transactionManager;
 	private InMemoryCounterIdentifierGenerator identifierGenerator;
-	private ClassMappingStrategy<Toto> totoClassMappingStrategy;
+	private ClassMappingStrategy<Toto, Integer> totoClassMappingStrategy;
 	private Dialect dialect;
 	private Table totoClassTable;
 	

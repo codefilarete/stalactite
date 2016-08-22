@@ -27,7 +27,7 @@ import static org.mockito.Mockito.verify;
 @RunWith(DataProviderRunner.class)
 public class UpdateExecutorTest extends DMLExecutorTest {
 	
-	private UpdateExecutor<Toto> testInstance;
+	private UpdateExecutor<Toto, Integer> testInstance;
 	
 	public void setUpTest() throws SQLException {
 		super.setUpTest();

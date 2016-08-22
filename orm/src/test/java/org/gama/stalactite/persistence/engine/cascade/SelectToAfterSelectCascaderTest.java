@@ -1,10 +1,10 @@
 package org.gama.stalactite.persistence.engine.cascade;
 
-import java.io.Serializable;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import org.gama.lang.collection.Arrays;
 import org.gama.lang.collection.Iterables;
@@ -29,15 +29,15 @@ public class SelectToAfterSelectCascaderTest extends CascaderTest {
 	public void testAfterSelect() throws SQLException {
 		PersistenceContext persistenceContextMock = mock(PersistenceContext.class);
 		when(persistenceContextMock.getDialect()).thenReturn(new Dialect(new JavaTypeToSqlTypeMapping(), new ColumnBinderRegistry()));
-		Persister<Tata> persisterMock = new Persister<Tata>(mock(ClassMappingStrategy.class),
+		Persister<Tata, Long> persisterMock = new Persister<Tata, Long>(mock(ClassMappingStrategy.class),
 				persistenceContextMock.getDialect(),
 				null, 10) {
 			@Override
-			protected List<Tata> doSelect(Iterable<Serializable> ids) {
+			protected List<Tata> doSelect(Iterable<Long> ids) {
 				List<Tata> selectedTarget = new ArrayList<>();
-				for (Serializable id : ids) {
+				for (Long id : ids) {
 					Tata tata = new Tata();
-					tata.id = (Long) id;
+					tata.id = id;
 					selectedTarget.add(tata);
 				}
 				return selectedTarget;
@@ -48,7 +48,7 @@ public class SelectToAfterSelectCascaderTest extends CascaderTest {
 		final List<Tata> triggeredTarget = new ArrayList<>();
 		
 		// Instance to test: overriden methods allow further cheching
-		SelectToAfterSelectCascader<Toto, Tata> testInstance = new SelectToAfterSelectCascader<Toto, Tata>(persisterMock) {
+		SelectToAfterSelectCascader<Toto, Tata, Long> testInstance = new SelectToAfterSelectCascader<Toto, Tata, Long>(persisterMock) {
 			
 			@Override
 			protected void postTargetSelect(Iterable<Tata> iterable) {
@@ -57,9 +57,9 @@ public class SelectToAfterSelectCascaderTest extends CascaderTest {
 			}
 			
 			@Override
-			protected Collection<Serializable> getTargetIds(Toto toto) {
+			protected Collection<Long> getTargetIds(Toto toto) {
 				actions.add("getTargets");
-				return Arrays.asList((Serializable)  ((long) toto.hashCode()^17));
+				return Arrays.asList(((long) toto.hashCode()^17));
 			}
 		};
 		
@@ -71,10 +71,7 @@ public class SelectToAfterSelectCascaderTest extends CascaderTest {
 		// check actions are done in good order
 		assertEquals(Arrays.asList("getTargets", "getTargets", "postTargetSelect"), actions);
 		// check triggered targets are those expected
-		List<Long> tataIds = new ArrayList<>();
-		for (Tata tata : triggeredTarget) {
-			tataIds.add(tata.id);
-		}
+		List<Long> tataIds = triggeredTarget.stream().map(tata -> tata.id).collect(Collectors.toList());
 		assertEquals(Arrays.asList((long) triggeringInstance1.hashCode()^17, (long) triggeringInstance2.hashCode()^17), tataIds);
 	}
 }

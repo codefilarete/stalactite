@@ -1,7 +1,6 @@
 package org.gama.stalactite.persistence.engine;
 
 import javax.sql.DataSource;
-import java.io.Serializable;
 import java.lang.reflect.Field;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -37,7 +36,7 @@ public abstract class DMLExecutorTest {
 	
 	protected static Dialect dialect;
 	
-	protected PersistenceConfiguration<Toto> persistenceConfiguration;
+	protected PersistenceConfiguration<Toto, Integer> persistenceConfiguration;
 	
 	protected PreparedStatement preparedStatement;
 	protected ArgumentCaptor<Integer> valueCaptor;
@@ -47,20 +46,20 @@ public abstract class DMLExecutorTest {
 	protected Connection connection;
 	private InMemoryCounterIdentifierGenerator identifierGenerator;
 	
-	protected static class PersistenceConfiguration<T> {
+	protected static class PersistenceConfiguration<T, I> {
 		
-		protected ClassMappingStrategy<T> classMappingStrategy;
+		protected ClassMappingStrategy<T, I> classMappingStrategy;
 		protected Table targetTable;
 	}
 	
-	protected static class PersistenceConfigurationBuilder<T> {
+	protected static class PersistenceConfigurationBuilder<T, I> {
 		
 		private Class<T> mappedClass;
-		private BiFunction<TableAndClass<T>, PropertyAccessor<T, Serializable>, ClassMappingStrategy<T>> classMappingStrategyBuilder;
+		private BiFunction<TableAndClass<T>, PropertyAccessor<T, I>, ClassMappingStrategy<T, I>> classMappingStrategyBuilder;
 		private String tableName;
 		private String primaryKeyFieldName;
 		
-		public PersistenceConfigurationBuilder withTableAndClass(String tableName, Class<T> mappedClass, BiFunction<TableAndClass<T>, PropertyAccessor<T, Serializable>, ClassMappingStrategy<T>> classMappingStrategyBuilder) {
+		public PersistenceConfigurationBuilder withTableAndClass(String tableName, Class<T> mappedClass, BiFunction<TableAndClass<T>, PropertyAccessor<T, I>, ClassMappingStrategy<T, I>> classMappingStrategyBuilder) {
 			this.tableName = tableName;
 			this.mappedClass = mappedClass;
 			this.classMappingStrategyBuilder = classMappingStrategyBuilder;
@@ -76,7 +75,7 @@ public abstract class DMLExecutorTest {
 			PersistenceConfiguration toReturn = new PersistenceConfiguration();
 			
 			final TableAndClass<T> tableAndClass = map(mappedClass, tableName);
-			final PropertyAccessor<T, Serializable> primaryKeyField = PropertyAccessor.forProperty(tableAndClass.configurePrimaryKey(primaryKeyFieldName));
+			final PropertyAccessor<T, I> primaryKeyField = PropertyAccessor.forProperty(tableAndClass.configurePrimaryKey(primaryKeyFieldName));
 			
 			toReturn.classMappingStrategy = classMappingStrategyBuilder.apply(tableAndClass, primaryKeyField);
 			toReturn.targetTable = tableAndClass.targetTable;
@@ -145,7 +144,7 @@ public abstract class DMLExecutorTest {
 	
 	protected PersistenceConfigurationBuilder newPersistenceConfigurationBuilder() {
 		identifierGenerator = new InMemoryCounterIdentifierGenerator();
-		return new PersistenceConfigurationBuilder<Toto>()
+		return new PersistenceConfigurationBuilder<Toto, Integer>()
 				.withTableAndClass("Toto", Toto.class, (mappedClass, primaryKeyField) -> new ClassMappingStrategy<>(mappedClass.mappedClass, mappedClass.targetTable,
 						mappedClass.persistentFieldHarverster.getFieldToColumn(), primaryKeyField, identifierGenerator))
 				.withPrimaryKeyFieldName("a");

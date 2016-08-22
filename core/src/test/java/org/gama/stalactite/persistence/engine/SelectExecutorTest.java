@@ -1,10 +1,13 @@
 package org.gama.stalactite.persistence.engine;
 
-import java.io.Serializable;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 import org.gama.lang.collection.Arrays;
 import org.gama.lang.collection.Iterables;
@@ -14,14 +17,17 @@ import org.gama.stalactite.test.PairSetList;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 /**
  * @author Guillaume Mary
  */
 public class SelectExecutorTest extends DMLExecutorTest {
 	
-	private SelectExecutor<Toto> testInstance;
+	private SelectExecutor<Toto, Integer> testInstance;
 	
 	public void setUpTest() throws SQLException {
 		super.setUpTest();
@@ -35,7 +41,7 @@ public class SelectExecutorTest extends DMLExecutorTest {
 		ResultSet resultSetMock = mock(ResultSet.class);
 		when(preparedStatement.executeQuery()).thenReturn(resultSetMock);
 		
-		testInstance.select(Arrays.asList((Serializable) 7));
+		testInstance.select(Arrays.asList(7));
 		
 		verify(preparedStatement, times(1)).executeQuery();
 		verify(preparedStatement, times(1)).setInt(indexCaptor.capture(), valueCaptor.capture());
@@ -50,7 +56,7 @@ public class SelectExecutorTest extends DMLExecutorTest {
 		ResultSet resultSetMock = mock(ResultSet.class);
 		when(preparedStatement.executeQuery()).thenReturn(resultSetMock);
 		
-		testInstance.select(Arrays.asList((Serializable) 11, 13, 17, 23));
+		testInstance.select(Arrays.asList(11, 13, 17, 23));
 		
 		// two queries because in operator is bounded to 3 values
 		verify(preparedStatement, times(2)).executeQuery();
@@ -83,12 +89,12 @@ public class SelectExecutorTest extends DMLExecutorTest {
 		connection.prepareStatement("insert into Toto(a, b, c) values (3, 30, 300)").execute();
 		connection.prepareStatement("insert into Toto(a, b, c) values (4, 40, 400)").execute();
 		connection.commit();
-		List<Toto> totos = testInstance.select(Arrays.asList((Serializable) 1));
+		List<Toto> totos = testInstance.select(Arrays.asList(1));
 		Toto t = Iterables.first(totos);
 		assertEquals(1, (Object) t.a);
 		assertEquals(10, (Object) t.b);
 		assertEquals(100, (Object) t.c);
-		totos = testInstance.select(Arrays.asList((Serializable) 2, 3, 4));
+		totos = testInstance.select(Arrays.asList(2, 3, 4));
 		for (int i = 2; i <= 4; i++) {
 			t = totos.get(i - 2);
 			assertEquals(i, (Object) t.a);

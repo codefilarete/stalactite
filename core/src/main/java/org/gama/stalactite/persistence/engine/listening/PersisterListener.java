@@ -1,6 +1,5 @@
 package org.gama.stalactite.persistence.engine.listening;
 
-import java.io.Serializable;
 import java.util.List;
 import java.util.Map.Entry;
 
@@ -11,20 +10,20 @@ import org.gama.lang.bean.ISilentDelegate;
  * 
  * @author Guillaume Mary
  */
-public class PersisterListener<T> {
+public class PersisterListener<T, I> {
 	
 	private InsertListenerCollection<T> insertListener = new InsertListenerCollection<>();
 	private UpdateRoughlyListenerCollection<T> updateRoughlyListener = new UpdateRoughlyListenerCollection<>();
 	private UpdateListenerCollection<T> updateListener = new UpdateListenerCollection<>();
 	private DeleteListenerCollection<T> deleteListener = new DeleteListenerCollection<>();
 	private DeleteRoughlyListenerCollection<T> deleteRoughlyListener = new DeleteRoughlyListenerCollection<>();
-	private SelectListenerCollection<T> selectListener = new SelectListenerCollection<>();
+	private SelectListenerCollection<T, I> selectListener = new SelectListenerCollection<>();
 	
 	public InsertListenerCollection<T> getInsertListener() {
 		return insertListener;
 	}
 	
-	public PersisterListener<T> addInsertListener(IInsertListener<T> insertListener) {
+	public PersisterListener<T, I> addInsertListener(IInsertListener<T> insertListener) {
 		this.insertListener.add(insertListener);
 		return this;
 	}
@@ -40,7 +39,7 @@ public class PersisterListener<T> {
 		return updateRoughlyListener;
 	}
 	
-	public PersisterListener<T> addUpdateRouglyListener(IUpdateRoughlyListener<T> updateRouglyListener) {
+	public PersisterListener<T, I> addUpdateRouglyListener(IUpdateRoughlyListener<T> updateRouglyListener) {
 		this.updateRoughlyListener.add(updateRouglyListener);
 		return this;
 	}
@@ -56,7 +55,7 @@ public class PersisterListener<T> {
 		return updateListener;
 	}
 	
-	public PersisterListener<T> addUpdateListener(IUpdateListener<T> updateListener) {
+	public PersisterListener<T, I> addUpdateListener(IUpdateListener<T> updateListener) {
 		this.updateListener.add(updateListener);
 		return this;
 	}
@@ -72,7 +71,7 @@ public class PersisterListener<T> {
 		return deleteListener;
 	}
 	
-	public PersisterListener<T> addDeleteListener(IDeleteListener<T> deleteListener) {
+	public PersisterListener<T, I> addDeleteListener(IDeleteListener<T> deleteListener) {
 		this.deleteListener.add(deleteListener);
 		return this;
 	}
@@ -84,7 +83,7 @@ public class PersisterListener<T> {
 		return result;
 	}
 	
-	public PersisterListener<T> addDeleteRoughlyListener(IDeleteRoughlyListener<T> deleteRoughlyListener) {
+	public PersisterListener<T, I> addDeleteRoughlyListener(IDeleteRoughlyListener<T> deleteRoughlyListener) {
 		this.deleteRoughlyListener.add(deleteRoughlyListener);
 		return this;
 	}
@@ -96,16 +95,16 @@ public class PersisterListener<T> {
 		return result;
 	}
 	
-	public SelectListenerCollection<T> getSelectListener() {
+	public SelectListenerCollection<T, I> getSelectListener() {
 		return selectListener;
 	}
 	
-	public PersisterListener<T> addSelectListener(ISelectListener<T> selectListener) {
+	public PersisterListener<T, I> addSelectListener(ISelectListener<T, I> selectListener) {
 		this.selectListener.add(selectListener);
 		return this;
 	}
 	
-	public List<T> doWithSelectListener(Iterable<Serializable> ids, ISilentDelegate<List<T>> delegate) {
+	public List<T> doWithSelectListener(Iterable<I> ids, ISilentDelegate<List<T>> delegate) {
 		selectListener.beforeSelect(ids);
 		List<T> toReturn = delegate.execute();
 		selectListener.afterSelect(toReturn);

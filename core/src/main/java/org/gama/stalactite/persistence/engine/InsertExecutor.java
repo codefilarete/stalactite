@@ -4,9 +4,9 @@ import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Consumer;
 
 import org.gama.lang.Retryer;
-import org.gama.lang.bean.Objects;
 import org.gama.sql.dml.SQLStatement;
 import org.gama.sql.dml.WriteOperation;
 import org.gama.stalactite.persistence.id.generator.AutoAssignedIdentifierGenerator;
@@ -22,9 +22,9 @@ import org.gama.stalactite.persistence.structure.Table;
  * 
  * @author Guillaume Mary
  */
-public class InsertExecutor<T> extends UpsertExecutor<T> {
+public class InsertExecutor<T, I> extends UpsertExecutor<T, I> {
 	
-	public InsertExecutor(ClassMappingStrategy<T> mappingStrategy, org.gama.stalactite.persistence.engine.ConnectionProvider connectionProvider, DMLGenerator dmlGenerator, Retryer writeOperationRetryer,
+	public InsertExecutor(ClassMappingStrategy<T, I> mappingStrategy, org.gama.stalactite.persistence.engine.ConnectionProvider connectionProvider, DMLGenerator dmlGenerator, Retryer writeOperationRetryer,
 						  int batchSize, int inOperatorMaxSize) {
 		super(mappingStrategy, connectionProvider, dmlGenerator, writeOperationRetryer, batchSize, inOperatorMaxSize);
 	}
@@ -69,9 +69,9 @@ public class InsertExecutor<T> extends UpsertExecutor<T> {
 	
 	private class JDBCBatchingIteratorIdAware extends JDBCBatchingIterator<T> {
 		
-		private final Objects.Consumer<T> identifierFixer;
+		private final Consumer<T> identifierFixer;
 		
-		public JDBCBatchingIteratorIdAware(Iterable<T> iterable, WriteOperation writeOperation, int batchSize, Objects.Consumer<T> identifierFixer) {
+		public JDBCBatchingIteratorIdAware(Iterable<T> iterable, WriteOperation writeOperation, int batchSize, Consumer<T> identifierFixer) {
 			super(iterable, writeOperation, batchSize);
 			this.identifierFixer = identifierFixer;
 		}
@@ -84,10 +84,10 @@ public class InsertExecutor<T> extends UpsertExecutor<T> {
 		}
 	}
 	
-	private class BeforeInsertIdentifierFixer implements Objects.Consumer<T> {
+	private class BeforeInsertIdentifierFixer implements Consumer<T> {
 		@Override
 		public void accept(T t) {
-			getMappingStrategy().setId(t, ((BeforeInsertIdentifierGenerator) getMappingStrategy().getIdentifierGenerator()).generate());
+			getMappingStrategy().setId(t, ((BeforeInsertIdentifierGenerator<I>) getMappingStrategy().getIdentifierGenerator()).generate());
 		}
 	}
 }

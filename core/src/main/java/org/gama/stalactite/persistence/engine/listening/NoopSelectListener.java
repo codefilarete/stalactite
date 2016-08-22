@@ -1,14 +1,12 @@
 package org.gama.stalactite.persistence.engine.listening;
 
-import java.io.Serializable;
-
 /**
  * @author Guillaume Mary
  */
-public class NoopSelectListener<T> implements ISelectListener<T> {
+public class NoopSelectListener<T, I> implements ISelectListener<T, I> {
 	
 	@Override
-	public void beforeSelect(Iterable<Serializable> ids) {
+	public void beforeSelect(Iterable<I> ids) {
 		
 	}
 	

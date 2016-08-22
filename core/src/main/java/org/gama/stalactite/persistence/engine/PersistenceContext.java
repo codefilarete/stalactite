@@ -43,7 +43,7 @@ public class PersistenceContext {
 		return dialect;
 	}
 	
-	public <T> ClassMappingStrategy<T> getMappingStrategy(Class<T> aClass) {
+	public <T> ClassMappingStrategy<T, Object> getMappingStrategy(Class<T> aClass) {
 		return mappingStrategies.get(aClass);
 	}
 	
@@ -64,20 +64,20 @@ public class PersistenceContext {
 		return new HashSet<>(persisterCache.values());
 	}
 	
-	public <T> Persister<T> getPersister(Class<T> clazz) {
+	public <T> Persister<T, ?> getPersister(Class<T> clazz) {
 		return persisterCache.get(clazz);
 	}
 	
-	public <T> void setPersister(Persister<T> persister) {
+	public <T> void setPersister(Persister<T, ?> persister) {
 		persisterCache.put(persister.getMappingStrategy().getClassToPersist(), persister);
 	}
 	
-	protected <T> Persister<T> newPersister(Class<T> clazz) {
+	protected <T> Persister<T, ?> newPersister(Class<T> clazz) {
 		return new Persister<>(PersistenceContext.this, ensureMappedClass(clazz));
 	}
 	
-	protected <T> ClassMappingStrategy<T> ensureMappedClass(Class<T> clazz) {
-		ClassMappingStrategy<T> mappingStrategy = getMappingStrategy(clazz);
+	protected <T> ClassMappingStrategy<T, Object> ensureMappedClass(Class<T> clazz) {
+		ClassMappingStrategy<T, Object> mappingStrategy = getMappingStrategy(clazz);
 		if (mappingStrategy == null) {
 			throw new IllegalArgumentException("Unmapped entity " + clazz);
 		} else {

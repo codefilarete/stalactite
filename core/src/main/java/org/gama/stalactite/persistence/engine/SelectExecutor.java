@@ -1,5 +1,11 @@
 package org.gama.stalactite.persistence.engine;
 
+import java.sql.ResultSet;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+import java.util.Set;
+
 import org.gama.lang.collection.Collections;
 import org.gama.lang.collection.Iterables;
 import org.gama.lang.exception.Exceptions;
@@ -11,31 +17,24 @@ import org.gama.stalactite.persistence.sql.dml.ColumnParamedSelect;
 import org.gama.stalactite.persistence.sql.dml.DMLGenerator;
 import org.gama.stalactite.persistence.structure.Table;
 
-import java.io.Serializable;
-import java.sql.ResultSet;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.Set;
-
 /**
  * Class dedicated to select statement execution
  * 
  * @author Guillaume Mary
  */
-public class SelectExecutor<T> extends DMLExecutor<T> {
+public class SelectExecutor<T, I> extends DMLExecutor<T, I> {
 	
-	public SelectExecutor(ClassMappingStrategy<T> mappingStrategy, org.gama.stalactite.persistence.engine.ConnectionProvider connectionProvider, DMLGenerator dmlGenerator, int inOperatorMaxSize) {
+	public SelectExecutor(ClassMappingStrategy<T, I> mappingStrategy, org.gama.stalactite.persistence.engine.ConnectionProvider connectionProvider, DMLGenerator dmlGenerator, int inOperatorMaxSize) {
 		super(mappingStrategy, connectionProvider, dmlGenerator, inOperatorMaxSize);
 	}
 	
 	
-	public List<T> select(Iterable<Serializable> ids) {
+	public List<T> select(Iterable<I> ids) {
 		ConnectionProvider connectionProvider = new ConnectionProvider();
 		List<T> toReturn = new ArrayList<>(50);
 		int blockSize = getInOperatorMaxSize();
-		List<List<Serializable>> parcels = Collections.parcel(ids, blockSize);
-		List<Serializable> lastBlock = Iterables.last(parcels);
+		List<List<I>> parcels = Collections.parcel(ids, blockSize);
+		List<I> lastBlock = Iterables.last(parcels);
 		ColumnParamedSelect selectStatement;
 		ReadOperation<Table.Column> readOperation;
 		Table targetTable = getMappingStrategy().getTargetTable();
@@ -46,7 +45,7 @@ public class SelectExecutor<T> extends DMLExecutor<T> {
 				parcels = parcels.subList(0, parcels.size() - 1);
 			}
 			readOperation = newReadOperation(selectStatement, connectionProvider);
-			for (List<Serializable> parcel : parcels) {
+			for (List<I> parcel : parcels) {
 				toReturn.addAll(execute(readOperation, getMappingStrategy().getSingleColumnKey(), parcel));
 			}
 		}
@@ -62,7 +61,7 @@ public class SelectExecutor<T> extends DMLExecutor<T> {
 		return new ReadOperation<>(statement, connectionProvider);
 	}
 	
-	protected List<T> execute(ReadOperation<Table.Column> operation, Table.Column column, Collection<Serializable> values) {
+	protected List<T> execute(ReadOperation<Table.Column> operation, Table.Column column, Collection<I> values) {
 		List<T> toReturn = new ArrayList<>(values.size());
 		try(ReadOperation<Table.Column> closeableOperation = operation) {
 			operation.setValue(column, values);

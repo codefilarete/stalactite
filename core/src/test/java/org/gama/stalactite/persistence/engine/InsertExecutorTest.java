@@ -17,7 +17,7 @@ import static org.mockito.Mockito.verify;
  */
 public class InsertExecutorTest extends DMLExecutorTest {
 	
-	private InsertExecutor<Toto> testInstance;
+	private InsertExecutor<Toto, Integer> testInstance;
 	
 	public void setUpTest() throws SQLException {
 		super.setUpTest();

@@ -1,13 +1,12 @@
 package org.gama.stalactite.persistence.engine.cascade;
 
-import org.gama.stalactite.persistence.engine.Persister;
-import org.gama.stalactite.persistence.engine.listening.ISelectListener;
-import org.gama.stalactite.persistence.engine.listening.NoopSelectListener;
-
-import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+
+import org.gama.stalactite.persistence.engine.Persister;
+import org.gama.stalactite.persistence.engine.listening.ISelectListener;
+import org.gama.stalactite.persistence.engine.listening.NoopSelectListener;
 
 /**
  * Cascader for select, written for @OneToOne style of cascade where Trigger owns the relationship with Target.
@@ -16,17 +15,17 @@ import java.util.List;
  * 
  * @author Guillaume Mary
  */
-public abstract class SelectToAfterSelectCascader<Trigger, Target> extends NoopSelectListener<Trigger> {
+public abstract class SelectToAfterSelectCascader<Trigger, Target, I> extends NoopSelectListener<Trigger, I> {
 	
-	private Persister<Target> persister;
+	private Persister<Target, I> persister;
 	
 	/**
 	 * Simple constructor. Created instance must be added to PersisterListener afterward.
 	 * @param persister
 	 */
-	SelectToAfterSelectCascader(Persister<Target> persister) {
+	SelectToAfterSelectCascader(Persister<Target, I> persister) {
 		this.persister = persister;
-		this.persister.getPersisterListener().addSelectListener(new NoopSelectListener<Target>() {
+		this.persister.getPersisterListener().addSelectListener(new NoopSelectListener<Target, I>() {
 			@Override
 			public void afterSelect(Iterable<Target> iterable) {
 				super.afterSelect(iterable);
@@ -44,7 +43,7 @@ public abstract class SelectToAfterSelectCascader<Trigger, Target> extends NoopS
 	 */
 	@Override
 	public void afterSelect(Iterable<Trigger> iterables) {
-		List<Serializable> targets = new ArrayList<>(50);
+		List<I> targets = new ArrayList<>(50);
 		for (Trigger trigger : iterables) {
 			targets.addAll(getTargetIds(trigger));
 		}
@@ -64,6 +63,6 @@ public abstract class SelectToAfterSelectCascader<Trigger, Target> extends NoopS
 	 * @param trigger
 	 * @return
 	 */
-	protected abstract Collection<Serializable> getTargetIds(Trigger trigger);
+	protected abstract Collection<I> getTargetIds(Trigger trigger);
 	
 }

@@ -1,9 +1,7 @@
 package org.gama.stalactite.persistence.id.generator.sequence;
 
-import java.lang.reflect.Field;
 import java.util.Map;
 
-import org.gama.lang.Reflections;
 import org.gama.lang.collection.Maps;
 import org.gama.reflection.PropertyAccessor;
 import org.gama.stalactite.persistence.engine.Persister;
@@ -22,12 +20,14 @@ import org.gama.stalactite.persistence.structure.Table;
  * 
  * @author Guillaume Mary
  */
-public class PooledSequencePersister extends Persister<PooledSequence> {
+public class PooledSequencePersister extends Persister<PooledSequence, String> {
 	
 	/**
 	 * Constructor with default table and column names.
+	 * @param dialect the {@link Dialect} to use for database dialog
+	 * @param separateTransactionExecutor a transaction provider that mmust give a new and separate transaction
+	 * @param jdbcBatchSize the JDBC batch size, not really usefull for this class since it doesn't do massive insert
 	 * @see PooledSequencePersistenceOptions#DEFAULT
-	 * @param dialect
 	 */
 	public PooledSequencePersister(Dialect dialect, SeparateTransactionExecutor separateTransactionExecutor, int jdbcBatchSize) {
 		this(PooledSequencePersistenceOptions.DEFAULT, dialect, separateTransactionExecutor, jdbcBatchSize);
@@ -62,9 +62,9 @@ public class PooledSequencePersister extends Persister<PooledSequence> {
 			nextValColumn = new Column(nextValColName, Long.class);
 		}
 		
-		public Map<PropertyAccessor<PooledSequence, Object>, Column> getPooledSequenceFieldMapping() {
-			return Maps.asMap(PropertyAccessor.<PooledSequence, Object>of(PooledSequence.SEQUENCE_NAME_FIELD), sequenceNameColumn)
-						.add(PropertyAccessor.of(PooledSequence.UPPER_BOUND_FIELD), nextValColumn);
+		public Map<PropertyAccessor, Column> getPooledSequenceFieldMapping() {
+			return Maps.asMap((PropertyAccessor) PooledSequence.SEQUENCE_NAME_FIELD, sequenceNameColumn)
+						.add(PooledSequence.UPPER_BOUND_FIELD, nextValColumn);
 		}
 	}
 	
@@ -73,13 +73,13 @@ public class PooledSequencePersister extends Persister<PooledSequence> {
 	 */
 	public static class PooledSequence {
 		
-		private static final Field SEQUENCE_NAME_FIELD;
-		private static final Field UPPER_BOUND_FIELD;
+		private static final PropertyAccessor<PooledSequence, String> SEQUENCE_NAME_FIELD;
+		private static final PropertyAccessor<PooledSequence, Long> UPPER_BOUND_FIELD;
+		
 		
 		static {
-			Map<String, Field> pooledSequenceClassFields = Reflections.mapFieldsOnName(PooledSequence.class);
-			SEQUENCE_NAME_FIELD = pooledSequenceClassFields.get("sequenceName");
-			UPPER_BOUND_FIELD = pooledSequenceClassFields.get("upperBound");
+			SEQUENCE_NAME_FIELD = PropertyAccessor.forProperty(PooledSequence.class, "sequenceName");
+			UPPER_BOUND_FIELD = PropertyAccessor.forProperty(PooledSequence.class, "upperBound");
 		}
 		
 		private String sequenceName;
@@ -134,17 +134,16 @@ public class PooledSequencePersister extends Persister<PooledSequence> {
 	
 	private static class PooledSequencePersisterConfigurer {
 		
-		private ClassMappingStrategy<PooledSequence> buildConfiguration(PooledSequencePersistenceOptions storageOptions) {
+		private ClassMappingStrategy<PooledSequence, String> buildConfiguration(PooledSequencePersistenceOptions storageOptions) {
 			// Sequence table creation
 			SequenceTable sequenceTable = new SequenceTable(null, storageOptions.getTable(), storageOptions.getSequenceNameColumn(), storageOptions.getValueColumn());
 			// Strategy building
 			// NB: no id generator here because we manage ids (see reservePool)
-			ClassMappingStrategy<PooledSequence> mappingStrategy = new ClassMappingStrategy(PooledSequence.class,
+			return new ClassMappingStrategy<>(PooledSequence.class,
 					sequenceTable,
 					sequenceTable.getPooledSequenceFieldMapping(),
-					PropertyAccessor.<PooledSequence, Object>of(PooledSequence.SEQUENCE_NAME_FIELD),
+					PooledSequence.SEQUENCE_NAME_FIELD,
 					new AutoAssignedIdentifierGenerator());
-			return mappingStrategy;
 		}
 	}
 }

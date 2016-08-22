@@ -1,13 +1,16 @@
 package org.gama.stalactite.persistence.engine;
 
 import javax.sql.DataSource;
-import java.io.Serializable;
 import java.lang.reflect.Field;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 import org.gama.lang.Reflections;
 import org.gama.lang.bean.Objects;
@@ -26,21 +29,24 @@ import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 
 import static org.junit.Assert.assertEquals;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 /**
  * @author Guillaume Mary
  */
 public class JoinTablePersisterTest {
 	
-	private JoinTablePersister<Toto> testInstance;
+	private JoinTablePersister<Toto, Integer> testInstance;
 	private PreparedStatement preparedStatement;
 	private ArgumentCaptor<Integer> valueCaptor;
 	private ArgumentCaptor<Integer> indexCaptor;
 	private ArgumentCaptor<String> statementArgCaptor;
 	private JdbcConnectionProvider transactionManager;
 	private InMemoryCounterIdentifierGenerator identifierGenerator;
-	private ClassMappingStrategy<Toto> totoClassMappingStrategy_ontoTable1, totoClassMappingStrategy2_ontoTable2;
+	private ClassMappingStrategy<Toto, Integer> totoClassMappingStrategy_ontoTable1, totoClassMappingStrategy2_ontoTable2;
 	private Dialect dialect;
 	private Table totoClassTable1, totoClassTable2;
 	
@@ -250,7 +256,7 @@ public class JoinTablePersisterTest {
 		ResultSet resultSetMock = mock(ResultSet.class);
 		when(preparedStatement.executeQuery()).thenReturn(resultSetMock);
 		
-		testInstance.select(Arrays.asList((Serializable) 7, 13, 17, 23));
+		testInstance.select(Arrays.asList(7, 13, 17, 23));
 		
 		verify(preparedStatement, times(2)).executeQuery();
 		verify(preparedStatement, times(4)).setInt(indexCaptor.capture(), valueCaptor.capture());

@@ -1,6 +1,5 @@
 package org.gama.stalactite.persistence.mapping;
 
-import java.io.Serializable;
 import java.lang.reflect.Field;
 import java.lang.reflect.Member;
 import java.lang.reflect.Method;
@@ -24,7 +23,7 @@ import org.gama.stalactite.persistence.structure.Table.Column;
 /**
  * @author Guillaume Mary
  */
-public class ClassMappingStrategy<T> implements IEntityMappingStrategy<T> {
+public class ClassMappingStrategy<T, I> implements IEntityMappingStrategy<T, I> {
 	
 	private Class<T> classToPersist;
 	
@@ -40,10 +39,10 @@ public class ClassMappingStrategy<T> implements IEntityMappingStrategy<T> {
 	
 	private final IdentifierGenerator identifierGenerator;
 	
-	private PropertyAccessor<T, Serializable> identifierAccessor;
+	private PropertyAccessor<T, I> identifierAccessor;
 	
 	public ClassMappingStrategy(Class<T> classToPersist, Table targetTable,
-								Map<PropertyAccessor, Column> propertyToColumn, PropertyAccessor<T, Serializable> identifierProperty, IdentifierGenerator identifierGenerator) {
+								Map<PropertyAccessor, Column> propertyToColumn, PropertyAccessor<T, I> identifierProperty, IdentifierGenerator identifierGenerator) {
 		if (identifierProperty == null) {
 			throw new UnsupportedOperationException("No identifier property for " + targetTable.getName());
 		}
@@ -207,12 +206,12 @@ public class ClassMappingStrategy<T> implements IEntityMappingStrategy<T> {
 	}
 	
 	@Override
-	public Serializable getId(T t) {
+	public I getId(T t) {
 		return identifierAccessor.get(t);
 	}
 	
 	@Override
-	public void setId(T t, Serializable identifier) {
+	public void setId(T t, I identifier) {
 		identifierAccessor.set(t, identifier);
 	}
 	

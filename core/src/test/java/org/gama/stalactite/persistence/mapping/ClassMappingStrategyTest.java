@@ -43,7 +43,7 @@ public class ClassMappingStrategyTest {
 	private static PropertyAccessor myListField;
 	private static PropertyAccessor myMapField;
 	
-	private static ClassMappingStrategy<Toto> testInstance;
+	private static ClassMappingStrategy<Toto, Integer> testInstance;
 	
 	@BeforeClass
 	public static void setUpClass() throws NoSuchFieldException {

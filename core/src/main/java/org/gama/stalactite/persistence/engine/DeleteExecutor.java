@@ -1,6 +1,5 @@
 package org.gama.stalactite.persistence.engine;
 
-import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -19,9 +18,9 @@ import org.gama.stalactite.persistence.structure.Table;
  * 
  * @author Guillaume Mary
  */
-public class DeleteExecutor<T> extends WriteExecutor<T> {
+public class DeleteExecutor<T, I> extends WriteExecutor<T, I> {
 	
-	public DeleteExecutor(ClassMappingStrategy<T> mappingStrategy, org.gama.stalactite.persistence.engine.ConnectionProvider connectionProvider,
+	public DeleteExecutor(ClassMappingStrategy<T, I> mappingStrategy, org.gama.stalactite.persistence.engine.ConnectionProvider connectionProvider,
 						  DMLGenerator dmlGenerator, Retryer writeOperationRetryer,
 						  int batchSize, int inOperatorMaxSize) {
 		super(mappingStrategy, connectionProvider, dmlGenerator, writeOperationRetryer, batchSize, inOperatorMaxSize);
@@ -40,19 +39,19 @@ public class DeleteExecutor<T> extends WriteExecutor<T> {
 	
 	public int deleteRoughly(Iterable<T> iterable) {
 		// get ids before passing them to deleteRoughlyById
-		List<Serializable> ids = new ArrayList<>();
+		List<I> ids = new ArrayList<>();
 		for (T t : iterable) {
-			ids.add(getMappingStrategy().getId(t));
+			ids.add((I) getMappingStrategy().getId(t));
 		}
 		return deleteRoughlyById(ids);
 	}
 	
-	public int deleteRoughlyById(Iterable<Serializable> ids) {
+	public int deleteRoughlyById(Iterable<I> ids) {
 		// NB: ConnectionProvider must provide the same connection over all blocks
 		ConnectionProvider connectionProvider = new ConnectionProvider();
 		int blockSize = getInOperatorMaxSize();
-		List<List<Serializable>> parcels = Collections.parcel(ids, blockSize);
-		List<Serializable> lastBlock = Iterables.last(parcels);
+		List<List<I>> parcels = Collections.parcel(ids, blockSize);
+		List<I> lastBlock = Iterables.last(parcels);
 		ColumnParamedSQL deleteStatement;
 		WriteOperation<Table.Column> writeOperation;
 		Table targetTable = getMappingStrategy().getTargetTable();
@@ -64,9 +63,9 @@ public class DeleteExecutor<T> extends WriteExecutor<T> {
 				parcels = parcels.subList(0, parcels.size() - 1);
 			}
 			writeOperation = newWriteOperation(deleteStatement, connectionProvider);
-			JDBCBatchingIterator<List<Serializable>> jdbcBatchingIterator = new JDBCBatchingIterator<>(parcels, writeOperation, getBatchSize());
+			JDBCBatchingIterator<List<I>> jdbcBatchingIterator = new JDBCBatchingIterator<>(parcels, writeOperation, getBatchSize());
 			while(jdbcBatchingIterator.hasNext()) {
-				List<Serializable> updateValues = jdbcBatchingIterator.next();
+				List<I> updateValues = jdbcBatchingIterator.next();
 				writeOperation.addBatch(Maps.asMap(keyColumn, updateValues));
 			}
 			updatedRowCounter = jdbcBatchingIterator.getUpdatedRowCount();

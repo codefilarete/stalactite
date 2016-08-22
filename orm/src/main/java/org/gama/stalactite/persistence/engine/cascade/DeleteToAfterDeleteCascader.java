@@ -1,12 +1,12 @@
 package org.gama.stalactite.persistence.engine.cascade;
 
-import org.gama.stalactite.persistence.engine.Persister;
-import org.gama.stalactite.persistence.engine.listening.IDeleteListener;
-import org.gama.stalactite.persistence.engine.listening.NoopDeleteListener;
-
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+
+import org.gama.stalactite.persistence.engine.Persister;
+import org.gama.stalactite.persistence.engine.listening.IDeleteListener;
+import org.gama.stalactite.persistence.engine.listening.NoopDeleteListener;
 
 /**
  * Cascader for delete, written for @OneToOne style of cascade where Trigger owns the relationship with Target
@@ -15,13 +15,13 @@ import java.util.List;
  */
 public abstract class DeleteToAfterDeleteCascader<Trigger, Target> extends NoopDeleteListener<Trigger> {
 	
-	private Persister<Target> persister;
+	private Persister<Target, Object> persister;
 	
 	/**
 	 * Simple constructor. Created instance must be added to PersisterListener afterward.
 	 * @param persister
 	 */
-	DeleteToAfterDeleteCascader(Persister<Target> persister) {
+	DeleteToAfterDeleteCascader(Persister<Target, Object> persister) {
 		this.persister = persister;
 		this.persister.getPersisterListener().addDeleteListener(new NoopDeleteListener<Target>() {
 			@Override

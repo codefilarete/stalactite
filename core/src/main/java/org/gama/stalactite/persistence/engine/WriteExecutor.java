@@ -12,12 +12,12 @@ import org.gama.stalactite.persistence.sql.dml.DMLGenerator;
  * 
  * @author Guillaume Mary
  */
-public abstract class WriteExecutor<T> extends DMLExecutor<T> {
+public abstract class WriteExecutor<T, I> extends DMLExecutor<T, I> {
 	
 	private final int batchSize;
 	private final Retryer writeOperationRetryer;
 	
-	public WriteExecutor(ClassMappingStrategy<T> mappingStrategy,
+	public WriteExecutor(ClassMappingStrategy<T, I> mappingStrategy,
 						 org.gama.stalactite.persistence.engine.ConnectionProvider connectionProvider, DMLGenerator dmlGenerator, Retryer writeOperationRetryer,
 						 int batchSize, int inOperatorMaxSize) {
 		super(mappingStrategy, connectionProvider, dmlGenerator, inOperatorMaxSize);

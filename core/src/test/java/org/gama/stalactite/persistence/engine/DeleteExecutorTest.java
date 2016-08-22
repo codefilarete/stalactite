@@ -14,7 +14,7 @@ import static org.mockito.Mockito.verify;
 
 public class DeleteExecutorTest extends DMLExecutorTest {
 	
-	private DeleteExecutor<Toto> testInstance;
+	private DeleteExecutor<Toto, Integer> testInstance;
 	
 	public void setUpTest() throws SQLException {
 		super.setUpTest();

@@ -1,12 +1,12 @@
 package org.gama.stalactite.persistence.engine.cascade;
 
-import org.gama.stalactite.persistence.engine.Persister;
-import org.gama.stalactite.persistence.engine.listening.IInsertListener;
-import org.gama.stalactite.persistence.engine.listening.NoopInsertListener;
-
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+
+import org.gama.stalactite.persistence.engine.Persister;
+import org.gama.stalactite.persistence.engine.listening.IInsertListener;
+import org.gama.stalactite.persistence.engine.listening.NoopInsertListener;
 
 /**
  * Cascader for insert, written for @OneToOne style of cascade where Trigger owns the relationship with Target
@@ -15,14 +15,14 @@ import java.util.List;
  */
 public abstract class InsertToBeforeInsertCascader<Trigger, Target> extends NoopInsertListener<Trigger> {
 	
-	private Persister<Target> persister;
+	private Persister<Target, Object> persister;
 	
 	/**
 	 * Simple constructor. Created instance must be added to PersisterListener afterward.
 	 *
 	 * @param persister
 	 */
-	InsertToBeforeInsertCascader(Persister<Target> persister) {
+	InsertToBeforeInsertCascader(Persister<Target, Object> persister) {
 		this.persister = persister;
 		this.persister.getPersisterListener().addInsertListener(new NoopInsertListener<Target>() {
 			@Override
