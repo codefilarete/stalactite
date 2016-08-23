@@ -4,7 +4,7 @@ import java.util.Date;
 import java.util.WeakHashMap;
 
 /**
- * Registry for {@link ParameterBinder}s according to their binding class.
+ * Registry of {@link ParameterBinder}s according to their binding class.
  *
  * @author Guillaume Mary
  */
@@ -46,16 +46,16 @@ public class ParameterBinderRegistry {
 	 * @return the registered {@link ParameterBinder} for the given type
 	 * @throws UnsupportedOperationException if the binder doesn't exist
 	 */
-	public <T> ParameterBinder<T> getBinder(Class<T> clazz) {
+	public <T> ParameterBinder<T> getBinder(Class<T> clazz) throws UnsupportedOperationException {
 		ParameterBinder<T> parameterBinder = getParameterBinders().get(clazz);
 		if (parameterBinder == null) {
-			throwMissingBinderException(clazz);
+			throw newMissingBinderException(clazz);
 		}
 		return parameterBinder;
 	}
 	
-	private void throwMissingBinderException(Class clazz) {
-		throw new UnsupportedOperationException("No parameter binder found for type " + clazz.getName());
+	private UnsupportedOperationException newMissingBinderException(Class clazz) {
+		return new UnsupportedOperationException("No parameter binder found for type " + clazz.getName());
 	}
 	
 }

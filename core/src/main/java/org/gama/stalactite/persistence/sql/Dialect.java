@@ -8,6 +8,11 @@ import org.gama.stalactite.persistence.sql.dml.DMLGenerator;
 import org.gama.stalactite.persistence.sql.dml.binder.ColumnBinderRegistry;
 
 /**
+ * Class that keeps objects necessary for "communication" with a Database at the SQL language level:
+ * - column types for their creation: {@link JavaTypeToSqlTypeMapping} 
+ * - column types for their read and write in {@link java.sql.PreparedStatement} and {@link java.sql.ResultSet}: {@link ColumnBinderRegistry}
+ * - engines for SQL generation: {@link DDLSchemaGenerator} and {@link DMLGenerator}
+ * 
  * @author Guillaume Mary
  */
 public class Dialect {

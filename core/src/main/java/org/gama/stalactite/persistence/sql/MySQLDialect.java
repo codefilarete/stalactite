@@ -1,5 +1,8 @@
 package org.gama.stalactite.persistence.sql;
 
+import java.sql.SQLException;
+import java.util.Date;
+
 import org.gama.lang.Retryer;
 import org.gama.lang.StringAppender;
 import org.gama.lang.exception.Exceptions;
@@ -9,10 +12,12 @@ import org.gama.stalactite.persistence.sql.ddl.JavaTypeToSqlTypeMapping;
 import org.gama.stalactite.persistence.sql.dml.binder.ColumnBinderRegistry;
 import org.gama.stalactite.persistence.structure.Table;
 
-import java.sql.SQLException;
-import java.util.Date;
-
 /**
+ * Dialect specialization for MySQL:
+ * - drop foreign key SQL statement
+ * - null on timestamp column else current time is default value
+ * - Retryer to handle "lock wait timeout" that appears sometimes even is low concurrency
+ * 
  * @author Guillaume Mary
  */
 public class MySQLDialect extends Dialect {
@@ -31,8 +36,7 @@ public class MySQLDialect extends Dialect {
 		setWriteOperationRetryer(new Retryer(3, 200) {
 			@Override
 			protected boolean shouldRetry(Throwable t) {
-				SQLException sqlException = Exceptions.findExceptionInHierarchy(t, SQLException.class, "Lock wait timeout exceeded; try restarting transaction");
-				return sqlException != null;
+				return Exceptions.findExceptionInHierarchy(t, SQLException.class, "Lock wait timeout exceeded; try restarting transaction") != null;
 			}
 		});
 	}

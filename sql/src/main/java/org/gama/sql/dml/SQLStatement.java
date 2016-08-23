@@ -1,7 +1,5 @@
 package org.gama.sql.dml;
 
-import org.gama.sql.binder.ParameterBinder;
-
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.HashMap;
@@ -9,6 +7,8 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
+
+import org.gama.sql.binder.ParameterBinder;
 
 /**
  * Parent class that defines methods for applying values to {@link PreparedStatement} that is supposed to be built
@@ -80,8 +80,8 @@ public abstract class SQLStatement<ParamType> {
 			try {
 				doApplyValue(indexToValue.getKey(), indexToValue.getValue(), statement);
 			} catch (Throwable t) {
-				throw (RuntimeException) new RuntimeException("Error while applying value " + indexToValue.getValue() + " on parameter " + indexToValue.getKey()
-						+ " on statement \"" + getSQL() + "\"").initCause(t);
+				throw new RuntimeException("Error while applying value " + indexToValue.getValue() + " on parameter " + indexToValue.getKey()
+						+ " on statement \"" + getSQL() + "\"", t);
 			}
 		}
 	}

@@ -19,7 +19,7 @@ import org.gama.stalactite.persistence.sql.Dialect;
 public class PersistenceContext {
 	
 	private int jdbcBatchSize = 100;
-	private Map<Class<?>, Persister> persisterCache = new ValueFactoryHashMap<>(10, new IFactory<Class<?>, Persister>() {
+	private final Map<Class<?>, Persister> persisterCache = new ValueFactoryHashMap<>(10, new IFactory<Class<?>, Persister>() {
 		@Override
 		public Persister createInstance(Class<?> input) {
 			return newPersister(input);
@@ -47,8 +47,19 @@ public class PersistenceContext {
 		return mappingStrategies.get(aClass);
 	}
 	
-	public void add(ClassMappingStrategy classMappingStrategy) {
+	/**
+	 * Add a persistence configuration to this instance
+	 * 
+	 * @param classMappingStrategy the persitence configuration
+	 * @param <T> the entity type that is configured for persistence
+	 * @param <I> the identifier type of the entity
+	 * @return the newly created {@link Persister} for the configuration
+	 */
+	public <T, I> Persister<T, I> add(ClassMappingStrategy<T, I> classMappingStrategy) {
 		mappingStrategies.put(classMappingStrategy.getClassToPersist(), classMappingStrategy);
+		Persister<T, I> persister = new Persister<>(this, classMappingStrategy);
+		persisterCache.put(classMappingStrategy.getClassToPersist(), persister);
+		return persister;
 	}
 	
 	public Map<Class, ClassMappingStrategy> getMappingStrategies() {
@@ -64,6 +75,15 @@ public class PersistenceContext {
 		return new HashSet<>(persisterCache.values());
 	}
 	
+	/**
+	 * Returns the {@link Persister} mapped for a class.
+	 * Prefer usage of that returned by {@link #add(ClassMappingStrategy)} because it's better typed (with identifier type)
+	 * 
+	 * @param clazz the class for which the {@link Persister} must be given
+	 * @param <T> the type of the persisted entity
+	 * @return never null
+	 * @throws IllegalArgumentException if the class is not mapped
+	 */
 	public <T> Persister<T, ?> getPersister(Class<T> clazz) {
 		return persisterCache.get(clazz);
 	}
@@ -73,7 +93,7 @@ public class PersistenceContext {
 	}
 	
 	protected <T> Persister<T, ?> newPersister(Class<T> clazz) {
-		return new Persister<>(PersistenceContext.this, ensureMappedClass(clazz));
+		return new Persister<>(this, ensureMappedClass(clazz));
 	}
 	
 	protected <T> ClassMappingStrategy<T, Object> ensureMappedClass(Class<T> clazz) {

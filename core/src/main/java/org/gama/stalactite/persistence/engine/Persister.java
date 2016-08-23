@@ -7,7 +7,6 @@ import java.util.List;
 import java.util.Map.Entry;
 
 import org.gama.lang.Retryer;
-import org.gama.lang.bean.ISilentDelegate;
 import org.gama.lang.collection.Iterables;
 import org.gama.stalactite.persistence.engine.listening.PersisterListener;
 import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
@@ -174,12 +173,7 @@ public class Persister<T, I> {
 	}
 	
 	public int insert(Iterable<T> iterable) {
-		return getPersisterListener().doWithInsertListener(iterable, new ISilentDelegate<Integer>() {
-			@Override
-			public Integer execute() {
-				return doInsert(iterable);
-			}
-		});
+		return getPersisterListener().doWithInsertListener(iterable, () -> doInsert(iterable));
 	}
 	
 	protected int doInsert(Iterable<T> iterable) {
@@ -195,12 +189,7 @@ public class Persister<T, I> {
 	 * @param iterable iterable of instances
 	 */
 	public int updateRoughly(Iterable<T> iterable) {
-		return getPersisterListener().doWithUpdateRouglyListener(iterable, new ISilentDelegate<Integer>() {
-			@Override
-			public Integer execute() {
-				return doUpdateRoughly(iterable);
-			}
-		});
+		return getPersisterListener().doWithUpdateRouglyListener(iterable, () -> doUpdateRoughly(iterable));
 	}
 	
 	protected int doUpdateRoughly(Iterable<T> iterable) {
@@ -219,12 +208,8 @@ public class Persister<T, I> {
 	 * @param allColumnsStatement true if all columns must be in the SQL statement, false if only modified ones should be..
 	 */
 	public Integer update(Iterable<Entry<T, T>> differencesIterable, boolean allColumnsStatement) {
-		return getPersisterListener().doWithUpdateListener(differencesIterable, allColumnsStatement, new ISilentDelegate<Integer>() {
-			@Override
-			public Integer execute() {
-				return doUpdate(differencesIterable, allColumnsStatement);
-			}
-		});
+		return getPersisterListener().doWithUpdateListener(differencesIterable, allColumnsStatement,
+				() -> doUpdate(differencesIterable, allColumnsStatement));
 	}
 	
 	protected int doUpdate(Iterable<Entry<T, T>> differencesIterable, boolean allColumnsStatement) {
@@ -236,12 +221,7 @@ public class Persister<T, I> {
 	}
 	
 	public int delete(Iterable<T> iterable) {
-		return getPersisterListener().doWithDeleteListener(iterable, new ISilentDelegate<Integer>() {
-			@Override
-			public Integer execute() {
-				return doDelete(iterable);
-			}
-		});
+		return getPersisterListener().doWithDeleteListener(iterable, () -> doDelete(iterable));
 	}
 	
 	protected int doDelete(Iterable<T> iterable) {
@@ -253,12 +233,7 @@ public class Persister<T, I> {
 	}
 	
 	public int deleteRoughly(Iterable<T> iterable) {
-		return getPersisterListener().doWithDeleteRoughlyListener(iterable, new ISilentDelegate<Integer>() {
-			@Override
-			public Integer execute() {
-				return doDeleteRoughly(iterable);
-			}
-		});
+		return getPersisterListener().doWithDeleteRoughlyListener(iterable, () -> doDeleteRoughly(iterable));
 	}
 	
 	protected int doDeleteRoughly(Iterable<T> iterable) {
@@ -280,12 +255,7 @@ public class Persister<T, I> {
 	
 	public List<T> select(Iterable<I> ids) {
 		if (!Iterables.isEmpty(ids)) {
-			return getPersisterListener().doWithSelectListener(ids, new ISilentDelegate<List<T>>() {
-				@Override
-				public List<T> execute() {
-					return doSelect(ids);
-				}
-			});
+			return getPersisterListener().doWithSelectListener(ids, () -> doSelect(ids));
 		} else {
 			throw new IllegalArgumentException("Non selectable entity " + mappingStrategy.getClassToPersist() + " because of null id");
 		}
