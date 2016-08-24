@@ -81,7 +81,7 @@ public class PersisterDatabaseTest {
 	
 	@Test
 	@UseDataProvider("dataSources")
-	public void testSelect(final DataSource dataSource) throws SQLException {
+	public void testSelect(DataSource dataSource) throws SQLException {
 		transactionManager.setDataSource(dataSource);
 		DDLDeployer ddlDeployer = new DDLDeployer(dialect.getDdlSchemaGenerator(), transactionManager) {
 			@Override
@@ -113,7 +113,7 @@ public class PersisterDatabaseTest {
 	
 	@Test
 	@UseDataProvider("dataSources")
-	public void testSelect_rowCount(final DataSource dataSource) throws SQLException {
+	public void testSelect_rowCount(DataSource dataSource) throws SQLException {
 		transactionManager.setDataSource(dataSource);
 		DDLDeployer ddlDeployer = new DDLDeployer(dialect.getDdlSchemaGenerator(), transactionManager) {
 			@Override

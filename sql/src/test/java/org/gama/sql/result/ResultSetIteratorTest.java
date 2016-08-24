@@ -1,34 +1,43 @@
 package org.gama.sql.result;
 
+import javax.sql.DataSource;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
+import com.tngtech.java.junit.dataprovider.DataProvider;
+import com.tngtech.java.junit.dataprovider.DataProviderRunner;
+import com.tngtech.java.junit.dataprovider.UseDataProvider;
 import org.gama.lang.exception.Exceptions;
+import org.gama.sql.test.DerbyInMemoryDataSource;
 import org.gama.sql.test.HSQLDBInMemoryDataSource;
-import org.junit.Before;
+import org.gama.sql.test.MariaDBEmbeddableDataSource;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
+@RunWith(DataProviderRunner.class)
 public class ResultSetIteratorTest {
 	
-	private Connection connection;
-	private PreparedStatement selectStmnt;
-	
-	@Before
-	public void setUp() throws SQLException {
-		HSQLDBInMemoryDataSource hsqldbInMemoryDataSource = new HSQLDBInMemoryDataSource();
-		connection = hsqldbInMemoryDataSource.getConnection();
-		PreparedStatement createTableStmnt = connection.prepareStatement("create table Toto(id IDENTITY , name VARCHAR(10));");
-		createTableStmnt.execute();
-		selectStmnt = connection.prepareStatement("select name from Toto");
+	@DataProvider
+	public static Object[][] dataSources() {
+		return new Object[][] {
+				{ new HSQLDBInMemoryDataSource() },
+				{ new DerbyInMemoryDataSource() },
+				{ new MariaDBEmbeddableDataSource(3406) },
+		};
 	}
 	
 	@Test
-	public void testHasNext_emptyResultSet() throws Exception {
+	@UseDataProvider("dataSources")
+	public void testHasNext_emptyResultSet(DataSource dataSource) throws Exception {
+		Connection connection = dataSource.getConnection();
+		ensureTable(connection);
+		
+		PreparedStatement selectStmnt = connection.prepareStatement("select name from Toto");
 		ResultSet selectStmntRs = selectStmnt.executeQuery();
 		
 		ResultSetIterator<String> resultSetIterator = new ResultSetIterator<String>(selectStmntRs) {
@@ -45,11 +54,16 @@ public class ResultSetIteratorTest {
 	}
 	
 	@Test
-	public void testHasNext_filledResultSet() throws Exception {
+	@UseDataProvider("dataSources")
+	public void testHasNext_filledResultSet(DataSource dataSource) throws Exception {
+		Connection connection = dataSource.getConnection();
+		ensureTable(connection);
+
 		PreparedStatement insertDataStmnt = connection.prepareStatement("insert into Toto(name) values ('a'), ('b'), ('c')");
 		insertDataStmnt.execute();
 		connection.commit();
 		
+		PreparedStatement selectStmnt = connection.prepareStatement("select name from Toto");
 		ResultSet selectStmntRs = selectStmnt.executeQuery();
 		
 		ResultSetIterator<String> resultSetIterator = new ResultSetIterator<String>(selectStmntRs) {
@@ -69,5 +83,10 @@ public class ResultSetIteratorTest {
 		assertTrue(resultSetIterator.hasNext());
 		resultSetIterator.next();
 		assertFalse(resultSetIterator.hasNext());
+	}
+	
+	public void ensureTable(Connection connection) throws SQLException {
+		PreparedStatement createTableStmnt = connection.prepareStatement("create table Toto(name VARCHAR(10))");
+		createTableStmnt.execute();
 	}
 }

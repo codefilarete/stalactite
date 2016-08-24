@@ -31,7 +31,7 @@ public class SQLParameterParserTest {
 		return new Object[][] {
 				// should not break anything since no parameter
 				{"select a from Toto where b = 1", new ParsedSQL(Arrays.asList((Object) "select a from Toto where b = 1"),
-						new HashMap<String, Parameter>())},
+						new HashMap<>())},
 				// only one parameter, at the end
 				{"select a from Toto where b = :B", new ParsedSQL(Arrays.asList("select a from Toto where b = ", paramB),
 						Maps.asMap("B", paramB))},

@@ -16,7 +16,7 @@ import org.gama.lang.exception.Exceptions;
  */
 public abstract class ResultSetIterator<T> extends ReadOnlyIterator<T> implements IConverter<ResultSet, T> {
 	
-	public static <T> List<T> convert(ResultSet resultSet, final IConverter<ResultSet, T> converter) {
+	public static <T> List<T> convert(ResultSet resultSet, IConverter<ResultSet, T> converter) {
 		return new ResultSetIterator<T>(resultSet) {
 			@Override
 			public T convert(ResultSet rs) {

@@ -7,7 +7,6 @@ import java.sql.Statement;
 import java.util.HashMap;
 import java.util.Map;
 
-import com.tngtech.java.junit.dataprovider.DataProviderRunner;
 import org.gama.sql.IConnectionProvider;
 import org.gama.sql.SimpleConnectionProvider;
 import org.gama.sql.binder.LongBinder;
@@ -16,7 +15,6 @@ import org.gama.sql.binder.StringBinder;
 import org.gama.sql.test.HSQLDBInMemoryDataSource;
 import org.junit.Before;
 import org.junit.Test;
-import org.junit.runner.RunWith;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -24,7 +22,6 @@ import static org.junit.Assert.assertTrue;
 /**
  * @author Guillaume Mary
  */
-@RunWith(DataProviderRunner.class)
 public class ReadOperationTest {
 	
 	private IConnectionProvider connectionProvider;
