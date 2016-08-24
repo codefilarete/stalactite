@@ -1,12 +1,11 @@
 package org.gama.sql.result;
 
-import org.gama.lang.exception.Exceptions;
-import org.gama.sql.binder.ParameterBinder;
-
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Map;
 import java.util.Map.Entry;
+
+import org.gama.sql.binder.ParameterBinder;
 
 /**
  * {@link ResultSetIterator} specialized in {@link Row} building for each Resulset line.
@@ -38,15 +37,11 @@ public class RowIterator extends ResultSetIterator<Row> {
 	}
 	
 	@Override
-	public Row convert(ResultSet rs) {
+	public Row convert(ResultSet rs) throws SQLException {
 		Row toReturn = new Row();
-		try {
-			for (Entry<String, ? extends ParameterBinder> columnEntry : columnNameBinders.entrySet()) {
-				String columnName = columnEntry.getKey();
-				toReturn.put(columnName, columnEntry.getValue().get(columnName, rs));
-			}
-		} catch (SQLException e) {
-			throw Exceptions.asRuntimeException(e);
+		for (Entry<String, ? extends ParameterBinder> columnEntry : columnNameBinders.entrySet()) {
+			String columnName = columnEntry.getKey();
+			toReturn.put(columnName, columnEntry.getValue().get(columnName, rs));
 		}
 		return toReturn;
 	}

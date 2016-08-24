@@ -1,14 +1,13 @@
 package org.gama.sql.dml;
 
-import org.gama.lang.exception.Exceptions;
-import org.gama.sql.result.ResultSetIterator;
-import org.gama.sql.result.Row;
-
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
+
+import org.gama.sql.result.ResultSetIterator;
+import org.gama.sql.result.Row;
 
 /**
  * Default implementation of a {@link ResultSet} returned by {@link Statement#getGeneratedKeys()}.
@@ -43,13 +42,9 @@ public class GeneratedKeysReader {
 			List<Row> toReturn = new ArrayList<>();
 			ResultSetIterator<Row> iterator = new ResultSetIterator<Row>(generatedKeys) {
 				@Override
-				public Row convert(ResultSet rs) {
+				public Row convert(ResultSet rs) throws SQLException {
 					Row toReturn = new Row();
-					try {
-						fillRow(toReturn, rs);
-					} catch (SQLException e) {
-						throw Exceptions.asRuntimeException(e);
-					}
+					fillRow(toReturn, rs);
 					return toReturn;
 				}
 			};

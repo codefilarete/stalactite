@@ -3,10 +3,10 @@ package org.gama.lang.bean;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.gama.lang.bean.IConverter.NullAwareConverter;
+import org.gama.lang.bean.IQuietConverter.NullAwareConverter;
 
 /**
- * @author mary
+ * @author Guilllaume Mary
  */
 public class Converter {
 	
@@ -51,12 +51,12 @@ public class Converter {
 		});
 	}
 	
-	private final Map<Class, IConverter> converters = new HashMap<>();
+	private final Map<Class, IQuietConverter> converters = new HashMap<>();
 	
 	public Converter() {
 	}
 	
-	public <O> void setConverter(Class<O> clazz, IConverter<Object, O> converter) {
+	public <O> void setConverter(Class<O> clazz, IQuietConverter<Object, O> converter) {
 		converters.put(clazz, converter);
 	}
 	
@@ -88,7 +88,7 @@ public class Converter {
 		return getConverter(clazz).convert(value);
 	}
 	
-	public <O> IConverter<Object, O> getConverter(Class<O> clazz) {
+	public <O> IQuietConverter<Object, O> getConverter(Class<O> clazz) {
 		return this.converters.get(clazz);
 	}
 }

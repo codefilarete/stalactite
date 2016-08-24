@@ -1,6 +1,5 @@
 package org.gama.lang;
 
-import org.gama.lang.bean.ISilentDelegate;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
@@ -22,12 +21,9 @@ public class RetryerTest {
 		
 		final int[] callTimes = new int[1];
 		try {
-			testInstance.execute(new ISilentDelegate<Object>() {
-				@Override
-				public Object execute() {
-					callTimes[0]++;
-					throw new RuntimeException("Never works !");
-				}
+			testInstance.execute(() -> {
+				callTimes[0]++;
+				throw new RuntimeException("Never works !");
 			}, "test");
 		} catch (Throwable t) {
 			assertEquals("Action \"test\" has been executed 3 times every 5ms and always failed", t.getMessage());
@@ -47,15 +43,12 @@ public class RetryerTest {
 		
 		final int[] callTimes = new int[1];
 		try {
-			testInstance.execute(new ISilentDelegate<Object>() {
-				@Override
-				public Object execute() {
-					callTimes[0]++;
-					if (callTimes[0] < 2) {
-						throw new RuntimeException("Never works !");
-					}
-					return null;
+			testInstance.execute(() -> {
+				callTimes[0]++;
+				if (callTimes[0] < 2) {
+					throw new RuntimeException("Never works !");
 				}
+				return null;
 			}, "test");
 		} catch (Throwable t) {
 			fail("No exception should be thrown");
@@ -74,12 +67,9 @@ public class RetryerTest {
 		
 		final int[] callTimes = new int[1];
 		try {
-			testInstance.execute(new ISilentDelegate<Object>() {
-				@Override
-				public Object execute() {
-					callTimes[0]++;
-					return null;
-				}
+			testInstance.execute(() -> {
+				callTimes[0]++;
+				return null;
 			}, "test");
 		} catch (Throwable t) {
 			fail("No exception should be thrown");
@@ -98,15 +88,12 @@ public class RetryerTest {
 		
 		final int[] callTimes = new int[1];
 		try {
-			testInstance.execute(new ISilentDelegate<Object>() {
-				@Override
-				public Object execute() {
-					callTimes[0]++;
-					if (callTimes[0] < 3) {
-						throw new RuntimeException("retry");
-					} else {
-						throw new RuntimeException("Unepected error");
-					}
+			testInstance.execute(() -> {
+				callTimes[0]++;
+				if (callTimes[0] < 3) {
+					throw new RuntimeException("retry");
+				} else {
+					throw new RuntimeException("Unepected error");
 				}
 			}, "test");
 		} catch (Throwable t) {
@@ -122,12 +109,9 @@ public class RetryerTest {
 		final int[] callTimes = new int[1];
 		String result = null;
 		try {
-			result = (String) testInstance.execute(new ISilentDelegate<Object>() {
-				@Override
-				public Object execute() {
-					callTimes[0]++;
-					return "OK";
-				}
+			result = testInstance.execute(() -> {
+				callTimes[0]++;
+				return "OK";
 			}, "test");
 		} catch (Throwable t) {
 			fail("No exception should be thrown");

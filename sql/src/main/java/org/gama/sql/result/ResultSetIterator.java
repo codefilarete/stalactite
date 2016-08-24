@@ -14,25 +14,32 @@ import org.gama.lang.exception.Exceptions;
  * 
  * @author Guillaume Mary
  */
-public abstract class ResultSetIterator<T> extends ReadOnlyIterator<T> implements IConverter<ResultSet, T> {
+public abstract class ResultSetIterator<T> extends ReadOnlyIterator<T> implements IConverter<ResultSet, T, SQLException> {
 	
-	public static <T> List<T> convert(ResultSet resultSet, IConverter<ResultSet, T> converter) {
+	public static <T> List<T> convert(ResultSet resultSet, IConverter<ResultSet, T, SQLException> converter) {
 		return new ResultSetIterator<T>(resultSet) {
 			@Override
-			public T convert(ResultSet rs) {
+			public T convert(ResultSet rs) throws SQLException {
 				return converter.convert(rs);
 			}
 		}.convert();
 	}
 	
-	
+	/** The read {@link ResultSet} */
 	private ResultSet resultSet;
+	/** Mimic the {@link ResultSet#getRow()} method which is not supported by all databases */
+	private int rowNumber;
+	/**
+	 * Flag that indicates if the next method was called.
+	 * Used for hasNext() since {@link ResultSet} has no sure way of saying if its read is started or not
+	 */
 	private boolean nextCalled = false;
 	
 	/**
 	 * Constructor for ResultSetIterator.
 	 */
 	public ResultSetIterator() {
+		resetRowNumber();
 	}
 	
 	/**
@@ -40,11 +47,17 @@ public abstract class ResultSetIterator<T> extends ReadOnlyIterator<T> implement
 	 * @param resultSet a ResultSet to be wrapped in an Iterator.
 	 */
 	public ResultSetIterator(ResultSet resultSet) {
+		this();
 		this.resultSet = resultSet;
 	}
 	
 	public void setResultSet(ResultSet resultSet) {
 		this.resultSet = resultSet;
+		resetRowNumber();
+	}
+	
+	public void resetRowNumber() {
+		this.rowNumber = 1;
 	}
 	
 	/**
@@ -66,7 +79,7 @@ public abstract class ResultSetIterator<T> extends ReadOnlyIterator<T> implement
 	@Override
 	public T next() {
 		try {
-			return convert(resultSet);
+			return read(resultSet);
 		} finally {
 			nextCalled = false;
 		}
@@ -79,7 +92,24 @@ public abstract class ResultSetIterator<T> extends ReadOnlyIterator<T> implement
 	public List<T> convert() {
 		List<T> result = new ArrayList<>();
 		while(hasNext()) {
-			result.add(convert(resultSet));
+			result.add(read(resultSet));
+		}
+		return result;
+	}
+	
+	/**
+	 * Mainly made for handling {@link SQLException} thrown by {@link #convert(ResultSet)}
+	 * 
+	 * @param rs the read {@link ResultSet}
+	 * @return the result made by {@link #convert(ResultSet)}
+	 */
+	protected T read(ResultSet rs) {
+		T result;
+		try {
+			result = convert(rs);
+			this.rowNumber++;
+		} catch (SQLException e) {
+			throw new RuntimeException("Error while reading ResultSet on line " + rowNumber, e);
 		}
 		return result;
 	}
@@ -87,8 +117,8 @@ public abstract class ResultSetIterator<T> extends ReadOnlyIterator<T> implement
 	/**
 	 * Convert current row of the ResultSet
 	 * @param rs the ResultSet given at constructor or {@link #setResultSet}
-	 * @return
+	 * @return the result of the conversion
 	 */
-	public abstract T convert(ResultSet rs);
+	public abstract T convert(ResultSet rs) throws SQLException;
 	
 }

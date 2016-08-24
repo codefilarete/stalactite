@@ -12,7 +12,6 @@ import com.tngtech.java.junit.dataprovider.DataProviderRunner;
 import com.tngtech.java.junit.dataprovider.UseDataProvider;
 import org.gama.lang.collection.Arrays;
 import org.gama.lang.collection.Iterables;
-import org.gama.lang.exception.Exceptions;
 import org.gama.sql.result.ResultSetIterator;
 import org.gama.sql.test.DerbyInMemoryDataSource;
 import org.gama.sql.test.HSQLDBInMemoryDataSource;
@@ -75,12 +74,8 @@ public class AbstractParameterBinderTest {
 		ResultSet resultSet = connection.prepareStatement("select a from Toto").executeQuery();
 		ResultSetIterator<Long> resultSetIterator = new ResultSetIterator<Long>(resultSet) {
 			@Override
-			public Long convert(ResultSet rs) {
-				try {
-					return testInstance.get("a", resultSet);
-				} catch (SQLException e) {
-					throw Exceptions.asRuntimeException(e);
-				}
+			public Long convert(ResultSet rs) throws SQLException {
+				return testInstance.get("a", resultSet);
 			}
 		};
 		assertEquals(Arrays.asSet(null, 0L), Iterables.stream(resultSetIterator).collect(Collectors.toSet()));

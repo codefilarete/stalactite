@@ -9,7 +9,6 @@ import java.sql.SQLException;
 import com.tngtech.java.junit.dataprovider.DataProvider;
 import com.tngtech.java.junit.dataprovider.DataProviderRunner;
 import com.tngtech.java.junit.dataprovider.UseDataProvider;
-import org.gama.lang.exception.Exceptions;
 import org.gama.sql.test.DerbyInMemoryDataSource;
 import org.gama.sql.test.HSQLDBInMemoryDataSource;
 import org.gama.sql.test.MariaDBEmbeddableDataSource;
@@ -42,12 +41,8 @@ public class ResultSetIteratorTest {
 		
 		ResultSetIterator<String> resultSetIterator = new ResultSetIterator<String>(selectStmntRs) {
 			@Override
-			public String convert(ResultSet rs) {
-				try {
-					return rs.getString(1);
-				} catch (SQLException e) {
-					throw Exceptions.asRuntimeException(e);
-				}
+			public String convert(ResultSet rs) throws SQLException {
+				return rs.getString("name");
 			}
 		};
 		assertFalse(resultSetIterator.hasNext());
@@ -68,12 +63,8 @@ public class ResultSetIteratorTest {
 		
 		ResultSetIterator<String> resultSetIterator = new ResultSetIterator<String>(selectStmntRs) {
 			@Override
-			public String convert(ResultSet rs) {
-				try {
-					return rs.getString(1);
-				} catch (SQLException e) {
-					throw Exceptions.asRuntimeException(e);
-				}
+			public String convert(ResultSet rs) throws SQLException {
+				return rs.getString("name");
 			}
 		};
 		assertTrue(resultSetIterator.hasNext());
