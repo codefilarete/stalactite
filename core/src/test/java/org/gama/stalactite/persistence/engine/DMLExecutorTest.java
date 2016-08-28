@@ -10,6 +10,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.BiFunction;
 
 import org.gama.reflection.PropertyAccessor;
 import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
@@ -24,7 +25,6 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.mockito.ArgumentCaptor;
 
-import static org.gama.lang.bean.Objects.BiFunction;
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -59,7 +59,8 @@ public abstract class DMLExecutorTest {
 		private String tableName;
 		private String primaryKeyFieldName;
 		
-		public PersistenceConfigurationBuilder withTableAndClass(String tableName, Class<T> mappedClass, BiFunction<TableAndClass<T>, PropertyAccessor<T, I>, ClassMappingStrategy<T, I>> classMappingStrategyBuilder) {
+		public PersistenceConfigurationBuilder withTableAndClass(String tableName, Class<T> mappedClass, BiFunction<TableAndClass<T>, 
+				PropertyAccessor<T, I>, ClassMappingStrategy<T, I>> classMappingStrategyBuilder) {
 			this.tableName = tableName;
 			this.mappedClass = mappedClass;
 			this.classMappingStrategyBuilder = classMappingStrategyBuilder;
@@ -95,6 +96,7 @@ public abstract class DMLExecutorTest {
 			protected final Table targetTable;
 			protected final Class<T> mappedClass;
 			protected final PersistentFieldHarverster persistentFieldHarverster;
+			
 			public TableAndClass(Table targetTable, Class<T> mappedClass, PersistentFieldHarverster persistentFieldHarverster) {
 				this.targetTable = targetTable;
 				this.mappedClass = mappedClass;
@@ -125,7 +127,7 @@ public abstract class DMLExecutorTest {
 		persistenceConfiguration = persistenceConfigurationBuilder.build();
 		
 		preparedStatement = mock(PreparedStatement.class);
-		when(preparedStatement.executeBatch()).thenReturn(new int[] {1});
+		when(preparedStatement.executeBatch()).thenReturn(new int[] { 1 });
 		
 		connection = mock(Connection.class);
 		// PreparedStatement.getConnection() must gives that instance of connection because of SQLOperation that checks
@@ -145,7 +147,8 @@ public abstract class DMLExecutorTest {
 	protected PersistenceConfigurationBuilder newPersistenceConfigurationBuilder() {
 		identifierGenerator = new InMemoryCounterIdentifierGenerator();
 		return new PersistenceConfigurationBuilder<Toto, Integer>()
-				.withTableAndClass("Toto", Toto.class, (mappedClass, primaryKeyField) -> new ClassMappingStrategy<>(mappedClass.mappedClass, mappedClass.targetTable,
+				.withTableAndClass("Toto", Toto.class, (mappedClass, primaryKeyField) -> new ClassMappingStrategy<>(mappedClass.mappedClass, 
+						mappedClass.targetTable,
 						mappedClass.persistentFieldHarverster.getFieldToColumn(), primaryKeyField, identifierGenerator))
 				.withPrimaryKeyFieldName("a");
 	}

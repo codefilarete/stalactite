@@ -8,11 +8,11 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import org.gama.lang.StringAppender;
 import org.gama.lang.Strings;
-import org.gama.lang.bean.Objects;
 import org.gama.lang.collection.Collections;
 import org.gama.lang.collection.Iterables;
 import org.gama.lang.collection.KeepOrderSet;
@@ -43,7 +43,7 @@ import static org.gama.sql.dml.ExpandableSQL.ExpandableParameter.SQL_PARAMETER_M
 /**
  * Persister for entity with multiple joined tables by primary key.
  * A main table is defined by the {@link ClassMappingStrategy} passed to constructor. Complementary tables are defined
- * with {@link #addMappingStrategy(ClassMappingStrategy, Objects.Function)}.
+ * with {@link #addMappingStrategy(ClassMappingStrategy, Function)}.
  * Entity load is defined by a select that joins all tables, each {@link ClassMappingStrategy} is called to complete
  * entity loading.
  * 
@@ -51,7 +51,7 @@ import static org.gama.sql.dml.ExpandableSQL.ExpandableParameter.SQL_PARAMETER_M
  */
 public class JoinTablePersister<T, I> extends Persister<T, I> {
 	
-	/** Strategies and executors that must be applied, LinkedHashMap to keep order of {@link #addMappingStrategy(ClassMappingStrategy, Objects.Function)} parameter */
+	/** Strategies and executors that must be applied, LinkedHashMap to keep order of {@link #addMappingStrategy(ClassMappingStrategy, Function)} parameter */
 	private Set<ClassMappingStrategy> strategies = new LinkedHashSet<>();
 	private final Dialect dialect;
 	
@@ -72,7 +72,7 @@ public class JoinTablePersister<T, I> extends Persister<T, I> {
 	 * potential foreign keys.
 	 *
 	 */
-	public <U> void addMappingStrategy(ClassMappingStrategy<U, I> mappingStrategy, Objects.Function<Iterable<T>, Iterable<U>> complementaryInstancesProvider) {
+	public <U> void addMappingStrategy(ClassMappingStrategy<U, I> mappingStrategy, Function<Iterable<T>, Iterable<U>> complementaryInstancesProvider) {
 		this.strategies.add(mappingStrategy);
 		addInsertExecutor(mappingStrategy, complementaryInstancesProvider);
 		addUpdateExecutor(mappingStrategy, complementaryInstancesProvider);
@@ -81,7 +81,7 @@ public class JoinTablePersister<T, I> extends Persister<T, I> {
 		addDeleteRoughlyExecutor(mappingStrategy, complementaryInstancesProvider);
 	}
 	
-	private <U> void addInsertExecutor(ClassMappingStrategy<U, I> mappingStrategy, Objects.Function<Iterable<T>, Iterable<U>> complementaryInstancesProvider) {
+	private <U> void addInsertExecutor(ClassMappingStrategy<U, I> mappingStrategy, Function<Iterable<T>, Iterable<U>> complementaryInstancesProvider) {
 		InsertExecutor<U, I> insertExecutor = newInsertExecutor(mappingStrategy,
 				getConnectionProvider(),
 				getDmlGenerator(),
@@ -96,7 +96,7 @@ public class JoinTablePersister<T, I> extends Persister<T, I> {
 		});
 	}
 	
-	private <U> void addUpdateExecutor(ClassMappingStrategy<U, I> mappingStrategy, Objects.Function<Iterable<T>, Iterable<U>> complementaryInstancesProvider) {
+	private <U> void addUpdateExecutor(ClassMappingStrategy<U, I> mappingStrategy, Function<Iterable<T>, Iterable<U>> complementaryInstancesProvider) {
 		UpdateExecutor<U, I> updateExecutor = newUpdateExecutor(
 				mappingStrategy,
 				getConnectionProvider(),
@@ -116,14 +116,14 @@ public class JoinTablePersister<T, I> extends Persister<T, I> {
 					keysIterable.add(entry.getKey());
 					valuesIterable.add(entry.getValue());
 				}
-				PairIterator<U, U> x = new PairIterator<>(complementaryInstancesProvider.apply(keysIterable), complementaryInstancesProvider.apply(valuesIterable));
+				PairIterator<U, U> pairIterator = new PairIterator<>(complementaryInstancesProvider.apply(keysIterable), complementaryInstancesProvider.apply(valuesIterable));
 				
-				updateExecutor.update(() -> x, allColumnsStatement);
+				updateExecutor.update(() -> pairIterator, allColumnsStatement);
 			}
 		});
 	}
 	
-	private <U> void addUpdateRoughlyExecutor(ClassMappingStrategy<U, I> mappingStrategy, Objects.Function<Iterable<T>, Iterable<U>> complementaryInstancesProvider) {
+	private <U> void addUpdateRoughlyExecutor(ClassMappingStrategy<U, I> mappingStrategy, Function<Iterable<T>, Iterable<U>> complementaryInstancesProvider) {
 		UpdateExecutor<U, I> updateExecutor = newUpdateExecutor(
 				mappingStrategy,
 				getConnectionProvider(),
@@ -139,7 +139,7 @@ public class JoinTablePersister<T, I> extends Persister<T, I> {
 		});
 	}
 	
-	private <U> void addDeleteExecutor(ClassMappingStrategy<U, I> mappingStrategy, Objects.Function<Iterable<T>, Iterable<U>> complementaryInstancesProvider) {
+	private <U> void addDeleteExecutor(ClassMappingStrategy<U, I> mappingStrategy, Function<Iterable<T>, Iterable<U>> complementaryInstancesProvider) {
 		DeleteExecutor<U, I> deleteExecutor = newDeleteExecutor(
 				mappingStrategy,
 				getConnectionProvider(),
@@ -155,7 +155,7 @@ public class JoinTablePersister<T, I> extends Persister<T, I> {
 		});
 	}
 	
-	private <U> void addDeleteRoughlyExecutor(ClassMappingStrategy<U, I> mappingStrategy, Objects.Function<Iterable<T>, Iterable<U>> complementaryInstancesProvider) {
+	private <U> void addDeleteRoughlyExecutor(ClassMappingStrategy<U, I> mappingStrategy, Function<Iterable<T>, Iterable<U>> complementaryInstancesProvider) {
 		DeleteExecutor<U, I> deleteExecutor = newDeleteExecutor(
 				mappingStrategy,
 				getConnectionProvider(),

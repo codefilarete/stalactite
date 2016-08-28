@@ -1,13 +1,17 @@
 package org.gama.lang.collection;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.Map.Entry;
+import java.util.SortedMap;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
-
-import org.gama.lang.bean.Objects;
 
 /**
  * @author Guillaume Mary
@@ -167,7 +171,7 @@ public final class Iterables {
 		return StreamSupport.stream(iterable.spliterator(), false);
 	}
 	
-	public static <E> Iterable<E> filter(Iterable<E> iterable, Objects.Predicate<E> predicate) {
+	public static <E> Iterable<E> filter(Iterable<E> iterable, Predicate<E> predicate) {
 		Iterator<E> iterator = iterable.iterator();
 		while (iterator.hasNext()) {
 			E e = iterator.next();

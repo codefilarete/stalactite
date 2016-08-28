@@ -13,7 +13,6 @@ import java.util.Map;
 import java.util.Set;
 
 import org.gama.lang.Reflections;
-import org.gama.lang.bean.Objects;
 import org.gama.lang.collection.Arrays;
 import org.gama.lang.collection.Maps;
 import org.gama.reflection.PropertyAccessor;
@@ -110,7 +109,7 @@ public class JoinTablePersisterTest {
 		identifierGenerator.reset();
 		
 		preparedStatement = mock(PreparedStatement.class);
-		when(preparedStatement.executeBatch()).thenReturn(new int[] {1});
+		when(preparedStatement.executeBatch()).thenReturn(new int[] { 1 });
 		
 		Connection connection = mock(Connection.class);
 		// PreparedStatement.getConnection() must gives that instance of connection because of SQLOperation that checks
@@ -126,12 +125,9 @@ public class JoinTablePersisterTest {
 		when(dataSource.getConnection()).thenReturn(connection);
 		transactionManager.setDataSource(dataSource);
 		testInstance = new JoinTablePersister<>(totoClassMappingStrategy_ontoTable1, dialect, transactionManager, 3);
-		testInstance.addMappingStrategy(totoClassMappingStrategy2_ontoTable2, new Objects.Function<Iterable<Toto>, Iterable<Toto>>() {
-			@Override
-			public Iterable<Toto> apply(Iterable<Toto> totos) {
-				// since we only want a replicate of totos in table2, we only need to return them
-				return totos;
-			}
+		testInstance.addMappingStrategy(totoClassMappingStrategy2_ontoTable2, totos -> {
+			// since we only want a replicate of totos in table2, we only need to return them
+			return totos;
 		});
 	}
 	
@@ -147,12 +143,14 @@ public class JoinTablePersisterTest {
 	
 	@Test
 	public void testInsert() throws Exception {
-		testInstance.insert(Arrays.asList(new Toto(17, 23, 117, 123, -117), new Toto(29, 31, 129, 131, -129), new Toto(37, 41, 137, 141, -137), new Toto(43, 53, 143, 153, -143)));
+		testInstance.insert(Arrays.asList(new Toto(17, 23, 117, 123, -117), new Toto(29, 31, 129, 131, -129), new Toto(37, 41, 137, 141, -137),
+				new Toto(43, 53, 143, 153, -143)));
 		
 		verify(preparedStatement, times(8)).addBatch();
 		verify(preparedStatement, times(4)).executeBatch();
 		verify(preparedStatement, times(28)).setInt(indexCaptor.capture(), valueCaptor.capture());
-		assertEquals(Arrays.asList("insert into Toto1(id, a, b) values (?, ?, ?)", "insert into Toto2(id, x, y, z) values (?, ?, ?, ?)"), statementArgCaptor.getAllValues());
+		assertEquals(Arrays.asList("insert into Toto1(id, a, b) values (?, ?, ?)", "insert into Toto2(id, x, y, z) values (?, ?, ?, ?)"), 
+				statementArgCaptor.getAllValues());
 		PairSetList<Integer, Integer> expectedPairs = new PairSetList<Integer, Integer>()
 				.of(1, 1).add(2, 17).add(3, 23)
 				.of(1, 2).add(2, 29).add(3, 31)
@@ -162,19 +160,20 @@ public class JoinTablePersisterTest {
 				.of(1, 1).add(2, 117).add(3, 123).add(4, -117)
 				.of(1, 2).add(2, 129).add(3, 131).add(4, -129)
 				.of(1, 3).add(2, 137).add(3, 141).add(4, -137)
-				.of(1, 4).add(2, 143).add(3, 153).add(4, -143)
-		;
+				.of(1, 4).add(2, 143).add(3, 153).add(4, -143);
 		assertCapturedPairsEqual(expectedPairs);
 	}
 	
 	@Test
 	public void testUpdateRoughly() throws Exception {
-		testInstance.updateRoughly(Arrays.asList(new Toto(1, 17, 23, 117, 123, -117), new Toto(2, 29, 31, 129, 131, -129), new Toto(3, 37, 41, 137, 141, -137), new Toto(4, 43, 53, 143, 153, -143)));
+		testInstance.updateRoughly(Arrays.asList(new Toto(1, 17, 23, 117, 123, -117), new Toto(2, 29, 31, 129, 131, -129),
+				new Toto(3, 37, 41, 137, 141, -137), new Toto(4, 43, 53, 143, 153, -143)));
 		
 		verify(preparedStatement, times(8)).addBatch();
 		verify(preparedStatement, times(4)).executeBatch();
 		verify(preparedStatement, times(28)).setInt(indexCaptor.capture(), valueCaptor.capture());
-		assertEquals(Arrays.asList("update Toto1 set a = ?, b = ? where id = ?", "update Toto2 set x = ?, y = ?, z = ? where id = ?"), statementArgCaptor.getAllValues());
+		assertEquals(Arrays.asList("update Toto1 set a = ?, b = ? where id = ?", "update Toto2 set x = ?, y = ?, z = ? where id = ?"), 
+				statementArgCaptor.getAllValues());
 		PairSetList<Integer, Integer> expectedPairs = new PairSetList<Integer, Integer>()
 				.of(1, 17).add(2, 23).add(3, 1)
 				.of(1, 29).add(2, 31).add(3, 2)
@@ -184,8 +183,7 @@ public class JoinTablePersisterTest {
 				.of(1, 117).add(2, 123).add(3, -117).add(4, 1)
 				.of(1, 129).add(2, 131).add(3, -129).add(4, 2)
 				.of(1, 137).add(2, 141).add(3, -137).add(4, 3)
-				.of(1, 143).add(2, 153).add(3, -143).add(4, 4)
-		;
+				.of(1, 143).add(2, 153).add(3, -143).add(4, 4);
 		assertCapturedPairsEqual(expectedPairs);
 	}
 	
@@ -206,7 +204,8 @@ public class JoinTablePersisterTest {
 	
 	@Test
 	public void testDelete_multiple() throws Exception {
-		testInstance.delete(Arrays.asList(new Toto(1, 17, 23, 117, 123, -117), new Toto(2, 29, 31, 129, 131, -129), new Toto(3, 37, 41, 137, 141, -137), new Toto(4, 43, 53, 143, 153, -143)));
+		testInstance.delete(Arrays.asList(new Toto(1, 17, 23, 117, 123, -117), new Toto(2, 29, 31, 129, 131, -129),
+				new Toto(3, 37, 41, 137, 141, -137), new Toto(4, 43, 53, 143, 153, -143)));
 		// 4 statements because in operator is bounded to 3 values (see testInstance creation)
 		assertEquals(Arrays.asList("delete from Toto2 where id = ?", "delete from Toto1 where id = ?"), statementArgCaptor.getAllValues());
 		verify(preparedStatement, times(8)).addBatch();
@@ -235,9 +234,11 @@ public class JoinTablePersisterTest {
 	
 	@Test
 	public void testDeleteRoughly_multiple() throws Exception {
-		testInstance.deleteRoughly(Arrays.asList(new Toto(1, 17, 23, 117, 123, -117), new Toto(2, 29, 31, 129, 131, -129), new Toto(3, 37, 41, 137, 141, -137), new Toto(4, 43, 53, 143, 153, -143)));
+		testInstance.deleteRoughly(Arrays.asList(new Toto(1, 17, 23, 117, 123, -117), new Toto(2, 29, 31, 129, 131, -129),
+				new Toto(3, 37, 41, 137, 141, -137), new Toto(4, 43, 53, 143, 153, -143)));
 		// 4 statements because in operator is bounded to 3 values (see testInstance creation)
-		assertEquals(Arrays.asList("delete from Toto2 where id in (?, ?, ?)", "delete from Toto2 where id in (?)", "delete from Toto1 where id in (?, ?, ?)", "delete from Toto1 where id in (?)"), statementArgCaptor.getAllValues());
+		assertEquals(Arrays.asList("delete from Toto2 where id in (?, ?, ?)", "delete from Toto2 where id in (?)",
+				"delete from Toto1 where id in (?, ?, ?)", "delete from Toto1 where id in (?)"), statementArgCaptor.getAllValues());
 		verify(preparedStatement, times(2)).addBatch();
 		verify(preparedStatement, times(2)).executeBatch();
 		verify(preparedStatement, times(2)).executeUpdate();
@@ -261,12 +262,12 @@ public class JoinTablePersisterTest {
 		verify(preparedStatement, times(2)).executeQuery();
 		verify(preparedStatement, times(4)).setInt(indexCaptor.capture(), valueCaptor.capture());
 		assertEquals(Arrays.asList(
-				"select Toto1.id as Toto1_id, Toto1.a as Toto1_a, Toto1.b as Toto1_b, Toto2.id as Toto2_id, Toto2.x as Toto2_x, Toto2.y as Toto2_y, Toto2.z as Toto2_z" +
-						" from Toto1 inner join Toto2 on Toto1.id = Toto2.id where Toto1.id in (?, ?, ?)", 
-				"select Toto1.id as Toto1_id, Toto1.a as Toto1_a, Toto1.b as Toto1_b, Toto2.id as Toto2_id, Toto2.x as Toto2_x, Toto2.y as Toto2_y, Toto2.z as Toto2_z" +
-						" from Toto1 inner join Toto2 on Toto1.id = Toto2.id where Toto1.id in (?)"), statementArgCaptor.getAllValues());
-		PairSetList<Integer, Integer> expectedPairs = new PairSetList<Integer, Integer>()
-				.of(1, 7).add(2, 13).add(3, 17).add(1, 23);
+				"select Toto1.id as Toto1_id, Toto1.a as Toto1_a, Toto1.b as Toto1_b, Toto2.id as Toto2_id, Toto2.x as Toto2_x, Toto2.y as Toto2_y, " +
+						"Toto2.z as Toto2_z from Toto1 inner join Toto2 on Toto1.id = Toto2.id where Toto1.id in (?, ?, ?)",
+				"select Toto1.id as Toto1_id, Toto1.a as Toto1_a, Toto1.b as Toto1_b, Toto2.id as Toto2_id, Toto2.x as Toto2_x, Toto2.y as Toto2_y, " +
+						"Toto2.z as Toto2_z from Toto1 inner join Toto2 on Toto1.id = Toto2.id where Toto1.id in (?)"),
+				statementArgCaptor.getAllValues());
+		PairSetList<Integer, Integer> expectedPairs = new PairSetList<Integer, Integer>().of(1, 7).add(2, 13).add(3, 17).add(1, 23);
 		assertCapturedPairsEqual(expectedPairs);
 	}
 	

@@ -1,11 +1,18 @@
 package org.gama.stalactite.query.builder;
 
+import java.util.function.BiPredicate;
+
 import org.gama.lang.StringAppender;
 import org.gama.lang.Strings;
 import org.gama.lang.bean.Objects;
 import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.query.model.From;
-import org.gama.stalactite.query.model.From.*;
+import org.gama.stalactite.query.model.From.AbstractJoin;
+import org.gama.stalactite.query.model.From.AliasedTable;
+import org.gama.stalactite.query.model.From.ColumnJoin;
+import org.gama.stalactite.query.model.From.CrossJoin;
+import org.gama.stalactite.query.model.From.Join;
+import org.gama.stalactite.query.model.From.RawTableJoin;
 
 /**
  * @author Guillaume Mary
@@ -16,12 +23,7 @@ public class FromBuilder extends AbstractDMLBuilder implements SQLBuilder {
 	private static final String LEFT_OUTER_JOIN = " left outer join ";
 	private static final String RIGHT_OUTER_JOIN = " right outer join ";
 	
-	private static final Objects.BiPredicate<String, String> EQUALS_IGNORE_CASE_PREDICATE = new Objects.BiPredicate<String, String>() {
-		@Override
-		public boolean test(String s, String s2) {
-			return s.compareToIgnoreCase(s2) == 0;
-		}
-	};
+	private static final BiPredicate<String, String> EQUALS_IGNORE_CASE_PREDICATE = (s, s2) -> s.compareToIgnoreCase(s2) == 0;
 	
 	
 	private final From from;
