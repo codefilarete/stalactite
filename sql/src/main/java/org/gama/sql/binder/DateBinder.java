@@ -7,19 +7,19 @@ import java.sql.Timestamp;
 import java.util.Date;
 
 /**
- * {@link AbstractParameterBinder} dédié aux Dates
- * 
- * @author mary
+ * {@link ParameterBinder} dedicated to {@link Date} : use {@link ResultSet#getTimestamp(String)} and {@link PreparedStatement#setTimestamp(int, Timestamp)}
+ *
+ * @author Guillaume Mary
  */
-public class DateBinder extends AbstractParameterBinder<Date> {
-
+public class DateBinder implements ParameterBinder<Date> {
+	
 	@Override
-	public void setNotNull(int valueIndex, Date value, PreparedStatement statement) throws SQLException {
-		statement.setTimestamp(valueIndex, new Timestamp(value.getTime()));
-	}
-
-	@Override
-	public Date getNotNull(String columnName, ResultSet resultSet) throws SQLException {
+	public Date get(String columnName, ResultSet resultSet) throws SQLException {
 		return new Date(resultSet.getTimestamp(columnName).getTime());
+	}
+	
+	@Override
+	public void set(int valueIndex, Date value, PreparedStatement statement) throws SQLException {
+		statement.setTimestamp(valueIndex, new Timestamp(value.getTime()));
 	}
 }

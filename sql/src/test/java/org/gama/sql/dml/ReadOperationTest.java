@@ -9,9 +9,8 @@ import java.util.Map;
 
 import org.gama.sql.IConnectionProvider;
 import org.gama.sql.SimpleConnectionProvider;
-import org.gama.sql.binder.LongBinder;
+import org.gama.sql.binder.DefaultParameterBinders;
 import org.gama.sql.binder.ParameterBinder;
-import org.gama.sql.binder.StringBinder;
 import org.gama.sql.test.HSQLDBInMemoryDataSource;
 import org.junit.Before;
 import org.junit.Test;
@@ -40,8 +39,8 @@ public class ReadOperationTest {
 	@Test
 	public void testExecute_preparedSQL() throws SQLException {
 		Map<Integer, ParameterBinder> parameterBinders = new HashMap<>();
-		parameterBinders.put(1, new LongBinder());
-		parameterBinders.put(2, new StringBinder());
+		parameterBinders.put(1, DefaultParameterBinders.LONG_PRIMITIVE_BINDER);
+		parameterBinders.put(2, DefaultParameterBinders.STRING_BINDER);
 		
 		ReadOperation<Integer> testInstance = new ReadOperation<>(new PreparedSQL("select count(*) from Toto where id = ? and name = ?", parameterBinders), connectionProvider);
 		testInstance.setValue(1, 1L);
@@ -54,8 +53,8 @@ public class ReadOperationTest {
 	@Test
 	public void testExecute_parameterizedSQL() throws SQLException {
 		Map<String, ParameterBinder> parameterBinders = new HashMap<>();
-		parameterBinders.put("id", new LongBinder());
-		parameterBinders.put("name", new StringBinder());
+		parameterBinders.put("id", DefaultParameterBinders.LONG_PRIMITIVE_BINDER);
+		parameterBinders.put("name", DefaultParameterBinders.STRING_BINDER);
 		
 		ReadOperation<String> testInstance = new ReadOperation<>(new StringParamedSQL("select count(*) from Toto where id = :id and name = :name", parameterBinders), connectionProvider);
 		testInstance.setValue("id", 1L);

@@ -1,5 +1,6 @@
 package org.gama.sql.binder;
 
+import java.io.InputStream;
 import java.util.Date;
 import java.util.WeakHashMap;
 
@@ -25,18 +26,19 @@ public class ParameterBinderRegistry {
 	}
 	
 	protected void registerParameterBinders() {
-		register(String.class, new StringBinder());
-		register(Double.class, new DoubleBinder());
-		register(Double.TYPE, new DoubleBinder());
-		register(Float.class, new FloatBinder());
-		register(Float.TYPE, new FloatBinder());
-		register(Long.class, new LongBinder());
-		register(Long.TYPE, new LongBinder());
-		register(Integer.class, new IntegerBinder());
-		register(Integer.TYPE, new IntegerBinder());
+		register(String.class, DefaultParameterBinders.STRING_BINDER);
+		register(Double.class, DefaultParameterBinders.DOUBLE_BINDER);
+		register(Double.TYPE, DefaultParameterBinders.DOUBLE_PRIMITIVE_BINDER);
+		register(Float.class, DefaultParameterBinders.FLOAT_BINDER);
+		register(Float.TYPE, DefaultParameterBinders.FLOAT_PRIMITIVE_BINDER);
+		register(Long.class, DefaultParameterBinders.LONG_BINDER);
+		register(Long.TYPE, DefaultParameterBinders.LONG_PRIMITIVE_BINDER);
+		register(Integer.class, DefaultParameterBinders.INTEGER_BINDER);
+		register(Integer.TYPE, DefaultParameterBinders.INTEGER_PRIMITIVE_BINDER);
 		register(Date.class, new DateBinder());
-		register(Boolean.class, new BooleanBinder());
-		register(Boolean.TYPE, new BooleanBinder());
+		register(Boolean.class, DefaultParameterBinders.BOOLEAN_BINDER);
+		register(Boolean.TYPE, DefaultParameterBinders.BOOLEAN_PRIMITIVE_BINDER);
+		register(InputStream.class, DefaultParameterBinders.BINARYSTREAM_BINDER);
 	}
 	
 	/**

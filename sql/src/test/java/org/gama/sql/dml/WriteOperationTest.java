@@ -10,9 +10,8 @@ import org.gama.lang.collection.Arrays;
 import org.gama.lang.collection.Maps;
 import org.gama.sql.IConnectionProvider;
 import org.gama.sql.SimpleConnectionProvider;
-import org.gama.sql.binder.LongBinder;
+import org.gama.sql.binder.DefaultParameterBinders;
 import org.gama.sql.binder.ParameterBinder;
-import org.gama.sql.binder.StringBinder;
 import org.gama.sql.test.HSQLDBInMemoryDataSource;
 import org.junit.Before;
 import org.junit.Test;
@@ -40,8 +39,8 @@ public class WriteOperationTest {
 	@Test
 	public void testExecute_preparedSQL() throws SQLException {
 		Map<Integer, ParameterBinder> parameterBinders = new HashMap<>();
-		parameterBinders.put(1, new LongBinder());
-		parameterBinders.put(2, new StringBinder());
+		parameterBinders.put(1, DefaultParameterBinders.LONG_PRIMITIVE_BINDER);
+		parameterBinders.put(2, DefaultParameterBinders.STRING_BINDER);
 		
 		WriteOperation<Integer> testInstance = new WriteOperation<>(new PreparedSQL("insert into Toto(id, name) values(?, ?)", parameterBinders), connectionProvider);
 		testInstance.setValue(1, 1L);
@@ -53,8 +52,8 @@ public class WriteOperationTest {
 	@Test
 	public void testExecuteBatch_preparedSQL() throws SQLException {
 		Map<Integer, ParameterBinder> parameterBinders = new HashMap<>();
-		parameterBinders.put(1, new LongBinder());
-		parameterBinders.put(2, new StringBinder());
+		parameterBinders.put(1, DefaultParameterBinders.LONG_PRIMITIVE_BINDER);
+		parameterBinders.put(2, DefaultParameterBinders.STRING_BINDER);
 		
 		WriteOperation<Integer> testInstance = new WriteOperation<>(new PreparedSQL("insert into Toto(id, name) values(?, ?)", parameterBinders), connectionProvider);
 		testInstance.addBatch(Maps.asMap(1, (Object) 1L).add(2, "Tata"));
@@ -69,8 +68,8 @@ public class WriteOperationTest {
 	@Test
 	public void testExecute_parameterizedSQL() throws SQLException {
 		Map<String, ParameterBinder> parameterBinders = new HashMap<>();
-		parameterBinders.put("id", new LongBinder());
-		parameterBinders.put("name", new StringBinder());
+		parameterBinders.put("id", DefaultParameterBinders.LONG_PRIMITIVE_BINDER);
+		parameterBinders.put("name", DefaultParameterBinders.STRING_BINDER);
 		
 		WriteOperation<String> testInstance = new WriteOperation<>(new StringParamedSQL("insert into Toto(id, name) values(:id, :name)", parameterBinders), connectionProvider);
 		testInstance.setValue("id", 1L);
@@ -79,9 +78,9 @@ public class WriteOperationTest {
 		assertEquals(1, executeOne);
 		
 		parameterBinders.clear();
-		parameterBinders.put("ids", new LongBinder());
+		parameterBinders.put("ids", DefaultParameterBinders.LONG_PRIMITIVE_BINDER);
 		WriteOperation<String> testInstanceForDelete = new WriteOperation<>(new StringParamedSQL("delete from Toto where id in (:ids)", parameterBinders), connectionProvider);
-		testInstanceForDelete.addBatch(Maps.asMap("ids", (Object) Arrays.asList(1L, 2L, 3L)));
+		testInstanceForDelete.addBatch(Maps.asMap("ids", Arrays.asList(1L, 2L, 3L)));
 		int executeMultiple = testInstanceForDelete.executeBatch();
 		assertEquals(1, executeMultiple);
 	}
@@ -89,8 +88,8 @@ public class WriteOperationTest {
 	@Test
 	public void testExecuteBatch_parameterizedSQL() throws SQLException {
 		Map<String, ParameterBinder> parameterBinders = new HashMap<>();
-		parameterBinders.put("id", new LongBinder());
-		parameterBinders.put("name", new StringBinder());
+		parameterBinders.put("id", DefaultParameterBinders.LONG_PRIMITIVE_BINDER);
+		parameterBinders.put("name", DefaultParameterBinders.STRING_BINDER);
 		
 		WriteOperation<String> testInstance = new WriteOperation<>(new StringParamedSQL("insert into Toto(id, name) values(:id, :name)", parameterBinders), connectionProvider);
 		testInstance.addBatch(Maps.asMap("id", (Object) 1L).add("name", "Tata"));
