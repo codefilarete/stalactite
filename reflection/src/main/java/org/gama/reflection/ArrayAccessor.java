@@ -51,7 +51,7 @@ public class ArrayAccessor<C> extends AbstractAccessor<C, C> {
 	
 	@Override
 	protected String getGetterDescription() {
-		return "array accessor to index " + index;
+		return "array accessor for index " + index;
 	}
 	
 	@Override

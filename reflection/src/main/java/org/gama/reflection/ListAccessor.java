@@ -6,12 +6,21 @@ import java.util.List;
 import org.gama.lang.Reflections;
 
 /**
+ * Dedicated class to {@link List#get(int)} accessor
+ * 
  * @author Guillaume Mary
  */
 public class ListAccessor<C extends List<T>, T> extends AccessorByMethod<C, T> {
 	
-	private int index;
+	/* Implementation note:
+	 * The index of the get() method is mapped to the first argument of super attribute "methodParameters" through setParameter(0, index)
+	 * and getParameter(0). We could have used a dedicated attribute "index" but it requires implementation of equald/hashcode. Whereas reuse
+	 * of "methodParameters" allow comparison (equals()) with another AccessorByMethod that is not a ListAccessor.
+	 */
 	
+	/**
+	 * Default constructor without index. Will lead to error if {@link #setIndex(int)} is not called.
+	 */
 	public ListAccessor() {
 		super(Reflections.findMethod(List.class, "get", Integer.TYPE));
 	}
@@ -22,11 +31,14 @@ public class ListAccessor<C extends List<T>, T> extends AccessorByMethod<C, T> {
 	}
 	
 	public void setIndex(int index) {
-		this.index = index;
+		// we reuse the super parameter method
+		setParameter(0, index);
 	}
 	
 	public int getIndex() {
-		return index;
+		// preventing NullPointerException
+		Object parameter = getParameter(0);
+		return parameter == null ? 0 : (int) parameter;
 	}
 	
 	@Override
@@ -36,7 +48,7 @@ public class ListAccessor<C extends List<T>, T> extends AccessorByMethod<C, T> {
 	
 	@Override
 	protected String getGetterDescription() {
-		return "java.util.List.get(int)";
+		return "java.util.List.get(" + getIndex() +")";
 	}
 	
 	@Override

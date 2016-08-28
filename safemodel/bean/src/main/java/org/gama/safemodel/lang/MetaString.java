@@ -39,8 +39,7 @@ public class MetaString<O extends MetaModel, M extends AbstractMemberDescription
 	}
 	
 	public MetaModel<MetaModel, ArrayDescription> toCharArray(int index) {
-		MetaModel<MetaString, MethodDescription<Character[]>> toCharArray = (MetaModel<MetaString, MethodDescription<Character[]>>)
-				new MetaModel(method(String.class, "toCharArray", char[].class));
+		MetaModel<MetaString, MethodDescription<char[]>> toCharArray = new MetaModel<>(method(String.class, "toCharArray", char[].class));
 		toCharArray.setOwner(this);
 		MetaModel<MetaModel, ArrayDescription> toCharArrayAccessor = new MetaModel<>(new ArrayDescription(String.class));
 		toCharArrayAccessor.setOwner(toCharArray);

@@ -5,8 +5,10 @@ import java.lang.reflect.Member;
 import java.lang.reflect.Method;
 import java.util.Arrays;
 
+import org.gama.lang.StringAppender;
+
 /**
- * @author mary
+ * @author Guillaume Mary
  */
 public class AccessorByMethod<C, T> extends AbstractAccessor<C, T> implements AccessorByMember<C, T, Method> {
 	
@@ -15,11 +17,13 @@ public class AccessorByMethod<C, T> extends AbstractAccessor<C, T> implements Ac
 	private final Object[] methodParameters;
 	
 	public AccessorByMethod(Method getter) {
+		this(getter, new Object[getter.getParameterTypes().length]);
+	}
+	
+	public AccessorByMethod(Method getter, Object ... arguments) {
 		this.getter = getter;
 		this.getter.setAccessible(true);
-		int parametersLength = this.getter.getParameterTypes().length;
-		// method parameters instanciation to avoid extra array instanciation on each get(..) call
-		this.methodParameters = new Object[parametersLength];
+		this.methodParameters = arguments;
 	}
 	
 	@Override
@@ -44,6 +48,10 @@ public class AccessorByMethod<C, T> extends AbstractAccessor<C, T> implements Ac
 		return this;
 	}
 	
+	public Object getParameter(int index) {
+		return methodParameters[index];
+	}
+	
 	public T get(C c, Object ... params) {
 		try {
 			return doGet(c, params);
@@ -66,7 +74,10 @@ public class AccessorByMethod<C, T> extends AbstractAccessor<C, T> implements Ac
 	
 	@Override
 	protected String getGetterDescription() {
-		return getGetter().getDeclaringClass().getName() + "." + getGetter().getName() + "()";
+		StringAppender arguments = new StringAppender(Arrays.deepToString(methodParameters));
+		// removing '[' and ']'
+		arguments.cutHead(1).cutTail(1);
+		return getGetter().getDeclaringClass().getName() + "." + getGetter().getName() + "(" + arguments + ")";
 	}
 	
 	@Override
@@ -83,11 +94,12 @@ public class AccessorByMethod<C, T> extends AbstractAccessor<C, T> implements Ac
 	
 	@Override
 	public boolean equals(Object other) {
-		// we base our implementation on the setter description because a setAccessible() call on the member changes its internal state
+		// We base our implementation on the getter String because a setAccessible() call on the member changes its internal state
 		// and I don't think it sould be taken into account for comparison
+		// We could base it on getGetterDescription() but it requires more computation
 		return this == other || 
 				(other instanceof AccessorByMethod
-						&& getGetterDescription().equals(((AccessorByMethod) other).getGetterDescription())
+						&& getGetter().toString().equals(((AccessorByMethod) other).getGetter().toString())
 						&& Arrays.equals(methodParameters, ((AccessorByMethod) other).methodParameters));
 	}
 	

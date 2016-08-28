@@ -1,6 +1,5 @@
 package org.gama.safemodel;
 
-import java.util.ArrayList;
 import java.util.List;
 
 import com.tngtech.java.junit.dataprovider.DataProvider;
@@ -8,7 +7,12 @@ import com.tngtech.java.junit.dataprovider.DataProviderRunner;
 import com.tngtech.java.junit.dataprovider.UseDataProvider;
 import org.gama.lang.Reflections;
 import org.gama.lang.collection.Arrays;
-import org.gama.reflection.*;
+import org.gama.reflection.AccessorByField;
+import org.gama.reflection.AccessorByMethod;
+import org.gama.reflection.AccessorChain;
+import org.gama.reflection.Accessors;
+import org.gama.reflection.ArrayAccessor;
+import org.gama.reflection.IAccessor;
 import org.gama.safemodel.lang.MetaString;
 import org.gama.safemodel.metamodel.MetaAddress;
 import org.gama.safemodel.metamodel.MetaCity;
@@ -46,12 +50,12 @@ public class MetaModelAccessorBuilderTest {
 		addressCityAccessor = Accessors.accessorByField(Address.class, "city");
 		personAddressAccessor = Accessors.accessorByField(Person.class, "address");
 		addressPhonesAccessor = Accessors.accessorByField(Address.class, "phones");
-		phoneListAccessor = new AccessorByMethod<>(Reflections.findMethod(List.class, "get", Integer.TYPE));
+		phoneListAccessor = new AccessorByMethod<>(Reflections.findMethod(List.class, "get", Integer.TYPE), 2);
 		phoneNumberAccessor = Accessors.accessorByField(Phone.class, "number");
 		phoneNumberMethodAccessor = Accessors.accessorByMethod(Phone.class, "number");
-		charAtAccessor = new AccessorByMethod<>(Reflections.findMethod(String.class, "charAt", Integer.TYPE));
+		charAtAccessor = new AccessorByMethod<>(Reflections.findMethod(String.class, "charAt", Integer.TYPE), 2);
 		toCharAccessor = new AccessorByMethod<>(Reflections.findMethod(String.class, "toCharArray"));
-		charAtArrayAccessor = new ArrayAccessor<>(0);
+		charAtArrayAccessor = new ArrayAccessor<>(2);
 	}
 	
 	public static List<IAccessor> list(IAccessor ... accessors) {
@@ -67,6 +71,8 @@ public class MetaModelAccessorBuilderTest {
 						list(addressCityAccessor, cityNameAccessor) },
 				{ new MetaPerson<>().address.city.name,
 						list(personAddressAccessor, addressCityAccessor, cityNameAccessor) },
+				{ new MetaAddress<>().phones(2),
+						list(addressPhonesAccessor, phoneListAccessor) },
 				{ new MetaPerson<>().address.phones(2).number,
 						list(personAddressAccessor, addressPhonesAccessor, phoneListAccessor, phoneNumberAccessor) },
 				{ new MetaPerson<>().address.phones(2).getNumber(),
@@ -82,13 +88,9 @@ public class MetaModelAccessorBuilderTest {
 	
 	@Test
 	@UseDataProvider("testTransformData")
-	public void testTransform(MetaModel metaModel, List<IAccessor> expected) throws Exception {
+	public void testTransform(MetaModel metaModel, List<IAccessor> expected) {
 		MetaModelAccessorBuilder<Object, Object> testInstance = new MetaModelAccessorBuilder<>();
 		AccessorChain<Object, Object> accessorChain = testInstance.transform(metaModel);
-		List<IAccessor> accessors = new ArrayList<>();
-		for (IAccessor accessor : accessorChain.getAccessors()) {
-			accessors.add(accessor);
-		}
-		assertEquals(expected, accessors);
+		assertEquals(expected, accessorChain.getAccessors());
 	}
 }

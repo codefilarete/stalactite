@@ -4,7 +4,7 @@ import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 
 /**
- * @author mary
+ * @author Guillaume Mary
  */
 public class AccessorByField<C, T> extends AbstractAccessor<C, T> implements AccessorByMember<C, T, Field> {
 	
@@ -37,10 +37,10 @@ public class AccessorByField<C, T> extends AbstractAccessor<C, T> implements Acc
 	
 	@Override
 	public boolean equals(Object other) {
-		// we base our implementation on the setter description because a setAccessible() call on the member changes its internal state
+		// we base our implementation on the getter String because a setAccessible() call on the member changes its internal state
 		// and I don't think it sould be taken into account for comparison
 		return this == other
-				|| (other instanceof AccessorByField && getGetterDescription().equals(((AccessorByField) other).getGetterDescription()));
+				|| (other instanceof AccessorByField && getGetter().toString().equals(((AccessorByField) other).getGetter().toString()));
 	}
 	
 	@Override
