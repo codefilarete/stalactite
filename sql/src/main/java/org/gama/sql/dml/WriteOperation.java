@@ -72,12 +72,7 @@ public class WriteOperation<ParamType> extends SQLOperation<ParamType> {
 	
 	private int executeUpdate() {
 		LOGGER.debug(getSQL());
-		return doWithRetry(new IDelegate<Integer, SQLException>() {
-			@Override
-			public Integer execute() throws SQLException {
-				return doExecuteUpdate();
-			}
-		});
+		return doWithRetry(this::doExecuteUpdate);
 	}
 	
 	private int doExecuteUpdate() throws SQLException {
@@ -113,12 +108,7 @@ public class WriteOperation<ParamType> extends SQLOperation<ParamType> {
 	private int[] doExecuteBatch() {
 		LOGGER.debug(getSQL());
 		try {
-			return (int[]) doWithRetry(new IDelegate<Object, SQLException>() {
-				@Override
-				public Object execute() throws SQLException {
-					return preparedStatement.executeBatch();
-				}
-			});
+			return (int[]) doWithRetry((IDelegate<Object, SQLException>) () -> preparedStatement.executeBatch());
 		} catch (Throwable t) {
 			throw new RuntimeException("Error during " + getSQL(), t);
 		}

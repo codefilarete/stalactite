@@ -51,7 +51,8 @@ public class InsertExecutor<T, I> extends UpsertExecutor<T, I> {
 	}
 	
 	private GeneratedKeysReader getGeneratedKeysReader() {
-		return getMappingStrategy().getGeneratedKeysReader();
+		IdentifierGenerator identifierGenerator = getMappingStrategy().getIdentifierGenerator();
+		return identifierGenerator instanceof AfterInsertIdentifierGenerator ? ((AfterInsertIdentifierGenerator) identifierGenerator).getGeneratedKeysReader() : null;
 	}
 	
 	public int insert(Iterable<T> iterable) {

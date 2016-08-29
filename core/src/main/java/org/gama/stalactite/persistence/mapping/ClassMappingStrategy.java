@@ -14,7 +14,6 @@ import java.util.stream.Collectors;
 
 import org.gama.lang.collection.Arrays;
 import org.gama.reflection.PropertyAccessor;
-import org.gama.sql.dml.GeneratedKeysReader;
 import org.gama.sql.result.Row;
 import org.gama.stalactite.persistence.id.generator.IdentifierGenerator;
 import org.gama.stalactite.persistence.sql.dml.PreparedUpdate.UpwhereColumn;
@@ -42,16 +41,8 @@ public class ClassMappingStrategy<T, I> implements IEntityMappingStrategy<T, I> 
 	
 	private PropertyAccessor<T, I> identifierAccessor;
 	
-	private final GeneratedKeysReader generatedKeysReader;
-	
 	public ClassMappingStrategy(Class<T> classToPersist, Table targetTable,
 								Map<PropertyAccessor, Column> propertyToColumn, PropertyAccessor<T, I> identifierProperty, IdentifierGenerator identifierGenerator) {
-		this(classToPersist, targetTable, propertyToColumn, identifierProperty, identifierGenerator, null);
-	}
-	
-	public ClassMappingStrategy(Class<T> classToPersist, Table targetTable,
-								Map<PropertyAccessor, Column> propertyToColumn, PropertyAccessor<T, I> identifierProperty, IdentifierGenerator identifierGenerator,
-								GeneratedKeysReader generatedKeysReader) {
 		if (identifierProperty == null) {
 			throw new UnsupportedOperationException("No identifier property for " + classToPersist.getName());
 		}
@@ -74,7 +65,6 @@ public class ClassMappingStrategy<T, I> implements IEntityMappingStrategy<T, I> 
 			throw new UnsupportedOperationException("Accessor " + identifierProperty.getAccessor()
 					+ " is declared as identifier but mapped column " + identifierColumn.toString() + " is not the primary key of table");
 		}
-		this.generatedKeysReader = generatedKeysReader;
 	}
 	
 	public Class<T> getClassToPersist() {
@@ -122,10 +112,6 @@ public class ClassMappingStrategy<T, I> implements IEntityMappingStrategy<T, I> 
 	
 	public IdentifierGenerator getIdentifierGenerator() {
 		return identifierGenerator;
-	}
-	
-	public GeneratedKeysReader getGeneratedKeysReader() {
-		return generatedKeysReader;
 	}
 	
 	@Override
