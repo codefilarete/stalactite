@@ -59,8 +59,8 @@ public abstract class DMLExecutorTest {
 		private String tableName;
 		private String primaryKeyFieldName;
 		
-		public PersistenceConfigurationBuilder withTableAndClass(String tableName, Class<T> mappedClass, BiFunction<TableAndClass<T>, 
-				PropertyAccessor<T, I>, ClassMappingStrategy<T, I>> classMappingStrategyBuilder) {
+		public PersistenceConfigurationBuilder withTableAndClass(String tableName, Class<T> mappedClass,
+						BiFunction<TableAndClass<T>, PropertyAccessor<T, I>, ClassMappingStrategy<T, I>> classMappingStrategyBuilder) {
 			this.tableName = tableName;
 			this.mappedClass = mappedClass;
 			this.classMappingStrategyBuilder = classMappingStrategyBuilder;

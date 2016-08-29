@@ -28,6 +28,7 @@ import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 
 import static org.junit.Assert.assertEquals;
+import static org.mockito.Matchers.anyInt;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -117,6 +118,7 @@ public class JoinTablePersisterTest {
 		when(preparedStatement.getConnection()).thenReturn(connection);
 		statementArgCaptor = ArgumentCaptor.forClass(String.class);
 		when(connection.prepareStatement(statementArgCaptor.capture())).thenReturn(preparedStatement);
+		when(connection.prepareStatement(statementArgCaptor.capture(), anyInt())).thenReturn(preparedStatement);
 		
 		valueCaptor = ArgumentCaptor.forClass(Integer.class);
 		indexCaptor = ArgumentCaptor.forClass(Integer.class);
