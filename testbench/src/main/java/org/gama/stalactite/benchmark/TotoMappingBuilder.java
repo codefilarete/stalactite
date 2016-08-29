@@ -6,6 +6,8 @@ import java.util.HashSet;
 import java.util.Map;
 
 import org.gama.lang.exception.Exceptions;
+import org.gama.reflection.PropertyAccessor;
+import org.gama.stalactite.persistence.engine.PersistenceContext;
 import org.gama.stalactite.persistence.engine.SeparateTransactionExecutor;
 import org.gama.stalactite.persistence.id.generator.sequence.PooledSequenceIdentifierGenerator;
 import org.gama.stalactite.persistence.id.generator.sequence.PooledSequenceIdentifierGeneratorOptions;
@@ -27,18 +29,20 @@ public class TotoMappingBuilder implements IMappingBuilder {
 	public ClassMappingStrategy getClassMappingStrategy() {
 		targetTable = new TotoTable();
 		PersistentFieldHarverster persistentFieldHarverster = new PersistentFieldHarverster();
-		Map<Field, Column> fieldColumnMap = persistentFieldHarverster.mapFields(Toto.class, targetTable);
-		ClassMappingStrategy<Toto> classMappingStrategy = new ClassMappingStrategy<>(Toto.class, targetTable,
-				fieldColumnMap, persistentFieldHarverster.getField("id"),
+		Map<PropertyAccessor, Column> fieldColumnMap = persistentFieldHarverster.mapFields(Toto.class, targetTable);
+		PersistenceContext currentPersistenceContext = PersistenceContexts.getCurrent();
+		ClassMappingStrategy<Toto, Long> classMappingStrategy = new ClassMappingStrategy<>(Toto.class, targetTable,
+				fieldColumnMap, PropertyAccessor.forProperty(persistentFieldHarverster.getField("id")),
 				new PooledSequenceIdentifierGenerator(new PooledSequenceIdentifierGeneratorOptions(100, "Toto", PooledSequencePersistenceOptions.DEFAULT),
-						PersistenceContexts.getCurrent().getDialect(), (SeparateTransactionExecutor) PersistenceContexts.getCurrent().getConnectionProvider(), PersistenceContexts.getCurrent().getJDBCBatchSize()));
+						currentPersistenceContext.getDialect(), (SeparateTransactionExecutor) currentPersistenceContext.getConnectionProvider(),
+						currentPersistenceContext.getJDBCBatchSize()));
 		Field answersField = null;
 		try {
 			answersField = Toto.class.getDeclaredField("answers");
 		} catch (NoSuchFieldException e) {
 			throw Exceptions.asRuntimeException(e);
 		}
-		classMappingStrategy.put(answersField, new ColumnedMapMappingStrategy<Map<Long, Object>, Long, Object, Object>(targetTable, new HashSet<>(targetTable.dynamicColumns.values()), HashMap.class) {
+		classMappingStrategy.put(PropertyAccessor.forProperty(answersField), new ColumnedMapMappingStrategy<Map<Long, Object>, Long, Object, Object>(targetTable, new HashSet<>(targetTable.dynamicColumns.values()), HashMap.class) {
 			@Override
 			protected Column getColumn(Long key) {
 				return targetTable.dynamicColumns.get(key);
