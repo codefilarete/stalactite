@@ -6,11 +6,16 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Random;
 
 import net.bytebuddy.ByteBuddy;
 import net.bytebuddy.dynamic.ClassLoadingStrategy;
 import net.bytebuddy.dynamic.DynamicType.Builder;
+import org.gama.reflection.PropertyAccessor;
 import org.gama.stalactite.persistence.engine.SeparateTransactionExecutor;
 import org.gama.stalactite.persistence.id.generator.AutoAssignedIdentifierGenerator;
 import org.gama.stalactite.persistence.id.generator.sequence.PooledSequenceIdentifierGenerator;
@@ -37,7 +42,7 @@ public class DynamicAndComplementaryClassMappingBuilder implements IMappingBuild
 	
 	Map<String, Field> dynamicTypeFields;
 	Map<String, Field> nilDynamicTypeFields;
-	private ClassMappingStrategy<?> classMappingStrategyNil;
+	private ClassMappingStrategy<? extends DynamicAndComplementaryClassMappingBuilder.DynamicEntity, Long> classMappingStrategyNil;
 	
 	@Override
 	public ClassMappingStrategy getClassMappingStrategy() {
@@ -45,9 +50,9 @@ public class DynamicAndComplementaryClassMappingBuilder implements IMappingBuild
 		this.dynamicType = buildDynamicType(targetTable);
 		
 		PersistentFieldHarverster persistentFieldHarverster = new PersistentFieldHarverster();
-		Map<Field, Column> fieldColumnMap = persistentFieldHarverster.mapFields(dynamicType, targetTable);
+		Map<PropertyAccessor, Column> fieldColumnMap = persistentFieldHarverster.mapFields(dynamicType, targetTable);
 		dynamicTypeFields = new HashMap<>();
-		for (Field declaredField : fieldColumnMap.keySet()) {
+		for (Field declaredField : persistentFieldHarverster.getFields(dynamicType)) {
 //			if (declaredField.getName().startsWith("q")) {
 				dynamicTypeFields.put(declaredField.getName(), declaredField);
 //			}
@@ -57,8 +62,8 @@ public class DynamicAndComplementaryClassMappingBuilder implements IMappingBuild
 		PooledSequenceIdentifierGenerator identifierGenerator = new PooledSequenceIdentifierGenerator(options,
 				PersistenceContexts.getCurrent().getDialect(), (SeparateTransactionExecutor) PersistenceContexts.getCurrent().getConnectionProvider(), PersistenceContexts.getCurrent().getJDBCBatchSize());
 //		PersistenceContext.getCurrent().add(identifierGenerator.getPooledSequencePersister().getMappingStrategy());
-		ClassMappingStrategy<?> classMappingStrategy = new ClassMappingStrategy<>(dynamicType, targetTable,
-				fieldColumnMap, persistentFieldHarverster.getField("id"), identifierGenerator);
+		ClassMappingStrategy<? extends DynamicEntity, Long> classMappingStrategy = new ClassMappingStrategy<>(dynamicType, targetTable,
+				fieldColumnMap, PropertyAccessor.forProperty(persistentFieldHarverster.getField("id")), identifierGenerator);
 		getClassMappingStrategy_nil();
 		getClassMappingStrategy_indexes();
 		return classMappingStrategy;
@@ -74,15 +79,15 @@ public class DynamicAndComplementaryClassMappingBuilder implements IMappingBuild
 		this.nilDynamicType = buildDynamicType(targetNilTable);
 		
 		PersistentFieldHarverster persistentFieldHarverster = new PersistentFieldHarverster();
-		Map<Field, Column> fieldColumnMap = persistentFieldHarverster.mapFields(nilDynamicType, targetNilTable);
+		Map<PropertyAccessor, Column> fieldColumnMap = persistentFieldHarverster.mapFields(nilDynamicType, targetNilTable);
 		nilDynamicTypeFields = new HashMap<>();
-		for (Field declaredField : fieldColumnMap.keySet()) {
+		for (Field declaredField : persistentFieldHarverster.getFields(nilDynamicType)) {
 			nilDynamicTypeFields.put(declaredField.getName(), declaredField);
 		}
 		
 		// NB: AutoAssignedIdentifierGenerator car l'id vient de l'instance de DynamicType
 		classMappingStrategyNil = new ClassMappingStrategy<>(nilDynamicType, targetNilTable,
-				fieldColumnMap, persistentFieldHarverster.getField("id"), new AutoAssignedIdentifierGenerator());
+				fieldColumnMap, PropertyAccessor.forProperty(persistentFieldHarverster.getField("id")), new AutoAssignedIdentifierGenerator());
 		return classMappingStrategyNil;
 	}
 	
@@ -98,10 +103,10 @@ public class DynamicAndComplementaryClassMappingBuilder implements IMappingBuild
 			Class<? extends DynamicEntity> indexDynamicType = buildDynamicType(indexTable);
 			
 			PersistentFieldHarverster persistentFieldHarverster = new PersistentFieldHarverster();
-			Map<Field, Column> fieldColumnMap = persistentFieldHarverster.mapFields(indexDynamicType, indexTable);
+			Map<PropertyAccessor, Column> fieldColumnMap = persistentFieldHarverster.mapFields(indexDynamicType, indexTable);
 			
-			ClassMappingStrategy<?> classMappingStrategy = new ClassMappingStrategy<>(indexDynamicType, indexTable,
-					fieldColumnMap, persistentFieldHarverster.getField("id"), new AutoAssignedIdentifierGenerator());
+			ClassMappingStrategy<? extends DynamicEntity, Long> classMappingStrategy = new ClassMappingStrategy<>(indexDynamicType, indexTable,
+					fieldColumnMap, PropertyAccessor.forProperty(persistentFieldHarverster.getField("id")), new AutoAssignedIdentifierGenerator());
 			indexDynamicTypes.put(columnToIndex, classMappingStrategy);
 		}
 		return indexDynamicTypes;

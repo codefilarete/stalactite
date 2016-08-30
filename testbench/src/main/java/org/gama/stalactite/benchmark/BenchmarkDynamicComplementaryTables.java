@@ -1,5 +1,15 @@
 package org.gama.stalactite.benchmark;
 
+import java.lang.reflect.Field;
+import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
+
 import org.gama.lang.bean.IFactory;
 import org.gama.lang.collection.ValueFactoryHashMap;
 import org.gama.lang.exception.Exceptions;
@@ -12,12 +22,6 @@ import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
 import org.gama.stalactite.persistence.sql.ddl.DDLGenerator;
 import org.gama.stalactite.persistence.sql.ddl.DDLTableGenerator;
 import org.gama.stalactite.persistence.structure.Table;
-
-import java.lang.reflect.Field;
-import java.sql.SQLException;
-import java.util.*;
-import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutionException;
 
 /**
  * @author Guillaume Mary
@@ -68,7 +72,7 @@ public class BenchmarkDynamicComplementaryTables extends AbstractBenchmark<Dynam
 	}
 	
 	private <D extends DynamicEntity> void addListener(final PersistenceContext persistenceContext) {
-		final Persister<D> dynamicTypePersister = persistenceContext.getPersister((Class<D>) dynamicClassMappingBuilder.dynamicType);
+		final Persister<D, Long> dynamicTypePersister = (Persister<D, Long>) persistenceContext.getPersister((Class<D>) dynamicClassMappingBuilder.dynamicType);
 		dynamicTypePersister.getPersisterListener().addInsertListener(new NoopInsertListener<D>() {
 			@Override
 			public void afterInsert(Iterable<D> iterables) {
@@ -192,7 +196,7 @@ public class BenchmarkDynamicComplementaryTables extends AbstractBenchmark<Dynam
 		}
 		
 		protected void persist(final PersistenceContext persistenceContext, List<D> data) {
-			final Persister<D> dynamicTypePersister = persistenceContext.getPersister((Class<D>) dynamicClassMappingBuilder.dynamicType);
+			final Persister<D, Long> dynamicTypePersister = (Persister<D, Long>) persistenceContext.getPersister((Class<D>) dynamicClassMappingBuilder.dynamicType);
 //			dynamicTypePersister.getPersisterListener().addInsertListener(new NoopInsertListener<D>() {
 //				@Override
 //				public void afterInsert(Iterable<D> iterables) {

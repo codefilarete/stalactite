@@ -8,6 +8,8 @@ import java.util.Map;
 import net.bytebuddy.ByteBuddy;
 import net.bytebuddy.dynamic.ClassLoadingStrategy;
 import net.bytebuddy.dynamic.DynamicType.Builder;
+import org.gama.reflection.PropertyAccessor;
+import org.gama.stalactite.persistence.engine.PersistenceContext;
 import org.gama.stalactite.persistence.engine.SeparateTransactionExecutor;
 import org.gama.stalactite.persistence.id.generator.sequence.PooledSequenceIdentifierGenerator;
 import org.gama.stalactite.persistence.id.generator.sequence.PooledSequenceIdentifierGeneratorOptions;
@@ -53,11 +55,13 @@ public class DynamicClassMappingBuilder implements IMappingBuilder {
 		}
 		
 		PersistentFieldHarverster persistentFieldHarverster = new PersistentFieldHarverster();
-		Map<Field, Column> fieldColumnMap = persistentFieldHarverster.mapFields(dynamicType, targetTable);
-		ClassMappingStrategy<?> classMappingStrategy = new ClassMappingStrategy<>(dynamicType, targetTable,
-				fieldColumnMap, persistentFieldHarverster.getField("id"),
+		Map<PropertyAccessor, Column> fieldColumnMap = persistentFieldHarverster.mapFields(dynamicType, targetTable);
+		PersistenceContext currentPersistenceContext = PersistenceContexts.getCurrent();
+		ClassMappingStrategy<? extends DynamicEntity, Long> classMappingStrategy = new ClassMappingStrategy<>(dynamicType, targetTable,
+				fieldColumnMap, PropertyAccessor.forProperty(persistentFieldHarverster.getField("id")),
 				new PooledSequenceIdentifierGenerator(new PooledSequenceIdentifierGeneratorOptions(100, "Toto", PooledSequencePersistenceOptions.DEFAULT),
-				PersistenceContexts.getCurrent().getDialect(), (SeparateTransactionExecutor) PersistenceContexts.getCurrent().getConnectionProvider(), PersistenceContexts.getCurrent().getJDBCBatchSize()));
+				currentPersistenceContext.getDialect(), (SeparateTransactionExecutor) currentPersistenceContext.getConnectionProvider(),
+						currentPersistenceContext.getJDBCBatchSize()));
 		return classMappingStrategy;
 	}
 	
