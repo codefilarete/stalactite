@@ -112,7 +112,7 @@ public class InsertExecutorTest extends DMLExecutorTest {
 			}
 		}
 		
-		protected static class PrimaryKeyReaderFromGeneratedKeys implements AfterInsertIdentifierGenerator {
+		protected static class PrimaryKeyReaderFromGeneratedKeys implements AfterInsertIdentifierGenerator<Serializable> {
 			
 			private final String primaryKeyName;
 			

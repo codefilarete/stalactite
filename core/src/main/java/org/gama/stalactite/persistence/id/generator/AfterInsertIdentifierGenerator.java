@@ -12,9 +12,9 @@ import org.gama.sql.dml.GeneratedKeysReader;
  * 
  * @author Guillaume Mary
  */
-public interface AfterInsertIdentifierGenerator extends IdentifierGenerator {
+public interface AfterInsertIdentifierGenerator<I> extends IdentifierGenerator {
 	
-	Object get(Map<String, Object> generatedKeys);
+	I get(Map<String, Object> generatedKeys);
 	
 	GeneratedKeysReader getGeneratedKeysReader();
 }
