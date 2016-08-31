@@ -15,13 +15,13 @@ import org.gama.stalactite.persistence.engine.listening.NoopDeleteListener;
  */
 public abstract class DeleteToAfterDeleteCascader<Trigger, Target> extends NoopDeleteListener<Trigger> {
 	
-	private Persister<Target, Object> persister;
+	private Persister<Target, ?> persister;
 	
 	/**
 	 * Simple constructor. Created instance must be added to PersisterListener afterward.
 	 * @param persister
 	 */
-	DeleteToAfterDeleteCascader(Persister<Target, Object> persister) {
+	DeleteToAfterDeleteCascader(Persister<Target, ?> persister) {
 		this.persister = persister;
 		this.persister.getPersisterListener().addDeleteListener(new NoopDeleteListener<Target>() {
 			@Override

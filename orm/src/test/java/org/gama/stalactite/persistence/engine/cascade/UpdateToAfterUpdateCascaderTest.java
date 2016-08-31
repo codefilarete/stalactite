@@ -9,12 +9,10 @@ import java.util.Map.Entry;
 
 import org.gama.lang.collection.Arrays;
 import org.gama.lang.collection.Iterables;
-import org.gama.stalactite.persistence.engine.PersistenceContext;
 import org.gama.stalactite.persistence.engine.Persister;
+import org.gama.stalactite.persistence.id.generator.AutoAssignedIdentifierGenerator;
 import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
 import org.gama.stalactite.persistence.sql.Dialect;
-import org.gama.stalactite.persistence.sql.ddl.JavaTypeToSqlTypeMapping;
-import org.gama.stalactite.persistence.sql.dml.binder.ColumnBinderRegistry;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
@@ -24,16 +22,14 @@ import static org.mockito.Mockito.when;
 /**
  * @author Guillaume Mary
  */
-public class UpdateToAfterUpdateCascaderTest extends CascaderTest {
+public class UpdateToAfterUpdateCascaderTest extends AbstractCascaderTest {
 	
 	@Test
 	public void testAfterUpdate() throws SQLException {
-		// Necessary Persister to be passed to the InsertToBeforeInsertCascader tested instance
-		PersistenceContext persistenceContextMock = mock(PersistenceContext.class);
-		when(persistenceContextMock.getDialect()).thenReturn(new Dialect(new JavaTypeToSqlTypeMapping(), new ColumnBinderRegistry()));
-		Persister<Tata, Object> persisterMock = new Persister<Tata, Object>(mock(ClassMappingStrategy.class),
-				persistenceContextMock.getDialect(),
-				null, 10) {
+		ClassMappingStrategy mappingStrategyMock = mock(ClassMappingStrategy.class);
+		// AutoAssignedIdentifierGenerator is sufficient for our test case
+		when(mappingStrategyMock.getIdentifierGenerator()).thenReturn(new AutoAssignedIdentifierGenerator());
+		Persister<Tata, Object> persisterMock = new Persister<Tata, Object>(mappingStrategyMock, mock(Dialect.class), null, 10) {
 			@Override
 			protected int doUpdate(Iterable<Entry<Tata, Tata>> differencesIterable, boolean allColumnsStatement) {
 				// Overriden to do no action, because default super action is complex to mock
@@ -43,8 +39,8 @@ public class UpdateToAfterUpdateCascaderTest extends CascaderTest {
 		
 		final List<String> actions = new ArrayList<>();
 		final List<Entry<Tata, Tata>> triggeredTarget = new ArrayList<>();
-		// Instance to test: overriden methods allow further cheching
-		UpdateToAfterUpdateCascader<Toto, Tata> testInstance = new UpdateToAfterUpdateCascader<Toto, Tata>(persisterMock, true) {
+		// Instance to test: overriden methods allow later checking
+		UpdateToAfterUpdateCascader<Toto, Tata> testInstance = new UpdateToAfterUpdateCascader<Toto, Tata>(persisterMock) {
 			
 			@Override
 			protected void postTargetUpdate(Iterable<Entry<Tata, Tata>> iterables) {

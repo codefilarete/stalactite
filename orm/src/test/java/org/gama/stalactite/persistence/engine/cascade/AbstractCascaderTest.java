@@ -3,7 +3,7 @@ package org.gama.stalactite.persistence.engine.cascade;
 /**
  * @author Guillaume Mary
  */
-public class CascaderTest {
+public abstract class AbstractCascaderTest {
 	
 	protected static class Toto {
 		

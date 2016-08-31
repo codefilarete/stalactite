@@ -16,10 +16,9 @@ import org.gama.stalactite.persistence.engine.listening.NoopUpdateListener;
  */
 public abstract class UpdateToAfterUpdateCascader<Trigger, Target> extends NoopUpdateListener<Trigger> {
 	
-	private Persister<Target, Object> persister;
-	private boolean allColumnsStatement;
+	private Persister<Target, ?> persister;
 	
-	UpdateToAfterUpdateCascader(Persister<Target, Object> persister, final boolean allColumnsStatement) {
+	UpdateToAfterUpdateCascader(Persister<Target, ?> persister) {
 		this.persister = persister;
 		this.persister.getPersisterListener().addUpdateListener(new NoopUpdateListener<Target>() {
 			@Override
@@ -28,7 +27,6 @@ public abstract class UpdateToAfterUpdateCascader<Trigger, Target> extends NoopU
 				postTargetUpdate(iterables);
 			}
 		});
-		this.allColumnsStatement = allColumnsStatement;
 	}
 	
 	/**

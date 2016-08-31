@@ -8,12 +8,10 @@ import java.util.stream.Collectors;
 
 import org.gama.lang.collection.Arrays;
 import org.gama.lang.collection.Iterables;
-import org.gama.stalactite.persistence.engine.PersistenceContext;
 import org.gama.stalactite.persistence.engine.Persister;
+import org.gama.stalactite.persistence.id.generator.AutoAssignedIdentifierGenerator;
 import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
 import org.gama.stalactite.persistence.sql.Dialect;
-import org.gama.stalactite.persistence.sql.ddl.JavaTypeToSqlTypeMapping;
-import org.gama.stalactite.persistence.sql.dml.binder.ColumnBinderRegistry;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
@@ -23,15 +21,14 @@ import static org.mockito.Mockito.when;
 /**
  * @author Guillaume Mary
  */
-public class SelectToAfterSelectCascaderTest extends CascaderTest {
+public class SelectToAfterSelectCascaderTest extends AbstractCascaderTest {
 	
 	@Test
 	public void testAfterSelect() throws SQLException {
-		PersistenceContext persistenceContextMock = mock(PersistenceContext.class);
-		when(persistenceContextMock.getDialect()).thenReturn(new Dialect(new JavaTypeToSqlTypeMapping(), new ColumnBinderRegistry()));
-		Persister<Tata, Long> persisterMock = new Persister<Tata, Long>(mock(ClassMappingStrategy.class),
-				persistenceContextMock.getDialect(),
-				null, 10) {
+		ClassMappingStrategy mappingStrategyMock = mock(ClassMappingStrategy.class);
+		// AutoAssignedIdentifierGenerator is sufficient for our test case
+		when(mappingStrategyMock.getIdentifierGenerator()).thenReturn(new AutoAssignedIdentifierGenerator());
+		Persister<Tata, Long> persisterMock = new Persister<Tata, Long>(mappingStrategyMock, mock(Dialect.class), null, 10) {
 			@Override
 			protected List<Tata> doSelect(Iterable<Long> ids) {
 				List<Tata> selectedTarget = new ArrayList<>();
@@ -44,10 +41,10 @@ public class SelectToAfterSelectCascaderTest extends CascaderTest {
 			}
 		};
 		
-		final List<String> actions = new ArrayList<>();
-		final List<Tata> triggeredTarget = new ArrayList<>();
+		List<String> actions = new ArrayList<>();
+		List<Tata> triggeredTarget = new ArrayList<>();
 		
-		// Instance to test: overriden methods allow further cheching
+		// Instance to test: overriden methods allow later checking
 		SelectToAfterSelectCascader<Toto, Tata, Long> testInstance = new SelectToAfterSelectCascader<Toto, Tata, Long>(persisterMock) {
 			
 			@Override
@@ -59,11 +56,10 @@ public class SelectToAfterSelectCascaderTest extends CascaderTest {
 			@Override
 			protected Collection<Long> getTargetIds(Toto toto) {
 				actions.add("getTargets");
-				return Arrays.asList(((long) toto.hashCode()^17));
+				return Arrays.asList(((long) toto.hashCode()));
 			}
 		};
 		
-		// 
 		Toto triggeringInstance1 = new Toto();
 		Toto triggeringInstance2 = new Toto();
 		testInstance.afterSelect(Arrays.asList(triggeringInstance1, triggeringInstance2));
@@ -72,6 +68,6 @@ public class SelectToAfterSelectCascaderTest extends CascaderTest {
 		assertEquals(Arrays.asList("getTargets", "getTargets", "postTargetSelect"), actions);
 		// check triggered targets are those expected
 		List<Long> tataIds = triggeredTarget.stream().map(tata -> tata.id).collect(Collectors.toList());
-		assertEquals(Arrays.asList((long) triggeringInstance1.hashCode()^17, (long) triggeringInstance2.hashCode()^17), tataIds);
+		assertEquals(Arrays.asList((long) triggeringInstance1.hashCode(), (long) triggeringInstance2.hashCode()), tataIds);
 	}
 }
