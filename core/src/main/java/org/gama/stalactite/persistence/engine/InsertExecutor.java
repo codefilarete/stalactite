@@ -9,6 +9,7 @@ import org.gama.lang.Retryer;
 import org.gama.sql.dml.SQLStatement;
 import org.gama.sql.dml.WriteOperation;
 import org.gama.stalactite.persistence.id.generator.AfterInsertIdentifierGenerator;
+import org.gama.stalactite.persistence.id.generator.AutoAssignedIdentifierGenerator;
 import org.gama.stalactite.persistence.id.generator.BeforeInsertIdentifierGenerator;
 import org.gama.stalactite.persistence.id.generator.IdentifierGenerator;
 import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
@@ -38,7 +39,7 @@ public class InsertExecutor<T, I> extends UpsertExecutor<T, I> {
 			return new AfterInsertIdentifierManager<>(getMappingStrategy()); 
 		} else if (identifierGenerator instanceof BeforeInsertIdentifierGenerator) {
 			return new BeforeInsertIdentifierManager<>(getMappingStrategy());
-		} else if (identifierGenerator instanceof AutoAssignedIdentifierManager) {
+		} else if (identifierGenerator instanceof AutoAssignedIdentifierGenerator) {
 			return new AutoAssignedIdentifierManager<>();
 		} else {
 			throw new UnsupportedOperationException("Identifier generator is not supported : "

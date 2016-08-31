@@ -29,7 +29,7 @@ public class PooledIdentifierProviderTest {
 		ExecutorService backgroundLoader = Executors.newSingleThreadExecutor();
 		PooledIdentifierProvider<Long> testInstance = new PooledIdentifierProvider<Long>(starterKit, 2, backgroundLoader, Duration.ofSeconds(2)) {
 			
-			// let's start at the end of starter kit so will have a continuous serie of long
+			// let's start at the end of starter kit so we'll have a continuous serie of long
 			private long seed = 4;
 			
 			@Override
@@ -75,7 +75,10 @@ public class PooledIdentifierProviderTest {
 			while (true) {
 				try {
 					PersistableIdentifier<Long> data = testInstance.giveNewIdentifier();
-					bagToFill.add(data.getSurrogate());
+					// we sync to prevent ConcurrentModificationException that happen sometimes
+					synchronized (bagToFill) {
+						bagToFill.add(data.getSurrogate());
+					}
 					Thread.sleep(50);
 				} catch (InterruptedException e) {
 					Thread.currentThread().interrupt();
