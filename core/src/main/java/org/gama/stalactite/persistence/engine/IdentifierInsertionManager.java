@@ -6,11 +6,12 @@ import java.sql.SQLException;
 
 import org.gama.sql.dml.WriteOperation;
 import org.gama.stalactite.persistence.engine.WriteExecutor.JDBCBatchingIterator;
+import org.gama.stalactite.persistence.id.generator.IdAssignmentPolicy;
 import org.gama.stalactite.persistence.structure.Table.Column;
 
 /**
  * Contract of the "management" of entity identifier during insertion.
- * Kind of runtime part of {@link org.gama.stalactite.persistence.id.generator.IdentifierGenerator}
+ * Kind of runtime part of {@link IdAssignmentPolicy}
  *
  * @author Guillaume Mary
  */

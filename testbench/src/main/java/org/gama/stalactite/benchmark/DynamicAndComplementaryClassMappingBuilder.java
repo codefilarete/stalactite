@@ -17,7 +17,7 @@ import net.bytebuddy.dynamic.ClassLoadingStrategy;
 import net.bytebuddy.dynamic.DynamicType.Builder;
 import org.gama.reflection.PropertyAccessor;
 import org.gama.stalactite.persistence.engine.SeparateTransactionExecutor;
-import org.gama.stalactite.persistence.id.generator.AutoAssignedIdentifierGenerator;
+import org.gama.stalactite.persistence.id.generator.AlreadyAssignedIdPolicy;
 import org.gama.stalactite.persistence.id.generator.sequence.PooledSequenceIdentifierGenerator;
 import org.gama.stalactite.persistence.id.generator.sequence.PooledSequenceIdentifierGeneratorOptions;
 import org.gama.stalactite.persistence.id.generator.sequence.PooledSequencePersistenceOptions;
@@ -85,9 +85,9 @@ public class DynamicAndComplementaryClassMappingBuilder implements IMappingBuild
 			nilDynamicTypeFields.put(declaredField.getName(), declaredField);
 		}
 		
-		// NB: AutoAssignedIdentifierGenerator car l'id vient de l'instance de DynamicType
+		// NB: AlreadyAssignedIdPolicy car l'id vient de l'instance de DynamicType
 		classMappingStrategyNil = new ClassMappingStrategy<>(nilDynamicType, targetNilTable,
-				fieldColumnMap, PropertyAccessor.forProperty(persistentFieldHarverster.getField("id")), new AutoAssignedIdentifierGenerator());
+				fieldColumnMap, PropertyAccessor.forProperty(persistentFieldHarverster.getField("id")), AlreadyAssignedIdPolicy.INSTANCE);
 		return classMappingStrategyNil;
 	}
 	
@@ -106,7 +106,7 @@ public class DynamicAndComplementaryClassMappingBuilder implements IMappingBuild
 			Map<PropertyAccessor, Column> fieldColumnMap = persistentFieldHarverster.mapFields(indexDynamicType, indexTable);
 			
 			ClassMappingStrategy<? extends DynamicEntity, Long> classMappingStrategy = new ClassMappingStrategy<>(indexDynamicType, indexTable,
-					fieldColumnMap, PropertyAccessor.forProperty(persistentFieldHarverster.getField("id")), new AutoAssignedIdentifierGenerator());
+					fieldColumnMap, PropertyAccessor.forProperty(persistentFieldHarverster.getField("id")), AlreadyAssignedIdPolicy.INSTANCE);
 			indexDynamicTypes.put(columnToIndex, classMappingStrategy);
 		}
 		return indexDynamicTypes;

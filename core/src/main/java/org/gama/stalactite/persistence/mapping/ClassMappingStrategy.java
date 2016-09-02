@@ -15,7 +15,7 @@ import java.util.stream.Collectors;
 import org.gama.lang.collection.Arrays;
 import org.gama.reflection.PropertyAccessor;
 import org.gama.sql.result.Row;
-import org.gama.stalactite.persistence.id.generator.IdentifierGenerator;
+import org.gama.stalactite.persistence.id.generator.IdAssignmentPolicy;
 import org.gama.stalactite.persistence.sql.dml.PreparedUpdate.UpwhereColumn;
 import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.persistence.structure.Table.Column;
@@ -25,9 +25,9 @@ import org.gama.stalactite.persistence.structure.Table.Column;
  */
 public class ClassMappingStrategy<T, I> implements IEntityMappingStrategy<T, I> {
 	
-	private Class<T> classToPersist;
+	private final Class<T> classToPersist;
 	
-	private EmbeddedBeanMappingStrategy<T> defaultMappingStrategy;
+	private final EmbeddedBeanMappingStrategy<T> defaultMappingStrategy;
 	
 	private final Table targetTable;
 	
@@ -35,14 +35,14 @@ public class ClassMappingStrategy<T, I> implements IEntityMappingStrategy<T, I> 
 	
 	private final Set<Column> updatableColumns;
 	
-	private Map<PropertyAccessor, IEmbeddedBeanMapper> mappingStrategies;
+	private final Map<PropertyAccessor, IEmbeddedBeanMapper> mappingStrategies;
 	
-	private final IdentifierGenerator identifierGenerator;
+	private final IdAssignmentPolicy idAssignmentPolicy;
 	
-	private PropertyAccessor<T, I> identifierAccessor;
+	private final PropertyAccessor<T, I> identifierAccessor;
 	
-	public ClassMappingStrategy(Class<T> classToPersist, Table targetTable,
-								Map<PropertyAccessor, Column> propertyToColumn, PropertyAccessor<T, I> identifierProperty, IdentifierGenerator identifierGenerator) {
+	public ClassMappingStrategy(Class<T> classToPersist, Table targetTable, Map<PropertyAccessor, Column> propertyToColumn,
+								PropertyAccessor<T, I> identifierProperty, IdAssignmentPolicy idAssignmentPolicy) {
 		if (identifierProperty == null) {
 			throw new UnsupportedOperationException("No identifier property for " + classToPersist.getName());
 		}
@@ -55,10 +55,10 @@ public class ClassMappingStrategy<T, I> implements IEntityMappingStrategy<T, I> 
 		this.insertableColumns = new LinkedHashSet<>();
 		this.updatableColumns = new LinkedHashSet<>();
 		this.mappingStrategies = new HashMap<>();
-		this.identifierGenerator = identifierGenerator;
+		this.idAssignmentPolicy = idAssignmentPolicy;
 		fillInsertableColumns();
 		fillUpdatableColumns();
-		identifierAccessor = identifierProperty;
+		this.identifierAccessor = identifierProperty;
 		// identifierAccessor must be the same instance as those stored in propertyToColumn for Map.remove method used in foreach()
 		Column identifierColumn = propertyToColumn.get(identifierProperty);
 		if (!identifierColumn.isPrimaryKey()) {
@@ -96,6 +96,10 @@ public class ClassMappingStrategy<T, I> implements IEntityMappingStrategy<T, I> 
 		return updatableColumns;
 	}
 	
+	public IdAssignmentPolicy getIdAssignmentPolicy() {
+		return idAssignmentPolicy;
+	}
+	
 	/**
 	 * Gives a particular strategy for a given {@link Member}.
 	 * The {@link Member} is supposed to be a complex type so it needs multiple columns for persistence and then needs an {@link IEmbeddedBeanMapper}
@@ -108,10 +112,6 @@ public class ClassMappingStrategy<T, I> implements IEntityMappingStrategy<T, I> 
 		// update columns lists
 		addInsertableColumns(mappingStrategy);
 		addUpdatableColumns(mappingStrategy);
-	}
-	
-	public IdentifierGenerator getIdentifierGenerator() {
-		return identifierGenerator;
 	}
 	
 	@Override

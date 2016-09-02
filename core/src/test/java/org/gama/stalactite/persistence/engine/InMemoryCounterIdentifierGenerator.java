@@ -1,20 +1,19 @@
 package org.gama.stalactite.persistence.engine;
 
-import org.gama.stalactite.persistence.id.generator.BeforeInsertIdentifierGenerator;
-
-import java.io.Serializable;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
+
+import org.gama.stalactite.persistence.id.generator.BeforeInsertIdPolicy;
 
 /**
  * Simple id gnerator for our tests : increments a in-memory counter.
  */
-public class InMemoryCounterIdentifierGenerator implements BeforeInsertIdentifierGenerator {
+public class InMemoryCounterIdentifierGenerator implements BeforeInsertIdPolicy<Integer> {
 	
 	private AtomicInteger idCounter = new AtomicInteger(0);
 	
 	@Override
-	public Serializable generate() {
+	public Integer generate() {
 		return idCounter.addAndGet(1);
 	}
 	

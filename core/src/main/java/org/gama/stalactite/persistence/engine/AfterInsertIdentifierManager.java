@@ -15,13 +15,13 @@ import org.gama.sql.dml.GeneratedKeysReader;
 import org.gama.sql.dml.WriteOperation;
 import org.gama.sql.result.Row;
 import org.gama.stalactite.persistence.engine.WriteExecutor.JDBCBatchingIterator;
-import org.gama.stalactite.persistence.id.generator.AfterInsertIdentifierGenerator;
+import org.gama.stalactite.persistence.id.generator.JDBCGeneratedKeysIdPolicy;
 import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
 import org.gama.stalactite.persistence.mapping.IEntityMappingStrategy;
 import org.gama.stalactite.persistence.structure.Table.Column;
 
 /**
- * Identifier manager during insertion for {@link org.gama.stalactite.persistence.id.generator.AfterInsertIdentifierGenerator}.
+ * Identifier manager during insertion for {@link JDBCGeneratedKeysIdPolicy}.
  * Identifier must be read from a ResultSet after insertion.
  *
  * @author Guillaume Mary
@@ -32,9 +32,9 @@ class AfterInsertIdentifierManager<T, I> implements IdentifierInsertionManager<T
 	private final GeneratedKeysReader generatedKeysReader;
 	
 	AfterInsertIdentifierManager(ClassMappingStrategy<T, I> mappingStrategy) {
-		AfterInsertIdentifierGenerator<I> identifierGenerator = (AfterInsertIdentifierGenerator<I>) mappingStrategy.getIdentifierGenerator();
-		this.identifierFixer = new AfterInsertIdentifierFixer<>(mappingStrategy, identifierGenerator);
-		this.generatedKeysReader = identifierGenerator.getGeneratedKeysReader();
+		JDBCGeneratedKeysIdPolicy<I> idAssignmentPolicy = (JDBCGeneratedKeysIdPolicy<I>) mappingStrategy.getIdAssignmentPolicy();
+		this.identifierFixer = new AfterInsertIdentifierFixer<>(mappingStrategy, idAssignmentPolicy);
+		this.generatedKeysReader = idAssignmentPolicy.getGeneratedKeysReader();
 		// protect ourselves from nonsense
 		if (this.generatedKeysReader == null) {
 			throw new IllegalArgumentException("Key reader should not be null");
@@ -61,16 +61,16 @@ class AfterInsertIdentifierManager<T, I> implements IdentifierInsertionManager<T
 	private static class AfterInsertIdentifierFixer<T, I> implements BiConsumer<T, Row> {
 		
 		private final IEntityMappingStrategy<T, I> mappingStrategy;
-		private final AfterInsertIdentifierGenerator<I> afterInsertIdentifierGenerator;
+		private final JDBCGeneratedKeysIdPolicy<I> idAssignmentPolicy;
 		
-		AfterInsertIdentifierFixer(IEntityMappingStrategy<T, I> mappingStrategy, AfterInsertIdentifierGenerator<I> afterInsertIdentifierGenerator) {
+		AfterInsertIdentifierFixer(IEntityMappingStrategy<T, I> mappingStrategy, JDBCGeneratedKeysIdPolicy<I> idAssignmentPolicy) {
 			this.mappingStrategy = mappingStrategy;
-			this.afterInsertIdentifierGenerator = afterInsertIdentifierGenerator;
+			this.idAssignmentPolicy = idAssignmentPolicy;
 		}
 		
 		@Override
 		public void accept(T t, Row row) {
-			I pk = afterInsertIdentifierGenerator.get(row.getContent());
+			I pk = idAssignmentPolicy.get(row.getContent());
 			mappingStrategy.setId(t, pk);
 		}
 	}

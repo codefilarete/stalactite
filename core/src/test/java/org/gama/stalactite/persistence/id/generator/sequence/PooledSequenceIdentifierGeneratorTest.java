@@ -1,6 +1,5 @@
 package org.gama.stalactite.persistence.id.generator.sequence;
 
-import java.io.Serializable;
 import java.sql.SQLException;
 
 import org.gama.lang.collection.Arrays;
@@ -39,24 +38,24 @@ public class PooledSequenceIdentifierGeneratorTest {
 		ddlDeployer.deployDDL();
 		// on vérifie que l'incrémentation se fait sans erreur depuis une base vierge
 		for (int i = 0; i < 45; i++) {
-			Serializable newId = testInstance.generate();
-			assertEquals((long) i, newId);
+			Long newId = testInstance.generate();
+			assertEquals(i, newId.intValue());
 		}
 		
 		// on vérifie que l'incrémentation se fait sans erreur avec une nouvelle sequence sur la même table
 		testInstance = new PooledSequenceIdentifierGenerator(new PooledSequenceIdentifierGeneratorOptions(10, "Tata", PooledSequencePersistenceOptions.DEFAULT),
 				persistenceContext.getDialect(), (SeparateTransactionExecutor) persistenceContext.getConnectionProvider(), persistenceContext.getJDBCBatchSize());
 		for (int i = 0; i < 45; i++) {
-			Serializable newId = testInstance.generate();
-			assertEquals((long) i, newId);
+			Long newId = testInstance.generate();
+			assertEquals(i, newId.intValue());
 		}
 		
 		// on vérifie que l'incrémentation se fait sans erreur avec sequence existante
 		testInstance = new PooledSequenceIdentifierGenerator(new PooledSequenceIdentifierGeneratorOptions(10, "Toto", PooledSequencePersistenceOptions.DEFAULT),
 				persistenceContext.getDialect(), (SeparateTransactionExecutor) persistenceContext.getConnectionProvider(), persistenceContext.getJDBCBatchSize());
 		for (int i = 0; i < 45; i++) {
-			Serializable newId = testInstance.generate();
-			assertEquals((long) 50+i, newId);
+			Long newId = testInstance.generate();
+			assertEquals(50+i, newId.intValue());
 		}
 	}
 }

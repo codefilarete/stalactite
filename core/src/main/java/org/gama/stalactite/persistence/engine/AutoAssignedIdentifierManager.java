@@ -6,10 +6,11 @@ import java.sql.SQLException;
 
 import org.gama.sql.dml.WriteOperation;
 import org.gama.stalactite.persistence.engine.WriteExecutor.JDBCBatchingIterator;
+import org.gama.stalactite.persistence.id.generator.AlreadyAssignedIdPolicy;
 import org.gama.stalactite.persistence.structure.Table.Column;
 
 /**
- * Identifier manager during insertion for {@link org.gama.stalactite.persistence.id.generator.AutoAssignedIdentifierGenerator}.
+ * Identifier manager during insertion for {@link AlreadyAssignedIdPolicy}.
  * As identifier is already specified on entity, nothing special must be done !
  * 
  * @author Guillaume Mary

@@ -1,10 +1,9 @@
 package org.gama.stalactite.persistence.id.generator.sequence;
 
-import java.io.Serializable;
 import java.util.Map;
 
 import org.gama.stalactite.persistence.engine.SeparateTransactionExecutor;
-import org.gama.stalactite.persistence.id.generator.IdentifierGenerator;
+import org.gama.stalactite.persistence.id.generator.BeforeInsertIdPolicy;
 import org.gama.stalactite.persistence.id.generator.sequence.PooledSequencePersister.PooledSequence;
 import org.gama.stalactite.persistence.sql.Dialect;
 
@@ -16,7 +15,7 @@ import org.gama.stalactite.persistence.sql.Dialect;
  * 
  * @author Guillaume Mary
  */
-public class PooledSequenceIdentifierGenerator implements IdentifierGenerator {
+public class PooledSequenceIdentifierGenerator implements BeforeInsertIdPolicy<Long> {
 	
 	private LongPool sequenceState;
 	
@@ -53,7 +52,8 @@ public class PooledSequenceIdentifierGenerator implements IdentifierGenerator {
 		return options;
 	}
 	
-	public synchronized Serializable generate() {
+	@Override
+	public synchronized Long generate() {
 		if (sequenceState == null) {
 			// No state yet so we create one
 			PooledSequence existingSequence = this.pooledSequencePersister.select(getSequenceName());

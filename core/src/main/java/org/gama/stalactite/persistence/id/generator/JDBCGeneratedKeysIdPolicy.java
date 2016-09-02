@@ -8,11 +8,11 @@ import org.gama.sql.dml.GeneratedKeysReader;
  * Marker interface for identifier generators which get identifiers from JDBC insert statements thanks to
  * {@link java.sql.PreparedStatement#getGeneratedKeys()}.
  * 
- * Shouldn't be combined with {@link BeforeInsertIdentifierGenerator} nor {@link AutoAssignedIdentifierGenerator}.
+ * Shouldn't be combined with {@link BeforeInsertIdPolicy} nor {@link AlreadyAssignedIdPolicy}.
  * 
  * @author Guillaume Mary
  */
-public interface AfterInsertIdentifierGenerator<I> extends IdentifierGenerator {
+public interface JDBCGeneratedKeysIdPolicy<I> extends IdAssignmentPolicy {
 	
 	I get(Map<String, Object> generatedKeys);
 	

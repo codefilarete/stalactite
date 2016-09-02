@@ -8,7 +8,7 @@ import java.util.List;
 import org.gama.lang.collection.Arrays;
 import org.gama.lang.collection.Iterables;
 import org.gama.stalactite.persistence.engine.Persister;
-import org.gama.stalactite.persistence.id.generator.AutoAssignedIdentifierGenerator;
+import org.gama.stalactite.persistence.id.generator.AlreadyAssignedIdPolicy;
 import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
 import org.gama.stalactite.persistence.sql.Dialect;
 import org.junit.Test;
@@ -25,8 +25,8 @@ public class InsertToBeforeInsertCascaderTest extends AbstractCascaderTest {
 	@Test
 	public void testBeforeInsert() throws SQLException {
 		ClassMappingStrategy mappingStrategyMock = mock(ClassMappingStrategy.class);
-		// AutoAssignedIdentifierGenerator is sufficient for our test case
-		when(mappingStrategyMock.getIdentifierGenerator()).thenReturn(new AutoAssignedIdentifierGenerator());
+		// AlreadyAssignedIdPolicy is sufficient for our test case
+		when(mappingStrategyMock.getIdAssignmentPolicy()).thenReturn(AlreadyAssignedIdPolicy.INSTANCE);
 		Persister<Tata, Long> persisterMock = new Persister<Tata, Long>(mappingStrategyMock, mock(Dialect.class), null, 10) {
 			@Override
 			protected int doInsert(Iterable<Tata> iterable) {

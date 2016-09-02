@@ -8,10 +8,10 @@ import java.util.Set;
 import org.gama.lang.Retryer;
 import org.gama.sql.dml.SQLStatement;
 import org.gama.sql.dml.WriteOperation;
-import org.gama.stalactite.persistence.id.generator.AfterInsertIdentifierGenerator;
-import org.gama.stalactite.persistence.id.generator.AutoAssignedIdentifierGenerator;
-import org.gama.stalactite.persistence.id.generator.BeforeInsertIdentifierGenerator;
-import org.gama.stalactite.persistence.id.generator.IdentifierGenerator;
+import org.gama.stalactite.persistence.id.generator.JDBCGeneratedKeysIdPolicy;
+import org.gama.stalactite.persistence.id.generator.AlreadyAssignedIdPolicy;
+import org.gama.stalactite.persistence.id.generator.BeforeInsertIdPolicy;
+import org.gama.stalactite.persistence.id.generator.IdAssignmentPolicy;
 import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
 import org.gama.stalactite.persistence.sql.dml.ColumnParamedSQL;
 import org.gama.stalactite.persistence.sql.dml.DMLGenerator;
@@ -34,16 +34,16 @@ public class InsertExecutor<T, I> extends UpsertExecutor<T, I> {
 	}
 	
 	private IdentifierInsertionManager<T> newIdentifierInsertionEngine() {
-		IdentifierGenerator identifierGenerator = getMappingStrategy().getIdentifierGenerator();
-		if (identifierGenerator instanceof AfterInsertIdentifierGenerator) {
+		IdAssignmentPolicy idAssignmentPolicy = getMappingStrategy().getIdAssignmentPolicy();
+		if (idAssignmentPolicy instanceof JDBCGeneratedKeysIdPolicy) {
 			return new AfterInsertIdentifierManager<>(getMappingStrategy()); 
-		} else if (identifierGenerator instanceof BeforeInsertIdentifierGenerator) {
+		} else if (idAssignmentPolicy instanceof BeforeInsertIdPolicy) {
 			return new BeforeInsertIdentifierManager<>(getMappingStrategy());
-		} else if (identifierGenerator instanceof AutoAssignedIdentifierGenerator) {
+		} else if (idAssignmentPolicy instanceof AlreadyAssignedIdPolicy) {
 			return new AutoAssignedIdentifierManager<>();
 		} else {
 			throw new UnsupportedOperationException("Identifier generator is not supported : "
-					+ (identifierGenerator == null ? null : identifierGenerator.getClass().getName())
+					+ (idAssignmentPolicy == null ? null : idAssignmentPolicy.getClass().getName())
 			);
 		}
 	}

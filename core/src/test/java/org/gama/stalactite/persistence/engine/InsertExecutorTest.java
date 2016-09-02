@@ -10,7 +10,7 @@ import java.util.Map;
 import org.gama.lang.Retryer;
 import org.gama.lang.collection.Arrays;
 import org.gama.sql.dml.GeneratedKeysReader;
-import org.gama.stalactite.persistence.id.generator.AfterInsertIdentifierGenerator;
+import org.gama.stalactite.persistence.id.generator.JDBCGeneratedKeysIdPolicy;
 import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
 import org.gama.stalactite.persistence.sql.dml.DMLGenerator;
 import org.gama.stalactite.test.PairSetList;
@@ -55,7 +55,7 @@ public class InsertExecutorTest extends DMLExecutorTest {
 	
 	public static class InsertExecutorTest_withAutoGenerateKeys extends DMLExecutorTest {
 		
-		// changing mapping strategy to add AfterInsertIdentifierGenerator and GeneratedKeysReader
+		// changing mapping strategy to add JDBCGeneratedKeysIdPolicy and GeneratedKeysReader
 		@Override
 		protected PersistenceConfigurationBuilder newPersistenceConfigurationBuilder() {
 			return new PersistenceConfigurationBuilder<Toto, Integer>()
@@ -112,7 +112,7 @@ public class InsertExecutorTest extends DMLExecutorTest {
 			}
 		}
 		
-		protected static class PrimaryKeyReaderFromGeneratedKeys implements AfterInsertIdentifierGenerator<Serializable> {
+		protected static class PrimaryKeyReaderFromGeneratedKeys implements JDBCGeneratedKeysIdPolicy<Serializable> {
 			
 			private final String primaryKeyName;
 			

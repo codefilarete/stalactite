@@ -16,7 +16,7 @@ import org.gama.lang.Reflections;
 import org.gama.lang.collection.Arrays;
 import org.gama.lang.collection.Maps;
 import org.gama.reflection.PropertyAccessor;
-import org.gama.stalactite.persistence.id.generator.AutoAssignedIdentifierGenerator;
+import org.gama.stalactite.persistence.id.generator.AlreadyAssignedIdPolicy;
 import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
 import org.gama.stalactite.persistence.sql.Dialect;
 import org.gama.stalactite.persistence.sql.ddl.JavaTypeToSqlTypeMapping;
@@ -95,7 +95,7 @@ public class JoinTablePersisterTest {
 		totoClassMappingStrategy_ontoTable1 = new ClassMappingStrategy<>(Toto.class, totoClassTable1,
 				totoClassMapping1, PropertyAccessor.forProperty(fieldId), identifierGenerator);
 		totoClassMappingStrategy2_ontoTable2 = new ClassMappingStrategy<>(Toto.class, totoClassTable2,
-				totoClassMapping2, PropertyAccessor.forProperty(fieldId), AutoAssignedIdentifierGenerator.INSTANCE);
+				totoClassMapping2, PropertyAccessor.forProperty(fieldId), AlreadyAssignedIdPolicy.INSTANCE);
 		
 		JavaTypeToSqlTypeMapping simpleTypeMapping = new JavaTypeToSqlTypeMapping();
 		simpleTypeMapping.put(Integer.class, "int");

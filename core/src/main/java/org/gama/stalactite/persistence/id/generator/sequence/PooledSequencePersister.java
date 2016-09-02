@@ -6,7 +6,7 @@ import org.gama.lang.collection.Maps;
 import org.gama.reflection.PropertyAccessor;
 import org.gama.stalactite.persistence.engine.Persister;
 import org.gama.stalactite.persistence.engine.SeparateTransactionExecutor;
-import org.gama.stalactite.persistence.id.generator.AutoAssignedIdentifierGenerator;
+import org.gama.stalactite.persistence.id.generator.AlreadyAssignedIdPolicy;
 import org.gama.stalactite.persistence.id.generator.sequence.PooledSequencePersister.PooledSequence;
 import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
 import org.gama.stalactite.persistence.sql.Dialect;
@@ -15,7 +15,7 @@ import org.gama.stalactite.persistence.structure.Table;
 
 /**
  * Persister dedicated to pooled entity identifiers.
- * The same instance can be shared by multiple IdentifierGenerator, as long as each calls {@link #reservePool(String, int)}
+ * The same instance can be shared by multiple IdAssignmentPolicy, as long as each calls {@link #reservePool(String, int)}
  * with different parameters, there's no risk of identifier collision.
  * 
  * @author Guillaume Mary
@@ -143,7 +143,7 @@ public class PooledSequencePersister extends Persister<PooledSequence, String> {
 					sequenceTable,
 					sequenceTable.getPooledSequenceFieldMapping(),
 					PooledSequence.SEQUENCE_NAME_FIELD,
-					new AutoAssignedIdentifierGenerator());
+					AlreadyAssignedIdPolicy.INSTANCE);
 		}
 	}
 }

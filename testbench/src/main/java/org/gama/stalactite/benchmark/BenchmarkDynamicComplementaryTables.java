@@ -97,7 +97,7 @@ public class BenchmarkDynamicComplementaryTables extends AbstractBenchmark<Dynam
 					}
 				}
 				// NB: on force insert car ... on le sait
-				// NB2: le système ne cherchera pas à générer un id car c'est configurer en AutoAssignedIdentifierGenerator
+				// NB2: le système ne cherchera pas à générer un id car c'est configurer en AlreadyAssignedIdPolicy
 				for (Field field : indexDynamicEntities.keySet()) {
 					Class<DynamicEntity> classToPersist = (Class<DynamicEntity>) dynamicClassMappingBuilder.indexDynamicTypes.get(field).getClassToPersist();
 					persistenceContext.getPersister(classToPersist).insert(indexDynamicEntities.get(field));
@@ -129,7 +129,7 @@ public class BenchmarkDynamicComplementaryTables extends AbstractBenchmark<Dynam
 					}
 				}
 				// NB: on force insert car ... on le sait
-				// NB2: le système ne cherchera pas à générer un id car c'est configurer en AutoAssignedIdentifierGenerator
+				// NB2: le système ne cherchera pas à générer un id car c'est configurer en AlreadyAssignedIdPolicy
 				persistenceContext.getPersister((Class<DynamicEntity>) dynamicClassMappingBuilder.nilDynamicType).insert(nilDynamicEntities);
 				}
 			});
@@ -221,7 +221,7 @@ public class BenchmarkDynamicComplementaryTables extends AbstractBenchmark<Dynam
 //						}
 //					}
 //					// NB: on force insert car ... on le sait
-//					// NB2: le système ne cherchera pas à générer un id car c'est configurer en AutoAssignedIdentifierGenerator
+//					// NB2: le système ne cherchera pas à générer un id car c'est configurer en AlreadyAssignedIdPolicy
 //					for (Field field : indexDynamicEntities.keySet()) {
 //						Class<DynamicEntity> classToPersist = (Class<DynamicEntity>) dynamicClassMappingBuilder.indexDynamicTypes.get(field).getClassToPersist();
 //						persistenceContext.getPersister(classToPersist).insert(indexDynamicEntities.get(field));
@@ -250,7 +250,7 @@ public class BenchmarkDynamicComplementaryTables extends AbstractBenchmark<Dynam
 //						}
 //					}
 //					// NB: on force insert car ... on le sait
-//					// NB2: le système ne cherchera pas à générer un id car c'est configurer en AutoAssignedIdentifierGenerator
+//					// NB2: le système ne cherchera pas à générer un id car c'est configurer en AlreadyAssignedIdPolicy
 //					persistenceContext.getPersister((Class<DynamicEntity>) dynamicClassMappingBuilder.nilDynamicType).insert(nilDynamicEntities);
 //				}
 //			});

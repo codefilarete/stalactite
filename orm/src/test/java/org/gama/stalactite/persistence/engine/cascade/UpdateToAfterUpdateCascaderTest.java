@@ -10,7 +10,7 @@ import java.util.Map.Entry;
 import org.gama.lang.collection.Arrays;
 import org.gama.lang.collection.Iterables;
 import org.gama.stalactite.persistence.engine.Persister;
-import org.gama.stalactite.persistence.id.generator.AutoAssignedIdentifierGenerator;
+import org.gama.stalactite.persistence.id.generator.AlreadyAssignedIdPolicy;
 import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
 import org.gama.stalactite.persistence.sql.Dialect;
 import org.junit.Test;
@@ -27,8 +27,8 @@ public class UpdateToAfterUpdateCascaderTest extends AbstractCascaderTest {
 	@Test
 	public void testAfterUpdate() throws SQLException {
 		ClassMappingStrategy mappingStrategyMock = mock(ClassMappingStrategy.class);
-		// AutoAssignedIdentifierGenerator is sufficient for our test case
-		when(mappingStrategyMock.getIdentifierGenerator()).thenReturn(new AutoAssignedIdentifierGenerator());
+		// AlreadyAssignedIdPolicy is sufficient for our test case
+		when(mappingStrategyMock.getIdAssignmentPolicy()).thenReturn(AlreadyAssignedIdPolicy.INSTANCE);
 		Persister<Tata, Object> persisterMock = new Persister<Tata, Object>(mappingStrategyMock, mock(Dialect.class), null, 10) {
 			@Override
 			protected int doUpdate(Iterable<Entry<Tata, Tata>> differencesIterable, boolean allColumnsStatement) {
@@ -60,8 +60,7 @@ public class UpdateToAfterUpdateCascaderTest extends AbstractCascaderTest {
 		Toto triggeringInstance1_modfied = new Toto(new Tata());
 		Toto triggeringInstance2 = new Toto(new Tata());
 		Toto triggeringInstance2_modified = new Toto(new Tata());
-		testInstance.afterUpdate(Arrays.asList((Entry<Toto, Toto>) 
-				new SimpleEntry<>(triggeringInstance1_modfied, triggeringInstance1),
+		testInstance.afterUpdate(Arrays.asList(new SimpleEntry<>(triggeringInstance1_modfied, triggeringInstance1),
 				new SimpleEntry<>(triggeringInstance2_modified, triggeringInstance2)
 		), true);
 		
