@@ -17,7 +17,7 @@ import java.util.stream.Collectors;
 import com.tngtech.java.junit.dataprovider.DataProvider;
 import com.tngtech.java.junit.dataprovider.DataProviderRunner;
 import com.tngtech.java.junit.dataprovider.UseDataProvider;
-import org.gama.io.IOs;
+import org.gama.lang.io.IOs;
 import org.gama.lang.Nullable;
 import org.gama.lang.collection.Arrays;
 import org.gama.lang.collection.Iterables;

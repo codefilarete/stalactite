@@ -5,7 +5,7 @@ import java.io.InputStream;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 
-import org.gama.io.IOs;
+import org.gama.lang.io.IOs;
 import org.gama.lang.Nullable;
 
 /**

@@ -1,4 +1,4 @@
-package org.gama.io;
+package org.gama.lang.io;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
