@@ -1,5 +1,6 @@
 package org.gama.stalactite.persistence.id.generator;
 
+import java.sql.PreparedStatement;
 import java.util.Map;
 
 import org.gama.sql.dml.GeneratedKeysReader;
@@ -14,7 +15,17 @@ import org.gama.sql.dml.GeneratedKeysReader;
  */
 public interface JDBCGeneratedKeysIdPolicy<I> extends IdAssignmentPolicy {
 	
-	I get(Map<String, Object> generatedKeys);
+	/**
+	 * Must return the identifier from the given {@link Map}
+	 * @param generatedKeys the keys read from the {@link java.sql.ResultSet} given by {@link PreparedStatement#getGeneratedKeys()} mapped by column name
+	 * @return thought to be not null
+	 */
+	I getId(Map<String, Object> generatedKeys);
 	
+	/**
+	 * Gives the objet that will collect the generated keys from the {@link java.sql.ResultSet} given by {@link PreparedStatement#getGeneratedKeys()}
+	 * 
+	 * @return not null
+	 */
 	GeneratedKeysReader getGeneratedKeysReader();
 }

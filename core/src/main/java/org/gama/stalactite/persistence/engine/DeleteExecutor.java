@@ -41,7 +41,7 @@ public class DeleteExecutor<T, I> extends WriteExecutor<T, I> {
 		// get ids before passing them to deleteRoughlyById
 		List<I> ids = new ArrayList<>();
 		for (T t : iterable) {
-			ids.add((I) getMappingStrategy().getId(t));
+			ids.add(getMappingStrategy().getId(t));
 		}
 		return deleteRoughlyById(ids);
 	}

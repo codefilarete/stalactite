@@ -70,7 +70,7 @@ class AfterInsertIdentifierManager<T, I> implements IdentifierInsertionManager<T
 		
 		@Override
 		public void accept(T t, Row row) {
-			I pk = idAssignmentPolicy.get(row.getContent());
+			I pk = idAssignmentPolicy.getId(row.getContent());
 			mappingStrategy.setId(t, pk);
 		}
 	}

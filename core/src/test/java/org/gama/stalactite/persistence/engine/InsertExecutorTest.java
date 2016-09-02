@@ -112,7 +112,7 @@ public class InsertExecutorTest extends DMLExecutorTest {
 			}
 		}
 		
-		protected static class PrimaryKeyReaderFromGeneratedKeys implements JDBCGeneratedKeysIdPolicy<Serializable> {
+		protected static class PrimaryKeyReaderFromGeneratedKeys implements JDBCGeneratedKeysIdPolicy<Integer> {
 			
 			private final String primaryKeyName;
 			
@@ -121,8 +121,8 @@ public class InsertExecutorTest extends DMLExecutorTest {
 			}
 			
 			@Override
-			public Serializable get(Map<String, Object> generatedKeys) {
-				return (Serializable) generatedKeys.get(primaryKeyName);
+			public Integer getId(Map<String, Object> generatedKeys) {
+				return (Integer) generatedKeys.get(primaryKeyName);
 			}
 			
 			@Override
