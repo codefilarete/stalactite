@@ -17,6 +17,7 @@ import org.gama.lang.trace.IncrementableInt;
 import org.gama.sql.dml.GeneratedKeysReader;
 import org.gama.sql.test.HSQLDBInMemoryDataSource;
 import org.gama.sql.test.MariaDBEmbeddableDataSource;
+import org.gama.stalactite.persistence.id.manager.AfterInsertIdentifierManager;
 import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
 import org.gama.stalactite.persistence.mapping.IdMappingStrategy;
 import org.gama.stalactite.persistence.sql.ddl.DDLTableGenerator;
@@ -26,7 +27,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
-import static org.gama.stalactite.persistence.engine.AfterInsertIdentifierManager.keyMapper;
+import static org.gama.stalactite.persistence.id.manager.AfterInsertIdentifierManager.keyMapper;
 import static org.junit.Assert.assertEquals;
 
 /**

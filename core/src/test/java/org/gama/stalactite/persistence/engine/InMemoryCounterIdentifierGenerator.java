@@ -2,7 +2,7 @@ package org.gama.stalactite.persistence.engine;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.gama.stalactite.persistence.engine.BeforeInsertIdentifierManager.Sequence;
+import org.gama.stalactite.persistence.id.manager.BeforeInsertIdentifierManager.Sequence;
 
 /**
  * Simple id gnerator for our tests : increments a in-memory counter.

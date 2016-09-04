@@ -7,6 +7,7 @@ import java.util.List;
 
 import org.gama.lang.Retryer;
 import org.gama.lang.collection.Arrays;
+import org.gama.stalactite.persistence.id.manager.AfterInsertIdentifierManager;
 import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
 import org.gama.stalactite.persistence.mapping.IdMappingStrategy;
 import org.gama.stalactite.persistence.sql.dml.DMLGenerator;

@@ -1,6 +1,6 @@
 package org.gama.stalactite.persistence.id.generator.sequence;
 
-import org.gama.stalactite.persistence.engine.BeforeInsertIdentifierManager.Sequence;
+import org.gama.stalactite.persistence.id.manager.BeforeInsertIdentifierManager.Sequence;
 import org.gama.stalactite.persistence.engine.SeparateTransactionExecutor;
 import org.gama.stalactite.persistence.id.generator.sequence.PooledSequencePersister.PooledSequence;
 import org.gama.stalactite.persistence.sql.Dialect;

@@ -16,6 +16,8 @@ import org.gama.lang.Reflections;
 import org.gama.lang.collection.Arrays;
 import org.gama.lang.collection.Maps;
 import org.gama.reflection.PropertyAccessor;
+import org.gama.stalactite.persistence.id.manager.AutoAssignedIdentifierManager;
+import org.gama.stalactite.persistence.id.manager.BeforeInsertIdentifierManager;
 import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
 import org.gama.stalactite.persistence.mapping.IdMappingStrategy;
 import org.gama.stalactite.persistence.sql.Dialect;

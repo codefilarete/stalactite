@@ -18,6 +18,7 @@ import org.gama.reflection.PropertyAccessor;
 import org.gama.sql.test.DerbyInMemoryDataSource;
 import org.gama.sql.test.HSQLDBInMemoryDataSource;
 import org.gama.sql.test.MariaDBEmbeddableDataSource;
+import org.gama.stalactite.persistence.id.manager.BeforeInsertIdentifierManager;
 import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
 import org.gama.stalactite.persistence.mapping.IdMappingStrategy;
 import org.gama.stalactite.persistence.mapping.PersistentFieldHarverster;

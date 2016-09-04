@@ -13,7 +13,9 @@ import java.util.Set;
 import java.util.function.BiFunction;
 
 import org.gama.reflection.PropertyAccessor;
-import org.gama.stalactite.persistence.engine.BeforeInsertIdentifierManager.Sequence;
+import org.gama.stalactite.persistence.id.manager.BeforeInsertIdentifierManager;
+import org.gama.stalactite.persistence.id.manager.BeforeInsertIdentifierManager.Sequence;
+import org.gama.stalactite.persistence.id.manager.IdentifierInsertionManager;
 import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
 import org.gama.stalactite.persistence.mapping.IdMappingStrategy;
 import org.gama.stalactite.persistence.mapping.PersistentFieldHarverster;

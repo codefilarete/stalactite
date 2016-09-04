@@ -1,7 +1,7 @@
 package org.gama.stalactite.persistence.mapping;
 
 import org.gama.reflection.PropertyAccessor;
-import org.gama.stalactite.persistence.engine.IdentifierInsertionManager;
+import org.gama.stalactite.persistence.id.manager.IdentifierInsertionManager;
 
 /**
  * @author Guillaume Mary

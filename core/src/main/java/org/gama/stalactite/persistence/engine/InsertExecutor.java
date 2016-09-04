@@ -8,6 +8,7 @@ import java.util.Set;
 import org.gama.lang.Retryer;
 import org.gama.sql.dml.SQLStatement;
 import org.gama.sql.dml.WriteOperation;
+import org.gama.stalactite.persistence.id.manager.IdentifierInsertionManager;
 import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
 import org.gama.stalactite.persistence.sql.dml.ColumnParamedSQL;
 import org.gama.stalactite.persistence.sql.dml.DMLGenerator;

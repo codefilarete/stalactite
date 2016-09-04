@@ -16,7 +16,7 @@ import net.bytebuddy.ByteBuddy;
 import net.bytebuddy.dynamic.ClassLoadingStrategy;
 import net.bytebuddy.dynamic.DynamicType.Builder;
 import org.gama.reflection.PropertyAccessor;
-import org.gama.stalactite.persistence.engine.AutoAssignedIdentifierManager;
+import org.gama.stalactite.persistence.id.manager.AutoAssignedIdentifierManager;
 import org.gama.stalactite.persistence.engine.SeparateTransactionExecutor;
 import org.gama.stalactite.persistence.id.generator.sequence.PooledSequenceIdentifierGenerator;
 import org.gama.stalactite.persistence.id.generator.sequence.PooledSequenceIdentifierGeneratorOptions;

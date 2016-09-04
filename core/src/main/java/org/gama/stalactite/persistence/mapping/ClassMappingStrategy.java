@@ -15,7 +15,7 @@ import java.util.stream.Collectors;
 import org.gama.lang.collection.Arrays;
 import org.gama.reflection.PropertyAccessor;
 import org.gama.sql.result.Row;
-import org.gama.stalactite.persistence.engine.IdentifierInsertionManager;
+import org.gama.stalactite.persistence.id.manager.IdentifierInsertionManager;
 import org.gama.stalactite.persistence.sql.dml.PreparedUpdate.UpwhereColumn;
 import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.persistence.structure.Table.Column;

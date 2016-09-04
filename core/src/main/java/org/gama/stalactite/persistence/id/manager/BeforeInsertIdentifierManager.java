@@ -1,4 +1,4 @@
-package org.gama.stalactite.persistence.engine;
+package org.gama.stalactite.persistence.id.manager;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
