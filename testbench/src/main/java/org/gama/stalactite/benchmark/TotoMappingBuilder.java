@@ -12,8 +12,10 @@ import org.gama.stalactite.persistence.engine.SeparateTransactionExecutor;
 import org.gama.stalactite.persistence.id.generator.sequence.PooledSequenceIdentifierGenerator;
 import org.gama.stalactite.persistence.id.generator.sequence.PooledSequenceIdentifierGeneratorOptions;
 import org.gama.stalactite.persistence.id.generator.sequence.PooledSequencePersistenceOptions;
+import org.gama.stalactite.persistence.id.manager.BeforeInsertIdentifierManager;
 import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
 import org.gama.stalactite.persistence.mapping.ColumnedMapMappingStrategy;
+import org.gama.stalactite.persistence.mapping.IdMappingStrategy;
 import org.gama.stalactite.persistence.mapping.PersistentFieldHarverster;
 import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.persistence.structure.Table.Column;
@@ -31,11 +33,13 @@ public class TotoMappingBuilder implements IMappingBuilder {
 		PersistentFieldHarverster persistentFieldHarverster = new PersistentFieldHarverster();
 		Map<PropertyAccessor, Column> fieldColumnMap = persistentFieldHarverster.mapFields(Toto.class, targetTable);
 		PersistenceContext currentPersistenceContext = PersistenceContexts.getCurrent();
+		PropertyAccessor idAccessor = PropertyAccessor.forProperty(persistentFieldHarverster.getField("id"));
+		PooledSequenceIdentifierGenerator longSequence = new PooledSequenceIdentifierGenerator(new PooledSequenceIdentifierGeneratorOptions(100, "Toto", 
+				PooledSequencePersistenceOptions.DEFAULT),
+				currentPersistenceContext.getDialect(), (SeparateTransactionExecutor) currentPersistenceContext.getConnectionProvider(),
+				currentPersistenceContext.getJDBCBatchSize());
 		ClassMappingStrategy<Toto, Long> classMappingStrategy = new ClassMappingStrategy<>(Toto.class, targetTable,
-				fieldColumnMap, PropertyAccessor.forProperty(persistentFieldHarverster.getField("id")),
-				new PooledSequenceIdentifierGenerator(new PooledSequenceIdentifierGeneratorOptions(100, "Toto", PooledSequencePersistenceOptions.DEFAULT),
-						currentPersistenceContext.getDialect(), (SeparateTransactionExecutor) currentPersistenceContext.getConnectionProvider(),
-						currentPersistenceContext.getJDBCBatchSize()));
+				fieldColumnMap, idAccessor, new BeforeInsertIdentifierManager<>(IdMappingStrategy.toIdAccessor(idAccessor), longSequence));
 		Field answersField = null;
 		try {
 			answersField = Toto.class.getDeclaredField("answers");
