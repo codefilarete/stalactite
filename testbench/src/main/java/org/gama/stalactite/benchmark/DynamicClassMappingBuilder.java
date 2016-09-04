@@ -14,7 +14,9 @@ import org.gama.stalactite.persistence.engine.SeparateTransactionExecutor;
 import org.gama.stalactite.persistence.id.generator.sequence.PooledSequenceIdentifierGenerator;
 import org.gama.stalactite.persistence.id.generator.sequence.PooledSequenceIdentifierGeneratorOptions;
 import org.gama.stalactite.persistence.id.generator.sequence.PooledSequencePersistenceOptions;
+import org.gama.stalactite.persistence.id.manager.BeforeInsertIdentifierManager;
 import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
+import org.gama.stalactite.persistence.mapping.IdMappingStrategy;
 import org.gama.stalactite.persistence.mapping.PersistentFieldHarverster;
 import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.persistence.structure.Table.Column;
@@ -57,11 +59,13 @@ public class DynamicClassMappingBuilder implements IMappingBuilder {
 		PersistentFieldHarverster persistentFieldHarverster = new PersistentFieldHarverster();
 		Map<PropertyAccessor, Column> fieldColumnMap = persistentFieldHarverster.mapFields(dynamicType, targetTable);
 		PersistenceContext currentPersistenceContext = PersistenceContexts.getCurrent();
-		ClassMappingStrategy<? extends DynamicEntity, Long> classMappingStrategy = new ClassMappingStrategy<>(dynamicType, targetTable,
-				fieldColumnMap, PropertyAccessor.forProperty(persistentFieldHarverster.getField("id")),
-				new PooledSequenceIdentifierGenerator(new PooledSequenceIdentifierGeneratorOptions(100, "Toto", PooledSequencePersistenceOptions.DEFAULT),
+		PropertyAccessor idAccessor = PropertyAccessor.forProperty(persistentFieldHarverster.getField("id"));
+		PooledSequenceIdentifierGenerator longSequence = new PooledSequenceIdentifierGenerator(new PooledSequenceIdentifierGeneratorOptions(100, "Toto", 
+				PooledSequencePersistenceOptions.DEFAULT),
 				currentPersistenceContext.getDialect(), (SeparateTransactionExecutor) currentPersistenceContext.getConnectionProvider(),
-						currentPersistenceContext.getJDBCBatchSize()));
+				currentPersistenceContext.getJDBCBatchSize());
+		ClassMappingStrategy<? extends DynamicEntity, Long> classMappingStrategy = new ClassMappingStrategy<>(dynamicType, targetTable,
+				fieldColumnMap, idAccessor, new BeforeInsertIdentifierManager<>(IdMappingStrategy.toIdAccessor(idAccessor), longSequence));
 		return classMappingStrategy;
 	}
 	
