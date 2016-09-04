@@ -4,7 +4,7 @@ import java.util.Map;
 
 import org.gama.lang.collection.Maps;
 import org.gama.reflection.PropertyAccessor;
-import org.gama.stalactite.persistence.id.manager.AutoAssignedIdentifierManager;
+import org.gama.stalactite.persistence.id.manager.AlreadyAssignedIdentifierManager;
 import org.gama.stalactite.persistence.engine.Persister;
 import org.gama.stalactite.persistence.engine.SeparateTransactionExecutor;
 import org.gama.stalactite.persistence.id.generator.sequence.PooledSequencePersister.PooledSequence;
@@ -15,8 +15,8 @@ import org.gama.stalactite.persistence.structure.Table;
 
 /**
  * Persister dedicated to pooled entity identifiers.
- * The same instance can be shared by multiple IdAssignmentPolicy, as long as each calls {@link #reservePool(String, int)}
- * with different parameters, there's no risk of identifier collision.
+ * The same instance can be shared, as long as each calls {@link #reservePool(String, int)} with a different name parameter to avoid
+ * sequence name collision.
  * 
  * @author Guillaume Mary
  */
@@ -99,6 +99,10 @@ public class PooledSequencePersister extends Persister<PooledSequence, String> {
 		public void setUpperBound(long upperBound) {
 			this.upperBound = upperBound;
 		}
+		
+		public String getSequenceName() {
+			return sequenceName;
+		}
 	}
 	
 	/**
@@ -143,7 +147,7 @@ public class PooledSequencePersister extends Persister<PooledSequence, String> {
 					sequenceTable,
 					sequenceTable.getPooledSequenceFieldMapping(),
 					PooledSequence.SEQUENCE_NAME_FIELD,
-					AutoAssignedIdentifierManager.INSTANCE);
+					AlreadyAssignedIdentifierManager.INSTANCE);
 		}
 	}
 }

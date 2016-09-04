@@ -16,12 +16,14 @@ import net.bytebuddy.ByteBuddy;
 import net.bytebuddy.dynamic.ClassLoadingStrategy;
 import net.bytebuddy.dynamic.DynamicType.Builder;
 import org.gama.reflection.PropertyAccessor;
-import org.gama.stalactite.persistence.id.manager.AutoAssignedIdentifierManager;
+import org.gama.stalactite.persistence.id.manager.AlreadyAssignedIdentifierManager;
 import org.gama.stalactite.persistence.engine.SeparateTransactionExecutor;
 import org.gama.stalactite.persistence.id.generator.sequence.PooledSequenceIdentifierGenerator;
 import org.gama.stalactite.persistence.id.generator.sequence.PooledSequenceIdentifierGeneratorOptions;
 import org.gama.stalactite.persistence.id.generator.sequence.PooledSequencePersistenceOptions;
+import org.gama.stalactite.persistence.id.manager.BeforeInsertIdentifierManager;
 import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
+import org.gama.stalactite.persistence.mapping.IdMappingStrategy;
 import org.gama.stalactite.persistence.mapping.PersistentFieldHarverster;
 import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.persistence.structure.Table.Column;
@@ -62,8 +64,9 @@ public class DynamicAndComplementaryClassMappingBuilder implements IMappingBuild
 		PooledSequenceIdentifierGenerator identifierGenerator = new PooledSequenceIdentifierGenerator(options,
 				PersistenceContexts.getCurrent().getDialect(), (SeparateTransactionExecutor) PersistenceContexts.getCurrent().getConnectionProvider(), PersistenceContexts.getCurrent().getJDBCBatchSize());
 //		PersistenceContext.getCurrent().add(identifierGenerator.getPooledSequencePersister().getMappingStrategy());
+		PropertyAccessor idAccessor = PropertyAccessor.forProperty(persistentFieldHarverster.getField("id"));
 		ClassMappingStrategy<? extends DynamicEntity, Long> classMappingStrategy = new ClassMappingStrategy<>(dynamicType, targetTable,
-				fieldColumnMap, PropertyAccessor.forProperty(persistentFieldHarverster.getField("id")), identifierGenerator);
+				fieldColumnMap, idAccessor, new BeforeInsertIdentifierManager<>(IdMappingStrategy.toIdAccessor(idAccessor), identifierGenerator));
 		getClassMappingStrategy_nil();
 		getClassMappingStrategy_indexes();
 		return classMappingStrategy;
@@ -85,9 +88,9 @@ public class DynamicAndComplementaryClassMappingBuilder implements IMappingBuild
 			nilDynamicTypeFields.put(declaredField.getName(), declaredField);
 		}
 		
-		// NB: AlreadyAssignedIdPolicy car l'id vient de l'instance de DynamicType
+		// NB: AlreadyAssignedIdentifierManager car l'id vient de l'instance de DynamicType
 		classMappingStrategyNil = new ClassMappingStrategy<>(nilDynamicType, targetNilTable,
-				fieldColumnMap, PropertyAccessor.forProperty(persistentFieldHarverster.getField("id")), AutoAssignedIdentifierManager.INSTANCE);
+				fieldColumnMap, PropertyAccessor.forProperty(persistentFieldHarverster.getField("id")), AlreadyAssignedIdentifierManager.INSTANCE);
 		return classMappingStrategyNil;
 	}
 	
@@ -106,7 +109,7 @@ public class DynamicAndComplementaryClassMappingBuilder implements IMappingBuild
 			Map<PropertyAccessor, Column> fieldColumnMap = persistentFieldHarverster.mapFields(indexDynamicType, indexTable);
 			
 			ClassMappingStrategy<? extends DynamicEntity, Long> classMappingStrategy = new ClassMappingStrategy<>(indexDynamicType, indexTable,
-					fieldColumnMap, PropertyAccessor.forProperty(persistentFieldHarverster.getField("id")), AutoAssignedIdentifierManager.INSTANCE);
+					fieldColumnMap, PropertyAccessor.forProperty(persistentFieldHarverster.getField("id")), AlreadyAssignedIdentifierManager.INSTANCE);
 			indexDynamicTypes.put(columnToIndex, classMappingStrategy);
 		}
 		return indexDynamicTypes;

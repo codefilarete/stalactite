@@ -6,20 +6,18 @@ import java.sql.SQLException;
 
 import org.gama.sql.dml.WriteOperation;
 import org.gama.stalactite.persistence.engine.WriteExecutor.JDBCBatchingIterator;
-import org.gama.stalactite.persistence.id.generator.AlreadyAssignedIdPolicy;
 import org.gama.stalactite.persistence.structure.Table.Column;
 
 /**
- * Identifier manager during insertion for {@link AlreadyAssignedIdPolicy}.
- * As identifier is already specified on entity, nothing special must be done !
+ * Identifier manager to be used when identifier is already specified on entity, so, nothing special must be done !
  * 
  * @author Guillaume Mary
  */
-public class AutoAssignedIdentifierManager<T> implements IdentifierInsertionManager<T> {
+public class AlreadyAssignedIdentifierManager<T> implements IdentifierInsertionManager<T> {
 	
-	public static final AutoAssignedIdentifierManager INSTANCE = new AutoAssignedIdentifierManager();
+	public static final AlreadyAssignedIdentifierManager INSTANCE = new AlreadyAssignedIdentifierManager();
 	
-	public AutoAssignedIdentifierManager() {
+	protected AlreadyAssignedIdentifierManager() {
 	}
 	
 	@Override

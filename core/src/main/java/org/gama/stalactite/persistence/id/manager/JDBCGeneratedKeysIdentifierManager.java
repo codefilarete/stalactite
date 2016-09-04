@@ -16,17 +16,15 @@ import org.gama.sql.dml.GeneratedKeysReader;
 import org.gama.sql.dml.WriteOperation;
 import org.gama.sql.result.Row;
 import org.gama.stalactite.persistence.engine.WriteExecutor.JDBCBatchingIterator;
-import org.gama.stalactite.persistence.id.generator.JDBCGeneratedKeysIdPolicy;
 import org.gama.stalactite.persistence.mapping.IIdAccessor;
 import org.gama.stalactite.persistence.structure.Table.Column;
 
 /**
- * Identifier manager during insertion for {@link JDBCGeneratedKeysIdPolicy}.
- * Identifier will be read from a {@link GeneratedKeysReader}.
- *
+ * Identifier manager that gets its values from {@link PreparedStatement#getGeneratedKeys()} (available after insert SQL statement). 
+ * 
  * @author Guillaume Mary
  */
-public class AfterInsertIdentifierManager<T, I> implements IdentifierInsertionManager<T> {
+public class JDBCGeneratedKeysIdentifierManager<T, I> implements IdentifierInsertionManager<T> {
 	
 	public static <I> Function<Map<String, Object>, I> keyMapper(String columnName) {
 		return m -> (I) m.get(columnName);
@@ -35,11 +33,11 @@ public class AfterInsertIdentifierManager<T, I> implements IdentifierInsertionMa
 	private final AfterInsertIdentifierFixer<T, I> identifierFixer;
 	private final GeneratedKeysReader generatedKeysReader;
 	
-	public AfterInsertIdentifierManager(IIdAccessor<T, I> idAccessor, GeneratedKeysReader generatedKeysReader, String columnName) {
+	public JDBCGeneratedKeysIdentifierManager(IIdAccessor<T, I> idAccessor, GeneratedKeysReader generatedKeysReader, String columnName) {
 		this(idAccessor, generatedKeysReader, keyMapper(columnName));
 	}
 
-	public AfterInsertIdentifierManager(IIdAccessor<T, I> idAccessor, GeneratedKeysReader generatedKeysReader, Function<Map<String, Object>, I> idReader) {
+	public JDBCGeneratedKeysIdentifierManager(IIdAccessor<T, I> idAccessor, GeneratedKeysReader generatedKeysReader, Function<Map<String, Object>, I> idReader) {
 		this.identifierFixer = new AfterInsertIdentifierFixer<>(idAccessor, idReader);
 		this.generatedKeysReader = generatedKeysReader;
 		// protect ourselves from nonsense
