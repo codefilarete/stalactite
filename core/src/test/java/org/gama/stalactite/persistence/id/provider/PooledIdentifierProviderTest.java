@@ -51,12 +51,14 @@ public class PooledIdentifierProviderTest {
 		executorService.awaitTermination(10, TimeUnit.SECONDS);
 		backgroundLoader.shutdown();
 		backgroundLoader.awaitTermination(2, TimeUnit.SECONDS);
-		// Sort to prevent from Thread precedence making pop() not done in ascending order
-		result.sort(Long::compareTo);
-		// assertion for forbidden duplicates
-		assertEquals(result, new ArrayList<>(new HashSet<>(result)));
-		// assertion for unexpected identifier generation
-		assertTrue(generated.containsAll(result));
+		synchronized (result) {
+			// Sort to prevent from Thread precedence making pop() not done in ascending order
+			result.sort(Long::compareTo);
+			// assertion for forbidden duplicates
+			assertEquals(result, new ArrayList<>(new HashSet<>(result)));
+			// assertion for unexpected identifier generation
+			assertTrue(generated.containsAll(result));
+		}
 	}
 	
 	private class QueueConsumer implements Runnable {

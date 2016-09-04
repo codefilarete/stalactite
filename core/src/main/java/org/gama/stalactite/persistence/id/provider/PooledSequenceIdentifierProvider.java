@@ -60,7 +60,7 @@ public class PooledSequenceIdentifierProvider extends PooledIdentifierProvider<L
 		int poolSize = sequenceIdentifierGenerator.getOptions().getPoolSize();
 		List<Long> result = new ArrayList<>(poolSize);
 		for (int i = 0; i < poolSize; i++) {
-			result.add(sequenceIdentifierGenerator.generate());
+			result.add(sequenceIdentifierGenerator.next());
 		}
 		return result;
 	}

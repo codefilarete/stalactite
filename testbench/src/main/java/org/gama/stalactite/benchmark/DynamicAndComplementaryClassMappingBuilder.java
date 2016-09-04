@@ -16,8 +16,8 @@ import net.bytebuddy.ByteBuddy;
 import net.bytebuddy.dynamic.ClassLoadingStrategy;
 import net.bytebuddy.dynamic.DynamicType.Builder;
 import org.gama.reflection.PropertyAccessor;
+import org.gama.stalactite.persistence.engine.AutoAssignedIdentifierManager;
 import org.gama.stalactite.persistence.engine.SeparateTransactionExecutor;
-import org.gama.stalactite.persistence.id.generator.AlreadyAssignedIdPolicy;
 import org.gama.stalactite.persistence.id.generator.sequence.PooledSequenceIdentifierGenerator;
 import org.gama.stalactite.persistence.id.generator.sequence.PooledSequenceIdentifierGeneratorOptions;
 import org.gama.stalactite.persistence.id.generator.sequence.PooledSequencePersistenceOptions;
@@ -87,7 +87,7 @@ public class DynamicAndComplementaryClassMappingBuilder implements IMappingBuild
 		
 		// NB: AlreadyAssignedIdPolicy car l'id vient de l'instance de DynamicType
 		classMappingStrategyNil = new ClassMappingStrategy<>(nilDynamicType, targetNilTable,
-				fieldColumnMap, PropertyAccessor.forProperty(persistentFieldHarverster.getField("id")), AlreadyAssignedIdPolicy.INSTANCE);
+				fieldColumnMap, PropertyAccessor.forProperty(persistentFieldHarverster.getField("id")), AutoAssignedIdentifierManager.INSTANCE);
 		return classMappingStrategyNil;
 	}
 	
@@ -106,7 +106,7 @@ public class DynamicAndComplementaryClassMappingBuilder implements IMappingBuild
 			Map<PropertyAccessor, Column> fieldColumnMap = persistentFieldHarverster.mapFields(indexDynamicType, indexTable);
 			
 			ClassMappingStrategy<? extends DynamicEntity, Long> classMappingStrategy = new ClassMappingStrategy<>(indexDynamicType, indexTable,
-					fieldColumnMap, PropertyAccessor.forProperty(persistentFieldHarverster.getField("id")), AlreadyAssignedIdPolicy.INSTANCE);
+					fieldColumnMap, PropertyAccessor.forProperty(persistentFieldHarverster.getField("id")), AutoAssignedIdentifierManager.INSTANCE);
 			indexDynamicTypes.put(columnToIndex, classMappingStrategy);
 		}
 		return indexDynamicTypes;

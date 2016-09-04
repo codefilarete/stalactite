@@ -15,7 +15,7 @@ import java.util.stream.Collectors;
 import org.gama.lang.collection.Arrays;
 import org.gama.reflection.PropertyAccessor;
 import org.gama.sql.result.Row;
-import org.gama.stalactite.persistence.id.generator.IdAssignmentPolicy;
+import org.gama.stalactite.persistence.engine.IdentifierInsertionManager;
 import org.gama.stalactite.persistence.sql.dml.PreparedUpdate.UpwhereColumn;
 import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.persistence.structure.Table.Column;
@@ -37,12 +37,10 @@ public class ClassMappingStrategy<T, I> implements IEntityMappingStrategy<T, I> 
 	
 	private final Map<PropertyAccessor, IEmbeddedBeanMapper> mappingStrategies;
 	
-	private final IdAssignmentPolicy idAssignmentPolicy;
-	
-	private final PropertyAccessor<T, I> identifierAccessor;
+	private final IdMappingStrategy<T, I> idMappingStrategy;
 	
 	public ClassMappingStrategy(Class<T> classToPersist, Table targetTable, Map<PropertyAccessor, Column> propertyToColumn,
-								PropertyAccessor<T, I> identifierProperty, IdAssignmentPolicy idAssignmentPolicy) {
+								PropertyAccessor<T, I> identifierProperty, IdentifierInsertionManager<T> identifierInsertionManager) {
 		if (identifierProperty == null) {
 			throw new UnsupportedOperationException("No identifier property for " + classToPersist.getName());
 		}
@@ -55,10 +53,9 @@ public class ClassMappingStrategy<T, I> implements IEntityMappingStrategy<T, I> 
 		this.insertableColumns = new LinkedHashSet<>();
 		this.updatableColumns = new LinkedHashSet<>();
 		this.mappingStrategies = new HashMap<>();
-		this.idAssignmentPolicy = idAssignmentPolicy;
+		this.idMappingStrategy = new IdMappingStrategy<>(identifierProperty, identifierInsertionManager);
 		fillInsertableColumns();
 		fillUpdatableColumns();
-		this.identifierAccessor = identifierProperty;
 		// identifierAccessor must be the same instance as those stored in propertyToColumn for Map.remove method used in foreach()
 		Column identifierColumn = propertyToColumn.get(identifierProperty);
 		if (!identifierColumn.isPrimaryKey()) {
@@ -96,8 +93,8 @@ public class ClassMappingStrategy<T, I> implements IEntityMappingStrategy<T, I> 
 		return updatableColumns;
 	}
 	
-	public IdAssignmentPolicy getIdAssignmentPolicy() {
-		return idAssignmentPolicy;
+	public IdMappingStrategy<T, I> getIdMappingStrategy() {
+		return idMappingStrategy;
 	}
 	
 	/**
@@ -207,12 +204,12 @@ public class ClassMappingStrategy<T, I> implements IEntityMappingStrategy<T, I> 
 	
 	@Override
 	public I getId(T t) {
-		return identifierAccessor.get(t);
+		return getIdMappingStrategy().getId(t);
 	}
 	
 	@Override
 	public void setId(T t, I identifier) {
-		identifierAccessor.set(t, identifier);
+		getIdMappingStrategy().setId(t, identifier);
 	}
 	
 	@Override

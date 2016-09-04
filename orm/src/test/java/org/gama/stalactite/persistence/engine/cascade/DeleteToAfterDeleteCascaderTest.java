@@ -8,8 +8,8 @@ import java.util.List;
 import org.gama.lang.collection.Arrays;
 import org.gama.lang.collection.Iterables;
 import org.gama.stalactite.persistence.engine.Persister;
-import org.gama.stalactite.persistence.id.generator.AlreadyAssignedIdPolicy;
 import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
+import org.gama.stalactite.persistence.mapping.IdMappingStrategy;
 import org.gama.stalactite.persistence.sql.Dialect;
 import org.junit.Test;
 
@@ -25,8 +25,8 @@ public class DeleteToAfterDeleteCascaderTest extends AbstractCascaderTest {
 	@Test
 	public void testAfterDelete() throws SQLException {
 		ClassMappingStrategy mappingStrategyMock = mock(ClassMappingStrategy.class);
-		// AlreadyAssignedIdPolicy is sufficient for our test case
-		when(mappingStrategyMock.getIdAssignmentPolicy()).thenReturn(AlreadyAssignedIdPolicy.INSTANCE);
+		// IdMappingStrategy is called by InsertExecutor to retrieve IdentifierInsertionManager but this will not be called, so we can mock it
+		when(mappingStrategyMock.getIdMappingStrategy()).thenReturn(mock(IdMappingStrategy.class));
 		Persister<Tata, Long> persisterMock = new Persister<Tata, Long>(mappingStrategyMock, mock(Dialect.class), null, 10) {
 			@Override
 			protected int doDelete(Iterable<Tata> iterable) {

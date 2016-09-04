@@ -1,9 +1,7 @@
 package org.gama.stalactite.persistence.id.generator.sequence;
 
-import java.util.Map;
-
+import org.gama.stalactite.persistence.engine.BeforeInsertIdentifierManager.Sequence;
 import org.gama.stalactite.persistence.engine.SeparateTransactionExecutor;
-import org.gama.stalactite.persistence.id.generator.BeforeInsertIdPolicy;
 import org.gama.stalactite.persistence.id.generator.sequence.PooledSequencePersister.PooledSequence;
 import org.gama.stalactite.persistence.sql.Dialect;
 
@@ -15,7 +13,7 @@ import org.gama.stalactite.persistence.sql.Dialect;
  * 
  * @author Guillaume Mary
  */
-public class PooledSequenceIdentifierGenerator implements BeforeInsertIdPolicy<Long> {
+public class PooledSequenceIdentifierGenerator implements Sequence<Long> {
 	
 	private LongPool sequenceState;
 	
@@ -34,11 +32,6 @@ public class PooledSequenceIdentifierGenerator implements BeforeInsertIdPolicy<L
 		configure(options);
 	}
 	
-	@Override
-	public void configure(Map<String, Object> configuration) {
-		configure(new PooledSequenceIdentifierGeneratorOptions(configuration));
-	}
-	
 	public void configure(PooledSequenceIdentifierGeneratorOptions options) {
 		this.pooledSequencePersister = new PooledSequencePersister(options.getStorageOptions(), dialect, separateTransactionExecutor, jdbcBatchSize);
 		this.options = options;
@@ -53,7 +46,7 @@ public class PooledSequenceIdentifierGenerator implements BeforeInsertIdPolicy<L
 	}
 	
 	@Override
-	public synchronized Long generate() {
+	public synchronized Long next() {
 		if (sequenceState == null) {
 			// No state yet so we create one
 			PooledSequence existingSequence = this.pooledSequencePersister.select(getSequenceName());

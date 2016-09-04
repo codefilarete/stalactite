@@ -38,7 +38,7 @@ public class PooledSequenceIdentifierGeneratorTest {
 		ddlDeployer.deployDDL();
 		// on vérifie que l'incrémentation se fait sans erreur depuis une base vierge
 		for (int i = 0; i < 45; i++) {
-			Long newId = testInstance.generate();
+			Long newId = testInstance.next();
 			assertEquals(i, newId.intValue());
 		}
 		
@@ -46,7 +46,7 @@ public class PooledSequenceIdentifierGeneratorTest {
 		testInstance = new PooledSequenceIdentifierGenerator(new PooledSequenceIdentifierGeneratorOptions(10, "Tata", PooledSequencePersistenceOptions.DEFAULT),
 				persistenceContext.getDialect(), (SeparateTransactionExecutor) persistenceContext.getConnectionProvider(), persistenceContext.getJDBCBatchSize());
 		for (int i = 0; i < 45; i++) {
-			Long newId = testInstance.generate();
+			Long newId = testInstance.next();
 			assertEquals(i, newId.intValue());
 		}
 		
@@ -54,7 +54,7 @@ public class PooledSequenceIdentifierGeneratorTest {
 		testInstance = new PooledSequenceIdentifierGenerator(new PooledSequenceIdentifierGeneratorOptions(10, "Toto", PooledSequencePersistenceOptions.DEFAULT),
 				persistenceContext.getDialect(), (SeparateTransactionExecutor) persistenceContext.getConnectionProvider(), persistenceContext.getJDBCBatchSize());
 		for (int i = 0; i < 45; i++) {
-			Long newId = testInstance.generate();
+			Long newId = testInstance.next();
 			assertEquals(50+i, newId.intValue());
 		}
 	}

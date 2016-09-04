@@ -13,7 +13,9 @@ import java.util.Set;
 import java.util.function.BiFunction;
 
 import org.gama.reflection.PropertyAccessor;
+import org.gama.stalactite.persistence.engine.BeforeInsertIdentifierManager.Sequence;
 import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
+import org.gama.stalactite.persistence.mapping.IdMappingStrategy;
 import org.gama.stalactite.persistence.mapping.PersistentFieldHarverster;
 import org.gama.stalactite.persistence.sql.Dialect;
 import org.gama.stalactite.persistence.sql.ddl.JavaTypeToSqlTypeMapping;
@@ -45,7 +47,6 @@ public abstract class DMLExecutorTest {
 	protected ArgumentCaptor<String> statementArgCaptor;
 	protected JdbcConnectionProvider transactionManager;
 	protected Connection connection;
-	private InMemoryCounterIdentifierGenerator identifierGenerator;
 	
 	protected static class PersistenceConfiguration<T, I> {
 		
@@ -147,11 +148,14 @@ public abstract class DMLExecutorTest {
 	}
 	
 	protected PersistenceConfigurationBuilder newPersistenceConfigurationBuilder() {
-		identifierGenerator = new InMemoryCounterIdentifierGenerator();
 		return new PersistenceConfigurationBuilder<Toto, Integer>()
-				.withTableAndClass("Toto", Toto.class, (mappedClass, primaryKeyField) -> new ClassMappingStrategy<>(mappedClass.mappedClass, 
-						mappedClass.targetTable,
-						mappedClass.persistentFieldHarverster.getFieldToColumn(), primaryKeyField, identifierGenerator))
+				.withTableAndClass("Toto", Toto.class, (mappedClass, primaryKeyField) -> {
+					Sequence<Integer> instance = InMemoryCounterIdentifierGenerator.INSTANCE;
+					IdentifierInsertionManager<Toto> identifierGenerator = new BeforeInsertIdentifierManager<>(IdMappingStrategy.toIdAccessor(primaryKeyField), instance);
+					return new ClassMappingStrategy<>(mappedClass.mappedClass,
+							mappedClass.targetTable,
+							mappedClass.persistentFieldHarverster.getFieldToColumn(), primaryKeyField, identifierGenerator);
+				})
 				.withPrimaryKeyFieldName("a");
 	}
 	

@@ -15,7 +15,7 @@ import org.gama.stalactite.persistence.structure.Table.Column;
  *
  * @author Guillaume Mary
  */
-interface IdentifierInsertionManager<T> {
+public interface IdentifierInsertionManager<T> {
 	
 	PreparedStatement prepareStatement(Connection connection, String sql) throws SQLException;
 	

@@ -8,11 +8,9 @@ import java.util.Map;
  * Shouldn't be combined with {@link BeforeInsertIdPolicy} nor {@link JDBCGeneratedKeysIdPolicy}.
  * 
  * @author Guillaume Mary
- * @see #INSTANCE
+ * @see AutoAssignedIdentifierManager#INSTANCE
  */
 public class AlreadyAssignedIdPolicy implements IdAssignmentPolicy {
-	
-	public static final AlreadyAssignedIdPolicy INSTANCE = new AlreadyAssignedIdPolicy();
 	
 	private AlreadyAssignedIdPolicy() {
 	}

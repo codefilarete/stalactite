@@ -15,7 +15,12 @@ import org.gama.stalactite.persistence.structure.Table.Column;
  * 
  * @author Guillaume Mary
  */
-class AutoAssignedIdentifierManager<T> implements IdentifierInsertionManager<T> {
+public class AutoAssignedIdentifierManager<T> implements IdentifierInsertionManager<T> {
+	
+	public static final AutoAssignedIdentifierManager INSTANCE = new AutoAssignedIdentifierManager();
+	
+	public AutoAssignedIdentifierManager() {
+	}
 	
 	@Override
 	public PreparedStatement prepareStatement(Connection connection, String sql) throws SQLException {

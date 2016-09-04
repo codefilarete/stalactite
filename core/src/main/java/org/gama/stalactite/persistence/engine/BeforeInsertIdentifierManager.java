@@ -8,8 +8,7 @@ import java.util.function.Consumer;
 import org.gama.sql.dml.WriteOperation;
 import org.gama.stalactite.persistence.engine.WriteExecutor.JDBCBatchingIterator;
 import org.gama.stalactite.persistence.id.generator.BeforeInsertIdPolicy;
-import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
-import org.gama.stalactite.persistence.mapping.IEntityMappingStrategy;
+import org.gama.stalactite.persistence.mapping.IIdAccessor;
 import org.gama.stalactite.persistence.structure.Table.Column;
 
 /**
@@ -18,12 +17,17 @@ import org.gama.stalactite.persistence.structure.Table.Column;
  *
  * @author Guillaume Mary
  */
-class BeforeInsertIdentifierManager<T, I> implements IdentifierInsertionManager<T> {
+public class BeforeInsertIdentifierManager<T, I> implements IdentifierInsertionManager<T> {
+	
+	@FunctionalInterface
+	public interface Sequence<I> {
+		I next();
+	}
 	
 	private final BeforeInsertIdentifierFixer<T, I> identifierFixer;
 	
-	BeforeInsertIdentifierManager(ClassMappingStrategy<T, I> mappingStrategy) {
-		this.identifierFixer = new BeforeInsertIdentifierFixer<>(mappingStrategy, (BeforeInsertIdPolicy<I>) mappingStrategy.getIdAssignmentPolicy());
+	public BeforeInsertIdentifierManager(IIdAccessor<T, I> idAccessor, Sequence<I> sequence) {
+		this.identifierFixer = new BeforeInsertIdentifierFixer<>(idAccessor, sequence);
 	}
 	
 	@Override
@@ -44,17 +48,17 @@ class BeforeInsertIdentifierManager<T, I> implements IdentifierInsertionManager<
 	 */
 	private static class BeforeInsertIdentifierFixer<T, I> implements Consumer<T> {
 		
-		private final IEntityMappingStrategy<T, I> mappingStrategy;
-		private final BeforeInsertIdPolicy<I> idAssignmentPolicy;
+		private final IIdAccessor<T, I> idAccessor;
+		private final Sequence<I> sequence;
 		
-		BeforeInsertIdentifierFixer(IEntityMappingStrategy<T, I> mappingStrategy, BeforeInsertIdPolicy<I> idAssignmentPolicy) {
-			this.mappingStrategy = mappingStrategy;
-			this.idAssignmentPolicy = idAssignmentPolicy;
+		BeforeInsertIdentifierFixer(IIdAccessor<T, I> idAccessor, Sequence<I> sequence) {
+			this.idAccessor = idAccessor;
+			this.sequence = sequence;
 		}
 		
 		@Override
 		public void accept(T t) {
-			mappingStrategy.setId(t, idAssignmentPolicy.generate());
+			idAccessor.setId(t, sequence.next());
 		}
 	}
 	

@@ -5,9 +5,6 @@ package org.gama.stalactite.persistence.mapping;
  * 
  * @author Guillaume Mary
  */
-public interface IEntityMappingStrategy<T, S> extends IMappingStrategy<T> {
+public interface IEntityMappingStrategy<T, I> extends IMappingStrategy<T>, IIdAccessor<T, I> {
 	
-	S getId(T t);
-	
-	void setId(T t, S identifier);
 }

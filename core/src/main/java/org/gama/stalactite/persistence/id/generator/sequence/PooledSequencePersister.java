@@ -4,9 +4,9 @@ import java.util.Map;
 
 import org.gama.lang.collection.Maps;
 import org.gama.reflection.PropertyAccessor;
+import org.gama.stalactite.persistence.engine.AutoAssignedIdentifierManager;
 import org.gama.stalactite.persistence.engine.Persister;
 import org.gama.stalactite.persistence.engine.SeparateTransactionExecutor;
-import org.gama.stalactite.persistence.id.generator.AlreadyAssignedIdPolicy;
 import org.gama.stalactite.persistence.id.generator.sequence.PooledSequencePersister.PooledSequence;
 import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
 import org.gama.stalactite.persistence.sql.Dialect;
@@ -143,7 +143,7 @@ public class PooledSequencePersister extends Persister<PooledSequence, String> {
 					sequenceTable,
 					sequenceTable.getPooledSequenceFieldMapping(),
 					PooledSequence.SEQUENCE_NAME_FIELD,
-					AlreadyAssignedIdPolicy.INSTANCE);
+					AutoAssignedIdentifierManager.INSTANCE);
 		}
 	}
 }
