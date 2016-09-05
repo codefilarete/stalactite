@@ -72,7 +72,7 @@ public final class Accessors {
 	public static String propertyName(Method fieldWrapper) {
 		String methodName = fieldWrapper.getName();
 		String propertyName;
-		propertyName = onFieldWrapperType(fieldWrapper, () -> methodName.substring(3), () -> methodName.substring(3), () -> methodName.substring(2));
+		propertyName = onJavaBeanFieldWrapper(fieldWrapper, () -> methodName.substring(3), () -> methodName.substring(3), () -> methodName.substring(2));
 		propertyName = Strings.uncapitalize(propertyName);
 		return propertyName;
 	}
@@ -88,7 +88,7 @@ public final class Accessors {
 	 * @param <E> the returned type
 	 * @return the result of the called action
 	 */
-	public static <E> E onFieldWrapperType(Method fieldWrapper, Supplier<E> getterAction, Supplier<E> setterAction, Supplier<E> booleanGetterAction) {
+	public static <E> E onJavaBeanFieldWrapper(Method fieldWrapper, Supplier<E> getterAction, Supplier<E> setterAction, Supplier<E> booleanGetterAction) {
 		String methodName = fieldWrapper.getName();
 		if (methodName.startsWith("get")) {
 			return getterAction.get();
