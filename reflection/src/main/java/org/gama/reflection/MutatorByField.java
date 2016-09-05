@@ -6,7 +6,7 @@ import java.lang.reflect.InvocationTargetException;
 /**
  * @author mary
  */
-public class MutatorByField<C, T> extends AbstractMutator<C, T> implements MutatorByMember<C, T, Field> {
+public class MutatorByField<C, T> extends AbstractMutator<C, T> implements MutatorByMember<C, T, Field>, IReversibleMutator<C, T> {
 	
 	private final Field field;
 	

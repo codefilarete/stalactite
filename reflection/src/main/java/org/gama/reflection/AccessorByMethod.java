@@ -10,7 +10,7 @@ import org.gama.lang.StringAppender;
 /**
  * @author Guillaume Mary
  */
-public class AccessorByMethod<C, T> extends AbstractAccessor<C, T> implements AccessorByMember<C, T, Method> {
+public class AccessorByMethod<C, T> extends AbstractAccessor<C, T> implements AccessorByMember<C, T, Method>, IReversibleAccessor<C, T> {
 	
 	private final Method getter;
 	

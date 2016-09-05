@@ -73,14 +73,14 @@ public class AccessorChainMutatorTest {
 	@DataProvider
 	public static Object[][] testGetMutatorData() {
 		return new Object[][]{
-				{cityNameAccessor, cityNameMutator},
-				{addressCityAccessor, addressCityMutator},
-				{personAddressAccessor, personAddressMutator},
-				{addressPhonesAccessor, addressPhonesMutator},
-				{phoneListAccessor, phoneListMutator},
-				{phoneNumberAccessor, phoneNumberMutator},
-				{phoneNumberMethodAccessor, phoneNumberMutator},
-				{charArrayAccessor, charArrayMutator}
+				{ cityNameAccessor, cityNameMutator },
+				{ addressCityAccessor, addressCityMutator },
+				{ personAddressAccessor, personAddressMutator },
+				{ addressPhonesAccessor, addressPhonesMutator },
+				{ phoneListAccessor, phoneListMutator },
+				{ phoneNumberAccessor, phoneNumberMutator },
+				{ phoneNumberMethodAccessor, phoneNumberMutator },
+				{ charArrayAccessor, charArrayMutator }
 			
 		};
 	}
@@ -88,20 +88,20 @@ public class AccessorChainMutatorTest {
 	@DataProvider
 	public static Object[][] testGetMutator_exception_data() {
 		return new Object[][]{
-				{charAtAccessor, charAtMutator},    // chartAt() has no mutator equivalent
-				{toCharArrayAccessor, toCharArrayMutator},    // toCharArray() has no mutator equivalent
+				{ charAtAccessor, charAtMutator },    // chartAt() has no mutator equivalent
+				{ toCharArrayAccessor, toCharArrayMutator },    // toCharArray() has no mutator equivalent
 		};
 	}
 	
 	@Test
 	@UseDataProvider("testGetMutatorData")
-	public void testGetMutator(IAccessor accessor, IMutator expected) {
+	public void testGetMutator(IReversibleAccessor accessor, IMutator expected) {
 		assertEquals(expected, accessor.toMutator());
 	}
 	
 	@Test(expected = IllegalArgumentException.class)
 	@UseDataProvider("testGetMutator_exception_data")
-	public void testGetMutator_exception(IAccessor accessor, IMutator expected) {
+	public void testGetMutator_exception(IReversibleAccessor accessor, IMutator expected) {
 		assertEquals(expected, accessor.toMutator());
 	}
 	

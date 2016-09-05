@@ -12,7 +12,7 @@ import org.gama.lang.collection.Iterables;
 /**
  * @author Guillaume Mary
  */
-public class AccessorChain<C, T> implements IAccessor<C, T>{
+public class AccessorChain<C, T> implements IReversibleAccessor<C, T> {
 	
 	private final List<IAccessor> accessors;
 	
@@ -67,10 +67,21 @@ public class AccessorChain<C, T> implements IAccessor<C, T>{
 		throw new NullPointerException(exceptionMessage);
 	}
 	
+	/**
+	 * Only supported when last accessor is reversible (aka implements {@link IReversibleAccessor}.
+	 *
+	 * @return a new chain which path is the same as this
+	 * @throws UnsupportedOperationException if last accessor is not reversible
+	 */
 	@Override
 	public AccessorChainMutator<C, Object, T> toMutator() {
 		IAccessor lastAccessor = Iterables.last(getAccessors());
-		IMutator<Object, T> lastMutator = lastAccessor.toMutator();
-		return new AccessorChainMutator<>(Collections.cutTail(getAccessors()), lastMutator);
+		if (lastAccessor instanceof IReversibleAccessor) {
+			IReversibleMutator<Object, T> lastMutator = (IReversibleMutator<Object, T>) ((IReversibleAccessor) lastAccessor).toMutator();
+			return new AccessorChainMutator<>(Collections.cutTail(getAccessors()), lastMutator);
+		} else {
+			throw new UnsupportedOperationException("Last accessor cannot be reverted because it's not " + IReversibleAccessor.class.getName()
+					+ ": " + lastAccessor);
+		}
 	}
 }

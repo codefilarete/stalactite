@@ -10,7 +10,7 @@ import org.gama.lang.bean.Objects;
 /**
  * @author Guillaume Mary
  */
-public class PropertyAccessor<C, T> implements IAccessor<C, T>, IMutator<C, T> {
+public class PropertyAccessor<C, T> implements IReversibleAccessor<C, T>, IReversibleMutator<C, T> {
 	
 	public static <C, T> PropertyAccessor<C, T> forProperty(Field field) {
 		return new PropertyAccessor<>(new AccessorByField<>(field), new MutatorByField<>(field));
@@ -44,14 +44,18 @@ public class PropertyAccessor<C, T> implements IAccessor<C, T>, IMutator<C, T> {
 					() -> new AccessorByMethod<>((Method) member),
 					() -> new MutatorByMethod<>((Method) member),
 					() -> new AccessorByMethod<>((Method) member));
+			// we don't force mutator and acceessor variables to be "reversible" because PropertyAccessor don't need it and overall it cannot
+			// be done since toMutator() and toAccessor() don't return reversible instance
 			IAccessor<C, T> accessor;
 			IMutator<C, T> mutator;
-			if (reflector instanceof IAccessor) {
-				accessor = (AccessorByMethod<C, T>) reflector;
-				mutator = accessor.toMutator();
-			} else if (reflector instanceof IMutator) {
-				mutator = (MutatorByMethod<C, T>) reflector;
-				accessor = mutator.toAccessor();
+			if (reflector instanceof IReversibleAccessor) {
+				IReversibleAccessor<C, T> reversibleAccessor = (IReversibleAccessor<C, T>) reflector;
+				accessor = reversibleAccessor;
+				mutator = reversibleAccessor.toMutator();
+			} else if (reflector instanceof IReversibleMutator) {
+				IReversibleMutator<C, T> reversibleMutator = (IReversibleMutator<C, T>) reflector;
+				mutator = reversibleMutator;
+				accessor = reversibleMutator.toAccessor();
 			} else {
 				// unreachable because preceding ifs check all conditions
 				throw new IllegalArgumentException("Member cannot be determined as a getter or a setter : " + member);

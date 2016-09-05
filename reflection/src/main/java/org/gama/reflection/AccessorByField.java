@@ -6,7 +6,7 @@ import java.lang.reflect.InvocationTargetException;
 /**
  * @author Guillaume Mary
  */
-public class AccessorByField<C, T> extends AbstractAccessor<C, T> implements AccessorByMember<C, T, Field> {
+public class AccessorByField<C, T> extends AbstractAccessor<C, T> implements AccessorByMember<C, T, Field>, IReversibleAccessor<C, T> {
 	
 	private final Field field;
 	

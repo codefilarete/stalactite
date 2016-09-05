@@ -7,7 +7,7 @@ import java.lang.reflect.InvocationTargetException;
  * @author Guillaume Mary
  */
 // NB: I didn't manage to create AbstractMutator<C[], C> without having a "C cannot be cast to Object[]" from MetaModelAccessorBuilder
-public class ArrayMutator<C> extends AbstractMutator<C, C> {
+public class ArrayMutator<C> extends AbstractMutator<C, C> implements IReversibleMutator<C, C> {
 	
 	private int index;
 	

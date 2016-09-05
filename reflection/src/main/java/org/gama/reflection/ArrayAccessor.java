@@ -7,7 +7,7 @@ import java.lang.reflect.InvocationTargetException;
  * @author Guillaume Mary
  */
 // NB: I didn't manage to create AbstractAccessor<C[], C> without having a "C cannot be cast to Object[]" from MetaModelAccessorBuilder
-public class ArrayAccessor<C> extends AbstractAccessor<C, C> {
+public class ArrayAccessor<C> extends AbstractAccessor<C, C> implements IReversibleAccessor<C, C> {
 	
 	private int index;
 	
