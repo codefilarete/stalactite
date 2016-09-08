@@ -10,8 +10,8 @@ import org.gama.sql.test.HSQLDBInMemoryDataSource;
 import org.gama.stalactite.persistence.engine.DDLDeployer;
 import org.gama.stalactite.persistence.engine.PersistenceContext;
 import org.gama.stalactite.persistence.engine.SeparateTransactionExecutor;
-import org.gama.stalactite.persistence.id.sequence.PooledSequencePersistenceOptions;
-import org.gama.stalactite.persistence.id.sequence.PooledSequencePersister;
+import org.gama.stalactite.persistence.id.sequence.SequencePersisterOptions;
+import org.gama.stalactite.persistence.id.sequence.SequencePersister;
 import org.gama.stalactite.persistence.sql.Dialect;
 import org.gama.stalactite.persistence.sql.ddl.JavaTypeToSqlTypeMapping;
 import org.gama.stalactite.test.JdbcConnectionProvider;
@@ -20,9 +20,9 @@ import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
 
-public class PooledSequencePersisterTest {
+public class SequencePersisterTest {
 	
-	private PooledSequencePersister testInstance;
+	private SequencePersister testInstance;
 	private Dialect dialect;
 	private PersistenceContext persistenceContext;
 	
@@ -34,7 +34,7 @@ public class PooledSequencePersisterTest {
 		
 		dialect = new Dialect(simpleTypeMapping);
 		persistenceContext = new PersistenceContext(new JdbcConnectionProvider(new HSQLDBInMemoryDataSource()), dialect);
-		testInstance = new PooledSequencePersister(dialect, (SeparateTransactionExecutor) persistenceContext.getConnectionProvider(), persistenceContext.getJDBCBatchSize());
+		testInstance = new SequencePersister(dialect, (SeparateTransactionExecutor) persistenceContext.getConnectionProvider(), persistenceContext.getJDBCBatchSize());
 	}
 	
 	@Test
@@ -46,7 +46,7 @@ public class PooledSequencePersisterTest {
 	
 	@Test
 	public void testGetCreationScripts_customized() throws Exception {
-		testInstance = new PooledSequencePersister(new PooledSequencePersistenceOptions("myTable", "mySequenceNameCol", "myNextValCol"),
+		testInstance = new SequencePersister(new SequencePersisterOptions("myTable", "mySequenceNameCol", "myNextValCol"),
 				dialect, (SeparateTransactionExecutor) persistenceContext.getConnectionProvider(), persistenceContext.getJDBCBatchSize());
 		dialect.getDdlSchemaGenerator().addTables(testInstance.getMappingStrategy().getTargetTable());
 		List<String> creationScripts = dialect.getDdlSchemaGenerator().getCreationScripts();

@@ -12,7 +12,7 @@ import org.gama.stalactite.persistence.engine.SeparateTransactionExecutor;
 import org.gama.stalactite.persistence.id.manager.BeforeInsertIdentifierManager;
 import org.gama.stalactite.persistence.id.sequence.PooledSequenceIdentifierGenerator;
 import org.gama.stalactite.persistence.id.sequence.PooledSequenceIdentifierGeneratorOptions;
-import org.gama.stalactite.persistence.id.sequence.PooledSequencePersistenceOptions;
+import org.gama.stalactite.persistence.id.sequence.SequencePersisterOptions;
 import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
 import org.gama.stalactite.persistence.mapping.ColumnedMapMappingStrategy;
 import org.gama.stalactite.persistence.mapping.IdMappingStrategy;
@@ -35,7 +35,7 @@ public class TotoMappingBuilder implements IMappingBuilder {
 		PersistenceContext currentPersistenceContext = PersistenceContexts.getCurrent();
 		PropertyAccessor idAccessor = PropertyAccessor.forProperty(persistentFieldHarverster.getField("id"));
 		PooledSequenceIdentifierGenerator longSequence = new PooledSequenceIdentifierGenerator(new PooledSequenceIdentifierGeneratorOptions(100, "Toto", 
-				PooledSequencePersistenceOptions.DEFAULT),
+				SequencePersisterOptions.DEFAULT),
 				currentPersistenceContext.getDialect(), (SeparateTransactionExecutor) currentPersistenceContext.getConnectionProvider(),
 				currentPersistenceContext.getJDBCBatchSize());
 		ClassMappingStrategy<Toto, Long> classMappingStrategy = new ClassMappingStrategy<>(Toto.class, targetTable,

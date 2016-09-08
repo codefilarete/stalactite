@@ -7,35 +7,36 @@ import org.gama.reflection.PropertyAccessor;
 import org.gama.stalactite.persistence.engine.Persister;
 import org.gama.stalactite.persistence.engine.SeparateTransactionExecutor;
 import org.gama.stalactite.persistence.id.manager.AlreadyAssignedIdentifierManager;
-import org.gama.stalactite.persistence.id.sequence.PooledSequencePersister.PooledSequence;
+import org.gama.stalactite.persistence.id.sequence.SequencePersister.Sequence;
 import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
 import org.gama.stalactite.persistence.sql.Dialect;
 import org.gama.stalactite.persistence.structure.Database.Schema;
 import org.gama.stalactite.persistence.structure.Table;
 
 /**
- * Persister dedicated to pooled entity identifiers.
+ * Persister dedicated to {@link Sequence}.
+ * 
  * The same instance can be shared, as long as each calls {@link #reservePool(String, int)} with a different name parameter to avoid
  * sequence name collision.
  * 
  * @author Guillaume Mary
  */
-public class PooledSequencePersister extends Persister<PooledSequence, String> {
+public class SequencePersister extends Persister<Sequence, String> {
 	
 	/**
 	 * Constructor with default table and column names.
 	 * @param dialect the {@link Dialect} to use for database dialog
 	 * @param separateTransactionExecutor a transaction provider that mmust give a new and separate transaction
 	 * @param jdbcBatchSize the JDBC batch size, not really usefull for this class since it doesn't do massive insert
-	 * @see PooledSequencePersistenceOptions#DEFAULT
+	 * @see SequencePersisterOptions#DEFAULT
 	 */
-	public PooledSequencePersister(Dialect dialect, SeparateTransactionExecutor separateTransactionExecutor, int jdbcBatchSize) {
-		this(PooledSequencePersistenceOptions.DEFAULT, dialect, separateTransactionExecutor, jdbcBatchSize);
+	public SequencePersister(Dialect dialect, SeparateTransactionExecutor separateTransactionExecutor, int jdbcBatchSize) {
+		this(SequencePersisterOptions.DEFAULT, dialect, separateTransactionExecutor, jdbcBatchSize);
 	}
 	
-	public PooledSequencePersister(PooledSequencePersistenceOptions storageOptions, Dialect dialect, SeparateTransactionExecutor separateTransactionExecutor, int jdbcBatchSize) {
+	public SequencePersister(SequencePersisterOptions storageOptions, Dialect dialect, SeparateTransactionExecutor separateTransactionExecutor, int jdbcBatchSize) {
 		// we reuse default PersistentContext
-		super(new PooledSequencePersisterConfigurer().buildConfiguration(storageOptions),
+		super(new SequencePersisterConfigurer().buildConfiguration(storageOptions),
 				dialect, separateTransactionExecutor, jdbcBatchSize);
 	}
 	
@@ -46,7 +47,7 @@ public class PooledSequencePersister extends Persister<PooledSequence, String> {
 		return jdbcOperation.getUpperBound();
 	}
 	
-	private PooledSequence readBound(String sequenceName) {
+	private Sequence readStep(String sequenceName) {
 		return select(sequenceName);
 	}
 	
@@ -63,41 +64,41 @@ public class PooledSequencePersister extends Persister<PooledSequence, String> {
 		}
 		
 		public Map<PropertyAccessor, Column> getPooledSequenceFieldMapping() {
-			return Maps.asMap((PropertyAccessor) PooledSequence.SEQUENCE_NAME_FIELD, sequenceNameColumn)
-						.add(PooledSequence.UPPER_BOUND_FIELD, nextValColumn);
+			return Maps.asMap((PropertyAccessor) Sequence.SEQUENCE_NAME_FIELD, sequenceNameColumn)
+						.add(Sequence.VALUE_FIELD, nextValColumn);
 		}
 	}
 	
 	/**
-	 * POJO which represents a line in the sequence table
+	 * POJO which represents a line in the sequence table which is composed of 2 columns: one for the name of the sequence, the second for its value.
 	 */
-	public static class PooledSequence {
+	public static class Sequence {
 		
-		private static final PropertyAccessor<PooledSequence, String> SEQUENCE_NAME_FIELD;
-		private static final PropertyAccessor<PooledSequence, Long> UPPER_BOUND_FIELD;
+		private static final PropertyAccessor<Sequence, String> SEQUENCE_NAME_FIELD;
+		private static final PropertyAccessor<Sequence, Long> VALUE_FIELD;
 		
 		
 		static {
-			SEQUENCE_NAME_FIELD = PropertyAccessor.forProperty(PooledSequence.class, "sequenceName");
-			UPPER_BOUND_FIELD = PropertyAccessor.forProperty(PooledSequence.class, "upperBound");
+			SEQUENCE_NAME_FIELD = PropertyAccessor.forProperty(Sequence.class, "sequenceName");
+			VALUE_FIELD = PropertyAccessor.forProperty(Sequence.class, "step");
 		}
 		
 		private String sequenceName;
-		private long upperBound;
+		private long step;
 		
-		private PooledSequence() {
+		private Sequence() {
 		}
 		
-		public PooledSequence(String sequenceName) {
+		public Sequence(String sequenceName) {
 			this.sequenceName = sequenceName;
 		}
 		
-		public long getUpperBound() {
-			return upperBound;
+		public long getStep() {
+			return step;
 		}
 		
-		public void setUpperBound(long upperBound) {
-			this.upperBound = upperBound;
+		public void setStep(long step) {
+			this.step = step;
 		}
 		
 		public String getSequenceName() {
@@ -106,47 +107,47 @@ public class PooledSequencePersister extends Persister<PooledSequence, String> {
 	}
 	
 	/**
-	 * Class aimed at executing update operations of PooledSequences.
+	 * Class aimed at executing update operations of {@link Sequence}.
 	 */
 	private class SequenceBoundJdbcOperation implements SeparateTransactionExecutor.JdbcOperation {
 		private final String sequenceName;
-		private final int poolSize;
-		private PooledSequence pool;
+		private final int stepSize;
+		private Sequence sequence;
 		
-		public SequenceBoundJdbcOperation(String sequenceName, int poolSize) {
+		public SequenceBoundJdbcOperation(String sequenceName, int nextStepSize) {
 			this.sequenceName = sequenceName;
-			this.poolSize = poolSize;
+			this.stepSize = nextStepSize;
 		}
 		
 		@Override
 		public void execute() {
-			pool = readBound(sequenceName);
-			if (pool != null) {
-				pool.setUpperBound(pool.getUpperBound() + poolSize);
-				updateRoughly(pool);
+			sequence = readStep(sequenceName);
+			if (sequence != null) {
+				sequence.setStep(sequence.getStep() + stepSize);
+				updateRoughly(sequence);
 			} else {
-				pool = new PooledSequence(sequenceName);
-				pool.setUpperBound(poolSize);
-				insert(pool);
+				sequence = new Sequence(sequenceName);
+				sequence.setStep(stepSize);
+				insert(sequence);
 			}
 		}
 		
 		public long getUpperBound() {
-			return pool.getUpperBound();
+			return sequence.getStep();
 		}
 	}
 	
-	private static class PooledSequencePersisterConfigurer {
+	private static class SequencePersisterConfigurer {
 		
-		private ClassMappingStrategy<PooledSequence, String> buildConfiguration(PooledSequencePersistenceOptions storageOptions) {
+		private ClassMappingStrategy<Sequence, String> buildConfiguration(SequencePersisterOptions storageOptions) {
 			// Sequence table creation
 			SequenceTable sequenceTable = new SequenceTable(null, storageOptions.getTable(), storageOptions.getSequenceNameColumn(), storageOptions.getValueColumn());
 			// Strategy building
 			// NB: no id generator here because we manage ids (see reservePool)
-			return new ClassMappingStrategy<>(PooledSequence.class,
+			return new ClassMappingStrategy<>(Sequence.class,
 					sequenceTable,
 					sequenceTable.getPooledSequenceFieldMapping(),
-					PooledSequence.SEQUENCE_NAME_FIELD,
+					Sequence.SEQUENCE_NAME_FIELD,
 					AlreadyAssignedIdentifierManager.INSTANCE);
 		}
 	}

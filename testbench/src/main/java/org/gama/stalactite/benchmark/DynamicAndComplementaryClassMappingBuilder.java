@@ -21,7 +21,7 @@ import org.gama.stalactite.persistence.id.manager.AlreadyAssignedIdentifierManag
 import org.gama.stalactite.persistence.id.manager.BeforeInsertIdentifierManager;
 import org.gama.stalactite.persistence.id.sequence.PooledSequenceIdentifierGenerator;
 import org.gama.stalactite.persistence.id.sequence.PooledSequenceIdentifierGeneratorOptions;
-import org.gama.stalactite.persistence.id.sequence.PooledSequencePersistenceOptions;
+import org.gama.stalactite.persistence.id.sequence.SequencePersisterOptions;
 import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
 import org.gama.stalactite.persistence.mapping.IdMappingStrategy;
 import org.gama.stalactite.persistence.mapping.PersistentFieldHarverster;
@@ -60,10 +60,10 @@ public class DynamicAndComplementaryClassMappingBuilder implements IMappingBuild
 //			}
 		}
 		
-		PooledSequenceIdentifierGeneratorOptions options = new PooledSequenceIdentifierGeneratorOptions(100, targetTable.getName(), PooledSequencePersistenceOptions.DEFAULT);
+		PooledSequenceIdentifierGeneratorOptions options = new PooledSequenceIdentifierGeneratorOptions(100, targetTable.getName(), SequencePersisterOptions.DEFAULT);
 		PooledSequenceIdentifierGenerator identifierGenerator = new PooledSequenceIdentifierGenerator(options,
 				PersistenceContexts.getCurrent().getDialect(), (SeparateTransactionExecutor) PersistenceContexts.getCurrent().getConnectionProvider(), PersistenceContexts.getCurrent().getJDBCBatchSize());
-//		PersistenceContext.getCurrent().add(identifierGenerator.getPooledSequencePersister().getMappingStrategy());
+//		PersistenceContext.getCurrent().add(identifierGenerator.getSequencePersister().getMappingStrategy());
 		PropertyAccessor idAccessor = PropertyAccessor.forProperty(persistentFieldHarverster.getField("id"));
 		ClassMappingStrategy<? extends DynamicEntity, Long> classMappingStrategy = new ClassMappingStrategy<>(dynamicType, targetTable,
 				fieldColumnMap, idAccessor, new BeforeInsertIdentifierManager<>(IdMappingStrategy.toIdAccessor(idAccessor), identifierGenerator));

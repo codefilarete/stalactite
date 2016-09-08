@@ -1,8 +1,7 @@
 package org.gama.stalactite.persistence.id.sequence;
 
-import org.gama.stalactite.persistence.id.manager.BeforeInsertIdentifierManager.Sequence;
 import org.gama.stalactite.persistence.engine.SeparateTransactionExecutor;
-import org.gama.stalactite.persistence.id.sequence.PooledSequencePersister.PooledSequence;
+import org.gama.stalactite.persistence.id.sequence.SequencePersister.Sequence;
 import org.gama.stalactite.persistence.sql.Dialect;
 
 /**
@@ -13,11 +12,11 @@ import org.gama.stalactite.persistence.sql.Dialect;
  * 
  * @author Guillaume Mary
  */
-public class PooledSequenceIdentifierGenerator implements Sequence<Long> {
+public class PooledSequenceIdentifierGenerator implements org.gama.stalactite.persistence.id.manager.BeforeInsertIdentifierManager.Sequence {
 	
 	private LongPool sequenceState;
 	
-	private PooledSequencePersister pooledSequencePersister;
+	private SequencePersister sequencePersister;
 	
 	private PooledSequenceIdentifierGeneratorOptions options;
 	
@@ -33,12 +32,12 @@ public class PooledSequenceIdentifierGenerator implements Sequence<Long> {
 	}
 	
 	public void configure(PooledSequenceIdentifierGeneratorOptions options) {
-		this.pooledSequencePersister = new PooledSequencePersister(options.getStorageOptions(), dialect, separateTransactionExecutor, jdbcBatchSize);
+		this.sequencePersister = new SequencePersister(options.getStorageOptions(), dialect, separateTransactionExecutor, jdbcBatchSize);
 		this.options = options;
 	}
 	
-	public PooledSequencePersister getPooledSequencePersister() {
-		return pooledSequencePersister;
+	public SequencePersister getSequencePersister() {
+		return sequencePersister;
 	}
 	
 	public PooledSequenceIdentifierGeneratorOptions getOptions() {
@@ -49,12 +48,12 @@ public class PooledSequenceIdentifierGenerator implements Sequence<Long> {
 	public synchronized Long next() {
 		if (sequenceState == null) {
 			// No state yet so we create one
-			PooledSequence existingSequence = this.pooledSequencePersister.select(getSequenceName());
-			long initialValue = existingSequence == null ? 0 : existingSequence.getUpperBound();
+			Sequence existingSequence = this.sequencePersister.select(getSequenceName());
+			long initialValue = existingSequence == null ? 0 : existingSequence.getStep();
 			this.sequenceState = new LongPool(options.getPoolSize(), --initialValue) {
 				@Override
 				void onBoundReached() {
-					pooledSequencePersister.reservePool(getSequenceName(), getPoolSize());
+					sequencePersister.reservePool(getSequenceName(), getPoolSize());
 				}
 			};
 			// if no sequence exists we consider that a new boundary is reached in order to insert initial state

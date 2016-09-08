@@ -22,18 +22,18 @@ public class PooledSequenceIdentifierGeneratorOptions {
 	
 	private final int poolSize;
 	private final String sequenceName;
-	private final PooledSequencePersistenceOptions storageOptions;
+	private final SequencePersisterOptions storageOptions;
 	
-	public PooledSequenceIdentifierGeneratorOptions(int poolSize, String sequenceName, PooledSequencePersistenceOptions storageOptions) {
+	public PooledSequenceIdentifierGeneratorOptions(int poolSize, String sequenceName, SequencePersisterOptions storageOptions) {
 		this.poolSize = poolSize;
 		this.sequenceName = sequenceName;
-		this.storageOptions = Objects.preventNull(storageOptions, PooledSequencePersistenceOptions.DEFAULT);
+		this.storageOptions = Objects.preventNull(storageOptions, SequencePersisterOptions.DEFAULT);
 	}
 	
 	public PooledSequenceIdentifierGeneratorOptions(Map<String, Object> configuration) {
 		this(CONVERTER.asInteger(configuration.get(POOL_SIZE_PARAM)),
 				CONVERTER.asString(configuration.get(SEQUENCE_NAME_PARAM)),
-				new PooledSequencePersistenceOptions(CONVERTER.asString(configuration.get(TABLE_PARAM)),
+				new SequencePersisterOptions(CONVERTER.asString(configuration.get(TABLE_PARAM)),
 						CONVERTER.asString(configuration.get(SEQUENCE_COLUMN_PARAM)),
 						CONVERTER.asString(configuration.get(VALUE_COLUMN_PARAM))
 				)
@@ -48,7 +48,7 @@ public class PooledSequenceIdentifierGeneratorOptions {
 		return sequenceName;
 	}
 	
-	public PooledSequencePersistenceOptions getStorageOptions() {
+	public SequencePersisterOptions getStorageOptions() {
 		return storageOptions;
 	}
 }

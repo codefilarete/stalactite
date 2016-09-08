@@ -31,10 +31,10 @@ public class PooledSequenceIdentifierGeneratorTest {
 	
 	@Test
 	public void testGenerate() throws SQLException {
-		testInstance = new PooledSequenceIdentifierGenerator(new PooledSequenceIdentifierGeneratorOptions(10, "Toto", PooledSequencePersistenceOptions.DEFAULT),
+		testInstance = new PooledSequenceIdentifierGenerator(new PooledSequenceIdentifierGeneratorOptions(10, "Toto", SequencePersisterOptions.DEFAULT),
 				persistenceContext.getDialect(), (SeparateTransactionExecutor) persistenceContext.getConnectionProvider(), persistenceContext.getJDBCBatchSize());
 		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
-		ddlDeployer.getDdlSchemaGenerator().setTables(Arrays.asList(testInstance.getPooledSequencePersister().getMappingStrategy().getTargetTable()));
+		ddlDeployer.getDdlSchemaGenerator().setTables(Arrays.asList(testInstance.getSequencePersister().getMappingStrategy().getTargetTable()));
 		ddlDeployer.deployDDL();
 		// on vérifie que l'incrémentation se fait sans erreur depuis une base vierge
 		for (int i = 0; i < 45; i++) {
@@ -43,7 +43,7 @@ public class PooledSequenceIdentifierGeneratorTest {
 		}
 		
 		// on vérifie que l'incrémentation se fait sans erreur avec une nouvelle sequence sur la même table
-		testInstance = new PooledSequenceIdentifierGenerator(new PooledSequenceIdentifierGeneratorOptions(10, "Tata", PooledSequencePersistenceOptions.DEFAULT),
+		testInstance = new PooledSequenceIdentifierGenerator(new PooledSequenceIdentifierGeneratorOptions(10, "Tata", SequencePersisterOptions.DEFAULT),
 				persistenceContext.getDialect(), (SeparateTransactionExecutor) persistenceContext.getConnectionProvider(), persistenceContext.getJDBCBatchSize());
 		for (int i = 0; i < 45; i++) {
 			Long newId = testInstance.next();
@@ -51,7 +51,7 @@ public class PooledSequenceIdentifierGeneratorTest {
 		}
 		
 		// on vérifie que l'incrémentation se fait sans erreur avec sequence existante
-		testInstance = new PooledSequenceIdentifierGenerator(new PooledSequenceIdentifierGeneratorOptions(10, "Toto", PooledSequencePersistenceOptions.DEFAULT),
+		testInstance = new PooledSequenceIdentifierGenerator(new PooledSequenceIdentifierGeneratorOptions(10, "Toto", SequencePersisterOptions.DEFAULT),
 				persistenceContext.getDialect(), (SeparateTransactionExecutor) persistenceContext.getConnectionProvider(), persistenceContext.getJDBCBatchSize());
 		for (int i = 0; i < 45; i++) {
 			Long newId = testInstance.next();
