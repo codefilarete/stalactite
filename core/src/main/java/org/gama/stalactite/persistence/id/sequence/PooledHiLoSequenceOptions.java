@@ -6,11 +6,11 @@ import org.gama.lang.bean.Converter;
 import org.gama.lang.bean.Objects;
 
 /**
- * Classe de stockage de la configuration de {@link PooledSequenceIdentifierGenerator}
+ * Classe de stockage de la configuration de {@link PooledHiLoSequence}
  * 
- * @author mary
+ * @author Guillaume Mary
  */
-public class PooledSequenceIdentifierGeneratorOptions {
+public class PooledHiLoSequenceOptions {
 	
 	private static final String POOL_SIZE_PARAM = "poolSize";
 	private static final String SEQUENCE_NAME_PARAM = "sequenceName";
@@ -24,13 +24,13 @@ public class PooledSequenceIdentifierGeneratorOptions {
 	private final String sequenceName;
 	private final SequencePersisterOptions storageOptions;
 	
-	public PooledSequenceIdentifierGeneratorOptions(int poolSize, String sequenceName, SequencePersisterOptions storageOptions) {
+	public PooledHiLoSequenceOptions(int poolSize, String sequenceName, SequencePersisterOptions storageOptions) {
 		this.poolSize = poolSize;
 		this.sequenceName = sequenceName;
 		this.storageOptions = Objects.preventNull(storageOptions, SequencePersisterOptions.DEFAULT);
 	}
 	
-	public PooledSequenceIdentifierGeneratorOptions(Map<String, Object> configuration) {
+	public PooledHiLoSequenceOptions(Map<String, Object> configuration) {
 		this(CONVERTER.asInteger(configuration.get(POOL_SIZE_PARAM)),
 				CONVERTER.asString(configuration.get(SEQUENCE_NAME_PARAM)),
 				new SequencePersisterOptions(CONVERTER.asString(configuration.get(TABLE_PARAM)),

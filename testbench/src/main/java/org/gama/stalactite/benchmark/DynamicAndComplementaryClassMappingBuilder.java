@@ -19,8 +19,8 @@ import org.gama.reflection.PropertyAccessor;
 import org.gama.stalactite.persistence.engine.SeparateTransactionExecutor;
 import org.gama.stalactite.persistence.id.manager.AlreadyAssignedIdentifierManager;
 import org.gama.stalactite.persistence.id.manager.BeforeInsertIdentifierManager;
-import org.gama.stalactite.persistence.id.sequence.PooledSequenceIdentifierGenerator;
-import org.gama.stalactite.persistence.id.sequence.PooledSequenceIdentifierGeneratorOptions;
+import org.gama.stalactite.persistence.id.sequence.PooledHiLoSequence;
+import org.gama.stalactite.persistence.id.sequence.PooledHiLoSequenceOptions;
 import org.gama.stalactite.persistence.id.sequence.SequencePersisterOptions;
 import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
 import org.gama.stalactite.persistence.mapping.IdMappingStrategy;
@@ -60,8 +60,8 @@ public class DynamicAndComplementaryClassMappingBuilder implements IMappingBuild
 //			}
 		}
 		
-		PooledSequenceIdentifierGeneratorOptions options = new PooledSequenceIdentifierGeneratorOptions(100, targetTable.getName(), SequencePersisterOptions.DEFAULT);
-		PooledSequenceIdentifierGenerator identifierGenerator = new PooledSequenceIdentifierGenerator(options,
+		PooledHiLoSequenceOptions options = new PooledHiLoSequenceOptions(100, targetTable.getName(), SequencePersisterOptions.DEFAULT);
+		PooledHiLoSequence identifierGenerator = new PooledHiLoSequence(options,
 				PersistenceContexts.getCurrent().getDialect(), (SeparateTransactionExecutor) PersistenceContexts.getCurrent().getConnectionProvider(), PersistenceContexts.getCurrent().getJDBCBatchSize());
 //		PersistenceContext.getCurrent().add(identifierGenerator.getSequencePersister().getMappingStrategy());
 		PropertyAccessor idAccessor = PropertyAccessor.forProperty(persistentFieldHarverster.getField("id"));

@@ -10,8 +10,8 @@ import org.gama.reflection.PropertyAccessor;
 import org.gama.stalactite.persistence.engine.PersistenceContext;
 import org.gama.stalactite.persistence.engine.SeparateTransactionExecutor;
 import org.gama.stalactite.persistence.id.manager.BeforeInsertIdentifierManager;
-import org.gama.stalactite.persistence.id.sequence.PooledSequenceIdentifierGenerator;
-import org.gama.stalactite.persistence.id.sequence.PooledSequenceIdentifierGeneratorOptions;
+import org.gama.stalactite.persistence.id.sequence.PooledHiLoSequence;
+import org.gama.stalactite.persistence.id.sequence.PooledHiLoSequenceOptions;
 import org.gama.stalactite.persistence.id.sequence.SequencePersisterOptions;
 import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
 import org.gama.stalactite.persistence.mapping.ColumnedMapMappingStrategy;
@@ -34,7 +34,7 @@ public class TotoMappingBuilder implements IMappingBuilder {
 		Map<PropertyAccessor, Column> fieldColumnMap = persistentFieldHarverster.mapFields(Toto.class, targetTable);
 		PersistenceContext currentPersistenceContext = PersistenceContexts.getCurrent();
 		PropertyAccessor idAccessor = PropertyAccessor.forProperty(persistentFieldHarverster.getField("id"));
-		PooledSequenceIdentifierGenerator longSequence = new PooledSequenceIdentifierGenerator(new PooledSequenceIdentifierGeneratorOptions(100, "Toto", 
+		PooledHiLoSequence longSequence = new PooledHiLoSequence(new PooledHiLoSequenceOptions(100, "Toto", 
 				SequencePersisterOptions.DEFAULT),
 				currentPersistenceContext.getDialect(), (SeparateTransactionExecutor) currentPersistenceContext.getConnectionProvider(),
 				currentPersistenceContext.getJDBCBatchSize());

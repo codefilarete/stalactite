@@ -13,8 +13,8 @@ import org.gama.stalactite.persistence.engine.DDLDeployer;
 import org.gama.stalactite.persistence.engine.PersistenceContext;
 import org.gama.stalactite.persistence.engine.SeparateTransactionExecutor;
 import org.gama.stalactite.persistence.id.PersistableIdentifier;
-import org.gama.stalactite.persistence.id.sequence.PooledSequenceIdentifierGenerator;
-import org.gama.stalactite.persistence.id.sequence.PooledSequenceIdentifierGeneratorOptions;
+import org.gama.stalactite.persistence.id.sequence.PooledHiLoSequence;
+import org.gama.stalactite.persistence.id.sequence.PooledHiLoSequenceOptions;
 import org.gama.stalactite.persistence.id.sequence.SequencePersisterOptions;
 import org.gama.stalactite.persistence.sql.Dialect;
 import org.gama.stalactite.persistence.sql.ddl.JavaTypeToSqlTypeMapping;
@@ -29,7 +29,7 @@ import static org.junit.Assert.assertEquals;
  */
 public class PooledSequenceIdentifierProviderTest {
 	
-	private PooledSequenceIdentifierGenerator sequenceIdentifierGenerator;
+	private PooledHiLoSequence sequenceIdentifierGenerator;
 	private PersistenceContext persistenceContext;
 	
 	@Before
@@ -44,7 +44,7 @@ public class PooledSequenceIdentifierProviderTest {
 	@Test
 	public void testGiveNewIdentifier() throws SQLException {
 		// Creation of an in-memory database pooled sequence generator
-		sequenceIdentifierGenerator = new PooledSequenceIdentifierGenerator(new PooledSequenceIdentifierGeneratorOptions(10, "Toto", SequencePersisterOptions.DEFAULT),
+		sequenceIdentifierGenerator = new PooledHiLoSequence(new PooledHiLoSequenceOptions(10, "Toto", SequencePersisterOptions.DEFAULT),
 				persistenceContext.getDialect(), (SeparateTransactionExecutor) persistenceContext.getConnectionProvider(), persistenceContext.getJDBCBatchSize());
 		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
 		ddlDeployer.getDdlSchemaGenerator().setTables(Arrays.asList(sequenceIdentifierGenerator.getSequencePersister().getMappingStrategy().getTargetTable()));
@@ -70,7 +70,7 @@ public class PooledSequenceIdentifierProviderTest {
 		assertEquals(expectedGeneration, generated);
 	}
 	
-	// TODO: make PooledSequenceIdentifierGenerator be generic
+	// TODO: make PooledHiLoSequence be generic
 	// TODO: test Identifier with PersistenceContext: must implement the "embeddable" feature
 	
 }

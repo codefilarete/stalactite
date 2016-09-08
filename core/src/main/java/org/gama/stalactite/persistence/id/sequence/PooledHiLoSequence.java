@@ -5,33 +5,33 @@ import org.gama.stalactite.persistence.id.sequence.SequencePersister.Sequence;
 import org.gama.stalactite.persistence.sql.Dialect;
 
 /**
- * Générateur d'identifiant Long par table/classe (une séquence par table).
- * Stocke l'état de toutes les séquences dans une table.
- * Chaque séquence peut avoir une taille de paquet différent.
- * Inspiré du mécanisme "enhanced table generator" avec Hilo Optimizer d'Hibernate.
+ * Long identifier generator for an entity class.
+ * Store the state of its sequence in a table (which can be shared, see {@link SequencePersister}
+ * 
+ * Inspired by "enhanced table generator" with Hilo Optimizer from Hibernate.
  * 
  * @author Guillaume Mary
  */
-public class PooledSequenceIdentifierGenerator implements org.gama.stalactite.persistence.id.manager.BeforeInsertIdentifierManager.Sequence {
+public class PooledHiLoSequence implements org.gama.stalactite.persistence.id.manager.BeforeInsertIdentifierManager.Sequence {
 	
 	private LongPool sequenceState;
 	
 	private SequencePersister sequencePersister;
 	
-	private PooledSequenceIdentifierGeneratorOptions options;
+	private PooledHiLoSequenceOptions options;
 	
 	private final Dialect dialect;
 	private final SeparateTransactionExecutor separateTransactionExecutor;
 	private final int jdbcBatchSize;
 	
-	public PooledSequenceIdentifierGenerator(PooledSequenceIdentifierGeneratorOptions options, Dialect dialect, SeparateTransactionExecutor separateTransactionExecutor, int jdbcBatchSize) {
+	public PooledHiLoSequence(PooledHiLoSequenceOptions options, Dialect dialect, SeparateTransactionExecutor separateTransactionExecutor, int jdbcBatchSize) {
 		this.dialect = dialect;
 		this.separateTransactionExecutor = separateTransactionExecutor;
 		this.jdbcBatchSize = jdbcBatchSize;
 		configure(options);
 	}
 	
-	public void configure(PooledSequenceIdentifierGeneratorOptions options) {
+	public void configure(PooledHiLoSequenceOptions options) {
 		this.sequencePersister = new SequencePersister(options.getStorageOptions(), dialect, separateTransactionExecutor, jdbcBatchSize);
 		this.options = options;
 	}
@@ -40,10 +40,15 @@ public class PooledSequenceIdentifierGenerator implements org.gama.stalactite.pe
 		return sequencePersister;
 	}
 	
-	public PooledSequenceIdentifierGeneratorOptions getOptions() {
+	public PooledHiLoSequenceOptions getOptions() {
 		return options;
 	}
 	
+	/**
+	 * Synchronized because multiple Thread may access this instance to insert their entities. 
+	 * 
+	 * @return never null
+	 */
 	@Override
 	public synchronized Long next() {
 		if (sequenceState == null) {
@@ -69,15 +74,16 @@ public class PooledSequenceIdentifierGenerator implements org.gama.stalactite.pe
 	}
 	
 	/**
-	 * Représentation d'une plage d'incrément de long.
-	 * Utilisé comme cache de long. Permet d'être prévenu quand la limite haute de la plage est atteinte.
+	 * Range of long. Used as a pool for incrementable long values.
+	 * Notifies when upper bound is reached.
+	 * @see #onBoundReached() 
 	 */
 	private static abstract class LongPool {
-		/** Taille de la réserve, ne change pas au cours de la vie de cette instance */
+		/** Pool size. Doesn't change */
 		private final int poolSize;
-		/** Valeur incrémentée */
+		/** Incremented value */
 		private long currentValue;
-		/** Limite haute de la plage courante, est incrémentée de poolSize quand elle est atteinte */
+		/** Upper bound for current range. Is incremented by poolSize when reached by currentValue */
 		protected long upperBound;
 		
 		public LongPool(int poolSize, long currentValue) {
@@ -95,10 +101,10 @@ public class PooledSequenceIdentifierGenerator implements org.gama.stalactite.pe
 		}
 		
 		/**
-		 * Renvoie la valeur suivante: valeur précédente + 1.
-		 * Appelle {@link #onBoundReached()} si la limite du segment est atteinte.
+		 * Returns nextValue: currentValue + 1.
+		 * Calls {@link #onBoundReached()} if the upperBound is reached.
 		 * 
-		 * @return le nombre entier suivant.
+		 * @return currentValue + 1
 		 */
 		public long nextValue() {
 			if (currentValue == upperBound) {
@@ -110,14 +116,14 @@ public class PooledSequenceIdentifierGenerator implements org.gama.stalactite.pe
 		}
 		
 		/**
-		 * Méthode chargée de déplacer la limite haute: taille du segment + valeur courante
+		 * Changes upper bound: currentValue + poolSize
 		 */
 		protected void nextBound() {
 			this.upperBound = currentValue + poolSize;
 		}
 		
 		/**
-		 * Méthode appelée quand la limite (haute) du segment est atteinte
+		 * Called when upper bound is reached
 		 */
 		abstract void onBoundReached();
 	}

@@ -15,9 +15,9 @@ import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
 
-public class PooledSequenceIdentifierGeneratorTest {
+public class PooledHiLoSequenceTest {
 	
-	private PooledSequenceIdentifierGenerator testInstance;
+	private PooledHiLoSequence testInstance;
 	private PersistenceContext persistenceContext;
 	
 	@Before
@@ -31,27 +31,27 @@ public class PooledSequenceIdentifierGeneratorTest {
 	
 	@Test
 	public void testGenerate() throws SQLException {
-		testInstance = new PooledSequenceIdentifierGenerator(new PooledSequenceIdentifierGeneratorOptions(10, "Toto", SequencePersisterOptions.DEFAULT),
+		testInstance = new PooledHiLoSequence(new PooledHiLoSequenceOptions(10, "Toto", SequencePersisterOptions.DEFAULT),
 				persistenceContext.getDialect(), (SeparateTransactionExecutor) persistenceContext.getConnectionProvider(), persistenceContext.getJDBCBatchSize());
 		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
 		ddlDeployer.getDdlSchemaGenerator().setTables(Arrays.asList(testInstance.getSequencePersister().getMappingStrategy().getTargetTable()));
 		ddlDeployer.deployDDL();
-		// on vérifie que l'incrémentation se fait sans erreur depuis une base vierge
+		// we check that we can increment from an empty database
 		for (int i = 0; i < 45; i++) {
 			Long newId = testInstance.next();
 			assertEquals(i, newId.intValue());
 		}
 		
-		// on vérifie que l'incrémentation se fait sans erreur avec une nouvelle sequence sur la même table
-		testInstance = new PooledSequenceIdentifierGenerator(new PooledSequenceIdentifierGeneratorOptions(10, "Tata", SequencePersisterOptions.DEFAULT),
+		// we check that we can increment from a database with a new sequence in the same table
+		testInstance = new PooledHiLoSequence(new PooledHiLoSequenceOptions(10, "Tata", SequencePersisterOptions.DEFAULT),
 				persistenceContext.getDialect(), (SeparateTransactionExecutor) persistenceContext.getConnectionProvider(), persistenceContext.getJDBCBatchSize());
 		for (int i = 0; i < 45; i++) {
 			Long newId = testInstance.next();
 			assertEquals(i, newId.intValue());
 		}
 		
-		// on vérifie que l'incrémentation se fait sans erreur avec sequence existante
-		testInstance = new PooledSequenceIdentifierGenerator(new PooledSequenceIdentifierGeneratorOptions(10, "Toto", SequencePersisterOptions.DEFAULT),
+		// we check that we can increment from a database with an existing sequence
+		testInstance = new PooledHiLoSequence(new PooledHiLoSequenceOptions(10, "Toto", SequencePersisterOptions.DEFAULT),
 				persistenceContext.getDialect(), (SeparateTransactionExecutor) persistenceContext.getConnectionProvider(), persistenceContext.getJDBCBatchSize());
 		for (int i = 0; i < 45; i++) {
 			Long newId = testInstance.next();
