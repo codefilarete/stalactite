@@ -31,31 +31,44 @@ public class PooledHiLoSequenceTest {
 	
 	@Test
 	public void testGenerate() throws SQLException {
-		testInstance = new PooledHiLoSequence(new PooledHiLoSequenceOptions(10, "Toto", SequencePersisterOptions.DEFAULT),
-				persistenceContext.getDialect(), (SeparateTransactionExecutor) persistenceContext.getConnectionProvider(), persistenceContext.getJDBCBatchSize());
+		Dialect dialect = persistenceContext.getDialect();
+		SeparateTransactionExecutor connectionProvider = (SeparateTransactionExecutor) persistenceContext.getConnectionProvider();
+		int jdbcBatchSize = persistenceContext.getJDBCBatchSize();
+		
+		// Instanciantion of the sequence, for schema generation
+		PooledHiLoSequenceOptions totoSequenceOptions = new PooledHiLoSequenceOptions(10, "Toto", SequenceStorageOptions.DEFAULT);
+		testInstance = new PooledHiLoSequence(totoSequenceOptions, dialect, connectionProvider, jdbcBatchSize);
+		
+		// Generating sequence table schema
 		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
-		ddlDeployer.getDdlSchemaGenerator().setTables(Arrays.asList(testInstance.getSequencePersister().getMappingStrategy().getTargetTable()));
+		ddlDeployer.getDdlSchemaGenerator().setTables(Arrays.asList(testInstance.getPersister().getMappingStrategy().getTargetTable()));
 		ddlDeployer.deployDDL();
+		
 		// we check that we can increment from an empty database
 		for (int i = 0; i < 45; i++) {
-			Long newId = testInstance.next();
-			assertEquals(i, newId.intValue());
+			assertEquals(i, testInstance.next().intValue());
 		}
 		
 		// we check that we can increment from a database with a new sequence in the same table
-		testInstance = new PooledHiLoSequence(new PooledHiLoSequenceOptions(10, "Tata", SequencePersisterOptions.DEFAULT),
-				persistenceContext.getDialect(), (SeparateTransactionExecutor) persistenceContext.getConnectionProvider(), persistenceContext.getJDBCBatchSize());
+		PooledHiLoSequenceOptions tataSequenceOptions = new PooledHiLoSequenceOptions(10, "Tata", SequenceStorageOptions.DEFAULT);
+		testInstance = new PooledHiLoSequence(tataSequenceOptions, dialect, connectionProvider, jdbcBatchSize);
 		for (int i = 0; i < 45; i++) {
-			Long newId = testInstance.next();
-			assertEquals(i, newId.intValue());
+			assertEquals(i, testInstance.next().intValue());
 		}
 		
 		// we check that we can increment from a database with an existing sequence
-		testInstance = new PooledHiLoSequence(new PooledHiLoSequenceOptions(10, "Toto", SequencePersisterOptions.DEFAULT),
-				persistenceContext.getDialect(), (SeparateTransactionExecutor) persistenceContext.getConnectionProvider(), persistenceContext.getJDBCBatchSize());
+		testInstance = new PooledHiLoSequence(totoSequenceOptions, dialect, connectionProvider, jdbcBatchSize);
 		for (int i = 0; i < 45; i++) {
-			Long newId = testInstance.next();
-			assertEquals(50+i, newId.intValue());
+			// 50 because previous call to Toto sequence had a pool size of 10, and its last call was 45. So the external state was 50.
+			// (upper bound of 45 by step of 10)
+			assertEquals(50+i, testInstance.next().intValue());
+		}
+		
+		// we check that we can increment a sequence from a different initial value
+		PooledHiLoSequenceOptions titiSequenceOptions = new PooledHiLoSequenceOptions(10, "Titi", SequenceStorageOptions.DEFAULT, -42);
+		testInstance = new PooledHiLoSequence(titiSequenceOptions, dialect, connectionProvider, jdbcBatchSize);
+		for (int i = -42; i < -25; i++) {
+			assertEquals(i, testInstance.next().intValue());
 		}
 	}
 }

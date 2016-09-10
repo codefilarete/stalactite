@@ -14,7 +14,7 @@ import org.gama.stalactite.persistence.engine.SeparateTransactionExecutor;
 import org.gama.stalactite.persistence.id.manager.BeforeInsertIdentifierManager;
 import org.gama.stalactite.persistence.id.sequence.PooledHiLoSequence;
 import org.gama.stalactite.persistence.id.sequence.PooledHiLoSequenceOptions;
-import org.gama.stalactite.persistence.id.sequence.SequencePersisterOptions;
+import org.gama.stalactite.persistence.id.sequence.SequenceStorageOptions;
 import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
 import org.gama.stalactite.persistence.mapping.IdMappingStrategy;
 import org.gama.stalactite.persistence.mapping.PersistentFieldHarverster;
@@ -61,7 +61,7 @@ public class DynamicClassMappingBuilder implements IMappingBuilder {
 		PersistenceContext currentPersistenceContext = PersistenceContexts.getCurrent();
 		PropertyAccessor idAccessor = PropertyAccessor.forProperty(persistentFieldHarverster.getField("id"));
 		PooledHiLoSequence longSequence = new PooledHiLoSequence(new PooledHiLoSequenceOptions(100, "Toto", 
-				SequencePersisterOptions.DEFAULT),
+				SequenceStorageOptions.DEFAULT),
 				currentPersistenceContext.getDialect(), (SeparateTransactionExecutor) currentPersistenceContext.getConnectionProvider(),
 				currentPersistenceContext.getJDBCBatchSize());
 		ClassMappingStrategy<? extends DynamicEntity, Long> classMappingStrategy = new ClassMappingStrategy<>(dynamicType, targetTable,

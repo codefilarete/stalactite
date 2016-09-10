@@ -16,7 +16,7 @@ public class PooledHiLoSequence implements org.gama.stalactite.persistence.id.ma
 	
 	private LongPool sequenceState;
 	
-	private SequencePersister sequencePersister;
+	private SequencePersister persister;
 	
 	private PooledHiLoSequenceOptions options;
 	
@@ -32,12 +32,12 @@ public class PooledHiLoSequence implements org.gama.stalactite.persistence.id.ma
 	}
 	
 	public void configure(PooledHiLoSequenceOptions options) {
-		this.sequencePersister = new SequencePersister(options.getStorageOptions(), dialect, separateTransactionExecutor, jdbcBatchSize);
+		this.persister = new SequencePersister(options.getStorageOptions(), dialect, separateTransactionExecutor, jdbcBatchSize);
 		this.options = options;
 	}
 	
-	public SequencePersister getSequencePersister() {
-		return sequencePersister;
+	public SequencePersister getPersister() {
+		return persister;
 	}
 	
 	public PooledHiLoSequenceOptions getOptions() {
@@ -53,20 +53,26 @@ public class PooledHiLoSequence implements org.gama.stalactite.persistence.id.ma
 	public synchronized Long next() {
 		if (sequenceState == null) {
 			// No state yet so we create one
-			Sequence existingSequence = this.sequencePersister.select(getSequenceName());
-			long initialValue = existingSequence == null ? 0 : existingSequence.getStep();
-			this.sequenceState = new LongPool(options.getPoolSize(), --initialValue) {
-				@Override
-				void onBoundReached() {
-					sequencePersister.reservePool(getSequenceName(), getPoolSize());
-				}
-			};
-			// if no sequence exists we consider that a new boundary is reached in order to insert initial state
-			if (existingSequence == null) {
-				sequenceState.onBoundReached();
-			}
+			initSequenceState();
 		}
 		return sequenceState.nextValue();
+	}
+	
+	private void initSequenceState() {
+		String sequenceName = getSequenceName();
+		Sequence existingSequence = this.persister.select(sequenceName);
+		long initialValue = existingSequence == null ? this.options.getInitialValue() : existingSequence.getStep();
+		// we decrement initialValue to compensate for LongPool incrementing first value on its next() call
+		this.sequenceState = new LongPool(options.getPoolSize(), --initialValue) {
+			@Override
+			void onBoundReached() {
+				persister.reservePool(sequenceName, getPoolSize());
+			}
+		};
+		// if no sequence exists we consider that a new boundary is reached in order to insert initial state
+		if (existingSequence == null) {
+			sequenceState.onBoundReached();
+		}
 	}
 	
 	protected String getSequenceName() {

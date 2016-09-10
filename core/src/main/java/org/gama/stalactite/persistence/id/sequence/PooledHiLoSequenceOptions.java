@@ -22,18 +22,32 @@ public class PooledHiLoSequenceOptions {
 	
 	private final int poolSize;
 	private final String sequenceName;
-	private final SequencePersisterOptions storageOptions;
+	private final SequenceStorageOptions storageOptions;
+	private final long initialValue;
 	
-	public PooledHiLoSequenceOptions(int poolSize, String sequenceName, SequencePersisterOptions storageOptions) {
+	public PooledHiLoSequenceOptions(int poolSize, String sequenceName, SequenceStorageOptions storageOptions) {
+		this(poolSize, sequenceName, Objects.preventNull(storageOptions, SequenceStorageOptions.DEFAULT), 0);
+	}
+	
+	/**
+	 * Detailed constructor.
+	 * 
+	 * @param poolSize the size of the pool
+	 * @param sequenceName the name of the sequence, most likely unique for the given {@link SequenceStorageOptions}
+	 * @param storageOptions options for storing the sequence in the database
+	 * @param initialValue the initial value for the very first insertion, never used again
+	 */
+	public PooledHiLoSequenceOptions(int poolSize, String sequenceName, SequenceStorageOptions storageOptions, long initialValue) {
 		this.poolSize = poolSize;
 		this.sequenceName = sequenceName;
-		this.storageOptions = Objects.preventNull(storageOptions, SequencePersisterOptions.DEFAULT);
+		this.storageOptions = Objects.preventNull(storageOptions, SequenceStorageOptions.DEFAULT);
+		this.initialValue = initialValue;
 	}
 	
 	public PooledHiLoSequenceOptions(Map<String, Object> configuration) {
 		this(CONVERTER.asInteger(configuration.get(POOL_SIZE_PARAM)),
 				CONVERTER.asString(configuration.get(SEQUENCE_NAME_PARAM)),
-				new SequencePersisterOptions(CONVERTER.asString(configuration.get(TABLE_PARAM)),
+				new SequenceStorageOptions(CONVERTER.asString(configuration.get(TABLE_PARAM)),
 						CONVERTER.asString(configuration.get(SEQUENCE_COLUMN_PARAM)),
 						CONVERTER.asString(configuration.get(VALUE_COLUMN_PARAM))
 				)
@@ -48,7 +62,16 @@ public class PooledHiLoSequenceOptions {
 		return sequenceName;
 	}
 	
-	public SequencePersisterOptions getStorageOptions() {
+	public SequenceStorageOptions getStorageOptions() {
 		return storageOptions;
+	}
+	
+	/**
+	 * To be used only the very first time of insertion of the sequence in the database
+	 * 
+	 * @return the value passed at constructor
+	 */
+	public long getInitialValue() {
+		return initialValue;
 	}
 }

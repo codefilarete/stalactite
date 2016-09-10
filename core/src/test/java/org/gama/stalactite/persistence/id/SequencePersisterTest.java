@@ -10,7 +10,7 @@ import org.gama.sql.test.HSQLDBInMemoryDataSource;
 import org.gama.stalactite.persistence.engine.DDLDeployer;
 import org.gama.stalactite.persistence.engine.PersistenceContext;
 import org.gama.stalactite.persistence.engine.SeparateTransactionExecutor;
-import org.gama.stalactite.persistence.id.sequence.SequencePersisterOptions;
+import org.gama.stalactite.persistence.id.sequence.SequenceStorageOptions;
 import org.gama.stalactite.persistence.id.sequence.SequencePersister;
 import org.gama.stalactite.persistence.sql.Dialect;
 import org.gama.stalactite.persistence.sql.ddl.JavaTypeToSqlTypeMapping;
@@ -46,7 +46,7 @@ public class SequencePersisterTest {
 	
 	@Test
 	public void testGetCreationScripts_customized() throws Exception {
-		testInstance = new SequencePersister(new SequencePersisterOptions("myTable", "mySequenceNameCol", "myNextValCol"),
+		testInstance = new SequencePersister(new SequenceStorageOptions("myTable", "mySequenceNameCol", "myNextValCol"),
 				dialect, (SeparateTransactionExecutor) persistenceContext.getConnectionProvider(), persistenceContext.getJDBCBatchSize());
 		dialect.getDdlSchemaGenerator().addTables(testInstance.getMappingStrategy().getTargetTable());
 		List<String> creationScripts = dialect.getDdlSchemaGenerator().getCreationScripts();

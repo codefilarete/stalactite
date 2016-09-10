@@ -15,7 +15,7 @@ import org.gama.stalactite.persistence.engine.SeparateTransactionExecutor;
 import org.gama.stalactite.persistence.id.PersistableIdentifier;
 import org.gama.stalactite.persistence.id.sequence.PooledHiLoSequence;
 import org.gama.stalactite.persistence.id.sequence.PooledHiLoSequenceOptions;
-import org.gama.stalactite.persistence.id.sequence.SequencePersisterOptions;
+import org.gama.stalactite.persistence.id.sequence.SequenceStorageOptions;
 import org.gama.stalactite.persistence.sql.Dialect;
 import org.gama.stalactite.persistence.sql.ddl.JavaTypeToSqlTypeMapping;
 import org.gama.stalactite.test.JdbcConnectionProvider;
@@ -44,10 +44,10 @@ public class PooledSequenceIdentifierProviderTest {
 	@Test
 	public void testGiveNewIdentifier() throws SQLException {
 		// Creation of an in-memory database pooled sequence generator
-		sequenceIdentifierGenerator = new PooledHiLoSequence(new PooledHiLoSequenceOptions(10, "Toto", SequencePersisterOptions.DEFAULT),
+		sequenceIdentifierGenerator = new PooledHiLoSequence(new PooledHiLoSequenceOptions(10, "Toto", SequenceStorageOptions.DEFAULT),
 				persistenceContext.getDialect(), (SeparateTransactionExecutor) persistenceContext.getConnectionProvider(), persistenceContext.getJDBCBatchSize());
 		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
-		ddlDeployer.getDdlSchemaGenerator().setTables(Arrays.asList(sequenceIdentifierGenerator.getSequencePersister().getMappingStrategy().getTargetTable()));
+		ddlDeployer.getDdlSchemaGenerator().setTables(Arrays.asList(sequenceIdentifierGenerator.getPersister().getMappingStrategy().getTargetTable()));
 		ddlDeployer.deployDDL();
 		
 		// Creation of our test instance

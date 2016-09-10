@@ -28,13 +28,13 @@ public class SequencePersister extends Persister<Sequence, String> {
 	 * @param dialect the {@link Dialect} to use for database dialog
 	 * @param separateTransactionExecutor a transaction provider that mmust give a new and separate transaction
 	 * @param jdbcBatchSize the JDBC batch size, not really usefull for this class since it doesn't do massive insert
-	 * @see SequencePersisterOptions#DEFAULT
+	 * @see SequenceStorageOptions#DEFAULT
 	 */
 	public SequencePersister(Dialect dialect, SeparateTransactionExecutor separateTransactionExecutor, int jdbcBatchSize) {
-		this(SequencePersisterOptions.DEFAULT, dialect, separateTransactionExecutor, jdbcBatchSize);
+		this(SequenceStorageOptions.DEFAULT, dialect, separateTransactionExecutor, jdbcBatchSize);
 	}
 	
-	public SequencePersister(SequencePersisterOptions storageOptions, Dialect dialect, SeparateTransactionExecutor separateTransactionExecutor, int jdbcBatchSize) {
+	public SequencePersister(SequenceStorageOptions storageOptions, Dialect dialect, SeparateTransactionExecutor separateTransactionExecutor, int jdbcBatchSize) {
 		// we reuse default PersistentContext
 		super(new SequencePersisterConfigurer().buildConfiguration(storageOptions),
 				dialect, separateTransactionExecutor, jdbcBatchSize);
@@ -139,7 +139,7 @@ public class SequencePersister extends Persister<Sequence, String> {
 	
 	private static class SequencePersisterConfigurer {
 		
-		private ClassMappingStrategy<Sequence, String> buildConfiguration(SequencePersisterOptions storageOptions) {
+		private ClassMappingStrategy<Sequence, String> buildConfiguration(SequenceStorageOptions storageOptions) {
 			// Sequence table creation
 			SequenceTable sequenceTable = new SequenceTable(null, storageOptions.getTable(), storageOptions.getSequenceNameColumn(), storageOptions.getValueColumn());
 			// Strategy building
