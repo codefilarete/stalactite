@@ -18,8 +18,8 @@ public abstract class Retryer {
 		this.retryDelay = retryDelay;
 	}
 
-	public <T> T execute(IDelegate<T, ?> delegate, String description) throws Throwable {
-		Executor<T> executor = new Executor<>(delegate, description);
+	public <T, E extends Throwable> T execute(IDelegate<T, E> delegate, String description) throws E, RetryException {
+		Executor<T, E> executor = new Executor<>(delegate, description);
 		return executor.execute();
 	}
 
@@ -44,15 +44,15 @@ public abstract class Retryer {
 	 * Internal méthode ofr execution in order to make "tryCount" thread-safe
 	 * @param <R>
 	 */
-	private final class Executor<R> {
+	private final class Executor<R, E extends Throwable> {
 		private int tryCount = 0;
-		private final IDelegate<R, ?> delegateWithResult;
+		private final IDelegate<R, E> delegateWithResult;
 		private final String description;
-		private Executor(IDelegate<R, ?> delegateWithResult, String description) {
+		private Executor(IDelegate<R, E> delegateWithResult, String description) {
 			this.delegateWithResult = delegateWithResult;
 			this.description = description;
 		}
-		public R execute() throws Throwable {
+		public R execute() throws E, RetryException {
 			try {
 				tryCount++;
 				return delegateWithResult.execute();

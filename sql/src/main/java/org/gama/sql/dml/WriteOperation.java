@@ -6,6 +6,7 @@ import java.sql.Statement;
 import java.util.Map;
 
 import org.gama.lang.Retryer;
+import org.gama.lang.Retryer.RetryException;
 import org.gama.lang.bean.IDelegate;
 import org.gama.lang.exception.Exceptions;
 import org.gama.sql.IConnectionProvider;
@@ -72,7 +73,11 @@ public class WriteOperation<ParamType> extends SQLOperation<ParamType> {
 	
 	private int executeUpdate() {
 		LOGGER.debug(getSQL());
-		return doWithRetry(this::doExecuteUpdate);
+		try {
+			return doWithRetry(this::doExecuteUpdate);
+		} catch (SQLException | RetryException e) {
+			throw new RuntimeException("Error during " + getSQL(), e);
+		}
 	}
 	
 	private int doExecuteUpdate() throws SQLException {
@@ -109,17 +114,13 @@ public class WriteOperation<ParamType> extends SQLOperation<ParamType> {
 		LOGGER.debug(getSQL());
 		try {
 			return (int[]) doWithRetry((IDelegate<Object, SQLException>) () -> preparedStatement.executeBatch());
-		} catch (Throwable t) {
-			throw new RuntimeException("Error during " + getSQL(), t);
+		} catch (SQLException | RetryException e) {
+			throw new RuntimeException("Error during " + getSQL(), e);
 		}
 	}
 	
-	private <T> T doWithRetry(IDelegate<T, ?> delegateWithResult) {
-		try {
-			return retryer.execute(delegateWithResult, getSQL());
-		} catch (Throwable t) {
-			throw Exceptions.asRuntimeException(t);
-		}
+	private <T, E extends Exception> T doWithRetry(IDelegate<T, E> delegateWithResult) throws E, RetryException {
+		return retryer.execute(delegateWithResult, getSQL());
 	}
 	
 	/**
