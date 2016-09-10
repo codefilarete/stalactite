@@ -9,8 +9,9 @@ public class ArrayIterator<O> extends ReadOnlyIterator<O> {
 
 	private O[] array;
 	private int currentIndex = 0, maxIndex;
-
-	public ArrayIterator(O[] array) {
+	
+	@SafeVarargs
+	public ArrayIterator(O ... array) {
 		this.array = array;
 		this.maxIndex = array.length;
 	}

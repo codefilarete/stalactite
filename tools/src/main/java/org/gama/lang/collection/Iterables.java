@@ -19,6 +19,16 @@ import java.util.stream.StreamSupport;
 public final class Iterables {
 	
 	/**
+	 * Transform an {@link Iterator} to an {@link Iterable}
+	 * @param iterator the surrogate
+	 * @param <E> the content typed of the {@link Iterator}
+	 * @return an {@link Iterable} whose {@link Iterable#iterator()} returns the given {@link Iterator}
+	 */
+	public static <E> Iterable<E> asIterable(Iterator<E> iterator) {
+		return () -> iterator;
+	}
+	
+	/**
 	 * Renvoie la première valeur d'une Iterable
 	 * 
 	 * @return null s'il n'y a pas de valeur dans l'Iterable
