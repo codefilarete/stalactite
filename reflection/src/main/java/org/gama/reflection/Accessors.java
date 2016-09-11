@@ -45,8 +45,13 @@ public final class Accessors {
 	
 	public static <C, T> MutatorByMethod<C, T> mutatorByMethod(Class<C> clazz, String propertyName) {
 		Field propertyField = Reflections.findField(clazz, propertyName);
+		Class<?> inputType = propertyField.getType();
+		return mutatorByMethod(clazz, propertyName, inputType);
+	}
+	
+	public static <C, T> MutatorByMethod<C, T> mutatorByMethod(Class<C> clazz, String propertyName, Class<?> inputType) {
 		String capitalizedProperty = Strings.capitalize(propertyName);
-		Method setter = Reflections.findMethod(clazz, "set" + capitalizedProperty, propertyField.getType());
+		Method setter = Reflections.findMethod(clazz, "set" + capitalizedProperty, inputType);
 		return setter == null ? null : new MutatorByMethod<>(setter);
 	}
 	
@@ -54,8 +59,11 @@ public final class Accessors {
 		return new MutatorByField<>(field);
 	}
 	
-	public static <C, T> MutatorByField<C, T> mutatorByField(Class clazz, String propertyName) {
+	public static <C, T> MutatorByField<C, T> mutatorByField(Class clazz, String propertyName) throws NoSuchFieldException {
 		Field propertyField = Reflections.findField(clazz, propertyName);
+		if (propertyField == null) {
+			throw new NoSuchFieldException("Class " + clazz.getName() + " doesn't have a field name " + propertyName);
+		}
 		return mutatorByField(propertyField);
 	}
 	
@@ -75,6 +83,10 @@ public final class Accessors {
 		propertyName = onJavaBeanFieldWrapper(fieldWrapper, () -> methodName.substring(3), () -> methodName.substring(3), () -> methodName.substring(2));
 		propertyName = Strings.uncapitalize(propertyName);
 		return propertyName;
+	}
+	
+	public static Class<?> propertyType(Method method) {
+		return onJavaBeanFieldWrapper(method, () -> method.getReturnType(), () -> method.getParameterTypes()[0], () -> boolean.class);
 	}
 	
 	/**

@@ -6,4 +6,5 @@ package org.gama.reflection;
 public interface IReversibleAccessor<C, T> extends IAccessor<C, T> {
 	
 	IMutator<C, T> toMutator();
+	
 }

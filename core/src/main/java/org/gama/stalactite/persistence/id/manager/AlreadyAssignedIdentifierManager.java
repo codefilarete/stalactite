@@ -17,7 +17,7 @@ public class AlreadyAssignedIdentifierManager<T> implements IdentifierInsertionM
 	
 	public static final AlreadyAssignedIdentifierManager INSTANCE = new AlreadyAssignedIdentifierManager();
 	
-	protected AlreadyAssignedIdentifierManager() {
+	public AlreadyAssignedIdentifierManager() {
 	}
 	
 	@Override

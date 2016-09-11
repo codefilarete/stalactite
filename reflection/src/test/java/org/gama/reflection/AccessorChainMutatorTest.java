@@ -46,7 +46,7 @@ public class AccessorChainMutatorTest {
 	private static ArrayMutator<String> charArrayMutator;
 	
 	@BeforeClass
-	public static void init() {
+	public static void init() throws NoSuchFieldException {
 		cityNameAccessor = Accessors.accessorByField(City.class, "name");
 		addressCityAccessor = Accessors.accessorByField(Address.class, "city");
 		personAddressAccessor = Accessors.accessorByField(Person.class, "address");
