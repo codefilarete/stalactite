@@ -1,11 +1,11 @@
 package org.gama.stalactite.persistence.engine;
 
-import org.gama.stalactite.persistence.engine.PersistenceMapper.IdentifierPolicy;
+import org.gama.stalactite.persistence.engine.FluentMappingBuilder.IdentifierPolicy;
 
 /**
  * @author Guillaume Mary
  */
 interface ColumnOptions<T> {
 	
-	IPersistenceMapper<T> identifier(IdentifierPolicy identifierPolicy);
+	IFluentMappingBuilder<T> identifier(IdentifierPolicy identifierPolicy);
 }

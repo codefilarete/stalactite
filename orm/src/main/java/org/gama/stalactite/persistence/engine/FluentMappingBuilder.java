@@ -27,7 +27,7 @@ import org.gama.stalactite.persistence.structure.Table.Column;
 /**
  * @author Guillaume Mary
  */
-public class PersistenceMapper<T> implements IPersistenceMapper<T> {
+public class FluentMappingBuilder<T> implements IFluentMappingBuilder<T> {
 	
 	public static enum IdentifierPolicy {
 		ALREADY_ASSIGNED,
@@ -35,8 +35,8 @@ public class PersistenceMapper<T> implements IPersistenceMapper<T> {
 		AFTER_INSERT
 	}
 	
-	public static <I> PersistenceMapper<I> with(Class<I> persistedClass, Table table) {
-		return new PersistenceMapper<>(persistedClass, table);
+	public static <I> FluentMappingBuilder<I> with(Class<I> persistedClass, Table table) {
+		return new FluentMappingBuilder<>(persistedClass, table);
 	}
 	
 	private final Class<T> persistedClass;
@@ -51,7 +51,7 @@ public class PersistenceMapper<T> implements IPersistenceMapper<T> {
 	
 	private final LambdaMethodCapturer<T> spy;
 	
-	public PersistenceMapper(Class<T> persistedClass, Table table) {
+	public FluentMappingBuilder(Class<T> persistedClass, Table table) {
 		this.persistedClass = persistedClass;
 		this.table = table;
 		this.mapping = new ArrayList<>();
@@ -69,7 +69,7 @@ public class PersistenceMapper<T> implements IPersistenceMapper<T> {
 	}
 	
 	@Override
-	public <I> IPersistenceMapperColumnOptions<T> add(BiConsumer<T, I> function) {
+	public <I> IFluentMappingBuilderColumnOptions<T> add(BiConsumer<T, I> function) {
 		Method method = captureLambdaMethod(function);
 		Class<?> columnType = Accessors.propertyType(method);
 		String columnName = Accessors.propertyName(method);
@@ -77,7 +77,7 @@ public class PersistenceMapper<T> implements IPersistenceMapper<T> {
 	}
 	
 	@Override
-	public IPersistenceMapperColumnOptions<T> add(Function<T, ?> function) {
+	public IFluentMappingBuilderColumnOptions<T> add(Function<T, ?> function) {
 		Method method = captureLambdaMethod(function);
 		Class<?> columnType = Accessors.propertyType(method);
 		String columnName = Accessors.propertyName(method);
@@ -85,32 +85,38 @@ public class PersistenceMapper<T> implements IPersistenceMapper<T> {
 	}
 	
 	@Override
-	public IPersistenceMapperColumnOptions<T> add(Function<T, ?> function, String columnName) {
+	public IFluentMappingBuilderColumnOptions<T> add(Function<T, ?> function, String columnName) {
 		Method method = captureLambdaMethod(function);
 		Class<?> columnType = Accessors.propertyType(method);
 		return add(method, columnName, columnType);
 	}
 	
-	private IPersistenceMapperColumnOptions<T> add(Method method, String columnName, Class<?> columnType) {
+	private IFluentMappingBuilderColumnOptions<T> add(Method method, String columnName, Class<?> columnType) {
 		Column newColumn = table.new Column(columnName, columnType);
 		PropertyAccessor<T, Object> propertyAccessor = PropertyAccessor.of(method);
+		this.mapping.stream().map(Linkage::getFunction).filter(propertyAccessor::equals)
+				.findAny()
+				.ifPresent(f -> { throw new IllegalArgumentException("Mapping is already defined by a method " + f.getAccessor()); });
+		this.mapping.stream().map(Linkage::getColumn).filter(newColumn::equals)
+				.findAny()
+				.ifPresent(f -> { throw new IllegalArgumentException("Mapping is already defined for " + columnName); });
 		this.mapping.add(new Linkage(propertyAccessor, newColumn));
-		return new Overlay<>(ColumnOptions.class).overlay(this, (Class<IPersistenceMapperColumnOptions<T>>) (Class) IPersistenceMapperColumnOptions.class, new ColumnOptions() {
+		return new Overlay<>(ColumnOptions.class).overlay(this, (Class<IFluentMappingBuilderColumnOptions<T>>) (Class) IFluentMappingBuilderColumnOptions.class, new ColumnOptions() {
 			@Override
-			public PersistenceMapper identifier(IdentifierPolicy identifierPolicy) {
-				if (PersistenceMapper.this.identifierAccessor != null) {
+			public FluentMappingBuilder identifier(IdentifierPolicy identifierPolicy) {
+				if (FluentMappingBuilder.this.identifierAccessor != null) {
 					throw new IllegalArgumentException("Identifier is already defined by " + identifierAccessor.getAccessor());
 				}
 				switch (identifierPolicy) {
 					case ALREADY_ASSIGNED:
-						PersistenceMapper.this.identifierInsertionManager = new AlreadyAssignedIdentifierManager<>();
+						FluentMappingBuilder.this.identifierInsertionManager = new AlreadyAssignedIdentifierManager<>();
 						newColumn.primaryKey();
 						break;
 					default:
 						throw new NotYetSupportedOperationException();
 				}
-				PersistenceMapper.this.identifierAccessor = propertyAccessor;
-				return PersistenceMapper.this;	// not necessary because the overlay will return it for us, but cleaner (if we change our mind)
+				FluentMappingBuilder.this.identifierAccessor = propertyAccessor;
+				return FluentMappingBuilder.this;	// not necessary because the overlay will return it for us, but cleaner (if we change our mind)
 			}
 		});
 	}
@@ -138,7 +144,7 @@ public class PersistenceMapper<T> implements IPersistenceMapper<T> {
 	}
 	
 	@Override
-	public <I> ClassMappingStrategy<T, I> forDialect(Dialect dialect) {
+	public <I> ClassMappingStrategy<T, I> build(Dialect dialect) {
 		mapping.stream().map(Linkage::getColumn).forEach(c -> dialect.getColumnBinderRegistry().getBinder(c));
 		return buildClassMappingStrategy();
 	}
