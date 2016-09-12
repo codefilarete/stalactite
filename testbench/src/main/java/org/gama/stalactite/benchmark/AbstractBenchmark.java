@@ -9,6 +9,7 @@ import org.gama.stalactite.benchmark.connection.MySQLDataSourceFactory;
 import org.gama.stalactite.benchmark.connection.MySQLDataSourceFactory.Property;
 import org.gama.stalactite.persistence.engine.DDLDeployer;
 import org.gama.stalactite.persistence.engine.PersistenceContext;
+import org.gama.stalactite.persistence.sql.HSQLDBDialect;
 import org.springframework.jdbc.datasource.DataSourceTransactionManager;
 import org.springframework.transaction.TransactionStatus;
 import org.springframework.transaction.support.TransactionCallbackWithoutResult;
@@ -49,7 +50,7 @@ public abstract class AbstractBenchmark<Data> {
 		dataSourceTransactionManager = new DataSourceTransactionManager(dataSource);
 		
 		SpringConnectionProvider transactionManager = new SpringConnectionProvider(dataSourceTransactionManager);
-		final PersistenceContext persistenceContext = new PersistenceContext(transactionManager, new HSQLBDDialect());
+		final PersistenceContext persistenceContext = new PersistenceContext(transactionManager, new HSQLDBDialect());
 		PersistenceContexts.setCurrent(persistenceContext);
 		
 		appendMappingStrategy(persistenceContext);

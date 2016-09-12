@@ -60,7 +60,7 @@ public class FluentMappingBuilderTest {
 	@Test
 	public void testAdd_withoutName_targettedPropertyNameIsTook() {
 		Table toto = new Table("Toto");
-		FluentMappingBuilder.with(Toto.class, toto)
+		FluentMappingBuilder.from(Toto.class, toto)
 				.add(Toto::getName);
 		
 		// column sould be correctly created
@@ -72,7 +72,7 @@ public class FluentMappingBuilderTest {
 	@Test
 	public void testAdd_definedAsIdentifier_columnBecomesPrimaryKey() {
 		Table toto = new Table("Toto");
-		FluentMappingBuilder.with(Toto.class, toto)
+		FluentMappingBuilder.from(Toto.class, toto)
 			.add(Toto::getName).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 		;
 		// column sould be correctly created
@@ -86,7 +86,7 @@ public class FluentMappingBuilderTest {
 		expectedException.expectMessage("Identifier is already defined by");
 		expectedException.expectMessage("getName");
 		Table toto = new Table("Toto");
-		FluentMappingBuilder.with(Toto.class, toto)
+		FluentMappingBuilder.from(Toto.class, toto)
 			.add(Toto::getName, "tata").identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 			.add(Toto::getFirstName).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 		;
@@ -97,7 +97,7 @@ public class FluentMappingBuilderTest {
 		expectedException.expect(IllegalArgumentException.class);
 		expectedException.expectMessage("Mapping is already defined by a method");
 		Table toto = new Table("Toto");
-		FluentMappingBuilder.with(Toto.class, toto)
+		FluentMappingBuilder.from(Toto.class, toto)
 				.add(Toto::getName)
 				.add(Toto::setName)
 		;
@@ -108,7 +108,7 @@ public class FluentMappingBuilderTest {
 		expectedException.expect(IllegalArgumentException.class);
 		expectedException.expectMessage("Mapping is already defined for xyz");
 		Table toto = new Table("Toto");
-		FluentMappingBuilder.with(Toto.class, toto)
+		FluentMappingBuilder.from(Toto.class, toto)
 				.add(Toto::getName, "xyz")
 				.add(Toto::getFirstName, "xyz")
 		;
@@ -117,7 +117,7 @@ public class FluentMappingBuilderTest {
 	@Test
 	public void testAdd_methodHasNoMatchingField_configurationIsStillValid() {
 		Table toto = new Table("Toto");
-		FluentMappingBuilder.with(Toto.class, toto)
+		FluentMappingBuilder.from(Toto.class, toto)
 				.add(Toto::getNoMatchingField);
 		
 		Column columnForProperty = toto.mapColumnsOnName().get("noMatchingField");
@@ -128,7 +128,7 @@ public class FluentMappingBuilderTest {
 	@Test
 	public void testAdd_methodIsASetter_configurationIsStillValid() {
 		Table toto = new Table("Toto");
-		FluentMappingBuilder.with(Toto.class, toto)
+		FluentMappingBuilder.from(Toto.class, toto)
 				.add(Toto::setNoMatchingField)
 				.add(Toto::setNoMatchingFieldPrimitive)
 		;

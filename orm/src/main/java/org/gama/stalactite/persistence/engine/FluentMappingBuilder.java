@@ -35,7 +35,24 @@ public class FluentMappingBuilder<T> implements IFluentMappingBuilder<T> {
 		AFTER_INSERT
 	}
 	
-	public static <I> FluentMappingBuilder<I> with(Class<I> persistedClass, Table table) {
+	/**
+	 * Will start a {@link FluentMappingBuilder} for a given class which will target a table that as the class name.
+	 * @param persistedClass the class to be persisted by the {@link ClassMappingStrategy} that will be created by {@link #build(Dialect)}
+	 * @param <I> any type to be persisted
+	 * @return a new {@link FluentMappingBuilder}
+	 */
+	public static <I> FluentMappingBuilder<I> from(Class<I> persistedClass) {
+		return from(persistedClass, new Table(persistedClass.getSimpleName()));
+	}
+	
+	/**
+	 * Will start a {@link FluentMappingBuilder} for a given class and a given target table.
+	 * @param persistedClass the class to be persisted by the {@link ClassMappingStrategy} that will be created by {@link #build(Dialect)}
+	 * @param table the table which will store instances of the persistedClass
+	 * @param <I> any type to be persisted
+	 * @return a new {@link FluentMappingBuilder}
+	 */
+	public static <I> FluentMappingBuilder<I> from(Class<I> persistedClass, Table table) {
 		return new FluentMappingBuilder<>(persistedClass, table);
 	}
 	
@@ -58,6 +75,10 @@ public class FluentMappingBuilder<T> implements IFluentMappingBuilder<T> {
 		
 		// Code enhancer for creation of a proxy that will support functions invocations
 		this.spy = new LambdaMethodCapturer<>(persistedClass);
+	}
+	
+	public Table getTable() {
+		return table;
 	}
 	
 	private Method captureLambdaMethod(Function<T, ?> function) {
@@ -101,7 +122,8 @@ public class FluentMappingBuilder<T> implements IFluentMappingBuilder<T> {
 				.findAny()
 				.ifPresent(f -> { throw new IllegalArgumentException("Mapping is already defined for " + columnName); });
 		this.mapping.add(new Linkage(propertyAccessor, newColumn));
-		return new Overlay<>(ColumnOptions.class).overlay(this, (Class<IFluentMappingBuilderColumnOptions<T>>) (Class) IFluentMappingBuilderColumnOptions.class, new ColumnOptions() {
+		Class<IFluentMappingBuilderColumnOptions<T>> returnType = (Class) IFluentMappingBuilderColumnOptions.class;
+		return new Overlay<>(ColumnOptions.class).overlay(this, returnType, new ColumnOptions() {
 			@Override
 			public FluentMappingBuilder identifier(IdentifierPolicy identifierPolicy) {
 				if (FluentMappingBuilder.this.identifierAccessor != null) {
@@ -145,6 +167,7 @@ public class FluentMappingBuilder<T> implements IFluentMappingBuilder<T> {
 	
 	@Override
 	public <I> ClassMappingStrategy<T, I> build(Dialect dialect) {
+		// Assertion that binders are present: this will throw en exception if the binder is not found
 		mapping.stream().map(Linkage::getColumn).forEach(c -> dialect.getColumnBinderRegistry().getBinder(c));
 		return buildClassMappingStrategy();
 	}

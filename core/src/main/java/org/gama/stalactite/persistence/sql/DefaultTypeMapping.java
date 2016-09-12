@@ -1,4 +1,4 @@
-package org.gama.stalactite.benchmark;
+package org.gama.stalactite.persistence.sql;
 
 import java.util.Date;
 
