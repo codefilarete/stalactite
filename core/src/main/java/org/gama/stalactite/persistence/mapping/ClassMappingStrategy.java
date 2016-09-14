@@ -40,7 +40,7 @@ public class ClassMappingStrategy<T, I> implements IEntityMappingStrategy<T, I> 
 	private final IdMappingStrategy<T, I> idMappingStrategy;
 	
 	public ClassMappingStrategy(Class<T> classToPersist, Table targetTable, Map<PropertyAccessor, Column> propertyToColumn,
-								PropertyAccessor<T, I> identifierProperty, IdentifierInsertionManager<T> identifierInsertionManager) {
+								PropertyAccessor<T, I> identifierProperty, IdentifierInsertionManager<T, I> identifierInsertionManager) {
 		if (identifierProperty == null) {
 			throw new UnsupportedOperationException("No identifier property for " + classToPersist.getName());
 		}
@@ -210,6 +210,11 @@ public class ClassMappingStrategy<T, I> implements IEntityMappingStrategy<T, I> 
 	@Override
 	public void setId(T t, I identifier) {
 		getIdMappingStrategy().setId(t, identifier);
+	}
+	
+	@Override
+	public boolean isNew(T t) {
+		return getIdMappingStrategy().isNew(t);
 	}
 	
 	@Override

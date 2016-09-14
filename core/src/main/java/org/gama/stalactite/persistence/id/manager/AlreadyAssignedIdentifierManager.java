@@ -10,14 +10,26 @@ import org.gama.stalactite.persistence.structure.Table.Column;
 
 /**
  * Identifier manager to be used when identifier is already specified on entity, so, nothing special must be done !
+ * In production use, may be used in confonction with {@link StatefullIdentifier}
  * 
  * @author Guillaume Mary
+ * @see org.gama.stalactite.persistence.mapping.IdMappingStrategy.IsNewDeterminer#isNew(Object) 
+ * @see org.gama.stalactite.persistence.mapping.IdMappingStrategy.WrappedIdIsNewDeterminer
+ * @see StatefullIdentifier
  */
-public class AlreadyAssignedIdentifierManager<T> implements IdentifierInsertionManager<T> {
+public class AlreadyAssignedIdentifierManager<T, I> implements IdentifierInsertionManager<T, I> {
 	
-	public static final AlreadyAssignedIdentifierManager INSTANCE = new AlreadyAssignedIdentifierManager();
+	public static final AlreadyAssignedIdentifierManager INSTANCE = new AlreadyAssignedIdentifierManager<>(Long.class);
 	
-	public AlreadyAssignedIdentifierManager() {
+	private final Class<I> identifierType;
+	
+	public AlreadyAssignedIdentifierManager(Class<I> identifierType) {
+		this.identifierType = identifierType;
+	}
+	
+	@Override
+	public Class<I> getIdentifierType() {
+		return identifierType;
 	}
 	
 	@Override

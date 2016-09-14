@@ -58,7 +58,8 @@ public class PersisterDatabaseTest {
 		identifierGenerator = new InMemoryCounterIdentifierGenerator();
 		PropertyAccessor<Toto, Integer> identifierAccessor = PropertyAccessor.forProperty(persistentFieldHarverster.getField("a"));
 		totoClassMappingStrategy = new ClassMappingStrategy<>(Toto.class, totoClassTable,
-				totoClassMapping, identifierAccessor, new BeforeInsertIdentifierManager<>(IdMappingStrategy.toIdAccessor(identifierAccessor), identifierGenerator));
+				totoClassMapping, identifierAccessor, new BeforeInsertIdentifierManager<>(IdMappingStrategy.toIdAccessor(identifierAccessor),
+				identifierGenerator, Integer.class));
 		
 		JavaTypeToSqlTypeMapping simpleTypeMapping = new JavaTypeToSqlTypeMapping();
 		simpleTypeMapping.put(Integer.class, "int");

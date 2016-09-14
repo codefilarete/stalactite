@@ -11,6 +11,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import org.gama.lang.collection.ArrayIterator;
@@ -27,7 +28,7 @@ import org.gama.stalactite.persistence.structure.Table.Column;
 /**
  * @author Guillaume Mary
  */
-public class FluentMappingBuilder<T> implements IFluentMappingBuilder<T> {
+public class FluentMappingBuilder<T, I> implements IFluentMappingBuilder<T, I> {
 	
 	public static enum IdentifierPolicy {
 		ALREADY_ASSIGNED,
@@ -38,21 +39,25 @@ public class FluentMappingBuilder<T> implements IFluentMappingBuilder<T> {
 	/**
 	 * Will start a {@link FluentMappingBuilder} for a given class which will target a table that as the class name.
 	 * @param persistedClass the class to be persisted by the {@link ClassMappingStrategy} that will be created by {@link #build(Dialect)}
-	 * @param <I> any type to be persisted
+	 * @param identifierClass the class of the identifier
+	 * @param <T> any type to be persisted
+	 * @param <I> the type of the identifier
 	 * @return a new {@link FluentMappingBuilder}
 	 */
-	public static <I> FluentMappingBuilder<I> from(Class<I> persistedClass) {
-		return from(persistedClass, new Table(persistedClass.getSimpleName()));
+	public static <T, I> FluentMappingBuilder<T, I> from(Class<T> persistedClass, Class<I> identifierClass) {
+		return from(persistedClass, identifierClass, new Table(persistedClass.getSimpleName()));
 	}
 	
 	/**
 	 * Will start a {@link FluentMappingBuilder} for a given class and a given target table.
 	 * @param persistedClass the class to be persisted by the {@link ClassMappingStrategy} that will be created by {@link #build(Dialect)}
+	 * @param identifierClass the class of the identifier
 	 * @param table the table which will store instances of the persistedClass
-	 * @param <I> any type to be persisted
+	 * @param <T> any type to be persisted
+	 * @param <I> the type of the identifier
 	 * @return a new {@link FluentMappingBuilder}
 	 */
-	public static <I> FluentMappingBuilder<I> from(Class<I> persistedClass, Table table) {
+	public static <T, I> FluentMappingBuilder<T, I> from(Class<T> persistedClass, Class<I> identifierClass, Table table) {
 		return new FluentMappingBuilder<>(persistedClass, table);
 	}
 	
@@ -62,9 +67,9 @@ public class FluentMappingBuilder<T> implements IFluentMappingBuilder<T> {
 	
 	private List<Linkage> mapping;
 	
-	private IdentifierInsertionManager<T> identifierInsertionManager;
+	private IdentifierInsertionManager<T, I> identifierInsertionManager;
 	
-	private PropertyAccessor<T, ?> identifierAccessor;
+	private PropertyAccessor<T, I> identifierAccessor;
 	
 	private final LambdaMethodCapturer<T> spy;
 	
@@ -85,12 +90,12 @@ public class FluentMappingBuilder<T> implements IFluentMappingBuilder<T> {
 		return this.spy.capture(function);
 	}
 	
-	private <I> Method captureLambdaMethod(BiConsumer<T, I> function) {
+	private <O> Method captureLambdaMethod(BiConsumer<T, O> function) {
 		return this.spy.capture(function);
 	}
 	
 	@Override
-	public <I> IFluentMappingBuilderColumnOptions<T> add(BiConsumer<T, I> function) {
+	public <O> IFluentMappingBuilderColumnOptions<T, I> add(BiConsumer<T, O> function) {
 		Method method = captureLambdaMethod(function);
 		Class<?> columnType = Accessors.propertyType(method);
 		String columnName = Accessors.propertyName(method);
@@ -98,7 +103,7 @@ public class FluentMappingBuilder<T> implements IFluentMappingBuilder<T> {
 	}
 	
 	@Override
-	public IFluentMappingBuilderColumnOptions<T> add(Function<T, ?> function) {
+	public IFluentMappingBuilderColumnOptions<T, I> add(Function<T, ?> function) {
 		Method method = captureLambdaMethod(function);
 		Class<?> columnType = Accessors.propertyType(method);
 		String columnName = Accessors.propertyName(method);
@@ -106,15 +111,15 @@ public class FluentMappingBuilder<T> implements IFluentMappingBuilder<T> {
 	}
 	
 	@Override
-	public IFluentMappingBuilderColumnOptions<T> add(Function<T, ?> function, String columnName) {
+	public IFluentMappingBuilderColumnOptions<T, I> add(Function<T, ?> function, String columnName) {
 		Method method = captureLambdaMethod(function);
 		Class<?> columnType = Accessors.propertyType(method);
 		return add(method, columnName, columnType);
 	}
 	
-	private IFluentMappingBuilderColumnOptions<T> add(Method method, String columnName, Class<?> columnType) {
+	private IFluentMappingBuilderColumnOptions<T, I> add(Method method, String columnName, Class<?> columnType) {
 		Column newColumn = table.new Column(columnName, columnType);
-		PropertyAccessor<T, Object> propertyAccessor = PropertyAccessor.of(method);
+		PropertyAccessor<T, I> propertyAccessor = PropertyAccessor.of(method);
 		this.mapping.stream().map(Linkage::getFunction).filter(propertyAccessor::equals)
 				.findAny()
 				.ifPresent(f -> { throw new IllegalArgumentException("Mapping is already defined by a method " + f.getAccessor()); });
@@ -122,7 +127,7 @@ public class FluentMappingBuilder<T> implements IFluentMappingBuilder<T> {
 				.findAny()
 				.ifPresent(f -> { throw new IllegalArgumentException("Mapping is already defined for " + columnName); });
 		this.mapping.add(new Linkage(propertyAccessor, newColumn));
-		Class<IFluentMappingBuilderColumnOptions<T>> returnType = (Class) IFluentMappingBuilderColumnOptions.class;
+		Class<IFluentMappingBuilderColumnOptions<T, I>> returnType = (Class) IFluentMappingBuilderColumnOptions.class;
 		return new Overlay<>(ColumnOptions.class).overlay(this, returnType, new ColumnOptions() {
 			@Override
 			public FluentMappingBuilder identifier(IdentifierPolicy identifierPolicy) {
@@ -131,7 +136,11 @@ public class FluentMappingBuilder<T> implements IFluentMappingBuilder<T> {
 				}
 				switch (identifierPolicy) {
 					case ALREADY_ASSIGNED:
-						FluentMappingBuilder.this.identifierInsertionManager = new AlreadyAssignedIdentifierManager<>();
+						Class<I> e = Accessors.onJavaBeanFieldWrapper(method,
+								method::getReturnType,
+								(Supplier<Class>) () -> method.getParameterTypes()[0],
+								() -> boolean.class);
+						FluentMappingBuilder.this.identifierInsertionManager = new AlreadyAssignedIdentifierManager<>(e);
 						newColumn.primaryKey();
 						break;
 					default:
@@ -147,7 +156,7 @@ public class FluentMappingBuilder<T> implements IFluentMappingBuilder<T> {
 		return mapping.stream().collect(HashMap::new, (hashMap, linkage) -> hashMap.put(linkage.getFunction(), linkage.getColumn()), (a, b) -> {});
 	}
 	
-	private <I> ClassMappingStrategy<T, I> buildClassMappingStrategy() {
+	private ClassMappingStrategy<T, I> buildClassMappingStrategy() {
 		Map<PropertyAccessor, Column> columnMapping = getMapping();
 		List<Entry<PropertyAccessor, Column>> identifierProperties = columnMapping.entrySet().stream().filter(e -> e.getValue().isPrimaryKey()).collect
 				(Collectors.toList());
@@ -166,7 +175,7 @@ public class FluentMappingBuilder<T> implements IFluentMappingBuilder<T> {
 	}
 	
 	@Override
-	public <I> ClassMappingStrategy<T, I> build(Dialect dialect) {
+	public ClassMappingStrategy<T, I> build(Dialect dialect) {
 		// Assertion that binders are present: this will throw en exception if the binder is not found
 		mapping.stream().map(Linkage::getColumn).forEach(c -> dialect.getColumnBinderRegistry().getBinder(c));
 		return buildClassMappingStrategy();

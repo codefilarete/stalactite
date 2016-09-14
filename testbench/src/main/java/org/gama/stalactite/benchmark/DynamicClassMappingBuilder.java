@@ -65,7 +65,7 @@ public class DynamicClassMappingBuilder implements IMappingBuilder {
 				currentPersistenceContext.getDialect(), (SeparateTransactionExecutor) currentPersistenceContext.getConnectionProvider(),
 				currentPersistenceContext.getJDBCBatchSize());
 		ClassMappingStrategy<? extends DynamicEntity, Long> classMappingStrategy = new ClassMappingStrategy<>(dynamicType, targetTable,
-				fieldColumnMap, idAccessor, new BeforeInsertIdentifierManager<>(IdMappingStrategy.toIdAccessor(idAccessor), longSequence));
+				fieldColumnMap, idAccessor, new BeforeInsertIdentifierManager<>(IdMappingStrategy.toIdAccessor(idAccessor), longSequence, long.class));
 		return classMappingStrategy;
 	}
 	

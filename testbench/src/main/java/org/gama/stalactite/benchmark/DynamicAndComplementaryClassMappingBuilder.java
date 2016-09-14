@@ -66,7 +66,7 @@ public class DynamicAndComplementaryClassMappingBuilder implements IMappingBuild
 //		PersistenceContext.getCurrent().add(identifierGenerator.getPersister().getMappingStrategy());
 		PropertyAccessor idAccessor = PropertyAccessor.forProperty(persistentFieldHarverster.getField("id"));
 		ClassMappingStrategy<? extends DynamicEntity, Long> classMappingStrategy = new ClassMappingStrategy<>(dynamicType, targetTable,
-				fieldColumnMap, idAccessor, new BeforeInsertIdentifierManager<>(IdMappingStrategy.toIdAccessor(idAccessor), identifierGenerator));
+				fieldColumnMap, idAccessor, new BeforeInsertIdentifierManager<>(IdMappingStrategy.toIdAccessor(idAccessor), identifierGenerator, long.class));
 		getClassMappingStrategy_nil();
 		getClassMappingStrategy_indexes();
 		return classMappingStrategy;

@@ -21,7 +21,7 @@ import org.gama.stalactite.persistence.structure.Table;
  */
 public class InsertExecutor<T, I> extends UpsertExecutor<T, I> {
 	
-	private final IdentifierInsertionManager<T> identifierInsertionManager;
+	private final IdentifierInsertionManager<T, I> identifierInsertionManager;
 	
 	public InsertExecutor(ClassMappingStrategy<T, I> mappingStrategy, org.gama.stalactite.persistence.engine.ConnectionProvider connectionProvider,
 						  DMLGenerator dmlGenerator, Retryer writeOperationRetryer,

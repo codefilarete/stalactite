@@ -5,7 +5,7 @@ import org.gama.stalactite.persistence.engine.FluentMappingBuilder.IdentifierPol
 /**
  * @author Guillaume Mary
  */
-interface ColumnOptions<T> {
+interface ColumnOptions<T, I> {
 	
-	IFluentMappingBuilder<T> identifier(IdentifierPolicy identifierPolicy);
+	IFluentMappingBuilder<T, I> identifier(IdentifierPolicy identifierPolicy);
 }

@@ -1,5 +1,6 @@
 package org.gama.stalactite.persistence.id;
 
+import org.gama.stalactite.persistence.id.manager.StatefullIdentifier;
 import org.gama.stalactite.persistence.id.provider.IdentifierProvider;
 
 /**
@@ -11,7 +12,7 @@ import org.gama.stalactite.persistence.id.provider.IdentifierProvider;
  * @param <T> the real type of the identifier
  * @author Guillaume Mary
  */
-public interface Identifier<T> {
+public interface Identifier<T> extends StatefullIdentifier<T> {
 	
 	T getSurrogate();
 	

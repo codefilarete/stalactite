@@ -7,4 +7,10 @@ package org.gama.stalactite.persistence.mapping;
  */
 public interface IEntityMappingStrategy<T, I> extends IMappingStrategy<T>, IIdAccessor<T, I> {
 	
+	/**
+	 * Necessary to distinguish insert or update action on {@link org.gama.stalactite.persistence.engine.Persister#persist(Object)} call
+	 * @param t an instance of T
+	 * @return true if the instance is not persisted, false if not (a row for its identifier already exists in the targeted table)
+	 */
+	boolean isNew(T t);
 }

@@ -241,12 +241,15 @@ public class Persister<T, I> {
 	}
 	
 	/**
-	 * Indicates if a bean is persisted or not, implemented on null identifier 
+	 * Indicates if a bean is persisted or not. Delegated to {@link ClassMappingStrategy}
+	 * 
 	 * @param t a bean
-	 * @return true if bean's id is null, false otherwise
+	 * @return true if a bean is already persisted
+	 * @see ClassMappingStrategy#isNew(Object)
+	 * @see org.gama.stalactite.persistence.mapping.IdMappingStrategy.IsNewDeterminer
 	 */
-	public boolean isNew(T t) {
-		return mappingStrategy.getId(t) == null;
+	private boolean isNew(T t) {
+		return mappingStrategy.isNew(t);
 	}
 	
 	public T select(I id) {

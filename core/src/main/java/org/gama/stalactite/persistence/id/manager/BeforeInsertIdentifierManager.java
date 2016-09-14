@@ -15,17 +15,26 @@ import org.gama.stalactite.persistence.structure.Table.Column;
  *
  * @author Guillaume Mary
  */
-public class BeforeInsertIdentifierManager<T, I> implements IdentifierInsertionManager<T> {
+public class BeforeInsertIdentifierManager<T, I> implements IdentifierInsertionManager<T, I> {
 	
 	@FunctionalInterface
 	public interface Sequence<I> {
+		
 		I next();
 	}
 	
+	private final Class<I> identifierType;
+	
 	private final BeforeInsertIdentifierFixer<T, I> identifierFixer;
 	
-	public BeforeInsertIdentifierManager(IIdAccessor<T, I> idAccessor, Sequence<I> sequence) {
+	public BeforeInsertIdentifierManager(IIdAccessor<T, I> idAccessor, Sequence<I> sequence, Class<I> identifierType) {
+		this.identifierType = identifierType;
 		this.identifierFixer = new BeforeInsertIdentifierFixer<>(idAccessor, sequence);
+	}
+	
+	@Override
+	public Class<I> getIdentifierType() {
+		return identifierType;
 	}
 	
 	@Override

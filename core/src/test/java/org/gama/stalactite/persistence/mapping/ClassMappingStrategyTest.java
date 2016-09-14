@@ -14,6 +14,7 @@ import com.tngtech.java.junit.dataprovider.UseDataProvider;
 import org.gama.lang.collection.Arrays;
 import org.gama.lang.collection.Maps;
 import org.gama.reflection.PropertyAccessor;
+import org.gama.stalactite.persistence.id.manager.AlreadyAssignedIdentifierManager;
 import org.gama.stalactite.persistence.sql.dml.PreparedUpdate.UpwhereColumn;
 import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.persistence.structure.Table.Column;
@@ -71,8 +72,12 @@ public class ClassMappingStrategyTest {
 	public static void setUpTestInstance() {
 		// instance to test building
 		// The basic mapping will be altered to add special mapping for field "myListField" (a Collection) and "myMapField" (a Map)
-		// Basic mapping (no id generator here because it's not the goal of our test)
-		testInstance = new ClassMappingStrategy<>(Toto.class, targetTable, classMapping, PropertyAccessor.forProperty(persistentFieldHarverster.getField("a")), null);
+		testInstance = new ClassMappingStrategy<>(Toto.class,
+				targetTable,
+				classMapping,
+				PropertyAccessor.forProperty(persistentFieldHarverster.getField("a")),
+				// Basic mapping to prevent NullPointerException, even if it's not the goal of our test
+				new AlreadyAssignedIdentifierManager<>(Integer.class));
 		
 		
 		// Additionnal mapping: the list is mapped to 2 additionnal columns

@@ -39,7 +39,7 @@ public class TotoMappingBuilder implements IMappingBuilder {
 				currentPersistenceContext.getDialect(), (SeparateTransactionExecutor) currentPersistenceContext.getConnectionProvider(),
 				currentPersistenceContext.getJDBCBatchSize());
 		ClassMappingStrategy<Toto, Long> classMappingStrategy = new ClassMappingStrategy<>(Toto.class, targetTable,
-				fieldColumnMap, idAccessor, new BeforeInsertIdentifierManager<>(IdMappingStrategy.toIdAccessor(idAccessor), longSequence));
+				fieldColumnMap, idAccessor, new BeforeInsertIdentifierManager<>(IdMappingStrategy.toIdAccessor(idAccessor), longSequence, long.class));
 		Field answersField = null;
 		try {
 			answersField = Toto.class.getDeclaredField("answers");

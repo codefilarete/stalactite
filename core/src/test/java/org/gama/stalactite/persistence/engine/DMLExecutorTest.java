@@ -153,7 +153,8 @@ public abstract class DMLExecutorTest {
 		return new PersistenceConfigurationBuilder<Toto, Integer>()
 				.withTableAndClass("Toto", Toto.class, (mappedClass, primaryKeyField) -> {
 					Sequence<Integer> instance = InMemoryCounterIdentifierGenerator.INSTANCE;
-					IdentifierInsertionManager<Toto> identifierGenerator = new BeforeInsertIdentifierManager<>(IdMappingStrategy.toIdAccessor(primaryKeyField), instance);
+					IdentifierInsertionManager<Toto, Integer> identifierGenerator = new BeforeInsertIdentifierManager<>(
+							IdMappingStrategy.toIdAccessor(primaryKeyField), instance, Integer.class);
 					return new ClassMappingStrategy<>(mappedClass.mappedClass,
 							mappedClass.targetTable,
 							mappedClass.persistentFieldHarverster.getFieldToColumn(), primaryKeyField, identifierGenerator);

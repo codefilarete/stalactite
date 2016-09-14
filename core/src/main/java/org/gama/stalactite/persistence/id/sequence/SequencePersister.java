@@ -148,7 +148,7 @@ public class SequencePersister extends Persister<Sequence, String> {
 					sequenceTable,
 					sequenceTable.getPooledSequenceFieldMapping(),
 					Sequence.SEQUENCE_NAME_FIELD,
-					AlreadyAssignedIdentifierManager.INSTANCE);
+					new AlreadyAssignedIdentifierManager(String.class));
 		}
 	}
 }

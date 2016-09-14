@@ -96,8 +96,8 @@ public class JoinTablePersisterTest {
 		
 		identifierGenerator = new InMemoryCounterIdentifierGenerator();
 		BeforeInsertIdentifierManager<Toto, Integer> beforeInsertIdentifierManager = new BeforeInsertIdentifierManager<>
-				(IdMappingStrategy.toIdAccessor(identifierAccessor), identifierGenerator);
-		totoClassMappingStrategy_ontoTable1 = new ClassMappingStrategy<>(Toto.class, totoClassTable1,
+				(IdMappingStrategy.toIdAccessor(identifierAccessor), identifierGenerator, Integer.class);
+		totoClassMappingStrategy_ontoTable1 = new ClassMappingStrategy(Toto.class, totoClassTable1,
 				totoClassMapping1, identifierAccessor, beforeInsertIdentifierManager);
 		totoClassMappingStrategy2_ontoTable2 = new ClassMappingStrategy<>(Toto.class, totoClassTable2,
 				totoClassMapping2, identifierAccessor, AlreadyAssignedIdentifierManager.INSTANCE);

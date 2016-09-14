@@ -24,7 +24,9 @@ import org.gama.stalactite.persistence.structure.Table.Column;
  * 
  * @author Guillaume Mary
  */
-public class JDBCGeneratedKeysIdentifierManager<T, I> implements IdentifierInsertionManager<T> {
+public class JDBCGeneratedKeysIdentifierManager<T, I> implements IdentifierInsertionManager<T, I> {
+	
+	private final Class<I> identifierType;
 	
 	public static <I> Function<Map<String, Object>, I> keyMapper(String columnName) {
 		return m -> (I) m.get(columnName);
@@ -33,17 +35,23 @@ public class JDBCGeneratedKeysIdentifierManager<T, I> implements IdentifierInser
 	private final AfterInsertIdentifierFixer<T, I> identifierFixer;
 	private final GeneratedKeysReader generatedKeysReader;
 	
-	public JDBCGeneratedKeysIdentifierManager(IIdAccessor<T, I> idAccessor, GeneratedKeysReader generatedKeysReader, String columnName) {
-		this(idAccessor, generatedKeysReader, keyMapper(columnName));
+	public JDBCGeneratedKeysIdentifierManager(IIdAccessor<T, I> idAccessor, GeneratedKeysReader generatedKeysReader, String columnName, Class<I> identifierType) {
+		this(idAccessor, generatedKeysReader, keyMapper(columnName), identifierType);
 	}
 
-	public JDBCGeneratedKeysIdentifierManager(IIdAccessor<T, I> idAccessor, GeneratedKeysReader generatedKeysReader, Function<Map<String, Object>, I> idReader) {
+	public JDBCGeneratedKeysIdentifierManager(IIdAccessor<T, I> idAccessor, GeneratedKeysReader generatedKeysReader, Function<Map<String, Object>, I> idReader, Class<I> identifierType) {
 		this.identifierFixer = new AfterInsertIdentifierFixer<>(idAccessor, idReader);
 		this.generatedKeysReader = generatedKeysReader;
 		// protect ourselves from nonsense
 		if (this.generatedKeysReader == null) {
 			throw new IllegalArgumentException("Key reader should not be null");
 		}
+		this.identifierType = identifierType;
+	}
+	
+	@Override
+	public Class<I> getIdentifierType() {
+		return identifierType;
 	}
 	
 	@Override

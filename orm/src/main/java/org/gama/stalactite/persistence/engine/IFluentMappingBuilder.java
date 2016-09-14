@@ -9,17 +9,17 @@ import org.gama.stalactite.persistence.sql.Dialect;
 /**
  * @author Guillaume Mary
  */
-public interface IFluentMappingBuilder<T> {
+public interface IFluentMappingBuilder<T, I> {
 	
-	<I> IFluentMappingBuilderColumnOptions<T> add(BiConsumer<T, I> function);
+	<O> IFluentMappingBuilderColumnOptions<T, I> add(BiConsumer<T, O> function);
 	
-	IFluentMappingBuilderColumnOptions<T> add(Function<T, ?> function);
+	IFluentMappingBuilderColumnOptions<T, I> add(Function<T, ?> function);
 	
-	IFluentMappingBuilder<T> add(Function<T, ?> function, String columnName);
+	IFluentMappingBuilder<T, I> add(Function<T, ?> function, String columnName);
 	
-	<I> ClassMappingStrategy<T, I> build(Dialect dialect);
+	ClassMappingStrategy<T, I> build(Dialect dialect);
 	
-	interface IFluentMappingBuilderColumnOptions<T> extends IFluentMappingBuilder<T>, ColumnOptions<T> {
+	interface IFluentMappingBuilderColumnOptions<T, I> extends IFluentMappingBuilder<T, I>, ColumnOptions<T, I> {
 	}
 	
 }

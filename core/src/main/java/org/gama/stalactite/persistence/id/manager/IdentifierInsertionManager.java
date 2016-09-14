@@ -13,7 +13,12 @@ import org.gama.stalactite.persistence.structure.Table.Column;
  * 
  * @author Guillaume Mary
  */
-public interface IdentifierInsertionManager<T> {
+public interface IdentifierInsertionManager<T, I> {
+	
+	/**
+	 * @return the type of the identifier
+	 */
+	Class<I> getIdentifierType();
 	
 	PreparedStatement prepareStatement(Connection connection, String sql) throws SQLException;
 	
