@@ -69,7 +69,7 @@ public class MariaDBEmbeddableDataSource extends UrlAwareDataSource implements C
 				DBConfigurationBuilder configBuilder = DBConfigurationBuilder.newBuilder();
 				configBuilder.setPort(port);
 				// for linux system with message "Fatal error: Please read "Security" section of the manual to find out how to run mysqld as root!" 
-				configBuilder.addArg("-u root");
+				configBuilder.addArg("--user=root");
 				db = DB.newEmbeddedDB(configBuilder.build());
 				db.start();
 				usedPorts.put(port, db);
