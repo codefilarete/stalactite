@@ -10,7 +10,6 @@
 	<packaging>pom</packaging>
 	
 	<modules>
-		<module>tools</module>
 		<module>safemodel</module>
 		<module>reflection</module>
 		<module>core</module>
