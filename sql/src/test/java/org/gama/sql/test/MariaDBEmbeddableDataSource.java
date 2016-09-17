@@ -1,17 +1,18 @@
 package org.gama.sql.test;
 
-import ch.vorburger.exec.ManagedProcessException;
-import ch.vorburger.mariadb4j.DB;
-import org.gama.lang.exception.Exceptions;
-import org.gama.sql.UrlAwareDataSource;
-import org.mariadb.jdbc.MariaDbDataSource;
-
 import java.io.Closeable;
 import java.io.IOException;
 import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
+
+import ch.vorburger.exec.ManagedProcessException;
+import ch.vorburger.mariadb4j.DB;
+import ch.vorburger.mariadb4j.DBConfigurationBuilder;
+import org.gama.lang.exception.Exceptions;
+import org.gama.sql.UrlAwareDataSource;
+import org.mariadb.jdbc.MariaDbDataSource;
 
 /**
  * Simple DataSource MariaDB for tests
@@ -65,7 +66,11 @@ public class MariaDBEmbeddableDataSource extends UrlAwareDataSource implements C
 		db = usedPorts.get(port);
 		if (db == null) {
 			try {
-				db = DB.newEmbeddedDB(port);
+				DBConfigurationBuilder configBuilder = DBConfigurationBuilder.newBuilder();
+				configBuilder.setPort(port);
+				// for linux system with message "Fatal error: Please read "Security" section of the manual to find out how to run mysqld as root!" 
+				configBuilder.addArg("-u root");
+				db = DB.newEmbeddedDB(configBuilder.build());
 				db.start();
 				usedPorts.put(port, db);
 			} catch (ManagedProcessException e) {

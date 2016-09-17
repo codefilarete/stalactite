@@ -23,7 +23,7 @@
 		<encoding>UTF-8</encoding>
 		<junit.version>4.12</junit.version>
 		<mockito.version>1.10.19</mockito.version>
-		<slf4j-api.version>1.7.12</slf4j-api.version>
+		<slf4j-api.version>1.7.21</slf4j-api.version>
 		<junit-dataprovider.version>1.10.0</junit-dataprovider.version>
 	</properties>
 	
