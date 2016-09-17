@@ -10,7 +10,6 @@
 	<packaging>pom</packaging>
 	
 	<modules>
-		<module>safemodel</module>
 		<module>core</module>
 		<module>orm</module>
 		<module>testbench</module>
