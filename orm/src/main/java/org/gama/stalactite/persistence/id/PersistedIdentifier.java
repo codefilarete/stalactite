@@ -18,4 +18,13 @@ public class PersistedIdentifier<T> extends AbstractIdentifier<T> {
 	public final boolean isPersisted() {
 		return true;
 	}
+	
+	@Override
+	protected boolean equals(AbstractIdentifier<?> that) {
+		if (super.equals(that) && that instanceof PersistedIdentifier) {
+			return true;
+		} else {
+			return false;
+		}
+	}
 }
