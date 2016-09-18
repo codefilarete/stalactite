@@ -21,7 +21,7 @@ import org.gama.stalactite.persistence.structure.Table;
  */
 public class UpdateExecutor<T, I> extends UpsertExecutor<T, I> {
 	
-	public UpdateExecutor(ClassMappingStrategy<T, I> mappingStrategy, org.gama.stalactite.persistence.engine.ConnectionProvider connectionProvider,
+	public UpdateExecutor(ClassMappingStrategy<T, I> mappingStrategy, ConnectionProvider connectionProvider,
 						  DMLGenerator dmlGenerator, Retryer writeOperationRetryer,
 						  int batchSize, int inOperatorMaxSize) {
 		super(mappingStrategy, connectionProvider, dmlGenerator, writeOperationRetryer, batchSize, inOperatorMaxSize);
@@ -34,7 +34,7 @@ public class UpdateExecutor<T, I> extends UpsertExecutor<T, I> {
 	public int updateRoughly(Iterable<T> iterable) {
 		Set<Table.Column> columnsToUpdate = getMappingStrategy().getUpdatableColumns();
 		PreparedUpdate updateOperation = getDmlGenerator().buildUpdate(columnsToUpdate, getMappingStrategy().getVersionedKeys());
-		WriteOperation<PreparedUpdate.UpwhereColumn> writeOperation = newWriteOperation(updateOperation, new ConnectionProvider());
+		WriteOperation<PreparedUpdate.UpwhereColumn> writeOperation = newWriteOperation(updateOperation, new CurrentConnectionProvider());
 		
 		JDBCBatchingIterator<T> jdbcBatchingIterator = new JDBCBatchingIterator<>(iterable, writeOperation, getBatchSize());
 		while(jdbcBatchingIterator.hasNext()) {
@@ -67,8 +67,8 @@ public class UpdateExecutor<T, I> extends UpsertExecutor<T, I> {
 	 * @param differencesIterable pairs of modified-unmodified instances, used to compute differences side by side
 	 */
 	public int updatePartially(Iterable<Map.Entry<T, T>> differencesIterable) {
-		ConnectionProvider connectionProvider = new ConnectionProvider();
-		return new DifferenceUpdater(new JDBCBatchingOperationCache(connectionProvider), false).update(differencesIterable);
+		CurrentConnectionProvider currentConnectionProvider = new CurrentConnectionProvider();
+		return new DifferenceUpdater(new JDBCBatchingOperationCache(currentConnectionProvider), false).update(differencesIterable);
 	}
 	
 	/**
@@ -82,7 +82,7 @@ public class UpdateExecutor<T, I> extends UpsertExecutor<T, I> {
 		// we never update primary key (by principle and for persistent bean cache based on id (on what else ?)) 
 		Set<Table.Column> columnsToUpdate = targetTable.getColumnsNoPrimaryKey();
 		PreparedUpdate preparedUpdate = getDmlGenerator().buildUpdate(columnsToUpdate, getMappingStrategy().getVersionedKeys());
-		WriteOperation<PreparedUpdate.UpwhereColumn> writeOperation = newWriteOperation(preparedUpdate, new ConnectionProvider());
+		WriteOperation<PreparedUpdate.UpwhereColumn> writeOperation = newWriteOperation(preparedUpdate, new CurrentConnectionProvider());
 		// Since all columns are updated we can benefit from JDBC batch
 		JDBCBatchingOperation jdbcBatchingOperation = new JDBCBatchingOperation(writeOperation, getBatchSize());
 		
@@ -162,13 +162,13 @@ public class UpdateExecutor<T, I> extends UpsertExecutor<T, I> {
 		
 		private final Map<Set<PreparedUpdate.UpwhereColumn>, JDBCBatchingOperation> updateOperationCache;
 		
-		private JDBCBatchingOperationCache(final ConnectionProvider connectionProvider) {
+		private JDBCBatchingOperationCache(final CurrentConnectionProvider currentConnectionProvider) {
 			// cache for WriteOperation instances (key is Columns to be updated) for batch use
 			updateOperationCache = new ValueFactoryHashMap<>(new IFactory<Set<PreparedUpdate.UpwhereColumn>, JDBCBatchingOperation>() {
 				@Override
 				public JDBCBatchingOperation createInstance(Set<PreparedUpdate.UpwhereColumn> input) {
 					PreparedUpdate preparedUpdate = getDmlGenerator().buildUpdate(PreparedUpdate.UpwhereColumn.getUpdateColumns(input), getMappingStrategy().getVersionedKeys());
-					return new JDBCBatchingOperation(newWriteOperation(preparedUpdate, connectionProvider), getBatchSize());
+					return new JDBCBatchingOperation(newWriteOperation(preparedUpdate, currentConnectionProvider), getBatchSize());
 				}
 			});
 		}

@@ -10,12 +10,12 @@ import org.gama.lang.collection.Collections;
 import org.gama.lang.collection.Iterables;
 import org.gama.lang.exception.Exceptions;
 import org.gama.sql.dml.ReadOperation;
-import org.gama.sql.dml.SQLStatement;
 import org.gama.sql.result.RowIterator;
 import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
 import org.gama.stalactite.persistence.sql.dml.ColumnParamedSelect;
 import org.gama.stalactite.persistence.sql.dml.DMLGenerator;
 import org.gama.stalactite.persistence.structure.Table;
+import org.gama.stalactite.persistence.structure.Table.Column;
 
 /**
  * Class dedicated to select statement execution
@@ -24,47 +24,42 @@ import org.gama.stalactite.persistence.structure.Table;
  */
 public class SelectExecutor<T, I> extends DMLExecutor<T, I> {
 	
-	public SelectExecutor(ClassMappingStrategy<T, I> mappingStrategy, org.gama.stalactite.persistence.engine.ConnectionProvider connectionProvider, DMLGenerator dmlGenerator, int inOperatorMaxSize) {
+	public SelectExecutor(ClassMappingStrategy<T, I> mappingStrategy, ConnectionProvider connectionProvider, DMLGenerator dmlGenerator, int inOperatorMaxSize) {
 		super(mappingStrategy, connectionProvider, dmlGenerator, inOperatorMaxSize);
 	}
 	
-	
 	public List<T> select(Iterable<I> ids) {
-		ConnectionProvider connectionProvider = new ConnectionProvider();
+		CurrentConnectionProvider currentConnectionProvider = new CurrentConnectionProvider();
 		List<T> toReturn = new ArrayList<>(50);
 		int blockSize = getInOperatorMaxSize();
 		List<List<I>> parcels = Collections.parcel(ids, blockSize);
-		List<I> lastBlock = Iterables.last(parcels);
-		ColumnParamedSelect selectStatement;
-		ReadOperation<Table.Column> readOperation;
 		Table targetTable = getMappingStrategy().getTargetTable();
 		Set<Table.Column> columnsToRead = targetTable.getColumns().asSet();
-		if (parcels.size() > 1) {
-			selectStatement = getDmlGenerator().buildMassiveSelect(targetTable, columnsToRead, getMappingStrategy().getSingleColumnKey(), blockSize);
-			if (lastBlock.size() != blockSize) {
-				parcels = parcels.subList(0, parcels.size() - 1);
-			}
-			readOperation = newReadOperation(selectStatement, connectionProvider);
-			for (List<I> parcel : parcels) {
-				toReturn.addAll(execute(readOperation, getMappingStrategy().getSingleColumnKey(), parcel));
-			}
-		}
-		if (lastBlock.size() > 0) {
-			selectStatement = getDmlGenerator().buildMassiveSelect(targetTable, columnsToRead, getMappingStrategy().getSingleColumnKey(), lastBlock.size());
-			readOperation = newReadOperation(selectStatement, connectionProvider);
-			toReturn.addAll(execute(readOperation, getMappingStrategy().getSingleColumnKey(), lastBlock));
-		}
+		
+		// We distinguish the default case where packets are of the same size from the (last) case where it's different
+		// So we can apply the same read operation to all the firsts packets
+		ReadOperation<Table.Column> defaultReadOperation = newReadOperation(targetTable, columnsToRead, blockSize, currentConnectionProvider);
+		Collections.cutTail(parcels).forEach(parcel -> toReturn.addAll(execute(defaultReadOperation, targetTable.getPrimaryKey(), parcel)));
+		// last packet treatment (packet size may be different)
+		List<I> lastParcel = Iterables.last(parcels);
+		int lastBlockSize = lastParcel.size();
+		ReadOperation<Column> lastReadOperation = lastBlockSize != blockSize
+				? newReadOperation(targetTable, columnsToRead, lastBlockSize, currentConnectionProvider)
+				: defaultReadOperation;
+		toReturn.addAll(execute(lastReadOperation, targetTable.getPrimaryKey(), lastParcel));
 		return toReturn;
 	}
 	
-	private <C> ReadOperation<C> newReadOperation(SQLStatement<C> statement, ConnectionProvider connectionProvider) {
-		return new ReadOperation<>(statement, connectionProvider);
+	private ReadOperation<Column> newReadOperation(Table targetTable, Set<Column> columnsToRead, int blockSize,
+												   CurrentConnectionProvider currentConnectionProvider) {
+		ColumnParamedSelect selectStatement = getDmlGenerator().buildMassiveSelect(targetTable, columnsToRead, targetTable.getPrimaryKey(), blockSize);
+		return new ReadOperation<>(selectStatement, currentConnectionProvider);
 	}
 	
-	protected List<T> execute(ReadOperation<Table.Column> operation, Table.Column column, Collection<I> values) {
+	protected List<T> execute(ReadOperation<Table.Column> operation, Table.Column primaryKey, Collection<I> values) {
 		List<T> toReturn = new ArrayList<>(values.size());
 		try(ReadOperation<Table.Column> closeableOperation = operation) {
-			operation.setValue(column, values);
+			operation.setValue(primaryKey, values);
 			ResultSet resultSet = closeableOperation.execute();
 			RowIterator rowIterator = new RowIterator(resultSet, ((ColumnParamedSelect) closeableOperation.getSqlStatement()).getSelectParameterBinders());
 			while (rowIterator.hasNext()) {

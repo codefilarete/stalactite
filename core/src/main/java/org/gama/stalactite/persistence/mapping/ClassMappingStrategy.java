@@ -194,14 +194,6 @@ public class ClassMappingStrategy<T, I> implements IEntityMappingStrategy<T, I> 
 		return Collections.unmodifiableSet(Arrays.asSet(this.targetTable.getPrimaryKey()));
 	}
 	
-	public Column getKey() {
-		return this.getTargetTable().getPrimaryKey();
-	}
-	
-	public Column getSingleColumnKey() {
-		return getTargetTable().getPrimaryKey();
-	}
-	
 	@Override
 	public I getId(T t) {
 		return getIdMappingStrategy().getId(t);

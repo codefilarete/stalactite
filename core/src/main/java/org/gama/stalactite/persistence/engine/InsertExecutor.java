@@ -23,15 +23,15 @@ public class InsertExecutor<T, I> extends UpsertExecutor<T, I> {
 	
 	private final IdentifierInsertionManager<T, I> identifierInsertionManager;
 	
-	public InsertExecutor(ClassMappingStrategy<T, I> mappingStrategy, org.gama.stalactite.persistence.engine.ConnectionProvider connectionProvider,
+	public InsertExecutor(ClassMappingStrategy<T, I> mappingStrategy, ConnectionProvider connectionProvider,
 						  DMLGenerator dmlGenerator, Retryer writeOperationRetryer,
 						  int batchSize, int inOperatorMaxSize) {
 		super(mappingStrategy, connectionProvider, dmlGenerator, writeOperationRetryer, batchSize, inOperatorMaxSize);
 		this.identifierInsertionManager = mappingStrategy.getIdMappingStrategy().getIdentifierInsertionManager();
 	}
 	
-	protected <C> WriteOperation<C> newWriteOperation(SQLStatement<C> statement, ConnectionProvider connectionProvider) {
-		return new WriteOperation<C>(statement, connectionProvider, getWriteOperationRetryer()) {
+	protected <C> WriteOperation<C> newWriteOperation(SQLStatement<C> statement, CurrentConnectionProvider currentConnectionProvider) {
+		return new WriteOperation<C>(statement, currentConnectionProvider, getWriteOperationRetryer()) {
 			@Override
 			protected void prepareStatement(Connection connection) throws SQLException {
 				// NB: simple implementation: we don't use the column-specifying signature since not all databases support reading by column name
@@ -43,7 +43,7 @@ public class InsertExecutor<T, I> extends UpsertExecutor<T, I> {
 	public int insert(Iterable<T> iterable) {
 		Set<Table.Column> columns = getMappingStrategy().getInsertableColumns();
 		ColumnParamedSQL insertStatement = getDmlGenerator().buildInsert(columns);
-		WriteOperation<Table.Column> writeOperation = newWriteOperation(insertStatement, new ConnectionProvider());
+		WriteOperation<Table.Column> writeOperation = newWriteOperation(insertStatement, new CurrentConnectionProvider());
 		JDBCBatchingIterator<T> jdbcBatchingIterator = identifierInsertionManager.buildJDBCBatchingIterator(iterable, writeOperation, getBatchSize());
 		
 		while (jdbcBatchingIterator.hasNext()) {

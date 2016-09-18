@@ -33,8 +33,8 @@ public abstract class WriteExecutor<T, I> extends DMLExecutor<T, I> {
 		return writeOperationRetryer;
 	}
 	
-	protected <C> WriteOperation<C> newWriteOperation(SQLStatement<C> statement, ConnectionProvider connectionProvider) {
-		return new WriteOperation<>(statement, connectionProvider, getWriteOperationRetryer());
+	protected <C> WriteOperation<C> newWriteOperation(SQLStatement<C> statement, CurrentConnectionProvider currentConnectionProvider) {
+		return new WriteOperation<>(statement, currentConnectionProvider, getWriteOperationRetryer());
 	}
 	
 	/**

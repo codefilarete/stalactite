@@ -20,7 +20,7 @@ import org.gama.stalactite.persistence.structure.Table;
  */
 public class DeleteExecutor<T, I> extends WriteExecutor<T, I> {
 	
-	public DeleteExecutor(ClassMappingStrategy<T, I> mappingStrategy, org.gama.stalactite.persistence.engine.ConnectionProvider connectionProvider,
+	public DeleteExecutor(ClassMappingStrategy<T, I> mappingStrategy, ConnectionProvider connectionProvider,
 						  DMLGenerator dmlGenerator, Retryer writeOperationRetryer,
 						  int batchSize, int inOperatorMaxSize) {
 		super(mappingStrategy, connectionProvider, dmlGenerator, writeOperationRetryer, batchSize, inOperatorMaxSize);
@@ -28,7 +28,7 @@ public class DeleteExecutor<T, I> extends WriteExecutor<T, I> {
 	
 	public int delete(Iterable<T> iterable) {
 		ColumnParamedSQL deleteStatement = getDmlGenerator().buildDelete(getMappingStrategy().getTargetTable(), getMappingStrategy().getVersionedKeys());
-		WriteOperation<Table.Column> writeOperation = newWriteOperation(deleteStatement, new ConnectionProvider());
+		WriteOperation<Table.Column> writeOperation = newWriteOperation(deleteStatement, new CurrentConnectionProvider());
 		JDBCBatchingIterator<T> jdbcBatchingIterator = new JDBCBatchingIterator<>(iterable, writeOperation, getBatchSize());
 		while(jdbcBatchingIterator.hasNext()) {
 			T t = jdbcBatchingIterator.next();
@@ -47,22 +47,23 @@ public class DeleteExecutor<T, I> extends WriteExecutor<T, I> {
 	}
 	
 	public int deleteRoughlyById(Iterable<I> ids) {
-		// NB: ConnectionProvider must provide the same connection over all blocks
-		ConnectionProvider connectionProvider = new ConnectionProvider();
+		// NB: CurrentConnectionProvider must provide the same connection over all blocks
+		CurrentConnectionProvider currentConnectionProvider = new CurrentConnectionProvider();
 		int blockSize = getInOperatorMaxSize();
 		List<List<I>> parcels = Collections.parcel(ids, blockSize);
 		List<I> lastBlock = Iterables.last(parcels);
 		ColumnParamedSQL deleteStatement;
 		WriteOperation<Table.Column> writeOperation;
 		Table targetTable = getMappingStrategy().getTargetTable();
-		Table.Column keyColumn = getMappingStrategy().getSingleColumnKey();
+		Table.Column keyColumn = targetTable.getPrimaryKey();
+		
 		int updatedRowCounter = 0;
 		if (parcels.size() > 1) {
 			deleteStatement = getDmlGenerator().buildMassiveDelete(targetTable, keyColumn, blockSize);
 			if (lastBlock.size() != blockSize) {
 				parcels = parcels.subList(0, parcels.size() - 1);
 			}
-			writeOperation = newWriteOperation(deleteStatement, connectionProvider);
+			writeOperation = newWriteOperation(deleteStatement, currentConnectionProvider);
 			JDBCBatchingIterator<List<I>> jdbcBatchingIterator = new JDBCBatchingIterator<>(parcels, writeOperation, getBatchSize());
 			while(jdbcBatchingIterator.hasNext()) {
 				List<I> updateValues = jdbcBatchingIterator.next();
@@ -73,7 +74,7 @@ public class DeleteExecutor<T, I> extends WriteExecutor<T, I> {
 		// remaining block treatment
 		if (lastBlock.size() > 0) {
 			deleteStatement = getDmlGenerator().buildMassiveDelete(targetTable, keyColumn, lastBlock.size());
-			writeOperation = newWriteOperation(deleteStatement, connectionProvider);
+			writeOperation = newWriteOperation(deleteStatement, currentConnectionProvider);
 			writeOperation.setValue(keyColumn, lastBlock);
 			int updatedRowCount = writeOperation.execute();
 			updatedRowCounter += updatedRowCount;

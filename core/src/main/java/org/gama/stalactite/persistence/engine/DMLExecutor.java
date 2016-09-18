@@ -13,11 +13,11 @@ import org.gama.stalactite.persistence.sql.dml.DMLGenerator;
 public abstract class DMLExecutor<T, I> {
 	
 	private final ClassMappingStrategy<T, I> mappingStrategy;
-	private final org.gama.stalactite.persistence.engine.ConnectionProvider connectionProvider;
+	private final ConnectionProvider connectionProvider;
 	private final DMLGenerator dmlGenerator;
 	private final int inOperatorMaxSize;
 	
-	public DMLExecutor(ClassMappingStrategy<T, I> mappingStrategy, org.gama.stalactite.persistence.engine.ConnectionProvider connectionProvider,
+	public DMLExecutor(ClassMappingStrategy<T, I> mappingStrategy, ConnectionProvider connectionProvider,
 					   DMLGenerator dmlGenerator, int inOperatorMaxSize) {
 		this.mappingStrategy = mappingStrategy;
 		this.connectionProvider = connectionProvider;
@@ -29,7 +29,7 @@ public abstract class DMLExecutor<T, I> {
 		return mappingStrategy;
 	}
 	
-	public org.gama.stalactite.persistence.engine.ConnectionProvider getConnectionProvider() {
+	public ConnectionProvider getConnectionProvider() {
 		return connectionProvider;
 	}
 	
@@ -44,9 +44,9 @@ public abstract class DMLExecutor<T, I> {
 	/**
 	 * Implementation that gives the ConnectionProvider.getCurrentConnection() of instanciation time
 	 */
-	protected class ConnectionProvider extends SimpleConnectionProvider {
+	protected class CurrentConnectionProvider extends SimpleConnectionProvider {
 		
-		public ConnectionProvider() {
+		public CurrentConnectionProvider() {
 			super(connectionProvider.getCurrentConnection());
 		}
 	}
