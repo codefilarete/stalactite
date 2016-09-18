@@ -2,7 +2,7 @@ package org.gama.stalactite.persistence.id.manager;
 
 /**
  * A marker for identifier that are wrapped into a simple class.
- * The surrogate will be persisted, not the whome instances of this class.
+ * The surrogate will be persisted, not the whole instances of this class.
  * 
  * Mainly introduced to manage {@link AlreadyAssignedIdentifierManager} and the need to determine if an instance is persisted or not
  * (see {@link org.gama.stalactite.persistence.engine.Persister#persist(Object)}.
