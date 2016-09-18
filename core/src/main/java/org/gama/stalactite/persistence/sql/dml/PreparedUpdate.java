@@ -1,13 +1,16 @@
 package org.gama.stalactite.persistence.sql.dml;
 
+import java.sql.PreparedStatement;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Set;
+
 import org.gama.sql.binder.ParameterBinder;
 import org.gama.sql.dml.SQLStatement;
 import org.gama.stalactite.persistence.sql.dml.PreparedUpdate.UpwhereColumn;
 import org.gama.stalactite.persistence.structure.Table.Column;
-
-import java.sql.PreparedStatement;
-import java.util.*;
-import java.util.Map.Entry;
 
 /**
  * Statement dedicated to updates: a parameter can be in the where clause and the update one with different values.
@@ -33,7 +36,7 @@ public class PreparedUpdate extends SQLStatement<UpwhereColumn> {
 	
 	@Override
 	protected void doApplyValue(UpwhereColumn column, Object value, PreparedStatement statement) {
-		ParameterBinder parameterBinder = getParameterBinder(column);
+		ParameterBinder<Object> parameterBinder = getParameterBinder(column);
 		if (parameterBinder == null) {
 			throw new IllegalArgumentException("Can't find a "+ParameterBinder.class.getName() + " for column " + column.column.getAbsoluteName() + " of value " + value
 					+ " on sql : " + getSQL());

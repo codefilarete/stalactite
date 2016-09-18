@@ -1,9 +1,9 @@
 package org.gama.sql.dml;
 
-import org.gama.sql.binder.ParameterBinder;
-
 import java.sql.PreparedStatement;
 import java.util.Map;
+
+import org.gama.sql.binder.ParameterBinder;
 
 /**
  * Equivalent to {@link PreparedSQL} but with ParamType that can be expanded (essentially for Collection parameters)
@@ -26,7 +26,7 @@ public abstract class ExpandableStatement<ParamType> extends SQLStatement<ParamT
 	
 	@Override
 	protected void doApplyValue(ParamType paramType, Object value, PreparedStatement statement) {
-		ParameterBinder parameterBinder = getParameterBinder(paramType);
+		ParameterBinder<Object> parameterBinder = getParameterBinder(paramType);
 		if (parameterBinder == null) {
 			throw new IllegalArgumentException("Can't find binder for parameter " + getParameterName(paramType)
 					+ " of type " + (value == null ? "unkown" : value.getClass().getName())

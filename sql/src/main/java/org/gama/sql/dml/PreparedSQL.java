@@ -1,9 +1,9 @@
 package org.gama.sql.dml;
 
-import org.gama.sql.binder.ParameterBinder;
-
 import java.sql.PreparedStatement;
 import java.util.Map;
+
+import org.gama.sql.binder.ParameterBinder;
 
 /**
  * Class that applies values to {@link PreparedStatement} according to SQL that contains indexed parameters.
@@ -25,7 +25,7 @@ public class PreparedSQL extends SQLStatement<Integer> {
 	}
 	
 	protected void doApplyValue(Integer index, Object value, PreparedStatement statement) {
-		ParameterBinder paramBinder = getParameterBinder(index);
+		ParameterBinder<Object> paramBinder = getParameterBinder(index);
 		if (paramBinder == null) {
 			throw new IllegalArgumentException("Can't find a "+ParameterBinder.class.getName() + " for index " + index + " of value " + value
 					+ " on sql : " + getSQL());

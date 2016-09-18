@@ -86,7 +86,7 @@ public abstract class SQLStatement<ParamType> {
 		}
 	}
 	
-	public ParameterBinder getParameterBinder(ParamType parameter) {
+	public ParameterBinder<Object> getParameterBinder(ParamType parameter) {
 		return parameterBinders.get(parameter);
 	}
 	
@@ -108,7 +108,7 @@ public abstract class SQLStatement<ParamType> {
 	 * @param paramBinder the binder of the parameter on the statement
 	 * @param statement the statement to use
 	 */
-	protected void doApplyValue(int index, Object value, ParameterBinder paramBinder, PreparedStatement statement) {
+	protected void doApplyValue(int index, Object value, ParameterBinder<Object> paramBinder, PreparedStatement statement) {
 		try {
 			paramBinder.set(index, value, statement);
 		} catch (SQLException e) {

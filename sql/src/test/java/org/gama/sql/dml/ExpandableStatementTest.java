@@ -68,7 +68,7 @@ public class ExpandableStatementTest {
 		Map<Integer, Object> appliedIndexedValues = new HashMap<>();
 		ExpandableStatement<String> testInstance = new StringParamedSQL(sql, binders) {
 			@Override
-			protected void doApplyValue(int index, Object value, ParameterBinder paramBinder, PreparedStatement statement) {
+			protected void doApplyValue(int index, Object value, ParameterBinder<Object> paramBinder, PreparedStatement statement) {
 				appliedIndexedValues.put(index, value);
 				super.doApplyValue(index, value, paramBinder, statement);
 			}
