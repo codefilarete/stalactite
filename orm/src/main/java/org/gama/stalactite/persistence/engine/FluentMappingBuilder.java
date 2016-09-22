@@ -11,9 +11,9 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
-import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
+import org.gama.lang.Reflections;
 import org.gama.lang.collection.ArrayIterator;
 import org.gama.lang.collection.Iterables;
 import org.gama.reflection.Accessors;
@@ -97,7 +97,7 @@ public class FluentMappingBuilder<T, I> implements IFluentMappingBuilder<T, I> {
 	@Override
 	public <O> IFluentMappingBuilderColumnOptions<T, I> add(BiConsumer<T, O> function) {
 		Method method = captureLambdaMethod(function);
-		Class<?> columnType = Accessors.propertyType(method);
+		Class<?> columnType = Reflections.propertyType(method);
 		String columnName = Accessors.propertyName(method);
 		return add(method, columnName, columnType);
 	}
@@ -105,7 +105,7 @@ public class FluentMappingBuilder<T, I> implements IFluentMappingBuilder<T, I> {
 	@Override
 	public IFluentMappingBuilderColumnOptions<T, I> add(Function<T, ?> function) {
 		Method method = captureLambdaMethod(function);
-		Class<?> columnType = Accessors.propertyType(method);
+		Class<?> columnType = Reflections.propertyType(method);
 		String columnName = Accessors.propertyName(method);
 		return add(method, columnName, columnType);
 	}
@@ -113,7 +113,7 @@ public class FluentMappingBuilder<T, I> implements IFluentMappingBuilder<T, I> {
 	@Override
 	public IFluentMappingBuilderColumnOptions<T, I> add(Function<T, ?> function, String columnName) {
 		Method method = captureLambdaMethod(function);
-		Class<?> columnType = Accessors.propertyType(method);
+		Class<?> columnType = Reflections.propertyType(method);
 		return add(method, columnName, columnType);
 	}
 	
@@ -136,10 +136,7 @@ public class FluentMappingBuilder<T, I> implements IFluentMappingBuilder<T, I> {
 				}
 				switch (identifierPolicy) {
 					case ALREADY_ASSIGNED:
-						Class<I> e = Accessors.onJavaBeanFieldWrapper(method,
-								method::getReturnType,
-								(Supplier<Class>) () -> method.getParameterTypes()[0],
-								() -> boolean.class);
+						Class<I> e = Reflections.propertyType(method);
 						FluentMappingBuilder.this.identifierInsertionManager = new AlreadyAssignedIdentifierManager<>(e);
 						newColumn.primaryKey();
 						break;
