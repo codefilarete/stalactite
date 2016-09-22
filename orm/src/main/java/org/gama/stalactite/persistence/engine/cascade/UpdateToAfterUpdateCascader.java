@@ -18,7 +18,7 @@ public abstract class UpdateToAfterUpdateCascader<Trigger, Target> extends NoopU
 	
 	private Persister<Target, ?> persister;
 	
-	UpdateToAfterUpdateCascader(Persister<Target, ?> persister) {
+	public UpdateToAfterUpdateCascader(Persister<Target, ?> persister) {
 		this.persister = persister;
 		this.persister.getPersisterListener().addUpdateListener(new NoopUpdateListener<Target>() {
 			@Override

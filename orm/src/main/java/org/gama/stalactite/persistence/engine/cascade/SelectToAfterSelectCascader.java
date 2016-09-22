@@ -10,8 +10,7 @@ import org.gama.stalactite.persistence.engine.listening.NoopSelectListener;
 
 /**
  * Cascader for select, written for @OneToOne style of cascade where Trigger owns the relationship with Target.
- * To be used carefully because if this class is overriden to trigger other Select for Target instances it will result
- * in a N+1 symptom.
+ * Use carefully : this class triggers selects for Target instances so it will result in a N+1 symptom. Prefer using a join select.
  * 
  * @author Guillaume Mary
  */
@@ -23,7 +22,7 @@ public abstract class SelectToAfterSelectCascader<Trigger, Target, I> extends No
 	 * Simple constructor. Created instance must be added to PersisterListener afterward.
 	 * @param persister
 	 */
-	SelectToAfterSelectCascader(Persister<Target, I> persister) {
+	public SelectToAfterSelectCascader(Persister<Target, I> persister) {
 		this.persister = persister;
 		this.persister.getPersisterListener().addSelectListener(new NoopSelectListener<Target, I>() {
 			@Override

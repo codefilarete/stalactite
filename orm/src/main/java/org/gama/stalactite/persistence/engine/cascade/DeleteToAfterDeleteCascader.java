@@ -21,7 +21,7 @@ public abstract class DeleteToAfterDeleteCascader<Trigger, Target> extends NoopD
 	 * Simple constructor. Created instance must be added to PersisterListener afterward.
 	 * @param persister
 	 */
-	DeleteToAfterDeleteCascader(Persister<Target, ?> persister) {
+	public DeleteToAfterDeleteCascader(Persister<Target, ?> persister) {
 		this.persister = persister;
 		this.persister.getPersisterListener().addDeleteListener(new NoopDeleteListener<Target>() {
 			@Override

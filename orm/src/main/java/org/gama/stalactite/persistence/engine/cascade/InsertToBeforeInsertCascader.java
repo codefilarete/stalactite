@@ -22,7 +22,7 @@ public abstract class InsertToBeforeInsertCascader<Trigger, Target> extends Noop
 	 *
 	 * @param persister
 	 */
-	InsertToBeforeInsertCascader(Persister<Target, ?> persister) {
+	public InsertToBeforeInsertCascader(Persister<Target, ?> persister) {
 		this.persister = persister;
 		this.persister.getPersisterListener().addInsertListener(new NoopInsertListener<Target>() {
 			@Override
