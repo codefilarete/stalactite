@@ -11,7 +11,7 @@ import org.gama.sql.result.Row;
  * 
  * @author Guillaume Mary
  */
-public abstract  class AbstractTransformer<T> implements IRowTransformer<T> {
+public abstract class AbstractTransformer<T> implements IRowTransformer<T> {
 	protected final Constructor<T> constructor;
 	
 	public AbstractTransformer(Class<T> clazz) {
