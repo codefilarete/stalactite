@@ -166,7 +166,7 @@ public class DefaultParameterBindersTest {
 	@UseDataProvider("dataSources")
 	public void testBinaryStreamBinder(DataSource dataSource) throws SQLException {
 		InputStream inputStream = new ByteArrayInputStream("Hello world !".getBytes());
-		LinkedHashSet<InputStream> valuesToInsert = Arrays.asSet(null, inputStream);
+		LinkedHashSet<InputStream> valuesToInsert = Arrays.asSet(inputStream, null);
 		ParameterBinder<InputStream> binarystreamBinder = DefaultParameterBinders.BINARYSTREAM_BINDER;
 		// HSQLDB and Derby are already tested in their respective classes
 		if (dataSource instanceof HSQLDBInMemoryDataSource) {

@@ -29,7 +29,7 @@ public class DerbyParameterBindersTest {
 	@Test
 	public void testBinaryStreamBinder() throws SQLException {
 		InputStream inputStream = new ByteArrayInputStream("Hello world !".getBytes());
-		LinkedHashSet<InputStream> valuesToInsert = Arrays.asSet(null, inputStream);
+		LinkedHashSet<InputStream> valuesToInsert = Arrays.asSet(inputStream, null);
 		ParameterBinder<InputStream> binarystreamBinder = DerbyParameterBinders.BINARYSTREAM_BINDER;
 		Set<InputStream> databaseContent = DefaultParameterBindersTest.insertAndSelect(dataSource, binarystreamBinder, "blob", valuesToInsert);
 		assertEquals(Arrays.asSet(null, "Hello world !"), DefaultParameterBindersTest.convertToString(databaseContent));
