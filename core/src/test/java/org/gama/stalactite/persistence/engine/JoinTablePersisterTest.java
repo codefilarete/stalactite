@@ -23,6 +23,7 @@ import org.gama.stalactite.persistence.mapping.IdMappingStrategy;
 import org.gama.stalactite.persistence.sql.Dialect;
 import org.gama.stalactite.persistence.sql.ddl.JavaTypeToSqlTypeMapping;
 import org.gama.stalactite.persistence.structure.Table;
+import org.gama.stalactite.persistence.structure.Table.Column;
 import org.gama.stalactite.test.JdbcConnectionProvider;
 import org.gama.stalactite.test.PairSetList;
 import org.junit.Before;
@@ -51,6 +52,8 @@ public class JoinTablePersisterTest {
 	private ClassMappingStrategy<Toto, Integer> totoClassMappingStrategy_ontoTable1, totoClassMappingStrategy2_ontoTable2;
 	private Dialect dialect;
 	private Table totoClassTable1, totoClassTable2;
+	private Column leftJoinColumn;
+	private Column rightJoinColumn;
 	
 	@Before
 	public void setUp() throws SQLException {
@@ -67,14 +70,14 @@ public class JoinTablePersisterTest {
 		Field fieldZ = Reflections.getField(Toto.class, "z");
 		
 		totoClassTable1 = new Table("Toto1");
-		totoClassTable1.new Column("id", fieldId.getType());
+		leftJoinColumn = totoClassTable1.new Column("id", fieldId.getType());
 		totoClassTable1.new Column("a", fieldA.getType());
 		totoClassTable1.new Column("b", fieldB.getType());
 		Map<String, Table.Column> columnMap1 = totoClassTable1.mapColumnsOnName();
 		columnMap1.get("id").setPrimaryKey(true);
 		
 		totoClassTable2 = new Table("Toto2");
-		totoClassTable2.new Column("id", fieldId.getType());
+		rightJoinColumn = totoClassTable2.new Column("id", fieldId.getType());
 		totoClassTable2.new Column("x", fieldX.getType());
 		totoClassTable2.new Column("y", fieldY.getType());
 		totoClassTable2.new Column("z", fieldZ.getType());
@@ -97,7 +100,7 @@ public class JoinTablePersisterTest {
 		identifierGenerator = new InMemoryCounterIdentifierGenerator();
 		BeforeInsertIdentifierManager<Toto, Integer> beforeInsertIdentifierManager = new BeforeInsertIdentifierManager<>
 				(IdMappingStrategy.toIdAccessor(identifierAccessor), identifierGenerator, Integer.class);
-		totoClassMappingStrategy_ontoTable1 = new ClassMappingStrategy(Toto.class, totoClassTable1,
+		totoClassMappingStrategy_ontoTable1 = new ClassMappingStrategy<>(Toto.class, totoClassTable1,
 				totoClassMapping1, identifierAccessor, beforeInsertIdentifierManager);
 		totoClassMappingStrategy2_ontoTable2 = new ClassMappingStrategy<>(Toto.class, totoClassTable2,
 				totoClassMapping2, identifierAccessor, AlreadyAssignedIdentifierManager.INSTANCE);
@@ -135,7 +138,7 @@ public class JoinTablePersisterTest {
 		testInstance.addMappingStrategy(totoClassMappingStrategy2_ontoTable2, totos -> {
 			// since we only want a replicate of totos in table2, we only need to return them
 			return totos;
-		});
+		}, leftJoinColumn, rightJoinColumn);
 	}
 	
 	public void assertCapturedPairsEqual(PairSetList<Integer, Integer> expectedPairs) {
@@ -264,7 +267,7 @@ public class JoinTablePersisterTest {
 		ResultSet resultSetMock = mock(ResultSet.class);
 		when(preparedStatement.executeQuery()).thenReturn(resultSetMock);
 		
-		testInstance.select(Arrays.asList(7, 13, 17, 23));
+		List<Toto> select = testInstance.select(Arrays.asList(7, 13, 17, 23));
 		
 		verify(preparedStatement, times(2)).executeQuery();
 		verify(preparedStatement, times(4)).setInt(indexCaptor.capture(), valueCaptor.capture());

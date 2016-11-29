@@ -1,29 +1,11 @@
 package org.gama.stalactite.persistence.engine;
 
-import java.sql.ResultSet;
 import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.function.Function;
-import java.util.stream.Collectors;
 
-import org.gama.lang.StringAppender;
-import org.gama.lang.Strings;
-import org.gama.lang.collection.Collections;
-import org.gama.lang.collection.Iterables;
-import org.gama.lang.collection.KeepOrderSet;
 import org.gama.lang.collection.PairIterator;
-import org.gama.lang.exception.Exceptions;
-import org.gama.sql.IConnectionProvider;
-import org.gama.sql.SimpleConnectionProvider;
-import org.gama.sql.binder.ParameterBinder;
-import org.gama.sql.dml.ReadOperation;
-import org.gama.sql.result.Row;
-import org.gama.sql.result.RowIterator;
 import org.gama.stalactite.persistence.engine.listening.NoopDeleteListener;
 import org.gama.stalactite.persistence.engine.listening.NoopDeleteRoughlyListener;
 import org.gama.stalactite.persistence.engine.listening.NoopInsertListener;
@@ -31,19 +13,12 @@ import org.gama.stalactite.persistence.engine.listening.NoopUpdateListener;
 import org.gama.stalactite.persistence.engine.listening.NoopUpdateRoughlyListener;
 import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
 import org.gama.stalactite.persistence.sql.Dialect;
-import org.gama.stalactite.persistence.sql.dml.ColumnParamedSelect;
-import org.gama.stalactite.persistence.structure.Table;
-import org.gama.stalactite.query.builder.SelectQueryBuilder;
-import org.gama.stalactite.query.model.SelectQuery;
-
-import static org.gama.sql.dml.ExpandableSQL.ExpandableParameter.SQL_PARAMETER_MARK_1;
-import static org.gama.sql.dml.ExpandableSQL.ExpandableParameter.SQL_PARAMETER_MARK_10;
-import static org.gama.sql.dml.ExpandableSQL.ExpandableParameter.SQL_PARAMETER_MARK_100;
+import org.gama.stalactite.persistence.structure.Table.Column;
 
 /**
  * Persister for entity with multiple joined tables by primary key.
  * A main table is defined by the {@link ClassMappingStrategy} passed to constructor. Complementary tables are defined
- * with {@link #addMappingStrategy(ClassMappingStrategy, Function)}.
+ * with {@link #addMappingStrategy(ClassMappingStrategy, Function, Column, Column)}.
  * Entity load is defined by a select that joins all tables, each {@link ClassMappingStrategy} is called to complete
  * entity loading.
  * 
@@ -51,37 +26,38 @@ import static org.gama.sql.dml.ExpandableSQL.ExpandableParameter.SQL_PARAMETER_M
  */
 public class JoinTablePersister<T, I> extends Persister<T, I> {
 	
-	/** Strategies and executors that must be applied, LinkedHashMap to keep order of {@link #addMappingStrategy(ClassMappingStrategy, Function)} parameter */
-	private Set<ClassMappingStrategy> strategies = new LinkedHashSet<>();
-	private final Dialect dialect;
+	/** Select clause helper because of its complexity */
+	private final JoinSelectExecutor<T, I> joinSelectExecutor;
 	
 	public JoinTablePersister(PersistenceContext persistenceContext, ClassMappingStrategy<T, I> mainMappingStrategy) {
-		this(mainMappingStrategy, persistenceContext.getDialect(), persistenceContext.getConnectionProvider(),
-				persistenceContext.getJDBCBatchSize());
+		this(mainMappingStrategy, persistenceContext.getDialect(), persistenceContext.getConnectionProvider(), persistenceContext.getJDBCBatchSize());
 	}
 	
 	public JoinTablePersister(ClassMappingStrategy<T, I> mainMappingStrategy, Dialect dialect, ConnectionProvider connectionProvider, int jdbcBatchSize) {
 		super(mainMappingStrategy, connectionProvider, dialect.getDmlGenerator(),
 				dialect.getWriteOperationRetryer(), jdbcBatchSize, dialect.getInOperatorMaxSize());
-		this.dialect = dialect;
+		this.joinSelectExecutor = new JoinSelectExecutor<>(mainMappingStrategy, dialect, connectionProvider);
 	}
 	
 	/**
 	 * Add a mapping strategy to be applied for persistence. It will be called after the main strategy
 	 * (passed in constructor), in order of the Collection, or in reverse order for delete actions to take into account
 	 * potential foreign keys.
-	 *
 	 */
-	public <U> void addMappingStrategy(ClassMappingStrategy<U, I> mappingStrategy, Function<Iterable<T>, Iterable<U>> complementaryInstancesProvider) {
-		this.strategies.add(mappingStrategy);
-		addInsertExecutor(mappingStrategy, complementaryInstancesProvider);
-		addUpdateExecutor(mappingStrategy, complementaryInstancesProvider);
-		addUpdateRoughlyExecutor(mappingStrategy, complementaryInstancesProvider);
-		addDeleteExecutor(mappingStrategy, complementaryInstancesProvider);
-		addDeleteRoughlyExecutor(mappingStrategy, complementaryInstancesProvider);
+	public <U> void addMappingStrategy(ClassMappingStrategy<U, I> mappingStrategy, Function<Iterable<T>, Iterable<U>> additionalInstancesProvider,
+									   Column leftJoinColumn, Column rightJoinColumn) {
+		addInsertExecutor(mappingStrategy, additionalInstancesProvider);
+		addUpdateExecutor(mappingStrategy, additionalInstancesProvider);
+		addUpdateRoughlyExecutor(mappingStrategy, additionalInstancesProvider);
+		addDeleteExecutor(mappingStrategy, additionalInstancesProvider);
+		addDeleteRoughlyExecutor(mappingStrategy, additionalInstancesProvider);
+		
+		// We use our own select system since ISelectListener is not aimed at joining table
+		// the addition must be done after mapping strategy addition because it needs them all
+		addSelectExecutor(mappingStrategy, null, leftJoinColumn, rightJoinColumn);
 	}
 	
-	private <U> void addInsertExecutor(ClassMappingStrategy<U, I> mappingStrategy, Function<Iterable<T>, Iterable<U>> complementaryInstancesProvider) {
+	private <U> void addInsertExecutor(ClassMappingStrategy<U, I> mappingStrategy, Function<Iterable<T>, Iterable<U>> additionalInstancesProvider) {
 		InsertExecutor<U, I> insertExecutor = newInsertExecutor(mappingStrategy,
 				getConnectionProvider(),
 				getDmlGenerator(),
@@ -91,12 +67,12 @@ public class JoinTablePersister<T, I> extends Persister<T, I> {
 		getPersisterListener().addInsertListener(new NoopInsertListener<T>() {
 			@Override
 			public void afterInsert(Iterable<T> iterables) {
-				insertExecutor.insert(complementaryInstancesProvider.apply(iterables));
+				insertExecutor.insert(additionalInstancesProvider.apply(iterables));
 			}
 		});
 	}
 	
-	private <U> void addUpdateExecutor(ClassMappingStrategy<U, I> mappingStrategy, Function<Iterable<T>, Iterable<U>> complementaryInstancesProvider) {
+	private <U> void addUpdateExecutor(ClassMappingStrategy<U, I> mappingStrategy, Function<Iterable<T>, Iterable<U>> additionalInstancesProvider) {
 		UpdateExecutor<U, I> updateExecutor = newUpdateExecutor(
 				mappingStrategy,
 				getConnectionProvider(),
@@ -107,16 +83,16 @@ public class JoinTablePersister<T, I> extends Persister<T, I> {
 		getPersisterListener().addUpdateListener(new NoopUpdateListener<T>() {
 			@Override
 			public void afterUpdate(Iterable<Map.Entry<T, T>> iterables, boolean allColumnsStatement) {
-				// Creation of an Entry<U, U> iterator from the Entry<T, T> iterator by applying complementaryInstancesProvider on each.
+				// Creation of an Entry<U, U> iterator from the Entry<T, T> iterator by applying additionalInstancesProvider on each.
 				// Not really optimized since we create 2 lists but I couldn't find better without changing method signature
-				// or calling numerous time complementaryInstancesProvider.apply(..) (one time per T instance)
+				// or calling numerous time additionalInstancesProvider.apply(..) (one time per T instance)
 				List<T> keysIterable = new ArrayList<>();
 				List<T> valuesIterable = new ArrayList<>();
 				for (Map.Entry<T, T> entry : iterables) {
 					keysIterable.add(entry.getKey());
 					valuesIterable.add(entry.getValue());
 				}
-				PairIterator<U, U> pairIterator = new PairIterator<>(complementaryInstancesProvider.apply(keysIterable), complementaryInstancesProvider.apply(valuesIterable));
+				PairIterator<U, U> pairIterator = new PairIterator<>(additionalInstancesProvider.apply(keysIterable), additionalInstancesProvider.apply(valuesIterable));
 				
 				updateExecutor.update(() -> pairIterator, allColumnsStatement);
 			}
@@ -171,12 +147,8 @@ public class JoinTablePersister<T, I> extends Persister<T, I> {
 		});
 	}
 	
-	public Set<ClassMappingStrategy> getMappingStrategies() {
-		return strategies;
-	}
-	
-	public Set<Table> getTables() {
-		return getMappingStrategies().stream().map(ClassMappingStrategy::getTargetTable).collect(Collectors.toCollection(HashSet::new));
+	private <U> void addSelectExecutor(ClassMappingStrategy<U, I> mappingStrategy, Function<T, Iterable<U>> setter, Column leftJoinColumn, Column rightJoinColumn) {
+		joinSelectExecutor.addComplementaryTables(mappingStrategy, setter, leftJoinColumn, rightJoinColumn);
 	}
 	
 	/**
@@ -186,157 +158,6 @@ public class JoinTablePersister<T, I> extends Persister<T, I> {
 	 */
 	@Override
 	protected List<T> doSelect(Iterable<I> ids) {
-		SelectExecutor selectExecutor = new SelectExecutor();
-		// creating query with join of all tables
-		selectExecutor.addComplementaryTables();
-		return selectExecutor.select(ids);
-	}
-	
-	
-	
-	private class SelectExecutor {
-		
-		private final SelectQuery selectQuery = new SelectQuery();
-		private final Map<String, ParameterBinder> selectParameterBinders = new HashMap<>();
-		private final Map<Table.Column, ParameterBinder> parameterBinders = new HashMap<>();
-		private final Map<Table.Column, int[]> inOperatorValueIndexes = new HashMap<>();
-		private final int blockSize = getInOperatorMaxSize();
-		private final Table.Column keyColumn = getTargetTable().getPrimaryKey();
-		
-		private List<T> result;
-		
-		public void addComplementaryTables() {
-			Table previousTable = getTargetTable();
-			addColumnsToSelect(getMappingStrategy().getTargetTable().getColumns(), selectQuery, selectParameterBinders);
-			// looping on secondary tables by joining them and adding their columns to select
-			SelectQuery.FluentFrom from = null;
-			for (ClassMappingStrategy complementaryStrategy : getMappingStrategies()) {
-				Table complementaryTable = complementaryStrategy.getTargetTable();
-				addColumnsToSelect(complementaryTable.getColumns(), selectQuery, selectParameterBinders);
-				if (from == null) {
-					// initialization of from with first encountered table
-					from = selectQuery.from(previousTable.getPrimaryKey(), complementaryTable.getPrimaryKey());
-				} else {
-					from.innerJoin(previousTable.getPrimaryKey(), complementaryTable.getPrimaryKey());
-				}
-			}
-		}
-		
-		private void bindInClause(int inSize) {
-			int[] indexes = new int[inSize];
-			for (int i = 0; i < inSize;) {
-				indexes[i] = ++i;
-			}
-			inOperatorValueIndexes.put(keyColumn, indexes);
-			parameterBinders.put(keyColumn, dialect.getColumnBinderRegistry().getBinder(keyColumn));
-		}
-		
-		private void addColumnsToSelect(KeepOrderSet<Table.Column> selectableColumns, SelectQuery selectQuery, Map<String, ParameterBinder> selectParameterBinders) {
-			for (Table.Column selectableColumn : selectableColumns) {
-				selectQuery.select(selectableColumn, selectableColumn.getAlias());
-				selectParameterBinders.put(selectableColumn.getName(), dialect.getColumnBinderRegistry().getBinder(selectableColumn));
-			}
-		}
-		
-		public List<T> select(Iterable<I> ids) {
-			// cutting ids into pieces, adjusting expected result size
-			List<List<I>> parcels = Collections.parcel(ids, blockSize);
-			result = new ArrayList<>(parcels.size() * blockSize);
-			
-			// Use same Connection for all operations
-			IConnectionProvider connectionProvider = new SimpleConnectionProvider(getConnectionProvider().getCurrentConnection());
-			// Creation of the where clause: we use a dynamic "in" operator clause to avoid multiple SelectQueryBuilder instanciation
-			DynamicInClause condition = new DynamicInClause();
-			selectQuery.where(keyColumn, condition);
-			SelectQueryBuilder queryBuilder = new SelectQueryBuilder(selectQuery);
-			List<I> lastBlock = Iterables.last(parcels);
-			// keep only full blocks to run them on the fully filled "in" operator
-			if (lastBlock.size() != blockSize) {
-				parcels = Collections.cutTail(parcels);
-			}
-			if (!parcels.isEmpty()) {
-				// change parameter mark count to adapt "in" operator values
-				condition.setParamMarkCount(blockSize);
-				// adding "in" identifiers to where clause
-				bindInClause(blockSize);
-				execute(connectionProvider, queryBuilder, parcels);
-			}
-			if (!lastBlock.isEmpty()) {
-				// change parameter mark count to adapt "in" operator values
-				condition.setParamMarkCount(lastBlock.size());
-				bindInClause(lastBlock.size());
-				execute(connectionProvider, queryBuilder, java.util.Collections.singleton(lastBlock));
-			}
-			return result;
-		}
-		
-		private void execute(IConnectionProvider connectionProvider,
-								SelectQueryBuilder queryBuilder,
-								Iterable<? extends Iterable<I>> idsParcels) {
-			ColumnParamedSelect preparedSelect = new ColumnParamedSelect(queryBuilder.toSQL(), inOperatorValueIndexes, parameterBinders, selectParameterBinders);
-			ReadOperation<Table.Column> columnReadOperation = new ReadOperation<>(preparedSelect, connectionProvider);
-			for (Iterable<I> parcel : idsParcels) {
-				execute(columnReadOperation, parcel);
-			}
-		}
-		
-		private void execute(ReadOperation<Table.Column> operation, Iterable<I> ids) {
-			try(ReadOperation<Table.Column> closeableOperation = operation) {
-				operation.setValue(keyColumn, ids);
-				ResultSet resultSet = closeableOperation.execute();
-				RowIterator rowIterator = new RowIterator(resultSet, ((ColumnParamedSelect) closeableOperation.getSqlStatement()).getSelectParameterBinders());
-				while (rowIterator.hasNext()) {
-					result.add(transform(rowIterator));
-				}
-			} catch (Exception e) {
-				throw Exceptions.asRuntimeException(e);
-			}
-		}
-		
-		private T transform(RowIterator rowIterator) {
-			Row row = rowIterator.next();
-			// get entity from main mapping stategy
-			T t = getMappingStrategy().transform(row);
-			// complete entity load with complementary mapping strategy
-			for (ClassMappingStrategy<T, ?> classMappingStrategy : strategies) {
-				classMappingStrategy.getDefaultMappingStrategy().getRowTransformer().applyRowToBean(row, t);
-			}
-			return t;
-		}
-	}
-	
-	
-	private static class DynamicInClause implements CharSequence {
-		
-		private String dynamicIn;
-		
-		public DynamicInClause setParamMarkCount(int markCount) {
-			StringAppender result = new StringAppender(10 + markCount * SQL_PARAMETER_MARK_1.length());
-			Strings.repeat(result.getAppender(), markCount, SQL_PARAMETER_MARK_1, SQL_PARAMETER_MARK_100, SQL_PARAMETER_MARK_10);
-			result.cutTail(2);
-			result.wrap("in (", ")");
-			dynamicIn = result.toString();
-			return this;
-		}
-		
-		@Override
-		public int length() {
-			return dynamicIn.length();
-		}
-		
-		@Override
-		public char charAt(int index) {
-			return dynamicIn.charAt(index);
-		}
-		
-		@Override
-		public CharSequence subSequence(int start, int end) {
-			return dynamicIn.subSequence(start, end);
-		}
-		
-		@Override
-		public String toString() {
-			return dynamicIn;
-		}
+		return joinSelectExecutor.select(ids);
 	}
 }

@@ -35,6 +35,8 @@ public class ClassMappingStrategy<T, I> implements IEntityMappingStrategy<T, I> 
 	
 	private final Set<Column> updatableColumns;
 	
+	private final Set<Column> selectableColumns;
+	
 	private final Map<PropertyAccessor, IEmbeddedBeanMapper> mappingStrategies;
 	
 	private final IdMappingStrategy<T, I> idMappingStrategy;
@@ -52,10 +54,12 @@ public class ClassMappingStrategy<T, I> implements IEntityMappingStrategy<T, I> 
 		this.defaultMappingStrategy = new EmbeddedBeanMappingStrategy<>(classToPersist, targetTable, propertyToColumn);
 		this.insertableColumns = new LinkedHashSet<>();
 		this.updatableColumns = new LinkedHashSet<>();
+		this.selectableColumns = new LinkedHashSet<>();
 		this.mappingStrategies = new HashMap<>();
 		this.idMappingStrategy = new IdMappingStrategy<>(identifierProperty, identifierInsertionManager);
 		fillInsertableColumns();
 		fillUpdatableColumns();
+		fillSelectableColumns();
 		// identifierAccessor must be the same instance as those stored in propertyToColumn for Map.remove method used in foreach()
 		Column identifierColumn = propertyToColumn.get(identifierProperty);
 		if (!identifierColumn.isPrimaryKey()) {
@@ -91,6 +95,10 @@ public class ClassMappingStrategy<T, I> implements IEntityMappingStrategy<T, I> 
 	 */
 	public Set<Column> getUpdatableColumns() {
 		return updatableColumns;
+	}
+	
+	public Set<Column> getSelectableColumns() {
+		return selectableColumns;
 	}
 	
 	public IdMappingStrategy<T, I> getIdMappingStrategy() {
@@ -182,6 +190,16 @@ public class ClassMappingStrategy<T, I> implements IEntityMappingStrategy<T, I> 
 	
 	private void addUpdatableColumns(IEmbeddedBeanMapper<?> iEmbeddedBeanMapper) {
 		updatableColumns.addAll(iEmbeddedBeanMapper.getColumns());
+	}
+	
+	private void fillSelectableColumns() {
+		selectableColumns.clear();
+		addSelectableColumns(defaultMappingStrategy);
+		mappingStrategies.values().forEach(this::addSelectableColumns);
+	}
+	
+	private void addSelectableColumns(IEmbeddedBeanMapper<?> iEmbeddedBeanMapper) {
+		selectableColumns.addAll(iEmbeddedBeanMapper.getColumns());
 	}
 	
 	public Map<Column, Object> getVersionedKeyValues(T t) {
