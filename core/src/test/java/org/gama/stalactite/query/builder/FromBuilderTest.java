@@ -19,35 +19,39 @@ public class FromBuilderTest {
 	
 	@DataProvider
 	public static Object[][] testToSQL_data() {
-		final Table tableToto = new Table(null, "Toto");
+		Table tableToto = new Table(null, "Toto");
 		Column colTotoA = tableToto.new Column("a", String.class);
 		Column colTotoB = tableToto.new Column("b", String.class);
-		final Table tableTata = new Table(null, "Tata");
+		Table tableTata = new Table(null, "Tata");
 		Column colTataA = tableTata.new Column("a", String.class);
 		Column colTataB = tableTata.new Column("b", String.class);
-		final Table tableTutu = new Table(null, "Tutu");
+		Table tableTutu = new Table(null, "Tutu");
 		Column colTutuA = tableTutu.new Column("a", String.class);
 		Column colTutuB = tableTutu.new Column("b", String.class);
 		
+		Table tableToto2 = new Table(null, "Toto2");
+		Column colToto2A = tableToto2.new Column("a", String.class);
+		Column colToto2B = tableToto2.new Column("b", String.class);
+		
 		return new Object[][] {
-				// test écriture From avec des Tables
-				// 1 jointure, avec ou sans alias
+				// testing syntax with Table API
+				// 1 join, with or without alias
 				{ new From().innerJoin(tableToto, tableTata, "Toto.id = Tata.id"), "Toto inner join Tata on Toto.id = Tata.id" },
 				{ new From().innerJoin(tableToto, "to", tableTata, "ta", "to.id = ta.id"), "Toto as to inner join Tata as ta on to.id = ta.id" },
 				{ new From().leftOuterJoin(tableToto, tableTata, "Toto.id = Tata.id"), "Toto left outer join Tata on Toto.id = Tata.id" },
 				{ new From().leftOuterJoin(tableToto, "to", tableTata, "ta", "to.id = ta.id"), "Toto as to left outer join Tata as ta on to.id = ta.id" },
 				{ new From().rightOuterJoin(tableToto, tableTata, "Toto.id = Tata.id"), "Toto right outer join Tata on Toto.id = Tata.id" },
 				{ new From().rightOuterJoin(tableToto, "to", tableTata, "ta", "to.id = ta.id"), "Toto as to right outer join Tata as ta on to.id = ta.id" },
-				// 2 jointures, avec ou sans alias
+				// 2 joins, with or without alias
 				{ new From().innerJoin(tableToto, tableTata, "Toto.a = Tata.a").innerJoin(tableToto, tableTutu, "Toto.b = Tutu.b"),
 						"Toto inner join Tata on Toto.a = Tata.a inner join Tutu on Toto.b = Tutu.b" },
-				{ new From().innerJoin(tableToto, "to", tableTata, "ta", "to.a = ta.a").innerJoin(tableToto, tableTutu, "to.b = Tutu.b"),
+				{ new From().innerJoin(tableToto, "to", tableTata, "ta", "to.a = ta.a").innerJoin(tableToto, "to", tableTutu, null, "to.b = Tutu.b"),
 						"Toto as to inner join Tata as ta on to.a = ta.a inner join Tutu on to.b = Tutu.b" },
-				{ new From().innerJoin(tableToto, tableTata, "to.a = Tata.a").innerJoin(tableToto, "to", tableTutu, "tu", "to.b = tu.b"),
+				{ new From().innerJoin(tableToto, "to", tableTata, null, "to.a = Tata.a").innerJoin(tableToto, "to", tableTutu, "tu", "to.b = tu.b"),
 						"Toto as to inner join Tata on to.a = Tata.a inner join Tutu as tu on to.b = tu.b" },
 				
-				// test écriture From avec des Columns
-				// 1 jointure, avec ou sans alias
+				// testing syntax with Column API
+				// 1 join, with or without alias
 				{ new From().innerJoin(colTotoA, colTataA), "Toto inner join Tata on Toto.a = Tata.a" },
 				{ new From().innerJoin(colTotoA, "to", colTataA, "ta"), "Toto as to inner join Tata as ta on to.a = ta.a" },
 				{ new From().leftOuterJoin(colTotoA, colTataA), "Toto left outer join Tata on Toto.a = Tata.a" },
@@ -55,41 +59,42 @@ public class FromBuilderTest {
 				{ new From().rightOuterJoin(colTotoA, colTataA), "Toto right outer join Tata on Toto.a = Tata.a" },
 				{ new From().rightOuterJoin(colTotoA, "to", colTataA, "ta"), "Toto as to right outer join Tata as ta on to.a = ta.a" },
 				
-				// 2 jointures, avec ou sans alias
+				// 2 joins, with or without alias
 				{ new From().innerJoin(colTotoA, colTataA).innerJoin(colTotoB, colTutuB),
 						"Toto inner join Tata on Toto.a = Tata.a inner join Tutu on Toto.b = Tutu.b" },
-				{ new From().innerJoin(colTotoA, "to", colTataA, "ta").innerJoin(colTotoB, colTutuB),
+				{ new From().innerJoin(colTotoA, "to", colTataA, "ta").innerJoin(colTotoB, "to", colTutuB, null),
 						"Toto as to inner join Tata as ta on to.a = ta.a inner join Tutu on to.b = Tutu.b" },
-				{ new From().innerJoin(colTotoA, colTataA).innerJoin(colTotoB, "to", colTutuB, "tu"),
+				{ new From().innerJoin(colTotoA, "to", colTataA, "ta").crossJoin(tableToto2).innerJoin(colToto2B, colTutuB),
+						"Toto as to inner join Tata as ta on to.a = ta.a cross join Toto2 inner join Tutu on Toto2.b = Tutu.b" },
+				{ new From().innerJoin(colTotoA, "to", colTataA, null).innerJoin(colTotoB, "to", colTutuB, "tu"),
 						"Toto as to inner join Tata on to.a = Tata.a inner join Tutu as tu on to.b = tu.b" },
-				
-				{ new From().innerJoin(colTotoA, "to", colTataA, "ta").innerJoin(colTotoB, null, colTutuB, "tu").innerJoin(colTutuB, colTataA),
+				{ new From().innerJoin(colTotoA, "to", colTataA, "ta").innerJoin(colTotoB, "to", colTutuB, "tu").innerJoin(colTutuB, "tu", colTataA, "ta"),
 						"Toto as to inner join Tata as ta on to.a = ta.a inner join Tutu as tu on to.b = tu.b inner join Tata as ta on tu.b = ta.a" },
-				
-				// mix par Table et par Column
+
+				// mix with Table and Column
 				{ new From().innerJoin(tableToto, tableTata, "Toto.a = Tata.a").innerJoin(colTotoB, colTutuB),
 						"Toto inner join Tata on Toto.a = Tata.a inner join Tutu on Toto.b = Tutu.b" },
 				
-				// NB: {{ }} necessary to return From instance type, not crossJoin() return type
-				{ new From() {{ add(tableToto); }},
+				// testing syntax with cross join
+				{ new From().add(tableToto),
 						"Toto" },
-				{ new From() {{ add(tableToto).crossJoin(tableTata); }},
+				{ new From().add(tableToto).crossJoin(tableTata),
 						"Toto cross join Tata" },
-				{ new From() {{ add(tableToto).innerJoin(tableTata, "id = id"); }},
+				{ new From().innerJoin(tableToto, tableTata, "id = id"),
 						"Toto inner join Tata on id = id" },
-				{ new From() {{ add(tableToto).crossJoin(tableTata).innerJoin(tableTutu, "id = id"); }},
-						"Toto cross join Tata inner join Tutu on id = id" },
-				{ new From() {{ add(tableToto).leftOuterJoin(tableTata, "id = id"); }},
+				{ new From().add(tableToto, "to").crossJoin(tableTata).innerJoin(tableToto, "to", tableTutu, "", "id = id"),
+						"Toto as to cross join Tata inner join Tutu on id = id" },
+				{ new From().add(tableToto, "to").crossJoin(tableTata).innerJoin(colTotoA, "to", colTutuA, ""),
+						"Toto as to cross join Tata inner join Tutu on to.a = Tutu.a" },
+				{ new From().add(tableToto).leftOuterJoin(tableToto, tableTata, "id = id"),
 						"Toto left outer join Tata on id = id" },
-				{ new From() {{ add(tableToto).crossJoin(tableTata).leftOuterJoin(tableTutu, "id = id"); }},
+				{ new From().add(tableToto).crossJoin(tableTata).leftOuterJoin(tableTata, tableTutu, "id = id"),
 						"Toto cross join Tata left outer join Tutu on id = id" },
-				{ new From() {{ add(tableToto).rightOuterJoin(tableTata, "id = id"); }},
+				{ new From().add(tableToto).rightOuterJoin(tableToto, tableTata, "id = id"),
 						"Toto right outer join Tata on id = id" },
-				{ new From() {{ add(tableToto).crossJoin(tableTata).rightOuterJoin(tableTutu, "id = id"); }},
+				{ new From().add(tableToto).crossJoin(tableTata).rightOuterJoin(tableToto, tableTutu, "id = id"),
 						"Toto cross join Tata right outer join Tutu on id = id" },
-
 		};
-		
 	}
 	
 	@Test

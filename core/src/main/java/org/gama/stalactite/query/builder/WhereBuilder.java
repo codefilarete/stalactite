@@ -1,6 +1,5 @@
 package org.gama.stalactite.query.builder;
 
-import java.util.EnumMap;
 import java.util.Map;
 
 import org.gama.lang.StringAppender;
@@ -17,16 +16,9 @@ import org.gama.stalactite.query.model.RawCriterion;
  */
 public class WhereBuilder extends AbstractDMLBuilder {
 
-	private static final EnumMap<LogicalOperator, String> LOGICAL_OPERATOR_NAMES = new EnumMap<>(LogicalOperator.class);
-	
 	public static final String AND = "and";
 	public static final String OR = "or";
 
-	static {
-		LOGICAL_OPERATOR_NAMES.put(LogicalOperator.And, AND);
-		LOGICAL_OPERATOR_NAMES.put(LogicalOperator.Or, OR);
-	}
-	
 	private final Criteria where;
 
 	public WhereBuilder(Criteria where, Map<Table, String> tableAliases) {
@@ -66,7 +58,7 @@ public class WhereBuilder extends AbstractDMLBuilder {
 			if (o instanceof Column) {
 				sql.cat(getName((Column) o));
 			} else if (o instanceof CharSequence) {
-				sql.cat((CharSequence) o);
+				sql.cat(o);
 			} else {
 				throw new IllegalArgumentException("Unknown criterion type " + criterion.getClass());
 			}
@@ -83,12 +75,14 @@ public class WhereBuilder extends AbstractDMLBuilder {
 		}
 	}
 	
-//	protected void cat(Criteria criteriaSuite, StringAppender sql) {
-//		WhereBuilder whereBuilder = new WhereBuilder(criteriaSuite, tableAliases);
-//		sql.cat("(", whereBuilder.toSQL(), ")");
-//	}
-
-	String getName(LogicalOperator operator) {
-		return LOGICAL_OPERATOR_NAMES.get(operator);
+	private String getName(LogicalOperator operator) {
+		switch (operator) {
+			case And:
+				return AND;
+			case Or:
+				return OR;
+			default:
+				throw new IllegalArgumentException("Operator " + operator + " is unknown");
+		}
 	}
 }

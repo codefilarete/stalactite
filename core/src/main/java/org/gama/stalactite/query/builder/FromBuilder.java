@@ -1,16 +1,21 @@
 package org.gama.stalactite.query.builder;
 
-import java.util.function.BiPredicate;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Comparator;
+import java.util.SortedSet;
+import java.util.TreeSet;
 
 import org.gama.lang.StringAppender;
 import org.gama.lang.Strings;
 import org.gama.lang.bean.Objects;
+import org.gama.lang.collection.Iterables;
 import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.query.model.From;
-import org.gama.stalactite.query.model.From.AbstractJoin;
 import org.gama.stalactite.query.model.From.AliasedTable;
 import org.gama.stalactite.query.model.From.ColumnJoin;
 import org.gama.stalactite.query.model.From.CrossJoin;
+import org.gama.stalactite.query.model.From.IJoin;
 import org.gama.stalactite.query.model.From.Join;
 import org.gama.stalactite.query.model.From.RawTableJoin;
 
@@ -18,13 +23,6 @@ import org.gama.stalactite.query.model.From.RawTableJoin;
  * @author Guillaume Mary
  */
 public class FromBuilder extends AbstractDMLBuilder implements SQLBuilder {
-	
-	private static final String INNER_JOIN = " inner join ";
-	private static final String LEFT_OUTER_JOIN = " left outer join ";
-	private static final String RIGHT_OUTER_JOIN = " right outer join ";
-	
-	private static final BiPredicate<String, String> EQUALS_IGNORE_CASE_PREDICATE = (s, s2) -> s.compareToIgnoreCase(s2) == 0;
-	
 	
 	private final From from;
 
@@ -35,100 +33,123 @@ public class FromBuilder extends AbstractDMLBuilder implements SQLBuilder {
 
 	@Override
 	public String toSQL() {
-		StringAppender sql = new StringAppender(200);
+		StringAppender sql = new FromGenerator();
 		
 		if (from.getJoins().isEmpty()) {
 			// invalid SQL
 			throw new IllegalArgumentException("Empty from");
 		} else {
-			// necessary for join table calculation
-			AbstractJoin previousJoin = null;
-			boolean isFirst = true;
-			for (AbstractJoin abstractJoin : from) {
-				if (isFirst) {
-					cat(abstractJoin.getLeftTable(), sql);
-				}
-				if (abstractJoin instanceof Join) {
-					Join localPreviousJoin = null;
-					if (previousJoin instanceof CrossJoin) {
-						sql.cat(" cross join ");
-						cat(abstractJoin.getLeftTable(), sql);
+			Comparator<AliasedTable> aliasedTableComparator = (t1, t2) -> toString(t1).compareToIgnoreCase(toString(t2));
+			SortedSet<AliasedTable> addedTables = new TreeSet<>(aliasedTableComparator);
+			for (IJoin iJoin : from) {
+				if (iJoin instanceof Join) {
+					Join join = (Join) iJoin;
+					AliasedTable aliasedTable;
+					if (addedTables.isEmpty()) {
+						addedTables.add(join.getLeftTable());
+					}
+					
+					Collection<AliasedTable> nonAddedTable = new ArrayList<>(); 
+					if (addedTables.contains(join.getLeftTable())) {
+						nonAddedTable.add(join.getRightTable());
 					} else {
-						localPreviousJoin = (Join) previousJoin;
+						if (addedTables.contains(join.getRightTable())) {
+							nonAddedTable.add(join.getLeftTable());
+						}
 					}
-					Join join = (Join) abstractJoin;
-					Table joinTable = localPreviousJoin == null ? join.getRightTable().getTable() : diff(localPreviousJoin, join);
-					String joinClause = null;
-					if (join instanceof RawTableJoin) {
-						joinClause = ((RawTableJoin) join).getJoinClause();
-					} else if (join instanceof ColumnJoin) {
-						joinClause = getName(((ColumnJoin) join).getLeftColumn()) + " = " + getName(((ColumnJoin) join).getRightColumn());
+					if (nonAddedTable.isEmpty()) {
+						throw new UnsupportedOperationException("Join is declared on non-added tables : "
+								+ toString(join.getLeftTable()) + " / " + toString(join.getRightTable()));
+					} else if (nonAddedTable.size() == 2) {
+						throw new UnsupportedOperationException("Join is declared on already-added tables : "
+								+ toString(join.getLeftTable()) + " / " + toString(join.getRightTable()));
 					} else {
-						// did I miss something ?
-						throw new UnsupportedOperationException("From building is not implemented for " + join.getClass().getName());
+						aliasedTable = Iterables.first(nonAddedTable);
 					}
-					cat(joinTable, join.getJoinDirection(), joinClause, sql);
-				} else if (abstractJoin instanceof CrossJoin) {
-					if (!isFirst) {
-						sql.cat(" cross join ");
-						cat(abstractJoin.getLeftTable(), sql);
-					}
+					
+					join.getRightTable();
+					sql.cat(join);
+					addedTables.add(aliasedTable);
+				} else if (iJoin instanceof CrossJoin) {
+					sql.cat(iJoin);
+					addedTables.add(iJoin.getLeftTable());
 				}
-				previousJoin = abstractJoin;
-				isFirst = false;
 			}
-			
 		}
-		
 		return sql.toString();
 	}
-
-	/**
-	 * @return the table in join2 that is missing in join1, throw an exception if all table of join 2 are in join1
-	 */
-	private Table diff(Join join1, Join join2) {
-		AliasedTable commonTable = null;
-		if (equals(join2.getRightTable(), join1.getRightTable()) || equals(join2.getRightTable(), join1.getLeftTable())) {
-			commonTable = join2.getLeftTable();
-		} else if (equals(join2.getLeftTable(), join1.getRightTable()) || equals(join2.getLeftTable(), join1.getLeftTable())) {
-			commonTable = join2.getRightTable();
-		} else {
-			throw new IllegalArgumentException("Second join doesn't join on new table");
-		}
-		return commonTable.getTable();
+	
+	private static String toString(AliasedTable table) {
+		return table.getTable().getAbsoluteName() + " as " + table.getAlias();
 	}
 	
-	private boolean equals(AliasedTable t1, AliasedTable t2) {
-		// NB: il faut comparer les tables avec leur alias, mais pas celui de AliasedTable car ici il peut ne pas
-		// avoir d'alias (selon la méthode de joiture appelée), c'est celui du From qui fait foi
-		return t1.getTable().getName().compareToIgnoreCase(t2.getTable().getName()) == 0
-				&& Objects.equalsWithNull(getAlias(t1.getTable()), getAlias(t2.getTable()), EQUALS_IGNORE_CASE_PREDICATE);
-	}
-
-	protected void cat(Table rightTable, Boolean joinDirection, String joinClause, StringAppender sql) {
-		String joinType;
-		if (joinDirection == null) {
-			joinType = INNER_JOIN;
-		} else if (!joinDirection) {
-			joinType = LEFT_OUTER_JOIN;
-		} else {
-			joinType = RIGHT_OUTER_JOIN;
+	/**
+	 * A dedicated {@link StringAppender} for the From clause
+	 */
+	private class FromGenerator extends StringAppender {
+		
+		private static final String INNER_JOIN = " inner join ";
+		private static final String LEFT_OUTER_JOIN = " left outer join ";
+		private static final String RIGHT_OUTER_JOIN = " right outer join ";
+		private static final String CROSS_JOIN = " cross join ";
+		private static final String ON = " on ";
+		
+		public FromGenerator() {
+			super(200);
 		}
-		sql.cat(joinType);
-		cat(rightTable, sql);
-		sql.cat(" on ", joinClause);
+		
+		/** Overriden to dispatch to dedicated cat methods */
+		@Override
+		public StringAppender cat(Object o) {
+			if (o instanceof AliasedTable) {
+				return cat((AliasedTable) o);
+			} else if (o instanceof CrossJoin) {
+				return cat((CrossJoin) o);
+			} else if (o instanceof Join) {
+				return cat((Join) o);
+			} else {
+				return super.cat(o);
+			}
+		}
+		
+		private StringAppender cat(AliasedTable aliasedTable) {
+			Table table = aliasedTable.getTable();
+			String tableAlias = Objects.preventNull(aliasedTable.getAlias(), getAlias(table));
+			return cat(table.getName()).catIf(!Strings.isEmpty(tableAlias), " as " + tableAlias);
+		}
+		
+		private StringAppender cat(CrossJoin join) {
+			catIf(length() > 0, CROSS_JOIN).cat(join.getLeftTable());
+			return this;
+		}
+		
+		private StringAppender cat(Join join) {
+			catIf(length() == 0, join.getLeftTable());
+			cat(join.getJoinDirection(), join.getRightTable());
+			if (join instanceof RawTableJoin) {
+				cat(((RawTableJoin) join).getJoinClause());
+			} else if (join instanceof ColumnJoin) {
+				ColumnJoin columnJoin = (ColumnJoin) join;
+				CharSequence leftPrefix = Strings.preventEmpty(columnJoin.getLeftTable().getAlias(), columnJoin.getLeftTable().getTable().getName());
+				CharSequence rightPrefix = Strings.preventEmpty(columnJoin.getRightTable().getAlias(), columnJoin.getRightTable().getTable().getName());
+				cat(leftPrefix, ".", columnJoin.getLeftColumn().getName(), " = ", rightPrefix, ".", columnJoin.getRightColumn().getName());
+			} else {
+				// did I miss something ?
+				throw new UnsupportedOperationException("From building is not implemented for " + join.getClass().getName());
+			}
+			return this;
+		}
+		
+		protected void cat(Boolean joinDirection, AliasedTable joinTable) {
+			String joinType;
+			if (joinDirection == null) {
+				joinType = INNER_JOIN;
+			} else if (!joinDirection) {
+				joinType = LEFT_OUTER_JOIN;
+			} else {
+				joinType = RIGHT_OUTER_JOIN;
+			}
+			cat(joinType, joinTable, ON);
+		}
 	}
-
-	private void cat(AliasedTable leftTable, StringAppender sql) {
-		cat(leftTable.getTable(), Objects.preventNull(leftTable.getAlias(), getAlias(leftTable.getTable())), sql);
-	}
-
-	private void cat(Table leftTable, StringAppender sql) {
-		cat(leftTable, getAlias(leftTable), sql);
-	}
-
-	private void cat(Table leftTable, String tableAlias, StringAppender sql) {
-		sql.cat(leftTable.getName()).catIf(!Strings.isEmpty(tableAlias), " as ", tableAlias);
-	}
-
 }

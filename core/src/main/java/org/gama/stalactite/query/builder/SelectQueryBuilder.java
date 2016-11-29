@@ -12,9 +12,9 @@ import org.gama.stalactite.query.model.SelectQuery.Having;
 public class SelectQueryBuilder extends AbstractDMLBuilder {
 	
 	private final SelectQuery selectQuery;
-	private SelectBuilder selectBuilder;
-	private FromBuilder fromBuilder;
-	private WhereBuilder whereBuilder;
+	private final SelectBuilder selectBuilder;
+	private final FromBuilder fromBuilder;
+	private final WhereBuilder whereBuilder;
 	
 	public SelectQueryBuilder(SelectQuery selectQuery) {
 		super(selectQuery.getFrom().getTableAliases());
@@ -50,7 +50,7 @@ public class SelectQueryBuilder extends AbstractDMLBuilder {
 	private void cat(GroupBy groupBy, StringAppender sql) {
 		for (Object o : groupBy.getGroups()) {
 			if (o instanceof String) {
-				sql.cat((String) o);
+				sql.cat(o);
 			} else if (o instanceof Column) {
 				sql.cat(getName((Column) o));
 			}
