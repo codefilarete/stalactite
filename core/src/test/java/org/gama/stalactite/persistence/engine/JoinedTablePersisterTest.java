@@ -40,9 +40,9 @@ import static org.mockito.Mockito.when;
 /**
  * @author Guillaume Mary
  */
-public class JoinTablePersisterTest {
+public class JoinedTablePersisterTest {
 	
-	private JoinTablePersister<Toto, Integer> testInstance;
+	private JoinedTablePersister<Toto, Integer> testInstance;
 	private PreparedStatement preparedStatement;
 	private ArgumentCaptor<Integer> valueCaptor;
 	private ArgumentCaptor<Integer> indexCaptor;
@@ -134,7 +134,7 @@ public class JoinTablePersisterTest {
 		DataSource dataSource = mock(DataSource.class);
 		when(dataSource.getConnection()).thenReturn(connection);
 		transactionManager.setDataSource(dataSource);
-		testInstance = new JoinTablePersister<>(totoClassMappingStrategy_ontoTable1, dialect, transactionManager, 3);
+		testInstance = new JoinedTablePersister<>(totoClassMappingStrategy_ontoTable1, dialect, transactionManager, 3);
 		testInstance.addMappingStrategy(totoClassMappingStrategy2_ontoTable2, totos -> {
 			// since we only want a replicate of totos in table2, we only need to return them
 			return totos;

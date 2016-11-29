@@ -24,16 +24,16 @@ import org.gama.stalactite.persistence.structure.Table.Column;
  * 
  * @author Guillaume Mary
  */
-public class JoinTablePersister<T, I> extends Persister<T, I> {
+public class JoinedTablePersister<T, I> extends Persister<T, I> {
 	
 	/** Select clause helper because of its complexity */
 	private final JoinSelectExecutor<T, I> joinSelectExecutor;
 	
-	public JoinTablePersister(PersistenceContext persistenceContext, ClassMappingStrategy<T, I> mainMappingStrategy) {
+	public JoinedTablePersister(PersistenceContext persistenceContext, ClassMappingStrategy<T, I> mainMappingStrategy) {
 		this(mainMappingStrategy, persistenceContext.getDialect(), persistenceContext.getConnectionProvider(), persistenceContext.getJDBCBatchSize());
 	}
 	
-	public JoinTablePersister(ClassMappingStrategy<T, I> mainMappingStrategy, Dialect dialect, ConnectionProvider connectionProvider, int jdbcBatchSize) {
+	public JoinedTablePersister(ClassMappingStrategy<T, I> mainMappingStrategy, Dialect dialect, ConnectionProvider connectionProvider, int jdbcBatchSize) {
 		super(mainMappingStrategy, connectionProvider, dialect.getDmlGenerator(),
 				dialect.getWriteOperationRetryer(), jdbcBatchSize, dialect.getInOperatorMaxSize());
 		this.joinSelectExecutor = new JoinSelectExecutor<>(mainMappingStrategy, dialect, connectionProvider);
