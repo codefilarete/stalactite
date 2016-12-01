@@ -24,6 +24,18 @@ import static org.mockito.Mockito.when;
 @RunWith(DataProviderRunner.class)
 public class JoinedStrategySelectTest {
 	
+	private static ClassMappingStrategy buildMockMappingStrategy(String tableName) {
+		return buildMockMappingStrategy(new Table(tableName));
+	}
+	
+	private static ClassMappingStrategy buildMockMappingStrategy(Table table) {
+		ClassMappingStrategy mappingStrategyMock = mock(ClassMappingStrategy.class);
+		when(mappingStrategyMock.getTargetTable()).thenReturn(table);
+		// the selected columns are plugged on the table ones
+		when(mappingStrategyMock.getSelectableColumns()).thenAnswer(invocation -> table.getColumns().asSet());
+		return mappingStrategyMock;
+	}
+	
 	// TODO: tester avec les stratégies bizarres
 
 	@DataProvider
@@ -49,7 +61,7 @@ public class JoinedStrategySelectTest {
 		assertEquals(expected, queryBuilder.toSQL());
 	}
 	
-	private static Object[] inheritance_tablePerClass_2Classes() {
+	private static Object[] inheritance_tablePerClass_2Classes_testData() {
 		ClassMappingStrategy totoMappingMock = buildMockMappingStrategy("Toto");
 		Table totoTable = totoMappingMock.getTargetTable();
 		Column totoPrimaryKey = totoTable.new Column("id", long.class);
@@ -66,18 +78,8 @@ public class JoinedStrategySelectTest {
 		);
 	}
 	
-	private static ClassMappingStrategy buildMockMappingStrategy(String tableName) {
-		return buildMockMappingStrategy(new Table(tableName));
-	}
-	
-	private static ClassMappingStrategy buildMockMappingStrategy(Table table) {
-		ClassMappingStrategy mappingStrategyMock = mock(ClassMappingStrategy.class);
-		when(mappingStrategyMock.getTargetTable()).thenReturn(table);
-		return mappingStrategyMock;
-	}
-	
 	@DataProvider
-	public static Object[][] testToSQL_multipleStrategyData() {
+	public static Object[][] dataToSQL_multipleStrategy() {
 		ClassMappingStrategy totoMappingMock = buildMockMappingStrategy("Toto");
 		Table totoTable = totoMappingMock.getTargetTable();
 		totoTable.new Column("id", long.class);
@@ -94,16 +96,16 @@ public class JoinedStrategySelectTest {
 		buildMockMappingStrategy(tata2Table);
 		
 		return $$(
-				inheritance_tablePerClass_2Classes(),
+				inheritance_tablePerClass_2Classes_testData(),
 				$(
 						totoMappingMock, tataMappingMock, totoOtherTableId, tataPrimaryKey,
-						"select Toto.id as Toto_id, Toto.name as Toto_name, Toto.otherTable_id as Toto_otherTable_id," +
-								" Tata.id as Tata_id from Toto inner join Tata on Toto.otherTable_id = Tata.id")
+						"select Toto.id as Toto_id, Toto.name as Toto_name, Toto.otherTable_id as Toto_otherTable_id,"
+								+ " Tata.id as Tata_id from Toto inner join Tata on Toto.otherTable_id = Tata.id")
 		);
 	}
 	
 	@Test
-	@UseDataProvider(value = "testToSQL_multipleStrategyData")
+	@UseDataProvider
 	public void testToSQL_multipleStrategy(ClassMappingStrategy rootMappingStrategy, ClassMappingStrategy classMappingStrategy,
 										   Column leftJoinColumn, Column rightJoinColumn,
 										   String expected) {
@@ -112,4 +114,118 @@ public class JoinedStrategySelectTest {
 		SelectQueryBuilder queryBuilder = new SelectQueryBuilder(testInstance.buildSelectQuery());
 		assertEquals(expected, queryBuilder.toSQL());
 	}
+	
+	@Test
+	public void testInheritance_tablePerClass_3Classes() {
+		ClassMappingStrategy totoMappingMock = buildMockMappingStrategy("Toto");
+		Table totoTable = totoMappingMock.getTargetTable();
+		Column totoPrimaryKey = totoTable.new Column("id", long.class);
+		// column for "noise" in select
+		totoTable.new Column("name", String.class);
+		
+		ClassMappingStrategy tataMappingMock = buildMockMappingStrategy("Tata");
+		Table tataTable = tataMappingMock.getTargetTable();
+		Column tataPrimaryKey = tataTable.new Column("id", long.class);
+		// column for "noise" in select
+		tataTable.new Column("name", String.class);
+		
+		ClassMappingStrategy tutuMappingMock = buildMockMappingStrategy("Tutu");
+		Table tutuTable = tutuMappingMock.getTargetTable();
+		Column tutuPrimaryKey = tutuTable.new Column("id", long.class);
+		// column for "noise" in select
+		tutuTable.new Column("name", String.class);
+		
+		JoinedStrategySelect testInstance = new JoinedStrategySelect(totoMappingMock, c -> null);
+		String tataAddKey = testInstance.add(JoinedStrategySelect.FIRST_STRATEGY_NAME, tataMappingMock, totoPrimaryKey, tataPrimaryKey, Function.identity());
+		testInstance.add(tataAddKey, tutuMappingMock, tataPrimaryKey, tutuPrimaryKey, Function.identity());
+		SelectQueryBuilder queryBuilder = new SelectQueryBuilder(testInstance.buildSelectQuery());
+		assertEquals("select"
+						+ " Toto.id as Toto_id, Toto.name as Toto_name"
+						+ ", Tata.id as Tata_id, Tata.name as Tata_name"
+						+ ", Tutu.id as Tutu_id, Tutu.name as Tutu_name"
+						+ " from Toto"
+						+ " inner join Tata on Toto.id = Tata.id"
+						+ " inner join Tutu on Tata.id = Tutu.id"
+				, queryBuilder.toSQL());
+	}
+	
+	@Test
+	public void testJoin_2Relations() {
+		ClassMappingStrategy totoMappingMock = buildMockMappingStrategy("Toto");
+		Table totoTable = totoMappingMock.getTargetTable();
+		Column totoPrimaryKey = totoTable.new Column("id", long.class);
+		// column for "noise" in select
+		totoTable.new Column("name", String.class);
+		Column tataId = totoTable.new Column("tataId", String.class);
+		Column tutuId = totoTable.new Column("tutuId", String.class);
+		
+		ClassMappingStrategy tataMappingMock = buildMockMappingStrategy("Tata");
+		Table tataTable = tataMappingMock.getTargetTable();
+		Column tataPrimaryKey = tataTable.new Column("id", long.class);
+		// column for "noise" in select
+		tataTable.new Column("name", String.class);
+		
+		ClassMappingStrategy tutuMappingMock = buildMockMappingStrategy("Tutu");
+		Table tutuTable = tutuMappingMock.getTargetTable();
+		Column tutuPrimaryKey = tutuTable.new Column("id", long.class);
+		// column for "noise" in select
+		tutuTable.new Column("name", String.class);
+		
+		JoinedStrategySelect testInstance = new JoinedStrategySelect(totoMappingMock, c -> null);
+		String tataAddKey = testInstance.add(JoinedStrategySelect.FIRST_STRATEGY_NAME, tataMappingMock, tataId, tataPrimaryKey, Function.identity());
+		testInstance.add(tataAddKey, tutuMappingMock, tutuId, tutuPrimaryKey, Function.identity());
+		SelectQueryBuilder queryBuilder = new SelectQueryBuilder(testInstance.buildSelectQuery());
+		assertEquals("select"
+						+ " Toto.id as Toto_id, Toto.name as Toto_name, Toto.tataId as Toto_tataId, Toto.tutuId as Toto_tutuId"
+						+ ", Tata.id as Tata_id, Tata.name as Tata_name"
+						+ ", Tutu.id as Tutu_id, Tutu.name as Tutu_name"
+						+ " from Toto"
+						+ " left outer join Tata on Toto.tataId = Tata.id"
+						+ " left outer join Tutu on Toto.tutuId = Tutu.id"
+				, queryBuilder.toSQL());
+	}
+	
+	@Test
+	public void testInheritance_tablePerClass_NClasses() {
+		ClassMappingStrategy totoMappingMock = buildMockMappingStrategy("Toto");
+		Table totoTable = totoMappingMock.getTargetTable();
+		Column totoPrimaryKey = totoTable.new Column("id", long.class);
+		// column for "noise" in select
+		totoTable.new Column("name", String.class);
+		
+		ClassMappingStrategy tataMappingMock = buildMockMappingStrategy("Tata");
+		Table tataTable = tataMappingMock.getTargetTable();
+		Column tataPrimaryKey = tataTable.new Column("id", long.class);
+		// column for "noise" in select
+		tataTable.new Column("name", String.class);
+		
+		ClassMappingStrategy tutuMappingMock = buildMockMappingStrategy("Tutu");
+		Table tutuTable = tutuMappingMock.getTargetTable();
+		Column tutuPrimaryKey = tutuTable.new Column("id", long.class);
+		// column for "noise" in select
+		tutuTable.new Column("name", String.class);
+		
+		ClassMappingStrategy titiMappingMock = buildMockMappingStrategy("Titi");
+		Table titiTable = titiMappingMock.getTargetTable();
+		Column titiPrimaryKey = titiTable.new Column("id", long.class);
+		// column for "noise" in select
+		titiTable.new Column("name", String.class);
+		
+		JoinedStrategySelect testInstance = new JoinedStrategySelect(totoMappingMock, c -> null);
+		String tataAddKey = testInstance.add(JoinedStrategySelect.FIRST_STRATEGY_NAME, tataMappingMock, totoPrimaryKey, tataPrimaryKey, Function.identity());
+		String tutuAddKey = testInstance.add(tataAddKey, tutuMappingMock, tataPrimaryKey, tutuPrimaryKey, Function.identity());
+		String titiAddKey = testInstance.add(JoinedStrategySelect.FIRST_STRATEGY_NAME, titiMappingMock, tataPrimaryKey, titiPrimaryKey, Function.identity());
+		SelectQueryBuilder queryBuilder = new SelectQueryBuilder(testInstance.buildSelectQuery());
+		assertEquals("select"
+						+ " Toto.id as Toto_id, Toto.name as Toto_name"
+						+ ", Tata.id as Tata_id, Tata.name as Tata_name"
+						+ ", Tutu.id as Tutu_id, Tutu.name as Tutu_name"
+						+ ", Titi.id as Titi_id, Titi.name as Titi_name"
+						+ " from Toto"
+						+ " inner join Tata on Toto.id = Tata.id"
+						+ " inner join Tutu on Tata.id = Tutu.id"
+						+ " inner join Titi on Tata.id = Titi.id"
+				, queryBuilder.toSQL());
+	}
+	
 }

@@ -27,7 +27,7 @@ import org.gama.stalactite.persistence.structure.Table.Column;
 public class JoinedTablePersister<T, I> extends Persister<T, I> {
 	
 	/** Select clause helper because of its complexity */
-	private final JoinSelectExecutor<T, I> joinSelectExecutor;
+	private final JoinedStrategySelectExecutor<T, I> joinedStrategySelectExecutor;
 	
 	public JoinedTablePersister(PersistenceContext persistenceContext, ClassMappingStrategy<T, I> mainMappingStrategy) {
 		this(mainMappingStrategy, persistenceContext.getDialect(), persistenceContext.getConnectionProvider(), persistenceContext.getJDBCBatchSize());
@@ -36,7 +36,7 @@ public class JoinedTablePersister<T, I> extends Persister<T, I> {
 	public JoinedTablePersister(ClassMappingStrategy<T, I> mainMappingStrategy, Dialect dialect, ConnectionProvider connectionProvider, int jdbcBatchSize) {
 		super(mainMappingStrategy, connectionProvider, dialect.getDmlGenerator(),
 				dialect.getWriteOperationRetryer(), jdbcBatchSize, dialect.getInOperatorMaxSize());
-		this.joinSelectExecutor = new JoinSelectExecutor<>(mainMappingStrategy, dialect, connectionProvider);
+		this.joinedStrategySelectExecutor = new JoinedStrategySelectExecutor<>(mainMappingStrategy, dialect, connectionProvider);
 	}
 	
 	/**
@@ -148,7 +148,7 @@ public class JoinedTablePersister<T, I> extends Persister<T, I> {
 	}
 	
 	private <U> void addSelectExecutor(ClassMappingStrategy<U, I> mappingStrategy, Function<T, Iterable<U>> setter, Column leftJoinColumn, Column rightJoinColumn) {
-		joinSelectExecutor.addComplementaryTables(mappingStrategy, setter, leftJoinColumn, rightJoinColumn);
+		joinedStrategySelectExecutor.addComplementaryTables(mappingStrategy, setter, leftJoinColumn, rightJoinColumn);
 	}
 	
 	/**
@@ -158,6 +158,6 @@ public class JoinedTablePersister<T, I> extends Persister<T, I> {
 	 */
 	@Override
 	protected List<T> doSelect(Iterable<I> ids) {
-		return joinSelectExecutor.select(ids);
+		return joinedStrategySelectExecutor.select(ids);
 	}
 }

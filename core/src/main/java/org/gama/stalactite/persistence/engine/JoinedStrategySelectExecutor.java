@@ -19,7 +19,7 @@ import org.gama.sql.binder.ParameterBinder;
 import org.gama.sql.dml.ReadOperation;
 import org.gama.sql.result.Row;
 import org.gama.sql.result.RowIterator;
-import org.gama.stalactite.persistence.engine.JoinedStrategySelect.StrategyJoin;
+import org.gama.stalactite.persistence.engine.JoinedStrategySelect.StrategyJoins;
 import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
 import org.gama.stalactite.persistence.sql.Dialect;
 import org.gama.stalactite.persistence.sql.dml.ColumnParamedSelect;
@@ -36,7 +36,7 @@ import static org.gama.sql.dml.ExpandableSQL.ExpandableParameter.SQL_PARAMETER_M
  * 
  * @author Guillaume Mary
  */
-public class JoinSelectExecutor<T, I> {
+public class JoinedStrategySelectExecutor<T, I> {
 	
 	/** The surrogate for joining the strategies, will help to build the SQL */
 	private final JoinedStrategySelect<T, I> joinedStrategySelect;
@@ -50,7 +50,7 @@ public class JoinSelectExecutor<T, I> {
 	private final Column keyColumn;
 	private List<T> result;
 	
-	JoinSelectExecutor(ClassMappingStrategy<T, I> classMappingStrategy, Dialect dialect, ConnectionProvider connectionProvider) {
+	JoinedStrategySelectExecutor(ClassMappingStrategy<T, I> classMappingStrategy, Dialect dialect, ConnectionProvider connectionProvider) {
 		this.joinedStrategySelect = new JoinedStrategySelect<>(classMappingStrategy, c -> dialect.getColumnBinderRegistry().getBinder(c));
 		this.dialect = dialect;
 		this.connectionProvider = connectionProvider;
@@ -146,10 +146,10 @@ public class JoinSelectExecutor<T, I> {
 	private T transform(RowIterator rowIterator) {
 		Row row = rowIterator.next();
 		// get entity from main mapping stategy
-		T t = joinedStrategySelect.giveRoot().transform(row);
+		T t = joinedStrategySelect.getRoot().transform(row);
 		// complete entity load with complementary mapping strategy
-		for (StrategyJoin strategyJoin : joinedStrategySelect.getStrategies()) {
-			Object transform = strategyJoin.getStrategy().transform(row);
+		for (StrategyJoins strategyJoins : joinedStrategySelect.getStrategies()) {
+			Object transform = strategyJoins.getStrategy().transform(row);
 //				classMappingStrategy.getDefaultMappingStrategy().getRowTransformer().applyRowToBean(row, t);
 		}
 		return t;
