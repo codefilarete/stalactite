@@ -67,6 +67,7 @@ public class ColumnedCollectionMappingStrategyTest {
 	
 	@DataProvider
 	public static Object[][] testGetInsertValuesData() {
+		setUpClass();
 		return new Object[][] {
 				{ Arrays.asList("a", "b", "c"), Maps.asMap(col1, "a").add(col2, "b").add(col3, "c").add(col4, null).add(col5, null) },
 				{ Arrays.asList("a", "b", null), Maps.asMap(col1, "a").add(col2, "b").add(col3, null).add(col4, null).add(col5, null) },
@@ -83,6 +84,7 @@ public class ColumnedCollectionMappingStrategyTest {
 	
 	@DataProvider
 	public static Object[][] testGetUpdateValues_diffOnlyData() {
+		setUpClass();
 		return new Object[][] {
 				{ Arrays.asList("a", "b", "c"), Arrays.asList("x", "y", "x"),
 						Maps.asMap(col1, "a").add(col2, "b").add(col3, "c") },
@@ -110,6 +112,7 @@ public class ColumnedCollectionMappingStrategyTest {
 	
 	@DataProvider
 	public static Object[][] testGetUpdateValues_allColumnsData() {
+		setUpClass();
 		return new Object[][] {
 				{ Arrays.asList("a", "b", "c"), Arrays.asList("x", "y", "x"),
 						Maps.asMap(col1, "a").add(col2, "b").add(col3, "c").add(col4, null).add(col5, null) },

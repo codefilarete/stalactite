@@ -11,6 +11,7 @@ import java.util.Set;
 import com.tngtech.java.junit.dataprovider.DataProvider;
 import com.tngtech.java.junit.dataprovider.DataProviderRunner;
 import com.tngtech.java.junit.dataprovider.UseDataProvider;
+import org.gama.lang.Reflections;
 import org.gama.lang.collection.Arrays;
 import org.gama.lang.collection.Maps;
 import org.gama.reflection.PropertyAccessor;
@@ -47,7 +48,7 @@ public class ClassMappingStrategyTest {
 	private static ClassMappingStrategy<Toto, Integer> testInstance;
 	
 	@BeforeClass
-	public static void setUpClass() throws NoSuchFieldException {
+	public static void setUpClass() {
 		persistentFieldHarverster = new PersistentFieldHarverster();
 		targetTable = new Table("Toto");
 		classMapping = persistentFieldHarverster.mapFields(Toto.class, targetTable);
@@ -60,10 +61,10 @@ public class ClassMappingStrategyTest {
 		colC = columnMapOnName.get("c");
 		
 		// Remplacement du mapping par défaut pour la List (attribut myListField) par une strategy adhoc
-		myListField = PropertyAccessor.forProperty(Toto.class.getDeclaredField("myList"));
+		myListField = PropertyAccessor.forProperty(Reflections.findField(Toto.class, "myList"));
 		classMapping.remove(myListField);
 		// Remplacement du mapping par défaut pour la Map (attribut myMapField) par une strategy adhoc
-		myMapField = PropertyAccessor.forProperty(Toto.class.getDeclaredField("myMap"));
+		myMapField = PropertyAccessor.forProperty(Reflections.findField(Toto.class, "myMap"));
 		classMapping.remove(myMapField);
 		
 		setUpTestInstance();
@@ -146,6 +147,7 @@ public class ClassMappingStrategyTest {
 	
 	@DataProvider
 	public static Object[][] testGetInsertValuesData() {
+		setUpClass();
 		return new Object[][] {
 				{ new Toto(1, 2, 3), Maps.asMap(colA, 1).add(colB, 2).add(colC, 3)
 						.add(colD1, null).add(colD2, null).add(colE1, null).add(colE2, null) },
@@ -170,6 +172,7 @@ public class ClassMappingStrategyTest {
 	
 	@DataProvider
 	public static Object[][] testGetUpdateValues_diffOnlyData() {
+		setUpClass();
 		return new Object[][] {
 				{ new Toto(1, 2, 3), new Toto(1, 5, 6), Maps.asMap(colB, 2).add(colC, 3)}, 
 				{ new Toto(1, 2, 3), new Toto(1, null, null), Maps.asMap(colB, 2).add(colC, 3) },
@@ -203,6 +206,7 @@ public class ClassMappingStrategyTest {
 	
 	@DataProvider
 	public static Object[][] testGetUpdateValues_allColumnsData() {
+		setUpClass();
 		return new Object[][] {
 				{ new Toto(1, 2, 3), new Toto(1, 5, 6),
 						Maps.asMap(colB, 2).add(colC, 3).add(colD1, null).add(colD2, null).add(colE1, null).add(colE2, null)},

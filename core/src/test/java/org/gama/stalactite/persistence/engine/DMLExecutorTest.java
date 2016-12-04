@@ -79,8 +79,8 @@ public abstract class DMLExecutorTest {
 		protected PersistenceConfiguration build() {
 			PersistenceConfiguration toReturn = new PersistenceConfiguration();
 			
-			final TableAndClass<T> tableAndClass = map(mappedClass, tableName);
-			final PropertyAccessor<T, I> primaryKeyField = PropertyAccessor.forProperty(tableAndClass.configurePrimaryKey(primaryKeyFieldName));
+			TableAndClass<T> tableAndClass = map(mappedClass, tableName);
+			PropertyAccessor<T, I> primaryKeyField = PropertyAccessor.forProperty(tableAndClass.configurePrimaryKey(primaryKeyFieldName));
 			
 			toReturn.classMappingStrategy = classMappingStrategyBuilder.apply(tableAndClass, primaryKeyField);
 			toReturn.targetTable = tableAndClass.targetTable;
@@ -117,8 +117,12 @@ public abstract class DMLExecutorTest {
 		
 	}
 	
+	/**
+	 * To be called by subclasses @DataProvider because @BeforeClass is not compatible with @DataProvider
+	 * (cf https://github.com/TNG/junit-dataprovider/wiki/Features#beforeclass-support)
+	 */
 	@BeforeClass
-	public static void setUpClass() {
+	public static void setUpDialect() {
 		JavaTypeToSqlTypeMapping simpleTypeMapping = new JavaTypeToSqlTypeMapping();
 		simpleTypeMapping.put(Integer.class, "int");
 		

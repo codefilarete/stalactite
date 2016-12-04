@@ -51,6 +51,7 @@ public class EmbeddedBeanMappingStrategyTest {
 	
 	@DataProvider
 	public static Object[][] testGetInsertValuesData() {
+		setUpClass();
 		return new Object[][] {
 				{ new Toto(1, 2, 3), Maps.asMap(colA, 1).add(colB, 2).add(colC, 3) },
 				{ new Toto(null, null, null), Maps.asMap(colA, null).add(colB, null).add(colC, null) },
@@ -68,6 +69,7 @@ public class EmbeddedBeanMappingStrategyTest {
 	
 	@DataProvider
 	public static Object[][] testGetUpdateValues_diffOnlyData() {
+		setUpClass();
 		return new Object[][] {
 				{ new Toto(1, 2, 3), new Toto(1, 5, 6), Maps.asMap(colB, 2).add(colC, 3) },
 				{ new Toto(1, 2, 3), new Toto(1, null, null), Maps.asMap(colB, 2).add(colC, 3) },

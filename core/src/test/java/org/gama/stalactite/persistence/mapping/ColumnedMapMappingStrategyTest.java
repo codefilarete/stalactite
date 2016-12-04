@@ -13,7 +13,6 @@ import org.gama.stalactite.persistence.sql.dml.PreparedUpdate.UpwhereColumn;
 import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.persistence.structure.Table.Column;
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -36,7 +35,7 @@ public class ColumnedMapMappingStrategyTest {
 	private static Map<Integer, Column> columnToKey;
 	private static Map<Column, Integer> keyToColumn;
 	
-	@BeforeClass
+//	@BeforeClass
 	public static void setUpClass() {
 		totoTable = new Table(null, "Toto");
 		final int nbCol = 5;
@@ -90,6 +89,7 @@ public class ColumnedMapMappingStrategyTest {
 	
 	@DataProvider
 	public static Object[][] testGetInsertValuesData() {
+		setUpClass();
 		return new Object[][] {
 				{ Maps.asMap(1, "a").add(2, "b").add(3, "c"), Maps.asMap(col1, "a").add(col2, "b").add(col3, "c").add(col4, null).add(col5, null) },
 				{ Maps.asMap(1, "a").add(2, "b").add(3, null), Maps.asMap(col1, "a").add(col2, "b").add(col3, null).add(col4, null).add(col5, null) },
@@ -106,6 +106,7 @@ public class ColumnedMapMappingStrategyTest {
 	
 	@DataProvider
 	public static Object[][] testGetUpdateValues_diffOnlyData() {
+		setUpClass();
 		return new Object[][] {
 				{ Maps.asMap(1, "a").add(2, "b").add(3, "c"), Maps.asMap(1, "x").add(2, "y").add(3, "z"),
 						Maps.asMap(col1, "a").add(col2, "b").add(col3, "c") },
@@ -133,6 +134,7 @@ public class ColumnedMapMappingStrategyTest {
 	
 	@DataProvider
 	public static Object[][] testGetUpdateValues_allColumnsData() {
+		setUpClass();
 		return new Object[][] {
 				{ Maps.asMap(1, "a").add(2, "b").add(3, "c"), Maps.asMap(1, "x").add(2, "y").add(3, "z"),
 						Maps.asMap(col1, "a").add(col2, "b").add(col3, "c").add(col4, null).add(col5, null) },

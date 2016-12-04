@@ -97,8 +97,8 @@ public class JoinedStrategiesSelect<T, I> {
 	
 	public <U> String add(String leftStrategyName, ClassMappingStrategy<U, ?> strategy, Column leftJoinColumn, Column rightJoinColumn,
 						  Function<T, Iterable<U>> setter) {
-		// we outer join nullable columns, except primary keys because it is nonsense
-		boolean isOuterJoin = !leftJoinColumn.isNullable() && !leftJoinColumn.isPrimaryKey();
+		// we outer join nullable columns
+		boolean isOuterJoin = rightJoinColumn.isNullable();
 		return add(leftStrategyName, strategy, leftJoinColumn, rightJoinColumn, isOuterJoin, setter);
 	}
 	
@@ -182,7 +182,7 @@ public class JoinedStrategiesSelect<T, I> {
 			private final Column leftJoinColumn;
 			/** Join column with next strategy table */
 			private final Column rightJoinColumn;
-			/** Indicates if the join must be an outer join */
+			/** Indicates if the join must be an inner or (left) outer join */
 			private final boolean outer;
 			/** Setter for instances of previous strategy entities on this strategy */
 			private final Function<I, O> setter;
