@@ -15,8 +15,24 @@ public class Row {
 	public Row() {
 	}
 	
+	/**
+	 * Put a key-value pair to this instance
+	 * @param columnName the key of the value
+	 * @param object the value
+	 */
 	public void put(String columnName, Object object) {
 		content.put(columnName, object);
+	}
+	
+	/**
+	 * Fluent API equivalent to {@link #put(String, Object)}
+	 * @param columnName the key of the value
+	 * @param object the value
+	 * @return this
+	 */
+	public Row add(String columnName, Object object) {
+		put(columnName, object);
+		return this;
 	}
 
 	public Object get(String key) {

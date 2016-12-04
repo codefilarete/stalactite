@@ -19,7 +19,7 @@ import org.gama.sql.binder.ParameterBinder;
 import org.gama.sql.dml.ReadOperation;
 import org.gama.sql.result.Row;
 import org.gama.sql.result.RowIterator;
-import org.gama.stalactite.persistence.engine.JoinedStrategySelect.StrategyJoins;
+import org.gama.stalactite.persistence.engine.JoinedStrategiesSelect.StrategyJoins;
 import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
 import org.gama.stalactite.persistence.sql.Dialect;
 import org.gama.stalactite.persistence.sql.dml.ColumnParamedSelect;
@@ -36,10 +36,10 @@ import static org.gama.sql.dml.ExpandableSQL.ExpandableParameter.SQL_PARAMETER_M
  * 
  * @author Guillaume Mary
  */
-public class JoinedStrategySelectExecutor<T, I> {
+public class JoinedStrategiesSelectExecutor<T, I> {
 	
 	/** The surrogate for joining the strategies, will help to build the SQL */
-	private final JoinedStrategySelect<T, I> joinedStrategySelect;
+	private final JoinedStrategiesSelect<T, I> joinedStrategiesSelect;
 	private final Dialect dialect;
 	private final Map<String, ParameterBinder> selectParameterBinders = new HashMap<>();
 	private final Map<Column, ParameterBinder> parameterBinders = new HashMap<>();
@@ -50,8 +50,8 @@ public class JoinedStrategySelectExecutor<T, I> {
 	private final Column keyColumn;
 	private List<T> result;
 	
-	JoinedStrategySelectExecutor(ClassMappingStrategy<T, I> classMappingStrategy, Dialect dialect, ConnectionProvider connectionProvider) {
-		this.joinedStrategySelect = new JoinedStrategySelect<>(classMappingStrategy, c -> dialect.getColumnBinderRegistry().getBinder(c));
+	JoinedStrategiesSelectExecutor(ClassMappingStrategy<T, I> classMappingStrategy, Dialect dialect, ConnectionProvider connectionProvider) {
+		this.joinedStrategiesSelect = new JoinedStrategiesSelect<>(classMappingStrategy, c -> dialect.getColumnBinderRegistry().getBinder(c));
 		this.dialect = dialect;
 		this.connectionProvider = connectionProvider;
 		// post-initialization
@@ -65,7 +65,7 @@ public class JoinedStrategySelectExecutor<T, I> {
 	}
 
 	public <U> void addComplementaryTables(ClassMappingStrategy<U, ?> mappingStrategy, Function<T, Iterable<U>> setter, Column leftJoinColumn, Column rightJoinColumn) {
-		joinedStrategySelect.add(JoinedStrategySelect.FIRST_STRATEGY_NAME, mappingStrategy, leftJoinColumn, rightJoinColumn, setter);
+		joinedStrategiesSelect.add(JoinedStrategiesSelect.FIRST_STRATEGY_NAME, mappingStrategy, leftJoinColumn, rightJoinColumn, setter);
 	}
 	
 	private void addColumnsToSelect(KeepOrderSet<Column> selectableColumns, SelectQuery selectQuery, Map<String, ParameterBinder> selectParameterBinders) {
@@ -80,7 +80,7 @@ public class JoinedStrategySelectExecutor<T, I> {
 		List<List<I>> parcels = Collections.parcel(ids, blockSize);
 		result = new ArrayList<>(parcels.size() * blockSize);
 		
-		SelectQuery selectQuery = joinedStrategySelect.buildSelectQuery();
+		SelectQuery selectQuery = joinedStrategiesSelect.buildSelectQuery();
 		SelectQueryBuilder queryBuilder = new SelectQueryBuilder(selectQuery);
 		queryBuilder.toSQL();
 		
@@ -146,9 +146,9 @@ public class JoinedStrategySelectExecutor<T, I> {
 	private T transform(RowIterator rowIterator) {
 		Row row = rowIterator.next();
 		// get entity from main mapping stategy
-		T t = joinedStrategySelect.getRoot().transform(row);
+		T t = joinedStrategiesSelect.getRoot().transform(row);
 		// complete entity load with complementary mapping strategy
-		for (StrategyJoins strategyJoins : joinedStrategySelect.getStrategies()) {
+		for (StrategyJoins strategyJoins : joinedStrategiesSelect.getStrategies()) {
 			Object transform = strategyJoins.getStrategy().transform(row);
 //				classMappingStrategy.getDefaultMappingStrategy().getRowTransformer().applyRowToBean(row, t);
 		}

@@ -22,7 +22,7 @@ import static org.mockito.Mockito.when;
  * @author Guillaume Mary
  */
 @RunWith(DataProviderRunner.class)
-public class JoinedStrategySelectTest {
+public class JoinedStrategiesSelectTest {
 	
 	private static ClassMappingStrategy buildMockMappingStrategy(String tableName) {
 		return buildMockMappingStrategy(new Table(tableName));
@@ -56,7 +56,7 @@ public class JoinedStrategySelectTest {
 	@UseDataProvider(value = "testToSQL_singleStrategyData")
 	public void testToSQL_singleStrategy(Table table, String expected) {
 		ClassMappingStrategy mappingStrategyMock = buildMockMappingStrategy(table);
-		JoinedStrategySelect testInstance = new JoinedStrategySelect<>(mappingStrategyMock, c -> null);
+		JoinedStrategiesSelect testInstance = new JoinedStrategiesSelect<>(mappingStrategyMock, c -> null);
 		SelectQueryBuilder queryBuilder = new SelectQueryBuilder(testInstance.buildSelectQuery());
 		assertEquals(expected, queryBuilder.toSQL());
 	}
@@ -109,8 +109,8 @@ public class JoinedStrategySelectTest {
 	public void testToSQL_multipleStrategy(ClassMappingStrategy rootMappingStrategy, ClassMappingStrategy classMappingStrategy,
 										   Column leftJoinColumn, Column rightJoinColumn,
 										   String expected) {
-		JoinedStrategySelect testInstance = new JoinedStrategySelect(rootMappingStrategy, c -> null);
-		testInstance.add(JoinedStrategySelect.FIRST_STRATEGY_NAME, classMappingStrategy, leftJoinColumn, rightJoinColumn, Function.identity());
+		JoinedStrategiesSelect testInstance = new JoinedStrategiesSelect(rootMappingStrategy, c -> null);
+		testInstance.add(JoinedStrategiesSelect.FIRST_STRATEGY_NAME, classMappingStrategy, leftJoinColumn, rightJoinColumn, Function.identity());
 		SelectQueryBuilder queryBuilder = new SelectQueryBuilder(testInstance.buildSelectQuery());
 		assertEquals(expected, queryBuilder.toSQL());
 	}
@@ -135,8 +135,8 @@ public class JoinedStrategySelectTest {
 		// column for "noise" in select
 		tutuTable.new Column("name", String.class);
 		
-		JoinedStrategySelect testInstance = new JoinedStrategySelect(totoMappingMock, c -> null);
-		String tataAddKey = testInstance.add(JoinedStrategySelect.FIRST_STRATEGY_NAME, tataMappingMock, totoPrimaryKey, tataPrimaryKey, Function.identity());
+		JoinedStrategiesSelect testInstance = new JoinedStrategiesSelect(totoMappingMock, c -> null);
+		String tataAddKey = testInstance.add(JoinedStrategiesSelect.FIRST_STRATEGY_NAME, tataMappingMock, totoPrimaryKey, tataPrimaryKey, Function.identity());
 		testInstance.add(tataAddKey, tutuMappingMock, tataPrimaryKey, tutuPrimaryKey, Function.identity());
 		SelectQueryBuilder queryBuilder = new SelectQueryBuilder(testInstance.buildSelectQuery());
 		assertEquals("select"
@@ -171,8 +171,8 @@ public class JoinedStrategySelectTest {
 		// column for "noise" in select
 		tutuTable.new Column("name", String.class);
 		
-		JoinedStrategySelect testInstance = new JoinedStrategySelect(totoMappingMock, c -> null);
-		String tataAddKey = testInstance.add(JoinedStrategySelect.FIRST_STRATEGY_NAME, tataMappingMock, tataId, tataPrimaryKey, Function.identity());
+		JoinedStrategiesSelect testInstance = new JoinedStrategiesSelect(totoMappingMock, c -> null);
+		String tataAddKey = testInstance.add(JoinedStrategiesSelect.FIRST_STRATEGY_NAME, tataMappingMock, tataId, tataPrimaryKey, Function.identity());
 		testInstance.add(tataAddKey, tutuMappingMock, tutuId, tutuPrimaryKey, Function.identity());
 		SelectQueryBuilder queryBuilder = new SelectQueryBuilder(testInstance.buildSelectQuery());
 		assertEquals("select"
@@ -211,10 +211,10 @@ public class JoinedStrategySelectTest {
 		// column for "noise" in select
 		titiTable.new Column("name", String.class);
 		
-		JoinedStrategySelect testInstance = new JoinedStrategySelect(totoMappingMock, c -> null);
-		String tataAddKey = testInstance.add(JoinedStrategySelect.FIRST_STRATEGY_NAME, tataMappingMock, totoPrimaryKey, tataPrimaryKey, Function.identity());
+		JoinedStrategiesSelect testInstance = new JoinedStrategiesSelect(totoMappingMock, c -> null);
+		String tataAddKey = testInstance.add(JoinedStrategiesSelect.FIRST_STRATEGY_NAME, tataMappingMock, totoPrimaryKey, tataPrimaryKey, Function.identity());
 		String tutuAddKey = testInstance.add(tataAddKey, tutuMappingMock, tataPrimaryKey, tutuPrimaryKey, Function.identity());
-		String titiAddKey = testInstance.add(JoinedStrategySelect.FIRST_STRATEGY_NAME, titiMappingMock, tataPrimaryKey, titiPrimaryKey, Function.identity());
+		String titiAddKey = testInstance.add(JoinedStrategiesSelect.FIRST_STRATEGY_NAME, titiMappingMock, tataPrimaryKey, titiPrimaryKey, Function.identity());
 		SelectQueryBuilder queryBuilder = new SelectQueryBuilder(testInstance.buildSelectQuery());
 		assertEquals("select"
 						+ " Toto.id as Toto_id, Toto.name as Toto_name"

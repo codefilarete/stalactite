@@ -24,19 +24,19 @@ import org.gama.stalactite.persistence.structure.Table.Column;
  * 
  * @author Guillaume Mary
  */
-public class JoinedTablePersister<T, I> extends Persister<T, I> {
+public class JoinedTablesPersister<T, I> extends Persister<T, I> {
 	
 	/** Select clause helper because of its complexity */
-	private final JoinedStrategySelectExecutor<T, I> joinedStrategySelectExecutor;
+	private final JoinedStrategiesSelectExecutor<T, I> joinedStrategiesSelectExecutor;
 	
-	public JoinedTablePersister(PersistenceContext persistenceContext, ClassMappingStrategy<T, I> mainMappingStrategy) {
+	public JoinedTablesPersister(PersistenceContext persistenceContext, ClassMappingStrategy<T, I> mainMappingStrategy) {
 		this(mainMappingStrategy, persistenceContext.getDialect(), persistenceContext.getConnectionProvider(), persistenceContext.getJDBCBatchSize());
 	}
 	
-	public JoinedTablePersister(ClassMappingStrategy<T, I> mainMappingStrategy, Dialect dialect, ConnectionProvider connectionProvider, int jdbcBatchSize) {
+	public JoinedTablesPersister(ClassMappingStrategy<T, I> mainMappingStrategy, Dialect dialect, ConnectionProvider connectionProvider, int jdbcBatchSize) {
 		super(mainMappingStrategy, connectionProvider, dialect.getDmlGenerator(),
 				dialect.getWriteOperationRetryer(), jdbcBatchSize, dialect.getInOperatorMaxSize());
-		this.joinedStrategySelectExecutor = new JoinedStrategySelectExecutor<>(mainMappingStrategy, dialect, connectionProvider);
+		this.joinedStrategiesSelectExecutor = new JoinedStrategiesSelectExecutor<>(mainMappingStrategy, dialect, connectionProvider);
 	}
 	
 	/**
@@ -148,7 +148,7 @@ public class JoinedTablePersister<T, I> extends Persister<T, I> {
 	}
 	
 	private <U> void addSelectExecutor(ClassMappingStrategy<U, I> mappingStrategy, Function<T, Iterable<U>> setter, Column leftJoinColumn, Column rightJoinColumn) {
-		joinedStrategySelectExecutor.addComplementaryTables(mappingStrategy, setter, leftJoinColumn, rightJoinColumn);
+		joinedStrategiesSelectExecutor.addComplementaryTables(mappingStrategy, setter, leftJoinColumn, rightJoinColumn);
 	}
 	
 	/**
@@ -158,6 +158,6 @@ public class JoinedTablePersister<T, I> extends Persister<T, I> {
 	 */
 	@Override
 	protected List<T> doSelect(Iterable<I> ids) {
-		return joinedStrategySelectExecutor.select(ids);
+		return joinedStrategiesSelectExecutor.select(ids);
 	}
 }

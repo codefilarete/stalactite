@@ -9,6 +9,7 @@ import java.util.Map.Entry;
 import org.gama.lang.bean.FieldIterator;
 import org.gama.lang.collection.Iterables;
 import org.gama.lang.collection.Iterables.ForEach;
+import org.gama.reflection.IMutator;
 import org.gama.reflection.PropertyAccessor;
 import org.gama.sql.result.Row;
 
@@ -19,7 +20,7 @@ import org.gama.sql.result.Row;
  */
 public class ToBeanRowTransformer<T> extends AbstractTransformer<T> {
 	
-	private final Map<String, PropertyAccessor> columnToField;
+	private final Map<String, IMutator> columnToField;
 	
 	public ToBeanRowTransformer(Class<T> clazz) throws NoSuchMethodException {
 		this(clazz.getConstructor(), new HashMap<>(10));
@@ -27,20 +28,20 @@ public class ToBeanRowTransformer<T> extends AbstractTransformer<T> {
 		Iterables.visit(fieldIterator, new ForEach<Field, Void>() {
 			@Override
 			public Void visit(Field field) {
-				columnToField.put(field.getName(), PropertyAccessor.forProperty(field.getDeclaringClass(), field.getName()));
+				columnToField.put(field.getName(), PropertyAccessor.mutator(field.getDeclaringClass(), field.getName()));
 				return null;
 			}
 		});
 	}
 	
-	public ToBeanRowTransformer(Constructor<T> constructor, Map<String, PropertyAccessor> columnToField) {
+	public ToBeanRowTransformer(Constructor<T> constructor, Map<String, IMutator> columnToField) {
 		super(constructor);
 		this.columnToField = columnToField;
 	}
 	
 	@Override
 	public void applyRowToBean(Row row, T rowBean) {
-		for (Entry<String, PropertyAccessor> columnFieldEntry : columnToField.entrySet()) {
+		for (Entry<String, IMutator> columnFieldEntry : columnToField.entrySet()) {
 			Object object = row.get(columnFieldEntry.getKey());
 			columnFieldEntry.getValue().set(rowBean, object);
 		}

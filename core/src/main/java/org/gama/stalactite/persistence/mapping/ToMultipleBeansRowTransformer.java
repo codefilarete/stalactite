@@ -38,16 +38,17 @@ public abstract class ToMultipleBeansRowTransformer<T> implements IRowTransforme
 		// Array of built instances on this row
 		Object[] tranformedRow = new Object[this.beanTransformers.size()];
 		int i = 0;
-		for (Entry<String, IRowTransformer> beanTransformer : this.beanTransformers.entrySet()) {
+		for (Entry<String, IRowTransformer> entry : this.beanTransformers.entrySet()) {
 			// ask for already existing instance for this column
-			Object groupingColumnValue = row.get(beanTransformer.getKey());
-			Object o = getCachedInstance(beanTransformer.getKey(), groupingColumnValue);
+			String colName = entry.getKey();
+			Object colValue = row.get(colName);
+			Object o = getCachedInstance(colName, colValue);
 			if (o == null) {
 				// no instance exists, so before asking for a new one, check if it's possible to give information
 				// to build it: the grouping column as a value ?
-				if (groupingColumnValue != null) {
-					o = beanTransformer.getValue().transform(row);
-					onNewObject(beanTransformer.getKey(), o);
+				if (colValue != null) {
+					o = entry.getValue().transform(row);
+					onNewObject(colName, o);
 				}
 			}
 			tranformedRow[i++] = o;
