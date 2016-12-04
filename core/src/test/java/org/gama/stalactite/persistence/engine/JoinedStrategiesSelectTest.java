@@ -173,14 +173,14 @@ public class JoinedStrategiesSelectTest {
 		
 		JoinedStrategiesSelect testInstance = new JoinedStrategiesSelect(totoMappingMock, c -> null);
 		String tataAddKey = testInstance.add(JoinedStrategiesSelect.FIRST_STRATEGY_NAME, tataMappingMock, tataId, tataPrimaryKey, Function.identity());
-		testInstance.add(tataAddKey, tutuMappingMock, tutuId, tutuPrimaryKey, Function.identity());
+		testInstance.add(tataAddKey, tutuMappingMock, tutuId, tutuPrimaryKey, true, Function.identity());
 		SelectQueryBuilder queryBuilder = new SelectQueryBuilder(testInstance.buildSelectQuery());
 		assertEquals("select"
 						+ " Toto.id as Toto_id, Toto.name as Toto_name, Toto.tataId as Toto_tataId, Toto.tutuId as Toto_tutuId"
 						+ ", Tata.id as Tata_id, Tata.name as Tata_name"
 						+ ", Tutu.id as Tutu_id, Tutu.name as Tutu_name"
 						+ " from Toto"
-						+ " left outer join Tata on Toto.tataId = Tata.id"
+						+ " inner join Tata on Toto.tataId = Tata.id"
 						+ " left outer join Tutu on Toto.tutuId = Tutu.id"
 				, queryBuilder.toSQL());
 	}
