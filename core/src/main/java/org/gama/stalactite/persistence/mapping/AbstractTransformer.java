@@ -32,7 +32,7 @@ public abstract class AbstractTransformer<T> implements IRowTransformer<T> {
 	
 	protected abstract void applyRowToBean(Row row, T bean);
 	
-	protected T newRowInstance() {
+	public T newRowInstance() {
 		T rowBean;
 		try {
 			rowBean = constructor.newInstance();

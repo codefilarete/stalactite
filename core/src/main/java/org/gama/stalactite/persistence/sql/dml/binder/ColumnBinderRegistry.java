@@ -2,7 +2,11 @@ package org.gama.stalactite.persistence.sql.dml.binder;
 
 import java.sql.PreparedStatement;
 import java.util.HashMap;
+import java.util.Objects;
+import java.util.stream.Stream;
 
+import org.gama.lang.bean.InterfaceIterator;
+import org.gama.lang.collection.Iterables;
 import org.gama.sql.binder.ParameterBinder;
 import org.gama.sql.binder.ParameterBinderRegistry;
 import org.gama.stalactite.persistence.structure.Table;
@@ -37,13 +41,20 @@ public class ColumnBinderRegistry extends ParameterBinderRegistry {
 	 * @return the binder for the column or for its Java type
 	 * @throws UnsupportedOperationException if the binder doesn't exist
 	 */
-	public ParameterBinder getBinder(Table.Column column) throws UnsupportedOperationException {
+	public ParameterBinder getBinder(Table.Column column) {
 		ParameterBinder columnBinder = parameterBinders.get(column);
 		try {
 			return columnBinder != null ? columnBinder : getBinder(column.getJavaType());
 		} catch (UnsupportedOperationException e) {
-			// exception is replaced by a better message
-			throw newMissingBinderException(column);
+			InterfaceIterator interfaceIterator = new InterfaceIterator(column.getJavaType());
+			Stream<ParameterBinder> stream = Iterables.stream(interfaceIterator).map(iface -> getParameterBinders().get(iface));
+			columnBinder = stream.filter(Objects::nonNull).findFirst().orElse(null);
+			if (columnBinder != null) {
+				return columnBinder;
+			} else {
+				// exception is replaced by a better message
+				throw newMissingBinderException(column);
+			}
 		}
 	}
 	

@@ -3,6 +3,7 @@ package org.gama.stalactite.persistence.engine;
 import java.sql.ResultSet;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
@@ -19,7 +20,7 @@ import org.gama.sql.binder.ParameterBinder;
 import org.gama.sql.dml.ReadOperation;
 import org.gama.sql.result.Row;
 import org.gama.sql.result.RowIterator;
-import org.gama.stalactite.persistence.engine.JoinedStrategiesSelect.StrategyJoins;
+import org.gama.stalactite.persistence.engine.JoinedStrategiesSelect.ParameterBinderProvider;
 import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
 import org.gama.stalactite.persistence.sql.Dialect;
 import org.gama.stalactite.persistence.sql.dml.ColumnParamedSelect;
@@ -40,7 +41,7 @@ public class JoinedStrategiesSelectExecutor<T, I> {
 	
 	/** The surrogate for joining the strategies, will help to build the SQL */
 	private final JoinedStrategiesSelect<T, I> joinedStrategiesSelect;
-	private final Dialect dialect;
+	private final ParameterBinderProvider parameterBinderProvider;
 	private final Map<String, ParameterBinder> selectParameterBinders = new HashMap<>();
 	private final Map<Column, ParameterBinder> parameterBinders = new HashMap<>();
 	private final Map<Column, int[]> inOperatorValueIndexes = new HashMap<>();
@@ -51,8 +52,8 @@ public class JoinedStrategiesSelectExecutor<T, I> {
 	private List<T> result;
 	
 	JoinedStrategiesSelectExecutor(ClassMappingStrategy<T, I> classMappingStrategy, Dialect dialect, ConnectionProvider connectionProvider) {
-		this.joinedStrategiesSelect = new JoinedStrategiesSelect<>(classMappingStrategy, c -> dialect.getColumnBinderRegistry().getBinder(c));
-		this.dialect = dialect;
+		this.parameterBinderProvider = c -> dialect.getColumnBinderRegistry().getBinder(c);
+		this.joinedStrategiesSelect = new JoinedStrategiesSelect<>(classMappingStrategy, this.parameterBinderProvider);
 		this.connectionProvider = connectionProvider;
 		// post-initialization
 		this.blockSize = dialect.getInOperatorMaxSize();
@@ -71,7 +72,7 @@ public class JoinedStrategiesSelectExecutor<T, I> {
 	private void addColumnsToSelect(KeepOrderSet<Column> selectableColumns, SelectQuery selectQuery, Map<String, ParameterBinder> selectParameterBinders) {
 		for (Column selectableColumn : selectableColumns) {
 			selectQuery.select(selectableColumn, selectableColumn.getAlias());
-			selectParameterBinders.put(selectableColumn.getName(), dialect.getColumnBinderRegistry().getBinder(selectableColumn));
+			selectParameterBinders.put(selectableColumn.getName(), this.parameterBinderProvider.getBinder(selectableColumn));
 		}
 	}
 	
@@ -117,7 +118,7 @@ public class JoinedStrategiesSelectExecutor<T, I> {
 			indexes[i] = ++i;
 		}
 		inOperatorValueIndexes.put(keyColumn, indexes);
-		parameterBinders.put(keyColumn, dialect.getColumnBinderRegistry().getBinder(keyColumn));
+		parameterBinders.put(keyColumn, this.parameterBinderProvider.getBinder(keyColumn));
 	}
 	
 	private void execute(IConnectionProvider connectionProvider,
@@ -143,15 +144,18 @@ public class JoinedStrategiesSelectExecutor<T, I> {
 		}
 	}
 	
-	private T transform(RowIterator rowIterator) {
+	T transform(Iterator<Row> rowIterator) {
 		Row row = rowIterator.next();
 		// get entity from main mapping stategy
-		T t = joinedStrategiesSelect.getRoot().transform(row);
-		// complete entity load with complementary mapping strategy
-		for (StrategyJoins strategyJoins : joinedStrategiesSelect.getStrategies()) {
-			Object transform = strategyJoins.getStrategy().transform(row);
-//				classMappingStrategy.getDefaultMappingStrategy().getRowTransformer().applyRowToBean(row, t);
-		}
+		T t = joinedStrategiesSelect.getRoot().getRowTransformer().newRowInstance();
+		joinedStrategiesSelect.getRoot().getRowTransformer().applyRowToBean(row, t);
+		
+//		T t = joinedStrategiesSelect.getRoot().transform(row);
+//		// complete entity load with complementary mapping strategy
+//		for (StrategyJoins strategyJoins : joinedStrategiesSelect.getStrategies()) {
+//			Object transform = strategyJoins.getStrategy().transform(row);
+////				classMappingStrategy.getDefaultMappingStrategy().getRowTransformer().applyRowToBean(row, t);
+//		}
 		return t;
 	}
 	

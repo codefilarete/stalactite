@@ -235,4 +235,8 @@ public class ClassMappingStrategy<T, I> implements IEntityMappingStrategy<T, I> 
 		}
 		return toReturn;
 	}
+	
+	public ToBeanRowTransformer<T> getRowTransformer() {
+		return defaultMappingStrategy.getRowTransformer();
+	}
 }
