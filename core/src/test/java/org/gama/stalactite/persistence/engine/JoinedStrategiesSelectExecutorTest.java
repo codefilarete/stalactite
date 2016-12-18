@@ -73,15 +73,75 @@ public class JoinedStrategiesSelectExecutorTest {
 		when(dummyStrategy.getRowTransformer()).thenReturn(new ToBeanRowTransformer<>(Toto.class));
 		when(joinedStrategy.getRowTransformer()).thenReturn(new ToBeanRowTransformer<>(Tata.class));
 		
-		Row row1 = new Row().add("id", 1L).add("name", "toto").add("firstName", "tata");
+		Row row1 = new Row()
+				// for Toto instance
+				.add("id", 1L).add("name", "toto")
+				// for Tata instance
+				.add("firstName", "tata");
 		Object result = testInstance.transform(Arrays.asList(row1).iterator());
 		
 		assertTrue(result instanceof Toto);
 		Toto typedResult = (Toto) result;
 		assertEquals("toto", typedResult.name);
 		assertNotNull(typedResult.oneToOne);
+		// firstName is filled because we put "firstName" into the Row
 		assertEquals("tata", typedResult.oneToOne.firstName);
 	}
+	
+	@Test
+	public void testTransform_with3strategies() throws SQLException, NoSuchMethodException {
+		// preventing from NullPointerException during JoinedStrategiesSelectExecutor instanciation
+		when(dummyStrategy.getTargetTable()).thenReturn(new Table("toto"));
+		
+		JoinedStrategiesSelectExecutor testInstance = new JoinedStrategiesSelectExecutor(dummyStrategy, dummyDialect, null);
+		
+		ClassMappingStrategy joinedStrategy1 = mock(ClassMappingStrategy.class);
+		when(joinedStrategy1.getClassToPersist()).thenReturn(Tata.class);
+		
+		ClassMappingStrategy joinedStrategy2 = mock(ClassMappingStrategy.class);
+		when(joinedStrategy2.getClassToPersist()).thenReturn(Titi.class);
+		
+		// defining the target table is not necessary for the test case but it is technically, otherwise we get a NullPointerException
+		Table tataTable = new Table("tata");
+		Column dummyJoinColumn1 = tataTable.new Column("a", long.class);
+		when(joinedStrategy1.getTargetTable()).thenReturn(tataTable);
+		
+		Table titiTable = new Table("titi");
+		Column dummyJoinColumn2 = titiTable.new Column("a", long.class);
+		when(joinedStrategy2.getTargetTable()).thenReturn(titiTable);
+		
+		// completing the test case: adding the joined strategy
+		String joinedStrategy1Name = testInstance.addComplementaryTables(JoinedStrategiesSelect.FIRST_STRATEGY_NAME, joinedStrategy1,
+				(BiConsumer<Toto, Tata>) Toto::setOneToOne,
+				null, dummyJoinColumn1);
+		testInstance.addComplementaryTables(joinedStrategy1Name, joinedStrategy2, (BiConsumer<Tata, Titi>) Tata::setOneToOne,
+				null, dummyJoinColumn2);
+		
+		when(dummyStrategy.getRowTransformer()).thenReturn(new ToBeanRowTransformer<>(Toto.class));
+		when(joinedStrategy1.getRowTransformer()).thenReturn(new ToBeanRowTransformer<>(Tata.class));
+		when(joinedStrategy2.getRowTransformer()).thenReturn(new ToBeanRowTransformer<>(Titi.class));
+		
+		Row row1 = new Row()
+				// for Toto instance
+				.add("id", 1L).add("name", "toto")
+				// for Tata instance
+				.add("firstName", "tata")
+				// for Titi instance
+				.add("lastName", "titi");
+		Object result = testInstance.transform(Arrays.asList(row1).iterator());
+		
+		assertTrue(result instanceof Toto);
+		Toto typedResult = (Toto) result;
+		assertEquals("toto", typedResult.name);
+		assertNotNull(typedResult.oneToOne);
+		// firstName is filled because we put "firstName" into the Row
+		assertEquals("tata", typedResult.oneToOne.firstName);
+		// joined instance must be filled
+		assertNotNull(typedResult.oneToOne.oneToOne);
+		// firstName is filled because we put "firstName" into the Row
+		assertEquals("titi", typedResult.oneToOne.oneToOne.lastName);
+	}
+	
 	
 	public static class Toto {
 		private Long id;
@@ -103,5 +163,14 @@ public class JoinedStrategiesSelectExecutorTest {
 	
 	public static class Tata {
 		private String firstName;
+		private Titi oneToOne;
+		
+		public void setOneToOne(Titi oneToOne) {
+			this.oneToOne = oneToOne;
+		}
+	}
+	
+	public static class Titi {
+		private String lastName;
 	}
 }

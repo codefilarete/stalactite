@@ -7,6 +7,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Queue;
 import java.util.function.BiConsumer;
 
@@ -146,19 +147,31 @@ public class JoinedStrategiesSelectExecutor<T, I> {
 		Row row = rowIterator.next();
 		
 		List<T> result = new ArrayList<>();
-		Queue<StrategyJoins> stack = new ArrayDeque<>();
-		stack.add(joinedStrategiesSelect.getStrategyJoins(JoinedStrategiesSelect.FIRST_STRATEGY_NAME));
+		Queue<Entry<StrategyJoins, Object>> stack = new ArrayDeque<>();
+		stack.add(new HashMap.SimpleEntry<>(joinedStrategiesSelect.getStrategyJoins(JoinedStrategiesSelect.FIRST_STRATEGY_NAME), null));
 		while (!stack.isEmpty()) {
-			StrategyJoins<?> strategyJoins = stack.poll();
+			Entry<StrategyJoins, Object> entry = stack.poll();
+			StrategyJoins<?> strategyJoins = entry.getKey();
+//			System.out.println("treating " + strategyJoins.getTable().getAbsoluteName());
 			ToBeanRowTransformer mainRowTransformer = strategyJoins.getStrategy().getRowTransformer();
-			Object rowInstance = mainRowTransformer.newRowInstance();
+			Object rowInstance = entry.getValue();
+			if (rowInstance == null) {
+				rowInstance = mainRowTransformer.newRowInstance();
+				entry.setValue(rowInstance);
+			}
+			
 			result.add((T) rowInstance);
 			mainRowTransformer.applyRowToBean(row, rowInstance);
 			for (Join join : strategyJoins.getJoins()) {
+//				System.out.println("applying " + join.getStrategy().getTable().getAbsoluteName());
 				ToBeanRowTransformer rowTransformer = join.getStrategy().getStrategy().getRowTransformer();
 				Object o = rowTransformer.newRowInstance();
 				rowTransformer.applyRowToBean(row, o);
+//				System.out.println(new MethodReferenceCapturer(rowInstance.getClass()).capture(join.getSetter()));
+//				System.out.println(rowInstance);
+//				System.out.println(o);
 				join.getSetter().accept(rowInstance, o);
+				stack.add(new HashMap.SimpleEntry<>(join.getStrategy(), o));
 			}
 		}
 		return Iterables.first(result);
