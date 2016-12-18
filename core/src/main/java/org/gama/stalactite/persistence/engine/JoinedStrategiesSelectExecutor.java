@@ -1,18 +1,19 @@
 package org.gama.stalactite.persistence.engine;
 
 import java.sql.ResultSet;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Function;
+import java.util.Queue;
+import java.util.function.BiConsumer;
 
 import org.gama.lang.StringAppender;
 import org.gama.lang.Strings;
 import org.gama.lang.collection.Collections;
 import org.gama.lang.collection.Iterables;
-import org.gama.lang.collection.KeepOrderSet;
 import org.gama.lang.exception.Exceptions;
 import org.gama.sql.IConnectionProvider;
 import org.gama.sql.SimpleConnectionProvider;
@@ -21,7 +22,10 @@ import org.gama.sql.dml.ReadOperation;
 import org.gama.sql.result.Row;
 import org.gama.sql.result.RowIterator;
 import org.gama.stalactite.persistence.engine.JoinedStrategiesSelect.ParameterBinderProvider;
+import org.gama.stalactite.persistence.engine.JoinedStrategiesSelect.StrategyJoins;
+import org.gama.stalactite.persistence.engine.JoinedStrategiesSelect.StrategyJoins.Join;
 import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
+import org.gama.stalactite.persistence.mapping.ToBeanRowTransformer;
 import org.gama.stalactite.persistence.sql.Dialect;
 import org.gama.stalactite.persistence.sql.dml.ColumnParamedSelect;
 import org.gama.stalactite.persistence.structure.Table.Column;
@@ -65,15 +69,9 @@ public class JoinedStrategiesSelectExecutor<T, I> {
 		return connectionProvider;
 	}
 
-	public <U> void addComplementaryTables(ClassMappingStrategy<U, ?> mappingStrategy, Function<T, Iterable<U>> setter, Column leftJoinColumn, Column rightJoinColumn) {
-		joinedStrategiesSelect.add(JoinedStrategiesSelect.FIRST_STRATEGY_NAME, mappingStrategy, leftJoinColumn, rightJoinColumn, setter);
-	}
-	
-	private void addColumnsToSelect(KeepOrderSet<Column> selectableColumns, SelectQuery selectQuery, Map<String, ParameterBinder> selectParameterBinders) {
-		for (Column selectableColumn : selectableColumns) {
-			selectQuery.select(selectableColumn, selectableColumn.getAlias());
-			selectParameterBinders.put(selectableColumn.getName(), this.parameterBinderProvider.getBinder(selectableColumn));
-		}
+	public <U> String addComplementaryTables(String leftStrategyName, ClassMappingStrategy<U, ?> mappingStrategy, BiConsumer<T, Iterable<U>> setter,
+											 Column leftJoinColumn, Column rightJoinColumn) {
+		return joinedStrategiesSelect.add(leftStrategyName, mappingStrategy, leftJoinColumn, rightJoinColumn, setter);
 	}
 	
 	public List<T> select(Iterable<I> ids) {
@@ -146,17 +144,24 @@ public class JoinedStrategiesSelectExecutor<T, I> {
 	
 	T transform(Iterator<Row> rowIterator) {
 		Row row = rowIterator.next();
-		// get entity from main mapping stategy
-		T t = joinedStrategiesSelect.getRoot().getRowTransformer().newRowInstance();
-		joinedStrategiesSelect.getRoot().getRowTransformer().applyRowToBean(row, t);
 		
-//		T t = joinedStrategiesSelect.getRoot().transform(row);
-//		// complete entity load with complementary mapping strategy
-//		for (StrategyJoins strategyJoins : joinedStrategiesSelect.getStrategies()) {
-//			Object transform = strategyJoins.getStrategy().transform(row);
-////				classMappingStrategy.getDefaultMappingStrategy().getRowTransformer().applyRowToBean(row, t);
-//		}
-		return t;
+		List<T> result = new ArrayList<>();
+		Queue<StrategyJoins> stack = new ArrayDeque<>();
+		stack.add(joinedStrategiesSelect.getStrategyJoins(JoinedStrategiesSelect.FIRST_STRATEGY_NAME));
+		while (!stack.isEmpty()) {
+			StrategyJoins<?> strategyJoins = stack.poll();
+			ToBeanRowTransformer mainRowTransformer = strategyJoins.getStrategy().getRowTransformer();
+			Object rowInstance = mainRowTransformer.newRowInstance();
+			result.add((T) rowInstance);
+			mainRowTransformer.applyRowToBean(row, rowInstance);
+			for (Join join : strategyJoins.getJoins()) {
+				ToBeanRowTransformer rowTransformer = join.getStrategy().getStrategy().getRowTransformer();
+				Object o = rowTransformer.newRowInstance();
+				rowTransformer.applyRowToBean(row, o);
+				join.getSetter().accept(rowInstance, o);
+			}
+		}
+		return Iterables.first(result);
 	}
 	
 	private static class DynamicInClause implements CharSequence {

@@ -1,7 +1,5 @@
 package org.gama.stalactite.persistence.engine;
 
-import java.util.function.Function;
-
 import com.tngtech.java.junit.dataprovider.DataProvider;
 import com.tngtech.java.junit.dataprovider.DataProviderRunner;
 import com.tngtech.java.junit.dataprovider.UseDataProvider;
@@ -110,7 +108,7 @@ public class JoinedStrategiesSelectTest {
 										   Column leftJoinColumn, Column rightJoinColumn,
 										   String expected) {
 		JoinedStrategiesSelect testInstance = new JoinedStrategiesSelect(rootMappingStrategy, c -> null);
-		testInstance.add(JoinedStrategiesSelect.FIRST_STRATEGY_NAME, classMappingStrategy, leftJoinColumn, rightJoinColumn, Function.identity());
+		testInstance.add(JoinedStrategiesSelect.FIRST_STRATEGY_NAME, classMappingStrategy, leftJoinColumn, rightJoinColumn, (a, b) -> {});
 		SelectQueryBuilder queryBuilder = new SelectQueryBuilder(testInstance.buildSelectQuery());
 		assertEquals(expected, queryBuilder.toSQL());
 	}
@@ -136,8 +134,8 @@ public class JoinedStrategiesSelectTest {
 		tutuTable.new Column("name", String.class);
 		
 		JoinedStrategiesSelect testInstance = new JoinedStrategiesSelect(totoMappingMock, c -> null);
-		String tataAddKey = testInstance.add(JoinedStrategiesSelect.FIRST_STRATEGY_NAME, tataMappingMock, totoPrimaryKey, tataPrimaryKey, Function.identity());
-		testInstance.add(tataAddKey, tutuMappingMock, tataPrimaryKey, tutuPrimaryKey, Function.identity());
+		String tataAddKey = testInstance.add(JoinedStrategiesSelect.FIRST_STRATEGY_NAME, tataMappingMock, totoPrimaryKey, tataPrimaryKey, (a, b) -> {});
+		testInstance.add(tataAddKey, tutuMappingMock, tataPrimaryKey, tutuPrimaryKey, (a, b) -> {});
 		SelectQueryBuilder queryBuilder = new SelectQueryBuilder(testInstance.buildSelectQuery());
 		assertEquals("select"
 						+ " Toto.id as Toto_id, Toto.name as Toto_name"
@@ -172,8 +170,8 @@ public class JoinedStrategiesSelectTest {
 		tutuTable.new Column("name", String.class);
 		
 		JoinedStrategiesSelect testInstance = new JoinedStrategiesSelect(totoMappingMock, c -> null);
-		String tataAddKey = testInstance.add(JoinedStrategiesSelect.FIRST_STRATEGY_NAME, tataMappingMock, tataId, tataPrimaryKey, Function.identity());
-		testInstance.add(tataAddKey, tutuMappingMock, tutuId, tutuPrimaryKey, true, Function.identity());
+		String tataAddKey = testInstance.add(JoinedStrategiesSelect.FIRST_STRATEGY_NAME, tataMappingMock, tataId, tataPrimaryKey, (a, b) -> {});
+		testInstance.add(tataAddKey, tutuMappingMock, tutuId, tutuPrimaryKey, true, (a, b) -> {});
 		SelectQueryBuilder queryBuilder = new SelectQueryBuilder(testInstance.buildSelectQuery());
 		assertEquals("select"
 						+ " Toto.id as Toto_id, Toto.name as Toto_name, Toto.tataId as Toto_tataId, Toto.tutuId as Toto_tutuId"
@@ -212,19 +210,19 @@ public class JoinedStrategiesSelectTest {
 		titiTable.new Column("name", String.class);
 		
 		JoinedStrategiesSelect testInstance = new JoinedStrategiesSelect(totoMappingMock, c -> null);
-		String tataAddKey = testInstance.add(JoinedStrategiesSelect.FIRST_STRATEGY_NAME, tataMappingMock, totoPrimaryKey, tataPrimaryKey, Function.identity());
-		String tutuAddKey = testInstance.add(tataAddKey, tutuMappingMock, tataPrimaryKey, tutuPrimaryKey, Function.identity());
-		String titiAddKey = testInstance.add(JoinedStrategiesSelect.FIRST_STRATEGY_NAME, titiMappingMock, tataPrimaryKey, titiPrimaryKey, Function.identity());
+		String tataAddKey = testInstance.add(JoinedStrategiesSelect.FIRST_STRATEGY_NAME, tataMappingMock, totoPrimaryKey, tataPrimaryKey, (a, b) -> {});
+		String tutuAddKey = testInstance.add(tataAddKey, tutuMappingMock, tataPrimaryKey, tutuPrimaryKey, (a, b) -> {});
+		String titiAddKey = testInstance.add(JoinedStrategiesSelect.FIRST_STRATEGY_NAME, titiMappingMock, tataPrimaryKey, titiPrimaryKey, (a, b) -> {});
 		SelectQueryBuilder queryBuilder = new SelectQueryBuilder(testInstance.buildSelectQuery());
 		assertEquals("select"
 						+ " Toto.id as Toto_id, Toto.name as Toto_name"
 						+ ", Tata.id as Tata_id, Tata.name as Tata_name"
-						+ ", Tutu.id as Tutu_id, Tutu.name as Tutu_name"
 						+ ", Titi.id as Titi_id, Titi.name as Titi_name"
+						+ ", Tutu.id as Tutu_id, Tutu.name as Tutu_name"
 						+ " from Toto"
 						+ " inner join Tata on Toto.id = Tata.id"
-						+ " inner join Tutu on Tata.id = Tutu.id"
 						+ " inner join Titi on Tata.id = Titi.id"
+						+ " inner join Tutu on Tata.id = Tutu.id"
 				, queryBuilder.toSQL());
 	}
 	

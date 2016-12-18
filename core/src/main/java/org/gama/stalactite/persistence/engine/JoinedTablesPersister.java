@@ -3,6 +3,7 @@ package org.gama.stalactite.persistence.engine;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.function.BiConsumer;
 import java.util.function.Function;
 
 import org.gama.lang.collection.PairIterator;
@@ -54,7 +55,8 @@ public class JoinedTablesPersister<T, I> extends Persister<T, I> {
 		
 		// We use our own select system since ISelectListener is not aimed at joining table
 		// the addition must be done after mapping strategy addition because it needs them all
-		addSelectExecutor(mappingStrategy, null, leftJoinColumn, rightJoinColumn);
+		// TODO: ask for the left strategy name (as a new method argument) instead of hard coding the root one's
+		addSelectExecutor(JoinedStrategiesSelect.FIRST_STRATEGY_NAME, mappingStrategy, null, leftJoinColumn, rightJoinColumn);
 	}
 	
 	private <U> void addInsertExecutor(ClassMappingStrategy<U, I> mappingStrategy, Function<Iterable<T>, Iterable<U>> additionalInstancesProvider) {
@@ -147,8 +149,10 @@ public class JoinedTablesPersister<T, I> extends Persister<T, I> {
 		});
 	}
 	
-	private <U> void addSelectExecutor(ClassMappingStrategy<U, I> mappingStrategy, Function<T, Iterable<U>> setter, Column leftJoinColumn, Column rightJoinColumn) {
-		joinedStrategiesSelectExecutor.addComplementaryTables(mappingStrategy, setter, leftJoinColumn, rightJoinColumn);
+	private <U> String addSelectExecutor(String leftStrategyName, ClassMappingStrategy<U, I> mappingStrategy, BiConsumer<T, Iterable<U>> setter,
+										 Column leftJoinColumn, Column rightJoinColumn) {
+		return joinedStrategiesSelectExecutor.addComplementaryTables(leftStrategyName, mappingStrategy, setter, 
+				leftJoinColumn, rightJoinColumn);
 	}
 	
 	/**

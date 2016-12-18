@@ -7,7 +7,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
-import java.util.function.Function;
+import java.util.function.BiConsumer;
 
 import org.gama.sql.binder.ParameterBinder;
 import org.gama.stalactite.persistence.engine.JoinedStrategiesSelect.StrategyJoins.Join;
@@ -36,7 +36,7 @@ public class JoinedStrategiesSelect<T, I> {
 	private final StrategyJoins<T> root;
 	/**
 	 * A mapping between a name and join to help finding them when we want to join them with a new one
-	 * @see #add(String, ClassMappingStrategy, Column, Column, Function)
+	 * @see #add(String, ClassMappingStrategy, Column, Column, BiConsumer)
 	 */
 	private final Map<String, StrategyJoins> strategyIndex = new HashMap<>();
 	/** The objet that will help to give names of strategies into the index */
@@ -96,22 +96,26 @@ public class JoinedStrategiesSelect<T, I> {
 	}
 	
 	public <U> String add(String leftStrategyName, ClassMappingStrategy<U, ?> strategy, Column leftJoinColumn, Column rightJoinColumn,
-						  Function<T, Iterable<U>> setter) {
+						  BiConsumer<T, Iterable<U>> setter) {
 		// we outer join nullable columns
 		boolean isOuterJoin = rightJoinColumn.isNullable();
 		return add(leftStrategyName, strategy, leftJoinColumn, rightJoinColumn, isOuterJoin, setter);
 	}
 	
 	public <U> String add(String leftStrategyName, ClassMappingStrategy<U, ?> strategy, Column leftJoinColumn, Column rightJoinColumn,
-						   boolean isOuterJoin, Function<T, Iterable<U>> setter) {
-		StrategyJoins hangingJoins = this.strategyIndex.get(leftStrategyName);
+						   boolean isOuterJoin, BiConsumer<T, Iterable<U>> setter) {
+		StrategyJoins hangingJoins = getStrategyJoins(leftStrategyName);
 		if (hangingJoins == null) {
 			throw new IllegalStateException("No strategy with name " + leftStrategyName + " exists to add a new strategy");
 		}
-		hangingJoins.add(strategy, leftJoinColumn, rightJoinColumn, isOuterJoin, Function.identity());
+		Join join = hangingJoins.add(strategy, leftJoinColumn, rightJoinColumn, isOuterJoin, setter);
 		String indexKey = indexNamer.generateName(strategy);
-		strategyIndex.put(indexKey, hangingJoins);
+		strategyIndex.put(indexKey, join.getStrategy());
 		return indexKey;
+	}
+	
+	StrategyJoins getStrategyJoins(String leftStrategyName) {
+		return this.strategyIndex.get(leftStrategyName);
 	}
 	
 	public Collection<StrategyJoins> getStrategies() {
@@ -151,16 +155,16 @@ public class JoinedStrategiesSelect<T, I> {
 		/**
 		 * Add a join between the owned strategy and the given one
 		 *
+		 * @param <U> the new strategy mapped type
 		 * @param strategy the new strategy on which to join
 		 * @param leftJoinColumn the column of the owned strategy table (no check done) on which the join will be made
 		 * @param rightJoinColumn the column of the new strategy table (no check done) on whoch the join will be made
 		 * @param isOuterJoin indicates if the join is an outer (left) one or not
 		 * @param setter the function to use for applyling instance of the new strategy on the owned one
-		 * @param <U> the new strategy mapped type
 		 * @return the created join
 		 */
-		private <U> Join<I, U> add(ClassMappingStrategy<U, ?> strategy, Column leftJoinColumn, Column rightJoinColumn, boolean isOuterJoin,
-								   Function<I, U> setter) {
+		private <U> Join<I, U> add(ClassMappingStrategy strategy, Column leftJoinColumn, Column rightJoinColumn, boolean isOuterJoin,
+								   BiConsumer<I, Iterable<U>> setter) {
 			Join<I, U> join = new Join<>(strategy, leftJoinColumn, rightJoinColumn, isOuterJoin, setter);
 			this.joins.add(join);
 			return join;
@@ -185,9 +189,9 @@ public class JoinedStrategiesSelect<T, I> {
 			/** Indicates if the join must be an inner or (left) outer join */
 			private final boolean outer;
 			/** Setter for instances of previous strategy entities on this strategy */
-			private final Function<I, O> setter;
+			private final BiConsumer<I, Iterable<O>> setter;
 			
-			private Join(ClassMappingStrategy<O, ?> strategy, Column leftJoinColumn, Column rightJoinColumn, boolean outer, Function<I, O> setter) {
+			private Join(ClassMappingStrategy<O, ?> strategy, Column leftJoinColumn, Column rightJoinColumn, boolean outer, BiConsumer<I, Iterable<O>> setter) {
 				this.strategy = new StrategyJoins<>(strategy);
 				this.leftJoinColumn = leftJoinColumn;
 				this.rightJoinColumn = rightJoinColumn;
@@ -195,7 +199,7 @@ public class JoinedStrategiesSelect<T, I> {
 				this.setter = setter;
 			}
 			
-			private StrategyJoins<O> getStrategy() {
+			StrategyJoins<O> getStrategy() {
 				return strategy;
 			}
 			
@@ -211,7 +215,7 @@ public class JoinedStrategiesSelect<T, I> {
 				return outer;
 			}
 			
-			public Function<I, O> getSetter() {
+			public BiConsumer<I, Iterable<O>> getSetter() {
 				return setter;
 			}
 		}

@@ -1,6 +1,7 @@
 package org.gama.stalactite.persistence.engine;
 
 import java.sql.SQLException;
+import java.util.function.BiConsumer;
 
 import org.gama.lang.collection.Arrays;
 import org.gama.sql.result.Row;
@@ -9,10 +10,12 @@ import org.gama.stalactite.persistence.mapping.ToBeanRowTransformer;
 import org.gama.stalactite.persistence.sql.Dialect;
 import org.gama.stalactite.persistence.sql.ddl.JavaTypeToSqlTypeMapping;
 import org.gama.stalactite.persistence.structure.Table;
+import org.gama.stalactite.persistence.structure.Table.Column;
 import org.junit.Before;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -32,7 +35,7 @@ public class JoinedStrategiesSelectExecutorTest {
 	}
 	
 	@Test
-	public void testTransform() throws SQLException, NoSuchMethodException {
+	public void testTransform_with1strategy() throws SQLException, NoSuchMethodException {
 		// preventing from NullPointerException during JoinedStrategiesSelectExecutor instanciation
 		when(dummyStrategy.getTargetTable()).thenReturn(new Table("toto"));
 		
@@ -40,19 +43,50 @@ public class JoinedStrategiesSelectExecutorTest {
 		
 		when(dummyStrategy.getRowTransformer()).thenReturn(new ToBeanRowTransformer<>(Toto.class));
 		
-//		when(dummyStrategy.transform(any(Row.class))).thenReturn(new Toto(1L, "toto"));
 		Row row1 = new Row().add("id", 1L).add("name", "toto");
 		Object result = testInstance.transform(Arrays.asList(row1).iterator());
 		
-		// seems
 		assertTrue(result instanceof Toto);
 		Toto typedResult = (Toto) result;
-		assertEquals(new Toto(1L, "toto").name, typedResult.name);
+		assertEquals("toto", typedResult.name);
 	}
 	
-	private static class Toto {
+	@Test
+	public void testTransform_with2strategies() throws SQLException, NoSuchMethodException {
+		// preventing from NullPointerException during JoinedStrategiesSelectExecutor instanciation
+		when(dummyStrategy.getTargetTable()).thenReturn(new Table("toto"));
+		
+		JoinedStrategiesSelectExecutor testInstance = new JoinedStrategiesSelectExecutor(dummyStrategy, dummyDialect, null);
+		
+		ClassMappingStrategy joinedStrategy = mock(ClassMappingStrategy.class);
+		when(joinedStrategy.getClassToPersist()).thenReturn(Tata.class);
+		
+		// defining the target table is not necessary for the test case but it is technically, otherwise we get a NullPointerException
+		Table tataTable = new Table("tata");
+		Column dummyJoinColumn = tataTable.new Column("a", long.class);
+		when(joinedStrategy.getTargetTable()).thenReturn(tataTable);
+		
+		// completing the test case: adding the joined strategy
+		testInstance.addComplementaryTables(JoinedStrategiesSelect.FIRST_STRATEGY_NAME, joinedStrategy, (BiConsumer<Toto, Tata>) Toto::setOneToOne,
+				null, dummyJoinColumn);
+		
+		when(dummyStrategy.getRowTransformer()).thenReturn(new ToBeanRowTransformer<>(Toto.class));
+		when(joinedStrategy.getRowTransformer()).thenReturn(new ToBeanRowTransformer<>(Tata.class));
+		
+		Row row1 = new Row().add("id", 1L).add("name", "toto").add("firstName", "tata");
+		Object result = testInstance.transform(Arrays.asList(row1).iterator());
+		
+		assertTrue(result instanceof Toto);
+		Toto typedResult = (Toto) result;
+		assertEquals("toto", typedResult.name);
+		assertNotNull(typedResult.oneToOne);
+		assertEquals("tata", typedResult.oneToOne.firstName);
+	}
+	
+	public static class Toto {
 		private Long id;
 		private String name;
+		private Tata oneToOne;
 		
 		public Toto() {
 		}
@@ -61,6 +95,13 @@ public class JoinedStrategiesSelectExecutorTest {
 			this.id = id;
 			this.name = name;
 		}
+		
+		public void setOneToOne(Tata oneToOne) {
+			this.oneToOne = oneToOne;
+		}
 	}
 	
+	public static class Tata {
+		private String firstName;
+	}
 }
