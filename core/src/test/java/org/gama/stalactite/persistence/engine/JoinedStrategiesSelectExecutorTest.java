@@ -51,6 +51,9 @@ public class JoinedStrategiesSelectExecutorTest {
 		assertEquals("toto", typedResult.name);
 	}
 	
+	/**
+	 * Test case with a root strategy joined with another one : @OneToOne case
+	 */
 	@Test
 	public void testTransform_with2strategies() throws SQLException, NoSuchMethodException {
 		// preventing from NullPointerException during JoinedStrategiesSelectExecutor instanciation
@@ -67,9 +70,11 @@ public class JoinedStrategiesSelectExecutorTest {
 		when(joinedStrategy.getTargetTable()).thenReturn(tataTable);
 		
 		// completing the test case: adding the joined strategy
-		testInstance.addComplementaryTables(JoinedStrategiesSelect.FIRST_STRATEGY_NAME, joinedStrategy, (BiConsumer<Toto, Tata>) Toto::setOneToOne,
+		testInstance.addComplementaryTables(JoinedStrategiesSelect.FIRST_STRATEGY_NAME, joinedStrategy,
+				(BiConsumer<Toto, Tata>) Toto::setOneToOne,
 				null, dummyJoinColumn);
 		
+		// Telling mocks which instance to create
 		when(dummyStrategy.getRowTransformer()).thenReturn(new ToBeanRowTransformer<>(Toto.class));
 		when(joinedStrategy.getRowTransformer()).thenReturn(new ToBeanRowTransformer<>(Tata.class));
 		
@@ -88,8 +93,11 @@ public class JoinedStrategiesSelectExecutorTest {
 		assertEquals("tata", typedResult.oneToOne.firstName);
 	}
 	
+	/**
+	 * Test case with a root strategy joined with 2 others by deep : nested @OneToOne case
+	 */
 	@Test
-	public void testTransform_with3strategies() throws SQLException, NoSuchMethodException {
+	public void testTransform_with3strategies_deep() throws SQLException, NoSuchMethodException {
 		// preventing from NullPointerException during JoinedStrategiesSelectExecutor instanciation
 		when(dummyStrategy.getTargetTable()).thenReturn(new Table("toto"));
 		
@@ -110,13 +118,15 @@ public class JoinedStrategiesSelectExecutorTest {
 		Column dummyJoinColumn2 = titiTable.new Column("a", long.class);
 		when(joinedStrategy2.getTargetTable()).thenReturn(titiTable);
 		
-		// completing the test case: adding the joined strategy
+		// completing the test case: adding the depth-1 strategy
 		String joinedStrategy1Name = testInstance.addComplementaryTables(JoinedStrategiesSelect.FIRST_STRATEGY_NAME, joinedStrategy1,
 				(BiConsumer<Toto, Tata>) Toto::setOneToOne,
 				null, dummyJoinColumn1);
+		// completing the test case: adding the depth-2 strategy
 		testInstance.addComplementaryTables(joinedStrategy1Name, joinedStrategy2, (BiConsumer<Tata, Titi>) Tata::setOneToOne,
 				null, dummyJoinColumn2);
 		
+		// Telling mocks which instance to create
 		when(dummyStrategy.getRowTransformer()).thenReturn(new ToBeanRowTransformer<>(Toto.class));
 		when(joinedStrategy1.getRowTransformer()).thenReturn(new ToBeanRowTransformer<>(Tata.class));
 		when(joinedStrategy2.getRowTransformer()).thenReturn(new ToBeanRowTransformer<>(Titi.class));
@@ -142,11 +152,72 @@ public class JoinedStrategiesSelectExecutorTest {
 		assertEquals("titi", typedResult.oneToOne.oneToOne.lastName);
 	}
 	
+	/**
+	 * Test case with a root strategy joined with 2 others flat : side-by-side @OneToOne case
+	 */
+	@Test
+	public void testTransform_with3strategies_flat() throws SQLException, NoSuchMethodException {
+		// preventing from NullPointerException during JoinedStrategiesSelectExecutor instanciation
+		when(dummyStrategy.getTargetTable()).thenReturn(new Table("toto"));
+		
+		JoinedStrategiesSelectExecutor testInstance = new JoinedStrategiesSelectExecutor(dummyStrategy, dummyDialect, null);
+		
+		ClassMappingStrategy joinedStrategy1 = mock(ClassMappingStrategy.class);
+		when(joinedStrategy1.getClassToPersist()).thenReturn(Tata.class);
+		
+		ClassMappingStrategy joinedStrategy2 = mock(ClassMappingStrategy.class);
+		when(joinedStrategy2.getClassToPersist()).thenReturn(Titi.class);
+		
+		// defining the target table is not necessary for the test case but it is technically, otherwise we get a NullPointerException
+		Table tataTable = new Table("tata");
+		Column dummyJoinColumn1 = tataTable.new Column("a", long.class);
+		when(joinedStrategy1.getTargetTable()).thenReturn(tataTable);
+		
+		Table titiTable = new Table("titi");
+		Column dummyJoinColumn2 = titiTable.new Column("a", long.class);
+		when(joinedStrategy2.getTargetTable()).thenReturn(titiTable);
+		
+		// completing the test case: adding the joined strategy
+		testInstance.addComplementaryTables(JoinedStrategiesSelect.FIRST_STRATEGY_NAME, joinedStrategy1,
+				(BiConsumer<Toto, Tata>) Toto::setOneToOne,
+				null, dummyJoinColumn1);
+		// completing the test case: adding the 2nd joined strategy
+		testInstance.addComplementaryTables(JoinedStrategiesSelect.FIRST_STRATEGY_NAME, joinedStrategy2,
+				(BiConsumer<Toto, Titi>) Toto::setOneToOneOther,
+				null, dummyJoinColumn2);
+		
+		// Telling mocks which instance to create
+		when(dummyStrategy.getRowTransformer()).thenReturn(new ToBeanRowTransformer<>(Toto.class));
+		when(joinedStrategy1.getRowTransformer()).thenReturn(new ToBeanRowTransformer<>(Tata.class));
+		when(joinedStrategy2.getRowTransformer()).thenReturn(new ToBeanRowTransformer<>(Titi.class));
+		
+		Row row1 = new Row()
+				// for Toto instance
+				.add("id", 1L).add("name", "toto")
+				// for Tata instance
+				.add("firstName", "tata")
+				// for Titi instance
+				.add("lastName", "titi");
+		Object result = testInstance.transform(Arrays.asList(row1).iterator());
+		
+		assertTrue(result instanceof Toto);
+		Toto typedResult = (Toto) result;
+		assertEquals("toto", typedResult.name);
+		assertNotNull(typedResult.oneToOne);
+		// firstName is filled because we put "firstName" into the Row
+		assertEquals("tata", typedResult.oneToOne.firstName);
+		// joined instance must be filled
+		assertNotNull(typedResult.oneToOneOther);
+		// firstName is filled because we put "firstName" into the Row
+		assertEquals("titi", typedResult.oneToOneOther.lastName);
+	}
+	
 	
 	public static class Toto {
 		private Long id;
 		private String name;
 		private Tata oneToOne;
+		private Titi oneToOneOther;
 		
 		public Toto() {
 		}
@@ -158,6 +229,10 @@ public class JoinedStrategiesSelectExecutorTest {
 		
 		public void setOneToOne(Tata oneToOne) {
 			this.oneToOne = oneToOne;
+		}
+		
+		public void setOneToOneOther(Titi oneToOneOther) {
+			this.oneToOneOther = oneToOneOther;
 		}
 	}
 	
