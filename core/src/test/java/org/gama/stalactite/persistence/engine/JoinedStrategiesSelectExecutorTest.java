@@ -1,10 +1,16 @@
 package org.gama.stalactite.persistence.engine;
 
 import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+import java.util.Set;
 import java.util.function.BiConsumer;
+import java.util.stream.Collectors;
 
 import org.gama.lang.collection.Arrays;
 import org.gama.sql.result.Row;
+import org.gama.stalactite.persistence.engine.JoinedStrategiesSelect.StrategyJoins;
 import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
 import org.gama.stalactite.persistence.mapping.ToBeanRowTransformer;
 import org.gama.stalactite.persistence.sql.Dialect;
@@ -32,21 +38,25 @@ public class JoinedStrategiesSelectExecutorTest {
 	public void setUp() {
 		dummyDialect = new Dialect(new JavaTypeToSqlTypeMapping());
 		dummyStrategy = mock(ClassMappingStrategy.class);
+		when(dummyStrategy.getClassToPersist()).thenReturn(Toto.class);
 	}
 	
 	@Test
 	public void testTransform_with1strategy() throws SQLException, NoSuchMethodException {
 		// preventing from NullPointerException during JoinedStrategiesSelectExecutor instanciation
-		when(dummyStrategy.getTargetTable()).thenReturn(new Table("toto"));
+		Table totoTable = new Table("toto");
+		totoTable.new Column("id", long.class).primaryKey();
+		when(dummyStrategy.getTargetTable()).thenReturn(totoTable);
 		
 		JoinedStrategiesSelectExecutor testInstance = new JoinedStrategiesSelectExecutor(dummyStrategy, dummyDialect, null);
 		
 		when(dummyStrategy.getRowTransformer()).thenReturn(new ToBeanRowTransformer<>(Toto.class));
 		
-		Row row1 = new Row().add("id", 1L).add("name", "toto");
+		Row row1 = new Row().add("toto_id", 1L).add("name", "toto");
 		Object result = testInstance.transform(Arrays.asList(row1).iterator());
 		
-		assertTrue(result instanceof Toto);
+		assertNotNull(result);
+		assertEquals(Toto.class, result.getClass());
 		Toto typedResult = (Toto) result;
 		assertEquals("toto", typedResult.name);
 	}
@@ -57,7 +67,9 @@ public class JoinedStrategiesSelectExecutorTest {
 	@Test
 	public void testTransform_with2strategies() throws SQLException, NoSuchMethodException {
 		// preventing from NullPointerException during JoinedStrategiesSelectExecutor instanciation
-		when(dummyStrategy.getTargetTable()).thenReturn(new Table("toto"));
+		Table totoTable = new Table("toto");
+		totoTable.new Column("id", long.class).primaryKey();
+		when(dummyStrategy.getTargetTable()).thenReturn(totoTable);
 		
 		JoinedStrategiesSelectExecutor testInstance = new JoinedStrategiesSelectExecutor(dummyStrategy, dummyDialect, null);
 		
@@ -66,6 +78,7 @@ public class JoinedStrategiesSelectExecutorTest {
 		
 		// defining the target table is not necessary for the test case but it is technically, otherwise we get a NullPointerException
 		Table tataTable = new Table("tata");
+		tataTable.new Column("id", long.class).primaryKey();
 		Column dummyJoinColumn = tataTable.new Column("a", long.class);
 		when(joinedStrategy.getTargetTable()).thenReturn(tataTable);
 		
@@ -80,12 +93,14 @@ public class JoinedStrategiesSelectExecutorTest {
 		
 		Row row1 = new Row()
 				// for Toto instance
-				.add("id", 1L).add("name", "toto")
+				.add("toto_id", 1L).add("name", "toto")
 				// for Tata instance
+				.add("tata_id", 1L).add("name", "toto")
 				.add("firstName", "tata");
 		Object result = testInstance.transform(Arrays.asList(row1).iterator());
 		
-		assertTrue(result instanceof Toto);
+		assertNotNull(result);
+		assertEquals(Toto.class, result.getClass());
 		Toto typedResult = (Toto) result;
 		assertEquals("toto", typedResult.name);
 		assertNotNull(typedResult.oneToOne);
@@ -99,7 +114,9 @@ public class JoinedStrategiesSelectExecutorTest {
 	@Test
 	public void testTransform_with3strategies_deep() throws SQLException, NoSuchMethodException {
 		// preventing from NullPointerException during JoinedStrategiesSelectExecutor instanciation
-		when(dummyStrategy.getTargetTable()).thenReturn(new Table("toto"));
+		Table totoTable = new Table("toto");
+		totoTable.new Column("id", long.class).primaryKey();
+		when(dummyStrategy.getTargetTable()).thenReturn(totoTable);
 		
 		JoinedStrategiesSelectExecutor testInstance = new JoinedStrategiesSelectExecutor(dummyStrategy, dummyDialect, null);
 		
@@ -111,10 +128,12 @@ public class JoinedStrategiesSelectExecutorTest {
 		
 		// defining the target table is not necessary for the test case but it is technically, otherwise we get a NullPointerException
 		Table tataTable = new Table("tata");
+		tataTable.new Column("id", long.class).primaryKey();
 		Column dummyJoinColumn1 = tataTable.new Column("a", long.class);
 		when(joinedStrategy1.getTargetTable()).thenReturn(tataTable);
 		
 		Table titiTable = new Table("titi");
+		titiTable.new Column("id", long.class).primaryKey();
 		Column dummyJoinColumn2 = titiTable.new Column("a", long.class);
 		when(joinedStrategy2.getTargetTable()).thenReturn(titiTable);
 		
@@ -133,14 +152,17 @@ public class JoinedStrategiesSelectExecutorTest {
 		
 		Row row1 = new Row()
 				// for Toto instance
-				.add("id", 1L).add("name", "toto")
+				.add("toto_id", 1L).add("name", "toto")
 				// for Tata instance
+				.add("tata_id", 1L)
 				.add("firstName", "tata")
 				// for Titi instance
+				.add("titi_id", 1L)
 				.add("lastName", "titi");
 		Object result = testInstance.transform(Arrays.asList(row1).iterator());
 		
-		assertTrue(result instanceof Toto);
+		assertNotNull(result);
+		assertEquals(Toto.class, result.getClass());
 		Toto typedResult = (Toto) result;
 		assertEquals("toto", typedResult.name);
 		assertNotNull(typedResult.oneToOne);
@@ -158,7 +180,9 @@ public class JoinedStrategiesSelectExecutorTest {
 	@Test
 	public void testTransform_with3strategies_flat() throws SQLException, NoSuchMethodException {
 		// preventing from NullPointerException during JoinedStrategiesSelectExecutor instanciation
-		when(dummyStrategy.getTargetTable()).thenReturn(new Table("toto"));
+		Table totoTable = new Table("toto");
+		totoTable.new Column("id", long.class).primaryKey();
+		when(dummyStrategy.getTargetTable()).thenReturn(totoTable);
 		
 		JoinedStrategiesSelectExecutor testInstance = new JoinedStrategiesSelectExecutor(dummyStrategy, dummyDialect, null);
 		
@@ -170,10 +194,12 @@ public class JoinedStrategiesSelectExecutorTest {
 		
 		// defining the target table is not necessary for the test case but it is technically, otherwise we get a NullPointerException
 		Table tataTable = new Table("tata");
+		tataTable.new Column("id", long.class).primaryKey();
 		Column dummyJoinColumn1 = tataTable.new Column("a", long.class);
 		when(joinedStrategy1.getTargetTable()).thenReturn(tataTable);
 		
 		Table titiTable = new Table("titi");
+		titiTable.new Column("id", long.class).primaryKey();
 		Column dummyJoinColumn2 = titiTable.new Column("a", long.class);
 		when(joinedStrategy2.getTargetTable()).thenReturn(titiTable);
 		
@@ -193,14 +219,17 @@ public class JoinedStrategiesSelectExecutorTest {
 		
 		Row row1 = new Row()
 				// for Toto instance
-				.add("id", 1L).add("name", "toto")
+				.add("toto_id", 1L).add("name", "toto")
 				// for Tata instance
+				.add("tata_id", 1L)
 				.add("firstName", "tata")
 				// for Titi instance
+				.add("titi_id", 1L)
 				.add("lastName", "titi");
 		Object result = testInstance.transform(Arrays.asList(row1).iterator());
 		
-		assertTrue(result instanceof Toto);
+		assertNotNull(result);
+		assertEquals(Toto.class, result.getClass());
 		Toto typedResult = (Toto) result;
 		assertEquals("toto", typedResult.name);
 		assertNotNull(typedResult.oneToOne);
@@ -212,12 +241,68 @@ public class JoinedStrategiesSelectExecutorTest {
 		assertEquals("titi", typedResult.oneToOneOther.lastName);
 	}
 	
+	/**
+	 * Test case with a root strategy joined with another one : @OneToMany case
+	 */
+	@Test
+	public void testTransform_with2strategies_oneToMany() throws SQLException, NoSuchMethodException {
+		// preventing from NullPointerException during JoinedStrategiesSelectExecutor instanciation
+		Table totoTable = new Table("toto");
+		totoTable.new Column("id", long.class).primaryKey();
+		when(dummyStrategy.getTargetTable()).thenReturn(totoTable);
+		
+		JoinedStrategiesSelect testInstance = new JoinedStrategiesSelect(dummyStrategy, c -> dummyDialect.getColumnBinderRegistry().getBinder(c));
+		
+		ClassMappingStrategy joinedStrategy = mock(ClassMappingStrategy.class);
+		when(joinedStrategy.getClassToPersist()).thenReturn(Tata.class);
+		
+		// defining the target table is not necessary for the test case but it is technically, otherwise we get a NullPointerException
+		Table tataTable = new Table("tata");
+		tataTable.new Column("id", long.class).primaryKey();
+		Column dummyJoinColumn = tataTable.new Column("a", long.class);
+		when(joinedStrategy.getTargetTable()).thenReturn(tataTable);
+		
+		// completing the test case: adding the joined strategy
+		testInstance.add(JoinedStrategiesSelect.FIRST_STRATEGY_NAME, joinedStrategy,
+				null, dummyJoinColumn, false, (BiConsumer<Toto, Collection<Tata>>) Toto::setOneToMany,
+				ArrayList.class);
+		
+		// Telling mocks which instance to create
+		when(dummyStrategy.getRowTransformer()).thenReturn(new ToBeanRowTransformer<>(Toto.class));
+		when(joinedStrategy.getRowTransformer()).thenReturn(new ToBeanRowTransformer<>(Tata.class));
+		
+		Row row1 = new Row()
+				// for Toto instance
+				.add("toto_id", 1L).add("name", "toto")
+				// for Tata instance
+				.add("tata_id", 1L)
+				.add("firstName", "tata1");
+		Row row2 = new Row()
+				// for Toto instance
+				.add("toto_id", 1L).add("name", "toto")
+				// for Tata instance
+				.add("tata_id", 2L)
+				.add("firstName", "tata2");
+		List<Toto> result = JoinedStrategiesSelectExecutor.transform(Arrays.asList(row1, row2).iterator(),
+				(StrategyJoins<Toto>) testInstance.getStrategyJoins(JoinedStrategiesSelect.FIRST_STRATEGY_NAME));
+		
+		assertEquals(1, result.size());
+		Toto firstResult = result.get(0);
+		assertEquals("toto", firstResult.name);
+		assertNotNull(firstResult.oneToMany);
+		assertTrue(firstResult.oneToMany instanceof ArrayList);
+		// firstName is filled because we put "firstName" into the Row
+		Set<String> oneToManyResult = firstResult.oneToMany.stream().map((tata -> tata.firstName)).collect(Collectors.toSet());
+		assertEquals(Arrays.asSet("tata1", "tata2"), oneToManyResult);
+	}
+	
 	
 	public static class Toto {
 		private Long id;
 		private String name;
 		private Tata oneToOne;
 		private Titi oneToOneOther;
+		private Collection<Tata> oneToMany;
 		
 		public Toto() {
 		}
@@ -233,6 +318,10 @@ public class JoinedStrategiesSelectExecutorTest {
 		
 		public void setOneToOneOther(Titi oneToOneOther) {
 			this.oneToOneOther = oneToOneOther;
+		}
+		
+		public void setOneToMany(Collection<Tata> oneToMany) {
+			this.oneToMany = oneToMany;
 		}
 	}
 	

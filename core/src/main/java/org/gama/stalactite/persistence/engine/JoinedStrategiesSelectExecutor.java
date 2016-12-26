@@ -1,21 +1,25 @@
 package org.gama.stalactite.persistence.engine;
 
+import java.lang.reflect.Method;
 import java.sql.ResultSet;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Queue;
 import java.util.function.BiConsumer;
 
+import org.gama.lang.Reflections;
 import org.gama.lang.StringAppender;
 import org.gama.lang.Strings;
 import org.gama.lang.collection.Collections;
 import org.gama.lang.collection.Iterables;
 import org.gama.lang.exception.Exceptions;
+import org.gama.reflection.PropertyAccessor;
+import org.gama.spy.MethodReferenceCapturer;
 import org.gama.sql.IConnectionProvider;
 import org.gama.sql.SimpleConnectionProvider;
 import org.gama.sql.binder.ParameterBinder;
@@ -69,10 +73,19 @@ public class JoinedStrategiesSelectExecutor<T, I> {
 	public ConnectionProvider getConnectionProvider() {
 		return connectionProvider;
 	}
-
+	
+	/** @deprecated use {@link #addComplementaryTables(String, ClassMappingStrategy, BiConsumer, Column, Column, Class)}  */
+	@Deprecated
 	public <U> String addComplementaryTables(String leftStrategyName, ClassMappingStrategy<U, ?> mappingStrategy, BiConsumer<T, Iterable<U>> setter,
 											 Column leftJoinColumn, Column rightJoinColumn) {
 		return joinedStrategiesSelect.add(leftStrategyName, mappingStrategy, leftJoinColumn, rightJoinColumn, setter);
+	}
+	
+	public <U> String addComplementaryTables(String leftStrategyName, ClassMappingStrategy<U, ?> mappingStrategy, BiConsumer<T, Iterable<U>> setter,
+											 Column leftJoinColumn, Column rightJoinColumn, Class<? extends Collection> oneToManyType) {
+		// we outer join nullable columns
+		boolean isOuterJoin = rightJoinColumn.isNullable();
+		return joinedStrategiesSelect.add(leftStrategyName, mappingStrategy, leftJoinColumn, rightJoinColumn, isOuterJoin, setter, oneToManyType);
 	}
 	
 	public List<T> select(Iterable<I> ids) {
@@ -144,37 +157,69 @@ public class JoinedStrategiesSelectExecutor<T, I> {
 	}
 	
 	T transform(Iterator<Row> rowIterator) {
-		Row row = rowIterator.next();
-		
+		List<T> result = transform(rowIterator, joinedStrategiesSelect.getStrategyJoins(JoinedStrategiesSelect.FIRST_STRATEGY_NAME));
+		return Iterables.first(result);
+	}
+	
+	static <T> List<T> transform(Iterator<Row> rowIterator, StrategyJoins<T> rootStrategyJoins) {
 		List<T> result = new ArrayList<>();
-		Queue<Entry<StrategyJoins, Object>> stack = new ArrayDeque<>();
-		stack.add(new HashMap.SimpleEntry<>(joinedStrategiesSelect.getStrategyJoins(JoinedStrategiesSelect.FIRST_STRATEGY_NAME), null));
-		while (!stack.isEmpty()) {
-			Entry<StrategyJoins, Object> entry = stack.poll();
-			StrategyJoins<?> strategyJoins = entry.getKey();
-//			System.out.println("treating " + strategyJoins.getTable().getAbsoluteName());
-			ToBeanRowTransformer mainRowTransformer = strategyJoins.getStrategy().getRowTransformer();
-			Object rowInstance = entry.getValue();
-			if (rowInstance == null) {
-				rowInstance = mainRowTransformer.newRowInstance();
-				entry.setValue(rowInstance);
-			}
-			
-			result.add((T) rowInstance);
-			mainRowTransformer.applyRowToBean(row, rowInstance);
-			for (Join join : strategyJoins.getJoins()) {
-//				System.out.println("applying " + join.getStrategy().getTable().getAbsoluteName());
-				ToBeanRowTransformer rowTransformer = join.getStrategy().getStrategy().getRowTransformer();
-				Object o = rowTransformer.newRowInstance();
-				rowTransformer.applyRowToBean(row, o);
-//				System.out.println(new MethodReferenceCapturer(rowInstance.getClass()).capture(join.getSetter()));
-//				System.out.println(rowInstance);
-//				System.out.println(o);
-				join.getSetter().accept(rowInstance, o);
-				stack.add(new HashMap.SimpleEntry<>(join.getStrategy(), o));
+		Map<Class, Map<Object, Object>> entityCache = new HashMap<>();
+		for (Row row : (Iterable<Row>) () -> rowIterator) {
+			Queue<StrategyJoins> stack = new ArrayDeque<>();
+			stack.add(rootStrategyJoins);
+			while (!stack.isEmpty()) {
+				StrategyJoins<?> strategyJoins = stack.poll();
+				ToBeanRowTransformer mainRowTransformer = strategyJoins.getStrategy().getRowTransformer();
+				Object primaryKeyValue = row.get(strategyJoins.getTable().getPrimaryKey().getAlias());
+				Object rowInstance = entityCache.computeIfAbsent(strategyJoins.getStrategy().getClassToPersist(), k -> new HashMap<>())
+						.get(primaryKeyValue);
+				if (rowInstance == null) {
+					rowInstance = mainRowTransformer.newRowInstance();
+					entityCache.computeIfAbsent(strategyJoins.getStrategy().getClassToPersist(), k -> new HashMap<>())
+							.put(primaryKeyValue, rowInstance);
+					if (strategyJoins == rootStrategyJoins) {
+						result.add((T) rowInstance);
+					}
+					mainRowTransformer.applyRowToBean(row, rowInstance);
+				}
+				for (Join join : strategyJoins.getJoins()) {
+					Object primaryKeyValue2 = row.get(join.getStrategy().getTable().getPrimaryKey().getAlias());
+					Object rowInstance2 = entityCache.computeIfAbsent(join.getStrategy().getStrategy().getClassToPersist(), k -> new HashMap<>())
+							.get(primaryKeyValue2);
+					
+					ToBeanRowTransformer rowTransformer = join.getStrategy().getStrategy().getRowTransformer();
+					if (rowInstance2 == null) {
+						rowInstance2 = rowTransformer.newRowInstance();
+						entityCache.computeIfAbsent(join.getStrategy().getStrategy().getClassToPersist(), k -> new HashMap<>())
+								.put(primaryKeyValue2, rowInstance2);
+						rowTransformer.applyRowToBean(row, rowInstance2);
+					}
+					Method capture = new MethodReferenceCapturer(rowInstance.getClass()).capture(join.getSetter());
+					PropertyAccessor<Object, Object> accessor = PropertyAccessor.of(capture);
+					// TODO: generic: la signature en Iterable du join.getSetter est fausse en OneToOne, je me demande comment ça marche ! il faudra sans doute mettre "Object" au lieu de Iterable
+					// TODO: fournir également le getter (pour remplacer capture et supprimer spy du pom.xml) car c'est obligatoire pour avoir les "value bean" comme les Collection ou Embeddable
+					// TODO: supprimer méthode deprecated JoinedStrategiesSelect#add
+					// TODO: sortir cet algorithme dans une classe à part
+					// TODO: créer une méthode qui récupère/crée l'entité du cache
+					// TODO: construire la Queue 1 fois et la réutiliser avec un Iterator ?
+					// TODO: implémenter l'héritage d'entité
+					// TODO: implémenter ManyToMany ?
+					// TODO: supprimer la dépendance du projet vers spy (mis juste pour MethodReferenceCapturer)
+					if (join.getOneToManyType() != null) {
+						Collection<Object> oneToManyTarget = (Collection) accessor.get(rowInstance);
+						if (oneToManyTarget == null) {
+							oneToManyTarget = Reflections.newInstance((Class<Collection>) join.getOneToManyType());
+						}
+						oneToManyTarget.add(rowInstance2);
+						join.getSetter().accept(rowInstance, oneToManyTarget);
+					} else {
+						join.getSetter().accept(rowInstance, rowInstance2);
+					}
+					stack.add(join.getStrategy());
+				}
 			}
 		}
-		return Iterables.first(result);
+		return result;
 	}
 	
 	private static class DynamicInClause implements CharSequence {

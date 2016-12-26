@@ -170,8 +170,10 @@ public class JoinedStrategiesSelectTest {
 		tutuTable.new Column("name", String.class);
 		
 		JoinedStrategiesSelect testInstance = new JoinedStrategiesSelect(totoMappingMock, c -> null);
-		String tataAddKey = testInstance.add(JoinedStrategiesSelect.FIRST_STRATEGY_NAME, tataMappingMock, tataId, tataPrimaryKey, (a, b) -> {});
-		testInstance.add(tataAddKey, tutuMappingMock, tutuId, tutuPrimaryKey, true, (a, b) -> {});
+		String tataAddKey = testInstance.add(JoinedStrategiesSelect.FIRST_STRATEGY_NAME, tataMappingMock, tataId, tataPrimaryKey,
+				false, (a, b) -> {}, null);
+		testInstance.add(tataAddKey, tutuMappingMock, tutuId, tutuPrimaryKey,
+				true, (a, b) -> {}, null);
 		SelectQueryBuilder queryBuilder = new SelectQueryBuilder(testInstance.buildSelectQuery());
 		assertEquals("select"
 						+ " Toto.id as Toto_id, Toto.name as Toto_name, Toto.tataId as Toto_tataId, Toto.tutuId as Toto_tutuId"
