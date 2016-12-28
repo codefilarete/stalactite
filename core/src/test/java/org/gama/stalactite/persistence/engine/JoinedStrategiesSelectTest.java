@@ -108,7 +108,8 @@ public class JoinedStrategiesSelectTest {
 										   Column leftJoinColumn, Column rightJoinColumn,
 										   String expected) {
 		JoinedStrategiesSelect testInstance = new JoinedStrategiesSelect(rootMappingStrategy, c -> null);
-		testInstance.add(JoinedStrategiesSelect.FIRST_STRATEGY_NAME, classMappingStrategy, leftJoinColumn, rightJoinColumn, (a, b) -> {});
+		testInstance.add(JoinedStrategiesSelect.FIRST_STRATEGY_NAME, classMappingStrategy, leftJoinColumn, rightJoinColumn, false,
+				(a, b) -> {}, a -> null, null);
 		SelectQueryBuilder queryBuilder = new SelectQueryBuilder(testInstance.buildSelectQuery());
 		assertEquals(expected, queryBuilder.toSQL());
 	}
@@ -134,8 +135,10 @@ public class JoinedStrategiesSelectTest {
 		tutuTable.new Column("name", String.class);
 		
 		JoinedStrategiesSelect testInstance = new JoinedStrategiesSelect(totoMappingMock, c -> null);
-		String tataAddKey = testInstance.add(JoinedStrategiesSelect.FIRST_STRATEGY_NAME, tataMappingMock, totoPrimaryKey, tataPrimaryKey, (a, b) -> {});
-		testInstance.add(tataAddKey, tutuMappingMock, tataPrimaryKey, tutuPrimaryKey, (a, b) -> {});
+		String tataAddKey = testInstance.add(JoinedStrategiesSelect.FIRST_STRATEGY_NAME, tataMappingMock, totoPrimaryKey, tataPrimaryKey, false,
+				(a, b) -> {}, a -> null, null);
+		testInstance.add(tataAddKey, tutuMappingMock, tataPrimaryKey, tutuPrimaryKey, false,
+				(a, b) -> {}, a -> null, null);
 		SelectQueryBuilder queryBuilder = new SelectQueryBuilder(testInstance.buildSelectQuery());
 		assertEquals("select"
 						+ " Toto.id as Toto_id, Toto.name as Toto_name"
@@ -171,9 +174,9 @@ public class JoinedStrategiesSelectTest {
 		
 		JoinedStrategiesSelect testInstance = new JoinedStrategiesSelect(totoMappingMock, c -> null);
 		String tataAddKey = testInstance.add(JoinedStrategiesSelect.FIRST_STRATEGY_NAME, tataMappingMock, tataId, tataPrimaryKey,
-				false, (a, b) -> {}, null);
+				false, (a, b) -> {}, a -> null, null);
 		testInstance.add(tataAddKey, tutuMappingMock, tutuId, tutuPrimaryKey,
-				true, (a, b) -> {}, null);
+				true, (a, b) -> {}, a -> null, null);
 		SelectQueryBuilder queryBuilder = new SelectQueryBuilder(testInstance.buildSelectQuery());
 		assertEquals("select"
 						+ " Toto.id as Toto_id, Toto.name as Toto_name, Toto.tataId as Toto_tataId, Toto.tutuId as Toto_tutuId"
@@ -212,9 +215,12 @@ public class JoinedStrategiesSelectTest {
 		titiTable.new Column("name", String.class);
 		
 		JoinedStrategiesSelect testInstance = new JoinedStrategiesSelect(totoMappingMock, c -> null);
-		String tataAddKey = testInstance.add(JoinedStrategiesSelect.FIRST_STRATEGY_NAME, tataMappingMock, totoPrimaryKey, tataPrimaryKey, (a, b) -> {});
-		String tutuAddKey = testInstance.add(tataAddKey, tutuMappingMock, tataPrimaryKey, tutuPrimaryKey, (a, b) -> {});
-		String titiAddKey = testInstance.add(JoinedStrategiesSelect.FIRST_STRATEGY_NAME, titiMappingMock, tataPrimaryKey, titiPrimaryKey, (a, b) -> {});
+		String tataAddKey = testInstance.add(JoinedStrategiesSelect.FIRST_STRATEGY_NAME, tataMappingMock, totoPrimaryKey, tataPrimaryKey, false,
+				(a, b) -> {}, a -> null, null);
+		String tutuAddKey = testInstance.add(tataAddKey, tutuMappingMock, tataPrimaryKey, tutuPrimaryKey, false,
+				(a, b) -> {}, a -> null, null);
+		String titiAddKey = testInstance.add(JoinedStrategiesSelect.FIRST_STRATEGY_NAME, titiMappingMock, tataPrimaryKey, titiPrimaryKey, false,
+				(a, b) -> {}, a -> null, null);
 		SelectQueryBuilder queryBuilder = new SelectQueryBuilder(testInstance.buildSelectQuery());
 		assertEquals("select"
 						+ " Toto.id as Toto_id, Toto.name as Toto_name"

@@ -8,6 +8,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.function.BiConsumer;
+import java.util.function.Function;
 
 import org.gama.lang.StringAppender;
 import org.gama.lang.Strings;
@@ -66,18 +67,12 @@ public class JoinedStrategiesSelectExecutor<T, I> {
 		return connectionProvider;
 	}
 	
-	/** @deprecated use {@link #addComplementaryTables(String, ClassMappingStrategy, BiConsumer, Column, Column, Class)}  */
-	@Deprecated
-	public <U> String addComplementaryTables(String leftStrategyName, ClassMappingStrategy<U, ?> mappingStrategy, BiConsumer<T, Iterable<U>> setter,
-											 Column leftJoinColumn, Column rightJoinColumn) {
-		return joinedStrategiesSelect.add(leftStrategyName, mappingStrategy, leftJoinColumn, rightJoinColumn, setter);
-	}
-	
-	public <U> String addComplementaryTables(String leftStrategyName, ClassMappingStrategy<U, ?> mappingStrategy, BiConsumer<T, Iterable<U>> setter,
+	public <U> String addComplementaryTables(String leftStrategyName, ClassMappingStrategy<U, ?> mappingStrategy,
+											 BiConsumer<T, Iterable<U>> setter, Function<T, Iterable<U>> getter,
 											 Column leftJoinColumn, Column rightJoinColumn, Class<? extends Collection> oneToManyType) {
 		// we outer join nullable columns
 		boolean isOuterJoin = rightJoinColumn.isNullable();
-		return joinedStrategiesSelect.add(leftStrategyName, mappingStrategy, leftJoinColumn, rightJoinColumn, isOuterJoin, setter, oneToManyType);
+		return joinedStrategiesSelect.add(leftStrategyName, mappingStrategy, leftJoinColumn, rightJoinColumn, isOuterJoin, setter, getter, oneToManyType);
 	}
 	
 	public List<T> select(Iterable<I> ids) {

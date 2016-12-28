@@ -6,6 +6,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Set;
 import java.util.function.BiConsumer;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import org.gama.lang.collection.Arrays;
@@ -85,7 +86,7 @@ public class JoinedStrategiesSelectExecutorTest {
 		// completing the test case: adding the joined strategy
 		testInstance.addComplementaryTables(JoinedStrategiesSelect.FIRST_STRATEGY_NAME, joinedStrategy,
 				(BiConsumer<Toto, Tata>) Toto::setOneToOne,
-				null, dummyJoinColumn);
+				(Function<Toto, Tata>) Toto::getOneToOne, dummyJoinColumn, dummyJoinColumn, null);
 		
 		// Telling mocks which instance to create
 		when(dummyStrategy.getRowTransformer()).thenReturn(new ToBeanRowTransformer<>(Toto.class));
@@ -140,10 +141,10 @@ public class JoinedStrategiesSelectExecutorTest {
 		// completing the test case: adding the depth-1 strategy
 		String joinedStrategy1Name = testInstance.addComplementaryTables(JoinedStrategiesSelect.FIRST_STRATEGY_NAME, joinedStrategy1,
 				(BiConsumer<Toto, Tata>) Toto::setOneToOne,
-				null, dummyJoinColumn1);
+				(Function<Toto, Tata>) Toto::getOneToOne, dummyJoinColumn1, dummyJoinColumn1, null);
 		// completing the test case: adding the depth-2 strategy
 		testInstance.addComplementaryTables(joinedStrategy1Name, joinedStrategy2, (BiConsumer<Tata, Titi>) Tata::setOneToOne,
-				null, dummyJoinColumn2);
+				null, dummyJoinColumn2, dummyJoinColumn2, null);
 		
 		// Telling mocks which instance to create
 		when(dummyStrategy.getRowTransformer()).thenReturn(new ToBeanRowTransformer<>(Toto.class));
@@ -206,11 +207,11 @@ public class JoinedStrategiesSelectExecutorTest {
 		// completing the test case: adding the joined strategy
 		testInstance.addComplementaryTables(JoinedStrategiesSelect.FIRST_STRATEGY_NAME, joinedStrategy1,
 				(BiConsumer<Toto, Tata>) Toto::setOneToOne,
-				null, dummyJoinColumn1);
+				null, dummyJoinColumn1, dummyJoinColumn1, null);
 		// completing the test case: adding the 2nd joined strategy
 		testInstance.addComplementaryTables(JoinedStrategiesSelect.FIRST_STRATEGY_NAME, joinedStrategy2,
 				(BiConsumer<Toto, Titi>) Toto::setOneToOneOther,
-				null, dummyJoinColumn2);
+				null, dummyJoinColumn2, dummyJoinColumn2, null);
 		
 		// Telling mocks which instance to create
 		when(dummyStrategy.getRowTransformer()).thenReturn(new ToBeanRowTransformer<>(Toto.class));
@@ -264,8 +265,8 @@ public class JoinedStrategiesSelectExecutorTest {
 		
 		// completing the test case: adding the joined strategy
 		testInstance.add(JoinedStrategiesSelect.FIRST_STRATEGY_NAME, joinedStrategy,
-				null, dummyJoinColumn, false, (BiConsumer<Toto, Collection<Tata>>) Toto::setOneToMany,
-				ArrayList.class);
+				null, dummyJoinColumn, false,
+				(BiConsumer<Toto, Collection<Tata>>) Toto::setOneToMany, (Function<Toto, Collection<Tata>>) Toto::getOneToMany, ArrayList.class);
 		
 		// Telling mocks which instance to create
 		when(dummyStrategy.getRowTransformer()).thenReturn(new ToBeanRowTransformer<>(Toto.class));
@@ -316,12 +317,20 @@ public class JoinedStrategiesSelectExecutorTest {
 			this.oneToOne = oneToOne;
 		}
 		
+		public Tata getOneToOne() {
+			return oneToOne;
+		}
+		
 		public void setOneToOneOther(Titi oneToOneOther) {
 			this.oneToOneOther = oneToOneOther;
 		}
 		
 		public void setOneToMany(Collection<Tata> oneToMany) {
 			this.oneToMany = oneToMany;
+		}
+		
+		public Collection<Tata> getOneToMany() {
+			return oneToMany;
 		}
 	}
 	

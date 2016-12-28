@@ -1,6 +1,5 @@
 package org.gama.stalactite.persistence.engine;
 
-import java.lang.reflect.Method;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -9,8 +8,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Queue;
 import java.util.function.BiConsumer;
+import java.util.function.Function;
 
-import org.gama.spy.MethodReferenceCapturer;
 import org.gama.sql.binder.ParameterBinder;
 import org.gama.stalactite.persistence.engine.JoinedStrategiesSelect.StrategyJoins.Join;
 import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
@@ -38,7 +37,7 @@ public class JoinedStrategiesSelect<T, I> {
 	private final StrategyJoins<T> root;
 	/**
 	 * A mapping between a name and join to help finding them when we want to join them with a new one
-	 * @see #add(String, ClassMappingStrategy, Column, Column, BiConsumer)
+	 * @see #add(String, ClassMappingStrategy, Column, Column, boolean, BiConsumer, Function, Class) 
 	 */
 	private final Map<String, StrategyJoins> strategyIndex = new HashMap<>();
 	/** The objet that will help to give names of strategies into the index */
@@ -97,38 +96,19 @@ public class JoinedStrategiesSelect<T, I> {
 		return selectQuery;
 	}
 	
-	/** @deprecated use {@link #add(String, ClassMappingStrategy, Column, Column, boolean, BiConsumer, Class)}  */
-	@Deprecated
 	public <U> String add(String leftStrategyName, ClassMappingStrategy<U, ?> strategy, Column leftJoinColumn, Column rightJoinColumn,
-						  BiConsumer<T, Iterable<U>> setter) {
+						  boolean isOuterJoin, BiConsumer<T, Iterable<U>> setter, Function<T, Iterable<U>> getter, Class<? extends Collection> oneToManyType) {
 		StrategyJoins hangingJoins = getStrategyJoins(leftStrategyName);
 		if (hangingJoins == null) {
 			throw new IllegalStateException("No strategy with name " + leftStrategyName + " exists to add a new strategy");
 		}
-		MethodReferenceCapturer methodReferenceCapturer = new MethodReferenceCapturer(hangingJoins.getStrategy().getClassToPersist());
-		Method capture = methodReferenceCapturer.capture(setter);
-		Class<? extends Collection> oneToManyType = null;
-		if (capture != null && Collection.class.isAssignableFrom(capture.getReturnType())) {
-			oneToManyType = (Class<? extends Collection>) capture.getReturnType();
-		}
-		// we outer join nullable columns
-		boolean isOuterJoin = rightJoinColumn.isNullable();
-		return add(leftStrategyName, strategy, leftJoinColumn, rightJoinColumn, isOuterJoin, setter, oneToManyType);
-	}
-	
-	public <U> String add(String leftStrategyName, ClassMappingStrategy<U, ?> strategy, Column leftJoinColumn, Column rightJoinColumn,
-						  boolean isOuterJoin, BiConsumer<T, Iterable<U>> setter, Class<? extends Collection> oneToManyType) {
-		StrategyJoins hangingJoins = getStrategyJoins(leftStrategyName);
-		if (hangingJoins == null) {
-			throw new IllegalStateException("No strategy with name " + leftStrategyName + " exists to add a new strategy");
-		}
-		return add(hangingJoins, strategy, leftJoinColumn, rightJoinColumn, isOuterJoin, setter, oneToManyType);
+		return add(hangingJoins, strategy, leftJoinColumn, rightJoinColumn, isOuterJoin, setter, getter, oneToManyType);
 	}
 	
 	private <U> String add(StrategyJoins owner, ClassMappingStrategy<U, ?> strategy,
 						   Column leftJoinColumn, Column rightJoinColumn, boolean isOuterJoin,
-						   BiConsumer<T, Iterable<U>> setter, Class<? extends Collection> oneToManyType) {
-		Join join = owner.add(strategy, leftJoinColumn, rightJoinColumn, isOuterJoin, setter, oneToManyType);
+						   BiConsumer<T, Iterable<U>> setter, Function<T, Iterable<U>> getter, Class<? extends Collection> oneToManyType) {
+		Join join = owner.add(strategy, leftJoinColumn, rightJoinColumn, isOuterJoin, setter, getter, oneToManyType);
 		String indexKey = indexNamer.generateName(strategy);
 		strategyIndex.put(indexKey, join.getStrategy());
 		return indexKey;
@@ -185,8 +165,8 @@ public class JoinedStrategiesSelect<T, I> {
 		 * @return the created join
 		 */
 		private <U> Join<I, U> add(ClassMappingStrategy strategy, Column leftJoinColumn, Column rightJoinColumn, boolean isOuterJoin,
-								   BiConsumer<I, Iterable<U>> setter, Class<? extends Collection> oneToManyType) {
-			Join<I, U> join = new Join<>(strategy, leftJoinColumn, rightJoinColumn, isOuterJoin, setter, oneToManyType);
+								   BiConsumer<I, Iterable<U>> setter, Function<I, Iterable<U>> getter, Class<? extends Collection> oneToManyType) {
+			Join<I, U> join = new Join<>(strategy, leftJoinColumn, rightJoinColumn, isOuterJoin, setter, getter, oneToManyType);
 			this.joins.add(join);
 			return join;
 		}
@@ -209,19 +189,22 @@ public class JoinedStrategiesSelect<T, I> {
 			private final Column rightJoinColumn;
 			/** Indicates if the join must be an inner or (left) outer join */
 			private final boolean outer;
-			/** Setter for instances of previous strategy entities on this strategy */
+			/** Setter for instances of this strategy from owning strategy entities */
 			private final BiConsumer<I, Iterable<O>> setter;
+			/** Getter for instances of this strategy from owning strategy entities */
+			private final Function<I, Iterable<O>> getter;
 			/** Type of the Collection in case of a OneToMany case, expected to be null when join is not a -many relation */
 			private final Class<? extends Collection> oneToManyType;
 			
 			private Join(ClassMappingStrategy<O, ?> strategy, Column leftJoinColumn, Column rightJoinColumn, boolean outer,
-						 BiConsumer<I, Iterable<O>> setter, Class<? extends Collection> oneToManyType) {
+						 BiConsumer<I, Iterable<O>> setter, Function<I, Iterable<O>> getter, Class<? extends Collection> oneToManyType) {
 				this.strategy = new StrategyJoins<>(strategy);
 				this.leftJoinColumn = leftJoinColumn;
 				this.rightJoinColumn = rightJoinColumn;
 				this.outer = outer;
 				this.setter = setter;
 				this.oneToManyType = oneToManyType;
+				this.getter = getter;
 			}
 			
 			StrategyJoins<O> getStrategy() {
@@ -242,6 +225,10 @@ public class JoinedStrategiesSelect<T, I> {
 			
 			public BiConsumer<I, Iterable<O>> getSetter() {
 				return setter;
+			}
+			
+			public Function<I, Iterable<O>> getGetter() {
+				return getter;
 			}
 			
 			public Class<? extends Collection> getOneToManyType() {

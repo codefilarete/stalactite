@@ -43,11 +43,6 @@
 		</dependency>
 		<dependency>
 			<groupId>org.gama</groupId>
-			<artifactId>spy</artifactId>
-			<version>${project.version}</version>
-		</dependency>
-		<dependency>
-			<groupId>org.gama</groupId>
 			<artifactId>sql</artifactId>
 			<version>${project.version}</version>
 		</dependency>

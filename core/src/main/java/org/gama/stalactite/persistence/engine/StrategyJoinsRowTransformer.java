@@ -1,6 +1,5 @@
 package org.gama.stalactite.persistence.engine;
 
-import java.lang.reflect.Method;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -8,14 +7,15 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
+import java.util.function.BiConsumer;
+import java.util.function.Function;
 import java.util.function.Supplier;
 
 import org.gama.lang.Reflections;
-import org.gama.reflection.PropertyAccessor;
-import org.gama.spy.MethodReferenceCapturer;
 import org.gama.sql.result.Row;
 import org.gama.stalactite.persistence.engine.JoinedStrategiesSelect.StrategyJoins;
 import org.gama.stalactite.persistence.engine.JoinedStrategiesSelect.StrategyJoins.Join;
+import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
 import org.gama.stalactite.persistence.mapping.ToBeanRowTransformer;
 
 /**
@@ -43,10 +43,11 @@ public class StrategyJoinsRowTransformer<T> {
 			stack.add(rootStrategyJoins);
 			while (!stack.isEmpty()) {
 				StrategyJoins<?> strategyJoins = stack.poll();
-				ToBeanRowTransformer mainRowTransformer = strategyJoins.getStrategy().getRowTransformer();
+				ClassMappingStrategy<?, ?> leftStrategy = strategyJoins.getStrategy();
+				ToBeanRowTransformer mainRowTransformer = leftStrategy.getRowTransformer();
 				Object primaryKeyValue = row.get(strategyJoins.getTable().getPrimaryKey().getAlias());
 				
-				Object rowInstance = entityCacheWrapper.computeIfAbsent(strategyJoins.getStrategy().getClassToPersist(), primaryKeyValue, () -> {
+				Object rowInstance = entityCacheWrapper.computeIfAbsent(leftStrategy.getClassToPersist(), primaryKeyValue, () -> {
 					Object newInstance = mainRowTransformer.newRowInstance();
 					mainRowTransformer.applyRowToBean(row, newInstance);
 					if (strategyJoins == rootStrategyJoins) {
@@ -56,39 +57,43 @@ public class StrategyJoinsRowTransformer<T> {
 				});
 				
 				for (Join join : strategyJoins.getJoins()) {
-					Object primaryKeyValue2 = row.get(join.getStrategy().getTable().getPrimaryKey().getAlias());
+					StrategyJoins rightMember = join.getStrategy();
+					Object primaryKeyValue2 = row.get(rightMember.getTable().getPrimaryKey().getAlias());
 					
-					ToBeanRowTransformer rowTransformer = join.getStrategy().getStrategy().getRowTransformer();
-					Object rowInstance2 = entityCacheWrapper.computeIfAbsent(join.getStrategy().getStrategy().getClassToPersist(), primaryKeyValue2, () -> {
+					ToBeanRowTransformer rowTransformer = rightMember.getStrategy().getRowTransformer();
+					Object rowInstance2 = entityCacheWrapper.computeIfAbsent(rightMember.getStrategy().getClassToPersist(), primaryKeyValue2, () -> {
 						Object newInstance = rowTransformer.newRowInstance();
 						rowTransformer.applyRowToBean(row, newInstance);
 						return newInstance;
 					});
 					
-					Method capture = new MethodReferenceCapturer(rowInstance.getClass()).capture(join.getSetter());
-					PropertyAccessor<Object, Object> accessor = PropertyAccessor.of(capture);
 					// TODO: generic: la signature en Iterable du join.getSetter est fausse en OneToOne, je me demande comment ça marche ! il faudra sans doute mettre "Object" au lieu de Iterable
-					// TODO: fournir également le getter (pour remplacer capture et supprimer spy du pom.xml) car c'est obligatoire pour avoir les "value bean" comme les Collection ou Embeddable
-					// TODO: supprimer méthode deprecated JoinedStrategiesSelect#add
-					// TODO: construire la Queue 1 fois et la réutiliser avec un Iterator ?
 					// TODO: implémenter l'héritage d'entité
 					// TODO: implémenter ManyToMany ?
-					// TODO: supprimer la dépendance du projet vers spy (mis juste pour MethodReferenceCapturer)
-					if (join.getOneToManyType() != null) {
-						Collection<Object> oneToManyTarget = (Collection) accessor.get(rowInstance);
-						if (oneToManyTarget == null) {
-							oneToManyTarget = Reflections.newInstance((Class<Collection>) join.getOneToManyType());
-						}
-						oneToManyTarget.add(rowInstance2);
-						join.getSetter().accept(rowInstance, oneToManyTarget);
-					} else {
-						join.getSetter().accept(rowInstance, rowInstance2);
-					}
-					stack.add(join.getStrategy());
+					fillRelation(rowInstance, rowInstance2, join.getSetter(), join.getGetter(), join.getOneToManyType());
+					stack.add(rightMember);
 				}
 			}
 		}
 		return result;
+	}
+	
+	private <K, V> void fillRelation(K rowInstance, V rowInstance2, BiConsumer setter, Function getter, Class oneToManyType) {
+		if (oneToManyType != null) {
+			fillOneToMany(rowInstance, rowInstance2, (BiConsumer<K, Collection<V>>) setter, (Function<K, Collection<V>>) getter, (Class<Collection<V>>) oneToManyType);
+		} else {
+			setter.accept(rowInstance, rowInstance2);
+		}
+	}
+	
+	private <K, V> void fillOneToMany(K rowInstance, V rowInstance2, BiConsumer<K, Collection<V>> setter, Function<K, Collection<V>> getter, Class<Collection<V>> oneToManyType) {
+		Collection<V> oneToManyTarget = getter.apply(rowInstance);
+		// if the container doesn't exist, we create and fix it
+		if (oneToManyTarget == null) {
+			oneToManyTarget = Reflections.newInstance(oneToManyType);
+			setter.accept(rowInstance, oneToManyTarget);
+		}
+		oneToManyTarget.add(rowInstance2);
 	}
 	
 	/**
