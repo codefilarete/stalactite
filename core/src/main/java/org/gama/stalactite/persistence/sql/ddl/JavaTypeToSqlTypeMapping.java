@@ -30,12 +30,48 @@ public class JavaTypeToSqlTypeMapping {
 	 */
 	private final Map<Class, String> defaultJavaTypeToSQLType = new HashMap<>();
 	
+	/**
+	 * Register a Java class to a SQL type mapping
+	 * 
+	 * @param clazz the Java class to bind
+	 * @param sqlType the SQL type to map on the Java type
+	 */
 	public void put(Class clazz, String sqlType) {
 		defaultJavaTypeToSQLType.put(clazz, sqlType);
 	}
 	
+	/**
+	 * Register a Java class to a SQL type mapping
+	 *
+	 * @param clazz the Java class to bind
+	 * @param size the minimal size from which the SQL type will be used
+	 * @param sqlType the SQL type to map on the Java type
+	 */
 	public void put(Class clazz, int size, String sqlType) {
 		javaTypeToSQLType.get(clazz).put(size, sqlType);
+	}
+	
+	/**
+	 * Same as {@link #put(Class, String)} but with fluent writing
+	 * @param clazz the Java class to bind
+	 * @param sqlType the SQL type to map on the Java type
+	 * @return this
+	 */
+	public JavaTypeToSqlTypeMapping with(Class clazz, String sqlType) {
+		put(clazz, sqlType);
+		return this;
+	}
+	
+	/**
+	 * Same as {@link #put(Class, int, String)} but with fluent writing
+	 * @param clazz the Java class to bind
+	 * @param size the minimal size from which the SQL type will be used
+	 * @param sqlType the SQL type to map on the Java type
+	 * @return this
+	 */
+	public JavaTypeToSqlTypeMapping with(Class clazz, int size, String sqlType) {
+		put(clazz, size, sqlType);
+		return this;
 	}
 	
 	/**

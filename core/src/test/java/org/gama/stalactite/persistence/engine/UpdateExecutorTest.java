@@ -14,6 +14,7 @@ import org.gama.lang.collection.Arrays;
 import org.gama.lang.collection.PairIterator;
 import org.gama.stalactite.persistence.sql.dml.DMLGenerator;
 import org.gama.stalactite.test.PairSetList;
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -25,30 +26,33 @@ import static org.mockito.Mockito.verify;
  * @author Guillaume Mary
  */
 @RunWith(DataProviderRunner.class)
-public class UpdateExecutorTest extends DMLExecutorTest {
+public class UpdateExecutorTest extends AbstractDMLExecutorTest {
+	
+	private DataSet dataSet;
 	
 	private UpdateExecutor<Toto, Integer> testInstance;
 	
-	public void setUpTest() throws SQLException {
-		super.setUpTest();
-		DMLGenerator dmlGenerator = new DMLGenerator(dialect.getColumnBinderRegistry(), new DMLGenerator.CaseSensitiveSorter());
-		testInstance = new UpdateExecutor<>(persistenceConfiguration.classMappingStrategy, transactionManager, dmlGenerator, Retryer.NO_RETRY, 3, 3);
+	@Before
+	public void setUp() throws SQLException {
+		dataSet = new DataSet();
+		DMLGenerator dmlGenerator = new DMLGenerator(dataSet.dialect.getColumnBinderRegistry(), new DMLGenerator.CaseSensitiveSorter());
+		testInstance = new UpdateExecutor<>(dataSet.persistenceConfiguration.classMappingStrategy, dataSet.transactionManager, dmlGenerator, Retryer.NO_RETRY, 3, 3);
 	}
 	
 	@Test
 	public void testUpdateRoughly() throws Exception {
 		testInstance.updateRoughly(Arrays.asList(new Toto(1, 17, 23), new Toto(2, 29, 31), new Toto(3, 37, 41), new Toto(4, 43, 53)));
 		
-		verify(preparedStatement, times(4)).addBatch();
-		verify(preparedStatement, times(2)).executeBatch();
-		verify(preparedStatement, times(12)).setInt(indexCaptor.capture(), valueCaptor.capture());
-		assertEquals("update Toto set b = ?, c = ? where a = ?", statementArgCaptor.getValue());
+		verify(dataSet.preparedStatement, times(4)).addBatch();
+		verify(dataSet.preparedStatement, times(2)).executeBatch();
+		verify(dataSet.preparedStatement, times(12)).setInt(dataSet.indexCaptor.capture(), dataSet.valueCaptor.capture());
+		assertEquals("update Toto set b = ?, c = ? where a = ?", dataSet.statementArgCaptor.getValue());
 		PairSetList<Integer, Integer> expectedPairs = new PairSetList<Integer, Integer>()
 				.of(1, 17).add(2, 23).add(3, 1)
 				.of(1, 29).add(2, 31).add(3, 2)
 				.of(1, 37).add(2, 41).add(3, 3)
 				.of(1, 43).add(2, 53).add(3, 4);
-		assertCapturedPairsEqual(expectedPairs);
+		assertCapturedPairsEqual(dataSet, expectedPairs);
 	}
 	
 	@DataProvider
@@ -114,11 +118,11 @@ public class UpdateExecutorTest extends DMLExecutorTest {
 			}
 		}, false);
 		
-		verify(preparedStatement, times(expectedResult.addBatchCallCount)).addBatch();
-		verify(preparedStatement, times(expectedResult.executeBatchCallCount)).executeBatch();
-		verify(preparedStatement, times(expectedResult.setIntCallCount)).setInt(indexCaptor.capture(), valueCaptor.capture());
-		assertEquals(expectedResult.updateStatements, statementArgCaptor.getAllValues());
-		assertCapturedPairsEqual(expectedResult.statementValues);
+		verify(dataSet.preparedStatement, times(expectedResult.addBatchCallCount)).addBatch();
+		verify(dataSet.preparedStatement, times(expectedResult.executeBatchCallCount)).executeBatch();
+		verify(dataSet.preparedStatement, times(expectedResult.setIntCallCount)).setInt(dataSet.indexCaptor.capture(), dataSet.valueCaptor.capture());
+		assertEquals(expectedResult.updateStatements, dataSet.statementArgCaptor.getAllValues());
+		assertCapturedPairsEqual(dataSet, expectedResult.statementValues);
 	}
 	
 	@Test
@@ -132,16 +136,16 @@ public class UpdateExecutorTest extends DMLExecutorTest {
 			}
 		}, true);
 		
-		verify(preparedStatement, times(4)).addBatch();
-		verify(preparedStatement, times(2)).executeBatch();
-		verify(preparedStatement, times(12)).setInt(indexCaptor.capture(), valueCaptor.capture());
-		assertEquals(Arrays.asList("update Toto set b = ?, c = ? where a = ?"), statementArgCaptor.getAllValues());
+		verify(dataSet.preparedStatement, times(4)).addBatch();
+		verify(dataSet.preparedStatement, times(2)).executeBatch();
+		verify(dataSet.preparedStatement, times(12)).setInt(dataSet.indexCaptor.capture(), dataSet.valueCaptor.capture());
+		assertEquals(Arrays.asList("update Toto set b = ?, c = ? where a = ?"), dataSet.statementArgCaptor.getAllValues());
 		PairSetList<Integer, Integer> expectedPairs = new PairSetList<Integer, Integer>()
 				.of(1, 17).add(2, 123).add(3, 1)
 				.of(1, 129).add(2, 31).add(3, 2)
 				.of(1, 137).add(2, 141).add(3, 3)
 				.of(1, 143).add(2, 153).add(3, 4);
-		assertCapturedPairsEqual(expectedPairs);
+		assertCapturedPairsEqual(dataSet, expectedPairs);
 	}
 	
 }

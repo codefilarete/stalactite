@@ -25,8 +25,6 @@ import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.persistence.structure.Table.Column;
 import org.gama.stalactite.test.JdbcConnectionProvider;
 import org.gama.stalactite.test.PairSetList;
-import org.junit.Before;
-import org.junit.BeforeClass;
 import org.mockito.ArgumentCaptor;
 
 import static org.junit.Assert.assertEquals;
@@ -37,18 +35,61 @@ import static org.mockito.Mockito.when;
 /**
  * @author Guillaume Mary
  */
-public abstract class DMLExecutorTest {
+public abstract class AbstractDMLExecutorTest {
 	
-	protected static Dialect dialect;
-	
-	protected PersistenceConfiguration<Toto, Integer> persistenceConfiguration;
-	
-	protected PreparedStatement preparedStatement;
-	protected ArgumentCaptor<Integer> valueCaptor;
-	protected ArgumentCaptor<Integer> indexCaptor;
-	protected ArgumentCaptor<String> statementArgCaptor;
-	protected JdbcConnectionProvider transactionManager;
-	protected Connection connection;
+	protected static class DataSet {
+		
+		protected final Dialect dialect = new Dialect(new JavaTypeToSqlTypeMapping()
+				.with(Integer.class, "int"));
+		
+		protected PersistenceConfiguration<Toto, Integer> persistenceConfiguration;
+		
+		protected PreparedStatement preparedStatement;
+		protected ArgumentCaptor<Integer> valueCaptor;
+		protected ArgumentCaptor<Integer> indexCaptor;
+		protected ArgumentCaptor<String> statementArgCaptor;
+		protected JdbcConnectionProvider transactionManager;
+		protected Connection connection;
+		
+		protected DataSet() throws SQLException {
+			PersistenceConfigurationBuilder persistenceConfigurationBuilder = newPersistenceConfigurationBuilder();
+			persistenceConfiguration = persistenceConfigurationBuilder.build();
+			
+			preparedStatement = mock(PreparedStatement.class);
+			when(preparedStatement.executeBatch()).thenReturn(new int[] { 1 });
+			
+			connection = mock(Connection.class);
+			// PreparedStatement.getConnection() must gives that instance of connection because of SQLOperation that checks
+			// weither or not it should prepare statement
+			when(preparedStatement.getConnection()).thenReturn(connection);
+			statementArgCaptor = ArgumentCaptor.forClass(String.class);
+			when(connection.prepareStatement(statementArgCaptor.capture())).thenReturn(preparedStatement);
+			when(connection.prepareStatement(statementArgCaptor.capture(), anyInt())).thenReturn(preparedStatement);
+			
+			valueCaptor = ArgumentCaptor.forClass(Integer.class);
+			indexCaptor = ArgumentCaptor.forClass(Integer.class);
+			
+			DataSource dataSource = mock(DataSource.class);
+			when(dataSource.getConnection()).thenReturn(connection);
+			transactionManager = new JdbcConnectionProvider(dataSource);
+		}
+		
+		protected PersistenceConfigurationBuilder newPersistenceConfigurationBuilder() {
+			return new PersistenceConfigurationBuilder<Toto, Integer>()
+					.withTableAndClass("Toto", Toto.class, (mappedClass, primaryKeyField) -> {
+						Sequence<Integer> instance = InMemoryCounterIdentifierGenerator.INSTANCE;
+						IdentifierInsertionManager<Toto, Integer> identifierGenerator = new BeforeInsertIdentifierManager<>(
+								IdMappingStrategy.toIdAccessor(primaryKeyField), instance, Integer.class);
+						return new ClassMappingStrategy<>(
+								mappedClass.mappedClass,
+								mappedClass.targetTable,
+								mappedClass.persistentFieldHarverster.getFieldToColumn(),
+								primaryKeyField,
+								identifierGenerator);
+					})
+					.withPrimaryKeyFieldName("a");
+		}
+	}
 	
 	protected static class PersistenceConfiguration<T, I> {
 		
@@ -117,57 +158,8 @@ public abstract class DMLExecutorTest {
 		
 	}
 	
-	/**
-	 * To be called by subclasses @DataProvider because @BeforeClass is not compatible with @DataProvider
-	 * (cf https://github.com/TNG/junit-dataprovider/wiki/Features#beforeclass-support)
-	 */
-	@BeforeClass
-	public static void setUpDialect() {
-		JavaTypeToSqlTypeMapping simpleTypeMapping = new JavaTypeToSqlTypeMapping();
-		simpleTypeMapping.put(Integer.class, "int");
-		
-		dialect = new Dialect(simpleTypeMapping);
-	}
-	
-	@Before
-	public void setUpTest() throws SQLException {
-		PersistenceConfigurationBuilder persistenceConfigurationBuilder = newPersistenceConfigurationBuilder();
-		persistenceConfiguration = persistenceConfigurationBuilder.build();
-		
-		preparedStatement = mock(PreparedStatement.class);
-		when(preparedStatement.executeBatch()).thenReturn(new int[] { 1 });
-		
-		connection = mock(Connection.class);
-		// PreparedStatement.getConnection() must gives that instance of connection because of SQLOperation that checks
-		// weither or not it should prepare statement
-		when(preparedStatement.getConnection()).thenReturn(connection);
-		statementArgCaptor = ArgumentCaptor.forClass(String.class);
-		when(connection.prepareStatement(statementArgCaptor.capture())).thenReturn(preparedStatement);
-		when(connection.prepareStatement(statementArgCaptor.capture(), anyInt())).thenReturn(preparedStatement);
-		
-		valueCaptor = ArgumentCaptor.forClass(Integer.class);
-		indexCaptor = ArgumentCaptor.forClass(Integer.class);
-		
-		DataSource dataSource = mock(DataSource.class);
-		when(dataSource.getConnection()).thenReturn(connection);
-		transactionManager = new JdbcConnectionProvider(dataSource);
-	}
-	
-	protected PersistenceConfigurationBuilder newPersistenceConfigurationBuilder() {
-		return new PersistenceConfigurationBuilder<Toto, Integer>()
-				.withTableAndClass("Toto", Toto.class, (mappedClass, primaryKeyField) -> {
-					Sequence<Integer> instance = InMemoryCounterIdentifierGenerator.INSTANCE;
-					IdentifierInsertionManager<Toto, Integer> identifierGenerator = new BeforeInsertIdentifierManager<>(
-							IdMappingStrategy.toIdAccessor(primaryKeyField), instance, Integer.class);
-					return new ClassMappingStrategy<>(mappedClass.mappedClass,
-							mappedClass.targetTable,
-							mappedClass.persistentFieldHarverster.getFieldToColumn(), primaryKeyField, identifierGenerator);
-				})
-				.withPrimaryKeyFieldName("a");
-	}
-	
-	public void assertCapturedPairsEqual(PairSetList<Integer, Integer> expectedPairs) {
-		List<Map.Entry<Integer, Integer>> obtainedPairs = PairSetList.toPairs(indexCaptor.getAllValues(), valueCaptor.getAllValues());
+	public void assertCapturedPairsEqual(DataSet dataSet, PairSetList<Integer, Integer> expectedPairs) {
+		List<Map.Entry<Integer, Integer>> obtainedPairs = PairSetList.toPairs(dataSet.indexCaptor.getAllValues(), dataSet.valueCaptor.getAllValues());
 		List<Set<Map.Entry<Integer, Integer>>> obtained = new ArrayList<>();
 		int startIndex = 0;
 		for (Set<Map.Entry<Integer, Integer>> expectedPair : expectedPairs.asList()) {

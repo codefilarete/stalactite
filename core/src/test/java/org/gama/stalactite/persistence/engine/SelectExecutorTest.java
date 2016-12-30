@@ -3,17 +3,14 @@ package org.gama.stalactite.persistence.engine;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
 
 import org.gama.lang.collection.Arrays;
 import org.gama.lang.collection.Iterables;
 import org.gama.sql.test.HSQLDBInMemoryDataSource;
 import org.gama.stalactite.persistence.sql.dml.DMLGenerator;
 import org.gama.stalactite.test.PairSetList;
+import org.junit.Before;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
@@ -25,63 +22,56 @@ import static org.mockito.Mockito.when;
 /**
  * @author Guillaume Mary
  */
-public class SelectExecutorTest extends DMLExecutorTest {
+public class SelectExecutorTest extends AbstractDMLExecutorTest {
+	
+	private DataSet dataSet;
 	
 	private SelectExecutor<Toto, Integer> testInstance;
 	
-	public void setUpTest() throws SQLException {
-		super.setUpTest();
-		DMLGenerator dmlGenerator = new DMLGenerator(dialect.getColumnBinderRegistry(), new DMLGenerator.CaseSensitiveSorter());
-		testInstance = new SelectExecutor<>(persistenceConfiguration.classMappingStrategy, transactionManager, dmlGenerator, 3);
+	@Before
+	public void setUp() throws SQLException {
+		dataSet = new DataSet();
+		DMLGenerator dmlGenerator = new DMLGenerator(dataSet.dialect.getColumnBinderRegistry(), new DMLGenerator.CaseSensitiveSorter());
+		testInstance = new SelectExecutor<>(dataSet.persistenceConfiguration.classMappingStrategy, dataSet.transactionManager, dmlGenerator, 3);
 	}
 	
 	@Test
 	public void testSelect_one() throws Exception {
 		// mocking executeQuery not to return null because select method will use the ResultSet
 		ResultSet resultSetMock = mock(ResultSet.class);
-		when(preparedStatement.executeQuery()).thenReturn(resultSetMock);
+		when(dataSet.preparedStatement.executeQuery()).thenReturn(resultSetMock);
 		
 		testInstance.select(Arrays.asList(7));
 		
-		verify(preparedStatement, times(1)).executeQuery();
-		verify(preparedStatement, times(1)).setInt(indexCaptor.capture(), valueCaptor.capture());
-		assertEquals("select a, b, c from Toto where a in (?)", statementArgCaptor.getValue());
+		verify(dataSet.preparedStatement, times(1)).executeQuery();
+		verify(dataSet.preparedStatement, times(1)).setInt(dataSet.indexCaptor.capture(), dataSet.valueCaptor.capture());
+		assertEquals("select a, b, c from Toto where a in (?)", dataSet.statementArgCaptor.getValue());
 		PairSetList<Integer, Integer> expectedPairs = new PairSetList<Integer, Integer>().of(1, 7);
-		assertCapturedPairsEqual(expectedPairs);
+		assertCapturedPairsEqual(dataSet, expectedPairs);
 	}
 	
 	@Test
 	public void testSelect_multiple() throws Exception {
 		// mocking executeQuery not to return null because select method will use the ResultSet
 		ResultSet resultSetMock = mock(ResultSet.class);
-		when(preparedStatement.executeQuery()).thenReturn(resultSetMock);
+		when(dataSet.preparedStatement.executeQuery()).thenReturn(resultSetMock);
 		
 		testInstance.select(Arrays.asList(11, 13, 17, 23));
 		
 		// two queries because in operator is bounded to 3 values
-		verify(preparedStatement, times(2)).executeQuery();
-		verify(preparedStatement, times(4)).setInt(indexCaptor.capture(), valueCaptor.capture());
-		assertEquals(Arrays.asList("select a, b, c from Toto where a in (?, ?, ?)", "select a, b, c from Toto where a in (?)"), statementArgCaptor.getAllValues());
+		verify(dataSet.preparedStatement, times(2)).executeQuery();
+		verify(dataSet.preparedStatement, times(4)).setInt(dataSet.indexCaptor.capture(), dataSet.valueCaptor.capture());
+		assertEquals(Arrays.asList("select a, b, c from Toto where a in (?, ?, ?)", "select a, b, c from Toto where a in (?)"), dataSet.statementArgCaptor.getAllValues());
 		PairSetList<Integer, Integer> expectedPairs = new PairSetList<Integer, Integer>().of(1, 11).add(2, 13).add(3, 17).of(1, 23);
-		assertCapturedPairsEqual(expectedPairs);
-	}
-	
-	public void assertCapturedPairsEqual(PairSetList<Integer, Integer> expectedPairs) {
-		List<Map.Entry<Integer, Integer>> obtainedPairs = PairSetList.toPairs(indexCaptor.getAllValues(), valueCaptor.getAllValues());
-		List<Set<Map.Entry<Integer, Integer>>> obtained = new ArrayList<>();
-		int startIndex = 0;
-		for (Set<Map.Entry<Integer, Integer>> expectedPair : expectedPairs.asList()) {
-			obtained.add(new HashSet<>(obtainedPairs.subList(startIndex, startIndex += expectedPair.size())));
-		}
-		assertEquals(expectedPairs.asList(), obtained);
+		assertCapturedPairsEqual(dataSet, expectedPairs);
 	}
 	
 	@Test
 	public void testSelect_hsqldb() throws SQLException {
-		final HSQLDBInMemoryDataSource dataSource = new HSQLDBInMemoryDataSource();
-		transactionManager.setDataSource(dataSource);
-		DDLDeployer ddlDeployer = new DDLDeployer(dialect.getDdlSchemaGenerator(), transactionManager);
-		ddlDeployer.getDdlSchemaGenerator().addTables(persistenceConfiguration.targetTable);
+		HSQLDBInMemoryDataSource dataSource = new HSQLDBInMemoryDataSource();
+		dataSet.transactionManager.setDataSource(dataSource);
+		DDLDeployer ddlDeployer = new DDLDeployer(dataSet.dialect.getDdlSchemaGenerator(), dataSet.transactionManager);
+		ddlDeployer.getDdlSchemaGenerator().addTables(dataSet.persistenceConfiguration.targetTable);
 		ddlDeployer.deployDDL();
 		Connection connection = dataSource.getConnection();
 		connection.prepareStatement("insert into Toto(a, b, c) values (1, 10, 100)").execute();
