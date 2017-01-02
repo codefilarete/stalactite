@@ -145,7 +145,7 @@ public class JoinedStrategiesSelect<T, I> {
 		/** Joins */
 		private final List<Join> joins = new ArrayList<>();
 		
-		private StrategyJoins(ClassMappingStrategy<I, ?> strategy) {
+		StrategyJoins(ClassMappingStrategy<I, ?> strategy) {
 			this.strategy = strategy;
 		}
 		
@@ -164,7 +164,7 @@ public class JoinedStrategiesSelect<T, I> {
 		 * @param setter the function to use for applyling instance of the new strategy on the owned one
 		 * @return the created join
 		 */
-		private <U> Join<I, U> add(ClassMappingStrategy strategy, Column leftJoinColumn, Column rightJoinColumn, boolean isOuterJoin,
+		<U> Join<I, U> add(ClassMappingStrategy strategy, Column leftJoinColumn, Column rightJoinColumn, boolean isOuterJoin,
 								   BiConsumer<I, Iterable<U>> setter, Function<I, Iterable<U>> getter, Class<? extends Collection> oneToManyType) {
 			Join<I, U> join = new Join<>(strategy, leftJoinColumn, rightJoinColumn, isOuterJoin, setter, getter, oneToManyType);
 			this.joins.add(join);
