@@ -14,14 +14,14 @@ import org.gama.sql.binder.ParameterBinder;
  */
 public class RowIterator extends ResultSetIterator<Row> {
 	
-	private final Map<String, ? extends ParameterBinder> columnNameBinders;
+	private final Map<String, ParameterBinder> columnNameBinders;
 	
 	/**
 	 * ResultSetIterator constructor
 	 *
 	 * @param columnNameBinders columns and associated {@link ParameterBinder} to use for <t>ResultSet</t> reading
 	 */
-	public RowIterator(Map<String, ? extends ParameterBinder> columnNameBinders) {
+	public RowIterator(Map<String, ParameterBinder> columnNameBinders) {
 		this(null, columnNameBinders);
 	}
 	
@@ -31,7 +31,7 @@ public class RowIterator extends ResultSetIterator<Row> {
 	 * @param rs a ResultSet to wrap into an <t>Iterator</t>
 	 * @param columnNameBinders columns and associated {@link ParameterBinder} to use for <t>ResultSet</t> reading
 	 */
-	public RowIterator(ResultSet rs, Map<String, ? extends ParameterBinder> columnNameBinders) {
+	public RowIterator(ResultSet rs, Map<String, ParameterBinder> columnNameBinders) {
 		super(rs);
 		this.columnNameBinders = columnNameBinders;
 	}
@@ -39,7 +39,7 @@ public class RowIterator extends ResultSetIterator<Row> {
 	@Override
 	public Row convert(ResultSet rs) throws SQLException {
 		Row toReturn = new Row();
-		for (Entry<String, ? extends ParameterBinder> columnEntry : columnNameBinders.entrySet()) {
+		for (Entry<String, ParameterBinder> columnEntry : columnNameBinders.entrySet()) {
 			String columnName = columnEntry.getKey();
 			toReturn.put(columnName, columnEntry.getValue().get(columnName, rs));
 		}

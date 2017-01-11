@@ -20,9 +20,9 @@ public class ToMultipleBeansRowTransformerTest {
 	
 	@Test
 	public void testTransform() throws Exception {
-		final Map<Long, Toto> aCache = new LinkedHashMap<>();
-		final Map<Long, Tata> bCache = new LinkedHashMap<>();
-		final Map<Long, Titi> cCache = new LinkedHashMap<>();
+		Map<Long, Toto> aCache = new LinkedHashMap<>();
+		Map<Long, Tata> bCache = new LinkedHashMap<>();
+		Map<Long, Titi> cCache = new LinkedHashMap<>();
 		
 		// preparing instance
 		// Column "toto.id" should trigger building (or retreive from cache) a Toto instance 
@@ -144,7 +144,7 @@ public class ToMultipleBeansRowTransformerTest {
 		public Titi() {}
 	}
 	
-	private static class ToEntityRowTransformer<E extends Entity> extends ToBeanRowTransformer<E> {
+	private static class ToEntityRowTransformer<E extends Entity> extends AbstractTransformer<E> {
 		
 		private final String idColumn;
 		private final String nameColumn;

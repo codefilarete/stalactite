@@ -22,7 +22,6 @@ import org.gama.sql.dml.ReadOperation;
 import org.gama.sql.result.Row;
 import org.gama.sql.result.RowIterator;
 import org.gama.stalactite.persistence.engine.JoinedStrategiesSelect.ParameterBinderProvider;
-import org.gama.stalactite.persistence.engine.JoinedStrategiesSelect.StrategyJoins;
 import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
 import org.gama.stalactite.persistence.sql.Dialect;
 import org.gama.stalactite.persistence.sql.dml.ColumnParamedSelect;
@@ -35,7 +34,9 @@ import static org.gama.sql.dml.ExpandableSQL.ExpandableParameter.SQL_PARAMETER_M
 import static org.gama.sql.dml.ExpandableSQL.ExpandableParameter.SQL_PARAMETER_MARK_100;
 
 /**
- * Class aimed at executing a SQL select statement from multiple joined {@link ClassMappingStrategy}
+ * Class aimed at executing a SQL select statement from multiple joined {@link ClassMappingStrategy}.
+ * Based on {@link JoinedStrategiesSelect} for storing the joins structure and {@link StrategyJoinsRowTransformer} for building the entities from
+ * the {@link ResultSet}.
  * 
  * @author Guillaume Mary
  */
@@ -44,7 +45,6 @@ public class JoinedStrategiesSelectExecutor<T, I> {
 	/** The surrogate for joining the strategies, will help to build the SQL */
 	private final JoinedStrategiesSelect<T, I> joinedStrategiesSelect;
 	private final ParameterBinderProvider parameterBinderProvider;
-	private final Map<String, ParameterBinder> selectParameterBinders = new HashMap<>();
 	private final Map<Column, ParameterBinder> parameterBinders = new HashMap<>();
 	private final Map<Column, int[]> inOperatorValueIndexes = new HashMap<>();
 	private final int blockSize;
@@ -117,13 +117,15 @@ public class JoinedStrategiesSelectExecutor<T, I> {
 			indexes[i] = ++i;
 		}
 		inOperatorValueIndexes.put(keyColumn, indexes);
+		// The select statement needs the parameter binder to be declared
+		// TODO: Could be done elsewhere (sooner) if ColumnParamedSelect accepts ParameterBinderProvider 
 		parameterBinders.put(keyColumn, this.parameterBinderProvider.getBinder(keyColumn));
 	}
 	
 	private void execute(IConnectionProvider connectionProvider,
 						 SelectQueryBuilder queryBuilder,
 						 Iterable<? extends Iterable<I>> idsParcels) {
-		ColumnParamedSelect preparedSelect = new ColumnParamedSelect(queryBuilder.toSQL(), inOperatorValueIndexes, parameterBinders, selectParameterBinders);
+		ColumnParamedSelect preparedSelect = new ColumnParamedSelect(queryBuilder.toSQL(), inOperatorValueIndexes, parameterBinders, joinedStrategiesSelect.getSelectParameterBinders());
 		ReadOperation<Column> columnReadOperation = new ReadOperation<>(preparedSelect, connectionProvider);
 		for (Iterable<I> parcel : idsParcels) {
 			execute(columnReadOperation, parcel);
@@ -144,13 +146,11 @@ public class JoinedStrategiesSelectExecutor<T, I> {
 	}
 	
 	T transform(Iterator<Row> rowIterator) {
-		List<T> result = transform(rowIterator, joinedStrategiesSelect.getStrategyJoins(JoinedStrategiesSelect.FIRST_STRATEGY_NAME));
+		StrategyJoinsRowTransformer<T> strategyJoinsRowTransformer = new StrategyJoinsRowTransformer<>(joinedStrategiesSelect.getStrategyJoins(JoinedStrategiesSelect.FIRST_STRATEGY_NAME));
+		
+		strategyJoinsRowTransformer.setAliases(this.joinedStrategiesSelect.getAliases());
+		List<T> result = strategyJoinsRowTransformer.transform(() -> rowIterator);
 		return Iterables.first(result);
-	}
-	
-	static <T> List<T> transform(Iterator<Row> rowIterator, StrategyJoins<T> rootStrategyJoins) {
-		StrategyJoinsRowTransformer<T> strategyJoinsRowTransformer = new StrategyJoinsRowTransformer<>(rootStrategyJoins);
-		return strategyJoinsRowTransformer.transform(() -> rowIterator);
 	}
 	
 	private static class DynamicInClause implements CharSequence {

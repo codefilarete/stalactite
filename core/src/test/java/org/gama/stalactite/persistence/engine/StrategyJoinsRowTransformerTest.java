@@ -4,13 +4,14 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-import java.util.Set;
+import java.util.Map;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import org.gama.lang.collection.Arrays;
 import org.gama.lang.collection.Iterables;
+import org.gama.lang.collection.Maps;
 import org.gama.sql.result.Row;
 import org.gama.stalactite.persistence.engine.JoinedStrategiesSelect.StrategyJoins;
 import org.gama.stalactite.persistence.engine.JoinedStrategiesSelect.StrategyJoins.Join;
@@ -44,13 +45,17 @@ public class StrategyJoinsRowTransformerTest {
 	public void testTransform_with1strategy() throws SQLException, NoSuchMethodException {
 		// defining the Table is mandatory and overall its primary key since the transformer requires it to read and find the entity in the cache
 		Table totoTable = new Table("toto");
-		totoTable.new Column("id", long.class).primaryKey();
+		Column totoColumnId = totoTable.new Column("id", long.class).primaryKey();
+		Column totoColumnName = totoTable.new Column("name", String.class);
 		when(dummyStrategy.getTargetTable()).thenReturn(totoTable);
 		
-		when(dummyStrategy.getRowTransformer()).thenReturn(new ToBeanRowTransformer<>(Toto.class));
+		when(dummyStrategy.getRowTransformer()).thenReturn(new ToBeanRowTransformer<>(Toto.class, totoTable, false));
 		
 		StrategyJoinsRowTransformer testInstance = new StrategyJoinsRowTransformer(new StrategyJoins<>(dummyStrategy));
-		Row row1 = new Row().add("toto_id", 1L).add("name", "toto");
+		Row row1 = buildRow(
+				Maps.asMap(totoColumnId, (Object) 1L)
+						.add(totoColumnName, "toto"),
+				testInstance.getAliasProvider());
 		List result = testInstance.transform(Arrays.asList(row1));
 		
 		Object firstObject = Iterables.first(result);
@@ -64,10 +69,11 @@ public class StrategyJoinsRowTransformerTest {
 	 * Test case with a root strategy joined with another one : @OneToOne case
 	 */
 	@Test
-	public void testTransform_with2strategies() throws SQLException, NoSuchMethodException {
+	public void testTransform_with2strategies_oneToOne() throws SQLException, NoSuchMethodException {
 		// defining the Table is mandatory and overall its primary key since the transformer requires it to read and find the entity in the cache
 		Table totoTable = new Table("toto");
-		totoTable.new Column("id", long.class).primaryKey();
+		Column totoColumnId = totoTable.new Column("id", long.class).primaryKey();
+		Column totoColumnName = totoTable.new Column("name", String.class);
 		when(dummyStrategy.getTargetTable()).thenReturn(totoTable);
 		
 		StrategyJoins rootStrategyJoins = new StrategyJoins<>(dummyStrategy);
@@ -77,7 +83,8 @@ public class StrategyJoinsRowTransformerTest {
 		
 		// defining the target table is not necessary for the test case but it is technically, otherwise we get a NullPointerException
 		Table tataTable = new Table("tata");
-		tataTable.new Column("id", long.class).primaryKey();
+		Column tataColumnId = tataTable.new Column("id", long.class).primaryKey();
+		Column tataColumnFirstName = tataTable.new Column("firstName", String.class);
 		Column dummyJoinColumn = tataTable.new Column("a", long.class);
 		when(joinedStrategy.getTargetTable()).thenReturn(tataTable);
 		
@@ -87,16 +94,16 @@ public class StrategyJoinsRowTransformerTest {
 				(Function<Toto, Tata>) Toto::getOneToOne, null);
 		
 		// Telling mocks which instance to create
-		when(dummyStrategy.getRowTransformer()).thenReturn(new ToBeanRowTransformer<>(Toto.class));
-		when(joinedStrategy.getRowTransformer()).thenReturn(new ToBeanRowTransformer<>(Tata.class));
+		when(dummyStrategy.getRowTransformer()).thenReturn(new ToBeanRowTransformer<>(Toto.class, totoTable, false));
+		when(joinedStrategy.getRowTransformer()).thenReturn(new ToBeanRowTransformer<>(Tata.class, tataTable, false));
 		
 		StrategyJoinsRowTransformer testInstance = new StrategyJoinsRowTransformer(rootStrategyJoins);
-		Row row1 = new Row()
-				// for Toto instance
-				.add("toto_id", 1L).add("name", "toto")
-				// for Tata instance
-				.add("tata_id", 1L).add("name", "toto")
-				.add("firstName", "tata");
+		Row row1 = buildRow(
+				Maps.asMap(totoColumnId, (Object) 1L)
+						.add(totoColumnName, "toto")
+						.add(tataColumnId, 1L)
+						.add(tataColumnFirstName, "tata"),
+				testInstance.getAliasProvider());
 		List result = testInstance.transform(Arrays.asList(row1));
 		
 		Object firstObject = Iterables.first(result);
@@ -116,7 +123,8 @@ public class StrategyJoinsRowTransformerTest {
 	public void testTransform_with3strategies_deep() throws SQLException, NoSuchMethodException {
 		// defining the Table is mandatory and overall its primary key since the transformer requires it to read and find the entity in the cache
 		Table totoTable = new Table("toto");
-		totoTable.new Column("id", long.class).primaryKey();
+		Column totoColumnId = totoTable.new Column("id", long.class).primaryKey();
+		Column totoColumnName = totoTable.new Column("name", String.class);
 		when(dummyStrategy.getTargetTable()).thenReturn(totoTable);
 		
 		StrategyJoins rootStrategyJoins = new StrategyJoins<>(dummyStrategy);
@@ -129,12 +137,14 @@ public class StrategyJoinsRowTransformerTest {
 		
 		// defining the target table is not necessary for the test case but it is technically, otherwise we get a NullPointerException
 		Table tataTable = new Table("tata");
-		tataTable.new Column("id", long.class).primaryKey();
+		Column tataColumnId = tataTable.new Column("id", long.class).primaryKey();
+		Column tataColumnFirstName = tataTable.new Column("firstName", String.class);
 		Column dummyJoinColumn1 = tataTable.new Column("a", long.class);
 		when(joinedStrategy1.getTargetTable()).thenReturn(tataTable);
 		
 		Table titiTable = new Table("titi");
-		titiTable.new Column("id", long.class).primaryKey();
+		Column titiColumnId = titiTable.new Column("id", long.class).primaryKey();
+		Column titiColumnLastName = titiTable.new Column("lastName", String.class);
 		Column dummyJoinColumn2 = titiTable.new Column("a", long.class);
 		when(joinedStrategy2.getTargetTable()).thenReturn(titiTable);
 		
@@ -146,20 +156,19 @@ public class StrategyJoinsRowTransformerTest {
 				(BiConsumer<Tata, Titi>) Tata::setOneToOne, null, null);
 		
 		// Telling mocks which instance to create
-		when(dummyStrategy.getRowTransformer()).thenReturn(new ToBeanRowTransformer<>(Toto.class));
-		when(joinedStrategy1.getRowTransformer()).thenReturn(new ToBeanRowTransformer<>(Tata.class));
-		when(joinedStrategy2.getRowTransformer()).thenReturn(new ToBeanRowTransformer<>(Titi.class));
+		when(dummyStrategy.getRowTransformer()).thenReturn(new ToBeanRowTransformer<>(Toto.class, totoTable, false));
+		when(joinedStrategy1.getRowTransformer()).thenReturn(new ToBeanRowTransformer<>(Tata.class, tataTable, false));
+		when(joinedStrategy2.getRowTransformer()).thenReturn(new ToBeanRowTransformer<>(Titi.class, titiTable, false));
 		
 		StrategyJoinsRowTransformer testInstance = new StrategyJoinsRowTransformer(rootStrategyJoins);
-		Row row = new Row()
-				// for Toto instance
-				.add("toto_id", 1L).add("name", "toto")
-				// for Tata instance
-				.add("tata_id", 1L)
-				.add("firstName", "tata")
-				// for Titi instance
-				.add("titi_id", 1L)
-				.add("lastName", "titi");
+		Row row = buildRow(
+				Maps.asMap(totoColumnId, (Object) 1L)
+						.add(totoColumnName, "toto")
+						.add(tataColumnId, 1L)
+						.add(tataColumnFirstName, "tata")
+						.add(titiColumnId, 1L)
+						.add(titiColumnLastName, "titi"),
+				testInstance.getAliasProvider());
 		List result = testInstance.transform(Arrays.asList(row));
 		
 		Object firstObject = Iterables.first(result);
@@ -183,7 +192,8 @@ public class StrategyJoinsRowTransformerTest {
 	public void testTransform_with3strategies_flat() throws SQLException, NoSuchMethodException {
 		// defining the Table is mandatory and overall its primary key since the transformer requires it to read and find the entity in the cache
 		Table totoTable = new Table("toto");
-		totoTable.new Column("id", long.class).primaryKey();
+		Column totoColumnId = totoTable.new Column("id", long.class).primaryKey();
+		Column totoColumnName = totoTable.new Column("name", String.class);
 		when(dummyStrategy.getTargetTable()).thenReturn(totoTable);
 		
 		StrategyJoins rootStrategyJoins = new StrategyJoins<>(dummyStrategy);
@@ -196,12 +206,14 @@ public class StrategyJoinsRowTransformerTest {
 		
 		// defining the target table is not necessary for the test case but it is technically, otherwise we get a NullPointerException
 		Table tataTable = new Table("tata");
-		tataTable.new Column("id", long.class).primaryKey();
+		Column tataColumnId = tataTable.new Column("id", long.class).primaryKey();
+		Column tataColumnFirstName = tataTable.new Column("firstName", String.class);
 		Column dummyJoinColumn1 = tataTable.new Column("a", long.class);
 		when(joinedStrategy1.getTargetTable()).thenReturn(tataTable);
 		
 		Table titiTable = new Table("titi");
-		titiTable.new Column("id", long.class).primaryKey();
+		Column titiColumnId = titiTable.new Column("id", long.class).primaryKey();
+		Column titiColumnLastName = titiTable.new Column("lastName", String.class);
 		Column dummyJoinColumn2 = titiTable.new Column("a", long.class);
 		when(joinedStrategy2.getTargetTable()).thenReturn(titiTable);
 		
@@ -215,20 +227,19 @@ public class StrategyJoinsRowTransformerTest {
 				null, null);
 		
 		// Telling mocks which instance to create
-		when(dummyStrategy.getRowTransformer()).thenReturn(new ToBeanRowTransformer<>(Toto.class));
-		when(joinedStrategy1.getRowTransformer()).thenReturn(new ToBeanRowTransformer<>(Tata.class));
-		when(joinedStrategy2.getRowTransformer()).thenReturn(new ToBeanRowTransformer<>(Titi.class));
+		when(dummyStrategy.getRowTransformer()).thenReturn(new ToBeanRowTransformer<>(Toto.class, totoTable, false));
+		when(joinedStrategy1.getRowTransformer()).thenReturn(new ToBeanRowTransformer<>(Tata.class, tataTable, false));
+		when(joinedStrategy2.getRowTransformer()).thenReturn(new ToBeanRowTransformer<>(Titi.class, titiTable, false));
 		
 		StrategyJoinsRowTransformer testInstance = new StrategyJoinsRowTransformer(rootStrategyJoins);
-		Row row = new Row()
-				// for Toto instance
-				.add("toto_id", 1L).add("name", "toto")
-				// for Tata instance
-				.add("tata_id", 1L)
-				.add("firstName", "tata")
-				// for Titi instance
-				.add("titi_id", 1L)
-				.add("lastName", "titi");
+		Row row = buildRow(
+				Maps.asMap(totoColumnId, (Object) 1L)
+						.add(totoColumnName, "toto")
+						.add(tataColumnId, 1L)
+						.add(tataColumnFirstName, "tata")
+						.add(titiColumnId, 1L)
+						.add(titiColumnLastName, "titi"),
+				testInstance.getAliasProvider());
 		List result = testInstance.transform(Arrays.asList(row));
 		
 		Object firstObject = Iterables.first(result);
@@ -252,7 +263,8 @@ public class StrategyJoinsRowTransformerTest {
 	public void testTransform_with2strategies_oneToMany() throws SQLException, NoSuchMethodException {
 		// defining the Table is mandatory and overall its primary key since the transformer requires it to read and find the entity in the cache
 		Table totoTable = new Table("toto");
-		totoTable.new Column("id", long.class).primaryKey();
+		Column totoColumnId = totoTable.new Column("id", long.class).primaryKey();
+		Column totoColumnName = totoTable.new Column("name", String.class);
 		when(dummyStrategy.getTargetTable()).thenReturn(totoTable);
 		
 		StrategyJoins rootStrategyJoins = new StrategyJoins<>(dummyStrategy);
@@ -262,7 +274,8 @@ public class StrategyJoinsRowTransformerTest {
 		
 		// defining the target table is not necessary for the test case but it is technically, otherwise we get a NullPointerException
 		Table tataTable = new Table("tata");
-		tataTable.new Column("id", long.class).primaryKey();
+		Column tataColumnId = tataTable.new Column("id", long.class).primaryKey();
+		Column tataColumnFirstName = tataTable.new Column("firstName", String.class).primaryKey();
 		Column dummyJoinColumn = tataTable.new Column("a", long.class);
 		when(joinedStrategy.getTargetTable()).thenReturn(tataTable);
 		
@@ -272,32 +285,95 @@ public class StrategyJoinsRowTransformerTest {
 				(BiConsumer<Toto, Collection<Tata>>) Toto::setOneToMany, (Function<Toto, Collection<Tata>>) Toto::getOneToMany, ArrayList.class);
 		
 		// Telling mocks which instance to create
-		when(dummyStrategy.getRowTransformer()).thenReturn(new ToBeanRowTransformer<>(Toto.class));
-		when(joinedStrategy.getRowTransformer()).thenReturn(new ToBeanRowTransformer<>(Tata.class));
+		when(dummyStrategy.getRowTransformer()).thenReturn(new ToBeanRowTransformer<>(Toto.class, totoTable, false));
+		when(joinedStrategy.getRowTransformer()).thenReturn(new ToBeanRowTransformer<>(Tata.class, tataTable, false));
 		
 		StrategyJoinsRowTransformer testInstance = new StrategyJoinsRowTransformer(rootStrategyJoins);
-		Row row1 = new Row()
-				// for Toto instance
-				.add("toto_id", 1L).add("name", "toto")
-				// for Tata instance
-				.add("tata_id", 1L)
-				.add("firstName", "tata1");
-		Row row2 = new Row()
-				// for Toto instance
-				.add("toto_id", 1L).add("name", "toto")
-				// for Tata instance
-				.add("tata_id", 2L)
-				.add("firstName", "tata2");
+		
+		Row row1 = buildRow(
+				Maps.asMap(totoColumnId, (Object) 1L)
+						.add(totoColumnName, "toto")
+						.add(tataColumnId, 1L)
+						.add(tataColumnFirstName, "tata1"),
+				testInstance.getAliasProvider());
+		Row row2 = buildRow(
+				Maps.asMap(totoColumnId, (Object) 1L)
+						.add(totoColumnName, "we don't care")
+						.add(tataColumnId, 2L)
+						.add(tataColumnFirstName, "tata2"),
+				testInstance.getAliasProvider());
 		List<Toto> result = testInstance.transform(Arrays.asList(row1, row2));
 		
 		assertEquals(1, result.size());
 		Toto firstResult = result.get(0);
+		assertEquals(1L, (Object) firstResult.id);
 		assertEquals("toto", firstResult.name);
 		assertNotNull(firstResult.oneToMany);
 		assertTrue(firstResult.oneToMany instanceof ArrayList);
 		// firstName is filled because we put "firstName" into the Row
-		Set<String> oneToManyResult = firstResult.oneToMany.stream().map((tata -> tata.firstName)).collect(Collectors.toSet());
-		assertEquals(Arrays.asSet("tata1", "tata2"), oneToManyResult);
+		List<String> oneToManyResult = firstResult.oneToMany.stream().map((tata -> tata.firstName)).collect(Collectors.toList());
+		assertEquals(Arrays.asList("tata1", "tata2"), oneToManyResult);
+	}
+	
+	private static Row buildRow(Map<Column, Object> data, Function<Column, String> aliasProvider) {
+		Row result = new Row();
+		data.entrySet().forEach(e -> result.add(aliasProvider.apply(e.getKey()), e.getValue()));
+		return result;
+	}
+	
+	@Test
+	public void testTransform_withTwiceSameStrategies_oneToOne() throws SQLException, NoSuchMethodException {
+		// defining the Table is mandatory and overall its primary key since the transformer requires it to read and find the entity in the cache
+		Table totoTable1 = new Table("toto");
+		Column totoColumnId = totoTable1.new Column("id", long.class).primaryKey();
+		Column totoColumnName = totoTable1.new Column("name", String.class);
+		when(dummyStrategy.getTargetTable()).thenReturn(totoTable1);
+		
+		StrategyJoins rootStrategyJoins = new StrategyJoins<>(dummyStrategy);
+		
+		// completing the test case: adding the joined strategy
+		Table totoTable2 = new Table("toto");
+		Column toto2ColumnId = totoTable2.new Column("id", long.class).primaryKey();
+		Column toto2ColumnName = totoTable2.new Column("name", String.class);
+		ClassMappingStrategy dummyStrategy2 = mock(ClassMappingStrategy.class);
+		when(dummyStrategy2.getClassToPersist()).thenReturn(Toto.class);
+		when(dummyStrategy2.getTargetTable()).thenReturn(totoTable2);
+		rootStrategyJoins.add(dummyStrategy2,
+				null, toto2ColumnId, false,
+				(BiConsumer<Toto, Toto>) Toto::setSibling, (Function<Toto, Toto>) Toto::getSibling);
+		
+		
+		// Telling mocks which instance to create
+		when(dummyStrategy.getRowTransformer()).thenReturn(new ToBeanRowTransformer<>(Toto.class, totoTable1, false));
+		when(dummyStrategy2.getRowTransformer()).thenReturn(new ToBeanRowTransformer<>(Toto.class, totoTable2, false));
+		
+		StrategyJoinsRowTransformer<Toto> testInstance = new StrategyJoinsRowTransformer<>(rootStrategyJoins);
+		
+		Function<Column, String> aliasGenerator = c -> (c.getTable() == totoTable1 ? "table1_" : "table2_") + c.getName();
+		// we give the aliases to our test instance
+		testInstance.setAliases(Maps.asMap(totoColumnId, aliasGenerator.apply(totoColumnId))
+				.add(totoColumnName, aliasGenerator.apply(totoColumnName))
+				.add(toto2ColumnId, aliasGenerator.apply(toto2ColumnId))
+				.add(toto2ColumnName, aliasGenerator.apply(toto2ColumnName)));
+		// the row must math the aliases given to the instance
+		Row row = buildRow(
+				Maps.asMap(totoColumnId, (Object) 1L)
+						.add(totoColumnName, "toto1")
+						.add(toto2ColumnId, 2L)
+						.add(toto2ColumnName, "toto2"),
+				aliasGenerator
+		);
+		
+		// executing the test
+		List<Toto> result = testInstance.transform(Arrays.asList(row));
+		
+		// checking
+		assertEquals(1, result.size());
+		Toto firstResult = result.get(0);
+		assertEquals((Object) 1L, firstResult.id);
+		assertEquals((Object) 2L, firstResult.getSibling().id);
+		assertEquals("toto1", firstResult.name);
+		assertEquals("toto2", firstResult.getSibling().name);
 	}
 	
 	
@@ -307,6 +383,7 @@ public class StrategyJoinsRowTransformerTest {
 		private Tata oneToOne;
 		private Titi oneToOneOther;
 		private Collection<Tata> oneToMany;
+		private Toto sibling;
 		
 		public Toto() {
 		}
@@ -334,6 +411,14 @@ public class StrategyJoinsRowTransformerTest {
 		
 		public Collection<Tata> getOneToMany() {
 			return oneToMany;
+		}
+		
+		public Toto getSibling() {
+			return sibling;
+		}
+		
+		public void setSibling(Toto sibling) {
+			this.sibling = sibling;
 		}
 	}
 	

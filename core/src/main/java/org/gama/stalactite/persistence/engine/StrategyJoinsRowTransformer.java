@@ -17,21 +17,51 @@ import org.gama.stalactite.persistence.engine.JoinedStrategiesSelect.StrategyJoi
 import org.gama.stalactite.persistence.engine.JoinedStrategiesSelect.StrategyJoins.Join;
 import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
 import org.gama.stalactite.persistence.mapping.ToBeanRowTransformer;
+import org.gama.stalactite.persistence.structure.Table.Column;
 
 /**
  * @author Guillaume Mary
  */
 public class StrategyJoinsRowTransformer<T> {
 	
+	public static final Function<Column, String> DEFAULT_ALIAS_PROVIDER = Column::getAlias;
+	
 	private final StrategyJoins<?> rootStrategyJoins;
-	private Map<Class, Map<Object, Object>> entityCache = new HashMap<>();
+	private Map<Class, Map<Object /* identifier */, Object /* entity */>> entityCache = new HashMap<>();
+	private Function<Column, String> aliasProvider = DEFAULT_ALIAS_PROVIDER;
 	
 	public StrategyJoinsRowTransformer(StrategyJoins<?> rootStrategyJoins) {
 		this.rootStrategyJoins = rootStrategyJoins;
 	}
 	
-	public void setEntityCache(Map<Class, Map<Object, Object>> entityCache) {
+	/**
+	 * Give an entity pool (cache ?) to this instance, to be used for filling relations by getting them from it instead of creating clones.
+	 * Will be filled by newly created entity.
+	 * 
+	 * @param entityCache the Maps of entities per identifier, mapped by Class persistence 
+	 */
+	public void setEntityCache(Map<Class, Map<Object /* identifier */, Object /* entity */>> entityCache) {
 		this.entityCache = entityCache;
+	}
+	
+	/**
+	 * 
+	 * @return
+	 */
+	public Function<Column, String> getAliasProvider() {
+		return aliasProvider;
+	}
+	
+	/**
+	 * Change the alias provider (default is {@link Column#getAlias()}) by giving the map between {@link Column} and their alias.
+	 * @param aliases the mapping between {@link Column} and their alias in the Rows of {@link #transform(Iterable)}
+	 */
+	public void setAliases(Map<Column, String> aliases) {
+		this.aliasProvider = aliases::get;
+	}
+	
+	private String getAlias(Column primaryKey) {
+		return aliasProvider.apply(primaryKey);
 	}
 	
 	public List<T> transform(Iterable<Row> rows) {
@@ -39,38 +69,48 @@ public class StrategyJoinsRowTransformer<T> {
 		EntityCacheWrapper entityCacheWrapper = new EntityCacheWrapper(entityCache);
 		
 		for (Row row : rows) {
+			// Algorithm : we iterate depth by depth the tree structure of the joins
+			// We start by the root of the hierarchy.
+			// We process the entity of the current depth, then process the direct relations, add those relations to the depth iterator
+			
+			
 			Queue<StrategyJoins> stack = new ArrayDeque<>();
 			stack.add(rootStrategyJoins);
 			while (!stack.isEmpty()) {
+				
+				// treating the current depth
 				StrategyJoins<?> strategyJoins = stack.poll();
 				ClassMappingStrategy<?, ?> leftStrategy = strategyJoins.getStrategy();
 				ToBeanRowTransformer mainRowTransformer = leftStrategy.getRowTransformer();
-				Object primaryKeyValue = row.get(strategyJoins.getTable().getPrimaryKey().getAlias());
+				Object primaryKeyValue = row.get(getAlias(strategyJoins.getTable().getPrimaryKey()));
 				
 				Object rowInstance = entityCacheWrapper.computeIfAbsent(leftStrategy.getClassToPersist(), primaryKeyValue, () -> {
 					Object newInstance = mainRowTransformer.newRowInstance();
-					mainRowTransformer.applyRowToBean(row, newInstance);
+					mainRowTransformer.withAliases(aliasProvider).applyRowToBean(row, newInstance);
 					if (strategyJoins == rootStrategyJoins) {
 						result.add((T) newInstance);
 					}
 					return newInstance;
 				});
 				
+				// processing the direct relations
 				for (Join join : strategyJoins.getJoins()) {
 					StrategyJoins rightMember = join.getStrategy();
-					Object primaryKeyValue2 = row.get(rightMember.getTable().getPrimaryKey().getAlias());
+					Object primaryKeyValue2 = row.get(getAlias(rightMember.getTable().getPrimaryKey()));
 					
 					ToBeanRowTransformer rowTransformer = rightMember.getStrategy().getRowTransformer();
 					Object rowInstance2 = entityCacheWrapper.computeIfAbsent(rightMember.getStrategy().getClassToPersist(), primaryKeyValue2, () -> {
 						Object newInstance = rowTransformer.newRowInstance();
-						rowTransformer.applyRowToBean(row, newInstance);
+						rowTransformer.withAliases(aliasProvider).applyRowToBean(row, newInstance);
 						return newInstance;
 					});
 					
-					// TODO: generic: la signature en Iterable du join.getSetter est fausse en OneToOne, je me demande comment ça marche ! il faudra sans doute mettre "Object" au lieu de Iterable
 					// TODO: implémenter l'héritage d'entité
 					// TODO: implémenter ManyToMany ?
 					fillRelation(rowInstance, rowInstance2, join.getSetter(), join.getGetter(), join.getOneToManyType());
+					
+					// don't forget to add the member to the depth iteration
+					// TODO: can't it be skiped if it has no joins (getJoins.isEmpty) ? since it just have been treated ?
 					stack.add(rightMember);
 				}
 			}
