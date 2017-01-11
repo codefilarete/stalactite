@@ -3,6 +3,7 @@ package org.gama.stalactite.persistence.engine;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.function.BiConsumer;
@@ -351,13 +352,14 @@ public class StrategyJoinsRowTransformerTest {
 		
 		Function<Column, String> aliasGenerator = c -> (c.getTable() == totoTable1 ? "table1_" : "table2_") + c.getName();
 		// we give the aliases to our test instance
-		testInstance.setAliases(Maps.asMap(totoColumnId, aliasGenerator.apply(totoColumnId))
+		Comparator<Column> columnComparator = (c1, c2) -> aliasGenerator.apply(c1).compareToIgnoreCase(aliasGenerator.apply(c2));
+		testInstance.setAliases(Maps.asComparingMap(columnComparator, totoColumnId, aliasGenerator.apply(totoColumnId))
 				.add(totoColumnName, aliasGenerator.apply(totoColumnName))
 				.add(toto2ColumnId, aliasGenerator.apply(toto2ColumnId))
 				.add(toto2ColumnName, aliasGenerator.apply(toto2ColumnName)));
 		// the row must math the aliases given to the instance
 		Row row = buildRow(
-				Maps.asMap(totoColumnId, (Object) 1L)
+				Maps.asComparingMap(columnComparator, totoColumnId, (Object) 1L)
 						.add(totoColumnName, "toto1")
 						.add(toto2ColumnId, 2L)
 						.add(toto2ColumnName, "toto2"),

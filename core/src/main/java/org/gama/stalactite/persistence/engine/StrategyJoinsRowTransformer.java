@@ -110,8 +110,9 @@ public class StrategyJoinsRowTransformer<T> {
 					fillRelation(rowInstance, rowInstance2, join.getSetter(), join.getGetter(), join.getOneToManyType());
 					
 					// don't forget to add the member to the depth iteration
-					// TODO: can't it be skiped if it has no joins (getJoins.isEmpty) ? since it just have been treated ?
-					stack.add(rightMember);
+					if (!rightMember.getJoins().isEmpty()) {
+						stack.add(rightMember);
+					}
 				}
 			}
 		}
