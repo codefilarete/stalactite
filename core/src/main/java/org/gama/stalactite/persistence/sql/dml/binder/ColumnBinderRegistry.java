@@ -2,12 +2,16 @@ package org.gama.stalactite.persistence.sql.dml.binder;
 
 import java.sql.PreparedStatement;
 import java.util.HashMap;
+import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Objects;
+import java.util.Set;
 import java.util.stream.Stream;
 
 import org.gama.lang.bean.InterfaceIterator;
 import org.gama.lang.collection.Iterables;
 import org.gama.sql.binder.ParameterBinder;
+import org.gama.sql.binder.ParameterBinderIndex;
 import org.gama.sql.binder.ParameterBinderRegistry;
 import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.persistence.structure.Table.Column;
@@ -20,12 +24,12 @@ import org.gama.stalactite.persistence.structure.Table.Column;
  *
  * @author Guillaume Mary
  */
-public class ColumnBinderRegistry extends ParameterBinderRegistry {
+public class ColumnBinderRegistry extends ParameterBinderRegistry implements ParameterBinderIndex<Column> {
 	
 	/**
 	 * Registry for Columns
 	 */
-	private final HashMap<Column, ParameterBinder> parameterBinders = new HashMap<>();
+	private final Map<Column, ParameterBinder> parameterBinders = new HashMap<>();
 	
 	public ColumnBinderRegistry() {
 	}
@@ -41,6 +45,7 @@ public class ColumnBinderRegistry extends ParameterBinderRegistry {
 	 * @return the binder for the column or for its Java type
 	 * @throws UnsupportedOperationException if the binder doesn't exist
 	 */
+	@Override
 	public ParameterBinder getBinder(Table.Column column) {
 		ParameterBinder columnBinder = parameterBinders.get(column);
 		try {
@@ -56,6 +61,16 @@ public class ColumnBinderRegistry extends ParameterBinderRegistry {
 				throw newMissingBinderException(column);
 			}
 		}
+	}
+	
+	@Override
+	public Set<Column> keys() {
+		return parameterBinders.keySet();
+	}
+	
+	@Override
+	public Set<Entry<Column, ParameterBinder>> all() {
+		return parameterBinders.entrySet();
 	}
 	
 	private UnsupportedOperationException newMissingBinderException(Column column) {

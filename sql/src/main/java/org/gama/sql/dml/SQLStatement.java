@@ -9,6 +9,7 @@ import java.util.Map.Entry;
 import java.util.Set;
 
 import org.gama.sql.binder.ParameterBinder;
+import org.gama.sql.binder.ParameterBinderIndex;
 
 /**
  * Parent class that defines methods for applying values to {@link PreparedStatement} that is supposed to be built
@@ -22,12 +23,16 @@ public abstract class SQLStatement<ParamType> {
 	
 	protected final Map<ParamType, Object> values = new HashMap<>(5);
 	
-	protected final Map<ParamType, ParameterBinder> parameterBinders;
+	protected final ParameterBinderIndex<ParamType> parameterBinderProvider;
 	protected final Set<ParamType> indexes;
 	
 	protected SQLStatement(Map<ParamType, ParameterBinder> parameterBinders) {
-		this.parameterBinders = parameterBinders;
-		this.indexes = parameterBinders.keySet();
+		this(ParameterBinderIndex.fromMap(parameterBinders));
+	}
+	
+	protected SQLStatement(ParameterBinderIndex<ParamType> parameterBinderProvider) {
+		this.parameterBinderProvider = parameterBinderProvider;
+		this.indexes = parameterBinderProvider.keys();
 	}
 	
 	/**
@@ -87,7 +92,7 @@ public abstract class SQLStatement<ParamType> {
 	}
 	
 	public ParameterBinder<Object> getParameterBinder(ParamType parameter) {
-		return parameterBinders.get(parameter);
+		return parameterBinderProvider.getBinder(parameter);
 	}
 	
 	/**
@@ -115,4 +120,5 @@ public abstract class SQLStatement<ParamType> {
 			throw new RuntimeException("Error while setting value " + value + " for parameter " + index + " on statement " + getSQL(), e);
 		}
 	}
+	
 }

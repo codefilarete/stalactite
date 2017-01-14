@@ -12,6 +12,7 @@ import java.util.function.Function;
 
 import org.gama.lang.Strings;
 import org.gama.sql.binder.ParameterBinder;
+import org.gama.sql.binder.ParameterBinderProvider;
 import org.gama.stalactite.persistence.engine.JoinedStrategiesSelect.StrategyJoins.Join;
 import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
 import org.gama.stalactite.persistence.structure.Table;
@@ -36,7 +37,7 @@ public class JoinedStrategiesSelect<T, I> {
 	/** Aliases of columns. Values are keys of {@link #selectParameterBinders} */
 	private final Map<Column, String> aliases = new HashMap<>();
 	/** Will give the {@link ParameterBinder} for the reading of the final select clause */
-	private final ParameterBinderProvider parameterBinderProvider;
+	private final ParameterBinderProvider<Column> parameterBinderProvider;
 	/** The very first {@link ClassMappingStrategy} on which other strategies will be joined */
 	private final StrategyJoins<T> root;
 	/**
@@ -53,7 +54,7 @@ public class JoinedStrategiesSelect<T, I> {
 	 * @param classMappingStrategy the root strategy, added strategy will be joined wih it
 	 * @param parameterBinderProvider the objet that will give {@link ParameterBinder} to read the selected columns
 	 */
-	JoinedStrategiesSelect(ClassMappingStrategy<T, I> classMappingStrategy, ParameterBinderProvider parameterBinderProvider) {
+	JoinedStrategiesSelect(ClassMappingStrategy<T, I> classMappingStrategy, ParameterBinderProvider<Column> parameterBinderProvider) {
 		this(classMappingStrategy, parameterBinderProvider, FIRST_STRATEGY_NAME);
 	}
 	
@@ -63,7 +64,7 @@ public class JoinedStrategiesSelect<T, I> {
 	 * @param classMappingStrategy the root strategy, added strategy will be joined wih it
 	 * @param parameterBinderProvider the objet that will give {@link ParameterBinder} to read the selected columns
 	 */
-	JoinedStrategiesSelect(ClassMappingStrategy<T, I> classMappingStrategy, ParameterBinderProvider parameterBinderProvider, String strategyName) {
+	JoinedStrategiesSelect(ClassMappingStrategy<T, I> classMappingStrategy, ParameterBinderProvider<Column> parameterBinderProvider, String strategyName) {
 		this.parameterBinderProvider = parameterBinderProvider;
 		this.root = new StrategyJoins<>(classMappingStrategy);
 		this.strategyIndex.put(strategyName, this.root);
@@ -305,10 +306,5 @@ public class JoinedStrategiesSelect<T, I> {
 		private String generateName(ClassMappingStrategy classMappingStrategy) {
 			return classMappingStrategy.getTargetTable().getAbsoluteName() + aliasCount++;
 		}
-	}
-	
-	@FunctionalInterface
-	public interface ParameterBinderProvider {
-		ParameterBinder getBinder(Column column);
 	}
 }

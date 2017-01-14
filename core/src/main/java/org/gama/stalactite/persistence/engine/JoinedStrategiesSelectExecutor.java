@@ -17,11 +17,10 @@ import org.gama.lang.collection.Iterables;
 import org.gama.lang.exception.Exceptions;
 import org.gama.sql.IConnectionProvider;
 import org.gama.sql.SimpleConnectionProvider;
-import org.gama.sql.binder.ParameterBinder;
+import org.gama.sql.binder.ParameterBinderIndex;
 import org.gama.sql.dml.ReadOperation;
 import org.gama.sql.result.Row;
 import org.gama.sql.result.RowIterator;
-import org.gama.stalactite.persistence.engine.JoinedStrategiesSelect.ParameterBinderProvider;
 import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
 import org.gama.stalactite.persistence.sql.Dialect;
 import org.gama.stalactite.persistence.sql.dml.ColumnParamedSelect;
@@ -44,8 +43,7 @@ public class JoinedStrategiesSelectExecutor<T, I> {
 	
 	/** The surrogate for joining the strategies, will help to build the SQL */
 	private final JoinedStrategiesSelect<T, I> joinedStrategiesSelect;
-	private final ParameterBinderProvider parameterBinderProvider;
-	private final Map<Column, ParameterBinder> parameterBinders = new HashMap<>();
+	private final ParameterBinderIndex<Column> parameterBinderProvider;
 	private final Map<Column, int[]> inOperatorValueIndexes = new HashMap<>();
 	private final int blockSize;
 	private final ConnectionProvider connectionProvider;
@@ -54,7 +52,7 @@ public class JoinedStrategiesSelectExecutor<T, I> {
 	private List<T> result;
 	
 	JoinedStrategiesSelectExecutor(ClassMappingStrategy<T, I> classMappingStrategy, Dialect dialect, ConnectionProvider connectionProvider) {
-		this.parameterBinderProvider = c -> dialect.getColumnBinderRegistry().getBinder(c);
+		this.parameterBinderProvider = dialect.getColumnBinderRegistry();
 		this.joinedStrategiesSelect = new JoinedStrategiesSelect<>(classMappingStrategy, this.parameterBinderProvider);
 		this.connectionProvider = connectionProvider;
 		// post-initialization
@@ -117,15 +115,12 @@ public class JoinedStrategiesSelectExecutor<T, I> {
 			indexes[i] = ++i;
 		}
 		inOperatorValueIndexes.put(keyColumn, indexes);
-		// The select statement needs the parameter binder to be declared
-		// TODO: Could be done elsewhere (sooner) if ColumnParamedSelect accepts ParameterBinderProvider 
-		parameterBinders.put(keyColumn, this.parameterBinderProvider.getBinder(keyColumn));
 	}
 	
 	private void execute(IConnectionProvider connectionProvider,
 						 SelectQueryBuilder queryBuilder,
 						 Iterable<? extends Iterable<I>> idsParcels) {
-		ColumnParamedSelect preparedSelect = new ColumnParamedSelect(queryBuilder.toSQL(), inOperatorValueIndexes, parameterBinders, joinedStrategiesSelect.getSelectParameterBinders());
+		ColumnParamedSelect preparedSelect = new ColumnParamedSelect(queryBuilder.toSQL(), inOperatorValueIndexes, parameterBinderProvider, joinedStrategiesSelect.getSelectParameterBinders());
 		ReadOperation<Column> columnReadOperation = new ReadOperation<>(preparedSelect, connectionProvider);
 		for (Iterable<I> parcel : idsParcels) {
 			execute(columnReadOperation, parcel);
@@ -136,6 +131,7 @@ public class JoinedStrategiesSelectExecutor<T, I> {
 		try (ReadOperation<Column> closeableOperation = operation) {
 			operation.setValue(keyColumn, ids);
 			ResultSet resultSet = closeableOperation.execute();
+			// NB: we give the same ParametersBinders of those given at ColumnParamedSelect since the row iterator is expected to read column from it
 			RowIterator rowIterator = new RowIterator(resultSet, ((ColumnParamedSelect) closeableOperation.getSqlStatement()).getSelectParameterBinders());
 			while (rowIterator.hasNext()) {
 				result.add(transform(rowIterator));

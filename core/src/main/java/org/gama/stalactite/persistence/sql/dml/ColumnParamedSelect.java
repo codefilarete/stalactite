@@ -1,9 +1,10 @@
 package org.gama.stalactite.persistence.sql.dml;
 
-import org.gama.sql.binder.ParameterBinder;
-import org.gama.stalactite.persistence.structure.Table.Column;
-
 import java.util.Map;
+
+import org.gama.sql.binder.ParameterBinder;
+import org.gama.sql.binder.ParameterBinderIndex;
+import org.gama.stalactite.persistence.structure.Table.Column;
 
 /**
  * Specialization of {@link ColumnParamedSQL} for select statement: gives access to selected columns thru {@link #getSelectParameterBinders()}
@@ -12,14 +13,24 @@ import java.util.Map;
  */
 public class ColumnParamedSelect extends ColumnParamedSQL {
 	
-	private final Map<String, ParameterBinder> selectParameterBinders;
+	private final ParameterBinderIndex<String> selectParameterBinders;
 	
 	public ColumnParamedSelect(String sql, Map<Column, int[]> columnIndexes, Map<Column, ParameterBinder> parameterBinders, Map<String, ParameterBinder> selectParameterBinders) {
 		super(sql, columnIndexes, parameterBinders);
+		this.selectParameterBinders = ParameterBinderIndex.fromMap(selectParameterBinders);
+	}
+	
+	public ColumnParamedSelect(String sql, Map<Column, int[]> columnIndexes, ParameterBinderIndex<Column> parameterBinderProvider, Map<String, ParameterBinder> selectParameterBinders) {
+		super(sql, columnIndexes, parameterBinderProvider);
+		this.selectParameterBinders = ParameterBinderIndex.fromMap(selectParameterBinders);
+	}
+	
+	public ColumnParamedSelect(String sql, Map<Column, int[]> columnIndexes, ParameterBinderIndex<Column> parameterBinderProvider, ParameterBinderIndex<String> selectParameterBinders) {
+		super(sql, columnIndexes, parameterBinderProvider);
 		this.selectParameterBinders = selectParameterBinders;
 	}
 	
-	public Map<String, ParameterBinder> getSelectParameterBinders() {
+	public ParameterBinderIndex<String> getSelectParameterBinders() {
 		return selectParameterBinders;
 	}
 }

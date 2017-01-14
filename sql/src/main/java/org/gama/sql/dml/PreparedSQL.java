@@ -4,6 +4,7 @@ import java.sql.PreparedStatement;
 import java.util.Map;
 
 import org.gama.sql.binder.ParameterBinder;
+import org.gama.sql.binder.ParameterBinderIndex;
 
 /**
  * Class that applies values to {@link PreparedStatement} according to SQL that contains indexed parameters.
@@ -16,6 +17,11 @@ public class PreparedSQL extends SQLStatement<Integer> {
 	
 	public PreparedSQL(String sql, Map<Integer, ParameterBinder> parameterBinders) {
 		super(parameterBinders);
+		this.sql = sql;
+	}
+	
+	public PreparedSQL(String sql, ParameterBinderIndex<Integer> parameterBinderProvider) {
+		super(parameterBinderProvider);
 		this.sql = sql;
 	}
 	

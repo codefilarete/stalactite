@@ -4,6 +4,7 @@ import java.sql.PreparedStatement;
 import java.util.Map;
 
 import org.gama.sql.binder.ParameterBinder;
+import org.gama.sql.binder.ParameterBinderIndex;
 
 /**
  * Equivalent to {@link PreparedSQL} but with ParamType that can be expanded (essentially for Collection parameters)
@@ -16,6 +17,11 @@ public abstract class ExpandableStatement<ParamType> extends SQLStatement<ParamT
 	
 	public ExpandableStatement(String sql, Map<ParamType, ParameterBinder> parameterBinders) {
 		super(parameterBinders);
+		this.sql = sql;
+	}
+	
+	public ExpandableStatement(String sql, ParameterBinderIndex<ParamType> parameterBinderProvider) {
+		super(parameterBinderProvider);
 		this.sql = sql;
 	}
 	

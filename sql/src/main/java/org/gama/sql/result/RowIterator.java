@@ -6,6 +6,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 
 import org.gama.sql.binder.ParameterBinder;
+import org.gama.sql.binder.ParameterBinderIndex;
 
 /**
  * {@link ResultSetIterator} specialized in {@link Row} building for each Resulset line.
@@ -14,7 +15,7 @@ import org.gama.sql.binder.ParameterBinder;
  */
 public class RowIterator extends ResultSetIterator<Row> {
 	
-	private final Map<String, ParameterBinder> columnNameBinders;
+	private final ParameterBinderIndex<String> columnNameBinders;
 	
 	/**
 	 * ResultSetIterator constructor
@@ -32,6 +33,10 @@ public class RowIterator extends ResultSetIterator<Row> {
 	 * @param columnNameBinders columns and associated {@link ParameterBinder} to use for <t>ResultSet</t> reading
 	 */
 	public RowIterator(ResultSet rs, Map<String, ParameterBinder> columnNameBinders) {
+		this(rs, ParameterBinderIndex.fromMap(columnNameBinders));
+	}
+	
+	public RowIterator(ResultSet rs, ParameterBinderIndex<String> columnNameBinders) {
 		super(rs);
 		this.columnNameBinders = columnNameBinders;
 	}
@@ -39,7 +44,7 @@ public class RowIterator extends ResultSetIterator<Row> {
 	@Override
 	public Row convert(ResultSet rs) throws SQLException {
 		Row toReturn = new Row();
-		for (Entry<String, ParameterBinder> columnEntry : columnNameBinders.entrySet()) {
+		for (Entry<String, ParameterBinder> columnEntry : columnNameBinders.all()) {
 			String columnName = columnEntry.getKey();
 			toReturn.put(columnName, columnEntry.getValue().get(columnName, rs));
 		}

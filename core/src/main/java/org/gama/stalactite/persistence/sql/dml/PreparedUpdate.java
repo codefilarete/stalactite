@@ -8,6 +8,7 @@ import java.util.Map.Entry;
 import java.util.Set;
 
 import org.gama.sql.binder.ParameterBinder;
+import org.gama.sql.binder.ParameterBinderIndex;
 import org.gama.sql.dml.SQLStatement;
 import org.gama.stalactite.persistence.sql.dml.PreparedUpdate.UpwhereColumn;
 import org.gama.stalactite.persistence.structure.Table.Column;
@@ -25,6 +26,12 @@ public class PreparedUpdate extends SQLStatement<UpwhereColumn> {
 	
 	public PreparedUpdate(String sql, Map<UpwhereColumn, Integer> columnIndexes, Map<UpwhereColumn, ParameterBinder> parameterBinders) {
 		super(parameterBinders);
+		this.sql = sql;
+		this.columnIndexes = columnIndexes;
+	}
+	
+	public PreparedUpdate(String sql, Map<UpwhereColumn, Integer> columnIndexes, ParameterBinderIndex<UpwhereColumn> parameterBinderProvider) {
+		super(parameterBinderProvider);
 		this.sql = sql;
 		this.columnIndexes = columnIndexes;
 	}

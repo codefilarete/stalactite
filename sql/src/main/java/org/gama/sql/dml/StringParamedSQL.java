@@ -1,11 +1,12 @@
 package org.gama.sql.dml;
 
-import org.gama.sql.binder.ParameterBinder;
-import org.gama.sql.dml.ExpandableSQL.ExpandableParameter;
-import org.gama.sql.dml.SQLParameterParser.ParsedSQL;
-
 import java.sql.PreparedStatement;
 import java.util.Map;
+
+import org.gama.sql.binder.ParameterBinder;
+import org.gama.sql.binder.ParameterBinderIndex;
+import org.gama.sql.dml.ExpandableSQL.ExpandableParameter;
+import org.gama.sql.dml.SQLParameterParser.ParsedSQL;
 
 /**
  * Class that applies values to {@link PreparedStatement} according to SQL that contains named parameters.
@@ -25,6 +26,15 @@ public class StringParamedSQL extends ExpandableStatement<String> {
 	
 	public StringParamedSQL(ParsedSQL parsedSQL, Map<String, ParameterBinder> parameterBinders) {
 		super(null, parameterBinders);
+		this.parsedSQL = parsedSQL;
+	}
+	
+	public StringParamedSQL(String originalSQL, ParameterBinderIndex<String> parameterBinderProvider) {
+		this(new SQLParameterParser(originalSQL).parse(), parameterBinderProvider);
+	}
+	
+	public StringParamedSQL(ParsedSQL parsedSQL, ParameterBinderIndex<String> parameterBinderProvider) {
+		super(null, parameterBinderProvider);
 		this.parsedSQL = parsedSQL;
 	}
 	
