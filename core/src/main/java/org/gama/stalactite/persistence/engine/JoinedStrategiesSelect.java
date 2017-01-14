@@ -1,5 +1,6 @@
 package org.gama.stalactite.persistence.engine;
 
+import javax.annotation.Nonnull;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -47,6 +48,8 @@ public class JoinedStrategiesSelect<T, I> {
 	private final Map<String, StrategyJoins> strategyIndex = new HashMap<>();
 	/** The objet that will help to give names of strategies into the index (no impact on the generated SQL) */
 	private final StrategyIndexNamer indexNamer = new StrategyIndexNamer();
+	
+	private ColumnAliasBuilder columnAliasBuilder = new ColumnAliasBuilder();
 	
 	/**
 	 * Default constructor
@@ -99,13 +102,15 @@ public class JoinedStrategiesSelect<T, I> {
 		
 		// initialization of the from clause with the very first table
 		From from = selectQuery.getFrom().add(root.getTable());
-		addColumnsToSelect(root.getTableAlias(), root.getStrategy().getSelectableColumns(), selectQuery);
+		String tableAlias = columnAliasBuilder.buildAlias(root.getTable(), root.getTableAlias());
+		addColumnsToSelect(tableAlias, root.getStrategy().getSelectableColumns(), selectQuery);
 		
 		Queue<Join> stack = new ArrayDeque<>();
 		stack.addAll(root.getJoins());
 		while (!stack.isEmpty()) {
 			Join join = stack.poll();
-			addColumnsToSelect(join.getStrategy().getTableAlias(), join.getStrategy().getStrategy().getSelectableColumns(), selectQuery);
+			String joinTableAlias = columnAliasBuilder.buildAlias(join.getStrategy().getTable(), join.getStrategy().getTableAlias());
+			addColumnsToSelect(joinTableAlias, join.getStrategy().getStrategy().getSelectableColumns(), selectQuery);
 			Column leftJoinColumn = join.getLeftJoinColumn();
 			Column rightJoinColumn = join.getRightJoinColumn();
 			from.add(from.new ColumnJoin(leftJoinColumn, rightJoinColumn, join.isOuter() ? false : null));
@@ -136,19 +141,12 @@ public class JoinedStrategiesSelect<T, I> {
 	
 	private void addColumnsToSelect(String tableAlias, Iterable<Column> selectableColumns, SelectQuery selectQuery) {
 		for (Column selectableColumn : selectableColumns) {
-			String alias = getAlias(tableAlias, selectableColumn);
+			String alias = columnAliasBuilder.buildAlias(tableAlias, selectableColumn);
 			selectQuery.select(selectableColumn, alias);
 			// we link the column alias to the binder so it will be easy to read the ResultSet
-			// TODO: voir s'il ne faut pas "contextualiser" l'alias en fonction du Dialect (problème de case notamment), ou mettre le ResultSet dans
-			// un wrapper comme row insensible à la case
 			selectParameterBinders.put(alias, parameterBinderProvider.getBinder(selectableColumn));
 			aliases.put(selectableColumn, alias);
 		}
-	}
-	
-	private String getAlias(String tableAlias, Column selectableColumn) {
-		// TODO: ne pas faire un preventEmpty systématiquement, passer par une fonction
-		return Strings.preventEmpty(tableAlias, selectableColumn.getTable().getName()) + "_" + selectableColumn.getName();
 	}
 	
 	/**
@@ -305,6 +303,29 @@ public class JoinedStrategiesSelect<T, I> {
 		
 		private String generateName(ClassMappingStrategy classMappingStrategy) {
 			return classMappingStrategy.getTargetTable().getAbsoluteName() + aliasCount++;
+		}
+	}
+	
+	private static class ColumnAliasBuilder {
+		
+		/**
+		 * Gives the alias of a table
+		 * @param table the {@link Table} for which an alias is requested
+		 * @param aliasOverride an optional given alias
+		 * @return the given alias in priority or the name of the table
+		 */
+		public String buildAlias(Table table, String aliasOverride) {
+			return (String) Strings.preventEmpty(aliasOverride, table.getName());
+		}
+		
+		/**
+		 * Gives the alias of a Column 
+		 * @param tableAlias a non-null table alias
+		 * @param selectableColumn the {@link Column} for which an alias is requested
+		 * @return tableAlias + "_" + column.getName()
+		 */
+		public String buildAlias(@Nonnull String tableAlias, Column selectableColumn) {
+			return tableAlias + "_" + selectableColumn.getName();
 		}
 	}
 }
