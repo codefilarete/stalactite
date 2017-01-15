@@ -6,7 +6,6 @@ import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
-import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -90,9 +89,7 @@ public class StrategyJoinsRowTransformerTest {
 		when(joinedStrategy.getTargetTable()).thenReturn(tataTable);
 		
 		// completing the test case: adding the joined strategy
-		rootStrategyJoins.add(joinedStrategy, dummyJoinColumn, dummyJoinColumn, false,
-				(BiConsumer<Toto, Tata>) Toto::setOneToOne,
-				(Function<Toto, Tata>) Toto::getOneToOne, null);
+		rootStrategyJoins.add(joinedStrategy, dummyJoinColumn, dummyJoinColumn, false, BeanRelationFixer.of(Toto::setOneToOne));
 		
 		// Telling mocks which instance to create
 		when(dummyStrategy.getRowTransformer()).thenReturn(new ToBeanRowTransformer<>(Toto.class, totoTable, false));
@@ -151,10 +148,10 @@ public class StrategyJoinsRowTransformerTest {
 		
 		// completing the test case: adding the depth-1 strategy
 		Join joinedStrategy1Name = rootStrategyJoins.add(joinedStrategy1, dummyJoinColumn1, dummyJoinColumn1, false,
-				(BiConsumer<Toto, Tata>) Toto::setOneToOne, (Function<Toto, Tata>) Toto::getOneToOne, null);
+				BeanRelationFixer.of(Toto::setOneToOne));
 		// completing the test case: adding the depth-2 strategy
 		joinedStrategy1Name.getStrategy().add(joinedStrategy2, dummyJoinColumn2, dummyJoinColumn2, false,
-				(BiConsumer<Tata, Titi>) Tata::setOneToOne, null, null);
+				BeanRelationFixer.of(Tata::setOneToOne));
 		
 		// Telling mocks which instance to create
 		when(dummyStrategy.getRowTransformer()).thenReturn(new ToBeanRowTransformer<>(Toto.class, totoTable, false));
@@ -220,12 +217,10 @@ public class StrategyJoinsRowTransformerTest {
 		
 		// completing the test case: adding the joined strategy
 		rootStrategyJoins.add(joinedStrategy1, dummyJoinColumn1, dummyJoinColumn1, false,
-				(BiConsumer<Toto, Tata>) Toto::setOneToOne,
-				null, null);
+				BeanRelationFixer.of(Toto::setOneToOne));
 		// completing the test case: adding the 2nd joined strategy
 		rootStrategyJoins.add(joinedStrategy2, dummyJoinColumn2, dummyJoinColumn2, false,
-				(BiConsumer<Toto, Titi>) Toto::setOneToOneOther,
-				null, null);
+				BeanRelationFixer.of(Toto::setOneToOneOther));
 		
 		// Telling mocks which instance to create
 		when(dummyStrategy.getRowTransformer()).thenReturn(new ToBeanRowTransformer<>(Toto.class, totoTable, false));
@@ -283,7 +278,7 @@ public class StrategyJoinsRowTransformerTest {
 		// completing the test case: adding the joined strategy
 		rootStrategyJoins.add(joinedStrategy,
 				null, dummyJoinColumn, false,
-				(BiConsumer<Toto, Collection<Tata>>) Toto::setOneToMany, (Function<Toto, Collection<Tata>>) Toto::getOneToMany, ArrayList.class);
+				BeanRelationFixer.of(Toto::setOneToMany, Toto::getOneToMany, ArrayList::new));
 		
 		// Telling mocks which instance to create
 		when(dummyStrategy.getRowTransformer()).thenReturn(new ToBeanRowTransformer<>(Toto.class, totoTable, false));
@@ -341,7 +336,7 @@ public class StrategyJoinsRowTransformerTest {
 		when(dummyStrategy2.getTargetTable()).thenReturn(totoTable2);
 		rootStrategyJoins.add(dummyStrategy2,
 				null, toto2ColumnId, false,
-				(BiConsumer<Toto, Toto>) Toto::setSibling, (Function<Toto, Toto>) Toto::getSibling);
+				BeanRelationFixer.of(Toto::setSibling));
 		
 		
 		// Telling mocks which instance to create

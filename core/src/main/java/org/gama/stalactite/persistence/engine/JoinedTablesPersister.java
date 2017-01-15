@@ -1,10 +1,8 @@
 package org.gama.stalactite.persistence.engine;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-import java.util.function.BiConsumer;
 import java.util.function.Function;
 
 import org.gama.lang.collection.PairIterator;
@@ -20,7 +18,7 @@ import org.gama.stalactite.persistence.structure.Table.Column;
 /**
  * Persister for entity with multiple joined tables by primary key.
  * A main table is defined by the {@link ClassMappingStrategy} passed to constructor. Complementary tables are defined
- * with {@link #addMappingStrategy(ClassMappingStrategy, Function, Column, Column)}.
+ * with {@link #addMappingStrategy(String, ClassMappingStrategy, Function, BeanRelationFixer, Column, Column)}.
  * Entity load is defined by a select that joins all tables, each {@link ClassMappingStrategy} is called to complete
  * entity loading.
  * 
@@ -45,9 +43,18 @@ public class JoinedTablesPersister<T, I> extends Persister<T, I> {
 	 * Add a mapping strategy to be applied for persistence. It will be called after the main strategy
 	 * (passed in constructor), in order of the Collection, or in reverse order for delete actions to take into account
 	 * potential foreign keys.
+	 * @param ownerStrategyName the name of the strategy on which the mappingStrategy parameter will be added
+	 * @param mappingStrategy the strategy to be added
+	 * @param additionalInstancesProvider the function that gives all related instance, for cascade insert, update and delete
+	 * @param beanRelationFixer will help to fix the relation between instance at selection time
+	 * @param leftJoinColumn the column of the owning strategy to be used for joining with the newly added one (mappingStrategy parameter)
+	 * @param rightJoinColumn the column of the newly added strategy to be used for joining with the owning one
+	 * @see JoinedStrategiesSelect#add(String, ClassMappingStrategy, Column, Column, boolean, BeanRelationFixer
 	 */
-	public <U> void addMappingStrategy(ClassMappingStrategy<U, I> mappingStrategy, Function<Iterable<T>, Iterable<U>> additionalInstancesProvider,
-									   Column leftJoinColumn, Column rightJoinColumn) {
+	public <U> String addMappingStrategy(String ownerStrategyName, ClassMappingStrategy<U, I> mappingStrategy,
+										 Function<Iterable<T>, Iterable<U>> additionalInstancesProvider,
+										 BeanRelationFixer beanRelationFixer,
+										 Column leftJoinColumn, Column rightJoinColumn) {
 		addInsertExecutor(mappingStrategy, additionalInstancesProvider);
 		addUpdateExecutor(mappingStrategy, additionalInstancesProvider);
 		addUpdateRoughlyExecutor(mappingStrategy, additionalInstancesProvider);
@@ -55,9 +62,7 @@ public class JoinedTablesPersister<T, I> extends Persister<T, I> {
 		addDeleteRoughlyExecutor(mappingStrategy, additionalInstancesProvider);
 		
 		// We use our own select system since ISelectListener is not aimed at joining table
-		// the addition must be done after mapping strategy addition because it needs them all
-		// TODO: ask for the left strategy name (as a new method argument) instead of hard coding the root one's
-		addSelectExecutor(JoinedStrategiesSelect.FIRST_STRATEGY_NAME, mappingStrategy, null, null, null, leftJoinColumn, rightJoinColumn);
+		return addSelectExecutor(ownerStrategyName, mappingStrategy, beanRelationFixer, leftJoinColumn, rightJoinColumn);
 	}
 	
 	private <U> void addInsertExecutor(ClassMappingStrategy<U, I> mappingStrategy, Function<Iterable<T>, Iterable<U>> additionalInstancesProvider) {
@@ -150,11 +155,10 @@ public class JoinedTablesPersister<T, I> extends Persister<T, I> {
 		});
 	}
 	
-	private <U> String addSelectExecutor(String leftStrategyName, ClassMappingStrategy<U, I> mappingStrategy,
-										 BiConsumer<T, Iterable<U>> setter, Function<T, Iterable<U>> getter, Class<? extends Collection> oneToManyType,
+	private <U> String addSelectExecutor(String leftStrategyName, ClassMappingStrategy<U, I> mappingStrategy, BeanRelationFixer beanRelationFixer,
 										 Column leftJoinColumn, Column rightJoinColumn) {
-		return joinedStrategiesSelectExecutor.addComplementaryTables(leftStrategyName, mappingStrategy, setter, getter, 
-				leftJoinColumn, rightJoinColumn, oneToManyType);
+		return joinedStrategiesSelectExecutor.addComplementaryTables(leftStrategyName, mappingStrategy, beanRelationFixer,
+				leftJoinColumn, rightJoinColumn);
 	}
 	
 	/**

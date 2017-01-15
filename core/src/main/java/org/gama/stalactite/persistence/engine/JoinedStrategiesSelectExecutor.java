@@ -2,13 +2,10 @@ package org.gama.stalactite.persistence.engine;
 
 import java.sql.ResultSet;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.function.BiConsumer;
-import java.util.function.Function;
 
 import org.gama.lang.StringAppender;
 import org.gama.lang.Strings;
@@ -58,7 +55,6 @@ public class JoinedStrategiesSelectExecutor<T, I> {
 		// post-initialization
 		this.blockSize = dialect.getInOperatorMaxSize();
 		this.keyColumn = classMappingStrategy.getTargetTable().getPrimaryKey();
-		
 	}
 	
 	public ConnectionProvider getConnectionProvider() {
@@ -66,11 +62,11 @@ public class JoinedStrategiesSelectExecutor<T, I> {
 	}
 	
 	public <U> String addComplementaryTables(String leftStrategyName, ClassMappingStrategy<U, ?> mappingStrategy,
-											 BiConsumer<T, Iterable<U>> setter, Function<T, Iterable<U>> getter,
-											 Column leftJoinColumn, Column rightJoinColumn, Class<? extends Collection> oneToManyType) {
+											 BeanRelationFixer beanRelationFixer,
+											 Column leftJoinColumn, Column rightJoinColumn) {
 		// we outer join nullable columns
 		boolean isOuterJoin = rightJoinColumn.isNullable();
-		return joinedStrategiesSelect.add(leftStrategyName, mappingStrategy, leftJoinColumn, rightJoinColumn, isOuterJoin, setter, getter, oneToManyType);
+		return joinedStrategiesSelect.add(leftStrategyName, mappingStrategy, leftJoinColumn, rightJoinColumn, isOuterJoin, beanRelationFixer);
 	}
 	
 	public List<T> select(Iterable<I> ids) {

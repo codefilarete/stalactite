@@ -2,16 +2,13 @@ package org.gama.stalactite.persistence.engine;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
-import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
-import org.gama.lang.Reflections;
 import org.gama.sql.result.Row;
 import org.gama.stalactite.persistence.engine.JoinedStrategiesSelect.StrategyJoins;
 import org.gama.stalactite.persistence.engine.JoinedStrategiesSelect.StrategyJoins.Join;
@@ -107,7 +104,7 @@ public class StrategyJoinsRowTransformer<T> {
 					
 					// TODO: implémenter l'héritage d'entité
 					// TODO: implémenter ManyToMany ?
-					fillRelation(rowInstance, rowInstance2, join.getSetter(), join.getGetter(), join.getOneToManyType());
+					join.getBeanRelationFixer().apply(rowInstance, rowInstance2);
 					
 					// don't forget to add the member to the depth iteration
 					if (!rightMember.getJoins().isEmpty()) {
@@ -117,24 +114,6 @@ public class StrategyJoinsRowTransformer<T> {
 			}
 		}
 		return result;
-	}
-	
-	private <K, V> void fillRelation(K rowInstance, V rowInstance2, BiConsumer setter, Function getter, Class oneToManyType) {
-		if (oneToManyType != null) {
-			fillOneToMany(rowInstance, rowInstance2, (BiConsumer<K, Collection<V>>) setter, (Function<K, Collection<V>>) getter, (Class<Collection<V>>) oneToManyType);
-		} else {
-			setter.accept(rowInstance, rowInstance2);
-		}
-	}
-	
-	private <K, V> void fillOneToMany(K rowInstance, V rowInstance2, BiConsumer<K, Collection<V>> setter, Function<K, Collection<V>> getter, Class<Collection<V>> oneToManyType) {
-		Collection<V> oneToManyTarget = getter.apply(rowInstance);
-		// if the container doesn't exist, we create and fix it
-		if (oneToManyTarget == null) {
-			oneToManyTarget = Reflections.newInstance(oneToManyType);
-			setter.accept(rowInstance, oneToManyTarget);
-		}
-		oneToManyTarget.add(rowInstance2);
 	}
 	
 	/**

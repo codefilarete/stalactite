@@ -8,8 +8,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
-import java.util.function.BiConsumer;
-import java.util.function.Function;
 
 import org.gama.lang.Strings;
 import org.gama.sql.binder.ParameterBinder;
@@ -43,7 +41,7 @@ public class JoinedStrategiesSelect<T, I> {
 	private final StrategyJoins<T> root;
 	/**
 	 * A mapping between a name and join to help finding them when we want to join them with a new one
-	 * @see #add(String, ClassMappingStrategy, Column, Column, boolean, BiConsumer, Function, Class) 
+	 * @see #add(String, ClassMappingStrategy, Column, Column, boolean, BeanRelationFixer) 
 	 */
 	private final Map<String, StrategyJoins> strategyIndex = new HashMap<>();
 	/** The objet that will help to give names of strategies into the index (no impact on the generated SQL) */
@@ -122,18 +120,18 @@ public class JoinedStrategiesSelect<T, I> {
 	}
 	
 	public <U> String add(String leftStrategyName, ClassMappingStrategy<U, ?> strategy, Column leftJoinColumn, Column rightJoinColumn,
-						  boolean isOuterJoin, BiConsumer<T, Iterable<U>> setter, Function<T, Iterable<U>> getter, Class<? extends Collection> oneToManyType) {
+						  boolean isOuterJoin, BeanRelationFixer beanRelationFixer) {
 		StrategyJoins hangingJoins = getStrategyJoins(leftStrategyName);
 		if (hangingJoins == null) {
 			throw new IllegalStateException("No strategy with name " + leftStrategyName + " exists to add a new strategy");
 		}
-		return add(hangingJoins, strategy, leftJoinColumn, rightJoinColumn, isOuterJoin, setter, getter, oneToManyType);
+		return add(hangingJoins, strategy, leftJoinColumn, rightJoinColumn, isOuterJoin, beanRelationFixer);
 	}
 	
 	private <U> String add(StrategyJoins owner, ClassMappingStrategy<U, ?> strategy,
 						   Column leftJoinColumn, Column rightJoinColumn, boolean isOuterJoin,
-						   BiConsumer<T, Iterable<U>> setter, Function<T, Iterable<U>> getter, Class<? extends Collection> oneToManyType) {
-		Join join = owner.add(strategy, leftJoinColumn, rightJoinColumn, isOuterJoin, setter, getter, oneToManyType);
+						   BeanRelationFixer beanRelationFixer) {
+		Join join = owner.add(strategy, leftJoinColumn, rightJoinColumn, isOuterJoin, beanRelationFixer);
 		String indexKey = indexNamer.generateName(strategy);
 		strategyIndex.put(indexKey, join.getStrategy());
 		return indexKey;
@@ -196,45 +194,16 @@ public class JoinedStrategiesSelect<T, I> {
 		}
 		
 		/**
-		 * Add a join between the owned strategy and the given one
-		 *
-		 * @param strategy the new strategy on which to join
-		 * @param leftJoinColumn the column of the owned strategy table (no check done) on which the join will be made
-		 * @param rightJoinColumn the column of the new strategy table (no check done) on whoch the join will be made
-		 * @param isOuterJoin indicates if the join is an outer (left) one or not
-		 * @param setter the function to use for applyling instance of the new strategy on the owned one
-		 * @param getter the function to use for retrieving the instance of the new strategy on the owned one
-		 * @param oneToManyType the concrete type of the Collection, used for instanciation of the relation
-		 * @param <U> the new strategy mapped type
-		 * @return the created join
-		 */
-		<U> Join<I, U> add(ClassMappingStrategy strategy, Column leftJoinColumn, Column rightJoinColumn, boolean isOuterJoin,
-								   BiConsumer<I, Iterable<U>> setter, Function<I, Iterable<U>> getter, Class<? extends Collection> oneToManyType) {
-			return nonGenericAdd(strategy, leftJoinColumn, rightJoinColumn, isOuterJoin, setter, getter, oneToManyType);
-		}
-		
-		/**
 		 * Method dedicated to OneToOne relation
 		 * @param strategy the new strategy on which to join
 		 * @param leftJoinColumn the column of the owned strategy table (no check done) on which the join will be made
 		 * @param rightJoinColumn the column of the new strategy table (no check done) on whoch the join will be made
 		 * @param isOuterJoin indicates if the join is an outer (left) one or not
-		 * @param setter the function to use for applyling the instance of the new strategy on the owned one
-		 * @param getter the function to use for retrieving the instance of the new strategy on the owned one
-		 * @param <U> the new strategy mapped type
+		 * @param beanRelationFixer will help to apply the instance of the new strategy on the owned one
 		 * @return the created join
 		 */
-		<U> Join<I, U> add(ClassMappingStrategy strategy, Column leftJoinColumn, Column rightJoinColumn, boolean isOuterJoin,
-								   BiConsumer<I, U> setter, Function<I, U> getter) {
-			return nonGenericAdd(strategy, leftJoinColumn, rightJoinColumn, isOuterJoin, setter, getter, null);
-		}
-		
-		/**
-		 * Internal add without generic-ed parameters signature
-		 */
-		private <U> Join<I, U> nonGenericAdd(ClassMappingStrategy strategy, Column leftJoinColumn, Column rightJoinColumn, boolean isOuterJoin,
-											 BiConsumer setter, Function getter, Class<? extends Collection> oneToManyType) {
-			Join<I, U> join = new Join<>(strategy, leftJoinColumn, rightJoinColumn, isOuterJoin, setter, getter, oneToManyType);
+		<U> Join<I, U> add(ClassMappingStrategy strategy, Column leftJoinColumn, Column rightJoinColumn, boolean isOuterJoin, BeanRelationFixer beanRelationFixer) {
+			Join<I, U> join = new Join<>(strategy, leftJoinColumn, rightJoinColumn, isOuterJoin, beanRelationFixer);
 			this.joins.add(join);
 			return join;
 		}
@@ -249,22 +218,15 @@ public class JoinedStrategiesSelect<T, I> {
 			private final Column rightJoinColumn;
 			/** Indicates if the join must be an inner or (left) outer join */
 			private final boolean outer;
-			/** Setter for instances of this strategy from owning strategy entities */
-			private final BiConsumer<I, Iterable<O>> setter;
-			/** Getter for instances of this strategy from owning strategy entities */
-			private final Function<I, Iterable<O>> getter;
-			/** Type of the Collection in case of a OneToMany case, expected to be null when join is not a -many relation */
-			private final Class<? extends Collection> oneToManyType;
+			/** Relation fixer for instances of this strategy on owning strategy entities */
+			private final BeanRelationFixer beanRelationFixer;
 			
-			private Join(ClassMappingStrategy<O, ?> strategy, Column leftJoinColumn, Column rightJoinColumn, boolean outer,
-						 BiConsumer<I, Iterable<O>> setter, Function<I, Iterable<O>> getter, Class<? extends Collection> oneToManyType) {
+			private Join(ClassMappingStrategy<O, ?> strategy, Column leftJoinColumn, Column rightJoinColumn, boolean outer, BeanRelationFixer beanRelationFixer) {
 				this.strategy = new StrategyJoins<>(strategy);
 				this.leftJoinColumn = leftJoinColumn;
 				this.rightJoinColumn = rightJoinColumn;
 				this.outer = outer;
-				this.setter = setter;
-				this.oneToManyType = oneToManyType;
-				this.getter = getter;
+				this.beanRelationFixer = beanRelationFixer;
 			}
 			
 			StrategyJoins<O> getStrategy() {
@@ -283,16 +245,8 @@ public class JoinedStrategiesSelect<T, I> {
 				return outer;
 			}
 			
-			public BiConsumer<I, Iterable<O>> getSetter() {
-				return setter;
-			}
-			
-			public Function<I, Iterable<O>> getGetter() {
-				return getter;
-			}
-			
-			public Class<? extends Collection> getOneToManyType() {
-				return oneToManyType;
+			public BeanRelationFixer getBeanRelationFixer() {
+				return beanRelationFixer;
 			}
 		}
 	}

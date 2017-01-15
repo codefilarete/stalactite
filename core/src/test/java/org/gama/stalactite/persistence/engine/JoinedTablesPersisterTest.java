@@ -135,10 +135,10 @@ public class JoinedTablesPersisterTest {
 		when(dataSource.getConnection()).thenReturn(connection);
 		transactionManager.setDataSource(dataSource);
 		testInstance = new JoinedTablesPersister<>(totoClassMappingStrategy_ontoTable1, dialect, transactionManager, 3);
-		testInstance.addMappingStrategy(totoClassMappingStrategy2_ontoTable2, totos -> {
+		testInstance.addMappingStrategy(JoinedStrategiesSelect.FIRST_STRATEGY_NAME, totoClassMappingStrategy2_ontoTable2, totos -> {
 			// since we only want a replicate of totos in table2, we only need to return them
 			return totos;
-		}, leftJoinColumn, rightJoinColumn);
+		}, null, leftJoinColumn, rightJoinColumn);
 	}
 	
 	public void assertCapturedPairsEqual(PairSetList<Integer, Integer> expectedPairs) {
