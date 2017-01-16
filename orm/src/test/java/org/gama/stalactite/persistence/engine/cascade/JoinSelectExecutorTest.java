@@ -1,4 +1,4 @@
-package org.gama.stalactite.persistence.engine;
+package org.gama.stalactite.persistence.engine.cascade;
 
 /**
  * @author Guillaume Mary

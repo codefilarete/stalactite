@@ -1,4 +1,4 @@
-package org.gama.stalactite.persistence.engine;
+package org.gama.stalactite.persistence.engine.cascade;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -10,8 +10,8 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 
 import org.gama.sql.result.Row;
-import org.gama.stalactite.persistence.engine.JoinedStrategiesSelect.StrategyJoins;
-import org.gama.stalactite.persistence.engine.JoinedStrategiesSelect.StrategyJoins.Join;
+import org.gama.stalactite.persistence.engine.cascade.JoinedStrategiesSelect.StrategyJoins;
+import org.gama.stalactite.persistence.engine.cascade.JoinedStrategiesSelect.StrategyJoins.Join;
 import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
 import org.gama.stalactite.persistence.mapping.ToBeanRowTransformer;
 import org.gama.stalactite.persistence.structure.Table.Column;

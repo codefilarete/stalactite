@@ -1,4 +1,4 @@
-package org.gama.stalactite.persistence.engine;
+package org.gama.stalactite.persistence.engine.cascade;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -6,6 +6,13 @@ import java.util.Map;
 import java.util.function.Function;
 
 import org.gama.lang.collection.PairIterator;
+import org.gama.stalactite.persistence.engine.BeanRelationFixer;
+import org.gama.stalactite.persistence.engine.ConnectionProvider;
+import org.gama.stalactite.persistence.engine.DeleteExecutor;
+import org.gama.stalactite.persistence.engine.InsertExecutor;
+import org.gama.stalactite.persistence.engine.PersistenceContext;
+import org.gama.stalactite.persistence.engine.Persister;
+import org.gama.stalactite.persistence.engine.UpdateExecutor;
 import org.gama.stalactite.persistence.engine.listening.NoopDeleteListener;
 import org.gama.stalactite.persistence.engine.listening.NoopDeleteRoughlyListener;
 import org.gama.stalactite.persistence.engine.listening.NoopInsertListener;
