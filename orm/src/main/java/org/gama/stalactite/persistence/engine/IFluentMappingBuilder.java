@@ -17,7 +17,11 @@ public interface IFluentMappingBuilder<T, I> {
 	
 	IFluentMappingBuilder<T, I> add(Function<T, ?> function, String columnName);
 	
+	<O> IFluentMappingBuilder<T, I> cascade(Function<T, O> function, IFluentMappingBuilder<O, ?> targetFluentMappingBuilder);
+	
 	ClassMappingStrategy<T, I> build(Dialect dialect);
+	
+	Persister<T, I> build(PersistenceContext persistenceContext);
 	
 	interface IFluentMappingBuilderColumnOptions<T, I> extends IFluentMappingBuilder<T, I>, ColumnOptions<T, I> {
 	}

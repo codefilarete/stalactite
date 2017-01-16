@@ -1,9 +1,6 @@
 package org.gama.stalactite.persistence.engine;
 
-import java.lang.reflect.InvocationHandler;
-import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.lang.reflect.Proxy;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -14,10 +11,10 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import org.gama.lang.Reflections;
-import org.gama.lang.collection.ArrayIterator;
 import org.gama.lang.collection.Iterables;
 import org.gama.reflection.Accessors;
 import org.gama.reflection.PropertyAccessor;
+import org.gama.spy.MethodReferenceCapturer;
 import org.gama.stalactite.persistence.id.manager.AlreadyAssignedIdentifierManager;
 import org.gama.stalactite.persistence.id.manager.IdentifierInsertionManager;
 import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
@@ -30,12 +27,13 @@ import org.gama.stalactite.persistence.structure.Table.Column;
  */
 public class FluentMappingBuilder<T, I> implements IFluentMappingBuilder<T, I> {
 	
+
+	
 	public static enum IdentifierPolicy {
 		ALREADY_ASSIGNED,
 		BEFORE_INSERT,
-		AFTER_INSERT
+		AFTER_INSERT;
 	}
-	
 	/**
 	 * Will start a {@link FluentMappingBuilder} for a given class which will target a table that as the class name.
 	 * @param persistedClass the class to be persisted by the {@link ClassMappingStrategy} that will be created by {@link #build(Dialect)}
@@ -71,7 +69,9 @@ public class FluentMappingBuilder<T, I> implements IFluentMappingBuilder<T, I> {
 	
 	private PropertyAccessor<T, I> identifierAccessor;
 	
-	private final LambdaMethodCapturer<T> spy;
+	private final MethodReferenceCapturer<T> spy;
+	
+	private Cascade<T, ?, ?> cascade;
 	
 	public FluentMappingBuilder(Class<T> persistedClass, Table table) {
 		this.persistedClass = persistedClass;
@@ -79,7 +79,7 @@ public class FluentMappingBuilder<T, I> implements IFluentMappingBuilder<T, I> {
 		this.mapping = new ArrayList<>();
 		
 		// Code enhancer for creation of a proxy that will support functions invocations
-		this.spy = new LambdaMethodCapturer<>(persistedClass);
+		this.spy = new MethodReferenceCapturer<>(persistedClass);
 	}
 	
 	public Table getTable() {
@@ -128,7 +128,7 @@ public class FluentMappingBuilder<T, I> implements IFluentMappingBuilder<T, I> {
 				.ifPresent(f -> { throw new IllegalArgumentException("Mapping is already defined for " + columnName); });
 		this.mapping.add(new Linkage(propertyAccessor, newColumn));
 		Class<IFluentMappingBuilderColumnOptions<T, I>> returnType = (Class) IFluentMappingBuilderColumnOptions.class;
-		return new Overlay<>(ColumnOptions.class).overlay(this, returnType, new ColumnOptions() {
+		return new Decorator<>(ColumnOptions.class).decorate(this, returnType, new ColumnOptions() {
 			@Override
 			public FluentMappingBuilder identifier(IdentifierPolicy identifierPolicy) {
 				if (FluentMappingBuilder.this.identifierAccessor != null) {
@@ -144,13 +144,58 @@ public class FluentMappingBuilder<T, I> implements IFluentMappingBuilder<T, I> {
 						throw new NotYetSupportedOperationException();
 				}
 				FluentMappingBuilder.this.identifierAccessor = propertyAccessor;
-				return FluentMappingBuilder.this;	// not necessary because the overlay will return it for us, but cleaner (if we change our mind)
+				// we could return null because the decorator return embedder.this for us, but I find cleaner to do so (if we change our mind)
+				return FluentMappingBuilder.this;
 			}
 		});
 	}
 	
+	@Override
+	public <O> IFluentMappingBuilder<T, I> cascade(Function<T, O> function, IFluentMappingBuilder<O, ?> targetFluentMappingBuilder) {
+		cascade = new Cascade<>(function, (Class<O>) Reflections.propertyType(captureLambdaMethod(function)), targetFluentMappingBuilder);
+		return this;
+	}
+	
 	private Map<PropertyAccessor, Column> getMapping() {
 		return mapping.stream().collect(HashMap::new, (hashMap, linkage) -> hashMap.put(linkage.getFunction(), linkage.getColumn()), (a, b) -> {});
+	}
+	
+	@Override
+	public ClassMappingStrategy<T, I> build(Dialect dialect) {
+		// Assertion that binders are present: this will throw en exception if the binder is not found
+		mapping.stream().map(Linkage::getColumn).forEach(c -> dialect.getColumnBinderRegistry().getBinder(c));
+		return buildClassMappingStrategy();
+	}
+	
+	@Override
+	public Persister<T, I> build(PersistenceContext persistenceContext) {
+		if (this.cascade != null) {
+			add(cascade.targetProvider);
+		}
+		ClassMappingStrategy<T, I> mappingStrategy = build(persistenceContext.getDialect());
+		Persister<T, I> persister = persistenceContext.add(mappingStrategy);
+		if (this.cascade != null) {
+			JoinedTablesPersister<T, I> joinedTablesPersister = new JoinedTablesPersister<>(persistenceContext, mappingStrategy);
+			persister = joinedTablesPersister;
+			
+			ClassMappingStrategy targetMappingStrategy = this.cascade.targetFluentMappingBuilder.build(persistenceContext.getDialect());
+
+			Map<PropertyAccessor, Column> propertyToColumn = mappingStrategy.getDefaultMappingStrategy().getPropertyToColumn();
+			Method member = captureLambdaMethod(this.cascade.targetProvider);
+			Class<?> targetPropertyType = Reflections.onJavaBeanPropertyWrapper(member, () -> member.getReturnType(), () -> member.getParameterTypes()[0], null);
+			PropertyAccessor<Object, Object> propertyAccessor = PropertyAccessor.of(member);
+			Persister<?, ?> persister1 = persistenceContext.getPersister(targetPropertyType);
+			if (persister1 == null) {
+				throw new IllegalArgumentException("Target of cascade is not registered for persistence : " + targetPropertyType.getName());
+			}
+			Column rightColumn = persister1.getTargetTable().getPrimaryKey();
+			Column leftColumn = propertyToColumn.get(propertyAccessor);
+			Function<Iterable<T>, Iterable> function = ts -> Iterables.stream(ts).map(t -> cascade.targetProvider.apply(t)).collect(Collectors.toList());
+			joinedTablesPersister.addMappingStrategy(JoinedStrategiesSelect.FIRST_STRATEGY_NAME, targetMappingStrategy, (Function) function, BeanRelationFixer.of((a, b) -> {
+				propertyAccessor.getMutator().set(a, b);
+			}), leftColumn, rightColumn);
+		}
+		return persister;
 	}
 	
 	private ClassMappingStrategy<T, I> buildClassMappingStrategy() {
@@ -169,13 +214,6 @@ public class FluentMappingBuilder<T, I> implements IFluentMappingBuilder<T, I> {
 		}
 		
 		return new ClassMappingStrategy<>(persistedClass, table, columnMapping, identifierProperty, this.identifierInsertionManager);
-	}
-	
-	@Override
-	public ClassMappingStrategy<T, I> build(Dialect dialect) {
-		// Assertion that binders are present: this will throw en exception if the binder is not found
-		mapping.stream().map(Linkage::getColumn).forEach(c -> dialect.getColumnBinderRegistry().getBinder(c));
-		return buildClassMappingStrategy();
 	}
 	
 	
@@ -198,35 +236,16 @@ public class FluentMappingBuilder<T, I> implements IFluentMappingBuilder<T, I> {
 		}
 	}
 	
-	private static class Overlay<V> {
+	private static class Cascade<I, O, J> {
 		
-		private final Class<V> clazz;
+		private final Function<I, O> targetProvider;
+		private final Class<O> cascadingTargetClass;
+		private final IFluentMappingBuilder<O, J> targetFluentMappingBuilder;
 		
-		Overlay(Class<V> clazz) {
-			this.clazz = clazz;
-		}
-		
-		public <T, U extends T> U overlay(T o, Class<U> interfazz, V surrogate) {
-			InvocationHandler invocationRedirector = (proxy, method, args) -> {
-				if (Iterables.copy(new ArrayIterator<>(clazz.getDeclaredMethods())).contains(method)) {
-					invoke(surrogate, method, args);
-					return o;
-				} else {
-					return invoke(o, method, args);
-				}
-			};
-			// Which ClassLoader ?
-			ClassLoader classLoader = Thread.currentThread().getContextClassLoader();//o.getClass().getClassLoader();
-			return (U) Proxy.newProxyInstance(classLoader, new Class[] { interfazz }, invocationRedirector);
-		}
-		
-		private Object invoke(Object target, Method method, Object[] args) throws Throwable {
-			try {
-				return method.invoke(target, args);
-			} catch (InvocationTargetException e) {
-				// we rethrow the main exception so caller will not be polluted by UndeclaredThrowableException + InvocationTargetException
-				throw e.getCause();
-			}
+		private Cascade(Function<I, O> targetProvider, Class<O> cascadingTargetClass, IFluentMappingBuilder<O, J> targetFluentMappingBuilder) {
+			this.targetProvider = targetProvider;
+			this.cascadingTargetClass = cascadingTargetClass;
+			this.targetFluentMappingBuilder = targetFluentMappingBuilder;
 		}
 	}
 }
