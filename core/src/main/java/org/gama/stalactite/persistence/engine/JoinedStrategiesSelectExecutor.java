@@ -129,20 +129,17 @@ public class JoinedStrategiesSelectExecutor<T, I> {
 			ResultSet resultSet = closeableOperation.execute();
 			// NB: we give the same ParametersBinders of those given at ColumnParamedSelect since the row iterator is expected to read column from it
 			RowIterator rowIterator = new RowIterator(resultSet, ((ColumnParamedSelect) closeableOperation.getSqlStatement()).getSelectParameterBinders());
-			while (rowIterator.hasNext()) {
-				result.add(transform(rowIterator));
-			}
+			result.addAll(transform(rowIterator));
 		} catch (Exception e) {
 			throw Exceptions.asRuntimeException(e);
 		}
 	}
 	
-	T transform(Iterator<Row> rowIterator) {
+	List<T> transform(Iterator<Row> rowIterator) {
 		StrategyJoinsRowTransformer<T> strategyJoinsRowTransformer = new StrategyJoinsRowTransformer<>(joinedStrategiesSelect.getStrategyJoins(JoinedStrategiesSelect.FIRST_STRATEGY_NAME));
 		
 		strategyJoinsRowTransformer.setAliases(this.joinedStrategiesSelect.getAliases());
-		List<T> result = strategyJoinsRowTransformer.transform(() -> rowIterator);
-		return Iterables.first(result);
+		return strategyJoinsRowTransformer.transform(() -> rowIterator);
 	}
 	
 	private static class DynamicInClause implements CharSequence {
