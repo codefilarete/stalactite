@@ -17,7 +17,7 @@ public interface IFluentMappingBuilder<T, I> {
 	
 	IFluentMappingBuilder<T, I> add(Function<T, ?> function, String columnName);
 	
-	<O> IFluentMappingBuilder<T, I> cascade(Function<T, O> function, IFluentMappingBuilder<O, ?> targetFluentMappingBuilder);
+	<O> IFluentMappingBuilder<T, I> cascade(Function<T, O> function, Persister<O, ?> persister);
 	
 	ClassMappingStrategy<T, I> build(Dialect dialect);
 	

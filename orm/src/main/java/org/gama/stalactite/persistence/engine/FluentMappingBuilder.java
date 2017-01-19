@@ -17,8 +17,12 @@ import org.gama.reflection.PropertyAccessor;
 import org.gama.spy.MethodReferenceCapturer;
 import org.gama.stalactite.persistence.engine.cascade.JoinedStrategiesSelect;
 import org.gama.stalactite.persistence.engine.cascade.JoinedTablesPersister;
+import org.gama.stalactite.persistence.engine.listening.NoopInsertListener;
+import org.gama.stalactite.persistence.id.Identified;
+import org.gama.stalactite.persistence.id.PersistableIdentifier;
 import org.gama.stalactite.persistence.id.manager.AlreadyAssignedIdentifierManager;
 import org.gama.stalactite.persistence.id.manager.IdentifierInsertionManager;
+import org.gama.stalactite.persistence.id.manager.StatefullIdentifier;
 import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
 import org.gama.stalactite.persistence.sql.Dialect;
 import org.gama.stalactite.persistence.structure.Table;
@@ -153,8 +157,8 @@ public class FluentMappingBuilder<T, I> implements IFluentMappingBuilder<T, I> {
 	}
 	
 	@Override
-	public <O> IFluentMappingBuilder<T, I> cascade(Function<T, O> function, IFluentMappingBuilder<O, ?> targetFluentMappingBuilder) {
-		cascade = new Cascade<>(function, (Class<O>) Reflections.propertyType(captureLambdaMethod(function)), targetFluentMappingBuilder);
+	public <O> IFluentMappingBuilder<T, I> cascade(Function<T, O> function, Persister<O, ?> persister) {
+		cascade = new Cascade<>(function, (Class<O>) Reflections.propertyType(captureLambdaMethod(function)), persister);
 		return this;
 	}
 	
@@ -175,29 +179,41 @@ public class FluentMappingBuilder<T, I> implements IFluentMappingBuilder<T, I> {
 			add(cascade.targetProvider);
 		}
 		ClassMappingStrategy<T, I> mappingStrategy = build(persistenceContext.getDialect());
-		Persister<T, I> persister = persistenceContext.add(mappingStrategy);
+		Persister<T, I> localPersister = persistenceContext.add(mappingStrategy);
 		if (this.cascade != null) {
 			JoinedTablesPersister<T, I> joinedTablesPersister = new JoinedTablesPersister<>(persistenceContext, mappingStrategy);
-			persister = joinedTablesPersister;
+			localPersister = joinedTablesPersister;
 			
-			ClassMappingStrategy targetMappingStrategy = this.cascade.targetFluentMappingBuilder.build(persistenceContext.getDialect());
-
-			Map<PropertyAccessor, Column> propertyToColumn = mappingStrategy.getDefaultMappingStrategy().getPropertyToColumn();
-			Method member = captureLambdaMethod(this.cascade.targetProvider);
-			Class<?> targetPropertyType = Reflections.onJavaBeanPropertyWrapper(member, () -> member.getReturnType(), () -> member.getParameterTypes()[0], null);
+			Persister<Object, Object> targetPersister = (Persister<Object, Object>) this.cascade.persister;
+			Method member = this.cascade.member;
+			
+//			Class<?> targetPropertyType = Reflections.onJavaBeanPropertyWrapper(member, member::getReturnType, () -> member.getParameterTypes()[0], null);
 			PropertyAccessor<Object, Object> propertyAccessor = PropertyAccessor.of(member);
-			Persister<?, ?> persister1 = persistenceContext.getPersister(targetPropertyType);
-			if (persister1 == null) {
-				throw new IllegalArgumentException("Target of cascade is not registered for persistence : " + targetPropertyType.getName());
-			}
-			Column rightColumn = persister1.getTargetTable().getPrimaryKey();
-			Column leftColumn = propertyToColumn.get(propertyAccessor);
-			Function<Iterable<T>, Iterable> function = ts -> Iterables.stream(ts).map(t -> cascade.targetProvider.apply(t)).collect(Collectors.toList());
-			joinedTablesPersister.addMappingStrategy(JoinedStrategiesSelect.FIRST_STRATEGY_NAME, targetMappingStrategy, (Function) function, BeanRelationFixer.of((a, b) -> {
-				propertyAccessor.getMutator().set(a, b);
-			}), leftColumn, rightColumn);
+			Function<Iterable<T>, Iterable<Object>> function = alreadyPersistedInstanceRemover(this.cascade.targetProvider::apply);
+			joinedTablesPersister.getPersisterListener().addInsertListener(SetPersistedFlagAfterInsertListener.INSTANCE);
+			targetPersister.getPersisterListener().addInsertListener(SetPersistedFlagAfterInsertListener.INSTANCE);
+			
+			// finding joined columns: left one is given by current mapping strategy throught the property accessor. Right one is target primary key
+			// because we don't yet support "not owner of the property"
+			Column leftColumn = mappingStrategy.getDefaultMappingStrategy().getPropertyToColumn().get(propertyAccessor);
+			Column rightColumn = targetPersister.getTargetTable().getPrimaryKey();
+			joinedTablesPersister.addPersister(JoinedStrategiesSelect.FIRST_STRATEGY_NAME, targetPersister, function,
+					BeanRelationFixer.of((a, b) -> propertyAccessor.getMutator().set(a, b)),
+					leftColumn, rightColumn);
 		}
-		return persister;
+		return localPersister;
+	}
+	
+	/**
+	 * Give a function that will remove already persisted instance from the result of the given function
+	 * @param function a simple function
+	 * @return a massive vesion of the given function, additionnaly will remove {@link StatefullIdentifier#isPersisted()} instances
+	 */
+	private static <I, O> Function<Iterable<I>, Iterable<O>> alreadyPersistedInstanceRemover(Function<I, O> function) {
+		return ts -> Iterables.stream(ts)
+				.map(function)
+				.filter(o -> !(o instanceof Identified && ((Identified) o).getId().isPersisted()))
+				.collect(Collectors.toList());
 	}
 	
 	private ClassMappingStrategy<T, I> buildClassMappingStrategy() {
@@ -238,16 +254,33 @@ public class FluentMappingBuilder<T, I> implements IFluentMappingBuilder<T, I> {
 		}
 	}
 	
-	private static class Cascade<I, O, J> {
+	private class Cascade<I, O, J> {
 		
 		private final Function<I, O> targetProvider;
 		private final Class<O> cascadingTargetClass;
-		private final IFluentMappingBuilder<O, J> targetFluentMappingBuilder;
+		private final Persister<O, J> persister;
+		private final Method member;
 		
-		private Cascade(Function<I, O> targetProvider, Class<O> cascadingTargetClass, IFluentMappingBuilder<O, J> targetFluentMappingBuilder) {
+		private Cascade(Function<I, O> targetProvider, Class<O> cascadingTargetClass, Persister<O, J> persister) {
 			this.targetProvider = targetProvider;
 			this.cascadingTargetClass = cascadingTargetClass;
-			this.targetFluentMappingBuilder = targetFluentMappingBuilder;
+			this.persister = persister;
+			// looking for the target type because its necesary to find its persister (and other objects). Done thru a method capturer (weird thing).
+			this.member = captureLambdaMethod((Function) targetProvider);
+		}
+	}
+	
+	private static class SetPersistedFlagAfterInsertListener<T> extends NoopInsertListener<T> {
+		
+		public static final SetPersistedFlagAfterInsertListener INSTANCE = new SetPersistedFlagAfterInsertListener();
+		
+		@Override
+		public void afterInsert(Iterable<T> iterables) {
+			for (T t : iterables) {
+				if (t instanceof Identified && ((Identified) t).getId() instanceof PersistableIdentifier) {
+					((PersistableIdentifier) ((Identified) t).getId()).setPersisted(true);
+				}
+			}
 		}
 	}
 }

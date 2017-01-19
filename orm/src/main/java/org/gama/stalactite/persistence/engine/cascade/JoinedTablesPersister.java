@@ -8,11 +8,8 @@ import java.util.function.Function;
 import org.gama.lang.collection.PairIterator;
 import org.gama.stalactite.persistence.engine.BeanRelationFixer;
 import org.gama.stalactite.persistence.engine.ConnectionProvider;
-import org.gama.stalactite.persistence.engine.DeleteExecutor;
-import org.gama.stalactite.persistence.engine.InsertExecutor;
 import org.gama.stalactite.persistence.engine.PersistenceContext;
 import org.gama.stalactite.persistence.engine.Persister;
-import org.gama.stalactite.persistence.engine.UpdateExecutor;
 import org.gama.stalactite.persistence.engine.listening.NoopDeleteListener;
 import org.gama.stalactite.persistence.engine.listening.NoopDeleteRoughlyListener;
 import org.gama.stalactite.persistence.engine.listening.NoopInsertListener;
@@ -25,7 +22,7 @@ import org.gama.stalactite.persistence.structure.Table.Column;
 /**
  * Persister for entity with multiple joined tables by primary key.
  * A main table is defined by the {@link ClassMappingStrategy} passed to constructor. Complementary tables are defined
- * with {@link #addMappingStrategy(String, ClassMappingStrategy, Function, BeanRelationFixer, Column, Column)}.
+ * with {@link #addPersister(String, Persister, Function, BeanRelationFixer, Column, Column)}.
  * Entity load is defined by a select that joins all tables, each {@link ClassMappingStrategy} is called to complete
  * entity loading.
  * 
@@ -51,50 +48,39 @@ public class JoinedTablesPersister<T, I> extends Persister<T, I> {
 	 * (passed in constructor), in order of the Collection, or in reverse order for delete actions to take into account
 	 * potential foreign keys.
 	 * @param ownerStrategyName the name of the strategy on which the mappingStrategy parameter will be added
-	 * @param mappingStrategy the strategy to be added
+	 * @param persister the {@link Persister} who strategy must be added to be added
 	 * @param additionalInstancesProvider the function that gives all related instance, for cascade insert, update and delete
 	 * @param beanRelationFixer will help to fix the relation between instance at selection time
 	 * @param leftJoinColumn the column of the owning strategy to be used for joining with the newly added one (mappingStrategy parameter)
 	 * @param rightJoinColumn the column of the newly added strategy to be used for joining with the owning one
 	 * @see JoinedStrategiesSelect#add(String, ClassMappingStrategy, Column, Column, boolean, BeanRelationFixer
 	 */
-	public <U> String addMappingStrategy(String ownerStrategyName, ClassMappingStrategy<U, I> mappingStrategy,
+	public <U, J> String addPersister(String ownerStrategyName, Persister<U, J> persister,
 										 Function<Iterable<T>, Iterable<U>> additionalInstancesProvider,
 										 BeanRelationFixer beanRelationFixer,
 										 Column leftJoinColumn, Column rightJoinColumn) {
-		addInsertExecutor(mappingStrategy, additionalInstancesProvider);
-		addUpdateExecutor(mappingStrategy, additionalInstancesProvider);
-		addUpdateRoughlyExecutor(mappingStrategy, additionalInstancesProvider);
-		addDeleteExecutor(mappingStrategy, additionalInstancesProvider);
-		addDeleteRoughlyExecutor(mappingStrategy, additionalInstancesProvider);
+		ClassMappingStrategy<U, J> mappingStrategy = persister.getMappingStrategy();
+		addInsertExecutor(persister, additionalInstancesProvider);
+		addUpdateExecutor(persister, additionalInstancesProvider);
+		addUpdateRoughlyExecutor(persister, additionalInstancesProvider);
+		addDeleteExecutor(persister, additionalInstancesProvider);
+		addDeleteRoughlyExecutor(persister, additionalInstancesProvider);
 		
 		// We use our own select system since ISelectListener is not aimed at joining table
 		return addSelectExecutor(ownerStrategyName, mappingStrategy, beanRelationFixer, leftJoinColumn, rightJoinColumn);
 	}
 	
-	private <U> void addInsertExecutor(ClassMappingStrategy<U, I> mappingStrategy, Function<Iterable<T>, Iterable<U>> additionalInstancesProvider) {
-		InsertExecutor<U, I> insertExecutor = newInsertExecutor(mappingStrategy,
-				getConnectionProvider(),
-				getDmlGenerator(),
-				getWriteOperationRetryer(),
-				getBatchSize(),
-				getInOperatorMaxSize());
+	private <U, J> void addInsertExecutor(Persister<U, J> persister, Function<Iterable<T>, Iterable<U>> additionalInstancesProvider) {
 		getPersisterListener().addInsertListener(new NoopInsertListener<T>() {
 			@Override
 			public void afterInsert(Iterable<T> iterables) {
-				insertExecutor.insert(additionalInstancesProvider.apply(iterables));
+				Iterable<U> iterable = additionalInstancesProvider.apply(iterables);
+				persister.insert(iterable);
 			}
 		});
 	}
 	
-	private <U> void addUpdateExecutor(ClassMappingStrategy<U, I> mappingStrategy, Function<Iterable<T>, Iterable<U>> additionalInstancesProvider) {
-		UpdateExecutor<U, I> updateExecutor = newUpdateExecutor(
-				mappingStrategy,
-				getConnectionProvider(),
-				getDmlGenerator(),
-				getWriteOperationRetryer(),
-				getBatchSize(),
-				getInOperatorMaxSize());
+	private <U, J> void addUpdateExecutor(Persister<U, J> persister, Function<Iterable<T>, Iterable<U>> additionalInstancesProvider) {
 		getPersisterListener().addUpdateListener(new NoopUpdateListener<T>() {
 			@Override
 			public void afterUpdate(Iterable<Map.Entry<T, T>> iterables, boolean allColumnsStatement) {
@@ -109,60 +95,39 @@ public class JoinedTablesPersister<T, I> extends Persister<T, I> {
 				}
 				PairIterator<U, U> pairIterator = new PairIterator<>(additionalInstancesProvider.apply(keysIterable), additionalInstancesProvider.apply(valuesIterable));
 				
-				updateExecutor.update(() -> pairIterator, allColumnsStatement);
+				persister.update(() -> pairIterator, allColumnsStatement);
 			}
 		});
 	}
 	
-	private <U> void addUpdateRoughlyExecutor(ClassMappingStrategy<U, I> mappingStrategy, Function<Iterable<T>, Iterable<U>> complementaryInstancesProvider) {
-		UpdateExecutor<U, I> updateExecutor = newUpdateExecutor(
-				mappingStrategy,
-				getConnectionProvider(),
-				getDmlGenerator(),
-				getWriteOperationRetryer(),
-				getBatchSize(),
-				getInOperatorMaxSize());
+	private <U, J> void addUpdateRoughlyExecutor(Persister<U, J>persister, Function<Iterable<T>, Iterable<U>> complementaryInstancesProvider) {
 		getPersisterListener().addUpdateRouglyListener(new NoopUpdateRoughlyListener<T>() {
 			@Override
 			public void afterUpdateRoughly(Iterable<T> iterables) {
-				updateExecutor.updateRoughly(complementaryInstancesProvider.apply(iterables));
+				persister.updateRoughly(complementaryInstancesProvider.apply(iterables));
 			}
 		});
 	}
 	
-	private <U> void addDeleteExecutor(ClassMappingStrategy<U, I> mappingStrategy, Function<Iterable<T>, Iterable<U>> complementaryInstancesProvider) {
-		DeleteExecutor<U, I> deleteExecutor = newDeleteExecutor(
-				mappingStrategy,
-				getConnectionProvider(),
-				getDmlGenerator(),
-				getWriteOperationRetryer(),
-				getBatchSize(),
-				getInOperatorMaxSize());
+	private <U, J> void addDeleteExecutor(Persister<U, J> persister, Function<Iterable<T>, Iterable<U>> complementaryInstancesProvider) {
 		getPersisterListener().addDeleteListener(new NoopDeleteListener<T>() {
 			@Override
 			public void beforeDelete(Iterable<T> iterables) {
-				deleteExecutor.delete(complementaryInstancesProvider.apply(iterables));
+				persister.delete(complementaryInstancesProvider.apply(iterables));
 			}
 		});
 	}
 	
-	private <U> void addDeleteRoughlyExecutor(ClassMappingStrategy<U, I> mappingStrategy, Function<Iterable<T>, Iterable<U>> complementaryInstancesProvider) {
-		DeleteExecutor<U, I> deleteExecutor = newDeleteExecutor(
-				mappingStrategy,
-				getConnectionProvider(),
-				getDmlGenerator(),
-				getWriteOperationRetryer(),
-				getBatchSize(),
-				getInOperatorMaxSize());
+	private <U, J> void addDeleteRoughlyExecutor(Persister<U, J> persister, Function<Iterable<T>, Iterable<U>> complementaryInstancesProvider) {
 		getPersisterListener().addDeleteRoughlyListener(new NoopDeleteRoughlyListener<T>() {
 			@Override
 			public void beforeDeleteRoughly(Iterable<T> iterables) {
-				deleteExecutor.deleteRoughly(complementaryInstancesProvider.apply(iterables));
+				persister.deleteRoughly(complementaryInstancesProvider.apply(iterables));
 			}
 		});
 	}
 	
-	private <U> String addSelectExecutor(String leftStrategyName, ClassMappingStrategy<U, I> mappingStrategy, BeanRelationFixer beanRelationFixer,
+	private <U, J> String addSelectExecutor(String leftStrategyName, ClassMappingStrategy<U, J> mappingStrategy, BeanRelationFixer beanRelationFixer,
 										 Column leftJoinColumn, Column rightJoinColumn) {
 		return joinedStrategiesSelectExecutor.addComplementaryTables(leftStrategyName, mappingStrategy, beanRelationFixer,
 				leftJoinColumn, rightJoinColumn);
