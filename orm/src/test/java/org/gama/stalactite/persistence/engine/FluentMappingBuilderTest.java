@@ -1,6 +1,9 @@
 package org.gama.stalactite.persistence.engine;
 
 import org.gama.stalactite.persistence.engine.FluentMappingBuilder.IdentifierPolicy;
+import org.gama.stalactite.persistence.id.Identified;
+import org.gama.stalactite.persistence.id.Identifier;
+import org.gama.stalactite.persistence.id.manager.StatefullIdentifier;
 import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.persistence.structure.Table.Column;
 import org.junit.Rule;
@@ -16,7 +19,7 @@ import static org.junit.Assert.assertTrue;
  */
 public class FluentMappingBuilderTest {
 	
-	protected static class Toto {
+	protected static class Toto implements Identified<Integer> {
 		
 		private String name;
 		
@@ -52,6 +55,16 @@ public class FluentMappingBuilderTest {
 		public void setNoMatchingFieldPrimitive(long s) {
 			
 		}
+		
+		@Override
+		public Identifier<Integer> getId() {
+			return null;
+		}
+		
+		@Override
+		public void setId(Identifier<Integer> id) {
+			
+		}
 	}
 	
 	@Rule
@@ -60,7 +73,7 @@ public class FluentMappingBuilderTest {
 	@Test
 	public void testAdd_withoutName_targettedPropertyNameIsTook() {
 		Table toto = new Table("Toto");
-		FluentMappingBuilder.from(Toto.class, Void.class, toto)
+		FluentMappingBuilder.from(Toto.class, StatefullIdentifier.class, toto)
 				.add(Toto::getName);
 		
 		// column sould be correctly created
@@ -72,7 +85,7 @@ public class FluentMappingBuilderTest {
 	@Test
 	public void testAdd_definedAsIdentifier_columnBecomesPrimaryKey() {
 		Table toto = new Table("Toto");
-		FluentMappingBuilder.from(Toto.class, Void.class, toto)
+		FluentMappingBuilder.from(Toto.class, StatefullIdentifier.class, toto)
 			.add(Toto::getName).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 		;
 		// column sould be correctly created
@@ -86,7 +99,7 @@ public class FluentMappingBuilderTest {
 		expectedException.expectMessage("Identifier is already defined by");
 		expectedException.expectMessage("getName");
 		Table toto = new Table("Toto");
-		FluentMappingBuilder.from(Toto.class, Void.class, toto)
+		FluentMappingBuilder.from(Toto.class, StatefullIdentifier.class, toto)
 			.add(Toto::getName, "tata").identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 			.add(Toto::getFirstName).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 		;
@@ -97,7 +110,7 @@ public class FluentMappingBuilderTest {
 		expectedException.expect(IllegalArgumentException.class);
 		expectedException.expectMessage("Mapping is already defined by a method");
 		Table toto = new Table("Toto");
-		FluentMappingBuilder.from(Toto.class, Void.class, toto)
+		FluentMappingBuilder.from(Toto.class, StatefullIdentifier.class, toto)
 				.add(Toto::getName)
 				.add(Toto::setName)
 		;
@@ -108,7 +121,7 @@ public class FluentMappingBuilderTest {
 		expectedException.expect(IllegalArgumentException.class);
 		expectedException.expectMessage("Mapping is already defined for xyz");
 		Table toto = new Table("Toto");
-		FluentMappingBuilder.from(Toto.class, Void.class, toto)
+		FluentMappingBuilder.from(Toto.class, StatefullIdentifier.class, toto)
 				.add(Toto::getName, "xyz")
 				.add(Toto::getFirstName, "xyz")
 		;
@@ -117,7 +130,7 @@ public class FluentMappingBuilderTest {
 	@Test
 	public void testAdd_methodHasNoMatchingField_configurationIsStillValid() {
 		Table toto = new Table("Toto");
-		FluentMappingBuilder.from(Toto.class, Void.class, toto)
+		FluentMappingBuilder.from(Toto.class, StatefullIdentifier.class, toto)
 				.add(Toto::getNoMatchingField);
 		
 		Column columnForProperty = toto.mapColumnsOnName().get("noMatchingField");
@@ -128,7 +141,7 @@ public class FluentMappingBuilderTest {
 	@Test
 	public void testAdd_methodIsASetter_configurationIsStillValid() {
 		Table toto = new Table("Toto");
-		FluentMappingBuilder.from(Toto.class, Void.class, toto)
+		FluentMappingBuilder.from(Toto.class, StatefullIdentifier.class, toto)
 				.add(Toto::setNoMatchingField)
 				.add(Toto::setNoMatchingFieldPrimitive)
 		;

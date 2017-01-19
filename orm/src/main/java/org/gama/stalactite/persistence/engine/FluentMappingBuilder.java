@@ -17,6 +17,7 @@ import org.gama.reflection.PropertyAccessor;
 import org.gama.spy.MethodReferenceCapturer;
 import org.gama.stalactite.persistence.engine.cascade.JoinedStrategiesSelect;
 import org.gama.stalactite.persistence.engine.cascade.JoinedTablesPersister;
+import org.gama.stalactite.persistence.engine.listening.IInsertListener;
 import org.gama.stalactite.persistence.engine.listening.NoopInsertListener;
 import org.gama.stalactite.persistence.id.Identified;
 import org.gama.stalactite.persistence.id.PersistableIdentifier;
@@ -31,7 +32,7 @@ import org.gama.stalactite.persistence.structure.Table.Column;
 /**
  * @author Guillaume Mary
  */
-public class FluentMappingBuilder<T, I> implements IFluentMappingBuilder<T, I> {
+public class FluentMappingBuilder<T extends Identified, I extends StatefullIdentifier> implements IFluentMappingBuilder<T, I> {
 	
 
 	
@@ -48,7 +49,7 @@ public class FluentMappingBuilder<T, I> implements IFluentMappingBuilder<T, I> {
 	 * @param <I> the type of the identifier
 	 * @return a new {@link FluentMappingBuilder}
 	 */
-	public static <T, I> FluentMappingBuilder<T, I> from(Class<T> persistedClass, Class<I> identifierClass) {
+	public static <T extends Identified, I extends StatefullIdentifier> FluentMappingBuilder<T, I> from(Class<T> persistedClass, Class<I> identifierClass) {
 		return from(persistedClass, identifierClass, new Table(persistedClass.getSimpleName()));
 	}
 	
@@ -61,7 +62,7 @@ public class FluentMappingBuilder<T, I> implements IFluentMappingBuilder<T, I> {
 	 * @param <I> the type of the identifier
 	 * @return a new {@link FluentMappingBuilder}
 	 */
-	public static <T, I> FluentMappingBuilder<T, I> from(Class<T> persistedClass, Class<I> identifierClass, Table table) {
+	public static <T extends Identified, I extends StatefullIdentifier> FluentMappingBuilder<T, I> from(Class<T> persistedClass, Class<I> identifierClass, Table table) {
 		return new FluentMappingBuilder<>(persistedClass, table);
 	}
 	
@@ -77,7 +78,7 @@ public class FluentMappingBuilder<T, I> implements IFluentMappingBuilder<T, I> {
 	
 	private final MethodReferenceCapturer<T> spy;
 	
-	private Cascade<T, ?, ?> cascade;
+	private Cascade<T, ? extends Identified, ? extends StatefullIdentifier> cascade;
 	
 	public FluentMappingBuilder(Class<T> persistedClass, Table table) {
 		this.persistedClass = persistedClass;
@@ -157,7 +158,7 @@ public class FluentMappingBuilder<T, I> implements IFluentMappingBuilder<T, I> {
 	}
 	
 	@Override
-	public <O> IFluentMappingBuilder<T, I> cascade(Function<T, O> function, Persister<O, ?> persister) {
+	public <O extends Identified, J extends StatefullIdentifier> IFluentMappingBuilder<T, I> cascade(Function<T, O> function, Persister<O, J> persister) {
 		cascade = new Cascade<>(function, (Class<O>) Reflections.propertyType(captureLambdaMethod(function)), persister);
 		return this;
 	}
@@ -184,13 +185,13 @@ public class FluentMappingBuilder<T, I> implements IFluentMappingBuilder<T, I> {
 			JoinedTablesPersister<T, I> joinedTablesPersister = new JoinedTablesPersister<>(persistenceContext, mappingStrategy);
 			localPersister = joinedTablesPersister;
 			
-			Persister<Object, Object> targetPersister = (Persister<Object, Object>) this.cascade.persister;
+			Persister<Identified, StatefullIdentifier> targetPersister = (Persister<Identified, StatefullIdentifier>) this.cascade.persister;
 			Method member = this.cascade.member;
 			
 //			Class<?> targetPropertyType = Reflections.onJavaBeanPropertyWrapper(member, member::getReturnType, () -> member.getParameterTypes()[0], null);
-			PropertyAccessor<Object, Object> propertyAccessor = PropertyAccessor.of(member);
-			Function<Iterable<T>, Iterable<Object>> function = alreadyPersistedInstanceRemover(this.cascade.targetProvider::apply);
-			joinedTablesPersister.getPersisterListener().addInsertListener(SetPersistedFlagAfterInsertListener.INSTANCE);
+			PropertyAccessor<Identified, Identified> propertyAccessor = PropertyAccessor.of(member);
+			Function<Iterable<T>, Iterable<Identified>> function = alreadyPersistedInstanceRemover(this.cascade.targetProvider::apply);
+			joinedTablesPersister.getPersisterListener().addInsertListener((IInsertListener<T>) SetPersistedFlagAfterInsertListener.INSTANCE);
 			targetPersister.getPersisterListener().addInsertListener(SetPersistedFlagAfterInsertListener.INSTANCE);
 			
 			// finding joined columns: left one is given by current mapping strategy throught the property accessor. Right one is target primary key
@@ -198,8 +199,8 @@ public class FluentMappingBuilder<T, I> implements IFluentMappingBuilder<T, I> {
 			Column leftColumn = mappingStrategy.getDefaultMappingStrategy().getPropertyToColumn().get(propertyAccessor);
 			Column rightColumn = targetPersister.getTargetTable().getPrimaryKey();
 			joinedTablesPersister.addPersister(JoinedStrategiesSelect.FIRST_STRATEGY_NAME, targetPersister, function,
-					BeanRelationFixer.of((a, b) -> propertyAccessor.getMutator().set(a, b)),
-					leftColumn, rightColumn);
+					BeanRelationFixer.of((a, b) -> propertyAccessor.getMutator().set((Identified) a, (Identified) b)),
+					leftColumn, rightColumn, false);
 		}
 		return localPersister;
 	}
@@ -254,7 +255,7 @@ public class FluentMappingBuilder<T, I> implements IFluentMappingBuilder<T, I> {
 		}
 	}
 	
-	private class Cascade<I, O, J> {
+	private class Cascade<I, O extends Identified, J extends StatefullIdentifier> {
 		
 		private final Function<I, O> targetProvider;
 		private final Class<O> cascadingTargetClass;
@@ -270,15 +271,15 @@ public class FluentMappingBuilder<T, I> implements IFluentMappingBuilder<T, I> {
 		}
 	}
 	
-	private static class SetPersistedFlagAfterInsertListener<T> extends NoopInsertListener<T> {
+	private static class SetPersistedFlagAfterInsertListener extends NoopInsertListener<Identified> {
 		
 		public static final SetPersistedFlagAfterInsertListener INSTANCE = new SetPersistedFlagAfterInsertListener();
 		
 		@Override
-		public void afterInsert(Iterable<T> iterables) {
-			for (T t : iterables) {
-				if (t instanceof Identified && ((Identified) t).getId() instanceof PersistableIdentifier) {
-					((PersistableIdentifier) ((Identified) t).getId()).setPersisted(true);
+		public void afterInsert(Iterable<Identified> iterables) {
+			for (Identified t : iterables) {
+				if (t.getId() instanceof PersistableIdentifier) {
+					((PersistableIdentifier) t.getId()).setPersisted(true);
 				}
 			}
 		}

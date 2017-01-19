@@ -68,6 +68,12 @@ public class JoinedStrategiesSelectExecutor<T, I> {
 											 Column leftJoinColumn, Column rightJoinColumn) {
 		// we outer join nullable columns
 		boolean isOuterJoin = rightJoinColumn.isNullable();
+		return addComplementaryTables(leftStrategyName, mappingStrategy, beanRelationFixer, leftJoinColumn, rightJoinColumn, isOuterJoin);
+	}
+	
+	public <U> String addComplementaryTables(String leftStrategyName, ClassMappingStrategy<U, ?> mappingStrategy,
+											 BeanRelationFixer beanRelationFixer,
+											 Column leftJoinColumn, Column rightJoinColumn, boolean isOuterJoin) {
 		return joinedStrategiesSelect.add(leftStrategyName, mappingStrategy, leftJoinColumn, rightJoinColumn, isOuterJoin, beanRelationFixer);
 	}
 	

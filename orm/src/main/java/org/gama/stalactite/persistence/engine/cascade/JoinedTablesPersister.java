@@ -15,6 +15,8 @@ import org.gama.stalactite.persistence.engine.listening.NoopDeleteRoughlyListene
 import org.gama.stalactite.persistence.engine.listening.NoopInsertListener;
 import org.gama.stalactite.persistence.engine.listening.NoopUpdateListener;
 import org.gama.stalactite.persistence.engine.listening.NoopUpdateRoughlyListener;
+import org.gama.stalactite.persistence.id.Identified;
+import org.gama.stalactite.persistence.id.manager.StatefullIdentifier;
 import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
 import org.gama.stalactite.persistence.sql.Dialect;
 import org.gama.stalactite.persistence.structure.Table.Column;
@@ -22,13 +24,13 @@ import org.gama.stalactite.persistence.structure.Table.Column;
 /**
  * Persister for entity with multiple joined tables by primary key.
  * A main table is defined by the {@link ClassMappingStrategy} passed to constructor. Complementary tables are defined
- * with {@link #addPersister(String, Persister, Function, BeanRelationFixer, Column, Column)}.
+ * with {@link #addPersister(String, Persister, Function, BeanRelationFixer, Column, Column, boolean)}.
  * Entity load is defined by a select that joins all tables, each {@link ClassMappingStrategy} is called to complete
  * entity loading.
  * 
  * @author Guillaume Mary
  */
-public class JoinedTablesPersister<T, I> extends Persister<T, I> {
+public class JoinedTablesPersister<T extends Identified, I extends StatefullIdentifier> extends Persister<T, I> {
 	
 	/** Select clause helper because of its complexity */
 	private final JoinedStrategiesSelectExecutor<T, I> joinedStrategiesSelectExecutor;
@@ -53,12 +55,13 @@ public class JoinedTablesPersister<T, I> extends Persister<T, I> {
 	 * @param beanRelationFixer will help to fix the relation between instance at selection time
 	 * @param leftJoinColumn the column of the owning strategy to be used for joining with the newly added one (mappingStrategy parameter)
 	 * @param rightJoinColumn the column of the newly added strategy to be used for joining with the owning one
+	 * @param isOuterJoin true to use a left outer join (optional relation)
 	 * @see JoinedStrategiesSelect#add(String, ClassMappingStrategy, Column, Column, boolean, BeanRelationFixer
 	 */
-	public <U, J> String addPersister(String ownerStrategyName, Persister<U, J> persister,
-										 Function<Iterable<T>, Iterable<U>> additionalInstancesProvider,
-										 BeanRelationFixer beanRelationFixer,
-										 Column leftJoinColumn, Column rightJoinColumn) {
+	public <U extends Identified, J extends StatefullIdentifier> String addPersister(String ownerStrategyName, Persister<U, J> persister,
+																					 Function<Iterable<T>, Iterable<U>> additionalInstancesProvider,
+																					 BeanRelationFixer beanRelationFixer,
+																					 Column leftJoinColumn, Column rightJoinColumn, boolean isOuterJoin) {
 		ClassMappingStrategy<U, J> mappingStrategy = persister.getMappingStrategy();
 		addInsertExecutor(persister, additionalInstancesProvider);
 		addUpdateExecutor(persister, additionalInstancesProvider);
@@ -67,7 +70,7 @@ public class JoinedTablesPersister<T, I> extends Persister<T, I> {
 		addDeleteRoughlyExecutor(persister, additionalInstancesProvider);
 		
 		// We use our own select system since ISelectListener is not aimed at joining table
-		return addSelectExecutor(ownerStrategyName, mappingStrategy, beanRelationFixer, leftJoinColumn, rightJoinColumn);
+		return addSelectExecutor(ownerStrategyName, mappingStrategy, beanRelationFixer, leftJoinColumn, rightJoinColumn, isOuterJoin);
 	}
 	
 	private <U, J> void addInsertExecutor(Persister<U, J> persister, Function<Iterable<T>, Iterable<U>> additionalInstancesProvider) {
@@ -128,9 +131,9 @@ public class JoinedTablesPersister<T, I> extends Persister<T, I> {
 	}
 	
 	private <U, J> String addSelectExecutor(String leftStrategyName, ClassMappingStrategy<U, J> mappingStrategy, BeanRelationFixer beanRelationFixer,
-										 Column leftJoinColumn, Column rightJoinColumn) {
+										 Column leftJoinColumn, Column rightJoinColumn, boolean isOuterJoin) {
 		return joinedStrategiesSelectExecutor.addComplementaryTables(leftStrategyName, mappingStrategy, beanRelationFixer,
-				leftJoinColumn, rightJoinColumn);
+				leftJoinColumn, rightJoinColumn, isOuterJoin);
 	}
 	
 	/**

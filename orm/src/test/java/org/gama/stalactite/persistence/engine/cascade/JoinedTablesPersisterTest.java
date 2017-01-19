@@ -11,15 +11,22 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Function;
 
 import org.gama.lang.Reflections;
 import org.gama.lang.collection.Arrays;
 import org.gama.lang.collection.Maps;
 import org.gama.reflection.PropertyAccessor;
+import org.gama.sql.binder.ParameterBinder;
 import org.gama.stalactite.persistence.engine.InMemoryCounterIdentifierGenerator;
 import org.gama.stalactite.persistence.engine.Persister;
+import org.gama.stalactite.persistence.id.Identified;
+import org.gama.stalactite.persistence.id.Identifier;
+import org.gama.stalactite.persistence.id.PersistableIdentifier;
+import org.gama.stalactite.persistence.id.PersistedIdentifier;
 import org.gama.stalactite.persistence.id.manager.AlreadyAssignedIdentifierManager;
 import org.gama.stalactite.persistence.id.manager.BeforeInsertIdentifierManager;
+import org.gama.stalactite.persistence.id.manager.StatefullIdentifier;
 import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
 import org.gama.stalactite.persistence.mapping.IdMappingStrategy;
 import org.gama.stalactite.persistence.sql.Dialect;
@@ -44,14 +51,14 @@ import static org.mockito.Mockito.when;
  */
 public class JoinedTablesPersisterTest {
 	
-	private JoinedTablesPersister<Toto, Integer> testInstance;
+	private JoinedTablesPersister<Toto, StatefullIdentifier<Integer>> testInstance;
 	private PreparedStatement preparedStatement;
 	private ArgumentCaptor<Integer> valueCaptor;
 	private ArgumentCaptor<Integer> indexCaptor;
 	private ArgumentCaptor<String> statementArgCaptor;
 	private JdbcConnectionProvider transactionManager;
 	private InMemoryCounterIdentifierGenerator identifierGenerator;
-	private ClassMappingStrategy<Toto, Integer> totoClassMappingStrategy_ontoTable1, totoClassMappingStrategy2_ontoTable2;
+	private ClassMappingStrategy<Toto, StatefullIdentifier<Integer>> totoClassMappingStrategy_ontoTable1, totoClassMappingStrategy2_ontoTable2;
 	private Dialect dialect;
 	private Table totoClassTable1, totoClassTable2;
 	private Column leftJoinColumn;
@@ -87,7 +94,7 @@ public class JoinedTablesPersisterTest {
 		columnMap2.get("id").setPrimaryKey(true);
 		
 		
-		PropertyAccessor<Toto, Integer> identifierAccessor = PropertyAccessor.forProperty(fieldId);
+		PropertyAccessor<Toto, StatefullIdentifier<Integer>> identifierAccessor = PropertyAccessor.forProperty(fieldId);
 		Map<PropertyAccessor, Table.Column> totoClassMapping1 = Maps.asMap(
 				(PropertyAccessor) identifierAccessor, columnMap1.get("id"))
 				.add(PropertyAccessor.forProperty(fieldA), columnMap1.get("a"))
@@ -100,19 +107,33 @@ public class JoinedTablesPersisterTest {
 		
 		
 		identifierGenerator = new InMemoryCounterIdentifierGenerator();
-		BeforeInsertIdentifierManager<Toto, Integer> beforeInsertIdentifierManager = new BeforeInsertIdentifierManager<>
-				(IdMappingStrategy.toIdAccessor(identifierAccessor), identifierGenerator, Integer.class);
+		
+		BeforeInsertIdentifierManager<Toto, StatefullIdentifier<Integer>> beforeInsertIdentifierManager = new BeforeInsertIdentifierManager<>(
+				IdMappingStrategy.toIdAccessor(identifierAccessor),
+				() -> new PersistableIdentifier<>(identifierGenerator.next()),
+				(Class) StatefullIdentifier.class);
 		totoClassMappingStrategy_ontoTable1 = new ClassMappingStrategy<>(Toto.class, totoClassTable1,
 				totoClassMapping1, identifierAccessor, beforeInsertIdentifierManager);
 		totoClassMappingStrategy2_ontoTable2 = new ClassMappingStrategy<>(Toto.class, totoClassTable2,
 				totoClassMapping2, identifierAccessor, AlreadyAssignedIdentifierManager.INSTANCE);
 		
 		JavaTypeToSqlTypeMapping simpleTypeMapping = new JavaTypeToSqlTypeMapping();
-		simpleTypeMapping.put(Integer.class, "int");
+		simpleTypeMapping.put(Identifier.class, "int");
 		
 		transactionManager = new JdbcConnectionProvider(null);
 		dialect = new Dialect(simpleTypeMapping);
 		dialect.setInOperatorMaxSize(3);
+		dialect.getColumnBinderRegistry().register(Identifier.class, new ParameterBinder<Identifier>() {
+			@Override
+			public Identifier get(String columnName, ResultSet resultSet) throws SQLException {
+				return new PersistedIdentifier(resultSet.getObject(columnName));
+			}
+			
+			@Override
+			public void set(int valueIndex, Identifier value, PreparedStatement statement) throws SQLException {
+				statement.setInt(valueIndex, (Integer) value.getSurrogate());
+			}
+		});
 	}
 	
 	protected void initTest() throws SQLException {
@@ -137,12 +158,12 @@ public class JoinedTablesPersisterTest {
 		when(dataSource.getConnection()).thenReturn(connection);
 		transactionManager.setDataSource(dataSource);
 		testInstance = new JoinedTablesPersister<>(totoClassMappingStrategy_ontoTable1, dialect, transactionManager, 3);
-		Persister<JoinedTablesPersisterTest.Toto, Integer> persister = new Persister<>(totoClassMappingStrategy2_ontoTable2, dialect, () -> 
+		Persister<JoinedTablesPersisterTest.Toto, StatefullIdentifier<Integer>> persister = new Persister<>(totoClassMappingStrategy2_ontoTable2, dialect, () -> 
 				connection, 3);
-		testInstance.addPersister(JoinedStrategiesSelect.FIRST_STRATEGY_NAME, persister, totos -> {
-			// since we only want a replicate of totos in table2, we only need to return them
-			return totos;
-		}, null, leftJoinColumn, rightJoinColumn);
+		testInstance.addPersister(JoinedStrategiesSelect.FIRST_STRATEGY_NAME, persister,
+				// since we only want a replicate of totos in table2, we only need to return them
+				Function.identity(),
+				null, leftJoinColumn, rightJoinColumn, false);
 	}
 	
 	public void assertCapturedPairsEqual(PairSetList<Integer, Integer> expectedPairs) {
@@ -289,7 +310,12 @@ public class JoinedTablesPersisterTest {
 		ResultSet resultSetMock = mock(ResultSet.class);
 		when(preparedStatement.executeQuery()).thenReturn(resultSetMock);
 		
-		List<Toto> select = testInstance.select(Arrays.asList(7, 13, 17, 23));
+		List<Toto> select = testInstance.select(Arrays.asList(
+				new PersistableIdentifier<>(7),
+				new PersistableIdentifier<>(13),
+				new PersistableIdentifier<>(17),
+				new PersistableIdentifier<>(23)
+		));
 		
 		verify(preparedStatement, times(2)).executeQuery();
 		verify(preparedStatement, times(4)).setInt(indexCaptor.capture(), valueCaptor.capture());
@@ -303,15 +329,15 @@ public class JoinedTablesPersisterTest {
 		assertCapturedPairsEqual(expectedPairs);
 	}
 	
-	private static class Toto {
-		private int id;
+	private static class Toto implements Identified {
+		private Identifier id;
 		private Integer a, b, x, y, z;
 		
 		public Toto() {
 		}
 		
 		public Toto(int id, Integer a, Integer b, Integer x, Integer y, Integer z) {
-			this.id = id;
+			this.id = new PersistableIdentifier<>(id);
 			this.a = a;
 			this.b = b;
 			this.x = x;
@@ -325,6 +351,16 @@ public class JoinedTablesPersisterTest {
 			this.x = x;
 			this.y = y;
 			this.z = z;
+		}
+		
+		@Override
+		public Identifier getId() {
+			return id;
+		}
+		
+		@Override
+		public void setId(Identifier id) {
+			this.id = id;
 		}
 		
 		@Override
