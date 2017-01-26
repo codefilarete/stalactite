@@ -46,7 +46,7 @@ public class EmbeddedBeanMappingStrategyTest {
 	
 	@Before
 	public void setUp() {
-		testInstance = new EmbeddedBeanMappingStrategy<>(Toto.class, targetTable, classMapping);
+		testInstance = new EmbeddedBeanMappingStrategy<>(Toto.class, classMapping);
 	}
 	
 	@DataProvider

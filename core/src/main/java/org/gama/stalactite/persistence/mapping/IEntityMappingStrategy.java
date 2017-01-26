@@ -1,11 +1,15 @@
 package org.gama.stalactite.persistence.mapping;
 
+import org.gama.stalactite.persistence.structure.Table;
+
 /**
  * The interface defining methods necessary to persist an entity (ie an object with an id)
  * 
  * @author Guillaume Mary
  */
 public interface IEntityMappingStrategy<T, I> extends IMappingStrategy<T>, IIdAccessor<T, I> {
+	
+	Table getTargetTable();
 	
 	/**
 	 * Necessary to distinguish insert or update action on {@link org.gama.stalactite.persistence.engine.Persister#persist(Object)} call

@@ -1,5 +1,6 @@
 package org.gama.stalactite.persistence.engine;
 
+import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -11,6 +12,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import org.gama.lang.Reflections;
+import org.gama.lang.bean.FieldIterator;
 import org.gama.lang.collection.Iterables;
 import org.gama.reflection.Accessors;
 import org.gama.reflection.PropertyAccessor;
@@ -25,6 +27,7 @@ import org.gama.stalactite.persistence.id.manager.AlreadyAssignedIdentifierManag
 import org.gama.stalactite.persistence.id.manager.IdentifierInsertionManager;
 import org.gama.stalactite.persistence.id.manager.StatefullIdentifier;
 import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
+import org.gama.stalactite.persistence.mapping.EmbeddedBeanMappingStrategy;
 import org.gama.stalactite.persistence.sql.Dialect;
 import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.persistence.structure.Table.Column;
@@ -79,6 +82,8 @@ public class FluentMappingBuilder<T extends Identified, I extends StatefullIdent
 	private final MethodReferenceCapturer<T> spy;
 	
 	private Cascade<T, ? extends Identified, ? extends StatefullIdentifier> cascade;
+	
+	private Inset<T, ?> embed;
 	
 	public FluentMappingBuilder(Class<T> persistedClass, Table table) {
 		this.persistedClass = persistedClass;
@@ -135,31 +140,34 @@ public class FluentMappingBuilder<T extends Identified, I extends StatefullIdent
 				.ifPresent(f -> { throw new IllegalArgumentException("Mapping is already defined for " + columnName); });
 		this.mapping.add(new Linkage(propertyAccessor, newColumn));
 		Class<IFluentMappingBuilderColumnOptions<T, I>> returnType = (Class) IFluentMappingBuilderColumnOptions.class;
-		return new Decorator<>(ColumnOptions.class).decorate(this, returnType, new ColumnOptions() {
-			@Override
-			public FluentMappingBuilder identifier(IdentifierPolicy identifierPolicy) {
-				if (FluentMappingBuilder.this.identifierAccessor != null) {
-					throw new IllegalArgumentException("Identifier is already defined by " + identifierAccessor.getAccessor());
-				}
-				switch (identifierPolicy) {
-					case ALREADY_ASSIGNED:
-						Class<I> e = Reflections.propertyType(method);
-						FluentMappingBuilder.this.identifierInsertionManager = new AlreadyAssignedIdentifierManager<>(e);
-						newColumn.primaryKey();
-						break;
-					default:
-						throw new NotYetSupportedOperationException();
-				}
-				FluentMappingBuilder.this.identifierAccessor = propertyAccessor;
-				// we could return null because the decorator return embedder.this for us, but I find cleaner to do so (if we change our mind)
-				return FluentMappingBuilder.this;
+		return new Decorator<>(ColumnOptions.class).decorate(this, returnType, identifierPolicy -> {
+			if (FluentMappingBuilder.this.identifierAccessor != null) {
+				throw new IllegalArgumentException("Identifier is already defined by " + identifierAccessor.getAccessor());
 			}
+			switch (identifierPolicy) {
+				case ALREADY_ASSIGNED:
+					Class<I> e = Reflections.propertyType(method);
+					FluentMappingBuilder.this.identifierInsertionManager = new AlreadyAssignedIdentifierManager<>(e);
+					newColumn.primaryKey();
+					break;
+				default:
+					throw new NotYetSupportedOperationException();
+			}
+			FluentMappingBuilder.this.identifierAccessor = propertyAccessor;
+			// we could return null because the decorator return embedder.this for us, but I find cleaner to do so (if we change our mind)
+			return FluentMappingBuilder.this;
 		});
 	}
 	
 	@Override
 	public <O extends Identified, J extends StatefullIdentifier> IFluentMappingBuilder<T, I> cascade(Function<T, O> function, Persister<O, J> persister) {
 		cascade = new Cascade<>(function, (Class<O>) Reflections.propertyType(captureLambdaMethod(function)), persister);
+		return this;
+	}
+	
+	@Override
+	public IFluentMappingBuilder<T, I> embed(Function<T, ?> function) {
+		this.embed = new Inset<>(function);
 		return this;
 	}
 	
@@ -202,6 +210,26 @@ public class FluentMappingBuilder<T extends Identified, I extends StatefullIdent
 					BeanRelationFixer.of((a, b) -> propertyAccessor.getMutator().set((Identified) a, (Identified) b)),
 					leftColumn, rightColumn, false);
 		}
+		
+		if (this.embed != null) {
+			// Building the mapping of the value-object's fields to the table
+			Map<String, Column> columnsPerName = localPersister.getTargetTable().mapColumnsOnName();
+			Map<PropertyAccessor, Column> mapping = new HashMap<>();
+			FieldIterator fieldIterator = new FieldIterator(embed.cascadingTargetClass);
+			while(fieldIterator.hasNext()) {
+				Field field = fieldIterator.next();
+				Column column = columnsPerName.get(field.getName());
+				if (column == null) {
+					// Column isn't declared in table => we create one from field informations
+					column = localPersister.getTargetTable().new Column(field.getName(), field.getType());
+				}
+				mapping.put(PropertyAccessor.of(field), column);
+			}
+			// We simply register a specialized mapping strategy for the field into the main strategy
+			EmbeddedBeanMappingStrategy beanMappingStrategy = new EmbeddedBeanMappingStrategy(embed.cascadingTargetClass, mapping);
+			mappingStrategy.put(PropertyAccessor.of(embed.member), beanMappingStrategy);
+		}
+		
 		return localPersister;
 	}
 	
@@ -255,14 +283,14 @@ public class FluentMappingBuilder<T extends Identified, I extends StatefullIdent
 		}
 	}
 	
-	private class Cascade<I, O extends Identified, J extends StatefullIdentifier> {
+	private class Cascade<SRC, O extends Identified, J extends StatefullIdentifier> {
 		
-		private final Function<I, O> targetProvider;
+		private final Function<SRC, O> targetProvider;
 		private final Class<O> cascadingTargetClass;
 		private final Persister<O, J> persister;
 		private final Method member;
 		
-		private Cascade(Function<I, O> targetProvider, Class<O> cascadingTargetClass, Persister<O, J> persister) {
+		private Cascade(Function<SRC, O> targetProvider, Class<O> cascadingTargetClass, Persister<O, J> persister) {
 			this.targetProvider = targetProvider;
 			this.cascadingTargetClass = cascadingTargetClass;
 			this.persister = persister;
@@ -270,6 +298,23 @@ public class FluentMappingBuilder<T extends Identified, I extends StatefullIdent
 			this.member = captureLambdaMethod((Function) targetProvider);
 		}
 	}
+	
+	/**
+	 * Represents a property that embeds a complex type
+	 * 
+	 * @param <SRC> the owner type
+	 * @param <TRGT> the target type
+	 */
+	private class Inset<SRC, TRGT> {
+		private final Class<TRGT> cascadingTargetClass;
+		private final Method member;
+		
+		private Inset(Function<SRC, TRGT> targetProvider) {
+			// looking for the target type because its necesary to find its persister (and other objects). Done thru a method capturer (weird thing).
+			this.member = captureLambdaMethod((Function) targetProvider);
+			this.cascadingTargetClass = (Class<TRGT>) Reflections.onJavaBeanPropertyWrapper(member, member::getReturnType, () -> member.getParameterTypes()[0], null);
+		}
+	} 
 	
 	private static class SetPersistedFlagAfterInsertListener extends NoopInsertListener<Identified> {
 		

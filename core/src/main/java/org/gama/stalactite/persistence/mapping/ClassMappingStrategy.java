@@ -51,7 +51,7 @@ public class ClassMappingStrategy<T, I> implements IEntityMappingStrategy<T, I> 
 		}
 		this.targetTable = targetTable;
 		this.classToPersist = classToPersist;
-		this.defaultMappingStrategy = new EmbeddedBeanMappingStrategy<>(classToPersist, targetTable, propertyToColumn);
+		this.defaultMappingStrategy = new EmbeddedBeanMappingStrategy<>(classToPersist, propertyToColumn);
 		this.insertableColumns = new LinkedHashSet<>();
 		this.updatableColumns = new LinkedHashSet<>();
 		this.selectableColumns = new LinkedHashSet<>();

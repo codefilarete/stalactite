@@ -49,7 +49,6 @@ public abstract class ColumnedMapMappingStrategy<C extends Map<K, V>, K, V, T> i
 		};
 	}
 	
-	@Override
 	public Table getTargetTable() {
 		return targetTable;
 	}

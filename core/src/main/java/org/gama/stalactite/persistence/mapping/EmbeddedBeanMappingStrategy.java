@@ -13,7 +13,6 @@ import org.gama.reflection.IMutator;
 import org.gama.reflection.PropertyAccessor;
 import org.gama.sql.result.Row;
 import org.gama.stalactite.persistence.sql.dml.PreparedUpdate.UpwhereColumn;
-import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.persistence.structure.Table.Column;
 
 /**
@@ -22,8 +21,6 @@ import org.gama.stalactite.persistence.structure.Table.Column;
 public class EmbeddedBeanMappingStrategy<T> implements IEmbeddedBeanMapper<T> {
 	
 	private final Map<PropertyAccessor, Column> propertyToColumn;
-	
-	private final Table targetTable;
 	
 	private final Set<Column> columns;
 	
@@ -37,11 +34,9 @@ public class EmbeddedBeanMappingStrategy<T> implements IEmbeddedBeanMapper<T> {
 	 * First entry of <tt>propertyToColumn</tt> is used to pick up persisted class and target table.
 	 *
 	 * @param targetClass the class to persist
-	 * @param targetTable the table to put fields into
 	 * @param propertyToColumn a mapping between Field and Column, expected to be coherent (fields of same class, column of same table)
 	 */
-	public EmbeddedBeanMappingStrategy(Class<T> targetClass, Table targetTable, Map<PropertyAccessor, Column> propertyToColumn) {
-		this.targetTable = targetTable;
+	public EmbeddedBeanMappingStrategy(Class<T> targetClass, Map<PropertyAccessor, Column> propertyToColumn) {
 		this.propertyToColumn = new HashMap<>(propertyToColumn.size());
 		Map<Column, IMutator> columnToField = new HashMap<>();
 		for (Entry<PropertyAccessor, Column> fieldColumnEntry : propertyToColumn.entrySet()) {
@@ -56,11 +51,6 @@ public class EmbeddedBeanMappingStrategy<T> implements IEmbeddedBeanMapper<T> {
 		}
 		this.rowTransformer = new ToBeanRowTransformer<>(Reflections.getDefaultConstructor(targetClass), columnToField);
 		this.columns = new LinkedHashSet<>(propertyToColumn.values());
-	}
-	
-	@Override
-	public Table getTargetTable() {
-		return targetTable;
 	}
 	
 	public Map<PropertyAccessor, Column> getPropertyToColumn() {

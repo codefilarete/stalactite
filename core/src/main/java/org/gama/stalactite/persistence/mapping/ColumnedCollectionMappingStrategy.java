@@ -48,7 +48,6 @@ public abstract class ColumnedCollectionMappingStrategy<C extends Collection<T>,
 		};
 	}
 	
-	@Override
 	public Table getTargetTable() {
 		return targetTable;
 	}

@@ -21,6 +21,8 @@ public interface IFluentMappingBuilder<T extends Identified, I extends Statefull
 	
 	<O extends Identified, J extends StatefullIdentifier> IFluentMappingBuilder<T, I> cascade(Function<T, O> function, Persister<O, J> persister);
 	
+	IFluentMappingBuilder<T, I> embed(Function<T, ?> function);
+	
 	ClassMappingStrategy<T, I> build(Dialect dialect);
 	
 	Persister<T, I> build(PersistenceContext persistenceContext);
