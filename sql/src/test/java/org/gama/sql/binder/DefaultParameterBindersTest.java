@@ -10,6 +10,9 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.util.Date;
 import java.util.LinkedHashSet;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -17,10 +20,10 @@ import java.util.stream.Collectors;
 import com.tngtech.java.junit.dataprovider.DataProvider;
 import com.tngtech.java.junit.dataprovider.DataProviderRunner;
 import com.tngtech.java.junit.dataprovider.UseDataProvider;
-import org.gama.lang.io.IOs;
 import org.gama.lang.Nullable;
 import org.gama.lang.collection.Arrays;
 import org.gama.lang.collection.Iterables;
+import org.gama.lang.io.IOs;
 import org.gama.sql.result.ResultSetIterator;
 import org.gama.sql.test.DerbyInMemoryDataSource;
 import org.gama.sql.test.HSQLDBInMemoryDataSource;
@@ -137,13 +140,40 @@ public class DefaultParameterBindersTest {
 	
 	@Test
 	@UseDataProvider("dataSources")
-	public void testDateBinder(DataSource dataSource) throws SQLException {
+	public void testDateSqlBinder(DataSource dataSource) throws SQLException {
 		// Using Date(long) constructor leads to mistake since the Date spec (Javadoc) says : "the hours, minutes, seconds, and milliseconds to zero"  
 		// So if the argument is a real millis time (like System.currentTimeMillis), the millis precision is lost by PreparedStatement.setDate()
 		// (the data type is not the culprit since timestamp makes the same result), hence the comparison with the select result fails
 		// Therefore we use a non-precised millis thanks to LocalDate.now()
 		java.sql.Date date = java.sql.Date.valueOf(LocalDate.now());
+		testParameterBinder(DefaultParameterBinders.DATE_SQL_BINDER, dataSource, "date", Arrays.asSet(null, date));
+	}
+	
+	@Test
+	@UseDataProvider("dataSources")
+	public void testDateBinder(DataSource dataSource) throws SQLException {
+		// Using Date(long) constructor leads to mistake since the Date spec (Javadoc) says : "the hours, minutes, seconds, and milliseconds to zero"  
+		// So if the argument is a real millis time (like System.currentTimeMillis), the millis precision is lost by PreparedStatement.setDate()
+		// (the data type is not the culprit since timestamp makes the same result), hence the comparison with the select result fails
+		// Therefore we use a non-precised millis thanks to LocalDate.now()
+		Date date = Date.from(LocalDate.now().atStartOfDay(ZoneId.systemDefault()).toInstant());
 		testParameterBinder(DefaultParameterBinders.DATE_BINDER, dataSource, "date", Arrays.asSet(null, date));
+	}
+	
+	@Test
+	@UseDataProvider("dataSources")
+	public void testLocalDateBinder(DataSource dataSource) throws SQLException {
+		testParameterBinder(DefaultParameterBinders.LOCALDATE_BINDER, dataSource, "date", Arrays.asSet(null, LocalDate.now()));
+	}
+	
+	@Test
+	@UseDataProvider("dataSources")
+	public void testLocalDateTimeBinder(DataSource dataSource) throws SQLException {
+		String sqlColumnType = "timestamp";
+		if (dataSource instanceof MariaDBEmbeddableDataSource) {
+			sqlColumnType = "timestamp(3) null"; // 3 for nano precision, else nanos are lost during storage, hence comparison fails
+		}
+		testParameterBinder(DefaultParameterBinders.LOCALDATETIME_BINDER, dataSource, sqlColumnType, Arrays.asSet(null, LocalDateTime.now()));
 	}
 	
 	@Test

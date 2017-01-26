@@ -13,12 +13,12 @@ public class LambdaParameterBinder<T> implements ParameterBinder<T> {
 	
 	
 	@FunctionalInterface
-	interface ResultSetReader<O> {
+	public interface ResultSetReader<O> {
 		O get(ResultSet resultSet, String columnName) throws SQLException;
 	}
 	
 	@FunctionalInterface
-	interface PreparedStatementWriter<I> {
+	public interface PreparedStatementWriter<I> {
 		void set(PreparedStatement preparedStatement, Integer index, I value) throws SQLException;
 	}
 	

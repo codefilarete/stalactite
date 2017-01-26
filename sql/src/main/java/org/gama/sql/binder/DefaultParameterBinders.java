@@ -1,10 +1,13 @@
 package org.gama.sql.binder;
 
 import java.io.InputStream;
+import java.net.URL;
 import java.sql.Date;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.Timestamp;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 /**
  * Default {@link ParameterBinder}s mapped to methods of {@link ResultSet} and {@link PreparedStatement} 
@@ -82,7 +85,7 @@ public final class DefaultParameterBinders {
 	 * For common usage, prefer {@link DateBinder} because it uses {@link java.util.Date}
 	 * @see DateBinder
 	 */
-	public static final LambdaParameterBinder<Date> DATE_BINDER = new LambdaParameterBinder<>(ResultSet::getDate, PreparedStatement::setDate);
+	public static final LambdaParameterBinder<Date> DATE_SQL_BINDER = new LambdaParameterBinder<>(ResultSet::getDate, PreparedStatement::setDate);
 	
 	/**
 	 * {@link ParameterBinder} for {@link ResultSet#getTimestamp(String)} and {@link PreparedStatement#setTimestamp(int, Timestamp)}.
@@ -102,6 +105,26 @@ public final class DefaultParameterBinders {
 	 */
 	public static final LambdaParameterBinder<InputStream> BINARYSTREAM_BINDER = new LambdaParameterBinder<>(ResultSet::getBinaryStream,
 			PreparedStatement::setBinaryStream);
+	
+	/**
+	 * {@link ParameterBinder} for {@link ResultSet#getURL(int)} and {@link PreparedStatement#setURL(int, URL)}.
+	 */
+	public static final LambdaParameterBinder<URL> URL_BINDER = new LambdaParameterBinder<>(ResultSet::getURL, PreparedStatement::setURL);
+	
+	/**
+	 * {@link ParameterBinder} for {@link java.util.Date}
+	 */
+	public static final ParameterBinder<java.util.Date> DATE_BINDER = new NullAwareParameterBinder<>(new DateBinder());
+	
+	/**
+	 * {@link ParameterBinder} for {@link java.time.LocalDate}
+	 */
+	public static final ParameterBinder<LocalDate> LOCALDATE_BINDER = new NullAwareParameterBinder<>(new LocalDateBinder());
+	
+	/**
+	 * {@link ParameterBinder} for {@link java.time.LocalDateTime}
+	 */
+	public static final ParameterBinder<LocalDateTime> LOCALDATETIME_BINDER = new NullAwareParameterBinder<>(new LocalDateTimeBinder());
 	
 	private DefaultParameterBinders() {
 	}

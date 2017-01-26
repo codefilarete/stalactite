@@ -1,6 +1,8 @@
 package org.gama.sql.binder;
 
 import java.io.InputStream;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.Date;
 import java.util.WeakHashMap;
 
@@ -35,7 +37,9 @@ public class ParameterBinderRegistry {
 		register(Long.TYPE, DefaultParameterBinders.LONG_PRIMITIVE_BINDER);
 		register(Integer.class, DefaultParameterBinders.INTEGER_BINDER);
 		register(Integer.TYPE, DefaultParameterBinders.INTEGER_PRIMITIVE_BINDER);
-		register(Date.class, new DateBinder());
+		register(Date.class, DefaultParameterBinders.DATE_BINDER);
+		register(LocalDate.class, DefaultParameterBinders.LOCALDATE_BINDER);
+		register(LocalDateTime.class, DefaultParameterBinders.LOCALDATETIME_BINDER);
 		register(Boolean.class, DefaultParameterBinders.BOOLEAN_BINDER);
 		register(Boolean.TYPE, DefaultParameterBinders.BOOLEAN_PRIMITIVE_BINDER);
 		register(InputStream.class, DefaultParameterBinders.BINARYSTREAM_BINDER);

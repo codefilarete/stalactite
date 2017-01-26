@@ -7,7 +7,7 @@ import java.sql.Timestamp;
 import java.util.Date;
 
 /**
- * {@link ParameterBinder} dedicated to {@link Date} : use {@link ResultSet#getTimestamp(String)} and {@link PreparedStatement#setTimestamp(int, Timestamp)}
+ * {@link ParameterBinder} dedicated to {@link Date} : uses {@link ResultSet#getTimestamp(String)} and {@link PreparedStatement#setTimestamp(int, Timestamp)}
  *
  * @author Guillaume Mary
  */
