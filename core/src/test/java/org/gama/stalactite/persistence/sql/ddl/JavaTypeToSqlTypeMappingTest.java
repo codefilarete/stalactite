@@ -35,13 +35,16 @@ public class JavaTypeToSqlTypeMappingTest {
 	@DataProvider
 	public static Object[][] testMultiGetTypeNameData() {
 		JavaTypeToSqlTypeMapping testInstance = new JavaTypeToSqlTypeMapping();
-		testInstance.put(String.class, "VARCHAR");
+		testInstance.put(CharSequence.class, "VARCHAR");
+		testInstance.put(String.class, "VARCHAR(255)");
 		testInstance.put(String.class, 10, "CHAR($l)");
 		return new Object[][] {
-				new Object[] { testInstance, String.class, null, "VARCHAR" },
+				new Object[] { testInstance, String.class, null, "VARCHAR(255)" },
 				new Object[] { testInstance, String.class, 5, "CHAR(5)" },
 				new Object[] { testInstance, String.class, 10, "CHAR(10)" },
-				new Object[] { testInstance, String.class, 20, "VARCHAR" },
+				new Object[] { testInstance, String.class, 20, "VARCHAR(255)" },
+				new Object[] { testInstance, CharSequence.class, null, "VARCHAR" },
+				new Object[] { testInstance, CharSequence.class, 20, "VARCHAR" },
 		};
 	}
 	

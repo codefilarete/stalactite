@@ -2,9 +2,12 @@ package org.gama.stalactite.persistence.sql.ddl;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.SortedMap;
 import java.util.TreeMap;
+import java.util.stream.Stream;
 
+import org.gama.lang.bean.InterfaceIterator;
 import org.gama.lang.collection.Iterables;
 import org.gama.lang.collection.ValueFactoryHashMap;
 import org.gama.stalactite.persistence.structure.Table.Column;
@@ -102,7 +105,15 @@ public class JavaTypeToSqlTypeMapping {
 	private String getTypeName(Class javaType) {
 		String type = defaultJavaTypeToSQLType.get(javaType);
 		if (type == null) {
-			throw new IllegalArgumentException("No sql type defined for " + javaType);
+			InterfaceIterator interfaceIterator = new InterfaceIterator(javaType);
+			Stream<String> stream = Iterables.stream(interfaceIterator).map(defaultJavaTypeToSQLType::get);
+			type = stream.filter(Objects::nonNull).findFirst().orElse(null);
+			if (type != null) {
+				return type;
+			} else {
+				// exception is replaced by a better message
+				throw new IllegalArgumentException("No sql type defined for " + javaType);
+			}
 		}
 		return type;
 	}
