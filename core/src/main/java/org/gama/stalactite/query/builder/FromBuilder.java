@@ -16,7 +16,8 @@ import org.gama.stalactite.query.model.From.AliasedTable;
 import org.gama.stalactite.query.model.From.ColumnJoin;
 import org.gama.stalactite.query.model.From.CrossJoin;
 import org.gama.stalactite.query.model.From.IJoin;
-import org.gama.stalactite.query.model.From.Join;
+import org.gama.stalactite.query.model.From.AbstractJoin;
+import org.gama.stalactite.query.model.From.AbstractJoin.JoinDirection;
 import org.gama.stalactite.query.model.From.RawTableJoin;
 
 /**
@@ -42,8 +43,8 @@ public class FromBuilder extends AbstractDMLBuilder implements SQLBuilder {
 			Comparator<AliasedTable> aliasedTableComparator = (t1, t2) -> toString(t1).compareToIgnoreCase(toString(t2));
 			SortedSet<AliasedTable> addedTables = new TreeSet<>(aliasedTableComparator);
 			for (IJoin iJoin : from) {
-				if (iJoin instanceof Join) {
-					Join join = (Join) iJoin;
+				if (iJoin instanceof AbstractJoin) {
+					AbstractJoin join = (AbstractJoin) iJoin;
 					AliasedTable aliasedTable;
 					if (addedTables.isEmpty()) {
 						addedTables.add(join.getLeftTable());
@@ -105,8 +106,8 @@ public class FromBuilder extends AbstractDMLBuilder implements SQLBuilder {
 				return cat((AliasedTable) o);
 			} else if (o instanceof CrossJoin) {
 				return cat((CrossJoin) o);
-			} else if (o instanceof Join) {
-				return cat((Join) o);
+			} else if (o instanceof AbstractJoin) {
+				return cat((AbstractJoin) o);
 			} else {
 				return super.cat(o);
 			}
@@ -123,7 +124,7 @@ public class FromBuilder extends AbstractDMLBuilder implements SQLBuilder {
 			return this;
 		}
 		
-		private StringAppender cat(Join join) {
+		private StringAppender cat(AbstractJoin join) {
 			catIf(length() == 0, join.getLeftTable());
 			cat(join.getJoinDirection(), join.getRightTable());
 			if (join instanceof RawTableJoin) {
@@ -140,14 +141,20 @@ public class FromBuilder extends AbstractDMLBuilder implements SQLBuilder {
 			return this;
 		}
 		
-		protected void cat(Boolean joinDirection, AliasedTable joinTable) {
+		protected void cat(JoinDirection joinDirection, AliasedTable joinTable) {
 			String joinType;
-			if (joinDirection == null) {
-				joinType = INNER_JOIN;
-			} else if (!joinDirection) {
-				joinType = LEFT_OUTER_JOIN;
-			} else {
-				joinType = RIGHT_OUTER_JOIN;
+			switch (joinDirection) {
+				case INNER_JOIN:
+					joinType = INNER_JOIN;
+					break;
+				case LEFT_OUTER_JOIN:
+					joinType = LEFT_OUTER_JOIN;
+					break;
+				case RIGHT_OUTER_JOIN:
+					joinType = RIGHT_OUTER_JOIN;
+					break;
+				default:
+					throw new IllegalArgumentException("Join type not implemented");
 			}
 			cat(joinType, joinTable, ON);
 		}

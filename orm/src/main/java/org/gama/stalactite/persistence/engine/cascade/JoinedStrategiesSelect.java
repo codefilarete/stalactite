@@ -18,6 +18,7 @@ import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
 import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.persistence.structure.Table.Column;
 import org.gama.stalactite.query.model.From;
+import org.gama.stalactite.query.model.From.AbstractJoin.JoinDirection;
 import org.gama.stalactite.query.model.SelectQuery;
 
 /**
@@ -112,7 +113,7 @@ public class JoinedStrategiesSelect<T, I> {
 			addColumnsToSelect(joinTableAlias, join.getStrategy().getStrategy().getSelectableColumns(), selectQuery);
 			Column leftJoinColumn = join.getLeftJoinColumn();
 			Column rightJoinColumn = join.getRightJoinColumn();
-			from.add(from.new ColumnJoin(leftJoinColumn, rightJoinColumn, join.isOuter() ? false : null));
+			from.add(from.new ColumnJoin(leftJoinColumn, rightJoinColumn, join.isOuter() ? JoinDirection.LEFT_OUTER_JOIN : JoinDirection.INNER_JOIN));
 			
 			stack.addAll(join.getStrategy().getJoins());
 		}
@@ -124,7 +125,7 @@ public class JoinedStrategiesSelect<T, I> {
 						  boolean isOuterJoin, BeanRelationFixer beanRelationFixer) {
 		StrategyJoins hangingJoins = getStrategyJoins(leftStrategyName);
 		if (hangingJoins == null) {
-			throw new IllegalStateException("No strategy with name " + leftStrategyName + " exists to add a new strategy");
+			throw new IllegalStateException("No strategy with name " + leftStrategyName + " exists to add a new strategy on");
 		}
 		return add(hangingJoins, strategy, leftJoinColumn, rightJoinColumn, isOuterJoin, beanRelationFixer);
 	}

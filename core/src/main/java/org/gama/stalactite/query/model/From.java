@@ -10,6 +10,7 @@ import org.gama.lang.Strings;
 import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.persistence.structure.Table.Column;
 import org.gama.stalactite.query.model.From.IJoin;
+import org.gama.stalactite.query.model.From.AbstractJoin.JoinDirection;
 
 /**
  * Class to ease From clause creation in a Select SQL statement.
@@ -36,55 +37,55 @@ public class From implements Iterable<IJoin> {
 	}
 	
 	public From innerJoin(Column leftColumn, Column rightColumn) {
-		return addNewJoin(leftColumn, null, rightColumn, null, null);
+		return addNewJoin(leftColumn, null, rightColumn, null, JoinDirection.INNER_JOIN);
 	}
 	
 	public From innerJoin(Column leftColumn, String leftTableAlias, Column rightColumn, String rightTableAlias) {
-		return addNewJoin(leftColumn, leftTableAlias, rightColumn, rightTableAlias, null);
+		return addNewJoin(leftColumn, leftTableAlias, rightColumn, rightTableAlias, JoinDirection.INNER_JOIN);
 	}
 	
 	public From leftOuterJoin(Column leftColumn, Column rightColumn) {
-		return addNewJoin(leftColumn, null, rightColumn, null, false);
+		return addNewJoin(leftColumn, null, rightColumn, null, JoinDirection.LEFT_OUTER_JOIN);
 	}
 	
 	public From leftOuterJoin(Column leftColumn, String leftTableAlias, Column rightColumn, String rightTableAlias) {
-		return addNewJoin(leftColumn, leftTableAlias, rightColumn, rightTableAlias, false);
+		return addNewJoin(leftColumn, leftTableAlias, rightColumn, rightTableAlias, JoinDirection.LEFT_OUTER_JOIN);
 	}
 	
 	public From rightOuterJoin(Column leftColumn, Column rightColumn) {
-		return addNewJoin(leftColumn, null, rightColumn, null, true);
+		return addNewJoin(leftColumn, null, rightColumn, null, JoinDirection.RIGHT_OUTER_JOIN);
 	}
 	
 	public From rightOuterJoin(Column leftColumn, String leftTableAlias, Column rightColumn, String rightTableAlias) {
-		return addNewJoin(leftColumn, leftTableAlias, rightColumn, rightTableAlias, true);
+		return addNewJoin(leftColumn, leftTableAlias, rightColumn, rightTableAlias, JoinDirection.RIGHT_OUTER_JOIN);
 	}
 	
-	private From addNewJoin(Column leftColumn, String leftTableAlias, Column rightColumn, String rightTableAlias, Boolean joinDirection) {
+	private From addNewJoin(Column leftColumn, String leftTableAlias, Column rightColumn, String rightTableAlias, JoinDirection joinDirection) {
 		return add(new ColumnJoin(leftColumn, leftTableAlias, rightColumn, rightTableAlias, joinDirection));
 	}
 	
 	public From innerJoin(Table leftTable, Table rightTable, String joinClause) {
-		return addNewJoin(leftTable, null, rightTable, null, joinClause, null);
+		return addNewJoin(leftTable, null, rightTable, null, joinClause, JoinDirection.INNER_JOIN);
 	}
 	
 	public From innerJoin(Table leftTable, String leftTableAlias, Table rigTable, String rightTableAlias, String joinClause) {
-		return addNewJoin(leftTable, leftTableAlias, rigTable, rightTableAlias, joinClause, null);
+		return addNewJoin(leftTable, leftTableAlias, rigTable, rightTableAlias, joinClause, JoinDirection.INNER_JOIN);
 	}
 	
 	public From leftOuterJoin(Table leftTable, Table rigTable, String joinClause) {
-		return addNewJoin(leftTable, null, rigTable, null, joinClause, false);
+		return addNewJoin(leftTable, null, rigTable, null, joinClause, JoinDirection.LEFT_OUTER_JOIN);
 	}
 	
 	public From leftOuterJoin(Table leftTable, String leftTableAlias, Table rigTable, String rightTableAlias, String joinClause) {
-		return addNewJoin(leftTable, leftTableAlias, rigTable, rightTableAlias, joinClause, false);
+		return addNewJoin(leftTable, leftTableAlias, rigTable, rightTableAlias, joinClause, JoinDirection.LEFT_OUTER_JOIN);
 	}
 	
 	public From rightOuterJoin(Table leftTable, Table rigTable, String joinClause) {
-		return addNewJoin(leftTable, null, rigTable, null, joinClause, true);
+		return addNewJoin(leftTable, null, rigTable, null, joinClause, JoinDirection.RIGHT_OUTER_JOIN);
 	}
 	
 	public From rightOuterJoin(Table leftTable, String leftTableAlias, Table rigTable, String rightTableAlias, String joinClause) {
-		return addNewJoin(leftTable, leftTableAlias, rigTable, rightTableAlias, joinClause, true);
+		return addNewJoin(leftTable, leftTableAlias, rigTable, rightTableAlias, joinClause, JoinDirection.RIGHT_OUTER_JOIN);
 	}
 	
 	public From crossJoin(Table table) {
@@ -109,7 +110,7 @@ public class From implements Iterable<IJoin> {
 		return add(crossJoin);
 	}
 	
-	private From addNewJoin(Table leftTable, String leftTableAlias, Table rigTable, String rightTableAlias, String joinClause, Boolean joinDirection) {
+	private From addNewJoin(Table leftTable, String leftTableAlias, Table rigTable, String rightTableAlias, String joinClause, JoinDirection joinDirection) {
 		return add(new RawTableJoin(leftTable, leftTableAlias, rigTable, rightTableAlias, joinClause, joinDirection));
 	}
 	
@@ -135,6 +136,12 @@ public class From implements Iterable<IJoin> {
 		return this.joins.iterator();
 	}
 	
+	/**
+	 * A representation of a table with an optional alias.
+	 * It's auto-added to the table aliases Map of the {@link From} embbeding instance
+	 * 
+	 * @see #addAlias(Table, String) 
+	 */
 	public class AliasedTable extends Aliased {
 		
 		private final Table table;
@@ -165,33 +172,39 @@ public class From implements Iterable<IJoin> {
 	/**
 	 * Parent class for join
 	 */
-	public abstract static class Join implements IJoin {
-		/** null = inner, false = left, true = right */
-		private final Boolean joinDirection;
+	public abstract static class AbstractJoin implements IJoin {
+		
+		public enum JoinDirection {
+			INNER_JOIN,
+			LEFT_OUTER_JOIN,
+			RIGHT_OUTER_JOIN
+		}
+		
+		private final JoinDirection joinDirection;
 		
 		/**
 		 * Contructor that needs direction
 		 *
-		 * @param joinDirection null for inner join, false for left outer, true for right outer
+		 * @param joinDirection the join type of this join
 		 */
-		protected Join(Boolean joinDirection) {
+		protected AbstractJoin(JoinDirection joinDirection) {
 			this.joinDirection = joinDirection;
 		}
 		
-		public Boolean getJoinDirection() {
+		public JoinDirection getJoinDirection() {
 			return this.joinDirection;
 		}
 		
 		public boolean isInner() {
-			return joinDirection == null;
+			return joinDirection == JoinDirection.INNER_JOIN;
 		}
 		
 		public boolean isLeftOuter() {
-			return joinDirection != null && !joinDirection;
+				return joinDirection == JoinDirection.LEFT_OUTER_JOIN;
 		}
 		
 		public boolean isRightOuter() {
-			return joinDirection != null && joinDirection;
+			return joinDirection == JoinDirection.RIGHT_OUTER_JOIN;
 		}
 		
 		public abstract AliasedTable getRightTable();
@@ -235,12 +248,12 @@ public class From implements Iterable<IJoin> {
 	/**
 	 * Join that only ask for joined table but not the way they are : the join condition is a free and is let as a String
 	 */
-	public class RawTableJoin extends Join {
+	public class RawTableJoin extends AbstractJoin {
 		private final AliasedTable leftTable;
 		private final AliasedTable rightTable;
 		private final String joinClause;
 		
-		public RawTableJoin(Table leftTable, Table rightTable, String joinClause, Boolean joinDirection) {
+		public RawTableJoin(Table leftTable, Table rightTable, String joinClause, JoinDirection joinDirection) {
 			super(joinDirection);
 			this.leftTable = new AliasedTable(leftTable);
 			this.joinClause = joinClause;
@@ -248,7 +261,7 @@ public class From implements Iterable<IJoin> {
 		}
 		
 		public RawTableJoin(Table leftTable, String leftTableAlias,
-							Table rightTable, String rightTableAlias, String joinClause, Boolean joinDirection) {
+							Table rightTable, String rightTableAlias, String joinClause, JoinDirection joinDirection) {
 			super(joinDirection);
 			this.leftTable = new AliasedTable(leftTable, leftTableAlias);
 			this.rightTable = new AliasedTable(rightTable, rightTableAlias);
@@ -271,18 +284,18 @@ public class From implements Iterable<IJoin> {
 	/**
 	 * Class that define a join with {@link Column}
 	 */
-	public class ColumnJoin extends Join {
+	public class ColumnJoin extends AbstractJoin {
 		
 		private final Column leftColumn;
 		private final Column rightColumn;
 		private final AliasedTable leftTable;
 		private final AliasedTable rightTable;
 		
-		public ColumnJoin(Column leftColumn, Column rightColumn, Boolean joinDirection) {
+		public ColumnJoin(Column leftColumn, Column rightColumn, JoinDirection joinDirection) {
 			this(leftColumn, null, rightColumn, null, joinDirection);
 		}
 		
-		public ColumnJoin(Column leftColumn, String leftAlias, Column rightColumn, String rightAlias, Boolean joinDirection) {
+		public ColumnJoin(Column leftColumn, String leftAlias, Column rightColumn, String rightAlias, JoinDirection joinDirection) {
 			super(joinDirection);
 			this.leftColumn = leftColumn;
 			this.rightColumn = rightColumn;
