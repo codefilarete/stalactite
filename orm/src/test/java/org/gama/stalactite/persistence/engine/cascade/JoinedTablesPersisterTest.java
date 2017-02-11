@@ -11,7 +11,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.function.Function;
 
 import org.gama.lang.Reflections;
 import org.gama.lang.collection.Arrays;
@@ -20,6 +19,10 @@ import org.gama.reflection.PropertyAccessor;
 import org.gama.sql.binder.ParameterBinder;
 import org.gama.stalactite.persistence.engine.InMemoryCounterIdentifierGenerator;
 import org.gama.stalactite.persistence.engine.Persister;
+import org.gama.stalactite.persistence.engine.listening.NoopDeleteListener;
+import org.gama.stalactite.persistence.engine.listening.NoopDeleteRoughlyListener;
+import org.gama.stalactite.persistence.engine.listening.NoopInsertListener;
+import org.gama.stalactite.persistence.engine.listening.NoopUpdateRoughlyListener;
 import org.gama.stalactite.persistence.id.Identified;
 import org.gama.stalactite.persistence.id.Identifier;
 import org.gama.stalactite.persistence.id.PersistableIdentifier;
@@ -126,7 +129,7 @@ public class JoinedTablesPersisterTest {
 		dialect.getColumnBinderRegistry().register(Identifier.class, new ParameterBinder<Identifier>() {
 			@Override
 			public Identifier get(String columnName, ResultSet resultSet) throws SQLException {
-				return new PersistedIdentifier(resultSet.getObject(columnName));
+				return new PersistedIdentifier<>(resultSet.getObject(columnName));
 			}
 			
 			@Override
@@ -158,12 +161,37 @@ public class JoinedTablesPersisterTest {
 		when(dataSource.getConnection()).thenReturn(connection);
 		transactionManager.setDataSource(dataSource);
 		testInstance = new JoinedTablesPersister<>(totoClassMappingStrategy_ontoTable1, dialect, transactionManager, 3);
-		Persister<JoinedTablesPersisterTest.Toto, StatefullIdentifier<Integer>> persister = new Persister<>(totoClassMappingStrategy2_ontoTable2, dialect, () -> 
-				connection, 3);
+		Persister<Toto, StatefullIdentifier<Integer>> persister = new Persister<>(totoClassMappingStrategy2_ontoTable2, dialect, () -> connection, 3);
 		testInstance.addPersister(JoinedStrategiesSelect.FIRST_STRATEGY_NAME, persister,
-				// since we only want a replicate of totos in table2, we only need to return them
-				Function.identity(),
 				null, leftJoinColumn, rightJoinColumn, false);
+		testInstance.getPersisterListener().addInsertListener(new NoopInsertListener<Toto>() {
+			@Override
+			public void afterInsert(Iterable<Toto> iterables) {
+				// since we only want a replicate of totos in table2, we only need to return them
+				persister.insert(iterables);
+			}
+		});
+		testInstance.getPersisterListener().addUpdateRouglyListener(new NoopUpdateRoughlyListener<Toto>() {
+			@Override
+			public void afterUpdateRoughly(Iterable<Toto> iterables) {
+				// since we only want a replicate of totos in table2, we only need to return them
+				persister.updateRoughly(iterables);
+			}
+		});
+		testInstance.getPersisterListener().addDeleteListener(new NoopDeleteListener<Toto>() {
+			@Override
+			public void beforeDelete(Iterable<Toto> iterables) {
+				// since we only want a replicate of totos in table2, we only need to return them
+				persister.delete(iterables);
+			}
+		});
+		testInstance.getPersisterListener().addDeleteRoughlyListener(new NoopDeleteRoughlyListener<Toto>() {
+			@Override
+			public void beforeDeleteRoughly(Iterable<Toto> iterables) {
+				// since we only want a replicate of totos in table2, we only need to return them
+				persister.deleteRoughly(iterables);
+			}
+		});
 	}
 	
 	public void assertCapturedPairsEqual(PairSetList<Integer, Integer> expectedPairs) {

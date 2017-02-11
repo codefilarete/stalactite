@@ -20,9 +20,9 @@ public interface IFluentMappingBuilder<T extends Identified, I extends Statefull
 	
 	IFluentMappingBuilder<T, I> add(Function<T, ?> function, String columnName);
 	
-	<O extends Identified, J extends StatefullIdentifier> IFluentMappingBuilder<T, I> cascade(Function<T, O> function, Persister<O, J> persister);
+	<O extends Identified, J extends StatefullIdentifier> IFluentMappingBuilderOneToOneOptions<T, I> addOneToOne(Function<T, O> function, Persister<O, J> persister);
 	
-	<O extends Identified, J extends StatefullIdentifier, C extends Collection<O>> IFluentMappingBuilderCascadeManyOptions<T, I, O> addOneToMany(Function<T, C> function, Persister<O, J> persister);
+	<O extends Identified, J extends StatefullIdentifier, C extends Collection<O>> IFluentMappingBuilderOneToManyOptions<T, I, O> addOneToMany(Function<T, C> function, Persister<O, J> persister);
 	
 	IFluentMappingBuilder<T, I> embed(Function<T, ?> function);
 	
@@ -33,7 +33,10 @@ public interface IFluentMappingBuilder<T extends Identified, I extends Statefull
 	interface IFluentMappingBuilderColumnOptions<T extends Identified, I extends StatefullIdentifier> extends IFluentMappingBuilder<T, I>, ColumnOptions<T, I> {
 	}
 	
-	interface IFluentMappingBuilderCascadeManyOptions<T extends Identified, I extends StatefullIdentifier, O extends Identified> extends IFluentMappingBuilder<T, I>, CascadeManyOptions<T, I, O> {
+	interface IFluentMappingBuilderOneToOneOptions<T extends Identified, I extends StatefullIdentifier> extends IFluentMappingBuilder<T, I>, OneToOneOptions<T, I> {
+	}
+	
+	interface IFluentMappingBuilderOneToManyOptions<T extends Identified, I extends StatefullIdentifier, O extends Identified> extends IFluentMappingBuilder<T, I>, OneToManyOptions<T, I, O> {
 	}
 	
 }

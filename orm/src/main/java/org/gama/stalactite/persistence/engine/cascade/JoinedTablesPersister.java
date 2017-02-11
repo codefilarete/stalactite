@@ -10,9 +10,6 @@ import org.gama.stalactite.persistence.engine.BeanRelationFixer;
 import org.gama.stalactite.persistence.engine.ConnectionProvider;
 import org.gama.stalactite.persistence.engine.PersistenceContext;
 import org.gama.stalactite.persistence.engine.Persister;
-import org.gama.stalactite.persistence.engine.listening.NoopDeleteListener;
-import org.gama.stalactite.persistence.engine.listening.NoopDeleteRoughlyListener;
-import org.gama.stalactite.persistence.engine.listening.NoopInsertListener;
 import org.gama.stalactite.persistence.engine.listening.NoopUpdateListener;
 import org.gama.stalactite.persistence.engine.listening.NoopUpdateRoughlyListener;
 import org.gama.stalactite.persistence.id.Identified;
@@ -24,7 +21,7 @@ import org.gama.stalactite.persistence.structure.Table.Column;
 /**
  * Persister for entity with multiple joined tables by primary key.
  * A main table is defined by the {@link ClassMappingStrategy} passed to constructor. Complementary tables are defined
- * with {@link #addPersister(String, Persister, Function, BeanRelationFixer, Column, Column, boolean)}.
+ * with {@link #addPersister(String, Persister, BeanRelationFixer, Column, Column, boolean)}.
  * Entity load is defined by a select that joins all tables, each {@link ClassMappingStrategy} is called to complete
  * entity loading.
  * 
@@ -51,7 +48,6 @@ public class JoinedTablesPersister<T extends Identified, I extends StatefullIden
 	 * potential foreign keys.
 	 * @param ownerStrategyName the name of the strategy on which the mappingStrategy parameter will be added
 	 * @param persister the {@link Persister} who strategy must be added to be added
-	 * @param additionalInstancesProvider the function that gives all related instance, for cascade insert, update and delete
 	 * @param beanRelationFixer will help to fix the relation between instance at selection time
 	 * @param leftJoinColumn the column of the owning strategy to be used for joining with the newly added one (mappingStrategy parameter)
 	 * @param rightJoinColumn the column of the newly added strategy to be used for joining with the owning one
@@ -59,28 +55,14 @@ public class JoinedTablesPersister<T extends Identified, I extends StatefullIden
 	 * @see JoinedStrategiesSelect#add(String, ClassMappingStrategy, Column, Column, boolean, BeanRelationFixer
 	 */
 	public <U extends Identified, J extends StatefullIdentifier> String addPersister(String ownerStrategyName, Persister<U, J> persister,
-																					 Function<Iterable<T>, Iterable<U>> additionalInstancesProvider,
 																					 BeanRelationFixer beanRelationFixer,
 																					 Column leftJoinColumn, Column rightJoinColumn, boolean isOuterJoin) {
 		ClassMappingStrategy<U, J> mappingStrategy = persister.getMappingStrategy();
-		addInsertExecutor(persister, additionalInstancesProvider);
-		addUpdateExecutor(persister, additionalInstancesProvider);
-		addUpdateRoughlyExecutor(persister, additionalInstancesProvider);
-		addDeleteExecutor(persister, additionalInstancesProvider);
-		addDeleteRoughlyExecutor(persister, additionalInstancesProvider);
+//		addUpdateExecutor(persister, additionalInstancesProvider);
+//		addUpdateRoughlyExecutor(persister, additionalInstancesProvider);
 		
 		// We use our own select system since ISelectListener is not aimed at joining table
 		return addSelectExecutor(ownerStrategyName, mappingStrategy, beanRelationFixer, leftJoinColumn, rightJoinColumn, isOuterJoin);
-	}
-	
-	private <U, J> void addInsertExecutor(Persister<U, J> persister, Function<Iterable<T>, Iterable<U>> additionalInstancesProvider) {
-		getPersisterListener().addInsertListener(new NoopInsertListener<T>() {
-			@Override
-			public void afterInsert(Iterable<T> iterables) {
-				Iterable<U> iterable = additionalInstancesProvider.apply(iterables);
-				persister.insert(iterable);
-			}
-		});
 	}
 	
 	private <U, J> void addUpdateExecutor(Persister<U, J> persister, Function<Iterable<T>, Iterable<U>> additionalInstancesProvider) {
@@ -108,24 +90,6 @@ public class JoinedTablesPersister<T extends Identified, I extends StatefullIden
 			@Override
 			public void afterUpdateRoughly(Iterable<T> iterables) {
 				persister.updateRoughly(complementaryInstancesProvider.apply(iterables));
-			}
-		});
-	}
-	
-	private <U, J> void addDeleteExecutor(Persister<U, J> persister, Function<Iterable<T>, Iterable<U>> complementaryInstancesProvider) {
-		getPersisterListener().addDeleteListener(new NoopDeleteListener<T>() {
-			@Override
-			public void beforeDelete(Iterable<T> iterables) {
-				persister.delete(complementaryInstancesProvider.apply(iterables));
-			}
-		});
-	}
-	
-	private <U, J> void addDeleteRoughlyExecutor(Persister<U, J> persister, Function<Iterable<T>, Iterable<U>> complementaryInstancesProvider) {
-		getPersisterListener().addDeleteRoughlyListener(new NoopDeleteRoughlyListener<T>() {
-			@Override
-			public void beforeDeleteRoughly(Iterable<T> iterables) {
-				persister.deleteRoughly(complementaryInstancesProvider.apply(iterables));
 			}
 		});
 	}

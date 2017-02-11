@@ -13,11 +13,11 @@ import org.gama.lang.collection.Arrays;
 /**
  * A class that is aimed to redirect some methods to an instance whereas other methods remain invoked on a main instance.
  * 
- * @param <V> the type that will intercept methods call, interface expected
+ * @param <C> the type that will intercept methods call, interface expected
  * 
  * @author Guillaume Mary
  */
-public class Decorator<V> {
+public class Decorator<C> {
 	
 	/**
 	 * Shortcut for a new {@link Decorator} instance on which {@link #decorate(Object, Class, Object)} is called.
@@ -26,19 +26,19 @@ public class Decorator<V> {
 	 * @param toBeDecorated the support for default methods
 	 * @param interfazz the type to be returned (only interface supported, must extends T and V)
 	 * @param extensionSurrogate the instance that will intercept method calls of the V interface on the returned proxy
-	 * @param <V> the extension type
+	 * @param <C> the extension type
 	 * @param <T> the type to be decorated
-	 * @param <U> an interface that must extends T and V (multiple inheritance, couldn't manage to express it in the signature because compiler warns
+	 * @param <X> an interface that must extends T and C (multiple inheritance, couldn't manage to express it in the signature because compiler warns
 	 * 				about V is not an interface)
 	 * @return a JDK proxy that implements U
 	 */
-	public static <V, T, U extends T> U extend(T toBeDecorated, Class<U> interfazz, V extensionSurrogate) {
-		return new Decorator<>((Class<V>) extensionSurrogate.getClass()).decorate(toBeDecorated, interfazz, extensionSurrogate);
+	public static <C, T, X extends T> X extend(T toBeDecorated, Class<X> interfazz, C extensionSurrogate) {
+		return new Decorator<>((Class<C>) extensionSurrogate.getClass()).decorate(toBeDecorated, interfazz, extensionSurrogate);
 	}
 	
 	private final Set<Method> methodsToBeIntercepted;
 	
-	Decorator(Class<V> clazz) {
+	Decorator(Class<C> clazz) {
 		if (!clazz.isInterface()) {
 			throw new UnsupportedOperationException("Only interfaces are supported as argument"
 					+ " because only multiple inheritance is supported by interfaces");
@@ -52,15 +52,14 @@ public class Decorator<V> {
 	 * @param interfazz the type to be returned (only interface supported, must extends T and V)
 	 * @param extensionSurrogate the instance that will intercept method calls of the V interface on the returned proxy
 	 * @param <T> the type to be decorated
-	 * @param <U> an interface that must extends T and V (multiple inheritance, couldn't manage to express it in the signature because compiler warns
+	 * @param <X> an interface that must extends T and C (multiple inheritance, couldn't manage to express it in the signature because compiler warns
 	 * 				about V is not an interface)
 	 * @return a JDK proxy that implements U
 	 */
-	public <T, U extends T> U decorate(T toBeDecorated, Class<U> interfazz, V extensionSurrogate) {
+	public <T, X extends T> X decorate(T toBeDecorated, Class<X> interfazz, C extensionSurrogate) {
 		InvocationHandler invocationRedirector = (proxy, method, args) -> {
 			if (methodsToBeIntercepted.contains(method)) {
-				invoke(extensionSurrogate, method, args);
-				return toBeDecorated;
+				return invoke(extensionSurrogate, method, args);
 			} else {
 				return invoke(toBeDecorated, method, args);
 			}
@@ -68,7 +67,7 @@ public class Decorator<V> {
 		// Which ClassLoader ? Thread, target ?
 		// we use the target's one because Thread can live forever so it might lead to memory leak
 		ClassLoader classLoader = toBeDecorated.getClass().getClassLoader();
-		return (U) Proxy.newProxyInstance(classLoader, new Class[] { interfazz }, invocationRedirector);
+		return (X) Proxy.newProxyInstance(classLoader, new Class[] { interfazz }, invocationRedirector);
 	}
 	
 	private Object invoke(Object target, Method method, Object[] args) throws Throwable {

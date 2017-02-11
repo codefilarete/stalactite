@@ -22,7 +22,7 @@ import static org.mockito.Mockito.when;
 /**
  * @author Guillaume Mary
  */
-public class UpdateToAfterUpdateCascaderTest extends AbstractCascaderTest {
+public class AfterUpdateCollectionCascaderTest extends AbstractCascaderTest {
 	
 	@Test
 	public void testAfterUpdate() throws SQLException {
@@ -40,7 +40,7 @@ public class UpdateToAfterUpdateCascaderTest extends AbstractCascaderTest {
 		final List<String> actions = new ArrayList<>();
 		final List<Entry<Tata, Tata>> triggeredTarget = new ArrayList<>();
 		// Instance to test: overriden methods allow later checking
-		UpdateToAfterUpdateCascader<Toto, Tata> testInstance = new UpdateToAfterUpdateCascader<Toto, Tata>(persisterMock) {
+		AfterUpdateCollectionCascader<Toto, Tata> testInstance = new AfterUpdateCollectionCascader<Toto, Tata>(persisterMock) {
 			
 			@Override
 			protected void postTargetUpdate(Iterable<Entry<Tata, Tata>> iterables) {
