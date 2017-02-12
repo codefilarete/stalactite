@@ -95,20 +95,24 @@ public class StrategyJoinsRowTransformer<T> {
 					StrategyJoins rightMember = join.getStrategy();
 					Object primaryKeyValue2 = row.get(getAlias(rightMember.getTable().getPrimaryKey()));
 					
-					ToBeanRowTransformer rowTransformer = rightMember.getStrategy().getRowTransformer();
-					Object rowInstance2 = entityCacheWrapper.computeIfAbsent(rightMember.getStrategy().getClassToPersist(), primaryKeyValue2, () -> {
-						Object newInstance = rowTransformer.newRowInstance();
-						rowTransformer.withAliases(aliasProvider).applyRowToBean(row, newInstance);
-						return newInstance;
-					});
-					
-					// TODO: implémenter l'héritage d'entité
-					// TODO: implémenter ManyToMany ?
-					join.getBeanRelationFixer().apply(rowInstance, rowInstance2);
-					
-					// don't forget to add the member to the depth iteration
-					if (!rightMember.getJoins().isEmpty()) {
-						stack.add(rightMember);
+					// primary key null means no entity => nothing to do
+					if (primaryKeyValue2 != null) {
+						ToBeanRowTransformer rowTransformer = rightMember.getStrategy().getRowTransformer();
+						Object rowInstance2 = entityCacheWrapper.computeIfAbsent(rightMember.getStrategy().getClassToPersist(), primaryKeyValue2, () -> {
+							
+							Object newInstance = rowTransformer.newRowInstance();
+							rowTransformer.withAliases(aliasProvider).applyRowToBean(row, newInstance);
+							return newInstance;
+						});
+						
+						// TODO: implémenter l'héritage d'entité
+						// TODO: implémenter ManyToMany ?
+						join.getBeanRelationFixer().apply(rowInstance, rowInstance2);
+						
+						// don't forget to add the member to the depth iteration
+						if (!rightMember.getJoins().isEmpty()) {
+							stack.add(rightMember);
+						}
 					}
 				}
 			}

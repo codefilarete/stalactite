@@ -2,6 +2,7 @@ package org.gama.stalactite.persistence.engine;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+import java.util.AbstractMap.SimpleEntry;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -25,6 +26,8 @@ import org.gama.spy.MethodReferenceCapturer;
 import org.gama.stalactite.persistence.engine.CascadeOption.CascadeType;
 import org.gama.stalactite.persistence.engine.cascade.AfterInsertCascader;
 import org.gama.stalactite.persistence.engine.cascade.AfterInsertCollectionCascader;
+import org.gama.stalactite.persistence.engine.cascade.AfterUpdateCascader;
+import org.gama.stalactite.persistence.engine.cascade.AfterUpdateCollectionCascader;
 import org.gama.stalactite.persistence.engine.cascade.BeforeDeleteCascader;
 import org.gama.stalactite.persistence.engine.cascade.BeforeDeleteCollectionCascader;
 import org.gama.stalactite.persistence.engine.cascade.BeforeDeleteRoughlyCascader;
@@ -298,16 +301,16 @@ public class FluentMappingBuilder<T extends Identified, I extends StatefullIdent
 						});
 						break;
 					case UPDATE:
-						localPersister.getPersisterListener().addInsertListener(new AfterInsertCascader<T, Identified>(targetPersister) {
+						localPersister.getPersisterListener().addUpdateListener(new AfterUpdateCascader<T, Identified>(targetPersister) {
 							
 							@Override
-							protected void postTargetInsert(Iterable<Identified> iterables) {
+							protected void postTargetUpdate(Iterable<Entry<Identified, Identified>> iterables) {
 								// Nothing to do
 							}
 							
 							@Override
-							protected Identified getTarget(T o) {
-								return cascadeOne.targetProvider.apply(o);
+							protected Entry<Identified, Identified> getTarget(T modifiedTrigger, T unmodifiedTrigger) {
+								return new SimpleEntry<>(cascadeOne.targetProvider.apply(modifiedTrigger), cascadeOne.targetProvider.apply(unmodifiedTrigger));
 							}
 						});
 						break;
@@ -354,7 +357,7 @@ public class FluentMappingBuilder<T extends Identified, I extends StatefullIdent
 			IMutator targetSetter = propertyAccessor.getMutator();
 			joinedTablesPersister.addPersister(JoinedStrategiesSelect.FIRST_STRATEGY_NAME, targetPersister,
 					BeanRelationFixer.of(targetSetter::set),
-					leftColumn, rightColumn, false);
+					leftColumn, rightColumn, true);
 		}
 		
 		if (this.cascadeMany != null) {
@@ -370,6 +373,11 @@ public class FluentMappingBuilder<T extends Identified, I extends StatefullIdent
 			// finding joined columns: left one is primary key. Right one is given by the target strategy throught the property accessor
 			Column leftColumn = localPersister.getTargetTable().getPrimaryKey();
 			MethodReferenceCapturer methodReferenceCapturer = new MethodReferenceCapturer(targetPersister.getMappingStrategy().getClassToPersist());
+			if (cascadeMany.reverseMember == null) {
+				throw new NotYetSupportedOperationException("Collection mapping without reverse property is not (yet) supported," +
+						" please used \"mappedBy\" option do delcare one for "
+						+ Reflections.toString(new MethodReferenceCapturer(localPersister.getMappingStrategy().getClassToPersist()).capture(cascadeMany.targetProvider)));
+			}
 			Method capture = methodReferenceCapturer.capture(cascadeMany.reverseMember);
 			Column rightColumn = targetPersister.getMappingStrategy().getDefaultMappingStrategy().getPropertyToColumn().get(PropertyAccessor.of(capture));
 			
@@ -397,19 +405,16 @@ public class FluentMappingBuilder<T extends Identified, I extends StatefullIdent
 						});
 						break;
 					case UPDATE:
-						localPersister.getPersisterListener().addInsertListener(new AfterInsertCollectionCascader<T, Identified>(targetPersister) {
+						localPersister.getPersisterListener().addUpdateListener(new AfterUpdateCollectionCascader<T, Identified>(targetPersister) {
 							
 							@Override
-							protected void postTargetInsert(Iterable<Identified> iterables) {
+							protected void postTargetUpdate(Iterable<Map.Entry<Identified, Identified>> iterables) {
 								// Nothing to do
 							}
 							
 							@Override
-							protected Collection<Identified> getTargets(T o) {
-								Collection<Identified> targets = (Collection<Identified>) targetProvider.apply(o);
-								return Iterables.stream(targets)
-										.filter(Objects::nonNull)
-										.collect(Collectors.toList());
+							protected Collection<Entry<Identified, Identified>> getTargets(T modifiedTrigger, T unmodifiedTrigger) {
+								throw new NotYetSupportedOperationException();
 							}
 						});
 						break;
@@ -453,7 +458,7 @@ public class FluentMappingBuilder<T extends Identified, I extends StatefullIdent
 			IMutator targetSetter = PropertyAccessor.of(cascadeMany.member).getMutator();
 			joinedTablesPersister.addPersister(JoinedStrategiesSelect.FIRST_STRATEGY_NAME, targetPersister,
 					BeanRelationFixer.of((BiConsumer) targetSetter::set, targetProvider, this.cascadeMany.collectionTargetClass, (BiConsumer) cascadeMany.reverseMember),
-					leftColumn, rightColumn, false);
+					leftColumn, rightColumn, true);
 		}
 		
 		for (Inset embed : this.insets) {
