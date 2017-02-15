@@ -1,7 +1,7 @@
 package org.gama.stalactite.persistence.engine.model;
 
-import java.util.Collection;
 import java.util.HashSet;
+import java.util.Set;
 
 import org.gama.stalactite.persistence.id.Identified;
 import org.gama.stalactite.persistence.id.Identifier;
@@ -19,7 +19,7 @@ public class Country implements Identified<Long> {
 	
 	private Person president;
 	
-	private Collection<City> cities = new HashSet<>();
+	private Set<City> cities = new HashSet<>();
 	
 	public Country() {
 	}
@@ -36,6 +36,30 @@ public class Country implements Identified<Long> {
 	@Override
 	public void setId(Identifier<Long> id) {
 		this.id = id;
+	}
+	
+	/**
+	 * Implemented for difference computation between Collection. See {@link org.gama.stalactite.persistence.id.IdentifiedCollectionDiffer}
+	 * @param o
+	 * @return
+	 */
+	@Override
+	public boolean equals(Object o) {
+		if (this == o) return true;
+		if (!(o instanceof Country)) return false;
+		
+		Country country = (Country) o;
+		
+		return id.getSurrogate().equals(country.id.getSurrogate());
+	}
+	
+	/**
+	 * Implemented for difference computation between Collection. See {@link org.gama.stalactite.persistence.id.IdentifiedCollectionDiffer}
+	 * @return
+	 */
+	@Override
+	public int hashCode() {
+		return id.getSurrogate().hashCode();
 	}
 	
 	public String getName() {
@@ -62,11 +86,11 @@ public class Country implements Identified<Long> {
 		this.president = president;
 	}
 	
-	public Collection<City> getCities() {
+	public Set<City> getCities() {
 		return cities;
 	}
 	
-	public void setCities(Collection<City> cities) {
+	public void setCities(Set<City> cities) {
 		this.cities = cities;
 	}
 	

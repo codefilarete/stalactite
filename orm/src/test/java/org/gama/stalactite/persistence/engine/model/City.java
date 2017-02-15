@@ -31,6 +31,30 @@ public class City implements Identified<Long> {
 		this.id = id;
 	}
 	
+	/**
+	 * Implemented for difference computation between Collection. See {@link org.gama.stalactite.persistence.id.IdentifiedCollectionDiffer}
+	 * @param o
+	 * @return
+	 */
+	@Override
+	public boolean equals(Object o) {
+		if (this == o) return true;
+		if (!(o instanceof City)) return false;
+		
+		City city = (City) o;
+		
+		return id.getSurrogate().equals(city.id.getSurrogate());
+	}
+	
+	/**
+	 * Implemented for difference computation between Collection. See {@link org.gama.stalactite.persistence.id.IdentifiedCollectionDiffer}
+	 * @return
+	 */
+	@Override
+	public int hashCode() {
+		return id.getSurrogate().hashCode();
+	}
+	
 	public String getName() {
 		return name;
 	}

@@ -37,6 +37,8 @@ import org.gama.stalactite.persistence.engine.cascade.JoinedTablesPersister;
 import org.gama.stalactite.persistence.engine.listening.IInsertListener;
 import org.gama.stalactite.persistence.engine.listening.NoopInsertListener;
 import org.gama.stalactite.persistence.id.Identified;
+import org.gama.stalactite.persistence.id.IdentifiedCollectionDiffer;
+import org.gama.stalactite.persistence.id.IdentifiedCollectionDiffer.Diff;
 import org.gama.stalactite.persistence.id.PersistableIdentifier;
 import org.gama.stalactite.persistence.id.manager.AlreadyAssignedIdentifierManager;
 import org.gama.stalactite.persistence.id.manager.IdentifierInsertionManager;
@@ -208,13 +210,12 @@ public class FluentMappingBuilder<T extends Identified, I extends StatefullIdent
 	public <O extends Identified, J extends StatefullIdentifier, C extends Collection<O>> IFluentMappingBuilderOneToManyOptions<T, I, O> addOneToMany(
 			Function<T, C> function, Persister<O, J> persister) {
 		cascadeMany = new CascadeMany<>(function, persister);
-		// we create a column on the reverse side
-		cascadeMany.persister.getTargetTable().new Column(cascadeMany.member.getName(), cascadeMany.persister.getMappingStrategy().getClassToPersist());
 		
 		IFluentMappingBuilderOneToManyOptions[] hack = new IFluentMappingBuilderOneToManyOptions[1];
-		IFluentMappingBuilderOneToManyOptions<T, I, O> proxy = new Decorator<>(OneToManyOptions.class).decorate(this,
-				(Class<IFluentMappingBuilderOneToManyOptions<T, I, O>>) (Class)
-						IFluentMappingBuilderOneToManyOptions.class, new OneToManyOptions() {
+		IFluentMappingBuilderOneToManyOptions<T, I, O> proxy = new Decorator<>(OneToManyOptions.class).decorate(
+				this,
+				(Class<IFluentMappingBuilderOneToManyOptions<T, I, O>>) (Class) IFluentMappingBuilderOneToManyOptions.class,
+				new OneToManyOptions() {
 					@Override
 					public IFluentMappingBuilderOneToManyOptions mappedBy(BiConsumer reverseLink) {
 						cascadeMany.reverseMember = reverseLink;
@@ -364,6 +365,16 @@ public class FluentMappingBuilder<T extends Identified, I extends StatefullIdent
 			JoinedTablesPersister<T, I> joinedTablesPersister = new JoinedTablesPersister<>(persistenceContext, mappingStrategy);
 			localPersister = joinedTablesPersister;
 			
+			// we create a column on the reverse side
+			Class<? extends Identified> targetClass = cascadeMany.persister.getMappingStrategy().getClassToPersist();
+			MethodReferenceCapturer methodReferenceCapturer = new MethodReferenceCapturer(targetClass);
+			Method reverseMember = methodReferenceCapturer.capture(cascadeMany.reverseMember);
+			// the name of the column is extracted from the accessor
+			String columnName = Reflections.onJavaBeanPropertyWrapper(reverseMember, () -> reverseMember.getName().substring(3), () -> reverseMember.getName().substring(3), () -> reverseMember.getName().substring(2));
+			Column column = cascadeMany.persister.getTargetTable().new Column(columnName, targetClass);
+			// we map the new column to the property
+			cascadeMany.persister.getMappingStrategy().getDefaultMappingStrategy().addProperty(column, PropertyAccessor.of(reverseMember));
+			
 			Persister<Identified, StatefullIdentifier> targetPersister = (Persister<Identified, StatefullIdentifier>) this.cascadeMany.persister;
 			
 			// adding persistence flag setters on both side
@@ -372,7 +383,6 @@ public class FluentMappingBuilder<T extends Identified, I extends StatefullIdent
 			
 			// finding joined columns: left one is primary key. Right one is given by the target strategy throught the property accessor
 			Column leftColumn = localPersister.getTargetTable().getPrimaryKey();
-			MethodReferenceCapturer methodReferenceCapturer = new MethodReferenceCapturer(targetPersister.getMappingStrategy().getClassToPersist());
 			if (cascadeMany.reverseMember == null) {
 				throw new NotYetSupportedOperationException("Collection mapping without reverse property is not (yet) supported," +
 						" please used \"mappedBy\" option do delcare one for "
@@ -406,6 +416,30 @@ public class FluentMappingBuilder<T extends Identified, I extends StatefullIdent
 						break;
 					case UPDATE:
 						localPersister.getPersisterListener().addUpdateListener(new AfterUpdateCollectionCascader<T, Identified>(targetPersister) {
+							
+							@Override
+							public void afterUpdate(Iterable<Map.Entry<T, T>> iterables, boolean allColumnsStatement) {
+								IdentifiedCollectionDiffer differ = new IdentifiedCollectionDiffer();
+								iterables.forEach(entry -> {
+									Set<Diff> diffSet = differ.diffSet(
+											(Set) cascadeMany.targetProvider.apply(entry.getValue()),
+											(Set) cascadeMany.targetProvider.apply(entry.getKey()));
+									for (Diff diff : diffSet) {
+										switch (diff.getState()) {
+											case ADDED:
+												targetPersister.insert(diff.getReplacingInstance());
+												break;
+											case HELD:
+												// NB: update will only be done if necessary by target persister
+												targetPersister.update(diff.getReplacingInstance(), diff.getSourceInstance(), allColumnsStatement);
+												break;
+											case REMOVED:
+												targetPersister.delete(diff.getSourceInstance());
+												break;
+										}
+									}
+								});
+							}
 							
 							@Override
 							protected void postTargetUpdate(Iterable<Map.Entry<Identified, Identified>> iterables) {

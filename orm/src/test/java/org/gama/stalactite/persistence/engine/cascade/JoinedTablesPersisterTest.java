@@ -357,8 +357,8 @@ public class JoinedTablesPersisterTest {
 		assertCapturedPairsEqual(expectedPairs);
 	}
 	
-	private static class Toto implements Identified {
-		private Identifier id;
+	private static class Toto implements Identified<Integer> {
+		private Identifier<Integer> id;
 		private Integer a, b, x, y, z;
 		
 		public Toto() {
