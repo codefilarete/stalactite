@@ -53,19 +53,6 @@ public class EmbeddedBeanMappingStrategy<T> implements IEmbeddedBeanMapper<T> {
 		this.columns = new LinkedHashSet<>(propertyToColumn.values());
 	}
 	
-	/**
-	 * Add a mapping to this strategy.
-	 * Should be used with care because, obviously, it changes the next behavior of all select operations.
-	 * 
-	 * @param column the new target column
-	 * @param accessor the accessor of the property to be mapped
-	 */
-	public void addProperty(Column column, PropertyAccessor accessor) {
-		this.propertyToColumn.put(accessor, column);
-		this.rowTransformer.addProperty(column, accessor);
-		this.columns.add(column);
-	}
-	
 	public Map<PropertyAccessor, Column> getPropertyToColumn() {
 		return propertyToColumn;
 	}

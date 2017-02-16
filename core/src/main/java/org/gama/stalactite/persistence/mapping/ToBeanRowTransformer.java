@@ -75,16 +75,6 @@ public class ToBeanRowTransformer<T> extends AbstractTransformer<T> {
 		this.keyToField = keyToField;
 	}
 	
-	/**
-	 * Add a mapping to this transformer.
-	 * 
-	 * @param column the new target column
-	 * @param accessor the accessor of the property to be mapped
-	 */
-	public void addProperty(Column column, PropertyAccessor accessor) {
-		keyToField.put(new ColumnRowKey(column), accessor);
-	}
-	
 	@Override
 	public void applyRowToBean(Row source, T targetRowBean) {
 		for (Entry<RowKeyMapper, IMutator> columnFieldEntry : keyToField.entrySet()) {

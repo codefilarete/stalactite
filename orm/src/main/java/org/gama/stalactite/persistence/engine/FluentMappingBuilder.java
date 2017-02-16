@@ -152,17 +152,8 @@ public class FluentMappingBuilder<T extends Identified, I extends StatefullIdent
 	}
 	
 	private IFluentMappingBuilderColumnOptions<T, I> add(Method method, String columnName, Class<?> columnType) {
-		Column newColumn = table.new Column(columnName, columnType);
 		PropertyAccessor<T, I> propertyAccessor = PropertyAccessor.of(method);
-		this.mapping.forEach(l -> {
-			if (l.getFunction().equals(propertyAccessor)) {
-				throw new IllegalArgumentException("Mapping is already defined by a method " + l.getFunction().getAccessor());
-			}
-			if (l.getColumn().equals(newColumn)) {
-				throw new IllegalArgumentException("Mapping is already defined for " + columnName);
-			}
-		});
-		this.mapping.add(new Linkage(propertyAccessor, newColumn));
+		Column newColumn = addMapping(columnName, columnType, propertyAccessor);
 		return new Decorator<>(ColumnOptions.class).decorate(this, (Class<IFluentMappingBuilderColumnOptions<T, I>>) (Class)
 				IFluentMappingBuilderColumnOptions.class, identifierPolicy -> {
 			if (FluentMappingBuilder.this.identifierAccessor != null) {
@@ -183,13 +174,30 @@ public class FluentMappingBuilder<T extends Identified, I extends StatefullIdent
 		});
 	}
 	
+	/**
+	 * @return a new Column aded to the target table, throws an exception if already mapped
+	 */
+	private Column addMapping(String columnName, Class<?> columnType, PropertyAccessor<T, I> propertyAccessor) {
+		Column newColumn = table.new Column(columnName, columnType);
+		this.mapping.forEach(l -> {
+			if (l.getFunction().equals(propertyAccessor)) {
+				throw new IllegalArgumentException("Mapping is already defined by the method " + l.getFunction().getAccessor());
+			}
+			if (l.getColumn().equals(newColumn)) {
+				throw new IllegalArgumentException("Mapping is already defined for " + columnName);
+			}
+		});
+		this.mapping.add(new Linkage(propertyAccessor, newColumn));
+		return newColumn;
+	}
+	
 	@Override
 	public <O extends Identified, J extends StatefullIdentifier> IFluentMappingBuilderOneToOneOptions<T, I> addOneToOne(Function<T, O> function,
 																														Persister<O, J> persister) {
 		cascadeOne = new CascadeOne<>(function, persister);
 		// we declare the column on our side
 		add(cascadeOne.targetProvider);
-		IFluentMappingBuilderOneToOneOptions[] hack = new IFluentMappingBuilderOneToOneOptions[1];
+		IFluentMappingBuilderOneToOneOptions[] finalHack = new IFluentMappingBuilderOneToOneOptions[1];
 		IFluentMappingBuilderOneToOneOptions<T, I> proxy = new Decorator<>(OneToOneOptions.class).decorate(this,
 				(Class<IFluentMappingBuilderOneToOneOptions<T, I>>) (Class) IFluentMappingBuilderOneToOneOptions.class, new OneToOneOptions() {
 					
@@ -199,10 +207,10 @@ public class FluentMappingBuilder<T extends Identified, I extends StatefullIdent
 						for (CascadeType type : cascadeTypes) {
 							cascadeOne.addCascadeType(type);
 						}
-						return hack[0];
+						return finalHack[0];
 					}
 				});
-		hack[0] = proxy;
+		finalHack[0] = proxy;
 		return proxy;
 	}
 	
@@ -211,7 +219,7 @@ public class FluentMappingBuilder<T extends Identified, I extends StatefullIdent
 			Function<T, C> function, Persister<O, J> persister) {
 		cascadeMany = new CascadeMany<>(function, persister);
 		
-		IFluentMappingBuilderOneToManyOptions[] hack = new IFluentMappingBuilderOneToManyOptions[1];
+		IFluentMappingBuilderOneToManyOptions[] finalHack = new IFluentMappingBuilderOneToManyOptions[1];
 		IFluentMappingBuilderOneToManyOptions<T, I, O> proxy = new Decorator<>(OneToManyOptions.class).decorate(
 				this,
 				(Class<IFluentMappingBuilderOneToManyOptions<T, I, O>>) (Class) IFluentMappingBuilderOneToManyOptions.class,
@@ -219,7 +227,7 @@ public class FluentMappingBuilder<T extends Identified, I extends StatefullIdent
 					@Override
 					public IFluentMappingBuilderOneToManyOptions mappedBy(BiConsumer reverseLink) {
 						cascadeMany.reverseMember = reverseLink;
-						return hack[0];
+						return finalHack[0];
 					}
 					
 					@Override
@@ -228,10 +236,10 @@ public class FluentMappingBuilder<T extends Identified, I extends StatefullIdent
 						for (CascadeType type : cascadeTypes) {
 							cascadeMany.addCascadeType(type);
 						}
-						return hack[0];
+						return finalHack[0];
 					}
 				});
-		hack[0] = proxy;
+		finalHack[0] = proxy;
 		return proxy;
 	}
 	
@@ -242,8 +250,7 @@ public class FluentMappingBuilder<T extends Identified, I extends StatefullIdent
 	}
 	
 	private Map<PropertyAccessor, Column> collectMapping() {
-		return mapping.stream().collect(HashMap::new, (hashMap, linkage) -> hashMap.put(linkage.getFunction(), linkage.getColumn()), (a, b) -> {
-		});
+		return mapping.stream().collect(HashMap::new, (hashMap, linkage) -> hashMap.put(linkage.getFunction(), linkage.getColumn()), (a, b) -> { });
 	}
 	
 	@Override
@@ -365,15 +372,8 @@ public class FluentMappingBuilder<T extends Identified, I extends StatefullIdent
 			JoinedTablesPersister<T, I> joinedTablesPersister = new JoinedTablesPersister<>(persistenceContext, mappingStrategy);
 			localPersister = joinedTablesPersister;
 			
-			// we create a column on the reverse side
 			Class<? extends Identified> targetClass = cascadeMany.persister.getMappingStrategy().getClassToPersist();
 			MethodReferenceCapturer methodReferenceCapturer = new MethodReferenceCapturer(targetClass);
-			Method reverseMember = methodReferenceCapturer.capture(cascadeMany.reverseMember);
-			// the name of the column is extracted from the accessor
-			String columnName = Reflections.onJavaBeanPropertyWrapper(reverseMember, () -> reverseMember.getName().substring(3), () -> reverseMember.getName().substring(3), () -> reverseMember.getName().substring(2));
-			Column column = cascadeMany.persister.getTargetTable().new Column(columnName, targetClass);
-			// we map the new column to the property
-			cascadeMany.persister.getMappingStrategy().getDefaultMappingStrategy().addProperty(column, PropertyAccessor.of(reverseMember));
 			
 			Persister<Identified, StatefullIdentifier> targetPersister = (Persister<Identified, StatefullIdentifier>) this.cascadeMany.persister;
 			
@@ -388,8 +388,13 @@ public class FluentMappingBuilder<T extends Identified, I extends StatefullIdent
 						" please used \"mappedBy\" option do delcare one for "
 						+ Reflections.toString(new MethodReferenceCapturer(localPersister.getMappingStrategy().getClassToPersist()).capture(cascadeMany.targetProvider)));
 			}
-			Method capture = methodReferenceCapturer.capture(cascadeMany.reverseMember);
-			Column rightColumn = targetPersister.getMappingStrategy().getDefaultMappingStrategy().getPropertyToColumn().get(PropertyAccessor.of(capture));
+			Method reverseMember = methodReferenceCapturer.capture(cascadeMany.reverseMember);
+			Column rightColumn = targetPersister.getMappingStrategy().getDefaultMappingStrategy().getPropertyToColumn().get(PropertyAccessor.of(reverseMember));
+			if (rightColumn == null) {
+				throw new NotYetSupportedOperationException("Reverse side mapping is not declared, please add the mapping of a "
+						+ localPersister.getMappingStrategy().getClassToPersist().getSimpleName()
+						+ " to persister of " + cascadeMany.persister.getMappingStrategy().getClassToPersist().getName());
+			}
 			
 			Function targetProvider = this.cascadeMany.targetProvider;
 			
@@ -520,8 +525,7 @@ public class FluentMappingBuilder<T extends Identified, I extends StatefullIdent
 	private ClassMappingStrategy<T, I> buildClassMappingStrategy() {
 		Map<PropertyAccessor, Column> columnMapping = collectMapping();
 		List<Entry<PropertyAccessor, Column>> identifierProperties = columnMapping.entrySet().stream().filter(e -> e.getValue().isPrimaryKey())
-				.collect
-				(Collectors.toList());
+				.collect(Collectors.toList());
 		PropertyAccessor<T, I> identifierProperty;
 		switch (identifierProperties.size()) {
 			case 0:
