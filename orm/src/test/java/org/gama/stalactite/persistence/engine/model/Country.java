@@ -19,6 +19,8 @@ public class Country implements Identified<Long> {
 	
 	private Person president;
 	
+	private City capital;
+	
 	private Set<City> cities = new HashSet<>();
 	
 	public Country() {
@@ -84,6 +86,14 @@ public class Country implements Identified<Long> {
 	
 	public void setPresident(Person president) {
 		this.president = president;
+	}
+	
+	public City getCapital() {
+		return capital;
+	}
+	
+	public void setCapital(City capital) {
+		this.capital = capital;
 	}
 	
 	public Set<City> getCities() {

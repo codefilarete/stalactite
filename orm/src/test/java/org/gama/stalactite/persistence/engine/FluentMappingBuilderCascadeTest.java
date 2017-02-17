@@ -8,6 +8,7 @@ import org.gama.sql.binder.DefaultParameterBinders;
 import org.gama.sql.test.HSQLDBInMemoryDataSource;
 import org.gama.stalactite.persistence.engine.FluentMappingBuilder.IdentifierPolicy;
 import org.gama.stalactite.persistence.engine.IFluentMappingBuilder.IFluentMappingBuilderColumnOptions;
+import org.gama.stalactite.persistence.engine.model.City;
 import org.gama.stalactite.persistence.engine.model.Country;
 import org.gama.stalactite.persistence.engine.model.Person;
 import org.gama.stalactite.persistence.id.Identified;
@@ -36,6 +37,7 @@ public class FluentMappingBuilderCascadeTest {
 	private static final HSQLDBDialect DIALECT = new HSQLDBDialect();
 	private DataSource dataSource = new HSQLDBInMemoryDataSource();
 	private Persister<Person, PersistedIdentifier<Long>> personPersister;
+	private Persister<City, PersistedIdentifier<Long>> cityPersister;
 	private PersistenceContext persistenceContext;
 	
 	@BeforeClass
@@ -56,6 +58,12 @@ public class FluentMappingBuilderCascadeTest {
 				.add(Person::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.add(Person::getName);
 		personPersister = personMappingBuilder.build(persistenceContext);
+		
+		IFluentMappingBuilderColumnOptions<City, PersistedIdentifier<Long>> cityMappingBuilder = FluentMappingBuilder.from(City.class,
+				(Class<PersistedIdentifier<Long>>) (Class) PersistedIdentifier.class)
+				.add(City::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
+				.add(City::getName);
+		cityPersister = cityMappingBuilder.build(persistenceContext);
 	}
 	
 	@Test
@@ -205,7 +213,7 @@ public class FluentMappingBuilderCascadeTest {
 		Persister<Country, Identifier<Long>> countryPersister = FluentMappingBuilder.from(Country.class, (Class<Identifier<Long>>) (Class) PersistedIdentifier.class)
 				.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.add(Country::getDescription)
-				.addOneToOne(Country::getPresident, personPersister).cascade(INSERT, DELETE)
+				.addOneToOne(Country::getPresident, personPersister).cascade(INSERT, UPDATE, DELETE)
 				.build(persistenceContext);
 		
 		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
@@ -215,32 +223,120 @@ public class FluentMappingBuilderCascadeTest {
 		Country dummyCountry = new Country(countryIdProvider.giveNewIdentifier());
 		dummyCountry.setName("France");
 		dummyCountry.setDescription("Smelly cheese !");
+		
 		Person person = new Person(new LongProvider().giveNewIdentifier());
 		person.setName("France president");
 		dummyCountry.setPresident(person);
-		countryPersister.insert(dummyCountry);
 		
+		// testing insert cascade
+		countryPersister.insert(dummyCountry);
 		Country persistedCountry = countryPersister.select(dummyCountry.getId());
 		assertEquals(new PersistedIdentifier<>(0L), persistedCountry.getId());
 		assertEquals("Smelly cheese !", persistedCountry.getDescription());
 		assertEquals("France president", persistedCountry.getPresident().getName());
 		assertTrue(persistedCountry.getPresident().getId().isPersisted());
 		
+		// testing insert cascade with another Country reusing OneToOne entity
 		Country dummyCountry2 = new Country(countryIdProvider.giveNewIdentifier());
 		dummyCountry2.setName("France 2");
 		dummyCountry2.setPresident(person);
 		countryPersister.insert(dummyCountry2);
-		
+		// database must be up to date
 		Country persistedCountry2 = countryPersister.select(dummyCountry2.getId());
 		assertEquals(new PersistedIdentifier<>(1L), persistedCountry2.getId());
 		assertEquals("France president", persistedCountry2.getPresident().getName());
 		assertEquals(persistedCountry.getPresident().getId().getSurrogate(), persistedCountry2.getPresident().getId().getSurrogate());
 		assertNotSame(persistedCountry.getPresident(), persistedCountry2.getPresident());
 		
+		// testing update cascade
+		persistedCountry2.getPresident().setName("France president renamed");
+		countryPersister.update(persistedCountry2, persistedCountry, true);
+		// database must be up to date
+		ResultSet resultSet;
+		resultSet = persistenceContext.getCurrentConnection().createStatement().executeQuery("select name from Person");
+		resultSet.next();
+		assertEquals("France president renamed", resultSet.getString("name"));
+		
+		// testing delete cascade
 		countryPersister.delete(persistedCountry);
-		ResultSet resultSet = persistenceContext.getCurrentConnection().createStatement().executeQuery("select id from Country where id = 0");
+		// database must be up to date
+		resultSet = persistenceContext.getCurrentConnection().createStatement().executeQuery("select id from Country where id = 0");
 		assertFalse(resultSet.next());
 		resultSet = persistenceContext.getCurrentConnection().createStatement().executeQuery("select id from Person");
+		assertFalse(resultSet.next());
+	}
+	
+	@Test
+	public void testCascade_multiple_oneToOne_all() throws SQLException {
+		// mapping building thantks to fluent API
+		Persister<Country, Identifier<Long>> countryPersister = FluentMappingBuilder.from(Country.class, (Class<Identifier<Long>>) (Class) PersistedIdentifier.class)
+				.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
+				.add(Country::getDescription)
+				.addOneToOne(Country::getPresident, personPersister).cascade(INSERT, UPDATE, DELETE)
+				.addOneToOne(Country::getCapital, cityPersister).cascade(INSERT, UPDATE, DELETE)
+				.build(persistenceContext);
+		
+		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+		ddlDeployer.deployDDL();
+		
+		LongProvider countryIdProvider = new LongProvider();
+		Country dummyCountry = new Country(countryIdProvider.giveNewIdentifier());
+		dummyCountry.setName("France");
+		dummyCountry.setDescription("Smelly cheese !");
+		
+		Person person = new Person(new LongProvider().giveNewIdentifier());
+		person.setName("France president");
+		dummyCountry.setPresident(person);
+		
+		City capital = new City(new LongProvider().giveNewIdentifier());
+		capital.setName("Paris");
+		dummyCountry.setCapital(capital);
+		
+		// testing insert cascade
+		countryPersister.insert(dummyCountry);
+		Country persistedCountry = countryPersister.select(dummyCountry.getId());
+		assertEquals(new PersistedIdentifier<>(0L), persistedCountry.getId());
+		assertEquals("France president", persistedCountry.getPresident().getName());
+		assertEquals("Paris", persistedCountry.getCapital().getName());
+		assertTrue(persistedCountry.getPresident().getId().isPersisted());
+		assertTrue(persistedCountry.getCapital().getId().isPersisted());
+		
+		// testing insert cascade with another Country reusing OneToOne entities
+		Country dummyCountry2 = new Country(countryIdProvider.giveNewIdentifier());
+		dummyCountry2.setName("France 2");
+		dummyCountry2.setPresident(person);
+		dummyCountry2.setCapital(capital);
+		countryPersister.insert(dummyCountry2);
+		// database must be up to date
+		Country persistedCountry2 = countryPersister.select(dummyCountry2.getId());
+		assertEquals(new PersistedIdentifier<>(1L), persistedCountry2.getId());
+		assertEquals("France president", persistedCountry2.getPresident().getName());
+		assertEquals(persistedCountry.getPresident().getId().getSurrogate(), persistedCountry2.getPresident().getId().getSurrogate());
+		assertEquals(persistedCountry.getCapital().getId().getSurrogate(), persistedCountry2.getCapital().getId().getSurrogate());
+		assertNotSame(persistedCountry.getPresident(), persistedCountry2.getPresident());
+		assertNotSame(persistedCountry.getCapital(), persistedCountry2.getCapital());
+		
+		// testing update cascade
+		persistedCountry2.getPresident().setName("France president renamed");
+		persistedCountry2.getCapital().setName("Paris renamed");
+		countryPersister.update(persistedCountry2, persistedCountry, true);
+		// database must be up to date
+		ResultSet resultSet;
+		resultSet = persistenceContext.getCurrentConnection().createStatement().executeQuery("select name from Person");
+		resultSet.next();
+		assertEquals("France president renamed", resultSet.getString("name"));
+		resultSet = persistenceContext.getCurrentConnection().createStatement().executeQuery("select name from City");
+		resultSet.next();
+		assertEquals("Paris renamed", resultSet.getString("name"));
+		
+		// testing delete cascade
+		countryPersister.delete(persistedCountry);
+		// database must be up to date
+		resultSet = persistenceContext.getCurrentConnection().createStatement().executeQuery("select id from Country where id = 0");
+		assertFalse(resultSet.next());
+		resultSet = persistenceContext.getCurrentConnection().createStatement().executeQuery("select id from Person");
+		assertFalse(resultSet.next());
+		resultSet = persistenceContext.getCurrentConnection().createStatement().executeQuery("select id from City");
 		assertFalse(resultSet.next());
 	}
 }

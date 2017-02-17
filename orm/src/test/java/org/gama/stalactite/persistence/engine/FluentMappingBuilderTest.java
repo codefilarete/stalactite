@@ -45,7 +45,6 @@ public class FluentMappingBuilderTest {
 		}
 		
 		public void setNoMatchingField(Long s) {
-			
 		}
 		
 		public long getNoMatchingFieldPrimitive() {
@@ -53,7 +52,6 @@ public class FluentMappingBuilderTest {
 		}
 		
 		public void setNoMatchingFieldPrimitive(long s) {
-			
 		}
 		
 		@Override
@@ -71,7 +69,7 @@ public class FluentMappingBuilderTest {
 	public ExpectedException expectedException = ExpectedException.none();
 	
 	@Test
-	public void testAdd_withoutName_targettedPropertyNameIsTook() {
+	public void testAdd_withoutName_targettedPropertyNameIsTaken() {
 		Table toto = new Table("Toto");
 		FluentMappingBuilder.from(Toto.class, StatefullIdentifier.class, toto)
 				.add(Toto::getName);
@@ -108,7 +106,7 @@ public class FluentMappingBuilderTest {
 	@Test
 	public void testAdd_mappingDefinedTwiceByMethod_throwsException() {
 		expectedException.expect(IllegalArgumentException.class);
-		expectedException.expectMessage("Mapping is already defined by a method");
+		expectedException.expectMessage("Mapping is already defined by the method");
 		Table toto = new Table("Toto");
 		FluentMappingBuilder.from(Toto.class, StatefullIdentifier.class, toto)
 				.add(Toto::getName)
