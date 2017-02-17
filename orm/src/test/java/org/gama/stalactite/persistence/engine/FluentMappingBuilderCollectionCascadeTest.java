@@ -13,6 +13,7 @@ import org.gama.stalactite.persistence.engine.FluentMappingBuilder.IdentifierPol
 import org.gama.stalactite.persistence.engine.IFluentMappingBuilder.IFluentMappingBuilderColumnOptions;
 import org.gama.stalactite.persistence.engine.model.City;
 import org.gama.stalactite.persistence.engine.model.Country;
+import org.gama.stalactite.persistence.engine.model.State;
 import org.gama.stalactite.persistence.id.Identified;
 import org.gama.stalactite.persistence.id.Identifier;
 import org.gama.stalactite.persistence.id.PersistedIdentifier;
@@ -92,7 +93,7 @@ public class FluentMappingBuilderCollectionCascadeTest {
 	}
 	
 	@Test
-	public void testCascade_oneToOne_insert() throws SQLException {
+	public void testCascade_oneToMany_insert() throws SQLException {
 		// mapping building thantks to fluent API
 		Persister<Country, Identifier<Long>> countryPersister = FluentMappingBuilder.from(Country.class, (Class<Identifier<Long>>) (Class) PersistedIdentifier.class)
 				.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
@@ -139,7 +140,7 @@ public class FluentMappingBuilderCollectionCascadeTest {
 	}
 	
 	@Test
-	public void testCascade_oneToOne_update() throws SQLException {
+	public void testCascade_oneToMany_update() throws SQLException {
 		// mapping building thantks to fluent API
 		Persister<Country, Identifier<Long>> countryPersister = FluentMappingBuilder.from(Country.class, (Class<Identifier<Long>>) (Class) PersistedIdentifier.class)
 				.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
@@ -174,8 +175,6 @@ public class FluentMappingBuilderCollectionCascadeTest {
 		
 		countryPersister.update(persistedCountry, dummyCountry, true);
 		
-		// TODO: faire idem avec List, pb index. Voir comment fait java-object-diff
-		
 		Country persistedCountry2 = countryPersister.select(dummyCountry.getId());
 		// Checking deletion has been take into account : the reloaded instance contains cities that are the same as of the memory one
 		// (comparison are done on equals/hashCode => id)
@@ -185,7 +184,7 @@ public class FluentMappingBuilderCollectionCascadeTest {
 	}
 	
 	@Test
-	public void testCascade_oneToOne_delete() throws SQLException {
+	public void testCascade_oneToMany_delete() throws SQLException {
 		// mapping building thantks to fluent API
 		Persister<Country, Identifier<Long>> countryPersister = FluentMappingBuilder.from(Country.class, (Class<Identifier<Long>>) (Class) PersistedIdentifier.class)
 				.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
@@ -214,4 +213,76 @@ public class FluentMappingBuilderCollectionCascadeTest {
 		resultSet = persistenceContext.getCurrentConnection().createStatement().executeQuery("select id from City where id = 300");
 		assertTrue(resultSet.next());
 	}
+	
+	@Test
+	public void testCascade_multiple_oneToMany_update() throws SQLException {
+		// mapping building thantks to fluent API
+		IFluentMappingBuilderColumnOptions<State, PersistedIdentifier<Long>> stateMappingBuilder = FluentMappingBuilder.from(State.class,
+				(Class<PersistedIdentifier<Long>>) (Class) PersistedIdentifier.class)
+				.add(State::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
+				.add(State::getName)
+				.add(State::getCountry);	// allow to declare the owner column of the relation
+		Persister<State, PersistedIdentifier<Long>> statePersister = stateMappingBuilder.build(persistenceContext);
+		
+		
+		Persister<Country, Identifier<Long>> countryPersister = FluentMappingBuilder.from(Country.class, (Class<Identifier<Long>>) (Class) PersistedIdentifier.class)
+				.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
+				.add(Country::getName)
+				.add(Country::getDescription)
+				.addOneToMany(Country::getCities, cityPersister).mappedBy(City::setCountry).cascade(CascadeType.INSERT, CascadeType.UPDATE)
+				.addOneToMany(Country::getStates, statePersister).mappedBy(State::setCountry).cascade(CascadeType.INSERT, CascadeType.UPDATE)
+				.build(persistenceContext);
+		
+		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+		ddlDeployer.deployDDL();
+		
+		LongProvider countryIdProvider = new LongProvider();
+		Country dummyCountry = new Country(countryIdProvider.giveNewIdentifier());
+		dummyCountry.setName("France");
+		dummyCountry.setDescription("Smelly cheese !");
+		LongProvider cityIdProvider = new LongProvider(10); // NB: we start at a different index than other to avoid join collision
+		City paris = new City(cityIdProvider.giveNewIdentifier());
+		paris.setName("Paris");
+		dummyCountry.addCity(paris);
+		City lyon = new City(cityIdProvider.giveNewIdentifier());
+		lyon.setName("Lyon");
+		dummyCountry.addCity(lyon);
+		
+		LongProvider stateIdProvider = new LongProvider(100); // NB: we start at a different index than other to avoid join collision
+		State isere = new State(stateIdProvider.giveNewIdentifier());
+		isere.setName("Isere");
+		dummyCountry.addState(isere);
+		State ain = new State(stateIdProvider.giveNewIdentifier());
+		ain.setName("ain");
+		dummyCountry.addState(ain);
+		
+		countryPersister.insert(dummyCountry);
+		
+		// Changing country cities to see what happens when we save it to the database
+		Country persistedCountry = countryPersister.select(dummyCountry.getId());
+		persistedCountry.getCities().remove(paris);
+		City grenoble = new City(cityIdProvider.giveNewIdentifier());
+		grenoble.setName("Grenoble");
+		persistedCountry.addCity(grenoble);
+		Iterables.first(persistedCountry.getCities()).setName("changed");
+		
+		persistedCountry.getStates().remove(ain);
+		State ardeche = new State(cityIdProvider.giveNewIdentifier());
+		ardeche.setName("ardeche");
+		persistedCountry.addState(ardeche);
+		Iterables.first(persistedCountry.getStates()).setName("changed");
+		
+		countryPersister.update(persistedCountry, dummyCountry, true);
+		
+		Country persistedCountry2 = countryPersister.select(dummyCountry.getId());
+		// Checking deletion has been take into account : the reloaded instance contains cities that are the same as of the memory one
+		// (comparison are done on equals/hashCode => id)
+		assertEquals(Arrays.asHashSet(lyon, grenoble), persistedCountry2.getCities());
+		assertEquals(Arrays.asHashSet(ardeche, isere), persistedCountry2.getStates());
+		// Checking update is done too
+		assertEquals(Arrays.asHashSet("changed", "Grenoble"), persistedCountry2.getCities().stream().map(City::getName).collect(toSet()));
+		assertEquals(Arrays.asHashSet("changed", "ardeche"), persistedCountry2.getStates().stream().map(State::getName).collect(toSet()));
+	}
+	
+	
 }

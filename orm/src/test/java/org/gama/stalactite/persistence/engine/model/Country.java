@@ -23,6 +23,8 @@ public class Country implements Identified<Long> {
 	
 	private Set<City> cities = new HashSet<>();
 	
+	private Set<State> states = new HashSet<>();
+	
 	public Country() {
 	}
 	
@@ -107,5 +109,18 @@ public class Country implements Identified<Long> {
 	public void addCity(City city) {
 		this.cities.add(city);
 		city.setCountry(this);
+	}
+	
+	public Set<State> getStates() {
+		return states;
+	}
+	
+	public void setStates(Set<State> states) {
+		this.states = states;
+	}
+	
+	public void addState(State state) {
+		this.states.add(state);
+		state.setCountry(this);
 	}
 }
