@@ -303,19 +303,8 @@ public class FluentMappingBuilder<T extends Identified, I extends StatefullIdent
 						case INSERT:
 							// if cascade is mandatory, then adding nullability checking before insert
 							if (!cascadeOne.nullable) {
-								localPersister.getPersisterListener().addInsertListener(new NoopInsertListener<T>() {
-									@Override
-									public void beforeInsert(Iterable<T> iterable) {
-										for (T pawn : iterable) {
-											Identified modifiedTarget = cascadeOne.targetProvider.apply(pawn);
-											if (modifiedTarget == null) {
-												Method member = cascadeOne.member;
-												String simplifiedMember = member.getDeclaringClass().getSimpleName() + "." + member.getName() + "()";
-												throw new RuntimeMappingException("Non null value expected for relation " + simplifiedMember + " on object " + pawn);
-											}
-										}
-									}
-								});
+								localPersister.getPersisterListener().addInsertListener(
+										new MandatoryRelationCheckingBeforeInsertListener<>(cascadeOne.targetProvider, cascadeOne.member));
 							}
 							// adding cascade treatment: after insert target is inserted too
 							localPersister.getPersisterListener().addInsertListener(new AfterInsertCascader<T, Identified>(targetPersister) {
@@ -340,20 +329,8 @@ public class FluentMappingBuilder<T extends Identified, I extends StatefullIdent
 						case UPDATE:
 							// if cascade is mandatory, then adding nullability checking before insert
 							if (!cascadeOne.nullable) {
-								localPersister.getPersisterListener().addUpdateListener(new NoopUpdateListener<T>() {
-									@Override
-									public void beforeUpdate(Iterable<Entry<T, T>> iterable, boolean allColumnsStatement) {
-										for (Entry<T, T> entry : iterable) {
-											T t = entry.getKey();
-											Identified modifiedTarget = cascadeOne.targetProvider.apply(t);
-											if (modifiedTarget == null) {
-												Method member = cascadeOne.member;
-												String simplifiedMember = member.getDeclaringClass().getSimpleName() + "." + member.getName() + "()";
-												throw new RuntimeMappingException("Non null value expected for relation " + simplifiedMember + " on object " + t);
-											}
-										}
-									}
-								});
+								localPersister.getPersisterListener().addUpdateListener(
+										new MandatoryRelationCheckingBeforeUpdateListener<>(cascadeOne.member, cascadeOne.targetProvider));
 							}
 							// adding cascade treatment: after update target is updated too
 							localPersister.getPersisterListener().addUpdateListener(new AfterUpdateCascader<T, Identified>(targetPersister) {
@@ -713,4 +690,53 @@ public class FluentMappingBuilder<T extends Identified, I extends StatefullIdent
 			}
 		}
 	}
+	
+	private static class MandatoryRelationCheckingBeforeInsertListener<T extends Identified> extends NoopInsertListener<T> {
+		
+		private final Function<T, ? extends Identified> targetProvider;
+		private final Method member;
+		
+		public MandatoryRelationCheckingBeforeInsertListener(Function<T, ? extends Identified> targetProvider, Method member) {
+			this.targetProvider = targetProvider;
+			this.member = member;
+		}
+		
+		@Override
+		public void beforeInsert(Iterable<T> iterable) {
+			for (T pawn : iterable) {
+				Identified modifiedTarget = targetProvider.apply(pawn);
+				if (modifiedTarget == null) {
+					throw newRuntimeMappingException(pawn, member);
+				}
+			}
+		}
+	}
+	
+	private static class MandatoryRelationCheckingBeforeUpdateListener<T extends Identified> extends NoopUpdateListener<T> {
+		
+		private final Method member;
+		private final Function<T, ? extends Identified> targetProvider;
+		
+		public MandatoryRelationCheckingBeforeUpdateListener(Method member, Function<T, ? extends Identified> targetProvider) {
+			this.member = member;
+			this.targetProvider = targetProvider;
+		}
+		
+		@Override
+		public void beforeUpdate(Iterable<Entry<T, T>> iterable, boolean allColumnsStatement) {
+			for (Entry<T, T> entry : iterable) {
+				T t = entry.getKey();
+				Identified modifiedTarget = targetProvider.apply(t);
+				if (modifiedTarget == null) {
+					throw newRuntimeMappingException(t, member);
+				}
+			}
+		}
+	}
+	
+	public static RuntimeMappingException newRuntimeMappingException(Object pawn, Method member) {
+		return new RuntimeMappingException("Non null value expected for relation "
+				+ Reflections.toString(member) + " on object " + pawn);
+	}
+	
 }

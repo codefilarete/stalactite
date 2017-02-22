@@ -152,7 +152,7 @@ public class FluentMappingBuilderCascadeTest {
 	@Test
 	public void testCascade_oneToOne_insert_mandatory() throws SQLException {
 		expectedException.expect(RuntimeMappingException.class);
-		expectedException.expectMessage(new IsEqual<>("Non null value expected for relation Country.getPresident() on object org.gama.stalactite.persistence.engine.model.Country@0"));
+		expectedException.expectMessage(new IsEqual<>("Non null value expected for relation o.g.s.p.e.m.Person o.g.s.p.e.m.Country.getPresident() on object org.gama.stalactite.persistence.engine.model.Country@0"));
 		// mapping building thantks to fluent API
 		Persister<Country, Identifier<Long>> countryPersister = FluentMappingBuilder.from(Country.class, (Class<Identifier<Long>>) (Class) PersistedIdentifier.class)
 				.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
@@ -207,7 +207,7 @@ public class FluentMappingBuilderCascadeTest {
 	@Test
 	public void testCascade_oneToOne_update_mandatory() throws SQLException {
 		expectedException.expect(RuntimeMappingException.class);
-		expectedException.expectMessage(new IsEqual<>("Non null value expected for relation Country.getPresident() on object org.gama.stalactite.persistence.engine.model.Country@0"));
+		expectedException.expectMessage(new IsEqual<>("Non null value expected for relation o.g.s.p.e.m.Person o.g.s.p.e.m.Country.getPresident() on object org.gama.stalactite.persistence.engine.model.Country@0"));
 		// mapping building thantks to fluent API
 		Persister<Country, Identifier<Long>> countryPersister = FluentMappingBuilder.from(Country.class, (Class<Identifier<Long>>) (Class) PersistedIdentifier.class)
 				.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
