@@ -36,6 +36,7 @@ import org.gama.stalactite.persistence.engine.cascade.JoinedStrategiesSelect;
 import org.gama.stalactite.persistence.engine.cascade.JoinedTablesPersister;
 import org.gama.stalactite.persistence.engine.listening.IInsertListener;
 import org.gama.stalactite.persistence.engine.listening.NoopInsertListener;
+import org.gama.stalactite.persistence.engine.listening.NoopUpdateListener;
 import org.gama.stalactite.persistence.id.Identified;
 import org.gama.stalactite.persistence.id.IdentifiedCollectionDiffer;
 import org.gama.stalactite.persistence.id.IdentifiedCollectionDiffer.Diff;
@@ -210,6 +211,12 @@ public class FluentMappingBuilder<T extends Identified, I extends StatefullIdent
 						}
 						return finalHack[0];
 					}
+					
+					@Override
+					public IFluentMappingBuilderOneToOneOptions mandatory() {
+						cascadeOne.nullable = false;
+						return finalHack[0];
+					}
 				});
 		finalHack[0] = proxy;
 		return proxy;
@@ -287,15 +294,34 @@ public class FluentMappingBuilder<T extends Identified, I extends StatefullIdent
 				// - left one is given by current mapping strategy throught the property accessor.
 				// - Right one is target primary key because we don't yet support "not owner of the property"
 				Column leftColumn = mappingStrategy.getDefaultMappingStrategy().getPropertyToColumn().get(propertyAccessor);
+				// According to the nullable option, we specify the ddl schema option
+				leftColumn.nullable(cascadeOne.nullable);
 				Column rightColumn = targetPersister.getTargetTable().getPrimaryKey();
 				
 				for (CascadeType cascadeType : cascadeOne.cascadeTypes) {
 					switch (cascadeType) {
 						case INSERT:
+							// if cascade is mandatory, then adding nullability checking before insert
+							if (!cascadeOne.nullable) {
+								localPersister.getPersisterListener().addInsertListener(new NoopInsertListener<T>() {
+									@Override
+									public void beforeInsert(Iterable<T> iterable) {
+										for (T pawn : iterable) {
+											Identified modifiedTarget = cascadeOne.targetProvider.apply(pawn);
+											if (modifiedTarget == null) {
+												Method member = cascadeOne.member;
+												String simplifiedMember = member.getDeclaringClass().getSimpleName() + "." + member.getName() + "()";
+												throw new RuntimeMappingException("Non null value expected for relation " + simplifiedMember + " on object " + pawn);
+											}
+										}
+									}
+								});
+							}
+							// adding cascade treatment: after insert target is inserted too
 							localPersister.getPersisterListener().addInsertListener(new AfterInsertCascader<T, Identified>(targetPersister) {
 								
 								@Override
-								protected void postTargetInsert(Iterable<Identified> iterables) {
+								protected void postTargetInsert(Iterable<Identified> iterable) {
 									// Nothing to do. Identified#isPersisted flag should be fixed by target persister
 								}
 								
@@ -312,10 +338,28 @@ public class FluentMappingBuilder<T extends Identified, I extends StatefullIdent
 							});
 							break;
 						case UPDATE:
+							// if cascade is mandatory, then adding nullability checking before insert
+							if (!cascadeOne.nullable) {
+								localPersister.getPersisterListener().addUpdateListener(new NoopUpdateListener<T>() {
+									@Override
+									public void beforeUpdate(Iterable<Entry<T, T>> iterable, boolean allColumnsStatement) {
+										for (Entry<T, T> entry : iterable) {
+											T t = entry.getKey();
+											Identified modifiedTarget = cascadeOne.targetProvider.apply(t);
+											if (modifiedTarget == null) {
+												Method member = cascadeOne.member;
+												String simplifiedMember = member.getDeclaringClass().getSimpleName() + "." + member.getName() + "()";
+												throw new RuntimeMappingException("Non null value expected for relation " + simplifiedMember + " on object " + t);
+											}
+										}
+									}
+								});
+							}
+							// adding cascade treatment: after update target is updated too
 							localPersister.getPersisterListener().addUpdateListener(new AfterUpdateCascader<T, Identified>(targetPersister) {
 								
 								@Override
-								protected void postTargetUpdate(Iterable<Entry<Identified, Identified>> iterables) {
+								protected void postTargetUpdate(Iterable<Entry<Identified, Identified>> iterable) {
 									// Nothing to do
 								}
 								
@@ -327,10 +371,11 @@ public class FluentMappingBuilder<T extends Identified, I extends StatefullIdent
 							});
 							break;
 						case DELETE:
+							// adding cascade treatment: before delete target is deleted (done before because of foreign key constraint)
 							localPersister.getPersisterListener().addDeleteListener(new BeforeDeleteCascader<T, Identified>(targetPersister) {
 								
 								@Override
-								protected void postTargetDelete(Iterable<Identified> iterables) {
+								protected void postTargetDelete(Iterable<Identified> iterable) {
 								}
 								
 								@Override
@@ -350,7 +395,7 @@ public class FluentMappingBuilder<T extends Identified, I extends StatefullIdent
 									(targetPersister) {
 								
 								@Override
-								protected void postTargetDelete(Iterable<Identified> iterables) {
+								protected void postTargetDelete(Iterable<Identified> iterable) {
 								}
 								
 								@Override
@@ -371,7 +416,7 @@ public class FluentMappingBuilder<T extends Identified, I extends StatefullIdent
 				IMutator targetSetter = propertyAccessor.getMutator();
 				joinedTablesPersister.addPersister(JoinedStrategiesSelect.FIRST_STRATEGY_NAME, targetPersister,
 						BeanRelationFixer.of(targetSetter::set),
-						leftColumn, rightColumn, true);
+						leftColumn, rightColumn, cascadeOne.nullable);
 			}
 		}
 		
@@ -579,16 +624,21 @@ public class FluentMappingBuilder<T extends Identified, I extends StatefullIdent
 	
 	private class CascadeOne<SRC extends Identified, O extends Identified, J extends StatefullIdentifier> {
 		
+		/** Original method reference given for mapping */
 		private final Function<SRC, O> targetProvider;
-		private final Persister<O, J> persister;
+		/** Equivalent of {@link #targetProvider} as a Reflection API element */
 		private final Method member;
+		/** The {@link Persister} that will be used to persist the target of the relation */
+		private final Persister<O, J> persister;
+		/** Events of the cascade, default is none */
 		private final Set<CascadeType> cascadeTypes = new HashSet<>();
+		/** Nullable option, mainly for column join and DDL schema generation */
+		private boolean nullable = true;
 		
 		private CascadeOne(Function<SRC, O> targetProvider, Persister<O, J> persister) {
 			this.targetProvider = targetProvider;
 			this.persister = persister;
-			// looking for the target type because its necessary to find its persister (and other objects). Done thru a method capturer (weird 
-			// thing).
+			// looking for the target type because its necessary to find its persister (and other objects). Done thru a method capturer (weird thing).
 			this.member = captureLambdaMethod((Function) targetProvider);
 		}
 		
@@ -613,8 +663,7 @@ public class FluentMappingBuilder<T extends Identified, I extends StatefullIdent
 		private CascadeMany(Function<SRC, C> targetProvider, Persister<O, J> persister) {
 			this.targetProvider = targetProvider;
 			this.persister = persister;
-			// looking for the target type because its necessary to find its persister (and other objects). Done thru a method capturer (weird 
-			// thing).
+			// looking for the target type because its necessary to find its persister (and other objects). Done thru a method capturer (weird thing).
 			this.member = captureLambdaMethod((Function) targetProvider);
 			this.collectionTargetClass = (Class<C>) Reflections.onJavaBeanPropertyWrapper(member, member::getReturnType, () -> member
 					.getParameterTypes()[0], null);

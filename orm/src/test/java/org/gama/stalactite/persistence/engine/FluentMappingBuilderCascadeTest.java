@@ -17,9 +17,12 @@ import org.gama.stalactite.persistence.id.PersistedIdentifier;
 import org.gama.stalactite.persistence.id.provider.LongProvider;
 import org.gama.stalactite.persistence.sql.HSQLDBDialect;
 import org.gama.stalactite.test.JdbcConnectionProvider;
+import org.hamcrest.core.IsEqual;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 
 import static org.gama.stalactite.persistence.engine.CascadeOption.CascadeType.DELETE;
 import static org.gama.stalactite.persistence.engine.CascadeOption.CascadeType.INSERT;
@@ -48,6 +51,9 @@ public class FluentMappingBuilderCascadeTest {
 		DIALECT.getColumnBinderRegistry().register((Class) Identified.class, Identified.identifiedBinder(DefaultParameterBinders.LONG_PRIMITIVE_BINDER));
 		DIALECT.getJavaTypeToSqlTypeMapping().put(Identified.class, "int");
 	}
+	
+	@Rule
+	public ExpectedException expectedException = ExpectedException.none();
 	
 	@Before
 	public void initTest() {
@@ -144,6 +150,27 @@ public class FluentMappingBuilderCascadeTest {
 	}
 	
 	@Test
+	public void testCascade_oneToOne_insert_mandatory() throws SQLException {
+		expectedException.expect(RuntimeMappingException.class);
+		expectedException.expectMessage(new IsEqual<>("Non null value expected for relation Country.getPresident() on object org.gama.stalactite.persistence.engine.model.Country@0"));
+		// mapping building thantks to fluent API
+		Persister<Country, Identifier<Long>> countryPersister = FluentMappingBuilder.from(Country.class, (Class<Identifier<Long>>) (Class) PersistedIdentifier.class)
+				.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
+				.add(Country::getName)
+				.add(Country::getDescription)
+				.addOneToOne(Country::getPresident, personPersister).cascade(INSERT).mandatory()
+				.build(persistenceContext);
+		
+		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+		ddlDeployer.deployDDL();
+		
+		LongProvider countryIdProvider = new LongProvider();
+		Country dummyCountry = new Country(countryIdProvider.giveNewIdentifier());
+		dummyCountry.setName("France");
+		countryPersister.insert(dummyCountry);
+	}
+	
+	@Test
 	public void testCascade_oneToOne_update() throws SQLException {
 		// mapping building thantks to fluent API
 		Persister<Country, Identifier<Long>> countryPersister = FluentMappingBuilder.from(Country.class, (Class<Identifier<Long>>) (Class) PersistedIdentifier.class)
@@ -175,6 +202,36 @@ public class FluentMappingBuilderCascadeTest {
 		Country persistedCountry2 = countryPersister.select(dummyCountry.getId());
 		assertEquals("New France president", persistedCountry2.getPresident().getName());
 		assertTrue(persistedCountry.getPresident().getId().isPersisted());
+	}
+	
+	@Test
+	public void testCascade_oneToOne_update_mandatory() throws SQLException {
+		expectedException.expect(RuntimeMappingException.class);
+		expectedException.expectMessage(new IsEqual<>("Non null value expected for relation Country.getPresident() on object org.gama.stalactite.persistence.engine.model.Country@0"));
+		// mapping building thantks to fluent API
+		Persister<Country, Identifier<Long>> countryPersister = FluentMappingBuilder.from(Country.class, (Class<Identifier<Long>>) (Class) PersistedIdentifier.class)
+				.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
+				.add(Country::getName)
+				.add(Country::getDescription)
+				.addOneToOne(Country::getPresident, personPersister).cascade(UPDATE).mandatory()
+				.build(persistenceContext);
+		
+		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+		ddlDeployer.deployDDL();
+		
+		LongProvider countryIdProvider = new LongProvider();
+		Country dummyCountry = new Country(countryIdProvider.giveNewIdentifier());
+		dummyCountry.setName("France");
+		Person person = new Person(new LongProvider().giveNewIdentifier());
+		person.setName("France president");
+		dummyCountry.setPresident(person);
+		countryPersister.insert(dummyCountry);
+		personPersister.insert(person);
+		
+		// Changing president's name to see what happens when we save it to the database
+		Country persistedCountry = countryPersister.select(dummyCountry.getId());
+		persistedCountry.setPresident(null);
+		countryPersister.update(persistedCountry, dummyCountry, true);
 	}
 	
 	@Test
