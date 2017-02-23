@@ -4,7 +4,6 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-import java.util.stream.Collectors;
 
 import org.gama.lang.collection.Arrays;
 import org.gama.lang.collection.Iterables;
@@ -21,53 +20,46 @@ import static org.mockito.Mockito.when;
 /**
  * @author Guillaume Mary
  */
-public class SelectToAfterSelectCascaderTest extends AbstractCascaderTest {
+public class BeforeInsertCascaderTest extends AbstractCascaderTest {
 	
 	@Test
-	public void testAfterSelect() throws SQLException {
+	public void testBeforeInsert() throws SQLException {
 		ClassMappingStrategy mappingStrategyMock = mock(ClassMappingStrategy.class);
 		// IdMappingStrategy is called by InsertExecutor to retrieve IdentifierInsertionManager but this will not be called, so we can mock it
 		when(mappingStrategyMock.getIdMappingStrategy()).thenReturn(mock(IdMappingStrategy.class));
 		Persister<Tata, Long> persisterMock = new Persister<Tata, Long>(mappingStrategyMock, mock(Dialect.class), null, 10) {
 			@Override
-			protected List<Tata> doSelect(Iterable<Long> ids) {
-				List<Tata> selectedTarget = new ArrayList<>();
-				for (Long id : ids) {
-					Tata tata = new Tata();
-					tata.id = id;
-					selectedTarget.add(tata);
-				}
-				return selectedTarget;
+			protected int doInsert(Iterable<Tata> iterable) {
+				// Overriden to do no action, because default super action is complex to mock
+				return 0;
 			}
 		};
 		
 		List<String> actions = new ArrayList<>();
 		List<Tata> triggeredTarget = new ArrayList<>();
-		
 		// Instance to test: overriden methods allow later checking
-		SelectToAfterSelectCascader<Toto, Tata, Long> testInstance = new SelectToAfterSelectCascader<Toto, Tata, Long>(persisterMock) {
-			
+		BeforeInsertCascader<Toto, Tata> testInstance = new BeforeInsertCascader<Toto, Tata>(persisterMock) {
 			@Override
-			protected void postTargetSelect(Iterable<Tata> iterable) {
-				actions.add("postTargetSelect");
-				triggeredTarget.addAll(Iterables.copy(iterable));
+			protected void postTargetInsert(Iterable<Tata> iterables) {
+				actions.add("postTargetInsert");
+				triggeredTarget.addAll(Iterables.copy(iterables));
 			}
 			
 			@Override
-			protected Collection<Long> getTargetIds(Toto toto) {
+			protected Collection<Tata> getTargets(Toto toto) {
 				actions.add("getTargets");
-				return Arrays.asList(((long) toto.hashCode()));
+				return Arrays.asList(toto.tata);
 			}
 		};
 		
-		Toto triggeringInstance1 = new Toto();
-		Toto triggeringInstance2 = new Toto();
-		testInstance.afterSelect(Arrays.asList(triggeringInstance1, triggeringInstance2));
+		// 
+		Toto triggeringInstance1 = new Toto(new Tata());
+		Toto triggeringInstance2 = new Toto(new Tata());
+		testInstance.beforeInsert(Arrays.asList(triggeringInstance1, triggeringInstance2));
 		
 		// check actions are done in good order
-		assertEquals(Arrays.asList("getTargets", "getTargets", "postTargetSelect"), actions);
+		assertEquals(Arrays.asList("getTargets", "getTargets", "postTargetInsert"), actions);
 		// check triggered targets are those expected
-		List<Long> tataIds = triggeredTarget.stream().map(tata -> tata.id).collect(Collectors.toList());
-		assertEquals(Arrays.asList((long) triggeringInstance1.hashCode(), (long) triggeringInstance2.hashCode()), tataIds);
+		assertEquals(Arrays.asList(triggeringInstance1.tata, triggeringInstance2.tata), triggeredTarget);
 	}
 }

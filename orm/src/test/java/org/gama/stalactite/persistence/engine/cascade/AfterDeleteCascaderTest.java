@@ -20,16 +20,16 @@ import static org.mockito.Mockito.when;
 /**
  * @author Guillaume Mary
  */
-public class InsertToBeforeInsertCascaderTest extends AbstractCascaderTest {
+public class AfterDeleteCascaderTest extends AbstractCascaderTest {
 	
 	@Test
-	public void testBeforeInsert() throws SQLException {
+	public void testAfterDelete() throws SQLException {
 		ClassMappingStrategy mappingStrategyMock = mock(ClassMappingStrategy.class);
 		// IdMappingStrategy is called by InsertExecutor to retrieve IdentifierInsertionManager but this will not be called, so we can mock it
 		when(mappingStrategyMock.getIdMappingStrategy()).thenReturn(mock(IdMappingStrategy.class));
 		Persister<Tata, Long> persisterMock = new Persister<Tata, Long>(mappingStrategyMock, mock(Dialect.class), null, 10) {
 			@Override
-			protected int doInsert(Iterable<Tata> iterable) {
+			protected int doDelete(Iterable<Tata> iterable) {
 				// Overriden to do no action, because default super action is complex to mock
 				return 0;
 			}
@@ -38,10 +38,10 @@ public class InsertToBeforeInsertCascaderTest extends AbstractCascaderTest {
 		List<String> actions = new ArrayList<>();
 		List<Tata> triggeredTarget = new ArrayList<>();
 		// Instance to test: overriden methods allow later checking
-		InsertToBeforeInsertCascader<Toto, Tata> testInstance = new InsertToBeforeInsertCascader<Toto, Tata>(persisterMock) {
+		AfterDeleteCascader<Toto, Tata> testInstance = new AfterDeleteCascader<Toto, Tata>(persisterMock) {
 			@Override
-			protected void postTargetInsert(Iterable<Tata> iterables) {
-				actions.add("postTargetInsert");
+			protected void postTargetDelete(Iterable<Tata> iterables) {
+				actions.add("postTargetDelete");
 				triggeredTarget.addAll(Iterables.copy(iterables));
 			}
 			
@@ -55,10 +55,10 @@ public class InsertToBeforeInsertCascaderTest extends AbstractCascaderTest {
 		// 
 		Toto triggeringInstance1 = new Toto(new Tata());
 		Toto triggeringInstance2 = new Toto(new Tata());
-		testInstance.beforeInsert(Arrays.asList(triggeringInstance1, triggeringInstance2));
+		testInstance.afterDelete(Arrays.asList(triggeringInstance1, triggeringInstance2));
 		
 		// check actions are done in good order
-		assertEquals(Arrays.asList("getTargets", "getTargets", "postTargetInsert"), actions);
+		assertEquals(Arrays.asList("getTargets", "getTargets", "postTargetDelete"), actions);
 		// check triggered targets are those expected
 		assertEquals(Arrays.asList(triggeringInstance1.tata, triggeringInstance2.tata), triggeredTarget);
 	}
