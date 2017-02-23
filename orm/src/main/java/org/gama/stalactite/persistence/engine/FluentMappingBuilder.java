@@ -2,7 +2,6 @@ package org.gama.stalactite.persistence.engine;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
-import java.util.AbstractMap.SimpleEntry;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -10,7 +9,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Objects;
 import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
@@ -18,28 +16,15 @@ import java.util.stream.Collectors;
 
 import org.gama.lang.Reflections;
 import org.gama.lang.bean.FieldIterator;
-import org.gama.lang.collection.Iterables;
 import org.gama.reflection.Accessors;
-import org.gama.reflection.IMutator;
 import org.gama.reflection.PropertyAccessor;
 import org.gama.spy.MethodReferenceCapturer;
 import org.gama.stalactite.persistence.engine.CascadeOption.CascadeType;
-import org.gama.stalactite.persistence.engine.cascade.AfterInsertCascader;
-import org.gama.stalactite.persistence.engine.cascade.AfterInsertCollectionCascader;
-import org.gama.stalactite.persistence.engine.cascade.AfterUpdateCascader;
-import org.gama.stalactite.persistence.engine.cascade.AfterUpdateCollectionCascader;
-import org.gama.stalactite.persistence.engine.cascade.BeforeDeleteCascader;
-import org.gama.stalactite.persistence.engine.cascade.BeforeDeleteCollectionCascader;
-import org.gama.stalactite.persistence.engine.cascade.BeforeDeleteRoughlyCascader;
-import org.gama.stalactite.persistence.engine.cascade.BeforeDeleteRoughlyCollectionCascader;
-import org.gama.stalactite.persistence.engine.cascade.JoinedStrategiesSelect;
 import org.gama.stalactite.persistence.engine.cascade.JoinedTablesPersister;
 import org.gama.stalactite.persistence.engine.listening.IInsertListener;
 import org.gama.stalactite.persistence.engine.listening.NoopInsertListener;
 import org.gama.stalactite.persistence.engine.listening.NoopUpdateListener;
 import org.gama.stalactite.persistence.id.Identified;
-import org.gama.stalactite.persistence.id.IdentifiedCollectionDiffer;
-import org.gama.stalactite.persistence.id.IdentifiedCollectionDiffer.Diff;
 import org.gama.stalactite.persistence.id.PersistableIdentifier;
 import org.gama.stalactite.persistence.id.manager.AlreadyAssignedIdentifierManager;
 import org.gama.stalactite.persistence.id.manager.IdentifierInsertionManager;
@@ -195,10 +180,10 @@ public class FluentMappingBuilder<T extends Identified, I extends StatefullIdent
 	@Override
 	public <O extends Identified, J extends StatefullIdentifier> IFluentMappingBuilderOneToOneOptions<T, I> addOneToOne(Function<T, O> function,
 																														Persister<O, J> persister) {
-		CascadeOne<T, O, J> cascadeOne = new CascadeOne<>(function, persister);
+		CascadeOne<T, O, J> cascadeOne = new CascadeOne<>(function, persister, captureLambdaMethod((Function) function));
 		this.cascadeOnes.add(cascadeOne);
 		// we declare the column on our side
-		add(cascadeOne.targetProvider);
+		add(cascadeOne.getTargetProvider());
 		IFluentMappingBuilderOneToOneOptions[] finalHack = new IFluentMappingBuilderOneToOneOptions[1];
 		IFluentMappingBuilderOneToOneOptions<T, I> proxy = new Decorator<>(OneToOneOptions.class).decorate(this,
 				(Class<IFluentMappingBuilderOneToOneOptions<T, I>>) (Class) IFluentMappingBuilderOneToOneOptions.class, new OneToOneOptions() {
@@ -225,7 +210,7 @@ public class FluentMappingBuilder<T extends Identified, I extends StatefullIdent
 	@Override
 	public <O extends Identified, J extends StatefullIdentifier, C extends Collection<O>> IFluentMappingBuilderOneToManyOptions<T, I, O> addOneToMany(
 			Function<T, C> function, Persister<O, J> persister) {
-		CascadeMany<T, O, J, C> cascadeMany = new CascadeMany<>(function, persister);
+		CascadeMany<T, O, J, C> cascadeMany = new CascadeMany<>(function, persister, captureLambdaMethod((Function) function));
 		this.cascadeManys.add(cascadeMany);
 		IFluentMappingBuilderOneToManyOptions[] finalHack = new IFluentMappingBuilderOneToManyOptions[1];
 		IFluentMappingBuilderOneToManyOptions<T, I, O> proxy = new Decorator<>(OneToManyOptions.class).decorate(
@@ -284,116 +269,7 @@ public class FluentMappingBuilder<T extends Identified, I extends StatefullIdent
 			// adding persistence flag setters on this side
 			joinedTablesPersister.getPersisterListener().addInsertListener((IInsertListener<T>) SetPersistedFlagAfterInsertListener.INSTANCE);
 			for (CascadeOne<T, ? extends Identified, ? extends StatefullIdentifier> cascadeOne : cascadeOnes) {
-				Persister<Identified, StatefullIdentifier> targetPersister = (Persister<Identified, StatefullIdentifier>) cascadeOne.persister;
-				
-				// adding persistence flag setters on other side
-				targetPersister.getPersisterListener().addInsertListener(SetPersistedFlagAfterInsertListener.INSTANCE);
-				
-				PropertyAccessor<Identified, Identified> propertyAccessor = PropertyAccessor.of(cascadeOne.member);
-				// Finding joined columns:
-				// - left one is given by current mapping strategy throught the property accessor.
-				// - Right one is target primary key because we don't yet support "not owner of the property"
-				Column leftColumn = mappingStrategy.getDefaultMappingStrategy().getPropertyToColumn().get(propertyAccessor);
-				// According to the nullable option, we specify the ddl schema option
-				leftColumn.nullable(cascadeOne.nullable);
-				Column rightColumn = targetPersister.getTargetTable().getPrimaryKey();
-				
-				for (CascadeType cascadeType : cascadeOne.cascadeTypes) {
-					switch (cascadeType) {
-						case INSERT:
-							// if cascade is mandatory, then adding nullability checking before insert
-							if (!cascadeOne.nullable) {
-								localPersister.getPersisterListener().addInsertListener(
-										new MandatoryRelationCheckingBeforeInsertListener<>(cascadeOne.targetProvider, cascadeOne.member));
-							}
-							// adding cascade treatment: after insert target is inserted too
-							localPersister.getPersisterListener().addInsertListener(new AfterInsertCascader<T, Identified>(targetPersister) {
-								
-								@Override
-								protected void postTargetInsert(Iterable<Identified> iterable) {
-									// Nothing to do. Identified#isPersisted flag should be fixed by target persister
-								}
-								
-								@Override
-								protected Identified getTarget(T o) {
-									Identified target = cascadeOne.targetProvider.apply(o);
-									// We only insert non-persisted instances (for logic and to prevent duplicate primary key error)
-									if (target != null && !target.getId().isPersisted()) {
-										return target;
-									} else {
-										return null;
-									}
-								}
-							});
-							break;
-						case UPDATE:
-							// if cascade is mandatory, then adding nullability checking before insert
-							if (!cascadeOne.nullable) {
-								localPersister.getPersisterListener().addUpdateListener(
-										new MandatoryRelationCheckingBeforeUpdateListener<>(cascadeOne.member, cascadeOne.targetProvider));
-							}
-							// adding cascade treatment: after update target is updated too
-							localPersister.getPersisterListener().addUpdateListener(new AfterUpdateCascader<T, Identified>(targetPersister) {
-								
-								@Override
-								protected void postTargetUpdate(Iterable<Entry<Identified, Identified>> iterable) {
-									// Nothing to do
-								}
-								
-								@Override
-								protected Entry<Identified, Identified> getTarget(T modifiedTrigger, T unmodifiedTrigger) {
-									return new SimpleEntry<>(cascadeOne.targetProvider.apply(modifiedTrigger), cascadeOne.targetProvider.apply
-											(unmodifiedTrigger));
-								}
-							});
-							break;
-						case DELETE:
-							// adding cascade treatment: before delete target is deleted (done before because of foreign key constraint)
-							localPersister.getPersisterListener().addDeleteListener(new BeforeDeleteCascader<T, Identified>(targetPersister) {
-								
-								@Override
-								protected void postTargetDelete(Iterable<Identified> iterable) {
-								}
-								
-								@Override
-								protected Identified getTarget(T o) {
-									Identified target = cascadeOne.targetProvider.apply(o);
-									// We only delete persisted instances (for logic and to prevent from non matching row count error)
-									if (target != null && target.getId().isPersisted()) {
-										return target;
-									} else {
-										return null;
-									}
-								}
-							});
-							// we add the delete roughly event since we suppose that if delete is required then there's no reason that roughly 
-							// delete is not
-							localPersister.getPersisterListener().addDeleteRoughlyListener(new BeforeDeleteRoughlyCascader<T, Identified>
-									(targetPersister) {
-								
-								@Override
-								protected void postTargetDelete(Iterable<Identified> iterable) {
-								}
-								
-								@Override
-								protected Identified getTarget(T o) {
-									Identified target = cascadeOne.targetProvider.apply(o);
-									// We only delete persisted instances (for logic and to prevent from non matching row count error)
-									if (target != null && target.getId().isPersisted()) {
-										return target;
-									} else {
-										return null;
-									}
-								}
-							});
-							break;
-					}
-				}
-				
-				IMutator targetSetter = propertyAccessor.getMutator();
-				joinedTablesPersister.addPersister(JoinedStrategiesSelect.FIRST_STRATEGY_NAME, targetPersister,
-						BeanRelationFixer.of(targetSetter::set),
-						leftColumn, rightColumn, cascadeOne.nullable);
+				new CascadeOneConfigurer().appendCascade(cascadeOne, joinedTablesPersister, mappingStrategy, joinedTablesPersister);
 			}
 		}
 		
@@ -402,131 +278,7 @@ public class FluentMappingBuilder<T extends Identified, I extends StatefullIdent
 			localPersister = joinedTablesPersister;
 			
 			for(CascadeMany<T, ? extends Identified, ? extends StatefullIdentifier, ? extends Collection> cascadeMany : cascadeManys) {
-				Persister<Identified, StatefullIdentifier> targetPersister = (Persister<Identified, StatefullIdentifier>) cascadeMany.persister;
-				
-				// adding persistence flag setters on both side
-				joinedTablesPersister.getPersisterListener().addInsertListener((IInsertListener<T>) SetPersistedFlagAfterInsertListener.INSTANCE);
-				targetPersister.getPersisterListener().addInsertListener(SetPersistedFlagAfterInsertListener.INSTANCE);
-				
-				// finding joined columns: left one is primary key. Right one is given by the target strategy throught the property accessor
-				Column leftColumn = localPersister.getTargetTable().getPrimaryKey();
-				Function targetProvider = cascadeMany.targetProvider;
-				if (cascadeMany.reverseMember == null) {
-					throw new NotYetSupportedOperationException("Collection mapping without reverse property is not (yet) supported,"
-							+ " please used \"mappedBy\" option do declare one for "
-							+ Reflections.toString(new MethodReferenceCapturer<>(localPersister.getMappingStrategy().getClassToPersist()).capture(targetProvider)));
-				}
-				
-				Class<? extends Identified> targetClass = cascadeMany.persister.getMappingStrategy().getClassToPersist();
-				MethodReferenceCapturer methodReferenceCapturer = new MethodReferenceCapturer<>(targetClass);
-				Method reverseMember = methodReferenceCapturer.capture(cascadeMany.reverseMember);
-				Column rightColumn = targetPersister.getMappingStrategy().getDefaultMappingStrategy().getPropertyToColumn().get(PropertyAccessor.of(reverseMember));
-				if (rightColumn == null) {
-					throw new NotYetSupportedOperationException("Reverse side mapping is not declared, please add the mapping of a "
-							+ localPersister.getMappingStrategy().getClassToPersist().getSimpleName()
-							+ " to persister of " + cascadeMany.persister.getMappingStrategy().getClassToPersist().getName());
-				}
-				
-				for (CascadeType cascadeType : cascadeMany.cascadeTypes) {
-					switch (cascadeType) {
-						case INSERT:
-							localPersister.getPersisterListener().addInsertListener(new AfterInsertCollectionCascader<T, Identified>(targetPersister) {
-								
-								@Override
-								protected void postTargetInsert(Iterable<Identified> iterables) {
-									// Nothing to do. Identified#isPersisted flag should be fixed by target persister
-								}
-								
-								@Override
-								protected Collection<Identified> getTargets(T o) {
-									Collection<Identified> targets = (Collection<Identified>) targetProvider.apply(o);
-									// We only insert non-persisted instances (for logic and to prevent duplicate primary key error)
-									return Iterables.stream(targets)
-											.filter(Objects::nonNull)
-											.filter(t -> t == null || !t.getId().isPersisted())
-											.collect(Collectors.toList());
-								}
-							});
-							break;
-						case UPDATE:
-							localPersister.getPersisterListener().addUpdateListener(new AfterUpdateCollectionCascader<T, Identified>(targetPersister) {
-								
-								@Override
-								public void afterUpdate(Iterable<Map.Entry<T, T>> iterables, boolean allColumnsStatement) {
-									IdentifiedCollectionDiffer differ = new IdentifiedCollectionDiffer();
-									iterables.forEach(entry -> {
-										Set<Diff> diffSet = differ.diffSet(
-												(Set) cascadeMany.targetProvider.apply(entry.getValue()),
-												(Set) cascadeMany.targetProvider.apply(entry.getKey()));
-										for (Diff diff : diffSet) {
-											switch (diff.getState()) {
-												case ADDED:
-													targetPersister.insert(diff.getReplacingInstance());
-													break;
-												case HELD:
-													// NB: update will only be done if necessary by target persister
-													targetPersister.update(diff.getReplacingInstance(), diff.getSourceInstance(), allColumnsStatement);
-													break;
-												case REMOVED:
-													targetPersister.delete(diff.getSourceInstance());
-													break;
-											}
-										}
-									});
-								}
-								
-								@Override
-								protected void postTargetUpdate(Iterable<Map.Entry<Identified, Identified>> iterables) {
-									// Nothing to do
-								}
-								
-								@Override
-								protected Collection<Entry<Identified, Identified>> getTargets(T modifiedTrigger, T unmodifiedTrigger) {
-									throw new NotYetSupportedOperationException();
-								}
-							});
-							break;
-						case DELETE:
-							localPersister.getPersisterListener().addDeleteListener(new BeforeDeleteCollectionCascader<T, Identified>(targetPersister) {
-								
-								@Override
-								protected void postTargetDelete(Iterable<Identified> iterables) {
-								}
-								
-								@Override
-								protected Collection<Identified> getTargets(T o) {
-									Collection<Identified> targets = (Collection<Identified>) targetProvider.apply(o);
-									// We only delete persisted instances (for logic and to prevent from non matching row count exception)
-									return Iterables.stream(targets)
-											.filter(Objects::nonNull)
-											.filter(t -> t != null && t.getId().isPersisted())
-											.collect(Collectors.toList());
-								}
-							});
-							// we add the delete roughly event since we suppose that if delete is required then there's no reason that roughly delete is not
-							localPersister.getPersisterListener().addDeleteRoughlyListener(new BeforeDeleteRoughlyCollectionCascader<T, Identified>(targetPersister) {
-								@Override
-								protected void postTargetDelete(Iterable<Identified> iterables) {
-								}
-								
-								@Override
-								protected Collection<Identified> getTargets(T o) {
-									Collection<Identified> targets = (Collection<Identified>) targetProvider.apply(o);
-									// We only delete persisted instances (for logic and to prevent from non matching row count exception)
-									return Iterables.stream(targets)
-											.filter(Objects::nonNull)
-											.filter(t -> t != null && t.getId().isPersisted())
-											.collect(Collectors.toList());
-								}
-							});
-							break;
-					}
-				}
-				
-				IMutator targetSetter = PropertyAccessor.of(cascadeMany.member).getMutator();
-				joinedTablesPersister.addPersister(JoinedStrategiesSelect.FIRST_STRATEGY_NAME, targetPersister,
-						BeanRelationFixer.of((BiConsumer) targetSetter::set, targetProvider, cascadeMany.collectionTargetClass, (BiConsumer) cascadeMany.reverseMember),
-						leftColumn, rightColumn, true);
+				new CascadeManyConfigurer().appendCascade(cascadeMany, joinedTablesPersister, joinedTablesPersister);
 			}
 		}
 		
@@ -599,36 +351,52 @@ public class FluentMappingBuilder<T extends Identified, I extends StatefullIdent
 		}
 	}
 	
-	private class CascadeOne<SRC extends Identified, O extends Identified, J extends StatefullIdentifier> {
+	public static class CascadeOne<SRC extends Identified, O extends Identified, J extends StatefullIdentifier> {
 		
-		/** Original method reference given for mapping */
 		private final Function<SRC, O> targetProvider;
-		/** Equivalent of {@link #targetProvider} as a Reflection API element */
 		private final Method member;
-		/** The {@link Persister} that will be used to persist the target of the relation */
 		private final Persister<O, J> persister;
-		/** Events of the cascade, default is none */
 		private final Set<CascadeType> cascadeTypes = new HashSet<>();
-		/** Nullable option, mainly for column join and DDL schema generation */
 		private boolean nullable = true;
 		
-		private CascadeOne(Function<SRC, O> targetProvider, Persister<O, J> persister) {
+		private CascadeOne(Function<SRC, O> targetProvider, Persister<O, J> persister, Method method) {
 			this.targetProvider = targetProvider;
 			this.persister = persister;
 			// looking for the target type because its necessary to find its persister (and other objects). Done thru a method capturer (weird thing).
-			this.member = captureLambdaMethod((Function) targetProvider);
+			this.member = method;
 		}
 		
+		/** Original method reference given for mapping */
+		public Function<SRC, O> getTargetProvider() {
+			return targetProvider;
+		}
+		
+		/** Equivalent of {@link #targetProvider} as a Reflection API element */
+		public Method getMember() {
+			return member;
+		}
+		
+		/** The {@link Persister} that will be used to persist the target of the relation */
 		public Persister<O, J> getPersister() {
 			return persister;
 		}
 		
+		/** Events of the cascade, default is none */
+		public Set<CascadeType> getCascadeTypes() {
+			return cascadeTypes;
+		}
+		
 		public void addCascadeType(CascadeType cascadeType) {
-			this.cascadeTypes.add(cascadeType);
+			this.getCascadeTypes().add(cascadeType);
+		}
+		
+		/** Nullable option, mainly for column join and DDL schema generation */
+		public boolean isNullable() {
+			return nullable;
 		}
 	}
 	
-	private class CascadeMany<SRC extends Identified, O extends Identified, J extends StatefullIdentifier, C extends Collection<O>> {
+	public static class CascadeMany<SRC extends Identified, O extends Identified, J extends StatefullIdentifier, C extends Collection<O>> {
 		
 		private final Function<SRC, C> targetProvider;
 		private final Persister<O, J> persister;
@@ -637,21 +405,45 @@ public class FluentMappingBuilder<T extends Identified, I extends StatefullIdent
 		private BiConsumer<O, SRC> reverseMember;
 		private final Set<CascadeType> cascadeTypes = new HashSet<>();
 		
-		private CascadeMany(Function<SRC, C> targetProvider, Persister<O, J> persister) {
+		private CascadeMany(Function<SRC, C> targetProvider, Persister<O, J> persister, Method method) {
 			this.targetProvider = targetProvider;
 			this.persister = persister;
 			// looking for the target type because its necessary to find its persister (and other objects). Done thru a method capturer (weird thing).
-			this.member = captureLambdaMethod((Function) targetProvider);
+			this.member = method;
 			this.collectionTargetClass = (Class<C>) Reflections.onJavaBeanPropertyWrapper(member, member::getReturnType, () -> member
 					.getParameterTypes()[0], null);
 		}
 		
-		private CascadeMany(Function<SRC, C> targetProvider, Persister<O, J> persister, Class<C> collectionTargetClass) {
+		private CascadeMany(Function<SRC, C> targetProvider, Persister<O, J> persister, Class<C> collectionTargetClass, Method method) {
 			this.targetProvider = targetProvider;
 			this.persister = persister;
 			// looking for the target type because its necesary to find its persister (and other objects). Done thru a method capturer (weird thing).
-			this.member = captureLambdaMethod((Function) targetProvider);
+			this.member = method;
 			this.collectionTargetClass = collectionTargetClass;
+		}
+		
+		public Function<SRC, C> getTargetProvider() {
+			return targetProvider;
+		}
+		
+		public Persister<O, J> getPersister() {
+			return persister;
+		}
+		
+		public Method getMember() {
+			return member;
+		}
+		
+		public Class<C> getCollectionTargetClass() {
+			return collectionTargetClass;
+		}
+		
+		public BiConsumer<O, SRC> getReverseMember() {
+			return reverseMember;
+		}
+		
+		public Set<CascadeType> getCascadeTypes() {
+			return cascadeTypes;
 		}
 		
 		public void addCascadeType(CascadeType cascadeType) {
@@ -677,7 +469,7 @@ public class FluentMappingBuilder<T extends Identified, I extends StatefullIdent
 		}
 	}
 	
-	private static class SetPersistedFlagAfterInsertListener extends NoopInsertListener<Identified> {
+	public static class SetPersistedFlagAfterInsertListener extends NoopInsertListener<Identified> {
 		
 		public static final SetPersistedFlagAfterInsertListener INSTANCE = new SetPersistedFlagAfterInsertListener();
 		
@@ -691,7 +483,7 @@ public class FluentMappingBuilder<T extends Identified, I extends StatefullIdent
 		}
 	}
 	
-	private static class MandatoryRelationCheckingBeforeInsertListener<T extends Identified> extends NoopInsertListener<T> {
+	public static class MandatoryRelationCheckingBeforeInsertListener<T extends Identified> extends NoopInsertListener<T> {
 		
 		private final Function<T, ? extends Identified> targetProvider;
 		private final Method member;
@@ -712,7 +504,7 @@ public class FluentMappingBuilder<T extends Identified, I extends StatefullIdent
 		}
 	}
 	
-	private static class MandatoryRelationCheckingBeforeUpdateListener<T extends Identified> extends NoopUpdateListener<T> {
+	public static class MandatoryRelationCheckingBeforeUpdateListener<T extends Identified> extends NoopUpdateListener<T> {
 		
 		private final Method member;
 		private final Function<T, ? extends Identified> targetProvider;
