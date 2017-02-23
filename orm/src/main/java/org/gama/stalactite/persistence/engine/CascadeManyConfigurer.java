@@ -4,7 +4,6 @@ import java.lang.reflect.Method;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Objects;
 import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
@@ -25,6 +24,7 @@ import org.gama.stalactite.persistence.engine.cascade.BeforeDeleteRoughlyCollect
 import org.gama.stalactite.persistence.engine.cascade.JoinedStrategiesSelect;
 import org.gama.stalactite.persistence.engine.cascade.JoinedTablesPersister;
 import org.gama.stalactite.persistence.engine.listening.IInsertListener;
+import org.gama.stalactite.persistence.engine.listening.PersisterListener;
 import org.gama.stalactite.persistence.id.Identified;
 import org.gama.stalactite.persistence.id.IdentifiedCollectionDiffer;
 import org.gama.stalactite.persistence.id.IdentifiedCollectionDiffer.Diff;
@@ -35,6 +35,8 @@ import org.gama.stalactite.persistence.structure.Table.Column;
  * @author Guillaume Mary
  */
 public class CascadeManyConfigurer<T extends Identified, I extends Identified, J extends StatefullIdentifier, C extends Collection<I>> {
+	
+	private final IdentifiedCollectionDiffer differ = new IdentifiedCollectionDiffer();
 	
 	public void appendCascade(CascadeMany<T, I, J, C> cascadeMany, Persister<T, ?> localPersister,
 					 JoinedTablesPersister<T, J> joinedTablesPersister) {
@@ -63,10 +65,11 @@ public class CascadeManyConfigurer<T extends Identified, I extends Identified, J
 					+ " to persister of " + cascadeMany.getPersister().getMappingStrategy().getClassToPersist().getName());
 		}
 		
+		PersisterListener<T, ?> persisterListener = localPersister.getPersisterListener();
 		for (CascadeType cascadeType : cascadeMany.getCascadeTypes()) {
 			switch (cascadeType) {
 				case INSERT:
-					localPersister.getPersisterListener().addInsertListener(new AfterInsertCollectionCascader<T, Identified>(targetPersister) {
+					persisterListener.addInsertListener(new AfterInsertCollectionCascader<T, Identified>(targetPersister) {
 						
 						@Override
 						protected void postTargetInsert(Iterable<Identified> iterables) {
@@ -78,18 +81,16 @@ public class CascadeManyConfigurer<T extends Identified, I extends Identified, J
 							Collection<Identified> targets = (Collection<Identified>) targetProvider.apply(o);
 							// We only insert non-persisted instances (for logic and to prevent duplicate primary key error)
 							return Iterables.stream(targets)
-									.filter(Objects::nonNull)
-									.filter(t -> t == null || !t.getId().isPersisted())
+									.filter(CascadeOneConfigurer.NON_PERSISTED_PREDICATE)
 									.collect(Collectors.toList());
 						}
 					});
 					break;
 				case UPDATE:
-					localPersister.getPersisterListener().addUpdateListener(new AfterUpdateCollectionCascader<T, Identified>(targetPersister) {
+					persisterListener.addUpdateListener(new AfterUpdateCollectionCascader<T, Identified>(targetPersister) {
 						
 						@Override
 						public void afterUpdate(Iterable<Map.Entry<T, T>> iterables, boolean allColumnsStatement) {
-							IdentifiedCollectionDiffer differ = new IdentifiedCollectionDiffer();
 							iterables.forEach(entry -> {
 								Set<Diff> diffSet = differ.diffSet(
 										(Set) targetProvider.apply(entry.getValue()),
@@ -123,7 +124,7 @@ public class CascadeManyConfigurer<T extends Identified, I extends Identified, J
 					});
 					break;
 				case DELETE:
-					localPersister.getPersisterListener().addDeleteListener(new BeforeDeleteCollectionCascader<T, Identified>(targetPersister) {
+					persisterListener.addDeleteListener(new BeforeDeleteCollectionCascader<T, Identified>(targetPersister) {
 						
 						@Override
 						protected void postTargetDelete(Iterable<Identified> iterables) {
@@ -134,13 +135,12 @@ public class CascadeManyConfigurer<T extends Identified, I extends Identified, J
 							Collection<Identified> targets = (Collection<Identified>) targetProvider.apply(o);
 							// We only delete persisted instances (for logic and to prevent from non matching row count exception)
 							return Iterables.stream(targets)
-									.filter(Objects::nonNull)
-									.filter(t -> t != null && t.getId().isPersisted())
+									.filter(CascadeOneConfigurer.PERSISTED_PREDICATE)
 									.collect(Collectors.toList());
 						}
 					});
 					// we add the delete roughly event since we suppose that if delete is required then there's no reason that roughly delete is not
-					localPersister.getPersisterListener().addDeleteRoughlyListener(new BeforeDeleteRoughlyCollectionCascader<T, Identified>(targetPersister) {
+					persisterListener.addDeleteRoughlyListener(new BeforeDeleteRoughlyCollectionCascader<T, Identified>(targetPersister) {
 						@Override
 						protected void postTargetDelete(Iterable<Identified> iterables) {
 						}
@@ -150,8 +150,7 @@ public class CascadeManyConfigurer<T extends Identified, I extends Identified, J
 							Collection<Identified> targets = (Collection<Identified>) targetProvider.apply(o);
 							// We only delete persisted instances (for logic and to prevent from non matching row count exception)
 							return Iterables.stream(targets)
-									.filter(Objects::nonNull)
-									.filter(t -> t != null && t.getId().isPersisted())
+									.filter(CascadeOneConfigurer.PERSISTED_PREDICATE)
 									.collect(Collectors.toList());
 						}
 					});
