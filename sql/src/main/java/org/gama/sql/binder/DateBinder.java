@@ -14,12 +14,12 @@ import java.util.Date;
 public class DateBinder implements ParameterBinder<Date> {
 	
 	@Override
-	public Date get(String columnName, ResultSet resultSet) throws SQLException {
+	public Date get(ResultSet resultSet, String columnName) throws SQLException {
 		return new Date(resultSet.getTimestamp(columnName).getTime());
 	}
 	
 	@Override
-	public void set(int valueIndex, Date value, PreparedStatement statement) throws SQLException {
+	public void set(PreparedStatement statement, int valueIndex, Date value) throws SQLException {
 		statement.setTimestamp(valueIndex, new Timestamp(value.getTime()));
 	}
 }

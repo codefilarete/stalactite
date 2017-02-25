@@ -2,11 +2,12 @@ package org.gama.sql.binder;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.sql.PreparedStatement;
 import java.sql.SQLException;
 
-import org.gama.lang.io.IOs;
 import org.gama.lang.Nullable;
+import org.gama.lang.io.IOs;
+
+import static org.gama.sql.DefaultPreparedStatementWriters.BINARYSTREAM_WRITER;
 
 /**
  * @author Guillaume Mary
@@ -25,7 +26,7 @@ public final class DerbyParameterBinders {
 				} catch (IOException e) {
 					throw new SQLException(e);
 				}
-			}).get(), PreparedStatement::setBinaryStream);
+			}).get(), BINARYSTREAM_WRITER);
 	
 	private DerbyParameterBinders() {
 	}

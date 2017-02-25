@@ -14,12 +14,12 @@ import java.time.LocalDateTime;
 public class LocalDateTimeBinder implements ParameterBinder<LocalDateTime> {
 	
 	@Override
-	public LocalDateTime get(String columnName, ResultSet resultSet) throws SQLException {
+	public LocalDateTime get(ResultSet resultSet, String columnName) throws SQLException {
 		return resultSet.getTimestamp(columnName).toLocalDateTime();
 	}
 	
 	@Override
-	public void set(int valueIndex, LocalDateTime value, PreparedStatement statement) throws SQLException {
+	public void set(PreparedStatement statement, int valueIndex, LocalDateTime value) throws SQLException {
 		statement.setTimestamp(valueIndex, java.sql.Timestamp.valueOf(value));
 	}
 }

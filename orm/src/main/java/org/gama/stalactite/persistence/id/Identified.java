@@ -27,13 +27,13 @@ public interface Identified<I> {
 	static <I> ParameterBinder<Identified<I>> identifiedBinder(LambdaParameterBinder<I> lambdaParameterBinder) {
 		return new NullAwareParameterBinder<>(new ParameterBinder<Identified<I>>() {
 			@Override
-			public Identified<I> get(String columnName, ResultSet resultSet) throws SQLException {
+			public Identified<I> get(ResultSet resultSet, String columnName) throws SQLException {
 				return null;//new PersistedIdentifier<>(lambdaParameterBinder.get(columnName, resultSet));
 			}
 			
 			@Override
-			public void set(int valueIndex, Identified<I> value, PreparedStatement statement) throws SQLException {
-				lambdaParameterBinder.set(valueIndex, value.getId().getSurrogate(), statement);
+			public void set(PreparedStatement statement, int valueIndex, Identified<I> value) throws SQLException {
+				lambdaParameterBinder.set(statement, valueIndex, value.getId().getSurrogate());
 			}
 		});
 	}

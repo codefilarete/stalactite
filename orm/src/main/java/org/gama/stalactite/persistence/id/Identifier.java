@@ -30,13 +30,13 @@ public interface Identifier<T> extends StatefullIdentifier<T> {
 	static <I> ParameterBinder<StatefullIdentifier<I>> identifierBinder(LambdaParameterBinder<I> lambdaParameterBinder) {
 		return new NullAwareParameterBinder<>(new ParameterBinder<StatefullIdentifier<I>>() {
 			@Override
-			public StatefullIdentifier<I> get(String columnName, ResultSet resultSet) throws SQLException {
-				return new PersistedIdentifier<>(lambdaParameterBinder.get(columnName, resultSet));
+			public StatefullIdentifier<I> get(ResultSet resultSet, String columnName) throws SQLException {
+				return new PersistedIdentifier<>(lambdaParameterBinder.get(resultSet, columnName));
 			}
 			
 			@Override
-			public void set(int valueIndex, StatefullIdentifier<I> value, PreparedStatement statement) throws SQLException {
-				lambdaParameterBinder.set(valueIndex, value.getSurrogate(), statement);
+			public void set(PreparedStatement statement, int valueIndex, StatefullIdentifier<I> value) throws SQLException {
+				lambdaParameterBinder.set(statement, valueIndex, value.getSurrogate());
 			}
 		});
 	}

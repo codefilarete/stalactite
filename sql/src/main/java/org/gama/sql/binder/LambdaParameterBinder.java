@@ -11,17 +11,6 @@ import java.sql.SQLException;
  */
 public class LambdaParameterBinder<T> implements ParameterBinder<T> {
 	
-	
-	@FunctionalInterface
-	public interface ResultSetReader<O> {
-		O get(ResultSet resultSet, String columnName) throws SQLException;
-	}
-	
-	@FunctionalInterface
-	public interface PreparedStatementWriter<I> {
-		void set(PreparedStatement preparedStatement, Integer index, I value) throws SQLException;
-	}
-	
 	private final ResultSetReader<T> resultSetReader;
 	private final PreparedStatementWriter<T> preparedStatementWriter;
 	
@@ -31,12 +20,12 @@ public class LambdaParameterBinder<T> implements ParameterBinder<T> {
 	}
 	
 	@Override
-	public T get(String columnName, ResultSet resultSet) throws SQLException {
+	public T get(ResultSet resultSet, String columnName) throws SQLException {
 		return resultSetReader.get(resultSet, columnName);
 	}
 	
 	@Override
-	public void set(int valueIndex, T value, PreparedStatement statement) throws SQLException {
+	public void set(PreparedStatement statement, int valueIndex, T value) throws SQLException {
 		preparedStatementWriter.set(statement, valueIndex, value);
 	}
 }

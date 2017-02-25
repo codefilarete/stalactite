@@ -115,7 +115,7 @@ public abstract class SQLStatement<ParamType> {
 	 */
 	protected void doApplyValue(int index, Object value, ParameterBinder<Object> paramBinder, PreparedStatement statement) {
 		try {
-			paramBinder.set(index, value, statement);
+			paramBinder.set(statement, index, value);
 		} catch (SQLException e) {
 			throw new RuntimeException("Error while setting value " + value + " for parameter " + index + " on statement " + getSQL(), e);
 		}

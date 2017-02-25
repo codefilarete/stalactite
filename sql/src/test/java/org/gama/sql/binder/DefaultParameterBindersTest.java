@@ -231,7 +231,7 @@ public class DefaultParameterBindersTest {
 		PreparedStatement statement = connection.prepareStatement("insert into Toto(a) values (?)");
 		valuesToInsert.forEach((v) -> {
 			try {
-				testInstance.set(1, v, statement);
+				testInstance.set(statement, 1, v);
 				statement.execute();
 			} catch (SQLException e) {
 				throw new RuntimeException(e);
@@ -244,7 +244,7 @@ public class DefaultParameterBindersTest {
 		ResultSetIterator<T> resultSetIterator = new ResultSetIterator<T>(resultSet) {
 			@Override
 			public T convert(ResultSet rs) throws SQLException {
-				return testInstance.get("a", resultSet);
+				return testInstance.get(resultSet, "a");
 			}
 		};
 		// we don't close the Connection nor the ResultSet because it's needed for further reading

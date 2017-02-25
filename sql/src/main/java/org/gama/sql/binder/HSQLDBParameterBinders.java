@@ -2,7 +2,8 @@ package org.gama.sql.binder;
 
 import java.io.InputStream;
 import java.sql.PreparedStatement;
-import java.sql.ResultSet;
+
+import static org.gama.sql.binder.DefaultResultSetReaders.*;
 
 /**
  * Specialized {@link ParameterBinder}s for HSQLDB.
@@ -16,7 +17,7 @@ public final class HSQLDBParameterBinders {
 	 * with "org.hsqldb.HsqlException: Invalid argument in JDBC call"
 	 * HsqlDB 2.3.2
 	 */
-	public static final ParameterBinder<InputStream> BINARYSTREAM_BINDER = new LambdaParameterBinder<>(ResultSet::getBinaryStream, (p, i, v) -> {
+	public static final ParameterBinder<InputStream> BINARYSTREAM_BINDER = new LambdaParameterBinder<>(BINARYSTREAM_READER, (p, i, v) -> {
 		if (v == null) {
 			p.setObject(i, null);
 		} else {

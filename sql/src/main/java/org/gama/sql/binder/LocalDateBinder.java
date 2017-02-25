@@ -14,12 +14,12 @@ import java.time.LocalDate;
 public class LocalDateBinder implements ParameterBinder<LocalDate> {
 	
 	@Override
-	public LocalDate get(String columnName, ResultSet resultSet) throws SQLException {
+	public LocalDate get(ResultSet resultSet, String columnName) throws SQLException {
 		return resultSet.getDate(columnName).toLocalDate();
 	}
 	
 	@Override
-	public void set(int valueIndex, LocalDate value, PreparedStatement statement) throws SQLException {
+	public void set(PreparedStatement statement, int valueIndex, LocalDate value) throws SQLException {
 		statement.setDate(valueIndex, java.sql.Date.valueOf(value));
 	}
 }

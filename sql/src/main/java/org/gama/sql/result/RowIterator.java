@@ -46,7 +46,7 @@ public class RowIterator extends ResultSetIterator<Row> {
 		Row toReturn = new Row();
 		for (Entry<String, ParameterBinder> columnEntry : columnNameBinders.all()) {
 			String columnName = columnEntry.getKey();
-			toReturn.put(columnName, columnEntry.getValue().get(columnName, rs));
+			toReturn.put(columnName, columnEntry.getValue().get(rs, columnName));
 		}
 		return toReturn;
 	}
