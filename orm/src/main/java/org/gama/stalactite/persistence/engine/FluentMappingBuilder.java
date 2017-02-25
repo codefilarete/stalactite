@@ -231,6 +231,12 @@ public class FluentMappingBuilder<T extends Identified, I extends StatefullIdent
 						}
 						return finalHack[0];
 					}
+					
+					@Override
+					public IFluentMappingBuilderOneToManyOptions deleteRemoved() {
+						cascadeMany.deleteRemoved = true;
+						return finalHack[0];
+					}
 				});
 		finalHack[0] = proxy;
 		return proxy;
@@ -404,6 +410,8 @@ public class FluentMappingBuilder<T extends Identified, I extends StatefullIdent
 		private final Class<C> collectionTargetClass;
 		private BiConsumer<O, SRC> reverseMember;
 		private final Set<CascadeType> cascadeTypes = new HashSet<>();
+		/** Should we delete removed entities from the Collection (for UPDATE cascade) */
+		public boolean deleteRemoved = false;
 		
 		private CascadeMany(Function<SRC, C> targetProvider, Persister<O, J> persister, Method method) {
 			this.targetProvider = targetProvider;
@@ -448,6 +456,10 @@ public class FluentMappingBuilder<T extends Identified, I extends StatefullIdent
 		
 		public void addCascadeType(CascadeType cascadeType) {
 			this.cascadeTypes.add(cascadeType);
+		}
+		
+		public boolean shouldDeleteRemoved() {
+			return deleteRemoved;
 		}
 	}
 	

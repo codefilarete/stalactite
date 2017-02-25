@@ -176,6 +176,53 @@ public class FluentMappingBuilderCollectionCascadeTest {
 		countryPersister.update(persistedCountry, dummyCountry, true);
 		
 		Country persistedCountry2 = countryPersister.select(dummyCountry.getId());
+		// Checking deletion : we did'nt asked for deletion of removed entities so all of them must be there
+		// (comparison are done on equals/hashCode => id)
+		assertEquals(Arrays.asHashSet(paris, lyon, grenoble), persistedCountry2.getCities());
+		// Checking update is done too
+		assertEquals(Arrays.asHashSet("Paris", "changed", "Grenoble"), persistedCountry2.getCities().stream().map(City::getName).collect(toSet()));
+	}
+	
+	@Test
+	public void testCascade_oneToMany_update_deleteRemoved() throws SQLException {
+		// mapping building thantks to fluent API
+		Persister<Country, Identifier<Long>> countryPersister = FluentMappingBuilder.from(Country.class, (Class<Identifier<Long>>) (Class) PersistedIdentifier.class)
+				.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
+				.add(Country::getName)
+				.add(Country::getDescription)
+				.addOneToMany(Country::getCities, cityPersister)
+					.mappedBy(City::setCountry)
+					.cascade(CascadeType.INSERT, CascadeType.UPDATE)
+					.deleteRemoved()
+				.build(persistenceContext);
+		
+		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+		ddlDeployer.deployDDL();
+		
+		LongProvider countryIdProvider = new LongProvider();
+		Country dummyCountry = new Country(countryIdProvider.giveNewIdentifier());
+		dummyCountry.setName("France");
+		dummyCountry.setDescription("Smelly cheese !");
+		LongProvider cityIdProvider = new LongProvider();
+		City paris = new City(cityIdProvider.giveNewIdentifier());
+		paris.setName("Paris");
+		dummyCountry.addCity(paris);
+		City lyon = new City(cityIdProvider.giveNewIdentifier());
+		lyon.setName("Lyon");
+		dummyCountry.addCity(lyon);
+		countryPersister.insert(dummyCountry);
+		
+		// Changing country cities to see what happens when we save it to the database
+		Country persistedCountry = countryPersister.select(dummyCountry.getId());
+		persistedCountry.getCities().remove(paris);
+		City grenoble = new City(cityIdProvider.giveNewIdentifier());
+		grenoble.setName("Grenoble");
+		persistedCountry.addCity(grenoble);
+		Iterables.first(persistedCountry.getCities()).setName("changed");
+		
+		countryPersister.update(persistedCountry, dummyCountry, true);
+		
+		Country persistedCountry2 = countryPersister.select(dummyCountry.getId());
 		// Checking deletion has been take into account : the reloaded instance contains cities that are the same as of the memory one
 		// (comparison are done on equals/hashCode => id)
 		assertEquals(Arrays.asHashSet(lyon, grenoble), persistedCountry2.getCities());
@@ -229,8 +276,13 @@ public class FluentMappingBuilderCollectionCascadeTest {
 				.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.add(Country::getName)
 				.add(Country::getDescription)
-				.addOneToMany(Country::getCities, cityPersister).mappedBy(City::setCountry).cascade(CascadeType.INSERT, CascadeType.UPDATE)
-				.addOneToMany(Country::getStates, statePersister).mappedBy(State::setCountry).cascade(CascadeType.INSERT, CascadeType.UPDATE)
+				.addOneToMany(Country::getCities, cityPersister)
+					.mappedBy(City::setCountry)
+					.cascade(CascadeType.INSERT, CascadeType.UPDATE)
+					.deleteRemoved()
+				.addOneToMany(Country::getStates, statePersister)
+					.mappedBy(State::setCountry)
+					.cascade(CascadeType.INSERT, CascadeType.UPDATE)
 				.build(persistenceContext);
 		
 		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
@@ -275,13 +327,14 @@ public class FluentMappingBuilderCollectionCascadeTest {
 		countryPersister.update(persistedCountry, dummyCountry, true);
 		
 		Country persistedCountry2 = countryPersister.select(dummyCountry.getId());
-		// Checking deletion has been take into account : the reloaded instance contains cities that are the same as of the memory one
+		// Checking deletion : for cities we asked for deletion of removed entities so the reloaded instance must have the same content of the memory one
+		// but we didn't for regions, so all of them must be there
 		// (comparison are done on equals/hashCode => id)
 		assertEquals(Arrays.asHashSet(lyon, grenoble), persistedCountry2.getCities());
-		assertEquals(Arrays.asHashSet(ardeche, isere), persistedCountry2.getStates());
+		assertEquals(Arrays.asHashSet(ain, ardeche, isere), persistedCountry2.getStates());
 		// Checking update is done too
 		assertEquals(Arrays.asHashSet("changed", "Grenoble"), persistedCountry2.getCities().stream().map(City::getName).collect(toSet()));
-		assertEquals(Arrays.asHashSet("changed", "ardeche"), persistedCountry2.getStates().stream().map(State::getName).collect(toSet()));
+		assertEquals(Arrays.asHashSet("ain", "changed", "ardeche"), persistedCountry2.getStates().stream().map(State::getName).collect(toSet()));
 	}
 	
 	

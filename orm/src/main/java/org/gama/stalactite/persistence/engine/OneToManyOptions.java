@@ -14,4 +14,9 @@ public interface OneToManyOptions<T extends Identified, I extends StatefullIdent
 	
 	IFluentMappingBuilderOneToManyOptions<T, I, O> mappedBy(BiConsumer<O, T> reverseLink);
 	
+	/**
+	 * Ask for deletion of removed entities from the collection (kind of orphan removal) during UPDATE cascade. Default is false (conservative)
+	 */
+	IFluentMappingBuilderOneToManyOptions<T, I, O> deleteRemoved();
+	
 }

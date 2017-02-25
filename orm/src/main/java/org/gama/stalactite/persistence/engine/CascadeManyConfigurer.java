@@ -105,7 +105,9 @@ public class CascadeManyConfigurer<T extends Identified, I extends Identified, J
 											targetPersister.update(diff.getReplacingInstance(), diff.getSourceInstance(), allColumnsStatement);
 											break;
 										case REMOVED:
-											targetPersister.delete(diff.getSourceInstance());
+											if (cascadeMany.shouldDeleteRemoved()) {
+												targetPersister.delete(diff.getSourceInstance());
+											}
 											break;
 									}
 								}
