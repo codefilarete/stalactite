@@ -26,6 +26,8 @@ public interface IFluentMappingBuilder<T extends Identified, I extends Statefull
 	
 	IFluentMappingBuilder<T, I> embed(Function<T, ?> function);
 	
+	IFluentMappingBuilder<T, I> foreignKeyNamingPolicy(ForeignKeyNamingStrategy foreignKeyNamingStrategy);
+	
 	ClassMappingStrategy<T, I> build(Dialect dialect);
 	
 	Persister<T, I> build(PersistenceContext persistenceContext);

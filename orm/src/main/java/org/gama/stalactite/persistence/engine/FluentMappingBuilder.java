@@ -93,6 +93,8 @@ public class FluentMappingBuilder<T extends Identified, I extends StatefullIdent
 	
 	private Collection<Inset<T, ?>> insets = new ArrayList<>();
 	
+	private ForeignKeyNamingStrategy foreignKeyNamingStrategy;
+	
 	public FluentMappingBuilder(Class<T> persistedClass, Table table) {
 		this.persistedClass = persistedClass;
 		this.table = table;
@@ -248,6 +250,12 @@ public class FluentMappingBuilder<T extends Identified, I extends StatefullIdent
 		return this;
 	}
 	
+	@Override
+	public IFluentMappingBuilder<T, I> foreignKeyNamingPolicy(ForeignKeyNamingStrategy foreignKeyNamingStrategy) {
+		this.foreignKeyNamingStrategy = foreignKeyNamingStrategy;
+		return this;
+	}
+	
 	private Map<PropertyAccessor, Column> collectMapping() {
 		return mapping.stream().collect(HashMap::new, (hashMap, linkage) -> hashMap.put(linkage.getFunction(), linkage.getColumn()), (a, b) -> { });
 	}
@@ -275,7 +283,8 @@ public class FluentMappingBuilder<T extends Identified, I extends StatefullIdent
 			// adding persistence flag setters on this side
 			joinedTablesPersister.getPersisterListener().addInsertListener((IInsertListener<T>) SetPersistedFlagAfterInsertListener.INSTANCE);
 			for (CascadeOne<T, ? extends Identified, ? extends StatefullIdentifier> cascadeOne : cascadeOnes) {
-				new CascadeOneConfigurer().appendCascade(cascadeOne, joinedTablesPersister, mappingStrategy, joinedTablesPersister);
+				new CascadeOneConfigurer().appendCascade(cascadeOne, joinedTablesPersister, mappingStrategy, joinedTablesPersister,
+						foreignKeyNamingStrategy);
 			}
 		}
 		
@@ -284,7 +293,7 @@ public class FluentMappingBuilder<T extends Identified, I extends StatefullIdent
 			localPersister = joinedTablesPersister;
 			
 			for(CascadeMany<T, ? extends Identified, ? extends StatefullIdentifier, ? extends Collection> cascadeMany : cascadeManys) {
-				new CascadeManyConfigurer().appendCascade(cascadeMany, joinedTablesPersister, joinedTablesPersister);
+				new CascadeManyConfigurer().appendCascade(cascadeMany, joinedTablesPersister, joinedTablesPersister, foreignKeyNamingStrategy);
 			}
 		}
 		

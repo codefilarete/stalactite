@@ -35,7 +35,7 @@ public class CascadeOneConfigurer<T extends Identified, I extends Identified, J 
 	public void appendCascade(
 			CascadeOne<T, I, J> cascadeOne, Persister<T, ?> localPersister,
 			ClassMappingStrategy<T, I> mappingStrategy,
-			JoinedTablesPersister<T, J> joinedTablesPersister) {
+			JoinedTablesPersister<T, J> joinedTablesPersister, ForeignKeyNamingStrategy foreignKeyNamingStrategy) {
 		Persister<Identified, StatefullIdentifier> targetPersister = (Persister<Identified, StatefullIdentifier>) cascadeOne.getPersister();
 		
 		// adding persistence flag setters on other side
@@ -49,6 +49,9 @@ public class CascadeOneConfigurer<T extends Identified, I extends Identified, J 
 		// According to the nullable option, we specify the ddl schema option
 		leftColumn.nullable(cascadeOne.isNullable());
 		Column rightColumn = targetPersister.getTargetTable().getPrimaryKey();
+		
+		// adding foerign key constraint
+		leftColumn.getTable().new ForeignKey(leftColumn, foreignKeyNamingStrategy.giveName(leftColumn, rightColumn), rightColumn);
 		
 		PersisterListener<T, ?> persisterListener = localPersister.getPersisterListener();
 		for (CascadeType cascadeType : cascadeOne.getCascadeTypes()) {
