@@ -13,7 +13,7 @@ import org.gama.stalactite.persistence.engine.listening.NoopDeleteRoughlyListene
  * 
  * @author Guillaume Mary
  */
-public abstract class BeforeDeleteRoughlyCascader<Trigger, Target> extends NoopDeleteRoughlyListener<Trigger> {
+public abstract class AfterDeleteRoughlyCascader<Trigger, Target> extends NoopDeleteRoughlyListener<Trigger> {
 	
 	private Persister<Target, ?> persister;
 	
@@ -21,7 +21,7 @@ public abstract class BeforeDeleteRoughlyCascader<Trigger, Target> extends NoopD
 	 * Simple constructor. Created instance must be added to PersisterListener afterward.
 	 * @param persister
 	 */
-	public BeforeDeleteRoughlyCascader(Persister<Target, ?> persister) {
+	public AfterDeleteRoughlyCascader(Persister<Target, ?> persister) {
 		this.persister = persister;
 		this.persister.getPersisterListener().addDeleteRoughlyListener(new NoopDeleteRoughlyListener<Target>() {
 			@Override
@@ -39,7 +39,7 @@ public abstract class BeforeDeleteRoughlyCascader<Trigger, Target> extends NoopD
 	 * @param iterables
 	 */
 	@Override
-	public void beforeDeleteRoughly(Iterable<Trigger> iterables) {
+	public void afterDeleteRoughly(Iterable<Trigger> iterables) {
 		this.persister.deleteRoughly(Iterables.stream(iterables).map(this::getTarget).filter(Objects::nonNull).collect(Collectors.toList()));
 	}
 	

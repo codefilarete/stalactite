@@ -18,6 +18,8 @@ public interface IFluentMappingBuilder<T extends Identified, I extends Statefull
 	
 	IFluentMappingBuilderColumnOptions<T, I> add(Function<T, ?> function);
 	
+	<O> IFluentMappingBuilderColumnOptions<T, I> add(BiConsumer<T, O> function, String columnName);
+	
 	IFluentMappingBuilder<T, I> add(Function<T, ?> function, String columnName);
 	
 	<O extends Identified, J extends StatefullIdentifier> IFluentMappingBuilderOneToOneOptions<T, I> addOneToOne(Function<T, O> function, Persister<O, J> persister);
@@ -27,6 +29,8 @@ public interface IFluentMappingBuilder<T extends Identified, I extends Statefull
 	IFluentMappingBuilder<T, I> embed(Function<T, ?> function);
 	
 	IFluentMappingBuilder<T, I> foreignKeyNamingPolicy(ForeignKeyNamingStrategy foreignKeyNamingStrategy);
+	
+	IFluentMappingBuilder<T, I> joinColumnNamingStrategy(JoinColumnNamingStrategy columnNamingStrategy);
 	
 	ClassMappingStrategy<T, I> build(Dialect dialect);
 	

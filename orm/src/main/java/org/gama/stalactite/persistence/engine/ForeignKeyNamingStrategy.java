@@ -16,9 +16,14 @@ public interface ForeignKeyNamingStrategy {
 	
 	String giveName(Column src, Column target);
 	
-	ForeignKeyNamingStrategy DEFAULT = (src, target) -> DEFAULT_FOREIGNEKEY_PREFIX + src.getName() + "_" + target.getName();
+	/**
+	 * Composed of a prefix, source table name, source column name, target column name.
+	 * Must be quite unique to prevent Database such as HSQLDB to yiel because key names unicity is over a table space, not per table.
+	 */
+	ForeignKeyNamingStrategy DEFAULT = (src, target) -> DEFAULT_FOREIGNEKEY_PREFIX + src.getTable().getAbsoluteName() + "_" + src.getName() + "_" + target.getName();
 	
-	ForeignKeyNamingStrategy HASH = (src, target) -> DEFAULT_FOREIGNEKEY_PREFIX + Integer.toHexString(src.getName().hashCode() + target.getName().hashCode());
+	ForeignKeyNamingStrategy HASH = (src, target) -> DEFAULT_FOREIGNEKEY_PREFIX
+			+ Integer.toHexString(src.getTable().getAbsoluteName().hashCode() * 31 * 31 + src.getName().hashCode() * 31 + target.getName().hashCode());
 	
 	/** Generates same name as Hibernate (4.3.7) does. From org.hibernate.mapping.Constraint#generateName(String, Table, Column... columns) */
 	ForeignKeyNamingStrategy HIBERNATE = (src, target) -> {

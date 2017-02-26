@@ -100,7 +100,7 @@ public class FluentMappingBuilderForeignKeyTest {
 			}
 		};
 		JdbcForeignKey foundForeignKey = Iterables.first(fkPersonIterator);
-		JdbcForeignKey expectedForeignKey = new JdbcForeignKey("FK_PRESIDENT_ID", "COUNTRY", "PRESIDENT", "PERSON", "ID");
+		JdbcForeignKey expectedForeignKey = new JdbcForeignKey("FK_COUNTRY_PRESIDENTID_ID", "COUNTRY", "PRESIDENTID", "PERSON", "ID");
 		assertEquals(expectedForeignKey.getSignature(), foundForeignKey.getSignature());
 		
 		ResultSetIterator<JdbcForeignKey> fkCityIterator = new ResultSetIterator<JdbcForeignKey>(currentConnection.getMetaData().getExportedKeys(null, null,
@@ -115,7 +115,7 @@ public class FluentMappingBuilderForeignKeyTest {
 			}
 		};
 		foundForeignKey = Iterables.first(fkCityIterator);
-		expectedForeignKey = new JdbcForeignKey("FK_COUNTRY_ID", "CITY", "COUNTRY", "COUNTRY", "ID");
+		expectedForeignKey = new JdbcForeignKey("FK_CITY_COUNTRYID_ID", "CITY", "COUNTRYID", "COUNTRY", "ID");
 		assertEquals(expectedForeignKey.getSignature(), foundForeignKey.getSignature());
 	}
 	

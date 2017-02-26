@@ -1,9 +1,9 @@
 package org.gama.stalactite.persistence.engine.cascade;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
+import java.util.Objects;
+import java.util.stream.Collectors;
 
+import org.gama.lang.collection.Iterables;
 import org.gama.stalactite.persistence.engine.Persister;
 import org.gama.stalactite.persistence.engine.listening.IInsertListener;
 import org.gama.stalactite.persistence.engine.listening.NoopInsertListener;
@@ -41,11 +41,7 @@ public abstract class BeforeInsertCascader<Trigger, Target> extends NoopInsertLi
 	 */
 	@Override
 	public void beforeInsert(Iterable<Trigger> iterables) {
-		List<Target> targets = new ArrayList<>(50);
-		for (Trigger trigger : iterables) {
-			targets.addAll(getTargets(trigger));
-		}
-		this.persister.insert(targets);
+		this.persister.insert(Iterables.stream(iterables).map(this::getTarget).filter(Objects::nonNull).collect(Collectors.toList()));
 	}
 	
 	/**
@@ -62,6 +58,6 @@ public abstract class BeforeInsertCascader<Trigger, Target> extends NoopInsertLi
 	 * @param trigger
 	 * @return
 	 */
-	protected abstract Collection<Target> getTargets(Trigger trigger);
+	protected abstract Target getTarget(Trigger trigger);
 	
 }

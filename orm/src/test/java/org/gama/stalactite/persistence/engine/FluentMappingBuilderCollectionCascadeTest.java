@@ -244,7 +244,7 @@ public class FluentMappingBuilderCollectionCascadeTest {
 		ddlDeployer.deployDDL();
 		
 		persistenceContext.getCurrentConnection().createStatement().executeUpdate("insert into Country(id) values (42, 666)");
-		persistenceContext.getCurrentConnection().createStatement().executeUpdate("insert into City(id, country) values (100, 42), (200, 42), (300, 666)");
+		persistenceContext.getCurrentConnection().createStatement().executeUpdate("insert into City(id, countryId) values (100, 42), (200, 42), (300, 666)");
 		
 		Country persistedCountry = countryPersister.select(new PersistedIdentifier<>(42L));
 		countryPersister.delete(persistedCountry);

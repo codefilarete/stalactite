@@ -38,8 +38,10 @@ public class CascadeManyConfigurer<T extends Identified, I extends Identified, J
 	
 	private final IdentifiedCollectionDiffer differ = new IdentifiedCollectionDiffer();
 	
-	public void appendCascade(CascadeMany<T, I, J, C> cascadeMany, Persister<T, ?> localPersister,
-							  JoinedTablesPersister<T, J> joinedTablesPersister, ForeignKeyNamingStrategy foreignKeyNamingStrategy) {
+	public void appendCascade(CascadeMany<T, I, J, C> cascadeMany,
+							  Persister<T, ?> localPersister,
+							  JoinedTablesPersister<T, J> joinedTablesPersister,
+							  ForeignKeyNamingStrategy foreignKeyNamingStrategy) {
 		Persister<Identified, StatefullIdentifier> targetPersister = (Persister<Identified, StatefullIdentifier>) cascadeMany.getPersister();
 		
 		// adding persistence flag setters on both side

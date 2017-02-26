@@ -1,11 +1,14 @@
 package org.gama.stalactite.persistence.engine;
 
+import org.gama.sql.binder.DefaultParameterBinders;
 import org.gama.stalactite.persistence.engine.FluentMappingBuilder.IdentifierPolicy;
 import org.gama.stalactite.persistence.id.Identified;
 import org.gama.stalactite.persistence.id.Identifier;
 import org.gama.stalactite.persistence.id.manager.StatefullIdentifier;
+import org.gama.stalactite.persistence.sql.HSQLDBDialect;
 import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.persistence.structure.Table.Column;
+import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -65,6 +68,17 @@ public class FluentMappingBuilderTest {
 		}
 	}
 	
+	private static final HSQLDBDialect DIALECT = new HSQLDBDialect();
+	
+	@BeforeClass
+	public static void initBinders() {
+		// binder creation for our identifier
+		DIALECT.getColumnBinderRegistry().register((Class) Identifier.class, Identifier.identifierBinder(DefaultParameterBinders.LONG_PRIMITIVE_BINDER));
+		DIALECT.getJavaTypeToSqlTypeMapping().put(Identifier.class, "int");
+		DIALECT.getColumnBinderRegistry().register((Class) Identified.class, Identified.identifiedBinder(DefaultParameterBinders.LONG_PRIMITIVE_BINDER));
+		DIALECT.getJavaTypeToSqlTypeMapping().put(Identified.class, "int");
+	}
+	
 	@Rule
 	public ExpectedException expectedException = ExpectedException.none();
 	
@@ -72,7 +86,9 @@ public class FluentMappingBuilderTest {
 	public void testAdd_withoutName_targettedPropertyNameIsTaken() {
 		Table toto = new Table("Toto");
 		FluentMappingBuilder.from(Toto.class, StatefullIdentifier.class, toto)
-				.add(Toto::getName);
+				.add(Toto::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
+				.add(Toto::getName)
+				.build(DIALECT);
 		
 		// column sould be correctly created
 		Column columnForProperty = toto.mapColumnsOnName().get("name");
@@ -85,6 +101,7 @@ public class FluentMappingBuilderTest {
 		Table toto = new Table("Toto");
 		FluentMappingBuilder.from(Toto.class, StatefullIdentifier.class, toto)
 			.add(Toto::getName).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
+			.build(DIALECT)
 		;
 		// column sould be correctly created
 		Column columnForProperty = toto.mapColumnsOnName().get("name");
@@ -129,7 +146,9 @@ public class FluentMappingBuilderTest {
 	public void testAdd_methodHasNoMatchingField_configurationIsStillValid() {
 		Table toto = new Table("Toto");
 		FluentMappingBuilder.from(Toto.class, StatefullIdentifier.class, toto)
-				.add(Toto::getNoMatchingField);
+				.add(Toto::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
+				.add(Toto::getNoMatchingField)
+				.build(DIALECT);
 		
 		Column columnForProperty = toto.mapColumnsOnName().get("noMatchingField");
 		assertNotNull(columnForProperty);

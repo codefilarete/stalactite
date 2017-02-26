@@ -46,9 +46,9 @@ public class BeforeInsertCascaderTest extends AbstractCascaderTest {
 			}
 			
 			@Override
-			protected Collection<Tata> getTargets(Toto toto) {
+			protected Tata getTarget(Toto toto) {
 				actions.add("getTargets");
-				return Arrays.asList(toto.tata);
+				return toto.tata;
 			}
 		};
 		

@@ -1,9 +1,9 @@
 package org.gama.stalactite.persistence.engine.cascade;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
+import java.util.Objects;
+import java.util.stream.Collectors;
 
+import org.gama.lang.collection.Iterables;
 import org.gama.stalactite.persistence.engine.Persister;
 import org.gama.stalactite.persistence.engine.listening.IDeleteListener;
 import org.gama.stalactite.persistence.engine.listening.NoopDeleteListener;
@@ -40,11 +40,7 @@ public abstract class AfterDeleteCascader<Trigger, Target> extends NoopDeleteLis
 	 */
 	@Override
 	public void afterDelete(Iterable<Trigger> iterables) {
-		List<Target> targets = new ArrayList<>(50);
-		for (Trigger trigger : iterables) {
-			targets.addAll(getTargets(trigger));
-		}
-		this.persister.delete(targets);
+		this.persister.delete(Iterables.stream(iterables).map(this::getTarget).filter(Objects::nonNull).collect(Collectors.toList()));
 	}
 	
 	/**
@@ -55,11 +51,11 @@ public abstract class AfterDeleteCascader<Trigger, Target> extends NoopDeleteLis
 	protected abstract void postTargetDelete(Iterable<Target> iterables);
 	
 	/**
-	 * Expected to give or create the corresponding Target instances of Trigger
-	 * 
-	 * @param trigger
-	 * @return
+	 * Expected to give the Target instance of a Trigger (should simply give a field value of trigger)
+	 *
+	 * @param trigger the source instance from which to take the targets
+	 * @return the linked objet or null if there's not (or shouldn't be persisted for whatever reason)
 	 */
-	protected abstract Collection<Target> getTargets(Trigger trigger);
+	protected abstract Target getTarget(Trigger trigger);
 	
 }

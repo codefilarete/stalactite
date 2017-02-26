@@ -1,6 +1,7 @@
 package org.gama.stalactite.persistence.engine;
 
 import javax.sql.DataSource;
+import java.sql.BatchUpdateException;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
@@ -17,6 +18,7 @@ import org.gama.stalactite.persistence.id.PersistedIdentifier;
 import org.gama.stalactite.persistence.id.provider.LongProvider;
 import org.gama.stalactite.persistence.sql.HSQLDBDialect;
 import org.gama.stalactite.test.JdbcConnectionProvider;
+import org.hamcrest.Matcher;
 import org.hamcrest.core.IsEqual;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -27,10 +29,14 @@ import org.junit.rules.ExpectedException;
 import static org.gama.stalactite.persistence.engine.CascadeOption.CascadeType.DELETE;
 import static org.gama.stalactite.persistence.engine.CascadeOption.CascadeType.INSERT;
 import static org.gama.stalactite.persistence.engine.CascadeOption.CascadeType.UPDATE;
+import static org.hamcrest.CoreMatchers.both;
+import static org.hamcrest.CoreMatchers.containsString;
+import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotSame;
 import static org.junit.Assert.assertTrue;
+import static org.junit.internal.matchers.ThrowableMessageMatcher.hasMessage;
 
 /**
  * @author Guillaume Mary
@@ -74,6 +80,9 @@ public class FluentMappingBuilderCascadeTest {
 	
 	@Test
 	public void testCascade_oneToOne_noCascade() throws SQLException {
+		expectedException.expectCause(
+				both((Matcher<Throwable>) (Matcher) instanceOf(BatchUpdateException.class))
+				.and(hasMessage(containsString("integrity constraint violation: foreign key no parent; FK_COUNTRY_PRESIDENTID_ID table: COUNTRY"))));
 		// mapping building thantks to fluent API
 		Persister<Country, Identifier<Long>> countryPersister = FluentMappingBuilder.from(Country.class, (Class<Identifier<Long>>) (Class) PersistedIdentifier.class)
 				.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
@@ -190,8 +199,8 @@ public class FluentMappingBuilderCascadeTest {
 		Person person = new Person(new LongProvider().giveNewIdentifier());
 		person.setName("France president");
 		dummyCountry.setPresident(person);
-		countryPersister.insert(dummyCountry);
 		personPersister.insert(person);
+		countryPersister.insert(dummyCountry);
 		
 		// Changing president's name to see what happens when we save it to the database
 		Country persistedCountry = countryPersister.select(dummyCountry.getId());
@@ -225,8 +234,8 @@ public class FluentMappingBuilderCascadeTest {
 		Person person = new Person(new LongProvider().giveNewIdentifier());
 		person.setName("France president");
 		dummyCountry.setPresident(person);
-		countryPersister.insert(dummyCountry);
 		personPersister.insert(person);
+		countryPersister.insert(dummyCountry);
 		
 		// Changing president's name to see what happens when we save it to the database
 		Country persistedCountry = countryPersister.select(dummyCountry.getId());
@@ -247,7 +256,7 @@ public class FluentMappingBuilderCascadeTest {
 		ddlDeployer.deployDDL();
 		
 		persistenceContext.getCurrentConnection().createStatement().executeUpdate("insert into Person(id) values (42), (666)");
-		persistenceContext.getCurrentConnection().createStatement().executeUpdate("insert into Country(id, president) values (100, 42), (200, 666)");
+		persistenceContext.getCurrentConnection().createStatement().executeUpdate("insert into Country(id, presidentId) values (100, 42), (200, 666)");
 		
 		Country persistedCountry = countryPersister.select(new PersistedIdentifier<>(100L));
 		countryPersister.delete(persistedCountry);
@@ -315,6 +324,9 @@ public class FluentMappingBuilderCascadeTest {
 		assertEquals("France president renamed", resultSet.getString("name"));
 		
 		// testing delete cascade
+		// but we have to remove first the other country that points to the same president, else will get a constraint violation
+		assertEquals(1, persistenceContext.getCurrentConnection().createStatement().executeUpdate(
+				"update Country set presidentId = null where id = " + dummyCountry2.getId().getSurrogate()));
 		countryPersister.delete(persistedCountry);
 		// database must be up to date
 		resultSet = persistenceContext.getCurrentConnection().createStatement().executeQuery("select id from Country where id = 0");
@@ -387,6 +399,9 @@ public class FluentMappingBuilderCascadeTest {
 		assertEquals("Paris renamed", resultSet.getString("name"));
 		
 		// testing delete cascade
+		// but we have to remove first the other country that points to the same president, else will get a constraint violation
+		assertEquals(1, persistenceContext.getCurrentConnection().createStatement().executeUpdate(
+				"update Country set presidentId = null, capitalId = null where id = " + dummyCountry2.getId().getSurrogate()));
 		countryPersister.delete(persistedCountry);
 		// database must be up to date
 		resultSet = persistenceContext.getCurrentConnection().createStatement().executeQuery("select id from Country where id = 0");

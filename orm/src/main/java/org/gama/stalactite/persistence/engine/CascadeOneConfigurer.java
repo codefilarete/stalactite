@@ -11,10 +11,10 @@ import org.gama.stalactite.persistence.engine.FluentMappingBuilder.CascadeOne;
 import org.gama.stalactite.persistence.engine.FluentMappingBuilder.MandatoryRelationCheckingBeforeInsertListener;
 import org.gama.stalactite.persistence.engine.FluentMappingBuilder.MandatoryRelationCheckingBeforeUpdateListener;
 import org.gama.stalactite.persistence.engine.FluentMappingBuilder.SetPersistedFlagAfterInsertListener;
-import org.gama.stalactite.persistence.engine.cascade.AfterInsertCascader;
+import org.gama.stalactite.persistence.engine.cascade.AfterDeleteCascader;
 import org.gama.stalactite.persistence.engine.cascade.AfterUpdateCascader;
-import org.gama.stalactite.persistence.engine.cascade.BeforeDeleteCascader;
-import org.gama.stalactite.persistence.engine.cascade.BeforeDeleteRoughlyCascader;
+import org.gama.stalactite.persistence.engine.cascade.AfterDeleteRoughlyCascader;
+import org.gama.stalactite.persistence.engine.cascade.BeforeInsertCascader;
 import org.gama.stalactite.persistence.engine.cascade.JoinedStrategiesSelect;
 import org.gama.stalactite.persistence.engine.cascade.JoinedTablesPersister;
 import org.gama.stalactite.persistence.engine.listening.PersisterListener;
@@ -35,7 +35,8 @@ public class CascadeOneConfigurer<T extends Identified, I extends Identified, J 
 	public void appendCascade(
 			CascadeOne<T, I, J> cascadeOne, Persister<T, ?> localPersister,
 			ClassMappingStrategy<T, I> mappingStrategy,
-			JoinedTablesPersister<T, J> joinedTablesPersister, ForeignKeyNamingStrategy foreignKeyNamingStrategy) {
+			JoinedTablesPersister<T, J> joinedTablesPersister,
+			ForeignKeyNamingStrategy foreignKeyNamingStrategy) {
 		Persister<Identified, StatefullIdentifier> targetPersister = (Persister<Identified, StatefullIdentifier>) cascadeOne.getPersister();
 		
 		// adding persistence flag setters on other side
@@ -63,7 +64,7 @@ public class CascadeOneConfigurer<T extends Identified, I extends Identified, J 
 								new MandatoryRelationCheckingBeforeInsertListener<>(cascadeOne.getTargetProvider(), cascadeOne.getMember()));
 					}
 					// adding cascade treatment: after insert target is inserted too
-					persisterListener.addInsertListener(new AfterInsertCascader<T, Identified>(targetPersister) {
+					persisterListener.addInsertListener(new BeforeInsertCascader<T, Identified>(targetPersister) {
 						
 						@Override
 						protected void postTargetInsert(Iterable<Identified> iterable) {
@@ -101,7 +102,7 @@ public class CascadeOneConfigurer<T extends Identified, I extends Identified, J 
 					break;
 				case DELETE:
 					// adding cascade treatment: before delete target is deleted (done before because of foreign key constraint)
-					persisterListener.addDeleteListener(new BeforeDeleteCascader<T, Identified>(targetPersister) {
+					persisterListener.addDeleteListener(new AfterDeleteCascader<T, Identified>(targetPersister) {
 						
 						@Override
 						protected void postTargetDelete(Iterable<Identified> iterable) {
@@ -116,7 +117,7 @@ public class CascadeOneConfigurer<T extends Identified, I extends Identified, J 
 					});
 					// we add the delete roughly event since we suppose that if delete is required then there's no reason that roughly 
 					// delete is not
-					persisterListener.addDeleteRoughlyListener(new BeforeDeleteRoughlyCascader<T, Identified>(targetPersister) {
+					persisterListener.addDeleteRoughlyListener(new AfterDeleteRoughlyCascader<T, Identified>(targetPersister) {
 						
 						@Override
 						protected void postTargetDelete(Iterable<Identified> iterable) {

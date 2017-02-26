@@ -12,6 +12,7 @@ import java.util.Map.Entry;
 import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import org.gama.lang.Reflections;
@@ -93,7 +94,9 @@ public class FluentMappingBuilder<T extends Identified, I extends StatefullIdent
 	
 	private Collection<Inset<T, ?>> insets = new ArrayList<>();
 	
-	private ForeignKeyNamingStrategy foreignKeyNamingStrategy;
+	private ForeignKeyNamingStrategy foreignKeyNamingStrategy = ForeignKeyNamingStrategy.DEFAULT;
+	
+	private JoinColumnNamingStrategy columnNamingStrategy = JoinColumnNamingStrategy.DEFAULT;
 	
 	public FluentMappingBuilder(Class<T> persistedClass, Table table) {
 		this.persistedClass = persistedClass;
@@ -119,29 +122,29 @@ public class FluentMappingBuilder<T extends Identified, I extends StatefullIdent
 	@Override
 	public <O> IFluentMappingBuilderColumnOptions<T, I> add(BiConsumer<T, O> function) {
 		Method method = captureLambdaMethod(function);
-		Class<?> columnType = Reflections.propertyType(method);
-		String columnName = Accessors.propertyName(method);
-		return add(method, columnName, columnType);
+		return add(method, null);
 	}
 	
 	@Override
 	public IFluentMappingBuilderColumnOptions<T, I> add(Function<T, ?> function) {
 		Method method = captureLambdaMethod(function);
-		Class<?> columnType = Reflections.propertyType(method);
-		String columnName = Accessors.propertyName(method);
-		return add(method, columnName, columnType);
+		return add(method, null);
+	}
+	
+	@Override
+	public <O> IFluentMappingBuilderColumnOptions<T, I> add(BiConsumer<T, O> function, String columnName) {
+		Method method = captureLambdaMethod(function);
+		return add(method, columnName);
 	}
 	
 	@Override
 	public IFluentMappingBuilderColumnOptions<T, I> add(Function<T, ?> function, String columnName) {
 		Method method = captureLambdaMethod(function);
-		Class<?> columnType = Reflections.propertyType(method);
-		return add(method, columnName, columnType);
+		return add(method, columnName);
 	}
 	
-	private IFluentMappingBuilderColumnOptions<T, I> add(Method method, String columnName, Class<?> columnType) {
-		PropertyAccessor<T, I> propertyAccessor = PropertyAccessor.of(method);
-		Column newColumn = addMapping(columnName, columnType, propertyAccessor);
+	private IFluentMappingBuilderColumnOptions<T, I> add(Method method, String columnName) {
+		Linkage newMapping = addMapping(method, columnName);
 		return new Decorator<>(ColumnOptions.class).decorate(this, (Class<IFluentMappingBuilderColumnOptions<T, I>>) (Class)
 				IFluentMappingBuilderColumnOptions.class, identifierPolicy -> {
 			if (FluentMappingBuilder.this.identifierAccessor != null) {
@@ -151,12 +154,12 @@ public class FluentMappingBuilder<T extends Identified, I extends StatefullIdent
 				case ALREADY_ASSIGNED:
 					Class<I> e = Reflections.propertyType(method);
 					FluentMappingBuilder.this.identifierInsertionManager = new AlreadyAssignedIdentifierManager<>(e);
-					newColumn.primaryKey();
+					newMapping.primaryKey();
 					break;
 				default:
 					throw new NotYetSupportedOperationException();
 			}
-			FluentMappingBuilder.this.identifierAccessor = propertyAccessor;
+			FluentMappingBuilder.this.identifierAccessor = (PropertyAccessor<T, I>) newMapping.getFunction();
 			// we could return null because the decorator return embedder.this for us, but I find cleaner to do so (if we change our mind)
 			return FluentMappingBuilder.this;
 		});
@@ -165,27 +168,39 @@ public class FluentMappingBuilder<T extends Identified, I extends StatefullIdent
 	/**
 	 * @return a new Column aded to the target table, throws an exception if already mapped
 	 */
-	private Column addMapping(String columnName, Class<?> columnType, PropertyAccessor<T, I> propertyAccessor) {
-		Column newColumn = table.new Column(columnName, columnType);
-		this.mapping.forEach(l -> {
-			if (l.getFunction().equals(propertyAccessor)) {
-				throw new IllegalArgumentException("Mapping is already defined by the method " + l.getFunction().getAccessor());
+	private Linkage addMapping(Method method, String columnName) {
+		PropertyAccessor<Object, Object> propertyAccessor = PropertyAccessor.of(method);
+		Predicate<Linkage> checker = ((Predicate<Linkage>) (l -> {
+			PropertyAccessor<T, ?> function = l.getFunction();
+			if (function.equals(propertyAccessor)) {
+				throw new IllegalArgumentException("Mapping is already defined by the method " + function.getAccessor());
 			}
-			if (l.getColumn().equals(newColumn)) {
+			return true;
+		})).and(l -> {
+			if (columnName != null && columnName.equals(l.getColumnName())) {
 				throw new IllegalArgumentException("Mapping is already defined for " + columnName);
 			}
+			return true;
 		});
-		this.mapping.add(new Linkage(propertyAccessor, newColumn));
-		return newColumn;
+		mapping.forEach(checker::test);
+		String linkName = columnName;
+		if (columnName == null && Identified.class.isAssignableFrom(Reflections.javaBeanTargetType(method))) {
+			linkName = columnNamingStrategy.giveName(propertyAccessor);
+		}
+		Linkage linkage = new Linkage(method, linkName);
+		this.mapping.add(linkage);
+		return linkage;
 	}
 	
 	@Override
 	public <O extends Identified, J extends StatefullIdentifier> IFluentMappingBuilderOneToOneOptions<T, I> addOneToOne(Function<T, O> function,
 																														Persister<O, J> persister) {
-		CascadeOne<T, O, J> cascadeOne = new CascadeOne<>(function, persister, captureLambdaMethod((Function) function));
+		// we declare the column on our side: we do it first because it checks some rules
+		add(function);
+		// we keep it
+		CascadeOne<T, O, J> cascadeOne = new CascadeOne<>(function, persister, captureLambdaMethod(function));
 		this.cascadeOnes.add(cascadeOne);
-		// we declare the column on our side
-		add(cascadeOne.getTargetProvider());
+		// then we return an object that allows fluent settings over our OneToOne cascade instance
 		IFluentMappingBuilderOneToOneOptions[] finalHack = new IFluentMappingBuilderOneToOneOptions[1];
 		IFluentMappingBuilderOneToOneOptions<T, I> proxy = new Decorator<>(OneToOneOptions.class).decorate(this,
 				(Class<IFluentMappingBuilderOneToOneOptions<T, I>>) (Class) IFluentMappingBuilderOneToOneOptions.class, new OneToOneOptions() {
@@ -212,7 +227,7 @@ public class FluentMappingBuilder<T extends Identified, I extends StatefullIdent
 	@Override
 	public <O extends Identified, J extends StatefullIdentifier, C extends Collection<O>> IFluentMappingBuilderOneToManyOptions<T, I, O> addOneToMany(
 			Function<T, C> function, Persister<O, J> persister) {
-		CascadeMany<T, O, J, C> cascadeMany = new CascadeMany<>(function, persister, captureLambdaMethod((Function) function));
+		CascadeMany<T, O, J, C> cascadeMany = new CascadeMany<>(function, persister, captureLambdaMethod(function));
 		this.cascadeManys.add(cascadeMany);
 		IFluentMappingBuilderOneToManyOptions[] finalHack = new IFluentMappingBuilderOneToManyOptions[1];
 		IFluentMappingBuilderOneToManyOptions<T, I, O> proxy = new Decorator<>(OneToManyOptions.class).decorate(
@@ -256,21 +271,36 @@ public class FluentMappingBuilder<T extends Identified, I extends StatefullIdent
 		return this;
 	}
 	
-	private Map<PropertyAccessor, Column> collectMapping() {
-		return mapping.stream().collect(HashMap::new, (hashMap, linkage) -> hashMap.put(linkage.getFunction(), linkage.getColumn()), (a, b) -> { });
+	@Override
+	public IFluentMappingBuilder<T, I> joinColumnNamingStrategy(JoinColumnNamingStrategy columnNamingStrategy) {
+		this.columnNamingStrategy = columnNamingStrategy;
+		return this;
+	}
+	
+	/**
+	 * Create all necessary columns on the table
+	 * @param dialect necessary for some checking
+	 * @return the mapping between "property" to column
+	 */
+	private Map<PropertyAccessor, Column> buildMapping(Dialect dialect) {
+		Map<PropertyAccessor, Column> columnMapping = new HashMap<>();
+		mapping.forEach(linkage -> {
+					Column newColumn = getTable().new Column(linkage.getColumnName(), linkage.getColumnType());
+					// assert that column binder is registered : it will throw en exception if the binder is not found
+					dialect.getColumnBinderRegistry().getBinder(newColumn);
+					// setting the primary key option as asked
+					if (linkage.isPrimaryKey()) {
+						newColumn.primaryKey();
+					}
+					columnMapping.put(linkage.getFunction(), newColumn);
+				}
+		);
+		return columnMapping;
 	}
 	
 	@Override
 	public ClassMappingStrategy<T, I> build(Dialect dialect) {
-		assertColumnBindersRegistered(dialect);
-		return buildClassMappingStrategy();
-	}
-	
-	/**
-	 * Asserts that binders of all mapped columns are present: it will throw en exception if the binder is not found
-	 */
-	private void assertColumnBindersRegistered(Dialect dialect) {
-		mapping.stream().map(Linkage::getColumn).forEach(c -> dialect.getColumnBinderRegistry().getBinder(c));
+		return buildClassMappingStrategy(dialect);
 	}
 	
 	@Override
@@ -319,8 +349,15 @@ public class FluentMappingBuilder<T extends Identified, I extends StatefullIdent
 		return localPersister;
 	}
 
-	private ClassMappingStrategy<T, I> buildClassMappingStrategy() {
-		Map<PropertyAccessor, Column> columnMapping = collectMapping();
+	private ClassMappingStrategy<T, I> buildClassMappingStrategy(Dialect dialect) {
+		
+		
+		
+//		assertColumnBindersRegistered(dialect);
+		
+//		mapping.stream().collect(HashMap::new, (hashMap, linkage) -> hashMap.put(linkage.getFunction(), linkage.getColumn()), (a, b) -> { });
+		
+		Map<PropertyAccessor, Column> columnMapping = buildMapping(dialect);
 		List<Entry<PropertyAccessor, Column>> identifierProperties = columnMapping.entrySet().stream().filter(e -> e.getValue().isPrimaryKey())
 				.collect(Collectors.toList());
 		PropertyAccessor<T, I> identifierProperty;
@@ -341,20 +378,34 @@ public class FluentMappingBuilder<T extends Identified, I extends StatefullIdent
 	private class Linkage {
 		
 		private final PropertyAccessor function;
-		private final Column column;
+		private final Class<?> columnType;
+		/** Column name override if not default */
+		private final String columnName;
 		private Class<Collection> targetManyType;
+		private boolean primaryKey;
 		
-		private Linkage(PropertyAccessor function, Column column) {
-			this.function = function;
-			this.column = column;
+		/**
+		 * Constructor by {@link Method}. Only accessor by method is implemented (since input is from method reference).
+		 * (Doing it for field accessor is simple work but not necessary)
+		 * @param method a {@link PropertyAccessor}
+		 * @param columnName an override of the default name that will be generated
+		 */
+		private Linkage(Method method, String columnName) {
+			this.function = PropertyAccessor.of(method);
+			this.columnType = Reflections.propertyType(method);
+			this.columnName = columnName == null ? Accessors.propertyName(method) : columnName;
 		}
 		
 		public PropertyAccessor<T, ?> getFunction() {
 			return function;
 		}
 		
-		public Column getColumn() {
-			return column;
+		public String getColumnName() {
+			return columnName;
+		}
+		
+		public Class<?> getColumnType() {
+			return columnType;
 		}
 		
 		public Class<Collection> getTargetManyType() {
@@ -363,6 +414,14 @@ public class FluentMappingBuilder<T extends Identified, I extends StatefullIdent
 		
 		public void setTargetManyType(Class<Collection> targetManyType) {
 			this.targetManyType = targetManyType;
+		}
+		
+		public boolean isPrimaryKey() {
+			return primaryKey;
+		}
+		
+		public void primaryKey() {
+			this.primaryKey = true;
 		}
 	}
 	
@@ -427,8 +486,7 @@ public class FluentMappingBuilder<T extends Identified, I extends StatefullIdent
 			this.persister = persister;
 			// looking for the target type because its necessary to find its persister (and other objects). Done thru a method capturer (weird thing).
 			this.member = method;
-			this.collectionTargetClass = (Class<C>) Reflections.onJavaBeanPropertyWrapper(member, member::getReturnType, () -> member
-					.getParameterTypes()[0], null);
+			this.collectionTargetClass = (Class<C>) Reflections.javaBeanTargetType(member);
 		}
 		
 		private CascadeMany(Function<SRC, C> targetProvider, Persister<O, J> persister, Class<C> collectionTargetClass, Method method) {
@@ -485,8 +543,7 @@ public class FluentMappingBuilder<T extends Identified, I extends StatefullIdent
 		private Inset(Function<SRC, TRGT> targetProvider) {
 			// looking for the target type because its necesary to find its persister (and other objects). Done thru a method capturer (weird thing).
 			this.member = captureLambdaMethod((Function) targetProvider);
-			this.cascadingTargetClass = (Class<TRGT>) Reflections.onJavaBeanPropertyWrapper(member, member::getReturnType, () -> member
-					.getParameterTypes()[0], null);
+			this.cascadingTargetClass = (Class<TRGT>) Reflections.javaBeanTargetType(member);
 		}
 	}
 	
