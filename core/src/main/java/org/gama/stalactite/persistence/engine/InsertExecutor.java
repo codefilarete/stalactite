@@ -6,6 +6,7 @@ import java.util.Map;
 import java.util.Set;
 
 import org.gama.lang.Retryer;
+import org.gama.sql.ConnectionProvider;
 import org.gama.sql.dml.SQLStatement;
 import org.gama.sql.dml.WriteOperation;
 import org.gama.stalactite.persistence.id.manager.IdentifierInsertionManager;

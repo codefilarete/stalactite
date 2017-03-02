@@ -8,6 +8,9 @@ import java.sql.SQLFeatureNotSupportedException;
 import java.util.logging.Logger;
 
 /**
+ * {@link DataSource} that wraps another one and delegates all its methods to it without any additionnal feature.
+ * Made for overriding only some targeted methods.
+ *
  * @author Guillaume Mary
  */
 public class DataSourceWrapper implements DataSource {

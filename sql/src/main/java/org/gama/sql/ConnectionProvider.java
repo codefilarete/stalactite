@@ -1,4 +1,4 @@
-package org.gama.stalactite.persistence.engine;
+package org.gama.sql;
 
 import java.sql.Connection;
 

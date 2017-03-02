@@ -2,6 +2,7 @@ package org.gama.stalactite.persistence.engine;
 
 import org.gama.lang.Retryer;
 import org.gama.lang.collection.SteppingIterator;
+import org.gama.sql.ConnectionProvider;
 import org.gama.sql.dml.SQLStatement;
 import org.gama.sql.dml.WriteOperation;
 import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
@@ -18,7 +19,7 @@ public abstract class WriteExecutor<T, I> extends DMLExecutor<T, I> {
 	private final Retryer writeOperationRetryer;
 	
 	public WriteExecutor(ClassMappingStrategy<T, I> mappingStrategy,
-						 org.gama.stalactite.persistence.engine.ConnectionProvider connectionProvider, DMLGenerator dmlGenerator, Retryer writeOperationRetryer,
+						 ConnectionProvider connectionProvider, DMLGenerator dmlGenerator, Retryer writeOperationRetryer,
 						 int batchSize, int inOperatorMaxSize) {
 		super(mappingStrategy, connectionProvider, dmlGenerator, inOperatorMaxSize);
 		this.batchSize = batchSize;

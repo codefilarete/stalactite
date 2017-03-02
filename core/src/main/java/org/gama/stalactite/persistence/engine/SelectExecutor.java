@@ -9,6 +9,7 @@ import java.util.Set;
 import org.gama.lang.collection.Collections;
 import org.gama.lang.collection.Iterables;
 import org.gama.lang.exception.Exceptions;
+import org.gama.sql.ConnectionProvider;
 import org.gama.sql.dml.ReadOperation;
 import org.gama.sql.result.RowIterator;
 import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;

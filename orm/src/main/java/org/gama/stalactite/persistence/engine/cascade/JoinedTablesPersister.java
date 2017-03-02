@@ -6,8 +6,8 @@ import java.util.Map;
 import java.util.function.Function;
 
 import org.gama.lang.collection.PairIterator;
+import org.gama.sql.ConnectionProvider;
 import org.gama.stalactite.persistence.engine.BeanRelationFixer;
-import org.gama.stalactite.persistence.engine.ConnectionProvider;
 import org.gama.stalactite.persistence.engine.PersistenceContext;
 import org.gama.stalactite.persistence.engine.Persister;
 import org.gama.stalactite.persistence.engine.listening.NoopUpdateListener;

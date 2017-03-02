@@ -8,6 +8,7 @@ import java.util.Set;
 
 import org.gama.lang.bean.IFactory;
 import org.gama.lang.collection.ValueFactoryHashMap;
+import org.gama.sql.ConnectionProvider;
 import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
 import org.gama.stalactite.persistence.sql.Dialect;
 

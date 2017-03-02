@@ -1,5 +1,7 @@
 package org.gama.stalactite.persistence.engine;
 
+import org.gama.sql.ConnectionProvider;
+
 /**
  * A special {@link ConnectionProvider} that is capable of executing a SQL operation in a different (new) transaction than the one returned by
  * {@link #getCurrentConnection()} outside of the call to {@link #executeInNewTransaction(JdbcOperation)}.
