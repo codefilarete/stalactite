@@ -8,7 +8,7 @@ import java.util.Map;
 
 import org.gama.lang.collection.Arrays;
 import org.gama.lang.collection.Maps;
-import org.gama.sql.IConnectionProvider;
+import org.gama.sql.ConnectionProvider;
 import org.gama.sql.SimpleConnectionProvider;
 import org.gama.sql.binder.DefaultParameterBinders;
 import org.gama.sql.binder.ParameterBinder;
@@ -23,7 +23,7 @@ import static org.junit.Assert.assertEquals;
  */
 public class WriteOperationTest {
 	
-	private IConnectionProvider connectionProvider;
+	private ConnectionProvider connectionProvider;
 	
 	@Before
 	public void setUp() throws SQLException {

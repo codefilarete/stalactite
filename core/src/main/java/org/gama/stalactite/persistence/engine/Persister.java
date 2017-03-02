@@ -8,6 +8,7 @@ import java.util.Map.Entry;
 
 import org.gama.lang.Retryer;
 import org.gama.lang.collection.Iterables;
+import org.gama.sql.ConnectionProvider;
 import org.gama.stalactite.persistence.engine.listening.PersisterListener;
 import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
 import org.gama.stalactite.persistence.sql.Dialect;
@@ -138,6 +139,22 @@ public class Persister<T, I> {
 	 */
 	public PersisterListener<T, I> getPersisterListener() {
 		return persisterListener;
+	}
+	
+	public InsertExecutor<T, I> getInsertExecutor() {
+		return insertExecutor;
+	}
+	
+	public UpdateExecutor<T, I> getUpdateExecutor() {
+		return updateExecutor;
+	}
+	
+	public DeleteExecutor<T, I> getDeleteExecutor() {
+		return deleteExecutor;
+	}
+	
+	public SelectExecutor<T, I> getSelectExecutor() {
+		return selectExecutor;
 	}
 	
 	public void persist(T t) {

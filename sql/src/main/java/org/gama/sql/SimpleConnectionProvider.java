@@ -3,11 +3,11 @@ package org.gama.sql;
 import java.sql.Connection;
 
 /**
- * Naïve implementation of {@link IConnectionProvider} that stores the {@link Connection}
+ * Naïve implementation of {@link ConnectionProvider} that stores the {@link Connection}
  * 
  * @author Guillaume Mary
  */
-public class SimpleConnectionProvider implements IConnectionProvider {
+public class SimpleConnectionProvider implements ConnectionProvider {
 	
 	private final Connection connection;
 	
@@ -16,7 +16,7 @@ public class SimpleConnectionProvider implements IConnectionProvider {
 	}
 	
 	@Override
-	public Connection getConnection() {
+	public Connection getCurrentConnection() {
 		return this.connection;
 	}
 	

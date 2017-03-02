@@ -12,9 +12,9 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.BiFunction;
 
+import org.gama.lang.function.Sequence;
 import org.gama.reflection.PropertyAccessor;
 import org.gama.stalactite.persistence.id.manager.BeforeInsertIdentifierManager;
-import org.gama.stalactite.persistence.id.manager.BeforeInsertIdentifierManager.Sequence;
 import org.gama.stalactite.persistence.id.manager.IdentifierInsertionManager;
 import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
 import org.gama.stalactite.persistence.mapping.IdMappingStrategy;

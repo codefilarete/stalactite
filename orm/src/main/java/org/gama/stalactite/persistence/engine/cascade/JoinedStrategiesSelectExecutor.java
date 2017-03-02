@@ -12,14 +12,13 @@ import org.gama.lang.Strings;
 import org.gama.lang.collection.Collections;
 import org.gama.lang.collection.Iterables;
 import org.gama.lang.exception.Exceptions;
-import org.gama.sql.IConnectionProvider;
+import org.gama.sql.ConnectionProvider;
 import org.gama.sql.SimpleConnectionProvider;
 import org.gama.sql.binder.ParameterBinderIndex;
 import org.gama.sql.dml.ReadOperation;
 import org.gama.sql.result.Row;
 import org.gama.sql.result.RowIterator;
 import org.gama.stalactite.persistence.engine.BeanRelationFixer;
-import org.gama.stalactite.persistence.engine.ConnectionProvider;
 import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
 import org.gama.stalactite.persistence.sql.Dialect;
 import org.gama.stalactite.persistence.sql.dml.ColumnParamedSelect;
@@ -87,7 +86,7 @@ public class JoinedStrategiesSelectExecutor<T, I> {
 		queryBuilder.toSQL();
 		
 		// Use same Connection for all operations
-		IConnectionProvider connectionProvider = new SimpleConnectionProvider(getConnectionProvider().getCurrentConnection());
+		ConnectionProvider connectionProvider = new SimpleConnectionProvider(getConnectionProvider().getCurrentConnection());
 		// Creation of the where clause: we use a dynamic "in" operator clause to avoid multiple SelectQueryBuilder instanciation
 		DynamicInClause condition = new DynamicInClause();
 		selectQuery.where(keyColumn, condition);
@@ -121,7 +120,7 @@ public class JoinedStrategiesSelectExecutor<T, I> {
 		inOperatorValueIndexes.put(keyColumn, indexes);
 	}
 	
-	private void execute(IConnectionProvider connectionProvider,
+	private void execute(ConnectionProvider connectionProvider,
 						 SelectQueryBuilder queryBuilder,
 						 Iterable<? extends Iterable<I>> idsParcels) {
 		ColumnParamedSelect preparedSelect = new ColumnParamedSelect(queryBuilder.toSQL(), inOperatorValueIndexes, parameterBinderProvider, joinedStrategiesSelect.getSelectParameterBinders());

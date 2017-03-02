@@ -12,6 +12,8 @@ public class Person implements Identified<Long> {
 	
 	private String name;
 	
+	private int version;
+	
 	public Person() {
 	}
 	
@@ -35,5 +37,9 @@ public class Person implements Identified<Long> {
 	
 	public void setName(String name) {
 		this.name = name;
+	}
+	
+	public int getVersion() {
+		return version;
 	}
 }

@@ -1,11 +1,11 @@
 package org.gama.sql.dml;
 
-import org.gama.sql.IConnectionProvider;
-
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.Map;
+
+import org.gama.sql.ConnectionProvider;
 
 /**
  * Tries to simplify use of {@link PreparedStatement} in oriented scenarii like:
@@ -20,7 +20,7 @@ import java.util.Map;
  */
 public abstract class SQLOperation<ParamType> implements AutoCloseable {
 	
-	protected final IConnectionProvider connectionProvider;
+	protected final ConnectionProvider connectionProvider;
 	
 	protected PreparedStatement preparedStatement;
 	
@@ -28,7 +28,7 @@ public abstract class SQLOperation<ParamType> implements AutoCloseable {
 	
 	private String sql;
 	
-	public SQLOperation(SQLStatement<ParamType> sqlStatement, IConnectionProvider connectionProvider) {
+	public SQLOperation(SQLStatement<ParamType> sqlStatement, ConnectionProvider connectionProvider) {
 		this.sqlStatement = sqlStatement;
 		this.connectionProvider = connectionProvider;
 	}
@@ -37,7 +37,7 @@ public abstract class SQLOperation<ParamType> implements AutoCloseable {
 		return sqlStatement;
 	}
 	
-	public IConnectionProvider getConnectionProvider() {
+	public ConnectionProvider getConnectionProvider() {
 		return connectionProvider;
 	}
 	
@@ -61,7 +61,7 @@ public abstract class SQLOperation<ParamType> implements AutoCloseable {
 	 * @throws SQLException
 	 */
 	protected void ensureStatement() throws SQLException {
-		Connection connection = this.connectionProvider.getConnection();
+		Connection connection = this.connectionProvider.getCurrentConnection();
 		if (this.preparedStatement == null || this.preparedStatement.getConnection() != connection) {
 			prepareStatement(connection);
 		}

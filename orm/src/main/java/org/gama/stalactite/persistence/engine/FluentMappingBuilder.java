@@ -15,8 +15,10 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
+import org.gama.lang.Nullable;
 import org.gama.lang.Reflections;
 import org.gama.lang.bean.FieldIterator;
+import org.gama.lang.function.Sequence;
 import org.gama.reflection.Accessors;
 import org.gama.reflection.PropertyAccessor;
 import org.gama.spy.MethodReferenceCapturer;
@@ -97,6 +99,8 @@ public class FluentMappingBuilder<T extends Identified, I extends StatefullIdent
 	private ForeignKeyNamingStrategy foreignKeyNamingStrategy = ForeignKeyNamingStrategy.DEFAULT;
 	
 	private JoinColumnNamingStrategy columnNamingStrategy = JoinColumnNamingStrategy.DEFAULT;
+	
+	private OptimiticLockOption optimiticLockOption;
 	
 	public FluentMappingBuilder(Class<T> persistedClass, Table table) {
 		this.persistedClass = persistedClass;
@@ -277,6 +281,13 @@ public class FluentMappingBuilder<T extends Identified, I extends StatefullIdent
 		return this;
 	}
 	
+	@Override
+	public <C> IFluentMappingBuilder<T, I> versionedBy(Function<T, C> property, Sequence<C> sequence) {
+		optimiticLockOption = new OptimiticLockOption(PropertyAccessor.of(captureLambdaMethod(property)), sequence);
+		add(property);
+		return this;
+	}
+	
 	/**
 	 * Create all necessary columns on the table
 	 * @param dialect necessary for some checking
@@ -346,17 +357,21 @@ public class FluentMappingBuilder<T extends Identified, I extends StatefullIdent
 			mappingStrategy.put(PropertyAccessor.of(embed.member), beanMappingStrategy);
 		}
 		
+		Nullable<VersioningStrategy> versionigStrategy = Nullable.of(optimiticLockOption).orApply(OptimiticLockOption::getVersioningStrategy);
+		if (versionigStrategy.isPresent()) {
+//			localPersister.getMappingStrategy().put(optimiticLockOption.propertyAccessor,
+//					new VersionMapping(localPersister.getMappingStrategy().getDefaultMappingStrategy().getPropertyToColumn().get(optimiticLockOption.propertyAccessor)));
+			
+			Column column = localPersister.getMappingStrategy().getDefaultMappingStrategy().getPropertyToColumn().get(optimiticLockOption
+					.propertyAccessor);
+			localPersister.getMappingStrategy().addVersionedColumn(optimiticLockOption.propertyAccessor, column);
+			localPersister.getUpdateExecutor().setVersioningStrategy(versionigStrategy.get());
+		}
+		
 		return localPersister;
 	}
 
 	private ClassMappingStrategy<T, I> buildClassMappingStrategy(Dialect dialect) {
-		
-		
-		
-//		assertColumnBindersRegistered(dialect);
-		
-//		mapping.stream().collect(HashMap::new, (hashMap, linkage) -> hashMap.put(linkage.getFunction(), linkage.getColumn()), (a, b) -> { });
-		
 		Map<PropertyAccessor, Column> columnMapping = buildMapping(dialect);
 		List<Entry<PropertyAccessor, Column>> identifierProperties = columnMapping.entrySet().stream().filter(e -> e.getValue().isPrimaryKey())
 				.collect(Collectors.toList());
@@ -609,4 +624,24 @@ public class FluentMappingBuilder<T extends Identified, I extends StatefullIdent
 				+ Reflections.toString(member) + " on object " + pawn);
 	}
 	
+	private class OptimiticLockOption<C> {
+		
+		private final VersioningStrategy versioningStrategy;
+		private final PropertyAccessor<Object, C> propertyAccessor;
+		
+		public OptimiticLockOption(PropertyAccessor<Object, C> propertyAccessor, Sequence<C> sequence) {
+			this.propertyAccessor = propertyAccessor;
+			this.versioningStrategy = new DefaultVersioningStrategy<C>(this.propertyAccessor) {
+				
+				@Override
+				protected Object next(Object previousVersion) {
+					return ((int) previousVersion)+1;
+				}
+			};
+		}
+		
+		public VersioningStrategy getVersioningStrategy() {
+			return versioningStrategy;
+		}
+	}
 }

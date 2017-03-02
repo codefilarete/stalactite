@@ -4,6 +4,7 @@ import java.util.Collection;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 
+import org.gama.lang.function.Sequence;
 import org.gama.stalactite.persistence.id.Identified;
 import org.gama.stalactite.persistence.id.manager.StatefullIdentifier;
 import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
@@ -31,6 +32,8 @@ public interface IFluentMappingBuilder<T extends Identified, I extends Statefull
 	IFluentMappingBuilder<T, I> foreignKeyNamingPolicy(ForeignKeyNamingStrategy foreignKeyNamingStrategy);
 	
 	IFluentMappingBuilder<T, I> joinColumnNamingStrategy(JoinColumnNamingStrategy columnNamingStrategy);
+	
+	<C> IFluentMappingBuilder<T, I> versionedBy(Function<T, C> property, Sequence<C> sequence);
 	
 	ClassMappingStrategy<T, I> build(Dialect dialect);
 	

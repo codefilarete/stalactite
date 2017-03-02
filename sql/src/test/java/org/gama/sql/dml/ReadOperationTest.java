@@ -7,7 +7,7 @@ import java.sql.Statement;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.gama.sql.IConnectionProvider;
+import org.gama.sql.ConnectionProvider;
 import org.gama.sql.SimpleConnectionProvider;
 import org.gama.sql.binder.DefaultParameterBinders;
 import org.gama.sql.binder.ParameterBinder;
@@ -23,7 +23,7 @@ import static org.junit.Assert.assertTrue;
  */
 public class ReadOperationTest {
 	
-	private IConnectionProvider connectionProvider;
+	private ConnectionProvider connectionProvider;
 	
 	@Before
 	public void setUp() throws SQLException {

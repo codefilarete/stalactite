@@ -1,14 +1,14 @@
 package org.gama.sql.dml;
 
-import org.gama.sql.IConnectionProvider;
-import org.gama.sql.result.ResultSetIterator;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.List;
+
+import org.gama.sql.ConnectionProvider;
+import org.gama.sql.result.ResultSetIterator;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * {@link SQLOperation} dedicated to Selectes ... so all operations that return a ResultSet
@@ -19,7 +19,7 @@ public class ReadOperation<ParamType> extends SQLOperation<ParamType> {
 	
 	protected static final Logger LOGGER = LoggerFactory.getLogger(ReadOperation.class);
 	
-	public ReadOperation(SQLStatement<ParamType> sqlGenerator, IConnectionProvider connectionProvider) {
+	public ReadOperation(SQLStatement<ParamType> sqlGenerator, ConnectionProvider connectionProvider) {
 		super(sqlGenerator, connectionProvider);
 	}
 	

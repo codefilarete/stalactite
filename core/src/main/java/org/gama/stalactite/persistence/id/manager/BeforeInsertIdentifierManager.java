@@ -5,6 +5,7 @@ import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.function.Consumer;
 
+import org.gama.lang.function.Sequence;
 import org.gama.sql.dml.WriteOperation;
 import org.gama.stalactite.persistence.engine.WriteExecutor.JDBCBatchingIterator;
 import org.gama.stalactite.persistence.mapping.IIdAccessor;
@@ -16,12 +17,6 @@ import org.gama.stalactite.persistence.structure.Table.Column;
  * @author Guillaume Mary
  */
 public class BeforeInsertIdentifierManager<T, I> implements IdentifierInsertionManager<T, I> {
-	
-	@FunctionalInterface
-	public interface Sequence<I> {
-		
-		I next();
-	}
 	
 	private final Class<I> identifierType;
 	

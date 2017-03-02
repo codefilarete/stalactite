@@ -25,6 +25,8 @@ public class Country implements Identified<Long> {
 	
 	private Set<State> states = new HashSet<>();
 	
+	private int version;
+	
 	public Country() {
 	}
 	
@@ -122,5 +124,9 @@ public class Country implements Identified<Long> {
 	public void addState(State state) {
 		this.states.add(state);
 		state.setCountry(this);
+	}
+	
+	public int getVersion() {
+		return version;
 	}
 }
