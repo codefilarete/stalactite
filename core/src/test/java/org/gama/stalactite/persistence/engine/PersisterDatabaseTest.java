@@ -159,6 +159,7 @@ public class PersisterDatabaseTest {
 		// check deleted row count
 		int deleteRowCount = testInstance.delete(Arrays.asList(new Toto(1, 10, 100)));
 		assertEquals(1, deleteRowCount);
+		testInstance.getDeleteExecutor().setRowCountManager(RowCountManager.NOOP_ROW_COUNT_MANAGER);
 		deleteRowCount = testInstance.delete(Arrays.asList(new Toto(1, 10, 100), new Toto(2, 20, 200), new Toto(3, 30, 300), new Toto(4, 40, 400)));
 		assertEquals(3, deleteRowCount);
 		deleteRowCount = testInstance.delete(Arrays.asList(new Toto(1, 10, 100), new Toto(2, 20, 200), new Toto(3, 30, 300), new Toto(4, 40, 400)));

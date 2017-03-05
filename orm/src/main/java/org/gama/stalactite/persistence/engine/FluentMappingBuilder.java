@@ -270,7 +270,7 @@ public class FluentMappingBuilder<T extends Identified, I extends StatefullIdent
 	}
 	
 	@Override
-	public IFluentMappingBuilder<T, I> foreignKeyNamingPolicy(ForeignKeyNamingStrategy foreignKeyNamingStrategy) {
+	public IFluentMappingBuilder<T, I> foreignKeyNamingStrategy(ForeignKeyNamingStrategy foreignKeyNamingStrategy) {
 		this.foreignKeyNamingStrategy = foreignKeyNamingStrategy;
 		return this;
 	}
@@ -359,13 +359,16 @@ public class FluentMappingBuilder<T extends Identified, I extends StatefullIdent
 		
 		Nullable<VersioningStrategy> versionigStrategy = Nullable.of(optimiticLockOption).orApply(OptimiticLockOption::getVersioningStrategy);
 		if (versionigStrategy.isPresent()) {
-//			localPersister.getMappingStrategy().put(optimiticLockOption.propertyAccessor,
-//					new VersionMapping(localPersister.getMappingStrategy().getDefaultMappingStrategy().getPropertyToColumn().get(optimiticLockOption.propertyAccessor)));
-			
+			// we have to declare it to the lapping strategy. To do that we must find the versionning column
 			Column column = localPersister.getMappingStrategy().getDefaultMappingStrategy().getPropertyToColumn().get(optimiticLockOption
 					.propertyAccessor);
 			localPersister.getMappingStrategy().addVersionedColumn(optimiticLockOption.propertyAccessor, column);
+			// and don't forget to give it to the workers !
 			localPersister.getUpdateExecutor().setVersioningStrategy(versionigStrategy.get());
+			// TODO: take exception into account for deletion
+//			localPersister.getDeleteExecutor().setVersioningStrategy(versionigStrategy.get());
+			// TODO: ask initial value for insert
+//			localPersister.getInsertExecutor().setVersioningStrategy(versionigStrategy.get());
 		}
 		
 		return localPersister;

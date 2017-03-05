@@ -20,6 +20,13 @@ import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.persistence.structure.Table.Column;
 
 /**
+ * Main class for persistence entity mapping description.
+ * Composed of:
+ * - a main strategy : an embedded one ({@link EmbeddedBeanMappingStrategy}, accessible by {@link #getDefaultMappingStrategy()}
+ * - an id strategy : {@link IdMappingStrategy} accessible with {@link #getIdMappingStrategy()}
+ * - optional version mapping : accessible with {@link #getVersionedKeys()} for instance
+ * - additionnal mappings (for embeddable for instance) : see {@link #put(PropertyAccessor, IEmbeddedBeanMapper)}
+ * 
  * @author Guillaume Mary
  */
 public class ClassMappingStrategy<T, I> implements IEntityMappingStrategy<T, I> {

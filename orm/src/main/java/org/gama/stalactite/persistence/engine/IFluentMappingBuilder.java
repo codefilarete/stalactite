@@ -29,7 +29,7 @@ public interface IFluentMappingBuilder<T extends Identified, I extends Statefull
 	
 	IFluentMappingBuilder<T, I> embed(Function<T, ?> function);
 	
-	IFluentMappingBuilder<T, I> foreignKeyNamingPolicy(ForeignKeyNamingStrategy foreignKeyNamingStrategy);
+	IFluentMappingBuilder<T, I> foreignKeyNamingStrategy(ForeignKeyNamingStrategy foreignKeyNamingStrategy);
 	
 	IFluentMappingBuilder<T, I> joinColumnNamingStrategy(JoinColumnNamingStrategy columnNamingStrategy);
 	

@@ -6,18 +6,22 @@ import java.util.Map;
 import java.util.Set;
 
 import org.gama.lang.Retryer;
+import org.gama.lang.bean.Objects;
 import org.gama.lang.collection.ArrayIterator;
 import org.gama.lang.collection.ValueFactoryHashMap;
 import org.gama.sql.ConnectionProvider;
 import org.gama.sql.RollbackListener;
 import org.gama.sql.RollbackObserver;
 import org.gama.sql.dml.WriteOperation;
+import org.gama.stalactite.persistence.engine.RowCountManager.RowCounter;
 import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
 import org.gama.stalactite.persistence.sql.dml.DMLGenerator;
 import org.gama.stalactite.persistence.sql.dml.PreparedUpdate;
 import org.gama.stalactite.persistence.sql.dml.PreparedUpdate.UpwhereColumn;
 import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.persistence.structure.Table.Column;
+
+import static org.gama.stalactite.persistence.engine.RowCountManager.THROWING_ROW_COUNT_MANAGER;
 
 /**
  * Class dedicated to update statement execution
@@ -29,10 +33,16 @@ public class UpdateExecutor<T, I> extends UpsertExecutor<T, I> {
 	/** Entity lock manager, default is no operation as soon as a {@link VersioningStrategy} is given */
 	private OptimisticLockManager optimisticLockManager = OptimisticLockManager.NOOP_OPTIMISTIC_LOCK_MANAGER;
 	
+	private RowCountManager rowCountManager = RowCountManager.THROWING_ROW_COUNT_MANAGER;
+	
 	public UpdateExecutor(ClassMappingStrategy<T, I> mappingStrategy, ConnectionProvider connectionProvider,
 						  DMLGenerator dmlGenerator, Retryer writeOperationRetryer,
 						  int batchSize, int inOperatorMaxSize) {
 		super(mappingStrategy, connectionProvider, dmlGenerator, writeOperationRetryer, batchSize, inOperatorMaxSize);
+	}
+	
+	public void setRowCountManager(RowCountManager rowCountManager) {
+		this.rowCountManager = rowCountManager;
 	}
 	
 	public void setVersioningStrategy(VersioningStrategy versioningStrategy) {
@@ -40,6 +50,7 @@ public class UpdateExecutor<T, I> extends UpsertExecutor<T, I> {
 		// shared as long as PropertyAccessor is reusable over entities (wraps a common method)
 		Column versionColumn = getMappingStrategy().getDefaultMappingStrategy().getPropertyToColumn().get(versioningStrategy.getPropertyAccessor());
 		setOptimisticLockManager(new RevertOnRollbackMVCC(versioningStrategy, versionColumn, getConnectionProvider()));
+		setRowCountManager(THROWING_ROW_COUNT_MANAGER);
 	}
 	
 	public void setOptimisticLockManager(OptimisticLockManager optimisticLockManager) {
@@ -146,12 +157,12 @@ public class UpdateExecutor<T, I> extends UpsertExecutor<T, I> {
 		}
 	}
 	
-	private interface IJDBCBatchingOperationProvider {
+	private interface JDBCBatchingOperationProvider {
 		JDBCBatchingOperation getJdbcBatchingOperation(Set<PreparedUpdate.UpwhereColumn> upwhereColumns);
 		Iterable<JDBCBatchingOperation> getJdbcBatchingOperations();
 	}
 	
-	private class SingleJDBCBatchingOperation implements IJDBCBatchingOperationProvider, Iterable<JDBCBatchingOperation> {
+	private class SingleJDBCBatchingOperation implements JDBCBatchingOperationProvider, Iterable<JDBCBatchingOperation> {
 		
 		private final JDBCBatchingOperation[] jdbcBatchingOperation = new JDBCBatchingOperation[1];
 		
@@ -177,7 +188,7 @@ public class UpdateExecutor<T, I> extends UpsertExecutor<T, I> {
 		}
 	}
 	
-	private class JDBCBatchingOperationCache implements IJDBCBatchingOperationProvider {
+	private class JDBCBatchingOperationCache implements JDBCBatchingOperationProvider {
 		
 		private final Map<Set<PreparedUpdate.UpwhereColumn>, JDBCBatchingOperation> updateOperationCache;
 		
@@ -206,15 +217,16 @@ public class UpdateExecutor<T, I> extends UpsertExecutor<T, I> {
 	 */
 	private class DifferenceUpdater {
 		
-		private final IJDBCBatchingOperationProvider batchingOperationProvider;
+		private final JDBCBatchingOperationProvider batchingOperationProvider;
 		private final boolean allColumns;
 		
-		DifferenceUpdater(IJDBCBatchingOperationProvider batchingOperationProvider, boolean allColumns) {
+		DifferenceUpdater(JDBCBatchingOperationProvider batchingOperationProvider, boolean allColumns) {
 			this.batchingOperationProvider = batchingOperationProvider;
 			this.allColumns = allColumns;
 		}
 		
 		private int update(Iterable<Map.Entry<T, T>> differencesIterable) {
+			RowCounter rowCounter = new RowCounter();
 			// building UpdateOperations and update values
 			for (Map.Entry<T, T> next : differencesIterable) {
 				T modified = next.getKey();
@@ -225,6 +237,8 @@ public class UpdateExecutor<T, I> extends UpsertExecutor<T, I> {
 					optimisticLockManager.manageLock(modified, unmodified, updateValues);
 					JDBCBatchingOperation writeOperation = batchingOperationProvider.getJdbcBatchingOperation(updateValues.keySet());
 					writeOperation.setValues(updateValues);
+					// we keep the updated values for row count, not glad with it but not found any way to do differently
+					rowCounter.add(updateValues);
 				} // else nothing to do (no modification)
 			}
 			// treating remaining values not yet executed
@@ -235,6 +249,7 @@ public class UpdateExecutor<T, I> extends UpsertExecutor<T, I> {
 				}
 				updatedRowCount += jdbcBatchingOperation.getUpdatedRowCount();
 			}
+			rowCountManager.checkRowCount(rowCounter, updatedRowCount);
 			return updatedRowCount;
 		}
 		
@@ -260,28 +275,29 @@ public class UpdateExecutor<T, I> extends UpsertExecutor<T, I> {
 	}
 	
 	/**
-	 * A {@link OptimisticLockManager} that upgrades entities and revert them on connection rollback.
-	 * Needs a {@link RollbackObserver}
+	 * A {@link OptimisticLockManager} that upgrades entities and reverts them on connection rollback.
+	 * Needs that the {@link ConnectionProvider} is also a {@link RollbackObserver} (see constructors).
+	 * MVCC stands for MultiVersion Concurrency Control.
 	 */
 	private static class RevertOnRollbackMVCC implements OptimisticLockManager {
 		
 		private final VersioningStrategy versioningStrategy;
 		private final Column versionColumn;
-		private final RollbackObserver connectionProvider;
+		private final RollbackObserver rollbackObserver;
 		
 		/**
 		 * Main constructor.
 		 * 
 		 * @param versioningStrategy the entities upgrader
 		 * @param versionColumn the column that stores the version
-		 * @param connectionProvider the {@link RollbackObserver} to revert upgrade when rollback happens
+		 * @param rollbackObserver the {@link RollbackObserver} to revert upgrade when rollback happens
 		 * @param <C> a {@link ConnectionProvider} that notifies rollback.
 		 * {@link ConnectionProvider#getCurrentConnection()} is not used here, simple mark to help understanding
 		 */
-		private <C extends RollbackObserver & ConnectionProvider> RevertOnRollbackMVCC(VersioningStrategy versioningStrategy, Column versionColumn, C connectionProvider) {
+		private <C extends RollbackObserver & ConnectionProvider> RevertOnRollbackMVCC(VersioningStrategy versioningStrategy, Column versionColumn, C rollbackObserver) {
 			this.versioningStrategy = versioningStrategy;
 			this.versionColumn = versionColumn;
-			this.connectionProvider = connectionProvider;
+			this.rollbackObserver = rollbackObserver;
 		}
 		
 		/**
@@ -290,27 +306,33 @@ public class UpdateExecutor<T, I> extends UpsertExecutor<T, I> {
 		 * 
 		 * @param versioningStrategy the entities upgrader
 		 * @param versionColumn the column that stores the version
-		 * @param connectionProvider the {@link RollbackObserver} to revert upgrade when rollback happens
+		 * @param rollbackObserver a {@link ConnectionProvider} that implements {@link RollbackObserver} to revert upgrade when rollback happens
+		 * @throws UnsupportedOperationException if the given {@link ConnectionProvider} doesn't implements {@link RollbackObserver}
 		 */
-		private RevertOnRollbackMVCC(VersioningStrategy versioningStrategy, Column versionColumn, ConnectionProvider connectionProvider) {
+		private RevertOnRollbackMVCC(VersioningStrategy versioningStrategy, Column versionColumn, ConnectionProvider rollbackObserver) {
 			this.versioningStrategy = versioningStrategy;
 			this.versionColumn = versionColumn;
-			if (!(connectionProvider instanceof RollbackObserver)) {
+			if (!(rollbackObserver instanceof RollbackObserver)) {
 				throw new UnsupportedOperationException("Version control is only supported with " + ConnectionProvider.class.getName()
 						+ " that also implements " + RollbackObserver.class.getName());
 			}
-			this.connectionProvider = (RollbackObserver) connectionProvider;
+			this.rollbackObserver = (RollbackObserver) rollbackObserver;
 		}
 		
 		/**
-		 * Upgrade modified instance and add version column if the update statement throught {@link UpwhereColumn}s
+		 * Upgrade modified instance and add version column to the update statement throught {@link UpwhereColumn}s
 		 */
 		@Override
 		public void manageLock(Object modified, Object unmodified, Map<UpwhereColumn, Object> updateValues) {
-			Object version = versioningStrategy.upgrade(modified);
+			Object modifiedVersion = versioningStrategy.getVersion(modified);
+			Object unmodifiedVersion = versioningStrategy.getVersion(unmodified);
+			if (!Objects.equalsWithNull(modifiedVersion, modifiedVersion)) {
+				throw new IllegalStateException();
+			}
+			versioningStrategy.upgrade(modified);
 			updateValues.put(new UpwhereColumn(versionColumn, true), versioningStrategy.getVersion(modified));
-			updateValues.put(new UpwhereColumn(versionColumn, false), versioningStrategy.getVersion(unmodified));
-			connectionProvider.addRollbackListener(new RollbackListener() {
+			updateValues.put(new UpwhereColumn(versionColumn, false), unmodifiedVersion);
+			rollbackObserver.addRollbackListener(new RollbackListener() {
 				@Override
 				public void beforeRollback() {
 				}
@@ -318,7 +340,7 @@ public class UpdateExecutor<T, I> extends UpsertExecutor<T, I> {
 				@Override
 				public void afterRollback() {
 					// We revert the upgrade
-					versioningStrategy.revert(modified, version);
+					versioningStrategy.revert(modified, modifiedVersion);
 				}
 				
 				@Override

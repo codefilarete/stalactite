@@ -4,6 +4,7 @@ import org.gama.reflection.PropertyAccessor;
 
 /**
  * @author Guillaume Mary
+ * @param <C> the upgrade value type
  */
 public interface VersioningStrategy<C> {
 	

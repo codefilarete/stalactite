@@ -2,6 +2,7 @@ package org.gama.stalactite.persistence.engine;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import org.gama.lang.Retryer;
 import org.gama.lang.collection.Collections;
@@ -9,10 +10,12 @@ import org.gama.lang.collection.Iterables;
 import org.gama.lang.collection.Maps;
 import org.gama.sql.ConnectionProvider;
 import org.gama.sql.dml.WriteOperation;
+import org.gama.stalactite.persistence.engine.RowCountManager.RowCounter;
 import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
 import org.gama.stalactite.persistence.sql.dml.ColumnParamedSQL;
 import org.gama.stalactite.persistence.sql.dml.DMLGenerator;
 import org.gama.stalactite.persistence.structure.Table;
+import org.gama.stalactite.persistence.structure.Table.Column;
 
 /**
  * Class dedicated to delete statement execution
@@ -21,21 +24,32 @@ import org.gama.stalactite.persistence.structure.Table;
  */
 public class DeleteExecutor<T, I> extends WriteExecutor<T, I> {
 	
+	private RowCountManager rowCountManager = RowCountManager.THROWING_ROW_COUNT_MANAGER;
+	
 	public DeleteExecutor(ClassMappingStrategy<T, I> mappingStrategy, ConnectionProvider connectionProvider,
 						  DMLGenerator dmlGenerator, Retryer writeOperationRetryer,
 						  int batchSize, int inOperatorMaxSize) {
 		super(mappingStrategy, connectionProvider, dmlGenerator, writeOperationRetryer, batchSize, inOperatorMaxSize);
 	}
 	
+	public void setRowCountManager(RowCountManager rowCountManager) {
+		this.rowCountManager = rowCountManager;
+	}
+	
 	public int delete(Iterable<T> iterable) {
 		ColumnParamedSQL deleteStatement = getDmlGenerator().buildDelete(getMappingStrategy().getTargetTable(), getMappingStrategy().getVersionedKeys());
 		WriteOperation<Table.Column> writeOperation = newWriteOperation(deleteStatement, new CurrentConnectionProvider());
 		JDBCBatchingIterator<T> jdbcBatchingIterator = new JDBCBatchingIterator<>(iterable, writeOperation, getBatchSize());
+		RowCounter rowCounter = new RowCounter();
 		while(jdbcBatchingIterator.hasNext()) {
 			T t = jdbcBatchingIterator.next();
-			writeOperation.addBatch(getMappingStrategy().getVersionedKeyValues(t));
+			Map<Column, Object> versionedKeyValues = getMappingStrategy().getVersionedKeyValues(t);
+			writeOperation.addBatch(versionedKeyValues);
+			rowCounter.add(versionedKeyValues);
 		}
-		return jdbcBatchingIterator.getUpdatedRowCount();
+		int updatedRowCount = jdbcBatchingIterator.getUpdatedRowCount();
+		rowCountManager.checkRowCount(rowCounter, updatedRowCount);
+		return updatedRowCount;
 	}
 	
 	public int deleteRoughly(Iterable<T> iterable) {

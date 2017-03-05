@@ -41,6 +41,7 @@ public class DeleteExecutorTest extends AbstractDMLExecutorTest {
 	
 	@Test
 	public void testDelete_multiple() throws Exception {
+		testInstance.setRowCountManager(RowCountManager.NOOP_ROW_COUNT_MANAGER);
 		testInstance.delete(Arrays.asList(new Toto(1, 17, 23), new Toto(2, 29, 31), new Toto(3, 37, 41), new Toto(4, 43, 53)));
 		assertEquals(Arrays.asList("delete from Toto where a = ?"), dataSet.statementArgCaptor.getAllValues());
 		verify(dataSet.preparedStatement, times(4)).addBatch();

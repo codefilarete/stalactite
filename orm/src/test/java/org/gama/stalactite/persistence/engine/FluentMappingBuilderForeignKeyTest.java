@@ -76,7 +76,7 @@ public class FluentMappingBuilderForeignKeyTest {
 		Persister<Country, Identifier<Long>> countryPersister = FluentMappingBuilder.from(Country.class,
 				(Class<Identifier<Long>>) (Class) PersistedIdentifier.class)
 				// setting a foreign key naming strategy to be tested
-				.foreignKeyNamingPolicy(ForeignKeyNamingStrategy.DEFAULT)
+				.foreignKeyNamingStrategy(ForeignKeyNamingStrategy.DEFAULT)
 				.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.add(Country::getName)
 				.add(Country::getDescription)

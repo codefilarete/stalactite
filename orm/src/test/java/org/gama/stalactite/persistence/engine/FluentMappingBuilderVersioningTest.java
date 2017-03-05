@@ -25,6 +25,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.junit.Assert.assertEquals;
 
 /**
@@ -76,7 +77,7 @@ public class FluentMappingBuilderVersioningTest {
 		FluentMappingBuilder.from(Country.class,
 				(Class<Identifier<Long>>) (Class) PersistedIdentifier.class)
 				// setting a foreign key naming strategy to be tested
-				.foreignKeyNamingPolicy(ForeignKeyNamingStrategy.DEFAULT)
+				.foreignKeyNamingStrategy(ForeignKeyNamingStrategy.DEFAULT)
 				.versionedBy(Country::getVersion, new IntSequence())
 				.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.add(Country::getName)
@@ -93,7 +94,7 @@ public class FluentMappingBuilderVersioningTest {
 		Persister<Country, Identifier<Long>> countryPersister = FluentMappingBuilder.from(Country.class,
 				(Class<Identifier<Long>>) (Class) PersistedIdentifier.class)
 				// setting a foreign key naming strategy to be tested
-				.foreignKeyNamingPolicy(ForeignKeyNamingStrategy.DEFAULT)
+				.foreignKeyNamingStrategy(ForeignKeyNamingStrategy.DEFAULT)
 				.versionedBy(Country::getVersion, new IntSequence())
 				.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.add(Country::getName)
@@ -139,7 +140,7 @@ public class FluentMappingBuilderVersioningTest {
 		Persister<Country, Identifier<Long>> countryPersister = FluentMappingBuilder.from(Country.class,
 				(Class<Identifier<Long>>) (Class) PersistedIdentifier.class)
 				// setting a foreign key naming strategy to be tested
-				.foreignKeyNamingPolicy(ForeignKeyNamingStrategy.DEFAULT)
+				.foreignKeyNamingStrategy(ForeignKeyNamingStrategy.DEFAULT)
 				.versionedBy(Country::getVersion, new IntSequence())
 				.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.add(Country::getName)
@@ -164,7 +165,8 @@ public class FluentMappingBuilderVersioningTest {
 		// the update must fail because the updated object is out of sync
 		dummyCountryClone.setName("Tata");
 		// the following should go wrong since version is not up to date on the clone
-		assertEquals(0, countryPersister.update(dummyCountryClone, dummyCountry, true));
+		assertThatExceptionOfType(StaleObjectExcepion.class).isThrownBy(() -> countryPersister.update(dummyCountryClone, dummyCountry, true));
+//		assertEquals(0, countryPersister.update(dummyCountryClone, dummyCountry, true));
 		// version is not reverted because rollback wasn't invoked 
 		assertEquals(1, dummyCountryClone.getVersion());
 		// ... but it is when we rollback

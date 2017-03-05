@@ -19,6 +19,7 @@ import org.gama.reflection.PropertyAccessor;
 import org.gama.sql.binder.ParameterBinder;
 import org.gama.stalactite.persistence.engine.InMemoryCounterIdentifierGenerator;
 import org.gama.stalactite.persistence.engine.Persister;
+import org.gama.stalactite.persistence.engine.RowCountManager;
 import org.gama.stalactite.persistence.engine.listening.NoopDeleteListener;
 import org.gama.stalactite.persistence.engine.listening.NoopDeleteRoughlyListener;
 import org.gama.stalactite.persistence.engine.listening.NoopInsertListener;
@@ -66,6 +67,7 @@ public class JoinedTablesPersisterTest {
 	private Table totoClassTable1, totoClassTable2;
 	private Column leftJoinColumn;
 	private Column rightJoinColumn;
+	private Persister<Toto, StatefullIdentifier<Integer>> persister2;
 	
 	@Before
 	public void setUp() throws SQLException {
@@ -114,7 +116,7 @@ public class JoinedTablesPersisterTest {
 		BeforeInsertIdentifierManager<Toto, StatefullIdentifier<Integer>> beforeInsertIdentifierManager = new BeforeInsertIdentifierManager<>(
 				IdMappingStrategy.toIdAccessor(identifierAccessor),
 				() -> new PersistableIdentifier<>(identifierGenerator.next()),
-				(Class) StatefullIdentifier.class);
+				(Class<StatefullIdentifier<Integer>>) (Class) StatefullIdentifier.class);
 		totoClassMappingStrategy_ontoTable1 = new ClassMappingStrategy<>(Toto.class, totoClassTable1,
 				totoClassMapping1, identifierAccessor, beforeInsertIdentifierManager);
 		totoClassMappingStrategy2_ontoTable2 = new ClassMappingStrategy<>(Toto.class, totoClassTable2,
@@ -161,35 +163,36 @@ public class JoinedTablesPersisterTest {
 		when(dataSource.getConnection()).thenReturn(connection);
 		transactionManager.setDataSource(dataSource);
 		testInstance = new JoinedTablesPersister<>(totoClassMappingStrategy_ontoTable1, dialect, transactionManager, 3);
-		Persister<Toto, StatefullIdentifier<Integer>> persister = new Persister<>(totoClassMappingStrategy2_ontoTable2, dialect, () -> connection, 3);
-		testInstance.addPersister(JoinedStrategiesSelect.FIRST_STRATEGY_NAME, persister,
+		// we add a copier onto a another table
+		persister2 = new Persister<>(totoClassMappingStrategy2_ontoTable2, dialect, () -> connection, 3);
+		testInstance.addPersister(JoinedStrategiesSelect.FIRST_STRATEGY_NAME, persister2,
 				null, leftJoinColumn, rightJoinColumn, false);
 		testInstance.getPersisterListener().addInsertListener(new NoopInsertListener<Toto>() {
 			@Override
 			public void afterInsert(Iterable<Toto> iterables) {
 				// since we only want a replicate of totos in table2, we only need to return them
-				persister.insert(iterables);
+				persister2.insert(iterables);
 			}
 		});
 		testInstance.getPersisterListener().addUpdateRouglyListener(new NoopUpdateRoughlyListener<Toto>() {
 			@Override
 			public void afterUpdateRoughly(Iterable<Toto> iterables) {
 				// since we only want a replicate of totos in table2, we only need to return them
-				persister.updateRoughly(iterables);
+				persister2.updateRoughly(iterables);
 			}
 		});
 		testInstance.getPersisterListener().addDeleteListener(new NoopDeleteListener<Toto>() {
 			@Override
 			public void beforeDelete(Iterable<Toto> iterables) {
 				// since we only want a replicate of totos in table2, we only need to return them
-				persister.delete(iterables);
+				persister2.delete(iterables);
 			}
 		});
 		testInstance.getPersisterListener().addDeleteRoughlyListener(new NoopDeleteRoughlyListener<Toto>() {
 			@Override
 			public void beforeDeleteRoughly(Iterable<Toto> iterables) {
 				// since we only want a replicate of totos in table2, we only need to return them
-				persister.deleteRoughly(iterables);
+				persister2.deleteRoughly(iterables);
 			}
 		});
 	}
@@ -275,6 +278,8 @@ public class JoinedTablesPersisterTest {
 	
 	@Test
 	public void testDelete_multiple() throws Exception {
+		testInstance.getDeleteExecutor().setRowCountManager(RowCountManager.NOOP_ROW_COUNT_MANAGER);
+		persister2.getDeleteExecutor().setRowCountManager(RowCountManager.NOOP_ROW_COUNT_MANAGER);
 		testInstance.delete(Arrays.asList(
 				new Toto(1, 17, 23, 117, 123, -117),
 				new Toto(2, 29, 31, 129, 131, -129),
