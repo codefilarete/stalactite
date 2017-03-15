@@ -5,7 +5,9 @@ import java.sql.BatchUpdateException;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
+import org.gama.lang.collection.Maps;
 import org.gama.sql.binder.DefaultParameterBinders;
+import org.gama.sql.result.RowIterator;
 import org.gama.sql.test.HSQLDBInMemoryDataSource;
 import org.gama.stalactite.persistence.engine.FluentMappingBuilder.IdentifierPolicy;
 import org.gama.stalactite.persistence.engine.IFluentMappingBuilder.IFluentMappingBuilderColumnOptions;
@@ -112,6 +114,61 @@ public class FluentMappingBuilderCascadeTest {
 		assertTrue(resultSet.next());
 		resultSet = persistenceContext.getCurrentConnection().createStatement().executeQuery("select id from Person");
 		assertFalse(resultSet.next());
+	}
+	
+	/**
+	 * Thanks to the registering of Identified instances into the ColumnBinderRegistry (cf test preparation) it's possible to have a light relation
+	 * between 2 mappings: kind of OneToOne without any cascade, just column of the relation is inserted/updated.
+	 * Not really an expected feature since it looks like a OneToOne with insert+update cascade (on insert, already persisted instance are not inserted again)
+	 * 
+	 * @throws SQLException
+	 */
+	@Test
+	public void testCascade_lightOneToOne_relationIsPersisted() throws SQLException {
+		// mapping building thantks to fluent API
+		Persister<Country, Identifier<Long>> countryPersister = FluentMappingBuilder.from(Country.class, (Class<Identifier<Long>>) (Class) PersistedIdentifier.class)
+				.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
+				.add(Country::getName)
+				.add(Country::getDescription)
+				.add(Country::getPresident)	// this is not a true relation, it's only for presidentId insert/update
+				.build(persistenceContext);
+		
+		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+		ddlDeployer.deployDDL();
+		
+		LongProvider personIdProvider = new LongProvider(123);
+		Person person = new Person(personIdProvider.giveNewIdentifier());
+		person.setName("France president");
+		personPersister.insert(person);
+		
+		LongProvider countryIdProvider = new LongProvider(456);
+		Country dummyCountry = new Country(countryIdProvider.giveNewIdentifier());
+		dummyCountry.setName("France");
+		dummyCountry.setPresident(person);
+		countryPersister.insert(dummyCountry);
+		
+		// Checking that the country has the tight president in the database
+		ResultSet resultSet = persistenceContext.getCurrentConnection().createStatement().executeQuery(
+				"select count(*) as countryCount from Country where presidentId = " + person.getId().getSurrogate());
+		RowIterator resultSetIterator = new RowIterator(resultSet, Maps.asMap("countryCount", DefaultParameterBinders.INTEGER_PRIMITIVE_BINDER));
+		resultSetIterator.hasNext();
+		assertEquals(1, resultSetIterator.next().get("countryCount"));
+		
+		
+		Country selectedCountry = countryPersister.select(dummyCountry.getId());
+		// update test
+		Person person2 = new Person(personIdProvider.giveNewIdentifier());
+		person2.setName("France president");
+		personPersister.insert(person2);
+		dummyCountry.setPresident(person2);
+		countryPersister.update(dummyCountry, selectedCountry, false);
+		
+		// Checking that the country has changed from president in the database
+		resultSet = persistenceContext.getCurrentConnection().createStatement().executeQuery(
+				"select count(*) as countryCount from Country where presidentId = " + person2.getId().getSurrogate());
+		resultSetIterator = new RowIterator(resultSet, Maps.asMap("countryCount", DefaultParameterBinders.INTEGER_PRIMITIVE_BINDER));
+		resultSetIterator.hasNext();
+		assertEquals(1, resultSetIterator.next().get("countryCount"));
 	}
 	
 	@Test
