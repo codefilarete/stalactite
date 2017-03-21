@@ -3,13 +3,14 @@ package org.gama.sql.dml;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.HashMap;
 import java.util.Map;
 
 import org.gama.lang.Retryer;
 import org.gama.lang.Retryer.RetryException;
 import org.gama.lang.bean.IDelegate;
 import org.gama.lang.exception.Exceptions;
-import org.gama.sql.IConnectionProvider;
+import org.gama.sql.ConnectionProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -31,11 +32,14 @@ public class WriteOperation<ParamType> extends SQLOperation<ParamType> {
 	/** Instance that helps to retry update statements on error, default is no {@link Retryer#NO_RETRY}, should not be null */
 	private final Retryer retryer;
 	
-	public WriteOperation(SQLStatement<ParamType> sqlGenerator, IConnectionProvider connectionProvider) {
+	/** Batched values, mainly for logging, filled when debug is required */
+	private final Map<Integer /* batch count */, Map<ParamType, Object>> batchedValues = new HashMap<>();
+	
+	public WriteOperation(SQLStatement<ParamType> sqlGenerator, ConnectionProvider connectionProvider) {
 		this(sqlGenerator, connectionProvider, Retryer.NO_RETRY);
 	}
 	
-	public WriteOperation(SQLStatement<ParamType> sqlGenerator, IConnectionProvider connectionProvider, Retryer retryer) {
+	public WriteOperation(SQLStatement<ParamType> sqlGenerator, ConnectionProvider connectionProvider, Retryer retryer) {
 		super(sqlGenerator, connectionProvider);
 		this.retryer = retryer;
 	}
@@ -112,10 +116,15 @@ public class WriteOperation<ParamType> extends SQLOperation<ParamType> {
 	
 	private int[] doExecuteBatch() {
 		LOGGER.debug(getSQL());
+		LOGGER.debug("values {}", batchedValues);
 		try {
 			return (int[]) doWithRetry((IDelegate<Object, SQLException>) () -> preparedStatement.executeBatch());
 		} catch (SQLException | RetryException e) {
 			throw new RuntimeException("Error during " + getSQL(), e);
+		} finally {
+			if (LOGGER.isDebugEnabled()) {
+				batchedValues.clear();
+			}
 		}
 	}
 	
@@ -134,6 +143,10 @@ public class WriteOperation<ParamType> extends SQLOperation<ParamType> {
 		setValues(values);
 		applyValuesToEnsuredStatement();
 		batchedStatementCount++;
+		if (LOGGER.isDebugEnabled()) {
+			// we log values only when debug needed to prevent memory consumption
+			batchedValues.put(batchedStatementCount, values);
+		}
 		try {
 			this.preparedStatement.addBatch();
 		} catch (SQLException e) {
