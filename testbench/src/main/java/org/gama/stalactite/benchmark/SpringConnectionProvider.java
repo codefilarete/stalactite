@@ -28,7 +28,7 @@ public class SpringConnectionProvider implements SeparateTransactionExecutor {
 	}
 	
 	@Override
-	public void executeInNewTransaction(final SeparateTransactionExecutor.JdbcOperation jdbcOperation) {
+	public void executeInNewTransaction(SeparateTransactionExecutor.JdbcOperation jdbcOperation) {
 		TransactionTemplate transactionTemplate = new TransactionTemplate(this.transactionManager);
 		transactionTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
 		transactionTemplate.execute(new TransactionCallbackWithoutResult() {
