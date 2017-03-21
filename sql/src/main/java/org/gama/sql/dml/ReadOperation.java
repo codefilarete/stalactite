@@ -6,7 +6,7 @@ import java.sql.SQLException;
 import java.util.List;
 
 import org.gama.sql.ConnectionProvider;
-import org.gama.sql.result.ResultSetIterator;
+import org.gama.sql.result.ResultSetTransformer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -24,7 +24,7 @@ public class ReadOperation<ParamType> extends SQLOperation<ParamType> {
 	}
 	
 	/**
-	 * Execute the statement, wraps {@link PreparedStatement#executeQuery()}
+	 * Executes the statement, wraps {@link PreparedStatement#executeQuery()}
 	 *
 	 * @return the {@link ResultSet} from the database
 	 */
@@ -40,13 +40,12 @@ public class ReadOperation<ParamType> extends SQLOperation<ParamType> {
 	}
 	
 	/**
-	 * Execute the statement and return the transformed result by resultSetIterator
+	 * Executes the statement and returns the transformed result
 	 *
 	 * @return the transformed result by resultSetIterator
 	 */
-	public <T> List<T> execute(ResultSetIterator<T> resultSetIterator) {
-		resultSetIterator.setResultSet(execute());
-		return resultSetIterator.convert();
+	public <T> List<T> execute(ResultSetTransformer<T> resultSetTransformer) throws SQLException {
+		return resultSetTransformer.convert(execute());
 	}
 	
 }
