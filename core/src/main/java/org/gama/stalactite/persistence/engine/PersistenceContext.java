@@ -6,9 +6,9 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
-import org.gama.lang.bean.IFactory;
 import org.gama.lang.collection.ValueFactoryHashMap;
 import org.gama.sql.ConnectionProvider;
+import org.gama.sql.binder.ParameterBinderProvider;
 import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
 import org.gama.stalactite.persistence.sql.Dialect;
 
@@ -20,12 +20,7 @@ import org.gama.stalactite.persistence.sql.Dialect;
 public class PersistenceContext {
 	
 	private int jdbcBatchSize = 100;
-	private final Map<Class<?>, Persister> persisterCache = new ValueFactoryHashMap<>(10, new IFactory<Class<?>, Persister>() {
-		@Override
-		public Persister createInstance(Class<?> input) {
-			return newPersister(input);
-		}
-	});
+	private final Map<Class<?>, Persister> persisterCache = new ValueFactoryHashMap<>(10, input -> newPersister(input));
 	
 	private Dialect dialect;
 	private ConnectionProvider connectionProvider;
@@ -112,5 +107,9 @@ public class PersistenceContext {
 	
 	public void setJDBCBatchSize(int jdbcBatchSize) {
 		this.jdbcBatchSize = jdbcBatchSize;
+	}
+	
+	public <T> Query<T> newQuery(CharSequence sql, Class<T> beanType) {
+		return new Query<>(beanType, sql, ParameterBinderProvider.fromMap(getDialect().getColumnBinderRegistry().getParameterBinders()));
 	}
 }

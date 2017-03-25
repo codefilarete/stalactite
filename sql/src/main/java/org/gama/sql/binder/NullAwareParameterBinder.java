@@ -13,6 +13,21 @@ import org.gama.sql.NullAwarePreparedStatementWriter;
  */
 public class NullAwareParameterBinder<T> implements ParameterBinder<T> {
 	
+	/**
+	 * A particular binder that will always set null values onto SQL {@link java.sql.PreparedStatement}
+	 */
+	public static final ParameterBinder ALWAYS_SET_NULL_INSTANCE = new ParameterBinder() {
+		@Override
+		public void set(PreparedStatement preparedStatement, int valueIndex, Object value) throws SQLException {
+			preparedStatement.setObject(valueIndex, null);
+		}
+		
+		@Override
+		public Object get(ResultSet resultSet, String columnName) throws SQLException {
+			throw new UnsupportedOperationException("This code should never be called because it's only aimed at writing parameters, not reading");
+		}
+	};
+	
 	private final NullAwareResultSetReader<T> nullAwareResultSetReader;
 	
 	private final NullAwarePreparedStatementWriter<T> nullAwarePreparedStatementWriter;
