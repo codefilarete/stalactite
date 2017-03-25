@@ -3,10 +3,8 @@ package org.gama.sql.dml;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.List;
 
 import org.gama.sql.ConnectionProvider;
-import org.gama.sql.result.ResultSetTransformer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -38,14 +36,4 @@ public class ReadOperation<ParamType> extends SQLOperation<ParamType> {
 			throw new RuntimeException("Error running \"" + getSQL() + "\"", e);
 		}
 	}
-	
-	/**
-	 * Executes the statement and returns the transformed result
-	 *
-	 * @return the transformed result by resultSetIterator
-	 */
-	public <T> List<T> execute(ResultSetTransformer<T> resultSetTransformer) throws SQLException {
-		return resultSetTransformer.convert(execute());
-	}
-	
 }

@@ -34,8 +34,8 @@ public abstract class ExpandableStatement<ParamType> extends SQLStatement<ParamT
 	protected void doApplyValue(ParamType paramType, Object value, PreparedStatement statement) {
 		ParameterBinder<Object> parameterBinder = getParameterBinder(paramType);
 		if (parameterBinder == null) {
-			throw new IllegalArgumentException("Can't find binder for parameter " + getParameterName(paramType)
-					+ " of type " + (value == null ? "unkown" : value.getClass().getName())
+			throw new IllegalArgumentException("Can't find binder for parameter \"" + getParameterName(paramType) +"\""
+					+ " of type " + (value == null ? "unknown" : value.getClass().getName())
 					+ " (value = " + value + ")"
 					+ " on sql : " + getSQL());
 		}

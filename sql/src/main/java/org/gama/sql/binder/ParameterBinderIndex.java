@@ -5,6 +5,10 @@ import java.util.Map.Entry;
 import java.util.Set;
 
 /**
+ * A contract for a {@link ParameterBinder} index.
+ * The difference with {@link ParameterBinderProvider} is that an index can be queried for its whole keys and content, hence permiting optimization
+ * for "massive" operation such as iterating over all the {@link ParameterBinder}.
+ * 
  * @author Guillaume Mary
  */
 public interface ParameterBinderIndex<K> extends ParameterBinderProvider<K> {

@@ -14,11 +14,11 @@ import org.gama.stalactite.persistence.structure.Table.Column;
 import org.gama.stalactite.persistence.structure.Table.SizedColumn;
 
 /**
- * Mapping between Java classes and Sql Types.
- * Near Hibernate Dialect::register types principles, so no SQL types are defined here : it's only a storage and finding tool.
- * 
- * @see #getTypeName(Class)
+ * A storage of mapping between Java classes and Sql Types. Aimed at generating schema, not reading nor writing to ResultSet/Statement.
+ * Near Hibernate Dialect::register types principles.
+ *
  * @author Guillaume Mary
+ * @see #getTypeName(Class)
  */
 public class JavaTypeToSqlTypeMapping {
 	
@@ -119,7 +119,7 @@ public class JavaTypeToSqlTypeMapping {
 	}
 	
 	/**
-	 * Gives the learest SQL type of a Java class according to the expected size
+	 * Gives the nearest SQL type of a Java class according to the expected size
 	 *
 	 * @param javaType a Java class
 	 * @return the SQL type for the given column

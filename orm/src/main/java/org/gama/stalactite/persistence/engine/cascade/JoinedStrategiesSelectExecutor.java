@@ -83,7 +83,6 @@ public class JoinedStrategiesSelectExecutor<T, I> {
 		
 		SelectQuery selectQuery = joinedStrategiesSelect.buildSelectQuery();
 		SelectQueryBuilder queryBuilder = new SelectQueryBuilder(selectQuery);
-		queryBuilder.toSQL();
 		
 		// Use same Connection for all operations
 		ConnectionProvider connectionProvider = new SimpleConnectionProvider(getConnectionProvider().getCurrentConnection());

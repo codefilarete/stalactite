@@ -10,6 +10,7 @@ import java.util.Set;
 
 import org.gama.sql.binder.ParameterBinder;
 import org.gama.sql.binder.ParameterBinderIndex;
+import org.gama.sql.binder.ParameterBinderProvider;
 
 /**
  * Parent class that defines methods for applying values to {@link PreparedStatement} that is supposed to be built
@@ -23,7 +24,7 @@ public abstract class SQLStatement<ParamType> {
 	
 	protected final Map<ParamType, Object> values = new HashMap<>(5);
 	
-	protected final ParameterBinderIndex<ParamType> parameterBinderProvider;
+	protected final ParameterBinderProvider<ParamType> parameterBinderProvider;
 	protected final Set<ParamType> indexes;
 	
 	protected SQLStatement(Map<ParamType, ParameterBinder> parameterBinders) {

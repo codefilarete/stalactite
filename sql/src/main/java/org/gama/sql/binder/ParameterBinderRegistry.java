@@ -8,6 +8,11 @@ import java.util.WeakHashMap;
 
 /**
  * Registry of {@link ParameterBinder}s according to their binding class.
+ * <br>
+ * NB: this class can't implement {@link ParameterBinderIndex} because it already defines {@link #getBinder(Class)} with generified Class type.
+ * This disallows to have a none generified version of it, which is the default given while implementing {@link ParameterBinderIndex}&lt;Class&gt;
+ * Moreover it would disallow also children classes to implement another type of key as index since classes can't implement twice an interface
+ * with 2 differents generic type due to type erasure.
  *
  * @author Guillaume Mary
  */

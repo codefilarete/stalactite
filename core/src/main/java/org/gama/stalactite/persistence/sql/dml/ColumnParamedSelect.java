@@ -7,7 +7,7 @@ import org.gama.sql.binder.ParameterBinderIndex;
 import org.gama.stalactite.persistence.structure.Table.Column;
 
 /**
- * Specialization of {@link ColumnParamedSQL} for select statement: gives access to selected columns thru {@link #getSelectParameterBinders()}
+ * Specialization of {@link ColumnParamedSQL} for select statement: gives access to selected columns through {@link #getSelectParameterBinders()}
  * 
  * @author Guillaume Mary
  */

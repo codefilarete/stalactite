@@ -29,10 +29,23 @@ public class Dialect {
 	
 	private DMLGenerator dmlGenerator;
 	
+	/**
+	 * Creates a default dialect, with a {@link DefaultTypeMapping} and a default {@link ColumnBinderRegistry}
+	 */
+	public Dialect() {
+		this(new DefaultTypeMapping());
+	}
+	
+	/**
+	 * Creates a default dialect, with a default {@link ColumnBinderRegistry}
+	 */
 	public Dialect(JavaTypeToSqlTypeMapping javaTypeToSqlTypeMapping) {
 		this(javaTypeToSqlTypeMapping, new ColumnBinderRegistry());
 	}
 	
+	/**
+	 * Creates a given {@link JavaTypeToSqlTypeMapping} and {@link ColumnBinderRegistry}
+	 */
 	public Dialect(JavaTypeToSqlTypeMapping javaTypeToSqlTypeMapping, ColumnBinderRegistry columnBinderRegistry) {
 		this.javaTypeToSqlTypeMapping = javaTypeToSqlTypeMapping;
 		this.columnBinderRegistry = columnBinderRegistry;

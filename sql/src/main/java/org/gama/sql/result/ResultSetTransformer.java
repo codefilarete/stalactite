@@ -107,7 +107,8 @@ public class ResultSetTransformer<T> implements IConverter<ResultSet, List<T>, S
 	
 	@Override
 	public List<T> convert(ResultSet resultSet) throws SQLException {
-		ResultSetIterator<T> resultSetIterator = new ResultSetIterator<T>() {
+		// We convert the ResultSet with an iteration over a ResultSetIterator that uses the transform(ResultSet) method
+		ResultSetIterator<T> resultSetIterator = new ResultSetIterator<T>(resultSet) {
 			@Override
 			public T convert(ResultSet resultSet) throws SQLException {
 				return ResultSetTransformer.this.transform(resultSet);
@@ -131,6 +132,12 @@ public class ResultSetTransformer<T> implements IConverter<ResultSet, List<T>, S
 		return currentRowBean;
 	}
 	
+	/**
+	 * A relation between a property mutator (setter) and the provider of the bean to be given as the setter argument
+	 * 
+	 * @param <K>
+	 * @param <V>
+	 */
 	public static class Relation<K, V> implements ThrowingBiConsumer<K, ResultSet, SQLException> {
 		
 		private final BiConsumer<K, V> relationFixer;
@@ -144,7 +151,9 @@ public class ResultSetTransformer<T> implements IConverter<ResultSet, List<T>, S
 		
 		@Override
 		public void accept(K bean, ResultSet resultSet) throws SQLException {
+			// getting the bean
 			V value = transformer.transform(resultSet);
+			// applying it to the setter
 			relationFixer.accept(bean, value);
 		}
 	}

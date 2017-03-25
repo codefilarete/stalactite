@@ -3,6 +3,8 @@ package org.gama.sql.binder;
 import java.util.Map;
 
 /**
+ * Simple contract for giving a {@link ParameterBinder} thanks to a certain kind of key.
+ * 
  * @author Guillaume Mary
  */
 @FunctionalInterface
