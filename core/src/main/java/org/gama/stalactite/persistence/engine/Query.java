@@ -108,7 +108,7 @@ public class Query<T> {
 	 * @return a {@link List} filled by the instances built
 	 * @throws SQLException in case of bad reading during the conversion
 	 */
-	public List<T> execute(ConnectionProvider connectionProvider) throws SQLException {
+	public List<T> execute(ConnectionProvider connectionProvider) {
 		if (beanCreationDefinition == null) {
 			throw new IllegalArgumentException("Bean creation is not defined, use mapKey(..)");
 		}

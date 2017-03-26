@@ -106,7 +106,7 @@ public class ResultSetTransformer<T> implements IConverter<ResultSet, List<T>, S
 	}
 	
 	@Override
-	public List<T> convert(ResultSet resultSet) throws SQLException {
+	public List<T> convert(ResultSet resultSet) {
 		// We convert the ResultSet with an iteration over a ResultSetIterator that uses the transform(ResultSet) method
 		ResultSetIterator<T> resultSetIterator = new ResultSetIterator<T>(resultSet) {
 			@Override
