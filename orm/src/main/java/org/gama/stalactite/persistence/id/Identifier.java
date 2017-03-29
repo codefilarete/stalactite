@@ -4,7 +4,6 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
-import org.gama.sql.binder.LambdaParameterBinder;
 import org.gama.sql.binder.NullAwareParameterBinder;
 import org.gama.sql.binder.ParameterBinder;
 import org.gama.stalactite.persistence.id.manager.StatefullIdentifier;
@@ -22,21 +21,21 @@ public interface Identifier<T> extends StatefullIdentifier<T> {
 	
 	/**
 	 * Gives a {@link ParameterBinder} for a generic {@link Identifier}
-	 * @param lambdaParameterBinder the surrogate {@link ParameterBinder} (can be for primitive type because null is already handled by this method result)
+	 * @param parameterBinder the surrogate {@link ParameterBinder} (can be for primitive type because null is already handled by this method result)
 	 * @param <I> the type of the surrogate {@link Identifier}
-	 * @return a new {@link ParameterBinder} which will wrap/unwrap the result of lambdaParameterBinder
+	 * @return a new {@link ParameterBinder} which will wrap/unwrap the result of parameterBinder
 	 * @see org.gama.sql.binder.DefaultParameterBinders
 	 */
-	static <I> ParameterBinder<StatefullIdentifier<I>> identifierBinder(LambdaParameterBinder<I> lambdaParameterBinder) {
+	static <I> ParameterBinder<StatefullIdentifier<I>> identifierBinder(ParameterBinder<I> parameterBinder) {
 		return new NullAwareParameterBinder<>(new ParameterBinder<StatefullIdentifier<I>>() {
 			@Override
 			public StatefullIdentifier<I> get(ResultSet resultSet, String columnName) throws SQLException {
-				return new PersistedIdentifier<>(lambdaParameterBinder.get(resultSet, columnName));
+				return new PersistedIdentifier<>(parameterBinder.get(resultSet, columnName));
 			}
 			
 			@Override
 			public void set(PreparedStatement statement, int valueIndex, StatefullIdentifier<I> value) throws SQLException {
-				lambdaParameterBinder.set(statement, valueIndex, value.getSurrogate());
+				parameterBinder.set(statement, valueIndex, value.getSurrogate());
 			}
 		});
 	}
