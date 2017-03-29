@@ -161,7 +161,7 @@ public class FluentMappingBuilder<T extends Identified, I extends StatefullIdent
 					newMapping.primaryKey();
 					break;
 				default:
-					throw new NotYetSupportedOperationException();
+					throw new NotYetSupportedOperationException(identifierPolicy + " is not yet supported");
 			}
 			FluentMappingBuilder.this.identifierAccessor = (PropertyAccessor<T, I>) newMapping.getFunction();
 			// we could return null because the decorator return embedder.this for us, but I find cleaner to do so (if we change our mind)
