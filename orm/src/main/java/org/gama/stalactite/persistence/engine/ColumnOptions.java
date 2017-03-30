@@ -7,7 +7,7 @@ import org.gama.stalactite.persistence.id.manager.StatefullIdentifier;
 /**
  * @author Guillaume Mary
  */
-interface ColumnOptions<T extends Identified, I extends StatefullIdentifier> {
+public interface ColumnOptions<T extends Identified, I extends StatefullIdentifier> {
 	
 	IFluentMappingBuilder<T, I> identifier(IdentifierPolicy identifierPolicy);
 }
