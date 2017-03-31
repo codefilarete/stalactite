@@ -1,5 +1,6 @@
 package org.gama.stalactite.persistence.sql;
 
+import java.time.LocalDateTime;
 import java.util.Date;
 
 import org.gama.stalactite.persistence.sql.ddl.JavaTypeToSqlTypeMapping;
@@ -17,6 +18,7 @@ import org.gama.stalactite.persistence.sql.ddl.JavaTypeToSqlTypeMapping;
  * <tr><td>Long</td><td>bigint</td></trt>
  * <tr><td>Integer</td><td>integer</td></trt>
  * <tr><td>Date</td><td>timestamp</td></trt>
+ * <tr><td>LocalDateTime</td><td>timestamp</td></trt>
  * <tr><td>String</td><td>varchar</td></trt>
  * <tr><td>String with size</td><td>varchar(size)</td></trt>
  * </table>
@@ -38,6 +40,7 @@ public class DefaultTypeMapping extends JavaTypeToSqlTypeMapping {
 		put(Integer.class, "integer");
 		put(Integer.TYPE, "integer");
 		put(Date.class, "timestamp");
+		put(LocalDateTime.class, "timestamp");
 		put(String.class, "varchar");
 		put(String.class, 16383, "varchar($l)");
 	}

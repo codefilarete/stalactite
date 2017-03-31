@@ -6,9 +6,15 @@ package org.gama.stalactite.persistence.sql;
 public class HSQLDBDialect extends Dialect { 
 	
 	public HSQLDBDialect() {
-		super(new DefaultTypeMapping() {{
-			// pour éviter "length must be specified in type definition: VARCHAR"
+		super(new HSQLDBTypeMapping());
+	}
+	
+	public static class HSQLDBTypeMapping extends DefaultTypeMapping {
+		
+		public HSQLDBTypeMapping() {
+			super();
+			// to prevent "length must be specified in type definition: VARCHAR"
 			put(String.class, "varchar(255)");
-		}});
+		}
 	}
 }

@@ -1,6 +1,7 @@
 package org.gama.stalactite.persistence.sql;
 
 import java.sql.SQLException;
+import java.time.LocalDateTime;
 import java.util.Date;
 
 import org.gama.lang.Retryer;
@@ -58,24 +59,15 @@ public class MySQLDialect extends Dialect {
 		return ddlSchemaGenerator;
 	}
 	
-	public static class MySQLTypeMapping extends JavaTypeToSqlTypeMapping {
+	public static class MySQLTypeMapping extends DefaultTypeMapping {
 		
 		public MySQLTypeMapping() {
 			super();
-			put(Boolean.class, "bit");
-			put(Boolean.TYPE, "bit");
-			put(Double.class, "double");
-			put(Double.TYPE, "double");
-			put(Float.class, "float");
-			put(Float.TYPE, "float");
-			put(Long.class, "bigint");
-			put(Long.TYPE, "bigint");
 			put(Integer.class, "int");
 			put(Integer.TYPE, "int");
 			put(Date.class, "timestamp null");	// null allows nullable in MySQL, else current time is inserted by default
-//			put(Date.class, "datetime null");	// null allows nullable in MySQL, else current time is inserted by default
+			put(LocalDateTime.class, "timestamp null");
 			put(String.class, "varchar(255)");
-			put(String.class, 16383, "varchar($l)");
 		}
 	}
 }
