@@ -4,6 +4,7 @@ import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.Collection;
+import java.util.List;
 import java.util.stream.Collectors;
 
 import org.gama.sql.ConnectionProvider;
@@ -66,15 +67,23 @@ public class DDLDeployer {
 	}
 	
 	public void deployDDL() throws SQLException {
-		for (String sql : getDdlSchemaGenerator().getCreationScripts()) {
+		for (String sql : getCreationScripts()) {
 			execute(sql);
 		}
 	}
 	
+	public List<String> getCreationScripts() {
+		return getDdlSchemaGenerator().getCreationScripts();
+	}
+	
 	public void dropDDL() throws SQLException {
-		for (String sql : getDdlSchemaGenerator().getDropScripts()) {
+		for (String sql : getDropScripts()) {
 			execute(sql);
 		}
+	}
+	
+	public List<String> getDropScripts() {
+		return getDdlSchemaGenerator().getDropScripts();
 	}
 	
 	protected void execute(String sql) throws SQLException {
