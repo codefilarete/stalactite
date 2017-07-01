@@ -10,6 +10,7 @@ import java.util.Map;
 import org.gama.lang.bean.FieldIterator;
 import org.gama.lang.collection.Iterables;
 import org.gama.lang.collection.Iterables.Filter;
+import org.gama.reflection.Accessors;
 import org.gama.reflection.PropertyAccessor;
 import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.persistence.structure.Table.Column;
@@ -42,7 +43,7 @@ public class PersistentFieldHarverster {
 			if (column == null) {
 				column = newColumn(targetTable, field);
 			} // else column already exists, skip it to avoid duplicate column (even if type is different)
-			fieldToColumn.put(PropertyAccessor.forProperty(field), column);
+			fieldToColumn.put(Accessors.forProperty(field), column);
 			nameTofield.put(field.getName(), field);
 		}
 		return fieldToColumn;

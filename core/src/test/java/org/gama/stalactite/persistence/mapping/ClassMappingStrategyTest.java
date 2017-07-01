@@ -14,6 +14,7 @@ import com.tngtech.java.junit.dataprovider.UseDataProvider;
 import org.gama.lang.Reflections;
 import org.gama.lang.collection.Arrays;
 import org.gama.lang.collection.Maps;
+import org.gama.reflection.Accessors;
 import org.gama.reflection.PropertyAccessor;
 import org.gama.stalactite.persistence.id.manager.AlreadyAssignedIdentifierManager;
 import org.gama.stalactite.persistence.sql.dml.PreparedUpdate.UpwhereColumn;
@@ -61,10 +62,10 @@ public class ClassMappingStrategyTest {
 		colC = columnMapOnName.get("c");
 		
 		// Remplacement du mapping par défaut pour la List (attribut myListField) par une strategy adhoc
-		myListField = PropertyAccessor.forProperty(Reflections.findField(Toto.class, "myList"));
+		myListField = Accessors.forProperty(Reflections.findField(Toto.class, "myList"));
 		classMapping.remove(myListField);
 		// Remplacement du mapping par défaut pour la Map (attribut myMapField) par une strategy adhoc
-		myMapField = PropertyAccessor.forProperty(Reflections.findField(Toto.class, "myMap"));
+		myMapField = Accessors.forProperty(Reflections.findField(Toto.class, "myMap"));
 		classMapping.remove(myMapField);
 		
 		setUpTestInstance();
@@ -76,7 +77,7 @@ public class ClassMappingStrategyTest {
 		testInstance = new ClassMappingStrategy<>(Toto.class,
 				targetTable,
 				classMapping,
-				PropertyAccessor.forProperty(persistentFieldHarverster.getField("a")),
+				Accessors.forProperty(persistentFieldHarverster.getField("a")),
 				// Basic mapping to prevent NullPointerException, even if it's not the goal of our test
 				new AlreadyAssignedIdentifierManager<>(Integer.class));
 		

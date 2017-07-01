@@ -14,6 +14,7 @@ import org.gama.lang.Retryer;
 import org.gama.lang.collection.Arrays;
 import org.gama.lang.collection.Iterables;
 import org.gama.lang.collection.Maps;
+import org.gama.reflection.Accessors;
 import org.gama.reflection.PropertyAccessor;
 import org.gama.sql.test.DerbyInMemoryDataSource;
 import org.gama.sql.test.HSQLDBInMemoryDataSource;
@@ -56,7 +57,7 @@ public class PersisterDatabaseTest {
 		columns.get("a").setPrimaryKey(true);
 		
 		identifierGenerator = new InMemoryCounterIdentifierGenerator();
-		PropertyAccessor<Toto, Integer> identifierAccessor = PropertyAccessor.forProperty(persistentFieldHarverster.getField("a"));
+		PropertyAccessor<Toto, Integer> identifierAccessor = Accessors.forProperty(persistentFieldHarverster.getField("a"));
 		totoClassMappingStrategy = new ClassMappingStrategy<>(Toto.class, totoClassTable,
 				totoClassMapping, identifierAccessor, new BeforeInsertIdentifierManager<>(IdMappingStrategy.toIdAccessor(identifierAccessor),
 				identifierGenerator, Integer.class));

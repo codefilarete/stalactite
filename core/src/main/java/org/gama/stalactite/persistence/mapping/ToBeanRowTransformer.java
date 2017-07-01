@@ -11,8 +11,8 @@ import org.gama.lang.Reflections;
 import org.gama.lang.bean.FieldIterator;
 import org.gama.lang.collection.Iterables;
 import org.gama.lang.collection.Iterables.ForEach;
+import org.gama.reflection.Accessors;
 import org.gama.reflection.IMutator;
-import org.gama.reflection.PropertyAccessor;
 import org.gama.sql.result.Row;
 import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.persistence.structure.Table.Column;
@@ -47,7 +47,7 @@ public class ToBeanRowTransformer<T> extends AbstractTransformer<T> {
 						throw new UnsupportedOperationException("Missing column for field " + field.getDeclaringClass().getName() + "." + field.getName());
 					}
 				} else {
-					keyToField.put(new ColumnRowKey(column), PropertyAccessor.mutator(field.getDeclaringClass(), field.getName()));
+					keyToField.put(new ColumnRowKey(column), Accessors.mutator(field.getDeclaringClass(), field.getName()));
 				}
 				return null;
 			}

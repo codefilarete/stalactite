@@ -13,6 +13,7 @@ import java.util.Set;
 import java.util.function.BiFunction;
 
 import org.gama.lang.function.Sequence;
+import org.gama.reflection.Accessors;
 import org.gama.reflection.PropertyAccessor;
 import org.gama.stalactite.persistence.id.manager.BeforeInsertIdentifierManager;
 import org.gama.stalactite.persistence.id.manager.IdentifierInsertionManager;
@@ -121,7 +122,7 @@ public abstract class AbstractDMLExecutorTest {
 			PersistenceConfiguration toReturn = new PersistenceConfiguration();
 			
 			TableAndClass<T> tableAndClass = map(mappedClass, tableName);
-			PropertyAccessor<T, I> primaryKeyField = PropertyAccessor.forProperty(tableAndClass.configurePrimaryKey(primaryKeyFieldName));
+			PropertyAccessor<T, I> primaryKeyField = Accessors.forProperty(tableAndClass.configurePrimaryKey(primaryKeyFieldName));
 			
 			toReturn.classMappingStrategy = classMappingStrategyBuilder.apply(tableAndClass, primaryKeyField);
 			toReturn.targetTable = tableAndClass.targetTable;
@@ -150,7 +151,7 @@ public abstract class AbstractDMLExecutorTest {
 			
 			protected Field configurePrimaryKey(String primaryKeyFieldName) {
 				Field primaryKeyField = persistentFieldHarverster.getField(primaryKeyFieldName);
-				Column primaryKey = persistentFieldHarverster.getColumn(PropertyAccessor.forProperty(primaryKeyField));
+				Column primaryKey = persistentFieldHarverster.getColumn(Accessors.forProperty(primaryKeyField));
 				primaryKey.setPrimaryKey(true);
 				return primaryKeyField;
 			}

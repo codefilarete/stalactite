@@ -7,6 +7,7 @@ import com.tngtech.java.junit.dataprovider.DataProvider;
 import com.tngtech.java.junit.dataprovider.DataProviderRunner;
 import com.tngtech.java.junit.dataprovider.UseDataProvider;
 import org.gama.lang.collection.Maps;
+import org.gama.reflection.Accessors;
 import org.gama.reflection.PropertyAccessor;
 import org.gama.sql.result.Row;
 import org.gama.stalactite.persistence.sql.dml.PreparedUpdate.UpwhereColumn;
@@ -37,9 +38,9 @@ public class EmbeddedBeanMappingStrategyTest {
 		colA = targetTable.new Column("a", Integer.class);
 		colB = targetTable.new Column("b", Integer.class);
 		colC = targetTable.new Column("c", Integer.class);
-		classMapping = Maps.asMap((PropertyAccessor) PropertyAccessor.forProperty(Toto.class, "a"), colA)
-				.add(PropertyAccessor.forProperty(Toto.class, "b"), colB)
-				.add(PropertyAccessor.forProperty(Toto.class, "c"), colC);
+		classMapping = Maps.asMap((PropertyAccessor) Accessors.forProperty(Toto.class, "a"), colA)
+				.add(Accessors.forProperty(Toto.class, "b"), colB)
+				.add(Accessors.forProperty(Toto.class, "c"), colC);
 	}
 	
 	private EmbeddedBeanMappingStrategy<Toto> testInstance;

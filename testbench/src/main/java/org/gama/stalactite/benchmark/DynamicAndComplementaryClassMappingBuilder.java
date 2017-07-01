@@ -15,6 +15,7 @@ import java.util.Random;
 import net.bytebuddy.ByteBuddy;
 import net.bytebuddy.dynamic.ClassLoadingStrategy;
 import net.bytebuddy.dynamic.DynamicType.Builder;
+import org.gama.reflection.Accessors;
 import org.gama.reflection.PropertyAccessor;
 import org.gama.stalactite.persistence.engine.SeparateTransactionExecutor;
 import org.gama.stalactite.persistence.id.manager.AlreadyAssignedIdentifierManager;
@@ -64,7 +65,7 @@ public class DynamicAndComplementaryClassMappingBuilder implements IMappingBuild
 		PooledHiLoSequence identifierGenerator = new PooledHiLoSequence(options,
 				PersistenceContexts.getCurrent().getDialect(), (SeparateTransactionExecutor) PersistenceContexts.getCurrent().getConnectionProvider(), PersistenceContexts.getCurrent().getJDBCBatchSize());
 //		PersistenceContext.getCurrent().add(identifierGenerator.getPersister().getMappingStrategy());
-		PropertyAccessor idAccessor = PropertyAccessor.forProperty(persistentFieldHarverster.getField("id"));
+		PropertyAccessor idAccessor = Accessors.forProperty(persistentFieldHarverster.getField("id"));
 		ClassMappingStrategy<? extends DynamicEntity, Long> classMappingStrategy = new ClassMappingStrategy<>(dynamicType, targetTable,
 				fieldColumnMap, idAccessor, new BeforeInsertIdentifierManager<>(IdMappingStrategy.toIdAccessor(idAccessor), identifierGenerator, long.class));
 		getClassMappingStrategy_nil();
@@ -90,7 +91,7 @@ public class DynamicAndComplementaryClassMappingBuilder implements IMappingBuild
 		
 		// NB: AlreadyAssignedIdentifierManager car l'id vient de l'instance de DynamicType
 		classMappingStrategyNil = new ClassMappingStrategy<>(nilDynamicType, targetNilTable,
-				fieldColumnMap, PropertyAccessor.forProperty(persistentFieldHarverster.getField("id")), AlreadyAssignedIdentifierManager.INSTANCE);
+				fieldColumnMap, Accessors.forProperty(persistentFieldHarverster.getField("id")), AlreadyAssignedIdentifierManager.INSTANCE);
 		return classMappingStrategyNil;
 	}
 	
@@ -109,7 +110,7 @@ public class DynamicAndComplementaryClassMappingBuilder implements IMappingBuild
 			Map<PropertyAccessor, Column> fieldColumnMap = persistentFieldHarverster.mapFields(indexDynamicType, indexTable);
 			
 			ClassMappingStrategy<? extends DynamicEntity, Long> classMappingStrategy = new ClassMappingStrategy<>(indexDynamicType, indexTable,
-					fieldColumnMap, PropertyAccessor.forProperty(persistentFieldHarverster.getField("id")), AlreadyAssignedIdentifierManager.INSTANCE);
+					fieldColumnMap, Accessors.forProperty(persistentFieldHarverster.getField("id")), AlreadyAssignedIdentifierManager.INSTANCE);
 			indexDynamicTypes.put(columnToIndex, classMappingStrategy);
 		}
 		return indexDynamicTypes;

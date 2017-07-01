@@ -11,8 +11,8 @@ import java.util.stream.Collectors;
 
 import org.gama.lang.Reflections;
 import org.gama.lang.collection.Iterables;
+import org.gama.reflection.Accessors;
 import org.gama.reflection.IMutator;
-import org.gama.reflection.PropertyAccessor;
 import org.gama.spy.MethodReferenceCapturer;
 import org.gama.stalactite.persistence.engine.CascadeOption.CascadeType;
 import org.gama.stalactite.persistence.engine.FluentMappingBuilder.CascadeMany;
@@ -60,7 +60,7 @@ public class CascadeManyConfigurer<T extends Identified, I extends Identified, J
 		Class<? extends Identified> targetClass = cascadeMany.getPersister().getMappingStrategy().getClassToPersist();
 		MethodReferenceCapturer methodReferenceCapturer = new MethodReferenceCapturer<>(targetClass);
 		Method reverseMember = methodReferenceCapturer.capture(cascadeMany.getReverseMember());
-		Column rightColumn = targetPersister.getMappingStrategy().getDefaultMappingStrategy().getPropertyToColumn().get(PropertyAccessor.of(reverseMember));
+		Column rightColumn = targetPersister.getMappingStrategy().getDefaultMappingStrategy().getPropertyToColumn().get(Accessors.of(reverseMember));
 		if (rightColumn == null) {
 			throw new NotYetSupportedOperationException("Reverse side mapping is not declared, please add the mapping of a "
 					+ localPersister.getMappingStrategy().getClassToPersist().getSimpleName()
@@ -165,7 +165,7 @@ public class CascadeManyConfigurer<T extends Identified, I extends Identified, J
 			}
 		}
 		
-		IMutator targetSetter = PropertyAccessor.of(cascadeMany.getMember()).getMutator();
+		IMutator targetSetter = Accessors.of(cascadeMany.getMember()).getMutator();
 		joinedTablesPersister.addPersister(JoinedStrategiesSelect.FIRST_STRATEGY_NAME, targetPersister,
 				BeanRelationFixer.of((BiConsumer) targetSetter::set, targetProvider, cascadeMany.getCollectionTargetClass(), cascadeMany.getReverseMember()),
 				leftColumn, rightColumn, true);

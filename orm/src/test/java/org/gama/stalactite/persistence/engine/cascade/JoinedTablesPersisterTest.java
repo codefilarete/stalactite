@@ -15,6 +15,7 @@ import java.util.Set;
 import org.gama.lang.Reflections;
 import org.gama.lang.collection.Arrays;
 import org.gama.lang.collection.Maps;
+import org.gama.reflection.Accessors;
 import org.gama.reflection.PropertyAccessor;
 import org.gama.sql.binder.ParameterBinder;
 import org.gama.stalactite.persistence.engine.InMemoryCounterIdentifierGenerator;
@@ -99,16 +100,16 @@ public class JoinedTablesPersisterTest {
 		columnMap2.get("id").setPrimaryKey(true);
 		
 		
-		PropertyAccessor<Toto, StatefullIdentifier<Integer>> identifierAccessor = PropertyAccessor.forProperty(fieldId);
+		PropertyAccessor<Toto, StatefullIdentifier<Integer>> identifierAccessor = Accessors.forProperty(fieldId);
 		Map<PropertyAccessor, Table.Column> totoClassMapping1 = Maps.asMap(
 				(PropertyAccessor) identifierAccessor, columnMap1.get("id"))
-				.add(PropertyAccessor.forProperty(fieldA), columnMap1.get("a"))
-				.add(PropertyAccessor.forProperty(fieldB), columnMap1.get("b"));
+				.add(Accessors.forProperty(fieldA), columnMap1.get("a"))
+				.add(Accessors.forProperty(fieldB), columnMap1.get("b"));
 		Map<PropertyAccessor, Table.Column> totoClassMapping2 = Maps.asMap(
 				(PropertyAccessor) identifierAccessor, columnMap2.get("id"))
-				.add(PropertyAccessor.forProperty(fieldX), columnMap2.get("x"))
-				.add(PropertyAccessor.forProperty(fieldY), columnMap2.get("y"))
-				.add(PropertyAccessor.forProperty(fieldZ), columnMap2.get("z"));
+				.add(Accessors.forProperty(fieldX), columnMap2.get("x"))
+				.add(Accessors.forProperty(fieldY), columnMap2.get("y"))
+				.add(Accessors.forProperty(fieldZ), columnMap2.get("z"));
 		
 		
 		identifierGenerator = new InMemoryCounterIdentifierGenerator();

@@ -173,7 +173,7 @@ public class FluentMappingBuilder<T extends Identified, I extends StatefullIdent
 	 * @return a new Column aded to the target table, throws an exception if already mapped
 	 */
 	private Linkage addMapping(Method method, String columnName) {
-		PropertyAccessor<Object, Object> propertyAccessor = PropertyAccessor.of(method);
+		PropertyAccessor<Object, Object> propertyAccessor = Accessors.of(method);
 		Predicate<Linkage> checker = ((Predicate<Linkage>) (l -> {
 			PropertyAccessor<T, ?> function = l.getFunction();
 			if (function.equals(propertyAccessor)) {
@@ -283,7 +283,7 @@ public class FluentMappingBuilder<T extends Identified, I extends StatefullIdent
 	
 	@Override
 	public <C> IFluentMappingBuilder<T, I> versionedBy(Function<T, C> property, Sequence<C> sequence) {
-		optimiticLockOption = new OptimiticLockOption(PropertyAccessor.of(captureLambdaMethod(property)), sequence);
+		optimiticLockOption = new OptimiticLockOption(Accessors.of(captureLambdaMethod(property)), sequence);
 		add(property);
 		return this;
 	}
@@ -350,11 +350,11 @@ public class FluentMappingBuilder<T extends Identified, I extends StatefullIdent
 					// Column isn't declared in table => we create one from field informations
 					column = localPersister.getTargetTable().new Column(field.getName(), field.getType());
 				}
-				mapping.put(PropertyAccessor.of(field), column);
+				mapping.put(Accessors.of(field), column);
 			}
 			// We simply register a specialized mapping strategy for the field into the main strategy
 			EmbeddedBeanMappingStrategy beanMappingStrategy = new EmbeddedBeanMappingStrategy(embed.cascadingTargetClass, mapping);
-			mappingStrategy.put(PropertyAccessor.of(embed.member), beanMappingStrategy);
+			mappingStrategy.put(Accessors.of(embed.member), beanMappingStrategy);
 		}
 		
 		Nullable<VersioningStrategy> versionigStrategy = Nullable.of(optimiticLockOption).orApply(OptimiticLockOption::getVersioningStrategy);
@@ -409,7 +409,7 @@ public class FluentMappingBuilder<T extends Identified, I extends StatefullIdent
 		 * @param columnName an override of the default name that will be generated
 		 */
 		private Linkage(Method method, String columnName) {
-			this.function = PropertyAccessor.of(method);
+			this.function = Accessors.of(method);
 			this.columnType = Reflections.propertyType(method);
 			this.columnName = columnName == null ? Accessors.propertyName(method) : columnName;
 		}

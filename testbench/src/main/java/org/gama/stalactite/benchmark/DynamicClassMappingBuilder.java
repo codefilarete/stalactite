@@ -8,6 +8,7 @@ import java.util.Map;
 import net.bytebuddy.ByteBuddy;
 import net.bytebuddy.dynamic.ClassLoadingStrategy;
 import net.bytebuddy.dynamic.DynamicType.Builder;
+import org.gama.reflection.Accessors;
 import org.gama.reflection.PropertyAccessor;
 import org.gama.stalactite.persistence.engine.PersistenceContext;
 import org.gama.stalactite.persistence.engine.SeparateTransactionExecutor;
@@ -59,7 +60,7 @@ public class DynamicClassMappingBuilder implements IMappingBuilder {
 		PersistentFieldHarverster persistentFieldHarverster = new PersistentFieldHarverster();
 		Map<PropertyAccessor, Column> fieldColumnMap = persistentFieldHarverster.mapFields(dynamicType, targetTable);
 		PersistenceContext currentPersistenceContext = PersistenceContexts.getCurrent();
-		PropertyAccessor idAccessor = PropertyAccessor.forProperty(persistentFieldHarverster.getField("id"));
+		PropertyAccessor idAccessor = Accessors.forProperty(persistentFieldHarverster.getField("id"));
 		PooledHiLoSequence longSequence = new PooledHiLoSequence(new PooledHiLoSequenceOptions(100, "Toto", 
 				SequenceStorageOptions.DEFAULT),
 				currentPersistenceContext.getDialect(), (SeparateTransactionExecutor) currentPersistenceContext.getConnectionProvider(),

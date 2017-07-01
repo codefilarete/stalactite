@@ -6,6 +6,7 @@ import java.util.HashSet;
 import java.util.Map;
 
 import org.gama.lang.exception.Exceptions;
+import org.gama.reflection.Accessors;
 import org.gama.reflection.PropertyAccessor;
 import org.gama.stalactite.persistence.engine.PersistenceContext;
 import org.gama.stalactite.persistence.engine.SeparateTransactionExecutor;
@@ -33,7 +34,7 @@ public class TotoMappingBuilder implements IMappingBuilder {
 		PersistentFieldHarverster persistentFieldHarverster = new PersistentFieldHarverster();
 		Map<PropertyAccessor, Column> fieldColumnMap = persistentFieldHarverster.mapFields(Toto.class, targetTable);
 		PersistenceContext currentPersistenceContext = PersistenceContexts.getCurrent();
-		PropertyAccessor idAccessor = PropertyAccessor.forProperty(persistentFieldHarverster.getField("id"));
+		PropertyAccessor idAccessor = Accessors.forProperty(persistentFieldHarverster.getField("id"));
 		PooledHiLoSequence longSequence = new PooledHiLoSequence(new PooledHiLoSequenceOptions(100, "Toto", 
 				SequenceStorageOptions.DEFAULT),
 				currentPersistenceContext.getDialect(), (SeparateTransactionExecutor) currentPersistenceContext.getConnectionProvider(),
@@ -46,7 +47,7 @@ public class TotoMappingBuilder implements IMappingBuilder {
 		} catch (NoSuchFieldException e) {
 			throw Exceptions.asRuntimeException(e);
 		}
-		classMappingStrategy.put(PropertyAccessor.forProperty(answersField), new ColumnedMapMappingStrategy<Map<Long, Object>, Long, Object, Object>(targetTable, new HashSet<>(targetTable.dynamicColumns.values()), HashMap.class) {
+		classMappingStrategy.put(Accessors.forProperty(answersField), new ColumnedMapMappingStrategy<Map<Long, Object>, Long, Object, Object>(targetTable, new HashSet<>(targetTable.dynamicColumns.values()), HashMap.class) {
 			@Override
 			protected Column getColumn(Long key) {
 				return targetTable.dynamicColumns.get(key);

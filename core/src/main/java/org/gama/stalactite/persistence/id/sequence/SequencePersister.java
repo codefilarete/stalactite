@@ -3,6 +3,7 @@ package org.gama.stalactite.persistence.id.sequence;
 import java.util.Map;
 
 import org.gama.lang.collection.Maps;
+import org.gama.reflection.Accessors;
 import org.gama.reflection.PropertyAccessor;
 import org.gama.stalactite.persistence.engine.Persister;
 import org.gama.stalactite.persistence.engine.SeparateTransactionExecutor;
@@ -79,8 +80,8 @@ public class SequencePersister extends Persister<Sequence, String> {
 		
 		
 		static {
-			SEQUENCE_NAME_FIELD = PropertyAccessor.forProperty(Sequence.class, "sequenceName");
-			VALUE_FIELD = PropertyAccessor.forProperty(Sequence.class, "step");
+			SEQUENCE_NAME_FIELD = Accessors.forProperty(Sequence.class, "sequenceName");
+			VALUE_FIELD = Accessors.forProperty(Sequence.class, "step");
 		}
 		
 		private String sequenceName;

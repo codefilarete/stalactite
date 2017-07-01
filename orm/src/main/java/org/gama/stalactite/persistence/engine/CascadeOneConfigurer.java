@@ -4,6 +4,7 @@ import java.util.AbstractMap.SimpleEntry;
 import java.util.Map.Entry;
 import java.util.function.Predicate;
 
+import org.gama.reflection.Accessors;
 import org.gama.reflection.IMutator;
 import org.gama.reflection.PropertyAccessor;
 import org.gama.stalactite.persistence.engine.CascadeOption.CascadeType;
@@ -42,7 +43,7 @@ public class CascadeOneConfigurer<T extends Identified, I extends Identified, J 
 		// adding persistence flag setters on other side
 		targetPersister.getPersisterListener().addInsertListener(SetPersistedFlagAfterInsertListener.INSTANCE);
 		
-		PropertyAccessor<Identified, Identified> propertyAccessor = PropertyAccessor.of(cascadeOne.getMember());
+		PropertyAccessor<Identified, Identified> propertyAccessor = Accessors.of(cascadeOne.getMember());
 		// Finding joined columns:
 		// - left one is given by current mapping strategy throught the property accessor.
 		// - Right one is target primary key because we don't yet support "not owner of the property"
