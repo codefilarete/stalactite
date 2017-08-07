@@ -24,21 +24,21 @@ public class ResultSetRowConverter<I, T> implements IConverter<ResultSet, T, SQL
 	
 	private final String columnName;
 	private final ResultSetReader<I> reader;
-	private final Function<I, T> converter;
+	private final Function<I, T> beanFactory;
 	
 	private final List<ColumnConsumer> consumers = new ArrayList<>();
 	
 	/**
 	 * Constructor with main and mandatory arguments
 	 * 
-	 * @param columnName the name of the column that contains bean keys
-	 * @param reader object to simplify column read, give the column type
-	 * @param converter the bean creator, bean key will be passed as argument. Not called if bean key is null (no instanciation needed)
+	 * @param columnName the name of the column that contains bean key
+	 * @param reader object to ease column reading, indicates column type
+	 * @param beanFactory the bean creator, bean key will be passed as argument. Not called if bean key is null (no instanciation needed)
 	 */
-	public ResultSetRowConverter(String columnName, ResultSetReader<I> reader, Function<I, T> converter) {
+	public ResultSetRowConverter(String columnName, ResultSetReader<I> reader, Function<I, T> beanFactory) {
 		this.columnName = columnName;
 		this.reader = reader;
-		this.converter = converter;
+		this.beanFactory = beanFactory;
 	}
 	
 	/**
@@ -67,17 +67,17 @@ public class ResultSetRowConverter<I, T> implements IConverter<ResultSet, T, SQL
 	 * Implemented to create and fill a bean from a {@link ResultSet}
 	 * 
 	 * @param input the {@link ResultSet} positioned at a row to be read
-	 * @return the bean that is returned by the converter given at construction time. Can be null (if bean key is), reused, or new.
+	 * @return the bean returned by the bean factory given at construction time. Can be null if bean key is.
 	 * 
 	 * @throws SQLException in case of {@link ResultSet} read problem
 	 */
 	@Override
 	public T convert(ResultSet input) throws SQLException {
 		I beanKey = reader.get(input, columnName);
-		if (beanKey == null) {	// prevent NPE when consumer is a simple setter, or more generaly target is null
+		if (beanKey == null) {
 			return null;
 		} else {
-			T rowInstance = converter.apply(beanKey);
+			T rowInstance = beanFactory.apply(beanKey);
 			for (ColumnConsumer<T, ?> consumer : consumers) {
 				consumer.accept(rowInstance, input);
 			}

@@ -1,16 +1,15 @@
 package org.gama.stalactite.persistence.engine;
 
 import java.lang.reflect.Method;
-import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.function.BiConsumer;
-import java.util.function.Function;
 
+import org.danekja.java.util.function.serializable.SerializableBiConsumer;
+import org.danekja.java.util.function.serializable.SerializableFunction;
 import org.gama.lang.function.LazyInitializer;
-import org.gama.spy.MethodReferenceCapturer;
+import org.gama.reflection.MethodReferenceCapturer;
 import org.gama.sql.ConnectionProvider;
 import org.gama.sql.binder.ParameterBinder;
 import org.gama.sql.binder.ParameterBinderProvider;
@@ -21,6 +20,8 @@ import org.gama.sql.result.ResultSetTransformer;
 import static org.gama.sql.binder.NullAwareParameterBinder.ALWAYS_SET_NULL_INSTANCE;
 
 /**
+ * A class aimed at querying the database and creating Java beans from it.
+ * 
  * @author Guillaume Mary
  */
 public class Query<T> {
@@ -61,7 +62,7 @@ public class Query<T> {
 	 * @param <I> the type of the column, which is also that of the factory argument
 	 * @return this
 	 */
-	public <I> Query<T> mapKey(String columnName, Class<I> columnType, Function<I, T> factory) {
+	public <I> Query<T> mapKey(String columnName, Class<I> columnType, SerializableFunction<I, T> factory) {
 		this.beanCreationDefinition = new BeanCreationDefinition<>(columnName, columnType, factory);
 		return this;
 	}
@@ -75,7 +76,7 @@ public class Query<T> {
 	 * @param <I> the type of the column, which is also that of the setter argument
 	 * @return this
 	 */
-	public <I> Query<T> map(String columnName, Class<I> columnType, BiConsumer<T, I> setter) {
+	public <I> Query<T> map(String columnName, Class<I> columnType, SerializableBiConsumer<T, I> setter) {
 		add(new ColumnMapping<>(columnName, columnType, setter));
 		return this;
 	}
@@ -83,14 +84,14 @@ public class Query<T> {
 	/**
 	 * Defines a mapping between a column of the query and a bean property through its setter.
 	 * WARNING : Column type will be deduced from the setter type. To do it, some bytecode enhancement is required, therefore it's not the cleanest
-	 * way to define the binding. Prefer {@link #map(String, Class, BiConsumer)}
+	 * way to define the binding. Prefer {@link #map(String, Class, SerializableBiConsumer)}
 	 *
 	 * @param columnName a column name
 	 * @param setter the setter function
 	 * @param <I> the type of the column, which is also that of the setter argument
 	 * @return this
 	 */
-	public <I> Query<T> map(String columnName, BiConsumer<T, I> setter) {
+	public <I> Query<T> map(String columnName, SerializableBiConsumer<T, I> setter) {
 		map(columnName, null, setter);
 		return this;
 	}
@@ -101,12 +102,11 @@ public class Query<T> {
 	
 	/**
 	 * Executes the query onto the connection given by the {@link ConnectionProvider}. Transforms the result to a list of beans thanks to the
-	 * definition given through {@link #mapKey(String, Class, Function)}, {@link #map(String, Class, BiConsumer)} and {@link #map(String, BiConsumer)}
-	 * methods.
+	 * definition given through {@link #mapKey(String, Class, SerializableFunction)}, {@link #map(String, Class, SerializableBiConsumer)}
+	 * and {@link #map(String, SerializableBiConsumer)} methods.
 	 * 
 	 * @param connectionProvider the object that will given the {@link java.sql.Connection}
 	 * @return a {@link List} filled by the instances built
-	 * @throws SQLException in case of bad reading during the conversion
 	 */
 	public List<T> execute(ConnectionProvider connectionProvider) {
 		if (beanCreationDefinition == null) {
@@ -114,16 +114,16 @@ public class Query<T> {
 		}
 		
 		// we avoid useless need of a default constructor on target class due to MethodReferenceCapturer by making it lazy intialized
-		LazyInitializer<MethodReferenceCapturer<T>> lazyMethodCapturerProvider = new LazyInitializer<MethodReferenceCapturer<T>>() {
+		LazyInitializer<MethodReferenceCapturer> lazyMethodCapturerProvider = new LazyInitializer<MethodReferenceCapturer>() {
 			@Override
-			protected MethodReferenceCapturer<T> createInstance() {
-				return new MethodReferenceCapturer<>(rootBeanType);
+			protected MethodReferenceCapturer createInstance() {
+				return new MethodReferenceCapturer();
 			}
 		};
 		Class<?> columnType = beanCreationDefinition.getColumn().getValueType();
 		if (columnType == null) {
-			// column type wasn't defined (bad practice) => we're going to try to find it by capture the method (factory) argument type
-			Method setter = lazyMethodCapturerProvider.get().capture((Function<T, ?>) beanCreationDefinition.factory);
+			// column type wasn't defined (not encouraged) => we're going to try to find it by capture the method (factory) argument type
+			Method setter = lazyMethodCapturerProvider.get().findMethod(beanCreationDefinition.factory);
 			columnType = setter.getParameterTypes()[0];
 		}
 		ParameterBinder idParameterBinder = this.parameterBinderProvider.getBinder(columnType);
@@ -132,7 +132,7 @@ public class Query<T> {
 			columnType = columnMapping.getColumn().getValueType();
 			if (columnType == null) {
 				// column type wasn't defined (bad practice) => we're going to try to find it by capture the method (factory) argument type
-				Method setter = lazyMethodCapturerProvider.get().capture(columnMapping.getSetter());
+				Method setter = lazyMethodCapturerProvider.get().findMethod(columnMapping.getSetter());
 				columnType = setter.getParameterTypes()[0];
 			}
 			transformer.add(columnMapping.getColumn().getName(), parameterBinderProvider.getBinder(columnType), columnMapping.getSetter());
@@ -222,7 +222,7 @@ public class Query<T> {
 	}
 	
 	/**
-	 * An internal definition for the way to instanciate a bean from a selected column
+	 * An internal class defining the way to instanciate a bean from a selected column
 	 * @param <T> the bean type that will be created
 	 * @param <I> the column value type which is also the input type of the bean factory
 	 */
@@ -230,9 +230,9 @@ public class Query<T> {
 		
 		private final Column<I> column;
 		
-		private final Function<I, T> factory;
+		private final SerializableFunction<I, T> factory;
 		
-		public BeanCreationDefinition(String columnName, Class<I> columnType, Function<I, T> factory) {
+		public BeanCreationDefinition(String columnName, Class<I> columnType, SerializableFunction<I, T> factory) {
 			this.column = new Column<>(columnName, columnType);
 			this.factory = factory;
 		}
@@ -241,13 +241,13 @@ public class Query<T> {
 			return column;
 		}
 		
-		public Function<I, T> getFactory() {
+		public SerializableFunction<I, T> getFactory() {
 			return factory;
 		}
 	}
 	
 	/**
-	 * An internal definition for the way to map a result column to a bean "property" (more precisely a setter or whatever would take the value as input)
+	 * An internal class defining the way to map a result column to a bean "property" (more precisely a setter or whatever would take the value as input)
 	 * @param <T> the bean type that supports the setter
 	 * @param <I> the column value type which is also the input type of the property setter
 	 */
@@ -255,9 +255,9 @@ public class Query<T> {
 		
 		private final Column<I> column;
 		
-		private final BiConsumer<T, I> setter;
+		private final SerializableBiConsumer<T, I> setter;
 		
-		public ColumnMapping(String columnName, Class<I> columnType, BiConsumer<T, I> setter) {
+		public ColumnMapping(String columnName, Class<I> columnType, SerializableBiConsumer<T, I> setter) {
 			this.column = new Column<>(columnName, columnType);
 			this.setter = setter;
 		}
@@ -266,7 +266,7 @@ public class Query<T> {
 			return column;
 		}
 		
-		public BiConsumer<T, I> getSetter() {
+		public SerializableBiConsumer<T, I> getSetter() {
 			return setter;
 		}
 	}
