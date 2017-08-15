@@ -26,8 +26,6 @@ public class ResultSetTransformer<T> implements IConverter<ResultSet, List<T>, S
 	
 	private SimpleBeanCache beanCache = new SimpleBeanCache();
 	
-	private T currentRowBean;
-	
 	private final List<Relation> hierachicalConsumers = new ArrayList<>();
 	
 	public <I> ResultSetTransformer(Class<T> rootType, String columnName, ResultSetReader<I> reader, Function<I, T> factory) {
@@ -41,13 +39,13 @@ public class ResultSetTransformer<T> implements IConverter<ResultSet, List<T>, S
 	 * Example:<br/>
 	 * <code>add("property_alias", STRING_READER, MyBean::setProperty);</code>
 	 * 
-	 * @param columnName the name of the column whom value will be given to the consumer
+	 * @param columnName the name of the column whom value will be given to the combiner
 	 * @param reader the object that will extract the value from the column
-	 * @param consumer some code that will consume column value, can be expressed as method reference such as MyBean::setProperty
-	 * @param <I>
+	 * @param combiner some code that will consume the column value, can be expressed as method reference such as MyBean::setProperty
+	 * @param <I> the column value type
 	 */
-	public <I> void add(String columnName, ResultSetReader<I> reader, BiConsumer<T, I> consumer) {
-		rootConverter.add(columnName, reader, (bean, colValue) -> consumer.accept(bean, colValue));
+	public <I> void add(String columnName, ResultSetReader<I> reader, BiConsumer<T, I> combiner) {
+		rootConverter.add(columnName, reader, combiner);
 	}
 	
 	/**
@@ -64,7 +62,7 @@ public class ResultSetTransformer<T> implements IConverter<ResultSet, List<T>, S
 	 * @return the newly created {@link ResultSetTransformer} that will manage the new bean type creation, NOT THIS
 	 */
 	public <I, V> ResultSetTransformer<V> add(String columnName, ResultSetReader<I> reader, Class<V> beanType, Function<I, V> factory, BiConsumer<T, V> relationFixer) {
-		ResultSetTransformer<V> relatedBeanCreator = new ResultSetTransformer<>(beanType, columnName, reader, factory::apply);
+		ResultSetTransformer<V> relatedBeanCreator = new ResultSetTransformer<>(beanType, columnName, reader, factory);
 		return add(relatedBeanCreator, relationFixer);
 		
 	}
@@ -125,7 +123,7 @@ public class ResultSetTransformer<T> implements IConverter<ResultSet, List<T>, S
 	
 	public T transform(ResultSet resultSet) throws SQLException {
 		// Can it be possible to have a null root bean ? if such we should add a if-null prevention. But what's the case ?
-		currentRowBean = rootConverter.convert(resultSet);
+		T currentRowBean = rootConverter.convert(resultSet);
 		for (Relation<T, ?> hierachicalConsumer : this.hierachicalConsumers) {
 			hierachicalConsumer.accept(currentRowBean, resultSet);
 		}

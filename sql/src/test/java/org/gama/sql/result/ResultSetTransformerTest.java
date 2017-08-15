@@ -11,6 +11,7 @@ import org.gama.lang.collection.Arrays;
 import org.gama.lang.collection.Iterables;
 import org.gama.lang.collection.Maps;
 import org.gama.lang.function.Functions;
+import org.gama.sql.result.ResultSetTransformerTest.WingInner.FeatherInner;
 import org.junit.Test;
 
 import static org.gama.sql.binder.DefaultResultSetReaders.STRING_READER;
@@ -24,18 +25,21 @@ public class ResultSetTransformerTest {
 	
 	@Test
 	public void testTranform() throws SQLException {
-		ResultSetTransformer<Chicken> testInstance = new ResultSetTransformer<>(Chicken.class, "chickenName", STRING_READER, Chicken::new);
-		testInstance.add("leftFeatherColor", STRING_READER, (chicken, colorName) -> chicken.getLeftWing().add(new Feather(new FeatherColor
-				(colorName))));
+		String chickenInstanciationColumnName = "chickenName";
+		String leftFeatherColorColumnName = "leftFeatherColor";
+		ResultSetTransformer<Chicken> testInstance = new ResultSetTransformer<>(Chicken.class, chickenInstanciationColumnName, STRING_READER, Chicken::new);
+		testInstance.add(leftFeatherColorColumnName, STRING_READER,
+				(chicken, colorName) -> chicken.getLeftWing().add(new Feather(new FeatherColor(colorName)))
+		);
 		
 		// a ResultSet that retrieves all the feathers of a unique Chicken
 		InMemoryResultSet resultSet = new InMemoryResultSet(Arrays.asList(
-				Maps.asMap("chickenName", (Object) "rooster")
+				Maps.asMap(chickenInstanciationColumnName, (Object) "rooster")
 						.add("leftFeatherNumber", 1)
-						.add("leftFeatherColor", "red"),
-				Maps.asMap("chickenName", (Object) "rooster")
+						.add(leftFeatherColorColumnName, "red"),
+				Maps.asMap(chickenInstanciationColumnName, (Object) "rooster")
 						.add("leftFeatherNumber", 1)
-						.add("leftFeatherColor", "black")
+						.add(leftFeatherColorColumnName, "black")
 		));
 		
 		// from first row, a new instance of Chicken is created named "rooster", it has 1 red feather
@@ -56,11 +60,15 @@ public class ResultSetTransformerTest {
 	
 	@Test
 	public void testTranform_shareBeanInstances() throws SQLException {
-		ResultSetTransformer<Chicken> testInstance = new ResultSetTransformer<>(Chicken.class, "chickenName", STRING_READER, Chicken::new);
-		testInstance.add("leftFeatherColor", STRING_READER, FeatherColor.class, FeatherColor::new, (chicken, color) -> chicken.getLeftWing().add(new
-				Feather(color)));
+		String chickenInstanciationColumnName = "chickenName";
+		String leftFeatherColorColumnName = "leftFeatherColor";
+		String rightFeatherColorColumnName = "rightFeatherColor";
+		ResultSetTransformer<Chicken> testInstance = new ResultSetTransformer<>(Chicken.class, chickenInstanciationColumnName, STRING_READER, Chicken::new);
+		testInstance.add(leftFeatherColorColumnName, STRING_READER, FeatherColor.class, FeatherColor::new,
+				(chicken, color) -> chicken.getLeftWing().add(new Feather(color))
+		);
 		// we add almost the same as previous but for the right wing : the color must be shared between wings
-		testInstance.add("rightFeatherColor", STRING_READER, FeatherColor.class, FeatherColor::new, (chicken, color) -> {
+		testInstance.add(rightFeatherColorColumnName, STRING_READER, FeatherColor.class, FeatherColor::new, (chicken, color) -> {
 			if (color != null) {	// prevent addition of Feather with a null color
 				chicken.getRightWing().add(new Feather(color));
 			}
@@ -68,12 +76,12 @@ public class ResultSetTransformerTest {
 		
 		// a ResultSet that retrieves all the feathers of a unique Chicken
 		InMemoryResultSet resultSet = new InMemoryResultSet(Arrays.asList(
-				Maps.asMap("chickenName", (Object) "rooster")
-						.add("leftFeatherColor", "red"),
-				Maps.asMap("chickenName", (Object) "rooster")
-						.add("leftFeatherColor", "black"),
-				Maps.asMap("chickenName", (Object) "rooster")
-						.add("rightFeatherColor", "black")
+				Maps.asMap(chickenInstanciationColumnName, (Object) "rooster")
+						.add(leftFeatherColorColumnName, "red"),
+				Maps.asMap(chickenInstanciationColumnName, (Object) "rooster")
+						.add(leftFeatherColorColumnName, "black"),
+				Maps.asMap(chickenInstanciationColumnName, (Object) "rooster")
+						.add(rightFeatherColorColumnName, "black")
 		));
 		
 		// from first row, a new instance of Chicken is created named "rooster", it has 1 red feather on left wing
@@ -98,10 +106,49 @@ public class ResultSetTransformerTest {
 				.map(((Function<Feather, FeatherColor>) Feather::getColor).andThen(FeatherColor::getName)).collect(Collectors.toList()));
 		
 		// checking that wings share the same color instance
-		Function<Feather, String> colorNameAccessor = Functions.chain(Feather::getColor, FeatherColor::getName);
+		Function<Feather, String> colorNameAccessor = Functions.link(Feather::getColor, FeatherColor::getName);
 		Map<String, FeatherColor> leftWingFeatherColors = Iterables.map(result.getLeftWing().getFeathers(), colorNameAccessor, Feather::getColor);
 		Map<String, FeatherColor> rightWingFeatherColors = Iterables.map(result.getRightWing().getFeathers(), colorNameAccessor, Feather::getColor);
 		assertSame(leftWingFeatherColors.get("black"), rightWingFeatherColors.get("black"));
+	}
+	
+	/**
+	 * Test to demonstrate that inner classes can also be assembled.
+	 * WingInner has inner instances of FeatherInner, they are automatically added to they enclosing WingInner instance throught their constructor. 
+	 */
+	@Test
+	public void testTranform_withInnerClass() throws SQLException {
+		String wingInstanciationColumnName = "wingName";
+		String leftFeatherColorColumnName = "featherColor";
+		ResultSetTransformer<WingInner> testInstance = new ResultSetTransformer<>(WingInner.class, wingInstanciationColumnName, STRING_READER, WingInner::new);
+		testInstance.add(leftFeatherColorColumnName, STRING_READER,
+				// Simply instanciate the inner class as usual
+				// No need to be added to the wing instance because the constructor does it
+				(wing, colorName) -> wing.new FeatherInner(colorName)
+		);
+		
+		// a ResultSet that retrieves all the feathers of a unique Chicken
+		InMemoryResultSet resultSet = new InMemoryResultSet(Arrays.asList(
+				Maps.asMap(wingInstanciationColumnName, (Object) "left")
+						.add(leftFeatherColorColumnName, "red"),
+				Maps.asMap(wingInstanciationColumnName, (Object) "left")
+						.add(leftFeatherColorColumnName, "black")
+		));
+		
+		// from first row, a new instance of Chicken is created named "rooster", it has 1 red feather
+		resultSet.next();
+		WingInner result = testInstance.transform(resultSet);
+		assertEquals("left", result.getSide());
+		assertEquals(Arrays.asList("red"), result.getFeathers().stream()
+				.map(FeatherInner::getColor).collect(Collectors.toList()));
+		
+		// from second row, the previous instance of Chicken is kept (not new), and a new black feather was added
+		resultSet.next();
+		WingInner result1 = testInstance.transform(resultSet);
+		assertSame(result, result1);
+		assertEquals(2, result.getFeathers().size());
+		assertEquals(Arrays.asList("red", "black"), result.getFeathers().stream()
+				.map(FeatherInner::getColor).collect(Collectors.toList()));
 	}
 	
 	public static class Chicken {
@@ -187,6 +234,62 @@ public class ResultSetTransformerTest {
 			return super.toString() + "{" +
 					"name='" + name + '\'' +
 					'}';
+		}
+	}
+	
+	public static class WingInner {
+		
+		private String side;
+		
+		private List<FeatherInner> feathers = new ArrayList<>();
+		
+		public WingInner(String side) {
+			this.side = side;
+		}
+		
+		public String getSide() {
+			return side;
+		}
+		
+		public void setSide(String side) {
+			this.side = side;
+		}
+		
+		private void add(FeatherInner feather) {
+			this.feathers.add(feather);
+		}
+		
+		public List<FeatherInner> getFeathers() {
+			return feathers;
+		}
+		
+		public class FeatherInner {
+			
+			private String color;
+			
+			public FeatherInner(String color) {
+				this.color = color;
+				add(this);
+			}
+			
+			public String getColor() {
+				return color;
+			}
+			
+			public void setColor(String color) {
+				this.color = color;
+			}
+			
+			public WingInner getWing() {
+				return WingInner.this;
+			}
+			
+			@Override
+			public String toString() {
+				return "Feather{" +
+						"color=" + color +
+						'}';
+			}
 		}
 	}
 	
