@@ -43,93 +43,117 @@ public class InMemoryResultSet extends NoopResultSet {
 		throw new UnsupportedOperationException();	// to be supported ... but not yet
 	}
 	
-	@Override
-	public String getString(String columnLabel) throws SQLException {
-		return (String) currentRow.get(columnLabel);
+	private void assertExists(String columnName) throws SQLException {
+		if (!currentRow.containsKey(columnName)) {
+			throw new SQLException("Column doesn't exist : " + columnName);
+		}
 	}
 	
 	@Override
-	public boolean getBoolean(String columnLabel) throws SQLException {
-		return (boolean) currentRow.get(columnLabel);
+	public String getString(String columnName) throws SQLException {
+		assertExists(columnName);
+		return (String) currentRow.get(columnName);
 	}
 	
 	@Override
-	public byte getByte(String columnLabel) throws SQLException {
-		return (byte) currentRow.get(columnLabel);
+	public boolean getBoolean(String columnName) throws SQLException {
+		assertExists(columnName);
+		return (boolean) currentRow.get(columnName);
 	}
 	
 	@Override
-	public short getShort(String columnLabel) throws SQLException {
-		return (short) currentRow.get(columnLabel);
+	public byte getByte(String columnName) throws SQLException {
+		assertExists(columnName);
+		return (byte) currentRow.get(columnName);
 	}
 	
 	@Override
-	public int getInt(String columnLabel) throws SQLException {
-		return (int) currentRow.get(columnLabel);
+	public short getShort(String columnName) throws SQLException {
+		assertExists(columnName);
+		return (short) currentRow.get(columnName);
 	}
 	
 	@Override
-	public long getLong(String columnLabel) throws SQLException {
-		return (long) currentRow.get(columnLabel);
+	public int getInt(String columnName) throws SQLException {
+		assertExists(columnName);
+		return (int) currentRow.get(columnName);
 	}
 	
 	@Override
-	public float getFloat(String columnLabel) throws SQLException {
-		return (float) currentRow.get(columnLabel);
+	public long getLong(String columnName) throws SQLException {
+		assertExists(columnName);
+		return (long) currentRow.get(columnName);
 	}
 	
 	@Override
-	public double getDouble(String columnLabel) throws SQLException {
-		return (double) currentRow.get(columnLabel);
+	public float getFloat(String columnName) throws SQLException {
+		assertExists(columnName);
+		return (float) currentRow.get(columnName);
 	}
 	
 	@Override
-	public byte[] getBytes(String columnLabel) throws SQLException {
-		return (byte[]) currentRow.get(columnLabel);
+	public double getDouble(String columnName) throws SQLException {
+		assertExists(columnName);
+		return (double) currentRow.get(columnName);
 	}
 	
 	@Override
-	public Date getDate(String columnLabel) throws SQLException {
-		return (Date) currentRow.get(columnLabel);
+	public byte[] getBytes(String columnName) throws SQLException {
+		assertExists(columnName);
+		return (byte[]) currentRow.get(columnName);
 	}
 	
 	@Override
-	public Time getTime(String columnLabel) throws SQLException {
-		return (Time) currentRow.get(columnLabel);
+	public Date getDate(String columnName) throws SQLException {
+		assertExists(columnName);
+		return (Date) currentRow.get(columnName);
 	}
 	
 	@Override
-	public Timestamp getTimestamp(String columnLabel) throws SQLException {
-		return (Timestamp) currentRow.get(columnLabel);
+	public Time getTime(String columnName) throws SQLException {
+		assertExists(columnName);
+		return (Time) currentRow.get(columnName);
 	}
 	
 	@Override
-	public InputStream getAsciiStream(String columnLabel) throws SQLException {
-		return (InputStream) currentRow.get(columnLabel);
+	public Timestamp getTimestamp(String columnName) throws SQLException {
+		assertExists(columnName);
+		return (Timestamp) currentRow.get(columnName);
 	}
 	
 	@Override
-	public InputStream getUnicodeStream(String columnLabel) throws SQLException {
-		return (InputStream) currentRow.get(columnLabel);
+	public InputStream getAsciiStream(String columnName) throws SQLException {
+		assertExists(columnName);
+		return (InputStream) currentRow.get(columnName);
 	}
 	
 	@Override
-	public InputStream getBinaryStream(String columnLabel) throws SQLException {
-		return (InputStream) currentRow.get(columnLabel);
+	public InputStream getUnicodeStream(String columnName) throws SQLException {
+		assertExists(columnName);
+		return (InputStream) currentRow.get(columnName);
 	}
 	
 	@Override
-	public Object getObject(String columnLabel) throws SQLException {
-		return currentRow.get(columnLabel);
+	public InputStream getBinaryStream(String columnName) throws SQLException {
+		assertExists(columnName);
+		return (InputStream) currentRow.get(columnName);
 	}
 	
 	@Override
-	public Reader getCharacterStream(String columnLabel) throws SQLException {
-		return (Reader) currentRow.get(columnLabel);
+	public Object getObject(String columnName) throws SQLException {
+		assertExists(columnName);
+		return currentRow.get(columnName);
 	}
 	
 	@Override
-	public BigDecimal getBigDecimal(String columnLabel) throws SQLException {
-		return (BigDecimal) currentRow.get(columnLabel);
+	public Reader getCharacterStream(String columnName) throws SQLException {
+		assertExists(columnName);
+		return (Reader) currentRow.get(columnName);
+	}
+	
+	@Override
+	public BigDecimal getBigDecimal(String columnName) throws SQLException {
+		assertExists(columnName);
+		return (BigDecimal) currentRow.get(columnName);
 	}
 }

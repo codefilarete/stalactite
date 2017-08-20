@@ -2,6 +2,7 @@ package org.gama.sql.result;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.NoSuchElementException;
 
 import org.gama.lang.bean.IConverter;
 import org.gama.lang.collection.ReadOnlyIterator;
@@ -24,8 +25,8 @@ public abstract class ResultSetIterator<T> extends ReadOnlyIterator<T> implement
 	private int rowNumber = 1;
 	
 	/**
-	 * Flag that indicates if the next method was called.
-	 * Used for hasNext() since {@link ResultSet} has no sure way of saying if its read is started or not
+	 * Flag that indicates if the {@link ResultSet#next()} method of the undelying instance was called.
+	 * Used for hasNext() since {@link ResultSet} has no sure way of saying if its iteration is started or not
 	 * @see #reset() 
 	 */
 	private boolean nextCalled = false;
@@ -82,6 +83,7 @@ public abstract class ResultSetIterator<T> extends ReadOnlyIterator<T> implement
 	@Override
 	public boolean hasNext() {
 		try {
+			// Warn: operand order is very important to prevent next() to be called unnecessarly
 			return !nextCalled && resultSet.next();
 		} catch (SQLException e) {
 			throw Exceptions.asRuntimeException(e);
@@ -92,11 +94,15 @@ public abstract class ResultSetIterator<T> extends ReadOnlyIterator<T> implement
 	
 	@Override
 	public T next() {
+		if (!nextCalled) {
+			// this is necessary to be compliant with Iterator#next(..) contract
+			throw new NoSuchElementException();
+		}
 		try {
 			this.rowNumber++;
 			return convert(resultSet);
 		} catch (SQLException e) {
-			throw new RuntimeException("Error while reading ResultSet on line " + getRowNumber(), e);
+			throw new RuntimeException("Error while reading ResultSet on row " + --rowNumber, e);
 		} finally {
 			nextCalled = false;
 		}

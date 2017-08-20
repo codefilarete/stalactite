@@ -1,7 +1,6 @@
 package org.gama.sql.result;
 
 import java.sql.SQLException;
-import java.util.function.BiConsumer;
 
 import org.gama.lang.bean.Objects;
 import org.gama.lang.collection.Arrays;
@@ -10,7 +9,9 @@ import org.gama.lang.trace.IncrementableInt;
 import org.junit.Test;
 
 import static org.gama.sql.binder.DefaultResultSetReaders.INTEGER_READER;
+import static org.gama.sql.binder.DefaultResultSetReaders.STRING_READER;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotSame;
 
 /**
  * @author Guillaume Mary
@@ -20,19 +21,19 @@ public class ResultSetRowConverterTest {
 	@Test
 	public void testConvert_basicUseCase() throws SQLException {
 		// The default IncrementableInt that takes its value from "a". Reinstanciated on each row.
-		ResultSetRowConverter<Integer, IncrementableInt> testInstance = new ResultSetRowConverter<>("a", INTEGER_READER, IncrementableInt::new);
+		ResultSetRowConverter<Integer, IncrementableInt> testInstance = new ResultSetRowConverter<>(IncrementableInt.class, "a", INTEGER_READER, IncrementableInt::new);
 		// The secondary that will increment the same IncrementableInt by column "b" value
-		testInstance.add(new ColumnConsumer<>("b", INTEGER_READER, (BiConsumer<IncrementableInt, Integer>) (t, i) -> t.increment(Objects.preventNull(i, 0))));
+		testInstance.add(new ColumnConsumer<>("b", INTEGER_READER, (t, i) -> t.increment(Objects.preventNull(i, 0))));
 		
 		InMemoryResultSet resultSet = new InMemoryResultSet(Arrays.asList(
 				Maps.asMap("a", (Object) 42).add("b", 1),
-				Maps.asMap("a", 666)
+				Maps.asMap("a", (Object) 666).add("b", null)
 		));
 		
 		resultSet.next();
 		assertEquals(43, testInstance.convert(resultSet).getValue());
 		resultSet.next();
-		// no change on this one because there's no "b" column on the row and we took null into account during incrementation
+		// no change on this one because "b" column is null on the row and we took null into account during incrementation
 		assertEquals(666, testInstance.convert(resultSet).getValue());
 	}
 	
@@ -43,7 +44,7 @@ public class ResultSetRowConverterTest {
 	public void testConvert_shareInstanceOverRows() throws SQLException {
 		// The default IncrementableInt that takes its value from "a". Shared over rows (class attribute)
 		IncrementableInt sharedInstance = new IncrementableInt(0);
-		ResultSetRowConverter<Integer, IncrementableInt> testInstance = new ResultSetRowConverter<>("a", INTEGER_READER, i -> {
+		ResultSetRowConverter<Integer, IncrementableInt> testInstance = new ResultSetRowConverter<>(IncrementableInt.class, "a", INTEGER_READER, i -> {
 			sharedInstance.increment(i);
 			return sharedInstance;
 		});
@@ -52,14 +53,84 @@ public class ResultSetRowConverterTest {
 		
 		InMemoryResultSet resultSet = new InMemoryResultSet(Arrays.asList(
 				Maps.asMap("a", (Object) 42).add("b", 1),
-				Maps.asMap("a", 666)
+				Maps.asMap("a", (Object) 666).add("b", null)
 		));
 		
 		resultSet.next();
 		assertEquals(43, testInstance.convert(resultSet).getValue());
 		resultSet.next();
-		// no change on this one because there's no "b" column on the row and we took null into account during incrementation
+		// no change on this one because "b" column is null on the row and we took null into account during incrementation
 		assertEquals(709, testInstance.convert(resultSet).getValue());
 	}
 	
+	
+	@Test
+	public void testCopyWithMapping() throws SQLException {
+		ResultSetRowConverter<Integer, IncrementableInt> sourceInstance = new ResultSetRowConverter<>(IncrementableInt.class, "a", INTEGER_READER, IncrementableInt::new);
+		sourceInstance.add(new ColumnConsumer<>("b", INTEGER_READER, (t, i) -> t.increment(Objects.preventNull(i, 0))));
+		
+		// we're making our copy with column "a" is now "x", and column "b" is now "y"
+		ResultSetRowConverter<Integer, IncrementableInt> testInstance = sourceInstance.copyWithMapping(Maps.asHashMap("a", "x").add("b", "y"));
+		
+		// of course ....
+		assertNotSame(sourceInstance, testInstance);
+		
+		InMemoryResultSet resultSet = new InMemoryResultSet(Arrays.asList(
+				Maps.asMap("x", (Object) 42).add("y", 1),
+				Maps.asMap("x", (Object) 666).add("y", null)
+		));
+		
+		resultSet.next();
+		assertEquals(43, testInstance.convert(resultSet).getValue());
+		resultSet.next();
+		// no change on this one because "b" column is null on the row and we took null into account during incrementation
+		assertEquals(666, testInstance.convert(resultSet).getValue());
+	}
+	
+	@Test
+	public void testCopyFor() throws SQLException {
+		ResultSetRowConverter<String, Vehicle> sourceInstance = new ResultSetRowConverter<>(Vehicle.class, "name", STRING_READER, Vehicle::new);
+		
+		ResultSetRowConverter<String, Car> testInstance = sourceInstance.copyFor(Car.class, Car::new);
+		testInstance.add(new ColumnConsumer<>("wheels", INTEGER_READER, Car::setWheelCount));
+		
+		InMemoryResultSet resultSet = new InMemoryResultSet(Arrays.asList(
+				Maps.asMap("name", (Object) "peugeot").add("wheels", 4)
+		));
+		
+		resultSet.next();
+		Car result = testInstance.convert(resultSet);
+		assertEquals("peugeot", result.getName());
+		assertEquals(4, result.getWheelCount());
+	}
+	
+	private static class Vehicle {
+		
+		private String name;
+		
+		private Vehicle(String name) {
+			this.name = name;
+		}
+		
+		public String getName() {
+			return name;
+		}
+	}
+	
+	private static class Car extends Vehicle {
+		
+		private int wheelCount;
+		
+		private Car(String name) {
+			super(name);
+		}
+		
+		public int getWheelCount() {
+			return wheelCount;
+		}
+		
+		public void setWheelCount(int wheelCount) {
+			this.wheelCount = wheelCount;
+		}
+	}
 }
