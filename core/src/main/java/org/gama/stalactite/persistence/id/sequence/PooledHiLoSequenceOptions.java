@@ -2,7 +2,7 @@ package org.gama.stalactite.persistence.id.sequence;
 
 import java.util.Map;
 
-import org.gama.lang.bean.Converter;
+import org.gama.lang.bean.ConverterRegistry;
 import org.gama.lang.bean.Objects;
 
 /**
@@ -18,7 +18,7 @@ public class PooledHiLoSequenceOptions {
 	private static final String SEQUENCE_COLUMN_PARAM = "sequenceNameColumn";
 	private static final String VALUE_COLUMN_PARAM = "valueColumn";
 	
-	private static final Converter CONVERTER = Converter.DEFAULT;
+	private static final ConverterRegistry CONVERTER_REGISTRY = ConverterRegistry.DEFAULT;
 	
 	private final int poolSize;
 	private final String sequenceName;
@@ -45,11 +45,11 @@ public class PooledHiLoSequenceOptions {
 	}
 	
 	public PooledHiLoSequenceOptions(Map<String, Object> configuration) {
-		this(CONVERTER.asInteger(configuration.get(POOL_SIZE_PARAM)),
-				CONVERTER.asString(configuration.get(SEQUENCE_NAME_PARAM)),
-				new SequenceStorageOptions(CONVERTER.asString(configuration.get(TABLE_PARAM)),
-						CONVERTER.asString(configuration.get(SEQUENCE_COLUMN_PARAM)),
-						CONVERTER.asString(configuration.get(VALUE_COLUMN_PARAM))
+		this(CONVERTER_REGISTRY.asInteger(configuration.get(POOL_SIZE_PARAM)),
+				CONVERTER_REGISTRY.asString(configuration.get(SEQUENCE_NAME_PARAM)),
+				new SequenceStorageOptions(CONVERTER_REGISTRY.asString(configuration.get(TABLE_PARAM)),
+						CONVERTER_REGISTRY.asString(configuration.get(SEQUENCE_COLUMN_PARAM)),
+						CONVERTER_REGISTRY.asString(configuration.get(VALUE_COLUMN_PARAM))
 				)
 		);
 	}

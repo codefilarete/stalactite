@@ -15,7 +15,7 @@ import org.gama.sql.binder.ParameterBinder;
 import org.gama.sql.binder.ParameterBinderProvider;
 import org.gama.sql.dml.ReadOperation;
 import org.gama.sql.dml.StringParamedSQL;
-import org.gama.sql.result.ResultSetTransformer;
+import org.gama.sql.result.ResultSetConverter;
 
 import static org.gama.sql.binder.NullAwareParameterBinder.ALWAYS_SET_NULL_INSTANCE;
 
@@ -127,7 +127,7 @@ public class Query<T> {
 			columnType = setter.getParameterTypes()[0];
 		}
 		ParameterBinder idParameterBinder = this.parameterBinderProvider.getBinder(columnType);
-		ResultSetTransformer<T> transformer = new ResultSetTransformer<>(rootBeanType, beanCreationDefinition.getColumn().getName(), idParameterBinder, beanCreationDefinition.getFactory());
+		ResultSetConverter<?, T> transformer = new ResultSetConverter<>(rootBeanType, beanCreationDefinition.getColumn().getName(), idParameterBinder, beanCreationDefinition.getFactory());
 		for (ColumnMapping<T, Object> columnMapping : columnMappings) {
 			columnType = columnMapping.getColumn().getValueType();
 			if (columnType == null) {

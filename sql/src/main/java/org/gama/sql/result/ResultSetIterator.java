@@ -4,7 +4,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.NoSuchElementException;
 
-import org.gama.lang.bean.IConverter;
+import org.gama.lang.bean.Converter;
 import org.gama.lang.collection.ReadOnlyIterator;
 import org.gama.lang.exception.Exceptions;
 
@@ -13,7 +13,7 @@ import org.gama.lang.exception.Exceptions;
  * 
  * @author Guillaume Mary
  */
-public abstract class ResultSetIterator<T> extends ReadOnlyIterator<T> implements IConverter<ResultSet, T, SQLException> {
+public abstract class ResultSetIterator<T> extends ReadOnlyIterator<T> implements Converter<ResultSet, T, SQLException> {
 	
 	/** The read {@link ResultSet} */
 	private ResultSet resultSet;

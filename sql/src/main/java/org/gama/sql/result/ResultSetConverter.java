@@ -12,7 +12,7 @@ import java.util.stream.Collectors;
 
 import org.gama.lang.Reflections;
 import org.gama.lang.ThreadLocals;
-import org.gama.lang.bean.IConverter;
+import org.gama.lang.bean.Converter;
 import org.gama.lang.collection.Iterables;
 import org.gama.lang.function.ThrowingBiConsumer;
 import org.gama.lang.function.ThrowingSupplier;
@@ -30,16 +30,16 @@ import org.gama.sql.binder.ResultSetReader;
  * @see #add(String, ResultSetReader, BiConsumer)  
  * @see #add(String, ResultSetReader, Class, Function, BiConsumer) 
  */
-public class ResultSetTransformer<I, T> implements IConverter<ResultSet, List<T>, SQLException>, ResultSetRowTransformer<I, T> {
+public class ResultSetConverter<I, T> extends AnstractResultSetConverter<I, T> implements Converter<ResultSet, List<T>, SQLException> {
 	
 	/**
 	 * Cache for created beans during {@link ResultSet} iteration.
-	 * Created as a ThreadLocal to share it between all {@link ResultSetTransformer}s that are implied in the bean graph creation : first approach
+	 * Created as a ThreadLocal to share it between all {@link ResultSetConverter}s that are implied in the bean graph creation : first approach
 	 * was to use an instance variable and initialize it on all instances before {@link ResultSet} iteration and release it after, but this design
 	 * had several drawbacks:
 	 * - non-thread-safe usage of instances (implying synchronization during whole iteration !)
 	 * - instances piped with {@link #add(ResultSetRowConverter, BiConsumer)} were impossible to wire to the bean cache without cloning them to a
-	 * {@link ResultSetTransformer}
+	 * {@link ResultSetConverter}
 	 * 
 	 */
 	static final ThreadLocal<SimpleBeanCache> BEAN_CACHE = new ThreadLocal<>();
@@ -63,7 +63,7 @@ public class ResultSetTransformer<I, T> implements IConverter<ResultSet, List<T>
 	 * @param reader object to ease column reading, indicates column type
 	 * @param beanFactory the bean creator, bean key will be passed as argument. Not called if bean key is null (no instanciation needed)
 	 */
-	public ResultSetTransformer(Class<T> rootType, String columnName, ResultSetReader<I> reader, Function<I, T> beanFactory) {
+	public ResultSetConverter(Class<T> rootType, String columnName, ResultSetReader<I> reader, Function<I, T> beanFactory) {
 		this.rootConverter = new ResultSetRowConverter<>(rootType, columnName, reader,
 				k -> computeInstanceIfCacheMiss(rootType, k, () -> beanFactory.apply(k)));
 		this.beanFactory = beanFactory;
@@ -74,7 +74,7 @@ public class ResultSetTransformer<I, T> implements IConverter<ResultSet, List<T>
 	 * @param rootConverter
 	 * @param factory
 	 */
-	private ResultSetTransformer(ResultSetRowConverter<I, T> rootConverter, Function<I, T> factory) {
+	private ResultSetConverter(ResultSetRowConverter<I, T> rootConverter, Function<I, T> factory) {
 		this.rootConverter = rootConverter;
 		this.beanFactory = factory;
 	}
@@ -104,8 +104,8 @@ public class ResultSetTransformer<I, T> implements IConverter<ResultSet, List<T>
 	 * @return this
 	 * @see #add(String, ResultSetReader, Class, BiConsumer) 
 	 */
-	public <K, V> ResultSetTransformer<I, T> add(String columnName, ResultSetReader<K> reader, Class<V> beanType, Function<K, V> beanFactory, BiConsumer<T, V> combiner) {
-		ResultSetTransformer<K, V> relatedBeanCreator = new ResultSetTransformer<>(beanType, columnName, reader, beanFactory);
+	public <K, V> ResultSetConverter<I, T> add(String columnName, ResultSetReader<K> reader, Class<V> beanType, Function<K, V> beanFactory, BiConsumer<T, V> combiner) {
+		ResultSetConverter<K, V> relatedBeanCreator = new ResultSetConverter<>(beanType, columnName, reader, beanFactory);
 		add(relatedBeanCreator, combiner);
 		return this;
 	}
@@ -126,7 +126,7 @@ public class ResultSetTransformer<I, T> implements IConverter<ResultSet, List<T>
 	 * 
 	 * @return this
 	 */
-	public <K, V> ResultSetTransformer<I, T> add(String columnName, ResultSetReader<K> reader, Class<V> beanType, BiConsumer<T, V> combiner) {
+	public <K, V> ResultSetConverter<I, T> add(String columnName, ResultSetReader<K> reader, Class<V> beanType, BiConsumer<T, V> combiner) {
 		add(columnName, reader, beanType, v -> Reflections.newInstance(beanType), combiner);
 		return this;
 	}
@@ -141,13 +141,13 @@ public class ResultSetTransformer<I, T> implements IConverter<ResultSet, List<T>
 	 * @param <V> the type of the other beans
 	 * @return this
 	 */
-	public <K, V> ResultSetTransformer<I, T> add(ResultSetTransformer<K, V> relatedBeanCreator, BiConsumer<T, V> combiner) {
+	public <K, V> ResultSetConverter<I, T> add(ResultSetConverter<K, V> relatedBeanCreator, BiConsumer<T, V> combiner) {
 		combiners.add(new Relation(combiner, relatedBeanCreator));
 		return this;
 	}
 	
 	/**
-	 * Same as {@link #add(ResultSetTransformer, BiConsumer)} but for {@link ResultSetRowConverter}.
+	 * Same as {@link #add(ResultSetConverter, BiConsumer)} but for {@link ResultSetRowConverter}.
 	 * Be aware that a copy of relatedBeanCreator is made to make it use cache of beans during {@link ResultSet} iteration. This is different from
 	 * the other add(..) method that doesn't needs cloning of the relatedBeanCreator.
 	 * Hence, modifying relatedBeanCreator after won't affect this.
@@ -158,7 +158,7 @@ public class ResultSetTransformer<I, T> implements IConverter<ResultSet, List<T>
 	 * @param <V> the type of the other beans
 	 * @return this
 	 */
-	public <K, V> ResultSetTransformer<I, T> add(ResultSetRowConverter<K, V> relatedBeanCreator, BiConsumer<T, V> combiner) {
+	public <K, V> ResultSetConverter<I, T> add(ResultSetRowConverter<K, V> relatedBeanCreator, BiConsumer<T, V> combiner) {
 		Class<V> beanType = relatedBeanCreator.getBeanType();
 		Function<K, V> relatedBeanFactory = relatedBeanCreator.getBeanFactory();
 		// ResultSetRowConverter doesn't have a cache system, so we decorate its factory with a cache checking
@@ -171,29 +171,29 @@ public class ResultSetTransformer<I, T> implements IConverter<ResultSet, List<T>
 	}
 	
 	@Override
-	public <C> ResultSetTransformer<I, C> copyFor(Class<C> beanType, Function<I, C> beanFactory) {
+	public <C> ResultSetConverter<I, C> copyFor(Class<C> beanType, Function<I, C> beanFactory) {
 		// ResultSetRowConverter doesn't have a cache system, so we decorate its factory with a cache checking
 		ResultSetRowConverter<I, C> rootConverterCopy = this.rootConverter.copyFor(beanType,
 				beanKey -> computeInstanceIfCacheMiss(beanType, beanKey, () -> beanFactory.apply(beanKey))
 		);
 		// Making the copy
-		ResultSetTransformer<I, C> result = new ResultSetTransformer<>(rootConverterCopy, beanFactory);
+		ResultSetConverter<I, C> result = new ResultSetConverter<>(rootConverterCopy, beanFactory);
 		this.combiners.forEach(c -> result.combiners.add(new Relation<>(c.relationFixer, c.transformer)));
 		return result;
 	}
 	
 	@Override
-	public ResultSetTransformer<I, T> copyWithMapping(Function<String, String> columMapping) {
+	public ResultSetConverter<I, T> copyWithMapping(Function<String, String> columMapping) {
 		// NB: rootConverter can be cloned without a cache checking bean factory because it already has it due to previous assignements
 		// (follow rootConverter assignements to be sure)
 		ResultSetRowConverter<I, T> rootConverterCopy = this.rootConverter.copyWithMapping(columMapping);
-		ResultSetTransformer<I, T> result = new ResultSetTransformer<>(rootConverterCopy, this.beanFactory);
+		ResultSetConverter<I, T> result = new ResultSetConverter<>(rootConverterCopy, this.beanFactory);
 		this.combiners.forEach(c -> result.combiners.add(new Relation<>(c.relationFixer, c.transformer.copyWithMapping(columMapping))));
 		return result;
 	}
 	
 	@Override	// for adhoc return type
-	public ResultSetTransformer<I, T> copyWithMapping(Map<String, String> columMapping) {
+	public ResultSetConverter<I, T> copyWithMapping(Map<String, String> columMapping) {
 		return copyWithMapping(columMapping::get);
 	}
 	
@@ -203,7 +203,7 @@ public class ResultSetTransformer<I, T> implements IConverter<ResultSet, List<T>
 		ResultSetIterator<T> resultSetIterator = new ResultSetIterator<T>(resultSet) {
 			@Override
 			public T convert(ResultSet resultSet) throws SQLException {
-				return ResultSetTransformer.this.transform(resultSet);
+				return ResultSetConverter.this.transform(resultSet);
 			}
 		};
 		return doWithBeanCache(() -> Iterables.stream(resultSetIterator).collect(Collectors.toList()));
@@ -241,9 +241,9 @@ public class ResultSetTransformer<I, T> implements IConverter<ResultSet, List<T>
 		
 		private final BiConsumer<K, V> relationFixer;
 		
-		private final ResultSetRowTransformer<K, V> transformer;
+		private final AnstractResultSetConverter<K, V> transformer;
 		
-		public Relation(BiConsumer<K, V> relationFixer, ResultSetRowTransformer<K, V> transformer) {
+		public Relation(BiConsumer<K, V> relationFixer, AnstractResultSetConverter<K, V> transformer) {
 			this.relationFixer = relationFixer;
 			this.transformer = transformer;
 		}

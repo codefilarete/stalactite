@@ -13,7 +13,7 @@ import org.gama.sql.binder.ResultSetReader;
  * @param <T> the type of beans
  * @author Guillaume Mary
  */
-public interface ResultSetRowTransformer<I, T> {
+public abstract class AnstractResultSetConverter<I, T> {
 	
 	/**
 	 * Defines a complementary column that will be mapped on a bean property.
@@ -21,7 +21,7 @@ public interface ResultSetRowTransformer<I, T> {
 	 *
 	 * @param columnConsumer the object that will do the reading and mapping
 	 */
-	void add(ColumnConsumer<T, ?> columnConsumer);
+	public abstract void add(ColumnConsumer<T, ?> columnConsumer);
 	
 	/**
 	 * Detailed version of {@link #add(ColumnConsumer)}
@@ -31,7 +31,7 @@ public interface ResultSetRowTransformer<I, T> {
 	 * @param consumer the applyer of the value over a bean property
 	 * @param <V> the type of the read value, must be compatible with the bean property input
 	 */
-	default <V> void add(String columnName, ResultSetReader<V> reader, BiConsumer<T, V> consumer) {
+	public <V> void add(String columnName, ResultSetReader<V> reader, BiConsumer<T, V> consumer) {
 		add(new ColumnConsumer<>(columnName, reader, consumer));
 	}
 	
@@ -43,7 +43,7 @@ public interface ResultSetRowTransformer<I, T> {
 	 * @return an instance of T, newly created or not according to implementation
 	 * @throws SQLException due to {@link ResultSet} reading
 	 */
-	T transform(ResultSet resultSet) throws SQLException;
+	public abstract T transform(ResultSet resultSet) throws SQLException;
 	
 	/**
 	 * Clones this for another type of bean.
@@ -55,7 +55,7 @@ public interface ResultSetRowTransformer<I, T> {
 	 * @param <C> the target bean type
 	 * @return a new instance, kind of clone of this but for another type
 	 */
-	<C> ResultSetRowTransformer<I, C> copyFor(Class<C> beanType, Function<I, C> beanFactory);
+	public abstract <C> AnstractResultSetConverter<I, C> copyFor(Class<C> beanType, Function<I, C> beanFactory);
 	
 	/**
 	 * Makes a copy of this instance with column translation.
@@ -65,14 +65,14 @@ public interface ResultSetRowTransformer<I, T> {
 	 * 						Can be implemented with a switch/case, a prefix/suffix concatenation, etc
 	 * @return a new instance, kind of clone of this
 	 */
-	ResultSetRowTransformer<I, T> copyWithMapping(Function<String, String> columMapping);
+	public abstract AnstractResultSetConverter<I, T> copyWithMapping(Function<String, String> columMapping);
 	
 	/**
 	 * Same as {@link #copyWithMapping(Function)} but with a concrete mapping throught a {@link Map}
 	 * @param columMapping the mapping between column names declared by {@link #add(String, ResultSetReader, BiConsumer)} and new ones
 	 * @return a new instance, kind of clone of this
 	 */
-	default ResultSetRowTransformer<I, T> copyWithMapping(Map<String, String> columMapping) {
+	public AnstractResultSetConverter<I, T> copyWithMapping(Map<String, String> columMapping) {
 		return copyWithMapping(columMapping::get);
 	}
 }
