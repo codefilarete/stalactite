@@ -30,7 +30,7 @@ import org.gama.sql.binder.ResultSetReader;
  * @see #add(String, ResultSetReader, BiConsumer)  
  * @see #add(String, ResultSetReader, Class, Function, BiConsumer) 
  */
-public class ResultSetConverter<I, T> extends AnstractResultSetConverter<I, T> implements Converter<ResultSet, List<T>, SQLException> {
+public class ResultSetConverter<I, T> extends AbstractResultSetConverter<I, T> implements Converter<ResultSet, List<T>, SQLException> {
 	
 	/**
 	 * Cache for created beans during {@link ResultSet} iteration.
@@ -241,9 +241,9 @@ public class ResultSetConverter<I, T> extends AnstractResultSetConverter<I, T> i
 		
 		private final BiConsumer<K, V> relationFixer;
 		
-		private final AnstractResultSetConverter<K, V> transformer;
+		private final AbstractResultSetConverter<K, V> transformer;
 		
-		public Relation(BiConsumer<K, V> relationFixer, AnstractResultSetConverter<K, V> transformer) {
+		public Relation(BiConsumer<K, V> relationFixer, AbstractResultSetConverter<K, V> transformer) {
 			this.relationFixer = relationFixer;
 			this.transformer = transformer;
 		}

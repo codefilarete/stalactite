@@ -2,9 +2,11 @@ package org.gama.sql.result;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.Collection;
 import java.util.Map;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
+import java.util.function.Supplier;
 
 import org.gama.sql.binder.ResultSetReader;
 
@@ -13,7 +15,7 @@ import org.gama.sql.binder.ResultSetReader;
  * @param <T> the type of beans
  * @author Guillaume Mary
  */
-public abstract class AnstractResultSetConverter<I, T> {
+public abstract class AbstractResultSetConverter<I, T> {
 	
 	/**
 	 * Defines a complementary column that will be mapped on a bean property.
@@ -28,11 +30,35 @@ public abstract class AnstractResultSetConverter<I, T> {
 	 *
 	 * @param columnName the column name of the property source
 	 * @param reader the object that helps to read the column
-	 * @param consumer the applyer of the value over a bean property
+	 * @param combiner the applyer of the value over a bean property
 	 * @param <V> the type of the read value, must be compatible with the bean property input
 	 */
-	public <V> void add(String columnName, ResultSetReader<V> reader, BiConsumer<T, V> consumer) {
-		add(new ColumnConsumer<>(columnName, reader, consumer));
+	public <V> void add(String columnName, ResultSetReader<V> reader, BiConsumer<T, V> combiner) {
+		add(new ColumnConsumer<>(columnName, reader, combiner));
+	}
+	
+	/**
+	 * Specialized version of add(..) for a collection-typed property : will instanciate and set the collection before adding the
+	 * {@link ResultSet} value.
+	 * 
+	 * @param columnName the column name of the property source
+	 * @param reader the object that helps to read the column
+	 * @param collectionAccessor the collection getter
+	 * @param collectionMutator the collection setter (called only if getter returns null)
+	 * @param collectionFactory the collection factory (called only if getter returns null)
+	 * @param <V> the type of the read value, must be compatible with the bean property input
+	 * @param <C> the collection type
+	 */
+	public <V, C extends Collection<V>> void add(String columnName, ResultSetReader<V> reader,
+												 Function<T, C> collectionAccessor, BiConsumer<T, C> collectionMutator, Supplier<C> collectionFactory) {
+		add(new ColumnConsumer<>(columnName, reader, (t, v) -> {
+			C collection = collectionAccessor.apply(t);
+			if (collection == null) {
+				collection = collectionFactory.get();
+				collectionMutator.accept(t, collection);
+			}
+			collection.add(v);
+		}));
 	}
 	
 	/**
@@ -55,7 +81,7 @@ public abstract class AnstractResultSetConverter<I, T> {
 	 * @param <C> the target bean type
 	 * @return a new instance, kind of clone of this but for another type
 	 */
-	public abstract <C> AnstractResultSetConverter<I, C> copyFor(Class<C> beanType, Function<I, C> beanFactory);
+	public abstract <C> AbstractResultSetConverter<I, C> copyFor(Class<C> beanType, Function<I, C> beanFactory);
 	
 	/**
 	 * Makes a copy of this instance with column translation.
@@ -65,14 +91,14 @@ public abstract class AnstractResultSetConverter<I, T> {
 	 * 						Can be implemented with a switch/case, a prefix/suffix concatenation, etc
 	 * @return a new instance, kind of clone of this
 	 */
-	public abstract AnstractResultSetConverter<I, T> copyWithMapping(Function<String, String> columMapping);
+	public abstract AbstractResultSetConverter<I, T> copyWithMapping(Function<String, String> columMapping);
 	
 	/**
 	 * Same as {@link #copyWithMapping(Function)} but with a concrete mapping throught a {@link Map}
 	 * @param columMapping the mapping between column names declared by {@link #add(String, ResultSetReader, BiConsumer)} and new ones
 	 * @return a new instance, kind of clone of this
 	 */
-	public AnstractResultSetConverter<I, T> copyWithMapping(Map<String, String> columMapping) {
+	public AbstractResultSetConverter<I, T> copyWithMapping(Map<String, String> columMapping) {
 		return copyWithMapping(columMapping::get);
 	}
 }

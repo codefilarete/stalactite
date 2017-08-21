@@ -23,7 +23,7 @@ import org.gama.sql.binder.ResultSetReader;
  *     
  * @author Guillaume Mary
  */
-public class ResultSetRowConverter<I, T> extends AnstractResultSetConverter<I, T> implements Converter<ResultSet, T, SQLException> {
+public class ResultSetRowConverter<I, T> extends AbstractResultSetConverter<I, T> implements Converter<ResultSet, T, SQLException> {
 	
 	private final String columnName;
 	

@@ -1,6 +1,8 @@
 package org.gama.sql.result;
 
 import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.gama.lang.bean.Objects;
 import org.gama.lang.collection.Arrays;
@@ -104,6 +106,23 @@ public class ResultSetRowConverterTest {
 		assertEquals(4, result.getWheelCount());
 	}
 	
+	@Test
+	public void testAddCollection() throws SQLException {
+		ResultSetRowConverter<String, Person> testInstance = new ResultSetRowConverter<>(Person.class, "name", STRING_READER, Person::new);
+		
+		testInstance.add("address1", STRING_READER, Person::getAddresses, Person::setAddresses, ArrayList::new);
+		testInstance.add("address2", STRING_READER, Person::getAddresses, Person::setAddresses, ArrayList::new);
+		
+		InMemoryResultSet resultSet = new InMemoryResultSet(Arrays.asList(
+				Maps.asMap("name", (Object) "paul").add("address1", "rue Vaudirard").add("address2", "rue Menon")
+		));
+		
+		resultSet.next();
+		Person result = testInstance.convert(resultSet);
+		assertEquals("paul", result.getName());
+		assertEquals(Arrays.asList("rue Vaudirard", "rue Menon"), result.getAddresses());
+	}
+	
 	private static class Vehicle {
 		
 		private String name;
@@ -131,6 +150,29 @@ public class ResultSetRowConverterTest {
 		
 		public void setWheelCount(int wheelCount) {
 			this.wheelCount = wheelCount;
+		}
+	}
+	
+	static class Person {
+		
+		private String name;
+		
+		private List<String> addresses = new ArrayList<>();
+		
+		Person(String name) {
+			this.name = name;
+		}
+		
+		public String getName() {
+			return name;
+		}
+		
+		public List<String> getAddresses() {
+			return addresses;
+		}
+		
+		public void setAddresses(List<String> addresses) {
+			this.addresses = addresses;
 		}
 	}
 }

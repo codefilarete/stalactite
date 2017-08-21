@@ -18,6 +18,7 @@ import org.gama.lang.collection.Maps;
 import org.gama.lang.function.Functions;
 import org.gama.lang.function.ThrowingRunnable;
 import org.gama.sql.result.ResultSetConverterTest.WingInner.FeatherInner;
+import org.gama.sql.result.ResultSetRowConverterTest.Person;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -208,7 +209,7 @@ public class ResultSetConverterTest {
 		List<Chicken> result = testInstance.convert(resultSet);
 		// 3 chickens because of 3 rows in ResultSet
 		assertEquals(3, result.size());
-		// ... but they should be all the sames
+		// ... but they should be all the same
 		assertSame(result.get(0), result.get(1));
 		assertSame(result.get(0), result.get(2));
 		
@@ -238,7 +239,7 @@ public class ResultSetConverterTest {
 	
 	@UseDataProvider
 	@Test
-	public void testConvert_withReuse(AnstractResultSetConverter featherColorTestInstance) throws SQLException {
+	public void testConvert_withReuse(AbstractResultSetConverter featherColorTestInstance) throws SQLException {
 		String chickenInstanciationColumnName = "chickenName";
 		String leftFeatherColorColumnName = "leftFeatherColor";
 		String rightFeatherColorColumnName = "rightFeatherColor";
@@ -279,7 +280,7 @@ public class ResultSetConverterTest {
 		List<Chicken> result = testInstance.convert(resultSet);
 		// 3 chickens because of 3 rows in ResultSet
 		assertEquals(3, result.size());
-		// ... but they should be all the sames
+		// ... but they should be all the same
 		assertSame(result.get(0), result.get(1));
 		assertSame(result.get(0), result.get(2));
 		
@@ -332,7 +333,7 @@ public class ResultSetConverterTest {
 		List<Rooster> result = testInstanceCopy.convert(resultSet);
 		// 3 chickens because of 3 rows in ResultSet
 		assertEquals(3, result.size());
-		// ... but they should be all the sames
+		// ... but they should be all the same
 		assertSame(result.get(0), result.get(1));
 		assertSame(result.get(0), result.get(2));
 		
@@ -351,6 +352,22 @@ public class ResultSetConverterTest {
 		Map<String, FeatherColor> leftWingFeatherColors = Iterables.map(rooster.getLeftWing().getFeathers(), colorNameAccessor, Feather::getColor);
 		Map<String, FeatherColor> rightWingFeatherColors = Iterables.map(rooster.getRightWing().getFeathers(), colorNameAccessor, Feather::getColor);
 		assertSame(leftWingFeatherColors.get("black"), rightWingFeatherColors.get("black"));
+	}
+	
+	@Test
+	public void testAddCollection() throws SQLException {
+		ResultSetConverter<String, Person> testInstance = new ResultSetConverter<>(Person.class, "name", STRING_READER, Person::new);
+		
+		testInstance.add("address", STRING_READER, Person::getAddresses, Person::setAddresses, ArrayList::new);
+		
+		InMemoryResultSet resultSet = new InMemoryResultSet(Arrays.asList(
+				Maps.asMap("name", (Object) "paul").add("address", "rue Vaudirard"),
+				Maps.asMap("name", (Object) "paul").add("address", "rue Menon")
+		));
+		
+		List<Person> result = testInstance.convert(resultSet);
+		assertEquals("paul", result.get(0).getName());
+		assertEquals(Arrays.asList("rue Vaudirard", "rue Menon"), result.get(0).getAddresses());
 	}
 	
 	public static class Chicken {
