@@ -7,7 +7,7 @@ import java.util.Map;
 import com.tngtech.java.junit.dataprovider.DataProvider;
 import com.tngtech.java.junit.dataprovider.DataProviderRunner;
 import com.tngtech.java.junit.dataprovider.UseDataProvider;
-import org.gama.lang.NoopInvocationHandler;
+import org.gama.lang.InvocationHandlerSupport;
 import org.gama.lang.collection.Arrays;
 import org.gama.lang.collection.Maps;
 import org.gama.sql.binder.ParameterBinder;
@@ -24,7 +24,7 @@ public class ExpandableStatementTest {
 	
 	@DataProvider
 	public static Object[][] testDoApplyValue_data() {
-		ParameterBinder parameterBinderMock = NoopInvocationHandler.mock(ParameterBinder.class);
+		ParameterBinder parameterBinderMock = InvocationHandlerSupport.mock(ParameterBinder.class);
 		return new Object[][] {
 				{ "select * from Toto where id = :a",
 						Maps.asMap("a", 17), Maps.asMap("a", parameterBinderMock),
@@ -77,7 +77,7 @@ public class ExpandableStatementTest {
 			testInstance.setValue(paramValue.getKey(), paramValue.getValue());
 		}
 		testInstance.getSQL();
-		testInstance.applyValues(NoopInvocationHandler.mock(PreparedStatement.class));
+		testInstance.applyValues(InvocationHandlerSupport.mock(PreparedStatement.class));
 		assertEquals(new HashMap<>(expectedIndexes), appliedIndexedValues);
 		
 	}
