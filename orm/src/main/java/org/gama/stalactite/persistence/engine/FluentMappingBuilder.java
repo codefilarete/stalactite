@@ -20,6 +20,7 @@ import org.gama.lang.Nullable;
 import org.gama.lang.Reflections;
 import org.gama.lang.bean.FieldIterator;
 import org.gama.lang.function.Serie;
+import org.gama.lang.reflect.MethodDispatcher;
 import org.gama.reflection.Accessors;
 import org.gama.reflection.PropertyAccessor;
 import org.gama.spy.MethodReferenceCapturer;
@@ -151,24 +152,26 @@ public class FluentMappingBuilder<T extends Identified, I extends StatefullIdent
 	
 	private IFluentMappingBuilderColumnOptions<T, I> add(Method method, String columnName) {
 		Linkage newMapping = addMapping(method, columnName);
-		return new Decorator<>(ColumnOptions.class).decorate(this, (Class<IFluentMappingBuilderColumnOptions<T, I>>) (Class)
-				IFluentMappingBuilderColumnOptions.class, identifierPolicy -> {
-			if (FluentMappingBuilder.this.identifierAccessor != null) {
-				throw new IllegalArgumentException("Identifier is already defined by " + identifierAccessor.getAccessor());
-			}
-			switch (identifierPolicy) {
-				case ALREADY_ASSIGNED:
-					Class<I> e = Reflections.propertyType(method);
-					FluentMappingBuilder.this.identifierInsertionManager = new AlreadyAssignedIdentifierManager<>(e);
-					newMapping.primaryKey();
-					break;
-				default:
-					throw new NotYetSupportedOperationException(identifierPolicy + " is not yet supported");
-			}
-			FluentMappingBuilder.this.identifierAccessor = (PropertyAccessor<T, I>) newMapping.getFunction();
-			// we could return null because the decorator return embedder.this for us, but I find cleaner to do so (if we change our mind)
-			return FluentMappingBuilder.this;
-		});
+		return new MethodDispatcher()
+				.redirect(ColumnOptions.class, identifierPolicy -> {
+					if (FluentMappingBuilder.this.identifierAccessor != null) {
+						throw new IllegalArgumentException("Identifier is already defined by " + identifierAccessor.getAccessor());
+					}
+					switch (identifierPolicy) {
+						case ALREADY_ASSIGNED:
+							Class<I> e = Reflections.propertyType(method);
+							FluentMappingBuilder.this.identifierInsertionManager = new AlreadyAssignedIdentifierManager<>(e);
+							newMapping.primaryKey();
+							break;
+						default:
+							throw new NotYetSupportedOperationException(identifierPolicy + " is not yet supported");
+					}
+					FluentMappingBuilder.this.identifierAccessor = (PropertyAccessor<T, I>) newMapping.getFunction();
+					// we could return null because the decorator return embedder.this for us, but I find cleaner to do so (if we change our mind)
+					return FluentMappingBuilder.this;
+				})
+				.fallbackOn(this)
+				.build((Class<IFluentMappingBuilderColumnOptions<T, I>>) (Class) IFluentMappingBuilderColumnOptions.class);
 	}
 	
 	/**
@@ -208,9 +211,8 @@ public class FluentMappingBuilder<T extends Identified, I extends StatefullIdent
 		this.cascadeOnes.add(cascadeOne);
 		// then we return an object that allows fluent settings over our OneToOne cascade instance
 		IFluentMappingBuilderOneToOneOptions[] finalHack = new IFluentMappingBuilderOneToOneOptions[1];
-		IFluentMappingBuilderOneToOneOptions<T, I> proxy = new Decorator<>(OneToOneOptions.class).decorate(this,
-				(Class<IFluentMappingBuilderOneToOneOptions<T, I>>) (Class) IFluentMappingBuilderOneToOneOptions.class, new OneToOneOptions() {
-					
+		IFluentMappingBuilderOneToOneOptions<T, I> proxy = new MethodDispatcher()
+				.redirect(OneToOneOptions.class, new OneToOneOptions() {
 					@Override
 					public IFluentMappingBuilderOneToOneOptions cascade(CascadeType cascadeType, CascadeType... cascadeTypes) {
 						cascadeOne.addCascadeType(cascadeType);
@@ -225,7 +227,9 @@ public class FluentMappingBuilder<T extends Identified, I extends StatefullIdent
 						cascadeOne.nullable = false;
 						return finalHack[0];
 					}
-				});
+				})
+				.fallbackOn(this)
+				.build((Class<IFluentMappingBuilderOneToOneOptions<T, I>>) (Class) IFluentMappingBuilderOneToOneOptions.class);
 		finalHack[0] = proxy;
 		return proxy;
 	}
@@ -236,10 +240,8 @@ public class FluentMappingBuilder<T extends Identified, I extends StatefullIdent
 		CascadeMany<T, O, J, C> cascadeMany = new CascadeMany<>(function, persister, captureLambdaMethod(function));
 		this.cascadeManys.add(cascadeMany);
 		IFluentMappingBuilderOneToManyOptions[] finalHack = new IFluentMappingBuilderOneToManyOptions[1];
-		IFluentMappingBuilderOneToManyOptions<T, I, O> proxy = new Decorator<>(OneToManyOptions.class).decorate(
-				this,
-				(Class<IFluentMappingBuilderOneToManyOptions<T, I, O>>) (Class) IFluentMappingBuilderOneToManyOptions.class,
-				new OneToManyOptions() {
+		IFluentMappingBuilderOneToManyOptions<T, I, O> proxy = new MethodDispatcher()
+				.redirect(OneToManyOptions.class, new OneToManyOptions() {
 					@Override
 					public IFluentMappingBuilderOneToManyOptions mappedBy(BiConsumer reverseLink) {
 						cascadeMany.reverseMember = reverseLink;
@@ -260,7 +262,9 @@ public class FluentMappingBuilder<T extends Identified, I extends StatefullIdent
 						cascadeMany.deleteRemoved = true;
 						return finalHack[0];
 					}
-				});
+				})
+				.fallbackOn(this)
+				.build((Class<IFluentMappingBuilderOneToManyOptions<T, I, O>>) (Class) IFluentMappingBuilderOneToManyOptions.class);
 		finalHack[0] = proxy;
 		return proxy;
 	}
