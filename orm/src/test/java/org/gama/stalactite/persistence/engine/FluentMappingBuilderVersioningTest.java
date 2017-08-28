@@ -3,7 +3,7 @@ package org.gama.stalactite.persistence.engine;
 import javax.sql.DataSource;
 import java.sql.SQLException;
 
-import org.gama.lang.function.Sequence;
+import org.gama.lang.function.Serie.IntegerSerie;
 import org.gama.sql.ConnectionProvider;
 import org.gama.sql.TransactionObserverConnectionProvider;
 import org.gama.sql.binder.DefaultParameterBinders;
@@ -78,7 +78,21 @@ public class FluentMappingBuilderVersioningTest {
 				(Class<Identifier<Long>>) (Class) PersistedIdentifier.class)
 				// setting a foreign key naming strategy to be tested
 				.foreignKeyNamingStrategy(ForeignKeyNamingStrategy.DEFAULT)
-				.versionedBy(Country::getVersion, new IntSequence())
+				.versionedBy(Country::getVersion, new IntegerSerie())
+				.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
+				.add(Country::getName)
+				.add(Country::getDescription)
+				.build(persistenceContext);
+	}
+	
+	@Test(expected = UnsupportedOperationException.class)
+	public void testBuild_versionedPropertyIsOfUnsupportedType_throwsException() throws SQLException {
+		PersistenceContext persistenceContext = new PersistenceContext(new JdbcConnectionProvider(dataSource), DIALECT);
+		FluentMappingBuilder.from(Country.class,
+				(Class<Identifier<Long>>) (Class) PersistedIdentifier.class)
+				// setting a foreign key naming strategy to be tested
+				.foreignKeyNamingStrategy(ForeignKeyNamingStrategy.DEFAULT)
+				.versionedBy(Country::getName)
 				.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.add(Country::getName)
 				.add(Country::getDescription)
@@ -95,7 +109,7 @@ public class FluentMappingBuilderVersioningTest {
 				(Class<Identifier<Long>>) (Class) PersistedIdentifier.class)
 				// setting a foreign key naming strategy to be tested
 				.foreignKeyNamingStrategy(ForeignKeyNamingStrategy.DEFAULT)
-				.versionedBy(Country::getVersion, new IntSequence())
+				.versionedBy(Country::getVersion, new IntegerSerie())
 				.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.add(Country::getName)
 				.add(Country::getDescription)
@@ -141,7 +155,7 @@ public class FluentMappingBuilderVersioningTest {
 				(Class<Identifier<Long>>) (Class) PersistedIdentifier.class)
 				// setting a foreign key naming strategy to be tested
 				.foreignKeyNamingStrategy(ForeignKeyNamingStrategy.DEFAULT)
-				.versionedBy(Country::getVersion, new IntSequence())
+				.versionedBy(Country::getVersion, new IntegerSerie())
 				.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.add(Country::getName)
 				.add(Country::getDescription)
@@ -172,16 +186,5 @@ public class FluentMappingBuilderVersioningTest {
 		// ... but it is when we rollback
 		connectionProvider.getCurrentConnection().rollback();
 		assertEquals(0, dummyCountryClone.getVersion());
-	}
-	
-	
-	private static class IntSequence implements Sequence<Integer> {
-		
-		private int pawn = 0;
-		
-		@Override
-		public Integer next() {
-			return ++pawn;
-		}
 	}
 }

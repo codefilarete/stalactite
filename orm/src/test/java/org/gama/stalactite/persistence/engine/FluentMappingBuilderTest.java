@@ -90,7 +90,7 @@ public class FluentMappingBuilderTest {
 				.add(Toto::getName)
 				.build(DIALECT);
 		
-		// column sould be correctly created
+		// column should be correctly created
 		Column columnForProperty = toto.mapColumnsOnName().get("name");
 		assertNotNull(columnForProperty);
 		assertEquals(String.class, columnForProperty.getJavaType());
@@ -103,7 +103,7 @@ public class FluentMappingBuilderTest {
 			.add(Toto::getName).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 			.build(DIALECT)
 		;
-		// column sould be correctly created
+		// column should be correctly created
 		Column columnForProperty = toto.mapColumnsOnName().get("name");
 		assertTrue(columnForProperty.isPrimaryKey());
 	}

@@ -6,13 +6,13 @@ import org.gama.reflection.PropertyAccessor;
  * @author Guillaume Mary
  * @param <C> the upgrade value type
  */
-public interface VersioningStrategy<C> {
+public interface VersioningStrategy<I, C> {
 	
-	PropertyAccessor<Object, C> getPropertyAccessor();
+	PropertyAccessor<I, C> getPropertyAccessor();
 	
-	C getVersion(Object o);
+	C getVersion(I o);
 	
-	C upgrade(Object o);
+	C upgrade(I o);
 	
-	C revert(Object o, C previousValue);
+	C revert(I o, C previousValue);
 }

@@ -4,6 +4,7 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -18,10 +19,11 @@ import java.util.stream.Collectors;
 import org.gama.lang.Nullable;
 import org.gama.lang.Reflections;
 import org.gama.lang.bean.FieldIterator;
-import org.gama.lang.function.Sequence;
+import org.gama.lang.function.Serie;
 import org.gama.reflection.Accessors;
 import org.gama.reflection.PropertyAccessor;
 import org.gama.spy.MethodReferenceCapturer;
+import org.gama.stalactite.persistence.engine.AbstractVersioningStrategy.VersioningStrategySupport;
 import org.gama.stalactite.persistence.engine.CascadeOption.CascadeType;
 import org.gama.stalactite.persistence.engine.cascade.JoinedTablesPersister;
 import org.gama.stalactite.persistence.engine.listening.IInsertListener;
@@ -282,8 +284,29 @@ public class FluentMappingBuilder<T extends Identified, I extends StatefullIdent
 	}
 	
 	@Override
-	public <C> IFluentMappingBuilder<T, I> versionedBy(Function<T, C> property, Sequence<C> sequence) {
-		optimiticLockOption = new OptimiticLockOption(Accessors.of(captureLambdaMethod(property)), sequence);
+	public <C> IFluentMappingBuilder<T, I> versionedBy(Function<T, C> property) {
+		Method method = captureLambdaMethod(property);
+		Serie<C> serie;
+		if (Integer.class.isAssignableFrom(method.getReturnType())) {
+			serie = (Serie<C>) Serie.INTEGER_SERIE;
+		} else if (Long.class.isAssignableFrom(method.getReturnType())) {
+			serie = (Serie<C>) Serie.LONG_SERIE;
+		} else if (Date.class.isAssignableFrom(method.getReturnType())) {
+			serie = (Serie<C>) Serie.NOW_SERIE;
+		} else {
+			throw new UnsupportedOperationException("Type of versioned property is not implemented, please provide a "
+					+ Serie.class.getSimpleName() + " for it : " + method.getReturnType());
+		}
+		return versionedBy(property, method, serie);
+	}
+	
+	@Override
+	public <C> IFluentMappingBuilder<T, I> versionedBy(Function<T, C> property, Serie<C> serie) {
+		return versionedBy(property, captureLambdaMethod(property), serie);
+	}
+	
+	public <C> IFluentMappingBuilder<T, I> versionedBy(Function<T, C> property, Method method, Serie<C> serie) {
+		optimiticLockOption = new OptimiticLockOption<>(Accessors.of(method), serie);
 		add(property);
 		return this;
 	}
@@ -629,18 +652,12 @@ public class FluentMappingBuilder<T extends Identified, I extends StatefullIdent
 	
 	private class OptimiticLockOption<C> {
 		
-		private final VersioningStrategy versioningStrategy;
+		private final VersioningStrategy<Object, C> versioningStrategy;
 		private final PropertyAccessor<Object, C> propertyAccessor;
 		
-		public OptimiticLockOption(PropertyAccessor<Object, C> propertyAccessor, Sequence<C> sequence) {
+		public OptimiticLockOption(PropertyAccessor<Object, C> propertyAccessor, Serie<C> serie) {
 			this.propertyAccessor = propertyAccessor;
-			this.versioningStrategy = new DefaultVersioningStrategy<C>(this.propertyAccessor) {
-				
-				@Override
-				protected Object next(Object previousVersion) {
-					return ((int) previousVersion)+1;
-				}
-			};
+			this.versioningStrategy = new VersioningStrategySupport<>(propertyAccessor, serie);
 		}
 		
 		public VersioningStrategy getVersioningStrategy() {
