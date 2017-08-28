@@ -1,9 +1,9 @@
 package org.gama.stalactite.persistence.engine;
 
 import java.util.Collection;
-import java.util.function.BiConsumer;
-import java.util.function.Function;
 
+import org.danekja.java.util.function.serializable.SerializableBiConsumer;
+import org.danekja.java.util.function.serializable.SerializableFunction;
 import org.gama.lang.function.Serie;
 import org.gama.stalactite.persistence.id.Identified;
 import org.gama.stalactite.persistence.id.manager.StatefullIdentifier;
@@ -15,27 +15,27 @@ import org.gama.stalactite.persistence.sql.Dialect;
  */
 public interface IFluentMappingBuilder<T extends Identified, I extends StatefullIdentifier> {
 	
-	<O> IFluentMappingBuilderColumnOptions<T, I> add(BiConsumer<T, O> function);
+	<O> IFluentMappingBuilderColumnOptions<T, I> add(SerializableBiConsumer<T, O> function);
 	
-	IFluentMappingBuilderColumnOptions<T, I> add(Function<T, ?> function);
+	IFluentMappingBuilderColumnOptions<T, I> add(SerializableFunction<T, ?> function);
 	
-	<O> IFluentMappingBuilderColumnOptions<T, I> add(BiConsumer<T, O> function, String columnName);
+	<O> IFluentMappingBuilderColumnOptions<T, I> add(SerializableBiConsumer<T, O> function, String columnName);
 	
-	IFluentMappingBuilder<T, I> add(Function<T, ?> function, String columnName);
+	IFluentMappingBuilder<T, I> add(SerializableFunction<T, ?> function, String columnName);
 	
-	<O extends Identified, J extends StatefullIdentifier> IFluentMappingBuilderOneToOneOptions<T, I> addOneToOne(Function<T, O> function, Persister<O, J> persister);
+	<O extends Identified, J extends StatefullIdentifier> IFluentMappingBuilderOneToOneOptions<T, I> addOneToOne(SerializableFunction<T, O> function, Persister<O, J> persister);
 	
-	<O extends Identified, J extends StatefullIdentifier, C extends Collection<O>> IFluentMappingBuilderOneToManyOptions<T, I, O> addOneToMany(Function<T, C> function, Persister<O, J> persister);
+	<O extends Identified, J extends StatefullIdentifier, C extends Collection<O>> IFluentMappingBuilderOneToManyOptions<T, I, O> addOneToMany(SerializableFunction<T, C> function, Persister<O, J> persister);
 	
-	IFluentMappingBuilder<T, I> embed(Function<T, ?> function);
+	IFluentMappingBuilder<T, I> embed(SerializableFunction<T, ?> function);
 	
 	IFluentMappingBuilder<T, I> foreignKeyNamingStrategy(ForeignKeyNamingStrategy foreignKeyNamingStrategy);
 	
 	IFluentMappingBuilder<T, I> joinColumnNamingStrategy(JoinColumnNamingStrategy columnNamingStrategy);
 	
-	<C> IFluentMappingBuilder<T, I> versionedBy(Function<T, C> property);
+	<C> IFluentMappingBuilder<T, I> versionedBy(SerializableFunction<T, C> property);
 	
-	<C> IFluentMappingBuilder<T, I> versionedBy(Function<T, C> property, Serie<C> sequence);
+	<C> IFluentMappingBuilder<T, I> versionedBy(SerializableFunction<T, C> property, Serie<C> sequence);
 	
 	ClassMappingStrategy<T, I> build(Dialect dialect);
 	

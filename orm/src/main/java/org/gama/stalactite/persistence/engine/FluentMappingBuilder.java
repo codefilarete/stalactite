@@ -16,14 +16,16 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
+import org.danekja.java.util.function.serializable.SerializableBiConsumer;
+import org.danekja.java.util.function.serializable.SerializableFunction;
 import org.gama.lang.Nullable;
 import org.gama.lang.Reflections;
 import org.gama.lang.bean.FieldIterator;
 import org.gama.lang.function.Serie;
 import org.gama.lang.reflect.MethodDispatcher;
 import org.gama.reflection.Accessors;
+import org.gama.reflection.MethodReferenceCapturer;
 import org.gama.reflection.PropertyAccessor;
-import org.gama.spy.MethodReferenceCapturer;
 import org.gama.stalactite.persistence.engine.AbstractVersioningStrategy.VersioningStrategySupport;
 import org.gama.stalactite.persistence.engine.CascadeOption.CascadeType;
 import org.gama.stalactite.persistence.engine.cascade.JoinedTablesPersister;
@@ -91,7 +93,7 @@ public class FluentMappingBuilder<T extends Identified, I extends StatefullIdent
 	
 	private PropertyAccessor<T, I> identifierAccessor;
 	
-	private final MethodReferenceCapturer<T> spy;
+	private final MethodReferenceCapturer spy;
 	
 	private List<CascadeOne<T, ? extends Identified, ? extends StatefullIdentifier>> cascadeOnes = new ArrayList<>();
 	
@@ -110,42 +112,42 @@ public class FluentMappingBuilder<T extends Identified, I extends StatefullIdent
 		this.table = table;
 		this.mapping = new ArrayList<>();
 		
-		// Code enhancer for creation of a proxy that will support functions invocations
-		this.spy = new MethodReferenceCapturer<>(persistedClass);
+		// Helper to capture Method behind method reference
+		this.spy = new MethodReferenceCapturer();
 	}
 	
 	public Table getTable() {
 		return table;
 	}
 	
-	private Method captureLambdaMethod(Function<T, ?> function) {
-		return this.spy.capture(function);
+	private Method captureLambdaMethod(SerializableFunction<T, ?> function) {
+		return this.spy.findMethod(function);
 	}
 	
-	private <O> Method captureLambdaMethod(BiConsumer<T, O> function) {
-		return this.spy.capture(function);
+	private <O> Method captureLambdaMethod(SerializableBiConsumer<T, O> function) {
+		return this.spy.findMethod(function);
 	}
 	
 	@Override
-	public <O> IFluentMappingBuilderColumnOptions<T, I> add(BiConsumer<T, O> function) {
+	public <O> IFluentMappingBuilderColumnOptions<T, I> add(SerializableBiConsumer<T, O> function) {
 		Method method = captureLambdaMethod(function);
 		return add(method, null);
 	}
 	
 	@Override
-	public IFluentMappingBuilderColumnOptions<T, I> add(Function<T, ?> function) {
+	public IFluentMappingBuilderColumnOptions<T, I> add(SerializableFunction<T, ?> function) {
 		Method method = captureLambdaMethod(function);
 		return add(method, null);
 	}
 	
 	@Override
-	public <O> IFluentMappingBuilderColumnOptions<T, I> add(BiConsumer<T, O> function, String columnName) {
+	public <O> IFluentMappingBuilderColumnOptions<T, I> add(SerializableBiConsumer<T, O> function, String columnName) {
 		Method method = captureLambdaMethod(function);
 		return add(method, columnName);
 	}
 	
 	@Override
-	public IFluentMappingBuilderColumnOptions<T, I> add(Function<T, ?> function, String columnName) {
+	public IFluentMappingBuilderColumnOptions<T, I> add(SerializableFunction<T, ?> function, String columnName) {
 		Method method = captureLambdaMethod(function);
 		return add(method, columnName);
 	}
@@ -202,7 +204,7 @@ public class FluentMappingBuilder<T extends Identified, I extends StatefullIdent
 	}
 	
 	@Override
-	public <O extends Identified, J extends StatefullIdentifier> IFluentMappingBuilderOneToOneOptions<T, I> addOneToOne(Function<T, O> function,
+	public <O extends Identified, J extends StatefullIdentifier> IFluentMappingBuilderOneToOneOptions<T, I> addOneToOne(SerializableFunction<T, O> function,
 																														Persister<O, J> persister) {
 		// we declare the column on our side: we do it first because it checks some rules
 		add(function);
@@ -236,7 +238,7 @@ public class FluentMappingBuilder<T extends Identified, I extends StatefullIdent
 	
 	@Override
 	public <O extends Identified, J extends StatefullIdentifier, C extends Collection<O>> IFluentMappingBuilderOneToManyOptions<T, I, O> addOneToMany(
-			Function<T, C> function, Persister<O, J> persister) {
+			SerializableFunction<T, C> function, Persister<O, J> persister) {
 		CascadeMany<T, O, J, C> cascadeMany = new CascadeMany<>(function, persister, captureLambdaMethod(function));
 		this.cascadeManys.add(cascadeMany);
 		IFluentMappingBuilderOneToManyOptions[] finalHack = new IFluentMappingBuilderOneToManyOptions[1];
@@ -270,7 +272,7 @@ public class FluentMappingBuilder<T extends Identified, I extends StatefullIdent
 	}
 	
 	@Override
-	public IFluentMappingBuilder<T, I> embed(Function<T, ?> function) {
+	public IFluentMappingBuilder<T, I> embed(SerializableFunction<T, ?> function) {
 		insets.add(new Inset<>(function));
 		return this;
 	}
@@ -288,7 +290,7 @@ public class FluentMappingBuilder<T extends Identified, I extends StatefullIdent
 	}
 	
 	@Override
-	public <C> IFluentMappingBuilder<T, I> versionedBy(Function<T, C> property) {
+	public <C> IFluentMappingBuilder<T, I> versionedBy(SerializableFunction<T, C> property) {
 		Method method = captureLambdaMethod(property);
 		Serie<C> serie;
 		if (Integer.class.isAssignableFrom(method.getReturnType())) {
@@ -305,11 +307,11 @@ public class FluentMappingBuilder<T extends Identified, I extends StatefullIdent
 	}
 	
 	@Override
-	public <C> IFluentMappingBuilder<T, I> versionedBy(Function<T, C> property, Serie<C> serie) {
+	public <C> IFluentMappingBuilder<T, I> versionedBy(SerializableFunction<T, C> property, Serie<C> serie) {
 		return versionedBy(property, captureLambdaMethod(property), serie);
 	}
 	
-	public <C> IFluentMappingBuilder<T, I> versionedBy(Function<T, C> property, Method method, Serie<C> serie) {
+	public <C> IFluentMappingBuilder<T, I> versionedBy(SerializableFunction<T, C> property, Method method, Serie<C> serie) {
 		optimiticLockOption = new OptimiticLockOption<>(Accessors.of(method), serie);
 		add(property);
 		return this;
@@ -585,9 +587,9 @@ public class FluentMappingBuilder<T extends Identified, I extends StatefullIdent
 		private final Class<TRGT> cascadingTargetClass;
 		private final Method member;
 		
-		private Inset(Function<SRC, TRGT> targetProvider) {
+		private Inset(SerializableFunction<SRC, TRGT> targetProvider) {
 			// looking for the target type because its necesary to find its persister (and other objects). Done thru a method capturer (weird thing).
-			this.member = captureLambdaMethod((Function) targetProvider);
+			this.member = captureLambdaMethod((SerializableFunction) targetProvider);
 			this.cascadingTargetClass = (Class<TRGT>) Reflections.javaBeanTargetType(member);
 		}
 	}
