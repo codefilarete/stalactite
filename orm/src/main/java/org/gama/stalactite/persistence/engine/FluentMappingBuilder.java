@@ -105,7 +105,7 @@ public class FluentMappingBuilder<T extends Identified, I extends StatefullIdent
 	
 	private JoinColumnNamingStrategy columnNamingStrategy = JoinColumnNamingStrategy.DEFAULT;
 	
-	private OptimiticLockOption optimiticLockOption;
+	private OptimisticLockOption optimisticLockOption;
 	
 	public FluentMappingBuilder(Class<T> persistedClass, Table table) {
 		this.persistedClass = persistedClass;
@@ -312,7 +312,7 @@ public class FluentMappingBuilder<T extends Identified, I extends StatefullIdent
 	}
 	
 	public <C> IFluentMappingBuilder<T, I> versionedBy(SerializableFunction<T, C> property, Method method, Serie<C> serie) {
-		optimiticLockOption = new OptimiticLockOption<>(Accessors.of(method), serie);
+		optimisticLockOption = new OptimisticLockOption<>(Accessors.of(method), serie);
 		add(property);
 		return this;
 	}
@@ -386,12 +386,12 @@ public class FluentMappingBuilder<T extends Identified, I extends StatefullIdent
 			mappingStrategy.put(Accessors.of(embed.member), beanMappingStrategy);
 		}
 		
-		Nullable<VersioningStrategy> versionigStrategy = Nullable.of(optimiticLockOption).orApply(OptimiticLockOption::getVersioningStrategy);
+		Nullable<VersioningStrategy> versionigStrategy = Nullable.of(optimisticLockOption).orApply(OptimisticLockOption::getVersioningStrategy);
 		if (versionigStrategy.isPresent()) {
-			// we have to declare it to the lapping strategy. To do that we must find the versionning column
-			Column column = localPersister.getMappingStrategy().getDefaultMappingStrategy().getPropertyToColumn().get(optimiticLockOption
+			// we have to declare it to the mapping strategy. To do that we must find the versionning column
+			Column column = localPersister.getMappingStrategy().getDefaultMappingStrategy().getPropertyToColumn().get(optimisticLockOption
 					.propertyAccessor);
-			localPersister.getMappingStrategy().addVersionedColumn(optimiticLockOption.propertyAccessor, column);
+			localPersister.getMappingStrategy().addVersionedColumn(optimisticLockOption.propertyAccessor, column);
 			// and don't forget to give it to the workers !
 			localPersister.getUpdateExecutor().setVersioningStrategy(versionigStrategy.get());
 			// TODO: take exception into account for deletion
@@ -656,12 +656,12 @@ public class FluentMappingBuilder<T extends Identified, I extends StatefullIdent
 				+ Reflections.toString(member) + " on object " + pawn);
 	}
 	
-	private class OptimiticLockOption<C> {
+	private class OptimisticLockOption<C> {
 		
 		private final VersioningStrategy<Object, C> versioningStrategy;
 		private final PropertyAccessor<Object, C> propertyAccessor;
 		
-		public OptimiticLockOption(PropertyAccessor<Object, C> propertyAccessor, Serie<C> serie) {
+		public OptimisticLockOption(PropertyAccessor<Object, C> propertyAccessor, Serie<C> serie) {
 			this.propertyAccessor = propertyAccessor;
 			this.versioningStrategy = new VersioningStrategySupport<>(propertyAccessor, serie);
 		}
