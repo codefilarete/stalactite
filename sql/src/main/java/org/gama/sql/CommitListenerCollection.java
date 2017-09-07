@@ -23,4 +23,9 @@ public class CommitListenerCollection implements CommitListener {
 		commitListeners.forEach(CommitListener::afterCommit);
 	}
 	
+	@Override
+	public boolean isTemporary() {
+		return false;
+	}
+	
 }

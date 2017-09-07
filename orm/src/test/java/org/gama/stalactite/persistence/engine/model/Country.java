@@ -1,5 +1,6 @@
 package org.gama.stalactite.persistence.engine.model;
 
+import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -26,6 +27,8 @@ public class Country implements Identified<Long> {
 	private Set<State> states = new HashSet<>();
 	
 	private int version;
+	
+	private LocalDateTime modificationDate;
 	
 	public Country() {
 	}
@@ -128,5 +131,9 @@ public class Country implements Identified<Long> {
 	
 	public int getVersion() {
 		return version;
+	}
+	
+	public LocalDateTime getModificationDate() {
+		return modificationDate;
 	}
 }

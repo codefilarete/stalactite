@@ -264,7 +264,7 @@ public class UpdateExecutor<T, I> extends UpsertExecutor<T, I> {
 		
 		/**
 		 * Expected to "manage" the optimistic lock:
-		 * - can manage it with thanks to a versioning column, then must upgrade the entity and takes connection rollback into account
+		 * - can manage it thanks to a versioning column, then must upgrade the entity and takes connection rollback into account
 		 * - can manage it by adding modified columns in the where clause
 		 * 
 		 * @param modified
@@ -349,6 +349,12 @@ public class UpdateExecutor<T, I> extends UpsertExecutor<T, I> {
 				
 				@Override
 				public void afterRollback(Savepoint savepoint) {
+				}
+				
+				@Override
+				public boolean isTemporary() {
+					// we don't need this on each rollback
+					return true;
 				}
 			});
 		}

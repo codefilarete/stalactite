@@ -396,8 +396,7 @@ public class FluentMappingBuilder<T extends Identified, I extends StatefullIdent
 			localPersister.getUpdateExecutor().setVersioningStrategy(versionigStrategy.get());
 			// TODO: take exception into account for deletion
 //			localPersister.getDeleteExecutor().setVersioningStrategy(versionigStrategy.get());
-			// TODO: ask initial value for insert
-//			localPersister.getInsertExecutor().setVersioningStrategy(versionigStrategy.get());
+			localPersister.getInsertExecutor().setVersioningStrategy(versionigStrategy.get());
 		}
 		
 		return localPersister;

@@ -3,6 +3,8 @@ package org.gama.sql;
 import java.sql.Savepoint;
 
 /**
+ * Default contract for listening to transaction commit and rollback
+ * 
  * @author Guillaume Mary
  */
 public interface TransactionListener extends CommitListener, RollbackListener {
@@ -48,4 +50,13 @@ public interface TransactionListener extends CommitListener, RollbackListener {
 	void beforeCompletion();
 	
 	void afterCompletion();
+	
+	/**
+	 * Implemented for non-temporary listener (arbitrary choice)
+	 * @return false
+	 */
+	@Override
+	default boolean isTemporary() {
+		return false;
+	}
 }

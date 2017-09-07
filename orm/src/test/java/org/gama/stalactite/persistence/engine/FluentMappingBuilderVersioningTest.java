@@ -2,8 +2,12 @@ package org.gama.stalactite.persistence.engine;
 
 import javax.sql.DataSource;
 import java.sql.SQLException;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.gama.lang.function.Serie.IntegerSerie;
+import org.gama.lang.function.Serie.NowSerie;
 import org.gama.sql.ConnectionProvider;
 import org.gama.sql.TransactionObserverConnectionProvider;
 import org.gama.sql.binder.DefaultParameterBinders;
@@ -100,7 +104,7 @@ public class FluentMappingBuilderVersioningTest {
 	}
 	
 	@Test
-	public void testUpdate_versionIsUpgraded() throws SQLException {
+	public void testUpdate_versionIsUpgraded_integerVersion() throws SQLException {
 		JdbcConnectionProvider surrogateConnectionProvider = new JdbcConnectionProvider(dataSource);
 		ConnectionProvider connectionProvider = new TransactionObserverConnectionProvider(surrogateConnectionProvider);
 		persistenceContext = new PersistenceContext(connectionProvider, DIALECT);
@@ -131,18 +135,72 @@ public class FluentMappingBuilderVersioningTest {
 		countryPersister.update(dummyCountryClone1, dummyCountry, true);
 		
 		// checking
-		assertEquals(1, dummyCountryClone1.getVersion());
-		assertEquals(0, dummyCountry.getVersion());
+		assertEquals(2, dummyCountryClone1.getVersion());
+		assertEquals(1, dummyCountry.getVersion());
 		
 		// the reloaded version should be up to date
 		Country dummyCountryClone2 = countryPersister.select(dummyCountry.getId());
-		assertEquals(1, dummyCountryClone2.getVersion());
+		assertEquals(2, dummyCountryClone2.getVersion());
 		
 		// another update should upgraded the entity again
 		dummyCountryClone2.setName("Tutu");
 		countryPersister.update(dummyCountryClone2, dummyCountryClone1, true);
-		assertEquals(2, dummyCountryClone2.getVersion());
-		assertEquals(0, dummyCountry.getVersion());
+		assertEquals(3, dummyCountryClone2.getVersion());
+		assertEquals(1, dummyCountry.getVersion());
+	}
+	
+	@Test
+	public void testUpdate_versionIsUpgraded_dateVersion() throws SQLException {
+		JdbcConnectionProvider surrogateConnectionProvider = new JdbcConnectionProvider(dataSource);
+		ConnectionProvider connectionProvider = new TransactionObserverConnectionProvider(surrogateConnectionProvider);
+		persistenceContext = new PersistenceContext(connectionProvider, DIALECT);
+		// mapping building thantks to fluent API
+		List<LocalDateTime> nowHistory = new ArrayList<>();
+		Persister<Country, Identifier<Long>> countryPersister = FluentMappingBuilder.from(Country.class,
+				(Class<Identifier<Long>>) (Class) PersistedIdentifier.class)
+				// setting a foreign key naming strategy to be tested
+				.foreignKeyNamingStrategy(ForeignKeyNamingStrategy.DEFAULT)
+				.versionedBy(Country::getModificationDate, new NowSerie() {
+					@Override
+					public LocalDateTime next(LocalDateTime input) {
+						LocalDateTime now = super.next(input);
+						nowHistory.add(now);
+						return now;
+					}
+				})
+				.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
+				.add(Country::getName)
+				.add(Country::getDescription)
+				.build(persistenceContext);
+		
+		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+		ddlDeployer.deployDDL();
+		
+		// creation of test data
+		LongProvider countryIdProvider = new LongProvider();
+		Country dummyCountry = new Country(countryIdProvider.giveNewIdentifier());
+		dummyCountry.setName("France");
+		countryPersister.insert(dummyCountry);
+		
+		
+		// test case: the version of an updated entity is upgraded
+		Country dummyCountryClone1 = countryPersister.select(dummyCountry.getId());
+		dummyCountryClone1.setName("Toto");
+		countryPersister.update(dummyCountryClone1, dummyCountry, true);
+		
+		// checking
+		assertEquals(nowHistory.get(1), dummyCountryClone1.getModificationDate());
+		assertEquals(nowHistory.get(0), dummyCountry.getModificationDate());
+		
+		// the reloaded version should be up to date
+		Country dummyCountryClone2 = countryPersister.select(dummyCountry.getId());
+		assertEquals(nowHistory.get(1), dummyCountryClone2.getModificationDate());
+		
+		// another update should upgraded the entity again
+		dummyCountryClone2.setName("Tutu");
+		countryPersister.update(dummyCountryClone2, dummyCountryClone1, true);
+		assertEquals(nowHistory.get(2), dummyCountryClone2.getModificationDate());
+		assertEquals(nowHistory.get(0), dummyCountry.getModificationDate());
 	}
 	
 	@Test
@@ -169,6 +227,7 @@ public class FluentMappingBuilderVersioningTest {
 		Country dummyCountry = new Country(countryIdProvider.giveNewIdentifier());
 		dummyCountry.setName("France");
 		countryPersister.insert(dummyCountry);
+		assertEquals(1, dummyCountry.getVersion());
 		
 		// test case : we out of sync the entity by loading it from database while another process will update it
 		Country dummyCountryClone = countryPersister.select(dummyCountry.getId());
@@ -178,13 +237,17 @@ public class FluentMappingBuilderVersioningTest {
 		
 		// the update must fail because the updated object is out of sync
 		dummyCountryClone.setName("Tata");
-		// the following should go wrong since version is not up to date on the clone
+		// the following should go wrong since version is not up to date on the clone and the original
 		assertThatExceptionOfType(StaleObjectExcepion.class).isThrownBy(() -> countryPersister.update(dummyCountryClone, dummyCountry, true));
-//		assertEquals(0, countryPersister.update(dummyCountryClone, dummyCountry, true));
+		assertThatExceptionOfType(StaleObjectExcepion.class).isThrownBy(() -> countryPersister.delete(dummyCountry));
 		// version is not reverted because rollback wasn't invoked 
-		assertEquals(1, dummyCountryClone.getVersion());
+		assertEquals(2, dummyCountryClone.getVersion());
 		// ... but it is when we rollback
 		connectionProvider.getCurrentConnection().rollback();
-		assertEquals(0, dummyCountryClone.getVersion());
+		assertEquals(1, dummyCountryClone.getVersion());
+		
+		// check that version is robust to multiple rollback
+		connectionProvider.getCurrentConnection().rollback();
+		assertEquals(1, dummyCountryClone.getVersion());
 	}
 }

@@ -33,4 +33,9 @@ public class RollbackListenerCollection implements RollbackListener {
 	public void afterRollback(Savepoint savepoint) {
 		rollbackListeners.forEach(l -> l.afterRollback(savepoint));
 	}
+	
+	@Override
+	public boolean isTemporary() {
+		return false;
+	}
 }

@@ -63,6 +63,7 @@ public class TransactionListenerCollection implements RollbackObserver, CommitOb
 	@Override
 	public void afterCompletion() {
 		transactionListeners.forEach(TransactionListener::afterCompletion);
+		transactionListeners.removeIf(TransactionListener::isTemporary);
 	}
 	
 	@Override
@@ -87,6 +88,11 @@ public class TransactionListenerCollection implements RollbackObserver, CommitOb
 			@Override
 			public void afterCompletion() {
 				// no completion to accomplish because the surrogate doesn't
+			}
+			
+			@Override
+			public boolean isTemporary() {
+				return commitListener.isTemporary();
 			}
 		});
 	}
@@ -123,6 +129,11 @@ public class TransactionListenerCollection implements RollbackObserver, CommitOb
 			@Override
 			public void afterCompletion() {
 				// no completion to accomplish because the surrogate doesn't
+			}
+			
+			@Override
+			public boolean isTemporary() {
+				return rollbackListener.isTemporary();
 			}
 		});
 	}
