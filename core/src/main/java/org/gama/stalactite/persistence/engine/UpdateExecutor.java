@@ -274,20 +274,11 @@ public class UpdateExecutor<T, I> extends UpsertExecutor<T, I> {
 		void manageLock(Object modified, Object unmodified, Map<UpwhereColumn, Object> updateValues);
 	}
 	
-	/**
-	 * A {@link OptimisticLockManager} that upgrades entities and reverts them on connection rollback.
-	 * Needs that the {@link ConnectionProvider} is also a {@link RollbackObserver} (see constructors).
-	 * MVCC stands for MultiVersion Concurrency Control.
-	 */
-	private static class RevertOnRollbackMVCC implements OptimisticLockManager {
-		
-		private final VersioningStrategy versioningStrategy;
-		private final Column versionColumn;
-		private final RollbackObserver rollbackObserver;
+	private class RevertOnRollbackMVCC extends AbstractRevertOnRollbackMVCC implements OptimisticLockManager {
 		
 		/**
 		 * Main constructor.
-		 * 
+		 *
 		 * @param versioningStrategy the entities upgrader
 		 * @param versionColumn the column that stores the version
 		 * @param rollbackObserver the {@link RollbackObserver} to revert upgrade when rollback happens
@@ -295,28 +286,20 @@ public class UpdateExecutor<T, I> extends UpsertExecutor<T, I> {
 		 * {@link ConnectionProvider#getCurrentConnection()} is not used here, simple mark to help understanding
 		 */
 		private <C extends RollbackObserver & ConnectionProvider> RevertOnRollbackMVCC(VersioningStrategy versioningStrategy, Column versionColumn, C rollbackObserver) {
-			this.versioningStrategy = versioningStrategy;
-			this.versionColumn = versionColumn;
-			this.rollbackObserver = rollbackObserver;
+			super(versioningStrategy, versionColumn, rollbackObserver);
 		}
 		
 		/**
 		 * Constructor that will check that the given {@link ConnectionProvider} is also a {@link RollbackObserver}, as the other constructor
 		 * expects it. Wil throw an {@link Exception} if it is not the case
-		 * 
+		 *
 		 * @param versioningStrategy the entities upgrader
 		 * @param versionColumn the column that stores the version
 		 * @param rollbackObserver a {@link ConnectionProvider} that implements {@link RollbackObserver} to revert upgrade when rollback happens
 		 * @throws UnsupportedOperationException if the given {@link ConnectionProvider} doesn't implements {@link RollbackObserver}
 		 */
 		private RevertOnRollbackMVCC(VersioningStrategy versioningStrategy, Column versionColumn, ConnectionProvider rollbackObserver) {
-			this.versioningStrategy = versioningStrategy;
-			this.versionColumn = versionColumn;
-			if (!(rollbackObserver instanceof RollbackObserver)) {
-				throw new UnsupportedOperationException("Version control is only supported with " + ConnectionProvider.class.getName()
-						+ " that also implements " + RollbackObserver.class.getName());
-			}
-			this.rollbackObserver = (RollbackObserver) rollbackObserver;
+			super(versioningStrategy, versionColumn, rollbackObserver);
 		}
 		
 		/**

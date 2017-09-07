@@ -92,11 +92,7 @@ public class InsertExecutor<T, I> extends UpsertExecutor<T, I> {
 		void manageLock(T instance, Map<Column, Object> updateValues);
 	}
 	
-	private static class RevertOnRollbackMVCC<T> implements OptimisticLockManager<T> {
-		
-		private final VersioningStrategy versioningStrategy;
-		private final Column versionColumn;
-		private final RollbackObserver rollbackObserver;
+	private class RevertOnRollbackMVCC extends AbstractRevertOnRollbackMVCC implements OptimisticLockManager<T> {
 		
 		/**
 		 * Main constructor.
@@ -108,9 +104,7 @@ public class InsertExecutor<T, I> extends UpsertExecutor<T, I> {
 		 * {@link ConnectionProvider#getCurrentConnection()} is not used here, simple mark to help understanding
 		 */
 		private <C extends RollbackObserver & ConnectionProvider> RevertOnRollbackMVCC(VersioningStrategy versioningStrategy, Column versionColumn, C rollbackObserver) {
-			this.versioningStrategy = versioningStrategy;
-			this.versionColumn = versionColumn;
-			this.rollbackObserver = rollbackObserver;
+			super(versioningStrategy, versionColumn, rollbackObserver);
 		}
 		
 		/**
@@ -123,13 +117,7 @@ public class InsertExecutor<T, I> extends UpsertExecutor<T, I> {
 		 * @throws UnsupportedOperationException if the given {@link ConnectionProvider} doesn't implements {@link RollbackObserver}
 		 */
 		private RevertOnRollbackMVCC(VersioningStrategy versioningStrategy, Column versionColumn, ConnectionProvider rollbackObserver) {
-			this.versioningStrategy = versioningStrategy;
-			this.versionColumn = versionColumn;
-			if (!(rollbackObserver instanceof RollbackObserver)) {
-				throw new UnsupportedOperationException("Version control is only supported with " + ConnectionProvider.class.getName()
-						+ " that also implements " + RollbackObserver.class.getName());
-			}
-			this.rollbackObserver = (RollbackObserver) rollbackObserver;
+			super(versioningStrategy, versionColumn, rollbackObserver);
 		}
 		
 		/**
