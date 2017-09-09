@@ -394,8 +394,6 @@ public class FluentMappingBuilder<T extends Identified, I extends StatefullIdent
 			localPersister.getMappingStrategy().addVersionedColumn(optimisticLockOption.propertyAccessor, column);
 			// and don't forget to give it to the workers !
 			localPersister.getUpdateExecutor().setVersioningStrategy(versionigStrategy.get());
-			// TODO: take exception into account for deletion
-//			localPersister.getDeleteExecutor().setVersioningStrategy(versionigStrategy.get());
 			localPersister.getInsertExecutor().setVersioningStrategy(versionigStrategy.get());
 		}
 		

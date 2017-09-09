@@ -109,7 +109,7 @@ public class InsertExecutor<T, I> extends UpsertExecutor<T, I> {
 		
 		/**
 		 * Constructor that will check that the given {@link ConnectionProvider} is also a {@link RollbackObserver}, as the other constructor
-		 * expects it. Wil throw an {@link Exception} if it is not the case
+		 * expects it. Will throw an {@link UnsupportedOperationException} if it is not the case
 		 *
 		 * @param versioningStrategy the entities upgrader
 		 * @param versionColumn the column that stores the version

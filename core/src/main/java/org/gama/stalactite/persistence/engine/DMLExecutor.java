@@ -43,7 +43,7 @@ public abstract class DMLExecutor<T, I> {
 	}
 	
 	/**
-	 * Implementation that gives the ConnectionProvider.getCurrentConnection() of instanciation time
+	 * Implementation that gives the {@link ConnectionProvider#getCurrentConnection()} of instanciation time
 	 */
 	protected class CurrentConnectionProvider extends SimpleConnectionProvider {
 		
