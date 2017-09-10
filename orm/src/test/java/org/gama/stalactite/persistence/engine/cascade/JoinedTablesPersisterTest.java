@@ -22,9 +22,9 @@ import org.gama.stalactite.persistence.engine.InMemoryCounterIdentifierGenerator
 import org.gama.stalactite.persistence.engine.Persister;
 import org.gama.stalactite.persistence.engine.RowCountManager;
 import org.gama.stalactite.persistence.engine.listening.NoopDeleteListener;
-import org.gama.stalactite.persistence.engine.listening.NoopDeleteRoughlyListener;
+import org.gama.stalactite.persistence.engine.listening.NoopDeleteByIdListener;
 import org.gama.stalactite.persistence.engine.listening.NoopInsertListener;
-import org.gama.stalactite.persistence.engine.listening.NoopUpdateRoughlyListener;
+import org.gama.stalactite.persistence.engine.listening.NoopUpdateByIdListener;
 import org.gama.stalactite.persistence.id.Identified;
 import org.gama.stalactite.persistence.id.Identifier;
 import org.gama.stalactite.persistence.id.PersistableIdentifier;
@@ -175,11 +175,11 @@ public class JoinedTablesPersisterTest {
 				persister2.insert(iterables);
 			}
 		});
-		testInstance.getPersisterListener().addUpdateRouglyListener(new NoopUpdateRoughlyListener<Toto>() {
+		testInstance.getPersisterListener().addUpdateByIdListener(new NoopUpdateByIdListener<Toto>() {
 			@Override
-			public void afterUpdateRoughly(Iterable<Toto> iterables) {
+			public void afterUpdateById(Iterable<Toto> iterables) {
 				// since we only want a replicate of totos in table2, we only need to return them
-				persister2.updateRoughly(iterables);
+				persister2.updateById(iterables);
 			}
 		});
 		testInstance.getPersisterListener().addDeleteListener(new NoopDeleteListener<Toto>() {
@@ -189,11 +189,11 @@ public class JoinedTablesPersisterTest {
 				persister2.delete(iterables);
 			}
 		});
-		testInstance.getPersisterListener().addDeleteRoughlyListener(new NoopDeleteRoughlyListener<Toto>() {
+		testInstance.getPersisterListener().addDeleteByIdListener(new NoopDeleteByIdListener<Toto>() {
 			@Override
-			public void beforeDeleteRoughly(Iterable<Toto> iterables) {
+			public void beforeDeleteById(Iterable<Toto> iterables) {
 				// since we only want a replicate of totos in table2, we only need to return them
-				persister2.deleteRoughly(iterables);
+				persister2.deleteById(iterables);
 			}
 		});
 	}
@@ -236,8 +236,8 @@ public class JoinedTablesPersisterTest {
 	}
 	
 	@Test
-	public void testUpdateRoughly() throws Exception {
-		testInstance.updateRoughly(Arrays.asList(
+	public void testUpdateById() throws Exception {
+		testInstance.updateById(Arrays.asList(
 				new Toto(1, 17, 23, 117, 123, -117),
 				new Toto(2, 29, 31, 129, 131, -129),
 				new Toto(3, 37, 41, 137, 141, -137),
@@ -302,8 +302,8 @@ public class JoinedTablesPersisterTest {
 	}
 	
 	@Test
-	public void testDeleteRoughly() throws Exception {
-		testInstance.deleteRoughly(Arrays.asList(
+	public void testDeleteById() throws Exception {
+		testInstance.deleteById(Arrays.asList(
 				new Toto(7, 17, 23, 117, 123, -117)
 		));
 		
@@ -316,8 +316,8 @@ public class JoinedTablesPersisterTest {
 	}
 	
 	@Test
-	public void testDeleteRoughly_multiple() throws Exception {
-		testInstance.deleteRoughly(Arrays.asList(
+	public void testDeleteById_multiple() throws Exception {
+		testInstance.deleteById(Arrays.asList(
 				new Toto(1, 17, 23, 117, 123, -117),
 				new Toto(2, 29, 31, 129, 131, -129),
 				new Toto(3, 37, 41, 137, 141, -137),

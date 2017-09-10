@@ -125,7 +125,7 @@ public class SequencePersister extends Persister<Sequence, String> {
 			sequence = readStep(sequenceName);
 			if (sequence != null) {
 				sequence.setStep(sequence.getStep() + stepSize);
-				updateRoughly(sequence);
+				updateById(sequence);
 			} else {
 				sequence = new Sequence(sequenceName);
 				sequence.setStep(stepSize);

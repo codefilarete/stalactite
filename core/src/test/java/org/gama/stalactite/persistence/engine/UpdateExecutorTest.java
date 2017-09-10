@@ -40,8 +40,8 @@ public class UpdateExecutorTest extends AbstractDMLExecutorTest {
 	}
 	
 	@Test
-	public void testUpdateRoughly() throws Exception {
-		testInstance.updateRoughly(asList(new Toto(1, 17, 23), new Toto(2, 29, 31), new Toto(3, 37, 41), new Toto(4, 43, 53)));
+	public void testUpdateById() throws Exception {
+		testInstance.updateById(asList(new Toto(1, 17, 23), new Toto(2, 29, 31), new Toto(3, 37, 41), new Toto(4, 43, 53)));
 		
 		verify(dataSet.preparedStatement, times(4)).addBatch();
 		verify(dataSet.preparedStatement, times(2)).executeBatch();

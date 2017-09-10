@@ -6,14 +6,14 @@ import java.util.stream.Collectors;
 import org.gama.lang.collection.Iterables;
 import org.gama.stalactite.persistence.engine.Persister;
 import org.gama.stalactite.persistence.engine.listening.IDeleteListener;
-import org.gama.stalactite.persistence.engine.listening.NoopDeleteRoughlyListener;
+import org.gama.stalactite.persistence.engine.listening.NoopDeleteByIdListener;
 
 /**
  * Cascader for delete, written for @OneToMany style of cascade where Target owns the relationship to Trigger
  * 
  * @author Guillaume Mary
  */
-public abstract class BeforeDeleteRoughlyCollectionCascader<Trigger, Target> extends NoopDeleteRoughlyListener<Trigger> {
+public abstract class BeforeDeleteByIdCollectionCascader<Trigger, Target> extends NoopDeleteByIdListener<Trigger> {
 	
 	private Persister<Target, ?> persister;
 	
@@ -21,12 +21,12 @@ public abstract class BeforeDeleteRoughlyCollectionCascader<Trigger, Target> ext
 	 * Simple constructor. Created instance must be added to PersisterListener afterward.
 	 * @param persister
 	 */
-	public BeforeDeleteRoughlyCollectionCascader(Persister<Target, ?> persister) {
+	public BeforeDeleteByIdCollectionCascader(Persister<Target, ?> persister) {
 		this.persister = persister;
-		this.persister.getPersisterListener().addDeleteRoughlyListener(new NoopDeleteRoughlyListener<Target>() {
+		this.persister.getPersisterListener().addDeleteByIdListener(new NoopDeleteByIdListener<Target>() {
 			@Override
-			public void afterDeleteRoughly(Iterable<Target> iterables) {
-				super.afterDeleteRoughly(iterables);
+			public void afterDeleteById(Iterable<Target> iterables) {
+				super.afterDeleteById(iterables);
 				postTargetDelete(iterables);
 			}
 		});
@@ -39,8 +39,8 @@ public abstract class BeforeDeleteRoughlyCollectionCascader<Trigger, Target> ext
 	 * @param iterables
 	 */
 	@Override
-	public void beforeDeleteRoughly(Iterable<Trigger> iterables) {
-		this.persister.deleteRoughly(Iterables.stream(iterables).flatMap(c -> getTargets(c).stream()).collect(Collectors.toList()));
+	public void beforeDeleteById(Iterable<Trigger> iterables) {
+		this.persister.deleteById(Iterables.stream(iterables).flatMap(c -> getTargets(c).stream()).collect(Collectors.toList()));
 	}
 	
 	/**

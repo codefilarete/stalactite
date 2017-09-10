@@ -6,14 +6,14 @@ import java.util.stream.Collectors;
 import org.gama.lang.collection.Iterables;
 import org.gama.stalactite.persistence.engine.Persister;
 import org.gama.stalactite.persistence.engine.listening.IDeleteListener;
-import org.gama.stalactite.persistence.engine.listening.NoopDeleteRoughlyListener;
+import org.gama.stalactite.persistence.engine.listening.NoopDeleteByIdListener;
 
 /**
  * Cascader for delete, written for @OneToOne style of cascade where Trigger owns the relationship to Target
  * 
  * @author Guillaume Mary
  */
-public abstract class AfterDeleteRoughlyCascader<Trigger, Target> extends NoopDeleteRoughlyListener<Trigger> {
+public abstract class AfterDeleteByIdCascader<Trigger, Target> extends NoopDeleteByIdListener<Trigger> {
 	
 	private Persister<Target, ?> persister;
 	
@@ -21,12 +21,12 @@ public abstract class AfterDeleteRoughlyCascader<Trigger, Target> extends NoopDe
 	 * Simple constructor. Created instance must be added to PersisterListener afterward.
 	 * @param persister
 	 */
-	public AfterDeleteRoughlyCascader(Persister<Target, ?> persister) {
+	public AfterDeleteByIdCascader(Persister<Target, ?> persister) {
 		this.persister = persister;
-		this.persister.getPersisterListener().addDeleteRoughlyListener(new NoopDeleteRoughlyListener<Target>() {
+		this.persister.getPersisterListener().addDeleteByIdListener(new NoopDeleteByIdListener<Target>() {
 			@Override
-			public void afterDeleteRoughly(Iterable<Target> iterables) {
-				super.afterDeleteRoughly(iterables);
+			public void afterDeleteById(Iterable<Target> iterables) {
+				super.afterDeleteById(iterables);
 				postTargetDelete(iterables);
 			}
 		});
@@ -39,8 +39,8 @@ public abstract class AfterDeleteRoughlyCascader<Trigger, Target> extends NoopDe
 	 * @param iterables
 	 */
 	@Override
-	public void afterDeleteRoughly(Iterable<Trigger> iterables) {
-		this.persister.deleteRoughly(Iterables.stream(iterables).map(this::getTarget).filter(Objects::nonNull).collect(Collectors.toList()));
+	public void afterDeleteById(Iterable<Trigger> iterables) {
+		this.persister.deleteById(Iterables.stream(iterables).map(this::getTarget).filter(Objects::nonNull).collect(Collectors.toList()));
 	}
 	
 	/**

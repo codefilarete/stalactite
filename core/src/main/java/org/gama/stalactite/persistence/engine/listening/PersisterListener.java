@@ -13,10 +13,10 @@ import org.gama.lang.bean.IQuietDelegate;
 public class PersisterListener<T, I> {
 	
 	private InsertListenerCollection<T> insertListener = new InsertListenerCollection<>();
-	private UpdateRoughlyListenerCollection<T> updateRoughlyListener = new UpdateRoughlyListenerCollection<>();
+	private UpdateByIdListenerCollection<T> updateByIdListenerCollection = new UpdateByIdListenerCollection<>();
 	private UpdateListenerCollection<T> updateListener = new UpdateListenerCollection<>();
 	private DeleteListenerCollection<T> deleteListener = new DeleteListenerCollection<>();
-	private DeleteRoughlyListenerCollection<T> deleteRoughlyListener = new DeleteRoughlyListenerCollection<>();
+	private DeleteByIdListenerCollection<T> deleteByIdListenerCollection = new DeleteByIdListenerCollection<>();
 	private SelectListenerCollection<T, I> selectListener = new SelectListenerCollection<>();
 	
 	public InsertListenerCollection<T> getInsertListener() {
@@ -35,19 +35,19 @@ public class PersisterListener<T, I> {
 		return result;
 	}
 	
-	public UpdateRoughlyListenerCollection<T> getUpdateRoughlyListener() {
-		return updateRoughlyListener;
+	public UpdateByIdListenerCollection<T> getUpdateByIdListenerCollection() {
+		return updateByIdListenerCollection;
 	}
 	
-	public PersisterListener<T, I> addUpdateRouglyListener(IUpdateRoughlyListener<T> updateRouglyListener) {
-		this.updateRoughlyListener.add(updateRouglyListener);
+	public PersisterListener<T, I> addUpdateByIdListener(IUpdateByIdListener<T> updateByIdListener) {
+		this.updateByIdListenerCollection.add(updateByIdListener);
 		return this;
 	}
 	
-	public <R> R doWithUpdateRouglyListener(Iterable<T> iterable, IQuietDelegate<R> delegate) {
-		updateRoughlyListener.beforeUpdateRoughly(iterable);
+	public <R> R doWithUpdateByIdListener(Iterable<T> iterable, IQuietDelegate<R> delegate) {
+		updateByIdListenerCollection.beforeUpdateById(iterable);
 		R result = delegate.execute();
-		updateRoughlyListener.afterUpdateRoughly(iterable);
+		updateByIdListenerCollection.afterUpdateById(iterable);
 		return result;
 	}
 	
@@ -83,15 +83,15 @@ public class PersisterListener<T, I> {
 		return result;
 	}
 	
-	public PersisterListener<T, I> addDeleteRoughlyListener(IDeleteRoughlyListener<T> deleteRoughlyListener) {
-		this.deleteRoughlyListener.add(deleteRoughlyListener);
+	public PersisterListener<T, I> addDeleteByIdListener(IDeleteByIdListener<T> deleteByIdListener) {
+		this.deleteByIdListenerCollection.add(deleteByIdListener);
 		return this;
 	}
 	
-	public <R> R doWithDeleteRoughlyListener(Iterable<T> iterable, IQuietDelegate<R> delegate) {
-		deleteRoughlyListener.beforeDeleteRoughly(iterable);
+	public <R> R doWithDeleteByIdListener(Iterable<T> iterable, IQuietDelegate<R> delegate) {
+		deleteByIdListenerCollection.beforeDeleteById(iterable);
 		R result = delegate.execute();
-		deleteRoughlyListener.afterDeleteRoughly(iterable);
+		deleteByIdListenerCollection.afterDeleteById(iterable);
 		return result;
 	}
 	

@@ -59,9 +59,10 @@ public class UpdateExecutor<T, I> extends UpsertExecutor<T, I> {
 	
 	/**
 	 * Update roughly some instances: no difference are computed, only update statements (all columns) are applied.
+	 * Hence optimistic lock (versioned entities) is not check
 	 * @param iterable iterable of instances
 	 */
-	public int updateRoughly(Iterable<T> iterable) {
+	public int updateById(Iterable<T> iterable) {
 		Set<Table.Column> columnsToUpdate = getMappingStrategy().getUpdatableColumns();
 		PreparedUpdate updateOperation = getDmlGenerator().buildUpdate(columnsToUpdate, getMappingStrategy().getVersionedKeys());
 		WriteOperation<PreparedUpdate.UpwhereColumn> writeOperation = newWriteOperation(updateOperation, new CurrentConnectionProvider());

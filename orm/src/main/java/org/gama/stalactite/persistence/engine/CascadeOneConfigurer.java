@@ -14,7 +14,7 @@ import org.gama.stalactite.persistence.engine.FluentMappingBuilder.MandatoryRela
 import org.gama.stalactite.persistence.engine.FluentMappingBuilder.SetPersistedFlagAfterInsertListener;
 import org.gama.stalactite.persistence.engine.cascade.AfterDeleteCascader;
 import org.gama.stalactite.persistence.engine.cascade.AfterUpdateCascader;
-import org.gama.stalactite.persistence.engine.cascade.AfterDeleteRoughlyCascader;
+import org.gama.stalactite.persistence.engine.cascade.AfterDeleteByIdCascader;
 import org.gama.stalactite.persistence.engine.cascade.BeforeInsertCascader;
 import org.gama.stalactite.persistence.engine.cascade.JoinedStrategiesSelect;
 import org.gama.stalactite.persistence.engine.cascade.JoinedTablesPersister;
@@ -116,9 +116,8 @@ public class CascadeOneConfigurer<T extends Identified, I extends Identified, J 
 							return PERSISTED_PREDICATE.test(target) ? target : null;
 						}
 					});
-					// we add the delete roughly event since we suppose that if delete is required then there's no reason that roughly 
-					// delete is not
-					persisterListener.addDeleteRoughlyListener(new AfterDeleteRoughlyCascader<T, Identified>(targetPersister) {
+					// we add the deleteById event since we suppose that if delete is required then there's no reason that rough delete is not
+					persisterListener.addDeleteByIdListener(new AfterDeleteByIdCascader<T, Identified>(targetPersister) {
 						
 						@Override
 						protected void postTargetDelete(Iterable<Identified> iterable) {

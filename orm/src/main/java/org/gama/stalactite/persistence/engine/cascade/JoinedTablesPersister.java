@@ -11,7 +11,7 @@ import org.gama.stalactite.persistence.engine.BeanRelationFixer;
 import org.gama.stalactite.persistence.engine.PersistenceContext;
 import org.gama.stalactite.persistence.engine.Persister;
 import org.gama.stalactite.persistence.engine.listening.NoopUpdateListener;
-import org.gama.stalactite.persistence.engine.listening.NoopUpdateRoughlyListener;
+import org.gama.stalactite.persistence.engine.listening.NoopUpdateByIdListener;
 import org.gama.stalactite.persistence.id.Identified;
 import org.gama.stalactite.persistence.id.manager.StatefullIdentifier;
 import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
@@ -59,7 +59,7 @@ public class JoinedTablesPersister<T extends Identified, I extends StatefullIden
 																					 Column leftJoinColumn, Column rightJoinColumn, boolean isOuterJoin) {
 		ClassMappingStrategy<U, J> mappingStrategy = persister.getMappingStrategy();
 //		addUpdateExecutor(persister, additionalInstancesProvider);
-//		addUpdateRoughlyExecutor(persister, additionalInstancesProvider);
+//		addUpdateByIdExecutor(persister, additionalInstancesProvider);
 		
 		// We use our own select system since ISelectListener is not aimed at joining table
 		return addSelectExecutor(ownerStrategyName, mappingStrategy, beanRelationFixer, leftJoinColumn, rightJoinColumn, isOuterJoin);
@@ -85,11 +85,11 @@ public class JoinedTablesPersister<T extends Identified, I extends StatefullIden
 		});
 	}
 	
-	private <U, J> void addUpdateRoughlyExecutor(Persister<U, J>persister, Function<Iterable<T>, Iterable<U>> complementaryInstancesProvider) {
-		getPersisterListener().addUpdateRouglyListener(new NoopUpdateRoughlyListener<T>() {
+	private <U, J> void addUpdateByIdExecutor(Persister<U, J>persister, Function<Iterable<T>, Iterable<U>> complementaryInstancesProvider) {
+		getPersisterListener().addUpdateByIdListener(new NoopUpdateByIdListener<T>() {
 			@Override
-			public void afterUpdateRoughly(Iterable<T> iterables) {
-				persister.updateRoughly(complementaryInstancesProvider.apply(iterables));
+			public void afterUpdateById(Iterable<T> iterables) {
+				persister.updateById(complementaryInstancesProvider.apply(iterables));
 			}
 		});
 	}

@@ -53,8 +53,8 @@ public class DeleteExecutorTest extends AbstractDMLExecutorTest {
 	}
 	
 	@Test
-	public void testDeleteRoughly() throws Exception {
-		testInstance.deleteRoughly(Arrays.asList(new Toto(7, 17, 23)));
+	public void testDeleteById() throws Exception {
+		testInstance.deleteById(Arrays.asList(new Toto(7, 17, 23)));
 		
 		verify(dataSet.preparedStatement, times(0)).addBatch();
 		verify(dataSet.preparedStatement, times(0)).executeBatch();
@@ -66,8 +66,8 @@ public class DeleteExecutorTest extends AbstractDMLExecutorTest {
 	}
 	
 	@Test
-	public void testDeleteRoughly_multiple() throws Exception {
-		testInstance.deleteRoughly(Arrays.asList(new Toto(1, 17, 23), new Toto(2, 29, 31), new Toto(3, 37, 41), new Toto(4, 43, 53)));
+	public void testDeleteById_multiple() throws Exception {
+		testInstance.deleteById(Arrays.asList(new Toto(1, 17, 23), new Toto(2, 29, 31), new Toto(3, 37, 41), new Toto(4, 43, 53)));
 		// 2 statements because in operator is bounded to 3 values (see testInstance creation)
 		assertEquals(Arrays.asList("delete from Toto where a in (?, ?, ?)", "delete from Toto where a in (?)"), dataSet.statementArgCaptor.getAllValues());
 		verify(dataSet.preparedStatement, times(1)).addBatch();

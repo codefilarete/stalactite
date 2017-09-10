@@ -136,13 +136,13 @@ public class PersisterDatabaseTest {
 		insertedRowCount = testInstance.insert(Arrays.asList(new Toto(2, 20, 200), new Toto(3, 30, 300), new Toto(4, 40, 400)));
 		assertEquals(3, insertedRowCount);
 		
-		// check updated row count roughly
-		int updatedRoughlyRowCount = testInstance.updateRoughly(Arrays.asList(new Toto(1, 10, 100)));
-		assertEquals(1, updatedRoughlyRowCount);
-		updatedRoughlyRowCount = testInstance.insert(Arrays.asList(new Toto(2, 20, 200), new Toto(3, 30, 300), new Toto(4, 40, 400)));
-		assertEquals(3, updatedRoughlyRowCount);
-		updatedRoughlyRowCount = testInstance.updateRoughly(Arrays.asList(new Toto(-1, 10, 100)));
-		assertEquals(0, updatedRoughlyRowCount);
+		// check updated row count
+		int updatedByIdRowCount = testInstance.updateById(Arrays.asList(new Toto(1, 10, 100)));
+		assertEquals(1, updatedByIdRowCount);
+		updatedByIdRowCount = testInstance.insert(Arrays.asList(new Toto(2, 20, 200), new Toto(3, 30, 300), new Toto(4, 40, 400)));
+		assertEquals(3, updatedByIdRowCount);
+		updatedByIdRowCount = testInstance.updateById(Arrays.asList(new Toto(-1, 10, 100)));
+		assertEquals(0, updatedByIdRowCount);
 		
 		// check updated row count
 		int updatedFullyRowCount = testInstance.update(Arrays.asList(

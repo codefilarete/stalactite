@@ -162,7 +162,7 @@ public class Persister<T, I> {
 		if (isNew(t)) {
 			insert(t);
 		} else {
-			updateRoughly(t);
+			updateById(t);
 		}
 	}
 	
@@ -181,7 +181,7 @@ public class Persister<T, I> {
 			insert(toInsert);
 		}
 		if (!toUpdate.isEmpty()) {
-			updateRoughly(toUpdate);
+			updateById(toUpdate);
 		}
 	}
 	
@@ -197,20 +197,20 @@ public class Persister<T, I> {
 		return insertExecutor.insert(iterable);
 	}
 	
-	public void updateRoughly(T t) {
-		updateRoughly(Collections.singletonList(t));
+	public void updateById(T t) {
+		updateById(Collections.singletonList(t));
 	}
 	
 	/**
 	 * Update roughly some instances: no difference are computed, only update statements (full column) are applied.
 	 * @param iterable iterable of instances
 	 */
-	public int updateRoughly(Iterable<T> iterable) {
-		return getPersisterListener().doWithUpdateRouglyListener(iterable, () -> doUpdateRoughly(iterable));
+	public int updateById(Iterable<T> iterable) {
+		return getPersisterListener().doWithUpdateByIdListener(iterable, () -> doUpdateById(iterable));
 	}
 	
-	protected int doUpdateRoughly(Iterable<T> iterable) {
-		return updateExecutor.updateRoughly(iterable);
+	protected int doUpdateById(Iterable<T> iterable) {
+		return updateExecutor.updateById(iterable);
 	}
 	
 	public int update(T modified, T unmodified, boolean allColumnsStatement) {
@@ -245,16 +245,16 @@ public class Persister<T, I> {
 		return deleteExecutor.delete(iterable);
 	}
 	
-	public int deleteRougly(T t) {
-		return deleteRoughly(Collections.singletonList(t));
+	public int deleteById(T t) {
+		return deleteById(Collections.singletonList(t));
 	}
 	
-	public int deleteRoughly(Iterable<T> iterable) {
-		return getPersisterListener().doWithDeleteRoughlyListener(iterable, () -> doDeleteRoughly(iterable));
+	public int deleteById(Iterable<T> iterable) {
+		return getPersisterListener().doWithDeleteByIdListener(iterable, () -> doDeleteById(iterable));
 	}
 	
-	protected int doDeleteRoughly(Iterable<T> iterable) {
-		return deleteExecutor.deleteRoughly(iterable);
+	protected int doDeleteById(Iterable<T> iterable) {
+		return deleteExecutor.deleteById(iterable);
 	}
 	
 	/**

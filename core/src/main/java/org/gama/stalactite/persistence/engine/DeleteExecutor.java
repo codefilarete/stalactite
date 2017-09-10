@@ -36,10 +36,18 @@ public class DeleteExecutor<T, I> extends WriteExecutor<T, I> {
 		this.rowCountManager = rowCountManager;
 	}
 	
-	public int delete(Iterable<T> iterable) {
+	/**
+	 * Delete instances.
+	 * Take optmistic lock into account.
+	 * 
+	 * @param entities entites to be deleted
+	 * @return deleted row count
+	 * @throws StaleObjectExcepion if deleted row count differs from entities count
+	 */
+	public int delete(Iterable<T> entities) {
 		ColumnParamedSQL deleteStatement = getDmlGenerator().buildDelete(getMappingStrategy().getTargetTable(), getMappingStrategy().getVersionedKeys());
 		WriteOperation<Table.Column> writeOperation = newWriteOperation(deleteStatement, new CurrentConnectionProvider());
-		JDBCBatchingIterator<T> jdbcBatchingIterator = new JDBCBatchingIterator<>(iterable, writeOperation, getBatchSize());
+		JDBCBatchingIterator<T> jdbcBatchingIterator = new JDBCBatchingIterator<>(entities, writeOperation, getBatchSize());
 		RowCounter rowCounter = new RowCounter();
 		while(jdbcBatchingIterator.hasNext()) {
 			T t = jdbcBatchingIterator.next();
@@ -52,16 +60,32 @@ public class DeleteExecutor<T, I> extends WriteExecutor<T, I> {
 		return updatedRowCount;
 	}
 	
-	public int deleteRoughly(Iterable<T> iterable) {
-		// get ids before passing them to deleteRoughlyById
+	/**
+	 * Will delete instances only by their identifier.
+	 * This method will not take optimisic lock (versioned entity) into account, so it will delete database rows "roughly".
+	 *
+	 * @param entities entites to be deleted
+	 * @return deleted row count
+	 */
+	public int deleteById(Iterable<T> entities) {
+		// get ids before passing them to deleteFromId
 		List<I> ids = new ArrayList<>();
-		for (T t : iterable) {
+		for (T t : entities) {
 			ids.add(getMappingStrategy().getId(t));
 		}
-		return deleteRoughlyById(ids);
+		return deleteFromId(ids);
 	}
 	
-	public int deleteRoughlyById(Iterable<I> ids) {
+	/**
+	 * Will delete entities only from their identifier.
+	 * This method will not take optimisic lock (versioned entity) into account, so it will delete database rows "roughly".
+	 * 
+	 * Can't be named "deleteById" due to generics type erasure that generates same signature as {@link #deleteById(Iterable)}
+	 * 
+	 * @param ids entities identifiers
+	 * @return deleted row count
+	 */
+	public int deleteFromId(Iterable<I> ids) {
 		// NB: CurrentConnectionProvider must provide the same connection over all blocks
 		CurrentConnectionProvider currentConnectionProvider = new CurrentConnectionProvider();
 		int blockSize = getInOperatorMaxSize();
