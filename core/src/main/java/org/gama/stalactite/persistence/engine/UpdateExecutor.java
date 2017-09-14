@@ -304,7 +304,7 @@ public class UpdateExecutor<T, I> extends UpsertExecutor<T, I> {
 		}
 		
 		/**
-		 * Upgrade modified instance and add version column to the update statement throught {@link UpwhereColumn}s
+		 * Upgrade modified instance and add version column to the update statement through {@link UpwhereColumn}s
 		 */
 		@Override
 		public void manageLock(Object modified, Object unmodified, Map<UpwhereColumn, Object> updateValues) {

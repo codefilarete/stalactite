@@ -94,7 +94,7 @@ public abstract class AbstractResultSetConverter<I, T> {
 	public abstract AbstractResultSetConverter<I, T> copyWithMapping(Function<String, String> columMapping);
 	
 	/**
-	 * Same as {@link #copyWithMapping(Function)} but with a concrete mapping throught a {@link Map}
+	 * Same as {@link #copyWithMapping(Function)} but with a concrete mapping through a {@link Map}
 	 * @param columMapping the mapping between column names declared by {@link #add(String, ResultSetReader, BiConsumer)} and new ones
 	 * @return a new instance, kind of clone of this
 	 */

@@ -23,7 +23,7 @@ import org.gama.stalactite.query.model.SelectQuery;
 
 /**
  * Class that eases the creation of a SQL selection with multiple joined {@link ClassMappingStrategy}.
- * The representation of a link between strategies is done throught {@link StrategyJoins}
+ * The representation of a link between strategies is done through {@link StrategyJoins}
  *
  * @author Guillaume Mary
  * @see #buildSelectQuery()

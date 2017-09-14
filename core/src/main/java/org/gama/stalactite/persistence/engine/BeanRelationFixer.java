@@ -10,7 +10,7 @@ import org.gama.lang.Reflections;
 /**
  * An interface aimed at abstracting the way how relations between 2 beans are filled : implementation should handle one-to-one relationship
  * as well as one-to-many relationship.
- * Since implemenations are quite simple, they are done thru all "of" static methods in this interface.
+ * Since implemenations are quite simple, they are done through all "of" static methods in this interface.
  * 
  * @author Guillaume Mary
  * @see #of(BiConsumer, Function, Class)
@@ -78,7 +78,7 @@ public interface BeanRelationFixer<S, I> {
 	}
 	
 	/**
-	 * Shortcut to {@link #of(BiConsumer, Function, Supplier, BiConsumer)} with a supplier that will isntanciate the given concrete Collection class
+	 * Shortcut to {@link #of(BiConsumer, Function, Supplier, BiConsumer)} with a supplier that will instanciate the given concrete Collection class
 	 *
 	 * @param setter the method that sets the {@link Collection} onto the target bean
 	 * @param getter the method that gets the {@link Collection} from the target bean

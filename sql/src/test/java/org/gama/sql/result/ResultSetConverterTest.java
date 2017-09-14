@@ -135,7 +135,7 @@ public class ResultSetConverterTest {
 	
 	/**
 	 * Test to demonstrate that inner classes can also be assembled.
-	 * WingInner has inner instances of FeatherInner, they are automatically added to they enclosing WingInner instance throught their constructor. 
+	 * WingInner has inner instances of FeatherInner, they are automatically added to they enclosing WingInner instance through their constructor. 
 	 */
 	@Test
 	public void testTranform_withInnerClass() throws SQLException {
