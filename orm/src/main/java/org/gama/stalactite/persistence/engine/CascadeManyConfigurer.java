@@ -48,7 +48,7 @@ public class CascadeManyConfigurer<T extends Identified, I extends Identified, J
 		joinedTablesPersister.getPersisterListener().addInsertListener((IInsertListener<T>) SetPersistedFlagAfterInsertListener.INSTANCE);
 		targetPersister.getPersisterListener().addInsertListener(SetPersistedFlagAfterInsertListener.INSTANCE);
 		
-		// finding joined columns: left one is primary key. Right one is given by the target strategy throught the property accessor
+		// finding joined columns: left one is primary key. Right one is given by the target strategy through the property accessor
 		Column leftColumn = localPersister.getTargetTable().getPrimaryKey();
 		Function targetProvider = cascadeMany.getTargetProvider();
 		if (cascadeMany.getReverseMember() == null) {
@@ -162,12 +162,14 @@ public class CascadeManyConfigurer<T extends Identified, I extends Identified, J
 						}
 					});
 					break;
+				case SELECT:
+					// configuring select for fetching relation
+					IMutator targetSetter = Accessors.of(cascadeMany.getMember()).getMutator();
+					joinedTablesPersister.addPersister(JoinedStrategiesSelect.FIRST_STRATEGY_NAME, targetPersister,
+							BeanRelationFixer.of((BiConsumer) targetSetter::set, targetProvider, cascadeMany.getCollectionTargetClass(), cascadeMany.getReverseMember()),
+							leftColumn, rightColumn, true);
+					break;
 			}
 		}
-		
-		IMutator targetSetter = Accessors.of(cascadeMany.getMember()).getMutator();
-		joinedTablesPersister.addPersister(JoinedStrategiesSelect.FIRST_STRATEGY_NAME, targetPersister,
-				BeanRelationFixer.of((BiConsumer) targetSetter::set, targetProvider, cascadeMany.getCollectionTargetClass(), cascadeMany.getReverseMember()),
-				leftColumn, rightColumn, true);
 	}
 }

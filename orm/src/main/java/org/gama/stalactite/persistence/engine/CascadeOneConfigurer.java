@@ -12,9 +12,9 @@ import org.gama.stalactite.persistence.engine.FluentMappingBuilder.CascadeOne;
 import org.gama.stalactite.persistence.engine.FluentMappingBuilder.MandatoryRelationCheckingBeforeInsertListener;
 import org.gama.stalactite.persistence.engine.FluentMappingBuilder.MandatoryRelationCheckingBeforeUpdateListener;
 import org.gama.stalactite.persistence.engine.FluentMappingBuilder.SetPersistedFlagAfterInsertListener;
+import org.gama.stalactite.persistence.engine.cascade.AfterDeleteByIdCascader;
 import org.gama.stalactite.persistence.engine.cascade.AfterDeleteCascader;
 import org.gama.stalactite.persistence.engine.cascade.AfterUpdateCascader;
-import org.gama.stalactite.persistence.engine.cascade.AfterDeleteByIdCascader;
 import org.gama.stalactite.persistence.engine.cascade.BeforeInsertCascader;
 import org.gama.stalactite.persistence.engine.cascade.JoinedStrategiesSelect;
 import org.gama.stalactite.persistence.engine.cascade.JoinedTablesPersister;
@@ -45,7 +45,7 @@ public class CascadeOneConfigurer<T extends Identified, I extends Identified, J 
 		
 		PropertyAccessor<Identified, Identified> propertyAccessor = Accessors.of(cascadeOne.getMember());
 		// Finding joined columns:
-		// - left one is given by current mapping strategy throught the property accessor.
+		// - left one is given by current mapping strategy through the property accessor.
 		// - Right one is target primary key because we don't yet support "not owner of the property"
 		Column leftColumn = mappingStrategy.getDefaultMappingStrategy().getPropertyToColumn().get(propertyAccessor);
 		// According to the nullable option, we specify the ddl schema option
@@ -131,13 +131,15 @@ public class CascadeOneConfigurer<T extends Identified, I extends Identified, J 
 						}
 					});
 					break;
+				case SELECT:
+					// configuring select for fetching relation
+					IMutator targetSetter = propertyAccessor.getMutator();
+					joinedTablesPersister.addPersister(JoinedStrategiesSelect.FIRST_STRATEGY_NAME, targetPersister,
+							BeanRelationFixer.of(targetSetter::set),
+							leftColumn, rightColumn, cascadeOne.isNullable());
+					break;
 			}
 		}
-		
-		IMutator targetSetter = propertyAccessor.getMutator();
-		joinedTablesPersister.addPersister(JoinedStrategiesSelect.FIRST_STRATEGY_NAME, targetPersister,
-				BeanRelationFixer.of(targetSetter::set),
-				leftColumn, rightColumn, cascadeOne.isNullable());
 	}
 	
 }

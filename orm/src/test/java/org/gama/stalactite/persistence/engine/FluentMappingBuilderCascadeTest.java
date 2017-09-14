@@ -30,6 +30,7 @@ import org.junit.rules.ExpectedException;
 
 import static org.gama.stalactite.persistence.engine.CascadeOption.CascadeType.DELETE;
 import static org.gama.stalactite.persistence.engine.CascadeOption.CascadeType.INSERT;
+import static org.gama.stalactite.persistence.engine.CascadeOption.CascadeType.SELECT;
 import static org.gama.stalactite.persistence.engine.CascadeOption.CascadeType.UPDATE;
 import static org.hamcrest.CoreMatchers.both;
 import static org.hamcrest.CoreMatchers.containsString;
@@ -178,7 +179,7 @@ public class FluentMappingBuilderCascadeTest {
 				.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.add(Country::getName)
 				.add(Country::getDescription)
-				.addOneToOne(Country::getPresident, personPersister).cascade(INSERT)
+				.addOneToOne(Country::getPresident, personPersister).cascade(INSERT, SELECT)
 				.build(persistenceContext);
 		
 		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
@@ -224,7 +225,7 @@ public class FluentMappingBuilderCascadeTest {
 				.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.add(Country::getName)
 				.add(Country::getDescription)
-				.addOneToOne(Country::getPresident, personPersister).cascade(INSERT).mandatory()
+				.addOneToOne(Country::getPresident, personPersister).cascade(INSERT, SELECT).mandatory()
 				.build(persistenceContext);
 		
 		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
@@ -243,7 +244,7 @@ public class FluentMappingBuilderCascadeTest {
 				.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.add(Country::getName)
 				.add(Country::getDescription)
-				.addOneToOne(Country::getPresident, personPersister).cascade(UPDATE)
+				.addOneToOne(Country::getPresident, personPersister).cascade(UPDATE, SELECT)
 				.build(persistenceContext);
 		
 		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
@@ -279,7 +280,7 @@ public class FluentMappingBuilderCascadeTest {
 				.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.add(Country::getName)
 				.add(Country::getDescription)
-				.addOneToOne(Country::getPresident, personPersister).cascade(UPDATE).mandatory()
+				.addOneToOne(Country::getPresident, personPersister).cascade(UPDATE, SELECT).mandatory()
 				.build(persistenceContext);
 		
 		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
@@ -306,7 +307,7 @@ public class FluentMappingBuilderCascadeTest {
 		Persister<Country, Identifier<Long>> countryPersister = FluentMappingBuilder.from(Country.class, (Class<Identifier<Long>>) (Class) PersistedIdentifier.class)
 				.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.add(Country::getDescription)
-				.addOneToOne(Country::getPresident, personPersister).cascade(DELETE)
+				.addOneToOne(Country::getPresident, personPersister).cascade(DELETE, SELECT)
 				.build(persistenceContext);
 		
 		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
@@ -336,7 +337,7 @@ public class FluentMappingBuilderCascadeTest {
 		Persister<Country, Identifier<Long>> countryPersister = FluentMappingBuilder.from(Country.class, (Class<Identifier<Long>>) (Class) PersistedIdentifier.class)
 				.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.add(Country::getDescription)
-				.addOneToOne(Country::getPresident, personPersister).cascade(INSERT, UPDATE, DELETE)
+				.addOneToOne(Country::getPresident, personPersister).cascade(INSERT, UPDATE, DELETE, SELECT)
 				.build(persistenceContext);
 		
 		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
@@ -398,8 +399,8 @@ public class FluentMappingBuilderCascadeTest {
 		Persister<Country, Identifier<Long>> countryPersister = FluentMappingBuilder.from(Country.class, (Class<Identifier<Long>>) (Class) PersistedIdentifier.class)
 				.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.add(Country::getDescription)
-				.addOneToOne(Country::getPresident, personPersister).cascade(INSERT, UPDATE, DELETE)
-				.addOneToOne(Country::getCapital, cityPersister).cascade(INSERT, UPDATE, DELETE)
+				.addOneToOne(Country::getPresident, personPersister).cascade(INSERT, UPDATE, DELETE, SELECT)
+				.addOneToOne(Country::getCapital, cityPersister).cascade(INSERT, UPDATE, DELETE, SELECT)
 				.build(persistenceContext);
 		
 		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);

@@ -8,7 +8,6 @@ import org.gama.lang.collection.Arrays;
 import org.gama.lang.collection.Iterables;
 import org.gama.sql.binder.DefaultParameterBinders;
 import org.gama.sql.test.HSQLDBInMemoryDataSource;
-import org.gama.stalactite.persistence.engine.CascadeOption.CascadeType;
 import org.gama.stalactite.persistence.engine.FluentMappingBuilder.IdentifierPolicy;
 import org.gama.stalactite.persistence.engine.IFluentMappingBuilder.IFluentMappingBuilderColumnOptions;
 import org.gama.stalactite.persistence.engine.model.City;
@@ -25,6 +24,10 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import static java.util.stream.Collectors.toSet;
+import static org.gama.stalactite.persistence.engine.CascadeOption.CascadeType.DELETE;
+import static org.gama.stalactite.persistence.engine.CascadeOption.CascadeType.INSERT;
+import static org.gama.stalactite.persistence.engine.CascadeOption.CascadeType.SELECT;
+import static org.gama.stalactite.persistence.engine.CascadeOption.CascadeType.UPDATE;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -99,7 +102,7 @@ public class FluentMappingBuilderCollectionCascadeTest {
 				.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.add(Country::getName)
 				.add(Country::getDescription)
-				.addOneToMany(Country::getCities, cityPersister).mappedBy(City::setCountry).cascade(CascadeType.INSERT)
+				.addOneToMany(Country::getCities, cityPersister).mappedBy(City::setCountry).cascade(INSERT, SELECT)
 				.build(persistenceContext);
 		
 		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
@@ -146,7 +149,7 @@ public class FluentMappingBuilderCollectionCascadeTest {
 				.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.add(Country::getName)
 				.add(Country::getDescription)
-				.addOneToMany(Country::getCities, cityPersister).mappedBy(City::setCountry).cascade(CascadeType.INSERT, CascadeType.UPDATE)
+				.addOneToMany(Country::getCities, cityPersister).mappedBy(City::setCountry).cascade(INSERT, UPDATE, SELECT)
 				.build(persistenceContext);
 		
 		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
@@ -192,7 +195,7 @@ public class FluentMappingBuilderCollectionCascadeTest {
 				.add(Country::getDescription)
 				.addOneToMany(Country::getCities, cityPersister)
 					.mappedBy(City::setCountry)
-					.cascade(CascadeType.INSERT, CascadeType.UPDATE)
+					.cascade(INSERT, UPDATE, SELECT)
 					.deleteRemoved()
 				.build(persistenceContext);
 		
@@ -237,7 +240,7 @@ public class FluentMappingBuilderCollectionCascadeTest {
 				.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.add(Country::getName)
 				.add(Country::getDescription)
-				.addOneToMany(Country::getCities, cityPersister).mappedBy(City::setCountry).cascade(CascadeType.DELETE)
+				.addOneToMany(Country::getCities, cityPersister).mappedBy(City::setCountry).cascade(DELETE, SELECT)
 				.build(persistenceContext);
 		
 		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
@@ -278,11 +281,11 @@ public class FluentMappingBuilderCollectionCascadeTest {
 				.add(Country::getDescription)
 				.addOneToMany(Country::getCities, cityPersister)
 					.mappedBy(City::setCountry)
-					.cascade(CascadeType.INSERT, CascadeType.UPDATE)
+					.cascade(INSERT, UPDATE, SELECT)
 					.deleteRemoved()
 				.addOneToMany(Country::getStates, statePersister)
 					.mappedBy(State::setCountry)
-					.cascade(CascadeType.INSERT, CascadeType.UPDATE)
+					.cascade(INSERT, UPDATE, SELECT)
 				.build(persistenceContext);
 		
 		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);

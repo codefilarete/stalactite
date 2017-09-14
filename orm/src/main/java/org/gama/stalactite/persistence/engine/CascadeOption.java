@@ -10,6 +10,8 @@ public interface CascadeOption<R> {
 	enum CascadeType {
 		INSERT,
 		UPDATE,
-		DELETE
+		DELETE,
+		/** For fetching relations. Without it, some {@link NullPointerException} may occur if you didn't fulfill the relations by yourself */
+		SELECT
 	}
 }
