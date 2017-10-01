@@ -17,10 +17,10 @@ public class SelectQueryBuilder extends AbstractDMLBuilder {
 	private final WhereBuilder whereBuilder;
 	
 	public SelectQueryBuilder(SelectQuery selectQuery) {
-		super(selectQuery.getFrom().getTableAliases());
+		super(selectQuery.getFromSurrogate().getTableAliases());
 		this.selectQuery = selectQuery;
 		this.selectBuilder = new SelectBuilder(selectQuery.getSelect(), tableAliases);
-		this.fromBuilder = new FromBuilder(selectQuery.getFrom());
+		this.fromBuilder = new FromBuilder(selectQuery.getFromSurrogate());
 		this.whereBuilder = new WhereBuilder(selectQuery.getWhere(), tableAliases);
 	}
 	

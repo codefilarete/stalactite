@@ -101,7 +101,7 @@ public class JoinedStrategiesSelect<T, I> {
 		SelectQuery selectQuery = new SelectQuery();
 		
 		// initialization of the from clause with the very first table
-		From from = selectQuery.getFrom().add(root.getTable());
+		From from = selectQuery.getFromSurrogate().add(root.getTable());
 		String tableAlias = columnAliasBuilder.buildAlias(root.getTable(), root.getTableAlias());
 		addColumnsToSelect(tableAlias, root.getStrategy().getSelectableColumns(), selectQuery);
 		

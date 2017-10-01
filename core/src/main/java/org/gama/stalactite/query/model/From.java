@@ -19,7 +19,7 @@ import org.gama.stalactite.query.model.From.AbstractJoin.JoinDirection;
  * 
  * @author Guillaume Mary
  */
-public class From implements Iterable<IJoin> {
+public class From implements Iterable<IJoin>, JoinChain {
 	
 	private final List<IJoin> joins = new ArrayList<>();
 	

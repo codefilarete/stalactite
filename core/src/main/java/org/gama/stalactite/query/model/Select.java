@@ -11,7 +11,7 @@ import org.gama.stalactite.persistence.structure.Table.Column;
 /**
  * @author Guillaume Mary
  */
-public class Select implements Iterable<Object> {
+public class Select implements Iterable<Object /* String, Column ou AliasedColumn */> {
 	/** String, Column ou AliasedColumn */
 	private List<Object> columns = new ArrayList<>(5);
 
