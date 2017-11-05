@@ -4,6 +4,8 @@ import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.persistence.structure.Table.Column;
 
 /**
+ * The interface defining what's possible to do (fluent point of view) on a from (more exactly a join to take more general cases)
+ * 
  * @author Guillaume Mary
  */
 public interface JoinChain<T extends JoinChain<T>> {

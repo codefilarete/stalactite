@@ -19,7 +19,7 @@ public class SelectQueryBuilder extends AbstractDMLBuilder {
 	public SelectQueryBuilder(SelectQuery selectQuery) {
 		super(selectQuery.getFromSurrogate().getTableAliases());
 		this.selectQuery = selectQuery;
-		this.selectBuilder = new SelectBuilder(selectQuery.getSelect(), tableAliases);
+		this.selectBuilder = new SelectBuilder(selectQuery.getSelectSurrogate(), tableAliases);
 		this.fromBuilder = new FromBuilder(selectQuery.getFromSurrogate());
 		this.whereBuilder = new WhereBuilder(selectQuery.getWhere(), tableAliases);
 	}

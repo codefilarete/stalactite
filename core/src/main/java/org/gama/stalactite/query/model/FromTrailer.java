@@ -5,6 +5,8 @@ import org.gama.stalactite.query.model.SelectQuery.FluentWhere;
 import org.gama.stalactite.query.model.SelectQuery.GroupBy;
 
 /**
+ * The interface defining what's possible to do (fluent point of view) after a from
+ *
  * @author Guillaume Mary
  */
 public interface FromTrailer {
