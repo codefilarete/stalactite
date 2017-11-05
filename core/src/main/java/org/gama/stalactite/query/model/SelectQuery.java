@@ -30,13 +30,11 @@ public class SelectQuery implements FromTrailer, SelectTrailer {
 	public SelectQuery() {
 		this.selectSurrogate = new Select();
 		this.select = new MethodDispatcher()
-				.fallbackOn(new Object())
 				.redirect(SelectChain.class, selectSurrogate, true)
 				.redirect(SelectTrailer.class, this)
 				.build(FluentSelect.class);
 		this.fromSurrogate = new From();
 		this.from = new MethodDispatcher()
-				.fallbackOn(new Object())
 				.redirect(JoinChain.class, fromSurrogate, true)
 				.redirect(FromTrailer.class, this)
 				.build(FluentFrom.class);
