@@ -5,6 +5,7 @@ import java.util.Map;
 import org.gama.lang.reflect.MethodDispatcher;
 import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.persistence.structure.Table.Column;
+import org.gama.stalactite.query.model.OrderByChain.Order;
 
 /**
  * A support for a SQL query, trying to be closest as possible to a real select query syntax and implementing the most simple/common usage. 
@@ -232,6 +233,36 @@ public class SelectQuery implements FromAware, WhereAware, HavingAware, OrderByA
 	@Override
 	public SelectQuery getSelectQuery() {
 		return this;
+	}
+	
+	@Override
+	public FluentOrderBy orderBy(Column column, Order order) {
+		return this.orderBy.add(column, order);
+	}
+	
+	@Override
+	public FluentOrderBy orderBy(Column col1, Order order1, Column col2, Order order2) {
+		return this.orderBy.add(col1, order1, col2, order2);
+	}
+	
+	@Override
+	public FluentOrderBy orderBy(Column col1, Order order1, Column col2, Order order2, Column col3, Order order3) {
+		return this.orderBy.add(col1, order1, col2, order2, col3, order3);
+	}
+	
+	@Override
+	public FluentOrderBy orderBy(String column, Order order) {
+		return this.orderBy.add(column, order);
+	}
+	
+	@Override
+	public FluentOrderBy orderBy(String col1, Order order1, String col2, Order order2) {
+		return this.orderBy.add(col1, order1, col2, order2);
+	}
+	
+	@Override
+	public FluentOrderBy orderBy(String col1, Order order1, String col2, Order order2, String col3, Order order3) {
+		return this.orderBy.add(col1, order1, col2, order2, col3, order3);
 	}
 	
 	@Override

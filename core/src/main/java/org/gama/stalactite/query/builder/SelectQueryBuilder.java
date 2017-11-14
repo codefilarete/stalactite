@@ -6,6 +6,8 @@ import org.gama.stalactite.query.model.GroupBy;
 import org.gama.stalactite.query.model.Having;
 import org.gama.stalactite.query.model.Limit;
 import org.gama.stalactite.query.model.OrderBy;
+import org.gama.stalactite.query.model.OrderBy.OrderedColumn;
+import org.gama.stalactite.query.model.OrderByChain.Order;
 import org.gama.stalactite.query.model.SelectQuery;
 
 /**
@@ -58,23 +60,29 @@ public class SelectQueryBuilder extends AbstractDMLBuilder {
 	}
 	
 	private void cat(OrderBy orderBy, StringAppender sql) {
-		catColumns(orderBy, sql);
-	}
-	
-	private void cat(GroupBy groupBy, StringAppender sql) {
-		catColumns(groupBy, sql);
-	}
-	
-	private void catColumns(Iterable<Object> orderBy, StringAppender sql) {
-		for (Object o : orderBy) {
-			if (o instanceof String) {
-				sql.cat(o);
-			} else if (o instanceof Column) {
-				sql.cat(getName((Column) o));
-			}
+		for (OrderedColumn o : orderBy) {
+			Object column = o.getColumn();
+			cat(column, sql);
+			sql.catIf(o.getOrder() != null, o.getOrder() == Order.ASC ? " asc" : " desc");
 			sql.cat(", ");
 		}
 		sql.cutTail(2);
+	}
+	
+	private void cat(GroupBy groupBy, StringAppender sql) {
+		for (Object o : groupBy) {
+			cat(o, sql);
+			sql.cat(", ");
+		}
+		sql.cutTail(2);
+	}
+	
+	private void cat(Object column, StringAppender sql) {
+		if (column instanceof String) {
+			sql.cat(column);
+		} else if (column instanceof Column) {
+			sql.cat(getName((Column) column));
+		}
 	}
 	
 	private void cat(Having having, StringAppender sql) {

@@ -5,24 +5,63 @@ import java.util.Iterator;
 import java.util.List;
 
 import org.gama.stalactite.persistence.structure.Table.Column;
+import org.gama.stalactite.query.model.OrderBy.OrderedColumn;
 
 /**
  * A support for the "order by" clause of a SQL query
  *
  * @author Guillaume Mary
  */
-public class OrderBy implements Iterable<Object /* String, Column */>, OrderByChain<OrderBy> {
+public class OrderBy implements Iterable<OrderedColumn>, OrderByChain<OrderBy> {
 	
 	/** String, Column */
-	private List<Object> columns = new ArrayList<>(5);
+	private List<OrderedColumn> columns = new ArrayList<>(5);
 	
-	private OrderBy add(Object column) {
+	private OrderBy add(OrderedColumn column) {
 		this.columns.add(column);
 		return this;
 	}
 	
-	public List<Object> getColumns() {
+	private OrderBy add(Column column) {
+		return add(new OrderedColumn(column));
+	}
+	
+	private OrderBy add(String column) {
+		return add(new OrderedColumn(column));
+	}
+	
+	public List<OrderedColumn> getColumns() {
 		return columns;
+	}
+	
+	@Override
+	public OrderBy add(Column column, Order order) {
+		return add(new OrderedColumn(column, order));
+	}
+	
+	@Override
+	public OrderBy add(Column col1, Order order1, Column col2, Order order2) {
+		return add(col1, order1).add(col2, order2);
+	}
+	
+	@Override
+	public OrderBy add(Column col1, Order order1, Column col2, Order order2, Column col3, Order order3) {
+		return add(col1, order1).add(col2, order2).add(col3, order3);
+	}
+	
+	@Override
+	public OrderBy add(String column, Order order) {
+		return add(new OrderedColumn(column, order));
+	}
+	
+	@Override
+	public OrderBy add(String col1, Order order1, String col2, Order order2) {
+		return add(col1, order1).add(col2, order2);
+	}
+	
+	@Override
+	public OrderBy add(String col1, Order order1, String col2, Order order2, String col3, Order order3) {
+		return add(col1, order1).add(col2, order2).add(col3, order3);
 	}
 	
 	@Override
@@ -44,8 +83,33 @@ public class OrderBy implements Iterable<Object /* String, Column */>, OrderByCh
 	}
 	
 	@Override
-	public Iterator<Object> iterator() {
+	public Iterator<OrderedColumn> iterator() {
 		return this.columns.iterator();
 	}
 	
+	public static class OrderedColumn {
+		
+		private final Object /* String or Column */ column;
+		private final Order order;
+		
+		public OrderedColumn(Object column) {
+			this(column, null);
+		}
+		
+		public OrderedColumn(Object column, Order order) {
+			this.column = column;
+			this.order = order;
+		}
+		
+		public Object getColumn() {
+			return column;
+		}
+		
+		/**
+		 * @return maybe null
+		 */
+		public Order getOrder() {
+			return order;
+		}
+	}
 }
