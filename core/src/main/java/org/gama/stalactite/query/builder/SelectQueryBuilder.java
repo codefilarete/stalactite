@@ -2,9 +2,10 @@ package org.gama.stalactite.query.builder;
 
 import org.gama.lang.StringAppender;
 import org.gama.stalactite.persistence.structure.Table.Column;
-import org.gama.stalactite.query.model.SelectQuery;
 import org.gama.stalactite.query.model.GroupBy;
 import org.gama.stalactite.query.model.Having;
+import org.gama.stalactite.query.model.OrderBy;
+import org.gama.stalactite.query.model.SelectQuery;
 
 /**
  * @author Guillaume Mary
@@ -44,11 +45,24 @@ public class SelectQueryBuilder extends AbstractDMLBuilder {
 			cat(having, sql.cat(" having "));
 		}
 		
+		OrderBy orderBy = selectQuery.getOrderBySurrogate();
+		if (!orderBy.getColumns().isEmpty()) {
+			cat(orderBy, sql.cat(" order by "));
+		}
+		
 		return sql.toString();
 	}
 	
+	private void cat(OrderBy orderBy, StringAppender sql) {
+		catColumns(orderBy, sql);
+	}
+	
 	private void cat(GroupBy groupBy, StringAppender sql) {
-		for (Object o : groupBy.getGroups()) {
+		catColumns(groupBy, sql);
+	}
+	
+	private void catColumns(Iterable<Object> orderBy, StringAppender sql) {
+		for (Object o : orderBy) {
 			if (o instanceof String) {
 				sql.cat(o);
 			} else if (o instanceof Column) {

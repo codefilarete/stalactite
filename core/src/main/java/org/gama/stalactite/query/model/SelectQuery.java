@@ -13,7 +13,7 @@ import org.gama.stalactite.persistence.structure.Table.Column;
  * @author Guillaume Mary
  * @see org.gama.stalactite.query.builder.SelectQueryBuilder
  */
-public class SelectQuery implements SelectTrailer, FromTrailer, GroupByTrailer, QueryProvider {
+public class SelectQuery implements SelectTrailer, FromTrailer, GroupByTrailer, OrderByAware, QueryProvider {
 	
 	private final FluentSelect select;
 	private final Select selectSurrogate;
@@ -25,6 +25,8 @@ public class SelectQuery implements SelectTrailer, FromTrailer, GroupByTrailer, 
 	private final GroupBy groupBySurrogate;
 	private final FluentHaving having;
 	private final Having havingSurrogate;
+	private final OrderBy orderBySurrogate;
+	private final FluentOrderBy orderBy;
 	
 	public SelectQuery() {
 		this.selectSurrogate = new Select();
@@ -44,6 +46,7 @@ public class SelectQuery implements SelectTrailer, FromTrailer, GroupByTrailer, 
 				.redirect(CriteriaChain.class, whereSurrogate, true)
 				.redirect(Iterable.class, whereSurrogate)
 				.redirect(WhereTrailer.class, this)
+				.redirect(OrderByAware.class, this)
 				.redirect(QueryProvider.class, this)
 				.build(FluentWhere.class);
 		this.groupBySurrogate = new GroupBy();
@@ -57,6 +60,12 @@ public class SelectQuery implements SelectTrailer, FromTrailer, GroupByTrailer, 
 				.redirect(CriteriaChain.class, havingSurrogate, true)
 				.redirect(QueryProvider.class, this)
 				.build(FluentHaving.class);
+		this.orderBySurrogate = new OrderBy();
+		this.orderBy = new MethodDispatcher()
+				.redirect(OrderByChain.class, orderBySurrogate, true)
+				.redirect(OrderByAware.class, this)
+				.redirect(QueryProvider.class, this)
+				.build(FluentOrderBy.class);
 		
 	}
 	
@@ -93,6 +102,10 @@ public class SelectQuery implements SelectTrailer, FromTrailer, GroupByTrailer, 
 	
 	public Having getHavingSurrogate() {
 		return havingSurrogate;
+	}
+	
+	public OrderBy getOrderBySurrogate() {
+		return orderBySurrogate;
 	}
 	
 	public FluentSelect select(String selectable) {
@@ -204,6 +217,16 @@ public class SelectQuery implements SelectTrailer, FromTrailer, GroupByTrailer, 
 		return this;
 	}
 	
+	@Override
+	public OrderByChain orderBy(Column column, Column... columns) {
+		return this.orderBy.add(column, columns);
+	}
+	
+	@Override
+	public OrderByChain orderBy(String column, String... columns) {
+		return this.orderBy.add(column, columns);
+	}
+	
 	public interface FluentSelect extends SelectChain<FluentSelect>, SelectTrailer, QueryProvider {
 		
 	}
@@ -212,7 +235,7 @@ public class SelectQuery implements SelectTrailer, FromTrailer, GroupByTrailer, 
 		
 	}
 	
-	public interface FluentWhere extends CriteriaChain<FluentWhere>, WhereTrailer, QueryProvider {
+	public interface FluentWhere extends CriteriaChain<FluentWhere>, WhereTrailer, QueryProvider, OrderByAware {
 		
 	}
 	
@@ -221,6 +244,10 @@ public class SelectQuery implements SelectTrailer, FromTrailer, GroupByTrailer, 
 	}
 	
 	public interface FluentHaving extends CriteriaChain<FluentHaving>, QueryProvider {
+		
+	}
+	
+	public interface FluentOrderBy extends OrderByChain<FluentOrderBy>, OrderByAware, QueryProvider {
 		
 	}
 }
