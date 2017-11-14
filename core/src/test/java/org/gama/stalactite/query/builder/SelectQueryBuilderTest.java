@@ -30,6 +30,8 @@ public class SelectQueryBuilderTest {
 		return new Object[][] {
 				{ select(colTotoA, colTotoB).from(tableToto),
 					"select Toto.a, Toto.b from Toto" },
+				{ select(colTotoA, colTotoB).distinct().from(tableToto),
+					"select distinct Toto.a, Toto.b from Toto" },
 				{ select(colTotoA, colTotoB).from(tableToto, "t"),
 					"select t.a, t.b from Toto as t" },
 				{ select(colTotoA, colTotoB, colTataA, colTataB).from(tableToto, "to").crossJoin(tableTata),
@@ -43,8 +45,7 @@ public class SelectQueryBuilderTest {
 				{ select(colTotoA, colTataB).from(tableToto, tableTata, "x = y").where(colTotoB, "= 1").groupBy(colTotoB),
 					"select Toto.a, Tata.b from Toto inner join Tata on x = y where Toto.b = 1 group by Toto.b" },
 				{ select(colTotoA, colTataB).from(tableToto, tableTata, "x = y").where(colTotoB, "= 1").groupBy(colTotoB)
-						.having("sum(", colTotoB, ") > 1")
-						,
+						.having("sum(", colTotoB, ") > 1"),
 					"select Toto.a, Tata.b from Toto inner join Tata on x = y where Toto.b = 1 group by Toto.b having sum(Toto.b) > 1" },
 				{ select(colTotoA, colTataB).from(tableToto, tableTata, "x = y").where(colTotoB, "= 1").and(colTataA, "= 4")
 						.groupBy(colTotoB).add(colTataB).having("sum(", colTotoB, ") > 1").and("count(id) = 0"),

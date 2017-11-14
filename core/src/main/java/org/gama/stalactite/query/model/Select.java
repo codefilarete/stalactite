@@ -18,6 +18,8 @@ public class Select implements Iterable<Object /* String, Column or AliasedColum
 	/** String, Column or AliasedColumn */
 	private List<Object> columns = new ArrayList<>(5);
 	
+	private boolean distinct = false;
+	
 	private Select add(Object column) {
 		this.columns.add(column);
 		return this;
@@ -49,6 +51,16 @@ public class Select implements Iterable<Object /* String, Column or AliasedColum
 		for (Entry<Column, String> aliasedColumn : aliasedColumns.entrySet()) {
 			add(new AliasedColumn(aliasedColumn.getKey(), aliasedColumn.getValue()));
 		}
+		return this;
+	}
+	
+	public boolean isDistinct() {
+		return distinct;
+	}
+	
+	@Override
+	public Select distinct() {
+		this.distinct = true;
 		return this;
 	}
 	

@@ -14,8 +14,9 @@ import org.gama.stalactite.query.model.Select.AliasedColumn;
  */
 public class SelectBuilder extends AbstractDMLBuilder {
 	
+	private static final String COLUMN_SEPARATOR = ", ";
 	private final Select select;
-
+	
 	public SelectBuilder(Select select, Map<Table, String> tableAliases) {
 		super(tableAliases);
 		this.select = select;
@@ -24,7 +25,7 @@ public class SelectBuilder extends AbstractDMLBuilder {
 	@Override
 	public String toSQL() {
 		StringAppender sql = new StringAppender(200);
-
+		sql.catIf(this.select.isDistinct(), "distinct ");
 		for (Object o : this.select) {
 			if (o instanceof String) {
 				cat((String) o, sql);
@@ -34,20 +35,20 @@ public class SelectBuilder extends AbstractDMLBuilder {
 				cat((AliasedColumn) o, sql);
 			}
 		}
-		// il y a toujours une virgule en trop à la fin, on la supprime
+		// cut the always traling comma
 		sql.cutTail(2);
 		return sql.toString();
 	}
 	
 	protected void cat(String o, StringAppender sql) {
-		sql.cat(o, ", ");
+		sql.cat(o, COLUMN_SEPARATOR);
 	}
 	
 	protected void cat(Column o, StringAppender sql) {
-		sql.cat(getName(o), ", ");
+		sql.cat(getName(o), COLUMN_SEPARATOR);
 	}
 	
 	protected void cat(AliasedColumn o, StringAppender sql) {
-		sql.cat(getName(o.getColumn())).catIf(!Strings.isEmpty(o.getAlias()), " as ", o.getAlias()).cat(", ");
+		sql.cat(getName(o.getColumn())).catIf(!Strings.isEmpty(o.getAlias()), " as ", o.getAlias()).cat(COLUMN_SEPARATOR);
 	}
 }

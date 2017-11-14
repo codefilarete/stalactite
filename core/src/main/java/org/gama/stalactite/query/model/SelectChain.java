@@ -20,4 +20,6 @@ public interface SelectChain<T extends SelectChain<T>> {
 	T add(Column column, String alias);
 	
 	T add(Map<Column, String> aliasedColumns);
+	
+	T distinct();
 }

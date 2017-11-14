@@ -34,6 +34,8 @@ public class SelectBuilderTest {
 		Map<Table, String> emptyMap = Collections.emptyMap();
 		return new Object[][]{
 				{ new Select().add("a"), tableAliases, "a" },
+				{ new Select().distinct().add("a"), tableAliases, "distinct a" },
+				{ new Select().add("a").distinct(), tableAliases, "distinct a" },
 				{ new Select().add("a", "b"), tableAliases, "a, b" },
 				{ new Select().add(colTotoA), emptyMap, "Toto.a" },
 				{ new Select().add(colTotoA), tableAliases, "to.a" },
@@ -41,6 +43,7 @@ public class SelectBuilderTest {
 				{ new Select().add(colTotoA, colTotoB), tableAliases, "to.a, to.b" },
 				{ new Select().add(colTotoA, colTataB), emptyMap, "Toto.a, Tata.b" },
 				{ new Select().add(colTotoA, colTataB), tableAliases, "to.a, ta.b" },
+				{ new Select().add(colTotoA, colTataB).distinct(), tableAliases, "distinct to.a, ta.b" },
 				{ new Select().add(colTotoA, "A"), emptyMap, "Toto.a as A" },
 				{ new Select().add(colTotoA, "A"), tableAliases, "to.a as A" },
 		};
