@@ -9,7 +9,7 @@ import org.gama.stalactite.query.model.SelectQuery.FluentFrom;
  *
  * @author Guillaume Mary
  */
-public interface SelectTrailer {
+public interface FromAware {
 	
 	FluentFrom from(Table leftTable);
 	

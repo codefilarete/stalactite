@@ -6,7 +6,7 @@ import org.gama.stalactite.query.model.SelectQuery.FluentHaving;
 /**
  * @author Guillaume Mary
  */
-public interface GroupByTrailer {
+public interface HavingAware {
 	
 	FluentHaving having(Column column, String condition);
 	

@@ -6,7 +6,7 @@ import org.gama.stalactite.query.model.SelectQuery.FluentGroupBy;
 /**
  * @author Guillaume Mary
  */
-public interface WhereTrailer {
+public interface GroupByAware {
 	
 	FluentGroupBy groupBy(Column column, Column... columns);
 	

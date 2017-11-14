@@ -13,7 +13,7 @@ import org.gama.stalactite.persistence.structure.Table.Column;
  * @author Guillaume Mary
  * @see org.gama.stalactite.query.builder.SelectQueryBuilder
  */
-public class SelectQuery implements SelectTrailer, FromTrailer, GroupByTrailer, OrderByAware, QueryProvider {
+public class SelectQuery implements FromAware, WhereAware, HavingAware, OrderByAware, QueryProvider {
 	
 	private final FluentSelect select;
 	private final Select selectSurrogate;
@@ -32,27 +32,27 @@ public class SelectQuery implements SelectTrailer, FromTrailer, GroupByTrailer, 
 		this.selectSurrogate = new Select();
 		this.select = new MethodDispatcher()
 				.redirect(SelectChain.class, selectSurrogate, true)
-				.redirect(SelectTrailer.class, this)
+				.redirect(FromAware.class, this)
 				.redirect(QueryProvider.class, this)
 				.build(FluentSelect.class);
 		this.fromSurrogate = new From();
 		this.from = new MethodDispatcher()
 				.redirect(JoinChain.class, fromSurrogate, true)
-				.redirect(FromTrailer.class, this)
+				.redirect(WhereAware.class, this)
 				.redirect(QueryProvider.class, this)
 				.build(FluentFrom.class);
 		this.whereSurrogate = new Where();
 		this.where = new MethodDispatcher()
 				.redirect(CriteriaChain.class, whereSurrogate, true)
 				.redirect(Iterable.class, whereSurrogate)
-				.redirect(WhereTrailer.class, this)
+				.redirect(GroupByAware.class, this)
 				.redirect(OrderByAware.class, this)
 				.redirect(QueryProvider.class, this)
 				.build(FluentWhere.class);
 		this.groupBySurrogate = new GroupBy();
 		this.groupBy = new MethodDispatcher()
 				.redirect(GroupByChain.class, groupBySurrogate, true)
-				.redirect(GroupByTrailer.class, this)
+				.redirect(HavingAware.class, this)
 				.redirect(QueryProvider.class, this)
 				.build(FluentGroupBy.class);
 		this.havingSurrogate = new Having();
@@ -227,19 +227,19 @@ public class SelectQuery implements SelectTrailer, FromTrailer, GroupByTrailer, 
 		return this.orderBy.add(column, columns);
 	}
 	
-	public interface FluentSelect extends SelectChain<FluentSelect>, SelectTrailer, QueryProvider {
+	public interface FluentSelect extends SelectChain<FluentSelect>, FromAware, QueryProvider {
 		
 	}
 	
-	public interface FluentFrom extends JoinChain<FluentFrom>, FromTrailer, QueryProvider {
+	public interface FluentFrom extends JoinChain<FluentFrom>, WhereAware, QueryProvider {
 		
 	}
 	
-	public interface FluentWhere extends CriteriaChain<FluentWhere>, WhereTrailer, QueryProvider, OrderByAware {
+	public interface FluentWhere extends CriteriaChain<FluentWhere>, GroupByAware, QueryProvider, OrderByAware {
 		
 	}
 	
-	public interface FluentGroupBy extends GroupByChain<FluentGroupBy>, GroupByTrailer, QueryProvider {
+	public interface FluentGroupBy extends GroupByChain<FluentGroupBy>, HavingAware, QueryProvider {
 		
 	}
 	

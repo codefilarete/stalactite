@@ -8,7 +8,7 @@ import org.gama.stalactite.query.model.SelectQuery.FluentWhere;
  *
  * @author Guillaume Mary
  */
-public interface FromTrailer extends WhereTrailer {
+public interface WhereAware extends GroupByAware {
 	
 	FluentWhere where(Column column, CharSequence condition);
 	
