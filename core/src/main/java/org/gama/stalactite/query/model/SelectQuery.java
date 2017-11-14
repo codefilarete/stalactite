@@ -53,11 +53,13 @@ public class SelectQuery implements FromAware, WhereAware, HavingAware, OrderByA
 		this.groupBy = new MethodDispatcher()
 				.redirect(GroupByChain.class, groupBySurrogate, true)
 				.redirect(HavingAware.class, this)
+				.redirect(OrderByAware.class, this)
 				.redirect(QueryProvider.class, this)
 				.build(FluentGroupBy.class);
 		this.havingSurrogate = new Having();
 		this.having = new MethodDispatcher()
 				.redirect(CriteriaChain.class, havingSurrogate, true)
+				.redirect(OrderByAware.class, this)
 				.redirect(QueryProvider.class, this)
 				.build(FluentHaving.class);
 		this.orderBySurrogate = new OrderBy();
@@ -239,11 +241,11 @@ public class SelectQuery implements FromAware, WhereAware, HavingAware, OrderByA
 		
 	}
 	
-	public interface FluentGroupBy extends GroupByChain<FluentGroupBy>, HavingAware, QueryProvider {
+	public interface FluentGroupBy extends GroupByChain<FluentGroupBy>, HavingAware, OrderByAware, QueryProvider {
 		
 	}
 	
-	public interface FluentHaving extends CriteriaChain<FluentHaving>, QueryProvider {
+	public interface FluentHaving extends CriteriaChain<FluentHaving>, OrderByAware, QueryProvider {
 		
 	}
 	
