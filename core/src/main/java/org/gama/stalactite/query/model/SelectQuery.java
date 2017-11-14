@@ -13,7 +13,7 @@ import org.gama.stalactite.persistence.structure.Table.Column;
  * @author Guillaume Mary
  * @see org.gama.stalactite.query.builder.SelectQueryBuilder
  */
-public class SelectQuery implements FromAware, WhereAware, HavingAware, OrderByAware, QueryProvider {
+public class SelectQuery implements FromAware, WhereAware, HavingAware, OrderByAware, LimitAware, QueryProvider {
 	
 	private final FluentSelect select;
 	private final Select selectSurrogate;
@@ -27,6 +27,8 @@ public class SelectQuery implements FromAware, WhereAware, HavingAware, OrderByA
 	private final Having havingSurrogate;
 	private final OrderBy orderBySurrogate;
 	private final FluentOrderBy orderBy;
+	private final Limit limitSurrogate;
+	private final FluentLimit limit;
 	
 	public SelectQuery() {
 		this.selectSurrogate = new Select();
@@ -39,6 +41,7 @@ public class SelectQuery implements FromAware, WhereAware, HavingAware, OrderByA
 		this.from = new MethodDispatcher()
 				.redirect(JoinChain.class, fromSurrogate, true)
 				.redirect(WhereAware.class, this)
+				.redirect(LimitAware.class, this)
 				.redirect(QueryProvider.class, this)
 				.build(FluentFrom.class);
 		this.whereSurrogate = new Where();
@@ -47,6 +50,7 @@ public class SelectQuery implements FromAware, WhereAware, HavingAware, OrderByA
 				.redirect(Iterable.class, whereSurrogate)
 				.redirect(GroupByAware.class, this)
 				.redirect(OrderByAware.class, this)
+				.redirect(LimitAware.class, this)
 				.redirect(QueryProvider.class, this)
 				.build(FluentWhere.class);
 		this.groupBySurrogate = new GroupBy();
@@ -54,20 +58,27 @@ public class SelectQuery implements FromAware, WhereAware, HavingAware, OrderByA
 				.redirect(GroupByChain.class, groupBySurrogate, true)
 				.redirect(HavingAware.class, this)
 				.redirect(OrderByAware.class, this)
+				.redirect(LimitAware.class, this)
 				.redirect(QueryProvider.class, this)
 				.build(FluentGroupBy.class);
 		this.havingSurrogate = new Having();
 		this.having = new MethodDispatcher()
 				.redirect(CriteriaChain.class, havingSurrogate, true)
 				.redirect(OrderByAware.class, this)
+				.redirect(LimitAware.class, this)
 				.redirect(QueryProvider.class, this)
 				.build(FluentHaving.class);
 		this.orderBySurrogate = new OrderBy();
 		this.orderBy = new MethodDispatcher()
 				.redirect(OrderByChain.class, orderBySurrogate, true)
-				.redirect(OrderByAware.class, this)
+				.redirect(LimitAware.class, this)
 				.redirect(QueryProvider.class, this)
 				.build(FluentOrderBy.class);
+		this.limitSurrogate = new Limit();
+		this.limit = new MethodDispatcher()
+				.redirect(LimitChain.class, limitSurrogate, true)
+				.redirect(QueryProvider.class, this)
+				.build(FluentLimit.class);
 		
 	}
 	
@@ -108,6 +119,10 @@ public class SelectQuery implements FromAware, WhereAware, HavingAware, OrderByA
 	
 	public OrderBy getOrderBySurrogate() {
 		return orderBySurrogate;
+	}
+	
+	public Limit getLimitSurrogate() {
+		return limitSurrogate;
 	}
 	
 	public FluentSelect select(String selectable) {
@@ -220,36 +235,45 @@ public class SelectQuery implements FromAware, WhereAware, HavingAware, OrderByA
 	}
 	
 	@Override
-	public OrderByChain orderBy(Column column, Column... columns) {
+	public FluentOrderBy orderBy(Column column, Column... columns) {
 		return this.orderBy.add(column, columns);
 	}
 	
 	@Override
-	public OrderByChain orderBy(String column, String... columns) {
+	public FluentOrderBy orderBy(String column, String... columns) {
 		return this.orderBy.add(column, columns);
+	}
+	
+	@Override
+	public LimitChain limit(int value) {
+		return this.limit.setValue(value);
 	}
 	
 	public interface FluentSelect extends SelectChain<FluentSelect>, FromAware, QueryProvider {
 		
 	}
 	
-	public interface FluentFrom extends JoinChain<FluentFrom>, WhereAware, QueryProvider {
+	public interface FluentFrom extends JoinChain<FluentFrom>, WhereAware, LimitAware, QueryProvider {
 		
 	}
 	
-	public interface FluentWhere extends CriteriaChain<FluentWhere>, GroupByAware, QueryProvider, OrderByAware {
+	public interface FluentWhere extends CriteriaChain<FluentWhere>, GroupByAware, OrderByAware, LimitAware, QueryProvider {
 		
 	}
 	
-	public interface FluentGroupBy extends GroupByChain<FluentGroupBy>, HavingAware, OrderByAware, QueryProvider {
+	public interface FluentGroupBy extends GroupByChain<FluentGroupBy>, HavingAware, OrderByAware, LimitAware, QueryProvider {
 		
 	}
 	
-	public interface FluentHaving extends CriteriaChain<FluentHaving>, OrderByAware, QueryProvider {
+	public interface FluentHaving extends CriteriaChain<FluentHaving>, OrderByAware, LimitAware, QueryProvider {
 		
 	}
 	
-	public interface FluentOrderBy extends OrderByChain<FluentOrderBy>, OrderByAware, QueryProvider {
+	public interface FluentOrderBy extends OrderByChain<FluentOrderBy>, LimitAware, QueryProvider {
+		
+	}
+	
+	public interface FluentLimit extends LimitChain<FluentLimit>, QueryProvider {
 		
 	}
 }

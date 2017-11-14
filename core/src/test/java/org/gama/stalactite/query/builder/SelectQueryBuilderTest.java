@@ -62,6 +62,17 @@ public class SelectQueryBuilderTest {
 				{ select(colTotoA, colTataB).from(tableToto, tableTata, "x = y").where(colTotoB, "= 1").groupBy(colTotoB)
 						.having("sum(", colTotoB, ") > 1").orderBy(colTotoB),
 					"select Toto.a, Tata.b from Toto inner join Tata on x = y where Toto.b = 1 group by Toto.b having sum(Toto.b) > 1 order by Toto.b" },
+				// limit test
+				{ select(colTotoA, colTataB).from(tableToto).limit(2),
+						"select Toto.a, Tata.b from Toto limit 2" },
+				{ select(colTotoA, colTataB).from(tableToto).where(colTotoB, "= 1").limit(2),
+						"select Toto.a, Tata.b from Toto where Toto.b = 1 limit 2" },
+				{ select(colTotoA, colTataB).from(tableToto).where(colTotoB, "= 1").orderBy(colTotoA).limit(2),
+						"select Toto.a, Tata.b from Toto where Toto.b = 1 order by Toto.a limit 2" },
+				{ select(colTotoA, colTataB).from(tableToto).where(colTotoB, "= 1").groupBy(colTotoA).limit(2),
+						"select Toto.a, Tata.b from Toto where Toto.b = 1 group by Toto.a limit 2" },
+				{ select(colTotoA, colTataB).from(tableToto).where(colTotoB, "= 1").groupBy(colTotoA).having("sum(", colTotoB, ") > 1").limit(2),
+						"select Toto.a, Tata.b from Toto where Toto.b = 1 group by Toto.a having sum(Toto.b) > 1 limit 2" },
 		};
 	}
 	

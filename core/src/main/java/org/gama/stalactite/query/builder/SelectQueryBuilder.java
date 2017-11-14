@@ -4,6 +4,7 @@ import org.gama.lang.StringAppender;
 import org.gama.stalactite.persistence.structure.Table.Column;
 import org.gama.stalactite.query.model.GroupBy;
 import org.gama.stalactite.query.model.Having;
+import org.gama.stalactite.query.model.Limit;
 import org.gama.stalactite.query.model.OrderBy;
 import org.gama.stalactite.query.model.SelectQuery;
 
@@ -49,6 +50,9 @@ public class SelectQueryBuilder extends AbstractDMLBuilder {
 		if (!orderBy.getColumns().isEmpty()) {
 			cat(orderBy, sql.cat(" order by "));
 		}
+		
+		Limit limit = selectQuery.getLimitSurrogate();
+		sql.catIf(limit.getValue() != null, " limit ", limit.getValue());
 		
 		return sql.toString();
 	}
