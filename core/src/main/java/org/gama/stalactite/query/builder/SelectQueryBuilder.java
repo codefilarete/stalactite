@@ -3,8 +3,8 @@ package org.gama.stalactite.query.builder;
 import org.gama.lang.StringAppender;
 import org.gama.stalactite.persistence.structure.Table.Column;
 import org.gama.stalactite.query.model.SelectQuery;
-import org.gama.stalactite.query.model.SelectQuery.GroupBy;
-import org.gama.stalactite.query.model.SelectQuery.Having;
+import org.gama.stalactite.query.model.GroupBy;
+import org.gama.stalactite.query.model.Having;
 
 /**
  * @author Guillaume Mary
@@ -30,16 +30,16 @@ public class SelectQueryBuilder extends AbstractDMLBuilder {
 		
 		sql.cat("select ", selectBuilder.toSQL());
 		sql.cat(" from ", fromBuilder.toSQL());
-		if (!selectQuery.getWhere().getConditions().isEmpty()) {
+		if (!selectQuery.getWhereSurrogate().getConditions().isEmpty()) {
 			sql.cat(" where ", whereBuilder.toSQL());
 		}
 		
-		GroupBy groupBy = selectQuery.getGroupBy();
+		GroupBy groupBy = selectQuery.getGroupBySurrogate();
 		if (!groupBy.getGroups().isEmpty()) {
 			cat(groupBy, sql.cat(" group by "));
 		}
 		
-		Having having = groupBy.getHaving();
+		Having having = selectQuery.getHavingSurrogate();
 		if (!having.getConditions().isEmpty()) {
 			cat(having, sql.cat(" having "));
 		}

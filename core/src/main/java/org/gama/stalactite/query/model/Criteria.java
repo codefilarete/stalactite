@@ -1,10 +1,10 @@
 package org.gama.stalactite.query.model;
 
-import org.gama.stalactite.persistence.structure.Table.Column;
-
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+
+import org.gama.stalactite.persistence.structure.Table.Column;
 
 import static org.gama.stalactite.query.model.AbstractCriterion.LogicalOperator.And;
 import static org.gama.stalactite.query.model.AbstractCriterion.LogicalOperator.Or;
@@ -12,7 +12,7 @@ import static org.gama.stalactite.query.model.AbstractCriterion.LogicalOperator.
 /**
  * @author Guillaume Mary
  */
-public class Criteria<C extends Criteria> extends AbstractCriterion implements Iterable<AbstractCriterion> {
+public class Criteria<C extends CriteriaChain<C>> extends AbstractCriterion implements CriteriaChain<C> {
 	
 	/** Criteria, ClosedCriteria */
 	protected List<AbstractCriterion> conditions = new ArrayList<>();
@@ -22,6 +22,10 @@ public class Criteria<C extends Criteria> extends AbstractCriterion implements I
 
 	public Criteria(Column column, CharSequence condition) {
 		add(new ColumnCriterion(column, condition));
+	}
+
+	public Criteria(Object ... columns) {
+		add(new RawCriterion(columns));
 	}
 
 	protected void setOperator(LogicalOperator operator) {
@@ -37,29 +41,35 @@ public class Criteria<C extends Criteria> extends AbstractCriterion implements I
 		return (C) this;
 	}
 
+	@Override
 	public C and(Column column, CharSequence condition) {
 		return add(new ColumnCriterion(And, column, condition));
 	}
 
+	@Override
 	public C or(Column column, CharSequence condition) {
 		return add(new ColumnCriterion(Or, column, condition));
 	}
 
+	@Override
 	public C and(Criteria criteria) {
 		criteria.setOperator(And);
 		return add(criteria);
 	}
 
+	@Override
 	public C or(Criteria criteria) {
 		criteria.setOperator(Or);
 		return add(criteria);
 	}
 	
-	public C and(Object ... columns) {
+	@Override
+	public C and(Object... columns) {
 		return add(new RawCriterion(And, columns));
 	}
-
-	public C or(Object ... columns) {
+	
+	@Override
+	public C or(Object... columns) {
 		return add(new RawCriterion(Or, columns));
 	}
 

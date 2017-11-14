@@ -1,15 +1,10 @@
 package org.gama.stalactite.query.model;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Map;
 
 import org.gama.lang.reflect.MethodDispatcher;
 import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.persistence.structure.Table.Column;
-
-import static org.gama.stalactite.query.model.AbstractCriterion.LogicalOperator.And;
-import static org.gama.stalactite.query.model.AbstractCriterion.LogicalOperator.Or;
 
 /**
  * A support for a SQL query, trying to be closest as possible to a real select query syntax and implementing the most simple/common usage. 
@@ -18,28 +13,51 @@ import static org.gama.stalactite.query.model.AbstractCriterion.LogicalOperator.
  * @author Guillaume Mary
  * @see org.gama.stalactite.query.builder.SelectQueryBuilder
  */
-public class SelectQuery implements FromTrailer, SelectTrailer {
+public class SelectQuery implements SelectTrailer, FromTrailer, GroupByTrailer, QueryProvider {
 	
 	private final FluentSelect select;
 	private final Select selectSurrogate;
 	private final FluentFrom from;
 	private final From fromSurrogate;
 	private final FluentWhere where;
-	private final GroupBy groupBy;
+	private final Where whereSurrogate;
+	private final FluentGroupBy groupBy;
+	private final GroupBy groupBySurrogate;
+	private final FluentHaving having;
+	private final Having havingSurrogate;
 	
 	public SelectQuery() {
 		this.selectSurrogate = new Select();
 		this.select = new MethodDispatcher()
 				.redirect(SelectChain.class, selectSurrogate, true)
 				.redirect(SelectTrailer.class, this)
+				.redirect(QueryProvider.class, this)
 				.build(FluentSelect.class);
 		this.fromSurrogate = new From();
 		this.from = new MethodDispatcher()
 				.redirect(JoinChain.class, fromSurrogate, true)
 				.redirect(FromTrailer.class, this)
+				.redirect(QueryProvider.class, this)
 				.build(FluentFrom.class);
-		this.where = new FluentWhere();
-		this.groupBy = new GroupBy();
+		this.whereSurrogate = new Where();
+		this.where = new MethodDispatcher()
+				.redirect(CriteriaChain.class, whereSurrogate, true)
+				.redirect(Iterable.class, whereSurrogate)
+				.redirect(WhereTrailer.class, this)
+				.redirect(QueryProvider.class, this)
+				.build(FluentWhere.class);
+		this.groupBySurrogate = new GroupBy();
+		this.groupBy = new MethodDispatcher()
+				.redirect(GroupByChain.class, groupBySurrogate, true)
+				.redirect(GroupByTrailer.class, this)
+				.redirect(QueryProvider.class, this)
+				.build(FluentGroupBy.class);
+		this.havingSurrogate = new Having();
+		this.having = new MethodDispatcher()
+				.redirect(CriteriaChain.class, havingSurrogate, true)
+				.redirect(QueryProvider.class, this)
+				.build(FluentHaving.class);
+		
 	}
 	
 	public FluentSelect getSelect() {
@@ -47,7 +65,7 @@ public class SelectQuery implements FromTrailer, SelectTrailer {
 	}
 	
 	/**
-	 * @return a concrete implementation of a select that is 
+	 * @return a concrete implementation of a select
 	 */
 	public Select getSelectSurrogate() {
 		return selectSurrogate;
@@ -61,12 +79,20 @@ public class SelectQuery implements FromTrailer, SelectTrailer {
 		return fromSurrogate;
 	}
 	
-	public Where getWhere() {
+	public FluentWhere getWhere() {
 		return where;
 	}
 	
-	public GroupBy getGroupBy() {
-		return groupBy;
+	public Where getWhereSurrogate() {
+		return whereSurrogate;
+	}
+	
+	public GroupBy getGroupBySurrogate() {
+		return groupBySurrogate;
+	}
+	
+	public Having getHavingSurrogate() {
+		return havingSurrogate;
 	}
 	
 	public FluentSelect select(String selectable) {
@@ -154,140 +180,47 @@ public class SelectQuery implements FromTrailer, SelectTrailer {
 	}
 	
 	@Override
-	public FluentWhere where(Object... criterion) {
-		return this.where.and(criterion);
-	}
-	
-	@Override
-	public GroupBy groupBy(Column column, Column... columns) {
+	public FluentGroupBy groupBy(Column column, Column... columns) {
 		return this.groupBy.add(column, columns);
 	}
 	
 	@Override
-	public GroupBy groupBy(String column, String... columns) {
+	public FluentGroupBy groupBy(String column, String... columns) {
 		return this.groupBy.add(column, columns);
 	}
 	
-	public interface FluentSelect extends SelectChain<FluentSelect>, SelectTrailer {
+	@Override
+	public FluentHaving having(Column column, String condition) {
+		return having.and(column, condition);
 	}
 	
-	public interface FluentFrom extends JoinChain<FluentFrom>, FromTrailer {
+	@Override
+	public FluentHaving having(Object... columns) {
+		return having.and(columns);
 	}
 	
-	public class FluentWhere extends Where<FluentWhere> {
-		
-		@Override
-		public FluentWhere and(Column column, CharSequence condition) {
-			return super.and(column, condition);
-		}
-		
-		@Override
-		public FluentWhere or(Column column, CharSequence condition) {
-			return super.or(column, condition);
-		}
-		
-		@Override
-		public FluentWhere and(Criteria criteria) {
-			return super.and(criteria);
-		}
-		
-		@Override
-		public FluentWhere or(Criteria criteria) {
-			return super.or(criteria);
-		}
-		
-		@Override
-		public FluentWhere and(Object... columns) {
-			return add(new RawCriterion(And, columns));
-		}
-		
-		@Override
-		public FluentWhere or(Object... columns) {
-			return add(new RawCriterion(Or, columns));
-		}
-		
-		public GroupBy groupBy(Column column, Column... columns) {
-			return SelectQuery.this.groupBy.add(column, columns);
-		}
-		
-		public GroupBy groupBy(String column, String... columns) {
-			return SelectQuery.this.groupBy.add(column, columns);
-		}
+	@Override
+	public SelectQuery getSelectQuery() {
+		return this;
 	}
 	
-	public static class GroupBy {
-		/** Column, String */
-		private final List<Object> groups = new ArrayList<>();
-		private final Having having = new Having();
+	public interface FluentSelect extends SelectChain<FluentSelect>, SelectTrailer, QueryProvider {
 		
-		private GroupBy add(Object table) {
-			this.groups.add(table);
-			return this;
-		}
-		
-		public List<Object> getGroups() {
-			return groups;
-		}
-		
-		public Having getHaving() {
-			return having;
-		}
-		
-		public GroupBy add(Column column, Column... columns) {
-			add(column);
-			for (Column col : columns) {
-				add(col);
-			}
-			return this;
-		}
-		
-		public GroupBy add(String column, String... columns) {
-			add(column);
-			for (String col : columns) {
-				add(col);
-			}
-			return this;
-		}
-		
-		public Having having(Column column, String condition) {
-			return this.having.and(column, condition);
-		}
-		
-		public Having having(Object... columns) {
-			return this.having.and(columns);
-		}
 	}
 	
-	public static class Having extends Criteria<Having> {
+	public interface FluentFrom extends JoinChain<FluentFrom>, FromTrailer, QueryProvider {
 		
-		@Override
-		public Having and(Column column, CharSequence condition) {
-			return super.and(column, condition);
-		}
+	}
+	
+	public interface FluentWhere extends CriteriaChain<FluentWhere>, WhereTrailer, QueryProvider {
 		
-		@Override
-		public Having or(Column column, CharSequence condition) {
-			return super.or(column, condition);
-		}
+	}
+	
+	public interface FluentGroupBy extends GroupByChain<FluentGroupBy>, GroupByTrailer, QueryProvider {
 		
-		@Override
-		public Having and(Criteria criteria) {
-			return super.and(criteria);
-		}
+	}
+	
+	public interface FluentHaving extends CriteriaChain<FluentHaving>, QueryProvider {
 		
-		@Override
-		public Having or(Criteria criteria) {
-			return super.or(criteria);
-		}
-		
-		@Override
-		public Having and(Object... columns) {
-			return add(new RawCriterion(And, columns));
-		}
-		
-		@Override
-		public Having or(Object... columns) {
-			return add(new RawCriterion(Or, columns));
-		}
 	}
 }

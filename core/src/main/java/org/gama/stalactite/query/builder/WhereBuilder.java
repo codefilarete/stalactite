@@ -2,26 +2,27 @@ package org.gama.stalactite.query.builder;
 
 import java.util.Map;
 
+import org.gama.lang.Reflections;
 import org.gama.lang.StringAppender;
 import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.persistence.structure.Table.Column;
 import org.gama.stalactite.query.model.AbstractCriterion;
 import org.gama.stalactite.query.model.AbstractCriterion.LogicalOperator;
 import org.gama.stalactite.query.model.ColumnCriterion;
-import org.gama.stalactite.query.model.Criteria;
+import org.gama.stalactite.query.model.CriteriaChain;
 import org.gama.stalactite.query.model.RawCriterion;
 
 /**
- * @author mary
+ * @author Guillaume Mary
  */
 public class WhereBuilder extends AbstractDMLBuilder {
 
 	public static final String AND = "and";
 	public static final String OR = "or";
 
-	private final Criteria where;
+	private final CriteriaChain where;
 
-	public WhereBuilder(Criteria where, Map<Table, String> tableAliases) {
+	public WhereBuilder(CriteriaChain where, Map<Table, String> tableAliases) {
 		super(tableAliases);
 		this.where = where;
 	}
@@ -33,7 +34,7 @@ public class WhereBuilder extends AbstractDMLBuilder {
 		return sql.toString();
 	}
 	
-	protected void cat(Criteria criteria, StringAppender sql) {
+	protected void cat(CriteriaChain criteria, StringAppender sql) {
 		boolean isNotFirst = false;
 		for (Object criterion : criteria) {
 			if (isNotFirst) {
@@ -45,9 +46,9 @@ public class WhereBuilder extends AbstractDMLBuilder {
 				cat((RawCriterion) criterion, sql);
 			} else if (criterion instanceof ColumnCriterion) {
 				cat((ColumnCriterion) criterion, sql);
-			} else if (criterion instanceof Criteria) {
+			} else if (criterion instanceof CriteriaChain) {
 				sql.cat("(");
-				cat((Criteria) criterion, sql);
+				cat((CriteriaChain) criterion, sql);
 				sql.cat(")");
 			}
 		}
@@ -59,8 +60,12 @@ public class WhereBuilder extends AbstractDMLBuilder {
 				sql.cat(getName((Column) o));
 			} else if (o instanceof CharSequence) {
 				sql.cat(o);
+			} else if (o instanceof CriteriaChain) {
+				sql.cat("(");
+				cat((CriteriaChain) o, sql);
+				sql.cat(")");
 			} else {
-				throw new IllegalArgumentException("Unknown criterion type " + criterion.getClass());
+				throw new IllegalArgumentException("Unknown criterion type " + Reflections.toString(o.getClass()));
 			}
 		}
 	}
