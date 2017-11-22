@@ -1,10 +1,13 @@
 package org.gama.sql.binder;
 
 import java.io.InputStream;
+import java.net.URL;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Date;
 import java.util.WeakHashMap;
+
+import org.gama.lang.Reflections;
 
 /**
  * Registry of {@link ParameterBinder}s according to their binding class.
@@ -43,11 +46,13 @@ public class ParameterBinderRegistry {
 		register(Integer.class, DefaultParameterBinders.INTEGER_BINDER);
 		register(Integer.TYPE, DefaultParameterBinders.INTEGER_PRIMITIVE_BINDER);
 		register(Date.class, DefaultParameterBinders.DATE_BINDER);
+		register(java.sql.Date.class, DefaultParameterBinders.DATE_SQL_BINDER);
 		register(LocalDate.class, DefaultParameterBinders.LOCALDATE_BINDER);
 		register(LocalDateTime.class, DefaultParameterBinders.LOCALDATETIME_BINDER);
 		register(Boolean.class, DefaultParameterBinders.BOOLEAN_BINDER);
 		register(Boolean.TYPE, DefaultParameterBinders.BOOLEAN_PRIMITIVE_BINDER);
 		register(InputStream.class, DefaultParameterBinders.BINARYSTREAM_BINDER);
+		register(URL.class, DefaultParameterBinders.URL_BINDER);
 	}
 	
 	/**
@@ -66,7 +71,7 @@ public class ParameterBinderRegistry {
 	}
 	
 	private UnsupportedOperationException newMissingBinderException(Class clazz) {
-		return new UnsupportedOperationException("No parameter binder found for type " + clazz.getName());
+		return new UnsupportedOperationException("No parameter binder found for type " + Reflections.toString(clazz));
 	}
 	
 }
