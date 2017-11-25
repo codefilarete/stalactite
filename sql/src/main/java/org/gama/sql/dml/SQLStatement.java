@@ -2,6 +2,7 @@ package org.gama.sql.dml;
 
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -43,9 +44,6 @@ public abstract class SQLStatement<ParamType> {
 	 * @param values
 	 */
 	public void setValues(Map<ParamType, Object> values) {
-		if (values.containsKey(null)) {
-			throw new IllegalArgumentException("Parameter should not be null (parameter's value = " + values.get(null) + ")");
-		}
 		this.values.putAll(values);
 	}
 	
@@ -57,10 +55,14 @@ public abstract class SQLStatement<ParamType> {
 	 * @param value
 	 */
 	public void setValue(ParamType index, Object value) {
-		if (index == null) {
-			throw new IllegalArgumentException("Parameter should not be null (parameter's value = " + value + ")");
-		}
 		this.values.put(index, value);
+	}
+	
+	/**
+	 * @return a non-modifiable copy of values (because subclasses may not support direct modifications and it's even not encouraged by this class)
+	 */
+	public Map<ParamType, Object> getValues() {
+		return Collections.unmodifiableMap(values);
 	}
 	
 	/**

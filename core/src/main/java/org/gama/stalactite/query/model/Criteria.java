@@ -20,10 +20,14 @@ public class Criteria<C extends CriteriaChain<C>> extends AbstractCriterion impl
 	public Criteria() {
 	}
 
-	public Criteria(Column column, CharSequence condition) {
+	public Criteria(Column column, String condition) {
 		add(new ColumnCriterion(column, condition));
 	}
-
+	
+	public Criteria(Column column, Operand condition) {
+		add(new ColumnCriterion(column, condition));
+	}
+	
 	public Criteria(Object ... columns) {
 		add(new RawCriterion(columns));
 	}
@@ -42,15 +46,23 @@ public class Criteria<C extends CriteriaChain<C>> extends AbstractCriterion impl
 	}
 
 	@Override
-	public C and(Column column, CharSequence condition) {
+	public C and(Column column, String condition) {
+		return add(new ColumnCriterion(And, column, condition));
+	}
+
+	public C and(Column column, Operand condition) {
 		return add(new ColumnCriterion(And, column, condition));
 	}
 
 	@Override
-	public C or(Column column, CharSequence condition) {
+	public C or(Column column, String condition) {
 		return add(new ColumnCriterion(Or, column, condition));
 	}
-
+	
+	public C or(Column column, Operand condition) {
+		return add(new ColumnCriterion(Or, column, condition));
+	}
+	
 	@Override
 	public C and(Criteria criteria) {
 		criteria.setOperator(And);

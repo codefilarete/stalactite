@@ -35,11 +35,19 @@ public class QueryEase {
 		return new SelectQuery().select(aliasedColumns);
 	}
 	
-	public static Where where(Column column, CharSequence condition) {
+	public static Where where(Column column, String condition) {
 		return new Where(column, condition);
 	}
 	
-	public static Criteria filter(Column column, CharSequence condition) {
+	public static Where where(Column column, Operand condition) {
+		return new Where(column, condition);
+	}
+	
+	public static Criteria filter(Column column, String condition) {
+		return new Criteria(column, condition);
+	}
+	
+	public static Criteria filter(Column column, Operand condition) {
 		return new Criteria(column, condition);
 	}
 	

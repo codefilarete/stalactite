@@ -1,13 +1,13 @@
 package org.gama.sql.dml;
 
-import org.gama.lang.Strings;
-import org.gama.sql.dml.SQLParameterParser.Parameter;
-import org.gama.sql.dml.SQLParameterParser.ParsedSQL;
-
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
+
+import org.gama.lang.Strings;
+import org.gama.sql.dml.SQLParameterParser.Parameter;
+import org.gama.sql.dml.SQLParameterParser.ParsedSQL;
 
 /**
  * Class that helps to adapt an SQL String with named parameters according . Eases index of named parameters as
@@ -59,7 +59,7 @@ public class ExpandableSQL {
 		this.preparedSQL = preparedSQLBuilder.toString();
 	}
 	
-	private void buildParameter(String parameterName, Integer valueSize, int firstIndex, StringBuilder preparedSQLBuilder) {
+	private void buildParameter(String parameterName, int valueSize, int firstIndex, StringBuilder preparedSQLBuilder) {
 		ExpandableParameter expandableParameter = this.expandableParameters.get(parameterName);
 		if (expandableParameter == null) {
 			expandableParameter = new ExpandableParameter(parameterName, valueSize);
@@ -109,7 +109,7 @@ public class ExpandableSQL {
 		/** Index of the parameter in the PreparedStatement, the first one for Collection value */
 		private int[] indexes;
 		
-		private ExpandableParameter(String parameterName, Integer markCount) {
+		private ExpandableParameter(String parameterName, int markCount) {
 			this.parameterName = parameterName;
 			this.markCount = markCount;
 		}
