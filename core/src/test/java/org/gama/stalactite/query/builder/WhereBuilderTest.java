@@ -186,8 +186,8 @@ public class WhereBuilderTest {
 		WhereBuilder testInstance = new WhereBuilder(where, tableAliases);
 		ParameterBinderRegistry parameterBinderRegistry = new ParameterBinderRegistry();
 		PreparedSQL preparedSQL = testInstance.toPreparedSQL(parameterBinderRegistry);
-		assertEquals(expectedValues, preparedSQL.getValues());
 		assertEquals(expectedPreparedStatement, preparedSQL.getSQL());
+		assertEquals(expectedValues, preparedSQL.getValues());
 	}
 	
 }

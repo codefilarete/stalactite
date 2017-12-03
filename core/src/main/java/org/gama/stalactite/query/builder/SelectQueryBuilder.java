@@ -19,6 +19,7 @@ public class SelectQueryBuilder extends AbstractDMLBuilder {
 	private final SelectBuilder selectBuilder;
 	private final FromBuilder fromBuilder;
 	private final WhereBuilder whereBuilder;
+	private final WhereBuilder havingBuilder;
 	
 	public SelectQueryBuilder(SelectQuery selectQuery) {
 		super(selectQuery.getFromSurrogate().getTableAliases());
@@ -26,6 +27,7 @@ public class SelectQueryBuilder extends AbstractDMLBuilder {
 		this.selectBuilder = new SelectBuilder(selectQuery.getSelectSurrogate(), tableAliases);
 		this.fromBuilder = new FromBuilder(selectQuery.getFromSurrogate());
 		this.whereBuilder = new WhereBuilder(selectQuery.getWhere(), tableAliases);
+		this.havingBuilder = new WhereBuilder(selectQuery.getHavingSurrogate(), tableAliases);
 	}
 	
 	@Override
@@ -45,7 +47,7 @@ public class SelectQueryBuilder extends AbstractDMLBuilder {
 		
 		Having having = selectQuery.getHavingSurrogate();
 		if (!having.getConditions().isEmpty()) {
-			cat(having, sql.cat(" having "));
+			havingBuilder.toSQL(sql.cat(" having "));
 		}
 		
 		OrderBy orderBy = selectQuery.getOrderBySurrogate();
@@ -83,9 +85,5 @@ public class SelectQueryBuilder extends AbstractDMLBuilder {
 		} else if (column instanceof Column) {
 			sql.cat(getName((Column) column));
 		}
-	}
-	
-	private void cat(Having having, StringAppender sql) {
-		whereBuilder.cat(having, sql);
 	}
 }
