@@ -22,7 +22,7 @@ import org.gama.stalactite.query.model.RawCriterion;
  * 
  * @author Guillaume Mary
  */
-public class WhereBuilder extends AbstractDMLBuilder {
+public class WhereBuilder extends AbstractDMLBuilder implements PreparedSQLBuilder {
 
 	public static final String AND = "and";
 	public static final String OR = "or";
@@ -49,12 +49,17 @@ public class WhereBuilder extends AbstractDMLBuilder {
 		return this.sql.toString();
 	}
 	
+	@Override
 	public PreparedSQL toPreparedSQL(ParameterBinderRegistry parameterBinderRegistry) {
 		return toPreparedSQL(sql, parameterBinderRegistry);
 	}
 	
 	public PreparedSQL toPreparedSQL(StringAppender sql, ParameterBinderRegistry parameterBinderRegistry) {
 		PreparedSQLWrapper preparedSQLWrapper = new PreparedSQLWrapper(new StringAppenderWrapper(sql), parameterBinderRegistry);
+		return toPreparedSQL(preparedSQLWrapper);
+	}
+	
+	public PreparedSQL toPreparedSQL(PreparedSQLWrapper preparedSQLWrapper) {
 		WhereAppender whereAppender = new WhereAppender(preparedSQLWrapper);
 		whereAppender.cat(where);
 		PreparedSQL result = new PreparedSQL(this.sql.toString(), preparedSQLWrapper.getParameterBinders());
@@ -137,6 +142,8 @@ public class WhereBuilder extends AbstractDMLBuilder {
 					cat(")");
 				} else if (o instanceof Column) {
 					sql.cat(WhereBuilder.this.getName((Column) o));
+				} else if (o instanceof Operand) {
+					cat((Operand) o);
 				} else {
 					throw new IllegalArgumentException("Unknown criterion type " + Reflections.toString(o.getClass()));
 				}

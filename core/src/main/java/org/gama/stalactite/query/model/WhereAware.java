@@ -12,6 +12,8 @@ public interface WhereAware extends GroupByAware {
 	
 	FluentWhere where(Column column, String condition);
 	
+	FluentWhere where(Column column, Operand condition);
+	
 	FluentWhere where(Criteria criteria);
 	
 }

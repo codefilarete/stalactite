@@ -1,7 +1,9 @@
 package org.gama.stalactite.query.builder;
 
 /**
- * @author mary
+ * A simplistic contract to print some SQL
+ * 
+ * @author Guillaume Mary
  */
 public interface SQLBuilder {
 	

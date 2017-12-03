@@ -1,14 +1,21 @@
 package org.gama.stalactite.query.builder;
 
+import java.util.Map;
+
 import com.tngtech.java.junit.dataprovider.DataProvider;
 import com.tngtech.java.junit.dataprovider.DataProviderRunner;
 import com.tngtech.java.junit.dataprovider.UseDataProvider;
+import org.gama.lang.collection.Maps;
+import org.gama.sql.binder.ParameterBinderRegistry;
+import org.gama.sql.dml.PreparedSQL;
 import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.persistence.structure.Table.Column;
 import org.gama.stalactite.query.model.QueryProvider;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
+import static org.gama.stalactite.query.model.Operand.eq;
+import static org.gama.stalactite.query.model.Operand.gt;
 import static org.gama.stalactite.query.model.OrderByChain.Order.ASC;
 import static org.gama.stalactite.query.model.OrderByChain.Order.DESC;
 import static org.gama.stalactite.query.model.QueryEase.select;
@@ -101,5 +108,33 @@ public class SelectQueryBuilderTest {
 	public void testToSQL(QueryProvider queryProvider, String expected) {
 		SelectQueryBuilder testInstance = new SelectQueryBuilder(queryProvider.getSelectQuery());
 		assertEquals(expected, testInstance.toSQL());
+	}
+	
+	@DataProvider
+	public static Object[][] testToPreparedSQL_data() {
+		final Table tableToto = new Table(null, "Toto");
+		final Column colTotoA = tableToto.new Column("a", String.class);
+		final Column colTotoB = tableToto.new Column("b", String.class);
+		final Table tableTata = new Table(null, "Tata");
+		final Column colTataA = tableTata.new Column("a", String.class);
+		final Column colTataB = tableTata.new Column("b", String.class);
+		
+		return new Object[][] {
+				{ select(colTotoA, colTataB).from(tableToto).where(colTotoB, eq(1)).groupBy(colTotoA)
+						.having("sum(", colTotoB, ") ", gt(1)).limit(2),
+						"select Toto.a, Tata.b from Toto where Toto.b = ? group by Toto.a having sum(Toto.b) > ? limit ?",
+						Maps.asHashMap(1, 1).add(2, 1).add(3, 2)},
+		};
+	}
+	
+	@Test
+	@UseDataProvider("testToPreparedSQL_data")
+	public void testToPreparedSQL(QueryProvider queryProvider,
+								  String expectedPreparedStatement, Map<Integer, Object> expectedValues) {
+		SelectQueryBuilder testInstance = new SelectQueryBuilder(queryProvider.getSelectQuery());
+		ParameterBinderRegistry parameterBinderRegistry = new ParameterBinderRegistry();
+		PreparedSQL preparedSQL = testInstance.toPreparedSQL(parameterBinderRegistry);
+		assertEquals(expectedPreparedStatement, preparedSQL.getSQL());
+		assertEquals(expectedValues, preparedSQL.getValues());
 	}
 }

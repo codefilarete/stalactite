@@ -1,7 +1,11 @@
 package org.gama.stalactite.query.builder;
 
 import org.gama.lang.StringAppender;
+import org.gama.sql.binder.ParameterBinderRegistry;
+import org.gama.sql.dml.PreparedSQL;
 import org.gama.stalactite.persistence.structure.Table.Column;
+import org.gama.stalactite.query.builder.OperandBuilder.PreparedSQLWrapper;
+import org.gama.stalactite.query.builder.OperandBuilder.StringAppenderWrapper;
 import org.gama.stalactite.query.model.GroupBy;
 import org.gama.stalactite.query.model.Having;
 import org.gama.stalactite.query.model.Limit;
@@ -13,7 +17,7 @@ import org.gama.stalactite.query.model.SelectQuery;
 /**
  * @author Guillaume Mary
  */
-public class SelectQueryBuilder extends AbstractDMLBuilder {
+public class SelectQueryBuilder extends AbstractDMLBuilder implements PreparedSQLBuilder {
 	
 	private final SelectQuery selectQuery;
 	private final SelectBuilder selectBuilder;
@@ -61,12 +65,52 @@ public class SelectQueryBuilder extends AbstractDMLBuilder {
 		return sql.toString();
 	}
 	
+	@Override
+	public PreparedSQL toPreparedSQL(ParameterBinderRegistry parameterBinderRegistry) {
+		StringAppender sql = new StringAppender(500);
+		
+		PreparedSQLWrapper preparedSQLWrapper = new PreparedSQLWrapper(new StringAppenderWrapper(sql), parameterBinderRegistry);
+		
+		sql.cat("select ", selectBuilder.toSQL());
+		sql.cat(" from ", fromBuilder.toSQL());
+		if (!selectQuery.getWhereSurrogate().getConditions().isEmpty()) {
+			sql.cat(" where ");
+			whereBuilder.toPreparedSQL(preparedSQLWrapper);
+		}
+		
+		GroupBy groupBy = selectQuery.getGroupBySurrogate();
+		if (!groupBy.getGroups().isEmpty()) {
+			cat(groupBy, sql.cat(" group by "));
+		}
+		
+		Having having = selectQuery.getHavingSurrogate();
+		if (!having.getConditions().isEmpty()) {
+			sql.cat(" having ");
+			havingBuilder.toPreparedSQL(preparedSQLWrapper);
+		}
+		
+		OrderBy orderBy = selectQuery.getOrderBySurrogate();
+		if (!orderBy.getColumns().isEmpty()) {
+			cat(orderBy, sql.cat(" order by "));
+		}
+		
+		Limit limit = selectQuery.getLimitSurrogate();
+		if (limit.getValue() != null) {
+			sql.cat(" limit ");
+			preparedSQLWrapper.catValue(limit.getValue());
+		}
+		
+		PreparedSQL result = new PreparedSQL(sql.toString(), preparedSQLWrapper.getParameterBinders());
+		result.setValues(preparedSQLWrapper.getValues());
+		
+		return result;
+	}
+	
 	private void cat(OrderBy orderBy, StringAppender sql) {
 		for (OrderedColumn o : orderBy) {
 			Object column = o.getColumn();
 			cat(column, sql);
-			sql.catIf(o.getOrder() != null, o.getOrder() == Order.ASC ? " asc" : " desc");
-			sql.cat(", ");
+			sql.catIf(o.getOrder() != null, o.getOrder() == Order.ASC ? " asc" : " desc").cat(", ");
 		}
 		sql.cutTail(2);
 	}
