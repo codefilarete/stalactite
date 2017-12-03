@@ -13,64 +13,64 @@ import org.gama.stalactite.query.model.operand.Lower;
  */
 public abstract class Operand {
 	
-	public static Operand eq(Object value) {
+	public static Equals eq(Object value) {
 		return new Equals(value);
 	}
 	
-	public static Operand not(Operand operand) {
-		operand.not = true;
+	public static <I extends Operand> I not(I operand) {
+		operand.setNot();
 		return operand;
 	}
 	
-	public static Operand lt(Object value) {
+	public static Lower lt(Object value) {
 		return new Lower(value);
 	}
 	
-	public static Operand lteq(Object value) {
+	public static Lower lteq(Object value) {
 		return new Lower(value, true);
 	}
 	
-	public static Operand gt(Object value) {
+	public static Greater gt(Object value) {
 		return new Greater(value);
 	}
 	
-	public static Operand gteq(Object value) {
+	public static Greater gteq(Object value) {
 		return new Greater(value, true);
 	}
 	
-	public static Operand between(Object value1, Object value2) {
+	public static Between between(Object value1, Object value2) {
 		return new Between(value1, value2);
 	}
 	
-	public static Operand in(Iterable value) {
+	public static In in(Iterable value) {
 		return new In(value);
 	}
 	
-	public static Operand in(Object ... value) {
+	public static In in(Object ... value) {
 		return new In(value);
 	}
 	
-	public static Operand isNull() {
+	public static IsNull isNull() {
 		return new IsNull();
 	}
 	
-	public static Operand isNotNull() {
+	public static IsNull isNotNull() {
 		return not(isNull());
 	}
 	
-	public static Operand like(String value) {
+	public static Like like(String value) {
 		return new Like(value);
 	}
 	
-	public static Operand contains(String value) {
+	public static Like contains(String value) {
 		return new Like(value, true, true);
 	}
 	
-	public static Operand startsWith(String value) {
+	public static Like startsWith(String value) {
 		return new Like(value, false, true);
 	}
 	
-	public static Operand endsWith(String value) {
+	public static Like endsWith(String value) {
 		return new Like(value, true, false);
 	}
 	
@@ -92,5 +92,17 @@ public abstract class Operand {
 	
 	public boolean isNot() {
 		return not;
+	}
+	
+	public void setNot(boolean not) {
+		this.not = not;
+	}
+	
+	public void setNot() {
+		setNot(true);
+	}
+	
+	public void flipNot() {
+		this.not = !this.not;
 	}
 }

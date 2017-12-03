@@ -3,6 +3,7 @@ package org.gama.stalactite.query.builder;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.gama.lang.Reflections;
 import org.gama.lang.StringAppender;
 import org.gama.lang.collection.ArrayIterator;
 import org.gama.lang.collection.Iterables;
@@ -32,7 +33,7 @@ public class OperandBuilder {
 	 */
 	public void cat(Operand operand, SQLAppender sql) {
 		if (operand.getValue() == null) {
-			catNullValue(operand, sql);
+			catNullValue(operand.isNot(), sql);
 		} else {
 			if (operand instanceof Equals) {
 				catEquals((Equals) operand, sql);
@@ -49,18 +50,18 @@ public class OperandBuilder {
 			} else if (operand instanceof IsNull) {
 				catIsNull((IsNull) operand, sql);
 			} else {
-				throw new UnsupportedOperationException("Operator " + operand.getClass() + " is not implemented");
+				throw new UnsupportedOperationException("Operator " + Reflections.toString(operand.getClass()) + " is not implemented");
 			}
 		}
 	}
 	
-	public void catNullValue(Operand operand, SQLAppender sql) {
+	public void catNullValue(boolean not, SQLAppender sql) {
 		// "= NULL" is incorrect and will return no result (answer from Internet) and should be replaced by "is null"
-		sql.cat("is").catIf(operand.isNot(), " not").cat(" null");
+		sql.cat("is").catIf(not, " not").cat(" null");
 	}
 	
 	public void catIsNull(IsNull isNull, SQLAppender sql) {
-		catNullValue(isNull, sql);
+		catNullValue(isNull.isNot(), sql);
 	}
 	
 	public void catLike(Like like, SQLAppender sql) {
