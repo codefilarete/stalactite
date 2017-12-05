@@ -201,7 +201,7 @@ public class SelectQuery implements FromAware, WhereAware, HavingAware, OrderByA
 	}
 	
 	@Override
-	public FluentWhere where(Column column, String condition) {
+	public FluentWhere where(Column column, CharSequence condition) {
 		return this.where.and(new ColumnCriterion(column, condition));
 	}
 	

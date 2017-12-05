@@ -82,31 +82,33 @@ public class JoinedStrategiesSelectExecutor<T, I> {
 		result = new ArrayList<>(parcels.size() * blockSize);
 		
 		SelectQuery selectQuery = joinedStrategiesSelect.buildSelectQuery();
-		SelectQueryBuilder queryBuilder = new SelectQueryBuilder(selectQuery);
 		
-		// Use same Connection for all operations
-		ConnectionProvider connectionProvider = new SimpleConnectionProvider(getConnectionProvider().getCurrentConnection());
 		// Creation of the where clause: we use a dynamic "in" operator clause to avoid multiple SelectQueryBuilder instanciation
 		DynamicInClause condition = new DynamicInClause();
 		selectQuery.where(keyColumn, condition);
+		
+		// Use same Connection for all operations
+		ConnectionProvider connectionProvider = new SimpleConnectionProvider(getConnectionProvider().getCurrentConnection());
 		List<I> lastBlock = Iterables.last(parcels);
 		// keep only full blocks to run them on the fully filled "in" operator
 		int lastBlockSize = lastBlock.size();
 		if (lastBlockSize != blockSize) {
 			parcels = Collections.cutTail(parcels);
 		}
+		
+		SelectQueryBuilder queryBuilder = new SelectQueryBuilder(selectQuery);
 		if (!parcels.isEmpty()) {
 			// change parameter mark count to adapt "in" operator values
 			condition.setParamMarkCount(blockSize);
 			// adding "in" identifiers to where clause
 			bindInClause(blockSize);
-			execute(connectionProvider, queryBuilder, parcels);
+			execute(connectionProvider, queryBuilder.toSQL(), parcels);
 		}
 		if (!lastBlock.isEmpty()) {
 			// change parameter mark count to adapt "in" operator values
 			condition.setParamMarkCount(lastBlockSize);
 			bindInClause(lastBlockSize);
-			execute(connectionProvider, queryBuilder, java.util.Collections.singleton(lastBlock));
+			execute(connectionProvider, queryBuilder.toSQL(), java.util.Collections.singleton(lastBlock));
 		}
 		return result;
 	}
@@ -120,9 +122,8 @@ public class JoinedStrategiesSelectExecutor<T, I> {
 	}
 	
 	private void execute(ConnectionProvider connectionProvider,
-						 SelectQueryBuilder queryBuilder,
-						 Iterable<? extends Iterable<I>> idsParcels) {
-		ColumnParamedSelect preparedSelect = new ColumnParamedSelect(queryBuilder.toSQL(), inOperatorValueIndexes, parameterBinderProvider, joinedStrategiesSelect.getSelectParameterBinders());
+						 String sql, Iterable<? extends Iterable<I>> idsParcels) {
+		ColumnParamedSelect preparedSelect = new ColumnParamedSelect(sql, inOperatorValueIndexes, parameterBinderProvider, joinedStrategiesSelect.getSelectParameterBinders());
 		ReadOperation<Column> columnReadOperation = new ReadOperation<>(preparedSelect, connectionProvider);
 		for (Iterable<I> parcel : idsParcels) {
 			execute(columnReadOperation, parcel);
@@ -142,7 +143,8 @@ public class JoinedStrategiesSelectExecutor<T, I> {
 	}
 	
 	List<T> transform(Iterator<Row> rowIterator) {
-		StrategyJoinsRowTransformer<T> strategyJoinsRowTransformer = new StrategyJoinsRowTransformer<>(joinedStrategiesSelect.getStrategyJoins(JoinedStrategiesSelect.FIRST_STRATEGY_NAME));
+		StrategyJoinsRowTransformer<T> strategyJoinsRowTransformer = new StrategyJoinsRowTransformer<>(
+				joinedStrategiesSelect.getStrategyJoins(JoinedStrategiesSelect.FIRST_STRATEGY_NAME));
 		
 		strategyJoinsRowTransformer.setAliases(this.joinedStrategiesSelect.getAliases());
 		return strategyJoinsRowTransformer.transform(() -> rowIterator);

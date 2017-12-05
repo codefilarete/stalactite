@@ -10,7 +10,6 @@ import org.gama.lang.collection.Iterables;
 import org.gama.lang.trace.IncrementableInt;
 import org.gama.sql.binder.ParameterBinder;
 import org.gama.sql.binder.ParameterBinderRegistry;
-import org.gama.stalactite.query.builder.WhereBuilder.SQLAppender;
 import org.gama.stalactite.query.model.Operand;
 import org.gama.stalactite.query.model.operand.Between;
 import org.gama.stalactite.query.model.operand.Between.Interval;
@@ -127,6 +126,35 @@ public class OperandBuilder {
 	
 	public void catEquals(Equals equals, SQLAppender sql) {
 		sql.catIf(equals.isNot(), "!").cat("= ").catValue(equals.getValue());
+	}
+	
+	/**
+	 * The contract for printing a where clause : need to prin a String and a value.
+	 * Then you can print a prepared statement or a valued statement.
+	 */
+	public interface SQLAppender {
+		
+		/**
+		 * Appends a {@link String} to the underlying result. Used for keywords, column name, etc
+		 * @param s a basic {@link String}
+		 * @return this
+		 */
+		SQLAppender cat(String s, String... ss);
+		
+		/**
+		 * Called when a value must be "printed" to the underlying result. Implementations will differs on this point depending on the target goal:
+		 * values printed in the SQL statement (bad practive because of SQL injection) or prepared statement
+		 * @param value the object to be added/printed to the statement
+		 * @return this
+		 */
+		SQLAppender catValue(Object value);
+		
+		default SQLAppender catIf(boolean condition, String s) {
+			if (condition) {
+				cat(s);
+			}
+			return this;
+		}
 	}
 	
 	/**

@@ -46,7 +46,7 @@ public class Criteria<C extends CriteriaChain<C>> extends AbstractCriterion impl
 	}
 
 	@Override
-	public C and(Column column, String condition) {
+	public C and(Column column, CharSequence condition) {
 		return add(new ColumnCriterion(And, column, condition));
 	}
 
@@ -55,7 +55,7 @@ public class Criteria<C extends CriteriaChain<C>> extends AbstractCriterion impl
 	}
 
 	@Override
-	public C or(Column column, String condition) {
+	public C or(Column column, CharSequence condition) {
 		return add(new ColumnCriterion(Or, column, condition));
 	}
 	

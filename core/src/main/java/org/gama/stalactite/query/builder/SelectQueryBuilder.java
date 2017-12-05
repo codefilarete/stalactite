@@ -75,7 +75,7 @@ public class SelectQueryBuilder extends AbstractDMLBuilder implements PreparedSQ
 		sql.cat(" from ", fromBuilder.toSQL());
 		if (!selectQuery.getWhereSurrogate().getConditions().isEmpty()) {
 			sql.cat(" where ");
-			whereBuilder.toPreparedSQL(preparedSQLWrapper);
+			whereBuilder.toPreparedSQL(sql, preparedSQLWrapper);
 		}
 		
 		GroupBy groupBy = selectQuery.getGroupBySurrogate();
@@ -86,7 +86,7 @@ public class SelectQueryBuilder extends AbstractDMLBuilder implements PreparedSQ
 		Having having = selectQuery.getHavingSurrogate();
 		if (!having.getConditions().isEmpty()) {
 			sql.cat(" having ");
-			havingBuilder.toPreparedSQL(preparedSQLWrapper);
+			havingBuilder.toPreparedSQL(sql, preparedSQLWrapper);
 		}
 		
 		OrderBy orderBy = selectQuery.getOrderBySurrogate();

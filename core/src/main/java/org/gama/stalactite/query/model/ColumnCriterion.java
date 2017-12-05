@@ -10,7 +10,7 @@ public class ColumnCriterion extends AbstractCriterion {
 	private final Column column;
 	private final Object /* String or Operand */ condition;
 	
-	public ColumnCriterion(Column column, String condition) {
+	public ColumnCriterion(Column column, CharSequence condition) {
 		this(null, column, condition);
 	}
 	

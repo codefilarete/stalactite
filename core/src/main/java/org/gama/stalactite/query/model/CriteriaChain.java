@@ -7,9 +7,9 @@ import org.gama.stalactite.persistence.structure.Table.Column;
  */
 public interface CriteriaChain<SELF extends CriteriaChain<SELF>> extends Iterable<AbstractCriterion> {
 	
-	SELF and(Column column, String condition);
+	SELF and(Column column, CharSequence condition);
 	
-	SELF or(Column column, String condition);
+	SELF or(Column column, CharSequence condition);
 	
 	SELF and(Criteria criteria);
 	

@@ -10,7 +10,7 @@ import org.gama.stalactite.query.model.SelectQuery.FluentWhere;
  */
 public interface WhereAware extends GroupByAware {
 	
-	FluentWhere where(Column column, String condition);
+	FluentWhere where(Column column, CharSequence condition);
 	
 	FluentWhere where(Column column, Operand condition);
 	

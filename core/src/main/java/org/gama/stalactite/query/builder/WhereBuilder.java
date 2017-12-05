@@ -9,6 +9,7 @@ import org.gama.sql.dml.PreparedSQL;
 import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.persistence.structure.Table.Column;
 import org.gama.stalactite.query.builder.OperandBuilder.PreparedSQLWrapper;
+import org.gama.stalactite.query.builder.OperandBuilder.SQLAppender;
 import org.gama.stalactite.query.builder.OperandBuilder.StringAppenderWrapper;
 import org.gama.stalactite.query.model.AbstractCriterion;
 import org.gama.stalactite.query.model.AbstractCriterion.LogicalOperator;
@@ -31,8 +32,6 @@ public class WhereBuilder extends AbstractDMLBuilder implements PreparedSQLBuild
 	
 	private final OperandBuilder operandBuilder = new OperandBuilder();
 	
-	private final StringAppender sql = new StringAppender();
-	
 	public WhereBuilder(CriteriaChain where, Map<Table, String> tableAliases) {
 		super(tableAliases);
 		this.where = where;
@@ -40,60 +39,31 @@ public class WhereBuilder extends AbstractDMLBuilder implements PreparedSQLBuild
 	
 	@Override
 	public String toSQL() {
-		return toSQL(sql);
+		return toSQL(new StringAppender());
 	}
 	
 	public String toSQL(StringAppender sql) {
 		WhereAppender whereAppender = new WhereAppender(new StringAppenderWrapper(sql));
 		whereAppender.cat(where);
-		return this.sql.toString();
+		return sql.toString();
 	}
 	
 	@Override
 	public PreparedSQL toPreparedSQL(ParameterBinderRegistry parameterBinderRegistry) {
-		return toPreparedSQL(sql, parameterBinderRegistry);
+		return toPreparedSQL(new StringAppender(), parameterBinderRegistry);
 	}
 	
 	public PreparedSQL toPreparedSQL(StringAppender sql, ParameterBinderRegistry parameterBinderRegistry) {
 		PreparedSQLWrapper preparedSQLWrapper = new PreparedSQLWrapper(new StringAppenderWrapper(sql), parameterBinderRegistry);
-		return toPreparedSQL(preparedSQLWrapper);
+		return toPreparedSQL(sql, preparedSQLWrapper);
 	}
 	
-	public PreparedSQL toPreparedSQL(PreparedSQLWrapper preparedSQLWrapper) {
+	public PreparedSQL toPreparedSQL(StringAppender sql, PreparedSQLWrapper preparedSQLWrapper) {
 		WhereAppender whereAppender = new WhereAppender(preparedSQLWrapper);
 		whereAppender.cat(where);
-		PreparedSQL result = new PreparedSQL(this.sql.toString(), preparedSQLWrapper.getParameterBinders());
+		PreparedSQL result = new PreparedSQL(sql.toString(), preparedSQLWrapper.getParameterBinders());
 		result.setValues(preparedSQLWrapper.getValues());
 		return result;
-	}
-	
-	/**
-	 * The contract for printing a where clause : need to prin a String and a value.
-	 * Then you can print a prepared statement or a valued statement.
-	 */
-	public interface SQLAppender {
-		
-		/**
-		 * Appends a {@link String} to the underlying result. Used for keywords, column name, etc
-		 * @param s a basic {@link String}
-		 * @return this
-		 */
-		SQLAppender cat(String s, String... ss);
-		
-		/**
-		 * Called when a value must be "printed" to the underlying result. Implementations will differs on this point depending on the target goal:
-		 * values printed in the SQL statement (bad practive because of SQL injection) or prepared statement
-		 * @param value the object to be added/printed to the statement
-		 * @return this
-		 */
-		SQLAppender catValue(Object value);
-		
-		default SQLAppender catIf(boolean condition, String s) {
-			if (condition) {
-				cat(s);
-			}
-			return this;
-		}
 	}
 	
 	private class WhereAppender {
@@ -105,8 +75,8 @@ public class WhereBuilder extends AbstractDMLBuilder implements PreparedSQLBuild
 		}
 		
 		public void cat(Object o) {
-			if (o instanceof String) {
-				sql.cat((String) o);
+			if (o instanceof CharSequence) {
+				sql.cat(o.toString());
 			} else if (o instanceof CriteriaChain) {
 				cat("(");
 				cat((CriteriaChain) o);
@@ -134,8 +104,8 @@ public class WhereBuilder extends AbstractDMLBuilder implements PreparedSQLBuild
 			for (Object o : criterion.getCondition()) {
 				if (o instanceof ColumnCriterion) {
 					cat((ColumnCriterion) o);
-				} else if (o instanceof String) {
-					sql.cat((String) o);
+				} else if (o instanceof CharSequence) {
+					sql.cat(o.toString());
 				} else if (o instanceof CriteriaChain) {
 					cat("(");
 					cat((CriteriaChain) o);
@@ -153,8 +123,8 @@ public class WhereBuilder extends AbstractDMLBuilder implements PreparedSQLBuild
 		public void cat(ColumnCriterion criterion) {
 			sql.cat(WhereBuilder.this.getName(criterion.getColumn()), " ");
 			Object o = criterion.getCondition();
-			if (o instanceof String) {
-				sql.cat((String) o);
+			if (o instanceof CharSequence) {
+				sql.cat(o.toString());
 			} else if (o instanceof Operand) {
 				cat((Operand) o);
 			} else {
