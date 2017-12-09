@@ -25,28 +25,21 @@ public class Select implements Iterable<Object /* String, Column or AliasedColum
 		return this;
 	}
 	
-	public Select add(Column column) {
-		return add((Object) column);
-	}
-	
-	public Select add(Column... columns) {
-		for (Column col : columns) {
+	@Override
+	public Select add(Object selectable, Object... selectables) {
+		add(selectable);
+		for (Object col : selectables) {
 			add(col);
 		}
 		return this;
 	}
 	
-	public Select add(String... columns) {
-		for (String col : columns) {
-			add(col);
-		}
-		return this;
-	}
-	
+	@Override
 	public Select add(Column column, String alias) {
 		return add(new AliasedColumn(column, alias));
 	}
 	
+	@Override
 	public Select add(Map<Column, String> aliasedColumns) {
 		for (Entry<Column, String> aliasedColumn : aliasedColumns.entrySet()) {
 			add(new AliasedColumn(aliasedColumn.getKey(), aliasedColumn.getValue()));

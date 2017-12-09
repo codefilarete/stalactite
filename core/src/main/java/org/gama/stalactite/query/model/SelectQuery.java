@@ -126,20 +126,8 @@ public class SelectQuery implements FromAware, WhereAware, HavingAware, OrderByA
 		return limitSurrogate;
 	}
 	
-	public FluentSelect select(String selectable) {
-		return this.select.add(selectable);
-	}
-	
-	public FluentSelect select(Column column) {
-		return this.select.add(column);
-	}
-	
-	public FluentSelect select(Column... columns) {
-		return this.select.add(columns);
-	}
-	
-	public FluentSelect select(String... columns) {
-		return this.select.add(columns);
+	public FluentSelect select(Object selectable, Object... selectables) {
+		return this.select.add(selectable, selectables);
 	}
 	
 	public FluentSelect select(Column column, String alias) {

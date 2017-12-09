@@ -11,11 +11,7 @@ import org.gama.stalactite.persistence.structure.Table.Column;
  */
 public interface SelectChain<T extends SelectChain<T>> {
 	
-	T add(Column column);
-	
-	T add(Column ... columns);
-	
-	T add(String ... columns);
+	T add(Object selectable, Object... selectables);
 	
 	T add(Column column, String alias);
 	

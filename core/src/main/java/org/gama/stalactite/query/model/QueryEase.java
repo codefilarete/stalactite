@@ -11,12 +11,8 @@ import org.gama.stalactite.query.model.SelectQuery.FluentSelect;
  */
 public class QueryEase {
 	
-	public static FluentSelect select(String selectable, String... columns) {
-		return new SelectQuery().select(selectable).add(columns);
-	}
-	
-	public static FluentSelect select(Column column, Column... columns) {
-		return new SelectQuery().select(column).add(columns);
+	public static FluentSelect select(Object selectable, Object... columns) {
+		return new SelectQuery().select(selectable, columns);
 	}
 	
 	public static FluentSelect select(Column column, String alias) {

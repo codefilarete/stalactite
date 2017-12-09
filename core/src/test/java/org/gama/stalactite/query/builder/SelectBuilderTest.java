@@ -13,6 +13,8 @@ import org.gama.stalactite.query.model.Select;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
+import static org.gama.stalactite.query.model.Operand.max;
+import static org.gama.stalactite.query.model.Operand.min;
 import static org.junit.Assert.assertEquals;
 
 /**
@@ -46,13 +48,14 @@ public class SelectBuilderTest {
 				{ new Select().add(colTotoA, colTataB).distinct(), tableAliases, "distinct to.a, ta.b" },
 				{ new Select().add(colTotoA, "A"), emptyMap, "Toto.a as A" },
 				{ new Select().add(colTotoA, "A"), tableAliases, "to.a as A" },
+				{ new Select().add(min(colTotoA), max(colTotoA)), tableAliases, "min(to.a), max(to.a)" },
 		};
 	}
 
 	@Test
 	@UseDataProvider("testToSQL_data")
-	public void testToSQL(Select from, Map<Table, String> tableAliases, String expected) {
-		SelectBuilder testInstance = new SelectBuilder(from, tableAliases);
+	public void testToSQL(Select select, Map<Table, String> tableAliases, String expected) {
+		SelectBuilder testInstance = new SelectBuilder(select, tableAliases);
 		assertEquals(expected, testInstance.toSQL());
 	}
 }
