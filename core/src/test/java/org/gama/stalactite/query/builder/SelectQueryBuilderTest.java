@@ -9,7 +9,7 @@ import org.gama.lang.collection.Maps;
 import org.gama.sql.binder.ParameterBinderRegistry;
 import org.gama.sql.dml.PreparedSQL;
 import org.gama.stalactite.persistence.structure.Table;
-import org.gama.stalactite.persistence.structure.Table.Column;
+import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.query.model.QueryProvider;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -31,11 +31,11 @@ public class SelectQueryBuilderTest {
 	@DataProvider
 	public static Object[][] testToSQL_data() {
 		final Table tableToto = new Table(null, "Toto");
-		final Column colTotoA = tableToto.new Column("a", String.class);
-		final Column colTotoB = tableToto.new Column("b", String.class);
+		final Column colTotoA = tableToto.addColumn("a", String.class);
+		final Column colTotoB = tableToto.addColumn("b", String.class);
 		final Table tableTata = new Table(null, "Tata");
-		final Column colTataA = tableTata.new Column("a", String.class);
-		final Column colTataB = tableTata.new Column("b", String.class);
+		final Column colTataA = tableTata.addColumn("a", String.class);
+		final Column colTataB = tableTata.addColumn("b", String.class);
 		
 		return new Object[][] {
 				{ select(colTotoA, colTotoB).from(tableToto),
@@ -117,11 +117,11 @@ public class SelectQueryBuilderTest {
 	@DataProvider
 	public static Object[][] testToPreparedSQL_data() {
 		final Table tableToto = new Table(null, "Toto");
-		final Column colTotoA = tableToto.new Column("a", String.class);
-		final Column colTotoB = tableToto.new Column("b", String.class);
+		final Column colTotoA = tableToto.addColumn("a", String.class);
+		final Column colTotoB = tableToto.addColumn("b", String.class);
 		final Table tableTata = new Table(null, "Tata");
-		final Column colTataA = tableTata.new Column("a", String.class);
-		final Column colTataB = tableTata.new Column("b", String.class);
+		final Column colTataA = tableTata.addColumn("a", String.class);
+		final Column colTataB = tableTata.addColumn("b", String.class);
 		
 		return new Object[][] {
 				{ select(colTotoA, colTataB).from(tableToto).where(colTotoB, eq(1)).groupBy(colTotoA)

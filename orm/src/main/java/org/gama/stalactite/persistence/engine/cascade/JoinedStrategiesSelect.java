@@ -16,7 +16,7 @@ import org.gama.stalactite.persistence.engine.BeanRelationFixer;
 import org.gama.stalactite.persistence.engine.cascade.JoinedStrategiesSelect.StrategyJoins.Join;
 import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
 import org.gama.stalactite.persistence.structure.Table;
-import org.gama.stalactite.persistence.structure.Table.Column;
+import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.query.model.From;
 import org.gama.stalactite.query.model.From.AbstractJoin.JoinDirection;
 import org.gama.stalactite.query.model.SelectQuery;

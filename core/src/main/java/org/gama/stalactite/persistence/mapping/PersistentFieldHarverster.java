@@ -13,7 +13,7 @@ import org.gama.lang.collection.Iterables.Filter;
 import org.gama.reflection.Accessors;
 import org.gama.reflection.PropertyAccessor;
 import org.gama.stalactite.persistence.structure.Table;
-import org.gama.stalactite.persistence.structure.Table.Column;
+import org.gama.stalactite.persistence.structure.Column;
 
 /**
  * @author Guillaume Mary
@@ -54,7 +54,7 @@ public class PersistentFieldHarverster {
 	}
 	
 	protected Column newColumn(Table targetTable, String fieldName, Class type) {
-		return targetTable.new Column(fieldName, type);
+		return targetTable.addColumn(fieldName, type);
 	}
 	
 	protected String buildColumnName(Field field) {

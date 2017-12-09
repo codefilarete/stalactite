@@ -8,7 +8,7 @@ import com.tngtech.java.junit.dataprovider.DataProviderRunner;
 import com.tngtech.java.junit.dataprovider.UseDataProvider;
 import org.gama.lang.collection.Maps;
 import org.gama.stalactite.persistence.structure.Table;
-import org.gama.stalactite.persistence.structure.Table.Column;
+import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.query.model.Select;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -26,11 +26,11 @@ public class SelectBuilderTest {
 	@DataProvider
 	public static Object[][] testToSQL_data() {
 		Table tableToto = new Table(null, "Toto");
-		Column colTotoA = tableToto.new Column("a", String.class);
-		Column colTotoB = tableToto.new Column("b", String.class);
+		Column colTotoA = tableToto.addColumn("a", String.class);
+		Column colTotoB = tableToto.addColumn("b", String.class);
 		Table tableTata = new Table(null, "Tata");
-		Column colTataA = tableTata.new Column("a", String.class);
-		Column colTataB = tableTata.new Column("b", String.class);
+		Column colTataA = tableTata.addColumn("a", String.class);
+		Column colTataB = tableTata.addColumn("b", String.class);
 		Map<Table, String> tableAliases = Maps.asMap(tableToto, "to").add(tableTata, "ta");
 
 		Map<Table, String> emptyMap = Collections.emptyMap();

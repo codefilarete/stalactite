@@ -10,8 +10,7 @@ import java.util.stream.Stream;
 import org.gama.lang.bean.InterfaceIterator;
 import org.gama.lang.collection.Iterables;
 import org.gama.lang.collection.ValueFactoryHashMap;
-import org.gama.stalactite.persistence.structure.Table.Column;
-import org.gama.stalactite.persistence.structure.Table.SizedColumn;
+import org.gama.stalactite.persistence.structure.Column;
 
 /**
  * A storage of mapping between Java classes and Sql Types. Aimed at generating schema, not reading nor writing to ResultSet/Statement.
@@ -88,8 +87,8 @@ public class JavaTypeToSqlTypeMapping {
 		if (javaType == null) {
 			throw new IllegalArgumentException("Can't give sql type for column " + column.getAbsoluteName() + " because its type is null");
 		}
-		if (column instanceof SizedColumn) {
-			int size = ((SizedColumn) column).getSize();
+		Integer size = column.getSize();
+		if (size != null) {
 			return getTypeName(javaType, size);
 		} else {
 			return getTypeName(javaType);

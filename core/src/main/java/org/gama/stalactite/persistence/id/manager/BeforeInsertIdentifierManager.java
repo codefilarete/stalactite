@@ -9,7 +9,7 @@ import org.gama.lang.function.Sequence;
 import org.gama.sql.dml.WriteOperation;
 import org.gama.stalactite.persistence.engine.WriteExecutor.JDBCBatchingIterator;
 import org.gama.stalactite.persistence.mapping.IIdAccessor;
-import org.gama.stalactite.persistence.structure.Table.Column;
+import org.gama.stalactite.persistence.structure.Column;
 
 /**
  * Identifier manager to be used when identifier must be fixed just before insertion.

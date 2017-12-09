@@ -19,7 +19,7 @@ import org.gama.reflection.PropertyAccessor;
 import org.gama.stalactite.persistence.id.manager.AlreadyAssignedIdentifierManager;
 import org.gama.stalactite.persistence.sql.dml.PreparedUpdate.UpwhereColumn;
 import org.gama.stalactite.persistence.structure.Table;
-import org.gama.stalactite.persistence.structure.Table.Column;
+import org.gama.stalactite.persistence.structure.Column;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -87,7 +87,7 @@ public class ClassMappingStrategyTest {
 		Set<Column> collectionColumn = new LinkedHashSet<>(nbCol);
 		for (int i = 1; i <= nbCol; i++) {
 			String columnName = "cold_" + i;
-			collectionColumn.add(targetTable.new Column(columnName, String.class));
+			collectionColumn.add(targetTable.addColumn(columnName, String.class));
 		}
 		testInstance.put(myListField, new ColumnedCollectionMappingStrategy<List<String>, String>(targetTable, collectionColumn, ArrayList.class) {
 			
@@ -101,7 +101,7 @@ public class ClassMappingStrategyTest {
 		final Map<String, Column> mappedColumnsOnKey = new HashMap<>();
 		for (int i = 1; i <= 2; i++) {
 			String columnName = "cole_" + i;
-			Column column = targetTable.new Column(columnName, String.class);
+			Column column = targetTable.addColumn(columnName, String.class);
 			switch (i) {
 				case 1:
 					mappedColumnsOnKey.put("x", column);

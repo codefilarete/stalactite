@@ -5,7 +5,7 @@ import com.tngtech.java.junit.dataprovider.DataProviderRunner;
 import com.tngtech.java.junit.dataprovider.UseDataProvider;
 import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
 import org.gama.stalactite.persistence.structure.Table;
-import org.gama.stalactite.persistence.structure.Table.Column;
+import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.query.builder.SelectQueryBuilder;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -30,7 +30,7 @@ public class JoinedStrategiesSelectTest {
 		ClassMappingStrategy mappingStrategyMock = mock(ClassMappingStrategy.class);
 		when(mappingStrategyMock.getTargetTable()).thenReturn(table);
 		// the selected columns are plugged on the table ones
-		when(mappingStrategyMock.getSelectableColumns()).thenAnswer(invocation -> table.getColumns().asSet());
+		when(mappingStrategyMock.getSelectableColumns()).thenAnswer(invocation -> table.getColumns());
 		return mappingStrategyMock;
 	}
 	
@@ -40,11 +40,11 @@ public class JoinedStrategiesSelectTest {
 	public static Object[][] testToSQL_singleStrategyData() {
 		return $$(
 				$(
-						new Table("Toto").new Column("id", long.class).getTable(),
+						new Table("Toto").addColumn("id", long.class).getTable(),
 						"select Toto.id as Toto_id from Toto"
 				),
 				$(
-						new Table("Toto").new Column("id", long.class).getTable().new Column("name", String.class).getTable(),
+						new Table("Toto").addColumn("id", long.class).getTable().addColumn("name", String.class).getTable(),
 						"select Toto.id as Toto_id, Toto.name as Toto_name from Toto"
 				)
 		);
@@ -62,13 +62,13 @@ public class JoinedStrategiesSelectTest {
 	private static Object[] inheritance_tablePerClass_2Classes_testData() {
 		ClassMappingStrategy totoMappingMock = buildMockMappingStrategy("Toto");
 		Table totoTable = totoMappingMock.getTargetTable();
-		Column totoPrimaryKey = totoTable.new Column("id", long.class);
+		Column totoPrimaryKey = totoTable.addColumn("id", long.class);
 		// column for "noise" in select
-		totoTable.new Column("name", String.class);
+		totoTable.addColumn("name", String.class);
 		
 		ClassMappingStrategy tataMappingMock = buildMockMappingStrategy("Tata");
 		Table tataTable = tataMappingMock.getTargetTable();
-		Column tataPrimaryKey = tataTable.new Column("id", long.class);
+		Column tataPrimaryKey = tataTable.addColumn("id", long.class);
 		
 		return $( // kind of inheritance "table per class" mapping
 				totoMappingMock, tataMappingMock, totoPrimaryKey, tataPrimaryKey,
@@ -80,17 +80,17 @@ public class JoinedStrategiesSelectTest {
 	public static Object[][] dataToSQL_multipleStrategy() {
 		ClassMappingStrategy totoMappingMock = buildMockMappingStrategy("Toto");
 		Table totoTable = totoMappingMock.getTargetTable();
-		totoTable.new Column("id", long.class);
+		totoTable.addColumn("id", long.class);
 		// column for "noise" in select
-		totoTable.new Column("name", String.class);
+		totoTable.addColumn("name", String.class);
 		
 		ClassMappingStrategy tataMappingMock = buildMockMappingStrategy("Tata");
 		Table tataTable = tataMappingMock.getTargetTable();
-		Column tataPrimaryKey = tataTable.new Column("id", long.class);
-		Column totoOtherTableId = totoTable.new Column("otherTable_id", long.class);
+		Column tataPrimaryKey = tataTable.addColumn("id", long.class);
+		Column totoOtherTableId = totoTable.addColumn("otherTable_id", long.class);
 		
 		Table tata2Table = new Table("Tata");
-		tata2Table.new Column("id", long.class);
+		tata2Table.addColumn("id", long.class);
 		buildMockMappingStrategy(tata2Table);
 		
 		return $$(
@@ -117,21 +117,21 @@ public class JoinedStrategiesSelectTest {
 	public void testInheritance_tablePerClass_3Classes() {
 		ClassMappingStrategy totoMappingMock = buildMockMappingStrategy("Toto");
 		Table totoTable = totoMappingMock.getTargetTable();
-		Column totoPrimaryKey = totoTable.new Column("id", long.class);
+		Column totoPrimaryKey = totoTable.addColumn("id", long.class);
 		// column for "noise" in select
-		totoTable.new Column("name", String.class);
+		totoTable.addColumn("name", String.class);
 		
 		ClassMappingStrategy tataMappingMock = buildMockMappingStrategy("Tata");
 		Table tataTable = tataMappingMock.getTargetTable();
-		Column tataPrimaryKey = tataTable.new Column("id", long.class);
+		Column tataPrimaryKey = tataTable.addColumn("id", long.class);
 		// column for "noise" in select
-		tataTable.new Column("name", String.class);
+		tataTable.addColumn("name", String.class);
 		
 		ClassMappingStrategy tutuMappingMock = buildMockMappingStrategy("Tutu");
 		Table tutuTable = tutuMappingMock.getTargetTable();
-		Column tutuPrimaryKey = tutuTable.new Column("id", long.class);
+		Column tutuPrimaryKey = tutuTable.addColumn("id", long.class);
 		// column for "noise" in select
-		tutuTable.new Column("name", String.class);
+		tutuTable.addColumn("name", String.class);
 		
 		JoinedStrategiesSelect testInstance = new JoinedStrategiesSelect(totoMappingMock, c -> null);
 		String tataAddKey = testInstance.add(JoinedStrategiesSelect.FIRST_STRATEGY_NAME, tataMappingMock, totoPrimaryKey, tataPrimaryKey, false, null);
@@ -151,23 +151,23 @@ public class JoinedStrategiesSelectTest {
 	public void testJoin_2Relations() {
 		ClassMappingStrategy totoMappingMock = buildMockMappingStrategy("Toto");
 		Table totoTable = totoMappingMock.getTargetTable();
-		Column totoPrimaryKey = totoTable.new Column("id", long.class);
+		Column totoPrimaryKey = totoTable.addColumn("id", long.class);
 		// column for "noise" in select
-		totoTable.new Column("name", String.class);
-		Column tataId = totoTable.new Column("tataId", String.class);
-		Column tutuId = totoTable.new Column("tutuId", String.class);
+		totoTable.addColumn("name", String.class);
+		Column tataId = totoTable.addColumn("tataId", String.class);
+		Column tutuId = totoTable.addColumn("tutuId", String.class);
 		
 		ClassMappingStrategy tataMappingMock = buildMockMappingStrategy("Tata");
 		Table tataTable = tataMappingMock.getTargetTable();
-		Column tataPrimaryKey = tataTable.new Column("id", long.class);
+		Column tataPrimaryKey = tataTable.addColumn("id", long.class);
 		// column for "noise" in select
-		tataTable.new Column("name", String.class);
+		tataTable.addColumn("name", String.class);
 		
 		ClassMappingStrategy tutuMappingMock = buildMockMappingStrategy("Tutu");
 		Table tutuTable = tutuMappingMock.getTargetTable();
-		Column tutuPrimaryKey = tutuTable.new Column("id", long.class);
+		Column tutuPrimaryKey = tutuTable.addColumn("id", long.class);
 		// column for "noise" in select
-		tutuTable.new Column("name", String.class);
+		tutuTable.addColumn("name", String.class);
 		
 		JoinedStrategiesSelect testInstance = new JoinedStrategiesSelect(totoMappingMock, c -> null);
 		String tataAddKey = testInstance.add(JoinedStrategiesSelect.FIRST_STRATEGY_NAME, tataMappingMock, tataId, tataPrimaryKey, false, null);
@@ -187,27 +187,27 @@ public class JoinedStrategiesSelectTest {
 	public void testInheritance_tablePerClass_NClasses() {
 		ClassMappingStrategy totoMappingMock = buildMockMappingStrategy("Toto");
 		Table totoTable = totoMappingMock.getTargetTable();
-		Column totoPrimaryKey = totoTable.new Column("id", long.class);
+		Column totoPrimaryKey = totoTable.addColumn("id", long.class);
 		// column for "noise" in select
-		totoTable.new Column("name", String.class);
+		totoTable.addColumn("name", String.class);
 		
 		ClassMappingStrategy tataMappingMock = buildMockMappingStrategy("Tata");
 		Table tataTable = tataMappingMock.getTargetTable();
-		Column tataPrimaryKey = tataTable.new Column("id", long.class);
+		Column tataPrimaryKey = tataTable.addColumn("id", long.class);
 		// column for "noise" in select
-		tataTable.new Column("name", String.class);
+		tataTable.addColumn("name", String.class);
 		
 		ClassMappingStrategy tutuMappingMock = buildMockMappingStrategy("Tutu");
 		Table tutuTable = tutuMappingMock.getTargetTable();
-		Column tutuPrimaryKey = tutuTable.new Column("id", long.class);
+		Column tutuPrimaryKey = tutuTable.addColumn("id", long.class);
 		// column for "noise" in select
-		tutuTable.new Column("name", String.class);
+		tutuTable.addColumn("name", String.class);
 		
 		ClassMappingStrategy titiMappingMock = buildMockMappingStrategy("Titi");
 		Table titiTable = titiMappingMock.getTargetTable();
-		Column titiPrimaryKey = titiTable.new Column("id", long.class);
+		Column titiPrimaryKey = titiTable.addColumn("id", long.class);
 		// column for "noise" in select
-		titiTable.new Column("name", String.class);
+		titiTable.addColumn("name", String.class);
 		
 		JoinedStrategiesSelect testInstance = new JoinedStrategiesSelect(totoMappingMock, c -> null);
 		String tataAddKey = testInstance.add(JoinedStrategiesSelect.FIRST_STRATEGY_NAME, tataMappingMock, totoPrimaryKey, tataPrimaryKey, false, null);

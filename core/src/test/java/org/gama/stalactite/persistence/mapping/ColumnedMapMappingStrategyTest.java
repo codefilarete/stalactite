@@ -11,7 +11,7 @@ import org.gama.lang.collection.Maps.ChainingMap;
 import org.gama.sql.result.Row;
 import org.gama.stalactite.persistence.sql.dml.PreparedUpdate.UpwhereColumn;
 import org.gama.stalactite.persistence.structure.Table;
-import org.gama.stalactite.persistence.structure.Table.Column;
+import org.gama.stalactite.persistence.structure.Column;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -43,7 +43,7 @@ public class ColumnedMapMappingStrategyTest {
 		keyToColumn = new HashMap<>();
 		for (int i = 1; i <= nbCol; i++) {
 			String columnName = "col_" + i;
-			Column column = totoTable.new Column(columnName, String.class);
+			Column column = totoTable.addColumn(columnName, String.class);
 			columnToKey.put(i, column);
 			keyToColumn.put(column, i);
 		}
@@ -60,7 +60,7 @@ public class ColumnedMapMappingStrategyTest {
 	
 	@Before
 	public void setUp() {
-		testInstance = new ColumnedMapMappingStrategy<Map<Integer, String>, Integer, String, String>(totoTable, totoTable.getColumns().asSet(), HashMap.class) {
+		testInstance = new ColumnedMapMappingStrategy<Map<Integer, String>, Integer, String, String>(totoTable, totoTable.getColumns(), HashMap.class) {
 			@Override
 			protected Column getColumn(Integer key) {
 				if (key > 5) {

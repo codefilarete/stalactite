@@ -19,7 +19,7 @@ import org.gama.stalactite.persistence.mapping.ColumnedMapMappingStrategy;
 import org.gama.stalactite.persistence.mapping.IdMappingStrategy;
 import org.gama.stalactite.persistence.mapping.PersistentFieldHarverster;
 import org.gama.stalactite.persistence.structure.Table;
-import org.gama.stalactite.persistence.structure.Table.Column;
+import org.gama.stalactite.persistence.structure.Column;
 
 /**
  * @author Guillaume Mary
@@ -89,7 +89,7 @@ public class TotoMappingBuilder implements IMappingBuilder {
 		
 		public TotoTable() {
 			super(null, "Toto");
-			id = new Column("id", Long.TYPE);
+			id = addColumn("id", Long.TYPE);
 			id.setPrimaryKey(true);
 //			a = new Column("a", String.class);
 //			b = new Column("b", Integer.class);
@@ -100,11 +100,11 @@ public class TotoMappingBuilder implements IMappingBuilder {
 //				} else {
 					columnType = Integer.class;
 //				}
-				Column column = new Column("q" + i, columnType);
+				Column column = addColumn("q" + i, columnType);
 				dynamicColumns.put((long) i, column);
 				dynamicIndexes.put(column, (long) i);
 				if (i%5==0) {
-					new Index(column, "idx_" + column.getName());
+					addIndex("idx_" + column.getName(), column);
 				}
 			}
 		}

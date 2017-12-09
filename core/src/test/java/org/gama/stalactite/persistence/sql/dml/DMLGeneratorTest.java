@@ -7,7 +7,7 @@ import org.gama.stalactite.persistence.sql.Dialect;
 import org.gama.stalactite.persistence.sql.ddl.JavaTypeToSqlTypeMapping;
 import org.gama.stalactite.persistence.sql.dml.PreparedUpdate.UpwhereColumn;
 import org.gama.stalactite.persistence.structure.Table;
-import org.gama.stalactite.persistence.structure.Table.Column;
+import org.gama.stalactite.persistence.structure.Column;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -29,8 +29,8 @@ public class DMLGeneratorTest {
 	@Test
 	public void testBuildInsert() throws Exception {
 		Table toto = new Table(null, "Toto");
-		Column colA = toto.new Column("A", String.class);
-		Column colB = toto.new Column("B", String.class);
+		Column colA = toto.addColumn("A", String.class);
+		Column colB = toto.addColumn("B", String.class);
 
 		ColumnParamedSQL buildedInsert = testInstance.buildInsert(toto.getColumns());
 		assertEquals(buildedInsert.getSQL(), "insert into Toto(A, B) values (?, ?)");
@@ -44,8 +44,8 @@ public class DMLGeneratorTest {
 	@Test
 	public void testBuildUpdate() throws Exception {
 		Table toto = new Table(null, "Toto");
-		Column colA = toto.new Column("A", String.class);
-		Column colB = toto.new Column("B", String.class);
+		Column colA = toto.addColumn("A", String.class);
+		Column colB = toto.addColumn("B", String.class);
 		
 		PreparedUpdate buildedUpdate = testInstance.buildUpdate(toto.getColumns(), Arrays.asList(colA));
 		assertEquals(buildedUpdate.getSQL(), "update Toto set A = ?, B = ? where A = ?");
@@ -62,8 +62,8 @@ public class DMLGeneratorTest {
 	@Test
 	public void testBuildDelete() throws Exception {
 		Table toto = new Table(null, "Toto");
-		Column colA = toto.new Column("A", String.class);
-		toto.new Column("B", String.class);
+		Column colA = toto.addColumn("A", String.class);
+		toto.addColumn("B", String.class);
 		
 		ColumnParamedSQL buildedDelete = testInstance.buildDelete(toto, Arrays.asList(colA));
 		assertEquals("delete from Toto where A = ?", buildedDelete.getSQL());
@@ -75,8 +75,8 @@ public class DMLGeneratorTest {
 	@Test
 	public void testBuildMassiveDelete() throws Exception {
 		Table toto = new Table(null, "Toto");
-		Column colA = toto.new Column("A", String.class);
-		toto.new Column("B", String.class);
+		Column colA = toto.addColumn("A", String.class);
+		toto.addColumn("B", String.class);
 		
 		ColumnParamedSQL buildedDelete = testInstance.buildMassiveDelete(toto, colA, 1);
 		assertEquals("delete from Toto where A in (?)", buildedDelete.getSQL());
@@ -88,8 +88,8 @@ public class DMLGeneratorTest {
 	@Test
 	public void testBuildSelect() throws Exception {
 		Table toto = new Table(null, "Toto");
-		Column colA = toto.new Column("A", String.class);
-		Column colB = toto.new Column("B", String.class);
+		Column colA = toto.addColumn("A", String.class);
+		Column colB = toto.addColumn("B", String.class);
 		
 		ColumnParamedSQL buildedSelect = testInstance.buildSelect(toto, Arrays.asList(colA, colB), Arrays.asList(colA));
 		assertEquals(buildedSelect.getSQL(), "select A, B from Toto where A = ?");
@@ -101,8 +101,8 @@ public class DMLGeneratorTest {
 	@Test
 	public void testBuildMassiveSelect() throws Exception {
 		Table toto = new Table(null, "Toto");
-		Column colA = toto.new Column("A", String.class);
-		Column colB = toto.new Column("B", String.class);
+		Column colA = toto.addColumn("A", String.class);
+		Column colB = toto.addColumn("B", String.class);
 		
 		ColumnParamedSQL buildedSelect = testInstance.buildMassiveSelect(toto, Arrays.asList(colA, colB), colA, 5);
 		assertEquals(buildedSelect.getSQL(), "select A, B from Toto where A in (?, ?, ?, ?, ?)");

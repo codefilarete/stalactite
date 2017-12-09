@@ -16,8 +16,7 @@ import org.gama.stalactite.persistence.id.manager.IdentifierInsertionManager;
 import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
 import org.gama.stalactite.persistence.sql.dml.ColumnParamedSQL;
 import org.gama.stalactite.persistence.sql.dml.DMLGenerator;
-import org.gama.stalactite.persistence.structure.Table;
-import org.gama.stalactite.persistence.structure.Table.Column;
+import org.gama.stalactite.persistence.structure.Column;
 
 /**
  * Dedicated class to insert statement execution
@@ -60,14 +59,14 @@ public class InsertExecutor<T, I> extends UpsertExecutor<T, I> {
 	}
 	
 	public int insert(Iterable<T> iterable) {
-		Set<Table.Column> columns = getMappingStrategy().getInsertableColumns();
+		Set<Column> columns = getMappingStrategy().getInsertableColumns();
 		ColumnParamedSQL insertStatement = getDmlGenerator().buildInsert(columns);
-		WriteOperation<Table.Column> writeOperation = newWriteOperation(insertStatement, new CurrentConnectionProvider());
+		WriteOperation<Column> writeOperation = newWriteOperation(insertStatement, new CurrentConnectionProvider());
 		JDBCBatchingIterator<T> jdbcBatchingIterator = identifierInsertionManager.buildJDBCBatchingIterator(iterable, writeOperation, getBatchSize());
 		
 		while (jdbcBatchingIterator.hasNext()) {
 			T t = jdbcBatchingIterator.next();
-			Map<Table.Column, Object> insertValues = getMappingStrategy().getInsertValues(t);
+			Map<Column, Object> insertValues = getMappingStrategy().getInsertValues(t);
 			optimisticLockManager.manageLock(t, insertValues);
 			writeOperation.addBatch(insertValues);
 		}

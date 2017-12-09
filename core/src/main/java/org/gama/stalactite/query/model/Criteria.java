@@ -4,7 +4,7 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
-import org.gama.stalactite.persistence.structure.Table.Column;
+import org.gama.stalactite.persistence.structure.Column;
 
 import static org.gama.stalactite.query.model.AbstractCriterion.LogicalOperator.And;
 import static org.gama.stalactite.query.model.AbstractCriterion.LogicalOperator.Or;

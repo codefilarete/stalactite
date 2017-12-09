@@ -16,7 +16,7 @@ import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
 import org.gama.stalactite.persistence.sql.dml.ColumnParamedSelect;
 import org.gama.stalactite.persistence.sql.dml.DMLGenerator;
 import org.gama.stalactite.persistence.structure.Table;
-import org.gama.stalactite.persistence.structure.Table.Column;
+import org.gama.stalactite.persistence.structure.Column;
 
 /**
  * Class dedicated to select statement execution
@@ -35,11 +35,11 @@ public class SelectExecutor<T, I> extends DMLExecutor<T, I> {
 		int blockSize = getInOperatorMaxSize();
 		List<List<I>> parcels = Collections.parcel(ids, blockSize);
 		Table targetTable = getMappingStrategy().getTargetTable();
-		Set<Table.Column> columnsToRead = targetTable.getColumns().asSet();
+		Set<Column> columnsToRead = targetTable.getColumns();
 		
 		// We distinguish the default case where packets are of the same size from the (last) case where it's different
 		// So we can apply the same read operation to all the firsts packets
-		ReadOperation<Table.Column> defaultReadOperation = newReadOperation(targetTable, columnsToRead, blockSize, currentConnectionProvider);
+		ReadOperation<Column> defaultReadOperation = newReadOperation(targetTable, columnsToRead, blockSize, currentConnectionProvider);
 		Collections.cutTail(parcels).forEach(parcel -> toReturn.addAll(execute(defaultReadOperation, targetTable.getPrimaryKey(), parcel)));
 		// last packet treatment (packet size may be different)
 		List<I> lastParcel = Iterables.last(parcels);
@@ -57,9 +57,9 @@ public class SelectExecutor<T, I> extends DMLExecutor<T, I> {
 		return new ReadOperation<>(selectStatement, currentConnectionProvider);
 	}
 	
-	protected List<T> execute(ReadOperation<Table.Column> operation, Table.Column primaryKey, Collection<I> values) {
+	protected List<T> execute(ReadOperation<Column> operation, Column primaryKey, Collection<I> values) {
 		List<T> toReturn = new ArrayList<>(values.size());
-		try(ReadOperation<Table.Column> closeableOperation = operation) {
+		try(ReadOperation<Column> closeableOperation = operation) {
 			operation.setValue(primaryKey, values);
 			ResultSet resultSet = closeableOperation.execute();
 			RowIterator rowIterator = new RowIterator(resultSet, ((ColumnParamedSelect) closeableOperation.getSqlStatement()).getSelectParameterBinders());

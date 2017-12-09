@@ -7,7 +7,7 @@ import org.gama.lang.StringAppender;
 import org.gama.sql.binder.ParameterBinderRegistry;
 import org.gama.sql.dml.PreparedSQL;
 import org.gama.stalactite.persistence.structure.Table;
-import org.gama.stalactite.persistence.structure.Table.Column;
+import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.query.builder.OperandBuilder.PreparedSQLWrapper;
 import org.gama.stalactite.query.builder.OperandBuilder.SQLAppender;
 import org.gama.stalactite.query.builder.OperandBuilder.StringAppenderWrapper;

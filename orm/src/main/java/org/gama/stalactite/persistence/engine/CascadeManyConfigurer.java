@@ -29,7 +29,7 @@ import org.gama.stalactite.persistence.id.Identified;
 import org.gama.stalactite.persistence.id.IdentifiedCollectionDiffer;
 import org.gama.stalactite.persistence.id.IdentifiedCollectionDiffer.Diff;
 import org.gama.stalactite.persistence.id.manager.StatefullIdentifier;
-import org.gama.stalactite.persistence.structure.Table.Column;
+import org.gama.stalactite.persistence.structure.Column;
 
 /**
  * @author Guillaume Mary
@@ -68,7 +68,7 @@ public class CascadeManyConfigurer<T extends Identified, I extends Identified, J
 		}
 		
 		// adding foerign key constraint
-		rightColumn.getTable().new ForeignKey(rightColumn, foreignKeyNamingStrategy.giveName(rightColumn, leftColumn), leftColumn);
+		rightColumn.getTable().addForeignKey(foreignKeyNamingStrategy.giveName(rightColumn, leftColumn), rightColumn, leftColumn);
 		
 		PersisterListener<T, ?> persisterListener = localPersister.getPersisterListener();
 		for (CascadeType cascadeType : cascadeMany.getCascadeTypes()) {

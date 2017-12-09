@@ -15,7 +15,7 @@ import org.gama.reflection.Accessors;
 import org.gama.reflection.IMutator;
 import org.gama.sql.result.Row;
 import org.gama.stalactite.persistence.structure.Table;
-import org.gama.stalactite.persistence.structure.Table.Column;
+import org.gama.stalactite.persistence.structure.Column;
 
 /**
  * Class for transforming columns into a bean.

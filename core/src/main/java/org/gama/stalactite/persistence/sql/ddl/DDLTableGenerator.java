@@ -3,10 +3,10 @@ package org.gama.stalactite.persistence.sql.ddl;
 import org.gama.lang.StringAppender;
 import org.gama.lang.collection.Iterables;
 import org.gama.lang.collection.Iterables.ForEach;
-import org.gama.stalactite.persistence.structure.Table.ForeignKey;
-import org.gama.stalactite.persistence.structure.Table.Index;
+import org.gama.stalactite.persistence.structure.ForeignKey;
+import org.gama.stalactite.persistence.structure.Index;
 import org.gama.stalactite.persistence.structure.Table;
-import org.gama.stalactite.persistence.structure.Table.Column;
+import org.gama.stalactite.persistence.structure.Column;
 
 /**
  * @author Guillaume Mary

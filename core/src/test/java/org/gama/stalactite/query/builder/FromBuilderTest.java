@@ -4,7 +4,7 @@ import com.tngtech.java.junit.dataprovider.DataProvider;
 import com.tngtech.java.junit.dataprovider.DataProviderRunner;
 import com.tngtech.java.junit.dataprovider.UseDataProvider;
 import org.gama.stalactite.persistence.structure.Table;
-import org.gama.stalactite.persistence.structure.Table.Column;
+import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.query.model.From;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -20,18 +20,18 @@ public class FromBuilderTest {
 	@DataProvider
 	public static Object[][] testToSQL_data() {
 		Table tableToto = new Table(null, "Toto");
-		Column colTotoA = tableToto.new Column("a", String.class);
-		Column colTotoB = tableToto.new Column("b", String.class);
+		Column colTotoA = tableToto.addColumn("a", String.class);
+		Column colTotoB = tableToto.addColumn("b", String.class);
 		Table tableTata = new Table(null, "Tata");
-		Column colTataA = tableTata.new Column("a", String.class);
-		Column colTataB = tableTata.new Column("b", String.class);
+		Column colTataA = tableTata.addColumn("a", String.class);
+		Column colTataB = tableTata.addColumn("b", String.class);
 		Table tableTutu = new Table(null, "Tutu");
-		Column colTutuA = tableTutu.new Column("a", String.class);
-		Column colTutuB = tableTutu.new Column("b", String.class);
+		Column colTutuA = tableTutu.addColumn("a", String.class);
+		Column colTutuB = tableTutu.addColumn("b", String.class);
 		
 		Table tableToto2 = new Table(null, "Toto2");
-		Column colToto2A = tableToto2.new Column("a", String.class);
-		Column colToto2B = tableToto2.new Column("b", String.class);
+		Column colToto2A = tableToto2.addColumn("a", String.class);
+		Column colToto2B = tableToto2.addColumn("b", String.class);
 		
 		return new Object[][] {
 				// testing syntax with Table API

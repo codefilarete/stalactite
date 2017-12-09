@@ -2,7 +2,7 @@ package org.gama.stalactite.query.builder;
 
 import org.gama.lang.StringAppender;
 import org.gama.stalactite.persistence.structure.Table;
-import org.gama.stalactite.persistence.structure.Table.Column;
+import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.query.builder.OperandBuilder.StringAppenderWrapper;
 import org.gama.stalactite.query.model.Operand;
 import org.gama.stalactite.query.model.operand.IsNull;
@@ -160,7 +160,7 @@ public class OperandBuilderTest {
 		StringAppender result = new StringAppender();
 		
 		Table tableToto = new Table("Toto");
-		Column colA = tableToto.new Column("a", Integer.class);
+		Column colA = tableToto.addColumn("a", Integer.class);
 		
 		testInstance.catSum(sum(colA), new StringAppenderWrapper(result));
 		assertEquals("sum(Toto.a)", result.toString());
@@ -172,7 +172,7 @@ public class OperandBuilderTest {
 		StringAppender result = new StringAppender();
 		
 		Table tableToto = new Table("Toto");
-		Column colA = tableToto.new Column("a", Integer.class);
+		Column colA = tableToto.addColumn("a", Integer.class);
 		
 		testInstance.catCount(count(colA), new StringAppenderWrapper(result));
 		assertEquals("count(Toto.a)", result.toString());
@@ -184,7 +184,7 @@ public class OperandBuilderTest {
 		StringAppender result = new StringAppender();
 		
 		Table tableToto = new Table("Toto");
-		Column colA = tableToto.new Column("a", Integer.class);
+		Column colA = tableToto.addColumn("a", Integer.class);
 		
 		testInstance.catMin(min(colA), new StringAppenderWrapper(result));
 		assertEquals("min(Toto.a)", result.toString());
@@ -196,7 +196,7 @@ public class OperandBuilderTest {
 		StringAppender result = new StringAppender();
 		
 		Table tableToto = new Table("Toto");
-		Column colA = tableToto.new Column("a", Integer.class);
+		Column colA = tableToto.addColumn("a", Integer.class);
 		
 		testInstance.catMax(max(colA), new StringAppenderWrapper(result));
 		assertEquals("max(Toto.a)", result.toString());

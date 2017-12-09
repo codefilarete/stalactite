@@ -11,7 +11,7 @@ import org.gama.stalactite.persistence.sql.ddl.DDLSchemaGenerator;
 import org.gama.stalactite.persistence.sql.ddl.DDLTableGenerator;
 import org.gama.stalactite.persistence.sql.ddl.JavaTypeToSqlTypeMapping;
 import org.gama.stalactite.persistence.sql.dml.binder.ColumnBinderRegistry;
-import org.gama.stalactite.persistence.structure.Table;
+import org.gama.stalactite.persistence.structure.ForeignKey;
 
 /**
  * Dialect specialization for MySQL:
@@ -50,7 +50,7 @@ public class MySQLDialect extends Dialect {
 			 * Overriden to change "drop constraint" into "drop foreign key", MySQL specific
 			 */
 			@Override
-			public String generateDropForeignKey(Table.ForeignKey foreignKey) {
+			public String generateDropForeignKey(ForeignKey foreignKey) {
 				StringAppender sqlCreateTable = new StringAppender("alter table ", foreignKey.getTable().getName(),
 						" drop foreign key ", foreignKey.getName());
 				return sqlCreateTable.toString();

@@ -13,8 +13,7 @@ import org.gama.lang.collection.Iterables;
 import org.gama.sql.binder.ParameterBinder;
 import org.gama.sql.binder.ParameterBinderIndex;
 import org.gama.sql.binder.ParameterBinderRegistry;
-import org.gama.stalactite.persistence.structure.Table;
-import org.gama.stalactite.persistence.structure.Table.Column;
+import org.gama.stalactite.persistence.structure.Column;
 
 /**
  * Registry of {@link ParameterBinder}s used to pickup the best suited Column to simplify access to method of {@link
@@ -46,7 +45,7 @@ public class ColumnBinderRegistry extends ParameterBinderRegistry implements Par
 	 * @throws UnsupportedOperationException if the binder doesn't exist
 	 */
 	@Override
-	public ParameterBinder getBinder(Table.Column column) {
+	public ParameterBinder getBinder(Column column) {
 		ParameterBinder columnBinder = parameterBinders.get(column);
 		try {
 			return columnBinder != null ? columnBinder : getBinder(column.getJavaType());

@@ -14,7 +14,7 @@ import org.gama.lang.collection.Maps.ChainingMap;
 import org.gama.sql.result.Row;
 import org.gama.stalactite.persistence.sql.dml.PreparedUpdate.UpwhereColumn;
 import org.gama.stalactite.persistence.structure.Table;
-import org.gama.stalactite.persistence.structure.Table.Column;
+import org.gama.stalactite.persistence.structure.Column;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -41,7 +41,7 @@ public class ColumnedCollectionMappingStrategyTest {
 		final int nbCol = 5;
 		for (int i = 1; i <= nbCol; i++) {
 			String columnName = "col_" + i;
-			targetTable.new Column(columnName, String.class);
+			targetTable.addColumn(columnName, String.class);
 		}
 		Map<String, Column> namedColumns = targetTable.mapColumnsOnName();
 		col1 = namedColumns.get("col_1");
@@ -56,7 +56,7 @@ public class ColumnedCollectionMappingStrategyTest {
 	
 	@Before
 	public void setUp() {
-		testInstance = new ColumnedCollectionMappingStrategy<List<String>, String>(targetTable, targetTable.getColumns().asSet(), ArrayList.class) {
+		testInstance = new ColumnedCollectionMappingStrategy<List<String>, String>(targetTable, targetTable.getColumns(), ArrayList.class) {
 			@Override
 			protected String toCollectionValue(Object t) {
 				return t == null ?  null : t.toString();

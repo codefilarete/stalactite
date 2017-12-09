@@ -11,6 +11,7 @@ import org.gama.stalactite.persistence.id.manager.AlreadyAssignedIdentifierManag
 import org.gama.stalactite.persistence.id.sequence.SequencePersister.Sequence;
 import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
 import org.gama.stalactite.persistence.sql.Dialect;
+import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Database.Schema;
 import org.gama.stalactite.persistence.structure.Table;
 
@@ -59,9 +60,9 @@ public class SequencePersister extends Persister<Sequence, String> {
 		
 		public SequenceTable(Schema schema, String name, String sequenceNameColName, String nextValColName) {
 			super(schema, name);
-			sequenceNameColumn = new Column(sequenceNameColName, String.class);
+			sequenceNameColumn = addColumn(sequenceNameColName, String.class);
 			sequenceNameColumn.setPrimaryKey(true);
-			nextValColumn = new Column(nextValColName, Long.class);
+			nextValColumn = addColumn(nextValColName, Long.class);
 		}
 		
 		public Map<PropertyAccessor, Column> getPooledSequenceFieldMapping() {

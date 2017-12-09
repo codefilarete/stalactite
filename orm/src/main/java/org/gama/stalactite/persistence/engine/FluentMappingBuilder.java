@@ -41,7 +41,7 @@ import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
 import org.gama.stalactite.persistence.mapping.EmbeddedBeanMappingStrategy;
 import org.gama.stalactite.persistence.sql.Dialect;
 import org.gama.stalactite.persistence.structure.Table;
-import org.gama.stalactite.persistence.structure.Table.Column;
+import org.gama.stalactite.persistence.structure.Column;
 
 /**
  * @author Guillaume Mary
@@ -325,7 +325,7 @@ public class FluentMappingBuilder<T extends Identified, I extends StatefullIdent
 	private Map<PropertyAccessor, Column> buildMapping(Dialect dialect) {
 		Map<PropertyAccessor, Column> columnMapping = new HashMap<>();
 		mapping.forEach(linkage -> {
-					Column newColumn = getTable().new Column(linkage.getColumnName(), linkage.getColumnType());
+					Column newColumn = getTable().addColumn(linkage.getColumnName(), linkage.getColumnType());
 					// assert that column binder is registered : it will throw en exception if the binder is not found
 					dialect.getColumnBinderRegistry().getBinder(newColumn);
 					// setting the primary key option as asked
@@ -377,7 +377,7 @@ public class FluentMappingBuilder<T extends Identified, I extends StatefullIdent
 				Column column = columnsPerName.get(field.getName());
 				if (column == null) {
 					// Column isn't declared in table => we create one from field informations
-					column = localPersister.getTargetTable().new Column(field.getName(), field.getType());
+					column = localPersister.getTargetTable().addColumn(field.getName(), field.getType());
 				}
 				mapping.put(Accessors.of(field), column);
 			}

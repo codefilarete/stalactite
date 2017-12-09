@@ -37,7 +37,7 @@ import org.gama.stalactite.persistence.mapping.IdMappingStrategy;
 import org.gama.stalactite.persistence.sql.Dialect;
 import org.gama.stalactite.persistence.sql.ddl.JavaTypeToSqlTypeMapping;
 import org.gama.stalactite.persistence.structure.Table;
-import org.gama.stalactite.persistence.structure.Table.Column;
+import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.test.JdbcConnectionProvider;
 import org.gama.stalactite.test.PairSetList;
 import org.junit.Before;
@@ -85,27 +85,27 @@ public class JoinedTablesPersisterTest {
 		Field fieldZ = Reflections.getField(Toto.class, "z");
 		
 		totoClassTable1 = new Table("Toto1");
-		leftJoinColumn = totoClassTable1.new Column("id", fieldId.getType());
-		totoClassTable1.new Column("a", fieldA.getType());
-		totoClassTable1.new Column("b", fieldB.getType());
-		Map<String, Table.Column> columnMap1 = totoClassTable1.mapColumnsOnName();
+		leftJoinColumn = totoClassTable1.addColumn("id", fieldId.getType());
+		totoClassTable1.addColumn("a", fieldA.getType());
+		totoClassTable1.addColumn("b", fieldB.getType());
+		Map<String, Column> columnMap1 = totoClassTable1.mapColumnsOnName();
 		columnMap1.get("id").setPrimaryKey(true);
 		
 		totoClassTable2 = new Table("Toto2");
-		rightJoinColumn = totoClassTable2.new Column("id", fieldId.getType());
-		totoClassTable2.new Column("x", fieldX.getType());
-		totoClassTable2.new Column("y", fieldY.getType());
-		totoClassTable2.new Column("z", fieldZ.getType());
-		Map<String, Table.Column> columnMap2 = totoClassTable2.mapColumnsOnName();
+		rightJoinColumn = totoClassTable2.addColumn("id", fieldId.getType());
+		totoClassTable2.addColumn("x", fieldX.getType());
+		totoClassTable2.addColumn("y", fieldY.getType());
+		totoClassTable2.addColumn("z", fieldZ.getType());
+		Map<String, Column> columnMap2 = totoClassTable2.mapColumnsOnName();
 		columnMap2.get("id").setPrimaryKey(true);
 		
 		
 		PropertyAccessor<Toto, StatefullIdentifier<Integer>> identifierAccessor = Accessors.forProperty(fieldId);
-		Map<PropertyAccessor, Table.Column> totoClassMapping1 = Maps.asMap(
+		Map<PropertyAccessor, Column> totoClassMapping1 = Maps.asMap(
 				(PropertyAccessor) identifierAccessor, columnMap1.get("id"))
 				.add(Accessors.forProperty(fieldA), columnMap1.get("a"))
 				.add(Accessors.forProperty(fieldB), columnMap1.get("b"));
-		Map<PropertyAccessor, Table.Column> totoClassMapping2 = Maps.asMap(
+		Map<PropertyAccessor, Column> totoClassMapping2 = Maps.asMap(
 				(PropertyAccessor) identifierAccessor, columnMap2.get("id"))
 				.add(Accessors.forProperty(fieldX), columnMap2.get("x"))
 				.add(Accessors.forProperty(fieldY), columnMap2.get("y"))

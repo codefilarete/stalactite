@@ -27,7 +27,7 @@ import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
 import org.gama.stalactite.persistence.mapping.IdMappingStrategy;
 import org.gama.stalactite.persistence.mapping.PersistentFieldHarverster;
 import org.gama.stalactite.persistence.structure.Table;
-import org.gama.stalactite.persistence.structure.Table.Column;
+import org.gama.stalactite.persistence.structure.Column;
 
 /**
  * @author Guillaume Mary
@@ -77,7 +77,7 @@ public class DynamicAndComplementaryClassMappingBuilder implements IMappingBuild
 		targetNilTable = new DynamicTable(targetTable.getName() + "_nil", DynamicEntity.QUESTION_COUNT) {
 			@Override
 			protected Column newColum(int i) {
-				return new Column("q"+i, Boolean.TYPE);
+				return new Column(targetTable, "q"+i, Boolean.TYPE);
 			}
 		};
 		this.nilDynamicType = buildDynamicType(targetNilTable);
@@ -99,9 +99,9 @@ public class DynamicAndComplementaryClassMappingBuilder implements IMappingBuild
 		// tables des colonnes à indexer
 		for (Field columnToIndex : shuffle(new ArrayList<>(dynamicTypeFields.values()), 5)) {
 			DynamicTable indexTable = new DynamicTable(targetTable.getName() + "_" + columnToIndex.getName(), 0);
-			indexTable.new Column(targetTable.getPrimaryKey().getName(), targetTable.getPrimaryKey().getJavaType());
-			Column indexedColumn = indexTable.new Column(columnToIndex.getName(), columnToIndex.getType());
-			indexTable.new Index(indexedColumn, "IDX_" + indexedColumn.getName());
+			indexTable.addColumn(targetTable.getPrimaryKey().getName(), targetTable.getPrimaryKey().getJavaType());
+			Column indexedColumn = indexTable.addColumn(columnToIndex.getName(), columnToIndex.getType());
+			indexTable.addIndex("IDX_" + indexedColumn.getName(), indexedColumn);
 			indexTables.add(indexTable);
 			
 			Class<? extends DynamicEntity> indexDynamicType = buildDynamicType(indexTable);
@@ -148,7 +148,7 @@ public class DynamicAndComplementaryClassMappingBuilder implements IMappingBuild
 		
 		public DynamicTable(String tableName, int columnCount) {
 			super(null, tableName);
-			id = new Column("id", Long.TYPE);
+			id = new Column(this, "id", Long.TYPE);
 			id.setPrimaryKey(true);
 			for (int i = 0; i < columnCount; i++) {
 				Column column = newColum(i);
@@ -158,7 +158,7 @@ public class DynamicAndComplementaryClassMappingBuilder implements IMappingBuild
 		
 		protected Column newColum(int i) {
 			Class columnType = Integer.class;
-			return new Column("q" + i, columnType);
+			return new Column(this, "q" + i, columnType);
 		}
 	}
 	

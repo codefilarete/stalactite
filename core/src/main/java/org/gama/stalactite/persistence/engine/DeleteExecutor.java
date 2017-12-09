@@ -15,7 +15,7 @@ import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
 import org.gama.stalactite.persistence.sql.dml.ColumnParamedSQL;
 import org.gama.stalactite.persistence.sql.dml.DMLGenerator;
 import org.gama.stalactite.persistence.structure.Table;
-import org.gama.stalactite.persistence.structure.Table.Column;
+import org.gama.stalactite.persistence.structure.Column;
 
 /**
  * Class dedicated to delete statement execution
@@ -46,7 +46,7 @@ public class DeleteExecutor<T, I> extends WriteExecutor<T, I> {
 	 */
 	public int delete(Iterable<T> entities) {
 		ColumnParamedSQL deleteStatement = getDmlGenerator().buildDelete(getMappingStrategy().getTargetTable(), getMappingStrategy().getVersionedKeys());
-		WriteOperation<Table.Column> writeOperation = newWriteOperation(deleteStatement, new CurrentConnectionProvider());
+		WriteOperation<Column> writeOperation = newWriteOperation(deleteStatement, new CurrentConnectionProvider());
 		JDBCBatchingIterator<T> jdbcBatchingIterator = new JDBCBatchingIterator<>(entities, writeOperation, getBatchSize());
 		RowCounter rowCounter = new RowCounter();
 		while(jdbcBatchingIterator.hasNext()) {
@@ -92,9 +92,9 @@ public class DeleteExecutor<T, I> extends WriteExecutor<T, I> {
 		List<List<I>> parcels = Collections.parcel(ids, blockSize);
 		List<I> lastBlock = Iterables.last(parcels);
 		ColumnParamedSQL deleteStatement;
-		WriteOperation<Table.Column> writeOperation;
+		WriteOperation<Column> writeOperation;
 		Table targetTable = getMappingStrategy().getTargetTable();
-		Table.Column keyColumn = targetTable.getPrimaryKey();
+		Column keyColumn = targetTable.getPrimaryKey();
 		
 		int updatedRowCounter = 0;
 		if (parcels.size() > 1) {

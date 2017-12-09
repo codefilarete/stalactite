@@ -4,7 +4,7 @@ import java.util.Map;
 
 import org.gama.sql.binder.ParameterBinder;
 import org.gama.sql.binder.ParameterBinderIndex;
-import org.gama.stalactite.persistence.structure.Table.Column;
+import org.gama.stalactite.persistence.structure.Column;
 
 /**
  * Specialization of {@link ColumnParamedSQL} for select statement: gives access to selected columns through {@link #getSelectParameterBinders()}

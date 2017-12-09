@@ -6,7 +6,7 @@ import org.gama.lang.Reflections;
 import org.gama.lang.StringAppender;
 import org.gama.lang.Strings;
 import org.gama.stalactite.persistence.structure.Table;
-import org.gama.stalactite.persistence.structure.Table.Column;
+import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.query.builder.OperandBuilder.StringAppenderWrapper;
 import org.gama.stalactite.query.model.Operand;
 import org.gama.stalactite.query.model.Select;

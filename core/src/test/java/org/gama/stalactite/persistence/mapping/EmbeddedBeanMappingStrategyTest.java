@@ -12,7 +12,7 @@ import org.gama.reflection.PropertyAccessor;
 import org.gama.sql.result.Row;
 import org.gama.stalactite.persistence.sql.dml.PreparedUpdate.UpwhereColumn;
 import org.gama.stalactite.persistence.structure.Table;
-import org.gama.stalactite.persistence.structure.Table.Column;
+import org.gama.stalactite.persistence.structure.Column;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -35,9 +35,9 @@ public class EmbeddedBeanMappingStrategyTest {
 	@BeforeClass
 	public static void setUpClass() {
 		targetTable = new Table("Toto");
-		colA = targetTable.new Column("a", Integer.class);
-		colB = targetTable.new Column("b", Integer.class);
-		colC = targetTable.new Column("c", Integer.class);
+		colA = targetTable.addColumn("a", Integer.class);
+		colB = targetTable.addColumn("b", Integer.class);
+		colC = targetTable.addColumn("c", Integer.class);
 		classMapping = Maps.asMap((PropertyAccessor) Accessors.forProperty(Toto.class, "a"), colA)
 				.add(Accessors.forProperty(Toto.class, "b"), colB)
 				.add(Accessors.forProperty(Toto.class, "c"), colC);

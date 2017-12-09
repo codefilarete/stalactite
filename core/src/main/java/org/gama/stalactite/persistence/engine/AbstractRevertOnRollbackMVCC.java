@@ -2,7 +2,7 @@ package org.gama.stalactite.persistence.engine;
 
 import org.gama.sql.ConnectionProvider;
 import org.gama.sql.RollbackObserver;
-import org.gama.stalactite.persistence.structure.Table.Column;
+import org.gama.stalactite.persistence.structure.Column;
 
 /**
  * Some code mutualisation around optimistic lock manager.

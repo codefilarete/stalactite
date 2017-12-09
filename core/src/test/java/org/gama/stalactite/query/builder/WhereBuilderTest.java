@@ -10,7 +10,7 @@ import org.gama.lang.collection.Maps;
 import org.gama.sql.binder.ParameterBinderRegistry;
 import org.gama.sql.dml.PreparedSQL;
 import org.gama.stalactite.persistence.structure.Table;
-import org.gama.stalactite.persistence.structure.Table.Column;
+import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.query.model.CriteriaChain;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -40,8 +40,8 @@ public class WhereBuilderTest {
 	@DataProvider
 	public static Object[][] testToSQL_data() {
 		Table tableToto = new Table(null, "Toto");
-		Column colA = tableToto.new Column("a", String.class);
-		Column colB = tableToto.new Column("b", String.class);
+		Column colA = tableToto.addColumn("a", String.class);
+		Column colB = tableToto.addColumn("b", String.class);
 		Map<Table, String> tableAliases = Maps.asMap(tableToto, "t");
 		
 		return new Object[][] {
@@ -84,8 +84,8 @@ public class WhereBuilderTest {
 	@DataProvider
 	public static Object[][] testToPreparedSQL_data() {
 		Table tableToto = new Table(null, "Toto");
-		Column colA = tableToto.new Column("a", String.class);
-		Column colB = tableToto.new Column("b", String.class);
+		Column colA = tableToto.addColumn("a", String.class);
+		Column colB = tableToto.addColumn("b", String.class);
 		Map<Table, String> tableAliases = Maps.asMap(tableToto, "t");
 		
 		return new Object[][] {

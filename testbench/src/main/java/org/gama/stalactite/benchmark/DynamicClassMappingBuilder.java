@@ -20,7 +20,7 @@ import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
 import org.gama.stalactite.persistence.mapping.IdMappingStrategy;
 import org.gama.stalactite.persistence.mapping.PersistentFieldHarverster;
 import org.gama.stalactite.persistence.structure.Table;
-import org.gama.stalactite.persistence.structure.Table.Column;
+import org.gama.stalactite.persistence.structure.Column;
 
 /**
  * @author Guillaume Mary
@@ -77,14 +77,14 @@ public class DynamicClassMappingBuilder implements IMappingBuilder {
 		
 		public DynamicTable(String tableName) {
 			super(null, tableName);
-			id = new Column("id", Long.TYPE);
+			id = addColumn("id", Long.TYPE);
 			id.setPrimaryKey(true);
 			for (int i = 0; i < 1; i++) {
 				Class columnType = Integer.class;
-				Column column = new Column("q" + i, columnType);
+				Column column = addColumn("q" + i, columnType);
 				dynamicColumns.put((long) i, column);
 				if (i % 5 == 0) {
-					new Index(column, "idx_" + column.getName());
+					addIndex("idx_" + column.getName(), column);
 				}
 			}
 		}

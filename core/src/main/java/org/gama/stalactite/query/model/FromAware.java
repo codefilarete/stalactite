@@ -1,7 +1,7 @@
 package org.gama.stalactite.query.model;
 
 import org.gama.stalactite.persistence.structure.Table;
-import org.gama.stalactite.persistence.structure.Table.Column;
+import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.query.model.SelectQuery.FluentFrom;
 
 /**

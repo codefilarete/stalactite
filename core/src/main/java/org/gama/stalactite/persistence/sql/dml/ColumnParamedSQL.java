@@ -6,7 +6,7 @@ import org.gama.sql.binder.ParameterBinder;
 import org.gama.sql.dml.ExpandableStatement;
 import org.gama.sql.binder.ParameterBinderIndex;
 import org.gama.sql.dml.PreparedSQL;
-import org.gama.stalactite.persistence.structure.Table.Column;
+import org.gama.stalactite.persistence.structure.Column;
 
 /**
  * Equivalent to {@link PreparedSQL} but with Column as index identifier.

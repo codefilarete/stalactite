@@ -2,7 +2,7 @@ package org.gama.stalactite.query.model;
 
 import java.util.Map;
 
-import org.gama.stalactite.persistence.structure.Table.Column;
+import org.gama.stalactite.persistence.structure.Column;
 
 /**
  * The interface defining what's possible to do (fluent point of view) on a select

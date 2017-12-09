@@ -16,7 +16,7 @@ import org.gama.stalactite.persistence.sql.ddl.DDLTableGenerator;
 import org.gama.stalactite.persistence.sql.dml.PreparedUpdate.UpwhereColumn;
 import org.gama.stalactite.persistence.sql.dml.binder.ColumnBinderRegistry;
 import org.gama.stalactite.persistence.structure.Table;
-import org.gama.stalactite.persistence.structure.Table.Column;
+import org.gama.stalactite.persistence.structure.Column;
 
 import static org.gama.sql.dml.ExpandableSQL.ExpandableParameter.SQL_PARAMETER_MARK;
 import static org.gama.sql.dml.ExpandableSQL.ExpandableParameter.SQL_PARAMETER_MARK_1;
@@ -40,7 +40,7 @@ public class DMLGenerator {
 		this(columnBinderRegistry, NoopSorter.INSTANCE);
 	}
 	
-	public DMLGenerator(ColumnBinderRegistry columnBinderRegistry, ISorter<Iterable<Table.Column>> columnSorter) {
+	public DMLGenerator(ColumnBinderRegistry columnBinderRegistry, ISorter<Iterable<Column>> columnSorter) {
 		this.columnBinderRegistry = columnBinderRegistry;
 		this.columnSorter = columnSorter;
 	}

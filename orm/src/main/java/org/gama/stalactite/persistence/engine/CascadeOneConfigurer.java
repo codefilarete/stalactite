@@ -22,7 +22,7 @@ import org.gama.stalactite.persistence.engine.listening.PersisterListener;
 import org.gama.stalactite.persistence.id.Identified;
 import org.gama.stalactite.persistence.id.manager.StatefullIdentifier;
 import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
-import org.gama.stalactite.persistence.structure.Table.Column;
+import org.gama.stalactite.persistence.structure.Column;
 
 /**
  * @author Guillaume Mary
@@ -53,7 +53,7 @@ public class CascadeOneConfigurer<T extends Identified, I extends Identified, J 
 		Column rightColumn = targetPersister.getTargetTable().getPrimaryKey();
 		
 		// adding foerign key constraint
-		leftColumn.getTable().new ForeignKey(leftColumn, foreignKeyNamingStrategy.giveName(leftColumn, rightColumn), rightColumn);
+		leftColumn.getTable().addForeignKey(foreignKeyNamingStrategy.giveName(leftColumn, rightColumn), leftColumn, rightColumn);
 		
 		PersisterListener<T, ?> persisterListener = localPersister.getPersisterListener();
 		for (CascadeType cascadeType : cascadeOne.getCascadeTypes()) {

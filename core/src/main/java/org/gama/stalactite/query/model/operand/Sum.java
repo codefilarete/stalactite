@@ -1,6 +1,6 @@
 package org.gama.stalactite.query.model.operand;
 
-import org.gama.stalactite.persistence.structure.Table.Column;
+import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.query.model.Operand;
 
 /**

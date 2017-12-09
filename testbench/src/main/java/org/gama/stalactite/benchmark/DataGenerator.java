@@ -1,9 +1,13 @@
 package org.gama.stalactite.benchmark;
 
-import java.util.*;
+import java.util.Collection;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Random;
 
-import org.gama.stalactite.persistence.structure.Table.Column;
-import org.gama.stalactite.persistence.structure.Table.SizedColumn;
+import org.gama.lang.bean.Objects;
+import org.gama.stalactite.persistence.structure.Column;
 
 /**
  * @author Guillaume Mary
@@ -64,7 +68,7 @@ public class DataGenerator {
 	}
 	
 	protected String randomText(Column column) {
-		int maxLength = column instanceof SizedColumn ? ((SizedColumn) column).getSize() : 100;
+		int maxLength = Objects.preventNull(column.getSize(), 100);
 		return randomText(maxLength);
 	}
 	

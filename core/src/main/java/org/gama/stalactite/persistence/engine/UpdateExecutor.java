@@ -19,7 +19,7 @@ import org.gama.stalactite.persistence.sql.dml.DMLGenerator;
 import org.gama.stalactite.persistence.sql.dml.PreparedUpdate;
 import org.gama.stalactite.persistence.sql.dml.PreparedUpdate.UpwhereColumn;
 import org.gama.stalactite.persistence.structure.Table;
-import org.gama.stalactite.persistence.structure.Table.Column;
+import org.gama.stalactite.persistence.structure.Column;
 
 import static org.gama.stalactite.persistence.engine.RowCountManager.THROWING_ROW_COUNT_MANAGER;
 
@@ -63,7 +63,7 @@ public class UpdateExecutor<T, I> extends UpsertExecutor<T, I> {
 	 * @param iterable iterable of instances
 	 */
 	public int updateById(Iterable<T> iterable) {
-		Set<Table.Column> columnsToUpdate = getMappingStrategy().getUpdatableColumns();
+		Set<Column> columnsToUpdate = getMappingStrategy().getUpdatableColumns();
 		PreparedUpdate updateOperation = getDmlGenerator().buildUpdate(columnsToUpdate, getMappingStrategy().getVersionedKeys());
 		WriteOperation<PreparedUpdate.UpwhereColumn> writeOperation = newWriteOperation(updateOperation, new CurrentConnectionProvider());
 		
@@ -111,7 +111,7 @@ public class UpdateExecutor<T, I> extends UpsertExecutor<T, I> {
 	public int updateFully(Iterable<Map.Entry<T, T>> differencesIterable) {
 		Table targetTable = getMappingStrategy().getTargetTable();
 		// we never update primary key (by principle and for persistent bean cache based on id (on what else ?)) 
-		Set<Table.Column> columnsToUpdate = targetTable.getColumnsNoPrimaryKey();
+		Set<Column> columnsToUpdate = targetTable.getColumnsNoPrimaryKey();
 		PreparedUpdate preparedUpdate = getDmlGenerator().buildUpdate(columnsToUpdate, getMappingStrategy().getVersionedKeys());
 		WriteOperation<PreparedUpdate.UpwhereColumn> writeOperation = newWriteOperation(preparedUpdate, new CurrentConnectionProvider());
 		// Since all columns are updated we can benefit from JDBC batch
