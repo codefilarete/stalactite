@@ -17,7 +17,7 @@ import org.gama.stalactite.query.model.SelectQuery;
 /**
  * @author Guillaume Mary
  */
-public class SelectQueryBuilder extends AbstractDMLBuilder implements PreparedSQLBuilder {
+public class SelectQueryBuilder extends AbstractDMLBuilder implements SQLBuilder, PreparedSQLBuilder {
 	
 	private final SelectQuery selectQuery;
 	private final SelectBuilder selectBuilder;

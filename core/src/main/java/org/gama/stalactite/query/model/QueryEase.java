@@ -11,24 +11,24 @@ import org.gama.stalactite.query.model.SelectQuery.FluentSelect;
  */
 public class QueryEase {
 	
-	public static FluentSelect select(String selectable) {
-		return new SelectQuery().select(selectable);
+	public static FluentSelect select(String selectable, String... columns) {
+		return new SelectQuery().select(selectable).add(columns);
 	}
 	
-	public static FluentSelect select(Column column) {
-		return new SelectQuery().select(column);
-	}
-	
-	public static FluentSelect select(Column... columns) {
-		return new SelectQuery().select(columns);
-	}
-	
-	public static FluentSelect select(String... columns) {
-		return new SelectQuery().select(columns);
+	public static FluentSelect select(Column column, Column... columns) {
+		return new SelectQuery().select(column).add(columns);
 	}
 	
 	public static FluentSelect select(Column column, String alias) {
 		return new SelectQuery().select(column, alias);
+	}
+	
+	public static FluentSelect select(Column col1, String alias1, Column col2, String alias2) {
+		return new SelectQuery().select(col1, alias1, col2, alias2);
+	}
+	
+	public static FluentSelect select(Column col1, String alias1, Column col2, String alias2, Column col3, String alias3) {
+		return new SelectQuery().select(col1, alias1, col2, alias2, col3, alias3);
 	}
 	
 	public static FluentSelect select(Map<Column, String> aliasedColumns) {

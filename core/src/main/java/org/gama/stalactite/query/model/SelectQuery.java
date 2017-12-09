@@ -146,6 +146,14 @@ public class SelectQuery implements FromAware, WhereAware, HavingAware, OrderByA
 		return this.select.add(column, alias);
 	}
 	
+	public FluentSelect select(Column col1, String alias1, Column col2, String alias2) {
+		return this.select.add(col1, alias1, col2, alias2);
+	}
+	
+	public FluentSelect select(Column col1, String alias1, Column col2, String alias2, Column col3, String alias3) {
+		return this.select.add(col1, alias1, col2, alias2, col3, alias3);
+	}
+	
 	public FluentSelect select(Map<Column, String> aliasedColumns) {
 		return this.select.add(aliasedColumns);
 	}

@@ -12,7 +12,7 @@ import org.gama.stalactite.query.model.Select.AliasedColumn;
 /**
  * @author Guillaume Mary
  */
-public class SelectBuilder extends AbstractDMLBuilder {
+public class SelectBuilder extends AbstractDMLBuilder implements SQLBuilder {
 	
 	private static final String COLUMN_SEPARATOR = ", ";
 	private final Select select;

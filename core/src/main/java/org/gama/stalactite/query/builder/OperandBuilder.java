@@ -1,5 +1,6 @@
 package org.gama.stalactite.query.builder;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -10,22 +11,36 @@ import org.gama.lang.collection.Iterables;
 import org.gama.lang.trace.IncrementableInt;
 import org.gama.sql.binder.ParameterBinder;
 import org.gama.sql.binder.ParameterBinderRegistry;
+import org.gama.stalactite.persistence.structure.Table;
+import org.gama.stalactite.persistence.structure.Table.Column;
 import org.gama.stalactite.query.model.Operand;
 import org.gama.stalactite.query.model.operand.Between;
 import org.gama.stalactite.query.model.operand.Between.Interval;
+import org.gama.stalactite.query.model.operand.Count;
 import org.gama.stalactite.query.model.operand.Equals;
 import org.gama.stalactite.query.model.operand.Greater;
 import org.gama.stalactite.query.model.operand.In;
 import org.gama.stalactite.query.model.operand.IsNull;
 import org.gama.stalactite.query.model.operand.Like;
 import org.gama.stalactite.query.model.operand.Lower;
+import org.gama.stalactite.query.model.operand.Max;
+import org.gama.stalactite.query.model.operand.Min;
+import org.gama.stalactite.query.model.operand.Sum;
 
 /**
  * A class made to print a {@link Operand}
  * 
  * @author Guillaume Mary
  */
-public class OperandBuilder {
+public class OperandBuilder extends AbstractDMLBuilder {
+	
+	public OperandBuilder() {
+		this(Collections.emptyMap());
+	}
+	
+	public OperandBuilder(Map<Table, String> tableAliases) {
+		super(tableAliases);
+	}
 	
 	/**
 	 * Main entry point
@@ -48,6 +63,14 @@ public class OperandBuilder {
 				catLike((Like) operand, sql);
 			} else if (operand instanceof IsNull) {
 				catIsNull((IsNull) operand, sql);
+			} else if (operand instanceof Sum) {
+				catSum((Sum) operand, sql);
+			} else if (operand instanceof Count) {
+				catCount((Count) operand, sql);
+			} else if (operand instanceof Min) {
+				catMin((Min) operand, sql);
+			} else if (operand instanceof Max) {
+				catMax((Max) operand, sql);
 			} else {
 				throw new UnsupportedOperationException("Operator " + Reflections.toString(operand.getClass()) + " is not implemented");
 			}
@@ -126,6 +149,22 @@ public class OperandBuilder {
 	
 	public void catEquals(Equals equals, SQLAppender sql) {
 		sql.catIf(equals.isNot(), "!").cat("= ").catValue(equals.getValue());
+	}
+	
+	public void catSum(Sum sum, SQLAppender sqlAppender) {
+		sqlAppender.cat("sum(", getName(((Column) sum.getValue())), ")");
+	}
+	
+	public void catCount(Count count, SQLAppender sqlAppender) {
+		sqlAppender.cat("count(", getName(((Column) count.getValue())), ")");
+	}
+	
+	public void catMin(Min min, SQLAppender sqlAppender) {
+		sqlAppender.cat("min(", getName(((Column) min.getValue())), ")");
+	}
+	
+	public void catMax(Max max, SQLAppender sqlAppender) {
+		sqlAppender.cat("max(", getName(((Column) max.getValue())), ")");
 	}
 	
 	/**

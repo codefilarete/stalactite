@@ -1,12 +1,17 @@
 package org.gama.stalactite.query.model;
 
+import org.gama.stalactite.persistence.structure.Table.Column;
 import org.gama.stalactite.query.model.operand.Between;
+import org.gama.stalactite.query.model.operand.Count;
 import org.gama.stalactite.query.model.operand.Equals;
 import org.gama.stalactite.query.model.operand.Greater;
 import org.gama.stalactite.query.model.operand.In;
 import org.gama.stalactite.query.model.operand.IsNull;
 import org.gama.stalactite.query.model.operand.Like;
 import org.gama.stalactite.query.model.operand.Lower;
+import org.gama.stalactite.query.model.operand.Max;
+import org.gama.stalactite.query.model.operand.Min;
+import org.gama.stalactite.query.model.operand.Sum;
 
 /**
  * @author Guillaume Mary
@@ -72,6 +77,22 @@ public abstract class Operand {
 	
 	public static Like endsWith(String value) {
 		return new Like(value, true, false);
+	}
+	
+	public static Sum sum(Column column) {
+		return new Sum(column);
+	}
+	
+	public static Count count(Column column) {
+		return new Count(column);
+	}
+	
+	public static Min min(Column column) {
+		return new Min(column);
+	}
+	
+	public static Max max(Column column) {
+		return new Max(column);
 	}
 	
 	private Object value;

@@ -23,18 +23,19 @@ import org.gama.stalactite.query.model.RawCriterion;
  * 
  * @author Guillaume Mary
  */
-public class WhereBuilder extends AbstractDMLBuilder implements PreparedSQLBuilder {
+public class WhereBuilder extends AbstractDMLBuilder implements SQLBuilder, PreparedSQLBuilder {
 
 	public static final String AND = "and";
 	public static final String OR = "or";
 
 	private final CriteriaChain where;
 	
-	private final OperandBuilder operandBuilder = new OperandBuilder();
+	private final OperandBuilder operandBuilder;
 	
 	public WhereBuilder(CriteriaChain where, Map<Table, String> tableAliases) {
 		super(tableAliases);
 		this.where = where;
+		this.operandBuilder = new OperandBuilder(tableAliases);
 	}
 	
 	@Override

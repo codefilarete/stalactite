@@ -9,7 +9,7 @@ import org.gama.stalactite.persistence.structure.Table.Column;
 /**
  * @author Guillaume Mary
  */
-public abstract class AbstractDMLBuilder implements SQLBuilder {
+public abstract class AbstractDMLBuilder {
 	
 	protected final Map<Table, String> tableAliases;
 

@@ -16,6 +16,7 @@ import org.junit.runner.RunWith;
 
 import static org.gama.stalactite.query.model.Operand.eq;
 import static org.gama.stalactite.query.model.Operand.gt;
+import static org.gama.stalactite.query.model.Operand.sum;
 import static org.gama.stalactite.query.model.OrderByChain.Order.ASC;
 import static org.gama.stalactite.query.model.OrderByChain.Order.DESC;
 import static org.gama.stalactite.query.model.QueryEase.select;
@@ -98,8 +99,11 @@ public class SelectQueryBuilderTest {
 				{ select(colTotoA, colTataB).from(tableToto).where(colTotoB, "= 1").groupBy(colTotoA).limit(2),
 						"select Toto.a, Tata.b from Toto where Toto.b = 1 group by Toto.a limit 2" },
 				{ select(colTotoA, colTataB).from(tableToto).where(colTotoB, "= 1").groupBy(colTotoA)
-						.having("sum(", colTotoB, ") > 1").limit(2),
+						.having(sum(colTotoB), " > 1").limit(2),
 						"select Toto.a, Tata.b from Toto where Toto.b = 1 group by Toto.a having sum(Toto.b) > 1 limit 2" },
+				{ select(colTotoA, colTataB).from(tableToto, "T").where(colTotoB, "= 1").groupBy(colTotoA)
+						.having(sum(colTotoB), " > 1").limit(2),
+						"select T.a, Tata.b from Toto as T where T.b = 1 group by T.a having sum(T.b) > 1 limit 2" },
 		};
 	}
 	
@@ -123,6 +127,14 @@ public class SelectQueryBuilderTest {
 				{ select(colTotoA, colTataB).from(tableToto).where(colTotoB, eq(1)).groupBy(colTotoA)
 						.having("sum(", colTotoB, ") ", gt(1)).limit(2),
 						"select Toto.a, Tata.b from Toto where Toto.b = ? group by Toto.a having sum(Toto.b) > ? limit ?",
+						Maps.asHashMap(1, 1).add(2, 1).add(3, 2)},
+				{ select(colTotoA, colTataB).from(tableToto).where(colTotoB, eq(1)).groupBy(colTotoA)
+						.having(sum(colTotoB), gt(1)).limit(2),
+						"select Toto.a, Tata.b from Toto where Toto.b = ? group by Toto.a having sum(Toto.b)> ? limit ?",
+						Maps.asHashMap(1, 1).add(2, 1).add(3, 2)},
+				{ select(colTotoA, colTataB).from(tableToto, "T").where(colTotoB, eq(1)).groupBy(colTotoA)
+						.having(sum(colTotoB), gt(1)).limit(2),
+						"select T.a, Tata.b from Toto as T where T.b = ? group by T.a having sum(T.b)> ? limit ?",
 						Maps.asHashMap(1, 1).add(2, 1).add(3, 2)},
 		};
 	}

@@ -1,6 +1,8 @@
 package org.gama.stalactite.query.builder;
 
 import org.gama.lang.StringAppender;
+import org.gama.stalactite.persistence.structure.Table;
+import org.gama.stalactite.persistence.structure.Table.Column;
 import org.gama.stalactite.query.builder.OperandBuilder.StringAppenderWrapper;
 import org.gama.stalactite.query.model.Operand;
 import org.gama.stalactite.query.model.operand.IsNull;
@@ -9,6 +11,7 @@ import org.junit.Test;
 
 import static org.gama.stalactite.query.model.Operand.between;
 import static org.gama.stalactite.query.model.Operand.contains;
+import static org.gama.stalactite.query.model.Operand.count;
 import static org.gama.stalactite.query.model.Operand.endsWith;
 import static org.gama.stalactite.query.model.Operand.eq;
 import static org.gama.stalactite.query.model.Operand.gt;
@@ -16,8 +19,11 @@ import static org.gama.stalactite.query.model.Operand.gteq;
 import static org.gama.stalactite.query.model.Operand.in;
 import static org.gama.stalactite.query.model.Operand.lt;
 import static org.gama.stalactite.query.model.Operand.lteq;
+import static org.gama.stalactite.query.model.Operand.max;
+import static org.gama.stalactite.query.model.Operand.min;
 import static org.gama.stalactite.query.model.Operand.not;
 import static org.gama.stalactite.query.model.Operand.startsWith;
+import static org.gama.stalactite.query.model.Operand.sum;
 import static org.junit.Assert.assertEquals;
 
 /**
@@ -146,5 +152,53 @@ public class OperandBuilderTest {
 		
 		testInstance.catEquals(eq(1), new StringAppenderWrapper(result));
 		assertEquals("= 1", result.toString());
+	}
+	
+	@Test
+	public void catSum() {
+		OperandBuilder testInstance = new OperandBuilder();
+		StringAppender result = new StringAppender();
+		
+		Table tableToto = new Table("Toto");
+		Column colA = tableToto.new Column("a", Integer.class);
+		
+		testInstance.catSum(sum(colA), new StringAppenderWrapper(result));
+		assertEquals("sum(Toto.a)", result.toString());
+	}
+	
+	@Test
+	public void catCount() {
+		OperandBuilder testInstance = new OperandBuilder();
+		StringAppender result = new StringAppender();
+		
+		Table tableToto = new Table("Toto");
+		Column colA = tableToto.new Column("a", Integer.class);
+		
+		testInstance.catCount(count(colA), new StringAppenderWrapper(result));
+		assertEquals("count(Toto.a)", result.toString());
+	}
+	
+	@Test
+	public void catMin() {
+		OperandBuilder testInstance = new OperandBuilder();
+		StringAppender result = new StringAppender();
+		
+		Table tableToto = new Table("Toto");
+		Column colA = tableToto.new Column("a", Integer.class);
+		
+		testInstance.catMin(min(colA), new StringAppenderWrapper(result));
+		assertEquals("min(Toto.a)", result.toString());
+	}
+	
+	@Test
+	public void catMax() {
+		OperandBuilder testInstance = new OperandBuilder();
+		StringAppender result = new StringAppender();
+		
+		Table tableToto = new Table("Toto");
+		Column colA = tableToto.new Column("a", Integer.class);
+		
+		testInstance.catMax(max(colA), new StringAppenderWrapper(result));
+		assertEquals("max(Toto.a)", result.toString());
 	}
 }
