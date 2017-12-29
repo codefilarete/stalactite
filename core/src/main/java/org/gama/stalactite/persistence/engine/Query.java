@@ -1,5 +1,6 @@
 package org.gama.stalactite.persistence.engine;
 
+import java.io.Serializable;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -8,8 +9,8 @@ import java.util.Map;
 
 import org.danekja.java.util.function.serializable.SerializableBiConsumer;
 import org.danekja.java.util.function.serializable.SerializableFunction;
-import org.gama.lang.function.LazyInitializer;
 import org.gama.reflection.MethodReferenceCapturer;
+import org.gama.reflection.MethodReferences;
 import org.gama.sql.ConnectionProvider;
 import org.gama.sql.binder.ParameterBinder;
 import org.gama.sql.binder.ParameterBinderProvider;
@@ -25,6 +26,12 @@ import static org.gama.sql.binder.NullAwareParameterBinder.ALWAYS_SET_NULL_INSTA
  * @author Guillaume Mary
  */
 public class Query<T> {
+	
+	/** Default method capturer. Shared to cache result of each lookup. */
+	private static final MethodReferenceCapturer METHOD_REFERENCE_CAPTURER = new MethodReferenceCapturer();
+	
+	/** The method capturer (when column types are not given by {@link #map(String, SerializableBiConsumer)}) */
+	private final MethodReferenceCapturer methodReferenceCapturer;
 	
 	/** Type of bean that will be built by {@link #execute(ConnectionProvider)} */
 	private final Class<T> rootBeanType;
@@ -47,10 +54,29 @@ public class Query<T> {
 	/** SQL argument values (for where clause, or anywhere else) */
 	private final Map<String, Object> sqlArguments = new HashMap<>();
 	
+	/**
+	 * Simple constructor
+	 * @param rootBeanType type of built bean
+	 * @param sql the sql to execute
+	 * @param parameterBinderProvider a provider for SQL parameters and selected column
+	 */
 	public Query(Class<T> rootBeanType, CharSequence sql, ParameterBinderProvider<Class> parameterBinderProvider) {
+		this(rootBeanType, sql, parameterBinderProvider, METHOD_REFERENCE_CAPTURER);
+	}
+	
+	/**
+	 * Constructor to share {@link MethodReferenceCapturer} between instance of {@link Query}
+	 * @param rootBeanType type of built bean
+	 * @param sql the sql to execute
+	 * @param parameterBinderProvider a provider for SQL parameters and selected column
+	 * @param methodReferenceCapturer a method capturer (when column types are not given by {@link #map(String, SerializableBiConsumer)}),
+	 * default is {@link #METHOD_REFERENCE_CAPTURER}
+	 */
+	public Query(Class<T> rootBeanType, CharSequence sql, ParameterBinderProvider<Class> parameterBinderProvider, MethodReferenceCapturer methodReferenceCapturer) {
 		this.rootBeanType = rootBeanType;
 		this.sql = sql;
 		this.parameterBinderProvider = parameterBinderProvider;
+		this.methodReferenceCapturer = methodReferenceCapturer;
 	}
 	
 	/**
@@ -70,13 +96,13 @@ public class Query<T> {
 	/**
 	 * Defines a mapping between a column of the query and a bean property through its setter
 	 *
-	 * @param columnName a column name
-	 * @param columnType the type of the column, which is also that of the setter argument
-	 * @param setter the setter function
 	 * @param <I> the type of the column, which is also that of the setter argument
+	 * @param columnName a column name
+	 * @param setter the setter function
+	 * @param columnType the type of the column, which is also that of the setter argument
 	 * @return this
 	 */
-	public <I> Query<T> map(String columnName, Class<I> columnType, SerializableBiConsumer<T, I> setter) {
+	public <I> Query<T> map(String columnName, SerializableBiConsumer<T, I> setter, Class<I> columnType) {
 		add(new ColumnMapping<>(columnName, columnType, setter));
 		return this;
 	}
@@ -84,7 +110,7 @@ public class Query<T> {
 	/**
 	 * Defines a mapping between a column of the query and a bean property through its setter.
 	 * WARNING : Column type will be deduced from the setter type. To do it, some bytecode enhancement is required, therefore it's not the cleanest
-	 * way to define the binding. Prefer {@link #map(String, Class, SerializableBiConsumer)}
+	 * way to define the binding. Prefer {@link #map(String, SerializableBiConsumer, Class)}
 	 *
 	 * @param columnName a column name
 	 * @param setter the setter function
@@ -92,7 +118,7 @@ public class Query<T> {
 	 * @return this
 	 */
 	public <I> Query<T> map(String columnName, SerializableBiConsumer<T, I> setter) {
-		map(columnName, null, setter);
+		map(columnName, setter, null);
 		return this;
 	}
 	
@@ -102,45 +128,47 @@ public class Query<T> {
 	
 	/**
 	 * Executes the query onto the connection given by the {@link ConnectionProvider}. Transforms the result to a list of beans thanks to the
-	 * definition given through {@link #mapKey(String, Class, SerializableFunction)}, {@link #map(String, Class, SerializableBiConsumer)}
+	 * definition given through {@link #mapKey(String, Class, SerializableFunction)}, {@link #map(String, SerializableBiConsumer, Class)}
 	 * and {@link #map(String, SerializableBiConsumer)} methods.
 	 * 
 	 * @param connectionProvider the object that will given the {@link java.sql.Connection}
 	 * @return a {@link List} filled by the instances built
 	 */
-	public List<T> execute(ConnectionProvider connectionProvider) {
+	public <I> List<T> execute(ConnectionProvider connectionProvider) {
 		if (beanCreationDefinition == null) {
 			throw new IllegalArgumentException("Bean creation is not defined, use mapKey(..)");
 		}
 		
-		// we avoid useless need of a default constructor on target class due to MethodReferenceCapturer by making it lazy intialized
-		LazyInitializer<MethodReferenceCapturer> lazyMethodCapturerProvider = new LazyInitializer<MethodReferenceCapturer>() {
-			@Override
-			protected MethodReferenceCapturer createInstance() {
-				return new MethodReferenceCapturer();
-			}
-		};
-		Class<?> columnType = beanCreationDefinition.getColumn().getValueType();
-		if (columnType == null) {
-			// column type wasn't defined (not encouraged) => we're going to try to find it by capture the method (factory) argument type
-			Method setter = lazyMethodCapturerProvider.get().findMethod(beanCreationDefinition.factory);
-			columnType = setter.getParameterTypes()[0];
-		}
-		ParameterBinder idParameterBinder = this.parameterBinderProvider.getBinder(columnType);
-		ResultSetConverter<?, T> transformer = new ResultSetConverter<>(rootBeanType, beanCreationDefinition.getColumn().getName(), idParameterBinder, beanCreationDefinition.getFactory());
+		// creating ResultSetConverter
+		Column<I> keyColumn = (Column<I>) beanCreationDefinition.getColumn();
+		ParameterBinder<I> idParameterBinder = giveParameterBinder(keyColumn, beanCreationDefinition.factory);
+		SerializableFunction<I, T> beanFactory = (SerializableFunction<I, T>) beanCreationDefinition.getFactory();
+		ResultSetConverter<I, T> transformer = new ResultSetConverter<>(rootBeanType, keyColumn.getName(), idParameterBinder, beanFactory);
+		// adding complementary properties to transformer
 		for (ColumnMapping<T, Object> columnMapping : columnMappings) {
-			columnType = columnMapping.getColumn().getValueType();
-			if (columnType == null) {
-				// column type wasn't defined (bad practice) => we're going to try to find it by capture the method (factory) argument type
-				Method setter = lazyMethodCapturerProvider.get().findMethod(columnMapping.getSetter());
-				columnType = setter.getParameterTypes()[0];
-			}
-			transformer.add(columnMapping.getColumn().getName(), parameterBinderProvider.getBinder(columnType), columnMapping.getSetter());
+			ParameterBinder parameterBinder = giveParameterBinder(columnMapping.getColumn(), columnMapping.getSetter());
+			transformer.add(columnMapping.getColumn().getName(), parameterBinder, columnMapping.getSetter());
 		}
 		ReadOperation<String> readOperation = new ReadOperation<>(new StringParamedSQL(sql.toString(), sqlParameterBinders), connectionProvider);
 		readOperation.setValues(sqlArguments);
 		
 		return transformer.convert(readOperation.execute());
+	}
+	
+	/**
+	 * Gives the {@link ParameterBinder} for a column, if column type is null, then the setter/factory will be used to look for it
+	 * @param column the column for which {@link ParameterBinder} must be found 
+	 * @param setterOrFactoryFallback the SerializableBiConsumer (setter) or SerializableFunction (factory) fallback
+	 * @return the {@link ParameterBinder} found
+	 */
+	private <I> ParameterBinder<I> giveParameterBinder(Column column, Serializable setterOrFactoryFallback) {
+		Class<I> columnType = column.getValueType();
+		if (columnType == null) {
+			// column type wasn't defined (bad practice) => we're going to try to find it by capture the method (factory) argument type
+			Method setter = methodReferenceCapturer.findMethod(MethodReferences.buildSerializedLambda(setterOrFactoryFallback));
+			columnType = (Class<I>) setter.getParameterTypes()[0];
+		}
+		return parameterBinderProvider.getBinder(columnType);
 	}
 	
 	/**

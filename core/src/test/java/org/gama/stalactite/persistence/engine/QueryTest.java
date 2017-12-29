@@ -30,30 +30,34 @@ import static org.mockito.Mockito.when;
 public class QueryTest {
 	
 	@Test
-	public void testNewQuery() throws SQLException {
+	public void testNewQuery() {
 		// NB: SQL String is there only for clarification but is never executed
 		ParameterBinderProvider<Class> parameterBinderProvider = ParameterBinderProvider.fromMap(new ColumnBinderRegistry().getParameterBinders());
 		Query<Toto> query = new Query<>(Toto.class, "select id, name from Toto", parameterBinderProvider)
 				.mapKey("id", Integer.class, Toto::new)
-				.map("name", String.class, Toto::setName)
-				.map("active", Boolean.class, Toto::setActive);
+				.map("name", Toto::setName, String.class)
+				.map("active", Toto::setActive);
 		
-		Map<String, Object> testCaseData = Maps.asHashMap("id", (Object) 42).add("name", "coucou").add("active", true);
-		List<Map<String, Object>> resultSetData = Arrays.asList(testCaseData);
+		List<Map<String, Object>> resultSetData = Arrays.asList(
+				Maps.asHashMap("id", (Object) 42).add("name", "coucou").add("active", true),
+				Maps.asHashMap("id", (Object) 43).add("name", "hello").add("active", false)
+		);
 		
 		// creation of a Connection that will give our test case data
-		Connection mock = mock(Connection.class);
+		Connection connectionMock = mock(Connection.class);
 		try {
 			PreparedStatement statementMock = mock(PreparedStatement.class);
-			when(mock.prepareStatement(any())).thenReturn(statementMock);
+			when(connectionMock.prepareStatement(any())).thenReturn(statementMock);
 			when(statementMock.executeQuery()).thenReturn(new InMemoryResultSet(resultSetData));
 		} catch (SQLException e) {
 			// impossible since there's no real database connection
 			throw Exceptions.asRuntimeException(e);
 		}
 		
-		List<Toto> result = query.execute(() -> mock);
+		List<Toto> result = query.execute(() -> connectionMock);
 		assertEquals(new Toto(42, "coucou", true).toString(), Iterables.first(result).toString());
+		
+		assertEquals(new Toto(43, "hello", false).toString(), result.get(1).toString());
 	}
 	
 	@Test
