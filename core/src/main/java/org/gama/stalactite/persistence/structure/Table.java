@@ -69,14 +69,14 @@ public class Table {
 		return columns;
 	}
 	
-	public Column addColumn(String name, Class javaType) {
-		Column column = new Column(this, name, javaType);
+	public <T> Column<T> addColumn(String name, Class<T> javaType) {
+		Column<T> column = new Column<>(this, name, javaType);
 		this.columns.add(column);
 		return column;
 	}
 	
-	public Column addColumn(String name, Class javaType, int size) {
-		Column column = new Column(this, name, javaType, size);
+	public <T> Column<T> addColumn(String name, Class<T> javaType, int size) {
+		Column<T> column = new Column<>(this, name, javaType, size);
 		this.columns.add(column);
 		return column;
 	}

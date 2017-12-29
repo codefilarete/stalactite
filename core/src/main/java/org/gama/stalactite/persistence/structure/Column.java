@@ -3,13 +3,14 @@ package org.gama.stalactite.persistence.structure;
 /**
  * Column of a table.
  * 
+ * @param <T> the Java type this columns is mapped to
  * @author Guillaume Mary
  */
-public class Column {
+public class Column<T> {
 	
 	private final Table table;
 	private final String name;
-	private final Class javaType;
+	private final Class<T> javaType;
 	private final Integer size;
 	private final String absoluteName;
 	private final String alias;
@@ -20,14 +21,14 @@ public class Column {
 	/**
 	 * Build a column
 	 */
-	public Column(Table owner, String name, Class javaType) {
+	public Column(Table owner, String name, Class<T> javaType) {
 		this(owner, name, javaType, null);
 	}
 	
 	/**
 	 * Build a column with a size
 	 */
-	public Column(Table owner, String name, Class javaType, Integer size) {
+	public Column(Table owner, String name, Class<T> javaType, Integer size) {
 		this.table = owner;
 		this.name = name;
 		this.javaType = javaType;
@@ -62,7 +63,7 @@ public class Column {
 		return alias;
 	}
 	
-	public Class getJavaType() {
+	public Class<T> getJavaType() {
 		return javaType;
 	}
 	
@@ -100,7 +101,7 @@ public class Column {
 	 * Fluent API. Set this column as primary of the table.
 	 * @return this
 	 */
-	public Column primaryKey() {
+	public Column<T> primaryKey() {
 		setPrimaryKey(true);
 		return this;
 	}
