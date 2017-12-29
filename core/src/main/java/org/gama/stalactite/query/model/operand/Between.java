@@ -1,5 +1,6 @@
 package org.gama.stalactite.query.model.operand;
 
+import org.gama.lang.Reflections;
 import org.gama.stalactite.query.model.Operand;
 
 /**
@@ -14,7 +15,7 @@ public class Between extends Operand {
 		super(value);
 	}
 	
-	public Between(Object value1, Object value2) {
+	public <O> Between(O value1, O value2) {
 		this(new Interval(value1, value2));
 	}
 	
@@ -30,6 +31,14 @@ public class Between extends Operand {
 		return (interval == null || interval.isEmpty()) ? null : interval;
 	}
 	
+	@Override
+	public void setValue(Object value) {
+		if (!(value instanceof Interval)) {
+			throw new IllegalArgumentException(Reflections.toString(getClass()) + " only supports " + Reflections.toString(Interval.class) + " as value");
+		}
+		super.setValue(value);
+	}
+	
 	/**
 	 * A small class to store between values
 	 */
@@ -38,7 +47,7 @@ public class Between extends Operand {
 		private final Object value1;
 		private final Object value2;
 		
-		public Interval(Object value1, Object value2) {
+		public <O> Interval(O value1, O value2) {
 			this.value1 = value1;
 			this.value2 = value2;
 		}

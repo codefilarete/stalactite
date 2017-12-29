@@ -3,6 +3,8 @@ package org.gama.stalactite.query.model.operand;
 import org.gama.stalactite.query.model.Operand;
 
 /**
+ * Represents a "is null" comparison
+ * 
  * @author Guillaume Mary
  */
 public class IsNull extends Operand {

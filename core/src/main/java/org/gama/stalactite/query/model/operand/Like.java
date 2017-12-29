@@ -3,6 +3,9 @@ package org.gama.stalactite.query.model.operand;
 import org.gama.stalactite.query.model.Operand;
 
 /**
+ * Represents a like comparison.
+ * Options to create a "startsWith" and "endsWith" are provided.
+ * 
  * @author Guillaume Mary
  */
 public class Like extends Operand {
@@ -10,11 +13,21 @@ public class Like extends Operand {
 	private boolean leadingStar;
 	private boolean endingStar;
 	
-	public Like(Object value) {
+	/**
+	 * Basic constructor
+	 * @param value something that looks like a String, may contain '%' characters
+	 */
+	public Like(CharSequence value) {
 		this(value, false, false);
 	}
 	
-	public Like(Object value, boolean leadingStar, boolean endingStar) {
+	/**
+	 * Constructor for "startsWith" and "endsWith" operand
+	 * @param value something that looks like a String, may contain '%' characters
+	 * @param leadingStar true to add a leading generic '%' character
+	 * @param endingStar true to add a ending generic '%' character
+	 */
+	public Like(CharSequence value, boolean leadingStar, boolean endingStar) {
 		super(value);
 		this.leadingStar = leadingStar;
 		this.endingStar = endingStar;

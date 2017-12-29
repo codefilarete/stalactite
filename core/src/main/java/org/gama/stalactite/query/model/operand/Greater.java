@@ -3,6 +3,8 @@ package org.gama.stalactite.query.model.operand;
 import org.gama.stalactite.query.model.Operand;
 
 /**
+ * Represents a greater (< or <=) comparison
+ * 
  * @author Guillaume Mary
  */
 public class Greater extends Operand {

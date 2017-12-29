@@ -100,6 +100,16 @@ public class OperandBuilderTest {
 		
 		testInstance.catIn(in("a", "b"), new StringAppenderWrapper(result));
 		assertEquals("in ('a', 'b')", result.toString());
+		
+		// next test is meant to record the behavior, not to approve it
+		result = new StringAppender();
+		testInstance.catIn(in(), new StringAppenderWrapper(result));
+		assertEquals("in ()", result.toString());
+		
+		// next test is meant to record the behavior, not to approve it
+		result = new StringAppender();
+		testInstance.cat(in((Object) null), new StringAppenderWrapper(result));
+		assertEquals("in (null)", result.toString());
 	}
 	
 	@Test

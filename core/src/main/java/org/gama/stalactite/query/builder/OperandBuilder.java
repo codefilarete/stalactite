@@ -49,6 +49,7 @@ public class OperandBuilder extends AbstractDMLBuilder {
 		if (operand.getValue() == null) {
 			catNullValue(operand.isNot(), sql);
 		} else {
+			// uggly way of dispatching concatenation, can't find a better way without heavying classes or struggling with single responsability design
 			if (operand instanceof Equals) {
 				catEquals((Equals) operand, sql);
 			} else if (operand instanceof Lower) {
@@ -108,9 +109,19 @@ public class OperandBuilder extends AbstractDMLBuilder {
 			value = Iterables.asIterable(new ArrayIterator<>((Object[]) value));
 		}
 		sql.catIf(in.isNot(), "not ").cat("in (");
+		catInValue((Iterable) value, sql);
+		sql.cat(")");
+	}
+	
+	/**
+	 * Appends {@link Iterable} values to the given appender. Essentially done for "in" operator
+	 * @param sql the appender
+	 * @param value the iterable to be appended, not null (but may be empty, this method doesn't care)
+	 */
+	private void catInValue(Iterable value, SQLAppender sql) {
 		// appending values (separated by a comma, boilerplate code)
 		boolean isFirst = true;
-		for (Object v : (Iterable) value) {
+		for (Object v : value) {
 			if (!isFirst) {
 				sql.cat(", ");
 			} else {
@@ -118,7 +129,6 @@ public class OperandBuilder extends AbstractDMLBuilder {
 			}
 			sql.catValue(v);
 		}
-		sql.cat(")");
 	}
 	
 	public void catBetween(Between between, SQLAppender sql) {
@@ -209,13 +219,14 @@ public class OperandBuilder extends AbstractDMLBuilder {
 		
 		@Override
 		public StringAppenderWrapper cat(String s, String... ss) {
-			surrogate.cat(s).cat(ss);
+			surrogate.cat(s).cat((Object[]) ss);
 			return this;
 		}
 		
 		@Override
 		public StringAppenderWrapper catValue(Object value) {
 			if (value instanceof CharSequence) {
+				// specialized case to espace single quotes
 				surrogate.cat("'", value.toString().replace("'", "''"), "'");
 			} else {
 				surrogate.cat(value);
