@@ -10,13 +10,13 @@ import org.gama.sql.ConnectionProvider;
 import org.gama.stalactite.persistence.engine.BeanRelationFixer;
 import org.gama.stalactite.persistence.engine.PersistenceContext;
 import org.gama.stalactite.persistence.engine.Persister;
-import org.gama.stalactite.persistence.engine.listening.NoopUpdateListener;
 import org.gama.stalactite.persistence.engine.listening.NoopUpdateByIdListener;
+import org.gama.stalactite.persistence.engine.listening.NoopUpdateListener;
 import org.gama.stalactite.persistence.id.Identified;
 import org.gama.stalactite.persistence.id.manager.StatefullIdentifier;
 import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
 import org.gama.stalactite.persistence.sql.Dialect;
-import org.gama.stalactite.persistence.structure.Table.Column;
+import org.gama.stalactite.persistence.structure.Column;
 
 /**
  * Persister for entity with multiple joined tables by primary key.
