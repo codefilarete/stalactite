@@ -5,8 +5,6 @@ import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
-import org.apache.commons.lang3.builder.ToStringBuilder;
-import org.apache.commons.lang3.builder.ToStringStyle;
 import org.gama.lang.collection.Iterables;
 import org.gama.sql.binder.DefaultParameterBinders;
 import org.gama.sql.result.ResultSetIterator;
@@ -136,7 +134,13 @@ public class FluentMappingBuilderForeignKeyTest {
 		}
 		
 		String getSignature() {
-			return ToStringBuilder.reflectionToString(this, ToStringStyle.NO_CLASS_NAME_STYLE);
+			return "JdbcForeignKey{" +
+					"name='" + name + '\'' +
+					", srcColumnName='" + srcColumnName + '\'' +
+					", srcTableName='" + srcTableName + '\'' +
+					", targetColumnName='" + targetColumnName + '\'' +
+					", targetTableName='" + targetTableName + '\'' +
+					'}';
 		}
 	}
 }
