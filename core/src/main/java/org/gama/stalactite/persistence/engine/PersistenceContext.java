@@ -109,6 +109,13 @@ public class PersistenceContext {
 		this.jdbcBatchSize = jdbcBatchSize;
 	}
 	
+	/**
+	 * Create a {@link Query} 
+	 * @param sql the sql to execute to populate beans
+	 * @param beanType type of created beans, used for returned type marker
+	 * @param <T> type of created beans
+	 * @return a new {@link Query} that must be configured and executed
+	 */
 	public <T> Query<T> newQuery(CharSequence sql, Class<T> beanType) {
 		return new Query<>(beanType, sql, ParameterBinderProvider.fromMap(getDialect().getColumnBinderRegistry().getParameterBinders()));
 	}

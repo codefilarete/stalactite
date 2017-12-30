@@ -24,6 +24,9 @@ import static org.gama.sql.binder.NullAwareParameterBinder.ALWAYS_SET_NULL_INSTA
 
 /**
  * A class aimed at querying the database and creating Java beans from it.
+ * Beans resulting of it are not expected to be used as entity and given to {@link Persister}, noticibly for insert
+ * or update, because one should ensure that fields read from its query must be the same as those done by {@link Persister}, otherwise it may
+ * result in column value erasure.
  * 
  * @author Guillaume Mary
  */
