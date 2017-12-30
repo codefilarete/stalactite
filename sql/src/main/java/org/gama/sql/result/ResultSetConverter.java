@@ -70,6 +70,23 @@ public class ResultSetConverter<I, T> extends AbstractResultSetConverter<I, T> i
 	}
 	
 	/**
+	 * Constructor with root bean instanciation parameters as a default Java Bean constructor and setter for key value
+	 *
+	 * @param rootType main bean type
+	 * @param columnName the name of the column that contains bean key
+	 * @param reader object to ease column reading, indicates column type
+	 * @param beanFactory the bean constructor. Not called if bean key is null (no instanciation needed)
+	 * @param setter setter for bean key
+	 */
+	public ResultSetConverter(Class<T> rootType, String columnName, ResultSetReader<I> reader, Supplier<T> beanFactory, BiConsumer<T, I> setter) {
+		this(rootType, columnName, reader, i -> {
+			T newInstance = beanFactory.get();
+			setter.accept(newInstance, i);
+			return newInstance;
+		});
+	}
+	
+	/**
 	 * Special constructor made for cloning, no reason to expose it outside
 	 * @param rootConverter
 	 * @param factory
