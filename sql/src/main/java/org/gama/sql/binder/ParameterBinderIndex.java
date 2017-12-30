@@ -14,7 +14,7 @@ import java.util.Set;
 public interface ParameterBinderIndex<K> extends ParameterBinderProvider<K> {
 	
 	/**
-	 * @return all the keys available
+	 * @return all available keys
 	 */
 	Set<K> keys();
 	

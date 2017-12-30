@@ -9,6 +9,7 @@ import java.util.Map;
 import com.tngtech.java.junit.dataprovider.DataProvider;
 import com.tngtech.java.junit.dataprovider.DataProviderRunner;
 import com.tngtech.java.junit.dataprovider.UseDataProvider;
+import org.danekja.java.util.function.serializable.SerializableBiConsumer;
 import org.gama.lang.collection.Arrays;
 import org.gama.lang.collection.Iterables;
 import org.gama.lang.collection.Maps;
@@ -47,14 +48,29 @@ public class QueryTest {
 		return new Object[][] {
 				{	// default API: column name, column type
 					new Query<>(Toto.class, "select id, name from Toto", parameterBinderProvider)
-						.mapKey("id", Long.class, Toto::new)
+						.mapKey("id", Toto::new, Long.class)
 						.map("name", Toto::setName, String.class)
 						.map("active", Toto::setActive) },
 				{	// with Java Bean constructor (no args)
 					new Query<>(Toto.class, "select id, name from Toto", parameterBinderProvider)
-						.mapKey("id", Long.class, Toto::new, Toto::setId)
+						.mapKey("id", Toto::new, Toto::setId, Long.class)
 						.map("name", Toto::setName, String.class)
 						.map("active", Toto::setActive) },
+				{	// with Java Bean constructor (no args) and no column type
+					new Query<>(Toto.class, "select id, name from Toto", parameterBinderProvider)
+						.mapKey("id", Toto::new, Toto::setId)
+						.map("name", Toto::setName, String.class)
+						.map("active", Toto::setActive) },
+				{	// with Java Bean constructor (no args) and no column type, other syntax (not officially supported)
+					new Query<>(Toto.class, "select id, name from Toto", parameterBinderProvider)
+						.mapKey("id", Toto::new, (SerializableBiConsumer<Toto, Long>) (t, i) -> t.setId(i))
+						.map("name", Toto::setName, String.class)
+						.map("active", Toto::setActive) },
+				{	// with map method using other syntax (not officially supported)
+					new Query<>(Toto.class, "select id, name from Toto", parameterBinderProvider)
+							.mapKey("id", Toto::new, Toto::setId)
+						.map("name", Toto::setName, String.class)
+						.map("active", (SerializableBiConsumer<Toto, Boolean>) (t, b) -> t.setActive(b)) },
 				{ 	// with Column API
 					new Query<>(Toto.class, "select id, name from Toto", parameterBinderProvider)
 						.mapKey(id, Toto::new)
@@ -100,7 +116,7 @@ public class QueryTest {
 		ParameterBinderProvider<Class> parameterBinderProvider = ParameterBinderProvider.fromMap(new ColumnBinderRegistry().getParameterBinders());
 		// NB: SQL String is there only for clarification but is never executed
 		Query<Toto> query = new Query<>(Toto.class, "select id, name from Toto where id in (:id)", parameterBinderProvider)
-				.mapKey("id", Integer.class, Toto::new)
+				.mapKey("id", Toto::new, Integer.class)
 				.set("id", Arrays.asList(1, 2), Integer.class);
 		
 		// Very simple data are necessary for the ResultSet since only id is mapped 

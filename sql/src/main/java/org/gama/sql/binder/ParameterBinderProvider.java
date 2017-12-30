@@ -10,7 +10,22 @@ import java.util.Map;
 @FunctionalInterface
 public interface ParameterBinderProvider<K> {
 	
-	ParameterBinder getBinder(K key);
+	/**
+	 * Gives a {@link ParameterBinder} from a key.
+	 * Will throw an exception in case of missing {@link ParameterBinder}
+	 * 
+	 * @param key an object for which a {@link ParameterBinder} is expected
+	 * @return the {@link ParameterBinder} associated with the key 
+	 */
+	default ParameterBinder getBinder(K key) {
+		ParameterBinder binder = doGetBinder(key);
+		if (binder == null) {
+			throw new RuntimeException("Binder for " + key + " is not registered");
+		}
+		return binder;
+	}
+	
+	ParameterBinder doGetBinder(K key);
 	
 	/**
 	 * Short way of getting a {@link ParameterBinderProvider} from a Map
@@ -22,7 +37,7 @@ public interface ParameterBinderProvider<K> {
 	}
 	
 	/**
-	 * A simple {@link ParameterBinderIndex} that takes its values from a {@link Map}
+	 * A simple {@link ParameterBinderProvider} that takes its values from a {@link Map}
 	 * 
 	 * @author Guillaume Mary
 	 */
@@ -39,7 +54,7 @@ public interface ParameterBinderProvider<K> {
 		}
 		
 		@Override
-		public ParameterBinder getBinder(ParamType key) {
+		public ParameterBinder doGetBinder(ParamType key) {
 			return parameterBinders.get(key);
 		}
 		

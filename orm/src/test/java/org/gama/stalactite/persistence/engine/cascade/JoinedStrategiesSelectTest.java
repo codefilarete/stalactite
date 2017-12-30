@@ -3,6 +3,7 @@ package org.gama.stalactite.persistence.engine.cascade;
 import com.tngtech.java.junit.dataprovider.DataProvider;
 import com.tngtech.java.junit.dataprovider.DataProviderRunner;
 import com.tngtech.java.junit.dataprovider.UseDataProvider;
+import org.gama.sql.binder.ParameterBinder;
 import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
 import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.persistence.structure.Column;
@@ -54,7 +55,7 @@ public class JoinedStrategiesSelectTest {
 	@UseDataProvider(value = "testToSQL_singleStrategyData")
 	public void testToSQL_singleStrategy(Table table, String expected) {
 		ClassMappingStrategy mappingStrategyMock = buildMockMappingStrategy(table);
-		JoinedStrategiesSelect testInstance = new JoinedStrategiesSelect<>(mappingStrategyMock, c -> null);
+		JoinedStrategiesSelect testInstance = new JoinedStrategiesSelect<>(mappingStrategyMock, c -> mock(ParameterBinder.class));
 		SelectQueryBuilder queryBuilder = new SelectQueryBuilder(testInstance.buildSelectQuery());
 		assertEquals(expected, queryBuilder.toSQL());
 	}
@@ -107,7 +108,7 @@ public class JoinedStrategiesSelectTest {
 	public void testToSQL_multipleStrategy(ClassMappingStrategy rootMappingStrategy, ClassMappingStrategy classMappingStrategy,
 										   Column leftJoinColumn, Column rightJoinColumn,
 										   String expected) {
-		JoinedStrategiesSelect testInstance = new JoinedStrategiesSelect(rootMappingStrategy, c -> null);
+		JoinedStrategiesSelect testInstance = new JoinedStrategiesSelect(rootMappingStrategy, c -> mock(ParameterBinder.class));
 		testInstance.add(JoinedStrategiesSelect.FIRST_STRATEGY_NAME, classMappingStrategy, leftJoinColumn, rightJoinColumn, false, null);
 		SelectQueryBuilder queryBuilder = new SelectQueryBuilder(testInstance.buildSelectQuery());
 		assertEquals(expected, queryBuilder.toSQL());
@@ -133,7 +134,7 @@ public class JoinedStrategiesSelectTest {
 		// column for "noise" in select
 		tutuTable.addColumn("name", String.class);
 		
-		JoinedStrategiesSelect testInstance = new JoinedStrategiesSelect(totoMappingMock, c -> null);
+		JoinedStrategiesSelect testInstance = new JoinedStrategiesSelect(totoMappingMock, c -> mock(ParameterBinder.class));
 		String tataAddKey = testInstance.add(JoinedStrategiesSelect.FIRST_STRATEGY_NAME, tataMappingMock, totoPrimaryKey, tataPrimaryKey, false, null);
 		testInstance.add(tataAddKey, tutuMappingMock, tataPrimaryKey, tutuPrimaryKey, false, null);
 		SelectQueryBuilder queryBuilder = new SelectQueryBuilder(testInstance.buildSelectQuery());
@@ -169,7 +170,7 @@ public class JoinedStrategiesSelectTest {
 		// column for "noise" in select
 		tutuTable.addColumn("name", String.class);
 		
-		JoinedStrategiesSelect testInstance = new JoinedStrategiesSelect(totoMappingMock, c -> null);
+		JoinedStrategiesSelect testInstance = new JoinedStrategiesSelect(totoMappingMock, c -> mock(ParameterBinder.class));
 		String tataAddKey = testInstance.add(JoinedStrategiesSelect.FIRST_STRATEGY_NAME, tataMappingMock, tataId, tataPrimaryKey, false, null);
 		testInstance.add(tataAddKey, tutuMappingMock, tutuId, tutuPrimaryKey, true, null);
 		SelectQueryBuilder queryBuilder = new SelectQueryBuilder(testInstance.buildSelectQuery());
@@ -209,7 +210,7 @@ public class JoinedStrategiesSelectTest {
 		// column for "noise" in select
 		titiTable.addColumn("name", String.class);
 		
-		JoinedStrategiesSelect testInstance = new JoinedStrategiesSelect(totoMappingMock, c -> null);
+		JoinedStrategiesSelect testInstance = new JoinedStrategiesSelect(totoMappingMock, c -> mock(ParameterBinder.class));
 		String tataAddKey = testInstance.add(JoinedStrategiesSelect.FIRST_STRATEGY_NAME, tataMappingMock, totoPrimaryKey, tataPrimaryKey, false, null);
 		String tutuAddKey = testInstance.add(tataAddKey, tutuMappingMock, tataPrimaryKey, tutuPrimaryKey, false, null);
 		String titiAddKey = testInstance.add(JoinedStrategiesSelect.FIRST_STRATEGY_NAME, titiMappingMock, tataPrimaryKey, titiPrimaryKey, false, null);

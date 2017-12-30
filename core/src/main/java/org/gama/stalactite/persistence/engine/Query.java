@@ -1,15 +1,16 @@
 package org.gama.stalactite.persistence.engine;
 
-import java.io.Serializable;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
 
 import org.danekja.java.util.function.serializable.SerializableBiConsumer;
 import org.danekja.java.util.function.serializable.SerializableFunction;
 import org.danekja.java.util.function.serializable.SerializableSupplier;
+import org.gama.lang.collection.Arrays;
 import org.gama.reflection.MethodReferenceCapturer;
 import org.gama.reflection.MethodReferences;
 import org.gama.sql.ConnectionProvider;
@@ -81,35 +82,57 @@ public class Query<T> {
 	}
 	
 	/**
-	 * Defines the key column and the way to create the bean
+	 * Defines the key column and the way to create the bean : a constructor with the key as parameter.
 	 * 
-	 * @param columnName the key column name
-	 * @param columnType the type of the column, which is also that of the factory argument
-	 * @param factory the factory function that will instanciate new beans (with key as single argument)
+	 * Note that the same method without columnType can't be written because it is in conflict with other mapKey(..) methods and/or available
+	 * constructors in target bean class.
+	 * 
 	 * @param <I> the type of the column, which is also that of the factory argument
+	 * @param columnName the key column name
+	 * @param factory the factory function that will instanciate new beans (with key as single argument)
+	 * @param columnType the type of the column, which is also that of the factory argument
 	 * @return this
 	 */
-	public <I> Query<T> mapKey(String columnName, Class<I> columnType, SerializableFunction<I, T> factory) {
-		this.beanCreationDefinition = new BeanCreationDefinition<>(columnName, columnType, factory);
+	public <I> Query<T> mapKey(String columnName, SerializableFunction<I, T> factory, Class<I> columnType) {
+		this.beanCreationDefinition = new BeanCreationDefinition<>(columnName, factory, columnType);
 		return this;
 	}
 	
 	/**
-	 * Sam as {@link #mapKey(String, Class, SerializableFunction)} but with a non-argument constructor
+	 * Same as {@link #mapKey(String, SerializableFunction, Class)} but with a non-argument constructor and a setter for key value.
+	 * Reader of colum value will be deduced from setter by reflection.
 	 *
+	 * @param <I> the type of the column
 	 * @param columnName the key column name
-	 * @param columnType the type of the column
 	 * @param javaBeanCtor the factory function that will instanciate new beans (no argument)
 	 * @param keySetter setter for key
-	 * @param <I> the type of the column
 	 * @return this
 	 */
-	public <I> Query<T> mapKey(String columnName, Class<I> columnType, SerializableSupplier<T> javaBeanCtor, SerializableBiConsumer<T, I> keySetter) {
-		return mapKey(columnName, columnType, (SerializableFunction<I, T>) i -> {
+	public <I> Query<T> mapKey(String columnName, SerializableSupplier<T> javaBeanCtor, SerializableBiConsumer<T, I> keySetter) {
+		this.beanCreationDefinition = new BeanCreationDefinition<>(columnName, (SerializableFunction<I, T>) i -> {
 			T newInstance = javaBeanCtor.get();
 			keySetter.accept(newInstance, i);
 			return newInstance;
-		});
+		}, giveColumnType(keySetter));
+		return this;
+	}
+	
+	/**
+	 * Same as {@link #mapKey(String, SerializableFunction, Class)} but with a non-argument constructor and a setter for key value.
+	 *
+	 * @param <I> the type of the column
+	 * @param columnName the key column name
+	 * @param javaBeanCtor the factory function that will instanciate new beans (no argument)
+	 * @param keySetter setter for key
+	 * @param columnType the type of the column
+	 * @return this
+	 */
+	public <I> Query<T> mapKey(String columnName, SerializableSupplier<T> javaBeanCtor, SerializableBiConsumer<T, I> keySetter, Class<I> columnType) {
+		return mapKey(columnName, (SerializableFunction<I, T>) i -> {
+			T newInstance = javaBeanCtor.get();
+			keySetter.accept(newInstance, i);
+			return newInstance;
+		}, columnType);
 	}
 	
 	/**
@@ -122,7 +145,7 @@ public class Query<T> {
 	 * @return this
 	 */
 	public <I> Query<T> map(String columnName, SerializableBiConsumer<T, I> setter, Class<I> columnType) {
-		add(new ColumnMapping<>(columnName, columnType, setter));
+		add(new ColumnMapping<>(columnName, setter, columnType));
 		return this;
 	}
 	
@@ -137,24 +160,24 @@ public class Query<T> {
 	 * @return this
 	 */
 	public <I> Query<T> map(String columnName, SerializableBiConsumer<T, I> setter) {
-		map(columnName, setter, null);
+		map(columnName, setter, giveColumnType(setter));
 		return this;
 	}
 	
 	/**
-	 * Same as {@link #mapKey(String, Class, SerializableFunction)} but with {@link org.gama.stalactite.persistence.structure.Column} signature
+	 * Same as {@link #mapKey(String, SerializableFunction, Class)} but with {@link org.gama.stalactite.persistence.structure.Column} signature
 	 * @param column the mapped column used as a key
 	 * @param factory the bean constructor
 	 * @param <I> type of the key
 	 * @return this
 	 */
 	public <I> Query<T> mapKey(org.gama.stalactite.persistence.structure.Column<I> column, SerializableFunction<I, T> factory) {
-		this.beanCreationDefinition = new BeanCreationDefinition<>(column.getName(), column.getJavaType(), factory);
+		this.beanCreationDefinition = new BeanCreationDefinition<>(column.getName(), factory, column.getJavaType());
 		return this;
 	}
 	
 	/**
-	 * Same as {@link #mapKey(String, Class, SerializableSupplier, SerializableBiConsumer)} but with {@link org.gama.stalactite.persistence.structure.Column} signature
+	 * Same as {@link #mapKey(String, SerializableSupplier, SerializableBiConsumer, Class)} but with {@link org.gama.stalactite.persistence.structure.Column} signature
 	 * @param column the mapped column used as a key
 	 * @param javaBeanCtor the factory function that will instanciate new beans (no argument)
 	 * @param <I> type of the key
@@ -187,7 +210,7 @@ public class Query<T> {
 	
 	/**
 	 * Executes the query onto the connection given by the {@link ConnectionProvider}. Transforms the result to a list of beans thanks to the
-	 * definition given through {@link #mapKey(String, Class, SerializableFunction)}, {@link #map(String, SerializableBiConsumer, Class)}
+	 * definition given through {@link #mapKey(String, SerializableFunction, Class)}, {@link #map(String, SerializableBiConsumer, Class)}
 	 * and {@link #map(String, SerializableBiConsumer)} methods.
 	 * 
 	 * @param connectionProvider the object that will given the {@link java.sql.Connection}
@@ -200,12 +223,12 @@ public class Query<T> {
 		
 		// creating ResultSetConverter
 		Column<I> keyColumn = (Column<I>) beanCreationDefinition.getColumn();
-		SerializableFunction<I, T> beanFactory = (SerializableFunction<I, T>) beanCreationDefinition.getFactory();
-		ParameterBinder<I> idParameterBinder = giveParameterBinder(keyColumn, beanFactory);
+		Function<I, T> beanFactory = (Function<I, T>) beanCreationDefinition.getFactory();
+		ParameterBinder<I> idParameterBinder = parameterBinderProvider.getBinder(keyColumn.getValueType());
 		ResultSetConverter<I, T> transformer = new ResultSetConverter<>(rootBeanType, keyColumn.getName(), idParameterBinder, beanFactory);
 		// adding complementary properties to transformer
 		for (ColumnMapping<T, Object> columnMapping : columnMappings) {
-			ParameterBinder parameterBinder = giveParameterBinder(columnMapping.getColumn(), columnMapping.getSetter());
+			ParameterBinder parameterBinder = parameterBinderProvider.getBinder(columnMapping.getColumn().getValueType());
 			transformer.add(columnMapping.getColumn().getName(), parameterBinder, columnMapping.getSetter());
 		}
 		ReadOperation<String> readOperation = new ReadOperation<>(new StringParamedSQL(sql.toString(), sqlParameterBinders), connectionProvider);
@@ -214,20 +237,10 @@ public class Query<T> {
 		return transformer.convert(readOperation.execute());
 	}
 	
-	/**
-	 * Gives the {@link ParameterBinder} for a column, if column type is null, then the setter/factory will be used to look for it
-	 * @param column the column for which {@link ParameterBinder} must be found 
-	 * @param setterOrFactoryFallback the SerializableBiConsumer (setter) or SerializableFunction (factory) fallback
-	 * @return the {@link ParameterBinder} found
-	 */
-	private <I> ParameterBinder<I> giveParameterBinder(Column column, Serializable setterOrFactoryFallback) {
-		Class<I> columnType = column.getValueType();
-		if (columnType == null) {
-			// column type wasn't defined (bad practice) => we're going to try to find it by capture the method (factory) argument type
-			Method setter = methodReferenceCapturer.findMethod(MethodReferences.buildSerializedLambda(setterOrFactoryFallback));
-			columnType = (Class<I>) setter.getParameterTypes()[0];
-		}
-		return parameterBinderProvider.getBinder(columnType);
+	private <I> Class<I> giveColumnType(SerializableBiConsumer<T, I> setter) {
+		Method method = methodReferenceCapturer.findMethod(MethodReferences.buildSerializedLambda(setter));
+		// we could take the first parameter type, but with a particular syntax of setter it's insufficient, last element is better 
+		return (Class<I>) Arrays.last(method.getParameterTypes());
 	}
 	
 	/**
@@ -239,6 +252,7 @@ public class Query<T> {
 	 * @param value the value of the parameter
 	 * @return this
 	 * @see #set(String, Iterable, Class)
+	 * @see #clear(String)
 	 */
 	public Query<T> set(String paramName, Object value) {
 		return set(paramName, value, value == null ? null : (Class) value.getClass());
@@ -254,6 +268,7 @@ public class Query<T> {
 	 * @param valueType the content type of the {@link Iterable}, more exactly will determine which {@link ParameterBinder} to be used
 	 * @return this
 	 * @see #set(String, Iterable, Class)
+	 * @see #clear(String)
 	 */
 	public <C> Query<T> set(String paramName, C value, Class<? super C> valueType) {
 		sqlParameterBinders.put(paramName, value == null ? ALWAYS_SET_NULL_INSTANCE : parameterBinderProvider.getBinder(valueType));
@@ -271,6 +286,7 @@ public class Query<T> {
 	 * @param value the value of the parameter
 	 * @param valueType the content type of the {@link Iterable}, more exactly will determine which {@link ParameterBinder} to be used
 	 * @return this
+	 * @see #clear(String)
 	 */
 	public <C> Query<T> set(String paramName, Iterable<C> value, Class<? super C> valueType) {
 		this.sqlParameterBinders.put(paramName, value == null ? ALWAYS_SET_NULL_INSTANCE : parameterBinderProvider.getBinder(valueType));
@@ -278,7 +294,14 @@ public class Query<T> {
 		return this;
 	}
 	
-	public Query<T> remove(String paramName) {
+	/**
+	 * Remove the value of a parameter (previously set by set(..) methods)
+	 * 
+	 * @param paramName the name of the parameter to clear
+	 * @return this
+	 * @see #set(String, Object) 
+	 */
+	public Query<T> clear(String paramName) {
 		this.sqlParameterBinders.remove(paramName);
 		this.sqlArguments.remove(paramName);
 		return this;
@@ -313,24 +336,33 @@ public class Query<T> {
 	 * @param <T> the bean type that will be created
 	 * @param <I> the column value type which is also the input type of the bean factory
 	 */
-	private static class BeanCreationDefinition<T, I> {
+	private class BeanCreationDefinition<T, I> {
 		
 		private final Column<I> column;
 		
-		private final SerializableFunction<I, T> factory;
+		private final Function<I, T> factory;
 		
-		public BeanCreationDefinition(String columnName, Class<I> columnType, SerializableFunction<I, T> factory) {
+		public BeanCreationDefinition(String columnName, Function<I, T> factory, Class<I> columnType) {
 			this.column = new Column<>(columnName, columnType);
 			this.factory = factory;
 		}
+		
+//		public BeanCreationDefinition(String columnName, Supplier<T> factory, SerializableBiConsumer<T, I> setter) {
+//			this(columnName, i -> {
+//				T newInstance = factory.get();
+//				setter.accept(newInstance, i);
+//				return newInstance;
+//			}, giveColumnType(setter));
+//		}
 		
 		public Column<I> getColumn() {
 			return column;
 		}
 		
-		public SerializableFunction<I, T> getFactory() {
+		public Function<I, T> getFactory() {
 			return factory;
 		}
+		
 	}
 	
 	/**
@@ -344,7 +376,7 @@ public class Query<T> {
 		
 		private final SerializableBiConsumer<T, I> setter;
 		
-		public ColumnMapping(String columnName, Class<I> columnType, SerializableBiConsumer<T, I> setter) {
+		public ColumnMapping(String columnName, SerializableBiConsumer<T, I> setter, Class<I> columnType) {
 			this.column = new Column<>(columnName, columnType);
 			this.setter = setter;
 		}
