@@ -10,9 +10,9 @@ import java.util.function.Function;
 import org.danekja.java.util.function.serializable.SerializableBiConsumer;
 import org.danekja.java.util.function.serializable.SerializableFunction;
 import org.danekja.java.util.function.serializable.SerializableSupplier;
+import org.gama.lang.bean.Converter;
 import org.gama.lang.collection.Arrays;
 import org.gama.reflection.MethodReferenceCapturer;
-import org.gama.reflection.MethodReferences;
 import org.gama.sql.ConnectionProvider;
 import org.gama.sql.binder.ParameterBinder;
 import org.gama.sql.binder.ParameterBinderProvider;
@@ -87,10 +87,10 @@ public class Query<T> {
 	 * Note that the same method without columnType can't be written because it is in conflict with other mapKey(..) methods and/or available
 	 * constructors in target bean class.
 	 * 
-	 * @param <I> the type of the column, which is also that of the factory argument
 	 * @param columnName the key column name
 	 * @param factory the factory function that will instanciate new beans (with key as single argument)
 	 * @param columnType the type of the column, which is also that of the factory argument
+	 * @param <I> the type of the column, which is also that of the factory argument
 	 * @return this
 	 */
 	public <I> Query<T> mapKey(String columnName, SerializableFunction<I, T> factory, Class<I> columnType) {
@@ -102,10 +102,10 @@ public class Query<T> {
 	 * Same as {@link #mapKey(String, SerializableFunction, Class)} but with a non-argument constructor and a setter for key value.
 	 * Reader of colum value will be deduced from setter by reflection.
 	 *
-	 * @param <I> the type of the column
 	 * @param columnName the key column name
 	 * @param javaBeanCtor the factory function that will instanciate new beans (no argument)
 	 * @param keySetter setter for key
+	 * @param <I> the type of the column
 	 * @return this
 	 */
 	public <I> Query<T> mapKey(String columnName, SerializableSupplier<T> javaBeanCtor, SerializableBiConsumer<T, I> keySetter) {
@@ -120,11 +120,11 @@ public class Query<T> {
 	/**
 	 * Same as {@link #mapKey(String, SerializableFunction, Class)} but with a non-argument constructor and a setter for key value.
 	 *
-	 * @param <I> the type of the column
 	 * @param columnName the key column name
 	 * @param javaBeanCtor the factory function that will instanciate new beans (no argument)
 	 * @param keySetter setter for key
 	 * @param columnType the type of the column
+	 * @param <I> the type of the column
 	 * @return this
 	 */
 	public <I> Query<T> mapKey(String columnName, SerializableSupplier<T> javaBeanCtor, SerializableBiConsumer<T, I> keySetter, Class<I> columnType) {
@@ -138,15 +138,31 @@ public class Query<T> {
 	/**
 	 * Defines a mapping between a column of the query and a bean property through its setter
 	 *
-	 * @param <I> the type of the column, which is also that of the setter argument
 	 * @param columnName a column name
 	 * @param setter the setter function
 	 * @param columnType the type of the column, which is also that of the setter argument
+	 * @param <I> the type of the column, which is also that of the setter argument
 	 * @return this
 	 */
 	public <I> Query<T> map(String columnName, SerializableBiConsumer<T, I> setter, Class<I> columnType) {
 		add(new ColumnMapping<>(columnName, setter, columnType));
 		return this;
+	}
+	
+	/**
+	 * Same as {@link #map(String, SerializableBiConsumer, Class)}.
+	 * Differs by providing the possiblity to convert the value before setting it onto the bean.
+	 * 
+	 * @param columnName a column name
+	 * @param setter the setter function
+	 * @param columnType the type of the column, which is also that of the setter argument
+	 * @param converter a converter of the read value from ResultSet
+	 * @param <I> the type of the setter argument, which is also that of the converter result
+	 * @param <J> the type of the column, which is also that of the converter argument
+	 * @return this
+	 */
+	public <I, J> Query<T> map(String columnName, SerializableBiConsumer<T, J> setter, Class<I> columnType, SerializableFunction<I, J> converter) {
+		return map(columnName, (t, i) -> setter.accept(t, converter.apply(i)), columnType);
 	}
 	
 	/**
@@ -162,6 +178,23 @@ public class Query<T> {
 	public <I> Query<T> map(String columnName, SerializableBiConsumer<T, I> setter) {
 		map(columnName, setter, giveColumnType(setter));
 		return this;
+	}
+	
+	/**
+	 * Same as {@link #map(String, SerializableBiConsumer)}.
+	 * Differs by providing the possiblity to convert the value before setting it onto the bean.
+	 *
+	 * @param columnName a column name
+	 * @param setter the setter function
+	 * @param converter a converter of the read value from ResultSet
+	 * @param <I> the type of the setter argument, which is also that of the converter result
+	 * @param <J> the type of the column, which is also that of the converter argument
+	 * @return this
+	 */
+	public <I, J> Query<T> map(String columnName, SerializableBiConsumer<T, J> setter, SerializableFunction<I, J> converter) {
+		Method method = methodReferenceCapturer.findMethod(setter);
+		Class<I> aClass = (Class<I>) method.getParameterTypes()[0];
+		return map(columnName, (SerializableBiConsumer<T, I>) (t, i) -> setter.accept(t, converter.apply(i)), aClass);
 	}
 	
 	/**
@@ -204,6 +237,21 @@ public class Query<T> {
 		return this;
 	}
 	
+	/**
+	 * Same as {@link #map(org.gama.stalactite.persistence.structure.Column, SerializableBiConsumer)}.
+	 * Differs by providing the possiblity to convert the value before setting it onto the bean.
+	 *
+	 * @param column the mapped column
+	 * @param setter the setter function
+	 * @param converter a converter of the read value from ResultSet
+	 * @param <I> the type of the setter argument, which is also that of the converter result
+	 * @param <J> the type of the column, which is also that of the converter argument
+	 * @return this
+	 */
+	public <I, J> Query<T> map(org.gama.stalactite.persistence.structure.Column<I> column, SerializableBiConsumer<T, J> setter, Converter<I, J, RuntimeException> converter) {
+		return map(column, (SerializableBiConsumer<T, I>) (t, i) -> setter.accept(t, converter.convert(i)));
+	}
+	
 	private <I> void add(ColumnMapping<T, I> columnWire) {
 		this.columnMappings.add(columnWire);
 	}
@@ -238,7 +286,7 @@ public class Query<T> {
 	}
 	
 	private <I> Class<I> giveColumnType(SerializableBiConsumer<T, I> setter) {
-		Method method = methodReferenceCapturer.findMethod(MethodReferences.buildSerializedLambda(setter));
+		Method method = methodReferenceCapturer.findMethod(setter);
 		// we could take the first parameter type, but with a particular syntax of setter it's insufficient, last element is better 
 		return (Class<I>) Arrays.last(method.getParameterTypes());
 	}

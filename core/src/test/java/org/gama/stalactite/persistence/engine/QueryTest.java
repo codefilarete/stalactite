@@ -92,6 +92,53 @@ public class QueryTest {
 				Maps.asHashMap("id", (Object) 43L).add("name", "hello").add("active", false)
 		);
 		
+		List<Toto> result = execute(query, resultSetData);
+		
+		List<Toto> expected = Arrays.asList(
+				new Toto(42, "coucou", true), 
+				new Toto(43, "hello", false)
+		);
+		assertEquals(expected.toString(), result.toString());
+	}
+	
+	@DataProvider
+	public static Object[][] testNewQuery_withConverter_data() {
+		ParameterBinderProvider<Class> parameterBinderProvider = ParameterBinderProvider.fromMap(new ColumnBinderRegistry().getParameterBinders());
+		Table toto = new Table("Toto");
+		Column<Long> id = toto.addColumn("id", Long.class).primaryKey();
+		Column<String> name = toto.addColumn("name", String.class);
+		
+		return new Object[][] {
+				{ new Query<>(Toto.class, "select id, name from Toto", parameterBinderProvider)
+							.mapKey("id", Toto::new, Toto::setId)
+							.map("name", Toto::setName, input -> "coucou") },
+				{ new Query<>(Toto.class, "select id, name from Toto", parameterBinderProvider)
+							.mapKey("id", Toto::new, Toto::setId)
+							.map("name", Toto::setName, String.class, input -> "coucou") },
+				{ new Query<>(Toto.class, "select id, name from Toto", parameterBinderProvider)
+							.mapKey(id, Toto::new, Toto::setId)
+							.map(name, Toto::setName, input -> "coucou") }
+		};
+	}
+	
+	@Test
+	@UseDataProvider("testNewQuery_withConverter_data")
+	public void testNewQuery_withConverter(Query<Toto> query) {
+		List<Map<String, Object>> resultSetData = Arrays.asList(
+				Maps.asHashMap("id", (Object) 42L).add("name", "ghoeihvoih"),
+				Maps.asHashMap("id", (Object) 43L).add("name", "oziuoie")
+		);
+		
+		List<Toto> result = execute(query, resultSetData);
+		
+		List<Toto> expected = Arrays.asList(
+				new Toto(42, "coucou", false),
+				new Toto(43, "coucou", false)
+		);
+		assertEquals(expected.toString(), result.toString());
+	}
+	
+	public List<Toto> execute(Query<Toto> query, List<Map<String, Object>> resultSetData) {
 		// creation of a Connection that will give our test case data
 		Connection connectionMock = mock(Connection.class);
 		try {
@@ -103,12 +150,7 @@ public class QueryTest {
 			throw Exceptions.asRuntimeException(e);
 		}
 		
-		List<Toto> result = query.execute(() -> connectionMock);
-		List<Toto> expected = Arrays.asList(
-				new Toto(42, "coucou", true), 
-				new Toto(43, "hello", false)
-		);
-		assertEquals(expected.toString(), result.toString());
+		return query.execute(() -> connectionMock);
 	}
 	
 	@Test
