@@ -4,6 +4,8 @@ import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Savepoint;
 
+import org.gama.lang.sql.ConnectionWrapper;
+
 /**
  * A {@link ConnectionWrapper} that aims at notifying {@link TransactionListener}, {@link CommitListener} or {@link RollbackListener}
  * of transaction-related methods invocations.
