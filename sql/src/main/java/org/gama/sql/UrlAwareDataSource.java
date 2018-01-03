@@ -2,6 +2,8 @@ package org.gama.sql;
 
 import javax.sql.DataSource;
 
+import org.gama.lang.sql.DataSourceWrapper;
+
 /**
  * @author Guillaume Mary
  */
