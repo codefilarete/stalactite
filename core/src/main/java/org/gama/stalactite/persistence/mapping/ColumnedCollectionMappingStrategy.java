@@ -13,7 +13,6 @@ import java.util.Set;
 import org.gama.lang.bean.Objects;
 import org.gama.lang.collection.Collections;
 import org.gama.lang.collection.Iterables;
-import org.gama.lang.collection.Iterables.ForEach;
 import org.gama.lang.collection.PairIterator;
 import org.gama.lang.collection.PairIterator.EmptyIterator;
 import org.gama.lang.collection.PairIterator.InfiniteIterator;
@@ -59,7 +58,6 @@ public abstract class ColumnedCollectionMappingStrategy<C extends Collection<T>,
 	
 	@Override
 	public Map<Column, Object> getInsertValues(C c) {
-		final Map<Column, Object> toReturn = new HashMap<>();
 		Collection<T> toIterate = c;
 		if (Collections.isEmpty(c)) {
 			toIterate = new ArrayList<>();
@@ -67,14 +65,7 @@ public abstract class ColumnedCollectionMappingStrategy<C extends Collection<T>,
 		// NB: we wrap c.iterator() in an InfiniteIterator to get all columns generated: overflow columns will have
 		// null value (see 	InfiniteIterator#getValue)
 		PairIterator<Column, T> valueColumnPairIterator = new PairIterator<>(columns.iterator(), new InfiniteIterator<>(toIterate.iterator()));
-		Iterables.visit(valueColumnPairIterator, new ForEach<Entry<Column, T>, Void>() {
-			@Override
-			public Void visit(Entry<Column, T> valueEntry) {
-				toReturn.put(valueEntry.getKey(), toDatabaseValue(valueEntry.getValue()));
-				return null;
-			}
-			});
-		return toReturn;
+		return Iterables.map(() -> valueColumnPairIterator, Entry::getKey, e -> toDatabaseValue(e.getValue()));
 	}
 	
 	@Override
@@ -86,17 +77,13 @@ public abstract class ColumnedCollectionMappingStrategy<C extends Collection<T>,
 			Iterator<T> unmodifiedIterator = unmodified == null ? new EmptyIterator<>() : unmodified.iterator();
 			UntilBothIterator<T, T> untilBothIterator = new UntilBothIterator<>(modified.iterator(), unmodifiedIterator);
 			PairIterator<Column, Entry<T, T>> valueColumnPairIterator = new PairIterator<>(columns.iterator(), untilBothIterator);
-			Iterables.visit(valueColumnPairIterator, new ForEach<Entry<Column, Entry<T, T>>, Void>() {
-				@Override
-				public Void visit(Entry<Column, Entry<T, T>> diffEntry) {
-					Column fieldColumn = diffEntry.getKey();
-					Entry<T, T> toBeCompared = diffEntry.getValue();
-					if (!Objects.equalsWithNull(toBeCompared.getKey(), toBeCompared.getValue())) {
-						toReturn.put(fieldColumn, toDatabaseValue(toBeCompared.getKey()));
-					} else {
-						unmodifiedColumns.put(fieldColumn, toBeCompared.getKey());
-					}
-					return null;
+			valueColumnPairIterator.forEachRemaining(diffEntry -> {
+				Column fieldColumn = diffEntry.getKey();
+				Entry<T, T> toBeCompared = diffEntry.getValue();
+				if (!Objects.equalsWithNull(toBeCompared.getKey(), toBeCompared.getValue())) {
+					toReturn.put(fieldColumn, toDatabaseValue(toBeCompared.getKey()));
+				} else {
+					unmodifiedColumns.put(fieldColumn, toBeCompared.getKey());
 				}
 			});
 			

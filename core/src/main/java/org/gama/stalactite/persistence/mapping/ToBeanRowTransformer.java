@@ -1,7 +1,6 @@
 package org.gama.stalactite.persistence.mapping;
 
 import java.lang.reflect.Constructor;
-import java.lang.reflect.Field;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -10,12 +9,11 @@ import java.util.function.Function;
 import org.gama.lang.Reflections;
 import org.gama.lang.bean.FieldIterator;
 import org.gama.lang.collection.Iterables;
-import org.gama.lang.collection.Iterables.ForEach;
 import org.gama.reflection.Accessors;
 import org.gama.reflection.IMutator;
 import org.gama.sql.result.Row;
-import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.persistence.structure.Column;
+import org.gama.stalactite.persistence.structure.Table;
 
 /**
  * Class for transforming columns into a bean.
@@ -38,9 +36,7 @@ public class ToBeanRowTransformer<T> extends AbstractTransformer<T> {
 		this(Reflections.getDefaultConstructor(clazz), new HashMap<>(10), true);
 		Map<String, Column> columnPerName = table.mapColumnsOnName();
 		FieldIterator fieldIterator = new FieldIterator(clazz);
-		Iterables.visit(fieldIterator, new ForEach<Field, Void>() {
-			@Override
-			public Void visit(Field field) {
+		Iterables.stream(fieldIterator).forEach(field -> {
 				Column column = columnPerName.get(field.getName());
 				if (column == null) {
 					if (warnOnMissingColumn) {
@@ -49,9 +45,8 @@ public class ToBeanRowTransformer<T> extends AbstractTransformer<T> {
 				} else {
 					keyToField.put(new ColumnRowKey(column), Accessors.mutator(field.getDeclaringClass(), field.getName()));
 				}
-				return null;
 			}
-		});
+		);
 	}
 	
 	/**

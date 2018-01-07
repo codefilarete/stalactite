@@ -1,8 +1,9 @@
 package org.gama.stalactite.persistence.sql.ddl;
 
+import java.util.function.Function;
+
 import org.gama.lang.StringAppender;
 import org.gama.lang.collection.Iterables;
-import org.gama.lang.collection.Iterables.ForEach;
 import org.gama.stalactite.persistence.structure.ForeignKey;
 import org.gama.stalactite.persistence.structure.Index;
 import org.gama.stalactite.persistence.structure.Table;
@@ -12,8 +13,6 @@ import org.gama.stalactite.persistence.structure.Column;
  * @author Guillaume Mary
  */
 public class DDLTableGenerator {
-	
-	public static final ForEach<Column, String> FOREACH_COLUMNNAME = new ForEachColumnName();
 	
 	private final JavaTypeToSqlTypeMapping typeMapping;
 	
@@ -97,25 +96,11 @@ public class DDLTableGenerator {
 	}
 	
 	public static void catWithComma(Iterable<Column> targetColumns, StringAppender sql) {
-		cat(sql, targetColumns, FOREACH_COLUMNNAME).cutTail(2);
+		cat(sql, targetColumns, column -> column.getName() + ", ").cutTail(2);
 	}
 	
-	public static class ForEachColumnName extends ForEach<Column, String> {
-		@Override
-		public String visit(Column column) {
-			return column.getName() + ", ";
-		}
-	}
-	
-	public static <O> StringAppender cat(final StringAppender appender, Iterable<O> iterable, final ForEach<O, String> mapper) {
-		Iterables.visit(iterable, new ForEach<O, Object>() {
-			
-			@Override
-			public Void visit(O o) {
-				appender.cat(mapper.visit(o));
-				return null;
-			}
-		});
+	public static <O> StringAppender cat(StringAppender appender, Iterable<O> iterable, Function<O, String> mapper) {
+		Iterables.stream(iterable).forEach(o -> appender.cat(mapper.apply(o)));
 		return appender;
 	}
 	

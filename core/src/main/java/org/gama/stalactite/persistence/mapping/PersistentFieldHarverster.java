@@ -6,10 +6,11 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
 import org.gama.lang.bean.FieldIterator;
 import org.gama.lang.collection.Iterables;
-import org.gama.lang.collection.Iterables.Filter;
 import org.gama.reflection.Accessors;
 import org.gama.reflection.PropertyAccessor;
 import org.gama.stalactite.persistence.structure.Table;
@@ -26,7 +27,7 @@ public class PersistentFieldHarverster {
 	
 	public List<Field> getFields(Class clazz) {
 		FieldFilter fieldVisitor = getFieldVisitor();
-		return Iterables.filter(new FieldIterator(clazz), fieldVisitor);
+		return Iterables.stream(new FieldIterator(clazz)).filter(fieldVisitor).collect(Collectors.toList());
 	}
 	
 	public Map<PropertyAccessor, Column> getFieldToColumn() {
@@ -70,7 +71,7 @@ public class PersistentFieldHarverster {
 	}
 	
 	/**
-	 * To ovveride to exclude unecessary Fields. Implemented to exclude static, Iterable and Map fields.
+	 * To be overriden to exclude unecessary Fields. Current implementation excludes static, Iterable and Map fields.
 	 * @return a {@link FieldFilter}
 	 */
 	protected FieldFilter getFieldVisitor() {
@@ -80,9 +81,9 @@ public class PersistentFieldHarverster {
 	/**
 	 * Simple class that doesn't accept static, Iterable and Map Fields
 	 */
-	public static class FieldFilter extends Filter<Field> {
+	public static class FieldFilter implements Predicate<Field> {
 		@Override
-		public boolean accept(Field field) {
+		public boolean test(Field field) {
 			return !Modifier.isStatic(field.getModifiers()) && !(Iterable.class.isAssignableFrom(field.getType()) || Map.class.isAssignableFrom(field.getType()));
 		}
 	}

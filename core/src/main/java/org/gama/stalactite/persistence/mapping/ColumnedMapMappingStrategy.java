@@ -9,12 +9,10 @@ import java.util.Set;
 
 import org.gama.lang.bean.Objects;
 import org.gama.lang.collection.Collections;
-import org.gama.lang.collection.Iterables;
-import org.gama.lang.collection.Iterables.ForEach;
 import org.gama.sql.result.Row;
 import org.gama.stalactite.persistence.sql.dml.PreparedUpdate.UpwhereColumn;
-import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.persistence.structure.Column;
+import org.gama.stalactite.persistence.structure.Table;
 
 /**
  * @author Guillaume Mary
@@ -69,13 +67,7 @@ public abstract class ColumnedMapMappingStrategy<C extends Map<K, V>, K, V, T> i
 		if (Collections.isEmpty(c)) {
 			toIterate = new HashMap<>();
 		}
-		Iterables.visit(toIterate.entrySet(), new ForEach<Entry<K, V>, Void>() {
-			@Override
-			public Void visit(Entry<K, V> mapEntry) {
-				addUpsertValues(mapEntry.getKey(), mapEntry.getValue(), toReturn);
-				return null;
-			}
-		});
+		toIterate.forEach((key, value) -> addUpsertValues(key, value, toReturn));
 		// NB: we must return all columns: we complete non-valued columns with null 
 		for (Column column : columns) {
 			if (!toReturn.containsKey(column)) {

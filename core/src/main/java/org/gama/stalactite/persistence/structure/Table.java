@@ -9,8 +9,6 @@ import java.util.Map;
 import java.util.Set;
 
 import org.gama.lang.collection.Arrays;
-import org.gama.lang.collection.Iterables;
-import org.gama.lang.collection.Iterables.Finder;
 import org.gama.lang.collection.KeepOrderSet;
 import org.gama.stalactite.persistence.structure.Database.Schema;
 
@@ -91,12 +89,7 @@ public class Table {
 	
 	public Column getPrimaryKey() {
 		if (primaryKey == null) {
-			this.primaryKey = Iterables.filter(columns, new Finder<Column>() {
-				@Override
-				public boolean accept(Column column) {
-					return column.isPrimaryKey();
-				}
-			});
+			primaryKey = columns.stream().filter(Column::isPrimaryKey).findAny().orElse(null);
 		}
 		return primaryKey;
 	}
