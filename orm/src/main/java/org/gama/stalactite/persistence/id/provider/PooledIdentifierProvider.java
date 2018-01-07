@@ -28,22 +28,22 @@ public abstract class PooledIdentifierProvider<T> implements IdentifierProvider<
 	
 	/**
 	 * 
-	 * @param initialValues the initial values for filling this queue. Can be empty, not null.
-	 * @param threshold the threshold below (excluded) which the backgound service is called for filling this queue
-	 * @param executor the executor capable of running a background filling of this queue
-	 * @param timeOut the time-out after which the {@link #giveNewIdentifier()} gives up and returns null because of an empty queue
+	 * @param initialValues the initial values to fill this queue. Can be empty, not null.
+	 * @param threshold the threshold below (excluded) which the background service is called to fill this queue
+	 * @param executor the executor capable of running a background task of filling this queue
+	 * @param timeOut the timeout after which the {@link #giveNewIdentifier()} gives up and returns null because of an empty queue
 	 */
 	public PooledIdentifierProvider(Collection<T> initialValues, int threshold, Executor executor, Duration timeOut) {
-		// we use LinkedBlockingQueue because it's not bounded (with this constructor) and we need it because of our implementation
-		// of giveNewIdentifier that doesn't guarantee the number of elements in the stack
-		this.queue = new LinkedBlockingQueue<>(initialValues.stream().map(PersistableIdentifier::new).collect(Collectors.toList()));
+		// we use LinkedBlockingQueue because it's not bounded (with this constructor) : we need it because our implementation
+		// of giveNewIdentifier doesn't guarantee the number of elements in the stack
+		this.queue = initialValues.stream().map(PersistableIdentifier::new).collect(Collectors.toCollection(LinkedBlockingQueue::new));
 		this.threshold = threshold;
 		this.executor = executor;
 		this.timeOut = timeOut;
 	}
 	
 	/**
-	 * Pop the queue by waiting for any value if there's not any more taking into account the timeout.
+	 * Pops the queue. If there's not any more it will wait for any value until timeout (defined at construction time).
 	 */
 	private PersistableIdentifier<T> pop() {
 		try {
@@ -56,18 +56,19 @@ public abstract class PooledIdentifierProvider<T> implements IdentifierProvider<
 	}
 	
 	/**
-	 * Warn: may return null if time-out defined at construction time was reached when trying to pop this queue
+	 * Warn: may return null if timeout (defined at construction time) is reached when trying to pop this queue
 	 * @return the identifier on the "top" of this queue
 	 */
 	@Override
 	public PersistableIdentifier<T> giveNewIdentifier() {
-		// we ask for a queue filling if we reached the given threshold (below which we must refuel)
-		// NB: this is not thread-safe so we may add several tasks of refuel to the executor. I don't think it's a problem because will have some
-		// more values reserved. It's not a perfect algorithm and the caveat is on memory consumption.
-		// (we do it before pop() to take first call where the queue is empty hence popo() will time out and would return null)
+		// We ask for a queue filling if we reached the given threshold (below which we must refuel)
+		// Since this code block is not synchronized, we could have several refueling tasks added to the executor. I don't think it's a problem
+		// because the consequence is that we'll get some "extra" values reserved : the drawback is memory consumption due to extra identifiers
+		// which should be very small, and of course a extra values can be lost if JVM crashes. 
+		// (we do it before pop() to take account of very first call : queue can be empty)
 		boolean refueling = ensureMinimalPool();
 		PersistableIdentifier<T> toReturn = pop();
-		// we do it again for further calls to pop (if not already pending/running)
+		// we do it again for future calls to pop (if not previously done)
 		if (!refueling) {
 			ensureMinimalPool();
 		}
