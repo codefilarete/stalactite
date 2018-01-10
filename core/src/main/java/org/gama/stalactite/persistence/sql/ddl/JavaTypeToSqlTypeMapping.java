@@ -27,13 +27,15 @@ public class JavaTypeToSqlTypeMapping {
 	 */
 	private final Map<Class, SortedMap<Integer, String>> javaTypeToSQLType = new ValueFactoryHashMap<>(input -> new TreeMap<>());
 	
+	private final Map<Column, String> columnToSQLType = new HashMap<>();
+	
 	/**
 	 * SQL types storage per Java type, usual cases.
 	 */
 	private final Map<Class, String> defaultJavaTypeToSQLType = new HashMap<>();
 	
 	/**
-	 * Register a Java class to a SQL type mapping
+	 * Registers a Java class to a SQL type mapping
 	 * 
 	 * @param clazz the Java class to bind
 	 * @param sqlType the SQL type to map on the Java type
@@ -54,7 +56,18 @@ public class JavaTypeToSqlTypeMapping {
 	}
 	
 	/**
-	 * Same as {@link #put(Class, String)} but with fluent writing
+	 * Register a column to a SQL type mapping
+	 *
+	 * @param column the column to bind
+	 * @param sqlType the SQL type to map on the Java type
+	 */
+	public void put(Column column, String sqlType) {
+		columnToSQLType.put(column, sqlType);
+	}
+	
+	/**
+	 * Same as {@link #put(Class, String)} with fluent writing
+	 * 
 	 * @param clazz the Java class to bind
 	 * @param sqlType the SQL type to map on the Java type
 	 * @return this
@@ -65,7 +78,8 @@ public class JavaTypeToSqlTypeMapping {
 	}
 	
 	/**
-	 * Same as {@link #put(Class, int, String)} but with fluent writing
+	 * Same as {@link #put(Class, int, String)} with fluent writing
+	 * 
 	 * @param clazz the Java class to bind
 	 * @param size the minimal size from which the SQL type will be used
 	 * @param sqlType the SQL type to map on the Java type
@@ -77,16 +91,30 @@ public class JavaTypeToSqlTypeMapping {
 	}
 	
 	/**
+	 * Same as {@link #put(Column, String)} with fluent writing
+	 *
+	 * @param column the column to bind
+	 * @param sqlType the SQL type to map on the Java type
+	 */
+	public JavaTypeToSqlTypeMapping with(Column column, String sqlType) {
+		put(column, sqlType);
+		return this;
+	}
+	
+	/**
 	 * Gives the SQL type name of a column. Main entry point of this class.
 	 *
 	 * @param column a column
 	 * @return the SQL type for the given column
 	 */
 	public String getTypeName(Column column) {
-		Class javaType = column.getJavaType();
-		if (javaType == null) {
-			throw new IllegalArgumentException("Can't give sql type for column " + column.getAbsoluteName() + " because its type is null");
+		// first, very fine-grained tuning
+		String typeName = columnToSQLType.get(column);
+		if (typeName != null) {
+			return typeName;
 		}
+		// then, tuning by Java type : same types may use same SQL type (id, timestamp, ...)
+		Class javaType = column.getJavaType();
 		Integer size = column.getSize();
 		if (size != null) {
 			return getTypeName(javaType, size);
