@@ -1,13 +1,16 @@
 package org.gama.stalactite.persistence.engine;
 
+import java.util.Date;
+import java.util.Map;
+
 import org.gama.sql.binder.DefaultParameterBinders;
 import org.gama.stalactite.persistence.engine.FluentMappingBuilder.IdentifierPolicy;
 import org.gama.stalactite.persistence.id.Identified;
 import org.gama.stalactite.persistence.id.Identifier;
 import org.gama.stalactite.persistence.id.manager.StatefullIdentifier;
 import org.gama.stalactite.persistence.sql.HSQLDBDialect;
-import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.persistence.structure.Column;
+import org.gama.stalactite.persistence.structure.Table;
 import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
@@ -15,58 +18,13 @@ import org.junit.rules.ExpectedException;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 /**
  * @author Guillaume Mary
  */
 public class FluentMappingBuilderTest {
-	
-	protected static class Toto implements Identified<Integer> {
-		
-		private String name;
-		
-		private String firstName;
-		
-		public Toto() {
-		}
-		
-		public String getName() {
-			return name;
-		}
-		
-		public void setName(String name) {
-			this.name = name;
-		}
-		
-		public String getFirstName() {
-			return name;
-		}
-		
-		public Long getNoMatchingField() {
-			return null;
-		}
-		
-		public void setNoMatchingField(Long s) {
-		}
-		
-		public long getNoMatchingFieldPrimitive() {
-			return 0;
-		}
-		
-		public void setNoMatchingFieldPrimitive(long s) {
-		}
-		
-		@Override
-		public Identifier<Integer> getId() {
-			return null;
-		}
-		
-		@Override
-		public void setId(Identifier<Integer> id) {
-			
-		}
-	}
 	
 	private static final HSQLDBDialect DIALECT = new HSQLDBDialect();
 	
@@ -159,9 +117,134 @@ public class FluentMappingBuilderTest {
 	public void testAdd_methodIsASetter_configurationIsStillValid() {
 		Table toto = new Table("Toto");
 		FluentMappingBuilder.from(Toto.class, StatefullIdentifier.class, toto)
-				.add(Toto::setNoMatchingField)
-				.add(Toto::setNoMatchingFieldPrimitive)
-		;
+				.add(Toto::setId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
+				.build(DIALECT);
+		
+		Column columnForProperty = toto.mapColumnsOnName().get("id");
+		assertNotNull(columnForProperty);
+		assertEquals(Identifier.class, columnForProperty.getJavaType());
 	}
 	
+	@Test
+	public void testEmbed_definedByGetter() {
+		Table toto = new Table("Toto");
+		FluentMappingBuilder.from(Toto.class, StatefullIdentifier.class, toto)
+				.add(Toto::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
+				.embed(Toto::getTimestamp)
+				.build(new PersistenceContext(null, DIALECT));
+		
+		Column columnForProperty = toto.mapColumnsOnName().get("creationDate");
+		assertNotNull(columnForProperty);
+		assertEquals(Date.class, columnForProperty.getJavaType());
+	}
+	
+	@Test
+	public void testEmbed_definedBySetter() {
+		Table toto = new Table("Toto");
+		FluentMappingBuilder.from(Toto.class, StatefullIdentifier.class, toto)
+				.add(Toto::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
+				.embed(Toto::setTimestamp)
+				.build(new PersistenceContext(null, DIALECT));
+		
+		Column columnForProperty = toto.mapColumnsOnName().get("creationDate");
+		assertNotNull(columnForProperty);
+		assertEquals(Date.class, columnForProperty.getJavaType());
+	}
+	
+	@Test
+	public void testEmbed_withOverridenColumn() {
+		Table toto = new Table("Toto");
+		FluentMappingBuilder.from(Toto.class, StatefullIdentifier.class, toto)
+				.add(Toto::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
+				.embed(Toto::getTimestamp)
+					.overrideName(Timestamp::getCreationDate, "createdAt")
+					.overrideName(Timestamp::getModificationDate, "modifiedAt")
+				.build(new PersistenceContext(null, DIALECT));
+		
+		Map<String, Column> columnsByName = toto.mapColumnsOnName();
+		
+		// original columns must be absent (hard to test: can be absent for many reasons !)
+		assertNull(columnsByName.get("creationDate"));
+		assertNull(columnsByName.get("modificationDate"));
+
+		Column overridenColumn;
+		// Columns with good name must be present
+		overridenColumn = columnsByName.get("modifiedAt");
+		assertNotNull(overridenColumn);
+		assertEquals(Date.class, overridenColumn.getJavaType());
+		overridenColumn = columnsByName.get("createdAt");
+		assertNotNull(overridenColumn);
+		assertEquals(Date.class, overridenColumn.getJavaType());
+	}
+	
+	protected static class Toto implements Identified<Integer> {
+		
+		private String name;
+		
+		private String firstName;
+		
+		private Timestamp timestamp;
+		
+		public Toto() {
+		}
+		
+		public String getName() {
+			return name;
+		}
+		
+		public void setName(String name) {
+			this.name = name;
+		}
+		
+		public String getFirstName() {
+			return name;
+		}
+		
+		public Long getNoMatchingField() {
+			return null;
+		}
+		
+		public void setNoMatchingField(Long s) {
+		}
+		
+		public long getNoMatchingFieldPrimitive() {
+			return 0;
+		}
+		
+		public void setNoMatchingFieldPrimitive(long s) {
+		}
+		
+		@Override
+		public Identifier<Integer> getId() {
+			return null;
+		}
+		
+		@Override
+		public void setId(Identifier<Integer> id) {
+			
+		}
+		
+		public Timestamp getTimestamp() {
+			return timestamp;
+		}
+		
+		public void setTimestamp(Timestamp timestamp) {
+			this.timestamp = timestamp;
+		}
+	}
+	
+	protected static class Timestamp {
+		
+		private Date creationDate;
+		
+		private Date modificationDate;
+		
+		public Date getCreationDate() {
+			return creationDate;
+		}
+		
+		public Date getModificationDate() {
+			return modificationDate;
+		}
+	}
 }

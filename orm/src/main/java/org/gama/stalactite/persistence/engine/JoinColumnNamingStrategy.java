@@ -4,8 +4,8 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Member;
 import java.lang.reflect.Method;
 
+import org.gama.lang.Reflections;
 import org.gama.reflection.AccessorByMember;
-import org.gama.reflection.Accessors;
 import org.gama.reflection.PropertyAccessor;
 
 /**
@@ -28,7 +28,7 @@ public interface JoinColumnNamingStrategy {
 		if (getter instanceof Field) {
 			baseColumnName = getter.getName();
 		} else {
-			baseColumnName = Accessors.JAVA_BEAN_ACCESSOR_PREFIX_REMOVER.apply((Method) getter);
+			baseColumnName = Reflections.JAVA_BEAN_ACCESSOR_PREFIX_REMOVER.apply((Method) getter);
 		}
 		return baseColumnName + DEFAULT_JOIN_COLUMN_SUFFIX;
 	};

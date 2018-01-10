@@ -40,8 +40,8 @@ import org.gama.stalactite.persistence.id.manager.StatefullIdentifier;
 import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
 import org.gama.stalactite.persistence.mapping.EmbeddedBeanMappingStrategy;
 import org.gama.stalactite.persistence.sql.Dialect;
-import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.persistence.structure.Column;
+import org.gama.stalactite.persistence.structure.Table;
 
 /**
  * @author Guillaume Mary
@@ -120,11 +120,11 @@ public class FluentMappingBuilder<T extends Identified, I extends StatefullIdent
 		return table;
 	}
 	
-	private Method captureLambdaMethod(SerializableFunction<T, ?> function) {
+	private Method captureLambdaMethod(SerializableFunction function) {
 		return this.spy.findMethod(function);
 	}
 	
-	private <O> Method captureLambdaMethod(SerializableBiConsumer<T, O> function) {
+	private Method captureLambdaMethod(SerializableBiConsumer function) {
 		return this.spy.findMethod(function);
 	}
 	
@@ -272,9 +272,29 @@ public class FluentMappingBuilder<T extends Identified, I extends StatefullIdent
 	}
 	
 	@Override
-	public IFluentMappingBuilder<T, I> embed(SerializableFunction<T, ?> function) {
-		insets.add(new Inset<>(function));
-		return this;
+	public <O> IFluentMappingBuilderEmbedOptions<T, I, O> embed(SerializableBiConsumer<T, O> function) {
+		Inset<T, O> inset = new Inset<>(function);
+		insets.add(inset);
+		return embed(inset);
+	}
+	
+	@Override
+	public <O> IFluentMappingBuilderEmbedOptions<T, I, O> embed(SerializableFunction<T, O> function) {
+		Inset<T, O> inset = new Inset<>(function);
+		insets.add(inset);
+		return embed(inset);
+	}
+	
+	private <O> IFluentMappingBuilderEmbedOptions<T, I, O> embed(Inset<T, O> inset) {
+		return new MethodDispatcher()
+				.redirect(EmbedOptions.class, (methodRef, columnName) -> {
+					inset.overrideName(methodRef, columnName);
+					// we can't return this nor FluentMappingBuilder.this because none of them implements IFluentMappingBuilderEmbedOptions
+					// so we return anything (null) and ask for returning proxy (which does)
+					return null;
+				}, true)
+				.fallbackOn(this)
+				.build((Class<IFluentMappingBuilderEmbedOptions<T, I, O>>) (Class) IFluentMappingBuilderEmbedOptions.class);
 	}
 	
 	@Override
@@ -377,13 +397,18 @@ public class FluentMappingBuilder<T extends Identified, I extends StatefullIdent
 				Column column = columnsPerName.get(field.getName());
 				if (column == null) {
 					// Column isn't declared in table => we create one from field informations
-					column = localPersister.getTargetTable().addColumn(field.getName(), field.getType());
+					String columnName = field.getName();
+					String overridenName = (String) embed.overridenColumnNames.get(field);
+					if (overridenName != null) {
+						columnName = overridenName;
+					}
+					column = localPersister.getTargetTable().addColumn(columnName, field.getType());
 				}
 				mapping.put(Accessors.of(field), column);
 			}
 			// We simply register a specialized mapping strategy for the field into the main strategy
 			EmbeddedBeanMappingStrategy beanMappingStrategy = new EmbeddedBeanMappingStrategy(embed.cascadingTargetClass, mapping);
-			mappingStrategy.put(Accessors.of(embed.member), beanMappingStrategy);
+			mappingStrategy.put(Accessors.of(embed.insetAccessor), beanMappingStrategy);
 		}
 		
 		Nullable<VersioningStrategy> versionigStrategy = Nullable.of(optimisticLockOption).orApply(OptimisticLockOption::getVersioningStrategy);
@@ -437,7 +462,7 @@ public class FluentMappingBuilder<T extends Identified, I extends StatefullIdent
 		private Linkage(Method method, String columnName) {
 			this.function = Accessors.of(method);
 			this.columnType = Reflections.propertyType(method);
-			this.columnName = columnName == null ? Accessors.propertyName(method) : columnName;
+			this.columnName = columnName == null ? Reflections.propertyName(method) : columnName;
 		}
 		
 		public PropertyAccessor<T, ?> getFunction() {
@@ -582,12 +607,26 @@ public class FluentMappingBuilder<T extends Identified, I extends StatefullIdent
 	 */
 	private class Inset<SRC, TRGT> {
 		private final Class<TRGT> cascadingTargetClass;
-		private final Method member;
+		private final Method insetAccessor;
+		private final Map<Field, String> overridenColumnNames = new HashMap<>();
+		
+		private Inset(SerializableBiConsumer<SRC, TRGT> targetProvider) {
+			this(captureLambdaMethod(targetProvider));
+		}
 		
 		private Inset(SerializableFunction<SRC, TRGT> targetProvider) {
-			// looking for the target type because its necesary to find its persister (and other objects). Done thru a method capturer (weird thing).
-			this.member = captureLambdaMethod((SerializableFunction) targetProvider);
-			this.cascadingTargetClass = (Class<TRGT>) Reflections.javaBeanTargetType(member);
+			this(captureLambdaMethod(targetProvider));
+		}
+		
+		private Inset(Method insetAccessor) {
+			this.insetAccessor = insetAccessor;
+			// looking for the target type because its necessary to find its persister (and other objects)
+			this.cascadingTargetClass = (Class<TRGT>) Reflections.javaBeanTargetType(this.insetAccessor);
+		}
+		
+		public void overrideName(SerializableFunction function, String columnName) {
+			Method method = captureLambdaMethod(function);
+			this.overridenColumnNames.put(Reflections.wrappedField(method), columnName);
 		}
 	}
 	
