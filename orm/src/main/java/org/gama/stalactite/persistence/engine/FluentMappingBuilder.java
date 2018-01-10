@@ -135,7 +135,7 @@ public class FluentMappingBuilder<T extends Identified, I extends StatefullIdent
 	}
 	
 	@Override
-	public IFluentMappingBuilderColumnOptions<T, I> add(SerializableFunction<T, ?> function) {
+	public <O> IFluentMappingBuilderColumnOptions<T, I> add(SerializableFunction<T, O> function) {
 		Method method = captureLambdaMethod(function);
 		return add(method, null);
 	}

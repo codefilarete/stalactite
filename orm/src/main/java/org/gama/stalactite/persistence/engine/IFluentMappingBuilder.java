@@ -17,7 +17,7 @@ public interface IFluentMappingBuilder<T extends Identified, I extends Statefull
 	
 	<O> IFluentMappingBuilderColumnOptions<T, I> add(SerializableBiConsumer<T, O> function);
 	
-	IFluentMappingBuilderColumnOptions<T, I> add(SerializableFunction<T, ?> function);
+	<O> IFluentMappingBuilderColumnOptions<T, I> add(SerializableFunction<T, O> function);
 	
 	<O> IFluentMappingBuilderColumnOptions<T, I> add(SerializableBiConsumer<T, O> function, String columnName);
 	
