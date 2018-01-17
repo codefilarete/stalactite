@@ -23,19 +23,25 @@ import org.gama.stalactite.query.model.RawCriterion;
  * 
  * @author Guillaume Mary
  */
-public class WhereBuilder extends AbstractDMLBuilder implements SQLBuilder, PreparedSQLBuilder {
+public class WhereBuilder implements SQLBuilder, PreparedSQLBuilder {
 
 	public static final String AND = "and";
 	public static final String OR = "or";
 
 	private final CriteriaChain where;
 	
+	private final DMLNameProvider dmlNameProvider;
+	
 	private final OperandBuilder operandBuilder;
 	
 	public WhereBuilder(CriteriaChain where, Map<Table, String> tableAliases) {
-		super(tableAliases);
+		this(where, new DMLNameProvider(tableAliases));
+	}
+	
+	public WhereBuilder(CriteriaChain where, DMLNameProvider dmlNameProvider) {
 		this.where = where;
-		this.operandBuilder = new OperandBuilder(tableAliases);
+		this.dmlNameProvider = dmlNameProvider;
+		this.operandBuilder = new OperandBuilder(this.dmlNameProvider);
 	}
 	
 	@Override
@@ -112,7 +118,7 @@ public class WhereBuilder extends AbstractDMLBuilder implements SQLBuilder, Prep
 					cat((CriteriaChain) o);
 					cat(")");
 				} else if (o instanceof Column) {
-					sql.cat(WhereBuilder.this.getName((Column) o));
+					sql.cat(WhereBuilder.this.dmlNameProvider.getName((Column) o));
 				} else if (o instanceof Operand) {
 					cat((Operand) o);
 				} else {
@@ -122,7 +128,7 @@ public class WhereBuilder extends AbstractDMLBuilder implements SQLBuilder, Prep
 		}
 		
 		public void cat(ColumnCriterion criterion) {
-			sql.cat(WhereBuilder.this.getName(criterion.getColumn()), " ");
+			sql.cat(WhereBuilder.this.dmlNameProvider.getName(criterion.getColumn()), " ");
 			Object o = criterion.getCondition();
 			if (o instanceof CharSequence) {
 				sql.cat(o.toString());

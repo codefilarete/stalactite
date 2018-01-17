@@ -32,14 +32,20 @@ import org.gama.stalactite.query.model.operand.Sum;
  * 
  * @author Guillaume Mary
  */
-public class OperandBuilder extends AbstractDMLBuilder {
+public class OperandBuilder {
+	
+	private final DMLNameProvider dmlNameProvider;
 	
 	public OperandBuilder() {
 		this(Collections.emptyMap());
 	}
 	
 	public OperandBuilder(Map<Table, String> tableAliases) {
-		super(tableAliases);
+		this(new DMLNameProvider(tableAliases));
+	}
+	
+	public OperandBuilder(DMLNameProvider dmlNameProvider) {
+		this.dmlNameProvider = dmlNameProvider;
 	}
 	
 	/**
@@ -162,19 +168,19 @@ public class OperandBuilder extends AbstractDMLBuilder {
 	}
 	
 	public void catSum(Sum sum, SQLAppender sqlAppender) {
-		sqlAppender.cat("sum(", getName(((Column) sum.getValue())), ")");
+		sqlAppender.cat("sum(", dmlNameProvider.getName(((Column) sum.getValue())), ")");
 	}
 	
 	public void catCount(Count count, SQLAppender sqlAppender) {
-		sqlAppender.cat("count(", getName(((Column) count.getValue())), ")");
+		sqlAppender.cat("count(", dmlNameProvider.getName(((Column) count.getValue())), ")");
 	}
 	
 	public void catMin(Min min, SQLAppender sqlAppender) {
-		sqlAppender.cat("min(", getName(((Column) min.getValue())), ")");
+		sqlAppender.cat("min(", dmlNameProvider.getName(((Column) min.getValue())), ")");
 	}
 	
 	public void catMax(Max max, SQLAppender sqlAppender) {
-		sqlAppender.cat("max(", getName(((Column) max.getValue())), ")");
+		sqlAppender.cat("max(", dmlNameProvider.getName(((Column) max.getValue())), ")");
 	}
 	
 	/**

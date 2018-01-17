@@ -17,8 +17,9 @@ import org.gama.stalactite.query.model.SelectQuery;
 /**
  * @author Guillaume Mary
  */
-public class SelectQueryBuilder extends AbstractDMLBuilder implements SQLBuilder, PreparedSQLBuilder {
+public class SelectQueryBuilder implements SQLBuilder, PreparedSQLBuilder {
 	
+	private final DMLNameProvider dmlNameProvider;
 	private final SelectQuery selectQuery;
 	private final SelectBuilder selectBuilder;
 	private final FromBuilder fromBuilder;
@@ -26,12 +27,12 @@ public class SelectQueryBuilder extends AbstractDMLBuilder implements SQLBuilder
 	private final WhereBuilder havingBuilder;
 	
 	public SelectQueryBuilder(SelectQuery selectQuery) {
-		super(selectQuery.getFromSurrogate().getTableAliases());
+		this.dmlNameProvider = new DMLNameProvider(selectQuery.getFromSurrogate().getTableAliases());
 		this.selectQuery = selectQuery;
-		this.selectBuilder = new SelectBuilder(selectQuery.getSelectSurrogate(), tableAliases);
+		this.selectBuilder = new SelectBuilder(selectQuery.getSelectSurrogate(), dmlNameProvider);
 		this.fromBuilder = new FromBuilder(selectQuery.getFromSurrogate());
-		this.whereBuilder = new WhereBuilder(selectQuery.getWhere(), tableAliases);
-		this.havingBuilder = new WhereBuilder(selectQuery.getHavingSurrogate(), tableAliases);
+		this.whereBuilder = new WhereBuilder(selectQuery.getWhere(), dmlNameProvider);
+		this.havingBuilder = new WhereBuilder(selectQuery.getHavingSurrogate(), dmlNameProvider);
 	}
 	
 	@Override
@@ -127,7 +128,7 @@ public class SelectQueryBuilder extends AbstractDMLBuilder implements SQLBuilder
 		if (column instanceof String) {
 			sql.cat(column);
 		} else if (column instanceof Column) {
-			sql.cat(getName((Column) column));
+			sql.cat(dmlNameProvider.getName((Column) column));
 		}
 	}
 }

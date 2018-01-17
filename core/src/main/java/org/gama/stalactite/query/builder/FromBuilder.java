@@ -23,13 +23,15 @@ import org.gama.stalactite.query.model.From.RawTableJoin;
 /**
  * @author Guillaume Mary
  */
-public class FromBuilder extends AbstractDMLBuilder implements SQLBuilder {
+public class FromBuilder implements SQLBuilder {
 	
 	private final From from;
+	
+	private final DMLNameProvider dmlNameProvider;
 
 	public FromBuilder(From from) {
-		super(from.getTableAliases());
 		this.from = from;
+		this.dmlNameProvider = new DMLNameProvider(from.getTableAliases());
 	}
 
 	@Override
@@ -115,7 +117,7 @@ public class FromBuilder extends AbstractDMLBuilder implements SQLBuilder {
 		
 		private StringAppender cat(AliasedTable aliasedTable) {
 			Table table = aliasedTable.getTable();
-			String tableAlias = Objects.preventNull(aliasedTable.getAlias(), getAlias(table));
+			String tableAlias = Objects.preventNull(aliasedTable.getAlias(), dmlNameProvider.getAlias(table));
 			return cat(table.getName()).catIf(!Strings.isEmpty(tableAlias), " as " + tableAlias);
 		}
 		

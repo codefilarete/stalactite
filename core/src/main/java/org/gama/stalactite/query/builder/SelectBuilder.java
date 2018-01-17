@@ -15,15 +15,20 @@ import org.gama.stalactite.query.model.Select.AliasedColumn;
 /**
  * @author Guillaume Mary
  */
-public class SelectBuilder extends AbstractDMLBuilder implements SQLBuilder {
+public class SelectBuilder implements SQLBuilder {
 	
 	private final Select select;
+	private final DMLNameProvider dmlNameProvider;
 	private final OperandBuilder operandBuilder;
 	
 	public SelectBuilder(Select select, Map<Table, String> tableAliases) {
-		super(tableAliases);
+		this(select, new DMLNameProvider(tableAliases));
+	}
+	
+	public SelectBuilder(Select select, DMLNameProvider dmlNameProvider) {
 		this.select = select;
-		this.operandBuilder = new OperandBuilder(tableAliases);
+		this.dmlNameProvider = dmlNameProvider;;
+		this.operandBuilder = new OperandBuilder(this.dmlNameProvider);
 	}
 	
 	@Override
@@ -55,11 +60,11 @@ public class SelectBuilder extends AbstractDMLBuilder implements SQLBuilder {
 	}
 	
 	protected void cat(Column o, StringAppender sql) {
-		sql.cat(getName(o));
+		sql.cat(dmlNameProvider.getName(o));
 	}
 	
 	protected void cat(AliasedColumn o, StringAppender sql) {
-		sql.cat(getName(o.getColumn())).catIf(!Strings.isEmpty(o.getAlias()), " as ", o.getAlias());
+		sql.cat(dmlNameProvider.getName(o.getColumn())).catIf(!Strings.isEmpty(o.getAlias()), " as ", o.getAlias());
 	}
 	
 	private void cat(Operand operand, StringAppenderWrapper appenderWrapper) {
