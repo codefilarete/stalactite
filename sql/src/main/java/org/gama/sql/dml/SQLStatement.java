@@ -4,11 +4,11 @@ import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 
+import org.gama.lang.collection.Iterables;
 import org.gama.sql.binder.ParameterBinder;
 import org.gama.sql.binder.ParameterBinderIndex;
 import org.gama.sql.binder.ParameterBinderProvider;
@@ -79,10 +79,9 @@ public abstract class SQLStatement<ParamType> {
 	 */
 	public void applyValues(PreparedStatement statement) {
 		Set<ParamType> paramTypes = values.keySet();
-		if (!paramTypes.containsAll(indexes)) {
-			HashSet<ParamType> missingIndexes = new HashSet<>(indexes);
-			missingIndexes.removeAll(paramTypes);
-			throw new IllegalArgumentException("Missing value for indexes " + missingIndexes + " in values " + values + " for \"" + getSQL() + "\"");
+		Set<ParamType> indexDiff = Iterables.minus(indexes, paramTypes);
+		if (!indexDiff.isEmpty()) {
+			throw new IllegalArgumentException("Missing value for indexes " + indexDiff + " in values " + values + " for \"" + getSQL() + "\"");
 		}
 		for (Entry<ParamType, Object> indexToValue : values.entrySet()) {
 			try {
