@@ -6,7 +6,8 @@ import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.query.model.SelectQuery.FluentSelect;
 
 /**
- * A simple class to avoid "new SelectQuery" syntax cahined with select
+ * A simple class to avoid "new SelectQuery()" syntax chained with {@link SelectQuery#select(Column, String)}
+ * 
  * @author Guillaume Mary
  */
 public class QueryEase {
@@ -39,14 +40,37 @@ public class QueryEase {
 		return new Where(column, condition);
 	}
 	
+	/**
+	 * Shortcut to create a {@link Criteria}.
+	 * Combined with {@link org.gama.stalactite.query.builder.WhereBuilder} it will add parenthesis around it.
+	 * 
+	 * @param column a {@link Column}
+	 * @param condition the criteria on the {@link Column}
+	 * @return a new {@link Criteria}
+	 */
 	public static Criteria filter(Column column, String condition) {
 		return new Criteria(column, condition);
 	}
 	
+	/**
+	 * Shortcut to create a {@link Criteria}.
+	 * Combined with {@link org.gama.stalactite.query.builder.WhereBuilder} it will add parenthesis around it.
+	 *
+	 * @param column a {@link Column}
+	 * @param condition the criteria on the {@link Column}
+	 * @return a new {@link Criteria}
+	 */
 	public static Criteria filter(Column column, Operand condition) {
 		return new Criteria(column, condition);
 	}
 	
+	/**
+	 * Shortcut to create a {@link Criteria}.
+	 * Combined with {@link org.gama.stalactite.query.builder.WhereBuilder} it will add parenthesis around it.
+	 *
+	 * @param columns a combination of objects describing the criteria
+	 * @return a new {@link Criteria}
+	 */
 	public static Criteria filter(Object ... columns) {
 		return new Criteria(columns);
 	}
