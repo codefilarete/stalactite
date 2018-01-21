@@ -57,11 +57,6 @@ public class MariaDBEmbeddableDataSource extends UrlAwareDataSource implements C
 		}
 	}
 	
-	@Override
-	public String toString() {
-		return getUrl();
-	}
-	
 	private void start() {
 		db = usedPorts.get(port);
 		if (db == null) {

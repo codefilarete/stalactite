@@ -1,40 +1,64 @@
 package org.gama.sql.test;
 
+import java.io.PrintWriter;
+import java.io.Writer;
+
+import org.apache.derby.iapi.reference.Property;
 import org.apache.derby.jdbc.EmbeddedDataSource;
+import org.gama.lang.bean.Randomizer;
 import org.gama.sql.UrlAwareDataSource;
 
-import java.io.PrintWriter;
-import java.io.StringWriter;
-import java.sql.SQLException;
-import java.util.Random;
-
 /**
- * Simple DataSource Derby pour les tests
+ * Simple Derby DataSource for tests
  * 
  * @author Guillaume Mary
  */
 public class DerbyInMemoryDataSource extends UrlAwareDataSource {
 	
 	/** No operation logger to get rid of derby.log, see System.setProperty("derby.stream.error.field") */
-	public static PrintWriter NOOP_LOGGER = new PrintWriter(new StringWriter(512));
+	private static final PrintWriter NOOP_LOGGER = new PrintWriter(new NoopWriter());
 	
 	public DerbyInMemoryDataSource() {
-		// URL "aléatoire" pour éviter des percussions dans les tests
-		this("memory:"+Integer.toHexString(new Random().nextInt()));
+		// random URL to avoid conflict between tests
+		this("memory:"+Randomizer.INSTANCE.randomHexString(8));
 	}
 	
 	private DerbyInMemoryDataSource(String databaseName) {
 		super("jdbc:derby:" + databaseName);
 		EmbeddedDataSource delegate = new EmbeddedDataSource();
 		delegate.setDatabaseName(databaseName);
+		// we enable the creation of the schema
 		delegate.setCreateDatabase("create");
-		try {
-			delegate.setLogWriter(new PrintWriter(new StringWriter(512)));
-		} catch (SQLException e) {
-			e.printStackTrace();
-		}
-		// get rid of derby.log (setLogWriter doesn't work)
-		System.setProperty("derby.stream.error.field", "org.gama.sql.test.DerbyInMemoryDataSource.NOOP_LOGGER" );
+		fixDerbyLogger();
 		setDelegate(delegate);
+	}
+	
+	/**
+	 * Implentation that disables logs (prevent derby.log polluting project build).
+	 * Left protected to change this behavior.
+	 */
+	protected void fixDerbyLogger() {
+		// get rid of default derby.log (setLogWriter doesn't work)
+		System.setProperty(Property.ERRORLOG_FIELD_PROPERTY, DerbyInMemoryDataSource.class.getName() + ".NOOP_LOGGER");
+	}
+	
+	/**
+	 * A writer that does nothing
+	 */
+	private static class NoopWriter extends Writer {
+		@Override
+		public void write(char[] cbuf, int off, int len) {
+			// nothing to do because of goal's class
+		}
+		
+		@Override
+		public void flush() {
+			// nothing to do because of goal's class
+		}
+		
+		@Override
+		public void close() {
+			// nothing to do because of goal's class
+		}
 	}
 }
