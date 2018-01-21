@@ -9,12 +9,14 @@ import java.sql.SQLException;
 import com.tngtech.java.junit.dataprovider.DataProvider;
 import com.tngtech.java.junit.dataprovider.DataProviderRunner;
 import com.tngtech.java.junit.dataprovider.UseDataProvider;
+import org.gama.lang.collection.Arrays;
 import org.gama.sql.test.DerbyInMemoryDataSource;
 import org.gama.sql.test.HSQLDBInMemoryDataSource;
 import org.gama.sql.test.MariaDBEmbeddableDataSource;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
@@ -74,6 +76,28 @@ public class ResultSetIteratorTest {
 		assertTrue(resultSetIterator.hasNext());
 		resultSetIterator.next();
 		assertFalse(resultSetIterator.hasNext());
+	}
+	
+	@Test
+	@UseDataProvider("dataSources")
+	public void testConvert(DataSource dataSource) throws Exception {
+		Connection connection = dataSource.getConnection();
+		ensureTable(connection);
+		
+		PreparedStatement insertDataStmnt = connection.prepareStatement("insert into Toto(name) values ('a'), ('b'), ('c')");
+		insertDataStmnt.execute();
+		connection.commit();
+		
+		PreparedStatement selectStmnt = connection.prepareStatement("select name from Toto");
+		ResultSet selectStmntRs = selectStmnt.executeQuery();
+		
+		ResultSetIterator<String> resultSetIterator = new ResultSetIterator<String>(selectStmntRs) {
+			@Override
+			public String convert(ResultSet rs) throws SQLException {
+				return rs.getString("name");
+			}
+		};
+		assertEquals(Arrays.asList("a", "b", "c"), resultSetIterator.convert());
 	}
 	
 	public void ensureTable(Connection connection) throws SQLException {

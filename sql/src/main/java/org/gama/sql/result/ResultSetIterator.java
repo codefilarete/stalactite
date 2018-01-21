@@ -2,9 +2,12 @@ package org.gama.sql.result;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.List;
 import java.util.NoSuchElementException;
+import java.util.function.Function;
 
 import org.gama.lang.bean.Converter;
+import org.gama.lang.collection.Iterables;
 import org.gama.lang.collection.ReadOnlyIterator;
 import org.gama.lang.exception.Exceptions;
 
@@ -106,6 +109,16 @@ public abstract class ResultSetIterator<T> extends ReadOnlyIterator<T> implement
 		} finally {
 			nextCalled = false;
 		}
+	}
+	
+	/**
+	 * Collect all rows of the {@link ResultSet} given by {@link #setResultSet(ResultSet)} to a {@link List}.
+	 * This basic implementation implies that the size of the list equals the {@link ResultSet} row count.
+	 * 
+	 * @return a non null {@link List} containing all converted rows of the {@link ResultSet}
+	 */
+	public List<T> convert() {
+		return Iterables.collectToList(() -> this, Function.identity());
 	}
 	
 	/**
