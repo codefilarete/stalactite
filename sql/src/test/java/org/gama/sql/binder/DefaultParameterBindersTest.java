@@ -210,7 +210,7 @@ public class DefaultParameterBindersTest {
 	}
 	
 	static Set<String> convertToString(Set<InputStream> databaseContent) {
-		return databaseContent.stream().map(s -> Nullable.of(s).orApply(inputStream -> {
+		return databaseContent.stream().map(s -> Nullable.nullable(s).apply(inputStream -> {
 			try(InputStream closeable = inputStream) {
 				return new String(IOs.toByteArray(closeable));
 			} catch (IOException e) {

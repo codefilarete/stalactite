@@ -411,7 +411,7 @@ public class FluentMappingBuilder<T extends Identified, I extends StatefullIdent
 			mappingStrategy.put(Accessors.of(embed.insetAccessor), beanMappingStrategy);
 		}
 		
-		Nullable<VersioningStrategy> versionigStrategy = Nullable.of(optimisticLockOption).orApply(OptimisticLockOption::getVersioningStrategy);
+		Nullable<VersioningStrategy> versionigStrategy = Nullable.nullable(optimisticLockOption).apply(OptimisticLockOption::getVersioningStrategy);
 		if (versionigStrategy.isPresent()) {
 			// we have to declare it to the mapping strategy. To do that we must find the versionning column
 			Column column = localPersister.getMappingStrategy().getDefaultMappingStrategy().getPropertyToColumn().get(optimisticLockOption

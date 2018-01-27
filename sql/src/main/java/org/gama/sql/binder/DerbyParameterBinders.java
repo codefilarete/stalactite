@@ -20,7 +20,7 @@ public final class DerbyParameterBinders {
 	 * Looks like https://issues.apache.org/jira/browse/DERBY-6341 but I don't get where I'm wrong (don't see where I read twice the ResultSet).
 	 */
 	public static final ParameterBinder<InputStream> BINARYSTREAM_BINDER = new LambdaParameterBinder<>((resultSet, columnName) ->
-			Nullable.of(resultSet.getBinaryStream(columnName)).orConvert(inputStream -> {
+			Nullable.nullable(resultSet.getBinaryStream(columnName)).applyThrowing(inputStream -> {
 				try {
 					return IOs.toByteArrayInputStream(inputStream);
 				} catch (IOException e) {
