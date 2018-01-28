@@ -10,9 +10,9 @@ import org.gama.lang.collection.ArrayIterator;
 import org.gama.lang.collection.Iterables;
 import org.gama.lang.trace.IncrementableInt;
 import org.gama.sql.binder.ParameterBinder;
-import org.gama.sql.binder.ParameterBinderRegistry;
-import org.gama.stalactite.persistence.structure.Table;
+import org.gama.stalactite.persistence.sql.dml.binder.ColumnBinderRegistry;
 import org.gama.stalactite.persistence.structure.Column;
+import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.query.model.Operand;
 import org.gama.stalactite.query.model.operand.Between;
 import org.gama.stalactite.query.model.operand.Between.Interval;
@@ -210,6 +210,8 @@ public class OperandBuilder {
 			}
 			return this;
 		}
+		
+		String getSQL();
 	}
 	
 	/**
@@ -218,9 +220,11 @@ public class OperandBuilder {
 	public static class StringAppenderWrapper implements SQLAppender {
 		
 		private final StringAppender surrogate;
+		private final DMLNameProvider dmlNameProvider;
 		
-		public StringAppenderWrapper(StringAppender stringAppender) {
+		public StringAppenderWrapper(StringAppender stringAppender, DMLNameProvider dmlNameProvider) {
 			surrogate = stringAppender;
+			this.dmlNameProvider = dmlNameProvider;
 		}
 		
 		@Override
@@ -234,10 +238,18 @@ public class OperandBuilder {
 			if (value instanceof CharSequence) {
 				// specialized case to espace single quotes
 				surrogate.cat("'", value.toString().replace("'", "''"), "'");
+			} else if (value instanceof Column) {
+				// Columns are simply appended (no binder needed nor index increment)
+				surrogate.cat(dmlNameProvider.getName((Column) value));
 			} else {
 				surrogate.cat(value);
 			}
 			return this;
+		}
+		
+		@Override
+		public String getSQL() {
+			return surrogate.toString();
 		}
 	}
 	
@@ -247,14 +259,16 @@ public class OperandBuilder {
 	public static class PreparedSQLWrapper implements SQLAppender {
 		
 		private final SQLAppender surrogate;
-		private final ParameterBinderRegistry parameterBinderRegistry;
+		private final ColumnBinderRegistry parameterBinderRegistry;
 		private final Map<Integer, ParameterBinder> parameterBinders;
 		private final Map<Integer, Object> values;
 		private final IncrementableInt paramCounter = new IncrementableInt(1);
+		private final DMLNameProvider dmlNameProvider;
 		
-		public PreparedSQLWrapper(SQLAppender sqlAppender, ParameterBinderRegistry parameterBinderRegistry) {
+		public PreparedSQLWrapper(SQLAppender sqlAppender, ColumnBinderRegistry parameterBinderRegistry, DMLNameProvider dmlNameProvider) {
 			this.surrogate = sqlAppender;
 			this.parameterBinderRegistry = parameterBinderRegistry;
+			this.dmlNameProvider = dmlNameProvider;
 			this.parameterBinders = new HashMap<>();
 			this.values = new HashMap<>();
 		}
@@ -280,12 +294,24 @@ public class OperandBuilder {
 		 */
 		@Override
 		public PreparedSQLWrapper catValue(Object value) {
-			Class<?> binderType = value.getClass().isArray() ? value.getClass().getComponentType() : value.getClass();
-			values.put(paramCounter.getValue(), value);
-			parameterBinders.put(paramCounter.getValue(), parameterBinderRegistry.getBinder(binderType));
-			paramCounter.increment();
-			surrogate.cat("?");
+			ParameterBinder<?> binder;
+			if (value instanceof Column) {
+				// Columns are simply appended (no binder needed nor index increment)
+				surrogate.cat(dmlNameProvider.getName((Column) value));
+			} else {
+				Class<?> binderType = value.getClass().isArray() ? value.getClass().getComponentType() : value.getClass();
+				binder = parameterBinderRegistry.getBinder(binderType);
+				surrogate.cat("?");
+				values.put(paramCounter.getValue(), value);
+				parameterBinders.put(paramCounter.getValue(), binder);
+				paramCounter.increment();
+			}
 			return this;
+		}
+		
+		@Override
+		public String getSQL() {
+			return surrogate.getSQL();
 		}
 	}
 }

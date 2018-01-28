@@ -6,10 +6,10 @@ import com.tngtech.java.junit.dataprovider.DataProvider;
 import com.tngtech.java.junit.dataprovider.DataProviderRunner;
 import com.tngtech.java.junit.dataprovider.UseDataProvider;
 import org.gama.lang.collection.Maps;
-import org.gama.sql.binder.ParameterBinderRegistry;
 import org.gama.sql.dml.PreparedSQL;
-import org.gama.stalactite.persistence.structure.Table;
+import org.gama.stalactite.persistence.sql.dml.binder.ColumnBinderRegistry;
 import org.gama.stalactite.persistence.structure.Column;
+import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.query.model.QueryProvider;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -144,7 +144,7 @@ public class SelectQueryBuilderTest {
 	public void testToPreparedSQL(QueryProvider queryProvider,
 								  String expectedPreparedStatement, Map<Integer, Object> expectedValues) {
 		SelectQueryBuilder testInstance = new SelectQueryBuilder(queryProvider.getSelectQuery());
-		ParameterBinderRegistry parameterBinderRegistry = new ParameterBinderRegistry();
+		ColumnBinderRegistry parameterBinderRegistry = new ColumnBinderRegistry();
 		PreparedSQL preparedSQL = testInstance.toPreparedSQL(parameterBinderRegistry);
 		assertEquals(expectedPreparedStatement, preparedSQL.getSQL());
 		assertEquals(expectedValues, preparedSQL.getValues());

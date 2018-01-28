@@ -34,7 +34,7 @@ public class SelectBuilder implements SQLBuilder {
 	@Override
 	public String toSQL() {
 		StringAppender sql = new StringAppender(200);
-		StringAppenderWrapper appenderWrapper = new StringAppenderWrapper(sql);
+		StringAppenderWrapper appenderWrapper = new StringAppenderWrapper(sql, dmlNameProvider);
 		sql.catIf(this.select.isDistinct(), "distinct ");
 		for (Object o : this.select) {
 			if (o instanceof String) {

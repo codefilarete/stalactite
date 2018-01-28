@@ -7,10 +7,10 @@ import com.tngtech.java.junit.dataprovider.DataProviderRunner;
 import com.tngtech.java.junit.dataprovider.UseDataProvider;
 import org.gama.lang.collection.Arrays;
 import org.gama.lang.collection.Maps;
-import org.gama.sql.binder.ParameterBinderRegistry;
 import org.gama.sql.dml.PreparedSQL;
-import org.gama.stalactite.persistence.structure.Table;
+import org.gama.stalactite.persistence.sql.dml.binder.ColumnBinderRegistry;
 import org.gama.stalactite.persistence.structure.Column;
+import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.query.model.CriteriaChain;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -71,6 +71,7 @@ public class WhereBuilderTest {
 				// test Where composed of String Criteria
 				{ where(colA, "= 28").or(filter("t.b = 1").and("t.b < -1")), tableAliases, "t.a = 28 or (t.b = 1 and t.b < -1)" },
 				{ where(colA, "= 28").or(filter( "t.b = 1").or("t.b < -1")), tableAliases, "t.a = 28 or (t.b = 1 or t.b < -1)" },
+				{ where(colA, "= 28").or(filter( "t.b = 1").or(colB, eq(colA))), tableAliases, "t.a = 28 or (t.b = 1 or t.b = t.a)" },
 		};
 	}
 	
@@ -184,7 +185,7 @@ public class WhereBuilderTest {
 	public void testToPreparedSQL(CriteriaChain where, Map<Table, String> tableAliases, 
 						  String expectedPreparedStatement, Map<Integer, Object> expectedValues) {
 		WhereBuilder testInstance = new WhereBuilder(where, tableAliases);
-		ParameterBinderRegistry parameterBinderRegistry = new ParameterBinderRegistry();
+		ColumnBinderRegistry parameterBinderRegistry = new ColumnBinderRegistry();
 		PreparedSQL preparedSQL = testInstance.toPreparedSQL(parameterBinderRegistry);
 		assertEquals(expectedPreparedStatement, preparedSQL.getSQL());
 		assertEquals(expectedValues, preparedSQL.getValues());

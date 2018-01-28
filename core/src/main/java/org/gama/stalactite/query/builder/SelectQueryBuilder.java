@@ -1,8 +1,8 @@
 package org.gama.stalactite.query.builder;
 
 import org.gama.lang.StringAppender;
-import org.gama.sql.binder.ParameterBinderRegistry;
 import org.gama.sql.dml.PreparedSQL;
+import org.gama.stalactite.persistence.sql.dml.binder.ColumnBinderRegistry;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.query.builder.OperandBuilder.PreparedSQLWrapper;
 import org.gama.stalactite.query.builder.OperandBuilder.StringAppenderWrapper;
@@ -67,16 +67,16 @@ public class SelectQueryBuilder implements SQLBuilder, PreparedSQLBuilder {
 	}
 	
 	@Override
-	public PreparedSQL toPreparedSQL(ParameterBinderRegistry parameterBinderRegistry) {
+	public PreparedSQL toPreparedSQL(ColumnBinderRegistry parameterBinderRegistry) {
 		StringAppender sql = new StringAppender(500);
 		
-		PreparedSQLWrapper preparedSQLWrapper = new PreparedSQLWrapper(new StringAppenderWrapper(sql), parameterBinderRegistry);
+		PreparedSQLWrapper preparedSQLWrapper = new PreparedSQLWrapper(new StringAppenderWrapper(sql, dmlNameProvider), parameterBinderRegistry, dmlNameProvider);
 		
 		sql.cat("select ", selectBuilder.toSQL());
 		sql.cat(" from ", fromBuilder.toSQL());
 		if (!selectQuery.getWhereSurrogate().getConditions().isEmpty()) {
 			sql.cat(" where ");
-			whereBuilder.toPreparedSQL(sql, preparedSQLWrapper);
+			whereBuilder.toPreparedSQL(preparedSQLWrapper);
 		}
 		
 		GroupBy groupBy = selectQuery.getGroupBySurrogate();
@@ -87,7 +87,7 @@ public class SelectQueryBuilder implements SQLBuilder, PreparedSQLBuilder {
 		Having having = selectQuery.getHavingSurrogate();
 		if (!having.getConditions().isEmpty()) {
 			sql.cat(" having ");
-			havingBuilder.toPreparedSQL(sql, preparedSQLWrapper);
+			havingBuilder.toPreparedSQL(preparedSQLWrapper);
 		}
 		
 		OrderBy orderBy = selectQuery.getOrderBySurrogate();

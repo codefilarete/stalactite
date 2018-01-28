@@ -4,10 +4,10 @@ import java.util.Map;
 
 import org.gama.lang.Reflections;
 import org.gama.lang.StringAppender;
-import org.gama.sql.binder.ParameterBinderRegistry;
 import org.gama.sql.dml.PreparedSQL;
-import org.gama.stalactite.persistence.structure.Table;
+import org.gama.stalactite.persistence.sql.dml.binder.ColumnBinderRegistry;
 import org.gama.stalactite.persistence.structure.Column;
+import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.query.builder.OperandBuilder.PreparedSQLWrapper;
 import org.gama.stalactite.query.builder.OperandBuilder.SQLAppender;
 import org.gama.stalactite.query.builder.OperandBuilder.StringAppenderWrapper;
@@ -32,8 +32,6 @@ public class WhereBuilder implements SQLBuilder, PreparedSQLBuilder {
 	
 	private final DMLNameProvider dmlNameProvider;
 	
-	private final OperandBuilder operandBuilder;
-	
 	public WhereBuilder(CriteriaChain where, Map<Table, String> tableAliases) {
 		this(where, new DMLNameProvider(tableAliases));
 	}
@@ -41,7 +39,6 @@ public class WhereBuilder implements SQLBuilder, PreparedSQLBuilder {
 	public WhereBuilder(CriteriaChain where, DMLNameProvider dmlNameProvider) {
 		this.where = where;
 		this.dmlNameProvider = dmlNameProvider;
-		this.operandBuilder = new OperandBuilder(this.dmlNameProvider);
 	}
 	
 	@Override
@@ -50,44 +47,54 @@ public class WhereBuilder implements SQLBuilder, PreparedSQLBuilder {
 	}
 	
 	public String toSQL(StringAppender sql) {
-		WhereAppender whereAppender = new WhereAppender(new StringAppenderWrapper(sql));
+		return toSQL(new StringAppenderWrapper(sql, dmlNameProvider));
+	}
+	
+	public String toSQL(SQLAppender sql) {
+		WhereAppender whereAppender = new WhereAppender(sql, dmlNameProvider);
 		whereAppender.cat(where);
-		return sql.toString();
+		return sql.getSQL();
 	}
 	
 	@Override
-	public PreparedSQL toPreparedSQL(ParameterBinderRegistry parameterBinderRegistry) {
+	public PreparedSQL toPreparedSQL(ColumnBinderRegistry parameterBinderRegistry) {
 		return toPreparedSQL(new StringAppender(), parameterBinderRegistry);
 	}
 	
-	public PreparedSQL toPreparedSQL(StringAppender sql, ParameterBinderRegistry parameterBinderRegistry) {
-		PreparedSQLWrapper preparedSQLWrapper = new PreparedSQLWrapper(new StringAppenderWrapper(sql), parameterBinderRegistry);
-		return toPreparedSQL(sql, preparedSQLWrapper);
+	public PreparedSQL toPreparedSQL(StringAppender sql, ColumnBinderRegistry parameterBinderRegistry) {
+		PreparedSQLWrapper preparedSQLWrapper = new PreparedSQLWrapper(new StringAppenderWrapper(sql, dmlNameProvider), parameterBinderRegistry, dmlNameProvider);
+		return toPreparedSQL(preparedSQLWrapper);
 	}
 	
-	public PreparedSQL toPreparedSQL(StringAppender sql, PreparedSQLWrapper preparedSQLWrapper) {
-		WhereAppender whereAppender = new WhereAppender(preparedSQLWrapper);
+	public PreparedSQL toPreparedSQL(PreparedSQLWrapper preparedSQLWrapper) {
+		WhereAppender whereAppender = new WhereAppender(preparedSQLWrapper, dmlNameProvider);
 		whereAppender.cat(where);
-		PreparedSQL result = new PreparedSQL(sql.toString(), preparedSQLWrapper.getParameterBinders());
+		PreparedSQL result = new PreparedSQL(preparedSQLWrapper.getSQL(), preparedSQLWrapper.getParameterBinders());
 		result.setValues(preparedSQLWrapper.getValues());
 		return result;
 	}
 	
-	private class WhereAppender {
+	public static class WhereAppender {
 		
 		private final SQLAppender sql;
 		
-		private WhereAppender(SQLAppender sql) {
+		private final OperandBuilder operandBuilder;
+		
+		private final DMLNameProvider dmlNameProvider;
+		
+		public WhereAppender(SQLAppender sql, DMLNameProvider dmlNameProvider) {
 			this.sql = sql;
+			this.operandBuilder = new OperandBuilder(dmlNameProvider);
+			this.dmlNameProvider = dmlNameProvider;
 		}
 		
 		public void cat(Object o) {
 			if (o instanceof CharSequence) {
 				sql.cat(o.toString());
 			} else if (o instanceof CriteriaChain) {
-				cat("(");
+				sql.cat("(");
 				cat((CriteriaChain) o);
-				cat(")");
+				sql.cat(")");
 			} else if (o instanceof RawCriterion) {
 				cat((RawCriterion) o);
 			} else if (o instanceof ColumnCriterion) {
@@ -114,11 +121,11 @@ public class WhereBuilder implements SQLBuilder, PreparedSQLBuilder {
 				} else if (o instanceof CharSequence) {
 					sql.cat(o.toString());
 				} else if (o instanceof CriteriaChain) {
-					cat("(");
+					sql.cat("(");
 					cat((CriteriaChain) o);
-					cat(")");
+					sql.cat(")");
 				} else if (o instanceof Column) {
-					sql.cat(WhereBuilder.this.dmlNameProvider.getName((Column) o));
+					cat((Column) o);
 				} else if (o instanceof Operand) {
 					cat((Operand) o);
 				} else {
@@ -128,7 +135,8 @@ public class WhereBuilder implements SQLBuilder, PreparedSQLBuilder {
 		}
 		
 		public void cat(ColumnCriterion criterion) {
-			sql.cat(WhereBuilder.this.dmlNameProvider.getName(criterion.getColumn()), " ");
+			cat(criterion.getColumn());
+			sql.cat(" ");
 			Object o = criterion.getCondition();
 			if (o instanceof CharSequence) {
 				sql.cat(o.toString());
@@ -137,6 +145,11 @@ public class WhereBuilder implements SQLBuilder, PreparedSQLBuilder {
 			} else {
 				throw new IllegalArgumentException("Unknown criterion type " + Reflections.toString(o.getClass()));
 			}
+		}
+		
+		public void cat(Column column) {
+			// delegated to dmlNameProvider
+			sql.cat(this.dmlNameProvider.getName(column));
 		}
 		
 		public void cat(LogicalOperator operator) {
