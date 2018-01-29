@@ -1,7 +1,9 @@
 package org.gama.stalactite.query.builder;
 
+import javax.annotation.Nonnull;
 import java.util.Map;
 
+import org.gama.lang.StringAppender;
 import org.gama.lang.Strings;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
@@ -19,9 +21,25 @@ public class DMLNameProvider {
 		this.tableAliases = tableAliases;
 	}
 	
-	public String getName(Column column) {
+	/**
+	 * Gives a column name with table "path" (either alias or name according to {@link #getTablePrefix(Table)})
+	 * @param column a column
+	 * @return the column name prefixed with table name/alias
+	 */
+	public String getName(@Nonnull Column column) {
 		String tablePrefix = getTablePrefix(column.getTable());
-		return tablePrefix + "." + column.getName();
+		return tablePrefix + "." + getSimpleName(column);
+	}
+	
+	/**
+	 * Gives the column name (without table name).
+	 * Aimed at being overriden to take key words into account (and put it between quotes for instance)
+	 * 
+	 * @param column a column
+	 * @return the column name (eventually escaped)
+	 */
+	public String getSimpleName(@Nonnull Column column) {
+		return column.getName();
 	}
 	
 	public String getAlias(Table table) {
@@ -30,6 +48,23 @@ public class DMLNameProvider {
 	
 	public String getTablePrefix(Table table) {
 		String tableAlias = getAlias(table);
-		return Strings.isEmpty(tableAlias) ? table.getName() : tableAlias;
+		return Strings.isEmpty(tableAlias) ? getSimpleName(table) : tableAlias;
 	}
+	
+	/**
+	 * Gives the tanme name.
+	 * Aimed at being overriden to take key words into account (and put it between quotes for instance)
+	 *
+	 * @param table a table
+	 * @return the table name (eventually escaped)
+	 */
+	public String getSimpleName(Table table) {
+		return table.getAbsoluteName();
+	}
+	
+	public void catWithComma(Iterable<Column> targetColumns, StringAppender sql) {
+		targetColumns.forEach(c -> sql.cat(getSimpleName(c) + ", "));
+		sql.cutTail(2);
+	}
+	
 }

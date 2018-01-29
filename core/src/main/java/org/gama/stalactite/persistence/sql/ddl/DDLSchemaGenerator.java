@@ -1,18 +1,22 @@
 package org.gama.stalactite.persistence.sql.ddl;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.LinkedHashSet;
+import java.util.List;
+
 import org.gama.lang.collection.Collections;
-import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.persistence.structure.ForeignKey;
 import org.gama.stalactite.persistence.structure.Index;
-
-import java.util.*;
+import org.gama.stalactite.persistence.structure.Table;
 
 /**
  * @author Guillaume Mary
  */
 public class DDLSchemaGenerator implements DDLGenerator {
 	
-	private Collection<Table> tables = new LinkedHashSet<>();
+	private Collection<Table> tables;
 	
 	private Collection<DDLGenerator> ddlGenerators = new LinkedHashSet<>();
 	

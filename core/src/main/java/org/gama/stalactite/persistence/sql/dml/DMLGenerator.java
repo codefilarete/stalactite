@@ -1,5 +1,6 @@
 package org.gama.stalactite.persistence.sql.dml;
 
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Map;
@@ -12,11 +13,11 @@ import org.gama.lang.collection.Iterables;
 import org.gama.lang.trace.IncrementableInt;
 import org.gama.sql.binder.ParameterBinder;
 import org.gama.stalactite.persistence.engine.DMLExecutor;
-import org.gama.stalactite.persistence.sql.ddl.DDLTableGenerator;
 import org.gama.stalactite.persistence.sql.dml.PreparedUpdate.UpwhereColumn;
 import org.gama.stalactite.persistence.sql.dml.binder.ColumnBinderRegistry;
-import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.persistence.structure.Column;
+import org.gama.stalactite.persistence.structure.Table;
+import org.gama.stalactite.query.builder.DMLNameProvider;
 
 import static org.gama.sql.dml.ExpandableSQL.ExpandableParameter.SQL_PARAMETER_MARK;
 import static org.gama.sql.dml.ExpandableSQL.ExpandableParameter.SQL_PARAMETER_MARK_1;
@@ -36,20 +37,27 @@ public class DMLGenerator {
 	
 	private final ISorter<Iterable<Column>> columnSorter;
 	
+	private final DMLNameProvider dmlNameProvider;
+	
 	public DMLGenerator(ColumnBinderRegistry columnBinderRegistry) {
 		this(columnBinderRegistry, NoopSorter.INSTANCE);
 	}
 	
 	public DMLGenerator(ColumnBinderRegistry columnBinderRegistry, ISorter<Iterable<Column>> columnSorter) {
+		this(columnBinderRegistry, columnSorter, new DMLNameProvider(Collections.emptyMap()));
+	}
+	
+	public DMLGenerator(ColumnBinderRegistry columnBinderRegistry, ISorter<Iterable<Column>> columnSorter, DMLNameProvider dmlNameProvider) {
 		this.columnBinderRegistry = columnBinderRegistry;
 		this.columnSorter = columnSorter;
+		this.dmlNameProvider = dmlNameProvider;
 	}
 	
 	public ColumnParamedSQL buildInsert(Iterable<Column> columns) {
 		columns = sort(columns);
 		Table table = Iterables.first(columns).getTable();
-		StringAppender sqlInsert = new StringAppender("insert into ", table.getAbsoluteName(), "(");
-		DDLTableGenerator.catWithComma(columns, sqlInsert);
+		StringAppender sqlInsert = new StringAppender("insert into ", dmlNameProvider.getSimpleName(table), "(");
+		dmlNameProvider.catWithComma(columns, sqlInsert);
 		sqlInsert.cat(") values (");
 		
 		Map<Column, int[]> columnToIndex = new HashMap<>();
@@ -68,19 +76,19 @@ public class DMLGenerator {
 	public PreparedUpdate buildUpdate(Iterable<Column> columns, Iterable<Column> where) {
 		columns = sort(columns);
 		Table table = Iterables.first(columns).getTable();
-		StringAppender sqlUpdate = new StringAppender("update ", table.getAbsoluteName(), " set ");
+		StringAppender sqlUpdate = new StringAppender("update ", dmlNameProvider.getSimpleName(table), " set ");
 		Map<UpwhereColumn, Integer> upsertIndexes = new HashMap<>(10);
 		Map<UpwhereColumn, ParameterBinder> parameterBinders = new HashMap<>();
 		int positionCounter = 1;
 		for (Column column : columns) {
-			sqlUpdate.cat(column.getName(), " = " + SQL_PARAMETER_MARK_1);
+			sqlUpdate.cat(dmlNameProvider.getSimpleName(column), " = " + SQL_PARAMETER_MARK_1);
 			UpwhereColumn upwhereColumn = new UpwhereColumn(column, true);
 			upsertIndexes.put(upwhereColumn, positionCounter++);
 			parameterBinders.put(upwhereColumn, columnBinderRegistry.getBinder(column));
 		}
 		sqlUpdate.cutTail(2).cat(" where ");
 		for (Column column : where) {
-			sqlUpdate.cat(column.getName(), EQUAL_SQL_PARAMETER_MARK_AND);
+			sqlUpdate.cat(dmlNameProvider.getSimpleName(column), EQUAL_SQL_PARAMETER_MARK_AND);
 			UpwhereColumn upwhereColumn = new UpwhereColumn(column, false);
 			upsertIndexes.put(upwhereColumn, positionCounter++);
 			parameterBinders.put(upwhereColumn, columnBinderRegistry.getBinder(column));
@@ -89,7 +97,7 @@ public class DMLGenerator {
 	}
 	
 	public ColumnParamedSQL buildDelete(Table table, Iterable<Column> where) {
-		StringAppender sqlDelete = new StringAppender("delete from ", table.getAbsoluteName());
+		StringAppender sqlDelete = new StringAppender("delete from ", dmlNameProvider.getSimpleName(table));
 		sqlDelete.cat(" where ");
 		Map<Column, int[]> columnToIndex = new HashMap<>();
 		Map<Column, ParameterBinder> parameterBinders = new HashMap<>();
@@ -102,7 +110,7 @@ public class DMLGenerator {
 			parameterBinders) {
 		IncrementableInt positionCounter = new IncrementableInt(1);
 		Iterables.stream(where).forEach(column -> {
-			sql.cat(column.getName(), EQUAL_SQL_PARAMETER_MARK_AND);
+			sql.cat(dmlNameProvider.getSimpleName(column), EQUAL_SQL_PARAMETER_MARK_AND);
 			columnToIndex.put(column, new int[] { positionCounter.getValue() });
 			positionCounter.increment();
 			parameterBinders.put(column, columnBinderRegistry.getBinder(column));
@@ -110,8 +118,8 @@ public class DMLGenerator {
 	}
 	
 	public ColumnParamedSQL buildMassiveDelete(Table table, Column keyColumn, int whereValuesCount) {
-		StringAppender sqlDelete = new StringAppender("delete from ", table.getAbsoluteName());
-		sqlDelete.cat(" where ", keyColumn.getName(), " in (");
+		StringAppender sqlDelete = new StringAppender("delete from ", dmlNameProvider.getSimpleName(table));
+		sqlDelete.cat(" where ", dmlNameProvider.getSimpleName(keyColumn), " in (");
 		Strings.repeat(sqlDelete.getAppender(), whereValuesCount, SQL_PARAMETER_MARK_1, SQL_PARAMETER_MARK_100, SQL_PARAMETER_MARK_10);
 		sqlDelete.cutTail(2).cat(")");
 		Map<Column, int[]> columnToIndex = new HashMap<>();
@@ -128,8 +136,8 @@ public class DMLGenerator {
 	public ColumnParamedSQL buildSelect(Table table, Iterable<Column> columns, Iterable<Column> where) {
 		columns = sort(columns);
 		StringAppender sqlSelect = new StringAppender("select ");
-		DDLTableGenerator.catWithComma(columns, sqlSelect);
-		sqlSelect.cat(" from ", table.getAbsoluteName(), " where ");
+		dmlNameProvider.catWithComma(columns, sqlSelect);
+		sqlSelect.cat(" from ", dmlNameProvider.getSimpleName(table), " where ");
 		Map<Column, int[]> columnToIndex = new HashMap<>();
 		Map<Column, ParameterBinder> parameterBinders = new HashMap<>();
 		appendWhere(sqlSelect, where, columnToIndex, parameterBinders);
@@ -142,11 +150,11 @@ public class DMLGenerator {
 		StringAppender sqlSelect = new StringAppender("select ");
 		Map<String, ParameterBinder> selectParameterBinders = new HashMap<>();
 		for (Column column : columns) {
-			String selectedColumnName = column.getName();
+			String selectedColumnName = dmlNameProvider.getSimpleName(column);
 			sqlSelect.cat(selectedColumnName, ", ");
 			selectParameterBinders.put(selectedColumnName, columnBinderRegistry.getBinder(column));
 		}
-		sqlSelect.cutTail(2).cat(" from ", table.getAbsoluteName(), " where ", keyColumn.getName(), " in (");
+		sqlSelect.cutTail(2).cat(" from ", dmlNameProvider.getSimpleName(table), " where ", dmlNameProvider.getSimpleName(keyColumn), " in (");
 		Strings.repeat(sqlSelect.getAppender(), whereValuesCount, SQL_PARAMETER_MARK_1, SQL_PARAMETER_MARK_100, SQL_PARAMETER_MARK_10);
 		sqlSelect.cutTail(2).cat(")");
 		Map<Column, int[]> columnToIndex = new HashMap<>();
@@ -175,7 +183,7 @@ public class DMLGenerator {
 	}
 	
 	/**
-	 * Sort columns passed as arguments.
+	 * Sorts columns passed as arguments.
 	 * Optional action since it's used in appending String operation.
 	 * Usefull for unit tests and debug operations : give steady (and logical) column places in SQL, without this, order
 	 * is given by Column hashcode and HashMap algorithm.

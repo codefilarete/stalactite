@@ -27,7 +27,7 @@ public class MultiTableAwareDMLNameProvider extends DMLNameProvider {
 			// default : adds table prefix
 			return super.getName(column);
 		} else {
-			return column.getName();
+			return getSimpleName(column);
 		}
 	}
 	
