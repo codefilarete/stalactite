@@ -5,8 +5,8 @@
 	<modelVersion>4.0.0</modelVersion>
 	
 	<parent>
-		<groupId>org.gama</groupId>
-		<artifactId>stalactite</artifactId>
+		<groupId>org.gama.stalactite</groupId>
+		<artifactId>parent</artifactId>
 		<version>1.0-SNAPSHOT</version>
 	</parent>
 	
@@ -43,7 +43,7 @@
 			<version>${project.version}</version>
 		</dependency>
 		<dependency>
-			<groupId>org.gama</groupId>
+			<groupId>org.gama.stalactite</groupId>
 			<artifactId>sql</artifactId>
 			<version>${project.version}</version>
 		</dependency>
@@ -58,7 +58,7 @@
 			<version>${project.version}</version>
 		</dependency>
 		<dependency>
-			<groupId>org.gama</groupId>
+			<groupId>org.gama.stalactite</groupId>
 			<artifactId>sql</artifactId>
 			<version>${project.version}</version>
 			<type>test-jar</type>
