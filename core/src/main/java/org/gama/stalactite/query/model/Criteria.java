@@ -51,7 +51,8 @@ public class Criteria<SELF extends Criteria<SELF>> extends AbstractCriterion imp
 	public SELF and(Column column, CharSequence condition) {
 		return add(new ColumnCriterion(And, column, condition));
 	}
-
+	
+	@Override
 	public SELF and(Column column, Operand condition) {
 		return add(new ColumnCriterion(And, column, condition));
 	}
@@ -61,6 +62,7 @@ public class Criteria<SELF extends Criteria<SELF>> extends AbstractCriterion imp
 		return add(new ColumnCriterion(Or, column, condition));
 	}
 	
+	@Override
 	public SELF or(Column column, Operand condition) {
 		return add(new ColumnCriterion(Or, column, condition));
 	}

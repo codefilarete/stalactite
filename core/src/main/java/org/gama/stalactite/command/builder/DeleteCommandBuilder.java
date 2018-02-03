@@ -46,7 +46,7 @@ public class DeleteCommandBuilder implements SQLBuilder {
 		
 		// looking for additionnal Tables : more than the updated one, can be found in conditions
 		Set<Column> whereColumns = new LinkedHashSet<>();
-		delete.getCriteria().getConditions().forEach(c -> {
+		delete.getCriteria().forEach(c -> {
 			if (c instanceof ColumnCriterion) {
 				whereColumns.add(((ColumnCriterion) c).getColumn());
 				Object condition = ((ColumnCriterion) c).getCondition();
@@ -73,7 +73,7 @@ public class DeleteCommandBuilder implements SQLBuilder {
 		
 		
 		// append where clause
-		if (!delete.getCriteria().getConditions().isEmpty()) {
+		if (delete.getCriteria().iterator().hasNext()) {
 			result.cat(" where ");
 			WhereBuilder whereBuilder = new WhereBuilder(this.delete.getCriteria(), dmlNameProvider);
 			whereBuilder.toSQL(result);

@@ -6,6 +6,7 @@ import java.util.Set;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.query.model.Criteria;
+import org.gama.stalactite.query.model.CriteriaChain;
 import org.gama.stalactite.query.model.Operand;
 
 /**
@@ -78,7 +79,7 @@ public class Update {
 	 * @param condition the condition
 	 * @return this
 	 */
-	public Criteria where(Column column, String condition) {
+	public CriteriaChain where(Column column, String condition) {
 		return criteriaSurrogate.and(column, condition);
 	}
 	
@@ -89,7 +90,7 @@ public class Update {
 	 * @param condition the condition
 	 * @return this
 	 */
-	public Criteria where(Column column, Operand condition) {
+	public CriteriaChain where(Column column, Operand condition) {
 		return criteriaSurrogate.and(column, condition);
 	}
 	
