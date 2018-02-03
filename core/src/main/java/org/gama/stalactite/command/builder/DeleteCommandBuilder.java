@@ -42,7 +42,7 @@ public class DeleteCommandBuilder implements SQLBuilder {
 	}
 	
 	private String toSQL(SQLAppender result, MultiTableAwareDMLNameProvider dmlNameProvider) {
-		result.cat("delete ");
+		result.cat("delete from ");
 		
 		// looking for additionnal Tables : more than the updated one, can be found in conditions
 		Set<Column> whereColumns = new LinkedHashSet<>();

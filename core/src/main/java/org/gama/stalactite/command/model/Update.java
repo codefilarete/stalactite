@@ -46,6 +46,11 @@ public class Update {
 		return this;
 	}
 	
+	public Update set(Column column, Object value) {
+		this.columns.add(new UpdateColumn(column, value));
+		return this;
+	}
+	
 	/**
 	 * Adds a target column which value is took from another column
 	 *

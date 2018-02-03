@@ -1,6 +1,7 @@
 package org.gama.stalactite.persistence.engine;
 
 import java.sql.Connection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -9,8 +10,20 @@ import java.util.Set;
 import org.gama.lang.collection.ValueFactoryHashMap;
 import org.gama.sql.ConnectionProvider;
 import org.gama.sql.binder.ParameterBinderProvider;
+import org.gama.sql.dml.PreparedSQL;
+import org.gama.sql.dml.WriteOperation;
+import org.gama.stalactite.command.builder.DeleteCommandBuilder;
+import org.gama.stalactite.command.builder.InsertCommandBuilder;
+import org.gama.stalactite.command.builder.UpdateCommandBuilder;
+import org.gama.stalactite.command.builder.UpdateCommandBuilder.UpdateStatement;
+import org.gama.stalactite.command.model.Delete;
+import org.gama.stalactite.command.model.Insert;
+import org.gama.stalactite.command.model.Update;
 import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
 import org.gama.stalactite.persistence.sql.Dialect;
+import org.gama.stalactite.persistence.sql.dml.ColumnParamedSQL;
+import org.gama.stalactite.persistence.structure.Column;
+import org.gama.stalactite.persistence.structure.Table;
 
 /**
  * Entry point for persistence in a database. Mix of configuration (Transaction, Dialect, ...) and registry for {@link Persister}s.
@@ -118,5 +131,117 @@ public class PersistenceContext {
 	 */
 	public <T> Query<T> newQuery(CharSequence sql, Class<T> beanType) {
 		return new Query<>(beanType, sql, ParameterBinderProvider.fromMap(getDialect().getColumnBinderRegistry().getParameterBinders()));
+	}
+	
+	public ExecutableUpdate update(Table table) {
+		return new ExecutableUpdate(table);
+	}
+	
+	public ExecutableInsert insert(Table table) {
+		return new ExecutableInsert(table);
+	}
+	
+	public ExecutableDelete delete(Table table) {
+		return new ExecutableDelete(table);
+	}
+	
+	public class ExecutableUpdate extends Update {
+		
+		public ExecutableUpdate(Table targetTable) {
+			super(targetTable);
+		}
+		
+		/** Overriden to adapt return type */
+		@Override
+		public ExecutableUpdate set(Column column) {
+			super.set(column);
+			return this;
+		}
+		
+		/** Overriden to adapt return type */
+		@Override
+		public ExecutableUpdate set(Column column, Object value) {
+			super.set(column, value);
+			return this;
+		}
+		
+		/** Overriden to adapt return type */
+		@Override
+		public ExecutableUpdate set(Column column1, Column column2) {
+			super.set(column1, column2);
+			return this;
+		}
+		
+		/**
+		 * Executes this update statement. To be used when update has no parameters on where clause, else use {@link #execute(Map)}
+		 * 
+		 * @return the updated row count
+		 */
+		public int execute() {
+			return execute(Collections.emptyMap());
+		}
+		
+		/**
+		 * Executes this update statement with given values.
+		 *
+		 * @return the updated row count
+		 */
+		public int execute(Map<Column, Object> values) {
+			UpdateStatement updateStatement = new UpdateCommandBuilder(this).toStatement(getDialect().getColumnBinderRegistry());
+			values.forEach(updateStatement::setValue);
+			WriteOperation<Integer> writeOperation = new WriteOperation<>(updateStatement, connectionProvider);
+			
+			writeOperation.setValues(updateStatement.getValues());
+			return writeOperation.execute();
+		}
+	}
+	
+	public class ExecutableInsert extends Insert {
+		
+		private final Map<Column, Object> values = new HashMap<>();
+		
+		public ExecutableInsert(Table table) {
+			super(table);
+		}
+		
+		public <T> ExecutableInsert set(Column<T> column, T value) {
+			super.set(column);
+			this.values.put(column, value);
+			return this;
+		}
+		
+		/**
+		 * Executes this insert statement.
+		 *
+		 * @return the inserted row count
+		 */
+		public int execute() {
+			ColumnParamedSQL insertStatement = new InsertCommandBuilder(this).toStatement(getDialect().getColumnBinderRegistry());
+			values.forEach(insertStatement::setValue);
+			WriteOperation<Column> writeOperation = new WriteOperation<>(insertStatement, connectionProvider);
+			
+			writeOperation.setValues(insertStatement.getValues());
+			return writeOperation.execute();
+		}
+	}
+	
+	public class ExecutableDelete extends Delete {
+		
+		public ExecutableDelete(Table table) {
+			super(table);
+		}
+		
+		/**
+		 * Executes this delete statement with given values.
+		 *
+		 * @return the deleted row count
+		 */
+		public int execute() {
+			PreparedSQL deleteStatement = new DeleteCommandBuilder(this).toStatement(getDialect().getColumnBinderRegistry());
+			WriteOperation<Integer> writeOperation = new WriteOperation<>(deleteStatement, connectionProvider);
+			
+			writeOperation.setValues(deleteStatement.getValues());
+			return writeOperation.execute();
+		}
 	}
 }

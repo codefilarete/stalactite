@@ -33,13 +33,13 @@ public class DeleteCommandBuilderTest {
 		
 		DeleteCommandBuilder testInstance = new DeleteCommandBuilder(delete);
 		
-		assertEquals("delete Toto where a = 44 or a = b", testInstance.toSQL());
+		assertEquals("delete from Toto where a = 44 or a = b", testInstance.toSQL());
 		
 		delete = new Delete(totoTable);
 		
 		testInstance = new DeleteCommandBuilder(delete);
 		
-		assertEquals("delete Toto", testInstance.toSQL());
+		assertEquals("delete from Toto", testInstance.toSQL());
 		
 	}
 	
@@ -57,14 +57,14 @@ public class DeleteCommandBuilderTest {
 		
 		DeleteCommandBuilder testInstance = new DeleteCommandBuilder(delete);
 		
-		assertEquals("delete Toto, Tata where Toto.a = Tata.x or Toto.a = Tata.y", testInstance.toSQL());
+		assertEquals("delete from Toto, Tata where Toto.a = Tata.x or Toto.a = Tata.y", testInstance.toSQL());
 		
 		delete = new Delete(totoTable);
 		delete.where(columnA, Operand.eq(columnX)).or(columnA, Operand.eq(columnY));
 		
 		testInstance = new DeleteCommandBuilder(delete);
 		
-		assertEquals("delete Toto, Tata where Toto.a = Tata.x or Toto.a = Tata.y", testInstance.toSQL());
+		assertEquals("delete from Toto, Tata where Toto.a = Tata.x or Toto.a = Tata.y", testInstance.toSQL());
 	}
 	
 	@Test
@@ -83,7 +83,7 @@ public class DeleteCommandBuilderTest {
 		binderRegistry.register(columnB, DefaultParameterBinders.STRING_BINDER);
 		
 		PreparedSQL result = testInstance.toStatement(binderRegistry);
-		assertEquals("delete Toto where a in (?, ?) or a = b", result.getSQL());
+		assertEquals("delete from Toto where a in (?, ?) or a = b", result.getSQL());
 		
 		assertEquals(Maps.asMap(1, 44).add(2, 45), result.getValues());
 		assertEquals(DefaultParameterBinders.INTEGER_BINDER, result.getParameterBinder(1));

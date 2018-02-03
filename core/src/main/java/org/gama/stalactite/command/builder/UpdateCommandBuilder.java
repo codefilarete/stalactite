@@ -82,8 +82,7 @@ public class UpdateCommandBuilder implements SQLBuilder {
 		while (columnIterator.hasNext()) {
 			UpdateColumn c = columnIterator.next();
 			result.cat(dmlNameProvider.getName(c.getColumn()), " = ");
-			Object value = c.getValue();
-			catUpdateObject(value, result, dmlNameProvider);
+			catUpdateObject(c.getValue(), result, dmlNameProvider);
 			if (columnIterator.hasNext()) {
 				result.catIf(columnIterator.hasNext(), ", ");
 			}
