@@ -39,7 +39,7 @@ public class StringParamedSQL extends ExpandableStatement<String> {
 	}
 	
 	@Override
-	public void setValues(Map<String, Object> values) {
+	public void setValues(Map<String, ?> values) {
 		super.setValues(values);
 		expandableSQLExpired = true;
 	}

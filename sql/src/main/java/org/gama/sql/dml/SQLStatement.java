@@ -7,6 +7,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.gama.lang.collection.Iterables;
 import org.gama.sql.binder.ParameterBinder;
@@ -26,15 +27,26 @@ public abstract class SQLStatement<ParamType> {
 	protected final Map<ParamType, Object> values = new HashMap<>(5);
 	
 	protected final ParameterBinderProvider<ParamType> parameterBinderProvider;
-	protected final Set<ParamType> indexes;
+	/** Set of keys/parameters/indexes available in the statement */
+	protected final Set<ParamType> expectedParameters;
 	
+	/**
+	 * 
+	 * @param parameterBinders expected to be the exact necessary binders of every parameters in the SQL order (no more, no less).
+	 * Checked by {@link #assertValuesAreApplyable()}
+	 */
 	protected SQLStatement(Map<ParamType, ParameterBinder> parameterBinders) {
 		this(ParameterBinderIndex.fromMap(parameterBinders));
 	}
 	
+	/**
+	 *
+	 * @param parameterBinderProvider expected to be the exact necessary binders of every parameters in the SQL order (no more, no less).
+	 * Checked by {@link #assertValuesAreApplyable()}
+	 */
 	protected SQLStatement(ParameterBinderIndex<ParamType> parameterBinderProvider) {
 		this.parameterBinderProvider = parameterBinderProvider;
-		this.indexes = parameterBinderProvider.keys();
+		this.expectedParameters = parameterBinderProvider.keys();
 	}
 	
 	/**
@@ -43,7 +55,7 @@ public abstract class SQLStatement<ParamType> {
 	 * @see #applyValues(PreparedStatement) 
 	 * @param values
 	 */
-	public void setValues(Map<ParamType, Object> values) {
+	public void setValues(Map<ParamType, ?> values) {
 		this.values.putAll(values);
 	}
 	
@@ -78,11 +90,7 @@ public abstract class SQLStatement<ParamType> {
 	 * @param statement
 	 */
 	public void applyValues(PreparedStatement statement) {
-		Set<ParamType> paramTypes = values.keySet();
-		Set<ParamType> indexDiff = Iterables.minus(indexes, paramTypes);
-		if (!indexDiff.isEmpty()) {
-			throw new IllegalArgumentException("Missing value for indexes " + indexDiff + " in values " + values + " for \"" + getSQL() + "\"");
-		}
+		assertValuesAreApplyable();
 		for (Entry<ParamType, Object> indexToValue : values.entrySet()) {
 			try {
 				doApplyValue(indexToValue.getKey(), indexToValue.getValue(), statement);
@@ -90,6 +98,20 @@ public abstract class SQLStatement<ParamType> {
 				throw new RuntimeException("Error while applying value " + indexToValue.getValue() + " on parameter " + indexToValue.getKey()
 						+ " on statement \"" + getSQL() + "\"", t);
 			}
+		}
+	}
+	
+	public void assertValuesAreApplyable() {
+		Set<ParamType> paramTypes = values.keySet();
+		// looking for missing values
+		Set<ParamType> indexDiff = Iterables.minus(expectedParameters, paramTypes);
+		if (!indexDiff.isEmpty()) {
+			throw new IllegalArgumentException("Missing value for parameters " + indexDiff + " in values " + values + " in \"" + getSQL() + "\"");
+		}
+		// Looking for undefined binder
+		Set<ParamType> missingParameters = values.keySet().stream().filter(paramType -> parameterBinderProvider.doGetBinder(paramType) == null).collect(Collectors.toSet());
+		if (!missingParameters.isEmpty()) {
+			throw new IllegalArgumentException("Missing binder for " + missingParameters + " for values " + values + " in \"" + getSQL() + "\"");
 		}
 	}
 	
