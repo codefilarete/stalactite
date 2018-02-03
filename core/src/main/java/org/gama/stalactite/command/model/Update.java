@@ -46,7 +46,7 @@ public class Update {
 		return this;
 	}
 	
-	public Update set(Column column, Object value) {
+	public <T> Update set(Column<T> column, T value) {
 		this.columns.add(new UpdateColumn(column, value));
 		return this;
 	}
@@ -58,7 +58,7 @@ public class Update {
 	 * @param column2 a non null column
 	 * @return this
 	 */
-	public Update set(Column column1, Column column2) {
+	public <T> Update set(Column<T> column1, Column<T> column2) {
 		this.columns.add(new UpdateColumn(column1, column2));
 		return this;
 	}

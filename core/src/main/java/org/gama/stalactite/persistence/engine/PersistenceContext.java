@@ -160,14 +160,14 @@ public class PersistenceContext {
 		
 		/** Overriden to adapt return type */
 		@Override
-		public ExecutableUpdate set(Column column, Object value) {
+		public <T> ExecutableUpdate set(Column<T> column, T value) {
 			super.set(column, value);
 			return this;
 		}
 		
 		/** Overriden to adapt return type */
 		@Override
-		public ExecutableUpdate set(Column column1, Column column2) {
+		public <T> ExecutableUpdate set(Column<T> column1, Column<T> column2) {
 			super.set(column1, column2);
 			return this;
 		}
