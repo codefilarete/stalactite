@@ -8,10 +8,12 @@ import org.gama.sql.result.IRowTransformer;
 import org.gama.sql.result.Row;
 
 /**
+ * A very general frame to transform {@link Row}s
  * 
  * @author Guillaume Mary
  */
 public abstract class AbstractTransformer<T> implements IRowTransformer<T> {
+	
 	protected final Constructor<T> constructor;
 	
 	public AbstractTransformer(Class<T> clazz) {
@@ -25,14 +27,14 @@ public abstract class AbstractTransformer<T> implements IRowTransformer<T> {
 	
 	@Override
 	public T transform(Row row) {
-		T bean = newRowInstance();
+		T bean = newBeanInstance();
 		applyRowToBean(row, bean);
 		return bean;
 	}
 	
 	protected abstract void applyRowToBean(Row row, T bean);
 	
-	public T newRowInstance() {
+	public T newBeanInstance() {
 		T rowBean;
 		try {
 			rowBean = constructor.newInstance();

@@ -82,7 +82,7 @@ public class StrategyJoinsRowTransformer<T> {
 				Object primaryKeyValue = row.get(getAlias(strategyJoins.getTable().getPrimaryKey()));
 				
 				Object rowInstance = entityCacheWrapper.computeIfAbsent(leftStrategy.getClassToPersist(), primaryKeyValue, () -> {
-					Object newInstance = mainRowTransformer.newRowInstance();
+					Object newInstance = mainRowTransformer.newBeanInstance();
 					mainRowTransformer.withAliases(aliasProvider).applyRowToBean(row, newInstance);
 					if (strategyJoins == rootStrategyJoins) {
 						result.add((T) newInstance);
@@ -100,7 +100,7 @@ public class StrategyJoinsRowTransformer<T> {
 						ToBeanRowTransformer rowTransformer = rightMember.getStrategy().getRowTransformer();
 						Object rowInstance2 = entityCacheWrapper.computeIfAbsent(rightMember.getStrategy().getClassToPersist(), primaryKeyValue2, () -> {
 							
-							Object newInstance = rowTransformer.newRowInstance();
+							Object newInstance = rowTransformer.newBeanInstance();
 							rowTransformer.withAliases(aliasProvider).applyRowToBean(row, newInstance);
 							return newInstance;
 						});
