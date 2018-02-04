@@ -56,7 +56,7 @@ public class ToBeanRowTransformer<T> extends AbstractTransformer<T> {
 	 */
 	public ToBeanRowTransformer(Constructor<T> constructor, Map<Column, IMutator> columnToField) {
 		this(constructor, new HashMap<>(10), true);
-		columnToField.entrySet().forEach(e -> keyToField.put(new ColumnRowKey(e.getKey()), e.getValue()));
+		columnToField.forEach((key, value) -> keyToField.put(new ColumnRowKey(key), value));
 	}
 	
 	/**
@@ -87,10 +87,8 @@ public class ToBeanRowTransformer<T> extends AbstractTransformer<T> {
 	public ToBeanRowTransformer<T> withAliases(Function<Column, String> aliasProvider) {
 		// We transform the actual keyToField Map by a new one whose keys are took on the aliasProvider
 		Map<RowKeyMapper, IMutator> aliasToField = new HashMap<>(this.keyToField.size());
-		this.keyToField.entrySet().forEach(e -> aliasToField.put(
-				new StringRowKey(aliasProvider.apply(((ColumnRowKey) e.getKey()).getColumn())), 
-				e.getValue())
-		);
+		this.keyToField.forEach((key, value) -> aliasToField.put(
+				new StringRowKey(aliasProvider.apply(((ColumnRowKey) key).getColumn())), value));
 		return new ToBeanRowTransformer<>(constructor, aliasToField, true);
 	}
 	
