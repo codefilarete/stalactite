@@ -30,7 +30,7 @@ import static org.gama.sql.binder.NullAwareParameterBinder.ALWAYS_SET_NULL_INSTA
  * 
  * @author Guillaume Mary
  */
-public class Query<T> {
+public class QueryConverter<T> {
 	
 	/** Default method capturer. Shared to cache result of each lookup. */
 	private static final MethodReferenceCapturer METHOD_REFERENCE_CAPTURER = new MethodReferenceCapturer();
@@ -65,19 +65,19 @@ public class Query<T> {
 	 * @param sql the sql to execute
 	 * @param parameterBinderProvider a provider for SQL parameters and selected column
 	 */
-	public Query(Class<T> rootBeanType, CharSequence sql, ParameterBinderProvider<Class> parameterBinderProvider) {
+	public QueryConverter(Class<T> rootBeanType, CharSequence sql, ParameterBinderProvider<Class> parameterBinderProvider) {
 		this(rootBeanType, sql, parameterBinderProvider, METHOD_REFERENCE_CAPTURER);
 	}
 	
 	/**
-	 * Constructor to share {@link MethodReferenceCapturer} between instance of {@link Query}
+	 * Constructor to share {@link MethodReferenceCapturer} between instance of {@link QueryConverter}
 	 * @param rootBeanType type of built bean
 	 * @param sql the sql to execute
 	 * @param parameterBinderProvider a provider for SQL parameters and selected column
 	 * @param methodReferenceCapturer a method capturer (when column types are not given by {@link #map(String, SerializableBiConsumer)}),
 	 * default is {@link #METHOD_REFERENCE_CAPTURER}
 	 */
-	public Query(Class<T> rootBeanType, CharSequence sql, ParameterBinderProvider<Class> parameterBinderProvider, MethodReferenceCapturer methodReferenceCapturer) {
+	public QueryConverter(Class<T> rootBeanType, CharSequence sql, ParameterBinderProvider<Class> parameterBinderProvider, MethodReferenceCapturer methodReferenceCapturer) {
 		this.rootBeanType = rootBeanType;
 		this.sql = sql;
 		this.parameterBinderProvider = parameterBinderProvider;
@@ -96,7 +96,7 @@ public class Query<T> {
 	 * @param <I> the type of the column, which is also that of the factory argument
 	 * @return this
 	 */
-	public <I> Query<T> mapKey(String columnName, SerializableFunction<I, T> factory, Class<I> columnType) {
+	public <I> QueryConverter<T> mapKey(String columnName, SerializableFunction<I, T> factory, Class<I> columnType) {
 		this.beanCreationDefinition = new BeanCreationDefinition<>(columnName, factory, columnType);
 		return this;
 	}
@@ -111,7 +111,7 @@ public class Query<T> {
 	 * @param <I> the type of the column
 	 * @return this
 	 */
-	public <I> Query<T> mapKey(String columnName, SerializableSupplier<T> javaBeanCtor, SerializableBiConsumer<T, I> keySetter) {
+	public <I> QueryConverter<T> mapKey(String columnName, SerializableSupplier<T> javaBeanCtor, SerializableBiConsumer<T, I> keySetter) {
 		this.beanCreationDefinition = new BeanCreationDefinition<>(columnName, (SerializableFunction<I, T>) i -> {
 			T newInstance = javaBeanCtor.get();
 			keySetter.accept(newInstance, i);
@@ -130,7 +130,7 @@ public class Query<T> {
 	 * @param <I> the type of the column
 	 * @return this
 	 */
-	public <I> Query<T> mapKey(String columnName, SerializableSupplier<T> javaBeanCtor, SerializableBiConsumer<T, I> keySetter, Class<I> columnType) {
+	public <I> QueryConverter<T> mapKey(String columnName, SerializableSupplier<T> javaBeanCtor, SerializableBiConsumer<T, I> keySetter, Class<I> columnType) {
 		return mapKey(columnName, (SerializableFunction<I, T>) i -> {
 			T newInstance = javaBeanCtor.get();
 			keySetter.accept(newInstance, i);
@@ -147,7 +147,7 @@ public class Query<T> {
 	 * @param <I> the type of the column, which is also that of the setter argument
 	 * @return this
 	 */
-	public <I> Query<T> map(String columnName, SerializableBiConsumer<T, I> setter, Class<I> columnType) {
+	public <I> QueryConverter<T> map(String columnName, SerializableBiConsumer<T, I> setter, Class<I> columnType) {
 		add(new ColumnMapping<>(columnName, setter, columnType));
 		return this;
 	}
@@ -164,7 +164,7 @@ public class Query<T> {
 	 * @param <J> the type of the column, which is also that of the converter argument
 	 * @return this
 	 */
-	public <I, J> Query<T> map(String columnName, SerializableBiConsumer<T, J> setter, Class<I> columnType, SerializableFunction<I, J> converter) {
+	public <I, J> QueryConverter<T> map(String columnName, SerializableBiConsumer<T, J> setter, Class<I> columnType, SerializableFunction<I, J> converter) {
 		return map(columnName, (t, i) -> setter.accept(t, converter.apply(i)), columnType);
 	}
 	
@@ -178,7 +178,7 @@ public class Query<T> {
 	 * @param <I> the type of the column, which is also that of the setter argument
 	 * @return this
 	 */
-	public <I> Query<T> map(String columnName, SerializableBiConsumer<T, I> setter) {
+	public <I> QueryConverter<T> map(String columnName, SerializableBiConsumer<T, I> setter) {
 		map(columnName, setter, giveColumnType(setter));
 		return this;
 	}
@@ -194,7 +194,7 @@ public class Query<T> {
 	 * @param <J> the type of the column, which is also that of the converter argument
 	 * @return this
 	 */
-	public <I, J> Query<T> map(String columnName, SerializableBiConsumer<T, J> setter, SerializableFunction<I, J> converter) {
+	public <I, J> QueryConverter<T> map(String columnName, SerializableBiConsumer<T, J> setter, SerializableFunction<I, J> converter) {
 		Method method = methodReferenceCapturer.findMethod(setter);
 		Class<I> aClass = (Class<I>) method.getParameterTypes()[0];
 		return map(columnName, (SerializableBiConsumer<T, I>) (t, i) -> setter.accept(t, converter.apply(i)), aClass);
@@ -207,7 +207,7 @@ public class Query<T> {
 	 * @param <I> type of the key
 	 * @return this
 	 */
-	public <I> Query<T> mapKey(org.gama.stalactite.persistence.structure.Column<I> column, SerializableFunction<I, T> factory) {
+	public <I> QueryConverter<T> mapKey(org.gama.stalactite.persistence.structure.Column<I> column, SerializableFunction<I, T> factory) {
 		this.beanCreationDefinition = new BeanCreationDefinition<>(column.getName(), factory, column.getJavaType());
 		return this;
 	}
@@ -219,7 +219,7 @@ public class Query<T> {
 	 * @param <I> type of the key
 	 * @return this
 	 */
-	public <I> Query<T> mapKey(org.gama.stalactite.persistence.structure.Column<I> column, SerializableSupplier<T> javaBeanCtor, SerializableBiConsumer<T, I> keySetter) {
+	public <I> QueryConverter<T> mapKey(org.gama.stalactite.persistence.structure.Column<I> column, SerializableSupplier<T> javaBeanCtor, SerializableBiConsumer<T, I> keySetter) {
 		return mapKey(column, (SerializableFunction<I, T>) i -> {
 			T newInstance = javaBeanCtor.get();
 			keySetter.accept(newInstance, i);
@@ -235,7 +235,7 @@ public class Query<T> {
 	 * @param <I> the type of the column, which is also that of the setter argument
 	 * @return this
 	 */
-	public <I> Query<T> map(org.gama.stalactite.persistence.structure.Column<I> column, SerializableBiConsumer<T, I> setter) {
+	public <I> QueryConverter<T> map(org.gama.stalactite.persistence.structure.Column<I> column, SerializableBiConsumer<T, I> setter) {
 		map(column.getName(), setter, column.getJavaType());
 		return this;
 	}
@@ -251,7 +251,7 @@ public class Query<T> {
 	 * @param <J> the type of the column, which is also that of the converter argument
 	 * @return this
 	 */
-	public <I, J> Query<T> map(org.gama.stalactite.persistence.structure.Column<I> column, SerializableBiConsumer<T, J> setter, Converter<I, J, RuntimeException> converter) {
+	public <I, J> QueryConverter<T> map(org.gama.stalactite.persistence.structure.Column<I> column, SerializableBiConsumer<T, J> setter, Converter<I, J, RuntimeException> converter) {
 		return map(column, (SerializableBiConsumer<T, I>) (t, i) -> setter.accept(t, converter.convert(i)));
 	}
 	
@@ -296,7 +296,7 @@ public class Query<T> {
 	
 	/**
 	 * Sets a value for a SQL parameter. Not for Collection/Iterable value : see {@link #set(String, Iterable, Class)} dedicated method for it.
-	 * No already-existing argument name checking is done, so you can overwrite/redefine an existing value. This lets you reexecute a Query with
+	 * No already-existing argument name checking is done, so you can overwrite/redefine an existing value. This lets you reexecute a QueryConverter with
 	 * different parameters.
 	 *
 	 * @param paramName the name of the SQL parameter to be set
@@ -305,13 +305,13 @@ public class Query<T> {
 	 * @see #set(String, Iterable, Class)
 	 * @see #clear(String)
 	 */
-	public Query<T> set(String paramName, Object value) {
+	public QueryConverter<T> set(String paramName, Object value) {
 		return set(paramName, value, value == null ? null : (Class) value.getClass());
 	}
 	
 	/**
 	 * Sets a value for a SQL parameter. Not for Collection/Iterable value : see {@link #set(String, Iterable, Class)} dedicated method for it.
-	 * No already-existing argument name checking is done, so you can overwrite/redefine an existing value. This lets you reexecute a Query with
+	 * No already-existing argument name checking is done, so you can overwrite/redefine an existing value. This lets you reexecute a QueryConverter with
 	 * different parameters.
 	 *
 	 * @param paramName the name of the SQL parameter to be set
@@ -321,7 +321,7 @@ public class Query<T> {
 	 * @see #set(String, Iterable, Class)
 	 * @see #clear(String)
 	 */
-	public <C> Query<T> set(String paramName, C value, Class<? super C> valueType) {
+	public <C> QueryConverter<T> set(String paramName, C value, Class<? super C> valueType) {
 		sqlParameterBinders.put(paramName, value == null ? ALWAYS_SET_NULL_INSTANCE : parameterBinderProvider.getBinder(valueType));
 		this.sqlArguments.put(paramName, value);
 		return this;
@@ -330,7 +330,7 @@ public class Query<T> {
 	/**
 	 * Sets a value for a Collection/Iterable SQL argument. Must be distinguished from {@link #set(String, Object)} because real {@link Iterable}
 	 * content type guessing can be difficult (or at least not accurate) and can lead to {@link Iterable} consumption.
-	 * No already-existing argument name checking is done, so you can overwrite/redefine an existing value. This lets you reexecute a Query with
+	 * No already-existing argument name checking is done, so you can overwrite/redefine an existing value. This lets you reexecute a QueryConverter with
 	 * different parameters.
 	 *
 	 * @param paramName the name of the SQL parameter to be set
@@ -339,7 +339,7 @@ public class Query<T> {
 	 * @return this
 	 * @see #clear(String)
 	 */
-	public <C> Query<T> set(String paramName, Iterable<C> value, Class<? super C> valueType) {
+	public <C> QueryConverter<T> set(String paramName, Iterable<C> value, Class<? super C> valueType) {
 		this.sqlParameterBinders.put(paramName, value == null ? ALWAYS_SET_NULL_INSTANCE : parameterBinderProvider.getBinder(valueType));
 		this.sqlArguments.put(paramName, value);
 		return this;
@@ -352,7 +352,7 @@ public class Query<T> {
 	 * @return this
 	 * @see #set(String, Object) 
 	 */
-	public Query<T> clear(String paramName) {
+	public QueryConverter<T> clear(String paramName) {
 		this.sqlParameterBinders.remove(paramName);
 		this.sqlArguments.remove(paramName);
 		return this;

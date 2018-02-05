@@ -35,7 +35,7 @@ import static org.mockito.Mockito.when;
  * @author Guillaume Mary
  */
 @RunWith(DataProviderRunner.class)
-public class QueryTest {
+public class QueryConverterTest {
 	
 	@DataProvider
 	public static Object[][] testNewQuery_data() {
@@ -47,37 +47,37 @@ public class QueryTest {
 		
 		return new Object[][] {
 				{	// default API: column name, column type
-					new Query<>(Toto.class, "select id, name from Toto", parameterBinderProvider)
+					new QueryConverter<>(Toto.class, "select id, name from Toto", parameterBinderProvider)
 						.mapKey("id", Toto::new, Long.class)
 						.map("name", Toto::setName, String.class)
 						.map("active", Toto::setActive) },
 				{	// with Java Bean constructor (no args)
-					new Query<>(Toto.class, "select id, name from Toto", parameterBinderProvider)
+					new QueryConverter<>(Toto.class, "select id, name from Toto", parameterBinderProvider)
 						.mapKey("id", Toto::new, Toto::setId, Long.class)
 						.map("name", Toto::setName, String.class)
 						.map("active", Toto::setActive) },
 				{	// with Java Bean constructor (no args) and no column type
-					new Query<>(Toto.class, "select id, name from Toto", parameterBinderProvider)
+					new QueryConverter<>(Toto.class, "select id, name from Toto", parameterBinderProvider)
 						.mapKey("id", Toto::new, Toto::setId)
 						.map("name", Toto::setName, String.class)
 						.map("active", Toto::setActive) },
 				{	// with Java Bean constructor (no args) and no column type, other syntax (not officially supported)
-					new Query<>(Toto.class, "select id, name from Toto", parameterBinderProvider)
+					new QueryConverter<>(Toto.class, "select id, name from Toto", parameterBinderProvider)
 						.mapKey("id", Toto::new, (SerializableBiConsumer<Toto, Long>) (t, i) -> t.setId(i))
 						.map("name", Toto::setName, String.class)
 						.map("active", Toto::setActive) },
 				{	// with map method using other syntax (not officially supported)
-					new Query<>(Toto.class, "select id, name from Toto", parameterBinderProvider)
+					new QueryConverter<>(Toto.class, "select id, name from Toto", parameterBinderProvider)
 							.mapKey("id", Toto::new, Toto::setId)
 						.map("name", Toto::setName, String.class)
 						.map("active", (SerializableBiConsumer<Toto, Boolean>) (t, b) -> t.setActive(b)) },
 				{ 	// with Column API
-					new Query<>(Toto.class, "select id, name from Toto", parameterBinderProvider)
+					new QueryConverter<>(Toto.class, "select id, name from Toto", parameterBinderProvider)
 						.mapKey(id, Toto::new)
 						.map(name, Toto::setName)
 						.map(active, Toto::setActive) },
 				{	// with Java Bean constructor (no args)
-					new Query<>(Toto.class, "select id, name from Toto", parameterBinderProvider)
+					new QueryConverter<>(Toto.class, "select id, name from Toto", parameterBinderProvider)
 						.mapKey(id, Toto::new, Toto::setId)
 						.map(name, Toto::setName)
 						.map(active, Toto::setActive) }
@@ -86,13 +86,13 @@ public class QueryTest {
 	
 	@Test
 	@UseDataProvider("testNewQuery_data")
-	public void testNewQuery(Query<Toto> query) {
+	public void testNewQuery(QueryConverter<Toto> queryConverter) {
 		List<Map<String, Object>> resultSetData = Arrays.asList(
 				Maps.asHashMap("id", (Object) 42L).add("name", "coucou").add("active", true),
 				Maps.asHashMap("id", (Object) 43L).add("name", "hello").add("active", false)
 		);
 		
-		List<Toto> result = execute(query, resultSetData);
+		List<Toto> result = execute(queryConverter, resultSetData);
 		
 		List<Toto> expected = Arrays.asList(
 				new Toto(42, "coucou", true), 
@@ -109,13 +109,13 @@ public class QueryTest {
 		Column<String> name = toto.addColumn("name", String.class);
 		
 		return new Object[][] {
-				{ new Query<>(Toto.class, "select id, name from Toto", parameterBinderProvider)
+				{ new QueryConverter<>(Toto.class, "select id, name from Toto", parameterBinderProvider)
 							.mapKey("id", Toto::new, Toto::setId)
 							.map("name", Toto::setName, input -> "coucou") },
-				{ new Query<>(Toto.class, "select id, name from Toto", parameterBinderProvider)
+				{ new QueryConverter<>(Toto.class, "select id, name from Toto", parameterBinderProvider)
 							.mapKey("id", Toto::new, Toto::setId)
 							.map("name", Toto::setName, String.class, input -> "coucou") },
-				{ new Query<>(Toto.class, "select id, name from Toto", parameterBinderProvider)
+				{ new QueryConverter<>(Toto.class, "select id, name from Toto", parameterBinderProvider)
 							.mapKey(id, Toto::new, Toto::setId)
 							.map(name, Toto::setName, input -> "coucou") }
 		};
@@ -123,13 +123,13 @@ public class QueryTest {
 	
 	@Test
 	@UseDataProvider("testNewQuery_withConverter_data")
-	public void testNewQuery_withConverter(Query<Toto> query) {
+	public void testNewQuery_withConverter(QueryConverter<Toto> queryConverter) {
 		List<Map<String, Object>> resultSetData = Arrays.asList(
 				Maps.asHashMap("id", (Object) 42L).add("name", "ghoeihvoih"),
 				Maps.asHashMap("id", (Object) 43L).add("name", "oziuoie")
 		);
 		
-		List<Toto> result = execute(query, resultSetData);
+		List<Toto> result = execute(queryConverter, resultSetData);
 		
 		List<Toto> expected = Arrays.asList(
 				new Toto(42, "coucou", false),
@@ -138,7 +138,7 @@ public class QueryTest {
 		assertEquals(expected.toString(), result.toString());
 	}
 	
-	public List<Toto> execute(Query<Toto> query, List<Map<String, Object>> resultSetData) {
+	public List<Toto> execute(QueryConverter<Toto> queryConverter, List<Map<String, Object>> resultSetData) {
 		// creation of a Connection that will give our test case data
 		Connection connectionMock = mock(Connection.class);
 		try {
@@ -150,14 +150,14 @@ public class QueryTest {
 			throw Exceptions.asRuntimeException(e);
 		}
 		
-		return query.execute(() -> connectionMock);
+		return queryConverter.execute(() -> connectionMock);
 	}
 	
 	@Test
 	public void testNewQuery_withCondition() throws SQLException {
 		ParameterBinderProvider<Class> parameterBinderProvider = ParameterBinderProvider.fromMap(new ColumnBinderRegistry().getParameterBinders());
 		// NB: SQL String is there only for clarification but is never executed
-		Query<Toto> query = new Query<>(Toto.class, "select id, name from Toto where id in (:id)", parameterBinderProvider)
+		QueryConverter<Toto> queryConverter = new QueryConverter<>(Toto.class, "select id, name from Toto where id in (:id)", parameterBinderProvider)
 				.mapKey("id", Toto::new, Integer.class)
 				.set("id", Arrays.asList(1, 2), Integer.class);
 		
@@ -179,7 +179,7 @@ public class QueryTest {
 			throw Exceptions.asRuntimeException(e);
 		}
 		
-		List<Toto> result = query.execute(() -> mock);
+		List<Toto> result = queryConverter.execute(() -> mock);
 		// Checking that setters were called
 		verify(statementMock, times(2)).setInt(anyInt(), captor.capture());
 		assertEquals(Arrays.asList(1, 2), captor.getAllValues());
@@ -190,14 +190,14 @@ public class QueryTest {
 //	@Test
 //	public void testNewQuery_withColumn() {
 //		PersistenceContext testInstance = new PersistenceContext(() -> null, new Dialect(new DefaultTypeMapping(), new ColumnBinderRegistry()));
-//		Query query = testInstance.newQuery(new SelectQuery());
+//		QueryConverter query = testInstance.newQuery(new SelectQuery());
 //		query.set("ids", Arrays.asList(1, 2));
 //	}
 	
 //	@Test
 //	public void testNewQuery_withBeanGraphBuilding() {
 //		PersistenceContext testInstance = new PersistenceContext(() -> null, new Dialect(new DefaultTypeMapping(), new ColumnBinderRegistry()));
-//		Query query = testInstance.newQuery(new SelectQuery());
+//		QueryConverter query = testInstance.newQuery(new SelectQuery());
 //		query.set("ids", Arrays.asList(1, 2));
 //	}
 	

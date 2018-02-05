@@ -123,14 +123,14 @@ public class PersistenceContext {
 	}
 	
 	/**
-	 * Create a {@link Query} 
+	 * Create a {@link QueryConverter} 
 	 * @param sql the sql to execute to populate beans
 	 * @param beanType type of created beans, used for returned type marker
 	 * @param <T> type of created beans
-	 * @return a new {@link Query} that must be configured and executed
+	 * @return a new {@link QueryConverter} that must be configured and executed
 	 */
-	public <T> Query<T> newQuery(CharSequence sql, Class<T> beanType) {
-		return new Query<>(beanType, sql, ParameterBinderProvider.fromMap(getDialect().getColumnBinderRegistry().getParameterBinders()));
+	public <T> QueryConverter<T> newQuery(CharSequence sql, Class<T> beanType) {
+		return new QueryConverter<>(beanType, sql, ParameterBinderProvider.fromMap(getDialect().getColumnBinderRegistry().getParameterBinders()));
 	}
 	
 	public ExecutableUpdate update(Table table) {
