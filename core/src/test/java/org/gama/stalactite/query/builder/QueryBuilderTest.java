@@ -26,7 +26,7 @@ import static org.junit.Assert.assertEquals;
  * @author Guillaume Mary
  */
 @RunWith(DataProviderRunner.class)
-public class SelectQueryBuilderTest {
+public class QueryBuilderTest {
 	
 	@DataProvider
 	public static Object[][] testToSQL_data() {
@@ -110,7 +110,7 @@ public class SelectQueryBuilderTest {
 	@Test
 	@UseDataProvider("testToSQL_data")
 	public void testToSQL(QueryProvider queryProvider, String expected) {
-		SelectQueryBuilder testInstance = new SelectQueryBuilder(queryProvider.getSelectQuery());
+		QueryBuilder testInstance = new QueryBuilder(queryProvider.getSelectQuery());
 		assertEquals(expected, testInstance.toSQL());
 	}
 	
@@ -143,7 +143,7 @@ public class SelectQueryBuilderTest {
 	@UseDataProvider("testToPreparedSQL_data")
 	public void testToPreparedSQL(QueryProvider queryProvider,
 								  String expectedPreparedStatement, Map<Integer, Object> expectedValues) {
-		SelectQueryBuilder testInstance = new SelectQueryBuilder(queryProvider.getSelectQuery());
+		QueryBuilder testInstance = new QueryBuilder(queryProvider.getSelectQuery());
 		ColumnBinderRegistry parameterBinderRegistry = new ColumnBinderRegistry();
 		PreparedSQL preparedSQL = testInstance.toPreparedSQL(parameterBinderRegistry);
 		assertEquals(expectedPreparedStatement, preparedSQL.getSQL());

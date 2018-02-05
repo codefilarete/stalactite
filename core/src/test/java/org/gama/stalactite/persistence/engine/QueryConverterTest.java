@@ -190,14 +190,14 @@ public class QueryConverterTest {
 //	@Test
 //	public void testNewQuery_withColumn() {
 //		PersistenceContext testInstance = new PersistenceContext(() -> null, new Dialect(new DefaultTypeMapping(), new ColumnBinderRegistry()));
-//		QueryConverter query = testInstance.newQuery(new SelectQuery());
+//		QueryConverter query = testInstance.newQuery(new Query());
 //		query.set("ids", Arrays.asList(1, 2));
 //	}
 	
 //	@Test
 //	public void testNewQuery_withBeanGraphBuilding() {
 //		PersistenceContext testInstance = new PersistenceContext(() -> null, new Dialect(new DefaultTypeMapping(), new ColumnBinderRegistry()));
-//		QueryConverter query = testInstance.newQuery(new SelectQuery());
+//		QueryConverter query = testInstance.newQuery(new Query());
 //		query.set("ids", Arrays.asList(1, 2));
 //	}
 	

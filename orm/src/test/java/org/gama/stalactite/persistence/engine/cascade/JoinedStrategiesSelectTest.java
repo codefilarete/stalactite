@@ -7,7 +7,7 @@ import org.gama.sql.binder.ParameterBinder;
 import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
 import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.persistence.structure.Column;
-import org.gama.stalactite.query.builder.SelectQueryBuilder;
+import org.gama.stalactite.query.builder.QueryBuilder;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -56,7 +56,7 @@ public class JoinedStrategiesSelectTest {
 	public void testToSQL_singleStrategy(Table table, String expected) {
 		ClassMappingStrategy mappingStrategyMock = buildMockMappingStrategy(table);
 		JoinedStrategiesSelect testInstance = new JoinedStrategiesSelect<>(mappingStrategyMock, c -> mock(ParameterBinder.class));
-		SelectQueryBuilder queryBuilder = new SelectQueryBuilder(testInstance.buildSelectQuery());
+		QueryBuilder queryBuilder = new QueryBuilder(testInstance.buildSelectQuery());
 		assertEquals(expected, queryBuilder.toSQL());
 	}
 	
@@ -110,7 +110,7 @@ public class JoinedStrategiesSelectTest {
 										   String expected) {
 		JoinedStrategiesSelect testInstance = new JoinedStrategiesSelect(rootMappingStrategy, c -> mock(ParameterBinder.class));
 		testInstance.add(JoinedStrategiesSelect.FIRST_STRATEGY_NAME, classMappingStrategy, leftJoinColumn, rightJoinColumn, false, null);
-		SelectQueryBuilder queryBuilder = new SelectQueryBuilder(testInstance.buildSelectQuery());
+		QueryBuilder queryBuilder = new QueryBuilder(testInstance.buildSelectQuery());
 		assertEquals(expected, queryBuilder.toSQL());
 	}
 	
@@ -137,7 +137,7 @@ public class JoinedStrategiesSelectTest {
 		JoinedStrategiesSelect testInstance = new JoinedStrategiesSelect(totoMappingMock, c -> mock(ParameterBinder.class));
 		String tataAddKey = testInstance.add(JoinedStrategiesSelect.FIRST_STRATEGY_NAME, tataMappingMock, totoPrimaryKey, tataPrimaryKey, false, null);
 		testInstance.add(tataAddKey, tutuMappingMock, tataPrimaryKey, tutuPrimaryKey, false, null);
-		SelectQueryBuilder queryBuilder = new SelectQueryBuilder(testInstance.buildSelectQuery());
+		QueryBuilder queryBuilder = new QueryBuilder(testInstance.buildSelectQuery());
 		assertEquals("select"
 						+ " Toto.id as Toto_id, Toto.name as Toto_name"
 						+ ", Tata.id as Tata_id, Tata.name as Tata_name"
@@ -173,7 +173,7 @@ public class JoinedStrategiesSelectTest {
 		JoinedStrategiesSelect testInstance = new JoinedStrategiesSelect(totoMappingMock, c -> mock(ParameterBinder.class));
 		String tataAddKey = testInstance.add(JoinedStrategiesSelect.FIRST_STRATEGY_NAME, tataMappingMock, tataId, tataPrimaryKey, false, null);
 		testInstance.add(tataAddKey, tutuMappingMock, tutuId, tutuPrimaryKey, true, null);
-		SelectQueryBuilder queryBuilder = new SelectQueryBuilder(testInstance.buildSelectQuery());
+		QueryBuilder queryBuilder = new QueryBuilder(testInstance.buildSelectQuery());
 		assertEquals("select"
 						+ " Toto.id as Toto_id, Toto.name as Toto_name, Toto.tataId as Toto_tataId, Toto.tutuId as Toto_tutuId"
 						+ ", Tata.id as Tata_id, Tata.name as Tata_name"
@@ -214,7 +214,7 @@ public class JoinedStrategiesSelectTest {
 		String tataAddKey = testInstance.add(JoinedStrategiesSelect.FIRST_STRATEGY_NAME, tataMappingMock, totoPrimaryKey, tataPrimaryKey, false, null);
 		String tutuAddKey = testInstance.add(tataAddKey, tutuMappingMock, tataPrimaryKey, tutuPrimaryKey, false, null);
 		String titiAddKey = testInstance.add(JoinedStrategiesSelect.FIRST_STRATEGY_NAME, titiMappingMock, tataPrimaryKey, titiPrimaryKey, false, null);
-		SelectQueryBuilder queryBuilder = new SelectQueryBuilder(testInstance.buildSelectQuery());
+		QueryBuilder queryBuilder = new QueryBuilder(testInstance.buildSelectQuery());
 		assertEquals("select"
 						+ " Toto.id as Toto_id, Toto.name as Toto_name"
 						+ ", Tata.id as Tata_id, Tata.name as Tata_name"

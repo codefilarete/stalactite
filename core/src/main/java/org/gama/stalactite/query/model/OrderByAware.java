@@ -2,7 +2,7 @@ package org.gama.stalactite.query.model;
 
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.query.model.OrderByChain.Order;
-import org.gama.stalactite.query.model.SelectQuery.FluentOrderBy;
+import org.gama.stalactite.query.model.Query.FluentOrderBy;
 
 /**
  * @author Guillaume Mary

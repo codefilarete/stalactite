@@ -7,5 +7,5 @@ package org.gama.stalactite.query.model;
  */
 public interface QueryProvider {
 	
-	SelectQuery getSelectQuery();
+	Query getSelectQuery();
 }

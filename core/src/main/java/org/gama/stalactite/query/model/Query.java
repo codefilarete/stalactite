@@ -5,16 +5,17 @@ import java.util.Map;
 import org.gama.lang.reflect.MethodDispatcher;
 import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.persistence.structure.Column;
+import org.gama.stalactite.query.builder.QueryBuilder;
 import org.gama.stalactite.query.model.OrderByChain.Order;
 
 /**
  * A support for a SQL query, trying to be closest as possible to a real select query syntax and implementing the most simple/common usage. 
- * No syntax validation is done. Final printing can be made by {@link org.gama.stalactite.query.builder.SelectQueryBuilder}
+ * No syntax validation is done. Final printing can be made by {@link QueryBuilder}
  * 
  * @author Guillaume Mary
- * @see org.gama.stalactite.query.builder.SelectQueryBuilder
+ * @see QueryBuilder
  */
-public class SelectQuery implements FromAware, WhereAware, HavingAware, OrderByAware, LimitAware, QueryProvider {
+public class Query implements FromAware, WhereAware, HavingAware, OrderByAware, LimitAware, QueryProvider {
 	
 	private final FluentSelect select;
 	private final Select selectSurrogate;
@@ -31,7 +32,7 @@ public class SelectQuery implements FromAware, WhereAware, HavingAware, OrderByA
 	private final Limit limitSurrogate;
 	private final FluentLimit limit;
 	
-	public SelectQuery() {
+	public Query() {
 		this.selectSurrogate = new Select();
 		this.select = new MethodDispatcher()
 				.redirect(SelectChain.class, selectSurrogate, true)
@@ -232,7 +233,7 @@ public class SelectQuery implements FromAware, WhereAware, HavingAware, OrderByA
 	}
 	
 	@Override
-	public SelectQuery getSelectQuery() {
+	public Query getSelectQuery() {
 		return this;
 	}
 	

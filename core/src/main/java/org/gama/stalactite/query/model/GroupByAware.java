@@ -1,7 +1,7 @@
 package org.gama.stalactite.query.model;
 
 import org.gama.stalactite.persistence.structure.Column;
-import org.gama.stalactite.query.model.SelectQuery.FluentGroupBy;
+import org.gama.stalactite.query.model.Query.FluentGroupBy;
 
 /**
  * @author Guillaume Mary

@@ -3,33 +3,33 @@ package org.gama.stalactite.query.model;
 import java.util.Map;
 
 import org.gama.stalactite.persistence.structure.Column;
-import org.gama.stalactite.query.model.SelectQuery.FluentSelect;
+import org.gama.stalactite.query.model.Query.FluentSelect;
 
 /**
- * A simple class to avoid "new SelectQuery()" syntax chained with {@link SelectQuery#select(Column, String)}
+ * A simple class to avoid "new Query()" syntax chained with {@link Query#select(Column, String)}
  * 
  * @author Guillaume Mary
  */
 public class QueryEase {
 	
 	public static FluentSelect select(Object selectable, Object... columns) {
-		return new SelectQuery().select(selectable, columns);
+		return new Query().select(selectable, columns);
 	}
 	
 	public static FluentSelect select(Column column, String alias) {
-		return new SelectQuery().select(column, alias);
+		return new Query().select(column, alias);
 	}
 	
 	public static FluentSelect select(Column col1, String alias1, Column col2, String alias2) {
-		return new SelectQuery().select(col1, alias1, col2, alias2);
+		return new Query().select(col1, alias1, col2, alias2);
 	}
 	
 	public static FluentSelect select(Column col1, String alias1, Column col2, String alias2, Column col3, String alias3) {
-		return new SelectQuery().select(col1, alias1, col2, alias2, col3, alias3);
+		return new Query().select(col1, alias1, col2, alias2, col3, alias3);
 	}
 	
 	public static FluentSelect select(Map<Column, String> aliasedColumns) {
-		return new SelectQuery().select(aliasedColumns);
+		return new Query().select(aliasedColumns);
 	}
 	
 	public static Where where(Column column, String condition) {

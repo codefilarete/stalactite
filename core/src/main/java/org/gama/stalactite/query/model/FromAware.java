@@ -2,7 +2,7 @@ package org.gama.stalactite.query.model;
 
 import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.persistence.structure.Column;
-import org.gama.stalactite.query.model.SelectQuery.FluentFrom;
+import org.gama.stalactite.query.model.Query.FluentFrom;
 
 /**
  * The interface defining what's possible to do (fluent point of view) after a select

@@ -1,7 +1,7 @@
 package org.gama.stalactite.query.model;
 
 import org.gama.stalactite.persistence.structure.Column;
-import org.gama.stalactite.query.model.SelectQuery.FluentWhere;
+import org.gama.stalactite.query.model.Query.FluentWhere;
 
 /**
  * The interface defining what's possible to do (fluent point of view) after a from

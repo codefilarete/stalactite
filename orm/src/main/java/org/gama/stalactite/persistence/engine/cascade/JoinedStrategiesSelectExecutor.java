@@ -23,8 +23,8 @@ import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
 import org.gama.stalactite.persistence.sql.Dialect;
 import org.gama.stalactite.persistence.sql.dml.ColumnParamedSelect;
 import org.gama.stalactite.persistence.structure.Column;
-import org.gama.stalactite.query.builder.SelectQueryBuilder;
-import org.gama.stalactite.query.model.SelectQuery;
+import org.gama.stalactite.query.builder.QueryBuilder;
+import org.gama.stalactite.query.model.Query;
 
 import static org.gama.sql.dml.ExpandableSQL.ExpandableParameter.SQL_PARAMETER_MARK_1;
 import static org.gama.sql.dml.ExpandableSQL.ExpandableParameter.SQL_PARAMETER_MARK_10;
@@ -81,11 +81,11 @@ public class JoinedStrategiesSelectExecutor<T, I> {
 		List<List<I>> parcels = Collections.parcel(ids, blockSize);
 		result = new ArrayList<>(parcels.size() * blockSize);
 		
-		SelectQuery selectQuery = joinedStrategiesSelect.buildSelectQuery();
+		Query query = joinedStrategiesSelect.buildSelectQuery();
 		
-		// Creation of the where clause: we use a dynamic "in" operator clause to avoid multiple SelectQueryBuilder instanciation
+		// Creation of the where clause: we use a dynamic "in" operator clause to avoid multiple QueryBuilder instanciation
 		DynamicInClause condition = new DynamicInClause();
-		selectQuery.where(keyColumn, condition);
+		query.where(keyColumn, condition);
 		
 		// Use same Connection for all operations
 		ConnectionProvider connectionProvider = new SimpleConnectionProvider(getConnectionProvider().getCurrentConnection());
@@ -96,7 +96,7 @@ public class JoinedStrategiesSelectExecutor<T, I> {
 			parcels = Collections.cutTail(parcels);
 		}
 		
-		SelectQueryBuilder queryBuilder = new SelectQueryBuilder(selectQuery);
+		QueryBuilder queryBuilder = new QueryBuilder(query);
 		if (!parcels.isEmpty()) {
 			// change parameter mark count to adapt "in" operator values
 			condition.setParamMarkCount(blockSize);

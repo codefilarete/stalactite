@@ -19,7 +19,7 @@ import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.query.model.From;
 import org.gama.stalactite.query.model.From.AbstractJoin.JoinDirection;
-import org.gama.stalactite.query.model.SelectQuery;
+import org.gama.stalactite.query.model.Query;
 
 /**
  * Class that eases the creation of a SQL selection with multiple joined {@link ClassMappingStrategy}.
@@ -83,7 +83,7 @@ public class JoinedStrategiesSelect<T, I> {
 	}
 	
 	/**
-	 * @return the generated aliases by {@link Column} during the {@link #addColumnsToSelect(String, Iterable, SelectQuery)} phase
+	 * @return the generated aliases by {@link Column} during the {@link #addColumnsToSelect(String, Iterable, Query)} phase
 	 */
 	public Map<Column, String> getAliases() {
 		return aliases;
@@ -97,20 +97,20 @@ public class JoinedStrategiesSelect<T, I> {
 		return strategyIndex.values();
 	}
 	
-	public SelectQuery buildSelectQuery() {
-		SelectQuery selectQuery = new SelectQuery();
+	public Query buildSelectQuery() {
+		Query query = new Query();
 		
 		// initialization of the from clause with the very first table
-		From from = selectQuery.getFromSurrogate().add(root.getTable());
+		From from = query.getFromSurrogate().add(root.getTable());
 		String tableAlias = columnAliasBuilder.buildAlias(root.getTable(), root.getTableAlias());
-		addColumnsToSelect(tableAlias, root.getStrategy().getSelectableColumns(), selectQuery);
+		addColumnsToSelect(tableAlias, root.getStrategy().getSelectableColumns(), query);
 		
 		Queue<Join> stack = new ArrayDeque<>();
 		stack.addAll(root.getJoins());
 		while (!stack.isEmpty()) {
 			Join join = stack.poll();
 			String joinTableAlias = columnAliasBuilder.buildAlias(join.getStrategy().getTable(), join.getStrategy().getTableAlias());
-			addColumnsToSelect(joinTableAlias, join.getStrategy().getStrategy().getSelectableColumns(), selectQuery);
+			addColumnsToSelect(joinTableAlias, join.getStrategy().getStrategy().getSelectableColumns(), query);
 			Column leftJoinColumn = join.getLeftJoinColumn();
 			Column rightJoinColumn = join.getRightJoinColumn();
 			from.add(from.new ColumnJoin(leftJoinColumn, rightJoinColumn, join.isOuter() ? JoinDirection.LEFT_OUTER_JOIN : JoinDirection.INNER_JOIN));
@@ -118,7 +118,7 @@ public class JoinedStrategiesSelect<T, I> {
 			stack.addAll(join.getStrategy().getJoins());
 		}
 		
-		return selectQuery;
+		return query;
 	}
 	
 	public <U> String add(String leftStrategyName, ClassMappingStrategy<U, ?> strategy, Column leftJoinColumn, Column rightJoinColumn,
@@ -139,10 +139,10 @@ public class JoinedStrategiesSelect<T, I> {
 		return indexKey;
 	}
 	
-	private void addColumnsToSelect(String tableAlias, Iterable<Column> selectableColumns, SelectQuery selectQuery) {
+	private void addColumnsToSelect(String tableAlias, Iterable<Column> selectableColumns, Query query) {
 		for (Column selectableColumn : selectableColumns) {
 			String alias = columnAliasBuilder.buildAlias(tableAlias, selectableColumn);
-			selectQuery.select(selectableColumn, alias);
+			query.select(selectableColumn, alias);
 			// we link the column alias to the binder so it will be easy to read the ResultSet
 			selectParameterBinders.put(alias, parameterBinderProvider.getBinder(selectableColumn));
 			aliases.put(selectableColumn, alias);

@@ -12,27 +12,27 @@ import org.gama.stalactite.query.model.Limit;
 import org.gama.stalactite.query.model.OrderBy;
 import org.gama.stalactite.query.model.OrderBy.OrderedColumn;
 import org.gama.stalactite.query.model.OrderByChain.Order;
-import org.gama.stalactite.query.model.SelectQuery;
+import org.gama.stalactite.query.model.Query;
 
 /**
  * @author Guillaume Mary
  */
-public class SelectQueryBuilder implements SQLBuilder, PreparedSQLBuilder {
+public class QueryBuilder implements SQLBuilder, PreparedSQLBuilder {
 	
 	private final DMLNameProvider dmlNameProvider;
-	private final SelectQuery selectQuery;
+	private final Query query;
 	private final SelectBuilder selectBuilder;
 	private final FromBuilder fromBuilder;
 	private final WhereBuilder whereBuilder;
 	private final WhereBuilder havingBuilder;
 	
-	public SelectQueryBuilder(SelectQuery selectQuery) {
-		this.dmlNameProvider = new DMLNameProvider(selectQuery.getFromSurrogate().getTableAliases());
-		this.selectQuery = selectQuery;
-		this.selectBuilder = new SelectBuilder(selectQuery.getSelectSurrogate(), dmlNameProvider);
-		this.fromBuilder = new FromBuilder(selectQuery.getFromSurrogate());
-		this.whereBuilder = new WhereBuilder(selectQuery.getWhere(), dmlNameProvider);
-		this.havingBuilder = new WhereBuilder(selectQuery.getHavingSurrogate(), dmlNameProvider);
+	public QueryBuilder(Query query) {
+		this.dmlNameProvider = new DMLNameProvider(query.getFromSurrogate().getTableAliases());
+		this.query = query;
+		this.selectBuilder = new SelectBuilder(query.getSelectSurrogate(), dmlNameProvider);
+		this.fromBuilder = new FromBuilder(query.getFromSurrogate());
+		this.whereBuilder = new WhereBuilder(query.getWhere(), dmlNameProvider);
+		this.havingBuilder = new WhereBuilder(query.getHavingSurrogate(), dmlNameProvider);
 	}
 	
 	@Override
@@ -41,26 +41,26 @@ public class SelectQueryBuilder implements SQLBuilder, PreparedSQLBuilder {
 		
 		sql.cat("select ", selectBuilder.toSQL());
 		sql.cat(" from ", fromBuilder.toSQL());
-		if (!selectQuery.getWhereSurrogate().getConditions().isEmpty()) {
+		if (!query.getWhereSurrogate().getConditions().isEmpty()) {
 			sql.cat(" where ", whereBuilder.toSQL());
 		}
 		
-		GroupBy groupBy = selectQuery.getGroupBySurrogate();
+		GroupBy groupBy = query.getGroupBySurrogate();
 		if (!groupBy.getGroups().isEmpty()) {
 			cat(groupBy, sql.cat(" group by "));
 		}
 		
-		Having having = selectQuery.getHavingSurrogate();
+		Having having = query.getHavingSurrogate();
 		if (!having.getConditions().isEmpty()) {
 			havingBuilder.toSQL(sql.cat(" having "));
 		}
 		
-		OrderBy orderBy = selectQuery.getOrderBySurrogate();
+		OrderBy orderBy = query.getOrderBySurrogate();
 		if (!orderBy.getColumns().isEmpty()) {
 			cat(orderBy, sql.cat(" order by "));
 		}
 		
-		Limit limit = selectQuery.getLimitSurrogate();
+		Limit limit = query.getLimitSurrogate();
 		sql.catIf(limit.getValue() != null, " limit ", limit.getValue());
 		
 		return sql.toString();
@@ -74,28 +74,28 @@ public class SelectQueryBuilder implements SQLBuilder, PreparedSQLBuilder {
 		
 		sql.cat("select ", selectBuilder.toSQL());
 		sql.cat(" from ", fromBuilder.toSQL());
-		if (!selectQuery.getWhereSurrogate().getConditions().isEmpty()) {
+		if (!query.getWhereSurrogate().getConditions().isEmpty()) {
 			sql.cat(" where ");
 			whereBuilder.toPreparedSQL(preparedSQLWrapper);
 		}
 		
-		GroupBy groupBy = selectQuery.getGroupBySurrogate();
+		GroupBy groupBy = query.getGroupBySurrogate();
 		if (!groupBy.getGroups().isEmpty()) {
 			cat(groupBy, sql.cat(" group by "));
 		}
 		
-		Having having = selectQuery.getHavingSurrogate();
+		Having having = query.getHavingSurrogate();
 		if (!having.getConditions().isEmpty()) {
 			sql.cat(" having ");
 			havingBuilder.toPreparedSQL(preparedSQLWrapper);
 		}
 		
-		OrderBy orderBy = selectQuery.getOrderBySurrogate();
+		OrderBy orderBy = query.getOrderBySurrogate();
 		if (!orderBy.getColumns().isEmpty()) {
 			cat(orderBy, sql.cat(" order by "));
 		}
 		
-		Limit limit = selectQuery.getLimitSurrogate();
+		Limit limit = query.getLimitSurrogate();
 		if (limit.getValue() != null) {
 			sql.cat(" limit ");
 			preparedSQLWrapper.catValue(limit.getValue());
