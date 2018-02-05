@@ -159,7 +159,7 @@ public class ResultSetConverter<I, T> extends AbstractResultSetConverter<I, T> i
 	 * @return this
 	 */
 	public <K, V> ResultSetConverter<I, T> add(ResultSetConverter<K, V> relatedBeanCreator, BiConsumer<T, V> combiner) {
-		combiners.add(new Relation(combiner, relatedBeanCreator));
+		combiners.add(new Relation<>(combiner, relatedBeanCreator));
 		return this;
 	}
 	
@@ -183,7 +183,7 @@ public class ResultSetConverter<I, T> extends AbstractResultSetConverter<I, T> i
 				beanKey -> computeInstanceIfCacheMiss(beanType, beanKey, () -> relatedBeanFactory.apply(beanKey))
 		);
 		relatedBeanCreatorCopy.getConsumers().addAll(relatedBeanCreator.getConsumers());
-		this.combiners.add(new Relation(combiner, relatedBeanCreatorCopy));
+		this.combiners.add(new Relation<>(combiner, relatedBeanCreatorCopy));
 		return this;
 	}
 	
@@ -258,9 +258,9 @@ public class ResultSetConverter<I, T> extends AbstractResultSetConverter<I, T> i
 		
 		private final BiConsumer<K, V> relationFixer;
 		
-		private final AbstractResultSetConverter<K, V> transformer;
+		private final AbstractResultSetConverter<?, V> transformer;
 		
-		public Relation(BiConsumer<K, V> relationFixer, AbstractResultSetConverter<K, V> transformer) {
+		public Relation(BiConsumer<K, V> relationFixer, AbstractResultSetConverter<?, V> transformer) {
 			this.relationFixer = relationFixer;
 			this.transformer = transformer;
 		}
