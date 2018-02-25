@@ -7,8 +7,7 @@ import java.util.Map;
  * 
  * @author Guillaume Mary
  */
-@FunctionalInterface
-public interface ParameterBinderProvider<K> {
+public interface ParameterBinderProvider<K> extends PreparedStatementWriterProvider<K> {
 	
 	/**
 	 * Gives a {@link ParameterBinder} from a key.
@@ -26,6 +25,11 @@ public interface ParameterBinderProvider<K> {
 	}
 	
 	ParameterBinder doGetBinder(K key);
+	
+	@Override
+	default PreparedStatementWriter doGetWriter(K key) {
+		return doGetBinder(key);
+	}
 	
 	/**
 	 * Short way of getting a {@link ParameterBinderProvider} from a Map

@@ -11,7 +11,7 @@ import java.util.Set;
  * 
  * @author Guillaume Mary
  */
-public interface ParameterBinderIndex<K> extends ParameterBinderProvider<K> {
+public interface ParameterBinderIndex<K> extends ParameterBinderProvider<K>, PreparedStatementWriterIndex<K> {
 	
 	/**
 	 * @return all available keys

@@ -3,8 +3,8 @@ package org.gama.sql.dml;
 import java.sql.PreparedStatement;
 import java.util.Map;
 
-import org.gama.sql.binder.ParameterBinder;
-import org.gama.sql.binder.ParameterBinderIndex;
+import org.gama.sql.binder.PreparedStatementWriter;
+import org.gama.sql.binder.PreparedStatementWriterIndex;
 import org.gama.sql.dml.ExpandableSQL.ExpandableParameter;
 import org.gama.sql.dml.SQLParameterParser.ParsedSQL;
 
@@ -20,20 +20,20 @@ public class StringParamedSQL extends ExpandableStatement<String> {
 	private ExpandableSQL expandableSQL;
 	private boolean expandableSQLExpired = false;
 	
-	public StringParamedSQL(String originalSQL, Map<String, ParameterBinder> parameterBinders) {
+	public StringParamedSQL(String originalSQL, Map<String, ? extends PreparedStatementWriter> parameterBinders) {
 		this(new SQLParameterParser(originalSQL).parse(), parameterBinders);
 	}
 	
-	public StringParamedSQL(ParsedSQL parsedSQL, Map<String, ParameterBinder> parameterBinders) {
+	public StringParamedSQL(ParsedSQL parsedSQL, Map<String, ? extends PreparedStatementWriter> parameterBinders) {
 		super(null, parameterBinders);
 		this.parsedSQL = parsedSQL;
 	}
 	
-	public StringParamedSQL(String originalSQL, ParameterBinderIndex<String> parameterBinderProvider) {
+	public StringParamedSQL(String originalSQL, PreparedStatementWriterIndex<String> parameterBinderProvider) {
 		this(new SQLParameterParser(originalSQL).parse(), parameterBinderProvider);
 	}
 	
-	public StringParamedSQL(ParsedSQL parsedSQL, ParameterBinderIndex<String> parameterBinderProvider) {
+	public StringParamedSQL(ParsedSQL parsedSQL, PreparedStatementWriterIndex<String> parameterBinderProvider) {
 		super(null, parameterBinderProvider);
 		this.parsedSQL = parsedSQL;
 	}

@@ -11,8 +11,9 @@ import java.util.stream.Collectors;
 
 import org.gama.lang.collection.Iterables;
 import org.gama.sql.binder.ParameterBinder;
-import org.gama.sql.binder.ParameterBinderIndex;
-import org.gama.sql.binder.ParameterBinderProvider;
+import org.gama.sql.binder.PreparedStatementWriter;
+import org.gama.sql.binder.PreparedStatementWriterIndex;
+import org.gama.sql.binder.PreparedStatementWriterProvider;
 
 /**
  * Parent class that defines methods for applying values to {@link PreparedStatement} that is supposed to be built
@@ -26,7 +27,7 @@ public abstract class SQLStatement<ParamType> {
 	
 	protected final Map<ParamType, Object> values = new HashMap<>(5);
 	
-	protected final ParameterBinderProvider<ParamType> parameterBinderProvider;
+	protected final PreparedStatementWriterProvider<ParamType> parameterBinderProvider;
 	/** Set of keys/parameters/indexes available in the statement */
 	protected final Set<ParamType> expectedParameters;
 	
@@ -35,8 +36,8 @@ public abstract class SQLStatement<ParamType> {
 	 * @param parameterBinders expected to be the exact necessary binders of every parameters in the SQL order (no more, no less).
 	 * Checked by {@link #assertValuesAreApplyable()}
 	 */
-	protected SQLStatement(Map<ParamType, ParameterBinder> parameterBinders) {
-		this(ParameterBinderIndex.fromMap(parameterBinders));
+	protected SQLStatement(Map<ParamType, ? extends PreparedStatementWriter> parameterBinders) {
+		this(PreparedStatementWriterIndex.fromMap(parameterBinders));
 	}
 	
 	/**
@@ -44,7 +45,7 @@ public abstract class SQLStatement<ParamType> {
 	 * @param parameterBinderProvider expected to be the exact necessary binders of every parameters in the SQL order (no more, no less).
 	 * Checked by {@link #assertValuesAreApplyable()}
 	 */
-	protected SQLStatement(ParameterBinderIndex<ParamType> parameterBinderProvider) {
+	protected SQLStatement(PreparedStatementWriterIndex<ParamType> parameterBinderProvider) {
 		this.parameterBinderProvider = parameterBinderProvider;
 		this.expectedParameters = parameterBinderProvider.keys();
 	}
@@ -109,14 +110,14 @@ public abstract class SQLStatement<ParamType> {
 			throw new IllegalArgumentException("Missing value for parameters " + indexDiff + " in values " + values + " in \"" + getSQL() + "\"");
 		}
 		// Looking for undefined binder
-		Set<ParamType> missingParameters = values.keySet().stream().filter(paramType -> parameterBinderProvider.doGetBinder(paramType) == null).collect(Collectors.toSet());
+		Set<ParamType> missingParameters = values.keySet().stream().filter(paramType -> parameterBinderProvider.doGetWriter(paramType) == null).collect(Collectors.toSet());
 		if (!missingParameters.isEmpty()) {
 			throw new IllegalArgumentException("Missing binder for " + missingParameters + " for values " + values + " in \"" + getSQL() + "\"");
 		}
 	}
 	
-	public ParameterBinder<Object> getParameterBinder(ParamType parameter) {
-		return parameterBinderProvider.getBinder(parameter);
+	public PreparedStatementWriter<Object> getParameterBinder(ParamType parameter) {
+		return parameterBinderProvider.getWriter(parameter);
 	}
 	
 	/**
@@ -137,7 +138,7 @@ public abstract class SQLStatement<ParamType> {
 	 * @param paramBinder the binder of the parameter on the statement
 	 * @param statement the statement to use
 	 */
-	protected void doApplyValue(int index, Object value, ParameterBinder<Object> paramBinder, PreparedStatement statement) {
+	protected <T> void doApplyValue(int index, T value, PreparedStatementWriter<T> paramBinder, PreparedStatement statement) {
 		try {
 			paramBinder.set(statement, index, value);
 		} catch (SQLException e) {

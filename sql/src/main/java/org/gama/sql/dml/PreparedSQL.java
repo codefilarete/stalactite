@@ -4,7 +4,8 @@ import java.sql.PreparedStatement;
 import java.util.Map;
 
 import org.gama.sql.binder.ParameterBinder;
-import org.gama.sql.binder.ParameterBinderIndex;
+import org.gama.sql.binder.PreparedStatementWriter;
+import org.gama.sql.binder.PreparedStatementWriterIndex;
 
 /**
  * Class that applies values to {@link PreparedStatement} according to SQL that contains indexed parameters.
@@ -15,12 +16,12 @@ public class PreparedSQL extends SQLStatement<Integer> {
 	
 	private final String sql;
 	
-	public PreparedSQL(String sql, Map<Integer, ParameterBinder> parameterBinders) {
+	public PreparedSQL(String sql, Map<Integer, ? extends PreparedStatementWriter> parameterBinders) {
 		super(parameterBinders);
 		this.sql = sql;
 	}
 	
-	public PreparedSQL(String sql, ParameterBinderIndex<Integer> parameterBinderProvider) {
+	public PreparedSQL(String sql, PreparedStatementWriterIndex<Integer> parameterBinderProvider) {
 		super(parameterBinderProvider);
 		this.sql = sql;
 	}
@@ -31,7 +32,7 @@ public class PreparedSQL extends SQLStatement<Integer> {
 	}
 	
 	protected void doApplyValue(Integer index, Object value, PreparedStatement statement) {
-		ParameterBinder<Object> paramBinder = getParameterBinder(index);
+		PreparedStatementWriter<Object> paramBinder = getParameterBinder(index);
 		if (paramBinder == null) {
 			throw new IllegalArgumentException("Can't find a "+ParameterBinder.class.getName() + " for index " + index + " of value " + value
 					+ " on sql : " + getSQL());

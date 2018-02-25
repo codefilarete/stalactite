@@ -3,8 +3,8 @@ package org.gama.sql.dml;
 import java.sql.PreparedStatement;
 import java.util.Map;
 
-import org.gama.sql.binder.ParameterBinder;
-import org.gama.sql.binder.ParameterBinderIndex;
+import org.gama.sql.binder.PreparedStatementWriter;
+import org.gama.sql.binder.PreparedStatementWriterIndex;
 
 /**
  * Equivalent to {@link PreparedSQL} but with ParamType that can be expanded (essentially for Collection parameters)
@@ -15,12 +15,12 @@ public abstract class ExpandableStatement<ParamType> extends SQLStatement<ParamT
 	
 	private final String sql;
 	
-	public ExpandableStatement(String sql, Map<ParamType, ParameterBinder> parameterBinders) {
+	public ExpandableStatement(String sql, Map<ParamType, ? extends PreparedStatementWriter> parameterBinders) {
 		super(parameterBinders);
 		this.sql = sql;
 	}
 	
-	public ExpandableStatement(String sql, ParameterBinderIndex<ParamType> parameterBinderProvider) {
+	public ExpandableStatement(String sql, PreparedStatementWriterIndex<ParamType> parameterBinderProvider) {
 		super(parameterBinderProvider);
 		this.sql = sql;
 	}
@@ -32,7 +32,7 @@ public abstract class ExpandableStatement<ParamType> extends SQLStatement<ParamT
 	
 	@Override
 	protected void doApplyValue(ParamType paramType, Object value, PreparedStatement statement) {
-		ParameterBinder<Object> parameterBinder = getParameterBinder(paramType);
+		PreparedStatementWriter<Object> parameterBinder = getParameterBinder(paramType);
 		if (parameterBinder == null) {
 			throw new IllegalArgumentException("Can't find binder for parameter \"" + getParameterName(paramType) +"\""
 					+ " of type " + (value == null ? "unknown" : value.getClass().getName())

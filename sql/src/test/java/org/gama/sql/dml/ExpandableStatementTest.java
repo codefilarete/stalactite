@@ -11,6 +11,7 @@ import org.gama.lang.InvocationHandlerSupport;
 import org.gama.lang.collection.Arrays;
 import org.gama.lang.collection.Maps;
 import org.gama.sql.binder.ParameterBinder;
+import org.gama.sql.binder.PreparedStatementWriter;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -64,11 +65,11 @@ public class ExpandableStatementTest {
 	
 	@Test
 	@UseDataProvider("testDoApplyValue_data")
-	public void testDoApplyValue(String sql, Map<String, Object> paramValues, Map<String, ParameterBinder> binders, Map<Integer, Integer> expectedIndexes) {
+	public void testDoApplyValue(String sql, Map<String, Object> paramValues, Map<String, PreparedStatementWriter> binders, Map<Integer, Integer> expectedIndexes) {
 		Map<Integer, Object> appliedIndexedValues = new HashMap<>();
 		ExpandableStatement<String> testInstance = new StringParamedSQL(sql, binders) {
 			@Override
-			protected void doApplyValue(int index, Object value, ParameterBinder<Object> paramBinder, PreparedStatement statement) {
+			protected <T> void doApplyValue(int index, T value, PreparedStatementWriter<T> paramBinder, PreparedStatement statement) {
 				appliedIndexedValues.put(index, value);
 				super.doApplyValue(index, value, paramBinder, statement);
 			}
