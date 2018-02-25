@@ -48,26 +48,30 @@ public class OperandBuilder {
 		this.dmlNameProvider = dmlNameProvider;
 	}
 	
+	public void cat(Operand operand, SQLAppender sql) {
+		cat(null, operand, sql);
+	}
+	
 	/**
 	 * Main entry point
 	 */
-	public void cat(Operand operand, SQLAppender sql) {
+	public void cat(Column column, Operand operand, SQLAppender sql) {
 		if (operand.getValue() == null) {
 			catNullValue(operand.isNot(), sql);
 		} else {
 			// uggly way of dispatching concatenation, can't find a better way without heavying classes or struggling with single responsability design
 			if (operand instanceof Equals) {
-				catEquals((Equals) operand, sql);
+				catEquals((Equals) operand, sql, column);
 			} else if (operand instanceof Lower) {
-				catLower((Lower) operand, sql);
+				catLower((Lower) operand, sql, column);
 			} else if (operand instanceof Greater) {
-				catGreater((Greater) operand, sql);
+				catGreater((Greater) operand, sql, column);
 			} else if (operand instanceof Between) {
-				catBetween((Between) operand, sql);
+				catBetween((Between) operand, sql, column);
 			} else if (operand instanceof In) {
-				catIn((In) operand, sql);
+				catIn((In) operand, sql, column);
 			} else if (operand instanceof Like) {
-				catLike((Like) operand, sql);
+				catLike((Like) operand, sql, column);
 			} else if (operand instanceof IsNull) {
 				catIsNull((IsNull) operand, sql);
 			} else if (operand instanceof Sum) {
@@ -93,7 +97,7 @@ public class OperandBuilder {
 		catNullValue(isNull.isNot(), sql);
 	}
 	
-	public void catLike(Like like, SQLAppender sql) {
+	public void catLike(Like like, SQLAppender sql, Column column) {
 		String value = (String) like.getValue();
 		if (like.withLeadingStar()) {
 			value = '%' + value;
@@ -101,10 +105,10 @@ public class OperandBuilder {
 		if (like.withEndingStar()) {
 			value += '%';
 		}
-		sql.catIf(like.isNot(), "not ").cat("like ").catValue(value);
+		sql.catIf(like.isNot(), "not ").cat("like ").catValue(column, value);
 	}
 	
-	public void catIn(In in, SQLAppender sql) {
+	public void catIn(In in, SQLAppender sql, Column column) {
 		// we take collection into account : iterating over it to cat all values
 		Object value = in.getValue();
 		// we adapt the value to an Iterable, avoiding multiple cases and falling into a simple foreach loop 
@@ -115,16 +119,17 @@ public class OperandBuilder {
 			value = Iterables.asIterable(new ArrayIterator<>((Object[]) value));
 		}
 		sql.catIf(in.isNot(), "not ").cat("in (");
-		catInValue((Iterable) value, sql);
+		catInValue((Iterable) value, sql, column);
 		sql.cat(")");
 	}
 	
 	/**
 	 * Appends {@link Iterable} values to the given appender. Essentially done for "in" operator
 	 * @param sql the appender
+	 * @param column
 	 * @param value the iterable to be appended, not null (but may be empty, this method doesn't care)
 	 */
-	private void catInValue(Iterable value, SQLAppender sql) {
+	private void catInValue(Iterable value, SQLAppender sql, Column column) {
 		// appending values (separated by a comma, boilerplate code)
 		boolean isFirst = true;
 		for (Object v : value) {
@@ -133,38 +138,38 @@ public class OperandBuilder {
 			} else {
 				isFirst = false;
 			}
-			sql.catValue(v);
+			sql.catValue(column, v);
 		}
 	}
 	
-	public void catBetween(Between between, SQLAppender sql) {
+	public void catBetween(Between between, SQLAppender sql, Column column) {
 		Interval interval = between.getValue();
 		if (interval.getValue1() == null) {
-			sql.cat(between.isNot() ? ">= " : "< ").catValue(interval.getValue2());
+			sql.cat(between.isNot() ? ">= " : "< ").catValue(null, interval.getValue2());
 		} else if (interval.getValue2() == null) {
-			sql.cat(between.isNot() ? "<= " : "> ").catValue(interval.getValue1());
+			sql.cat(between.isNot() ? "<= " : "> ").catValue(null, interval.getValue1());
 		} else {
 			sql.catIf(between.isNot(), "not ").cat("between ")
-					.catValue(interval.getValue1()).cat(" and ").catValue(interval.getValue2());
+					.catValue(column, interval.getValue1()).cat(" and ").catValue(column, interval.getValue2());
 		}
 	}
 	
-	public void catGreater(Greater greater, SQLAppender sql) {
+	public void catGreater(Greater greater, SQLAppender sql, Column column) {
 		sql.cat(greater.isNot()
 				? (greater.isEquals() ? "< ": "<= ")
 				: (greater.isEquals() ? ">= ": "> "))
-			.catValue(greater.getValue());
+			.catValue(column, greater.getValue());
 	}
 	
-	public void catLower(Lower lower, SQLAppender sql) {
+	public void catLower(Lower lower, SQLAppender sql, Column column) {
 		sql.cat(lower.isNot()
 				? (lower.isEquals() ? "> ": ">= ")
 				: (lower.isEquals() ? "<= ": "< "))
-			.catValue(lower.getValue());
+			.catValue(column, lower.getValue());
 	}
 	
-	public void catEquals(Equals equals, SQLAppender sql) {
-		sql.catIf(equals.isNot(), "!").cat("= ").catValue(equals.getValue());
+	public void catEquals(Equals equals, SQLAppender sql, Column column) {
+		sql.catIf(equals.isNot(), "!").cat("= ").catValue(column, equals.getValue());
 	}
 	
 	public void catSum(Sum sum, SQLAppender sqlAppender) {
@@ -199,10 +204,11 @@ public class OperandBuilder {
 		/**
 		 * Called when a value must be "printed" to the underlying result. Implementations will differs on this point depending on the target goal:
 		 * values printed in the SQL statement (bad practive because of SQL injection) or prepared statement
+		 * @param column
 		 * @param value the object to be added/printed to the statement
 		 * @return this
 		 */
-		SQLAppender catValue(Object value);
+		SQLAppender catValue(Column column, Object value);
 		
 		default SQLAppender catIf(boolean condition, String s) {
 			if (condition) {
@@ -234,7 +240,7 @@ public class OperandBuilder {
 		}
 		
 		@Override
-		public StringAppenderWrapper catValue(Object value) {
+		public StringAppenderWrapper catValue(Column column, Object value) {
 			if (value instanceof CharSequence) {
 				// specialized case to espace single quotes
 				surrogate.cat("'", value.toString().replace("'", "''"), "'");
@@ -289,18 +295,23 @@ public class OperandBuilder {
 		
 		/**
 		 * Implemented such it adds the value as a {@link java.sql.PreparedStatement} mark (?) and keeps it for future use in the value list.
+		 * @param column
 		 * @param value the object to be added/printed to the statement
 		 * @return this
 		 */
 		@Override
-		public PreparedSQLWrapper catValue(Object value) {
+		public PreparedSQLWrapper catValue(Column column, Object value) {
 			ParameterBinder<?> binder;
 			if (value instanceof Column) {
 				// Columns are simply appended (no binder needed nor index increment)
 				surrogate.cat(dmlNameProvider.getName((Column) value));
 			} else {
-				Class<?> binderType = value.getClass().isArray() ? value.getClass().getComponentType() : value.getClass();
-				binder = parameterBinderRegistry.getBinder(binderType);
+				if (column != null) {
+					binder = parameterBinderRegistry.getBinder(column);
+				} else {
+					Class<?> binderType = value.getClass().isArray() ? value.getClass().getComponentType() : value.getClass();
+					binder = parameterBinderRegistry.getBinder(binderType);
+				}
 				surrogate.cat("?");
 				values.put(paramCounter.getValue(), value);
 				parameterBinders.put(paramCounter.getValue(), binder);

@@ -43,14 +43,14 @@ public class WhereBuilder implements SQLBuilder, PreparedSQLBuilder {
 	
 	@Override
 	public String toSQL() {
-		return toSQL(new StringAppender());
+		return appendSQL(new StringAppender());
 	}
 	
-	public String toSQL(StringAppender sql) {
-		return toSQL(new StringAppenderWrapper(sql, dmlNameProvider));
+	public String appendSQL(StringAppender sql) {
+		return appendSQL(new StringAppenderWrapper(sql, dmlNameProvider));
 	}
 	
-	public String toSQL(SQLAppender sql) {
+	public String appendSQL(SQLAppender sql) {
 		WhereAppender whereAppender = new WhereAppender(sql, dmlNameProvider);
 		whereAppender.cat(where);
 		return sql.getSQL();
@@ -141,7 +141,7 @@ public class WhereBuilder implements SQLBuilder, PreparedSQLBuilder {
 			if (o instanceof CharSequence) {
 				sql.cat(o.toString());
 			} else if (o instanceof Operand) {
-				cat((Operand) o);
+				cat(criterion.getColumn(), (Operand) o);
 			} else {
 				throw new IllegalArgumentException("Unknown criterion type " + Reflections.toString(o.getClass()));
 			}
@@ -160,6 +160,10 @@ public class WhereBuilder implements SQLBuilder, PreparedSQLBuilder {
 		
 		public void cat(Operand operand) {
 			operandBuilder.cat(operand, sql);
+		}
+		
+		public void cat(Column column, Operand operand) {
+			operandBuilder.cat(column, operand, sql);
 		}
 		
 		public String getName(LogicalOperator operator) {

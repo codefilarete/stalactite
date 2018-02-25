@@ -76,7 +76,7 @@ public class DeleteCommandBuilder implements SQLBuilder {
 		if (delete.getCriteria().iterator().hasNext()) {
 			result.cat(" where ");
 			WhereBuilder whereBuilder = new WhereBuilder(this.delete.getCriteria(), dmlNameProvider);
-			whereBuilder.toSQL(result);
+			whereBuilder.appendSQL(result);
 		}
 		return result.getSQL();
 	}

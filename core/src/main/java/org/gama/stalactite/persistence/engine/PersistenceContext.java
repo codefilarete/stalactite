@@ -14,6 +14,7 @@ import org.gama.sql.dml.PreparedSQL;
 import org.gama.sql.dml.WriteOperation;
 import org.gama.stalactite.command.builder.DeleteCommandBuilder;
 import org.gama.stalactite.command.builder.InsertCommandBuilder;
+import org.gama.stalactite.command.builder.InsertCommandBuilder.InsertStatement;
 import org.gama.stalactite.command.builder.UpdateCommandBuilder;
 import org.gama.stalactite.command.builder.UpdateCommandBuilder.UpdateStatement;
 import org.gama.stalactite.command.model.Delete;
@@ -21,7 +22,6 @@ import org.gama.stalactite.command.model.Insert;
 import org.gama.stalactite.command.model.Update;
 import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
 import org.gama.stalactite.persistence.sql.Dialect;
-import org.gama.stalactite.persistence.sql.dml.ColumnParamedSQL;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
 
@@ -198,16 +198,22 @@ public class PersistenceContext {
 	
 	public class ExecutableInsert extends Insert {
 		
-		private final Map<Column, Object> values = new HashMap<>();
-		
 		public ExecutableInsert(Table table) {
 			super(table);
 		}
 		
 		public <T> ExecutableInsert set(Column<T> column, T value) {
-			super.set(column);
-			this.values.put(column, value);
+			super.set(column, value);
 			return this;
+		}
+		
+		/**
+		 * Executes this insert statement. To be used when insert has no parameters on where clause, else use {@link #execute(Map)}
+		 *
+		 * @return the inserted row count
+		 */
+		public int execute() {
+			return execute(Collections.emptyMap());
 		}
 		
 		/**
@@ -215,10 +221,10 @@ public class PersistenceContext {
 		 *
 		 * @return the inserted row count
 		 */
-		public int execute() {
-			ColumnParamedSQL insertStatement = new InsertCommandBuilder(this).toStatement(getDialect().getColumnBinderRegistry());
+		public int execute(Map<Column, Object> values) {
+			InsertStatement insertStatement = new InsertCommandBuilder(this).toStatement(getDialect().getColumnBinderRegistry());
 			values.forEach(insertStatement::setValue);
-			WriteOperation<Column> writeOperation = new WriteOperation<>(insertStatement, connectionProvider);
+			WriteOperation<Integer> writeOperation = new WriteOperation<>(insertStatement, connectionProvider);
 			
 			writeOperation.setValues(insertStatement.getValues());
 			return writeOperation.execute();

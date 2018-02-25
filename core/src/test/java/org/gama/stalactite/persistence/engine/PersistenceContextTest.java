@@ -45,7 +45,7 @@ public class PersistenceContextTest {
 		
 		// test update with where
 		ExecutableUpdate set = testInstance.update(toto).set(id, 2L);
-		set.where(id, eq(1));
+		set.where(id, eq(1L));
 		updatedRowCount = set.execute();
 		assertEquals(1, updatedRowCount);
 		
@@ -55,7 +55,7 @@ public class PersistenceContextTest {
 		
 		// test delete
 		ExecutableDelete delete = testInstance.delete(toto);
-		delete.where(id, eq(2));
+		delete.where(id, eq(2L));
 		assertEquals(1, delete.execute());
 	}
 	

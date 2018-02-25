@@ -52,7 +52,7 @@ public class QueryBuilder implements SQLBuilder, PreparedSQLBuilder {
 		
 		Having having = query.getHavingSurrogate();
 		if (!having.getConditions().isEmpty()) {
-			havingBuilder.toSQL(sql.cat(" having "));
+			havingBuilder.appendSQL(sql.cat(" having "));
 		}
 		
 		OrderBy orderBy = query.getOrderBySurrogate();
@@ -98,7 +98,7 @@ public class QueryBuilder implements SQLBuilder, PreparedSQLBuilder {
 		Limit limit = query.getLimitSurrogate();
 		if (limit.getValue() != null) {
 			sql.cat(" limit ");
-			preparedSQLWrapper.catValue(limit.getValue());
+			preparedSQLWrapper.catValue(null, limit.getValue());
 		}
 		
 		PreparedSQL result = new PreparedSQL(sql.toString(), preparedSQLWrapper.getParameterBinders());

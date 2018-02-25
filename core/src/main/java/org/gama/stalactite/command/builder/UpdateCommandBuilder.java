@@ -43,7 +43,16 @@ public class UpdateCommandBuilder implements SQLBuilder {
 	
 	@Override
 	public String toSQL() {
-		return toSQL(new StringAppenderWrapper(new StringAppender(), dmlNameProvider), dmlNameProvider);
+		return toSQL(new StringAppenderWrapper(new StringAppender(), dmlNameProvider) {
+			@Override
+			public StringAppenderWrapper catValue(Column column, Object value) {
+				if (value == UpdateColumn.PLACEHOLDER) {
+					return cat("?");
+				} else {
+					return super.catValue(column, value);
+				}
+			}
+		}, dmlNameProvider);
 	}
 	
 	private String toSQL(SQLAppender result, MultiTableAwareDMLNameProvider dmlNameProvider) {
@@ -82,7 +91,7 @@ public class UpdateCommandBuilder implements SQLBuilder {
 		while (columnIterator.hasNext()) {
 			UpdateColumn c = columnIterator.next();
 			result.cat(dmlNameProvider.getName(c.getColumn()), " = ");
-			catUpdateObject(c.getValue(), result, dmlNameProvider);
+			catUpdateObject(c, result, dmlNameProvider);
 			if (columnIterator.hasNext()) {
 				result.catIf(columnIterator.hasNext(), ", ");
 			}
@@ -92,55 +101,55 @@ public class UpdateCommandBuilder implements SQLBuilder {
 		if (!update.getCriteria().getConditions().isEmpty()) {
 			result.cat(" where ");
 			WhereBuilder whereBuilder = new WhereBuilder(this.update.getCriteria(), dmlNameProvider);
-			whereBuilder.toSQL(result);
+			whereBuilder.appendSQL(result);
 		}
 		return result.getSQL();
 	}
 	
 	/**
 	 * Method that must append the given value coming from the "set" clause to the given SQLAppender.
-	 * Let protected to cover unexpected cases (because {@link UpdateColumn} handle Objects as value)
+	 * Left protected to cover unexpected cases (because {@link UpdateColumn} handle Objects as value)
 	 * 
-	 * @param value the value to append as a String in the {@link SQLAppender}
+	 * @param updateColumn the value to append in the {@link SQLAppender}
 	 * @param result the final SQL appender
 	 * @param dmlNameProvider provider of tables and columns names
 	 */
-	protected void catUpdateObject(Object value, SQLAppender result, MultiTableAwareDMLNameProvider dmlNameProvider) {
-		if (value == UpdateColumn.PLACEHOLDER) {
-			result.cat("?");
-		} else if (value instanceof Column) {
+	protected void catUpdateObject(UpdateColumn updateColumn, SQLAppender result, MultiTableAwareDMLNameProvider dmlNameProvider) {
+		Object value = updateColumn.getValue();
+		if (value instanceof Column) {
+			// case Update.set(colA, colB)
 			result.cat(dmlNameProvider.getName((Column) value));
 		} else {
-			result.catValue(value);
+			// case Update.set(colA, any object) and Update.set(colA)  (with UpdateColumn.PLACEHOLDER as value)
+			result.catValue(updateColumn.getColumn(), value);
 		}
 	}
 	
 	public UpdateStatement toStatement(ColumnBinderRegistry columnBinderRegistry) {
-		Map<Integer, ParameterBinder> parameterBinders = new HashMap<>();
-		
-		// Computing updated columns placeholders ('?') indexes
-		Map<Column, Integer> columnIndexes = new HashMap<>();
-		IncrementableInt placeholderColumnCount = new IncrementableInt();
-		update.getColumns().stream().filter(c -> c.getValue() == UpdateColumn.PLACEHOLDER).forEach(c -> {
-			// NB: prepared statement indexes start at 1 which will be given at first increment
-			int index = placeholderColumnCount.increment();
-			parameterBinders.put(index, columnBinderRegistry.getBinder(c.getColumn()));
-			columnIndexes.put(c.getColumn(), index);
-		});
-		
 		// We ask for SQL generation through a PreparedSQLWrapper because we need SQL placeholders for where + update clause
 		PreparedSQLWrapper preparedSQLWrapper = new PreparedSQLWrapper(new StringAppenderWrapper(new StringAppender(), dmlNameProvider), columnBinderRegistry, dmlNameProvider);
 		String sql = toSQL(preparedSQLWrapper, dmlNameProvider);
 		
-		// PreparedSQLWrapperHanger have filled values and parameter binders from the where clause but not from the update part
-		// because it doesn't know objects of update clause (UpdateColumn).
-		// So we need to shift values and parameter binders indexes of the "updatable column count" (those that expected placeholders)
-		// (we could reiterate over update.getColumns() but result is already here through placeholderColumnCount) 
-		int shift = placeholderColumnCount.getValue();
-		// shifting values and parameter binders 
-		Map<Integer, Object> values = new HashMap<>();
-		preparedSQLWrapper.getValues().forEach((index, o) -> values.put(index + shift, o));
-		preparedSQLWrapper.getParameterBinders().forEach((index, parameterBinder) -> parameterBinders.put(index + shift, parameterBinder));
+		Map<Integer, Object> values = new HashMap<>(preparedSQLWrapper.getValues());
+		Map<Integer, ParameterBinder> parameterBinders = new HashMap<>(preparedSQLWrapper.getParameterBinders());
+		Map<Column, Integer> columnIndexes = new HashMap<>();
+		
+		// PreparedSQLWrapper has filled values (see catUpdateObject(..)) but PLACEHOLDERs must be removed from them.
+		// (ParameterBinders are correctly filled by PreparedSQLWrapper)
+		// Moreover we have to build indexes of Columns to allow usage of UpdateStatement.setValue(..)
+		// So we iterate of set Columns to remove unecessary columns and compute column indexes
+		IncrementableInt placeholderColumnCount = new IncrementableInt();
+		update.getColumns().forEach(c -> {
+			// only non column value must be adapted (see catUpdateObject(..))
+			if (!Column.class.isInstance(c.getValue())) {
+				// NB: prepared statement indexes start at 1 which will be given at first increment
+				int index = placeholderColumnCount.increment();
+				if (values.get(index).equals(UpdateColumn.PLACEHOLDER)) {
+					values.remove(index);
+				}
+				columnIndexes.put(c.getColumn(), index);
+			}
+		});
 		
 		// final assembly
 		UpdateStatement result = new UpdateStatement(sql, parameterBinders, columnIndexes);
@@ -169,12 +178,16 @@ public class UpdateCommandBuilder implements SQLBuilder {
 		}
 		
 		/**
-		 * Dedicated method for setting values of updated {@link Column}s.
+		 * Dedicated method to set values of updated {@link Column}s.
+		 * 
 		 * @param column {@link Column} to be set
 		 * @param value value applied on Column
 		 */
-		public void setValue(Column column, Object value) {
-			super.setValue(columnIndexes.get(column), value);
+		public <T> void setValue(Column<T> column, T value) {
+			if (columnIndexes.get(column) == null) {
+				throw new IllegalArgumentException("Column " + column.getAbsoluteName() + " is not declared updatable with fixed value in the update clause");
+			}
+			setValue(columnIndexes.get(column), value);
 		}
 	}
 	

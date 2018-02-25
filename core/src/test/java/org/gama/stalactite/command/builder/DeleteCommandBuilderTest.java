@@ -15,6 +15,7 @@ import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 /**
@@ -74,25 +75,32 @@ public class DeleteCommandBuilderTest {
 		Column<String> columnB = totoTable.addColumn("b", String.class);
 		
 		Delete delete = new Delete(totoTable);
-		delete.where(columnA,  Operand.in(44, 45)).or(columnA, Operand.eq(columnB));
+		delete.where(columnA,  Operand.in(42L, 43L)).or(columnA, Operand.eq(columnB));
 		
 		DeleteCommandBuilder testInstance = new DeleteCommandBuilder(delete);
 		
 		ColumnBinderRegistry binderRegistry = new ColumnBinderRegistry();
-		binderRegistry.register(columnA, DefaultParameterBinders.STRING_BINDER);
-		binderRegistry.register(columnB, DefaultParameterBinders.STRING_BINDER);
 		
 		PreparedSQL result = testInstance.toStatement(binderRegistry);
 		assertEquals("delete from Toto where a in (?, ?) or a = b", result.getSQL());
 		
-		assertEquals(Maps.asMap(1, 44).add(2, 45), result.getValues());
-		assertEquals(DefaultParameterBinders.INTEGER_BINDER, result.getParameterBinder(1));
-		assertEquals(DefaultParameterBinders.INTEGER_BINDER, result.getParameterBinder(2));
+		assertEquals(Maps.asMap(1, 42L).add(2, 43L), result.getValues());
+		assertEquals(DefaultParameterBinders.LONG_BINDER, result.getParameterBinder(1));
+		assertEquals(DefaultParameterBinders.LONG_BINDER, result.getParameterBinder(2));
 		
 		PreparedStatement mock = mock(PreparedStatement.class);
 		result.applyValues(mock);
-		verify(mock).setInt(1, 44);
-		verify(mock).setInt(2, 45);
+		verify(mock).setLong(1, 42L);
+		verify(mock).setLong(2, 43L);
+		
+		// ensuring that column type override in registry is taken into account
+		binderRegistry.register(columnA, DefaultParameterBinders.LONG_PRIMITIVE_BINDER);
+		result = testInstance.toStatement(binderRegistry);
+		assertEquals(DefaultParameterBinders.LONG_PRIMITIVE_BINDER, result.getParameterBinder(1));
+		assertEquals(DefaultParameterBinders.LONG_PRIMITIVE_BINDER, result.getParameterBinder(2));
+		result.applyValues(mock);
+		verify(mock, times(2)).setLong(1, 42L);
+		verify(mock, times(2)).setLong(2, 43L);
 	}
 	
 }

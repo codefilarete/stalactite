@@ -82,19 +82,19 @@ public class OperandBuilderTest {
 		OperandBuilder testInstance = new OperandBuilder();
 		StringAppender result = new StringAppender();
 		
-		testInstance.catLike(new Like("a"), new StringAppenderWrapper(result, dmlNameProvider));
+		testInstance.catLike(new Like("a"), new StringAppenderWrapper(result, dmlNameProvider), null);
 		assertEquals("like 'a'", result.toString());
 		
 		result = new StringAppender();
-		testInstance.catLike(contains("a"), new StringAppenderWrapper(result, dmlNameProvider));
+		testInstance.catLike(contains("a"), new StringAppenderWrapper(result, dmlNameProvider), null);
 		assertEquals("like '%a%'", result.toString());
 		
 		result = new StringAppender();
-		testInstance.catLike(startsWith("a"), new StringAppenderWrapper(result, dmlNameProvider));
+		testInstance.catLike(startsWith("a"), new StringAppenderWrapper(result, dmlNameProvider), null);
 		assertEquals("like 'a%'", result.toString());
 		
 		result = new StringAppender();
-		testInstance.catLike(endsWith("a"), new StringAppenderWrapper(result, dmlNameProvider));
+		testInstance.catLike(endsWith("a"), new StringAppenderWrapper(result, dmlNameProvider), null);
 		assertEquals("like '%a'", result.toString());	}
 	
 	@Test
@@ -102,12 +102,12 @@ public class OperandBuilderTest {
 		OperandBuilder testInstance = new OperandBuilder();
 		StringAppender result = new StringAppender();
 		
-		testInstance.catIn(in("a", "b"), new StringAppenderWrapper(result, dmlNameProvider));
+		testInstance.catIn(in("a", "b"), new StringAppenderWrapper(result, dmlNameProvider), null);
 		assertEquals("in ('a', 'b')", result.toString());
 		
 		// next test is meant to record the behavior, not to approve it
 		result = new StringAppender();
-		testInstance.catIn(in(), new StringAppenderWrapper(result, dmlNameProvider));
+		testInstance.catIn(in(), new StringAppenderWrapper(result, dmlNameProvider), null);
 		assertEquals("in ()", result.toString());
 		
 		// next test is meant to record the behavior, not to approve it
@@ -121,15 +121,15 @@ public class OperandBuilderTest {
 		OperandBuilder testInstance = new OperandBuilder();
 		StringAppender result = new StringAppender();
 		
-		testInstance.catBetween(between(1, 2), new StringAppenderWrapper(result, dmlNameProvider));
+		testInstance.catBetween(between(1, 2), new StringAppenderWrapper(result, dmlNameProvider), null);
 		assertEquals("between 1 and 2", result.toString());
 		
 		result = new StringAppender();
-		testInstance.catBetween(between(1, null), new StringAppenderWrapper(result, dmlNameProvider));
+		testInstance.catBetween(between(1, null), new StringAppenderWrapper(result, dmlNameProvider), null);
 		assertEquals("> 1", result.toString());
 		
 		result = new StringAppender();
-		testInstance.catBetween(between(null, 2), new StringAppenderWrapper(result, dmlNameProvider));
+		testInstance.catBetween(between(null, 2), new StringAppenderWrapper(result, dmlNameProvider), null);
 		assertEquals("< 2", result.toString());
 	}
 	
@@ -138,11 +138,11 @@ public class OperandBuilderTest {
 		OperandBuilder testInstance = new OperandBuilder();
 		StringAppender result = new StringAppender();
 		
-		testInstance.catGreater(gt(1), new StringAppenderWrapper(result, dmlNameProvider));
+		testInstance.catGreater(gt(1), new StringAppenderWrapper(result, dmlNameProvider), null);
 		assertEquals("> 1", result.toString());
 		
 		result = new StringAppender();
-		testInstance.catGreater(gteq(1), new StringAppenderWrapper(result, dmlNameProvider));
+		testInstance.catGreater(gteq(1), new StringAppenderWrapper(result, dmlNameProvider), null);
 		assertEquals(">= 1", result.toString());
 	}
 	
@@ -151,11 +151,11 @@ public class OperandBuilderTest {
 		OperandBuilder testInstance = new OperandBuilder();
 		StringAppender result = new StringAppender();
 		
-		testInstance.catLower(lt(1), new StringAppenderWrapper(result, dmlNameProvider));
+		testInstance.catLower(lt(1), new StringAppenderWrapper(result, dmlNameProvider), null);
 		assertEquals("< 1", result.toString());
 		
 		result = new StringAppender();
-		testInstance.catLower(lteq(1), new StringAppenderWrapper(result, dmlNameProvider));
+		testInstance.catLower(lteq(1), new StringAppenderWrapper(result, dmlNameProvider), null);
 		assertEquals("<= 1", result.toString());
 	}
 	
@@ -164,7 +164,7 @@ public class OperandBuilderTest {
 		OperandBuilder testInstance = new OperandBuilder();
 		StringAppender result = new StringAppender();
 		
-		testInstance.catEquals(eq(1), new StringAppenderWrapper(result, dmlNameProvider));
+		testInstance.catEquals(eq(1), new StringAppenderWrapper(result, dmlNameProvider), null);
 		assertEquals("= 1", result.toString());
 	}
 	
@@ -176,7 +176,7 @@ public class OperandBuilderTest {
 		Table tableToto = new Table("Toto");
 		Column colA = tableToto.addColumn("a", Integer.class);
 		
-		testInstance.catEquals(eq(colA), new StringAppenderWrapper(result, dmlNameProvider));
+		testInstance.catEquals(eq(colA), new StringAppenderWrapper(result, dmlNameProvider), null);
 		assertEquals("= Toto.a", result.toString());
 	}
 	

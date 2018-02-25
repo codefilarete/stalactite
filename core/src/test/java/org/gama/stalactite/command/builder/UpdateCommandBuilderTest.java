@@ -76,32 +76,50 @@ public class UpdateCommandBuilderTest {
 		Column<Long> columnA = totoTable.addColumn("a", Long.class);
 		Column<Long> columnB = totoTable.addColumn("b", Long.class);
 		Column<String> columnC = totoTable.addColumn("c", String.class);
+		Column<String> columnD = totoTable.addColumn("d", String.class);
 		
 		Update update = new Update(totoTable)
 				.set(columnA)
 				.set(columnB, columnA)
-				.set(columnC, "tata");
-		update.where(columnA, Operand.in(42, 43)).or(columnA, Operand.eq(columnB));
+				.set(columnC, "tata")
+				.set(columnD);
+		update.where(columnA, Operand.in(42L, 43L)).or(columnA, Operand.eq(columnB));
 		UpdateCommandBuilder testInstance = new UpdateCommandBuilder(update);
 		
 		ColumnBinderRegistry binderRegistry = new ColumnBinderRegistry();
-		binderRegistry.register(columnA, DefaultParameterBinders.STRING_BINDER);
-		binderRegistry.register(columnB, DefaultParameterBinders.STRING_BINDER);
 		
 		UpdateStatement result = testInstance.toStatement(binderRegistry);
-		assertEquals("update Toto set a = ?, b = a, c = ? where a in (?, ?) or a = b", result.getSQL());
+		assertEquals("update Toto set a = ?, b = a, c = ?, d = ? where a in (?, ?) or a = b", result.getSQL());
 				
-		assertEquals(Maps.asMap(2, (Object) "tata").add(3, 42).add(4, 43), result.getValues());
+		assertEquals(Maps.asMap(2, (Object) "tata").add(4, 42L).add(5, 43L), result.getValues());
+		assertEquals(DefaultParameterBinders.LONG_BINDER, result.getParameterBinder(1));
 		assertEquals(DefaultParameterBinders.STRING_BINDER, result.getParameterBinder(2));
-		assertEquals(DefaultParameterBinders.INTEGER_BINDER, result.getParameterBinder(3));
-		assertEquals(DefaultParameterBinders.INTEGER_BINDER, result.getParameterBinder(4));
-		result.setValue(columnA, "Hello");
+		assertEquals(DefaultParameterBinders.STRING_BINDER, result.getParameterBinder(3));
+		assertEquals(DefaultParameterBinders.LONG_BINDER, result.getParameterBinder(4));
+		assertEquals(DefaultParameterBinders.LONG_BINDER, result.getParameterBinder(5));
+		result.setValue(columnA, 41L);
+		result.setValue(columnD, "toto");
 		
 		PreparedStatement mock = mock(PreparedStatement.class);
 		result.applyValues(mock);
-		verify(mock).setString(1, "Hello");
+		verify(mock).setLong(1, 41L);
 		verify(mock).setString(2, "tata");
-		verify(mock).setInt(3, 42);
-		verify(mock).setInt(4, 43);
+		verify(mock).setString(3, "toto");
+		verify(mock).setLong(4, 42L);
+		verify(mock).setLong(5, 43L);
+		
+		// test with post modification of pre-set column
+		result.setValue(columnC, "tutu");
+		result.applyValues(mock);
+		verify(mock).setString(2, "tutu");
+		
+		// ensuring that column type override in registry is taken into account
+		binderRegistry.register(columnA, DefaultParameterBinders.LONG_PRIMITIVE_BINDER);
+		result = testInstance.toStatement(binderRegistry);
+		assertEquals(DefaultParameterBinders.LONG_PRIMITIVE_BINDER, result.getParameterBinder(1));
+		result.setValue(columnA, -42l);
+		result.setValue(columnD, "toto");
+		result.applyValues(mock);
+		verify(mock).setLong(1, -42l);
 	}
 }
