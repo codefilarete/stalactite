@@ -4,6 +4,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
+import org.gama.lang.reflect.MemberPrinter;
 import org.gama.sql.ConnectionProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -15,7 +16,8 @@ import org.slf4j.LoggerFactory;
  */
 public class ReadOperation<ParamType> extends SQLOperation<ParamType> {
 	
-	protected static final Logger LOGGER = LoggerFactory.getLogger(ReadOperation.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(SQLOperation.class);
+	private static final Logger VALUES_LOGGER = LoggerFactory.getLogger(MemberPrinter.FULL_PACKAGE_PRINTER.toString(SQLOperation.class) + ".values");
 	
 	public ReadOperation(SQLStatement<ParamType> sqlGenerator, ConnectionProvider connectionProvider) {
 		super(sqlGenerator, connectionProvider);
@@ -31,6 +33,7 @@ public class ReadOperation<ParamType> extends SQLOperation<ParamType> {
 			ensureStatement();
 			this.sqlStatement.applyValues(preparedStatement);
 			LOGGER.debug(getSQL());
+			VALUES_LOGGER.debug("{}", sqlStatement.getValues());
 			return this.preparedStatement.executeQuery();
 		} catch (SQLException e) {
 			throw new RuntimeException("Error running \"" + getSQL() + "\"", e);
