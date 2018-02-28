@@ -2,6 +2,9 @@ package org.gama.sql.binder;
 
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
+import java.util.function.Function;
+
+import sun.security.krb5.Checksum;
 
 /**
  * An interface that allows to use {@link PreparedStatement#setXXX(...)} methods to be used as method reference.
@@ -20,4 +23,16 @@ public interface PreparedStatementWriter<I> {
 	 * @throws SQLException the exception thrown be the underlying access to the {@link PreparedStatement}
 	 */
 	void set(PreparedStatement preparedStatement, int valueIndex, I value) throws SQLException;
+	
+	/**
+	 * Builds a new {@link PreparedStatementWriter} from this one by applying a converter on the input object
+	 * 
+	 * @param converter the {@link Function} that turns input value to the colum type
+	 * @param <O> type of input accepted by resulting {@link PreparedStatementWriter} 
+	 * @return a new {@link PreparedStatementWriter} based on this one plus a converting {@link Function}
+	 * @see ResultSetReader#thenApply(Function)
+	 */
+	default <O> PreparedStatementWriter<O> preApply(Function<O, I> converter) {
+		return (ps, valueIndex, value) -> this.set(ps, valueIndex, converter.apply(value));
+	}
 }
