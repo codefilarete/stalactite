@@ -7,7 +7,7 @@ import java.sql.SQLException;
 import org.gama.lang.Nullable;
 import org.gama.lang.io.IOs;
 
-import static org.gama.sql.DefaultPreparedStatementWriters.BINARYSTREAM_WRITER;
+import static org.gama.sql.binder.DefaultPreparedStatementWriters.BINARYSTREAM_WRITER;
 
 /**
  * @author Guillaume Mary

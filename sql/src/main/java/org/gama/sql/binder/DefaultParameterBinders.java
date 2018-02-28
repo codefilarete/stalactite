@@ -9,7 +9,7 @@ import java.sql.Timestamp;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
-import static org.gama.sql.DefaultPreparedStatementWriters.*;
+import static org.gama.sql.binder.DefaultPreparedStatementWriters.*;
 import static org.gama.sql.binder.DefaultResultSetReaders.*;
 
 /**
