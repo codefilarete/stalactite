@@ -73,7 +73,7 @@ public abstract class SQLOperation<ParamType> implements AutoCloseable {
 	
 	/**
 	 * Gives the SQL that is used in the {@link PreparedStatement}.
-	 * Called by {@link SQLStatement#getSQL()} and store the result.
+	 * Called by {@link SQLStatement#getSQL()} then stores the result.
 	 * 
 	 * @return the SQL that is used in the {@link PreparedStatement}
 	 */
@@ -85,9 +85,22 @@ public abstract class SQLOperation<ParamType> implements AutoCloseable {
 	}
 	
 	/**
+	 * Cancels the underlying {@link PreparedStatement} (if exists and not closed, to avoid unecessary exceptions)
+	 * 
+	 * @throws SQLException this of the {@link PreparedStatement#cancel()} method
+	 */
+	public void cancel() throws SQLException {
+		// avoid calling cancel() on a closed statement so only interesting exceptions will be thrown
+		// but we let SQLFeatureNotSupportedException
+		if (this.preparedStatement != null && !this.preparedStatement.isClosed()) {
+			this.preparedStatement.cancel();
+		}
+	}
+	
+	/**
 	 * Closes internal {@link PreparedStatement}
 	 * 
-	 * @throws Exception
+	 * @throws Exception this of the {@link PreparedStatement#close()} method
 	 */
 	@Override
 	public void close() throws Exception {
