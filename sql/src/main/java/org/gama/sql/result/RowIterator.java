@@ -13,7 +13,7 @@ import org.gama.sql.binder.ParameterBinderIndex;
 import org.gama.sql.binder.ResultSetReader;
 
 /**
- * {@link ResultSetIterator} specialized in {@link Row} building for each Resulset line.
+ * {@link ResultSetIterator} specialized in {@link Row} building for each {@link ResultSet} line.
  *
  * @author Guillaume Mary
  */
@@ -23,19 +23,19 @@ public class RowIterator extends ResultSetIterator<Row> {
 	private final Iterable<Decoder> decoders;
 	
 	/**
-	 * ResultSetIterator constructor
+	 * Constrcucts an instance without {@link ResultSet} : it must be set further with {@link #setResultSet(ResultSet)}.
 	 *
-	 * @param columnNameBinders columns and associated {@link ParameterBinder} to use for <t>ResultSet</t> reading
+	 * @param columnNameBinders columns and associated {@link ParameterBinder} to use for {@link ResultSet} reading
 	 */
 	public RowIterator(Map<String, ParameterBinder> columnNameBinders) {
 		this(null, columnNameBinders);
 	}
 	
 	/**
-	 * RowIterator constructor
+	 * Constrcucts an instance that will iterate over the given {@link ResultSet}. It can be change with {@link #setResultSet(ResultSet)}.
 	 *
-	 * @param rs a ResultSet to wrap into an <t>Iterator</t>
-	 * @param columnNameBinders column names and associated {@link ParameterBinder} to use for <t>ResultSet</t> reading
+	 * @param rs a ResultSet to wrap into an {@link java.util.Iterator}
+	 * @param columnNameBinders column names and associated {@link ParameterBinder} to use for {@link ResultSet} reading
 	 */
 	public RowIterator(ResultSet rs, Map<String, ? extends ResultSetReader> columnNameBinders) {
 		super(rs);
@@ -43,9 +43,9 @@ public class RowIterator extends ResultSetIterator<Row> {
 	}
 	
 	/**
-	 * Another way to build a {@link RowIterator}.
+	 * Constrcucts an instance that will iterate over the given {@link ResultSet}. It can be change with {@link #setResultSet(ResultSet)}.
 	 * 
-	 * @param rs a ResultSet to wrap into an <t>Iterator</t>
+	 * @param rs a ResultSet to wrap into an {@link java.util.Iterator}
 	 * @param columnNameBinders object to extract column names and associated {@link ParameterBinder} to use for <t>ResultSet</t> reading
 	 */
 	public RowIterator(ResultSet rs, ParameterBinderIndex<String> columnNameBinders) {
@@ -54,6 +54,13 @@ public class RowIterator extends ResultSetIterator<Row> {
 		decoders = Decoder.decoders(all);
 	}
 	
+	/**
+	 * Implementation that convert current {@link ResultSet} line into a {@link Row} according to {@link ResultSetReader}s given at construction time.
+	 * 
+	 * @param rs {@link ResultSet} positionned at line that must be converted
+	 * @return a {@link Row} containing values given by {@link ResultSetReader}s
+	 * @throws SQLException if a read error occurs
+	 */
 	@Override
 	public Row convert(ResultSet rs) throws SQLException {
 		Row toReturn = new Row();

@@ -28,7 +28,7 @@ public abstract class ResultSetIterator<T> extends ReadOnlyIterator<T> implement
 	private int rowNumber = 1;
 	
 	/**
-	 * Flag that indicates if the {@link ResultSet#next()} method of the undelying instance was called.
+	 * Flag that indicates if the {@link ResultSet#next()} method of the underlying instance was called.
 	 * Used for hasNext() since {@link ResultSet} has no sure way of saying if its iteration is started or not
 	 * @see #reset() 
 	 */
@@ -112,7 +112,7 @@ public abstract class ResultSetIterator<T> extends ReadOnlyIterator<T> implement
 	}
 	
 	/**
-	 * Collect all rows of the {@link ResultSet} given by {@link #setResultSet(ResultSet)} to a {@link List}.
+	 * Collects all rows of the {@link ResultSet} set by {@link #setResultSet(ResultSet)} to a {@link List}.
 	 * This basic implementation implies that the size of the list equals the {@link ResultSet} row count.
 	 * 
 	 * @return a non null {@link List} containing all converted rows of the {@link ResultSet}
@@ -122,7 +122,7 @@ public abstract class ResultSetIterator<T> extends ReadOnlyIterator<T> implement
 	}
 	
 	/**
-	 * Convert current row of the ResultSet
+	 * Converts current row of the ResultSet
 	 * 
 	 * @param resultSet the ResultSet given at constructor or {@link #setResultSet}
 	 * @return the result of the conversion
