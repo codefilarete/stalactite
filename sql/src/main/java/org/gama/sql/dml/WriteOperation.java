@@ -10,20 +10,14 @@ import org.gama.lang.Retryer;
 import org.gama.lang.Retryer.RetryException;
 import org.gama.lang.bean.IDelegate;
 import org.gama.lang.exception.Exceptions;
-import org.gama.lang.reflect.MemberPrinter;
 import org.gama.sql.ConnectionProvider;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
- * {@link SQLOperation} dedicated to Inserts, Updates, Deletes ... so all operations that return number of affected rows
- *
+ * {@link SQLOperation} dedicated to Inserts, Updates, Deletes ... so theses operations return number of affected rows
+ * 
  * @author Guillaume Mary
  */
 public class WriteOperation<ParamType> extends SQLOperation<ParamType> {
-	
-	private static final Logger LOGGER = LoggerFactory.getLogger(SQLOperation.class);
-	private static final Logger VALUES_LOGGER = LoggerFactory.getLogger(MemberPrinter.FULL_PACKAGE_PRINTER.toString(SQLOperation.class) + ".values");
 	
 	/** Updated row count of the last executed batch statement */
 	private int updatedRowCount = 0;
@@ -79,7 +73,9 @@ public class WriteOperation<ParamType> extends SQLOperation<ParamType> {
 	
 	private int executeUpdate() {
 		LOGGER.debug(getSQL());
-		VALUES_LOGGER.debug("{}", sqlStatement.getValues());
+		if (VALUES_LOGGER.isDebugEnabled()) {
+			VALUES_LOGGER.debug("{}", filterLoggable(sqlStatement.getValues()));
+		}
 		try {
 			return doWithRetry(this::doExecuteUpdate);
 		} catch (SQLException | RetryException e) {
@@ -119,7 +115,9 @@ public class WriteOperation<ParamType> extends SQLOperation<ParamType> {
 	
 	private int[] doExecuteBatch() {
 		LOGGER.debug(getSQL());
-		VALUES_LOGGER.debug("{}", batchedValues);
+		if (VALUES_LOGGER.isDebugEnabled()) {
+			batchedValues.forEach((batchRowNum, values) -> VALUES_LOGGER.debug("{} {}", batchRowNum, filterLoggable(values)));
+		}
 		try {
 			return (int[]) doWithRetry((IDelegate<Object, SQLException>) () -> preparedStatement.executeBatch());
 		} catch (SQLException | RetryException e) {

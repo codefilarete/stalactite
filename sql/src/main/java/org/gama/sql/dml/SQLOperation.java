@@ -1,24 +1,37 @@
 package org.gama.sql.dml;
 
+import javax.annotation.Nonnull;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 
 import org.gama.sql.ConnectionProvider;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Tries to simplify use of {@link PreparedStatement} in oriented scenarii like:
  * - set values on {@link PreparedStatement}
  * - executeBatch {@link PreparedStatement}
  * 
+ * Logging of SQL execution can be activated with a logger with this class name. SQL and values will be logged at debug level.
+ * If you want more fine grained logs, SQL statements only can be logged throught the same logger suffixed by ".sql", whereas values only can be
+ * logged with the ".values" suffix.
+ * 
  * @see WriteOperation
  * @see ReadOperation
- * @param <ParamType> is type of sqlStatement value entries
+ * @param <ParamType> type of sqlStatement value entries, for example String (for {@link StringParamedSQL}), Integer (for {@link PreparedSQL}
  * 
  * @author Guillaume Mary
  */
 public abstract class SQLOperation<ParamType> implements AutoCloseable {
+	
+	protected static final Logger LOGGER = LoggerFactory.getLogger(SQLOperation.class.getName() + ".sql");
+	protected static final Logger VALUES_LOGGER = LoggerFactory.getLogger(SQLOperation.class.getName() + ".values");
 	
 	protected final ConnectionProvider connectionProvider;
 	
@@ -27,6 +40,9 @@ public abstract class SQLOperation<ParamType> implements AutoCloseable {
 	protected final SQLStatement<ParamType> sqlStatement;
 	
 	private String sql;
+	
+	/** Parameters that mustn't be logged for security reason for instance */
+	private Set<ParamType> notLoggedParams = Collections.emptySet();
 	
 	public SQLOperation(SQLStatement<ParamType> sqlStatement, ConnectionProvider connectionProvider) {
 		this.sqlStatement = sqlStatement;
@@ -105,5 +121,25 @@ public abstract class SQLOperation<ParamType> implements AutoCloseable {
 	@Override
 	public void close() throws Exception {
 		this.preparedStatement.close();
+	}
+	
+	/**
+	 * Set params that mustn't be logged when debug is activated for values
+	 * @param notLoggedParams set of not loggable values
+	 */
+	public void setNotLoggedParams(@Nonnull Set<ParamType> notLoggedParams) {
+		this.notLoggedParams = notLoggedParams;
+	}
+	
+	protected Map<ParamType, Object> filterLoggable(Map<ParamType, Object> values) {
+		// we make a copy of values to prevent alteration
+		Map<ParamType, Object> loggedValues = new HashMap<>(values);
+		loggedValues.entrySet().forEach(e -> {
+			if (notLoggedParams.contains(e.getKey())) {
+				// we change logged value so param is still present in mapped params, showing that it hasn't desappeared
+				e.setValue("X-masked value-X");
+			}
+		});
+		return loggedValues;
 	}
 }

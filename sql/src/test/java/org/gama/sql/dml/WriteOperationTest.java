@@ -1,11 +1,17 @@
 package org.gama.sql.dml;
 
+import java.io.StringWriter;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.apache.log4j.Level;
+import org.apache.log4j.LogManager;
+import org.apache.log4j.Logger;
+import org.apache.log4j.SimpleLayout;
+import org.apache.log4j.WriterAppender;
 import org.gama.lang.collection.Arrays;
 import org.gama.lang.collection.Maps;
 import org.gama.sql.ConnectionProvider;
@@ -17,6 +23,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 /**
  * @author Guillaume Mary
@@ -37,7 +44,7 @@ public class WriteOperationTest {
 	}
 	
 	@Test
-	public void testExecute_preparedSQL() throws SQLException {
+	public void testExecute_preparedSQL() {
 		Map<Integer, ParameterBinder> parameterBinders = new HashMap<>();
 		parameterBinders.put(1, DefaultParameterBinders.LONG_PRIMITIVE_BINDER);
 		parameterBinders.put(2, DefaultParameterBinders.STRING_BINDER);
@@ -50,7 +57,7 @@ public class WriteOperationTest {
 	}
 	
 	@Test
-	public void testExecuteBatch_preparedSQL() throws SQLException {
+	public void testExecuteBatch_preparedSQL() {
 		Map<Integer, ParameterBinder> parameterBinders = new HashMap<>();
 		parameterBinders.put(1, DefaultParameterBinders.LONG_PRIMITIVE_BINDER);
 		parameterBinders.put(2, DefaultParameterBinders.STRING_BINDER);
@@ -66,7 +73,7 @@ public class WriteOperationTest {
 	}
 	
 	@Test
-	public void testExecute_parameterizedSQL() throws SQLException {
+	public void testExecute_parameterizedSQL() {
 		Map<String, ParameterBinder> parameterBinders = new HashMap<>();
 		parameterBinders.put("id", DefaultParameterBinders.LONG_PRIMITIVE_BINDER);
 		parameterBinders.put("name", DefaultParameterBinders.STRING_BINDER);
@@ -86,7 +93,7 @@ public class WriteOperationTest {
 	}
 	
 	@Test
-	public void testExecuteBatch_parameterizedSQL() throws SQLException {
+	public void testExecuteBatch_parameterizedSQL() {
 		Map<String, ParameterBinder> parameterBinders = new HashMap<>();
 		parameterBinders.put("id", DefaultParameterBinders.LONG_PRIMITIVE_BINDER);
 		parameterBinders.put("name", DefaultParameterBinders.STRING_BINDER);
@@ -99,5 +106,31 @@ public class WriteOperationTest {
 		testInstance.addBatch(Maps.asMap("id", (Object) 3L).add("name", "Tata"));
 		executeMultiple = testInstance.executeBatch();
 		assertEquals(2, executeMultiple);
+	}
+	
+	@Test
+	public void testExecute_sensibleValuesAreNotLogged() {
+		Map<Integer, ParameterBinder> parameterBinders = new HashMap<>();
+		parameterBinders.put(1, DefaultParameterBinders.LONG_PRIMITIVE_BINDER);
+		parameterBinders.put(2, DefaultParameterBinders.STRING_BINDER);
+
+		WriteOperation<Integer> testInstance = new WriteOperation<>(new PreparedSQL("insert into Toto(id, name) values(?, ?)", parameterBinders), connectionProvider);
+		testInstance.setNotLoggedParams(Arrays.asSet(2));
+		testInstance.setValue(1, 1L);
+		testInstance.setValue(2, "tata");
+		
+		// preparing log system to capture logs
+		StringWriter logsRecipient = new StringWriter();
+		Logger logger = LogManager.getLogger(SQLOperation.class.getName() + ".values");
+		Level currentLevel = logger.getLevel();
+		logger.setLevel(Level.DEBUG);
+		logger.addAppender(new WriterAppender(new SimpleLayout(), logsRecipient));
+		
+		int executeOne = testInstance.execute();
+		assertEquals(1, executeOne);
+		
+		assertTrue(logsRecipient.toString().contains("DEBUG - {1=1, 2=X-masked value-X}"));
+		// back to normal
+		logger.setLevel(currentLevel);
 	}
 }
