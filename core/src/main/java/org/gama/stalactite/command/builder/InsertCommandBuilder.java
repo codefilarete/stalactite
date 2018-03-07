@@ -119,7 +119,7 @@ public class InsertCommandBuilder implements SQLBuilder {
 	}
 	
 	/**
-	 * A specialized version of {@link PreparedSQL} dedicated to {@link Insert} so one can set column values of the update clause
+	 * A specialized version of {@link PreparedSQL} dedicated to {@link Insert} so one can set column values of the insert clause
 	 * through {@link #setValue(Column, Object)}
 	 */
 	public static class InsertStatement extends PreparedSQL {
@@ -129,7 +129,7 @@ public class InsertCommandBuilder implements SQLBuilder {
 		/**
 		 * Single constructor, not expected to be used elsewhere than {@link UpdateCommandBuilder}.
 		 *
-		 * @param sql the update sql order as a prepared statement
+		 * @param sql the insert sql order as a prepared statement
 		 * @param parameterBinders binder for prepared statement values
 		 * @param columnIndexes indexes of the updated columns
 		 */
@@ -139,14 +139,14 @@ public class InsertCommandBuilder implements SQLBuilder {
 		}
 		
 		/**
-		 * Dedicated method to set values of updated {@link Column}s.
+		 * Dedicated method to set values of inserted {@link Column}s.
 		 *
 		 * @param column {@link Column} to be set
 		 * @param value value applied on Column
 		 */
 		public <T> void setValue(Column<T> column, T value) {
 			if (columnIndexes.get(column) == null) {
-				throw new IllegalArgumentException("Column " + column.getAbsoluteName() + " is insertable with fixed value in the upate clause");
+				throw new IllegalArgumentException("Column " + column.getAbsoluteName() + " is not insertable with fixed value in the insert clause");
 			}
 			setValue(columnIndexes.get(column), value);
 		}
