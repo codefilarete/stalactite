@@ -202,6 +202,8 @@ public class PersistenceContext {
 			super(table);
 		}
 		
+		/** Overriden to adapt return type */
+		@Override
 		public <T> ExecutableInsert set(Column<T> column, T value) {
 			super.set(column, value);
 			return this;
