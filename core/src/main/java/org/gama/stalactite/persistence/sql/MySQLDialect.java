@@ -53,7 +53,7 @@ public class MySQLDialect extends Dialect {
 	
 	@Override
 	public DDLSchemaGenerator newDdlSchemaGenerator() {
-		DDLSchemaGenerator ddlSchemaGenerator = super.getDdlSchemaGenerator();
+		DDLSchemaGenerator ddlSchemaGenerator = super.newDdlSchemaGenerator();
 		ddlSchemaGenerator.setDdlTableGenerator(new MySQLDDLTableGenerator(getJavaTypeToSqlTypeMapping()));
 		return ddlSchemaGenerator;
 	}
