@@ -22,6 +22,39 @@ public class ResultSetRowConverterTest {
 	
 	@Test
 	public void testConvert_basicUseCase() throws SQLException {
+		// Binding column "vehicleType" to the constructor of Car
+		ResultSetRowConverter<String, Car> testInstance = new ResultSetRowConverter<>(Car.class, "vehicleType", STRING_READER, Car::new);
+		// Adding a column to fill the bean
+		testInstance.add("wheels", INTEGER_READER, Car::setWheelCount);
+		
+		InMemoryResultSet resultSet = new InMemoryResultSet(Arrays.asList(
+				Maps.asMap("vehicleType", (Object) "bicycle").add("wheels", 2),
+				Maps.asMap("vehicleType", (Object) "moto").add("wheels", 2),
+				Maps.asMap("vehicleType", (Object) "car").add("wheels", 4),
+				Maps.asMap("vehicleType", (Object) "car").add("wheels", 6)
+		));
+		
+		resultSet.next();
+		Car vehicle1 = testInstance.convert(resultSet);
+		assertEquals("bicycle", vehicle1.getName());
+		assertEquals(2, vehicle1.getWheelCount());
+		resultSet.next();
+		Car vehicle2 = testInstance.convert(resultSet);
+		assertEquals("moto", vehicle2.getName());
+		assertEquals(2, vehicle2.getWheelCount());
+		resultSet.next();
+		Car vehicle3 = testInstance.convert(resultSet);
+		assertEquals("car", vehicle3.getName());
+		assertEquals(4, vehicle3.getWheelCount());
+		resultSet.next();
+		Car vehicle4 = testInstance.convert(resultSet);
+		assertEquals("car", vehicle4.getName());
+		// vehicle3 and vehicle4 shouldn't be the same despite their identical name
+		assertNotSame(vehicle4, vehicle3);
+	}
+	
+	@Test
+	public void testConvert_basicUseCase2() throws SQLException {
 		// The default IncrementableInt that takes its value from "a". Reinstanciated on each row.
 		ResultSetRowConverter<Integer, IncrementableInt> testInstance = new ResultSetRowConverter<>(IncrementableInt.class, "a", INTEGER_READER, IncrementableInt::new);
 		// The secondary that will increment the same IncrementableInt by column "b" value

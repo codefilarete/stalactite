@@ -39,7 +39,7 @@ public class ColumnConsumer<T, I> implements ThrowingBiConsumer<T, ResultSet, SQ
 	}
 	
 	/**
-	 * Apply the column value from the {@link ResultSet} onto the instance through the given consumer (at construction time)
+	 * Applies the column value from the {@link ResultSet} onto the instance through the given consumer (at construction time)
 	 * 
 	 * @param instance a bean, not null
 	 * @param resultSet the source of data

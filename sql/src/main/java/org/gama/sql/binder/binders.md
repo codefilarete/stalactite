@@ -1,8 +1,8 @@
 ## Binders overview
 
 Binders are aimed at giving a more fine grained access to
- - [ResultSet](ResultSetReader.java) read
- - [PreparedStatementWriter](PreparedStatementWriter.java) write
+ - [ResultSet read](ResultSetReader.java)
+ - [PreparedStatement write](PreparedStatementWriter.java)
 
 from a "column" point of view.
 

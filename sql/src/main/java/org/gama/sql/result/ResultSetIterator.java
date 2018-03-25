@@ -13,8 +13,26 @@ import org.gama.lang.exception.Exceptions;
 
 /**
  * Turns a {@link ResultSet} into an {@link java.util.Iterator} with row conversion support.
+ * You can either give the {@link ResultSet} at construct time or set it through {@link #setResultSet(ResultSet)} to reuse
+ * this instance.
+ * <br/>
+ * Then you can iterate over your {@link ResultSetIterator} within a loop such as this one :
+ * <pre>
+ *     ResultSetIterator<String> resultSetIterator = new ResultSetIterator<String>(resultSet) {
+ *         &#64;Override
+ *         public String convert(ResultSet rs) throws SQLException {
+ *             return rs.getString("name");
+ *         }
+ *     };
+ *     while (resultSetIterator.hasNext()) {
+ *         String next = resultSetIterator.next();
+ *     }
+ * </pre>
  * 
  * @author Guillaume Mary
+ * @see RowIterator
+ * @see #convert()
+ * @see #convert(ResultSet)
  */
 public abstract class ResultSetIterator<T> extends ReadOnlyIterator<T> implements Converter<ResultSet, T, SQLException> {
 	
@@ -73,7 +91,7 @@ public abstract class ResultSetIterator<T> extends ReadOnlyIterator<T> implement
 	/**
 	 * Called when {@link ResultSet} is set. Doesn't rewind the {@link ResultSet} to the beginning.
 	 */
-	protected void reset() {
+	private void reset() {
 		this.nextCalled = false;
 		this.rowNumber = 1;
 	}
