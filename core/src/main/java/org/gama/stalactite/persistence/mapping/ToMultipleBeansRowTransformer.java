@@ -3,7 +3,6 @@ package org.gama.stalactite.persistence.mapping;
 import java.util.Map;
 import java.util.Map.Entry;
 
-import org.gama.sql.result.IRowTransformer;
 import org.gama.sql.result.Row;
 import org.gama.sql.result.RowIterator;
 

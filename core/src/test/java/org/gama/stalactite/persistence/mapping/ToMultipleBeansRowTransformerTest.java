@@ -7,7 +7,6 @@ import java.util.Map;
 
 import org.gama.lang.collection.Arrays;
 import org.gama.lang.collection.Maps;
-import org.gama.sql.result.IRowTransformer;
 import org.gama.sql.result.Row;
 import org.junit.Test;
 

@@ -4,7 +4,6 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 
 import org.gama.lang.Reflections;
-import org.gama.sql.result.IRowTransformer;
 import org.gama.sql.result.Row;
 
 /**
