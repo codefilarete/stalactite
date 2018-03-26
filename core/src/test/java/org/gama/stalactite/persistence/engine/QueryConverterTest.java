@@ -38,7 +38,7 @@ import static org.mockito.Mockito.when;
 public class QueryConverterTest {
 	
 	@DataProvider
-	public static Object[][] testNewQuery_data() {
+	public static Object[][] testNewQuery() {
 		ParameterBinderProvider<Class> parameterBinderProvider = ParameterBinderProvider.fromMap(new ColumnBinderRegistry().getParameterBinders());
 		Table toto = new Table("Toto");
 		Column<Long> id = toto.addColumn("id", Long.class).primaryKey();
@@ -63,14 +63,14 @@ public class QueryConverterTest {
 						.map("active", Toto::setActive) },
 				{	// with Java Bean constructor (no args) and no column type, other syntax (not officially supported)
 					new QueryConverter<>(Toto.class, "select id, name from Toto", parameterBinderProvider)
-						.mapKey("id", Toto::new, (SerializableBiConsumer<Toto, Long>) (t, i) -> t.setId(i))
+						.mapKey("id", Toto::new, (SerializableBiConsumer<Toto, Long>) Toto::setId)
 						.map("name", Toto::setName, String.class)
 						.map("active", Toto::setActive) },
 				{	// with map method using other syntax (not officially supported)
 					new QueryConverter<>(Toto.class, "select id, name from Toto", parameterBinderProvider)
 							.mapKey("id", Toto::new, Toto::setId)
 						.map("name", Toto::setName, String.class)
-						.map("active", (SerializableBiConsumer<Toto, Boolean>) (t, b) -> t.setActive(b)) },
+						.map("active", (SerializableBiConsumer<Toto, Boolean>) Toto::setActive) },
 				{ 	// with Column API
 					new QueryConverter<>(Toto.class, "select id, name from Toto", parameterBinderProvider)
 						.mapKey(id, Toto::new)
@@ -85,7 +85,7 @@ public class QueryConverterTest {
 	}
 	
 	@Test
-	@UseDataProvider("testNewQuery_data")
+	@UseDataProvider
 	public void testNewQuery(QueryConverter<Toto> queryConverter) {
 		List<Map<String, Object>> resultSetData = Arrays.asList(
 				Maps.asHashMap("id", (Object) 42L).add("name", "coucou").add("active", true),
@@ -102,7 +102,7 @@ public class QueryConverterTest {
 	}
 	
 	@DataProvider
-	public static Object[][] testNewQuery_withConverter_data() {
+	public static Object[][] testNewQuery_withConverter() {
 		ParameterBinderProvider<Class> parameterBinderProvider = ParameterBinderProvider.fromMap(new ColumnBinderRegistry().getParameterBinders());
 		Table toto = new Table("Toto");
 		Column<Long> id = toto.addColumn("id", Long.class).primaryKey();
@@ -122,7 +122,7 @@ public class QueryConverterTest {
 	}
 	
 	@Test
-	@UseDataProvider("testNewQuery_withConverter_data")
+	@UseDataProvider
 	public void testNewQuery_withConverter(QueryConverter<Toto> queryConverter) {
 		List<Map<String, Object>> resultSetData = Arrays.asList(
 				Maps.asHashMap("id", (Object) 42L).add("name", "ghoeihvoih"),
@@ -187,19 +187,26 @@ public class QueryConverterTest {
 		assertEquals(new Toto(42).toString(), Iterables.first(result).toString());
 	}
 	
-//	@Test
-//	public void testNewQuery_withColumn() {
-//		PersistenceContext testInstance = new PersistenceContext(() -> null, new Dialect(new DefaultTypeMapping(), new ColumnBinderRegistry()));
-//		QueryConverter query = testInstance.newQuery(new Query());
-//		query.set("ids", Arrays.asList(1, 2));
-//	}
-	
-//	@Test
-//	public void testNewQuery_withBeanGraphBuilding() {
-//		PersistenceContext testInstance = new PersistenceContext(() -> null, new Dialect(new DefaultTypeMapping(), new ColumnBinderRegistry()));
-//		QueryConverter query = testInstance.newQuery(new Query());
-//		query.set("ids", Arrays.asList(1, 2));
-//	}
+	@Test
+	public void testNewQuery_addAssembler() {
+		ParameterBinderProvider<Class> parameterBinderProvider = ParameterBinderProvider.fromMap(new ColumnBinderRegistry().getParameterBinders());
+		QueryConverter<Toto> queryConverter = new QueryConverter<>(Toto.class, "select id, name from Toto", parameterBinderProvider)
+				.mapKey("id", Toto::new, Toto::setId)
+				.add((rootBean, resultSet) -> rootBean.setName(resultSet.getString("name")));
+		
+		List<Map<String, Object>> resultSetData = Arrays.asList(
+				Maps.asHashMap("id", (Object) 42L).add("name", "ghoeihvoih"),
+				Maps.asHashMap("id", (Object) 43L).add("name", "oziuoie")
+		);
+		
+		List<Toto> result = execute(queryConverter, resultSetData);
+		
+		List<Toto> expected = Arrays.asList(
+				new Toto(42, "ghoeihvoih", false),
+				new Toto(43, "oziuoie", false)
+		);
+		assertEquals(expected.toString(), result.toString());
+	}
 	
 	public static class Toto {
 		

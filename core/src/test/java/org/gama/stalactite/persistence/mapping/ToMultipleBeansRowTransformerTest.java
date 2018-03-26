@@ -27,7 +27,7 @@ public class ToMultipleBeansRowTransformerTest {
 		// Column "toto.id" should trigger building (or retreive from cache) a Toto instance 
 		// Column "tata.id" should trigger building (or retreive from cache) a Tata instance 
 		// Column "titi.id" should trigger building (or retreive from cache) a Titi instance 
-		// Finally, thanks to assembly, all of these instance are melt together
+		// Finally, thanks to assemble, all of these instance are melt together
 		ToMultipleBeansRowTransformer<Toto> testInstance = new ToMultipleBeansRowTransformer<Toto>(
 				Maps.asMap("toto.id", (IRowTransformer) new ToEntityRowTransformer<>(Toto.class, "toto.id", "toto.name"))
 				.add("tata.id", (IRowTransformer) new ToEntityRowTransformer<>(Tata.class, "tata.id", "tata.name"))

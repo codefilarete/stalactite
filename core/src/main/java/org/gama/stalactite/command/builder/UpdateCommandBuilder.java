@@ -151,7 +151,7 @@ public class UpdateCommandBuilder implements SQLBuilder {
 			}
 		});
 		
-		// final assembly
+		// final assemble
 		UpdateStatement result = new UpdateStatement(sql, parameterBinders, columnIndexes);
 		result.setValues(values);
 		return result;

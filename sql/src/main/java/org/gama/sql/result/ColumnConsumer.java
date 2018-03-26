@@ -4,7 +4,6 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.function.BiConsumer;
 
-import org.gama.lang.function.ThrowingBiConsumer;
 import org.gama.sql.binder.ResultSetReader;
 
 /**
@@ -14,7 +13,7 @@ import org.gama.sql.binder.ResultSetReader;
  * 
  * @author Guillaume Mary
  */
-public class ColumnConsumer<T, I> implements ThrowingBiConsumer<T, ResultSet, SQLException> {
+public class ColumnConsumer<T, I> implements ResultSetRowAssembler<T> {
 	
 	private final String columnName;
 	private final ResultSetReader<I> reader;
@@ -46,7 +45,7 @@ public class ColumnConsumer<T, I> implements ThrowingBiConsumer<T, ResultSet, SQ
 	 * @throws SQLException in case of error during {@link ResultSet} read
 	 */
 	@Override
-	public void accept(T instance, ResultSet resultSet) throws SQLException {
+	public void assemble(T instance, ResultSet resultSet) throws SQLException {
 		consumer.accept(instance, reader.get(resultSet, columnName));
 	}
 }

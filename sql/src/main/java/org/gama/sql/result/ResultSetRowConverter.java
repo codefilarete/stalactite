@@ -23,7 +23,8 @@ import org.gama.sql.binder.ResultSetReader;
  *     
  * @author Guillaume Mary
  */
-public class ResultSetRowConverter<I, T> extends AbstractResultSetConverter<I, T> implements Converter<ResultSet, T, SQLException> {
+public class ResultSetRowConverter<I, T> extends AbstractResultSetConverter<I, T>
+		implements Converter<ResultSet, T, SQLException>, ResultSetRowAssembler<T> {
 	
 	private final String columnName;
 	
@@ -119,7 +120,7 @@ public class ResultSetRowConverter<I, T> extends AbstractResultSetConverter<I, T
 			return null;
 		} else {
 			T rowInstance = giveRootInstance(beanKey);
-			applyConsumers(rowInstance, resultSet);
+			assemble(rowInstance, resultSet);
 			return rowInstance;
 		}
 	}
@@ -128,9 +129,17 @@ public class ResultSetRowConverter<I, T> extends AbstractResultSetConverter<I, T
 		return beanFactory.apply(beanKey);
 	}
 	
-	protected void applyConsumers(T rowInstance, ResultSet input) throws SQLException {
+	/**
+	 * Implementation that applies all {@link ColumnConsumer} to the given {@link ResultSet} 
+	 * 
+	 * @param rootBean the bean built for the row
+	 * @param input
+	 * @throws SQLException
+	 */
+	@Override
+	public void assemble(T rootBean, ResultSet input) throws SQLException {
 		for (ColumnConsumer<T, ?> consumer : consumers) {
-			consumer.accept(rowInstance, input);
+			consumer.assemble(rootBean, input);
 		}
 	}
 }

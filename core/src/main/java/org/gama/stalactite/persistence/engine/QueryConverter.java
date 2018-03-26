@@ -19,6 +19,7 @@ import org.gama.sql.binder.ParameterBinderProvider;
 import org.gama.sql.dml.ReadOperation;
 import org.gama.sql.dml.StringParamedSQL;
 import org.gama.sql.result.ResultSetConverter;
+import org.gama.sql.result.ResultSetRowAssembler;
 
 import static org.gama.sql.binder.NullAwareParameterBinder.ALWAYS_SET_NULL_INSTANCE;
 
@@ -49,6 +50,8 @@ public class QueryConverter<T> {
 	
 	/** Mappings between selected columns and bean property setter */
 	private final List<ColumnMapping> columnMappings = new ArrayList<>();
+	
+	private final List<ResultSetRowAssembler<T>> rawMappers = new ArrayList<>();
 	
 	/** The "registry" of {@link ParameterBinder}s, for column reading as well as sql argument setting */
 	private final ParameterBinderProvider<Class> parameterBinderProvider;
@@ -259,6 +262,11 @@ public class QueryConverter<T> {
 		this.columnMappings.add(columnWire);
 	}
 	
+	public QueryConverter<T> add(ResultSetRowAssembler<T> assembler) {
+		rawMappers.add(assembler);
+		return this;
+	}
+	
 	/**
 	 * Executes the query onto the connection given by the {@link ConnectionProvider}. Transforms the result to a list of beans thanks to the
 	 * definition given through {@link #mapKey(String, SerializableFunction, Class)}, {@link #map(String, SerializableBiConsumer, Class)}
@@ -271,7 +279,15 @@ public class QueryConverter<T> {
 		if (beanCreationDefinition == null) {
 			throw new IllegalArgumentException("Bean creation is not defined, use mapKey(..)");
 		}
+		ResultSetConverter<I, T> transformer = buildTransformer();
 		
+		ReadOperation<String> readOperation = new ReadOperation<>(new StringParamedSQL(sql.toString(), sqlParameterBinders), connectionProvider);
+		readOperation.setValues(sqlArguments);
+		
+		return transformer.convert(readOperation.execute());
+	}
+	
+	protected <I> ResultSetConverter<I, T> buildTransformer() {
 		// creating ResultSetConverter
 		Column<I> keyColumn = (Column<I>) beanCreationDefinition.getColumn();
 		Function<I, T> beanFactory = (Function<I, T>) beanCreationDefinition.getFactory();
@@ -282,10 +298,8 @@ public class QueryConverter<T> {
 			ParameterBinder parameterBinder = parameterBinderProvider.getBinder(columnMapping.getColumn().getValueType());
 			transformer.add(columnMapping.getColumn().getName(), parameterBinder, columnMapping.getSetter());
 		}
-		ReadOperation<String> readOperation = new ReadOperation<>(new StringParamedSQL(sql.toString(), sqlParameterBinders), connectionProvider);
-		readOperation.setValues(sqlArguments);
-		
-		return transformer.convert(readOperation.execute());
+		rawMappers.forEach(transformer::add);
+		return transformer;
 	}
 	
 	private <I> Class<I> giveColumnType(SerializableBiConsumer<T, I> setter) {
@@ -397,14 +411,6 @@ public class QueryConverter<T> {
 			this.column = new Column<>(columnName, columnType);
 			this.factory = factory;
 		}
-		
-//		public BeanCreationDefinition(String columnName, Supplier<T> factory, SerializableBiConsumer<T, I> setter) {
-//			this(columnName, i -> {
-//				T newInstance = factory.get();
-//				setter.accept(newInstance, i);
-//				return newInstance;
-//			}, giveColumnType(setter));
-//		}
 		
 		public Column<I> getColumn() {
 			return column;

@@ -1,5 +1,6 @@
 package org.gama.sql.result;
 
+import javax.annotation.Nonnull;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -14,7 +15,6 @@ import org.gama.lang.Reflections;
 import org.gama.lang.ThreadLocals;
 import org.gama.lang.bean.Converter;
 import org.gama.lang.collection.Iterables;
-import org.gama.lang.function.ThrowingBiConsumer;
 import org.gama.lang.function.ThrowingSupplier;
 import org.gama.sql.binder.ResultSetReader;
 
@@ -53,7 +53,7 @@ public class ResultSetConverter<I, T> extends AbstractResultSetConverter<I, T> i
 	private final Function<I, T> beanFactory;
 	
 	/** The list of relations that will assemble objects */
-	private final List<Relation> combiners = new ArrayList<>();
+	private final List<ResultSetRowAssembler<T>> combiners = new ArrayList<>();
 	
 	/**
 	 * Constructor with root bean instanciation parameters
@@ -187,6 +187,18 @@ public class ResultSetConverter<I, T> extends AbstractResultSetConverter<I, T> i
 		return this;
 	}
 	
+	/**
+	 * Adds a very generic way to assemble {@link ResultSet} rows to a root bean.
+	 * ARGUMENT IS NOT TOOK INTO ACCOUNT BY {@link #copyFor(Class, Function)} neither {@link #copyWithMapping(Function)} nor {@link #copyWithMapping(Map)}
+	 * 
+	 * @param assembler a generic combiner of a root bean and each {@link ResultSet} row 
+	 * @return this
+	 */
+	public ResultSetConverter<I, T> add(ResultSetRowAssembler<T> assembler) {
+		this.combiners.add(assembler);
+		return this;
+	}
+	
 	@Override
 	public <C> ResultSetConverter<I, C> copyFor(Class<C> beanType, Function<I, C> beanFactory) {
 		// ResultSetRowConverter doesn't have a cache system, so we decorate its factory with a cache checking
@@ -195,7 +207,11 @@ public class ResultSetConverter<I, T> extends AbstractResultSetConverter<I, T> i
 		);
 		// Making the copy
 		ResultSetConverter<I, C> result = new ResultSetConverter<>(rootConverterCopy, beanFactory);
-		this.combiners.forEach(c -> result.combiners.add(new Relation<>(c.relationFixer, c.transformer)));
+		this.combiners.forEach(c -> {
+			if (c instanceof Relation) {
+				result.combiners.add(new Relation<>(((Relation) c).relationFixer, ((Relation) c).transformer));
+			}
+		});
 		return result;
 	}
 	
@@ -205,7 +221,11 @@ public class ResultSetConverter<I, T> extends AbstractResultSetConverter<I, T> i
 		// (follow rootConverter assignements to be sure)
 		ResultSetRowConverter<I, T> rootConverterCopy = this.rootConverter.copyWithMapping(columMapping);
 		ResultSetConverter<I, T> result = new ResultSetConverter<>(rootConverterCopy, this.beanFactory);
-		this.combiners.forEach(c -> result.combiners.add(new Relation<>(c.relationFixer, c.transformer.copyWithMapping(columMapping))));
+		this.combiners.forEach(c -> {
+			if (c instanceof Relation) {
+				result.combiners.add(new Relation<>(((Relation) c).relationFixer, ((Relation) c).transformer.copyWithMapping(columMapping)));
+			}
+		});
 		return result;
 	}
 	
@@ -234,8 +254,8 @@ public class ResultSetConverter<I, T> extends AbstractResultSetConverter<I, T> i
 	public T transform(ResultSet resultSet) throws SQLException {
 		// Can it be possible to have a null root bean ? if such we should add a if-null prevention. But what's the case ?
 		T currentRowBean = rootConverter.convert(resultSet);
-		for (Relation<T, ?> combiner : this.combiners) {
-			combiner.accept(currentRowBean, resultSet);
+		for (ResultSetRowAssembler<T> combiner : this.combiners) {
+			combiner.assemble(currentRowBean, resultSet);
 		}
 		return currentRowBean;
 	}
@@ -254,7 +274,7 @@ public class ResultSetConverter<I, T> extends AbstractResultSetConverter<I, T> i
 	 * @param <K>
 	 * @param <V>
 	 */
-	public static class Relation<K, V> implements ThrowingBiConsumer<K, ResultSet, SQLException> {
+	public static class Relation<K, V> implements ResultSetRowAssembler<K> {
 		
 		private final BiConsumer<K, V> relationFixer;
 		
@@ -266,7 +286,7 @@ public class ResultSetConverter<I, T> extends AbstractResultSetConverter<I, T> i
 		}
 		
 		@Override
-		public void accept(K bean, ResultSet resultSet) throws SQLException {
+		public void assemble(@Nonnull K bean, ResultSet resultSet) throws SQLException {
 			// getting the bean
 			V value = transformer.transform(resultSet);
 			// applying it to the setter

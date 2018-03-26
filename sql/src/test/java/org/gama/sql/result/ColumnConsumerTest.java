@@ -29,10 +29,10 @@ public class ColumnConsumerTest {
 		));
 		
 		resultSet.next();
-		testInstance.accept(targetInstance, resultSet);
+		testInstance.assemble(targetInstance, resultSet);
 		assertEquals(42, targetInstance.getValue());
 		resultSet.next();
-		testInstance.accept(targetInstance, resultSet);
+		testInstance.assemble(targetInstance, resultSet);
 		// 42 + 666 = 708
 		assertEquals(708, targetInstance.getValue());
 	}
