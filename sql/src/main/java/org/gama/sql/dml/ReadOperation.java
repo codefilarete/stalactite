@@ -26,14 +26,10 @@ public class ReadOperation<ParamType> extends SQLOperation<ParamType> {
 		try {
 			ensureStatement();
 			this.sqlStatement.applyValues(preparedStatement);
-			LOGGER.debug(getSQL());
-			if (VALUES_LOGGER.isDebugEnabled()) {
-				VALUES_LOGGER.debug("{}", filterLoggable(sqlStatement.getValues()));
-			}
+			logExecution();
 			return this.preparedStatement.executeQuery();
 		} catch (SQLException e) {
 			throw new RuntimeException("Error running \"" + getSQL() + "\"", e);
 		}
 	}
-	
 }

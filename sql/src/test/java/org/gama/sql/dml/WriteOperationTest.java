@@ -7,11 +7,13 @@ import java.sql.Statement;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.apache.log4j.Layout;
 import org.apache.log4j.Level;
 import org.apache.log4j.LogManager;
 import org.apache.log4j.Logger;
-import org.apache.log4j.SimpleLayout;
 import org.apache.log4j.WriterAppender;
+import org.apache.log4j.spi.LoggingEvent;
+import org.gama.lang.StringAppender;
 import org.gama.lang.collection.Arrays;
 import org.gama.lang.collection.Maps;
 import org.gama.sql.ConnectionProvider;
@@ -103,9 +105,65 @@ public class WriteOperationTest {
 		int executeMultiple = testInstance.executeBatch();
 		assertEquals(1, executeMultiple);
 		testInstance.addBatch(Maps.asMap("id", (Object) 2L).add("name", "Tata"));
-		testInstance.addBatch(Maps.asMap("id", (Object) 3L).add("name", "Tata"));
+		testInstance.addBatch(Maps.asMap("id", (Object) 3L).add("name", "Toto"));
 		executeMultiple = testInstance.executeBatch();
 		assertEquals(2, executeMultiple);
+	}
+	
+	@Test
+	public void testExecute_batchLog_indexedParameters() {
+		Map<Integer, ParameterBinder> parameterBinders = new HashMap<>();
+		parameterBinders.put(1, DefaultParameterBinders.LONG_PRIMITIVE_BINDER);
+		parameterBinders.put(2, DefaultParameterBinders.STRING_BINDER);
+
+		// preparing log system to capture logs
+		StringWriter logsRecipient = new StringWriter();
+		Logger logger = LogManager.getLogger(SQLOperation.class);
+		Level currentLevel = logger.getLevel();
+		logger.setLevel(Level.TRACE);
+		Layout layout = new TestLayout();
+		logger.addAppender(new WriterAppender(layout, logsRecipient));
+		
+		WriteOperation<Integer> testInstance = new WriteOperation<>(new PreparedSQL("insert into Toto(id, name) values(?, ?)", parameterBinders), connectionProvider);
+		testInstance.addBatch(Maps.asMap(1, (Object) 1L).add(2, "tata"));
+		testInstance.addBatch(Maps.asMap(1, (Object) 2L).add(2, "toto"));
+		
+		int writeCount = testInstance.executeBatch();
+		assertEquals(2, writeCount);
+		
+		String expectedLog = layout.format(new LoggingEvent("toto", logger, Level.DEBUG,
+				"insert into Toto(id, name) values(?, ?) | {1={1=1, 2=tata}, 2={1=2, 2=toto}}", null));
+		assertTrue(logsRecipient.toString().contains(expectedLog));
+		// back to normal
+		logger.setLevel(currentLevel);
+	}
+	
+	@Test
+	public void testExecute_batchLog_namedParameters() {
+		Map<String, ParameterBinder> parameterBinders = new HashMap<>();
+		parameterBinders.put("id", DefaultParameterBinders.LONG_PRIMITIVE_BINDER);
+		parameterBinders.put("name", DefaultParameterBinders.STRING_BINDER);
+		
+		// preparing log system to capture logs
+		StringWriter logsRecipient = new StringWriter();
+		Logger logger = LogManager.getLogger(SQLOperation.class);
+		Level currentLevel = logger.getLevel();
+		logger.setLevel(Level.TRACE);
+		Layout layout = new TestLayout();
+		logger.addAppender(new WriterAppender(layout, logsRecipient));
+		
+		WriteOperation<String> testInstance = new WriteOperation<>(new StringParamedSQL("insert into Toto(id, name) values(:id, :name)", parameterBinders), connectionProvider);
+		testInstance.addBatch(Maps.asMap("id", (Object) 2L).add("name", "Tata"));
+		testInstance.addBatch(Maps.asMap("id", (Object) 3L).add("name", "Toto"));
+		
+		int writeCount = testInstance.executeBatch();
+		assertEquals(2, writeCount);
+		
+		String expectedLog = layout.format(new LoggingEvent("toto", logger, Level.DEBUG,
+				"insert into Toto(id, name) values(:id, :name) | {1={name=Tata, id=2}, 2={name=Toto, id=3}}", null));
+		assertTrue(logsRecipient.toString().contains(expectedLog));
+		// back to normal
+		logger.setLevel(currentLevel);
 	}
 	
 	@Test
@@ -113,24 +171,78 @@ public class WriteOperationTest {
 		Map<Integer, ParameterBinder> parameterBinders = new HashMap<>();
 		parameterBinders.put(1, DefaultParameterBinders.LONG_PRIMITIVE_BINDER);
 		parameterBinders.put(2, DefaultParameterBinders.STRING_BINDER);
-
+		
+		// preparing log system to capture logs
+		StringWriter logsRecipient = new StringWriter();
+		Logger logger = LogManager.getLogger(SQLOperation.class);
+		Level currentLevel = logger.getLevel();
+		logger.setLevel(Level.TRACE);
+		Layout layout = new TestLayout();
+		logger.addAppender(new WriterAppender(layout, logsRecipient));
+		
 		WriteOperation<Integer> testInstance = new WriteOperation<>(new PreparedSQL("insert into Toto(id, name) values(?, ?)", parameterBinders), connectionProvider);
 		testInstance.setNotLoggedParams(Arrays.asSet(2));
 		testInstance.setValue(1, 1L);
 		testInstance.setValue(2, "tata");
 		
-		// preparing log system to capture logs
-		StringWriter logsRecipient = new StringWriter();
-		Logger logger = LogManager.getLogger(SQLOperation.class.getName() + ".values");
-		Level currentLevel = logger.getLevel();
-		logger.setLevel(Level.DEBUG);
-		logger.addAppender(new WriterAppender(new SimpleLayout(), logsRecipient));
+		int writeCount = testInstance.execute();
+		assertEquals(1, writeCount);
 		
-		int executeOne = testInstance.execute();
-		assertEquals(1, executeOne);
-		
-		assertTrue(logsRecipient.toString().contains("DEBUG - {1=1, 2=X-masked value-X}"));
+		String expectedLog = layout.format(new LoggingEvent("toto", logger, Level.DEBUG,
+				"insert into Toto(id, name) values(?, ?) | {1=1, 2=X-masked value-X}", null));
+		assertTrue(logsRecipient.toString().contains(expectedLog));
 		// back to normal
 		logger.setLevel(currentLevel);
+	}
+	
+	@Test
+	public void testExecute_sensibleValuesAreNotLogged_batchNamedParameters() {
+		Map<String, ParameterBinder> parameterBinders = new HashMap<>();
+		parameterBinders.put("id", DefaultParameterBinders.LONG_PRIMITIVE_BINDER);
+		parameterBinders.put("name", DefaultParameterBinders.STRING_BINDER);
+		
+		// preparing log system to capture logs
+		StringWriter logsRecipient = new StringWriter();
+		Logger logger = LogManager.getLogger(SQLOperation.class);
+		Level currentLevel = logger.getLevel();
+		logger.setLevel(Level.TRACE);
+		Layout layout = new TestLayout();
+		logger.addAppender(new WriterAppender(layout, logsRecipient));
+		
+		WriteOperation<String> testInstance = new WriteOperation<>(new StringParamedSQL("insert into Toto(id, name) values(:id, :name)", parameterBinders), connectionProvider);
+		testInstance.setNotLoggedParams(Arrays.asSet("name"));
+		testInstance.addBatch(Maps.asMap("id", (Object) 2L).add("name", "Tata"));
+		testInstance.addBatch(Maps.asMap("id", (Object) 3L).add("name", "Toto"));
+		
+		int writeCount = testInstance.executeBatch();
+		assertEquals(2, writeCount);
+		
+		String expectedLog = layout.format(new LoggingEvent("toto", logger, Level.DEBUG,
+				"insert into Toto(id, name) values(:id, :name) | {1={name=X-masked value-X, id=2}, 2={name=X-masked value-X, id=3}}", null));
+		assertTrue(logsRecipient.toString().contains(expectedLog));
+		// back to normal
+		logger.setLevel(currentLevel);
+	}
+	
+	private static class TestLayout extends Layout {
+		
+		private final StringAppender appender = new StringAppender();
+		
+		@Override
+		public String format(LoggingEvent event) {
+			appender.cutTail(appender.length());
+			appender.ccat(event.getLevel(), event.getLoggerName(), event.getRenderedMessage(), LINE_SEP, "\t");
+			return appender.toString();
+		}
+		
+		@Override
+		public boolean ignoresThrowable() {
+			return false;
+		}
+		
+		@Override
+		public void activateOptions() {
+			
+		}
 	}
 }

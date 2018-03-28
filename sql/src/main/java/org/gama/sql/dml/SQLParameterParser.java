@@ -9,6 +9,7 @@ import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.gama.lang.StringAppender;
 import org.gama.lang.collection.Arrays;
 import org.gama.lang.collection.ValueFactoryHashMap;
 
@@ -290,6 +291,27 @@ public class SQLParameterParser {
 			} else {
 				this.sqlSnippets.add(sqlSnippet);
 			}
+		}
+		
+		/**
+		 * Implementation for simple tracing
+		 * @return ":" + parameter name
+		 */
+		@Override
+		public String toString() {
+			return new StringAppender() {
+				@Override
+				public StringAppender cat(Object s) {
+					if (s instanceof Parameter) {
+						// NB: don't merge nexts statements to super.cat(...) because it will call us back
+						super.cat(":");
+						super.cat(((Parameter) s).getName());
+					} else {
+						super.cat(s);
+					}
+					return this;
+				}
+			}.cat(getSqlSnippets()).toString();
 		}
 	}
 	

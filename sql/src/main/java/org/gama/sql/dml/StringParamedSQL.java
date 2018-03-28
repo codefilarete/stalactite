@@ -51,6 +51,11 @@ public class StringParamedSQL extends ExpandableStatement<String> {
 	}
 	
 	@Override
+	public String getSQLSource() {
+		return this.parsedSQL.toString();
+	}
+	
+	@Override
 	public String getSQL() {
 		ensureExpandableSQL(values);
 		return expandableSQL.getPreparedSQL();

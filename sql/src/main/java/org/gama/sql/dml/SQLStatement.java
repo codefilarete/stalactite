@@ -79,6 +79,15 @@ public abstract class SQLStatement<ParamType> {
 	}
 	
 	/**
+	 * Gives original sql. Essentially used for logging
+	 * 
+	 * @return the sql given at construction time
+	 */
+	public String getSQLSource() {
+		return getSQL();
+	}
+	
+	/**
 	 * Expected to gives the SQL run in the {@link PreparedStatement}
 	 * @return
 	 */

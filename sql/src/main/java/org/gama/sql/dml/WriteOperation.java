@@ -49,6 +49,8 @@ public class WriteOperation<ParamType> extends SQLOperation<ParamType> {
 	 * To be used if you don't used {@link #addBatch(Map)}
 	 *
 	 * @return the same as {@link PreparedStatement#executeUpdate()}
+	 * @see #setValue(Object, Object)
+	 * @see #setValues(Map)
 	 */
 	public int execute() {
 		applyValuesToEnsuredStatement();
@@ -60,6 +62,7 @@ public class WriteOperation<ParamType> extends SQLOperation<ParamType> {
 	 * To be used if you used {@link #addBatch(Map)}
 	 *
 	 * @return {@link Statement#SUCCESS_NO_INFO} or {@link Statement#EXECUTE_FAILED} if one {@link PreparedStatement#executeBatch()}
+	 * @see #addBatch(Map)
 	 */
 	public int executeBatch() {
 		LOGGER.debug("Batching " + batchedStatementCount + " statements");
@@ -72,10 +75,7 @@ public class WriteOperation<ParamType> extends SQLOperation<ParamType> {
 	}
 	
 	private int executeUpdate() {
-		LOGGER.debug(getSQL());
-		if (VALUES_LOGGER.isDebugEnabled()) {
-			VALUES_LOGGER.debug("{}", filterLoggable(sqlStatement.getValues()));
-		}
+		logExecution();
 		try {
 			return doWithRetry(this::doExecuteUpdate);
 		} catch (SQLException | RetryException e) {
@@ -114,16 +114,17 @@ public class WriteOperation<ParamType> extends SQLOperation<ParamType> {
 	} 
 	
 	private int[] doExecuteBatch() {
-		LOGGER.debug(getSQL());
-		if (VALUES_LOGGER.isDebugEnabled()) {
-			batchedValues.forEach((batchRowNum, values) -> VALUES_LOGGER.debug("{} {}", batchRowNum, filterLoggable(values)));
-		}
+		logExecution(() -> {
+			HashMap<Integer, Map<ParamType, Object>> valuesClone = new HashMap<>(batchedValues);
+			valuesClone.entrySet().forEach(e -> e.setValue(filterLoggable(e.getValue())));
+			return valuesClone.toString();
+		});
 		try {
 			return (int[]) doWithRetry((IDelegate<Object, SQLException>) () -> preparedStatement.executeBatch());
 		} catch (SQLException | RetryException e) {
 			throw new RuntimeException("Error during " + getSQL(), e);
 		} finally {
-			if (LOGGER.isDebugEnabled()) {
+			if (LOGGER.isTraceEnabled()) {
 				batchedValues.clear();
 			}
 		}
@@ -137,6 +138,7 @@ public class WriteOperation<ParamType> extends SQLOperation<ParamType> {
 	 * Add values as a batched statement
 	 *
 	 * @param values values to be added as batch
+	 * @see #executeBatch()
 	 */
 	public void addBatch(Map<ParamType, Object> values) {
 		// Necessary to call setValues() BEFORE ensureStatement() because in case of StringParamedSQL statement is built
@@ -144,7 +146,7 @@ public class WriteOperation<ParamType> extends SQLOperation<ParamType> {
 		setValues(values);
 		applyValuesToEnsuredStatement();
 		batchedStatementCount++;
-		if (LOGGER.isDebugEnabled()) {
+		if (LOGGER.isTraceEnabled()) {
 			// we log values only when debug needed to prevent memory consumption
 			batchedValues.put(batchedStatementCount, values);
 		}

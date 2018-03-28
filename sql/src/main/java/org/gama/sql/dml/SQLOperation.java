@@ -8,6 +8,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Supplier;
 
 import org.gama.sql.ConnectionProvider;
 import org.slf4j.Logger;
@@ -18,9 +19,9 @@ import org.slf4j.LoggerFactory;
  * - set values on {@link PreparedStatement}
  * - executeBatch {@link PreparedStatement}
  * 
- * Logging of SQL execution can be activated with a logger with this class name. SQL and values will be logged at debug level.
- * If you want more fine grained logs, SQL statements only can be logged throught the same logger suffixed by ".sql", whereas values only can be
- * logged with the ".values" suffix.
+ * Logging of SQL execution can be activated with a logger with this class name.
+ * If you want more fine grained logs, SQL statements can be logged with DEBUG level, whereas values can be logged with TRACE level.
+ * <b>Despite that activation of fined grained logs defers by level, they are always logged at DEBUG level.</b> (which is not really consistent).
  * 
  * @see WriteOperation
  * @see ReadOperation
@@ -30,8 +31,7 @@ import org.slf4j.LoggerFactory;
  */
 public abstract class SQLOperation<ParamType> implements AutoCloseable {
 	
-	protected static final Logger LOGGER = LoggerFactory.getLogger(SQLOperation.class.getName() + ".sql");
-	protected static final Logger VALUES_LOGGER = LoggerFactory.getLogger(SQLOperation.class.getName() + ".values");
+	protected static final Logger LOGGER = LoggerFactory.getLogger(SQLOperation.class);
 	
 	protected final ConnectionProvider connectionProvider;
 	
@@ -59,13 +59,18 @@ public abstract class SQLOperation<ParamType> implements AutoCloseable {
 	
 	/**
 	 * Simple wrap to {@link SQLStatement#setValues(Map)}
-	 * @param values
+	 * @param values values for each parameter
 	 */
 	public void setValues(Map<ParamType, Object> values) {
 		// we transfert data to our own structure
 		this.sqlStatement.setValues(values);
 	}
 	
+	/**
+	 * Sets value for given parameter/index
+	 * @param index parameter/index for which value mumst be set
+	 * @param value parameter/index value
+	 */
 	public void setValue(ParamType index, Object value) {
 		this.sqlStatement.setValue(index, value);
 	}
@@ -74,7 +79,7 @@ public abstract class SQLOperation<ParamType> implements AutoCloseable {
 	 * Common operation for subclasses. Rebuild PreparedStatement if connection changed. Call {@link #getSQL()} when
 	 * necessary.
 	 * 
-	 * @throws SQLException
+	 * @throws SQLException in case of error during execution
 	 */
 	protected void ensureStatement() throws SQLException {
 		Connection connection = this.connectionProvider.getCurrentConnection();
@@ -141,5 +146,19 @@ public abstract class SQLOperation<ParamType> implements AutoCloseable {
 			}
 		});
 		return loggedValues;
+	}
+	
+	protected void logExecution() {
+		logExecution(() -> filterLoggable(sqlStatement.getValues()).toString());
+	}
+	
+	protected void logExecution(Supplier<String> valuesSupplier) {
+		// we log statement only in strict DEBUG mode because it's also logged in TRACE mode and DEBUG os also active at TRACE level
+		if (LOGGER.isDebugEnabled() && !LOGGER.isTraceEnabled()) {
+			LOGGER.debug(sqlStatement.getSQLSource());
+		}
+		if (LOGGER.isTraceEnabled()) {
+			LOGGER.debug("{} | {}", sqlStatement.getSQLSource(), valuesSupplier.get());
+		}
 	}
 }
