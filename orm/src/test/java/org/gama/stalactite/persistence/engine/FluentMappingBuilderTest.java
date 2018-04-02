@@ -8,6 +8,7 @@ import org.gama.stalactite.persistence.engine.FluentMappingBuilder.IdentifierPol
 import org.gama.stalactite.persistence.id.Identified;
 import org.gama.stalactite.persistence.id.Identifier;
 import org.gama.stalactite.persistence.id.manager.StatefullIdentifier;
+import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
 import org.gama.stalactite.persistence.sql.HSQLDBDialect;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
@@ -42,14 +43,14 @@ public class FluentMappingBuilderTest {
 	
 	@Test
 	public void testAdd_withoutName_targettedPropertyNameIsTaken() {
-		Table toto = new Table("Toto");
-		FluentMappingBuilder.from(Toto.class, StatefullIdentifier.class, toto)
+		ClassMappingStrategy<Toto, StatefullIdentifier> mappingStrategy = FluentMappingBuilder.from(Toto.class, StatefullIdentifier.class)
 				.add(Toto::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.add(Toto::getName)
 				.build(DIALECT);
 		
 		// column should be correctly created
-		Column columnForProperty = toto.mapColumnsOnName().get("name");
+		assertEquals("Toto", mappingStrategy.getTargetTable().getName());
+		Column columnForProperty = mappingStrategy.getTargetTable().mapColumnsOnName().get("name");
 		assertNotNull(columnForProperty);
 		assertEquals(String.class, columnForProperty.getJavaType());
 	}

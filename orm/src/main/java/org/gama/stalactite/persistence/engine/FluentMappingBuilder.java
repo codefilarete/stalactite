@@ -48,6 +48,11 @@ import org.gama.stalactite.persistence.structure.Table;
  */
 public class FluentMappingBuilder<T extends Identified, I extends StatefullIdentifier> implements IFluentMappingBuilder<T, I> {
 	
+	/**
+	 * Available identifier policies for entities.
+	 * Only {@link #ALREADY_ASSIGNED} is supported for now
+	 * @see IdentifierInsertionManager
+	 */
 	public enum IdentifierPolicy {
 		ALREADY_ASSIGNED,
 		BEFORE_INSERT,
@@ -107,6 +112,12 @@ public class FluentMappingBuilder<T extends Identified, I extends StatefullIdent
 	
 	private OptimisticLockOption optimisticLockOption;
 	
+	/**
+	 * Creates a builder to map the given class for persistence
+	 *
+	 * @param persistedClass the class to create a mapping for
+	 * @param table the target table of the persisted class
+	 */
 	public FluentMappingBuilder(Class<T> persistedClass, Table table) {
 		this.persistedClass = persistedClass;
 		this.table = table;
@@ -114,6 +125,15 @@ public class FluentMappingBuilder<T extends Identified, I extends StatefullIdent
 		
 		// Helper to capture Method behind method reference
 		this.spy = new MethodReferenceCapturer();
+	}
+	
+	/**
+	 * Creates a builder to map the given class on a same name table
+	 * 
+	 * @param persistedClass the class to create a mapping for
+	 */
+	public FluentMappingBuilder(Class<T> persistedClass) {
+		this(persistedClass, new Table(persistedClass.getSimpleName()));
 	}
 	
 	public Table getTable() {

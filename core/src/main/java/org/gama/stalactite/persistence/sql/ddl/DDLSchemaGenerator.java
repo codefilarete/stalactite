@@ -12,6 +12,9 @@ import org.gama.stalactite.persistence.structure.Index;
 import org.gama.stalactite.persistence.structure.Table;
 
 /**
+ * A class to collect multiple DDL sources. Main purpose is multiple table creation scripts so then can be payed against a database to create
+ * a schema. Use cases are tests and installation of a new application.
+ * 
  * @author Guillaume Mary
  */
 public class DDLSchemaGenerator implements DDLGenerator {

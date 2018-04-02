@@ -9,9 +9,15 @@ import org.gama.stalactite.persistence.id.Identified;
 import org.gama.stalactite.persistence.id.manager.StatefullIdentifier;
 import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
 import org.gama.stalactite.persistence.sql.Dialect;
+import org.gama.stalactite.persistence.structure.Table;
 
 /**
+ * An interface describing a fluent way to declare the persistence mapping of a class 
+ * 
  * @author Guillaume Mary
+ * @see FluentMappingBuilder#from(Class, Class)
+ * @see FluentMappingBuilder#from(Class, Class, Table)
+ * @see #build(Dialect)
  */
 public interface IFluentMappingBuilder<T extends Identified, I extends StatefullIdentifier> {
 	
@@ -39,6 +45,12 @@ public interface IFluentMappingBuilder<T extends Identified, I extends Statefull
 	
 	<C> IFluentMappingBuilder<T, I> versionedBy(SerializableFunction<T, C> property, Serie<C> sequence);
 	
+	/**
+	 * Final method, builds the concrete persistence mapping
+	 * 
+	 * @param dialect the {@link Dialect} to build the mapping for
+	 * @return the finalized mapping, can be modified further
+	 */
 	ClassMappingStrategy<T, I> build(Dialect dialect);
 	
 	Persister<T, I> build(PersistenceContext persistenceContext);
