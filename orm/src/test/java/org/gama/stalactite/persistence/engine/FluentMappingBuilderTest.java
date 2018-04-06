@@ -1,8 +1,12 @@
 package org.gama.stalactite.persistence.engine;
 
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
 import java.util.Date;
 import java.util.Map;
 
+import org.gama.sql.SimpleConnectionProvider;
 import org.gama.sql.binder.DefaultParameterBinders;
 import org.gama.stalactite.persistence.engine.FluentMappingBuilder.IdentifierPolicy;
 import org.gama.stalactite.persistence.id.Identified;
@@ -16,11 +20,16 @@ import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
+import org.mockito.ArgumentCaptor;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 /**
  * @author Guillaume Mary
@@ -167,7 +176,7 @@ public class FluentMappingBuilderTest {
 	}
 	
 	@Test
-	public void testEmbed_withOverridenColumn() {
+	public void testEmbed_withOverridenColumnName() {
 		Table toto = new Table("Toto");
 		FluentMappingBuilder.from(Toto.class, StatefullIdentifier.class, toto)
 				.add(Toto::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
@@ -178,7 +187,7 @@ public class FluentMappingBuilderTest {
 		
 		Map<String, Column> columnsByName = toto.mapColumnsOnName();
 		
-		// original columns must be absent (hard to test: can be absent for many reasons !)
+		// columns with getter name must be absent (hard to test: can be absent for many reasons !)
 		assertNull(columnsByName.get("creationDate"));
 		assertNull(columnsByName.get("modificationDate"));
 
@@ -190,6 +199,41 @@ public class FluentMappingBuilderTest {
 		overridenColumn = columnsByName.get("createdAt");
 		assertNotNull(overridenColumn);
 		assertEquals(Date.class, overridenColumn.getJavaType());
+	}
+	
+	@Test
+	public void testEmbed_withOverridenColumn() throws SQLException {
+		Table toto = new Table("Toto");
+		Column<Date> createdAt = toto.addColumn("createdAt", Date.class);
+		Column<Date> modifiedAt = toto.addColumn("modifiedAt", Date.class);
+		
+		// Preparation of column mapping check thought insert statement generation
+		Connection connectionMock = mock(Connection.class);
+		PreparedStatement preparedStatementMock = mock(PreparedStatement.class);
+		when(connectionMock.prepareStatement(anyString())).thenReturn(preparedStatementMock);
+		when(preparedStatementMock.executeBatch()).thenReturn(new int[]{ 1 });
+		ArgumentCaptor<String> argumentCaptor = ArgumentCaptor.forClass(String.class);
+		
+		Persister<Toto, StatefullIdentifier> persister = FluentMappingBuilder.from(Toto.class, StatefullIdentifier.class, toto)
+				.add(Toto::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
+				.embed(Toto::getTimestamp)
+				.override(Timestamp::getCreationDate, createdAt)
+				.override(Timestamp::getModificationDate, modifiedAt)
+				.build(new PersistenceContext(new SimpleConnectionProvider(connectionMock), DIALECT));
+		
+		Map<String, Column> columnsByName = toto.mapColumnsOnName();
+		
+		// columns with getter name must be absent (hard to test: can be absent for many reasons !)
+		assertNull(columnsByName.get("creationDate"));
+		assertNull(columnsByName.get("modificationDate"));
+		
+		// checking that overriden column are well mapped: we use the insert command for that
+		Toto dummyInstance = new Toto();
+		dummyInstance.setTimestamp(new Timestamp());
+		persister.insert(dummyInstance);
+		verify(connectionMock).prepareStatement(argumentCaptor.capture());
+		// the insert SQL must contains overriden columns
+		assertEquals("insert into Toto(id, createdAt, modifiedAt) values (?, ?, ?)", argumentCaptor.getValue());
 	}
 	
 	protected static class Toto implements Identified<Integer> {

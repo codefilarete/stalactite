@@ -36,9 +36,9 @@ public interface IFluentMappingBuilder<T extends Identified, I extends Statefull
 	
 	<O extends Identified, J extends StatefullIdentifier, C extends Collection<O>> IFluentMappingBuilderOneToManyOptions<T, I, O> addOneToMany(SerializableFunction<T, C> function, Persister<O, J> persister);
 	
-	<O> IFluentMappingBuilderEmbedOptions<T, I, O> embed(SerializableBiConsumer<T, O> function);
+	<O> IFluentMappingBuilderEmbedOptions<T, I> embed(SerializableBiConsumer<T, O> function);
 	
-	<O> IFluentMappingBuilderEmbedOptions<T, I, O> embed(SerializableFunction<T, O> function);
+	<O> IFluentMappingBuilderEmbedOptions<T, I> embed(SerializableFunction<T, O> function);
 	
 	IFluentMappingBuilder<T, I> foreignKeyNamingStrategy(ForeignKeyNamingStrategy foreignKeyNamingStrategy);
 	
@@ -67,7 +67,7 @@ public interface IFluentMappingBuilder<T extends Identified, I extends Statefull
 	interface IFluentMappingBuilderOneToManyOptions<T extends Identified, I extends StatefullIdentifier, O extends Identified> extends IFluentMappingBuilder<T, I>, OneToManyOptions<T, I, O> {
 	}
 	
-	interface IFluentMappingBuilderEmbedOptions<T extends Identified, I extends StatefullIdentifier, O> extends IFluentMappingBuilder<T, I>, EmbedOptions<T, I, O> {
+	interface IFluentMappingBuilderEmbedOptions<T extends Identified, I extends StatefullIdentifier> extends IFluentMappingBuilder<T, I>, EmbedOptions<T, I> {
 	}
 	
 }

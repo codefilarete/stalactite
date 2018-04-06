@@ -332,29 +332,40 @@ public class FluentMappingBuilder<T extends Identified, I extends StatefullIdent
 	}
 	
 	@Override
-	public <O> IFluentMappingBuilderEmbedOptions<T, I, O> embed(SerializableBiConsumer<T, O> function) {
+	public <O> IFluentMappingBuilderEmbedOptions<T, I> embed(SerializableBiConsumer<T, O> function) {
 		Inset<T, O> inset = new Inset<>(function);
 		insets.add(inset);
 		return embed(inset);
 	}
 	
 	@Override
-	public <O> IFluentMappingBuilderEmbedOptions<T, I, O> embed(SerializableFunction<T, O> function) {
+	public <O> IFluentMappingBuilderEmbedOptions<T, I> embed(SerializableFunction<T, O> function) {
 		Inset<T, O> inset = new Inset<>(function);
 		insets.add(inset);
 		return embed(inset);
 	}
 	
-	private <O> IFluentMappingBuilderEmbedOptions<T, I, O> embed(Inset<T, O> inset) {
+	private <O> IFluentMappingBuilderEmbedOptions<T, I> embed(Inset<T, O> inset) {
 		return new MethodDispatcher()
-				.redirect(EmbedOptions.class, (methodRef, columnName) -> {
-					inset.overrideName(methodRef, columnName);
-					// we can't return this nor FluentMappingBuilder.this because none of them implements IFluentMappingBuilderEmbedOptions
-					// so we return anything (null) and ask for returning proxy (which does)
-					return null;
+				.redirect(EmbedOptions.class, new EmbedOptions() {
+					@Override
+					public IFluentMappingBuilderEmbedOptions overrideName(SerializableFunction methodRef, String columnName) {
+						inset.overrideName(methodRef, columnName);
+						// we can't return this nor FluentMappingBuilder.this because none of them implements IFluentMappingBuilderEmbedOptions
+						// so we return anything (null) and ask for returning proxy
+						return null;
+					}
+					
+					@Override
+					public IFluentMappingBuilderEmbedOptions override(SerializableFunction methodRef, Column targetColumn) {
+						inset.override(methodRef, targetColumn);
+						// we can't return this nor FluentMappingBuilder.this because none of them implements IFluentMappingBuilderEmbedOptions
+						// so we return anything (null) and ask for returning proxy
+						return null;
+					}
 				}, true)
 				.fallbackOn(this)
-				.build((Class<IFluentMappingBuilderEmbedOptions<T, I, O>>) (Class) IFluentMappingBuilderEmbedOptions.class);
+				.build((Class<IFluentMappingBuilderEmbedOptions<T, I>>) (Class) IFluentMappingBuilderEmbedOptions.class);
 	}
 	
 	@Override
@@ -456,28 +467,37 @@ public class FluentMappingBuilder<T extends Identified, I extends StatefullIdent
 			}
 		}
 		
-		for (Inset embed : this.insets) {
+		for (Inset<?, ?> inset : this.insets) {
 			// Building the mapping of the value-object's fields to the table
 			Map<String, Column> columnsPerName = localPersister.getTargetTable().mapColumnsOnName();
 			Map<PropertyAccessor, Column> mapping = new HashMap<>();
-			FieldIterator fieldIterator = new FieldIterator(embed.cascadingTargetClass);
+			FieldIterator fieldIterator = new FieldIterator(inset.embeddedClass);
 			while (fieldIterator.hasNext()) {
 				Field field = fieldIterator.next();
-				Column column = columnsPerName.get(field.getName());
-				if (column == null) {
-					// Column isn't declared in table => we create one from field informations
-					String columnName = field.getName();
-					String overridenName = (String) embed.overridenColumnNames.get(field);
-					if (overridenName != null) {
-						columnName = overridenName;
+				// looking for the targeted column
+				Column targetColumn;
+				// overriden column is taken first
+				Column overridenColumn = inset.overridenColumns.get(field);
+				if (overridenColumn != null) {
+					targetColumn = overridenColumn;
+				} else {
+					// then we try an overriden name 
+					targetColumn = columnsPerName.get(field.getName());
+					if (targetColumn == null) {
+						// Column isn't declared in table => we create one from field informations
+						String columnName = field.getName();
+						String overridenName = inset.overridenColumnNames.get(field);
+						if (overridenName != null) {
+							columnName = overridenName;
+						}
+						targetColumn = localPersister.getTargetTable().addColumn(columnName, field.getType());
 					}
-					column = localPersister.getTargetTable().addColumn(columnName, field.getType());
 				}
-				mapping.put(Accessors.of(field), column);
+				mapping.put(Accessors.of(field), targetColumn);
 			}
 			// We simply register a specialized mapping strategy for the field into the main strategy
-			EmbeddedBeanMappingStrategy beanMappingStrategy = new EmbeddedBeanMappingStrategy(embed.cascadingTargetClass, mapping);
-			mappingStrategy.put(Accessors.of(embed.insetAccessor), beanMappingStrategy);
+			EmbeddedBeanMappingStrategy beanMappingStrategy = new EmbeddedBeanMappingStrategy(inset.embeddedClass, mapping);
+			mappingStrategy.put(Accessors.of(inset.insetAccessor), beanMappingStrategy);
 		}
 		
 		Nullable<VersioningStrategy> versionigStrategy = Nullable.nullable(optimisticLockOption).apply(OptimisticLockOption::getVersioningStrategy);
@@ -719,9 +739,10 @@ public class FluentMappingBuilder<T extends Identified, I extends StatefullIdent
 	 * @param <TRGT> the target type
 	 */
 	private class Inset<SRC, TRGT> {
-		private final Class<TRGT> cascadingTargetClass;
+		private final Class<TRGT> embeddedClass;
 		private final Method insetAccessor;
 		private final Map<Field, String> overridenColumnNames = new HashMap<>();
+		private final Map<Field, Column> overridenColumns = new HashMap<>();
 		
 		private Inset(SerializableBiConsumer<SRC, TRGT> targetProvider) {
 			this(captureLambdaMethod(targetProvider));
@@ -734,12 +755,17 @@ public class FluentMappingBuilder<T extends Identified, I extends StatefullIdent
 		private Inset(Method insetAccessor) {
 			this.insetAccessor = insetAccessor;
 			// looking for the target type because its necessary to find its persister (and other objects)
-			this.cascadingTargetClass = (Class<TRGT>) Reflections.javaBeanTargetType(this.insetAccessor);
+			this.embeddedClass = (Class<TRGT>) Reflections.javaBeanTargetType(this.insetAccessor);
 		}
 		
-		public void overrideName(SerializableFunction function, String columnName) {
-			Method method = captureLambdaMethod(function);
+		public void overrideName(SerializableFunction methodRef, String columnName) {
+			Method method = captureLambdaMethod(methodRef);
 			this.overridenColumnNames.put(Reflections.wrappedField(method), columnName);
+		}
+		
+		public void override(SerializableFunction methodRef, Column column) {
+			Method method = captureLambdaMethod(methodRef);
+			this.overridenColumns.put(Reflections.wrappedField(method), column);
 		}
 	}
 	
