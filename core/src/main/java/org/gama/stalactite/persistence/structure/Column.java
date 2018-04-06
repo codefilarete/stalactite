@@ -1,5 +1,7 @@
 package org.gama.stalactite.persistence.structure;
 
+import javax.annotation.Nonnull;
+
 /**
  * Column of a table.
  * 
@@ -21,14 +23,14 @@ public class Column<T> {
 	/**
 	 * Build a column
 	 */
-	public Column(Table owner, String name, Class<T> javaType) {
+	public Column(@Nonnull Table owner, String name, Class<T> javaType) {
 		this(owner, name, javaType, null);
 	}
 	
 	/**
 	 * Build a column with a size
 	 */
-	public Column(Table owner, String name, Class<T> javaType, Integer size) {
+	public Column(@Nonnull Table owner, String name, Class<T> javaType, Integer size) {
 		this.table = owner;
 		this.name = name;
 		this.javaType = javaType;

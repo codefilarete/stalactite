@@ -21,6 +21,7 @@ import org.danekja.java.util.function.serializable.SerializableFunction;
 import org.gama.lang.Nullable;
 import org.gama.lang.Reflections;
 import org.gama.lang.bean.FieldIterator;
+import org.gama.lang.exception.NotImplementedException;
 import org.gama.lang.function.Serie;
 import org.gama.lang.reflect.MethodDispatcher;
 import org.gama.reflection.Accessors;
@@ -151,13 +152,13 @@ public class FluentMappingBuilder<T extends Identified, I extends StatefullIdent
 	@Override
 	public <O> IFluentMappingBuilderColumnOptions<T, I> add(SerializableBiConsumer<T, O> function) {
 		Method method = captureLambdaMethod(function);
-		return add(method, null);
+		return add(method, (String) null);
 	}
 	
 	@Override
 	public <O> IFluentMappingBuilderColumnOptions<T, I> add(SerializableFunction<T, O> function) {
 		Method method = captureLambdaMethod(function);
-		return add(method, null);
+		return add(method, (String) null);
 	}
 	
 	@Override
@@ -172,8 +173,65 @@ public class FluentMappingBuilder<T extends Identified, I extends StatefullIdent
 		return add(method, columnName);
 	}
 	
-	private IFluentMappingBuilderColumnOptions<T, I> add(Method method, String columnName) {
-		Linkage newMapping = addMapping(method, columnName);
+	@Override
+	public <O> IFluentMappingBuilderColumnOptions<T, I> add(SerializableFunction<T, O> function, Column<O> column) {
+		Method method = captureLambdaMethod(function);
+		return add(method, column);
+	}
+	
+	private <O> IFluentMappingBuilderColumnOptions<T, I> add(Method method, Column<O> column) {
+		Linkage<T> newMapping = addMapping(method, column);
+		return addMapping(method, newMapping);
+	}
+	
+	private IFluentMappingBuilderColumnOptions<T, I> add(Method method, @javax.annotation.Nullable String columnName) {
+		Linkage<T> newMapping = addMapping(method, columnName);
+		return addMapping(method, newMapping);
+	}
+	
+	/**
+	 * @return a new Column aded to the target table, throws an exception if already mapped
+	 */
+	private Linkage<T> addMapping(Method method, @javax.annotation.Nullable String columnName) {
+		PropertyAccessor<Object, Object> propertyAccessor = Accessors.of(method);
+		assertMappingIsNotAlreadyDefined(columnName, propertyAccessor);
+		String linkName = columnName;
+		if (columnName == null && Identified.class.isAssignableFrom(Reflections.javaBeanTargetType(method))) {
+			linkName = columnNamingStrategy.giveName(propertyAccessor);
+		}
+		Linkage<T>linkage = new LinkageByColumnName<>(method, linkName);
+		this.mapping.add(linkage);
+		return linkage;
+	}
+	
+	/**
+	 * @return a new Column aded to the target table, throws an exception if already mapped
+	 */
+	private <O> Linkage<T> addMapping(Method method, Column<O> column) {
+		PropertyAccessor<Object, Object> propertyAccessor = Accessors.of(method);
+		assertMappingIsNotAlreadyDefined(column.getName(), propertyAccessor);
+		Linkage<T> linkage = new LinkageByColumn<>(method, column);
+		this.mapping.add(linkage);
+		return linkage;
+	}
+	
+	private void assertMappingIsNotAlreadyDefined(@javax.annotation.Nullable String columnName, PropertyAccessor propertyAccessor) {
+		Predicate<Linkage> checker = ((Predicate<Linkage>) (linkage -> {
+			PropertyAccessor<T, ?> accessor = linkage.getAccessor();
+			if (accessor.equals(propertyAccessor)) {
+				throw new IllegalArgumentException("Mapping is already defined by the method " + accessor.getAccessor());
+			}
+			return true;
+		})).and(linkage -> {
+			if (columnName != null && columnName.equals(linkage.getColumnName())) {
+				throw new IllegalArgumentException("Mapping is already defined for " + columnName);
+			}
+			return true;
+		});
+		mapping.forEach(checker::test);
+	}
+	
+	private IFluentMappingBuilderColumnOptions<T, I> addMapping(Method method, Linkage newMapping) {
 		return new MethodDispatcher()
 				.redirect(ColumnOptions.class, identifierPolicy -> {
 					if (FluentMappingBuilder.this.identifierAccessor != null) {
@@ -181,46 +239,28 @@ public class FluentMappingBuilder<T extends Identified, I extends StatefullIdent
 					}
 					switch (identifierPolicy) {
 						case ALREADY_ASSIGNED:
-							Class<I> e = Reflections.propertyType(method);
-							FluentMappingBuilder.this.identifierInsertionManager = new AlreadyAssignedIdentifierManager<>(e);
-							newMapping.primaryKey();
+							Class<I> primaryKeyType = Reflections.propertyType(method);
+							FluentMappingBuilder.this.identifierInsertionManager = new AlreadyAssignedIdentifierManager<>(primaryKeyType);
+							if (newMapping instanceof FluentMappingBuilder.LinkageByColumnName) {
+								// we force primary key so it's no necessary to set it by caller
+								((LinkageByColumnName) newMapping).primaryKey();
+							} else if (newMapping instanceof FluentMappingBuilder.LinkageByColumn && !newMapping.isPrimaryKey()) {
+								// safeguard about a missconfiguration, even if mapping would work it smells bad configuration
+								throw new IllegalArgumentException("Identifier policy is assigned on a non primary key column");
+							} else {
+								// in case of evolution in the Linkage API
+								throw new NotImplementedException(newMapping.getClass());
+							}
 							break;
 						default:
 							throw new NotYetSupportedOperationException(identifierPolicy + " is not yet supported");
 					}
-					FluentMappingBuilder.this.identifierAccessor = (PropertyAccessor<T, I>) newMapping.getFunction();
+					FluentMappingBuilder.this.identifierAccessor = (PropertyAccessor<T, I>) newMapping.getAccessor();
 					// we return the fluent builder so user can chain with any other configuration
 					return FluentMappingBuilder.this;
 				})
 				.fallbackOn(this)
 				.build((Class<IFluentMappingBuilderColumnOptions<T, I>>) (Class) IFluentMappingBuilderColumnOptions.class);
-	}
-	
-	/**
-	 * @return a new Column aded to the target table, throws an exception if already mapped
-	 */
-	private Linkage addMapping(Method method, String columnName) {
-		PropertyAccessor<Object, Object> propertyAccessor = Accessors.of(method);
-		Predicate<Linkage> checker = ((Predicate<Linkage>) (l -> {
-			PropertyAccessor<T, ?> function = l.getFunction();
-			if (function.equals(propertyAccessor)) {
-				throw new IllegalArgumentException("Mapping is already defined by the method " + function.getAccessor());
-			}
-			return true;
-		})).and(l -> {
-			if (columnName != null && columnName.equals(l.getColumnName())) {
-				throw new IllegalArgumentException("Mapping is already defined for " + columnName);
-			}
-			return true;
-		});
-		mapping.forEach(checker::test);
-		String linkName = columnName;
-		if (columnName == null && Identified.class.isAssignableFrom(Reflections.javaBeanTargetType(method))) {
-			linkName = columnNamingStrategy.giveName(propertyAccessor);
-		}
-		Linkage linkage = new Linkage(method, linkName);
-		this.mapping.add(linkage);
-		return linkage;
 	}
 	
 	@Override
@@ -365,14 +405,21 @@ public class FluentMappingBuilder<T extends Identified, I extends StatefullIdent
 	private Map<PropertyAccessor, Column> buildMapping(Dialect dialect) {
 		Map<PropertyAccessor, Column> columnMapping = new HashMap<>();
 		mapping.forEach(linkage -> {
-					Column newColumn = getTable().addColumn(linkage.getColumnName(), linkage.getColumnType());
-					// assert that column binder is registered : it will throw en exception if the binder is not found
-					dialect.getColumnBinderRegistry().getBinder(newColumn);
-					// setting the primary key option as asked
-					if (linkage.isPrimaryKey()) {
-						newColumn.primaryKey();
+					Column column;
+					if (linkage instanceof LinkageByColumnName) {
+						column = getTable().addColumn(linkage.getColumnName(), linkage.getColumnType());
+						// assert that column binder is registered : it will throw en exception if the binder is not found
+						dialect.getColumnBinderRegistry().getBinder(column);
+						// setting the primary key option as asked
+						if (linkage.isPrimaryKey()) {
+							column.primaryKey();
+						}
+					} else if (linkage instanceof LinkageByColumn) {
+						column = ((LinkageByColumn) linkage).getColumn();
+					} else {
+						throw new NotImplementedException(linkage.getClass());
 					}
-					columnMapping.put(linkage.getFunction(), newColumn);
+					columnMapping.put(linkage.getAccessor(), column);
 				}
 		);
 		return columnMapping;
@@ -392,8 +439,9 @@ public class FluentMappingBuilder<T extends Identified, I extends StatefullIdent
 			localPersister = joinedTablesPersister;
 			// adding persistence flag setters on this side
 			joinedTablesPersister.getPersisterListener().addInsertListener((IInsertListener<T>) SetPersistedFlagAfterInsertListener.INSTANCE);
+			CascadeOneConfigurer cascadeOneConfigurer = new CascadeOneConfigurer();
 			for (CascadeOne<T, ? extends Identified, ? extends StatefullIdentifier> cascadeOne : cascadeOnes) {
-				new CascadeOneConfigurer().appendCascade(cascadeOne, joinedTablesPersister, mappingStrategy, joinedTablesPersister,
+				cascadeOneConfigurer.appendCascade(cascadeOne, joinedTablesPersister, mappingStrategy, joinedTablesPersister,
 						foreignKeyNamingStrategy);
 			}
 		}
@@ -402,8 +450,9 @@ public class FluentMappingBuilder<T extends Identified, I extends StatefullIdent
 			JoinedTablesPersister<T, I> joinedTablesPersister = new JoinedTablesPersister<>(persistenceContext, mappingStrategy);
 			localPersister = joinedTablesPersister;
 			
+			CascadeManyConfigurer cascadeManyConfigurer = new CascadeManyConfigurer();
 			for(CascadeMany<T, ? extends Identified, ? extends StatefullIdentifier, ? extends Collection> cascadeMany : cascadeManys) {
-				new CascadeManyConfigurer().appendCascade(cascadeMany, joinedTablesPersister, joinedTablesPersister, foreignKeyNamingStrategy);
+				cascadeManyConfigurer.appendCascade(cascadeMany, joinedTablesPersister, joinedTablesPersister, foreignKeyNamingStrategy);
 			}
 		}
 		
@@ -464,7 +513,18 @@ public class FluentMappingBuilder<T extends Identified, I extends StatefullIdent
 	}
 	
 	
-	private class Linkage {
+	private interface Linkage<T> {
+		
+		PropertyAccessor<T, ?> getAccessor();
+		
+		String getColumnName();
+		
+		Class<?> getColumnType();
+		
+		boolean isPrimaryKey();
+	}
+	
+	private static class LinkageByColumnName<T> implements Linkage<T> {
 		
 		private final PropertyAccessor function;
 		private final Class<?> columnType;
@@ -479,13 +539,13 @@ public class FluentMappingBuilder<T extends Identified, I extends StatefullIdent
 		 * @param method a {@link PropertyAccessor}
 		 * @param columnName an override of the default name that will be generated
 		 */
-		private Linkage(Method method, String columnName) {
+		private LinkageByColumnName(Method method, String columnName) {
 			this.function = Accessors.of(method);
 			this.columnType = Reflections.propertyType(method);
 			this.columnName = columnName == null ? Reflections.propertyName(method) : columnName;
 		}
 		
-		public PropertyAccessor<T, ?> getFunction() {
+		public PropertyAccessor<T, ?> getAccessor() {
 			return function;
 		}
 		
@@ -497,20 +557,53 @@ public class FluentMappingBuilder<T extends Identified, I extends StatefullIdent
 			return columnType;
 		}
 		
-		public Class<Collection> getTargetManyType() {
-			return targetManyType;
-		}
-		
-		public void setTargetManyType(Class<Collection> targetManyType) {
-			this.targetManyType = targetManyType;
-		}
-		
 		public boolean isPrimaryKey() {
 			return primaryKey;
 		}
 		
 		public void primaryKey() {
 			this.primaryKey = true;
+		}
+	}
+	
+	private static class LinkageByColumn<T> implements Linkage<T> {
+		
+		private final PropertyAccessor function;
+		private final Column column;
+		
+		/**
+		 * Constructor by {@link Method}. Only accessor by method is implemented (since input is from method reference).
+		 * (Doing it for field accessor is simple work but not necessary)
+		 * @param method a {@link PropertyAccessor}
+		 * @param column an override of the default column that would have been generated
+		 */
+		private LinkageByColumn(Method method, Column column) {
+			this(Accessors.of(method), column);
+		}
+		
+		private LinkageByColumn(PropertyAccessor function, Column column) {
+			this.function = function;
+			this.column = column;
+		}
+		
+		public PropertyAccessor<T, ?> getAccessor() {
+			return function;
+		}
+		
+		public String getColumnName() {
+			return column.getName();
+		}
+		
+		public Class<?> getColumnType() {
+			return column.getJavaType();
+		}
+		
+		public boolean isPrimaryKey() {
+			return column.isPrimaryKey();
+		}
+		
+		public Column getColumn() {
+			return column;
 		}
 	}
 	

@@ -42,7 +42,7 @@ public class FluentMappingBuilderTest {
 	public ExpectedException expectedException = ExpectedException.none();
 	
 	@Test
-	public void testAdd_withoutName_targettedPropertyNameIsTaken() {
+	public void testAdd_withoutName_targetedPropertyNameIsTaken() {
 		ClassMappingStrategy<Toto, StatefullIdentifier> mappingStrategy = FluentMappingBuilder.from(Toto.class, StatefullIdentifier.class)
 				.add(Toto::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.add(Toto::getName)
@@ -53,6 +53,20 @@ public class FluentMappingBuilderTest {
 		Column columnForProperty = mappingStrategy.getTargetTable().mapColumnsOnName().get("name");
 		assertNotNull(columnForProperty);
 		assertEquals(String.class, columnForProperty.getJavaType());
+	}
+	
+	@Test
+	public void testAdd_withColumn_columnIsTaken() {
+		Table toto = new Table("Toto");
+		Column<String> titleColumn = toto.addColumn("title", String.class);
+		ClassMappingStrategy<Toto, StatefullIdentifier> mappingStrategy = FluentMappingBuilder.from(Toto.class, StatefullIdentifier.class, toto)
+				.add(Toto::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
+				.add(Toto::getName, titleColumn)
+				.build(DIALECT);
+		
+		// column should not have been created
+		Column columnForProperty = mappingStrategy.getTargetTable().mapColumnsOnName().get("name");
+		assertNull(columnForProperty);
 	}
 	
 	@Test

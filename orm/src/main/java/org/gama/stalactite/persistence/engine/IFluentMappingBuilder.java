@@ -9,6 +9,7 @@ import org.gama.stalactite.persistence.id.Identified;
 import org.gama.stalactite.persistence.id.manager.StatefullIdentifier;
 import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
 import org.gama.stalactite.persistence.sql.Dialect;
+import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
 
 /**
@@ -27,7 +28,9 @@ public interface IFluentMappingBuilder<T extends Identified, I extends Statefull
 	
 	<O> IFluentMappingBuilderColumnOptions<T, I> add(SerializableBiConsumer<T, O> function, String columnName);
 	
-	IFluentMappingBuilder<T, I> add(SerializableFunction<T, ?> function, String columnName);
+	IFluentMappingBuilderColumnOptions<T, I> add(SerializableFunction<T, ?> function, String columnName);
+	
+	<O> IFluentMappingBuilderColumnOptions<T, I> add(SerializableFunction<T, O> function, Column<O> column);
 	
 	<O extends Identified, J extends StatefullIdentifier> IFluentMappingBuilderOneToOneOptions<T, I> addOneToOne(SerializableFunction<T, O> function, Persister<O, J> persister);
 	
