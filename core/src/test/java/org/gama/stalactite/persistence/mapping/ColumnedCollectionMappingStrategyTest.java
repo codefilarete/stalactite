@@ -21,6 +21,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
 
 /**
  * @author Guillaume Mary
@@ -38,7 +39,7 @@ public class ColumnedCollectionMappingStrategyTest {
 	@BeforeClass
 	public static void setUpClass() {
 		targetTable = new Table(null, "Toto");
-		final int nbCol = 5;
+		int nbCol = 5;
 		for (int i = 1; i <= nbCol; i++) {
 			String columnName = "col_" + i;
 			targetTable.addColumn(columnName, String.class);
@@ -56,17 +57,17 @@ public class ColumnedCollectionMappingStrategyTest {
 	
 	@Before
 	public void setUp() {
-		testInstance = new ColumnedCollectionMappingStrategy<List<String>, String>(targetTable, targetTable.getColumns(), ArrayList.class) {
+		testInstance = new ColumnedCollectionMappingStrategy<List<String>, String>(targetTable, targetTable.getColumns(), (Class<List<String>>) (Class) ArrayList.class) {
 			@Override
-			protected String toCollectionValue(Object t) {
-				return t == null ?  null : t.toString();
+			protected String toCollectionValue(Object object) {
+				return object == null ?  null : object.toString();
 			}
 		};
 	}
 	
 	
 	@DataProvider
-	public static Object[][] testGetInsertValuesData() {
+	public static Object[][] testGetInsertValues() {
 		setUpClass();
 		return new Object[][] {
 				{ Arrays.asList("a", "b", "c"), Maps.asMap(col1, "a").add(col2, "b").add(col3, "c").add(col4, null).add(col5, null) },
@@ -76,14 +77,14 @@ public class ColumnedCollectionMappingStrategyTest {
 	}
 	
 	@Test
-	@UseDataProvider("testGetInsertValuesData")
+	@UseDataProvider
 	public void testGetInsertValues(List<String> toInsert, ChainingMap<Column, String> expected) {
 		Map<Column, Object> insertValues = testInstance.getInsertValues(toInsert);
 		assertEquals(insertValues, expected);
 	}
 	
 	@DataProvider
-	public static Object[][] testGetUpdateValues_diffOnlyData() {
+	public static Object[][] testGetUpdateValues_diffOnly() {
 		setUpClass();
 		return new Object[][] {
 				{ Arrays.asList("a", "b", "c"), Arrays.asList("x", "y", "x"),
@@ -102,7 +103,7 @@ public class ColumnedCollectionMappingStrategyTest {
 	}
 	
 	@Test
-	@UseDataProvider("testGetUpdateValues_diffOnlyData")
+	@UseDataProvider
 	public void testGetUpdateValues_diffOnly(List<String> modified, List<String> unmodified, Map<Column, String> expected) {
 		Map<UpwhereColumn, Object> updateValues = testInstance.getUpdateValues(modified, unmodified, false);
 		Map<UpwhereColumn, Object> expectationWithUpwhereColumn = new HashMap<>();
@@ -111,7 +112,7 @@ public class ColumnedCollectionMappingStrategyTest {
 	}
 	
 	@DataProvider
-	public static Object[][] testGetUpdateValues_allColumnsData() {
+	public static Object[][] testGetUpdateValues_allColumns() {
 		setUpClass();
 		return new Object[][] {
 				{ Arrays.asList("a", "b", "c"), Arrays.asList("x", "y", "x"),
@@ -132,7 +133,7 @@ public class ColumnedCollectionMappingStrategyTest {
 	}
 	
 	@Test
-	@UseDataProvider("testGetUpdateValues_allColumnsData")
+	@UseDataProvider
 	public void testGetUpdateValues_allColumns(List<String> modified, List<String> unmodified, Map<Column, String> expected) {
 		Map<UpwhereColumn, Object> updateValues = testInstance.getUpdateValues(modified, unmodified, true);
 		Map<UpwhereColumn, Object> expectationWithUpwhereColumn = new HashMap<>();
@@ -151,8 +152,8 @@ public class ColumnedCollectionMappingStrategyTest {
 		assertEquals(toto.get(0), "a");
 		assertEquals(toto.get(1), "b");
 		assertEquals(toto.get(2), "c");
-		assertEquals(toto.get(3), null);
-		assertEquals(toto.get(4), null);
+		assertNull(toto.get(3));
+		assertNull(toto.get(4));
 		// there's not more element since mapping used 5 columns
 		assertEquals(toto.size(), 5);
 	}

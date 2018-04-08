@@ -15,13 +15,16 @@ import org.gama.lang.Reflections;
 import org.gama.lang.collection.Arrays;
 import org.gama.lang.collection.Maps;
 import org.gama.reflection.Accessors;
+import org.gama.reflection.IReversibleAccessor;
 import org.gama.reflection.PropertyAccessor;
 import org.gama.stalactite.persistence.id.manager.AlreadyAssignedIdentifierManager;
 import org.gama.stalactite.persistence.sql.dml.PreparedUpdate.UpwhereColumn;
-import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.persistence.structure.Column;
+import org.gama.stalactite.persistence.structure.Table;
 import org.junit.BeforeClass;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 import org.junit.runner.RunWith;
 
 import static org.junit.Assert.assertEquals;
@@ -39,7 +42,7 @@ public class ClassMappingStrategyTest {
 	private static Column colD2;
 	private static Column colE1;
 	private static Column colE2;
-	private static Map<PropertyAccessor, Column> classMapping;
+	private static Map<? extends IReversibleAccessor, Column> classMapping;
 	private static Table targetTable;
 	private static PersistentFieldHarverster persistentFieldHarverster;
 	private static Map<String, Column> columnMapOnName;
@@ -47,6 +50,9 @@ public class ClassMappingStrategyTest {
 	private static PropertyAccessor myMapField;
 	
 	private static ClassMappingStrategy<Toto, Integer> testInstance;
+	
+	@Rule
+	public final ExpectedException expectedException = ExpectedException.none();
 	
 	@BeforeClass
 	public static void setUpClass() {
@@ -89,11 +95,11 @@ public class ClassMappingStrategyTest {
 			String columnName = "cold_" + i;
 			collectionColumn.add(targetTable.addColumn(columnName, String.class));
 		}
-		testInstance.put(myListField, new ColumnedCollectionMappingStrategy<List<String>, String>(targetTable, collectionColumn, ArrayList.class) {
+		testInstance.put(myListField, new ColumnedCollectionMappingStrategy<List<String>, String>(targetTable, collectionColumn, (Class<List<String>>) (Class) ArrayList.class) {
 			
 			@Override
-			protected String toCollectionValue(Object t) {
-				return t.toString();
+			protected String toCollectionValue(Object object) {
+				return object.toString();
 			}
 		});
 		
@@ -111,7 +117,7 @@ public class ClassMappingStrategyTest {
 					break;
 			}
 		}
-		testInstance.put(myMapField, new ColumnedMapMappingStrategy<Map<String, String>, String, String, String>(targetTable, new HashSet<>(mappedColumnsOnKey.values()), HashMap.class) {
+		testInstance.put(myMapField, new ColumnedMapMappingStrategy<Map<String, String>, String, String, String>(targetTable, new HashSet<>(mappedColumnsOnKey.values()), (Class<Map<String, String>>) (Class) HashMap.class) {
 			
 			@Override
 			protected Column getColumn(String key) {
@@ -147,7 +153,7 @@ public class ClassMappingStrategyTest {
 	}
 	
 	@DataProvider
-	public static Object[][] testGetInsertValuesData() {
+	public static Object[][] testGetInsertValues() {
 		setUpClass();
 		return new Object[][] {
 				{ new Toto(1, 2, 3), Maps.asMap(colA, 1).add(colB, 2).add(colC, 3)
@@ -164,7 +170,7 @@ public class ClassMappingStrategyTest {
 	}
 	
 	@Test
-	@UseDataProvider("testGetInsertValuesData")
+	@UseDataProvider
 	public void testGetInsertValues(Toto modified, Map<Column, Object> expectedResult) {
 		Map<Column, Object> valuesToInsert = testInstance.getInsertValues(modified);
 		
@@ -172,7 +178,7 @@ public class ClassMappingStrategyTest {
 	}
 	
 	@DataProvider
-	public static Object[][] testGetUpdateValues_diffOnlyData() {
+	public static Object[][] testGetUpdateValues_diffOnly() {
 		setUpClass();
 		return new Object[][] {
 				{ new Toto(1, 2, 3), new Toto(1, 5, 6), Maps.asMap(colB, 2).add(colC, 3)}, 
@@ -193,7 +199,7 @@ public class ClassMappingStrategyTest {
 	}
 	
 	@Test
-	@UseDataProvider("testGetUpdateValues_diffOnlyData")
+	@UseDataProvider
 	public void testGetUpdateValues_diffOnly(Toto modified, Toto unmodified, Map<Column, Object> expectedResult) {
 		Map<UpwhereColumn, Object> valuesToUpdate = testInstance.getUpdateValues(modified, unmodified, false);
 		
@@ -206,7 +212,7 @@ public class ClassMappingStrategyTest {
 	}
 	
 	@DataProvider
-	public static Object[][] testGetUpdateValues_allColumnsData() {
+	public static Object[][] testGetUpdateValues_allColumns() {
 		setUpClass();
 		return new Object[][] {
 				{ new Toto(1, 2, 3), new Toto(1, 5, 6),
@@ -235,7 +241,7 @@ public class ClassMappingStrategyTest {
 	}
 	
 	@Test
-	@UseDataProvider("testGetUpdateValues_allColumnsData")
+	@UseDataProvider
 	public void testGetUpdateValues_allColumns(Toto modified, Toto unmodified, Map<Column, Object> expectedResult) {
 		Map<UpwhereColumn, Object> valuesToUpdate = testInstance.getUpdateValues(modified, unmodified, true);
 		
@@ -245,6 +251,19 @@ public class ClassMappingStrategyTest {
 		} else {
 			assertEquals(new HashMap<Column, Object>(), UpwhereColumn.getWhereColumns(valuesToUpdate));
 		}
+	}
+	
+	@Test
+	public void testBeanKeyIsPresent() {
+		PropertyAccessor<Toto, Integer> identifierAccesor = Accessors.forProperty(persistentFieldHarverster.getField("a"));
+		expectedException.expect(IllegalArgumentException.class);
+		expectedException.expectMessage("Bean identifier '" + identifierAccesor + "' must have its matching column in the mapping");
+		new ClassMappingStrategy<>(Toto.class,
+				targetTable,
+				Maps.asMap(Accessors.forProperty(Toto.class, "b"), colB),
+				// identifier is not present in previous statement so it leads to the expected exception
+				identifierAccesor,
+				new AlreadyAssignedIdentifierManager<>(Integer.class));
 	}
 	
 	private static class Toto {

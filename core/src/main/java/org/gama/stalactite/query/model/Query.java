@@ -14,6 +14,7 @@ import org.gama.stalactite.query.model.OrderByChain.Order;
  * 
  * @author Guillaume Mary
  * @see QueryBuilder
+ * @see QueryEase
  */
 public class Query implements FromAware, WhereAware, HavingAware, OrderByAware, LimitAware, QueryProvider {
 	

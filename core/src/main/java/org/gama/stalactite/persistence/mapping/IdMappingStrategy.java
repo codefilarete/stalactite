@@ -1,6 +1,6 @@
 package org.gama.stalactite.persistence.mapping;
 
-import org.gama.reflection.PropertyAccessor;
+import org.gama.reflection.IReversibleAccessor;
 import org.gama.stalactite.persistence.id.manager.IdentifierInsertionManager;
 import org.gama.stalactite.persistence.id.manager.StatefullIdentifier;
 
@@ -11,7 +11,7 @@ import org.gama.stalactite.persistence.id.manager.StatefullIdentifier;
  */
 public class IdMappingStrategy<T, I> {
 	
-	public static <T, I> IIdAccessor<T, I> toIdAccessor(PropertyAccessor<T, I> propertyAccessor) {
+	public static <T, I> IIdAccessor<T, I> toIdAccessor(IReversibleAccessor<T, I> propertyAccessor) {
 		return new IIdAccessor<T, I>() {
 			
 			@Override
@@ -21,7 +21,7 @@ public class IdMappingStrategy<T, I> {
 			
 			@Override
 			public void setId(T t, I identifier) {
-				propertyAccessor.set(t, identifier);
+				propertyAccessor.toMutator().set(t, identifier);
 			}
 		};
 	}
@@ -44,7 +44,7 @@ public class IdMappingStrategy<T, I> {
 		}
 	}
 	
-	public IdMappingStrategy(PropertyAccessor<T, I> identifierAccessor, IdentifierInsertionManager<T, I> identifierInsertionManager) {
+	public IdMappingStrategy(IReversibleAccessor<T, I> identifierAccessor, IdentifierInsertionManager<T, I> identifierInsertionManager) {
 		this(toIdAccessor(identifierAccessor), identifierInsertionManager);
 	}
 	

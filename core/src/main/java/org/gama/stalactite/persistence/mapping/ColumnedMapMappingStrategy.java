@@ -15,6 +15,8 @@ import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
 
 /**
+ * A class that "roughly" persists a Map of {@link Column}s, without any bean class.
+ *
  * @author Guillaume Mary
  */
 public abstract class ColumnedMapMappingStrategy<C extends Map<K, V>, K, V, T> implements IEmbeddedBeanMapper<C> {
@@ -28,13 +30,12 @@ public abstract class ColumnedMapMappingStrategy<C extends Map<K, V>, K, V, T> i
 	 * 
 	 * @param targetTable table to persist in
 	 * @param columns columns that will be used for persistent of Maps, expected to be a subset of targetTable columns    
-	 * @param rowClass Class to instanciate for select from database, expected to be C but can't be typed due to generic complexity
+	 * @param rowClass Class to instanciate for select from database
 	 */
-	public ColumnedMapMappingStrategy(Table targetTable, Set<Column> columns, Class<? extends Map> rowClass) {
+	public ColumnedMapMappingStrategy(Table targetTable, Set<Column> columns, Class<C> rowClass) {
 		this.targetTable = targetTable;
 		this.columns = columns;
-		// weird cast cause of generics
-		this.rowTransformer = new ToMapRowTransformer<C>((Class<C>) rowClass) {
+		this.rowTransformer = new ToMapRowTransformer<C>(rowClass) {
 			/** We bind conversion on MapMappingStrategy conversion methods */
 			@Override
 			protected void applyRowToBean(Row row, C map) {

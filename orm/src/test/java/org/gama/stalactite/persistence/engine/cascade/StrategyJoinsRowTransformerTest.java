@@ -1,6 +1,5 @@
 package org.gama.stalactite.persistence.engine.cascade;
 
-import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
@@ -18,8 +17,8 @@ import org.gama.stalactite.persistence.engine.cascade.JoinedStrategiesSelect.Str
 import org.gama.stalactite.persistence.engine.cascade.JoinedStrategiesSelect.StrategyJoins.Join;
 import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
 import org.gama.stalactite.persistence.mapping.ToBeanRowTransformer;
-import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.persistence.structure.Column;
+import org.gama.stalactite.persistence.structure.Table;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -43,7 +42,7 @@ public class StrategyJoinsRowTransformerTest {
 	}
 	
 	@Test
-	public void testTransform_with1strategy() throws SQLException, NoSuchMethodException {
+	public void testTransform_with1strategy() {
 		// defining the Table is mandatory and overall its primary key since the transformer requires it to read and find the entity in the cache
 		Table totoTable = new Table("toto");
 		Column totoColumnId = totoTable.addColumn("id", long.class).primaryKey();
@@ -70,7 +69,7 @@ public class StrategyJoinsRowTransformerTest {
 	 * Test case with a root strategy joined with another one : @OneToOne case
 	 */
 	@Test
-	public void testTransform_with2strategies_oneToOne() throws SQLException, NoSuchMethodException {
+	public void testTransform_with2strategies_oneToOne() {
 		// defining the Table is mandatory and overall its primary key since the transformer requires it to read and find the entity in the cache
 		Table totoTable = new Table("toto");
 		Column totoColumnId = totoTable.addColumn("id", long.class).primaryKey();
@@ -119,7 +118,7 @@ public class StrategyJoinsRowTransformerTest {
 	 * Test case with a root strategy joined with 2 others by deep : nested @OneToOne case
 	 */
 	@Test
-	public void testTransform_with3strategies_deep() throws SQLException, NoSuchMethodException {
+	public void testTransform_with3strategies_deep() {
 		// defining the Table is mandatory and overall its primary key since the transformer requires it to read and find the entity in the cache
 		Table totoTable = new Table("toto");
 		Column totoColumnId = totoTable.addColumn("id", long.class).primaryKey();
@@ -188,7 +187,7 @@ public class StrategyJoinsRowTransformerTest {
 	 * Test case with a root strategy joined with 2 others flat : side-by-side @OneToOne case
 	 */
 	@Test
-	public void testTransform_with3strategies_flat() throws SQLException, NoSuchMethodException {
+	public void testTransform_with3strategies_flat() {
 		// defining the Table is mandatory and overall its primary key since the transformer requires it to read and find the entity in the cache
 		Table totoTable = new Table("toto");
 		Column totoColumnId = totoTable.addColumn("id", long.class).primaryKey();
@@ -257,7 +256,7 @@ public class StrategyJoinsRowTransformerTest {
 	 * Test case with a root strategy joined with another one : @OneToMany case
 	 */
 	@Test
-	public void testTransform_with2strategies_oneToMany() throws SQLException, NoSuchMethodException {
+	public void testTransform_with2strategies_oneToMany() {
 		// defining the Table is mandatory and overall its primary key since the transformer requires it to read and find the entity in the cache
 		Table totoTable = new Table("toto");
 		Column totoColumnId = totoTable.addColumn("id", long.class).primaryKey();
@@ -314,12 +313,12 @@ public class StrategyJoinsRowTransformerTest {
 	
 	private static Row buildRow(Map<Column, Object> data, Function<Column, String> aliasProvider) {
 		Row result = new Row();
-		data.entrySet().forEach(e -> result.add(aliasProvider.apply(e.getKey()), e.getValue()));
+		data.forEach((key, value) -> result.add(aliasProvider.apply(key), value));
 		return result;
 	}
 	
 	@Test
-	public void testTransform_withTwiceSameStrategies_oneToOne() throws SQLException, NoSuchMethodException {
+	public void testTransform_withTwiceSameStrategies_oneToOne() {
 		// defining the Table is mandatory and overall its primary key since the transformer requires it to read and find the entity in the cache
 		Table totoTable1 = new Table("toto");
 		Column totoColumnId = totoTable1.addColumn("id", long.class).primaryKey();

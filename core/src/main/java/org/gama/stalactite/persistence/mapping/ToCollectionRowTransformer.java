@@ -1,8 +1,9 @@
 package org.gama.stalactite.persistence.mapping;
 
-import org.gama.lang.Reflections;
-
+import java.lang.reflect.Constructor;
 import java.util.Collection;
+
+import org.gama.lang.Reflections;
 
 /**
  * Class for transforming columns into a Collection.
@@ -12,7 +13,11 @@ import java.util.Collection;
 public abstract class ToCollectionRowTransformer<T extends Collection> extends AbstractTransformer<T> {
 	
 	public ToCollectionRowTransformer(Class<T> clazz) {
-		super(Reflections.getDefaultConstructor(clazz));
+		this(Reflections.getDefaultConstructor(clazz));
+	}
+	
+	public ToCollectionRowTransformer(Constructor<T> constructor) {
+		super(constructor);
 	}
 	
 }

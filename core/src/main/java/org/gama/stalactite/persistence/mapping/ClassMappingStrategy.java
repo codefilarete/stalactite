@@ -12,22 +12,41 @@ import java.util.Map.Entry;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import org.gama.reflection.IReversibleAccessor;
+import org.gama.reflection.IReversibleMutator;
 import org.gama.reflection.PropertyAccessor;
 import org.gama.sql.result.Row;
 import org.gama.stalactite.persistence.id.manager.IdentifierInsertionManager;
 import org.gama.stalactite.persistence.sql.dml.PreparedUpdate.UpwhereColumn;
-import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.persistence.structure.Column;
+import org.gama.stalactite.persistence.structure.Table;
 
 /**
+ * <p>
  * Main class for persistence entity mapping description.
  * Composed of:
- * - a main strategy : an embedded one ({@link EmbeddedBeanMappingStrategy}, accessible by {@link #getDefaultMappingStrategy()}
- * - an id strategy : {@link IdMappingStrategy} accessible with {@link #getIdMappingStrategy()}
- * - optional version mapping : accessible with {@link #getVersionedKeys()} for instance
- * - additionnal mappings (for embeddable for instance) : see {@link #put(PropertyAccessor, IEmbeddedBeanMapper)}
+ * <ul>
+ * <li>a main strategy : an embedded one ({@link EmbeddedBeanMappingStrategy}, accessible by {@link #getDefaultMappingStrategy()}</li>
+ * <li>an id strategy : {@link IdMappingStrategy} accessible with {@link #getIdMappingStrategy()}</li>
+ * <li>optional version mapping : accessible with {@link #getVersionedKeys()} for instance</li>
+ * <li>additionnal mappings (for embeddable for instance) : see {@link #put(IReversibleAccessor, IEmbeddedBeanMapper)}</li>
+ * </ul>
+ * </p>
+ * <p>
+ * Note that mapping is defined through getter ({@link IReversibleAccessor}) and not setter ({@link IReversibleMutator}) only
+ * because a choice must be done between them, else the concrete class {@link PropertyAccessor} is the choice, which is less open.
+ * </p>
+ *
+ * <p>
+ * Mapping definition can be eased thanks to {@link PersistentFieldHarverster}, {@link org.gama.reflection.Accessors}
+ * </p>
+ * 
+ * <br/>
+ * <b>THIS CLASS DOESN'T ADRESS RELATION MAPPING</b>, because it's not the purpose of Stalactite 'core' module, see 'orm' module.
+ * Meanwhile one case use {@link org.gama.stalactite.query.model.Query} to construct complex type.
  * 
  * @author Guillaume Mary
+ * @see org.gama.stalactite.query.model.Query
  */
 public class ClassMappingStrategy<T, I> implements IEntityMappingStrategy<T, I> {
 	
@@ -43,14 +62,24 @@ public class ClassMappingStrategy<T, I> implements IEntityMappingStrategy<T, I> 
 	
 	private final Set<Column> selectableColumns;
 	
-	private final Map<PropertyAccessor, IEmbeddedBeanMapper> mappingStrategies;
+	private final Map<IReversibleAccessor, IEmbeddedBeanMapper> mappingStrategies;
 	
 	private final IdMappingStrategy<T, I> idMappingStrategy;
 	
 	private final Map<PropertyAccessor, Column> versioningMapping = new HashMap<>();
 	
-	public ClassMappingStrategy(Class<T> classToPersist, Table targetTable, Map<PropertyAccessor, Column> propertyToColumn,
-								PropertyAccessor<T, I> identifierProperty, IdentifierInsertionManager<T, I> identifierInsertionManager) {
+	/**
+	 * Only constructor to define the persistent mapping between a class and a table.
+	 * It only defines main class and table, secondary (such as embedded class or
+	 * 
+	 * @param classToPersist the class to be persisted
+	 * @param targetTable the persisting table
+	 * @param propertyToColumn mapping between bean "properties" and table columns
+	 * @param identifierProperty identifier of the persisted class
+	 * @param identifierInsertionManager manager of identifiers
+	 */
+	public ClassMappingStrategy(Class<T> classToPersist, Table targetTable, Map<? extends IReversibleAccessor, Column> propertyToColumn,
+								IReversibleAccessor<T, I> identifierProperty, IdentifierInsertionManager<T, I> identifierInsertionManager) {
 		if (identifierProperty == null) {
 			throw new UnsupportedOperationException("No identifier property for " + classToPersist.getName());
 		}
@@ -70,9 +99,12 @@ public class ClassMappingStrategy<T, I> implements IEntityMappingStrategy<T, I> 
 		fillSelectableColumns();
 		// identifierAccessor must be the same instance as those stored in propertyToColumn for Map.remove method used in foreach()
 		Column identifierColumn = propertyToColumn.get(identifierProperty);
+		if (identifierColumn == null) {
+			throw new IllegalArgumentException("Bean identifier '" + identifierProperty + "' must have its matching column in the mapping");
+		}
 		if (!identifierColumn.isPrimaryKey()) {
-			throw new UnsupportedOperationException("Accessor " + identifierProperty.getAccessor()
-					+ " is declared as identifier but mapped column " + identifierColumn.toString() + " is not the primary key of table");
+			throw new UnsupportedOperationException("Accessor '" + identifierProperty
+					+ "' is declared as identifier but mapped column " + identifierColumn.toString() + " is not the primary key of table");
 		}
 	}
 	
@@ -124,7 +156,7 @@ public class ClassMappingStrategy<T, I> implements IEntityMappingStrategy<T, I> 
 	 * @param property an object representing a {@link Field} or {@link Method}
 	 * @param mappingStrategy the strategy that should be used to persist the member
 	 */
-	public void put(PropertyAccessor property, IEmbeddedBeanMapper mappingStrategy) {
+	public void put(IReversibleAccessor property, IEmbeddedBeanMapper mappingStrategy) {
 		mappingStrategies.put(property, mappingStrategy);
 		// update columns lists
 		addInsertableColumns(mappingStrategy);
@@ -138,7 +170,7 @@ public class ClassMappingStrategy<T, I> implements IEntityMappingStrategy<T, I> 
 				// autoincrement columns mustn't be written
 				.filter(entry -> !entry.getKey().isAutoGenerated())
 				.forEach(entry -> insertValues.put(entry.getKey(), entry.getValue()));
-		for (Entry<PropertyAccessor, IEmbeddedBeanMapper> fieldStrategyEntry : mappingStrategies.entrySet()) {
+		for (Entry<? extends IReversibleAccessor, IEmbeddedBeanMapper> fieldStrategyEntry : mappingStrategies.entrySet()) {
 			Object fieldValue = fieldStrategyEntry.getKey().get(t);
 			Map<Column, Object> fieldInsertValues = fieldStrategyEntry.getValue().getInsertValues(fieldValue);
 			insertValues.putAll(fieldInsertValues);
@@ -149,8 +181,8 @@ public class ClassMappingStrategy<T, I> implements IEntityMappingStrategy<T, I> 
 	@Override
 	public Map<UpwhereColumn, Object> getUpdateValues(T modified, T unmodified, boolean allColumns) {
 		Map<UpwhereColumn, Object> toReturn = defaultMappingStrategy.getUpdateValues(modified, unmodified, allColumns);
-		for (Entry<PropertyAccessor, IEmbeddedBeanMapper> fieldStrategyEntry : mappingStrategies.entrySet()) {
-			PropertyAccessor<T, Object> accessor = fieldStrategyEntry.getKey();
+		for (Entry<? extends IReversibleAccessor, IEmbeddedBeanMapper> fieldStrategyEntry : mappingStrategies.entrySet()) {
+			IReversibleAccessor<T, Object> accessor = fieldStrategyEntry.getKey();
 			Object modifiedValue = accessor.get(modified);
 			Object unmodifiedValue = unmodified == null ?  null : accessor.get(unmodified);
 			Map<UpwhereColumn, Object> fieldUpdateValues = fieldStrategyEntry.getValue().getUpdateValues(modifiedValue, unmodifiedValue, allColumns);
@@ -256,8 +288,8 @@ public class ClassMappingStrategy<T, I> implements IEntityMappingStrategy<T, I> 
 	@Override
 	public T transform(Row row) {
 		T toReturn = defaultMappingStrategy.transform(row);
-		for (Entry<PropertyAccessor, IEmbeddedBeanMapper> mappingStrategyEntry : mappingStrategies.entrySet()) {
-			mappingStrategyEntry.getKey().set(toReturn, mappingStrategyEntry.getValue().transform(row));
+		for (Entry<? extends IReversibleAccessor, IEmbeddedBeanMapper> mappingStrategyEntry : mappingStrategies.entrySet()) {
+			mappingStrategyEntry.getKey().toMutator().set(toReturn, mappingStrategyEntry.getValue().transform(row));
 		}
 		return toReturn;
 	}

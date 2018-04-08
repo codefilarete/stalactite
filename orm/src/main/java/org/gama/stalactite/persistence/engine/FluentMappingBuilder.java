@@ -380,9 +380,23 @@ public class FluentMappingBuilder<T extends Identified, I extends StatefullIdent
 		return this;
 	}
 	
+	/**
+	 * Defines the versioning property of beans. This implies that Optmistic Locking will be applied on those beans.
+	 * Versioning policy is supported for following types:
+	 * <ul>
+	 * <li>{@link Integer} : a "+1" policy will be applied, see {@link Serie#INTEGER_SERIE}</li>
+	 * <li>{@link Long} : a "+1" policy will be applied, see {@link Serie#LONG_SERIE}</li>
+	 * <li>{@link Date} : a "now" policy will be applied, see {@link Serie#NOW_SERIE}</li>
+	 * </ul>
+	 * 
+	 * @param getter the funciton that gives access to the versioning property
+	 * @param <C> type of the versioning property, determines versioning policy
+	 * @return this
+	 * @see #versionedBy(SerializableFunction, Serie)
+	 */
 	@Override
-	public <C> IFluentMappingBuilder<T, I> versionedBy(SerializableFunction<T, C> property) {
-		Method method = captureLambdaMethod(property);
+	public <C> IFluentMappingBuilder<T, I> versionedBy(SerializableFunction<T, C> getter) {
+		Method method = captureLambdaMethod(getter);
 		Serie<C> serie;
 		if (Integer.class.isAssignableFrom(method.getReturnType())) {
 			serie = (Serie<C>) Serie.INTEGER_SERIE;
@@ -391,20 +405,20 @@ public class FluentMappingBuilder<T extends Identified, I extends StatefullIdent
 		} else if (Date.class.isAssignableFrom(method.getReturnType())) {
 			serie = (Serie<C>) Serie.NOW_SERIE;
 		} else {
-			throw new UnsupportedOperationException("Type of versioned property is not implemented, please provide a "
+			throw new NotImplementedException("Type of versioned property is not implemented, please provide a "
 					+ Serie.class.getSimpleName() + " for it : " + method.getReturnType());
 		}
-		return versionedBy(property, method, serie);
+		return versionedBy(getter, method, serie);
 	}
 	
 	@Override
-	public <C> IFluentMappingBuilder<T, I> versionedBy(SerializableFunction<T, C> property, Serie<C> serie) {
-		return versionedBy(property, captureLambdaMethod(property), serie);
+	public <C> IFluentMappingBuilder<T, I> versionedBy(SerializableFunction<T, C> getter, Serie<C> serie) {
+		return versionedBy(getter, captureLambdaMethod(getter), serie);
 	}
 	
-	public <C> IFluentMappingBuilder<T, I> versionedBy(SerializableFunction<T, C> property, Method method, Serie<C> serie) {
+	public <C> IFluentMappingBuilder<T, I> versionedBy(SerializableFunction<T, C> getter, Method method, Serie<C> serie) {
 		optimisticLockOption = new OptimisticLockOption<>(Accessors.of(method), serie);
-		add(property);
+		add(getter);
 		return this;
 	}
 	
@@ -550,7 +564,6 @@ public class FluentMappingBuilder<T extends Identified, I extends StatefullIdent
 		private final Class<?> columnType;
 		/** Column name override if not default */
 		private final String columnName;
-		private Class<Collection> targetManyType;
 		private boolean primaryKey;
 		
 		/**

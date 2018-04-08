@@ -19,24 +19,33 @@ import org.gama.lang.collection.PairIterator.InfiniteIterator;
 import org.gama.lang.collection.PairIterator.UntilBothIterator;
 import org.gama.sql.result.Row;
 import org.gama.stalactite.persistence.sql.dml.PreparedUpdate.UpwhereColumn;
-import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.persistence.structure.Column;
+import org.gama.stalactite.persistence.structure.Table;
 
 /**
+ * A class that "roughly" persists a Collection of {@link Column}s, without any bean class.
+ * One may override {@link #toCollectionValue(Object)} and {@link #toDatabaseValue(Object)} to adapt values.
+ * 
  * @author Guillaume Mary
  */
-public abstract class ColumnedCollectionMappingStrategy<C extends Collection<T>, T> implements IEmbeddedBeanMapper<C> {
+public class ColumnedCollectionMappingStrategy<C extends Collection<T>, T> implements IEmbeddedBeanMapper<C> {
 	
 	private final Table targetTable;
 	private final Set<Column> columns;
 	private final ToCollectionRowTransformer<C> rowTransformer;
 	
-	public ColumnedCollectionMappingStrategy(Table targetTable, Set<Column> columns, Class<? extends Collection> rowClass) {
+	/**
+	 * Constructor 
+	 *
+	 * @param targetTable table to persist in
+	 * @param columns columns that will be used for persistent of Collections, expected to be a subset of targetTable columns    
+	 * @param rowClass Class to instanciate for select from database
+	 */
+	public ColumnedCollectionMappingStrategy(Table targetTable, Set<Column> columns, Class<C> rowClass) {
 		this.targetTable = targetTable;
 		this.columns = columns;
-		// weird cast cause of generics
-		this.rowTransformer = new ToCollectionRowTransformer<C>((Class<C>) rowClass) {
-			/** We bind conversion on CollectionColumnedMappingStrategy conversion methods */
+		this.rowTransformer = new ToCollectionRowTransformer<C>(rowClass) {
+			/** We bind conversion on {@link ColumnedCollectionMappingStrategy} conversion methods */
 			@Override
 			protected void applyRowToBean(Row row, C collection) {
 				for (Column column : getColumns()) {
@@ -111,16 +120,19 @@ public abstract class ColumnedCollectionMappingStrategy<C extends Collection<T>,
 		return convertion;
 	}
 	
-	protected Object toDatabaseValue(T t) {
-		return t;
+	protected Object toDatabaseValue(T object) {
+		return object;
 	}
 	
 	/**
-	 * Reverse of {@link #toDatabaseValue(Object)}: give a map value from a database selected value
-	 * @param t
+	 * Opposit of {@link #toDatabaseValue(Object)}: converts the database value for the collection value
+	 * 
+	 * @param object the value coming from the database {@link java.sql.ResultSet}
 	 * @return a value for a Map
 	 */
-	protected abstract T toCollectionValue(Object t);
+	protected T toCollectionValue(Object object) {
+		return (T) object;
+	}
 	
 	@Override
 	public C transform(Row row) {
