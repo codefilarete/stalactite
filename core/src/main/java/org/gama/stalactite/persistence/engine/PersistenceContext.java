@@ -24,6 +24,9 @@ import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
 import org.gama.stalactite.persistence.sql.Dialect;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
+import org.gama.stalactite.query.builder.QueryBuilder;
+import org.gama.stalactite.query.model.Query;
+import org.gama.stalactite.query.model.QueryProvider;
 
 /**
  * Entry point for persistence in a database. Mix of configuration (Transaction, Dialect, ...) and registry for {@link Persister}s.
@@ -38,6 +41,10 @@ public class PersistenceContext {
 	private Dialect dialect;
 	private ConnectionProvider connectionProvider;
 	private final Map<Class, ClassMappingStrategy> mappingStrategies = new HashMap<>(50);
+	
+	public PersistenceContext() {
+		
+	}
 	
 	public PersistenceContext(ConnectionProvider connectionProvider, Dialect dialect) {
 		this.connectionProvider = connectionProvider;
@@ -59,7 +66,7 @@ public class PersistenceContext {
 	/**
 	 * Add a persistence configuration to this instance
 	 * 
-	 * @param classMappingStrategy the persitence configuration
+	 * @param classMappingStrategy the persistence configuration
 	 * @param <T> the entity type that is configured for persistence
 	 * @param <I> the identifier type of the entity
 	 * @return the newly created {@link Persister} for the configuration
@@ -123,7 +130,39 @@ public class PersistenceContext {
 	}
 	
 	/**
-	 * Create a {@link QueryConverter} 
+	 * Creates a {@link QueryConverter} from a {@link QueryProvider}, so it helps to build beans from a {@link Query}.
+	 * Should be chained by {@link QueryConverter} mapping methods and obviously by its {@link QueryConverter#execute(ConnectionProvider)}
+	 * method with {@link #getConnectionProvider()} as argument (for instance)
+	 * 
+	 * @param queryProvider the query provider to give the {@link Query} execute to populate beans
+	 * @param beanType type of created beans, used for returned type marker
+	 * @param <T> type of created beans
+	 * @return a new {@link QueryConverter} that must be configured and executed
+	 * @see org.gama.stalactite.query.model.QueryEase
+	 */
+	public <T> QueryConverter<T> newQuery(QueryProvider queryProvider, Class<T> beanType) {
+		return newQuery(new QueryBuilder(queryProvider.getSelectQuery()).toSQL(), beanType);
+	}
+	
+	/**
+	 * Creates a {@link QueryConverter} from a {@link Query} in order to build beans from the {@link Query}.
+	 * Should be chained by {@link QueryConverter} mapping methods and obviously by its {@link QueryConverter#execute(ConnectionProvider)}
+	 * method with {@link #getConnectionProvider()} as argument (for instance)
+	 * 
+	 * @param query the query to execute to populate beans
+	 * @param beanType type of created beans, used for returned type marker
+	 * @param <T> type of created beans
+	 * @return a new {@link QueryConverter} that must be configured and executed
+	 */
+	public <T> QueryConverter<T> newQuery(Query query, Class<T> beanType) {
+		return newQuery(new QueryBuilder(query).toSQL(), beanType);
+	}
+	
+	/**
+	 * Creates a {@link QueryConverter} from some SQL in order to build beans from the SQL.
+	 * Should be chained by {@link QueryConverter} mapping methods and obviously by its {@link QueryConverter#execute(ConnectionProvider)}
+	 * method with {@link #getConnectionProvider()} as argument (for instance)
+	 * 
 	 * @param sql the sql to execute to populate beans
 	 * @param beanType type of created beans, used for returned type marker
 	 * @param <T> type of created beans
