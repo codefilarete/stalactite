@@ -4,28 +4,23 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.regex.Matcher;
 
-import com.tngtech.java.junit.dataprovider.DataProvider;
-import com.tngtech.java.junit.dataprovider.DataProviderRunner;
-import com.tngtech.java.junit.dataprovider.UseDataProvider;
 import org.gama.lang.collection.Maps;
 import org.gama.sql.dml.SQLParameterParser.CollectionParameter;
 import org.gama.sql.dml.SQLParameterParser.Parameter;
 import org.gama.sql.dml.SQLParameterParser.ParsedSQL;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.gama.lang.collection.Arrays.asList;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 /**
  * @author Guillaume Mary
  */
-@RunWith(DataProviderRunner.class)
 public class SQLParameterParserTest {
 	
-	@DataProvider
 	public static Object[][] testParse_data() {
 		Parameter paramB = new Parameter("B");
 		Parameter paramC = new Parameter("C");
@@ -51,8 +46,8 @@ public class SQLParameterParserTest {
 		};
 	}
 	
-	@Test
-	@UseDataProvider("testParse_data")
+	@ParameterizedTest
+	@MethodSource("testParse_data")
 	public void testParse(String sql, ParsedSQL expectedResult) {
 		SQLParameterParser testInstance = new SQLParameterParser(sql);
 		ParsedSQL parsedSQL = testInstance.parse();
@@ -60,7 +55,6 @@ public class SQLParameterParserTest {
 		assertEquals(expectedResult.getParametersMap(), parsedSQL.getParametersMap());
 	}
 	
-	@DataProvider
 	public static Object[][] testParse_inMatcher_data() {
 		return new Object[][] {
 				{ " in (", true },
@@ -73,14 +67,13 @@ public class SQLParameterParserTest {
 		};
 	}
 	
-	@Test
-	@UseDataProvider("testParse_inMatcher_data")
+	@ParameterizedTest
+	@MethodSource("testParse_inMatcher_data")
 	public void testParse_inMatcher(String sql, boolean expectedResult) {
 		Matcher matcher = SQLParameterParser.IN_PATTERN.matcher(sql);
 		assertEquals(expectedResult, matcher.find());
 	}
 	
-	@DataProvider
 	public static Object[][] testParse_in_data() {
 		CollectionParameter paramB = new CollectionParameter("B");
 		CollectionParameter paramC = new CollectionParameter("C");
@@ -101,8 +94,8 @@ public class SQLParameterParserTest {
 		};
 	}
 	
-	@Test
-	@UseDataProvider("testParse_in_data")
+	@ParameterizedTest
+	@MethodSource("testParse_in_data")
 	public void testParse_in(String input, ParsedSQL expectedResult) {
 		SQLParameterParser testInstance = new SQLParameterParser(input);
 		ParsedSQL parsedSQL = testInstance.parse();
@@ -110,17 +103,12 @@ public class SQLParameterParserTest {
 		assertEquals(expectedResult.getParametersMap(), parsedSQL.getParametersMap());
 	}
 	
-	@Rule
-	public ExpectedException expectedException = ExpectedException.none();
-	
 	@Test
 	public void testParse_error_causeEmptyParamName() {
-		expectedException.expect(IllegalArgumentException.class);
-		expectedException.expectMessage("Parameter name can't be empty at position 30");
 		// a parameter without name => error
 		String sql = "select a from Toto where b = :";
 		SQLParameterParser testInstance = new SQLParameterParser(sql);
-		testInstance.parse();
+		assertThrows(IllegalArgumentException.class, testInstance::parse, "Parameter name can't be empty at position 30");
 	}
 	
 }

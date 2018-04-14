@@ -4,26 +4,21 @@ import java.sql.PreparedStatement;
 import java.util.HashMap;
 import java.util.Map;
 
-import com.tngtech.java.junit.dataprovider.DataProvider;
-import com.tngtech.java.junit.dataprovider.DataProviderRunner;
-import com.tngtech.java.junit.dataprovider.UseDataProvider;
 import org.gama.lang.InvocationHandlerSupport;
 import org.gama.lang.collection.Arrays;
 import org.gama.lang.collection.Maps;
 import org.gama.sql.binder.ParameterBinder;
 import org.gama.sql.binder.PreparedStatementWriter;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
  * @author Guillaume Mary
  */
-@RunWith(DataProviderRunner.class)
 public class ExpandableStatementTest {
 	
-	@DataProvider
 	public static Object[][] testDoApplyValue_data() {
 		ParameterBinder parameterBinderMock = InvocationHandlerSupport.mock(ParameterBinder.class);
 		return new Object[][] {
@@ -63,8 +58,8 @@ public class ExpandableStatementTest {
 		};
 	}
 	
-	@Test
-	@UseDataProvider("testDoApplyValue_data")
+	@ParameterizedTest
+	@MethodSource("testDoApplyValue_data")
 	public void testDoApplyValue(String sql, Map<String, Object> paramValues, Map<String, PreparedStatementWriter> binders, Map<Integer, Integer> expectedIndexes) {
 		Map<Integer, Object> appliedIndexedValues = new HashMap<>();
 		ExpandableStatement<String> testInstance = new StringParamedSQL(sql, binders) {

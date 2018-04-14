@@ -19,18 +19,18 @@ import org.gama.stalactite.persistence.id.PersistedIdentifier;
 import org.gama.stalactite.persistence.id.provider.LongProvider;
 import org.gama.stalactite.persistence.sql.HSQLDBDialect;
 import org.gama.stalactite.test.JdbcConnectionProvider;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import static java.util.stream.Collectors.toSet;
 import static org.gama.stalactite.persistence.engine.CascadeOption.CascadeType.DELETE;
 import static org.gama.stalactite.persistence.engine.CascadeOption.CascadeType.INSERT;
 import static org.gama.stalactite.persistence.engine.CascadeOption.CascadeType.SELECT;
 import static org.gama.stalactite.persistence.engine.CascadeOption.CascadeType.UPDATE;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * @author Guillaume Mary
@@ -42,7 +42,7 @@ public class FluentMappingBuilderCollectionCascadeTest {
 	private Persister<City, PersistedIdentifier<Long>> cityPersister;
 	private PersistenceContext persistenceContext;
 	
-	@BeforeClass
+	@BeforeAll
 	public static void initBinders() {
 		// binder creation for our identifier
 		DIALECT.getColumnBinderRegistry().register((Class) Identifier.class, Identifier.identifierBinder(DefaultParameterBinders.LONG_PRIMITIVE_BINDER));
@@ -51,7 +51,7 @@ public class FluentMappingBuilderCollectionCascadeTest {
 		DIALECT.getJavaTypeToSqlTypeMapping().put(Identified.class, "int");
 	}
 	
-	@Before
+	@BeforeEach
 	public void initTest() {
 		persistenceContext = new PersistenceContext(new JdbcConnectionProvider(dataSource), DIALECT);
 		

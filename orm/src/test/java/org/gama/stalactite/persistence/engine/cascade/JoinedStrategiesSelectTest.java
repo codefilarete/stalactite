@@ -1,26 +1,21 @@
 package org.gama.stalactite.persistence.engine.cascade;
 
-import com.tngtech.java.junit.dataprovider.DataProvider;
-import com.tngtech.java.junit.dataprovider.DataProviderRunner;
-import com.tngtech.java.junit.dataprovider.UseDataProvider;
 import org.gama.sql.binder.ParameterBinder;
 import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
-import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.persistence.structure.Column;
+import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.query.builder.QueryBuilder;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
-import static com.tngtech.java.junit.dataprovider.DataProviders.$;
-import static com.tngtech.java.junit.dataprovider.DataProviders.$$;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 /**
  * @author Guillaume Mary
  */
-@RunWith(DataProviderRunner.class)
 public class JoinedStrategiesSelectTest {
 	
 	private static ClassMappingStrategy buildMockMappingStrategy(String tableName) {
@@ -35,24 +30,21 @@ public class JoinedStrategiesSelectTest {
 		return mappingStrategyMock;
 	}
 	
-	// TODO: tester avec les stratégies bizarres
-
-	@DataProvider
 	public static Object[][] testToSQL_singleStrategyData() {
-		return $$(
-				$(
+		return new Object[][] {
+				new Object[] {
 						new Table("Toto").addColumn("id", long.class).getTable(),
 						"select Toto.id as Toto_id from Toto"
-				),
-				$(
+				},
+				new Object[] {
 						new Table("Toto").addColumn("id", long.class).getTable().addColumn("name", String.class).getTable(),
 						"select Toto.id as Toto_id, Toto.name as Toto_name from Toto"
-				)
-		);
+				}
+		};
 	}
 	
-	@Test
-	@UseDataProvider(value = "testToSQL_singleStrategyData")
+	@ParameterizedTest
+	@MethodSource("testToSQL_singleStrategyData")
 	public void testToSQL_singleStrategy(Table table, String expected) {
 		ClassMappingStrategy mappingStrategyMock = buildMockMappingStrategy(table);
 		JoinedStrategiesSelect testInstance = new JoinedStrategiesSelect<>(mappingStrategyMock, c -> mock(ParameterBinder.class));
@@ -71,13 +63,12 @@ public class JoinedStrategiesSelectTest {
 		Table tataTable = tataMappingMock.getTargetTable();
 		Column tataPrimaryKey = tataTable.addColumn("id", long.class);
 		
-		return $( // kind of inheritance "table per class" mapping
+		return new Object[] { // kind of inheritance "table per class" mapping
 				totoMappingMock, tataMappingMock, totoPrimaryKey, tataPrimaryKey,
 				"select Toto.id as Toto_id, Toto.name as Toto_name, Tata.id as Tata_id from Toto inner join Tata on Toto.id = Tata.id"
-		);
+		};
 	}
 	
-	@DataProvider
 	public static Object[][] dataToSQL_multipleStrategy() {
 		ClassMappingStrategy totoMappingMock = buildMockMappingStrategy("Toto");
 		Table totoTable = totoMappingMock.getTargetTable();
@@ -94,17 +85,17 @@ public class JoinedStrategiesSelectTest {
 		tata2Table.addColumn("id", long.class);
 		buildMockMappingStrategy(tata2Table);
 		
-		return $$(
+		return new Object[][] {
 				inheritance_tablePerClass_2Classes_testData(),
-				$(
+				new Object[] {
 						totoMappingMock, tataMappingMock, totoOtherTableId, tataPrimaryKey,
 						"select Toto.id as Toto_id, Toto.name as Toto_name, Toto.otherTable_id as Toto_otherTable_id,"
-								+ " Tata.id as Tata_id from Toto inner join Tata on Toto.otherTable_id = Tata.id")
-		);
+								+ " Tata.id as Tata_id from Toto inner join Tata on Toto.otherTable_id = Tata.id" }
+		};
 	}
 	
-	@Test
-	@UseDataProvider
+	@ParameterizedTest
+	@MethodSource("dataToSQL_multipleStrategy")
 	public void testToSQL_multipleStrategy(ClassMappingStrategy rootMappingStrategy, ClassMappingStrategy classMappingStrategy,
 										   Column leftJoinColumn, Column rightJoinColumn,
 										   String expected) {

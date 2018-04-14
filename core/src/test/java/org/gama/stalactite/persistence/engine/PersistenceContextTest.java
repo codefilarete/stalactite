@@ -11,10 +11,10 @@ import org.gama.stalactite.persistence.engine.PersistenceContext.ExecutableUpdat
 import org.gama.stalactite.persistence.sql.HSQLDBDialect;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import static org.gama.stalactite.query.model.Operand.eq;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
  * @author Guillaume Mary

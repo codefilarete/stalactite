@@ -6,6 +6,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 
 import org.gama.lang.collection.Maps;
+import org.gama.spy.matcher.Matcher;
 import org.gama.sql.binder.DefaultParameterBinders;
 import org.gama.sql.result.RowIterator;
 import org.gama.sql.test.HSQLDBInMemoryDataSource;
@@ -20,26 +21,21 @@ import org.gama.stalactite.persistence.id.PersistedIdentifier;
 import org.gama.stalactite.persistence.id.provider.LongProvider;
 import org.gama.stalactite.persistence.sql.HSQLDBDialect;
 import org.gama.stalactite.test.JdbcConnectionProvider;
-import org.hamcrest.Matcher;
-import org.hamcrest.core.IsEqual;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.function.Executable;
+import org.opentest4j.AssertionFailedError;
 
 import static org.gama.stalactite.persistence.engine.CascadeOption.CascadeType.DELETE;
 import static org.gama.stalactite.persistence.engine.CascadeOption.CascadeType.INSERT;
 import static org.gama.stalactite.persistence.engine.CascadeOption.CascadeType.SELECT;
 import static org.gama.stalactite.persistence.engine.CascadeOption.CascadeType.UPDATE;
-import static org.hamcrest.CoreMatchers.both;
-import static org.hamcrest.CoreMatchers.containsString;
-import static org.hamcrest.CoreMatchers.instanceOf;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotSame;
-import static org.junit.Assert.assertTrue;
-import static org.junit.internal.matchers.ThrowableMessageMatcher.hasMessage;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * @author Guillaume Mary
@@ -52,7 +48,7 @@ public class FluentMappingBuilderCascadeTest {
 	private Persister<City, PersistedIdentifier<Long>> cityPersister;
 	private PersistenceContext persistenceContext;
 	
-	@BeforeClass
+	@BeforeAll
 	public static void initBinders() {
 		// binder creation for our identifier
 		DIALECT.getColumnBinderRegistry().register((Class) Identifier.class, Identifier.identifierBinder(DefaultParameterBinders.LONG_PRIMITIVE_BINDER));
@@ -61,10 +57,7 @@ public class FluentMappingBuilderCascadeTest {
 		DIALECT.getJavaTypeToSqlTypeMapping().put(Identified.class, "int");
 	}
 	
-	@Rule
-	public ExpectedException expectedException = ExpectedException.none();
-	
-	@Before
+	@BeforeEach
 	public void initTest() {
 		persistenceContext = new PersistenceContext(new JdbcConnectionProvider(dataSource), DIALECT);
 		
@@ -83,9 +76,6 @@ public class FluentMappingBuilderCascadeTest {
 	
 	@Test
 	public void testCascade_oneToOne_noCascade() throws SQLException {
-		expectedException.expectCause(
-				both((Matcher<Throwable>) (Matcher) instanceOf(BatchUpdateException.class))
-				.and(hasMessage(containsString("integrity constraint violation: foreign key no parent; FK_COUNTRY_PRESIDENTID_ID table: COUNTRY"))));
 		// mapping building thantks to fluent API
 		Persister<Country, Identifier<Long>> countryPersister = FluentMappingBuilder.from(Country.class, (Class<Identifier<Long>>) (Class) PersistedIdentifier.class)
 				.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
@@ -105,16 +95,23 @@ public class FluentMappingBuilderCascadeTest {
 		Person person = new Person(new LongProvider().giveNewIdentifier());
 		person.setName("France president");
 		dummyCountry.setPresident(person);
-		countryPersister.insert(dummyCountry);
-		
-		// Checking that the country is persisted but not the president because we didn't asked for insert cascade
-		// NB: we don't check with countryPersister.select(..) because select(..) depends on outer join which we don't want to be bothered by 
-		
-		ResultSet resultSet;
-		resultSet = persistenceContext.getCurrentConnection().createStatement().executeQuery("select id from Country where id = 0");
-		assertTrue(resultSet.next());
-		resultSet = persistenceContext.getCurrentConnection().createStatement().executeQuery("select id from Person");
-		assertFalse(resultSet.next());
+		assertThrowsMathes(() -> countryPersister.insert(dummyCountry), t ->
+			t.getCause() instanceof BatchUpdateException
+					&& t.getCause().getMessage().contains("integrity constraint violation: foreign key no parent; FK_COUNTRY_PRESIDENTID_PERSON_ID table: COUNTRY")
+		);
+	}
+	
+	private static <T extends Throwable> T assertThrowsMathes(Executable executable, Matcher<Throwable> throwableMatcher) {
+		try {
+			executable.execute();
+		} catch (Throwable actualException) {
+			if (throwableMatcher.matches(actualException)) {
+				return (T) actualException;
+			} else {
+				throw new AssertionFailedError("Unexpected exception type thrown", actualException);
+			}
+		}
+		throw new AssertionFailedError("Expected exception to be thrown, but nothing was thrown.");
 	}
 	
 	/**
@@ -218,8 +215,6 @@ public class FluentMappingBuilderCascadeTest {
 	
 	@Test
 	public void testCascade_oneToOne_insert_mandatory() throws SQLException {
-		expectedException.expect(RuntimeMappingException.class);
-		expectedException.expectMessage(new IsEqual<>("Non null value expected for relation o.g.s.p.e.m.Person o.g.s.p.e.m.Country.getPresident() on object org.gama.stalactite.persistence.engine.model.Country@0"));
 		// mapping building thantks to fluent API
 		Persister<Country, Identifier<Long>> countryPersister = FluentMappingBuilder.from(Country.class, (Class<Identifier<Long>>) (Class) PersistedIdentifier.class)
 				.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
@@ -234,7 +229,8 @@ public class FluentMappingBuilderCascadeTest {
 		LongProvider countryIdProvider = new LongProvider();
 		Country dummyCountry = new Country(countryIdProvider.giveNewIdentifier());
 		dummyCountry.setName("France");
-		countryPersister.insert(dummyCountry);
+		assertThrows(RuntimeMappingException.class, () -> countryPersister.insert(dummyCountry),
+				"Non null value expected for relation o.g.s.p.e.m.Person o.g.s.p.e.m.Country.getPresident() on object org.gama.stalactite.persistence.engine.model.Country@0");
 	}
 	
 	@Test
@@ -273,8 +269,6 @@ public class FluentMappingBuilderCascadeTest {
 	
 	@Test
 	public void testCascade_oneToOne_update_mandatory() throws SQLException {
-		expectedException.expect(RuntimeMappingException.class);
-		expectedException.expectMessage(new IsEqual<>("Non null value expected for relation o.g.s.p.e.m.Person o.g.s.p.e.m.Country.getPresident() on object org.gama.stalactite.persistence.engine.model.Country@0"));
 		// mapping building thantks to fluent API
 		Persister<Country, Identifier<Long>> countryPersister = FluentMappingBuilder.from(Country.class, (Class<Identifier<Long>>) (Class) PersistedIdentifier.class)
 				.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
@@ -298,7 +292,8 @@ public class FluentMappingBuilderCascadeTest {
 		// Changing president's name to see what happens when we save it to the database
 		Country persistedCountry = countryPersister.select(dummyCountry.getId());
 		persistedCountry.setPresident(null);
-		countryPersister.update(persistedCountry, dummyCountry, true);
+		assertThrows(RuntimeMappingException.class, () -> countryPersister.update(persistedCountry, dummyCountry, true),
+				"Non null value expected for relation o.g.s.p.e.m.Person o.g.s.p.e.m.Country.getPresident() on object org.gama.stalactite.persistence.engine.model.Country@0");
 	}
 	
 	@Test

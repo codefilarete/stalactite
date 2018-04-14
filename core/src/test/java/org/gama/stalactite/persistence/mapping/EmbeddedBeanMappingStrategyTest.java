@@ -3,27 +3,24 @@ package org.gama.stalactite.persistence.mapping;
 import java.util.HashMap;
 import java.util.Map;
 
-import com.tngtech.java.junit.dataprovider.DataProvider;
-import com.tngtech.java.junit.dataprovider.DataProviderRunner;
-import com.tngtech.java.junit.dataprovider.UseDataProvider;
 import org.gama.lang.collection.Maps;
 import org.gama.reflection.Accessors;
 import org.gama.reflection.PropertyAccessor;
 import org.gama.sql.result.Row;
 import org.gama.stalactite.persistence.sql.dml.PreparedUpdate.UpwhereColumn;
-import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.persistence.structure.Column;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.gama.stalactite.persistence.structure.Table;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
  * @author Guillaume Mary
  */
-@RunWith(DataProviderRunner.class)
 public class EmbeddedBeanMappingStrategyTest {
 	
 	private static Table targetTable;
@@ -32,7 +29,7 @@ public class EmbeddedBeanMappingStrategyTest {
 	private static Column colC;
 	private static Map<PropertyAccessor, Column> classMapping;
 	
-	@BeforeClass
+	@BeforeAll
 	public static void setUpClass() {
 		targetTable = new Table("Toto");
 		colA = targetTable.addColumn("a", Integer.class);
@@ -45,12 +42,11 @@ public class EmbeddedBeanMappingStrategyTest {
 	
 	private EmbeddedBeanMappingStrategy<Toto> testInstance;
 	
-	@Before
+	@BeforeEach
 	public void setUp() {
 		testInstance = new EmbeddedBeanMappingStrategy<>(Toto.class, classMapping);
 	}
 	
-	@DataProvider
 	public static Object[][] testGetInsertValuesData() {
 		setUpClass();
 		return new Object[][] {
@@ -60,15 +56,14 @@ public class EmbeddedBeanMappingStrategyTest {
 		};
 	}
 	
-	@Test
-	@UseDataProvider("testGetInsertValuesData")
+	@ParameterizedTest
+	@MethodSource("testGetInsertValuesData")
 	public void testGetInsertValues(Toto modified, Map<Column, Object> expectedResult) {
 		Map<Column, Object> valuesToInsert = testInstance.getInsertValues(modified);
 		
 		assertEquals(expectedResult, valuesToInsert);
 	}
 	
-	@DataProvider
 	public static Object[][] testGetUpdateValues_diffOnlyData() {
 		setUpClass();
 		return new Object[][] {
@@ -84,8 +79,8 @@ public class EmbeddedBeanMappingStrategyTest {
 		};
 	}
 	
-	@Test
-	@UseDataProvider("testGetUpdateValues_diffOnlyData")
+	@ParameterizedTest
+	@MethodSource("testGetUpdateValues_diffOnlyData")
 	public void testGetUpdateValues_diffOnly(Toto modified, Toto unmodified, Map<Column, Object> expectedResult) {
 		Map<UpwhereColumn, Object> valuesToInsert = testInstance.getUpdateValues(modified, unmodified, false);
 		
@@ -93,7 +88,6 @@ public class EmbeddedBeanMappingStrategyTest {
 		assertEquals(new HashMap<Column, Object>(), UpwhereColumn.getWhereColumns(valuesToInsert));
 	}
 	
-	@DataProvider
 	public static Object[][] testGetUpdateValues_allColumnsData() {
 		return new Object[][] {
 				{ new Toto(1, 2, 3), new Toto(1, 2, 42), Maps.asMap(colA, 1).add(colB, 2).add(colC, 3) },
@@ -103,8 +97,8 @@ public class EmbeddedBeanMappingStrategyTest {
 		};
 	}
 	
-	@Test
-	@UseDataProvider("testGetUpdateValues_allColumnsData")
+	@ParameterizedTest
+	@MethodSource("testGetUpdateValues_allColumnsData")
 	public void testGetUpdateValues_allColumns(Toto modified, Toto unmodified, Map<Column, Object> expectedResult) {
 		Map<UpwhereColumn, Object> valuesToInsert = testInstance.getUpdateValues(modified, unmodified, true);
 		

@@ -15,10 +15,10 @@ import org.gama.stalactite.persistence.id.sequence.SequencePersister;
 import org.gama.stalactite.persistence.sql.Dialect;
 import org.gama.stalactite.persistence.sql.ddl.JavaTypeToSqlTypeMapping;
 import org.gama.stalactite.test.JdbcConnectionProvider;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class SequencePersisterTest {
 	
@@ -26,7 +26,7 @@ public class SequencePersisterTest {
 	private Dialect dialect;
 	private PersistenceContext persistenceContext;
 	
-	@Before
+	@BeforeEach
 	public void setUp() {
 		JavaTypeToSqlTypeMapping simpleTypeMapping = new JavaTypeToSqlTypeMapping();
 		simpleTypeMapping.put(Long.class, "int");

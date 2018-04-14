@@ -4,35 +4,30 @@ import java.sql.SQLException;
 import java.util.Collections;
 import java.util.List;
 
-import com.tngtech.java.junit.dataprovider.DataProvider;
-import com.tngtech.java.junit.dataprovider.DataProviderRunner;
-import com.tngtech.java.junit.dataprovider.UseDataProvider;
 import org.gama.lang.Retryer;
 import org.gama.lang.collection.PairIterator;
 import org.gama.stalactite.persistence.sql.dml.DMLGenerator;
 import org.gama.stalactite.test.PairSetList;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
-import static com.tngtech.java.junit.dataprovider.DataProviders.$;
-import static com.tngtech.java.junit.dataprovider.DataProviders.$$;
 import static org.gama.lang.collection.Arrays.asList;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 /**
  * @author Guillaume Mary
  */
-@RunWith(DataProviderRunner.class)
 public class UpdateExecutorTest extends AbstractDMLExecutorTest {
 	
 	private DataSet dataSet;
 	
 	private UpdateExecutor<Toto, Integer> testInstance;
 	
-	@Before
+	@BeforeEach
 	public void setUp() throws SQLException {
 		dataSet = new DataSet();
 		DMLGenerator dmlGenerator = new DMLGenerator(dataSet.dialect.getColumnBinderRegistry(), new DMLGenerator.CaseSensitiveSorter());
@@ -55,24 +50,23 @@ public class UpdateExecutorTest extends AbstractDMLExecutorTest {
 		assertCapturedPairsEqual(dataSet, expectedPairs);
 	}
 	
-	@DataProvider
 	public static Object[][] testUpdate_diff_data() {
-		return $$(
+		return new Object[][] {
 				// extreme case: no differences
-				$( 	asList(new Toto(1, 1, 1), new Toto(2, 2, 2)),
+				new Object[] { asList(new Toto(1, 1, 1), new Toto(2, 2, 2)),
 						asList(new Toto(1, 1, 1), new Toto(2, 2, 2)),
-						new ExpectedResult_TestUpdate_diff(0, 0, 0, Collections.EMPTY_LIST, new PairSetList<>()) ),
+						new ExpectedResult_TestUpdate_diff(0, 0, 0, Collections.EMPTY_LIST, new PairSetList<>()) },
 				// case: always the same kind of modification: only "b" field
-				$( 	asList(new Toto(1, 1, 1), new Toto(2, 2, 2), new Toto(3, 3, 3)),
+				new Object[] { asList(new Toto(1, 1, 1), new Toto(2, 2, 2), new Toto(3, 3, 3)),
 						asList(new Toto(1, 2, 1), new Toto(2, 3, 2), new Toto(3, 4, 3)),
 						new ExpectedResult_TestUpdate_diff(3, 1, 6,
 								asList("update Toto set b = ? where a = ?"),
 								new PairSetList<Integer, Integer>()
 										.of(1, 2).add(2, 1)
 										.add(1, 3).add(2, 2)
-										.add(1, 4).add(2, 3)) ),
+										.add(1, 4).add(2, 3)) },
 				// case: always the same kind of modification: only "b" field, but batch should be called twice
-				$( asList(new Toto(1, 1, 1), new Toto(2, 2, 2), new Toto(3, 3, 3), new Toto(4, 4, 4)),
+				new Object[] { asList(new Toto(1, 1, 1), new Toto(2, 2, 2), new Toto(3, 3, 3), new Toto(4, 4, 4)),
 						asList(new Toto(1, 2, 1), new Toto(2, 3, 2), new Toto(3, 4, 3), new Toto(4, 5, 4)),
 						new ExpectedResult_TestUpdate_diff(4, 2, 8,
 								asList("update Toto set b = ? where a = ?"),
@@ -80,9 +74,9 @@ public class UpdateExecutorTest extends AbstractDMLExecutorTest {
 										.of(1, 2).add(2, 1)
 										.add(1, 3).add(2, 2)
 										.add(1, 4).add(2, 3)
-										.add(1, 5).add(2, 4)) ),
+										.add(1, 5).add(2, 4)) },
 				// case: always the same kind of modification: "b" + "c" fields
-				$( 	asList(new Toto(1, 1, 1), new Toto(2, 2, 2), new Toto(3, 3, 3), new Toto(4, 4, 4)),
+				new Object[] { asList(new Toto(1, 1, 1), new Toto(2, 2, 2), new Toto(3, 3, 3), new Toto(4, 4, 4)),
 						asList(new Toto(1, 11, 11), new Toto(2, 22, 22), new Toto(3, 33, 33), new Toto(4, 44, 44)),
 						new ExpectedResult_TestUpdate_diff(4, 2, 12,
 								asList("update Toto set b = ?, c = ? where a = ?"),
@@ -90,9 +84,9 @@ public class UpdateExecutorTest extends AbstractDMLExecutorTest {
 										.of(1, 11).add(2, 11).add(3, 1)
 										.add(1, 22).add(2, 22).add(3, 2)
 										.add(1, 33).add(2, 33).add(3, 3)
-										.add(1, 44).add(2, 44).add(3, 4)) ),
+										.add(1, 44).add(2, 44).add(3, 4)) },
 				// more complex case: mix of modification sort, with batch updates
-				$( 	asList(
+				new Object[] { asList(
 						new Toto(1, 1, 1), new Toto(2, 2, 2), new Toto(3, 3, 3),
 						new Toto(4, 4, 4), new Toto(5, 5, 5), new Toto(6, 6, 6), new Toto(7, 7, 7)),
 						asList(
@@ -106,8 +100,8 @@ public class UpdateExecutorTest extends AbstractDMLExecutorTest {
 										.add(1, 33).add(2, 3)
 										.add(1, 44).add(2, 444).add(3, 4)
 										.add(1, 55).add(2, 555).add(3, 5)
-										.add(1, 66).add(2, 666).add(3, 6)) )
-		);
+										.add(1, 66).add(2, 666).add(3, 6)) }
+		};
 	}
 	
 	private static class ExpectedResult_TestUpdate_diff {
@@ -126,8 +120,8 @@ public class UpdateExecutorTest extends AbstractDMLExecutorTest {
 		}
 	}
 	
-	@Test
-	@UseDataProvider("testUpdate_diff_data")
+	@ParameterizedTest
+	@MethodSource("testUpdate_diff_data")
 	public void testUpdate_diff(List<Toto> originalInstances, List<Toto> modifiedInstances, ExpectedResult_TestUpdate_diff expectedResult) throws Exception {
 		testInstance.setRowCountManager(RowCountManager.NOOP_ROW_COUNT_MANAGER);
 		testInstance.update(() -> new PairIterator<>(modifiedInstances, originalInstances), false);

@@ -23,14 +23,12 @@ import org.gama.stalactite.persistence.id.PersistedIdentifier;
 import org.gama.stalactite.persistence.id.provider.LongProvider;
 import org.gama.stalactite.persistence.sql.HSQLDBDialect;
 import org.gama.stalactite.test.JdbcConnectionProvider;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
-import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 /**
  * @author Guillaume Mary
@@ -43,7 +41,7 @@ public class FluentMappingBuilderVersioningTest {
 	private Persister<City, PersistedIdentifier<Long>> cityPersister;
 	private PersistenceContext persistenceContext;
 	
-	@BeforeClass
+	@BeforeAll
 	public static void initBinders() {
 		// binder creation for our identifier
 		DIALECT.getColumnBinderRegistry().register((Class) Identifier.class, Identifier.identifierBinder(DefaultParameterBinders
@@ -54,10 +52,7 @@ public class FluentMappingBuilderVersioningTest {
 		DIALECT.getJavaTypeToSqlTypeMapping().put(Identified.class, "int");
 	}
 	
-	@Rule
-	public ExpectedException expectedException = ExpectedException.none();
-	
-	@Before
+	@BeforeEach
 	public void initTest() {
 		persistenceContext = new PersistenceContext(new JdbcConnectionProvider(dataSource), DIALECT);
 		
@@ -75,10 +70,10 @@ public class FluentMappingBuilderVersioningTest {
 		cityPersister = cityMappingBuilder.build(persistenceContext);
 	}
 	
-	@Test(expected = UnsupportedOperationException.class)
-	public void testBuild_connectionProviderIsNotRollbackObserver_throwsException() throws SQLException {
+	@Test
+	public void testBuild_connectionProviderIsNotRollbackObserver_throwsException() {
 		PersistenceContext persistenceContext = new PersistenceContext(new JdbcConnectionProvider(dataSource), DIALECT);
-		FluentMappingBuilder.from(Country.class,
+		assertThrows(UnsupportedOperationException.class, () -> FluentMappingBuilder.from(Country.class,
 				(Class<Identifier<Long>>) (Class) PersistedIdentifier.class)
 				// setting a foreign key naming strategy to be tested
 				.foreignKeyNamingStrategy(ForeignKeyNamingStrategy.DEFAULT)
@@ -86,13 +81,13 @@ public class FluentMappingBuilderVersioningTest {
 				.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.add(Country::getName)
 				.add(Country::getDescription)
-				.build(persistenceContext);
+				.build(persistenceContext));
 	}
 	
-	@Test(expected = UnsupportedOperationException.class)
-	public void testBuild_versionedPropertyIsOfUnsupportedType_throwsException() throws SQLException {
+	@Test
+	public void testBuild_versionedPropertyIsOfUnsupportedType_throwsException() {
 		PersistenceContext persistenceContext = new PersistenceContext(new JdbcConnectionProvider(dataSource), DIALECT);
-		FluentMappingBuilder.from(Country.class,
+		assertThrows(UnsupportedOperationException.class, () -> FluentMappingBuilder.from(Country.class,
 				(Class<Identifier<Long>>) (Class) PersistedIdentifier.class)
 				// setting a foreign key naming strategy to be tested
 				.foreignKeyNamingStrategy(ForeignKeyNamingStrategy.DEFAULT)
@@ -100,7 +95,7 @@ public class FluentMappingBuilderVersioningTest {
 				.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.add(Country::getName)
 				.add(Country::getDescription)
-				.build(persistenceContext);
+				.build(persistenceContext));
 	}
 	
 	@Test
@@ -238,8 +233,8 @@ public class FluentMappingBuilderVersioningTest {
 		// the update must fail because the updated object is out of sync
 		dummyCountryClone.setName("Tata");
 		// the following should go wrong since version is not up to date on the clone and the original
-		assertThatExceptionOfType(StaleObjectExcepion.class).isThrownBy(() -> countryPersister.update(dummyCountryClone, dummyCountry, true));
-		assertThatExceptionOfType(StaleObjectExcepion.class).isThrownBy(() -> countryPersister.delete(dummyCountry));
+		assertThrows(StaleObjectExcepion.class, () -> countryPersister.update(dummyCountryClone, dummyCountry, true));
+		assertThrows(StaleObjectExcepion.class, () -> countryPersister.delete(dummyCountry));
 		// version is not reverted because rollback wasn't invoked 
 		assertEquals(2, dummyCountryClone.getVersion());
 		// ... but it is when we rollback

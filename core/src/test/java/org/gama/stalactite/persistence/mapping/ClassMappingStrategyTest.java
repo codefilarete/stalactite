@@ -8,9 +8,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import com.tngtech.java.junit.dataprovider.DataProvider;
-import com.tngtech.java.junit.dataprovider.DataProviderRunner;
-import com.tngtech.java.junit.dataprovider.UseDataProvider;
 import org.gama.lang.Reflections;
 import org.gama.lang.collection.Arrays;
 import org.gama.lang.collection.Maps;
@@ -21,18 +18,17 @@ import org.gama.stalactite.persistence.id.manager.AlreadyAssignedIdentifierManag
 import org.gama.stalactite.persistence.sql.dml.PreparedUpdate.UpwhereColumn;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
-import org.junit.BeforeClass;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 /**
  * @author Guillaume Mary
  */
-@RunWith(DataProviderRunner.class)
 public class ClassMappingStrategyTest {
 	
 	private static Column colA;
@@ -51,10 +47,7 @@ public class ClassMappingStrategyTest {
 	
 	private static ClassMappingStrategy<Toto, Integer> testInstance;
 	
-	@Rule
-	public final ExpectedException expectedException = ExpectedException.none();
-	
-	@BeforeClass
+	@BeforeAll
 	public static void setUpClass() {
 		persistentFieldHarverster = new PersistentFieldHarverster();
 		targetTable = new Table("Toto");
@@ -152,7 +145,6 @@ public class ClassMappingStrategyTest {
 		colE2 = columnMapOnName.get("cole_2");
 	}
 	
-	@DataProvider
 	public static Object[][] testGetInsertValues() {
 		setUpClass();
 		return new Object[][] {
@@ -169,15 +161,14 @@ public class ClassMappingStrategyTest {
 		};
 	}
 	
-	@Test
-	@UseDataProvider
+	@ParameterizedTest
+	@MethodSource("testGetInsertValues")
 	public void testGetInsertValues(Toto modified, Map<Column, Object> expectedResult) {
 		Map<Column, Object> valuesToInsert = testInstance.getInsertValues(modified);
 		
 		assertEquals(expectedResult, valuesToInsert);
 	}
 	
-	@DataProvider
 	public static Object[][] testGetUpdateValues_diffOnly() {
 		setUpClass();
 		return new Object[][] {
@@ -198,8 +189,8 @@ public class ClassMappingStrategyTest {
 		};
 	}
 	
-	@Test
-	@UseDataProvider
+	@ParameterizedTest
+	@MethodSource("testGetUpdateValues_diffOnly")
 	public void testGetUpdateValues_diffOnly(Toto modified, Toto unmodified, Map<Column, Object> expectedResult) {
 		Map<UpwhereColumn, Object> valuesToUpdate = testInstance.getUpdateValues(modified, unmodified, false);
 		
@@ -211,7 +202,6 @@ public class ClassMappingStrategyTest {
 		}
 	}
 	
-	@DataProvider
 	public static Object[][] testGetUpdateValues_allColumns() {
 		setUpClass();
 		return new Object[][] {
@@ -240,8 +230,8 @@ public class ClassMappingStrategyTest {
 		};
 	}
 	
-	@Test
-	@UseDataProvider
+	@ParameterizedTest
+	@MethodSource("testGetUpdateValues_allColumns")
 	public void testGetUpdateValues_allColumns(Toto modified, Toto unmodified, Map<Column, Object> expectedResult) {
 		Map<UpwhereColumn, Object> valuesToUpdate = testInstance.getUpdateValues(modified, unmodified, true);
 		
@@ -256,14 +246,13 @@ public class ClassMappingStrategyTest {
 	@Test
 	public void testBeanKeyIsPresent() {
 		PropertyAccessor<Toto, Integer> identifierAccesor = Accessors.forProperty(persistentFieldHarverster.getField("a"));
-		expectedException.expect(IllegalArgumentException.class);
-		expectedException.expectMessage("Bean identifier '" + identifierAccesor + "' must have its matching column in the mapping");
-		new ClassMappingStrategy<>(Toto.class,
+		assertThrows(IllegalArgumentException.class, () -> new ClassMappingStrategy<>(Toto.class,
 				targetTable,
 				Maps.asMap(Accessors.forProperty(Toto.class, "b"), colB),
 				// identifier is not present in previous statement so it leads to the expected exception
 				identifierAccesor,
-				new AlreadyAssignedIdentifierManager<>(Integer.class));
+				new AlreadyAssignedIdentifierManager<>(Integer.class)),
+				"Bean identifier '" + identifierAccesor + "' must have its matching column in the mapping");
 	}
 	
 	private static class Toto {

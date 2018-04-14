@@ -12,10 +12,10 @@ import org.gama.stalactite.persistence.sql.dml.PreparedUpdate.UpwhereColumn;
 import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.query.builder.DMLNameProvider;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class DMLGeneratorTest {
 
@@ -23,7 +23,7 @@ public class DMLGeneratorTest {
 	private DMLGenerator testInstance;
 	private Dialect currentDialect;
 	
-	@Before
+	@BeforeEach
 	public void setUp() {
 		currentDialect = new Dialect(new JavaTypeToSqlTypeMapping());
 		stringBinder = currentDialect.getColumnBinderRegistry().getBinder(String.class);

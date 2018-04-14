@@ -16,16 +16,15 @@ import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
 import org.gama.stalactite.persistence.sql.HSQLDBDialect;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
-import org.junit.BeforeClass;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -38,7 +37,7 @@ public class FluentMappingBuilderTest {
 	
 	private static final HSQLDBDialect DIALECT = new HSQLDBDialect();
 	
-	@BeforeClass
+	@BeforeAll
 	public static void initBinders() {
 		// binder creation for our identifier
 		DIALECT.getColumnBinderRegistry().register((Class) Identifier.class, Identifier.identifierBinder(DefaultParameterBinders.LONG_PRIMITIVE_BINDER));
@@ -46,9 +45,6 @@ public class FluentMappingBuilderTest {
 		DIALECT.getColumnBinderRegistry().register((Class) Identified.class, Identified.identifiedBinder(DefaultParameterBinders.LONG_PRIMITIVE_BINDER));
 		DIALECT.getJavaTypeToSqlTypeMapping().put(Identified.class, "int");
 	}
-	
-	@Rule
-	public ExpectedException expectedException = ExpectedException.none();
 	
 	@Test
 	public void testAdd_withoutName_targetedPropertyNameIsTaken() {
@@ -92,36 +88,30 @@ public class FluentMappingBuilderTest {
 	
 	@Test
 	public void testAdd_identifierDefinedTwice_throwsException() {
-		expectedException.expect(IllegalArgumentException.class);
-		expectedException.expectMessage("Identifier is already defined by");
-		expectedException.expectMessage("getName");
 		Table toto = new Table("Toto");
-		FluentMappingBuilder.from(Toto.class, StatefullIdentifier.class, toto)
+		assertThrows(IllegalArgumentException.class, () -> FluentMappingBuilder.from(Toto.class, StatefullIdentifier.class, toto)
 			.add(Toto::getName, "tata").identifier(IdentifierPolicy.ALREADY_ASSIGNED)
-			.add(Toto::getFirstName).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
-		;
+			.add(Toto::getFirstName).identifier(IdentifierPolicy.ALREADY_ASSIGNED),
+			"Identifier is already defined by getName");
 	}
 	
 	@Test
 	public void testAdd_mappingDefinedTwiceByMethod_throwsException() {
-		expectedException.expect(IllegalArgumentException.class);
-		expectedException.expectMessage("Mapping is already defined by the method");
 		Table toto = new Table("Toto");
-		FluentMappingBuilder.from(Toto.class, StatefullIdentifier.class, toto)
+		assertThrows(IllegalArgumentException.class, () -> FluentMappingBuilder.from(Toto.class, StatefullIdentifier.class, toto)
 				.add(Toto::getName)
-				.add(Toto::setName)
-		;
+				.add(Toto::setName),
+				"Mapping is already defined by the method"
+				);
 	}
 	
 	@Test
 	public void testAdd_mappingDefinedTwiceByColumn_throwsException() {
-		expectedException.expect(IllegalArgumentException.class);
-		expectedException.expectMessage("Mapping is already defined for xyz");
 		Table toto = new Table("Toto");
-		FluentMappingBuilder.from(Toto.class, StatefullIdentifier.class, toto)
+		assertThrows(IllegalArgumentException.class, () -> FluentMappingBuilder.from(Toto.class, StatefullIdentifier.class, toto)
 				.add(Toto::getName, "xyz")
-				.add(Toto::getFirstName, "xyz")
-		;
+				.add(Toto::getFirstName, "xyz"),
+				"Mapping is already defined for xyz");
 	}
 	
 	@Test

@@ -8,9 +8,6 @@ import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import com.tngtech.java.junit.dataprovider.DataProvider;
-import com.tngtech.java.junit.dataprovider.DataProviderRunner;
-import com.tngtech.java.junit.dataprovider.UseDataProvider;
 import org.gama.lang.ThreadLocals;
 import org.gama.lang.collection.Arrays;
 import org.gama.lang.collection.Iterables;
@@ -19,20 +16,18 @@ import org.gama.lang.function.Functions;
 import org.gama.lang.function.ThrowingRunnable;
 import org.gama.sql.result.ResultSetConverterTest.WingInner.FeatherInner;
 import org.gama.sql.result.ResultSetRowConverterTest.Person;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
-import static com.tngtech.java.junit.dataprovider.DataProviders.$;
-import static com.tngtech.java.junit.dataprovider.DataProviders.$$;
 import static org.gama.sql.binder.DefaultResultSetReaders.INTEGER_PRIMITIVE_READER;
 import static org.gama.sql.binder.DefaultResultSetReaders.STRING_READER;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertSame;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertSame;
 
 /**
  * @author Guillaume Mary
  */
-@RunWith(DataProviderRunner.class)
 public class ResultSetConverterTest {
 	
 	@Test
@@ -229,17 +224,16 @@ public class ResultSetConverterTest {
 		assertSame(leftWingFeatherColors.get("black"), rightWingFeatherColors.get("black"));
 	}
 	
-	@DataProvider
 	public static Object[][] testConvert_withReuse() {
-		return $$(
-				$(new ResultSetRowConverter<>(FeatherColor.class, "featherColor", STRING_READER, FeatherColor::new)),
-				$(new ResultSetConverter<>(FeatherColor.class, "featherColor", STRING_READER, FeatherColor::new))
-		);
+		return new Object[][] {
+				new Object[] { new ResultSetRowConverter<>(FeatherColor.class, "featherColor", STRING_READER, FeatherColor::new) },
+				new Object[] { new ResultSetConverter<>(FeatherColor.class, "featherColor", STRING_READER, FeatherColor::new) }
+		};
 	}
 	
-	@UseDataProvider
-	@Test
-	public void testConvert_withReuse(AbstractResultSetConverter featherColorTestInstance) throws SQLException {
+	@ParameterizedTest
+	@MethodSource("testConvert_withReuse")
+	public void testConvert_withReuse(AbstractResultSetConverter featherColorTestInstance) {
 		String chickenInstanciationColumnName = "chickenName";
 		String leftFeatherColorColumnName = "leftFeatherColor";
 		String rightFeatherColorColumnName = "rightFeatherColor";

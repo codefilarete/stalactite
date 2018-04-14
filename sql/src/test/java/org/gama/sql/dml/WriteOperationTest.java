@@ -21,11 +21,11 @@ import org.gama.sql.SimpleConnectionProvider;
 import org.gama.sql.binder.DefaultParameterBinders;
 import org.gama.sql.binder.ParameterBinder;
 import org.gama.sql.test.HSQLDBInMemoryDataSource;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * @author Guillaume Mary
@@ -34,7 +34,7 @@ public class WriteOperationTest {
 	
 	private ConnectionProvider connectionProvider;
 	
-	@Before
+	@BeforeEach
 	public void setUp() throws SQLException {
 		// Connection provider
 		HSQLDBInMemoryDataSource hsqldbInMemoryDataSource = new HSQLDBInMemoryDataSource();

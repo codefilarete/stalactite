@@ -6,24 +6,19 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
-import com.tngtech.java.junit.dataprovider.DataProvider;
-import com.tngtech.java.junit.dataprovider.DataProviderRunner;
-import com.tngtech.java.junit.dataprovider.UseDataProvider;
 import org.gama.lang.collection.Arrays;
 import org.gama.sql.test.DerbyInMemoryDataSource;
 import org.gama.sql.test.HSQLDBInMemoryDataSource;
 import org.gama.sql.test.MariaDBEmbeddableDataSource;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-@RunWith(DataProviderRunner.class)
 public class ResultSetIteratorTest {
 	
-	@DataProvider
 	public static Object[][] dataSources() {
 		return new Object[][] {
 				{ new HSQLDBInMemoryDataSource() },
@@ -32,8 +27,8 @@ public class ResultSetIteratorTest {
 		};
 	}
 	
-	@Test
-	@UseDataProvider("dataSources")
+	@ParameterizedTest
+	@MethodSource("dataSources")
 	public void testHasNext_emptyResultSet(DataSource dataSource) throws Exception {
 		Connection connection = dataSource.getConnection();
 		ensureTable(connection);
@@ -50,8 +45,8 @@ public class ResultSetIteratorTest {
 		assertFalse(resultSetIterator.hasNext());
 	}
 	
-	@Test
-	@UseDataProvider("dataSources")
+	@ParameterizedTest
+	@MethodSource("dataSources")
 	public void testHasNext_filledResultSet(DataSource dataSource) throws Exception {
 		Connection connection = dataSource.getConnection();
 		ensureTable(connection);
@@ -78,8 +73,8 @@ public class ResultSetIteratorTest {
 		assertFalse(resultSetIterator.hasNext());
 	}
 	
-	@Test
-	@UseDataProvider("dataSources")
+	@ParameterizedTest
+	@MethodSource("dataSources")
 	public void testConvert(DataSource dataSource) throws Exception {
 		Connection connection = dataSource.getConnection();
 		ensureTable(connection);

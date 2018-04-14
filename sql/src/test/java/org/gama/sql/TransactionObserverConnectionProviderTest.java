@@ -4,7 +4,7 @@ import java.sql.SQLException;
 import java.sql.Savepoint;
 
 import org.gama.sql.test.HSQLDBInMemoryDataSource;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
 import static org.mockito.ArgumentMatchers.any;

@@ -2,9 +2,6 @@ package org.gama.stalactite.query.builder;
 
 import java.util.Map;
 
-import com.tngtech.java.junit.dataprovider.DataProvider;
-import com.tngtech.java.junit.dataprovider.DataProviderRunner;
-import com.tngtech.java.junit.dataprovider.UseDataProvider;
 import org.gama.lang.collection.Arrays;
 import org.gama.lang.collection.Maps;
 import org.gama.sql.dml.PreparedSQL;
@@ -12,8 +9,8 @@ import org.gama.stalactite.persistence.sql.dml.binder.ColumnBinderRegistry;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.query.model.CriteriaChain;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import static java.util.Collections.EMPTY_MAP;
 import static org.gama.stalactite.query.model.Operand.between;
@@ -29,15 +26,13 @@ import static org.gama.stalactite.query.model.Operand.not;
 import static org.gama.stalactite.query.model.Operand.startsWith;
 import static org.gama.stalactite.query.model.QueryEase.filter;
 import static org.gama.stalactite.query.model.QueryEase.where;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
  * @author Guillaume Mary
  */
-@RunWith(DataProviderRunner.class)
 public class WhereBuilderTest {
 	
-	@DataProvider
 	public static Object[][] testToSQL_data() {
 		Table tableToto = new Table(null, "Toto");
 		Column colA = tableToto.addColumn("a", String.class);
@@ -75,14 +70,13 @@ public class WhereBuilderTest {
 		};
 	}
 	
-	@Test
-	@UseDataProvider("testToSQL_data")
+	@ParameterizedTest
+	@MethodSource("testToSQL_data")
 	public void testToSQL(CriteriaChain where, Map<Table, String> tableAliases, String expected) {
 		WhereBuilder testInstance = new WhereBuilder(where, tableAliases);
 		assertEquals(expected, testInstance.toSQL());
 	}
 	
-	@DataProvider
 	public static Object[][] testToPreparedSQL_data() {
 		Table tableToto = new Table(null, "Toto");
 		Column colA = tableToto.addColumn("a", String.class);
@@ -180,8 +174,8 @@ public class WhereBuilderTest {
 		};
 	}
 	
-	@Test
-	@UseDataProvider("testToPreparedSQL_data")
+	@ParameterizedTest
+	@MethodSource("testToPreparedSQL_data")
 	public void testToPreparedSQL(CriteriaChain where, Map<Table, String> tableAliases, 
 						  String expectedPreparedStatement, Map<Integer, Object> expectedValues) {
 		WhereBuilder testInstance = new WhereBuilder(where, tableAliases);

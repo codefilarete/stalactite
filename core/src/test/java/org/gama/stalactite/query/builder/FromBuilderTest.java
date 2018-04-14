@@ -1,23 +1,18 @@
 package org.gama.stalactite.query.builder;
 
-import com.tngtech.java.junit.dataprovider.DataProvider;
-import com.tngtech.java.junit.dataprovider.DataProviderRunner;
-import com.tngtech.java.junit.dataprovider.UseDataProvider;
-import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.persistence.structure.Column;
+import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.query.model.From;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
  * @author Guillaume Mary
  */
-@RunWith(DataProviderRunner.class)
 public class FromBuilderTest {
 	
-	@DataProvider
 	public static Object[][] testToSQL_data() {
 		Table tableToto = new Table(null, "Toto");
 		Column colTotoA = tableToto.addColumn("a", String.class);
@@ -97,8 +92,8 @@ public class FromBuilderTest {
 		};
 	}
 	
-	@Test
-	@UseDataProvider("testToSQL_data")
+	@ParameterizedTest
+	@MethodSource("testToSQL_data")
 	public void testToSQL(From from, String expected) {
 		FromBuilder testInstance = new FromBuilder(from);
 		assertEquals(expected, testInstance.toSQL());

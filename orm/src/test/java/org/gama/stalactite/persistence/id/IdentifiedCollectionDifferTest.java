@@ -3,25 +3,19 @@ package org.gama.stalactite.persistence.id;
 import java.util.HashSet;
 import java.util.Set;
 
-import com.tngtech.java.junit.dataprovider.DataProvider;
-import com.tngtech.java.junit.dataprovider.DataProviderRunner;
-import com.tngtech.java.junit.dataprovider.UseDataProvider;
 import org.gama.lang.collection.Arrays;
 import org.gama.stalactite.persistence.engine.model.Country;
 import org.gama.stalactite.persistence.id.IdentifiedCollectionDiffer.Diff;
 import org.gama.stalactite.persistence.id.IdentifiedCollectionDiffer.State;
 import org.gama.stalactite.persistence.id.provider.LongProvider;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
-import static com.tngtech.java.junit.dataprovider.DataProviders.$;
-import static com.tngtech.java.junit.dataprovider.DataProviders.$$;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
  * @author Guillaume Mary
  */
-@RunWith(DataProviderRunner.class)
 public class IdentifiedCollectionDifferTest {
 	
 	private static class TestData {
@@ -44,8 +38,6 @@ public class IdentifiedCollectionDifferTest {
 		}
 	}
 	
-	
-	@DataProvider
 	public static Object[][] testDiffSet() {
 		TestData testData = new TestData();
 		Set<Diff> expectedResult = new HashSet<>();
@@ -55,33 +47,33 @@ public class IdentifiedCollectionDifferTest {
 		expectedResult.add(new Diff(State.REMOVED, testData.country2, null));
 		expectedResult.add(new Diff(State.HELD, testData.country3, testData.country3Clone));
 		
-		return $$(
-				$(
+		return new Object[][] {
+				new Object[] {
 						Arrays.asHashSet(testData.country1, testData.country2, testData.country3),
 						Arrays.asHashSet(testData.country3Clone, testData.country4, testData.country5),
 						expectedResult
-				),
+				},
 				// corner cases with empty sets
-				$(
+				new Object[] {
 						Arrays.asHashSet(),
 						Arrays.asHashSet(testData.country1),
 						Arrays.asHashSet(new Diff(State.ADDED, null, testData.country1))
-				),
-				$(
+				},
+				new Object[] {
 						Arrays.asHashSet(testData.country1),
 						Arrays.asHashSet(),
 						Arrays.asHashSet(new Diff(State.REMOVED, testData.country1, null))
-				),
-				$(
+				},
+				new Object[] {
 						Arrays.asHashSet(),
 						Arrays.asHashSet(),
 						Arrays.asHashSet()
-				)
-		);
+				}
+		};
 	}
 	
-	@Test
-	@UseDataProvider
+	@ParameterizedTest
+	@MethodSource("testDiffSet")
 	public void testDiffSet(Set<Country> set1, Set<Country> set2, Set<Diff> expectedResult) {
 		IdentifiedCollectionDiffer testInstance = new IdentifiedCollectionDiffer();
 		

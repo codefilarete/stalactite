@@ -19,13 +19,11 @@ import org.gama.stalactite.persistence.id.Identifier;
 import org.gama.stalactite.persistence.id.PersistedIdentifier;
 import org.gama.stalactite.persistence.sql.HSQLDBDialect;
 import org.gama.stalactite.test.JdbcConnectionProvider;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
  * @author Guillaume Mary
@@ -38,7 +36,7 @@ public class FluentMappingBuilderForeignKeyTest {
 	private Persister<City, PersistedIdentifier<Long>> cityPersister;
 	private PersistenceContext persistenceContext;
 	
-	@BeforeClass
+	@BeforeAll
 	public static void initBinders() {
 		// binder creation for our identifier
 		DIALECT.getColumnBinderRegistry().register((Class) Identifier.class, Identifier.identifierBinder(DefaultParameterBinders.LONG_PRIMITIVE_BINDER));
@@ -47,10 +45,7 @@ public class FluentMappingBuilderForeignKeyTest {
 		DIALECT.getJavaTypeToSqlTypeMapping().put(Identified.class, "int");
 	}
 	
-	@Rule
-	public ExpectedException expectedException = ExpectedException.none();
-	
-	@Before
+	@BeforeEach
 	public void initTest() {
 		persistenceContext = new PersistenceContext(new JdbcConnectionProvider(dataSource), DIALECT);
 		
@@ -98,7 +93,7 @@ public class FluentMappingBuilderForeignKeyTest {
 			}
 		};
 		JdbcForeignKey foundForeignKey = Iterables.first(fkPersonIterator);
-		JdbcForeignKey expectedForeignKey = new JdbcForeignKey("FK_COUNTRY_PRESIDENTID_ID", "COUNTRY", "PRESIDENTID", "PERSON", "ID");
+		JdbcForeignKey expectedForeignKey = new JdbcForeignKey("FK_COUNTRY_PRESIDENTID_PERSON_ID", "COUNTRY", "PRESIDENTID", "PERSON", "ID");
 		assertEquals(expectedForeignKey.getSignature(), foundForeignKey.getSignature());
 		
 		ResultSetIterator<JdbcForeignKey> fkCityIterator = new ResultSetIterator<JdbcForeignKey>(currentConnection.getMetaData().getExportedKeys(null, null,
@@ -113,7 +108,7 @@ public class FluentMappingBuilderForeignKeyTest {
 			}
 		};
 		foundForeignKey = Iterables.first(fkCityIterator);
-		expectedForeignKey = new JdbcForeignKey("FK_CITY_COUNTRYID_ID", "CITY", "COUNTRYID", "COUNTRY", "ID");
+		expectedForeignKey = new JdbcForeignKey("FK_CITY_COUNTRYID_COUNTRY_ID", "CITY", "COUNTRYID", "COUNTRY", "ID");
 		assertEquals(expectedForeignKey.getSignature(), foundForeignKey.getSignature());
 	}
 	

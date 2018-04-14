@@ -17,9 +17,6 @@ import java.util.LinkedHashSet;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import com.tngtech.java.junit.dataprovider.DataProvider;
-import com.tngtech.java.junit.dataprovider.DataProviderRunner;
-import com.tngtech.java.junit.dataprovider.UseDataProvider;
 import org.gama.lang.Nullable;
 import org.gama.lang.collection.Arrays;
 import org.gama.lang.collection.Iterables;
@@ -28,18 +25,17 @@ import org.gama.sql.result.ResultSetIterator;
 import org.gama.sql.test.DerbyInMemoryDataSource;
 import org.gama.sql.test.HSQLDBInMemoryDataSource;
 import org.gama.sql.test.MariaDBEmbeddableDataSource;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 /**
  * @author Guillaume Mary
  */
-@RunWith(DataProviderRunner.class)
 public class DefaultParameterBindersTest {
 	
-	@DataProvider
 	public static Object[][] dataSources() {
 		return new Object[][] {
 				{ new HSQLDBInMemoryDataSource() },
@@ -48,98 +44,103 @@ public class DefaultParameterBindersTest {
 		};
 	}
 	
-	@Test
-	@UseDataProvider("dataSources")
+	@ParameterizedTest
+	@MethodSource("dataSources")
 	public void testLongBinder(DataSource dataSource) throws SQLException {
 		testParameterBinder(DefaultParameterBinders.LONG_BINDER, dataSource, "int", Arrays.asSet(null, 42L));
 	}
 	
-	@Test
-	@UseDataProvider("dataSources")
+	@ParameterizedTest
+	@MethodSource("dataSources")
 	public void testLongPrimitiveBinder(DataSource dataSource) throws SQLException {
 		testParameterBinder(DefaultParameterBinders.LONG_PRIMITIVE_BINDER, dataSource, "int not null", Arrays.asSet(42L));
 	}
 	
-	@Test(expected = NullPointerException.class)
-	@UseDataProvider("dataSources")
+	@ParameterizedTest
+	@MethodSource("dataSources")
 	public void testLongPrimitiveBinder_nullValuePassed_NPEThrown(DataSource dataSource) throws SQLException {
-		testParameterBinder(DefaultParameterBinders.LONG_PRIMITIVE_BINDER, dataSource, "int not null", Arrays.asSet(null));
+		assertThrows(NullPointerException.class, () -> testParameterBinder(DefaultParameterBinders.LONG_PRIMITIVE_BINDER, dataSource,
+				"int not null", Arrays.asSet(null)));
 	}
 	
-	@Test
-	@UseDataProvider("dataSources")
+	@ParameterizedTest
+	@MethodSource("dataSources")
 	public void testIntegerBinder(DataSource dataSource) throws SQLException {
 		testParameterBinder(DefaultParameterBinders.INTEGER_BINDER, dataSource, "int", Arrays.asSet(null, 42));
 	}
 	
-	@Test
-	@UseDataProvider("dataSources")
+	@ParameterizedTest
+	@MethodSource("dataSources")
 	public void testIntegerPrimitiveBinder(DataSource dataSource) throws SQLException {
 		testParameterBinder(DefaultParameterBinders.INTEGER_PRIMITIVE_BINDER, dataSource, "int not null", Arrays.asSet(42));
 	}
 	
-	@Test(expected = NullPointerException.class)
-	@UseDataProvider("dataSources")
+	@ParameterizedTest
+	@MethodSource("dataSources")
 	public void testIntegerPrimitiveBinder_nullValuePassed_NPEThrown(DataSource dataSource) throws SQLException {
-		testParameterBinder(DefaultParameterBinders.INTEGER_PRIMITIVE_BINDER, dataSource, "int not null", Arrays.asSet(null));
+		assertThrows(NullPointerException.class, () -> testParameterBinder(DefaultParameterBinders.INTEGER_PRIMITIVE_BINDER, dataSource,
+				"int not null", Arrays.asSet(null)));
 	}
 	
-	@Test
-	@UseDataProvider("dataSources")
+	@ParameterizedTest
+	@MethodSource("dataSources")
 	public void testDoubleBinder(DataSource dataSource) throws SQLException {
 		testParameterBinder(DefaultParameterBinders.DOUBLE_BINDER, dataSource, "double", Arrays.asSet(null, 42.57D));
 	}
 	
-	@Test
-	@UseDataProvider("dataSources")
+	@ParameterizedTest
+	@MethodSource("dataSources")
 	public void testDoublePrimitiveBinder(DataSource dataSource) throws SQLException {
 		testParameterBinder(DefaultParameterBinders.DOUBLE_PRIMITIVE_BINDER, dataSource, "double not null", Arrays.asSet(42.57D));
 	}
 	
-	@Test(expected = NullPointerException.class)
-	@UseDataProvider("dataSources")
+	@ParameterizedTest
+	@MethodSource("dataSources")
 	public void testDoublePrimitiveBinder_nullValuePassed_NPEThrown(DataSource dataSource) throws SQLException {
-		testParameterBinder(DefaultParameterBinders.DOUBLE_PRIMITIVE_BINDER, dataSource, "double not null", Arrays.asSet(null));
+		assertThrows(NullPointerException.class, () -> testParameterBinder(DefaultParameterBinders.DOUBLE_PRIMITIVE_BINDER, dataSource,
+				"double not null", Arrays.asSet(null)));
 	}
 	
-	@Test
-	@UseDataProvider("dataSources")
+	@ParameterizedTest
+	@MethodSource("dataSources")
 	public void testFloatBinder(DataSource dataSource) throws SQLException {
 		testParameterBinder(DefaultParameterBinders.FLOAT_BINDER, dataSource, "double", Arrays.asSet(null, 42.57F));
 	}
 	
-	@Test
-	@UseDataProvider("dataSources")
+	@ParameterizedTest
+	@MethodSource("dataSources")
 	public void testFloatPrimitiveBinder(DataSource dataSource) throws SQLException {
 		testParameterBinder(DefaultParameterBinders.FLOAT_PRIMITIVE_BINDER, dataSource, "double not null", Arrays.asSet(42.57F));
 	}
 	
-	@Test(expected = NullPointerException.class)
-	@UseDataProvider("dataSources")
+	@ParameterizedTest
+	@MethodSource("dataSources")
 	public void testFloatPrimitiveBinder_nullValuePassed_NPEThrown(DataSource dataSource) throws SQLException {
-		testParameterBinder(DefaultParameterBinders.FLOAT_PRIMITIVE_BINDER, dataSource, "double not null", Arrays.asSet(null));
+		assertThrows(NullPointerException.class, () -> testParameterBinder(DefaultParameterBinders.FLOAT_PRIMITIVE_BINDER, dataSource,
+				"double not null", Arrays.asSet(null)));
 	}
 	
-	@Test
-	@UseDataProvider("dataSources")
+	@ParameterizedTest
+	@MethodSource("dataSources")
 	public void testBooleanBinder(DataSource dataSource) throws SQLException {
 		testParameterBinder(DefaultParameterBinders.BOOLEAN_BINDER, dataSource, "boolean", Arrays.asSet(null, true, false));
 	}
 	
-	@Test
-	@UseDataProvider("dataSources")
+	@ParameterizedTest
+	@MethodSource("dataSources")
 	public void testBooleanPrimitiveBinder(DataSource dataSource) throws SQLException {
 		testParameterBinder(DefaultParameterBinders.BOOLEAN_PRIMITIVE_BINDER, dataSource, "boolean not null", Arrays.asSet(true, false));
 	}
 	
-	@Test(expected = NullPointerException.class)
-	@UseDataProvider("dataSources")
+	@ParameterizedTest
+	@MethodSource("dataSources")
 	public void testBooleanPrimitiveBinder_nullValuePassed_NPEThrown(DataSource dataSource) throws SQLException {
-		testParameterBinder(DefaultParameterBinders.BOOLEAN_PRIMITIVE_BINDER, dataSource, "boolean not null", Arrays.asSet(null));
+		assertThrows(NullPointerException.class, () -> testParameterBinder(DefaultParameterBinders.BOOLEAN_PRIMITIVE_BINDER, dataSource,
+				"boolean not null", Arrays.asSet(null)));
 	}
 	
-	@Test
-	@UseDataProvider("dataSources")
+	@ParameterizedTest
+	@MethodSource("dataSources")
 	public void testDateSqlBinder(DataSource dataSource) throws SQLException {
 		// Using Date(long) constructor leads to mistake since the Date spec (Javadoc) says : "the hours, minutes, seconds, and milliseconds to zero"  
 		// So if the argument is a real millis time (like System.currentTimeMillis), the millis precision is lost by PreparedStatement.setDate()
@@ -149,8 +150,8 @@ public class DefaultParameterBindersTest {
 		testParameterBinder(DefaultParameterBinders.DATE_SQL_BINDER, dataSource, "date", Arrays.asSet(null, date));
 	}
 	
-	@Test
-	@UseDataProvider("dataSources")
+	@ParameterizedTest
+	@MethodSource("dataSources")
 	public void testDateBinder(DataSource dataSource) throws SQLException {
 		// Using Date(long) constructor leads to mistake since the Date spec (Javadoc) says : "the hours, minutes, seconds, and milliseconds to zero"  
 		// So if the argument is a real millis time (like System.currentTimeMillis), the millis precision is lost by PreparedStatement.setDate()
@@ -160,14 +161,14 @@ public class DefaultParameterBindersTest {
 		testParameterBinder(DefaultParameterBinders.DATE_BINDER, dataSource, "date", Arrays.asSet(null, date));
 	}
 	
-	@Test
-	@UseDataProvider("dataSources")
+	@ParameterizedTest
+	@MethodSource("dataSources")
 	public void testLocalDateBinder(DataSource dataSource) throws SQLException {
 		testParameterBinder(DefaultParameterBinders.LOCALDATE_BINDER, dataSource, "date", Arrays.asSet(null, LocalDate.now()));
 	}
 	
-	@Test
-	@UseDataProvider("dataSources")
+	@ParameterizedTest
+	@MethodSource("dataSources")
 	public void testLocalDateTimeBinder(DataSource dataSource) throws SQLException {
 		String sqlColumnType = "timestamp";
 		if (dataSource instanceof MariaDBEmbeddableDataSource) {
@@ -176,8 +177,8 @@ public class DefaultParameterBindersTest {
 		testParameterBinder(DefaultParameterBinders.LOCALDATETIME_BINDER, dataSource, sqlColumnType, Arrays.asSet(null, LocalDateTime.now()));
 	}
 	
-	@Test
-	@UseDataProvider("dataSources")
+	@ParameterizedTest
+	@MethodSource("dataSources")
 	public void testTimestampBinder(DataSource dataSource) throws SQLException {
 		String sqlColumnType = "timestamp";
 		if (dataSource instanceof MariaDBEmbeddableDataSource) {
@@ -186,14 +187,14 @@ public class DefaultParameterBindersTest {
 		testParameterBinder(DefaultParameterBinders.TIMESTAMP_BINDER, dataSource, sqlColumnType, Arrays.asSet(null, new Timestamp(System.currentTimeMillis())));
 	}
 	
-	@Test
-	@UseDataProvider("dataSources")
+	@ParameterizedTest
+	@MethodSource("dataSources")
 	public void testStringBinder(DataSource dataSource) throws SQLException {
 		testParameterBinder(DefaultParameterBinders.STRING_BINDER, dataSource, "varchar(255)", Arrays.asSet(null, "Hello world !"));
 	}
 	
-	@Test
-	@UseDataProvider("dataSources")
+	@ParameterizedTest
+	@MethodSource("dataSources")
 	public void testBinaryStreamBinder(DataSource dataSource) throws SQLException {
 		InputStream inputStream = new ByteArrayInputStream("Hello world !".getBytes());
 		LinkedHashSet<InputStream> valuesToInsert = Arrays.asSet(inputStream, null);

@@ -7,9 +7,6 @@ import java.util.AbstractMap;
 import java.util.List;
 import java.util.Map;
 
-import com.tngtech.java.junit.dataprovider.DataProvider;
-import com.tngtech.java.junit.dataprovider.DataProviderRunner;
-import com.tngtech.java.junit.dataprovider.UseDataProvider;
 import org.gama.lang.Retryer;
 import org.gama.lang.collection.Arrays;
 import org.gama.lang.collection.Iterables;
@@ -26,19 +23,18 @@ import org.gama.stalactite.persistence.mapping.PersistentFieldHarverster;
 import org.gama.stalactite.persistence.sql.Dialect;
 import org.gama.stalactite.persistence.sql.ddl.JavaTypeToSqlTypeMapping;
 import org.gama.stalactite.persistence.sql.dml.DMLGenerator;
-import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.persistence.structure.Column;
+import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.test.JdbcConnectionProvider;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
  * @author Guillaume Mary
  */
-@RunWith(DataProviderRunner.class)
 public class PersisterDatabaseTest {
 	
 	private Persister<Toto, Integer> testInstance;
@@ -48,8 +44,8 @@ public class PersisterDatabaseTest {
 	private Dialect dialect;
 	private Table totoClassTable;
 	
-	@Before
-	public void setUp() throws SQLException {
+	@BeforeEach
+	public void setUp() {
 		totoClassTable = new Table(null, "Toto");
 		PersistentFieldHarverster persistentFieldHarverster = new PersistentFieldHarverster();
 		Map<PropertyAccessor, Column> totoClassMapping = persistentFieldHarverster.mapFields(Toto.class, totoClassTable);
@@ -75,7 +71,6 @@ public class PersisterDatabaseTest {
 				new DMLGenerator(dialect.getColumnBinderRegistry() , DMLGenerator.CaseSensitiveSorter.INSTANCE), Retryer.NO_RETRY, 3, 3);
 	}
 	
-	@DataProvider
 	public static Object[][] dataSources() {
 		return new Object[][] {
 				{ new HSQLDBInMemoryDataSource() },
@@ -84,8 +79,8 @@ public class PersisterDatabaseTest {
 		};
 	}
 	
-	@Test
-	@UseDataProvider("dataSources")
+	@ParameterizedTest
+	@MethodSource("dataSources")
 	public void testSelect(DataSource dataSource) throws SQLException {
 		transactionManager.setDataSource(dataSource);
 		DDLDeployer ddlDeployer = new DDLDeployer(dialect.getDdlSchemaGenerator(), transactionManager) {
@@ -116,8 +111,8 @@ public class PersisterDatabaseTest {
 		}
 	}
 	
-	@Test
-	@UseDataProvider("dataSources")
+	@ParameterizedTest
+	@MethodSource("dataSources")
 	public void testSelect_rowCount(DataSource dataSource) throws SQLException {
 		transactionManager.setDataSource(dataSource);
 		DDLDeployer ddlDeployer = new DDLDeployer(dialect.getDdlSchemaGenerator(), transactionManager) {

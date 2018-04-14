@@ -3,27 +3,24 @@ package org.gama.stalactite.persistence.mapping;
 import java.util.HashMap;
 import java.util.Map;
 
-import com.tngtech.java.junit.dataprovider.DataProvider;
-import com.tngtech.java.junit.dataprovider.DataProviderRunner;
-import com.tngtech.java.junit.dataprovider.UseDataProvider;
 import org.gama.lang.collection.Maps;
 import org.gama.lang.collection.Maps.ChainingMap;
 import org.gama.sql.result.Row;
 import org.gama.stalactite.persistence.sql.dml.PreparedUpdate.UpwhereColumn;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
-import static junit.framework.TestCase.assertTrue;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * @author Guillaume Mary
  */
-@RunWith(DataProviderRunner.class)
 public class ColumnedMapMappingStrategyTest {
 	
 	private static Table totoTable;
@@ -58,7 +55,7 @@ public class ColumnedMapMappingStrategyTest {
 	
 	private ColumnedMapMappingStrategy<Map<Integer, String>, Integer, String, String> testInstance;
 	
-	@Before
+	@BeforeEach
 	public void setUp() {
 		testInstance = new ColumnedMapMappingStrategy<Map<Integer, String>, Integer, String, String>(totoTable, totoTable.getColumns(), (Class<Map<Integer, String>>) (Class) HashMap.class) {
 			@Override
@@ -87,7 +84,6 @@ public class ColumnedMapMappingStrategyTest {
 		
 	}
 	
-	@DataProvider
 	public static Object[][] testGetInsertValuesData() {
 		setUpClass();
 		return new Object[][] {
@@ -97,14 +93,13 @@ public class ColumnedMapMappingStrategyTest {
 		};
 	}
 	
-	@Test
-	@UseDataProvider("testGetInsertValuesData")
+	@ParameterizedTest
+	@MethodSource("testGetInsertValuesData")
 	public void testGetInsertValues(ChainingMap<Integer, String> toInsert, ChainingMap<Column, String> expected) {
 		Map<Column, Object> insertValues = testInstance.getInsertValues(toInsert);
 		assertEquals(expected, insertValues);
 	}
 	
-	@DataProvider
 	public static Object[][] testGetUpdateValues_diffOnlyData() {
 		setUpClass();
 		return new Object[][] {
@@ -123,8 +118,8 @@ public class ColumnedMapMappingStrategyTest {
 		};
 	}
 	
-	@Test
-	@UseDataProvider("testGetUpdateValues_diffOnlyData")
+	@ParameterizedTest
+	@MethodSource("testGetUpdateValues_diffOnlyData")
 	public void testGetUpdateValues_diffOnly(HashMap<Integer, String> modified, HashMap<Integer, String> unmodified, Map<Column, String> expected) {
 		Map<UpwhereColumn, Object> updateValues = testInstance.getUpdateValues(modified, unmodified, false);
 		Map<UpwhereColumn, Object> expectationWithUpwhereColumn = new HashMap<>();
@@ -132,7 +127,6 @@ public class ColumnedMapMappingStrategyTest {
 		assertEquals(expectationWithUpwhereColumn, updateValues);
 	}
 	
-	@DataProvider
 	public static Object[][] testGetUpdateValues_allColumnsData() {
 		setUpClass();
 		return new Object[][] {
@@ -153,8 +147,8 @@ public class ColumnedMapMappingStrategyTest {
 		};
 	}
 	
-	@Test
-	@UseDataProvider("testGetUpdateValues_allColumnsData")
+	@ParameterizedTest
+	@MethodSource("testGetUpdateValues_allColumnsData")
 	public void testGetUpdateValues_allColumns(HashMap<Integer, String> modified, HashMap<Integer, String> unmodified, Map<Column, String> expected) {
 		Map<UpwhereColumn, Object> updateValues = testInstance.getUpdateValues(modified, unmodified, true);
 		Map<UpwhereColumn, Object> expectationWithUpwhereColumn = new HashMap<>();

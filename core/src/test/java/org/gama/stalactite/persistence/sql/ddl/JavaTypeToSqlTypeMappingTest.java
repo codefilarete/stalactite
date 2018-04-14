@@ -1,22 +1,19 @@
 package org.gama.stalactite.persistence.sql.ddl;
 
-import com.tngtech.java.junit.dataprovider.DataProvider;
-import com.tngtech.java.junit.dataprovider.DataProviderRunner;
-import com.tngtech.java.junit.dataprovider.UseDataProvider;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 /**
  * @author Guillaume Mary
  */
-@RunWith(DataProviderRunner.class)
 public class JavaTypeToSqlTypeMappingTest {
 	
-	@DataProvider
 	public static Object[][] testGetTypeName_withSingleton() {
 		JavaTypeToSqlTypeMapping testInstance1 = new JavaTypeToSqlTypeMapping();
 		testInstance1.put(String.class, "VARCHAR");
@@ -28,13 +25,12 @@ public class JavaTypeToSqlTypeMappingTest {
 		};
 	}
 	
-	@Test
-	@UseDataProvider
+	@ParameterizedTest
+	@MethodSource("testGetTypeName_withSingleton")
 	public void testGetTypeName_withSingleton(JavaTypeToSqlTypeMapping testInstance, Class javaType, Integer size, String expected) {
 		assertEquals(expected, testInstance.getTypeName(javaType, size));
 	}
 	
-	@DataProvider
 	public static Object[][] testGetTypeName() {
 		JavaTypeToSqlTypeMapping testInstance = new JavaTypeToSqlTypeMapping();
 		testInstance.put(CharSequence.class, "VARCHAR");
@@ -50,19 +46,18 @@ public class JavaTypeToSqlTypeMappingTest {
 		};
 	}
 	
-	@Test
-	@UseDataProvider
+	@ParameterizedTest
+	@MethodSource("testGetTypeName")
 	public void testGetTypeName(JavaTypeToSqlTypeMapping testInstance, Class javaType, Integer size, String expected) {
 		assertEquals(expected, testInstance.getTypeName(javaType, size));
 	}
 	
-	@Test(expected = IllegalArgumentException.class)
+	@Test
 	public void testGetTypeName_unkonwnType_exceptionIsThrown() {
 		JavaTypeToSqlTypeMapping testInstance = new JavaTypeToSqlTypeMapping();
-		testInstance.getTypeName(Object.class, null);
+		assertThrows(IllegalArgumentException.class, () -> testInstance.getTypeName(Object.class, null));
 	}
 	
-	@DataProvider
 	public static Object[][] testGetTypeName_column() {
 		Table toto = new Table("toto");
 		Column<String> columnA = toto.addColumn("a", String.class);
@@ -83,15 +78,16 @@ public class JavaTypeToSqlTypeMappingTest {
 		};
 	}
 	
-	@Test
-	@UseDataProvider
+	@ParameterizedTest
+	@MethodSource("testGetTypeName_column")
 	public void testGetTypeName_column(JavaTypeToSqlTypeMapping testInstance, Column column, String expected) {
 		assertEquals(expected, testInstance.getTypeName(column));
 	}
 	
-	@Test(expected = NullPointerException.class)	// because we can't create a column with null type, if possible addd a safe guard in getTypeName
+	@Test
 	public void testGetTypeName_columnWithNullType_exceptionIsThrown() {
 		Table toto = new Table("toto");
-		toto.addColumn("a", null);
+		// because we can't create a column with null type, if possible addd a safe guard in getTypeName
+		assertThrows(NullPointerException.class, () -> toto.addColumn("a", null));
 	}
 }

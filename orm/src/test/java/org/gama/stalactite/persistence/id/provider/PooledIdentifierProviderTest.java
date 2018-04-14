@@ -11,10 +11,10 @@ import java.util.concurrent.TimeUnit;
 
 import org.gama.lang.collection.Arrays;
 import org.gama.stalactite.persistence.id.PersistableIdentifier;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * @author Guillaume Mary

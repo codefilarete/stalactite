@@ -2,17 +2,14 @@ package org.gama.stalactite.query.builder;
 
 import java.util.Map;
 
-import com.tngtech.java.junit.dataprovider.DataProvider;
-import com.tngtech.java.junit.dataprovider.DataProviderRunner;
-import com.tngtech.java.junit.dataprovider.UseDataProvider;
 import org.gama.lang.collection.Maps;
 import org.gama.sql.dml.PreparedSQL;
 import org.gama.stalactite.persistence.sql.dml.binder.ColumnBinderRegistry;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.query.model.QueryProvider;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.gama.stalactite.query.model.Operand.eq;
 import static org.gama.stalactite.query.model.Operand.gt;
@@ -20,15 +17,13 @@ import static org.gama.stalactite.query.model.Operand.sum;
 import static org.gama.stalactite.query.model.OrderByChain.Order.ASC;
 import static org.gama.stalactite.query.model.OrderByChain.Order.DESC;
 import static org.gama.stalactite.query.model.QueryEase.select;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
  * @author Guillaume Mary
  */
-@RunWith(DataProviderRunner.class)
 public class QueryBuilderTest {
 	
-	@DataProvider
 	public static Object[][] testToSQL_data() {
 		final Table tableToto = new Table(null, "Toto");
 		final Column colTotoA = tableToto.addColumn("a", String.class);
@@ -107,14 +102,13 @@ public class QueryBuilderTest {
 		};
 	}
 	
-	@Test
-	@UseDataProvider("testToSQL_data")
+	@ParameterizedTest
+	@MethodSource("testToSQL_data")
 	public void testToSQL(QueryProvider queryProvider, String expected) {
 		QueryBuilder testInstance = new QueryBuilder(queryProvider.getSelectQuery());
 		assertEquals(expected, testInstance.toSQL());
 	}
 	
-	@DataProvider
 	public static Object[][] testToPreparedSQL_data() {
 		final Table tableToto = new Table(null, "Toto");
 		final Column colTotoA = tableToto.addColumn("a", String.class);
@@ -139,8 +133,8 @@ public class QueryBuilderTest {
 		};
 	}
 	
-	@Test
-	@UseDataProvider("testToPreparedSQL_data")
+	@ParameterizedTest
+	@MethodSource("testToPreparedSQL_data")
 	public void testToPreparedSQL(QueryProvider queryProvider,
 								  String expectedPreparedStatement, Map<Integer, Object> expectedValues) {
 		QueryBuilder testInstance = new QueryBuilder(queryProvider.getSelectQuery());

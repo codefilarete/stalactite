@@ -4,24 +4,19 @@ import java.lang.reflect.Field;
 import java.util.Iterator;
 import java.util.List;
 
-import com.tngtech.java.junit.dataprovider.DataProvider;
-import com.tngtech.java.junit.dataprovider.DataProviderRunner;
-import com.tngtech.java.junit.dataprovider.UseDataProvider;
 import org.gama.lang.collection.Arrays;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
-import static junit.framework.TestCase.assertTrue;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * @author Guillaume Mary
  */
-@RunWith(DataProviderRunner.class)
 public class PersistentFieldHarversterTest {
 	
-	@DataProvider
 	public static Object[][] testNextMethodsData() {
 		return new Object[][] {
 				{ X.class, Arrays.asList("f1") },
@@ -30,9 +25,9 @@ public class PersistentFieldHarversterTest {
 		};
 	}
 	
-	@Test
-	@UseDataProvider("testNextMethodsData")
-	public void testGetFields(Class clazz, List<String> expectedFields) throws Exception {
+	@ParameterizedTest
+	@MethodSource("testNextMethodsData")
+	public void testGetFields(Class clazz, List<String> expectedFields) {
 		PersistentFieldHarverster testInstance = new PersistentFieldHarverster();
 		Iterable<Field> fields = testInstance.getFields(clazz);
 		Iterator<Field> fieldsIterator = fields.iterator();

@@ -6,9 +6,6 @@ import java.sql.SQLException;
 import java.util.List;
 import java.util.Map;
 
-import com.tngtech.java.junit.dataprovider.DataProvider;
-import com.tngtech.java.junit.dataprovider.DataProviderRunner;
-import com.tngtech.java.junit.dataprovider.UseDataProvider;
 import org.danekja.java.util.function.serializable.SerializableBiConsumer;
 import org.gama.lang.collection.Arrays;
 import org.gama.lang.collection.Iterables;
@@ -19,11 +16,12 @@ import org.gama.sql.result.InMemoryResultSet;
 import org.gama.stalactite.persistence.sql.dml.binder.ColumnBinderRegistry;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.ArgumentCaptor;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.mock;
@@ -34,10 +32,8 @@ import static org.mockito.Mockito.when;
 /**
  * @author Guillaume Mary
  */
-@RunWith(DataProviderRunner.class)
 public class QueryConverterTest {
 	
-	@DataProvider
 	public static Object[][] testNewQuery() {
 		ParameterBinderProvider<Class> parameterBinderProvider = ParameterBinderProvider.fromMap(new ColumnBinderRegistry().getParameterBinders());
 		Table toto = new Table("Toto");
@@ -84,8 +80,8 @@ public class QueryConverterTest {
 		};
 	}
 	
-	@Test
-	@UseDataProvider
+	@ParameterizedTest
+	@MethodSource("testNewQuery")
 	public void testNewQuery(QueryConverter<Toto> queryConverter) {
 		List<Map<String, Object>> resultSetData = Arrays.asList(
 				Maps.asHashMap("id", (Object) 42L).add("name", "coucou").add("active", true),
@@ -101,7 +97,6 @@ public class QueryConverterTest {
 		assertEquals(expected.toString(), result.toString());
 	}
 	
-	@DataProvider
 	public static Object[][] testNewQuery_withConverter() {
 		ParameterBinderProvider<Class> parameterBinderProvider = ParameterBinderProvider.fromMap(new ColumnBinderRegistry().getParameterBinders());
 		Table toto = new Table("Toto");
@@ -121,8 +116,8 @@ public class QueryConverterTest {
 		};
 	}
 	
-	@Test
-	@UseDataProvider
+	@ParameterizedTest
+	@MethodSource("testNewQuery_withConverter")
 	public void testNewQuery_withConverter(QueryConverter<Toto> queryConverter) {
 		List<Map<String, Object>> resultSetData = Arrays.asList(
 				Maps.asHashMap("id", (Object) 42L).add("name", "ghoeihvoih"),

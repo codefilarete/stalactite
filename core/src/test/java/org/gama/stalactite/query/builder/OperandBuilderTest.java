@@ -9,7 +9,7 @@ import org.gama.stalactite.query.builder.OperandBuilder.StringAppenderWrapper;
 import org.gama.stalactite.query.model.Operand;
 import org.gama.stalactite.query.model.operand.IsNull;
 import org.gama.stalactite.query.model.operand.Like;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import static org.gama.stalactite.query.model.Operand.between;
 import static org.gama.stalactite.query.model.Operand.contains;
@@ -26,7 +26,7 @@ import static org.gama.stalactite.query.model.Operand.min;
 import static org.gama.stalactite.query.model.Operand.not;
 import static org.gama.stalactite.query.model.Operand.startsWith;
 import static org.gama.stalactite.query.model.Operand.sum;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
  * @author Guillaume Mary

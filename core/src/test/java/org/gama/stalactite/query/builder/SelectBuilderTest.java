@@ -3,27 +3,22 @@ package org.gama.stalactite.query.builder;
 import java.util.Collections;
 import java.util.Map;
 
-import com.tngtech.java.junit.dataprovider.DataProvider;
-import com.tngtech.java.junit.dataprovider.DataProviderRunner;
-import com.tngtech.java.junit.dataprovider.UseDataProvider;
 import org.gama.lang.collection.Maps;
-import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.persistence.structure.Column;
+import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.query.model.Select;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.gama.stalactite.query.model.Operand.max;
 import static org.gama.stalactite.query.model.Operand.min;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
  * @author Guillaume Mary
  */
-@RunWith(DataProviderRunner.class)
 public class SelectBuilderTest {
 
-	@DataProvider
 	public static Object[][] testToSQL_data() {
 		Table tableToto = new Table(null, "Toto");
 		Column colTotoA = tableToto.addColumn("a", String.class);
@@ -51,9 +46,9 @@ public class SelectBuilderTest {
 				{ new Select().add(min(colTotoA), max(colTotoA)), tableAliases, "min(to.a), max(to.a)" },
 		};
 	}
-
-	@Test
-	@UseDataProvider("testToSQL_data")
+	
+	@ParameterizedTest
+	@MethodSource("testToSQL_data")
 	public void testToSQL(Select select, Map<Table, String> tableAliases, String expected) {
 		SelectBuilder testInstance = new SelectBuilder(select, tableAliases);
 		assertEquals(expected, testInstance.toSQL());

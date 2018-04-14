@@ -40,11 +40,11 @@ import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.test.JdbcConnectionProvider;
 import org.gama.stalactite.test.PairSetList;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Matchers.anyInt;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
@@ -70,13 +70,13 @@ public class JoinedTablesPersisterTest {
 	private Column rightJoinColumn;
 	private Persister<Toto, StatefullIdentifier<Integer>> persister2;
 	
-	@Before
+	@BeforeEach
 	public void setUp() throws SQLException {
 		initData();
 		initTest();
 	}
 	
-	protected void initData() throws SQLException {
+	protected void initData() {
 		Field fieldId = Reflections.getField(Toto.class, "id");
 		Field fieldA = Reflections.getField(Toto.class, "a");
 		Field fieldB = Reflections.getField(Toto.class, "b");

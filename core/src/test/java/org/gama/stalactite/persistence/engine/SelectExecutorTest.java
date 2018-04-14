@@ -10,10 +10,10 @@ import org.gama.lang.collection.Iterables;
 import org.gama.sql.test.HSQLDBInMemoryDataSource;
 import org.gama.stalactite.persistence.sql.dml.DMLGenerator;
 import org.gama.stalactite.test.PairSetList;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -28,7 +28,7 @@ public class SelectExecutorTest extends AbstractDMLExecutorTest {
 	
 	private SelectExecutor<Toto, Integer> testInstance;
 	
-	@Before
+	@BeforeEach
 	public void setUp() throws SQLException {
 		dataSet = new DataSet();
 		DMLGenerator dmlGenerator = new DMLGenerator(dataSet.dialect.getColumnBinderRegistry(), new DMLGenerator.CaseSensitiveSorter());

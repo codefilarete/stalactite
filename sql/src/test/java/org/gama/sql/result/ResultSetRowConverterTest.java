@@ -8,12 +8,12 @@ import org.gama.lang.bean.Objects;
 import org.gama.lang.collection.Arrays;
 import org.gama.lang.collection.Maps;
 import org.gama.lang.trace.IncrementableInt;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import static org.gama.sql.binder.DefaultResultSetReaders.INTEGER_READER;
 import static org.gama.sql.binder.DefaultResultSetReaders.STRING_READER;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotSame;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotSame;
 
 /**
  * @author Guillaume Mary

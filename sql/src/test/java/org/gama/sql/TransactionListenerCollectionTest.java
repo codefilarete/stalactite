@@ -2,11 +2,10 @@ package org.gama.sql;
 
 import java.sql.Savepoint;
 
-import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.gama.lang.trace.IncrementableInt;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
  * @author Guillaume Mary
@@ -101,5 +100,22 @@ public class TransactionListenerCollectionTest {
 		// no more increment
 		testInstance.afterRollback();
 		assertEquals(3, incrementableInt.getValue());
+	}
+	
+	private static class MutableBoolean {
+		
+		private boolean value;
+		
+		public boolean booleanValue() {
+			return value;
+		}
+		
+		public void setTrue() {
+			this.value = true;
+		}
+		
+		public void setFalse() {
+			this.value = false;
+		}
 	}
 }

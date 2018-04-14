@@ -9,10 +9,10 @@ import java.util.Set;
 
 import org.gama.lang.collection.Arrays;
 import org.gama.sql.test.HSQLDBInMemoryDataSource;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
  * @author Guillaume Mary
@@ -21,7 +21,7 @@ public class HSQLDBParameterBindersTest {
 	
 	private DataSource dataSource;
 	
-	@Before
+	@BeforeEach
 	public void createDataSource() {
 		dataSource = new HSQLDBInMemoryDataSource();
 	}
