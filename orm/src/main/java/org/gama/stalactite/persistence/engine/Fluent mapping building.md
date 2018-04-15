@@ -38,4 +38,8 @@ FluentMappingBuilder.from(MyEntity.class, StatefullIdentifier.class)
 	.build(persistenceContext);
 </pre>
 
-For some more examples you can have a look at tests.
+For some more examples you can have a look at those tests :
+- [Cascading one to one](FluentMappingBuilderCascadeTest.java)
+- [Cascading one to many](FluentMappingBuilderCollectionCascadeTest.java)
+- [Versioning](FluentMappingBuilderVersioningTest.java)
+- [Foreign key](FluentMappingBuilderForeignKeyTest.java)

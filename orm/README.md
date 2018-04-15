@@ -1,0 +1,7 @@
+# ORM module of Stalactite
+
+This module aims at managing relational mapping between Beans and RDBMS tables 
+
+Main entry point of this module is [FluentMappingBuilder](src/main/java/org/gama/stalactite/persistence/engine/Fluent mapping building.md)
+
+Note that this module is clearly not finished because it lacks a lot of features and have some hard limitations such as identifier policy.
