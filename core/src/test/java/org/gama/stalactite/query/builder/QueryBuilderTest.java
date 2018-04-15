@@ -45,6 +45,8 @@ public class QueryBuilderTest {
 					"select to.a, to.b, ta.a, ta.b from Toto as to cross join Tata as ta" },
 				{ select(colTotoA, colTataB).from(tableToto, tableTata, "x = y"),
 					"select Toto.a, Tata.b from Toto inner join Tata on x = y" },
+				{ select(colTotoA, colTataB).from(colTotoA, "toto", colTataB, "tata"),
+						"select toto.a, tata.b from Toto as toto inner join Tata as tata on toto.a = tata.b" },
 				{ select(colTotoA, colTataB).from(tableToto, tableTata, "x = y").where(colTotoB, "= 1"),
 					"select Toto.a, Tata.b from Toto inner join Tata on x = y where Toto.b = 1" },
 				{ select(colTotoA, colTataB).from(tableToto, tableTata, "x = y").where(colTotoB, "= 1")
@@ -137,7 +139,7 @@ public class QueryBuilderTest {
 	@MethodSource("testToPreparedSQL_data")
 	public void testToPreparedSQL(QueryProvider queryProvider,
 								  String expectedPreparedStatement, Map<Integer, Object> expectedValues) {
-		QueryBuilder testInstance = new QueryBuilder(queryProvider.getSelectQuery());
+		QueryBuilder testInstance = new QueryBuilder(queryProvider);
 		ColumnBinderRegistry parameterBinderRegistry = new ColumnBinderRegistry();
 		PreparedSQL preparedSQL = testInstance.toPreparedSQL(parameterBinderRegistry);
 		assertEquals(expectedPreparedStatement, preparedSQL.getSQL());

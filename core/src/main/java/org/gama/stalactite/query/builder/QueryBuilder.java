@@ -1,5 +1,7 @@
 package org.gama.stalactite.query.builder;
 
+import javax.annotation.Nonnull;
+
 import org.gama.lang.StringAppender;
 import org.gama.sql.dml.PreparedSQL;
 import org.gama.stalactite.persistence.sql.dml.binder.ColumnBinderRegistry;
@@ -13,6 +15,7 @@ import org.gama.stalactite.query.model.OrderBy;
 import org.gama.stalactite.query.model.OrderBy.OrderedColumn;
 import org.gama.stalactite.query.model.OrderByChain.Order;
 import org.gama.stalactite.query.model.Query;
+import org.gama.stalactite.query.model.QueryProvider;
 
 /**
  * @author Guillaume Mary
@@ -26,7 +29,21 @@ public class QueryBuilder implements SQLBuilder, PreparedSQLBuilder {
 	private final WhereBuilder whereBuilder;
 	private final WhereBuilder havingBuilder;
 	
-	public QueryBuilder(Query query) {
+	/**
+	 * Constructor to be combined with result of {@link Query} methods for a short writing, because it avoids calling {@link QueryProvider#getSelectQuery()} 
+	 * 
+	 * @param query a {@link QueryProvider}
+	 */
+	public QueryBuilder(@Nonnull QueryProvider query) {
+		this(query.getSelectQuery());
+	}
+	
+	/**
+	 * Main constructor
+	 * 
+	 * @param query a {@link Query}
+	 */
+	public QueryBuilder(@Nonnull Query query) {
 		this.dmlNameProvider = new DMLNameProvider(query.getFromSurrogate().getTableAliases());
 		this.query = query;
 		this.selectBuilder = new SelectBuilder(query.getSelectSurrogate(), dmlNameProvider);

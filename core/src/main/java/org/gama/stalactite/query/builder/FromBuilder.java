@@ -2,8 +2,9 @@ package org.gama.stalactite.query.builder;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Comparator;
-import java.util.SortedSet;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Set;
 import java.util.TreeSet;
 
 import org.gama.lang.StringAppender;
@@ -12,12 +13,12 @@ import org.gama.lang.bean.Objects;
 import org.gama.lang.collection.Iterables;
 import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.query.model.From;
+import org.gama.stalactite.query.model.From.AbstractJoin;
+import org.gama.stalactite.query.model.From.AbstractJoin.JoinDirection;
 import org.gama.stalactite.query.model.From.AliasedTable;
 import org.gama.stalactite.query.model.From.ColumnJoin;
 import org.gama.stalactite.query.model.From.CrossJoin;
 import org.gama.stalactite.query.model.From.IJoin;
-import org.gama.stalactite.query.model.From.AbstractJoin;
-import org.gama.stalactite.query.model.From.AbstractJoin.JoinDirection;
 import org.gama.stalactite.query.model.From.RawTableJoin;
 
 /**
@@ -42,40 +43,46 @@ public class FromBuilder implements SQLBuilder {
 			// invalid SQL
 			throw new IllegalArgumentException("Empty from");
 		} else {
-			Comparator<AliasedTable> aliasedTableComparator = (t1, t2) -> toString(t1).compareToIgnoreCase(toString(t2));
-			SortedSet<AliasedTable> addedTables = new TreeSet<>(aliasedTableComparator);
+			Map<Table, Set<String>> addedTables = new HashMap<>();
 			for (IJoin iJoin : from) {
 				if (iJoin instanceof AbstractJoin) {
 					AbstractJoin join = (AbstractJoin) iJoin;
-					AliasedTable aliasedTable;
+					AliasedTable leftTable = join.getLeftTable();
 					if (addedTables.isEmpty()) {
-						addedTables.add(join.getLeftTable());
+						Set<String> aliases = addedTables.computeIfAbsent(leftTable.getTable(), k -> new TreeSet<>(String.CASE_INSENSITIVE_ORDER));
+						if (!Strings.isEmpty(leftTable.getAlias())) {
+							aliases.add(leftTable.getAlias());
+						}
 					}
 					
-					Collection<AliasedTable> nonAddedTable = new ArrayList<>(); 
-					if (addedTables.contains(join.getLeftTable())) {
-						nonAddedTable.add(join.getRightTable());
+					Collection<AliasedTable> nonAddedTable = new ArrayList<>();
+					AliasedTable rightTable = join.getRightTable();
+					if (!addedTables.containsKey(leftTable.getTable())
+							|| (!Strings.isEmpty(leftTable.getAlias()) && addedTables.get(leftTable.getTable()).contains(leftTable.getAlias()))) {
+						nonAddedTable.add(rightTable);
 					} else {
-						if (addedTables.contains(join.getRightTable())) {
-							nonAddedTable.add(join.getLeftTable());
+						if (!addedTables.containsKey(rightTable.getTable())
+								|| (!Strings.isEmpty(rightTable.getAlias()) && addedTables.get(rightTable.getTable()).contains(rightTable.getAlias()))) {
+							nonAddedTable.add(leftTable);
 						}
 					}
 					if (nonAddedTable.isEmpty()) {
 						throw new UnsupportedOperationException("Join is declared on non-added tables : "
-								+ toString(join.getLeftTable()) + " / " + toString(join.getRightTable()));
+								+ toString(leftTable) + " / " + toString(rightTable));
 					} else if (nonAddedTable.size() == 2) {
 						throw new UnsupportedOperationException("Join is declared on already-added tables : "
-								+ toString(join.getLeftTable()) + " / " + toString(join.getRightTable()));
-					} else {
-						aliasedTable = Iterables.first(nonAddedTable);
+								+ toString(leftTable) + " / " + toString(rightTable));
 					}
 					
-					join.getRightTable();
 					sql.cat(join);
-					addedTables.add(aliasedTable);
+					AliasedTable aliasedTable = Iterables.first(nonAddedTable);
+					addedTables.computeIfAbsent(aliasedTable.getTable(), k -> new TreeSet<>(String.CASE_INSENSITIVE_ORDER))
+							.add(Objects.preventNull(aliasedTable.getAlias()));
+					
 				} else if (iJoin instanceof CrossJoin) {
 					sql.cat(iJoin);
-					addedTables.add(iJoin.getLeftTable());
+					addedTables.computeIfAbsent(iJoin.getLeftTable().getTable(), k -> new TreeSet<>(String.CASE_INSENSITIVE_ORDER))
+							.add(Objects.preventNull(iJoin.getLeftTable().getAlias()));
 				}
 			}
 		}
