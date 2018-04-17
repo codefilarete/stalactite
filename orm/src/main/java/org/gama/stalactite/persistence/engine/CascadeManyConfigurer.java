@@ -9,18 +9,19 @@ import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import org.danekja.java.util.function.serializable.SerializableBiConsumer;
 import org.gama.lang.Reflections;
 import org.gama.lang.collection.Iterables;
 import org.gama.reflection.Accessors;
 import org.gama.reflection.IMutator;
-import org.gama.spy.MethodReferenceCapturer;
+import org.gama.reflection.MethodReferenceCapturer;
 import org.gama.stalactite.persistence.engine.CascadeOption.CascadeType;
 import org.gama.stalactite.persistence.engine.FluentMappingBuilder.CascadeMany;
 import org.gama.stalactite.persistence.engine.FluentMappingBuilder.SetPersistedFlagAfterInsertListener;
 import org.gama.stalactite.persistence.engine.cascade.AfterInsertCollectionCascader;
 import org.gama.stalactite.persistence.engine.cascade.AfterUpdateCollectionCascader;
-import org.gama.stalactite.persistence.engine.cascade.BeforeDeleteCollectionCascader;
 import org.gama.stalactite.persistence.engine.cascade.BeforeDeleteByIdCollectionCascader;
+import org.gama.stalactite.persistence.engine.cascade.BeforeDeleteCollectionCascader;
 import org.gama.stalactite.persistence.engine.cascade.JoinedStrategiesSelect;
 import org.gama.stalactite.persistence.engine.cascade.JoinedTablesPersister;
 import org.gama.stalactite.persistence.engine.listening.IInsertListener;
@@ -35,6 +36,10 @@ import org.gama.stalactite.persistence.structure.Column;
  * @author Guillaume Mary
  */
 public class CascadeManyConfigurer<T extends Identified, I extends Identified, J extends StatefullIdentifier, C extends Collection<I>> {
+	
+	/** {@link OneToManyOptions#mappedBy(SerializableBiConsumer)} method signature (for printing purpose) to help find usage by avoiding hard "mappedBy" String */
+	private static final String MAPPED_BY_SIGNATURE = Reflections.toString(new MethodReferenceCapturer()
+			.findMethod((SerializableBiConsumer<OneToManyOptions, SerializableBiConsumer>) OneToManyOptions::mappedBy));
 	
 	private final IdentifiedCollectionDiffer differ = new IdentifiedCollectionDiffer();
 	
@@ -53,13 +58,12 @@ public class CascadeManyConfigurer<T extends Identified, I extends Identified, J
 		Function targetProvider = cascadeMany.getTargetProvider();
 		if (cascadeMany.getReverseMember() == null) {
 			throw new NotYetSupportedOperationException("Collection mapping without reverse property is not (yet) supported,"
-					+ " please used \"mappedBy\" option do declare one for "
-					+ Reflections.toString(new MethodReferenceCapturer<>(localPersister.getMappingStrategy().getClassToPersist()).capture(targetProvider)));
+					+ " please used \"" + MAPPED_BY_SIGNATURE + "\" option do declare one for " 
+					+ Reflections.toString(cascadeMany.getMember()));
 		}
 		
-		Class<? extends Identified> targetClass = cascadeMany.getPersister().getMappingStrategy().getClassToPersist();
-		MethodReferenceCapturer methodReferenceCapturer = new MethodReferenceCapturer<>(targetClass);
-		Method reverseMember = methodReferenceCapturer.capture(cascadeMany.getReverseMember());
+		MethodReferenceCapturer methodReferenceCapturer = new MethodReferenceCapturer();
+		Method reverseMember = methodReferenceCapturer.findMethod(cascadeMany.getReverseMember());
 		Column rightColumn = targetPersister.getMappingStrategy().getDefaultMappingStrategy().getPropertyToColumn().get(Accessors.of(reverseMember));
 		if (rightColumn == null) {
 			throw new NotYetSupportedOperationException("Reverse side mapping is not declared, please add the mapping of a "

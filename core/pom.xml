@@ -53,11 +53,6 @@
 			<version>${slf4j-api.version}</version>
 		</dependency>
 		<dependency>
-			<groupId>org.gama</groupId>
-			<artifactId>spy</artifactId>
-			<version>${project.version}</version>
-		</dependency>
-		<dependency>
 			<groupId>org.gama.stalactite</groupId>
 			<artifactId>sql</artifactId>
 			<version>${project.version}</version>

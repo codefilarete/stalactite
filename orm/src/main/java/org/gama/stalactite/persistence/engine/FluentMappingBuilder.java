@@ -305,7 +305,7 @@ public class FluentMappingBuilder<T extends Identified, I extends StatefullIdent
 		IFluentMappingBuilderOneToManyOptions<T, I, O> proxy = new MethodDispatcher()
 				.redirect(OneToManyOptions.class, new OneToManyOptions() {
 					@Override
-					public IFluentMappingBuilderOneToManyOptions mappedBy(BiConsumer reverseLink) {
+					public IFluentMappingBuilderOneToManyOptions mappedBy(SerializableBiConsumer reverseLink) {
 						cascadeMany.reverseMember = reverseLink;
 						return finalHack[0];
 					}
@@ -691,7 +691,7 @@ public class FluentMappingBuilder<T extends Identified, I extends StatefullIdent
 		private final Persister<O, J> persister;
 		private final Method member;
 		private final Class<C> collectionTargetClass;
-		private BiConsumer<O, SRC> reverseMember;
+		private SerializableBiConsumer<O, SRC> reverseMember;
 		private final Set<CascadeType> cascadeTypes = new HashSet<>();
 		/** Should we delete removed entities from the Collection (for UPDATE cascade) */
 		public boolean deleteRemoved = false;
@@ -728,7 +728,7 @@ public class FluentMappingBuilder<T extends Identified, I extends StatefullIdent
 			return collectionTargetClass;
 		}
 		
-		public BiConsumer<O, SRC> getReverseMember() {
+		public SerializableBiConsumer<O, SRC> getReverseMember() {
 			return reverseMember;
 		}
 		

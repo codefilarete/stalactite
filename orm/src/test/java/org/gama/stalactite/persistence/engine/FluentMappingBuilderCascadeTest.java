@@ -4,9 +4,9 @@ import javax.sql.DataSource;
 import java.sql.BatchUpdateException;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.function.Predicate;
 
 import org.gama.lang.collection.Maps;
-import org.gama.spy.matcher.Matcher;
 import org.gama.sql.binder.DefaultParameterBinders;
 import org.gama.sql.result.RowIterator;
 import org.gama.sql.test.HSQLDBInMemoryDataSource;
@@ -105,9 +105,7 @@ public class FluentMappingBuilderCascadeTest {
 		try {
 			executable.execute();
 		} catch (Throwable actualException) {
-			if (throwableMatcher.matches(actualException)) {
-				return (T) actualException;
-			} else {
+			if (!throwableMatcher.test(actualException)) {
 				throw new AssertionFailedError("Unexpected exception type thrown", actualException);
 			}
 		}
