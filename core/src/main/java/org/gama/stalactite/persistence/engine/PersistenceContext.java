@@ -59,7 +59,7 @@ public class PersistenceContext {
 		return dialect;
 	}
 	
-	public <T> ClassMappingStrategy<T, Object> getMappingStrategy(Class<T> aClass) {
+	public <T, I> ClassMappingStrategy<T, I> getMappingStrategy(Class<T> aClass) {
 		return mappingStrategies.get(aClass);
 	}
 	
@@ -100,7 +100,7 @@ public class PersistenceContext {
 	 * @return never null
 	 * @throws IllegalArgumentException if the class is not mapped
 	 */
-	public <T> Persister<T, ?> getPersister(Class<T> clazz) {
+	public <T, I> Persister<T, I> getPersister(Class<T> clazz) {
 		return persisterCache.get(clazz);
 	}
 	
@@ -108,12 +108,12 @@ public class PersistenceContext {
 		persisterCache.put(persister.getMappingStrategy().getClassToPersist(), persister);
 	}
 	
-	protected <T> Persister<T, ?> newPersister(Class<T> clazz) {
+	protected <T, I> Persister<T, I> newPersister(Class<T> clazz) {
 		return new Persister<>(this, ensureMappedClass(clazz));
 	}
 	
-	protected <T> ClassMappingStrategy<T, Object> ensureMappedClass(Class<T> clazz) {
-		ClassMappingStrategy<T, Object> mappingStrategy = getMappingStrategy(clazz);
+	protected <T, I> ClassMappingStrategy<T, I> ensureMappedClass(Class<T> clazz) {
+		ClassMappingStrategy<T, I> mappingStrategy = getMappingStrategy(clazz);
 		if (mappingStrategy == null) {
 			throw new IllegalArgumentException("Unmapped entity " + clazz);
 		} else {
@@ -228,10 +228,10 @@ public class PersistenceContext {
 		public int execute(Map<Column, Object> values) {
 			UpdateStatement updateStatement = new UpdateCommandBuilder(this).toStatement(getDialect().getColumnBinderRegistry());
 			values.forEach(updateStatement::setValue);
-			WriteOperation<Integer> writeOperation = new WriteOperation<>(updateStatement, connectionProvider);
-			
-			writeOperation.setValues(updateStatement.getValues());
-			return writeOperation.execute();
+			try (WriteOperation<Integer> writeOperation = new WriteOperation<>(updateStatement, connectionProvider)) {
+				writeOperation.setValues(updateStatement.getValues());
+				return writeOperation.execute();
+			}
 		}
 	}
 	
@@ -265,10 +265,10 @@ public class PersistenceContext {
 		public int execute(Map<Column, Object> values) {
 			InsertStatement insertStatement = new InsertCommandBuilder(this).toStatement(getDialect().getColumnBinderRegistry());
 			values.forEach(insertStatement::setValue);
-			WriteOperation<Integer> writeOperation = new WriteOperation<>(insertStatement, connectionProvider);
-			
-			writeOperation.setValues(insertStatement.getValues());
-			return writeOperation.execute();
+			try (WriteOperation<Integer> writeOperation = new WriteOperation<>(insertStatement, connectionProvider)) {
+				writeOperation.setValues(insertStatement.getValues());
+				return writeOperation.execute();
+			}
 		}
 	}
 	
@@ -285,10 +285,10 @@ public class PersistenceContext {
 		 */
 		public int execute() {
 			PreparedSQL deleteStatement = new DeleteCommandBuilder(this).toStatement(getDialect().getColumnBinderRegistry());
-			WriteOperation<Integer> writeOperation = new WriteOperation<>(deleteStatement, connectionProvider);
-			
-			writeOperation.setValues(deleteStatement.getValues());
-			return writeOperation.execute();
+			try (WriteOperation<Integer> writeOperation = new WriteOperation<>(deleteStatement, connectionProvider)) {
+				writeOperation.setValues(deleteStatement.getValues());
+				return writeOperation.execute();
+			}
 		}
 	}
 }

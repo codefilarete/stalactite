@@ -121,11 +121,15 @@ public abstract class SQLOperation<ParamType> implements AutoCloseable {
 	/**
 	 * Closes internal {@link PreparedStatement}
 	 * 
-	 * @throws Exception this of the {@link PreparedStatement#close()} method
+	 * @throws SQLException this of the {@link PreparedStatement#close()} method
 	 */
 	@Override
-	public void close() throws Exception {
-		this.preparedStatement.close();
+	public void close() {
+		try {
+			this.preparedStatement.close();
+		} catch (SQLException e) {
+			LOGGER.warn("Can't close statement properly", e);
+		}
 	}
 	
 	/**

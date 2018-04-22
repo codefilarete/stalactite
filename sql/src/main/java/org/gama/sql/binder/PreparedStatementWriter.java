@@ -4,8 +4,6 @@ import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.function.Function;
 
-import sun.security.krb5.Checksum;
-
 /**
  * An interface that allows to use {@link PreparedStatement#setXXX(...)} methods to be used as method reference.
  * 
