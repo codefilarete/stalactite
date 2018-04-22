@@ -101,12 +101,15 @@ public class FluentMappingBuilderCascadeTest {
 		);
 	}
 	
-	private static <T extends Throwable> T assertThrowsMathes(Executable executable, Matcher<Throwable> throwableMatcher) {
+	private static <T extends Throwable> void assertThrowsMathes(Executable executable, Predicate<Throwable> throwableMatcher) {
 		try {
 			executable.execute();
 		} catch (Throwable actualException) {
 			if (!throwableMatcher.test(actualException)) {
 				throw new AssertionFailedError("Unexpected exception type thrown", actualException);
+			} else {
+				// everything is fine, we have to break execution flow else we'll end up on the "no exception thrown"
+				return;
 			}
 		}
 		throw new AssertionFailedError("Expected exception to be thrown, but nothing was thrown.");
