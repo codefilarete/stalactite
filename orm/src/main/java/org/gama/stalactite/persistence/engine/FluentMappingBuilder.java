@@ -11,7 +11,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
-import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -307,6 +306,12 @@ public class FluentMappingBuilder<T extends Identified, I extends StatefullIdent
 					@Override
 					public IFluentMappingBuilderOneToManyOptions mappedBy(SerializableBiConsumer reverseLink) {
 						cascadeMany.reverseMember = reverseLink;
+						return finalHack[0];
+					}
+					
+					@Override
+					public IFluentMappingBuilderOneToManyOptions mappedBy(Column reverseLink) {
+						cascadeMany.reverseColumn = reverseLink;
 						return finalHack[0];
 					}
 					
@@ -646,6 +651,7 @@ public class FluentMappingBuilder<T extends Identified, I extends StatefullIdent
 		private final Method member;
 		private final Persister<O, J> persister;
 		private final Set<CascadeType> cascadeTypes = new HashSet<>();
+		private Column reverseSide;
 		private boolean nullable = true;
 		
 		private CascadeOne(Function<SRC, O> targetProvider, Persister<O, J> persister, Method method) {
@@ -683,6 +689,14 @@ public class FluentMappingBuilder<T extends Identified, I extends StatefullIdent
 		public boolean isNullable() {
 			return nullable;
 		}
+		
+		public Column getReverseSide() {
+			return reverseSide;
+		}
+		
+		public void setReverseSide(Column reverseSide) {
+			this.reverseSide = reverseSide;
+		}
 	}
 	
 	public static class CascadeMany<SRC extends Identified, O extends Identified, J extends StatefullIdentifier, C extends Collection<O>> {
@@ -692,6 +706,7 @@ public class FluentMappingBuilder<T extends Identified, I extends StatefullIdent
 		private final Method member;
 		private final Class<C> collectionTargetClass;
 		private SerializableBiConsumer<O, SRC> reverseMember;
+		private Column<SRC> reverseColumn;
 		private final Set<CascadeType> cascadeTypes = new HashSet<>();
 		/** Should we delete removed entities from the Collection (for UPDATE cascade) */
 		public boolean deleteRemoved = false;
@@ -699,7 +714,7 @@ public class FluentMappingBuilder<T extends Identified, I extends StatefullIdent
 		private CascadeMany(Function<SRC, C> targetProvider, Persister<O, J> persister, Method method) {
 			this.targetProvider = targetProvider;
 			this.persister = persister;
-			// looking for the target type because its necessary to find its persister (and other objects). Done thru a method capturer (weird thing).
+			// looking for the target type because its necessary to find its persister (and other objects). Done throught a method capturer (weird thing).
 			this.member = method;
 			this.collectionTargetClass = (Class<C>) Reflections.javaBeanTargetType(member);
 		}
@@ -707,7 +722,7 @@ public class FluentMappingBuilder<T extends Identified, I extends StatefullIdent
 		private CascadeMany(Function<SRC, C> targetProvider, Persister<O, J> persister, Class<C> collectionTargetClass, Method method) {
 			this.targetProvider = targetProvider;
 			this.persister = persister;
-			// looking for the target type because its necesary to find its persister (and other objects). Done thru a method capturer (weird thing).
+			// looking for the target type because its necesary to find its persister (and other objects). Done throught a method capturer (weird thing).
 			this.member = method;
 			this.collectionTargetClass = collectionTargetClass;
 		}
@@ -730,6 +745,10 @@ public class FluentMappingBuilder<T extends Identified, I extends StatefullIdent
 		
 		public SerializableBiConsumer<O, SRC> getReverseMember() {
 			return reverseMember;
+		}
+		
+		public Column<SRC> getReverseColumn() {
+			return reverseColumn;
 		}
 		
 		public Set<CascadeType> getCascadeTypes() {

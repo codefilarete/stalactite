@@ -6,6 +6,8 @@ import java.sql.SQLException;
 
 import org.gama.lang.collection.Arrays;
 import org.gama.lang.collection.Iterables;
+import org.gama.lang.function.ThrowingSupplier;
+import org.gama.sql.ConnectionProvider;
 import org.gama.sql.binder.DefaultParameterBinders;
 import org.gama.sql.test.HSQLDBInMemoryDataSource;
 import org.gama.stalactite.persistence.engine.FluentMappingBuilder.IdentifierPolicy;
@@ -18,10 +20,13 @@ import org.gama.stalactite.persistence.id.Identifier;
 import org.gama.stalactite.persistence.id.PersistedIdentifier;
 import org.gama.stalactite.persistence.id.provider.LongProvider;
 import org.gama.stalactite.persistence.sql.HSQLDBDialect;
+import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.test.JdbcConnectionProvider;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import static java.util.stream.Collectors.toSet;
 import static org.gama.stalactite.persistence.engine.CascadeOption.CascadeType.DELETE;
@@ -38,10 +43,12 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 public class FluentMappingBuilderCollectionCascadeTest {
 	
 	private static final HSQLDBDialect DIALECT = new HSQLDBDialect();
-	private DataSource dataSource = new HSQLDBInMemoryDataSource();
+	private static IFluentMappingBuilderColumnOptions<City, PersistedIdentifier<Long>> CITY_MAPPING_BUILDER;
+	private final DataSource dataSource = new HSQLDBInMemoryDataSource();
+	private final ConnectionProvider connectionProvider = new JdbcConnectionProvider(dataSource);
 	private Persister<City, PersistedIdentifier<Long>> cityPersister;
 	private PersistenceContext persistenceContext;
-	
+
 	@BeforeAll
 	public static void initBinders() {
 		// binder creation for our identifier
@@ -50,17 +57,19 @@ public class FluentMappingBuilderCollectionCascadeTest {
 		DIALECT.getColumnBinderRegistry().register((Class) Identified.class, Identified.identifiedBinder(DefaultParameterBinders.LONG_PRIMITIVE_BINDER));
 		DIALECT.getJavaTypeToSqlTypeMapping().put(Identified.class, "int");
 	}
-	
+
 	@BeforeEach
-	public void initTest() {
-		persistenceContext = new PersistenceContext(new JdbcConnectionProvider(dataSource), DIALECT);
+	public void beforeTest() {
+		persistenceContext = new PersistenceContext(connectionProvider, DIALECT);
 		
-		IFluentMappingBuilderColumnOptions<City, PersistedIdentifier<Long>> personMappingBuilder = FluentMappingBuilder.from(City.class,
+		// We need to rebuild our cityPersister before each test because some of them alter it on country relationship.
+		// So schema contains FK twice with same name, ending in duplicate FK name exception
+		CITY_MAPPING_BUILDER = FluentMappingBuilder.from(City.class,
 				(Class<PersistedIdentifier<Long>>) (Class) PersistedIdentifier.class)
 				.add(City::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.add(City::getName)
-				.add(City::getCountry);	// allow to declare the owner column of the relation
-		cityPersister = personMappingBuilder.build(persistenceContext);
+				.add(City::getCountry);
+		cityPersister = CITY_MAPPING_BUILDER.build(persistenceContext);
 	}
 	
 	@Test
@@ -95,18 +104,54 @@ public class FluentMappingBuilderCollectionCascadeTest {
 		assertFalse(resultSet.next());
 	}
 	
-	@Test
-	public void testCascade_oneToMany_insert() throws SQLException {
-		// mapping building thantks to fluent API
-		Persister<Country, Identifier<Long>> countryPersister = FluentMappingBuilder.from(Country.class, (Class<Identifier<Long>>) (Class) PersistedIdentifier.class)
-				.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
-				.add(Country::getName)
-				.add(Country::getDescription)
-				.addOneToMany(Country::getCities, cityPersister).mappedBy(City::setCountry).cascade(INSERT, SELECT)
-				.build(persistenceContext);
+	public static Object[][] oneToManyInsertData() {
+		// we recreate all the context of our test, else we end up in a static/non-static variable and method conflict because @MethodSource
+		// needs a static provider, whereas a majority of our variables are class attributes, and database schema must be erased between tests
+		// to avoid duplicate table + FK name
+		return new Object[][] {
+				{ (ThrowingSupplier<Persister<Country, Identifier<Long>>, SQLException>) () -> {
+					PersistenceContext persistenceContext = new PersistenceContext(new JdbcConnectionProvider(new HSQLDBInMemoryDataSource()), DIALECT);
+					Persister<City, PersistedIdentifier<Long>> cityPersister = CITY_MAPPING_BUILDER.build(persistenceContext);
+					Persister<Country, Identifier<Long>> countryPersister = FluentMappingBuilder.from(Country.class, (Class<Identifier<Long>>) (Class) PersistedIdentifier.class)
+							.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
+							.add(Country::getName)
+							.add(Country::getDescription)
+							.addOneToMany(Country::getCities, cityPersister).mappedBy(City::setCountry).cascade(INSERT, SELECT)
+							.build(persistenceContext);
+					DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+					try {
+						ddlDeployer.deployDDL();
+					} catch (SQLException e) {
+						throw new RuntimeException(e);
+					}
+					return countryPersister;
+				}},
+				{ (ThrowingSupplier<Persister<Country, Identifier<Long>>, SQLException>) () -> {
+					PersistenceContext persistenceContext = new PersistenceContext(new JdbcConnectionProvider(new HSQLDBInMemoryDataSource()), DIALECT);
+					Persister<City, PersistedIdentifier<Long>> cityPersister = CITY_MAPPING_BUILDER.build(persistenceContext);
+					Column<Country> countryId = cityPersister.getTargetTable().mapColumnsOnName().get("CountryId");
+					Persister<Country, Identifier<Long>> countryPersister = FluentMappingBuilder.from(Country.class, (Class<Identifier<Long>>) (Class) PersistedIdentifier.class)
+							.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
+							.add(Country::getName)
+							.add(Country::getDescription)
+							.addOneToMany(Country::getCities, cityPersister).mappedBy(countryId).cascade(INSERT, SELECT)
+							.build(persistenceContext);
+					DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+					try {
+						ddlDeployer.deployDDL();
+					} catch (SQLException e) {
+						throw new RuntimeException(e);
+					}
+					return countryPersister;
+				}},
+		};
+	}
+	
+	@ParameterizedTest
+	@MethodSource("oneToManyInsertData")
+	public void testCascade_oneToMany_insert(ThrowingSupplier<Persister<Country, Identifier<Long>>, SQLException> a) throws SQLException {
 		
-		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
-		ddlDeployer.deployDDL();
+		Persister<Country, Identifier<Long>> countryPersister = a.get();
 		
 		LongProvider countryIdProvider = new LongProvider();
 		Country dummyCountry = new Country(countryIdProvider.giveNewIdentifier());
@@ -144,7 +189,6 @@ public class FluentMappingBuilderCollectionCascadeTest {
 	
 	@Test
 	public void testCascade_oneToMany_update() throws SQLException {
-		// mapping building thantks to fluent API
 		Persister<Country, Identifier<Long>> countryPersister = FluentMappingBuilder.from(Country.class, (Class<Identifier<Long>>) (Class) PersistedIdentifier.class)
 				.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.add(Country::getName)
@@ -188,15 +232,11 @@ public class FluentMappingBuilderCollectionCascadeTest {
 	
 	@Test
 	public void testCascade_oneToMany_update_deleteRemoved() throws SQLException {
-		// mapping building thantks to fluent API
 		Persister<Country, Identifier<Long>> countryPersister = FluentMappingBuilder.from(Country.class, (Class<Identifier<Long>>) (Class) PersistedIdentifier.class)
 				.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.add(Country::getName)
 				.add(Country::getDescription)
-				.addOneToMany(Country::getCities, cityPersister)
-					.mappedBy(City::setCountry)
-					.cascade(INSERT, UPDATE, SELECT)
-					.deleteRemoved()
+				.addOneToMany(Country::getCities, cityPersister).mappedBy(City::setCountry).cascade(INSERT, UPDATE, SELECT).deleteRemoved()
 				.build(persistenceContext);
 		
 		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
@@ -235,7 +275,6 @@ public class FluentMappingBuilderCollectionCascadeTest {
 	
 	@Test
 	public void testCascade_oneToMany_delete() throws SQLException {
-		// mapping building thantks to fluent API
 		Persister<Country, Identifier<Long>> countryPersister = FluentMappingBuilder.from(Country.class, (Class<Identifier<Long>>) (Class) PersistedIdentifier.class)
 				.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.add(Country::getName)
@@ -266,7 +305,6 @@ public class FluentMappingBuilderCollectionCascadeTest {
 	
 	@Test
 	public void testCascade_multiple_oneToMany_update() throws SQLException {
-		// mapping building thantks to fluent API
 		IFluentMappingBuilderColumnOptions<State, PersistedIdentifier<Long>> stateMappingBuilder = FluentMappingBuilder.from(State.class,
 				(Class<PersistedIdentifier<Long>>) (Class) PersistedIdentifier.class)
 				.add(State::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
@@ -279,13 +317,8 @@ public class FluentMappingBuilderCollectionCascadeTest {
 				.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.add(Country::getName)
 				.add(Country::getDescription)
-				.addOneToMany(Country::getCities, cityPersister)
-					.mappedBy(City::setCountry)
-					.cascade(INSERT, UPDATE, SELECT)
-					.deleteRemoved()
-				.addOneToMany(Country::getStates, statePersister)
-					.mappedBy(State::setCountry)
-					.cascade(INSERT, UPDATE, SELECT)
+				.addOneToMany(Country::getCities, cityPersister).mappedBy(City::setCountry).cascade(INSERT, UPDATE, SELECT).deleteRemoved()
+				.addOneToMany(Country::getStates, statePersister).mappedBy(State::setCountry).cascade(INSERT, UPDATE, SELECT)
 				.build(persistenceContext);
 		
 		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);

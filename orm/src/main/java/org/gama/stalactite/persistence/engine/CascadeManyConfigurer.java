@@ -38,8 +38,13 @@ import org.gama.stalactite.persistence.structure.Column;
 public class CascadeManyConfigurer<T extends Identified, I extends Identified, J extends StatefullIdentifier, C extends Collection<I>> {
 	
 	/** {@link OneToManyOptions#mappedBy(SerializableBiConsumer)} method signature (for printing purpose) to help find usage by avoiding hard "mappedBy" String */
-	private static final String MAPPED_BY_SIGNATURE = Reflections.toString(new MethodReferenceCapturer()
-			.findMethod((SerializableBiConsumer<OneToManyOptions, SerializableBiConsumer>) OneToManyOptions::mappedBy));
+	private static final String MAPPED_BY_SIGNATURE;
+	
+	static {
+		Method mappedByMethod = new MethodReferenceCapturer()
+				.findMethod((SerializableBiConsumer<OneToManyOptions, SerializableBiConsumer>) OneToManyOptions::mappedBy);
+		MAPPED_BY_SIGNATURE = mappedByMethod.getDeclaringClass().getSimpleName() + "." + mappedByMethod.getName();
+	}
 	
 	private final IdentifiedCollectionDiffer differ = new IdentifiedCollectionDiffer();
 	
@@ -56,19 +61,23 @@ public class CascadeManyConfigurer<T extends Identified, I extends Identified, J
 		// finding joined columns: left one is primary key. Right one is given by the target strategy through the property accessor
 		Column leftColumn = localPersister.getTargetTable().getPrimaryKey();
 		Function targetProvider = cascadeMany.getTargetProvider();
-		if (cascadeMany.getReverseMember() == null) {
+		if (cascadeMany.getReverseMember() == null && cascadeMany.getReverseColumn() == null) {
 			throw new NotYetSupportedOperationException("Collection mapping without reverse property is not (yet) supported,"
-					+ " please used \"" + MAPPED_BY_SIGNATURE + "\" option do declare one for " 
+					+ " please use \"" + MAPPED_BY_SIGNATURE + "\" option do declare one for " 
 					+ Reflections.toString(cascadeMany.getMember()));
 		}
 		
-		MethodReferenceCapturer methodReferenceCapturer = new MethodReferenceCapturer();
-		Method reverseMember = methodReferenceCapturer.findMethod(cascadeMany.getReverseMember());
-		Column rightColumn = targetPersister.getMappingStrategy().getDefaultMappingStrategy().getPropertyToColumn().get(Accessors.of(reverseMember));
+		Column rightColumn = cascadeMany.getReverseColumn();
 		if (rightColumn == null) {
-			throw new NotYetSupportedOperationException("Reverse side mapping is not declared, please add the mapping of a "
-					+ localPersister.getMappingStrategy().getClassToPersist().getSimpleName()
-					+ " to persister of " + cascadeMany.getPersister().getMappingStrategy().getClassToPersist().getName());
+			// Here reverse side is surely defined by method reference (because of assertion some lines upper), we look for the matching column
+			MethodReferenceCapturer methodReferenceCapturer = new MethodReferenceCapturer();
+			Method reverseMember = methodReferenceCapturer.findMethod(cascadeMany.getReverseMember());
+			rightColumn = targetPersister.getMappingStrategy().getDefaultMappingStrategy().getPropertyToColumn().get(Accessors.of(reverseMember));
+			if (rightColumn == null) {
+				throw new NotYetSupportedOperationException("Reverse side mapping is not declared, please add the mapping of a "
+						+ localPersister.getMappingStrategy().getClassToPersist().getSimpleName()
+						+ " to persister of " + cascadeMany.getPersister().getMappingStrategy().getClassToPersist().getName());
+			}
 		}
 		
 		// adding foerign key constraint
@@ -169,8 +178,12 @@ public class CascadeManyConfigurer<T extends Identified, I extends Identified, J
 				case SELECT:
 					// configuring select for fetching relation
 					IMutator targetSetter = Accessors.of(cascadeMany.getMember()).getMutator();
+					SerializableBiConsumer<I, T> reverseMember = cascadeMany.getReverseMember();
+					if (reverseMember == null) {
+						reverseMember = (SerializableBiConsumer<I, T>) (i, t) -> { /* we can't do anything, so we do ... nothing */ };
+					}
 					joinedTablesPersister.addPersister(JoinedStrategiesSelect.FIRST_STRATEGY_NAME, targetPersister,
-							BeanRelationFixer.of((BiConsumer) targetSetter::set, targetProvider, cascadeMany.getCollectionTargetClass(), cascadeMany.getReverseMember()),
+							BeanRelationFixer.of((BiConsumer) targetSetter::set, targetProvider, cascadeMany.getCollectionTargetClass(), reverseMember),
 							leftColumn, rightColumn, true);
 					break;
 			}
