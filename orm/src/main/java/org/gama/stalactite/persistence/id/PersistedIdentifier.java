@@ -23,7 +23,7 @@ public class PersistedIdentifier<T> extends AbstractIdentifier<T> {
 	
 	@Override
 	protected boolean equalsDeeply(@Nonnull AbstractIdentifier<?> that) {
-		if (super.equals(that) && that instanceof PersistedIdentifier) {
+		if (super.equalsDeeply(that) && that instanceof PersistedIdentifier) {
 			return true;
 		} else {
 			return false;
