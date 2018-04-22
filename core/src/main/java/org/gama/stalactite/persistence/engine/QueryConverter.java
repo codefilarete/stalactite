@@ -281,10 +281,12 @@ public class QueryConverter<T> {
 		}
 		ResultSetConverter<I, T> transformer = buildTransformer();
 		
-		ReadOperation<String> readOperation = new ReadOperation<>(new StringParamedSQL(sql.toString(), sqlParameterBinders), connectionProvider);
-		readOperation.setValues(sqlArguments);
-		
-		return transformer.convert(readOperation.execute());
+		StringParamedSQL parameterizedSQL = new StringParamedSQL(this.sql.toString(), sqlParameterBinders);
+		try (ReadOperation<String> readOperation = new ReadOperation<>(parameterizedSQL, connectionProvider)) {
+			readOperation.setValues(sqlArguments);
+			
+			return transformer.convert(readOperation.execute());
+		}
 	}
 	
 	protected <I> ResultSetConverter<I, T> buildTransformer() {

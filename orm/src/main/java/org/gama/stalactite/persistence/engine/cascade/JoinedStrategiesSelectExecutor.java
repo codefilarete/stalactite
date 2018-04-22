@@ -87,8 +87,8 @@ public class JoinedStrategiesSelectExecutor<T, I> {
 		DynamicInClause condition = new DynamicInClause();
 		query.where(keyColumn, condition);
 		
-		// Use same Connection for all operations
-		ConnectionProvider connectionProvider = new SimpleConnectionProvider(getConnectionProvider().getCurrentConnection());
+		// We ensure that the same Connection is used for all operations
+		ConnectionProvider localConnectionProvider = new SimpleConnectionProvider(getConnectionProvider().getCurrentConnection());
 		List<I> lastBlock = Iterables.last(parcels);
 		// keep only full blocks to run them on the fully filled "in" operator
 		int lastBlockSize = lastBlock.size();
@@ -102,13 +102,13 @@ public class JoinedStrategiesSelectExecutor<T, I> {
 			condition.setParamMarkCount(blockSize);
 			// adding "in" identifiers to where clause
 			bindInClause(blockSize);
-			execute(connectionProvider, queryBuilder.toSQL(), parcels);
+			execute(localConnectionProvider, queryBuilder.toSQL(), parcels);
 		}
 		if (!lastBlock.isEmpty()) {
 			// change parameter mark count to adapt "in" operator values
 			condition.setParamMarkCount(lastBlockSize);
 			bindInClause(lastBlockSize);
-			execute(connectionProvider, queryBuilder.toSQL(), java.util.Collections.singleton(lastBlock));
+			execute(localConnectionProvider, queryBuilder.toSQL(), java.util.Collections.singleton(lastBlock));
 		}
 		return result;
 	}
@@ -124,9 +124,10 @@ public class JoinedStrategiesSelectExecutor<T, I> {
 	private void execute(ConnectionProvider connectionProvider,
 						 String sql, Iterable<? extends Iterable<I>> idsParcels) {
 		ColumnParamedSelect preparedSelect = new ColumnParamedSelect(sql, inOperatorValueIndexes, parameterBinderProvider, joinedStrategiesSelect.getSelectParameterBinders());
-		ReadOperation<Column> columnReadOperation = new ReadOperation<>(preparedSelect, connectionProvider);
-		for (Iterable<I> parcel : idsParcels) {
-			execute(columnReadOperation, parcel);
+		try (ReadOperation<Column> columnReadOperation = new ReadOperation<>(preparedSelect, connectionProvider)) {
+			for (Iterable<I> parcel : idsParcels) {
+				execute(columnReadOperation, parcel);
+			}
 		}
 	}
 	
