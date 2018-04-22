@@ -36,7 +36,7 @@ import org.gama.stalactite.query.model.QueryProvider;
 public class PersistenceContext {
 	
 	private int jdbcBatchSize = 100;
-	private final Map<Class<?>, Persister> persisterCache = new ValueFactoryHashMap<>(10, input -> newPersister(input));
+	private final Map<Class<?>, Persister> persisterCache = new ValueFactoryHashMap<>(10, this::newPersister);
 	
 	private Dialect dialect;
 	private ConnectionProvider connectionProvider;

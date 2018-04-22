@@ -1,5 +1,7 @@
 package org.gama.stalactite.persistence.id;
 
+import javax.annotation.Nonnull;
+
 /**
  * A decorator for already persisted bean identifier.
  * 
@@ -20,7 +22,7 @@ public class PersistedIdentifier<T> extends AbstractIdentifier<T> {
 	}
 	
 	@Override
-	protected boolean equals(AbstractIdentifier<?> that) {
+	protected boolean equalsDeeply(@Nonnull AbstractIdentifier<?> that) {
 		if (super.equals(that) && that instanceof PersistedIdentifier) {
 			return true;
 		} else {

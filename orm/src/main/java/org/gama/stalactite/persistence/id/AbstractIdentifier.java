@@ -1,5 +1,7 @@
 package org.gama.stalactite.persistence.id;
 
+import javax.annotation.Nonnull;
+
 /**
  * A decorator for already persisted bean identifier.
  * 
@@ -30,7 +32,7 @@ public abstract class AbstractIdentifier<T> implements Identifier<T> {
 			return true;
 		} else if (o instanceof AbstractIdentifier) {
 			AbstractIdentifier<?> that = (AbstractIdentifier<?>) o;
-			return equals(that);
+			return equalsDeeply(that);
 		} else {
 			return false;
 		}
@@ -41,7 +43,7 @@ public abstract class AbstractIdentifier<T> implements Identifier<T> {
 	 * @param that another objet, not null, not this
 	 * @return true if this surrogate equals the other surrogate
 	 */
-	protected boolean equals(AbstractIdentifier<?> that) {
+	protected boolean equalsDeeply(@Nonnull AbstractIdentifier<?> that) {
 		return surrogate.equals(that.surrogate);
 	}
 	

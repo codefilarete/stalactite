@@ -9,6 +9,8 @@
 	<version>1.0-SNAPSHOT</version>
 	<packaging>pom</packaging>
 	
+	<name>Stalactite</name>
+	
 	<modules>
 		<module>core</module>
 		<module>orm</module>
