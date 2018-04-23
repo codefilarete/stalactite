@@ -8,6 +8,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Stream;
 
+import org.gama.lang.Reflections;
 import org.gama.lang.bean.InterfaceIterator;
 import org.gama.lang.collection.Iterables;
 import org.gama.sql.binder.ParameterBinder;
@@ -73,6 +74,7 @@ public class ColumnBinderRegistry extends ParameterBinderRegistry implements Par
 	}
 	
 	private UnsupportedOperationException newMissingBinderException(Column column) {
-		return new UnsupportedOperationException("No parameter binder found for column " + column.getAbsoluteName() + " (type " + column.getJavaType() + ")");
+		return new UnsupportedOperationException("No parameter binder found for column " + column.getAbsoluteName()
+				+ " (type " + Reflections.toString(column.getJavaType()) + ")");
 	}
 }
