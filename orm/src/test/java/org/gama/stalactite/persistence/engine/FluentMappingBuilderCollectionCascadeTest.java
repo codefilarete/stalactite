@@ -129,7 +129,7 @@ public class FluentMappingBuilderCollectionCascadeTest {
 				{ (ThrowingSupplier<Persister<Country, Identifier<Long>>, SQLException>) () -> {
 					PersistenceContext persistenceContext = new PersistenceContext(new JdbcConnectionProvider(new HSQLDBInMemoryDataSource()), DIALECT);
 					Persister<City, PersistedIdentifier<Long>> cityPersister = CITY_MAPPING_BUILDER.build(persistenceContext);
-					Column<Country> countryId = cityPersister.getTargetTable().mapColumnsOnName().get("CountryId");
+					Column<Country> countryId = cityPersister.getTargetTable().mapColumnsOnName().get("countryId");
 					Persister<Country, Identifier<Long>> countryPersister = FluentMappingBuilder.from(Country.class, (Class<Identifier<Long>>) (Class) PersistedIdentifier.class)
 							.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 							.add(Country::getName)
