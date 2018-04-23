@@ -12,7 +12,7 @@ import org.gama.stalactite.persistence.sql.Dialect;
  * 
  * @author Guillaume Mary
  */
-public class PooledHiLoSequence implements org.gama.lang.function.Sequence {
+public class PooledHiLoSequence implements org.gama.lang.function.Sequence<Long> {
 	
 	private LongPool sequenceState;
 	

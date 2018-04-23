@@ -110,7 +110,7 @@ public class Table {
 		return Collections.unmodifiableSet(foreignKeys);
 	}
 	
-	public ForeignKey addForeignKey(String name, Column column, Column targetColumn) {
+	public <T> ForeignKey addForeignKey(String name, Column<T> column, Column<T> targetColumn) {
 		ForeignKey newForeignKey = new ForeignKey(name, column, targetColumn);
 		this.foreignKeys.add(newForeignKey);
 		return newForeignKey;

@@ -38,14 +38,14 @@ public class SequencePersisterTest {
 	}
 	
 	@Test
-	public void testGetCreationScripts() throws Exception {
+	public void testGetCreationScripts() {
 		dialect.getDdlSchemaGenerator().addTables(testInstance.getMappingStrategy().getTargetTable());
 		List<String> creationScripts = dialect.getDdlSchemaGenerator().getCreationScripts();
 		assertEquals(Arrays.asList("create table sequence_table(sequence_name VARCHAR(255), next_val int, primary key (sequence_name))"), creationScripts);
 	}
 	
 	@Test
-	public void testGetCreationScripts_customized() throws Exception {
+	public void testGetCreationScripts_customized() {
 		testInstance = new SequencePersister(new SequenceStorageOptions("myTable", "mySequenceNameCol", "myNextValCol"),
 				dialect, (SeparateTransactionExecutor) persistenceContext.getConnectionProvider(), persistenceContext.getJDBCBatchSize());
 		dialect.getDdlSchemaGenerator().addTables(testInstance.getMappingStrategy().getTargetTable());

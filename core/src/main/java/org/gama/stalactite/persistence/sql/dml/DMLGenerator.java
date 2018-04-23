@@ -117,6 +117,7 @@ public class DMLGenerator {
 		});
 	}
 	
+	@SuppressWarnings("squid:ForLoopCounterChangedCheck")
 	public ColumnParamedSQL buildMassiveDelete(Table table, Column keyColumn, int whereValuesCount) {
 		StringAppender sqlDelete = new StringAppender("delete from ", dmlNameProvider.getSimpleName(table));
 		sqlDelete.cat(" where ", dmlNameProvider.getSimpleName(keyColumn), " in (");
@@ -125,8 +126,8 @@ public class DMLGenerator {
 		Map<Column, int[]> columnToIndex = new HashMap<>();
 		Map<Column, ParameterBinder> parameterBinders = new HashMap<>();
 		int[] indexes = new int[whereValuesCount];
-		for (int i = 0; i < whereValuesCount; i++) {
-			indexes[i] = i + 1;
+		for (int i = 0; i < whereValuesCount;) {
+			indexes[i] = ++i;
 		}
 		columnToIndex.put(keyColumn, indexes);
 		parameterBinders.put(keyColumn, columnBinderRegistry.getBinder(keyColumn));

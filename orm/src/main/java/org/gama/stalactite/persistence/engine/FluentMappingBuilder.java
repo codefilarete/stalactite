@@ -554,7 +554,7 @@ public class FluentMappingBuilder<T extends Identified, I extends StatefullIdent
 	
 	private interface Linkage<T> {
 		
-		PropertyAccessor<T, ?> getAccessor();
+		<I> PropertyAccessor<T, I> getAccessor();
 		
 		String getColumnName();
 		
@@ -583,7 +583,7 @@ public class FluentMappingBuilder<T extends Identified, I extends StatefullIdent
 			this.columnName = columnName == null ? Reflections.propertyName(method) : columnName;
 		}
 		
-		public PropertyAccessor<T, ?> getAccessor() {
+		public <I> PropertyAccessor<T, I> getAccessor() {
 			return function;
 		}
 		
@@ -624,7 +624,7 @@ public class FluentMappingBuilder<T extends Identified, I extends StatefullIdent
 			this.column = column;
 		}
 		
-		public PropertyAccessor<T, ?> getAccessor() {
+		public <I> PropertyAccessor<T, I> getAccessor() {
 			return function;
 		}
 		

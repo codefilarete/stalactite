@@ -113,9 +113,10 @@ public class JoinedStrategiesSelectExecutor<T, I> {
 		return result;
 	}
 	
+	@SuppressWarnings("squid:ForLoopCounterChangedCheck")
 	private void bindInClause(int inSize) {
 		int[] indexes = new int[inSize];
-		for (int i = 0; i < inSize; ) {
+		for (int i = 0; i < inSize;) {
 			indexes[i] = ++i;
 		}
 		inOperatorValueIndexes.put(keyColumn, indexes);
