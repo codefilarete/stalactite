@@ -305,7 +305,13 @@ public class FluentMappingBuilder<T extends Identified, I extends StatefullIdent
 				.redirect(OneToManyOptions.class, new OneToManyOptions() {
 					@Override
 					public IFluentMappingBuilderOneToManyOptions mappedBy(SerializableBiConsumer reverseLink) {
-						cascadeMany.reverseMember = reverseLink;
+						cascadeMany.reverseSetter = reverseLink;
+						return finalHack[0];
+					}
+					
+					@Override
+					public IFluentMappingBuilderOneToManyOptions mappedBy(SerializableFunction reverseLink) {
+						cascadeMany.reverseGetter = reverseLink;
 						return finalHack[0];
 					}
 					
@@ -699,13 +705,23 @@ public class FluentMappingBuilder<T extends Identified, I extends StatefullIdent
 		}
 	}
 	
+	/**
+	 * 
+	 * @param <SRC> the "one" type
+	 * @param <O> the "many" type
+	 * @param <J> identifier type of O
+	 * @param <C> the "many" collection type
+	 */
 	public static class CascadeMany<SRC extends Identified, O extends Identified, J extends StatefullIdentifier, C extends Collection<O>> {
 		
 		private final Function<SRC, C> targetProvider;
 		private final Persister<O, J> persister;
 		private final Method member;
 		private final Class<C> collectionTargetClass;
-		private SerializableBiConsumer<O, SRC> reverseMember;
+		/** the method that sets the "one" entity" onto the "many" entities */
+		private SerializableBiConsumer<O, SRC> reverseSetter;
+		/** the method that gets the "one" entity" from the "many" entities */
+		private SerializableFunction<O, SRC> reverseGetter;
 		private Column<SRC> reverseColumn;
 		private final Set<CascadeType> cascadeTypes = new HashSet<>();
 		/** Should we delete removed entities from the Collection (for UPDATE cascade) */
@@ -743,12 +759,20 @@ public class FluentMappingBuilder<T extends Identified, I extends StatefullIdent
 			return collectionTargetClass;
 		}
 		
-		public SerializableBiConsumer<O, SRC> getReverseMember() {
-			return reverseMember;
+		public SerializableBiConsumer<O, SRC> getReverseSetter() {
+			return reverseSetter;
 		}
 		
 		public Column<SRC> getReverseColumn() {
 			return reverseColumn;
+		}
+		
+		public SerializableFunction<O, SRC> getReverseGetter() {
+			return reverseGetter;
+		}
+		
+		public void setReverseGetter(SerializableFunction<O, SRC> reverseGetter) {
+			this.reverseGetter = reverseGetter;
 		}
 		
 		public Set<CascadeType> getCascadeTypes() {

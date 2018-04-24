@@ -61,7 +61,7 @@ public class CascadeManyConfigurer<T extends Identified, I extends Identified, J
 		// finding joined columns: left one is primary key. Right one is given by the target strategy through the property accessor
 		Column leftColumn = localPersister.getTargetTable().getPrimaryKey();
 		Function targetProvider = cascadeMany.getTargetProvider();
-		if (cascadeMany.getReverseMember() == null && cascadeMany.getReverseColumn() == null) {
+		if (cascadeMany.getReverseSetter() == null && cascadeMany.getReverseGetter() == null && cascadeMany.getReverseColumn() == null) {
 			throw new NotYetSupportedOperationException("Collection mapping without reverse property is not (yet) supported,"
 					+ " please use \"" + MAPPED_BY_SIGNATURE + "\" option do declare one for " 
 					+ Reflections.toString(cascadeMany.getMember()));
@@ -71,7 +71,12 @@ public class CascadeManyConfigurer<T extends Identified, I extends Identified, J
 		if (rightColumn == null) {
 			// Here reverse side is surely defined by method reference (because of assertion some lines upper), we look for the matching column
 			MethodReferenceCapturer methodReferenceCapturer = new MethodReferenceCapturer();
-			Method reverseMember = methodReferenceCapturer.findMethod(cascadeMany.getReverseMember());
+			Method reverseMember;
+			if (cascadeMany.getReverseSetter() != null) {
+				reverseMember = methodReferenceCapturer.findMethod(cascadeMany.getReverseSetter());
+			} else {
+				reverseMember = methodReferenceCapturer.findMethod(cascadeMany.getReverseGetter());
+			}
 			rightColumn = targetPersister.getMappingStrategy().getDefaultMappingStrategy().getPropertyToColumn().get(Accessors.of(reverseMember));
 			if (rightColumn == null) {
 				throw new NotYetSupportedOperationException("Reverse side mapping is not declared, please add the mapping of a "
@@ -178,7 +183,7 @@ public class CascadeManyConfigurer<T extends Identified, I extends Identified, J
 				case SELECT:
 					// configuring select for fetching relation
 					IMutator targetSetter = Accessors.of(cascadeMany.getMember()).getMutator();
-					SerializableBiConsumer<I, T> reverseMember = cascadeMany.getReverseMember();
+					SerializableBiConsumer<I, T> reverseMember = cascadeMany.getReverseSetter();
 					if (reverseMember == null) {
 						reverseMember = (SerializableBiConsumer<I, T>) (i, t) -> { /* we can't do anything, so we do ... nothing */ };
 					}

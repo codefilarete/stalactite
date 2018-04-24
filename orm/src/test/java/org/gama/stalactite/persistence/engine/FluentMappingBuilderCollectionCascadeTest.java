@@ -116,7 +116,26 @@ public class FluentMappingBuilderCollectionCascadeTest {
 							.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 							.add(Country::getName)
 							.add(Country::getDescription)
+							// relation defined by setter
 							.addOneToMany(Country::getCities, cityPersister).mappedBy(City::setCountry).cascade(INSERT, SELECT)
+							.build(persistenceContext);
+					DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+					try {
+						ddlDeployer.deployDDL();
+					} catch (SQLException e) {
+						throw new RuntimeException(e);
+					}
+					return countryPersister;
+				}},
+				{ (ThrowingSupplier<Persister<Country, Identifier<Long>>, SQLException>) () -> {
+					PersistenceContext persistenceContext = new PersistenceContext(new JdbcConnectionProvider(new HSQLDBInMemoryDataSource()), DIALECT);
+					Persister<City, PersistedIdentifier<Long>> cityPersister = CITY_MAPPING_BUILDER.build(persistenceContext);
+					Persister<Country, Identifier<Long>> countryPersister = FluentMappingBuilder.from(Country.class, (Class<Identifier<Long>>) (Class) PersistedIdentifier.class)
+							.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
+							.add(Country::getName)
+							.add(Country::getDescription)
+							// relation defined by getter
+							.addOneToMany(Country::getCities, cityPersister).mappedBy(City::getCountry).cascade(INSERT, SELECT)
 							.build(persistenceContext);
 					DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
 					try {
@@ -134,6 +153,7 @@ public class FluentMappingBuilderCollectionCascadeTest {
 							.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 							.add(Country::getName)
 							.add(Country::getDescription)
+							// relation defined by column
 							.addOneToMany(Country::getCities, cityPersister).mappedBy(countryId).cascade(INSERT, SELECT)
 							.build(persistenceContext);
 					DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
