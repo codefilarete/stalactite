@@ -1,17 +1,11 @@
 package org.gama.stalactite.persistence.engine.cascade;
 
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
-import java.util.function.Function;
 
-import org.gama.lang.collection.PairIterator;
 import org.gama.sql.ConnectionProvider;
 import org.gama.stalactite.persistence.engine.BeanRelationFixer;
 import org.gama.stalactite.persistence.engine.PersistenceContext;
 import org.gama.stalactite.persistence.engine.Persister;
-import org.gama.stalactite.persistence.engine.listening.NoopUpdateByIdListener;
-import org.gama.stalactite.persistence.engine.listening.NoopUpdateListener;
 import org.gama.stalactite.persistence.id.Identified;
 import org.gama.stalactite.persistence.id.manager.StatefullIdentifier;
 import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
@@ -58,40 +52,9 @@ public class JoinedTablesPersister<T extends Identified, I extends StatefullIden
 																					 BeanRelationFixer beanRelationFixer,
 																					 Column leftJoinColumn, Column rightJoinColumn, boolean isOuterJoin) {
 		ClassMappingStrategy<U, J> mappingStrategy = persister.getMappingStrategy();
-//		addUpdateExecutor(persister, additionalInstancesProvider);
-//		addUpdateByIdExecutor(persister, additionalInstancesProvider);
 		
 		// We use our own select system since ISelectListener is not aimed at joining table
 		return addSelectExecutor(ownerStrategyName, mappingStrategy, beanRelationFixer, leftJoinColumn, rightJoinColumn, isOuterJoin);
-	}
-	
-	private <U, J> void addUpdateExecutor(Persister<U, J> persister, Function<Iterable<T>, Iterable<U>> additionalInstancesProvider) {
-		getPersisterListener().addUpdateListener(new NoopUpdateListener<T>() {
-			@Override
-			public void afterUpdate(Iterable<Map.Entry<T, T>> iterables, boolean allColumnsStatement) {
-				// Creation of an Entry<U, U> iterator from the Entry<T, T> iterator by applying additionalInstancesProvider on each.
-				// Not really optimized since we create 2 lists but I couldn't find better without changing method signature
-				// or calling numerous time additionalInstancesProvider.apply(..) (one time per T instance)
-				List<T> keysIterable = new ArrayList<>();
-				List<T> valuesIterable = new ArrayList<>();
-				for (Map.Entry<T, T> entry : iterables) {
-					keysIterable.add(entry.getKey());
-					valuesIterable.add(entry.getValue());
-				}
-				PairIterator<U, U> pairIterator = new PairIterator<>(additionalInstancesProvider.apply(keysIterable), additionalInstancesProvider.apply(valuesIterable));
-				
-				persister.update(() -> pairIterator, allColumnsStatement);
-			}
-		});
-	}
-	
-	private <U, J> void addUpdateByIdExecutor(Persister<U, J>persister, Function<Iterable<T>, Iterable<U>> complementaryInstancesProvider) {
-		getPersisterListener().addUpdateByIdListener(new NoopUpdateByIdListener<T>() {
-			@Override
-			public void afterUpdateById(Iterable<T> iterables) {
-				persister.updateById(complementaryInstancesProvider.apply(iterables));
-			}
-		});
 	}
 	
 	private <U, J> String addSelectExecutor(String leftStrategyName, ClassMappingStrategy<U, J> mappingStrategy, BeanRelationFixer beanRelationFixer,
