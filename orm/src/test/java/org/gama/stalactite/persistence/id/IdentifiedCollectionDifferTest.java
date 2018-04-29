@@ -48,23 +48,23 @@ public class IdentifiedCollectionDifferTest {
 		expectedResult.add(new Diff(State.HELD, testData.country3, testData.country3Clone));
 		
 		return new Object[][] {
-				new Object[] {
+				{
 						Arrays.asHashSet(testData.country1, testData.country2, testData.country3),
 						Arrays.asHashSet(testData.country3Clone, testData.country4, testData.country5),
 						expectedResult
 				},
 				// corner cases with empty sets
-				new Object[] {
+				{
 						Arrays.asHashSet(),
 						Arrays.asHashSet(testData.country1),
 						Arrays.asHashSet(new Diff(State.ADDED, null, testData.country1))
 				},
-				new Object[] {
+				{
 						Arrays.asHashSet(testData.country1),
 						Arrays.asHashSet(),
 						Arrays.asHashSet(new Diff(State.REMOVED, testData.country1, null))
 				},
-				new Object[] {
+				{
 						Arrays.asHashSet(),
 						Arrays.asHashSet(),
 						Arrays.asHashSet()

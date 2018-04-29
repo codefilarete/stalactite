@@ -1,12 +1,15 @@
 package org.gama.stalactite.persistence.id;
 
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
+import java.util.function.Function;
 
 import org.gama.lang.bean.Objects;
+import org.gama.lang.collection.Iterables;
+import org.gama.lang.function.Functions;
+import org.gama.stalactite.persistence.id.manager.StatefullIdentifier;
 
 /**
  * A class to compute the differences between 2 collections of {@link Identified}: addition, removal or held
@@ -14,6 +17,38 @@ import org.gama.lang.bean.Objects;
  * @author Guillaume Mary
  */
 public class IdentifiedCollectionDiffer {
+	
+	/**
+	 * Computes the differences between 2 sets. Comparison between objects will be done onto Identifier payload's hashCode() + equals()
+	 * 
+	 * @param identifieds1 the "source" Set
+	 * @param identifieds2 the modified Set
+	 * @param <I> the type of Identified
+	 * @param <C> the type of the payload onto comparison will be done
+	 * @return a set of differences between the 2 sets, never null, empty if the 2 sets are empty. If no modification, all instances will be
+	 * {@link State#HELD}.
+	 */
+	public <I extends Identified<C>, C> Set<Diff> diffSet(Set<I> identifieds1, Set<I> identifieds2) {
+		Function<I, C> surrogateAccessor = Functions.chain(Identified::getId, StatefullIdentifier::getSurrogate);
+		Map<C, I> set1MappedOnIdentifier = Iterables.map(identifieds1, surrogateAccessor, Function.identity());
+		Map<C, I> set2MappedOnIdentifier = Iterables.map(identifieds2, surrogateAccessor, Function.identity());
+		
+		Set<Diff> result = new HashSet<>();
+		
+		for (Entry<C, I> identified1 : set1MappedOnIdentifier.entrySet()) {
+			Identified identified2 = set2MappedOnIdentifier.get(identified1.getKey());
+			if (identified2 != null) {
+				result.add(new Diff(State.HELD, identified1.getValue(), identified2));
+			} else {
+				result.add(new Diff(State.REMOVED, identified1.getValue(), null));
+			}
+		}
+		set2MappedOnIdentifier.keySet().removeAll(set1MappedOnIdentifier.keySet());
+		for (Entry<C, I> identifiedEntry : set2MappedOnIdentifier.entrySet()) {
+			result.add(new Diff(State.ADDED, null, identifiedEntry.getValue()));
+		}
+		return result;
+	}
 	
 	public enum State {
 		/** The object has been added to the collection */
@@ -26,7 +61,7 @@ public class IdentifiedCollectionDiffer {
 	
 	/**
 	 * A difference element of a comparison made by {@link #diffSet(Set, Set)}
-	 * 
+	 *
 	 * On {@link State#ADDED} instances, only {@link #getReplacingInstance()} is set ({@link #getSourceInstance()} is null.
 	 * On {@link State#REMOVED} instances, only {@link #getSourceInstance()} is set ({@link #getReplacingInstance()} is null.
 	 * On {@link State#HELD} instances, both {@link #getSourceInstance()} and ({@link #getReplacingInstance()} are set.
@@ -74,36 +109,5 @@ public class IdentifiedCollectionDiffer {
 			// implemented for Set
 			return Objects.preventNull(sourceInstance, replacingInstance).getId().hashCode();
 		}
-	}
-	
-	/**
-	 * Compute the differences between 2 sets. Comparison between objects will be done onto Identifier payload's hashCode() + equals()
-	 * 
-	 * @param identifieds1 the "source" Set
-	 * @param identifieds2 the modified Set
-	 * @param <I> the type of Identified
-	 * @param <C> the type of the payload onto comparison will be done
-	 * @return a set of differences between the 2 sets, never null, empty if the 2 sets are empty. If no modification, all instances will be
-	 * {@link State#HELD}.
-	 */
-	public <I extends Identified<C>, C> Set<Diff> diffSet(Set<I> identifieds1, Set<I> identifieds2) {
-		Map<C, Identified> map1 = identifieds1.stream().collect(HashMap::new, (map, i) -> map.put(i.getId().getSurrogate(), i), (a, b) -> { });
-		Map<C, Identified> map2 = identifieds2.stream().collect(HashMap::new, (map, i) -> map.put(i.getId().getSurrogate(), i), (a, b) -> { });
-		
-		Set<Diff> result = new HashSet<>();
-		
-		for (Entry<C, Identified> identified1 : map1.entrySet()) {
-			Identified identified2 = map2.get(identified1.getKey());
-			if (identified2 != null) {
-				result.add(new Diff(State.HELD, identified1.getValue(), identified2));
-			} else {
-				result.add(new Diff(State.REMOVED, identified1.getValue(), null));
-			}
-		}
-		map2.keySet().removeAll(map1.keySet());
-		for (Entry<C, Identified> identifiedEntry : map2.entrySet()) {
-			result.add(new Diff(State.ADDED, null, identifiedEntry.getValue()));
-		}
-		return result;
 	}
 }
