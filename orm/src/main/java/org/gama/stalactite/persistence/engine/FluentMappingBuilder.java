@@ -725,20 +725,15 @@ public class FluentMappingBuilder<T extends Identified, I extends StatefullIdent
 		private Column<SRC> reverseColumn;
 		private final Set<CascadeType> cascadeTypes = new HashSet<>();
 		/** Should we delete removed entities from the Collection (for UPDATE cascade) */
-		public boolean deleteRemoved = false;
+		private boolean deleteRemoved = false;
 		
 		private CascadeMany(Function<SRC, C> targetProvider, Persister<O, J> persister, Method method) {
-			this.targetProvider = targetProvider;
-			this.persister = persister;
-			// looking for the target type because its necessary to find its persister (and other objects). Done throught a method capturer (weird thing).
-			this.member = method;
-			this.collectionTargetClass = (Class<C>) Reflections.javaBeanTargetType(member);
+			this(targetProvider, persister, (Class<C>) Reflections.javaBeanTargetType(method), method);
 		}
 		
 		private CascadeMany(Function<SRC, C> targetProvider, Persister<O, J> persister, Class<C> collectionTargetClass, Method method) {
 			this.targetProvider = targetProvider;
 			this.persister = persister;
-			// looking for the target type because its necesary to find its persister (and other objects). Done throught a method capturer (weird thing).
 			this.member = method;
 			this.collectionTargetClass = collectionTargetClass;
 		}
