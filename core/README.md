@@ -17,7 +17,7 @@ System.out.println(new QueryBuilder(q).toSQL())
 // will print : select firstName, birthDate from Person; 
 </pre>
 
-A 2-table-join one:
+A 2-tables-join one:
 <pre>
 Table personTable = new Table("Person");
 Column<Long> personId = personTable.addColumn("id", Long.class);
@@ -33,9 +33,9 @@ select(firstname, lastname, carColor).from(personTable, "p").innerJoin(personId,
 
 Please refer to [this test](src/test/java/org/gama/stalactite/query/builder/QueryBuilderTest.java) for examples.
 
-# 
+# Caveat
 
-Hence, using this module one must have skills in schema design, particularly for new table/bean : you won't be helped for designing
+Thus, using this module one must have skills in schema design, particularly for new table/bean : you won't be helped for designing
  relations between tables for one-to-many, many-to-one, etc. as would do JPA/Hibernate (it adds necessary columns, types, nullity, etc)
 
 For relation management, one may be interested in having a look at the [ORM module](../orm/README.md)
@@ -45,4 +45,4 @@ For relation management, one may be interested in having a look at the [ORM modu
 Some more documentation can be found here
 - [Dialects](src/main/java/org/gama/stalactite/persistence/sql/Dialects.md)
 - [mapping](src/main/java/org/gama/stalactite/persistence/mapping/mapping.md)
-- [about bean identifier](src/main/java/org/gama/stalactite/persistence/id/manager/Identifier generation policies.md)
+- [about bean identifier](src/main/java/org/gama/stalactite/persistence/id/manager/Identifier%20generation%20policies.md)

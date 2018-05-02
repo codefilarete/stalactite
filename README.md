@@ -1,6 +1,11 @@
 
 Stalactite aims at providing both a SQL library and an ORM.
 
+Its birth comes from a misconception on a huge domain-objects application (implying the creation of more than 200 database tables) and
+exposing entities to the view. With a classical ORM this leads to a bothering fetch-all and cache-all solution.
+Stalactite tries to ease loading of DTO or any adhoc-view-object, and insert/update/delete them into the database, without creating a huge
+mapping configuration, trying to promote small object graphs in bounded context.
+
 # Overview
 
 The project is layered in 3 main modules to fullfill this goal:
