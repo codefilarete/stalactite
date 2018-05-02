@@ -107,6 +107,7 @@ public class CascadeOneConfigurer<T extends Identified, I extends Identified, J 
 						
 						@Override
 						protected void postTargetDelete(Iterable<Identified> iterable) {
+							// no post treatment to do
 						}
 						
 						@Override
@@ -121,6 +122,7 @@ public class CascadeOneConfigurer<T extends Identified, I extends Identified, J 
 						
 						@Override
 						protected void postTargetDelete(Iterable<Identified> iterable) {
+							// no post treatment to do
 						}
 						
 						@Override

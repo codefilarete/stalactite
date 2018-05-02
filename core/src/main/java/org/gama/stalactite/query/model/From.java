@@ -26,6 +26,7 @@ public class From implements Iterable<IJoin>, JoinChain {
 	private final Map<Table, String> tableAliases = new HashMap<>(4);
 	
 	public From() {
+		// default constructor, properties are already assigned
 	}
 	
 	public List<IJoin> getJoins() {

@@ -13,6 +13,7 @@ public class Row {
 	private final TreeMap<String, Object> content = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
 	
 	public Row() {
+		// default constructor, properties are already assigned
 	}
 	
 	/**

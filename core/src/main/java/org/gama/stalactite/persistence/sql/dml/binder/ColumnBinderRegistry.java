@@ -32,6 +32,7 @@ public class ColumnBinderRegistry extends ParameterBinderRegistry implements Par
 	private final Map<Column, ParameterBinder> parameterBinders = new HashMap<>();
 	
 	public ColumnBinderRegistry() {
+		// default constructor, properties are already assigned
 	}
 	
 	public <T> void register(Column column, ParameterBinder<T> parameterBinder) {

@@ -131,6 +131,7 @@ public class InsertExecutor<T, I> extends UpsertExecutor<T, I> {
 			rollbackObserver.addRollbackListener(new RollbackListener() {
 				@Override
 				public void beforeRollback() {
+					// no pre rollabck treatment to do
 				}
 				
 				@Override
@@ -141,10 +142,13 @@ public class InsertExecutor<T, I> extends UpsertExecutor<T, I> {
 				
 				@Override
 				public void beforeRollback(Savepoint savepoint) {
+					// not implemented
 				}
 				
 				@Override
 				public void afterRollback(Savepoint savepoint) {
+					// not implemented : should we do the same as default rollback ?
+					// it depends on if entity versioning was done during this savepoint ... how to know ?
 				}
 				
 				@Override

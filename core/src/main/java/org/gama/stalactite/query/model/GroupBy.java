@@ -15,6 +15,7 @@ public class GroupBy implements Iterable<Object /* String, Column */>, GroupByCh
 	private final List<Object> groups = new ArrayList<>();
 	
 	public GroupBy() {
+		// default constructor, properties are already assigned
 	}
 	
 	private GroupBy add(Object table) {

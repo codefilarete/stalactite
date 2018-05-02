@@ -5,6 +5,7 @@ import java.util.Map.Entry;
 /**
  * @author Guillaume Mary
  */
+@SuppressWarnings("squid:S1186")	// methods are obviously empty because it is the goal of this class
 public class NoopUpdateListener<T> implements IUpdateListener<T> {
 	
 	@Override

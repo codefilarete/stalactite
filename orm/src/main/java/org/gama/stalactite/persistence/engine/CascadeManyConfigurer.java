@@ -153,6 +153,7 @@ public class CascadeManyConfigurer<T extends Identified, I extends Identified, J
 						
 						@Override
 						protected void postTargetDelete(Iterable<Identified> iterables) {
+							// no post treatment to do
 						}
 						
 						@Override
@@ -168,6 +169,7 @@ public class CascadeManyConfigurer<T extends Identified, I extends Identified, J
 					persisterListener.addDeleteByIdListener(new BeforeDeleteByIdCollectionCascader<T, Identified>(targetPersister) {
 						@Override
 						protected void postTargetDelete(Iterable<Identified> iterables) {
+							// no post treatment to do
 						}
 						
 						@Override
