@@ -11,9 +11,9 @@ import java.sql.Connection;
 public interface ConnectionProvider {
 	
 	/**
-	 * Gives an eventually existing {@link Connection} or opens a new one.
+	 * Gives an eventually existing {@link Connection} or opens a new one if current one is closed.
 	 * 
-	 * @return not null
+	 * @return neither null nor a closed connection
 	 */
 	@Nonnull
 	Connection getCurrentConnection();

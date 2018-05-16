@@ -15,9 +15,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Tries to simplify use of {@link PreparedStatement} in oriented scenarii like:
+ * Tries to simplify usage of {@link PreparedStatement} in oriented scenarii like:
  * - set values on {@link PreparedStatement}
- * - executeBatch {@link PreparedStatement}
+ * - executeBatch {@link PreparedStatement} (see {@link WriteOperation})
  * 
  * Logging of SQL execution can be activated with a logger with this class name.
  * If you want more fine grained logs, SQL statements can be logged with DEBUG level, whereas values can be logged with TRACE level.
@@ -58,7 +58,7 @@ public abstract class SQLOperation<ParamType> implements AutoCloseable {
 	}
 	
 	/**
-	 * Simple wrap to {@link SQLStatement#setValues(Map)}
+	 * Simple wrapping over {@link SQLStatement#setValues(Map)}
 	 * @param values values for each parameter
 	 */
 	public void setValues(Map<ParamType, Object> values) {
@@ -76,7 +76,7 @@ public abstract class SQLOperation<ParamType> implements AutoCloseable {
 	}
 	
 	/**
-	 * Common operation for subclasses. Rebuild PreparedStatement if connection changed. Call {@link #getSQL()} when
+	 * Common operation for subclasses. Rebuild PreparedStatement if connection has changed. Call {@link #getSQL()} when
 	 * necessary.
 	 * 
 	 * @throws SQLException in case of error during execution

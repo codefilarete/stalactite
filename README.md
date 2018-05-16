@@ -23,7 +23,7 @@ FluentMappingBuilder.from(MyEntity.class, StatefullIdentifier.class)
 	.build(persistenceContext);
 </pre>
 
-It's mainly based on a model of your RDBMS tables : the [core](core/README.md) provides the [structure package](core/src/main/java/org/gama/stalactite/persistence/structure/README.md)
+It's mainly based on a model of your RDBMS tables : the [core](core/README.md) module provides the [structure package](core/src/main/java/org/gama/stalactite/persistence/structure/README.md)
 with the idea to create a meta-model of your database schema.
 
 # Approach
@@ -35,3 +35,35 @@ The idea behind this is to let persist any bean that has no annotation, coming f
 Allowing such a thing let you query your database and create DTOs for a particular view and then persist them without exposing your
 rich-business-domain-model of your database (never knowing where your object graph reading have to stop), or copying it to DTOs with
 boilerplate code (or dedicated framework).
+
+# Features
+
+## orm
+- entities must implement [Identified](orm/src/main/java/org/gama/stalactite/persistence/id/Identified.java) which means that there id
+must be a [Identifier](orm/src/main/java/org/gama/stalactite/persistence/id/Identifier.java), see foot note
+- only supports single column primary key, see foot note
+- only supports already-assigned identifier, see foot note
+- one-to-one mapping
+ 	- property column owned by table owner or by reverse side
+ 	- eager : not lazy, select is done with join (no secondary select to load the linked entity)
+- one-to-many mapping
+	- property column owned by reverse side table
+	- eager : not lazy, select is done with join (no secondary select to load the linked entities, prevents N+1 query)
+- embedding of value class
+
+###### Why already-assigned-identifier single column ?
+- I prefer technical keys over domain ones because those may change over project life cycle. And overall, domain key values may change
+(human error for instance) which might create nighmare when entities must deal with HashSet or HashMap.
+- Already-assigned identifier allows to implement clean equals() & hashcode() based on it, here too it simpler when dealing with HashSet or HashMap
+- Single column, because it was simpler at beginning ;)
+
+## core
+- [CRUD persistence](core/src/main/java/org/gama/stalactite/persistence/mapping/mapping.md)
+- Listeners for persist actions on beans (before & after) : see [PersisterListener](core/src/main/java/org/gama/stalactite/persistence/engine/listening/PersisterListener.java),
+accessible through `PersistenceContext.getPersisterListener()`
+- SQL Query writing through [a fluent API](core/src/main/java/org/gama/stalactite/query/model/QueryEase.java)
+
+## sql
+- Transaction management thanks to [TransactionListener](sql/src/main/java/org/gama/sql/TransactionListener.java) which can be used
+through a [TransactionAdapter](sql/src/main/java/org/gama/sql/TransactionAdapter.java)
+- ResultSet iteration and transformation, see [ResultSet handling](sql/src/main/java/org/gama/sql/result/ResultSet%20handling.md)
