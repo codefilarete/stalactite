@@ -4,7 +4,9 @@ import java.io.InputStream;
 import java.net.URL;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.Date;
+import java.util.Map;
 import java.util.WeakHashMap;
 
 import org.gama.lang.Reflections;
@@ -27,7 +29,7 @@ public class ParameterBinderRegistry {
 		registerParameterBinders();
 	}
 	
-	public WeakHashMap<Class, ParameterBinder> getParameterBinders() {
+	public Map<Class, ParameterBinder> getParameterBinders() {
 		return parameterBinders;
 	}
 	
@@ -53,6 +55,7 @@ public class ParameterBinderRegistry {
 		register(Boolean.TYPE, DefaultParameterBinders.BOOLEAN_PRIMITIVE_BINDER);
 		register(InputStream.class, DefaultParameterBinders.BINARYSTREAM_BINDER);
 		register(URL.class, DefaultParameterBinders.URL_BINDER);
+		register(ZoneId.class, DefaultParameterBinders.ZONEID_BINDER);
 	}
 	
 	/**

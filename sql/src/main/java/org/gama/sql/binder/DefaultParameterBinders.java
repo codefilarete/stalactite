@@ -8,6 +8,7 @@ import java.sql.ResultSet;
 import java.sql.Timestamp;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 
 import static org.gama.sql.binder.DefaultPreparedStatementWriters.*;
 import static org.gama.sql.binder.DefaultResultSetReaders.*;
@@ -122,5 +123,11 @@ public interface DefaultParameterBinders {
 	 * {@link ParameterBinder} for {@link java.time.LocalDateTime}
 	 */
 	ParameterBinder<LocalDateTime> LOCALDATETIME_BINDER = new NullAwareParameterBinder<>(new LocalDateTimeBinder());
+	
+	/**
+	 * {@link ParameterBinder} for {@link java.time.ZoneId}.
+	 * It may have little purpose alone, but has its interest with {@link java.time.ZonedDateTime}.
+	 */
+	ParameterBinder<ZoneId> ZONEID_BINDER = new NullAwareParameterBinder<>(new ZoneIdBinder());
 	
 }

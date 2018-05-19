@@ -1,6 +1,7 @@
 package org.gama.stalactite.persistence.sql;
 
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.Date;
 
 import org.gama.stalactite.persistence.sql.ddl.JavaTypeToSqlTypeMapping;
@@ -43,5 +44,7 @@ public class DefaultTypeMapping extends JavaTypeToSqlTypeMapping {
 		put(LocalDateTime.class, "timestamp");
 		put(String.class, "varchar");
 		put(String.class, 16383, "varchar($l)");
+		// 35 chars because the largest timezone found is "America/Argentina/ComodRivadavia" (with ZoneId.getAvailableZoneIds())
+		put(ZoneId.class, "varchar(35)");
 	}
 }
