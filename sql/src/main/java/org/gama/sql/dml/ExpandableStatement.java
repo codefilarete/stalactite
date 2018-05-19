@@ -20,7 +20,7 @@ public abstract class ExpandableStatement<ParamType> extends SQLStatement<ParamT
 		this.sql = sql;
 	}
 	
-	public ExpandableStatement(String sql, PreparedStatementWriterIndex<ParamType> parameterBinderProvider) {
+	public ExpandableStatement(String sql, PreparedStatementWriterIndex<ParamType, ? extends PreparedStatementWriter> parameterBinderProvider) {
 		super(parameterBinderProvider);
 		this.sql = sql;
 	}

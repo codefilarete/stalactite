@@ -14,6 +14,7 @@ import org.gama.lang.collection.Iterables;
 import org.gama.lang.exception.Exceptions;
 import org.gama.sql.ConnectionProvider;
 import org.gama.sql.SimpleConnectionProvider;
+import org.gama.sql.binder.ParameterBinder;
 import org.gama.sql.binder.ParameterBinderIndex;
 import org.gama.sql.dml.ReadOperation;
 import org.gama.sql.result.Row;
@@ -41,7 +42,7 @@ public class JoinedStrategiesSelectExecutor<T, I> {
 	
 	/** The surrogate for joining the strategies, will help to build the SQL */
 	private final JoinedStrategiesSelect<T, I> joinedStrategiesSelect;
-	private final ParameterBinderIndex<Column> parameterBinderProvider;
+	private final ParameterBinderIndex<Column, ParameterBinder> parameterBinderProvider;
 	private final Map<Column, int[]> inOperatorValueIndexes = new HashMap<>();
 	private final int blockSize;
 	private final ConnectionProvider connectionProvider;

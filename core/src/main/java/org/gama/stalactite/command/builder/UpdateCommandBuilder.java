@@ -60,7 +60,7 @@ public class UpdateCommandBuilder implements SQLBuilder {
 		
 		// looking for additionnal Tables : more than the updated one, can be found in conditions
 		Set<Column> whereColumns = new LinkedHashSet<>();
-		update.getCriteria().getConditions().forEach(c -> {
+		update.getCriteria().forEach(c -> {
 			if (c instanceof ColumnCriterion) {
 				whereColumns.add(((ColumnCriterion) c).getColumn());
 				Object condition = ((ColumnCriterion) c).getCondition();

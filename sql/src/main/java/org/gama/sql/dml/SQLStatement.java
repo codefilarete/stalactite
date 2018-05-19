@@ -44,7 +44,7 @@ public abstract class SQLStatement<ParamType> {
 	 * @param parameterBinderProvider expected to be the exact necessary binders of every parameters in the SQL order (no more, no less).
 	 * Checked by {@link #assertValuesAreApplyable()}
 	 */
-	protected SQLStatement(PreparedStatementWriterIndex<ParamType> parameterBinderProvider) {
+	protected SQLStatement(PreparedStatementWriterIndex<ParamType, ? extends PreparedStatementWriter> parameterBinderProvider) {
 		this.parameterBinderProvider = parameterBinderProvider;
 		this.expectedParameters = parameterBinderProvider.keys();
 	}

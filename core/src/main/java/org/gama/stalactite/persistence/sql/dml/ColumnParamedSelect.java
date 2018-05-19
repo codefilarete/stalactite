@@ -14,24 +14,24 @@ import org.gama.stalactite.persistence.structure.Column;
  */
 public class ColumnParamedSelect extends ColumnParamedSQL {
 	
-	private final ParameterBinderIndex<String> selectParameterBinders;
+	private final ParameterBinderIndex<String, ParameterBinder> selectParameterBinders;
 	
 	public ColumnParamedSelect(String sql, Map<Column, int[]> columnIndexes, Map<Column, ParameterBinder> parameterBinders, Map<String, ParameterBinder> selectParameterBinders) {
 		super(sql, columnIndexes, parameterBinders);
 		this.selectParameterBinders = ParameterBinderIndex.fromMap(selectParameterBinders);
 	}
 	
-	public ColumnParamedSelect(String sql, Map<Column, int[]> columnIndexes, PreparedStatementWriterIndex<Column> parameterBinderProvider, Map<String, ParameterBinder> selectParameterBinders) {
+	public ColumnParamedSelect(String sql, Map<Column, int[]> columnIndexes, PreparedStatementWriterIndex<Column, ParameterBinder> parameterBinderProvider, Map<String, ParameterBinder> selectParameterBinders) {
 		super(sql, columnIndexes, parameterBinderProvider);
 		this.selectParameterBinders = ParameterBinderIndex.fromMap(selectParameterBinders);
 	}
 	
-	public ColumnParamedSelect(String sql, Map<Column, int[]> columnIndexes, PreparedStatementWriterIndex<Column> parameterBinderProvider, ParameterBinderIndex<String> selectParameterBinders) {
+	public ColumnParamedSelect(String sql, Map<Column, int[]> columnIndexes, PreparedStatementWriterIndex<Column, ParameterBinder> parameterBinderProvider, ParameterBinderIndex<String, ParameterBinder> selectParameterBinders) {
 		super(sql, columnIndexes, parameterBinderProvider);
 		this.selectParameterBinders = selectParameterBinders;
 	}
 	
-	public ParameterBinderIndex<String> getSelectParameterBinders() {
+	public ParameterBinderIndex<String, ParameterBinder> getSelectParameterBinders() {
 		return selectParameterBinders;
 	}
 }

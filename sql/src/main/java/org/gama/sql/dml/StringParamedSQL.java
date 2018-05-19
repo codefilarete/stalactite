@@ -29,11 +29,11 @@ public class StringParamedSQL extends ExpandableStatement<String> {
 		this.parsedSQL = parsedSQL;
 	}
 	
-	public StringParamedSQL(String originalSQL, PreparedStatementWriterIndex<String> parameterBinderProvider) {
+	public StringParamedSQL(String originalSQL, PreparedStatementWriterIndex<String, ? extends PreparedStatementWriter> parameterBinderProvider) {
 		this(new SQLParameterParser(originalSQL).parse(), parameterBinderProvider);
 	}
 	
-	public StringParamedSQL(ParsedSQL parsedSQL, PreparedStatementWriterIndex<String> parameterBinderProvider) {
+	public StringParamedSQL(ParsedSQL parsedSQL, PreparedStatementWriterIndex<String, ? extends PreparedStatementWriter> parameterBinderProvider) {
 		super(null, parameterBinderProvider);
 		this.parsedSQL = parsedSQL;
 	}

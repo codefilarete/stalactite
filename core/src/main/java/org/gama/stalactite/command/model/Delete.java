@@ -27,7 +27,7 @@ public class Delete {
 		return targetTable;
 	}
 	
-	public CriteriaChain<?> getCriteria() {
+	public CriteriaChain getCriteria() {
 		return criteriaSurrogate;
 	}
 	

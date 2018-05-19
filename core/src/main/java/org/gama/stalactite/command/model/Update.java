@@ -32,7 +32,7 @@ public class Update {
 		return targetTable;
 	}
 	
-	public Criteria<?> getCriteria() {
+	public Criteria getCriteria() {
 		return criteriaSurrogate;
 	}
 	

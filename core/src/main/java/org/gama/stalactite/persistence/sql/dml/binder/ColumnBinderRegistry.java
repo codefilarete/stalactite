@@ -24,7 +24,7 @@ import org.gama.stalactite.persistence.structure.Column;
  *
  * @author Guillaume Mary
  */
-public class ColumnBinderRegistry extends ParameterBinderRegistry implements ParameterBinderIndex<Column> {
+public class ColumnBinderRegistry extends ParameterBinderRegistry implements ParameterBinderIndex<Column, ParameterBinder> {
 	
 	/**
 	 * Registry for Columns

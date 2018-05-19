@@ -2,6 +2,7 @@ package org.gama.stalactite.persistence.sql.dml;
 
 import java.util.Map;
 
+import org.gama.sql.binder.ParameterBinder;
 import org.gama.sql.binder.PreparedStatementWriter;
 import org.gama.sql.binder.PreparedStatementWriterIndex;
 import org.gama.sql.dml.ExpandableStatement;
@@ -29,7 +30,7 @@ public class ColumnParamedSQL extends ExpandableStatement<Column> {
 		this.columnIndexes = columnIndexes;
 	}
 	
-	public ColumnParamedSQL(String sql, Map<Column, int[]> columnIndexes, PreparedStatementWriterIndex<Column> parameterBinderProvider) {
+	public ColumnParamedSQL(String sql, Map<Column, int[]> columnIndexes, PreparedStatementWriterIndex<Column, ParameterBinder> parameterBinderProvider) {
 		super(sql, parameterBinderProvider);
 		this.columnIndexes = columnIndexes;
 	}

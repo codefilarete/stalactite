@@ -26,7 +26,7 @@ public class PreparedUpdate extends SQLStatement<UpwhereColumn> {
 		this.columnIndexes = columnIndexes;
 	}
 	
-	public PreparedUpdate(String sql, Map<UpwhereColumn, Integer> columnIndexes, PreparedStatementWriterIndex<UpwhereColumn> parameterBinderProvider) {
+	public PreparedUpdate(String sql, Map<UpwhereColumn, Integer> columnIndexes, PreparedStatementWriterIndex<UpwhereColumn, ? extends PreparedStatementWriter> parameterBinderProvider) {
 		super(parameterBinderProvider);
 		this.sql = sql;
 		this.columnIndexes = columnIndexes;

@@ -45,20 +45,20 @@ public interface ParameterBinderProvider<K> extends PreparedStatementWriterProvi
 	 * 
 	 * @author Guillaume Mary
 	 */
-	class ParameterBinderProviderFromMap<ParamType> implements ParameterBinderProvider<ParamType> {
+	class ParameterBinderProviderFromMap<ParamType, BINDER extends ParameterBinder> implements ParameterBinderProvider<ParamType> {
 		
-		private final Map<ParamType, ParameterBinder> parameterBinders;
+		private final Map<ParamType, BINDER> parameterBinders;
 		
-		public ParameterBinderProviderFromMap(Map<ParamType, ParameterBinder> parameterBinders) {
+		public ParameterBinderProviderFromMap(Map<ParamType, BINDER> parameterBinders) {
 			this.parameterBinders = parameterBinders;
 		}
 		
-		public Map<ParamType, ParameterBinder> getParameterBinders() {
+		public Map<ParamType, BINDER> getParameterBinders() {
 			return parameterBinders;
 		}
 		
 		@Override
-		public ParameterBinder doGetBinder(ParamType key) {
+		public BINDER doGetBinder(ParamType key) {
 			return parameterBinders.get(key);
 		}
 		

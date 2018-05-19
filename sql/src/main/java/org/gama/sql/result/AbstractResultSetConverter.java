@@ -15,7 +15,7 @@ import org.gama.sql.binder.ResultSetReader;
  * @param <T> the type of beans
  * @author Guillaume Mary
  */
-public abstract class AbstractResultSetConverter<I, T> {
+public interface AbstractResultSetConverter<I, T> {
 	
 	/**
 	 * Defines a complementary column that will be mapped on a bean property.
@@ -23,7 +23,7 @@ public abstract class AbstractResultSetConverter<I, T> {
 	 *
 	 * @param columnConsumer the object that will do the reading and mapping
 	 */
-	public abstract void add(ColumnConsumer<T, ?> columnConsumer);
+	void add(ColumnConsumer<T, ?> columnConsumer);
 	
 	/**
 	 * Detailed version of {@link #add(ColumnConsumer)}
@@ -33,7 +33,7 @@ public abstract class AbstractResultSetConverter<I, T> {
 	 * @param combiner the applyer of the value over a bean property
 	 * @param <V> the type of the read value, must be compatible with the bean property input
 	 */
-	public <V> void add(String columnName, ResultSetReader<V> reader, BiConsumer<T, V> combiner) {
+	default <V> void add(String columnName, ResultSetReader<V> reader, BiConsumer<T, V> combiner) {
 		add(new ColumnConsumer<>(columnName, reader, combiner));
 	}
 	
@@ -49,7 +49,7 @@ public abstract class AbstractResultSetConverter<I, T> {
 	 * @param <V> the type of the read value, must be compatible with the bean property input
 	 * @param <C> the collection type
 	 */
-	public <V, C extends Collection<V>> void add(String columnName, ResultSetReader<V> reader,
+	default <V, C extends Collection<V>> void add(String columnName, ResultSetReader<V> reader,
 												 Function<T, C> collectionAccessor, BiConsumer<T, C> collectionMutator, Supplier<C> collectionFactory) {
 		add(new ColumnConsumer<>(columnName, reader, (t, v) -> {
 			C collection = collectionAccessor.apply(t);
@@ -69,7 +69,7 @@ public abstract class AbstractResultSetConverter<I, T> {
 	 * @return an instance of T, newly created or not according to implementation
 	 * @throws SQLException due to {@link ResultSet} reading
 	 */
-	public abstract T transform(ResultSet resultSet) throws SQLException;
+	T transform(ResultSet resultSet) throws SQLException;
 	
 	/**
 	 * Clones this for another type of bean.
@@ -81,7 +81,7 @@ public abstract class AbstractResultSetConverter<I, T> {
 	 * @param <C> the target bean type
 	 * @return a new instance, kind of clone of this but for another type
 	 */
-	public abstract <C> AbstractResultSetConverter<I, C> copyFor(Class<C> beanType, Function<I, C> beanFactory);
+	<C> AbstractResultSetConverter<I, C> copyFor(Class<C> beanType, Function<I, C> beanFactory);
 	
 	/**
 	 * Makes a copy of this instance with column translation.
@@ -91,14 +91,14 @@ public abstract class AbstractResultSetConverter<I, T> {
 	 * 						Can be implemented with a switch/case, a prefix/suffix concatenation, etc
 	 * @return a new instance, kind of clone of this
 	 */
-	public abstract AbstractResultSetConverter<I, T> copyWithMapping(Function<String, String> columMapping);
+	AbstractResultSetConverter<I, T> copyWithMapping(Function<String, String> columMapping);
 	
 	/**
 	 * Same as {@link #copyWithMapping(Function)} but with a concrete mapping through a {@link Map}
 	 * @param columMapping the mapping between column names declared by {@link #add(String, ResultSetReader, BiConsumer)} and new ones
 	 * @return a new instance, kind of clone of this
 	 */
-	public AbstractResultSetConverter<I, T> copyWithMapping(Map<String, String> columMapping) {
+	default AbstractResultSetConverter<I, T> copyWithMapping(Map<String, String> columMapping) {
 		return copyWithMapping(columMapping::get);
 	}
 }

@@ -21,7 +21,7 @@ public class PreparedSQL extends SQLStatement<Integer> {
 		this.sql = sql;
 	}
 	
-	public PreparedSQL(String sql, PreparedStatementWriterIndex<Integer> parameterBinderProvider) {
+	public PreparedSQL(String sql, PreparedStatementWriterIndex<Integer, ? extends PreparedStatementWriter> parameterBinderProvider) {
 		super(parameterBinderProvider);
 		this.sql = sql;
 	}

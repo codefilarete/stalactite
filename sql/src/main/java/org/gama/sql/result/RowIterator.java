@@ -46,7 +46,7 @@ public class RowIterator extends ResultSetIterator<Row> {
 	 * @param rs a ResultSet to wrap into an {@link java.util.Iterator}
 	 * @param columnNameBinders object to extract column names and associated {@link ParameterBinder} to use for <t>ResultSet</t> reading
 	 */
-	public RowIterator(ResultSet rs, ParameterBinderIndex<String> columnNameBinders) {
+	public RowIterator(ResultSet rs, ParameterBinderIndex<String, ? extends ParameterBinder> columnNameBinders) {
 		super(rs);
 		decoders = Decoder.decoders(columnNameBinders.all());
 	}

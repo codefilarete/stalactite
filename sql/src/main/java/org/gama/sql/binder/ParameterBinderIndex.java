@@ -11,7 +11,7 @@ import java.util.Set;
  * 
  * @author Guillaume Mary
  */
-public interface ParameterBinderIndex<K> extends ParameterBinderProvider<K>, PreparedStatementWriterIndex<K> {
+public interface ParameterBinderIndex<K, BINDER extends ParameterBinder> extends ParameterBinderProvider<K>, PreparedStatementWriterIndex<K, BINDER> {
 	
 	/**
 	 * @return all available keys
@@ -22,14 +22,14 @@ public interface ParameterBinderIndex<K> extends ParameterBinderProvider<K>, Pre
 	 * Aims at being used for iterating over all keys and values instead of calling {@link #getBinder(Object)} for each element of {@link #keys()}
 	 * @return all the key + value pairs of this index
 	 */
-	Set<Entry<K, ParameterBinder>> all();
+	Set<Entry<K, BINDER>> all();
 	
 	/**
 	 * Short way of getting a {@link ParameterBinderIndex} from a Map
 	 * @param parameterBinders the source of {@link ParameterBinder}
 	 * @return a {@link ParameterBinderIndex} backed by the Map
 	 */
-	static <K> ParameterBinderIndex<K> fromMap(Map<K, ParameterBinder> parameterBinders) {
+	static <K, BINDER extends ParameterBinder> ParameterBinderIndex<K, BINDER> fromMap(Map<K, BINDER> parameterBinders) {
 		return new ParameterBinderIndexFromMap<>(parameterBinders);
 	}
 	
@@ -38,9 +38,9 @@ public interface ParameterBinderIndex<K> extends ParameterBinderProvider<K>, Pre
 	 * 
 	 * @author Guillaume Mary
 	 */
-	class ParameterBinderIndexFromMap<ParamType> extends ParameterBinderProviderFromMap<ParamType> implements ParameterBinderIndex<ParamType> {
+	class ParameterBinderIndexFromMap<ParamType, BINDER extends ParameterBinder> extends ParameterBinderProviderFromMap<ParamType, BINDER> implements ParameterBinderIndex<ParamType, BINDER> {
 		
-		public ParameterBinderIndexFromMap(Map<ParamType, ParameterBinder> parameterBinders) {
+		public ParameterBinderIndexFromMap(Map<ParamType, BINDER> parameterBinders) {
 			super(parameterBinders);
 		}
 		
@@ -50,7 +50,7 @@ public interface ParameterBinderIndex<K> extends ParameterBinderProvider<K>, Pre
 		}
 		
 		@Override
-		public Set<Entry<ParamType, ParameterBinder>> all() {
+		public Set<Entry<ParamType, BINDER>> all() {
 			return getParameterBinders().entrySet();
 		}
 	}

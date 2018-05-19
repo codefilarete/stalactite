@@ -23,8 +23,8 @@ import org.gama.sql.binder.ResultSetReader;
  *     
  * @author Guillaume Mary
  */
-public class ResultSetRowConverter<I, T> extends AbstractResultSetConverter<I, T>
-		implements Converter<ResultSet, T, SQLException>, ResultSetRowAssembler<T> {
+public class ResultSetRowConverter<I, T>
+		implements AbstractResultSetConverter<I, T>, Converter<ResultSet, T, SQLException>, ResultSetRowAssembler<T> {
 	
 	private final String columnName;
 	
@@ -34,7 +34,7 @@ public class ResultSetRowConverter<I, T> extends AbstractResultSetConverter<I, T
 	
 	private final Class<T> beanType;
 	
-	private final List<ColumnConsumer<T, ?>> consumers = new ArrayList<>();
+	private final List<ColumnConsumer<T, Object>> consumers = new ArrayList<>();
 	
 	/**
 	 * Constructor with main and mandatory arguments
@@ -66,7 +66,7 @@ public class ResultSetRowConverter<I, T> extends AbstractResultSetConverter<I, T
 		return beanFactory;
 	}
 	
-	public List<ColumnConsumer<T, ?>> getConsumers() {
+	public List<ColumnConsumer<T, Object>> getConsumers() {
 		return consumers;
 	}
 	
@@ -78,7 +78,7 @@ public class ResultSetRowConverter<I, T> extends AbstractResultSetConverter<I, T
 	 */
 	@Override
 	public void add(ColumnConsumer<T, ?> columnConsumer) {
-		this.consumers.add(columnConsumer);
+		this.consumers.add((ColumnConsumer<T, Object>) columnConsumer);
 	}
 	
 	@Override

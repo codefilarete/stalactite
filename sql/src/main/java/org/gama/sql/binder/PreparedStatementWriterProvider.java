@@ -30,15 +30,15 @@ public interface PreparedStatementWriterProvider<K> {
 	 *
 	 * @author Guillaume Mary
 	 */
-	class PreparedStatementWriterProviderFromMap<ParamType> implements PreparedStatementWriterProvider<ParamType> {
+	class PreparedStatementWriterProviderFromMap<ParamType, BINDER extends PreparedStatementWriter> implements PreparedStatementWriterProvider<ParamType> {
 		
-		private final Map<ParamType, ? extends PreparedStatementWriter> parameterBinders;
+		private final Map<ParamType, BINDER> parameterBinders;
 		
-		public PreparedStatementWriterProviderFromMap(Map<ParamType, ? extends PreparedStatementWriter> parameterBinders) {
+		public PreparedStatementWriterProviderFromMap(Map<ParamType, BINDER> parameterBinders) {
 			this.parameterBinders = parameterBinders;
 		}
 		
-		public Map<ParamType, ? extends PreparedStatementWriter> getParameterBinders() {
+		public Map<ParamType, BINDER> getParameterBinders() {
 			return parameterBinders;
 		}
 		
