@@ -13,7 +13,7 @@ import org.gama.lang.collection.Iterables;
 import org.gama.lang.trace.IncrementableInt;
 import org.gama.sql.binder.ParameterBinder;
 import org.gama.stalactite.persistence.engine.DMLExecutor;
-import org.gama.stalactite.persistence.sql.dml.PreparedUpdate.UpwhereColumn;
+import org.gama.stalactite.persistence.mapping.IMappingStrategy.UpwhereColumn;
 import org.gama.stalactite.persistence.sql.dml.binder.ColumnBinderRegistry;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;

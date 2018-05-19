@@ -5,6 +5,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.NoSuchElementException;
 
 import org.gama.lang.collection.Arrays;
 import org.gama.sql.test.DerbyInMemoryDataSource;
@@ -15,6 +16,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class ResultSetIteratorTest {
@@ -29,7 +31,7 @@ public class ResultSetIteratorTest {
 	
 	@ParameterizedTest
 	@MethodSource("dataSources")
-	public void testHasNext_emptyResultSet(DataSource dataSource) throws Exception {
+	public void testHasNext_emptyResultSet(DataSource dataSource) throws SQLException {
 		Connection connection = dataSource.getConnection();
 		ensureTable(connection);
 		
@@ -47,7 +49,7 @@ public class ResultSetIteratorTest {
 	
 	@ParameterizedTest
 	@MethodSource("dataSources")
-	public void testHasNext_filledResultSet(DataSource dataSource) throws Exception {
+	public void testHasNext_filledResultSet(DataSource dataSource) throws SQLException {
 		Connection connection = dataSource.getConnection();
 		ensureTable(connection);
 
@@ -75,7 +77,35 @@ public class ResultSetIteratorTest {
 	
 	@ParameterizedTest
 	@MethodSource("dataSources")
-	public void testConvert(DataSource dataSource) throws Exception {
+	public void testNext_withoutCallToHasNext_throwsNoSucheElementException(DataSource dataSource) throws SQLException {
+		Connection connection = dataSource.getConnection();
+		ensureTable(connection);
+		
+		PreparedStatement insertDataStmnt = connection.prepareStatement("insert into Toto(name) values ('a'), ('b'), ('c')");
+		insertDataStmnt.execute();
+		connection.commit();
+		
+		PreparedStatement selectStmnt = connection.prepareStatement("select name from Toto");
+		ResultSet selectStmntRs = selectStmnt.executeQuery();
+		
+		ResultSetIterator<String> resultSetIterator = new ResultSetIterator<String>(selectStmntRs) {
+			@Override
+			public String convert(ResultSet rs) throws SQLException {
+				return rs.getString("name");
+			}
+		};
+		// No call to hasNext() throws NoSuchElementException
+		assertThrows(NoSuchElementException.class, resultSetIterator::next);
+		
+		// Multiple calls to next() without calling hasNext() throw NoSuchElementException
+		assertTrue(resultSetIterator.hasNext());
+		resultSetIterator.next();
+		assertThrows(NoSuchElementException.class, resultSetIterator::next);
+	}
+	
+	@ParameterizedTest
+	@MethodSource("dataSources")
+	public void testConvert(DataSource dataSource) throws SQLException {
 		Connection connection = dataSource.getConnection();
 		ensureTable(connection);
 		

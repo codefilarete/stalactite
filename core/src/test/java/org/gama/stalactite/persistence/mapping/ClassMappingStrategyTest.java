@@ -15,7 +15,7 @@ import org.gama.reflection.Accessors;
 import org.gama.reflection.IReversibleAccessor;
 import org.gama.reflection.PropertyAccessor;
 import org.gama.stalactite.persistence.id.manager.AlreadyAssignedIdentifierManager;
-import org.gama.stalactite.persistence.sql.dml.PreparedUpdate.UpwhereColumn;
+import org.gama.stalactite.persistence.mapping.IMappingStrategy.UpwhereColumn;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
 import org.junit.jupiter.api.BeforeAll;
@@ -88,7 +88,8 @@ public class ClassMappingStrategyTest {
 			String columnName = "cold_" + i;
 			collectionColumn.add(targetTable.addColumn(columnName, String.class));
 		}
-		testInstance.put(myListField, new ColumnedCollectionMappingStrategy<List<String>, String>(targetTable, collectionColumn, (Class<List<String>>) (Class) ArrayList.class) {
+		testInstance.put(myListField, new ColumnedCollectionMappingStrategy<List<String>, String>(targetTable,
+				collectionColumn, (Class<List<String>>) (Class) ArrayList.class) {
 			
 			@Override
 			protected String toCollectionValue(Object object) {
@@ -97,24 +98,25 @@ public class ClassMappingStrategyTest {
 		});
 		
 		// Additionnal mapping: the map is mapped to 2 additionnal columns
-		final Map<String, Column> mappedColumnsOnKey = new HashMap<>();
+		Map<String, Column> mappedColumnsByKey = new HashMap<>();
 		for (int i = 1; i <= 2; i++) {
 			String columnName = "cole_" + i;
 			Column column = targetTable.addColumn(columnName, String.class);
 			switch (i) {
 				case 1:
-					mappedColumnsOnKey.put("x", column);
+					mappedColumnsByKey.put("x", column);
 					break;
 				case 2:
-					mappedColumnsOnKey.put("y", column);
+					mappedColumnsByKey.put("y", column);
 					break;
 			}
 		}
-		testInstance.put(myMapField, new ColumnedMapMappingStrategy<Map<String, String>, String, String, String>(targetTable, new HashSet<>(mappedColumnsOnKey.values()), (Class<Map<String, String>>) (Class) HashMap.class) {
+		testInstance.put(myMapField, new ColumnedMapMappingStrategy<Map<String, String>, String, String, String>(targetTable,
+				new HashSet<>(mappedColumnsByKey.values()), (Class<Map<String, String>>) (Class) HashMap.class) {
 			
 			@Override
 			protected Column getColumn(String key) {
-				Column column = mappedColumnsOnKey.get(key);
+				Column column = mappedColumnsByKey.get(key);
 				if (column == null) {
 					throw new IllegalArgumentException("Unknown key " + key);
 				} else {

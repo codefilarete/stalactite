@@ -67,7 +67,8 @@ public abstract class SQLOperation<ParamType> implements AutoCloseable {
 	}
 	
 	/**
-	 * Sets value for given parameter/index
+	 * Simple wrapping over {@link SQLStatement#setValue(Object, Object)}
+	 * 
 	 * @param index parameter/index for which value mumst be set
 	 * @param value parameter/index value
 	 */

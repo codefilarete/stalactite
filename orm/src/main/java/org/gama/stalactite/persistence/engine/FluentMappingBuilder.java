@@ -140,41 +140,41 @@ public class FluentMappingBuilder<T extends Identified, I extends StatefullIdent
 		return table;
 	}
 	
-	private Method captureLambdaMethod(SerializableFunction function) {
-		return this.spy.findMethod(function);
+	private Method captureLambdaMethod(SerializableFunction getter) {
+		return this.spy.findMethod(getter);
 	}
 	
-	private Method captureLambdaMethod(SerializableBiConsumer function) {
-		return this.spy.findMethod(function);
+	private Method captureLambdaMethod(SerializableBiConsumer setter) {
+		return this.spy.findMethod(setter);
 	}
 	
 	@Override
-	public <O> IFluentMappingBuilderColumnOptions<T, I> add(SerializableBiConsumer<T, O> function) {
-		Method method = captureLambdaMethod(function);
+	public <O> IFluentMappingBuilderColumnOptions<T, I> add(SerializableBiConsumer<T, O> setter) {
+		Method method = captureLambdaMethod(setter);
 		return add(method, (String) null);
 	}
 	
 	@Override
-	public <O> IFluentMappingBuilderColumnOptions<T, I> add(SerializableFunction<T, O> function) {
-		Method method = captureLambdaMethod(function);
+	public <O> IFluentMappingBuilderColumnOptions<T, I> add(SerializableFunction<T, O> getter) {
+		Method method = captureLambdaMethod(getter);
 		return add(method, (String) null);
 	}
 	
 	@Override
-	public <O> IFluentMappingBuilderColumnOptions<T, I> add(SerializableBiConsumer<T, O> function, String columnName) {
-		Method method = captureLambdaMethod(function);
+	public <O> IFluentMappingBuilderColumnOptions<T, I> add(SerializableBiConsumer<T, O> setter, String columnName) {
+		Method method = captureLambdaMethod(setter);
 		return add(method, columnName);
 	}
 	
 	@Override
-	public IFluentMappingBuilderColumnOptions<T, I> add(SerializableFunction<T, ?> function, String columnName) {
-		Method method = captureLambdaMethod(function);
+	public IFluentMappingBuilderColumnOptions<T, I> add(SerializableFunction<T, ?> getter, String columnName) {
+		Method method = captureLambdaMethod(getter);
 		return add(method, columnName);
 	}
 	
 	@Override
-	public <O> IFluentMappingBuilderColumnOptions<T, I> add(SerializableFunction<T, O> function, Column<O> column) {
-		Method method = captureLambdaMethod(function);
+	public <O> IFluentMappingBuilderColumnOptions<T, I> add(SerializableFunction<T, O> getter, Column<O> column) {
+		Method method = captureLambdaMethod(getter);
 		return add(method, column);
 	}
 	
@@ -215,13 +215,13 @@ public class FluentMappingBuilder<T extends Identified, I extends StatefullIdent
 	}
 	
 	private void assertMappingIsNotAlreadyDefined(@javax.annotation.Nullable String columnName, PropertyAccessor propertyAccessor) {
-		Predicate<Linkage> checker = ((Predicate<Linkage>) (linkage -> {
+		Predicate<Linkage> checker = ((Predicate<Linkage>) linkage -> {
 			PropertyAccessor<T, ?> accessor = linkage.getAccessor();
 			if (accessor.equals(propertyAccessor)) {
 				throw new IllegalArgumentException("Mapping is already defined by the method " + accessor.getAccessor());
 			}
 			return true;
-		})).and(linkage -> {
+		}).and(linkage -> {
 			if (columnName != null && columnName.equals(linkage.getColumnName())) {
 				throw new IllegalArgumentException("Mapping is already defined for " + columnName);
 			}
@@ -263,12 +263,12 @@ public class FluentMappingBuilder<T extends Identified, I extends StatefullIdent
 	}
 	
 	@Override
-	public <O extends Identified, J extends StatefullIdentifier> IFluentMappingBuilderOneToOneOptions<T, I> addOneToOne(SerializableFunction<T, O> function,
+	public <O extends Identified, J extends StatefullIdentifier> IFluentMappingBuilderOneToOneOptions<T, I> addOneToOne(SerializableFunction<T, O> getter,
 																														Persister<O, J> persister) {
 		// we declare the column on our side: we do it first because it checks some rules
-		add(function);
+		add(getter);
 		// we keep it
-		CascadeOne<T, O, J> cascadeOne = new CascadeOne<>(function, persister, captureLambdaMethod(function));
+		CascadeOne<T, O, J> cascadeOne = new CascadeOne<>(getter, persister, captureLambdaMethod(getter));
 		this.cascadeOnes.add(cascadeOne);
 		// then we return an object that allows fluent settings over our OneToOne cascade instance
 		IFluentMappingBuilderOneToOneOptions[] finalHack = new IFluentMappingBuilderOneToOneOptions[1];
@@ -297,8 +297,8 @@ public class FluentMappingBuilder<T extends Identified, I extends StatefullIdent
 	
 	@Override
 	public <O extends Identified, J extends StatefullIdentifier, C extends Collection<O>> IFluentMappingBuilderOneToManyOptions<T, I, O> addOneToMany(
-			SerializableFunction<T, C> function, Persister<O, J> persister) {
-		CascadeMany<T, O, J, C> cascadeMany = new CascadeMany<>(function, persister, captureLambdaMethod(function));
+			SerializableFunction<T, C> getter, Persister<O, J> persister) {
+		CascadeMany<T, O, J, C> cascadeMany = new CascadeMany<>(getter, persister, captureLambdaMethod(getter));
 		this.cascadeManys.add(cascadeMany);
 		IFluentMappingBuilderOneToManyOptions[] finalHack = new IFluentMappingBuilderOneToManyOptions[1];
 		IFluentMappingBuilderOneToManyOptions<T, I, O> proxy = new MethodDispatcher()
@@ -343,15 +343,15 @@ public class FluentMappingBuilder<T extends Identified, I extends StatefullIdent
 	}
 	
 	@Override
-	public <O> IFluentMappingBuilderEmbedOptions<T, I> embed(SerializableBiConsumer<T, O> function) {
-		Inset<T, O> inset = new Inset<>(function);
+	public <O> IFluentMappingBuilderEmbedOptions<T, I> embed(SerializableBiConsumer<T, O> setter) {
+		Inset<T, O> inset = new Inset<>(setter);
 		insets.add(inset);
 		return embed(inset);
 	}
 	
 	@Override
-	public <O> IFluentMappingBuilderEmbedOptions<T, I> embed(SerializableFunction<T, O> function) {
-		Inset<T, O> inset = new Inset<>(function);
+	public <O> IFluentMappingBuilderEmbedOptions<T, I> embed(SerializableFunction<T, O> getter) {
+		Inset<T, O> inset = new Inset<>(getter);
 		insets.add(inset);
 		return embed(inset);
 	}
@@ -360,16 +360,16 @@ public class FluentMappingBuilder<T extends Identified, I extends StatefullIdent
 		return new MethodDispatcher()
 				.redirect(EmbedOptions.class, new EmbedOptions() {
 					@Override
-					public IFluentMappingBuilderEmbedOptions overrideName(SerializableFunction methodRef, String columnName) {
-						inset.overrideName(methodRef, columnName);
+					public IFluentMappingBuilderEmbedOptions overrideName(SerializableFunction getter, String columnName) {
+						inset.overrideName(getter, columnName);
 						// we can't return this nor FluentMappingBuilder.this because none of them implements IFluentMappingBuilderEmbedOptions
 						// so we return anything (null) and ask for returning proxy
 						return null;
 					}
 					
 					@Override
-					public IFluentMappingBuilderEmbedOptions override(SerializableFunction methodRef, Column targetColumn) {
-						inset.override(methodRef, targetColumn);
+					public IFluentMappingBuilderEmbedOptions override(SerializableFunction getter, Column targetColumn) {
+						inset.override(getter, targetColumn);
 						// we can't return this nor FluentMappingBuilder.this because none of them implements IFluentMappingBuilderEmbedOptions
 						// so we return anything (null) and ask for returning proxy
 						return null;
@@ -492,13 +492,14 @@ public class FluentMappingBuilder<T extends Identified, I extends StatefullIdent
 			}
 		}
 		
+		Table targetTable = localPersister.getTargetTable();
+		Map<String, Column> columnsPerName = targetTable.mapColumnsOnName();
+		Map<PropertyAccessor, Column> propertyMapping = new HashMap<>();
 		for (Inset<?, ?> inset : this.insets) {
 			// Building the mapping of the value-object's fields to the table
-			Map<String, Column> columnsPerName = localPersister.getTargetTable().mapColumnsOnName();
-			Map<PropertyAccessor, Column> mapping = new HashMap<>();
 			FieldIterator fieldIterator = new FieldIterator(inset.embeddedClass);
-			while (fieldIterator.hasNext()) {
-				Field field = fieldIterator.next();
+			propertyMapping.clear();
+			fieldIterator.forEachRemaining(field -> {
 				// looking for the targeted column
 				Column targetColumn;
 				// overriden column is taken first
@@ -515,13 +516,14 @@ public class FluentMappingBuilder<T extends Identified, I extends StatefullIdent
 						if (overridenName != null) {
 							columnName = overridenName;
 						}
-						targetColumn = localPersister.getTargetTable().addColumn(columnName, field.getType());
+						targetColumn = targetTable.addColumn(columnName, field.getType());
+						columnsPerName.put(columnName, targetColumn);
 					}
 				}
-				mapping.put(Accessors.of(field), targetColumn);
-			}
+				propertyMapping.put(Accessors.of(field), targetColumn);
+			});
 			// We simply register a specialized mapping strategy for the field into the main strategy
-			EmbeddedBeanMappingStrategy beanMappingStrategy = new EmbeddedBeanMappingStrategy(inset.embeddedClass, mapping);
+			EmbeddedBeanMappingStrategy beanMappingStrategy = new EmbeddedBeanMappingStrategy(inset.embeddedClass, propertyMapping);
 			mappingStrategy.put(Accessors.of(inset.insetAccessor), beanMappingStrategy);
 		}
 		

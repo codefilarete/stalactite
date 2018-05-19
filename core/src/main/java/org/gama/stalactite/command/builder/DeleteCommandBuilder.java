@@ -86,7 +86,7 @@ public class DeleteCommandBuilder implements SQLBuilder {
 		PreparedSQLWrapper preparedSQLWrapper = new PreparedSQLWrapper(new StringAppenderWrapper(new StringAppender(), dmlNameProvider), columnBinderRegistry, dmlNameProvider);
 		String sql = toSQL(preparedSQLWrapper, dmlNameProvider);
 		
-		// final assemble
+		// final assembly
 		PreparedSQL result = new PreparedSQL(sql, preparedSQLWrapper.getParameterBinders());
 		result.setValues(preparedSQLWrapper.getValues());
 		return result;

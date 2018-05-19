@@ -15,11 +15,11 @@ import org.gama.sql.RollbackObserver;
 import org.gama.sql.dml.WriteOperation;
 import org.gama.stalactite.persistence.engine.RowCountManager.RowCounter;
 import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
+import org.gama.stalactite.persistence.mapping.IMappingStrategy.UpwhereColumn;
 import org.gama.stalactite.persistence.sql.dml.DMLGenerator;
 import org.gama.stalactite.persistence.sql.dml.PreparedUpdate;
-import org.gama.stalactite.persistence.sql.dml.PreparedUpdate.UpwhereColumn;
-import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.persistence.structure.Column;
+import org.gama.stalactite.persistence.structure.Table;
 
 import static org.gama.stalactite.persistence.engine.RowCountManager.THROWING_ROW_COUNT_MANAGER;
 
@@ -65,12 +65,12 @@ public class UpdateExecutor<T, I> extends UpsertExecutor<T, I> {
 	public int updateById(Iterable<T> iterable) {
 		Set<Column> columnsToUpdate = getMappingStrategy().getUpdatableColumns();
 		PreparedUpdate updateOperation = getDmlGenerator().buildUpdate(columnsToUpdate, getMappingStrategy().getVersionedKeys());
-		WriteOperation<PreparedUpdate.UpwhereColumn> writeOperation = newWriteOperation(updateOperation, new CurrentConnectionProvider());
+		WriteOperation<UpwhereColumn> writeOperation = newWriteOperation(updateOperation, new CurrentConnectionProvider());
 		
 		JDBCBatchingIterator<T> jdbcBatchingIterator = new JDBCBatchingIterator<>(iterable, writeOperation, getBatchSize());
 		while(jdbcBatchingIterator.hasNext()) {
 			T t = jdbcBatchingIterator.next();
-			Map<PreparedUpdate.UpwhereColumn, Object> updateValues = getMappingStrategy().getUpdateValues(t, null, true);
+			Map<UpwhereColumn, Object> updateValues = getMappingStrategy().getUpdateValues(t, null, true);
 			writeOperation.addBatch(updateValues);
 		}
 		return jdbcBatchingIterator.getUpdatedRowCount();
@@ -113,7 +113,7 @@ public class UpdateExecutor<T, I> extends UpsertExecutor<T, I> {
 		// we never update primary key (by principle and for persistent bean cache based on id (on what else ?)) 
 		Set<Column> columnsToUpdate = targetTable.getColumnsNoPrimaryKey();
 		PreparedUpdate preparedUpdate = getDmlGenerator().buildUpdate(columnsToUpdate, getMappingStrategy().getVersionedKeys());
-		WriteOperation<PreparedUpdate.UpwhereColumn> writeOperation = newWriteOperation(preparedUpdate, new CurrentConnectionProvider());
+		WriteOperation<UpwhereColumn> writeOperation = newWriteOperation(preparedUpdate, new CurrentConnectionProvider());
 		// Since all columns are updated we can benefit from JDBC batch
 		JDBCBatchingOperation jdbcBatchingOperation = new JDBCBatchingOperation(writeOperation, getBatchSize());
 		
@@ -126,17 +126,17 @@ public class UpdateExecutor<T, I> extends UpsertExecutor<T, I> {
 	 * they generate multiple statements according to differences, hence an Iterator is not a good candidate for design.
 	 */
 	private static class JDBCBatchingOperation {
-		private final WriteOperation<PreparedUpdate.UpwhereColumn> writeOperation;
+		private final WriteOperation<UpwhereColumn> writeOperation;
 		private final int batchSize;
 		private long stepCounter = 0;
 		private int updatedRowCount;
 		
-		private JDBCBatchingOperation(WriteOperation<PreparedUpdate.UpwhereColumn> writeOperation, int batchSize) {
+		private JDBCBatchingOperation(WriteOperation<UpwhereColumn> writeOperation, int batchSize) {
 			this.writeOperation = writeOperation;
 			this.batchSize = batchSize;
 		}
 		
-		private void setValues(Map<PreparedUpdate.UpwhereColumn, Object> values) {
+		private void setValues(Map<UpwhereColumn, Object> values) {
 			this.writeOperation.addBatch(values);
 			this.stepCounter++;
 			executeBatchIfNecessary();
@@ -159,7 +159,7 @@ public class UpdateExecutor<T, I> extends UpsertExecutor<T, I> {
 	}
 	
 	private interface JDBCBatchingOperationProvider {
-		JDBCBatchingOperation getJdbcBatchingOperation(Set<PreparedUpdate.UpwhereColumn> upwhereColumns);
+		JDBCBatchingOperation getJdbcBatchingOperation(Set<UpwhereColumn> upwhereColumns);
 		Iterable<JDBCBatchingOperation> getJdbcBatchingOperations();
 	}
 	
@@ -174,7 +174,7 @@ public class UpdateExecutor<T, I> extends UpsertExecutor<T, I> {
 		}
 		
 		@Override
-		public JDBCBatchingOperation getJdbcBatchingOperation(Set<PreparedUpdate.UpwhereColumn> upwhereColumns) {
+		public JDBCBatchingOperation getJdbcBatchingOperation(Set<UpwhereColumn> upwhereColumns) {
 			return this.jdbcBatchingOperation[0];
 		}
 		
@@ -191,7 +191,7 @@ public class UpdateExecutor<T, I> extends UpsertExecutor<T, I> {
 	
 	private class JDBCBatchingOperationCache implements JDBCBatchingOperationProvider {
 		
-		private final Map<Set<PreparedUpdate.UpwhereColumn>, JDBCBatchingOperation> updateOperationCache;
+		private final Map<Set<UpwhereColumn>, JDBCBatchingOperation> updateOperationCache;
 		
 		private JDBCBatchingOperationCache(final CurrentConnectionProvider currentConnectionProvider) {
 			// cache for WriteOperation instances (key is Columns to be updated) for batch use
@@ -202,7 +202,7 @@ public class UpdateExecutor<T, I> extends UpsertExecutor<T, I> {
 		}
 		
 		@Override
-		public JDBCBatchingOperation getJdbcBatchingOperation(Set<PreparedUpdate.UpwhereColumn> upwhereColumns) {
+		public JDBCBatchingOperation getJdbcBatchingOperation(Set<UpwhereColumn> upwhereColumns) {
 			return updateOperationCache.get(upwhereColumns);
 		}
 		
@@ -233,7 +233,7 @@ public class UpdateExecutor<T, I> extends UpsertExecutor<T, I> {
 				T modified = next.getKey();
 				T unmodified = next.getValue();
 				// finding differences between modified instances and unmodified ones
-				Map<PreparedUpdate.UpwhereColumn, Object> updateValues = getMappingStrategy().getUpdateValues(modified, unmodified, allColumns);
+				Map<UpwhereColumn, Object> updateValues = getMappingStrategy().getUpdateValues(modified, unmodified, allColumns);
 				if (!updateValues.isEmpty()) {
 					optimisticLockManager.manageLock(modified, unmodified, updateValues);
 					JDBCBatchingOperation writeOperation = batchingOperationProvider.getJdbcBatchingOperation(updateValues.keySet());

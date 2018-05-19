@@ -113,6 +113,7 @@ public class InsertCommandBuilder implements SQLBuilder {
 			}
 		});
 		
+		// final assembly
 		InsertStatement result = new InsertStatement(sql, parameterBinders, columnIndexes);
 		result.setValues(values);
 		return result;

@@ -12,7 +12,6 @@ import org.gama.lang.bean.Objects;
 import org.gama.reflection.IMutator;
 import org.gama.reflection.IReversibleAccessor;
 import org.gama.sql.result.Row;
-import org.gama.stalactite.persistence.sql.dml.PreparedUpdate.UpwhereColumn;
 import org.gama.stalactite.persistence.structure.Column;
 
 /**
@@ -118,7 +117,7 @@ public class EmbeddedBeanMappingStrategy<T> implements IEmbeddedBeanMapper<T> {
 		return this.rowTransformer.transform(row);
 	}
 	
-	private static abstract class FieldVisitor<K> implements Consumer<Entry<IReversibleAccessor, Column>> {
+	private abstract static class FieldVisitor<K> implements Consumer<Entry<IReversibleAccessor, Column>> {
 		
 		protected Map<K, Object> toReturn = new HashMap<>();
 		

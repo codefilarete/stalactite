@@ -34,7 +34,7 @@ public class PreparedSQL extends SQLStatement<Integer> {
 	protected void doApplyValue(Integer index, Object value, PreparedStatement statement) {
 		PreparedStatementWriter<Object> paramBinder = getParameterBinder(index);
 		if (paramBinder == null) {
-			throw new IllegalArgumentException("Can't find a "+ParameterBinder.class.getName() + " for index " + index + " of value " + value
+			throw new BindingException("Can't find a "+ParameterBinder.class.getName() + " for index " + index + " of value " + value
 					+ " on sql : " + getSQL());
 		}
 		doApplyValue(index, value, paramBinder, statement);

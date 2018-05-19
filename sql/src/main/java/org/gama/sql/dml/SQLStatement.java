@@ -19,9 +19,8 @@ import org.gama.sql.binder.PreparedStatementWriterProvider;
  * Parent class that defines methods for applying values to {@link PreparedStatement} that is supposed to be built
  * with the {@link #getSQL()} method. Mainly used by {@link SQLOperation} subclasses.
  * 
- * @see SQLOperation
- * 
  * @author Guillaume Mary
+ * @see SQLOperation
  */
 public abstract class SQLStatement<ParamType> {
 	
@@ -52,6 +51,7 @@ public abstract class SQLStatement<ParamType> {
 	
 	/**
 	 * Set values to be given to the {@link PreparedStatement}. Values are not applied to {@link PreparedStatement}.
+	 * Not expected to be called by external API
 	 * 
 	 * @see #applyValues(PreparedStatement) 
 	 * @param values
@@ -104,9 +104,10 @@ public abstract class SQLStatement<ParamType> {
 		for (Entry<ParamType, Object> indexToValue : values.entrySet()) {
 			try {
 				doApplyValue(indexToValue.getKey(), indexToValue.getValue(), statement);
-			} catch (Throwable t) {
-				throw new RuntimeException("Error while applying value " + indexToValue.getValue() + " on parameter " + indexToValue.getKey()
-						+ " on statement \"" + getSQL() + "\"", t);
+			} catch (RuntimeException | OutOfMemoryError e) {
+				// NB: in case of BindingException it will be wrapped with some more friendly parameter name
+				// because the original one may use only index (see doApplyValue(..))
+				throw new BindingException(indexToValue.getValue(), indexToValue.getKey(), getSQL(), e);
 			}
 		}
 	}
@@ -151,8 +152,23 @@ public abstract class SQLStatement<ParamType> {
 		try {
 			paramBinder.set(statement, index, value);
 		} catch (SQLException e) {
-			throw new RuntimeException("Error while setting value " + value + " for parameter " + index + " on statement " + getSQL(), e);
+			throw new BindingException(value, index, getSQL(), e);
 		}
 	}
 	
+	public static class BindingException extends RuntimeException {
+		
+		public BindingException(String message) {
+			super(message);
+		}
+		
+		public BindingException(Object value, Object paramId, String sql) {
+			this("Error while setting value " + value + " for parameter " + paramId + " on statement " + sql);
+		}
+		
+		public BindingException(Object value, Object paramId, String sql, Throwable cause) {
+			this(value, paramId, sql);
+			initCause(cause);
+		}
+	}
 }

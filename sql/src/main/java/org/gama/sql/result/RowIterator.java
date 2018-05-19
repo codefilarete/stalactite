@@ -4,8 +4,6 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Comparator;
 import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Set;
 import java.util.TreeSet;
 
 import org.gama.sql.binder.ParameterBinder;
@@ -23,7 +21,7 @@ public class RowIterator extends ResultSetIterator<Row> {
 	private final Iterable<Decoder> decoders;
 	
 	/**
-	 * Constrcucts an instance without {@link ResultSet} : it must be set further with {@link #setResultSet(ResultSet)}.
+	 * Constructs an instance without {@link ResultSet} : it shall be set further with {@link #setResultSet(ResultSet)}.
 	 *
 	 * @param columnNameBinders columns and associated {@link ParameterBinder} to use for {@link ResultSet} reading
 	 */
@@ -32,7 +30,7 @@ public class RowIterator extends ResultSetIterator<Row> {
 	}
 	
 	/**
-	 * Constrcucts an instance that will iterate over the given {@link ResultSet}. It can be change with {@link #setResultSet(ResultSet)}.
+	 * Constructs an instance that will iterate over the given {@link ResultSet}. It can be changed with {@link #setResultSet(ResultSet)}.
 	 *
 	 * @param rs a ResultSet to wrap into an {@link java.util.Iterator}
 	 * @param columnNameBinders column names and associated {@link ParameterBinder} to use for {@link ResultSet} reading
@@ -43,19 +41,18 @@ public class RowIterator extends ResultSetIterator<Row> {
 	}
 	
 	/**
-	 * Constrcucts an instance that will iterate over the given {@link ResultSet}. It can be change with {@link #setResultSet(ResultSet)}.
+	 * Constructs an instance that will iterate over the given {@link ResultSet}. It can be changed with {@link #setResultSet(ResultSet)}.
 	 * 
 	 * @param rs a ResultSet to wrap into an {@link java.util.Iterator}
 	 * @param columnNameBinders object to extract column names and associated {@link ParameterBinder} to use for <t>ResultSet</t> reading
 	 */
 	public RowIterator(ResultSet rs, ParameterBinderIndex<String> columnNameBinders) {
 		super(rs);
-		Set<? extends Entry<String, ? extends ResultSetReader>> all = columnNameBinders.all();
-		decoders = Decoder.decoders(all);
+		decoders = Decoder.decoders(columnNameBinders.all());
 	}
 	
 	/**
-	 * Implementation that convert current {@link ResultSet} line into a {@link Row} according to {@link ResultSetReader}s given at construction time.
+	 * Implementation that converts current {@link ResultSet} line into a {@link Row} according to {@link ResultSetReader}s given at construction time.
 	 * 
 	 * @param rs {@link ResultSet} positionned at line that must be converted
 	 * @return a {@link Row} containing values given by {@link ResultSetReader}s

@@ -53,6 +53,7 @@ public class DDLDeployer {
 	
 	/**
 	 * Main constructor with mandatory objects for its work.
+	 * <strong>Tables to be generated must be declared via {@link DDLSchemaGenerator#addTables(Table, Table...)} </strong>
 	 * 
 	 * @param ddlSchemaGenerator the SQL scripts provider
 	 * @param connectionProvider the {@link Connection} provider for executing SQL scripts

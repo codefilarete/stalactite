@@ -131,7 +131,7 @@ public class PersistenceContext {
 	
 	/**
 	 * Creates a {@link QueryConverter} from a {@link QueryProvider}, so it helps to build beans from a {@link Query}.
-	 * Should be chained by {@link QueryConverter} mapping methods and obviously by its {@link QueryConverter#execute(ConnectionProvider)}
+	 * Should be chained with {@link QueryConverter} mapping methods and obviously with its {@link QueryConverter#execute(ConnectionProvider)}
 	 * method with {@link #getConnectionProvider()} as argument (for instance)
 	 * 
 	 * @param queryProvider the query provider to give the {@link Query} execute to populate beans
@@ -141,12 +141,12 @@ public class PersistenceContext {
 	 * @see org.gama.stalactite.query.model.QueryEase
 	 */
 	public <T> QueryConverter<T> newQuery(QueryProvider queryProvider, Class<T> beanType) {
-		return newQuery(new QueryBuilder(queryProvider.getSelectQuery()).toSQL(), beanType);
+		return newQuery(new QueryBuilder(queryProvider).toSQL(), beanType);
 	}
 	
 	/**
 	 * Creates a {@link QueryConverter} from a {@link Query} in order to build beans from the {@link Query}.
-	 * Should be chained by {@link QueryConverter} mapping methods and obviously by its {@link QueryConverter#execute(ConnectionProvider)}
+	 * Should be chained with {@link QueryConverter} mapping methods and obviously with its {@link QueryConverter#execute(ConnectionProvider)}
 	 * method with {@link #getConnectionProvider()} as argument (for instance)
 	 * 
 	 * @param query the query to execute to populate beans
@@ -160,7 +160,7 @@ public class PersistenceContext {
 	
 	/**
 	 * Creates a {@link QueryConverter} from some SQL in order to build beans from the SQL.
-	 * Should be chained by {@link QueryConverter} mapping methods and obviously by its {@link QueryConverter#execute(ConnectionProvider)}
+	 * Should be chained with {@link QueryConverter} mapping methods and obviously with its {@link QueryConverter#execute(ConnectionProvider)}
 	 * method with {@link #getConnectionProvider()} as argument (for instance)
 	 * 
 	 * @param sql the sql to execute to populate beans

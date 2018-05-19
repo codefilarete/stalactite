@@ -62,7 +62,7 @@ public class ExpandableStatementTest {
 	@MethodSource("testDoApplyValue_data")
 	public void testDoApplyValue(String sql, Map<String, Object> paramValues, Map<String, PreparedStatementWriter> binders, Map<Integer, Integer> expectedIndexes) {
 		Map<Integer, Object> appliedIndexedValues = new HashMap<>();
-		ExpandableStatement<String> testInstance = new StringParamedSQL(sql, binders) {
+		StringParamedSQL testInstance = new StringParamedSQL(sql, binders) {
 			@Override
 			protected <T> void doApplyValue(int index, T value, PreparedStatementWriter<T> paramBinder, PreparedStatement statement) {
 				appliedIndexedValues.put(index, value);
@@ -72,7 +72,8 @@ public class ExpandableStatementTest {
 		for (Map.Entry<String, Object> paramValue : paramValues.entrySet()) {
 			testInstance.setValue(paramValue.getKey(), paramValue.getValue());
 		}
-		testInstance.getSQL();
+		// we ensure presence of the underlying SQL order before applying values to SQL statement
+		testInstance.ensureExpandableSQL(testInstance.getValues());
 		testInstance.applyValues(InvocationHandlerSupport.mock(PreparedStatement.class));
 		assertEquals(new HashMap<>(expectedIndexes), appliedIndexedValues);
 		

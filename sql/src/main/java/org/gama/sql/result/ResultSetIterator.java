@@ -28,6 +28,9 @@ import org.gama.lang.exception.Exceptions;
  *         String next = resultSetIterator.next();
  *     }
  * </pre>
+ * <strong>Due to the nature of {@link ResultSet} we can't know if a next row exists without reading it, hence {@link #hasNext()} must be called
+ * before each access to {@link #next()}, else you'll get {@link NoSuchElementException} on {@link #next()} call.
+ * </strong>
  * 
  * @author Guillaume Mary
  * @see RowIterator
@@ -51,6 +54,8 @@ public abstract class ResultSetIterator<T> extends ReadOnlyIterator<T> implement
 	 * @see #reset() 
 	 */
 	private boolean nextCalled = false;
+	
+	private boolean hasNext = false;
 	
 	/**
 	 * Default constructor
@@ -89,10 +94,11 @@ public abstract class ResultSetIterator<T> extends ReadOnlyIterator<T> implement
 	}
 	
 	/**
-	 * Called when {@link ResultSet} is set. Doesn't rewind the {@link ResultSet} to the beginning.
+	 * Called when {@link ResultSet} is set. Doesn't rewind the {@link ResultSet} to the begining.
 	 */
 	private void reset() {
 		this.nextCalled = false;
+		this.hasNext = false;
 		this.rowNumber = 1;
 	}
 	
@@ -104,8 +110,8 @@ public abstract class ResultSetIterator<T> extends ReadOnlyIterator<T> implement
 	@Override
 	public boolean hasNext() {
 		try {
-			// Warn: operand order is very important to prevent next() to be called unnecessarly
-			return !nextCalled && resultSet.next();
+			// Warn: operand order is very important to prevent next() to be called unecessarly
+			return (hasNext = !nextCalled && resultSet.next());
 		} catch (SQLException e) {
 			throw Exceptions.asRuntimeException(e);
 		} finally {
@@ -115,7 +121,7 @@ public abstract class ResultSetIterator<T> extends ReadOnlyIterator<T> implement
 	
 	@Override
 	public T next() {
-		if (!nextCalled) {
+		if (!hasNext) {
 			// this is necessary to be compliant with Iterator#next(..) contract
 			throw new NoSuchElementException();
 		}
@@ -126,6 +132,7 @@ public abstract class ResultSetIterator<T> extends ReadOnlyIterator<T> implement
 			throw new RuntimeException("Error while reading ResultSet on row " + --rowNumber, e);
 		} finally {
 			nextCalled = false;
+			hasNext = false;
 		}
 	}
 	
