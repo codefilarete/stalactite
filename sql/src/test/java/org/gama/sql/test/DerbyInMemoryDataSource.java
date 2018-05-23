@@ -15,8 +15,8 @@ import org.gama.sql.UrlAwareDataSource;
  */
 public class DerbyInMemoryDataSource extends UrlAwareDataSource {
 	
-	/** No operation logger to get rid of derby.log, see System.setProperty("derby.stream.error.field") */
-	private static final PrintWriter NOOP_LOGGER = new PrintWriter(new NoopWriter());
+	/** No operation logger to get rid of derby.log, see System.setProperty("derby.stream.error.field"), must be public */
+	public static final PrintWriter NOOP_LOGGER = new PrintWriter(new NoopWriter());
 	
 	public DerbyInMemoryDataSource() {
 		// random URL to avoid conflict between tests
