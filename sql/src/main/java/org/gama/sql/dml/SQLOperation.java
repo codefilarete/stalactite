@@ -1,6 +1,7 @@
 package org.gama.sql.dml;
 
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
@@ -43,6 +44,9 @@ public abstract class SQLOperation<ParamType> implements AutoCloseable {
 	
 	/** Parameters that mustn't be logged for security reason for instance */
 	private Set<ParamType> notLoggedParams = Collections.emptySet();
+	
+	/** Timeout for SQl orders, default is null meaning that JDBC default timeout applies, which is generally 0, which means no timeout */
+	private Integer timeout = null;
 	
 	public SQLOperation(SQLStatement<ParamType> sqlStatement, ConnectionProvider connectionProvider) {
 		this.sqlStatement = sqlStatement;
@@ -112,11 +116,31 @@ public abstract class SQLOperation<ParamType> implements AutoCloseable {
 	 * @throws SQLException this of the {@link PreparedStatement#cancel()} method
 	 */
 	public void cancel() throws SQLException {
-		// avoid calling cancel() on a closed statement so only interesting exceptions will be thrown
-		// but we let SQLFeatureNotSupportedException
-		if (this.preparedStatement != null && !this.preparedStatement.isClosed()) {
+		if (this.preparedStatement != null) {
 			this.preparedStatement.cancel();
 		}
+	}
+	
+	/**
+	 * Gives current {@link PreparedStatement}
+	 * 
+	 * @return current {@link PreparedStatement}, maybe null, closed, cancel ...
+	 */
+	@Nullable
+	public PreparedStatement getPreparedStatement() {
+		return preparedStatement;
+	}
+	
+	/**
+	 *
+	 * @return null means default timeout applies, else the timeout set, 0 means infinite (see JDBC specification)
+	 */
+	public Integer getTimeout() {
+		return timeout;
+	}
+	
+	public void setTimeout(int timeout) {
+		this.timeout = timeout;
 	}
 	
 	/**
@@ -151,6 +175,12 @@ public abstract class SQLOperation<ParamType> implements AutoCloseable {
 			}
 		});
 		return loggedValues;
+	}
+	
+	protected void applyTimeout() throws SQLException {
+		if (getTimeout() != null) {
+			this.preparedStatement.setQueryTimeout(getTimeout());
+		}
 	}
 	
 	protected void logExecution() {

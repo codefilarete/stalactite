@@ -77,6 +77,7 @@ public class WriteOperation<ParamType> extends SQLOperation<ParamType> {
 	private int executeUpdate() {
 		logExecution();
 		try {
+			applyTimeout();
 			return doWithRetry(this::doExecuteUpdate);
 		} catch (SQLException | RetryException e) {
 			throw new RuntimeException("Error during " + getSQL(), e);
