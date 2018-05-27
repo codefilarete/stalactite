@@ -5,14 +5,14 @@ import javax.annotation.Nonnull;
 /**
  * Column of a table.
  * 
- * @param <T> the Java type this columns is mapped to
+ * @param <O> the Java type this columns is mapped to
  * @author Guillaume Mary
  */
-public class Column<T> {
+public class Column<T extends Table, O> {
 	
-	private final Table table;
+	private final T table;
 	private final String name;
-	private final Class<T> javaType;
+	private final Class<O> javaType;
 	private final Integer size;
 	private final String absoluteName;
 	private final String alias;
@@ -23,14 +23,14 @@ public class Column<T> {
 	/**
 	 * Build a column
 	 */
-	public Column(@Nonnull Table owner, String name, Class<T> javaType) {
+	public Column(@Nonnull T owner, String name, Class<O> javaType) {
 		this(owner, name, javaType, null);
 	}
 	
 	/**
 	 * Build a column with a size
 	 */
-	public Column(@Nonnull Table owner, String name, Class<T> javaType, Integer size) {
+	public Column(@Nonnull T owner, String name, Class<O> javaType, Integer size) {
 		this.table = owner;
 		this.name = name;
 		this.javaType = javaType;
@@ -40,7 +40,7 @@ public class Column<T> {
 		this.nullable = !javaType.isPrimitive();	// default basic principle
 	}
 	
-	public Table getTable() {
+	public T getTable() {
 		return table;
 	}
 	
@@ -65,7 +65,7 @@ public class Column<T> {
 		return alias;
 	}
 	
-	public Class<T> getJavaType() {
+	public Class<O> getJavaType() {
 		return javaType;
 	}
 	
@@ -103,7 +103,7 @@ public class Column<T> {
 	 * Fluent API. Set this column as primary of the table.
 	 * @return this
 	 */
-	public Column<T> primaryKey() {
+	public Column<T, O> primaryKey() {
 		setPrimaryKey(true);
 		return this;
 	}

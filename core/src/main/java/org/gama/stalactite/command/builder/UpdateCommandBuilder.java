@@ -31,12 +31,12 @@ import org.gama.stalactite.query.model.Operand;
  * 
  * @author Guillaume Mary
  */
-public class UpdateCommandBuilder implements SQLBuilder {
+public class UpdateCommandBuilder<T extends Table> implements SQLBuilder {
 	
-	private final Update update;
+	private final Update<T> update;
 	private final MultiTableAwareDMLNameProvider dmlNameProvider;
 	
-	public UpdateCommandBuilder(Update update) {
+	public UpdateCommandBuilder(Update<T> update) {
 		this.update = update;
 		this.dmlNameProvider = new MultiTableAwareDMLNameProvider();
 	}
@@ -59,7 +59,7 @@ public class UpdateCommandBuilder implements SQLBuilder {
 		result.cat("update ");
 		
 		// looking for additionnal Tables : more than the updated one, can be found in conditions
-		Set<Column> whereColumns = new LinkedHashSet<>();
+		Set<Column<T, Object>> whereColumns = new LinkedHashSet<>();
 		update.getCriteria().forEach(c -> {
 			if (c instanceof ColumnCriterion) {
 				whereColumns.add(((ColumnCriterion) c).getColumn());
@@ -69,7 +69,7 @@ public class UpdateCommandBuilder implements SQLBuilder {
 				}
 			}
 		});
-		Set<Table> additionalTables = Iterables.minus(
+		Set<T> additionalTables = Iterables.minus(
 				Iterables.collect(whereColumns, Column::getTable, HashSet::new),
 				Arrays.asList(this.update.getTargetTable()));
 		
@@ -79,9 +79,9 @@ public class UpdateCommandBuilder implements SQLBuilder {
 		result.cat(this.update.getTargetTable().getAbsoluteName())    // main table is always referenced with name (not alias)
 				.catIf(dmlNameProvider.isMultiTable(), ", ");
 		// additional tables (with optional alias)
-		Iterator<Table> iterator = additionalTables.iterator();
+		Iterator<T> iterator = additionalTables.iterator();
 		while (iterator.hasNext()) {
-			Table next = iterator.next();
+			T next = iterator.next();
 			result.cat(next.getAbsoluteName()).catIf(iterator.hasNext(), ", ");
 		}
 		
@@ -125,14 +125,14 @@ public class UpdateCommandBuilder implements SQLBuilder {
 		}
 	}
 	
-	public UpdateStatement toStatement(ColumnBinderRegistry columnBinderRegistry) {
+	public UpdateStatement<T> toStatement(ColumnBinderRegistry columnBinderRegistry) {
 		// We ask for SQL generation through a PreparedSQLWrapper because we need SQL placeholders for where + update clause
 		PreparedSQLWrapper preparedSQLWrapper = new PreparedSQLWrapper(new StringAppenderWrapper(new StringAppender(), dmlNameProvider), columnBinderRegistry, dmlNameProvider);
 		String sql = toSQL(preparedSQLWrapper, dmlNameProvider);
 		
 		Map<Integer, Object> values = new HashMap<>(preparedSQLWrapper.getValues());
 		Map<Integer, ParameterBinder> parameterBinders = new HashMap<>(preparedSQLWrapper.getParameterBinders());
-		Map<Column, Integer> columnIndexes = new HashMap<>();
+		Map<Column<T, Object>, Integer> columnIndexes = new HashMap<>();
 		
 		// PreparedSQLWrapper has filled values (see catUpdateObject(..)) but PLACEHOLDERs must be removed from them.
 		// (ParameterBinders are correctly filled by PreparedSQLWrapper)
@@ -152,7 +152,7 @@ public class UpdateCommandBuilder implements SQLBuilder {
 		});
 		
 		// final assembly
-		UpdateStatement result = new UpdateStatement(sql, parameterBinders, columnIndexes);
+		UpdateStatement<T> result = new UpdateStatement<>(sql, parameterBinders, columnIndexes);
 		result.setValues(values);
 		return result;
 	}
@@ -161,9 +161,9 @@ public class UpdateCommandBuilder implements SQLBuilder {
 	 * A specialized version of {@link PreparedSQL} dedicated to {@link Update} so one can set column values of the update clause
 	 * through {@link #setValue(Column, Object)}
 	 */
-	public static class UpdateStatement extends PreparedSQL {
+	public static class UpdateStatement<T extends Table> extends PreparedSQL {
 		
-		private final Map<Column, Integer> columnIndexes;
+		private final Map<? extends Column<T, Object>, Integer> columnIndexes;
 		
 		/**
 		 * Single constructor, not expected to be used elsewhere than {@link UpdateCommandBuilder}.
@@ -172,7 +172,7 @@ public class UpdateCommandBuilder implements SQLBuilder {
 		 * @param parameterBinders binder for prepared statement values
 		 * @param columnIndexes indexes of the updated columns
 		 */
-		private UpdateStatement(String sql, Map<Integer, ParameterBinder> parameterBinders, Map<Column, Integer> columnIndexes) {
+		private UpdateStatement(String sql, Map<Integer, ParameterBinder> parameterBinders, Map<? extends Column<T, Object>, Integer> columnIndexes) {
 			super(sql, parameterBinders);
 			this.columnIndexes = columnIndexes;
 		}
@@ -183,11 +183,12 @@ public class UpdateCommandBuilder implements SQLBuilder {
 		 * @param column {@link Column} to be set
 		 * @param value value applied on Column
 		 */
-		public <T> void setValue(Column<T> column, T value) {
-			if (columnIndexes.get(column) == null) {
+		public <C> void setValue(Column<T, C> column, C value) {
+			Integer index = columnIndexes.get(column);
+			if (index == null) {
 				throw new IllegalArgumentException("Column " + column.getAbsoluteName() + " is not declared updatable with fixed value in the update clause");
 			}
-			setValue(columnIndexes.get(column), value);
+			setValue(index, value);
 		}
 	}
 	

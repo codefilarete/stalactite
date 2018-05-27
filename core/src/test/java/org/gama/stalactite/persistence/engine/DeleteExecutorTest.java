@@ -5,6 +5,7 @@ import java.sql.SQLException;
 import org.gama.lang.Retryer;
 import org.gama.lang.collection.Arrays;
 import org.gama.stalactite.persistence.sql.dml.DMLGenerator;
+import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.test.PairSetList;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -17,7 +18,7 @@ public class DeleteExecutorTest extends AbstractDMLExecutorTest {
 	
 	private DataSet dataSet;
 	
-	private DeleteExecutor<Toto, Integer> testInstance;
+	private DeleteExecutor<Toto, Integer, Table> testInstance;
 	
 	@BeforeEach
 	public void setUp() throws SQLException {

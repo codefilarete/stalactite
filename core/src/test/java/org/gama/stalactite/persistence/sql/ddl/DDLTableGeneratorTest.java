@@ -34,7 +34,7 @@ public class DDLTableGeneratorTest {
 		generatedCreateTable = testInstance.generateCreateTable(t);
 		assertEquals("create table Toto(A type, B type)", generatedCreateTable);
 		
-		Column<String> primaryKey = t.addColumn("C", String.class);
+		Column<Table, String> primaryKey = t.addColumn("C", String.class);
 		primaryKey.setPrimaryKey(true);
 		generatedCreateTable = testInstance.generateCreateTable(t);
 		assertEquals("create table Toto(A type, B type, C type, primary key (C))", generatedCreateTable);
@@ -126,7 +126,7 @@ public class DDLTableGeneratorTest {
 		
 		Table t = new Table(null, "Toto");
 		
-		Column<String> newColumn = t.addColumn("A", String.class);
+		Column<Table, String> newColumn = t.addColumn("A", String.class);
 		String generateAddColumn = testInstance.generateAddColumn(newColumn);
 		assertEquals("alter table Toto add column A type", generateAddColumn);
 		
@@ -162,7 +162,7 @@ public class DDLTableGeneratorTest {
 		
 		Table t = new Table(null, "Toto");
 		
-		Column<String> newColumn = t.addColumn("A", String.class);
+		Column<Table, String> newColumn = t.addColumn("A", String.class);
 		String generateDropColumn = testInstance.generateDropColumn(newColumn);
 		assertEquals("alter table Toto drop column A", generateDropColumn);
 		
@@ -224,7 +224,7 @@ public class DDLTableGeneratorTest {
 		DDLTableGenerator testInstance = new DDLTableGenerator(null);
 		
 		Table t = new Table(null, "Toto");
-		Column<String> colA = t.addColumn("A", String.class);
+		Column<Table, String> colA = t.addColumn("A", String.class);
 		
 		Index idx = t.addIndex("idx1", colA);
 		

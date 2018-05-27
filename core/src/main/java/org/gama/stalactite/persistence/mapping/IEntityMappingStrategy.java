@@ -7,14 +7,14 @@ import org.gama.stalactite.persistence.structure.Table;
  * 
  * @author Guillaume Mary
  */
-public interface IEntityMappingStrategy<T, I> extends IMappingStrategy<T>, IIdAccessor<T, I> {
+public interface IEntityMappingStrategy<C, I, T extends Table> extends IMappingStrategy<C, T>, IIdAccessor<C, I> {
 	
-	Table getTargetTable();
+	T getTargetTable();
 	
 	/**
 	 * Necessary to distinguish insert or update action on {@link org.gama.stalactite.persistence.engine.Persister#persist(Object)} call
-	 * @param t an instance of T
+	 * @param c an instance of C
 	 * @return true if the instance is not persisted, false if not (a row for its identifier already exists in the targeted table)
 	 */
-	boolean isNew(T t);
+	boolean isNew(C c);
 }

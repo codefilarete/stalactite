@@ -37,14 +37,14 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 public class ZonedDateTimeMappingStrategyTest {
 	
 	private static Table targetTable;
-	private static Column colA;
-	private static Column colB;
+	private static Column<Table, LocalDateTime> colA;
+	private static Column<Table, ZoneId> colB;
 	private HSQLDBDialect dialect;
 	private JdbcConnectionProvider connectionProvider;
 	
 	@BeforeAll
 	public static void setUpClass() {
-		targetTable = new Table("Toto");
+		targetTable = new Table<>("Toto");
 		colA = targetTable.addColumn("a", LocalDateTime.class);
 		colB = targetTable.addColumn("b", ZoneId.class);
 	}
@@ -53,7 +53,7 @@ public class ZonedDateTimeMappingStrategyTest {
 	
 	@BeforeEach
 	public void setUp() throws SQLException {
-		testInstance = new ZonedDateTimeMappingStrategy(colA, colB);
+		testInstance = new ZonedDateTimeMappingStrategy<Table>(colA, colB);
 		// preparing schema
 		connectionProvider = new JdbcConnectionProvider(new HSQLDBInMemoryDataSource());
 		dialect = new HSQLDBDialect();

@@ -27,10 +27,10 @@ import org.gama.stalactite.persistence.structure.Table;
  * 
  * @author Guillaume Mary
  */
-public class ColumnedCollectionMappingStrategy<C extends Collection<T>, T> implements IEmbeddedBeanMapper<C> {
+public class ColumnedCollectionMappingStrategy<C extends Collection<O>, O, T extends Table> implements IEmbeddedBeanMapper<C, T> {
 	
-	private final Table targetTable;
-	private final Set<Column> columns;
+	private final T targetTable;
+	private final Set<Column<T, Object>> columns;
 	private final ToCollectionRowTransformer<C> rowTransformer;
 	
 	/**
@@ -40,7 +40,7 @@ public class ColumnedCollectionMappingStrategy<C extends Collection<T>, T> imple
 	 * @param columns columns that will be used for persistent of Collections, expected to be a subset of targetTable columns    
 	 * @param rowClass Class to instanciate for select from database
 	 */
-	public ColumnedCollectionMappingStrategy(Table targetTable, Set<Column> columns, Class<C> rowClass) {
+	public ColumnedCollectionMappingStrategy(T targetTable, Set<Column<T, Object>> columns, Class<C> rowClass) {
 		this.targetTable = targetTable;
 		this.columns = columns;
 		this.rowTransformer = new ToCollectionRowTransformer<C>(rowClass) {
@@ -55,39 +55,39 @@ public class ColumnedCollectionMappingStrategy<C extends Collection<T>, T> imple
 		};
 	}
 	
-	public Table getTargetTable() {
+	public T getTargetTable() {
 		return targetTable;
 	}
 	
 	@Override
-	public Set<Column> getColumns() {
+	public Set<Column<T, Object>> getColumns() {
 		return columns;
 	}
 	
 	@Override
-	public Map<Column, Object> getInsertValues(C c) {
-		Collection<T> toIterate = c;
+	public Map<Column<T, Object>, Object> getInsertValues(C c) {
+		Collection<O> toIterate = c;
 		if (Collections.isEmpty(c)) {
 			toIterate = new ArrayList<>();
 		}
 		// NB: we wrap c.iterator() in an InfiniteIterator to get all columns generated: overflow columns will have
 		// null value (see 	InfiniteIterator#getValue)
-		PairIterator<Column, T> valueColumnPairIterator = new PairIterator<>(columns.iterator(), new InfiniteIterator<>(toIterate.iterator()));
+		PairIterator<Column<T, Object>, O> valueColumnPairIterator = new PairIterator<>(columns.iterator(), new InfiniteIterator<>(toIterate.iterator()));
 		return Iterables.map(() -> valueColumnPairIterator, Entry::getKey, e -> toDatabaseValue(e.getValue()));
 	}
 	
 	@Override
-	public Map<UpwhereColumn, Object> getUpdateValues(C modified, C unmodified, boolean allColumns) {
-		Map<Column, Object> toReturn = new HashMap<>();
+	public Map<UpwhereColumn<T>, Object> getUpdateValues(C modified, C unmodified, boolean allColumns) {
+		Map<Column<T, Object>, Object> toReturn = new HashMap<>();
 		if (modified != null) {
 			// getting differences side by side
 			Map<Column, Object> unmodifiedColumns = new LinkedHashMap<>();
-			Iterator<T> unmodifiedIterator = unmodified == null ? new EmptyIterator<>() : unmodified.iterator();
-			UntilBothIterator<T, T> untilBothIterator = new UntilBothIterator<>(modified.iterator(), unmodifiedIterator);
-			PairIterator<Column, Entry<T, T>> valueColumnPairIterator = new PairIterator<>(columns.iterator(), untilBothIterator);
+			Iterator<O> unmodifiedIterator = unmodified == null ? new EmptyIterator<>() : unmodified.iterator();
+			UntilBothIterator<O, O> untilBothIterator = new UntilBothIterator<>(modified.iterator(), unmodifiedIterator);
+			PairIterator<Column<T, Object>, Entry<O, O>> valueColumnPairIterator = new PairIterator<>(columns.iterator(), untilBothIterator);
 			valueColumnPairIterator.forEachRemaining(diffEntry -> {
 				Column fieldColumn = diffEntry.getKey();
-				Entry<T, T> toBeCompared = diffEntry.getValue();
+				Entry<O, O> toBeCompared = diffEntry.getValue();
 				if (!Objects.equalsWithNull(toBeCompared.getKey(), toBeCompared.getValue())) {
 					toReturn.put(fieldColumn, toDatabaseValue(toBeCompared.getKey()));
 				} else {
@@ -97,9 +97,9 @@ public class ColumnedCollectionMappingStrategy<C extends Collection<T>, T> imple
 			
 			// adding complementary columns if necessary
 			if (allColumns && !toReturn.isEmpty()) {
-				Set<Column> missingColumns = new LinkedHashSet<>(columns);
+				Set<Column<T, Object>> missingColumns = new LinkedHashSet<>(columns);
 				missingColumns.removeAll(toReturn.keySet());
-				for (Column missingColumn : missingColumns) {
+				for (Column<T, Object> missingColumn : missingColumns) {
 					Object missingValue = unmodifiedColumns.get(missingColumn);
 					toReturn.put(missingColumn, missingValue);
 				}
@@ -113,13 +113,13 @@ public class ColumnedCollectionMappingStrategy<C extends Collection<T>, T> imple
 		return convertToUpwhereColumn(toReturn);
 	}
 	
-	private Map<UpwhereColumn, Object> convertToUpwhereColumn(Map<Column, Object> map) {
-		Map<UpwhereColumn, Object> convertion = new HashMap<>();
-		map.forEach((c, s) -> convertion.put(new UpwhereColumn(c, true), s));
+	private Map<UpwhereColumn<T>, Object> convertToUpwhereColumn(Map<? extends Column<T, Object>, Object> map) {
+		Map<UpwhereColumn<T>, Object> convertion = new HashMap<>();
+		map.forEach((c, s) -> convertion.put(new UpwhereColumn<>(c, true), s));
 		return convertion;
 	}
 	
-	protected Object toDatabaseValue(T object) {
+	protected Object toDatabaseValue(O object) {
 		return object;
 	}
 	
@@ -129,8 +129,8 @@ public class ColumnedCollectionMappingStrategy<C extends Collection<T>, T> imple
 	 * @param object the value coming from the database {@link java.sql.ResultSet}
 	 * @return a value for a Map
 	 */
-	protected T toCollectionValue(Object object) {
-		return (T) object;
+	protected O toCollectionValue(Object object) {
+		return (O) object;
 	}
 	
 	@Override

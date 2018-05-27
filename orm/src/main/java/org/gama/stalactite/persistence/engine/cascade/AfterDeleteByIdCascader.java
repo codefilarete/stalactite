@@ -15,13 +15,13 @@ import org.gama.stalactite.persistence.engine.listening.NoopDeleteByIdListener;
  */
 public abstract class AfterDeleteByIdCascader<Trigger, Target> extends NoopDeleteByIdListener<Trigger> {
 	
-	private Persister<Target, ?> persister;
+	private Persister<Target, ?, ?> persister;
 	
 	/**
 	 * Simple constructor. Created instance must be added to PersisterListener afterward.
 	 * @param persister
 	 */
-	public AfterDeleteByIdCascader(Persister<Target, ?> persister) {
+	public AfterDeleteByIdCascader(Persister<Target, ?, ?> persister) {
 		this.persister = persister;
 		this.persister.getPersisterListener().addDeleteByIdListener(new NoopDeleteByIdListener<Target>() {
 			@Override

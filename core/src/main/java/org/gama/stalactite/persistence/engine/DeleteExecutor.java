@@ -22,11 +22,11 @@ import org.gama.stalactite.persistence.structure.Column;
  * 
  * @author Guillaume Mary
  */
-public class DeleteExecutor<T, I> extends WriteExecutor<T, I> {
+public class DeleteExecutor<C, I, T extends Table> extends WriteExecutor<C, I, T> {
 	
 	private RowCountManager rowCountManager = RowCountManager.THROWING_ROW_COUNT_MANAGER;
 	
-	public DeleteExecutor(ClassMappingStrategy<T, I> mappingStrategy, ConnectionProvider connectionProvider,
+	public DeleteExecutor(ClassMappingStrategy<C, I, T> mappingStrategy, ConnectionProvider connectionProvider,
 						  DMLGenerator dmlGenerator, Retryer writeOperationRetryer,
 						  int batchSize, int inOperatorMaxSize) {
 		super(mappingStrategy, connectionProvider, dmlGenerator, writeOperationRetryer, batchSize, inOperatorMaxSize);
@@ -44,15 +44,15 @@ public class DeleteExecutor<T, I> extends WriteExecutor<T, I> {
 	 * @return deleted row count
 	 * @throws StaleObjectExcepion if deleted row count differs from entities count
 	 */
-	public int delete(Iterable<T> entities) {
-		ColumnParamedSQL deleteStatement = getDmlGenerator().buildDelete(getMappingStrategy().getTargetTable(), getMappingStrategy().getVersionedKeys());
-		WriteOperation<Column> writeOperation = newWriteOperation(deleteStatement, new CurrentConnectionProvider());
-		JDBCBatchingIterator<T> jdbcBatchingIterator = new JDBCBatchingIterator<>(entities, writeOperation, getBatchSize());
+	public int delete(Iterable<C> entities) {
+		ColumnParamedSQL<T> deleteStatement = getDmlGenerator().buildDelete(getMappingStrategy().getTargetTable(), getMappingStrategy().getVersionedKeys());
+		WriteOperation<Column<T, ?>> writeOperation = newWriteOperation(deleteStatement, new CurrentConnectionProvider());
+		JDBCBatchingIterator<C> jdbcBatchingIterator = new JDBCBatchingIterator<>(entities, writeOperation, getBatchSize());
 		RowCounter rowCounter = new RowCounter();
 		while(jdbcBatchingIterator.hasNext()) {
-			T t = jdbcBatchingIterator.next();
-			Map<Column, Object> versionedKeyValues = getMappingStrategy().getVersionedKeyValues(t);
-			writeOperation.addBatch(versionedKeyValues);
+			C c = jdbcBatchingIterator.next();
+			Map<Column<T, Object>, Object> versionedKeyValues = getMappingStrategy().getVersionedKeyValues(c);
+			writeOperation.addBatch((Map) versionedKeyValues);
 			rowCounter.add(versionedKeyValues);
 		}
 		int updatedRowCount = jdbcBatchingIterator.getUpdatedRowCount();
@@ -67,11 +67,11 @@ public class DeleteExecutor<T, I> extends WriteExecutor<T, I> {
 	 * @param entities entites to be deleted
 	 * @return deleted row count
 	 */
-	public int deleteById(Iterable<T> entities) {
+	public int deleteById(Iterable<C> entities) {
 		// get ids before passing them to deleteFromId
 		List<I> ids = new ArrayList<>();
-		for (T t : entities) {
-			ids.add(getMappingStrategy().getId(t));
+		for (C c : entities) {
+			ids.add(getMappingStrategy().getId(c));
 		}
 		return deleteFromId(ids);
 	}
@@ -91,10 +91,10 @@ public class DeleteExecutor<T, I> extends WriteExecutor<T, I> {
 		int blockSize = getInOperatorMaxSize();
 		List<List<I>> parcels = Collections.parcel(ids, blockSize);
 		List<I> lastBlock = Iterables.last(parcels);
-		ColumnParamedSQL deleteStatement;
-		WriteOperation<Column> writeOperation;
-		Table targetTable = getMappingStrategy().getTargetTable();
-		Column keyColumn = targetTable.getPrimaryKey();
+		ColumnParamedSQL<T> deleteStatement;
+		WriteOperation<Column<T, ?>> writeOperation;
+		T targetTable = getMappingStrategy().getTargetTable();
+		Column<T, Object> keyColumn = targetTable.getPrimaryKey();
 		
 		int updatedRowCounter = 0;
 		if (parcels.size() > 1) {
@@ -111,7 +111,7 @@ public class DeleteExecutor<T, I> extends WriteExecutor<T, I> {
 			updatedRowCounter = jdbcBatchingIterator.getUpdatedRowCount();
 		}
 		// remaining block treatment
-		if (lastBlock.size() > 0) {
+		if (!lastBlock.isEmpty()) {
 			deleteStatement = getDmlGenerator().buildMassiveDelete(targetTable, keyColumn, lastBlock.size());
 			writeOperation = newWriteOperation(deleteStatement, currentConnectionProvider);
 			writeOperation.setValue(keyColumn, lastBlock);

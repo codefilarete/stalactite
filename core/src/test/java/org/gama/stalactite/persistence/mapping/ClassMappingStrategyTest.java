@@ -38,19 +38,19 @@ public class ClassMappingStrategyTest {
 	private static Column colD2;
 	private static Column colE1;
 	private static Column colE2;
-	private static Map<? extends IReversibleAccessor, Column> classMapping;
+	private static Map<? extends IReversibleAccessor, ? extends Column> classMapping;
 	private static Table targetTable;
 	private static PersistentFieldHarverster persistentFieldHarverster;
 	private static Map<String, Column> columnMapOnName;
-	private static PropertyAccessor myListField;
-	private static PropertyAccessor myMapField;
+	private static PropertyAccessor<Toto, List> myListField;
+	private static PropertyAccessor<Toto, Map> myMapField;
 	
-	private static ClassMappingStrategy<Toto, Integer> testInstance;
+	private static ClassMappingStrategy<Toto, Integer, Table> testInstance;
 	
 	@BeforeAll
 	public static void setUpClass() {
 		persistentFieldHarverster = new PersistentFieldHarverster();
-		targetTable = new Table("Toto");
+		targetTable = new Table<>("Toto");
 		classMapping = persistentFieldHarverster.mapFields(Toto.class, targetTable);
 		
 		
@@ -73,9 +73,10 @@ public class ClassMappingStrategyTest {
 	public static void setUpTestInstance() {
 		// instance to test building
 		// The basic mapping will be altered to add special mapping for field "myListField" (a Collection) and "myMapField" (a Map)
-		testInstance = new ClassMappingStrategy<>(Toto.class,
+		testInstance = new ClassMappingStrategy<Toto, Integer, Table>(
+				Toto.class,
 				targetTable,
-				classMapping,
+				(Map) classMapping,
 				Accessors.forProperty(persistentFieldHarverster.getField("a")),
 				// Basic mapping to prevent NullPointerException, even if it's not the goal of our test
 				new AlreadyAssignedIdentifierManager<>(Integer.class));
@@ -83,12 +84,12 @@ public class ClassMappingStrategyTest {
 		
 		// Additionnal mapping: the list is mapped to 2 additionnal columns
 		int nbCol = 2;
-		Set<Column> collectionColumn = new LinkedHashSet<>(nbCol);
+		Set<Column<Table, Object>> collectionColumn = new LinkedHashSet<>(nbCol);
 		for (int i = 1; i <= nbCol; i++) {
 			String columnName = "cold_" + i;
 			collectionColumn.add(targetTable.addColumn(columnName, String.class));
 		}
-		testInstance.put(myListField, new ColumnedCollectionMappingStrategy<List<String>, String>(targetTable,
+		testInstance.put(myListField, new ColumnedCollectionMappingStrategy<List<String>, String, Table>(targetTable,
 				collectionColumn, (Class<List<String>>) (Class) ArrayList.class) {
 			
 			@Override
@@ -98,10 +99,10 @@ public class ClassMappingStrategyTest {
 		});
 		
 		// Additionnal mapping: the map is mapped to 2 additionnal columns
-		Map<String, Column> mappedColumnsByKey = new HashMap<>();
+		Map<String, Column<Table, Object>> mappedColumnsByKey = new HashMap<>();
 		for (int i = 1; i <= 2; i++) {
 			String columnName = "cole_" + i;
-			Column column = targetTable.addColumn(columnName, String.class);
+			Column<Table, Object> column = targetTable.addColumn(columnName, String.class);
 			switch (i) {
 				case 1:
 					mappedColumnsByKey.put("x", column);
@@ -111,7 +112,7 @@ public class ClassMappingStrategyTest {
 					break;
 			}
 		}
-		testInstance.put(myMapField, new ColumnedMapMappingStrategy<Map<String, String>, String, String, String>(targetTable,
+		testInstance.put(myMapField, new ColumnedMapMappingStrategy<Map<String, String>, String, String, Table>(targetTable,
 				new HashSet<>(mappedColumnsByKey.values()), (Class<Map<String, String>>) (Class) HashMap.class) {
 			
 			@Override
@@ -166,7 +167,7 @@ public class ClassMappingStrategyTest {
 	@ParameterizedTest
 	@MethodSource("testGetInsertValues")
 	public void testGetInsertValues(Toto modified, Map<Column, Object> expectedResult) {
-		Map<Column, Object> valuesToInsert = testInstance.getInsertValues(modified);
+		Map<Column<Table, Object>, Object> valuesToInsert = testInstance.getInsertValues(modified);
 		
 		assertEquals(expectedResult, valuesToInsert);
 	}
@@ -194,7 +195,7 @@ public class ClassMappingStrategyTest {
 	@ParameterizedTest
 	@MethodSource("testGetUpdateValues_diffOnly")
 	public void testGetUpdateValues_diffOnly(Toto modified, Toto unmodified, Map<Column, Object> expectedResult) {
-		Map<UpwhereColumn, Object> valuesToUpdate = testInstance.getUpdateValues(modified, unmodified, false);
+		Map<UpwhereColumn<Table>, Object> valuesToUpdate = testInstance.getUpdateValues(modified, unmodified, false);
 		
 		assertEquals(expectedResult, UpwhereColumn.getUpdateColumns(valuesToUpdate));
 		if (!expectedResult.isEmpty()) {
@@ -235,7 +236,7 @@ public class ClassMappingStrategyTest {
 	@ParameterizedTest
 	@MethodSource("testGetUpdateValues_allColumns")
 	public void testGetUpdateValues_allColumns(Toto modified, Toto unmodified, Map<Column, Object> expectedResult) {
-		Map<UpwhereColumn, Object> valuesToUpdate = testInstance.getUpdateValues(modified, unmodified, true);
+		Map<UpwhereColumn<Table>, Object> valuesToUpdate = testInstance.getUpdateValues(modified, unmodified, true);
 		
 		assertEquals(expectedResult, UpwhereColumn.getUpdateColumns(valuesToUpdate));
 		if (!expectedResult.isEmpty()) {

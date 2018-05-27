@@ -17,8 +17,8 @@ public class DMLNameProvider {
 	
 	protected final Map<Table, String> tableAliases;
 	
-	public DMLNameProvider(Map<Table, String> tableAliases) {
-		this.tableAliases = tableAliases;
+	public DMLNameProvider(Map<? extends Table, String> tableAliases) {
+		this.tableAliases = (Map<Table, String>) tableAliases;
 	}
 	
 	/**
@@ -62,7 +62,7 @@ public class DMLNameProvider {
 		return table.getAbsoluteName();
 	}
 	
-	public void catWithComma(Iterable<Column> targetColumns, StringAppender sql) {
+	public void catWithComma(Iterable<? extends Column> targetColumns, StringAppender sql) {
 		targetColumns.forEach(c -> sql.cat(getSimpleName(c) + ", "));
 		sql.cutTail(2);
 	}

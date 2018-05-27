@@ -47,25 +47,25 @@ import org.gama.stalactite.persistence.structure.Table;
  * @author Guillaume Mary
  * @see org.gama.stalactite.query.model.Query
  */
-public class ClassMappingStrategy<T, I> implements IEntityMappingStrategy<T, I> {
+public class ClassMappingStrategy<C, I, T extends Table> implements IEntityMappingStrategy<C, I, T> {
 	
-	private final Class<T> classToPersist;
+	private final Class<C> classToPersist;
 	
-	private final EmbeddedBeanMappingStrategy<T> defaultMappingStrategy;
+	private final EmbeddedBeanMappingStrategy<C, T> defaultMappingStrategy;
 	
-	private final Table targetTable;
+	private final T targetTable;
 	
-	private final Set<Column> insertableColumns;
+	private final Set<Column<T, Object>> insertableColumns;
 	
-	private final Set<Column> updatableColumns;
+	private final Set<Column<T, Object>> updatableColumns;
 	
-	private final Set<Column> selectableColumns;
+	private final Set<Column<T, Object>> selectableColumns;
 	
-	private final Map<IReversibleAccessor, IEmbeddedBeanMapper> mappingStrategies;
+	private final Map<IReversibleAccessor<C, Object>, IEmbeddedBeanMapper<Object, T>> mappingStrategies;
 	
-	private final IdMappingStrategy<T, I> idMappingStrategy;
+	private final IdMappingStrategy<C, I> idMappingStrategy;
 	
-	private final Map<PropertyAccessor, Column> versioningMapping = new HashMap<>();
+	private final Map<PropertyAccessor, Column<T, Object>> versioningMapping = new HashMap<>();
 	
 	/**
 	 * Only constructor to define the persistent mapping between a class and a table.
@@ -77,8 +77,11 @@ public class ClassMappingStrategy<T, I> implements IEntityMappingStrategy<T, I> 
 	 * @param identifierProperty identifier of the persisted class
 	 * @param identifierInsertionManager manager of identifiers
 	 */
-	public ClassMappingStrategy(Class<T> classToPersist, Table targetTable, Map<? extends IReversibleAccessor, Column> propertyToColumn,
-								IReversibleAccessor<T, I> identifierProperty, IdentifierInsertionManager<T, I> identifierInsertionManager) {
+	public ClassMappingStrategy(Class<C> classToPersist,
+								T targetTable,
+								Map<? extends IReversibleAccessor<C, Object>, Column<T, Object>> propertyToColumn,
+								IReversibleAccessor<C, I> identifierProperty,
+								IdentifierInsertionManager<C, I> identifierInsertionManager) {
 		if (identifierProperty == null) {
 			throw new UnsupportedOperationException("No identifier property for " + classToPersist.getName());
 		}
@@ -107,16 +110,16 @@ public class ClassMappingStrategy<T, I> implements IEntityMappingStrategy<T, I> 
 		}
 	}
 	
-	public Class<T> getClassToPersist() {
+	public Class<C> getClassToPersist() {
 		return classToPersist;
 	}
 	
 	@Override
-	public Table getTargetTable() {
+	public T getTargetTable() {
 		return targetTable;
 	}
 	
-	public EmbeddedBeanMappingStrategy<T> getDefaultMappingStrategy() {
+	public EmbeddedBeanMappingStrategy<C, T> getDefaultMappingStrategy() {
 		return defaultMappingStrategy;
 	}
 	
@@ -124,7 +127,7 @@ public class ClassMappingStrategy<T, I> implements IEntityMappingStrategy<T, I> 
 	 * Gives columns that can be inserted: columns minus generated keys
 	 * @return columns of all mapping strategies without auto-generated keys
 	 */
-	public Set<Column> getInsertableColumns() {
+	public Set<Column<T, Object>> getInsertableColumns() {
 		return insertableColumns;
 	}
 	
@@ -132,19 +135,19 @@ public class ClassMappingStrategy<T, I> implements IEntityMappingStrategy<T, I> 
 	 * Gives columns that can be updated: columns minus keys
 	 * @return columns of all mapping strategies without getKey()
 	 */
-	public Set<Column> getUpdatableColumns() {
+	public Set<Column<T, Object>> getUpdatableColumns() {
 		return updatableColumns;
 	}
 	
-	public Set<Column> getSelectableColumns() {
+	public Set<Column<T, Object>> getSelectableColumns() {
 		return selectableColumns;
 	}
 	
-	public IdMappingStrategy<T, I> getIdMappingStrategy() {
+	public IdMappingStrategy<C, I> getIdMappingStrategy() {
 		return idMappingStrategy;
 	}
 	
-	public void addVersionedColumn(PropertyAccessor propertyAccessor, Column column) {
+	public void addVersionedColumn(PropertyAccessor propertyAccessor, Column<T, Object> column) {
 		this.versioningMapping.put(propertyAccessor, column);
 	}
 	
@@ -155,50 +158,50 @@ public class ClassMappingStrategy<T, I> implements IEntityMappingStrategy<T, I> 
 	 * @param property an object representing a {@link Field} or {@link Method}
 	 * @param mappingStrategy the strategy that should be used to persist the member
 	 */
-	public void put(IReversibleAccessor property, IEmbeddedBeanMapper mappingStrategy) {
-		mappingStrategies.put(property, mappingStrategy);
+	public <O> void put(IReversibleAccessor<C, ? extends O> property, IEmbeddedBeanMapper<? extends O, T> mappingStrategy) {
+		mappingStrategies.put((IReversibleAccessor) property, (IEmbeddedBeanMapper) mappingStrategy);
 		// update columns lists
 		addInsertableColumns(mappingStrategy);
 		addUpdatableColumns(mappingStrategy);
 	}
 	
 	@Override
-	public Map<Column, Object> getInsertValues(T t) {
-		Map<Column, Object> insertValues = defaultMappingStrategy.getInsertValues(t);
-		getVersionedKeyValues(t).entrySet().stream()
-				// autoincrement columns mustn't be written
+	public Map<Column<T, Object>, Object> getInsertValues(C c) {
+		Map<Column<T, Object>, Object> insertValues = defaultMappingStrategy.getInsertValues(c);
+		getVersionedKeyValues(c).entrySet().stream()
+				// autoincrement columns mustn'c be written
 				.filter(entry -> !entry.getKey().isAutoGenerated())
 				.forEach(entry -> insertValues.put(entry.getKey(), entry.getValue()));
-		for (Entry<? extends IReversibleAccessor, IEmbeddedBeanMapper> fieldStrategyEntry : mappingStrategies.entrySet()) {
-			Object fieldValue = fieldStrategyEntry.getKey().get(t);
-			Map<Column, Object> fieldInsertValues = fieldStrategyEntry.getValue().getInsertValues(fieldValue);
+		for (Entry<? extends IReversibleAccessor<C, Object>, IEmbeddedBeanMapper<Object, T>> fieldStrategyEntry : mappingStrategies.entrySet()) {
+			Object fieldValue = fieldStrategyEntry.getKey().get(c);
+			Map<Column<T, Object>, Object> fieldInsertValues = fieldStrategyEntry.getValue().getInsertValues(fieldValue);
 			insertValues.putAll(fieldInsertValues);
 		}
 		return insertValues;
 	}
 	
 	@Override
-	public Map<UpwhereColumn, Object> getUpdateValues(T modified, T unmodified, boolean allColumns) {
-		Map<UpwhereColumn, Object> toReturn = defaultMappingStrategy.getUpdateValues(modified, unmodified, allColumns);
-		for (Entry<? extends IReversibleAccessor, IEmbeddedBeanMapper> fieldStrategyEntry : mappingStrategies.entrySet()) {
-			IReversibleAccessor<T, Object> accessor = fieldStrategyEntry.getKey();
+	public Map<UpwhereColumn<T>, Object> getUpdateValues(C modified, C unmodified, boolean allColumns) {
+		Map<UpwhereColumn<T>, Object> toReturn = defaultMappingStrategy.getUpdateValues(modified, unmodified, allColumns);
+		for (Entry<? extends IReversibleAccessor<C, Object>, IEmbeddedBeanMapper<Object, T>> fieldStrategyEntry : mappingStrategies.entrySet()) {
+			IReversibleAccessor<C, Object> accessor = fieldStrategyEntry.getKey();
 			Object modifiedValue = accessor.get(modified);
 			Object unmodifiedValue = unmodified == null ?  null : accessor.get(unmodified);
-			Map<UpwhereColumn, Object> fieldUpdateValues = fieldStrategyEntry.getValue().getUpdateValues(modifiedValue, unmodifiedValue, allColumns);
-			for (Entry<UpwhereColumn, Object> fieldUpdateValue : fieldUpdateValues.entrySet()) {
+			Map<UpwhereColumn<T>, Object> fieldUpdateValues = fieldStrategyEntry.getValue().getUpdateValues(modifiedValue, unmodifiedValue, allColumns);
+			for (Entry<UpwhereColumn<T>, Object> fieldUpdateValue : fieldUpdateValues.entrySet()) {
 				toReturn.put(fieldUpdateValue.getKey(), fieldUpdateValue.getValue());
 			}
 		}
 		if (!toReturn.isEmpty()) {
 			if (allColumns) {
-				Set<Column> missingColumns = new HashSet<>(getUpdatableColumns());
+				Set<Column<T, Object>> missingColumns = new HashSet<>(getUpdatableColumns());
 				missingColumns.removeAll(UpwhereColumn.getUpdateColumns(toReturn).keySet());
-				for (Column missingColumn : missingColumns) {
-					toReturn.put(new UpwhereColumn(missingColumn, true), null);
+				for (Column<T, Object> missingColumn : missingColumns) {
+					toReturn.put(new UpwhereColumn<>(missingColumn, true), null);
 				}
 			}
-			for (Entry<Column, Object> entry : getVersionedKeyValues(modified).entrySet()) {
-				toReturn.put(new UpwhereColumn(entry.getKey(), false), entry.getValue());
+			for (Entry<Column<T, Object>, Object> entry : getVersionedKeyValues(modified).entrySet()) {
+				toReturn.put(new UpwhereColumn<>(entry.getKey(), false), entry.getValue());
 			}
 		}
 		return toReturn;
@@ -213,10 +216,10 @@ public class ClassMappingStrategy<T, I> implements IEntityMappingStrategy<T, I> 
 		mappingStrategies.values().forEach(this::addInsertableColumns);
 		insertableColumns.addAll(versioningMapping.values());
 		// generated keys are never inserted
-		insertableColumns.removeAll(getTargetTable().getColumns().stream().filter(Column::isAutoGenerated).collect(Collectors.toList()));
+		insertableColumns.removeAll(((Set<Column>) getTargetTable().getColumns()).stream().filter(Column::isAutoGenerated).collect(Collectors.toList()));
 	}
 	
-	private void addInsertableColumns(IEmbeddedBeanMapper<?> iEmbeddedBeanMapper) {
+	private void addInsertableColumns(IEmbeddedBeanMapper<?, T> iEmbeddedBeanMapper) {
 		insertableColumns.addAll(iEmbeddedBeanMapper.getColumns());
 	}
 	
@@ -230,10 +233,10 @@ public class ClassMappingStrategy<T, I> implements IEntityMappingStrategy<T, I> 
 		updatableColumns.addAll(versioningMapping.values());
 		// keys are never updated
 		updatableColumns.remove(getTargetTable().getPrimaryKey());
-		updatableColumns.removeAll(getTargetTable().getColumns().stream().filter(Column::isAutoGenerated).collect(Collectors.toList()));
+		updatableColumns.removeAll(((Set<Column>) getTargetTable().getColumns()).stream().filter(Column::isAutoGenerated).collect(Collectors.toList()));
 	}
 	
-	private void addUpdatableColumns(IEmbeddedBeanMapper<?> iEmbeddedBeanMapper) {
+	private void addUpdatableColumns(IEmbeddedBeanMapper<?, T> iEmbeddedBeanMapper) {
 		updatableColumns.addAll(iEmbeddedBeanMapper.getColumns());
 	}
 	
@@ -244,56 +247,56 @@ public class ClassMappingStrategy<T, I> implements IEntityMappingStrategy<T, I> 
 		mappingStrategies.values().forEach(this::addSelectableColumns);
 	}
 	
-	private void addSelectableColumns(IEmbeddedBeanMapper<?> iEmbeddedBeanMapper) {
+	private void addSelectableColumns(IEmbeddedBeanMapper<?, T> iEmbeddedBeanMapper) {
 		selectableColumns.addAll(iEmbeddedBeanMapper.getColumns());
 	}
 	
-	public Map<Column, Object> getVersionedKeyValues(T t) {
-		Map<Column, Object> toReturn = new HashMap<>();
-		toReturn.put(this.targetTable.getPrimaryKey(), getId(t));
-		toReturn.putAll(getVersionedColumnsValues(t));
+	public Map<Column<T, Object>, Object> getVersionedKeyValues(C c) {
+		Map<Column<T, Object>, Object> toReturn = new HashMap<>();
+		toReturn.put(this.targetTable.getPrimaryKey(), getId(c));
+		toReturn.putAll(getVersionedColumnsValues(c));
 		return toReturn;
 	}
 	
-	private Map<Column, Object> getVersionedColumnsValues(T t) {
-		Map<Column, Object> toReturn = new HashMap<>();
-		for (Entry<PropertyAccessor, Column> columnEntry : versioningMapping.entrySet()) {
-			toReturn.put(columnEntry.getValue(), columnEntry.getKey().get(t));
+	private Map<Column<T, Object>, Object> getVersionedColumnsValues(C c) {
+		Map<Column<T, Object>, Object> toReturn = new HashMap<>();
+		for (Entry<PropertyAccessor, Column<T, Object>> columnEntry : versioningMapping.entrySet()) {
+			toReturn.put(columnEntry.getValue(), columnEntry.getKey().get(c));
 		}
 		return toReturn;
 	}
 	
-	public Iterable<Column> getVersionedKeys() {
-		HashSet<Column> columns = new HashSet<>(versioningMapping.values());
+	public Iterable<Column<T, Object>> getVersionedKeys() {
+		HashSet<Column<T, Object>> columns = new HashSet<>(versioningMapping.values());
 		columns.add(this.targetTable.getPrimaryKey());
 		return Collections.unmodifiableSet(columns);
 	}
 	
 	@Override
-	public I getId(T t) {
-		return getIdMappingStrategy().getId(t);
+	public I getId(C c) {
+		return getIdMappingStrategy().getId(c);
 	}
 	
 	@Override
-	public void setId(T t, I identifier) {
-		getIdMappingStrategy().setId(t, identifier);
+	public void setId(C c, I identifier) {
+		getIdMappingStrategy().setId(c, identifier);
 	}
 	
 	@Override
-	public boolean isNew(T t) {
-		return getIdMappingStrategy().isNew(t);
+	public boolean isNew(C c) {
+		return getIdMappingStrategy().isNew(c);
 	}
 	
 	@Override
-	public T transform(Row row) {
-		T toReturn = defaultMappingStrategy.transform(row);
-		for (Entry<? extends IReversibleAccessor, IEmbeddedBeanMapper> mappingStrategyEntry : mappingStrategies.entrySet()) {
+	public C transform(Row row) {
+		C toReturn = defaultMappingStrategy.transform(row);
+		for (Entry<? extends IReversibleAccessor<C, Object>, IEmbeddedBeanMapper<Object, T>> mappingStrategyEntry : mappingStrategies.entrySet()) {
 			mappingStrategyEntry.getKey().toMutator().set(toReturn, mappingStrategyEntry.getValue().transform(row));
 		}
 		return toReturn;
 	}
 	
-	public ToBeanRowTransformer<T> getRowTransformer() {
+	public ToBeanRowTransformer<C> getRowTransformer() {
 		return defaultMappingStrategy.getRowTransformer();
 	}
 	

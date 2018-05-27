@@ -24,10 +24,10 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 public class EmbeddedBeanMappingStrategyTest {
 	
 	private static Table targetTable;
-	private static Column colA;
-	private static Column colB;
-	private static Column colC;
-	private static Map<PropertyAccessor, Column> classMapping;
+	private static Column<Table, Integer> colA;
+	private static Column<Table, Integer> colB;
+	private static Column<Table, Integer> colC;
+	private static Map<PropertyAccessor<Toto, Object>, Column<Table, Integer>> classMapping;
 	
 	@BeforeAll
 	public static void setUpClass() {
@@ -35,16 +35,16 @@ public class EmbeddedBeanMappingStrategyTest {
 		colA = targetTable.addColumn("a", Integer.class);
 		colB = targetTable.addColumn("b", Integer.class);
 		colC = targetTable.addColumn("c", Integer.class);
-		classMapping = Maps.asMap((PropertyAccessor) Accessors.forProperty(Toto.class, "a"), colA)
+		classMapping = Maps.asMap(Accessors.forProperty(Toto.class, "a"), colA)
 				.add(Accessors.forProperty(Toto.class, "b"), colB)
 				.add(Accessors.forProperty(Toto.class, "c"), colC);
 	}
 	
-	private EmbeddedBeanMappingStrategy<Toto> testInstance;
+	private EmbeddedBeanMappingStrategy<Toto, Table> testInstance;
 	
 	@BeforeEach
 	public void setUp() {
-		testInstance = new EmbeddedBeanMappingStrategy<>(Toto.class, classMapping);
+		testInstance = new EmbeddedBeanMappingStrategy<Toto, Table>(Toto.class, (Map) classMapping);
 	}
 	
 	public static Object[][] testGetInsertValuesData() {
@@ -59,7 +59,7 @@ public class EmbeddedBeanMappingStrategyTest {
 	@ParameterizedTest
 	@MethodSource("testGetInsertValuesData")
 	public void testGetInsertValues(Toto modified, Map<Column, Object> expectedResult) {
-		Map<Column, Object> valuesToInsert = testInstance.getInsertValues(modified);
+		Map<Column<Table, Object>, Object> valuesToInsert = testInstance.getInsertValues(modified);
 		
 		assertEquals(expectedResult, valuesToInsert);
 	}
@@ -82,7 +82,7 @@ public class EmbeddedBeanMappingStrategyTest {
 	@ParameterizedTest
 	@MethodSource("testGetUpdateValues_diffOnlyData")
 	public void testGetUpdateValues_diffOnly(Toto modified, Toto unmodified, Map<Column, Object> expectedResult) {
-		Map<UpwhereColumn, Object> valuesToInsert = testInstance.getUpdateValues(modified, unmodified, false);
+		Map<UpwhereColumn<Table>, Object> valuesToInsert = testInstance.getUpdateValues(modified, unmodified, false);
 		
 		assertEquals(expectedResult, UpwhereColumn.getUpdateColumns(valuesToInsert));
 		assertEquals(new HashMap<Column, Object>(), UpwhereColumn.getWhereColumns(valuesToInsert));
@@ -100,7 +100,7 @@ public class EmbeddedBeanMappingStrategyTest {
 	@ParameterizedTest
 	@MethodSource("testGetUpdateValues_allColumnsData")
 	public void testGetUpdateValues_allColumns(Toto modified, Toto unmodified, Map<Column, Object> expectedResult) {
-		Map<UpwhereColumn, Object> valuesToInsert = testInstance.getUpdateValues(modified, unmodified, true);
+		Map<UpwhereColumn<Table>, Object> valuesToInsert = testInstance.getUpdateValues(modified, unmodified, true);
 		
 		assertEquals(expectedResult, UpwhereColumn.getUpdateColumns(valuesToInsert));
 		assertEquals(new HashMap<Column, Object>(), UpwhereColumn.getWhereColumns(valuesToInsert));

@@ -16,13 +16,13 @@ import org.gama.stalactite.persistence.engine.listening.NoopSelectListener;
  */
 public abstract class AfterSelectCascader<Trigger, Target, I> extends NoopSelectListener<Trigger, I> {
 	
-	private Persister<Target, I> persister;
+	private Persister<Target, I, ?> persister;
 	
 	/**
 	 * Simple constructor. Created instance must be added to PersisterListener afterward.
 	 * @param persister
 	 */
-	public AfterSelectCascader(Persister<Target, I> persister) {
+	public AfterSelectCascader(Persister<Target, I, ?> persister) {
 		this.persister = persister;
 		this.persister.getPersisterListener().addSelectListener(new NoopSelectListener<Target, I>() {
 			@Override

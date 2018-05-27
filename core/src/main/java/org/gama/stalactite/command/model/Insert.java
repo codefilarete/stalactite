@@ -13,18 +13,18 @@ import org.gama.stalactite.persistence.structure.Table;
  * @author Guillaume Mary
  * @see org.gama.stalactite.command.builder.InsertCommandBuilder
  */
-public class Insert {
+public class Insert<T extends Table> {
 	
 	/** Target of the values to insert */
-	private final Table targetTable;
+	private final T targetTable;
 	/** Target columns of the insert */
-	private final Set<UpdateColumn> columns = new LinkedHashSet<>();
+	private final Set<UpdateColumn<T>> columns = new LinkedHashSet<>();
 	
-	public Insert(Table targetTable) {
+	public Insert(T targetTable) {
 		this.targetTable = targetTable;
 	}
 	
-	public Table getTargetTable() {
+	public T getTargetTable() {
 		return targetTable;
 	}
 	
@@ -34,8 +34,8 @@ public class Insert {
 	 * @param column a non null column
 	 * @return this
 	 */
-	public Insert set(Column column) {
-		this.columns.add(new UpdateColumn(column));
+	public Insert<T> set(Column<T, ?> column) {
+		this.columns.add(new UpdateColumn<>((Column<T, Object>) column));
 		return this;
 	}
 	
@@ -44,11 +44,11 @@ public class Insert {
 	 * 
 	 * @param column a non null column
 	 * @param value value to be inserted
-	 * @param <T> colun and value type
+	 * @param <C> colun and value type
 	 * @return this
 	 */
-	public <T> Insert set(Column<T> column, T value) {
-		this.columns.add(new UpdateColumn(column, value));
+	public <C> Insert<T> set(Column<T, C> column, C value) {
+		this.columns.add(new UpdateColumn<>((Column<T, Object>) column, value));
 		return this;
 	}
 	
@@ -57,7 +57,7 @@ public class Insert {
 	 * 
 	 * @return a non null {@link Set}
 	 */
-	public Set<UpdateColumn> getColumns() {
+	public Set<UpdateColumn<T>> getColumns() {
 		return columns;
 	}
 }

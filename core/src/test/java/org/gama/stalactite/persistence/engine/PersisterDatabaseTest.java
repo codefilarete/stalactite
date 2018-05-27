@@ -24,6 +24,7 @@ import org.gama.stalactite.persistence.sql.Dialect;
 import org.gama.stalactite.persistence.sql.ddl.JavaTypeToSqlTypeMapping;
 import org.gama.stalactite.persistence.sql.dml.DMLGenerator;
 import org.gama.stalactite.persistence.structure.Column;
+import org.gama.stalactite.persistence.structure.Database.Schema;
 import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.test.JdbcConnectionProvider;
 import org.junit.jupiter.api.BeforeEach;
@@ -37,26 +38,30 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
  */
 public class PersisterDatabaseTest {
 	
-	private Persister<Toto, Integer> testInstance;
+	private Persister<Toto, Integer, TotoTable> testInstance;
 	private JdbcConnectionProvider transactionManager;
 	private InMemoryCounterIdentifierGenerator identifierGenerator;
-	private ClassMappingStrategy<Toto, Integer> totoClassMappingStrategy;
+	private ClassMappingStrategy<Toto, Integer, TotoTable> totoClassMappingStrategy;
 	private Dialect dialect;
-	private Table totoClassTable;
+	private TotoTable totoClassTable;
 	
 	@BeforeEach
 	public void setUp() {
-		totoClassTable = new Table(null, "Toto");
+		totoClassTable = new TotoTable(null, "Toto");
 		PersistentFieldHarverster persistentFieldHarverster = new PersistentFieldHarverster();
-		Map<PropertyAccessor, Column> totoClassMapping = persistentFieldHarverster.mapFields(Toto.class, totoClassTable);
-		Map<String, Column> columns = totoClassTable.mapColumnsOnName();
+		Map<PropertyAccessor<Toto, Object>, Column<TotoTable, Object>> totoClassMapping = persistentFieldHarverster.mapFields(Toto.class, totoClassTable);
+		Map<String, Column<TotoTable, Object>> columns = totoClassTable.mapColumnsOnName();
 		columns.get("a").setPrimaryKey(true);
 		
 		identifierGenerator = new InMemoryCounterIdentifierGenerator();
 		PropertyAccessor<Toto, Integer> identifierAccessor = Accessors.forProperty(persistentFieldHarverster.getField("a"));
-		totoClassMappingStrategy = new ClassMappingStrategy<>(Toto.class, totoClassTable,
-				totoClassMapping, identifierAccessor, new BeforeInsertIdentifierManager<>(IdMappingStrategy.toIdAccessor(identifierAccessor),
-				identifierGenerator, Integer.class));
+		totoClassMappingStrategy = new ClassMappingStrategy<>(
+				Toto.class,
+				totoClassTable,
+				totoClassMapping,
+				identifierAccessor,
+				new BeforeInsertIdentifierManager<>(IdMappingStrategy.toIdAccessor(identifierAccessor), identifierGenerator, Integer.class)
+		);
 		
 		JavaTypeToSqlTypeMapping simpleTypeMapping = new JavaTypeToSqlTypeMapping();
 		simpleTypeMapping.put(Integer.class, "int");
@@ -184,6 +189,17 @@ public class PersisterDatabaseTest {
 			return getClass().getSimpleName() + "["
 					+ Maps.asMap("a", (Object) a).add("b", b).add("c", c)
 					+ "]";
+		}
+	}
+	
+	private static class TotoTable extends Table<TotoTable> {
+		
+		public TotoTable(String name) {
+			super(name);
+		}
+		
+		public TotoTable(Schema schema, String name) {
+			super(schema, name);
 		}
 	}
 }

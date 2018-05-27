@@ -4,6 +4,7 @@ import org.gama.sql.ConnectionProvider;
 import org.gama.sql.SimpleConnectionProvider;
 import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
 import org.gama.stalactite.persistence.sql.dml.DMLGenerator;
+import org.gama.stalactite.persistence.structure.Table;
 
 /**
  * CRUD Persistent features dedicated to an entity class. Kind of sliding door of {@link Persister} aimed at running
@@ -11,14 +12,14 @@ import org.gama.stalactite.persistence.sql.dml.DMLGenerator;
  * 
  * @author Guillaume Mary
  */
-public abstract class DMLExecutor<T, I> {
+public abstract class DMLExecutor<C, I, T extends Table> {
 	
-	private final ClassMappingStrategy<T, I> mappingStrategy;
+	private final ClassMappingStrategy<C, I, T> mappingStrategy;
 	private final ConnectionProvider connectionProvider;
 	private final DMLGenerator dmlGenerator;
 	private final int inOperatorMaxSize;
 	
-	public DMLExecutor(ClassMappingStrategy<T, I> mappingStrategy, ConnectionProvider connectionProvider,
+	public DMLExecutor(ClassMappingStrategy<C, I, T> mappingStrategy, ConnectionProvider connectionProvider,
 					   DMLGenerator dmlGenerator, int inOperatorMaxSize) {
 		this.mappingStrategy = mappingStrategy;
 		this.connectionProvider = connectionProvider;
@@ -26,7 +27,7 @@ public abstract class DMLExecutor<T, I> {
 		this.inOperatorMaxSize = inOperatorMaxSize;
 	}
 	
-	public ClassMappingStrategy<T, I> getMappingStrategy() {
+	public ClassMappingStrategy<C, I, T> getMappingStrategy() {
 		return mappingStrategy;
 	}
 	

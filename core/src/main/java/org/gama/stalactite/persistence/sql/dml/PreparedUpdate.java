@@ -8,6 +8,7 @@ import org.gama.sql.binder.PreparedStatementWriter;
 import org.gama.sql.binder.PreparedStatementWriterIndex;
 import org.gama.sql.dml.SQLStatement;
 import org.gama.stalactite.persistence.mapping.IMappingStrategy.UpwhereColumn;
+import org.gama.stalactite.persistence.structure.Table;
 
 /**
  * Statement dedicated to updates: a parameter can be in the where clause and the update one with different values.
@@ -15,18 +16,18 @@ import org.gama.stalactite.persistence.mapping.IMappingStrategy.UpwhereColumn;
  * 
  * @author Guillaume Mary
  */
-public class PreparedUpdate extends SQLStatement<UpwhereColumn> {
+public class PreparedUpdate<T extends Table> extends SQLStatement<UpwhereColumn<T>> {
 	
 	private final String sql;
-	private final Map<UpwhereColumn, Integer> columnIndexes;
+	private final Map<UpwhereColumn<T>, Integer> columnIndexes;
 	
-	public PreparedUpdate(String sql, Map<UpwhereColumn, Integer> columnIndexes, Map<UpwhereColumn, ParameterBinder> parameterBinders) {
+	public PreparedUpdate(String sql, Map<UpwhereColumn<T>, Integer> columnIndexes, Map<UpwhereColumn<T>, ParameterBinder> parameterBinders) {
 		super(parameterBinders);
 		this.sql = sql;
 		this.columnIndexes = columnIndexes;
 	}
 	
-	public PreparedUpdate(String sql, Map<UpwhereColumn, Integer> columnIndexes, PreparedStatementWriterIndex<UpwhereColumn, ? extends PreparedStatementWriter> parameterBinderProvider) {
+	public PreparedUpdate(String sql, Map<UpwhereColumn<T>, Integer> columnIndexes, PreparedStatementWriterIndex<UpwhereColumn<T>, ? extends PreparedStatementWriter> parameterBinderProvider) {
 		super(parameterBinderProvider);
 		this.sql = sql;
 		this.columnIndexes = columnIndexes;

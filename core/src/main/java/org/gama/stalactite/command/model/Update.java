@@ -15,20 +15,20 @@ import org.gama.stalactite.query.model.Operand;
  * @author Guillaume Mary
  * @see org.gama.stalactite.command.builder.UpdateCommandBuilder
  */
-public class Update {
+public class Update<T extends Table> {
 	
 	/** Target of the values to insert */
-	private final Table targetTable;
+	private final T targetTable;
 	/** Target columns of the insert */
 	private final Set<UpdateColumn> columns = new LinkedHashSet<>();
 	
 	private final Criteria criteriaSurrogate = new Criteria();
 	
-	public Update(Table targetTable) {
+	public Update(T targetTable) {
 		this.targetTable = targetTable;
 	}
 	
-	public Table getTargetTable() {
+	public T getTargetTable() {
 		return targetTable;
 	}
 	
@@ -42,13 +42,13 @@ public class Update {
 	 * @param column a non null column
 	 * @return this
 	 */
-	public Update set(Column column) {
-		this.columns.add(new UpdateColumn(column));
+	public Update<T> set(Column<T, ?> column) {
+		this.columns.add(new UpdateColumn<>((Column<T, Object>) column));
 		return this;
 	}
 	
-	public <T> Update set(Column<T> column, T value) {
-		this.columns.add(new UpdateColumn(column, value));
+	public <C> Update<T> set(Column<T, C> column, C value) {
+		this.columns.add(new UpdateColumn<>((Column<T, Object>) column, value));
 		return this;
 	}
 	
@@ -59,8 +59,8 @@ public class Update {
 	 * @param column2 a non null column
 	 * @return this
 	 */
-	public <T> Update set(Column<T> column1, Column<T> column2) {
-		this.columns.add(new UpdateColumn(column1, column2));
+	public <C> Update<T> set(Column<T, C> column1, Column<T, C> column2) {
+		this.columns.add(new UpdateColumn<>((Column<T, Object>) column1, column2));
 		return this;
 	}
 	
@@ -94,23 +94,23 @@ public class Update {
 		return criteriaSurrogate.and(column, condition);
 	}
 	
-	public static class UpdateColumn {
+	public static class UpdateColumn<T extends Table> {
 		
 		public static final Object PLACEHOLDER = new Object();
 		
-		private final Column column;
+		private final Column<T, Object> column;
 		private final Object value;
 		
-		public UpdateColumn(Column column) {
+		public UpdateColumn(Column<T, Object> column) {
 			this(column, PLACEHOLDER);
 		}
 		
-		public UpdateColumn(Column column, Object value) {
+		public UpdateColumn(Column<T, Object> column, Object value) {
 			this.column = column;
 			this.value = value;
 		}
 		
-		public Column getColumn() {
+		public Column<T, Object> getColumn() {
 			return column;
 		}
 		

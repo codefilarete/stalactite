@@ -6,6 +6,7 @@ import java.sql.Statement;
 import java.util.Collection;
 import java.util.List;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.gama.sql.ConnectionProvider;
 import org.gama.stalactite.ILogger;
@@ -33,7 +34,8 @@ public class DDLDeployer {
 	 */
 	public static Collection<Table> lookupTables(PersistenceContext persistenceContext) {
 		Collection<ClassMappingStrategy> mappingStrategies = persistenceContext.getMappingStrategies().values();
-		return mappingStrategies.stream().map(ClassMappingStrategy::getTargetTable).collect(Collectors.toList());
+		Stream<Table> objectStream = mappingStrategies.stream().map(ClassMappingStrategy::getTargetTable);
+		return objectStream.collect(Collectors.toList());
 	}
 	
 	private final DDLSchemaGenerator ddlSchemaGenerator;

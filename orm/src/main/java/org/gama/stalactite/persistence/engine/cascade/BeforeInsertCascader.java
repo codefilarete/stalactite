@@ -15,14 +15,14 @@ import org.gama.stalactite.persistence.engine.listening.NoopInsertListener;
  */
 public abstract class BeforeInsertCascader<Trigger, Target> extends NoopInsertListener<Trigger> {
 	
-	private Persister<Target, ?> persister;
+	private Persister<Target, ?, ?> persister;
 	
 	/**
 	 * Simple constructor. Created instance must be added to PersisterListener afterward.
 	 *
 	 * @param persister
 	 */
-	public BeforeInsertCascader(Persister<Target, ?> persister) {
+	public BeforeInsertCascader(Persister<Target, ?, ?> persister) {
 		this.persister = persister;
 		this.persister.getPersisterListener().addInsertListener(new NoopInsertListener<Target>() {
 			@Override

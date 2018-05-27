@@ -7,6 +7,7 @@ import java.sql.SQLException;
 import org.gama.sql.dml.WriteOperation;
 import org.gama.stalactite.persistence.engine.WriteExecutor.JDBCBatchingIterator;
 import org.gama.stalactite.persistence.structure.Column;
+import org.gama.stalactite.persistence.structure.Table;
 
 /**
  * Contract of the "management" of entity identifier during insertion.
@@ -22,5 +23,5 @@ public interface IdentifierInsertionManager<T, I> {
 	
 	PreparedStatement prepareStatement(Connection connection, String sql) throws SQLException;
 	
-	JDBCBatchingIterator<T> buildJDBCBatchingIterator(Iterable<T> iterable, WriteOperation<Column> writeOperation, int batchSize);
+	JDBCBatchingIterator<T> buildJDBCBatchingIterator(Iterable<T> iterable, WriteOperation<? extends Column<? extends Table, ?>> writeOperation, int batchSize);
 }

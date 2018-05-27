@@ -18,10 +18,10 @@ import org.gama.stalactite.persistence.structure.Table;
  *
  * @author Guillaume Mary
  */
-public abstract class ColumnedMapMappingStrategy<C extends Map<K, V>, K, V, T> implements IEmbeddedBeanMapper<C> {
+public abstract class ColumnedMapMappingStrategy<C extends Map<K, V>, K, V, T extends Table> implements IEmbeddedBeanMapper<C, T> {
 	
-	private final Table targetTable;
-	private final Set<Column> columns;
+	private final T targetTable;
+	private final Set<Column<T, Object>> columns;
 	private final ToMapRowTransformer<C> rowTransformer;
 	
 	/**
@@ -31,7 +31,7 @@ public abstract class ColumnedMapMappingStrategy<C extends Map<K, V>, K, V, T> i
 	 * @param columns columns that will be used for persistent of Maps, expected to be a subset of targetTable columns    
 	 * @param rowClass Class to instanciate for select from database
 	 */
-	public ColumnedMapMappingStrategy(Table targetTable, Set<Column> columns, Class<C> rowClass) {
+	public ColumnedMapMappingStrategy(T targetTable, Set<Column<T, Object>> columns, Class<C> rowClass) {
 		this.targetTable = targetTable;
 		this.columns = columns;
 		this.rowTransformer = new ToMapRowTransformer<C>(rowClass) {
@@ -47,12 +47,12 @@ public abstract class ColumnedMapMappingStrategy<C extends Map<K, V>, K, V, T> i
 		};
 	}
 	
-	public Table getTargetTable() {
+	public T getTargetTable() {
 		return targetTable;
 	}
 	
 	@Override
-	public Set<Column> getColumns() {
+	public Set<Column<T, Object>> getColumns() {
 		return columns;
 	}
 	
@@ -61,15 +61,15 @@ public abstract class ColumnedMapMappingStrategy<C extends Map<K, V>, K, V, T> i
 	}
 	
 	@Override
-	public Map<Column, Object> getInsertValues(C c) {
-		Map<Column, Object> toReturn = new HashMap<>();
+	public Map<Column<T, Object>, Object> getInsertValues(C c) {
+		Map<Column<T, Object>, Object> toReturn = new HashMap<>();
 		Map<K, V> toIterate = c;
 		if (Collections.isEmpty(c)) {
 			toIterate = new HashMap<>();
 		}
 		toIterate.forEach((key, value) -> addUpsertValues(key, value, toReturn));
 		// NB: we must return all columns: we complete non-valued columns with null 
-		for (Column column : columns) {
+		for (Column<T, Object> column : columns) {
 			if (!toReturn.containsKey(column)) {
 				toReturn.put(column, null);
 			}
@@ -78,16 +78,16 @@ public abstract class ColumnedMapMappingStrategy<C extends Map<K, V>, K, V, T> i
 	}
 	
 	@Override
-	public Map<UpwhereColumn, Object> getUpdateValues(C modified, C unmodified, boolean allColumns) {
-		Map<Column, Object> unmodifiedColumns = new HashMap<>();
-		Map<Column, Object> toReturn = new HashMap<>();
+	public Map<UpwhereColumn<T>, Object> getUpdateValues(C modified, C unmodified, boolean allColumns) {
+		Map<Column<T, Object>, Object> unmodifiedColumns = new HashMap<>();
+		Map<Column<T, Object>, Object> toReturn = new HashMap<>();
 		if (modified != null) {
 			// getting differences
 			// - all of modified but different in unmodified
 			for (Entry<K, V> modifiedEntry : modified.entrySet()) {
 				K modifiedKey = modifiedEntry.getKey();
 				V modifiedValue = modifiedEntry.getValue();
-				Column column = getColumn(modifiedKey);
+				Column<T, Object> column = getColumn(modifiedKey);
 				if (!Objects.equalsWithNull(modifiedValue, unmodified == null ? null : unmodified.get(modifiedKey))) {
 					toReturn.put(column, modifiedValue);
 				} else {
@@ -103,24 +103,24 @@ public abstract class ColumnedMapMappingStrategy<C extends Map<K, V>, K, V, T> i
 			
 			// adding complementary columns if necessary
 			if (allColumns && !toReturn.isEmpty()) {
-				Set<Column> missingColumns = new LinkedHashSet<>(columns);
+				Set<Column<T, Object>> missingColumns = new LinkedHashSet<>(columns);
 				missingColumns.removeAll(toReturn.keySet());
-				for (Column missingColumn : missingColumns) {
+				for (Column<T, Object> missingColumn : missingColumns) {
 					Object missingValue = unmodifiedColumns.get(missingColumn);
 					toReturn.put(missingColumn, missingValue);
 				}
 			}
 		} else if (allColumns && unmodified != null) {
-			for (Column column : columns) {
+			for (Column<T, Object> column : columns) {
 				toReturn.put(column, null);
 			}
 		}
 		return convertToUpwhereColumn(toReturn);
 	}
 	
-	private Map<UpwhereColumn, Object> convertToUpwhereColumn(Map<Column, Object> map) {
-		Map<UpwhereColumn, Object> convertion = new HashMap<>();
-		map.forEach((c, s) -> convertion.put(new UpwhereColumn(c, true), s));
+	private Map<UpwhereColumn<T>, Object> convertToUpwhereColumn(Map<Column<T, Object>, Object> map) {
+		Map<UpwhereColumn<T>, Object> convertion = new HashMap<>();
+		map.forEach((c, s) -> convertion.put(new UpwhereColumn<>(c, true), s));
 		return convertion;
 	}
 	
@@ -132,13 +132,13 @@ public abstract class ColumnedMapMappingStrategy<C extends Map<K, V>, K, V, T> i
 	 * @param value the value ok key in the Map, may be transformed to be persisted
 	 * @param valuesToBePersisted Map to populate
 	 */
-	protected void addUpsertValues(K key, V value, Map<Column, Object> valuesToBePersisted) {
-		T t = toDatabaseValue(key, value);
-		Column column = getColumn(key);
-		valuesToBePersisted.put(column, t);
+	protected void addUpsertValues(K key, V value, Map<Column<T, Object>, Object> valuesToBePersisted) {
+		Object o = toDatabaseValue(key, value);
+		Column<T, Object> column = getColumn(key);
+		valuesToBePersisted.put(column, o);
 	}
 	
-	protected abstract Column getColumn(K k);
+	protected abstract Column<T, Object> getColumn(K k);
 	
 	/**
 	 * Expected to return the persisted value for v of key k 
@@ -146,7 +146,7 @@ public abstract class ColumnedMapMappingStrategy<C extends Map<K, V>, K, V, T> i
 	 * @param v the value to be persisted
 	 * @return the dabase value to be persisted
 	 */
-	protected abstract T toDatabaseValue(K k, V v);
+	protected abstract Object toDatabaseValue(K k, V v);
 	
 	/**
 	 * Reverse of {@link #getColumn(Object)}: give a map key from a column name

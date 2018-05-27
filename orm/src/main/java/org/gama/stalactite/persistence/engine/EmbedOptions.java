@@ -33,5 +33,5 @@ public interface EmbedOptions<T extends Identified, I extends StatefullIdentifie
 	 * @param <OUT> ouput of the function (property type)
 	 * @return a mapping configurer, specialized for embedded elements
 	 */
-	<IN, OUT> IFluentMappingBuilderEmbedOptions<T, I> override(SerializableFunction<IN, OUT> function, Column<OUT> targetColumn);
+	<IN, OUT> IFluentMappingBuilderEmbedOptions<T, I> override(SerializableFunction<IN, OUT> function, Column<Table, OUT> targetColumn);
 }

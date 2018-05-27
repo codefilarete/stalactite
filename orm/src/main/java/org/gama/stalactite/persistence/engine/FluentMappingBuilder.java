@@ -173,12 +173,12 @@ public class FluentMappingBuilder<T extends Identified, I extends StatefullIdent
 	}
 	
 	@Override
-	public <O> IFluentMappingBuilderColumnOptions<T, I> add(SerializableFunction<T, O> getter, Column<O> column) {
+	public <O> IFluentMappingBuilderColumnOptions<T, I> add(SerializableFunction<T, O> getter, Column<Table, O> column) {
 		Method method = captureLambdaMethod(getter);
 		return add(method, column);
 	}
 	
-	private <O> IFluentMappingBuilderColumnOptions<T, I> add(Method method, Column<O> column) {
+	private <O> IFluentMappingBuilderColumnOptions<T, I> add(Method method, Column<Table, O> column) {
 		Linkage<T> newMapping = addMapping(method, column);
 		return addMapping(method, newMapping);
 	}
@@ -206,7 +206,7 @@ public class FluentMappingBuilder<T extends Identified, I extends StatefullIdent
 	/**
 	 * @return a new Column aded to the target table, throws an exception if already mapped
 	 */
-	private <O> Linkage<T> addMapping(Method method, Column<O> column) {
+	private <O> Linkage<T> addMapping(Method method, Column<Table, O> column) {
 		PropertyAccessor<Object, Object> propertyAccessor = Accessors.of(method);
 		assertMappingIsNotAlreadyDefined(column.getName(), propertyAccessor);
 		Linkage<T> linkage = new LinkageByColumn<>(method, column);
@@ -264,7 +264,7 @@ public class FluentMappingBuilder<T extends Identified, I extends StatefullIdent
 	
 	@Override
 	public <O extends Identified, J extends StatefullIdentifier> IFluentMappingBuilderOneToOneOptions<T, I> addOneToOne(SerializableFunction<T, O> getter,
-																														Persister<O, J> persister) {
+																														Persister<O, J, ? extends Table> persister) {
 		// we declare the column on our side: we do it first because it checks some rules
 		add(getter);
 		// we keep it
@@ -297,7 +297,7 @@ public class FluentMappingBuilder<T extends Identified, I extends StatefullIdent
 	
 	@Override
 	public <O extends Identified, J extends StatefullIdentifier, C extends Collection<O>> IFluentMappingBuilderOneToManyOptions<T, I, O> addOneToMany(
-			SerializableFunction<T, C> getter, Persister<O, J> persister) {
+			SerializableFunction<T, C> getter, Persister<O, J, ? extends Table> persister) {
 		CascadeMany<T, O, J, C> cascadeMany = new CascadeMany<>(getter, persister, captureLambdaMethod(getter));
 		this.cascadeManys.add(cascadeMany);
 		IFluentMappingBuilderOneToManyOptions[] finalHack = new IFluentMappingBuilderOneToManyOptions[1];
@@ -462,16 +462,16 @@ public class FluentMappingBuilder<T extends Identified, I extends StatefullIdent
 	}
 	
 	@Override
-	public ClassMappingStrategy<T, I> build(Dialect dialect) {
+	public ClassMappingStrategy<T, I, Table> build(Dialect dialect) {
 		return buildClassMappingStrategy(dialect);
 	}
 	
 	@Override
-	public Persister<T, I> build(PersistenceContext persistenceContext) {
-		ClassMappingStrategy<T, I> mappingStrategy = build(persistenceContext.getDialect());
-		Persister<T, I> localPersister = persistenceContext.add(mappingStrategy);
+	public Persister<T, I, Table> build(PersistenceContext persistenceContext) {
+		ClassMappingStrategy<T, I, Table> mappingStrategy = build(persistenceContext.getDialect());
+		Persister<T, I, Table> localPersister = persistenceContext.add(mappingStrategy);
 		if (!cascadeOnes.isEmpty()) {
-			JoinedTablesPersister<T, I> joinedTablesPersister = new JoinedTablesPersister<>(persistenceContext, mappingStrategy);
+			JoinedTablesPersister<T, I, Table> joinedTablesPersister = new JoinedTablesPersister<>(persistenceContext, mappingStrategy);
 			localPersister = joinedTablesPersister;
 			// adding persistence flag setters on this side
 			joinedTablesPersister.getPersisterListener().addInsertListener((IInsertListener<T>) SetPersistedFlagAfterInsertListener.INSTANCE);
@@ -483,7 +483,7 @@ public class FluentMappingBuilder<T extends Identified, I extends StatefullIdent
 		}
 		
 		if (!cascadeManys.isEmpty()) {
-			JoinedTablesPersister<T, I> joinedTablesPersister = new JoinedTablesPersister<>(persistenceContext, mappingStrategy);
+			JoinedTablesPersister<T, I, Table> joinedTablesPersister = new JoinedTablesPersister<>(persistenceContext, mappingStrategy);
 			localPersister = joinedTablesPersister;
 			
 			CascadeManyConfigurer cascadeManyConfigurer = new CascadeManyConfigurer();
@@ -493,7 +493,7 @@ public class FluentMappingBuilder<T extends Identified, I extends StatefullIdent
 		}
 		
 		Table targetTable = localPersister.getTargetTable();
-		Map<String, Column> columnsPerName = targetTable.mapColumnsOnName();
+		Map<String, Column<Table, Object>> columnsPerName = targetTable.mapColumnsOnName();
 		Map<PropertyAccessor, Column> propertyMapping = new HashMap<>();
 		for (Inset<?, ?> inset : this.insets) {
 			// Building the mapping of the value-object's fields to the table
@@ -541,7 +541,7 @@ public class FluentMappingBuilder<T extends Identified, I extends StatefullIdent
 		return localPersister;
 	}
 
-	private ClassMappingStrategy<T, I> buildClassMappingStrategy(Dialect dialect) {
+	private ClassMappingStrategy<T, I, Table> buildClassMappingStrategy(Dialect dialect) {
 		Map<PropertyAccessor, Column> columnMapping = buildMapping(dialect);
 		List<Entry<PropertyAccessor, Column>> identifierProperties = columnMapping.entrySet().stream().filter(e -> e.getValue().isPrimaryKey())
 				.collect(Collectors.toList());
@@ -556,7 +556,7 @@ public class FluentMappingBuilder<T extends Identified, I extends StatefullIdent
 				throw new IllegalArgumentException("Multiple columned primary key is not supported");
 		}
 		
-		return new ClassMappingStrategy<>(persistedClass, table, columnMapping, identifierProperty, this.identifierInsertionManager);
+		return new ClassMappingStrategy<T, I, Table>(persistedClass, table, (Map) columnMapping, identifierProperty, this.identifierInsertionManager);
 	}
 	
 	
@@ -657,12 +657,12 @@ public class FluentMappingBuilder<T extends Identified, I extends StatefullIdent
 		
 		private final Function<SRC, O> targetProvider;
 		private final Method member;
-		private final Persister<O, J> persister;
+		private final Persister<O, J, ? extends Table> persister;
 		private final Set<CascadeType> cascadeTypes = new HashSet<>();
 		private Column reverseSide;
 		private boolean nullable = true;
 		
-		private CascadeOne(Function<SRC, O> targetProvider, Persister<O, J> persister, Method method) {
+		private CascadeOne(Function<SRC, O> targetProvider, Persister<O, J, ? extends Table> persister, Method method) {
 			this.targetProvider = targetProvider;
 			this.persister = persister;
 			// looking for the target type because its necessary to find its persister (and other objects). Done thru a method capturer (weird thing).
@@ -680,8 +680,8 @@ public class FluentMappingBuilder<T extends Identified, I extends StatefullIdent
 		}
 		
 		/** The {@link Persister} that will be used to persist the target of the relation */
-		public Persister<O, J> getPersister() {
-			return persister;
+		public Persister<O, J, Table> getPersister() {
+			return (Persister<O, J, Table>) persister;
 		}
 		
 		/** Events of the cascade, default is none */
@@ -717,23 +717,23 @@ public class FluentMappingBuilder<T extends Identified, I extends StatefullIdent
 	public static class CascadeMany<SRC extends Identified, O extends Identified, J extends StatefullIdentifier, C extends Collection<O>> {
 		
 		private final Function<SRC, C> targetProvider;
-		private final Persister<O, J> persister;
+		private final Persister<O, J, ? extends Table> persister;
 		private final Method member;
 		private final Class<C> collectionTargetClass;
 		/** the method that sets the "one" entity" onto the "many" entities */
 		private SerializableBiConsumer<O, SRC> reverseSetter;
 		/** the method that gets the "one" entity" from the "many" entities */
 		private SerializableFunction<O, SRC> reverseGetter;
-		private Column<SRC> reverseColumn;
+		private Column<Table, SRC> reverseColumn;
 		private final Set<CascadeType> cascadeTypes = new HashSet<>();
 		/** Should we delete removed entities from the Collection (for UPDATE cascade) */
 		private boolean deleteRemoved = false;
 		
-		private CascadeMany(Function<SRC, C> targetProvider, Persister<O, J> persister, Method method) {
+		private CascadeMany(Function<SRC, C> targetProvider, Persister<O, J, ? extends Table> persister, Method method) {
 			this(targetProvider, persister, (Class<C>) Reflections.javaBeanTargetType(method), method);
 		}
 		
-		private CascadeMany(Function<SRC, C> targetProvider, Persister<O, J> persister, Class<C> collectionTargetClass, Method method) {
+		private CascadeMany(Function<SRC, C> targetProvider, Persister<O, J, ? extends Table> persister, Class<C> collectionTargetClass, Method method) {
 			this.targetProvider = targetProvider;
 			this.persister = persister;
 			this.member = method;
@@ -744,8 +744,8 @@ public class FluentMappingBuilder<T extends Identified, I extends StatefullIdent
 			return targetProvider;
 		}
 		
-		public Persister<O, J> getPersister() {
-			return persister;
+		public Persister<O, J, Table> getPersister() {
+			return (Persister<O, J, Table>) persister;
 		}
 		
 		public Method getMember() {
@@ -760,7 +760,7 @@ public class FluentMappingBuilder<T extends Identified, I extends StatefullIdent
 			return reverseSetter;
 		}
 		
-		public Column<SRC> getReverseColumn() {
+		public Column<Table, SRC> getReverseColumn() {
 			return reverseColumn;
 		}
 		

@@ -53,11 +53,11 @@ public class ColumnedMapMappingStrategyTest {
 		col5 = namedColumns.get("col_5");
 	}
 	
-	private ColumnedMapMappingStrategy<Map<Integer, String>, Integer, String, String> testInstance;
+	private ColumnedMapMappingStrategy<Map<Integer, String>, Integer, String, Table> testInstance;
 	
 	@BeforeEach
 	public void setUp() {
-		testInstance = new ColumnedMapMappingStrategy<Map<Integer, String>, Integer, String, String>(totoTable, totoTable.getColumns(), (Class<Map<Integer, String>>) (Class) HashMap.class) {
+		testInstance = new ColumnedMapMappingStrategy<Map<Integer, String>, Integer, String, Table>(totoTable, totoTable.getColumns(), (Class<Map<Integer, String>>) (Class) HashMap.class) {
 			@Override
 			protected Column getColumn(Integer key) {
 				if (key > 5) {
@@ -96,7 +96,7 @@ public class ColumnedMapMappingStrategyTest {
 	@ParameterizedTest
 	@MethodSource("testGetInsertValuesData")
 	public void testGetInsertValues(ChainingMap<Integer, String> toInsert, ChainingMap<Column, String> expected) {
-		Map<Column, Object> insertValues = testInstance.getInsertValues(toInsert);
+		Map<Column<Table, Object>, Object> insertValues = testInstance.getInsertValues(toInsert);
 		assertEquals(expected, insertValues);
 	}
 	
@@ -121,7 +121,7 @@ public class ColumnedMapMappingStrategyTest {
 	@ParameterizedTest
 	@MethodSource("testGetUpdateValues_diffOnlyData")
 	public void testGetUpdateValues_diffOnly(HashMap<Integer, String> modified, HashMap<Integer, String> unmodified, Map<Column, String> expected) {
-		Map<UpwhereColumn, Object> updateValues = testInstance.getUpdateValues(modified, unmodified, false);
+		Map<UpwhereColumn<Table>, Object> updateValues = testInstance.getUpdateValues(modified, unmodified, false);
 		Map<UpwhereColumn, Object> expectationWithUpwhereColumn = new HashMap<>();
 		expected.forEach((c, s) -> expectationWithUpwhereColumn.put(new UpwhereColumn(c, true), s));
 		assertEquals(expectationWithUpwhereColumn, updateValues);
@@ -150,7 +150,7 @@ public class ColumnedMapMappingStrategyTest {
 	@ParameterizedTest
 	@MethodSource("testGetUpdateValues_allColumnsData")
 	public void testGetUpdateValues_allColumns(HashMap<Integer, String> modified, HashMap<Integer, String> unmodified, Map<Column, String> expected) {
-		Map<UpwhereColumn, Object> updateValues = testInstance.getUpdateValues(modified, unmodified, true);
+		Map<UpwhereColumn<Table>, Object> updateValues = testInstance.getUpdateValues(modified, unmodified, true);
 		Map<UpwhereColumn, Object> expectationWithUpwhereColumn = new HashMap<>();
 		expected.forEach((c, s) -> expectationWithUpwhereColumn.put(new UpwhereColumn(c, true), s));
 		assertEquals(expectationWithUpwhereColumn, updateValues);

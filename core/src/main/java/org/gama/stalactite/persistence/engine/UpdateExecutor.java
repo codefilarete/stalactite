@@ -28,14 +28,14 @@ import static org.gama.stalactite.persistence.engine.RowCountManager.THROWING_RO
  * 
  * @author Guillaume Mary
  */
-public class UpdateExecutor<T, I> extends UpsertExecutor<T, I> {
+public class UpdateExecutor<C, I, T extends Table> extends UpsertExecutor<C, I, T> {
 	
 	/** Entity lock manager, default is no operation as soon as a {@link VersioningStrategy} is given */
-	private OptimisticLockManager optimisticLockManager = OptimisticLockManager.NOOP_OPTIMISTIC_LOCK_MANAGER;
+	private OptimisticLockManager<T> optimisticLockManager = OptimisticLockManager.NOOP_OPTIMISTIC_LOCK_MANAGER;
 	
 	private RowCountManager rowCountManager = RowCountManager.THROWING_ROW_COUNT_MANAGER;
 	
-	public UpdateExecutor(ClassMappingStrategy<T, I> mappingStrategy, ConnectionProvider connectionProvider,
+	public UpdateExecutor(ClassMappingStrategy<C, I, T> mappingStrategy, ConnectionProvider connectionProvider,
 						  DMLGenerator dmlGenerator, Retryer writeOperationRetryer,
 						  int batchSize, int inOperatorMaxSize) {
 		super(mappingStrategy, connectionProvider, dmlGenerator, writeOperationRetryer, batchSize, inOperatorMaxSize);
@@ -48,12 +48,13 @@ public class UpdateExecutor<T, I> extends UpsertExecutor<T, I> {
 	public void setVersioningStrategy(VersioningStrategy versioningStrategy) {
 		// we could have put the column as an attribute of the VersioningStrategy but, by making the column more dynamic, the strategy can be
 		// shared as long as PropertyAccessor is reusable over entities (wraps a common method)
-		Column versionColumn = getMappingStrategy().getDefaultMappingStrategy().getPropertyToColumn().get(versioningStrategy.getPropertyAccessor());
+		Column<T, Object> versionColumn = getMappingStrategy().getDefaultMappingStrategy()
+				.getPropertyToColumn().get(versioningStrategy.getPropertyAccessor());
 		setOptimisticLockManager(new RevertOnRollbackMVCC(versioningStrategy, versionColumn, getConnectionProvider()));
 		setRowCountManager(THROWING_ROW_COUNT_MANAGER);
 	}
 	
-	public void setOptimisticLockManager(OptimisticLockManager optimisticLockManager) {
+	public void setOptimisticLockManager(OptimisticLockManager<T> optimisticLockManager) {
 		this.optimisticLockManager = optimisticLockManager;
 	}
 	
@@ -62,15 +63,15 @@ public class UpdateExecutor<T, I> extends UpsertExecutor<T, I> {
 	 * Hence optimistic lock (versioned entities) is not check
 	 * @param iterable iterable of instances
 	 */
-	public int updateById(Iterable<T> iterable) {
-		Set<Column> columnsToUpdate = getMappingStrategy().getUpdatableColumns();
-		PreparedUpdate updateOperation = getDmlGenerator().buildUpdate(columnsToUpdate, getMappingStrategy().getVersionedKeys());
-		WriteOperation<UpwhereColumn> writeOperation = newWriteOperation(updateOperation, new CurrentConnectionProvider());
+	public int updateById(Iterable<C> iterable) {
+		Set<Column<T, Object>> columnsToUpdate = getMappingStrategy().getUpdatableColumns();
+		PreparedUpdate<T> updateOperation = getDmlGenerator().buildUpdate(columnsToUpdate, getMappingStrategy().getVersionedKeys());
+		WriteOperation<UpwhereColumn<T>> writeOperation = newWriteOperation(updateOperation, new CurrentConnectionProvider());
 		
-		JDBCBatchingIterator<T> jdbcBatchingIterator = new JDBCBatchingIterator<>(iterable, writeOperation, getBatchSize());
+		JDBCBatchingIterator<C> jdbcBatchingIterator = new JDBCBatchingIterator<>(iterable, writeOperation, getBatchSize());
 		while(jdbcBatchingIterator.hasNext()) {
-			T t = jdbcBatchingIterator.next();
-			Map<UpwhereColumn, Object> updateValues = getMappingStrategy().getUpdateValues(t, null, true);
+			C c = jdbcBatchingIterator.next();
+			Map<UpwhereColumn<T>, Object> updateValues = getMappingStrategy().getUpdateValues(c, null, true);
 			writeOperation.addBatch(updateValues);
 		}
 		return jdbcBatchingIterator.getUpdatedRowCount();
@@ -83,7 +84,7 @@ public class UpdateExecutor<T, I> extends UpsertExecutor<T, I> {
 	 * @param differencesIterable pairs of modified-unmodified instances, used to compute differences side by side
 	 * @param allColumnsStatement true if all columns must be in the SQL statement, false if only modified ones should be..
 	 */
-	public int update(Iterable<Map.Entry<T, T>> differencesIterable, boolean allColumnsStatement) {
+	public int update(Iterable<Map.Entry<C, C>> differencesIterable, boolean allColumnsStatement) {
 		if (allColumnsStatement) {
 			return updateFully(differencesIterable);
 		} else {
@@ -97,7 +98,7 @@ public class UpdateExecutor<T, I> extends UpsertExecutor<T, I> {
 	 *
 	 * @param differencesIterable pairs of modified-unmodified instances, used to compute differences side by side
 	 */
-	public int updatePartially(Iterable<Map.Entry<T, T>> differencesIterable) {
+	public int updatePartially(Iterable<Map.Entry<C, C>> differencesIterable) {
 		CurrentConnectionProvider currentConnectionProvider = new CurrentConnectionProvider();
 		return new DifferenceUpdater(new JDBCBatchingOperationCache(currentConnectionProvider), false).update(differencesIterable);
 	}
@@ -108,14 +109,14 @@ public class UpdateExecutor<T, I> extends UpsertExecutor<T, I> {
 	 *
 	 * @param differencesIterable iterable of instances
 	 */
-	public int updateFully(Iterable<Map.Entry<T, T>> differencesIterable) {
-		Table targetTable = getMappingStrategy().getTargetTable();
+	public int updateFully(Iterable<Map.Entry<C, C>> differencesIterable) {
+		T targetTable = getMappingStrategy().getTargetTable();
 		// we never update primary key (by principle and for persistent bean cache based on id (on what else ?)) 
-		Set<Column> columnsToUpdate = targetTable.getColumnsNoPrimaryKey();
-		PreparedUpdate preparedUpdate = getDmlGenerator().buildUpdate(columnsToUpdate, getMappingStrategy().getVersionedKeys());
-		WriteOperation<UpwhereColumn> writeOperation = newWriteOperation(preparedUpdate, new CurrentConnectionProvider());
+		Set<Column<T, Object>> columnsToUpdate = targetTable.getColumnsNoPrimaryKey();
+		PreparedUpdate<T> preparedUpdate = getDmlGenerator().buildUpdate(columnsToUpdate, getMappingStrategy().getVersionedKeys());
+		WriteOperation<UpwhereColumn<T>> writeOperation = newWriteOperation(preparedUpdate, new CurrentConnectionProvider());
 		// Since all columns are updated we can benefit from JDBC batch
-		JDBCBatchingOperation jdbcBatchingOperation = new JDBCBatchingOperation(writeOperation, getBatchSize());
+		JDBCBatchingOperation jdbcBatchingOperation = new JDBCBatchingOperation<>(writeOperation, getBatchSize());
 		
 		return new DifferenceUpdater(new SingleJDBCBatchingOperation(jdbcBatchingOperation), true).update(differencesIterable);
 	}
@@ -125,18 +126,18 @@ public class UpdateExecutor<T, I> extends UpsertExecutor<T, I> {
 	 * Its principle is near to JDBCBatchingIterator but update methods have to compute differences on each couple so
 	 * they generate multiple statements according to differences, hence an Iterator is not a good candidate for design.
 	 */
-	private static class JDBCBatchingOperation {
-		private final WriteOperation<UpwhereColumn> writeOperation;
+	private static class JDBCBatchingOperation<T extends Table> {
+		private final WriteOperation<UpwhereColumn<T>> writeOperation;
 		private final int batchSize;
 		private long stepCounter = 0;
 		private int updatedRowCount;
 		
-		private JDBCBatchingOperation(WriteOperation<UpwhereColumn> writeOperation, int batchSize) {
+		private JDBCBatchingOperation(WriteOperation<UpwhereColumn<T>> writeOperation, int batchSize) {
 			this.writeOperation = writeOperation;
 			this.batchSize = batchSize;
 		}
 		
-		private void setValues(Map<UpwhereColumn, Object> values) {
+		private void setValues(Map<UpwhereColumn<T>, Object> values) {
 			this.writeOperation.addBatch(values);
 			this.stepCounter++;
 			executeBatchIfNecessary();
@@ -158,56 +159,56 @@ public class UpdateExecutor<T, I> extends UpsertExecutor<T, I> {
 		}
 	}
 	
-	private interface JDBCBatchingOperationProvider {
-		JDBCBatchingOperation getJdbcBatchingOperation(Set<UpwhereColumn> upwhereColumns);
-		Iterable<JDBCBatchingOperation> getJdbcBatchingOperations();
+	private interface JDBCBatchingOperationProvider<T extends Table> {
+		JDBCBatchingOperation<T> getJdbcBatchingOperation(Set<UpwhereColumn<T>> upwhereColumns);
+		Iterable<JDBCBatchingOperation<T>> getJdbcBatchingOperations();
 	}
 	
-	private class SingleJDBCBatchingOperation implements JDBCBatchingOperationProvider, Iterable<JDBCBatchingOperation> {
+	private class SingleJDBCBatchingOperation implements JDBCBatchingOperationProvider<T>, Iterable<JDBCBatchingOperation<T>> {
 		
-		private final JDBCBatchingOperation[] jdbcBatchingOperation = new JDBCBatchingOperation[1];
+		private final JDBCBatchingOperation<T>[] jdbcBatchingOperation = new JDBCBatchingOperation[1];
 		
-		private final ArrayIterator<JDBCBatchingOperation> operationIterator = new ArrayIterator<>(jdbcBatchingOperation);
+		private final ArrayIterator<JDBCBatchingOperation<T>> operationIterator = new ArrayIterator<>(jdbcBatchingOperation);
 		
-		private SingleJDBCBatchingOperation(JDBCBatchingOperation jdbcBatchingOperation) {
+		private SingleJDBCBatchingOperation(JDBCBatchingOperation<T> jdbcBatchingOperation) {
 			this.jdbcBatchingOperation[0] = jdbcBatchingOperation;
 		}
 		
 		@Override
-		public JDBCBatchingOperation getJdbcBatchingOperation(Set<UpwhereColumn> upwhereColumns) {
+		public JDBCBatchingOperation<T> getJdbcBatchingOperation(Set<UpwhereColumn<T>> upwhereColumns) {
 			return this.jdbcBatchingOperation[0];
 		}
 		
 		@Override
-		public Iterable<JDBCBatchingOperation> getJdbcBatchingOperations() {
+		public Iterable<JDBCBatchingOperation<T>> getJdbcBatchingOperations() {
 			return this;
 		}
 		
 		@Override
-		public Iterator<JDBCBatchingOperation> iterator() {
+		public Iterator<JDBCBatchingOperation<T>> iterator() {
 			return operationIterator;
 		}
 	}
 	
-	private class JDBCBatchingOperationCache implements JDBCBatchingOperationProvider {
+	private class JDBCBatchingOperationCache implements JDBCBatchingOperationProvider<T> {
 		
-		private final Map<Set<UpwhereColumn>, JDBCBatchingOperation> updateOperationCache;
+		private final Map<Set<UpwhereColumn<T>>, JDBCBatchingOperation<T>> updateOperationCache;
 		
-		private JDBCBatchingOperationCache(final CurrentConnectionProvider currentConnectionProvider) {
+		private JDBCBatchingOperationCache(CurrentConnectionProvider currentConnectionProvider) {
 			// cache for WriteOperation instances (key is Columns to be updated) for batch use
 			updateOperationCache = new ValueFactoryHashMap<>(input -> {
-				PreparedUpdate preparedUpdate = getDmlGenerator().buildUpdate(UpwhereColumn.getUpdateColumns(input), getMappingStrategy().getVersionedKeys());
-				return new JDBCBatchingOperation(newWriteOperation(preparedUpdate, currentConnectionProvider), getBatchSize());
+				PreparedUpdate<T> preparedUpdate = getDmlGenerator().buildUpdate(UpwhereColumn.getUpdateColumns(input), getMappingStrategy().getVersionedKeys());
+				return new JDBCBatchingOperation<>(newWriteOperation(preparedUpdate, currentConnectionProvider), getBatchSize());
 			});
 		}
 		
 		@Override
-		public JDBCBatchingOperation getJdbcBatchingOperation(Set<UpwhereColumn> upwhereColumns) {
+		public JDBCBatchingOperation<T> getJdbcBatchingOperation(Set<UpwhereColumn<T>> upwhereColumns) {
 			return updateOperationCache.get(upwhereColumns);
 		}
 		
 		@Override
-		public Iterable<JDBCBatchingOperation> getJdbcBatchingOperations() {
+		public Iterable<JDBCBatchingOperation<T>> getJdbcBatchingOperations() {
 			return updateOperationCache.values();
 		}
 	}
@@ -218,25 +219,25 @@ public class UpdateExecutor<T, I> extends UpsertExecutor<T, I> {
 	 */
 	private class DifferenceUpdater {
 		
-		private final JDBCBatchingOperationProvider batchingOperationProvider;
+		private final JDBCBatchingOperationProvider<T> batchingOperationProvider;
 		private final boolean allColumns;
 		
-		DifferenceUpdater(JDBCBatchingOperationProvider batchingOperationProvider, boolean allColumns) {
+		DifferenceUpdater(JDBCBatchingOperationProvider<T> batchingOperationProvider, boolean allColumns) {
 			this.batchingOperationProvider = batchingOperationProvider;
 			this.allColumns = allColumns;
 		}
 		
-		private int update(Iterable<Map.Entry<T, T>> differencesIterable) {
+		private int update(Iterable<Map.Entry<C, C>> differencesIterable) {
 			RowCounter rowCounter = new RowCounter();
 			// building UpdateOperations and update values
-			for (Map.Entry<T, T> next : differencesIterable) {
-				T modified = next.getKey();
-				T unmodified = next.getValue();
+			for (Map.Entry<C, C> next : differencesIterable) {
+				C modified = next.getKey();
+				C unmodified = next.getValue();
 				// finding differences between modified instances and unmodified ones
-				Map<UpwhereColumn, Object> updateValues = getMappingStrategy().getUpdateValues(modified, unmodified, allColumns);
+				Map<UpwhereColumn<T>, Object> updateValues = getMappingStrategy().getUpdateValues(modified, unmodified, allColumns);
 				if (!updateValues.isEmpty()) {
 					optimisticLockManager.manageLock(modified, unmodified, updateValues);
-					JDBCBatchingOperation writeOperation = batchingOperationProvider.getJdbcBatchingOperation(updateValues.keySet());
+					JDBCBatchingOperation<T> writeOperation = batchingOperationProvider.getJdbcBatchingOperation(updateValues.keySet());
 					writeOperation.setValues(updateValues);
 					// we keep the updated values for row count, not glad with it but not found any way to do differently
 					rowCounter.add(updateValues);
@@ -259,7 +260,7 @@ public class UpdateExecutor<T, I> extends UpsertExecutor<T, I> {
 	/**
 	 * The contract for managing Optimistic Lock on update.
 	 */
-	interface OptimisticLockManager {
+	interface OptimisticLockManager<T extends Table> {
 		
 		OptimisticLockManager NOOP_OPTIMISTIC_LOCK_MANAGER = (o1, o2, m) -> {};
 		
@@ -272,10 +273,10 @@ public class UpdateExecutor<T, I> extends UpsertExecutor<T, I> {
 		 * @param unmodified
 		 * @param updateValues
 		 */
-		void manageLock(Object modified, Object unmodified, Map<UpwhereColumn, Object> updateValues);
+		void manageLock(Object modified, Object unmodified, Map<UpwhereColumn<T>, Object> updateValues);
 	}
 	
-	private class RevertOnRollbackMVCC extends AbstractRevertOnRollbackMVCC implements OptimisticLockManager {
+	private class RevertOnRollbackMVCC extends AbstractRevertOnRollbackMVCC implements OptimisticLockManager<T> {
 		
 		/**
 		 * Main constructor.
@@ -286,7 +287,7 @@ public class UpdateExecutor<T, I> extends UpsertExecutor<T, I> {
 		 * @param <C> a {@link ConnectionProvider} that notifies rollback.
 		 * {@link ConnectionProvider#getCurrentConnection()} is not used here, simple mark to help understanding
 		 */
-		private <C extends RollbackObserver & ConnectionProvider> RevertOnRollbackMVCC(VersioningStrategy versioningStrategy, Column versionColumn, C rollbackObserver) {
+		private <C extends RollbackObserver & ConnectionProvider> RevertOnRollbackMVCC(VersioningStrategy versioningStrategy, Column<T, Object> versionColumn, C rollbackObserver) {
 			super(versioningStrategy, versionColumn, rollbackObserver);
 		}
 		
@@ -307,15 +308,15 @@ public class UpdateExecutor<T, I> extends UpsertExecutor<T, I> {
 		 * Upgrade modified instance and add version column to the update statement through {@link UpwhereColumn}s
 		 */
 		@Override
-		public void manageLock(Object modified, Object unmodified, Map<UpwhereColumn, Object> updateValues) {
+		public void manageLock(Object modified, Object unmodified, Map<UpwhereColumn<T>, Object> updateValues) {
 			Object modifiedVersion = versioningStrategy.getVersion(modified);
 			Object unmodifiedVersion = versioningStrategy.getVersion(unmodified);
 			if (!Objects.equalsWithNull(modifiedVersion, modifiedVersion)) {
 				throw new IllegalStateException();
 			}
 			versioningStrategy.upgrade(modified);
-			updateValues.put(new UpwhereColumn(versionColumn, true), versioningStrategy.getVersion(modified));
-			updateValues.put(new UpwhereColumn(versionColumn, false), unmodifiedVersion);
+			updateValues.put(new UpwhereColumn<T>(versionColumn, true), versioningStrategy.getVersion(modified));
+			updateValues.put(new UpwhereColumn<T>(versionColumn, false), unmodifiedVersion);
 			rollbackObserver.addRollbackListener(new RollbackListener() {
 				@Override
 				public void beforeRollback() {

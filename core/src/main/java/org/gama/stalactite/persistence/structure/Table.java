@@ -19,7 +19,7 @@ import org.gama.stalactite.persistence.structure.Database.Schema;
  *
  * @author Guillaume Mary
  */
-public class Table {
+public class Table<SELF extends Table<SELF>> {
 	
 	private Schema schema;
 	
@@ -27,9 +27,9 @@ public class Table {
 	
 	private String absoluteName;
 	
-	private KeepOrderSet<Column> columns = new KeepOrderSet<>();
+	private KeepOrderSet<Column<SELF, Object>> columns = new KeepOrderSet<>();
 	
-	private Column primaryKey;
+	private Column<SELF, Object> primaryKey;
 	
 	private Set<Index> indexes = new HashSet<>();
 	
@@ -57,37 +57,37 @@ public class Table {
 		return absoluteName;
 	}
 	
-	public Set<Column> getColumns() {
+	public Set<Column<SELF, Object>> getColumns() {
 		return Collections.unmodifiableSet(columns.asSet());
 	}
 	
-	public Set<Column> getColumnsNoPrimaryKey() {
-		LinkedHashSet<Column> columns = this.columns.asSet();
-		columns.remove(getPrimaryKey());
-		return columns;
+	public Set<Column<SELF, Object>> getColumnsNoPrimaryKey() {
+		LinkedHashSet<Column<SELF, Object>> result = this.columns.asSet();
+		result.remove(getPrimaryKey());
+		return result;
 	}
 	
-	public <T> Column<T> addColumn(String name, Class<T> javaType) {
-		Column<T> column = new Column<>(this, name, javaType);
-		this.columns.add(column);
+	public <O> Column<SELF, O> addColumn(String name, Class<O> javaType) {
+		Column<SELF, O> column = new Column<>((SELF) this, name, javaType);
+		this.columns.add((Column<SELF, Object>) column);
 		return column;
 	}
 	
-	public <T> Column<T> addColumn(String name, Class<T> javaType, int size) {
-		Column<T> column = new Column<>(this, name, javaType, size);
-		this.columns.add(column);
+	public <O> Column<SELF, O> addColumn(String name, Class<O> javaType, int size) {
+		Column<SELF, O> column = new Column<>((SELF) this, name, javaType, size);
+		this.columns.add((Column<SELF, Object>) column);
 		return column;
 	}
 	
-	public Map<String, Column> mapColumnsOnName() {
-		Map<String, Column> mapColumnsOnName = new LinkedHashMap<>(columns.size());
-		for (Column column : columns) {
+	public Map<String, Column<SELF, Object>> mapColumnsOnName() {
+		Map<String, Column<SELF, Object>> mapColumnsOnName = new LinkedHashMap<>(columns.size());
+		for (Column<SELF, Object> column : columns) {
 			mapColumnsOnName.put(column.getName(), column);
 		}
 		return mapColumnsOnName;
 	}
 	
-	public Column getPrimaryKey() {
+	public Column<SELF, Object> getPrimaryKey() {
 		if (primaryKey == null) {
 			primaryKey = columns.stream().filter(Column::isPrimaryKey).findAny().orElse(null);
 		}
@@ -110,7 +110,7 @@ public class Table {
 		return Collections.unmodifiableSet(foreignKeys);
 	}
 	
-	public <T> ForeignKey addForeignKey(String name, Column<T> column, Column<T> targetColumn) {
+	public <T1 extends Table<T1>, T2 extends Table<T2>, O> ForeignKey addForeignKey(String name, Column<T1, O> column, Column<T2, O> targetColumn) {
 		ForeignKey newForeignKey = new ForeignKey(name, column, targetColumn);
 		this.foreignKeys.add(newForeignKey);
 		return newForeignKey;
@@ -133,7 +133,7 @@ public class Table {
 		if (this == o) {
 			return true;
 		}
-		if (o == null || getClass() != o.getClass()) {
+		if (!(o instanceof Table)) {
 			return false;
 		}
 		

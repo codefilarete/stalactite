@@ -8,15 +8,16 @@ import org.gama.sql.binder.PreparedStatementWriterIndex;
 import org.gama.sql.dml.ExpandableStatement;
 import org.gama.sql.dml.PreparedSQL;
 import org.gama.stalactite.persistence.structure.Column;
+import org.gama.stalactite.persistence.structure.Table;
 
 /**
  * Equivalent to {@link PreparedSQL} but with Column as index identifier.
  * 
  * @author Guillaume Mary
  */
-public class ColumnParamedSQL extends ExpandableStatement<Column> {
+public class ColumnParamedSQL<T extends Table> extends ExpandableStatement<Column<T, ?>> {
 	
-	private final Map<Column, int[]> columnIndexes;
+	private final Map<Column<T, Object>, int[]> columnIndexes;
 	
 	/**
 	 * Detailed constructor
@@ -25,12 +26,12 @@ public class ColumnParamedSQL extends ExpandableStatement<Column> {
 	 * @param columnIndexes mapping between {@link Column}s (used on {@link #setValue(Object, Object)} and their indexes in the SQL statement
 	 * @param parameterBinders mapping between {@link Column}s and their 
 	 */
-	public ColumnParamedSQL(String sql, Map<Column, int[]> columnIndexes, Map<Column, ? extends PreparedStatementWriter> parameterBinders) {
+	public ColumnParamedSQL(String sql, Map<Column<T, Object>, int[]> columnIndexes, Map<Column<T, Object>, ? extends PreparedStatementWriter> parameterBinders) {
 		super(sql, parameterBinders);
 		this.columnIndexes = columnIndexes;
 	}
 	
-	public ColumnParamedSQL(String sql, Map<Column, int[]> columnIndexes, PreparedStatementWriterIndex<Column, ParameterBinder> parameterBinderProvider) {
+	public ColumnParamedSQL(String sql, Map<Column<T, Object>, int[]> columnIndexes, PreparedStatementWriterIndex<Column<T, Object>, ParameterBinder> parameterBinderProvider) {
 		super(sql, parameterBinderProvider);
 		this.columnIndexes = columnIndexes;
 	}

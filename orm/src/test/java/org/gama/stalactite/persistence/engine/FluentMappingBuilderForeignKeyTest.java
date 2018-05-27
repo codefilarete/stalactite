@@ -18,6 +18,7 @@ import org.gama.stalactite.persistence.id.Identified;
 import org.gama.stalactite.persistence.id.Identifier;
 import org.gama.stalactite.persistence.id.PersistedIdentifier;
 import org.gama.stalactite.persistence.sql.HSQLDBDialect;
+import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.test.JdbcConnectionProvider;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -32,8 +33,8 @@ public class FluentMappingBuilderForeignKeyTest {
 	
 	private static final HSQLDBDialect DIALECT = new HSQLDBDialect();
 	private DataSource dataSource = new HSQLDBInMemoryDataSource();
-	private Persister<Person, PersistedIdentifier<Long>> personPersister;
-	private Persister<City, PersistedIdentifier<Long>> cityPersister;
+	private Persister<Person, PersistedIdentifier<Long>, Table> personPersister;
+	private Persister<City, PersistedIdentifier<Long>, Table> cityPersister;
 	private PersistenceContext persistenceContext;
 	
 	@BeforeAll
@@ -66,7 +67,7 @@ public class FluentMappingBuilderForeignKeyTest {
 	@Test
 	public void testCascade_oneToOne_foreignKeyIsCreated() throws SQLException {
 		// mapping building thantks to fluent API
-		Persister<Country, Identifier<Long>> countryPersister = FluentMappingBuilder.from(Country.class,
+		Persister<Country, Identifier<Long>, Table> countryPersister = FluentMappingBuilder.from(Country.class,
 				(Class<Identifier<Long>>) (Class) PersistedIdentifier.class)
 				// setting a foreign key naming strategy to be tested
 				.foreignKeyNamingStrategy(ForeignKeyNamingStrategy.DEFAULT)

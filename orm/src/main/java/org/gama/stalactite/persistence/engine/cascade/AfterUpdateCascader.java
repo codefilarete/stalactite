@@ -19,9 +19,9 @@ import org.gama.stalactite.persistence.engine.listening.NoopUpdateListener;
  */
 public abstract class AfterUpdateCascader<Trigger, Target> extends NoopUpdateListener<Trigger> {
 	
-	private Persister<Target, ?> persister;
+	private Persister<Target, ?, ?> persister;
 	
-	public AfterUpdateCascader(Persister<Target, ?> persister) {
+	public AfterUpdateCascader(Persister<Target, ?, ?> persister) {
 		this.persister = persister;
 		this.persister.getPersisterListener().addUpdateListener(new NoopUpdateListener<Target>() {
 			@Override

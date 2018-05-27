@@ -77,7 +77,7 @@ public class StrategyJoinsRowTransformer<T> {
 				
 				// treating the current depth
 				StrategyJoins<?> strategyJoins = stack.poll();
-				ClassMappingStrategy<?, ?> leftStrategy = strategyJoins.getStrategy();
+				ClassMappingStrategy<?, ?, ?> leftStrategy = strategyJoins.getStrategy();
 				ToBeanRowTransformer mainRowTransformer = leftStrategy.getRowTransformer();
 				Object primaryKeyValue = row.get(getAlias(strategyJoins.getTable().getPrimaryKey()));
 				

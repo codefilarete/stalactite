@@ -20,30 +20,30 @@ import org.gama.stalactite.persistence.structure.Table;
  * 
  * @author Guillaume Mary
  */
-public class Persister<T, I> {
+public class Persister<C, I, T extends Table> {
 	
 	private final ConnectionProvider connectionProvider;
 	private final DMLGenerator dmlGenerator;
 	private final Retryer writeOperationRetryer;
 	private final int batchSize;
 	private final int inOperatorMaxSize;
-	private ClassMappingStrategy<T, I> mappingStrategy;
-	private PersisterListener<T, I> persisterListener = new PersisterListener<>();
-	private InsertExecutor<T, I> insertExecutor;
-	private UpdateExecutor<T, I> updateExecutor;
-	private DeleteExecutor<T, I> deleteExecutor;
-	private SelectExecutor<T, I> selectExecutor;
+	private ClassMappingStrategy<C, I, T> mappingStrategy;
+	private PersisterListener<C, I> persisterListener = new PersisterListener<>();
+	private InsertExecutor<C, I, T> insertExecutor;
+	private UpdateExecutor<C, I, T> updateExecutor;
+	private DeleteExecutor<C, I, T> deleteExecutor;
+	private SelectExecutor<C, I, T> selectExecutor;
 	
-	public Persister(PersistenceContext persistenceContext, ClassMappingStrategy<T, I> mappingStrategy) {
+	public Persister(PersistenceContext persistenceContext, ClassMappingStrategy<C, I, T> mappingStrategy) {
 		this(mappingStrategy, persistenceContext.getDialect(), persistenceContext.getConnectionProvider(), persistenceContext.getJDBCBatchSize());
 	}
 	
-	public Persister(ClassMappingStrategy<T, I> mappingStrategy, Dialect dialect, ConnectionProvider connectionProvider, int jdbcBatchSize) {
+	public Persister(ClassMappingStrategy<C, I, T> mappingStrategy, Dialect dialect, ConnectionProvider connectionProvider, int jdbcBatchSize) {
 		this(mappingStrategy, connectionProvider, dialect.getDmlGenerator(),
 				dialect.getWriteOperationRetryer(), jdbcBatchSize, dialect.getInOperatorMaxSize());
 	}
 	
-	protected Persister(ClassMappingStrategy<T, I> mappingStrategy, ConnectionProvider connectionProvider,
+	protected Persister(ClassMappingStrategy<C, I, T> mappingStrategy, ConnectionProvider connectionProvider,
 						DMLGenerator dmlGenerator, Retryer writeOperationRetryer, int jdbcBatchSize, int inOperatorMaxSize) {
 		this.mappingStrategy = mappingStrategy;
 		this.connectionProvider = connectionProvider;
@@ -60,17 +60,17 @@ public class Persister<T, I> {
 		this.selectExecutor = newSelectExecutor(mappingStrategy, connectionProvider, dmlGenerator, inOperatorMaxSize);
 	}
 	
-	protected <U> InsertExecutor<U, I> newInsertExecutor(ClassMappingStrategy<U, I> mappingStrategy,
-													  ConnectionProvider connectionProvider,
-													  DMLGenerator dmlGenerator,
-													  Retryer writeOperationRetryer,
-													  int jdbcBatchSize,
-													  int inOperatorMaxSize) {
+	protected <U> InsertExecutor<U, I, T> newInsertExecutor(ClassMappingStrategy<U, I, T> mappingStrategy,
+																ConnectionProvider connectionProvider,
+																DMLGenerator dmlGenerator,
+																Retryer writeOperationRetryer,
+																int jdbcBatchSize,
+																int inOperatorMaxSize) {
 		return new InsertExecutor<>(mappingStrategy, connectionProvider, dmlGenerator,
 				writeOperationRetryer, jdbcBatchSize, inOperatorMaxSize);
 	}
 	
-	protected <U> UpdateExecutor<U, I> newUpdateExecutor(ClassMappingStrategy<U, I> mappingStrategy,
+	protected <U> UpdateExecutor<U, I, T> newUpdateExecutor(ClassMappingStrategy<U, I, T> mappingStrategy,
 													  ConnectionProvider connectionProvider,
 													  DMLGenerator dmlGenerator,
 													  Retryer writeOperationRetryer,
@@ -80,20 +80,20 @@ public class Persister<T, I> {
 				writeOperationRetryer, jdbcBatchSize, inOperatorMaxSize);
 	}
 	
-	protected <U> DeleteExecutor<U, I> newDeleteExecutor(ClassMappingStrategy<U, I> mappingStrategy,
-											   ConnectionProvider connectionProvider,
-											   DMLGenerator dmlGenerator,
-											   Retryer writeOperationRetryer,
-											   int jdbcBatchSize,
-											   int inOperatorMaxSize) {
+	protected <U> DeleteExecutor<U, I, T> newDeleteExecutor(ClassMappingStrategy<U, I, T> mappingStrategy,
+															ConnectionProvider connectionProvider,
+															DMLGenerator dmlGenerator,
+															Retryer writeOperationRetryer,
+															int jdbcBatchSize,
+															int inOperatorMaxSize) {
 		return new DeleteExecutor<>(mappingStrategy, connectionProvider, dmlGenerator,
 				writeOperationRetryer, jdbcBatchSize, inOperatorMaxSize);
 	}
 	
-	protected <U> SelectExecutor<U, I> newSelectExecutor(ClassMappingStrategy<U, I> mappingStrategy,
-												ConnectionProvider connectionProvider,
-												DMLGenerator dmlGenerator,
-												int inOperatorMaxSize) {
+	protected <U> SelectExecutor<U, I, T> newSelectExecutor(ClassMappingStrategy<U, I, T> mappingStrategy,
+																ConnectionProvider connectionProvider,
+																DMLGenerator dmlGenerator,
+																int inOperatorMaxSize) {
 		return new SelectExecutor<>(mappingStrategy, connectionProvider, dmlGenerator, inOperatorMaxSize);
 	}
 	
@@ -117,15 +117,15 @@ public class Persister<T, I> {
 		return inOperatorMaxSize;
 	}
 	
-	public ClassMappingStrategy<T, I> getMappingStrategy() {
+	public ClassMappingStrategy<C, I, T> getMappingStrategy() {
 		return mappingStrategy;
 	}
 	
-	public Table getTargetTable() {
+	public T getTargetTable() {
 		return getMappingStrategy().getTargetTable();
 	}
 	
-	public void setPersisterListener(PersisterListener<T, I> persisterListener) {
+	public void setPersisterListener(PersisterListener<C, I> persisterListener) {
 		// prevent from null instance
 		if (persisterListener != null) {
 			this.persisterListener = persisterListener;
@@ -137,44 +137,44 @@ public class Persister<T, I> {
 	 * 
 	 * @return not null
 	 */
-	public PersisterListener<T, I> getPersisterListener() {
+	public PersisterListener<C, I> getPersisterListener() {
 		return persisterListener;
 	}
 	
-	public InsertExecutor<T, I> getInsertExecutor() {
+	public InsertExecutor<C, I, T> getInsertExecutor() {
 		return insertExecutor;
 	}
 	
-	public UpdateExecutor<T, I> getUpdateExecutor() {
+	public UpdateExecutor<C, I, T> getUpdateExecutor() {
 		return updateExecutor;
 	}
 	
-	public DeleteExecutor<T, I> getDeleteExecutor() {
+	public DeleteExecutor<C, I, T> getDeleteExecutor() {
 		return deleteExecutor;
 	}
 	
-	public SelectExecutor<T, I> getSelectExecutor() {
+	public SelectExecutor<C, I, T> getSelectExecutor() {
 		return selectExecutor;
 	}
 	
-	public void persist(T t) {
+	public void persist(C c) {
 		// determine insert or update operation
-		if (isNew(t)) {
-			insert(t);
+		if (isNew(c)) {
+			insert(c);
 		} else {
-			updateById(t);
+			updateById(c);
 		}
 	}
 	
-	public void persist(Iterable<T> iterable) {
+	public void persist(Iterable<C> iterable) {
 		// determine insert or update operation
-		List<T> toInsert = new ArrayList<>(20);
-		List<T> toUpdate = new ArrayList<>(20);
-		for (T t : iterable) {
-			if (isNew(t)) {
-				toInsert.add(t);
+		List<C> toInsert = new ArrayList<>(20);
+		List<C> toUpdate = new ArrayList<>(20);
+		for (C c : iterable) {
+			if (isNew(c)) {
+				toInsert.add(c);
 			} else {
-				toUpdate.add(t);
+				toUpdate.add(c);
 			}
 		}
 		if (!toInsert.isEmpty()) {
@@ -185,35 +185,35 @@ public class Persister<T, I> {
 		}
 	}
 	
-	public int insert(T t) {
-		return insert(Collections.singletonList(t));
+	public int insert(C c) {
+		return insert(Collections.singletonList(c));
 	}
 	
-	public int insert(Iterable<T> iterable) {
+	public int insert(Iterable<C> iterable) {
 		return getPersisterListener().doWithInsertListener(iterable, () -> doInsert(iterable));
 	}
 	
-	protected int doInsert(Iterable<T> iterable) {
+	protected int doInsert(Iterable<C> iterable) {
 		return insertExecutor.insert(iterable);
 	}
 	
-	public void updateById(T t) {
-		updateById(Collections.singletonList(t));
+	public void updateById(C c) {
+		updateById(Collections.singletonList(c));
 	}
 	
 	/**
 	 * Update roughly some instances: no difference are computed, only update statements (full column) are applied.
 	 * @param iterable iterable of instances
 	 */
-	public int updateById(Iterable<T> iterable) {
+	public int updateById(Iterable<C> iterable) {
 		return getPersisterListener().doWithUpdateByIdListener(iterable, () -> doUpdateById(iterable));
 	}
 	
-	protected int doUpdateById(Iterable<T> iterable) {
+	protected int doUpdateById(Iterable<C> iterable) {
 		return updateExecutor.updateById(iterable);
 	}
 	
-	public int update(T modified, T unmodified, boolean allColumnsStatement) {
+	public int update(C modified, C unmodified, boolean allColumnsStatement) {
 		return update(Collections.singletonList(new HashMap.SimpleImmutableEntry<>(modified, unmodified)), allColumnsStatement);
 	}
 	
@@ -224,56 +224,56 @@ public class Persister<T, I> {
 	 *  @param differencesIterable pairs of modified-unmodified instances, used to compute differences side by side
 	 * @param allColumnsStatement true if all columns must be in the SQL statement, false if only modified ones should be..
 	 */
-	public Integer update(Iterable<Entry<T, T>> differencesIterable, boolean allColumnsStatement) {
+	public Integer update(Iterable<Entry<C, C>> differencesIterable, boolean allColumnsStatement) {
 		return getPersisterListener().doWithUpdateListener(differencesIterable, allColumnsStatement,
 				() -> doUpdate(differencesIterable, allColumnsStatement));
 	}
 	
-	protected int doUpdate(Iterable<Entry<T, T>> differencesIterable, boolean allColumnsStatement) {
+	protected int doUpdate(Iterable<Entry<C, C>> differencesIterable, boolean allColumnsStatement) {
 		return updateExecutor.update(differencesIterable, allColumnsStatement);
 	}
 	
-	public int delete(T t) {
-		return delete(Collections.singletonList(t));
+	public int delete(C c) {
+		return delete(Collections.singletonList(c));
 	}
 	
-	public int delete(Iterable<T> iterable) {
+	public int delete(Iterable<C> iterable) {
 		return getPersisterListener().doWithDeleteListener(iterable, () -> doDelete(iterable));
 	}
 	
-	protected int doDelete(Iterable<T> iterable) {
+	protected int doDelete(Iterable<C> iterable) {
 		return deleteExecutor.delete(iterable);
 	}
 	
-	public int deleteById(T t) {
-		return deleteById(Collections.singletonList(t));
+	public int deleteById(C c) {
+		return deleteById(Collections.singletonList(c));
 	}
 	
-	public int deleteById(Iterable<T> iterable) {
+	public int deleteById(Iterable<C> iterable) {
 		return getPersisterListener().doWithDeleteByIdListener(iterable, () -> doDeleteById(iterable));
 	}
 	
-	protected int doDeleteById(Iterable<T> iterable) {
+	protected int doDeleteById(Iterable<C> iterable) {
 		return deleteExecutor.deleteById(iterable);
 	}
 	
 	/**
 	 * Indicates if a bean is persisted or not. Delegated to {@link ClassMappingStrategy}
 	 * 
-	 * @param t a bean
+	 * @param c a bean
 	 * @return true if a bean is already persisted
 	 * @see ClassMappingStrategy#isNew(Object)
 	 * @see org.gama.stalactite.persistence.mapping.IdMappingStrategy.IsNewDeterminer
 	 */
-	private boolean isNew(T t) {
-		return mappingStrategy.isNew(t);
+	private boolean isNew(C c) {
+		return mappingStrategy.isNew(c);
 	}
 	
-	public T select(I id) {
+	public C select(I id) {
 		return Iterables.first(select(Collections.singleton(id)));
 	}
 	
-	public List<T> select(Iterable<I> ids) {
+	public List<C> select(Iterable<I> ids) {
 		if (!Iterables.isEmpty(ids)) {
 			return getPersisterListener().doWithSelectListener(ids, () -> doSelect(ids));
 		} else {
@@ -281,7 +281,7 @@ public class Persister<T, I> {
 		}
 	}
 	
-	protected List<T> doSelect(Iterable<I> ids) {
+	protected List<C> doSelect(Iterable<I> ids) {
 		return selectExecutor.select(ids);
 	}
 }

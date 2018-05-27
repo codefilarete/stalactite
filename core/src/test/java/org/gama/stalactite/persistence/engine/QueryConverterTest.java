@@ -36,10 +36,10 @@ public class QueryConverterTest {
 	
 	public static Object[][] testNewQuery() {
 		ParameterBinderProvider<Class> parameterBinderProvider = ParameterBinderProvider.fromMap(new ColumnBinderRegistry().getParameterBinders());
-		Table toto = new Table("Toto");
-		Column<Long> id = toto.addColumn("id", Long.class).primaryKey();
-		Column<String> name = toto.addColumn("name", String.class);
-		Column<Boolean> active = toto.addColumn("active", boolean.class);
+		Table toto = new Table<>("Toto");
+		Column<Table, Long> id = toto.addColumn("id", Long.class).primaryKey();
+		Column<Table, String> name = toto.addColumn("name", String.class);
+		Column<Table, Boolean> active = toto.addColumn("active", boolean.class);
 		
 		return new Object[][] {
 				{	// default API: column name, column type
@@ -99,9 +99,9 @@ public class QueryConverterTest {
 	
 	public static Object[][] testNewQuery_withConverter() {
 		ParameterBinderProvider<Class> parameterBinderProvider = ParameterBinderProvider.fromMap(new ColumnBinderRegistry().getParameterBinders());
-		Table toto = new Table("Toto");
-		Column<Long> id = toto.addColumn("id", Long.class).primaryKey();
-		Column<String> name = toto.addColumn("name", String.class);
+		Table toto = new Table<>("Toto");
+		Column<Table, Long> id = toto.addColumn("id", Long.class).primaryKey();
+		Column<Table, String> name = toto.addColumn("name", String.class);
 		
 		return new Object[][] {
 				{ new QueryConverter<>(Toto.class, "select id, name from Toto", parameterBinderProvider)

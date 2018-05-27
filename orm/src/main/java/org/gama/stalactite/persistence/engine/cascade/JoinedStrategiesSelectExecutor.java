@@ -24,6 +24,7 @@ import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
 import org.gama.stalactite.persistence.sql.Dialect;
 import org.gama.stalactite.persistence.sql.dml.ColumnParamedSelect;
 import org.gama.stalactite.persistence.structure.Column;
+import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.query.builder.QueryBuilder;
 import org.gama.stalactite.query.model.Query;
 
@@ -41,7 +42,7 @@ import static org.gama.sql.dml.ExpandableSQL.ExpandableParameter.SQL_PARAMETER_M
 public class JoinedStrategiesSelectExecutor<T, I> {
 	
 	/** The surrogate for joining the strategies, will help to build the SQL */
-	private final JoinedStrategiesSelect<T, I> joinedStrategiesSelect;
+	private final JoinedStrategiesSelect<T, I, ? extends Table> joinedStrategiesSelect;
 	private final ParameterBinderIndex<Column, ParameterBinder> parameterBinderProvider;
 	private final Map<Column, int[]> inOperatorValueIndexes = new HashMap<>();
 	private final int blockSize;
@@ -50,7 +51,7 @@ public class JoinedStrategiesSelectExecutor<T, I> {
 	private final Column keyColumn;
 	private List<T> result;
 	
-	JoinedStrategiesSelectExecutor(ClassMappingStrategy<T, I> classMappingStrategy, Dialect dialect, ConnectionProvider connectionProvider) {
+	JoinedStrategiesSelectExecutor(ClassMappingStrategy<T, I, ? extends Table> classMappingStrategy, Dialect dialect, ConnectionProvider connectionProvider) {
 		this.parameterBinderProvider = dialect.getColumnBinderRegistry();
 		this.joinedStrategiesSelect = new JoinedStrategiesSelect<>(classMappingStrategy, this.parameterBinderProvider);
 		this.connectionProvider = connectionProvider;
@@ -63,7 +64,7 @@ public class JoinedStrategiesSelectExecutor<T, I> {
 		return connectionProvider;
 	}
 	
-	public <U> String addComplementaryTables(String leftStrategyName, ClassMappingStrategy<U, ?> mappingStrategy,
+	public <U> String addComplementaryTables(String leftStrategyName, ClassMappingStrategy<U, ?, ?> mappingStrategy,
 											 BeanRelationFixer beanRelationFixer,
 											 Column leftJoinColumn, Column rightJoinColumn) {
 		// we outer join nullable columns
@@ -71,7 +72,7 @@ public class JoinedStrategiesSelectExecutor<T, I> {
 		return addComplementaryTables(leftStrategyName, mappingStrategy, beanRelationFixer, leftJoinColumn, rightJoinColumn, isOuterJoin);
 	}
 	
-	public <U> String addComplementaryTables(String leftStrategyName, ClassMappingStrategy<U, ?> mappingStrategy,
+	public <U> String addComplementaryTables(String leftStrategyName, ClassMappingStrategy<U, ?, ?> mappingStrategy,
 											 BeanRelationFixer beanRelationFixer,
 											 Column leftJoinColumn, Column rightJoinColumn, boolean isOuterJoin) {
 		return joinedStrategiesSelect.add(leftStrategyName, mappingStrategy, leftJoinColumn, rightJoinColumn, isOuterJoin, beanRelationFixer);

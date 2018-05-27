@@ -48,14 +48,14 @@ public class FluentMappingBuilderTest {
 	
 	@Test
 	public void testAdd_withoutName_targetedPropertyNameIsTaken() {
-		ClassMappingStrategy<Toto, StatefullIdentifier> mappingStrategy = FluentMappingBuilder.from(Toto.class, StatefullIdentifier.class)
+		ClassMappingStrategy<Toto, StatefullIdentifier, Table> mappingStrategy = FluentMappingBuilder.from(Toto.class, StatefullIdentifier.class)
 				.add(Toto::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.add(Toto::getName)
 				.build(DIALECT);
 		
 		// column should be correctly created
 		assertEquals("Toto", mappingStrategy.getTargetTable().getName());
-		Column columnForProperty = mappingStrategy.getTargetTable().mapColumnsOnName().get("name");
+		Column columnForProperty = (Column) mappingStrategy.getTargetTable().mapColumnsOnName().get("name");
 		assertNotNull(columnForProperty);
 		assertEquals(String.class, columnForProperty.getJavaType());
 	}
@@ -63,14 +63,14 @@ public class FluentMappingBuilderTest {
 	@Test
 	public void testAdd_withColumn_columnIsTaken() {
 		Table toto = new Table("Toto");
-		Column<String> titleColumn = toto.addColumn("title", String.class);
-		ClassMappingStrategy<Toto, StatefullIdentifier> mappingStrategy = FluentMappingBuilder.from(Toto.class, StatefullIdentifier.class, toto)
+		Column<Table, String> titleColumn = toto.addColumn("title", String.class);
+		ClassMappingStrategy<Toto, StatefullIdentifier, Table> mappingStrategy = FluentMappingBuilder.from(Toto.class, StatefullIdentifier.class, toto)
 				.add(Toto::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.add(Toto::getName, titleColumn)
 				.build(DIALECT);
 		
 		// column should not have been created
-		Column columnForProperty = mappingStrategy.getTargetTable().mapColumnsOnName().get("name");
+		Column columnForProperty = (Column) mappingStrategy.getTargetTable().mapColumnsOnName().get("name");
 		assertNull(columnForProperty);
 	}
 	
@@ -82,7 +82,7 @@ public class FluentMappingBuilderTest {
 			.build(DIALECT)
 		;
 		// column should be correctly created
-		Column columnForProperty = toto.mapColumnsOnName().get("name");
+		Column columnForProperty = (Column) toto.mapColumnsOnName().get("name");
 		assertTrue(columnForProperty.isPrimaryKey());
 	}
 	
@@ -122,7 +122,7 @@ public class FluentMappingBuilderTest {
 				.add(Toto::getNoMatchingField)
 				.build(DIALECT);
 		
-		Column columnForProperty = toto.mapColumnsOnName().get("noMatchingField");
+		Column columnForProperty = (Column) toto.mapColumnsOnName().get("noMatchingField");
 		assertNotNull(columnForProperty);
 		assertEquals(Long.class, columnForProperty.getJavaType());
 	}
@@ -134,7 +134,7 @@ public class FluentMappingBuilderTest {
 				.add(Toto::setId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.build(DIALECT);
 		
-		Column columnForProperty = toto.mapColumnsOnName().get("id");
+		Column columnForProperty = (Column) toto.mapColumnsOnName().get("id");
 		assertNotNull(columnForProperty);
 		assertEquals(Identifier.class, columnForProperty.getJavaType());
 	}
@@ -147,7 +147,7 @@ public class FluentMappingBuilderTest {
 				.embed(Toto::getTimestamp)
 				.build(new PersistenceContext(null, DIALECT));
 		
-		Column columnForProperty = toto.mapColumnsOnName().get("creationDate");
+		Column columnForProperty = (Column) toto.mapColumnsOnName().get("creationDate");
 		assertNotNull(columnForProperty);
 		assertEquals(Date.class, columnForProperty.getJavaType());
 	}
@@ -160,7 +160,7 @@ public class FluentMappingBuilderTest {
 				.embed(Toto::setTimestamp)
 				.build(new PersistenceContext(null, DIALECT));
 		
-		Column columnForProperty = toto.mapColumnsOnName().get("creationDate");
+		Column columnForProperty = (Column) toto.mapColumnsOnName().get("creationDate");
 		assertNotNull(columnForProperty);
 		assertEquals(Date.class, columnForProperty.getJavaType());
 	}
@@ -194,8 +194,8 @@ public class FluentMappingBuilderTest {
 	@Test
 	public void testEmbed_withOverridenColumn() throws SQLException {
 		Table toto = new Table("Toto");
-		Column<Date> createdAt = toto.addColumn("createdAt", Date.class);
-		Column<Date> modifiedAt = toto.addColumn("modifiedAt", Date.class);
+		Column<Table, Date> createdAt = toto.addColumn("createdAt", Date.class);
+		Column<Table, Date> modifiedAt = toto.addColumn("modifiedAt", Date.class);
 		
 		// Preparation of column mapping check thought insert statement generation
 		Connection connectionMock = mock(Connection.class);
@@ -204,7 +204,7 @@ public class FluentMappingBuilderTest {
 		when(preparedStatementMock.executeBatch()).thenReturn(new int[]{ 1 });
 		ArgumentCaptor<String> argumentCaptor = ArgumentCaptor.forClass(String.class);
 		
-		Persister<Toto, StatefullIdentifier> persister = FluentMappingBuilder.from(Toto.class, StatefullIdentifier.class, toto)
+		Persister<Toto, StatefullIdentifier, Table> persister = FluentMappingBuilder.from(Toto.class, StatefullIdentifier.class, toto)
 				.add(Toto::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.embed(Toto::getTimestamp)
 				.override(Timestamp::getCreationDate, createdAt)

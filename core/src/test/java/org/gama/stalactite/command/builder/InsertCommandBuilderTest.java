@@ -23,37 +23,37 @@ public class InsertCommandBuilderTest {
 	
 	@Test
 	public void testToSQL() {
-		Table totoTable = new Table("Toto");
-		Column<Long> columnA = totoTable.addColumn("a", Long.class);
-		Column<String> columnB = totoTable.addColumn("b", String.class);
-		Insert insert = new Insert(totoTable)
+		Table totoTable = new Table<>("Toto");
+		Column<Table, Long> columnA = totoTable.addColumn("a", Long.class);
+		Column<Table, String> columnB = totoTable.addColumn("b", String.class);
+		Insert<Table> insert = new Insert<Table>(totoTable)
 				.set(columnA)
 				.set(columnB, "tata");
 		
-		InsertCommandBuilder testInstance = new InsertCommandBuilder(insert);
+		InsertCommandBuilder<Table> testInstance = new InsertCommandBuilder<>(insert);
 		
 		assertEquals("insert into Toto(a, b) values (?, 'tata')", testInstance.toSQL());
 	}
 	
 	@Test
 	public void testToStatement() throws SQLException {
-		Table totoTable = new Table("Toto");
-		Column<Long> columnA = totoTable.addColumn("a", Long.class);
-		Column<String> columnB = totoTable.addColumn("b", String.class);
-		Column<String> columnC = totoTable.addColumn("c", String.class);
-		Insert insert = new Insert(totoTable)
+		Table totoTable = new Table<>("Toto");
+		Column<Table, Long> columnA = totoTable.addColumn("a", Long.class);
+		Column<Table, String> columnB = totoTable.addColumn("b", String.class);
+		Column<Table, String> columnC = totoTable.addColumn("c", String.class);
+		Insert<Table> insert = new Insert<Table>(totoTable)
 				.set(columnA)
 				.set(columnB, "tata")
 				.set(columnC);
 		
-		InsertCommandBuilder testInstance = new InsertCommandBuilder(insert);
+		InsertCommandBuilder<Table> testInstance = new InsertCommandBuilder<>(insert);
 		
 		ColumnBinderRegistry binderRegistry = new ColumnBinderRegistry();
 //		binderRegistry.register(columnA, DefaultParameterBinders.INTEGER_BINDER);
 //		binderRegistry.register(columnB, DefaultParameterBinders.STRING_BINDER);
 //		binderRegistry.register(columnC, DefaultParameterBinders.STRING_BINDER);
 		
-		InsertStatement result = testInstance.toStatement(binderRegistry);
+		InsertStatement<Table> result = testInstance.toStatement(binderRegistry);
 		assertEquals("insert into Toto(a, b, c) values (?, ?, ?)", result.getSQL());
 		
 		assertEquals(Maps.asMap(2, (Object) "tata"), result.getValues());

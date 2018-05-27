@@ -9,6 +9,7 @@ import org.gama.stalactite.persistence.engine.Persister;
 import org.gama.stalactite.persistence.engine.SeparateTransactionExecutor;
 import org.gama.stalactite.persistence.id.manager.AlreadyAssignedIdentifierManager;
 import org.gama.stalactite.persistence.id.sequence.SequencePersister.Sequence;
+import org.gama.stalactite.persistence.id.sequence.SequencePersister.SequenceTable;
 import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
 import org.gama.stalactite.persistence.sql.Dialect;
 import org.gama.stalactite.persistence.structure.Column;
@@ -23,7 +24,7 @@ import org.gama.stalactite.persistence.structure.Table;
  * 
  * @author Guillaume Mary
  */
-public class SequencePersister extends Persister<Sequence, String> {
+public class SequencePersister extends Persister<Sequence, String, SequenceTable> {
 	
 	/**
 	 * Constructor with default table and column names.
@@ -53,10 +54,10 @@ public class SequencePersister extends Persister<Sequence, String> {
 		return select(sequenceName);
 	}
 	
-	private static class SequenceTable extends Table {
+	public static class SequenceTable extends Table<SequenceTable> {
 		
-		private final Column nextValColumn;
-		private final Column sequenceNameColumn;
+		private final Column<SequenceTable, Long> nextValColumn;
+		private final Column<SequenceTable, String> sequenceNameColumn;
 		
 		public SequenceTable(Schema schema, String name, String sequenceNameColName, String nextValColName) {
 			super(schema, name);
@@ -65,9 +66,9 @@ public class SequencePersister extends Persister<Sequence, String> {
 			nextValColumn = addColumn(nextValColName, Long.class);
 		}
 		
-		public Map<PropertyAccessor, Column> getPooledSequenceFieldMapping() {
-			return Maps.asMap((PropertyAccessor) Sequence.SEQUENCE_NAME_FIELD, sequenceNameColumn)
-						.add(Sequence.VALUE_FIELD, nextValColumn);
+		public Map<PropertyAccessor<Sequence, Object>, Column<SequenceTable, Object>> getPooledSequenceFieldMapping() {
+			return Maps.asMap(Sequence.SEQUENCE_NAME_FIELD, sequenceNameColumn)
+						.add((PropertyAccessor) Sequence.VALUE_FIELD, (Column) nextValColumn);
 		}
 	}
 	
@@ -141,16 +142,17 @@ public class SequencePersister extends Persister<Sequence, String> {
 	
 	private static class SequencePersisterConfigurer {
 		
-		private ClassMappingStrategy<Sequence, String> buildConfiguration(SequenceStorageOptions storageOptions) {
+		private ClassMappingStrategy<Sequence, String, SequenceTable> buildConfiguration(SequenceStorageOptions storageOptions) {
 			// Sequence table creation
 			SequenceTable sequenceTable = new SequenceTable(null, storageOptions.getTable(), storageOptions.getSequenceNameColumn(), storageOptions.getValueColumn());
 			// Strategy building
 			// NB: no id generator here because we manage ids (see reservePool)
-			return new ClassMappingStrategy<>(Sequence.class,
+			return new ClassMappingStrategy<>(
+					Sequence.class,
 					sequenceTable,
 					sequenceTable.getPooledSequenceFieldMapping(),
 					Sequence.SEQUENCE_NAME_FIELD,
-					new AlreadyAssignedIdentifierManager(String.class));
+					new AlreadyAssignedIdentifierManager<>(String.class));
 		}
 	}
 }

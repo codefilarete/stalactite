@@ -26,12 +26,12 @@ import org.gama.stalactite.query.model.Operand;
  * 
  * @author Guillaume Mary
  */
-public class DeleteCommandBuilder implements SQLBuilder {
+public class DeleteCommandBuilder<T extends Table> implements SQLBuilder {
 	
-	private final Delete delete;
+	private final Delete<T> delete;
 	private final MultiTableAwareDMLNameProvider dmlNameProvider;
 	
-	public DeleteCommandBuilder(Delete delete) {
+	public DeleteCommandBuilder(Delete<T> delete) {
 		this.delete = delete;
 		this.dmlNameProvider = new MultiTableAwareDMLNameProvider();
 	}
@@ -45,7 +45,7 @@ public class DeleteCommandBuilder implements SQLBuilder {
 		result.cat("delete from ");
 		
 		// looking for additionnal Tables : more than the updated one, can be found in conditions
-		Set<Column> whereColumns = new LinkedHashSet<>();
+		Set<Column<T, Object>> whereColumns = new LinkedHashSet<>();
 		delete.getCriteria().forEach(c -> {
 			if (c instanceof ColumnCriterion) {
 				whereColumns.add(((ColumnCriterion) c).getColumn());
@@ -55,7 +55,7 @@ public class DeleteCommandBuilder implements SQLBuilder {
 				}
 			}
 		});
-		Set<Table> additionalTables = Iterables.minus(
+		Set<T> additionalTables = Iterables.minus(
 				Iterables.collect(whereColumns, Column::getTable, HashSet::new),
 				Arrays.asList(this.delete.getTargetTable()));
 		
@@ -65,9 +65,9 @@ public class DeleteCommandBuilder implements SQLBuilder {
 		result.cat(this.delete.getTargetTable().getAbsoluteName())    // main table is always referenced with name (not alias)
 				.catIf(dmlNameProvider.isMultiTable(), ", ");
 		// additional tables (with optional alias)
-		Iterator<Table> iterator = additionalTables.iterator();
+		Iterator<T> iterator = additionalTables.iterator();
 		while (iterator.hasNext()) {
-			Table next = iterator.next();
+			T next = iterator.next();
 			result.cat(next.getAbsoluteName()).catIf(iterator.hasNext(), ", ");
 		}
 		

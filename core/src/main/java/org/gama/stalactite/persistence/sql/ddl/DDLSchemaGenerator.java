@@ -89,7 +89,7 @@ public class DDLSchemaGenerator implements DDLGenerator {
 		return this.ddlTableGenerator.generateCreateTable(table);
 	}
 	
-	protected List<String> generateIndexCreationScripts(Table table) {
+	protected List<String> generateIndexCreationScripts(Table<?> table) {
 		List<String> indexesCreationScripts = new ArrayList<>();
 		for (Index index : table.getIndexes()) {
 			indexesCreationScripts.add(generateCreationScript(index));
@@ -101,7 +101,7 @@ public class DDLSchemaGenerator implements DDLGenerator {
 		return this.ddlTableGenerator.generateCreateIndex(index);
 	}
 	
-	protected List<String> getForeignKeyCreationScripts(Table table) {
+	protected List<String> getForeignKeyCreationScripts(Table<?> table) {
 		List<String> foreignKeysCreationScripts = new ArrayList<>();
 		for (ForeignKey foreignKey : table.getForeignKeys()) {
 			foreignKeysCreationScripts.add(generateCreationScript(foreignKey));

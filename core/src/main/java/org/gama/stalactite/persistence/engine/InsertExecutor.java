@@ -17,20 +17,21 @@ import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
 import org.gama.stalactite.persistence.sql.dml.ColumnParamedSQL;
 import org.gama.stalactite.persistence.sql.dml.DMLGenerator;
 import org.gama.stalactite.persistence.structure.Column;
+import org.gama.stalactite.persistence.structure.Table;
 
 /**
  * Dedicated class to insert statement execution
  *
  * @author Guillaume Mary
  */
-public class InsertExecutor<T, I> extends UpsertExecutor<T, I> {
+public class InsertExecutor<C, I, T extends Table> extends UpsertExecutor<C, I, T> {
 	
 	/** Entity lock manager, default is no operation as soon as a {@link VersioningStrategy} is given */
 	private OptimisticLockManager optimisticLockManager = OptimisticLockManager.NOOP_OPTIMISTIC_LOCK_MANAGER;
 	
-	private final IdentifierInsertionManager<T, I> identifierInsertionManager;
+	private final IdentifierInsertionManager<C, I> identifierInsertionManager;
 	
-	public InsertExecutor(ClassMappingStrategy<T, I> mappingStrategy, ConnectionProvider connectionProvider,
+	public InsertExecutor(ClassMappingStrategy<C, I, T> mappingStrategy, ConnectionProvider connectionProvider,
 						  DMLGenerator dmlGenerator, Retryer writeOperationRetryer,
 						  int batchSize, int inOperatorMaxSize) {
 		super(mappingStrategy, connectionProvider, dmlGenerator, writeOperationRetryer, batchSize, inOperatorMaxSize);
@@ -48,8 +49,8 @@ public class InsertExecutor<T, I> extends UpsertExecutor<T, I> {
 		this.optimisticLockManager = optimisticLockManager;
 	}
 	
-	protected <C> WriteOperation<C> newWriteOperation(SQLStatement<C> statement, CurrentConnectionProvider currentConnectionProvider) {
-		return new WriteOperation<C>(statement, currentConnectionProvider, getWriteOperationRetryer()) {
+	protected <P> WriteOperation<P> newWriteOperation(SQLStatement<P> statement, CurrentConnectionProvider currentConnectionProvider) {
+		return new WriteOperation<P>(statement, currentConnectionProvider, getWriteOperationRetryer()) {
 			@Override
 			protected void prepareStatement(Connection connection) throws SQLException {
 				// NB: simple implementation: we don't use the column-specifying signature since not all databases support reading by column name
@@ -58,17 +59,17 @@ public class InsertExecutor<T, I> extends UpsertExecutor<T, I> {
 		};
 	}
 	
-	public int insert(Iterable<T> iterable) {
-		Set<Column> columns = getMappingStrategy().getInsertableColumns();
-		ColumnParamedSQL insertStatement = getDmlGenerator().buildInsert(columns);
-		WriteOperation<Column> writeOperation = newWriteOperation(insertStatement, new CurrentConnectionProvider());
-		JDBCBatchingIterator<T> jdbcBatchingIterator = identifierInsertionManager.buildJDBCBatchingIterator(iterable, writeOperation, getBatchSize());
+	public int insert(Iterable<C> iterable) {
+		Set<Column<T, Object>> columns = getMappingStrategy().getInsertableColumns();
+		ColumnParamedSQL<T> insertStatement = getDmlGenerator().buildInsert(columns);
+		WriteOperation<Column<T, ?>> writeOperation = newWriteOperation(insertStatement, new CurrentConnectionProvider());
+		JDBCBatchingIterator<C> jdbcBatchingIterator = identifierInsertionManager.buildJDBCBatchingIterator(iterable, writeOperation, getBatchSize());
 		
 		while (jdbcBatchingIterator.hasNext()) {
-			T t = jdbcBatchingIterator.next();
-			Map<Column, Object> insertValues = getMappingStrategy().getInsertValues(t);
-			optimisticLockManager.manageLock(t, insertValues);
-			writeOperation.addBatch(insertValues);
+			C c = jdbcBatchingIterator.next();
+			Map<Column<T, Object>, Object> insertValues = getMappingStrategy().getInsertValues(c);
+			optimisticLockManager.manageLock(c, insertValues);
+			writeOperation.addBatch((Map) insertValues);
 		}
 		return jdbcBatchingIterator.getUpdatedRowCount();
 	}
@@ -91,7 +92,7 @@ public class InsertExecutor<T, I> extends UpsertExecutor<T, I> {
 		void manageLock(T instance, Map<Column, Object> updateValues);
 	}
 	
-	private class RevertOnRollbackMVCC extends AbstractRevertOnRollbackMVCC implements OptimisticLockManager<T> {
+	private class RevertOnRollbackMVCC extends AbstractRevertOnRollbackMVCC implements OptimisticLockManager<C> {
 		
 		/**
 		 * Main constructor.
@@ -123,7 +124,7 @@ public class InsertExecutor<T, I> extends UpsertExecutor<T, I> {
 		 * Upgrade inserted instance
 		 */
 		@Override
-		public void manageLock(T instance, Map<Column, Object> updateValues) {
+		public void manageLock(C instance, Map<Column, Object> updateValues) {
 			Object previousVersion = versioningStrategy.getVersion(instance);
 			this.versioningStrategy.upgrade(instance);
 			Object newVersion = versioningStrategy.getVersion(instance);

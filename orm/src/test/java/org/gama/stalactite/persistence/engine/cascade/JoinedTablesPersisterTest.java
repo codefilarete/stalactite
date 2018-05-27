@@ -56,19 +56,19 @@ import static org.mockito.Mockito.when;
  */
 public class JoinedTablesPersisterTest {
 	
-	private JoinedTablesPersister<Toto, StatefullIdentifier<Integer>> testInstance;
+	private JoinedTablesPersister<Toto, StatefullIdentifier<Integer>, Table> testInstance;
 	private PreparedStatement preparedStatement;
 	private ArgumentCaptor<Integer> valueCaptor;
 	private ArgumentCaptor<Integer> indexCaptor;
 	private ArgumentCaptor<String> statementArgCaptor;
 	private JdbcConnectionProvider transactionManager;
 	private InMemoryCounterIdentifierGenerator identifierGenerator;
-	private ClassMappingStrategy<Toto, StatefullIdentifier<Integer>> totoClassMappingStrategy_ontoTable1, totoClassMappingStrategy2_ontoTable2;
+	private ClassMappingStrategy<Toto, StatefullIdentifier<Integer>, Table> totoClassMappingStrategy_ontoTable1, totoClassMappingStrategy2_ontoTable2;
 	private Dialect dialect;
 	private Table totoClassTable1, totoClassTable2;
 	private Column leftJoinColumn;
 	private Column rightJoinColumn;
-	private Persister<Toto, StatefullIdentifier<Integer>> persister2;
+	private Persister<Toto, StatefullIdentifier<Integer>, Table> persister2;
 	
 	@BeforeEach
 	public void setUp() throws SQLException {
@@ -101,12 +101,12 @@ public class JoinedTablesPersisterTest {
 		
 		
 		PropertyAccessor<Toto, StatefullIdentifier<Integer>> identifierAccessor = Accessors.forProperty(fieldId);
-		Map<PropertyAccessor, Column> totoClassMapping1 = Maps.asMap(
-				(PropertyAccessor) identifierAccessor, columnMap1.get("id"))
+		Map<PropertyAccessor<Toto, Object>, Column<Table, Object>> totoClassMapping1 = Maps.asMap(
+				(PropertyAccessor) identifierAccessor, (Column<Table, Object>) columnMap1.get("id"))
 				.add(Accessors.forProperty(fieldA), columnMap1.get("a"))
 				.add(Accessors.forProperty(fieldB), columnMap1.get("b"));
-		Map<PropertyAccessor, Column> totoClassMapping2 = Maps.asMap(
-				(PropertyAccessor) identifierAccessor, columnMap2.get("id"))
+		Map<PropertyAccessor<Toto, Object>, Column<Table, Object>> totoClassMapping2 = Maps.asMap(
+				(PropertyAccessor) identifierAccessor, (Column<Table, Object>) columnMap2.get("id"))
 				.add(Accessors.forProperty(fieldX), columnMap2.get("x"))
 				.add(Accessors.forProperty(fieldY), columnMap2.get("y"))
 				.add(Accessors.forProperty(fieldZ), columnMap2.get("z"));

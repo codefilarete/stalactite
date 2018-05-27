@@ -59,7 +59,7 @@ public class PersistenceContext {
 		return dialect;
 	}
 	
-	public <T, I> ClassMappingStrategy<T, I> getMappingStrategy(Class<T> aClass) {
+	public <C, I, T extends Table> ClassMappingStrategy<C, I, T> getMappingStrategy(Class<C> aClass) {
 		return mappingStrategies.get(aClass);
 	}
 	
@@ -67,13 +67,13 @@ public class PersistenceContext {
 	 * Add a persistence configuration to this instance
 	 * 
 	 * @param classMappingStrategy the persistence configuration
-	 * @param <T> the entity type that is configured for persistence
+	 * @param <C> the entity type that is configured for persistence
 	 * @param <I> the identifier type of the entity
 	 * @return the newly created {@link Persister} for the configuration
 	 */
-	public <T, I> Persister<T, I> add(ClassMappingStrategy<T, I> classMappingStrategy) {
+	public <C, I, T extends Table> Persister<C, I, T> add(ClassMappingStrategy<C, I, T> classMappingStrategy) {
 		mappingStrategies.put(classMappingStrategy.getClassToPersist(), classMappingStrategy);
-		Persister<T, I> persister = new Persister<>(this, classMappingStrategy);
+		Persister<C, I, T> persister = new Persister<>(this, classMappingStrategy);
 		persisterCache.put(classMappingStrategy.getClassToPersist(), persister);
 		return persister;
 	}
@@ -96,24 +96,25 @@ public class PersistenceContext {
 	 * Prefer usage of that returned by {@link #add(ClassMappingStrategy)} because it's better typed (with identifier type)
 	 * 
 	 * @param clazz the class for which the {@link Persister} must be given
-	 * @param <T> the type of the persisted entity
+	 * @param <C> the type of the persisted entity
 	 * @return never null
 	 * @throws IllegalArgumentException if the class is not mapped
 	 */
-	public <T, I> Persister<T, I> getPersister(Class<T> clazz) {
+	public <C, I, T extends Table> Persister<C, I, T> getPersister(Class<C> clazz) {
 		return persisterCache.get(clazz);
 	}
 	
-	public <T> void setPersister(Persister<T, ?> persister) {
+	public <C> void setPersister(Persister<C, ?, ?> persister) {
 		persisterCache.put(persister.getMappingStrategy().getClassToPersist(), persister);
 	}
 	
-	protected <T, I> Persister<T, I> newPersister(Class<T> clazz) {
-		return new Persister<>(this, ensureMappedClass(clazz));
+	protected <C, I, T extends Table> Persister<C, I, T> newPersister(Class<C> clazz) {
+		ClassMappingStrategy<C, I, T> citClassMappingStrategy = ensureMappedClass(clazz);
+		return new Persister<>(this, citClassMappingStrategy);
 	}
 	
-	protected <T, I> ClassMappingStrategy<T, I> ensureMappedClass(Class<T> clazz) {
-		ClassMappingStrategy<T, I> mappingStrategy = getMappingStrategy(clazz);
+	protected <C, I, T extends Table> ClassMappingStrategy<C, I, T> ensureMappedClass(Class<C> clazz) {
+		ClassMappingStrategy<C, I, T> mappingStrategy = getMappingStrategy(clazz);
 		if (mappingStrategy == null) {
 			throw new IllegalArgumentException("Unmapped entity " + clazz);
 		} else {
@@ -136,11 +137,11 @@ public class PersistenceContext {
 	 * 
 	 * @param queryProvider the query provider to give the {@link Query} execute to populate beans
 	 * @param beanType type of created beans, used for returned type marker
-	 * @param <T> type of created beans
+	 * @param <C> type of created beans
 	 * @return a new {@link QueryConverter} that must be configured and executed
 	 * @see org.gama.stalactite.query.model.QueryEase
 	 */
-	public <T> QueryConverter<T> newQuery(QueryProvider queryProvider, Class<T> beanType) {
+	public <C> QueryConverter<C> newQuery(QueryProvider queryProvider, Class<C> beanType) {
 		return newQuery(new QueryBuilder(queryProvider).toSQL(), beanType);
 	}
 	
@@ -151,10 +152,10 @@ public class PersistenceContext {
 	 * 
 	 * @param query the query to execute to populate beans
 	 * @param beanType type of created beans, used for returned type marker
-	 * @param <T> type of created beans
+	 * @param <C> type of created beans
 	 * @return a new {@link QueryConverter} that must be configured and executed
 	 */
-	public <T> QueryConverter<T> newQuery(Query query, Class<T> beanType) {
+	public <C> QueryConverter<C> newQuery(Query query, Class<C> beanType) {
 		return newQuery(new QueryBuilder(query).toSQL(), beanType);
 	}
 	
@@ -165,48 +166,48 @@ public class PersistenceContext {
 	 * 
 	 * @param sql the sql to execute to populate beans
 	 * @param beanType type of created beans, used for returned type marker
-	 * @param <T> type of created beans
+	 * @param <C> type of created beans
 	 * @return a new {@link QueryConverter} that must be configured and executed
 	 */
-	public <T> QueryConverter<T> newQuery(CharSequence sql, Class<T> beanType) {
+	public <C> QueryConverter<C> newQuery(CharSequence sql, Class<C> beanType) {
 		return new QueryConverter<>(beanType, sql, ParameterBinderProvider.fromMap(getDialect().getColumnBinderRegistry().getParameterBinders()));
 	}
 	
-	public ExecutableUpdate update(Table table) {
-		return new ExecutableUpdate(table);
+	public <T extends Table> ExecutableUpdate<T> update(T table) {
+		return new ExecutableUpdate<>(table);
 	}
 	
-	public ExecutableInsert insert(Table table) {
-		return new ExecutableInsert(table);
+	public <T extends Table> ExecutableInsert<T> insert(T table) {
+		return new ExecutableInsert<>(table);
 	}
 	
-	public ExecutableDelete delete(Table table) {
-		return new ExecutableDelete(table);
+	public <T extends Table> ExecutableDelete<T> delete(T table) {
+		return new ExecutableDelete<>(table);
 	}
 	
-	public class ExecutableUpdate extends Update {
+	public class ExecutableUpdate<T extends Table> extends Update<T> {
 		
-		public ExecutableUpdate(Table targetTable) {
+		public ExecutableUpdate(T targetTable) {
 			super(targetTable);
 		}
 		
 		/** Overriden to adapt return type */
 		@Override
-		public ExecutableUpdate set(Column column) {
+		public ExecutableUpdate<T> set(Column column) {
 			super.set(column);
 			return this;
 		}
 		
 		/** Overriden to adapt return type */
 		@Override
-		public <T> ExecutableUpdate set(Column<T> column, T value) {
+		public <C> ExecutableUpdate<T> set(Column<T, C> column, C value) {
 			super.set(column, value);
 			return this;
 		}
 		
 		/** Overriden to adapt return type */
 		@Override
-		public <T> ExecutableUpdate set(Column<T> column1, Column<T> column2) {
+		public <C> ExecutableUpdate<T> set(Column<T, C> column1, Column<T, C> column2) {
 			super.set(column1, column2);
 			return this;
 		}
@@ -225,8 +226,8 @@ public class PersistenceContext {
 		 *
 		 * @return the updated row count
 		 */
-		public int execute(Map<Column, Object> values) {
-			UpdateStatement updateStatement = new UpdateCommandBuilder(this).toStatement(getDialect().getColumnBinderRegistry());
+		public int execute(Map<? extends Column<T, Object>, Object> values) {
+			UpdateStatement<T> updateStatement = new UpdateCommandBuilder<>(this).toStatement(getDialect().getColumnBinderRegistry());
 			values.forEach(updateStatement::setValue);
 			try (WriteOperation<Integer> writeOperation = new WriteOperation<>(updateStatement, connectionProvider)) {
 				writeOperation.setValues(updateStatement.getValues());
@@ -235,15 +236,15 @@ public class PersistenceContext {
 		}
 	}
 	
-	public class ExecutableInsert extends Insert {
+	public class ExecutableInsert<T extends Table> extends Insert<T> {
 		
-		public ExecutableInsert(Table table) {
+		public ExecutableInsert(T table) {
 			super(table);
 		}
 		
 		/** Overriden to adapt return type */
 		@Override
-		public <T> ExecutableInsert set(Column<T> column, T value) {
+		public <C> ExecutableInsert<T> set(Column<T, C> column, C value) {
 			super.set(column, value);
 			return this;
 		}
@@ -263,7 +264,7 @@ public class PersistenceContext {
 		 * @return the inserted row count
 		 */
 		public int execute(Map<Column, Object> values) {
-			InsertStatement insertStatement = new InsertCommandBuilder(this).toStatement(getDialect().getColumnBinderRegistry());
+			InsertStatement<T> insertStatement = new InsertCommandBuilder<>(this).toStatement(getDialect().getColumnBinderRegistry());
 			values.forEach(insertStatement::setValue);
 			try (WriteOperation<Integer> writeOperation = new WriteOperation<>(insertStatement, connectionProvider)) {
 				writeOperation.setValues(insertStatement.getValues());
@@ -272,9 +273,9 @@ public class PersistenceContext {
 		}
 	}
 	
-	public class ExecutableDelete extends Delete {
+	public class ExecutableDelete<T extends Table> extends Delete<T> {
 		
-		public ExecutableDelete(Table table) {
+		public ExecutableDelete(T table) {
 			super(table);
 		}
 		
@@ -284,7 +285,7 @@ public class PersistenceContext {
 		 * @return the deleted row count
 		 */
 		public int execute() {
-			PreparedSQL deleteStatement = new DeleteCommandBuilder(this).toStatement(getDialect().getColumnBinderRegistry());
+			PreparedSQL deleteStatement = new DeleteCommandBuilder<T>(this).toStatement(getDialect().getColumnBinderRegistry());
 			try (WriteOperation<Integer> writeOperation = new WriteOperation<>(deleteStatement, connectionProvider)) {
 				writeOperation.setValues(deleteStatement.getValues());
 				return writeOperation.execute();

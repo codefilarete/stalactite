@@ -60,7 +60,7 @@ public class JavaTypeToSqlTypeMappingTest {
 	
 	public static Object[][] testGetTypeName_column() {
 		Table toto = new Table("toto");
-		Column<String> columnA = toto.addColumn("a", String.class);
+		Column<Table, String> columnA = toto.addColumn("a", String.class);
 		
 		JavaTypeToSqlTypeMapping testInstance1 = new JavaTypeToSqlTypeMapping();
 		testInstance1.put(String.class, "VARCHAR(255)");

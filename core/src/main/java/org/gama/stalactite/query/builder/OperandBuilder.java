@@ -40,7 +40,7 @@ public class OperandBuilder {
 		this(Collections.emptyMap());
 	}
 	
-	public OperandBuilder(Map<Table, String> tableAliases) {
+	public OperandBuilder(Map<? extends Table, String> tableAliases) {
 		this(new DMLNameProvider(tableAliases));
 	}
 	

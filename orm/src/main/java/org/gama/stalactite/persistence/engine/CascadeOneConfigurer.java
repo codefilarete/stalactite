@@ -23,22 +23,23 @@ import org.gama.stalactite.persistence.id.Identified;
 import org.gama.stalactite.persistence.id.manager.StatefullIdentifier;
 import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
 import org.gama.stalactite.persistence.structure.Column;
+import org.gama.stalactite.persistence.structure.Table;
 
 /**
  * @author Guillaume Mary
  */
-public class CascadeOneConfigurer<T extends Identified, I extends Identified, J extends StatefullIdentifier> {
+public class CascadeOneConfigurer<I extends Identified, O extends Identified, J extends StatefullIdentifier> {
 	
 	static final Predicate<Identified> NON_PERSISTED_PREDICATE = target -> target != null && !target.getId().isPersisted();
 	
 	static final Predicate<Identified> PERSISTED_PREDICATE = target -> target != null && target.getId().isPersisted();
 	
-	public void appendCascade(
-			CascadeOne<T, I, J> cascadeOne, Persister<T, ?> localPersister,
-			ClassMappingStrategy<T, I> mappingStrategy,
-			JoinedTablesPersister<T, J> joinedTablesPersister,
+	public <T extends Table> void appendCascade(
+			CascadeOne<I, O, J> cascadeOne, Persister<I, ?, T> localPersister,
+			ClassMappingStrategy<I, O, T> mappingStrategy,
+			JoinedTablesPersister<I, J, T> joinedTablesPersister,
 			ForeignKeyNamingStrategy foreignKeyNamingStrategy) {
-		Persister<Identified, StatefullIdentifier> targetPersister = (Persister<Identified, StatefullIdentifier>) cascadeOne.getPersister();
+		Persister<Identified, StatefullIdentifier, Table> targetPersister = (Persister<Identified, StatefullIdentifier, Table>) cascadeOne.getPersister();
 		
 		// adding persistence flag setters on other side
 		targetPersister.getPersisterListener().addInsertListener(SetPersistedFlagAfterInsertListener.INSTANCE);
@@ -55,7 +56,7 @@ public class CascadeOneConfigurer<T extends Identified, I extends Identified, J 
 		// adding foerign key constraint
 		leftColumn.getTable().addForeignKey(foreignKeyNamingStrategy.giveName(leftColumn, rightColumn), leftColumn, rightColumn);
 		
-		PersisterListener<T, ?> persisterListener = localPersister.getPersisterListener();
+		PersisterListener<I, ?> persisterListener = localPersister.getPersisterListener();
 		for (CascadeType cascadeType : cascadeOne.getCascadeTypes()) {
 			switch (cascadeType) {
 				case INSERT:
@@ -65,7 +66,7 @@ public class CascadeOneConfigurer<T extends Identified, I extends Identified, J 
 								new MandatoryRelationCheckingBeforeInsertListener<>(cascadeOne.getTargetProvider(), cascadeOne.getMember()));
 					}
 					// adding cascade treatment: after insert target is inserted too
-					persisterListener.addInsertListener(new BeforeInsertCascader<T, Identified>(targetPersister) {
+					persisterListener.addInsertListener(new BeforeInsertCascader<I, Identified>(targetPersister) {
 						
 						@Override
 						protected void postTargetInsert(Iterable<Identified> iterable) {
@@ -73,7 +74,7 @@ public class CascadeOneConfigurer<T extends Identified, I extends Identified, J 
 						}
 						
 						@Override
-						protected Identified getTarget(T o) {
+						protected Identified getTarget(I o) {
 							Identified target = cascadeOne.getTargetProvider().apply(o);
 							// We only insert non-persisted instances (for logic and to prevent duplicate primary key error)
 							return NON_PERSISTED_PREDICATE.test(target) ? target : null;
@@ -87,7 +88,7 @@ public class CascadeOneConfigurer<T extends Identified, I extends Identified, J 
 								new MandatoryRelationCheckingBeforeUpdateListener<>(cascadeOne.getMember(), cascadeOne.getTargetProvider()));
 					}
 					// adding cascade treatment: after update target is updated too
-					persisterListener.addUpdateListener(new AfterUpdateCascader<T, Identified>(targetPersister) {
+					persisterListener.addUpdateListener(new AfterUpdateCascader<I, Identified>(targetPersister) {
 						
 						@Override
 						protected void postTargetUpdate(Iterable<Entry<Identified, Identified>> iterable) {
@@ -95,7 +96,7 @@ public class CascadeOneConfigurer<T extends Identified, I extends Identified, J 
 						}
 						
 						@Override
-						protected Entry<Identified, Identified> getTarget(T modifiedTrigger, T unmodifiedTrigger) {
+						protected Entry<Identified, Identified> getTarget(I modifiedTrigger, I unmodifiedTrigger) {
 							return new SimpleEntry<>(cascadeOne.getTargetProvider().apply(modifiedTrigger), cascadeOne.getTargetProvider().apply
 									(unmodifiedTrigger));
 						}
@@ -103,7 +104,7 @@ public class CascadeOneConfigurer<T extends Identified, I extends Identified, J 
 					break;
 				case DELETE:
 					// adding cascade treatment: before delete target is deleted (done before because of foreign key constraint)
-					persisterListener.addDeleteListener(new AfterDeleteCascader<T, Identified>(targetPersister) {
+					persisterListener.addDeleteListener(new AfterDeleteCascader<I, Identified>(targetPersister) {
 						
 						@Override
 						protected void postTargetDelete(Iterable<Identified> iterable) {
@@ -111,14 +112,14 @@ public class CascadeOneConfigurer<T extends Identified, I extends Identified, J 
 						}
 						
 						@Override
-						protected Identified getTarget(T t) {
-							Identified target = cascadeOne.getTargetProvider().apply(t);
+						protected Identified getTarget(I i) {
+							Identified target = cascadeOne.getTargetProvider().apply(i);
 							// We only delete persisted instances (for logic and to prevent from non matching row count error)
 							return PERSISTED_PREDICATE.test(target) ? target : null;
 						}
 					});
 					// we add the deleteById event since we suppose that if delete is required then there's no reason that rough delete is not
-					persisterListener.addDeleteByIdListener(new AfterDeleteByIdCascader<T, Identified>(targetPersister) {
+					persisterListener.addDeleteByIdListener(new AfterDeleteByIdCascader<I, Identified>(targetPersister) {
 						
 						@Override
 						protected void postTargetDelete(Iterable<Identified> iterable) {
@@ -126,8 +127,8 @@ public class CascadeOneConfigurer<T extends Identified, I extends Identified, J 
 						}
 						
 						@Override
-						protected Identified getTarget(T t) {
-							Identified target = cascadeOne.getTargetProvider().apply(t);
+						protected Identified getTarget(I i) {
+							Identified target = cascadeOne.getTargetProvider().apply(i);
 							// We only delete persisted instances (for logic and to prevent from non matching row count error)
 							return PERSISTED_PREDICATE.test(target) ? target : null;
 						}

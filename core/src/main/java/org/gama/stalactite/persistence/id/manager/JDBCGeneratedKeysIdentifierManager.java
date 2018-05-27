@@ -18,6 +18,7 @@ import org.gama.sql.result.Row;
 import org.gama.stalactite.persistence.engine.WriteExecutor.JDBCBatchingIterator;
 import org.gama.stalactite.persistence.mapping.IIdAccessor;
 import org.gama.stalactite.persistence.structure.Column;
+import org.gama.stalactite.persistence.structure.Table;
 
 /**
  * Identifier manager that gets its values from {@link PreparedStatement#getGeneratedKeys()} (available after insert SQL statement). 
@@ -61,7 +62,7 @@ public class JDBCGeneratedKeysIdentifierManager<T, I> implements IdentifierInser
 	}
 	
 	@Override
-	public JDBCBatchingIterator<T> buildJDBCBatchingIterator(Iterable<T> iterable, WriteOperation<Column> writeOperation, int batchSize) {
+	public JDBCBatchingIterator<T> buildJDBCBatchingIterator(Iterable<T> iterable, WriteOperation<? extends Column<? extends Table, ?>> writeOperation, int batchSize) {
 		return new JDBCBatchingIteratorGeneratedKeysAware<>(iterable, writeOperation, batchSize, generatedKeysReader, identifierFixer);
 	}
 	

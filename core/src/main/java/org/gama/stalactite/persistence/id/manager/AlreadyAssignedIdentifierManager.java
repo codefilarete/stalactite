@@ -7,6 +7,7 @@ import java.sql.SQLException;
 import org.gama.sql.dml.WriteOperation;
 import org.gama.stalactite.persistence.engine.WriteExecutor.JDBCBatchingIterator;
 import org.gama.stalactite.persistence.structure.Column;
+import org.gama.stalactite.persistence.structure.Table;
 
 /**
  * Identifier manager to be used when identifier is already specified on entity, so, nothing special must be done !
@@ -38,7 +39,7 @@ public class AlreadyAssignedIdentifierManager<T, I> implements IdentifierInserti
 	}
 	
 	@Override
-	public JDBCBatchingIterator<T> buildJDBCBatchingIterator(Iterable<T> iterable, WriteOperation<Column> writeOperation, int batchSize) {
+	public JDBCBatchingIterator<T> buildJDBCBatchingIterator(Iterable<T> iterable, WriteOperation<? extends Column<? extends Table, ?>> writeOperation, int batchSize) {
 		return new JDBCBatchingIterator<>(iterable, writeOperation, batchSize);
 	}
 }

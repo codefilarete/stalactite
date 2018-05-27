@@ -12,18 +12,18 @@ import org.gama.stalactite.query.model.Operand;
  * @author Guillaume Mary
  * @see org.gama.stalactite.command.builder.DeleteCommandBuilder
  */
-public class Delete {
+public class Delete<T extends Table> {
 	
 	/** Target of the values to insert */
-	private final Table targetTable;
+	private final T targetTable;
 	
 	private final Criteria criteriaSurrogate = new Criteria();
 	
-	public Delete(Table targetTable) {
+	public Delete(T targetTable) {
 		this.targetTable = targetTable;
 	}
 	
-	public Table getTargetTable() {
+	public T getTargetTable() {
 		return targetTable;
 	}
 	

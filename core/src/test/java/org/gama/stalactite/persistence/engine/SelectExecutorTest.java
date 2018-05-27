@@ -9,6 +9,7 @@ import org.gama.lang.collection.Arrays;
 import org.gama.lang.collection.Iterables;
 import org.gama.sql.test.HSQLDBInMemoryDataSource;
 import org.gama.stalactite.persistence.sql.dml.DMLGenerator;
+import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.test.PairSetList;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -26,7 +27,7 @@ public class SelectExecutorTest extends AbstractDMLExecutorTest {
 	
 	private DataSet dataSet;
 	
-	private SelectExecutor<Toto, Integer> testInstance;
+	private SelectExecutor<Toto, Integer, Table> testInstance;
 	
 	@BeforeEach
 	public void setUp() throws SQLException {

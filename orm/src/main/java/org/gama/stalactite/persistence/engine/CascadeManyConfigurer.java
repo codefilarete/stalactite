@@ -31,11 +31,12 @@ import org.gama.stalactite.persistence.id.IdentifiedCollectionDiffer;
 import org.gama.stalactite.persistence.id.IdentifiedCollectionDiffer.Diff;
 import org.gama.stalactite.persistence.id.manager.StatefullIdentifier;
 import org.gama.stalactite.persistence.structure.Column;
+import org.gama.stalactite.persistence.structure.Table;
 
 /**
  * @author Guillaume Mary
  */
-public class CascadeManyConfigurer<T extends Identified, I extends Identified, J extends StatefullIdentifier, C extends Collection<I>> {
+public class CascadeManyConfigurer<I extends Identified, O extends Identified, J extends StatefullIdentifier, C extends Collection<O>> {
 	
 	/** {@link OneToManyOptions#mappedBy(SerializableBiConsumer)} method signature (for printing purpose) to help find usage by avoiding hard "mappedBy" String */
 	private static final String MAPPED_BY_SIGNATURE;
@@ -48,14 +49,14 @@ public class CascadeManyConfigurer<T extends Identified, I extends Identified, J
 	
 	private final IdentifiedCollectionDiffer differ = new IdentifiedCollectionDiffer();
 	
-	public void appendCascade(CascadeMany<T, I, J, C> cascadeMany,
-							  Persister<T, ?> localPersister,
-							  JoinedTablesPersister<T, J> joinedTablesPersister,
+	public <T extends Table> void appendCascade(CascadeMany<I, O, J, C> cascadeMany,
+							  Persister<I, ?, T> localPersister,
+							  JoinedTablesPersister<I, J, T> joinedTablesPersister,
 							  ForeignKeyNamingStrategy foreignKeyNamingStrategy) {
-		Persister<Identified, StatefullIdentifier> targetPersister = (Persister<Identified, StatefullIdentifier>) cascadeMany.getPersister();
+		Persister<Identified, StatefullIdentifier, Table> targetPersister = (Persister<Identified, StatefullIdentifier, Table>) cascadeMany.getPersister();
 		
 		// adding persistence flag setters on both side
-		joinedTablesPersister.getPersisterListener().addInsertListener((IInsertListener<T>) SetPersistedFlagAfterInsertListener.INSTANCE);
+		joinedTablesPersister.getPersisterListener().addInsertListener((IInsertListener<I>) SetPersistedFlagAfterInsertListener.INSTANCE);
 		targetPersister.getPersisterListener().addInsertListener(SetPersistedFlagAfterInsertListener.INSTANCE);
 		
 		// finding joined columns: left one is primary key. Right one is given by the target strategy through the property accessor
@@ -88,11 +89,11 @@ public class CascadeManyConfigurer<T extends Identified, I extends Identified, J
 		// adding foerign key constraint
 		rightColumn.getTable().addForeignKey(foreignKeyNamingStrategy.giveName(rightColumn, leftColumn), rightColumn, leftColumn);
 		
-		PersisterListener<T, ?> persisterListener = localPersister.getPersisterListener();
+		PersisterListener<I, ?> persisterListener = localPersister.getPersisterListener();
 		for (CascadeType cascadeType : cascadeMany.getCascadeTypes()) {
 			switch (cascadeType) {
 				case INSERT:
-					persisterListener.addInsertListener(new AfterInsertCollectionCascader<T, Identified>(targetPersister) {
+					persisterListener.addInsertListener(new AfterInsertCollectionCascader<I, Identified>(targetPersister) {
 						
 						@Override
 						protected void postTargetInsert(Iterable<Identified> iterables) {
@@ -100,7 +101,7 @@ public class CascadeManyConfigurer<T extends Identified, I extends Identified, J
 						}
 						
 						@Override
-						protected Collection<Identified> getTargets(T o) {
+						protected Collection<Identified> getTargets(I o) {
 							Collection<Identified> targets = (Collection<Identified>) targetProvider.apply(o);
 							// We only insert non-persisted instances (for logic and to prevent duplicate primary key error)
 							return Iterables.stream(targets)
@@ -110,10 +111,10 @@ public class CascadeManyConfigurer<T extends Identified, I extends Identified, J
 					});
 					break;
 				case UPDATE:
-					persisterListener.addUpdateListener(new AfterUpdateCollectionCascader<T, Identified>(targetPersister) {
+					persisterListener.addUpdateListener(new AfterUpdateCollectionCascader<I, Identified>(targetPersister) {
 						
 						@Override
-						public void afterUpdate(Iterable<Map.Entry<T, T>> iterables, boolean allColumnsStatement) {
+						public void afterUpdate(Iterable<Map.Entry<I, I>> iterables, boolean allColumnsStatement) {
 							iterables.forEach(entry -> {
 								Set<Diff> diffSet = differ.diffSet(
 										(Set) targetProvider.apply(entry.getValue()),
@@ -143,13 +144,13 @@ public class CascadeManyConfigurer<T extends Identified, I extends Identified, J
 						}
 						
 						@Override
-						protected Collection<Entry<Identified, Identified>> getTargets(T modifiedTrigger, T unmodifiedTrigger) {
+						protected Collection<Entry<Identified, Identified>> getTargets(I modifiedTrigger, I unmodifiedTrigger) {
 							throw new NotYetSupportedOperationException();
 						}
 					});
 					break;
 				case DELETE:
-					persisterListener.addDeleteListener(new BeforeDeleteCollectionCascader<T, Identified>(targetPersister) {
+					persisterListener.addDeleteListener(new BeforeDeleteCollectionCascader<I, Identified>(targetPersister) {
 						
 						@Override
 						protected void postTargetDelete(Iterable<Identified> iterables) {
@@ -157,7 +158,7 @@ public class CascadeManyConfigurer<T extends Identified, I extends Identified, J
 						}
 						
 						@Override
-						protected Collection<Identified> getTargets(T o) {
+						protected Collection<Identified> getTargets(I o) {
 							Collection<Identified> targets = (Collection<Identified>) targetProvider.apply(o);
 							// We only delete persisted instances (for logic and to prevent from non matching row count exception)
 							return Iterables.stream(targets)
@@ -166,14 +167,14 @@ public class CascadeManyConfigurer<T extends Identified, I extends Identified, J
 						}
 					});
 					// we add the deleteById event since we suppose that if delete is required then there's no reason that rough delete is not
-					persisterListener.addDeleteByIdListener(new BeforeDeleteByIdCollectionCascader<T, Identified>(targetPersister) {
+					persisterListener.addDeleteByIdListener(new BeforeDeleteByIdCollectionCascader<I, Identified>(targetPersister) {
 						@Override
 						protected void postTargetDelete(Iterable<Identified> iterables) {
 							// no post treatment to do
 						}
 						
 						@Override
-						protected Collection<Identified> getTargets(T o) {
+						protected Collection<Identified> getTargets(I o) {
 							Collection<Identified> targets = (Collection<Identified>) targetProvider.apply(o);
 							// We only delete persisted instances (for logic and to prevent from non matching row count exception)
 							return Iterables.stream(targets)
@@ -185,9 +186,9 @@ public class CascadeManyConfigurer<T extends Identified, I extends Identified, J
 				case SELECT:
 					// configuring select for fetching relation
 					IMutator targetSetter = Accessors.of(cascadeMany.getMember()).getMutator();
-					SerializableBiConsumer<I, T> reverseMember = cascadeMany.getReverseSetter();
+					SerializableBiConsumer<O, I> reverseMember = cascadeMany.getReverseSetter();
 					if (reverseMember == null) {
-						reverseMember = (SerializableBiConsumer<I, T>) (i, t) -> { /* we can't do anything, so we do ... nothing */ };
+						reverseMember = (SerializableBiConsumer<O, I>) (o, i) -> { /* we can'i do anything, so we do ... nothing */ };
 					}
 					joinedTablesPersister.addPersister(JoinedStrategiesSelect.FIRST_STRATEGY_NAME, targetPersister,
 							BeanRelationFixer.of((BiConsumer) targetSetter::set, targetProvider, cascadeMany.getCollectionTargetClass(), reverseMember),

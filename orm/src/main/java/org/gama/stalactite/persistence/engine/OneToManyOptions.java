@@ -6,6 +6,7 @@ import org.gama.stalactite.persistence.engine.IFluentMappingBuilder.IFluentMappi
 import org.gama.stalactite.persistence.id.Identified;
 import org.gama.stalactite.persistence.id.manager.StatefullIdentifier;
 import org.gama.stalactite.persistence.structure.Column;
+import org.gama.stalactite.persistence.structure.Table;
 
 /**
  * @author Guillaume Mary
@@ -48,7 +49,7 @@ public interface OneToManyOptions<T extends Identified, I extends StatefullIdent
 	 * @param reverseLink opposite owner of the relation
 	 * @return the global mapping configurer
 	 */
-	IFluentMappingBuilderOneToManyOptions<T, I, O> mappedBy(Column<T> reverseLink);
+	IFluentMappingBuilderOneToManyOptions<T, I, O> mappedBy(Column<Table, T> reverseLink);
 	
 	/**
 	 * Asks for deletion of removed entities from the collection (kind of orphan removal) during UPDATE cascade. Default is false (conservative)

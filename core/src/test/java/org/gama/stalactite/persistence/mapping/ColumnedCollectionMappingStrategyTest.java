@@ -35,7 +35,7 @@ public class ColumnedCollectionMappingStrategyTest {
 	
 	@BeforeAll
 	public static void setUpClass() {
-		targetTable = new Table(null, "Toto");
+		targetTable = new Table<>(null, "Toto");
 		int nbCol = 5;
 		for (int i = 1; i <= nbCol; i++) {
 			String columnName = "col_" + i;
@@ -50,11 +50,11 @@ public class ColumnedCollectionMappingStrategyTest {
 		col5 = namedColumns.get("col_5");
 	}
 	
-	private ColumnedCollectionMappingStrategy<List<String>, String> testInstance;
+	private ColumnedCollectionMappingStrategy<List<String>, String, Table> testInstance;
 	
 	@BeforeEach
 	public void setUp() {
-		testInstance = new ColumnedCollectionMappingStrategy<List<String>, String>(targetTable, targetTable.getColumns(), (Class<List<String>>) (Class) ArrayList.class) {
+		testInstance = new ColumnedCollectionMappingStrategy<List<String>, String, Table>(targetTable, targetTable.getColumns(), (Class<List<String>>) (Class) ArrayList.class) {
 			@Override
 			protected String toCollectionValue(Object object) {
 				return object == null ?  null : object.toString();
@@ -75,7 +75,7 @@ public class ColumnedCollectionMappingStrategyTest {
 	@ParameterizedTest
 	@MethodSource("testGetInsertValues")
 	public void testGetInsertValues(List<String> toInsert, ChainingMap<Column, String> expected) {
-		Map<Column, Object> insertValues = testInstance.getInsertValues(toInsert);
+		Map<Column<Table, Object>, Object> insertValues = testInstance.getInsertValues(toInsert);
 		assertEquals(insertValues, expected);
 	}
 	
@@ -100,7 +100,7 @@ public class ColumnedCollectionMappingStrategyTest {
 	@ParameterizedTest
 	@MethodSource("testGetUpdateValues_diffOnly")
 	public void testGetUpdateValues_diffOnly(List<String> modified, List<String> unmodified, Map<Column, String> expected) {
-		Map<UpwhereColumn, Object> updateValues = testInstance.getUpdateValues(modified, unmodified, false);
+		Map<UpwhereColumn<Table>, Object> updateValues = testInstance.getUpdateValues(modified, unmodified, false);
 		Map<UpwhereColumn, Object> expectationWithUpwhereColumn = new HashMap<>();
 		expected.forEach((c, s) -> expectationWithUpwhereColumn.put(new UpwhereColumn(c, true), s));
 		assertEquals(expectationWithUpwhereColumn, updateValues);
@@ -129,7 +129,7 @@ public class ColumnedCollectionMappingStrategyTest {
 	@ParameterizedTest
 	@MethodSource("testGetUpdateValues_allColumns")
 	public void testGetUpdateValues_allColumns(List<String> modified, List<String> unmodified, Map<Column, String> expected) {
-		Map<UpwhereColumn, Object> updateValues = testInstance.getUpdateValues(modified, unmodified, true);
+		Map<UpwhereColumn<Table>, Object> updateValues = testInstance.getUpdateValues(modified, unmodified, true);
 		Map<UpwhereColumn, Object> expectationWithUpwhereColumn = new HashMap<>();
 		expected.forEach((c, s) -> expectationWithUpwhereColumn.put(new UpwhereColumn(c, true), s));
 		assertEquals(expectationWithUpwhereColumn, updateValues);

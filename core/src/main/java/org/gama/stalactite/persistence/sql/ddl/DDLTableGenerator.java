@@ -1,6 +1,7 @@
 package org.gama.stalactite.persistence.sql.ddl;
 
 import java.util.Collections;
+import java.util.Set;
 
 import org.gama.lang.StringAppender;
 import org.gama.stalactite.persistence.structure.Column;
@@ -29,7 +30,7 @@ public class DDLTableGenerator {
 	
 	public String generateCreateTable(Table table) {
 		StringAppender sqlCreateTable = new StringAppender("create table ", dmlNameProvider.getSimpleName(table), "(");
-		for (Column column : table.getColumns()) {
+		for (Column column : (Set<Column>) table.getColumns()) {
 			generateCreateColumn(column, sqlCreateTable);
 			sqlCreateTable.cat(", ");
 		}

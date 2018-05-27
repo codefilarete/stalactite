@@ -30,11 +30,11 @@ public interface IFluentMappingBuilder<T extends Identified, I extends Statefull
 	
 	IFluentMappingBuilderColumnOptions<T, I> add(SerializableFunction<T, ?> function, String columnName);
 	
-	<O> IFluentMappingBuilderColumnOptions<T, I> add(SerializableFunction<T, O> getter, Column<O> column);
+	<O> IFluentMappingBuilderColumnOptions<T, I> add(SerializableFunction<T, O> getter, Column<Table, O> column);
 	
-	<O extends Identified, J extends StatefullIdentifier> IFluentMappingBuilderOneToOneOptions<T, I> addOneToOne(SerializableFunction<T, O> getter, Persister<O, J> persister);
+	<O extends Identified, J extends StatefullIdentifier> IFluentMappingBuilderOneToOneOptions<T, I> addOneToOne(SerializableFunction<T, O> getter, Persister<O, J, ? extends Table> persister);
 	
-	<O extends Identified, J extends StatefullIdentifier, C extends Collection<O>> IFluentMappingBuilderOneToManyOptions<T, I, O> addOneToMany(SerializableFunction<T, C> getter, Persister<O, J> persister);
+	<O extends Identified, J extends StatefullIdentifier, C extends Collection<O>> IFluentMappingBuilderOneToManyOptions<T, I, O> addOneToMany(SerializableFunction<T, C> getter, Persister<O, J, ? extends Table> persister);
 	
 	<O> IFluentMappingBuilderEmbedOptions<T, I> embed(SerializableBiConsumer<T, O> setter);
 	
@@ -54,9 +54,9 @@ public interface IFluentMappingBuilder<T extends Identified, I extends Statefull
 	 * @param dialect the {@link Dialect} to build the mapping for
 	 * @return the finalized mapping, can be modified further
 	 */
-	ClassMappingStrategy<T, I> build(Dialect dialect);
+	ClassMappingStrategy<T, I, Table> build(Dialect dialect);
 	
-	Persister<T, I> build(PersistenceContext persistenceContext);
+	Persister<T, I, Table> build(PersistenceContext persistenceContext);
 	
 	interface IFluentMappingBuilderColumnOptions<T extends Identified, I extends StatefullIdentifier> extends IFluentMappingBuilder<T, I>, ColumnOptions<T, I> {
 	}

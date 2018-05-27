@@ -12,9 +12,9 @@ import java.util.Set;
 import org.gama.lang.Reflections;
 import org.gama.lang.bean.Objects;
 import org.gama.lang.collection.Arrays;
-import org.gama.lang.collection.Maps;
 import org.gama.sql.result.Row;
 import org.gama.stalactite.persistence.structure.Column;
+import org.gama.stalactite.persistence.structure.Table;
 
 /**
  * A mapping strategy to persist a {@link ZonedDateTime} : requires 2 columns, one for the date-time part, another for the timezone.
@@ -28,13 +28,13 @@ import org.gama.stalactite.persistence.structure.Column;
  * 
  * @author Guillaume Mary
  */
-public class ZonedDateTimeMappingStrategy implements IEmbeddedBeanMapper<ZonedDateTime> {
+public class ZonedDateTimeMappingStrategy<T extends Table> implements IEmbeddedBeanMapper<ZonedDateTime, T> {
 	
-	private final Column dateTimeColumn;
-	private final Column zoneColumn;
-	private final UpwhereColumn dateTimeUpdateColumn;
-	private final UpwhereColumn zoneUpdateColumn;
-	private final Set<Column> columns;
+	private final Column<T, LocalDateTime> dateTimeColumn;
+	private final Column<T, ZoneId> zoneColumn;
+	private final UpwhereColumn<T> dateTimeUpdateColumn;
+	private final UpwhereColumn<T> zoneUpdateColumn;
+	private final Set<Column<T, ?>> columns;
 	
 	/**
 	 * Build a EmbeddedBeanMappingStrategy from a mapping between Field and Column.
@@ -47,7 +47,7 @@ public class ZonedDateTimeMappingStrategy implements IEmbeddedBeanMapper<ZonedDa
 	 * @param zoneColumn the column containing the zone part of final {@link ZonedDateTime}
 	 * @throws IllegalArgumentException if dateTimeColumn is not of type {@link LocalDateTime} or zoneColumn of type {@link ZoneId}
 	 */
-	public ZonedDateTimeMappingStrategy(Column dateTimeColumn, Column zoneColumn) {
+	public ZonedDateTimeMappingStrategy(Column<T, LocalDateTime> dateTimeColumn, Column<T, ZoneId> zoneColumn) {
 		if (!LocalDateTime.class.isAssignableFrom(dateTimeColumn.getJavaType())) {
 			throw new IllegalArgumentException("Only column whose type is " + Reflections.toString(LocalDateTime.class) + " are supported");
 		}
@@ -56,26 +56,28 @@ public class ZonedDateTimeMappingStrategy implements IEmbeddedBeanMapper<ZonedDa
 		}
 		this.dateTimeColumn = dateTimeColumn;
 		this.zoneColumn = zoneColumn;
-		this.dateTimeUpdateColumn = new UpwhereColumn(dateTimeColumn, true);
-		this.zoneUpdateColumn = new UpwhereColumn(zoneColumn, true);
+		this.dateTimeUpdateColumn = new UpwhereColumn<>(dateTimeColumn, true);
+		this.zoneUpdateColumn = new UpwhereColumn<>(zoneColumn, true);
 		this.columns = Collections.unmodifiableSet(Arrays.asHashSet(dateTimeColumn, zoneColumn));
 	}
 	
 	@Override
-	public Set<Column> getColumns() {
-		return columns;
+	public Set<Column<T, Object>> getColumns() {
+		return (Set) columns;
 	}
 	
 	@Override
-	public Map<Column, Object> getInsertValues(ZonedDateTime zonedDateTime) {
-		return Maps.asMap(dateTimeColumn, (Object) zonedDateTime.toLocalDateTime())
-				.add(zoneColumn, zonedDateTime.getZone());
+	public Map<Column<T, Object>, Object> getInsertValues(ZonedDateTime zonedDateTime) {
+		Map<Column<T, ?>, Object> result = new HashMap<>();
+		result.put(dateTimeColumn, zonedDateTime.toLocalDateTime());
+		result.put(zoneColumn, zonedDateTime.getZone());
+		return (Map) result;
 	}
 	
 	@Override
-	public Map<UpwhereColumn, Object> getUpdateValues(ZonedDateTime modified, ZonedDateTime unmodified, boolean allColumns) {
-		Map<Column, Object> unmodifiedColumns = new HashMap<>();
-		Map<UpwhereColumn, Object> toReturn = new HashMap<>();
+	public Map<UpwhereColumn<T>, Object> getUpdateValues(ZonedDateTime modified, ZonedDateTime unmodified, boolean allColumns) {
+		Map<Column<T, ?>, Object> unmodifiedColumns = new HashMap<>();
+		Map<UpwhereColumn<T>, Object> toReturn = new HashMap<>();
 		// getting differences side by side
 		if (modified != null) {
 			LocalDateTime modifiedDateTime = unmodified == null ? null : unmodified.toLocalDateTime();
@@ -97,8 +99,8 @@ public class ZonedDateTimeMappingStrategy implements IEmbeddedBeanMapper<ZonedDa
 
 		// adding complementary columns if necessary
 		if (!toReturn.isEmpty() && allColumns) {
-			for (Entry<Column, Object> unmodifiedField : unmodifiedColumns.entrySet()) {
-				toReturn.put(new UpwhereColumn(unmodifiedField.getKey(), true), unmodifiedField.getValue());
+			for (Entry<Column<T, ?>, Object> unmodifiedField : unmodifiedColumns.entrySet()) {
+				toReturn.put(new UpwhereColumn<>(unmodifiedField.getKey(), true), unmodifiedField.getValue());
 			}
 		}
 		return toReturn;

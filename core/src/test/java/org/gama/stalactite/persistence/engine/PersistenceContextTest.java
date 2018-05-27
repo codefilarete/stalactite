@@ -27,8 +27,8 @@ public class PersistenceContextTest {
 		Connection connection = hsqldbInMemoryDataSource.getConnection();
 		PersistenceContext testInstance = new PersistenceContext(new SimpleConnectionProvider(connection), new HSQLDBDialect());
 		Table toto = new Table("toto");
-		Column<Long> id = toto.addColumn("id", long.class);
-		Column<String> name = toto.addColumn("name", String.class);
+		Column<Table, Long> id = toto.addColumn("id", long.class);
+		Column<Table, String> name = toto.addColumn("name", String.class);
 		
 		DDLDeployer ddlDeployer = new DDLDeployer(testInstance);
 		ddlDeployer.getDdlSchemaGenerator().addTables(toto);

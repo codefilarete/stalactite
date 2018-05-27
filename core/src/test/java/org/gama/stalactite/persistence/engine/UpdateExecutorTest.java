@@ -7,6 +7,9 @@ import java.util.List;
 import org.gama.lang.Retryer;
 import org.gama.lang.collection.PairIterator;
 import org.gama.stalactite.persistence.sql.dml.DMLGenerator;
+import org.gama.stalactite.persistence.structure.Column;
+import org.gama.stalactite.persistence.structure.Database.Schema;
+import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.test.PairSetList;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -25,7 +28,7 @@ public class UpdateExecutorTest extends AbstractDMLExecutorTest {
 	
 	private DataSet dataSet;
 	
-	private UpdateExecutor<Toto, Integer> testInstance;
+	private UpdateExecutor<Toto, Integer, Table> testInstance;
 	
 	@BeforeEach
 	public void setUp() throws SQLException {

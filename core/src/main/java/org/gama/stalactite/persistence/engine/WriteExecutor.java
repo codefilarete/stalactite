@@ -7,18 +7,19 @@ import org.gama.sql.dml.SQLStatement;
 import org.gama.sql.dml.WriteOperation;
 import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
 import org.gama.stalactite.persistence.sql.dml.DMLGenerator;
+import org.gama.stalactite.persistence.structure.Table;
 
 /**
  * Parent class for insert, update or delete executor
  * 
  * @author Guillaume Mary
  */
-public abstract class WriteExecutor<T, I> extends DMLExecutor<T, I> {
+public abstract class WriteExecutor<C, I, T extends Table> extends DMLExecutor<C, I, T> {
 	
 	private final int batchSize;
 	private final Retryer writeOperationRetryer;
 	
-	public WriteExecutor(ClassMappingStrategy<T, I> mappingStrategy,
+	public WriteExecutor(ClassMappingStrategy<C, I, T> mappingStrategy,
 						 ConnectionProvider connectionProvider, DMLGenerator dmlGenerator, Retryer writeOperationRetryer,
 						 int batchSize, int inOperatorMaxSize) {
 		super(mappingStrategy, connectionProvider, dmlGenerator, inOperatorMaxSize);
@@ -34,7 +35,7 @@ public abstract class WriteExecutor<T, I> extends DMLExecutor<T, I> {
 		return writeOperationRetryer;
 	}
 	
-	protected <C> WriteOperation<C> newWriteOperation(SQLStatement<C> statement, CurrentConnectionProvider currentConnectionProvider) {
+	protected <P> WriteOperation<P> newWriteOperation(SQLStatement<P> statement, CurrentConnectionProvider currentConnectionProvider) {
 		return new WriteOperation<>(statement, currentConnectionProvider, getWriteOperationRetryer());
 	}
 	

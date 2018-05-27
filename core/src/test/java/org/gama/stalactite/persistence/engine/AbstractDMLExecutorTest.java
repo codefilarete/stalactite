@@ -43,7 +43,7 @@ public abstract class AbstractDMLExecutorTest {
 		protected final Dialect dialect = new Dialect(new JavaTypeToSqlTypeMapping()
 				.with(Integer.class, "int"));
 		
-		protected PersistenceConfiguration<Toto, Integer> persistenceConfiguration;
+		protected PersistenceConfiguration<Toto, Integer, Table> persistenceConfiguration;
 		
 		protected PreparedStatement preparedStatement;
 		protected ArgumentCaptor<Integer> valueCaptor;
@@ -76,15 +76,15 @@ public abstract class AbstractDMLExecutorTest {
 		}
 		
 		protected PersistenceConfigurationBuilder newPersistenceConfigurationBuilder() {
-			return new PersistenceConfigurationBuilder<Toto, Integer>()
+			return new PersistenceConfigurationBuilder<Toto, Integer, Table>()
 					.withTableAndClass("Toto", Toto.class, (mappedClass, primaryKeyField) -> {
 						Sequence<Integer> instance = InMemoryCounterIdentifierGenerator.INSTANCE;
 						IdentifierInsertionManager<Toto, Integer> identifierGenerator = new BeforeInsertIdentifierManager<>(
 								IdMappingStrategy.toIdAccessor(primaryKeyField), instance, Integer.class);
-						return new ClassMappingStrategy<>(
+						return new ClassMappingStrategy<Toto, Integer, Table>(
 								mappedClass.mappedClass,
 								mappedClass.targetTable,
-								mappedClass.persistentFieldHarverster.getFieldToColumn(),
+								(Map) mappedClass.persistentFieldHarverster.getFieldToColumn(),
 								primaryKeyField,
 								identifierGenerator);
 					})
@@ -92,21 +92,21 @@ public abstract class AbstractDMLExecutorTest {
 		}
 	}
 	
-	protected static class PersistenceConfiguration<T, I> {
+	protected static class PersistenceConfiguration<C, I, T extends Table> {
 		
-		protected ClassMappingStrategy<T, I> classMappingStrategy;
+		protected ClassMappingStrategy<C, I, T> classMappingStrategy;
 		protected Table targetTable;
 	}
 	
-	protected static class PersistenceConfigurationBuilder<T, I> {
+	protected static class PersistenceConfigurationBuilder<C, I, T extends Table> {
 		
-		private Class<T> mappedClass;
-		private BiFunction<TableAndClass<T>, PropertyAccessor<T, I>, ClassMappingStrategy<T, I>> classMappingStrategyBuilder;
+		private Class<C> mappedClass;
+		private BiFunction<TableAndClass<C>, PropertyAccessor<C, I>, ClassMappingStrategy<C, I, T>> classMappingStrategyBuilder;
 		private String tableName;
 		private String primaryKeyFieldName;
 		
-		public PersistenceConfigurationBuilder withTableAndClass(String tableName, Class<T> mappedClass,
-						BiFunction<TableAndClass<T>, PropertyAccessor<T, I>, ClassMappingStrategy<T, I>> classMappingStrategyBuilder) {
+		public PersistenceConfigurationBuilder withTableAndClass(String tableName, Class<C> mappedClass,
+						BiFunction<TableAndClass<C>, PropertyAccessor<C, I>, ClassMappingStrategy<C, I, T>> classMappingStrategyBuilder) {
 			this.tableName = tableName;
 			this.mappedClass = mappedClass;
 			this.classMappingStrategyBuilder = classMappingStrategyBuilder;
@@ -121,8 +121,8 @@ public abstract class AbstractDMLExecutorTest {
 		protected PersistenceConfiguration build() {
 			PersistenceConfiguration toReturn = new PersistenceConfiguration();
 			
-			TableAndClass<T> tableAndClass = map(mappedClass, tableName);
-			PropertyAccessor<T, I> primaryKeyField = Accessors.forProperty(tableAndClass.configurePrimaryKey(primaryKeyFieldName));
+			TableAndClass<C> tableAndClass = map(mappedClass, tableName);
+			PropertyAccessor<C, I> primaryKeyField = Accessors.forProperty(tableAndClass.configurePrimaryKey(primaryKeyFieldName));
 			
 			toReturn.classMappingStrategy = classMappingStrategyBuilder.apply(tableAndClass, primaryKeyField);
 			toReturn.targetTable = tableAndClass.targetTable;
@@ -130,10 +130,10 @@ public abstract class AbstractDMLExecutorTest {
 			return toReturn;
 		}
 		
-		protected TableAndClass<T> map(Class<T> mappedClass, String tableName) {
+		protected TableAndClass<C> map(Class<C> mappedClass, String tableName) {
 			Table targetTable = new Table(tableName);
 			PersistentFieldHarverster persistentFieldHarverster = new PersistentFieldHarverster();
-			Map<PropertyAccessor, Column> fieldsMapping = persistentFieldHarverster.mapFields(mappedClass, targetTable);
+			persistentFieldHarverster.mapFields(mappedClass, targetTable);
 			return new TableAndClass<>(targetTable, mappedClass, persistentFieldHarverster);
 		}
 		

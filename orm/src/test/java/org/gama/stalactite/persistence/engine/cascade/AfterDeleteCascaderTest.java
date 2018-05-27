@@ -10,6 +10,7 @@ import org.gama.stalactite.persistence.engine.Persister;
 import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
 import org.gama.stalactite.persistence.mapping.IdMappingStrategy;
 import org.gama.stalactite.persistence.sql.Dialect;
+import org.gama.stalactite.persistence.structure.Table;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -26,7 +27,7 @@ public class AfterDeleteCascaderTest extends AbstractCascaderTest {
 		ClassMappingStrategy mappingStrategyMock = mock(ClassMappingStrategy.class);
 		// IdMappingStrategy is called by InsertExecutor to retrieve IdentifierInsertionManager but this will not be called, so we can mock it
 		when(mappingStrategyMock.getIdMappingStrategy()).thenReturn(mock(IdMappingStrategy.class));
-		Persister<Tata, Long> persisterMock = new Persister<Tata, Long>(mappingStrategyMock, mock(Dialect.class), null, 10) {
+		Persister<Tata, Long, Table> persisterMock = new Persister<Tata, Long, Table>(mappingStrategyMock, mock(Dialect.class), null, 10) {
 			@Override
 			protected int doDelete(Iterable<Tata> iterable) {
 				// Overriden to do no action, because default super action is complex to mock

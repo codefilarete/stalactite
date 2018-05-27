@@ -12,6 +12,7 @@ import org.gama.stalactite.command.model.Insert;
 import org.gama.stalactite.command.model.Update.UpdateColumn;
 import org.gama.stalactite.persistence.sql.dml.binder.ColumnBinderRegistry;
 import org.gama.stalactite.persistence.structure.Column;
+import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.query.builder.DMLNameProvider;
 import org.gama.stalactite.query.builder.OperandBuilder.PreparedSQLWrapper;
 import org.gama.stalactite.query.builder.OperandBuilder.SQLAppender;
@@ -23,11 +24,11 @@ import org.gama.stalactite.query.builder.SQLBuilder;
  * 
  * @author Guillaume Mary
  */
-public class InsertCommandBuilder implements SQLBuilder {
+public class InsertCommandBuilder<T extends Table> implements SQLBuilder {
 	
-	private final Insert insert;
+	private final Insert<T> insert;
 	
-	public InsertCommandBuilder(Insert insert) {
+	public InsertCommandBuilder(Insert<T> insert) {
 		this.insert = insert;
 	}
 	
@@ -49,7 +50,7 @@ public class InsertCommandBuilder implements SQLBuilder {
 		result.cat("insert into ").cat(insert.getTargetTable().getAbsoluteName())
 		.cat("(");
 		
-		Iterator<UpdateColumn> columnIterator = insert.getColumns().iterator();
+		Iterator<UpdateColumn<T>> columnIterator = insert.getColumns().iterator();
 		while (columnIterator.hasNext()) {
 			UpdateColumn c = columnIterator.next();
 			result.cat(c.getColumn().getName());
@@ -60,7 +61,7 @@ public class InsertCommandBuilder implements SQLBuilder {
 		
 		result.cat(") values (");
 		
-		Iterator<UpdateColumn> columnIterator2 = insert.getColumns().iterator();
+		Iterator<UpdateColumn<T>> columnIterator2 = insert.getColumns().iterator();
 		while (columnIterator2.hasNext()) {
 			UpdateColumn c = columnIterator2.next();
 			catUpdateObject(c, result);
@@ -85,7 +86,7 @@ public class InsertCommandBuilder implements SQLBuilder {
 		result.catValue(value.getColumn(), value.getValue());
 	}
 	
-	public InsertStatement toStatement(ColumnBinderRegistry columnBinderRegistry) {
+	public InsertStatement<T> toStatement(ColumnBinderRegistry columnBinderRegistry) {
 		DMLNameProvider dmlNameProvider = new DMLNameProvider(new HashMap<>());
 		
 		// We ask for SQL generation through a PreparedSQLWrapper because we need SQL placeholders for where + update clause
@@ -94,7 +95,7 @@ public class InsertCommandBuilder implements SQLBuilder {
 		
 		Map<Integer, Object> values = new HashMap<>(preparedSQLWrapper.getValues());
 		Map<Integer, ParameterBinder> parameterBinders = new HashMap<>(preparedSQLWrapper.getParameterBinders());
-		Map<Column, Integer> columnIndexes = new HashMap<>();
+		Map<Column<T, Object>, Integer> columnIndexes = new HashMap<>();
 		
 		// PreparedSQLWrapper has filled values (see catUpdateObject(..)) but PLACEHOLDERs must be removed from them.
 		// (ParameterBinders are correctly filled by PreparedSQLWrapper)
@@ -114,7 +115,7 @@ public class InsertCommandBuilder implements SQLBuilder {
 		});
 		
 		// final assembly
-		InsertStatement result = new InsertStatement(sql, parameterBinders, columnIndexes);
+		InsertStatement<T> result = new InsertStatement<>(sql, parameterBinders, columnIndexes);
 		result.setValues(values);
 		return result;
 	}
@@ -123,9 +124,9 @@ public class InsertCommandBuilder implements SQLBuilder {
 	 * A specialized version of {@link PreparedSQL} dedicated to {@link Insert} so one can set column values of the insert clause
 	 * through {@link #setValue(Column, Object)}
 	 */
-	public static class InsertStatement extends PreparedSQL {
+	public static class InsertStatement<T extends Table> extends PreparedSQL {
 		
-		private final Map<Column, Integer> columnIndexes;
+		private final Map<? extends Column<T, Object>, Integer> columnIndexes;
 		
 		/**
 		 * Single constructor, not expected to be used elsewhere than {@link UpdateCommandBuilder}.
@@ -134,7 +135,7 @@ public class InsertCommandBuilder implements SQLBuilder {
 		 * @param parameterBinders binder for prepared statement values
 		 * @param columnIndexes indexes of the updated columns
 		 */
-		private InsertStatement(String sql, Map<Integer, ParameterBinder> parameterBinders, Map<Column, Integer> columnIndexes) {
+		private InsertStatement(String sql, Map<Integer, ParameterBinder> parameterBinders, Map<? extends Column<T, Object>, Integer> columnIndexes) {
 			super(sql, parameterBinders);
 			this.columnIndexes = columnIndexes;
 		}
@@ -145,7 +146,7 @@ public class InsertCommandBuilder implements SQLBuilder {
 		 * @param column {@link Column} to be set
 		 * @param value value applied on Column
 		 */
-		public <T> void setValue(Column<T> column, T value) {
+		public <C> void setValue(Column<T, C> column, C value) {
 			if (columnIndexes.get(column) == null) {
 				throw new IllegalArgumentException("Column " + column.getAbsoluteName() + " is not insertable with fixed value in the insert clause");
 			}

@@ -25,70 +25,70 @@ public class UpdateCommandBuilderTest {
 	@Test
 	public void testToSQL_singleTable() {
 		Table totoTable = new Table("Toto");
-		Column<String> columnA = totoTable.addColumn("a", String.class);
-		Column<String> columnB = totoTable.addColumn("b", String.class);
+		Column<Table, String> columnA = totoTable.addColumn("a", String.class);
+		Column<Table, String> columnB = totoTable.addColumn("b", String.class);
 		
-		Update update = new Update(totoTable)
+		Update<Table> update = new Update<Table>(totoTable)
 				.set(columnA)
 				.set(columnB);
 		update.where(columnA, Operand.eq(44)).or(columnA, Operand.eq(columnB));
-		UpdateCommandBuilder testInstance = new UpdateCommandBuilder(update);
+		UpdateCommandBuilder<Table> testInstance = new UpdateCommandBuilder<>(update);
 		assertEquals("update Toto set a = ?, b = ? where a = 44 or a = b", testInstance.toSQL());
 		
-		update = new Update(totoTable)
+		update = new Update<Table>(totoTable)
 				.set(columnA, columnB);
-		testInstance = new UpdateCommandBuilder(update);
+		testInstance = new UpdateCommandBuilder<>(update);
 		assertEquals("update Toto set a = b", testInstance.toSQL());
 		
 		
-		update = new Update(totoTable)
+		update = new Update<Table>(totoTable)
 				.set(columnA, "tata");
-		testInstance = new UpdateCommandBuilder(update);
+		testInstance = new UpdateCommandBuilder<>(update);
 		assertEquals("update Toto set a = 'tata'", testInstance.toSQL());
 	}
 	
 	@Test
 	public void testToSQL_multiTable() {
 		Table totoTable = new Table("Toto");
-		Column<String> columnA = totoTable.addColumn("a", String.class);
-		Column<String> columnB = totoTable.addColumn("b", String.class);
+		Column<Table, String> columnA = totoTable.addColumn("a", String.class);
+		Column<Table, String> columnB = totoTable.addColumn("b", String.class);
 		Table tataTable = new Table("Tata");
-		Column<Long> columnX = tataTable.addColumn("x", Long.class);
-		Column<String> columnY = tataTable.addColumn("y", String.class);
+		Column<Table, Long> columnX = tataTable.addColumn("x", Long.class);
+		Column<Table, String> columnY = tataTable.addColumn("y", String.class);
 		
-		Update update = new Update(totoTable)
+		Update<Table> update = new Update<Table>(totoTable)
 				.set(columnA)
 				.set(columnB);
 		update.where(columnA, Operand.eq(columnX)).or(columnA, Operand.eq(columnY));
-		UpdateCommandBuilder testInstance = new UpdateCommandBuilder(update);
+		UpdateCommandBuilder<Table> testInstance = new UpdateCommandBuilder<>(update);
 		assertEquals("update Toto, Tata set Toto.a = ?, Toto.b = ? where Toto.a = Tata.x or Toto.a = Tata.y", testInstance.toSQL());
 		
-		update = new Update(totoTable)
+		update = new Update<Table>(totoTable)
 				.set(columnA, columnB);
 		update.where(columnA, Operand.eq(columnX)).or(columnA, Operand.eq(columnY));
-		testInstance = new UpdateCommandBuilder(update);
+		testInstance = new UpdateCommandBuilder<Table>(update);
 		assertEquals("update Toto, Tata set Toto.a = Toto.b where Toto.a = Tata.x or Toto.a = Tata.y", testInstance.toSQL());
 	}
 	
 	@Test
 	public void testToStatement() throws SQLException {
 		Table totoTable = new Table("Toto");
-		Column<Long> columnA = totoTable.addColumn("a", Long.class);
-		Column<Long> columnB = totoTable.addColumn("b", Long.class);
-		Column<String> columnC = totoTable.addColumn("c", String.class);
-		Column<String> columnD = totoTable.addColumn("d", String.class);
+		Column<Table, Long> columnA = totoTable.addColumn("a", Long.class);
+		Column<Table, Long> columnB = totoTable.addColumn("b", Long.class);
+		Column<Table, String> columnC = totoTable.addColumn("c", String.class);
+		Column<Table, String> columnD = totoTable.addColumn("d", String.class);
 		
-		Update update = new Update(totoTable)
+		Update<Table> update = new Update<Table>(totoTable)
 				.set(columnA)
 				.set(columnB, columnA)
 				.set(columnC, "tata")
 				.set(columnD);
 		update.where(columnA, Operand.in(42L, 43L)).or(columnA, Operand.eq(columnB));
-		UpdateCommandBuilder testInstance = new UpdateCommandBuilder(update);
+		UpdateCommandBuilder<Table> testInstance = new UpdateCommandBuilder<>(update);
 		
 		ColumnBinderRegistry binderRegistry = new ColumnBinderRegistry();
 		
-		UpdateStatement result = testInstance.toStatement(binderRegistry);
+		UpdateStatement<Table> result = testInstance.toStatement(binderRegistry);
 		assertEquals("update Toto set a = ?, b = a, c = ?, d = ? where a in (?, ?) or a = b", result.getSQL());
 				
 		assertEquals(Maps.asMap(2, (Object) "tata").add(4, 42L).add(5, 43L), result.getValues());

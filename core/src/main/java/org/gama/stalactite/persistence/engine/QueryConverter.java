@@ -20,6 +20,7 @@ import org.gama.sql.dml.ReadOperation;
 import org.gama.sql.dml.StringParamedSQL;
 import org.gama.sql.result.ResultSetConverter;
 import org.gama.sql.result.ResultSetRowAssembler;
+import org.gama.stalactite.persistence.structure.Table;
 
 import static org.gama.sql.binder.NullAwareParameterBinder.ALWAYS_SET_NULL_INSTANCE;
 
@@ -210,7 +211,7 @@ public class QueryConverter<T> {
 	 * @param <I> type of the key
 	 * @return this
 	 */
-	public <I> QueryConverter<T> mapKey(org.gama.stalactite.persistence.structure.Column<I> column, SerializableFunction<I, T> factory) {
+	public <I> QueryConverter<T> mapKey(org.gama.stalactite.persistence.structure.Column<? extends Table, I> column, SerializableFunction<I, T> factory) {
 		this.beanCreationDefinition = new BeanCreationDefinition<>(column.getName(), factory, column.getJavaType());
 		return this;
 	}
@@ -222,7 +223,7 @@ public class QueryConverter<T> {
 	 * @param <I> type of the key
 	 * @return this
 	 */
-	public <I> QueryConverter<T> mapKey(org.gama.stalactite.persistence.structure.Column<I> column, SerializableSupplier<T> javaBeanCtor, SerializableBiConsumer<T, I> keySetter) {
+	public <I> QueryConverter<T> mapKey(org.gama.stalactite.persistence.structure.Column<? extends Table, I> column, SerializableSupplier<T> javaBeanCtor, SerializableBiConsumer<T, I> keySetter) {
 		return mapKey(column, (SerializableFunction<I, T>) i -> {
 			T newInstance = javaBeanCtor.get();
 			keySetter.accept(newInstance, i);
@@ -238,7 +239,7 @@ public class QueryConverter<T> {
 	 * @param <I> the type of the column, which is also that of the setter argument
 	 * @return this
 	 */
-	public <I> QueryConverter<T> map(org.gama.stalactite.persistence.structure.Column<I> column, SerializableBiConsumer<T, I> setter) {
+	public <I> QueryConverter<T> map(org.gama.stalactite.persistence.structure.Column<? extends Table, I> column, SerializableBiConsumer<T, I> setter) {
 		map(column.getName(), setter, column.getJavaType());
 		return this;
 	}
@@ -254,7 +255,7 @@ public class QueryConverter<T> {
 	 * @param <J> the type of the column, which is also that of the converter argument
 	 * @return this
 	 */
-	public <I, J> QueryConverter<T> map(org.gama.stalactite.persistence.structure.Column<I> column, SerializableBiConsumer<T, J> setter, Converter<I, J, RuntimeException> converter) {
+	public <I, J> QueryConverter<T> map(org.gama.stalactite.persistence.structure.Column<? extends Table, I> column, SerializableBiConsumer<T, J> setter, Converter<I, J, RuntimeException> converter) {
 		return map(column, (SerializableBiConsumer<T, I>) (t, i) -> setter.accept(t, converter.convert(i)));
 	}
 	

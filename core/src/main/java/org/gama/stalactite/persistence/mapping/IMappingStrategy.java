@@ -9,22 +9,23 @@ import java.util.Set;
 
 import org.gama.sql.result.Row;
 import org.gama.stalactite.persistence.structure.Column;
+import org.gama.stalactite.persistence.structure.Table;
 
 /**
  * A very general contract for mapping a type to a database table. Not expected to be used as this (for instance it lacks deletion contract)
  * 
  * @author Guillaume Mary
  */
-public interface IMappingStrategy<T> {
+public interface IMappingStrategy<C, T extends Table> {
 	
 	/**
 	 * Returns columns that must be inserted
 	 *
-	 * @param t the instance to be inserted,
+	 * @param c the instance to be inserted,
 	 * 					may be null when this method is called to manage relationship
 	 * @return a mapping between columns that must be put in the SQL insert order and there values
 	 */
-	Map<Column, Object> getInsertValues(T t);
+	Map<Column<T, Object>, Object> getInsertValues(C c);
 	
 	/**
 	 * Returns columns that must be updated because of change between 2 instances.
@@ -38,14 +39,14 @@ public interface IMappingStrategy<T> {
 	 * 			thus a distinction between columns to be updated and columns necessary to the where clause must be done, this is don through {@link UpwhereColumn},
 	 * 			so returned value may contains duplicates regarding {@link Column} (they can be in update & where part, especially for optimist lock columns)	
 	 */
-	Map<UpwhereColumn, Object> getUpdateValues(T modified, T unmodified, boolean allColumns);
+	Map<UpwhereColumn<T>, Object> getUpdateValues(C modified, C unmodified, boolean allColumns);
 	
-	T transform(Row row);
+	C transform(Row row);
 	
 	/**
 	 * Wrapper for {@link Column} placed in an update statement so it can distinguish if it's for the Update or Where part 
 	 */
-	class UpwhereColumn {
+	class UpwhereColumn<T extends Table> {
 		
 		/**
 		 * Collects all columns from a set of {@link UpwhereColumn}. Helper method.
@@ -53,14 +54,14 @@ public interface IMappingStrategy<T> {
 		 * @param set a non null set
 		 * @return all columns of the set
 		 */
-		public static Set<Column> getUpdateColumns(@Nonnull Set<UpwhereColumn> set) {
-			Set<Column> updateColumns = new HashSet<>();
-			for (UpwhereColumn upwhereColumn : set) {
+		public static <T extends Table> Set<Column<T, Object>> getUpdateColumns(@Nonnull Set<UpwhereColumn<T>> set) {
+			Set<Column<T, ?>> updateColumns = new HashSet<>();
+			for (UpwhereColumn<T> upwhereColumn : set) {
 				if (upwhereColumn.update) {
 					updateColumns.add(upwhereColumn.column);
 				}
 			}
-			return updateColumns;
+			return (Set) updateColumns;
 		}
 		
 		/**
@@ -69,15 +70,15 @@ public interface IMappingStrategy<T> {
 		 * @param map a non null map
 		 * @return all columns to be updated
 		 */
-		public static Map<Column, Object> getUpdateColumns(@Nonnull Map<UpwhereColumn, Object> map) {
-			Map<Column, Object> updateColumns = new HashMap<>();
-			for (Entry<UpwhereColumn, Object> entry : map.entrySet()) {
-				UpwhereColumn upwhereColumn = entry.getKey();
+		public static <T extends Table> Map<Column<T, Object>, Object> getUpdateColumns(@Nonnull Map<UpwhereColumn<T>, Object> map) {
+			Map<Column<T, ?>, Object> updateColumns = new HashMap<>();
+			for (Entry<UpwhereColumn<T>, Object> entry : map.entrySet()) {
+				UpwhereColumn<T> upwhereColumn = entry.getKey();
 				if (upwhereColumn.update) {
 					updateColumns.put(upwhereColumn.column, entry.getValue());
 				}
 			}
-			return updateColumns;
+			return (Map) updateColumns;
 		}
 		
 		/**
@@ -86,21 +87,21 @@ public interface IMappingStrategy<T> {
 		 * @param map a non null map
 		 * @return all columns for the where clause
 		 */
-		public static Map<Column, Object> getWhereColumns(@Nonnull Map<UpwhereColumn, Object> map) {
-			Map<Column, Object> updateColumns = new HashMap<>();
-			for (Entry<UpwhereColumn, Object> entry : map.entrySet()) {
-				UpwhereColumn upwhereColumn = entry.getKey();
+		public static <T extends Table> Map<Column<T, Object>, Object> getWhereColumns(@Nonnull Map<UpwhereColumn<T>, ?> map) {
+			Map<Column<T, ?>, Object> updateColumns = new HashMap<>();
+			for (Entry<UpwhereColumn<T>, ?> entry : map.entrySet()) {
+				UpwhereColumn<T> upwhereColumn = entry.getKey();
 				if (!upwhereColumn.update) {
 					updateColumns.put(upwhereColumn.column, entry.getValue());
 				}
 			}
-			return updateColumns;
+			return (Map) updateColumns;
 		}
 		
-		private final Column column;
+		private final Column<T, ?> column;
 		private final boolean update;
 		
-		public UpwhereColumn(Column column, boolean update) {
+		public UpwhereColumn(Column<T, ?> column, boolean update) {
 			this.column = column;
 			this.update = update;
 		}

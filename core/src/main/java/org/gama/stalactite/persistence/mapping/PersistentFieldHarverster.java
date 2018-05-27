@@ -34,9 +34,9 @@ public class PersistentFieldHarverster {
 		return fieldToColumn;
 	}
 	
-	public Map<PropertyAccessor, Column> mapFields(Class clazz, Table targetTable) {
+	public <C, T extends Table> Map<PropertyAccessor<C, Object>, Column<T, Object>> mapFields(Class<C> clazz, T targetTable) {
 		List<Field> fields = getFields(clazz);
-		Map<String, Column> mapColumnsOnName = targetTable.mapColumnsOnName();
+		Map<String, Column<T, Object>> mapColumnsOnName = targetTable.mapColumnsOnName();
 		fieldToColumn = new LinkedHashMap<>(5);
 		nameTofield = new HashMap<>(5);
 		for (Field field : fields) {
@@ -47,14 +47,14 @@ public class PersistentFieldHarverster {
 			fieldToColumn.put(Accessors.forProperty(field), column);
 			nameTofield.put(field.getName(), field);
 		}
-		return fieldToColumn;
+		return (Map) fieldToColumn;
 	}
 	
-	protected Column newColumn(Table targetTable, Field field) {
+	protected <T extends Table> Column<T, Object> newColumn(T targetTable, Field field) {
 		return newColumn(targetTable, buildColumnName(field), field.getType());
 	}
 	
-	protected Column newColumn(Table targetTable, String fieldName, Class type) {
+	protected <T extends Table> Column<T, Object> newColumn(T targetTable, String fieldName, Class type) {
 		return targetTable.addColumn(fieldName, type);
 	}
 	
