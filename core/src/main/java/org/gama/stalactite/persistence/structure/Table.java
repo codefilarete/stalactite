@@ -123,10 +123,10 @@ public class Table {
 	}
 	
 	/**
-	 * Implémentation basée sur la comparaison du nom. Surchargé pour les comparaisons dans les Collections
+	 * Implementation based on name comparison. Override for comparison in Collections.
 	 *
-	 * @param o un Object
-	 * @return true si le nom de la colonne comparée est le même que celui de celle-ci, insensible à la casse
+	 * @param o an Object
+	 * @return true if this table name equals the other table name, case insensitive
 	 */
 	@Override
 	public boolean equals(Object o) {
@@ -141,6 +141,10 @@ public class Table {
 		return name.equalsIgnoreCase(table.name);
 	}
 	
+	/**
+	 * Implemented to be compliant with equals override
+	 * @return a hash code based on table name
+	 */
 	@Override
 	public int hashCode() {
 		return name.toUpperCase().hashCode();

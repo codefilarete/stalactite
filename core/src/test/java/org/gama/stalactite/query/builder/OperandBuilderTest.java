@@ -142,8 +142,16 @@ public class OperandBuilderTest {
 		assertEquals("> 1", result.toString());
 		
 		result = new StringAppender();
+		testInstance.catGreater(not(gt(1)), new StringAppenderWrapper(result, dmlNameProvider), null);
+		assertEquals("<= 1", result.toString());
+
+		result = new StringAppender();
 		testInstance.catGreater(gteq(1), new StringAppenderWrapper(result, dmlNameProvider), null);
 		assertEquals(">= 1", result.toString());
+		
+		result = new StringAppender();
+		testInstance.catGreater(not(gteq(1)), new StringAppenderWrapper(result, dmlNameProvider), null);
+		assertEquals("< 1", result.toString());
 	}
 	
 	@Test
@@ -155,8 +163,16 @@ public class OperandBuilderTest {
 		assertEquals("< 1", result.toString());
 		
 		result = new StringAppender();
+		testInstance.catLower(not(lt(1)), new StringAppenderWrapper(result, dmlNameProvider), null);
+		assertEquals(">= 1", result.toString());
+		
+		result = new StringAppender();
 		testInstance.catLower(lteq(1), new StringAppenderWrapper(result, dmlNameProvider), null);
 		assertEquals("<= 1", result.toString());
+		
+		result = new StringAppender();
+		testInstance.catLower(not(lteq(1)), new StringAppenderWrapper(result, dmlNameProvider), null);
+		assertEquals("> 1", result.toString());
 	}
 	
 	@Test
