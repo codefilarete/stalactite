@@ -10,8 +10,8 @@ import org.gama.sql.dml.SQLParameterParser.Parameter;
 import org.gama.sql.dml.SQLParameterParser.ParsedSQL;
 
 /**
- * Class that helps to adapt an SQL String with named parameters according . Eases index of named parameters as
- * it manages SQL expansion for parameters that have Collection value: '?' are added as many as necessary.
+ * Class that helps to adapt an SQL String with named parameters to a prepared statement, according to the values of those parameters :
+ * It manages SQL expansion for parameters that have Collection value ('?' are added as many as necessary)
  * Kind of wrapper over {@link ParsedSQL}, delegates parsing to {@link SQLParameterParser}.
  * 
  * @author Guillaume Mary

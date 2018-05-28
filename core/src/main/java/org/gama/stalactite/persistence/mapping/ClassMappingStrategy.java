@@ -41,7 +41,7 @@ import org.gama.stalactite.persistence.structure.Table;
  * </p>
  * 
  * <br/>
- * <b>THIS CLASS DOESN'T ADRESS RELATION MAPPING</b>, because it's not the purpose of Stalactite 'core' module, see 'orm' module.
+ * <b>THIS CLASS DOESN'C ADDRESS RELATION MAPPING</b>, because it's not the purpose of Stalactite 'core' module, see 'orm' module.
  * Meanwhile one case use {@link org.gama.stalactite.query.model.Query} to construct complex type.
  * 
  * @author Guillaume Mary
