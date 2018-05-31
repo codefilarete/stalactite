@@ -1,11 +1,16 @@
 package org.gama.stalactite.test;
 
+import java.util.AbstractMap;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
 import org.gama.lang.collection.PairIterator;
 
-import java.util.*;
-
 /**
- * Facility class for simple creation of List of Set of Pair. Main usage is test unit.
+ * Facility class for simple creation of List of Set of Pair. Main usage is unit test.
  * Pairs are instances of Map.Entry.
  *
  * @author Guillaume Mary

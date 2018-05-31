@@ -18,11 +18,12 @@ import org.gama.lang.collection.Maps;
 import org.gama.reflection.Accessors;
 import org.gama.reflection.PropertyAccessor;
 import org.gama.sql.binder.ParameterBinder;
+import org.gama.sql.result.InMemoryResultSet;
 import org.gama.stalactite.persistence.engine.InMemoryCounterIdentifierGenerator;
 import org.gama.stalactite.persistence.engine.Persister;
 import org.gama.stalactite.persistence.engine.RowCountManager;
-import org.gama.stalactite.persistence.engine.listening.NoopDeleteListener;
 import org.gama.stalactite.persistence.engine.listening.NoopDeleteByIdListener;
+import org.gama.stalactite.persistence.engine.listening.NoopDeleteListener;
 import org.gama.stalactite.persistence.engine.listening.NoopInsertListener;
 import org.gama.stalactite.persistence.engine.listening.NoopUpdateByIdListener;
 import org.gama.stalactite.persistence.id.Identified;
@@ -36,8 +37,8 @@ import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
 import org.gama.stalactite.persistence.mapping.IdMappingStrategy;
 import org.gama.stalactite.persistence.sql.Dialect;
 import org.gama.stalactite.persistence.sql.ddl.JavaTypeToSqlTypeMapping;
-import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.persistence.structure.Column;
+import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.test.JdbcConnectionProvider;
 import org.gama.stalactite.test.PairSetList;
 import org.junit.jupiter.api.BeforeEach;
@@ -167,7 +168,7 @@ public class JoinedTablesPersisterTest {
 		// we add a copier onto a another table
 		persister2 = new Persister<>(totoClassMappingStrategy2_ontoTable2, dialect, () -> connection, 3);
 		testInstance.addPersister(JoinedStrategiesSelect.FIRST_STRATEGY_NAME, persister2,
-				null, leftJoinColumn, rightJoinColumn, false);
+				Toto::merge, leftJoinColumn, rightJoinColumn, false);
 		testInstance.getPersisterListener().addInsertListener(new NoopInsertListener<Toto>() {
 			@Override
 			public void afterInsert(Iterable<Toto> iterables) {
@@ -209,7 +210,7 @@ public class JoinedTablesPersisterTest {
 	}
 	
 	@Test
-	public void testInsert() throws Exception {
+	public void testInsert() throws SQLException {
 		testInstance.insert(Arrays.asList(
 				new Toto(17, 23, 117, 123, -117),
 				new Toto(29, 31, 129, 131, -129),
@@ -236,7 +237,7 @@ public class JoinedTablesPersisterTest {
 	}
 	
 	@Test
-	public void testUpdateById() throws Exception {
+	public void testUpdateById() throws SQLException {
 		testInstance.updateById(Arrays.asList(
 				new Toto(1, 17, 23, 117, 123, -117),
 				new Toto(2, 29, 31, 129, 131, -129),
@@ -263,7 +264,7 @@ public class JoinedTablesPersisterTest {
 	}
 	
 	@Test
-	public void testDelete() throws Exception {
+	public void testDelete() throws SQLException {
 		testInstance.delete(Arrays.asList(new Toto(7, 17, 23, 117, 123, -117)));
 		
 		assertEquals(Arrays.asList("delete from Toto2 where id = ?", "delete from Toto1 where id = ?"), statementArgCaptor.getAllValues());
@@ -278,7 +279,7 @@ public class JoinedTablesPersisterTest {
 	}
 	
 	@Test
-	public void testDelete_multiple() throws Exception {
+	public void testDelete_multiple() throws SQLException {
 		testInstance.getDeleteExecutor().setRowCountManager(RowCountManager.NOOP_ROW_COUNT_MANAGER);
 		persister2.getDeleteExecutor().setRowCountManager(RowCountManager.NOOP_ROW_COUNT_MANAGER);
 		testInstance.delete(Arrays.asList(
@@ -302,7 +303,7 @@ public class JoinedTablesPersisterTest {
 	}
 	
 	@Test
-	public void testDeleteById() throws Exception {
+	public void testDeleteById() throws SQLException {
 		testInstance.deleteById(Arrays.asList(
 				new Toto(7, 17, 23, 117, 123, -117)
 		));
@@ -316,7 +317,7 @@ public class JoinedTablesPersisterTest {
 	}
 	
 	@Test
-	public void testDeleteById_multiple() throws Exception {
+	public void testDeleteById_multiple() throws SQLException {
 		testInstance.deleteById(Arrays.asList(
 				new Toto(1, 17, 23, 117, 123, -117),
 				new Toto(2, 29, 31, 129, 131, -129),
@@ -339,9 +340,21 @@ public class JoinedTablesPersisterTest {
 	}
 	
 	@Test
-	public void testSelect() throws Exception {
+	public void testSelect() throws SQLException {
 		// mocking executeQuery not to return null because select method will use the ResultSet
-		ResultSet resultSetMock = mock(ResultSet.class);
+		String totoIdAlias = "Toto1_id";
+		String totoAAlias = "Toto1_a";
+		String totoBAlias = "Toto1_b";
+		String toto2IdAlias = "Toto2_id";
+		String toto2XAlias = "Toto2_x";
+		String toto2YAlias = "Toto2_y";
+		String toto2ZAlias = "Toto2_z";
+		ResultSet resultSetMock = new InMemoryResultSet(Arrays.asList(
+				Maps.asMap(totoIdAlias, (Object) 7).add(totoAAlias, 1).add(totoBAlias, 2).add(toto2IdAlias, 3).add(toto2XAlias, 4).add(toto2YAlias, 5).add(toto2ZAlias, 6),
+				Maps.asMap(totoIdAlias, (Object) 13).add(totoAAlias, 1).add(totoBAlias, 2).add(toto2IdAlias, 3).add(toto2XAlias, 4).add(toto2YAlias, 5).add(toto2ZAlias, 6),
+				Maps.asMap(totoIdAlias, (Object) 17).add(totoAAlias, 1).add(totoBAlias, 2).add(toto2IdAlias, 3).add(toto2XAlias, 4).add(toto2YAlias, 5).add(toto2ZAlias, 6),
+				Maps.asMap(totoIdAlias, (Object) 23).add(totoAAlias, 1).add(totoBAlias, 2).add(toto2IdAlias, 3).add(toto2XAlias, 4).add(toto2YAlias, 5).add(toto2ZAlias, 6)
+		));
 		when(preparedStatement.executeQuery()).thenReturn(resultSetMock);
 		
 		List<Toto> select = testInstance.select(Arrays.asList(
@@ -354,13 +367,32 @@ public class JoinedTablesPersisterTest {
 		verify(preparedStatement, times(2)).executeQuery();
 		verify(preparedStatement, times(4)).setInt(indexCaptor.capture(), valueCaptor.capture());
 		assertEquals(Arrays.asList(
-				"select Toto1.id as Toto1_id, Toto1.a as Toto1_a, Toto1.b as Toto1_b, Toto2.id as Toto2_id, Toto2.x as Toto2_x, Toto2.y as Toto2_y,"
-						+ " Toto2.z as Toto2_z from Toto1 inner join Toto2 on Toto1.id = Toto2.id where Toto1.id in (?, ?, ?)",
-				"select Toto1.id as Toto1_id, Toto1.a as Toto1_a, Toto1.b as Toto1_b, Toto2.id as Toto2_id, Toto2.x as Toto2_x, Toto2.y as Toto2_y,"
-						+ " Toto2.z as Toto2_z from Toto1 inner join Toto2 on Toto1.id = Toto2.id where Toto1.id in (?)"),
+				"select Toto1.id as " + totoIdAlias
+						+ ", Toto1.a as " + totoAAlias
+						+ ", Toto1.b as " + totoBAlias
+						+ ", Toto2.id as " + toto2IdAlias
+						+ ", Toto2.x as " + toto2XAlias
+						+ ", Toto2.y as " + toto2YAlias
+						+ ", Toto2.z as " + toto2ZAlias
+						+ " from Toto1 inner join Toto2 on Toto1.id = Toto2.id where Toto1.id in (?, ?, ?)",
+				"select Toto1.id as " + totoIdAlias
+						+ ", Toto1.a as " + totoAAlias
+						+ ", Toto1.b as " + totoBAlias
+						+ ", Toto2.id as " + toto2IdAlias
+						+ ", Toto2.x as " + toto2XAlias
+						+ ", Toto2.y as " + toto2YAlias
+						+ ", Toto2.z as " + toto2ZAlias
+						+ " from Toto1 inner join Toto2 on Toto1.id = Toto2.id where Toto1.id in (?)"),
 				statementArgCaptor.getAllValues());
 		PairSetList<Integer, Integer> expectedPairs = new PairSetList<Integer, Integer>().of(1, 7).add(2, 13).add(3, 17).add(1, 23);
 		assertCapturedPairsEqual(expectedPairs);
+		
+		assertEquals(Arrays.asList(
+				new Toto(7, 1, 2, 4, 5, 6),
+				new Toto(13, 1, 2, 4, 5, 6),
+				new Toto(17, 1, 2, 4, 5, 6),
+				new Toto(23, 1, 2, 4, 5, 6)
+				).toString(), select.toString());
 	}
 	
 	private static class Toto implements Identified<Integer> {
@@ -388,7 +420,7 @@ public class JoinedTablesPersisterTest {
 		}
 		
 		@Override
-		public Identifier getId() {
+		public Identifier<Integer> getId() {
 			return id;
 		}
 		
@@ -397,10 +429,23 @@ public class JoinedTablesPersisterTest {
 			this.id = id;
 		}
 		
+		/**
+		 * Method to merge another bean with this one on a part of their attributes.
+		 * It has no real purpose, it on exists to fullfill the relational mapping between tables Toto and Toto2 and avoid a NullPointerException
+		 * when associating 2 results of RowTransformer
+		 * 
+		 * @param another a bean coming from the persister2
+		 */
+		public void merge(Toto another) {
+			this.x = another.x;
+			this.y = another.y;
+			this.z = another.z;
+		}
+		
 		@Override
 		public String toString() {
 			return getClass().getSimpleName() + "["
-					+ Maps.asMap("id", (Object) id).add("a", a).add("b", b).add("x", x).add("y", y).add("z", z)
+					+ Maps.asMap("id", (Object) id.getSurrogate()).add("a", a).add("b", b).add("x", x).add("y", y).add("z", z)
 					+ "]";
 		}
 	}

@@ -162,6 +162,10 @@ public abstract class SQLStatement<ParamType> {
 			super(message);
 		}
 		
+		public BindingException(String message, Throwable cause) {
+			super(message, cause);
+		}
+		
 		public BindingException(Object value, Object paramId, String sql) {
 			this("Error while setting value " + value + " for parameter " + paramId + " on statement " + sql);
 		}

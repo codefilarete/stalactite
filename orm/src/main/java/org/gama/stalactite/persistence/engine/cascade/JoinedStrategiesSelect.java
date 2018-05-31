@@ -105,10 +105,9 @@ public class JoinedStrategiesSelect<C, I, T extends Table> {
 		String tableAlias = columnAliasBuilder.buildAlias(root.getTable(), root.getTableAlias());
 		addColumnsToSelect(tableAlias, root.getStrategy().getSelectableColumns(), query);
 		
-		Queue<Join> stack = new ArrayDeque<>();
-		stack.addAll(root.getJoins());
+		Queue<Join> stack = new ArrayDeque<>(root.getJoins());
 		while (!stack.isEmpty()) {
-			Join join = stack.poll();
+			Join<?, ?> join = stack.poll();
 			String joinTableAlias = columnAliasBuilder.buildAlias(join.getStrategy().getTable(), join.getStrategy().getTableAlias());
 			addColumnsToSelect(joinTableAlias, join.getStrategy().getStrategy().getSelectableColumns(), query);
 			Column leftJoinColumn = join.getLeftJoinColumn();

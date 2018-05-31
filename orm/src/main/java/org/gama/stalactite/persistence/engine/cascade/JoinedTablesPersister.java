@@ -50,7 +50,7 @@ public class JoinedTablesPersister<C extends Identified, I extends StatefullIden
 	 * @see JoinedStrategiesSelect#add(String, ClassMappingStrategy, Column, Column, boolean, BeanRelationFixer)
 	 */
 	public <U extends Identified, J extends StatefullIdentifier> String addPersister(String ownerStrategyName, Persister<U, J, ?> persister,
-																					 BeanRelationFixer beanRelationFixer,
+																					 BeanRelationFixer<C, U> beanRelationFixer,
 																					 Column leftJoinColumn, Column rightJoinColumn, boolean isOuterJoin) {
 		ClassMappingStrategy<U, J, ?> mappingStrategy = persister.getMappingStrategy();
 		

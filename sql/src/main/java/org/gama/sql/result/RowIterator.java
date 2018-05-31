@@ -6,9 +6,11 @@ import java.util.Comparator;
 import java.util.Map;
 import java.util.TreeSet;
 
+import org.gama.lang.Reflections;
 import org.gama.sql.binder.ParameterBinder;
 import org.gama.sql.binder.ParameterBinderIndex;
 import org.gama.sql.binder.ResultSetReader;
+import org.gama.sql.dml.SQLStatement.BindingException;
 
 /**
  * {@link ResultSetIterator} specialized in {@link Row} building for each {@link ResultSet} line.
@@ -57,13 +59,21 @@ public class RowIterator extends ResultSetIterator<Row> {
 	 * @param rs {@link ResultSet} positionned at line that must be converted
 	 * @return a {@link Row} containing values given by {@link ResultSetReader}s
 	 * @throws SQLException if a read error occurs
+	 * @throws BindingException if a binding doesn't match its ResultSet value
 	 */
 	@Override
 	public Row convert(ResultSet rs) throws SQLException {
 		Row toReturn = new Row();
 		for (Decoder columnEntry : decoders) {
 			String columnName = columnEntry.getColumnName();
-			toReturn.put(columnName, columnEntry.getReader().get(rs, columnName));
+			Object columnValue;
+			try {
+				columnValue = columnEntry.getReader().get(rs, columnName);
+			} catch (ClassCastException e) {
+				throw new BindingException("Can't read column " + columnName
+						+ " because ResultSet contains unexpected type " + Reflections.toString(rs.getObject(columnName).getClass()), e);
+			}
+			toReturn.put(columnName, columnValue);
 		}
 		return toReturn;
 	}
