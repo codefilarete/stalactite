@@ -1,5 +1,6 @@
 package org.gama.stalactite.persistence.mapping;
 
+import javax.annotation.Nonnull;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
@@ -61,11 +62,13 @@ public class ZonedDateTimeMappingStrategy<T extends Table> implements IEmbeddedB
 		this.columns = Collections.unmodifiableSet(Arrays.asHashSet(dateTimeColumn, zoneColumn));
 	}
 	
+	@Nonnull
 	@Override
 	public Set<Column<T, Object>> getColumns() {
 		return (Set) columns;
 	}
 	
+	@Nonnull
 	@Override
 	public Map<Column<T, Object>, Object> getInsertValues(ZonedDateTime zonedDateTime) {
 		Map<Column<T, ?>, Object> result = new HashMap<>();
@@ -74,6 +77,7 @@ public class ZonedDateTimeMappingStrategy<T extends Table> implements IEmbeddedB
 		return (Map) result;
 	}
 	
+	@Nonnull
 	@Override
 	public Map<UpwhereColumn<T>, Object> getUpdateValues(ZonedDateTime modified, ZonedDateTime unmodified, boolean allColumns) {
 		Map<Column<T, ?>, Object> unmodifiedColumns = new HashMap<>();

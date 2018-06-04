@@ -60,10 +60,10 @@ public class ClassMappingStrategyTest {
 		colB = columnMapOnName.get("b");
 		colC = columnMapOnName.get("c");
 		
-		// Remplacement du mapping par défaut pour la List (attribut myListField) par une strategy adhoc
+		// Replacing default mapping for the List (attribute myList) by a dedicated strategy
 		myListField = Accessors.forProperty(Reflections.findField(Toto.class, "myList"));
 		classMapping.remove(myListField);
-		// Remplacement du mapping par défaut pour la Map (attribut myMapField) par une strategy adhoc
+		// Replacing default mapping for the Map (attribute myMap) by a dedicated strategy
 		myMapField = Accessors.forProperty(Reflections.findField(Toto.class, "myMap"));
 		classMapping.remove(myMapField);
 		
@@ -71,7 +71,7 @@ public class ClassMappingStrategyTest {
 	}
 	
 	public static void setUpTestInstance() {
-		// instance to test building
+		// instance to test
 		// The basic mapping will be altered to add special mapping for field "myListField" (a Collection) and "myMapField" (a Map)
 		testInstance = new ClassMappingStrategy<Toto, Integer, Table>(
 				Toto.class,

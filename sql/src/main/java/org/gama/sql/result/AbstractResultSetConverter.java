@@ -87,18 +87,18 @@ public interface AbstractResultSetConverter<I, T> {
 	 * Makes a copy of this instance with column translation.
 	 * Made to reuse this instance on another kind of {@link ResultSet} on which column differs by their column names.
 	 * 
-	 * @param columMapping a {@link Function} that gives a new column name for each one declared with {@link #add(String, ResultSetReader, BiConsumer)}.
+	 * @param columnMapping a {@link Function} that gives a new column name for each one declared with {@link #add(String, ResultSetReader, BiConsumer)}.
 	 * 						Can be implemented with a switch/case, a prefix/suffix concatenation, etc
 	 * @return a new instance, kind of clone of this
 	 */
-	AbstractResultSetConverter<I, T> copyWithMapping(Function<String, String> columMapping);
+	AbstractResultSetConverter<I, T> copyWithMapping(Function<String, String> columnMapping);
 	
 	/**
 	 * Same as {@link #copyWithMapping(Function)} but with a concrete mapping through a {@link Map}
-	 * @param columMapping the mapping between column names declared by {@link #add(String, ResultSetReader, BiConsumer)} and new ones
+	 * @param columnMapping the mapping between column names declared by {@link #add(String, ResultSetReader, BiConsumer)} and new ones
 	 * @return a new instance, kind of clone of this
 	 */
-	default AbstractResultSetConverter<I, T> copyWithMapping(Map<String, String> columMapping) {
-		return copyWithMapping(columMapping::get);
+	default AbstractResultSetConverter<I, T> copyWithMapping(Map<String, String> columnMapping) {
+		return copyWithMapping(columnMapping::get);
 	}
 }

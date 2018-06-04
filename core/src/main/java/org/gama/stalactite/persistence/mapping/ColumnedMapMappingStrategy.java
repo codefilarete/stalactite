@@ -1,5 +1,6 @@
 package org.gama.stalactite.persistence.mapping;
 
+import javax.annotation.Nonnull;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
@@ -51,6 +52,7 @@ public abstract class ColumnedMapMappingStrategy<C extends Map<K, V>, K, V, T ex
 		return targetTable;
 	}
 	
+	@Nonnull
 	@Override
 	public Set<Column<T, Object>> getColumns() {
 		return columns;
@@ -60,6 +62,7 @@ public abstract class ColumnedMapMappingStrategy<C extends Map<K, V>, K, V, T ex
 		return columnsPrefix + i;
 	}
 	
+	@Nonnull
 	@Override
 	public Map<Column<T, Object>, Object> getInsertValues(C c) {
 		Map<Column<T, Object>, Object> toReturn = new HashMap<>();
@@ -77,6 +80,7 @@ public abstract class ColumnedMapMappingStrategy<C extends Map<K, V>, K, V, T ex
 		return toReturn;
 	}
 	
+	@Nonnull
 	@Override
 	public Map<UpwhereColumn<T>, Object> getUpdateValues(C modified, C unmodified, boolean allColumns) {
 		Map<Column<T, Object>, Object> unmodifiedColumns = new HashMap<>();

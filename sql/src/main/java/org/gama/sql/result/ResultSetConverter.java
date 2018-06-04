@@ -216,22 +216,22 @@ public class ResultSetConverter<I, T> implements AbstractResultSetConverter<I, T
 	}
 	
 	@Override
-	public ResultSetConverter<I, T> copyWithMapping(Function<String, String> columMapping) {
+	public ResultSetConverter<I, T> copyWithMapping(Function<String, String> columnMapping) {
 		// NB: rootConverter can be cloned without a cache checking bean factory because it already has it due to previous assignements
 		// (follow rootConverter assignements to be sure)
-		ResultSetRowConverter<I, T> rootConverterCopy = this.rootConverter.copyWithMapping(columMapping);
+		ResultSetRowConverter<I, T> rootConverterCopy = this.rootConverter.copyWithMapping(columnMapping);
 		ResultSetConverter<I, T> result = new ResultSetConverter<>(rootConverterCopy, this.beanFactory);
 		this.combiners.forEach(c -> {
 			if (c instanceof Relation) {
-				result.combiners.add(new Relation<>(((Relation) c).relationFixer, ((Relation) c).transformer.copyWithMapping(columMapping)));
+				result.combiners.add(new Relation<>(((Relation) c).relationFixer, ((Relation) c).transformer.copyWithMapping(columnMapping)));
 			}
 		});
 		return result;
 	}
 	
 	@Override	// for adhoc return type
-	public ResultSetConverter<I, T> copyWithMapping(Map<String, String> columMapping) {
-		return copyWithMapping(columMapping::get);
+	public ResultSetConverter<I, T> copyWithMapping(Map<String, String> columnMapping) {
+		return copyWithMapping(columnMapping::get);
 	}
 	
 	@Override

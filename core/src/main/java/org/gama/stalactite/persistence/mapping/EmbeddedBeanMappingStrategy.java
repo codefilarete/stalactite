@@ -1,5 +1,6 @@
 package org.gama.stalactite.persistence.mapping;
 
+import javax.annotation.Nonnull;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.Map;
@@ -59,8 +60,9 @@ public class EmbeddedBeanMappingStrategy<C, T extends Table> implements IEmbedde
 	
 	/**
 	 * Gives mapped columns (can be a subset of the target table)
-	 * @return
+	 * @return target mapped columns
 	 */
+	@Nonnull
 	@Override
 	public Set<Column<T, Object>> getColumns() {
 		return columns;
@@ -70,6 +72,7 @@ public class EmbeddedBeanMappingStrategy<C, T extends Table> implements IEmbedde
 		return rowTransformer;
 	}
 	
+	@Nonnull
 	@Override
 	public Map<Column<T, Object>, Object> getInsertValues(C c) {
 		return foreachField(new FieldVisitor<Column<T, Object>>() {
@@ -80,6 +83,7 @@ public class EmbeddedBeanMappingStrategy<C, T extends Table> implements IEmbedde
 		});
 	}
 	
+	@Nonnull
 	@Override
 	public Map<UpwhereColumn<T>, Object> getUpdateValues(C modified, C unmodified, boolean allColumns) {
 		Map<Column<T, Object>, Object> unmodifiedColumns = new HashMap<>();

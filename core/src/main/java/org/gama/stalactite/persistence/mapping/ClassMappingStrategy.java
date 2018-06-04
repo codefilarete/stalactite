@@ -1,5 +1,6 @@
 package org.gama.stalactite.persistence.mapping;
 
+import javax.annotation.Nonnull;
 import java.lang.reflect.Field;
 import java.lang.reflect.Member;
 import java.lang.reflect.Method;
@@ -165,6 +166,7 @@ public class ClassMappingStrategy<C, I, T extends Table> implements IEntityMappi
 		addUpdatableColumns(mappingStrategy);
 	}
 	
+	@Nonnull
 	@Override
 	public Map<Column<T, Object>, Object> getInsertValues(C c) {
 		Map<Column<T, Object>, Object> insertValues = defaultMappingStrategy.getInsertValues(c);
@@ -180,6 +182,7 @@ public class ClassMappingStrategy<C, I, T extends Table> implements IEntityMappi
 		return insertValues;
 	}
 	
+	@Nonnull
 	@Override
 	public Map<UpwhereColumn<T>, Object> getUpdateValues(C modified, C unmodified, boolean allColumns) {
 		Map<UpwhereColumn<T>, Object> toReturn = defaultMappingStrategy.getUpdateValues(modified, unmodified, allColumns);

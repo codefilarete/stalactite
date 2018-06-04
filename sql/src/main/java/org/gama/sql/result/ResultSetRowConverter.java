@@ -89,15 +89,15 @@ public class ResultSetRowConverter<I, T>
 	}
 	
 	@Override
-	public ResultSetRowConverter<I, T> copyWithMapping(Function<String, String> columMapping) {
-		ResultSetRowConverter<I, T> result = new ResultSetRowConverter<>(this.beanType, columMapping.apply(this.columnName), this.reader, this.beanFactory);
-		this.consumers.forEach(c -> result.add(new ColumnConsumer(columMapping.apply(c.getColumnName()), c.getReader(), c.getConsumer())));
+	public ResultSetRowConverter<I, T> copyWithMapping(Function<String, String> columnMapping) {
+		ResultSetRowConverter<I, T> result = new ResultSetRowConverter<>(this.beanType, columnMapping.apply(this.columnName), this.reader, this.beanFactory);
+		this.consumers.forEach(c -> result.add(new ColumnConsumer(columnMapping.apply(c.getColumnName()), c.getReader(), c.getConsumer())));
 		return result;
 	}
 	
 	@Override	// for adhoc return type
-	public ResultSetRowConverter<I, T> copyWithMapping(Map<String, String> columMapping) {
-		return copyWithMapping(columMapping::get);
+	public ResultSetRowConverter<I, T> copyWithMapping(Map<String, String> columnMapping) {
+		return copyWithMapping(columnMapping::get);
 	}
 	
 	/**

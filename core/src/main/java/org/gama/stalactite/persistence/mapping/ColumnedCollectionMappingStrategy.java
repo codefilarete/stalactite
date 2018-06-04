@@ -1,5 +1,6 @@
 package org.gama.stalactite.persistence.mapping;
 
+import javax.annotation.Nonnull;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -59,11 +60,13 @@ public class ColumnedCollectionMappingStrategy<C extends Collection<O>, O, T ext
 		return targetTable;
 	}
 	
+	@Nonnull
 	@Override
 	public Set<Column<T, Object>> getColumns() {
 		return columns;
 	}
 	
+	@Nonnull
 	@Override
 	public Map<Column<T, Object>, Object> getInsertValues(C c) {
 		Collection<O> toIterate = c;
@@ -76,6 +79,7 @@ public class ColumnedCollectionMappingStrategy<C extends Collection<O>, O, T ext
 		return Iterables.map(() -> valueColumnPairIterator, Entry::getKey, e -> toDatabaseValue(e.getValue()));
 	}
 	
+	@Nonnull
 	@Override
 	public Map<UpwhereColumn<T>, Object> getUpdateValues(C modified, C unmodified, boolean allColumns) {
 		Map<Column<T, Object>, Object> toReturn = new HashMap<>();

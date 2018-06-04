@@ -25,6 +25,7 @@ public interface IMappingStrategy<C, T extends Table> {
 	 * 					may be null when this method is called to manage relationship
 	 * @return a mapping between columns that must be put in the SQL insert order and there values
 	 */
+	@Nonnull
 	Map<Column<T, Object>, Object> getInsertValues(C c);
 	
 	/**
@@ -39,6 +40,7 @@ public interface IMappingStrategy<C, T extends Table> {
 	 * 			thus a distinction between columns to be updated and columns necessary to the where clause must be done, this is don through {@link UpwhereColumn},
 	 * 			so returned value may contains duplicates regarding {@link Column} (they can be in update & where part, especially for optimist lock columns)	
 	 */
+	@Nonnull
 	Map<UpwhereColumn<T>, Object> getUpdateValues(C modified, C unmodified, boolean allColumns);
 	
 	C transform(Row row);
