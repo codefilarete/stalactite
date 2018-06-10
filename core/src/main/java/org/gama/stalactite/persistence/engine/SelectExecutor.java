@@ -2,7 +2,6 @@ package org.gama.stalactite.persistence.engine;
 
 import java.sql.ResultSet;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 import java.util.Set;
 
@@ -57,10 +56,11 @@ public class SelectExecutor<C, I, T extends Table> extends DMLExecutor<C, I, T> 
 		return (ReadOperation) new ReadOperation<>(selectStatement, currentConnectionProvider);
 	}
 	
-	protected List<C> execute(ReadOperation<Column<T, Object>> operation, Column<T, Object> primaryKey, Collection<I> values) {
+	private List<C> execute(ReadOperation<Column<T, Object>> operation, Column<T, Object> primaryKey, List<I> values) {
 		List<C> toReturn = new ArrayList<>(values.size());
 		try(ReadOperation<Column<T, Object>> closeableOperation = operation) {
-			operation.setValue(primaryKey, values);
+			// we must pass a single value when expected, else ExpandableStatement may be confused when applying them
+			operation.setValue(primaryKey, values.size() == 1 ? values.get(0) : values);
 			ResultSet resultSet = closeableOperation.execute();
 			RowIterator rowIterator = new RowIterator(resultSet, ((ColumnParamedSelect) closeableOperation.getSqlStatement()).getSelectParameterBinders());
 			while (rowIterator.hasNext()) {

@@ -28,12 +28,12 @@ public class LambdaParameterBinder<T> implements ParameterBinder<T> {
 	}
 	
 	/**
-	 * Composes a new {@link LambdaParameterBinder} from a root one that is wrapped by 2 {@link Function}s for converting input and output values
+	 * Composes a new {@link LambdaParameterBinder} from another one which is wrapped by 2 {@link Function}s for converting input and output values
 	 * 
 	 * @param surrogate the root {@link LambdaParameterBinder}
 	 * @param resultSetConverter the converter applied on the value read by the root binder
 	 * @param statementInputConverter the converter applied on the value passed to the root binder
-	 * @param <I> type of the root binder's value type
+	 * @param <I> type of the root binder's value type, which is the Java type of the read and written value from/to the database
 	 */
 	public <I> LambdaParameterBinder(LambdaParameterBinder<I> surrogate, Function<I, T> resultSetConverter, Function<T, I> statementInputConverter) {
 		this.resultSetReader = surrogate.resultSetReader.thenApply(resultSetConverter);

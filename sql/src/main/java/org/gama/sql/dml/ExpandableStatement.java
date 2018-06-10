@@ -40,7 +40,7 @@ public abstract class ExpandableStatement<ParamType> extends SQLStatement<ParamT
 					+ " on sql : " + getSQL());
 		}
 		int[] markIndexes = getIndexes(paramType);
-		if (value instanceof Iterable) {
+		if (markIndexes.length > 1 && value instanceof Iterable) {
 			// we have several mark indexes : one per value, and one per parameter in query ("id = :id or id = :id)
 			// so we loop twice
 			for (int i = 0; i < markIndexes.length;) {
@@ -51,7 +51,10 @@ public abstract class ExpandableStatement<ParamType> extends SQLStatement<ParamT
 				}
 			}
 		} else {
-			// simple case: value is single, we loop on indexes
+			// cases:
+			// - simple case: one mark index and a single value, we loop on indexes
+			// - multiple mark indexes and a single value => all indexes will have the same value
+			// - one mark index and multiple values (List or any Iterable in fact) => binder should handle this case (ComplexTypeBinder for instance)
 			for (int markIndex : markIndexes) {
 				doApplyValue(markIndex, value, parameterBinder, statement);
 			}

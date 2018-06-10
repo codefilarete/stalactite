@@ -1,0 +1,56 @@
+package org.gama.stalactite.persistence.mapping;
+
+import javax.annotation.Nonnull;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+
+import org.gama.lang.bean.Converter;
+import org.gama.sql.binder.LambdaParameterBinder;
+import org.gama.sql.binder.NullAwareParameterBinder;
+import org.gama.sql.binder.ParameterBinder;
+
+/**
+ * Frame for handling unexpected type (from the library) that needs to be persisted into a single column.
+ * Acts more as a how-to or proof-of-concept than a really value-added class because there's quite no magic here : it only composes a binder and 2
+ * converters for reading and writing to a column. Moreover it can be done directly by creating your own {@link ParameterBinder} and implementing
+ * its methods.
+ *
+ * @param <C> the mapped type
+ * @author Guillaume Mary
+ * @see org.gama.stalactite.persistence.sql.ddl.JavaTypeToSqlTypeMapping
+ * @see org.gama.stalactite.persistence.sql.dml.binder.ColumnBinderRegistry
+ */
+public class ComplexTypeBinder<C> implements ParameterBinder<C> {
+	
+	private final NullAwareParameterBinder<C> convertingBinder;
+	
+	/**
+	 * Creates a binder for persisting C objects (handling eventually null values).
+	 * Instance should be registered into a {@link org.gama.stalactite.persistence.sql.ddl.JavaTypeToSqlTypeMapping} and {@link
+	 * org.gama.stalactite.persistence.sql.dml.binder.ColumnBinderRegistry}
+	 * 
+	 * @param lowerBinder the binder that interacts with {@link PreparedStatement} and {@link ResultSet}
+	 * @param toObjectConverter a converter applied on read value given by lower binder when reading from a {@link ResultSet}
+	 * @param toDatabaseConverter a converter applied on input value, then result is passed to lower binder when writing to {@link PreparedStatement}
+	 * @param <P> the intermediary type
+	 */
+	public <P> ComplexTypeBinder(@Nonnull ParameterBinder<P> lowerBinder,
+								 @Nonnull Converter<P, C, RuntimeException> toObjectConverter,
+								 @Nonnull Converter<C, P, RuntimeException> toDatabaseConverter) {
+		convertingBinder = new NullAwareParameterBinder<>(new LambdaParameterBinder<>(
+				// we simply need some conversion after reading and before writing
+				lowerBinder.thenApply(toObjectConverter::convert), lowerBinder.preApply(toDatabaseConverter::convert)
+		));
+	}
+	
+	@Override
+	public void set(PreparedStatement preparedStatement, int valueIndex, C value) throws SQLException {
+		convertingBinder.set(preparedStatement, valueIndex, value);
+	}
+	
+	@Override
+	public C get(ResultSet resultSet, String columnName) throws SQLException {
+		return convertingBinder.get(resultSet, columnName);
+	}
+}

@@ -1,5 +1,6 @@
 package org.gama.stalactite.persistence.sql.ddl;
 
+import org.gama.sql.dml.SQLStatement.BindingException;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
 import org.junit.jupiter.api.Test;
@@ -43,6 +44,9 @@ public class JavaTypeToSqlTypeMappingTest {
 				{ testInstance, String.class, 20, "VARCHAR(255)" },
 				{ testInstance, CharSequence.class, null, "VARCHAR" },
 				{ testInstance, CharSequence.class, 20, "VARCHAR" },
+				// testing interface inheritance
+				{ testInstance, StringBuilder.class, null, "VARCHAR" },
+				{ testInstance, StringBuilder.class, 20, "VARCHAR" },
 		};
 	}
 	
@@ -55,7 +59,7 @@ public class JavaTypeToSqlTypeMappingTest {
 	@Test
 	public void testGetTypeName_unkonwnType_exceptionIsThrown() {
 		JavaTypeToSqlTypeMapping testInstance = new JavaTypeToSqlTypeMapping();
-		assertThrows(IllegalArgumentException.class, () -> testInstance.getTypeName(Object.class, null));
+		assertThrows(BindingException.class, () -> testInstance.getTypeName(Object.class, null));
 	}
 	
 	public static Object[][] testGetTypeName_column() {

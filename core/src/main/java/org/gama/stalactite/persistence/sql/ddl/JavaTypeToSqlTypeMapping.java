@@ -10,6 +10,7 @@ import java.util.stream.Stream;
 import org.gama.lang.bean.InterfaceIterator;
 import org.gama.lang.collection.Iterables;
 import org.gama.lang.collection.ValueFactoryHashMap;
+import org.gama.sql.dml.SQLStatement.BindingException;
 import org.gama.stalactite.persistence.structure.Column;
 
 /**
@@ -39,6 +40,7 @@ public class JavaTypeToSqlTypeMapping {
 	 * 
 	 * @param clazz the Java class to bind
 	 * @param sqlType the SQL type to map on the Java type
+	 * @see #with(Class, String)
 	 */
 	public void put(Class clazz, String sqlType) {
 		defaultJavaTypeToSQLType.put(clazz, sqlType);
@@ -50,6 +52,7 @@ public class JavaTypeToSqlTypeMapping {
 	 * @param clazz the Java class to bind
 	 * @param size the minimal size from which the SQL type will be used
 	 * @param sqlType the SQL type to map on the Java type
+	 * @see #with(Class, int, String)
 	 */
 	public void put(Class clazz, int size, String sqlType) {
 		javaTypeToSQLType.get(clazz).put(size, sqlType);
@@ -60,6 +63,7 @@ public class JavaTypeToSqlTypeMapping {
 	 *
 	 * @param column the column to bind
 	 * @param sqlType the SQL type to map on the Java type
+	 * @see #with(Column, String) 
 	 */
 	public void put(Column column, String sqlType) {
 		columnToSQLType.put(column, sqlType);
@@ -119,12 +123,17 @@ public class JavaTypeToSqlTypeMapping {
 		if (size != null) {
 			return getTypeName(javaType, size);
 		} else {
-			return getTypeName(javaType);
+			try {
+				return getTypeName(javaType);
+			} catch (BindingException e) {
+				// Exception is wrapped for a more accurate message (column in message)
+				throw new BindingException("No sql type defined for column " + column.getAbsoluteName(), e);
+			}
 		}
 	}
 	
 	/**
-	 * Gives the SQL type of a Java class
+	 * Gives the SQL type of a Java class, checks also for its interfaces 
 	 *
 	 * @param javaType a Java class
 	 * @return the SQL type for the given column
@@ -138,8 +147,7 @@ public class JavaTypeToSqlTypeMapping {
 			if (type != null) {
 				return type;
 			} else {
-				// exception is replaced by a better message
-				throw new IllegalArgumentException("No sql type defined for " + javaType);
+				throw new BindingException("No sql type defined for " + javaType);
 			}
 		}
 		return type;
@@ -158,7 +166,7 @@ public class JavaTypeToSqlTypeMapping {
 			SortedMap<Integer, String> typeNames = javaTypeToSQLType.get(javaType).tailMap(size);
 			String typeName = Iterables.firstValue(typeNames);
 			if (typeName != null) {
-				// NB: we use $l as Hibernate to ease an eventual switch between framworks
+				// NB: we use $l as Hibernate to ease an eventual switch between frameworks
 				typeName = typeName.replace("$l", String.valueOf(size));
 			} else {
 				typeName = getTypeName(javaType);

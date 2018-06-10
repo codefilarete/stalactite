@@ -125,18 +125,19 @@ public class JoinedStrategiesSelectExecutor<T, I> {
 	}
 	
 	private void execute(ConnectionProvider connectionProvider,
-						 String sql, Iterable<? extends Iterable<I>> idsParcels) {
+						 String sql, Iterable<? extends List<I>> idsParcels) {
 		ColumnParamedSelect preparedSelect = new ColumnParamedSelect(sql, inOperatorValueIndexes, parameterBinderProvider, joinedStrategiesSelect.getSelectParameterBinders());
 		try (ReadOperation<Column> columnReadOperation = new ReadOperation<>(preparedSelect, connectionProvider)) {
-			for (Iterable<I> parcel : idsParcels) {
+			for (List<I> parcel : idsParcels) {
 				execute(columnReadOperation, parcel);
 			}
 		}
 	}
 	
-	private void execute(ReadOperation<Column> operation, Iterable<I> ids) {
+	private void execute(ReadOperation<Column> operation, List<I> ids) {
 		try (ReadOperation<Column> closeableOperation = operation) {
-			operation.setValue(keyColumn, ids);
+			// we must pass a single value when expected, else ExpandableStatement may be confused when applying them
+			operation.setValue(keyColumn, ids.size() == 1 ? ids.get(0) : ids);
 			ResultSet resultSet = closeableOperation.execute();
 			// NB: we give the same ParametersBinders of those given at ColumnParamedSelect since the row iterator is expected to read column from it
 			RowIterator rowIterator = new RowIterator(resultSet, ((ColumnParamedSelect) closeableOperation.getSqlStatement()).getSelectParameterBinders());

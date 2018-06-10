@@ -79,12 +79,12 @@ public class PersistentFieldHarverster {
 	}
 	
 	/**
-	 * Simple class that doesn't accept static, Iterable and Map Fields
+	 * Simple class that doesn't accept static fields
 	 */
 	public static class FieldFilter implements Predicate<Field> {
 		@Override
 		public boolean test(Field field) {
-			return !Modifier.isStatic(field.getModifiers()) && !(Iterable.class.isAssignableFrom(field.getType()) || Map.class.isAssignableFrom(field.getType()));
+			return !Modifier.isStatic(field.getModifiers());
 		}
 	}
 }

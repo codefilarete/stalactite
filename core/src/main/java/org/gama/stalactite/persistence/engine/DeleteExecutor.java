@@ -114,7 +114,8 @@ public class DeleteExecutor<C, I, T extends Table> extends WriteExecutor<C, I, T
 		if (!lastBlock.isEmpty()) {
 			deleteStatement = getDmlGenerator().buildMassiveDelete(targetTable, keyColumn, lastBlock.size());
 			writeOperation = newWriteOperation(deleteStatement, currentConnectionProvider);
-			writeOperation.setValue(keyColumn, lastBlock);
+			// we must pass a single value when expected, else ExpandableStatement may be confused when applying them
+			writeOperation.setValue(keyColumn, lastBlock.size() == 1 ? lastBlock.get(0) : lastBlock);
 			int updatedRowCount = writeOperation.execute();
 			updatedRowCounter += updatedRowCount;
 		}
