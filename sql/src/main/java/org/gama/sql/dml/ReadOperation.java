@@ -30,7 +30,7 @@ public class ReadOperation<ParamType> extends SQLOperation<ParamType> {
 			applyTimeout();
 			return this.preparedStatement.executeQuery();
 		} catch (SQLException e) {
-			throw new RuntimeException("Error running \"" + getSQL() + "\"", e);
+			throw new SQLExecutionException(getSQL(), e);
 		}
 	}
 }

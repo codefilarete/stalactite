@@ -144,9 +144,7 @@ public abstract class SQLOperation<ParamType> implements AutoCloseable {
 	}
 	
 	/**
-	 * Closes internal {@link PreparedStatement}
-	 * 
-	 * @throws SQLException this of the {@link PreparedStatement#close()} method
+	 * Closes the internal {@link PreparedStatement}
 	 */
 	@Override
 	public void close() {

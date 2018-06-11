@@ -11,6 +11,7 @@ import org.gama.lang.Retryer.RetryException;
 import org.gama.lang.bean.IDelegate;
 import org.gama.lang.exception.Exceptions;
 import org.gama.sql.ConnectionProvider;
+import org.gama.sql.dml.SQLStatement.BindingException;
 
 /**
  * {@link SQLOperation} dedicated to Inserts, Updates, Deletes ... so theses operations return number of affected rows
@@ -65,7 +66,7 @@ public class WriteOperation<ParamType> extends SQLOperation<ParamType> {
 	 * @see #addBatch(Map)
 	 */
 	public int executeBatch() {
-		LOGGER.debug("Batching " + batchedStatementCount + " statements");
+		LOGGER.debug("Batching {} statements", batchedStatementCount);
 		try {
 			updatedRowCount = computeUpdatedRowCount(doExecuteBatch());
 			return updatedRowCount;
@@ -80,7 +81,7 @@ public class WriteOperation<ParamType> extends SQLOperation<ParamType> {
 			applyTimeout();
 			return doWithRetry(this::doExecuteUpdate);
 		} catch (SQLException | RetryException e) {
-			throw new RuntimeException("Error during " + getSQL(), e);
+			throw new SQLExecutionException(getSQL(), e);
 		}
 	}
 	
@@ -98,17 +99,17 @@ public class WriteOperation<ParamType> extends SQLOperation<ParamType> {
 	 * 
 	 * @return {@link Statement#SUCCESS_NO_INFO}, {@link Statement#EXECUTE_FAILED}, or the sum of all ints
 	 */
-	protected int computeUpdatedRowCount(int[] updatedRowCounts) {
+	protected int computeUpdatedRowCount(int[] rowCounts) {
 		int updatedRowCountSum = 0;
-		for (int updatedRowCount : updatedRowCounts) {
-			switch (updatedRowCount) {
+		for (int rowCount : rowCounts) {
+			switch (rowCount) {
 				// first two cases are for drivers that conform to Statement.executeBatch specification
 				case Statement.SUCCESS_NO_INFO:
 					return Statement.SUCCESS_NO_INFO;
 				case Statement.EXECUTE_FAILED:
 					return Statement.EXECUTE_FAILED;
 				default:	// 0 or really updated row count
-					updatedRowCountSum += updatedRowCount;
+					updatedRowCountSum += rowCount;
 			}
 		}
 		return updatedRowCountSum;
@@ -123,7 +124,7 @@ public class WriteOperation<ParamType> extends SQLOperation<ParamType> {
 		try {
 			return (int[]) doWithRetry((IDelegate<Object, SQLException>) () -> preparedStatement.executeBatch());
 		} catch (SQLException | RetryException e) {
-			throw new RuntimeException("Error during " + getSQL(), e);
+			throw new SQLExecutionException(getSQL(), e);
 		} finally {
 			if (LOGGER.isTraceEnabled()) {
 				batchedValues.clear();
@@ -162,8 +163,8 @@ public class WriteOperation<ParamType> extends SQLOperation<ParamType> {
 		try {
 			ensureStatement();
 			this.sqlStatement.applyValues(preparedStatement);
-		} catch (Throwable t) {
-			throw new RuntimeException("Error while applying values " + this.sqlStatement.values + " on statement " + getSQL(), t);
+		} catch (SQLException | RuntimeException t) {
+			throw new BindingException("Error while applying values " + this.sqlStatement.values + " on statement " + getSQL(), t);
 		}
 	}
 }
