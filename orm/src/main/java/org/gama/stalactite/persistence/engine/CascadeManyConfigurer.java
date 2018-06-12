@@ -188,7 +188,7 @@ public class CascadeManyConfigurer<I extends Identified, O extends Identified, J
 					IMutator targetSetter = Accessors.of(cascadeMany.getMember()).getMutator();
 					SerializableBiConsumer<O, I> reverseMember = cascadeMany.getReverseSetter();
 					if (reverseMember == null) {
-						reverseMember = (SerializableBiConsumer<O, I>) (o, i) -> { /* we can'i do anything, so we do ... nothing */ };
+						reverseMember = (SerializableBiConsumer<O, I>) (o, i) -> { /* we can't do anything, so we do ... nothing */ };
 					}
 					joinedTablesPersister.addPersister(JoinedStrategiesSelect.FIRST_STRATEGY_NAME, targetPersister,
 							BeanRelationFixer.of((BiConsumer) targetSetter::set, targetProvider, cascadeMany.getCollectionTargetClass(), reverseMember),

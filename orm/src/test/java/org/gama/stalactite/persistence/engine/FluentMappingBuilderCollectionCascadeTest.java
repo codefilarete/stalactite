@@ -349,7 +349,7 @@ public class FluentMappingBuilderCollectionCascadeTest {
 		Country dummyCountry = new Country(countryIdProvider.giveNewIdentifier());
 		dummyCountry.setName("France");
 		dummyCountry.setDescription("Smelly cheese !");
-		LongProvider cityIdProvider = new LongProvider(10); // NB: we start at a different index than other to avoid join collision
+		LongProvider cityIdProvider = new LongProvider();
 		City paris = new City(cityIdProvider.giveNewIdentifier());
 		paris.setName("Paris");
 		dummyCountry.addCity(paris);
@@ -357,7 +357,7 @@ public class FluentMappingBuilderCollectionCascadeTest {
 		lyon.setName("Lyon");
 		dummyCountry.addCity(lyon);
 		
-		LongProvider stateIdProvider = new LongProvider(100); // NB: we start at a different index than other to avoid join collision
+		LongProvider stateIdProvider = new LongProvider();
 		State isere = new State(stateIdProvider.giveNewIdentifier());
 		isere.setName("Isere");
 		dummyCountry.addState(isere);
