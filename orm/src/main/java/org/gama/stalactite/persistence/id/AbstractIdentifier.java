@@ -2,6 +2,8 @@ package org.gama.stalactite.persistence.id;
 
 import javax.annotation.Nonnull;
 
+import org.gama.lang.Reflections;
+
 /**
  * A decorator for already persisted bean identifier.
  * 
@@ -54,5 +56,10 @@ public abstract class AbstractIdentifier<T> implements Identifier<T> {
 	@Override
 	public int hashCode() {
 		return surrogate.hashCode();
+	}
+	
+	@Override
+	public String toString() {
+		return Reflections.toString(getClass()) + "@" + Integer.toHexString(hashCode());
 	}
 }

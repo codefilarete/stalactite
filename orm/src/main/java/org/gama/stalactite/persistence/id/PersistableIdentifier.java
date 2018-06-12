@@ -38,9 +38,4 @@ public class PersistableIdentifier<T> extends AbstractIdentifier<T> {
 			return false;
 		}
 	}
-	
-	@Override
-	public String toString() {
-		return super.toString() + " = " + getSurrogate();
-	}
 }
