@@ -5,7 +5,7 @@ import java.util.Iterator;
 import java.util.Map;
 
 import org.gama.lang.StringAppender;
-import org.gama.lang.trace.IncrementableInt;
+import org.gama.lang.trace.ModifiableInt;
 import org.gama.sql.binder.ParameterBinder;
 import org.gama.sql.dml.PreparedSQL;
 import org.gama.stalactite.command.model.Insert;
@@ -101,7 +101,7 @@ public class InsertCommandBuilder<T extends Table> implements SQLBuilder {
 		// (ParameterBinders are correctly filled by PreparedSQLWrapper)
 		// Moreover we have to build indexes of Columns to allow usage of UpdateStatement.setValue(..)
 		// So we iterate of set Columns to remove unecessary columns and compute column indexes
-		IncrementableInt placeholderColumnCount = new IncrementableInt();
+		ModifiableInt placeholderColumnCount = new ModifiableInt();
 		insert.getColumns().forEach(c -> {
 			// only non column value must be adapted (see catUpdateObject(..))
 			if (!Column.class.isInstance(c.getValue())) {

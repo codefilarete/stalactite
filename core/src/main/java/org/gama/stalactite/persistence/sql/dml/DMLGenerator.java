@@ -10,7 +10,7 @@ import org.gama.lang.StringAppender;
 import org.gama.lang.Strings;
 import org.gama.lang.collection.ISorter;
 import org.gama.lang.collection.Iterables;
-import org.gama.lang.trace.IncrementableInt;
+import org.gama.lang.trace.ModifiableInt;
 import org.gama.sql.binder.ParameterBinder;
 import org.gama.stalactite.persistence.engine.DMLExecutor;
 import org.gama.stalactite.persistence.mapping.IMappingStrategy.UpwhereColumn;
@@ -62,7 +62,7 @@ public class DMLGenerator {
 		
 		Map<Column, int[]> columnToIndex = new HashMap<>();
 		Map<Column, ParameterBinder> parameterBinders = new HashMap<>();
-		IncrementableInt positionCounter = new IncrementableInt(1);
+		ModifiableInt positionCounter = new ModifiableInt(1);
 		Iterables.stream(columns).forEach(column -> {
 			sqlInsert.cat(SQL_PARAMETER_MARK_1);
 			columnToIndex.put(column, new int[] { positionCounter.getValue() });
@@ -110,7 +110,7 @@ public class DMLGenerator {
 												  Iterable<? extends Column<T, Object>> where,
 												  Map<Column<T, Object>, int[]> columnToIndex,
 												  Map<Column<T, Object>, ParameterBinder> parameterBinders) {
-		IncrementableInt positionCounter = new IncrementableInt(1);
+		ModifiableInt positionCounter = new ModifiableInt(1);
 		Iterables.stream(where).forEach(column -> {
 			sql.cat(dmlNameProvider.getSimpleName(column), EQUAL_SQL_PARAMETER_MARK_AND);
 			columnToIndex.put(column, new int[] { positionCounter.getValue() });

@@ -8,7 +8,7 @@ import org.gama.lang.Reflections;
 import org.gama.lang.StringAppender;
 import org.gama.lang.collection.ArrayIterator;
 import org.gama.lang.collection.Iterables;
-import org.gama.lang.trace.IncrementableInt;
+import org.gama.lang.trace.ModifiableInt;
 import org.gama.sql.binder.ParameterBinder;
 import org.gama.stalactite.persistence.sql.dml.binder.ColumnBinderRegistry;
 import org.gama.stalactite.persistence.structure.Column;
@@ -268,7 +268,7 @@ public class OperandBuilder {
 		private final ColumnBinderRegistry parameterBinderRegistry;
 		private final Map<Integer, ParameterBinder> parameterBinders;
 		private final Map<Integer, Object> values;
-		private final IncrementableInt paramCounter = new IncrementableInt(1);
+		private final ModifiableInt paramCounter = new ModifiableInt(1);
 		private final DMLNameProvider dmlNameProvider;
 		
 		public PreparedSQLWrapper(SQLAppender sqlAppender, ColumnBinderRegistry parameterBinderRegistry, DMLNameProvider dmlNameProvider) {

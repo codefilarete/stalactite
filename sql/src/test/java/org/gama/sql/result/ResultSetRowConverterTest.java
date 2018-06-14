@@ -7,7 +7,7 @@ import java.util.List;
 import org.gama.lang.bean.Objects;
 import org.gama.lang.collection.Arrays;
 import org.gama.lang.collection.Maps;
-import org.gama.lang.trace.IncrementableInt;
+import org.gama.lang.trace.ModifiableInt;
 import org.junit.jupiter.api.Test;
 
 import static org.gama.sql.binder.DefaultResultSetReaders.INTEGER_READER;
@@ -55,9 +55,9 @@ public class ResultSetRowConverterTest {
 	
 	@Test
 	public void testConvert_basicUseCase2() throws SQLException {
-		// The default IncrementableInt that takes its value from "a". Reinstanciated on each row.
-		ResultSetRowConverter<Integer, IncrementableInt> testInstance = new ResultSetRowConverter<>(IncrementableInt.class, "a", INTEGER_READER, IncrementableInt::new);
-		// The secondary that will increment the same IncrementableInt by column "b" value
+		// The default ModifiableInt that takes its value from "a". Reinstanciated on each row.
+		ResultSetRowConverter<Integer, ModifiableInt> testInstance = new ResultSetRowConverter<>(ModifiableInt.class, "a", INTEGER_READER, ModifiableInt::new);
+		// The secondary that will increment the same ModifiableInt by column "b" value
 		testInstance.add(new ColumnConsumer<>("b", INTEGER_READER, (t, i) -> t.increment(Objects.preventNull(i, 0))));
 		
 		InMemoryResultSet resultSet = new InMemoryResultSet(Arrays.asList(
@@ -73,17 +73,17 @@ public class ResultSetRowConverterTest {
 	}
 	
 	/**
-	 * A test based on an {@link IncrementableInt} that would take its value from a {@link java.sql.ResultSet}
+	 * A test based on an {@link ModifiableInt} that would take its value from a {@link java.sql.ResultSet}
 	 */
 	@Test
 	public void testConvert_shareInstanceOverRows() throws SQLException {
-		// The default IncrementableInt that takes its value from "a". Shared over rows (class attribute)
-		IncrementableInt sharedInstance = new IncrementableInt(0);
-		ResultSetRowConverter<Integer, IncrementableInt> testInstance = new ResultSetRowConverter<>(IncrementableInt.class, "a", INTEGER_READER, i -> {
+		// The default ModifiableInt that takes its value from "a". Shared over rows (class attribute)
+		ModifiableInt sharedInstance = new ModifiableInt(0);
+		ResultSetRowConverter<Integer, ModifiableInt> testInstance = new ResultSetRowConverter<>(ModifiableInt.class, "a", INTEGER_READER, i -> {
 			sharedInstance.increment(i);
 			return sharedInstance;
 		});
-		// The secondary that will increment the same IncrementableInt by column "b" value
+		// The secondary that will increment the same ModifiableInt by column "b" value
 		testInstance.add(new ColumnConsumer<>("b", INTEGER_READER, (t, i) -> sharedInstance.increment(Objects.preventNull(i, 0))));
 		
 		InMemoryResultSet resultSet = new InMemoryResultSet(Arrays.asList(
@@ -101,11 +101,11 @@ public class ResultSetRowConverterTest {
 	
 	@Test
 	public void testCopyWithMapping() throws SQLException {
-		ResultSetRowConverter<Integer, IncrementableInt> sourceInstance = new ResultSetRowConverter<>(IncrementableInt.class, "a", INTEGER_READER, IncrementableInt::new);
+		ResultSetRowConverter<Integer, ModifiableInt> sourceInstance = new ResultSetRowConverter<>(ModifiableInt.class, "a", INTEGER_READER, ModifiableInt::new);
 		sourceInstance.add(new ColumnConsumer<>("b", INTEGER_READER, (t, i) -> t.increment(Objects.preventNull(i, 0))));
 		
 		// we're making our copy with column "a" is now "x", and column "b" is now "y"
-		ResultSetRowConverter<Integer, IncrementableInt> testInstance = sourceInstance.copyWithMapping(Maps.asHashMap("a", "x").add("b", "y"));
+		ResultSetRowConverter<Integer, ModifiableInt> testInstance = sourceInstance.copyWithMapping(Maps.asHashMap("a", "x").add("b", "y"));
 		
 		// of course ....
 		assertNotSame(sourceInstance, testInstance);

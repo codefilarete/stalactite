@@ -4,7 +4,7 @@ import java.sql.SQLException;
 
 import org.gama.lang.collection.Arrays;
 import org.gama.lang.collection.Maps;
-import org.gama.lang.trace.IncrementableInt;
+import org.gama.lang.trace.ModifiableInt;
 import org.junit.jupiter.api.Test;
 
 import static org.gama.sql.binder.DefaultResultSetReaders.INTEGER_READER;
@@ -16,12 +16,12 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 public class ColumnConsumerTest {
 	
 	/**
-	 * A test based on an {@link IncrementableInt} that would take its value from a {@link java.sql.ResultSet}
+	 * A test based on an {@link ModifiableInt} that would take its value from a {@link java.sql.ResultSet}
 	 */
 	@Test
 	public void testApply() throws SQLException {
-		IncrementableInt targetInstance = new IncrementableInt();
-		ColumnConsumer<IncrementableInt, Integer> testInstance = new ColumnConsumer<>("a", INTEGER_READER, IncrementableInt::increment);
+		ModifiableInt targetInstance = new ModifiableInt();
+		ColumnConsumer<ModifiableInt, Integer> testInstance = new ColumnConsumer<>("a", INTEGER_READER, ModifiableInt::increment);
 		
 		InMemoryResultSet resultSet = new InMemoryResultSet(Arrays.asList(
 				Maps.asMap("a", (Object) 42).add("b", -42),
