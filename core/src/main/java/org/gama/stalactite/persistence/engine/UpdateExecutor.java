@@ -113,12 +113,17 @@ public class UpdateExecutor<C, I, T extends Table> extends UpsertExecutor<C, I, 
 		T targetTable = getMappingStrategy().getTargetTable();
 		// we never update primary key (by principle and for persistent bean cache based on id (on what else ?)) 
 		Set<Column<T, Object>> columnsToUpdate = targetTable.getColumnsNoPrimaryKey();
-		PreparedUpdate<T> preparedUpdate = getDmlGenerator().buildUpdate(columnsToUpdate, getMappingStrategy().getVersionedKeys());
-		WriteOperation<UpwhereColumn<T>> writeOperation = newWriteOperation(preparedUpdate, new CurrentConnectionProvider());
-		// Since all columns are updated we can benefit from JDBC batch
-		JDBCBatchingOperation jdbcBatchingOperation = new JDBCBatchingOperation<>(writeOperation, getBatchSize());
-		
-		return new DifferenceUpdater(new SingleJDBCBatchingOperation(jdbcBatchingOperation), true).update(differencesIterable);
+		if (columnsToUpdate.isEmpty()) {
+			// nothing to update, this prevent a NPE in buildUpdate due to lack of any (first) element
+			return 0;
+		} else {
+			PreparedUpdate<T> preparedUpdate = getDmlGenerator().buildUpdate(columnsToUpdate, getMappingStrategy().getVersionedKeys());
+			WriteOperation<UpwhereColumn<T>> writeOperation = newWriteOperation(preparedUpdate, new CurrentConnectionProvider());
+			// Since all columns are updated we can benefit from JDBC batch
+			JDBCBatchingOperation jdbcBatchingOperation = new JDBCBatchingOperation<>(writeOperation, getBatchSize());
+			
+			return new DifferenceUpdater(new SingleJDBCBatchingOperation(jdbcBatchingOperation), true).update(differencesIterable);
+		}
 	}
 	
 	/**
