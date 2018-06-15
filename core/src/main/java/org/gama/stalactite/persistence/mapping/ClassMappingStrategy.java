@@ -13,6 +13,7 @@ import java.util.Map.Entry;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import org.gama.lang.Reflections;
 import org.gama.reflection.IReversibleAccessor;
 import org.gama.reflection.IReversibleMutator;
 import org.gama.reflection.PropertyAccessor;
@@ -84,7 +85,7 @@ public class ClassMappingStrategy<C, I, T extends Table> implements IEntityMappi
 								IReversibleAccessor<C, I> identifierProperty,
 								IdentifierInsertionManager<C, I> identifierInsertionManager) {
 		if (identifierProperty == null) {
-			throw new UnsupportedOperationException("No identifier property for " + classToPersist.getName());
+			throw new UnsupportedOperationException("No identifier property for " + Reflections.toString(classToPersist));
 		}
 		if (targetTable.getPrimaryKey() == null) {
 			throw new UnsupportedOperationException("No primary key column defined for " + targetTable.getAbsoluteName());

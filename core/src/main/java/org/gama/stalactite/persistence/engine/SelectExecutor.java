@@ -52,7 +52,7 @@ public class SelectExecutor<C, I, T extends Table> extends DMLExecutor<C, I, T> 
 	
 	private ReadOperation<Column<T, Object>> newReadOperation(T targetTable, Set<Column<T, Object>> columnsToRead, int blockSize,
 												   CurrentConnectionProvider currentConnectionProvider) {
-		ColumnParamedSelect<T> selectStatement = getDmlGenerator().buildMassiveSelect(targetTable, columnsToRead, targetTable.getPrimaryKey(), blockSize);
+		ColumnParamedSelect<T> selectStatement = getDmlGenerator().buildSelectByKey(targetTable, columnsToRead, targetTable.getPrimaryKey(), blockSize);
 		return (ReadOperation) new ReadOperation<>(selectStatement, currentConnectionProvider);
 	}
 	

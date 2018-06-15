@@ -98,7 +98,7 @@ public class DeleteExecutor<C, I, T extends Table> extends WriteExecutor<C, I, T
 		
 		int updatedRowCounter = 0;
 		if (parcels.size() > 1) {
-			deleteStatement = getDmlGenerator().buildMassiveDelete(targetTable, keyColumn, blockSize);
+			deleteStatement = getDmlGenerator().buildDeleteByKey(targetTable, keyColumn, blockSize);
 			if (lastBlock.size() != blockSize) {
 				parcels = parcels.subList(0, parcels.size() - 1);
 			}
@@ -112,7 +112,7 @@ public class DeleteExecutor<C, I, T extends Table> extends WriteExecutor<C, I, T
 		}
 		// remaining block treatment
 		if (!lastBlock.isEmpty()) {
-			deleteStatement = getDmlGenerator().buildMassiveDelete(targetTable, keyColumn, lastBlock.size());
+			deleteStatement = getDmlGenerator().buildDeleteByKey(targetTable, keyColumn, lastBlock.size());
 			writeOperation = newWriteOperation(deleteStatement, currentConnectionProvider);
 			// we must pass a single value when expected, else ExpandableStatement may be confused when applying them
 			writeOperation.setValue(keyColumn, lastBlock.size() == 1 ? lastBlock.get(0) : lastBlock);

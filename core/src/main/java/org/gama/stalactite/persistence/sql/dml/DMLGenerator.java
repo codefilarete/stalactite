@@ -53,6 +53,14 @@ public class DMLGenerator {
 		this.dmlNameProvider = dmlNameProvider;
 	}
 	
+	/**
+	 * Creates a SQL statement order for inserting some data in a table.
+	 * Signature is made so that only columns of the same table can be used.
+	 *
+	 * @param columns columns that must be inserted, at least 1 element
+	 * @param <T> table type
+	 * @return a (kind of) prepared statement
+	 */
 	public <T extends Table> ColumnParamedSQL<T> buildInsert(Iterable<? extends Column<T, Object>> columns) {
 		columns = (Iterable<? extends Column<T, Object>>) sort(columns);
 		Table table = Iterables.first(columns).getTable();
@@ -60,8 +68,8 @@ public class DMLGenerator {
 		dmlNameProvider.catWithComma(columns, sqlInsert);
 		sqlInsert.cat(") values (");
 		
-		Map<Column, int[]> columnToIndex = new HashMap<>();
-		Map<Column, ParameterBinder> parameterBinders = new HashMap<>();
+		Map<Column<T, Object>, int[]> columnToIndex = new HashMap<>();
+		Map<Column<T, Object>, ParameterBinder> parameterBinders = new HashMap<>();
 		ModifiableInt positionCounter = new ModifiableInt(1);
 		Iterables.stream(columns).forEach(column -> {
 			sqlInsert.cat(SQL_PARAMETER_MARK_1);
@@ -70,9 +78,18 @@ public class DMLGenerator {
 			parameterBinders.put(column, columnBinderRegistry.getBinder(column));
 		});
 		sqlInsert.cutTail(2).cat(")");
-		return new ColumnParamedSQL(sqlInsert.toString(), columnToIndex, parameterBinders);
+		return new ColumnParamedSQL<>(sqlInsert.toString(), columnToIndex, parameterBinders);
 	}
 	
+	/**
+	 * Creates a SQL statement order for updating some database rows depending on a where clause.
+	 * Signature is made so that only columns of the same table can be used.
+	 * 
+	 * @param columns columns that must be updated, at least 1 element
+	 * @param where columns to use for where clause
+	 * @param <T> table type
+	 * @return a (kind of) prepared statement
+	 */
 	public <T extends Table> PreparedUpdate<T> buildUpdate(Iterable<? extends Column<T, Object>> columns, Iterable<? extends Column<T, Object>> where) {
 		columns = (Iterable<? extends Column<T, Object>>) sort(columns);
 		Table table = Iterables.first(columns).getTable();
@@ -93,9 +110,18 @@ public class DMLGenerator {
 			upsertIndexes.put(upwhereColumn, positionCounter++);
 			parameterBinders.put(upwhereColumn, columnBinderRegistry.getBinder(column));
 		}
-		return new PreparedUpdate<T>(sqlUpdate.cutTail(5).toString(), upsertIndexes, parameterBinders);
+		return new PreparedUpdate<>(sqlUpdate.cutTail(5).toString(), upsertIndexes, parameterBinders);
 	}
 	
+	/**
+	 * Creates a SQL statement order for deleting some database rows depending on a where clause.
+	 * Signature is made so that only columns of the same table can be used.
+	 *
+	 * @param table deletion target table
+	 * @param where columns to use for where clause
+	 * @param <T> table type
+	 * @return a (kind of) prepared statement parameterized by {@link Column}
+	 */
 	public <T extends Table> ColumnParamedSQL<T> buildDelete(T table, Iterable<? extends Column<T, Object>> where) {
 		StringAppender sqlDelete = new StringAppender("delete from ", dmlNameProvider.getSimpleName(table));
 		sqlDelete.cat(" where ");
@@ -119,8 +145,18 @@ public class DMLGenerator {
 		});
 	}
 	
+	/**
+	 * Creates a SQL statement order for deleting some database rows by key (with a "in (?, ?, ? ...)")
+	 * Signature is made so that only columns of the same table can be used.
+	 *
+	 * @param table deletion target table
+	 * @param keyColumn key column to use for where clause
+	 * @param whereValuesCount number of parameter in where clause (ie number of key values in where)
+	 * @param <T> table type
+	 * @return a (kind of) prepared statement parameterized by {@link Column}
+	 */
 	@SuppressWarnings("squid:ForLoopCounterChangedCheck")
-	public <T extends Table> ColumnParamedSQL<T> buildMassiveDelete(T table, Column<T, Object> keyColumn, int whereValuesCount) {
+	public <T extends Table> ColumnParamedSQL<T> buildDeleteByKey(T table, Column<T, Object> keyColumn, int whereValuesCount) {
 		StringAppender sqlDelete = new StringAppender("delete from ", dmlNameProvider.getSimpleName(table));
 		sqlDelete.cat(" where ", dmlNameProvider.getSimpleName(keyColumn), " in (");
 		Strings.repeat(sqlDelete.getAppender(), whereValuesCount, SQL_PARAMETER_MARK_1, SQL_PARAMETER_MARK_100, SQL_PARAMETER_MARK_10);
@@ -136,6 +172,15 @@ public class DMLGenerator {
 		return new ColumnParamedSQL<>(sqlDelete.toString(), columnToIndex, parameterBinders);
 	}
 	
+	/**
+	 * Creates a SQL statement order for selecting some database rows depending on a where clause.
+	 * Signature is made so that only columns of the same table can be used.
+	 *
+	 * @param table selection target table
+	 * @param where columns to use for where clause
+	 * @param <T> table type
+	 * @return a (kind of) prepared statement parameterized by {@link Column}
+	 */
 	public <T extends Table> ColumnParamedSQL<T> buildSelect(T table, Iterable<? extends Column<T, Object>> columns, Iterable<? extends Column<T, Object>> where) {
 		columns = (Iterable<? extends Column<T, Object>>) sort(columns);
 		StringAppender sqlSelect = new StringAppender("select ");
@@ -148,7 +193,17 @@ public class DMLGenerator {
 		return new ColumnParamedSQL<>(sqlSelect.toString(), columnToIndex, parameterBinders);
 	}
 	
-	public <T extends Table> ColumnParamedSelect<T> buildMassiveSelect(T table, Iterable<? extends Column<T, Object>> columns, Column<T, Object> keyColumn, int whereValuesCount) {
+	/**
+	 * Creates a SQL statement order for selecting some database rows by key (with a "in (?, ?, ? ...)")
+	 * Signature is made so that only columns of the same table can be used.
+	 *
+	 * @param table selection target table
+	 * @param keyColumn key column to use for where clause
+	 * @param whereValuesCount number of parameter in where clause (ie number of key values in where)
+	 * @param <T> table type
+	 * @return a (kind of) prepared statement parameterized by {@link Column}
+	 */
+	public <T extends Table> ColumnParamedSelect<T> buildSelectByKey(T table, Iterable<? extends Column<T, Object>> columns, Column<T, Object> keyColumn, int whereValuesCount) {
 		columns = (Iterable<? extends Column<T, Object>>) sort(columns);
 		StringAppender sqlSelect = new StringAppender("select ");
 		Map<String, ParameterBinder> selectParameterBinders = new HashMap<>();

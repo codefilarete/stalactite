@@ -161,7 +161,7 @@ public class DMLGeneratorTest {
 		Column colA = toto.addColumn("A", String.class);
 		toto.addColumn("B", String.class);
 		
-		ColumnParamedSQL buildedDelete = testInstance.buildMassiveDelete(toto, colA, 2);
+		ColumnParamedSQL buildedDelete = testInstance.buildDeleteByKey(toto, colA, 2);
 		assertEquals("delete from Toto where A in (?, ?)", buildedDelete.getSQL());
 		
 		assertEquals(1, buildedDelete.getIndexes(colA)[0]);
@@ -185,7 +185,7 @@ public class DMLGeneratorTest {
 		};
 		DMLGenerator testInstance = new DMLGenerator(currentDialect.getColumnBinderRegistry(), NoopSorter.INSTANCE, dmlNameProvider);
 		
-		ColumnParamedSQL buildedDelete = testInstance.buildMassiveDelete(toto, colA, 1);
+		ColumnParamedSQL buildedDelete = testInstance.buildDeleteByKey(toto, colA, 1);
 		assertEquals("delete from Toto where 'key' in (?)", buildedDelete.getSQL());
 		
 		assertEquals(1, buildedDelete.getIndexes(colA)[0]);
@@ -235,7 +235,7 @@ public class DMLGeneratorTest {
 		Column<Table, Object> colA = toto.addColumn("A", String.class);
 		Column<Table, Object> colB = toto.addColumn("B", String.class);
 		
-		ColumnParamedSQL buildedSelect = testInstance.buildMassiveSelect(toto, Arrays.asList(colA, colB), colA, 5);
+		ColumnParamedSQL buildedSelect = testInstance.buildSelectByKey(toto, Arrays.asList(colA, colB), colA, 5);
 		assertEquals("select A, B from Toto where A in (?, ?, ?, ?, ?)", buildedSelect.getSQL());
 		
 		assertEquals(1, buildedSelect.getIndexes(colA)[0]);
@@ -259,7 +259,7 @@ public class DMLGeneratorTest {
 		};
 		DMLGenerator testInstance = new DMLGenerator(currentDialect.getColumnBinderRegistry(), NoopSorter.INSTANCE, dmlNameProvider);
 		
-		ColumnParamedSQL buildedSelect = testInstance.buildMassiveSelect(toto, Arrays.asList(colA, colB), colA, 5);
+		ColumnParamedSQL buildedSelect = testInstance.buildSelectByKey(toto, Arrays.asList(colA, colB), colA, 5);
 		assertEquals("select 'key', B from Toto where 'key' in (?, ?, ?, ?, ?)", buildedSelect.getSQL());
 		
 		assertEquals(1, buildedSelect.getIndexes(colA)[0]);
