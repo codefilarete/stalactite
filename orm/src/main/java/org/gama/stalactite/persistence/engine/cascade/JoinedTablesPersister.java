@@ -14,12 +14,15 @@ import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
 
 /**
- * Persister for entity with multiple joined tables by primary key.
+ * Persister for entity with multiple joined tables with "foreign key = primary key".
  * A main table is defined by the {@link ClassMappingStrategy} passed to constructor. Complementary tables are defined
  * with {@link #addPersister(String, Persister, BeanRelationFixer, Column, Column, boolean)}.
  * Entity load is defined by a select that joins all tables, each {@link ClassMappingStrategy} is called to complete
  * entity loading.
  * 
+ * @param <C> the main class to be persisted
+ * @param <I> the type of main class identifiers
+ * @param <T> the main target table
  * @author Guillaume Mary
  */
 public class JoinedTablesPersister<C extends Identified, I extends StatefullIdentifier, T extends Table> extends Persister<C, I, T> {
