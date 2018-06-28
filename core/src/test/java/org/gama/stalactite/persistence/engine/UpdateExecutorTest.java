@@ -5,13 +5,11 @@ import java.util.AbstractMap.SimpleEntry;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import org.gama.lang.Retryer;
 import org.gama.lang.collection.Arrays;
 import org.gama.lang.collection.Maps;
 import org.gama.lang.collection.PairIterator;
-import org.gama.lang.trace.ModifiableBoolean;
 import org.gama.reflection.AccessorByField;
 import org.gama.reflection.Accessors;
 import org.gama.sql.ConnectionProvider;
@@ -29,7 +27,6 @@ import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.gama.lang.collection.Arrays.asList;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -174,24 +171,16 @@ public class UpdateExecutorTest extends AbstractDMLExecutorTest {
 	
 	@Test
 	public void testUpdate_noColumnToUpdate() {
-		ModifiableBoolean columnsGetterInvokationChecker = new ModifiableBoolean(false);
-		Table<?> table = new Table("SimpleEntity") {
-			@Override
-			public Set<Column<Table, Object>> getColumnsNoPrimaryKey() {
-				columnsGetterInvokationChecker.setTrue();
-				return super.getColumnsNoPrimaryKey();
-			}
-		};
+		Table<?> table = new Table("SimpleEntity");
 		Column<?, Long> id = table.addColumn("id", long.class).primaryKey();
 		AccessorByField<SimpleEntity, Long> idAccessor = Accessors.accessorByField(SimpleEntity.class, "id");
-		ClassMappingStrategy<SimpleEntity, Long, Table> simpleEnityLongTableClassMappingStrategy = new ClassMappingStrategy<SimpleEntity, Long, Table>
+		ClassMappingStrategy<SimpleEntity, Long, Table> simpleEntityPersistenceMapping = new ClassMappingStrategy<SimpleEntity, Long, Table>
 				(SimpleEntity.class, table, (Map) Maps.asMap(idAccessor, id), idAccessor, AlreadyAssignedIdentifierManager.INSTANCE);
 		UpdateExecutor<SimpleEntity, Long, Table> testInstance = new UpdateExecutor<>(
-				simpleEnityLongTableClassMappingStrategy, mock(ConnectionProvider.class), new DMLGenerator(new ColumnBinderRegistry()), Retryer.NO_RETRY, 3, 4);
+				simpleEntityPersistenceMapping, mock(ConnectionProvider.class), new DMLGenerator(new ColumnBinderRegistry()), Retryer.NO_RETRY, 3, 4);
 		
 		
 		assertEquals(0, testInstance.updateFully(Arrays.asList(new SimpleEntry<>(new SimpleEntity(), new SimpleEntity()))));
-		assertTrue(columnsGetterInvokationChecker.getValue(), "Safeguard is no respected : table columns should have been asked");
 	}
 	
 	private static class SimpleEntity {

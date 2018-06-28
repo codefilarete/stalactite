@@ -110,9 +110,8 @@ public class UpdateExecutor<C, I, T extends Table> extends UpsertExecutor<C, I, 
 	 * @param differencesIterable iterable of instances
 	 */
 	public int updateFully(Iterable<Map.Entry<C, C>> differencesIterable) {
-		T targetTable = getMappingStrategy().getTargetTable();
-		// we never update primary key (by principle and for persistent bean cache based on id (on what else ?)) 
-		Set<Column<T, Object>> columnsToUpdate = targetTable.getColumnsNoPrimaryKey();
+		// we ask the strategy to lookup for updatable columns (not taken directly on mapping strategy target table)
+		Set<Column<T, Object>> columnsToUpdate = getMappingStrategy().getUpdatableColumns();
 		if (columnsToUpdate.isEmpty()) {
 			// nothing to update, this prevent a NPE in buildUpdate due to lack of any (first) element
 			return 0;
@@ -310,7 +309,7 @@ public class UpdateExecutor<C, I, T extends Table> extends UpsertExecutor<C, I, 
 		}
 		
 		/**
-		 * Upgrade modified instance and add version column to the update statement through {@link UpwhereColumn}s
+		 * Upgrades modified instance and adds version column to the update statement through {@link UpwhereColumn}s
 		 */
 		@Override
 		public void manageLock(Object modified, Object unmodified, Map<UpwhereColumn<T>, Object> updateValues) {
