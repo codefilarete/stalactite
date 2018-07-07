@@ -271,8 +271,7 @@ public class FluentMappingBuilder<T extends Identified, I extends StatefullIdent
 		CascadeOne<T, O, J> cascadeOne = new CascadeOne<>(getter, persister, captureLambdaMethod(getter));
 		this.cascadeOnes.add(cascadeOne);
 		// then we return an object that allows fluent settings over our OneToOne cascade instance
-		IFluentMappingBuilderOneToOneOptions[] finalHack = new IFluentMappingBuilderOneToOneOptions[1];
-		IFluentMappingBuilderOneToOneOptions<T, I> proxy = new MethodDispatcher()
+		return new MethodDispatcher()
 				.redirect(OneToOneOptions.class, new OneToOneOptions() {
 					@Override
 					public IFluentMappingBuilderOneToOneOptions cascade(CascadeType cascadeType, CascadeType... cascadeTypes) {
@@ -280,19 +279,17 @@ public class FluentMappingBuilder<T extends Identified, I extends StatefullIdent
 						for (CascadeType type : cascadeTypes) {
 							cascadeOne.addCascadeType(type);
 						}
-						return finalHack[0];
+						return null;	// we can return null because dispatcher will return proxy
 					}
 					
 					@Override
 					public IFluentMappingBuilderOneToOneOptions mandatory() {
 						cascadeOne.nullable = false;
-						return finalHack[0];
+						return null;	// we can return null because dispatcher will return proxy
 					}
-				})
+				}, true)	// true to allow "return null" in implemented methods
 				.fallbackOn(this)
 				.build((Class<IFluentMappingBuilderOneToOneOptions<T, I>>) (Class) IFluentMappingBuilderOneToOneOptions.class);
-		finalHack[0] = proxy;
-		return proxy;
 	}
 	
 	@Override
@@ -300,25 +297,24 @@ public class FluentMappingBuilder<T extends Identified, I extends StatefullIdent
 			SerializableFunction<T, C> getter, Persister<O, J, ? extends Table> persister) {
 		CascadeMany<T, O, J, C> cascadeMany = new CascadeMany<>(getter, persister, captureLambdaMethod(getter));
 		this.cascadeManys.add(cascadeMany);
-		IFluentMappingBuilderOneToManyOptions[] finalHack = new IFluentMappingBuilderOneToManyOptions[1];
-		IFluentMappingBuilderOneToManyOptions<T, I, O> proxy = new MethodDispatcher()
+		return new MethodDispatcher()
 				.redirect(OneToManyOptions.class, new OneToManyOptions() {
 					@Override
 					public IFluentMappingBuilderOneToManyOptions mappedBy(SerializableBiConsumer reverseLink) {
 						cascadeMany.reverseSetter = reverseLink;
-						return finalHack[0];
+						return null;	// we can return null because dispatcher will return proxy
 					}
 					
 					@Override
 					public IFluentMappingBuilderOneToManyOptions mappedBy(SerializableFunction reverseLink) {
 						cascadeMany.reverseGetter = reverseLink;
-						return finalHack[0];
+						return null;	// we can return null because dispatcher will return proxy
 					}
 					
 					@Override
 					public IFluentMappingBuilderOneToManyOptions mappedBy(Column reverseLink) {
 						cascadeMany.reverseColumn = reverseLink;
-						return finalHack[0];
+						return null;	// we can return null because dispatcher will return proxy
 					}
 					
 					@Override
@@ -327,19 +323,23 @@ public class FluentMappingBuilder<T extends Identified, I extends StatefullIdent
 						for (CascadeType type : cascadeTypes) {
 							cascadeMany.addCascadeType(type);
 						}
-						return finalHack[0];
+						return null;	// we can return null because dispatcher will return proxy
 					}
 					
 					@Override
 					public IFluentMappingBuilderOneToManyOptions deleteRemoved() {
 						cascadeMany.deleteRemoved = true;
-						return finalHack[0];
+						return null;	// we can return null because dispatcher will return proxy
 					}
-				})
+					
+					@Override
+					public IFluentMappingBuilderOneToManyOptions indexedBy(Column orderingColumn) {
+						cascadeMany.setIndexingColumn(orderingColumn);
+						return null;	// we can return null because dispatcher will return proxy
+					}
+				}, true)	// true to allow "return null" in implemented methods
 				.fallbackOn(this)
 				.build((Class<IFluentMappingBuilderOneToManyOptions<T, I, O>>) (Class) IFluentMappingBuilderOneToManyOptions.class);
-		finalHack[0] = proxy;
-		return proxy;
 	}
 	
 	@Override
