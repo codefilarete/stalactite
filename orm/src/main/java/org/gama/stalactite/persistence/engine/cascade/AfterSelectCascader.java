@@ -12,6 +12,9 @@ import org.gama.stalactite.persistence.engine.listening.NoopSelectListener;
  * Cascader for select, written for @OneToOne style of cascade where Trigger owns the relationship with Target.
  * Use carefully : this class triggers selects for Target instances so it will result in a N+1 symptom. Prefer using a join select.
  * 
+ * @param <Trigger> source type that triggers this listener
+ * @param <Target> type of loaded beans
+ * @param <I> type of loaded beans key
  * @author Guillaume Mary
  */
 public abstract class AfterSelectCascader<Trigger, Target, I> extends NoopSelectListener<Trigger, I> {
