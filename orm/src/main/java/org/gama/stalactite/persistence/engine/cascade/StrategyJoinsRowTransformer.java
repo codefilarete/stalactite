@@ -15,8 +15,10 @@ import org.gama.stalactite.persistence.engine.cascade.JoinedStrategiesSelect.Str
 import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
 import org.gama.stalactite.persistence.mapping.ToBeanRowTransformer;
 import org.gama.stalactite.persistence.structure.Column;
+import org.gama.stalactite.persistence.structure.Table;
 
 /**
+ * @param <T> type of generated beans
  * @author Guillaume Mary
  */
 public class StrategyJoinsRowTransformer<T> {
@@ -76,8 +78,8 @@ public class StrategyJoinsRowTransformer<T> {
 			while (!stack.isEmpty()) {
 				
 				// treating the current depth
-				StrategyJoins<?> strategyJoins = stack.poll();
-				ClassMappingStrategy<?, ?, ?> leftStrategy = strategyJoins.getStrategy();
+				StrategyJoins<Object> strategyJoins = stack.poll();
+				ClassMappingStrategy<Object, Object, Table> leftStrategy = strategyJoins.getStrategy();
 				ToBeanRowTransformer mainRowTransformer = leftStrategy.getRowTransformer();
 				Object primaryKeyValue = row.get(getAlias(strategyJoins.getTable().getPrimaryKey()));
 				
@@ -140,11 +142,12 @@ public class StrategyJoinsRowTransformer<T> {
 		 * @param factory the "method" that will be called to create the entity when the entity is not in the cache
 		 * @return the existing instance in the cache or a new object
 		 */
-		public Object computeIfAbsent(Class clazz, Object identifier, Supplier<Object> factory) {
-			Object rowInstance = entityCache.computeIfAbsent(clazz, k -> new HashMap<>()).get(identifier);
+		public <C> C computeIfAbsent(Class<C> clazz, Object identifier, Supplier<C> factory) {
+			Map<Object, Object> classInstanceCacheByIdentifier = entityCache.computeIfAbsent(clazz, k -> new HashMap<>());
+			C rowInstance = (C) classInstanceCacheByIdentifier.get(identifier);
 			if (rowInstance == null) {
 				rowInstance = factory.get();
-				entityCache.computeIfAbsent(clazz, k -> new HashMap<>()).put(identifier, rowInstance);
+				classInstanceCacheByIdentifier.put(identifier, rowInstance);
 			}
 			return rowInstance;
 		}
