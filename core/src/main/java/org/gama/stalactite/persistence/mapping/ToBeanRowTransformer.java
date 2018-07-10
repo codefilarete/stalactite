@@ -73,15 +73,18 @@ public class ToBeanRowTransformer<T> extends AbstractTransformer<T> {
 	@Override
 	public void applyRowToBean(Row source, T targetRowBean) {
 		for (Entry<RowKeyMapper, IMutator> columnFieldEntry : keyToField.entrySet()) {
-			String propertyName = columnFieldEntry.getKey().rowKey();
-			Object object = source.get(propertyName);
+			String columnName = columnFieldEntry.getKey().rowKey();
+			Object object = source.get(columnName);
 			columnFieldEntry.getValue().set(targetRowBean, object);
 		}
 	}
 	
 	/**
-	 * Allows to change the mapping used by this instance by a new one. A new instance is returned that will read keys according to the given function  
-	 * @param aliasProvider a function that gives new row keys than the default ones
+	 * Allows to change the mapping used by this instance to a new one. A new instance is returned that will read keys according to the given
+	 * "sliding" function.
+	 * Helpfull to reuse a {@link IRowTransformer} over multiple queries which different column aliases.
+	 * 
+	 * @param aliasProvider a function that gives new {@link Row} keys from some {@link Column}.
 	 * @return a new instance of {@link ToBeanRowTransformer} whose read keys are those given by the function
 	 */
 	public ToBeanRowTransformer<T> withAliases(Function<Column, String> aliasProvider) {
@@ -120,7 +123,7 @@ public class ToBeanRowTransformer<T> extends AbstractTransformer<T> {
 	}
 	
 	/**
-	 * {@link RowKeyMapper} who takes the key on the column name
+	 * {@link RowKeyMapper} which takes the key on the column name
 	 */
 	private static class ColumnRowKey implements RowKeyMapper {
 		
