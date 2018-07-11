@@ -6,11 +6,15 @@ import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 
 import org.gama.lang.collection.Arrays;
+import org.gama.lang.collection.Iterables;
 import org.gama.lang.collection.KeepOrderSet;
 import org.gama.stalactite.persistence.structure.Database.Schema;
+
+import static org.gama.lang.Nullable.nullable;
 
 /**
  * Representation of a database Table, not exhaustive but sufficient for our need.
@@ -85,6 +89,16 @@ public class Table<SELF extends Table<SELF>> {
 			mapColumnsOnName.put(column.getName(), column);
 		}
 		return mapColumnsOnName;
+	}
+	
+	/**
+	 * Finds a column by its name (strict equality).
+	 * 
+	 * @param columnName an expected matching column name
+	 * @return null if not found
+	 */
+	public Column<SELF, Object> findColumn(String columnName) {
+		return nullable(Iterables.find(columns, Column::getName, columnName::equals)).apply(Entry::getKey).get();
 	}
 	
 	public Column<SELF, Object> getPrimaryKey() {
