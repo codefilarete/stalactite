@@ -45,8 +45,8 @@ public class FluentMappingBuilderCascadeTest {
 	
 	private static final HSQLDBDialect DIALECT = new HSQLDBDialect();
 	private DataSource dataSource = new HSQLDBInMemoryDataSource();
-	private Persister<Person, PersistedIdentifier<Long>, Table> personPersister;
-	private Persister<City, PersistedIdentifier<Long>, Table> cityPersister;
+	private Persister<Person, Identifier<Long>, Table> personPersister;
+	private Persister<City, Identifier<Long>, Table> cityPersister;
 	private PersistenceContext persistenceContext;
 	
 	@BeforeAll
@@ -62,14 +62,14 @@ public class FluentMappingBuilderCascadeTest {
 	public void initTest() {
 		persistenceContext = new PersistenceContext(new JdbcConnectionProvider(dataSource), DIALECT);
 		
-		IFluentMappingBuilderColumnOptions<Person, PersistedIdentifier<Long>> personMappingBuilder = FluentMappingBuilder.from(Person.class,
-				(Class<PersistedIdentifier<Long>>) (Class) PersistedIdentifier.class)
+		IFluentMappingBuilderColumnOptions<Person, Identifier<Long>> personMappingBuilder = FluentMappingBuilder.from(Person.class,
+				Identifier.LONG_TYPE)
 				.add(Person::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.add(Person::getName);
 		personPersister = personMappingBuilder.build(persistenceContext);
 		
-		IFluentMappingBuilderColumnOptions<City, PersistedIdentifier<Long>> cityMappingBuilder = FluentMappingBuilder.from(City.class,
-				(Class<PersistedIdentifier<Long>>) (Class) PersistedIdentifier.class)
+		IFluentMappingBuilderColumnOptions<City, Identifier<Long>> cityMappingBuilder = FluentMappingBuilder.from(City.class,
+				Identifier.LONG_TYPE)
 				.add(City::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.add(City::getName);
 		cityPersister = cityMappingBuilder.build(persistenceContext);
@@ -78,7 +78,7 @@ public class FluentMappingBuilderCascadeTest {
 	@Test
 	public void testCascade_oneToOne_noCascade() throws SQLException {
 		// mapping building thantks to fluent API
-		Persister<Country, Identifier<Long>, Table> countryPersister = FluentMappingBuilder.from(Country.class, (Class<Identifier<Long>>) (Class) PersistedIdentifier.class)
+		Persister<Country, Identifier<Long>, Table> countryPersister = FluentMappingBuilder.from(Country.class, Identifier.LONG_TYPE)
 				.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.add(Country::getName)
 				.add(Country::getDescription)
@@ -126,7 +126,7 @@ public class FluentMappingBuilderCascadeTest {
 	@Test
 	public void testCascade_lightOneToOne_relationIsPersisted() throws SQLException {
 		// mapping building thantks to fluent API
-		Persister<Country, Identifier<Long>, Table> countryPersister = FluentMappingBuilder.from(Country.class, (Class<Identifier<Long>>) (Class) PersistedIdentifier.class)
+		Persister<Country, Identifier<Long>, Table> countryPersister = FluentMappingBuilder.from(Country.class, Identifier.LONG_TYPE)
 				.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.add(Country::getName)
 				.add(Country::getDescription)
@@ -174,7 +174,7 @@ public class FluentMappingBuilderCascadeTest {
 	@Test
 	public void testCascade_oneToOne_insert() throws SQLException {
 		// mapping building thantks to fluent API
-		Persister<Country, Identifier<Long>, Table> countryPersister = FluentMappingBuilder.from(Country.class, (Class<Identifier<Long>>) (Class) PersistedIdentifier.class)
+		Persister<Country, Identifier<Long>, Table> countryPersister = FluentMappingBuilder.from(Country.class, Identifier.LONG_TYPE)
 				.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.add(Country::getName)
 				.add(Country::getDescription)
@@ -218,7 +218,7 @@ public class FluentMappingBuilderCascadeTest {
 	@Test
 	public void testCascade_oneToOne_insert_mandatory() throws SQLException {
 		// mapping building thantks to fluent API
-		Persister<Country, Identifier<Long>, Table> countryPersister = FluentMappingBuilder.from(Country.class, (Class<Identifier<Long>>) (Class) PersistedIdentifier.class)
+		Persister<Country, Identifier<Long>, Table> countryPersister = FluentMappingBuilder.from(Country.class, Identifier.LONG_TYPE)
 				.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.add(Country::getName)
 				.add(Country::getDescription)
@@ -238,7 +238,7 @@ public class FluentMappingBuilderCascadeTest {
 	@Test
 	public void testCascade_oneToOne_update() throws SQLException {
 		// mapping building thantks to fluent API
-		Persister<Country, Identifier<Long>, Table> countryPersister = FluentMappingBuilder.from(Country.class, (Class<Identifier<Long>>) (Class) PersistedIdentifier.class)
+		Persister<Country, Identifier<Long>, Table> countryPersister = FluentMappingBuilder.from(Country.class, Identifier.LONG_TYPE)
 				.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.add(Country::getName)
 				.add(Country::getDescription)
@@ -272,7 +272,7 @@ public class FluentMappingBuilderCascadeTest {
 	@Test
 	public void testCascade_oneToOne_update_mandatory() throws SQLException {
 		// mapping building thantks to fluent API
-		Persister<Country, Identifier<Long>, Table> countryPersister = FluentMappingBuilder.from(Country.class, (Class<Identifier<Long>>) (Class) PersistedIdentifier.class)
+		Persister<Country, Identifier<Long>, Table> countryPersister = FluentMappingBuilder.from(Country.class, Identifier.LONG_TYPE)
 				.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.add(Country::getName)
 				.add(Country::getDescription)
@@ -301,7 +301,7 @@ public class FluentMappingBuilderCascadeTest {
 	@Test
 	public void testCascade_oneToOne_delete() throws SQLException {
 		// mapping building thantks to fluent API
-		Persister<Country, Identifier<Long>, Table> countryPersister = FluentMappingBuilder.from(Country.class, (Class<Identifier<Long>>) (Class) PersistedIdentifier.class)
+		Persister<Country, Identifier<Long>, Table> countryPersister = FluentMappingBuilder.from(Country.class, Identifier.LONG_TYPE)
 				.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.add(Country::getDescription)
 				.addOneToOne(Country::getPresident, personPersister).cascade(DELETE, SELECT)
@@ -331,7 +331,7 @@ public class FluentMappingBuilderCascadeTest {
 	@Test
 	public void testCascade_oneToOne_all() throws SQLException {
 		// mapping building thantks to fluent API
-		Persister<Country, Identifier<Long>, Table> countryPersister = FluentMappingBuilder.from(Country.class, (Class<Identifier<Long>>) (Class) PersistedIdentifier.class)
+		Persister<Country, Identifier<Long>, Table> countryPersister = FluentMappingBuilder.from(Country.class, Identifier.LONG_TYPE)
 				.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.add(Country::getDescription)
 				.addOneToOne(Country::getPresident, personPersister).cascade(INSERT, UPDATE, DELETE, SELECT)
@@ -393,7 +393,7 @@ public class FluentMappingBuilderCascadeTest {
 	@Test
 	public void testCascade_multiple_oneToOne_all() throws SQLException {
 		// mapping building thantks to fluent API
-		Persister<Country, Identifier<Long>, Table> countryPersister = FluentMappingBuilder.from(Country.class, (Class<Identifier<Long>>) (Class) PersistedIdentifier.class)
+		Persister<Country, Identifier<Long>, Table> countryPersister = FluentMappingBuilder.from(Country.class, Identifier.LONG_TYPE)
 				.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.add(Country::getDescription)
 				.addOneToOne(Country::getPresident, personPersister).cascade(INSERT, UPDATE, DELETE, SELECT)

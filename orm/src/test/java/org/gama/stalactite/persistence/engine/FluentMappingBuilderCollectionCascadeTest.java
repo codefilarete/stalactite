@@ -44,10 +44,10 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 public class FluentMappingBuilderCollectionCascadeTest {
 	
 	private static final HSQLDBDialect DIALECT = new HSQLDBDialect();
-	private static IFluentMappingBuilderColumnOptions<City, PersistedIdentifier<Long>> CITY_MAPPING_BUILDER;
+	private static IFluentMappingBuilderColumnOptions<City, Identifier<Long>> CITY_MAPPING_BUILDER;
 	private final DataSource dataSource = new HSQLDBInMemoryDataSource();
 	private final ConnectionProvider connectionProvider = new JdbcConnectionProvider(dataSource);
-	private Persister<City, PersistedIdentifier<Long>, Table> cityPersister;
+	private Persister<City, Identifier<Long>, Table> cityPersister;
 	private PersistenceContext persistenceContext;
 
 	@BeforeAll
@@ -66,7 +66,7 @@ public class FluentMappingBuilderCollectionCascadeTest {
 		// We need to rebuild our cityPersister before each test because some of them alter it on country relationship.
 		// So schema contains FK twice with same name, ending in duplicate FK name exception
 		CITY_MAPPING_BUILDER = FluentMappingBuilder.from(City.class,
-				(Class<PersistedIdentifier<Long>>) (Class) PersistedIdentifier.class)
+				Identifier.LONG_TYPE)
 				.add(City::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.add(City::getName)
 				.add(City::getCountry);
@@ -76,7 +76,7 @@ public class FluentMappingBuilderCollectionCascadeTest {
 	@Test
 	public void testCascade_oneToMany_noCascade() throws SQLException {
 		// mapping building thantks to fluent API
-		Persister<Country, Identifier<Long>, Table> countryPersister = FluentMappingBuilder.from(Country.class, (Class<Identifier<Long>>) (Class) PersistedIdentifier.class)
+		Persister<Country, Identifier<Long>, Table> countryPersister = FluentMappingBuilder.from(Country.class, Identifier.LONG_TYPE)
 				.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.add(Country::getName)
 				.add(Country::getDescription)
@@ -112,8 +112,8 @@ public class FluentMappingBuilderCollectionCascadeTest {
 		return new Object[][] {
 				{ (ThrowingSupplier<Persister<Country, Identifier<Long>, Table>, SQLException>) () -> {
 					PersistenceContext persistenceContext = new PersistenceContext(new JdbcConnectionProvider(new HSQLDBInMemoryDataSource()), DIALECT);
-					Persister<City, PersistedIdentifier<Long>, Table> cityPersister = CITY_MAPPING_BUILDER.build(persistenceContext);
-					Persister<Country, Identifier<Long>, Table> countryPersister = FluentMappingBuilder.from(Country.class, (Class<Identifier<Long>>) (Class) PersistedIdentifier.class)
+					Persister<City, Identifier<Long>, Table> cityPersister = CITY_MAPPING_BUILDER.build(persistenceContext);
+					Persister<Country, Identifier<Long>, Table> countryPersister = FluentMappingBuilder.from(Country.class, Identifier.LONG_TYPE)
 							.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 							.add(Country::getName)
 							.add(Country::getDescription)
@@ -130,8 +130,8 @@ public class FluentMappingBuilderCollectionCascadeTest {
 				}},
 				{ (ThrowingSupplier<Persister<Country, Identifier<Long>, Table>, SQLException>) () -> {
 					PersistenceContext persistenceContext = new PersistenceContext(new JdbcConnectionProvider(new HSQLDBInMemoryDataSource()), DIALECT);
-					Persister<City, PersistedIdentifier<Long>, Table> cityPersister = CITY_MAPPING_BUILDER.build(persistenceContext);
-					Persister<Country, Identifier<Long>, Table> countryPersister = FluentMappingBuilder.from(Country.class, (Class<Identifier<Long>>) (Class) PersistedIdentifier.class)
+					Persister<City, Identifier<Long>, Table> cityPersister = CITY_MAPPING_BUILDER.build(persistenceContext);
+					Persister<Country, Identifier<Long>, Table> countryPersister = FluentMappingBuilder.from(Country.class, Identifier.LONG_TYPE)
 							.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 							.add(Country::getName)
 							.add(Country::getDescription)
@@ -148,9 +148,9 @@ public class FluentMappingBuilderCollectionCascadeTest {
 				}},
 				{ (ThrowingSupplier<Persister<Country, Identifier<Long>, Table>, SQLException>) () -> {
 					PersistenceContext persistenceContext = new PersistenceContext(new JdbcConnectionProvider(new HSQLDBInMemoryDataSource()), DIALECT);
-					Persister<City, PersistedIdentifier<Long>, Table> cityPersister = CITY_MAPPING_BUILDER.build(persistenceContext);
+					Persister<City, Identifier<Long>, Table> cityPersister = CITY_MAPPING_BUILDER.build(persistenceContext);
 					Column<Table, Country> countryId = (Column<Table, Country>) cityPersister.getTargetTable().mapColumnsOnName().get("countryId");
-					Persister<Country, Identifier<Long>, Table> countryPersister = FluentMappingBuilder.from(Country.class, (Class<Identifier<Long>>) (Class) PersistedIdentifier.class)
+					Persister<Country, Identifier<Long>, Table> countryPersister = FluentMappingBuilder.from(Country.class, Identifier.LONG_TYPE)
 							.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 							.add(Country::getName)
 							.add(Country::getDescription)
@@ -210,7 +210,7 @@ public class FluentMappingBuilderCollectionCascadeTest {
 	
 	@Test
 	public void testCascade_oneToMany_update() throws SQLException {
-		Persister<Country, Identifier<Long>, Table> countryPersister = FluentMappingBuilder.from(Country.class, (Class<Identifier<Long>>) (Class) PersistedIdentifier.class)
+		Persister<Country, Identifier<Long>, Table> countryPersister = FluentMappingBuilder.from(Country.class, Identifier.LONG_TYPE)
 				.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.add(Country::getName)
 				.add(Country::getDescription)
@@ -253,7 +253,7 @@ public class FluentMappingBuilderCollectionCascadeTest {
 	
 	@Test
 	public void testCascade_oneToMany_update_deleteRemoved() throws SQLException {
-		Persister<Country, Identifier<Long>, Table> countryPersister = FluentMappingBuilder.from(Country.class, (Class<Identifier<Long>>) (Class) PersistedIdentifier.class)
+		Persister<Country, Identifier<Long>, Table> countryPersister = FluentMappingBuilder.from(Country.class, Identifier.LONG_TYPE)
 				.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.add(Country::getName)
 				.add(Country::getDescription)
@@ -296,7 +296,7 @@ public class FluentMappingBuilderCollectionCascadeTest {
 	
 	@Test
 	public void testCascade_oneToMany_delete() throws SQLException {
-		Persister<Country, Identifier<Long>, Table> countryPersister = FluentMappingBuilder.from(Country.class, (Class<Identifier<Long>>) (Class) PersistedIdentifier.class)
+		Persister<Country, Identifier<Long>, Table> countryPersister = FluentMappingBuilder.from(Country.class, Identifier.LONG_TYPE)
 				.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.add(Country::getName)
 				.add(Country::getDescription)
@@ -326,15 +326,15 @@ public class FluentMappingBuilderCollectionCascadeTest {
 	
 	@Test
 	public void testCascade_multiple_oneToMany_update() throws SQLException {
-		IFluentMappingBuilderColumnOptions<State, PersistedIdentifier<Long>> stateMappingBuilder = FluentMappingBuilder.from(State.class,
-				(Class<PersistedIdentifier<Long>>) (Class) PersistedIdentifier.class)
+		IFluentMappingBuilderColumnOptions<State, Identifier<Long>> stateMappingBuilder = FluentMappingBuilder.from(State.class,
+				Identifier.LONG_TYPE)
 				.add(State::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.add(State::getName)
 				.add(State::getCountry);	// allow to declare the owner column of the relation
-		Persister<State, PersistedIdentifier<Long>, Table> statePersister = stateMappingBuilder.build(persistenceContext);
+		Persister<State, Identifier<Long>, Table> statePersister = stateMappingBuilder.build(persistenceContext);
 		
 		
-		Persister<Country, Identifier<Long>, Table> countryPersister = FluentMappingBuilder.from(Country.class, (Class<Identifier<Long>>) (Class) PersistedIdentifier.class)
+		Persister<Country, Identifier<Long>, Table> countryPersister = FluentMappingBuilder.from(Country.class, Identifier.LONG_TYPE)
 				.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.add(Country::getName)
 				.add(Country::getDescription)

@@ -10,9 +10,6 @@ import javax.annotation.Nonnull;
  */
 public class PersistedIdentifier<T> extends AbstractIdentifier<T> {
 	
-	/** A simple constant to help reference a {@link PersistedIdentifier} which surrogate is a {@link Long} */
-	public static final Class<PersistedIdentifier<Long>> LONG_TYPE = (Class<PersistedIdentifier<Long>>) (Class) PersistedIdentifier.class;
-	
 	public PersistedIdentifier(T surrogate) {
 		super(surrogate);
 	}

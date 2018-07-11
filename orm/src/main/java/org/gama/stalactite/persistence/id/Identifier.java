@@ -19,6 +19,9 @@ import org.gama.stalactite.persistence.id.manager.StatefullIdentifier;
  */
 public interface Identifier<T> extends StatefullIdentifier<T> {
 	
+	/** A simple constant to help referencing a {@link Identifier} which surrogate is a {@link Long} */
+	Class<Identifier<Long>> LONG_TYPE = (Class<Identifier<Long>>) (Class) PersistedIdentifier.class;
+	
 	/**
 	 * Gives a {@link ParameterBinder} for a generic {@link Identifier}
 	 * @param parameterBinder the surrogate {@link ParameterBinder} (can be for primitive type because null is already handled by this method result)

@@ -16,7 +16,6 @@ import org.gama.stalactite.persistence.engine.model.Country;
 import org.gama.stalactite.persistence.engine.model.Person;
 import org.gama.stalactite.persistence.id.Identified;
 import org.gama.stalactite.persistence.id.Identifier;
-import org.gama.stalactite.persistence.id.PersistedIdentifier;
 import org.gama.stalactite.persistence.sql.HSQLDBDialect;
 import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.test.JdbcConnectionProvider;
@@ -33,8 +32,8 @@ public class FluentMappingBuilderForeignKeyTest {
 	
 	private static final HSQLDBDialect DIALECT = new HSQLDBDialect();
 	private DataSource dataSource = new HSQLDBInMemoryDataSource();
-	private Persister<Person, PersistedIdentifier<Long>, Table> personPersister;
-	private Persister<City, PersistedIdentifier<Long>, Table> cityPersister;
+	private Persister<Person, Identifier<Long>, Table> personPersister;
+	private Persister<City, Identifier<Long>, Table> cityPersister;
 	private PersistenceContext persistenceContext;
 	
 	@BeforeAll
@@ -50,14 +49,14 @@ public class FluentMappingBuilderForeignKeyTest {
 	public void initTest() {
 		persistenceContext = new PersistenceContext(new JdbcConnectionProvider(dataSource), DIALECT);
 		
-		IFluentMappingBuilderColumnOptions<Person, PersistedIdentifier<Long>> personMappingBuilder = FluentMappingBuilder.from(Person.class,
-				(Class<PersistedIdentifier<Long>>) (Class) PersistedIdentifier.class)
+		IFluentMappingBuilderColumnOptions<Person, Identifier<Long>> personMappingBuilder = FluentMappingBuilder.from(Person.class,
+				Identifier.LONG_TYPE)
 				.add(Person::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.add(Person::getName);
 		personPersister = personMappingBuilder.build(persistenceContext);
 		
-		IFluentMappingBuilderColumnOptions<City, PersistedIdentifier<Long>> cityMappingBuilder = FluentMappingBuilder.from(City.class,
-				(Class<PersistedIdentifier<Long>>) (Class) PersistedIdentifier.class)
+		IFluentMappingBuilderColumnOptions<City, Identifier<Long>> cityMappingBuilder = FluentMappingBuilder.from(City.class,
+				Identifier.LONG_TYPE)
 				.add(City::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.add(City::getName)
 				.add(City::getCountry);
@@ -68,7 +67,7 @@ public class FluentMappingBuilderForeignKeyTest {
 	public void testCascade_oneToOne_foreignKeyIsCreated() throws SQLException {
 		// mapping building thantks to fluent API
 		Persister<Country, Identifier<Long>, Table> countryPersister = FluentMappingBuilder.from(Country.class,
-				(Class<Identifier<Long>>) (Class) PersistedIdentifier.class)
+				Identifier.LONG_TYPE)
 				// setting a foreign key naming strategy to be tested
 				.foreignKeyNamingStrategy(ForeignKeyNamingStrategy.DEFAULT)
 				.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)

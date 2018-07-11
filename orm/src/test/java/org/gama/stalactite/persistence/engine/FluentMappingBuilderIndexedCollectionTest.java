@@ -31,7 +31,7 @@ import static org.gama.stalactite.persistence.engine.CascadeOption.CascadeType.I
 import static org.gama.stalactite.persistence.engine.CascadeOption.CascadeType.SELECT;
 import static org.gama.stalactite.persistence.engine.CascadeOption.CascadeType.UPDATE;
 import static org.gama.stalactite.persistence.engine.FluentMappingBuilder.from;
-import static org.gama.stalactite.persistence.id.PersistedIdentifier.LONG_TYPE;
+import static org.gama.stalactite.persistence.id.Identifier.LONG_TYPE;
 import static org.gama.stalactite.query.model.QueryEase.select;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -64,7 +64,7 @@ public class FluentMappingBuilderIndexedCollectionTest {
 		Column<Table, Identifier> id = choiceTable.addColumn("id", Identifier.class).primaryKey();
 		Column<Table, Integer> idx = choiceTable.addColumn("idx", int.class);
 		
-		Persister<Choice, PersistedIdentifier<Long>, Table> choicePersister = from(Choice.class, LONG_TYPE, choiceTable)
+		Persister<Choice, Identifier<Long>, Table> choicePersister = from(Choice.class, LONG_TYPE, choiceTable)
 				.add(Choice::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.add(Choice::getName)
 				.add(Choice::getQuestion)
@@ -119,7 +119,7 @@ public class FluentMappingBuilderIndexedCollectionTest {
 		Column<Table, Identifier> id = choiceTable.addColumn("id", Identifier.class).primaryKey();
 		Column<Table, Integer> idx = choiceTable.addColumn("idx", int.class);
 		
-		Persister<Choice, PersistedIdentifier<Long>, Table> choicePersister = from(Choice.class, LONG_TYPE, choiceTable)
+		Persister<Choice, Identifier<Long>, Table> choicePersister = from(Choice.class, LONG_TYPE, choiceTable)
 				.add(Choice::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.add(Choice::getName)
 				.add(Choice::getQuestion)
@@ -127,7 +127,7 @@ public class FluentMappingBuilderIndexedCollectionTest {
 		
 		// We need to rebuild our cityPersister before each test because some of them alter it on country relationship.
 		// So schema contains FK twice with same name, ending in duplicate FK name exception
-		Persister<Question, PersistedIdentifier<Long>, Table> questionPersister = from(Question.class, LONG_TYPE)
+		Persister<Question, Identifier<Long>, Table> questionPersister = from(Question.class, LONG_TYPE)
 				.add(Question::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.addOneToMany(Question::getChoices, choicePersister).mappedBy(Choice::getQuestion).indexedBy(idx).cascade(INSERT)
 				.build(persistenceContext);
@@ -159,7 +159,7 @@ public class FluentMappingBuilderIndexedCollectionTest {
 		Column<Table, Identifier> id = choiceTable.addColumn("id", Identifier.class).primaryKey();
 		Column<Table, Integer> idx = choiceTable.addColumn("idx", int.class);
 		
-		Persister<Choice, PersistedIdentifier<Long>, Table> choicePersister = from(Choice.class,
+		Persister<Choice, Identifier<Long>, Table> choicePersister = from(Choice.class,
 				LONG_TYPE, choiceTable)
 				.add(Choice::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.add(Choice::getName)
@@ -168,7 +168,7 @@ public class FluentMappingBuilderIndexedCollectionTest {
 		
 		// We need to rebuild our cityPersister before each test because some of them alter it on country relationship.
 		// So schema contains FK twice with same name, ending in duplicate FK name exception
-		Persister<Question, PersistedIdentifier<Long>, Table> questionPersister = from(Question.class, LONG_TYPE)
+		Persister<Question, Identifier<Long>, Table> questionPersister = from(Question.class, LONG_TYPE)
 				.add(Question::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.addOneToMany(Question::getChoices, choicePersister).mappedBy(Choice::getQuestion).indexedBy(idx).cascade(INSERT, UPDATE)
 				.build(persistenceContext);
@@ -227,7 +227,7 @@ public class FluentMappingBuilderIndexedCollectionTest {
 		Column<Table, Identifier> id = choiceTable.addColumn("id", Identifier.class).primaryKey();
 		Column<Table, Integer> idx = choiceTable.addColumn("idx", int.class);
 		
-		Persister<Choice, PersistedIdentifier<Long>, Table> choicePersister = from(Choice.class,
+		Persister<Choice, Identifier<Long>, Table> choicePersister = from(Choice.class,
 				LONG_TYPE, choiceTable)
 				.add(Choice::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.add(Choice::getName)
@@ -236,7 +236,7 @@ public class FluentMappingBuilderIndexedCollectionTest {
 		
 		// We need to rebuild our cityPersister before each test because some of them alter it on country relationship.
 		// So schema contains FK twice with same name, ending in duplicate FK name exception
-		Persister<Question, PersistedIdentifier<Long>, Table> questionPersister = from(Question.class, LONG_TYPE)
+		Persister<Question, Identifier<Long>, Table> questionPersister = from(Question.class, LONG_TYPE)
 				.add(Question::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.addOneToMany(Question::getChoices, choicePersister).mappedBy(Choice::getQuestion).indexedBy(idx).cascade(INSERT, UPDATE, SELECT)
 				.build(persistenceContext);
