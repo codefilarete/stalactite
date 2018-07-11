@@ -24,6 +24,13 @@ public class SelectListenerCollection<T, I> implements ISelectListener<T, I> {
 		}
 	}
 	
+	@Override
+	public void onError(Iterable<I> ids) {
+		for (ISelectListener<T, I> selectListener : selectListeners) {
+			selectListener.onError(ids);
+		}
+	}
+	
 	public void add(ISelectListener<T, I> selectListener) {
 		if (selectListener != null) {    // prevent null as specified in interface
 			this.selectListeners.add(selectListener);

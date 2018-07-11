@@ -57,4 +57,10 @@ public interface OneToManyOptions<T extends Identified, I extends StatefullIdent
 	 */
 	IFluentMappingBuilderOneToManyOptions<T, I, O> deleteRemoved();
 	
+	/**
+	 * Defines the indexing column of the mapped {@link java.util.List}. Only available on {@link java.util.List}.
+	 * @param orderingColumn indexing column of the mapped {@link java.util.List}
+	 * @return the global mapping configurer
+	 */
+	IFluentMappingBuilderOneToManyOptions<T, I, O> indexedBy(Column orderingColumn);
 }

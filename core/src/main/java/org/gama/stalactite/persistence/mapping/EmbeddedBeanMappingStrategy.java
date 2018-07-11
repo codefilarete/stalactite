@@ -1,12 +1,15 @@
 package org.gama.stalactite.persistence.mapping;
 
 import javax.annotation.Nonnull;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.function.Consumer;
+import java.util.function.Function;
 
 import org.gama.lang.Reflections;
 import org.gama.lang.bean.Objects;
@@ -26,6 +29,18 @@ public class EmbeddedBeanMappingStrategy<C, T extends Table> implements IEmbedde
 	private final Set<Column<T, Object>> columns;
 	
 	private final ToBeanRowTransformer<C> rowTransformer;
+	
+	/**
+	 * Columns (and their value provider) which are not officially mapped by a bean property.
+	 * Those are for insertion time.
+	 */
+	private final List<Duo<Column<T, ?>, Function<C, ?>>> silentInsertedColumns = new ArrayList<>();
+	
+	/**
+	 * Columns (and their value provider) which are not officially mapped by a bean property.
+	 * Those are for update time.
+	 */
+	private final List<Duo<Column<T, ?>, Function<C, ?>>> silentUpdatedColumns = new ArrayList<>();
 	
 	/**
 	 * Build a EmbeddedBeanMappingStrategy from a mapping between Field and Column.
@@ -72,6 +87,16 @@ public class EmbeddedBeanMappingStrategy<C, T extends Table> implements IEmbedde
 		return rowTransformer;
 	}
 	
+	@Override
+	public <O> void addSilentColumnInserter(Column<T, O> column, Function<C, O> valueProvider) {
+		silentInsertedColumns.add(new Duo<>(column, valueProvider));
+	}
+	
+	@Override
+	public <O> void addSilentColumnUpdater(Column<T, O> column, Function<C, O> valueProvider) {
+		silentUpdatedColumns.add(new Duo<>(column, valueProvider));
+	}
+	
 	@Nonnull
 	@Override
 	public Map<Column<T, Object>, Object> getInsertValues(C c) {
@@ -79,6 +104,8 @@ public class EmbeddedBeanMappingStrategy<C, T extends Table> implements IEmbedde
 			@Override
 			protected void visitField(Entry<IReversibleAccessor<C, Object>, Column<T, Object>> fieldColumnEntry) {
 				toReturn.put(fieldColumnEntry.getValue(), fieldColumnEntry.getKey().get(c));
+				silentInsertedColumns.forEach(columnFunctionDuo ->
+						toReturn.put((Column<T, Object>) columnFunctionDuo.getLeft(), columnFunctionDuo.getRight().apply(c)));
 			}
 		});
 	}
@@ -109,6 +136,8 @@ public class EmbeddedBeanMappingStrategy<C, T extends Table> implements IEmbedde
 				toReturn.put(new UpwhereColumn<>(unmodifiedField.getKey(), true), unmodifiedField.getValue());
 			}
 		}
+		silentUpdatedColumns.forEach(columnFunctionDuo ->
+				toReturn.put(new UpwhereColumn<>(columnFunctionDuo.getLeft(), true), columnFunctionDuo.getRight().apply(modified)));
 		return toReturn;
 	}
 	
@@ -132,5 +161,24 @@ public class EmbeddedBeanMappingStrategy<C, T extends Table> implements IEmbedde
 		}
 
 		protected abstract void visitField(Entry<IReversibleAccessor<C, Object>, Column<T, Object>> fieldColumnEntry);
+	}
+	
+	public static class Duo<A, B> {
+		
+		private final A left;
+		private final B right;
+		
+		private Duo(A left, B right) {
+			this.left = left;
+			this.right = right;
+		}
+		
+		public A getLeft() {
+			return left;
+		}
+		
+		public B getRight() {
+			return right;
+		}
 	}
 }

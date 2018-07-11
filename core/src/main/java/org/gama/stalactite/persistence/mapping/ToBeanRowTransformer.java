@@ -1,6 +1,8 @@
 package org.gama.stalactite.persistence.mapping;
 
 import java.lang.reflect.Constructor;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -23,6 +25,8 @@ import org.gama.stalactite.persistence.structure.Table;
 public class ToBeanRowTransformer<T> extends AbstractTransformer<T> {
 	
 	private final Map<RowKeyMapper, IMutator> keyToField;
+	
+	private final Collection<TransformerListener<T>> rowTransformerListeners = new ArrayList<>();
 	
 	/**
 	 * A constructor that maps all fields of a class by name
@@ -70,6 +74,14 @@ public class ToBeanRowTransformer<T> extends AbstractTransformer<T> {
 		this.keyToField = keyToField;
 	}
 	
+	/** Overriden to invoke tranformation listeners */
+	@Override
+	public T transform(Row row) {
+		T bean = super.transform(row);
+		this.rowTransformerListeners.forEach(listener -> listener.onTransform(bean, row));
+		return bean;
+	}
+	
 	@Override
 	public void applyRowToBean(Row source, T targetRowBean) {
 		for (Entry<RowKeyMapper, IMutator> columnFieldEntry : keyToField.entrySet()) {
@@ -77,6 +89,26 @@ public class ToBeanRowTransformer<T> extends AbstractTransformer<T> {
 			Object object = source.get(columnName);
 			columnFieldEntry.getValue().set(targetRowBean, object);
 		}
+	}
+	
+	/**
+	 * Gives the value of a Column in the given row
+	 * @param row the current {@link Row}
+	 * @param column Column
+	 * @return the value of a {@link Column} in the given row, may be null
+	 */
+	public Object getValue(Row row, Column column) {
+		return row.get(column.getName());
+	}
+	
+	/**
+	 * Gives the value of a column name in the given row
+	 * @param row the current {@link Row}
+	 * @param columnName a column name or alias
+	 * @return the value of a column name in the given row, may be null
+	 */
+	public Object getValue(Row row, String columnName) {
+		return row.get(columnName);
 	}
 	
 	/**
@@ -92,7 +124,15 @@ public class ToBeanRowTransformer<T> extends AbstractTransformer<T> {
 		Map<RowKeyMapper, IMutator> aliasToField = new HashMap<>(this.keyToField.size());
 		this.keyToField.forEach((key, value) -> aliasToField.put(
 				new StringRowKey(aliasProvider.apply(((ColumnRowKey) key).getColumn())), value));
-		return new ToBeanRowTransformer<>(constructor, aliasToField, true);
+		ToBeanRowTransformer<T> result = new ToBeanRowTransformer<>(constructor, aliasToField, true);
+		// listeners are given to the new instance because they may be interested to transform rows of this one
+		result.rowTransformerListeners.addAll(rowTransformerListeners);
+		return result;
+	}
+	
+	
+	public void addTransformerListener(TransformerListener<T> listener) {
+		this.rowTransformerListeners.add(listener);
 	}
 	
 	/**
@@ -141,5 +181,11 @@ public class ToBeanRowTransformer<T> extends AbstractTransformer<T> {
 		public String rowKey() {
 			return key.getName();
 		}
+	}
+	
+	public interface TransformerListener<C> {
+		
+		void onTransform(C c, Row row);
+		
 	}
 }

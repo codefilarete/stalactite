@@ -1,10 +1,12 @@
 package org.gama.stalactite.persistence.id;
 
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import org.gama.lang.bean.Objects;
 import org.gama.lang.collection.Iterables;
@@ -47,6 +49,30 @@ public class IdentifiedCollectionDiffer {
 		for (Entry<C, I> identifiedEntry : set2MappedOnIdentifier.entrySet()) {
 			result.add(new Diff(State.ADDED, null, identifiedEntry.getValue()));
 		}
+		return result;
+	}
+	
+	public <I extends Identified<C>, C> Set<IndexedDiff> diffList(List<I> identifieds1, List<I> identifieds2) {
+		Set<IndexedDiff> result = new HashSet<>();
+		for (I identified1 : identifieds1) {
+			int foundIndex = identifieds2.indexOf(identified1);
+			if (foundIndex == -1) {
+				result.add(new IndexedDiff(State.REMOVED, identified1, null));
+			} else {
+				IndexedDiff held = new IndexedDiff(State.HELD, identified1, identified1);
+				result.add(held);
+				int searchPosition = 0;
+				while (foundIndex != -1) {
+					held.addIndex(searchPosition + foundIndex);
+					searchPosition = foundIndex;
+					foundIndex = identifieds2.subList(searchPosition +1, identifieds2.size()).indexOf(identified1);
+				}
+			}
+		}
+		Set<I> added = new HashSet<>(identifieds2);
+		added.removeAll(identifieds1);
+		result.addAll(added.stream().map(i -> new IndexedDiff(State.ADDED, null, i)).collect(Collectors.toSet()));
+		
 		return result;
 	}
 	
@@ -108,6 +134,19 @@ public class IdentifiedCollectionDiffer {
 		public int hashCode() {
 			// implemented for Set
 			return Objects.preventNull(sourceInstance, replacingInstance).getId().hashCode();
+		}
+	}
+	
+	public static class IndexedDiff extends Diff {
+		
+		private final Set<Integer> indexes = new HashSet<>();
+		
+		public IndexedDiff(State state, Identified sourceInstance, Identified replacingInstance) {
+			super(state, sourceInstance, replacingInstance);
+		}
+		
+		public void addIndex(int index) {
+			this.indexes.add(index);
 		}
 	}
 }

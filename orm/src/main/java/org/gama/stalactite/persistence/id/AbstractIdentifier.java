@@ -60,6 +60,6 @@ public abstract class AbstractIdentifier<T> implements Identifier<T> {
 	
 	@Override
 	public String toString() {
-		return Reflections.toString(getClass()) + "@" + Integer.toHexString(hashCode());
+		return Reflections.toString(getClass()) + "@" + surrogate;
 	}
 }

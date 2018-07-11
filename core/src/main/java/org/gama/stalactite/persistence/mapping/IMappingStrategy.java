@@ -6,6 +6,7 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
+import java.util.function.Function;
 
 import org.gama.sql.result.Row;
 import org.gama.stalactite.persistence.structure.Column;
@@ -34,7 +35,7 @@ public interface IMappingStrategy<C, T extends Table> {
 	 * @param modified the modified instance,
 	 * 					may be null when this method is called to manage relationship
 	 * @param unmodified the not modified instance or "previous state" (coming from database for instance),
-	 * 					may be null to generate a rough update statement (allColumn doesn't matters in this case) 
+	 * 					may be null to generate a rough update statement (allColumn doesn't matter in this case) 
 	 * @param allColumns indicates if allColumns must be returned, even if they are not all modified (necessary for JDBC batch optimization)
 	 * @return a mapping between columns that must be put in the SQL update order and there values,
 	 * 			thus a distinction between columns to be updated and columns necessary to the where clause must be done, this is don through {@link UpwhereColumn},
@@ -44,6 +45,44 @@ public interface IMappingStrategy<C, T extends Table> {
 	Map<UpwhereColumn<T>, Object> getUpdateValues(C modified, C unmodified, boolean allColumns);
 	
 	C transform(Row row);
+	
+	/**
+	 * Adds a column for insert. This column is not expected to be already mapped to a bean property of the &lt;C&gt; class
+	 * Here are some use case examples :
+	 * - getting the creation timestamp of a bean without the need to map it to a bean property,
+	 * - completing a table with a value that is not expected by the bean but by the table 
+	 * 
+	 * It is not expected to use it to tamper with the value of a mapped property, even this is not forbidden and may work, it is not guaranteed to
+	 * be a feature.
+	 * 
+	 * This method might have no purpose for many classes implementing {@link IMappingStrategy}.
+	 * 
+	 * @param column the column to update
+	 * @param valueProvider a {@link Function} for providing column value, incoming instance will be passed to it as input
+	 * @param <O> Java type of the column value 
+	 */
+	default <O> void addSilentColumnInserter(Column<T, O> column, Function<C, O> valueProvider) {
+		// does nothing by default
+	}
+	
+	/**
+	 * Adds a column for update. This column is not expected to be already mapped to a bean property of the &lt;C&gt; class
+	 * Here are some use case examples :
+	 * - timestamping a bean without the need to map the timestamp to a bean property,
+	 * - completing a table with a value that is not expected by the bean but by the table 
+	 * 
+	 * It is not expected to use it to tamper with the value of a mapped property, even this is not forbidden and may work, it is not guaranteed to
+	 * be a feature.
+	 * 
+	 * This method might have no purpose for many classes implementing {@link IMappingStrategy}.
+	 * 
+	 * @param column the column to update
+	 * @param valueProvider a {@link Function} for providing column value, incoming instance will be passed to it as input
+	 * @param <O> Java type of the column value 
+	 */
+	default <O> void addSilentColumnUpdater(Column<T, O> column, Function<C, O> valueProvider) {
+		// does nothing by default
+	}
 	
 	/**
 	 * Wrapper for {@link Column} placed in an update statement so it can distinguish if it's for the Update or Where part 

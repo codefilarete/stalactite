@@ -11,6 +11,7 @@ import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import org.gama.lang.Reflections;
@@ -151,6 +152,28 @@ public class ClassMappingStrategy<C, I, T extends Table> implements IEntityMappi
 	
 	public void addVersionedColumn(PropertyAccessor propertyAccessor, Column<T, Object> column) {
 		this.versioningMapping.put(propertyAccessor, column);
+	}
+	
+	@Override
+	public <O> void addSilentColumnInserter(Column<T, O> column, Function<C, O> valueProvider) {
+		// we delegate value computation to the default mapping strategy
+		defaultMappingStrategy.addSilentColumnInserter(column, valueProvider);
+		// we must register it as an insertable column so we'll generate the right SQL order
+		insertableColumns.add((Column<T, Object>) column);
+	}
+	
+	@Override
+	public <O> void addSilentColumnUpdater(Column<T, O> column, Function<C, O> valueProvider) {
+		// we delegate value computation to the default mapping strategy
+		defaultMappingStrategy.addSilentColumnUpdater(column, valueProvider);
+		// we must register it as an insertable column so we'll generate the right SQL order
+		updatableColumns.add((Column<T, Object>) column);
+	}
+	
+//	@Override
+	public <O> void addSilentColumnSelecter(Column<T, O> column) {
+		// we must register it as an insertable column so we'll generate the right SQL order
+		selectableColumns.add((Column<T, Object>) column);
 	}
 	
 	/**

@@ -23,6 +23,11 @@ import org.gama.stalactite.persistence.structure.Table;
  */
 public class StrategyJoinsRowTransformer<T> {
 	
+	/**
+	 * Default alias provider between strategy columns and their names in {@link java.sql.ResultSet}
+	 * Used when transforming {@link Row} to beans.
+	 * By default it is {@link Column#getAlias()} (which is hardly used at runtime because of joined columns naming strategy)
+	 */
 	public static final Function<Column, String> DEFAULT_ALIAS_PROVIDER = Column::getAlias;
 	
 	private final StrategyJoins<?> rootStrategyJoins;
@@ -52,7 +57,7 @@ public class StrategyJoinsRowTransformer<T> {
 	}
 	
 	/**
-	 * Change the alias provider (default is {@link Column#getAlias()}) by giving the map between {@link Column} and their alias.
+	 * Changes the alias provider (default is {@link Column#getAlias()}) by giving the map between {@link Column} and their alias.
 	 * @param aliases the mapping between {@link Column} and their alias in the Rows of {@link #transform(Iterable)}
 	 */
 	public void setAliases(Map<Column, String> aliases) {
@@ -75,6 +80,8 @@ public class StrategyJoinsRowTransformer<T> {
 			
 			Queue<StrategyJoins> stack = new ArrayDeque<>();
 			stack.add(rootStrategyJoins);
+			// we use a local cache of bean tranformer because we'll ask a slide of them with aliasProvider which creates an instance at each invokation
+			Map<ClassMappingStrategy, ToBeanRowTransformer> beanTransformerCache = new HashMap<>();
 			while (!stack.isEmpty()) {
 				
 				// treating the current depth
@@ -94,26 +101,22 @@ public class StrategyJoinsRowTransformer<T> {
 				
 				// processing the direct relations
 				for (Join join : strategyJoins.getJoins()) {
-					StrategyJoins rightMember = join.getStrategy();
-					Object primaryKeyValue2 = row.get(getAlias(rightMember.getTable().getPrimaryKey()));
+					StrategyJoins rightStrategy = join.getStrategy();
+					Object rightPrimaryKeyValue = row.get(getAlias(rightStrategy.getTable().getPrimaryKey()));
 					
 					// primary key null means no entity => nothing to do
-					if (primaryKeyValue2 != null) {
-						ToBeanRowTransformer rowTransformer = rightMember.getStrategy().getRowTransformer();
-						Object rowInstance2 = entityCacheWrapper.computeIfAbsent(rightMember.getStrategy().getClassToPersist(), primaryKeyValue2, () -> {
-							
-							Object newInstance = rowTransformer.newBeanInstance();
-							rowTransformer.withAliases(aliasProvider).applyRowToBean(row, newInstance);
-							return newInstance;
-						});
+					if (rightPrimaryKeyValue != null) {
+						ToBeanRowTransformer rowTransformer = beanTransformerCache.computeIfAbsent(rightStrategy.getStrategy(), s -> s.getRowTransformer().withAliases(aliasProvider));
+						Object rightInstance = entityCacheWrapper.computeIfAbsent(rightStrategy.getStrategy().getClassToPersist(), rightPrimaryKeyValue,
+								() -> rowTransformer.transform(row));
 						
 						// TODO: implémenter l'héritage d'entité
 						// TODO: implémenter ManyToMany ?
-						join.getBeanRelationFixer().apply(rowInstance, rowInstance2);
+						join.getBeanRelationFixer().apply(rowInstance, rightInstance);
 						
-						// don't forget to add the member to the depth iteration
-						if (!rightMember.getJoins().isEmpty()) {
-							stack.add(rightMember);
+						// Adds the right strategy for further processing if it has some more joins so they'll also be taken into account
+						if (!rightStrategy.getJoins().isEmpty()) {
+							stack.add(rightStrategy);
 						}
 					}
 				}
@@ -126,7 +129,7 @@ public class StrategyJoinsRowTransformer<T> {
 	 * Simple class to ease access or creation to entity from the cache
 	 * @see #computeIfAbsent(Class, Object, Supplier) 
 	 */
-	private final class EntityCacheWrapper {
+	private static final class EntityCacheWrapper {
 		
 		private final Map<Class, Map<Object, Object>> entityCache;
 		

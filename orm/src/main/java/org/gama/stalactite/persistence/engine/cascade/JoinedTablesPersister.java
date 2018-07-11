@@ -1,5 +1,6 @@
 package org.gama.stalactite.persistence.engine.cascade;
 
+import javax.annotation.Nonnull;
 import java.util.List;
 
 import org.gama.sql.ConnectionProvider;
@@ -38,6 +39,15 @@ public class JoinedTablesPersister<C extends Identified, I extends StatefullIden
 		super(mainMappingStrategy, connectionProvider, dialect.getDmlGenerator(),
 				dialect.getWriteOperationRetryer(), jdbcBatchSize, dialect.getInOperatorMaxSize());
 		this.joinedStrategiesSelectExecutor = new JoinedStrategiesSelectExecutor<>(mainMappingStrategy, dialect, connectionProvider);
+	}
+	
+	/**
+	 * Gives access to the select executor for further manipulations on {@link JoinedStrategiesSelect} for advanced usage
+	 * @return never null
+	 */
+	@Nonnull
+	public JoinedStrategiesSelectExecutor<C, I> getJoinedStrategiesSelectExecutor() {
+		return joinedStrategiesSelectExecutor;
 	}
 	
 	/**

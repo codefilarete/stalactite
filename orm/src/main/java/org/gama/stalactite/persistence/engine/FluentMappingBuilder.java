@@ -488,7 +488,7 @@ public class FluentMappingBuilder<T extends Identified, I extends StatefullIdent
 			
 			CascadeManyConfigurer cascadeManyConfigurer = new CascadeManyConfigurer();
 			for(CascadeMany<T, ? extends Identified, ? extends StatefullIdentifier, ? extends Collection> cascadeMany : cascadeManys) {
-				cascadeManyConfigurer.appendCascade(cascadeMany, joinedTablesPersister, joinedTablesPersister, foreignKeyNamingStrategy);
+				cascadeManyConfigurer.appendCascade(cascadeMany, joinedTablesPersister, foreignKeyNamingStrategy);
 			}
 		}
 		
@@ -728,6 +728,7 @@ public class FluentMappingBuilder<T extends Identified, I extends StatefullIdent
 		private final Set<CascadeType> cascadeTypes = new HashSet<>();
 		/** Should we delete removed entities from the Collection (for UPDATE cascade) */
 		private boolean deleteRemoved = false;
+		private Column indexingColumn;
 		
 		private CascadeMany(Function<SRC, C> targetProvider, Persister<O, J, ? extends Table> persister, Method method) {
 			this(targetProvider, persister, (Class<C>) Reflections.javaBeanTargetType(method), method);
@@ -782,6 +783,14 @@ public class FluentMappingBuilder<T extends Identified, I extends StatefullIdent
 		
 		public boolean shouldDeleteRemoved() {
 			return deleteRemoved;
+		}
+		
+		public void setIndexingColumn(Column indexingColumn) {
+			this.indexingColumn = indexingColumn;
+		}
+		
+		public Column getIndexingColumn() {
+			return indexingColumn;
 		}
 	}
 	

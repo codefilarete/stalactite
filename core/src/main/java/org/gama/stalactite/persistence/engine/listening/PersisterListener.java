@@ -106,7 +106,13 @@ public class PersisterListener<T, I> {
 	
 	public List<T> doWithSelectListener(Iterable<I> ids, IQuietDelegate<List<T>> delegate) {
 		selectListener.beforeSelect(ids);
-		List<T> toReturn = delegate.execute();
+		List<T> toReturn;
+		try {
+			toReturn = delegate.execute();
+		} catch (RuntimeException e) {
+			selectListener.onError(ids);
+			throw e;
+		}
 		selectListener.afterSelect(toReturn);
 		return toReturn;
 	}

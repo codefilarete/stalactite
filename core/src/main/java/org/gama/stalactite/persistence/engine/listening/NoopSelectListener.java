@@ -15,4 +15,9 @@ public class NoopSelectListener<T, I> implements ISelectListener<T, I> {
 	public void afterSelect(Iterable<T> result) {
 		
 	}
+	
+	@Override
+	public void onError(Iterable<I> ids) {
+		
+	}
 }
