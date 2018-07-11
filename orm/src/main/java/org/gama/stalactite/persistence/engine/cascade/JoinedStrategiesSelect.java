@@ -3,7 +3,6 @@ package org.gama.stalactite.persistence.engine.cascade;
 import javax.annotation.Nonnull;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -15,15 +14,18 @@ import org.gama.sql.binder.ParameterBinderProvider;
 import org.gama.stalactite.persistence.engine.BeanRelationFixer;
 import org.gama.stalactite.persistence.engine.cascade.JoinedStrategiesSelect.StrategyJoins.Join;
 import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
-import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.persistence.structure.Column;
+import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.query.model.From;
 import org.gama.stalactite.query.model.From.AbstractJoin.JoinDirection;
 import org.gama.stalactite.query.model.Query;
 
 /**
  * Class that eases the creation of a SQL selection with multiple joined {@link ClassMappingStrategy}.
- * The representation of a link between strategies is done through {@link StrategyJoins}
+ * The representation of a link between strategies is done through {@link StrategyJoins}.
+ * 
+ * Joins have a name (very first one is {@value #FIRST_STRATEGY_NAME}, see {@link #FIRST_STRATEGY_NAME}) so one can reference it in further
+ * joins for joining a table multiple times.
  *
  * @author Guillaume Mary
  * @see #buildSelectQuery()
@@ -52,7 +54,7 @@ public class JoinedStrategiesSelect<C, I, T extends Table> {
 	private ColumnAliasBuilder columnAliasBuilder = new ColumnAliasBuilder();
 	
 	/**
-	 * Default constructor
+	 * Main constructor which gives the very first strategy name as {@value #FIRST_STRATEGY_NAME} (see {@link #FIRST_STRATEGY_NAME})
 	 *
 	 * @param classMappingStrategy the root strategy, added strategy will be joined wih it
 	 * @param parameterBinderProvider the objet that will give {@link ParameterBinder} to read the selected columns
@@ -62,20 +64,16 @@ public class JoinedStrategiesSelect<C, I, T extends Table> {
 	}
 	
 	/**
-	 * Default constructor
+	 * Constructor that let one gives the very first strategy name.
 	 *
 	 * @param classMappingStrategy the root strategy, added strategy will be joined wih it
 	 * @param parameterBinderProvider the objet that will give {@link ParameterBinder} to read the selected columns
+	 * @param strategyName the very first strategy name
 	 */
 	JoinedStrategiesSelect(ClassMappingStrategy<C, I, T> classMappingStrategy, ParameterBinderProvider<Column> parameterBinderProvider, String strategyName) {
 		this.parameterBinderProvider = parameterBinderProvider;
 		this.root = new StrategyJoins<>((ClassMappingStrategy<C, I, Table>) classMappingStrategy);
 		this.strategyIndex.put(strategyName, this.root);
-	}
-	
-	@SuppressWarnings("unchecked")
-	public ClassMappingStrategy<C, I, T> getRoot() {
-		return (ClassMappingStrategy<C, I, T>) root.getStrategy();
 	}
 	
 	public Map<String, ParameterBinder> getSelectParameterBinders() {
@@ -91,10 +89,6 @@ public class JoinedStrategiesSelect<C, I, T extends Table> {
 	
 	StrategyJoins getStrategyJoins(String leftStrategyName) {
 		return this.strategyIndex.get(leftStrategyName);
-	}
-	
-	public Collection<StrategyJoins> getStrategies() {
-		return strategyIndex.values();
 	}
 	
 	public Query buildSelectQuery() {
@@ -120,17 +114,33 @@ public class JoinedStrategiesSelect<C, I, T extends Table> {
 		return query;
 	}
 	
-	public <U> String add(String leftStrategyName, ClassMappingStrategy<U, ?, ?> strategy, Column leftJoinColumn, Column rightJoinColumn,
-						  boolean isOuterJoin, BeanRelationFixer beanRelationFixer) {
+	/**
+	 * Adds a join to this select.
+	 * 
+	 * @param leftStrategyName the name of a (previously) registered join. {@code leftJoinColumn} must be a {@link Column} of its left {@link Table}
+	 * @param strategy the strategy of the mapped bean. Used to give {@link Column}s and {@link org.gama.stalactite.persistence.mapping.IRowTransformer}
+	 * @param leftJoinColumn the {@link Column} (of previous strategy left table) to be joined with {@code rightJoinColumn}
+	 * @param rightJoinColumn the {@link Column} (of the strategy table) to be joined with {@code leftJoinColumn}
+	 * @param isOuterJoin says wether or not the join must be open
+	 * @param beanRelationFixer a function to fullfill relation between 2 strategies beans
+	 * @param <U> type of bean mapped by the given strategy
+	 * @param <T1> joined left table
+	 * @param <T2> joined right table
+	 * @param <ID> type of joined values
+	 * @return the name of the created join, to be used as a key for other joins (through this method {@code leftStrategyName} argument)
+	 */
+	public <U, T1 extends Table<T1>, T2 extends Table<T2>, ID> String add(String leftStrategyName, ClassMappingStrategy<U, ID, T2> strategy,
+																		  Column<T1, ID> leftJoinColumn, Column<T2, ID> rightJoinColumn,
+																		  boolean isOuterJoin, BeanRelationFixer beanRelationFixer) {
 		StrategyJoins hangingJoins = getStrategyJoins(leftStrategyName);
 		if (hangingJoins == null) {
-			throw new IllegalStateException("No strategy with name " + leftStrategyName + " exists to add a new strategy on");
+			throw new IllegalArgumentException("No strategy with name " + leftStrategyName + " exists to add a new strategy on");
 		}
 		return add(hangingJoins, strategy, leftJoinColumn, rightJoinColumn, isOuterJoin, beanRelationFixer);
 	}
 	
-	private <U> String add(StrategyJoins owner, ClassMappingStrategy<U, ?, ?> strategy,
-						   Column leftJoinColumn, Column rightJoinColumn, boolean isOuterJoin,
+	private <U, T1 extends Table<T1>, T2 extends Table<T2>, ID> String add(StrategyJoins owner, ClassMappingStrategy<U, ID, T2> strategy,
+						   Column<T1, ID> leftJoinColumn, Column<T2, ID> rightJoinColumn, boolean isOuterJoin,
 						   BeanRelationFixer beanRelationFixer) {
 		Join join = owner.add(strategy, leftJoinColumn, rightJoinColumn, isOuterJoin, beanRelationFixer);
 		String indexKey = indexNamer.generateName(strategy);

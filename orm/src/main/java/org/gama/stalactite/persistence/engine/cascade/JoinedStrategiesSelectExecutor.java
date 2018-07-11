@@ -60,22 +60,60 @@ public class JoinedStrategiesSelectExecutor<T, I> {
 		this.keyColumn = classMappingStrategy.getTargetTable().getPrimaryKey();
 	}
 	
-	public ConnectionProvider getConnectionProvider() {
-		return connectionProvider;
+	public JoinedStrategiesSelect<T, I, ? extends Table> getJoinedStrategiesSelect() {
+		return joinedStrategiesSelect;
 	}
 	
-	public <U> String addComplementaryTables(String leftStrategyName, ClassMappingStrategy<U, ?, ?> mappingStrategy,
-											 BeanRelationFixer beanRelationFixer,
-											 Column leftJoinColumn, Column rightJoinColumn) {
+	/**
+	 * Adds an inner join to this executor.
+	 * Shorcu for {@link JoinedStrategiesSelect#add(String, ClassMappingStrategy, Column, Column, boolean, BeanRelationFixer)}
+	 *
+	 * @param leftStrategyName the name of a (previously) registered join. {@code leftJoinColumn} must be a {@link Column} of its left {@link Table}
+	 * @param strategy the strategy of the mapped bean. Used to give {@link Column}s and {@link org.gama.stalactite.persistence.mapping.IRowTransformer}
+	 * @param leftJoinColumn the {@link Column} (of previous strategy left table) to be joined with {@code rightJoinColumn}
+	 * @param rightJoinColumn the {@link Column} (of the strategy table) to be joined with {@code leftJoinColumn}
+	 * @param beanRelationFixer a function to fullfill relation between 2 strategies beans
+	 * @param <U> type of bean mapped by the given strategy
+	 * @param <T1> joined left table
+	 * @param <T2> joined right table
+	 * @param <ID> type of joined values
+	 * @return the name of the created join, to be used as a key for other joins (through this method {@code leftStrategyName} argument)
+	 */
+	public <U, T1 extends Table<T1>, T2 extends Table<T2>, ID> String addComplementaryTables(
+			String leftStrategyName,
+			ClassMappingStrategy<U, ID, T2> strategy,
+			BeanRelationFixer beanRelationFixer,
+			Column<T1, ID> leftJoinColumn,
+			Column<T2, ID> rightJoinColumn) {
 		// we outer join nullable columns
 		boolean isOuterJoin = rightJoinColumn.isNullable();
-		return addComplementaryTables(leftStrategyName, mappingStrategy, beanRelationFixer, leftJoinColumn, rightJoinColumn, isOuterJoin);
+		return addComplementaryTables(leftStrategyName, strategy, beanRelationFixer, leftJoinColumn, rightJoinColumn, isOuterJoin);
 	}
 	
-	public <U> String addComplementaryTables(String leftStrategyName, ClassMappingStrategy<U, ?, ?> mappingStrategy,
-											 BeanRelationFixer beanRelationFixer,
-											 Column leftJoinColumn, Column rightJoinColumn, boolean isOuterJoin) {
-		return joinedStrategiesSelect.add(leftStrategyName, mappingStrategy, leftJoinColumn, rightJoinColumn, isOuterJoin, beanRelationFixer);
+	/**
+	 * Adds a join to this executor.
+	 * Shorcu for {@link JoinedStrategiesSelect#add(String, ClassMappingStrategy, Column, Column, boolean, BeanRelationFixer)}
+	 *
+	 * @param leftStrategyName the name of a (previously) registered join. {@code leftJoinColumn} must be a {@link Column} of its left {@link Table}
+	 * @param strategy the strategy of the mapped bean. Used to give {@link Column}s and {@link org.gama.stalactite.persistence.mapping.IRowTransformer}
+	 * @param leftJoinColumn the {@link Column} (of previous strategy left table) to be joined with {@code rightJoinColumn}
+	 * @param rightJoinColumn the {@link Column} (of the strategy table) to be joined with {@code leftJoinColumn}
+	 * @param isOuterJoin says wether or not the join must be open
+	 * @param beanRelationFixer a function to fullfill relation between 2 strategies beans
+	 * @param <U> type of bean mapped by the given strategy
+	 * @param <T1> joined left table
+	 * @param <T2> joined right table
+	 * @param <ID> type of joined values
+	 * @return the name of the created join, to be used as a key for other joins (through this method {@code leftStrategyName} argument)
+	 */
+	public <U, T1 extends Table<T1>, T2 extends Table<T2>, ID> String addComplementaryTables(
+			String leftStrategyName,
+			ClassMappingStrategy<U, ID, T2> strategy,
+			BeanRelationFixer beanRelationFixer,
+			Column<T1, ID> leftJoinColumn,
+			Column<T2, ID> rightJoinColumn,
+			boolean isOuterJoin) {
+		return joinedStrategiesSelect.add(leftStrategyName, strategy, leftJoinColumn, rightJoinColumn, isOuterJoin, beanRelationFixer);
 	}
 	
 	public List<T> select(Iterable<I> ids) {
@@ -90,7 +128,7 @@ public class JoinedStrategiesSelectExecutor<T, I> {
 		query.where(keyColumn, condition);
 		
 		// We ensure that the same Connection is used for all operations
-		ConnectionProvider localConnectionProvider = new SimpleConnectionProvider(getConnectionProvider().getCurrentConnection());
+		ConnectionProvider localConnectionProvider = new SimpleConnectionProvider(connectionProvider.getCurrentConnection());
 		List<I> lastBlock = Iterables.last(parcels);
 		// keep only full blocks to run them on the fully filled "in" operator
 		int lastBlockSize = lastBlock.size();
