@@ -9,6 +9,6 @@ public interface ISelectListener<T, I> {
 	
 	void afterSelect(Iterable<T> result);
 	
-	void onError(Iterable<I> ids);
+	void onError(Iterable<I> ids, RuntimeException exception);
 	
 }

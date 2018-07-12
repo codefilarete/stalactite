@@ -7,12 +7,17 @@ package org.gama.stalactite.persistence.engine.listening;
 public class NoopUpdateByIdListener<T> implements IUpdateByIdListener<T> {
 	
 	@Override
-	public void beforeUpdateById(Iterable<T> iterables) {
+	public void beforeUpdateById(Iterable<T> entities) {
 		
 	}
 	
 	@Override
-	public void afterUpdateById(Iterable<T> iterables) {
+	public void afterUpdateById(Iterable<T> entities) {
+		
+	}
+	
+	@Override
+	public void onError(Iterable<T> entities, RuntimeException runtimeException) {
 		
 	}
 }

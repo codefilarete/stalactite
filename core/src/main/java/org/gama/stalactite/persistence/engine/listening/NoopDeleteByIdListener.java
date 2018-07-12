@@ -7,12 +7,17 @@ package org.gama.stalactite.persistence.engine.listening;
 public class NoopDeleteByIdListener<T> implements IDeleteByIdListener<T> {
 	
 	@Override
-	public void beforeDeleteById(Iterable<T> iterables) {
+	public void beforeDeleteById(Iterable<T> entities) {
 		
 	}
 	
 	@Override
-	public void afterDeleteById(Iterable<T> iterables) {
+	public void afterDeleteById(Iterable<T> entities) {
+		
+	}
+	
+	@Override
+	public void onError(Iterable<T> entities, RuntimeException runtimeException) {
 		
 	}
 }

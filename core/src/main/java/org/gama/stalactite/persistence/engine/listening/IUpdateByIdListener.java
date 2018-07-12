@@ -5,9 +5,9 @@ package org.gama.stalactite.persistence.engine.listening;
  */
 public interface IUpdateByIdListener<T> {
 	
-	void beforeUpdateById(Iterable<T> iterables);
+	void beforeUpdateById(Iterable<T> entities);
 	
-	void afterUpdateById(Iterable<T> iterables);
+	void afterUpdateById(Iterable<T> entities);
 	
-	
+	void onError(Iterable<T> entities, RuntimeException runtimeException);
 }

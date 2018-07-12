@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.Map.Entry;
 
 import org.gama.lang.bean.IQuietDelegate;
+import org.gama.lang.collection.Iterables;
 
 /**
  * Simple class that centralize persistence event listening. Delegates listening to encapsulated instance.
@@ -28,10 +29,16 @@ public class PersisterListener<T, I> {
 		return this;
 	}
 	
-	public <R> R doWithInsertListener(Iterable<T> iterable, IQuietDelegate<R> delegate) {
-		insertListener.beforeInsert(iterable);
-		R result = delegate.execute();
-		insertListener.afterInsert(iterable);
+	public <R> R doWithInsertListener(Iterable<T> entities, IQuietDelegate<R> delegate) {
+		insertListener.beforeInsert(entities);
+		R result;
+		try {
+			result = delegate.execute();
+		} catch (RuntimeException e) {
+			insertListener.onError(entities, e);
+			throw e;
+		}
+		insertListener.afterInsert(entities);
 		return result;
 	}
 	
@@ -44,10 +51,16 @@ public class PersisterListener<T, I> {
 		return this;
 	}
 	
-	public <R> R doWithUpdateByIdListener(Iterable<T> iterable, IQuietDelegate<R> delegate) {
-		updateByIdListenerCollection.beforeUpdateById(iterable);
-		R result = delegate.execute();
-		updateByIdListenerCollection.afterUpdateById(iterable);
+	public <R> R doWithUpdateByIdListener(Iterable<T> entities, IQuietDelegate<R> delegate) {
+		updateByIdListenerCollection.beforeUpdateById(entities);
+		R result;
+		try {
+			result = delegate.execute();
+		} catch (RuntimeException e) {
+			updateByIdListenerCollection.onError(entities, e);
+			throw e;
+		}
+		updateByIdListenerCollection.afterUpdateById(entities);
 		return result;
 	}
 	
@@ -62,7 +75,13 @@ public class PersisterListener<T, I> {
 	
 	public <R> R doWithUpdateListener(Iterable<Entry<T, T>> differencesIterable, boolean allColumnsStatement, IQuietDelegate<R> delegate) {
 		updateListener.beforeUpdate(differencesIterable, allColumnsStatement);
-		R result = delegate.execute();
+		R result;
+		try {
+			result = delegate.execute();
+		} catch (RuntimeException e) {
+			updateListener.onError(Iterables.collectToList(differencesIterable, Entry::getKey), e);
+			throw e;
+		}
 		updateListener.afterUpdate(differencesIterable, allColumnsStatement);
 		return result;
 	}
@@ -76,10 +95,16 @@ public class PersisterListener<T, I> {
 		return this;
 	}
 	
-	public <R> R doWithDeleteListener(Iterable<T> iterable, IQuietDelegate<R> delegate) {
-		deleteListener.beforeDelete(iterable);
-		R result = delegate.execute();
-		deleteListener.afterDelete(iterable);
+		public <R> R doWithDeleteListener(Iterable<T> entities, IQuietDelegate<R> delegate) {
+		deleteListener.beforeDelete(entities);
+		R result;
+		try {
+			result = delegate.execute();
+		} catch (RuntimeException e) {
+			deleteListener.onError(entities, e);
+			throw e;
+		}
+		deleteListener.afterDelete(entities);
 		return result;
 	}
 	
@@ -88,10 +113,16 @@ public class PersisterListener<T, I> {
 		return this;
 	}
 	
-	public <R> R doWithDeleteByIdListener(Iterable<T> iterable, IQuietDelegate<R> delegate) {
-		deleteByIdListenerCollection.beforeDeleteById(iterable);
-		R result = delegate.execute();
-		deleteByIdListenerCollection.afterDeleteById(iterable);
+	public <R> R doWithDeleteByIdListener(Iterable<T> entities, IQuietDelegate<R> delegate) {
+		deleteByIdListenerCollection.beforeDeleteById(entities);
+		R result;
+		try {
+			result = delegate.execute();
+		} catch (RuntimeException e) {
+			deleteByIdListenerCollection.onError(entities, e);
+			throw e;
+		}
+		deleteByIdListenerCollection.afterDeleteById(entities);
 		return result;
 	}
 	
@@ -110,7 +141,7 @@ public class PersisterListener<T, I> {
 		try {
 			toReturn = delegate.execute();
 		} catch (RuntimeException e) {
-			selectListener.onError(ids);
+			selectListener.onError(ids, e);
 			throw e;
 		}
 		selectListener.afterSelect(toReturn);

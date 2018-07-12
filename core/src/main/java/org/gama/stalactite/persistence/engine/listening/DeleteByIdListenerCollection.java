@@ -11,17 +11,18 @@ public class DeleteByIdListenerCollection<T> implements IDeleteByIdListener<T> {
 	private List<IDeleteByIdListener<T>> deleteByIdListeners = new ArrayList<>();
 	
 	@Override
-	public void beforeDeleteById(Iterable<T> iterables) {
-		for (IDeleteByIdListener<T> deleteByIdListener : deleteByIdListeners) {
-			deleteByIdListener.beforeDeleteById(iterables);
-		}
+	public void beforeDeleteById(Iterable<T> entities) {
+		deleteByIdListeners.forEach(listener -> listener.beforeDeleteById(entities));
 	}
 	
 	@Override
-	public void afterDeleteById(Iterable<T> iterables) {
-		for (IDeleteByIdListener<T> deleteByIdListener : deleteByIdListeners) {
-			deleteByIdListener.afterDeleteById(iterables);
-		}
+	public void afterDeleteById(Iterable<T> entities) {
+		deleteByIdListeners.forEach(listener -> listener.afterDeleteById(entities));
+	}
+	
+	@Override
+	public void onError(Iterable<T> entities, RuntimeException runtimeException) {
+		deleteByIdListeners.forEach(listener -> listener.onError(entities, runtimeException));
 	}
 	
 	public void add(IDeleteByIdListener<T> deleteByIdListener) {

@@ -12,23 +12,17 @@ public class SelectListenerCollection<T, I> implements ISelectListener<T, I> {
 	
 	@Override
 	public void beforeSelect(Iterable<I> ids) {
-		for (ISelectListener<T, I> selectListener : selectListeners) {
-			selectListener.beforeSelect(ids);
-		}
+		selectListeners.forEach(listener -> listener.beforeSelect(ids));
 	}
 	
 	@Override
-	public void afterSelect(Iterable<T> result) {
-		for (ISelectListener<T, I> selectListener : selectListeners) {
-			selectListener.afterSelect(result);
-		}
+	public void afterSelect(Iterable<T> entities) {
+		selectListeners.forEach(listener -> listener.afterSelect(entities));
 	}
 	
 	@Override
-	public void onError(Iterable<I> ids) {
-		for (ISelectListener<T, I> selectListener : selectListeners) {
-			selectListener.onError(ids);
-		}
+	public void onError(Iterable<I> ids, RuntimeException exception) {
+		selectListeners.forEach(listener -> listener.onError(ids, exception));
 	}
 	
 	public void add(ISelectListener<T, I> selectListener) {

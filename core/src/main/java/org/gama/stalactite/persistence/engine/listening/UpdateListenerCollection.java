@@ -13,16 +13,17 @@ public class UpdateListenerCollection<T> implements IUpdateListener<T> {
 	
 	@Override
 	public void beforeUpdate(Iterable<Entry<T, T>> iterables, boolean allColumnsStatement) {
-		for (IUpdateListener<T> updateListener : updateListeners) {
-			updateListener.beforeUpdate(iterables, allColumnsStatement);
-		}
+		updateListeners.forEach(listener -> listener.beforeUpdate(iterables, allColumnsStatement));
 	}
 	
 	@Override
 	public void afterUpdate(Iterable<Entry<T, T>> iterables, boolean allColumnsStatement) {
-		for (IUpdateListener<T> updateListener : updateListeners) {
-			updateListener.afterUpdate(iterables, allColumnsStatement);
-		}
+		updateListeners.forEach(listener -> listener.afterUpdate(iterables, allColumnsStatement));
+	}
+	
+	@Override
+	public void onError(Iterable<T> entities, RuntimeException runtimeException) {
+		updateListeners.forEach(listener -> listener.onError(entities, runtimeException));
 	}
 	
 	public void add(IUpdateListener<T> updateListener) {

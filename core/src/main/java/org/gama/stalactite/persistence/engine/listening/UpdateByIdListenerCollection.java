@@ -12,16 +12,17 @@ public class UpdateByIdListenerCollection<T> implements IUpdateByIdListener<T> {
 	
 	@Override
 	public void beforeUpdateById(Iterable<T> iterables) {
-		for (IUpdateByIdListener<T> updateByIdListener : updateByIdListeners) {
-			updateByIdListener.beforeUpdateById(iterables);
-		}
+		updateByIdListeners.forEach(listener -> listener.beforeUpdateById(iterables));
 	}
 	
 	@Override
 	public void afterUpdateById(Iterable<T> iterables) {
-		for (IUpdateByIdListener<T> updateByIdListener : updateByIdListeners) {
-			updateByIdListener.afterUpdateById(iterables);
-		}
+		updateByIdListeners.forEach(listener -> listener.afterUpdateById(iterables));
+	}
+	
+	@Override
+	public void onError(Iterable<T> entities, RuntimeException runtimeException) {
+		updateByIdListeners.forEach(listener -> listener.onError(entities, runtimeException));
 	}
 	
 	public void add(IUpdateByIdListener<T> updateByIdListener) {

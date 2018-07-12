@@ -17,7 +17,7 @@ public class NoopSelectListener<T, I> implements ISelectListener<T, I> {
 	}
 	
 	@Override
-	public void onError(Iterable<I> ids) {
+	public void onError(Iterable<I> ids, RuntimeException exception) {
 		
 	}
 }

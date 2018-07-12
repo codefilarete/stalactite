@@ -11,4 +11,6 @@ public interface IUpdateListener<T> {
 	
 	void afterUpdate(Iterable<Entry<T, T>> iterables, boolean allColumnsStatement);
 	
+	void onError(Iterable<T> entities, RuntimeException runtimeException);
+	
 }

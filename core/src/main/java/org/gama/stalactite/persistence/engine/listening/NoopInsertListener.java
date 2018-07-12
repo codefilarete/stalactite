@@ -7,12 +7,17 @@ package org.gama.stalactite.persistence.engine.listening;
 public class NoopInsertListener<T> implements IInsertListener<T> {
 	
 	@Override
-	public void beforeInsert(Iterable<T> iterables) {
+	public void beforeInsert(Iterable<T> entities) {
 		
 	}
 	
 	@Override
-	public void afterInsert(Iterable<T> iterables) {
+	public void afterInsert(Iterable<T> entities) {
+		
+	}
+	
+	@Override
+	public void onError(Iterable<T> entities, RuntimeException runtimeException) {
 		
 	}
 }

@@ -306,7 +306,7 @@ public class CascadeManyConfigurer<I extends Identified, O extends Identified, J
 							}
 							
 							@Override
-							public void onError(Iterable<J> ids) {
+							public void onError(Iterable<J> ids, RuntimeException exception) {
 								cleanContext();
 							}
 							

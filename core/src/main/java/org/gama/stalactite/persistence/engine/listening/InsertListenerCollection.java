@@ -11,17 +11,18 @@ public class InsertListenerCollection<T> implements IInsertListener<T> {
 	private List<IInsertListener<T>> insertListeners = new ArrayList<>();
 	
 	@Override
-	public void beforeInsert(Iterable<T> iterables) {
-		for (IInsertListener<T> insertListener : insertListeners) {
-			insertListener.beforeInsert(iterables);
-		}
+	public void beforeInsert(Iterable<T> entities) {
+		insertListeners.forEach(listener -> listener.beforeInsert(entities));
 	}
 	
 	@Override
-	public void afterInsert(Iterable<T> iterables) {
-		for (IInsertListener<T> insertListener : insertListeners) {
-			insertListener.afterInsert(iterables);
-		}
+	public void afterInsert(Iterable<T> entities) {
+		insertListeners.forEach(listener -> listener.afterInsert(entities));
+	}
+	
+	@Override
+	public void onError(Iterable<T> entities, RuntimeException runtimeException) {
+		insertListeners.forEach(listener -> listener.onError(entities, runtimeException));
 	}
 	
 	public void add(IInsertListener<T> insertListener) {

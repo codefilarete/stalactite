@@ -5,8 +5,10 @@ package org.gama.stalactite.persistence.engine.listening;
  */
 public interface IDeleteListener<T> {
 	
-	void beforeDelete(Iterable<T> iterables);
+	void beforeDelete(Iterable<T> entities);
 	
-	void afterDelete(Iterable<T> iterables);
+	void afterDelete(Iterable<T> entities);
+	
+	void onError(Iterable<T> entities, RuntimeException runtimeException);
 	
 }

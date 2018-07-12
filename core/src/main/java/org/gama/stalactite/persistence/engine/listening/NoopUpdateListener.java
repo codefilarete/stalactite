@@ -17,4 +17,9 @@ public class NoopUpdateListener<T> implements IUpdateListener<T> {
 	public void afterUpdate(Iterable<Entry<T, T>> iterables, boolean allColumnsStatement) {
 		
 	}
+	
+	@Override
+	public void onError(Iterable<T> entities, RuntimeException runtimeException) {
+		
+	}
 }
