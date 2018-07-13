@@ -3,10 +3,10 @@ package org.gama.stalactite.persistence.engine;
 import javax.sql.DataSource;
 import java.sql.Connection;
 import java.sql.SQLException;
-import java.util.AbstractMap;
 import java.util.List;
 import java.util.Map;
 
+import org.gama.lang.Duo;
 import org.gama.lang.Retryer;
 import org.gama.lang.collection.Arrays;
 import org.gama.lang.collection.Iterables;
@@ -146,15 +146,15 @@ public class PersisterDatabaseTest {
 		
 		// check updated row count
 		int updatedFullyRowCount = testInstance.update(Arrays.asList(
-				new AbstractMap.SimpleEntry<>(new Toto(1, 10, 100), new Toto(1, 10, 101))), true);
+				new Duo<>(new Toto(1, 10, 100), new Toto(1, 10, 101))), true);
 		assertEquals(1, updatedFullyRowCount);
 		updatedFullyRowCount = testInstance.update(Arrays.asList(
-				new AbstractMap.SimpleEntry<>(new Toto(1, 10, 101), new Toto(1, 10, 101))), true);
+				new Duo<>(new Toto(1, 10, 101), new Toto(1, 10, 101))), true);
 		assertEquals(0, updatedFullyRowCount);
 		updatedFullyRowCount = testInstance.update(Arrays.asList(
-				new AbstractMap.SimpleEntry<>(new Toto(2, 20, 200), new Toto(2, 20, 201)),
-				new AbstractMap.SimpleEntry<>(new Toto(3, 30, 300), new Toto(3, 30, 301)),
-				new AbstractMap.SimpleEntry<>(new Toto(4, 40, 400), new Toto(4, 40, 401))), true);
+				new Duo<>(new Toto(2, 20, 200), new Toto(2, 20, 201)),
+				new Duo<>(new Toto(3, 30, 300), new Toto(3, 30, 301)),
+				new Duo<>(new Toto(4, 40, 400), new Toto(4, 40, 401))), true);
 		assertEquals(3, updatedFullyRowCount);
 		
 		// check deleted row count

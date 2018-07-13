@@ -1,20 +1,19 @@
 package org.gama.stalactite.persistence.engine;
 
 import java.lang.reflect.Method;
-import java.util.AbstractMap.SimpleEntry;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import org.danekja.java.util.function.serializable.SerializableBiConsumer;
+import org.gama.lang.Duo;
 import org.gama.lang.Nullable;
 import org.gama.lang.Reflections;
 import org.gama.lang.ThreadLocals;
@@ -147,18 +146,18 @@ public class CascadeManyConfigurer<I extends Identified, O extends Identified, J
 						throw new UnsupportedOperationException("Indexing column is only available on List, found "
 								+ Reflections.toString(cascadeMany.getMember().getReturnType()));
 					}
-					BiConsumer<Entry<I, I>, Boolean> updateListener;
+					BiConsumer<Duo<I, I>, Boolean> updateListener;
 					if (List.class.isAssignableFrom(cascadeMany.getMember().getReturnType())) {
 						updateListener = (entry, allColumnsStatement) -> {
-							C coll1 = collectionGetter.apply(entry.getValue());
-							C coll2 = collectionGetter.apply(entry.getKey());
+							C modified = collectionGetter.apply(entry.getLeft());
+							C unmodified = collectionGetter.apply(entry.getRight());
 							
 							// In order to have batch update of the index column (better performance) we compute the whole indexes
 							// Then those indexes will be given to the update cascader.
 							// But this can only be done through a ThreadLocal (for now) because there's no way to give them directly
 							// Hence we need to be carefull of Thread safety (cleaning context and collision)
 							
-							Set<Diff> diffSet = differ.diffList((List) coll1, (List)coll2);
+							Set<Diff> diffSet = differ.diffList((List) unmodified, (List)modified);
 							// a List to keep SQL orders, for better debug, easier understanding of logs
 							List<O> toBeInserted = new ArrayList<>();
 							List<O> toBeDeleted = new ArrayList<>();
@@ -187,7 +186,7 @@ public class CascadeManyConfigurer<I extends Identified, O extends Identified, J
 							}
 							// we batch index update
 							ThreadLocals.doWithThreadLocal(updatableListIndex, () -> newIndexes, (Runnable) () -> {
-								List<Entry<O, O>> collect = updatableListIndex.get().keySet().stream().map(o -> new SimpleEntry<>(o, o)).collect(Collectors.toList());
+								List<Duo<O, O>> collect = Iterables.collectToList(updatableListIndex.get().keySet(), o -> new Duo<>(o, o));
 								targetPersister.update(collect, false);
 							});
 							// we batch added and deleted objects
@@ -196,9 +195,9 @@ public class CascadeManyConfigurer<I extends Identified, O extends Identified, J
 						};
 					} else /* any other type of Collection except List */ {
 						updateListener = (entry, allColumnsStatement) -> {
-							C coll1 = collectionGetter.apply(entry.getValue());
-							C coll2 = collectionGetter.apply(entry.getKey());
-							Set<Diff> diffSet = differ.diffSet((Set) coll1, (Set) coll2);
+							C modified = collectionGetter.apply(entry.getLeft());
+							C unmodified = collectionGetter.apply(entry.getRight());
+							Set<Diff> diffSet = differ.diffSet((Set) unmodified, (Set) modified);
 							for (Diff diff : diffSet) {
 								switch (diff.getState()) {
 									case ADDED:
@@ -219,17 +218,17 @@ public class CascadeManyConfigurer<I extends Identified, O extends Identified, J
 					}
 					persisterListener.addUpdateListener(new AfterUpdateCollectionCascader<I, O>(targetPersister) {
 						@Override
-						public void afterUpdate(Iterable<Map.Entry<I, I>> iterables, boolean allColumnsStatement) {
+						public void afterUpdate(Iterable<Duo<I, I>> iterables, boolean allColumnsStatement) {
 							iterables.forEach(entry -> updateListener.accept(entry, allColumnsStatement));
 						}
 						
 						@Override
-						protected void postTargetUpdate(Iterable<Map.Entry<O, O>> iterables) {
+						protected void postTargetUpdate(Iterable<Duo<O, O>> iterables) {
 							// Nothing to do
 						}
 						
 						@Override
-						protected Collection<Entry<O, O>> getTargets(I modifiedTrigger, I unmodifiedTrigger) {
+						protected Collection<Duo<O, O>> getTargets(I modifiedTrigger, I unmodifiedTrigger) {
 							throw new NotYetSupportedOperationException();
 						}
 					});

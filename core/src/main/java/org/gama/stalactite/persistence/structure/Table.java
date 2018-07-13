@@ -6,9 +6,9 @@ import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Set;
 
+import org.gama.lang.Duo;
 import org.gama.lang.collection.Arrays;
 import org.gama.lang.collection.Iterables;
 import org.gama.lang.collection.KeepOrderSet;
@@ -98,7 +98,7 @@ public class Table<SELF extends Table<SELF>> {
 	 * @return null if not found
 	 */
 	public Column<SELF, Object> findColumn(String columnName) {
-		return nullable(Iterables.find(columns, Column::getName, columnName::equals)).apply(Entry::getKey).get();
+		return nullable(Iterables.find(columns, Column::getName, columnName::equals)).apply(Duo::getLeft).get();
 	}
 	
 	public Column<SELF, Object> getPrimaryKey() {

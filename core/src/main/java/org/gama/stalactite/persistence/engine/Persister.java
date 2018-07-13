@@ -2,10 +2,9 @@ package org.gama.stalactite.persistence.engine;
 
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map.Entry;
 
+import org.gama.lang.Duo;
 import org.gama.lang.Retryer;
 import org.gama.lang.collection.Iterables;
 import org.gama.sql.ConnectionProvider;
@@ -214,7 +213,7 @@ public class Persister<C, I, T extends Table> {
 	}
 	
 	public int update(C modified, C unmodified, boolean allColumnsStatement) {
-		return update(Collections.singletonList(new HashMap.SimpleImmutableEntry<>(modified, unmodified)), allColumnsStatement);
+		return update(Collections.singletonList(new Duo<>(modified, unmodified)), allColumnsStatement);
 	}
 	
 	/**
@@ -224,12 +223,12 @@ public class Persister<C, I, T extends Table> {
 	 *  @param differencesIterable pairs of modified-unmodified instances, used to compute differences side by side
 	 * @param allColumnsStatement true if all columns must be in the SQL statement, false if only modified ones should be..
 	 */
-	public Integer update(Iterable<Entry<C, C>> differencesIterable, boolean allColumnsStatement) {
+	public Integer update(Iterable<Duo<C, C>> differencesIterable, boolean allColumnsStatement) {
 		return getPersisterListener().doWithUpdateListener(differencesIterable, allColumnsStatement,
 				() -> doUpdate(differencesIterable, allColumnsStatement));
 	}
 	
-	protected int doUpdate(Iterable<Entry<C, C>> differencesIterable, boolean allColumnsStatement) {
+	protected int doUpdate(Iterable<Duo<C, C>> differencesIterable, boolean allColumnsStatement) {
 		return updateExecutor.update(differencesIterable, allColumnsStatement);
 	}
 	

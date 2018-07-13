@@ -11,6 +11,7 @@ import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
+import org.gama.lang.Duo;
 import org.gama.lang.Reflections;
 import org.gama.lang.bean.Objects;
 import org.gama.reflection.IMutator;
@@ -163,22 +164,4 @@ public class EmbeddedBeanMappingStrategy<C, T extends Table> implements IEmbedde
 		protected abstract void visitField(Entry<IReversibleAccessor<C, Object>, Column<T, Object>> fieldColumnEntry);
 	}
 	
-	public static class Duo<A, B> {
-		
-		private final A left;
-		private final B right;
-		
-		private Duo(A left, B right) {
-			this.left = left;
-			this.right = right;
-		}
-		
-		public A getLeft() {
-			return left;
-		}
-		
-		public B getRight() {
-			return right;
-		}
-	}
 }

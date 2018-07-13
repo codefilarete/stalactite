@@ -1,10 +1,10 @@
 package org.gama.stalactite.persistence.engine.cascade;
 
 import java.util.Collection;
-import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
+import org.gama.lang.Duo;
 import org.gama.lang.collection.Iterables;
 import org.gama.stalactite.persistence.engine.Persister;
 import org.gama.stalactite.persistence.engine.listening.IUpdateListener;
@@ -26,7 +26,7 @@ public abstract class AfterUpdateCollectionCascader<Trigger, Target> extends Noo
 		this.persister = persister;
 		this.persister.getPersisterListener().addUpdateListener(new NoopUpdateListener<Target>() {
 			@Override
-			public void afterUpdate(Iterable<Map.Entry<Target, Target>> iterables, boolean allColumnsStatement) {
+			public void afterUpdate(Iterable<Duo<Target, Target>> iterables, boolean allColumnsStatement) {
 				super.afterUpdate(iterables, allColumnsStatement);
 				postTargetUpdate(iterables);
 			}
@@ -40,8 +40,8 @@ public abstract class AfterUpdateCollectionCascader<Trigger, Target> extends Noo
 	 * @param iterables
 	 */
 	@Override
-	public void afterUpdate(Iterable<Map.Entry<Trigger, Trigger>> iterables, boolean allColumnsStatement) {
-		this.persister.update(Iterables.stream(iterables).flatMap(e -> getTargets(e.getKey(), e.getValue()).stream()).filter(Objects::nonNull)
+	public void afterUpdate(Iterable<Duo<Trigger, Trigger>> iterables, boolean allColumnsStatement) {
+		this.persister.update(Iterables.stream(iterables).flatMap(e -> getTargets(e.getLeft(), e.getRight()).stream()).filter(Objects::nonNull)
 				.collect(Collectors.toList()), allColumnsStatement);
 	}
 	
@@ -50,7 +50,7 @@ public abstract class AfterUpdateCollectionCascader<Trigger, Target> extends Noo
 	 *
 	 * @param iterables
 	 */
-	protected abstract void postTargetUpdate(Iterable<Map.Entry<Target, Target>> iterables);
+	protected abstract void postTargetUpdate(Iterable<Duo<Target, Target>> iterables);
 	
 	/**
 	 * Expected to give the Target instance of a Trigger (should simply give a field value of trigger)
@@ -59,6 +59,6 @@ public abstract class AfterUpdateCollectionCascader<Trigger, Target> extends Noo
 	 * @param unmodifiedTrigger the source instance from which to take the target
 	 * @return the linked objet or null if there's not (or shouldn't be persisted for whatever reason)
 	 */
-	protected abstract Collection<Map.Entry<Target, Target>> getTargets(Trigger modifiedTrigger, Trigger unmodifiedTrigger);
+	protected abstract Collection<Duo<Target, Target>> getTargets(Trigger modifiedTrigger, Trigger unmodifiedTrigger);
 	
 }

@@ -8,9 +8,9 @@ import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Set;
 
+import org.gama.lang.Duo;
 import org.gama.lang.bean.Objects;
 import org.gama.lang.collection.Collections;
 import org.gama.lang.collection.Iterables;
@@ -76,7 +76,7 @@ public class ColumnedCollectionMappingStrategy<C extends Collection<O>, O, T ext
 		// NB: we wrap c.iterator() in an InfiniteIterator to get all columns generated: overflow columns will have
 		// null value (see 	InfiniteIterator#getValue)
 		PairIterator<Column<T, Object>, O> valueColumnPairIterator = new PairIterator<>(columns.iterator(), new InfiniteIterator<>(toIterate.iterator()));
-		return Iterables.map(() -> valueColumnPairIterator, Entry::getKey, e -> toDatabaseValue(e.getValue()));
+		return Iterables.map(() -> valueColumnPairIterator, Duo::getLeft, e -> toDatabaseValue(e.getRight()));
 	}
 	
 	@Nonnull
@@ -88,14 +88,14 @@ public class ColumnedCollectionMappingStrategy<C extends Collection<O>, O, T ext
 			Map<Column, Object> unmodifiedColumns = new LinkedHashMap<>();
 			Iterator<O> unmodifiedIterator = unmodified == null ? new EmptyIterator<>() : unmodified.iterator();
 			UntilBothIterator<O, O> untilBothIterator = new UntilBothIterator<>(modified.iterator(), unmodifiedIterator);
-			PairIterator<Column<T, Object>, Entry<O, O>> valueColumnPairIterator = new PairIterator<>(columns.iterator(), untilBothIterator);
+			PairIterator<Column<T, Object>, Duo<O, O>> valueColumnPairIterator = new PairIterator<>(columns.iterator(), untilBothIterator);
 			valueColumnPairIterator.forEachRemaining(diffEntry -> {
-				Column fieldColumn = diffEntry.getKey();
-				Entry<O, O> toBeCompared = diffEntry.getValue();
-				if (!Objects.equalsWithNull(toBeCompared.getKey(), toBeCompared.getValue())) {
-					toReturn.put(fieldColumn, toDatabaseValue(toBeCompared.getKey()));
+				Column fieldColumn = diffEntry.getLeft();
+				Duo<O, O> toBeCompared = diffEntry.getRight();
+				if (!Objects.equalsWithNull(toBeCompared.getLeft(), toBeCompared.getRight())) {
+					toReturn.put(fieldColumn, toDatabaseValue(toBeCompared.getLeft()));
 				} else {
-					unmodifiedColumns.put(fieldColumn, toBeCompared.getKey());
+					unmodifiedColumns.put(fieldColumn, toBeCompared.getRight());
 				}
 			});
 			

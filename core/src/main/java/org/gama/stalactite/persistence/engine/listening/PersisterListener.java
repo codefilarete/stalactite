@@ -1,8 +1,8 @@
 package org.gama.stalactite.persistence.engine.listening;
 
 import java.util.List;
-import java.util.Map.Entry;
 
+import org.gama.lang.Duo;
 import org.gama.lang.bean.IQuietDelegate;
 import org.gama.lang.collection.Iterables;
 
@@ -73,13 +73,13 @@ public class PersisterListener<T, I> {
 		return this;
 	}
 	
-	public <R> R doWithUpdateListener(Iterable<Entry<T, T>> differencesIterable, boolean allColumnsStatement, IQuietDelegate<R> delegate) {
+	public <R> R doWithUpdateListener(Iterable<Duo<T, T>> differencesIterable, boolean allColumnsStatement, IQuietDelegate<R> delegate) {
 		updateListener.beforeUpdate(differencesIterable, allColumnsStatement);
 		R result;
 		try {
 			result = delegate.execute();
 		} catch (RuntimeException e) {
-			updateListener.onError(Iterables.collectToList(differencesIterable, Entry::getKey), e);
+			updateListener.onError(Iterables.collectToList(differencesIterable, Duo::getLeft), e);
 			throw e;
 		}
 		updateListener.afterUpdate(differencesIterable, allColumnsStatement);

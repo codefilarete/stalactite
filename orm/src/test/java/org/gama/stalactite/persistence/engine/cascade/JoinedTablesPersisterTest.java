@@ -12,6 +12,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.gama.lang.Duo;
 import org.gama.lang.Reflections;
 import org.gama.lang.collection.Arrays;
 import org.gama.lang.collection.Maps;
@@ -200,10 +201,10 @@ public class JoinedTablesPersisterTest {
 	}
 	
 	public void assertCapturedPairsEqual(PairSetList<Integer, Integer> expectedPairs) {
-		List<Map.Entry<Integer, Integer>> obtainedPairs = PairSetList.toPairs(indexCaptor.getAllValues(), valueCaptor.getAllValues());
-		List<Set<Map.Entry<Integer, Integer>>> obtained = new ArrayList<>();
+		List<Duo<Integer, Integer>> obtainedPairs = PairSetList.toPairs(indexCaptor.getAllValues(), valueCaptor.getAllValues());
+		List<Set<Duo<Integer, Integer>>> obtained = new ArrayList<>();
 		int startIndex = 0;
-		for (Set<Map.Entry<Integer, Integer>> expectedPair : expectedPairs.asList()) {
+		for (Set<Duo<Integer, Integer>> expectedPair : expectedPairs.asList()) {
 			obtained.add(new HashSet<>(obtainedPairs.subList(startIndex, startIndex += expectedPair.size())));
 		}
 		assertEquals(expectedPairs.asList(), obtained);

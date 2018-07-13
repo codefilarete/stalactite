@@ -17,6 +17,7 @@ import java.util.stream.Collectors;
 
 import org.danekja.java.util.function.serializable.SerializableBiConsumer;
 import org.danekja.java.util.function.serializable.SerializableFunction;
+import org.gama.lang.Duo;
 import org.gama.lang.Nullable;
 import org.gama.lang.Reflections;
 import org.gama.lang.bean.FieldIterator;
@@ -877,9 +878,9 @@ public class FluentMappingBuilder<T extends Identified, I extends StatefullIdent
 		}
 		
 		@Override
-		public void beforeUpdate(Iterable<Entry<T, T>> iterable, boolean allColumnsStatement) {
-			for (Entry<T, T> entry : iterable) {
-				T t = entry.getKey();
+		public void beforeUpdate(Iterable<Duo<T, T>> iterable, boolean allColumnsStatement) {
+			for (Duo<T, T> entry : iterable) {
+				T t = entry.getLeft();
 				Identified modifiedTarget = targetProvider.apply(t);
 				if (modifiedTarget == null) {
 					throw newRuntimeMappingException(t, member);

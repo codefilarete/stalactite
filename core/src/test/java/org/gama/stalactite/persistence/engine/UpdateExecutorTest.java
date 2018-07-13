@@ -1,11 +1,11 @@
 package org.gama.stalactite.persistence.engine;
 
 import java.sql.SQLException;
-import java.util.AbstractMap.SimpleEntry;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
+import org.gama.lang.Duo;
 import org.gama.lang.Retryer;
 import org.gama.lang.collection.Arrays;
 import org.gama.lang.collection.Maps;
@@ -180,7 +180,7 @@ public class UpdateExecutorTest extends AbstractDMLExecutorTest {
 				simpleEntityPersistenceMapping, mock(ConnectionProvider.class), new DMLGenerator(new ColumnBinderRegistry()), Retryer.NO_RETRY, 3, 4);
 		
 		
-		assertEquals(0, testInstance.updateFully(Arrays.asList(new SimpleEntry<>(new SimpleEntity(), new SimpleEntity()))));
+		assertEquals(0, testInstance.updateFully(Arrays.asList(new Duo<>(new SimpleEntity(), new SimpleEntity()))));
 	}
 	
 	private static class SimpleEntity {

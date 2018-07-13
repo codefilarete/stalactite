@@ -1,8 +1,8 @@
 package org.gama.stalactite.persistence.engine.listening;
 
 import java.util.ArrayList;
-import java.util.Map.Entry;
 
+import org.gama.lang.Duo;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -100,7 +100,7 @@ public class PersisterListenerTest {
 		IUpdateListener listenerMock = mock(IUpdateListener.class);
 		testInstance.addUpdateListener(listenerMock);
 		
-		ArrayList<Entry> entities = new ArrayList<>();
+		ArrayList<Duo> entities = new ArrayList<>();
 		RuntimeException error = new RuntimeException("This is the expected exception to be thrown");
 		RuntimeException thrownException = assertThrows(RuntimeException.class, () -> testInstance.doWithUpdateListener(entities, true, () -> { throw error; }));
 		assertSame(error, thrownException);
@@ -130,7 +130,7 @@ public class PersisterListenerTest {
 		IUpdateByIdListener listenerMock = mock(IUpdateByIdListener.class);
 		testInstance.addUpdateByIdListener(listenerMock);
 		
-		ArrayList<Entry> entities = new ArrayList<>();
+		ArrayList<Duo> entities = new ArrayList<>();
 		RuntimeException error = new RuntimeException("This is the expected exception to be thrown");
 		RuntimeException thrownException = assertThrows(RuntimeException.class, () -> testInstance.doWithUpdateByIdListener(entities, () -> { throw error; }));
 		assertSame(error, thrownException);
@@ -160,7 +160,7 @@ public class PersisterListenerTest {
 		IDeleteListener listenerMock = mock(IDeleteListener.class);
 		testInstance.addDeleteListener(listenerMock);
 		
-		ArrayList<Entry> entities = new ArrayList<>();
+		ArrayList<Duo> entities = new ArrayList<>();
 		RuntimeException error = new RuntimeException("This is the expected exception to be thrown");
 		RuntimeException thrownException = assertThrows(RuntimeException.class, () -> testInstance.doWithDeleteListener(entities, () -> { throw error; }));
 		assertSame(error, thrownException);
@@ -190,7 +190,7 @@ public class PersisterListenerTest {
 		IDeleteByIdListener listenerMock = mock(IDeleteByIdListener.class);
 		testInstance.addDeleteByIdListener(listenerMock);
 		
-		ArrayList<Entry> entities = new ArrayList<>();
+		ArrayList<Duo> entities = new ArrayList<>();
 		RuntimeException error = new RuntimeException("This is the expected exception to be thrown");
 		RuntimeException thrownException = assertThrows(RuntimeException.class, () -> testInstance.doWithDeleteByIdListener(entities, () -> { throw error; }));
 		assertSame(error, thrownException);

@@ -4,6 +4,7 @@ import java.util.AbstractMap.SimpleEntry;
 import java.util.Map.Entry;
 import java.util.function.Predicate;
 
+import org.gama.lang.Duo;
 import org.gama.reflection.Accessors;
 import org.gama.reflection.IMutator;
 import org.gama.reflection.PropertyAccessor;
@@ -91,13 +92,13 @@ public class CascadeOneConfigurer<I extends Identified, O extends Identified, J 
 					persisterListener.addUpdateListener(new AfterUpdateCascader<I, Identified>(targetPersister) {
 						
 						@Override
-						protected void postTargetUpdate(Iterable<Entry<Identified, Identified>> iterable) {
+						protected void postTargetUpdate(Iterable<Duo<Identified, Identified>> iterable) {
 							// Nothing to do
 						}
 						
 						@Override
-						protected Entry<Identified, Identified> getTarget(I modifiedTrigger, I unmodifiedTrigger) {
-							return new SimpleEntry<>(cascadeOne.getTargetProvider().apply(modifiedTrigger), cascadeOne.getTargetProvider().apply
+						protected Duo<Identified, Identified> getTarget(I modifiedTrigger, I unmodifiedTrigger) {
+							return new Duo<>(cascadeOne.getTargetProvider().apply(modifiedTrigger), cascadeOne.getTargetProvider().apply
 									(unmodifiedTrigger));
 						}
 					});

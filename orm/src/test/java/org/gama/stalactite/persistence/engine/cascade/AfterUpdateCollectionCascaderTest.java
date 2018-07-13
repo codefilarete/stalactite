@@ -1,12 +1,11 @@
 package org.gama.stalactite.persistence.engine.cascade;
 
 import java.sql.SQLException;
-import java.util.AbstractMap.SimpleEntry;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-import java.util.Map.Entry;
 
+import org.gama.lang.Duo;
 import org.gama.lang.collection.Arrays;
 import org.gama.lang.collection.Iterables;
 import org.gama.stalactite.persistence.engine.Persister;
@@ -32,27 +31,27 @@ public class AfterUpdateCollectionCascaderTest extends AbstractCascaderTest {
 		when(mappingStrategyMock.getIdMappingStrategy()).thenReturn(mock(IdMappingStrategy.class));
 		Persister<Tata, Object, Table> persisterMock = new Persister<Tata, Object, Table>(mappingStrategyMock, mock(Dialect.class), null, 10) {
 			@Override
-			protected int doUpdate(Iterable<Entry<Tata, Tata>> differencesIterable, boolean allColumnsStatement) {
+			protected int doUpdate(Iterable<Duo<Tata, Tata>> differencesIterable, boolean allColumnsStatement) {
 				// Overriden to do no action, because default super action is complex to mock
 				return 0;
 			}
 		};
 		
-		final List<String> actions = new ArrayList<>();
-		final List<Entry<Tata, Tata>> triggeredTarget = new ArrayList<>();
+		List<String> actions = new ArrayList<>();
+		List<Duo<Tata, Tata>> triggeredTarget = new ArrayList<>();
 		// Instance to test: overriden methods allow later checking
 		AfterUpdateCollectionCascader<Toto, Tata> testInstance = new AfterUpdateCollectionCascader<Toto, Tata>(persisterMock) {
 			
 			@Override
-			protected void postTargetUpdate(Iterable<Entry<Tata, Tata>> iterables) {
+			protected void postTargetUpdate(Iterable<Duo<Tata, Tata>> iterables) {
 				actions.add("postTargetUpdate");
 				triggeredTarget.addAll(Iterables.copy(iterables));
 			}
 			
 			@Override
-			protected Collection<Entry<Tata, Tata>> getTargets(Toto modifiedTrigger, Toto unmodifiedTrigger) {
+			protected Collection<Duo<Tata, Tata>> getTargets(Toto modifiedTrigger, Toto unmodifiedTrigger) {
 				actions.add("getTargets");
-				return Arrays.asList((Entry<Tata, Tata>) new SimpleEntry<>(modifiedTrigger.tata, unmodifiedTrigger.tata));
+				return Arrays.asList((Duo<Tata, Tata>) new Duo<>(modifiedTrigger.tata, unmodifiedTrigger.tata));
 			}
 		};
 		
@@ -61,14 +60,14 @@ public class AfterUpdateCollectionCascaderTest extends AbstractCascaderTest {
 		Toto triggeringInstance1_modfied = new Toto(new Tata());
 		Toto triggeringInstance2 = new Toto(new Tata());
 		Toto triggeringInstance2_modified = new Toto(new Tata());
-		testInstance.afterUpdate(Arrays.asList(new SimpleEntry<>(triggeringInstance1_modfied, triggeringInstance1),
-				new SimpleEntry<>(triggeringInstance2_modified, triggeringInstance2)
+		testInstance.afterUpdate(Arrays.asList(new Duo<>(triggeringInstance1_modfied, triggeringInstance1),
+				new Duo<>(triggeringInstance2_modified, triggeringInstance2)
 		), true);
 		
 		// check actions are done in good order
 		assertEquals(Arrays.asList("getTargets", "getTargets", "postTargetUpdate"), actions);
 		// check triggered targets are those expected
-		assertEquals(Arrays.asList(new SimpleEntry<>(triggeringInstance1_modfied.tata, triggeringInstance1.tata),
-				new SimpleEntry<>(triggeringInstance2_modified.tata, triggeringInstance2.tata)), triggeredTarget);
+		assertEquals(Arrays.asList(new Duo<>(triggeringInstance1_modfied.tata, triggeringInstance1.tata),
+				new Duo<>(triggeringInstance2_modified.tata, triggeringInstance2.tata)), triggeredTarget);
 	}
 }

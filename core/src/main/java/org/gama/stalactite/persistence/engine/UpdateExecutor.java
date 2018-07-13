@@ -5,6 +5,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 
+import org.gama.lang.Duo;
 import org.gama.lang.Retryer;
 import org.gama.lang.bean.Objects;
 import org.gama.lang.collection.ArrayIterator;
@@ -84,7 +85,7 @@ public class UpdateExecutor<C, I, T extends Table> extends UpsertExecutor<C, I, 
 	 * @param differencesIterable pairs of modified-unmodified instances, used to compute differences side by side
 	 * @param allColumnsStatement true if all columns must be in the SQL statement, false if only modified ones should be..
 	 */
-	public int update(Iterable<Map.Entry<C, C>> differencesIterable, boolean allColumnsStatement) {
+	public int update(Iterable<Duo<C, C>> differencesIterable, boolean allColumnsStatement) {
 		if (allColumnsStatement) {
 			return updateFully(differencesIterable);
 		} else {
@@ -98,7 +99,7 @@ public class UpdateExecutor<C, I, T extends Table> extends UpsertExecutor<C, I, 
 	 *
 	 * @param differencesIterable pairs of modified-unmodified instances, used to compute differences side by side
 	 */
-	public int updatePartially(Iterable<Map.Entry<C, C>> differencesIterable) {
+	public int updatePartially(Iterable<Duo<C, C>> differencesIterable) {
 		CurrentConnectionProvider currentConnectionProvider = new CurrentConnectionProvider();
 		return new DifferenceUpdater(new JDBCBatchingOperationCache(currentConnectionProvider), false).update(differencesIterable);
 	}
@@ -109,7 +110,7 @@ public class UpdateExecutor<C, I, T extends Table> extends UpsertExecutor<C, I, 
 	 *
 	 * @param differencesIterable iterable of instances
 	 */
-	public int updateFully(Iterable<Map.Entry<C, C>> differencesIterable) {
+	public int updateFully(Iterable<Duo<C, C>> differencesIterable) {
 		// we ask the strategy to lookup for updatable columns (not taken directly on mapping strategy target table)
 		Set<Column<T, Object>> columnsToUpdate = getMappingStrategy().getUpdatableColumns();
 		if (columnsToUpdate.isEmpty()) {
@@ -231,12 +232,12 @@ public class UpdateExecutor<C, I, T extends Table> extends UpsertExecutor<C, I, 
 			this.allColumns = allColumns;
 		}
 		
-		private int update(Iterable<Map.Entry<C, C>> differencesIterable) {
+		private int update(Iterable<Duo<C, C>> differencesIterable) {
 			RowCounter rowCounter = new RowCounter();
 			// building UpdateOperations and update values
-			for (Map.Entry<C, C> next : differencesIterable) {
-				C modified = next.getKey();
-				C unmodified = next.getValue();
+			for (Duo<C, C> next : differencesIterable) {
+				C modified = next.getLeft();
+				C unmodified = next.getRight();
 				// finding differences between modified instances and unmodified ones
 				Map<UpwhereColumn<T>, Object> updateValues = getMappingStrategy().getUpdateValues(modified, unmodified, allColumns);
 				if (!updateValues.isEmpty()) {

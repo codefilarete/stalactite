@@ -1,12 +1,11 @@
 package org.gama.stalactite.test;
 
-import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
+import org.gama.lang.Duo;
 import org.gama.lang.collection.PairIterator;
 
 /**
@@ -17,19 +16,19 @@ import org.gama.lang.collection.PairIterator;
  */
 public class PairSetList<K, V> {
 	
-	public static <K, V> List<Map.Entry<K, V>> toPairs(Iterable<K> values1, Iterable<V> values2) {
-		List<Map.Entry<K, V>> indexValuePairs = new ArrayList<>();
+	public static <K, V> List<Duo<K, V>> toPairs(Iterable<K> values1, Iterable<V> values2) {
+		List<Duo<K, V>> indexValuePairs = new ArrayList<>();
 		PairIterator<K, V> pairIterator = new PairIterator<>(values1, values2);
 		while (pairIterator.hasNext()) {
-			Map.Entry<K, V> pair = pairIterator.next();
-			indexValuePairs.add(new AbstractMap.SimpleEntry<>(pair.getKey(), pair.getValue()));
+			Duo<K, V> pair = pairIterator.next();
+			indexValuePairs.add(pair);
 		}
 		return indexValuePairs;
 	}
 	
-	private List<Set<Map.Entry<K, V>>> toReturn = new ArrayList<>();
+	private List<Set<Duo<K, V>>> toReturn = new ArrayList<>();
 	
-	private Set<Map.Entry<K, V>> current = new HashSet<>();
+	private Set<Duo<K, V>> current = new HashSet<>();
 	
 	public PairSetList() {
 		toReturn.add(current);
@@ -42,7 +41,7 @@ public class PairSetList<K, V> {
 	 * @return this
 	 */
 	public PairSetList<K, V> add(K k, V v) {
-		current.add(new AbstractMap.SimpleEntry<>(k, v));
+		current.add(new Duo<>(k, v));
 		return this;
 	}
 	
@@ -57,7 +56,7 @@ public class PairSetList<K, V> {
 		return add(k, v);
 	}
 	
-	public List<Set<Map.Entry<K, V>>> asList() {
+	public List<Set<Duo<K, V>>> asList() {
 		return toReturn;
 	}
 }

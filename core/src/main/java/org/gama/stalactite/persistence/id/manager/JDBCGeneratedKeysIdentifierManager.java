@@ -10,6 +10,7 @@ import java.util.Map;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 
+import org.gama.lang.Duo;
 import org.gama.lang.collection.PairIterator;
 import org.gama.lang.exception.Exceptions;
 import org.gama.sql.dml.GeneratedKeysReader;
@@ -125,8 +126,8 @@ public class JDBCGeneratedKeysIdentifierManager<T, I> implements IdentifierInser
 				// we have a row for each entity in insertion order, so we iterate them to apply generated keys
 				PairIterator<T, Row> pairIterator = new PairIterator<>(elementsOfStep, rows);
 				while (pairIterator.hasNext()) {
-					Map.Entry<T, Row> pair = pairIterator.next();
-					generatedKeysConsumer.accept(pair.getKey(), pair.getValue());
+					Duo<T, Row> pair = pairIterator.next();
+					generatedKeysConsumer.accept(pair.getLeft(), pair.getRight());
 				}
 				elementsOfStep.clear();
 			} catch (SQLException e) {
