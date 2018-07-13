@@ -23,5 +23,5 @@ public interface IdentifierInsertionManager<T, I> {
 	
 	PreparedStatement prepareStatement(Connection connection, String sql) throws SQLException;
 	
-	JDBCBatchingIterator<T> buildJDBCBatchingIterator(Iterable<T> iterable, WriteOperation<? extends Column<? extends Table, ?>> writeOperation, int batchSize);
+	JDBCBatchingIterator<T> buildJDBCBatchingIterator(Iterable<T> entities, WriteOperation<? extends Column<? extends Table, ?>> writeOperation, int batchSize);
 }

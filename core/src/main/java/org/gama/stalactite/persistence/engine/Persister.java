@@ -165,11 +165,11 @@ public class Persister<C, I, T extends Table> {
 		}
 	}
 	
-	public void persist(Iterable<C> iterable) {
+	public void persist(Iterable<C> entities) {
 		// determine insert or update operation
 		List<C> toInsert = new ArrayList<>(20);
 		List<C> toUpdate = new ArrayList<>(20);
-		for (C c : iterable) {
+		for (C c : entities) {
 			if (isNew(c)) {
 				toInsert.add(c);
 			} else {
@@ -188,12 +188,12 @@ public class Persister<C, I, T extends Table> {
 		return insert(Collections.singletonList(c));
 	}
 	
-	public int insert(Iterable<C> iterable) {
-		return getPersisterListener().doWithInsertListener(iterable, () -> doInsert(iterable));
+	public int insert(Iterable<C> entities) {
+		return getPersisterListener().doWithInsertListener(entities, () -> doInsert(entities));
 	}
 	
-	protected int doInsert(Iterable<C> iterable) {
-		return insertExecutor.insert(iterable);
+	protected int doInsert(Iterable<C> entities) {
+		return insertExecutor.insert(entities);
 	}
 	
 	public void updateById(C c) {
@@ -202,14 +202,14 @@ public class Persister<C, I, T extends Table> {
 	
 	/**
 	 * Update roughly some instances: no difference are computed, only update statements (full column) are applied.
-	 * @param iterable iterable of instances
+	 * @param entities iterable of entities
 	 */
-	public int updateById(Iterable<C> iterable) {
-		return getPersisterListener().doWithUpdateByIdListener(iterable, () -> doUpdateById(iterable));
+	public int updateById(Iterable<C> entities) {
+		return getPersisterListener().doWithUpdateByIdListener(entities, () -> doUpdateById(entities));
 	}
 	
-	protected int doUpdateById(Iterable<C> iterable) {
-		return updateExecutor.updateById(iterable);
+	protected int doUpdateById(Iterable<C> entities) {
+		return updateExecutor.updateById(entities);
 	}
 	
 	public int update(C modified, C unmodified, boolean allColumnsStatement) {
@@ -236,24 +236,24 @@ public class Persister<C, I, T extends Table> {
 		return delete(Collections.singletonList(c));
 	}
 	
-	public int delete(Iterable<C> iterable) {
-		return getPersisterListener().doWithDeleteListener(iterable, () -> doDelete(iterable));
+	public int delete(Iterable<C> entities) {
+		return getPersisterListener().doWithDeleteListener(entities, () -> doDelete(entities));
 	}
 	
-	protected int doDelete(Iterable<C> iterable) {
-		return deleteExecutor.delete(iterable);
+	protected int doDelete(Iterable<C> entities) {
+		return deleteExecutor.delete(entities);
 	}
 	
 	public int deleteById(C c) {
 		return deleteById(Collections.singletonList(c));
 	}
 	
-	public int deleteById(Iterable<C> iterable) {
-		return getPersisterListener().doWithDeleteByIdListener(iterable, () -> doDeleteById(iterable));
+	public int deleteById(Iterable<C> entities) {
+		return getPersisterListener().doWithDeleteByIdListener(entities, () -> doDeleteById(entities));
 	}
 	
-	protected int doDeleteById(Iterable<C> iterable) {
-		return deleteExecutor.deleteById(iterable);
+	protected int doDeleteById(Iterable<C> entities) {
+		return deleteExecutor.deleteById(entities);
 	}
 	
 	/**

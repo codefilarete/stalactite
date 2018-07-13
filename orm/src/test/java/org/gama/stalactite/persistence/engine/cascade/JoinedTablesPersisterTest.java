@@ -172,30 +172,30 @@ public class JoinedTablesPersisterTest {
 				Toto::merge, leftJoinColumn, rightJoinColumn, false);
 		testInstance.getPersisterListener().addInsertListener(new NoopInsertListener<Toto>() {
 			@Override
-			public void afterInsert(Iterable<Toto> iterables) {
+			public void afterInsert(Iterable<Toto> entities) {
 				// since we only want a replicate of totos in table2, we only need to return them
-				persister2.insert(iterables);
+				persister2.insert(entities);
 			}
 		});
 		testInstance.getPersisterListener().addUpdateByIdListener(new NoopUpdateByIdListener<Toto>() {
 			@Override
-			public void afterUpdateById(Iterable<Toto> iterables) {
+			public void afterUpdateById(Iterable<Toto> entities) {
 				// since we only want a replicate of totos in table2, we only need to return them
-				persister2.updateById(iterables);
+				persister2.updateById(entities);
 			}
 		});
 		testInstance.getPersisterListener().addDeleteListener(new NoopDeleteListener<Toto>() {
 			@Override
-			public void beforeDelete(Iterable<Toto> iterables) {
+			public void beforeDelete(Iterable<Toto> entities) {
 				// since we only want a replicate of totos in table2, we only need to return them
-				persister2.delete(iterables);
+				persister2.delete(entities);
 			}
 		});
 		testInstance.getPersisterListener().addDeleteByIdListener(new NoopDeleteByIdListener<Toto>() {
 			@Override
-			public void beforeDeleteById(Iterable<Toto> iterables) {
+			public void beforeDeleteById(Iterable<Toto> entities) {
 				// since we only want a replicate of totos in table2, we only need to return them
-				persister2.deleteById(iterables);
+				persister2.deleteById(entities);
 			}
 		});
 	}

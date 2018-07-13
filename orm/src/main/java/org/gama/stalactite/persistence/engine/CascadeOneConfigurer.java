@@ -1,7 +1,5 @@
 package org.gama.stalactite.persistence.engine;
 
-import java.util.AbstractMap.SimpleEntry;
-import java.util.Map.Entry;
 import java.util.function.Predicate;
 
 import org.gama.lang.Duo;
@@ -70,7 +68,7 @@ public class CascadeOneConfigurer<I extends Identified, O extends Identified, J 
 					persisterListener.addInsertListener(new BeforeInsertCascader<I, Identified>(targetPersister) {
 						
 						@Override
-						protected void postTargetInsert(Iterable<Identified> iterable) {
+						protected void postTargetInsert(Iterable<Identified> entities) {
 							// Nothing to do. Identified#isPersisted flag should be fixed by target persister
 						}
 						
@@ -92,7 +90,7 @@ public class CascadeOneConfigurer<I extends Identified, O extends Identified, J 
 					persisterListener.addUpdateListener(new AfterUpdateCascader<I, Identified>(targetPersister) {
 						
 						@Override
-						protected void postTargetUpdate(Iterable<Duo<Identified, Identified>> iterable) {
+						protected void postTargetUpdate(Iterable<Duo<Identified, Identified>> entities) {
 							// Nothing to do
 						}
 						
@@ -108,7 +106,7 @@ public class CascadeOneConfigurer<I extends Identified, O extends Identified, J 
 					persisterListener.addDeleteListener(new AfterDeleteCascader<I, Identified>(targetPersister) {
 						
 						@Override
-						protected void postTargetDelete(Iterable<Identified> iterable) {
+						protected void postTargetDelete(Iterable<Identified> entities) {
 							// no post treatment to do
 						}
 						
@@ -123,7 +121,7 @@ public class CascadeOneConfigurer<I extends Identified, O extends Identified, J 
 					persisterListener.addDeleteByIdListener(new AfterDeleteByIdCascader<I, Identified>(targetPersister) {
 						
 						@Override
-						protected void postTargetDelete(Iterable<Identified> iterable) {
+						protected void postTargetDelete(Iterable<Identified> entities) {
 							// no post treatment to do
 						}
 						

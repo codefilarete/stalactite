@@ -5,7 +5,6 @@ import java.util.stream.Collectors;
 
 import org.gama.lang.collection.Iterables;
 import org.gama.stalactite.persistence.engine.Persister;
-import org.gama.stalactite.persistence.engine.listening.IInsertListener;
 import org.gama.stalactite.persistence.engine.listening.NoopInsertListener;
 
 /**
@@ -26,31 +25,30 @@ public abstract class BeforeInsertCascader<Trigger, Target> extends NoopInsertLi
 		this.persister = persister;
 		this.persister.getPersisterListener().addInsertListener(new NoopInsertListener<Target>() {
 			@Override
-			public void afterInsert(Iterable<Target> iterables) {
-				super.afterInsert(iterables);
-				postTargetInsert(iterables);
+			public void afterInsert(Iterable<Target> entities) {
+				super.afterInsert(entities);
+				postTargetInsert(entities);
 			}
 		});
 	}
 	
 	/**
-	 * As supposed, since Trigger owns the relationship, we have to persist Target before Trigger instances insertion.
-	 * So {@link IInsertListener#beforeInsert(Iterable)} is overriden.
-	 *
-	 * @param iterables
+	 * Overriden to insert Target instances of the Trigger instances.
+	 * 
+	 * @param entities source entities previously inserted
 	 */
 	@Override
-	public void beforeInsert(Iterable<Trigger> iterables) {
-		this.persister.insert(Iterables.stream(iterables).map(this::getTarget).filter(Objects::nonNull).collect(Collectors.toList()));
+	public void beforeInsert(Iterable<Trigger> entities) {
+		this.persister.insert(Iterables.stream(entities).map(this::getTarget).filter(Objects::nonNull).collect(Collectors.toList()));
 	}
 	
 	/**
 	 * Expected to adapt Target instances after their insertion. For instance set the owner property on Trigger instances
 	 * or apply bidirectionnal mapping with Trigger.
 	 *
-	 * @param iterables
+	 * @param entities entities inserted by this listener
 	 */
-	protected abstract void postTargetInsert(Iterable<Target> iterables);
+	protected abstract void postTargetInsert(Iterable<Target> entities);
 	
 	/**
 	 * Expected to give or create the corresponding Target instances of Trigger (should simply give a field)

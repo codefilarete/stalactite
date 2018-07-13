@@ -5,7 +5,6 @@ import java.util.Collection;
 import java.util.List;
 
 import org.gama.stalactite.persistence.engine.Persister;
-import org.gama.stalactite.persistence.engine.listening.ISelectListener;
 import org.gama.stalactite.persistence.engine.listening.NoopSelectListener;
 
 /**
@@ -29,24 +28,22 @@ public abstract class AfterSelectCascader<Trigger, Target, I> extends NoopSelect
 		this.persister = persister;
 		this.persister.getPersisterListener().addSelectListener(new NoopSelectListener<Target, I>() {
 			@Override
-			public void afterSelect(Iterable<Target> iterable) {
-				super.afterSelect(iterable);
-				postTargetSelect(iterable);
+			public void afterSelect(Iterable<Target> entities) {
+				super.afterSelect(entities);
+				postTargetSelect(entities);
 			}
 		});
 	}
 	
 	/**
-	 * As supposed, since Trigger owns the relationship, we have to select Target after Trigger instances select.
-	 * So {@link ISelectListener#afterSelect(Iterable)} is overriden.
-	 * Overriden to select the Target instance corresponding to the Trigger instance.
+	 * Overriden to select Target instances of the Trigger instances.
 	 *
-	 * @param iterables
+	 * @param entities source entities previously selected
 	 */
 	@Override
-	public void afterSelect(Iterable<Trigger> iterables) {
+	public void afterSelect(Iterable<Trigger> entities) {
 		List<I> targets = new ArrayList<>(50);
-		for (Trigger trigger : iterables) {
+		for (Trigger trigger : entities) {
 			targets.addAll(getTargetIds(trigger));
 		}
 		this.persister.select(targets);
@@ -55,9 +52,9 @@ public abstract class AfterSelectCascader<Trigger, Target, I> extends NoopSelect
 	/**
 	 * Post treatment after Target instance select. Cache addition for instance.
 	 *
-	 * @param iterable
+	 * @param entities entities selected by this listener
 	 */
-	protected abstract void postTargetSelect(Iterable<Target> iterable);
+	protected abstract void postTargetSelect(Iterable<Target> entities);
 	
 	/**
 	 * Expected to give the corresponding Target identifier of Trigger

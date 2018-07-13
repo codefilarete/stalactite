@@ -9,12 +9,12 @@ import org.gama.lang.Duo;
 public class NoopUpdateListener<T> implements IUpdateListener<T> {
 	
 	@Override
-	public void beforeUpdate(Iterable<Duo<T, T>> iterables, boolean allColumnsStatement) {
+	public void beforeUpdate(Iterable<Duo<T, T>> entities, boolean allColumnsStatement) {
 		
 	}
 	
 	@Override
-	public void afterUpdate(Iterable<Duo<T, T>> iterables, boolean allColumnsStatement) {
+	public void afterUpdate(Iterable<Duo<T, T>> entities, boolean allColumnsStatement) {
 		
 	}
 	

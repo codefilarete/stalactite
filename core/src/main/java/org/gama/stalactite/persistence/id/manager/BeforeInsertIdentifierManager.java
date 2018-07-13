@@ -39,8 +39,8 @@ public class BeforeInsertIdentifierManager<T, I> implements IdentifierInsertionM
 	}
 	
 	@Override
-	public JDBCBatchingIterator<T> buildJDBCBatchingIterator(Iterable<T> iterable, WriteOperation<? extends Column<? extends Table, ?>> writeOperation, int batchSize) {
-		return new JDBCBatchingIteratorIdAware<>(iterable, writeOperation, batchSize, identifierFixer);
+	public JDBCBatchingIterator<T> buildJDBCBatchingIterator(Iterable<T> entities, WriteOperation<? extends Column<? extends Table, ?>> writeOperation, int batchSize) {
+		return new JDBCBatchingIteratorIdAware<>(entities, writeOperation, batchSize, identifierFixer);
 	}
 	
 	/**
@@ -74,8 +74,8 @@ public class BeforeInsertIdentifierManager<T, I> implements IdentifierInsertionM
 		
 		private final Consumer<T> identifierFixer;
 		
-		public JDBCBatchingIteratorIdAware(Iterable<T> iterable, WriteOperation writeOperation, int batchSize, Consumer<T> identifierFixer) {
-			super(iterable, writeOperation, batchSize);
+		public JDBCBatchingIteratorIdAware(Iterable<T> entities, WriteOperation writeOperation, int batchSize, Consumer<T> identifierFixer) {
+			super(entities, writeOperation, batchSize);
 			this.identifierFixer = identifierFixer;
 		}
 		

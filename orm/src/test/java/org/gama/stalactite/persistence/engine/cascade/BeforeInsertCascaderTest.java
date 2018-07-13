@@ -1,6 +1,5 @@
 package org.gama.stalactite.persistence.engine.cascade;
 
-import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -23,13 +22,13 @@ import static org.mockito.Mockito.when;
 public class BeforeInsertCascaderTest extends AbstractCascaderTest {
 	
 	@Test
-	public void testBeforeInsert() throws SQLException {
+	public void testBeforeInsert() {
 		ClassMappingStrategy mappingStrategyMock = mock(ClassMappingStrategy.class);
 		// IdMappingStrategy is called by InsertExecutor to retrieve IdentifierInsertionManager but this will not be called, so we can mock it
 		when(mappingStrategyMock.getIdMappingStrategy()).thenReturn(mock(IdMappingStrategy.class));
 		Persister<Tata, Long, Table> persisterMock = new Persister<Tata, Long, Table>(mappingStrategyMock, mock(Dialect.class), null, 10) {
 			@Override
-			protected int doInsert(Iterable<Tata> iterable) {
+			protected int doInsert(Iterable<Tata> entities) {
 				// Overriden to do no action, because default super action is complex to mock
 				return 0;
 			}
@@ -40,9 +39,9 @@ public class BeforeInsertCascaderTest extends AbstractCascaderTest {
 		// Instance to test: overriden methods allow later checking
 		BeforeInsertCascader<Toto, Tata> testInstance = new BeforeInsertCascader<Toto, Tata>(persisterMock) {
 			@Override
-			protected void postTargetInsert(Iterable<Tata> iterables) {
+			protected void postTargetInsert(Iterable<Tata> entities) {
 				actions.add("postTargetInsert");
-				triggeredTarget.addAll(Iterables.copy(iterables));
+				triggeredTarget.addAll(Iterables.copy(entities));
 			}
 			
 			@Override

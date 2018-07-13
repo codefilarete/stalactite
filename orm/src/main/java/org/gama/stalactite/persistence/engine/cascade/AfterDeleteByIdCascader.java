@@ -5,7 +5,6 @@ import java.util.stream.Collectors;
 
 import org.gama.lang.collection.Iterables;
 import org.gama.stalactite.persistence.engine.Persister;
-import org.gama.stalactite.persistence.engine.listening.IDeleteListener;
 import org.gama.stalactite.persistence.engine.listening.NoopDeleteByIdListener;
 
 /**
@@ -25,30 +24,29 @@ public abstract class AfterDeleteByIdCascader<Trigger, Target> extends NoopDelet
 		this.persister = persister;
 		this.persister.getPersisterListener().addDeleteByIdListener(new NoopDeleteByIdListener<Target>() {
 			@Override
-			public void afterDeleteById(Iterable<Target> iterables) {
-				super.afterDeleteById(iterables);
-				postTargetDelete(iterables);
+			public void afterDeleteById(Iterable<Target> entities) {
+				super.afterDeleteById(entities);
+				postTargetDelete(entities);
 			}
 		});
 	}
 	
 	/**
-	 * As supposed, since Trigger owns the relationship, we have to delete Target after Trigger instances deletion.
-	 * So {@link IDeleteListener#afterDelete(Iterable)} is overriden.
-	 *
-	 * @param iterables
+	 * Overriden to delete Target instances of the Trigger instances.
+	 * 
+	 * @param entities source entities previously deleted
 	 */
 	@Override
-	public void afterDeleteById(Iterable<Trigger> iterables) {
-		this.persister.deleteById(Iterables.stream(iterables).map(this::getTarget).filter(Objects::nonNull).collect(Collectors.toList()));
+	public void afterDeleteById(Iterable<Trigger> entities) {
+		this.persister.deleteById(Iterables.stream(entities).map(this::getTarget).filter(Objects::nonNull).collect(Collectors.toList()));
 	}
 	
 	/**
 	 * Post treatment after Target instance deletion. Cache cleanup for instance.
 	 * 
-	 * @param iterables
+	 * @param entities entities deleted by this listener
 	 */
-	protected abstract void postTargetDelete(Iterable<Target> iterables);
+	protected abstract void postTargetDelete(Iterable<Target> entities);
 	
 	/**
 	 * Expected to give the Target instance of a Trigger (should simply give a field value of trigger)

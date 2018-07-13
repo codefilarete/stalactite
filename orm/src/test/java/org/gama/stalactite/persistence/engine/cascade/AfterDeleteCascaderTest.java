@@ -1,6 +1,5 @@
 package org.gama.stalactite.persistence.engine.cascade;
 
-import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -23,13 +22,13 @@ import static org.mockito.Mockito.when;
 public class AfterDeleteCascaderTest extends AbstractCascaderTest {
 	
 	@Test
-	public void testAfterDelete() throws SQLException {
+	public void testAfterDelete() {
 		ClassMappingStrategy mappingStrategyMock = mock(ClassMappingStrategy.class);
 		// IdMappingStrategy is called by InsertExecutor to retrieve IdentifierInsertionManager but this will not be called, so we can mock it
 		when(mappingStrategyMock.getIdMappingStrategy()).thenReturn(mock(IdMappingStrategy.class));
 		Persister<Tata, Long, Table> persisterMock = new Persister<Tata, Long, Table>(mappingStrategyMock, mock(Dialect.class), null, 10) {
 			@Override
-			protected int doDelete(Iterable<Tata> iterable) {
+			protected int doDelete(Iterable<Tata> entities) {
 				// Overriden to do no action, because default super action is complex to mock
 				return 0;
 			}
@@ -40,9 +39,9 @@ public class AfterDeleteCascaderTest extends AbstractCascaderTest {
 		// Instance to test: overriden methods allow later checking
 		AfterDeleteCascader<Toto, Tata> testInstance = new AfterDeleteCascader<Toto, Tata>(persisterMock) {
 			@Override
-			protected void postTargetDelete(Iterable<Tata> iterables) {
+			protected void postTargetDelete(Iterable<Tata> entities) {
 				actions.add("postTargetDelete");
-				triggeredTarget.addAll(Iterables.copy(iterables));
+				triggeredTarget.addAll(Iterables.copy(entities));
 			}
 			
 			@Override

@@ -39,7 +39,7 @@ public class AlreadyAssignedIdentifierManager<T, I> implements IdentifierInserti
 	}
 	
 	@Override
-	public JDBCBatchingIterator<T> buildJDBCBatchingIterator(Iterable<T> iterable, WriteOperation<? extends Column<? extends Table, ?>> writeOperation, int batchSize) {
-		return new JDBCBatchingIterator<>(iterable, writeOperation, batchSize);
+	public JDBCBatchingIterator<T> buildJDBCBatchingIterator(Iterable<T> entities, WriteOperation<? extends Column<? extends Table, ?>> writeOperation, int batchSize) {
+		return new JDBCBatchingIterator<>(entities, writeOperation, batchSize);
 	}
 }

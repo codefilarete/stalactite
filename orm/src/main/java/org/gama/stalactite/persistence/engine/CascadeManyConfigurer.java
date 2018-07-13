@@ -127,7 +127,7 @@ public class CascadeManyConfigurer<I extends Identified, O extends Identified, J
 					persisterListener.addInsertListener(new AfterInsertCollectionCascader<I, O>(targetPersister) {
 						
 						@Override
-						protected void postTargetInsert(Iterable<O> iterables) {
+						protected void postTargetInsert(Iterable<O> entities) {
 							// Nothing to do. Identified#isPersisted flag should be fixed by target persister
 						}
 						
@@ -157,7 +157,7 @@ public class CascadeManyConfigurer<I extends Identified, O extends Identified, J
 							// But this can only be done through a ThreadLocal (for now) because there's no way to give them directly
 							// Hence we need to be carefull of Thread safety (cleaning context and collision)
 							
-							Set<Diff> diffSet = differ.diffList((List) unmodified, (List)modified);
+							Set<Diff> diffSet = differ.diffList((List) unmodified, (List) modified);
 							// a List to keep SQL orders, for better debug, easier understanding of logs
 							List<O> toBeInserted = new ArrayList<>();
 							List<O> toBeDeleted = new ArrayList<>();
@@ -218,12 +218,12 @@ public class CascadeManyConfigurer<I extends Identified, O extends Identified, J
 					}
 					persisterListener.addUpdateListener(new AfterUpdateCollectionCascader<I, O>(targetPersister) {
 						@Override
-						public void afterUpdate(Iterable<Duo<I, I>> iterables, boolean allColumnsStatement) {
-							iterables.forEach(entry -> updateListener.accept(entry, allColumnsStatement));
+						public void afterUpdate(Iterable<Duo<I, I>> entities, boolean allColumnsStatement) {
+							entities.forEach(entry -> updateListener.accept(entry, allColumnsStatement));
 						}
 						
 						@Override
-						protected void postTargetUpdate(Iterable<Duo<O, O>> iterables) {
+						protected void postTargetUpdate(Iterable<Duo<O, O>> entities) {
 							// Nothing to do
 						}
 						
@@ -237,7 +237,7 @@ public class CascadeManyConfigurer<I extends Identified, O extends Identified, J
 					persisterListener.addDeleteListener(new BeforeDeleteCollectionCascader<I, O>(targetPersister) {
 						
 						@Override
-						protected void postTargetDelete(Iterable<O> iterables) {
+						protected void postTargetDelete(Iterable<O> entities) {
 							// no post treatment to do
 						}
 						
@@ -253,7 +253,7 @@ public class CascadeManyConfigurer<I extends Identified, O extends Identified, J
 					// we add the deleteById event since we suppose that if delete is required then there's no reason that rough delete is not
 					persisterListener.addDeleteByIdListener(new BeforeDeleteByIdCollectionCascader<I, O>(targetPersister) {
 						@Override
-						protected void postTargetDelete(Iterable<O> iterables) {
+						protected void postTargetDelete(Iterable<O> entities) {
 							// no post treatment to do
 						}
 						
@@ -273,7 +273,7 @@ public class CascadeManyConfigurer<I extends Identified, O extends Identified, J
 					// configuring select for fetching relation
 					SerializableBiConsumer<O, I> reverseMember = cascadeMany.getReverseSetter();
 					if (reverseMember == null) {
-						reverseMember = (SerializableBiConsumer<O, I>) (o, i) -> { /* we can't do anything, so we do ... nothing */ };
+						reverseMember = (o, i) -> { /* we can't do anything, so we do ... nothing */ };
 					}
 					
 					if (cascadeMany.getIndexingColumn() != null) {

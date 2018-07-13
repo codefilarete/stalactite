@@ -13,13 +13,13 @@ public class UpdateListenerCollection<T> implements IUpdateListener<T> {
 	private List<IUpdateListener<T>> updateListeners = new ArrayList<>();
 	
 	@Override
-	public void beforeUpdate(Iterable<Duo<T, T>> iterables, boolean allColumnsStatement) {
-		updateListeners.forEach(listener -> listener.beforeUpdate(iterables, allColumnsStatement));
+	public void beforeUpdate(Iterable<Duo<T, T>> entities, boolean allColumnsStatement) {
+		updateListeners.forEach(listener -> listener.beforeUpdate(entities, allColumnsStatement));
 	}
 	
 	@Override
-	public void afterUpdate(Iterable<Duo<T, T>> iterables, boolean allColumnsStatement) {
-		updateListeners.forEach(listener -> listener.afterUpdate(iterables, allColumnsStatement));
+	public void afterUpdate(Iterable<Duo<T, T>> entities, boolean allColumnsStatement) {
+		updateListeners.forEach(listener -> listener.afterUpdate(entities, allColumnsStatement));
 	}
 	
 	@Override

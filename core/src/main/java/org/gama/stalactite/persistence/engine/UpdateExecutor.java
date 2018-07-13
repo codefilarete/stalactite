@@ -62,14 +62,14 @@ public class UpdateExecutor<C, I, T extends Table> extends UpsertExecutor<C, I, 
 	/**
 	 * Update roughly some instances: no difference are computed, only update statements (all columns) are applied.
 	 * Hence optimistic lock (versioned entities) is not check
-	 * @param iterable iterable of instances
+	 * @param entities iterable of entities
 	 */
-	public int updateById(Iterable<C> iterable) {
+	public int updateById(Iterable<C> entities) {
 		Set<Column<T, Object>> columnsToUpdate = getMappingStrategy().getUpdatableColumns();
 		PreparedUpdate<T> updateOperation = getDmlGenerator().buildUpdate(columnsToUpdate, getMappingStrategy().getVersionedKeys());
 		WriteOperation<UpwhereColumn<T>> writeOperation = newWriteOperation(updateOperation, new CurrentConnectionProvider());
 		
-		JDBCBatchingIterator<C> jdbcBatchingIterator = new JDBCBatchingIterator<>(iterable, writeOperation, getBatchSize());
+		JDBCBatchingIterator<C> jdbcBatchingIterator = new JDBCBatchingIterator<>(entities, writeOperation, getBatchSize());
 		while(jdbcBatchingIterator.hasNext()) {
 			C c = jdbcBatchingIterator.next();
 			Map<UpwhereColumn<T>, Object> updateValues = getMappingStrategy().getUpdateValues(c, null, true);
@@ -108,7 +108,7 @@ public class UpdateExecutor<C, I, T extends Table> extends UpsertExecutor<C, I, 
 	 * Update instances that have changes. All columns are updated.
 	 * Groups statements to benefit from JDBC batch.
 	 *
-	 * @param differencesIterable iterable of instances
+	 * @param differencesIterable iterable of entities
 	 */
 	public int updateFully(Iterable<Duo<C, C>> differencesIterable) {
 		// we ask the strategy to lookup for updatable columns (not taken directly on mapping strategy target table)

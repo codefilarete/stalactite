@@ -6,7 +6,6 @@ import java.util.stream.Collectors;
 import org.gama.lang.Duo;
 import org.gama.lang.collection.Iterables;
 import org.gama.stalactite.persistence.engine.Persister;
-import org.gama.stalactite.persistence.engine.listening.IUpdateListener;
 import org.gama.stalactite.persistence.engine.listening.NoopUpdateListener;
 
 /**
@@ -25,31 +24,30 @@ public abstract class AfterUpdateCascader<Trigger, Target> extends NoopUpdateLis
 		this.persister = persister;
 		this.persister.getPersisterListener().addUpdateListener(new NoopUpdateListener<Target>() {
 			@Override
-			public void afterUpdate(Iterable<Duo<Target, Target>> iterables, boolean allColumnsStatement) {
-				super.afterUpdate(iterables, allColumnsStatement);
-				postTargetUpdate(iterables);
+			public void afterUpdate(Iterable<Duo<Target, Target>> entities, boolean allColumnsStatement) {
+				super.afterUpdate(entities, allColumnsStatement);
+				postTargetUpdate(entities);
 			}
 		});
 	}
 	
 	/**
-	 * Supposing Trigger owns the relationship, it seems more intuitive that Target updates happen after Trigger
-	 * updates. So {@link IUpdateListener#afterUpdate(Iterable, boolean)} is overriden.
+	 * Overriden to update Target instances of the Trigger instances.
 	 *
-	 * @param iterables
+	 * @param entities source entities previously updated
 	 */
 	@Override
-	public void afterUpdate(Iterable<Duo<Trigger, Trigger>> iterables, boolean allColumnsStatement) {
-		this.persister.update(Iterables.stream(iterables).map(e -> getTarget(e.getLeft(), e.getRight())).filter(Objects::nonNull)
+	public void afterUpdate(Iterable<Duo<Trigger, Trigger>> entities, boolean allColumnsStatement) {
+		this.persister.update(Iterables.stream(entities).map(e -> getTarget(e.getLeft(), e.getRight())).filter(Objects::nonNull)
 				.collect(Collectors.toList()), allColumnsStatement);
 	}
 	
 	/**
 	 * To override for cases where Target instances need to be adapted after their update.
 	 *
-	 * @param iterables
+	 * @param entities entities updated by this listener
 	 */
-	protected abstract void postTargetUpdate(Iterable<Duo<Target, Target>> iterables);
+	protected abstract void postTargetUpdate(Iterable<Duo<Target, Target>> entities);
 	
 	/**
 	 * Expected to give the Target instance of a Trigger (should simply give a field value of trigger)

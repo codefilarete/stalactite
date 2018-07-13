@@ -49,6 +49,7 @@ public class InsertExecutor<C, I, T extends Table> extends UpsertExecutor<C, I, 
 		this.optimisticLockManager = optimisticLockManager;
 	}
 	
+	@Override
 	protected <P> WriteOperation<P> newWriteOperation(SQLStatement<P> statement, CurrentConnectionProvider currentConnectionProvider) {
 		return new WriteOperation<P>(statement, currentConnectionProvider, getWriteOperationRetryer()) {
 			@Override
@@ -59,11 +60,11 @@ public class InsertExecutor<C, I, T extends Table> extends UpsertExecutor<C, I, 
 		};
 	}
 	
-	public int insert(Iterable<C> iterable) {
+	public int insert(Iterable<C> entities) {
 		Set<Column<T, Object>> columns = getMappingStrategy().getInsertableColumns();
 		ColumnParamedSQL<T> insertStatement = getDmlGenerator().buildInsert(columns);
 		WriteOperation<Column<T, ?>> writeOperation = newWriteOperation(insertStatement, new CurrentConnectionProvider());
-		JDBCBatchingIterator<C> jdbcBatchingIterator = identifierInsertionManager.buildJDBCBatchingIterator(iterable, writeOperation, getBatchSize());
+		JDBCBatchingIterator<C> jdbcBatchingIterator = identifierInsertionManager.buildJDBCBatchingIterator(entities, writeOperation, getBatchSize());
 		
 		while (jdbcBatchingIterator.hasNext()) {
 			C c = jdbcBatchingIterator.next();

@@ -1,13 +1,13 @@
 package org.gama.stalactite.persistence.id;
 
 import java.util.Comparator;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import org.gama.lang.collection.Arrays;
 import org.gama.lang.collection.Iterables;
 import org.gama.lang.function.Functions;
 import org.gama.stalactite.persistence.engine.model.Country;
@@ -51,18 +51,15 @@ public class IdentifiedCollectionDifferTest {
 	
 	public static Object[][] testDiffSet() {
 		TestData testData = new TestData();
-		Set<Diff> expectedResult = new HashSet<>();
-		expectedResult.add(new Diff(ADDED, null, testData.country4));
-		expectedResult.add(new Diff(ADDED, null, testData.country5));
-		expectedResult.add(new Diff(REMOVED, testData.country1, null));
-		expectedResult.add(new Diff(REMOVED, testData.country2, null));
-		expectedResult.add(new Diff(HELD, testData.country3, testData.country3Clone));
-		
 		return new Object[][] {
 				{
 						asHashSet(testData.country1, testData.country2, testData.country3),
 						asHashSet(testData.country3Clone, testData.country4, testData.country5),
-						expectedResult
+						Arrays.asHashSet(new Diff(ADDED, null, testData.country4),
+										new Diff(ADDED, null, testData.country5),
+										new Diff(REMOVED, testData.country1, null),
+										new Diff(REMOVED, testData.country2, null),
+										new Diff(HELD, testData.country3, testData.country3Clone))
 				},
 				// corner cases with empty sets
 				{

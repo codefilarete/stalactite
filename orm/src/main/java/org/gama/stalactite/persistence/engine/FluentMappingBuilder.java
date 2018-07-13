@@ -837,8 +837,8 @@ public class FluentMappingBuilder<T extends Identified, I extends StatefullIdent
 		public static final SetPersistedFlagAfterInsertListener INSTANCE = new SetPersistedFlagAfterInsertListener();
 		
 		@Override
-		public void afterInsert(Iterable<Identified> iterables) {
-			for (Identified t : iterables) {
+		public void afterInsert(Iterable<Identified> entities) {
+			for (Identified t : entities) {
 				if (t.getId() instanceof PersistableIdentifier) {
 					((PersistableIdentifier) t.getId()).setPersisted(true);
 				}
@@ -857,8 +857,8 @@ public class FluentMappingBuilder<T extends Identified, I extends StatefullIdent
 		}
 		
 		@Override
-		public void beforeInsert(Iterable<T> iterable) {
-			for (T pawn : iterable) {
+		public void beforeInsert(Iterable<T> entities) {
+			for (T pawn : entities) {
 				Identified modifiedTarget = targetProvider.apply(pawn);
 				if (modifiedTarget == null) {
 					throw newRuntimeMappingException(pawn, member);
@@ -878,8 +878,8 @@ public class FluentMappingBuilder<T extends Identified, I extends StatefullIdent
 		}
 		
 		@Override
-		public void beforeUpdate(Iterable<Duo<T, T>> iterable, boolean allColumnsStatement) {
-			for (Duo<T, T> entry : iterable) {
+		public void beforeUpdate(Iterable<Duo<T, T>> entities, boolean allColumnsStatement) {
+			for (Duo<T, T> entry : entities) {
 				T t = entry.getLeft();
 				Identified modifiedTarget = targetProvider.apply(t);
 				if (modifiedTarget == null) {

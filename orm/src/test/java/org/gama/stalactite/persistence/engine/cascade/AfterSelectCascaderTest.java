@@ -1,6 +1,5 @@
 package org.gama.stalactite.persistence.engine.cascade;
 
-import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -25,7 +24,7 @@ import static org.mockito.Mockito.when;
 public class AfterSelectCascaderTest extends AbstractCascaderTest {
 	
 	@Test
-	public void testAfterSelect() throws SQLException {
+	public void testAfterSelect() {
 		ClassMappingStrategy mappingStrategyMock = mock(ClassMappingStrategy.class);
 		// IdMappingStrategy is called by InsertExecutor to retrieve IdentifierInsertionManager but this will not be called, so we can mock it
 		when(mappingStrategyMock.getIdMappingStrategy()).thenReturn(mock(IdMappingStrategy.class));
@@ -49,9 +48,9 @@ public class AfterSelectCascaderTest extends AbstractCascaderTest {
 		AfterSelectCascader<Toto, Tata, Long> testInstance = new AfterSelectCascader<Toto, Tata, Long>(persisterMock) {
 			
 			@Override
-			protected void postTargetSelect(Iterable<Tata> iterable) {
+			protected void postTargetSelect(Iterable<Tata> entities) {
 				actions.add("postTargetSelect");
-				triggeredTarget.addAll(Iterables.copy(iterable));
+				triggeredTarget.addAll(Iterables.copy(entities));
 			}
 			
 			@Override
