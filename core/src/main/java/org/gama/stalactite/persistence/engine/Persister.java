@@ -1,5 +1,6 @@
 package org.gama.stalactite.persistence.engine;
 
+import javax.annotation.Nonnull;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -8,6 +9,8 @@ import org.gama.lang.Duo;
 import org.gama.lang.Retryer;
 import org.gama.lang.collection.Iterables;
 import org.gama.sql.ConnectionProvider;
+import org.gama.stalactite.persistence.engine.listening.IUpdateListener;
+import org.gama.stalactite.persistence.engine.listening.IUpdateListener.UpdatePayload;
 import org.gama.stalactite.persistence.engine.listening.PersisterListener;
 import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
 import org.gama.stalactite.persistence.sql.Dialect;
@@ -19,7 +22,8 @@ import org.gama.stalactite.persistence.structure.Table;
  * 
  * @author Guillaume Mary
  */
-public class Persister<C, I, T extends Table> {
+@Nonnull
+public class Persister<C, I, T extends Table<T>> {
 	
 	private final ConnectionProvider connectionProvider;
 	private final DMLGenerator dmlGenerator;
@@ -136,6 +140,7 @@ public class Persister<C, I, T extends Table> {
 	 * 
 	 * @return not null
 	 */
+	@Nonnull
 	public PersisterListener<C, I> getPersisterListener() {
 		return persisterListener;
 	}
@@ -156,16 +161,28 @@ public class Persister<C, I, T extends Table> {
 		return selectExecutor;
 	}
 	
-	public void persist(C c) {
+	/**
+	 * Persists an instance either it is already persisted or not (insert or update).
+	 * 
+	 * Check between insert or update is determined by id state which itself depends on identifier policy,
+	 * see {@link org.gama.stalactite.persistence.mapping.IdMappingStrategy.IsNewDeterminer} implementations and
+	 * {@link org.gama.stalactite.persistence.id.manager.IdentifierInsertionManager} implementations for id value computation. 
+	 * 
+	 * @param entity an entity to be persisted
+	 * @return persisted + updated rows count
+	 * @throws StaleObjectExcepion if updated row count differs from entities count
+	 * @see #insert(Iterable) 
+	 * @see #update(Iterable, boolean)  
+	 */
+	public int persist(C entity) {
 		// determine insert or update operation
-		if (isNew(c)) {
-			insert(c);
-		} else {
-			updateById(c);
-		}
+		return persist(Collections.singleton(entity));
 	}
 	
-	public void persist(Iterable<C> entities) {
+	public int persist(Iterable<C> entities) {
+		if (Iterables.isEmpty(entities)) {
+			return 0;
+		}
 		// determine insert or update operation
 		List<C> toInsert = new ArrayList<>(20);
 		List<C> toUpdate = new ArrayList<>(20);
@@ -176,12 +193,14 @@ public class Persister<C, I, T extends Table> {
 				toUpdate.add(c);
 			}
 		}
+		int writtenRowCount = 0;
 		if (!toInsert.isEmpty()) {
-			insert(toInsert);
+			writtenRowCount += insert(toInsert);
 		}
 		if (!toUpdate.isEmpty()) {
-			updateById(toUpdate);
+			writtenRowCount += updateById(toUpdate);
 		}
+		return writtenRowCount;
 	}
 	
 	public int insert(C c) {
@@ -189,54 +208,103 @@ public class Persister<C, I, T extends Table> {
 	}
 	
 	public int insert(Iterable<C> entities) {
-		return getPersisterListener().doWithInsertListener(entities, () -> doInsert(entities));
+		if (Iterables.isEmpty(entities)) {
+			return 0;
+		} else {
+			return getPersisterListener().doWithInsertListener(entities, () -> doInsert(entities));
+		}
 	}
 	
 	protected int doInsert(Iterable<C> entities) {
 		return insertExecutor.insert(entities);
 	}
 	
-	public void updateById(C c) {
-		updateById(Collections.singletonList(c));
+	public int updateById(C c) {
+		return updateById(Collections.singletonList(c));
 	}
 	
 	/**
-	 * Update roughly some instances: no difference are computed, only update statements (full column) are applied.
+	 * Updates roughly some instances: no difference are computed, only update statements (full column) are applied.
+	 * 
 	 * @param entities iterable of entities
 	 */
 	public int updateById(Iterable<C> entities) {
-		return getPersisterListener().doWithUpdateByIdListener(entities, () -> doUpdateById(entities));
+		if (Iterables.isEmpty(entities)) {
+			// nothing to update => we return immediatly without any call to listeners
+			return 0;
+		} else {
+			return getPersisterListener().doWithUpdateByIdListener(entities, () -> doUpdateById(entities));
+		}
 	}
 	
 	protected int doUpdateById(Iterable<C> entities) {
 		return updateExecutor.updateById(entities);
 	}
 	
+	/**
+	 * Updates an instance that may have changes.
+	 * Groups statements to benefit from JDBC batch. Usefull overall when allColumnsStatement
+	 * is set to false.
+	 *
+	 * @param modified the supposing entity that has differences againt {@code unmodified} entity
+	 * @param unmodified the "original" (freshly loaded from database ?) entity
+	 * @param allColumnsStatement true if all columns must be in the SQL statement, false if only modified ones should be in
+	 */
 	public int update(C modified, C unmodified, boolean allColumnsStatement) {
 		return update(Collections.singletonList(new Duo<>(modified, unmodified)), allColumnsStatement);
 	}
 	
 	/**
-	 * Update instances that has changes.
+	 * Updates instances that may have changes.
 	 * Groups statements to benefit from JDBC batch. Usefull overall when allColumnsStatement
 	 * is set to false.
-	 *  @param differencesIterable pairs of modified-unmodified instances, used to compute differences side by side
-	 * @param allColumnsStatement true if all columns must be in the SQL statement, false if only modified ones should be..
+	 * 
+	 * @param differencesIterable pairs of modified-unmodified instances, used to compute differences side by side
+	 * @param allColumnsStatement true if all columns must be in the SQL statement, false if only modified ones should be in
 	 */
-	public Integer update(Iterable<Duo<C, C>> differencesIterable, boolean allColumnsStatement) {
-		return getPersisterListener().doWithUpdateListener(differencesIterable, allColumnsStatement,
-				() -> doUpdate(differencesIterable, allColumnsStatement));
+	public int update(Iterable<Duo<C, C>> differencesIterable, boolean allColumnsStatement) {
+		Iterable<UpdatePayload<C, T>> updatePayloads = IUpdateListener.computePayloads(differencesIterable, allColumnsStatement, 
+				getMappingStrategy());
+		if (Iterables.isEmpty(updatePayloads)) {
+			// nothing to update => we return immediatly without any call to listeners
+			return 0;
+		} else {
+			return getPersisterListener().doWithUpdateListener(updatePayloads, allColumnsStatement, this::doUpdate);
+		}
 	}
 	
-	protected int doUpdate(Iterable<Duo<C, C>> differencesIterable, boolean allColumnsStatement) {
-		return updateExecutor.update(differencesIterable, allColumnsStatement);
+	protected int doUpdate(Iterable<UpdatePayload<C, T>> updatePayloads, boolean allColumnsStatement) {
+		if (allColumnsStatement) {
+			return updateExecutor.updateMappedColumns(updatePayloads);
+		} else {
+			return updateExecutor.updateVariousColumns(updatePayloads);
+		}
 	}
 	
-	public int delete(C c) {
-		return delete(Collections.singletonList(c));
+	/**
+	 * Deletes instances.
+	 * Takes optimistic lock into account.
+	 *
+	 * @param entity entity to be deleted
+	 * @return deleted row count
+	 * @throws StaleObjectExcepion if deleted row count differs from entities count
+	 */
+	public int delete(C entity) {
+		return delete(Collections.singletonList(entity));
 	}
 	
+	/**
+	 * Deletes instances.
+	 * Takes optimistic lock into account.
+	 *
+	 * @param entities entites to be deleted
+	 * @return deleted row count
+	 * @throws StaleObjectExcepion if deleted row count differs from entities count
+	 */
 	public int delete(Iterable<C> entities) {
+		if (Iterables.isEmpty(entities)) {
+			return 0;
+		}
 		return getPersisterListener().doWithDeleteListener(entities, () -> doDelete(entities));
 	}
 	
@@ -244,11 +312,28 @@ public class Persister<C, I, T extends Table> {
 		return deleteExecutor.delete(entities);
 	}
 	
-	public int deleteById(C c) {
-		return deleteById(Collections.singletonList(c));
+	/**
+	 * Will delete instances only by their identifier.
+	 * This method will not take optimisic lock (versioned entity) into account, so it will delete database rows "roughly".
+	 *
+	 * @param entity entity to be deleted
+	 * @return deleted row count
+	 */
+	public int deleteById(C entity) {
+		return deleteById(Collections.singletonList(entity));
 	}
 	
+	/**
+	 * Will delete instances only by their identifier.
+	 * This method will not take optimisic lock (versioned entity) into account, so it will delete database rows "roughly".
+	 *
+	 * @param entities entites to be deleted
+	 * @return deleted row count
+	 */
 	public int deleteById(Iterable<C> entities) {
+		if (Iterables.isEmpty(entities)) {
+			return 0;
+		}
 		return getPersisterListener().doWithDeleteByIdListener(entities, () -> doDeleteById(entities));
 	}
 	
@@ -273,10 +358,10 @@ public class Persister<C, I, T extends Table> {
 	}
 	
 	public List<C> select(Iterable<I> ids) {
-		if (!Iterables.isEmpty(ids)) {
-			return getPersisterListener().doWithSelectListener(ids, () -> doSelect(ids));
+		if (Iterables.isEmpty(ids)) {
+			return new ArrayList<>();
 		} else {
-			throw new IllegalArgumentException("Non selectable entity " + mappingStrategy.getClassToPersist() + " because of null id");
+			return getPersisterListener().doWithSelectListener(ids, () -> doSelect(ids));
 		}
 	}
 	

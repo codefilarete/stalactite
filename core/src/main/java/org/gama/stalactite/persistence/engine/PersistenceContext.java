@@ -71,7 +71,7 @@ public class PersistenceContext {
 	 * @param <I> the identifier type of the entity
 	 * @return the newly created {@link Persister} for the configuration
 	 */
-	public <C, I, T extends Table> Persister<C, I, T> add(ClassMappingStrategy<C, I, T> classMappingStrategy) {
+	public <C, I, T extends Table<T>> Persister<C, I, T> add(ClassMappingStrategy<C, I, T> classMappingStrategy) {
 		mappingStrategies.put(classMappingStrategy.getClassToPersist(), classMappingStrategy);
 		Persister<C, I, T> persister = new Persister<>(this, classMappingStrategy);
 		persisterCache.put(classMappingStrategy.getClassToPersist(), persister);
@@ -100,7 +100,7 @@ public class PersistenceContext {
 	 * @return never null
 	 * @throws IllegalArgumentException if the class is not mapped
 	 */
-	public <C, I, T extends Table> Persister<C, I, T> getPersister(Class<C> clazz) {
+	public <C, I, T extends Table<T>> Persister<C, I, T> getPersister(Class<C> clazz) {
 		return persisterCache.get(clazz);
 	}
 	
@@ -108,7 +108,7 @@ public class PersistenceContext {
 		persisterCache.put(persister.getMappingStrategy().getClassToPersist(), persister);
 	}
 	
-	protected <C, I, T extends Table> Persister<C, I, T> newPersister(Class<C> clazz) {
+	protected <C, I, T extends Table<T>> Persister<C, I, T> newPersister(Class<C> clazz) {
 		ClassMappingStrategy<C, I, T> citClassMappingStrategy = ensureMappedClass(clazz);
 		return new Persister<>(this, citClassMappingStrategy);
 	}

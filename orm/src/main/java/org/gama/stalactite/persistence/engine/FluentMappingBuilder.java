@@ -17,7 +17,6 @@ import java.util.stream.Collectors;
 
 import org.danekja.java.util.function.serializable.SerializableBiConsumer;
 import org.danekja.java.util.function.serializable.SerializableFunction;
-import org.gama.lang.Duo;
 import org.gama.lang.Nullable;
 import org.gama.lang.Reflections;
 import org.gama.lang.bean.FieldIterator;
@@ -468,11 +467,11 @@ public class FluentMappingBuilder<T extends Identified, I extends StatefullIdent
 	}
 	
 	@Override
-	public Persister<T, I, Table> build(PersistenceContext persistenceContext) {
+	public Persister<T, I, ?> build(PersistenceContext persistenceContext) {
 		ClassMappingStrategy<T, I, Table> mappingStrategy = build(persistenceContext.getDialect());
-		Persister<T, I, Table> localPersister = persistenceContext.add(mappingStrategy);
+		Persister<T, I, ?> localPersister = persistenceContext.add(mappingStrategy);
 		if (!cascadeOnes.isEmpty()) {
-			JoinedTablesPersister<T, I, Table> joinedTablesPersister = new JoinedTablesPersister<>(persistenceContext, mappingStrategy);
+			JoinedTablesPersister<T, I, ?> joinedTablesPersister = new JoinedTablesPersister<>(persistenceContext, mappingStrategy);
 			localPersister = joinedTablesPersister;
 			// adding persistence flag setters on this side
 			joinedTablesPersister.getPersisterListener().addInsertListener((IInsertListener<T>) SetPersistedFlagAfterInsertListener.INSTANCE);
@@ -484,7 +483,7 @@ public class FluentMappingBuilder<T extends Identified, I extends StatefullIdent
 		}
 		
 		if (!cascadeManys.isEmpty()) {
-			JoinedTablesPersister<T, I, Table> joinedTablesPersister = new JoinedTablesPersister<>(persistenceContext, mappingStrategy);
+			JoinedTablesPersister<T, I, ?> joinedTablesPersister = new JoinedTablesPersister<>(persistenceContext, mappingStrategy);
 			localPersister = joinedTablesPersister;
 			
 			CascadeManyConfigurer cascadeManyConfigurer = new CascadeManyConfigurer();
@@ -681,8 +680,8 @@ public class FluentMappingBuilder<T extends Identified, I extends StatefullIdent
 		}
 		
 		/** The {@link Persister} that will be used to persist the target of the relation */
-		public Persister<O, J, Table> getPersister() {
-			return (Persister<O, J, Table>) persister;
+		public Persister<O, J, ?> getPersister() {
+			return persister;
 		}
 		
 		/** Events of the cascade, default is none */
@@ -746,8 +745,8 @@ public class FluentMappingBuilder<T extends Identified, I extends StatefullIdent
 			return targetProvider;
 		}
 		
-		public Persister<O, J, Table> getPersister() {
-			return (Persister<O, J, Table>) persister;
+		public Persister<O, J, ?> getPersister() {
+			return persister;
 		}
 		
 		public Method getMember() {
@@ -878,9 +877,9 @@ public class FluentMappingBuilder<T extends Identified, I extends StatefullIdent
 		}
 		
 		@Override
-		public void beforeUpdate(Iterable<Duo<T, T>> entities, boolean allColumnsStatement) {
-			for (Duo<T, T> entry : entities) {
-				T t = entry.getLeft();
+		public void beforeUpdate(Iterable<UpdatePayload<T, ?>> payloads, boolean allColumnsStatement) {
+			for (UpdatePayload<T, ?> payload : payloads) {
+				T t = payload.getEntities().getLeft();
 				Identified modifiedTarget = targetProvider.apply(t);
 				if (modifiedTarget == null) {
 					throw newRuntimeMappingException(t, member);

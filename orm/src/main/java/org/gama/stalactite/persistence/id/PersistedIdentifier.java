@@ -21,10 +21,23 @@ public class PersistedIdentifier<T> extends AbstractIdentifier<T> {
 		return true;
 	}
 	
+	/**
+	 * Overriden to be compatible with {@link PersistableIdentifier}.
+	 * This is particularly usefull with {@link IdentifiedCollectionDiffer} because it may compare persisted and not persisted identifier.
+	 * 
+	 * @param that another objet, not null, not this
+	 * @return true if {@code that} is a {@link PersistedIdentifier}, or {@code that} is a {@link PersistableIdentifier} and its state is persisted 
+	 */
 	@Override
 	protected boolean equalsDeeply(@Nonnull AbstractIdentifier<?> that) {
-		if (super.equalsDeeply(that) && that instanceof PersistedIdentifier) {
-			return true;
+		if (super.equalsDeeply(that)) {
+			if (that instanceof PersistedIdentifier) {
+				return true;
+			} else if (that instanceof PersistableIdentifier) {
+				return that.isPersisted();
+			} else {
+				return false;
+			}
 		} else {
 			return false;
 		}

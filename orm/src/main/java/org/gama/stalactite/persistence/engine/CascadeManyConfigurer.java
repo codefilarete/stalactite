@@ -32,10 +32,12 @@ import org.gama.stalactite.persistence.engine.cascade.JoinedStrategiesSelect;
 import org.gama.stalactite.persistence.engine.cascade.JoinedTablesPersister;
 import org.gama.stalactite.persistence.engine.listening.IInsertListener;
 import org.gama.stalactite.persistence.engine.listening.ISelectListener;
+import org.gama.stalactite.persistence.engine.listening.IUpdateListener.UpdatePayload;
 import org.gama.stalactite.persistence.engine.listening.PersisterListener;
 import org.gama.stalactite.persistence.id.Identified;
 import org.gama.stalactite.persistence.id.IdentifiedCollectionDiffer;
 import org.gama.stalactite.persistence.id.IdentifiedCollectionDiffer.Diff;
+import org.gama.stalactite.persistence.id.IdentifiedCollectionDiffer.IndexedDiff;
 import org.gama.stalactite.persistence.id.manager.StatefullIdentifier;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
@@ -68,10 +70,10 @@ public class CascadeManyConfigurer<I extends Identified, O extends Identified, J
 		this.differ = differ;
 	}
 	
-	public <T extends Table> void appendCascade(CascadeMany<I, O, J, C> cascadeMany,
+	public <T extends Table<T>> void appendCascade(CascadeMany<I, O, J, C> cascadeMany,
 												JoinedTablesPersister<I, J, T> joinedTablesPersister,
 												ForeignKeyNamingStrategy foreignKeyNamingStrategy) {
-		Persister<O, J, Table> targetPersister = cascadeMany.getPersister();
+		Persister<O, J, ?> targetPersister = cascadeMany.getPersister();
 		
 		// adding persistence flag setters on both side
 		joinedTablesPersister.getPersisterListener().addInsertListener((IInsertListener<I>) SetPersistedFlagAfterInsertListener.INSTANCE);
@@ -146,39 +148,42 @@ public class CascadeManyConfigurer<I extends Identified, O extends Identified, J
 						throw new UnsupportedOperationException("Indexing column is only available on List, found "
 								+ Reflections.toString(cascadeMany.getMember().getReturnType()));
 					}
-					BiConsumer<Duo<I, I>, Boolean> updateListener;
+					BiConsumer<UpdatePayload<I, ?>, Boolean> updateListener;
 					if (List.class.isAssignableFrom(cascadeMany.getMember().getReturnType())) {
-						updateListener = (entry, allColumnsStatement) -> {
-							C modified = collectionGetter.apply(entry.getLeft());
-							C unmodified = collectionGetter.apply(entry.getRight());
+						updateListener = (updatePayload, allColumnsStatement) -> {
+							C modified = collectionGetter.apply(updatePayload.getEntities().getLeft());
+							C unmodified = collectionGetter.apply(updatePayload.getEntities().getRight());
 							
 							// In order to have batch update of the index column (better performance) we compute the whole indexes
 							// Then those indexes will be given to the update cascader.
 							// But this can only be done through a ThreadLocal (for now) because there's no way to give them directly
 							// Hence we need to be carefull of Thread safety (cleaning context and collision)
 							
-							Set<Diff> diffSet = differ.diffList((List) unmodified, (List) modified);
+							Set<IndexedDiff> diffSet = differ.diffList((List) unmodified, (List) modified);
 							// a List to keep SQL orders, for better debug, easier understanding of logs
 							List<O> toBeInserted = new ArrayList<>();
 							List<O> toBeDeleted = new ArrayList<>();
 							Map<O, Integer> newIndexes = new HashMap<>();
-							for (Diff diff : diffSet) {
+							for (IndexedDiff diff : diffSet) {
 								switch (diff.getState()) {
 									case ADDED:
-										toBeInserted.add((O) diff.getReplacingInstance());
+										// we insert only non persisted entity to prevent from a primary key conflict
+										if (!diff.getReplacingInstance().getId().isPersisted()) {
+											toBeInserted.add((O) diff.getReplacingInstance());
+										}
 										break;
 									case HELD:
-										O replacingInstance = (O) diff.getReplacingInstance();
-										I source = cascadeMany.getReverseGetter().apply(replacingInstance);
-										C collection = cascadeMany.getTargetProvider().apply(source);
-										int index = ((List) collection).indexOf(diff.getReplacingInstance());
-										newIndexes.put(replacingInstance, index);
-										targetPersister.getMappingStrategy().addSilentColumnUpdater(cascadeMany.getIndexingColumn(),
-												// Thread safe by updatableListIndex access
-												(Function<O, Object>) o -> Nullable.nullable(updatableListIndex.get()).apply(m -> m.get(o)).get());
+										Integer index = Iterables.first(Iterables.minus(diff.getReplacerIndexes(), diff.getSourceIndexes()));
+										if (index != null ) {
+											newIndexes.put((O) diff.getReplacingInstance(), index);
+											targetPersister.getMappingStrategy().addSilentColumnUpdater(cascadeMany.getIndexingColumn(),
+													// Thread safe by updatableListIndex access
+													(Function<O, Object>) o -> Nullable.nullable(updatableListIndex.get()).apply(m -> m.get(o)).get());
+										}
 										break;
 									case REMOVED:
-										if (cascadeMany.shouldDeleteRemoved()) {
+										// we delete only persisted entity to prevent from a not found record
+										if (cascadeMany.shouldDeleteRemoved() && diff.getSourceInstance().getId().isPersisted()) {
 											toBeDeleted.add((O) diff.getSourceInstance());
 										}
 										break;
@@ -195,8 +200,8 @@ public class CascadeManyConfigurer<I extends Identified, O extends Identified, J
 						};
 					} else /* any other type of Collection except List */ {
 						updateListener = (entry, allColumnsStatement) -> {
-							C modified = collectionGetter.apply(entry.getLeft());
-							C unmodified = collectionGetter.apply(entry.getRight());
+							C modified = collectionGetter.apply(entry.getEntities().getLeft());
+							C unmodified = collectionGetter.apply(entry.getEntities().getRight());
 							Set<Diff> diffSet = differ.diffSet((Set) unmodified, (Set) modified);
 							for (Diff diff : diffSet) {
 								switch (diff.getState()) {
@@ -218,12 +223,12 @@ public class CascadeManyConfigurer<I extends Identified, O extends Identified, J
 					}
 					persisterListener.addUpdateListener(new AfterUpdateCollectionCascader<I, O>(targetPersister) {
 						@Override
-						public void afterUpdate(Iterable<Duo<I, I>> entities, boolean allColumnsStatement) {
+						public void afterUpdate(Iterable<UpdatePayload<I, ?>> entities, boolean allColumnsStatement) {
 							entities.forEach(entry -> updateListener.accept(entry, allColumnsStatement));
 						}
 						
 						@Override
-						protected void postTargetUpdate(Iterable<Duo<O, O>> entities) {
+						protected void postTargetUpdate(Iterable<UpdatePayload<O, ?>> entities) {
 							// Nothing to do
 						}
 						

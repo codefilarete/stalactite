@@ -1,35 +1,40 @@
 package org.gama.stalactite.persistence.engine.listening;
 
 import java.util.List;
+import java.util.function.BiFunction;
 
 import org.gama.lang.Duo;
 import org.gama.lang.bean.IQuietDelegate;
 import org.gama.lang.collection.Iterables;
+import org.gama.stalactite.persistence.engine.listening.IUpdateListener.UpdatePayload;
+import org.gama.stalactite.persistence.structure.Table;
+
+import static org.gama.lang.function.Functions.chain;
 
 /**
  * Simple class that centralize persistence event listening. Delegates listening to encapsulated instance.
  * 
  * @author Guillaume Mary
  */
-public class PersisterListener<T, I> {
+public class PersisterListener<C, I> {
 	
-	private InsertListenerCollection<T> insertListener = new InsertListenerCollection<>();
-	private UpdateByIdListenerCollection<T> updateByIdListenerCollection = new UpdateByIdListenerCollection<>();
-	private UpdateListenerCollection<T> updateListener = new UpdateListenerCollection<>();
-	private DeleteListenerCollection<T> deleteListener = new DeleteListenerCollection<>();
-	private DeleteByIdListenerCollection<T> deleteByIdListenerCollection = new DeleteByIdListenerCollection<>();
-	private SelectListenerCollection<T, I> selectListener = new SelectListenerCollection<>();
+	private InsertListenerCollection<C> insertListener = new InsertListenerCollection<>();
+	private UpdateByIdListenerCollection<C> updateByIdListenerCollection = new UpdateByIdListenerCollection<>();
+	private UpdateListenerCollection<C> updateListener = new UpdateListenerCollection<>();
+	private DeleteListenerCollection<C> deleteListener = new DeleteListenerCollection<>();
+	private DeleteByIdListenerCollection<C> deleteByIdListenerCollection = new DeleteByIdListenerCollection<>();
+	private SelectListenerCollection<C, I> selectListener = new SelectListenerCollection<>();
 	
-	public InsertListenerCollection<T> getInsertListener() {
+	public InsertListenerCollection<C> getInsertListener() {
 		return insertListener;
 	}
 	
-	public PersisterListener<T, I> addInsertListener(IInsertListener<T> insertListener) {
+	public PersisterListener<C, I> addInsertListener(IInsertListener<C> insertListener) {
 		this.insertListener.add(insertListener);
 		return this;
 	}
 	
-	public <R> R doWithInsertListener(Iterable<T> entities, IQuietDelegate<R> delegate) {
+	public <R> R doWithInsertListener(Iterable<C> entities, IQuietDelegate<R> delegate) {
 		insertListener.beforeInsert(entities);
 		R result;
 		try {
@@ -42,16 +47,16 @@ public class PersisterListener<T, I> {
 		return result;
 	}
 	
-	public UpdateByIdListenerCollection<T> getUpdateByIdListenerCollection() {
+	public UpdateByIdListenerCollection<C> getUpdateByIdListenerCollection() {
 		return updateByIdListenerCollection;
 	}
 	
-	public PersisterListener<T, I> addUpdateByIdListener(IUpdateByIdListener<T> updateByIdListener) {
+	public PersisterListener<C, I> addUpdateByIdListener(IUpdateByIdListener<C> updateByIdListener) {
 		this.updateByIdListenerCollection.add(updateByIdListener);
 		return this;
 	}
 	
-	public <R> R doWithUpdateByIdListener(Iterable<T> entities, IQuietDelegate<R> delegate) {
+	public <R> R doWithUpdateByIdListener(Iterable<C> entities, IQuietDelegate<R> delegate) {
 		updateByIdListenerCollection.beforeUpdateById(entities);
 		R result;
 		try {
@@ -64,38 +69,39 @@ public class PersisterListener<T, I> {
 		return result;
 	}
 	
-	public UpdateListenerCollection<T> getUpdateListener() {
+	public UpdateListenerCollection<C> getUpdateListener() {
 		return updateListener;
 	}
 	
-	public PersisterListener<T, I> addUpdateListener(IUpdateListener<T> updateListener) {
+	public PersisterListener<C, I> addUpdateListener(IUpdateListener<C> updateListener) {
 		this.updateListener.add(updateListener);
 		return this;
 	}
 	
-	public <R> R doWithUpdateListener(Iterable<Duo<T, T>> differencesIterable, boolean allColumnsStatement, IQuietDelegate<R> delegate) {
-		updateListener.beforeUpdate(differencesIterable, allColumnsStatement);
+	public <R, T extends Table<T>> R doWithUpdateListener(Iterable<UpdatePayload<C, T>> differencesIterable, boolean allColumnsStatement,
+														  BiFunction<Iterable<UpdatePayload<C, T>>, Boolean, R> delegate) {
+		updateListener.beforeUpdate((Iterable) differencesIterable, allColumnsStatement);
 		R result;
 		try {
-			result = delegate.execute();
+			result = delegate.apply(differencesIterable, allColumnsStatement);
 		} catch (RuntimeException e) {
-			updateListener.onError(Iterables.collectToList(differencesIterable, Duo::getLeft), e);
+			updateListener.onError(Iterables.collectToList(differencesIterable, chain(UpdatePayload::getEntities, Duo::getLeft)), e);
 			throw e;
 		}
-		updateListener.afterUpdate(differencesIterable, allColumnsStatement);
+		updateListener.afterUpdate((Iterable) differencesIterable, allColumnsStatement);
 		return result;
 	}
 	
-	public DeleteListenerCollection<T> getDeleteListener() {
+	public DeleteListenerCollection<C> getDeleteListener() {
 		return deleteListener;
 	}
 	
-	public PersisterListener<T, I> addDeleteListener(IDeleteListener<T> deleteListener) {
+	public PersisterListener<C, I> addDeleteListener(IDeleteListener<C> deleteListener) {
 		this.deleteListener.add(deleteListener);
 		return this;
 	}
 	
-		public <R> R doWithDeleteListener(Iterable<T> entities, IQuietDelegate<R> delegate) {
+		public <R> R doWithDeleteListener(Iterable<C> entities, IQuietDelegate<R> delegate) {
 		deleteListener.beforeDelete(entities);
 		R result;
 		try {
@@ -108,12 +114,12 @@ public class PersisterListener<T, I> {
 		return result;
 	}
 	
-	public PersisterListener<T, I> addDeleteByIdListener(IDeleteByIdListener<T> deleteByIdListener) {
+	public PersisterListener<C, I> addDeleteByIdListener(IDeleteByIdListener<C> deleteByIdListener) {
 		this.deleteByIdListenerCollection.add(deleteByIdListener);
 		return this;
 	}
 	
-	public <R> R doWithDeleteByIdListener(Iterable<T> entities, IQuietDelegate<R> delegate) {
+	public <R> R doWithDeleteByIdListener(Iterable<C> entities, IQuietDelegate<R> delegate) {
 		deleteByIdListenerCollection.beforeDeleteById(entities);
 		R result;
 		try {
@@ -126,18 +132,18 @@ public class PersisterListener<T, I> {
 		return result;
 	}
 	
-	public SelectListenerCollection<T, I> getSelectListener() {
+	public SelectListenerCollection<C, I> getSelectListener() {
 		return selectListener;
 	}
 	
-	public PersisterListener<T, I> addSelectListener(ISelectListener<T, I> selectListener) {
+	public PersisterListener<C, I> addSelectListener(ISelectListener<C, I> selectListener) {
 		this.selectListener.add(selectListener);
 		return this;
 	}
 	
-	public List<T> doWithSelectListener(Iterable<I> ids, IQuietDelegate<List<T>> delegate) {
+	public List<C> doWithSelectListener(Iterable<I> ids, IQuietDelegate<List<C>> delegate) {
 		selectListener.beforeSelect(ids);
-		List<T> toReturn;
+		List<C> toReturn;
 		try {
 			toReturn = delegate.execute();
 		} catch (RuntimeException e) {

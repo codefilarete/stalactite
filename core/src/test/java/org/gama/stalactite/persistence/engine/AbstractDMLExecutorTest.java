@@ -191,6 +191,12 @@ public abstract class AbstractDMLExecutorTest {
 			this.b = b;
 			this.c = c;
 		}
+		
+		/** Implemented to ease comparison on tests */
+		@Override
+		public String toString() {
+			return "Toto{a=" + a + ", b=" + b + ", c=" + c + '}';
+		}
 	}
 	
 }

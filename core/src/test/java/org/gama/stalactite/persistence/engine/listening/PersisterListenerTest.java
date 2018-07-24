@@ -3,12 +3,12 @@ package org.gama.stalactite.persistence.engine.listening;
 import java.util.ArrayList;
 
 import org.gama.lang.Duo;
+import org.gama.stalactite.persistence.engine.listening.IUpdateListener.UpdatePayload;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyIterable;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
@@ -86,9 +86,10 @@ public class PersisterListenerTest {
 		IUpdateListener listenerMock = mock(IUpdateListener.class);
 		testInstance.addUpdateListener(listenerMock);
 		
-		ArrayList<Object> entities = new ArrayList<>();
+		ArrayList<UpdatePayload> entities = new ArrayList<>();
 		ArrayList<Object> result = new ArrayList<>();
-		assertEquals(result, testInstance.doWithUpdateListener(entities, true, () -> result));
+		
+		assertEquals(result, testInstance.doWithUpdateListener(entities, true, (p, b) -> result));
 		
 		verify(listenerMock).beforeUpdate(eq(entities), eq(true));
 		verify(listenerMock).afterUpdate(eq(result), eq(true));
@@ -100,14 +101,14 @@ public class PersisterListenerTest {
 		IUpdateListener listenerMock = mock(IUpdateListener.class);
 		testInstance.addUpdateListener(listenerMock);
 		
-		ArrayList<Duo> entities = new ArrayList<>();
+		ArrayList<UpdatePayload> entities = new ArrayList<>();
 		RuntimeException error = new RuntimeException("This is the expected exception to be thrown");
-		RuntimeException thrownException = assertThrows(RuntimeException.class, () -> testInstance.doWithUpdateListener(entities, true, () -> { throw error; }));
+		RuntimeException thrownException = assertThrows(RuntimeException.class, () -> testInstance.doWithUpdateListener(entities, true, (p, b) -> { throw error; }));
 		assertSame(error, thrownException);
 		
 		verify(listenerMock).beforeUpdate(eq(entities), eq(true));
 		verify(listenerMock).onError(eq(entities), eq(error));
-		verify(listenerMock, never()).afterUpdate(anyIterable(), anyBoolean());
+		verify(listenerMock, never()).afterUpdate(anyIterable(), eq(true));
 	}
 	
 	@Test

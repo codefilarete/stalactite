@@ -24,7 +24,7 @@ public abstract class AfterUpdateCascader<Trigger, Target> extends NoopUpdateLis
 		this.persister = persister;
 		this.persister.getPersisterListener().addUpdateListener(new NoopUpdateListener<Target>() {
 			@Override
-			public void afterUpdate(Iterable<Duo<Target, Target>> entities, boolean allColumnsStatement) {
+			public void afterUpdate(Iterable<UpdatePayload<Target, ?>> entities, boolean allColumnsStatement) {
 				super.afterUpdate(entities, allColumnsStatement);
 				postTargetUpdate(entities);
 			}
@@ -35,10 +35,11 @@ public abstract class AfterUpdateCascader<Trigger, Target> extends NoopUpdateLis
 	 * Overriden to update Target instances of the Trigger instances.
 	 *
 	 * @param entities source entities previously updated
+	 * @param allColumnsStatement
 	 */
 	@Override
-	public void afterUpdate(Iterable<Duo<Trigger, Trigger>> entities, boolean allColumnsStatement) {
-		this.persister.update(Iterables.stream(entities).map(e -> getTarget(e.getLeft(), e.getRight())).filter(Objects::nonNull)
+	public void afterUpdate(Iterable<UpdatePayload<Trigger, ?>> entities, boolean allColumnsStatement) {
+		this.persister.update(Iterables.stream(entities).map(e -> getTarget(e.getEntities().getLeft(), e.getEntities().getRight())).filter(Objects::nonNull)
 				.collect(Collectors.toList()), allColumnsStatement);
 	}
 	
@@ -47,7 +48,7 @@ public abstract class AfterUpdateCascader<Trigger, Target> extends NoopUpdateLis
 	 *
 	 * @param entities entities updated by this listener
 	 */
-	protected abstract void postTargetUpdate(Iterable<Duo<Target, Target>> entities);
+	protected abstract void postTargetUpdate(Iterable<UpdatePayload<Target, ?>> entities);
 	
 	/**
 	 * Expected to give the Target instance of a Trigger (should simply give a field value of trigger)

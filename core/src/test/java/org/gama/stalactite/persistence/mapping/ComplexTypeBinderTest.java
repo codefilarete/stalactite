@@ -67,7 +67,7 @@ public class ComplexTypeBinderTest {
 		new DDLDeployer(ddlSchemaGenerator, connectionProvider).deployDDL();
 		
 		// writing
-		Persister<Toto, Integer, Table> totoPersister = new Persister<>(persistenceContext, totoMappingStrategy);
+		Persister<Toto, Integer, ?> totoPersister = new Persister<>(persistenceContext, totoMappingStrategy);
 		Toto toto = new Toto(1, Arrays.asList("a", "b"));
 		totoPersister.insert(Arrays.asList(toto));
 		

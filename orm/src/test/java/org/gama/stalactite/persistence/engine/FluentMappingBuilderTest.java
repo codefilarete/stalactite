@@ -204,7 +204,7 @@ public class FluentMappingBuilderTest {
 		when(preparedStatementMock.executeBatch()).thenReturn(new int[]{ 1 });
 		ArgumentCaptor<String> argumentCaptor = ArgumentCaptor.forClass(String.class);
 		
-		Persister<Toto, StatefullIdentifier, Table> persister = FluentMappingBuilder.from(Toto.class, StatefullIdentifier.class, toto)
+		Persister<Toto, StatefullIdentifier, ?> persister = FluentMappingBuilder.from(Toto.class, StatefullIdentifier.class, toto)
 				.add(Toto::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.embed(Toto::getTimestamp)
 				.override(Timestamp::getCreationDate, createdAt)

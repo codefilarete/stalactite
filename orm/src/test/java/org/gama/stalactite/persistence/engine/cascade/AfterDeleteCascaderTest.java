@@ -22,11 +22,11 @@ import static org.mockito.Mockito.when;
 public class AfterDeleteCascaderTest extends AbstractCascaderTest {
 	
 	@Test
-	public void testAfterDelete() {
-		ClassMappingStrategy mappingStrategyMock = mock(ClassMappingStrategy.class);
+	public <T extends Table<T>> void testAfterDelete() {
+		ClassMappingStrategy<Tata, Long, T> mappingStrategyMock = mock(ClassMappingStrategy.class);
 		// IdMappingStrategy is called by InsertExecutor to retrieve IdentifierInsertionManager but this will not be called, so we can mock it
 		when(mappingStrategyMock.getIdMappingStrategy()).thenReturn(mock(IdMappingStrategy.class));
-		Persister<Tata, Long, Table> persisterMock = new Persister<Tata, Long, Table>(mappingStrategyMock, mock(Dialect.class), null, 10) {
+		Persister<Tata, Long, T> persisterMock = new Persister<Tata, Long, T>(mappingStrategyMock, mock(Dialect.class), null, 10) {
 			@Override
 			protected int doDelete(Iterable<Tata> entities) {
 				// Overriden to do no action, because default super action is complex to mock

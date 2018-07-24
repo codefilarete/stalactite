@@ -3,31 +3,29 @@ package org.gama.stalactite.persistence.engine.listening;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.gama.lang.Duo;
-
 /**
  * @author Guillaume Mary
  */
-public class UpdateListenerCollection<T> implements IUpdateListener<T> {
+public class UpdateListenerCollection<E> implements IUpdateListener<E> {
 	
-	private List<IUpdateListener<T>> updateListeners = new ArrayList<>();
+	private List<IUpdateListener<E>> updateListeners = new ArrayList<>();
 	
 	@Override
-	public void beforeUpdate(Iterable<Duo<T, T>> entities, boolean allColumnsStatement) {
-		updateListeners.forEach(listener -> listener.beforeUpdate(entities, allColumnsStatement));
+	public void beforeUpdate(Iterable<UpdatePayload<E, ?>> updatePayloads, boolean allColumnsStatement) {
+		updateListeners.forEach(listener -> listener.beforeUpdate(updatePayloads, allColumnsStatement));
 	}
 	
 	@Override
-	public void afterUpdate(Iterable<Duo<T, T>> entities, boolean allColumnsStatement) {
+	public void afterUpdate(Iterable<UpdatePayload<E, ?>> entities, boolean allColumnsStatement) {
 		updateListeners.forEach(listener -> listener.afterUpdate(entities, allColumnsStatement));
 	}
 	
 	@Override
-	public void onError(Iterable<T> entities, RuntimeException runtimeException) {
+	public void onError(Iterable<E> entities, RuntimeException runtimeException) {
 		updateListeners.forEach(listener -> listener.onError(entities, runtimeException));
 	}
 	
-	public void add(IUpdateListener<T> updateListener) {
+	public void add(IUpdateListener<E> updateListener) {
 		if (updateListener != null) {    // prevent null as specified in interface
 			this.updateListeners.add(updateListener);
 		}

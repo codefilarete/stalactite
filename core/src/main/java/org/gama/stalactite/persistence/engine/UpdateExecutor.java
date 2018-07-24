@@ -5,16 +5,18 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 
-import org.gama.lang.Duo;
 import org.gama.lang.Retryer;
 import org.gama.lang.bean.Objects;
 import org.gama.lang.collection.ArrayIterator;
+import org.gama.lang.collection.Iterables;
+import org.gama.lang.collection.ReadOnlyIterator;
 import org.gama.lang.collection.ValueFactoryHashMap;
 import org.gama.sql.ConnectionProvider;
 import org.gama.sql.RollbackListener;
 import org.gama.sql.RollbackObserver;
 import org.gama.sql.dml.WriteOperation;
 import org.gama.stalactite.persistence.engine.RowCountManager.RowCounter;
+import org.gama.stalactite.persistence.engine.listening.IUpdateListener.UpdatePayload;
 import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
 import org.gama.stalactite.persistence.mapping.IMappingStrategy.UpwhereColumn;
 import org.gama.stalactite.persistence.sql.dml.DMLGenerator;
@@ -29,7 +31,7 @@ import static org.gama.stalactite.persistence.engine.RowCountManager.THROWING_RO
  * 
  * @author Guillaume Mary
  */
-public class UpdateExecutor<C, I, T extends Table> extends UpsertExecutor<C, I, T> {
+public class UpdateExecutor<C, I, T extends Table<T>> extends WriteExecutor<C, I, T> {
 	
 	/** Entity lock manager, default is no operation as soon as a {@link VersioningStrategy} is given */
 	private OptimisticLockManager<T> optimisticLockManager = OptimisticLockManager.NOOP_OPTIMISTIC_LOCK_MANAGER;
@@ -60,8 +62,9 @@ public class UpdateExecutor<C, I, T extends Table> extends UpsertExecutor<C, I, 
 	}
 	
 	/**
-	 * Update roughly some instances: no difference are computed, only update statements (all columns) are applied.
-	 * Hence optimistic lock (versioned entities) is not check
+	 * Updates roughly some instances: no difference are computed, only update statements (all columns) are applied.
+	 * Hence optimistic lock (versioned entities) is not checked
+	 * 
 	 * @param entities iterable of entities
 	 */
 	public int updateById(Iterable<C> entities) {
@@ -79,51 +82,68 @@ public class UpdateExecutor<C, I, T extends Table> extends UpsertExecutor<C, I, 
 	}
 	
 	/**
-	 * Update instances that have changes.
-	 * Groups statements to benefit from JDBC batch. Usefull overall when allColumnsStatement
-	 * is set to false.
-	 * @param differencesIterable pairs of modified-unmodified instances, used to compute differences side by side
-	 * @param allColumnsStatement true if all columns must be in the SQL statement, false if only modified ones should be..
+	 * Executes update of given payloads. This method will dynamically create SQL orders for 
+	 * This method should be used for heterogeneous use case where payloads doesn't contain same columns for update.
+	 * 
+	 * Prefers {@link #updateMappedColumns(Iterable)} if you know that every payloads target the same columns.  
+	 * 
+	 * This method applies JDBC batch.
+	 * 
+	 * @param updatePayloads data for SQL order
 	 */
-	public int update(Iterable<Duo<C, C>> differencesIterable, boolean allColumnsStatement) {
-		if (allColumnsStatement) {
-			return updateFully(differencesIterable);
+	public int updateVariousColumns(Iterable<UpdatePayload<C, T>> updatePayloads) {
+		// we update only entities that have values to be modified
+		Iterable<UpdatePayload<C, T>> toUpdate = collectNonEmptyValues(ReadOnlyIterator.wrap(updatePayloads));
+		if (!Iterables.isEmpty(toUpdate)) {
+			CurrentConnectionProvider currentConnectionProvider = new CurrentConnectionProvider();
+			DifferenceUpdater differenceUpdater = new DifferenceUpdater(new JDBCBatchingOperationCache(currentConnectionProvider));
+			return differenceUpdater.update(toUpdate);
 		} else {
-			return updatePartially(differencesIterable);
+			return 0;
 		}
 	}
 	
 	/**
-	 * Update instances that have changes. Only columns that changed are updated.
-	 * Groups statements to benefit from JDBC batch.
+	 * Executes update of given payloads. This method expected that every payload wants to update same columns
+	 * as those given by {@link ClassMappingStrategy#getUpdatableColumns()} : this means all mapped columns.
+	 * If such a contract is not fullfilled, an exception may occur (because of lacking data)
+	 * 
+	 * This method applies JDBC batch.
 	 *
-	 * @param differencesIterable pairs of modified-unmodified instances, used to compute differences side by side
+	 * @param updatePayloads data for SQL order
 	 */
-	public int updatePartially(Iterable<Duo<C, C>> differencesIterable) {
-		CurrentConnectionProvider currentConnectionProvider = new CurrentConnectionProvider();
-		return new DifferenceUpdater(new JDBCBatchingOperationCache(currentConnectionProvider), false).update(differencesIterable);
-	}
-	
-	/**
-	 * Update instances that have changes. All columns are updated.
-	 * Groups statements to benefit from JDBC batch.
-	 *
-	 * @param differencesIterable iterable of entities
-	 */
-	public int updateFully(Iterable<Duo<C, C>> differencesIterable) {
+	public int updateMappedColumns(Iterable<UpdatePayload<C, T>> updatePayloads) {
 		// we ask the strategy to lookup for updatable columns (not taken directly on mapping strategy target table)
 		Set<Column<T, Object>> columnsToUpdate = getMappingStrategy().getUpdatableColumns();
 		if (columnsToUpdate.isEmpty()) {
 			// nothing to update, this prevent a NPE in buildUpdate due to lack of any (first) element
 			return 0;
 		} else {
-			PreparedUpdate<T> preparedUpdate = getDmlGenerator().buildUpdate(columnsToUpdate, getMappingStrategy().getVersionedKeys());
-			WriteOperation<UpwhereColumn<T>> writeOperation = newWriteOperation(preparedUpdate, new CurrentConnectionProvider());
-			// Since all columns are updated we can benefit from JDBC batch
-			JDBCBatchingOperation jdbcBatchingOperation = new JDBCBatchingOperation<>(writeOperation, getBatchSize());
-			
-			return new DifferenceUpdater(new SingleJDBCBatchingOperation(jdbcBatchingOperation), true).update(differencesIterable);
+			// we update only entities that have values to be modified
+			Iterable<UpdatePayload<C, T>> toUpdate = collectNonEmptyValues(ReadOnlyIterator.wrap(updatePayloads));
+			if (!Iterables.isEmpty(toUpdate)) {
+				PreparedUpdate<T> preparedUpdate = getDmlGenerator().buildUpdate(columnsToUpdate, getMappingStrategy().getVersionedKeys());
+				WriteOperation<UpwhereColumn<T>> writeOperation = newWriteOperation(preparedUpdate, new CurrentConnectionProvider());
+				// Since all columns are updated we can benefit from JDBC batch
+				JDBCBatchingOperation jdbcBatchingOperation = new JDBCBatchingOperation<>(writeOperation, getBatchSize());
+				
+				DifferenceUpdater differenceUpdater = new DifferenceUpdater(new SingleJDBCBatchingOperation(jdbcBatchingOperation));
+				return differenceUpdater.update(toUpdate);
+			} else {
+				return 0;
+			}
 		}
+	}
+	
+	/**
+	 * ARGUMENT SHOULD NOT ALTERED (ensured via readonly mark), else it corrupts callers which may pass this argument to some listeners, then
+	 * those ones will lack some data.
+	 * 
+	 * @param updatePayloads payloads expected to be updated 
+	 * @return a copy of the argument, without those which values are empty
+	 */
+	private Iterable<UpdatePayload<C, T>> collectNonEmptyValues(ReadOnlyIterator<UpdatePayload<C, T>> updatePayloads) {
+		return Iterables.filter(Iterables.copy(updatePayloads), u -> !u.getValues().isEmpty());
 	}
 	
 	/**
@@ -164,24 +184,25 @@ public class UpdateExecutor<C, I, T extends Table> extends UpsertExecutor<C, I, 
 		}
 	}
 	
-	private interface JDBCBatchingOperationProvider<T extends Table> {
+	private interface JDBCBatchingOperationProvider<T extends Table<T>> {
 		JDBCBatchingOperation<T> getJdbcBatchingOperation(Set<UpwhereColumn<T>> upwhereColumns);
 		Iterable<JDBCBatchingOperation<T>> getJdbcBatchingOperations();
 	}
 	
 	private class SingleJDBCBatchingOperation implements JDBCBatchingOperationProvider<T>, Iterable<JDBCBatchingOperation<T>> {
 		
-		private final JDBCBatchingOperation<T>[] jdbcBatchingOperation = new JDBCBatchingOperation[1];
+		private final JDBCBatchingOperation<T> jdbcBatchingOperation;
 		
-		private final ArrayIterator<JDBCBatchingOperation<T>> operationIterator = new ArrayIterator<>(jdbcBatchingOperation);
+		private final ArrayIterator<JDBCBatchingOperation<T>> operationIterator;
 		
 		private SingleJDBCBatchingOperation(JDBCBatchingOperation<T> jdbcBatchingOperation) {
-			this.jdbcBatchingOperation[0] = jdbcBatchingOperation;
+			this.jdbcBatchingOperation = jdbcBatchingOperation;
+			operationIterator = new ArrayIterator<>(this.jdbcBatchingOperation);
 		}
 		
 		@Override
 		public JDBCBatchingOperation<T> getJdbcBatchingOperation(Set<UpwhereColumn<T>> upwhereColumns) {
-			return this.jdbcBatchingOperation[0];
+			return this.jdbcBatchingOperation;
 		}
 		
 		@Override
@@ -195,6 +216,9 @@ public class UpdateExecutor<C, I, T extends Table> extends UpsertExecutor<C, I, 
 		}
 	}
 	
+	/**
+	 * Batching operation with cache based on SQL statement, more exactly based on Columns to be updated.
+	 */
 	private class JDBCBatchingOperationCache implements JDBCBatchingOperationProvider<T> {
 		
 		private final Map<Set<UpwhereColumn<T>>, JDBCBatchingOperation<T>> updateOperationCache;
@@ -220,34 +244,27 @@ public class UpdateExecutor<C, I, T extends Table> extends UpsertExecutor<C, I, 
 	
 	
 	/**
-	 * Little class to mutualize code of {@link #updatePartially(Iterable)} and {@link #updateFully(Iterable)}.
+	 * Little class to mutualize code of {@link #updateVariousColumns(Iterable)} and {@link #updateMappedColumns(Iterable)}.
 	 */
 	private class DifferenceUpdater {
 		
 		private final JDBCBatchingOperationProvider<T> batchingOperationProvider;
-		private final boolean allColumns;
 		
-		DifferenceUpdater(JDBCBatchingOperationProvider<T> batchingOperationProvider, boolean allColumns) {
+		DifferenceUpdater(JDBCBatchingOperationProvider<T> batchingOperationProvider) {
 			this.batchingOperationProvider = batchingOperationProvider;
-			this.allColumns = allColumns;
 		}
 		
-		private int update(Iterable<Duo<C, C>> differencesIterable) {
+		private int update(Iterable<UpdatePayload<C, T>> toUpdate) {
 			RowCounter rowCounter = new RowCounter();
 			// building UpdateOperations and update values
-			for (Duo<C, C> next : differencesIterable) {
-				C modified = next.getLeft();
-				C unmodified = next.getRight();
-				// finding differences between modified instances and unmodified ones
-				Map<UpwhereColumn<T>, Object> updateValues = getMappingStrategy().getUpdateValues(modified, unmodified, allColumns);
-				if (!updateValues.isEmpty()) {
-					optimisticLockManager.manageLock(modified, unmodified, updateValues);
-					JDBCBatchingOperation<T> writeOperation = batchingOperationProvider.getJdbcBatchingOperation(updateValues.keySet());
-					writeOperation.setValues(updateValues);
-					// we keep the updated values for row count, not glad with it but not found any way to do differently
-					rowCounter.add(updateValues);
-				} // else nothing to do (no modification)
-			}
+			toUpdate.forEach(p -> {
+				Map<UpwhereColumn<T>, Object> updateValues = p.getValues();
+				optimisticLockManager.manageLock(p.getEntities().getLeft(), p.getEntities().getRight(), updateValues);
+				JDBCBatchingOperation<T> writeOperation = batchingOperationProvider.getJdbcBatchingOperation(updateValues.keySet());
+				writeOperation.setValues(updateValues);
+				// we keep the updated values for row count, not glad with it but not found any way to do differently
+				rowCounter.add(updateValues);
+			});
 			// treating remaining values not yet executed
 			int updatedRowCount = 0;
 			for (JDBCBatchingOperation jdbcBatchingOperation : batchingOperationProvider.getJdbcBatchingOperations()) {
@@ -265,7 +282,7 @@ public class UpdateExecutor<C, I, T extends Table> extends UpsertExecutor<C, I, 
 	/**
 	 * The contract for managing Optimistic Lock on update.
 	 */
-	interface OptimisticLockManager<T extends Table> {
+	interface OptimisticLockManager<T extends Table<T>> {
 		
 		OptimisticLockManager NOOP_OPTIMISTIC_LOCK_MANAGER = (o1, o2, m) -> {};
 		

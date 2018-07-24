@@ -86,12 +86,13 @@ public class SelectExecutorTest extends AbstractDMLExecutorTest {
 		assertEquals(10, (Object) t.b);
 		assertEquals(100, (Object) t.c);
 		totos = testInstance.select(Arrays.asList(2, 3, 4));
-		for (int i = 2; i <= 4; i++) {
-			t = totos.get(i - 2);
-			assertEquals(i, (Object) t.a);
-			assertEquals(10 * i, (Object) t.b);
-			assertEquals(100 * i, (Object) t.c);
-		}
+		
+		List<Toto> expectedResult = Arrays.asList(
+				new Toto(2, 20, 200),
+				new Toto(3, 30, 300),
+				new Toto(4, 40, 400));
+		
+		assertEquals(expectedResult.toString(), totos.toString());
 	}
 	
 }

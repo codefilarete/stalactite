@@ -21,7 +21,6 @@ import org.gama.stalactite.persistence.id.Identified;
 import org.gama.stalactite.persistence.id.Identifier;
 import org.gama.stalactite.persistence.id.provider.LongProvider;
 import org.gama.stalactite.persistence.sql.HSQLDBDialect;
-import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.test.JdbcConnectionProvider;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -37,8 +36,8 @@ public class FluentMappingBuilderVersioningTest {
 	
 	private static final HSQLDBDialect DIALECT = new HSQLDBDialect();
 	private DataSource dataSource = new HSQLDBInMemoryDataSource();
-	private Persister<Person, Identifier<Long>, Table> personPersister;
-	private Persister<City, Identifier<Long>, Table> cityPersister;
+	private Persister<Person, Identifier<Long>, ?> personPersister;
+	private Persister<City, Identifier<Long>, ?> cityPersister;
 	private PersistenceContext persistenceContext;
 	
 	@BeforeAll
@@ -104,7 +103,7 @@ public class FluentMappingBuilderVersioningTest {
 		ConnectionProvider connectionProvider = new TransactionObserverConnectionProvider(surrogateConnectionProvider);
 		persistenceContext = new PersistenceContext(connectionProvider, DIALECT);
 		// mapping building thantks to fluent API
-		Persister<Country, Identifier<Long>, Table> countryPersister = FluentMappingBuilder.from(Country.class,
+		Persister<Country, Identifier<Long>, ?> countryPersister = FluentMappingBuilder.from(Country.class,
 				Identifier.LONG_TYPE)
 				// setting a foreign key naming strategy to be tested
 				.foreignKeyNamingStrategy(ForeignKeyNamingStrategy.DEFAULT)
@@ -151,7 +150,7 @@ public class FluentMappingBuilderVersioningTest {
 		persistenceContext = new PersistenceContext(connectionProvider, DIALECT);
 		// mapping building thantks to fluent API
 		List<LocalDateTime> nowHistory = new ArrayList<>();
-		Persister<Country, Identifier<Long>, Table> countryPersister = FluentMappingBuilder.from(Country.class,
+		Persister<Country, Identifier<Long>, ?> countryPersister = FluentMappingBuilder.from(Country.class,
 				Identifier.LONG_TYPE)
 				// setting a foreign key naming strategy to be tested
 				.foreignKeyNamingStrategy(ForeignKeyNamingStrategy.DEFAULT)
@@ -204,7 +203,7 @@ public class FluentMappingBuilderVersioningTest {
 		ConnectionProvider connectionProvider = new TransactionObserverConnectionProvider(surrogateConnectionProvider);
 		persistenceContext = new PersistenceContext(connectionProvider, DIALECT);
 		// mapping building thantks to fluent API
-		Persister<Country, Identifier<Long>, Table> countryPersister = FluentMappingBuilder.from(Country.class,
+		Persister<Country, Identifier<Long>, ?> countryPersister = FluentMappingBuilder.from(Country.class,
 				Identifier.LONG_TYPE)
 				// setting a foreign key naming strategy to be tested
 				.foreignKeyNamingStrategy(ForeignKeyNamingStrategy.DEFAULT)

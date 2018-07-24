@@ -10,7 +10,9 @@ import java.util.stream.Collectors;
 import org.gama.lang.collection.Arrays;
 import org.gama.lang.collection.Iterables;
 import org.gama.lang.function.Functions;
+import org.gama.stalactite.persistence.engine.model.City;
 import org.gama.stalactite.persistence.engine.model.Country;
+import org.gama.stalactite.persistence.id.IdentifiedCollectionDiffer.AbstractDiff;
 import org.gama.stalactite.persistence.id.IdentifiedCollectionDiffer.Diff;
 import org.gama.stalactite.persistence.id.IdentifiedCollectionDiffer.IndexedDiff;
 import org.gama.stalactite.persistence.id.provider.LongProvider;
@@ -19,6 +21,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.gama.lang.collection.Arrays.asHashSet;
 import static org.gama.lang.collection.Arrays.asList;
+import static org.gama.lang.collection.Arrays.asSet;
 import static org.gama.stalactite.persistence.id.IdentifiedCollectionDiffer.State.ADDED;
 import static org.gama.stalactite.persistence.id.IdentifiedCollectionDiffer.State.HELD;
 import static org.gama.stalactite.persistence.id.IdentifiedCollectionDiffer.State.REMOVED;
@@ -28,6 +31,25 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
  * @author Guillaume Mary
  */
 public class IdentifiedCollectionDifferTest {
+	
+	
+	private static String toString(Iterable<? extends AbstractDiff> diffs) {
+		return Iterables.stream(diffs).map(IdentifiedCollectionDifferTest::toString).collect(Collectors.joining(", "));
+	}
+	
+	private static String toString(AbstractDiff diff) {
+		return "" + diff.getState() + " " + diff.getSourceInstance() + " vs " + diff.getReplacingInstance()
+				+ (diff instanceof IndexedDiff ? " [ " + ((IndexedDiff) diff).getSourceIndexes() + " vs " + ((IndexedDiff) diff).getReplacerIndexes() + " ]" : "");
+	}
+	
+	private static final Function<AbstractDiff, Comparable> SOURCE_ID_GETTER = Functions.link(AbstractDiff::getSourceInstance, Identified::getId)
+			.andThen(statefullIdentifier -> (Comparable) statefullIdentifier.getSurrogate());
+	private static final Function<AbstractDiff, Comparable> REPLACING_ID_GETTER = Functions.link(AbstractDiff::getReplacingInstance, Identified::getId)
+			.andThen(statefullIdentifier -> (Comparable) statefullIdentifier.getSurrogate());
+	private static final Comparator<AbstractDiff> STATE_THEN_INSTANCES_COMPARATOR = Comparator.
+			comparing(AbstractDiff::getState)
+			.thenComparing(SOURCE_ID_GETTER, Comparator.nullsFirst(Comparator.naturalOrder()))
+			.thenComparing(REPLACING_ID_GETTER, Comparator.nullsFirst(Comparator.naturalOrder()));
 	
 	private static class TestData {
 		
@@ -87,40 +109,57 @@ public class IdentifiedCollectionDifferTest {
 		
 		Set<Diff> diffs = testInstance.diffSet(set1, set2);
 		
-		assertEquals(expectedResult, diffs);
+		// we must use a comparator to ensure same order then use a ToString, because the default solution of using assertEquals(..) needs
+		// an implementation of equals(..) and hashCode() which would have been made only for testing purpose
+		TreeSet<Diff> sortedExpectation = new TreeSet<>(STATE_THEN_INSTANCES_COMPARATOR);
+		sortedExpectation.addAll(expectedResult);
+		TreeSet<Diff> sortedResult = new TreeSet<>(STATE_THEN_INSTANCES_COMPARATOR);
+		sortedResult.addAll(diffs);
+		
+		assertEquals(toString(sortedExpectation), toString(sortedResult));
 	}
 	
 	public static Object[][] testDiffList() {
 		TestData testData = new TestData();
 		return new Object[][] {
 				{
-						asList(testData.country1, testData.country2),
-						asList(testData.country2, testData.country1),
-						asHashSet(new Diff(HELD, testData.country1, testData.country1),
-								new Diff(HELD, testData.country2, testData.country2))
+						asList(testData.country1, testData.country2, testData.country3),
+						asList(testData.country2, testData.country1, testData.country3),
+						asHashSet(new IndexedDiff(HELD, testData.country1, testData.country1)
+										.addSourceIndex(0).addReplacerIndex(1),
+								new IndexedDiff(HELD, testData.country2, testData.country2)
+										.addSourceIndex(1).addReplacerIndex(0),
+								new IndexedDiff(HELD, testData.country3, testData.country3)
+										.addSourceIndex(2).addReplacerIndex(2))
 				},
 				{
 						asList(testData.country1),
 						asList(testData.country1, testData.country2),
-						asHashSet(new IndexedDiff(HELD, testData.country1, testData.country1),
-								new IndexedDiff(ADDED, null, testData.country2))
+						asHashSet(new IndexedDiff(HELD, testData.country1, testData.country1)
+										.addSourceIndex(0).addReplacerIndex(0),
+								new IndexedDiff(ADDED, null, testData.country2)
+										.addReplacerIndex(1))
 				},
 				{
 						asList(testData.country1, testData.country2),
 						asList(testData.country1),
-						asHashSet(new IndexedDiff(HELD, testData.country1, testData.country1),
-								new IndexedDiff(REMOVED, testData.country2, null))
+						asHashSet(new IndexedDiff(HELD, testData.country1, testData.country1)
+										.addSourceIndex(0).addReplacerIndex(0),
+								new IndexedDiff(REMOVED, testData.country2, null)
+										.addSourceIndex(1))
 				},
 				// corner cases with empty sets
 				{
 						asList(),
 						asList(testData.country1),
-						asHashSet(new IndexedDiff(ADDED, null, testData.country1))
+						asHashSet(new IndexedDiff(ADDED, null, testData.country1)
+										.addReplacerIndex(0))
 				},
 				{
 						asList(testData.country1),
 						asList(),
-						asHashSet(new IndexedDiff(REMOVED, testData.country1, null))
+						asHashSet(new IndexedDiff(REMOVED, testData.country1, null)
+										.addSourceIndex(0))
 				},
 				{
 						asList(),
@@ -132,27 +171,38 @@ public class IdentifiedCollectionDifferTest {
 	
 	@ParameterizedTest
 	@MethodSource("testDiffList")
-	public void testDiffList(List<Country> set1, List<Country> set2, Set<Diff> expectedResult) {
+	public void testDiffList(List<Country> set1, List<Country> set2, Set<IndexedDiff> expectedResult) {
 		IdentifiedCollectionDiffer testInstance = new IdentifiedCollectionDiffer();
 		
 		Set<IndexedDiff> diffs = testInstance.diffList(set1, set2);
 		
-		TreeSet<Diff> treeSet1 = new TreeSet<>(STATE_THEN_SOURCE_COMPARATOR);
+		// we must use a comparator to ensure same order then use a ToString, because the default solution of using assertEquals(..) needs
+		// an implementation of equals(..) and hashCode() which would have been made only for testing purpose
+		TreeSet<IndexedDiff> treeSet1 = new TreeSet<>(STATE_THEN_INSTANCES_COMPARATOR);
 		treeSet1.addAll(diffs);
-		TreeSet<Diff> treeSet2 = new TreeSet<>(STATE_THEN_SOURCE_COMPARATOR);
+		TreeSet<IndexedDiff> treeSet2 = new TreeSet<>(STATE_THEN_INSTANCES_COMPARATOR);
 		treeSet2.addAll(expectedResult);
 		assertEquals(toString(treeSet2), toString(treeSet1));
 	}
 	
-	private static String toString(Iterable<Diff> diffs) {
-		return Iterables.stream(diffs).map(IdentifiedCollectionDifferTest::toString).collect(Collectors.joining(", "));
+	public static Object[][] testLookupIndexes() {
+		City city1 = new City(new PersistedIdentifier<>(1L));
+		City city2 = new City(new PersistedIdentifier<>(2L));
+		return new Object[][] {
+				{ asList(city1, city2), city1, asSet(0) },
+				{ asList(city1, city2), city2, asSet(1) },
+				{ asList(city1, city2, city2), city2, asSet(1, 2) },
+				{ asList(city1, city2, city1, city2), city2, asSet(1, 3) },
+				{ asList(city1, city2, city1, city2), city1, asSet(0, 2) },
+				{ asList(), city1, asSet() },
+		};
 	}
 	
-	private static String toString(Diff diff) {
-		return "" + diff.getState() + " " + diff.getSourceInstance() + " " + diff.getReplacingInstance();
+	@ParameterizedTest
+	@MethodSource("testLookupIndexes")
+	public void testLookupIndexes(List<City> input, City lookupElement, Set<Integer> expected) {
+		IdentifiedCollectionDiffer testInstance = new IdentifiedCollectionDiffer();
+		Set<Integer> result = testInstance.lookupIndexes(input, lookupElement);
+		assertEquals(expected, result);
 	}
-	
-	private static Function<Diff, Comparable> SOURCE_IDENTIFIER_GETTER = Functions.link(Diff::getSourceInstance, Identified::getId)
-					.andThen(statefullIdentifier -> (Comparable) statefullIdentifier.getSurrogate());
-	private static Comparator<Diff> STATE_THEN_SOURCE_COMPARATOR = Comparator.comparing(Diff::getState).thenComparing(SOURCE_IDENTIFIER_GETTER, Comparator.nullsFirst(Comparator.naturalOrder()));
 }

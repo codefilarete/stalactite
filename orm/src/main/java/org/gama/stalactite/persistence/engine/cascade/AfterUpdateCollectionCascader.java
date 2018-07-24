@@ -25,7 +25,7 @@ public abstract class AfterUpdateCollectionCascader<Trigger, Target> extends Noo
 		this.persister = persister;
 		this.persister.getPersisterListener().addUpdateListener(new NoopUpdateListener<Target>() {
 			@Override
-			public void afterUpdate(Iterable<Duo<Target, Target>> entities, boolean allColumnsStatement) {
+			public void afterUpdate(Iterable<UpdatePayload<Target, ?>> entities, boolean allColumnsStatement) {
 				super.afterUpdate(entities, allColumnsStatement);
 				postTargetUpdate(entities);
 			}
@@ -36,10 +36,11 @@ public abstract class AfterUpdateCollectionCascader<Trigger, Target> extends Noo
 	 * Overriden to update Target instances of the Trigger instances.
 	 *
 	 * @param entities source entities previously updated
+	 * @param allColumnsStatement
 	 */
 	@Override
-	public void afterUpdate(Iterable<Duo<Trigger, Trigger>> entities, boolean allColumnsStatement) {
-		this.persister.update(Iterables.stream(entities).flatMap(e -> getTargets(e.getLeft(), e.getRight()).stream()).filter(Objects::nonNull)
+	public void afterUpdate(Iterable<UpdatePayload<Trigger, ?>> entities, boolean allColumnsStatement) {
+		this.persister.update(Iterables.stream(entities).flatMap(e -> getTargets(e.getEntities().getLeft(), e.getEntities().getRight()).stream()).filter(Objects::nonNull)
 				.collect(Collectors.toList()), allColumnsStatement);
 	}
 	
@@ -48,7 +49,7 @@ public abstract class AfterUpdateCollectionCascader<Trigger, Target> extends Noo
 	 *
 	 * @param entities entities updated by this listener
 	 */
-	protected abstract void postTargetUpdate(Iterable<Duo<Target, Target>> entities);
+	protected abstract void postTargetUpdate(Iterable<UpdatePayload<Target, ?>> entities);
 	
 	/**
 	 * Expected to give the Target instance of a Trigger (should simply give a field value of trigger)

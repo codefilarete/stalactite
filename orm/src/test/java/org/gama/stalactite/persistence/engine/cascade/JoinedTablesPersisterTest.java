@@ -58,7 +58,7 @@ import static org.mockito.Mockito.when;
  */
 public class JoinedTablesPersisterTest {
 	
-	private JoinedTablesPersister<Toto, StatefullIdentifier<Integer>, Table> testInstance;
+	private JoinedTablesPersister<Toto, StatefullIdentifier<Integer>, ?> testInstance;
 	private PreparedStatement preparedStatement;
 	private ArgumentCaptor<Integer> valueCaptor;
 	private ArgumentCaptor<Integer> indexCaptor;
@@ -70,7 +70,7 @@ public class JoinedTablesPersisterTest {
 	private Table totoClassTable1, totoClassTable2;
 	private Column leftJoinColumn;
 	private Column rightJoinColumn;
-	private Persister<Toto, StatefullIdentifier<Integer>, Table> persister2;
+	private Persister<Toto, StatefullIdentifier<Integer>, ?> persister2;
 	
 	@BeforeEach
 	public void setUp() throws SQLException {

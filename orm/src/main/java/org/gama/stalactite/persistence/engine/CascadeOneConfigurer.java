@@ -33,12 +33,12 @@ public class CascadeOneConfigurer<I extends Identified, O extends Identified, J 
 	
 	static final Predicate<Identified> PERSISTED_PREDICATE = target -> target != null && target.getId().isPersisted();
 	
-	public <T extends Table> void appendCascade(
+	public <T extends Table<T>> void appendCascade(
 			CascadeOne<I, O, J> cascadeOne, Persister<I, ?, T> localPersister,
 			ClassMappingStrategy<I, O, T> mappingStrategy,
 			JoinedTablesPersister<I, J, T> joinedTablesPersister,
 			ForeignKeyNamingStrategy foreignKeyNamingStrategy) {
-		Persister<Identified, StatefullIdentifier, Table> targetPersister = (Persister<Identified, StatefullIdentifier, Table>) cascadeOne.getPersister();
+		Persister<Identified, StatefullIdentifier, ?> targetPersister = (Persister<Identified, StatefullIdentifier, ?>) cascadeOne.getPersister();
 		
 		// adding persistence flag setters on other side
 		targetPersister.getPersisterListener().addInsertListener(SetPersistedFlagAfterInsertListener.INSTANCE);
@@ -90,7 +90,7 @@ public class CascadeOneConfigurer<I extends Identified, O extends Identified, J 
 					persisterListener.addUpdateListener(new AfterUpdateCascader<I, Identified>(targetPersister) {
 						
 						@Override
-						protected void postTargetUpdate(Iterable<Duo<Identified, Identified>> entities) {
+						protected void postTargetUpdate(Iterable<UpdatePayload<Identified, ?>> entities) {
 							// Nothing to do
 						}
 						

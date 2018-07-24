@@ -24,11 +24,11 @@ import static org.mockito.Mockito.when;
 public class AfterSelectCascaderTest extends AbstractCascaderTest {
 	
 	@Test
-	public void testAfterSelect() {
-		ClassMappingStrategy mappingStrategyMock = mock(ClassMappingStrategy.class);
+	public <T extends Table<T>> void testAfterSelect() {
+		ClassMappingStrategy<Tata, Long, T> mappingStrategyMock = mock(ClassMappingStrategy.class);
 		// IdMappingStrategy is called by InsertExecutor to retrieve IdentifierInsertionManager but this will not be called, so we can mock it
 		when(mappingStrategyMock.getIdMappingStrategy()).thenReturn(mock(IdMappingStrategy.class));
-		Persister<Tata, Long, Table> persisterMock = new Persister<Tata, Long, Table>(mappingStrategyMock, mock(Dialect.class), null, 10) {
+		Persister<Tata, Long, T> persisterMock = new Persister<Tata, Long, T>(mappingStrategyMock, mock(Dialect.class), null, 10) {
 			@Override
 			protected List<Tata> doSelect(Iterable<Long> ids) {
 				List<Tata> selectedTarget = new ArrayList<>();

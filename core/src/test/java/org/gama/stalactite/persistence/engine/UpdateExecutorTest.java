@@ -13,6 +13,8 @@ import org.gama.lang.collection.PairIterator;
 import org.gama.reflection.AccessorByField;
 import org.gama.reflection.Accessors;
 import org.gama.sql.ConnectionProvider;
+import org.gama.stalactite.persistence.engine.listening.IUpdateListener;
+import org.gama.stalactite.persistence.engine.listening.IUpdateListener.UpdatePayload;
 import org.gama.stalactite.persistence.id.manager.AlreadyAssignedIdentifierManager;
 import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
 import org.gama.stalactite.persistence.sql.dml.DMLGenerator;
@@ -38,7 +40,7 @@ public class UpdateExecutorTest extends AbstractDMLExecutorTest {
 	
 	private DataSet dataSet;
 	
-	private UpdateExecutor<Toto, Integer, Table> testInstance;
+	private UpdateExecutor<Toto, Integer, ?> testInstance;
 	
 	@BeforeEach
 	public void setUp() throws SQLException {
@@ -135,9 +137,12 @@ public class UpdateExecutorTest extends AbstractDMLExecutorTest {
 	
 	@ParameterizedTest
 	@MethodSource("testUpdate_diff_data")
-	public void testUpdate_diff(List<Toto> originalInstances, List<Toto> modifiedInstances, ExpectedResult_TestUpdate_diff expectedResult) throws Exception {
+	public <T extends Table<T>> void testUpdate_diff(List<Toto> originalInstances, List<Toto> modifiedInstances, ExpectedResult_TestUpdate_diff expectedResult) throws Exception {
 		testInstance.setRowCountManager(RowCountManager.NOOP_ROW_COUNT_MANAGER);
-		testInstance.update(() -> new PairIterator<>(modifiedInstances, originalInstances), false);
+		// variable introduced to bypass generics problem
+		UpdateExecutor<Toto, Integer, T> localTestInstance = (UpdateExecutor<Toto, Integer, T>) testInstance;
+		localTestInstance.updateVariousColumns(IUpdateListener.computePayloads(() -> new PairIterator<>(modifiedInstances, originalInstances),
+				false, localTestInstance.getMappingStrategy()));
 		
 		verify(dataSet.preparedStatement, times(expectedResult.addBatchCallCount)).addBatch();
 		verify(dataSet.preparedStatement, times(expectedResult.executeBatchCallCount)).executeBatch();
@@ -147,7 +152,7 @@ public class UpdateExecutorTest extends AbstractDMLExecutorTest {
 	}
 	
 	@Test
-	public void testUpdate_diff_allColumns() throws Exception {
+	public <T extends Table<T>> void testUpdate_diff_allColumns() throws Exception {
 		List<Toto> originalInstances = asList(
 				new Toto(1, 17, 23), new Toto(2, 29, 31), new Toto(3, 37, 41),
 				new Toto(4, 43, 53), new Toto(5, -1, -2));
@@ -155,7 +160,10 @@ public class UpdateExecutorTest extends AbstractDMLExecutorTest {
 				new Toto(1, 17, 123), new Toto(2, 129, 31), new Toto(3, 137, 141),
 				new Toto(4, 143, 153), new Toto(5, -1, -2));
 		testInstance.setRowCountManager(RowCountManager.NOOP_ROW_COUNT_MANAGER);
-		testInstance.update(() -> new PairIterator<>(modifiedInstances, originalInstances), true);
+		// variable introduced to bypass generics problem
+		UpdateExecutor<Toto, Integer, T> localTestInstance = (UpdateExecutor<Toto, Integer, T>) testInstance;
+		localTestInstance.updateMappedColumns(IUpdateListener.computePayloads(() -> new PairIterator<>(modifiedInstances, originalInstances),
+				true, localTestInstance.getMappingStrategy()));
 		
 		verify(dataSet.preparedStatement, times(4)).addBatch();
 		verify(dataSet.preparedStatement, times(2)).executeBatch();
@@ -170,17 +178,19 @@ public class UpdateExecutorTest extends AbstractDMLExecutorTest {
 	}
 	
 	@Test
-	public void testUpdate_noColumnToUpdate() {
-		Table<?> table = new Table("SimpleEntity");
+	public <T extends Table<T>> void testUpdate_noColumnToUpdate() {
+		T table = (T) new Table<>("SimpleEntity");
 		Column<?, Long> id = table.addColumn("id", long.class).primaryKey();
 		AccessorByField<SimpleEntity, Long> idAccessor = Accessors.accessorByField(SimpleEntity.class, "id");
-		ClassMappingStrategy<SimpleEntity, Long, Table> simpleEntityPersistenceMapping = new ClassMappingStrategy<SimpleEntity, Long, Table>
+		ClassMappingStrategy<SimpleEntity, Long, T> simpleEntityPersistenceMapping = new ClassMappingStrategy<SimpleEntity, Long, T>
 				(SimpleEntity.class, table, (Map) Maps.asMap(idAccessor, id), idAccessor, AlreadyAssignedIdentifierManager.INSTANCE);
-		UpdateExecutor<SimpleEntity, Long, Table> testInstance = new UpdateExecutor<>(
+		UpdateExecutor<SimpleEntity, Long, T> testInstance = new UpdateExecutor<SimpleEntity, Long, T>(
 				simpleEntityPersistenceMapping, mock(ConnectionProvider.class), new DMLGenerator(new ColumnBinderRegistry()), Retryer.NO_RETRY, 3, 4);
 		
 		
-		assertEquals(0, testInstance.updateFully(Arrays.asList(new Duo<>(new SimpleEntity(), new SimpleEntity()))));
+		Iterable<UpdatePayload<SimpleEntity, T>> updatePayloads = IUpdateListener.computePayloads(Arrays.asList(new Duo<>(new SimpleEntity(), 
+				new SimpleEntity())), true, testInstance.getMappingStrategy());
+		assertEquals(0, testInstance.updateMappedColumns(updatePayloads));
 	}
 	
 	private static class SimpleEntity {

@@ -2,6 +2,7 @@ package org.gama.stalactite.persistence.engine;
 
 import javax.sql.DataSource;
 import java.sql.Connection;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.List;
 import java.util.Map;
@@ -13,6 +14,7 @@ import org.gama.lang.collection.Iterables;
 import org.gama.lang.collection.Maps;
 import org.gama.reflection.Accessors;
 import org.gama.reflection.PropertyAccessor;
+import org.gama.sql.result.ResultSetIterator;
 import org.gama.sql.test.DerbyInMemoryDataSource;
 import org.gama.sql.test.HSQLDBInMemoryDataSource;
 import org.gama.sql.test.MariaDBEmbeddableDataSource;
@@ -86,6 +88,179 @@ public class PersisterDatabaseTest {
 	
 	@ParameterizedTest
 	@MethodSource("dataSources")
+	public void testPersist(DataSource dataSource) throws SQLException {
+		transactionManager.setDataSource(dataSource);
+		DDLDeployer ddlDeployer = new DDLDeployer(dialect.getDdlSchemaGenerator(), transactionManager) {
+			@Override
+			protected Connection getCurrentConnection() throws SQLException {
+				return dataSource.getConnection();
+			}
+		};
+		ddlDeployer.getDdlSchemaGenerator().setTables(Arrays.asList(totoClassTable));
+		ddlDeployer.deployDDL();
+		
+		// we simulate a database state to test entity update
+		Connection connection = dataSource.getConnection();
+		Integer persistedInstanceID = identifierGenerator.next();
+		connection.prepareStatement("insert into Toto(a, b, c) values ("+ persistedInstanceID +", 10, 100)").execute();
+		connection.commit();
+		
+		Toto toBeInserted = new Toto(null, 20, 200);
+		Toto toBeUpdated = new Toto(persistedInstanceID, 11, 111);
+		int rowCount = testInstance.persist(Arrays.asList(toBeInserted, toBeUpdated));
+		transactionManager.getCurrentConnection().commit();
+		assertEquals(2, rowCount);
+		
+		ResultSetIterator<Map> resultSetIterator = new ResultSetIterator<Map>() {
+			@Override
+			public Map convert(ResultSet resultSet) throws SQLException {
+				return Maps.asMap("a", resultSet.getObject("a")).add("b", resultSet.getObject("b")).add("c", resultSet.getObject("c"));
+			}
+		};
+		ResultSet resultSet = connection.prepareStatement("select * from Toto").executeQuery();
+		resultSetIterator.setResultSet(resultSet);
+		List<Map> result = Iterables.copy(resultSetIterator);
+		assertEquals(Arrays.asList(
+				Maps.asMap("a", 1).add("b", 11).add("c", 111),
+				Maps.asMap("a", 2).add("b", 20).add("c", 200)),
+				result);
+		connection.commit();
+	}
+	
+	@ParameterizedTest
+	@MethodSource("dataSources")
+	public void testInsert(DataSource dataSource) throws SQLException {
+		transactionManager.setDataSource(dataSource);
+		DDLDeployer ddlDeployer = new DDLDeployer(dialect.getDdlSchemaGenerator(), transactionManager) {
+			@Override
+			protected Connection getCurrentConnection() throws SQLException {
+				return dataSource.getConnection();
+			}
+		};
+		ddlDeployer.getDdlSchemaGenerator().setTables(Arrays.asList(totoClassTable));
+		ddlDeployer.deployDDL();
+		
+		Toto toBeInserted = new Toto(1, 10, 100);
+		int rowCount = testInstance.insert(toBeInserted);
+		transactionManager.getCurrentConnection().commit();
+		assertEquals(1, rowCount);
+		
+		Connection connection = dataSource.getConnection();
+		ResultSetIterator<Map> resultSetIterator = new ResultSetIterator<Map>() {
+			@Override
+			public Map convert(ResultSet resultSet) throws SQLException {
+				return Maps.asMap("a", resultSet.getObject("a")).add("b", resultSet.getObject("b")).add("c", resultSet.getObject("c"));
+			}
+		};
+		ResultSet resultSet = connection.prepareStatement("select * from Toto").executeQuery();
+		resultSetIterator.setResultSet(resultSet);
+		List<Map> result = Iterables.copy(resultSetIterator);
+		assertEquals(Arrays.asList(Maps.asMap("a", 1).add("b", 10).add("c", 100)), result);
+		connection.commit();
+	}
+	
+	@ParameterizedTest
+	@MethodSource("dataSources")
+	public void testUpdate(DataSource dataSource) throws SQLException {
+		transactionManager.setDataSource(dataSource);
+		DDLDeployer ddlDeployer = new DDLDeployer(dialect.getDdlSchemaGenerator(), transactionManager) {
+			@Override
+			protected Connection getCurrentConnection() throws SQLException {
+				return dataSource.getConnection();
+			}
+		};
+		ddlDeployer.getDdlSchemaGenerator().setTables(Arrays.asList(totoClassTable));
+		ddlDeployer.deployDDL();
+		
+		// we simulate a database state to test entity update
+		Connection connection = dataSource.getConnection();
+		Integer persistedInstanceID = identifierGenerator.next();
+		connection.prepareStatement("insert into Toto(a, b, c) values ("+ persistedInstanceID +", 10, 100)").execute();
+		connection.commit();
+		
+		int rowCount = testInstance.update(new Toto(persistedInstanceID, 11, 111), new Toto(persistedInstanceID, 10, 100), true);
+		transactionManager.getCurrentConnection().commit();
+		assertEquals(1, rowCount);
+		
+		ResultSetIterator<Map> resultSetIterator = new ResultSetIterator<Map>() {
+			@Override
+			public Map convert(ResultSet resultSet) throws SQLException {
+				return Maps.asMap("a", resultSet.getObject("a")).add("b", resultSet.getObject("b")).add("c", resultSet.getObject("c"));
+			}
+		};
+		ResultSet resultSet = connection.prepareStatement("select * from Toto").executeQuery();
+		resultSetIterator.setResultSet(resultSet);
+		List<Map> result = Iterables.copy(resultSetIterator);
+		assertEquals(Arrays.asList(
+				Maps.asMap("a", 1).add("b", 11).add("c", 111)),
+				result);
+		connection.commit();
+		
+		rowCount = testInstance.updateById(new Toto(persistedInstanceID, 12, 122));
+		transactionManager.getCurrentConnection().commit();
+		assertEquals(1, rowCount);
+		resultSet = connection.prepareStatement("select * from Toto").executeQuery();
+		resultSetIterator.setResultSet(resultSet);
+		result = Iterables.copy(resultSetIterator);
+		assertEquals(Arrays.asList(
+				Maps.asMap("a", 1).add("b", 12).add("c", 122)),
+				result);
+		connection.commit();
+	}
+	
+	@ParameterizedTest
+	@MethodSource("dataSources")
+	public void testDelete(DataSource dataSource) throws SQLException {
+		transactionManager.setDataSource(dataSource);
+		DDLDeployer ddlDeployer = new DDLDeployer(dialect.getDdlSchemaGenerator(), transactionManager) {
+			@Override
+			protected Connection getCurrentConnection() throws SQLException {
+				return dataSource.getConnection();
+			}
+		};
+		ddlDeployer.getDdlSchemaGenerator().setTables(Arrays.asList(totoClassTable));
+		ddlDeployer.deployDDL();
+		
+		// we simulate a database state to test entity update
+		Connection connection = dataSource.getConnection();
+		Integer persistedInstanceID = identifierGenerator.next();
+		connection.prepareStatement("insert into Toto(a, b, c) values ("+ persistedInstanceID +", 10, 100)").execute();
+		connection.commit();
+		
+		int rowCount = testInstance.delete(new Toto(persistedInstanceID, 11, 111));
+		transactionManager.getCurrentConnection().commit();
+		assertEquals(1, rowCount);
+		
+		ResultSetIterator<Map> resultSetIterator = new ResultSetIterator<Map>() {
+			@Override
+			public Map convert(ResultSet resultSet) throws SQLException {
+				return Maps.asMap("a", resultSet.getObject("a")).add("b", resultSet.getObject("b")).add("c", resultSet.getObject("c"));
+			}
+		};
+		ResultSet resultSet = connection.prepareStatement("select * from Toto").executeQuery();
+		resultSetIterator.setResultSet(resultSet);
+		List<Map> result = Iterables.copy(resultSetIterator);
+		// Result must be empty
+		assertEquals(Arrays.asList(), result);
+		connection.commit();
+		
+		// we simulate a database state to test entity update
+		connection = dataSource.getConnection();
+		connection.prepareStatement("insert into Toto(a, b, c) values ("+ persistedInstanceID +", 10, 100)").execute();
+		connection.commit();
+		
+		rowCount = testInstance.deleteById(new Toto(persistedInstanceID, 12, 122));
+		transactionManager.getCurrentConnection().commit();
+		assertEquals(1, rowCount);
+		resultSet = connection.prepareStatement("select * from Toto").executeQuery();
+		resultSetIterator.setResultSet(resultSet);
+		result = Iterables.copy(resultSetIterator);
+		assertEquals(Arrays.asList(), result);
+		connection.commit();
+	}
+	
+	@ParameterizedTest
+	@MethodSource("dataSources")
 	public void testSelect(DataSource dataSource) throws SQLException {
 		transactionManager.setDataSource(dataSource);
 		DDLDeployer ddlDeployer = new DDLDeployer(dialect.getDdlSchemaGenerator(), transactionManager) {
@@ -108,12 +283,13 @@ public class PersisterDatabaseTest {
 		assertEquals(10, (Object) t.b);
 		assertEquals(100, (Object) t.c);
 		totos = testInstance.select(Arrays.asList(2, 3, 4));
-		for (int i = 2; i <= 4; i++) {
-			t = totos.get(i - 2);
-			assertEquals(i, (Object) t.a);
-			assertEquals(10 * i, (Object) t.b);
-			assertEquals(100 * i, (Object) t.c);
-		}
+		
+		List<Toto> expectedResult = Arrays.asList(
+				new Toto(2, 20, 200),
+				new Toto(3, 30, 300),
+				new Toto(4, 40, 400));
+		
+		assertEquals(expectedResult.toString(), totos.toString());
 	}
 	
 	@ParameterizedTest
@@ -167,7 +343,7 @@ public class PersisterDatabaseTest {
 		assertEquals(0, deleteRowCount);
 	}
 	
-	private static class Toto {
+	static class Toto {
 		private Integer a, b, c;
 		
 		public Toto() {
@@ -184,15 +360,14 @@ public class PersisterDatabaseTest {
 			this.c = c;
 		}
 		
+		/** Implemented to ease comparison on tests */
 		@Override
 		public String toString() {
-			return getClass().getSimpleName() + "["
-					+ Maps.asMap("a", (Object) a).add("b", b).add("c", c)
-					+ "]";
+			return "Toto{a=" + a + ", b=" + b + ", c=" + c + '}';
 		}
 	}
 	
-	private static class TotoTable extends Table<TotoTable> {
+	static class TotoTable extends Table<TotoTable> {
 		
 		public TotoTable(String name) {
 			super(name);

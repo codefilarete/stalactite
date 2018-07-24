@@ -24,7 +24,7 @@ import org.gama.stalactite.persistence.structure.Table;
  *
  * @author Guillaume Mary
  */
-public class InsertExecutor<C, I, T extends Table> extends UpsertExecutor<C, I, T> {
+public class InsertExecutor<C, I, T extends Table> extends WriteExecutor<C, I, T> {
 	
 	/** Entity lock manager, default is no operation as soon as a {@link VersioningStrategy} is given */
 	private OptimisticLockManager optimisticLockManager = OptimisticLockManager.NOOP_OPTIMISTIC_LOCK_MANAGER;

@@ -21,7 +21,14 @@ public abstract class AbstractCascaderTest {
 		
 		protected Long id;
 		
+		private String name;
+		
 		protected Tata() {
+		}
+		
+		public Tata setName(String name) {
+			this.name = name;
+			return this;
 		}
 	}
 }

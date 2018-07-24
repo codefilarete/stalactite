@@ -56,7 +56,7 @@ public interface IFluentMappingBuilder<T extends Identified, I extends Statefull
 	 */
 	ClassMappingStrategy<T, I, Table> build(Dialect dialect);
 	
-	Persister<T, I, Table> build(PersistenceContext persistenceContext);
+	Persister<T, I, ?> build(PersistenceContext persistenceContext);
 	
 	interface IFluentMappingBuilderColumnOptions<T extends Identified, I extends StatefullIdentifier> extends IFluentMappingBuilder<T, I>, ColumnOptions<T, I> {
 	}

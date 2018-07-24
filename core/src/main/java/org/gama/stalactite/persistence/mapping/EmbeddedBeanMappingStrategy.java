@@ -137,8 +137,11 @@ public class EmbeddedBeanMappingStrategy<C, T extends Table> implements IEmbedde
 				toReturn.put(new UpwhereColumn<>(unmodifiedField.getKey(), true), unmodifiedField.getValue());
 			}
 		}
-		silentUpdatedColumns.forEach(columnFunctionDuo ->
-				toReturn.put(new UpwhereColumn<>(columnFunctionDuo.getLeft(), true), columnFunctionDuo.getRight().apply(modified)));
+		// getting values for silent columns
+		silentUpdatedColumns.forEach(columnFunctionDuo -> {
+			Object modifiedValue = columnFunctionDuo.getRight().apply(modified);
+			toReturn.put(new UpwhereColumn<>(columnFunctionDuo.getLeft(), true), modifiedValue);
+		});
 		return toReturn;
 	}
 	

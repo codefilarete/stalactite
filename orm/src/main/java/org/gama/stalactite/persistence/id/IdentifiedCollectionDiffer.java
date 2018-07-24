@@ -8,10 +8,13 @@ import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import org.gama.lang.bean.Objects;
 import org.gama.lang.collection.Iterables;
 import org.gama.lang.function.Functions;
 import org.gama.stalactite.persistence.id.manager.StatefullIdentifier;
+
+import static org.gama.stalactite.persistence.id.IdentifiedCollectionDiffer.State.ADDED;
+import static org.gama.stalactite.persistence.id.IdentifiedCollectionDiffer.State.HELD;
+import static org.gama.stalactite.persistence.id.IdentifiedCollectionDiffer.State.REMOVED;
 
 /**
  * A class to compute the differences between 2 collections of {@link Identified}: addition, removal or held
@@ -40,74 +43,62 @@ public class IdentifiedCollectionDiffer {
 		for (Entry<C, I> identified1 : set1MappedOnIdentifier.entrySet()) {
 			Identified identified2 = set2MappedOnIdentifier.get(identified1.getKey());
 			if (identified2 != null) {
-				result.add(new Diff(State.HELD, identified1.getValue(), identified2));
+				result.add(new Diff(HELD, identified1.getValue(), identified2));
 			} else {
-				result.add(new Diff(State.REMOVED, identified1.getValue(), null));
+				result.add(new Diff(REMOVED, identified1.getValue(), null));
 			}
 		}
 		set2MappedOnIdentifier.keySet().removeAll(set1MappedOnIdentifier.keySet());
 		for (Entry<C, I> identifiedEntry : set2MappedOnIdentifier.entrySet()) {
-			result.add(new Diff(State.ADDED, null, identifiedEntry.getValue()));
+			result.add(new Diff(ADDED, null, identifiedEntry.getValue()));
 		}
 		return result;
 	}
 	
-	public <I extends Identified<C>, C> Set<IndexedDiff> diffList(List<I> identifieds1, List<I> identifieds2) {
+	public <I extends Identified> Set<IndexedDiff> diffList(List<I> identifieds1, List<I> identifieds2) {
 		Set<IndexedDiff> result = new HashSet<>();
+		int currentIndex = 0;
 		for (I identified1 : identifieds1) {
-			int foundIndex = identifieds2.indexOf(identified1);
-			if (foundIndex == -1) {
-				result.add(new IndexedDiff(State.REMOVED, identified1, null));
+			Set<Integer> indexes = lookupIndexes(identifieds2, identified1);
+			IndexedDiff diff;
+			if (indexes.isEmpty())  {
+				diff = new IndexedDiff(REMOVED, identified1, null);
 			} else {
-				IndexedDiff held = new IndexedDiff(State.HELD, identified1, identified1);
-				result.add(held);
-				int searchPosition = 0;
-				while (foundIndex != -1) {
-					held.addIndex(searchPosition + foundIndex);
-					searchPosition = foundIndex;
-					foundIndex = identifieds2.subList(searchPosition +1, identifieds2.size()).indexOf(identified1);
-				}
+				diff = new IndexedDiff(HELD, identified1, identified1, new HashSet<>(), indexes);
 			}
+			result.add(diff);
+			diff.addSourceIndex(currentIndex++);
 		}
 		Set<I> added = new HashSet<>(identifieds2);
 		added.removeAll(identifieds1);
-		result.addAll(added.stream().map(i -> new IndexedDiff(State.ADDED, null, i)).collect(Collectors.toSet()));
+		result.addAll(added.stream().map(pawn -> {
+					Set<Integer> indexes = lookupIndexes(identifieds2, pawn);
+					return new IndexedDiff(ADDED, null, pawn, new HashSet<>(), indexes);
+				}
+		).collect(Collectors.toSet()));
 		
 		return result;
 	}
 	
-	public enum State {
-		/** The object has been added to the collection */
-		ADDED,
-		/** The object exists but differs from the source object */
-		HELD,
-		/** The object has been removed from the source object */
-		REMOVED
+	<E extends Identified> Set<Integer> lookupIndexes(List<E> srcList, E searched) {
+		Set<Integer> indexes = new HashSet<>();
+		Iterables.consumeAll(srcList, e -> searched.getId().equals(e.getId()), (e, i) -> indexes.add(i));
+		return indexes;
 	}
 	
+	
 	/**
-	 * A difference element of a comparison made by {@link #diffSet(Set, Set)}
-	 *
-	 * On {@link State#ADDED} instances, only {@link #getReplacingInstance()} is set ({@link #getSourceInstance()} is null.
-	 * On {@link State#REMOVED} instances, only {@link #getSourceInstance()} is set ({@link #getReplacingInstance()} is null.
-	 * On {@link State#HELD} instances, both {@link #getSourceInstance()} and ({@link #getReplacingInstance()} are set.
+	 * @author Guillaume Mary
 	 */
-	public static class Diff {
-		
+	public static class AbstractDiff {
+		protected final Identified sourceInstance;
+		protected final Identified replacingInstance;
 		private final State state;
 		
-		private final Identified sourceInstance;
-		
-		private final Identified replacingInstance;
-		
-		public Diff(State state, Identified sourceInstance, Identified replacingInstance) {
+		public AbstractDiff(State state, Identified sourceInstance, Identified replacingInstance) {
 			this.state = state;
 			this.sourceInstance = sourceInstance;
 			this.replacingInstance = replacingInstance;
-		}
-		
-		public State getState() {
-			return state;
 		}
 		
 		public Identified getSourceInstance() {
@@ -118,35 +109,73 @@ public class IdentifiedCollectionDiffer {
 			return replacingInstance;
 		}
 		
-		@Override
-		public boolean equals(Object obj) {
-			if (this == obj) {
-				return true;
-			}
-			if (obj == null || this.getClass() != obj.getClass()) {
-				return false;
-			}
-			// implemented for Set
-			return state.equals(((Diff) obj).state);
+		public State getState() {
+			return state;
 		}
 		
-		@Override
-		public int hashCode() {
-			// implemented for Set
-			return Objects.preventNull(sourceInstance, replacingInstance).getId().hashCode();
+	}
+	
+	public enum State {
+		/** The object has been added to the collection */
+		ADDED,
+		/**
+		 * The object exists in both Sets, but source and replacer may differ on some fields
+		 * (depending on {@link #equals(Object)} method exhaustivity)
+		 */
+		HELD,
+		/** The object has been removed from the source object */
+		REMOVED
+	}
+	
+	/**
+	 * A difference of a comparison made by {@link #diffSet(Set, Set)}
+	 *
+	 * On {@link State#ADDED} instances, only {@link #getReplacingInstance()} is set ({@link #getSourceInstance()} is null.
+	 * On {@link State#REMOVED} instances, only {@link #getSourceInstance()} is set ({@link #getReplacingInstance()} is null.
+	 * On {@link State#HELD} instances, both {@link #getSourceInstance()} and ({@link #getReplacingInstance()} are set, because entity
+	 * {@link #equals(Object)} method may be implemented without taking into account all entity fields so 2 of them may differ on some fields while
+	 * remaining equals, such other fields difference shall interest database to update modified columns.
+	 */
+	public static class Diff extends AbstractDiff {
+		
+		public Diff(State state, Identified sourceInstance, Identified replacingInstance) {
+			super(state, sourceInstance, replacingInstance);
 		}
 	}
 	
-	public static class IndexedDiff extends Diff {
+	public static class IndexedDiff extends AbstractDiff {
 		
-		private final Set<Integer> indexes = new HashSet<>();
+		private final Set<Integer> sourceIndexes;
+		
+		private final Set<Integer> replacerIndexes;
 		
 		public IndexedDiff(State state, Identified sourceInstance, Identified replacingInstance) {
-			super(state, sourceInstance, replacingInstance);
+			this(state, sourceInstance, replacingInstance, new HashSet<>(), new HashSet<>());
 		}
 		
-		public void addIndex(int index) {
-			this.indexes.add(index);
+		public IndexedDiff(State state, Identified sourceInstance, Identified replacingInstance,
+						   Set<Integer> sourceIndexes, Set<Integer> replacerIndexes) {
+			super(state, sourceInstance, replacingInstance);
+			this.sourceIndexes = sourceIndexes;
+			this.replacerIndexes = replacerIndexes;
+		}
+		
+		public Set<Integer> getSourceIndexes() {
+			return sourceIndexes;
+		}
+		
+		public IndexedDiff addSourceIndex(int index) {
+			this.sourceIndexes.add(index);
+			return this;
+		}
+		
+		public Set<Integer> getReplacerIndexes() {
+			return replacerIndexes;
+		}
+		
+		public IndexedDiff addReplacerIndex(int index) {
+			this.replacerIndexes.add(index);
+			return this;
 		}
 	}
 }
