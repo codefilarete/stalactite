@@ -14,8 +14,8 @@ import org.gama.stalactite.persistence.engine.RowCountManager.RowCounter;
 import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
 import org.gama.stalactite.persistence.sql.dml.ColumnParamedSQL;
 import org.gama.stalactite.persistence.sql.dml.DMLGenerator;
-import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.persistence.structure.Column;
+import org.gama.stalactite.persistence.structure.Table;
 
 /**
  * Class dedicated to delete statement execution
@@ -37,8 +37,8 @@ public class DeleteExecutor<C, I, T extends Table> extends WriteExecutor<C, I, T
 	}
 	
 	/**
-	 * Delete instances.
-	 * Take optmistic lock into account.
+	 * Deletes instances.
+	 * Takes optimistic lock into account.
 	 * 
 	 * @param entities entites to be deleted
 	 * @return deleted row count
@@ -92,7 +92,6 @@ public class DeleteExecutor<C, I, T extends Table> extends WriteExecutor<C, I, T
 		List<List<I>> parcels = Collections.parcel(ids, blockSize);
 		List<I> lastBlock = Iterables.last(parcels);
 		ColumnParamedSQL<T> deleteStatement;
-		WriteOperation<Column<T, ?>> writeOperation;
 		T targetTable = getMappingStrategy().getTargetTable();
 		Column<T, Object> keyColumn = targetTable.getPrimaryKey();
 		
@@ -102,7 +101,7 @@ public class DeleteExecutor<C, I, T extends Table> extends WriteExecutor<C, I, T
 			if (lastBlock.size() != blockSize) {
 				parcels = parcels.subList(0, parcels.size() - 1);
 			}
-			writeOperation = newWriteOperation(deleteStatement, currentConnectionProvider);
+			WriteOperation<Column<T, ?>> writeOperation = newWriteOperation(deleteStatement, currentConnectionProvider);
 			JDBCBatchingIterator<List<I>> jdbcBatchingIterator = new JDBCBatchingIterator<>(parcels, writeOperation, getBatchSize());
 			while(jdbcBatchingIterator.hasNext()) {
 				List<I> updateValues = jdbcBatchingIterator.next();
@@ -113,10 +112,12 @@ public class DeleteExecutor<C, I, T extends Table> extends WriteExecutor<C, I, T
 		// remaining block treatment
 		if (!lastBlock.isEmpty()) {
 			deleteStatement = getDmlGenerator().buildDeleteByKey(targetTable, keyColumn, lastBlock.size());
-			writeOperation = newWriteOperation(deleteStatement, currentConnectionProvider);
-			// we must pass a single value when expected, else ExpandableStatement may be confused when applying them
-			writeOperation.setValue(keyColumn, lastBlock.size() == 1 ? lastBlock.get(0) : lastBlock);
-			int updatedRowCount = writeOperation.execute();
+			int updatedRowCount;
+			try (WriteOperation<Column<T, ?>> writeOperation = newWriteOperation(deleteStatement, currentConnectionProvider)) {
+				// we must pass a single value when expected, else ExpandableStatement may be confused when applying them
+				writeOperation.setValue(keyColumn, lastBlock.size() == 1 ? lastBlock.get(0) : lastBlock);
+				updatedRowCount = writeOperation.execute();
+			}
 			updatedRowCounter += updatedRowCount;
 		}
 		return updatedRowCounter;
