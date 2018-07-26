@@ -2,6 +2,8 @@ package org.gama.stalactite.persistence.id;
 
 import javax.annotation.Nonnull;
 
+import org.gama.stalactite.persistence.id.diff.IdentifiedCollectionDiffer;
+
 /**
  * An identifier that can have its persisted state changed.
  * To be used for newly created instance that are not yet inserted in database.

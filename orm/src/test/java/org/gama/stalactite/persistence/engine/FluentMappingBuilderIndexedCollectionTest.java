@@ -5,6 +5,7 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import java.util.function.Predicate;
 
@@ -488,6 +489,19 @@ public class FluentMappingBuilderIndexedCollectionTest {
 		
 		public void setName(String name) {
 			this.name = name;
+		}
+		
+		@Override
+		public boolean equals(Object o) {
+			if (this == o) return true;
+			if (!(o instanceof Choice)) return false;
+			Choice choice = (Choice) o;
+			return Objects.equals(id, choice.id);
+		}
+		
+		@Override
+		public int hashCode() {
+			return Objects.hash(id);
 		}
 	}
 	

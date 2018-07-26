@@ -2,6 +2,8 @@ package org.gama.stalactite.persistence.id;
 
 import javax.annotation.Nonnull;
 
+import org.gama.stalactite.persistence.id.diff.IdentifiedCollectionDiffer;
+
 /**
  * A decorator for already persisted bean identifier.
  * 

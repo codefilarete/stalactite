@@ -32,9 +32,10 @@ public class State implements Identified<Long> {
 	}
 	
 	/**
-	 * Implemented for difference computation between Collection. See {@link org.gama.stalactite.persistence.id.IdentifiedCollectionDiffer}
-	 * @param o
-	 * @return
+	 * Implementation based on id, for any {@link java.util.Collection#contains(Object)} or {@link java.util.Collection#remove(Object)}
+	 *
+	 * @param o the comparison object
+	 * @return true if this equals the argument
 	 */
 	@Override
 	public boolean equals(Object o) {
@@ -47,8 +48,9 @@ public class State implements Identified<Long> {
 	}
 	
 	/**
-	 * Implemented for difference computation between Collection. See {@link org.gama.stalactite.persistence.id.IdentifiedCollectionDiffer}
-	 * @return
+	 * Implementation based on id, for everything that needs a hash
+	 *
+	 * @return id hashcode
 	 */
 	@Override
 	public int hashCode() {
@@ -69,5 +71,14 @@ public class State implements Identified<Long> {
 	
 	public Country getCountry() {
 		return country;
+	}
+	
+	@Override
+	public String toString() {
+		return "State{" +
+				"id=" + id +
+				", name='" + name + '\'' +
+				", country=" + country +
+				'}';
 	}
 }

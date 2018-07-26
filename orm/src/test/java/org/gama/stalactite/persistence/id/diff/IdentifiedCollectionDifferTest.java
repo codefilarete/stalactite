@@ -1,4 +1,4 @@
-package org.gama.stalactite.persistence.id;
+package org.gama.stalactite.persistence.id.diff;
 
 import java.util.Comparator;
 import java.util.List;
@@ -12,9 +12,8 @@ import org.gama.lang.collection.Iterables;
 import org.gama.lang.function.Functions;
 import org.gama.stalactite.persistence.engine.model.City;
 import org.gama.stalactite.persistence.engine.model.Country;
-import org.gama.stalactite.persistence.id.IdentifiedCollectionDiffer.AbstractDiff;
-import org.gama.stalactite.persistence.id.IdentifiedCollectionDiffer.Diff;
-import org.gama.stalactite.persistence.id.IdentifiedCollectionDiffer.IndexedDiff;
+import org.gama.stalactite.persistence.id.Identified;
+import org.gama.stalactite.persistence.id.PersistedIdentifier;
 import org.gama.stalactite.persistence.id.provider.LongProvider;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -22,9 +21,9 @@ import org.junit.jupiter.params.provider.MethodSource;
 import static org.gama.lang.collection.Arrays.asHashSet;
 import static org.gama.lang.collection.Arrays.asList;
 import static org.gama.lang.collection.Arrays.asSet;
-import static org.gama.stalactite.persistence.id.IdentifiedCollectionDiffer.State.ADDED;
-import static org.gama.stalactite.persistence.id.IdentifiedCollectionDiffer.State.HELD;
-import static org.gama.stalactite.persistence.id.IdentifiedCollectionDiffer.State.REMOVED;
+import static org.gama.stalactite.persistence.id.diff.State.ADDED;
+import static org.gama.stalactite.persistence.id.diff.State.HELD;
+import static org.gama.stalactite.persistence.id.diff.State.REMOVED;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
