@@ -2,6 +2,7 @@ package org.gama.stalactite.persistence.id.diff;
 
 import java.util.HashSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 
 import org.gama.stalactite.persistence.id.Identified;
@@ -53,5 +54,29 @@ public class IndexedDiff extends AbstractDiff {
 	public IndexedDiff addReplacerIndex(int index) {
 		this.replacerIndexes.add(index);
 		return this;
+	}
+	
+	/**
+	 * Implemented for the {@link IdentifiedCollectionDiffer#diffList(List, List)} method algorithm
+	 * 
+	 * @param o any other object
+	 * @return true when source and replacing instances are equal (indexes are not taken into account)
+	 */
+	@Override
+	public boolean equals(Object o) {
+		if (this == o) return true;
+		if (!(o instanceof IndexedDiff)) return false;
+		IndexedDiff that = (IndexedDiff) o;
+		return Objects.equals(getSourceInstance(), that.getSourceInstance())
+				&& Objects.equals(getReplacingInstance(), that.getReplacingInstance())
+ 		;
+	}
+	
+	/**
+	 * @return a hash of source and replacing instances, based on same principle as {@link #equals(Object)}
+	 */
+	@Override
+	public int hashCode() {
+		return Objects.hash(getSourceInstance(), getReplacingInstance());
 	}
 }
