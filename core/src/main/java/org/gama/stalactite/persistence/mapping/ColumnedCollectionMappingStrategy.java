@@ -123,12 +123,24 @@ public class ColumnedCollectionMappingStrategy<C extends Collection<O>, O, T ext
 		return convertion;
 	}
 	
+	/**
+	 * Gives the database (JDBC) value of the argument.
+	 * This implementation returns the given argument without transformation.
+	 * This may duplicate behavior of {@link org.gama.sql.binder.PreparedStatementWriter} in some way, but is located to this strategy so can be
+	 * more accurate.
+	 * 
+	 * @param object any object took from a pesistent collection
+	 * @return the value to be persisted
+	 */
 	protected Object toDatabaseValue(O object) {
 		return object;
 	}
 	
 	/**
 	 * Opposit of {@link #toDatabaseValue(Object)}: converts the database value for the collection value
+	 * This implementation returns the given argument without transformation.
+	 * This may duplicate behavior of {@link org.gama.sql.binder.ResultSetReader} in some way, but is located to this strategy so can be
+	 * more accurate.
 	 * 
 	 * @param object the value coming from the database {@link java.sql.ResultSet}
 	 * @return a value for a Map
