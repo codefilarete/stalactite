@@ -110,10 +110,8 @@ public class IdentifiedCollectionDifferTest {
 		
 		// we must use a comparator to ensure same order then use a ToString, because the default solution of using assertEquals(..) needs
 		// an implementation of equals(..) and hashCode() which would have been made only for testing purpose
-		TreeSet<Diff> sortedExpectation = new TreeSet<>(STATE_THEN_INSTANCES_COMPARATOR);
-		sortedExpectation.addAll(expectedResult);
-		TreeSet<Diff> sortedResult = new TreeSet<>(STATE_THEN_INSTANCES_COMPARATOR);
-		sortedResult.addAll(diffs);
+		TreeSet<Diff> sortedExpectation = Arrays.asTreeSet(STATE_THEN_INSTANCES_COMPARATOR, expectedResult);
+		TreeSet<Diff> sortedResult = Arrays.asTreeSet(STATE_THEN_INSTANCES_COMPARATOR, diffs);
 		
 		assertEquals(toString(sortedExpectation), toString(sortedResult));
 	}
@@ -147,6 +145,60 @@ public class IdentifiedCollectionDifferTest {
 								new IndexedDiff(REMOVED, testData.country2, null)
 										.addSourceIndex(1))
 				},
+				// with duplicates ...
+				// ... one removed
+				{
+						asList(testData.country1, testData.country2, testData.country1),
+						asList(testData.country1),
+						asHashSet(new IndexedDiff(HELD, testData.country1, testData.country1)
+										.addSourceIndex(0).addReplacerIndex(0),
+								new IndexedDiff(REMOVED, testData.country2, null)
+										.addSourceIndex(1),
+								new IndexedDiff(REMOVED, testData.country1, null)
+										.addSourceIndex(2))
+				},
+				// ... none removed
+				{
+						asList(testData.country1, testData.country2, testData.country1),
+						asList(testData.country1, testData.country1),
+						asHashSet(new IndexedDiff(HELD, testData.country1, testData.country1)
+										.addSourceIndex(0).addSourceIndex(2).addReplacerIndex(0).addReplacerIndex(1),
+								new IndexedDiff(REMOVED, testData.country2, null)
+										.addSourceIndex(1))
+				},
+				// ... all removed
+				{
+						asList(testData.country1, testData.country2, testData.country1),
+						asList(testData.country2),
+						asHashSet(new IndexedDiff(REMOVED, testData.country1, null)
+										.addSourceIndex(0).addSourceIndex(2),
+								new IndexedDiff(HELD, testData.country2, testData.country2)
+										.addSourceIndex(1).addReplacerIndex(0))
+				},
+				// ... none removed but some added
+				{
+						asList(testData.country1, testData.country2, testData.country1),
+						asList(testData.country1, testData.country1, testData.country1, testData.country1),
+						asHashSet(new IndexedDiff(HELD, testData.country1, testData.country1)
+										.addSourceIndex(0).addSourceIndex(2).addReplacerIndex(0).addReplacerIndex(1),
+								new IndexedDiff(ADDED, null, testData.country1)
+										.addReplacerIndex(2).addReplacerIndex(3),
+								new IndexedDiff(REMOVED, testData.country2, null)
+										.addSourceIndex(1))
+				},
+				// ... none removed but some added
+				{
+						asList(testData.country1, testData.country2, testData.country1),
+						asList(testData.country1, testData.country1, testData.country1, testData.country1, testData.country2, testData.country2),
+						asHashSet(new IndexedDiff(HELD, testData.country1, testData.country1)
+										.addSourceIndex(0).addSourceIndex(2).addReplacerIndex(0).addReplacerIndex(1),
+								new IndexedDiff(ADDED, null, testData.country1)
+										.addReplacerIndex(2).addReplacerIndex(3),
+								new IndexedDiff(HELD, testData.country2, testData.country2)
+										.addSourceIndex(1).addReplacerIndex(4),
+								new IndexedDiff(ADDED, null, testData.country2)
+										.addReplacerIndex(5))
+				},
 				// corner cases with empty sets
 				{
 						asList(),
@@ -177,10 +229,8 @@ public class IdentifiedCollectionDifferTest {
 		
 		// we must use a comparator to ensure same order then use a ToString, because the default solution of using assertEquals(..) needs
 		// an implementation of equals(..) and hashCode() which would have been made only for testing purpose
-		TreeSet<IndexedDiff> treeSet1 = new TreeSet<>(STATE_THEN_INSTANCES_COMPARATOR);
-		treeSet1.addAll(diffs);
-		TreeSet<IndexedDiff> treeSet2 = new TreeSet<>(STATE_THEN_INSTANCES_COMPARATOR);
-		treeSet2.addAll(expectedResult);
+		TreeSet<IndexedDiff> treeSet1 = Arrays.asTreeSet(STATE_THEN_INSTANCES_COMPARATOR, diffs);
+		TreeSet<IndexedDiff> treeSet2 = Arrays.asTreeSet(STATE_THEN_INSTANCES_COMPARATOR, expectedResult);
 		assertEquals(toString(treeSet2), toString(treeSet1));
 	}
 	

@@ -75,10 +75,6 @@ public class City implements Identified<Long> {
 	
 	@Override
 	public String toString() {
-		return "City{" +
-				"id=" + id +
-				", name='" + name + '\'' +
-				", country=" + country +
-				'}';
+		return "City{id=" + id + '}';
 	}
 }

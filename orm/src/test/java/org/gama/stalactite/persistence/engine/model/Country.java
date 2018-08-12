@@ -141,14 +141,6 @@ public class Country implements Identified<Long> {
 	
 	@Override
 	public String toString() {
-		return "Country{" +
-				"id=" + id +
-				", name='" + name + '\'' +
-				", description='" + description + '\'' +
-				", president=" + president +
-				", capital=" + capital +
-				", version=" + version +
-				", modificationDate=" + modificationDate +
-				'}';
+		return "Country{id=" + id + '}';
 	}
 }

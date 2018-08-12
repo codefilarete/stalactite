@@ -81,7 +81,7 @@ public class FluentMappingBuilderCollectionCascadeTest {
 				.add(Country::getName)
 				.add(Country::getDescription)
 				// no cascade
-				.addOneToMany(Country::getCities, cityPersister).mappedBy(City::setCountry)
+				.addOneToManySet(Country::getCities, cityPersister).mappedBy(City::setCountry)
 				.build(persistenceContext);
 		
 		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
@@ -118,7 +118,7 @@ public class FluentMappingBuilderCollectionCascadeTest {
 							.add(Country::getName)
 							.add(Country::getDescription)
 							// relation defined by setter
-							.addOneToMany(Country::getCities, cityPersister).mappedBy(City::setCountry).cascade(INSERT, SELECT)
+							.addOneToManySet(Country::getCities, cityPersister).mappedBy(City::setCountry).cascade(INSERT, SELECT)
 							.build(persistenceContext);
 					DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
 					try {
@@ -136,7 +136,7 @@ public class FluentMappingBuilderCollectionCascadeTest {
 							.add(Country::getName)
 							.add(Country::getDescription)
 							// relation defined by getter
-							.addOneToMany(Country::getCities, cityPersister).mappedBy(City::getCountry).cascade(INSERT, SELECT)
+							.addOneToManySet(Country::getCities, cityPersister).mappedBy(City::getCountry).cascade(INSERT, SELECT)
 							.build(persistenceContext);
 					DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
 					try {
@@ -155,7 +155,7 @@ public class FluentMappingBuilderCollectionCascadeTest {
 							.add(Country::getName)
 							.add(Country::getDescription)
 							// relation defined by column
-							.addOneToMany(Country::getCities, cityPersister).mappedBy(countryId).cascade(INSERT, SELECT)
+							.addOneToManySet(Country::getCities, cityPersister).mappedBy(countryId).cascade(INSERT, SELECT)
 							.build(persistenceContext);
 					DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
 					try {
@@ -214,7 +214,7 @@ public class FluentMappingBuilderCollectionCascadeTest {
 				.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.add(Country::getName)
 				.add(Country::getDescription)
-				.addOneToMany(Country::getCities, cityPersister).mappedBy(City::setCountry).cascade(INSERT, UPDATE, SELECT)
+				.addOneToManySet(Country::getCities, cityPersister).mappedBy(City::setCountry).cascade(INSERT, UPDATE, SELECT)
 				.build(persistenceContext);
 		
 		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
@@ -257,7 +257,7 @@ public class FluentMappingBuilderCollectionCascadeTest {
 				.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.add(Country::getName)
 				.add(Country::getDescription)
-				.addOneToMany(Country::getCities, cityPersister).mappedBy(City::setCountry).cascade(INSERT, UPDATE, SELECT).deleteRemoved()
+				.addOneToManySet(Country::getCities, cityPersister).mappedBy(City::setCountry).cascade(INSERT, UPDATE, SELECT).deleteRemoved()
 				.build(persistenceContext);
 		
 		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
@@ -300,7 +300,7 @@ public class FluentMappingBuilderCollectionCascadeTest {
 				.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.add(Country::getName)
 				.add(Country::getDescription)
-				.addOneToMany(Country::getCities, cityPersister).mappedBy(City::setCountry).cascade(DELETE, SELECT)
+				.addOneToManySet(Country::getCities, cityPersister).mappedBy(City::setCountry).cascade(DELETE, SELECT)
 				.build(persistenceContext);
 		
 		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
@@ -338,8 +338,8 @@ public class FluentMappingBuilderCollectionCascadeTest {
 				.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.add(Country::getName)
 				.add(Country::getDescription)
-				.addOneToMany(Country::getCities, cityPersister).mappedBy(City::setCountry).cascade(INSERT, UPDATE, SELECT).deleteRemoved()
-				.addOneToMany(Country::getStates, statePersister).mappedBy(State::setCountry).cascade(INSERT, UPDATE, SELECT)
+				.addOneToManySet(Country::getCities, cityPersister).mappedBy(City::setCountry).cascade(INSERT, UPDATE, SELECT).deleteRemoved()
+				.addOneToManySet(Country::getStates, statePersister).mappedBy(State::setCountry).cascade(INSERT, UPDATE, SELECT)
 				.build(persistenceContext);
 		
 		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);

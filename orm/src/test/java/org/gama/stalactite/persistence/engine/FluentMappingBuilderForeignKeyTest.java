@@ -73,7 +73,7 @@ public class FluentMappingBuilderForeignKeyTest {
 				.add(Country::getName)
 				.add(Country::getDescription)
 				.addOneToOne(Country::getPresident, personPersister)
-				.addOneToMany(Country::getCities, cityPersister).mappedBy(City::setCountry)
+				.addOneToManySet(Country::getCities, cityPersister).mappedBy(City::setCountry)
 				.build(persistenceContext);
 		
 		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);

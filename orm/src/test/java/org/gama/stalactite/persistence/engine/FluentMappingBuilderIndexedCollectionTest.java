@@ -30,11 +30,12 @@ import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.test.JdbcConnectionProvider;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
 import static org.gama.lang.function.Functions.chain;
-import static org.gama.stalactite.persistence.engine.CascadeOption.CascadeType.DELETE;
 import static org.gama.stalactite.persistence.engine.CascadeOption.CascadeType.INSERT;
 import static org.gama.stalactite.persistence.engine.CascadeOption.CascadeType.SELECT;
 import static org.gama.stalactite.persistence.engine.CascadeOption.CascadeType.UPDATE;
@@ -42,7 +43,6 @@ import static org.gama.stalactite.persistence.engine.FluentMappingBuilder.from;
 import static org.gama.stalactite.persistence.id.Identifier.LONG_TYPE;
 import static org.gama.stalactite.query.model.QueryEase.select;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 
 /**
@@ -65,61 +65,6 @@ public class FluentMappingBuilderIndexedCollectionTest {
 	}
 	
 	@Test
-	public void testConfiguration_indexingColumnIsOnlySupportedOnList_elseThrowsException() {
-		persistenceContext = new PersistenceContext(connectionProvider, DIALECT);
-		
-		Table choiceTable = new Table("Choice");
-		// we declare the column that will store our List index
-		Column<Table, Identifier> id = choiceTable.addColumn("id", Identifier.class).primaryKey();
-		Column<Table, Integer> idx = choiceTable.addColumn("idx", int.class);
-		
-		Persister<Choice, Identifier<Long>, ?> choicePersister = from(Choice.class, LONG_TYPE, choiceTable)
-				.add(Choice::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
-				.add(Choice::getName)
-				.add(Choice::getQuestion)
-				.build(persistenceContext);
-		
-		// In folloqing tests we can't share the Question builder because cascade() is additional
-		// so INSERT will always be present, then an exception is always thrown even in SELECT and DELETE 
-		
-		// getNonIndexedChoices() doesn't return a List, that is our test case
-		
-		// Test with INSERT cascade
-		UnsupportedOperationException thrownException = assertThrows(UnsupportedOperationException.class, () ->
-				from(Question.class, LONG_TYPE)
-						.add(Question::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
-						.addOneToMany(Question::getNonIndexedChoices, choicePersister).mappedBy(Choice::getQuestion).indexedBy(idx)
-						.cascade(INSERT)
-						.build(persistenceContext));
-		assertEquals("Indexing column is only available on List, found j.u.Set", thrownException.getMessage());
-		
-		// Test with UPDATE cascade
-		thrownException = assertThrows(UnsupportedOperationException.class, () ->
-				from(Question.class, LONG_TYPE)
-						.add(Question::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
-						.addOneToMany(Question::getNonIndexedChoices, choicePersister).mappedBy(Choice::getQuestion).indexedBy(idx)
-						.cascade(UPDATE)
-						.build(persistenceContext));
-		assertEquals("Indexing column is only available on List, found j.u.Set", thrownException.getMessage());
-		
-		// Test with SELECT cascade
-		thrownException = assertThrows(UnsupportedOperationException.class, () ->
-				from(Question.class, LONG_TYPE)
-						.add(Question::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
-						.addOneToMany(Question::getNonIndexedChoices, choicePersister).mappedBy(Choice::getQuestion).indexedBy(idx)
-						.cascade(SELECT)
-						.build(persistenceContext));
-		assertEquals("Indexing column is only available on List, found j.u.Set", thrownException.getMessage());
-		
-		// Test with DELETE cascade : no exception expected because index column has no purpose on delete
-		from(Question.class, LONG_TYPE)
-				.add(Question::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
-				.addOneToMany(Question::getNonIndexedChoices, choicePersister).mappedBy(Choice::getQuestion).indexedBy(idx)
-				.cascade(DELETE)
-				.build(persistenceContext);
-	}
-	
-	@Test
 	public void testInsert() throws SQLException {
 		persistenceContext = new PersistenceContext(connectionProvider, DIALECT);
 		
@@ -138,7 +83,7 @@ public class FluentMappingBuilderIndexedCollectionTest {
 		// So schema contains FK twice with same name, ending in duplicate FK name exception
 		Persister<Question, Identifier<Long>, ?> questionPersister = from(Question.class, LONG_TYPE)
 				.add(Question::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
-				.addOneToMany(Question::getChoices, choicePersister).mappedBy(Choice::getQuestion).indexedBy(idx).cascade(INSERT)
+				.addOneToManyList(Question::getChoices, choicePersister).mappedBy(Choice::getQuestion).indexedBy(idx).cascade(INSERT)
 				.build(persistenceContext);
 		
 		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
@@ -355,7 +300,7 @@ public class FluentMappingBuilderIndexedCollectionTest {
 		// So schema contains FK twice with same name, ending in duplicate FK name exception
 		Persister<Question, Identifier<Long>, ?> questionPersister = from(Question.class, LONG_TYPE)
 				.add(Question::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
-				.addOneToMany(Question::getChoices, choicePersister).mappedBy(Choice::getQuestion).indexedBy(idx).cascade(INSERT, UPDATE, SELECT)
+				.addOneToManyList(Question::getChoices, choicePersister).mappedBy(Choice::getQuestion).indexedBy(idx).cascade(INSERT, UPDATE, SELECT)
 				.build(persistenceContext);
 		
 		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
@@ -381,8 +326,57 @@ public class FluentMappingBuilderIndexedCollectionTest {
 		
 		Question select = questionPersister.select(new PersistedIdentifier<>(1L));
 		assertEquals(Arrays.asList(20L, 10L, 30L), Iterables.collectToList(select.getChoices(), chain(Choice::getId, StatefullIdentifier::getSurrogate)));
-		
-		// TODO: test with duplicates in the list
+	}
+	
+	@Nested
+	@Disabled	// because code is not ready for this so this test fails
+	public class WithDuplicates {
+		@Test
+		public void testInsert() throws SQLException {
+			persistenceContext = new PersistenceContext(connectionProvider, DIALECT);
+			
+			Table choiceTable = new Table("Choice");
+			// we declare the column that will store our List index
+			Column<Table, Identifier> id = choiceTable.addColumn("id", Identifier.class).primaryKey();
+			Column<Table, Integer> idx = choiceTable.addColumn("idx", int.class);
+			
+			Persister<Choice, Identifier<Long>, ?> choicePersister = from(Choice.class, LONG_TYPE, choiceTable)
+					.add(Choice::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
+					.add(Choice::getName)
+					.add(Choice::getQuestion)
+					.build(persistenceContext);
+			
+			// We need to rebuild our cityPersister before each test because some of them alter it on country relationship.
+			// So schema contains FK twice with same name, ending in duplicate FK name exception
+			Persister<Question, Identifier<Long>, ?> questionPersister = from(Question.class, LONG_TYPE)
+					.add(Question::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
+					.addOneToManyList(Question::getChoices, choicePersister).mappedBy(Choice::getQuestion).indexedBy(idx).cascade(INSERT, UPDATE)
+					.build(persistenceContext);
+			
+			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+			ddlDeployer.deployDDL();
+			
+			Question newQuestion = new Question(1L);
+			questionPersister.insert(newQuestion);
+			Choice choice = new Choice(20L).setQuestion(newQuestion);
+			choicePersister.insert(choice);
+			
+			Question modifiedQuestion = new Question(new PersistedIdentifier<>(1L));
+			modifiedQuestion.setChoices(Arrays.asList(
+					new Choice(10L).setQuestion(modifiedQuestion),
+					choice,
+					choice,
+					new Choice(30L).setQuestion(modifiedQuestion)));
+			questionPersister.update(modifiedQuestion, newQuestion, true);
+			
+			List<Result> persistedChoices = persistenceContext.newQuery(select(id, idx).from(choiceTable).getSelectQuery().orderBy(id), Result.class)
+					.mapKey(id, Result::new)
+					.map(idx, (SerializableBiConsumer<Result, Integer>) Result::setIdx)
+					.execute(connectionProvider);
+			assertEquals(Arrays.asList(10L, 20L, 20L, 30L), Iterables.collectToList(persistedChoices, Result::getId));
+			// stating that indexes are in same order than instances
+			assertEquals(Arrays.asList(0, 1, 2, 3), Iterables.collectToList(persistedChoices, Result::getIdx));
+		}
 	}
 	
 	private class Result {
@@ -414,11 +408,15 @@ public class FluentMappingBuilderIndexedCollectionTest {
 		
 		private Set<Choice> nonIndexedChoices;
 		
-		public Question() {
+		private Question() {
 		}
 		
 		private Question(Long id) {
 			this.id = new PersistableIdentifier<>(id);
+		}
+		
+		private Question(Identifier<Long> id) {
+			this.id = id;
 		}
 		
 		@Override
@@ -571,7 +569,7 @@ public class FluentMappingBuilderIndexedCollectionTest {
 			// So schema contains FK twice with same name, ending in duplicate FK name exception
 			questionPersister = from(Question.class, LONG_TYPE)
 					.add(Question::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
-					.addOneToMany(Question::getChoices, choicePersister).mappedBy(Choice::getQuestion).indexedBy(idx)
+					.addOneToManyList(Question::getChoices, choicePersister).mappedBy(Choice::getQuestion).indexedBy(idx)
 					.cascade(INSERT, UPDATE)
 					.deleteRemoved()
 					.build(persistenceContext);

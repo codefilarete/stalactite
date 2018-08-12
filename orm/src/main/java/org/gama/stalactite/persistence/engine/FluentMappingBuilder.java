@@ -28,6 +28,8 @@ import org.gama.reflection.MethodReferenceCapturer;
 import org.gama.reflection.PropertyAccessor;
 import org.gama.stalactite.persistence.engine.AbstractVersioningStrategy.VersioningStrategySupport;
 import org.gama.stalactite.persistence.engine.CascadeOption.CascadeType;
+import org.gama.stalactite.persistence.engine.builder.CascadeMany;
+import org.gama.stalactite.persistence.engine.builder.CascadeManyList;
 import org.gama.stalactite.persistence.engine.cascade.JoinedTablesPersister;
 import org.gama.stalactite.persistence.engine.listening.IInsertListener;
 import org.gama.stalactite.persistence.engine.listening.NoopInsertListener;
@@ -293,53 +295,29 @@ public class FluentMappingBuilder<T extends Identified, I extends StatefullIdent
 	}
 	
 	@Override
-	public <O extends Identified, J extends StatefullIdentifier, C extends Collection<O>> IFluentMappingBuilderOneToManyOptions<T, I, O> addOneToMany(
+	public <O extends Identified, J extends StatefullIdentifier, C extends Set<O>> IFluentMappingBuilderOneToManyOptions<T, I, O> addOneToManySet(
 			SerializableFunction<T, C> getter, Persister<O, J, ? extends Table> persister) {
 		CascadeMany<T, O, J, C> cascadeMany = new CascadeMany<>(getter, persister, captureLambdaMethod(getter));
 		this.cascadeManys.add(cascadeMany);
 		return new MethodDispatcher()
-				.redirect(OneToManyOptions.class, new OneToManyOptions() {
-					@Override
-					public IFluentMappingBuilderOneToManyOptions mappedBy(SerializableBiConsumer reverseLink) {
-						cascadeMany.reverseSetter = reverseLink;
-						return null;	// we can return null because dispatcher will return proxy
-					}
-					
-					@Override
-					public IFluentMappingBuilderOneToManyOptions mappedBy(SerializableFunction reverseLink) {
-						cascadeMany.reverseGetter = reverseLink;
-						return null;	// we can return null because dispatcher will return proxy
-					}
-					
-					@Override
-					public IFluentMappingBuilderOneToManyOptions mappedBy(Column reverseLink) {
-						cascadeMany.reverseColumn = reverseLink;
-						return null;	// we can return null because dispatcher will return proxy
-					}
-					
-					@Override
-					public IFluentMappingBuilderOneToManyOptions cascade(CascadeType cascadeType, CascadeType... cascadeTypes) {
-						cascadeMany.addCascadeType(cascadeType);
-						for (CascadeType type : cascadeTypes) {
-							cascadeMany.addCascadeType(type);
-						}
-						return null;	// we can return null because dispatcher will return proxy
-					}
-					
-					@Override
-					public IFluentMappingBuilderOneToManyOptions deleteRemoved() {
-						cascadeMany.deleteRemoved = true;
-						return null;	// we can return null because dispatcher will return proxy
-					}
-					
-					@Override
-					public IFluentMappingBuilderOneToManyOptions indexedBy(Column orderingColumn) {
-						cascadeMany.setIndexingColumn(orderingColumn);
-						return null;	// we can return null because dispatcher will return proxy
-					}
-				}, true)	// true to allow "return null" in implemented methods
+				.redirect(OneToManyOptions.class, new OneToManyOptionsSupport<>(cascadeMany), true)	// true to allow "return null" in implemented methods
 				.fallbackOn(this)
 				.build((Class<IFluentMappingBuilderOneToManyOptions<T, I, O>>) (Class) IFluentMappingBuilderOneToManyOptions.class);
+	}
+	
+	@Override
+	public <O extends Identified, J extends StatefullIdentifier, C extends List<O>> IFluentMappingBuilderOneToManyListOptions<T, I, O> addOneToManyList(
+			SerializableFunction<T, C> getter, Persister<O, J, ? extends Table> persister) {
+		CascadeManyList<T, O, J> cascadeMany = new CascadeManyList<T, O, J>(getter, persister, captureLambdaMethod(getter));
+		this.cascadeManys.add(cascadeMany);
+		return new MethodDispatcher()
+				.redirect(OneToManyOptions.class, new OneToManyOptionsSupport<>(cascadeMany), true)	// true to allow "return null" in implemented methods
+				.redirect(IndexableCollectionOptions.class, orderingColumn -> {
+					cascadeMany.setIndexingColumn(orderingColumn);
+					return null;	// we can return null because dispatcher will return proxy
+				}, true)	// true to allow "return null" in implemented methods
+				.fallbackOn(this)
+				.build((Class<IFluentMappingBuilderOneToManyListOptions<T, I, O>>) (Class) IFluentMappingBuilderOneToManyListOptions.class);
 	}
 	
 	@Override
@@ -708,93 +686,6 @@ public class FluentMappingBuilder<T extends Identified, I extends StatefullIdent
 	}
 	
 	/**
-	 * 
-	 * @param <SRC> the "one" type
-	 * @param <O> the "many" type
-	 * @param <J> identifier type of O
-	 * @param <C> the "many" collection type
-	 */
-	public static class CascadeMany<SRC extends Identified, O extends Identified, J extends StatefullIdentifier, C extends Collection<O>> {
-		
-		private final Function<SRC, C> targetProvider;
-		private final Persister<O, J, ? extends Table> persister;
-		private final Method member;
-		private final Class<C> collectionTargetClass;
-		/** the method that sets the "one" entity" onto the "many" entities */
-		private SerializableBiConsumer<O, SRC> reverseSetter;
-		/** the method that gets the "one" entity" from the "many" entities */
-		private SerializableFunction<O, SRC> reverseGetter;
-		private Column<Table, SRC> reverseColumn;
-		private final Set<CascadeType> cascadeTypes = new HashSet<>();
-		/** Should we delete removed entities from the Collection (for UPDATE cascade) */
-		private boolean deleteRemoved = false;
-		private Column indexingColumn;
-		
-		private CascadeMany(Function<SRC, C> targetProvider, Persister<O, J, ? extends Table> persister, Method method) {
-			this(targetProvider, persister, (Class<C>) Reflections.javaBeanTargetType(method), method);
-		}
-		
-		private CascadeMany(Function<SRC, C> targetProvider, Persister<O, J, ? extends Table> persister, Class<C> collectionTargetClass, Method method) {
-			this.targetProvider = targetProvider;
-			this.persister = persister;
-			this.member = method;
-			this.collectionTargetClass = collectionTargetClass;
-		}
-		
-		public Function<SRC, C> getTargetProvider() {
-			return targetProvider;
-		}
-		
-		public Persister<O, J, ?> getPersister() {
-			return persister;
-		}
-		
-		public Method getMember() {
-			return member;
-		}
-		
-		public Class<C> getCollectionTargetClass() {
-			return collectionTargetClass;
-		}
-		
-		public SerializableBiConsumer<O, SRC> getReverseSetter() {
-			return reverseSetter;
-		}
-		
-		public Column<Table, SRC> getReverseColumn() {
-			return reverseColumn;
-		}
-		
-		public SerializableFunction<O, SRC> getReverseGetter() {
-			return reverseGetter;
-		}
-		
-		public void setReverseGetter(SerializableFunction<O, SRC> reverseGetter) {
-			this.reverseGetter = reverseGetter;
-		}
-		
-		public Set<CascadeType> getCascadeTypes() {
-			return cascadeTypes;
-		}
-		
-		public void addCascadeType(CascadeType cascadeType) {
-			this.cascadeTypes.add(cascadeType);
-		}
-		
-		public boolean shouldDeleteRemoved() {
-			return deleteRemoved;
-		}
-		
-		public void setIndexingColumn(Column indexingColumn) {
-			this.indexingColumn = indexingColumn;
-		}
-		
-		public Column getIndexingColumn() {
-			return indexingColumn;
-		}
-	}
-	
-	/**
 	 * Represents a property that embeds a complex type
 	 *
 	 * @param <SRC> the owner type
@@ -905,6 +796,53 @@ public class FluentMappingBuilder<T extends Identified, I extends StatefullIdent
 		
 		public VersioningStrategy getVersioningStrategy() {
 			return versioningStrategy;
+		}
+	}
+	
+	
+	/**
+	 * A small class for one-to-many options storage into a {@link CascadeMany}. Acts as a wrapper over it.
+	 */
+	private static class OneToManyOptionsSupport<T extends Identified, I extends StatefullIdentifier, O extends Identified>
+			implements OneToManyOptions<T, I, O> {
+		
+		private final CascadeMany<T, O, I, ? extends Collection> cascadeMany;
+		
+		public OneToManyOptionsSupport(CascadeMany<T, O, I, ? extends Collection> cascadeMany) {
+			this.cascadeMany = cascadeMany;
+		}
+		
+		@Override
+		public IFluentMappingBuilderOneToManyOptions<T, I, O> mappedBy(SerializableBiConsumer<O, T> reverseLink) {
+			cascadeMany.setReverseSetter(reverseLink);
+			return null;	// we can return null because dispatcher will return proxy
+		}
+		
+		@Override
+		public IFluentMappingBuilderOneToManyOptions<T, I, O> mappedBy(SerializableFunction<O, T> reverseLink) {
+			cascadeMany.setReverseGetter(reverseLink);
+			return null;	// we can return null because dispatcher will return proxy
+		}
+		
+		@Override
+		public IFluentMappingBuilderOneToManyOptions<T, I, O> mappedBy(Column<Table, T> reverseLink) {
+			cascadeMany.setReverseColumn(reverseLink);
+			return null;	// we can return null because dispatcher will return proxy
+		}
+		
+		@Override
+		public IFluentMappingBuilderOneToManyOptions<T, I, O> cascade(CascadeType cascadeType, CascadeType... cascadeTypes) {
+			cascadeMany.addCascadeType(cascadeType);
+			for (CascadeType type : cascadeTypes) {
+				cascadeMany.addCascadeType(type);
+			}
+			return null;	// we can return null because dispatcher will return proxy
+		}
+		
+		@Override
+		public IFluentMappingBuilderOneToManyOptions<T, I, O> deleteRemoved() {
+			cascadeMany.setDeleteRemoved(true);
+			return null;	// we can return null because dispatcher will return proxy
 		}
 	}
 }
