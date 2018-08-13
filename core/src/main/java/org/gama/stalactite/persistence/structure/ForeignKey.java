@@ -3,6 +3,7 @@ package org.gama.stalactite.persistence.structure;
 import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
+import java.util.Map.Entry;
 import java.util.Set;
 
 import org.gama.lang.collection.Arrays;
@@ -15,30 +16,31 @@ import static org.gama.lang.collection.Iterables.pair;
  * 
  * @author Guillaume Mary
  */
-public class ForeignKey {
+public class ForeignKey<T extends Table, U extends Table> {
 	
-	private final Table table;
+	private final T table;
 	private final String name;
-	private final LinkedHashMap<Column, Column> columns;
-	private final Table targetTable;
+	private final LinkedHashMap<Column<T, ?>, Column<U, ?>> columns;
+	private final U targetTable;
 	
-	public ForeignKey(String name, Column column, Column targetColumn) {
+	public ForeignKey(String name, Column<T, ?> column, Column<U, ?> targetColumn) {
 		this(name, Arrays.asSet(column), Arrays.asSet(targetColumn));
 	}
 	
-	public ForeignKey(String name, LinkedHashSet<Column> columns, LinkedHashSet<Column> targetColumns) {
+	public ForeignKey(String name, LinkedHashSet<Column<T, ?>> columns, LinkedHashSet<Column<U, ?>> targetColumns) {
 		this(name, pair(columns, targetColumns, LinkedHashMap::new));
 	}
 	
-	public ForeignKey(String name, LinkedHashMap<Column, Column> columns) {
+	public ForeignKey(String name, LinkedHashMap<Column<T, ?>, Column<U, ?>> columns) {
 		// table is took from columns
-		this.table = Iterables.first(columns.keySet()).getTable();
+		Entry<Column<T, ?>, Column<U, ?>> firstEntry = Iterables.first(columns.entrySet());
+		this.table = firstEntry.getKey().getTable();
+		this.targetTable = firstEntry.getValue().getTable();
 		this.name = name;
 		this.columns = columns;
-		this.targetTable = Iterables.first(columns.values()).getTable();
 	}
 	
-	public Set<Column> getColumns() {
+	public Set<Column<T, ?>> getColumns() {
 		return columns.keySet();
 	}
 	
@@ -46,15 +48,15 @@ public class ForeignKey {
 		return name;
 	}
 	
-	public Collection<Column> getTargetColumns() {
+	public Collection<Column<U, ?>> getTargetColumns() {
 		return columns.values();
 	}
 	
-	public Table getTable() {
+	public T getTable() {
 		return table;
 	}
 	
-	public Table getTargetTable() {
+	public U getTargetTable() {
 		return targetTable;
 	}
 }

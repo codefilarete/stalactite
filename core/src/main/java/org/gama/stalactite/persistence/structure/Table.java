@@ -37,7 +37,7 @@ public class Table<SELF extends Table<SELF>> {
 	
 	private Set<Index> indexes = new HashSet<>();
 	
-	private Set<ForeignKey> foreignKeys = new HashSet<>();
+	private Set<ForeignKey<SELF, ? extends Table<?>>> foreignKeys = new HashSet<>();
 	
 	public Table(String name) {
 		this(null, name);
@@ -120,18 +120,18 @@ public class Table<SELF extends Table<SELF>> {
 		return newIndex;
 	}
 	
-	public Set<ForeignKey> getForeignKeys() {
-		return Collections.unmodifiableSet(foreignKeys);
+	public Set<ForeignKey<SELF, Table>> getForeignKeys() {
+		return (Set<ForeignKey<SELF, Table>>) (Set) Collections.unmodifiableSet(foreignKeys);
 	}
 	
-	public <T1 extends Table<T1>, T2 extends Table<T2>, O> ForeignKey addForeignKey(String name, Column<T1, O> column, Column<T2, O> targetColumn) {
-		ForeignKey newForeignKey = new ForeignKey(name, column, targetColumn);
+	public <T extends Table<T>, I> ForeignKey addForeignKey(String name, Column<SELF, I> column, Column<T, I> targetColumn) {
+		ForeignKey<SELF, T> newForeignKey = new ForeignKey<>(name, column, targetColumn);
 		this.foreignKeys.add(newForeignKey);
 		return newForeignKey;
 	}
 	
-	public ForeignKey addForeignKey(String name, List<Column> columns, List<Column> targetColumns) {
-		ForeignKey newForeignKey = new ForeignKey(name, new LinkedHashSet<>(columns), new LinkedHashSet<>(targetColumns));
+	public <T extends Table<T>> ForeignKey addForeignKey(String name, List<Column<SELF, ?>> columns, List<Column<T, ?>> targetColumns) {
+		ForeignKey<SELF, T> newForeignKey = new ForeignKey<>(name, new LinkedHashSet<>(columns), new LinkedHashSet<>(targetColumns));
 		this.foreignKeys.add(newForeignKey);
 		return newForeignKey;
 	}
