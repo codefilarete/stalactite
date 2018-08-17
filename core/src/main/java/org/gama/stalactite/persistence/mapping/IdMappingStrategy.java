@@ -36,11 +36,11 @@ public class IdMappingStrategy<T, I> {
 		this.idAccessor = idAccessor;
 		this.identifierInsertionManager = identifierInsertionManager;
 		if (StatefullIdentifier.class.isAssignableFrom(identifierInsertionManager.getIdentifierType())) {
-			this.isNewDeterminer = new WrappedIdIsNewDeterminer();
+			this.isNewDeterminer = new StatefullIdDeterminer();
 		} else if (identifierInsertionManager.getIdentifierType().isPrimitive()) {
-			this.isNewDeterminer = new PrimitiveIdIsNewDeterminer();
+			this.isNewDeterminer = new PrimitiveIdDeterminer();
 		} else {
-			this.isNewDeterminer = new NullableIdIsNewDeterminer();
+			this.isNewDeterminer = new NullableIdDeterminer();
 		}
 	}
 	
@@ -80,7 +80,7 @@ public class IdMappingStrategy<T, I> {
 	/**
 	 * For case where the identifier is a basic type (String, Long, ...)
 	 */
-	private class NullableIdIsNewDeterminer implements IsNewDeterminer<T> {
+	private class NullableIdDeterminer implements IsNewDeterminer<T> {
 		
 		@Override
 		public boolean isNew(T t) {
@@ -91,7 +91,7 @@ public class IdMappingStrategy<T, I> {
 	/**
 	 * For case where the identifier is a primitive type (long, int, ...)
 	 */
-	private class PrimitiveIdIsNewDeterminer implements IsNewDeterminer<T> {
+	private class PrimitiveIdDeterminer implements IsNewDeterminer<T> {
 		
 		@Override
 		public boolean isNew(T t) {
@@ -100,9 +100,9 @@ public class IdMappingStrategy<T, I> {
 	}
 	
 	/**
-	 * For case where the identifier ia a wrapped type. Only support {@link StatefullIdentifier}
+	 * For case where the identifier is a {@link StatefullIdentifier}
 	 */
-	private class WrappedIdIsNewDeterminer implements IsNewDeterminer<T> {
+	private class StatefullIdDeterminer implements IsNewDeterminer<T> {
 		
 		@Override
 		public boolean isNew(T t) {
