@@ -31,7 +31,8 @@ public class ToMultipleBeansRowTransformerTest {
 		ToMultipleBeansRowTransformer<Toto> testInstance = new ToMultipleBeansRowTransformer<Toto>(
 				Maps.asMap("toto.id", (IRowTransformer) new ToEntityRowTransformer<>(Toto.class, "toto.id", "toto.name"))
 				.add("tata.id", (IRowTransformer) new ToEntityRowTransformer<>(Tata.class, "tata.id", "tata.name"))
-				.add("titi.id", (IRowTransformer) new ToEntityRowTransformer<>(Titi.class, "titi.id", "titi.name"))) {
+				.add("titi.id", (IRowTransformer) new ToEntityRowTransformer<>(Titi.class, "titi.id", "titi.name")),
+				"toto.id") {
 			@Override
 			protected Object getCachedInstance(String key, Object value) {
 				return getCache(key).get(value);
@@ -44,11 +45,11 @@ public class ToMultipleBeansRowTransformerTest {
 			}
 			
 			@Override
-			protected void assembly(Object[] rowAsObjects) {
+			protected void assembly(Map<String, Object> rowAsObjects) {
 				// final building for this row: we assemble objects. Simple case.
-				Toto toto = (Toto) rowAsObjects[0];
-				Tata tata = (Tata) rowAsObjects[1];
-				Titi titi = (Titi) rowAsObjects[2];
+				Toto toto = (Toto) rowAsObjects.get("toto.id");
+				Tata tata = (Tata) rowAsObjects.get("tata.id");
+				Titi titi = (Titi) rowAsObjects.get("titi.id");
 				if (tata != null) {
 					toto.tata = tata;
 					if (titi != null) {
