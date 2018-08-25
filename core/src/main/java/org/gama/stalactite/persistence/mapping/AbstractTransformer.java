@@ -1,7 +1,6 @@
 package org.gama.stalactite.persistence.mapping;
 
-import java.lang.reflect.Constructor;
-import java.lang.reflect.InvocationTargetException;
+import java.util.function.Supplier;
 
 import org.gama.lang.Reflections;
 import org.gama.sql.result.Row;
@@ -13,15 +12,24 @@ import org.gama.sql.result.Row;
  */
 public abstract class AbstractTransformer<T> implements IRowTransformer<T> {
 	
-	protected final Constructor<T> constructor;
+	protected final Supplier<T> constructor;
 	
+	/**
+	 * Constructor for beans to be instanciated with their default constructor.
+	 * 
+	 * @param clazz bean class
+	 */
 	public AbstractTransformer(Class<T> clazz) {
-		this(Reflections.getDefaultConstructor(clazz));
+		this(() -> Reflections.newInstance(clazz));
 	}
 	
-	public AbstractTransformer(Constructor<T> constructor) {
-		this.constructor = constructor;
-		Reflections.ensureAccessible(constructor);
+	/**
+	 * Constructor with a general bean {@link Supplier}
+	 *
+	 * @param factory the factory of beans
+	 */
+	public AbstractTransformer(Supplier<T> factory) {
+		this.constructor = factory;
 	}
 	
 	@Override
@@ -33,13 +41,12 @@ public abstract class AbstractTransformer<T> implements IRowTransformer<T> {
 	
 	protected abstract void applyRowToBean(Row row, T bean);
 	
+	/**
+	 * Instanciates a bean 
+	 * 
+	 * @return a new instance of bean T
+	 */
 	public T newBeanInstance() {
-		T rowBean;
-		try {
-			rowBean = constructor.newInstance();
-		} catch (IllegalAccessException | InstantiationException | InvocationTargetException e) {
-			throw new RuntimeException("Class " + constructor.getDeclaringClass().getName() + " can't be instanciated", e);
-		}
-		return rowBean;
+		return constructor.get();
 	}
 }

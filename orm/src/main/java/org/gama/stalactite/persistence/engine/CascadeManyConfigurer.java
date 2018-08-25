@@ -37,8 +37,8 @@ import org.gama.stalactite.persistence.engine.listening.ISelectListener;
 import org.gama.stalactite.persistence.engine.listening.IUpdateListener.UpdatePayload;
 import org.gama.stalactite.persistence.engine.listening.PersisterListener;
 import org.gama.stalactite.persistence.id.Identified;
-import org.gama.stalactite.persistence.id.diff.IdentifiedCollectionDiffer;
 import org.gama.stalactite.persistence.id.diff.Diff;
+import org.gama.stalactite.persistence.id.diff.IdentifiedCollectionDiffer;
 import org.gama.stalactite.persistence.id.diff.IndexedDiff;
 import org.gama.stalactite.persistence.id.manager.StatefullIdentifier;
 import org.gama.stalactite.persistence.structure.Column;
@@ -205,9 +205,11 @@ public class CascadeManyConfigurer<I extends Identified, O extends Identified, J
 		targetPersister.getMappingStrategy().getRowTransformer().addTransformerListener((bean, row) -> {
 			
 			Map<O, Integer> indexPerBean = updatableListIndex.get();
+			// indexingColumn is not defined in targetPersister.getMappingStrategy().getRowTransformer() but is present is row
+			// because it was read from ResultSet
+			// So we get its alias from the object that managed id, and we simply read it from the row (but not from RowTransformer)
 			Map<Column, String> aliases = joinedTablesPersister.getJoinedStrategiesSelectExecutor().getJoinedStrategiesSelect().getAliases();
-			String s = aliases.get(indexingColumn);
-			indexPerBean.put(bean, (int) targetPersister.getMappingStrategy().getRowTransformer().getValue(row, s));
+			indexPerBean.put(bean, (int) row.get(aliases.get(indexingColumn)));
 		});
 		return relationFixer;
 	}

@@ -12,7 +12,6 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 
 import org.gama.lang.Duo;
-import org.gama.lang.Reflections;
 import org.gama.lang.bean.Objects;
 import org.gama.reflection.IMutator;
 import org.gama.reflection.IReversibleAccessor;
@@ -66,7 +65,7 @@ public class EmbeddedBeanMappingStrategy<C, T extends Table> implements IEmbedde
 			}
 			columnToField.put(column, accessorByField.toMutator());
 		}
-		this.rowTransformer = new ToBeanRowTransformer<>(Reflections.getDefaultConstructor(targetClass), columnToField);
+		this.rowTransformer = new ToBeanRowTransformer<>(targetClass, columnToField);
 		this.columns = new LinkedHashSet<>(propertyToColumn.values());
 	}
 	

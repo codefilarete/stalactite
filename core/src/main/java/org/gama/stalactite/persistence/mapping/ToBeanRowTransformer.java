@@ -1,14 +1,14 @@
 package org.gama.stalactite.persistence.mapping;
 
-import java.lang.reflect.Constructor;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Optional;
 import java.util.function.Function;
+import java.util.function.Supplier;
 
-import org.gama.lang.Reflections;
 import org.gama.lang.bean.FieldIterator;
 import org.gama.lang.collection.Iterables;
 import org.gama.reflection.Accessors;
@@ -24,7 +24,7 @@ import org.gama.stalactite.persistence.structure.Table;
  */
 public class ToBeanRowTransformer<T> extends AbstractTransformer<T> {
 	
-	private final Map<RowKeyMapper, IMutator> keyToField;
+	private final Map<RowKeySupport, IMutator> keyToField;
 	
 	private final Collection<TransformerListener<T>> rowTransformerListeners = new ArrayList<>();
 	
@@ -37,7 +37,7 @@ public class ToBeanRowTransformer<T> extends AbstractTransformer<T> {
 	 * (matching name)
 	 */
 	public ToBeanRowTransformer(Class<T> clazz, Table table, boolean warnOnMissingColumn) {
-		this(Reflections.getDefaultConstructor(clazz), new HashMap<>(10), true);
+		this(clazz, new HashMap<>(10), true);
 		Map<String, Column> columnPerName = table.mapColumnsOnName();
 		FieldIterator fieldIterator = new FieldIterator(clazz);
 		Iterables.stream(fieldIterator).forEach(field -> {
@@ -47,7 +47,7 @@ public class ToBeanRowTransformer<T> extends AbstractTransformer<T> {
 						throw new UnsupportedOperationException("Missing column for field " + field.getDeclaringClass().getName() + "." + field.getName());
 					}
 				} else {
-					keyToField.put(new ColumnRowKey(column), Accessors.mutator(field.getDeclaringClass(), field.getName()));
+					keyToField.put(new RowKeySupport(column), Accessors.mutator(field.getDeclaringClass(), field.getName()));
 				}
 			}
 		);
@@ -55,22 +55,32 @@ public class ToBeanRowTransformer<T> extends AbstractTransformer<T> {
 	
 	/**
 	 *
-	 * @param constructor the constructor to be used to instanciate a new bean
+	 * @param clazz the constructor to be used to instanciate a new bean
 	 * @param columnToField the mapping between key in rows and helper that fixes values of the bean
 	 */
-	public ToBeanRowTransformer(Constructor<T> constructor, Map<Column, IMutator> columnToField) {
-		this(constructor, new HashMap<>(10), true);
-		columnToField.forEach((key, value) -> keyToField.put(new ColumnRowKey(key), value));
+	public ToBeanRowTransformer(Class<T> clazz, Map<Column, IMutator> columnToField) {
+		this(clazz, new HashMap<>(10), true);
+		columnToField.forEach((key, value) -> keyToField.put(new RowKeySupport(key), value));
 	}
 	
 	/**
 	 * 
-	 * @param constructor the constructor to be used to instanciate a new bean
+	 * @param clazz the constructor to be used to instanciate a new bean
 	 * @param keyToField the mapping between key in rows and helper that fixes values of the bean
-	 * @param constructorProof a mark to distinguish this constructor from {@link #ToBeanRowTransformer(Constructor, Map)} due to type erasure
+	 * @param constructorProof a mark to distinguish this constructor from {@link #ToBeanRowTransformer(Class, Map)} due to type erasure
 	 */
-	private ToBeanRowTransformer(Constructor<T> constructor, Map<RowKeyMapper, IMutator> keyToField, boolean constructorProof) {
-		super(constructor);
+	private ToBeanRowTransformer(Class<T> clazz, Map<RowKeySupport, IMutator> keyToField, boolean constructorProof) {
+		super(clazz);
+		this.keyToField = keyToField;
+	}
+	
+	/**
+	 * 
+	 * @param supplier the constructor to be used to instanciate a new bean
+	 * @param keyToField the mapping between key in rows and helper that fixes values of the bean
+	 */
+	private ToBeanRowTransformer(Supplier<T> supplier, Map<RowKeySupport, IMutator> keyToField) {
+		super(supplier);
 		this.keyToField = keyToField;
 	}
 	
@@ -84,7 +94,7 @@ public class ToBeanRowTransformer<T> extends AbstractTransformer<T> {
 	
 	@Override
 	public void applyRowToBean(Row source, T targetRowBean) {
-		for (Entry<RowKeyMapper, IMutator> columnFieldEntry : keyToField.entrySet()) {
+		for (Entry<RowKeySupport, IMutator> columnFieldEntry : keyToField.entrySet()) {
 			String columnName = columnFieldEntry.getKey().rowKey();
 			Object object = source.get(columnName);
 			columnFieldEntry.getValue().set(targetRowBean, object);
@@ -98,17 +108,13 @@ public class ToBeanRowTransformer<T> extends AbstractTransformer<T> {
 	 * @return the value of a {@link Column} in the given row, may be null
 	 */
 	public Object getValue(Row row, Column column) {
-		return row.get(column.getName());
-	}
-	
-	/**
-	 * Gives the value of a column name in the given row
-	 * @param row the current {@link Row}
-	 * @param columnName a column name or alias
-	 * @return the value of a column name in the given row, may be null
-	 */
-	public Object getValue(Row row, String columnName) {
-		return row.get(columnName);
+		Optional<RowKeySupport> foundKeyMapper = keyToField.keySet().stream().filter(c -> c.getColumn().equals(column)).findFirst();
+		if (foundKeyMapper.isPresent()) {
+			return row.get(foundKeyMapper.get().rowKey());
+		} else {
+			// we raise an exception (instead of returning null) because we think current usage is wrong
+			throw new IllegalArgumentException("Column " + column + " is not mapped");
+		}
 	}
 	
 	/**
@@ -121,10 +127,12 @@ public class ToBeanRowTransformer<T> extends AbstractTransformer<T> {
 	 */
 	public ToBeanRowTransformer<T> withAliases(Function<Column, String> aliasProvider) {
 		// We transform the actual keyToField Map by a new one whose keys are took on the aliasProvider
-		Map<RowKeyMapper, IMutator> aliasToField = new HashMap<>(this.keyToField.size());
-		this.keyToField.forEach((key, value) -> aliasToField.put(
-				new StringRowKey(aliasProvider.apply(((ColumnRowKey) key).getColumn())), value));
-		ToBeanRowTransformer<T> result = new ToBeanRowTransformer<>(constructor, aliasToField, true);
+		Map<RowKeySupport, IMutator> aliasToField = new HashMap<>(this.keyToField.size());
+		this.keyToField.forEach((key, value) -> {
+			Column column = key.getColumn();
+			aliasToField.put(new RowKeySupport(column, aliasProvider), value);
+		});
+		ToBeanRowTransformer<T> result = new ToBeanRowTransformer<>(constructor, aliasToField);
 		// listeners are given to the new instance because they may be interested to transform rows of this one
 		result.rowTransformerListeners.addAll(rowTransformerListeners);
 		return result;
@@ -136,50 +144,30 @@ public class ToBeanRowTransformer<T> extends AbstractTransformer<T> {
 	}
 	
 	/**
-	 * A short interface used to abstract how keys of the {@link Row} are given.
+	 * Internal small class to abstract how keys of the {@link Row} are given.
 	 * Mainly created for {@link #withAliases(Function)} method
 	 */
-	private interface RowKeyMapper {
-		
-		String rowKey();
-		
-	}
-	
-	/**
-	 * Trivial {@link RowKeyMapper} when alias is given
-	 */
-	private static class StringRowKey implements RowKeyMapper {
-		
-		private final String alias;
-		
-		private StringRowKey(String alias) {
-			this.alias = alias;
-		}
-		
-		@Override
-		public String rowKey() {
-			return alias;
-		}
-	}
-	
-	/**
-	 * {@link RowKeyMapper} which takes the key on the column name
-	 */
-	private static class ColumnRowKey implements RowKeyMapper {
+	private static class RowKeySupport {
 		
 		private final Column key;
 		
-		private ColumnRowKey(Column key) {
-			this.key = key;
+		private final Function<Column, String> aliaser;
+		
+		private RowKeySupport(Column key) {
+			this(key, Column::getName);
 		}
 		
-		public Column getColumn() {
+		private RowKeySupport(Column key, Function<Column, String> aliaser) {
+			this.key = key;
+			this.aliaser = aliaser;
+		}
+		
+		private Column getColumn() {
 			return key;
 		}
 		
-		@Override
-		public String rowKey() {
-			return key.getName();
+		private String rowKey() {
+			return aliaser.apply(key);
 		}
 	}
 	
