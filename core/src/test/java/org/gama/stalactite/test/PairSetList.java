@@ -6,24 +6,20 @@ import java.util.List;
 import java.util.Set;
 
 import org.gama.lang.Duo;
+import org.gama.lang.collection.Iterables;
 import org.gama.lang.collection.PairIterator;
 
 /**
- * Facility class for simple creation of List of Set of Pair. Main usage is unit test.
- * Pairs are instances of Map.Entry.
+ * Facility class for simple creation of List of Set of pairs. Main usage is unit test.
+ * Pairs are instances of {@link Duo}.
  *
  * @author Guillaume Mary
  */
 public class PairSetList<K, V> {
 	
 	public static <K, V> List<Duo<K, V>> toPairs(Iterable<K> values1, Iterable<V> values2) {
-		List<Duo<K, V>> indexValuePairs = new ArrayList<>();
 		PairIterator<K, V> pairIterator = new PairIterator<>(values1, values2);
-		while (pairIterator.hasNext()) {
-			Duo<K, V> pair = pairIterator.next();
-			indexValuePairs.add(pair);
-		}
-		return indexValuePairs;
+		return Iterables.copy(pairIterator);
 	}
 	
 	private List<Set<Duo<K, V>>> toReturn = new ArrayList<>();
@@ -35,7 +31,8 @@ public class PairSetList<K, V> {
 	}
 	
 	/**
-	 * Add key-value to the current Set
+	 * Adds key-value to the current Set
+	 * 
 	 * @param k a key
 	 * @param v a value
 	 * @return this
@@ -46,7 +43,8 @@ public class PairSetList<K, V> {
 	}
 	
 	/**
-	 * Create a new Set in the list and add key-value to it
+	 * Creates a new Set in the list and add key-value to it
+	 * 
 	 * @param k a key
 	 * @param v a value
 	 * @return this
