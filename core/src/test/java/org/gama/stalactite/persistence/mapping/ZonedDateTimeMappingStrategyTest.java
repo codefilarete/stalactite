@@ -52,8 +52,8 @@ public class ZonedDateTimeMappingStrategyTest {
 	private ZonedDateTimeMappingStrategy testInstance;
 	
 	@BeforeEach
-	public void setUp() throws SQLException {
-		testInstance = new ZonedDateTimeMappingStrategy<Table>(colA, colB);
+	public void setUp() {
+		testInstance = new ZonedDateTimeMappingStrategy<>(colA, colB);
 		// preparing schema
 		connectionProvider = new JdbcConnectionProvider(new HSQLDBInMemoryDataSource());
 		dialect = new HSQLDBDialect();
@@ -102,7 +102,7 @@ public class ZonedDateTimeMappingStrategyTest {
 		
 		ZonedDateTime modifiedZonedDateTime = originalValue.minusHours(4);
 		Map<UpwhereColumn, Object> updateValues = testInstance.getUpdateValues(modifiedZonedDateTime, originalValue, true);
-		// we set calue of the where clause (else SQL will update nothing or goes into error)
+		// we set value of the where clause (else the SQL order will update nothing or goes into error)
 		updateValues.put(new UpwhereColumn(colA, false), originalValue.toLocalDateTime());
 		updateValues.put(new UpwhereColumn(colB, false), originalValue.getZone());
 		PreparedUpdate updateOrder = dmlGenerator.buildUpdate(testInstance.getColumns(), testInstance.getColumns());
@@ -136,7 +136,7 @@ public class ZonedDateTimeMappingStrategyTest {
 		writeOperation.execute();
 		
 		Map<UpwhereColumn, Object> updateValues = testInstance.getUpdateValues(null, originalValue, true);
-		// we set calue of the where clause (else SQL will update nothing or goes into error)
+		// we set value of the where clause (else the SQL order will update nothing or goes into error)
 		updateValues.put(new UpwhereColumn(colA, false), originalValue.toLocalDateTime());
 		updateValues.put(new UpwhereColumn(colB, false), originalValue.getZone());
 		PreparedUpdate updateOrder = dmlGenerator.buildUpdate(testInstance.getColumns(), testInstance.getColumns());
