@@ -1,5 +1,6 @@
 package org.gama.stalactite.command.builder;
 
+import javax.annotation.Nonnull;
 import java.util.Collections;
 
 import org.gama.lang.trace.ModifiableBoolean;
@@ -22,7 +23,7 @@ public class MultiTableAwareDMLNameProvider extends DMLNameProvider {
 	}
 	
 	@Override
-	public String getName(Column column) {
+	public String getName(@Nonnull Column column) {
 		if (multiTable.isTrue()) {
 			// default : adds table prefix
 			return super.getName(column);

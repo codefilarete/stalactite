@@ -1,5 +1,6 @@
 package org.gama.stalactite.persistence.sql.dml.binder;
 
+import javax.annotation.Nonnull;
 import java.sql.PreparedStatement;
 import java.util.HashMap;
 import java.util.Map;
@@ -17,8 +18,7 @@ import org.gama.sql.binder.ParameterBinderRegistry;
 import org.gama.stalactite.persistence.structure.Column;
 
 /**
- * Registry of {@link ParameterBinder}s used to pickup the best suited Column to simplify access to method of {@link
- * PreparedStatement}.
+ * Registry of {@link ParameterBinder}s per {@link Column} to simplify access to method of {@link PreparedStatement} per {@link Column}.
  * Use {@link #register(Column, ParameterBinder)} or {@link #register(Class, ParameterBinder)} to specify the best
  * binder for a column or type.
  *
@@ -40,14 +40,14 @@ public class ColumnBinderRegistry extends ParameterBinderRegistry implements Par
 	}
 	
 	/**
-	 * Gives the {@link ParameterBinder} of a column if exists, else gives it for the Java type of the Column
+	 * Gives the {@link ParameterBinder} of a column if exists, else gives it for the Java type of the {@link Column}
 	 *
-	 * @param column
+	 * @param column any non null {@link Column}
 	 * @return the binder for the column or for its Java type
 	 * @throws UnsupportedOperationException if the binder doesn't exist
 	 */
 	@Override
-	public ParameterBinder doGetBinder(Column column) {
+	public ParameterBinder doGetBinder(@Nonnull Column column) {
 		ParameterBinder columnBinder = parameterBinders.get(column);
 		try {
 			return columnBinder != null ? columnBinder : getBinder(column.getJavaType());
