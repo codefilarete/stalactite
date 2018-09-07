@@ -22,7 +22,7 @@ public class SimpleIdMappingStrategy<C, I> implements IdMappingStrategy<C, I> {
 	
 	private final IsNewDeterminer<C> isNewDeterminer;
 	
-	private final SimpleIdentifierAssembler<C, I> identifierMarshaller;
+	private final SimpleIdentifierAssembler<I> identifierMarshaller;
 	
 	/**
 	 * Main constructor
@@ -33,7 +33,7 @@ public class SimpleIdMappingStrategy<C, I> implements IdMappingStrategy<C, I> {
 	 */
 	public SimpleIdMappingStrategy(IdAccessor<C, I> idAccessor,
 								   IdentifierInsertionManager<C, I> identifierInsertionManager,
-								   SimpleIdentifierAssembler<C, I> identifierMarshaller) {
+								   SimpleIdentifierAssembler<I> identifierMarshaller) {
 		this.idAccessor = idAccessor;
 		this.identifierInsertionManager = identifierInsertionManager;
 		this.identifierMarshaller = identifierMarshaller;
@@ -68,7 +68,7 @@ public class SimpleIdMappingStrategy<C, I> implements IdMappingStrategy<C, I> {
 	}
 	
 	@Override
-	public SimpleIdentifierAssembler<C, I> getIdentifierAssembler() {
+	public SimpleIdentifierAssembler<I> getIdentifierAssembler() {
 		return identifierMarshaller;
 	}
 	

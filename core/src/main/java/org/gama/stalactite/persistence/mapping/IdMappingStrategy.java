@@ -20,7 +20,7 @@ public interface IdMappingStrategy<C, I> {
 	
 	IdAccessor<C, I> getIdAccessor();
 	
-	IdentifierAssembler<C, I> getIdentifierAssembler();
+	IdentifierAssembler<I> getIdentifierAssembler();
 	
 	IdentifierInsertionManager<C, I> getIdentifierInsertionManager();
 }

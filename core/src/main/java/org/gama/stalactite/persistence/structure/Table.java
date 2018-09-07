@@ -141,7 +141,7 @@ public class Table<SELF extends Table<SELF>> {
 		return newForeignKey;
 	}
 	
-	public <T extends Table<T>> ForeignKey addForeignKey(String name, List<Column<SELF, ?>> columns, List<Column<T, ?>> targetColumns) {
+	public <T extends Table<T>> ForeignKey addForeignKey(String name, List<Column<SELF, Object>> columns, List<Column<T, Object>> targetColumns) {
 		ForeignKey<SELF, T> newForeignKey = new ForeignKey<>(name, new LinkedHashSet<>(columns), new LinkedHashSet<>(targetColumns));
 		this.foreignKeys.add(newForeignKey);
 		return newForeignKey;

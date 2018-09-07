@@ -13,11 +13,10 @@ import org.gama.stalactite.persistence.structure.Table;
  * Describes the way an identifier is read and written to a database.
  * Created to handle composed id.
  *
- * @param <C> entity type
  * @param <I> identifier type
  * @author Guillaume Mary
  */
-public interface IdentifierAssembler<C, I> {
+public interface IdentifierAssembler<I> {
 	
 	/**
 	 * Creates an identifier from a {@link Row}

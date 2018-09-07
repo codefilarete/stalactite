@@ -16,12 +16,11 @@ import org.gama.stalactite.persistence.structure.Table;
 /**
  * Describes the way a simple (single column) identifier is read and written to a database.
  *
- * @param <C> entity type
  * @param <I> identifier type
  * @author Guillaume Mary
  * @see ComposedIdentifierAssembler
  */
-public class SimpleIdentifierAssembler<C, I> implements IdentifierAssembler<C, I> {
+public class SimpleIdentifierAssembler<I> implements IdentifierAssembler<I> {
 	
 	private final Column<Table, I> primaryKey;
 	

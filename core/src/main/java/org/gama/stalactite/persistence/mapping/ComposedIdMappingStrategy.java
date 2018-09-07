@@ -17,7 +17,7 @@ public class ComposedIdMappingStrategy<C, I> implements IdMappingStrategy<C, I> 
 	
 	private final IdAccessor<C, I> idAccessor;
 	private final IdentifierInsertionManager<C, I> identifierInsertionManager;
-	private final ComposedIdentifierAssembler<C, I> identifierMarshaller;
+	private final ComposedIdentifierAssembler<I> identifierMarshaller;
 	
 	/**
 	 * Main constructor
@@ -28,7 +28,7 @@ public class ComposedIdMappingStrategy<C, I> implements IdMappingStrategy<C, I> 
 	 */
 	public ComposedIdMappingStrategy(IdAccessor<C, I> idAccessor,
 									 IdentifierInsertionManager<C, I> identifierInsertionManager,
-									 ComposedIdentifierAssembler<C, I> identifierMarshaller) {
+									 ComposedIdentifierAssembler<I> identifierMarshaller) {
 		this.idAccessor = idAccessor;
 		this.identifierInsertionManager = identifierInsertionManager;
 		this.identifierMarshaller = identifierMarshaller;
@@ -40,7 +40,7 @@ public class ComposedIdMappingStrategy<C, I> implements IdMappingStrategy<C, I> 
 	}
 	
 	@Override
-	public ComposedIdentifierAssembler<C, I> getIdentifierAssembler() {
+	public ComposedIdentifierAssembler<I> getIdentifierAssembler() {
 		return identifierMarshaller;
 	}
 	

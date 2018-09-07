@@ -16,12 +16,11 @@ import org.gama.stalactite.persistence.structure.Table;
 /**
  * Describes the way a composed identifier is read and written to a database.
  *
- * @param <C> entity type
  * @param <I> identifier type
  * @author Guillaume Mary
  * @see SimpleIdentifierAssembler
  */
-public abstract class ComposedIdentifierAssembler<C, I> implements IdentifierAssembler<C, I> {
+public abstract class ComposedIdentifierAssembler<I> implements IdentifierAssembler<I> {
 	
 	private final Set<Column> primaryKeyColumns;
 	

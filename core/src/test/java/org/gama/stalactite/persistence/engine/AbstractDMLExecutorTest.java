@@ -156,7 +156,7 @@ public abstract class AbstractDMLExecutorTest {
 									toto,
 									(Map) mappedClass.persistentFieldHarverster.getFieldToColumn(),
 									new ComposedIdMappingStrategy<>(idAccessor, new AlreadyAssignedIdentifierManager<>(Toto.class),
-											new ComposedIdentifierAssembler<Toto, Toto>(toto.getPrimaryKey().getColumns()) {
+											new ComposedIdentifierAssembler<Toto>(toto.getPrimaryKey().getColumns()) {
 												@Override
 												protected Toto assemble(Map<Column, Object> primaryKeyElements) {
 													// No need to be implemented id because we're on a delete test case, but it may be something 
@@ -225,7 +225,7 @@ public abstract class AbstractDMLExecutorTest {
 									tata,
 									Maps.asMap(Accessors.accessorByField(Tata.class, "c"), colC),
 									new ComposedIdMappingStrategy<>(idAccessor, new AlreadyAssignedIdentifierManager<>(ComposedId.class),
-											new ComposedIdentifierAssembler<Tata, ComposedId>(tata.getPrimaryKey().getColumns()) {
+											new ComposedIdentifierAssembler<ComposedId>(tata.getPrimaryKey().getColumns()) {
 												@Override
 												protected ComposedId assemble(Map<Column, Object> primaryKeyElements) {
 													// No need to be implemented id because we're on a delete test case, but it may be something 
