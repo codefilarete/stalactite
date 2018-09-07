@@ -78,7 +78,11 @@ public class CascadeManyConfigurer<I extends Identified, O extends Identified, J
 		targetPersister.getPersisterListener().addInsertListener((IInsertListener<O>) SetPersistedFlagAfterInsertListener.INSTANCE);
 		
 		// finding joined columns: left one is primary key. Right one is given by the target strategy through the property accessor
-		Column leftColumn = joinedTablesPersister.getTargetTable().getPrimaryKey();
+		if (joinedTablesPersister.getTargetTable().getPrimaryKey().getColumns().size() > 1) {
+			throw new NotYetSupportedOperationException("Joining tables on a composed primery key is not (yet) supported");
+		}
+		Column leftColumn = Iterables.first(joinedTablesPersister.getTargetTable().getPrimaryKey().getColumns());
+		
 		Function<I, C> collectionGetter = cascadeMany.getTargetProvider();
 		if (cascadeMany.getReverseSetter() == null && cascadeMany.getReverseGetter() == null && cascadeMany.getReverseColumn() == null) {
 			throw new NotYetSupportedOperationException("Collection mapping without reverse property is not (yet) supported,"

@@ -2,6 +2,7 @@ package org.gama.stalactite.persistence.engine;
 
 import javax.annotation.Nonnull;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 
@@ -13,6 +14,7 @@ import org.gama.stalactite.persistence.engine.listening.IUpdateListener;
 import org.gama.stalactite.persistence.engine.listening.IUpdateListener.UpdatePayload;
 import org.gama.stalactite.persistence.engine.listening.PersisterListener;
 import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
+import org.gama.stalactite.persistence.mapping.SimpleIdMappingStrategy;
 import org.gama.stalactite.persistence.sql.Dialect;
 import org.gama.stalactite.persistence.sql.dml.DMLGenerator;
 import org.gama.stalactite.persistence.structure.Table;
@@ -165,7 +167,7 @@ public class Persister<C, I, T extends Table<T>> {
 	 * Persists an instance either it is already persisted or not (insert or update).
 	 * 
 	 * Check between insert or update is determined by id state which itself depends on identifier policy,
-	 * see {@link org.gama.stalactite.persistence.mapping.IdMappingStrategy.IsNewDeterminer} implementations and
+	 * see {@link SimpleIdMappingStrategy.IsNewDeterminer} implementations and
 	 * {@link org.gama.stalactite.persistence.id.manager.IdentifierInsertionManager} implementations for id value computation. 
 	 * 
 	 * @param entity an entity to be persisted
@@ -347,7 +349,7 @@ public class Persister<C, I, T extends Table<T>> {
 	 * @param c a bean
 	 * @return true if a bean is already persisted
 	 * @see ClassMappingStrategy#isNew(Object)
-	 * @see org.gama.stalactite.persistence.mapping.IdMappingStrategy.IsNewDeterminer
+	 * @see SimpleIdMappingStrategy.IsNewDeterminer
 	 */
 	private boolean isNew(C c) {
 		return mappingStrategy.isNew(c);
@@ -357,7 +359,7 @@ public class Persister<C, I, T extends Table<T>> {
 		return Iterables.first(select(Collections.singleton(id)));
 	}
 	
-	public List<C> select(Iterable<I> ids) {
+	public List<C> select(Collection<I> ids) {
 		if (Iterables.isEmpty(ids)) {
 			return new ArrayList<>();
 		} else {
@@ -365,7 +367,7 @@ public class Persister<C, I, T extends Table<T>> {
 		}
 	}
 	
-	protected List<C> doSelect(Iterable<I> ids) {
+	protected List<C> doSelect(Collection<I> ids) {
 		return selectExecutor.select(ids);
 	}
 }

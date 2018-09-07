@@ -44,6 +44,13 @@ public interface IMappingStrategy<C, T extends Table> {
 	@Nonnull
 	Map<UpwhereColumn<T>, Object> getUpdateValues(C modified, C unmodified, boolean allColumns);
 	
+	/**
+	 * Transforms the given row into a new bean. It is not "alias proof" so it is not expected to be used in a select which columns haven't their
+	 * name in the select clause, over all with alias.
+	 * 
+	 * @param row a row coming from a select clause of this entity
+	 * @return a new bean which properties have been filled by row values
+	 */
 	C transform(Row row);
 	
 	/**
@@ -112,14 +119,14 @@ public interface IMappingStrategy<C, T extends Table> {
 		 * @return all columns to be updated
 		 */
 		public static <T extends Table> Map<Column<T, Object>, Object> getUpdateColumns(@Nonnull Map<UpwhereColumn<T>, Object> map) {
-			Map<Column<T, ?>, Object> updateColumns = new HashMap<>();
+			Map<Column<T, Object>, Object> updateColumns = new HashMap<>();
 			for (Entry<UpwhereColumn<T>, Object> entry : map.entrySet()) {
 				UpwhereColumn<T> upwhereColumn = entry.getKey();
 				if (upwhereColumn.update) {
-					updateColumns.put(upwhereColumn.column, entry.getValue());
+					updateColumns.put((Column<T, Object>) upwhereColumn.column, entry.getValue());
 				}
 			}
-			return (Map) updateColumns;
+			return updateColumns;
 		}
 		
 		/**
@@ -129,14 +136,14 @@ public interface IMappingStrategy<C, T extends Table> {
 		 * @return all columns for the where clause
 		 */
 		public static <T extends Table> Map<Column<T, Object>, Object> getWhereColumns(@Nonnull Map<UpwhereColumn<T>, ?> map) {
-			Map<Column<T, ?>, Object> updateColumns = new HashMap<>();
+			Map<Column<T, Object>, Object> updateColumns = new HashMap<>();
 			for (Entry<UpwhereColumn<T>, ?> entry : map.entrySet()) {
 				UpwhereColumn<T> upwhereColumn = entry.getKey();
 				if (!upwhereColumn.update) {
-					updateColumns.put(upwhereColumn.column, entry.getValue());
+					updateColumns.put((Column<T, Object>) upwhereColumn.column, entry.getValue());
 				}
 			}
-			return (Map) updateColumns;
+			return updateColumns;
 		}
 		
 		private final Column<T, ?> column;

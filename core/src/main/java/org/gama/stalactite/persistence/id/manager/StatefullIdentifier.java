@@ -1,5 +1,7 @@
 package org.gama.stalactite.persistence.id.manager;
 
+import javax.annotation.Nonnull;
+
 /**
  * A marker for identifier that are wrapped into a simple class.
  * The surrogate will be persisted, not the whole instances of this class.
@@ -16,6 +18,7 @@ public interface StatefullIdentifier<T> {
 	 * Returns the value to persist
 	 * @return the value to persist, obviously not null
 	 */
+	@Nonnull
 	T getSurrogate();
 	
 	/**

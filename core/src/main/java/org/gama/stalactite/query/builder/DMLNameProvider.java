@@ -2,8 +2,8 @@ package org.gama.stalactite.query.builder;
 
 import javax.annotation.Nonnull;
 import java.util.Map;
+import java.util.function.Function;
 
-import org.gama.lang.StringAppender;
 import org.gama.lang.Strings;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
@@ -15,10 +15,14 @@ import org.gama.stalactite.persistence.structure.Table;
  */
 public class DMLNameProvider {
 	
-	protected final Map<Table, String> tableAliases;
+	private final Function<Table, String> tableAliases;
+	
+	public DMLNameProvider(Function<Table, String> tableAliases) {
+		this.tableAliases = tableAliases;
+	}
 	
 	public DMLNameProvider(Map<? extends Table, String> tableAliases) {
-		this.tableAliases = (Map<Table, String>) tableAliases;
+		this(tableAliases::get);
 	}
 	
 	/**
@@ -43,7 +47,7 @@ public class DMLNameProvider {
 	}
 	
 	public String getAlias(Table table) {
-		return tableAliases.get(table);
+		return tableAliases.apply(table);
 	}
 	
 	public String getTablePrefix(Table table) {
@@ -52,7 +56,7 @@ public class DMLNameProvider {
 	}
 	
 	/**
-	 * Gives the tanme name.
+	 * Gives the table name.
 	 * Aimed at being overriden to take key words into account (and put it between quotes for instance)
 	 *
 	 * @param table a table
@@ -61,10 +65,4 @@ public class DMLNameProvider {
 	public String getSimpleName(Table table) {
 		return table.getAbsoluteName();
 	}
-	
-	public void catWithComma(Iterable<? extends Column> targetColumns, StringAppender sql) {
-		targetColumns.forEach(c -> sql.cat(getSimpleName(c) + ", "));
-		sql.cutTail(2);
-	}
-	
 }

@@ -20,7 +20,7 @@ import org.gama.sql.test.HSQLDBInMemoryDataSource;
 import org.gama.sql.test.MariaDBEmbeddableDataSource;
 import org.gama.stalactite.persistence.id.manager.BeforeInsertIdentifierManager;
 import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
-import org.gama.stalactite.persistence.mapping.IdMappingStrategy;
+import org.gama.stalactite.persistence.mapping.IdAccessor;
 import org.gama.stalactite.persistence.mapping.PersistentFieldHarverster;
 import org.gama.stalactite.persistence.sql.Dialect;
 import org.gama.stalactite.persistence.sql.ddl.JavaTypeToSqlTypeMapping;
@@ -62,7 +62,7 @@ public class PersisterDatabaseTest {
 				totoClassTable,
 				totoClassMapping,
 				identifierAccessor,
-				new BeforeInsertIdentifierManager<>(IdMappingStrategy.toIdAccessor(identifierAccessor), identifierGenerator, Integer.class)
+				new BeforeInsertIdentifierManager<>(IdAccessor.idAccessor(identifierAccessor), identifierGenerator, Integer.class)
 		);
 		
 		JavaTypeToSqlTypeMapping simpleTypeMapping = new JavaTypeToSqlTypeMapping();

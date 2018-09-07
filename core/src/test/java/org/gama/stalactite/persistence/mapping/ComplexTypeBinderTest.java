@@ -36,12 +36,12 @@ public class ComplexTypeBinderTest {
 	@Test
 	public void testReadingAndWriting() throws SQLException {
 		PersistentFieldHarverster persistentFieldHarverster = new PersistentFieldHarverster();
-		Table<?> targetTable = new Table<>("Toto");
+		Table targetTable = new Table<>("Toto");
 		Column colId = targetTable.addColumn("id", Integer.class).primaryKey();
 		Column colList = targetTable.addColumn("myList", (Class<List<String>>) (Class) List.class);
 		
 		// Our mapping : Toto.myList is mapped but not yet define with a binder
-		ClassMappingStrategy<Toto, Integer, Table> totoMappingStrategy = new ClassMappingStrategy<Toto, Integer, Table>(
+		ClassMappingStrategy<Toto, Integer, Table> totoMappingStrategy = new ClassMappingStrategy<>(
 				Toto.class,
 				targetTable,
 				persistentFieldHarverster.mapFields(Toto.class, targetTable),

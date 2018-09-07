@@ -69,7 +69,7 @@ public class DDLDeployer {
 		return ddlSchemaGenerator;
 	}
 	
-	public void deployDDL() throws SQLException {
+	public void deployDDL() {
 		for (String sql : getCreationScripts()) {
 			execute(sql);
 		}
@@ -79,7 +79,7 @@ public class DDLDeployer {
 		return getDdlSchemaGenerator().getCreationScripts();
 	}
 	
-	public void dropDDL() throws SQLException {
+	public void dropDDL() {
 		for (String sql : getDropScripts()) {
 			execute(sql);
 		}
@@ -89,11 +89,11 @@ public class DDLDeployer {
 		return getDdlSchemaGenerator().getDropScripts();
 	}
 	
-	protected void execute(String sql) throws SQLException {
+	protected void execute(String sql) {
 		try (Statement statement = getCurrentConnection().createStatement()) {
 			LOGGER.debug(sql);
 			statement.execute(sql);
-		} catch (Throwable t) {
+		} catch (SQLException t) {
 			throw new RuntimeException("Error executing \"" + sql + "\"", t);
 		}
 	}

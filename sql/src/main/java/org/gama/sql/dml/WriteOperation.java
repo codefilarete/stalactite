@@ -30,7 +30,7 @@ public class WriteOperation<ParamType> extends SQLOperation<ParamType> {
 	private final Retryer retryer;
 	
 	/** Batched values, mainly for logging, filled when debug is required */
-	private final Map<Integer /* batch count */, Map<ParamType, Object>> batchedValues = new HashMap<>();
+	private final Map<Integer /* batch count */, Map<ParamType, ?>> batchedValues = new HashMap<>();
 	
 	public WriteOperation(SQLStatement<ParamType> sqlGenerator, ConnectionProvider connectionProvider) {
 		this(sqlGenerator, connectionProvider, Retryer.NO_RETRY);
@@ -117,7 +117,7 @@ public class WriteOperation<ParamType> extends SQLOperation<ParamType> {
 	
 	private int[] doExecuteBatch() {
 		logExecution(() -> {
-			HashMap<Integer, Map<ParamType, Object>> valuesClone = new HashMap<>(batchedValues);
+			HashMap<Integer, Map<ParamType, ?>> valuesClone = new HashMap<>(batchedValues);
 			valuesClone.entrySet().forEach(e -> e.setValue(filterLoggable(e.getValue())));
 			return valuesClone.toString();
 		});
@@ -142,7 +142,7 @@ public class WriteOperation<ParamType> extends SQLOperation<ParamType> {
 	 * @param values values to be added as batch
 	 * @see #executeBatch()
 	 */
-	public void addBatch(Map<ParamType, Object> values) {
+	public void addBatch(Map<ParamType, ?> values) {
 		// Necessary to call setValues() BEFORE ensureStatement() because in case of StringParamedSQL statement is built
 		// thanks to values (the expansion of parameters needs the values)
 		setValues(values);

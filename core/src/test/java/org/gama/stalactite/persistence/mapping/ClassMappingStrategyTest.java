@@ -42,8 +42,8 @@ public class ClassMappingStrategyTest {
 	private static Table targetTable;
 	private static PersistentFieldHarverster persistentFieldHarverster;
 	private static Map<String, Column> columnMapOnName;
-	private static PropertyAccessor<Toto, List> myListField;
-	private static PropertyAccessor<Toto, Map> myMapField;
+	private static PropertyAccessor<Toto, List<String>> myListField;
+	private static PropertyAccessor<Toto, Map<String, String>> myMapField;
 	
 	private static ClassMappingStrategy<Toto, Integer, Table> testInstance;
 	
@@ -76,7 +76,7 @@ public class ClassMappingStrategyTest {
 		testInstance = new ClassMappingStrategy<Toto, Integer, Table>(
 				Toto.class,
 				targetTable,
-				(Map) classMapping,
+				(Map<IReversibleAccessor<Toto, Object>, Column<Table, Object>>) classMapping,
 				Accessors.forProperty(persistentFieldHarverster.getField("a")),
 				// Basic mapping to prevent NullPointerException, even if it's not the goal of our test
 				new AlreadyAssignedIdentifierManager<>(Integer.class));
@@ -98,7 +98,7 @@ public class ClassMappingStrategyTest {
 			}
 		});
 		
-		// Additionnal mapping: the map is mapped to 2 additionnal columns
+		// Additional mapping: the map is mapped to 2 additional columns
 		Map<String, Column<Table, Object>> mappedColumnsByKey = new HashMap<>();
 		for (int i = 1; i <= 2; i++) {
 			String columnName = "cole_" + i;

@@ -13,6 +13,7 @@ import org.gama.sql.result.Row;
 import org.gama.stalactite.persistence.engine.cascade.JoinedStrategiesSelect.StrategyJoins;
 import org.gama.stalactite.persistence.engine.cascade.JoinedStrategiesSelect.StrategyJoins.Join;
 import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
+import org.gama.stalactite.persistence.mapping.ColumnedRow;
 import org.gama.stalactite.persistence.mapping.ToBeanRowTransformer;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
@@ -64,10 +65,6 @@ public class StrategyJoinsRowTransformer<T> {
 		this.aliasProvider = aliases::get;
 	}
 	
-	private String getAlias(Column primaryKey) {
-		return aliasProvider.apply(primaryKey);
-	}
-	
 	public List<T> transform(Iterable<Row> rows) {
 		List<T> result = new ArrayList<>();
 		EntityCacheWrapper entityCacheWrapper = new EntityCacheWrapper(entityCache);
@@ -77,7 +74,7 @@ public class StrategyJoinsRowTransformer<T> {
 			// We start by the root of the hierarchy.
 			// We process the entity of the current depth, then process the direct relations, add those relations to the depth iterator
 			
-			
+			ColumnedRow columnedRow = new ColumnedRow(aliasProvider);
 			Queue<StrategyJoins> stack = new ArrayDeque<>();
 			stack.add(rootStrategyJoins);
 			// we use a local cache of bean tranformer because we'll ask a slide of them with aliasProvider which creates an instance at each invokation
@@ -87,12 +84,12 @@ public class StrategyJoinsRowTransformer<T> {
 				// treating the current depth
 				StrategyJoins<Object> strategyJoins = stack.poll();
 				ClassMappingStrategy<Object, Object, Table> leftStrategy = strategyJoins.getStrategy();
-				ToBeanRowTransformer mainRowTransformer = leftStrategy.getRowTransformer();
-				Object primaryKeyValue = row.get(getAlias(strategyJoins.getTable().getPrimaryKey()));
+				ToBeanRowTransformer mainRowTransformer = beanTransformerCache.computeIfAbsent(leftStrategy, s -> s.getRowTransformer().withAliases(aliasProvider));
+				Object identifier = leftStrategy.getIdMappingStrategy().getIdentifierAssembler().assemble(row, columnedRow);
 				
-				Object rowInstance = entityCacheWrapper.computeIfAbsent(leftStrategy.getClassToPersist(), primaryKeyValue, () -> {
+				Object rowInstance = entityCacheWrapper.computeIfAbsent(leftStrategy.getClassToPersist(), identifier, () -> {
 					Object newInstance = mainRowTransformer.newBeanInstance();
-					mainRowTransformer.withAliases(aliasProvider).applyRowToBean(row, newInstance);
+					mainRowTransformer.applyRowToBean(row, newInstance);
 					if (strategyJoins == rootStrategyJoins) {
 						result.add((T) newInstance);
 					}
@@ -101,13 +98,14 @@ public class StrategyJoinsRowTransformer<T> {
 				
 				// processing the direct relations
 				for (Join join : strategyJoins.getJoins()) {
-					StrategyJoins rightStrategy = join.getStrategy();
-					Object rightPrimaryKeyValue = row.get(getAlias(rightStrategy.getTable().getPrimaryKey()));
+					StrategyJoins subJoins = join.getStrategy();
+					ClassMappingStrategy rightStrategy = subJoins.getStrategy();
+					ToBeanRowTransformer rowTransformer = beanTransformerCache.computeIfAbsent(rightStrategy, s -> s.getRowTransformer().withAliases(aliasProvider));
+					Object rightIdentifier = rightStrategy.getIdMappingStrategy().getIdentifierAssembler().assemble(row, columnedRow);
 					
 					// primary key null means no entity => nothing to do
-					if (rightPrimaryKeyValue != null) {
-						ToBeanRowTransformer rowTransformer = beanTransformerCache.computeIfAbsent(rightStrategy.getStrategy(), s -> s.getRowTransformer().withAliases(aliasProvider));
-						Object rightInstance = entityCacheWrapper.computeIfAbsent(rightStrategy.getStrategy().getClassToPersist(), rightPrimaryKeyValue,
+					if (rightIdentifier != null) {
+						Object rightInstance = entityCacheWrapper.computeIfAbsent(rightStrategy.getClassToPersist(), rightIdentifier,
 								() -> rowTransformer.transform(row));
 						
 						// TODO: implémenter l'héritage d'entité
@@ -115,8 +113,8 @@ public class StrategyJoinsRowTransformer<T> {
 						join.getBeanRelationFixer().apply(rowInstance, rightInstance);
 						
 						// Adds the right strategy for further processing if it has some more joins so they'll also be taken into account
-						if (!rightStrategy.getJoins().isEmpty()) {
-							stack.add(rightStrategy);
+						if (!subJoins.getJoins().isEmpty()) {
+							stack.add(subJoins);
 						}
 					}
 				}
@@ -147,12 +145,7 @@ public class StrategyJoinsRowTransformer<T> {
 		 */
 		public <C> C computeIfAbsent(Class<C> clazz, Object identifier, Supplier<C> factory) {
 			Map<Object, Object> classInstanceCacheByIdentifier = entityCache.computeIfAbsent(clazz, k -> new HashMap<>());
-			C rowInstance = (C) classInstanceCacheByIdentifier.get(identifier);
-			if (rowInstance == null) {
-				rowInstance = factory.get();
-				classInstanceCacheByIdentifier.put(identifier, rowInstance);
-			}
-			return rowInstance;
+			return (C) classInstanceCacheByIdentifier.computeIfAbsent(identifier, k -> factory.get());
 		}
 	}
 }

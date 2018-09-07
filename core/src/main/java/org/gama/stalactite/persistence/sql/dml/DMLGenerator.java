@@ -1,20 +1,21 @@
 package org.gama.stalactite.persistence.sql.dml;
 
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.TreeSet;
 
-import org.gama.lang.StringAppender;
 import org.gama.lang.Strings;
 import org.gama.lang.collection.ISorter;
 import org.gama.lang.collection.Iterables;
 import org.gama.lang.trace.ModifiableInt;
 import org.gama.sql.binder.ParameterBinder;
+import org.gama.sql.binder.ParameterBinderIndex;
 import org.gama.stalactite.persistence.engine.DMLExecutor;
 import org.gama.stalactite.persistence.mapping.IMappingStrategy.UpwhereColumn;
-import org.gama.stalactite.persistence.sql.dml.binder.ColumnBinderRegistry;
+import org.gama.stalactite.persistence.sql.ddl.DDLAppender;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.query.builder.DMLNameProvider;
@@ -33,21 +34,21 @@ public class DMLGenerator {
 	
 	private static final String EQUAL_SQL_PARAMETER_MARK_AND = " = " + SQL_PARAMETER_MARK + " and ";
 	
-	private final ColumnBinderRegistry columnBinderRegistry;
+	private final ParameterBinderIndex<Column, ParameterBinder> columnBinderRegistry;
 	
 	private final ISorter<Iterable<? extends Column>> columnSorter;
 	
 	private final DMLNameProvider dmlNameProvider;
 	
-	public DMLGenerator(ColumnBinderRegistry columnBinderRegistry) {
+	public DMLGenerator(ParameterBinderIndex<Column, ParameterBinder> columnBinderRegistry) {
 		this(columnBinderRegistry, NoopSorter.INSTANCE);
 	}
 	
-	public DMLGenerator(ColumnBinderRegistry columnBinderRegistry, ISorter<Iterable<? extends Column>> columnSorter) {
+	public DMLGenerator(ParameterBinderIndex<Column, ParameterBinder> columnBinderRegistry, ISorter<Iterable<? extends Column>> columnSorter) {
 		this(columnBinderRegistry, columnSorter, new DMLNameProvider(Collections.emptyMap()));
 	}
 	
-	public DMLGenerator(ColumnBinderRegistry columnBinderRegistry, ISorter<Iterable<? extends Column>> columnSorter, DMLNameProvider dmlNameProvider) {
+	public DMLGenerator(ParameterBinderIndex<Column, ParameterBinder> columnBinderRegistry, ISorter<Iterable<? extends Column>> columnSorter, DMLNameProvider dmlNameProvider) {
 		this.columnBinderRegistry = columnBinderRegistry;
 		this.columnSorter = columnSorter;
 		this.dmlNameProvider = dmlNameProvider;
@@ -64,8 +65,8 @@ public class DMLGenerator {
 	public <T extends Table> ColumnParamedSQL<T> buildInsert(Iterable<? extends Column<T, Object>> columns) {
 		columns = (Iterable<? extends Column<T, Object>>) sort(columns);
 		Table table = Iterables.first(columns).getTable();
-		StringAppender sqlInsert = new StringAppender("insert into ", dmlNameProvider.getSimpleName(table), "(");
-		dmlNameProvider.catWithComma(columns, sqlInsert);
+		DDLAppender sqlInsert = new DDLAppender(dmlNameProvider, "insert into ", table, "(");
+		sqlInsert.ccat(columns, ", ");
 		sqlInsert.cat(") values (");
 		
 		Map<Column<T, Object>, int[]> columnToIndex = new HashMap<>();
@@ -93,19 +94,19 @@ public class DMLGenerator {
 	public <T extends Table> PreparedUpdate<T> buildUpdate(Iterable<? extends Column<T, Object>> columns, Iterable<? extends Column<T, Object>> where) {
 		columns = (Iterable<? extends Column<T, Object>>) sort(columns);
 		Table table = Iterables.first(columns).getTable();
-		StringAppender sqlUpdate = new StringAppender("update ", dmlNameProvider.getSimpleName(table), " set ");
+		DDLAppender sqlUpdate = new DDLAppender(dmlNameProvider, "update ", table, " set ");
 		Map<UpwhereColumn<T>, Integer> upsertIndexes = new HashMap<>(10);
 		Map<UpwhereColumn<T>, ParameterBinder> parameterBinders = new HashMap<>();
 		int positionCounter = 1;
 		for (Column<T, Object> column : columns) {
-			sqlUpdate.cat(dmlNameProvider.getSimpleName(column), " = " + SQL_PARAMETER_MARK_1);
+			sqlUpdate.cat(column, " = " + SQL_PARAMETER_MARK_1);
 			UpwhereColumn<T> upwhereColumn = new UpwhereColumn<>(column, true);
 			upsertIndexes.put(upwhereColumn, positionCounter++);
 			parameterBinders.put(upwhereColumn, columnBinderRegistry.getBinder(column));
 		}
 		sqlUpdate.cutTail(2).cat(" where ");
 		for (Column<T, Object> column : where) {
-			sqlUpdate.cat(dmlNameProvider.getSimpleName(column), EQUAL_SQL_PARAMETER_MARK_AND);
+			sqlUpdate.cat(column, EQUAL_SQL_PARAMETER_MARK_AND);
 			UpwhereColumn<T> upwhereColumn = new UpwhereColumn<>(column, false);
 			upsertIndexes.put(upwhereColumn, positionCounter++);
 			parameterBinders.put(upwhereColumn, columnBinderRegistry.getBinder(column));
@@ -123,26 +124,11 @@ public class DMLGenerator {
 	 * @return a (kind of) prepared statement parameterized by {@link Column}
 	 */
 	public <T extends Table> ColumnParamedSQL<T> buildDelete(T table, Iterable<? extends Column<T, Object>> where) {
-		StringAppender sqlDelete = new StringAppender("delete from ", dmlNameProvider.getSimpleName(table));
+		DDLAppender sqlDelete = new DDLAppender(dmlNameProvider, "delete from ", table);
 		sqlDelete.cat(" where ");
-		Map<Column<T, Object>, int[]> columnToIndex = new HashMap<>();
-		Map<Column<T, Object>, ParameterBinder> parameterBinders = new HashMap<>();
-		appendWhere(sqlDelete, where, columnToIndex, parameterBinders);
+		ParameterizedWhere<T> parameterizedWhere = appendWhere(sqlDelete, where);
 		sqlDelete.cutTail(5);
-		return new ColumnParamedSQL<>(sqlDelete.toString(), columnToIndex, parameterBinders);
-	}
-	
-	private <T extends Table> void appendWhere(StringAppender sql,
-												  Iterable<? extends Column<T, Object>> where,
-												  Map<Column<T, Object>, int[]> columnToIndex,
-												  Map<Column<T, Object>, ParameterBinder> parameterBinders) {
-		ModifiableInt positionCounter = new ModifiableInt(1);
-		Iterables.stream(where).forEach(column -> {
-			sql.cat(dmlNameProvider.getSimpleName(column), EQUAL_SQL_PARAMETER_MARK_AND);
-			columnToIndex.put(column, new int[] { positionCounter.getValue() });
-			positionCounter.increment();
-			parameterBinders.put(column, columnBinderRegistry.getBinder(column));
-		});
+		return new ColumnParamedSQL<>(sqlDelete.toString(), parameterizedWhere.columnToIndex, parameterizedWhere.parameterBinders);
 	}
 	
 	/**
@@ -150,25 +136,17 @@ public class DMLGenerator {
 	 * Signature is made so that only columns of the same table can be used.
 	 *
 	 * @param table deletion target table
-	 * @param keyColumn key column to use for where clause
+	 * @param keyColumns key columns to use for where clause
 	 * @param whereValuesCount number of parameter in where clause (ie number of key values in where)
 	 * @param <T> table type
 	 * @return a (kind of) prepared statement parameterized by {@link Column}
 	 */
 	@SuppressWarnings("squid:ForLoopCounterChangedCheck")
-	public <T extends Table> ColumnParamedSQL<T> buildDeleteByKey(T table, Column<T, Object> keyColumn, int whereValuesCount) {
-		StringAppender sqlDelete = new StringAppender("delete from ", dmlNameProvider.getSimpleName(table));
-		sqlDelete.cat(" where ", dmlNameProvider.getSimpleName(keyColumn), " in (");
-		Strings.repeat(sqlDelete.getAppender(), whereValuesCount, SQL_PARAMETER_MARK_1, SQL_PARAMETER_MARK_100, SQL_PARAMETER_MARK_10);
-		sqlDelete.cutTail(2).cat(")");
-		Map<Column<T, Object>, int[]> columnToIndex = new HashMap<>();
-		Map<Column<T, Object>, ParameterBinder> parameterBinders = new HashMap<>();
-		int[] indexes = new int[whereValuesCount];
-		for (int i = 0; i < whereValuesCount;) {
-			indexes[i] = ++i;
-		}
-		columnToIndex.put(keyColumn, indexes);
-		parameterBinders.put(keyColumn, columnBinderRegistry.getBinder(keyColumn));
+	public <T extends Table<T>> ColumnParamedSQL<T> buildDeleteByKey(T table, Collection<Column<T, Object>> keyColumns, int whereValuesCount) {
+		DDLAppender sqlDelete = new DDLAppender(dmlNameProvider, "delete from ", table, " where ");
+		ParameterizedWhere parameterizedWhere = appendTupledWhere(sqlDelete, keyColumns, whereValuesCount);
+		Map<Column<T, Object>, int[]> columnToIndex = parameterizedWhere.getColumnToIndex();
+		Map<Column<T, Object>, ParameterBinder> parameterBinders = parameterizedWhere.getParameterBinders();
 		return new ColumnParamedSQL<>(sqlDelete.toString(), columnToIndex, parameterBinders);
 	}
 	
@@ -181,16 +159,14 @@ public class DMLGenerator {
 	 * @param <T> table type
 	 * @return a (kind of) prepared statement parameterized by {@link Column}
 	 */
-	public <T extends Table> ColumnParamedSQL<T> buildSelect(T table, Iterable<? extends Column<T, Object>> columns, Iterable<? extends Column<T, Object>> where) {
+	public <T extends Table<T>> ColumnParamedSQL<T> buildSelect(T table, Iterable<? extends Column<T, ?>> columns, Iterable<? extends Column<T, Object>> where) {
 		columns = (Iterable<? extends Column<T, Object>>) sort(columns);
-		StringAppender sqlSelect = new StringAppender("select ");
-		dmlNameProvider.catWithComma(columns, sqlSelect);
-		sqlSelect.cat(" from ", dmlNameProvider.getSimpleName(table), " where ");
-		Map<Column<T, Object>, int[]> columnToIndex = new HashMap<>();
-		Map<Column<T, Object>, ParameterBinder> parameterBinders = new HashMap<>();
-		appendWhere(sqlSelect, where, columnToIndex, parameterBinders);
+		DDLAppender sqlSelect = new DDLAppender(dmlNameProvider, "select ");
+		sqlSelect.ccat(columns, ", ");
+		sqlSelect.cat(" from ", table, " where ");
+		ParameterizedWhere<T> parameterizedWhere = appendWhere(sqlSelect, where);
 		sqlSelect.cutTail(5);
-		return new ColumnParamedSQL<>(sqlSelect.toString(), columnToIndex, parameterBinders);
+		return new ColumnParamedSQL<>(sqlSelect.toString(), parameterizedWhere.columnToIndex, parameterizedWhere.parameterBinders);
 	}
 	
 	/**
@@ -198,31 +174,23 @@ public class DMLGenerator {
 	 * Signature is made so that only columns of the same table can be used.
 	 *
 	 * @param table selection target table
-	 * @param keyColumn key column to use for where clause
+	 * @param keyColumns key columns to use for where clause
 	 * @param whereValuesCount number of parameter in where clause (ie number of key values in where)
 	 * @param <T> table type
 	 * @return a (kind of) prepared statement parameterized by {@link Column}
 	 */
-	public <T extends Table> ColumnParamedSelect<T> buildSelectByKey(T table, Iterable<? extends Column<T, Object>> columns, Column<T, Object> keyColumn, int whereValuesCount) {
+	public <T extends Table<T>> ColumnParamedSelect<T> buildSelectByKey(T table, Iterable<? extends Column<T, Object>> columns, Collection<Column<T, Object>> keyColumns, int whereValuesCount) {
 		columns = (Iterable<? extends Column<T, Object>>) sort(columns);
-		StringAppender sqlSelect = new StringAppender("select ");
+		DDLAppender sqlSelect = new DDLAppender(dmlNameProvider, "select ");
 		Map<String, ParameterBinder> selectParameterBinders = new HashMap<>();
 		for (Column column : columns) {
-			String selectedColumnName = dmlNameProvider.getSimpleName(column);
-			sqlSelect.cat(selectedColumnName, ", ");
-			selectParameterBinders.put(selectedColumnName, columnBinderRegistry.getBinder(column));
+			sqlSelect.cat(column, ", ");
+			selectParameterBinders.put(dmlNameProvider.getSimpleName(column), columnBinderRegistry.getBinder(column));
 		}
-		sqlSelect.cutTail(2).cat(" from ", dmlNameProvider.getSimpleName(table), " where ", dmlNameProvider.getSimpleName(keyColumn), " in (");
-		Strings.repeat(sqlSelect.getAppender(), whereValuesCount, SQL_PARAMETER_MARK_1, SQL_PARAMETER_MARK_100, SQL_PARAMETER_MARK_10);
-		sqlSelect.cutTail(2).cat(")");
-		Map<Column<T, Object>, int[]> columnToIndex = new HashMap<>();
-		Map<Column<T, Object>, ParameterBinder> parameterBinders = new HashMap<>();
-		int[] indexes = new int[whereValuesCount];
-		for (int i = 0; i < whereValuesCount; i++) {
-			indexes[i] = i + 1;
-		}
-		columnToIndex.put(keyColumn, indexes);
-		parameterBinders.put(keyColumn, columnBinderRegistry.getBinder(keyColumn));
+		sqlSelect.cutTail(2).cat(" from ", table, " where ");
+		ParameterizedWhere parameterizedWhere = appendTupledWhere(sqlSelect, keyColumns, whereValuesCount);
+		Map<Column<T, Object>, int[]> columnToIndex = parameterizedWhere.getColumnToIndex();
+		Map<Column<T, Object>, ParameterBinder> parameterBinders = parameterizedWhere.getParameterBinders();
 		return new ColumnParamedSelect<>(sqlSelect.toString(), columnToIndex, parameterBinders, selectParameterBinders);
 	}
 	
@@ -258,6 +226,79 @@ public class DMLGenerator {
 			}
 			return result;
 		}
+	}
+	
+	/**
+	 * Appends a where condition (without "where" keyword) to a given sql order.
+	 * Conditions are appended with the form of ands such as {@code a = ? and b = ? and ...}
+	 *
+	 * @param sql the sql order on which to append the clause
+	 * @param conditionColumns columns of the where
+	 * @param <T> type of the table
+	 * @return an object that contains indexes and parameter binders of the where
+	 */
+	private <T extends Table> ParameterizedWhere<T> appendWhere(DDLAppender sql, Iterable<? extends Column<T, Object>> conditionColumns) {
+		ParameterizedWhere<T> result = new ParameterizedWhere<>();
+		ModifiableInt positionCounter = new ModifiableInt(1);
+		Iterables.stream(conditionColumns).forEach(column -> {
+			sql.cat(column, EQUAL_SQL_PARAMETER_MARK_AND);
+			result.columnToIndex.put(column, new int[] { positionCounter.getValue() });
+			positionCounter.increment();
+			result.parameterBinders.put(column, columnBinderRegistry.getBinder(column));
+		});
+		return result;
+	}
+	
+	/**
+	 * Appends a where condition (without "where" keyword) to a given sql order.
+	 * Conditions are appended with the form of tuples such as {@code (a, b) in ((?, ?), (?, ?), ...)}
+	 * 
+	 * @param sql the sql order on which to append the clause
+	 * @param conditionColumns columns of the where
+	 * @param whereValuesCount expected number of tuples
+	 * @param <T> type of the table
+	 * @return an object that contains indexes and parameter binders of the where
+	 */
+	public <T extends Table> ParameterizedWhere<T> appendTupledWhere(DDLAppender sql, Collection<Column<T, Object>> conditionColumns, int whereValuesCount) {
+		ParameterizedWhere<T> result = new ParameterizedWhere<>();
+		boolean isComposedKey = conditionColumns.size() > 1;
+		sql.catIf(isComposedKey, "(")
+				.ccat(conditionColumns, ", ")
+				.catIf(isComposedKey, ")");
+		sql.cat(" in (");
+		StringBuilder repeat = Strings.repeat(conditionColumns.size(), SQL_PARAMETER_MARK_1, SQL_PARAMETER_MARK_100, SQL_PARAMETER_MARK_10);
+		repeat.setLength(repeat.length() - 2);
+		String keyMarks = repeat.toString();
+		for (int i = 1; i <= whereValuesCount; i++) {
+			sql.catIf(isComposedKey, "(").cat(keyMarks);
+			sql.catIf(isComposedKey, ")").cat(", ");
+			// because statement indexes start at 0, we must decrement index of 1
+			final int startKeyMarkIndex = i-1;
+			ModifiableInt pkIndex = new ModifiableInt();
+			conditionColumns.forEach(keyColumn -> {
+				int pkColumnIndex = startKeyMarkIndex * conditionColumns.size() + pkIndex.increment();
+				result.columnToIndex.computeIfAbsent(keyColumn, k -> new int[whereValuesCount])[startKeyMarkIndex] = pkColumnIndex;
+			});
+		}
+		conditionColumns.forEach(keyColumn -> result.parameterBinders.put(keyColumn, columnBinderRegistry.getBinder(keyColumn)));
+		sql.cutTail(2).cat(")");
+		return result;
+	}
+	
+	public class ParameterizedWhere<T extends Table> {
+		
+		private Map<Column<T, Object>, int[]> columnToIndex = new HashMap<>();
+		
+		private Map<Column<T, Object>, ParameterBinder> parameterBinders = new HashMap<>();
+		
+		public Map<Column<T, Object>, int[]> getColumnToIndex() {
+			return columnToIndex;
+		}
+		
+		public Map<Column<T, Object>, ParameterBinder> getParameterBinders() {
+			return parameterBinders;
+		}
+		
 	}
 	
 	private static class ColumnNameComparator implements Comparator<Column> {

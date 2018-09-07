@@ -2,13 +2,13 @@ package org.gama.stalactite.persistence.engine.cascade;
 
 import java.sql.ResultSet;
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
 import org.gama.lang.StringAppender;
-import org.gama.lang.Strings;
+import org.gama.lang.bean.Objects;
 import org.gama.lang.collection.Collections;
 import org.gama.lang.collection.Iterables;
 import org.gama.lang.exception.Exceptions;
@@ -20,17 +20,21 @@ import org.gama.sql.dml.ReadOperation;
 import org.gama.sql.result.Row;
 import org.gama.sql.result.RowIterator;
 import org.gama.stalactite.persistence.engine.BeanRelationFixer;
+import org.gama.stalactite.persistence.engine.cascade.JoinedStrategiesSelect.StrategyJoins;
+import org.gama.stalactite.persistence.id.assembly.IdentifierAssembler;
 import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
 import org.gama.stalactite.persistence.sql.Dialect;
+import org.gama.stalactite.persistence.sql.ddl.DDLAppender;
 import org.gama.stalactite.persistence.sql.dml.ColumnParamedSelect;
+import org.gama.stalactite.persistence.sql.dml.DMLGenerator;
+import org.gama.stalactite.persistence.sql.dml.DMLGenerator.NoopSorter;
+import org.gama.stalactite.persistence.sql.dml.DMLGenerator.ParameterizedWhere;
 import org.gama.stalactite.persistence.structure.Column;
+import org.gama.stalactite.persistence.structure.PrimaryKey;
 import org.gama.stalactite.persistence.structure.Table;
+import org.gama.stalactite.query.builder.DMLNameProvider;
 import org.gama.stalactite.query.builder.QueryBuilder;
 import org.gama.stalactite.query.model.Query;
-
-import static org.gama.sql.dml.ExpandableSQL.ExpandableParameter.SQL_PARAMETER_MARK_1;
-import static org.gama.sql.dml.ExpandableSQL.ExpandableParameter.SQL_PARAMETER_MARK_10;
-import static org.gama.sql.dml.ExpandableSQL.ExpandableParameter.SQL_PARAMETER_MARK_100;
 
 /**
  * Class aimed at executing a SQL select statement from multiple joined {@link ClassMappingStrategy}.
@@ -39,29 +43,28 @@ import static org.gama.sql.dml.ExpandableSQL.ExpandableParameter.SQL_PARAMETER_M
  * 
  * @author Guillaume Mary
  */
-public class JoinedStrategiesSelectExecutor<T, I> {
+public class JoinedStrategiesSelectExecutor<C, I> {
 	
 	/** The surrogate for joining the strategies, will help to build the SQL */
-	private final JoinedStrategiesSelect<T, I, ? extends Table> joinedStrategiesSelect;
+	private final JoinedStrategiesSelect<C, I, ? extends Table> joinedStrategiesSelect;
 	private final ParameterBinderIndex<Column, ParameterBinder> parameterBinderProvider;
-	private final Map<Column, int[]> inOperatorValueIndexes = new HashMap<>();
 	private final int blockSize;
 	private final ConnectionProvider connectionProvider;
 	
-	private final Column keyColumn;
-	private List<T> result;
+	private final PrimaryKey<Table> primaryKey;
+	private final IdentifierAssembler<C, I> identifierAssembler;
 	
-	JoinedStrategiesSelectExecutor(ClassMappingStrategy<T, I, ? extends Table> classMappingStrategy, Dialect dialect, ConnectionProvider connectionProvider) {
+	JoinedStrategiesSelectExecutor(ClassMappingStrategy<C, I, ? extends Table> classMappingStrategy, Dialect dialect, ConnectionProvider connectionProvider) {
 		this.parameterBinderProvider = dialect.getColumnBinderRegistry();
 		this.joinedStrategiesSelect = new JoinedStrategiesSelect<>(classMappingStrategy, this.parameterBinderProvider);
 		this.connectionProvider = connectionProvider;
-		// post-initialization
 		this.blockSize = dialect.getInOperatorMaxSize();
-		this.keyColumn = classMappingStrategy.getTargetTable().getPrimaryKey();
+		this.primaryKey = classMappingStrategy.getTargetTable().getPrimaryKey();
+		this.identifierAssembler = classMappingStrategy.getIdMappingStrategy().getIdentifierAssembler();
 	}
 	
-	public JoinedStrategiesSelect<T, I, ? extends Table> getJoinedStrategiesSelect() {
-		return joinedStrategiesSelect;
+	public <T extends Table<T>> JoinedStrategiesSelect<C, I, T> getJoinedStrategiesSelect() {
+		return (JoinedStrategiesSelect<C, I, T>) joinedStrategiesSelect;
 	}
 	
 	/**
@@ -116,16 +119,18 @@ public class JoinedStrategiesSelectExecutor<T, I> {
 		return joinedStrategiesSelect.add(leftStrategyName, strategy, leftJoinColumn, rightJoinColumn, isOuterJoin, beanRelationFixer);
 	}
 	
-	public List<T> select(Iterable<I> ids) {
+	public List<C> select(Collection<I> ids) {
 		// cutting ids into pieces, adjusting expected result size
 		List<List<I>> parcels = Collections.parcel(ids, blockSize);
-		result = new ArrayList<>(parcels.size() * blockSize);
 		
 		Query query = joinedStrategiesSelect.buildSelectQuery();
 		
 		// Creation of the where clause: we use a dynamic "in" operator clause to avoid multiple QueryBuilder instanciation
-		DynamicInClause condition = new DynamicInClause();
-		query.where(keyColumn, condition);
+		// NB: in the condition, table and columns are from the main strategy, so there's no need to use aliases
+		DMLNameProvider dmlNameProvider = new WhereClauseDMLNameProvider();
+		DMLGenerator dmlGenerator = new DMLGenerator(parameterBinderProvider, new NoopSorter(), dmlNameProvider);
+		DDLAppender whereClause = new JoinDMLAppender(dmlNameProvider);
+		query.getWhere().and(whereClause);
 		
 		// We ensure that the same Connection is used for all operations
 		ConnectionProvider localConnectionProvider = new SimpleConnectionProvider(connectionProvider.getCurrentConnection());
@@ -136,94 +141,94 @@ public class JoinedStrategiesSelectExecutor<T, I> {
 			parcels = Collections.cutTail(parcels);
 		}
 		
+		List<C> result = new ArrayList<>(parcels.size() * blockSize);
 		QueryBuilder queryBuilder = new QueryBuilder(query);
 		if (!parcels.isEmpty()) {
 			// change parameter mark count to adapt "in" operator values
-			condition.setParamMarkCount(blockSize);
-			// adding "in" identifiers to where clause
-			bindInClause(blockSize);
-			execute(localConnectionProvider, queryBuilder.toSQL(), parcels);
+			ParameterizedWhere tableParameterizedWhere = dmlGenerator.appendTupledWhere(whereClause, primaryKey.getColumns(), blockSize);
+			result.addAll(execute(localConnectionProvider, queryBuilder.toSQL(), parcels, tableParameterizedWhere.getColumnToIndex()));
 		}
 		if (!lastBlock.isEmpty()) {
-			// change parameter mark count to adapt "in" operator values
-			condition.setParamMarkCount(lastBlockSize);
-			bindInClause(lastBlockSize);
-			execute(localConnectionProvider, queryBuilder.toSQL(), java.util.Collections.singleton(lastBlock));
+			// change parameter mark count to adapt "in" operator values, we must clear previous where clause
+			whereClause.getAppender().setLength(0);
+			ParameterizedWhere tableParameterizedWhere = dmlGenerator.appendTupledWhere(whereClause, primaryKey.getColumns(), lastBlock.size());
+			result.addAll(execute(localConnectionProvider, queryBuilder.toSQL(), java.util.Collections.singleton(lastBlock), tableParameterizedWhere.getColumnToIndex()));
 		}
 		return result;
 	}
 	
-	@SuppressWarnings("squid:ForLoopCounterChangedCheck")
-	private void bindInClause(int inSize) {
-		int[] indexes = new int[inSize];
-		for (int i = 0; i < inSize;) {
-			indexes[i] = ++i;
-		}
-		inOperatorValueIndexes.put(keyColumn, indexes);
-	}
-	
-	private void execute(ConnectionProvider connectionProvider,
-						 String sql, Iterable<? extends List<I>> idsParcels) {
+	List<C> execute(ConnectionProvider connectionProvider, String sql, Collection<? extends List<I>> idsParcels, Map<Column, int[]> inOperatorValueIndexes) {
+		List<C> result = new ArrayList<>(idsParcels.size() * blockSize);
 		ColumnParamedSelect preparedSelect = new ColumnParamedSelect(sql, inOperatorValueIndexes, parameterBinderProvider, joinedStrategiesSelect.getSelectParameterBinders());
-		try (ReadOperation<Column> columnReadOperation = new ReadOperation<>(preparedSelect, connectionProvider)) {
+		try (ReadOperation<Column<Table, Object>> columnReadOperation = new ReadOperation<>(preparedSelect, connectionProvider)) {
 			for (List<I> parcel : idsParcels) {
-				execute(columnReadOperation, parcel);
+				result.addAll(execute(columnReadOperation, parcel));
 			}
 		}
+		return result;
 	}
 	
-	private void execute(ReadOperation<Column> operation, List<I> ids) {
-		try (ReadOperation<Column> closeableOperation = operation) {
-			// we must pass a single value when expected, else ExpandableStatement may be confused when applying them
-			operation.setValue(keyColumn, ids.size() == 1 ? ids.get(0) : ids);
+	List<C> execute(ReadOperation<Column<Table, Object>> operation, List<I> ids) {
+		Map<Column<Table, Object>, Object> primaryKeyValues = identifierAssembler.getColumnValues(ids);
+		try (ReadOperation<Column<Table, Object>> closeableOperation = operation) {
+			closeableOperation.setValues(primaryKeyValues);
 			ResultSet resultSet = closeableOperation.execute();
 			// NB: we give the same ParametersBinders of those given at ColumnParamedSelect since the row iterator is expected to read column from it
 			RowIterator rowIterator = new RowIterator(resultSet, ((ColumnParamedSelect) closeableOperation.getSqlStatement()).getSelectParameterBinders());
-			result.addAll(transform(rowIterator));
+			return transform(rowIterator);
 		} catch (Exception e) {
 			throw Exceptions.asRuntimeException(e);
 		}
 	}
 	
-	List<T> transform(Iterator<Row> rowIterator) {
-		StrategyJoinsRowTransformer<T> strategyJoinsRowTransformer = new StrategyJoinsRowTransformer<>(
+	List<C> transform(Iterator<Row> rowIterator) {
+		StrategyJoinsRowTransformer<C> strategyJoinsRowTransformer = new StrategyJoinsRowTransformer<>(
 				joinedStrategiesSelect.getStrategyJoins(JoinedStrategiesSelect.FIRST_STRATEGY_NAME));
 		
 		strategyJoinsRowTransformer.setAliases(this.joinedStrategiesSelect.getAliases());
 		return strategyJoinsRowTransformer.transform(() -> rowIterator);
 	}
 	
-	private static class DynamicInClause implements CharSequence {
-		
-		private String dynamicIn;
-		
-		public DynamicInClause setParamMarkCount(int markCount) {
-			StringAppender result = new StringAppender(10 + markCount * SQL_PARAMETER_MARK_1.length());
-			Strings.repeat(result.getAppender(), markCount, SQL_PARAMETER_MARK_1, SQL_PARAMETER_MARK_100, SQL_PARAMETER_MARK_10);
-			result.cutTail(2);
-			result.wrap("in (", ")");
-			dynamicIn = result.toString();
-			return this;
+	private class WhereClauseDMLNameProvider extends DMLNameProvider {
+		public WhereClauseDMLNameProvider() {
+			// we don't care about the aliases because we redefine our way of getting them, see #getAlias
+			super(java.util.Collections.emptyMap());
 		}
 		
+		/** Overriden to get alias from the root {@link StrategyJoins} table alias (if any) */
 		@Override
-		public int length() {
-			return dynamicIn.length();
-		}
-		
-		@Override
-		public char charAt(int index) {
-			return dynamicIn.charAt(index);
-		}
-		
-		@Override
-		public CharSequence subSequence(int start, int end) {
-			return dynamicIn.subSequence(start, end);
-		}
-		
-		@Override
-		public String toString() {
-			return dynamicIn;
+		public String getAlias(Table table) {
+			StrategyJoins rootStrategyJoins = JoinedStrategiesSelectExecutor.this.joinedStrategiesSelect.getStrategyJoins(JoinedStrategiesSelect.FIRST_STRATEGY_NAME);
+			if (table == rootStrategyJoins.getTable()) {
+				return Objects.preventNull(rootStrategyJoins.getTableAlias(), table.getName());
+			} else {
+				// anti unexpected usage
+				throw new IllegalArgumentException("Table " + table.getName() + " is not expected to be used in the where clause");
+			}
 		}
 	}
+	
+	/**
+	 * A dedicated {@link DDLAppender} for joins : it prefixes columns with their table alias (or name)
+	 */
+	private static class JoinDMLAppender extends DDLAppender {
+		
+		private final DMLNameProvider dmlNameProvider;
+		
+		public JoinDMLAppender(DMLNameProvider dmlNameProvider) {
+			super(dmlNameProvider);
+			this.dmlNameProvider = dmlNameProvider;
+		}
+		
+		/** Overriden to change the way {@link Column}s are appended : their table prefix are added */
+		@Override
+		public StringAppender cat(Object o) {
+			if (o instanceof Column) {
+				return super.cat(dmlNameProvider.getName((Column) o));
+			} else {
+				return super.cat(o);
+			}
+		}
+	}
+	
 }

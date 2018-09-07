@@ -66,12 +66,11 @@ public class InsertExecutor<C, I, T extends Table> extends WriteExecutor<C, I, T
 		WriteOperation<Column<T, ?>> writeOperation = newWriteOperation(insertStatement, new CurrentConnectionProvider());
 		JDBCBatchingIterator<C> jdbcBatchingIterator = identifierInsertionManager.buildJDBCBatchingIterator(entities, writeOperation, getBatchSize());
 		
-		while (jdbcBatchingIterator.hasNext()) {
-			C c = jdbcBatchingIterator.next();
+		jdbcBatchingIterator.forEachRemaining(c -> {
 			Map<Column<T, Object>, Object> insertValues = getMappingStrategy().getInsertValues(c);
 			optimisticLockManager.manageLock(c, insertValues);
 			writeOperation.addBatch((Map) insertValues);
-		}
+		});
 		return jdbcBatchingIterator.getUpdatedRowCount();
 	}
 	

@@ -34,7 +34,7 @@ class ToBeanRowTransformerTest {
 	}
 	
 	@Test
-	public void testTransform_withSliding() {
+	public void testTransform_withAlias() {
 		Table table = new Table("totoTable");
 		Column columnA = table.addColumn("a", int.class);
 		Column columnB = table.addColumn("b", String.class);
@@ -75,47 +75,6 @@ class ToBeanRowTransformerTest {
 		assertEquals(1, transform.prop1);
 		assertEquals("hello", transform.prop2);
 		
-	}
-	
-	@Test
-	public void testGetValueTransform_defaultCase() {
-		Table table = new Table("totoTable");
-		Column columnA = table.addColumn("a", int.class);
-		Column columnB = table.addColumn("b", String.class);
-		ToBeanRowTransformer<Toto> testInstance = new ToBeanRowTransformer<>(Toto.class, Maps
-				.asMap(columnA, (IMutator) mutator(Toto::setProp1))
-				.add(columnB, mutator(Toto::setProp2)));
-		Row row = new Row();
-		row.add(columnA.getName(), 1);
-		row.add(columnB.getName(), "hello");
-		
-		assertEquals(1, testInstance.getValue(row, columnA));
-		assertEquals("hello", testInstance.getValue(row, columnB));
-	}
-	
-	@Test
-	public void testGetValueTransform_withSliding() {
-		Table table = new Table("totoTable");
-		Column columnA = table.addColumn("a", int.class);
-		Column columnB = table.addColumn("b", String.class);
-		ToBeanRowTransformer<Toto> testInstance = new ToBeanRowTransformer<>(Toto.class, Maps
-				.asMap(columnA, (IMutator) mutator(Toto::setProp1))
-				.add(columnB, mutator(Toto::setProp2)));
-		testInstance = testInstance.withAliases(column -> {
-			if (column == columnA) {
-				return "a_slided";
-			}
-			if (column == columnB) {
-				return "b_slided";
-			}
-			return null;
-		});
-		Row row = new Row();
-		row.add("a_slided", 1);
-		row.add("b_slided", "hello");
-		
-		assertEquals(1, testInstance.getValue(row, columnA));
-		assertEquals("hello", testInstance.getValue(row, columnB));
 	}
 	
 	private static class Toto {

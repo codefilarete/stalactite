@@ -1,5 +1,6 @@
 package org.gama.stalactite.persistence.sql.ddl;
 
+import javax.annotation.Nonnull;
 import java.util.Collections;
 import java.util.Set;
 
@@ -7,6 +8,7 @@ import org.gama.lang.StringAppender;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.ForeignKey;
 import org.gama.stalactite.persistence.structure.Index;
+import org.gama.stalactite.persistence.structure.PrimaryKey;
 import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.query.builder.DMLNameProvider;
 
@@ -29,25 +31,27 @@ public class DDLTableGenerator {
 	}
 	
 	public String generateCreateTable(Table table) {
-		StringAppender sqlCreateTable = new StringAppender("create table ", dmlNameProvider.getSimpleName(table), "(");
+		DDLAppender sqlCreateTable = new DDLAppender(dmlNameProvider, "create table ", table, "(");
 		for (Column column : (Set<Column>) table.getColumns()) {
 			generateCreateColumn(column, sqlCreateTable);
 			sqlCreateTable.cat(", ");
 		}
 		sqlCreateTable.cutTail(2);
 		if (table.getPrimaryKey() != null) {
-			generateCreatePrimaryKey(table, sqlCreateTable);
+			generateCreatePrimaryKey(table.getPrimaryKey(), sqlCreateTable);
 		}
 		sqlCreateTable.cat(")");
 		return sqlCreateTable.toString();
 	}
 	
-	protected void generateCreatePrimaryKey(Table table, StringAppender sqlCreateTable) {
-		sqlCreateTable.cat(", primary key (", dmlNameProvider.getSimpleName(table.getPrimaryKey()), ")");
+	protected void generateCreatePrimaryKey(@Nonnull PrimaryKey primaryKey, DDLAppender sqlCreateTable) {
+		sqlCreateTable.cat(", primary key (")
+			.ccat(primaryKey.getColumns(), ", ")
+			.cat(")");
 	}
 	
-	protected void generateCreateColumn(Column column, StringAppender sqlCreateTable) {
-		sqlCreateTable.cat(dmlNameProvider.getSimpleName(column), " ", getSqlType(column))
+	protected void generateCreateColumn(Column column, DDLAppender sqlCreateTable) {
+		sqlCreateTable.cat(column, " ", getSqlType(column))
 				.catIf(!column.isNullable(), " not null");
 		
 	}
@@ -58,53 +62,50 @@ public class DDLTableGenerator {
 
 	public String generateCreateIndex(Index index) {
 		Table table = index.getTable();
-		StringAppender sqlCreateIndex = new StringAppender("create")
+		StringAppender sqlCreateIndex = new DDLAppender(dmlNameProvider, "create")
 				.catIf(index.isUnique(), " unique")
-				.cat(" index ", index.getName(), " on ", dmlNameProvider.getSimpleName(table), "(");
-		dmlNameProvider.catWithComma(index.getColumns(), sqlCreateIndex);
+				.cat(" index ", index.getName(), " on ", table, "(")
+				.ccat(index.getColumns(), ", ");
 		return sqlCreateIndex.cat(")").toString();
 	}
 	
 	public String generateCreateForeignKey(ForeignKey foreignKey) {
 		Table table = foreignKey.getTable();
-		StringAppender sqlCreateFK = new StringAppender("alter table ", dmlNameProvider.getSimpleName(table))
-				.cat(" add constraint ", foreignKey.getName(), " foreign key(");
-		dmlNameProvider.catWithComma(foreignKey.getColumns(), sqlCreateFK);
-		sqlCreateFK.cat(") references ", dmlNameProvider.getSimpleName(foreignKey.getTargetTable()), "(");
-		dmlNameProvider.catWithComma(foreignKey.getTargetColumns(), sqlCreateFK);
+		StringAppender sqlCreateFK = new DDLAppender(dmlNameProvider, "alter table ", table)
+				.cat(" add constraint ", foreignKey.getName(), " foreign key(")
+				.ccat(foreignKey.getColumns(), ", ")
+				.cat(") references ", foreignKey.getTargetTable(), "(")
+				.ccat(foreignKey.getTargetColumns(), ", ");
 		return sqlCreateFK.cat(")").toString();
 	}
 	
 	public String generateAddColumn(Column column) {
-		StringAppender sqladdColumn = new StringAppender("alter table ", dmlNameProvider.getSimpleName(column.getTable()),
-				" add column ", dmlNameProvider.getSimpleName(column), " ", getSqlType(column));
+		DDLAppender sqladdColumn = new DDLAppender(dmlNameProvider, "alter table ", column.getTable(), " add column ", column, " ", getSqlType(column));
 		return sqladdColumn.toString();
 	}
 	
 	public String generateDropTable(Table table) {
-		StringAppender sqlCreateTable = new StringAppender("drop table ", dmlNameProvider.getSimpleName(table));
+		DDLAppender sqlCreateTable = new DDLAppender(dmlNameProvider, "drop table ", table);
 		return sqlCreateTable.toString();
 	}
 	
 	public String generateDropTableIfExists(Table table) {
-		StringAppender sqlCreateTable = new StringAppender("drop table if exists ", dmlNameProvider.getSimpleName(table));
+		DDLAppender sqlCreateTable = new DDLAppender(dmlNameProvider, "drop table if exists ", table);
 		return sqlCreateTable.toString();
 	}
 	
 	public String generateDropIndex(Index index) {
-		StringAppender sqlCreateTable = new StringAppender("drop index ", index.getName());
+		DDLAppender sqlCreateTable = new DDLAppender(dmlNameProvider, "drop index ", index.getName());
 		return sqlCreateTable.toString();
 	}
 	
 	public String generateDropForeignKey(ForeignKey foreignKey) {
-		StringAppender sqlCreateTable = new StringAppender("alter table ", dmlNameProvider.getSimpleName(foreignKey.getTable()),
-				" drop constraint ", foreignKey.getName());
+		DDLAppender sqlCreateTable = new DDLAppender(dmlNameProvider, "alter table ", foreignKey.getTable(), " drop constraint ", foreignKey.getName());
 		return sqlCreateTable.toString();
 	}
 	
 	public String generateDropColumn(Column column) {
-		StringAppender sqlDropColumn = new StringAppender("alter table ", dmlNameProvider.getSimpleName(column.getTable()),
-				" drop column ", dmlNameProvider.getSimpleName(column));
+		DDLAppender sqlDropColumn = new DDLAppender(dmlNameProvider, "alter table ", column.getTable(), " drop column ", column);
 		return sqlDropColumn.toString();
 	}
 	

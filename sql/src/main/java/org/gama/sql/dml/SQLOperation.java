@@ -65,7 +65,7 @@ public abstract class SQLOperation<ParamType> implements AutoCloseable {
 	 * Simple wrapping over {@link SQLStatement#setValues(Map)}
 	 * @param values values for each parameter
 	 */
-	public void setValues(Map<ParamType, Object> values) {
+	public void setValues(Map<ParamType, ?> values) {
 		// we transfert data to our own structure
 		this.sqlStatement.setValues(values);
 	}
@@ -163,7 +163,7 @@ public abstract class SQLOperation<ParamType> implements AutoCloseable {
 		this.notLoggedParams = notLoggedParams;
 	}
 	
-	protected Map<ParamType, Object> filterLoggable(Map<ParamType, Object> values) {
+	protected Map<ParamType, Object> filterLoggable(Map<ParamType, ?> values) {
 		// we make a copy of values to prevent alteration
 		Map<ParamType, Object> loggedValues = new HashMap<>(values);
 		loggedValues.entrySet().forEach(e -> {

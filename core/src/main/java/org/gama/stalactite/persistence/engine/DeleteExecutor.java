@@ -1,13 +1,14 @@
 package org.gama.stalactite.persistence.engine;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.gama.lang.Retryer;
 import org.gama.lang.collection.Collections;
 import org.gama.lang.collection.Iterables;
-import org.gama.lang.collection.Maps;
 import org.gama.sql.ConnectionProvider;
 import org.gama.sql.dml.WriteOperation;
 import org.gama.stalactite.persistence.engine.RowCountManager.RowCounter;
@@ -93,11 +94,11 @@ public class DeleteExecutor<C, I, T extends Table> extends WriteExecutor<C, I, T
 		List<I> lastBlock = Iterables.last(parcels);
 		ColumnParamedSQL<T> deleteStatement;
 		T targetTable = getMappingStrategy().getTargetTable();
-		Column<T, Object> keyColumn = targetTable.getPrimaryKey();
 		
 		int updatedRowCounter = 0;
+		Set<Column<T, Object>> pkColumns = targetTable.getPrimaryKey().getColumns();
 		if (parcels.size() > 1) {
-			deleteStatement = getDmlGenerator().buildDeleteByKey(targetTable, keyColumn, blockSize);
+			deleteStatement = getDmlGenerator().buildDeleteByKey(targetTable, pkColumns, blockSize);
 			if (lastBlock.size() != blockSize) {
 				parcels = parcels.subList(0, parcels.size() - 1);
 			}
@@ -105,17 +106,33 @@ public class DeleteExecutor<C, I, T extends Table> extends WriteExecutor<C, I, T
 			JDBCBatchingIterator<List<I>> jdbcBatchingIterator = new JDBCBatchingIterator<>(parcels, writeOperation, getBatchSize());
 			while(jdbcBatchingIterator.hasNext()) {
 				List<I> updateValues = jdbcBatchingIterator.next();
-				writeOperation.addBatch(Maps.asMap(keyColumn, updateValues));
+				Map<Column<T, ?>, List<Object>> pkValues = new HashMap<>();
+				updateValues.forEach(id -> {
+					Map<Column<T, Object>, Object> localPkValues = getMappingStrategy().getIdMappingStrategy().getIdentifierAssembler().getColumnValues(id);
+					pkColumns.forEach(pkColumn -> pkValues.computeIfAbsent(pkColumn, k -> new ArrayList<>()).add(localPkValues.get(pkColumn)));
+				});
+				writeOperation.addBatch(pkValues);
 			}
 			updatedRowCounter = jdbcBatchingIterator.getUpdatedRowCount();
 		}
 		// remaining block treatment
 		if (!lastBlock.isEmpty()) {
-			deleteStatement = getDmlGenerator().buildDeleteByKey(targetTable, keyColumn, lastBlock.size());
+			deleteStatement = getDmlGenerator().buildDeleteByKey(targetTable, pkColumns, lastBlock.size());
 			int updatedRowCount;
 			try (WriteOperation<Column<T, ?>> writeOperation = newWriteOperation(deleteStatement, currentConnectionProvider)) {
 				// we must pass a single value when expected, else ExpandableStatement may be confused when applying them
-				writeOperation.setValue(keyColumn, lastBlock.size() == 1 ? lastBlock.get(0) : lastBlock);
+				Object updateValues = lastBlock.size() == 1 ? lastBlock.get(0) : lastBlock;
+				if (updateValues instanceof List) {
+					((List<I>) updateValues).forEach(id -> {
+						Map<Column<T, ?>, List<Object>> pkValues = new HashMap<>();
+						Map<Column<T, Object>, Object> localPkValues = getMappingStrategy().getIdMappingStrategy().getIdentifierAssembler().getColumnValues(id);
+						pkColumns.forEach(pkColumn -> pkValues.computeIfAbsent(pkColumn, k -> new ArrayList<>()).add(localPkValues.get(pkColumn)));
+						writeOperation.setValues(pkValues);
+					});
+				} else {
+					Map<Column<T, Object>, Object> pkValues = getMappingStrategy().getIdMappingStrategy().getIdentifierAssembler().getColumnValues((I) updateValues);
+					writeOperation.setValues((Map<Column<T, ?>, Object>) (Map) pkValues);
+				}
 				updatedRowCount = writeOperation.execute();
 			}
 			updatedRowCounter += updatedRowCount;

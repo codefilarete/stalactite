@@ -7,7 +7,7 @@ import org.gama.stalactite.persistence.structure.Table;
  * 
  * @author Guillaume Mary
  */
-public interface IEntityMappingStrategy<C, I, T extends Table> extends IMappingStrategy<C, T>, IIdAccessor<C, I> {
+public interface IEntityMappingStrategy<C, I, T extends Table> extends IMappingStrategy<C, T>, IdAccessor<C, I> {
 	
 	T getTargetTable();
 	

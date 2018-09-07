@@ -1,11 +1,8 @@
 package org.gama.stalactite.persistence.id.manager;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.SQLException;
-
 import org.gama.sql.dml.WriteOperation;
 import org.gama.stalactite.persistence.engine.WriteExecutor.JDBCBatchingIterator;
+import org.gama.stalactite.persistence.mapping.SimpleIdMappingStrategy;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
 
@@ -14,8 +11,7 @@ import org.gama.stalactite.persistence.structure.Table;
  * In production use, may be used in confonction with {@link StatefullIdentifier}
  * 
  * @author Guillaume Mary
- * @see org.gama.stalactite.persistence.mapping.IdMappingStrategy.IsNewDeterminer#isNew(Object) 
- * @see org.gama.stalactite.persistence.mapping.IdMappingStrategy.WrappedIdIsNewDeterminer
+ * @see SimpleIdMappingStrategy.IsNewDeterminer#isNew(Object) 
  * @see StatefullIdentifier
  */
 public class AlreadyAssignedIdentifierManager<T, I> implements IdentifierInsertionManager<T, I> {
@@ -31,11 +27,6 @@ public class AlreadyAssignedIdentifierManager<T, I> implements IdentifierInserti
 	@Override
 	public Class<I> getIdentifierType() {
 		return identifierType;
-	}
-	
-	@Override
-	public PreparedStatement prepareStatement(Connection connection, String sql) throws SQLException {
-		return connection.prepareStatement(sql);
 	}
 	
 	@Override

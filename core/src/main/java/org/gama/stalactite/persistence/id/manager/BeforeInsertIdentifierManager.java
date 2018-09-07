@@ -1,14 +1,11 @@
 package org.gama.stalactite.persistence.id.manager;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.SQLException;
 import java.util.function.Consumer;
 
 import org.gama.lang.function.Sequence;
 import org.gama.sql.dml.WriteOperation;
 import org.gama.stalactite.persistence.engine.WriteExecutor.JDBCBatchingIterator;
-import org.gama.stalactite.persistence.mapping.IIdAccessor;
+import org.gama.stalactite.persistence.mapping.IdAccessor;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
 
@@ -23,7 +20,7 @@ public class BeforeInsertIdentifierManager<T, I> implements IdentifierInsertionM
 	
 	private final BeforeInsertIdentifierFixer<T, I> identifierFixer;
 	
-	public BeforeInsertIdentifierManager(IIdAccessor<T, I> idAccessor, Sequence<I> sequence, Class<I> identifierType) {
+	public BeforeInsertIdentifierManager(IdAccessor<T, I> idAccessor, Sequence<I> sequence, Class<I> identifierType) {
 		this.identifierType = identifierType;
 		this.identifierFixer = new BeforeInsertIdentifierFixer<>(idAccessor, sequence);
 	}
@@ -31,11 +28,6 @@ public class BeforeInsertIdentifierManager<T, I> implements IdentifierInsertionM
 	@Override
 	public Class<I> getIdentifierType() {
 		return identifierType;
-	}
-	
-	@Override
-	public PreparedStatement prepareStatement(Connection connection, String sql) throws SQLException {
-		return connection.prepareStatement(sql);
 	}
 	
 	@Override
@@ -51,10 +43,10 @@ public class BeforeInsertIdentifierManager<T, I> implements IdentifierInsertionM
 	 */
 	private static class BeforeInsertIdentifierFixer<T, I> implements Consumer<T> {
 		
-		private final IIdAccessor<T, I> idAccessor;
+		private final IdAccessor<T, I> idAccessor;
 		private final Sequence<I> sequence;
 		
-		BeforeInsertIdentifierFixer(IIdAccessor<T, I> idAccessor, Sequence<I> sequence) {
+		BeforeInsertIdentifierFixer(IdAccessor<T, I> idAccessor, Sequence<I> sequence) {
 			this.idAccessor = idAccessor;
 			this.sequence = sequence;
 		}

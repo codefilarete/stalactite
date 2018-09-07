@@ -78,4 +78,24 @@ public class DeleteExecutorTest extends AbstractDMLExecutorTest {
 		PairSetList<Integer, Integer> expectedPairs = new PairSetList<Integer, Integer>().of(1, 1).add(2, 2).add(3, 3).of(1, 4);
 		assertCapturedPairsEqual(dataSet, expectedPairs);
 	}
+	
+	@Test
+	public void testDeleteById_composedId_multiple() throws Exception {
+		DataSetWithComposedId dataSet = new DataSetWithComposedId();
+		DMLGenerator dmlGenerator = new DMLGenerator(dataSet.dialect.getColumnBinderRegistry(), new DMLGenerator.CaseSensitiveSorter());
+		DeleteExecutor<Toto, Toto, Table>testInstance = new DeleteExecutor<>(dataSet.persistenceConfiguration.classMappingStrategy, dataSet.transactionManager, dmlGenerator, Retryer.NO_RETRY, 3, 3);
+		
+		testInstance.deleteById(Arrays.asList(new Toto(1, 17, 23), new Toto(2, 29, 31), new Toto(3, 37, 41), new Toto(4, 43, 53)));
+		// 2 statements because in operator is bounded to 3 values (see testInstance creation)
+		assertEquals(Arrays.asList("delete from Toto where (a, b) in ((?, ?), (?, ?), (?, ?))", "delete from Toto where (a, b) in ((?, ?))"),
+				dataSet.statementArgCaptor.getAllValues());
+		verify(dataSet.preparedStatement, times(1)).addBatch();
+		verify(dataSet.preparedStatement, times(1)).executeBatch();
+		verify(dataSet.preparedStatement, times(1)).executeUpdate();
+		verify(dataSet.preparedStatement, times(8)).setInt(dataSet.indexCaptor.capture(), dataSet.valueCaptor.capture());
+		PairSetList<Integer, Integer> expectedPairs = new PairSetList<Integer, Integer>()
+				.add(1, 1).add(2, 17).add(3, 2).add(4, 29).add(5, 3).add(6, 37)
+				.of(1, 4).add(2, 43);
+		assertCapturedPairsEqual(dataSet, expectedPairs);
+	}
 }

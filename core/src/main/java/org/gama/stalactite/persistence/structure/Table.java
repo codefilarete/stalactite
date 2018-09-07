@@ -1,5 +1,6 @@
 package org.gama.stalactite.persistence.structure;
 
+import javax.annotation.Nullable;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -7,6 +8,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Function;
 
 import org.gama.lang.Duo;
 import org.gama.lang.collection.Arrays;
@@ -33,7 +35,7 @@ public class Table<SELF extends Table<SELF>> {
 	
 	private KeepOrderSet<Column<SELF, Object>> columns = new KeepOrderSet<>();
 	
-	private Column<SELF, Object> primaryKey;
+	private PrimaryKey<SELF> primaryKey;
 	
 	private Set<Index> indexes = new HashSet<>();
 	
@@ -101,9 +103,18 @@ public class Table<SELF extends Table<SELF>> {
 		return nullable(Iterables.find(columns, Column::getName, columnName::equals)).apply(Duo::getLeft).get();
 	}
 	
-	public Column<SELF, Object> getPrimaryKey() {
+	/**
+	 * Returns the {@link PrimaryKey} of this table if any {@link Column} was marked as primary key, else will return null.
+	 * Lazyly initialize an attribute, hence multiple calls to this method may return the very first attempt even if another {@link Column} was
+	 * marked as primary key between calls.
+	 * 
+	 * @return the {@link PrimaryKey} of this table if any {@link Column} was marked as primary key, else null
+	 */
+	@Nullable
+	public PrimaryKey<SELF> getPrimaryKey() {
 		if (primaryKey == null) {
-			primaryKey = columns.stream().filter(Column::isPrimaryKey).findAny().orElse(null);
+			Set<Column<SELF, Object>> pkColumns = Iterables.collect(columns.asSet(), Column::isPrimaryKey, Function.identity(), LinkedHashSet::new);
+			primaryKey = pkColumns.isEmpty() ? null : new PrimaryKey<>(pkColumns);
 		}
 		return primaryKey;
 	}

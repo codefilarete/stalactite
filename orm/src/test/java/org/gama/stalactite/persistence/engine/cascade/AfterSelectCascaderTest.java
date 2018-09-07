@@ -30,7 +30,7 @@ public class AfterSelectCascaderTest extends AbstractCascaderTest {
 		when(mappingStrategyMock.getIdMappingStrategy()).thenReturn(mock(IdMappingStrategy.class));
 		Persister<Tata, Long, T> persisterMock = new Persister<Tata, Long, T>(mappingStrategyMock, mock(Dialect.class), null, 10) {
 			@Override
-			protected List<Tata> doSelect(Iterable<Long> ids) {
+			protected List<Tata> doSelect(Collection<Long> ids) {
 				List<Tata> selectedTarget = new ArrayList<>();
 				for (Long id : ids) {
 					Tata tata = new Tata();

@@ -1,6 +1,7 @@
 package org.gama.stalactite.persistence.engine.cascade;
 
 import javax.annotation.Nonnull;
+import java.util.Collection;
 import java.util.List;
 
 import org.gama.sql.ConnectionProvider;
@@ -51,9 +52,10 @@ public class JoinedTablesPersister<C extends Identified, I extends StatefullIden
 	}
 	
 	/**
-	 * Add a mapping strategy to be applied for persistence. It will be called after the main strategy
-	 * (passed in constructor), in order of the Collection, or in reverse order for delete actions to take into account
+	 * Adds a mapping strategy to be applied for persistence. It will be called after the main strategy
+	 * (passed to constructor), in order of the Collection, or in reverse order for delete actions to take into account
 	 * potential foreign keys.
+	 * 
 	 * @param ownerStrategyName the name of the strategy on which the mappingStrategy parameter will be added
 	 * @param persister the {@link Persister} who strategy must be added to be added
 	 * @param beanRelationFixer will help to fix the relation between instance at selection time
@@ -79,11 +81,12 @@ public class JoinedTablesPersister<C extends Identified, I extends StatefullIden
 	
 	/**
 	 * Overriden to implement a load by joining tables
+	 * 
 	 * @param ids entity identifiers
 	 * @return a List of loaded entities corresponding to identifiers passed as parameter
 	 */
 	@Override
-	protected List<C> doSelect(Iterable<I> ids) {
+	protected List<C> doSelect(Collection<I> ids) {
 		return joinedStrategiesSelectExecutor.select(ids);
 	}
 }

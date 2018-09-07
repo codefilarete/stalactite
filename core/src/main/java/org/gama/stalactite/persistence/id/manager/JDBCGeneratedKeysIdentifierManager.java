@@ -17,7 +17,7 @@ import org.gama.sql.dml.GeneratedKeysReader;
 import org.gama.sql.dml.WriteOperation;
 import org.gama.sql.result.Row;
 import org.gama.stalactite.persistence.engine.WriteExecutor.JDBCBatchingIterator;
-import org.gama.stalactite.persistence.mapping.IIdAccessor;
+import org.gama.stalactite.persistence.mapping.IdAccessor;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
 
@@ -37,11 +37,11 @@ public class JDBCGeneratedKeysIdentifierManager<T, I> implements IdentifierInser
 	private final AfterInsertIdentifierFixer<T, I> identifierFixer;
 	private final GeneratedKeysReader generatedKeysReader;
 	
-	public JDBCGeneratedKeysIdentifierManager(IIdAccessor<T, I> idAccessor, GeneratedKeysReader generatedKeysReader, String columnName, Class<I> identifierType) {
+	public JDBCGeneratedKeysIdentifierManager(IdAccessor<T, I> idAccessor, GeneratedKeysReader generatedKeysReader, String columnName, Class<I> identifierType) {
 		this(idAccessor, generatedKeysReader, keyMapper(columnName), identifierType);
 	}
 
-	public JDBCGeneratedKeysIdentifierManager(IIdAccessor<T, I> idAccessor, GeneratedKeysReader generatedKeysReader, Function<Map<String, Object>, I> idReader, Class<I> identifierType) {
+	public JDBCGeneratedKeysIdentifierManager(IdAccessor<T, I> idAccessor, GeneratedKeysReader generatedKeysReader, Function<Map<String, Object>, I> idReader, Class<I> identifierType) {
 		this.identifierFixer = new AfterInsertIdentifierFixer<>(idAccessor, idReader);
 		this.generatedKeysReader = generatedKeysReader;
 		// protect ourselves from nonsense
@@ -75,10 +75,10 @@ public class JDBCGeneratedKeysIdentifierManager<T, I> implements IdentifierInser
 	 */
 	private static class AfterInsertIdentifierFixer<T, I> implements BiConsumer<T, Row> {
 		
-		private final IIdAccessor<T, I> idAccessor;
+		private final IdAccessor<T, I> idAccessor;
 		private final Function<Map<String, Object>, I> idReader;
 		
-		private AfterInsertIdentifierFixer(IIdAccessor<T, I> idAccessor, Function<Map<String, Object>, I> idReader) {
+		private AfterInsertIdentifierFixer(IdAccessor<T, I> idAccessor, Function<Map<String, Object>, I> idReader) {
 			this.idAccessor = idAccessor;
 			this.idReader = idReader;
 		}

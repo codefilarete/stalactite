@@ -22,11 +22,11 @@ import static org.mockito.Mockito.when;
  */
 public class JoinedStrategiesSelectTest {
 	
-	private static ClassMappingStrategy buildMappingStrategyMock(String tableName) {
+	static ClassMappingStrategy buildMappingStrategyMock(String tableName) {
 		return buildMappingStrategyMock(new Table(tableName));
 	}
 	
-	private static ClassMappingStrategy buildMappingStrategyMock(Table table) {
+	static ClassMappingStrategy buildMappingStrategyMock(Table table) {
 		ClassMappingStrategy mappingStrategyMock = mock(ClassMappingStrategy.class);
 		when(mappingStrategyMock.getTargetTable()).thenReturn(table);
 		// the selected columns are plugged on the table ones
@@ -35,33 +35,15 @@ public class JoinedStrategiesSelectTest {
 	}
 	
 	public static Object[][] testToSQL_singleStrategyData() {
-		class TestData {
-			final Table table;
-			final String sql;
-			
-			TestData(Table table, String sql) {
-				this.table = table;
-				this.sql = sql;
-			}
-		}
-		TestData testData1 = new TestData(new Table("Toto"), "select Toto.id as Toto_id from Toto");
-		testData1.table.addColumn("id", long.class);
-		TestData testData2 = new TestData(new Table("Toto"), "select Toto.id as Toto_id, Toto.name as Toto_name from Toto");
-		testData2.table.addColumn("id", long.class);
-		testData2.table.addColumn("name", String.class);
+		Table table1 = new Table("Toto");
+		Column id1 = table1.addColumn("id", long.class);
+		Table table2 = new Table("Toto");
+		Column id2 = table2.addColumn("id", long.class);
+		Column name2 = table2.addColumn("name", String.class);
 		
 		return new Object[][] {
-				new Object[] {
-						testData1.table,
-						testData1.sql,
-						Maps.asMap(testData1.table.findColumn("id"), "Toto_id")
-				},
-				new Object[] {
-						testData2.table,
-						testData2.sql,
-						Maps.asMap(testData2.table.findColumn("id"), "Toto_id")
-								.add(testData2.table.findColumn("name"), "Toto_name")
-				}
+				{ table1, "select Toto.id as Toto_id from Toto", Maps.asMap(id1, "Toto_id") },
+				{ table2, "select Toto.id as Toto_id, Toto.name as Toto_name from Toto", Maps.asMap(id2, "Toto_id").add(name2, "Toto_name") }
 		};
 	}
 	

@@ -121,11 +121,7 @@ public class FluentMappingBuilderCollectionCascadeTest {
 							.addOneToManySet(Country::getCities, cityPersister).mappedBy(City::setCountry).cascade(INSERT, SELECT)
 							.build(persistenceContext);
 					DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
-					try {
-						ddlDeployer.deployDDL();
-					} catch (SQLException e) {
-						throw new RuntimeException(e);
-					}
+					ddlDeployer.deployDDL();
 					return countryPersister;
 				}},
 				{ (ThrowingSupplier<Persister<Country, Identifier<Long>, ?>, SQLException>) () -> {
@@ -139,11 +135,7 @@ public class FluentMappingBuilderCollectionCascadeTest {
 							.addOneToManySet(Country::getCities, cityPersister).mappedBy(City::getCountry).cascade(INSERT, SELECT)
 							.build(persistenceContext);
 					DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
-					try {
-						ddlDeployer.deployDDL();
-					} catch (SQLException e) {
-						throw new RuntimeException(e);
-					}
+					ddlDeployer.deployDDL();
 					return countryPersister;
 				}},
 				{ (ThrowingSupplier<Persister<Country, Identifier<Long>, ?>, SQLException>) () -> {
@@ -158,11 +150,7 @@ public class FluentMappingBuilderCollectionCascadeTest {
 							.addOneToManySet(Country::getCities, cityPersister).mappedBy(countryId).cascade(INSERT, SELECT)
 							.build(persistenceContext);
 					DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
-					try {
-						ddlDeployer.deployDDL();
-					} catch (SQLException e) {
-						throw new RuntimeException(e);
-					}
+					ddlDeployer.deployDDL();
 					return countryPersister;
 				}},
 		};

@@ -59,7 +59,7 @@ public class PersistenceContext {
 		return dialect;
 	}
 	
-	public <C, I, T extends Table> ClassMappingStrategy<C, I, T> getMappingStrategy(Class<C> aClass) {
+	public <C, I, T extends Table<T>> ClassMappingStrategy<C, I, T> getMappingStrategy(Class<C> aClass) {
 		return mappingStrategies.get(aClass);
 	}
 	
@@ -113,7 +113,7 @@ public class PersistenceContext {
 		return new Persister<>(this, citClassMappingStrategy);
 	}
 	
-	protected <C, I, T extends Table> ClassMappingStrategy<C, I, T> ensureMappedClass(Class<C> clazz) {
+	protected <C, I, T extends Table<T>> ClassMappingStrategy<C, I, T> ensureMappedClass(Class<C> clazz) {
 		ClassMappingStrategy<C, I, T> mappingStrategy = getMappingStrategy(clazz);
 		if (mappingStrategy == null) {
 			throw new IllegalArgumentException("Unmapped entity " + clazz);

@@ -3,6 +3,7 @@ package org.gama.stalactite.persistence.engine;
 import java.util.function.Predicate;
 
 import org.gama.lang.Duo;
+import org.gama.lang.collection.Iterables;
 import org.gama.reflection.Accessors;
 import org.gama.reflection.IMutator;
 import org.gama.reflection.PropertyAccessor;
@@ -47,10 +48,13 @@ public class CascadeOneConfigurer<I extends Identified, O extends Identified, J 
 		// Finding joined columns:
 		// - left one is given by current mapping strategy through the property accessor.
 		// - Right one is target primary key because we don't yet support "not owner of the property"
+		if (mappingStrategy.getTargetTable().getPrimaryKey().getColumns().size() > 1) {
+			throw new NotYetSupportedOperationException("Joining tables on a composed primery key is not (yet) supported");
+		}
 		Column leftColumn = mappingStrategy.getDefaultMappingStrategy().getPropertyToColumn().get(propertyAccessor);
 		// According to the nullable option, we specify the ddl schema option
 		leftColumn.nullable(cascadeOne.isNullable());
-		Column rightColumn = targetPersister.getTargetTable().getPrimaryKey();
+		Column rightColumn = Iterables.first(targetPersister.getTargetTable().getPrimaryKey().getColumns());
 		
 		// adding foerign key constraint
 		leftColumn.getTable().addForeignKey(foreignKeyNamingStrategy.giveName(leftColumn, rightColumn), leftColumn, rightColumn);

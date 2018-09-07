@@ -13,12 +13,14 @@ import org.gama.lang.Reflections;
 public abstract class AbstractIdentifier<T> implements Identifier<T> {
 	
 	/** Real value, not null */
+	@Nonnull
 	private final T surrogate;
 	
-	public AbstractIdentifier(T surrogate) {
+	public AbstractIdentifier(@Nonnull T surrogate) {
 		this.surrogate = surrogate;
 	}
 	
+	@Nonnull
 	public T getSurrogate() {
 		return surrogate;
 	}

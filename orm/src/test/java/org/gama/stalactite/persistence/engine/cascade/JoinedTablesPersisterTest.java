@@ -35,7 +35,7 @@ import org.gama.stalactite.persistence.id.manager.AlreadyAssignedIdentifierManag
 import org.gama.stalactite.persistence.id.manager.BeforeInsertIdentifierManager;
 import org.gama.stalactite.persistence.id.manager.StatefullIdentifier;
 import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
-import org.gama.stalactite.persistence.mapping.IdMappingStrategy;
+import org.gama.stalactite.persistence.mapping.IdAccessor;
 import org.gama.stalactite.persistence.sql.Dialect;
 import org.gama.stalactite.persistence.sql.ddl.JavaTypeToSqlTypeMapping;
 import org.gama.stalactite.persistence.structure.Column;
@@ -117,7 +117,7 @@ public class JoinedTablesPersisterTest {
 		identifierGenerator = new InMemoryCounterIdentifierGenerator();
 		
 		BeforeInsertIdentifierManager<Toto, StatefullIdentifier<Integer>> beforeInsertIdentifierManager = new BeforeInsertIdentifierManager<>(
-				IdMappingStrategy.toIdAccessor(identifierAccessor),
+				IdAccessor.idAccessor(identifierAccessor),
 				() -> new PersistableIdentifier<>(identifierGenerator.next()),
 				(Class<StatefullIdentifier<Integer>>) (Class) StatefullIdentifier.class);
 		totoClassMappingStrategy_ontoTable1 = new ClassMappingStrategy<>(Toto.class, totoClassTable1,
