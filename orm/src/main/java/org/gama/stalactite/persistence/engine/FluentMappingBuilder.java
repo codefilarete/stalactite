@@ -238,23 +238,21 @@ public class FluentMappingBuilder<T extends Identified, I extends StatefullIdent
 					if (FluentMappingBuilder.this.identifierAccessor != null) {
 						throw new IllegalArgumentException("Identifier is already defined by " + identifierAccessor.getAccessor());
 					}
-					switch (identifierPolicy) {
-						case ALREADY_ASSIGNED:
-							Class<I> primaryKeyType = Reflections.propertyType(method);
-							FluentMappingBuilder.this.identifierInsertionManager = new AlreadyAssignedIdentifierManager<>(primaryKeyType);
-							if (newMapping instanceof FluentMappingBuilder.LinkageByColumnName) {
-								// we force primary key so it's no necessary to set it by caller
-								((LinkageByColumnName) newMapping).primaryKey();
-							} else if (newMapping instanceof FluentMappingBuilder.LinkageByColumn && !newMapping.isPrimaryKey()) {
-								// safeguard about a missconfiguration, even if mapping would work it smells bad configuration
-								throw new IllegalArgumentException("Identifier policy is assigned on a non primary key column");
-							} else {
-								// in case of evolution in the Linkage API
-								throw new NotImplementedException(newMapping.getClass());
-							}
-							break;
-						default:
-							throw new NotYetSupportedOperationException(identifierPolicy + " is not yet supported");
+					if (identifierPolicy == IdentifierPolicy.ALREADY_ASSIGNED) {
+						Class<I> primaryKeyType = Reflections.propertyType(method);
+						FluentMappingBuilder.this.identifierInsertionManager = new AlreadyAssignedIdentifierManager<>(primaryKeyType);
+						if (newMapping instanceof FluentMappingBuilder.LinkageByColumnName) {
+							// we force primary key so it's no necessary to set it by caller
+							((LinkageByColumnName) newMapping).primaryKey();
+						} else if (newMapping instanceof FluentMappingBuilder.LinkageByColumn && !newMapping.isPrimaryKey()) {
+							// safeguard about a missconfiguration, even if mapping would work it smells bad configuration
+							throw new IllegalArgumentException("Identifier policy is assigned on a non primary key column");
+						} else {
+							// in case of evolution in the Linkage API
+							throw new NotImplementedException(newMapping.getClass());
+						}
+					} else {
+						throw new NotYetSupportedOperationException(identifierPolicy + " is not yet supported");
 					}
 					FluentMappingBuilder.this.identifierAccessor = (PropertyAccessor<T, I>) newMapping.getAccessor();
 					// we return the fluent builder so user can chain with any other configuration
@@ -308,7 +306,7 @@ public class FluentMappingBuilder<T extends Identified, I extends StatefullIdent
 	@Override
 	public <O extends Identified, J extends StatefullIdentifier, C extends List<O>> IFluentMappingBuilderOneToManyListOptions<T, I, O> addOneToManyList(
 			SerializableFunction<T, C> getter, Persister<O, J, ? extends Table> persister) {
-		CascadeManyList<T, O, J> cascadeMany = new CascadeManyList<T, O, J>(getter, persister, captureLambdaMethod(getter));
+		CascadeManyList<T, O, J> cascadeMany = new CascadeManyList<>(getter, persister, captureLambdaMethod(getter));
 		this.cascadeManys.add(cascadeMany);
 		return new MethodDispatcher()
 				.redirect(OneToManyOptions.class, new OneToManyOptionsSupport<>(cascadeMany), true)	// true to allow "return null" in implemented methods
@@ -534,7 +532,7 @@ public class FluentMappingBuilder<T extends Identified, I extends StatefullIdent
 				throw new IllegalArgumentException("Multiple columned primary key is not supported");
 		}
 		
-		return new ClassMappingStrategy<T, I, Table>(persistedClass, table, (Map) columnMapping, identifierProperty, this.identifierInsertionManager);
+		return new ClassMappingStrategy<>(persistedClass, table, (Map) columnMapping, identifierProperty, this.identifierInsertionManager);
 	}
 	
 	
