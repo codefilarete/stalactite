@@ -69,7 +69,7 @@ public class Table<SELF extends Table<SELF>> {
 	
 	public Set<Column<SELF, Object>> getColumnsNoPrimaryKey() {
 		LinkedHashSet<Column<SELF, Object>> result = this.columns.asSet();
-		result.remove(getPrimaryKey());
+		result.removeAll(org.gama.lang.Nullable.nullable(getPrimaryKey()).apply(PrimaryKey::getColumns).orGet(Collections.emptySet()));
 		return result;
 	}
 	

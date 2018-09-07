@@ -56,4 +56,15 @@ public class TableTest {
 		assertNotNull(testInstance.getPrimaryKey());
 		assertIterableEquals(Arrays.asList(id, subId), testInstance.getPrimaryKey().getColumns());
 	}
+	
+	@Test
+	public void testGetColumnsPrimaryKey() {
+		Table testInstance = new Table("toto");
+		assertNull(testInstance.getPrimaryKey());
+		
+		Column dummyColumn = testInstance.addColumn("dummyColumn", String.class);
+		Column id = testInstance.addColumn("id", long.class).primaryKey();
+		assertEquals(Arrays.asSet(id), testInstance.getPrimaryKey().getColumns());
+		assertIterableEquals(Arrays.asList(dummyColumn), testInstance.getColumnsNoPrimaryKey());
+	}
 }
