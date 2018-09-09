@@ -24,7 +24,7 @@ import org.gama.sql.binder.ResultSetReader;
  * @author Guillaume Mary
  */
 public class ResultSetRowConverter<I, T>
-		implements AbstractResultSetConverter<I, T>, Converter<ResultSet, T, SQLException>, ResultSetRowAssembler<T> {
+		implements ResultSetConverter<I, T>, Converter<ResultSet, T, SQLException>, ResultSetRowAssembler<T> {
 	
 	private final String columnName;
 	

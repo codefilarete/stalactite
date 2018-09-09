@@ -18,7 +18,7 @@ import org.gama.sql.binder.ParameterBinder;
 import org.gama.sql.binder.ParameterBinderProvider;
 import org.gama.sql.dml.ReadOperation;
 import org.gama.sql.dml.StringParamedSQL;
-import org.gama.sql.result.ResultSetConverter;
+import org.gama.sql.result.ResultSetConverterSupport;
 import org.gama.sql.result.ResultSetRowAssembler;
 import org.gama.stalactite.persistence.structure.Table;
 
@@ -280,7 +280,7 @@ public class QueryConverter<T> {
 		if (beanCreationDefinition == null) {
 			throw new IllegalArgumentException("Bean creation is not defined, use mapKey(..)");
 		}
-		ResultSetConverter<I, T> transformer = buildTransformer();
+		ResultSetConverterSupport<I, T> transformer = buildTransformer();
 		
 		StringParamedSQL parameterizedSQL = new StringParamedSQL(this.sql.toString(), sqlParameterBinders);
 		try (ReadOperation<String> readOperation = new ReadOperation<>(parameterizedSQL, connectionProvider)) {
@@ -290,12 +290,12 @@ public class QueryConverter<T> {
 		}
 	}
 	
-	protected <I> ResultSetConverter<I, T> buildTransformer() {
-		// creating ResultSetConverter
+	protected <I> ResultSetConverterSupport<I, T> buildTransformer() {
+		// creating ResultSetConverterSupport
 		Column<I> keyColumn = (Column<I>) beanCreationDefinition.getColumn();
 		Function<I, T> beanFactory = (Function<I, T>) beanCreationDefinition.getFactory();
 		ParameterBinder<I> idParameterBinder = parameterBinderProvider.getBinder(keyColumn.getValueType());
-		ResultSetConverter<I, T> transformer = new ResultSetConverter<>(rootBeanType, keyColumn.getName(), idParameterBinder, beanFactory);
+		ResultSetConverterSupport<I, T> transformer = new ResultSetConverterSupport<>(rootBeanType, keyColumn.getName(), idParameterBinder, beanFactory);
 		// adding complementary properties to transformer
 		for (ColumnMapping<T, Object> columnMapping : columnMappings) {
 			ParameterBinder parameterBinder = parameterBinderProvider.getBinder(columnMapping.getColumn().getValueType());
