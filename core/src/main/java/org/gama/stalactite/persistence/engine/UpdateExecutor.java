@@ -69,27 +69,34 @@ public class UpdateExecutor<C, I, T extends Table<T>> extends WriteExecutor<C, I
 	 */
 	public int updateById(Iterable<C> entities) {
 		Set<Column<T, Object>> columnsToUpdate = getMappingStrategy().getUpdatableColumns();
-		PreparedUpdate<T> updateOperation = getDmlGenerator().buildUpdate(columnsToUpdate, getMappingStrategy().getVersionedKeys());
-		WriteOperation<UpwhereColumn<T>> writeOperation = newWriteOperation(updateOperation, new CurrentConnectionProvider());
-		
-		JDBCBatchingIterator<C> jdbcBatchingIterator = new JDBCBatchingIterator<>(entities, writeOperation, getBatchSize());
-		while(jdbcBatchingIterator.hasNext()) {
-			C c = jdbcBatchingIterator.next();
-			Map<UpwhereColumn<T>, Object> updateValues = getMappingStrategy().getUpdateValues(c, null, true);
-			writeOperation.addBatch(updateValues);
+		if (columnsToUpdate.isEmpty()) {
+			// nothing to update, this prevent a NPE in buildUpdate due to lack of any (first) element
+			return 0;
+		} else {
+			PreparedUpdate<T> updateOperation = getDmlGenerator().buildUpdate(columnsToUpdate, getMappingStrategy().getVersionedKeys());
+			WriteOperation<UpwhereColumn<T>> writeOperation = newWriteOperation(updateOperation, new CurrentConnectionProvider());
+			
+			JDBCBatchingIterator<C> jdbcBatchingIterator = new JDBCBatchingIterator<>(entities, writeOperation, getBatchSize());
+			while (jdbcBatchingIterator.hasNext()) {
+				C c = jdbcBatchingIterator.next();
+				Map<UpwhereColumn<T>, Object> updateValues = getMappingStrategy().getUpdateValues(c, null, true);
+				writeOperation.addBatch(updateValues);
+			}
+			return jdbcBatchingIterator.getUpdatedRowCount();
 		}
-		return jdbcBatchingIterator.getUpdatedRowCount();
 	}
 	
 	/**
-	 * Executes update of given payloads. This method will dynamically create SQL orders for 
+	 * Executes update of given payloads. This method will create as many SQL orders as necessary for them (some cache is used for payload with
+	 * same columns to be updated).
 	 * This method should be used for heterogeneous use case where payloads doesn't contain same columns for update.
 	 * 
-	 * Prefers {@link #updateMappedColumns(Iterable)} if you know that every payloads target the same columns.  
+	 * Prefers {@link #updateMappedColumns(Iterable)} if you know that all payloads target the same columns.  
 	 * 
 	 * This method applies JDBC batch.
 	 * 
 	 * @param updatePayloads data for SQL order
+	 * @see #updateMappedColumns(Iterable) 
 	 */
 	public int updateVariousColumns(Iterable<UpdatePayload<C, T>> updatePayloads) {
 		// we update only entities that have values to be modified
@@ -104,13 +111,14 @@ public class UpdateExecutor<C, I, T extends Table<T>> extends WriteExecutor<C, I
 	}
 	
 	/**
-	 * Executes update of given payloads. This method expected that every payload wants to update same columns
+	 * Executes update of given payloads. This method expects that every payload wants to update same columns
 	 * as those given by {@link ClassMappingStrategy#getUpdatableColumns()} : this means all mapped columns.
-	 * If such a contract is not fullfilled, an exception may occur (because of lacking data)
+	 * If such a contract is not fullfilled, an exception may occur (because of missing data)
 	 * 
 	 * This method applies JDBC batch.
 	 *
 	 * @param updatePayloads data for SQL order
+	 * @see #updateVariousColumns(Iterable)
 	 */
 	public int updateMappedColumns(Iterable<UpdatePayload<C, T>> updatePayloads) {
 		// we ask the strategy to lookup for updatable columns (not taken directly on mapping strategy target table)
@@ -136,7 +144,7 @@ public class UpdateExecutor<C, I, T extends Table<T>> extends WriteExecutor<C, I
 	}
 	
 	/**
-	 * ARGUMENT SHOULD NOT ALTERED (ensured via readonly mark), else it corrupts callers which may pass this argument to some listeners, then
+	 * ARGUMENT SHOULD NOT BE ALTERED (ensured via readonly mark), else it corrupts callers which may pass this argument to some listeners, then
 	 * those ones will lack some data.
 	 * 
 	 * @param updatePayloads payloads expected to be updated 

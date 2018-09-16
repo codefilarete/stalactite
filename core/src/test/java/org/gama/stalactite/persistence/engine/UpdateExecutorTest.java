@@ -65,6 +65,19 @@ public class UpdateExecutorTest extends AbstractDMLExecutorTest {
 		assertCapturedPairsEqual(dataSet, expectedPairs);
 	}
 	
+	@Test
+	public <T extends Table<T>> void testUpdateById_noColumnToUpdate() {
+		T table = (T) new Table<>("SimpleEntity");
+		Column<?, Long> id = table.addColumn("id", long.class).primaryKey();
+		AccessorByField<SimpleEntity, Long> idAccessor = Accessors.accessorByField(SimpleEntity.class, "id");
+		ClassMappingStrategy<SimpleEntity, Long, T> simpleEntityPersistenceMapping = new ClassMappingStrategy<SimpleEntity, Long, T>
+				(SimpleEntity.class, table, (Map) Maps.asMap(idAccessor, id), idAccessor, AlreadyAssignedIdentifierManager.INSTANCE);
+		UpdateExecutor<SimpleEntity, Long, T> testInstance = new UpdateExecutor<SimpleEntity, Long, T>(
+				simpleEntityPersistenceMapping, mock(ConnectionProvider.class), new DMLGenerator(new ColumnBinderRegistry()), Retryer.NO_RETRY, 3, 4);
+		
+		assertEquals(0, testInstance.updateById(Arrays.asList(new SimpleEntity())));
+	}
+	
 	public static Object[][] testUpdate_diff_data() {
 		return new Object[][] {
 				// extreme case: no differences
