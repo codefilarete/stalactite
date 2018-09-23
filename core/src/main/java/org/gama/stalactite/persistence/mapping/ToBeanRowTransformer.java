@@ -28,7 +28,7 @@ public class ToBeanRowTransformer<T> extends AbstractTransformer<T> {
 	
 	private final Collection<TransformerListener<T>> rowTransformerListeners = new ArrayList<>();
 	
-	/** A kind of {@link Column} aliaser, mainly usefull in case of {@link #withAliases(Function)} usage */
+	/** A kind of {@link Column} aliaser, mainly usefull in case of {@link #copyWithAliases(Function)} usage */
 	private ColumnedRow columnedRow = new ColumnedRow();
 	
 	/**
@@ -114,7 +114,7 @@ public class ToBeanRowTransformer<T> extends AbstractTransformer<T> {
 	 * @param aliasProvider a function that gives new {@link Row} keys from some {@link Column}.
 	 * @return a new instance of {@link ToBeanRowTransformer} whose read keys are those given by the function
 	 */
-	public ToBeanRowTransformer<T> withAliases(Function<Column, String> aliasProvider) {
+	public ToBeanRowTransformer<T> copyWithAliases(Function<Column, String> aliasProvider) {
 		ToBeanRowTransformer<T> result = new ToBeanRowTransformer<>(constructor, new HashMap<>(this.columnToMember));
 		result.columnedRow = new ColumnedRow(aliasProvider);
 		// listeners are given to the new instance because they may be interested in transforming rows of this one

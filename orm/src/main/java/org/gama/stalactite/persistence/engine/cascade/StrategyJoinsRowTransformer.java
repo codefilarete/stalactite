@@ -84,7 +84,7 @@ public class StrategyJoinsRowTransformer<T> {
 				// treating the current depth
 				StrategyJoins<Object> strategyJoins = stack.poll();
 				ClassMappingStrategy<Object, Object, Table> leftStrategy = strategyJoins.getStrategy();
-				ToBeanRowTransformer mainRowTransformer = beanTransformerCache.computeIfAbsent(leftStrategy, s -> s.getRowTransformer().withAliases(aliasProvider));
+				ToBeanRowTransformer mainRowTransformer = beanTransformerCache.computeIfAbsent(leftStrategy, s -> s.getRowTransformer().copyWithAliases(aliasProvider));
 				Object identifier = leftStrategy.getIdMappingStrategy().getIdentifierAssembler().assemble(row, columnedRow);
 				
 				Object rowInstance = entityCacheWrapper.computeIfAbsent(leftStrategy.getClassToPersist(), identifier, () -> {
@@ -100,7 +100,7 @@ public class StrategyJoinsRowTransformer<T> {
 				for (Join join : strategyJoins.getJoins()) {
 					StrategyJoins subJoins = join.getStrategy();
 					ClassMappingStrategy rightStrategy = subJoins.getStrategy();
-					ToBeanRowTransformer rowTransformer = beanTransformerCache.computeIfAbsent(rightStrategy, s -> s.getRowTransformer().withAliases(aliasProvider));
+					ToBeanRowTransformer rowTransformer = beanTransformerCache.computeIfAbsent(rightStrategy, s -> s.getRowTransformer().copyWithAliases(aliasProvider));
 					Object rightIdentifier = rightStrategy.getIdMappingStrategy().getIdentifierAssembler().assemble(row, columnedRow);
 					
 					// primary key null means no entity => nothing to do

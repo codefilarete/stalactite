@@ -12,10 +12,10 @@ import org.gama.sql.binder.ResultSetReader;
 
 /**
  * @param <I> the type of bean keys (input)
- * @param <T> the type of beans
+ * @param <C> the type of beans
  * @author Guillaume Mary
  */
-public interface ResultSetConverter<I, T> {
+public interface ResultSetConverter<I, C> {
 	
 	/**
 	 * Defines a complementary column that will be mapped on a bean property.
@@ -23,7 +23,7 @@ public interface ResultSetConverter<I, T> {
 	 *
 	 * @param columnConsumer the object that will do the reading and mapping
 	 */
-	void add(ColumnConsumer<T, ?> columnConsumer);
+	void add(ColumnConsumer<C, ?> columnConsumer);
 	
 	/**
 	 * Detailed version of {@link #add(ColumnConsumer)}
@@ -33,7 +33,7 @@ public interface ResultSetConverter<I, T> {
 	 * @param combiner the applyer of the value over a bean property
 	 * @param <V> the type of the read value, must be compatible with the bean property input
 	 */
-	default <V> void add(String columnName, ResultSetReader<V> reader, BiConsumer<T, V> combiner) {
+	default <V> void add(String columnName, ResultSetReader<V> reader, BiConsumer<C, V> combiner) {
 		add(new ColumnConsumer<>(columnName, reader, combiner));
 	}
 	
@@ -47,15 +47,15 @@ public interface ResultSetConverter<I, T> {
 	 * @param collectionMutator the collection setter (called only if getter returns null)
 	 * @param collectionFactory the collection factory (called only if getter returns null)
 	 * @param <V> the type of the read value, must be compatible with the bean property input
-	 * @param <C> the collection type
+	 * @param <U> the collection type
 	 */
-	default <V, C extends Collection<V>> void add(String columnName, ResultSetReader<V> reader,
-												 Function<T, C> collectionAccessor, BiConsumer<T, C> collectionMutator, Supplier<C> collectionFactory) {
-		add(new ColumnConsumer<>(columnName, reader, (t, v) -> {
-			C collection = collectionAccessor.apply(t);
+	default <V, U extends Collection<V>> void add(String columnName, ResultSetReader<V> reader,
+												  Function<C, U> collectionAccessor, BiConsumer<C, U> collectionMutator, Supplier<U> collectionFactory) {
+		add(new ColumnConsumer<>(columnName, reader, (c, v) -> {
+			U collection = collectionAccessor.apply(c);
 			if (collection == null) {
 				collection = collectionFactory.get();
-				collectionMutator.accept(t, collection);
+				collectionMutator.accept(c, collection);
 			}
 			collection.add(v);
 		}));
@@ -69,7 +69,7 @@ public interface ResultSetConverter<I, T> {
 	 * @return an instance of T, newly created or not according to implementation
 	 * @throws SQLException due to {@link ResultSet} reading
 	 */
-	T transform(ResultSet resultSet) throws SQLException;
+	C transform(ResultSet resultSet) throws SQLException;
 	
 	/**
 	 * Clones this for another type of bean.
@@ -78,10 +78,10 @@ public interface ResultSetConverter<I, T> {
 	 * 
 	 * @param beanType the target bean type
 	 * @param beanFactory the adhoc constructor for the target bean
-	 * @param <C> the target bean type
+	 * @param <T> the target bean type
 	 * @return a new instance, kind of clone of this but for another type
 	 */
-	<C> ResultSetConverter<I, C> copyFor(Class<C> beanType, Function<I, C> beanFactory);
+	<T extends C> ResultSetConverter<I, T> copyFor(Class<T> beanType, Function<I, T> beanFactory);
 	
 	/**
 	 * Makes a copy of this instance with column translation.
@@ -91,14 +91,14 @@ public interface ResultSetConverter<I, T> {
 	 * 						Can be implemented with a switch/case, a prefix/suffix concatenation, etc
 	 * @return a new instance, kind of clone of this
 	 */
-	ResultSetConverter<I, T> copyWithMapping(Function<String, String> columnMapping);
+	ResultSetConverter<I, C> copyWithAliases(Function<String, String> columnMapping);
 	
 	/**
-	 * Same as {@link #copyWithMapping(Function)} but with a concrete mapping through a {@link Map}
+	 * Same as {@link #copyWithAliases(Function)} but with a concrete mapping through a {@link Map}
 	 * @param columnMapping the mapping between column names declared by {@link #add(String, ResultSetReader, BiConsumer)} and new ones
 	 * @return a new instance, kind of clone of this
 	 */
-	default ResultSetConverter<I, T> copyWithMapping(Map<String, String> columnMapping) {
-		return copyWithMapping(columnMapping::get);
+	default ResultSetConverter<I, C> copyWithAliases(Map<String, String> columnMapping) {
+		return copyWithAliases(columnMapping::get);
 	}
 }

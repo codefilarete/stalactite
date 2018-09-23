@@ -16,10 +16,10 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 public class ColumnConsumerTest {
 	
 	/**
-	 * A test based on an {@link ModifiableInt} that would take its value from a {@link java.sql.ResultSet}
+	 * A test based on an {@link ModifiableInt} that will take its value from a {@link java.sql.ResultSet}
 	 */
 	@Test
-	public void testApply() throws SQLException {
+	public void testAssemble() throws SQLException {
 		ModifiableInt targetInstance = new ModifiableInt();
 		ColumnConsumer<ModifiableInt, Integer> testInstance = new ColumnConsumer<>("a", INTEGER_READER, ModifiableInt::increment);
 		

@@ -100,12 +100,12 @@ public class ResultSetRowConverterTest {
 	
 	
 	@Test
-	public void testCopyWithMapping() throws SQLException {
+	public void testCopyWithAliases() throws SQLException {
 		ResultSetRowConverter<Integer, ModifiableInt> sourceInstance = new ResultSetRowConverter<>(ModifiableInt.class, "a", INTEGER_READER, ModifiableInt::new);
 		sourceInstance.add(new ColumnConsumer<>("b", INTEGER_READER, (t, i) -> t.increment(Objects.preventNull(i, 0))));
 		
 		// we're making our copy with column "a" is now "x", and column "b" is now "y"
-		ResultSetRowConverter<Integer, ModifiableInt> testInstance = sourceInstance.copyWithMapping(Maps.asHashMap("a", "x").add("b", "y"));
+		ResultSetRowConverter<Integer, ModifiableInt> testInstance = sourceInstance.copyWithAliases(Maps.asHashMap("a", "x").add("b", "y"));
 		
 		// of course ....
 		assertNotSame(sourceInstance, testInstance);
@@ -125,18 +125,20 @@ public class ResultSetRowConverterTest {
 	@Test
 	public void testCopyFor() throws SQLException {
 		ResultSetRowConverter<String, Vehicle> sourceInstance = new ResultSetRowConverter<>(Vehicle.class, "name", STRING_READER, Vehicle::new);
+		sourceInstance.add(new ColumnConsumer<>("color", STRING_READER, Vehicle::setColor));
 		
 		ResultSetRowConverter<String, Car> testInstance = sourceInstance.copyFor(Car.class, Car::new);
 		testInstance.add(new ColumnConsumer<>("wheels", INTEGER_READER, Car::setWheelCount));
 		
 		InMemoryResultSet resultSet = new InMemoryResultSet(Arrays.asList(
-				Maps.asMap("name", (Object) "peugeot").add("wheels", 4)
+				Maps.asMap("name", (Object) "peugeot").add("wheels", 4).add("color", "red")
 		));
 		
 		resultSet.next();
 		Car result = testInstance.convert(resultSet);
 		assertEquals("peugeot", result.getName());
 		assertEquals(4, result.getWheelCount());
+		assertEquals("red", result.getColor());
 	}
 	
 	@Test
@@ -160,12 +162,22 @@ public class ResultSetRowConverterTest {
 		
 		private String name;
 		
+		private String color;
+		
 		private Vehicle(String name) {
 			this.name = name;
 		}
 		
 		public String getName() {
 			return name;
+		}
+		
+		public String getColor() {
+			return color;
+		}
+		
+		public void setColor(String color) {
+			this.color = color;
 		}
 	}
 	

@@ -29,7 +29,7 @@ import org.gama.stalactite.persistence.structure.Table;
  * 
  * @author Guillaume Mary
  */
-public class ZonedDateTimeMappingStrategy<T extends Table> implements IEmbeddedBeanMapper<ZonedDateTime, T> {
+public class ZonedDateTimeMappingStrategy<T extends Table> implements IEmbeddedBeanMapping<ZonedDateTime, T> {
 	
 	private final Column<T, LocalDateTime> dateTimeColumn;
 	private final Column<T, ZoneId> zoneColumn;

@@ -41,7 +41,7 @@ class ToBeanRowTransformerTest {
 		ToBeanRowTransformer<Toto> testInstance = new ToBeanRowTransformer<>(Toto.class, Maps
 				.asMap(columnA, (IMutator) mutator(Toto::setProp1))
 				.add(columnB, mutator(Toto::setProp2)));
-		testInstance = testInstance.withAliases(column -> {
+		testInstance = testInstance.copyWithAliases(column -> {
 			if (column == columnA) {
 				return "a_slided";
 			}
@@ -58,7 +58,7 @@ class ToBeanRowTransformerTest {
 		assertEquals(1, transform.prop1);
 		assertEquals("hello", transform.prop2);
 		
-		testInstance = testInstance.withAliases(column -> {
+		testInstance = testInstance.copyWithAliases(column -> {
 			if (column == columnA) {
 				return "a_slided2";
 			}

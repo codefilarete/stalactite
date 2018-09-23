@@ -32,7 +32,7 @@ import static org.gama.sql.binder.NullAwareParameterBinder.ALWAYS_SET_NULL_INSTA
  * 
  * @author Guillaume Mary
  */
-public class QueryConverter<T> {
+public class QueryConverter<C> {
 	
 	/** Default method capturer. Shared to cache result of each lookup. */
 	private static final MethodReferenceCapturer METHOD_REFERENCE_CAPTURER = new MethodReferenceCapturer();
@@ -41,18 +41,18 @@ public class QueryConverter<T> {
 	private final MethodReferenceCapturer methodReferenceCapturer;
 	
 	/** Type of bean that will be built by {@link #execute(ConnectionProvider)} */
-	private final Class<T> rootBeanType;
+	private final Class<C> rootBeanType;
 	
 	/** The sql that contains the select clause */
 	private final CharSequence sql;
 	
 	/** The definition of root bean instanciation */
-	private BeanCreationDefinition<T, ?> beanCreationDefinition;
+	private BeanCreationDefinition<C, ?> beanCreationDefinition;
 	
 	/** Mappings between selected columns and bean property setter */
 	private final List<ColumnMapping> columnMappings = new ArrayList<>();
 	
-	private final List<ResultSetRowAssembler<T>> rawMappers = new ArrayList<>();
+	private final List<ResultSetRowAssembler<C>> rawMappers = new ArrayList<>();
 	
 	/** The "registry" of {@link ParameterBinder}s, for column reading as well as sql argument setting */
 	private final ParameterBinderProvider<Class> parameterBinderProvider;
@@ -69,7 +69,7 @@ public class QueryConverter<T> {
 	 * @param sql the sql to execute
 	 * @param parameterBinderProvider a provider for SQL parameters and selected column
 	 */
-	public QueryConverter(Class<T> rootBeanType, CharSequence sql, ParameterBinderProvider<Class> parameterBinderProvider) {
+	public QueryConverter(Class<C> rootBeanType, CharSequence sql, ParameterBinderProvider<Class> parameterBinderProvider) {
 		this(rootBeanType, sql, parameterBinderProvider, METHOD_REFERENCE_CAPTURER);
 	}
 	
@@ -81,7 +81,7 @@ public class QueryConverter<T> {
 	 * @param methodReferenceCapturer a method capturer (when column types are not given by {@link #map(String, SerializableBiConsumer)}),
 	 * default is {@link #METHOD_REFERENCE_CAPTURER}
 	 */
-	public QueryConverter(Class<T> rootBeanType, CharSequence sql, ParameterBinderProvider<Class> parameterBinderProvider, MethodReferenceCapturer methodReferenceCapturer) {
+	public QueryConverter(Class<C> rootBeanType, CharSequence sql, ParameterBinderProvider<Class> parameterBinderProvider, MethodReferenceCapturer methodReferenceCapturer) {
 		this.rootBeanType = rootBeanType;
 		this.sql = sql;
 		this.parameterBinderProvider = parameterBinderProvider;
@@ -100,7 +100,7 @@ public class QueryConverter<T> {
 	 * @param <I> the type of the column, which is also that of the factory argument
 	 * @return this
 	 */
-	public <I> QueryConverter<T> mapKey(String columnName, SerializableFunction<I, T> factory, Class<I> columnType) {
+	public <I> QueryConverter<C> mapKey(String columnName, SerializableFunction<I, C> factory, Class<I> columnType) {
 		this.beanCreationDefinition = new BeanCreationDefinition<>(columnName, factory, columnType);
 		return this;
 	}
@@ -115,9 +115,9 @@ public class QueryConverter<T> {
 	 * @param <I> the type of the column
 	 * @return this
 	 */
-	public <I> QueryConverter<T> mapKey(String columnName, SerializableSupplier<T> javaBeanCtor, SerializableBiConsumer<T, I> keySetter) {
-		this.beanCreationDefinition = new BeanCreationDefinition<>(columnName, (SerializableFunction<I, T>) i -> {
-			T newInstance = javaBeanCtor.get();
+	public <I> QueryConverter<C> mapKey(String columnName, SerializableSupplier<C> javaBeanCtor, SerializableBiConsumer<C, I> keySetter) {
+		this.beanCreationDefinition = new BeanCreationDefinition<>(columnName, (SerializableFunction<I, C>) i -> {
+			C newInstance = javaBeanCtor.get();
 			keySetter.accept(newInstance, i);
 			return newInstance;
 		}, giveColumnType(keySetter));
@@ -134,9 +134,9 @@ public class QueryConverter<T> {
 	 * @param <I> the type of the column
 	 * @return this
 	 */
-	public <I> QueryConverter<T> mapKey(String columnName, SerializableSupplier<T> javaBeanCtor, SerializableBiConsumer<T, I> keySetter, Class<I> columnType) {
-		return mapKey(columnName, (SerializableFunction<I, T>) i -> {
-			T newInstance = javaBeanCtor.get();
+	public <I> QueryConverter<C> mapKey(String columnName, SerializableSupplier<C> javaBeanCtor, SerializableBiConsumer<C, I> keySetter, Class<I> columnType) {
+		return mapKey(columnName, (SerializableFunction<I, C>) i -> {
+			C newInstance = javaBeanCtor.get();
 			keySetter.accept(newInstance, i);
 			return newInstance;
 		}, columnType);
@@ -151,7 +151,7 @@ public class QueryConverter<T> {
 	 * @param <I> the type of the column, which is also that of the setter argument
 	 * @return this
 	 */
-	public <I> QueryConverter<T> map(String columnName, SerializableBiConsumer<T, I> setter, Class<I> columnType) {
+	public <I> QueryConverter<C> map(String columnName, SerializableBiConsumer<C, I> setter, Class<I> columnType) {
 		add(new ColumnMapping<>(columnName, setter, columnType));
 		return this;
 	}
@@ -168,7 +168,7 @@ public class QueryConverter<T> {
 	 * @param <J> the type of the column, which is also that of the converter argument
 	 * @return this
 	 */
-	public <I, J> QueryConverter<T> map(String columnName, SerializableBiConsumer<T, J> setter, Class<I> columnType, SerializableFunction<I, J> converter) {
+	public <I, J> QueryConverter<C> map(String columnName, SerializableBiConsumer<C, J> setter, Class<I> columnType, SerializableFunction<I, J> converter) {
 		return map(columnName, (t, i) -> setter.accept(t, converter.apply(i)), columnType);
 	}
 	
@@ -182,7 +182,7 @@ public class QueryConverter<T> {
 	 * @param <I> the type of the column, which is also that of the setter argument
 	 * @return this
 	 */
-	public <I> QueryConverter<T> map(String columnName, SerializableBiConsumer<T, I> setter) {
+	public <I> QueryConverter<C> map(String columnName, SerializableBiConsumer<C, I> setter) {
 		map(columnName, setter, giveColumnType(setter));
 		return this;
 	}
@@ -198,10 +198,10 @@ public class QueryConverter<T> {
 	 * @param <J> the type of the column, which is also that of the converter argument
 	 * @return this
 	 */
-	public <I, J> QueryConverter<T> map(String columnName, SerializableBiConsumer<T, J> setter, SerializableFunction<I, J> converter) {
+	public <I, J> QueryConverter<C> map(String columnName, SerializableBiConsumer<C, J> setter, SerializableFunction<I, J> converter) {
 		Method method = methodReferenceCapturer.findMethod(setter);
 		Class<I> aClass = (Class<I>) method.getParameterTypes()[0];
-		return map(columnName, (SerializableBiConsumer<T, I>) (t, i) -> setter.accept(t, converter.apply(i)), aClass);
+		return map(columnName, (SerializableBiConsumer<C, I>) (t, i) -> setter.accept(t, converter.apply(i)), aClass);
 	}
 	
 	/**
@@ -211,7 +211,7 @@ public class QueryConverter<T> {
 	 * @param <I> type of the key
 	 * @return this
 	 */
-	public <I> QueryConverter<T> mapKey(org.gama.stalactite.persistence.structure.Column<? extends Table, I> column, SerializableFunction<I, T> factory) {
+	public <I> QueryConverter<C> mapKey(org.gama.stalactite.persistence.structure.Column<? extends Table, I> column, SerializableFunction<I, C> factory) {
 		this.beanCreationDefinition = new BeanCreationDefinition<>(column.getName(), factory, column.getJavaType());
 		return this;
 	}
@@ -223,9 +223,9 @@ public class QueryConverter<T> {
 	 * @param <I> type of the key
 	 * @return this
 	 */
-	public <I> QueryConverter<T> mapKey(org.gama.stalactite.persistence.structure.Column<? extends Table, I> column, SerializableSupplier<T> javaBeanCtor, SerializableBiConsumer<T, I> keySetter) {
-		return mapKey(column, (SerializableFunction<I, T>) i -> {
-			T newInstance = javaBeanCtor.get();
+	public <I> QueryConverter<C> mapKey(org.gama.stalactite.persistence.structure.Column<? extends Table, I> column, SerializableSupplier<C> javaBeanCtor, SerializableBiConsumer<C, I> keySetter) {
+		return mapKey(column, (SerializableFunction<I, C>) i -> {
+			C newInstance = javaBeanCtor.get();
 			keySetter.accept(newInstance, i);
 			return newInstance;
 		});
@@ -239,7 +239,7 @@ public class QueryConverter<T> {
 	 * @param <I> the type of the column, which is also that of the setter argument
 	 * @return this
 	 */
-	public <I> QueryConverter<T> map(org.gama.stalactite.persistence.structure.Column<? extends Table, I> column, SerializableBiConsumer<T, I> setter) {
+	public <I> QueryConverter<C> map(org.gama.stalactite.persistence.structure.Column<? extends Table, I> column, SerializableBiConsumer<C, I> setter) {
 		map(column.getName(), setter, column.getJavaType());
 		return this;
 	}
@@ -255,15 +255,15 @@ public class QueryConverter<T> {
 	 * @param <J> the type of the column, which is also that of the converter argument
 	 * @return this
 	 */
-	public <I, J> QueryConverter<T> map(org.gama.stalactite.persistence.structure.Column<? extends Table, I> column, SerializableBiConsumer<T, J> setter, Converter<I, J, RuntimeException> converter) {
-		return map(column, (SerializableBiConsumer<T, I>) (t, i) -> setter.accept(t, converter.convert(i)));
+	public <I, J> QueryConverter<C> map(org.gama.stalactite.persistence.structure.Column<? extends Table, I> column, SerializableBiConsumer<C, J> setter, Converter<I, J, RuntimeException> converter) {
+		return map(column, (SerializableBiConsumer<C, I>) (t, i) -> setter.accept(t, converter.convert(i)));
 	}
 	
-	private <I> void add(ColumnMapping<T, I> columnWire) {
+	private <I> void add(ColumnMapping<C, I> columnWire) {
 		this.columnMappings.add(columnWire);
 	}
 	
-	public QueryConverter<T> add(ResultSetRowAssembler<T> assembler) {
+	public QueryConverter<C> add(ResultSetRowAssembler<C> assembler) {
 		rawMappers.add(assembler);
 		return this;
 	}
@@ -276,11 +276,11 @@ public class QueryConverter<T> {
 	 * @param connectionProvider the object that will given the {@link java.sql.Connection}
 	 * @return a {@link List} filled by the instances built
 	 */
-	public <I> List<T> execute(ConnectionProvider connectionProvider) {
+	public <I> List<C> execute(ConnectionProvider connectionProvider) {
 		if (beanCreationDefinition == null) {
 			throw new IllegalArgumentException("Bean creation is not defined, use mapKey(..)");
 		}
-		ResultSetConverterSupport<I, T> transformer = buildTransformer();
+		ResultSetConverterSupport<I, C> transformer = buildTransformer();
 		
 		StringParamedSQL parameterizedSQL = new StringParamedSQL(this.sql.toString(), sqlParameterBinders);
 		try (ReadOperation<String> readOperation = new ReadOperation<>(parameterizedSQL, connectionProvider)) {
@@ -290,14 +290,14 @@ public class QueryConverter<T> {
 		}
 	}
 	
-	protected <I> ResultSetConverterSupport<I, T> buildTransformer() {
+	protected <I> ResultSetConverterSupport<I, C> buildTransformer() {
 		// creating ResultSetConverterSupport
 		Column<I> keyColumn = (Column<I>) beanCreationDefinition.getColumn();
-		Function<I, T> beanFactory = (Function<I, T>) beanCreationDefinition.getFactory();
+		Function<I, C> beanFactory = (Function<I, C>) beanCreationDefinition.getFactory();
 		ParameterBinder<I> idParameterBinder = parameterBinderProvider.getBinder(keyColumn.getValueType());
-		ResultSetConverterSupport<I, T> transformer = new ResultSetConverterSupport<>(rootBeanType, keyColumn.getName(), idParameterBinder, beanFactory);
+		ResultSetConverterSupport<I, C> transformer = new ResultSetConverterSupport<>(rootBeanType, keyColumn.getName(), idParameterBinder, beanFactory);
 		// adding complementary properties to transformer
-		for (ColumnMapping<T, Object> columnMapping : columnMappings) {
+		for (ColumnMapping<C, Object> columnMapping : columnMappings) {
 			ParameterBinder parameterBinder = parameterBinderProvider.getBinder(columnMapping.getColumn().getValueType());
 			transformer.add(columnMapping.getColumn().getName(), parameterBinder, columnMapping.getSetter());
 		}
@@ -305,7 +305,7 @@ public class QueryConverter<T> {
 		return transformer;
 	}
 	
-	private <I> Class<I> giveColumnType(SerializableBiConsumer<T, I> setter) {
+	private <I> Class<I> giveColumnType(SerializableBiConsumer<C, I> setter) {
 		Method method = methodReferenceCapturer.findMethod(setter);
 		// we could take the first parameter type, but with a particular syntax of setter it's insufficient, last element is better 
 		return (Class<I>) Arrays.last(method.getParameterTypes());
@@ -322,7 +322,7 @@ public class QueryConverter<T> {
 	 * @see #set(String, Iterable, Class)
 	 * @see #clear(String)
 	 */
-	public QueryConverter<T> set(String paramName, Object value) {
+	public QueryConverter<C> set(String paramName, Object value) {
 		return set(paramName, value, value == null ? null : (Class) value.getClass());
 	}
 	
@@ -338,7 +338,7 @@ public class QueryConverter<T> {
 	 * @see #set(String, Iterable, Class)
 	 * @see #clear(String)
 	 */
-	public <C> QueryConverter<T> set(String paramName, C value, Class<? super C> valueType) {
+	public <O> QueryConverter<C> set(String paramName, O value, Class<? super O> valueType) {
 		sqlParameterBinders.put(paramName, value == null ? ALWAYS_SET_NULL_INSTANCE : parameterBinderProvider.getBinder(valueType));
 		this.sqlArguments.put(paramName, value);
 		return this;
@@ -356,7 +356,7 @@ public class QueryConverter<T> {
 	 * @return this
 	 * @see #clear(String)
 	 */
-	public <C> QueryConverter<T> set(String paramName, Iterable<C> value, Class<? super C> valueType) {
+	public <O> QueryConverter<C> set(String paramName, Iterable<O> value, Class<? super O> valueType) {
 		this.sqlParameterBinders.put(paramName, value == null ? ALWAYS_SET_NULL_INSTANCE : parameterBinderProvider.getBinder(valueType));
 		this.sqlArguments.put(paramName, value);
 		return this;
@@ -369,7 +369,7 @@ public class QueryConverter<T> {
 	 * @return this
 	 * @see #set(String, Object) 
 	 */
-	public QueryConverter<T> clear(String paramName) {
+	public QueryConverter<C> clear(String paramName) {
 		this.sqlParameterBinders.remove(paramName);
 		this.sqlArguments.remove(paramName);
 		return this;

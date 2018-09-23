@@ -22,7 +22,7 @@ import org.gama.stalactite.persistence.structure.Table;
 /**
  * @author Guillaume Mary
  */
-public class EmbeddedBeanMappingStrategy<C, T extends Table> implements IEmbeddedBeanMapper<C, T> {
+public class EmbeddedBeanMappingStrategy<C, T extends Table> implements IEmbeddedBeanMapping<C, T> {
 	
 	private final Map<IReversibleAccessor<C, Object>, Column<T, Object>> propertyToColumn;
 	

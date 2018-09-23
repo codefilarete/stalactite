@@ -251,14 +251,14 @@ public class ResultSetConverterSupportTest {
 		};
 		if (featherColorTestInstance instanceof ResultSetRowConverter) {
 			// we reuse the FeatherColor transformer for the left wing
-			testInstance.add((ResultSetRowConverter) featherColorTestInstance.copyWithMapping(Maps.asMap("featherColor", leftFeatherColorColumnName)), leftChickenFeatherColorCombiner);
+			testInstance.add((ResultSetRowConverter) featherColorTestInstance.copyWithAliases(Maps.asMap("featherColor", leftFeatherColorColumnName)), leftChickenFeatherColorCombiner);
 			// we reuse the FeatherColor transformer for the right wing
-			testInstance.add((ResultSetRowConverter) featherColorTestInstance.copyWithMapping(Maps.asMap("featherColor", rightFeatherColorColumnName)), rightChickenFeatherColorCombiner);
+			testInstance.add((ResultSetRowConverter) featherColorTestInstance.copyWithAliases(Maps.asMap("featherColor", rightFeatherColorColumnName)), rightChickenFeatherColorCombiner);
 		} else if (featherColorTestInstance instanceof ResultSetConverterSupport) {
 			// we reuse the FeatherColor transformer for the left wing
-			testInstance.add((ResultSetConverterSupport) featherColorTestInstance.copyWithMapping(Maps.asMap("featherColor", leftFeatherColorColumnName)), leftChickenFeatherColorCombiner);
+			testInstance.add((ResultSetConverterSupport) featherColorTestInstance.copyWithAliases(Maps.asMap("featherColor", leftFeatherColorColumnName)), leftChickenFeatherColorCombiner);
 			// we reuse the FeatherColor transformer for the right wing
-			testInstance.add((ResultSetConverterSupport) featherColorTestInstance.copyWithMapping(Maps.asMap("featherColor", rightFeatherColorColumnName)), rightChickenFeatherColorCombiner);
+			testInstance.add((ResultSetConverterSupport) featherColorTestInstance.copyWithAliases(Maps.asMap("featherColor", rightFeatherColorColumnName)), rightChickenFeatherColorCombiner);
 		}
 		
 		// a ResultSet that retrieves all the feathers of a unique Chicken

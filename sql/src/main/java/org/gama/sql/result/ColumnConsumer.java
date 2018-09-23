@@ -11,15 +11,17 @@ import org.gama.sql.binder.ResultSetReader;
  * For example: <br/>
  * <code>new ColumnConsumer("isActive", DefaultResultSetReaders.BOOLEAN_READER, MyClass::setActive)</code>
  * 
+ * @param <C> assembled bean type
+ * @param <I> bean identifier type
  * @author Guillaume Mary
  */
-public class ColumnConsumer<T, I> implements ResultSetRowAssembler<T> {
+public class ColumnConsumer<C, I> implements ResultSetRowAssembler<C> {
 	
 	private final String columnName;
 	private final ResultSetReader<I> reader;
-	private final BiConsumer<T, I> consumer;
+	private final BiConsumer<C, I> consumer;
 	
-	public ColumnConsumer(String columnName, ResultSetReader<I> reader, BiConsumer<T, I> consumer) {
+	public ColumnConsumer(String columnName, ResultSetReader<I> reader, BiConsumer<C, I> consumer) {
 		this.columnName = columnName;
 		this.reader = reader;
 		this.consumer = consumer;
@@ -33,7 +35,7 @@ public class ColumnConsumer<T, I> implements ResultSetRowAssembler<T> {
 		return reader;
 	}
 	
-	public BiConsumer<T, I> getConsumer() {
+	public BiConsumer<C, I> getConsumer() {
 		return consumer;
 	}
 	
@@ -45,7 +47,7 @@ public class ColumnConsumer<T, I> implements ResultSetRowAssembler<T> {
 	 * @throws SQLException in case of error during {@link ResultSet} read
 	 */
 	@Override
-	public void assemble(T instance, ResultSet resultSet) throws SQLException {
+	public void assemble(C instance, ResultSet resultSet) throws SQLException {
 		consumer.accept(instance, reader.get(resultSet, columnName));
 	}
 }
