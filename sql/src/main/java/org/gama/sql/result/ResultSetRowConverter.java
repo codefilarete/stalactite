@@ -26,9 +26,7 @@ import org.gama.sql.binder.ResultSetReader;
 public class ResultSetRowConverter<I, C>
 		implements ResultSetConverter<I, C>, Converter<ResultSet, C, SQLException>, ResultSetRowAssembler<C> {
 	
-	private final String columnName;
-	
-	private final ResultSetReader<I> reader;
+	private final ColumnReader<I> reader;
 	
 	private final Function<I, C> beanFactory;
 	
@@ -37,7 +35,8 @@ public class ResultSetRowConverter<I, C>
 	private final List<ColumnConsumer<C, Object>> consumers = new ArrayList<>();
 	
 	/**
-	 * Constructor with main and mandatory arguments
+	 * Constructor focused on simple cases where beans are built only from one column key.
+	 * Prefer {@link #ResultSetRowConverter(Class, ColumnReader, Function)} for more general purpose cases (multiple columns key)
 	 * 
 	 * @param columnName the name of the column that contains bean key
 	 * @param reader object to ease column reading, indicates column type
@@ -45,7 +44,19 @@ public class ResultSetRowConverter<I, C>
 	 */
 	public ResultSetRowConverter(Class<C> beanType, String columnName, ResultSetReader<I> reader, Function<I, C> beanFactory) {
 		this.beanType = beanType;
-		this.columnName = columnName;
+		this.reader = new SingleColumnReader<>(columnName, reader);
+		this.beanFactory = beanFactory;
+	}
+	
+	/**
+	 * Constructor with main and mandatory arguments
+	 *
+	 * @param beanType type of built instances
+	 * @param reader object to ease column reading, indicates column type
+	 * @param beanFactory the bean creator, bean key will be passed as argument. Not called if bean key is null (no instanciation needed)
+	 */
+	public ResultSetRowConverter(Class<C> beanType, ColumnReader<I> reader, Function<I, C> beanFactory) {
+		this.beanType = beanType;
 		this.reader = reader;
 		this.beanFactory = beanFactory;
 	}
@@ -54,11 +65,7 @@ public class ResultSetRowConverter<I, C>
 		return beanType;
 	}
 	
-	public String getColumnName() {
-		return columnName;
-	}
-	
-	public ResultSetReader<I> getReader() {
+	public ColumnReader<I> getReader() {
 		return reader;
 	}
 	
@@ -66,6 +73,11 @@ public class ResultSetRowConverter<I, C>
 		return beanFactory;
 	}
 	
+	/**
+	 * Gives {@link ColumnConsumer}s of this instances
+	 * 
+	 * @return not null
+	 */
 	public List<ColumnConsumer<C, Object>> getConsumers() {
 		return consumers;
 	}
@@ -74,7 +86,7 @@ public class ResultSetRowConverter<I, C>
 	 * Defines a complementary column that will be mapped on a bean property.
 	 * Null values will be passed to the consumer, hence the property mapper must be "null-value proof".
 	 * 
-	 * @param columnConsumer the object that will do the reading and mapping
+	 * @param columnConsumer the object that will do reading and mapping
 	 */
 	@Override
 	public void add(ColumnConsumer<C, ?> columnConsumer) {
@@ -83,15 +95,15 @@ public class ResultSetRowConverter<I, C>
 	
 	@Override
 	public <T extends C> ResultSetRowConverter<I, T> copyFor(Class<T> beanType, Function<I, T> beanFactory) {
-		ResultSetRowConverter<I, T> result = new ResultSetRowConverter<>(beanType, this.columnName, this.reader, beanFactory);
-		this.consumers.forEach(c -> result.add(new ColumnConsumer(c.getColumnName(), c.getReader(), c.getConsumer())));
+		ResultSetRowConverter<I, T> result = new ResultSetRowConverter<>(beanType, this.reader, beanFactory);
+		result.consumers.addAll((List) this.consumers);
 		return result;
 	}
 	
 	@Override
 	public ResultSetRowConverter<I, C> copyWithAliases(Function<String, String> columnMapping) {
-		ResultSetRowConverter<I, C> result = new ResultSetRowConverter<>(this.beanType, columnMapping.apply(this.columnName), this.reader, this.beanFactory);
-		this.consumers.forEach(c -> result.add(new ColumnConsumer(columnMapping.apply(c.getColumnName()), c.getReader(), c.getConsumer())));
+		ResultSetRowConverter<I, C> result = new ResultSetRowConverter<>(this.beanType, reader.copyWithAliases(columnMapping), this.beanFactory);
+		this.consumers.forEach(c -> result.add(c.copyWithAliases(columnMapping)));
 		return result;
 	}
 	
@@ -115,7 +127,7 @@ public class ResultSetRowConverter<I, C>
 	
 	@Override
 	public C transform(ResultSet resultSet) throws SQLException {
-		I beanKey = reader.get(resultSet, columnName);
+		I beanKey = reader.read(resultSet);
 		if (beanKey == null) {
 			return null;
 		} else {
@@ -133,8 +145,8 @@ public class ResultSetRowConverter<I, C>
 	 * Implementation that applies all {@link ColumnConsumer} to the given {@link ResultSet} 
 	 * 
 	 * @param rootBean the bean built for the row
-	 * @param input
-	 * @throws SQLException
+	 * @param input any {@link ResultSet} positioned at row that must be read
+	 * @throws SQLException in case of error while reading the {@link ResultSet}
 	 */
 	@Override
 	public void assemble(C rootBean, ResultSet input) throws SQLException {
