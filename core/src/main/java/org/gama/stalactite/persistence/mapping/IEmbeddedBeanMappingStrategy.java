@@ -11,7 +11,7 @@ import org.gama.stalactite.persistence.structure.Table;
  * 
  * @author Guillaume Mary
  */
-public interface IEmbeddedBeanMapping<C, T extends Table> extends IMappingStrategy<C, T> {
+public interface IEmbeddedBeanMappingStrategy<C, T extends Table> extends IMappingStrategy<C, T> {
 	
 	/**
 	 * Gives the columns implied in the persistence. Used as a reference for CRUD operations.

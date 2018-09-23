@@ -25,13 +25,15 @@ import org.gama.stalactite.persistence.structure.Table;
  */
 public class CascadeMany<SRC extends Identified, O extends Identified, J extends StatefullIdentifier, C extends Collection<O>> {
 	
+	/** the method that gets the "many" entities" from the "one" entity */
 	private final Function<SRC, C> targetProvider;
+	/** {@link Persister} for the "one" entity */
 	private final Persister<O, J, ? extends Table> persister;
 	private final Method member;
 	private final Class<C> collectionTargetClass;
-	/** the method that sets the "one" entity" onto the "many" entities */
+	/** the method that sets the "one" entity onto the "many" entities */
 	private SerializableBiConsumer<O, SRC> reverseSetter;
-	/** the method that gets the "one" entity" from the "many" entities */
+	/** the method that gets the "one" entity from the "many" entities */
 	private SerializableFunction<O, SRC> reverseGetter;
 	private Column<Table, SRC> reverseColumn;
 	private final Set<CascadeType> cascadeTypes = new HashSet<>();

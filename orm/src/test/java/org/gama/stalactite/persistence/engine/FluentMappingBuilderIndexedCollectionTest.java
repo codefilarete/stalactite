@@ -1,7 +1,6 @@
 package org.gama.stalactite.persistence.engine;
 
 import javax.sql.DataSource;
-import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -65,7 +64,7 @@ public class FluentMappingBuilderIndexedCollectionTest {
 	}
 	
 	@Test
-	public void testInsert() throws SQLException {
+	public void testInsert() {
 		persistenceContext = new PersistenceContext(connectionProvider, DIALECT);
 		
 		Table choiceTable = new Table("Choice");
@@ -106,16 +105,16 @@ public class FluentMappingBuilderIndexedCollectionTest {
 	}
 	
 	@Test
-	public void testUpdate_entitySwapping() throws SQLException {
-		UpdateDataTest updateDataTest = new UpdateDataTest().invoke();
-		Table choiceTable = updateDataTest.getChoiceTable();
-		Column<Table, Identifier> id = updateDataTest.getId();
-		Column<Table, Integer> idx = updateDataTest.getIdx();
-		Persister<Question, Identifier<Long>, ?> questionPersister = updateDataTest.getQuestionPersister();
-		Question newQuestion = updateDataTest.getNewQuestion();
-		Choice choice1 = updateDataTest.getChoice1();
-		Choice choice2 = updateDataTest.getChoice2();
-		Choice choice3 = updateDataTest.getChoice3();
+	public void testUpdate_entitySwapping() {
+		UpdateTestData updateTestData = new UpdateTestData().build();
+		Table choiceTable = updateTestData.getChoiceTable();
+		Column<Table, Identifier> id = updateTestData.getId();
+		Column<Table, Integer> idx = updateTestData.getIdx();
+		Persister<Question, Identifier<Long>, ?> questionPersister = updateTestData.getQuestionPersister();
+		Question newQuestion = updateTestData.getNewQuestion();
+		Choice choice1 = updateTestData.getChoice1();
+		Choice choice2 = updateTestData.getChoice2();
+		Choice choice3 = updateTestData.getChoice3();
 		
 		// creating a clone to test instance swapping
 		Question modifiedQuestion = new Question(newQuestion.getId().getSurrogate());
@@ -137,16 +136,16 @@ public class FluentMappingBuilderIndexedCollectionTest {
 	}
 	
 	@Test
-	public <T extends Table<T>> void testUpdate_noChange() throws SQLException {
-		UpdateDataTest updateDataTest = new UpdateDataTest().invoke();
-		Table choiceTable = updateDataTest.getChoiceTable();
-		Column<Table, Identifier> id = updateDataTest.getId();
-		Column<Table, Integer> idx = updateDataTest.getIdx();
-		Persister<Question, Identifier<Long>, ?> questionPersister = updateDataTest.getQuestionPersister();
-		Question newQuestion = updateDataTest.getNewQuestion();
-		Choice choice1 = updateDataTest.getChoice1();
-		Choice choice2 = updateDataTest.getChoice2();
-		Choice choice3 = updateDataTest.getChoice3();
+	public <T extends Table<T>> void testUpdate_noChange() {
+		UpdateTestData updateTestData = new UpdateTestData().build();
+		Table choiceTable = updateTestData.getChoiceTable();
+		Column<Table, Identifier> id = updateTestData.getId();
+		Column<Table, Integer> idx = updateTestData.getIdx();
+		Persister<Question, Identifier<Long>, ?> questionPersister = updateTestData.getQuestionPersister();
+		Question newQuestion = updateTestData.getNewQuestion();
+		Choice choice1 = updateTestData.getChoice1();
+		Choice choice2 = updateTestData.getChoice2();
+		Choice choice3 = updateTestData.getChoice3();
 		
 		// creating a clone to test instance swaping
 		Question modifiedQuestion = new Question(newQuestion.getId().getSurrogate());
@@ -157,7 +156,7 @@ public class FluentMappingBuilderIndexedCollectionTest {
 				choice3));
 		
 		IUpdateListener<Choice> updateListener = Mockito.mock(IUpdateListener.class);
-		updateDataTest.getChoicePersister().getPersisterListener().getUpdateListener().add(updateListener);
+		updateTestData.getChoicePersister().getPersisterListener().getUpdateListener().add(updateListener);
 		
 		questionPersister.update(modifiedQuestion, newQuestion, true);
 		UpdatePayload<Choice, T> expectedPayload1 = new UpdatePayload<>(new Duo<>(choice1, choice1), new HashMap<>());
@@ -179,16 +178,16 @@ public class FluentMappingBuilderIndexedCollectionTest {
 	}
 	
 	@Test
-	public void testUpdate_entityAddition() throws SQLException {
-		UpdateDataTest updateDataTest = new UpdateDataTest().invoke();
-		Table choiceTable = updateDataTest.getChoiceTable();
-		Column<Table, Identifier> id = updateDataTest.getId();
-		Column<Table, Integer> idx = updateDataTest.getIdx();
-		Persister<Question, Identifier<Long>, ?> questionPersister = updateDataTest.getQuestionPersister();
-		Question newQuestion = updateDataTest.getNewQuestion();
-		Choice choice1 = updateDataTest.getChoice1();
-		Choice choice2 = updateDataTest.getChoice2();
-		Choice choice3 = updateDataTest.getChoice3();
+	public void testUpdate_entityAddition() {
+		UpdateTestData updateTestData = new UpdateTestData().build();
+		Table choiceTable = updateTestData.getChoiceTable();
+		Column<Table, Identifier> id = updateTestData.getId();
+		Column<Table, Integer> idx = updateTestData.getIdx();
+		Persister<Question, Identifier<Long>, ?> questionPersister = updateTestData.getQuestionPersister();
+		Question newQuestion = updateTestData.getNewQuestion();
+		Choice choice1 = updateTestData.getChoice1();
+		Choice choice2 = updateTestData.getChoice2();
+		Choice choice3 = updateTestData.getChoice3();
 		Choice choice4 = new Choice(40L);
 		
 		// creating a clone to test instance swaping
@@ -213,15 +212,15 @@ public class FluentMappingBuilderIndexedCollectionTest {
 	}
 	
 	@Test
-	public void testUpdate_entityRemoval() throws SQLException {
-		UpdateDataTest updateDataTest = new UpdateDataTest().invoke();
-		Table choiceTable = updateDataTest.getChoiceTable();
-		Column<Table, Identifier> id = updateDataTest.getId();
-		Column<Table, Integer> idx = updateDataTest.getIdx();
-		Persister<Question, Identifier<Long>, ?> questionPersister = updateDataTest.getQuestionPersister();
-		Question newQuestion = updateDataTest.getNewQuestion();
-		Choice choice1 = updateDataTest.getChoice1();
-		Choice choice3 = updateDataTest.getChoice3();
+	public void testUpdate_entityRemoval() {
+		UpdateTestData updateTestData = new UpdateTestData().build();
+		Table choiceTable = updateTestData.getChoiceTable();
+		Column<Table, Identifier> id = updateTestData.getId();
+		Column<Table, Integer> idx = updateTestData.getIdx();
+		Persister<Question, Identifier<Long>, ?> questionPersister = updateTestData.getQuestionPersister();
+		Question newQuestion = updateTestData.getNewQuestion();
+		Choice choice1 = updateTestData.getChoice1();
+		Choice choice3 = updateTestData.getChoice3();
 		
 		// creating a clone to test instance swaping
 		Question modifiedQuestion = new Question(newQuestion.getId().getSurrogate());
@@ -251,15 +250,15 @@ public class FluentMappingBuilderIndexedCollectionTest {
 	 * This is not an expected use case and may be removed, but as it works it is "documented" 
 	 */
 	@Test
-	public void testUpdate_entityRemoval_entitiesAreSameObjectReference() throws SQLException {
-		UpdateDataTest updateDataTest = new UpdateDataTest().invoke();
-		Table choiceTable = updateDataTest.getChoiceTable();
-		Column<Table, Identifier> id = updateDataTest.getId();
-		Column<Table, Integer> idx = updateDataTest.getIdx();
-		Persister<Question, Identifier<Long>, ?> questionPersister = updateDataTest.getQuestionPersister();
-		Question newQuestion = updateDataTest.getNewQuestion();
-		Choice choice1 = updateDataTest.getChoice1();
-		Choice choice3 = updateDataTest.getChoice3();
+	public void testUpdate_entityRemoval_entitiesAreSameObjectReference() {
+		UpdateTestData updateTestData = new UpdateTestData().build();
+		Table choiceTable = updateTestData.getChoiceTable();
+		Column<Table, Identifier> id = updateTestData.getId();
+		Column<Table, Integer> idx = updateTestData.getIdx();
+		Persister<Question, Identifier<Long>, ?> questionPersister = updateTestData.getQuestionPersister();
+		Question newQuestion = updateTestData.getNewQuestion();
+		Choice choice1 = updateTestData.getChoice1();
+		Choice choice3 = updateTestData.getChoice3();
 		
 		// creating a clone to test instance swaping
 		Question modifiedQuestion = new Question(newQuestion.getId().getSurrogate());
@@ -281,7 +280,7 @@ public class FluentMappingBuilderIndexedCollectionTest {
 	}
 	
 	@Test
-	public void testSelect() throws SQLException {
+	public void testSelect() {
 		persistenceContext = new PersistenceContext(connectionProvider, DIALECT);
 		
 		Table choiceTable = new Table("Choice");
@@ -332,7 +331,7 @@ public class FluentMappingBuilderIndexedCollectionTest {
 	@Disabled	// because code is not ready for this so this test fails
 	public class WithDuplicates {
 		@Test
-		public void testInsert() throws SQLException {
+		public void testInsert() {
 			persistenceContext = new PersistenceContext(connectionProvider, DIALECT);
 			
 			Table choiceTable = new Table("Choice");
@@ -503,7 +502,7 @@ public class FluentMappingBuilderIndexedCollectionTest {
 		}
 	}
 	
-	private class UpdateDataTest {
+	private class UpdateTestData {
 		private Table choiceTable;
 		private Column<Table, Identifier> id;
 		private Column<Table, Integer> idx;
@@ -550,7 +549,7 @@ public class FluentMappingBuilderIndexedCollectionTest {
 			return choice3;
 		}
 		
-		public UpdateDataTest invoke() throws SQLException {
+		public UpdateTestData build() {
 			persistenceContext = new PersistenceContext(connectionProvider, DIALECT);
 			
 			choiceTable = new Table("Choice");

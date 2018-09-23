@@ -100,7 +100,7 @@ public class CascadeManyConfigurer<I extends Identified, O extends Identified, J
 			} else {
 				reverseMember = methodReferenceCapturer.findMethod(cascadeMany.getReverseGetter());
 			}
-			rightColumn = targetPersister.getMappingStrategy().getDefaultMappingStrategy().getPropertyToColumn().get(Accessors.of(reverseMember));
+			rightColumn = targetPersister.getMappingStrategy().getMainMappingStrategy().getPropertyToColumn().get(Accessors.of(reverseMember));
 			if (rightColumn == null) {
 				throw new NotYetSupportedOperationException("Reverse side mapping is not declared, please add the mapping of a "
 						+ Reflections.toString(joinedTablesPersister.getMappingStrategy().getClassToPersist())

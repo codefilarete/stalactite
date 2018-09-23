@@ -51,7 +51,7 @@ public class CascadeOneConfigurer<I extends Identified, O extends Identified, J 
 		if (mappingStrategy.getTargetTable().getPrimaryKey().getColumns().size() > 1) {
 			throw new NotYetSupportedOperationException("Joining tables on a composed primery key is not (yet) supported");
 		}
-		Column leftColumn = mappingStrategy.getDefaultMappingStrategy().getPropertyToColumn().get(propertyAccessor);
+		Column leftColumn = mappingStrategy.getMainMappingStrategy().getPropertyToColumn().get(propertyAccessor);
 		// According to the nullable option, we specify the ddl schema option
 		leftColumn.nullable(cascadeOne.isNullable());
 		Column rightColumn = Iterables.first(targetPersister.getTargetTable().getPrimaryKey().getColumns());
@@ -139,7 +139,7 @@ public class CascadeOneConfigurer<I extends Identified, O extends Identified, J 
 					break;
 				case SELECT:
 					// configuring select for fetching relation
-					IMutator targetSetter = propertyAccessor.getMutator();
+					IMutator<Identified, Identified> targetSetter = propertyAccessor.getMutator();
 					joinedTablesPersister.addPersister(JoinedStrategiesSelect.FIRST_STRATEGY_NAME, targetPersister,
 							BeanRelationFixer.of(targetSetter::set),
 							leftColumn, rightColumn, cascadeOne.isNullable());

@@ -27,7 +27,7 @@ import org.gama.stalactite.persistence.structure.Table;
  * @param <T> the main target table
  * @author Guillaume Mary
  */
-public class JoinedTablesPersister<C extends Identified, I extends StatefullIdentifier, T extends Table<T>> extends Persister<C, I, T> {
+public class JoinedTablesPersister<C, I, T extends Table<T>> extends Persister<C, I, T> {
 	
 	/** Select clause helper because of its complexity */
 	private final JoinedStrategiesSelectExecutor<C, I> joinedStrategiesSelectExecutor;

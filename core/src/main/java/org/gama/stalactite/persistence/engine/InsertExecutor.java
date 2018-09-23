@@ -41,7 +41,7 @@ public class InsertExecutor<C, I, T extends Table> extends WriteExecutor<C, I, T
 	public void setVersioningStrategy(VersioningStrategy versioningStrategy) {
 		// we could have put the column as an attribute of the VersioningStrategy but, by making the column more dynamic, the strategy can be
 		// shared as long as PropertyAccessor is reusable over entities (wraps a common method)
-		Column versionColumn = getMappingStrategy().getDefaultMappingStrategy().getPropertyToColumn().get(versioningStrategy.getPropertyAccessor());
+		Column versionColumn = getMappingStrategy().getMainMappingStrategy().getPropertyToColumn().get(versioningStrategy.getPropertyAccessor());
 		setOptimisticLockManager(new RevertOnRollbackMVCC(versioningStrategy, versionColumn, getConnectionProvider()));
 	}
 	

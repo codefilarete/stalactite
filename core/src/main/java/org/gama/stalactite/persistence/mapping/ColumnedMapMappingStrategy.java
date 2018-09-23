@@ -19,7 +19,7 @@ import org.gama.stalactite.persistence.structure.Table;
  *
  * @author Guillaume Mary
  */
-public abstract class ColumnedMapMappingStrategy<C extends Map<K, V>, K, V, T extends Table> implements IEmbeddedBeanMapping<C, T> {
+public abstract class ColumnedMapMappingStrategy<C extends Map<K, V>, K, V, T extends Table> implements IEmbeddedBeanMappingStrategy<C, T> {
 	
 	private final T targetTable;
 	private final Set<Column<T, Object>> columns;
