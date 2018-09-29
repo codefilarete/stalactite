@@ -66,7 +66,7 @@ public class WriteOperation<ParamType> extends SQLOperation<ParamType> {
 	 * @see #addBatch(Map)
 	 */
 	public int executeBatch() {
-		LOGGER.debug("Batching {} statements", batchedStatementCount);
+		LOGGER.debug("Batching statement {} times", batchedStatementCount);
 		try {
 			updatedRowCount = computeUpdatedRowCount(doExecuteBatch());
 			return updatedRowCount;

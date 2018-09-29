@@ -15,7 +15,7 @@ import org.gama.stalactite.persistence.structure.Table;
  * 
  * @author Guillaume Mary
  */
-public class ColumnParamedSQL<T extends Table> extends ExpandableStatement<Column<T, ?>> {
+public class ColumnParamedSQL<T extends Table> extends ExpandableStatement<Column<T, Object>> {
 	
 	private final Map<Column<T, Object>, int[]> columnIndexes;
 	
@@ -39,6 +39,19 @@ public class ColumnParamedSQL<T extends Table> extends ExpandableStatement<Colum
 	@Override
 	protected String getParameterName(Column column) {
 		return column.getAbsoluteName();
+	}
+	
+	/**
+	 * Hides {@link org.gama.sql.dml.SQLStatement#getParameterBinder(Object)} due to class generic type erasure, but this signature allows
+	 * to get the writer type that matched column's one
+	 * 
+	 * @param parameter any non null column
+	 * @param <O> column value type
+	 * @return super.getParameterBinder(parameter)
+	 * @see org.gama.sql.dml.SQLStatement#getParameterBinder(Object) 
+	 */
+	public <O> PreparedStatementWriter<O> getParameterBinder(Column<T, O> parameter) {
+		return super.getParameterBinder((Column) parameter);
 	}
 	
 	public int[] getIndexes(Column column) {
