@@ -112,6 +112,8 @@ public class FluentMappingBuilder<T extends Identified, I extends StatefullIdent
 	
 	private JoinColumnNamingStrategy columnNamingStrategy = JoinColumnNamingStrategy.DEFAULT;
 	
+	private AssociationTableNamingStrategy associationTableNamingStrategy = AssociationTableNamingStrategy.DEFAULT;
+	
 	private OptimisticLockOption optimisticLockOption;
 	
 	/**
@@ -464,7 +466,7 @@ public class FluentMappingBuilder<T extends Identified, I extends StatefullIdent
 			
 			CascadeManyConfigurer cascadeManyConfigurer = new CascadeManyConfigurer();
 			for(CascadeMany<T, ? extends Identified, ? extends StatefullIdentifier, ? extends Collection> cascadeMany : cascadeManys) {
-				cascadeManyConfigurer.appendCascade(cascadeMany, joinedTablesPersister, foreignKeyNamingStrategy);
+				cascadeManyConfigurer.appendCascade(cascadeMany, joinedTablesPersister, foreignKeyNamingStrategy, associationTableNamingStrategy, persistenceContext.getDialect());
 			}
 		}
 		

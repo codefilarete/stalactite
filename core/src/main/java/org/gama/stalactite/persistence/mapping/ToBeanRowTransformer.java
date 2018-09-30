@@ -86,7 +86,11 @@ public class ToBeanRowTransformer<T> extends AbstractTransformer<T> {
 		this.columnToMember = columnToMember;
 	}
 	
-	protected ColumnedRow getColumnedRow() {
+	public Map<Column, IMutator> getColumnToMember() {
+		return columnToMember;
+	}
+	
+	public ColumnedRow getColumnedRow() {
 		return columnedRow;
 	}
 	
@@ -127,6 +131,10 @@ public class ToBeanRowTransformer<T> extends AbstractTransformer<T> {
 		this.rowTransformerListeners.add(listener);
 	}
 	
+	/**
+	 * Small interface which instances will be invoked after row transformation, such as one can add any post-treatment to the bean row
+	 * @param <C> the row bean
+	 */
 	public interface TransformerListener<C> {
 		
 		void onTransform(C c, Row row);

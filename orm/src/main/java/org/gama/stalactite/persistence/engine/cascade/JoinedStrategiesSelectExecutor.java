@@ -67,6 +67,10 @@ public class JoinedStrategiesSelectExecutor<C, I> {
 		return (JoinedStrategiesSelect<C, I, T>) joinedStrategiesSelect;
 	}
 	
+	public ParameterBinderIndex<Column, ParameterBinder> getParameterBinderProvider() {
+		return parameterBinderProvider;
+	}
+	
 	/**
 	 * Adds an inner join to this executor.
 	 * Shorcu for {@link JoinedStrategiesSelect#add(String, ClassMappingStrategy, Column, Column, boolean, BeanRelationFixer)}

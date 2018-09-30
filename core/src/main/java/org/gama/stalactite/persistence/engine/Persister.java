@@ -25,7 +25,7 @@ import org.gama.stalactite.persistence.structure.Table;
  * @author Guillaume Mary
  */
 @Nonnull
-public class Persister<C, I, T extends Table<T>> {
+public class Persister<C, I, T extends Table> {
 	
 	private final ConnectionProvider connectionProvider;
 	private final DMLGenerator dmlGenerator;
@@ -265,8 +265,7 @@ public class Persister<C, I, T extends Table<T>> {
 	 * @param allColumnsStatement true if all columns must be in the SQL statement, false if only modified ones should be in
 	 */
 	public int update(Iterable<Duo<C, C>> differencesIterable, boolean allColumnsStatement) {
-		Iterable<UpdatePayload<C, T>> updatePayloads = IUpdateListener.computePayloads(differencesIterable, allColumnsStatement, 
-				getMappingStrategy());
+		Iterable<UpdatePayload<C, T>> updatePayloads = IUpdateListener.computePayloads(differencesIterable, allColumnsStatement, getMappingStrategy());
 		if (Iterables.isEmpty(updatePayloads)) {
 			// nothing to update => we return immediatly without any call to listeners
 			return 0;

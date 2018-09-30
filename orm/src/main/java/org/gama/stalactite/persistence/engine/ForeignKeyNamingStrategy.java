@@ -14,7 +14,7 @@ import org.gama.stalactite.persistence.structure.Column;
  */
 public interface ForeignKeyNamingStrategy {
 	
-	String DEFAULT_FOREIGNEKEY_PREFIX = "FK_";
+	String DEFAULT_FOREIGNKEY_PREFIX = "FK_";
 	
 	String giveName(Column src, Column target);
 	
@@ -22,10 +22,10 @@ public interface ForeignKeyNamingStrategy {
 	 * Composed of a prefix, source table name, source column name, target column name.
 	 * Must be quite unique to prevent Database such as HSQLDB to yiel because key names unicity is over a table space, not per table.
 	 */
-	ForeignKeyNamingStrategy DEFAULT = (src, target) -> DEFAULT_FOREIGNEKEY_PREFIX + src.getTable().getName() + "_" + src.getName()
+	ForeignKeyNamingStrategy DEFAULT = (src, target) -> DEFAULT_FOREIGNKEY_PREFIX + src.getTable().getName() + "_" + src.getName()
 			+ "_" + target.getTable().getName() + "_" + target.getName();
 	
-	ForeignKeyNamingStrategy HASH = (src, target) -> DEFAULT_FOREIGNEKEY_PREFIX
+	ForeignKeyNamingStrategy HASH = (src, target) -> DEFAULT_FOREIGNKEY_PREFIX
 			+ Integer.toHexString(src.getTable().getAbsoluteName().hashCode() * 31 * 31 + src.getName().hashCode() * 31 + target.getName().hashCode());
 	
 	/** Generates same name as Hibernate (4.3.7) does. From org.hibernate.mapping.Constraint#generateName(String, Table, Column... columns) */

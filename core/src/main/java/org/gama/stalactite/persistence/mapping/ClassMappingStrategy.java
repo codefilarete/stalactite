@@ -255,7 +255,9 @@ public class ClassMappingStrategy<C, I, T extends Table> implements IEntityMappi
 					toReturn.put(new UpwhereColumn<>(missingColumn, true), null);
 				}
 			}
-			for (Entry<Column<T, Object>, Object> entry : getVersionedKeyValues(modified).entrySet()) {
+			// Determining on which instance we should take where values : unmodified by default, modified for rough update (unmodified is null)
+			C whereSource = unmodified != null ? unmodified : modified;
+			for (Entry<Column<T, Object>, Object> entry : getVersionedKeyValues(whereSource).entrySet()) {
 				toReturn.put(new UpwhereColumn<>(entry.getKey(), false), entry.getValue());
 			}
 		}

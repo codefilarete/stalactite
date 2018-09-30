@@ -88,8 +88,7 @@ public class StrategyJoinsRowTransformer<T> {
 				Object identifier = leftStrategy.getIdMappingStrategy().getIdentifierAssembler().assemble(row, columnedRow);
 				
 				Object rowInstance = entityCacheWrapper.computeIfAbsent(leftStrategy.getClassToPersist(), identifier, () -> {
-					Object newInstance = mainRowTransformer.newBeanInstance();
-					mainRowTransformer.applyRowToBean(row, newInstance);
+					Object newInstance = mainRowTransformer.transform(row);
 					if (strategyJoins == rootStrategyJoins) {
 						result.add((T) newInstance);
 					}

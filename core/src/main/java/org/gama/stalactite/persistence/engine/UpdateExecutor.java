@@ -31,7 +31,7 @@ import static org.gama.stalactite.persistence.engine.RowCountManager.THROWING_RO
  * 
  * @author Guillaume Mary
  */
-public class UpdateExecutor<C, I, T extends Table<T>> extends WriteExecutor<C, I, T> {
+public class UpdateExecutor<C, I, T extends Table> extends WriteExecutor<C, I, T> {
 	
 	/** Entity lock manager, default is no operation as soon as a {@link VersioningStrategy} is given */
 	private OptimisticLockManager<T> optimisticLockManager = OptimisticLockManager.NOOP_OPTIMISTIC_LOCK_MANAGER;
@@ -192,7 +192,7 @@ public class UpdateExecutor<C, I, T extends Table<T>> extends WriteExecutor<C, I
 		}
 	}
 	
-	private interface JDBCBatchingOperationProvider<T extends Table<T>> {
+	private interface JDBCBatchingOperationProvider<T extends Table> {
 		JDBCBatchingOperation<T> getJdbcBatchingOperation(Set<UpwhereColumn<T>> upwhereColumns);
 		Iterable<JDBCBatchingOperation<T>> getJdbcBatchingOperations();
 	}
@@ -290,7 +290,7 @@ public class UpdateExecutor<C, I, T extends Table<T>> extends WriteExecutor<C, I
 	/**
 	 * The contract for managing Optimistic Lock on update.
 	 */
-	interface OptimisticLockManager<T extends Table<T>> {
+	interface OptimisticLockManager<T extends Table> {
 		
 		OptimisticLockManager NOOP_OPTIMISTIC_LOCK_MANAGER = (o1, o2, m) -> {};
 		

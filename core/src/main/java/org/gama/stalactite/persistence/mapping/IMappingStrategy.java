@@ -34,7 +34,7 @@ public interface IMappingStrategy<C, T extends Table> {
 	 * 
 	 * @param modified the modified instance,
 	 * 					may be null when this method is called to manage relationship
-	 * @param unmodified the not modified instance or "previous state" (coming from database for instance),
+	 * @param unmodified the non modified instance or "previous state" (coming from database for instance),
 	 * 					may be null to generate a rough update statement (allColumn doesn't matter in this case) 
 	 * @param allColumns indicates if allColumns must be returned, even if they are not all modified (necessary for JDBC batch optimization)
 	 * @return a mapping between columns that must be put in the SQL update order and there values,
@@ -54,7 +54,7 @@ public interface IMappingStrategy<C, T extends Table> {
 	C transform(Row row);
 	
 	/**
-	 * Adds a column for insert. This column is not expected to be already mapped to a bean property of the &lt;C&gt; class
+	 * Adds a column for insert. This column is not expected to be already mapped to a bean property of the &lt;T&gt; class
 	 * Here are some use case examples :
 	 * - getting the creation timestamp of a bean without the need to map it to a bean property,
 	 * - completing a table with a value that is not expected by the bean but by the table 
@@ -73,7 +73,7 @@ public interface IMappingStrategy<C, T extends Table> {
 	}
 	
 	/**
-	 * Adds a column for update. This column is not expected to be already mapped to a bean property of the &lt;C&gt; class
+	 * Adds a column for update. This column is not expected to be already mapped to a bean property of the &lt;T&gt; class
 	 * Here are some use case examples :
 	 * - timestamping a bean without the need to map the timestamp to a bean property,
 	 * - completing a table with a value that is not expected by the bean but by the table 

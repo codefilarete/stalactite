@@ -2,13 +2,14 @@ package org.gama.stalactite.persistence.engine;
 
 import javax.sql.DataSource;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Objects;
-import java.util.Set;
 import java.util.function.Predicate;
 
 import org.danekja.java.util.function.serializable.SerializableBiConsumer;
+import org.danekja.java.util.function.serializable.SerializableFunction;
 import org.gama.lang.Duo;
 import org.gama.lang.collection.Arrays;
 import org.gama.lang.collection.Iterables;
@@ -29,12 +30,12 @@ import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.test.JdbcConnectionProvider;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
 import static org.gama.lang.function.Functions.chain;
+import static org.gama.stalactite.persistence.engine.CascadeOption.CascadeType.DELETE;
 import static org.gama.stalactite.persistence.engine.CascadeOption.CascadeType.INSERT;
 import static org.gama.stalactite.persistence.engine.CascadeOption.CascadeType.SELECT;
 import static org.gama.stalactite.persistence.engine.CascadeOption.CascadeType.UPDATE;
@@ -78,8 +79,6 @@ public class FluentMappingBuilderIndexedCollectionTest {
 				.add(Choice::getQuestion)
 				.build(persistenceContext);
 		
-		// We need to rebuild our cityPersister before each test because some of them alter it on country relationship.
-		// So schema contains FK twice with same name, ending in duplicate FK name exception
 		Persister<Question, Identifier<Long>, ?> questionPersister = from(Question.class, LONG_TYPE)
 				.add(Question::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.addOneToManyList(Question::getChoices, choicePersister).mappedBy(Choice::getQuestion).indexedBy(idx).cascade(INSERT)
@@ -96,7 +95,7 @@ public class FluentMappingBuilderIndexedCollectionTest {
 		questionPersister.insert(newQuestion);
 		
 		List<Result> persistedChoices = persistenceContext.newQuery(select(id, idx).from(choiceTable).getSelectQuery().orderBy(id), Result.class)
-				.mapKey(id, Result::new)
+				.mapKey(Result::new, id)
 				.map(idx, (SerializableBiConsumer<Result, Integer>) Result::setIdx)
 				.execute(connectionProvider);
 		assertEquals(Arrays.asList(10L, 20L, 30L), Iterables.collectToList(persistedChoices, Result::getId));
@@ -126,7 +125,7 @@ public class FluentMappingBuilderIndexedCollectionTest {
 		
 		questionPersister.update(modifiedQuestion, newQuestion, true);
 		List<Result> persistedChoices = persistenceContext.newQuery(select(id, idx).from(choiceTable).getSelectQuery().orderBy(id), Result.class)
-				.mapKey(id, Result::new)
+				.mapKey(Result::new, id)
 				.map(idx, (SerializableBiConsumer<Result, Integer>) Result::setIdx)
 				.execute(connectionProvider);
 		// id should be left unmodified
@@ -168,7 +167,7 @@ public class FluentMappingBuilderIndexedCollectionTest {
 		// No change on List so no call to listener
 		verifyNoMoreInteractions(updateListener);
 		List<Result> persistedChoices = persistenceContext.newQuery(select(id, idx).from(choiceTable).getSelectQuery().orderBy(id), Result.class)
-				.mapKey(id, Result::new)
+				.mapKey(Result::new, id)
 				.map(idx, (SerializableBiConsumer<Result, Integer>) Result::setIdx)
 				.execute(connectionProvider);
 		// id should left unmodified
@@ -202,7 +201,7 @@ public class FluentMappingBuilderIndexedCollectionTest {
 		
 		questionPersister.update(modifiedQuestion, newQuestion, true);
 		List<Result> persistedChoices = persistenceContext.newQuery(select(id, idx).from(choiceTable).getSelectQuery().orderBy(id), Result.class)
-				.mapKey(id, Result::new)
+				.mapKey(Result::new, id)
 				.map(idx, (SerializableBiConsumer<Result, Integer>) Result::setIdx)
 				.execute(connectionProvider);
 		// id should left unmodified
@@ -236,7 +235,7 @@ public class FluentMappingBuilderIndexedCollectionTest {
 		
 		questionPersister.update(modifiedQuestion, newQuestion, true);
 		List<Result> persistedChoices = persistenceContext.newQuery(select(id, idx).from(choiceTable).getSelectQuery().orderBy(id), Result.class)
-				.mapKey(id, Result::new)
+				.mapKey(Result::new, id)
 				.map(idx, (SerializableBiConsumer<Result, Integer>) Result::setIdx)
 				.execute(connectionProvider);
 		// the removed id must be missing (entity asked for deletion)
@@ -270,7 +269,7 @@ public class FluentMappingBuilderIndexedCollectionTest {
 		
 		questionPersister.update(modifiedQuestion, newQuestion, true);
 		List<Result> persistedChoices = persistenceContext.newQuery(select(id, idx).from(choiceTable).getSelectQuery().orderBy(id), Result.class)
-				.mapKey(id, Result::new)
+				.mapKey(Result::new, id)
 				.map(idx, (SerializableBiConsumer<Result, Integer>) Result::setIdx)
 				.execute(connectionProvider);
 		// the removed id must be missing (entity asked for deletion)
@@ -295,8 +294,6 @@ public class FluentMappingBuilderIndexedCollectionTest {
 				.add(Choice::getQuestion)
 				.build(persistenceContext);
 		
-		// We need to rebuild our cityPersister before each test because some of them alter it on country relationship.
-		// So schema contains FK twice with same name, ending in duplicate FK name exception
 		Persister<Question, Identifier<Long>, ?> questionPersister = from(Question.class, LONG_TYPE)
 				.add(Question::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.addOneToManyList(Question::getChoices, choicePersister).mappedBy(Choice::getQuestion).indexedBy(idx).cascade(INSERT, UPDATE, SELECT)
@@ -328,53 +325,297 @@ public class FluentMappingBuilderIndexedCollectionTest {
 	}
 	
 	@Nested
-	@Disabled	// because code is not ready for this so this test fails
 	public class WithDuplicates {
+		
 		@Test
 		public void testInsert() {
 			persistenceContext = new PersistenceContext(connectionProvider, DIALECT);
 			
-			Table choiceTable = new Table("Choice");
-			// we declare the column that will store our List index
-			Column<Table, Identifier> id = choiceTable.addColumn("id", Identifier.class).primaryKey();
-			Column<Table, Integer> idx = choiceTable.addColumn("idx", int.class);
+			DuplicatesTestData duplicatesTestData = new DuplicatesTestData().build();
 			
-			Persister<Choice, Identifier<Long>, ?> choicePersister = from(Choice.class, LONG_TYPE, choiceTable)
-					.add(Choice::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
-					.add(Choice::getName)
-					.add(Choice::getQuestion)
-					.build(persistenceContext);
-			
-			// We need to rebuild our cityPersister before each test because some of them alter it on country relationship.
-			// So schema contains FK twice with same name, ending in duplicate FK name exception
-			Persister<Question, Identifier<Long>, ?> questionPersister = from(Question.class, LONG_TYPE)
-					.add(Question::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
-					.addOneToManyList(Question::getChoices, choicePersister).mappedBy(Choice::getQuestion).indexedBy(idx).cascade(INSERT, UPDATE)
-					.build(persistenceContext);
-			
-			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
-			ddlDeployer.deployDDL();
+			Persister<Question, Identifier<Long>, ?> questionPersister = duplicatesTestData.getQuestionPersister();
+			Persister<Answer, Identifier<Long>, ?> answerPersister = duplicatesTestData.getAnswerPersister();
+			Table answerChoicesTable = duplicatesTestData.getAnswerChoicesTable();
+			Column<Table, Identifier> answerChoicesTableId = duplicatesTestData.getAnswerChoicesTableId();
+			Column<Table, Integer> answerChoicesTableIdx = duplicatesTestData.getAnswerChoicesTableIdx();
+			Column<Table, Identifier> answerChoicesTableChoiceId = duplicatesTestData.getAnswerChoicesTableChoiceId();
 			
 			Question newQuestion = new Question(1L);
+			Choice choice1 = new Choice(10L);
+			Choice choice2 = new Choice(20L);
+			Choice choice3 = new Choice(30L);
+			newQuestion.setChoices(Arrays.asList(
+					choice1.setQuestion(newQuestion),
+					choice2.setQuestion(newQuestion),
+					choice3.setQuestion(newQuestion)));
 			questionPersister.insert(newQuestion);
-			Choice choice = new Choice(20L).setQuestion(newQuestion);
-			choicePersister.insert(choice);
 			
-			Question modifiedQuestion = new Question(new PersistedIdentifier<>(1L));
-			modifiedQuestion.setChoices(Arrays.asList(
-					new Choice(10L).setQuestion(modifiedQuestion),
-					choice,
-					choice,
-					new Choice(30L).setQuestion(modifiedQuestion)));
-			questionPersister.update(modifiedQuestion, newQuestion, true);
+			Answer answer = new Answer(1L);
+			answer.setChoices(Arrays.asList(choice1, choice2, choice2, choice3));
+			answerPersister.insert(answer);
 			
-			List<Result> persistedChoices = persistenceContext.newQuery(select(id, idx).from(choiceTable).getSelectQuery().orderBy(id), Result.class)
-					.mapKey(id, Result::new)
-					.map(idx, (SerializableBiConsumer<Result, Integer>) Result::setIdx)
+			QueryConverter<RawAnswer> query = persistenceContext.newQuery(
+					select(answerChoicesTableId, answerChoicesTableIdx, answerChoicesTableChoiceId)
+							.from(answerChoicesTable).getSelectQuery().orderBy(answerChoicesTableIdx), RawAnswer.class);
+			List<RawAnswer> persistedChoices = query
+					.mapKey(RawAnswer::new, answerChoicesTable.getPrimaryKey())
 					.execute(connectionProvider);
-			assertEquals(Arrays.asList(10L, 20L, 20L, 30L), Iterables.collectToList(persistedChoices, Result::getId));
+			assertEquals(Arrays.asList(10L, 20L, 20L, 30L), Iterables.collectToList(persistedChoices, RawAnswer::getChoiceId));
 			// stating that indexes are in same order than instances
-			assertEquals(Arrays.asList(0, 1, 2, 3), Iterables.collectToList(persistedChoices, Result::getIdx));
+			assertEquals(Arrays.asList(0, 1, 2, 3), Iterables.collectToList(persistedChoices, RawAnswer::getChoiceIdx));
+		}
+		
+		@Test
+		public void testSelect() {
+			persistenceContext = new PersistenceContext(connectionProvider, DIALECT);
+			
+			DuplicatesTestData duplicatesTestData = new DuplicatesTestData().build();
+			
+			Persister<Question, Identifier<Long>, ?> questionPersister = duplicatesTestData.getQuestionPersister();
+			Persister<Answer, Identifier<Long>, ?> answerPersister = duplicatesTestData.getAnswerPersister();
+			
+			Question newQuestion = new Question(1L);
+			Choice choice1 = new Choice(10L);
+			Choice choice2 = new Choice(20L);
+			Choice choice3 = new Choice(30L);
+			newQuestion.setChoices(Arrays.asList(
+					choice1.setQuestion(newQuestion),
+					choice2.setQuestion(newQuestion),
+					choice3.setQuestion(newQuestion)));
+			questionPersister.insert(newQuestion);
+			
+			Answer answer = new Answer(1L);
+			List<Choice> choices = Arrays.asList(choice1, choice2, choice2, choice3);
+			// we randomly shuffles choices so there's no risk to fall onto a green case due to unexpected database insertion or select behavior
+			Collections.shuffle(choices);
+			answer.setChoices(choices);
+			answerPersister.insert(answer);
+			
+			Answer selectedAnswer = answerPersister.select(new PersistableIdentifier<>(1L));
+			
+			assertEquals((Long) 1L, selectedAnswer.getId().getSurrogate());
+			assertEquals(choices, selectedAnswer.getChoices());
+		}
+
+		@Test
+		public void testDelete() {
+			persistenceContext = new PersistenceContext(connectionProvider, DIALECT);
+			
+			DuplicatesTestData duplicatesTestData = new DuplicatesTestData().build();
+			
+			Persister<Question, Identifier<Long>, ?> questionPersister = duplicatesTestData.getQuestionPersister();
+			Persister<Answer, Identifier<Long>, ?> answerPersister = duplicatesTestData.getAnswerPersister();
+			
+			Question newQuestion = new Question(1L);
+			Choice choice1 = new Choice(10L);
+			Choice choice2 = new Choice(20L);
+			Choice choice3 = new Choice(30L);
+			newQuestion.setChoices(Arrays.asList(
+					choice1.setQuestion(newQuestion),
+					choice2.setQuestion(newQuestion),
+					choice3.setQuestion(newQuestion)));
+			questionPersister.insert(newQuestion);
+			
+			Answer answer = new Answer(1L);
+			answer.setChoices(Arrays.asList(choice1, choice2, choice2, choice3));
+			answerPersister.insert(answer);
+			
+			int deletedAnswerCount = answerPersister.delete(answer);
+			
+			assertEquals(1, deletedAnswerCount);
+			
+			Table answerChoicesTable = duplicatesTestData.getAnswerChoicesTable();
+			QueryConverter<Long> query = persistenceContext.newQuery(
+					select("count(*) as c")
+							.from(answerChoicesTable).getSelectQuery(), Long.class);
+			List<Long> persistedChoices = query
+					.mapKey(SerializableFunction.identity(), "c", Long.class)
+					.execute(connectionProvider);
+			assertEquals((Long) 0L, persistedChoices.get(0));
+			
+			// No choice must be deleted
+			List<Choice> remainingChoices = duplicatesTestData.getChoicePersister().select(Arrays.asSet(choice1.getId(), choice2.getId(), choice3.getId()));
+			assertEquals(Arrays.asList(choice1, choice2, choice3), remainingChoices);
+		}
+		
+		@Test
+		public void testDeleteById() {
+			persistenceContext = new PersistenceContext(connectionProvider, DIALECT);
+			
+			DuplicatesTestData duplicatesTestData = new DuplicatesTestData().build();
+			
+			Persister<Question, Identifier<Long>, ?> questionPersister = duplicatesTestData.getQuestionPersister();
+			Persister<Answer, Identifier<Long>, ?> answerPersister = duplicatesTestData.getAnswerPersister();
+			
+			Question newQuestion = new Question(1L);
+			Choice choice1 = new Choice(10L);
+			Choice choice2 = new Choice(20L);
+			Choice choice3 = new Choice(30L);
+			newQuestion.setChoices(Arrays.asList(
+					choice1.setQuestion(newQuestion),
+					choice2.setQuestion(newQuestion),
+					choice3.setQuestion(newQuestion)));
+			questionPersister.insert(newQuestion);
+			
+			Answer answer = new Answer(1L);
+			answer.setChoices(Arrays.asList(choice1, choice2, choice2, choice3));
+			answerPersister.insert(answer);
+			
+			int deletedAnswerCount = answerPersister.deleteById(answer);
+			
+			assertEquals(1, deletedAnswerCount);
+			
+			Table answerChoicesTable = duplicatesTestData.getAnswerChoicesTable();
+			QueryConverter<Long> query = persistenceContext.newQuery(
+					select("count(*) as c")
+							.from(answerChoicesTable).getSelectQuery(), Long.class);
+			List<Long> persistedChoices = query
+					.mapKey(SerializableFunction.identity(), "c", Long.class)
+					.execute(connectionProvider);
+			assertEquals((Long) 0L, persistedChoices.get(0));
+			
+			// No choice must be deleted
+			List<Choice> remainingChoices = duplicatesTestData.getChoicePersister().select(Arrays.asSet(choice1.getId(), choice2.getId(), choice3.getId()));
+			assertEquals(Arrays.asList(choice1, choice2, choice3), remainingChoices);
+		}
+
+		@Test
+		public void testUpdate() {
+			persistenceContext = new PersistenceContext(connectionProvider, DIALECT);
+			
+			DuplicatesTestData duplicatesTestData = new DuplicatesTestData().build();
+			
+			Persister<Question, Identifier<Long>, ?> questionPersister = duplicatesTestData.getQuestionPersister();
+			Persister<Answer, Identifier<Long>, ?> answerPersister = duplicatesTestData.getAnswerPersister();
+			Table answerChoicesTable = duplicatesTestData.getAnswerChoicesTable();
+			Column<Table, Identifier> answerChoicesTableId = duplicatesTestData.getAnswerChoicesTableId();
+			Column<Table, Integer> answerChoicesTableIdx = duplicatesTestData.getAnswerChoicesTableIdx();
+			Column<Table, Identifier> answerChoicesTableChoiceId = duplicatesTestData.getAnswerChoicesTableChoiceId();
+			
+			
+			Question newQuestion = new Question(1L);
+			Choice choice1 = new Choice(10L);
+			Choice choice2 = new Choice(20L);
+			Choice choice3 = new Choice(30L);
+			Choice choice4 = new Choice(40L);
+			newQuestion.setChoices(Arrays.asList(
+					choice1.setQuestion(newQuestion),
+					choice2.setQuestion(newQuestion),
+					choice3.setQuestion(newQuestion),
+					choice4.setQuestion(newQuestion)
+			));
+			questionPersister.insert(newQuestion);
+			
+			Answer answer = new Answer(1L);
+			List<Choice> choices = Arrays.asList(choice1, choice2, choice2, choice3);
+			answer.setChoices(choices);
+			answerPersister.insert(answer);
+			
+			
+			// test with addition of entity
+			Choice nonPersistedChoice = new Choice(50L);
+			nonPersistedChoice.setQuestion(newQuestion);
+			Answer selectedAnswer = answerPersister.select(new PersistableIdentifier<>(1L));
+			selectedAnswer.setChoices(Arrays.asList(choice1, choice2, nonPersistedChoice, choice2, choice3, choice1, choice4));
+			answerPersister.update(selectedAnswer, answer, true);
+			
+			QueryConverter<RawAnswer> query = persistenceContext.newQuery(
+					select(answerChoicesTableId, answerChoicesTableIdx, answerChoicesTableChoiceId)
+							.from(answerChoicesTable).getSelectQuery().orderBy(answerChoicesTableIdx), RawAnswer.class);
+			List<RawAnswer> persistedChoices = query
+					.mapKey(RawAnswer::new, answerChoicesTable.getPrimaryKey())
+					.execute(connectionProvider);
+			assertEquals(Arrays.asList(10L, 20L, 50L, 20L, 30L, 10L, 40L), Iterables.collectToList(persistedChoices, RawAnswer::getChoiceId));
+			// stating that indexes are in same order than instances
+			assertEquals(Arrays.asList(0, 1, 2, 3, 4, 5, 6), Iterables.collectToList(persistedChoices, RawAnswer::getChoiceIdx));
+			
+			// test with entity removal
+			Answer selectedAnswer1 = answerPersister.select(new PersistableIdentifier<>(1L));
+			selectedAnswer1.setChoices(Arrays.asList(choice1, choice2, choice1));
+			answerPersister.update(selectedAnswer1, selectedAnswer, true);
+			
+			query = persistenceContext.newQuery(
+					select(answerChoicesTableId, answerChoicesTableIdx, answerChoicesTableChoiceId)
+							.from(answerChoicesTable).getSelectQuery().orderBy(answerChoicesTableIdx), RawAnswer.class);
+			persistedChoices = query
+					.mapKey(RawAnswer::new, answerChoicesTable.getPrimaryKey())
+					.execute(connectionProvider);
+			assertEquals(Arrays.asList(10L, 20L, 10L), Iterables.collectToList(persistedChoices, RawAnswer::getChoiceId));
+			// stating that indexes are in same order than instances
+			assertEquals(Arrays.asList(0, 1, 2), Iterables.collectToList(persistedChoices, RawAnswer::getChoiceIdx));
+		}
+		
+		private class DuplicatesTestData {
+			private Persister<Question, Identifier<Long>, ?> questionPersister;
+			private Persister<Choice, Identifier<Long>, ?> choicePersister;
+			private Persister<Answer, Identifier<Long>, ?> answerPersister;
+			private Table answerChoicesTable;
+			private Column<Table, Identifier> answerChoicesTableId;
+			private Column<Table, Integer> answerChoicesTableIdx;
+			private Column<Table, Identifier> answerChoicesTableChoiceId;
+			
+			public Persister<Question, Identifier<Long>, ?> getQuestionPersister() {
+				return questionPersister;
+			}
+			
+			public Persister<Answer, Identifier<Long>, ?> getAnswerPersister() {
+				return answerPersister;
+			}
+			
+			public Persister<Choice, Identifier<Long>, ?> getChoicePersister() {
+				return choicePersister;
+			}
+			
+			public Table getAnswerChoicesTable() {
+				return answerChoicesTable;
+			}
+			
+			public Column<Table, Identifier> getAnswerChoicesTableId() {
+				return answerChoicesTableId;
+			}
+			
+			public Column<Table, Integer> getAnswerChoicesTableIdx() {
+				return answerChoicesTableIdx;
+			}
+			
+			public Column<Table, Identifier> getAnswerChoicesTableChoiceId() {
+				return answerChoicesTableChoiceId;
+			}
+			
+			public DuplicatesTestData build() {
+				Table choiceTable = new Table("Choice");
+				// we declare the column that will store our List index
+				Column<Table, Identifier> id = choiceTable.addColumn("id", Identifier.class).primaryKey();
+				Column<Table, Integer> idx = choiceTable.addColumn("idx", int.class);
+				
+				choicePersister = from(Choice.class, LONG_TYPE, choiceTable)
+						.add(Choice::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
+						.add(Choice::getName)
+						.add(Choice::getQuestion)
+						.build(persistenceContext);
+				
+				questionPersister = from(Question.class, LONG_TYPE)
+						.add(Question::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
+						.addOneToManyList(Question::getChoices, choicePersister).mappedBy(Choice::getQuestion).indexedBy(idx).cascade(INSERT, UPDATE)
+						.build(persistenceContext);
+				
+				answerPersister = from(Answer.class, LONG_TYPE)
+						.add(Answer::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
+						.addOneToManyList(Answer::getChoices, choicePersister).cascade(INSERT, UPDATE, DELETE, SELECT)
+						.build(persistenceContext);
+				
+				// We declare the table that will store our relationship, and overall our List index
+				// NB: names are hardcoded here because they are hardly accessible from outside of CascadeManyConfigurer
+				answerChoicesTable = new Table("Answer_Choices");
+				answerChoicesTableId = answerChoicesTable.addColumn("answer_Id", Identifier.class).primaryKey();
+				answerChoicesTableIdx = answerChoicesTable.addColumn("idx", Integer.class).primaryKey();
+				answerChoicesTableChoiceId = answerChoicesTable.addColumn("choice_Id", Identifier.class).primaryKey();
+				
+				DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+				ddlDeployer.getDdlSchemaGenerator().addTables(answerChoicesTable);
+				ddlDeployer.deployDDL();
+				return this;
+			}
 		}
 	}
 	
@@ -405,13 +646,11 @@ public class FluentMappingBuilderIndexedCollectionTest {
 		
 		private List<Choice> choices = new ArrayList<>();
 		
-		private Set<Choice> nonIndexedChoices;
-		
 		private Question() {
 		}
 		
 		private Question(Long id) {
-			this.id = new PersistableIdentifier<>(id);
+			this(new PersistableIdentifier<>(id));
 		}
 		
 		private Question(Identifier<Long> id) {
@@ -436,13 +675,86 @@ public class FluentMappingBuilderIndexedCollectionTest {
 			this.choices = choices;
 			choices.forEach(choice -> choice.setQuestion(this));
 		}
+	}
+	
+	private static class Answer implements Identified<Long> {
 		
-		public Set<Choice> getNonIndexedChoices() {
-			return nonIndexedChoices;
+		private Identifier<Long> id;
+		
+		private List<Choice> choices = new ArrayList<>();
+		
+		private Answer() {
 		}
 		
-		public void setNonIndexedChoices(Set<Choice> nonIndexedChoices) {
-			this.nonIndexedChoices = nonIndexedChoices;
+		private Answer(Long id) {
+			this(new PersistableIdentifier<>(id));
+		}
+		
+		private Answer(Identifier<Long> id) {
+			this.id = id;
+		}
+		
+		@Override
+		public Identifier<Long> getId() {
+			return id;
+		}
+		
+		@Override
+		public void setId(Identifier<Long> id) {
+			this.id = id;
+		}
+		
+		public List<Choice> getChoices() {
+			return choices;
+		}
+		
+		public void setChoices(List<Choice> choices) {
+			this.choices = choices;
+		}
+	}
+	
+	private static class RawAnswer {
+		private Long answerId;
+		private Integer choiceIdx;
+		private Long choiceId;
+		
+		public RawAnswer() {
+		}
+		
+		private RawAnswer(long answerId, int choiceIdx, long choiceId) {
+			this.answerId = answerId;
+			this.choiceIdx = choiceIdx;
+			this.choiceId = choiceId;
+		}
+		
+		private RawAnswer(Object[] input) {
+			this.answerId = ((PersistedIdentifier<Long>) input[0]).getSurrogate();
+			this.choiceIdx = (Integer) input[1];
+			this.choiceId = ((PersistedIdentifier<Long>) input[2]).getSurrogate();
+		}
+		
+		public Long getAnswerId() {
+			return answerId;
+		}
+		
+		public void setAnswerId(long answerId) {
+			this.answerId = answerId;
+		}
+		
+		public Integer getChoiceIdx() {
+			return choiceIdx;
+		}
+		
+		public void setChoiceIdx(int choiceIdx) {
+			this.choiceIdx = choiceIdx;
+		}
+		
+		public Long getChoiceId() {
+			return choiceId;
+		}
+		
+		public void setChoiceId(long choiceId) {
+			this.choiceId = choiceId;
 		}
 	}
 	
@@ -499,6 +811,11 @@ public class FluentMappingBuilderIndexedCollectionTest {
 		@Override
 		public int hashCode() {
 			return Objects.hash(id);
+		}
+		
+		@Override
+		public String toString() {
+			return "Choice{id=" + id.getSurrogate() + ", question=" + question + ", name='" + name + '\'' + '}';
 		}
 	}
 	
@@ -564,8 +881,6 @@ public class FluentMappingBuilderIndexedCollectionTest {
 					.add(Choice::getQuestion)
 					.build(persistenceContext);
 			
-			// We need to rebuild our cityPersister before each test because some of them alter it on country relationship.
-			// So schema contains FK twice with same name, ending in duplicate FK name exception
 			questionPersister = from(Question.class, LONG_TYPE)
 					.add(Question::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 					.addOneToManyList(Question::getChoices, choicePersister).mappedBy(Choice::getQuestion).indexedBy(idx)
@@ -588,7 +903,7 @@ public class FluentMappingBuilderIndexedCollectionTest {
 			questionPersister.insert(newQuestion);
 			
 			List<Result> persistedChoices = persistenceContext.newQuery(select(id, idx).from(choiceTable).getSelectQuery().orderBy(id), Result.class)
-					.mapKey(id, Result::new)
+					.mapKey(Result::new, id)
 					.map(idx, (SerializableBiConsumer<Result, Integer>) Result::setIdx)
 					.execute(connectionProvider);
 			assertEquals(Arrays.asList(10L, 20L, 30L), Iterables.collectToList(persistedChoices, Result::getId));

@@ -1,5 +1,6 @@
 package org.gama.stalactite.persistence.engine;
 
+import java.util.Set;
 import java.util.function.Predicate;
 
 import org.gama.lang.Duo;
@@ -39,7 +40,7 @@ public class CascadeOneConfigurer<I extends Identified, O extends Identified, J 
 			ClassMappingStrategy<I, O, T> mappingStrategy,
 			JoinedTablesPersister<I, J, T> joinedTablesPersister,
 			ForeignKeyNamingStrategy foreignKeyNamingStrategy) {
-		Persister<Identified, StatefullIdentifier, ?> targetPersister = (Persister<Identified, StatefullIdentifier, ?>) cascadeOne.getPersister();
+		Persister<Identified, StatefullIdentifier, Table> targetPersister = (Persister<Identified, StatefullIdentifier, Table>) cascadeOne.getPersister();
 		
 		// adding persistence flag setters on other side
 		targetPersister.getPersisterListener().addInsertListener(SetPersistedFlagAfterInsertListener.INSTANCE);
@@ -54,7 +55,7 @@ public class CascadeOneConfigurer<I extends Identified, O extends Identified, J 
 		Column leftColumn = mappingStrategy.getMainMappingStrategy().getPropertyToColumn().get(propertyAccessor);
 		// According to the nullable option, we specify the ddl schema option
 		leftColumn.nullable(cascadeOne.isNullable());
-		Column rightColumn = Iterables.first(targetPersister.getTargetTable().getPrimaryKey().getColumns());
+		Column rightColumn = Iterables.first((Set<Column<?, Object>>) targetPersister.getTargetTable().getPrimaryKey().getColumns());
 		
 		// adding foerign key constraint
 		leftColumn.getTable().addForeignKey(foreignKeyNamingStrategy.giveName(leftColumn, rightColumn), leftColumn, rightColumn);

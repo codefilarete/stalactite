@@ -24,10 +24,18 @@ public abstract class ComposedIdentifierAssembler<I> implements IdentifierAssemb
 	
 	private final Set<Column> primaryKeyColumns;
 	
-	protected ComposedIdentifierAssembler(Table table) {
+	/**
+	 * Constructor for cases where primary key columns are those of the table
+	 * @param table any table (non null)
+	 */
+	protected ComposedIdentifierAssembler(@Nonnull Table table) {
 		this(table.getPrimaryKey().getColumns());
 	}
 	
+	/**
+	 * Constructor which explicitly gets columns to be used for identifying a bean
+	 * @param primaryKeyColumns some columns to be used to compose an identifier
+	 */
 	protected ComposedIdentifierAssembler(Set<Column> primaryKeyColumns) {
 		this.primaryKeyColumns = primaryKeyColumns;
 	}

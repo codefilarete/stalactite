@@ -28,7 +28,7 @@ public interface IUpdateListener<C> {
 	 * @param <C> entities type
 	 * @param <T> target table type
 	 */
-	class UpdatePayload<C, T extends Table<T>> {
+	class UpdatePayload<C, T extends Table> {
 		private final Duo<C, C> entities;
 		
 		private final Map<UpwhereColumn<T>, Object> values;

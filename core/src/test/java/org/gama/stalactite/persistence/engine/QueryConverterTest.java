@@ -44,37 +44,37 @@ public class QueryConverterTest {
 		return new Object[][] {
 				{	// default API: column name, column type
 					new QueryConverter<>(Toto.class, "select id, name from Toto", parameterBinderProvider)
-						.mapKey("id", Toto::new, Long.class)
+						.mapKey(Toto::new, "id", Long.class)
 						.map("name", Toto::setName, String.class)
 						.map("active", Toto::setActive) },
 				{	// with Java Bean constructor (no args)
 					new QueryConverter<>(Toto.class, "select id, name from Toto", parameterBinderProvider)
-						.mapKey("id", Toto::new, Toto::setId, Long.class)
+						.mapKey(Toto::new, "id", Long.class, Toto::setId)
 						.map("name", Toto::setName, String.class)
 						.map("active", Toto::setActive) },
 				{	// with Java Bean constructor (no args) and no column type
 					new QueryConverter<>(Toto.class, "select id, name from Toto", parameterBinderProvider)
-						.mapKey("id", Toto::new, Toto::setId)
+						.mapKey(Toto::new, "id", Toto::setId)
 						.map("name", Toto::setName, String.class)
 						.map("active", Toto::setActive) },
 				{	// with Java Bean constructor (no args) and no column type, other syntax (not officially supported)
 					new QueryConverter<>(Toto.class, "select id, name from Toto", parameterBinderProvider)
-						.mapKey("id", Toto::new, (SerializableBiConsumer<Toto, Long>) Toto::setId)
+						.mapKey(Toto::new, "id", (SerializableBiConsumer<Toto, Long>) Toto::setId)
 						.map("name", Toto::setName, String.class)
 						.map("active", Toto::setActive) },
 				{	// with map method using other syntax (not officially supported)
 					new QueryConverter<>(Toto.class, "select id, name from Toto", parameterBinderProvider)
-							.mapKey("id", Toto::new, Toto::setId)
+							.mapKey(Toto::new, "id", Toto::setId)
 						.map("name", Toto::setName, String.class)
 						.map("active", (SerializableBiConsumer<Toto, Boolean>) Toto::setActive) },
 				{ 	// with Column API
 					new QueryConverter<>(Toto.class, "select id, name from Toto", parameterBinderProvider)
-						.mapKey(id, Toto::new)
+						.mapKey(Toto::new, id)
 						.map(name, Toto::setName)
 						.map(active, Toto::setActive) },
 				{	// with Java Bean constructor (no args)
 					new QueryConverter<>(Toto.class, "select id, name from Toto", parameterBinderProvider)
-						.mapKey(id, Toto::new, Toto::setId)
+						.mapKey(Toto::new, id, Toto::setId)
 						.map(name, Toto::setName)
 						.map(active, Toto::setActive) }
 		};
@@ -105,13 +105,13 @@ public class QueryConverterTest {
 		
 		return new Object[][] {
 				{ new QueryConverter<>(Toto.class, "select id, name from Toto", parameterBinderProvider)
-							.mapKey("id", Toto::new, Toto::setId)
+							.mapKey(Toto::new, "id", Toto::setId)
 							.map("name", Toto::setName, input -> "coucou") },
 				{ new QueryConverter<>(Toto.class, "select id, name from Toto", parameterBinderProvider)
-							.mapKey("id", Toto::new, Toto::setId)
+							.mapKey(Toto::new, "id", Toto::setId)
 							.map("name", Toto::setName, String.class, input -> "coucou") },
 				{ new QueryConverter<>(Toto.class, "select id, name from Toto", parameterBinderProvider)
-							.mapKey(id, Toto::new, Toto::setId)
+							.mapKey(Toto::new, id, Toto::setId)
 							.map(name, Toto::setName, input -> "coucou") }
 		};
 	}
@@ -153,7 +153,7 @@ public class QueryConverterTest {
 		ParameterBinderProvider<Class> parameterBinderProvider = ParameterBinderProvider.fromMap(new ColumnBinderRegistry().getParameterBinders());
 		// NB: SQL String is there only for clarification but is never executed
 		QueryConverter<Toto> queryConverter = new QueryConverter<>(Toto.class, "select id, name from Toto where id in (:id)", parameterBinderProvider)
-				.mapKey("id", Toto::new, Integer.class)
+				.mapKey(Toto::new, "id", Integer.class)
 				.set("id", Arrays.asList(1, 2), Integer.class);
 		
 		// Very simple data are necessary for the ResultSet since only id is mapped 
@@ -186,7 +186,7 @@ public class QueryConverterTest {
 	public void testNewQuery_addAssembler() {
 		ParameterBinderProvider<Class> parameterBinderProvider = ParameterBinderProvider.fromMap(new ColumnBinderRegistry().getParameterBinders());
 		QueryConverter<Toto> queryConverter = new QueryConverter<>(Toto.class, "select id, name from Toto", parameterBinderProvider)
-				.mapKey("id", Toto::new, Toto::setId)
+				.mapKey(Toto::new, "id", Toto::setId)
 				.add((rootBean, resultSet) -> rootBean.setName(resultSet.getString("name")));
 		
 		List<Map<String, Object>> resultSetData = Arrays.asList(

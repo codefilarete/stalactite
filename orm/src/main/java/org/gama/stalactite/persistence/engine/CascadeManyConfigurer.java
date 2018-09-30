@@ -16,12 +16,16 @@ import org.danekja.java.util.function.serializable.SerializableBiConsumer;
 import org.gama.lang.Duo;
 import org.gama.lang.Nullable;
 import org.gama.lang.Reflections;
+import org.gama.lang.Retryer;
 import org.gama.lang.ThreadLocals;
-import org.gama.lang.collection.Iterables;
-import org.gama.reflection.Accessors;
+import org.gama.lang.collection.PairIterator;
 import org.gama.reflection.IMutator;
 import org.gama.reflection.MethodReferenceCapturer;
 import org.gama.reflection.PropertyAccessor;
+import org.gama.sql.dml.PreparedSQL;
+import org.gama.sql.dml.WriteOperation;
+import org.gama.stalactite.command.builder.DeleteCommandBuilder;
+import org.gama.stalactite.command.model.Delete;
 import org.gama.stalactite.persistence.engine.CascadeOption.CascadeType;
 import org.gama.stalactite.persistence.engine.FluentMappingBuilder.SetPersistedFlagAfterInsertListener;
 import org.gama.stalactite.persistence.engine.builder.CascadeMany;
@@ -30,24 +34,36 @@ import org.gama.stalactite.persistence.engine.cascade.AfterInsertCollectionCasca
 import org.gama.stalactite.persistence.engine.cascade.AfterUpdateCollectionCascader;
 import org.gama.stalactite.persistence.engine.cascade.BeforeDeleteByIdCollectionCascader;
 import org.gama.stalactite.persistence.engine.cascade.BeforeDeleteCollectionCascader;
-import org.gama.stalactite.persistence.engine.cascade.JoinedStrategiesSelect;
 import org.gama.stalactite.persistence.engine.cascade.JoinedTablesPersister;
+import org.gama.stalactite.persistence.engine.listening.IDeleteByIdListener;
+import org.gama.stalactite.persistence.engine.listening.IDeleteListener;
 import org.gama.stalactite.persistence.engine.listening.IInsertListener;
 import org.gama.stalactite.persistence.engine.listening.ISelectListener;
 import org.gama.stalactite.persistence.engine.listening.IUpdateListener.UpdatePayload;
 import org.gama.stalactite.persistence.engine.listening.PersisterListener;
 import org.gama.stalactite.persistence.id.Identified;
+import org.gama.stalactite.persistence.id.Identifier;
 import org.gama.stalactite.persistence.id.diff.Diff;
 import org.gama.stalactite.persistence.id.diff.IdentifiedCollectionDiffer;
 import org.gama.stalactite.persistence.id.diff.IndexedDiff;
-import org.gama.stalactite.persistence.id.manager.StatefullIdentifier;
+import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
+import org.gama.stalactite.persistence.sql.Dialect;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
+import org.gama.stalactite.query.model.Operand;
+
+import static org.gama.lang.collection.Iterables.collect;
+import static org.gama.lang.collection.Iterables.collectToList;
+import static org.gama.lang.collection.Iterables.first;
+import static org.gama.lang.collection.Iterables.minus;
+import static org.gama.lang.collection.Iterables.stream;
+import static org.gama.reflection.Accessors.of;
+import static org.gama.stalactite.persistence.engine.cascade.JoinedStrategiesSelect.FIRST_STRATEGY_NAME;
 
 /**
  * @author Guillaume Mary
  */
-public class CascadeManyConfigurer<I extends Identified, O extends Identified, J extends StatefullIdentifier, C extends Collection<O>> {
+public class CascadeManyConfigurer<I extends Identified, O extends Identified, J extends Identifier, C extends Collection<O>> {
 	
 	/** {@link OneToManyOptions#mappedBy(SerializableBiConsumer)} method signature (for printing purpose) to help find usage by avoiding hard "mappedBy" String */
 	private static final String MAPPED_BY_SIGNATURE;
@@ -60,6 +76,9 @@ public class CascadeManyConfigurer<I extends Identified, O extends Identified, J
 	 */
 	private final ThreadLocal<Map<O, Integer>> updatableListIndex = new ThreadLocal<>();
 	
+	private final ThreadLocal<Map<I, List<AssociationRecord>>> leftAssociations = new ThreadLocal<>();
+	private final ThreadLocal<Map<AssociationRecord, O>> rightAssociations = new ThreadLocal<>();
+	
 	static {
 		Method mappedByMethod = new MethodReferenceCapturer()
 				.findMethod((SerializableBiConsumer<OneToManyOptions, SerializableBiConsumer>) OneToManyOptions::mappedBy);
@@ -68,64 +87,111 @@ public class CascadeManyConfigurer<I extends Identified, O extends Identified, J
 	
 	private final IdentifiedCollectionDiffer differ = new IdentifiedCollectionDiffer();
 	
+	AssociationRecordPersister<AssociationRecord, AssociationTable> associationPersister;
+	AssociationRecordPersister<IndexedAssociationRecord, IndexedAssociationTable> indexedAssociationPersister;
+	Column<? extends AssociationTable, Object> pointerToLeftColumn;
+	Column<? extends AssociationTable, Object> pointerToRightColumn;
+	Column<IndexedAssociationTable, Integer> indexColumn;
+	private Dialect dialect;
+	
 	public <T extends Table<T>> void appendCascade(CascadeMany<I, O, J, C> cascadeMany,
 												   JoinedTablesPersister<I, J, T> joinedTablesPersister,
-												   ForeignKeyNamingStrategy foreignKeyNamingStrategy) {
-		Persister<O, J, ?> targetPersister = cascadeMany.getPersister();
+												   ForeignKeyNamingStrategy foreignKeyNamingStrategy,
+												   AssociationTableNamingStrategy associationTableNamingStrategy, Dialect dialect) {
+		this.dialect = dialect;
+		Persister<O, J, ?> leftPersister = cascadeMany.getPersister();
 		
 		// adding persistence flag setters on both side
 		joinedTablesPersister.getPersisterListener().addInsertListener((IInsertListener<I>) SetPersistedFlagAfterInsertListener.INSTANCE);
-		targetPersister.getPersisterListener().addInsertListener((IInsertListener<O>) SetPersistedFlagAfterInsertListener.INSTANCE);
+		leftPersister.getPersisterListener().addInsertListener((IInsertListener<O>) SetPersistedFlagAfterInsertListener.INSTANCE);
 		
 		// finding joined columns: left one is primary key. Right one is given by the target strategy through the property accessor
 		if (joinedTablesPersister.getTargetTable().getPrimaryKey().getColumns().size() > 1) {
-			throw new NotYetSupportedOperationException("Joining tables on a composed primery key is not (yet) supported");
+			throw new NotYetSupportedOperationException("Joining tables on a composed primary key is not (yet) supported");
 		}
-		Column leftColumn = Iterables.first(joinedTablesPersister.getTargetTable().getPrimaryKey().getColumns());
+		Column leftPrimaryKey = first(joinedTablesPersister.getTargetTable().getPrimaryKey().getColumns());
 		
-		Function<I, C> collectionGetter = cascadeMany.getTargetProvider();
+		Column rightJoinColumn;
 		if (cascadeMany.getReverseSetter() == null && cascadeMany.getReverseGetter() == null && cascadeMany.getReverseColumn() == null) {
-			throw new NotYetSupportedOperationException("Collection mapping without reverse property is not (yet) supported,"
-					+ " please use \"" + MAPPED_BY_SIGNATURE + "\" option do declare one for " 
-					+ Reflections.toString(cascadeMany.getMember()));
-		}
-		
-		Column rightColumn = cascadeMany.getReverseColumn();
-		if (rightColumn == null) {
-			// Here reverse side is surely defined by method reference (because of assertion some lines upper), we look for the matching column
-			MethodReferenceCapturer methodReferenceCapturer = new MethodReferenceCapturer();
-			Method reverseMember;
-			if (cascadeMany.getReverseSetter() != null) {
-				reverseMember = methodReferenceCapturer.findMethod(cascadeMany.getReverseSetter());
+			// case : Collection mapping without reverse property : an association table is needed
+			Table<?> rightTable = leftPersister.getMappingStrategy().getTargetTable();
+			Column rightPrimaryKey = first(rightTable.getPrimaryKey().getColumns());
+			
+			if (cascadeMany instanceof CascadeManyList) {
+				// NB: index column is part of the primary key
+				IndexedAssociationTable intermediaryTable = new IndexedAssociationTable(null, leftPrimaryKey, rightPrimaryKey, associationTableNamingStrategy, foreignKeyNamingStrategy);
+				pointerToLeftColumn = intermediaryTable.getOneSideKeyColumn();
+				pointerToRightColumn = intermediaryTable.getManySideKeyColumn();
+				indexColumn = intermediaryTable.getIndexColumn();
+				indexedAssociationPersister = new AssociationRecordPersister<>(
+						new IndexedAssociationRecordMappingStrategy(intermediaryTable),
+						joinedTablesPersister.getConnectionProvider(),
+						joinedTablesPersister.getDmlGenerator(),
+						Retryer.NO_RETRY,
+						joinedTablesPersister.getBatchSize(),
+						joinedTablesPersister.getInOperatorMaxSize());
 			} else {
-				reverseMember = methodReferenceCapturer.findMethod(cascadeMany.getReverseGetter());
+				AssociationTable intermediaryTable = new AssociationTable(null, leftPrimaryKey, rightPrimaryKey, associationTableNamingStrategy, foreignKeyNamingStrategy);
+				pointerToLeftColumn = intermediaryTable.getOneSideKeyColumn();
+				pointerToRightColumn = intermediaryTable.getManySideKeyColumn();
+				associationPersister = new AssociationRecordPersister<>(
+						new AssociationRecordMappingStrategy(intermediaryTable),
+						joinedTablesPersister.getConnectionProvider(),
+						joinedTablesPersister.getDmlGenerator(),
+						Retryer.NO_RETRY,
+						joinedTablesPersister.getBatchSize(),
+						joinedTablesPersister.getInOperatorMaxSize());
 			}
-			rightColumn = targetPersister.getMappingStrategy().getMainMappingStrategy().getPropertyToColumn().get(Accessors.of(reverseMember));
-			if (rightColumn == null) {
-				throw new NotYetSupportedOperationException("Reverse side mapping is not declared, please add the mapping of a "
-						+ Reflections.toString(joinedTablesPersister.getMappingStrategy().getClassToPersist())
-						+ " to persister of " + cascadeMany.getPersister().getMappingStrategy().getClassToPersist().getName());
+			
+			// for further select usage, see far below
+			rightJoinColumn = rightPrimaryKey;
+		} else {
+			// case : reverse property is defined through one of the setter, getter or column on the reverse side
+			// We're looking for the foreign key (no association table needed)
+			// Determining right side column
+			Column foreignKey = cascadeMany.getReverseColumn();
+			
+			if (foreignKey == null) {
+				// Here reverse side is surely defined by method reference (because of assertion some lines upper), we look for the matching column
+				MethodReferenceCapturer methodReferenceCapturer = new MethodReferenceCapturer();
+				Method reverseMember;
+				if (cascadeMany.getReverseSetter() != null) {
+					reverseMember = methodReferenceCapturer.findMethod(cascadeMany.getReverseSetter());
+				} else {
+					reverseMember = methodReferenceCapturer.findMethod(cascadeMany.getReverseGetter());
+				}
+				foreignKey = leftPersister.getMappingStrategy().getMainMappingStrategy().getPropertyToColumn().get(of(reverseMember));
+				if (foreignKey == null) {
+					// This should not happen, left for bug safety
+					throw new NotYetSupportedOperationException("Reverse side mapping is not declared, please add the mapping of a "
+							+ Reflections.toString(joinedTablesPersister.getMappingStrategy().getClassToPersist())
+							+ " to persister of " + cascadeMany.getPersister().getMappingStrategy().getClassToPersist().getName());
+				}
 			}
+			
+			// adding foreign key constraint
+			foreignKey.getTable().addForeignKey(foreignKeyNamingStrategy.giveName(foreignKey, leftPrimaryKey), foreignKey, leftPrimaryKey);
+			
+			// for further select usage, see far below
+			rightJoinColumn = foreignKey;
 		}
-		
-		// adding foreign key constraint
-		rightColumn.getTable().addForeignKey(foreignKeyNamingStrategy.giveName(rightColumn, leftColumn), rightColumn, leftColumn);
 		
 		// managing cascades
+		Function<I, C> collectionGetter = cascadeMany.getTargetProvider();
 		PersisterListener<I, J> persisterListener = joinedTablesPersister.getPersisterListener();
 		for (CascadeType cascadeType : cascadeMany.getCascadeTypes()) {
 			switch (cascadeType) {
 				case INSERT:
-					addInsertCascade(cascadeMany, targetPersister, collectionGetter, persisterListener);
+					addInsertCascade(cascadeMany, leftPersister, collectionGetter, persisterListener);
 					break;
 				case UPDATE:
-					addUpdateCascade(cascadeMany, targetPersister, collectionGetter, persisterListener);
+					addUpdateCascade(cascadeMany, leftPersister, collectionGetter, persisterListener);
 					break;
 				case DELETE:
-					addDeleteCascade(targetPersister, collectionGetter, persisterListener);
+					addDeleteCascade(cascadeMany, joinedTablesPersister, leftPersister, collectionGetter, persisterListener);
 					break;
 				case SELECT:
-					addSelectCascade(cascadeMany, joinedTablesPersister, targetPersister, leftColumn, collectionGetter, rightColumn,
+					addSelectCascade(cascadeMany, joinedTablesPersister, leftPersister, leftPrimaryKey, collectionGetter, rightJoinColumn,
 							persisterListener);
 					break;
 			}
@@ -137,10 +203,10 @@ public class CascadeManyConfigurer<I extends Identified, O extends Identified, J
 													  Persister<O, J, ?> targetPersister,
 													  Column leftColumn,
 													  Function<I, C> collectionGetter,
-													  Column rightColumn,
+													  Column rightColumn,	// can be either the foreign key, or primary key, on the target table
 													  PersisterListener<I, J> persisterListener) {
 		BeanRelationFixer relationFixer;
-		PropertyAccessor<I, C> propertyAccessor = Accessors.of(cascadeMany.getMember());
+		PropertyAccessor<I, C> propertyAccessor = of(cascadeMany.getMember());
 		IMutator<I, C> collectionSetter = propertyAccessor.getMutator();
 		// configuring select for fetching relation
 		SerializableBiConsumer<O, I> reverseMember = cascadeMany.getReverseSetter();
@@ -149,17 +215,94 @@ public class CascadeManyConfigurer<I extends Identified, O extends Identified, J
 		}
 		
 		if (cascadeMany instanceof CascadeManyList) {
-			relationFixer = addIndexSelection((CascadeManyList<I, O, J>) cascadeMany,
-					joinedTablesPersister, targetPersister, (Function<I, List<O>>) collectionGetter, persisterListener,
-					(IMutator<I, List<O>>) collectionSetter, reverseMember);
+			if (targetPersister.getTargetTable().equals(rightColumn.getTable()) && ((CascadeManyList) cascadeMany).getIndexingColumn() != null) {
+				// case where right owner and indexing column are defined (on target table) = simple case
+				// => we join between tables and add an index capturer
+				relationFixer = addIndexSelection((CascadeManyList<I, O, J>) cascadeMany,
+						joinedTablesPersister, targetPersister, (Function<I, List<O>>) collectionGetter, persisterListener,
+						(IMutator<I, List<O>>) collectionSetter, reverseMember);
+				joinedTablesPersister.addPersister(FIRST_STRATEGY_NAME,
+						targetPersister,
+						relationFixer,
+						leftColumn,
+						rightColumn,
+						true);
+			} else {
+				// case where no owning column is defined, nor an indexing one : an association table exists (previously defined),
+				// we must join on it and add in-memory reassociation
+				// Relation is kept on each row by the "relation fixer" passed to JoinedTablePersister because it seems more complex to read it
+				// from the Row (as for use case without association table, addTransformerListener(..)) due to the need to create some equivalent
+				// structure such as AssociationRecord
+				// Relation will be fixed after all rows read (SelectListener.afterSelect)
+				addIndexSelectionWithAssociationTable((CascadeManyList<I, O, J>) cascadeMany,
+						(Function<I, List<O>>) collectionGetter, persisterListener,
+						(IMutator<I, List<O>>) collectionSetter, reverseMember);
+				String joinNodeName = joinedTablesPersister.addPersister(FIRST_STRATEGY_NAME,
+						(Persister<AssociationRecord, AssociationTable, ?>) (Persister) indexedAssociationPersister,
+						(BeanRelationFixer<I, AssociationRecord>)
+								// implementation to keep track of the relation, further usage is in afterSelect
+								(target, input) -> leftAssociations.get().computeIfAbsent(target, k -> new ArrayList<>()).add(input), 
+						leftColumn,
+						indexedAssociationPersister.getTargetTable().getOneSideKeyColumn(),
+						true);
+				
+				joinedTablesPersister.addPersister(joinNodeName,
+						targetPersister,
+						(BeanRelationFixer<AssociationRecord, O>)
+								// implementation to keep track of the relation, further usage is in afterSelect
+								(target, input) -> rightAssociations.get().put(target, input), 
+						indexedAssociationPersister.getTargetTable().getManySideKeyColumn(),
+						rightColumn,
+						true);
+			}
 		} else {
 			relationFixer = BeanRelationFixer.of(collectionSetter::set, collectionGetter,
 					cascadeMany.getCollectionTargetClass(), reverseMember);
 			
+			joinedTablesPersister.addPersister(FIRST_STRATEGY_NAME, targetPersister,
+					relationFixer,
+					leftColumn, rightColumn, true);
 		}
-		joinedTablesPersister.addPersister(JoinedStrategiesSelect.FIRST_STRATEGY_NAME, targetPersister,
-				relationFixer,
-				leftColumn, rightColumn, true);
+	}
+	
+	private BeanRelationFixer addIndexSelectionWithAssociationTable(CascadeManyList<I, O, J> cascadeMany,
+																	Function<I, List<O>> collectionGetter,
+																	PersisterListener<I, J> persisterListener,
+																	IMutator<I, List<O>> collectionSetter,
+																	SerializableBiConsumer<O, I> reverseMember) {
+		BeanRelationFixer<I, O> beanRelationFixer = BeanRelationFixer.of(collectionSetter::set, collectionGetter,
+				cascadeMany.getCollectionTargetClass(), reverseMember);
+		persisterListener.addSelectListener(new ISelectListener<I, J>() {
+			@Override
+			public void beforeSelect(Iterable<J> ids) {
+				leftAssociations.set(new HashMap<>());
+				rightAssociations.set(new HashMap<>());
+			}
+			
+			/** Implementation that assembles source and target beans from ThreadLocal elements thanks to the {@link BeanRelationFixer} */
+			@Override
+			public void afterSelect(Iterable<I> result) {
+				try {
+					result.forEach(bean -> {
+						List<AssociationRecord> associationRecords = leftAssociations.get().get(bean);
+						associationRecords.forEach(s -> beanRelationFixer.apply(bean, rightAssociations.get().get(s)));
+					});
+				} finally {
+					cleanContext();
+				}
+			}
+			
+			@Override
+			public void onError(Iterable<J> ids, RuntimeException exception) {
+				cleanContext();
+			}
+			
+			private void cleanContext() {
+				leftAssociations.remove();
+				rightAssociations.remove();
+			}
+		});
+		return beanRelationFixer;
 	}
 	
 	private <T extends Table<T>> BeanRelationFixer addIndexSelection(CascadeManyList<I, O, J> cascadeMany,
@@ -184,12 +327,15 @@ public class CascadeManyConfigurer<I extends Identified, O extends Identified, J
 			
 			@Override
 			public void afterSelect(Iterable<I> result) {
-				// reordering List element according to read indexes during the transforming phase (see below)
-				result.forEach(i -> {
-					List<O> apply = cascadeMany.getTargetProvider().apply(i);
-					apply.sort(Comparator.comparingInt(o -> updatableListIndex.get().get(o)));
-				});
-				cleanContext();
+				try {
+					// reordering List element according to read indexes during the transforming phase (see below)
+					result.forEach(i -> {
+						List<O> apply = cascadeMany.getTargetProvider().apply(i);
+						apply.sort(Comparator.comparingInt(o -> updatableListIndex.get().get(o)));
+					});
+				} finally {
+					cleanContext();
+				}
 			}
 			
 			@Override
@@ -201,56 +347,177 @@ public class CascadeManyConfigurer<I extends Identified, O extends Identified, J
 				updatableListIndex.remove();
 			}
 		});
-		BeanRelationFixer relationFixer = BeanRelationFixer.of(collectionSetter::set, collectionGetter,
-				cascadeMany.getCollectionTargetClass(), reverseMember);
 		Column indexingColumn = cascadeMany.getIndexingColumn();
 		// Adding a transformer listener to keep track of the index column read from ResultSet/Row
 		// We place it into a ThreadLocal, then the select listener will use it to reorder loaded beans
 		targetPersister.getMappingStrategy().getRowTransformer().addTransformerListener((bean, row) -> {
-			
 			Map<O, Integer> indexPerBean = updatableListIndex.get();
-			// indexingColumn is not defined in targetPersister.getMappingStrategy().getRowTransformer() but is present is row
+			// indexingColumn is not defined in targetPersister.getMappingStrategy().getRowTransformer() but is present in row
 			// because it was read from ResultSet
 			// So we get its alias from the object that managed id, and we simply read it from the row (but not from RowTransformer)
 			Map<Column, String> aliases = joinedTablesPersister.getJoinedStrategiesSelectExecutor().getJoinedStrategiesSelect().getAliases();
 			indexPerBean.put(bean, (int) row.get(aliases.get(indexingColumn)));
 		});
-		return relationFixer;
+		return BeanRelationFixer.of(collectionSetter::set, collectionGetter,
+				cascadeMany.getCollectionTargetClass(), reverseMember);
 	}
 	
-	private void addDeleteCascade(Persister<O, J, ?> targetPersister, Function<I, C> collectionGetter, PersisterListener<I, J> persisterListener) {
-		persisterListener.addDeleteListener(new BeforeDeleteCollectionCascader<I, O>(targetPersister) {
+	private <T extends Table<T>> void addDeleteCascade(CascadeMany<I, O, J, C> cascadeMany,
+													   JoinedTablesPersister<I, J, T> joinedTablesPersister,
+													   Persister<O, J, ?> targetPersister,
+													   Function<I, C> collectionGetter,
+													   PersisterListener<I, J> persisterListener) {
+		// we delete association records
+		if (indexedAssociationPersister != null) {
+			persisterListener.addDeleteListener(new IDeleteListener<I>() {
+				@Override
+				public void beforeDelete(Iterable<I> entities) {
+					// We delete the association records by their ids (that are ... themselves) 
+					// We could have deleted them with a delete order but this requires a binder registry which is given by a Dialect
+					// so it requires that this configurer holds the Dialect which is not the case, but could have.
+					// It should be more efficient because, here, we have to create as many AssociationRecord as necessary which loads the garbage collector
+					List<IndexedAssociationRecord> associationRecords = new ArrayList<>();
+					entities.forEach(e -> {
+						Collection<O> targets = collectionGetter.apply(e);
+						int i = 0;
+						for (O target : targets) {
+							associationRecords.add(new IndexedAssociationRecord(e.getId(), target.getId(), i++));
+						}
+					});
+					indexedAssociationPersister.deleteById(associationRecords);
+				}
+				
+				@Override
+				public void afterDelete(Iterable<I> entities) {
+					
+				}
+				
+				@Override
+				public void onError(Iterable<I> entities, RuntimeException runtimeException) {
+					
+				}
+			});
 			
-			@Override
-			protected void postTargetDelete(Iterable<O> entities) {
-				// no post treatment to do
-			}
+			persisterListener.addDeleteByIdListener(new IDeleteByIdListener<I>() {
+				
+				@Override
+				public void beforeDeleteById(Iterable<I> entities) {
+					// We delete records thanks to delete order
+					// Yes it is no coherent with beforeDelete(..) !
+					Delete<IndexedAssociationTable> delete = new Delete<>(indexedAssociationPersister.getTargetTable());
+					ClassMappingStrategy<I, J, T> mappingStrategy = joinedTablesPersister.getMappingStrategy();
+					List<J> identifiers = collect(entities, mappingStrategy::getId, ArrayList::new);
+					delete.where(pointerToLeftColumn, Operand.in(identifiers));
+					
+					PreparedSQL deleteStatement = new DeleteCommandBuilder<>(delete).toStatement(dialect.getColumnBinderRegistry());
+					try (WriteOperation<Integer> writeOperation = new WriteOperation<>(deleteStatement, cascadeMany.getPersister().getConnectionProvider())) {
+						writeOperation.setValues(deleteStatement.getValues());
+						writeOperation.execute();
+					}
+				}
+				
+				@Override
+				public void afterDeleteById(Iterable<I> entities) {
+					
+				}
+				
+				@Override
+				public void onError(Iterable<I> entities, RuntimeException runtimeException) {
+					
+				}
+			});
+		} else if (associationPersister != null) {
+			persisterListener.addDeleteListener(new IDeleteListener<I>() {
+				@Override
+				public void beforeDelete(Iterable<I> entities) {
+					// We delete the association records by their ids (that are ... themselves) 
+					// We could have deleted them with a delete order but this requires a binder registry which is given by a Dialect
+					// so it requires that this configurer holds the Dialect which is not the case, but could have.
+					// It should be more efficient because, here, we have to create as many AssociationRecord as necessary which loads the garbage collector
+					List<AssociationRecord> associationRecords = new ArrayList<>();
+					entities.forEach(e -> {
+						Collection<O> targets = collectionGetter.apply(e);
+						for (O target : targets) {
+							associationRecords.add(new AssociationRecord(e.getId(), target.getId()));
+						}
+					});
+					associationPersister.deleteById(associationRecords);
+				}
+				
+				@Override
+				public void afterDelete(Iterable<I> entities) {
+					
+				}
+				
+				@Override
+				public void onError(Iterable<I> entities, RuntimeException runtimeException) {
+					
+				}
+			});
 			
-			@Override
-			protected Collection<O> getTargets(I o) {
-				Collection<O> targets = collectionGetter.apply(o);
-				// We only delete persisted instances (for logic and to prevent from non matching row count exception)
-				return Iterables.stream(targets)
-						.filter(CascadeOneConfigurer.PERSISTED_PREDICATE)
-						.collect(Collectors.toList());
-			}
-		});
-		// we add the deleteById event since we suppose that if delete is required then there's no reason that rough delete is not
-		persisterListener.addDeleteByIdListener(new BeforeDeleteByIdCollectionCascader<I, O>(targetPersister) {
-			@Override
-			protected void postTargetDelete(Iterable<O> entities) {
-				// no post treatment to do
-			}
+			persisterListener.addDeleteByIdListener(new IDeleteByIdListener<I>() {
+				
+				@Override
+				public void beforeDeleteById(Iterable<I> entities) {
+					// We delete records thanks to delete order
+					// Yes it is no coherent with beforeDelete(..) !
+					Delete<AssociationTable> delete = new Delete<>(associationPersister.getTargetTable());
+					ClassMappingStrategy<I, J, T> mappingStrategy = joinedTablesPersister.getMappingStrategy();
+					List<J> identifiers = collect(entities, mappingStrategy::getId, ArrayList::new);
+					delete.where(pointerToLeftColumn, Operand.in(identifiers));
+					
+					PreparedSQL deleteStatement = new DeleteCommandBuilder<>(delete).toStatement(dialect.getColumnBinderRegistry());
+					try (WriteOperation<Integer> writeOperation = new WriteOperation<>(deleteStatement, cascadeMany.getPersister().getConnectionProvider())) {
+						writeOperation.setValues(deleteStatement.getValues());
+						writeOperation.execute();
+					}
+				}
+				
+				@Override
+				public void afterDeleteById(Iterable<I> entities) {
+					
+				}
+				
+				@Override
+				public void onError(Iterable<I> entities, RuntimeException runtimeException) {
+					
+				}
+			});
+		} else {
 			
-			@Override
-			protected Collection<O> getTargets(I o) {
-				Collection<O> targets = collectionGetter.apply(o);
-				// We only delete persisted instances (for logic and to prevent from non matching row count exception)
-				return Iterables.stream(targets)
-						.filter(CascadeOneConfigurer.PERSISTED_PREDICATE)
-						.collect(Collectors.toList());
-			}
-		});
+			persisterListener.addDeleteListener(new BeforeDeleteCollectionCascader<I, O>(targetPersister) {
+				
+				@Override
+				protected void postTargetDelete(Iterable<O> entities) {
+					// no post treatment to do
+				}
+				
+				@Override
+				protected Collection<O> getTargets(I i) {
+					Collection<O> targets = collectionGetter.apply(i);
+					// We only delete persisted instances (for logic and to prevent from non matching row count exception)
+					return stream(targets)
+							.filter(CascadeOneConfigurer.PERSISTED_PREDICATE)
+							.collect(Collectors.toList());
+				}
+			});
+			// we add the deleteById event since we suppose that if delete is required then there's no reason that rough delete is not
+			persisterListener.addDeleteByIdListener(new BeforeDeleteByIdCollectionCascader<I, O>(targetPersister) {
+				@Override
+				protected void postTargetDelete(Iterable<O> entities) {
+					// no post treatment to do
+				}
+				
+				@Override
+				protected Collection<O> getTargets(I i) {
+					Collection<O> targets = collectionGetter.apply(i);
+					// We only delete persisted instances (for logic and to prevent from non matching row count exception)
+					return stream(targets)
+							.filter(CascadeOneConfigurer.PERSISTED_PREDICATE)
+							.collect(Collectors.toList());
+				}
+			});
+		}
 	}
 	
 	private void addUpdateCascade(CascadeMany<I, O, J, C> cascadeMany,
@@ -318,25 +585,50 @@ public class CascadeManyConfigurer<I extends Identified, O extends Identified, J
 			// a List to keep SQL orders, for better debug, easier understanding of logs
 			List<O> toBeInserted = new ArrayList<>();
 			List<O> toBeDeleted = new ArrayList<>();
+			List<AssociationRecord> associationRecordstoBeInserted = new ArrayList<>();
+			List<AssociationRecord> associationRecordstoBeDeleted = new ArrayList<>();
+			List<IndexedAssociationRecord> indexedAssociationRecordstoBeInserted = new ArrayList<>();
+			List<IndexedAssociationRecord> indexedAssociationRecordstoBeDeleted = new ArrayList<>();
+			List<Duo<IndexedAssociationRecord, IndexedAssociationRecord>> indexedAssociationRecordstoBeUpdated = new ArrayList<>();
 			Map<O, Integer> newIndexes = new HashMap<>();
 			for (IndexedDiff diff : diffSet) {
 				switch (diff.getState()) {
 					case ADDED:
+						if (indexedAssociationPersister != null) {
+							diff.getReplacerIndexes().forEach(idx ->
+									indexedAssociationRecordstoBeInserted.add(new IndexedAssociationRecord(updatePayload.getEntities().getLeft().getId(), diff.getReplacingInstance().getId(), idx)));
+						}
 						// we insert only non persisted entity to prevent from a primary key conflict
 						if (!diff.getReplacingInstance().getId().isPersisted()) {
 							toBeInserted.add((O) diff.getReplacingInstance());
 						}
 						break;
 					case HELD:
-						Integer index = Iterables.first(Iterables.minus(diff.getReplacerIndexes(), diff.getSourceIndexes()));
+						Set<Integer> minus = minus(diff.getReplacerIndexes(), diff.getSourceIndexes());
+						Integer index = first(minus);
 						if (index != null ) {
 							newIndexes.put((O) diff.getReplacingInstance(), index);
-							targetPersister.getMappingStrategy().addSilentColumnUpdater(cascadeMany.getIndexingColumn(),
-									// Thread safe by updatableListIndex access
-									(Function<O, Object>) o -> Nullable.nullable(updatableListIndex.get()).apply(m -> m.get(o)).get());
+							if (indexedAssociationPersister != null) {
+								PairIterator<Integer, Integer> diffIndexIterator = new PairIterator<>(diff.getReplacerIndexes(),
+										diff.getSourceIndexes());
+								diffIndexIterator.forEachRemaining(d -> {
+									if (!d.getLeft().equals(d.getRight()))
+										indexedAssociationRecordstoBeUpdated.add(new Duo<>(
+												new IndexedAssociationRecord(updatePayload.getEntities().getLeft().getId(), diff.getSourceInstance().getId(), d.getLeft()),
+												new IndexedAssociationRecord(updatePayload.getEntities().getLeft().getId(), diff.getSourceInstance().getId(), d.getRight())));
+								});
+							} else {
+								targetPersister.getMappingStrategy().addSilentColumnUpdater(cascadeMany.getIndexingColumn(),
+										// Thread safe by updatableListIndex access
+										(Function<O, Object>) o -> Nullable.nullable(updatableListIndex.get()).apply(m -> m.get(o)).get());
+							}
 						}
 						break;
 					case REMOVED:
+						if (indexedAssociationPersister != null) {
+							diff.getSourceIndexes().forEach(idx ->
+									indexedAssociationRecordstoBeDeleted.add(new IndexedAssociationRecord(updatePayload.getEntities().getLeft().getId(), diff.getSourceInstance().getId(), idx)));
+						}
 						// we delete only persisted entity to prevent from a not found record
 						if (cascadeMany.shouldDeleteRemoved() && diff.getSourceInstance().getId().isPersisted()) {
 							toBeDeleted.add((O) diff.getSourceInstance());
@@ -346,12 +638,20 @@ public class CascadeManyConfigurer<I extends Identified, O extends Identified, J
 			}
 			// we batch index update
 			ThreadLocals.doWithThreadLocal(updatableListIndex, () -> newIndexes, (Runnable) () -> {
-				List<Duo<O, O>> collect = Iterables.collectToList(updatableListIndex.get().keySet(), o -> new Duo<>(o, o));
+				List<Duo<O, O>> collect = collectToList(updatableListIndex.get().keySet(), o -> new Duo<>(o, o));
 				targetPersister.update(collect, false);
 			});
 			// we batch added and deleted objects
+			if (indexedAssociationPersister != null) {
+				indexedAssociationPersister.delete(indexedAssociationRecordstoBeDeleted);
+			}
 			targetPersister.insert(toBeInserted);
 			targetPersister.delete(toBeDeleted);
+			if (indexedAssociationPersister != null) {
+				indexedAssociationPersister.insert(indexedAssociationRecordstoBeInserted);
+				// we ask for index update : all columns shouldn't be updated, only index, so we don't need "all columns in statement"
+				indexedAssociationPersister.update(indexedAssociationRecordstoBeUpdated, false);
+			}
 		};
 		return updateListener;
 	}
@@ -360,7 +660,8 @@ public class CascadeManyConfigurer<I extends Identified, O extends Identified, J
 								 Persister<O, J, ?> targetPersister,
 								 Function<I, C> collectionGetter,
 								 PersisterListener<I, J> persisterListener) {
-		if (cascadeMany instanceof CascadeManyList) {
+		// For a List and a given manner to get its owner (so we can deduce index value), we configure persistence to keep index value in database
+		if (cascadeMany instanceof CascadeManyList && cascadeMany.getReverseGetter() != null) {
 			addIndexInsertion((CascadeManyList<I, O, J>) cascadeMany, targetPersister);
 		}
 		persisterListener.addInsertListener(new AfterInsertCollectionCascader<I, O>(targetPersister) {
@@ -374,18 +675,37 @@ public class CascadeManyConfigurer<I extends Identified, O extends Identified, J
 			protected Collection<O> getTargets(I o) {
 				Collection<O> targets = collectionGetter.apply(o);
 				// We only insert non-persisted instances (for logic and to prevent duplicate primary key error)
-				return Iterables.stream(targets)
+				return stream(targets)
 						.filter(CascadeOneConfigurer.NON_PERSISTED_PREDICATE)
 						.collect(Collectors.toList());
 			}
 		});
+		
+		if (associationPersister != null) {
+			persisterListener.addInsertListener(new AssociationRecordInsertionCascader<>(associationPersister, collectionGetter));
+		}
+		
+		if (indexedAssociationPersister != null) {
+			persisterListener.addInsertListener(new IndexedAssociationRecordInsertionCascader<>(indexedAssociationPersister, (Function<I, List<O>>) collectionGetter));
+		}
 	}
 	
+	/**
+	 * Adds a "listener" that will amend insertion of the index column filled with its value
+	 * @param cascadeMany
+	 * @param targetPersister
+	 */
 	private void addIndexInsertion(CascadeManyList<I, O, J> cascadeMany, Persister<O, J, ?> targetPersister) {
 		// we declare the indexing column as a silent one, then AfterInsertCollectionCascader will insert it
 		targetPersister.getInsertExecutor().getMappingStrategy().addSilentColumnInserter(cascadeMany.getIndexingColumn(),
 				(Function<O, Object>) target -> {
 					I source = cascadeMany.getReverseGetter().apply(target);
+					if (source == null) {
+						MethodReferenceCapturer methodReferenceCapturer = new MethodReferenceCapturer();
+						Method method = methodReferenceCapturer.findMethod(cascadeMany.getReverseGetter());
+						throw new IllegalStateException("Impossible to get index : " + target + " is not associated with a " + Reflections.toString(method.getReturnType()) + " : "
+							+ Reflections.toString(method) + " returned null");
+					}
 					List<O> collection = cascadeMany.getTargetProvider().apply(source);
 					return collection.indexOf(target);
 				});

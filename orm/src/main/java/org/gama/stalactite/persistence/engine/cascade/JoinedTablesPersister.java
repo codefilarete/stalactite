@@ -8,8 +8,6 @@ import org.gama.sql.ConnectionProvider;
 import org.gama.stalactite.persistence.engine.BeanRelationFixer;
 import org.gama.stalactite.persistence.engine.PersistenceContext;
 import org.gama.stalactite.persistence.engine.Persister;
-import org.gama.stalactite.persistence.id.Identified;
-import org.gama.stalactite.persistence.id.manager.StatefullIdentifier;
 import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
 import org.gama.stalactite.persistence.sql.Dialect;
 import org.gama.stalactite.persistence.structure.Column;
@@ -64,9 +62,9 @@ public class JoinedTablesPersister<C, I, T extends Table<T>> extends Persister<C
 	 * @param isOuterJoin true to use a left outer join (optional relation)
 	 * @see JoinedStrategiesSelect#add(String, ClassMappingStrategy, Column, Column, boolean, BeanRelationFixer)
 	 */
-	public <U extends Identified, J extends StatefullIdentifier> String addPersister(String ownerStrategyName, Persister<U, J, ?> persister,
-																					 BeanRelationFixer<C, U> beanRelationFixer,
-																					 Column leftJoinColumn, Column rightJoinColumn, boolean isOuterJoin) {
+	public <U, J, Z> String addPersister(String ownerStrategyName, Persister<U, J, ?> persister,
+																BeanRelationFixer<Z, U> beanRelationFixer,
+																Column leftJoinColumn, Column rightJoinColumn, boolean isOuterJoin) {
 		ClassMappingStrategy<U, J, ?> mappingStrategy = persister.getMappingStrategy();
 		
 		// We use our own select system since ISelectListener is not aimed at joining table
