@@ -1,7 +1,6 @@
 package org.gama.stalactite.persistence.engine;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.LinkedHashSet;
 import java.util.Map;
 
 /**
@@ -31,8 +30,10 @@ public interface RowCountManager {
 		/**
 		 * All values of SQL statement.
 		 * Not crucial but could be usefull for future features needing touched columns or debugging purpose.
+		 * This storage should not keep duplicates because it is used for update and delete orders, and database will not update nor delete twice
+		 * some records in the same transaction for same values (well ... it depends on transaction isolation, but we left it as this)
 		 */
-		private final List<Map<? /* UpwhereColumn or Column */, Object>> rowValues = new ArrayList<>();
+		private final LinkedHashSet<Map<? /* UpwhereColumn or Column */, Object>> rowValues = new LinkedHashSet<>();
 		
 		public void add(Map<? /* UpwhereColumn or Column */, Object> updateValues) {
 			this.rowValues.add(updateValues);
