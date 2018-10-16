@@ -198,7 +198,6 @@ public class ClassMappingStrategy<C, I, T extends Table> implements IEntityMappi
 		updatableColumns.add((Column<T, Object>) column);
 	}
 	
-//	@Override
 	public <O> void addSilentColumnSelecter(Column<T, O> column) {
 		// we must register it as an insertable column so we'll generate the right SQL order
 		selectableColumns.add((Column<T, Object>) column);
