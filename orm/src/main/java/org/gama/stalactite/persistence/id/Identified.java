@@ -15,8 +15,6 @@ public interface Identified<I> {
 	
 	Identifier<I> getId();
 	
-	void setId(Identifier<I> id);
-	
 	/**
 	 * Gives a {@link ParameterBinder} for a general {@link Identified} to be declared in a {@link org.gama.sql.binder.ParameterBinderRegistry}
 	 * for SQL write operation purpose : it will use the surrogate id as a value for the {@link PreparedStatement}.
