@@ -208,7 +208,7 @@ public class JoinedStrategiesSelect<C, I, T extends Table<T>> {
 		 * Method dedicated to OneToOne relation
 		 * @param strategy the new strategy on which to join
 		 * @param leftJoinColumn the column of the owned strategy table (no check done) on which the join will be made
-		 * @param rightJoinColumn the column of the new strategy table (no check done) on whoch the join will be made
+		 * @param rightJoinColumn the column of the new strategy table (no check done) on which the join will be made
 		 * @param isOuterJoin indicates if the join is an outer (left) one or not
 		 * @param beanRelationFixer will help to apply the instance of the new strategy on the owned one
 		 * @return the created join

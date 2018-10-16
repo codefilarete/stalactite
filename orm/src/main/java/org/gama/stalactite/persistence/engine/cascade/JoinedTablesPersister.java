@@ -55,7 +55,7 @@ public class JoinedTablesPersister<C, I, T extends Table<T>> extends Persister<C
 	 * potential foreign keys.
 	 * 
 	 * @param ownerStrategyName the name of the strategy on which the mappingStrategy parameter will be added
-	 * @param persister the {@link Persister} who strategy must be added to be added
+	 * @param persister the {@link Persister} which strategy must be added
 	 * @param beanRelationFixer will help to fix the relation between instance at selection time
 	 * @param leftJoinColumn the column of the owning strategy to be used for joining with the newly added one (mappingStrategy parameter)
 	 * @param rightJoinColumn the column of the newly added strategy to be used for joining with the owning one

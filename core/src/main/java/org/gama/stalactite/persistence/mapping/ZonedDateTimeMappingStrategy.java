@@ -50,10 +50,10 @@ public class ZonedDateTimeMappingStrategy<T extends Table> implements IEmbeddedB
 	 */
 	public ZonedDateTimeMappingStrategy(Column<T, LocalDateTime> dateTimeColumn, Column<T, ZoneId> zoneColumn) {
 		if (!LocalDateTime.class.isAssignableFrom(dateTimeColumn.getJavaType())) {
-			throw new IllegalArgumentException("Only column whose type is " + Reflections.toString(LocalDateTime.class) + " are supported");
+			throw new IllegalArgumentException("Only columns with type " + Reflections.toString(LocalDateTime.class) + " are supported");
 		}
 		if (!ZoneId.class.isAssignableFrom(zoneColumn.getJavaType())) {
-			throw new IllegalArgumentException("Only column whose type is " + Reflections.toString(ZoneId.class) + " are supported");
+			throw new IllegalArgumentException("Only columns with type " + Reflections.toString(ZoneId.class) + " are supported");
 		}
 		this.dateTimeColumn = dateTimeColumn;
 		this.zoneColumn = zoneColumn;

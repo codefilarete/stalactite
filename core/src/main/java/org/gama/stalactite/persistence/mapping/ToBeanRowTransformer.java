@@ -116,7 +116,7 @@ public class ToBeanRowTransformer<T> extends AbstractTransformer<T> {
 	 * Helpfull to reuse a {@link IRowTransformer} over multiple queries which different column aliases.
 	 * 
 	 * @param aliasProvider a function that gives new {@link Row} keys from some {@link Column}.
-	 * @return a new instance of {@link ToBeanRowTransformer} whose read keys are those given by the function
+	 * @return a new instance of {@link ToBeanRowTransformer} which read keys are those given by the function
 	 */
 	public ToBeanRowTransformer<T> copyWithAliases(Function<Column, String> aliasProvider) {
 		ToBeanRowTransformer<T> result = new ToBeanRowTransformer<>(constructor, new HashMap<>(this.columnToMember));
