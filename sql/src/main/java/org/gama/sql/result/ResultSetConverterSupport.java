@@ -11,16 +11,18 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
+import org.danekja.java.util.function.serializable.SerializableFunction;
 import org.gama.lang.Reflections;
 import org.gama.lang.ThreadLocals;
 import org.gama.lang.bean.Converter;
 import org.gama.lang.collection.Iterables;
-import org.gama.lang.function.ThrowingSupplier;
+import org.gama.lang.function.ThrowingFunction;
+import org.gama.reflection.MethodReferenceCapturer;
 import org.gama.sql.binder.ResultSetReader;
 
 /**
  * A class aimed at transforming a whole {@link ResultSet} into a graph of objects.
- * Graph creation is declared through {@link #add(String, ResultSetReader, Class, Function, BiConsumer)}, be aware that relations will be
+ * Graph creation is declared through {@link #add(String, ResultSetReader, Class, SerializableFunction, BiConsumer)}, be aware that relations will be
  * unstacked/applied in order of declaration.
  * Instances of this class can be reused over multiple {@link ResultSet} (supposed to have same columns) and are thread-safe for iteration.
  * They can also be adapt to other {@link ResultSet}s that haven't the exact same column names by duplicating them with {@link #copyWithAliases(Function)}.
@@ -30,7 +32,7 @@ import org.gama.sql.binder.ResultSetReader;
  * @param <I> bean identifier type
  * @author Guillaume Mary
  * @see #add(String, ResultSetReader, BiConsumer)
- * @see #add(String, ResultSetReader, Class, Function, BiConsumer)
+ * @see #add(String, ResultSetReader, Class, SerializableFunction, BiConsumer)
  */
 public class ResultSetConverterSupport<I, C> implements ResultSetConverter<I, C>, Converter<ResultSet, List<C>, SQLException> {
 	
@@ -48,12 +50,6 @@ public class ResultSetConverterSupport<I, C> implements ResultSetConverter<I, C>
 	
 	private final ResultSetRowConverter<I, C> rootConverter;
 	
-	/**
-	 * Bean factory given at instanciation time, this is the "real one", the other in the rootConverter points to it but is decorated with a bean
-	 * cache checking through {@link #computeInstanceIfCacheMiss(Class, Object, ThrowingSupplier)}
-	 */
-	private final Function<I, C> beanFactory;
-	
 	/** The list of relations that will assemble objects */
 	private final List<ResultSetRowAssembler<C>> combiners = new ArrayList<>();
 	
@@ -65,10 +61,8 @@ public class ResultSetConverterSupport<I, C> implements ResultSetConverter<I, C>
 	 * @param reader object to ease column reading, indicates column type
 	 * @param beanFactory the bean creator, bean key will be passed as argument. Not called if bean key is null (no instanciation needed)
 	 */
-	public ResultSetConverterSupport(Class<C> rootType, String columnName, ResultSetReader<I> reader, Function<I, C> beanFactory) {
-		this.rootConverter = new ResultSetRowConverter<>(rootType, columnName, reader,
-				k -> computeInstanceIfCacheMiss(rootType, k, () -> beanFactory.apply(k)));
-		this.beanFactory = beanFactory;
+	public ResultSetConverterSupport(Class<C> rootType, String columnName, ResultSetReader<I> reader, SerializableFunction<I, C> beanFactory) {
+		this(new ResultSetRowConverter<>(rootType, columnName, reader, new CachingBeanFactory<>(beanFactory, rootType)));
 	}
 	
 	/**
@@ -91,11 +85,9 @@ public class ResultSetConverterSupport<I, C> implements ResultSetConverter<I, C>
 	/**
 	 * Special constructor made for cloning, no reason to expose it outside
 	 * @param rootConverter
-	 * @param factory
 	 */
-	public ResultSetConverterSupport(ResultSetRowConverter<I, C> rootConverter, Function<I, C> factory) {
+	public ResultSetConverterSupport(ResultSetRowConverter<I, C> rootConverter) {
 		this.rootConverter = rootConverter;
-		this.beanFactory = factory;
 	}
 	
 	/**
@@ -123,7 +115,7 @@ public class ResultSetConverterSupport<I, C> implements ResultSetConverter<I, C>
 	 * @return this
 	 * @see #add(String, ResultSetReader, Class, BiConsumer) 
 	 */
-	public <K, V> ResultSetConverterSupport<I, C> add(String columnName, ResultSetReader<K> reader, Class<V> beanType, Function<K, V> beanFactory, BiConsumer<C, V> combiner) {
+	public <K, V> ResultSetConverterSupport<I, C> add(String columnName, ResultSetReader<K> reader, Class<V> beanType, SerializableFunction<K, V> beanFactory, BiConsumer<C, V> combiner) {
 		ResultSetConverterSupport<K, V> relatedBeanCreator = new ResultSetConverterSupport<>(beanType, columnName, reader, beanFactory);
 		add(relatedBeanCreator, combiner);
 		return this;
@@ -131,10 +123,10 @@ public class ResultSetConverterSupport<I, C> implements ResultSetConverter<I, C>
 	
 	/**
 	 * Adds a bean relation to the main/root object.
-	 * It is a simplified version of {@link #add(String, ResultSetReader, Class, Function, BiConsumer)} where the factory is the default constructor
+	 * It is a simplified version of {@link #add(String, ResultSetReader, Class, SerializableFunction, BiConsumer)} where the factory is the default constructor
 	 * of the given type.
 	 * Be aware that the factory doesn't take the column (bean key) value as a parameter, if no default constructor exists please prefer
-	 * {@link #add(String, ResultSetReader, Class, Function, BiConsumer)} or {@link #add(String, ResultSetReader, BiConsumer)}
+	 * {@link #add(String, ResultSetReader, Class, SerializableFunction, BiConsumer)} or {@link #add(String, ResultSetReader, BiConsumer)}
 	 * 
 	 * @param columnName the column name to read the bean key
 	 * @param reader a reader for reading the bean key
@@ -182,7 +174,7 @@ public class ResultSetConverterSupport<I, C> implements ResultSetConverter<I, C>
 		Function<K, V> relatedBeanFactory = relatedBeanCreator.getBeanFactory();
 		// ResultSetRowConverter doesn't have a cache system, so we decorate its factory with a cache checking
 		ResultSetRowConverter<K, V> relatedBeanCreatorCopy = relatedBeanCreator.copyFor(beanType,
-				beanKey -> computeInstanceIfCacheMiss(beanType, beanKey, () -> relatedBeanFactory.apply(beanKey))
+				beanKey -> computeInstanceIfCacheMiss(beanType, beanKey, relatedBeanFactory::apply)
 		);
 		relatedBeanCreatorCopy.getConsumers().addAll(relatedBeanCreator.getConsumers());
 		this.combiners.add(new Relation<>(combiner, relatedBeanCreatorCopy));
@@ -205,10 +197,10 @@ public class ResultSetConverterSupport<I, C> implements ResultSetConverter<I, C>
 	public <T extends C> ResultSetConverterSupport<I, T> copyFor(Class<T> beanType, Function<I, T> beanFactory) {
 		// ResultSetRowConverter doesn't have a cache system, so we decorate its factory with a cache checking
 		ResultSetRowConverter<I, T> rootConverterCopy = this.rootConverter.copyFor(beanType,
-				beanKey -> computeInstanceIfCacheMiss(beanType, beanKey, () -> beanFactory.apply(beanKey))
+				beanKey -> computeInstanceIfCacheMiss(beanType, beanKey, beanFactory::apply)
 		);
 		// Making the copy
-		ResultSetConverterSupport<I, T> result = new ResultSetConverterSupport<>(rootConverterCopy, beanFactory);
+		ResultSetConverterSupport<I, T> result = new ResultSetConverterSupport<>(rootConverterCopy);
 		this.combiners.forEach(c -> {
 			if (c instanceof Relation) {
 				result.combiners.add(new Relation<>(((Relation) c).relationFixer, ((Relation) c).transformer));
@@ -222,8 +214,7 @@ public class ResultSetConverterSupport<I, C> implements ResultSetConverter<I, C>
 		// NB: rootConverter can be cloned without a cache checking bean factory because it already has it due to previous assignements
 		// (follow rootConverter assignements to be sure)
 		ResultSetRowConverter<I, C> rootConverterCopy = this.rootConverter.copyWithAliases(columnMapping);
-		this.rootConverter.getBeanFactory();
-		ResultSetConverterSupport<I, C> result = new ResultSetConverterSupport<>(rootConverterCopy, this.beanFactory);
+		ResultSetConverterSupport<I, C> result = new ResultSetConverterSupport<>(rootConverterCopy);
 		this.combiners.forEach(c -> {
 			if (c instanceof Relation) {
 				result.combiners.add(new Relation<>(((Relation) c).relationFixer, ((Relation) c).transformer.copyWithAliases(columnMapping)));
@@ -249,7 +240,7 @@ public class ResultSetConverterSupport<I, C> implements ResultSetConverter<I, C>
 		return doWithBeanCache(() -> Iterables.stream(resultSetIterator).collect(Collectors.toList()));
 	}
 	
-	public <O> O doWithBeanCache(Supplier<O> callable) {
+	private <O> O doWithBeanCache(Supplier<O> callable) {
 		return ThreadLocals.doWithThreadLocal(BEAN_CACHE, SimpleBeanCache::new, callable);
 	}
 	
@@ -264,9 +255,45 @@ public class ResultSetConverterSupport<I, C> implements ResultSetConverter<I, C>
 	}
 	
 	/**
+	 * A small class that will check some cache for any presence of a bean behind a key, returning it or instanciating a new one if no bean is found
+	 * This class uses {@link #computeInstanceIfCacheMiss(Class, Object, ThrowingFunction)}, which is based on {@link #BEAN_CACHE}.
+	 * Thus this class can hardly be used outside of {@link ResultSetConverterSupport}, and overall {@link #doWithBeanCache(Supplier)}
+	 * 
+	 * @param <I> key type
+	 * @param <C> bean type
+	 */
+	private static class CachingBeanFactory<I, C> implements Function<I, C> {
+		
+		private final SerializableFunction<I, C> beanFactory;
+		
+		private final Class<C> rootType;
+		
+		private CachingBeanFactory(SerializableFunction<I, C> beanFactory, Class<C> rootType) {
+			this.beanFactory = beanFactory;
+			this.rootType = rootType;
+		}
+		
+		@Override
+		public C apply(I k) {
+			return computeInstanceIfCacheMiss(rootType, k, id -> {
+				try {
+					return beanFactory.apply(id);
+				} catch (ClassCastException cce) {
+					// Trying to give a more accurate reason that the default one
+					// Put into places for rare cases of misusage by wrapping code that loses reader and bean factory types,
+					// ending with a constructor input type error
+					MethodReferenceCapturer methodReferenceCapturer = new MethodReferenceCapturer();
+					throw new ClassCastException("Can't apply " + id + " on constructor "
+							+ Reflections.toString(methodReferenceCapturer.findConstructor(beanFactory)) + " : " + cce.getMessage());
+				}
+			});
+		}
+	}
+	
+	/**
 	 * Made to expose bean cache checking 
 	 */
-	private static <C, K> C computeInstanceIfCacheMiss(Class<C> instanceType, K beanKey, ThrowingSupplier<Object, RuntimeException> factory) {
+	private static <C, K> C computeInstanceIfCacheMiss(Class<C> instanceType, K beanKey, ThrowingFunction<K, C, RuntimeException> factory) {
 		// we don't call the cache if the bean key is null
 		return beanKey == null ? null : BEAN_CACHE.get().computeIfAbsent(instanceType, beanKey, factory);
 	}

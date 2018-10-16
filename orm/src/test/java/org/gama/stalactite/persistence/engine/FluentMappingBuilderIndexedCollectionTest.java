@@ -358,7 +358,7 @@ public class FluentMappingBuilderIndexedCollectionTest {
 					select(answerChoicesTableId, answerChoicesTableIdx, answerChoicesTableChoiceId)
 							.from(answerChoicesTable).getSelectQuery().orderBy(answerChoicesTableIdx), RawAnswer.class);
 			List<RawAnswer> persistedChoices = query
-					.mapKey(RawAnswer::new, answerChoicesTable.getPrimaryKey())
+					.mapKey(RawAnswer::new, answerChoicesTableId, answerChoicesTableIdx, answerChoicesTableChoiceId)
 					.execute(connectionProvider);
 			assertEquals(Arrays.asList(10L, 20L, 20L, 30L), Iterables.collectToList(persistedChoices, RawAnswer::getChoiceId));
 			// stating that indexes are in same order than instances
@@ -523,7 +523,7 @@ public class FluentMappingBuilderIndexedCollectionTest {
 					select(answerChoicesTableId, answerChoicesTableIdx, answerChoicesTableChoiceId)
 							.from(answerChoicesTable).getSelectQuery().orderBy(answerChoicesTableIdx), RawAnswer.class);
 			List<RawAnswer> persistedChoices = query
-					.mapKey(RawAnswer::new, answerChoicesTable.getPrimaryKey())
+					.mapKey(RawAnswer::new, answerChoicesTableId, answerChoicesTableIdx, answerChoicesTableChoiceId)
 					.execute(connectionProvider);
 			assertEquals(Arrays.asList(10L, 20L, 50L, 20L, 30L, 10L, 40L), Iterables.collectToList(persistedChoices, RawAnswer::getChoiceId));
 			// stating that indexes are in same order than instances
@@ -538,7 +538,7 @@ public class FluentMappingBuilderIndexedCollectionTest {
 					select(answerChoicesTableId, answerChoicesTableIdx, answerChoicesTableChoiceId)
 							.from(answerChoicesTable).getSelectQuery().orderBy(answerChoicesTableIdx), RawAnswer.class);
 			persistedChoices = query
-					.mapKey(RawAnswer::new, answerChoicesTable.getPrimaryKey())
+					.mapKey(RawAnswer::new, answerChoicesTableId, answerChoicesTableIdx, answerChoicesTableChoiceId)
 					.execute(connectionProvider);
 			assertEquals(Arrays.asList(10L, 20L, 10L), Iterables.collectToList(persistedChoices, RawAnswer::getChoiceId));
 			// stating that indexes are in same order than instances
@@ -727,10 +727,8 @@ public class FluentMappingBuilderIndexedCollectionTest {
 			this.choiceId = choiceId;
 		}
 		
-		private RawAnswer(Object[] input) {
-			this.answerId = ((PersistedIdentifier<Long>) input[0]).getSurrogate();
-			this.choiceIdx = (Integer) input[1];
-			this.choiceId = ((PersistedIdentifier<Long>) input[2]).getSurrogate();
+		private RawAnswer(Identifier<Long> answerId, int choiceIdx, Identifier<Long> choiceId) {
+			this(answerId.getSurrogate(), choiceIdx, choiceId.getSurrogate());
 		}
 		
 		public Long getAnswerId() {

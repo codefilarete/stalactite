@@ -38,11 +38,6 @@
 	
 	<dependencies>
 		<dependency>
-			<groupId>org.gama</groupId>
-			<artifactId>tools</artifactId>
-			<version>${project.version}</version>
-		</dependency>
-		<dependency>
 			<groupId>org.gama.stalactite</groupId>
 			<artifactId>sql</artifactId>
 			<version>${project.version}</version>
@@ -76,11 +71,6 @@
 			<artifactId>hsqldb</artifactId>
 			<version>${hsqldb.version}</version>
 			<scope>test</scope>
-		</dependency>
-		<dependency>
-			<groupId>org.gama</groupId>
-			<artifactId>reflection</artifactId>
-			<version>${project.version}</version>
 		</dependency>
 		<dependency>
 			<groupId>org.apache.derby</groupId>

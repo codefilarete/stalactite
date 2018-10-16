@@ -11,6 +11,7 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 
 import org.danekja.java.util.function.serializable.SerializableBiConsumer;
+import org.danekja.java.util.function.serializable.SerializableBiFunction;
 import org.danekja.java.util.function.serializable.SerializableFunction;
 import org.danekja.java.util.function.serializable.SerializableSupplier;
 import org.gama.lang.Duo;
@@ -18,6 +19,7 @@ import org.gama.lang.bean.Converter;
 import org.gama.lang.collection.Arrays;
 import org.gama.lang.collection.Iterables;
 import org.gama.lang.collection.KeepOrderSet;
+import org.gama.lang.function.SerializableTriFunction;
 import org.gama.reflection.MethodReferenceCapturer;
 import org.gama.sql.ConnectionProvider;
 import org.gama.sql.binder.ParameterBinder;
@@ -29,7 +31,6 @@ import org.gama.sql.result.ResultSetConverterSupport;
 import org.gama.sql.result.ResultSetRowAssembler;
 import org.gama.sql.result.ResultSetRowConverter;
 import org.gama.sql.result.SingleColumnReader;
-import org.gama.stalactite.persistence.structure.PrimaryKey;
 import org.gama.stalactite.persistence.structure.Table;
 
 import static org.gama.sql.binder.NullAwareParameterBinder.ALWAYS_SET_NULL_INSTANCE;
@@ -75,6 +76,7 @@ public class QueryConverter<C> {
 	
 	/**
 	 * Simple constructor
+	 * 
 	 * @param rootBeanType type of built bean
 	 * @param sql the sql to execute
 	 * @param parameterBinderProvider a provider for SQL parameters and selected column
@@ -85,6 +87,7 @@ public class QueryConverter<C> {
 	
 	/**
 	 * Constructor to share {@link MethodReferenceCapturer} between instance of {@link QueryConverter}
+	 * 
 	 * @param rootBeanType type of built bean
 	 * @param sql the sql to execute
 	 * @param parameterBinderProvider a provider for SQL parameters and selected column
@@ -116,6 +119,64 @@ public class QueryConverter<C> {
 	}
 	
 	/**
+	 * Same as {@link #mapKey(SerializableFunction, String, Class)} but with {@link org.gama.stalactite.persistence.structure.Column} signature
+	 *
+	 * @param <I> type of the key
+	 * @param factory the factory function that will instanciate new beans (with key as single argument)
+	 * @param column the mapped column used as a key
+	 * @return this
+	 */
+	public <I> QueryConverter<C> mapKey(SerializableFunction<I, C> factory,
+										org.gama.stalactite.persistence.structure.Column<? extends Table, I> column) {
+		return mapKey(factory, column.getName(), column.getJavaType());
+	}
+	
+	/**
+	 * Same as {@link #mapKey(SerializableFunction, org.gama.stalactite.persistence.structure.Column)} with a 2-args constructor
+	 *
+	 * @param <I> type of the key
+	 * @param factory the factory function that will instanciate new beans (with key as single argument)
+	 * @param column1 the first column of the key
+	 * @param column2 the second column of the key
+	 * @return this
+	 */
+	public <I, J> QueryConverter<C> mapKey(SerializableBiFunction<I, J, C> factory,
+										   org.gama.stalactite.persistence.structure.Column<? extends Table, I> column1,
+										   org.gama.stalactite.persistence.structure.Column<? extends Table, J> column2
+	) {
+		SerializableFunction<Object[], C> biArgsConstructorInvokation = args -> (C) factory.apply((I) args[0], (J) args[1]);
+		this.beanCreationDefinition = new BeanCreationDefinition<>(biArgsConstructorInvokation, Arrays.asSet(
+				new Duo<>(column1.getName(), column1.getJavaType()),
+				new Duo<>(column2.getName(), column2.getJavaType()))
+		);
+		return this;
+	}
+	
+	/**
+	 * Same as {@link #mapKey(SerializableFunction, org.gama.stalactite.persistence.structure.Column)} with a 3-args constructor
+	 *
+	 * @param <I> type of the key
+	 * @param factory the factory function that will instanciate new beans (with key as single argument)
+	 * @param column1 the first column of the key
+	 * @param column2 the second column of the key
+	 * @param column3 the third column of the key
+	 * @return this
+	 */
+	public <I, J, K> QueryConverter<C> mapKey(SerializableTriFunction<I, J, K, C> factory,
+											  org.gama.stalactite.persistence.structure.Column<? extends Table, I> column1,
+											  org.gama.stalactite.persistence.structure.Column<? extends Table, J> column2,
+											  org.gama.stalactite.persistence.structure.Column<? extends Table, K> column3
+	) {
+		SerializableFunction<Object[], C> triArgsConstructorInvokation = args -> (C) factory.apply((I) args[0], (J) args[1], (K) args[2]);
+		this.beanCreationDefinition = new BeanCreationDefinition<>(triArgsConstructorInvokation, Arrays.asSet(
+				new Duo<>(column1.getName(), column1.getJavaType()),
+				new Duo<>(column2.getName(), column2.getJavaType()),
+				new Duo<>(column3.getName(), column3.getJavaType())
+		));
+		return this;
+	}
+	
+	/**
 	 * Same as {@link #mapKey(SerializableFunction, String, Class)} but with a non-argument constructor and a setter for key value.
 	 * Reader of colum value will be deduced from setter by reflection.
 	 *
@@ -126,49 +187,14 @@ public class QueryConverter<C> {
 	 * @return this
 	 */
 	public <I> QueryConverter<C> mapKey(SerializableSupplier<C> javaBeanCtor, String columnName, SerializableBiConsumer<C, I> keySetter) {
-		this.beanCreationDefinition = new BeanCreationDefinition<>((SerializableFunction<I, C>) i -> {
-			C newInstance = javaBeanCtor.get();
-			keySetter.accept(newInstance, i);
-			return newInstance;
-		}, columnName, giveColumnType(keySetter));
+		this.beanCreationDefinition = new BeanCreationDefinition<>(i -> javaBeanCtor.get(), columnName, giveColumnType(keySetter));
+		map(columnName, keySetter);
 		return this;
 	}
 	
 	/**
-	 * Same as {@link #mapKey(SerializableFunction, String, Class)} but with a non-argument constructor and a setter for key value.
-	 *
-	 * @param <I> the type of the column
-	 * @param javaBeanCtor the factory function that will instanciate new beans (no argument)
-	 * @param columnName the key column name
-	 * @param columnType the type of the column
-	 * @param keySetter setter for key
-	 * @return this
-	 */
-	public <I> QueryConverter<C> mapKey(SerializableSupplier<C> javaBeanCtor,
-										String columnName,
-										Class<I> columnType,
-										SerializableBiConsumer<C, I> keySetter) {
-		return mapKey((SerializableFunction<I, C>) i -> {
-			C newInstance = javaBeanCtor.get();
-			keySetter.accept(newInstance, i);
-			return newInstance;
-		}, columnName, columnType);
-	}
-	
-	/**
-	 * Same as {@link #mapKey(SerializableFunction, String, Class)} but with {@link org.gama.stalactite.persistence.structure.Column} signature
-	 * @param <I> type of the key
-	 * @param factory the bean constructor
-	 * @param column the mapped column used as a key
-	 * @return this
-	 */
-	public <I> QueryConverter<C> mapKey(SerializableFunction<I, C> factory, org.gama.stalactite.persistence.structure.Column<? extends Table, I> column) {
-		this.beanCreationDefinition = new BeanCreationDefinition<>(factory, column.getName(), column.getJavaType());
-		return this;
-	}
-	
-	/**
-	 * Same as {@link #mapKey(SerializableSupplier, String, Class, SerializableBiConsumer)} but with {@link org.gama.stalactite.persistence.structure.Column} signature
+	 * Same as {@link #mapKey(SerializableSupplier, String, SerializableBiConsumer)} but with {@link org.gama.stalactite.persistence.structure.Column} signature
+	 * 
 	 * @param <I> type of the key
 	 * @param javaBeanCtor the factory function that will instanciate new beans (no argument)
 	 * @param column the mapped column used as a key
@@ -177,19 +203,7 @@ public class QueryConverter<C> {
 	public <I> QueryConverter<C> mapKey(SerializableSupplier<C> javaBeanCtor,
 										org.gama.stalactite.persistence.structure.Column<? extends Table, I> column,
 										SerializableBiConsumer<C, I> keySetter) {
-		return mapKey((SerializableFunction<I, C>) i -> {
-			C newInstance = javaBeanCtor.get();
-			keySetter.accept(newInstance, i);
-			return newInstance;
-		}, column);
-	}
-	
-	// NB : Do not try to add any <Table> generic type to PrimaryKey argument because it makes it lose QueryConverter generic type
-	// when PrimaryKey is taken on a simple Table instance not defined as a Table<?> or any Table subtype
-	public QueryConverter<C> mapKey(SerializableFunction<Object[], C> factory, PrimaryKey primaryKey) {
-		Set<Duo<String, Class>> primaryKeyDefinition = Iterables.collect(((PrimaryKey<Table>) primaryKey).getColumns(), c -> new Duo<>(c.getName(), c.getJavaType()), KeepOrderSet::new);
-		this.beanCreationDefinition = new BeanCreationDefinition<>(factory, primaryKeyDefinition);
-		return this;
+		return mapKey(javaBeanCtor, column.getName(), keySetter);
 	}
 	
 	/**
@@ -318,37 +332,46 @@ public class QueryConverter<C> {
 		ResultSetConverterSupport<?, C> transformer;
 		Set<Column> columns = beanCreationDefinition.getColumns();
 		if (columns.size() == 1) {
-			Column<Object> keyColumn = (Column<Object>) Iterables.first(columns);
-			ParameterBinder<Object> idParameterBinder = parameterBinderProvider.getBinder(keyColumn.getValueType());
-			transformer = new ResultSetConverterSupport<>(rootBeanType, keyColumn.getName(), idParameterBinder, (Function<Object, C>) beanCreationDefinition.getFactory());
+			transformer = buildSingleColumnKeyTransformer((Column<Object>) Iterables.first(columns));
 		} else {
-			Set<SingleColumnReader> columnReaders = Iterables.collect(columns, c -> {
-				ParameterBinder reader = parameterBinderProvider.getBinder(c.getValueType());
-				return new SingleColumnReader(c.getName(), reader);
-			}, HashSet::new);
-			MultipleColumnsReader<Object[]> multipleColumnsReader = new MultipleColumnsReader<>(columnReaders, resultSetRow -> {
-				// we transform all columns value into a Object[]
-				Object[] contructorArgs = new Object[columns.size()];
-				int i = 0;
-				for (Column column : columns) {
-					contructorArgs[i++] = resultSetRow.get(column.getName());
-				}
-				return contructorArgs;
-			});
-			Function<Object[], C> beanFactory = (Function<Object[], C>) beanCreationDefinition.getFactory();
-			ResultSetRowConverter<Object[], C> resultSetRowConverter = new ResultSetRowConverter<>(
-					rootBeanType,
-					multipleColumnsReader,
-					beanFactory);
-			transformer = new ResultSetConverterSupport<>(resultSetRowConverter, beanFactory);
+			transformer = buildComposedKeyTransformer(columns);
 		}
 		// adding complementary properties to transformer
-		for (ColumnMapping<C, java.lang.Object> columnMapping : columnMappings) {
+		for (ColumnMapping<C, Object> columnMapping : columnMappings) {
 			ParameterBinder parameterBinder = parameterBinderProvider.getBinder(columnMapping.getColumn().getValueType());
 			transformer.add(columnMapping.getColumn().getName(), parameterBinder, columnMapping.getSetter());
 		}
 		rawMappers.forEach(transformer::add);
 		return transformer;
+	}
+	
+	private ResultSetConverterSupport<?, C> buildSingleColumnKeyTransformer(Column<Object> keyColumn) {
+		ParameterBinder<Object> idParameterBinder = parameterBinderProvider.getBinder(keyColumn.getValueType());
+		return new ResultSetConverterSupport<>(rootBeanType, keyColumn.getName(), idParameterBinder,
+				(SerializableFunction<Object, C>) beanCreationDefinition.getFactory());
+	}
+	
+	private ResultSetConverterSupport<?, C> buildComposedKeyTransformer(Set<Column> columns) {
+		Set<SingleColumnReader> columnReaders = Iterables.collect(columns, c -> {
+			ParameterBinder reader = parameterBinderProvider.getBinder(c.getValueType());
+			return new SingleColumnReader<>(c.getName(), reader);
+		}, HashSet::new);
+		MultipleColumnsReader<Object[]> multipleColumnsReader = new MultipleColumnsReader<>(columnReaders, resultSetRow -> {
+			// we transform all columns value into a Object[]
+			Object[] contructorArgs = new Object[columns.size()];
+			int i = 0;
+			for (Column column : columns) {
+				contructorArgs[i++] = resultSetRow.get(column.getName());
+			}
+			return contructorArgs;
+		});
+		Function<Object[], C> beanFactory = (Function<Object[], C>) beanCreationDefinition.getFactory();
+		
+		ResultSetRowConverter<Object[], C> resultSetRowConverter = new ResultSetRowConverter<>(
+				rootBeanType,
+				multipleColumnsReader,
+				beanFactory);
+		return new ResultSetConverterSupport<>(resultSetRowConverter);
 	}
 	
 	private <I> Class<I> giveColumnType(SerializableBiConsumer<C, I> setter) {
@@ -454,15 +477,28 @@ public class QueryConverter<C> {
 		
 		private final KeepOrderSet<Column> columns = new KeepOrderSet<>();
 		
-		private final Function<I, O> factory;
+		private final SerializableFunction<I, O> factory;
 		
-		public BeanCreationDefinition(Function<I, O> factory, String columnName, Class<I> columnType) {
+		/**
+		 * Constructor for bean identified by a single column (not composed primary key)
+		 * 
+		 * @param factory bean factory, a constructor reference for instance (with single parameter)
+		 * @param columnName name of the column that contains bean key
+		 * @param columnType column type, must be the same as factory input
+		 */
+		public BeanCreationDefinition(SerializableFunction<I, O> factory, String columnName, Class<I> columnType) {
 			this.columns.add(new Column<>(columnName, columnType));
 			this.factory = factory;
 		}
 		
-		public BeanCreationDefinition(Function<I, O> factory,
-									  Set<Duo<String /* column1Name */ , Class /* column1Type */ >> columns
+		/**
+		 * Constructor for bean identified by a composed primary key
+		 *
+		 * @param factory bean factory, a constructor reference for instance (with several parameters)
+		 * @param columns pair of column name and column type that contains bean key
+		 */
+		public BeanCreationDefinition(SerializableFunction<I, O> factory,
+									  Set<Duo<String /* columnName */ , Class /* columnType */ >> columns
 		) {
 			this.columns.addAll(Iterables.collect(columns, duo -> new Column<>(duo.getLeft(), duo.getRight()), (Supplier<Set<Column>>) KeepOrderSet::new));
 			this.factory = factory;
@@ -472,7 +508,7 @@ public class QueryConverter<C> {
 			return columns;
 		}
 		
-		public Function<I, O> getFactory() {
+		public SerializableFunction<I, O> getFactory() {
 			return factory;
 		}
 		

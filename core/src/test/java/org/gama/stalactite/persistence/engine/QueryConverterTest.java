@@ -6,7 +6,6 @@ import java.sql.SQLException;
 import java.util.List;
 import java.util.Map;
 
-import org.danekja.java.util.function.serializable.SerializableBiConsumer;
 import org.gama.lang.collection.Arrays;
 import org.gama.lang.collection.Iterables;
 import org.gama.lang.collection.Maps;
@@ -36,47 +35,40 @@ public class QueryConverterTest {
 	
 	public static Object[][] testNewQuery() {
 		ParameterBinderProvider<Class> parameterBinderProvider = ParameterBinderProvider.fromMap(new ColumnBinderRegistry().getParameterBinders());
-		Table toto = new Table<>("Toto");
-		Column<Table, Long> id = toto.addColumn("id", Long.class).primaryKey();
-		Column<Table, String> name = toto.addColumn("name", String.class);
-		Column<Table, Boolean> active = toto.addColumn("active", boolean.class);
+		Table totoTable = new Table<>("Toto");
+		Column<Table, Long> id = totoTable.addColumn("id", Long.class).primaryKey();
+		Column<Table, String> name = totoTable.addColumn("name", String.class);
+		Column<Table, Boolean> active = totoTable.addColumn("active", boolean.class);
 		
+		String dummySql = "never executed statement";
 		return new Object[][] {
-				{	// default API: column name, column type
-					new QueryConverter<>(Toto.class, "select id, name from Toto", parameterBinderProvider)
+				{	// default API: constructor with 1 arg, column name, column type
+					new QueryConverter<>(Toto.class, dummySql, parameterBinderProvider)
 						.mapKey(Toto::new, "id", Long.class)
 						.map("name", Toto::setName, String.class)
 						.map("active", Toto::setActive) },
 				{	// with Java Bean constructor (no args)
-					new QueryConverter<>(Toto.class, "select id, name from Toto", parameterBinderProvider)
-						.mapKey(Toto::new, "id", Long.class, Toto::setId)
-						.map("name", Toto::setName, String.class)
-						.map("active", Toto::setActive) },
-				{	// with Java Bean constructor (no args) and no column type
-					new QueryConverter<>(Toto.class, "select id, name from Toto", parameterBinderProvider)
+					new QueryConverter<>(Toto.class, dummySql, parameterBinderProvider)
 						.mapKey(Toto::new, "id", Toto::setId)
 						.map("name", Toto::setName, String.class)
 						.map("active", Toto::setActive) },
-				{	// with Java Bean constructor (no args) and no column type, other syntax (not officially supported)
-					new QueryConverter<>(Toto.class, "select id, name from Toto", parameterBinderProvider)
-						.mapKey(Toto::new, "id", (SerializableBiConsumer<Toto, Long>) Toto::setId)
-						.map("name", Toto::setName, String.class)
-						.map("active", Toto::setActive) },
-				{	// with map method using other syntax (not officially supported)
-					new QueryConverter<>(Toto.class, "select id, name from Toto", parameterBinderProvider)
-							.mapKey(Toto::new, "id", Toto::setId)
-						.map("name", Toto::setName, String.class)
-						.map("active", (SerializableBiConsumer<Toto, Boolean>) Toto::setActive) },
+				{	// with Java Bean constructor (no args)
+					new QueryConverter<>(Toto.class, dummySql, parameterBinderProvider)
+							.mapKey(Toto::new, id, Toto::setId)
+							.map(name, Toto::setName)
+							.map(active, Toto::setActive) },
 				{ 	// with Column API
-					new QueryConverter<>(Toto.class, "select id, name from Toto", parameterBinderProvider)
+					new QueryConverter<>(Toto.class, dummySql, parameterBinderProvider)
 						.mapKey(Toto::new, id)
 						.map(name, Toto::setName)
 						.map(active, Toto::setActive) },
-				{	// with Java Bean constructor (no args)
-					new QueryConverter<>(Toto.class, "select id, name from Toto", parameterBinderProvider)
-						.mapKey(Toto::new, id, Toto::setId)
-						.map(name, Toto::setName)
-						.map(active, Toto::setActive) }
+				{	// with Java Bean constructor with 2 arguments
+						new QueryConverter<>(Toto.class, dummySql, parameterBinderProvider)
+						.mapKey(Toto::new, id, name)
+						.map(active, Toto::setActive)},
+				{	// with Java Bean constructor with 3 arguments
+						new QueryConverter<>(Toto.class, dummySql, parameterBinderProvider)
+						.mapKey(Toto::new, id, name, active) }
 		};
 	}
 	
@@ -88,7 +80,7 @@ public class QueryConverterTest {
 				Maps.asHashMap("id", (Object) 43L).add("name", "hello").add("active", false)
 		);
 		
-		List<Toto> result = execute(queryConverter, resultSetData);
+		List<Toto> result = invokeExecuteWithData(queryConverter, resultSetData);
 		
 		List<Toto> expected = Arrays.asList(
 				new Toto(42, "coucou", true), 
@@ -124,7 +116,7 @@ public class QueryConverterTest {
 				Maps.asHashMap("id", (Object) 43L).add("name", "oziuoie")
 		);
 		
-		List<Toto> result = execute(queryConverter, resultSetData);
+		List<Toto> result = invokeExecuteWithData(queryConverter, resultSetData);
 		
 		List<Toto> expected = Arrays.asList(
 				new Toto(42, "coucou", false),
@@ -133,7 +125,7 @@ public class QueryConverterTest {
 		assertEquals(expected.toString(), result.toString());
 	}
 	
-	public List<Toto> execute(QueryConverter<Toto> queryConverter, List<Map<String, Object>> resultSetData) {
+	private List<Toto> invokeExecuteWithData(QueryConverter<Toto> queryConverter, List<Map<String, Object>> resultSetData) {
 		// creation of a Connection that will give our test case data
 		Connection connectionMock = mock(Connection.class);
 		try {
@@ -194,7 +186,7 @@ public class QueryConverterTest {
 				Maps.asHashMap("id", (Object) 43L).add("name", "oziuoie")
 		);
 		
-		List<Toto> result = execute(queryConverter, resultSetData);
+		List<Toto> result = invokeExecuteWithData(queryConverter, resultSetData);
 		
 		List<Toto> expected = Arrays.asList(
 				new Toto(42, "ghoeihvoih", false),
@@ -216,6 +208,11 @@ public class QueryConverterTest {
 		
 		public Toto(long id) {
 			this.id = id;
+		}
+		
+		public Toto(long id, String name) {
+			this.id = id;
+			this.name = name;
 		}
 		
 		public Toto(long id, String name, boolean active) {
