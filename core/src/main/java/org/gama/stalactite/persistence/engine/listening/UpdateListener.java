@@ -12,18 +12,24 @@ import org.gama.stalactite.persistence.structure.Table;
 /**
  * @author Guillaume Mary
  */
-public interface IUpdateListener<C> {
+public interface UpdateListener<C> {
 	
-	void beforeUpdate(Iterable<UpdatePayload<C, ?>> payloads, boolean allColumnsStatement);
+	default void beforeUpdate(Iterable<UpdatePayload<C, ?>> payloads, boolean allColumnsStatement) {
+		
+	}
 	
-	void afterUpdate(Iterable<UpdatePayload<C, ?>> entities, boolean allColumnsStatement);
+	default void afterUpdate(Iterable<UpdatePayload<C, ?>> entities, boolean allColumnsStatement) {
+		
+	}
 	
-	void onError(Iterable<C> entities, RuntimeException runtimeException);
+	default void onError(Iterable<C> entities, RuntimeException runtimeException) {
+		
+	}
 	
 	/**
 	 * Payload for listener's methods. Carries modified + unmodified entities and the columns + values
 	 * which must be updated.
-	 * Not expected to be used elsewhere than the {@link IUpdateListener} mecanism.
+	 * Not expected to be used elsewhere than the {@link UpdateListener} mecanism.
 	 * 
 	 * @param <C> entities type
 	 * @param <T> target table type

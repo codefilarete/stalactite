@@ -3,7 +3,7 @@ package org.gama.stalactite.persistence.engine.listening;
 import java.util.ArrayList;
 
 import org.gama.lang.Duo;
-import org.gama.stalactite.persistence.engine.listening.IUpdateListener.UpdatePayload;
+import org.gama.stalactite.persistence.engine.listening.UpdateListener.UpdatePayload;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -23,7 +23,7 @@ public class PersisterListenerTest {
 	@Test
 	public void doWithSelectListener() {
 		PersisterListener testInstance = new PersisterListener();
-		ISelectListener listenerMock = mock(ISelectListener.class);
+		SelectListener listenerMock = mock(SelectListener.class);
 		testInstance.addSelectListener(listenerMock);
 		
 		ArrayList<Object> entities = new ArrayList<>();
@@ -37,7 +37,7 @@ public class PersisterListenerTest {
 	@Test
 	public void doWithSelectListener_onError() {
 		PersisterListener testInstance = new PersisterListener();
-		ISelectListener listenerMock = mock(ISelectListener.class);
+		SelectListener listenerMock = mock(SelectListener.class);
 		testInstance.addSelectListener(listenerMock);
 		
 		ArrayList<Object> entities = new ArrayList<>();
@@ -53,7 +53,7 @@ public class PersisterListenerTest {
 	@Test
 	public void doWithInsertListener() {
 		PersisterListener testInstance = new PersisterListener();
-		IInsertListener listenerMock = mock(IInsertListener.class);
+		InsertListener listenerMock = mock(InsertListener.class);
 		testInstance.addInsertListener(listenerMock);
 		
 		ArrayList<Object> entities = new ArrayList<>();
@@ -67,7 +67,7 @@ public class PersisterListenerTest {
 	@Test
 	public void doWithInsertListener_onError() {
 		PersisterListener testInstance = new PersisterListener();
-		IInsertListener listenerMock = mock(IInsertListener.class);
+		InsertListener listenerMock = mock(InsertListener.class);
 		testInstance.addInsertListener(listenerMock);
 		
 		ArrayList<Object> entities = new ArrayList<>();
@@ -83,7 +83,7 @@ public class PersisterListenerTest {
 	@Test
 	public void doWithUpdateListener() {
 		PersisterListener testInstance = new PersisterListener();
-		IUpdateListener listenerMock = mock(IUpdateListener.class);
+		UpdateListener listenerMock = mock(UpdateListener.class);
 		testInstance.addUpdateListener(listenerMock);
 		
 		ArrayList<UpdatePayload> entities = new ArrayList<>();
@@ -98,7 +98,7 @@ public class PersisterListenerTest {
 	@Test
 	public void doWithUpdateListener_onError() {
 		PersisterListener testInstance = new PersisterListener();
-		IUpdateListener listenerMock = mock(IUpdateListener.class);
+		UpdateListener listenerMock = mock(UpdateListener.class);
 		testInstance.addUpdateListener(listenerMock);
 		
 		ArrayList<UpdatePayload> entities = new ArrayList<>();
@@ -114,7 +114,7 @@ public class PersisterListenerTest {
 	@Test
 	public void doWithUpdateByIdListener() {
 		PersisterListener testInstance = new PersisterListener();
-		IUpdateByIdListener listenerMock = mock(IUpdateByIdListener.class);
+		UpdateByIdListener listenerMock = mock(UpdateByIdListener.class);
 		testInstance.addUpdateByIdListener(listenerMock);
 		
 		ArrayList<Object> entities = new ArrayList<>();
@@ -128,7 +128,7 @@ public class PersisterListenerTest {
 	@Test
 	public void doWithUpdateByIdListener_onError() {
 		PersisterListener testInstance = new PersisterListener();
-		IUpdateByIdListener listenerMock = mock(IUpdateByIdListener.class);
+		UpdateByIdListener listenerMock = mock(UpdateByIdListener.class);
 		testInstance.addUpdateByIdListener(listenerMock);
 		
 		ArrayList<Duo> entities = new ArrayList<>();
@@ -144,7 +144,7 @@ public class PersisterListenerTest {
 	@Test
 	public void doWithDeleteListener() {
 		PersisterListener testInstance = new PersisterListener();
-		IDeleteListener listenerMock = mock(IDeleteListener.class);
+		DeleteListener listenerMock = mock(DeleteListener.class);
 		testInstance.addDeleteListener(listenerMock);
 		
 		ArrayList<Object> entities = new ArrayList<>();
@@ -158,7 +158,7 @@ public class PersisterListenerTest {
 	@Test
 	public void doWithDeleteListener_onError() {
 		PersisterListener testInstance = new PersisterListener();
-		IDeleteListener listenerMock = mock(IDeleteListener.class);
+		DeleteListener listenerMock = mock(DeleteListener.class);
 		testInstance.addDeleteListener(listenerMock);
 		
 		ArrayList<Duo> entities = new ArrayList<>();
@@ -174,7 +174,7 @@ public class PersisterListenerTest {
 	@Test
 	public void doWithDeleteByIdListener() {
 		PersisterListener testInstance = new PersisterListener();
-		IDeleteByIdListener listenerMock = mock(IDeleteByIdListener.class);
+		DeleteByIdListener listenerMock = mock(DeleteByIdListener.class);
 		testInstance.addDeleteByIdListener(listenerMock);
 		
 		ArrayList<Object> entities = new ArrayList<>();
@@ -188,7 +188,7 @@ public class PersisterListenerTest {
 	@Test
 	public void doWithDeleteByIdListener_onError() {
 		PersisterListener testInstance = new PersisterListener();
-		IDeleteByIdListener listenerMock = mock(IDeleteByIdListener.class);
+		DeleteByIdListener listenerMock = mock(DeleteByIdListener.class);
 		testInstance.addDeleteByIdListener(listenerMock);
 		
 		ArrayList<Duo> entities = new ArrayList<>();

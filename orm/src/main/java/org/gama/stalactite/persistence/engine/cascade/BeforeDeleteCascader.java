@@ -5,14 +5,14 @@ import java.util.stream.Collectors;
 
 import org.gama.lang.collection.Iterables;
 import org.gama.stalactite.persistence.engine.Persister;
-import org.gama.stalactite.persistence.engine.listening.NoopDeleteListener;
+import org.gama.stalactite.persistence.engine.listening.DeleteListener;
 
 /**
  * Cascader for delete, written for @OneToOne style of cascade where Trigger owns the relationship to Target
  * 
  * @author Guillaume Mary
  */
-public abstract class BeforeDeleteCascader<Trigger, Target> extends NoopDeleteListener<Trigger> {
+public abstract class BeforeDeleteCascader<Trigger, Target> implements DeleteListener<Trigger> {
 	
 	private Persister<Target, ?, ?> persister;
 	
@@ -22,10 +22,9 @@ public abstract class BeforeDeleteCascader<Trigger, Target> extends NoopDeleteLi
 	 */
 	public BeforeDeleteCascader(Persister<Target, ?, ?> persister) {
 		this.persister = persister;
-		this.persister.getPersisterListener().addDeleteListener(new NoopDeleteListener<Target>() {
+		this.persister.getPersisterListener().addDeleteListener(new DeleteListener<Target>() {
 			@Override
 			public void afterDelete(Iterable<Target> entities) {
-				super.afterDelete(entities);
 				postTargetDelete(entities);
 			}
 		});

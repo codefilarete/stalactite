@@ -10,8 +10,8 @@ import org.gama.lang.Duo;
 import org.gama.lang.Retryer;
 import org.gama.lang.collection.Iterables;
 import org.gama.sql.ConnectionProvider;
-import org.gama.stalactite.persistence.engine.listening.IUpdateListener;
-import org.gama.stalactite.persistence.engine.listening.IUpdateListener.UpdatePayload;
+import org.gama.stalactite.persistence.engine.listening.UpdateListener;
+import org.gama.stalactite.persistence.engine.listening.UpdateListener.UpdatePayload;
 import org.gama.stalactite.persistence.engine.listening.PersisterListener;
 import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
 import org.gama.stalactite.persistence.mapping.SimpleIdMappingStrategy;
@@ -265,7 +265,7 @@ public class Persister<C, I, T extends Table> {
 	 * @param allColumnsStatement true if all columns must be in the SQL statement, false if only modified ones should be in
 	 */
 	public int update(Iterable<Duo<C, C>> differencesIterable, boolean allColumnsStatement) {
-		Iterable<UpdatePayload<C, T>> updatePayloads = IUpdateListener.computePayloads(differencesIterable, allColumnsStatement, getMappingStrategy());
+		Iterable<UpdatePayload<C, T>> updatePayloads = UpdateListener.computePayloads(differencesIterable, allColumnsStatement, getMappingStrategy());
 		if (Iterables.isEmpty(updatePayloads)) {
 			// nothing to update => we return immediatly without any call to listeners
 			return 0;

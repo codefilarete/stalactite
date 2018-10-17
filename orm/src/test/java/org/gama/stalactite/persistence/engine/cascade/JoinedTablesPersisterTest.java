@@ -23,10 +23,10 @@ import org.gama.sql.result.InMemoryResultSet;
 import org.gama.stalactite.persistence.engine.InMemoryCounterIdentifierGenerator;
 import org.gama.stalactite.persistence.engine.Persister;
 import org.gama.stalactite.persistence.engine.RowCountManager;
-import org.gama.stalactite.persistence.engine.listening.NoopDeleteByIdListener;
-import org.gama.stalactite.persistence.engine.listening.NoopDeleteListener;
-import org.gama.stalactite.persistence.engine.listening.NoopInsertListener;
-import org.gama.stalactite.persistence.engine.listening.NoopUpdateByIdListener;
+import org.gama.stalactite.persistence.engine.listening.DeleteByIdListener;
+import org.gama.stalactite.persistence.engine.listening.DeleteListener;
+import org.gama.stalactite.persistence.engine.listening.InsertListener;
+import org.gama.stalactite.persistence.engine.listening.UpdateByIdListener;
 import org.gama.stalactite.persistence.id.Identified;
 import org.gama.stalactite.persistence.id.Identifier;
 import org.gama.stalactite.persistence.id.PersistableIdentifier;
@@ -170,28 +170,28 @@ public class JoinedTablesPersisterTest {
 		persister2 = new Persister<>(totoClassMappingStrategy2_ontoTable2, dialect, () -> connection, 3);
 		testInstance.addPersister(JoinedStrategiesSelect.FIRST_STRATEGY_NAME, persister2,
 				Toto::merge, leftJoinColumn, rightJoinColumn, false);
-		testInstance.getPersisterListener().addInsertListener(new NoopInsertListener<Toto>() {
+		testInstance.getPersisterListener().addInsertListener(new InsertListener<Toto>() {
 			@Override
 			public void afterInsert(Iterable<Toto> entities) {
 				// since we only want a replicate of totos in table2, we only need to return them
 				persister2.insert(entities);
 			}
 		});
-		testInstance.getPersisterListener().addUpdateByIdListener(new NoopUpdateByIdListener<Toto>() {
+		testInstance.getPersisterListener().addUpdateByIdListener(new UpdateByIdListener<Toto>() {
 			@Override
 			public void afterUpdateById(Iterable<Toto> entities) {
 				// since we only want a replicate of totos in table2, we only need to return them
 				persister2.updateById(entities);
 			}
 		});
-		testInstance.getPersisterListener().addDeleteListener(new NoopDeleteListener<Toto>() {
+		testInstance.getPersisterListener().addDeleteListener(new DeleteListener<Toto>() {
 			@Override
 			public void beforeDelete(Iterable<Toto> entities) {
 				// since we only want a replicate of totos in table2, we only need to return them
 				persister2.delete(entities);
 			}
 		});
-		testInstance.getPersisterListener().addDeleteByIdListener(new NoopDeleteByIdListener<Toto>() {
+		testInstance.getPersisterListener().addDeleteByIdListener(new DeleteByIdListener<Toto>() {
 			@Override
 			public void beforeDeleteById(Iterable<Toto> entities) {
 				// since we only want a replicate of totos in table2, we only need to return them

@@ -16,12 +16,12 @@ import org.gama.reflection.IReversibleAccessor;
 import org.gama.sql.ConnectionProvider;
 import org.gama.stalactite.persistence.engine.PersisterDatabaseTest.Toto;
 import org.gama.stalactite.persistence.engine.PersisterDatabaseTest.TotoTable;
-import org.gama.stalactite.persistence.engine.listening.IDeleteByIdListener;
-import org.gama.stalactite.persistence.engine.listening.IDeleteListener;
-import org.gama.stalactite.persistence.engine.listening.IInsertListener;
-import org.gama.stalactite.persistence.engine.listening.IUpdateByIdListener;
-import org.gama.stalactite.persistence.engine.listening.IUpdateListener;
-import org.gama.stalactite.persistence.engine.listening.IUpdateListener.UpdatePayload;
+import org.gama.stalactite.persistence.engine.listening.DeleteByIdListener;
+import org.gama.stalactite.persistence.engine.listening.DeleteListener;
+import org.gama.stalactite.persistence.engine.listening.InsertListener;
+import org.gama.stalactite.persistence.engine.listening.UpdateByIdListener;
+import org.gama.stalactite.persistence.engine.listening.UpdateListener;
+import org.gama.stalactite.persistence.engine.listening.UpdateListener.UpdatePayload;
 import org.gama.stalactite.persistence.id.manager.AlreadyAssignedIdentifierManager;
 import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
 import org.gama.stalactite.persistence.mapping.IMappingStrategy.UpwhereColumn;
@@ -72,9 +72,9 @@ public class PersisterTest {
 		};
 		
 		
-		IInsertListener insertListener = mock(IInsertListener.class);
+		InsertListener insertListener = mock(InsertListener.class);
 		testInstance.getPersisterListener().addInsertListener(insertListener);
-		IUpdateByIdListener updateListener = mock(IUpdateByIdListener.class);
+		UpdateByIdListener updateListener = mock(UpdateByIdListener.class);
 		testInstance.getPersisterListener().addUpdateByIdListener(updateListener);
 		
 		int rowCount = testInstance.persist(Arrays.asList());
@@ -126,7 +126,7 @@ public class PersisterTest {
 		};
 		
 		
-		IInsertListener insertListener = mock(IInsertListener.class);
+		InsertListener insertListener = mock(InsertListener.class);
 		testInstance.getPersisterListener().addInsertListener(insertListener);
 		
 		int rowCount = testInstance.insert(Arrays.asList());
@@ -164,7 +164,7 @@ public class PersisterTest {
 			}
 		};
 		
-		IUpdateListener updateListener = mock(IUpdateListener.class);
+		UpdateListener updateListener = mock(UpdateListener.class);
 		testInstance.getPersisterListener().addUpdateListener(updateListener);
 		
 		// when nothing to be deleted, listener is not invoked
@@ -253,7 +253,7 @@ public class PersisterTest {
 			}
 		};
 		
-		IUpdateByIdListener updateListener = mock(IUpdateByIdListener.class);
+		UpdateByIdListener updateListener = mock(UpdateByIdListener.class);
 		testInstance.getPersisterListener().addUpdateByIdListener(updateListener);
 		
 		// when nothing to be deleted, listener is not invoked
@@ -294,7 +294,7 @@ public class PersisterTest {
 		};
 		
 		
-		IDeleteListener deleteListener = mock(IDeleteListener.class);
+		DeleteListener deleteListener = mock(DeleteListener.class);
 		testInstance.getPersisterListener().addDeleteListener(deleteListener);
 		
 		// when nothing to be deleted, listener is not invoked
@@ -332,7 +332,7 @@ public class PersisterTest {
 			}
 		};
 		
-		IDeleteByIdListener deleteListener = mock(IDeleteByIdListener.class);
+		DeleteByIdListener deleteListener = mock(DeleteByIdListener.class);
 		testInstance.getPersisterListener().addDeleteByIdListener(deleteListener);
 		
 		// when nothing to be deleted, listener is not invoked

@@ -5,7 +5,7 @@ import java.util.Collection;
 import java.util.List;
 
 import org.gama.stalactite.persistence.engine.Persister;
-import org.gama.stalactite.persistence.engine.listening.NoopSelectListener;
+import org.gama.stalactite.persistence.engine.listening.SelectListener;
 
 /**
  * Cascader for select, written for @OneToOne style of cascade where Trigger owns the relationship with Target.
@@ -16,7 +16,7 @@ import org.gama.stalactite.persistence.engine.listening.NoopSelectListener;
  * @param <I> type of loaded beans key
  * @author Guillaume Mary
  */
-public abstract class AfterSelectCascader<Trigger, Target, I> extends NoopSelectListener<Trigger, I> {
+public abstract class AfterSelectCascader<Trigger, Target, I> implements SelectListener<Trigger, I> {
 	
 	private Persister<Target, I, ?> persister;
 	
@@ -26,10 +26,9 @@ public abstract class AfterSelectCascader<Trigger, Target, I> extends NoopSelect
 	 */
 	public AfterSelectCascader(Persister<Target, I, ?> persister) {
 		this.persister = persister;
-		this.persister.getPersisterListener().addSelectListener(new NoopSelectListener<Target, I>() {
+		this.persister.getPersisterListener().addSelectListener(new SelectListener<Target, I>() {
 			@Override
 			public void afterSelect(Iterable<Target> entities) {
-				super.afterSelect(entities);
 				postTargetSelect(entities);
 			}
 		});

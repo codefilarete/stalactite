@@ -6,7 +6,7 @@ import java.util.stream.Collectors;
 import org.gama.lang.Duo;
 import org.gama.lang.collection.Iterables;
 import org.gama.stalactite.persistence.engine.Persister;
-import org.gama.stalactite.persistence.engine.listening.NoopUpdateListener;
+import org.gama.stalactite.persistence.engine.listening.UpdateListener;
 
 /**
  * Cascader for update, written for @OneToOne style of cascade where Trigger owns the relationship to Target.
@@ -16,16 +16,15 @@ import org.gama.stalactite.persistence.engine.listening.NoopUpdateListener;
  * @param <Target> the type of the instances of the relationship
  * @author Guillaume Mary
  */
-public abstract class AfterUpdateCascader<Trigger, Target> extends NoopUpdateListener<Trigger> {
+public abstract class AfterUpdateCascader<Trigger, Target> implements UpdateListener<Trigger> {
 	
 	private Persister<Target, ?, ?> persister;
 	
 	public AfterUpdateCascader(Persister<Target, ?, ?> persister) {
 		this.persister = persister;
-		this.persister.getPersisterListener().addUpdateListener(new NoopUpdateListener<Target>() {
+		this.persister.getPersisterListener().addUpdateListener(new UpdateListener<Target>() {
 			@Override
 			public void afterUpdate(Iterable<UpdatePayload<Target, ?>> entities, boolean allColumnsStatement) {
-				super.afterUpdate(entities, allColumnsStatement);
 				postTargetUpdate(entities);
 			}
 		});

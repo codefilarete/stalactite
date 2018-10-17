@@ -6,9 +6,9 @@ import java.util.List;
 /**
  * @author Guillaume Mary
  */
-public class DeleteListenerCollection<T> implements IDeleteListener<T> {
+public class DeleteListenerCollection<T> implements DeleteListener<T> {
 	
-	private List<IDeleteListener<T>> deleteListeners = new ArrayList<>();
+	private List<DeleteListener<T>> deleteListeners = new ArrayList<>();
 	
 	@Override
 	public void beforeDelete(Iterable<T> entities) {
@@ -25,7 +25,7 @@ public class DeleteListenerCollection<T> implements IDeleteListener<T> {
 		deleteListeners.forEach(listener -> listener.onError(entities, runtimeException));
 	}
 	
-	public void add(IDeleteListener<T> deleteListener) {
+	public void add(DeleteListener<T> deleteListener) {
 		if (deleteListener != null) {    // prevent null as specified in interface
 			this.deleteListeners.add(deleteListener);
 		}

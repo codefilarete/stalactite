@@ -16,7 +16,7 @@ import org.gama.sql.RollbackListener;
 import org.gama.sql.RollbackObserver;
 import org.gama.sql.dml.WriteOperation;
 import org.gama.stalactite.persistence.engine.RowCountManager.RowCounter;
-import org.gama.stalactite.persistence.engine.listening.IUpdateListener.UpdatePayload;
+import org.gama.stalactite.persistence.engine.listening.UpdateListener.UpdatePayload;
 import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
 import org.gama.stalactite.persistence.mapping.IMappingStrategy.UpwhereColumn;
 import org.gama.stalactite.persistence.sql.dml.DMLGenerator;

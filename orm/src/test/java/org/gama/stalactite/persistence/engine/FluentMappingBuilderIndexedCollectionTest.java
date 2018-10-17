@@ -18,8 +18,8 @@ import org.gama.sql.binder.DefaultParameterBinders;
 import org.gama.sql.test.HSQLDBInMemoryDataSource;
 import org.gama.stalactite.persistence.engine.FluentMappingBuilder.IdentifierPolicy;
 import org.gama.stalactite.persistence.engine.PersisterTest.PayloadPredicate;
-import org.gama.stalactite.persistence.engine.listening.IUpdateListener;
-import org.gama.stalactite.persistence.engine.listening.IUpdateListener.UpdatePayload;
+import org.gama.stalactite.persistence.engine.listening.UpdateListener;
+import org.gama.stalactite.persistence.engine.listening.UpdateListener.UpdatePayload;
 import org.gama.stalactite.persistence.id.Identified;
 import org.gama.stalactite.persistence.id.Identifier;
 import org.gama.stalactite.persistence.id.PersistableIdentifier;
@@ -154,7 +154,7 @@ public class FluentMappingBuilderIndexedCollectionTest {
 				choice2,
 				choice3));
 		
-		IUpdateListener<Choice> updateListener = Mockito.mock(IUpdateListener.class);
+		UpdateListener<Choice> updateListener = Mockito.mock(UpdateListener.class);
 		updateTestData.getChoicePersister().getPersisterListener().getUpdateListener().add(updateListener);
 		
 		questionPersister.update(modifiedQuestion, newQuestion, true);

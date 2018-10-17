@@ -6,9 +6,9 @@ import java.util.List;
 /**
  * @author Guillaume Mary
  */
-public class UpdateByIdListenerCollection<T> implements IUpdateByIdListener<T> {
+public class UpdateByIdListenerCollection<T> implements UpdateByIdListener<T> {
 	
-	private List<IUpdateByIdListener<T>> updateByIdListeners = new ArrayList<>();
+	private List<UpdateByIdListener<T>> updateByIdListeners = new ArrayList<>();
 	
 	@Override
 	public void beforeUpdateById(Iterable<T> entities) {
@@ -25,7 +25,7 @@ public class UpdateByIdListenerCollection<T> implements IUpdateByIdListener<T> {
 		updateByIdListeners.forEach(listener -> listener.onError(entities, runtimeException));
 	}
 	
-	public void add(IUpdateByIdListener<T> updateByIdListener) {
+	public void add(UpdateByIdListener<T> updateByIdListener) {
 		if (updateByIdListener != null) {    // prevent null as specified in interface
 			this.updateByIdListeners.add(updateByIdListener);
 		}

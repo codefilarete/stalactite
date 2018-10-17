@@ -5,14 +5,14 @@ import java.util.stream.Collectors;
 
 import org.gama.lang.collection.Iterables;
 import org.gama.stalactite.persistence.engine.Persister;
-import org.gama.stalactite.persistence.engine.listening.NoopInsertListener;
+import org.gama.stalactite.persistence.engine.listening.InsertListener;
 
 /**
  * Cascader for insert, written for @OneToOne style of cascade where Trigger owns the relationship to Target
  *
  * @author Guillaume Mary
  */
-public abstract class AfterInsertCascader<Trigger, Target> extends NoopInsertListener<Trigger> {
+public abstract class AfterInsertCascader<Trigger, Target> implements InsertListener<Trigger> {
 	
 	private Persister<Target, ?, ?> persister;
 	
@@ -23,10 +23,9 @@ public abstract class AfterInsertCascader<Trigger, Target> extends NoopInsertLis
 	 */
 	public AfterInsertCascader(Persister<Target, ?, ?> persister) {
 		this.persister = persister;
-		this.persister.getPersisterListener().addInsertListener(new NoopInsertListener<Target>() {
+		this.persister.getPersisterListener().addInsertListener(new InsertListener<Target>() {
 			@Override
 			public void afterInsert(Iterable<Target> entities) {
-				super.afterInsert(entities);
 				postTargetInsert(entities);
 			}
 		});

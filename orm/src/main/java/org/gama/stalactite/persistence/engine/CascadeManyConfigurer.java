@@ -35,11 +35,11 @@ import org.gama.stalactite.persistence.engine.cascade.AfterUpdateCollectionCasca
 import org.gama.stalactite.persistence.engine.cascade.BeforeDeleteByIdCollectionCascader;
 import org.gama.stalactite.persistence.engine.cascade.BeforeDeleteCollectionCascader;
 import org.gama.stalactite.persistence.engine.cascade.JoinedTablesPersister;
-import org.gama.stalactite.persistence.engine.listening.IDeleteByIdListener;
-import org.gama.stalactite.persistence.engine.listening.IDeleteListener;
-import org.gama.stalactite.persistence.engine.listening.IInsertListener;
-import org.gama.stalactite.persistence.engine.listening.ISelectListener;
-import org.gama.stalactite.persistence.engine.listening.IUpdateListener.UpdatePayload;
+import org.gama.stalactite.persistence.engine.listening.DeleteByIdListener;
+import org.gama.stalactite.persistence.engine.listening.DeleteListener;
+import org.gama.stalactite.persistence.engine.listening.InsertListener;
+import org.gama.stalactite.persistence.engine.listening.SelectListener;
+import org.gama.stalactite.persistence.engine.listening.UpdateListener.UpdatePayload;
 import org.gama.stalactite.persistence.engine.listening.PersisterListener;
 import org.gama.stalactite.persistence.id.Identified;
 import org.gama.stalactite.persistence.id.Identifier;
@@ -102,8 +102,8 @@ public class CascadeManyConfigurer<I extends Identified, O extends Identified, J
 		Persister<O, J, ?> leftPersister = cascadeMany.getPersister();
 		
 		// adding persistence flag setters on both side
-		joinedTablesPersister.getPersisterListener().addInsertListener((IInsertListener<I>) SetPersistedFlagAfterInsertListener.INSTANCE);
-		leftPersister.getPersisterListener().addInsertListener((IInsertListener<O>) SetPersistedFlagAfterInsertListener.INSTANCE);
+		joinedTablesPersister.getPersisterListener().addInsertListener((InsertListener<I>) SetPersistedFlagAfterInsertListener.INSTANCE);
+		leftPersister.getPersisterListener().addInsertListener((InsertListener<O>) SetPersistedFlagAfterInsertListener.INSTANCE);
 		
 		// finding joined columns: left one is primary key. Right one is given by the target strategy through the property accessor
 		if (joinedTablesPersister.getTargetTable().getPrimaryKey().getColumns().size() > 1) {
@@ -272,7 +272,7 @@ public class CascadeManyConfigurer<I extends Identified, O extends Identified, J
 																	SerializableBiConsumer<O, I> reverseMember) {
 		BeanRelationFixer<I, O> beanRelationFixer = BeanRelationFixer.of(collectionSetter::set, collectionGetter,
 				cascadeMany.getCollectionTargetClass(), reverseMember);
-		persisterListener.addSelectListener(new ISelectListener<I, J>() {
+		persisterListener.addSelectListener(new SelectListener<I, J>() {
 			@Override
 			public void beforeSelect(Iterable<J> ids) {
 				leftAssociations.set(new HashMap<>());
@@ -319,7 +319,7 @@ public class CascadeManyConfigurer<I extends Identified, O extends Identified, J
 		// The latter is used because target List is already filled by the relationFixer
 		// If we use the former we must change the relation fixer and keep a temporary List. Seems little bit more complex.
 		// May be changed if any performance issue is noticed
-		persisterListener.addSelectListener(new ISelectListener<I, J>() {
+		persisterListener.addSelectListener(new SelectListener<I, J>() {
 			@Override
 			public void beforeSelect(Iterable<J> ids) {
 				updatableListIndex.set(new HashMap<>());
@@ -369,7 +369,7 @@ public class CascadeManyConfigurer<I extends Identified, O extends Identified, J
 													   PersisterListener<I, J> persisterListener) {
 		// we delete association records
 		if (indexedAssociationPersister != null) {
-			persisterListener.addDeleteListener(new IDeleteListener<I>() {
+			persisterListener.addDeleteListener(new DeleteListener<I>() {
 				@Override
 				public void beforeDelete(Iterable<I> entities) {
 					// We delete the association records by their ids (that are ... themselves) 
@@ -398,7 +398,7 @@ public class CascadeManyConfigurer<I extends Identified, O extends Identified, J
 				}
 			});
 			
-			persisterListener.addDeleteByIdListener(new IDeleteByIdListener<I>() {
+			persisterListener.addDeleteByIdListener(new DeleteByIdListener<I>() {
 				
 				@Override
 				public void beforeDeleteById(Iterable<I> entities) {
@@ -427,7 +427,7 @@ public class CascadeManyConfigurer<I extends Identified, O extends Identified, J
 				}
 			});
 		} else if (associationPersister != null) {
-			persisterListener.addDeleteListener(new IDeleteListener<I>() {
+			persisterListener.addDeleteListener(new DeleteListener<I>() {
 				@Override
 				public void beforeDelete(Iterable<I> entities) {
 					// We delete the association records by their ids (that are ... themselves) 
@@ -455,7 +455,7 @@ public class CascadeManyConfigurer<I extends Identified, O extends Identified, J
 				}
 			});
 			
-			persisterListener.addDeleteByIdListener(new IDeleteByIdListener<I>() {
+			persisterListener.addDeleteByIdListener(new DeleteByIdListener<I>() {
 				
 				@Override
 				public void beforeDeleteById(Iterable<I> entities) {

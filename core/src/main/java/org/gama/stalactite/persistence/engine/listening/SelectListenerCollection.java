@@ -6,9 +6,9 @@ import java.util.List;
 /**
  * @author Guillaume Mary
  */
-public class SelectListenerCollection<T, I> implements ISelectListener<T, I> {
+public class SelectListenerCollection<T, I> implements SelectListener<T, I> {
 	
-	private List<ISelectListener<T, I>> selectListeners = new ArrayList<>();
+	private List<SelectListener<T, I>> selectListeners = new ArrayList<>();
 	
 	@Override
 	public void beforeSelect(Iterable<I> ids) {
@@ -25,7 +25,7 @@ public class SelectListenerCollection<T, I> implements ISelectListener<T, I> {
 		selectListeners.forEach(listener -> listener.onError(ids, exception));
 	}
 	
-	public void add(ISelectListener<T, I> selectListener) {
+	public void add(SelectListener<T, I> selectListener) {
 		if (selectListener != null) {    // prevent null as specified in interface
 			this.selectListeners.add(selectListener);
 		}

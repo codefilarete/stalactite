@@ -6,7 +6,7 @@ import java.util.function.BiFunction;
 import org.gama.lang.Duo;
 import org.gama.lang.bean.IQuietDelegate;
 import org.gama.lang.collection.Iterables;
-import org.gama.stalactite.persistence.engine.listening.IUpdateListener.UpdatePayload;
+import org.gama.stalactite.persistence.engine.listening.UpdateListener.UpdatePayload;
 import org.gama.stalactite.persistence.structure.Table;
 
 import static org.gama.lang.function.Functions.chain;
@@ -29,7 +29,7 @@ public class PersisterListener<C, I> {
 		return insertListener;
 	}
 	
-	public PersisterListener<C, I> addInsertListener(IInsertListener<C> insertListener) {
+	public PersisterListener<C, I> addInsertListener(InsertListener<C> insertListener) {
 		this.insertListener.add(insertListener);
 		return this;
 	}
@@ -51,7 +51,7 @@ public class PersisterListener<C, I> {
 		return updateByIdListenerCollection;
 	}
 	
-	public PersisterListener<C, I> addUpdateByIdListener(IUpdateByIdListener<C> updateByIdListener) {
+	public PersisterListener<C, I> addUpdateByIdListener(UpdateByIdListener<C> updateByIdListener) {
 		this.updateByIdListenerCollection.add(updateByIdListener);
 		return this;
 	}
@@ -73,7 +73,7 @@ public class PersisterListener<C, I> {
 		return updateListener;
 	}
 	
-	public PersisterListener<C, I> addUpdateListener(IUpdateListener<C> updateListener) {
+	public PersisterListener<C, I> addUpdateListener(UpdateListener<C> updateListener) {
 		this.updateListener.add(updateListener);
 		return this;
 	}
@@ -96,7 +96,7 @@ public class PersisterListener<C, I> {
 		return deleteListener;
 	}
 	
-	public PersisterListener<C, I> addDeleteListener(IDeleteListener<C> deleteListener) {
+	public PersisterListener<C, I> addDeleteListener(DeleteListener<C> deleteListener) {
 		this.deleteListener.add(deleteListener);
 		return this;
 	}
@@ -114,7 +114,7 @@ public class PersisterListener<C, I> {
 		return result;
 	}
 	
-	public PersisterListener<C, I> addDeleteByIdListener(IDeleteByIdListener<C> deleteByIdListener) {
+	public PersisterListener<C, I> addDeleteByIdListener(DeleteByIdListener<C> deleteByIdListener) {
 		this.deleteByIdListenerCollection.add(deleteByIdListener);
 		return this;
 	}
@@ -136,7 +136,7 @@ public class PersisterListener<C, I> {
 		return selectListener;
 	}
 	
-	public PersisterListener<C, I> addSelectListener(ISelectListener<C, I> selectListener) {
+	public PersisterListener<C, I> addSelectListener(SelectListener<C, I> selectListener) {
 		this.selectListener.add(selectListener);
 		return this;
 	}

@@ -6,9 +6,9 @@ import java.util.List;
 /**
  * @author Guillaume Mary
  */
-public class UpdateListenerCollection<E> implements IUpdateListener<E> {
+public class UpdateListenerCollection<E> implements UpdateListener<E> {
 	
-	private List<IUpdateListener<E>> updateListeners = new ArrayList<>();
+	private List<UpdateListener<E>> updateListeners = new ArrayList<>();
 	
 	@Override
 	public void beforeUpdate(Iterable<UpdatePayload<E, ?>> updatePayloads, boolean allColumnsStatement) {
@@ -25,7 +25,7 @@ public class UpdateListenerCollection<E> implements IUpdateListener<E> {
 		updateListeners.forEach(listener -> listener.onError(entities, runtimeException));
 	}
 	
-	public void add(IUpdateListener<E> updateListener) {
+	public void add(UpdateListener<E> updateListener) {
 		if (updateListener != null) {    // prevent null as specified in interface
 			this.updateListeners.add(updateListener);
 		}

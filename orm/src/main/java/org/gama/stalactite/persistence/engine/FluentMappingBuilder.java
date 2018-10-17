@@ -31,9 +31,8 @@ import org.gama.stalactite.persistence.engine.CascadeOption.CascadeType;
 import org.gama.stalactite.persistence.engine.builder.CascadeMany;
 import org.gama.stalactite.persistence.engine.builder.CascadeManyList;
 import org.gama.stalactite.persistence.engine.cascade.JoinedTablesPersister;
-import org.gama.stalactite.persistence.engine.listening.IInsertListener;
-import org.gama.stalactite.persistence.engine.listening.NoopInsertListener;
-import org.gama.stalactite.persistence.engine.listening.NoopUpdateListener;
+import org.gama.stalactite.persistence.engine.listening.InsertListener;
+import org.gama.stalactite.persistence.engine.listening.UpdateListener;
 import org.gama.stalactite.persistence.id.Identified;
 import org.gama.stalactite.persistence.id.PersistableIdentifier;
 import org.gama.stalactite.persistence.id.manager.AlreadyAssignedIdentifierManager;
@@ -452,7 +451,7 @@ public class FluentMappingBuilder<T extends Identified, I extends StatefullIdent
 			JoinedTablesPersister<T, I, ?> joinedTablesPersister = new JoinedTablesPersister<>(persistenceContext, mappingStrategy);
 			localPersister = joinedTablesPersister;
 			// adding persistence flag setters on this side
-			joinedTablesPersister.getPersisterListener().addInsertListener((IInsertListener<T>) SetPersistedFlagAfterInsertListener.INSTANCE);
+			joinedTablesPersister.getPersisterListener().addInsertListener((InsertListener<T>) SetPersistedFlagAfterInsertListener.INSTANCE);
 			CascadeOneConfigurer cascadeOneConfigurer = new CascadeOneConfigurer();
 			for (CascadeOne<T, ? extends Identified, ? extends StatefullIdentifier> cascadeOne : cascadeOnes) {
 				cascadeOneConfigurer.appendCascade(cascadeOne, joinedTablesPersister, mappingStrategy, joinedTablesPersister,
@@ -722,7 +721,7 @@ public class FluentMappingBuilder<T extends Identified, I extends StatefullIdent
 		}
 	}
 	
-	public static class SetPersistedFlagAfterInsertListener extends NoopInsertListener<Identified> {
+	public static class SetPersistedFlagAfterInsertListener implements InsertListener<Identified> {
 		
 		public static final SetPersistedFlagAfterInsertListener INSTANCE = new SetPersistedFlagAfterInsertListener();
 		
@@ -736,7 +735,7 @@ public class FluentMappingBuilder<T extends Identified, I extends StatefullIdent
 		}
 	}
 	
-	public static class MandatoryRelationCheckingBeforeInsertListener<T extends Identified> extends NoopInsertListener<T> {
+	public static class MandatoryRelationCheckingBeforeInsertListener<T extends Identified> implements InsertListener<T> {
 		
 		private final Function<T, ? extends Identified> targetProvider;
 		private final Method member;
@@ -757,7 +756,7 @@ public class FluentMappingBuilder<T extends Identified, I extends StatefullIdent
 		}
 	}
 	
-	public static class MandatoryRelationCheckingBeforeUpdateListener<T extends Identified> extends NoopUpdateListener<T> {
+	public static class MandatoryRelationCheckingBeforeUpdateListener<T extends Identified> implements UpdateListener<T> {
 		
 		private final Method member;
 		private final Function<T, ? extends Identified> targetProvider;
