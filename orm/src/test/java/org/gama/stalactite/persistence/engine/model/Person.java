@@ -26,11 +26,6 @@ public class Person implements Identified<Long> {
 		return id;
 	}
 	
-	@Override
-	public void setId(Identifier<Long> id) {
-		this.id = id;
-	}
-	
 	public String getName() {
 		return name;
 	}

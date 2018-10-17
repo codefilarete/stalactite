@@ -89,11 +89,6 @@ class AssociationRecordInsertionCascaderTest {
 			return id;
 		}
 		
-		@Override
-		public void setId(Identifier<Long> id) {
-			this.id = id;
-		}
-		
 		public List<Key> getKeys() {
 			return keys;
 		}
@@ -114,11 +109,6 @@ class AssociationRecordInsertionCascaderTest {
 		@Override
 		public Identifier<Long> getId() {
 			return id;
-		}
-		
-		@Override
-		public void setId(Identifier<Long> id) {
-			this.id = id;
 		}
 	}
 }

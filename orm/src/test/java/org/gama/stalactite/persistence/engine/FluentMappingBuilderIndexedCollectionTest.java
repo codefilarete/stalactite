@@ -223,10 +223,8 @@ public class FluentMappingBuilderIndexedCollectionTest {
 		
 		// creating a clone to test instance swaping
 		Question modifiedQuestion = new Question(newQuestion.getId().getSurrogate());
-		Choice choice3Copy = new Choice();
-		choice3Copy.setId(new PersistedIdentifier<>(choice3.getId().getSurrogate()));
-		Choice choice1Copy = new Choice();
-		choice1Copy.setId(new PersistedIdentifier<>(choice1.getId().getSurrogate()));
+		Choice choice3Copy = new Choice(new PersistedIdentifier<>(choice3.getId().getSurrogate()));
+		Choice choice1Copy = new Choice(new PersistedIdentifier<>(choice1.getId().getSurrogate()));
 		// little swap between 2 elements
 		modifiedQuestion.setChoices(Arrays.asList(
 				choice3Copy,
@@ -662,11 +660,6 @@ public class FluentMappingBuilderIndexedCollectionTest {
 			return id;
 		}
 		
-		@Override
-		public void setId(Identifier<Long> id) {
-			this.id = id;
-		}
-		
 		public List<Choice> getChoices() {
 			return choices;
 		}
@@ -697,11 +690,6 @@ public class FluentMappingBuilderIndexedCollectionTest {
 		@Override
 		public Identifier<Long> getId() {
 			return id;
-		}
-		
-		@Override
-		public void setId(Identifier<Long> id) {
-			this.id = id;
 		}
 		
 		public List<Choice> getChoices() {
@@ -771,14 +759,13 @@ public class FluentMappingBuilderIndexedCollectionTest {
 			this.id = new PersistableIdentifier<>(id);
 		}
 		
-		@Override
-		public Identifier<Long> getId() {
-			return id;
+		public Choice(Identifier<Long> id) {
+			this.id = id;
 		}
 		
 		@Override
-		public void setId(Identifier<Long> id) {
-			this.id = id;
+		public Identifier<Long> getId() {
+			return id;
 		}
 		
 		public Question getQuestion() {

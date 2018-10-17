@@ -425,11 +425,6 @@ public class JoinedTablesPersisterTest {
 			return id;
 		}
 		
-		@Override
-		public void setId(Identifier id) {
-			this.id = id;
-		}
-		
 		/**
 		 * Method to merge another bean with this one on a part of their attributes.
 		 * It has no real purpose, it on exists to fullfill the relational mapping between tables Toto and Toto2 and avoid a NullPointerException

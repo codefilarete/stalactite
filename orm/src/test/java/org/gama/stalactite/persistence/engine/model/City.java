@@ -26,11 +26,6 @@ public class City implements Identified<Long> {
 		return id;
 	}
 	
-	@Override
-	public void setId(Identifier<Long> id) {
-		this.id = id;
-	}
-	
 	/**
 	 * Implementation based on id, for any {@link java.util.Collection#contains(Object)} or {@link java.util.Collection#remove(Object)}
 	 * 
