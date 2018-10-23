@@ -1,6 +1,7 @@
 package org.gama.stalactite.persistence.id.assembly;
 
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -49,6 +50,14 @@ public abstract class ComposedIdentifierAssembler<I> implements IdentifierAssemb
 		return assemble(primaryKeyElements);
 	}
 	
+	/**
+	 * Build an identifier from the given {@link java.sql.ResultSet} row extract.
+	 * Expected to return null if the identifier can't be build
+	 * 
+	 * @param primaryKeyElements primary key values from a {@link java.sql.ResultSet} row
+	 * @return a new identifier, null if it can't be built (given values are null for instance)
+	 */
+	@Nullable
 	protected abstract I assemble(Map<Column, Object> primaryKeyElements);
 	
 	@Override

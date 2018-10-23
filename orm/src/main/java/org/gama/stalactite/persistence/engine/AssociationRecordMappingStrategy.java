@@ -36,10 +36,14 @@ class AssociationRecordMappingStrategy extends ClassMappingStrategy<AssociationR
 				}, new AlreadyAssignedIdentifierManager<>(AssociationRecord.class), new ComposedIdentifierAssembler<AssociationRecord>(targetTable) {
 					@Override
 					protected AssociationRecord assemble(Map<Column, Object> primaryKeyElements) {
-						return new AssociationRecord(
-								primaryKeyElements.get(targetTable.getOneSideKeyColumn()),
-								primaryKeyElements.get(targetTable.getManySideKeyColumn())
-						);
+						Object leftValue = primaryKeyElements.get(targetTable.getOneSideKeyColumn());
+						Object rightValue = primaryKeyElements.get(targetTable.getManySideKeyColumn());
+						// we should not return an id if any (both expected in fact) value is null
+						if (leftValue ==  null || rightValue == null) {
+							return null;
+						} else {
+							return new AssociationRecord(leftValue, rightValue);
+						}
 					}
 					
 					@Override

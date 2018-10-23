@@ -4,10 +4,12 @@ import javax.annotation.Nonnull;
 import java.util.Collection;
 import java.util.List;
 
+import org.gama.lang.Nullable;
 import org.gama.sql.ConnectionProvider;
 import org.gama.stalactite.persistence.engine.BeanRelationFixer;
 import org.gama.stalactite.persistence.engine.PersistenceContext;
 import org.gama.stalactite.persistence.engine.Persister;
+import org.gama.stalactite.persistence.engine.cascade.JoinedStrategiesSelect.StrategyJoins;
 import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
 import org.gama.stalactite.persistence.sql.Dialect;
 import org.gama.stalactite.persistence.structure.Column;
@@ -71,9 +73,9 @@ public class JoinedTablesPersister<C, I, T extends Table<T>> extends Persister<C
 		return addSelectExecutor(ownerStrategyName, mappingStrategy, beanRelationFixer, leftJoinColumn, rightJoinColumn, isOuterJoin);
 	}
 	
-	private <U, J> String addSelectExecutor(String leftStrategyName, ClassMappingStrategy<U, J, ?> mappingStrategy, BeanRelationFixer beanRelationFixer,
+	private <U, J> String addSelectExecutor(String ownerStrategyName, ClassMappingStrategy<U, J, ?> mappingStrategy, BeanRelationFixer beanRelationFixer,
 										 Column leftJoinColumn, Column rightJoinColumn, boolean isOuterJoin) {
-		return joinedStrategiesSelectExecutor.addComplementaryTables(leftStrategyName, mappingStrategy, beanRelationFixer,
+		return joinedStrategiesSelectExecutor.addComplementaryTables(ownerStrategyName, mappingStrategy, beanRelationFixer,
 				leftJoinColumn, rightJoinColumn, isOuterJoin);
 	}
 	
@@ -86,5 +88,17 @@ public class JoinedTablesPersister<C, I, T extends Table<T>> extends Persister<C
 	@Override
 	protected List<C> doSelect(Collection<I> ids) {
 		return joinedStrategiesSelectExecutor.select(ids);
+	}
+	
+	/**
+	 * Gives the {@link ClassMappingStrategy} of a join node.
+	 * Node name must be known so one should have kept it from the {@link #addPersister(String, Persister, BeanRelationFixer, Column, Column, boolean)}
+	 * return, else, since node naming strategy is not exposed it is not recommanded to use this method out of any test or debug purpose. 
+	 * 
+	 * @param nodeName a name of a added strategy
+	 * @return the {@link ClassMappingStrategy} behind a join node, null if not found
+	 */
+	public ClassMappingStrategy giveJoinedStrategy(String nodeName) {
+		return Nullable.nullable(joinedStrategiesSelectExecutor.getJoinedStrategiesSelect().getStrategyJoins(nodeName)).orGet(StrategyJoins::getStrategy);
 	}
 }

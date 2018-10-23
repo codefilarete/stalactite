@@ -3,6 +3,7 @@ package org.gama.stalactite.persistence.engine;
 import javax.sql.DataSource;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.Collections;
 
 import org.gama.lang.collection.Arrays;
 import org.gama.lang.collection.Iterables;
@@ -12,6 +13,7 @@ import org.gama.sql.binder.DefaultParameterBinders;
 import org.gama.sql.test.HSQLDBInMemoryDataSource;
 import org.gama.stalactite.persistence.engine.FluentMappingBuilder.IdentifierPolicy;
 import org.gama.stalactite.persistence.engine.IFluentMappingBuilder.IFluentMappingBuilderColumnOptions;
+import org.gama.stalactite.persistence.engine.cascade.JoinedTablesPersister;
 import org.gama.stalactite.persistence.engine.model.City;
 import org.gama.stalactite.persistence.engine.model.Country;
 import org.gama.stalactite.persistence.engine.model.State;
@@ -25,6 +27,7 @@ import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.test.JdbcConnectionProvider;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -36,6 +39,7 @@ import static org.gama.stalactite.persistence.engine.CascadeOption.CascadeType.S
 import static org.gama.stalactite.persistence.engine.CascadeOption.CascadeType.UPDATE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
@@ -310,6 +314,63 @@ public class FluentMappingBuilderCollectionCascadeTest {
 		assertTrue(resultSet.next());
 		resultSet = persistenceContext.getCurrentConnection().createStatement().executeQuery("select id from City where id = 300");
 		assertTrue(resultSet.next());
+	}
+	
+	@Nested
+	public class SelectWithEmptyRelationMustReturnEmptyCollection {
+		
+		@Test
+		public void test_noAssociationTable() throws SQLException {
+			Persister<Country, Identifier<Long>, ?> countryPersister = FluentMappingBuilder.from(Country.class, Identifier.LONG_TYPE)
+					.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
+					.add(Country::getName)
+					.add(Country::getDescription)
+					.addOneToManySet(Country::getCities, cityPersister).mappedBy(City::setCountry).cascade(SELECT)
+					.build(persistenceContext);
+			
+			// this is a configuration safeguard, thus we ensure that configuration matches test below
+			assertNull(((JoinedTablesPersister<Country, Identifier<Long>, ?>) countryPersister).giveJoinedStrategy("Country_Citys0"));
+			
+			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+			ddlDeployer.deployDDL();
+			
+			// we only register one country without any city
+			persistenceContext.getCurrentConnection().createStatement().executeUpdate("insert into Country(id) values (42)");
+			
+			// Then : Country must exist and have an empty city collection
+			Country loadedCountry = countryPersister.select(new PersistedIdentifier<>(42L));
+			assertEquals(Collections.emptySet(), loadedCountry.getCities());
+			
+		}
+		
+		@Test
+		public void test_withAssociationTable() throws SQLException {
+			Persister<Country, Identifier<Long>, ?> countryPersister = FluentMappingBuilder.from(Country.class, Identifier.LONG_TYPE)
+					.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
+					.add(Country::getName)
+					.add(Country::getDescription)
+					.addOneToManySet(Country::getCities, cityPersister).cascade(SELECT)
+					.build(persistenceContext);
+			
+			// We declare the table that will store our relationship, and overall our List index
+			// NB: names are hardcoded here because they are hardly accessible from outside of CascadeManyConfigurer
+			Table countryCitiesTable = new Table("Country_citys");
+			countryCitiesTable.addColumn("country_Id", Identifier.class).primaryKey();
+			countryCitiesTable.addColumn("city_Id", Identifier.class).primaryKey();
+
+			assertEquals(countryCitiesTable, ((JoinedTablesPersister<Country, Identifier<Long>, ?>) countryPersister).giveJoinedStrategy("Country_Citys0").getTargetTable());
+			
+			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+			ddlDeployer.getDdlSchemaGenerator().addTables(countryCitiesTable);
+			ddlDeployer.deployDDL();
+			
+			// we only register one country without any city
+			persistenceContext.getCurrentConnection().createStatement().executeUpdate("insert into Country(id) values (42)");
+			
+			// Then : Country must exist and have an empty city collection
+			Country loadedCountry = countryPersister.select(new PersistedIdentifier<>(42L));
+			assertEquals(Collections.emptySet(), loadedCountry.getCities());
+		}
 	}
 	
 	@Test
