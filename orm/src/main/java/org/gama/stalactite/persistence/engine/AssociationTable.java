@@ -19,11 +19,12 @@ public class AssociationTable<SELF extends AssociationTable<SELF>> extends Table
 	private final PrimaryKey<SELF> primaryKey;
 	
 	public AssociationTable(Schema schema,
+							String name,
 							Column oneSidePrimaryKey,
 							Column manySidePrimaryKey,
 							AssociationTableNamingStrategy namingStrategy,
 							ForeignKeyNamingStrategy foreignKeyNamingStrategy) {
-		super(schema, namingStrategy.giveName(oneSidePrimaryKey, manySidePrimaryKey));
+		super(schema, name);
 		this.oneSidePrimaryKey = oneSidePrimaryKey;
 		this.manySidePrimaryKey = manySidePrimaryKey;
 		this.oneSideKeyColumn = addColumn(namingStrategy.giveOneSideColumnName(oneSidePrimaryKey), oneSidePrimaryKey.getJavaType()).primaryKey();

@@ -10,9 +10,13 @@ public class IndexedAssociationTable extends AssociationTable<IndexedAssociation
 	
 	private final Column<IndexedAssociationTable, Integer> indexColumn;
 	
-	public IndexedAssociationTable(Schema schema, Column oneSidePrimaryKey, Column manySidePrimaryKey, AssociationTableNamingStrategy namingStrategy
-			, ForeignKeyNamingStrategy foreignKeyNamingStrategy) {
-		super(schema, oneSidePrimaryKey, manySidePrimaryKey, namingStrategy, foreignKeyNamingStrategy);
+	public IndexedAssociationTable(Schema schema,
+								   String name,
+								   Column oneSidePrimaryKey,
+								   Column manySidePrimaryKey,
+								   AssociationTableNamingStrategy namingStrategy,
+								   ForeignKeyNamingStrategy foreignKeyNamingStrategy) {
+		super(schema, name, oneSidePrimaryKey, manySidePrimaryKey, namingStrategy, foreignKeyNamingStrategy);
 		this.indexColumn = addColumn("idx", int.class).primaryKey();
 		getPrimaryKey().addColumn(indexColumn);
 	}

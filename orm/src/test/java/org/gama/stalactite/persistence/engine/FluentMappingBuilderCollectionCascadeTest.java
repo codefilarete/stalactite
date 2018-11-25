@@ -122,7 +122,7 @@ public class FluentMappingBuilderCollectionCascadeTest {
 		
 		// We declare the table that will store our relationship, and overall our List index
 		// NB: names are hardcoded here because they are hardly accessible from outside of CascadeManyConfigurer
-		Table countryCitiesTable = new Table("Country_citys");
+		Table countryCitiesTable = new Table("Country_cities");
 		countryCitiesTable.addColumn("country_Id", Identifier.class).primaryKey();
 		countryCitiesTable.addColumn("city_Id", Identifier.class).primaryKey();
 		
@@ -132,7 +132,7 @@ public class FluentMappingBuilderCollectionCascadeTest {
 		
 		persistenceContext.getCurrentConnection().createStatement().executeUpdate("insert into Country(id, name) values (1, 'France')");
 		persistenceContext.getCurrentConnection().createStatement().executeUpdate("insert into City(id, name) values (10, 'France president')");
-		persistenceContext.getCurrentConnection().createStatement().executeUpdate("insert into Country_citys(country_Id, city_Id) values (1, 10)");
+		persistenceContext.getCurrentConnection().createStatement().executeUpdate("insert into Country_cities(country_Id, city_Id) values (1, 10)");
 		
 		LongProvider countryIdProvider = new LongProvider(1);
 		Country dummyCountry = new Country(countryIdProvider.giveNewIdentifier());
@@ -391,11 +391,11 @@ public class FluentMappingBuilderCollectionCascadeTest {
 			
 			// We declare the table that will store our relationship, and overall our List index
 			// NB: names are hardcoded here because they are hardly accessible from outside of CascadeManyConfigurer
-			Table countryCitiesTable = new Table("Country_citys");
+			Table countryCitiesTable = new Table("Country_cities");
 			countryCitiesTable.addColumn("country_Id", Identifier.class).primaryKey();
 			countryCitiesTable.addColumn("city_Id", Identifier.class).primaryKey();
 
-			assertEquals(countryCitiesTable, ((JoinedTablesPersister<Country, Identifier<Long>, ?>) countryPersister).giveJoinedStrategy("Country_Citys0").getTargetTable());
+			assertEquals(countryCitiesTable, ((JoinedTablesPersister<Country, Identifier<Long>, ?>) countryPersister).giveJoinedStrategy("Country_cities0").getTargetTable());
 			
 			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
 			ddlDeployer.getDdlSchemaGenerator().addTables(countryCitiesTable);
@@ -421,7 +421,7 @@ public class FluentMappingBuilderCollectionCascadeTest {
 		
 		// We declare the table that will store our relationship, and overall our List index
 		// NB: names are hardcoded here because they are hardly accessible from outside of CascadeManyConfigurer
-		Table countryCitiesTable = new Table("Country_citys");
+		Table countryCitiesTable = new Table("Country_cities");
 		Column country_id = countryCitiesTable.addColumn("country_Id", Identifier.class).primaryKey();
 		Column city_id = countryCitiesTable.addColumn("city_Id", Identifier.class).primaryKey();
 		Column countryPK = Iterables.first(((Table<?>) countryPersister.getTargetTable()).getPrimaryKey().getColumns());
@@ -435,7 +435,7 @@ public class FluentMappingBuilderCollectionCascadeTest {
 		
 		persistenceContext.getCurrentConnection().createStatement().executeUpdate("insert into Country(id) values (42, 666)");
 		persistenceContext.getCurrentConnection().createStatement().executeUpdate("insert into City(id) values (100), (200), (300)");
-		persistenceContext.getCurrentConnection().createStatement().executeUpdate("insert into Country_citys(country_Id, city_Id)" +
+		persistenceContext.getCurrentConnection().createStatement().executeUpdate("insert into Country_cities(country_Id, city_Id)" +
 				" values (42, 100), (42, 200), (666, 300)");
 		
 		Country country1 = new Country(new PersistedIdentifier<>(42L));

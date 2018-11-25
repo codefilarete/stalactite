@@ -106,6 +106,7 @@ public class CascadeManyConfigurer<I extends Identified, O extends Identified, J
 			Table<?> rightTable = leftPersister.getMappingStrategy().getTargetTable();
 			Column rightPrimaryKey = first(rightTable.getPrimaryKey().getColumns());
 			
+			String associationTableName = associationTableNamingStrategy.giveName(cascadeMany.getMember(), leftPrimaryKey, rightPrimaryKey);
 			if (cascadeMany instanceof CascadeManyList) {
 				
 				if (((CascadeManyList) cascadeMany).getIndexingColumn() != null) {
@@ -114,7 +115,8 @@ public class CascadeManyConfigurer<I extends Identified, O extends Identified, J
 				}
 				
 				// NB: index column is part of the primary key
-				intermediaryTable = new IndexedAssociationTable(null, leftPrimaryKey, rightPrimaryKey, associationTableNamingStrategy, foreignKeyNamingStrategy);
+				intermediaryTable = new IndexedAssociationTable(null, associationTableName, leftPrimaryKey, rightPrimaryKey,
+						associationTableNamingStrategy, foreignKeyNamingStrategy);
 				pointerToLeftColumn = intermediaryTable.getOneSideKeyColumn();
 				indexedAssociationPersister = new AssociationRecordPersister<>(
 						new IndexedAssociationRecordMappingStrategy((IndexedAssociationTable) intermediaryTable),
@@ -122,7 +124,8 @@ public class CascadeManyConfigurer<I extends Identified, O extends Identified, J
 						joinedTablesPersister.getConnectionProvider(),
 						joinedTablesPersister.getBatchSize());
 			} else {
-				intermediaryTable = new AssociationTable(null, leftPrimaryKey, rightPrimaryKey, associationTableNamingStrategy, foreignKeyNamingStrategy);
+				intermediaryTable = new AssociationTable(null, associationTableName, leftPrimaryKey, rightPrimaryKey, associationTableNamingStrategy,
+						foreignKeyNamingStrategy);
 				pointerToLeftColumn = intermediaryTable.getOneSideKeyColumn();
 				associationPersister = new AssociationRecordPersister<>(
 						new AssociationRecordMappingStrategy(intermediaryTable),
