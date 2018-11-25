@@ -1,5 +1,6 @@
 package org.gama.stalactite.persistence.engine;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Set;
 
@@ -50,7 +51,7 @@ public interface IFluentMappingBuilder<T extends Identified, I extends Statefull
 	 * @return a enhanced version of {@code this} so one can add set options to the relationship or add mapping to {@code this}
 	 * @see #addOneToManyList(SerializableFunction, Persister)
 	 */
-	<O extends Identified, J extends StatefullIdentifier, C extends Set<O>>
+	<O extends Identified, J extends StatefullIdentifier, C extends Collection<O>>
 	IFluentMappingBuilderOneToManyOptions<T, I, O>
 	addOneToManySet(SerializableFunction<T, C> getter, Persister<O, J, ? extends Table> persister);
 	

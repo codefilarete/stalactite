@@ -80,7 +80,7 @@ public class StrategyJoinsRowTransformerTest {
 	 */
 	@Test
 	public void testTransform_with2strategies_oneToOne() {
-		StrategyJoins rootStrategyJoins = new StrategyJoins<>(rootStrategy);
+		StrategyJoins<Toto> rootStrategyJoins = new StrategyJoins<>(rootStrategy);
 		
 		// creating another strategy that will be joined to the root one (goal of this test)
 		ClassMappingStrategy<Tata, Long, Table> joinedStrategy = mock(ClassMappingStrategy.class);
@@ -104,7 +104,7 @@ public class StrategyJoinsRowTransformerTest {
 		when(rootStrategy.getRowTransformer()).thenReturn(new ToBeanRowTransformer<>(Toto.class, totoTable, false));
 		when(joinedStrategy.getRowTransformer()).thenReturn(new ToBeanRowTransformer<>(Tata.class, tataTable, false));
 		
-		StrategyJoinsRowTransformer testInstance = new StrategyJoinsRowTransformer(rootStrategyJoins);
+		StrategyJoinsRowTransformer<Toto> testInstance = new StrategyJoinsRowTransformer<>(rootStrategyJoins);
 		Row row1 = buildRow(
 				Maps.asMap(totoColumnId, (Object) 1L)
 						.add(totoColumnName, "toto")

@@ -1,9 +1,12 @@
 package org.gama.stalactite.persistence.engine;
 
 import javax.sql.DataSource;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.Predicate;
@@ -43,6 +46,8 @@ import static org.gama.stalactite.persistence.engine.FluentMappingBuilder.from;
 import static org.gama.stalactite.persistence.id.Identifier.LONG_TYPE;
 import static org.gama.stalactite.query.model.QueryEase.select;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 
 /**
@@ -310,16 +315,101 @@ public class FluentMappingBuilderIndexedCollectionTest {
 				choice3));
 		questionPersister.insert(newQuestion);
 		
-		Question modifiedQuestion = new Question(1L);
-		modifiedQuestion.setChoices(Arrays.asList(
-				choice2,
-				choice1,
-				choice3));
-		
-		questionPersister.update(modifiedQuestion, newQuestion, true);
-		
 		Question select = questionPersister.select(new PersistedIdentifier<>(1L));
-		assertEquals(Arrays.asList(20L, 10L, 30L), Iterables.collectToList(select.getChoices(), chain(Choice::getId, StatefullIdentifier::getSurrogate)));
+		assertEquals(Arrays.asSet(10L, 20L, 30L), Iterables.collect(select.getChoices(), chain(Choice::getId, StatefullIdentifier::getSurrogate), HashSet::new));
+	}
+	
+	@Test
+	public void testDelete_reverseSideIsNotMapped_relationRecordsMustBeDeleted() throws SQLException {
+		persistenceContext = new PersistenceContext(connectionProvider, DIALECT);
+		
+		// TODO : can we reuse DuplicatesTestData for table creation ?
+		
+		// We declare the table that will store our relationship, and overall our List index
+		// NB: names are hardcoded here because they are hardly accessible from outside of CascadeManyConfigurer
+		Table answerChoicesTable = new Table("Question_Choices");
+		answerChoicesTable.addColumn("question_Id", Identifier.class).primaryKey();
+		answerChoicesTable.addColumn("idx", Integer.class).primaryKey();
+		answerChoicesTable.addColumn("choice_Id", Identifier.class).primaryKey();
+		
+		Persister<Choice, Identifier<Long>, ?> choicePersister = from(Choice.class, LONG_TYPE)
+				.add(Choice::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
+				.add(Choice::getName)
+				.add(Choice::getQuestion)
+				.build(persistenceContext);
+		
+		Persister<Question, Identifier<Long>, ?> questionPersister = from(Question.class, LONG_TYPE)
+				.add(Question::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
+				.addOneToManyList(Question::getChoices, choicePersister).cascade(INSERT, DELETE)
+				.build(persistenceContext);
+		
+		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+		ddlDeployer.getDdlSchemaGenerator().addTables(answerChoicesTable);
+		ddlDeployer.deployDDL();
+		
+		Question newQuestion = new Question(1L);
+		Choice choice1 = new Choice(10L);
+		Choice choice2 = new Choice(20L);
+		Choice choice3 = new Choice(30L);
+		newQuestion.setChoices(Arrays.asList(
+				choice1,
+				choice2,
+				choice3));
+		questionPersister.insert(newQuestion);
+		
+		questionPersister.delete(newQuestion);
+		
+		ResultSet resultSet;
+		resultSet = persistenceContext.getCurrentConnection().createStatement().executeQuery("select id from Question");
+		assertFalse(resultSet.next());
+		resultSet = persistenceContext.getCurrentConnection().createStatement().executeQuery("select * from Question_Choices");
+		assertFalse(resultSet.next());
+		// NB: for now, target entities are not deleted when an association table exists
+//		resultSet = persistenceContext.getCurrentConnection().createStatement().executeQuery("select id from Choice");
+//		assertFalse(resultSet.next());
+	}
+	
+	@Test
+	public void testOneToManyList_withOwnerButWithoutIndexedBy_throwsException() {
+		persistenceContext = new PersistenceContext(connectionProvider, DIALECT);
+		
+		Persister<Choice, Identifier<Long>, ?> choicePersister = from(Choice.class, LONG_TYPE)
+				.add(Choice::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
+				.add(Choice::getName)
+				.add(Choice::getQuestion)
+				.build(persistenceContext);
+		
+		assertEquals("Missing indexing column : relation is mapped by o.g.s.p.e.Question o.g.s.p.e.Choice.getQuestion() but no indexing property is defined",
+				assertThrows(UnsupportedOperationException.class, () ->
+						from(Question.class, LONG_TYPE)
+								.add(Question::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
+								// in next statement there's no call to indexedBy(), so configuration will fail because it requires it
+								.addOneToManyList(Question::getChoices, choicePersister).mappedBy(Choice::getQuestion)
+								.build(persistenceContext)).getMessage());
+	}
+		
+	@Test
+	public void testOneToManyList_withoutOwnerButWithIndexedBy_throwsException() {
+		persistenceContext = new PersistenceContext(connectionProvider, DIALECT);
+		
+		Table choiceTable = new Table("Choice");
+		// we declare the column that will store our List index
+		Column<Table, Identifier> id = choiceTable.addColumn("id", Identifier.class).primaryKey();
+		Column<Table, Integer> idx = choiceTable.addColumn("idx", int.class);
+		
+		Persister<Choice, Identifier<Long>, ?> choicePersister = from(Choice.class, LONG_TYPE, choiceTable)
+				.add(Choice::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
+				.add(Choice::getName)
+				.add(Choice::getQuestion)
+				.build(persistenceContext);
+		
+		assertEquals("Indexing column id defined but not owner is defined : relation is only mapped by j.u.List o.g.s.p.e.Question.getChoices()",
+				assertThrows(UnsupportedOperationException.class, () ->
+				from(Question.class, LONG_TYPE)
+						.add(Question::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
+						// in next statement there's no call to indexedBy(), so configuration will fail because it requires it
+						.addOneToManyList(Question::getChoices, choicePersister).indexedBy(idx)
+						.build(persistenceContext)).getMessage());
 	}
 	
 	@Nested
@@ -432,7 +522,8 @@ public class FluentMappingBuilderIndexedCollectionTest {
 			assertEquals((Long) 0L, persistedChoices.get(0));
 			
 			// No choice must be deleted
-			List<Choice> remainingChoices = duplicatesTestData.getChoicePersister().select(Arrays.asSet(choice1.getId(), choice2.getId(), choice3.getId()));
+			// NB : we use choiceReader instead of choicePersister because the latter needs the idx column which is not mapped for Answer -> Choice
+			List<Choice> remainingChoices = duplicatesTestData.getChoiceReader().select(Arrays.asSet(choice1.getId(), choice2.getId(), choice3.getId()));
 			assertEquals(Arrays.asList(choice1, choice2, choice3), remainingChoices);
 		}
 		
@@ -473,7 +564,8 @@ public class FluentMappingBuilderIndexedCollectionTest {
 			assertEquals((Long) 0L, persistedChoices.get(0));
 			
 			// No choice must be deleted
-			List<Choice> remainingChoices = duplicatesTestData.getChoicePersister().select(Arrays.asSet(choice1.getId(), choice2.getId(), choice3.getId()));
+			// NB : we use choiceReader instead of choicePersister because the latter needs the idx column which is not mapped for Answer -> Choice
+			List<Choice> remainingChoices = duplicatesTestData.getChoiceReader().select(Arrays.asSet(choice1.getId(), choice2.getId(), choice3.getId()));
 			assertEquals(Arrays.asList(choice1, choice2, choice3), remainingChoices);
 		}
 
@@ -511,10 +603,11 @@ public class FluentMappingBuilderIndexedCollectionTest {
 			
 			
 			// test with addition of entity
-			Choice nonPersistedChoice = new Choice(50L);
-			nonPersistedChoice.setQuestion(newQuestion);
+			Choice newChoice = new Choice(50L);
+			newChoice.setQuestion(newQuestion);
+			duplicatesTestData.getChoicePersister().persist(newChoice);
 			Answer selectedAnswer = answerPersister.select(new PersistableIdentifier<>(1L));
-			selectedAnswer.setChoices(Arrays.asList(choice1, choice2, nonPersistedChoice, choice2, choice3, choice1, choice4));
+			selectedAnswer.setChoices(Arrays.asList(choice1, choice2, newChoice, choice2, choice3, choice1, choice4));
 			answerPersister.update(selectedAnswer, answer, true);
 			
 			QueryConverter<RawAnswer> query = persistenceContext.newQuery(
@@ -551,6 +644,7 @@ public class FluentMappingBuilderIndexedCollectionTest {
 			private Column<Table, Identifier> answerChoicesTableId;
 			private Column<Table, Integer> answerChoicesTableIdx;
 			private Column<Table, Identifier> answerChoicesTableChoiceId;
+			private Persister<Choice, Identifier<Long>, ?> choiceReader;
 			
 			public Persister<Question, Identifier<Long>, ?> getQuestionPersister() {
 				return questionPersister;
@@ -562,6 +656,10 @@ public class FluentMappingBuilderIndexedCollectionTest {
 			
 			public Persister<Choice, Identifier<Long>, ?> getChoicePersister() {
 				return choicePersister;
+			}
+			
+			public Persister<Choice, Identifier<Long>, ?> getChoiceReader() {
+				return choiceReader;
 			}
 			
 			public Table getAnswerChoicesTable() {
@@ -594,12 +692,21 @@ public class FluentMappingBuilderIndexedCollectionTest {
 				
 				questionPersister = from(Question.class, LONG_TYPE)
 						.add(Question::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
-						.addOneToManyList(Question::getChoices, choicePersister).mappedBy(Choice::getQuestion).indexedBy(idx).cascade(INSERT, UPDATE)
+						.addOneToManyList(Question::getChoices, choicePersister).mappedBy(Choice::getQuestion).indexedBy(idx)
+						.cascade(INSERT, UPDATE, DELETE, SELECT)
+						.build(persistenceContext);
+				
+				// We create another choices persister dedicated to Answer association because usages are not the same :
+				// like Aggregate (in Domain Driven Design) or CQRS, Answers are not in the same context than Questions so it requires a different
+				// mapping. For instance there's no need of Question relationship mapping.
+				choiceReader = from(Choice.class, LONG_TYPE, choiceTable)
+						.add(Choice::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
+						.add(Choice::getName)
 						.build(persistenceContext);
 				
 				answerPersister = from(Answer.class, LONG_TYPE)
 						.add(Answer::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
-						.addOneToManyList(Answer::getChoices, choicePersister).cascade(INSERT, UPDATE, DELETE, SELECT)
+						.addOneToManyList(Answer::getChoices, choiceReader).cascade(INSERT, UPDATE, DELETE, SELECT)
 						.build(persistenceContext);
 				
 				// We declare the table that will store our relationship, and overall our List index

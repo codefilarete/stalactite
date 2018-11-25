@@ -109,6 +109,43 @@ public class FluentMappingBuilderCollectionCascadeTest {
 		assertFalse(resultSet.next());
 	}
 	
+	@Test
+	public void testCascade_oneToMany_cascade_select_reverseSideIsNotMapped() throws SQLException {
+		// mapping building thantks to fluent API
+		Persister<Country, Identifier<Long>, ?> countryPersister = FluentMappingBuilder.from(Country.class, Identifier.LONG_TYPE)
+				.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
+				.add(Country::getName)
+				.add(Country::getDescription)
+				// no cascade, nor reverse side
+				.addOneToManySet(Country::getCities, cityPersister).cascade(SELECT)
+				.build(persistenceContext);
+		
+		// We declare the table that will store our relationship, and overall our List index
+		// NB: names are hardcoded here because they are hardly accessible from outside of CascadeManyConfigurer
+		Table countryCitiesTable = new Table("Country_citys");
+		countryCitiesTable.addColumn("country_Id", Identifier.class).primaryKey();
+		countryCitiesTable.addColumn("city_Id", Identifier.class).primaryKey();
+		
+		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+		ddlDeployer.getDdlSchemaGenerator().addTables(countryCitiesTable);
+		ddlDeployer.deployDDL();
+		
+		persistenceContext.getCurrentConnection().createStatement().executeUpdate("insert into Country(id, name) values (1, 'France')");
+		persistenceContext.getCurrentConnection().createStatement().executeUpdate("insert into City(id, name) values (10, 'France president')");
+		persistenceContext.getCurrentConnection().createStatement().executeUpdate("insert into Country_citys(country_Id, city_Id) values (1, 10)");
+		
+		LongProvider countryIdProvider = new LongProvider(1);
+		Country dummyCountry = new Country(countryIdProvider.giveNewIdentifier());
+		dummyCountry.setName("France");
+		LongProvider cityIdProvider = new LongProvider(10);
+		City city = new City(cityIdProvider.giveNewIdentifier());
+		city.setName("France president");
+		
+		Country selectedCountry = countryPersister.select(dummyCountry.getId());
+		assertEquals(dummyCountry.getName(), selectedCountry.getName());
+		assertEquals(city.getName(), Iterables.first(selectedCountry.getCities()).getName());
+	}
+	
 	public static Object[][] oneToManyInsertData() {
 		// we recreate all the context of our test, else we end up in a static/non-static variable and method conflict because @MethodSource
 		// needs a static provider, whereas a majority of our variables are class attributes, and database schema must be erased between tests
@@ -371,6 +408,68 @@ public class FluentMappingBuilderCollectionCascadeTest {
 			Country loadedCountry = countryPersister.select(new PersistedIdentifier<>(42L));
 			assertEquals(Collections.emptySet(), loadedCountry.getCities());
 		}
+	}
+	
+	@Test
+	public void testCascade_oneToMany_delete_reverseSideIsNotMapped_associationRecordsMustBeDeleted() throws SQLException {
+		Persister<Country, Identifier<Long>, ? extends Table> countryPersister = FluentMappingBuilder.from(Country.class, Identifier.LONG_TYPE)
+				.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
+				.add(Country::getName)
+				.add(Country::getDescription)
+				.addOneToManySet(Country::getCities, cityPersister).cascade(DELETE, SELECT)
+				.build(persistenceContext);
+		
+		// We declare the table that will store our relationship, and overall our List index
+		// NB: names are hardcoded here because they are hardly accessible from outside of CascadeManyConfigurer
+		Table countryCitiesTable = new Table("Country_citys");
+		Column country_id = countryCitiesTable.addColumn("country_Id", Identifier.class).primaryKey();
+		Column city_id = countryCitiesTable.addColumn("city_Id", Identifier.class).primaryKey();
+		Column countryPK = Iterables.first(((Table<?>) countryPersister.getTargetTable()).getPrimaryKey().getColumns());
+		countryCitiesTable.addForeignKey("country_FK", country_id, countryPK);
+		Column cityPK = Iterables.first(((Table<?>) cityPersister.getTargetTable()).getPrimaryKey().getColumns());
+		countryCitiesTable.addForeignKey("city_FK", city_id, cityPK);
+		
+		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+		ddlDeployer.getDdlSchemaGenerator().addTables(countryCitiesTable);
+		ddlDeployer.deployDDL();
+		
+		persistenceContext.getCurrentConnection().createStatement().executeUpdate("insert into Country(id) values (42, 666)");
+		persistenceContext.getCurrentConnection().createStatement().executeUpdate("insert into City(id) values (100), (200), (300)");
+		persistenceContext.getCurrentConnection().createStatement().executeUpdate("insert into Country_citys(country_Id, city_Id)" +
+				" values (42, 100), (42, 200), (666, 300)");
+		
+		Country country1 = new Country(new PersistedIdentifier<>(42L));
+		City city1 = new City(new PersistedIdentifier<>(100L));
+		City city2 = new City(new PersistedIdentifier<>(200L));
+		country1.addCity(city1);
+		country1.addCity(city2);
+		Country country2 = new Country(new PersistedIdentifier<>(666L));
+		City city3 = new City(new PersistedIdentifier<>(300L));
+		country2.addCity(city3);
+
+		// testing deletion
+		countryPersister.delete(country1);
+
+		ResultSet resultSet;
+		// Checking that we deleted what we wanted
+		resultSet = persistenceContext.getCurrentConnection().createStatement().executeQuery("select id from Country where id = 42");
+		assertFalse(resultSet.next());
+		// NB: for now, target entities are not deleted when an association table exists
+//		resultSet = persistenceContext.getCurrentConnection().createStatement().executeQuery("select id from City where id in (100, 200)");
+//		assertFalse(resultSet.next());
+		// but we did'nt delete everything !
+		resultSet = persistenceContext.getCurrentConnection().createStatement().executeQuery("select id from Country where id = 666");
+		assertTrue(resultSet.next());
+		resultSet = persistenceContext.getCurrentConnection().createStatement().executeQuery("select id from City where id = 300");
+		assertTrue(resultSet.next());
+
+		// testing deletion of the last one
+		countryPersister.delete(country2);
+		resultSet = persistenceContext.getCurrentConnection().createStatement().executeQuery("select id from Country where id = 666");
+		assertFalse(resultSet.next());
+		// NB: for now, target entities are not deleted when an association table exists
+//		resultSet = persistenceContext.getCurrentConnection().createStatement().executeQuery("select id from City where id = 300");
+//		assertFalse(resultSet.next());
 	}
 	
 	@Test

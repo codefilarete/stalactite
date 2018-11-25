@@ -294,7 +294,7 @@ public class FluentMappingBuilder<T extends Identified, I extends StatefullIdent
 	}
 	
 	@Override
-	public <O extends Identified, J extends StatefullIdentifier, C extends Set<O>> IFluentMappingBuilderOneToManyOptions<T, I, O> addOneToManySet(
+	public <O extends Identified, J extends StatefullIdentifier, C extends Collection<O>> IFluentMappingBuilderOneToManyOptions<T, I, O> addOneToManySet(
 			SerializableFunction<T, C> getter, Persister<O, J, ? extends Table> persister) {
 		CascadeMany<T, O, J, C> cascadeMany = new CascadeMany<>(getter, persister, captureLambdaMethod(getter));
 		this.cascadeManys.add(cascadeMany);

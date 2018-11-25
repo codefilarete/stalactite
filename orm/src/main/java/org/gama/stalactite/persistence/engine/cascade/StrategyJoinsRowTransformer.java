@@ -31,11 +31,11 @@ public class StrategyJoinsRowTransformer<T> {
 	 */
 	public static final Function<Column, String> DEFAULT_ALIAS_PROVIDER = Column::getAlias;
 	
-	private final StrategyJoins<?> rootStrategyJoins;
+	private final StrategyJoins<T> rootStrategyJoins;
 	private Map<Class, Map<Object /* identifier */, Object /* entity */>> entityCache = new HashMap<>();
 	private Function<Column, String> aliasProvider = DEFAULT_ALIAS_PROVIDER;
 	
-	public StrategyJoinsRowTransformer(StrategyJoins<?> rootStrategyJoins) {
+	public StrategyJoinsRowTransformer(StrategyJoins<T> rootStrategyJoins) {
 		this.rootStrategyJoins = rootStrategyJoins;
 	}
 	
