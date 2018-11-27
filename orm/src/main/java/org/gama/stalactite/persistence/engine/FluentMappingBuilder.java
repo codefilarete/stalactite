@@ -839,8 +839,8 @@ public class FluentMappingBuilder<T extends Identified, I extends StatefullIdent
 		}
 		
 		@Override
-		public IFluentMappingBuilderOneToManyOptions<T, I, O> deleteRemoved() {
-			cascadeMany.setDeleteRemoved(true);
+		public IFluentMappingBuilderOneToManyOptions<T, I, O> relationMode(RelationshipMaintenanceMode maintenanceMode) {
+			cascadeMany.setMaintenanceMode(maintenanceMode);
 			return null;	// we can return null because dispatcher will return proxy
 		}
 	}

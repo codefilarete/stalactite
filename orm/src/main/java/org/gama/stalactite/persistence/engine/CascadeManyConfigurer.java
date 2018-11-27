@@ -27,6 +27,7 @@ import org.gama.stalactite.command.builder.DeleteCommandBuilder;
 import org.gama.stalactite.command.model.Delete;
 import org.gama.stalactite.persistence.engine.CascadeOption.CascadeType;
 import org.gama.stalactite.persistence.engine.FluentMappingBuilder.SetPersistedFlagAfterInsertListener;
+import org.gama.stalactite.persistence.engine.OneToManyOptions.RelationshipMaintenanceMode;
 import org.gama.stalactite.persistence.engine.builder.CascadeMany;
 import org.gama.stalactite.persistence.engine.builder.CascadeManyList;
 import org.gama.stalactite.persistence.engine.cascade.AfterInsertCollectionCascader;
@@ -57,6 +58,8 @@ import static org.gama.lang.collection.Iterables.first;
 import static org.gama.lang.collection.Iterables.minus;
 import static org.gama.lang.collection.Iterables.stream;
 import static org.gama.reflection.Accessors.of;
+import static org.gama.stalactite.persistence.engine.OneToManyOptions.RelationshipMaintenanceMode.ALL_ORPHAN_REMOVAL;
+import static org.gama.stalactite.persistence.engine.OneToManyOptions.RelationshipMaintenanceMode.ASSOCIATION_ONLY;
 import static org.gama.stalactite.persistence.engine.cascade.JoinedStrategiesSelect.FIRST_STRATEGY_NAME;
 
 /**
@@ -182,16 +185,32 @@ public class CascadeManyConfigurer<I extends Identified, O extends Identified, J
 					addInsertCascade(cascadeMany, leftPersister, collectionGetter, persisterListener);
 					break;
 				case UPDATE:
-					addUpdateCascade(cascadeMany, leftPersister, collectionGetter, persisterListener);
+					addUpdateCascade(cascadeMany, leftPersister, collectionGetter, persisterListener, cascadeMany.shouldDeleteRemoved());
 					break;
 				case DELETE:
-					addDeleteCascade(cascadeMany, joinedTablesPersister, leftPersister, collectionGetter, persisterListener);
+					addDeleteCascade(cascadeMany, joinedTablesPersister, leftPersister, collectionGetter, persisterListener, false);
 					break;
 				case SELECT:
 					addSelectCascade(cascadeMany, joinedTablesPersister, leftPersister, leftPrimaryKey, collectionGetter, rightJoinColumn,
 							persisterListener);
 					break;
 			}
+		}
+		
+		RelationshipMaintenanceMode maintenanceMode = cascadeMany.getMaintenanceMode();
+		// selection is always present (else configuration is nonsense !)
+		addSelectCascade(cascadeMany, joinedTablesPersister, leftPersister, leftPrimaryKey, collectionGetter, rightJoinColumn,
+				persisterListener);
+		// additionnal cascade
+		switch (maintenanceMode) {
+			case ALL:
+			case ALL_ORPHAN_REMOVAL:
+			case ASSOCIATION_ONLY:
+				// NB: "delete removed" will be treated internally by updateCascade() and deleteCascade()
+				addInsertCascade(cascadeMany, leftPersister, collectionGetter, persisterListener);
+				addUpdateCascade(cascadeMany, leftPersister, collectionGetter, persisterListener, maintenanceMode == ALL_ORPHAN_REMOVAL);
+				addDeleteCascade(cascadeMany, joinedTablesPersister, leftPersister, collectionGetter, persisterListener, maintenanceMode != ASSOCIATION_ONLY);
+				break;
 		}
 	}
 	
@@ -400,7 +419,8 @@ public class CascadeManyConfigurer<I extends Identified, O extends Identified, J
 													   JoinedTablesPersister<I, J, T> joinedTablesPersister,
 													   Persister<O, J, ?> targetPersister,
 													   Function<I, C> collectionGetter,
-													   PersisterListener<I, J> persisterListener) {
+													   PersisterListener<I, J> persisterListener,
+													   boolean deleteTargetEntities) {
 		// we delete association records
 		if (indexedAssociationPersister != null) {
 			persisterListener.addDeleteListener(new DeleteListener<I>() {
@@ -478,8 +498,8 @@ public class CascadeManyConfigurer<I extends Identified, O extends Identified, J
 				}
 			});
 		}
-		// NB: with such a else, target entities are deleted only when no  association table exists
-		else {
+		// NB: with such a else, target entities are deleted only when no association table exists
+		if (deleteTargetEntities) {
 			// adding deletion of many-side entities
 			persisterListener.addDeleteListener(new BeforeDeleteCollectionCascader<I, O>(targetPersister) {
 				
@@ -517,12 +537,13 @@ public class CascadeManyConfigurer<I extends Identified, O extends Identified, J
 	}
 	
 	private void addUpdateCascade(CascadeMany<I, O, J, C> cascadeMany,
-								 Persister<O, J, ?> targetPersister,
-								 Function<I, C> collectionGetter,
-								 PersisterListener<I, J> persisterListener) {
+								  Persister<O, J, ?> targetPersister,
+								  Function<I, C> collectionGetter,
+								  PersisterListener<I, J> persisterListener,
+								  boolean shouldDeleteRemoved) {
 		BiConsumer<UpdatePayload<I, ?>, Boolean> updateListener;
 		if (cascadeMany instanceof CascadeManyList) {
-			updateListener = addIndexUpdate((CascadeManyList<I, O, J>) cascadeMany, targetPersister, collectionGetter);
+			updateListener = addIndexUpdate((CascadeManyList<I, O, J>) cascadeMany, targetPersister, collectionGetter, shouldDeleteRemoved);
 		} else /* any other type of Collection except List */ {
 			updateListener = (entry, allColumnsStatement) -> {
 				C modified = collectionGetter.apply(entry.getEntities().getLeft());
@@ -538,7 +559,7 @@ public class CascadeManyConfigurer<I extends Identified, O extends Identified, J
 							targetPersister.update((O) diff.getReplacingInstance(), (O) diff.getSourceInstance(), allColumnsStatement);
 							break;
 						case REMOVED:
-							if (cascadeMany.shouldDeleteRemoved()) {
+							if (shouldDeleteRemoved) {
 								targetPersister.delete((O) diff.getSourceInstance());
 							}
 							break;
@@ -565,8 +586,9 @@ public class CascadeManyConfigurer<I extends Identified, O extends Identified, J
 	}
 	
 	private BiConsumer<UpdatePayload<I, ?>, Boolean> addIndexUpdate(CascadeManyList<I, O, J> cascadeMany,
-																   Persister<O, J, ?> targetPersister,
-																   Function<I, C> collectionGetter) {
+																	Persister<O, J, ?> targetPersister,
+																	Function<I, C> collectionGetter,
+																	boolean shouldDeleteRemoved) {
 		BiConsumer<UpdatePayload<I, ?>, Boolean> updateListener;
 		updateListener = (updatePayload, allColumnsStatement) -> {
 			C modified = collectionGetter.apply(updatePayload.getEntities().getLeft());
@@ -624,7 +646,7 @@ public class CascadeManyConfigurer<I extends Identified, O extends Identified, J
 									indexedAssociationRecordstoBeDeleted.add(new IndexedAssociationRecord(updatePayload.getEntities().getLeft().getId(), diff.getSourceInstance().getId(), idx)));
 						}
 						// we delete only persisted entity to prevent from a not found record
-						if (cascadeMany.shouldDeleteRemoved() && diff.getSourceInstance().getId().isPersisted()) {
+						if (shouldDeleteRemoved && diff.getSourceInstance().getId().isPersisted()) {
 							toBeDeleted.add((O) diff.getSourceInstance());
 						}
 						break;

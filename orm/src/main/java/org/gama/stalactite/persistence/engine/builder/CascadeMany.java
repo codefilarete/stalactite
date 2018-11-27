@@ -10,6 +10,7 @@ import org.danekja.java.util.function.serializable.SerializableBiConsumer;
 import org.danekja.java.util.function.serializable.SerializableFunction;
 import org.gama.lang.Reflections;
 import org.gama.stalactite.persistence.engine.CascadeOption.CascadeType;
+import org.gama.stalactite.persistence.engine.OneToManyOptions.RelationshipMaintenanceMode;
 import org.gama.stalactite.persistence.engine.Persister;
 import org.gama.stalactite.persistence.id.Identified;
 import org.gama.stalactite.persistence.id.manager.StatefullIdentifier;
@@ -39,6 +40,7 @@ public class CascadeMany<SRC extends Identified, O extends Identified, J extends
 	private final Set<CascadeType> cascadeTypes = new HashSet<>();
 	/** Should we delete removed entities from the Collection (for UPDATE cascade) */
 	private boolean deleteRemoved = false;
+	private RelationshipMaintenanceMode maintenanceMode;
 	
 	public CascadeMany(Function<SRC, C> targetProvider, Persister<O, J, ? extends Table> persister, Method method) {
 		this(targetProvider, persister, (Class<C>) Reflections.javaBeanTargetType(method), method);
@@ -103,7 +105,11 @@ public class CascadeMany<SRC extends Identified, O extends Identified, J extends
 		return deleteRemoved;
 	}
 	
-	public void setDeleteRemoved(boolean deleteRemoved) {
-		this.deleteRemoved = deleteRemoved;
+	public RelationshipMaintenanceMode getMaintenanceMode() {
+		return maintenanceMode;
+	}
+	
+	public void setMaintenanceMode(RelationshipMaintenanceMode maintenanceMode) {
+		this.maintenanceMode = maintenanceMode;
 	}
 }

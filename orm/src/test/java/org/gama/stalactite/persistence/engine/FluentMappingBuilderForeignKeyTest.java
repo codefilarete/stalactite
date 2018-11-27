@@ -11,6 +11,7 @@ import org.gama.sql.result.ResultSetIterator;
 import org.gama.sql.test.HSQLDBInMemoryDataSource;
 import org.gama.stalactite.persistence.engine.FluentMappingBuilder.IdentifierPolicy;
 import org.gama.stalactite.persistence.engine.IFluentMappingBuilder.IFluentMappingBuilderColumnOptions;
+import org.gama.stalactite.persistence.engine.OneToManyOptions.RelationshipMaintenanceMode;
 import org.gama.stalactite.persistence.engine.model.City;
 import org.gama.stalactite.persistence.engine.model.Country;
 import org.gama.stalactite.persistence.engine.model.Person;
@@ -73,7 +74,7 @@ public class FluentMappingBuilderForeignKeyTest {
 				.add(Country::getName)
 				.add(Country::getDescription)
 				.addOneToOne(Country::getPresident, personPersister)
-				.addOneToManySet(Country::getCities, cityPersister).mappedBy(City::setCountry)
+				.addOneToManySet(Country::getCities, cityPersister).mappedBy(City::setCountry).relationMode(RelationshipMaintenanceMode.READ_ONLY)
 				.build(persistenceContext);
 		
 		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
