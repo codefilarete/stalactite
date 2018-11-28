@@ -1,6 +1,7 @@
 package org.gama.stalactite.persistence.engine;
 
 import javax.sql.DataSource;
+import java.sql.BatchUpdateException;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Collections;
@@ -11,14 +12,17 @@ import org.gama.lang.function.ThrowingSupplier;
 import org.gama.sql.ConnectionProvider;
 import org.gama.sql.binder.DefaultParameterBinders;
 import org.gama.sql.test.HSQLDBInMemoryDataSource;
+import org.gama.stalactite.persistence.engine.CascadeOption.RelationshipMode;
 import org.gama.stalactite.persistence.engine.FluentMappingBuilder.IdentifierPolicy;
 import org.gama.stalactite.persistence.engine.IFluentMappingBuilder.IFluentMappingBuilderColumnOptions;
+import org.gama.stalactite.persistence.engine.IFluentMappingBuilder.IFluentMappingBuilderOneToManyOptions;
 import org.gama.stalactite.persistence.engine.cascade.JoinedTablesPersister;
 import org.gama.stalactite.persistence.engine.model.City;
 import org.gama.stalactite.persistence.engine.model.Country;
 import org.gama.stalactite.persistence.engine.model.State;
 import org.gama.stalactite.persistence.id.Identified;
 import org.gama.stalactite.persistence.id.Identifier;
+import org.gama.stalactite.persistence.id.PersistableIdentifier;
 import org.gama.stalactite.persistence.id.PersistedIdentifier;
 import org.gama.stalactite.persistence.id.provider.LongProvider;
 import org.gama.stalactite.persistence.sql.HSQLDBDialect;
@@ -33,10 +37,10 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import static java.util.stream.Collectors.toSet;
-import static org.gama.stalactite.persistence.engine.OneToManyOptions.RelationshipMaintenanceMode.ALL;
-import static org.gama.stalactite.persistence.engine.OneToManyOptions.RelationshipMaintenanceMode.ALL_ORPHAN_REMOVAL;
-import static org.gama.stalactite.persistence.engine.OneToManyOptions.RelationshipMaintenanceMode.ASSOCIATION_ONLY;
-import static org.gama.stalactite.persistence.engine.OneToManyOptions.RelationshipMaintenanceMode.READ_ONLY;
+import static org.gama.stalactite.persistence.engine.CascadeOption.RelationshipMode.ALL;
+import static org.gama.stalactite.persistence.engine.CascadeOption.RelationshipMode.ALL_ORPHAN_REMOVAL;
+import static org.gama.stalactite.persistence.engine.CascadeOption.RelationshipMode.ASSOCIATION_ONLY;
+import static org.gama.stalactite.persistence.engine.CascadeOption.RelationshipMode.READ_ONLY;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -78,35 +82,80 @@ public class FluentMappingBuilderCollectionCascadeTest {
 	}
 	
 	@Test
-	public void testCascade_oneToMany_noCascade() throws SQLException {
+	public void testCascade_oneToMany_withoutAssociationTable_cascade_associationOnly_throwsException() {
+		IFluentMappingBuilderOneToManyOptions<Country, Identifier<Long>, City> mappingBuilder = FluentMappingBuilder.from(Country.class, Identifier.LONG_TYPE)
+				.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
+				.add(Country::getName)
+				.add(Country::getDescription)
+				// no cascade
+				.addOneToManySet(Country::getCities, cityPersister).mappedBy(City::setCountry).cascading(ASSOCIATION_ONLY);
+		
+		FluentMappingBuilderCascadeTest.assertThrowsMathes(() -> mappingBuilder.build(persistenceContext), t ->
+				t instanceof MappingConfigurationException
+						&& t.getMessage().equals(RelationshipMode.ASSOCIATION_ONLY + " is only relevent with an association table"));
+	}
+	
+	@Test
+	public void testCascade_oneToMany_noCascade_defaultIsReadOnly() throws SQLException {
 		// mapping building thanks to fluent API
 		Persister<Country, Identifier<Long>, ?> countryPersister = FluentMappingBuilder.from(Country.class, Identifier.LONG_TYPE)
 				.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.add(Country::getName)
 				.add(Country::getDescription)
 				// no cascade
-				.addOneToManySet(Country::getCities, cityPersister).mappedBy(City::setCountry).relationMode(READ_ONLY)
+				.addOneToManySet(Country::getCities, cityPersister).mappedBy(City::setCountry)
 				.build(persistenceContext);
 		
 		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
 		ddlDeployer.deployDDL();
 		
-		LongProvider countryIdProvider = new LongProvider();
-		Country dummyCountry = new Country(countryIdProvider.giveNewIdentifier());
+		Country dummyCountry = new Country(new PersistableIdentifier<>(42L));
 		dummyCountry.setName("France");
 		dummyCountry.setDescription("Smelly cheese !");
 		City city = new City(new LongProvider().giveNewIdentifier());
-		city.setName("France president");
+		city.setName("Paris");
 		dummyCountry.addCity(city);
 		countryPersister.insert(dummyCountry);
 		
-		// Checking that the country is persisted but not the president because we didn't asked for insert cascade
+		// Checking that the country is persisted but not the city because we didn't asked for insert cascade (only readonly buy default)
 		// NB: we don't check with countryPersister.select(..) because select(..) depends on outer join which we don't want to be bothered by 
 		ResultSet resultSet;
-		resultSet = persistenceContext.getCurrentConnection().createStatement().executeQuery("select id from Country where id = 0");
+		resultSet = persistenceContext.getCurrentConnection().createStatement().executeQuery("select id from Country where id = 42");
 		assertTrue(resultSet.next());
 		resultSet = persistenceContext.getCurrentConnection().createStatement().executeQuery("select id from City");
 		assertFalse(resultSet.next());
+		
+		// preparing next tests by relating a city to the existing country
+		persistenceContext.getCurrentConnection().prepareStatement("insert into City(id, name, countryId) values (1, 'Paris', 42)").execute();
+		
+		// select selects entity and relationship
+		Country loadedCountry = countryPersister.select(new PersistedIdentifier<>(42L));
+		assertEquals("France", loadedCountry.getName());
+		assertEquals("Paris", Iterables.first(loadedCountry.getCities()).getName());
+		
+		loadedCountry.setName("touched France");
+		Iterables.first(loadedCountry.getCities()).setName("touched Paris");
+		countryPersister.update(loadedCountry, dummyCountry, false);
+		
+		// city is left untouched because association is read only
+		assertEquals("Paris", persistenceContext.newQuery("select name from City where id = 1", String.class)
+				.mapKey(String::new, "name", String.class)
+				.execute(persistenceContext.getConnectionProvider())
+				.get(0));
+		
+		// delete throws integrity constraint because it doesn't delete target entity which own the relation
+		FluentMappingBuilderCascadeTest.assertThrowsMathes(() -> countryPersister.delete(loadedCountry), t ->
+				t.getCause() instanceof BatchUpdateException
+						&& t.getCause().getMessage().contains("integrity constraint violation: foreign key no action; FK_CITY_COUNTRYID_COUNTRY_ID table: CITY")
+		);
+		assertEquals("touched France", persistenceContext.newQuery("select name from Country where id = 42", String.class)
+				.mapKey(String::new, "name", String.class)
+				.execute(persistenceContext.getConnectionProvider())
+				.get(0));
+		assertEquals("Paris", persistenceContext.newQuery("select name from City where id = 1", String.class)
+				.mapKey(String::new, "name", String.class)
+				.execute(persistenceContext.getConnectionProvider())
+				.get(0));
 	}
 	
 	@Test
@@ -117,7 +166,7 @@ public class FluentMappingBuilderCollectionCascadeTest {
 				.add(Country::getName)
 				.add(Country::getDescription)
 				// no cascade, nor reverse side
-				.addOneToManySet(Country::getCities, cityPersister).relationMode(READ_ONLY)
+				.addOneToManySet(Country::getCities, cityPersister).cascading(READ_ONLY)
 				.build(persistenceContext);
 		
 		// We declare the table that will store our relationship, and overall our List index
@@ -131,7 +180,7 @@ public class FluentMappingBuilderCollectionCascadeTest {
 		ddlDeployer.deployDDL();
 		
 		persistenceContext.getCurrentConnection().createStatement().executeUpdate("insert into Country(id, name) values (1, 'France')");
-		persistenceContext.getCurrentConnection().createStatement().executeUpdate("insert into City(id, name) values (10, 'France president')");
+		persistenceContext.getCurrentConnection().createStatement().executeUpdate("insert into City(id, name) values (10, 'French president')");
 		persistenceContext.getCurrentConnection().createStatement().executeUpdate("insert into Country_cities(country_Id, city_Id) values (1, 10)");
 		
 		LongProvider countryIdProvider = new LongProvider(1);
@@ -139,7 +188,7 @@ public class FluentMappingBuilderCollectionCascadeTest {
 		dummyCountry.setName("France");
 		LongProvider cityIdProvider = new LongProvider(10);
 		City city = new City(cityIdProvider.giveNewIdentifier());
-		city.setName("France president");
+		city.setName("French president");
 		
 		Country selectedCountry = countryPersister.select(dummyCountry.getId());
 		assertEquals(dummyCountry.getName(), selectedCountry.getName());
@@ -160,7 +209,7 @@ public class FluentMappingBuilderCollectionCascadeTest {
 							.add(Country::getDescription)
 							// relation defined by setter
 							.addOneToManySet(Country::getCities, cityPersister).mappedBy(City::setCountry)
-							.relationMode(ALL)
+							.cascading(ALL)
 							.build(persistenceContext);
 					DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
 					ddlDeployer.deployDDL();
@@ -175,7 +224,7 @@ public class FluentMappingBuilderCollectionCascadeTest {
 							.add(Country::getDescription)
 							// relation defined by getter
 							.addOneToManySet(Country::getCities, cityPersister).mappedBy(City::getCountry)
-							.relationMode(ALL)
+							.cascading(ALL)
 							.build(persistenceContext);
 					DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
 					ddlDeployer.deployDDL();
@@ -191,7 +240,7 @@ public class FluentMappingBuilderCollectionCascadeTest {
 							.add(Country::getDescription)
 							// relation defined by column
 							.addOneToManySet(Country::getCities, cityPersister).mappedBy(countryId)
-							.relationMode(ALL)
+							.cascading(ALL)
 							.build(persistenceContext);
 					DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
 					ddlDeployer.deployDDL();
@@ -246,7 +295,7 @@ public class FluentMappingBuilderCollectionCascadeTest {
 				.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.add(Country::getName)
 				.add(Country::getDescription)
-				.addOneToManySet(Country::getCities, cityPersister).mappedBy(City::setCountry).relationMode(ALL)
+				.addOneToManySet(Country::getCities, cityPersister).mappedBy(City::setCountry).cascading(ALL)
 				.build(persistenceContext);
 		
 		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
@@ -289,7 +338,7 @@ public class FluentMappingBuilderCollectionCascadeTest {
 				.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.add(Country::getName)
 				.add(Country::getDescription)
-				.addOneToManySet(Country::getCities, cityPersister).mappedBy(City::setCountry).relationMode(ALL_ORPHAN_REMOVAL)
+				.addOneToManySet(Country::getCities, cityPersister).mappedBy(City::setCountry).cascading(ALL_ORPHAN_REMOVAL)
 				.build(persistenceContext);
 		
 		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
@@ -332,7 +381,7 @@ public class FluentMappingBuilderCollectionCascadeTest {
 				.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.add(Country::getName)
 				.add(Country::getDescription)
-				.addOneToManySet(Country::getCities, cityPersister).mappedBy(City::setCountry).relationMode(ALL)
+				.addOneToManySet(Country::getCities, cityPersister).mappedBy(City::setCountry).cascading(ALL)
 				.build(persistenceContext);
 		
 		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
@@ -365,7 +414,7 @@ public class FluentMappingBuilderCollectionCascadeTest {
 					.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 					.add(Country::getName)
 					.add(Country::getDescription)
-					.addOneToManySet(Country::getCities, cityPersister).mappedBy(City::setCountry).relationMode(READ_ONLY)
+					.addOneToManySet(Country::getCities, cityPersister).mappedBy(City::setCountry).cascading(READ_ONLY)
 					.build(persistenceContext);
 			
 			// this is a configuration safeguard, thus we ensure that configuration matches test below
@@ -389,7 +438,7 @@ public class FluentMappingBuilderCollectionCascadeTest {
 					.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 					.add(Country::getName)
 					.add(Country::getDescription)
-					.addOneToManySet(Country::getCities, cityPersister).relationMode(READ_ONLY)
+					.addOneToManySet(Country::getCities, cityPersister).cascading(READ_ONLY)
 					.build(persistenceContext);
 			
 			// We declare the table that will store our relationship, and overall our List index
@@ -421,7 +470,7 @@ public class FluentMappingBuilderCollectionCascadeTest {
 				.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.add(Country::getName)
 				.add(Country::getDescription)
-				.addOneToManySet(Country::getCities, cityPersister).relationMode(ALL)
+				.addOneToManySet(Country::getCities, cityPersister).cascading(ALL)
 				.build(persistenceContext);
 		
 		// We declare the table that will store our relationship, and overall our List index
@@ -489,7 +538,7 @@ public class FluentMappingBuilderCollectionCascadeTest {
 				.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.add(Country::getName)
 				.add(Country::getDescription)
-				.addOneToManySet(Country::getCities, cityPersister).relationMode(ASSOCIATION_ONLY)
+				.addOneToManySet(Country::getCities, cityPersister).cascading(ASSOCIATION_ONLY)
 				.build(persistenceContext);
 		
 		// We declare the table that will store our relationship, and overall our List index
@@ -565,8 +614,8 @@ public class FluentMappingBuilderCollectionCascadeTest {
 				.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.add(Country::getName)
 				.add(Country::getDescription)
-				.addOneToManySet(Country::getCities, cityPersister).mappedBy(City::setCountry).relationMode(ALL_ORPHAN_REMOVAL)
-				.addOneToManySet(Country::getStates, statePersister).mappedBy(State::setCountry).relationMode(ALL)
+				.addOneToManySet(Country::getCities, cityPersister).mappedBy(City::setCountry).cascading(ALL_ORPHAN_REMOVAL)
+				.addOneToManySet(Country::getStates, statePersister).mappedBy(State::setCountry).cascading(ALL)
 				.build(persistenceContext);
 		
 		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);

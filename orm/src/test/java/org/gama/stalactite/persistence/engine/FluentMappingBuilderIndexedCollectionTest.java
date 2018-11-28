@@ -19,8 +19,8 @@ import org.gama.lang.collection.Iterables;
 import org.gama.sql.ConnectionProvider;
 import org.gama.sql.binder.DefaultParameterBinders;
 import org.gama.sql.test.HSQLDBInMemoryDataSource;
+import org.gama.stalactite.persistence.engine.CascadeOption.RelationshipMode;
 import org.gama.stalactite.persistence.engine.FluentMappingBuilder.IdentifierPolicy;
-import org.gama.stalactite.persistence.engine.OneToManyOptions.RelationshipMaintenanceMode;
 import org.gama.stalactite.persistence.engine.PersisterTest.PayloadPredicate;
 import org.gama.stalactite.persistence.engine.listening.UpdateListener;
 import org.gama.stalactite.persistence.engine.listening.UpdateListener.UpdatePayload;
@@ -83,7 +83,7 @@ public class FluentMappingBuilderIndexedCollectionTest {
 		
 		Persister<Question, Identifier<Long>, ?> questionPersister = from(Question.class, LONG_TYPE)
 				.add(Question::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
-				.addOneToManyList(Question::getChoices, choicePersister).mappedBy(Choice::getQuestion).indexedBy(idx).relationMode(RelationshipMaintenanceMode.ALL)
+				.addOneToManyList(Question::getChoices, choicePersister).mappedBy(Choice::getQuestion).indexedBy(idx).cascading(RelationshipMode.ALL)
 				.build(persistenceContext);
 		
 		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
@@ -296,7 +296,7 @@ public class FluentMappingBuilderIndexedCollectionTest {
 		
 		Persister<Question, Identifier<Long>, ?> questionPersister = from(Question.class, LONG_TYPE)
 				.add(Question::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
-				.addOneToManyList(Question::getChoices, choicePersister).mappedBy(Choice::getQuestion).indexedBy(idx).relationMode(RelationshipMaintenanceMode.ALL)
+				.addOneToManyList(Question::getChoices, choicePersister).mappedBy(Choice::getQuestion).indexedBy(idx).cascading(RelationshipMode.ALL)
 				.build(persistenceContext);
 		
 		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
@@ -337,7 +337,7 @@ public class FluentMappingBuilderIndexedCollectionTest {
 		
 		Persister<Question, Identifier<Long>, ?> questionPersister = from(Question.class, LONG_TYPE)
 				.add(Question::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
-				.addOneToManyList(Question::getChoices, choicePersister).relationMode(RelationshipMaintenanceMode.ALL_ORPHAN_REMOVAL)
+				.addOneToManyList(Question::getChoices, choicePersister).cascading(RelationshipMode.ALL_ORPHAN_REMOVAL)
 				.build(persistenceContext);
 		
 		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
@@ -690,7 +690,7 @@ public class FluentMappingBuilderIndexedCollectionTest {
 				questionPersister = from(Question.class, LONG_TYPE)
 						.add(Question::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 						.addOneToManyList(Question::getChoices, choicePersister).mappedBy(Choice::getQuestion).indexedBy(idx)
-						.relationMode(RelationshipMaintenanceMode.ALL)
+						.cascading(RelationshipMode.ALL)
 						.build(persistenceContext);
 				
 				// We create another choices persister dedicated to Answer association because usages are not the same :
@@ -703,7 +703,7 @@ public class FluentMappingBuilderIndexedCollectionTest {
 				
 				answerPersister = from(Answer.class, LONG_TYPE)
 						.add(Answer::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
-						.addOneToManyList(Answer::getChoices, choiceReader).relationMode(RelationshipMaintenanceMode.ASSOCIATION_ONLY)
+						.addOneToManyList(Answer::getChoices, choiceReader).cascading(RelationshipMode.ASSOCIATION_ONLY)
 						.build(persistenceContext);
 				
 				// We declare the table that will store our relationship, and overall our List index
@@ -973,7 +973,7 @@ public class FluentMappingBuilderIndexedCollectionTest {
 			questionPersister = from(Question.class, LONG_TYPE)
 					.add(Question::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 					.addOneToManyList(Question::getChoices, choicePersister).mappedBy(Choice::getQuestion).indexedBy(idx)
-					.relationMode(RelationshipMaintenanceMode.ALL_ORPHAN_REMOVAL)
+					.cascading(RelationshipMode.ALL_ORPHAN_REMOVAL)
 					.build(persistenceContext);
 			
 			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);

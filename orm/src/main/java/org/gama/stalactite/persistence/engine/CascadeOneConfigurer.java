@@ -8,8 +8,7 @@ import org.gama.lang.collection.Iterables;
 import org.gama.reflection.Accessors;
 import org.gama.reflection.IMutator;
 import org.gama.reflection.PropertyAccessor;
-import org.gama.stalactite.persistence.engine.CascadeOption.CascadeType;
-import org.gama.stalactite.persistence.engine.FluentMappingBuilder.CascadeOne;
+import org.gama.stalactite.persistence.engine.CascadeOption.RelationshipMode;
 import org.gama.stalactite.persistence.engine.FluentMappingBuilder.MandatoryRelationCheckingBeforeInsertListener;
 import org.gama.stalactite.persistence.engine.FluentMappingBuilder.MandatoryRelationCheckingBeforeUpdateListener;
 import org.gama.stalactite.persistence.engine.FluentMappingBuilder.SetPersistedFlagAfterInsertListener;
@@ -61,92 +60,107 @@ public class CascadeOneConfigurer<I extends Identified, O extends Identified, J 
 		leftColumn.getTable().addForeignKey(foreignKeyNamingStrategy.giveName(leftColumn, rightColumn), leftColumn, rightColumn);
 		
 		PersisterListener<I, ?> persisterListener = localPersister.getPersisterListener();
-		for (CascadeType cascadeType : cascadeOne.getCascadeTypes()) {
-			switch (cascadeType) {
-				case INSERT:
-					// if cascade is mandatory, then adding nullability checking before insert
-					if (!cascadeOne.isNullable()) {
-						persisterListener.addInsertListener(
-								new MandatoryRelationCheckingBeforeInsertListener<>(cascadeOne.getTargetProvider(), cascadeOne.getMember()));
-					}
-					// adding cascade treatment: after insert target is inserted too
-					persisterListener.addInsertListener(new BeforeInsertCascader<I, Identified>(targetPersister) {
-						
-						@Override
-						protected void postTargetInsert(Iterable<Identified> entities) {
-							// Nothing to do. Identified#isPersisted flag should be fixed by target persister
-						}
-						
-						@Override
-						protected Identified getTarget(I o) {
-							Identified target = cascadeOne.getTargetProvider().apply(o);
-							// We only insert non-persisted instances (for logic and to prevent duplicate primary key error)
-							return NON_PERSISTED_PREDICATE.test(target) ? target : null;
-						}
-					});
-					break;
-				case UPDATE:
-					// if cascade is mandatory, then adding nullability checking before insert
-					if (!cascadeOne.isNullable()) {
-						persisterListener.addUpdateListener(
-								new MandatoryRelationCheckingBeforeUpdateListener<>(cascadeOne.getMember(), cascadeOne.getTargetProvider()));
-					}
-					// adding cascade treatment: after update target is updated too
-					persisterListener.addUpdateListener(new AfterUpdateCascader<I, Identified>(targetPersister) {
-						
-						@Override
-						protected void postTargetUpdate(Iterable<UpdatePayload<Identified, ?>> entities) {
-							// Nothing to do
-						}
-						
-						@Override
-						protected Duo<Identified, Identified> getTarget(I modifiedTrigger, I unmodifiedTrigger) {
-							return new Duo<>(cascadeOne.getTargetProvider().apply(modifiedTrigger), cascadeOne.getTargetProvider().apply
-									(unmodifiedTrigger));
-						}
-					});
-					break;
-				case DELETE:
-					// adding cascade treatment: before delete target is deleted (done before because of foreign key constraint)
-					persisterListener.addDeleteListener(new AfterDeleteCascader<I, Identified>(targetPersister) {
-						
-						@Override
-						protected void postTargetDelete(Iterable<Identified> entities) {
-							// no post treatment to do
-						}
-						
-						@Override
-						protected Identified getTarget(I i) {
-							Identified target = cascadeOne.getTargetProvider().apply(i);
-							// We only delete persisted instances (for logic and to prevent from non matching row count error)
-							return PERSISTED_PREDICATE.test(target) ? target : null;
-						}
-					});
-					// we add the deleteById event since we suppose that if delete is required then there's no reason that rough delete is not
-					persisterListener.addDeleteByIdListener(new AfterDeleteByIdCascader<I, Identified>(targetPersister) {
-						
-						@Override
-						protected void postTargetDelete(Iterable<Identified> entities) {
-							// no post treatment to do
-						}
-						
-						@Override
-						protected Identified getTarget(I i) {
-							Identified target = cascadeOne.getTargetProvider().apply(i);
-							// We only delete persisted instances (for logic and to prevent from non matching row count error)
-							return PERSISTED_PREDICATE.test(target) ? target : null;
-						}
-					});
-					break;
-				case SELECT:
-					// configuring select for fetching relation
-					IMutator<Identified, Identified> targetSetter = propertyAccessor.getMutator();
-					joinedTablesPersister.addPersister(JoinedStrategiesSelect.FIRST_STRATEGY_NAME, targetPersister,
-							BeanRelationFixer.of(targetSetter::set),
-							leftColumn, rightColumn, cascadeOne.isNullable());
-					break;
-			}
+		RelationshipMode maintenanceMode = cascadeOne.getRelationshipMode();
+		// selection is always present (else configuration is nonsense !)
+		addSelectCascade(cascadeOne, joinedTablesPersister, targetPersister, propertyAccessor, leftColumn, rightColumn);
+		// additionnal cascade
+		switch (maintenanceMode) {
+			case ALL:
+			case ALL_ORPHAN_REMOVAL:
+				// NB: "delete removed" will be treated internally by updateCascade() and deleteCascade()
+				addInsertCascade(cascadeOne, targetPersister, persisterListener);
+				addUpdateCascade(cascadeOne, targetPersister, persisterListener);
+				addDeleteCascade(cascadeOne, targetPersister, persisterListener);
+				break;
+			case ASSOCIATION_ONLY:
+				throw new MappingConfigurationException(RelationshipMode.ASSOCIATION_ONLY + " is only relevent for one to many association");
 		}
+	}
+	
+	public <T extends Table<T>> void addSelectCascade(CascadeOne<I, O, J> cascadeOne, JoinedTablesPersister<I, J, T> joinedTablesPersister, Persister<Identified, StatefullIdentifier, Table> targetPersister, PropertyAccessor<Identified, Identified> propertyAccessor, Column leftColumn, Column rightColumn) {
+		// configuring select for fetching relation
+		IMutator<Identified, Identified> targetSetter = propertyAccessor.getMutator();
+		joinedTablesPersister.addPersister(JoinedStrategiesSelect.FIRST_STRATEGY_NAME, targetPersister,
+				BeanRelationFixer.of(targetSetter::set),
+				leftColumn, rightColumn, cascadeOne.isNullable());
+	}
+	
+	public void addDeleteCascade(CascadeOne<I, O, J> cascadeOne, Persister<Identified, StatefullIdentifier, Table> targetPersister, PersisterListener<I, ?> persisterListener) {
+		// adding cascade treatment: before delete target is deleted (done before because of foreign key constraint)
+		persisterListener.addDeleteListener(new AfterDeleteCascader<I, Identified>(targetPersister) {
+			
+			@Override
+			protected void postTargetDelete(Iterable<Identified> entities) {
+				// no post treatment to do
+			}
+			
+			@Override
+			protected Identified getTarget(I i) {
+				Identified target = cascadeOne.getTargetProvider().apply(i);
+				// We only delete persisted instances (for logic and to prevent from non matching row count error)
+				return PERSISTED_PREDICATE.test(target) ? target : null;
+			}
+		});
+		// we add the deleteById event since we suppose that if delete is required then there's no reason that rough delete is not
+		persisterListener.addDeleteByIdListener(new AfterDeleteByIdCascader<I, Identified>(targetPersister) {
+			
+			@Override
+			protected void postTargetDelete(Iterable<Identified> entities) {
+				// no post treatment to do
+			}
+			
+			@Override
+			protected Identified getTarget(I i) {
+				Identified target = cascadeOne.getTargetProvider().apply(i);
+				// We only delete persisted instances (for logic and to prevent from non matching row count error)
+				return PERSISTED_PREDICATE.test(target) ? target : null;
+			}
+		});
+	}
+	
+	public void addUpdateCascade(CascadeOne<I, O, J> cascadeOne, Persister<Identified, StatefullIdentifier, Table> targetPersister, PersisterListener<I, ?> persisterListener) {
+		// if cascade is mandatory, then adding nullability checking before insert
+		if (!cascadeOne.isNullable()) {
+			persisterListener.addUpdateListener(
+					new MandatoryRelationCheckingBeforeUpdateListener<>(cascadeOne.getMember(), cascadeOne.getTargetProvider()));
+		}
+		// adding cascade treatment: after update target is updated too
+		persisterListener.addUpdateListener(new AfterUpdateCascader<I, Identified>(targetPersister) {
+			
+			@Override
+			protected void postTargetUpdate(Iterable<UpdatePayload<Identified, ?>> entities) {
+				// Nothing to do
+			}
+			
+			@Override
+			protected Duo<Identified, Identified> getTarget(I modifiedTrigger, I unmodifiedTrigger) {
+				return new Duo<>(cascadeOne.getTargetProvider().apply(modifiedTrigger), cascadeOne.getTargetProvider().apply
+						(unmodifiedTrigger));
+			}
+		});
+	}
+	
+	public void addInsertCascade(CascadeOne<I, O, J> cascadeOne, Persister<Identified, StatefullIdentifier, Table> targetPersister, PersisterListener<I, ?> persisterListener) {
+		// if cascade is mandatory, then adding nullability checking before insert
+		if (!cascadeOne.isNullable()) {
+			persisterListener.addInsertListener(
+					new MandatoryRelationCheckingBeforeInsertListener<>(cascadeOne.getTargetProvider(), cascadeOne.getMember()));
+		}
+		// adding cascade treatment: after insert target is inserted too
+		persisterListener.addInsertListener(new BeforeInsertCascader<I, Identified>(targetPersister) {
+			
+			@Override
+			protected void postTargetInsert(Iterable<Identified> entities) {
+				// Nothing to do. Identified#isPersisted flag should be fixed by target persister
+			}
+			
+			@Override
+			protected Identified getTarget(I o) {
+				Identified target = cascadeOne.getTargetProvider().apply(o);
+				// We only insert non-persisted instances (for logic and to prevent duplicate primary key error)
+				return NON_PERSISTED_PREDICATE.test(target) ? target : null;
+			}
+		});
 	}
 	
 }

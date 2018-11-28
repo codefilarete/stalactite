@@ -6,11 +6,9 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -27,7 +25,6 @@ import org.gama.reflection.Accessors;
 import org.gama.reflection.MethodReferenceCapturer;
 import org.gama.reflection.PropertyAccessor;
 import org.gama.stalactite.persistence.engine.AbstractVersioningStrategy.VersioningStrategySupport;
-import org.gama.stalactite.persistence.engine.CascadeOption.CascadeType;
 import org.gama.stalactite.persistence.engine.builder.CascadeMany;
 import org.gama.stalactite.persistence.engine.builder.CascadeManyList;
 import org.gama.stalactite.persistence.engine.cascade.JoinedTablesPersister;
@@ -275,17 +272,14 @@ public class FluentMappingBuilder<T extends Identified, I extends StatefullIdent
 		return new MethodDispatcher()
 				.redirect(OneToOneOptions.class, new OneToOneOptions() {
 					@Override
-					public IFluentMappingBuilderOneToOneOptions cascade(CascadeType cascadeType, CascadeType... cascadeTypes) {
-						cascadeOne.addCascadeType(cascadeType);
-						for (CascadeType type : cascadeTypes) {
-							cascadeOne.addCascadeType(type);
-						}
+					public IFluentMappingBuilderOneToOneOptions cascading(RelationshipMode relationshipMode) {
+						cascadeOne.setRelationshipMode(relationshipMode);
 						return null;	// we can return null because dispatcher will return proxy
 					}
 					
 					@Override
 					public IFluentMappingBuilderOneToOneOptions mandatory() {
-						cascadeOne.nullable = false;
+						cascadeOne.setNullable(false);
 						return null;	// we can return null because dispatcher will return proxy
 					}
 				}, true)	// true to allow "return null" in implemented methods
@@ -630,60 +624,6 @@ public class FluentMappingBuilder<T extends Identified, I extends StatefullIdent
 		}
 	}
 	
-	public static class CascadeOne<SRC extends Identified, O extends Identified, J extends StatefullIdentifier> {
-		
-		private final Function<SRC, O> targetProvider;
-		private final Method member;
-		private final Persister<O, J, ? extends Table> persister;
-		private final Set<CascadeType> cascadeTypes = new HashSet<>();
-		private Column reverseSide;
-		private boolean nullable = true;
-		
-		private CascadeOne(Function<SRC, O> targetProvider, Persister<O, J, ? extends Table> persister, Method method) {
-			this.targetProvider = targetProvider;
-			this.persister = persister;
-			// looking for the target type because its necessary to find its persister (and other objects). Done thru a method capturer (weird thing).
-			this.member = method;
-		}
-		
-		/** Original method reference given for mapping */
-		public Function<SRC, O> getTargetProvider() {
-			return targetProvider;
-		}
-		
-		/** Equivalent of {@link #targetProvider} as a Reflection API element */
-		public Method getMember() {
-			return member;
-		}
-		
-		/** The {@link Persister} that will be used to persist the target of the relation */
-		public Persister<O, J, ?> getPersister() {
-			return persister;
-		}
-		
-		/** Events of the cascade, default is none */
-		public Set<CascadeType> getCascadeTypes() {
-			return cascadeTypes;
-		}
-		
-		public void addCascadeType(CascadeType cascadeType) {
-			this.getCascadeTypes().add(cascadeType);
-		}
-		
-		/** Nullable option, mainly for column join and DDL schema generation */
-		public boolean isNullable() {
-			return nullable;
-		}
-		
-		public Column getReverseSide() {
-			return reverseSide;
-		}
-		
-		public void setReverseSide(Column reverseSide) {
-			this.reverseSide = reverseSide;
-		}
-	}
-	
 	/**
 	 * Represents a property that embeds a complex type
 	 *
@@ -830,18 +770,10 @@ public class FluentMappingBuilder<T extends Identified, I extends StatefullIdent
 		}
 		
 		@Override
-		public IFluentMappingBuilderOneToManyOptions<T, I, O> cascade(CascadeType cascadeType, CascadeType... cascadeTypes) {
-			cascadeMany.addCascadeType(cascadeType);
-			for (CascadeType type : cascadeTypes) {
-				cascadeMany.addCascadeType(type);
-			}
+		public IFluentMappingBuilderOneToManyOptions<T, I, O> cascading(RelationshipMode relationshipMode) {
+			cascadeMany.setRelationshipMode(relationshipMode);
 			return null;	// we can return null because dispatcher will return proxy
 		}
 		
-		@Override
-		public IFluentMappingBuilderOneToManyOptions<T, I, O> relationMode(RelationshipMaintenanceMode maintenanceMode) {
-			cascadeMany.setMaintenanceMode(maintenanceMode);
-			return null;	// we can return null because dispatcher will return proxy
-		}
 	}
 }

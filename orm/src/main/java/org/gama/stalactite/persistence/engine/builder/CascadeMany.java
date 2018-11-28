@@ -1,5 +1,6 @@
 package org.gama.stalactite.persistence.engine.builder;
 
+import javax.persistence.CascadeType;
 import java.lang.reflect.Method;
 import java.util.Collection;
 import java.util.HashSet;
@@ -9,8 +10,7 @@ import java.util.function.Function;
 import org.danekja.java.util.function.serializable.SerializableBiConsumer;
 import org.danekja.java.util.function.serializable.SerializableFunction;
 import org.gama.lang.Reflections;
-import org.gama.stalactite.persistence.engine.CascadeOption.CascadeType;
-import org.gama.stalactite.persistence.engine.OneToManyOptions.RelationshipMaintenanceMode;
+import org.gama.stalactite.persistence.engine.CascadeOption.RelationshipMode;
 import org.gama.stalactite.persistence.engine.Persister;
 import org.gama.stalactite.persistence.id.Identified;
 import org.gama.stalactite.persistence.id.manager.StatefullIdentifier;
@@ -40,7 +40,7 @@ public class CascadeMany<SRC extends Identified, O extends Identified, J extends
 	private final Set<CascadeType> cascadeTypes = new HashSet<>();
 	/** Should we delete removed entities from the Collection (for UPDATE cascade) */
 	private boolean deleteRemoved = false;
-	private RelationshipMaintenanceMode maintenanceMode;
+	private RelationshipMode relationshipMode = RelationshipMode.READ_ONLY;
 	
 	public CascadeMany(Function<SRC, C> targetProvider, Persister<O, J, ? extends Table> persister, Method method) {
 		this(targetProvider, persister, (Class<C>) Reflections.javaBeanTargetType(method), method);
@@ -105,11 +105,11 @@ public class CascadeMany<SRC extends Identified, O extends Identified, J extends
 		return deleteRemoved;
 	}
 	
-	public RelationshipMaintenanceMode getMaintenanceMode() {
-		return maintenanceMode;
+	public RelationshipMode getRelationshipMode() {
+		return relationshipMode;
 	}
 	
-	public void setMaintenanceMode(RelationshipMaintenanceMode maintenanceMode) {
-		this.maintenanceMode = maintenanceMode;
+	public void setRelationshipMode(RelationshipMode relationshipMode) {
+		this.relationshipMode = relationshipMode;
 	}
 }

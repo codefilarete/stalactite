@@ -25,9 +25,8 @@ import org.gama.sql.dml.PreparedSQL;
 import org.gama.sql.dml.WriteOperation;
 import org.gama.stalactite.command.builder.DeleteCommandBuilder;
 import org.gama.stalactite.command.model.Delete;
-import org.gama.stalactite.persistence.engine.CascadeOption.CascadeType;
+import org.gama.stalactite.persistence.engine.CascadeOption.RelationshipMode;
 import org.gama.stalactite.persistence.engine.FluentMappingBuilder.SetPersistedFlagAfterInsertListener;
-import org.gama.stalactite.persistence.engine.OneToManyOptions.RelationshipMaintenanceMode;
 import org.gama.stalactite.persistence.engine.builder.CascadeMany;
 import org.gama.stalactite.persistence.engine.builder.CascadeManyList;
 import org.gama.stalactite.persistence.engine.cascade.AfterInsertCollectionCascader;
@@ -58,8 +57,8 @@ import static org.gama.lang.collection.Iterables.first;
 import static org.gama.lang.collection.Iterables.minus;
 import static org.gama.lang.collection.Iterables.stream;
 import static org.gama.reflection.Accessors.of;
-import static org.gama.stalactite.persistence.engine.OneToManyOptions.RelationshipMaintenanceMode.ALL_ORPHAN_REMOVAL;
-import static org.gama.stalactite.persistence.engine.OneToManyOptions.RelationshipMaintenanceMode.ASSOCIATION_ONLY;
+import static org.gama.stalactite.persistence.engine.CascadeOption.RelationshipMode.ALL_ORPHAN_REMOVAL;
+import static org.gama.stalactite.persistence.engine.CascadeOption.RelationshipMode.ASSOCIATION_ONLY;
 import static org.gama.stalactite.persistence.engine.cascade.JoinedStrategiesSelect.FIRST_STRATEGY_NAME;
 
 /**
@@ -179,33 +178,18 @@ public class CascadeManyConfigurer<I extends Identified, O extends Identified, J
 		// managing cascades
 		Function<I, C> collectionGetter = cascadeMany.getTargetProvider();
 		PersisterListener<I, J> persisterListener = joinedTablesPersister.getPersisterListener();
-		for (CascadeType cascadeType : cascadeMany.getCascadeTypes()) {
-			switch (cascadeType) {
-				case INSERT:
-					addInsertCascade(cascadeMany, leftPersister, collectionGetter, persisterListener);
-					break;
-				case UPDATE:
-					addUpdateCascade(cascadeMany, leftPersister, collectionGetter, persisterListener, cascadeMany.shouldDeleteRemoved());
-					break;
-				case DELETE:
-					addDeleteCascade(cascadeMany, joinedTablesPersister, leftPersister, collectionGetter, persisterListener, false);
-					break;
-				case SELECT:
-					addSelectCascade(cascadeMany, joinedTablesPersister, leftPersister, leftPrimaryKey, collectionGetter, rightJoinColumn,
-							persisterListener);
-					break;
-			}
-		}
 		
-		RelationshipMaintenanceMode maintenanceMode = cascadeMany.getMaintenanceMode();
+		RelationshipMode maintenanceMode = cascadeMany.getRelationshipMode();
 		// selection is always present (else configuration is nonsense !)
-		addSelectCascade(cascadeMany, joinedTablesPersister, leftPersister, leftPrimaryKey, collectionGetter, rightJoinColumn,
-				persisterListener);
+		addSelectCascade(cascadeMany, joinedTablesPersister, leftPersister, leftPrimaryKey, collectionGetter, rightJoinColumn, persisterListener);
 		// additionnal cascade
 		switch (maintenanceMode) {
+			case ASSOCIATION_ONLY:
+				if (intermediaryTable == null) {
+					throw new MappingConfigurationException(RelationshipMode.ASSOCIATION_ONLY + " is only relevent with an association table");
+				}
 			case ALL:
 			case ALL_ORPHAN_REMOVAL:
-			case ASSOCIATION_ONLY:
 				// NB: "delete removed" will be treated internally by updateCascade() and deleteCascade()
 				addInsertCascade(cascadeMany, leftPersister, collectionGetter, persisterListener);
 				addUpdateCascade(cascadeMany, leftPersister, collectionGetter, persisterListener, maintenanceMode == ALL_ORPHAN_REMOVAL);
