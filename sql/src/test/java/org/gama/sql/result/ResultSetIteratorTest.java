@@ -77,7 +77,7 @@ public class ResultSetIteratorTest {
 	
 	@ParameterizedTest
 	@MethodSource("dataSources")
-	public void testNext_withoutCallToHasNext_throwsNoSucheElementException(DataSource dataSource) throws SQLException {
+	public void testNext_withoutCallToHasNext_throwsNoSuchElementException(DataSource dataSource) throws SQLException {
 		Connection connection = dataSource.getConnection();
 		ensureTable(connection);
 		
