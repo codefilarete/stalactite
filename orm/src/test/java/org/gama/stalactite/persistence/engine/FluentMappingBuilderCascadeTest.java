@@ -4,9 +4,9 @@ import javax.sql.DataSource;
 import java.sql.BatchUpdateException;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.function.Predicate;
 
 import org.gama.lang.collection.Maps;
+import org.gama.lang.exception.Exceptions;
 import org.gama.sql.binder.DefaultParameterBinders;
 import org.gama.sql.result.RowIterator;
 import org.gama.sql.test.HSQLDBInMemoryDataSource;
@@ -76,7 +76,7 @@ public class FluentMappingBuilderCascadeTest {
 	}
 	
 	@Test
-	public void testCascade_oneToOne_cascade_associationOnly_throwsException() throws SQLException {
+	public void testCascade_oneToOne_cascade_associationOnly_throwsException() {
 		IFluentMappingBuilderOneToOneOptions<Country, Identifier<Long>> mappingBuilder = FluentMappingBuilder.from(Country.class, Identifier.LONG_TYPE)
 				.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.add(Country::getName)
@@ -84,9 +84,8 @@ public class FluentMappingBuilderCascadeTest {
 				// no cascade
 				.addOneToOne(Country::getPresident, personPersister).cascading(ASSOCIATION_ONLY);
 		
-		assertThrowsMathes(() -> mappingBuilder.build(persistenceContext), t ->
-				t instanceof MappingConfigurationException
-						&& t.getMessage().equals(RelationshipMode.ASSOCIATION_ONLY + " is only relevent for one to many association"));
+		assertThrowsInHierarchy(() -> mappingBuilder.build(persistenceContext), MappingConfigurationException.class,
+				RelationshipMode.ASSOCIATION_ONLY + " is only relevent for one-to-many association");
 	}
 	
 	@Test
@@ -111,10 +110,8 @@ public class FluentMappingBuilderCascadeTest {
 		dummyCountry.setPresident(person);
 		
 		// insert throws integrity constraint because it doesn't save target entity
-		assertThrowsMathes(() -> countryPersister.insert(dummyCountry), t ->
-			t.getCause() instanceof BatchUpdateException
-					&& t.getCause().getMessage().contains("integrity constraint violation: foreign key no parent; FK_COUNTRY_PRESIDENTID_PERSON_ID table: COUNTRY")
-		);
+		assertThrowsInHierarchy(() -> countryPersister.insert(dummyCountry), BatchUpdateException.class,
+				"integrity constraint violation: foreign key no parent; FK_COUNTRY_PRESIDENTID_PERSON_ID table: COUNTRY");
 		
 		persistenceContext.getCurrentConnection().prepareStatement("insert into Person(id, name) values (1, 'French president')").execute();
 		persistenceContext.getCurrentConnection().prepareStatement("insert into Country(id, name, presidentId) values (42, 'France', 1)").execute();
@@ -146,14 +143,15 @@ public class FluentMappingBuilderCascadeTest {
 				.get(0));
 	}
 	
-	static void assertThrowsMathes(Executable executable, Predicate<Throwable> throwableMatcher) {
+	static void assertThrowsInHierarchy(Executable executable, Class<? extends Throwable> expectedException, String expectedMessage) {
 		try {
 			executable.execute();
 		} catch (Throwable actualException) {
-			if (!throwableMatcher.test(actualException)) {
-				throw new AssertionFailedError("Unexpected exception thrown", actualException);
+			Throwable exceptionInHierarchy = Exceptions.findExceptionInHierarchy(actualException, expectedException);
+			if (exceptionInHierarchy == null) {
+				throw new AssertionFailedError("Unexpected exception thrown", expectedException, actualException);
 			} else {
-				// everything is fine, we have to break execution flow else we'll end up on the "no exception thrown"
+				assertEquals(expectedMessage, exceptionInHierarchy.getMessage());
 				return;
 			}
 		}
@@ -216,7 +214,7 @@ public class FluentMappingBuilderCascadeTest {
 	}
 	
 	@Test
-	public void testCascade_oneToOne_insert() throws SQLException {
+	public void testCascade_oneToOne_insert() {
 		// mapping building thantks to fluent API
 		Persister<Country, Identifier<Long>, ?> countryPersister = FluentMappingBuilder.from(Country.class, Identifier.LONG_TYPE)
 				.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
@@ -260,7 +258,7 @@ public class FluentMappingBuilderCascadeTest {
 	}
 	
 	@Test
-	public void testCascade_oneToOne_insert_mandatory() throws SQLException {
+	public void testCascade_oneToOne_insert_mandatory() {
 		// mapping building thantks to fluent API
 		Persister<Country, Identifier<Long>, ?> countryPersister = FluentMappingBuilder.from(Country.class, Identifier.LONG_TYPE)
 				.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
@@ -280,7 +278,7 @@ public class FluentMappingBuilderCascadeTest {
 	}
 	
 	@Test
-	public void testCascade_oneToOne_update() throws SQLException {
+	public void testCascade_oneToOne_update() {
 		// mapping building thantks to fluent API
 		Persister<Country, Identifier<Long>, ?> countryPersister = FluentMappingBuilder.from(Country.class, Identifier.LONG_TYPE)
 				.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
@@ -323,7 +321,7 @@ public class FluentMappingBuilderCascadeTest {
 	}
 	
 	@Test
-	public void testCascade_oneToOne_update_mandatory() throws SQLException {
+	public void testCascade_oneToOne_update_mandatory() {
 		// mapping building thantks to fluent API
 		Persister<Country, Identifier<Long>, ?> countryPersister = FluentMappingBuilder.from(Country.class, Identifier.LONG_TYPE)
 				.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)

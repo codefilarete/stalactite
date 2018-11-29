@@ -73,7 +73,7 @@ public class CascadeOneConfigurer<I extends Identified, O extends Identified, J 
 				addDeleteCascade(cascadeOne, targetPersister, persisterListener);
 				break;
 			case ASSOCIATION_ONLY:
-				throw new MappingConfigurationException(RelationshipMode.ASSOCIATION_ONLY + " is only relevent for one to many association");
+				throw new MappingConfigurationException(RelationshipMode.ASSOCIATION_ONLY + " is only relevent for one-to-many association");
 		}
 	}
 	

@@ -90,9 +90,8 @@ public class FluentMappingBuilderCollectionCascadeTest {
 				// no cascade
 				.addOneToManySet(Country::getCities, cityPersister).mappedBy(City::setCountry).cascading(ASSOCIATION_ONLY);
 		
-		FluentMappingBuilderCascadeTest.assertThrowsMathes(() -> mappingBuilder.build(persistenceContext), t ->
-				t instanceof MappingConfigurationException
-						&& t.getMessage().equals(RelationshipMode.ASSOCIATION_ONLY + " is only relevent with an association table"));
+		FluentMappingBuilderCascadeTest.assertThrowsInHierarchy(() -> mappingBuilder.build(persistenceContext), MappingConfigurationException.class,
+				RelationshipMode.ASSOCIATION_ONLY + " is only relevent with an association table");
 	}
 	
 	@Test
@@ -144,10 +143,9 @@ public class FluentMappingBuilderCollectionCascadeTest {
 				.get(0));
 		
 		// delete throws integrity constraint because it doesn't delete target entity which own the relation
-		FluentMappingBuilderCascadeTest.assertThrowsMathes(() -> countryPersister.delete(loadedCountry), t ->
-				t.getCause() instanceof BatchUpdateException
-						&& t.getCause().getMessage().contains("integrity constraint violation: foreign key no action; FK_CITY_COUNTRYID_COUNTRY_ID table: CITY")
-		);
+		FluentMappingBuilderCascadeTest.assertThrowsInHierarchy(() -> countryPersister.delete(loadedCountry), BatchUpdateException.class,
+				"integrity constraint violation: foreign key no action; FK_CITY_COUNTRYID_COUNTRY_ID table: CITY");
+		
 		assertEquals("touched France", persistenceContext.newQuery("select name from Country where id = 42", String.class)
 				.mapKey(String::new, "name", String.class)
 				.execute(persistenceContext.getConnectionProvider())
@@ -333,7 +331,7 @@ public class FluentMappingBuilderCollectionCascadeTest {
 	}
 	
 	@Test
-	public void testCascade_oneToMany_update_deleteRemoved() throws SQLException {
+	public void testCascade_oneToMany_update_deleteRemoved() {
 		Persister<Country, Identifier<Long>, ?> countryPersister = FluentMappingBuilder.from(Country.class, Identifier.LONG_TYPE)
 				.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.add(Country::getName)
@@ -532,7 +530,7 @@ public class FluentMappingBuilderCollectionCascadeTest {
 		assertFalse(resultSet.next());
 	}
 	
-		@Test
+	@Test
 	public void testCascade_oneToMany_delete_maintainingASSOCIATION_ONLY_withAssociationTable_associationRecordsMustBeDeleted_butNotTargetEntities() throws SQLException {
 		Persister<Country, Identifier<Long>, ? extends Table> countryPersister = FluentMappingBuilder.from(Country.class, Identifier.LONG_TYPE)
 				.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
