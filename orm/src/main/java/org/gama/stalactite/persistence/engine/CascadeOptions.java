@@ -5,7 +5,7 @@ package org.gama.stalactite.persistence.engine;
  * 
  * @author Guillaume Mary
  */
-public interface CascadeOption<R> {
+public interface CascadeOptions<R> {
 	
 	/**
 	 * Specifies relationship maintenance mode.

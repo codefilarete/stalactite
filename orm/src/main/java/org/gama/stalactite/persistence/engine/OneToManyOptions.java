@@ -12,7 +12,7 @@ import org.gama.stalactite.persistence.structure.Table;
  * @author Guillaume Mary
  */
 public interface OneToManyOptions<T extends Identified, I extends StatefullIdentifier, O extends Identified>
-	extends CascadeOption<IFluentMappingBuilderOneToManyOptions<T, I, O>> {
+	extends CascadeOptions<IFluentMappingBuilderOneToManyOptions<T, I, O>> {
 	
 	/**
 	 * Defines the bidirectional relationship.

@@ -9,7 +9,7 @@ import org.gama.lang.collection.Iterables;
 import org.gama.sql.binder.DefaultParameterBinders;
 import org.gama.sql.result.ResultSetIterator;
 import org.gama.sql.test.HSQLDBInMemoryDataSource;
-import org.gama.stalactite.persistence.engine.CascadeOption.RelationshipMode;
+import org.gama.stalactite.persistence.engine.CascadeOptions.RelationshipMode;
 import org.gama.stalactite.persistence.engine.FluentMappingBuilder.IdentifierPolicy;
 import org.gama.stalactite.persistence.engine.IFluentMappingBuilder.IFluentMappingBuilderColumnOptions;
 import org.gama.stalactite.persistence.engine.model.City;

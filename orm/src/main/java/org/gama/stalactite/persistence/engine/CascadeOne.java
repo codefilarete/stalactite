@@ -3,7 +3,7 @@ package org.gama.stalactite.persistence.engine;
 import java.lang.reflect.Method;
 import java.util.function.Function;
 
-import org.gama.stalactite.persistence.engine.CascadeOption.RelationshipMode;
+import org.gama.stalactite.persistence.engine.CascadeOptions.RelationshipMode;
 import org.gama.stalactite.persistence.id.Identified;
 import org.gama.stalactite.persistence.id.manager.StatefullIdentifier;
 import org.gama.stalactite.persistence.structure.Column;

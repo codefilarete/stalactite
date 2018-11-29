@@ -25,7 +25,7 @@ import org.gama.sql.dml.PreparedSQL;
 import org.gama.sql.dml.WriteOperation;
 import org.gama.stalactite.command.builder.DeleteCommandBuilder;
 import org.gama.stalactite.command.model.Delete;
-import org.gama.stalactite.persistence.engine.CascadeOption.RelationshipMode;
+import org.gama.stalactite.persistence.engine.CascadeOptions.RelationshipMode;
 import org.gama.stalactite.persistence.engine.FluentMappingBuilder.SetPersistedFlagAfterInsertListener;
 import org.gama.stalactite.persistence.engine.builder.CascadeMany;
 import org.gama.stalactite.persistence.engine.builder.CascadeManyList;
@@ -57,8 +57,8 @@ import static org.gama.lang.collection.Iterables.first;
 import static org.gama.lang.collection.Iterables.minus;
 import static org.gama.lang.collection.Iterables.stream;
 import static org.gama.reflection.Accessors.of;
-import static org.gama.stalactite.persistence.engine.CascadeOption.RelationshipMode.ALL_ORPHAN_REMOVAL;
-import static org.gama.stalactite.persistence.engine.CascadeOption.RelationshipMode.ASSOCIATION_ONLY;
+import static org.gama.stalactite.persistence.engine.CascadeOptions.RelationshipMode.ALL_ORPHAN_REMOVAL;
+import static org.gama.stalactite.persistence.engine.CascadeOptions.RelationshipMode.ASSOCIATION_ONLY;
 import static org.gama.stalactite.persistence.engine.cascade.JoinedStrategiesSelect.FIRST_STRATEGY_NAME;
 
 /**

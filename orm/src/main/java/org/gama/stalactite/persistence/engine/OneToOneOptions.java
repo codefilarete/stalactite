@@ -8,7 +8,7 @@ import org.gama.stalactite.persistence.id.manager.StatefullIdentifier;
  * @author Guillaume Mary
  */
 public interface OneToOneOptions<T extends Identified, I extends StatefullIdentifier>
-		extends CascadeOption<IFluentMappingBuilderOneToOneOptions<T, I>> {
+		extends CascadeOptions<IFluentMappingBuilderOneToOneOptions<T, I>> {
 	
 	/** Marks the relation as mandatory. Hence joins will be inner ones and a checking for non null value will be done before insert and update */
 	IFluentMappingBuilderOneToOneOptions<T, I> mandatory();
