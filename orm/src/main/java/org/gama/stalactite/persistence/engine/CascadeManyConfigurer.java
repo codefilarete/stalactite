@@ -703,7 +703,7 @@ public class CascadeManyConfigurer<I extends Identified, O extends Identified, J
 					if (source == null) {
 						MethodReferenceCapturer methodReferenceCapturer = new MethodReferenceCapturer();
 						Method method = methodReferenceCapturer.findMethod(cascadeMany.getReverseGetter());
-						throw new IllegalStateException("Impossible to get index : " + target + " is not associated with a " + Reflections.toString(method.getReturnType()) + " : "
+						throw new IllegalStateException("Can't get index : " + target + " is not associated with a " + Reflections.toString(method.getReturnType()) + " : "
 							+ Reflections.toString(method) + " returned null");
 					}
 					List<O> collection = cascadeMany.getTargetProvider().apply(source);
