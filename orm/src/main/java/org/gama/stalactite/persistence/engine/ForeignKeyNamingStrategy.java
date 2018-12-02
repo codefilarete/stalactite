@@ -8,7 +8,7 @@ import org.gama.lang.exception.Exceptions;
 import org.gama.stalactite.persistence.structure.Column;
 
 /**
- * Contract to give a name to a foreign key
+ * Contract for giving a name to a foreign key
  *
  * @author Guillaume Mary
  */

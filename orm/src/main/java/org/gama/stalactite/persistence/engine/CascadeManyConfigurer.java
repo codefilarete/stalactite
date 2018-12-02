@@ -84,6 +84,8 @@ public class CascadeManyConfigurer<I extends Identified, O extends Identified, J
 	private Column<? extends AssociationTable, Object> pointerToLeftColumn;
 	private Dialect dialect;
 	private AssociationTable intermediaryTable;
+	/** Setter for applying source entity to reverse side (target entity). Available only when association is mapped without intermediary table */
+	private BiConsumer<O, I> reverseSetter = null;
 	
 	public <T extends Table<T>> void appendCascade(CascadeMany<I, O, J, C> cascadeMany,
 												   JoinedTablesPersister<I, J, T> joinedTablesPersister,
@@ -153,6 +155,7 @@ public class CascadeManyConfigurer<I extends Identified, O extends Identified, J
 				} else {
 					reverseMember = methodReferenceCapturer.findMethod(cascadeMany.getReverseGetter());
 				}
+				reverseSetter = of(reverseMember)::set;
 				foreignKey = leftPersister.getMappingStrategy().getMainMappingStrategy().getPropertyToColumn().get(of(reverseMember));
 				if (foreignKey == null) {
 					// This should not happen, left for bug safety
@@ -537,12 +540,27 @@ public class CascadeManyConfigurer<I extends Identified, O extends Identified, J
 					switch (diff.getState()) {
 						case ADDED:
 							targetPersister.insert((O) diff.getReplacingInstance());
+							if (associationPersister != null) {
+								AssociationRecord associationRecord = new AssociationRecord(entry.getEntities().getLeft().getId(),
+										diff.getReplacingInstance().getId());
+								associationPersister.insert(associationRecord);
+							}
 							break;
 						case HELD:
 							// NB: update will only be done if necessary by target persister
 							targetPersister.update((O) diff.getReplacingInstance(), (O) diff.getSourceInstance(), allColumnsStatement);
 							break;
 						case REMOVED:
+							if (associationPersister != null) {
+								AssociationRecord associationRecord = new AssociationRecord(entry.getEntities().getLeft().getId(),
+										diff.getSourceInstance().getId());
+								associationPersister.deleteById(associationRecord);
+							} else if (reverseSetter != null){
+								// we cut the link between target and source
+								// TODO : take versioning into account, but how to do it since we miss the unmodified version ?
+								reverseSetter.accept((O) diff.getSourceInstance(), null);
+								targetPersister.updateById((O) diff.getSourceInstance());
+							}
 							if (shouldDeleteRemoved) {
 								targetPersister.delete((O) diff.getSourceInstance());
 							}
@@ -592,11 +610,13 @@ public class CascadeManyConfigurer<I extends Identified, O extends Identified, J
 			List<Duo<IndexedAssociationRecord, IndexedAssociationRecord>> indexedAssociationRecordstoBeUpdated = new ArrayList<>();
 			Map<O, Integer> newIndexes = new HashMap<>();
 			for (IndexedDiff diff : diffSet) {
+				Identifier leftIdentifier = updatePayload.getEntities().getLeft().getId();
 				switch (diff.getState()) {
 					case ADDED:
 						if (indexedAssociationPersister != null) {
 							diff.getReplacerIndexes().forEach(idx ->
-									indexedAssociationRecordstoBeInserted.add(new IndexedAssociationRecord(updatePayload.getEntities().getLeft().getId(), diff.getReplacingInstance().getId(), idx)));
+									indexedAssociationRecordstoBeInserted.add(
+											new IndexedAssociationRecord(leftIdentifier, diff.getReplacingInstance().getId(), idx)));
 						}
 						// we insert only non persisted entity to prevent from a primary key conflict
 						if (!diff.getReplacingInstance().getId().isPersisted()) {
@@ -614,8 +634,8 @@ public class CascadeManyConfigurer<I extends Identified, O extends Identified, J
 								diffIndexIterator.forEachRemaining(d -> {
 									if (!d.getLeft().equals(d.getRight()))
 										indexedAssociationRecordstoBeUpdated.add(new Duo<>(
-												new IndexedAssociationRecord(updatePayload.getEntities().getLeft().getId(), diff.getSourceInstance().getId(), d.getLeft()),
-												new IndexedAssociationRecord(updatePayload.getEntities().getLeft().getId(), diff.getSourceInstance().getId(), d.getRight())));
+												new IndexedAssociationRecord(leftIdentifier, diff.getSourceInstance().getId(), d.getLeft()),
+												new IndexedAssociationRecord(leftIdentifier, diff.getSourceInstance().getId(), d.getRight())));
 								});
 							} else {
 								targetPersister.getMappingStrategy().addSilentColumnUpdater(cascadeMany.getIndexingColumn(),
@@ -627,7 +647,8 @@ public class CascadeManyConfigurer<I extends Identified, O extends Identified, J
 					case REMOVED:
 						if (indexedAssociationPersister != null) {
 							diff.getSourceIndexes().forEach(idx ->
-									indexedAssociationRecordstoBeDeleted.add(new IndexedAssociationRecord(updatePayload.getEntities().getLeft().getId(), diff.getSourceInstance().getId(), idx)));
+									indexedAssociationRecordstoBeDeleted.add(
+											new IndexedAssociationRecord(leftIdentifier, diff.getSourceInstance().getId(), idx)));
 						}
 						// we delete only persisted entity to prevent from a not found record
 						if (shouldDeleteRemoved && diff.getSourceInstance().getId().isPersisted()) {

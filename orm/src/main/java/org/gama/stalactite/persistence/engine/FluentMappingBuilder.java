@@ -440,30 +440,33 @@ public class FluentMappingBuilder<T extends Identified, I extends StatefullIdent
 	@Override
 	public Persister<T, I, ?> build(PersistenceContext persistenceContext) {
 		ClassMappingStrategy<T, I, Table> mappingStrategy = build(persistenceContext.getDialect());
-		Persister<T, I, ?> localPersister = persistenceContext.add(mappingStrategy);
-		if (!cascadeOnes.isEmpty()) {
-			JoinedTablesPersister<T, I, ?> joinedTablesPersister = new JoinedTablesPersister<>(persistenceContext, mappingStrategy);
-			localPersister = joinedTablesPersister;
-			// adding persistence flag setters on this side
-			joinedTablesPersister.getPersisterListener().addInsertListener((InsertListener<T>) SetPersistedFlagAfterInsertListener.INSTANCE);
-			CascadeOneConfigurer cascadeOneConfigurer = new CascadeOneConfigurer();
-			for (CascadeOne<T, ? extends Identified, ? extends StatefullIdentifier> cascadeOne : cascadeOnes) {
-				cascadeOneConfigurer.appendCascade(cascadeOne, joinedTablesPersister, mappingStrategy, joinedTablesPersister,
-						foreignKeyNamingStrategy);
-			}
-		}
 		
-		if (!cascadeManys.isEmpty()) {
+		// by default, result is the simple persister of the main strategy
+		Persister<T, I, ?> result = persistenceContext.add(mappingStrategy);
+		
+		if (!cascadeOnes.isEmpty() || !cascadeManys.isEmpty()) {
 			JoinedTablesPersister<T, I, ?> joinedTablesPersister = new JoinedTablesPersister<>(persistenceContext, mappingStrategy);
-			localPersister = joinedTablesPersister;
+			result = joinedTablesPersister;
+			if (!cascadeOnes.isEmpty()) {
+				// adding persistence flag setters on this side
+				joinedTablesPersister.getPersisterListener().addInsertListener((InsertListener<T>) SetPersistedFlagAfterInsertListener.INSTANCE);
+				CascadeOneConfigurer cascadeOneConfigurer = new CascadeOneConfigurer();
+				for (CascadeOne<T, ? extends Identified, ? extends StatefullIdentifier> cascadeOne : cascadeOnes) {
+					cascadeOneConfigurer.appendCascade(cascadeOne, joinedTablesPersister, mappingStrategy, joinedTablesPersister,
+							foreignKeyNamingStrategy);
+				}
+			}
 			
-			CascadeManyConfigurer cascadeManyConfigurer = new CascadeManyConfigurer();
-			for(CascadeMany<T, ? extends Identified, ? extends StatefullIdentifier, ? extends Collection> cascadeMany : cascadeManys) {
-				cascadeManyConfigurer.appendCascade(cascadeMany, joinedTablesPersister, foreignKeyNamingStrategy, associationTableNamingStrategy, persistenceContext.getDialect());
+			if (!cascadeManys.isEmpty()) {
+				for (CascadeMany<T, ? extends Identified, ? extends StatefullIdentifier, ? extends Collection> cascadeMany : cascadeManys) {
+					// TODO: remove this recurrent instanciation, because CascadeManyConfigurer is not stateless !
+					new CascadeManyConfigurer().appendCascade(cascadeMany, joinedTablesPersister, foreignKeyNamingStrategy, associationTableNamingStrategy,
+							persistenceContext.getDialect());
+				}
 			}
 		}
 		
-		Table targetTable = localPersister.getTargetTable();
+		Table targetTable = result.getTargetTable();
 		Map<String, Column<Table, Object>> columnsPerName = targetTable.mapColumnsOnName();
 		Map<PropertyAccessor, Column> propertyMapping = new HashMap<>();
 		for (Inset<?, ?> inset : this.insets) {
@@ -501,15 +504,15 @@ public class FluentMappingBuilder<T extends Identified, I extends StatefullIdent
 		Nullable<VersioningStrategy> versionigStrategy = Nullable.nullable(optimisticLockOption).apply(OptimisticLockOption::getVersioningStrategy);
 		if (versionigStrategy.isPresent()) {
 			// we have to declare it to the mapping strategy. To do that we must find the versionning column
-			Column column = localPersister.getMappingStrategy().getMainMappingStrategy().getPropertyToColumn().get(optimisticLockOption
+			Column column = result.getMappingStrategy().getMainMappingStrategy().getPropertyToColumn().get(optimisticLockOption
 					.propertyAccessor);
-			localPersister.getMappingStrategy().addVersionedColumn(optimisticLockOption.propertyAccessor, column);
+			result.getMappingStrategy().addVersionedColumn(optimisticLockOption.propertyAccessor, column);
 			// and don't forget to give it to the workers !
-			localPersister.getUpdateExecutor().setVersioningStrategy(versionigStrategy.get());
-			localPersister.getInsertExecutor().setVersioningStrategy(versionigStrategy.get());
+			result.getUpdateExecutor().setVersioningStrategy(versionigStrategy.get());
+			result.getInsertExecutor().setVersioningStrategy(versionigStrategy.get());
 		}
 		
-		return localPersister;
+		return result;
 	}
 
 	private ClassMappingStrategy<T, I, Table> buildClassMappingStrategy(Dialect dialect) {

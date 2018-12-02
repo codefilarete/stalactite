@@ -5,6 +5,7 @@ import java.sql.BatchUpdateException;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Collections;
+import java.util.HashSet;
 
 import org.gama.lang.collection.Arrays;
 import org.gama.lang.collection.Iterables;
@@ -43,6 +44,7 @@ import static org.gama.stalactite.persistence.engine.CascadeOptions.Relationship
 import static org.gama.stalactite.persistence.engine.CascadeOptions.RelationshipMode.READ_ONLY;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -82,7 +84,7 @@ public class FluentMappingBuilderCollectionCascadeTest {
 	}
 	
 	@Test
-	public void testCascade_oneToMany_withoutAssociationTable_cascade_associationOnly_throwsException() {
+	public void testCascade_associationOnly_withoutAssociationTable_throwsException() {
 		IFluentMappingBuilderOneToManyOptions<Country, Identifier<Long>, City> mappingBuilder = FluentMappingBuilder.from(Country.class, Identifier.LONG_TYPE)
 				.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.add(Country::getName)
@@ -95,7 +97,7 @@ public class FluentMappingBuilderCollectionCascadeTest {
 	}
 	
 	@Test
-	public void testCascade_oneToMany_noCascade_defaultIsReadOnly() throws SQLException {
+	public void testCascade_noCascade_defaultIsReadOnly() throws SQLException {
 		// mapping building thanks to fluent API
 		Persister<Country, Identifier<Long>, ?> countryPersister = FluentMappingBuilder.from(Country.class, Identifier.LONG_TYPE)
 				.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
@@ -157,7 +159,7 @@ public class FluentMappingBuilderCollectionCascadeTest {
 	}
 	
 	@Test
-	public void testCascade_oneToMany_cascade_select_reverseSideIsNotMapped() throws SQLException {
+	public void testCascade_readOnly_reverseSideIsNotMapped() throws SQLException {
 		// mapping building thantks to fluent API
 		Persister<Country, Identifier<Long>, ?> countryPersister = FluentMappingBuilder.from(Country.class, Identifier.LONG_TYPE)
 				.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
@@ -249,7 +251,7 @@ public class FluentMappingBuilderCollectionCascadeTest {
 	
 	@ParameterizedTest
 	@MethodSource("oneToManyInsertData")
-	public void testCascade_oneToMany_insert(ThrowingSupplier<Persister<Country, Identifier<Long>, ?>, SQLException> persisterSupplier) throws SQLException {
+	public void testCascade_all_mappedBy_differentWays(ThrowingSupplier<Persister<Country, Identifier<Long>, ?>, SQLException> persisterSupplier) throws SQLException {
 		
 		Persister<Country, Identifier<Long>, ?> countryPersister = persisterSupplier.get();
 		
@@ -288,7 +290,7 @@ public class FluentMappingBuilderCollectionCascadeTest {
 	}
 	
 	@Test
-	public void testCascade_oneToMany_update() throws SQLException {
+	public void testCascade_all_update_mappedBy() {
 		Persister<Country, Identifier<Long>, ?> countryPersister = FluentMappingBuilder.from(Country.class, Identifier.LONG_TYPE)
 				.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.add(Country::getName)
@@ -313,6 +315,58 @@ public class FluentMappingBuilderCollectionCascadeTest {
 		countryPersister.insert(dummyCountry);
 		
 		// Changing country cities to see what happens when we save it to the database
+		// removing Paris
+		// adding Grenoble
+		// renaming Lyon
+		Country persistedCountry = countryPersister.select(dummyCountry.getId());
+		persistedCountry.getCities().remove(paris);
+		City grenoble = new City(cityIdProvider.giveNewIdentifier());
+		grenoble.setName("Grenoble");
+		persistedCountry.addCity(grenoble);
+		Iterables.first(persistedCountry.getCities()).setName("changed");
+		
+		countryPersister.update(persistedCountry, dummyCountry, true);
+		
+		Country persistedCountry2 = countryPersister.select(dummyCountry.getId());
+		assertEquals(Arrays.asHashSet("changed", "Grenoble"), Iterables.collect(persistedCountry2.getCities(), City::getName, HashSet::new));
+	}
+	
+	@Test
+	public void testCascade_all_update_associationTable() {
+		Persister<Country, Identifier<Long>, ?> countryPersister = FluentMappingBuilder.from(Country.class, Identifier.LONG_TYPE)
+				.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
+				.add(Country::getName)
+				.add(Country::getDescription)
+				.addOneToManySet(Country::getCities, cityPersister).cascading(ALL)
+				.build(persistenceContext);
+		
+		// We declare the table that will store our relationship, and overall our List index
+		// NB: names are hardcoded here because they are hardly accessible from outside of CascadeManyConfigurer
+		Table countryCitiesTable = new Table("Country_cities");
+		countryCitiesTable.addColumn("country_Id", Identifier.class).primaryKey();
+		countryCitiesTable.addColumn("city_Id", Identifier.class).primaryKey();
+		
+		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+		ddlDeployer.getDdlSchemaGenerator().addTables(countryCitiesTable);
+		ddlDeployer.deployDDL();
+		
+		LongProvider countryIdProvider = new LongProvider();
+		Country dummyCountry = new Country(countryIdProvider.giveNewIdentifier());
+		dummyCountry.setName("France");
+		dummyCountry.setDescription("Smelly cheese !");
+		LongProvider cityIdProvider = new LongProvider();
+		City paris = new City(cityIdProvider.giveNewIdentifier());
+		paris.setName("Paris");
+		dummyCountry.addCity(paris);
+		City lyon = new City(cityIdProvider.giveNewIdentifier());
+		lyon.setName("Lyon");
+		dummyCountry.addCity(lyon);
+		countryPersister.insert(dummyCountry);
+		
+		// Changing country cities to see what happens when we save it to the database
+		// removing Paris
+		// adding Grenoble
+		// renaming Lyon
 		Country persistedCountry = countryPersister.select(dummyCountry.getId());
 		persistedCountry.getCities().remove(paris);
 		City grenoble = new City(cityIdProvider.giveNewIdentifier());
@@ -324,14 +378,13 @@ public class FluentMappingBuilderCollectionCascadeTest {
 		
 		Country persistedCountry2 = countryPersister.select(dummyCountry.getId());
 		// Checking deletion : we did'nt asked for deletion of removed entities so all of them must be there
-		// (comparison are done on equals/hashCode => id)
-		assertEquals(Arrays.asHashSet(paris, lyon, grenoble), persistedCountry2.getCities());
+		assertEquals(Arrays.asHashSet(lyon, grenoble), persistedCountry2.getCities());
 		// Checking update is done too
-		assertEquals(Arrays.asHashSet("Paris", "changed", "Grenoble"), persistedCountry2.getCities().stream().map(City::getName).collect(toSet()));
+		assertEquals(Arrays.asHashSet("changed", "Grenoble"), Iterables.collect(persistedCountry2.getCities(), City::getName, HashSet::new));
 	}
 	
 	@Test
-	public void testCascade_oneToMany_update_deleteRemoved() {
+	public void testCascade_all_update_deleteRemoved() {
 		Persister<Country, Identifier<Long>, ?> countryPersister = FluentMappingBuilder.from(Country.class, Identifier.LONG_TYPE)
 				.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.add(Country::getName)
@@ -371,36 +424,6 @@ public class FluentMappingBuilderCollectionCascadeTest {
 		assertEquals(Arrays.asHashSet(lyon, grenoble), persistedCountry2.getCities());
 		// Checking update is done too
 		assertEquals(Arrays.asHashSet("changed", "Grenoble"), persistedCountry2.getCities().stream().map(City::getName).collect(toSet()));
-	}
-	
-	@Test
-	public void testCascade_oneToMany_delete() throws SQLException {
-		Persister<Country, Identifier<Long>, ?> countryPersister = FluentMappingBuilder.from(Country.class, Identifier.LONG_TYPE)
-				.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
-				.add(Country::getName)
-				.add(Country::getDescription)
-				.addOneToManySet(Country::getCities, cityPersister).mappedBy(City::setCountry).cascading(ALL)
-				.build(persistenceContext);
-		
-		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
-		ddlDeployer.deployDDL();
-		
-		persistenceContext.getCurrentConnection().createStatement().executeUpdate("insert into Country(id) values (42, 666)");
-		persistenceContext.getCurrentConnection().createStatement().executeUpdate("insert into City(id, countryId) values (100, 42), (200, 42), (300, 666)");
-		
-		Country persistedCountry = countryPersister.select(new PersistedIdentifier<>(42L));
-		countryPersister.delete(persistedCountry);
-		ResultSet resultSet;
-		// Checking that we deleted what we wanted
-		resultSet = persistenceContext.getCurrentConnection().createStatement().executeQuery("select id from Country where id = 42");
-		assertFalse(resultSet.next());
-		resultSet = persistenceContext.getCurrentConnection().createStatement().executeQuery("select id from City where id in (100, 200)");
-		assertFalse(resultSet.next());
-		// but we did'nt delete everything !
-		resultSet = persistenceContext.getCurrentConnection().createStatement().executeQuery("select id from Country where id = 666");
-		assertTrue(resultSet.next());
-		resultSet = persistenceContext.getCurrentConnection().createStatement().executeQuery("select id from City where id = 300");
-		assertTrue(resultSet.next());
 	}
 	
 	@Nested
@@ -463,7 +486,37 @@ public class FluentMappingBuilderCollectionCascadeTest {
 	}
 	
 	@Test
-	public void testCascade_oneToMany_delete_maintainingALL_withAssociationTable_associationRecordsMustBeDeleted() throws SQLException {
+	public void testCascade_all_delete_mappedBy() throws SQLException {
+		Persister<Country, Identifier<Long>, ?> countryPersister = FluentMappingBuilder.from(Country.class, Identifier.LONG_TYPE)
+				.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
+				.add(Country::getName)
+				.add(Country::getDescription)
+				.addOneToManySet(Country::getCities, cityPersister).mappedBy(City::setCountry).cascading(ALL)
+				.build(persistenceContext);
+		
+		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+		ddlDeployer.deployDDL();
+		
+		persistenceContext.getCurrentConnection().createStatement().executeUpdate("insert into Country(id) values (42, 666)");
+		persistenceContext.getCurrentConnection().createStatement().executeUpdate("insert into City(id, countryId) values (100, 42), (200, 42), (300, 666)");
+		
+		Country persistedCountry = countryPersister.select(new PersistedIdentifier<>(42L));
+		countryPersister.delete(persistedCountry);
+		ResultSet resultSet;
+		// Checking that we deleted what we wanted
+		resultSet = persistenceContext.getCurrentConnection().createStatement().executeQuery("select id from Country where id = 42");
+		assertFalse(resultSet.next());
+		resultSet = persistenceContext.getCurrentConnection().createStatement().executeQuery("select id from City where id in (100, 200)");
+		assertFalse(resultSet.next());
+		// but we did'nt delete everything !
+		resultSet = persistenceContext.getCurrentConnection().createStatement().executeQuery("select id from Country where id = 666");
+		assertTrue(resultSet.next());
+		resultSet = persistenceContext.getCurrentConnection().createStatement().executeQuery("select id from City where id = 300");
+		assertTrue(resultSet.next());
+	}
+	
+	@Test
+	public void testCascade_maintainingALL_delete_withAssociationTable_associationRecordsMustBeDeleted() throws SQLException {
 		Persister<Country, Identifier<Long>, ? extends Table> countryPersister = FluentMappingBuilder.from(Country.class, Identifier.LONG_TYPE)
 				.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.add(Country::getName)
@@ -531,7 +584,7 @@ public class FluentMappingBuilderCollectionCascadeTest {
 	}
 	
 	@Test
-	public void testCascade_oneToMany_delete_maintainingASSOCIATION_ONLY_withAssociationTable_associationRecordsMustBeDeleted_butNotTargetEntities() throws SQLException {
+	public void testCascade_maintainingASSOCIATION_ONLY_delete_withAssociationTable_associationRecordsMustBeDeleted_butNotTargetEntities() throws SQLException {
 		Persister<Country, Identifier<Long>, ? extends Table> countryPersister = FluentMappingBuilder.from(Country.class, Identifier.LONG_TYPE)
 				.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.add(Country::getName)
@@ -599,7 +652,7 @@ public class FluentMappingBuilderCollectionCascadeTest {
 	}
 	
 	@Test
-	public void testCascade_multiple_oneToMany_update() throws SQLException {
+	public void testCascade_multiple_update() {
 		IFluentMappingBuilderColumnOptions<State, Identifier<Long>> stateMappingBuilder = FluentMappingBuilder.from(State.class,
 				Identifier.LONG_TYPE)
 				.add(State::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
@@ -662,10 +715,14 @@ public class FluentMappingBuilderCollectionCascadeTest {
 		// but we didn't for regions, so all of them must be there
 		// (comparison are done on equals/hashCode => id)
 		assertEquals(Arrays.asHashSet(lyon, grenoble), persistedCountry2.getCities());
-		assertEquals(Arrays.asHashSet(ain, ardeche, isere), persistedCountry2.getStates());
+		assertEquals(Arrays.asHashSet(ardeche, isere), persistedCountry2.getStates());
 		// Checking update is done too
 		assertEquals(Arrays.asHashSet("changed", "Grenoble"), persistedCountry2.getCities().stream().map(City::getName).collect(toSet()));
-		assertEquals(Arrays.asHashSet("ain", "changed", "ardeche"), persistedCountry2.getStates().stream().map(State::getName).collect(toSet()));
+		assertEquals(Arrays.asHashSet("changed", "ardeche"), persistedCountry2.getStates().stream().map(State::getName).collect(toSet()));
+		
+		// Ain should'nt have been deleted because we didn't asked for orphan removal
+		State loadedAin = statePersister.select(ain.getId());
+		assertNotNull(loadedAin);
 	}
 	
 	

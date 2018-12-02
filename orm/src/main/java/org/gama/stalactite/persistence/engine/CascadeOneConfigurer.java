@@ -134,8 +134,7 @@ public class CascadeOneConfigurer<I extends Identified, O extends Identified, J 
 			
 			@Override
 			protected Duo<Identified, Identified> getTarget(I modifiedTrigger, I unmodifiedTrigger) {
-				return new Duo<>(cascadeOne.getTargetProvider().apply(modifiedTrigger), cascadeOne.getTargetProvider().apply
-						(unmodifiedTrigger));
+				return new Duo<>(cascadeOne.getTargetProvider().apply(modifiedTrigger), cascadeOne.getTargetProvider().apply(unmodifiedTrigger));
 			}
 		});
 	}
