@@ -4,8 +4,6 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
-import org.gama.sql.NullAwarePreparedStatementWriter;
-
 /**
  * Wrapper around another {@link ParameterBinder} to handle null value
  * 

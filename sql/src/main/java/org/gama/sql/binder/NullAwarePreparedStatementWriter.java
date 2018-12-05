@@ -1,9 +1,7 @@
-package org.gama.sql;
+package org.gama.sql.binder;
 
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
-
-import org.gama.sql.binder.PreparedStatementWriter;
 
 /**
  * Wrapper around another {@link PreparedStatementWriter} to handle null value
