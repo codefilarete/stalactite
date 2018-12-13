@@ -18,12 +18,12 @@ import org.gama.stalactite.persistence.structure.Table;
  * @param <O> the "many" type
  * @param <J> identifier type of O
  */
-public class CascadeManyList<SRC extends Identified, O extends Identified, J extends StatefullIdentifier> extends CascadeMany<SRC, O, J, List<O>> {
+public class CascadeManyList<SRC extends Identified, O extends Identified, J extends StatefullIdentifier, C extends List<O>> extends CascadeMany<SRC, O, J, C> {
 	
 	private Column indexingColumn;
 	
-	public CascadeManyList(Function<SRC, ? extends List<O>> targetProvider, Persister<O, J, ? extends Table> persister, Method method) {
-		super((Function<SRC, List<O>>) targetProvider, persister, (Class<List<O>>) (Class) List.class, method);
+	public CascadeManyList(Function<SRC, C> targetProvider, Persister<O, J, ? extends Table> persister, Method method) {
+		super(targetProvider, persister, (Class<C>) (Class) List.class, method);
 	}
 	
 	public void setIndexingColumn(Column indexingColumn) {

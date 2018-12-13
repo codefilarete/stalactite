@@ -30,7 +30,7 @@ import org.gama.stalactite.persistence.structure.Table;
  */
 public class CascadeOneConfigurer<I extends Identified, O extends Identified, J extends StatefullIdentifier> {
 	
-	static final Predicate<Identified> NON_PERSISTED_PREDICATE = target -> target != null && !target.getId().isPersisted();
+	public static final Predicate<Identified> NON_PERSISTED_PREDICATE = target -> target != null && !target.getId().isPersisted();
 	
 	static final Predicate<Identified> PERSISTED_PREDICATE = target -> target != null && target.getId().isPersisted();
 	

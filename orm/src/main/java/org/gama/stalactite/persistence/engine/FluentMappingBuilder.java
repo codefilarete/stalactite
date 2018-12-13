@@ -301,7 +301,7 @@ public class FluentMappingBuilder<T extends Identified, I extends StatefullIdent
 	@Override
 	public <O extends Identified, J extends StatefullIdentifier, C extends List<O>> IFluentMappingBuilderOneToManyListOptions<T, I, O> addOneToManyList(
 			SerializableFunction<T, C> getter, Persister<O, J, ? extends Table> persister) {
-		CascadeManyList<T, O, J> cascadeMany = new CascadeManyList<>(getter, persister, captureLambdaMethod(getter));
+		CascadeManyList<T, O, J, ? extends List<O>> cascadeMany = new CascadeManyList<>(getter, persister, captureLambdaMethod(getter));
 		this.cascadeManys.add(cascadeMany);
 		return new MethodDispatcher()
 				.redirect(OneToManyOptions.class, new OneToManyOptionsSupport<>(cascadeMany), true)	// true to allow "return null" in implemented methods
@@ -458,9 +458,9 @@ public class FluentMappingBuilder<T extends Identified, I extends StatefullIdent
 			}
 			
 			if (!cascadeManys.isEmpty()) {
+				CascadeManyConfigurer cascadeManyConfigurer = new CascadeManyConfigurer();
 				for (CascadeMany<T, ? extends Identified, ? extends StatefullIdentifier, ? extends Collection> cascadeMany : cascadeManys) {
-					// TODO: remove this recurrent instanciation, because CascadeManyConfigurer is not stateless !
-					new CascadeManyConfigurer().appendCascade(cascadeMany, joinedTablesPersister, foreignKeyNamingStrategy, associationTableNamingStrategy,
+					cascadeManyConfigurer.appendCascade(cascadeMany, joinedTablesPersister, foreignKeyNamingStrategy, associationTableNamingStrategy,
 							persistenceContext.getDialect());
 				}
 			}

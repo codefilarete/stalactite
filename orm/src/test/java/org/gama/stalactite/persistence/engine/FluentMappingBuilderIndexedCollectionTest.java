@@ -104,7 +104,6 @@ public class FluentMappingBuilderIndexedCollectionTest {
 	@Nested
 	public class Update {
 		
-		
 		@Test
 		public void testUpdate_entitySwapping() {
 			UpdateTestData updateTestData = new UpdateTestData().build();
@@ -540,6 +539,7 @@ public class FluentMappingBuilderIndexedCollectionTest {
 			newChoice.setQuestion(newQuestion);
 			duplicatesTestData.getChoicePersister().persist(newChoice);
 			Answer selectedAnswer = answerPersister.select(new PersistableIdentifier<>(1L));
+			// NB: difference with previous state is addition on newChoice (in the middle), choice1 & choice4 to the end
 			selectedAnswer.setChoices(Arrays.asList(choice1, choice2, newChoice, choice2, choice3, choice1, choice4));
 			answerPersister.update(selectedAnswer, answer, true);
 			

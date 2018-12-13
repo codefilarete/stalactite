@@ -285,7 +285,7 @@ public class FluentMappingBuilderCollectionCascadeTest {
 		// Checking that the country is persisted but not the cities since they have been previously
 		Country persistedCountry2 = countryPersister.select(dummyCountry2.getId());
 		assertEquals(new PersistedIdentifier<>(1L), persistedCountry2.getId());
-		// the reloaded country has no cities because those hasn't been updated in database so the link is "broken" and still onto country 1
+		// the reloaded country has no cities because those haven't been updated in database so the link is "broken" and still onto country 1
 		assertEquals(0, persistedCountry2.getCities().size());
 	}
 	
@@ -329,6 +329,76 @@ public class FluentMappingBuilderCollectionCascadeTest {
 		
 		Country persistedCountry2 = countryPersister.select(dummyCountry.getId());
 		assertEquals(Arrays.asHashSet("changed", "Grenoble"), Iterables.collect(persistedCountry2.getCities(), City::getName, HashSet::new));
+		// reverse link is up to date
+		assertEquals(Arrays.asList(persistedCountry2, persistedCountry2), Iterables.collectToList(persistedCountry2.getCities(), City::getCountry));
+	}
+	
+	@Test
+	public void testCascade_all_update_reverseSideIsNotMapped() throws SQLException {
+		// mapping building thantks to fluent API
+		Persister<Country, Identifier<Long>, ?> countryPersister = FluentMappingBuilder.from(Country.class, Identifier.LONG_TYPE)
+				.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
+				.add(Country::getName)
+				.add(Country::getDescription)
+				// no cascade, nor reverse side
+				.addOneToManySet(Country::getCities, cityPersister).cascading(ALL)
+				.build(persistenceContext);
+		
+		// We declare the table that will store our relationship, and overall our List index
+		// NB: names are hardcoded here because they are hardly accessible from outside of CascadeManyConfigurer
+		Table countryCitiesTable = new Table("Country_cities");
+		countryCitiesTable.addColumn("country_Id", Identifier.class).primaryKey();
+		countryCitiesTable.addColumn("city_Id", Identifier.class).primaryKey();
+		
+		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+		ddlDeployer.getDdlSchemaGenerator().addTables(countryCitiesTable);
+		ddlDeployer.deployDDL();
+		
+//		persistenceContext.getCurrentConnection().createStatement().executeUpdate("insert into Country(id, name) values (1, 'France')");
+//		persistenceContext.getCurrentConnection().createStatement().executeUpdate("insert into City(id, name) values (10, 'French president')");
+//		persistenceContext.getCurrentConnection().createStatement().executeUpdate("insert into Country_cities(country_Id, city_Id) values (1, 10)");
+//		
+//		LongProvider countryIdProvider = new LongProvider(1);
+//		Country dummyCountry = new Country(countryIdProvider.giveNewIdentifier());
+//		dummyCountry.setName("France");
+//		LongProvider cityIdProvider = new LongProvider(10);
+//		City city = new City(cityIdProvider.giveNewIdentifier());
+//		city.setName("French president");
+//		
+//		Country selectedCountry = countryPersister.select(dummyCountry.getId());
+//		assertEquals(dummyCountry.getName(), selectedCountry.getName());
+//		assertEquals(city.getName(), Iterables.first(selectedCountry.getCities()).getName());
+		
+		LongProvider countryIdProvider = new LongProvider();
+		Country dummyCountry = new Country(countryIdProvider.giveNewIdentifier());
+		dummyCountry.setName("France");
+		dummyCountry.setDescription("Smelly cheese !");
+		LongProvider cityIdProvider = new LongProvider();
+		City paris = new City(cityIdProvider.giveNewIdentifier());
+		paris.setName("Paris");
+		dummyCountry.addCity(paris);
+		City lyon = new City(cityIdProvider.giveNewIdentifier());
+		lyon.setName("Lyon");
+		dummyCountry.addCity(lyon);
+		countryPersister.insert(dummyCountry);
+		
+		// Changing country cities to see what happens when we save it to the database
+		// removing Paris
+		// adding Grenoble
+		// renaming Lyon
+		Country persistedCountry = countryPersister.select(dummyCountry.getId());
+		persistedCountry.getCities().remove(paris);
+		City grenoble = new City(cityIdProvider.giveNewIdentifier());
+		grenoble.setName("Grenoble");
+		persistedCountry.addCity(grenoble);
+		Iterables.first(persistedCountry.getCities()).setName("changed");
+		
+		countryPersister.update(persistedCountry, dummyCountry, true);
+		
+		Country persistedCountry2 = countryPersister.select(dummyCountry.getId());
+		assertEquals(Arrays.asHashSet("changed", "Grenoble"), Iterables.collect(persistedCountry2.getCities(), City::getName, HashSet::new));
+		// reverse link is up to date
+		assertEquals(Arrays.asList(null, null), Iterables.collectToList(persistedCountry2.getCities(), City::getCountry));
 	}
 	
 	@Test
