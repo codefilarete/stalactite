@@ -49,60 +49,33 @@ public class CollectionUpdater<I extends Identified, O extends Identified, C ext
 		C modified = collectionGetter.apply(entry.getEntities().getLeft());
 		C unmodified = collectionGetter.apply(entry.getEntities().getRight());
 		Set<? extends AbstractDiff> diffSet = diff(modified, unmodified);
-		// a List to keep SQL orders, for better debug, easier understanding of logs
-		List<O> toBeInserted = new ArrayList<>();
-		List<AbstractDiff> toBeUpdated = new ArrayList<>();
-		List<O> toBeDeleted = new ArrayList<>();
 		UpdateContext updateContext = newUpdateContext(entry);
 		for (AbstractDiff diff : diffSet) {
 			switch (diff.getState()) {
 				case ADDED:
-					// we insert only non persisted entities to prevent from a primary key conflict
-					if (!diff.getReplacingInstance().getId().isPersisted()) {
-						toBeInserted.add((O) diff.getReplacingInstance());
-					}
-					afterTargetMarkedInserted(updateContext, diff);
+					onAddedTarget(updateContext, diff);
 					break;
 				case HELD:
-					toBeUpdated.add(diff);
-					afterTargetMarkedUpdated(updateContext, diff);
+					onHeldTarget(updateContext, diff);
 					break;
 				case REMOVED:
-					// we delete only persisted entity to prevent from a not found record
-					if (shouldDeleteRemoved) {
-						if (diff.getSourceInstance().getId().isPersisted()) {
-							toBeDeleted.add((O) diff.getSourceInstance());
-						}
-					} else // entity shouldn't be deleted, so we may have to update it
-						if (reverseSetter != null) {
-							// we cut the link between target and source
-							// NB : we don't take versioning into account,
-							// - overall because we can't : how to do it since we miss the unmodified version ?
-							// - but also because in same case with association table, target entity isn't touched (only association record is deleted)
-							//  so taking versioning into account here would make a different behavior
-							reverseSetter.accept((O) diff.getSourceInstance(), null);
-							targetPersister.updateById((O) diff.getSourceInstance());
-						}
-					afterTargetMarkedDeleted(updateContext, diff);
+					onRemovedTarget(updateContext, diff);
 					break;
 			}
 		}
-		updateTargets(updateContext, toBeUpdated, allColumnsStatement);
-		
-		deleteTargets(updateContext, toBeDeleted);
-		
-		insertTargets(updateContext, toBeInserted);
+		// is there any better order for these statements ?
+		updateTargets(updateContext, allColumnsStatement);
+		deleteTargets(updateContext);
+		insertTargets(updateContext);
 	}
 	
 	/**
 	 * Updates collection entities
-	 *
-	 * @param updateContext context created by {@link #newUpdateContext(UpdatePayload)}
-	 * @param toBeUpdated entities that must be updated
+	 *  @param updateContext context created by {@link #newUpdateContext(UpdatePayload)}
 	 * @param allColumnsStatement indicates if all (mapped) columns of entities must be in statement, else only modified ones will be updated
 	 */
-	protected void updateTargets(UpdateContext updateContext, List<AbstractDiff> toBeUpdated, boolean allColumnsStatement) {
-		for (AbstractDiff diff : toBeUpdated) {
+	protected void updateTargets(UpdateContext updateContext, boolean allColumnsStatement) {
+		for (AbstractDiff diff : updateContext.getEntitiesToBeUpdated()) {
 			// NB: update will only be done if necessary by target persister
 			targetPersister.update((O) diff.getReplacingInstance(), (O) diff.getSourceInstance(), allColumnsStatement);
 		}
@@ -110,22 +83,20 @@ public class CollectionUpdater<I extends Identified, O extends Identified, C ext
 	
 	/**
 	 * Deletes entities removed from collection (only when orphan removal is asked)
-	 *
-	 * @param updateContext context created by {@link #newUpdateContext(UpdatePayload)}
-	 * @param toBeDeleted entities that must be deleted
+	 *  @param updateContext context created by {@link #newUpdateContext(UpdatePayload)}
+	 * 
 	 */
-	protected void deleteTargets(UpdateContext updateContext, List<O> toBeDeleted) {
-		targetPersister.delete(toBeDeleted);
+	protected void deleteTargets(UpdateContext updateContext) {
+		targetPersister.delete(updateContext.getEntitiesToBeDeleted());
 	}
 	
 	/**
 	 * Insert entities added to collection
-	 *
-	 * @param updateContext context created by {@link #newUpdateContext(UpdatePayload)}
-	 * @param toBeInserted entities that must be inserted
+	 *  @param updateContext context created by {@link #newUpdateContext(UpdatePayload)}
+	 * 
 	 */
-	protected void insertTargets(UpdateContext updateContext, List<O> toBeInserted) {
-		targetPersister.insert(toBeInserted);
+	protected void insertTargets(UpdateContext updateContext) {
+		targetPersister.insert(updateContext.getEntitiesToBeInserted());
 	}
 	
 	/**
@@ -146,21 +117,41 @@ public class CollectionUpdater<I extends Identified, O extends Identified, C ext
 		return new UpdateContext(updatePayload);
 	}
 	
-	protected void afterTargetMarkedInserted(UpdateContext updateContext, AbstractDiff diff) {
-		
+	protected void onAddedTarget(UpdateContext updateContext, AbstractDiff diff) {
+		// we insert only non persisted entities to prevent from a primary key conflict
+		if (Identified.NON_PERSISTED_PREDICATE.test(diff.getReplacingInstance())) {
+			updateContext.getEntitiesToBeInserted().add((O) diff.getReplacingInstance());
+		}
 	}
 	
-	protected void afterTargetMarkedUpdated(UpdateContext updateContext, AbstractDiff diff) {
-		
+	protected void onHeldTarget(UpdateContext updateContext, AbstractDiff diff) {
+		updateContext.getEntitiesToBeUpdated().add(diff);
 	}
 	
-	protected void afterTargetMarkedDeleted(UpdateContext updateContext, AbstractDiff diff) {
-		
+	protected void onRemovedTarget(UpdateContext updateContext, AbstractDiff diff) {
+		// we delete only persisted entity to prevent from a not found record
+		if (shouldDeleteRemoved) {
+			if (Identified.PERSISTED_PREDICATE.test(diff.getSourceInstance())) {
+				updateContext.getEntitiesToBeDeleted().add((O) diff.getSourceInstance());
+			}
+		} else // entity shouldn't be deleted, so we may have to update it
+			if (reverseSetter != null) {
+				// we cut the link between target and source
+				// NB : we don't take versioning into account overall because we can't : how to do it since we miss the unmodified version ?
+				reverseSetter.accept((O) diff.getSourceInstance(), null);
+				targetPersister.updateById((O) diff.getSourceInstance());
+			}
 	}
 	
 	protected class UpdateContext {
 		
 		private final UpdatePayload<I, ?> payload;
+		/** List of many-side entities to be inserted (for massive SQL orders and better debug) */
+		private final List<O> entitiesToBeInserted = new ArrayList<>();
+		/** List of many-side entities to be update (for massive SQL orders and better debug) */
+		private final List<AbstractDiff> entitiesToBeUpdated = new ArrayList<>();
+		/** List of many-side entities to be deleted (for massive SQL orders and better debug) */
+		private final List<O> entitiesToBeDeleted = new ArrayList<>();
 		
 		public UpdateContext(UpdatePayload<I, ?> updatePayload) {
 			this.payload = updatePayload;
@@ -168,6 +159,18 @@ public class CollectionUpdater<I extends Identified, O extends Identified, C ext
 		
 		public UpdatePayload<I, ?> getPayload() {
 			return payload;
+		}
+		
+		public List<O> getEntitiesToBeInserted() {
+			return entitiesToBeInserted;
+		}
+		
+		public List<AbstractDiff> getEntitiesToBeUpdated() {
+			return entitiesToBeUpdated;
+		}
+		
+		public List<O> getEntitiesToBeDeleted() {
+			return entitiesToBeDeleted;
 		}
 	}
 	

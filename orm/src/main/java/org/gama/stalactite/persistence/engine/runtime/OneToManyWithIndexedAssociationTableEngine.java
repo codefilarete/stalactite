@@ -7,19 +7,30 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import org.gama.lang.Duo;
 import org.gama.lang.collection.PairIterator;
 import org.gama.reflection.Accessors;
 import org.gama.reflection.IMutator;
+import org.gama.sql.dml.PreparedSQL;
+import org.gama.sql.dml.WriteOperation;
+import org.gama.stalactite.command.builder.DeleteCommandBuilder;
+import org.gama.stalactite.command.model.Delete;
 import org.gama.stalactite.persistence.engine.AssociationRecordPersister;
+import org.gama.stalactite.persistence.engine.AssociationTable;
 import org.gama.stalactite.persistence.engine.BeanRelationFixer;
+import org.gama.stalactite.persistence.engine.CascadeOneConfigurer;
 import org.gama.stalactite.persistence.engine.IndexedAssociationRecord;
 import org.gama.stalactite.persistence.engine.IndexedAssociationTable;
 import org.gama.stalactite.persistence.engine.Persister;
 import org.gama.stalactite.persistence.engine.builder.CascadeMany;
 import org.gama.stalactite.persistence.engine.builder.CascadeManyList;
+import org.gama.stalactite.persistence.engine.cascade.BeforeDeleteByIdCollectionCascader;
+import org.gama.stalactite.persistence.engine.cascade.BeforeDeleteCollectionCascader;
 import org.gama.stalactite.persistence.engine.cascade.JoinedTablesPersister;
+import org.gama.stalactite.persistence.engine.listening.DeleteByIdListener;
+import org.gama.stalactite.persistence.engine.listening.DeleteListener;
 import org.gama.stalactite.persistence.engine.listening.PersisterListener;
 import org.gama.stalactite.persistence.engine.listening.SelectListener;
 import org.gama.stalactite.persistence.engine.listening.UpdateListener.UpdatePayload;
@@ -29,11 +40,16 @@ import org.gama.stalactite.persistence.id.Identified;
 import org.gama.stalactite.persistence.id.Identifier;
 import org.gama.stalactite.persistence.id.diff.AbstractDiff;
 import org.gama.stalactite.persistence.id.diff.IndexedDiff;
+import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
+import org.gama.stalactite.persistence.sql.Dialect;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
+import org.gama.stalactite.query.model.Operand;
 
+import static org.gama.lang.collection.Iterables.collect;
 import static org.gama.lang.collection.Iterables.first;
 import static org.gama.lang.collection.Iterables.minus;
+import static org.gama.lang.collection.Iterables.stream;
 import static org.gama.stalactite.persistence.engine.cascade.JoinedStrategiesSelect.FIRST_STRATEGY_NAME;
 
 /**
@@ -154,8 +170,8 @@ public class OneToManyWithIndexedAssociationTableEngine<I extends Identified, O 
 			}
 			
 			@Override
-			protected void afterTargetMarkedUpdated(UpdateContext updateContext, AbstractDiff diff) {
-				super.afterTargetMarkedUpdated(updateContext, diff);
+			protected void onHeldTarget(UpdateContext updateContext, AbstractDiff diff) {
+				super.onHeldTarget(updateContext, diff);
 				IndexedDiff indexedDiff = (IndexedDiff) diff;
 				Set<Integer> minus = minus(indexedDiff.getReplacerIndexes(), indexedDiff.getSourceIndexes());
 				Integer index = first(minus);
@@ -178,8 +194,8 @@ public class OneToManyWithIndexedAssociationTableEngine<I extends Identified, O 
 			}
 			
 			@Override
-			protected void afterTargetMarkedInserted(UpdateContext updateContext, AbstractDiff diff) {
-				super.afterTargetMarkedInserted(updateContext, diff);
+			protected void onAddedTarget(UpdateContext updateContext, AbstractDiff diff) {
+				super.onAddedTarget(updateContext, diff);
 				Identifier leftIdentifier = updateContext.getPayload().getEntities().getLeft().getId();
 				((IndexedDiff) diff).getReplacerIndexes().forEach(idx ->
 						((AssociationTableUpdateContext) updateContext).getAssociationRecordstoBeInserted().add(
@@ -187,8 +203,8 @@ public class OneToManyWithIndexedAssociationTableEngine<I extends Identified, O 
 			}
 			
 			@Override
-			protected void afterTargetMarkedDeleted(UpdateContext updateContext, AbstractDiff diff) {
-				super.afterTargetMarkedDeleted(updateContext, diff);
+			protected void onRemovedTarget(UpdateContext updateContext, AbstractDiff diff) {
+				super.onRemovedTarget(updateContext, diff);
 				Identifier leftIdentifier = updateContext.getPayload().getEntities().getLeft().getId();
 				((IndexedDiff) diff).getSourceIndexes().forEach(idx ->
 						((AssociationTableUpdateContext) updateContext).getAssociationRecordstoBeDeleted().add(
@@ -196,23 +212,23 @@ public class OneToManyWithIndexedAssociationTableEngine<I extends Identified, O 
 			}
 			
 			@Override
-			protected void updateTargets(UpdateContext updateContext, List<AbstractDiff> toBeUpdated, boolean allColumnsStatement) {
-				super.updateTargets(updateContext, toBeUpdated, allColumnsStatement);
+			protected void updateTargets(UpdateContext updateContext, boolean allColumnsStatement) {
+				super.updateTargets(updateContext, allColumnsStatement);
 				// we ask for index update : all columns shouldn't be updated, only index, so we don't need "all columns in statement"
 				indexedAssociationPersister.update(((AssociationTableUpdateContext) updateContext).getAssociationRecordstoBeUpdated(), false);
 			}
 			
 			@Override
-			protected void insertTargets(UpdateContext updateContext, List<O> toBeInserted) {
+			protected void insertTargets(UpdateContext updateContext) {
 				// we insert association records before targets to satisfy integrity constraint
 				indexedAssociationPersister.insert(((AssociationTableUpdateContext) updateContext).getAssociationRecordstoBeInserted());
-				super.insertTargets(updateContext, toBeInserted);
+				super.insertTargets(updateContext);
 				
 			}
 			
 			@Override
-			protected void deleteTargets(UpdateContext updateContext, List<O> toBeDeleted) {
-				super.deleteTargets(updateContext, toBeDeleted);
+			protected void deleteTargets(UpdateContext updateContext) {
+				super.deleteTargets(updateContext);
 				indexedAssociationPersister.delete(((AssociationTableUpdateContext) updateContext).getAssociationRecordstoBeDeleted());
 			}
 			
@@ -241,5 +257,89 @@ public class OneToManyWithIndexedAssociationTableEngine<I extends Identified, O 
 		};
 		
 		persisterListener.addUpdateListener(new TargetInstancesUpdateCascader<>(targetPersister, updateListener));
+	}
+	
+	public <T extends Table<T>> void addDeleteCascade(CascadeManyList<I, O, J, C> cascadeMany,
+													  JoinedTablesPersister<I, J, T> joinedTablesPersister,
+													  Persister<O, J, ?> targetPersister,
+													  Function<I, C> collectionGetter,
+													  PersisterListener<I, J> persisterListener,
+													  boolean deleteTargetEntities,
+													  Dialect dialect,
+													  Column<? extends AssociationTable, Object> pointerToLeftColumn) {
+		// we delete association records
+		persisterListener.addDeleteListener(new DeleteListener<I>() {
+			@Override
+			public void beforeDelete(Iterable<I> entities) {
+				// We delete the association records by their ids (that are ... themselves) 
+				// We could have deleted them with a delete order but this requires a binder registry which is given by a Dialect
+				// so it requires that this configurer holds the Dialect which is not the case, but could have.
+				// It should be more efficient because, here, we have to create as many AssociationRecord as necessary which loads the garbage collector
+				List<IndexedAssociationRecord> associationRecords = new ArrayList<>();
+				entities.forEach(e -> {
+					Collection<O> targets = collectionGetter.apply(e);
+					int i = 0;
+					for (O target : targets) {
+						associationRecords.add(new IndexedAssociationRecord(e.getId(), target.getId(), i++));
+					}
+				});
+				indexedAssociationPersister.deleteById(associationRecords);
+			}
+		});
+		
+		persisterListener.addDeleteByIdListener(new DeleteByIdListener<I>() {
+			
+			@Override
+			public void beforeDeleteById(Iterable<I> entities) {
+				// We delete records thanks to delete order
+				// Yes it is no coherent with beforeDelete(..) !
+				Delete<IndexedAssociationTable> delete = new Delete<>(indexedAssociationPersister.getTargetTable());
+				ClassMappingStrategy<I, J, T> mappingStrategy = joinedTablesPersister.getMappingStrategy();
+				List<J> identifiers = collect(entities, mappingStrategy::getId, ArrayList::new);
+				delete.where(pointerToLeftColumn, Operand.in(identifiers));
+				
+				PreparedSQL deleteStatement = new DeleteCommandBuilder<>(delete).toStatement(dialect.getColumnBinderRegistry());
+				try (WriteOperation<Integer> writeOperation = new WriteOperation<>(deleteStatement, cascadeMany.getPersister().getConnectionProvider())) {
+					writeOperation.setValues(deleteStatement.getValues());
+					writeOperation.execute();
+				}
+			}
+		});
+		// NB: with such a else, target entities are deleted only when no association table exists
+		if (deleteTargetEntities) {
+			// adding deletion of many-side entities
+			persisterListener.addDeleteListener(new BeforeDeleteCollectionCascader<I, O>(targetPersister) {
+				
+				@Override
+				protected void postTargetDelete(Iterable<O> entities) {
+					// no post treatment to do
+				}
+				
+				@Override
+				protected Collection<O> getTargets(I i) {
+					Collection<O> targets = collectionGetter.apply(i);
+					// We only delete persisted instances (for logic and to prevent from non matching row count exception)
+					return stream(targets)
+							.filter(CascadeOneConfigurer.PERSISTED_PREDICATE)
+							.collect(Collectors.toList());
+				}
+			});
+			// we add the deleteById event since we suppose that if delete is required then there's no reason that rough delete is not
+			persisterListener.addDeleteByIdListener(new BeforeDeleteByIdCollectionCascader<I, O>(targetPersister) {
+				@Override
+				protected void postTargetDelete(Iterable<O> entities) {
+					// no post treatment to do
+				}
+				
+				@Override
+				protected Collection<O> getTargets(I i) {
+					Collection<O> targets = collectionGetter.apply(i);
+					// We only delete persisted instances (for logic and to prevent from non matching row count exception)
+					return stream(targets)
+							.filter(CascadeOneConfigurer.PERSISTED_PREDICATE)
+							.collect(Collectors.toList());
+				}
+			});
+		}
 	}
 }

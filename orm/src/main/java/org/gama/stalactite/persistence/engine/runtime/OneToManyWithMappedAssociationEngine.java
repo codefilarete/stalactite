@@ -21,6 +21,7 @@ import org.gama.lang.collection.Iterables;
 import org.gama.reflection.Accessors;
 import org.gama.reflection.IMutator;
 import org.gama.reflection.MethodReferenceCapturer;
+import org.gama.stalactite.persistence.engine.AssociationTable;
 import org.gama.stalactite.persistence.engine.BeanRelationFixer;
 import org.gama.stalactite.persistence.engine.CascadeOneConfigurer;
 import org.gama.stalactite.persistence.engine.NotYetSupportedOperationException;
@@ -29,6 +30,8 @@ import org.gama.stalactite.persistence.engine.builder.CascadeMany;
 import org.gama.stalactite.persistence.engine.builder.CascadeManyList;
 import org.gama.stalactite.persistence.engine.cascade.AfterInsertCollectionCascader;
 import org.gama.stalactite.persistence.engine.cascade.AfterUpdateCollectionCascader;
+import org.gama.stalactite.persistence.engine.cascade.BeforeDeleteByIdCollectionCascader;
+import org.gama.stalactite.persistence.engine.cascade.BeforeDeleteCollectionCascader;
 import org.gama.stalactite.persistence.engine.cascade.JoinedTablesPersister;
 import org.gama.stalactite.persistence.engine.listening.PersisterListener;
 import org.gama.stalactite.persistence.engine.listening.SelectListener;
@@ -37,10 +40,12 @@ import org.gama.stalactite.persistence.id.Identified;
 import org.gama.stalactite.persistence.id.Identifier;
 import org.gama.stalactite.persistence.id.diff.AbstractDiff;
 import org.gama.stalactite.persistence.id.diff.IndexedDiff;
+import org.gama.stalactite.persistence.sql.Dialect;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
 
 import static org.gama.lang.collection.Iterables.collectToList;
+import static org.gama.lang.collection.Iterables.stream;
 import static org.gama.stalactite.persistence.engine.cascade.JoinedStrategiesSelect.FIRST_STRATEGY_NAME;
 
 /**
@@ -223,8 +228,8 @@ public class OneToManyWithMappedAssociationEngine<I extends Identified, O extend
 				}
 				
 				@Override
-				protected void afterTargetMarkedUpdated(UpdateContext updateContext, AbstractDiff diff) {
-					super.afterTargetMarkedUpdated(updateContext, diff);
+				protected void onHeldTarget(UpdateContext updateContext, AbstractDiff diff) {
+					super.onHeldTarget(updateContext, diff);
 					Set<Integer> minus = Iterables.minus(((IndexedDiff) diff).getReplacerIndexes(), ((IndexedDiff) diff).getSourceIndexes());
 					Integer index = Iterables.first(minus);
 					if (index != null ) {
@@ -233,9 +238,9 @@ public class OneToManyWithMappedAssociationEngine<I extends Identified, O extend
 				}
 				
 				@Override
-				protected void updateTargets(UpdateContext updateContext, List<AbstractDiff> toBeUpdated, boolean allColumnsStatement) {
+				protected void updateTargets(UpdateContext updateContext, boolean allColumnsStatement) {
 					// we ask for entities update, code seems weird because we pass a Duo of same instance which should update nothing because
-					// entities are stricly equal, but in fact this update invokation triggers the "silent column" updat, which is the index column
+					// entities are stricly equal, but in fact this update() invokation triggers the "silent column" update, which is the index column
 					ThreadLocals.doWithThreadLocal(updatableListIndex, ((IndexedMappedAssociationUpdateContext) updateContext)::getIndexUpdates, (Runnable) () -> {
 						List<Duo<O, O>> entities = collectToList(updatableListIndex.get().keySet(), o -> new Duo<>(o, o));
 						targetPersister.update(entities, false);
@@ -260,6 +265,79 @@ public class OneToManyWithMappedAssociationEngine<I extends Identified, O extend
 			updateListener = new CollectionUpdater<>(collectionGetter, targetPersister, reverseSetter, shouldDeleteRemoved);
 		}
 		persisterListener.addUpdateListener(new TargetInstancesUpdateCascader<>(targetPersister, updateListener));
+	}
+	
+	public <T extends Table<T>> void addDeleteCascade(CascadeMany<I, O, J, C> cascadeMany,
+													  JoinedTablesPersister<I, J, T> joinedTablesPersister,
+													  Persister<O, J, ?> targetPersister,
+													  Function<I, C> collectionGetter,
+													  PersisterListener<I, J> persisterListener,
+													  boolean deleteTargetEntities,
+													  Dialect dialect,
+													  Column<? extends AssociationTable, Object> pointerToLeftColumn) {
+		if (deleteTargetEntities) {
+			// adding deletion of many-side entities
+			persisterListener.addDeleteListener(new BeforeDeleteCollectionCascader<I, O>(targetPersister) {
+				
+				@Override
+				protected void postTargetDelete(Iterable<O> entities) {
+					// no post treatment to do
+				}
+				
+				@Override
+				protected Collection<O> getTargets(I i) {
+					Collection<O> targets = collectionGetter.apply(i);
+					// We only delete persisted instances (for logic and to prevent from non matching row count exception)
+					return stream(targets)
+							.filter(CascadeOneConfigurer.PERSISTED_PREDICATE)
+							.collect(Collectors.toList());
+				}
+			});
+			// we add the deleteById event since we suppose that if delete is required then there's no reason that rough delete is not
+			persisterListener.addDeleteByIdListener(new BeforeDeleteByIdCollectionCascader<I, O>(targetPersister) {
+				@Override
+				protected void postTargetDelete(Iterable<O> entities) {
+					// no post treatment to do
+				}
+				
+				@Override
+				protected Collection<O> getTargets(I i) {
+					Collection<O> targets = collectionGetter.apply(i);
+					// We only delete persisted instances (for logic and to prevent from non matching row count exception)
+					return stream(targets)
+							.filter(CascadeOneConfigurer.PERSISTED_PREDICATE)
+							.collect(Collectors.toList());
+				}
+			});
+		} else // entity shouldn't be deleted, so we may have to update it
+			if (reverseSetter != null) {
+				// we cut the link between target and source
+				// NB : we don't take versioning into account overall because we can't : how to do it since we miss the unmodified version ?
+				
+				persisterListener.addDeleteListener(new BeforeDeleteCollectionCascader<I, O>(targetPersister) {
+					
+					@Override
+					protected void postTargetDelete(Iterable<O> entities) {
+						
+					}
+					
+					@Override
+					public void beforeDelete(Iterable<I> entities) {
+						List<O> targets = stream(entities).flatMap(c -> getTargets(c).stream()).collect(Collectors.toList());
+						targets.forEach(e -> reverseSetter.accept(e, null));
+						targetPersister.updateById(targets);
+					}
+					
+					@Override
+					protected Collection<O> getTargets(I i) {
+						Collection<O> targets = collectionGetter.apply(i);
+						// We only delete persisted instances (for logic and to prevent from non matching row count exception)
+						return stream(targets)
+								.filter(CascadeOneConfigurer.PERSISTED_PREDICATE)
+								.collect(Collectors.toList());
+					}
+				});
+			}
 	}
 
 	static class TargetInstancesInsertCascader<I extends Identified, O extends Identified, J extends Identifier> extends AfterInsertCollectionCascader<I, O> {

@@ -114,14 +114,18 @@ public class EmbeddedBeanMappingStrategy<C, T extends Table> implements IEmbedde
 	public Map<UpwhereColumn<T>, Object> getUpdateValues(C modified, C unmodified, boolean allColumns) {
 		Map<Column<T, Object>, Object> unmodifiedColumns = new HashMap<>();
 		// getting differences
-		Map<UpwhereColumn<T>, Object> toReturn = foreachField(new FieldVisitor<UpwhereColumn<T>>() {
+		Map<UpwhereColumn<T>, Object> modifiedFields = foreachField(new FieldVisitor<UpwhereColumn<T>>() {
 			@Override
 			protected void visitField(Entry<IReversibleAccessor<C, Object>, Column<T, Object>> fieldColumnEntry) {
 				IReversibleAccessor<C, Object> accessor = fieldColumnEntry.getKey();
 				Object modifiedValue = accessor.get(modified);
 				Object unmodifiedValue = unmodified == null ? null : accessor.get(unmodified);
 				Column<T, Object> fieldColumn = fieldColumnEntry.getValue();
-				if (!Objects.equalsWithNull(modifiedValue, unmodifiedValue)) {
+				if (!Objects.equalsWithNull(modifiedValue, unmodifiedValue)
+						// OR is here to take cases where getUpdateValues(..) gets only "modified" parameter (such as for updateById) and
+						// some modified properties are null, without this OR such properties won't be updated (set to null)
+						// and, overall, if they are all null, modifiedFields is empty then causing a statement without values 
+						|| unmodified == null) {
 					toReturn.put(new UpwhereColumn<>(fieldColumn, true), modifiedValue);
 				} else {
 					unmodifiedColumns.put(fieldColumn, modifiedValue);
@@ -130,17 +134,17 @@ public class EmbeddedBeanMappingStrategy<C, T extends Table> implements IEmbedde
 		});
 		
 		// adding complementary columns if necessary
-		if (!toReturn.isEmpty() && allColumns) {
+		if (!modifiedFields.isEmpty() && allColumns) {
 			for (Entry<Column<T, Object>, Object> unmodifiedField : unmodifiedColumns.entrySet()) {
-				toReturn.put(new UpwhereColumn<>(unmodifiedField.getKey(), true), unmodifiedField.getValue());
+				modifiedFields.put(new UpwhereColumn<>(unmodifiedField.getKey(), true), unmodifiedField.getValue());
 			}
 		}
 		// getting values for silent columns
 		silentUpdatedColumns.forEach(columnFunctionDuo -> {
 			Object modifiedValue = columnFunctionDuo.getRight().apply(modified);
-			toReturn.put(new UpwhereColumn<>(columnFunctionDuo.getLeft(), true), modifiedValue);
+			modifiedFields.put(new UpwhereColumn<>(columnFunctionDuo.getLeft(), true), modifiedValue);
 		});
-		return toReturn;
+		return modifiedFields;
 	}
 	
 	private <K> Map<K, Object> foreachField(FieldVisitor<K> visitor) {

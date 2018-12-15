@@ -76,6 +76,9 @@ public class EmbeddedBeanMappingStrategyTest {
 				{ new Toto(1, 2, 3), new Toto(1, 2, 3), new HashMap<>() },
 				{ new Toto(null, null, null), new Toto(null, null, null), new HashMap<>() },
 				{ new Toto(1, 2, 3), null, Maps.asMap(colA, 1).add(colB, 2).add(colC, 3) },
+				// null properties against a null instance : columns must be updated
+				{ new Toto(null, 2, 3), null, Maps.asMap(colA, null).add(colB, 2).add(colC, 3) },
+				{ new Toto(null, null, null), null, Maps.asMap(colA, null).add(colB, null).add(colC, null) },
 		};
 	}
 	

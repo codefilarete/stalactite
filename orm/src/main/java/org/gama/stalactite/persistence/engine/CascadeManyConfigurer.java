@@ -1,28 +1,18 @@
 package org.gama.stalactite.persistence.engine;
 
 import java.lang.reflect.Method;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
-import java.util.stream.Collectors;
 
 import org.gama.lang.Reflections;
 import org.gama.reflection.MethodReferenceCapturer;
-import org.gama.sql.dml.PreparedSQL;
-import org.gama.sql.dml.WriteOperation;
-import org.gama.stalactite.command.builder.DeleteCommandBuilder;
-import org.gama.stalactite.command.model.Delete;
 import org.gama.stalactite.persistence.engine.CascadeOptions.RelationshipMode;
 import org.gama.stalactite.persistence.engine.FluentMappingBuilder.SetPersistedFlagAfterInsertListener;
 import org.gama.stalactite.persistence.engine.builder.CascadeMany;
 import org.gama.stalactite.persistence.engine.builder.CascadeManyList;
-import org.gama.stalactite.persistence.engine.cascade.BeforeDeleteByIdCollectionCascader;
-import org.gama.stalactite.persistence.engine.cascade.BeforeDeleteCollectionCascader;
 import org.gama.stalactite.persistence.engine.cascade.JoinedTablesPersister;
-import org.gama.stalactite.persistence.engine.listening.DeleteByIdListener;
-import org.gama.stalactite.persistence.engine.listening.DeleteListener;
 import org.gama.stalactite.persistence.engine.listening.InsertListener;
 import org.gama.stalactite.persistence.engine.listening.PersisterListener;
 import org.gama.stalactite.persistence.engine.runtime.OneToManyWithAssociationTableEngine;
@@ -30,15 +20,11 @@ import org.gama.stalactite.persistence.engine.runtime.OneToManyWithIndexedAssoci
 import org.gama.stalactite.persistence.engine.runtime.OneToManyWithMappedAssociationEngine;
 import org.gama.stalactite.persistence.id.Identified;
 import org.gama.stalactite.persistence.id.Identifier;
-import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
 import org.gama.stalactite.persistence.sql.Dialect;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
-import org.gama.stalactite.query.model.Operand;
 
-import static org.gama.lang.collection.Iterables.collect;
 import static org.gama.lang.collection.Iterables.first;
-import static org.gama.lang.collection.Iterables.stream;
 import static org.gama.reflection.Accessors.of;
 import static org.gama.stalactite.persistence.engine.CascadeOptions.RelationshipMode.ALL_ORPHAN_REMOVAL;
 import static org.gama.stalactite.persistence.engine.CascadeOptions.RelationshipMode.ASSOCIATION_ONLY;
@@ -153,7 +139,11 @@ public class CascadeManyConfigurer<I extends Identified, O extends Identified, J
 		PersisterListener<I, J> persisterListener = joinedTablesPersister.getPersisterListener();
 		
 		RelationshipMode maintenanceMode = cascadeMany.getRelationshipMode();
+		if (maintenanceMode == ASSOCIATION_ONLY && intermediaryTable == null) {
+			throw new MappingConfigurationException(RelationshipMode.ASSOCIATION_ONLY + " is only relevent with an association table");
+		}
 		// selection is always present (else configuration is nonsense !)
+		boolean orphanRemoval = maintenanceMode == ALL_ORPHAN_REMOVAL;
 		if (associationPersister != null) {
 			OneToManyWithAssociationTableEngine<I, O, J, C>  oneToManyWithAssociationTableEngine = new OneToManyWithAssociationTableEngine(
 					associationPersister);
@@ -161,7 +151,10 @@ public class CascadeManyConfigurer<I extends Identified, O extends Identified, J
 					cascadeMany, joinedTablesPersister, leftPersister, leftPrimaryKey, collectionGetter, rightJoinColumn, persisterListener);
 			if (maintenanceMode != READ_ONLY) {
 				oneToManyWithAssociationTableEngine.addInsertCascade(cascadeMany, leftPersister, collectionGetter, persisterListener);
-				oneToManyWithAssociationTableEngine.addUpdateCascade(cascadeMany, leftPersister, collectionGetter, persisterListener, maintenanceMode == ALL_ORPHAN_REMOVAL);
+				oneToManyWithAssociationTableEngine.addUpdateCascade(cascadeMany, leftPersister, collectionGetter, persisterListener,
+						orphanRemoval);
+				oneToManyWithAssociationTableEngine.addDeleteCascade(cascadeMany, joinedTablesPersister, leftPersister, collectionGetter,
+						persisterListener, orphanRemoval, this.dialect, pointerToLeftColumn);
 			}
 		}
 		if (indexedAssociationPersister != null) {
@@ -172,7 +165,9 @@ public class CascadeManyConfigurer<I extends Identified, O extends Identified, J
 					joinedTablesPersister, leftPersister, leftPrimaryKey, (Function) collectionGetter, rightJoinColumn, persisterListener);
 			if (maintenanceMode != READ_ONLY) {
 				oneToManyWithIndexedAssociationTableEngine.addInsertCascade(leftPersister, (Function) collectionGetter, persisterListener);
-				oneToManyWithIndexedAssociationTableEngine.addUpdateCascade((CascadeManyList) cascadeMany, leftPersister, (Function) collectionGetter, persisterListener, maintenanceMode == ALL_ORPHAN_REMOVAL);
+				oneToManyWithIndexedAssociationTableEngine.addUpdateCascade((CascadeManyList) cascadeMany, leftPersister, (Function) collectionGetter, persisterListener, orphanRemoval);
+				oneToManyWithIndexedAssociationTableEngine.addDeleteCascade((CascadeManyList) cascadeMany, joinedTablesPersister, leftPersister, (Function) collectionGetter,
+						persisterListener, orphanRemoval, this.dialect, pointerToLeftColumn);
 			}
 		}
 		if (associationPersister == null && indexedAssociationPersister == null) {
@@ -181,141 +176,10 @@ public class CascadeManyConfigurer<I extends Identified, O extends Identified, J
 			mappedAssociationEngine.addSelectCascade(cascadeMany, joinedTablesPersister, leftPersister, leftPrimaryKey, collectionGetter, rightJoinColumn, persisterListener);
 			if (maintenanceMode != READ_ONLY) {
 				mappedAssociationEngine.addInsertCascade(cascadeMany, leftPersister, collectionGetter, persisterListener);
-				mappedAssociationEngine.addUpdateCascade(cascadeMany, leftPersister, collectionGetter, persisterListener, maintenanceMode == ALL_ORPHAN_REMOVAL);
+				mappedAssociationEngine.addUpdateCascade(cascadeMany, leftPersister, collectionGetter, persisterListener, orphanRemoval);
+				mappedAssociationEngine.addDeleteCascade(cascadeMany, joinedTablesPersister, leftPersister, collectionGetter,
+						persisterListener, orphanRemoval, this.dialect, pointerToLeftColumn);
 			}
-		}
-		// additionnal cascade
-		switch (maintenanceMode) {
-			case ASSOCIATION_ONLY:
-				if (intermediaryTable == null) {
-					throw new MappingConfigurationException(RelationshipMode.ASSOCIATION_ONLY + " is only relevent with an association table");
-				}
-			case ALL:
-			case ALL_ORPHAN_REMOVAL:
-				// NB: "delete removed" will be treated internally by updateCascade() and deleteCascade()
-				addDeleteCascade(cascadeMany, joinedTablesPersister, leftPersister, collectionGetter, persisterListener, maintenanceMode != ASSOCIATION_ONLY);
-				break;
-		}
-	}
-	
-	private <T extends Table<T>> void addDeleteCascade(CascadeMany<I, O, J, C> cascadeMany,
-													   JoinedTablesPersister<I, J, T> joinedTablesPersister,
-													   Persister<O, J, ?> targetPersister,
-													   Function<I, C> collectionGetter,
-													   PersisterListener<I, J> persisterListener,
-													   boolean deleteTargetEntities) {
-		// we delete association records
-		if (indexedAssociationPersister != null) {
-			persisterListener.addDeleteListener(new DeleteListener<I>() {
-				@Override
-				public void beforeDelete(Iterable<I> entities) {
-					// We delete the association records by their ids (that are ... themselves) 
-					// We could have deleted them with a delete order but this requires a binder registry which is given by a Dialect
-					// so it requires that this configurer holds the Dialect which is not the case, but could have.
-					// It should be more efficient because, here, we have to create as many AssociationRecord as necessary which loads the garbage collector
-					List<IndexedAssociationRecord> associationRecords = new ArrayList<>();
-					entities.forEach(e -> {
-						Collection<O> targets = collectionGetter.apply(e);
-						int i = 0;
-						for (O target : targets) {
-							associationRecords.add(new IndexedAssociationRecord(e.getId(), target.getId(), i++));
-						}
-					});
-					indexedAssociationPersister.deleteById(associationRecords);
-				}
-			});
-			
-			persisterListener.addDeleteByIdListener(new DeleteByIdListener<I>() {
-				
-				@Override
-				public void beforeDeleteById(Iterable<I> entities) {
-					// We delete records thanks to delete order
-					// Yes it is no coherent with beforeDelete(..) !
-					Delete<IndexedAssociationTable> delete = new Delete<>(indexedAssociationPersister.getTargetTable());
-					ClassMappingStrategy<I, J, T> mappingStrategy = joinedTablesPersister.getMappingStrategy();
-					List<J> identifiers = collect(entities, mappingStrategy::getId, ArrayList::new);
-					delete.where(pointerToLeftColumn, Operand.in(identifiers));
-					
-					PreparedSQL deleteStatement = new DeleteCommandBuilder<>(delete).toStatement(dialect.getColumnBinderRegistry());
-					try (WriteOperation<Integer> writeOperation = new WriteOperation<>(deleteStatement, cascadeMany.getPersister().getConnectionProvider())) {
-						writeOperation.setValues(deleteStatement.getValues());
-						writeOperation.execute();
-					}
-				}
-			});
-		} else if (associationPersister != null) {
-			persisterListener.addDeleteListener(new DeleteListener<I>() {
-				@Override
-				public void beforeDelete(Iterable<I> entities) {
-					// We delete the association records by their ids (that are ... themselves) 
-					// We could have deleted them with a delete order but this requires a binder registry which is given by a Dialect
-					// so it requires that this configurer holds the Dialect which is not the case, but could have.
-					// It should be more efficient because, here, we have to create as many AssociationRecord as necessary which loads the garbage collector
-					List<AssociationRecord> associationRecords = new ArrayList<>();
-					entities.forEach(e -> {
-						Collection<O> targets = collectionGetter.apply(e);
-						for (O target : targets) {
-							associationRecords.add(new AssociationRecord(e.getId(), target.getId()));
-						}
-					});
-					associationPersister.delete(associationRecords);
-				}
-			});
-			
-			persisterListener.addDeleteByIdListener(new DeleteByIdListener<I>() {
-				
-				@Override
-				public void beforeDeleteById(Iterable<I> entities) {
-					// We delete records thanks to delete order
-					// Yes it is no coherent with beforeDelete(..) !
-					Delete<AssociationTable> delete = new Delete<>(associationPersister.getTargetTable());
-					ClassMappingStrategy<I, J, T> mappingStrategy = joinedTablesPersister.getMappingStrategy();
-					List<J> identifiers = collect(entities, mappingStrategy::getId, ArrayList::new);
-					delete.where(pointerToLeftColumn, Operand.in(identifiers));
-					
-					PreparedSQL deleteStatement = new DeleteCommandBuilder<>(delete).toStatement(dialect.getColumnBinderRegistry());
-					try (WriteOperation<Integer> writeOperation = new WriteOperation<>(deleteStatement, cascadeMany.getPersister().getConnectionProvider())) {
-						writeOperation.setValues(deleteStatement.getValues());
-						writeOperation.execute();
-					}
-				}
-			});
-		}
-		// NB: with such a else, target entities are deleted only when no association table exists
-		if (deleteTargetEntities) {
-			// adding deletion of many-side entities
-			persisterListener.addDeleteListener(new BeforeDeleteCollectionCascader<I, O>(targetPersister) {
-				
-				@Override
-				protected void postTargetDelete(Iterable<O> entities) {
-					// no post treatment to do
-				}
-				
-				@Override
-				protected Collection<O> getTargets(I i) {
-					Collection<O> targets = collectionGetter.apply(i);
-					// We only delete persisted instances (for logic and to prevent from non matching row count exception)
-					return stream(targets)
-							.filter(CascadeOneConfigurer.PERSISTED_PREDICATE)
-							.collect(Collectors.toList());
-				}
-			});
-			// we add the deleteById event since we suppose that if delete is required then there's no reason that rough delete is not
-			persisterListener.addDeleteByIdListener(new BeforeDeleteByIdCollectionCascader<I, O>(targetPersister) {
-				@Override
-				protected void postTargetDelete(Iterable<O> entities) {
-					// no post treatment to do
-				}
-				
-				@Override
-				protected Collection<O> getTargets(I i) {
-					Collection<O> targets = collectionGetter.apply(i);
-					// We only delete persisted instances (for logic and to prevent from non matching row count exception)
-					return stream(targets)
-							.filter(CascadeOneConfigurer.PERSISTED_PREDICATE)
-							.collect(Collectors.toList());
-				}
-			});
 		}
 	}
 }

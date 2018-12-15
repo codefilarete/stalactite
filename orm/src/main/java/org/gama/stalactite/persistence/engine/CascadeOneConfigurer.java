@@ -32,7 +32,7 @@ public class CascadeOneConfigurer<I extends Identified, O extends Identified, J 
 	
 	public static final Predicate<Identified> NON_PERSISTED_PREDICATE = target -> target != null && !target.getId().isPersisted();
 	
-	static final Predicate<Identified> PERSISTED_PREDICATE = target -> target != null && target.getId().isPersisted();
+	public static final Predicate<Identified> PERSISTED_PREDICATE = target -> target != null && target.getId().isPersisted();
 	
 	public <T extends Table<T>> void appendCascade(
 			CascadeOne<I, O, J> cascadeOne, Persister<I, ?, T> localPersister,

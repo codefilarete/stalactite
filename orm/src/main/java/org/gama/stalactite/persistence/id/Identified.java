@@ -3,6 +3,7 @@ package org.gama.stalactite.persistence.id;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.function.Predicate;
 
 import org.gama.sql.binder.LambdaParameterBinder;
 import org.gama.sql.binder.NullAwareParameterBinder;
@@ -14,6 +15,12 @@ import org.gama.sql.binder.ParameterBinder;
 public interface Identified<I> {
 	
 	Identifier<I> getId();
+	
+	/** Sortcut to check if a {@link Identified} is persisted or not */
+	Predicate<Identified> PERSISTED_PREDICATE = target -> target.getId().isPersisted();
+	
+	/** Sortcut to check if a {@link Identified} is not persisted */
+	Predicate<Identified> NON_PERSISTED_PREDICATE = PERSISTED_PREDICATE.negate();
 	
 	/**
 	 * Gives a {@link ParameterBinder} for a general {@link Identified} to be declared in a {@link org.gama.sql.binder.ParameterBinderRegistry}
