@@ -28,7 +28,7 @@ public class BeforeInsertCascaderTest extends AbstractCascaderTest {
 		when(mappingStrategyMock.getIdMappingStrategy()).thenReturn(mock(IdMappingStrategy.class));
 		Persister<Tata, Long, T> persisterMock = new Persister<Tata, Long, T>(mappingStrategyMock, mock(Dialect.class), null, 10) {
 			@Override
-			protected int doInsert(Iterable<Tata> entities) {
+			protected int doInsert(Iterable<? extends Tata> entities) {
 				// Overriden to do no action, because default super action is complex to mock
 				return 0;
 			}
@@ -39,7 +39,7 @@ public class BeforeInsertCascaderTest extends AbstractCascaderTest {
 		// Instance to test: overriden methods allow later checking
 		BeforeInsertCascader<Toto, Tata> testInstance = new BeforeInsertCascader<Toto, Tata>(persisterMock) {
 			@Override
-			protected void postTargetInsert(Iterable<Tata> entities) {
+			protected void postTargetInsert(Iterable<? extends Tata> entities) {
 				actions.add("postTargetInsert");
 				triggeredTarget.addAll(Iterables.copy(entities));
 			}

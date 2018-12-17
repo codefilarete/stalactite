@@ -3,17 +3,17 @@ package org.gama.stalactite.persistence.engine.listening;
 /**
  * @author Guillaume Mary
  */
-public interface InsertListener<T> {
+public interface InsertListener<C> {
 	
-	default void beforeInsert(Iterable<T> entities) {
+	default void beforeInsert(Iterable<? extends C> entities) {
 		
 	}
 	
-	default void afterInsert(Iterable<T> entities) {
+	default void afterInsert(Iterable<? extends C> entities) {
 		
 	}
 	
-	default void onError(Iterable<T> entities, RuntimeException runtimeException) {
+	default void onError(Iterable<? extends C> entities, RuntimeException runtimeException) {
 		
 	}
 	

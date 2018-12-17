@@ -25,7 +25,7 @@ public abstract class AfterInsertCascader<Trigger, Target> implements InsertList
 		this.persister = persister;
 		this.persister.getPersisterListener().addInsertListener(new InsertListener<Target>() {
 			@Override
-			public void afterInsert(Iterable<Target> entities) {
+			public void afterInsert(Iterable<? extends Target> entities) {
 				postTargetInsert(entities);
 			}
 		});
@@ -37,7 +37,7 @@ public abstract class AfterInsertCascader<Trigger, Target> implements InsertList
 	 * @param entities source entities previously inserted
 	 */
 	@Override
-	public void afterInsert(Iterable<Trigger> entities) {
+	public void afterInsert(Iterable<? extends Trigger> entities) {
 		this.persister.insert(Iterables.stream(entities).map(this::getTarget).filter(Objects::nonNull).collect(Collectors.toList()));
 	}
 	
@@ -47,7 +47,7 @@ public abstract class AfterInsertCascader<Trigger, Target> implements InsertList
 	 *
 	 * @param entities entities inserted by this listener
 	 */
-	protected abstract void postTargetInsert(Iterable<Target> entities);
+	protected abstract void postTargetInsert(Iterable<? extends Target> entities);
 	
 	/**
 	 * Expected to give the Target instance of a Trigger (should simply give a field value of trigger)

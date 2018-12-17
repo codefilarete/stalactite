@@ -172,7 +172,7 @@ public class JoinedTablesPersisterTest {
 				Toto::merge, leftJoinColumn, rightJoinColumn, false);
 		testInstance.getPersisterListener().addInsertListener(new InsertListener<Toto>() {
 			@Override
-			public void afterInsert(Iterable<Toto> entities) {
+			public void afterInsert(Iterable<? extends Toto> entities) {
 				// since we only want a replicate of totos in table2, we only need to return them
 				persister2.insert(entities);
 			}
@@ -201,8 +201,9 @@ public class JoinedTablesPersisterTest {
 	}
 	
 	public void assertCapturedPairsEqual(PairSetList<Integer, Integer> expectedPairs) {
-		List<Duo<Integer, Integer>> obtainedPairs = PairSetList.toPairs(indexCaptor.getAllValues(), valueCaptor.getAllValues());
-		List<Set<Duo<Integer, Integer>>> obtained = new ArrayList<>();
+		// NB: even if Integer can't be inherited, PairIterator is a Iterator<? extends X, ? extends X>
+		List<Duo<? extends Integer, ? extends Integer>> obtainedPairs = PairSetList.toPairs(indexCaptor.getAllValues(), valueCaptor.getAllValues());
+		List<Set<Duo<? extends Integer, ? extends Integer>>> obtained = new ArrayList<>();
 		int startIndex = 0;
 		for (Set<Duo<Integer, Integer>> expectedPair : expectedPairs.asList()) {
 			obtained.add(new HashSet<>(obtainedPairs.subList(startIndex, startIndex += expectedPair.size())));

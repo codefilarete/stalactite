@@ -47,7 +47,7 @@ public abstract class WriteExecutor<C, I, T extends Table> extends DMLExecutor<C
 		private final WriteOperation writeOperation;
 		private int updatedRowCount;
 		
-		public JDBCBatchingIterator(Iterable<E> entities, WriteOperation writeOperation, int batchSize) {
+		public JDBCBatchingIterator(Iterable<? extends E> entities, WriteOperation writeOperation, int batchSize) {
 			super(entities, batchSize);
 			this.writeOperation = writeOperation;
 		}

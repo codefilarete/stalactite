@@ -87,11 +87,11 @@ public class ColumnedCollectionMappingStrategy<C extends Collection<O>, O, T ext
 			// getting differences side by side
 			Map<Column, Object> unmodifiedColumns = new LinkedHashMap<>();
 			Iterator<O> unmodifiedIterator = unmodified == null ? new EmptyIterator<>() : unmodified.iterator();
-			UntilBothIterator<O, O> untilBothIterator = new UntilBothIterator<>(modified.iterator(), unmodifiedIterator);
-			PairIterator<Column<T, Object>, Duo<O, O>> valueColumnPairIterator = new PairIterator<>(columns.iterator(), untilBothIterator);
+			UntilBothIterator<? extends O, ? extends O> untilBothIterator = new UntilBothIterator<>(modified.iterator(), unmodifiedIterator);
+			PairIterator<Column<T, Object>, Duo<? extends O, ? extends O>> valueColumnPairIterator = new PairIterator<>(columns.iterator(), untilBothIterator);
 			valueColumnPairIterator.forEachRemaining(diffEntry -> {
 				Column fieldColumn = diffEntry.getLeft();
-				Duo<O, O> toBeCompared = diffEntry.getRight();
+				Duo<? extends O, ? extends O> toBeCompared = diffEntry.getRight();
 				if (!Objects.equalsWithNull(toBeCompared.getLeft(), toBeCompared.getRight())) {
 					toReturn.put(fieldColumn, toDatabaseValue(toBeCompared.getLeft()));
 				} else {

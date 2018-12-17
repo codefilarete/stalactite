@@ -22,7 +22,7 @@ import org.gama.stalactite.persistence.id.diff.IdentifiedCollectionDiffer;
  * @author Guillaume Mary
  */
 public class CollectionUpdater<I extends Identified, O extends Identified, C extends Collection<O>>
-		implements BiConsumer<UpdatePayload<I, ?>, Boolean> {
+		implements BiConsumer<UpdatePayload<? extends I, ?>, Boolean> {
 	
 	protected final IdentifiedCollectionDiffer differ = new IdentifiedCollectionDiffer();
 	
@@ -45,7 +45,7 @@ public class CollectionUpdater<I extends Identified, O extends Identified, C ext
 	}
 	
 	@Override
-	public void accept(UpdatePayload<I, ?> entry, Boolean allColumnsStatement) {
+	public void accept(UpdatePayload<? extends I, ?> entry, Boolean allColumnsStatement) {
 		C modified = collectionGetter.apply(entry.getEntities().getLeft());
 		C unmodified = collectionGetter.apply(entry.getEntities().getRight());
 		Set<? extends AbstractDiff> diffSet = diff(modified, unmodified);
@@ -113,7 +113,7 @@ public class CollectionUpdater<I extends Identified, O extends Identified, C ext
 	 * @param updatePayload instance given to {@link #accept(UpdatePayload, Boolean)}
 	 * @return a new {@link UpdateContext} with given payload
 	 */
-	protected UpdateContext newUpdateContext(UpdatePayload<I, ?> updatePayload) {
+	protected UpdateContext newUpdateContext(UpdatePayload<? extends I, ?> updatePayload) {
 		return new UpdateContext(updatePayload);
 	}
 	
@@ -145,7 +145,7 @@ public class CollectionUpdater<I extends Identified, O extends Identified, C ext
 	
 	protected class UpdateContext {
 		
-		private final UpdatePayload<I, ?> payload;
+		private final UpdatePayload<? extends I, ?> payload;
 		/** List of many-side entities to be inserted (for massive SQL orders and better debug) */
 		private final List<O> entitiesToBeInserted = new ArrayList<>();
 		/** List of many-side entities to be update (for massive SQL orders and better debug) */
@@ -153,11 +153,11 @@ public class CollectionUpdater<I extends Identified, O extends Identified, C ext
 		/** List of many-side entities to be deleted (for massive SQL orders and better debug) */
 		private final List<O> entitiesToBeDeleted = new ArrayList<>();
 		
-		public UpdateContext(UpdatePayload<I, ?> updatePayload) {
+		public UpdateContext(UpdatePayload<? extends I, ?> updatePayload) {
 			this.payload = updatePayload;
 		}
 		
-		public UpdatePayload<I, ?> getPayload() {
+		public UpdatePayload<? extends I, ?> getPayload() {
 			return payload;
 		}
 		

@@ -14,15 +14,15 @@ import org.gama.stalactite.persistence.structure.Table;
  */
 public interface UpdateListener<C> {
 	
-	default void beforeUpdate(Iterable<UpdatePayload<C, ?>> payloads, boolean allColumnsStatement) {
+	default void beforeUpdate(Iterable<UpdatePayload<? extends C, ?>> payloads, boolean allColumnsStatement) {
 		
 	}
 	
-	default void afterUpdate(Iterable<UpdatePayload<C, ?>> entities, boolean allColumnsStatement) {
+	default void afterUpdate(Iterable<UpdatePayload<? extends C, ?>> entities, boolean allColumnsStatement) {
 		
 	}
 	
-	default void onError(Iterable<C> entities, RuntimeException runtimeException) {
+	default void onError(Iterable<? extends C> entities, RuntimeException runtimeException) {
 		
 	}
 	
@@ -35,11 +35,11 @@ public interface UpdateListener<C> {
 	 * @param <T> target table type
 	 */
 	class UpdatePayload<C, T extends Table> {
-		private final Duo<C, C> entities;
+		private final Duo<? extends C, ? extends C> entities;
 		
 		private final Map<UpwhereColumn<T>, Object> values;
 		
-		public UpdatePayload(Duo<C, C> entities, Map<UpwhereColumn<T>, Object> values) {
+		public UpdatePayload(Duo<? extends C, ? extends C> entities, Map<UpwhereColumn<T>, Object> values) {
 			this.entities = entities;
 			this.values = values;
 		}
@@ -50,7 +50,7 @@ public interface UpdateListener<C> {
 		 * @return constructor argument
 		 */
 		public Duo<C, C> getEntities() {
-			return entities;
+			return (Duo<C, C>) entities;
 		}
 		
 		/**
@@ -73,11 +73,11 @@ public interface UpdateListener<C> {
 	 * @param <T> target table type
 	 * @return arguments wrapped into an {@link UpdatePayload}, enhanced with updatable columns and values
 	 */
-	static <C, T extends Table<T>> Iterable<UpdatePayload<C, T>> computePayloads(Iterable<Duo<C, C>> entities,
+	static <C, T extends Table<T>> Iterable<UpdatePayload<C, T>> computePayloads(Iterable<? extends Duo<? extends C, ? extends C>> entities,
 																			 boolean allColumns,
 																			 IMappingStrategy<C, T> mappingStrategy) {
 		List<UpdatePayload<C, T>> result = new ArrayList<>();
-		for (Duo<C, C> next : entities) {
+		for (Duo<? extends C, ? extends C> next : entities) {
 			C modified = next.getLeft();
 			C unmodified = next.getRight();
 			// finding differences between modified instances and unmodified ones

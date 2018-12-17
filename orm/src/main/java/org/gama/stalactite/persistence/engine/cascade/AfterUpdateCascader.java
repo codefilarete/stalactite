@@ -24,7 +24,7 @@ public abstract class AfterUpdateCascader<Trigger, Target> implements UpdateList
 		this.persister = persister;
 		this.persister.getPersisterListener().addUpdateListener(new UpdateListener<Target>() {
 			@Override
-			public void afterUpdate(Iterable<UpdatePayload<Target, ?>> entities, boolean allColumnsStatement) {
+			public void afterUpdate(Iterable<UpdatePayload<? extends Target, ?>> entities, boolean allColumnsStatement) {
 				postTargetUpdate(entities);
 			}
 		});
@@ -32,12 +32,11 @@ public abstract class AfterUpdateCascader<Trigger, Target> implements UpdateList
 	
 	/**
 	 * Overriden to update Target instances of the Trigger instances.
-	 *
-	 * @param entities source entities previously updated
+	 *  @param entities source entities previously updated
 	 * @param allColumnsStatement
 	 */
 	@Override
-	public void afterUpdate(Iterable<UpdatePayload<Trigger, ?>> entities, boolean allColumnsStatement) {
+	public void afterUpdate(Iterable<UpdatePayload<? extends Trigger, ?>> entities, boolean allColumnsStatement) {
 		this.persister.update(Iterables.stream(entities).map(e -> getTarget(e.getEntities().getLeft(), e.getEntities().getRight())).filter(Objects::nonNull)
 				.collect(Collectors.toList()), allColumnsStatement);
 	}
@@ -47,7 +46,7 @@ public abstract class AfterUpdateCascader<Trigger, Target> implements UpdateList
 	 *
 	 * @param entities entities updated by this listener
 	 */
-	protected abstract void postTargetUpdate(Iterable<UpdatePayload<Target, ?>> entities);
+	protected abstract void postTargetUpdate(Iterable<UpdatePayload<? extends Target, ?>> entities);
 	
 	/**
 	 * Expected to give the Target instance of a Trigger (should simply give a field value of trigger)

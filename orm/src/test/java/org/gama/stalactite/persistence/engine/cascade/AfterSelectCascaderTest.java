@@ -48,7 +48,7 @@ public class AfterSelectCascaderTest extends AbstractCascaderTest {
 		AfterSelectCascader<Toto, Tata, Long> testInstance = new AfterSelectCascader<Toto, Tata, Long>(persisterMock) {
 			
 			@Override
-			protected void postTargetSelect(Iterable<Tata> entities) {
+			protected void postTargetSelect(Iterable<? extends Tata> entities) {
 				actions.add("postTargetSelect");
 				triggeredTarget.addAll(Iterables.copy(entities));
 			}

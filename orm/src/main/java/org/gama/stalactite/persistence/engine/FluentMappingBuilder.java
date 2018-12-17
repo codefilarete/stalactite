@@ -669,7 +669,7 @@ public class FluentMappingBuilder<T extends Identified, I extends StatefullIdent
 		public static final SetPersistedFlagAfterInsertListener INSTANCE = new SetPersistedFlagAfterInsertListener();
 		
 		@Override
-		public void afterInsert(Iterable<Identified> entities) {
+		public void afterInsert(Iterable<? extends Identified> entities) {
 			for (Identified t : entities) {
 				if (t.getId() instanceof PersistableIdentifier) {
 					((PersistableIdentifier) t.getId()).setPersisted(true);
@@ -689,7 +689,7 @@ public class FluentMappingBuilder<T extends Identified, I extends StatefullIdent
 		}
 		
 		@Override
-		public void beforeInsert(Iterable<T> entities) {
+		public void beforeInsert(Iterable<? extends T> entities) {
 			for (T pawn : entities) {
 				Identified modifiedTarget = targetProvider.apply(pawn);
 				if (modifiedTarget == null) {
@@ -699,23 +699,23 @@ public class FluentMappingBuilder<T extends Identified, I extends StatefullIdent
 		}
 	}
 	
-	public static class MandatoryRelationCheckingBeforeUpdateListener<T extends Identified> implements UpdateListener<T> {
+	public static class MandatoryRelationCheckingBeforeUpdateListener<C extends Identified> implements UpdateListener<C> {
 		
 		private final Method member;
-		private final Function<T, ? extends Identified> targetProvider;
+		private final Function<C, ? extends Identified> targetProvider;
 		
-		public MandatoryRelationCheckingBeforeUpdateListener(Method member, Function<T, ? extends Identified> targetProvider) {
+		public MandatoryRelationCheckingBeforeUpdateListener(Method member, Function<C, ? extends Identified> targetProvider) {
 			this.member = member;
 			this.targetProvider = targetProvider;
 		}
 		
 		@Override
-		public void beforeUpdate(Iterable<UpdatePayload<T, ?>> payloads, boolean allColumnsStatement) {
-			for (UpdatePayload<T, ?> payload : payloads) {
-				T t = payload.getEntities().getLeft();
-				Identified modifiedTarget = targetProvider.apply(t);
+		public void beforeUpdate(Iterable<UpdatePayload<? extends C, ?>> payloads, boolean allColumnsStatement) {
+			for (UpdatePayload<? extends C, ?> payload : payloads) {
+				C modifiedEntity = payload.getEntities().getLeft();
+				Identified modifiedTarget = targetProvider.apply(modifiedEntity);
 				if (modifiedTarget == null) {
-					throw newRuntimeMappingException(t, member);
+					throw newRuntimeMappingException(modifiedEntity, member);
 				}
 			}
 		}

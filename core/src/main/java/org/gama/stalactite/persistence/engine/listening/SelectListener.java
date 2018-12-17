@@ -3,13 +3,13 @@ package org.gama.stalactite.persistence.engine.listening;
 /**
  * @author Guillaume Mary
  */
-public interface SelectListener<T, I> {
+public interface SelectListener<C, I> {
 	
 	default void beforeSelect(Iterable<I> ids) {
 		
 	}
 	
-	default void afterSelect(Iterable<T> result) {
+	default void afterSelect(Iterable<? extends C> result) {
 		
 	}
 	

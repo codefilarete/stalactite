@@ -118,9 +118,10 @@ public class OneToManyWithIndexedAssociationTableEngine<I extends Identified, O 
 				rightAssociations.set(new HashMap<>());
 			}
 			
-			/** Implementation that assembles source and target beans from ThreadLocal elements thanks to the {@link BeanRelationFixer} */
+			/** Implementation that assembles source and target beans from ThreadLocal elements thanks to the {@link BeanRelationFixer}
+			 * @param result*/
 			@Override
-			public void afterSelect(Iterable<I> result) {
+			public void afterSelect(Iterable<? extends I> result) {
 				try {
 					result.forEach(bean -> {
 						List<IndexedAssociationRecord> associationRecords = leftAssociations.get().get(bean);
@@ -165,7 +166,7 @@ public class OneToManyWithIndexedAssociationTableEngine<I extends Identified, O 
 		CollectionUpdater<I, O, C> updateListener = new CollectionUpdater<I, O, C>(collectionGetter, targetPersister, null, shouldDeleteRemoved) {
 			
 			@Override
-			protected AssociationTableUpdateContext newUpdateContext(UpdatePayload<I, ?> updatePayload) {
+			protected AssociationTableUpdateContext newUpdateContext(UpdatePayload<? extends I, ?> updatePayload) {
 				return new AssociationTableUpdateContext(updatePayload);
 			}
 			
@@ -238,7 +239,7 @@ public class OneToManyWithIndexedAssociationTableEngine<I extends Identified, O 
 				private final List<IndexedAssociationRecord> associationRecordstoBeDeleted = new ArrayList<>();
 				private final List<Duo<IndexedAssociationRecord, IndexedAssociationRecord>> associationRecordstoBeUpdated = new ArrayList<>();
 				
-				public AssociationTableUpdateContext(UpdatePayload<I, ?> updatePayload) {
+				public AssociationTableUpdateContext(UpdatePayload<? extends I, ?> updatePayload) {
 					super(updatePayload);
 				}
 				

@@ -100,12 +100,13 @@ public class IdentifiedCollectionDiffer {
 		// - Pairs with both values are declared held
 		Set<I> helds = Iterables.intersect(afterIndexes.keySet(), beforeIndexes.keySet());
 		helds.forEach(i -> {
-			Iterable<Duo<Integer, Integer>> indexPairs = () -> new UntilBothIterator<>(beforeIndexes.get(i), afterIndexes.get(i));
+			// NB: even if Integer can't be inherited, PairIterator is a Iterator<? extends X, ? extends X>
+			Iterable<Duo<? extends Integer, ? extends Integer>> indexPairs = () -> new UntilBothIterator<>(beforeIndexes.get(i), afterIndexes.get(i));
 			// NB: These instances may no be added to result, it depends on iteration
 			IndexedDiff removed = new IndexedDiff(REMOVED, i, null);
 			IndexedDiff held = new IndexedDiff(HELD, i, i);
 			IndexedDiff added = new IndexedDiff(ADDED, null, i);
-			for (Duo<Integer, Integer> indexPair : indexPairs) {
+			for (Duo<? extends Integer, ? extends Integer> indexPair : indexPairs) {
 				if (indexPair.getLeft() != null && indexPair.getRight() != null) {
 					held.addSourceIndex(indexPair.getLeft());
 					held.addReplacerIndex(indexPair.getRight());

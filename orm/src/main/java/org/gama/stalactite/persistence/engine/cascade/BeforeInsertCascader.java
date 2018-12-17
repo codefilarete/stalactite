@@ -25,7 +25,7 @@ public abstract class BeforeInsertCascader<Trigger, Target> implements InsertLis
 		this.persister = persister;
 		this.persister.getPersisterListener().addInsertListener(new InsertListener<Target>() {
 			@Override
-			public void afterInsert(Iterable<Target> entities) {
+			public void afterInsert(Iterable<? extends Target> entities) {
 				postTargetInsert(entities);
 			}
 		});
@@ -33,11 +33,11 @@ public abstract class BeforeInsertCascader<Trigger, Target> implements InsertLis
 	
 	/**
 	 * Overriden to insert Target instances of the Trigger instances.
-	 * 
+	 *
 	 * @param entities source entities previously inserted
 	 */
 	@Override
-	public void beforeInsert(Iterable<Trigger> entities) {
+	public void beforeInsert(Iterable<? extends Trigger> entities) {
 		this.persister.insert(Iterables.stream(entities).map(this::getTarget).filter(Objects::nonNull).collect(Collectors.toList()));
 	}
 	
@@ -47,7 +47,7 @@ public abstract class BeforeInsertCascader<Trigger, Target> implements InsertLis
 	 *
 	 * @param entities entities inserted by this listener
 	 */
-	protected abstract void postTargetInsert(Iterable<Target> entities);
+	protected abstract void postTargetInsert(Iterable<? extends Target> entities);
 	
 	/**
 	 * Expected to give or create the corresponding Target instances of Trigger (should simply give a field)

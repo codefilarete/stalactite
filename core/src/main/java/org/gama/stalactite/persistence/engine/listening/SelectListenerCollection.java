@@ -16,7 +16,7 @@ public class SelectListenerCollection<T, I> implements SelectListener<T, I> {
 	}
 	
 	@Override
-	public void afterSelect(Iterable<T> entities) {
+	public void afterSelect(Iterable<? extends T> entities) {
 		selectListeners.forEach(listener -> listener.afterSelect(entities));
 	}
 	

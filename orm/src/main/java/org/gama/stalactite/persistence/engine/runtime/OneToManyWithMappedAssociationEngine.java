@@ -138,7 +138,7 @@ public class OneToManyWithMappedAssociationEngine<I extends Identified, O extend
 			}
 			
 			@Override
-			public void afterSelect(Iterable<I> result) {
+			public void afterSelect(Iterable<? extends I> result) {
 				try {
 					// reordering List element according to read indexes during the transforming phase (see below)
 					result.forEach(i -> {
@@ -210,7 +210,7 @@ public class OneToManyWithMappedAssociationEngine<I extends Identified, O extend
 								  Function<I, C> collectionGetter,
 								  PersisterListener<I, J> persisterListener,
 								  boolean shouldDeleteRemoved) {
-		BiConsumer<UpdatePayload<I, ?>, Boolean> updateListener;
+		BiConsumer<UpdatePayload<? extends I, ?>, Boolean> updateListener;
 		if (cascadeMany instanceof CascadeManyList) {
 			
 			targetPersister.getMappingStrategy().addSilentColumnUpdater(((CascadeManyList) cascadeMany).getIndexingColumn(),
@@ -223,7 +223,7 @@ public class OneToManyWithMappedAssociationEngine<I extends Identified, O extend
 				}
 				
 				@Override
-				protected UpdateContext newUpdateContext(UpdatePayload<I, ?> updatePayload) {
+				protected UpdateContext newUpdateContext(UpdatePayload<? extends I, ?> updatePayload) {
 					return new IndexedMappedAssociationUpdateContext(updatePayload);
 				}
 				
@@ -242,7 +242,7 @@ public class OneToManyWithMappedAssociationEngine<I extends Identified, O extend
 					// we ask for entities update, code seems weird because we pass a Duo of same instance which should update nothing because
 					// entities are stricly equal, but in fact this update() invokation triggers the "silent column" update, which is the index column
 					ThreadLocals.doWithThreadLocal(updatableListIndex, ((IndexedMappedAssociationUpdateContext) updateContext)::getIndexUpdates, (Runnable) () -> {
-						List<Duo<O, O>> entities = collectToList(updatableListIndex.get().keySet(), o -> new Duo<>(o, o));
+						List<Duo<? extends O, ? extends O>> entities = collectToList(updatableListIndex.get().keySet(), o -> new Duo<>(o, o));
 						targetPersister.update(entities, false);
 					});
 				}
@@ -252,7 +252,7 @@ public class OneToManyWithMappedAssociationEngine<I extends Identified, O extend
 					/** New indexes per entity */
 					private final Map<O, Integer> indexUpdates = new HashMap<>();
 					
-					public IndexedMappedAssociationUpdateContext(UpdatePayload<I, ?> updatePayload) {
+					public IndexedMappedAssociationUpdateContext(UpdatePayload<? extends I, ?> updatePayload) {
 						super(updatePayload);
 					}
 					
@@ -350,7 +350,7 @@ public class OneToManyWithMappedAssociationEngine<I extends Identified, O extend
 		}
 
 		@Override
-		protected void postTargetInsert(Iterable<O> entities) {
+		protected void postTargetInsert(Iterable<? extends O> entities) {
 			// Nothing to do. Identified#isPersisted flag should be fixed by target persister
 		}
 
@@ -366,20 +366,20 @@ public class OneToManyWithMappedAssociationEngine<I extends Identified, O extend
 	
 	static class TargetInstancesUpdateCascader<I extends Identified, O extends Identified> extends AfterUpdateCollectionCascader<I, O> {
 		
-		private final BiConsumer<UpdatePayload<I, ?>, Boolean> updateListener;
+		private final BiConsumer<UpdatePayload<? extends I, ?>, Boolean> updateListener;
 		
-		public TargetInstancesUpdateCascader(Persister<O, ?, ?> targetPersister, BiConsumer<UpdatePayload<I, ?>, Boolean> updateListener) {
+		public TargetInstancesUpdateCascader(Persister<O, ?, ?> targetPersister, BiConsumer<UpdatePayload<? extends I, ?>, Boolean> updateListener) {
 			super(targetPersister);
 			this.updateListener = updateListener;
 		}
 		
 		@Override
-		public void afterUpdate(Iterable<UpdatePayload<I, ?>> entities, boolean allColumnsStatement) {
+		public void afterUpdate(Iterable<UpdatePayload<? extends I, ?>> entities, boolean allColumnsStatement) {
 			entities.forEach(entry -> updateListener.accept(entry, allColumnsStatement));
 		}
 		
 		@Override
-		protected void postTargetUpdate(Iterable<UpdatePayload<O, ?>> entities) {
+		protected void postTargetUpdate(Iterable<UpdatePayload<? extends O, ?>> entities) {
 			// Nothing to do
 		}
 		

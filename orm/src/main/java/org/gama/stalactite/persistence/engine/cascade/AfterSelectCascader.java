@@ -28,7 +28,7 @@ public abstract class AfterSelectCascader<Trigger, Target, I> implements SelectL
 		this.persister = persister;
 		this.persister.getPersisterListener().addSelectListener(new SelectListener<Target, I>() {
 			@Override
-			public void afterSelect(Iterable<Target> entities) {
+			public void afterSelect(Iterable<? extends Target> entities) {
 				postTargetSelect(entities);
 			}
 		});
@@ -40,7 +40,7 @@ public abstract class AfterSelectCascader<Trigger, Target, I> implements SelectL
 	 * @param entities source entities previously selected
 	 */
 	@Override
-	public void afterSelect(Iterable<Trigger> entities) {
+	public void afterSelect(Iterable<? extends Trigger> entities) {
 		List<I> targets = new ArrayList<>(50);
 		for (Trigger trigger : entities) {
 			targets.addAll(getTargetIds(trigger));
@@ -53,7 +53,7 @@ public abstract class AfterSelectCascader<Trigger, Target, I> implements SelectL
 	 *
 	 * @param entities entities selected by this listener
 	 */
-	protected abstract void postTargetSelect(Iterable<Target> entities);
+	protected abstract void postTargetSelect(Iterable<? extends Target> entities);
 	
 	/**
 	 * Expected to give the corresponding Target identifier of Trigger

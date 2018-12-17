@@ -25,7 +25,7 @@ class AssociationRecordInsertionCascader<I extends Identified, O extends Identif
 	}
 	
 	@Override
-	protected void postTargetInsert(Iterable<AssociationRecord> entities) {
+	protected void postTargetInsert(Iterable<? extends AssociationRecord> entities) {
 		// Nothing to do. Identified#isPersisted flag should be fixed by target persister
 	}
 	

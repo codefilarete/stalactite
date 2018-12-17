@@ -11,17 +11,17 @@ public class UpdateListenerCollection<E> implements UpdateListener<E> {
 	private List<UpdateListener<E>> updateListeners = new ArrayList<>();
 	
 	@Override
-	public void beforeUpdate(Iterable<UpdatePayload<E, ?>> updatePayloads, boolean allColumnsStatement) {
+	public void beforeUpdate(Iterable<UpdatePayload<? extends E, ?>> updatePayloads, boolean allColumnsStatement) {
 		updateListeners.forEach(listener -> listener.beforeUpdate(updatePayloads, allColumnsStatement));
 	}
 	
 	@Override
-	public void afterUpdate(Iterable<UpdatePayload<E, ?>> entities, boolean allColumnsStatement) {
+	public void afterUpdate(Iterable<UpdatePayload<? extends E, ?>> entities, boolean allColumnsStatement) {
 		updateListeners.forEach(listener -> listener.afterUpdate(entities, allColumnsStatement));
 	}
 	
 	@Override
-	public void onError(Iterable<E> entities, RuntimeException runtimeException) {
+	public void onError(Iterable<? extends E> entities, RuntimeException runtimeException) {
 		updateListeners.forEach(listener -> listener.onError(entities, runtimeException));
 	}
 	

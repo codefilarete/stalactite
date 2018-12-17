@@ -43,5 +43,5 @@ public interface IdentifierInsertionManager<T, I> {
 	 * @param batchSize batch size to apply to the returned {@link JDBCBatchingIterator}
 	 * @return a new {@link JDBCBatchingIterator} 
 	 */
-	JDBCBatchingIterator<T> buildJDBCBatchingIterator(Iterable<T> entities, WriteOperation<? extends Column<? extends Table, ?>> writeOperation, int batchSize);
+	JDBCBatchingIterator<T> buildJDBCBatchingIterator(Iterable<? extends T> entities, WriteOperation<? extends Column<? extends Table, ?>> writeOperation, int batchSize);
 }

@@ -128,7 +128,7 @@ public class CascadeOneConfigurer<I extends Identified, O extends Identified, J 
 		persisterListener.addUpdateListener(new AfterUpdateCascader<I, Identified>(targetPersister) {
 			
 			@Override
-			protected void postTargetUpdate(Iterable<UpdatePayload<Identified, ?>> entities) {
+			protected void postTargetUpdate(Iterable<UpdatePayload<? extends Identified, ?>> entities) {
 				// Nothing to do
 			}
 			
@@ -149,7 +149,7 @@ public class CascadeOneConfigurer<I extends Identified, O extends Identified, J 
 		persisterListener.addInsertListener(new BeforeInsertCascader<I, Identified>(targetPersister) {
 			
 			@Override
-			protected void postTargetInsert(Iterable<Identified> entities) {
+			protected void postTargetInsert(Iterable<? extends Identified> entities) {
 				// Nothing to do. Identified#isPersisted flag should be fixed by target persister
 			}
 			

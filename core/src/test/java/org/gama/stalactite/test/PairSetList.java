@@ -17,7 +17,7 @@ import org.gama.lang.collection.PairIterator;
  */
 public class PairSetList<K, V> {
 	
-	public static <K, V> List<Duo<K, V>> toPairs(Iterable<K> values1, Iterable<V> values2) {
+	public static <K, V> List<Duo<? extends K, ? extends V>> toPairs(Iterable<K> values1, Iterable<V> values2) {
 		PairIterator<K, V> pairIterator = new PairIterator<>(values1, values2);
 		return Iterables.copy(pairIterator);
 	}

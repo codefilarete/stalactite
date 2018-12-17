@@ -60,7 +60,7 @@ public class InsertExecutor<C, I, T extends Table> extends WriteExecutor<C, I, T
 		};
 	}
 	
-	public int insert(Iterable<C> entities) {
+	public int insert(Iterable<? extends C> entities) {
 		Set<Column<T, Object>> columns = getMappingStrategy().getInsertableColumns();
 		ColumnParamedSQL<T> insertStatement = getDmlGenerator().buildInsert(columns);
 		WriteOperation<Column<T, Object>> writeOperation = newWriteOperation(insertStatement, new CurrentConnectionProvider());

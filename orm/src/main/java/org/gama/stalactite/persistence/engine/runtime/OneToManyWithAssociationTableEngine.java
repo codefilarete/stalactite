@@ -109,9 +109,10 @@ public class OneToManyWithAssociationTableEngine<I extends Identified, O extends
 				rightAssociations.set(new HashMap<>());
 			}
 			
-			/** Implementation that assembles source and target beans from ThreadLocal elements thanks to the {@link BeanRelationFixer} */
+			/** Implementation that assembles source and target beans from ThreadLocal elements thanks to the {@link BeanRelationFixer}
+			 * @param result*/
 			@Override
-			public void afterSelect(Iterable<I> result) {
+			public void afterSelect(Iterable<? extends I> result) {
 				try {
 					result.forEach(bean -> {
 						List<AssociationRecord> associationRecords = leftAssociations.get().get(bean);
@@ -157,7 +158,7 @@ public class OneToManyWithAssociationTableEngine<I extends Identified, O extends
 		CollectionUpdater<I, O, C> updateListener = new CollectionUpdater<I, O, C>(collectionGetter, targetPersister, null, shouldDeleteRemoved) {
 			
 			@Override
-			protected AssociationTableUpdateContext newUpdateContext(UpdatePayload<I, ?> updatePayload) {
+			protected AssociationTableUpdateContext newUpdateContext(UpdatePayload<? extends I, ?> updatePayload) {
 				return new AssociationTableUpdateContext(updatePayload);
 			}
 			
@@ -196,7 +197,7 @@ public class OneToManyWithAssociationTableEngine<I extends Identified, O extends
 				private final List<AssociationRecord> associationRecordstoBeInserted = new ArrayList<>();
 				private final List<AssociationRecord> associationRecordstoBeDeleted = new ArrayList<>();
 				
-				public AssociationTableUpdateContext(UpdatePayload<I, ?> updatePayload) {
+				public AssociationTableUpdateContext(UpdatePayload<? extends I, ?> updatePayload) {
 					super(updatePayload);
 				}
 				

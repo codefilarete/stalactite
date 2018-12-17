@@ -52,12 +52,12 @@ public class AfterUpdateCollectionCascaderTest extends AbstractCascaderTest {
 		};
 		
 		List<String> actions = new ArrayList<>();
-		List<Duo<Tata, Tata>> triggeredTarget = new ArrayList<>();
+		List<Duo<? extends Tata, ? extends Tata>> triggeredTarget = new ArrayList<>();
 		// Instance to test: overriden methods allow later checking
 		AfterUpdateCollectionCascader<Toto, Tata> testInstance = new AfterUpdateCollectionCascader<Toto, Tata>(persisterStub) {
 			
 			@Override
-			protected void postTargetUpdate(Iterable<UpdatePayload<Tata, ?>> entities) {
+			protected void postTargetUpdate(Iterable<UpdatePayload<? extends Tata, ?>> entities) {
 				actions.add("postTargetUpdate");
 				triggeredTarget.addAll(Iterables.collectToList(entities, UpdatePayload::getEntities));
 			}

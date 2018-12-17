@@ -63,7 +63,7 @@ public class JDBCGeneratedKeysIdentifierManager<T, I> implements IdentifierInser
 	}
 	
 	@Override
-	public JDBCBatchingIterator<T> buildJDBCBatchingIterator(Iterable<T> entities, WriteOperation<? extends Column<? extends Table, ?>> writeOperation, int batchSize) {
+	public JDBCBatchingIterator<T> buildJDBCBatchingIterator(Iterable<? extends T> entities, WriteOperation<? extends Column<? extends Table, ?>> writeOperation, int batchSize) {
 		return new JDBCBatchingIteratorGeneratedKeysAware<>(entities, writeOperation, batchSize, generatedKeysReader, identifierFixer);
 	}
 	
@@ -103,7 +103,7 @@ public class JDBCGeneratedKeysIdentifierManager<T, I> implements IdentifierInser
 		/** Elements of the current step, cleared after each "onStep event" */
 		private final List<T> elementsOfStep;
 		
-		public JDBCBatchingIteratorGeneratedKeysAware(Iterable<T> entities, WriteOperation writeOperation, int batchSize,
+		public JDBCBatchingIteratorGeneratedKeysAware(Iterable<? extends T> entities, WriteOperation writeOperation, int batchSize,
 													  GeneratedKeysReader generatedKeysReader, BiConsumer<T, Row> generatedKeysConsumer) {
 			super(entities, writeOperation, batchSize);
 			this.elementsOfStep = new ArrayList<>(batchSize);

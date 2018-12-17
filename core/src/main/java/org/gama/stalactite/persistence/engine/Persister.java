@@ -209,7 +209,7 @@ public class Persister<C, I, T extends Table> {
 		return insert(Collections.singletonList(c));
 	}
 	
-	public int insert(Iterable<C> entities) {
+	public int insert(Iterable<? extends C> entities) {
 		if (Iterables.isEmpty(entities)) {
 			return 0;
 		} else {
@@ -217,7 +217,7 @@ public class Persister<C, I, T extends Table> {
 		}
 	}
 	
-	protected int doInsert(Iterable<C> entities) {
+	protected int doInsert(Iterable<? extends C> entities) {
 		return insertExecutor.insert(entities);
 	}
 	
@@ -264,7 +264,7 @@ public class Persister<C, I, T extends Table> {
 	 * @param differencesIterable pairs of modified-unmodified instances, used to compute differences side by side
 	 * @param allColumnsStatement true if all columns must be in the SQL statement, false if only modified ones should be in
 	 */
-	public int update(Iterable<Duo<C, C>> differencesIterable, boolean allColumnsStatement) {
+	public int update(Iterable<? extends Duo<? extends C, ? extends C>> differencesIterable, boolean allColumnsStatement) {
 		Iterable<UpdatePayload<C, T>> updatePayloads = UpdateListener.computePayloads(differencesIterable, allColumnsStatement, getMappingStrategy());
 		if (Iterables.isEmpty(updatePayloads)) {
 			// nothing to update => we return immediatly without any call to listeners

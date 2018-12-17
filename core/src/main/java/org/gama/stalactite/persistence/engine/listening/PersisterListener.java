@@ -34,7 +34,7 @@ public class PersisterListener<C, I> {
 		return this;
 	}
 	
-	public <R> R doWithInsertListener(Iterable<C> entities, IQuietDelegate<R> delegate) {
+	public <R> R doWithInsertListener(Iterable<? extends C> entities, IQuietDelegate<R> delegate) {
 		insertListener.beforeInsert(entities);
 		R result;
 		try {
@@ -101,7 +101,7 @@ public class PersisterListener<C, I> {
 		return this;
 	}
 	
-		public <R> R doWithDeleteListener(Iterable<C> entities, IQuietDelegate<R> delegate) {
+	public <R> R doWithDeleteListener(Iterable<C> entities, IQuietDelegate<R> delegate) {
 		deleteListener.beforeDelete(entities);
 		R result;
 		try {
