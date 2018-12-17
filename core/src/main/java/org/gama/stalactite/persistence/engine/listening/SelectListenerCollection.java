@@ -26,8 +26,6 @@ public class SelectListenerCollection<T, I> implements SelectListener<T, I> {
 	}
 	
 	public void add(SelectListener<T, I> selectListener) {
-		if (selectListener != null) {    // prevent null as specified in interface
-			this.selectListeners.add(selectListener);
-		}
+		this.selectListeners.add(selectListener);
 	}
 }

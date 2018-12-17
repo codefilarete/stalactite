@@ -9,9 +9,9 @@ import org.gama.stalactite.persistence.id.Identified;
  * @see Diff
  * @see IndexedDiff
  */
-public class AbstractDiff {
-	private final Identified sourceInstance;
-	private final Identified replacingInstance;
+public class AbstractDiff<I extends Identified> {
+	private final I sourceInstance;
+	private final I replacingInstance;
 	private final State state;
 	
 	/**
@@ -21,17 +21,17 @@ public class AbstractDiff {
 	 * @param sourceInstance initial instance
 	 * @param replacingInstance replacing instance (may differ from source on attributes except id)
 	 */
-	public AbstractDiff(State state, Identified sourceInstance, Identified replacingInstance) {
+	public AbstractDiff(State state, I sourceInstance, I replacingInstance) {
 		this.state = state;
 		this.sourceInstance = sourceInstance;
 		this.replacingInstance = replacingInstance;
 	}
 	
-	public Identified getSourceInstance() {
+	public I getSourceInstance() {
 		return sourceInstance;
 	}
 	
-	public Identified getReplacingInstance() {
+	public I getReplacingInstance() {
 		return replacingInstance;
 	}
 	

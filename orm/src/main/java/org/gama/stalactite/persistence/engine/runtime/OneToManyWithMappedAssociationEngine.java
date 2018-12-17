@@ -228,12 +228,12 @@ public class OneToManyWithMappedAssociationEngine<I extends Identified, O extend
 				}
 				
 				@Override
-				protected void onHeldTarget(UpdateContext updateContext, AbstractDiff diff) {
+				protected void onHeldTarget(UpdateContext updateContext, AbstractDiff<O> diff) {
 					super.onHeldTarget(updateContext, diff);
 					Set<Integer> minus = Iterables.minus(((IndexedDiff) diff).getReplacerIndexes(), ((IndexedDiff) diff).getSourceIndexes());
 					Integer index = Iterables.first(minus);
 					if (index != null ) {
-						((IndexedMappedAssociationUpdateContext) updateContext).getIndexUpdates().put((O) diff.getReplacingInstance(), index);
+						((IndexedMappedAssociationUpdateContext) updateContext).getIndexUpdates().put(diff.getReplacingInstance(), index);
 					}
 				}
 				

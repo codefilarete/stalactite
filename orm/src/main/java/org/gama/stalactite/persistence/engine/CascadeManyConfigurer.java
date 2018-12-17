@@ -2,7 +2,6 @@ package org.gama.stalactite.persistence.engine;
 
 import java.lang.reflect.Method;
 import java.util.Collection;
-import java.util.List;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 
@@ -15,6 +14,7 @@ import org.gama.stalactite.persistence.engine.builder.CascadeManyList;
 import org.gama.stalactite.persistence.engine.cascade.JoinedTablesPersister;
 import org.gama.stalactite.persistence.engine.listening.InsertListener;
 import org.gama.stalactite.persistence.engine.listening.PersisterListener;
+import org.gama.stalactite.persistence.engine.runtime.AbstractOneToManyWithAssociationTableEngine;
 import org.gama.stalactite.persistence.engine.runtime.OneToManyWithAssociationTableEngine;
 import org.gama.stalactite.persistence.engine.runtime.OneToManyWithIndexedAssociationTableEngine;
 import org.gama.stalactite.persistence.engine.runtime.OneToManyWithMappedAssociationEngine;
@@ -144,9 +144,9 @@ public class CascadeManyConfigurer<I extends Identified, O extends Identified, J
 		}
 		// selection is always present (else configuration is nonsense !)
 		boolean orphanRemoval = maintenanceMode == ALL_ORPHAN_REMOVAL;
+		AbstractOneToManyWithAssociationTableEngine<I, O, J, C, ? extends AssociationRecord, ? extends AssociationTable> oneToManyWithAssociationTableEngine;
 		if (associationPersister != null) {
-			OneToManyWithAssociationTableEngine<I, O, J, C>  oneToManyWithAssociationTableEngine = new OneToManyWithAssociationTableEngine(
-					associationPersister);
+			oneToManyWithAssociationTableEngine = new OneToManyWithAssociationTableEngine(associationPersister);
 			oneToManyWithAssociationTableEngine.addSelectCascade(
 					cascadeMany, joinedTablesPersister, leftPersister, leftPrimaryKey, collectionGetter, rightJoinColumn, persisterListener);
 			if (maintenanceMode != READ_ONLY) {
@@ -156,21 +156,18 @@ public class CascadeManyConfigurer<I extends Identified, O extends Identified, J
 				oneToManyWithAssociationTableEngine.addDeleteCascade(cascadeMany, joinedTablesPersister, leftPersister, collectionGetter,
 						persisterListener, orphanRemoval, this.dialect, pointerToLeftColumn);
 			}
-		}
-		if (indexedAssociationPersister != null) {
-			OneToManyWithIndexedAssociationTableEngine<I, O, J, List<O>>  oneToManyWithIndexedAssociationTableEngine = new OneToManyWithIndexedAssociationTableEngine(
-					indexedAssociationPersister);
-			oneToManyWithIndexedAssociationTableEngine.addSelectCascade(
+		} else if (indexedAssociationPersister != null) {
+			oneToManyWithAssociationTableEngine = new OneToManyWithIndexedAssociationTableEngine(indexedAssociationPersister);
+			oneToManyWithAssociationTableEngine.addSelectCascade(
 					(CascadeManyList) cascadeMany,
 					joinedTablesPersister, leftPersister, leftPrimaryKey, (Function) collectionGetter, rightJoinColumn, persisterListener);
 			if (maintenanceMode != READ_ONLY) {
-				oneToManyWithIndexedAssociationTableEngine.addInsertCascade(leftPersister, (Function) collectionGetter, persisterListener);
-				oneToManyWithIndexedAssociationTableEngine.addUpdateCascade((CascadeManyList) cascadeMany, leftPersister, (Function) collectionGetter, persisterListener, orphanRemoval);
-				oneToManyWithIndexedAssociationTableEngine.addDeleteCascade((CascadeManyList) cascadeMany, joinedTablesPersister, leftPersister, (Function) collectionGetter,
+				oneToManyWithAssociationTableEngine.addInsertCascade((CascadeManyList) cascadeMany, leftPersister, (Function) collectionGetter, persisterListener);
+				oneToManyWithAssociationTableEngine.addUpdateCascade((CascadeManyList) cascadeMany, leftPersister, (Function) collectionGetter, persisterListener, orphanRemoval);
+				oneToManyWithAssociationTableEngine.addDeleteCascade((CascadeManyList) cascadeMany, joinedTablesPersister, leftPersister, (Function) collectionGetter,
 						persisterListener, orphanRemoval, this.dialect, pointerToLeftColumn);
 			}
-		}
-		if (associationPersister == null && indexedAssociationPersister == null) {
+		} else {
 			// we have a direct relation : relationship is owned by target table as a foreign key
 			OneToManyWithMappedAssociationEngine mappedAssociationEngine = new OneToManyWithMappedAssociationEngine(reverseSetter);
 			mappedAssociationEngine.addSelectCascade(cascadeMany, joinedTablesPersister, leftPersister, leftPrimaryKey, collectionGetter, rightJoinColumn, persisterListener);

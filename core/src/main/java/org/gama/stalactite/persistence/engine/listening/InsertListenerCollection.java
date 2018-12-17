@@ -26,8 +26,6 @@ public class InsertListenerCollection<T> implements InsertListener<T> {
 	}
 	
 	public void add(InsertListener<T> insertListener) {
-		if (insertListener != null) {	// prevent null as specified in interface
-			this.insertListeners.add(insertListener);
-		}
+		this.insertListeners.add(insertListener);
 	}
 }

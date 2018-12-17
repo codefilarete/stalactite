@@ -26,8 +26,6 @@ public class UpdateByIdListenerCollection<T> implements UpdateByIdListener<T> {
 	}
 	
 	public void add(UpdateByIdListener<T> updateByIdListener) {
-		if (updateByIdListener != null) {    // prevent null as specified in interface
-			this.updateByIdListeners.add(updateByIdListener);
-		}
+		this.updateByIdListeners.add(updateByIdListener);
 	}
 }

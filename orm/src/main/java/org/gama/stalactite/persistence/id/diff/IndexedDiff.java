@@ -13,7 +13,7 @@ import org.gama.stalactite.persistence.id.Identified;
  *
  * @author Guillaume Mary
  */
-public class IndexedDiff extends AbstractDiff {
+public class IndexedDiff<I extends Identified> extends AbstractDiff<I> {
 	
 	private final Set<Integer> sourceIndexes;
 	
@@ -27,11 +27,11 @@ public class IndexedDiff extends AbstractDiff {
 	 * @param sourceInstance initial instance
 	 * @param replacingInstance replacing instance (may differ from source on attributes except id)
 	 */
-	public IndexedDiff(State state, Identified sourceInstance, Identified replacingInstance) {
+	public IndexedDiff(State state, I sourceInstance, I replacingInstance) {
 		this(state, sourceInstance, replacingInstance, new HashSet<>(), new HashSet<>());
 	}
 	
-	public IndexedDiff(State state, Identified sourceInstance, Identified replacingInstance,
+	public IndexedDiff(State state, I sourceInstance, I replacingInstance,
 					   Set<Integer> sourceIndexes, Set<Integer> replacerIndexes) {
 		super(state, sourceInstance, replacingInstance);
 		this.sourceIndexes = sourceIndexes;

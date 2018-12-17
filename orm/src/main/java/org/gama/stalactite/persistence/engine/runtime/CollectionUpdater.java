@@ -117,22 +117,22 @@ public class CollectionUpdater<I extends Identified, O extends Identified, C ext
 		return new UpdateContext(updatePayload);
 	}
 	
-	protected void onAddedTarget(UpdateContext updateContext, AbstractDiff diff) {
+	protected void onAddedTarget(UpdateContext updateContext, AbstractDiff<O> diff) {
 		// we insert only non persisted entities to prevent from a primary key conflict
 		if (Identified.NON_PERSISTED_PREDICATE.test(diff.getReplacingInstance())) {
 			updateContext.getEntitiesToBeInserted().add((O) diff.getReplacingInstance());
 		}
 	}
 	
-	protected void onHeldTarget(UpdateContext updateContext, AbstractDiff diff) {
+	protected void onHeldTarget(UpdateContext updateContext, AbstractDiff<O> diff) {
 		updateContext.getEntitiesToBeUpdated().add(diff);
 	}
 	
-	protected void onRemovedTarget(UpdateContext updateContext, AbstractDiff diff) {
+	protected void onRemovedTarget(UpdateContext updateContext, AbstractDiff<O> diff) {
 		// we delete only persisted entity to prevent from a not found record
 		if (shouldDeleteRemoved) {
 			if (Identified.PERSISTED_PREDICATE.test(diff.getSourceInstance())) {
-				updateContext.getEntitiesToBeDeleted().add((O) diff.getSourceInstance());
+				updateContext.getEntitiesToBeDeleted().add(diff.getSourceInstance());
 			}
 		} else // entity shouldn't be deleted, so we may have to update it
 			if (reverseSetter != null) {

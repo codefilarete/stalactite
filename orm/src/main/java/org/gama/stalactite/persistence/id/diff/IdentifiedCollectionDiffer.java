@@ -42,11 +42,11 @@ public class IdentifiedCollectionDiffer {
 	 * @return a set of differences between the 2 sets, never null, empty if the 2 sets are empty. If no modification, all instances will be
 	 * {@link State#HELD}.
 	 */
-	public <I extends Identified<C>, C> Set<Diff> diffSet(Set<I> before, Set<I> after) {
+	public <I extends Identified<C>, C> Set<Diff<I>> diffSet(Set<I> before, Set<I> after) {
 		Map<C, I> beforeMappedOnIdentifier = Iterables.map(before, (Function<I, C>) (Function) SURROGATE_ACCESSOR, Function.identity());
 		Map<C, I> afterMappedOnIdentifier = Iterables.map(after, (Function<I, C>) (Function) SURROGATE_ACCESSOR, Function.identity());
 		
-		Set<Diff> result = new HashSet<>();
+		Set<Diff<I>> result = new HashSet<>();
 		
 		for (Entry<C, I> id : beforeMappedOnIdentifier.entrySet()) {
 			Identified afterId = afterMappedOnIdentifier.get(id.getKey());
@@ -72,7 +72,7 @@ public class IdentifiedCollectionDiffer {
 	 * @return a set of differences between the 2 sets, never null, empty if the 2 sets are empty. If no modification, all instances will be
 	 * {@link State#HELD}.
 	 */
-	public <I extends Identified> Set<IndexedDiff> diffList(List<I> before, List<I> after) {
+	public <I extends Identified> Set<IndexedDiff<I>> diffList(List<I> before, List<I> after) {
 		// building Map of indexes per object
 		Map<I, Set<Integer>> beforeIndexes = new ValueFactoryHashMap<>(k -> new HashSet<>());
 		Map<I, Set<Integer>> afterIndexes = new ValueFactoryHashMap<>(k -> new HashSet<>());
@@ -81,7 +81,7 @@ public class IdentifiedCollectionDiffer {
 		ModifiableInt afterIndex = new ModifiableInt(-1);
 		after.forEach(o -> afterIndexes.get(o).add(afterIndex.increment()));
 		
-		Set<IndexedDiff> result = new HashSet<>();
+		Set<IndexedDiff<I>> result = new HashSet<>();
 		
 		// Removed instances are found with a simple minus
 		Set<I> removeds = Iterables.minus(beforeIndexes.keySet(), afterIndexes.keySet());

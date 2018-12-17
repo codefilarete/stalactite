@@ -1,7 +1,9 @@
 package org.gama.stalactite.persistence.engine.cascade;
 
 import java.util.Collection;
+import java.util.List;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.gama.lang.collection.Iterables;
 import org.gama.stalactite.persistence.engine.Persister;
@@ -38,7 +40,10 @@ public abstract class AfterInsertCollectionCascader<Trigger, Target> implements 
 	 */
 	@Override
 	public void afterInsert(Iterable<? extends Trigger> entities) {
-		this.persister.insert(Iterables.stream(entities).flatMap(c -> getTargets(c).stream()).collect(Collectors.toList()));
+		Stream<? extends Trigger> stream = Iterables.stream(entities);
+		Stream<? extends Target> targetStream = stream.flatMap(c -> getTargets(c).stream());
+		List<? extends Target> collect = targetStream.collect(Collectors.toList());
+		this.persister.insert(collect);
 	}
 	
 	/**

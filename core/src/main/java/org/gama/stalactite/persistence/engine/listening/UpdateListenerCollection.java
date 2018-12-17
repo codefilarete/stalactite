@@ -26,8 +26,6 @@ public class UpdateListenerCollection<E> implements UpdateListener<E> {
 	}
 	
 	public void add(UpdateListener<E> updateListener) {
-		if (updateListener != null) {    // prevent null as specified in interface
-			this.updateListeners.add(updateListener);
-		}
+		this.updateListeners.add(updateListener);
 	}
 }

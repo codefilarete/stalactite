@@ -41,12 +41,16 @@ public class IdentifiedCollectionDifferTest {
 				+ (diff instanceof IndexedDiff ? " [ " + ((IndexedDiff) diff).getSourceIndexes() + " vs " + ((IndexedDiff) diff).getReplacerIndexes() + " ]" : "");
 	}
 	
-	private static final Function<AbstractDiff, Comparable> SOURCE_ID_GETTER = Functions.link(AbstractDiff::getSourceInstance, Identified::getId)
+	private static final Function<AbstractDiff<? extends Identified>, ? extends Identified> GET_SOURCE_INSTANCE = AbstractDiff::getSourceInstance;
+	private static final Function<AbstractDiff<? extends Identified>, ? extends Identified> GET_REPLACING_INSTANCE = AbstractDiff::getReplacingInstance;
+	private static final Function<AbstractDiff<? extends Identified>, State> GET_STATE = AbstractDiff::getState;
+	
+	private static final Function<AbstractDiff<? extends Identified>, Comparable> SOURCE_ID_GETTER = Functions.link(GET_SOURCE_INSTANCE, Identified::getId)
 			.andThen(statefullIdentifier -> (Comparable) statefullIdentifier.getSurrogate());
-	private static final Function<AbstractDiff, Comparable> REPLACING_ID_GETTER = Functions.link(AbstractDiff::getReplacingInstance, Identified::getId)
+	private static final Function<AbstractDiff<? extends Identified>, Comparable> REPLACING_ID_GETTER = Functions.link(GET_REPLACING_INSTANCE, Identified::getId)
 			.andThen(statefullIdentifier -> (Comparable) statefullIdentifier.getSurrogate());
-	private static final Comparator<AbstractDiff> STATE_THEN_INSTANCES_COMPARATOR = Comparator.
-			comparing(AbstractDiff::getState)
+	private static final Comparator<AbstractDiff<? extends Identified>> COMPARING = Comparator.comparing(GET_STATE);
+	private static final Comparator<AbstractDiff<? extends Identified>> STATE_THEN_INSTANCES_COMPARATOR = COMPARING
 			.thenComparing(SOURCE_ID_GETTER, Comparator.nullsFirst(Comparator.naturalOrder()))
 			.thenComparing(REPLACING_ID_GETTER, Comparator.nullsFirst(Comparator.naturalOrder()));
 	
@@ -76,22 +80,22 @@ public class IdentifiedCollectionDifferTest {
 				{
 						asHashSet(testData.country1, testData.country2, testData.country3),
 						asHashSet(testData.country3Clone, testData.country4, testData.country5),
-						Arrays.asHashSet(new Diff(ADDED, null, testData.country4),
-										new Diff(ADDED, null, testData.country5),
-										new Diff(REMOVED, testData.country1, null),
-										new Diff(REMOVED, testData.country2, null),
-										new Diff(HELD, testData.country3, testData.country3Clone))
+						Arrays.asHashSet(new Diff<>(ADDED, null, testData.country4),
+										new Diff<>(ADDED, null, testData.country5),
+										new Diff<>(REMOVED, testData.country1, null),
+										new Diff<>(REMOVED, testData.country2, null),
+										new Diff<>(HELD, testData.country3, testData.country3Clone))
 				},
 				// corner cases with empty sets
 				{
 						asHashSet(),
 						asHashSet(testData.country1),
-						asHashSet(new Diff(ADDED, null, testData.country1))
+						asHashSet(new Diff<>(ADDED, null, testData.country1))
 				},
 				{
 						asHashSet(testData.country1),
 						asHashSet(),
-						asHashSet(new Diff(REMOVED, testData.country1, null))
+						asHashSet(new Diff<>(REMOVED, testData.country1, null))
 				},
 				{
 						asHashSet(),
@@ -103,15 +107,15 @@ public class IdentifiedCollectionDifferTest {
 	
 	@ParameterizedTest
 	@MethodSource("testDiffSet")
-	public void testDiffSet(Set<Country> set1, Set<Country> set2, Set<Diff> expectedResult) {
+	public void testDiffSet(Set<Country> set1, Set<Country> set2, Set<Diff<Country>> expectedResult) {
 		IdentifiedCollectionDiffer testInstance = new IdentifiedCollectionDiffer();
 		
-		Set<Diff> diffs = testInstance.diffSet(set1, set2);
+		Set<Diff<Country>> diffs = testInstance.diffSet(set1, set2);
 		
 		// we must use a comparator to ensure same order then use a ToString, because the default solution of using assertEquals(..) needs
 		// an implementation of equals(..) and hashCode() which would have been made only for testing purpose
-		TreeSet<Diff> sortedExpectation = Arrays.asTreeSet(STATE_THEN_INSTANCES_COMPARATOR, expectedResult);
-		TreeSet<Diff> sortedResult = Arrays.asTreeSet(STATE_THEN_INSTANCES_COMPARATOR, diffs);
+		TreeSet<Diff<Country>> sortedExpectation = Arrays.asTreeSet(STATE_THEN_INSTANCES_COMPARATOR, expectedResult);
+		TreeSet<Diff<Country>> sortedResult = Arrays.asTreeSet(STATE_THEN_INSTANCES_COMPARATOR, diffs);
 		
 		assertEquals(toString(sortedExpectation), toString(sortedResult));
 	}
@@ -222,15 +226,15 @@ public class IdentifiedCollectionDifferTest {
 	
 	@ParameterizedTest
 	@MethodSource("testDiffList")
-	public void testDiffList(List<Country> set1, List<Country> set2, Set<IndexedDiff> expectedResult) {
+	public void testDiffList(List<Country> set1, List<Country> set2, Set<IndexedDiff<Country>> expectedResult) {
 		IdentifiedCollectionDiffer testInstance = new IdentifiedCollectionDiffer();
 		
-		Set<IndexedDiff> diffs = testInstance.diffList(set1, set2);
+		Set<IndexedDiff<Country>> diffs = testInstance.diffList(set1, set2);
 		
 		// we must use a comparator to ensure same order then use a ToString, because the default solution of using assertEquals(..) needs
 		// an implementation of equals(..) and hashCode() which would have been made only for testing purpose
-		TreeSet<IndexedDiff> treeSet1 = Arrays.asTreeSet(STATE_THEN_INSTANCES_COMPARATOR, diffs);
-		TreeSet<IndexedDiff> treeSet2 = Arrays.asTreeSet(STATE_THEN_INSTANCES_COMPARATOR, expectedResult);
+		TreeSet<IndexedDiff<Country>> treeSet1 = Arrays.asTreeSet(STATE_THEN_INSTANCES_COMPARATOR, diffs);
+		TreeSet<IndexedDiff<Country>> treeSet2 = Arrays.asTreeSet(STATE_THEN_INSTANCES_COMPARATOR, expectedResult);
 		assertEquals(toString(treeSet2), toString(treeSet1));
 	}
 	

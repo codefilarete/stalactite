@@ -26,8 +26,6 @@ public class DeleteListenerCollection<T> implements DeleteListener<T> {
 	}
 	
 	public void add(DeleteListener<T> deleteListener) {
-		if (deleteListener != null) {    // prevent null as specified in interface
-			this.deleteListeners.add(deleteListener);
-		}
+		this.deleteListeners.add(deleteListener);
 	}
 }

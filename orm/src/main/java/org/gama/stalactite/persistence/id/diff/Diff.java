@@ -13,7 +13,7 @@ import org.gama.stalactite.persistence.id.Identified;
  * {@link #equals(Object)} method may be implemented without taking into account all entity fields so 2 of them may differ on some fields while
  * remaining equals, such other fields difference shall interest database to update modified columns.
  */
-public class Diff extends AbstractDiff {
+public class Diff<I extends Identified> extends AbstractDiff<I> {
 	
 	/**
 	 * Constructor without given index (minimal constructor).
@@ -22,7 +22,7 @@ public class Diff extends AbstractDiff {
 	 * @param sourceInstance initial instance
 	 * @param replacingInstance replacing instance (may differ from source on attributes except id)
 	 */
-	public Diff(State state, Identified sourceInstance, Identified replacingInstance) {
+	public Diff(State state, I sourceInstance, I replacingInstance) {
 		super(state, sourceInstance, replacingInstance);
 	}
 }
