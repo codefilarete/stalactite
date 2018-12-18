@@ -14,7 +14,7 @@ import org.gama.stalactite.persistence.engine.listening.DeleteByIdListener;
  */
 public abstract class AfterDeleteByIdCascader<Trigger, Target> implements DeleteByIdListener<Trigger> {
 	
-	private Persister<Target, ?, ?> persister;
+	private final Persister<Target, ?, ?> persister;
 	
 	/**
 	 * Simple constructor. Created instance must be added to PersisterListener afterward.

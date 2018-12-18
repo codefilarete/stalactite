@@ -19,7 +19,7 @@ import org.gama.stalactite.persistence.engine.listening.UpdateListener;
  */
 public abstract class AfterUpdateCollectionCascader<Trigger, Target> implements UpdateListener<Trigger> {
 	
-	private Persister<Target, ?, ?> persister;
+	private final Persister<Target, ?, ?> persister;
 	
 	public AfterUpdateCollectionCascader(Persister<Target, ?, ?> persister) {
 		this.persister = persister;

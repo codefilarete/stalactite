@@ -18,7 +18,7 @@ import org.gama.stalactite.persistence.engine.listening.UpdateListener;
  */
 public abstract class AfterUpdateCascader<Trigger, Target> implements UpdateListener<Trigger> {
 	
-	private Persister<Target, ?, ?> persister;
+	private final Persister<Target, ?, ?> persister;
 	
 	public AfterUpdateCascader(Persister<Target, ?, ?> persister) {
 		this.persister = persister;

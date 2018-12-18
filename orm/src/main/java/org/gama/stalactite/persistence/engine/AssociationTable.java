@@ -12,10 +12,33 @@ import org.gama.stalactite.persistence.structure.Table;
  */
 public class AssociationTable<SELF extends AssociationTable<SELF>> extends Table<SELF> {
 	
+	/**
+	 * Column pointing to left table primary key.
+	 * Expected to be joined with {@link #oneSidePrimaryKey}
+	 */
 	private final Column<SELF, Object> oneSideKeyColumn;
+	
+	/**
+	 * Primary key (one column for now) of the source entities, on the (undefined) target table.
+	 * Expected to be joined with {@link #oneSideKeyColumn}
+	 */
 	private final Column oneSidePrimaryKey;
+	
+	/**
+	 * Column pointing to right table primary key.
+	 * Expected to be joined with {@link #manySidePrimaryKey}
+	 */
 	private final Column<SELF, Object> manySideKeyColumn;
+	
+	/**
+	 * Primary key (one column for now) of the collection entities, on the (undefined) target table
+	 * Expected to be joined with {@link #manySideKeyColumn}
+	 */
 	private final Column manySidePrimaryKey;
+	
+	/**
+	 * Primary key of this table, contains {@link #oneSideKeyColumn} and {@link #manySideKeyColumn}
+	 */
 	private final PrimaryKey<SELF> primaryKey;
 	
 	public AssociationTable(Schema schema,

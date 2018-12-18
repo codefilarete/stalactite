@@ -14,7 +14,7 @@ import org.gama.stalactite.persistence.engine.listening.InsertListener;
  */
 public abstract class BeforeInsertCascader<Trigger, Target> implements InsertListener<Trigger> {
 	
-	private Persister<Target, ?, ?> persister;
+	private final Persister<Target, ?, ?> persister;
 	
 	/**
 	 * Simple constructor. Created instance must be added to PersisterListener afterward.

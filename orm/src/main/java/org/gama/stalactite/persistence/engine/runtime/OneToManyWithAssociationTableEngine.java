@@ -6,6 +6,8 @@ import java.util.function.Function;
 import org.gama.stalactite.persistence.engine.AssociationRecord;
 import org.gama.stalactite.persistence.engine.AssociationRecordPersister;
 import org.gama.stalactite.persistence.engine.AssociationTable;
+import org.gama.stalactite.persistence.engine.Persister;
+import org.gama.stalactite.persistence.engine.listening.PersisterListener;
 import org.gama.stalactite.persistence.id.Identified;
 import org.gama.stalactite.persistence.id.Identifier;
 
@@ -15,8 +17,8 @@ import org.gama.stalactite.persistence.id.Identifier;
 public class OneToManyWithAssociationTableEngine<I extends Identified, O extends Identified, J extends Identifier, C extends Collection<O>>
 		extends AbstractOneToManyWithAssociationTableEngine<I, O, J, C, AssociationRecord, AssociationTable> {
 	
-	public OneToManyWithAssociationTableEngine(AssociationRecordPersister<AssociationRecord, AssociationTable> associationPersister) {
-		super(associationPersister);
+	public OneToManyWithAssociationTableEngine(PersisterListener<I, J> persisterListener, Persister<O, J, ?> targetPersister, Function<I, C> collectionGetter, AssociationRecordPersister<AssociationRecord, AssociationTable> associationPersister) {
+		super(persisterListener, targetPersister, collectionGetter, associationPersister);
 	}
 	
 	@Override

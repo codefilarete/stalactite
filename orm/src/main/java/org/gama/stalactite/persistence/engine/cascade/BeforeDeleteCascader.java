@@ -14,7 +14,7 @@ import org.gama.stalactite.persistence.engine.listening.DeleteListener;
  */
 public abstract class BeforeDeleteCascader<Trigger, Target> implements DeleteListener<Trigger> {
 	
-	private Persister<Target, ?, ?> persister;
+	private final Persister<Target, ?, ?> persister;
 	
 	/**
 	 * Simple constructor. Created instance must be added to PersisterListener afterward.

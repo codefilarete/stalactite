@@ -12,7 +12,6 @@ import org.gama.stalactite.persistence.engine.AssociationRecordPersister;
 import org.gama.stalactite.persistence.engine.IndexedAssociationRecord;
 import org.gama.stalactite.persistence.engine.IndexedAssociationTable;
 import org.gama.stalactite.persistence.engine.Persister;
-import org.gama.stalactite.persistence.engine.builder.CascadeMany;
 import org.gama.stalactite.persistence.engine.listening.PersisterListener;
 import org.gama.stalactite.persistence.engine.listening.UpdateListener.UpdatePayload;
 import org.gama.stalactite.persistence.engine.runtime.OneToManyWithMappedAssociationEngine.TargetInstancesUpdateCascader;
@@ -30,16 +29,15 @@ import static org.gama.lang.collection.Iterables.minus;
 public class OneToManyWithIndexedAssociationTableEngine<I extends Identified, O extends Identified, J extends Identifier, C extends List<O>>
 		extends AbstractOneToManyWithAssociationTableEngine<I, O, J, C, IndexedAssociationRecord, IndexedAssociationTable> {
 	
-	public OneToManyWithIndexedAssociationTableEngine(AssociationRecordPersister<IndexedAssociationRecord, IndexedAssociationTable> associationPersister) {
-		super(associationPersister);
+	public OneToManyWithIndexedAssociationTableEngine(PersisterListener<I, J> persisterListener,
+													  Persister<O, J, ?> leftPersister,
+													  Function<I, C> collectionGetter,
+													  AssociationRecordPersister<IndexedAssociationRecord, IndexedAssociationTable> associationPersister) {
+		super(persisterListener, leftPersister, collectionGetter, associationPersister);
 	}
 	
 	@Override
-	public void addUpdateCascade(CascadeMany<I, O, J, C> cascadeMany,
-								 Persister<O, J, ?> targetPersister,
-								 Function<I, C> collectionGetter,
-								 PersisterListener<I, J> persisterListener,
-								 boolean shouldDeleteRemoved) {
+	public void addUpdateCascade(boolean shouldDeleteRemoved) {
 		
 		// NB: we don't have any reverseSetter (for applying source entity to reverse side (target entity)), because this is only relevent
 		// when association is mapped without intermediary table (owned by "many-side" entity)
@@ -58,8 +56,7 @@ public class OneToManyWithIndexedAssociationTableEngine<I extends Identified, O 
 				Integer index = first(minus);
 				if (index != null ) {
 					I leftIdentifier = updateContext.getPayload().getEntities().getLeft();
-					PairIterator<Integer, Integer> diffIndexIterator = new PairIterator<>(indexedDiff.getReplacerIndexes(),
-							indexedDiff.getSourceIndexes());
+					PairIterator<Integer, Integer> diffIndexIterator = new PairIterator<>(indexedDiff.getReplacerIndexes(), indexedDiff.getSourceIndexes());
 					diffIndexIterator.forEachRemaining(d -> {
 						if (!d.getLeft().equals(d.getRight()))
 							((AssociationTableUpdateContext) updateContext).getAssociationRecordstoBeUpdated().add(new Duo<>(

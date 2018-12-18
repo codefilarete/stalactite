@@ -18,7 +18,7 @@ import org.gama.stalactite.persistence.engine.listening.SelectListener;
  */
 public abstract class AfterSelectCascader<Trigger, Target, I> implements SelectListener<Trigger, I> {
 	
-	private Persister<Target, I, ?> persister;
+	private final Persister<Target, I, ?> persister;
 	
 	/**
 	 * Simple constructor. Created instance must be added to PersisterListener afterward.
