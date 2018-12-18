@@ -8,7 +8,7 @@ import org.gama.stalactite.persistence.engine.Persister;
 import org.gama.stalactite.persistence.engine.listening.SelectListener;
 
 /**
- * Cascader for select, written for @OneToOne style of cascade where Trigger owns the relationship with Target.
+ * Cascader for select, written for @OneToOne style of cascade where Trigger owns the relationship to Target.
  * Use carefully : this class triggers selects for Target instances so it will result in a N+1 symptom. Prefer using a join select.
  * 
  * @param <Trigger> source type that triggers this listener

@@ -8,7 +8,7 @@ import org.gama.stalactite.persistence.engine.Persister;
 import org.gama.stalactite.persistence.engine.listening.DeleteListener;
 
 /**
- * Cascader for delete, written for @OneToOne style of cascade where Trigger owns the relationship with Target
+ * Cascader for delete, written for @OneToOne style of cascade where Trigger owns the relationship to Target
  * 
  * @author Guillaume Mary
  */
