@@ -14,7 +14,7 @@ import java.util.stream.Collectors;
 import org.danekja.java.util.function.serializable.SerializableFunction;
 import org.gama.lang.Reflections;
 import org.gama.lang.ThreadLocals;
-import org.gama.lang.bean.Converter;
+import org.gama.lang.function.ThrowingConverter;
 import org.gama.lang.collection.Iterables;
 import org.gama.lang.function.ThrowingFunction;
 import org.gama.reflection.MethodReferenceCapturer;
@@ -34,7 +34,7 @@ import org.gama.sql.binder.ResultSetReader;
  * @see #add(String, ResultSetReader, BiConsumer)
  * @see #add(String, ResultSetReader, Class, SerializableFunction, BiConsumer)
  */
-public class ResultSetConverterSupport<I, C> implements ResultSetConverter<I, C>, Converter<ResultSet, List<C>, SQLException> {
+public class ResultSetConverterSupport<I, C> implements ResultSetConverter<I, C>, ThrowingConverter<ResultSet, List<C>, SQLException> {
 	
 	/**
 	 * Cache for created beans during {@link ResultSet} iteration.

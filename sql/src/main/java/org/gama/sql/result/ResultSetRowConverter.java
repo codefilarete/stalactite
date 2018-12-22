@@ -7,7 +7,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 
-import org.gama.lang.bean.Converter;
+import org.gama.lang.function.ThrowingConverter;
 import org.gama.sql.binder.ResultSetReader;
 
 /**
@@ -24,7 +24,7 @@ import org.gama.sql.binder.ResultSetReader;
  * @author Guillaume Mary
  */
 public class ResultSetRowConverter<I, C>
-		implements ResultSetConverter<I, C>, Converter<ResultSet, C, SQLException>, ResultSetRowAssembler<C> {
+		implements ResultSetConverter<I, C>, ThrowingConverter<ResultSet, C, SQLException>, ResultSetRowAssembler<C> {
 	
 	private final ColumnReader<I> reader;
 	

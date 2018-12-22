@@ -2,7 +2,7 @@ package org.gama.stalactite.persistence.id.sequence;
 
 import java.util.Map;
 
-import org.gama.lang.bean.ConverterRegistry;
+import org.gama.lang.function.ConverterRegistry;
 import org.gama.lang.bean.Objects;
 
 /**

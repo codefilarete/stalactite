@@ -6,7 +6,7 @@ import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.function.Function;
 
-import org.gama.lang.bean.Converter;
+import org.gama.lang.function.ThrowingConverter;
 import org.gama.lang.collection.Iterables;
 import org.gama.lang.collection.ReadOnlyIterator;
 import org.gama.lang.exception.Exceptions;
@@ -37,7 +37,7 @@ import org.gama.lang.exception.Exceptions;
  * @see #convert()
  * @see #convert(ResultSet)
  */
-public abstract class ResultSetIterator<T> extends ReadOnlyIterator<T> implements Converter<ResultSet, T, SQLException> {
+public abstract class ResultSetIterator<T> extends ReadOnlyIterator<T> implements ThrowingConverter<ResultSet, T, SQLException> {
 	
 	/** The read {@link ResultSet} */
 	private ResultSet resultSet;

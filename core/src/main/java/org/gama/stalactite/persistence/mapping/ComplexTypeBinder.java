@@ -5,7 +5,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
-import org.gama.lang.bean.Converter;
+import org.gama.lang.function.ThrowingConverter;
 import org.gama.sql.binder.LambdaParameterBinder;
 import org.gama.sql.binder.NullAwareParameterBinder;
 import org.gama.sql.binder.ParameterBinder;
@@ -36,8 +36,8 @@ public class ComplexTypeBinder<C> implements ParameterBinder<C> {
 	 * @param <P> the intermediary type
 	 */
 	public <P> ComplexTypeBinder(@Nonnull ParameterBinder<P> lowerBinder,
-								 @Nonnull Converter<P, C, RuntimeException> toObjectConverter,
-								 @Nonnull Converter<C, P, RuntimeException> toDatabaseConverter) {
+								 @Nonnull ThrowingConverter<P, C, RuntimeException> toObjectConverter,
+								 @Nonnull ThrowingConverter<C, P, RuntimeException> toDatabaseConverter) {
 		convertingBinder = new NullAwareParameterBinder<>(new LambdaParameterBinder<>(
 				// we simply need some conversion after reading and before writing
 				lowerBinder.thenApply(toObjectConverter::convert), lowerBinder.preApply(toDatabaseConverter::convert)
