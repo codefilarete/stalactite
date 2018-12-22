@@ -8,8 +8,8 @@ import java.util.Map;
 
 import org.gama.lang.Retryer;
 import org.gama.lang.Retryer.RetryException;
-import org.gama.lang.bean.IDelegate;
 import org.gama.lang.exception.Exceptions;
+import org.gama.lang.function.ThrowingExecutable;
 import org.gama.sql.ConnectionProvider;
 import org.gama.sql.dml.SQLStatement.BindingException;
 
@@ -122,7 +122,7 @@ public class WriteOperation<ParamType> extends SQLOperation<ParamType> {
 			return valuesClone.toString();
 		});
 		try {
-			return (int[]) doWithRetry((IDelegate<Object, SQLException>) () -> preparedStatement.executeBatch());
+			return (int[]) doWithRetry((ThrowingExecutable<Object, SQLException>) () -> preparedStatement.executeBatch());
 		} catch (SQLException | RetryException e) {
 			throw new SQLExecutionException(getSQL(), e);
 		} finally {
@@ -132,7 +132,7 @@ public class WriteOperation<ParamType> extends SQLOperation<ParamType> {
 		}
 	}
 	
-	private <T, E extends Exception> T doWithRetry(IDelegate<T, E> delegateWithResult) throws E, RetryException {
+	private <T, E extends Exception> T doWithRetry(ThrowingExecutable<T, E> delegateWithResult) throws E, RetryException {
 		return retryer.execute(delegateWithResult, getSQL());
 	}
 	

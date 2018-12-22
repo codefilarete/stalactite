@@ -1,11 +1,12 @@
 package org.gama.stalactite.persistence.engine.listening;
 
 import java.util.List;
+import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 
 import org.gama.lang.Duo;
-import org.gama.lang.bean.IQuietDelegate;
 import org.gama.lang.collection.Iterables;
+import org.gama.lang.function.ThrowingExecutable;
 import org.gama.stalactite.persistence.engine.listening.UpdateListener.UpdatePayload;
 import org.gama.stalactite.persistence.structure.Table;
 
@@ -34,7 +35,7 @@ public class PersisterListener<C, I> {
 		return this;
 	}
 	
-	public <R> R doWithInsertListener(Iterable<? extends C> entities, IQuietDelegate<R> delegate) {
+	public <R> R doWithInsertListener(Iterable<? extends C> entities, ThrowingExecutable<R, RuntimeException> delegate) {
 		insertListener.beforeInsert(entities);
 		R result;
 		try {
@@ -56,15 +57,9 @@ public class PersisterListener<C, I> {
 		return this;
 	}
 	
-	public <R> R doWithUpdateByIdListener(Iterable<C> entities, IQuietDelegate<R> delegate) {
+	public <R> R doWithUpdateByIdListener(Iterable<C> entities, ThrowingExecutable<R, RuntimeException> delegate) {
 		updateByIdListenerCollection.beforeUpdateById(entities);
-		R result;
-		try {
-			result = delegate.execute();
-		} catch (RuntimeException e) {
-			updateByIdListenerCollection.onError(entities, e);
-			throw e;
-		}
+		R result = execute(delegate, entities, updateByIdListenerCollection::onError);
 		updateByIdListenerCollection.afterUpdateById(entities);
 		return result;
 	}
@@ -101,15 +96,9 @@ public class PersisterListener<C, I> {
 		return this;
 	}
 	
-	public <R> R doWithDeleteListener(Iterable<C> entities, IQuietDelegate<R> delegate) {
+	public <R> R doWithDeleteListener(Iterable<C> entities, ThrowingExecutable<R, RuntimeException> delegate) {
 		deleteListener.beforeDelete(entities);
-		R result;
-		try {
-			result = delegate.execute();
-		} catch (RuntimeException e) {
-			deleteListener.onError(entities, e);
-			throw e;
-		}
+		R result = execute(delegate, entities, deleteListener::onError);
 		deleteListener.afterDelete(entities);
 		return result;
 	}
@@ -119,15 +108,9 @@ public class PersisterListener<C, I> {
 		return this;
 	}
 	
-	public <R> R doWithDeleteByIdListener(Iterable<C> entities, IQuietDelegate<R> delegate) {
+	public <R> R doWithDeleteByIdListener(Iterable<C> entities, ThrowingExecutable<R, RuntimeException> delegate) {
 		deleteByIdListenerCollection.beforeDeleteById(entities);
-		R result;
-		try {
-			result = delegate.execute();
-		} catch (RuntimeException e) {
-			deleteByIdListenerCollection.onError(entities, e);
-			throw e;
-		}
+		R result = execute(delegate, entities, deleteByIdListenerCollection::onError);
 		deleteByIdListenerCollection.afterDeleteById(entities);
 		return result;
 	}
@@ -141,17 +124,20 @@ public class PersisterListener<C, I> {
 		return this;
 	}
 	
-	public List<C> doWithSelectListener(Iterable<I> ids, IQuietDelegate<List<C>> delegate) {
+	public List<C> doWithSelectListener(Iterable<I> ids, ThrowingExecutable<List<C>, RuntimeException> delegate) {
 		selectListener.beforeSelect(ids);
-		List<C> toReturn;
-		try {
-			toReturn = delegate.execute();
-		} catch (RuntimeException e) {
-			selectListener.onError(ids, e);
-			throw e;
-		}
-		selectListener.afterSelect(toReturn);
-		return toReturn;
+		List<C> result = execute(delegate, ids, selectListener::onError);
+		selectListener.afterSelect(result);
+		return result;
 	}
 	
+	private <X, R> R execute(ThrowingExecutable<R, RuntimeException> delegate, Iterable<X> entities,
+								 BiConsumer<Iterable<X>, RuntimeException> errorHandler) {
+		try {
+			return delegate.execute();
+		} catch (RuntimeException e) {
+			errorHandler.accept(entities, e);
+			throw e;
+		}
+	}
 }
