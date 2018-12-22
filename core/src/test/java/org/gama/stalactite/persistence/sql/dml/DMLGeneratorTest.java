@@ -38,7 +38,7 @@ public class DMLGeneratorTest {
 		Column colA = toto.addColumn("A", String.class);
 		Column colB = toto.addColumn("B", String.class);
 
-		ColumnParamedSQL builtInsert = testInstance.buildInsert(toto.getColumns());
+		ColumnParameterizedSQL builtInsert = testInstance.buildInsert(toto.getColumns());
 		assertEquals(builtInsert.getSQL(), "insert into Toto(A, B) values (?, ?)");
 		
 		assertEquals(1, builtInsert.getIndexes(colA)[0]);
@@ -64,7 +64,7 @@ public class DMLGeneratorTest {
 		};
 		DMLGenerator testInstance = new DMLGenerator(currentDialect.getColumnBinderRegistry(), NoopSorter.INSTANCE, dmlNameProvider);
 
-		ColumnParamedSQL builtInsert = testInstance.buildInsert(toto.getColumns());
+		ColumnParameterizedSQL builtInsert = testInstance.buildInsert(toto.getColumns());
 		assertEquals(builtInsert.getSQL(), "insert into Toto('key', B) values (?, ?)");
 		
 		assertEquals(1, builtInsert.getIndexes(colA)[0]);
@@ -126,7 +126,7 @@ public class DMLGeneratorTest {
 		Column<Table, Object> colA = toto.addColumn("A", String.class);
 		toto.addColumn("B", String.class);
 		
-		ColumnParamedSQL builtDelete = testInstance.buildDelete(toto, Arrays.asList(colA));
+		ColumnParameterizedSQL builtDelete = testInstance.buildDelete(toto, Arrays.asList(colA));
 		assertEquals("delete from Toto where A = ?", builtDelete.getSQL());
 		
 		assertEquals(1, builtDelete.getIndexes(colA)[0]);
@@ -150,7 +150,7 @@ public class DMLGeneratorTest {
 		};
 		DMLGenerator testInstance = new DMLGenerator(currentDialect.getColumnBinderRegistry(), NoopSorter.INSTANCE, dmlNameProvider);
 		
-		ColumnParamedSQL builtDelete = testInstance.buildDelete(toto, Arrays.asList(colA));
+		ColumnParameterizedSQL builtDelete = testInstance.buildDelete(toto, Arrays.asList(colA));
 		assertEquals("delete from Toto where 'key' = ?", builtDelete.getSQL());
 		
 		assertEquals(1, builtDelete.getIndexes(colA)[0]);
@@ -164,7 +164,7 @@ public class DMLGeneratorTest {
 		toto.addColumn("B", String.class);
 		
 		Collection<Column<Table, Object>> keys = (Collection<Column<Table, Object>>) (Collection) Collections.singleton(colA);
-		ColumnParamedSQL<Table> builtDelete = testInstance.buildDeleteByKey(toto, keys, 2);
+		ColumnParameterizedSQL<Table> builtDelete = testInstance.buildDeleteByKey(toto, keys, 2);
 		assertEquals("delete from Toto where A in (?, ?)", builtDelete.getSQL());
 		
 		assertEquals(1, builtDelete.getIndexes(colA)[0]);
@@ -179,7 +179,7 @@ public class DMLGeneratorTest {
 		toto.addColumn("C", String.class);
 		
 		Collection<Column<Table, Object>> keys = (Collection<Column<Table, Object>>) (Collection) Arrays.asList(colA, colB);
-		ColumnParamedSQL<Table> builtDelete = testInstance.buildDeleteByKey(toto, keys, 3);
+		ColumnParameterizedSQL<Table> builtDelete = testInstance.buildDeleteByKey(toto, keys, 3);
 		assertEquals("delete from Toto where (A, B) in ((?, ?), (?, ?), (?, ?))", builtDelete.getSQL());
 		
 		assertEquals(1, builtDelete.getIndexes(colA)[0]);
@@ -204,7 +204,7 @@ public class DMLGeneratorTest {
 		DMLGenerator testInstance = new DMLGenerator(currentDialect.getColumnBinderRegistry(), NoopSorter.INSTANCE, dmlNameProvider);
 		
 		Set<Column<Table, Object>> singleton = (Set) Collections.singleton(colA);
-		ColumnParamedSQL builtDelete = testInstance.buildDeleteByKey(toto, singleton, 1);
+		ColumnParameterizedSQL builtDelete = testInstance.buildDeleteByKey(toto, singleton, 1);
 		assertEquals("delete from Toto where 'key' in (?)", builtDelete.getSQL());
 		
 		assertEquals(1, builtDelete.getIndexes(colA)[0]);
@@ -217,7 +217,7 @@ public class DMLGeneratorTest {
 		Column<Table, Object> colA = toto.addColumn("A", String.class);
 		Column<Table, Object> colB = toto.addColumn("B", String.class);
 		
-		ColumnParamedSQL builtSelect = testInstance.buildSelect(toto, Arrays.asList(colA, colB), Arrays.asList(colA, colB));
+		ColumnParameterizedSQL builtSelect = testInstance.buildSelect(toto, Arrays.asList(colA, colB), Arrays.asList(colA, colB));
 		assertEquals("select A, B from Toto where A = ? and B = ?", builtSelect.getSQL());
 		
 		assertEquals(1, builtSelect.getIndexes(colA)[0]);
@@ -241,7 +241,7 @@ public class DMLGeneratorTest {
 		};
 		DMLGenerator testInstance = new DMLGenerator(currentDialect.getColumnBinderRegistry(), NoopSorter.INSTANCE, dmlNameProvider);
 		
-		ColumnParamedSQL builtSelect = testInstance.buildSelect(toto, Arrays.asList(colA, colB), Arrays.asList(colA, colB));
+		ColumnParameterizedSQL builtSelect = testInstance.buildSelect(toto, Arrays.asList(colA, colB), Arrays.asList(colA, colB));
 		assertEquals("select 'key', B from Toto where 'key' = ? and B = ?", builtSelect.getSQL());
 		
 		assertEquals(1, builtSelect.getIndexes(colA)[0]);
@@ -256,7 +256,7 @@ public class DMLGeneratorTest {
 		
 		Iterable<Column<Table, Object>> selection = Arrays.asList(colA, colB);
 		Set<Column<Table, Object>> keys = Collections.singleton(colA);
-		ColumnParamedSQL builtSelect = testInstance.buildSelectByKey(toto, selection, keys, 5);
+		ColumnParameterizedSQL builtSelect = testInstance.buildSelectByKey(toto, selection, keys, 5);
 		assertEquals("select A, B from Toto where A in (?, ?, ?, ?, ?)", builtSelect.getSQL());
 		
 		assertEquals(1, builtSelect.getIndexes(colA)[0]);
@@ -272,7 +272,7 @@ public class DMLGeneratorTest {
 		
 		Iterable<Column<Table, Object>> selection = Arrays.asList(colA, colB);
 		Set<Column<Table, Object>> keys = Arrays.asSet(colA, colB);
-		ColumnParamedSQL builtSelect = testInstance.buildSelectByKey(toto, selection, keys, 3);
+		ColumnParameterizedSQL builtSelect = testInstance.buildSelectByKey(toto, selection, keys, 3);
 		assertEquals("select A, B from Toto where (A, B) in ((?, ?), (?, ?), (?, ?))", builtSelect.getSQL());
 		
 		assertEquals(1, builtSelect.getIndexes(colA)[0]);
@@ -297,7 +297,7 @@ public class DMLGeneratorTest {
 		DMLGenerator testInstance = new DMLGenerator(currentDialect.getColumnBinderRegistry(), NoopSorter.INSTANCE, dmlNameProvider);
 		
 		Set<Column<Table, Object>> keys = Collections.singleton(colA);
-		ColumnParamedSQL builtSelect = testInstance.buildSelectByKey(toto, Arrays.asList(colA, colB), keys, 5);
+		ColumnParameterizedSQL builtSelect = testInstance.buildSelectByKey(toto, Arrays.asList(colA, colB), keys, 5);
 		assertEquals("select 'key', B from Toto where 'key' in (?, ?, ?, ?, ?)", builtSelect.getSQL());
 		
 		assertEquals(1, builtSelect.getIndexes(colA)[0]);

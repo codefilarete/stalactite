@@ -14,7 +14,7 @@ import org.gama.sql.result.RowIterator;
 import org.gama.sql.test.HSQLDBInMemoryDataSource;
 import org.gama.stalactite.persistence.engine.DDLDeployer;
 import org.gama.stalactite.persistence.sql.HSQLDBDialect;
-import org.gama.stalactite.persistence.sql.dml.ColumnParamedSQL;
+import org.gama.stalactite.persistence.sql.dml.ColumnParameterizedSQL;
 import org.gama.stalactite.persistence.sql.dml.DMLGenerator;
 import org.gama.stalactite.persistence.mapping.IMappingStrategy.UpwhereColumn;
 import org.gama.stalactite.persistence.sql.dml.PreparedUpdate;
@@ -69,7 +69,7 @@ public class ZonedDateTimeMappingStrategyTest {
 		ZonedDateTime toBePersisted = ZonedDateTime.of(2018, Month.MAY.ordinal(), 16, 17, 53, 44, 00, ZoneId.of("America/Guadeloupe"));
 		Map<Column, Object> insertValues = testInstance.getInsertValues(toBePersisted);
 		DMLGenerator dmlGenerator = dialect.getDmlGenerator();
-		ColumnParamedSQL insertOrder = dmlGenerator.buildInsert(testInstance.getColumns());
+		ColumnParameterizedSQL insertOrder = dmlGenerator.buildInsert(testInstance.getColumns());
 		insertOrder.setValues(insertValues);
 		// execution
 		WriteOperation<Column> writeOperation = new WriteOperation<>(insertOrder, connectionProvider);
@@ -94,7 +94,7 @@ public class ZonedDateTimeMappingStrategyTest {
 		ZonedDateTime originalValue = ZonedDateTime.of(2018, Month.MAY.ordinal(), 16, 17, 53, 44, 00, ZoneId.of("America/Guadeloupe"));
 		Map<Column, Object> insertValues = testInstance.getInsertValues(originalValue);
 		DMLGenerator dmlGenerator = dialect.getDmlGenerator();
-		ColumnParamedSQL insertOrder = dmlGenerator.buildInsert(testInstance.getColumns());
+		ColumnParameterizedSQL insertOrder = dmlGenerator.buildInsert(testInstance.getColumns());
 		insertOrder.setValues(insertValues);
 		// execution
 		WriteOperation<Column> writeOperation = new WriteOperation<>(insertOrder, connectionProvider);
@@ -129,7 +129,7 @@ public class ZonedDateTimeMappingStrategyTest {
 		ZonedDateTime originalValue = ZonedDateTime.of(2018, Month.MAY.ordinal(), 16, 17, 53, 44, 00, ZoneId.of("America/Guadeloupe"));
 		Map<Column, Object> insertValues = testInstance.getInsertValues(originalValue);
 		DMLGenerator dmlGenerator = dialect.getDmlGenerator();
-		ColumnParamedSQL insertOrder = dmlGenerator.buildInsert(testInstance.getColumns());
+		ColumnParameterizedSQL insertOrder = dmlGenerator.buildInsert(testInstance.getColumns());
 		insertOrder.setValues(insertValues);
 		// execution
 		WriteOperation<Column> writeOperation = new WriteOperation<>(insertOrder, connectionProvider);

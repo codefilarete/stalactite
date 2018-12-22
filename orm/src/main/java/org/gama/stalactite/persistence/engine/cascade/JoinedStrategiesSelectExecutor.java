@@ -25,7 +25,7 @@ import org.gama.stalactite.persistence.id.assembly.IdentifierAssembler;
 import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
 import org.gama.stalactite.persistence.sql.Dialect;
 import org.gama.stalactite.persistence.sql.ddl.DDLAppender;
-import org.gama.stalactite.persistence.sql.dml.ColumnParamedSelect;
+import org.gama.stalactite.persistence.sql.dml.ColumnParameterizedSelect;
 import org.gama.stalactite.persistence.sql.dml.DMLGenerator;
 import org.gama.stalactite.persistence.sql.dml.DMLGenerator.NoopSorter;
 import org.gama.stalactite.persistence.sql.dml.DMLGenerator.ParameterizedWhere;
@@ -163,7 +163,7 @@ public class JoinedStrategiesSelectExecutor<C, I> {
 	
 	List<C> execute(ConnectionProvider connectionProvider, String sql, Collection<? extends List<I>> idsParcels, Map<Column, int[]> inOperatorValueIndexes) {
 		List<C> result = new ArrayList<>(idsParcels.size() * blockSize);
-		ColumnParamedSelect preparedSelect = new ColumnParamedSelect(sql, inOperatorValueIndexes, parameterBinderProvider, joinedStrategiesSelect.getSelectParameterBinders());
+		ColumnParameterizedSelect preparedSelect = new ColumnParameterizedSelect(sql, inOperatorValueIndexes, parameterBinderProvider, joinedStrategiesSelect.getSelectParameterBinders());
 		try (ReadOperation<Column<Table, Object>> columnReadOperation = new ReadOperation<>(preparedSelect, connectionProvider)) {
 			for (List<I> parcel : idsParcels) {
 				result.addAll(execute(columnReadOperation, parcel));
@@ -178,7 +178,7 @@ public class JoinedStrategiesSelectExecutor<C, I> {
 			closeableOperation.setValues(primaryKeyValues);
 			ResultSet resultSet = closeableOperation.execute();
 			// NB: we give the same ParametersBinders of those given at ColumnParamedSelect since the row iterator is expected to read column from it
-			RowIterator rowIterator = new RowIterator(resultSet, ((ColumnParamedSelect) closeableOperation.getSqlStatement()).getSelectParameterBinders());
+			RowIterator rowIterator = new RowIterator(resultSet, ((ColumnParameterizedSelect) closeableOperation.getSqlStatement()).getSelectParameterBinders());
 			return transform(rowIterator);
 		} catch (Exception e) {
 			throw Exceptions.asRuntimeException(e);

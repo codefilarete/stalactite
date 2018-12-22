@@ -13,7 +13,7 @@ import org.gama.sql.ConnectionProvider;
 import org.gama.sql.dml.ReadOperation;
 import org.gama.sql.result.RowIterator;
 import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
-import org.gama.stalactite.persistence.sql.dml.ColumnParamedSelect;
+import org.gama.stalactite.persistence.sql.dml.ColumnParameterizedSelect;
 import org.gama.stalactite.persistence.sql.dml.DMLGenerator;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.PrimaryKey;
@@ -61,7 +61,7 @@ public class SelectExecutor<C, I, T extends Table> extends DMLExecutor<C, I, T> 
 	private ReadOperation<Column<T, Object>> newReadOperation(T targetTable, Set<Column<T, Object>> columnsToRead, int blockSize,
 												   CurrentConnectionProvider currentConnectionProvider) {
 		PrimaryKey<T> primaryKey = targetTable.getPrimaryKey();
-		ColumnParamedSelect<T> selectStatement = getDmlGenerator().buildSelectByKey(targetTable, columnsToRead, primaryKey.getColumns(), blockSize);
+		ColumnParameterizedSelect<T> selectStatement = getDmlGenerator().buildSelectByKey(targetTable, columnsToRead, primaryKey.getColumns(), blockSize);
 		return (ReadOperation) new ReadOperation<>(selectStatement, currentConnectionProvider);
 	}
 	
@@ -70,7 +70,7 @@ public class SelectExecutor<C, I, T extends Table> extends DMLExecutor<C, I, T> 
 		try (ReadOperation<Column<T, Object>> closeableOperation = operation) {
 			closeableOperation.setValues(keyValues);
 			ResultSet resultSet = closeableOperation.execute();
-			RowIterator rowIterator = new RowIterator(resultSet, ((ColumnParamedSelect) closeableOperation.getSqlStatement()).getSelectParameterBinders());
+			RowIterator rowIterator = new RowIterator(resultSet, ((ColumnParameterizedSelect) closeableOperation.getSqlStatement()).getSelectParameterBinders());
 			while (rowIterator.hasNext()) {
 				toReturn.add(getMappingStrategy().transform(rowIterator.next()));
 			}

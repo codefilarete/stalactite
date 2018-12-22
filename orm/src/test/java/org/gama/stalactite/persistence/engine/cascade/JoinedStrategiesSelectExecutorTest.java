@@ -33,7 +33,7 @@ import org.gama.stalactite.persistence.mapping.IdMappingStrategy;
 import org.gama.stalactite.persistence.sql.Dialect;
 import org.gama.stalactite.persistence.sql.HSQLDBDialect.HSQLDBTypeMapping;
 import org.gama.stalactite.persistence.sql.ddl.DDLSchemaGenerator;
-import org.gama.stalactite.persistence.sql.dml.ColumnParamedSelect;
+import org.gama.stalactite.persistence.sql.dml.ColumnParameterizedSelect;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.test.JdbcConnectionProvider;
@@ -121,7 +121,7 @@ public class JoinedStrategiesSelectExecutorTest {
 		// mocking ResultSet transformation because we don't care about it in this test
 		ReadOperation readOperationMock = mock(ReadOperation.class);
 		when(readOperationMock.execute()).thenReturn(new InMemoryResultSet(Collections.emptyList()));
-		when(readOperationMock.getSqlStatement()).thenReturn(new ColumnParamedSelect("", new HashMap<>(), new HashMap<>(), new HashMap<>()));
+		when(readOperationMock.getSqlStatement()).thenReturn(new ColumnParameterizedSelect("", new HashMap<>(), new HashMap<>(), new HashMap<>()));
 		
 		// we're going to check if values are correctly passed to the underlying ReadOperation
 		JoinedStrategiesSelectExecutor testInstance = new JoinedStrategiesSelectExecutor<>(classMappingStrategy, new Dialect(), mock(ConnectionProvider.class));

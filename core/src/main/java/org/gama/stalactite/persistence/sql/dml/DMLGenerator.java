@@ -62,7 +62,7 @@ public class DMLGenerator {
 	 * @param <T> table type
 	 * @return a (kind of) prepared statement
 	 */
-	public <T extends Table> ColumnParamedSQL<T> buildInsert(Iterable<? extends Column<T, Object>> columns) {
+	public <T extends Table> ColumnParameterizedSQL<T> buildInsert(Iterable<? extends Column<T, Object>> columns) {
 		columns = (Iterable<? extends Column<T, Object>>) sort(columns);
 		Table table = Iterables.first(columns).getTable();
 		DDLAppender sqlInsert = new DDLAppender(dmlNameProvider, "insert into ", table, "(");
@@ -79,7 +79,7 @@ public class DMLGenerator {
 			parameterBinders.put(column, columnBinderRegistry.getBinder(column));
 		});
 		sqlInsert.cutTail(2).cat(")");
-		return new ColumnParamedSQL<>(sqlInsert.toString(), columnToIndex, parameterBinders);
+		return new ColumnParameterizedSQL<>(sqlInsert.toString(), columnToIndex, parameterBinders);
 	}
 	
 	/**
@@ -123,12 +123,12 @@ public class DMLGenerator {
 	 * @param <T> table type
 	 * @return a (kind of) prepared statement parameterized by {@link Column}
 	 */
-	public <T extends Table> ColumnParamedSQL<T> buildDelete(T table, Iterable<? extends Column<T, Object>> where) {
+	public <T extends Table> ColumnParameterizedSQL<T> buildDelete(T table, Iterable<? extends Column<T, Object>> where) {
 		DDLAppender sqlDelete = new DDLAppender(dmlNameProvider, "delete from ", table);
 		sqlDelete.cat(" where ");
 		ParameterizedWhere<T> parameterizedWhere = appendWhere(sqlDelete, where);
 		sqlDelete.cutTail(5);
-		return new ColumnParamedSQL<>(sqlDelete.toString(), parameterizedWhere.columnToIndex, parameterizedWhere.parameterBinders);
+		return new ColumnParameterizedSQL<>(sqlDelete.toString(), parameterizedWhere.columnToIndex, parameterizedWhere.parameterBinders);
 	}
 	
 	/**
@@ -142,12 +142,12 @@ public class DMLGenerator {
 	 * @return a (kind of) prepared statement parameterized by {@link Column}
 	 */
 	@SuppressWarnings("squid:ForLoopCounterChangedCheck")
-	public <T extends Table<T>> ColumnParamedSQL<T> buildDeleteByKey(T table, Collection<Column<T, Object>> keyColumns, int whereValuesCount) {
+	public <T extends Table<T>> ColumnParameterizedSQL<T> buildDeleteByKey(T table, Collection<Column<T, Object>> keyColumns, int whereValuesCount) {
 		DDLAppender sqlDelete = new DDLAppender(dmlNameProvider, "delete from ", table, " where ");
 		ParameterizedWhere parameterizedWhere = appendTupledWhere(sqlDelete, keyColumns, whereValuesCount);
 		Map<Column<T, Object>, int[]> columnToIndex = parameterizedWhere.getColumnToIndex();
 		Map<Column<T, Object>, ParameterBinder> parameterBinders = parameterizedWhere.getParameterBinders();
-		return new ColumnParamedSQL<>(sqlDelete.toString(), columnToIndex, parameterBinders);
+		return new ColumnParameterizedSQL<>(sqlDelete.toString(), columnToIndex, parameterBinders);
 	}
 	
 	/**
@@ -159,14 +159,14 @@ public class DMLGenerator {
 	 * @param <T> table type
 	 * @return a (kind of) prepared statement parameterized by {@link Column}
 	 */
-	public <T extends Table<T>> ColumnParamedSQL<T> buildSelect(T table, Iterable<? extends Column<T, ?>> columns, Iterable<? extends Column<T, Object>> where) {
+	public <T extends Table<T>> ColumnParameterizedSQL<T> buildSelect(T table, Iterable<? extends Column<T, ?>> columns, Iterable<? extends Column<T, Object>> where) {
 		columns = (Iterable<? extends Column<T, Object>>) sort(columns);
 		DDLAppender sqlSelect = new DDLAppender(dmlNameProvider, "select ");
 		sqlSelect.ccat(columns, ", ");
 		sqlSelect.cat(" from ", table, " where ");
 		ParameterizedWhere<T> parameterizedWhere = appendWhere(sqlSelect, where);
 		sqlSelect.cutTail(5);
-		return new ColumnParamedSQL<>(sqlSelect.toString(), parameterizedWhere.columnToIndex, parameterizedWhere.parameterBinders);
+		return new ColumnParameterizedSQL<>(sqlSelect.toString(), parameterizedWhere.columnToIndex, parameterizedWhere.parameterBinders);
 	}
 	
 	/**
@@ -179,7 +179,7 @@ public class DMLGenerator {
 	 * @param <T> table type
 	 * @return a (kind of) prepared statement parameterized by {@link Column}
 	 */
-	public <T extends Table<T>> ColumnParamedSelect<T> buildSelectByKey(T table, Iterable<? extends Column<T, Object>> columns, Collection<Column<T, Object>> keyColumns, int whereValuesCount) {
+	public <T extends Table<T>> ColumnParameterizedSelect<T> buildSelectByKey(T table, Iterable<? extends Column<T, Object>> columns, Collection<Column<T, Object>> keyColumns, int whereValuesCount) {
 		columns = (Iterable<? extends Column<T, Object>>) sort(columns);
 		DDLAppender sqlSelect = new DDLAppender(dmlNameProvider, "select ");
 		Map<String, ParameterBinder> selectParameterBinders = new HashMap<>();
@@ -191,7 +191,7 @@ public class DMLGenerator {
 		ParameterizedWhere parameterizedWhere = appendTupledWhere(sqlSelect, keyColumns, whereValuesCount);
 		Map<Column<T, Object>, int[]> columnToIndex = parameterizedWhere.getColumnToIndex();
 		Map<Column<T, Object>, ParameterBinder> parameterBinders = parameterizedWhere.getParameterBinders();
-		return new ColumnParamedSelect<>(sqlSelect.toString(), columnToIndex, parameterBinders, selectParameterBinders);
+		return new ColumnParameterizedSelect<>(sqlSelect.toString(), columnToIndex, parameterBinders, selectParameterBinders);
 	}
 	
 	private Iterable<? extends Column> sort(Iterable<? extends Column> columns) {

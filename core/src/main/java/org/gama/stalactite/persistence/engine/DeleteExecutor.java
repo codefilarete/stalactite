@@ -14,7 +14,7 @@ import org.gama.sql.dml.WriteOperation;
 import org.gama.stalactite.persistence.engine.RowCountManager.RowCounter;
 import org.gama.stalactite.persistence.id.assembly.IdentifierAssembler;
 import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
-import org.gama.stalactite.persistence.sql.dml.ColumnParamedSQL;
+import org.gama.stalactite.persistence.sql.dml.ColumnParameterizedSQL;
 import org.gama.stalactite.persistence.sql.dml.DMLGenerator;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
@@ -47,7 +47,7 @@ public class DeleteExecutor<C, I, T extends Table> extends WriteExecutor<C, I, T
 	 * @throws StaleObjectExcepion if deleted row count differs from entities count
 	 */
 	public int delete(Iterable<C> entities) {
-		ColumnParamedSQL<T> deleteStatement = getDmlGenerator().buildDelete(getMappingStrategy().getTargetTable(), getMappingStrategy().getVersionedKeys());
+		ColumnParameterizedSQL<T> deleteStatement = getDmlGenerator().buildDelete(getMappingStrategy().getTargetTable(), getMappingStrategy().getVersionedKeys());
 		WriteOperation<Column<T, Object>> writeOperation = newWriteOperation(deleteStatement, new CurrentConnectionProvider());
 		JDBCBatchingIterator<C> jdbcBatchingIterator = new JDBCBatchingIterator<>(entities, writeOperation, getBatchSize());
 		RowCounter rowCounter = new RowCounter();
@@ -100,7 +100,7 @@ public class DeleteExecutor<C, I, T extends Table> extends WriteExecutor<C, I, T
 		
 		// NB: CurrentConnectionProvider must provide the same connection over all blocks
 		CurrentConnectionProvider currentConnectionProvider = new CurrentConnectionProvider();
-		ColumnParamedSQL<T> deleteStatement;
+		ColumnParameterizedSQL<T> deleteStatement;
 		T targetTable = getMappingStrategy().getTargetTable();
 		
 		int updatedRowCounter = 0;

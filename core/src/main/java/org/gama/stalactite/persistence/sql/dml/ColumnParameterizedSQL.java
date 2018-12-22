@@ -15,7 +15,7 @@ import org.gama.stalactite.persistence.structure.Table;
  * 
  * @author Guillaume Mary
  */
-public class ColumnParamedSQL<T extends Table> extends ExpandableStatement<Column<T, Object>> {
+public class ColumnParameterizedSQL<T extends Table> extends ExpandableStatement<Column<T, Object>> {
 	
 	private final Map<Column<T, Object>, int[]> columnIndexes;
 	
@@ -26,12 +26,12 @@ public class ColumnParamedSQL<T extends Table> extends ExpandableStatement<Colum
 	 * @param columnIndexes mapping between {@link Column}s (used on {@link #setValue(Object, Object)} and their indexes in the SQL statement
 	 * @param parameterBinders mapping between {@link Column}s and their 
 	 */
-	public ColumnParamedSQL(String sql, Map<Column<T, Object>, int[]> columnIndexes, Map<Column<T, Object>, ? extends PreparedStatementWriter> parameterBinders) {
+	public ColumnParameterizedSQL(String sql, Map<Column<T, Object>, int[]> columnIndexes, Map<Column<T, Object>, ? extends PreparedStatementWriter> parameterBinders) {
 		super(sql, parameterBinders);
 		this.columnIndexes = columnIndexes;
 	}
 	
-	public ColumnParamedSQL(String sql, Map<Column<T, Object>, int[]> columnIndexes, PreparedStatementWriterIndex<Column<T, Object>, ParameterBinder> parameterBinderProvider) {
+	public ColumnParameterizedSQL(String sql, Map<Column<T, Object>, int[]> columnIndexes, PreparedStatementWriterIndex<Column<T, Object>, ParameterBinder> parameterBinderProvider) {
 		super(sql, parameterBinderProvider);
 		this.columnIndexes = columnIndexes;
 	}

@@ -14,7 +14,7 @@ import org.gama.sql.dml.SQLStatement;
 import org.gama.sql.dml.WriteOperation;
 import org.gama.stalactite.persistence.id.manager.IdentifierInsertionManager;
 import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
-import org.gama.stalactite.persistence.sql.dml.ColumnParamedSQL;
+import org.gama.stalactite.persistence.sql.dml.ColumnParameterizedSQL;
 import org.gama.stalactite.persistence.sql.dml.DMLGenerator;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
@@ -62,7 +62,7 @@ public class InsertExecutor<C, I, T extends Table> extends WriteExecutor<C, I, T
 	
 	public int insert(Iterable<? extends C> entities) {
 		Set<Column<T, Object>> columns = getMappingStrategy().getInsertableColumns();
-		ColumnParamedSQL<T> insertStatement = getDmlGenerator().buildInsert(columns);
+		ColumnParameterizedSQL<T> insertStatement = getDmlGenerator().buildInsert(columns);
 		WriteOperation<Column<T, Object>> writeOperation = newWriteOperation(insertStatement, new CurrentConnectionProvider());
 		JDBCBatchingIterator<C> jdbcBatchingIterator = identifierInsertionManager.buildJDBCBatchingIterator(entities, writeOperation, getBatchSize());
 		
