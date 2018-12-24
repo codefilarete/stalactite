@@ -1,5 +1,6 @@
 package org.gama.sql.spring;
 
+import javax.annotation.Nonnull;
 import java.sql.Connection;
 
 import org.gama.stalactite.persistence.engine.SeparateTransactionExecutor;
@@ -23,6 +24,7 @@ public class SpringConnectionProvider implements SeparateTransactionExecutor {
 		this.transactionManager = dataSourceTransactionManager;
 	}
 	
+	@Nonnull
 	@Override
 	public Connection getCurrentConnection() {
 		return DataSourceUtils.getConnection(transactionManager.getDataSource());

@@ -1,5 +1,6 @@
 package org.gama.sql;
 
+import javax.annotation.Nonnull;
 import java.sql.Connection;
 
 /**
@@ -15,6 +16,7 @@ public class SimpleConnectionProvider implements ConnectionProvider {
 		this.connection = connection;
 	}
 	
+	@Nonnull
 	@Override
 	public Connection getCurrentConnection() {
 		return this.connection;

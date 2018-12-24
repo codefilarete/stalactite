@@ -1,5 +1,6 @@
 package org.gama.stalactite.test;
 
+import javax.annotation.Nonnull;
 import javax.sql.DataSource;
 import java.sql.Connection;
 import java.sql.SQLException;
@@ -34,6 +35,7 @@ public class JdbcConnectionProvider implements SeparateTransactionExecutor {
 		this.dataSource = dataSource;
 	}
 	
+	@Nonnull
 	@Override
 	public Connection getCurrentConnection() {
 		Connection connectionOnTop = this.currentConnection.peek();

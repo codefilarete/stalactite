@@ -1,5 +1,6 @@
 package org.gama.sql;
 
+import javax.annotation.Nonnull;
 import javax.sql.DataSource;
 import java.sql.Connection;
 import java.sql.SQLException;
@@ -17,6 +18,7 @@ public class DataSourceConnectionProvider implements ConnectionProvider {
 		this.dataSource = dataSource;
 	}
 	
+	@Nonnull
 	@Override
 	public Connection getCurrentConnection() {
 		try {

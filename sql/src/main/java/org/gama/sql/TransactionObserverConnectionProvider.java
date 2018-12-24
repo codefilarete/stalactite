@@ -1,8 +1,12 @@
 package org.gama.sql;
 
+import javax.annotation.Nonnull;
 import java.sql.Connection;
 
 /**
+ * A bridge between a {@link ConnectionProvider} and transaction observers as {@link CommitObserver} and {@link RollbackObserver} in order
+ * to make provided {@link Connection}s observable for transactions commit and rollback.
+ * 
  * @author Guillaume Mary
  */
 public class TransactionObserverConnectionProvider implements ConnectionProvider, CommitObserver, RollbackObserver {
@@ -16,6 +20,7 @@ public class TransactionObserverConnectionProvider implements ConnectionProvider
 	}
 	
 	@Override
+	@Nonnull
 	public Connection getCurrentConnection() {
 		Connection connection = surrogateConnectionProvider.getCurrentConnection();
 		transactionAdapter.setSurrogate(connection);
