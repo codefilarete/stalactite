@@ -10,7 +10,7 @@ import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
 
 /**
- * Contract of the "management" of entity identifier at insertion time.
+ * Contract for entity identifier "management" at insertion time.
  * 
  * @author Guillaume Mary
  */
@@ -22,7 +22,7 @@ public interface IdentifierInsertionManager<T, I> {
 	Class<I> getIdentifierType();
 	
 	/**
-	 * Delegation of statement creation for insertion of entities, because some manager may need to ask JDBC for generated keys retrieval.
+	 * Delegation of statement creation for insertion of entities, because some managers may need to ask JDBC for generated keys retrieval.
 	 * This implementation will call {@link Connection#prepareStatement(String)}
 	 * 
 	 * @param connection a JDBC connection
@@ -35,7 +35,7 @@ public interface IdentifierInsertionManager<T, I> {
 	}
 	
 	/**
-	 * Delegation of {@link JDBCBatchingIterator} creation, because some implementation may read generated keys or fill operation
+	 * Delegation of {@link JDBCBatchingIterator} creation, because some implementations may read generated keys or fill operation
 	 * with "just generated id"
 	 * 
 	 * @param entities entities to be inserted
