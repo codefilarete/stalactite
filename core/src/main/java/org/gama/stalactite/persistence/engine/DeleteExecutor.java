@@ -90,7 +90,7 @@ public class DeleteExecutor<C, I, T extends Table> extends WriteExecutor<C, I, T
 	public int deleteFromId(Iterable<I> ids) {
 		int blockSize = getInOperatorMaxSize();
 		List<List<I>> parcels = Collections.parcel(ids, blockSize);
-		List<I> lastBlock = Iterables.last(parcels);
+		List<I> lastBlock = Iterables.last(parcels, java.util.Collections.emptyList());
 		// Adjusting parcels and last block to group parcels by blockSize
 		if (lastBlock.size() != blockSize) {
 			parcels = parcels.subList(0, parcels.size() - 1);
