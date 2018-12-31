@@ -9,7 +9,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
@@ -29,7 +28,6 @@ import org.gama.stalactite.persistence.engine.builder.CascadeMany;
 import org.gama.stalactite.persistence.engine.builder.CascadeManyList;
 import org.gama.stalactite.persistence.engine.cascade.JoinedTablesPersister;
 import org.gama.stalactite.persistence.engine.listening.InsertListener;
-import org.gama.stalactite.persistence.engine.listening.UpdateListener;
 import org.gama.stalactite.persistence.id.Identified;
 import org.gama.stalactite.persistence.id.PersistableIdentifier;
 import org.gama.stalactite.persistence.id.manager.AlreadyAssignedIdentifierManager;
@@ -449,7 +447,6 @@ public class FluentMappingBuilder<T extends Identified, I extends StatefullIdent
 			result = joinedTablesPersister;
 			if (!cascadeOnes.isEmpty()) {
 				// adding persistence flag setters on this side
-				joinedTablesPersister.getPersisterListener().addInsertListener((InsertListener<T>) SetPersistedFlagAfterInsertListener.INSTANCE);
 				CascadeOneConfigurer cascadeOneConfigurer = new CascadeOneConfigurer();
 				for (CascadeOne<T, ? extends Identified, ? extends StatefullIdentifier> cascadeOne : cascadeOnes) {
 					cascadeOneConfigurer.appendCascade(cascadeOne, joinedTablesPersister, mappingStrategy, joinedTablesPersister,
@@ -678,55 +675,7 @@ public class FluentMappingBuilder<T extends Identified, I extends StatefullIdent
 		}
 	}
 	
-	public static class MandatoryRelationCheckingBeforeInsertListener<T extends Identified> implements InsertListener<T> {
-		
-		private final Function<T, ? extends Identified> targetProvider;
-		private final Method member;
-		
-		public MandatoryRelationCheckingBeforeInsertListener(Function<T, ? extends Identified> targetProvider, Method member) {
-			this.targetProvider = targetProvider;
-			this.member = member;
-		}
-		
-		@Override
-		public void beforeInsert(Iterable<? extends T> entities) {
-			for (T pawn : entities) {
-				Identified modifiedTarget = targetProvider.apply(pawn);
-				if (modifiedTarget == null) {
-					throw newRuntimeMappingException(pawn, member);
-				}
-			}
-		}
-	}
-	
-	public static class MandatoryRelationCheckingBeforeUpdateListener<C extends Identified> implements UpdateListener<C> {
-		
-		private final Method member;
-		private final Function<C, ? extends Identified> targetProvider;
-		
-		public MandatoryRelationCheckingBeforeUpdateListener(Method member, Function<C, ? extends Identified> targetProvider) {
-			this.member = member;
-			this.targetProvider = targetProvider;
-		}
-		
-		@Override
-		public void beforeUpdate(Iterable<UpdatePayload<? extends C, ?>> payloads, boolean allColumnsStatement) {
-			for (UpdatePayload<? extends C, ?> payload : payloads) {
-				C modifiedEntity = payload.getEntities().getLeft();
-				Identified modifiedTarget = targetProvider.apply(modifiedEntity);
-				if (modifiedTarget == null) {
-					throw newRuntimeMappingException(modifiedEntity, member);
-				}
-			}
-		}
-	}
-	
-	public static RuntimeMappingException newRuntimeMappingException(Object pawn, Method member) {
-		return new RuntimeMappingException("Non null value expected for relation "
-				+ Reflections.toString(member) + " on object " + pawn);
-	}
-	
-	private class OptimisticLockOption<C> {
+	private static class OptimisticLockOption<C> {
 		
 		private final VersioningStrategy<Object, C> versioningStrategy;
 		private final PropertyAccessor<Object, C> propertyAccessor;
@@ -740,7 +689,6 @@ public class FluentMappingBuilder<T extends Identified, I extends StatefullIdent
 			return versioningStrategy;
 		}
 	}
-	
 	
 	/**
 	 * A small class for one-to-many options storage into a {@link CascadeMany}. Acts as a wrapper over it.

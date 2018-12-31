@@ -1,16 +1,17 @@
 package org.gama.stalactite.persistence.engine;
 
+import java.lang.reflect.Method;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.function.Predicate;
 
 import org.gama.lang.Duo;
+import org.gama.lang.Reflections;
 import org.gama.lang.collection.Iterables;
 import org.gama.reflection.Accessors;
 import org.gama.reflection.IMutator;
 import org.gama.reflection.PropertyAccessor;
 import org.gama.stalactite.persistence.engine.CascadeOptions.RelationshipMode;
-import org.gama.stalactite.persistence.engine.FluentMappingBuilder.MandatoryRelationCheckingBeforeInsertListener;
-import org.gama.stalactite.persistence.engine.FluentMappingBuilder.MandatoryRelationCheckingBeforeUpdateListener;
 import org.gama.stalactite.persistence.engine.FluentMappingBuilder.SetPersistedFlagAfterInsertListener;
 import org.gama.stalactite.persistence.engine.cascade.AfterDeleteByIdCascader;
 import org.gama.stalactite.persistence.engine.cascade.AfterDeleteCascader;
@@ -18,7 +19,9 @@ import org.gama.stalactite.persistence.engine.cascade.AfterUpdateCascader;
 import org.gama.stalactite.persistence.engine.cascade.BeforeInsertCascader;
 import org.gama.stalactite.persistence.engine.cascade.JoinedStrategiesSelect;
 import org.gama.stalactite.persistence.engine.cascade.JoinedTablesPersister;
+import org.gama.stalactite.persistence.engine.listening.InsertListener;
 import org.gama.stalactite.persistence.engine.listening.PersisterListener;
+import org.gama.stalactite.persistence.engine.listening.UpdateListener;
 import org.gama.stalactite.persistence.id.Identified;
 import org.gama.stalactite.persistence.id.manager.StatefullIdentifier;
 import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
@@ -162,4 +165,51 @@ public class CascadeOneConfigurer<I extends Identified, O extends Identified, J 
 		});
 	}
 	
+	public static class MandatoryRelationCheckingBeforeInsertListener<T extends Identified> implements InsertListener<T> {
+		
+		private final Function<T, ? extends Identified> targetProvider;
+		private final Method member;
+		
+		public MandatoryRelationCheckingBeforeInsertListener(Function<T, ? extends Identified> targetProvider, Method member) {
+			this.targetProvider = targetProvider;
+			this.member = member;
+		}
+		
+		@Override
+		public void beforeInsert(Iterable<? extends T> entities) {
+			for (T pawn : entities) {
+				Identified modifiedTarget = targetProvider.apply(pawn);
+				if (modifiedTarget == null) {
+					throw newRuntimeMappingException(pawn, member);
+				}
+			}
+		}
+	}
+	
+	public static class MandatoryRelationCheckingBeforeUpdateListener<C extends Identified> implements UpdateListener<C> {
+		
+		private final Method member;
+		private final Function<C, ? extends Identified> targetProvider;
+		
+		public MandatoryRelationCheckingBeforeUpdateListener(Method member, Function<C, ? extends Identified> targetProvider) {
+			this.member = member;
+			this.targetProvider = targetProvider;
+		}
+		
+		@Override
+		public void beforeUpdate(Iterable<UpdatePayload<? extends C, ?>> payloads, boolean allColumnsStatement) {
+			for (UpdatePayload<? extends C, ?> payload : payloads) {
+				C modifiedEntity = payload.getEntities().getLeft();
+				Identified modifiedTarget = targetProvider.apply(modifiedEntity);
+				if (modifiedTarget == null) {
+					throw newRuntimeMappingException(modifiedEntity, member);
+				}
+			}
+		}
+	}
+	
+	public static RuntimeMappingException newRuntimeMappingException(Object pawn, Method member) {
+		return new RuntimeMappingException("Non null value expected for relation "
+				+ Reflections.toString(member) + " on object " + pawn);
+	}
 }
