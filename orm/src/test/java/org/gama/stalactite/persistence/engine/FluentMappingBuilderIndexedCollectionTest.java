@@ -16,7 +16,6 @@ import org.gama.lang.collection.Iterables;
 import org.gama.sql.ConnectionProvider;
 import org.gama.sql.binder.DefaultParameterBinders;
 import org.gama.sql.test.HSQLDBInMemoryDataSource;
-import org.gama.stalactite.persistence.engine.CascadeOptions.RelationshipMode;
 import org.gama.stalactite.persistence.engine.FluentMappingBuilder.IdentifierPolicy;
 import org.gama.stalactite.persistence.engine.listening.UpdateListener;
 import org.gama.stalactite.persistence.id.Identified;
@@ -34,6 +33,9 @@ import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
 import static org.gama.lang.function.Functions.chain;
+import static org.gama.stalactite.persistence.engine.CascadeOptions.RelationshipMode.ALL;
+import static org.gama.stalactite.persistence.engine.CascadeOptions.RelationshipMode.ALL_ORPHAN_REMOVAL;
+import static org.gama.stalactite.persistence.engine.CascadeOptions.RelationshipMode.ASSOCIATION_ONLY;
 import static org.gama.stalactite.persistence.engine.FluentMappingBuilder.from;
 import static org.gama.stalactite.persistence.id.Identifier.LONG_TYPE;
 import static org.gama.stalactite.query.model.QueryEase.select;
@@ -63,7 +65,7 @@ public class FluentMappingBuilderIndexedCollectionTest {
 	}
 	
 	@Test
-	public void testInsert_cascadeIsTriggered() {
+	public void testOneToManyList_insert_cascadeIsTriggered() {
 		persistenceContext = new PersistenceContext(connectionProvider, DIALECT);
 		
 		Table choiceTable = new Table("Choice");
@@ -79,7 +81,7 @@ public class FluentMappingBuilderIndexedCollectionTest {
 		
 		Persister<Question, Identifier<Long>, ?> questionPersister = from(Question.class, LONG_TYPE)
 				.add(Question::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
-				.addOneToManyList(Question::getChoices, choicePersister).mappedBy(Choice::getQuestion).indexedBy(idx).cascading(RelationshipMode.ALL)
+				.addOneToManyList(Question::getChoices, choicePersister).mappedBy(Choice::getQuestion).indexedBy(idx).cascading(ALL)
 				.build(persistenceContext);
 		
 		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
@@ -269,7 +271,7 @@ public class FluentMappingBuilderIndexedCollectionTest {
 		
 		Persister<Question, Identifier<Long>, ?> questionPersister = from(Question.class, LONG_TYPE)
 				.add(Question::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
-				.addOneToManyList(Question::getChoices, choicePersister).mappedBy(Choice::getQuestion).indexedBy(idx).cascading(RelationshipMode.ALL)
+				.addOneToManyList(Question::getChoices, choicePersister).mappedBy(Choice::getQuestion).indexedBy(idx).cascading(ALL)
 				.build(persistenceContext);
 		
 		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
@@ -287,7 +289,7 @@ public class FluentMappingBuilderIndexedCollectionTest {
 	}
 	
 	@Test
-	public void testDelete_reverseSideIsNotMapped_relationRecordsMustBeDeleted() throws SQLException {
+	public void testOneToManyList_delete_reverseSideIsNotMapped_relationRecordsMustBeDeleted() throws SQLException {
 		persistenceContext = new PersistenceContext(connectionProvider, DIALECT);
 		
 		DuplicatesTestData duplicatesTestData = new DuplicatesTestData().build();
@@ -300,6 +302,8 @@ public class FluentMappingBuilderIndexedCollectionTest {
 		Choice choice3 = new Choice(30L);
 		newQuestion.setChoices(Arrays.asList(choice1, choice2, choice3));
 		questionPersister.insert(newQuestion);
+		
+		assertTrue(choice1.getId().isPersisted());
 		
 		Persister<Answer, Identifier<Long>, ?> answerPersister = duplicatesTestData.getAnswerPersister();
 		Answer answer = new Answer(1L);
@@ -336,6 +340,69 @@ public class FluentMappingBuilderIndexedCollectionTest {
 								.addOneToManyList(Question::getChoices, choicePersister).mappedBy(Choice::getQuestion)
 								.build(persistenceContext)).getMessage());
 	}
+	
+	@Test
+	public void testOneToManyList_insert_mappedByNonExistingGetter_throwsException() {
+		persistenceContext = new PersistenceContext(connectionProvider, DIALECT);
+		
+		Table choiceTable = new Table("Choice");
+		// we declare the column that will store our List index
+		Column<Table, Identifier> id = choiceTable.addColumn("id", Identifier.class).primaryKey();
+		Column<Table, Integer> idx = choiceTable.addColumn("idx", int.class);
+		
+		Persister<Choice, Identifier<Long>, ?> choicePersister = from(Choice.class, LONG_TYPE, choiceTable)
+				.add(Choice::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
+				.add(Choice::getName)
+				.add(Choice::setQuestionWithNoGetter)
+				.build(persistenceContext);
+		
+		Persister<Question, Identifier<Long>, ?> persisterWithNonExistingSetter = from(Question.class, LONG_TYPE)
+				.add(Question::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
+				.addOneToManyList(Question::getChoices, choicePersister).indexedBy(idx).mappedBy(Choice::setQuestionWithNoGetter).cascading(ALL)
+				.build(persistenceContext);
+		
+		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+		ddlDeployer.deployDDL();
+		
+		Question question = new Question(1L);
+		Choice choice = new Choice(4L);
+		question.addChoice(choice);
+		
+		assertEquals("Can't get index : " + choice.toString() + " is not associated with a o.g.s.p.e.Question : "
+						+ "accessor for field o.g.s.p.e.Question o.g.s.p.e.Choice.questionWithNoGetter returned null",
+				assertThrows(RuntimeMappingException.class, () -> persisterWithNonExistingSetter.insert(question)).getMessage());
+	}
+		
+	@Test
+	public void testOneToManyList_insert_targetEntitiesAreNotLinked_throwsException() {
+		persistenceContext = new PersistenceContext(connectionProvider, DIALECT);
+		
+		Table choiceTable = new Table("Choice");
+		// we declare the column that will store our List index
+		Column<Table, Identifier> id = choiceTable.addColumn("id", Identifier.class).primaryKey();
+		Column<Table, Integer> idx = choiceTable.addColumn("idx", int.class);
+		
+		Persister<Choice, Identifier<Long>, ?> choicePersister = from(Choice.class, LONG_TYPE, choiceTable)
+				.add(Choice::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
+				.add(Choice::getName)
+				.add(Choice::getQuestion)
+				.build(persistenceContext);
+		
+		Persister<Question, Identifier<Long>, ?> persister = from(Question.class, LONG_TYPE)
+				.add(Question::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
+				.addOneToManyList(Question::getChoices, choicePersister).indexedBy(idx).mappedBy(Choice::setQuestion).cascading(ALL)
+				.build(persistenceContext);
+		
+		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+		ddlDeployer.deployDDL();
+		
+		Question question = new Question(1L);
+		question.getChoices().add(new Choice(4L));
+		
+		assertEquals("Can't get index : Choice{id=4, question=null, name='null'} is not associated with a o.g.s.p.e.Question : "
+						+ "o.g.s.p.e.Question o.g.s.p.e.Choice.getQuestion() returned null",
+				assertThrows(RuntimeMappingException.class, () -> persister.insert(question)).getMessage());
+	}
 		
 	@Test
 	public void testOneToManyList_withoutOwnerButWithIndexedBy_throwsException() {
@@ -352,7 +419,7 @@ public class FluentMappingBuilderIndexedCollectionTest {
 				.add(Choice::getQuestion)
 				.build(persistenceContext);
 		
-		assertEquals("Indexing column id defined but not owner is defined : relation is only mapped by j.u.List o.g.s.p.e.Question.getChoices()",
+		assertEquals("Indexing column is defined without owner : relation is only declared by j.u.List o.g.s.p.e.Question.getChoices()",
 				assertThrows(UnsupportedOperationException.class, () ->
 				from(Question.class, LONG_TYPE)
 						.add(Question::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
@@ -624,6 +691,16 @@ public class FluentMappingBuilderIndexedCollectionTest {
 			this.choices = choices;
 			choices.forEach(choice -> choice.setQuestion(this));
 		}
+		
+		public void addChoice(Choice choice) {
+			choice.setQuestion(this);
+			choices.add(choice);
+		}
+		
+		public void removeChoice(Choice choice) {
+			choices.remove(choice);
+			choice.setQuestion(null);
+		}
 	}
 	
 	private static class Answer implements Identified<Long> {
@@ -706,6 +783,8 @@ public class FluentMappingBuilderIndexedCollectionTest {
 		
 		private Question question;
 		
+		private Question questionWithNoGetter;
+		
 		private String name;
 		
 		public Choice() {
@@ -731,6 +810,10 @@ public class FluentMappingBuilderIndexedCollectionTest {
 		public Choice setQuestion(Question question) {
 			this.question = question;
 			return this;
+		}
+		
+		public void setQuestionWithNoGetter(Question question) {
+			questionWithNoGetter = question;
 		}
 		
 		public String getName() {
@@ -825,7 +908,7 @@ public class FluentMappingBuilderIndexedCollectionTest {
 			questionPersister = from(Question.class, LONG_TYPE)
 					.add(Question::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 					.addOneToManyList(Question::getChoices, choicePersister).mappedBy(Choice::getQuestion).indexedBy(idx)
-					.cascading(RelationshipMode.ALL_ORPHAN_REMOVAL)
+					.cascading(ALL_ORPHAN_REMOVAL)
 					.build(persistenceContext);
 			
 			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
@@ -908,7 +991,7 @@ public class FluentMappingBuilderIndexedCollectionTest {
 			questionPersister = from(Question.class, LONG_TYPE)
 					.add(Question::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 					.addOneToManyList(Question::getChoices, choicePersister).mappedBy(Choice::getQuestion).indexedBy(idx)
-					.cascading(RelationshipMode.ALL)
+					.cascading(ALL)
 					.build(persistenceContext);
 			
 			// We create another choices persister dedicated to Answer association because usages are not the same :
@@ -921,7 +1004,7 @@ public class FluentMappingBuilderIndexedCollectionTest {
 			
 			answerPersister = from(Answer.class, LONG_TYPE)
 					.add(Answer::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
-					.addOneToManyList(Answer::getChoices, choiceReader).cascading(RelationshipMode.ASSOCIATION_ONLY)
+					.addOneToManyList(Answer::getChoices, choiceReader).cascading(ASSOCIATION_ONLY)
 					.build(persistenceContext);
 			
 			// We declare the table that will store our relationship, and overall our List index

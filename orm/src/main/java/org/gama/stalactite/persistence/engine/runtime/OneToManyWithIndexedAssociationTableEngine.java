@@ -31,9 +31,9 @@ public class OneToManyWithIndexedAssociationTableEngine<I extends Identified, O 
 	
 	public OneToManyWithIndexedAssociationTableEngine(PersisterListener<I, J> persisterListener,
 													  Persister<O, J, ?> leftPersister,
-													  Function<I, C> collectionGetter,
+													  ManyRelationDescriptor<I, O, C> manyRelationDescriptor,
 													  AssociationRecordPersister<IndexedAssociationRecord, IndexedAssociationTable> associationPersister) {
-		super(persisterListener, leftPersister, collectionGetter, associationPersister);
+		super(persisterListener, leftPersister, manyRelationDescriptor, associationPersister);
 	}
 	
 	@Override
@@ -41,7 +41,7 @@ public class OneToManyWithIndexedAssociationTableEngine<I extends Identified, O 
 		
 		// NB: we don't have any reverseSetter (for applying source entity to reverse side (target entity)), because this is only relevent
 		// when association is mapped without intermediary table (owned by "many-side" entity)
-		CollectionUpdater<I, O, C> updateListener = new CollectionUpdater<I, O, C>(collectionGetter, targetPersister, null, shouldDeleteRemoved) {
+		CollectionUpdater<I, O, C> updateListener = new CollectionUpdater<I, O, C>(manyRelationDescriptor.getCollectionGetter(), targetPersister, null, shouldDeleteRemoved) {
 			
 			@Override
 			protected AssociationTableUpdateContext newUpdateContext(UpdatePayload<? extends I, ?> updatePayload) {
@@ -67,8 +67,8 @@ public class OneToManyWithIndexedAssociationTableEngine<I extends Identified, O 
 			}
 			
 			@Override
-			protected Set<? extends AbstractDiff> diff(Collection<O> modified, Collection<O> unmodified) {
-				return (Set<IndexedDiff>) differ.diffList((List) unmodified, (List) modified);
+			protected Set<? extends AbstractDiff<O>> diff(Collection<O> modified, Collection<O> unmodified) {
+				return getDiffer().diffList((List<O>) unmodified, (List<O>) modified);
 			}
 			
 			@Override

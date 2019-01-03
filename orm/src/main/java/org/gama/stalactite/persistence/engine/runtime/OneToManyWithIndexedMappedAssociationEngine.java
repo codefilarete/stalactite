@@ -1,6 +1,5 @@
 package org.gama.stalactite.persistence.engine.runtime;
 
-import java.lang.reflect.Method;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -10,19 +9,13 @@ import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 
-import org.danekja.java.util.function.serializable.SerializableBiConsumer;
-import org.danekja.java.util.function.serializable.SerializableFunction;
 import org.gama.lang.Duo;
 import org.gama.lang.Nullable;
 import org.gama.lang.Reflections;
 import org.gama.lang.ThreadLocals;
 import org.gama.lang.collection.Iterables;
-import org.gama.reflection.IMutator;
-import org.gama.reflection.MethodReferenceCapturer;
-import org.gama.stalactite.persistence.engine.BeanRelationFixer;
 import org.gama.stalactite.persistence.engine.Persister;
-import org.gama.stalactite.persistence.engine.builder.CascadeMany;
-import org.gama.stalactite.persistence.engine.builder.CascadeManyList;
+import org.gama.stalactite.persistence.engine.RuntimeMappingException;
 import org.gama.stalactite.persistence.engine.cascade.JoinedTablesPersister;
 import org.gama.stalactite.persistence.engine.listening.PersisterListener;
 import org.gama.stalactite.persistence.engine.listening.SelectListener;
@@ -48,38 +41,26 @@ public class OneToManyWithIndexedMappedAssociationEngine<I extends Identified, O
 	 * Could be static, but would lack the O typing, which leads to some generics errors, so left non static (acceptable small overhead)
 	 */
 	private final ThreadLocal<Map<O, Integer>> updatableListIndex = new ThreadLocal<>();
+	
+	/** Column that stores index value, owned by reverse side table (table of targetPersister) */
 	private final Column indexingColumn;
-	private final SerializableFunction<O, I> reverseGetter;
 	
 	public OneToManyWithIndexedMappedAssociationEngine(PersisterListener<I, J> persisterListener,
 													   Persister<O, J, ?> targetPersister,
-													   Function<I, C> collectionGetter,
-													   BiConsumer<O, I> reverseSetter,
+													   IndexedMappedManyRelationDescriptor<I, O, C> manyRelationDefinition,
 													   JoinedTablesPersister<I, J, ?> joinedTablesPersister,
-													   Column indexingColumn,
-													   SerializableFunction<O, I> reverseGetter) {
-		super(persisterListener, targetPersister, collectionGetter, reverseSetter, joinedTablesPersister);
+													   Column indexingColumn) {
+		super(persisterListener, targetPersister, manyRelationDefinition, joinedTablesPersister);
 		this.indexingColumn = indexingColumn;
-		this.reverseGetter = reverseGetter;
-		
 	}
 	
 	@Override
-	protected BeanRelationFixer newRelationFixer(CascadeMany<I, O, J, C> cascadeMany, IMutator<I, C> collectionSetter, SerializableBiConsumer<O, I> reverseMember,
-												 PersisterListener<I, J> persisterListener) {
-		CascadeManyList<I, O, J, C> refinedCascadeMany = (CascadeManyList<I, O, J, C>) cascadeMany;
-		return addIndexSelection(
-				joinedTablesPersister,
-				refinedCascadeMany.getCollectionTargetClass(),
-				persisterListener,
-				collectionSetter, reverseMember);
+	public void addSelectCascade(Column sourcePrimaryKey, Column relationshipOwner) {
+		super.addSelectCascade(sourcePrimaryKey, relationshipOwner);
+		addIndexSelection();
 	}
 	
-	private BeanRelationFixer addIndexSelection(JoinedTablesPersister<I, J, ?> joinedTablesPersister,
-												Class<C> collectionTargetClass,
-												PersisterListener<I, J> persisterListener,
-												IMutator<I, C> collectionSetter,
-												SerializableBiConsumer<O, I> reverseMember) {
+	private void addIndexSelection() {
 		targetPersister.getSelectExecutor().getMappingStrategy().addSilentColumnSelecter(indexingColumn);
 		// Implementation note: 2 possiblities
 		// - keep object indexes and put sorted beans in a temporary List, then add them all to the target List
@@ -98,7 +79,7 @@ public class OneToManyWithIndexedMappedAssociationEngine<I extends Identified, O
 				try {
 					// reordering List element according to read indexes during the transforming phase (see below)
 					result.forEach(i -> {
-						List<O> apply = collectionGetter.apply(i);
+						List<O> apply = manyRelationDefinition.getCollectionGetter().apply(i);
 						apply.sort(Comparator.comparingInt(o -> updatableListIndex.get().get(o)));
 					});
 				} finally {
@@ -125,15 +106,12 @@ public class OneToManyWithIndexedMappedAssociationEngine<I extends Identified, O
 			Map<Column, String> aliases = joinedTablesPersister.getJoinedStrategiesSelectExecutor().getJoinedStrategiesSelect().getAliases();
 			indexPerBean.put(bean, (int) row.get(aliases.get(indexingColumn)));
 		});
-		return BeanRelationFixer.of(collectionSetter::set, collectionGetter,
-				collectionTargetClass, reverseMember);
 	}
 	
 	@Override
 	public void addInsertCascade() {
 		// For a List and a given manner to get its owner (so we can deduce index value), we configure persistence to keep index value in database
 		addIndexInsertion();
-//		addIndexInsertion((CascadeManyList<I, O, J, ? extends List<O>>) cascadeMany);
 		super.addInsertCascade();
 	}
 	
@@ -142,17 +120,18 @@ public class OneToManyWithIndexedMappedAssociationEngine<I extends Identified, O
 	 */
 	private void addIndexInsertion() {
 		// we declare the indexing column as a silent one, then AfterInsertCollectionCascader will insert it
-		targetPersister.getInsertExecutor().getMappingStrategy().addSilentColumnInserter(indexingColumn,
-				(Function<O, Object>) target -> {
-					I source = reverseGetter.apply(target);
+		targetPersister.getInsertExecutor().getMappingStrategy().addSilentColumnInserter(indexingColumn, (Function<O, Object>)
+				target -> {
+					IndexedMappedManyRelationDescriptor<I, O, C> manyRelationDefinition =
+							(IndexedMappedManyRelationDescriptor<I, O, C>) this.manyRelationDefinition;
+					I source = manyRelationDefinition.getReverseGetter().apply(target);
 					if (source == null) {
-						MethodReferenceCapturer methodReferenceCapturer = new MethodReferenceCapturer();
-						Method method = methodReferenceCapturer.findMethod(reverseGetter);
-						throw new IllegalStateException("Can't get index : " + target + " is not associated with a " + Reflections.toString(method.getReturnType()) + " : "
-								+ Reflections.toString(method) + " returned null");
+						throw new RuntimeMappingException("Can't get index : " + target + " is not associated with a "
+								+ Reflections.toString(joinedTablesPersister.getMappingStrategy().getClassToPersist()) + " : "
+								// NB: we let Mutator print itself because it has a self defined toString()
+								+ manyRelationDefinition.getReverseGetterSignature() + " returned null");
 					}
-					List<O> collection = collectionGetter.apply(source);
-					return collection.indexOf(target);
+					return this.manyRelationDefinition.getCollectionGetter().apply(source).indexOf(target);
 				});
 	}
 	
@@ -163,12 +142,15 @@ public class OneToManyWithIndexedMappedAssociationEngine<I extends Identified, O
 				// Thread safe by updatableListIndex access
 				(Function<O, Object>) o -> Nullable.nullable(updatableListIndex.get()).apply(m -> m.get(o)).get());
 		
-		BiConsumer<UpdatePayload<? extends I, ?>, Boolean> updateListener = new CollectionUpdater<I, O, C>(collectionGetter, targetPersister,
-				reverseSetter, shouldDeleteRemoved) {
+		BiConsumer<UpdatePayload<? extends I, ?>, Boolean> updateListener = new CollectionUpdater<I, O, C>(
+				manyRelationDefinition.getCollectionGetter(),
+				targetPersister,
+				manyRelationDefinition.getReverseSetter(),
+				shouldDeleteRemoved) {
 			
 			@Override
-			protected Set<? extends AbstractDiff> diff(Collection<O> modified, Collection<O> unmodified) {
-				return differ.diffList((List) unmodified, (List) modified);
+			protected Set<? extends AbstractDiff<O>> diff(Collection<O> modified, Collection<O> unmodified) {
+				return getDiffer().diffList((List<O>) unmodified, (List<O>) modified);
 			}
 			
 			@Override
@@ -179,7 +161,7 @@ public class OneToManyWithIndexedMappedAssociationEngine<I extends Identified, O
 			@Override
 			protected void onHeldTarget(UpdateContext updateContext, AbstractDiff<O> diff) {
 				super.onHeldTarget(updateContext, diff);
-				Set<Integer> minus = Iterables.minus(((IndexedDiff) diff).getReplacerIndexes(), ((IndexedDiff) diff).getSourceIndexes());
+				Set<Integer> minus = Iterables.minus(((IndexedDiff<O>) diff).getReplacerIndexes(), ((IndexedDiff<O>) diff).getSourceIndexes());
 				Integer index = Iterables.first(minus);
 				if (index != null) {
 					((IndexedMappedAssociationUpdateContext) updateContext).getIndexUpdates().put(diff.getReplacingInstance(), index);

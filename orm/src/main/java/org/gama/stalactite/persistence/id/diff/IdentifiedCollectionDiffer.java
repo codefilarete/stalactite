@@ -49,16 +49,16 @@ public class IdentifiedCollectionDiffer {
 		Set<Diff<I>> result = new HashSet<>();
 		
 		for (Entry<C, I> id : beforeMappedOnIdentifier.entrySet()) {
-			Identified afterId = afterMappedOnIdentifier.get(id.getKey());
+			I afterId = afterMappedOnIdentifier.get(id.getKey());
 			if (afterId != null) {
-				result.add(new Diff(HELD, id.getValue(), afterId));
+				result.add(new Diff<>(HELD, id.getValue(), afterId));
 			} else {
-				result.add(new Diff(REMOVED, id.getValue(), null));
+				result.add(new Diff<>(REMOVED, id.getValue(), null));
 			}
 		}
 		afterMappedOnIdentifier.keySet().removeAll(beforeMappedOnIdentifier.keySet());
 		for (Entry<C, I> identifiedEntry : afterMappedOnIdentifier.entrySet()) {
-			result.add(new Diff(ADDED, null, identifiedEntry.getValue()));
+			result.add(new Diff<>(ADDED, null, identifiedEntry.getValue()));
 		}
 		return result;
 	}
@@ -85,11 +85,11 @@ public class IdentifiedCollectionDiffer {
 		
 		// Removed instances are found with a simple minus
 		Set<I> removeds = Iterables.minus(beforeIndexes.keySet(), afterIndexes.keySet());
-		removeds.forEach(i -> result.add(new IndexedDiff(REMOVED, i, null, beforeIndexes.get(i), new HashSet<>())));
+		removeds.forEach(i -> result.add(new IndexedDiff<>(REMOVED, i, null, beforeIndexes.get(i), new HashSet<>())));
 		
 		// Added instances are found with a simple minus (reverse order of removed)
 		Set<I> addeds = Iterables.minus(afterIndexes.keySet(), beforeIndexes.keySet());
-		addeds.forEach(i -> result.add(new IndexedDiff(ADDED, null, i, new HashSet<>(), afterIndexes.get(i))));
+		addeds.forEach(i -> result.add(new IndexedDiff<>(ADDED, null, i, new HashSet<>(), afterIndexes.get(i))));
 		
 		// There are several cases for "held" instances (those existing on both sides)
 		// - if they are more instances in the new set, then those new are ADDED (with their new index)
@@ -103,9 +103,9 @@ public class IdentifiedCollectionDiffer {
 			// NB: even if Integer can't be inherited, PairIterator is a Iterator<? extends X, ? extends X>
 			Iterable<Duo<? extends Integer, ? extends Integer>> indexPairs = () -> new UntilBothIterator<>(beforeIndexes.get(i), afterIndexes.get(i));
 			// NB: These instances may no be added to result, it depends on iteration
-			IndexedDiff removed = new IndexedDiff(REMOVED, i, null);
-			IndexedDiff held = new IndexedDiff(HELD, i, i);
-			IndexedDiff added = new IndexedDiff(ADDED, null, i);
+			IndexedDiff<I> removed = new IndexedDiff<>(REMOVED, i, null);
+			IndexedDiff<I> held = new IndexedDiff<>(HELD, i, i);
+			IndexedDiff<I> added = new IndexedDiff<>(ADDED, null, i);
 			for (Duo<? extends Integer, ? extends Integer> indexPair : indexPairs) {
 				if (indexPair.getLeft() != null && indexPair.getRight() != null) {
 					held.addSourceIndex(indexPair.getLeft());

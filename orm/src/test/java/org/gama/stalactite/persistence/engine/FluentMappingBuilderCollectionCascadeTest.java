@@ -43,10 +43,13 @@ import static org.gama.stalactite.persistence.engine.CascadeOptions.Relationship
 import static org.gama.stalactite.persistence.engine.CascadeOptions.RelationshipMode.ALL_ORPHAN_REMOVAL;
 import static org.gama.stalactite.persistence.engine.CascadeOptions.RelationshipMode.ASSOCIATION_ONLY;
 import static org.gama.stalactite.persistence.engine.CascadeOptions.RelationshipMode.READ_ONLY;
+import static org.gama.stalactite.persistence.engine.FluentMappingBuilder.from;
+import static org.gama.stalactite.persistence.id.Identifier.LONG_TYPE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
@@ -82,6 +85,24 @@ public class FluentMappingBuilderCollectionCascadeTest {
 				.add(City::getName)
 				.add(City::getCountry);
 		cityPersister = CITY_MAPPING_BUILDER.build(persistenceContext);
+	}
+	
+	@Test
+	public void testBuild_mappedByNonDeclaredMapping_thrownsException() {
+		persistenceContext = new PersistenceContext(connectionProvider, DIALECT);
+		
+		Persister<City, Identifier<Long>, ?> cityPersister = from(City.class, LONG_TYPE)
+				.add(City::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
+				.add(City::getName)
+				// we don't add getQuestion() to the mapping, that's the goal of our test
+				//.add(City::getCountry)
+				.build(persistenceContext);
+		
+		assertEquals("Can't build a relation with on a non mapped property, please add the mapping of a o.g.s.p.e.m.Country to persister of o.g.s.p.e.m.City",
+				assertThrows(NotYetSupportedOperationException.class, () -> from(Country.class, LONG_TYPE)
+						.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
+						.addOneToManySet(Country::getCities, cityPersister).mappedBy(City::getCountry).cascading(ALL)
+						.build(persistenceContext)).getMessage());
 	}
 	
 	@Test
@@ -335,7 +356,7 @@ public class FluentMappingBuilderCollectionCascadeTest {
 	}
 	
 	@Test
-	public void testCascade_all_update_noMappedBy_associationTableIsMaintained() throws SQLException {
+	public void testCascade_all_update_noMappedBy_associationTableIsMaintained() {
 		// mapping building thantks to fluent API
 		Persister<Country, Identifier<Long>, ?> countryPersister = FluentMappingBuilder.from(Country.class, Identifier.LONG_TYPE)
 				.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
@@ -383,7 +404,7 @@ public class FluentMappingBuilderCollectionCascadeTest {
 		
 		Country persistedCountry2 = countryPersister.select(dummyCountry.getId());
 		assertEquals(Arrays.asHashSet("changed", "Grenoble"), Iterables.collect(persistedCountry2.getCities(), City::getName, HashSet::new));
-		// reverse link is up to date
+		// reverse link is empty because mappedBy wasn't defined
 		assertEquals(Arrays.asList(null, null), Iterables.collectToList(persistedCountry2.getCities(), City::getCountry));
 	}
 	

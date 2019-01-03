@@ -6,17 +6,13 @@ import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import org.danekja.java.util.function.serializable.SerializableBiConsumer;
 import org.gama.lang.Duo;
 import org.gama.lang.bean.Objects;
 import org.gama.lang.collection.Iterables;
-import org.gama.reflection.Accessors;
-import org.gama.reflection.IMutator;
 import org.gama.stalactite.persistence.engine.BeanRelationFixer;
 import org.gama.stalactite.persistence.engine.CascadeOneConfigurer;
 import org.gama.stalactite.persistence.engine.NotYetSupportedOperationException;
 import org.gama.stalactite.persistence.engine.Persister;
-import org.gama.stalactite.persistence.engine.builder.CascadeMany;
 import org.gama.stalactite.persistence.engine.cascade.AfterInsertCollectionCascader;
 import org.gama.stalactite.persistence.engine.cascade.AfterUpdateCollectionCascader;
 import org.gama.stalactite.persistence.engine.cascade.BeforeDeleteByIdCollectionCascader;
@@ -37,15 +33,12 @@ import static org.gama.stalactite.persistence.engine.cascade.JoinedStrategiesSel
  */
 public class OneToManyWithMappedAssociationEngine<I extends Identified, O extends Identified, J extends Identifier, C extends Collection<O>> {
 	
-	/** Empty setter for applying source entity to target entity (reverse side). Available only when association is mapped without intermediary table */
-	static final SerializableBiConsumer NOOP_REVERSE_SETTER = (o, i) -> {
+	/** Empty setter for applying source entity to target entity (reverse side) */
+	protected static final BiConsumer NOOP_REVERSE_SETTER = (o, i) -> {
 		/* Having a reverse setter in one to many relation with intermediary table isn't possible (cascadeMany.getReverseSetter() is null)
 		 * because as soon as "mappedBy" is used (which fills reverseSetter), an intermediary table is not possible
 		 */
 	};
-	
-	/** Setter for applying source entity to reverse side (target entity). Available only when association is mapped without intermediary table */
-	protected final BiConsumer<O, I> reverseSetter;
 	
 	protected final JoinedTablesPersister<I, J, ?> joinedTablesPersister;
 	
@@ -53,30 +46,27 @@ public class OneToManyWithMappedAssociationEngine<I extends Identified, O extend
 	
 	protected final Persister<O, J, ?> targetPersister;
 	
-	protected final Function<I, C> collectionGetter;
+	protected final MappedManyRelationDescriptor<I, O, C> manyRelationDefinition;
 	
 	public OneToManyWithMappedAssociationEngine(PersisterListener<I, J> persisterListener,
-														Persister<O, J, ?> targetPersister,
-														Function<I, C> collectionGetter,
-														BiConsumer<O, I> reverseSetter,
-														JoinedTablesPersister<I, J, ?> joinedTablesPersister) {
+												Persister<O, J, ?> targetPersister,
+												MappedManyRelationDescriptor<I, O, C> manyRelationDefinition,
+												JoinedTablesPersister<I, J, ?> joinedTablesPersister) {
 		this.persisterListener = persisterListener;
 		this.targetPersister = targetPersister;
-		this.collectionGetter = collectionGetter;
-		this.reverseSetter = reverseSetter;
+		this.manyRelationDefinition = manyRelationDefinition;
 		this.joinedTablesPersister = joinedTablesPersister;
 	}
 	
-	public void addSelectCascade(CascadeMany<I, O, J, C> cascadeMany,
-								 Column sourcePrimaryKey,
-								 Column relationshipOwner	// foreign key on target table
+	public void addSelectCascade(Column sourcePrimaryKey,
+								 Column relationshipOwner    // foreign key on target table
 	) {
-		
-		IMutator<I, C> collectionSetter = Accessors.<I, C>of(cascadeMany.getMember()).getMutator();
 		// configuring select for fetching relation
-		SerializableBiConsumer<O, I> reverseMember = Objects.preventNull(cascadeMany.getReverseSetter(), NOOP_REVERSE_SETTER);
-		
-		BeanRelationFixer relationFixer = newRelationFixer(cascadeMany, collectionSetter, reverseMember, persisterListener);
+		BeanRelationFixer<I, O> relationFixer = BeanRelationFixer.of(
+				manyRelationDefinition.getCollectionSetter(),
+				manyRelationDefinition.getCollectionGetter(),
+				manyRelationDefinition.getCollectionClass(),
+				Objects.preventNull(manyRelationDefinition.getReverseSetter(), NOOP_REVERSE_SETTER));
 		
 		joinedTablesPersister.addPersister(FIRST_STRATEGY_NAME,
 				targetPersister,
@@ -86,19 +76,15 @@ public class OneToManyWithMappedAssociationEngine<I extends Identified, O extend
 				true);
 	}
 	
-	protected BeanRelationFixer newRelationFixer(CascadeMany<I, O, J, C> cascadeMany, IMutator<I, C> collectionSetter,
-												 SerializableBiConsumer<O, I> reverseMember, PersisterListener<I, J> persisterListener) {
-		BeanRelationFixer relationFixer = BeanRelationFixer.of(collectionSetter::set, collectionGetter,
-				cascadeMany.getCollectionTargetClass(), reverseMember);
-		return relationFixer;
-	}
-	
 	public void addInsertCascade() {
-		persisterListener.addInsertListener(new OneToManyWithMappedAssociationEngine.TargetInstancesInsertCascader<>(targetPersister, collectionGetter));
+		persisterListener.addInsertListener(new OneToManyWithMappedAssociationEngine.TargetInstancesInsertCascader<>(targetPersister, manyRelationDefinition.getCollectionGetter()));
 	}
 	
 	public void addUpdateCascade(boolean shouldDeleteRemoved) {
-		BiConsumer<UpdatePayload<? extends I, ?>, Boolean> updateListener = new CollectionUpdater<>(collectionGetter, targetPersister, reverseSetter,
+		BiConsumer<UpdatePayload<? extends I, ?>, Boolean> updateListener = new CollectionUpdater<>(
+				manyRelationDefinition.getCollectionGetter(),
+				targetPersister,
+				manyRelationDefinition.getReverseSetter(),
 				shouldDeleteRemoved);
 		persisterListener.addUpdateListener(new OneToManyWithMappedAssociationEngine.TargetInstancesUpdateCascader<>(targetPersister, updateListener));
 	}
@@ -106,14 +92,13 @@ public class OneToManyWithMappedAssociationEngine<I extends Identified, O extend
 	public <T extends Table<T>> void addDeleteCascade(boolean deleteTargetEntities) {
 		if (deleteTargetEntities) {
 			// adding deletion of many-side entities
-			persisterListener.addDeleteListener(new DeleteTargetEntitiesBeforeDeleteCascader<>(targetPersister, collectionGetter));
+			persisterListener.addDeleteListener(new DeleteTargetEntitiesBeforeDeleteCascader<>(targetPersister, manyRelationDefinition.getCollectionGetter()));
 			// we add the deleteById event since we suppose that if delete is required then there's no reason that rough delete is not
-			persisterListener.addDeleteByIdListener(new DeleteByIdTargetEntitiesBeforeDeleteByIdCascader<>(targetPersister, collectionGetter));
+			persisterListener.addDeleteByIdListener(new DeleteByIdTargetEntitiesBeforeDeleteByIdCascader<>(targetPersister, manyRelationDefinition.getCollectionGetter()));
 		} else // entity shouldn't be deleted, so we may have to update it
-			if (reverseSetter != null) {
+			if (manyRelationDefinition.getReverseSetter() != null) {
 				// we cut the link between target and source
 				// NB : we don't take versioning into account overall because we can't : how to do it since we miss the unmodified version ?
-				
 				persisterListener.addDeleteListener(new BeforeDeleteCollectionCascader<I, O>(targetPersister) {
 					
 					@Override
@@ -124,13 +109,13 @@ public class OneToManyWithMappedAssociationEngine<I extends Identified, O extend
 					@Override
 					public void beforeDelete(Iterable<I> entities) {
 						List<O> targets = stream(entities).flatMap(c -> getTargets(c).stream()).collect(Collectors.toList());
-						targets.forEach(e -> reverseSetter.accept(e, null));
+						targets.forEach(e -> manyRelationDefinition.getReverseSetter().accept(e, null));
 						targetPersister.updateById(targets);
 					}
 					
 					@Override
 					protected Collection<O> getTargets(I i) {
-						Collection<O> targets = collectionGetter.apply(i);
+						Collection<O> targets = manyRelationDefinition.getCollectionGetter().apply(i);
 						// We only delete persisted instances (for logic and to prevent from non matching row count exception)
 						return stream(targets)
 								.filter(CascadeOneConfigurer.PERSISTED_PREDICATE)
@@ -155,8 +140,8 @@ public class OneToManyWithMappedAssociationEngine<I extends Identified, O extend
 		}
 		
 		@Override
-		protected Collection<O> getTargets(I o) {
-			Collection<O> targets = collectionGetter.apply(o);
+		protected Collection<O> getTargets(I source) {
+			Collection<O> targets = collectionGetter.apply(source);
 			// We only insert non-persisted instances (for logic and to prevent duplicate primary key error)
 			return Iterables.stream(targets)
 					.filter(CascadeOneConfigurer.NON_PERSISTED_PREDICATE)

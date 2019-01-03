@@ -9,8 +9,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
 
-import org.gama.reflection.Accessors;
-import org.gama.reflection.IMutator;
 import org.gama.sql.dml.PreparedSQL;
 import org.gama.sql.dml.WriteOperation;
 import org.gama.stalactite.command.builder.DeleteCommandBuilder;
@@ -20,7 +18,6 @@ import org.gama.stalactite.persistence.engine.AssociationRecordPersister;
 import org.gama.stalactite.persistence.engine.AssociationTable;
 import org.gama.stalactite.persistence.engine.BeanRelationFixer;
 import org.gama.stalactite.persistence.engine.Persister;
-import org.gama.stalactite.persistence.engine.builder.CascadeMany;
 import org.gama.stalactite.persistence.engine.cascade.AfterInsertCollectionCascader;
 import org.gama.stalactite.persistence.engine.cascade.JoinedTablesPersister;
 import org.gama.stalactite.persistence.engine.listening.DeleteByIdListener;
@@ -35,8 +32,7 @@ import org.gama.stalactite.persistence.engine.runtime.OneToManyWithMappedAssocia
 import org.gama.stalactite.persistence.id.Identified;
 import org.gama.stalactite.persistence.id.Identifier;
 import org.gama.stalactite.persistence.id.diff.AbstractDiff;
-import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
-import org.gama.stalactite.persistence.sql.Dialect;
+import org.gama.stalactite.persistence.sql.dml.binder.ColumnBinderRegistry;
 import org.gama.stalactite.query.model.Operand;
 
 import static org.gama.lang.collection.Iterables.collect;
@@ -60,29 +56,29 @@ public abstract class AbstractOneToManyWithAssociationTableEngine<I extends Iden
 	protected final AssociationRecordPersister<R, T> associationPersister;
 	
 	protected final PersisterListener<I, J> persisterListener;
+	
 	protected final Persister<O, J, ?> targetPersister;
 	
-	protected final Function<I, C> collectionGetter;
+	protected final ManyRelationDescriptor<I, O, C> manyRelationDescriptor;
 	
-	public AbstractOneToManyWithAssociationTableEngine(PersisterListener<I, J> persisterListener, Persister<O, J, ?> targetPersister, Function<I, C> collectionGetter, AssociationRecordPersister<R, T> associationPersister) {
+	public AbstractOneToManyWithAssociationTableEngine(PersisterListener<I, J> persisterListener,
+													   Persister<O, J, ?> targetPersister,
+													   ManyRelationDescriptor<I, O, C> manyRelationDescriptor,
+													   AssociationRecordPersister<R, T> associationPersister) {
 		this.persisterListener = persisterListener;
 		this.targetPersister = targetPersister;
-		this.collectionGetter = collectionGetter;
+		this.manyRelationDescriptor = manyRelationDescriptor;
 		this.associationPersister = associationPersister;
 	}
 	
-	public void addSelectCascade(CascadeMany<I, O, J, C> cascadeMany,
-								 JoinedTablesPersister<I, J, ?> joinedTablesPersister
-	) {
-		
-		IMutator<I, C> collectionSetter = Accessors.<I, C>of(cascadeMany.getMember()).getMutator();
+	public void addSelectCascade(JoinedTablesPersister<I, J, ?> joinedTablesPersister) {
 		
 		// we must join on the association table and add in-memory reassociation
 		// Relation is kept on each row by the "relation fixer" passed to JoinedTablePersister below, because it seems more complex to read it
 		// from the Row (as for use case without association table, addTransformerListener(..)) due to the need to create an equivalent
 		// structure to AssociationRecord
 		// Relation will be fixed after all rows read (SelectListener.afterSelect)
-		addIndexReadOnSelect(cascadeMany.getCollectionTargetClass(), persisterListener, collectionSetter);
+		addRelationReadOnSelect();
 		// adding association table join
 		String associationTableJoinNodeName = joinedTablesPersister.addPersister(FIRST_STRATEGY_NAME,
 				associationPersister,
@@ -103,12 +99,13 @@ public abstract class AbstractOneToManyWithAssociationTableEngine<I extends Iden
 				true);
 	}
 	
-	private void addIndexReadOnSelect(Class<C> collectionTargetClass,
-									  PersisterListener<I, J> persisterListener,
-									  IMutator<I, C> collectionSetter) {
+	private void addRelationReadOnSelect() {
 		// Note: reverse setter does nothing (NOOP) because there's no such a reverse setter in relationship with association table
-		BeanRelationFixer<I, O> beanRelationFixer = BeanRelationFixer.of(collectionSetter::set, collectionGetter,
-				collectionTargetClass, OneToManyWithMappedAssociationEngine.NOOP_REVERSE_SETTER);
+		BeanRelationFixer<I, O> beanRelationFixer = BeanRelationFixer.of(
+				manyRelationDescriptor.getCollectionSetter(),
+				manyRelationDescriptor.getCollectionGetter(),
+				manyRelationDescriptor.getCollectionClass(),
+				OneToManyWithMappedAssociationEngine.NOOP_REVERSE_SETTER);
 		persisterListener.addSelectListener(new SelectListener<I, J>() {
 			@Override
 			public void beforeSelect(Iterable<J> ids) {
@@ -148,16 +145,16 @@ public abstract class AbstractOneToManyWithAssociationTableEngine<I extends Iden
 	}
 	
 	public void addInsertCascade() {
-		persisterListener.addInsertListener(new TargetInstancesInsertCascader<>(targetPersister, collectionGetter));
+		persisterListener.addInsertListener(new TargetInstancesInsertCascader<>(targetPersister, manyRelationDescriptor.getCollectionGetter()));
 		
-		persisterListener.addInsertListener(newRecordInsertionCascader(collectionGetter, associationPersister));
+		persisterListener.addInsertListener(newRecordInsertionCascader(manyRelationDescriptor.getCollectionGetter(), associationPersister));
 	}
 	
 	public void addUpdateCascade(boolean shouldDeleteRemoved) {
 		
 		// NB: we don't have any reverseSetter (for applying source entity to reverse side (target entity)), because this is only relevent
 		// when association is mapped without intermediary table (owned by "many-side" entity)
-		CollectionUpdater<I, O, C> updateListener = new CollectionUpdater<I, O, C>(collectionGetter, targetPersister, null, shouldDeleteRemoved) {
+		CollectionUpdater<I, O, C> updateListener = new CollectionUpdater<I, O, C>(manyRelationDescriptor.getCollectionGetter(), targetPersister, null, shouldDeleteRemoved) {
 			
 			@Override
 			protected AssociationTableUpdateContext newUpdateContext(UpdatePayload<? extends I, ?> updatePayload) {
@@ -214,10 +211,16 @@ public abstract class AbstractOneToManyWithAssociationTableEngine<I extends Iden
 		persisterListener.addUpdateListener(new TargetInstancesUpdateCascader<>(targetPersister, updateListener));
 	}
 	
-	public void addDeleteCascade(CascadeMany<I, O, J, C> cascadeMany,
-								 JoinedTablesPersister<I, J, ?> joinedTablesPersister,
-								 boolean deleteTargetEntities,
-								 Dialect dialect) {
+	/**
+	 * Add deletion of association records on {@link Persister#delete} and {@link Persister#deleteById} events.
+	 * If {@code deleteTargetEntities} is true, then will also delete target (many side) entities.
+	 * 
+	 * In case of {@link Persister#deleteById}, association records will be deleted only by source entity keys.
+	 * 
+	 * @param deleteTargetEntities true to delete many-side entities, false to onlly delete association records
+	 * @param columnBinderRegistry should come from a {@link org.gama.stalactite.persistence.sql.Dialect}, necessary for deleteById action
+	 */
+	public void addDeleteCascade(boolean deleteTargetEntities, ColumnBinderRegistry columnBinderRegistry) {
 		// we delete association records
 		persisterListener.addDeleteListener(new DeleteListener<I>() {
 			@Override
@@ -228,7 +231,7 @@ public abstract class AbstractOneToManyWithAssociationTableEngine<I extends Iden
 				// It should be more efficient because, here, we have to create as many AssociationRecord as necessary which loads the garbage collector
 				List<R> associationRecords = new ArrayList<>();
 				entities.forEach(e -> {
-					Collection<O> targets = collectionGetter.apply(e);
+					Collection<O> targets = manyRelationDescriptor.getCollectionGetter().apply(e);
 					int i = 0;
 					for (O target : targets) {
 						associationRecords.add(newRecord(e, target, i++));
@@ -243,27 +246,30 @@ public abstract class AbstractOneToManyWithAssociationTableEngine<I extends Iden
 			
 			@Override
 			public void beforeDeleteById(Iterable<I> entities) {
-				// We delete records thanks to a SQL delete order
-				// Yes it is not coherent with beforeDelete(..) !
-				// TODO: make it coherent with beforeDelete(..) to avoid dialect and connectionProvider parameters
+				// We delete association records by entity keys, not their id because we don't have them (it is themselves and we don't have the full
+				// entities, only their id)
+				// We do it thanks to a SQL delete order ... not very coherent with beforeDelete(..) !
 				Delete<AssociationTable> delete = new Delete<>(associationPersister.getTargetTable());
-				ClassMappingStrategy<I, J, ?> mappingStrategy = joinedTablesPersister.getMappingStrategy();
-				Set<J> identifiers = collect(entities, mappingStrategy::getId, HashSet::new);
+				Set<J> identifiers = collect(entities, this::castId, HashSet::new);
 				delete.where(associationPersister.getTargetTable().getOneSideKeyColumn(), Operand.in(identifiers));
 				
-				PreparedSQL deleteStatement = new DeleteCommandBuilder<>(delete).toStatement(dialect.getColumnBinderRegistry());
-				try (WriteOperation<Integer> writeOperation = new WriteOperation<>(deleteStatement, cascadeMany.getPersister().getConnectionProvider())) {
+				PreparedSQL deleteStatement = new DeleteCommandBuilder<>(delete).toStatement(columnBinderRegistry);
+				try (WriteOperation<Integer> writeOperation = new WriteOperation<>(deleteStatement, associationPersister.getConnectionProvider())) {
 					writeOperation.setValues(deleteStatement.getValues());
 					writeOperation.execute();
 				}
+			}
+			
+			private J castId(I e) {
+				return (J) e.getId();
 			}
 		});
 		
 		if (deleteTargetEntities) {
 			// adding deletion of many-side entities
-			persisterListener.addDeleteListener(new DeleteTargetEntitiesBeforeDeleteCascader<>(targetPersister, collectionGetter));
+			persisterListener.addDeleteListener(new DeleteTargetEntitiesBeforeDeleteCascader<>(targetPersister, manyRelationDescriptor.getCollectionGetter()));
 			// we add the deleteById event since we suppose that if delete is required then there's no reason that rough delete is not
-			persisterListener.addDeleteByIdListener(new DeleteByIdTargetEntitiesBeforeDeleteByIdCascader<>(targetPersister, collectionGetter));
+			persisterListener.addDeleteByIdListener(new DeleteByIdTargetEntitiesBeforeDeleteByIdCascader<>(targetPersister, manyRelationDescriptor.getCollectionGetter()));
 		}
 	}
 	

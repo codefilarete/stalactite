@@ -17,8 +17,11 @@ import org.gama.stalactite.persistence.id.Identifier;
 public class OneToManyWithAssociationTableEngine<I extends Identified, O extends Identified, J extends Identifier, C extends Collection<O>>
 		extends AbstractOneToManyWithAssociationTableEngine<I, O, J, C, AssociationRecord, AssociationTable> {
 	
-	public OneToManyWithAssociationTableEngine(PersisterListener<I, J> persisterListener, Persister<O, J, ?> targetPersister, Function<I, C> collectionGetter, AssociationRecordPersister<AssociationRecord, AssociationTable> associationPersister) {
-		super(persisterListener, targetPersister, collectionGetter, associationPersister);
+	public OneToManyWithAssociationTableEngine(PersisterListener<I, J> persisterListener,
+											   Persister<O, J, ?> targetPersister,
+											   ManyRelationDescriptor<I, O, C> manyRelationDescriptor,
+											   AssociationRecordPersister<AssociationRecord, AssociationTable> associationPersister) {
+		super(persisterListener, targetPersister, manyRelationDescriptor, associationPersister);
 	}
 	
 	@Override

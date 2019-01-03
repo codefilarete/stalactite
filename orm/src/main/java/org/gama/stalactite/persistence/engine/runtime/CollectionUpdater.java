@@ -13,6 +13,7 @@ import org.gama.stalactite.persistence.engine.listening.UpdateListener.UpdatePay
 import org.gama.stalactite.persistence.id.Identified;
 import org.gama.stalactite.persistence.id.diff.AbstractDiff;
 import org.gama.stalactite.persistence.id.diff.IdentifiedCollectionDiffer;
+import org.gama.stalactite.persistence.structure.Table;
 
 /**
  * Class aimed at making the difference of entities of an {@link UpdatePayload} and updating, inserting or deleting them according to difference
@@ -24,7 +25,7 @@ import org.gama.stalactite.persistence.id.diff.IdentifiedCollectionDiffer;
 public class CollectionUpdater<I extends Identified, O extends Identified, C extends Collection<O>>
 		implements BiConsumer<UpdatePayload<? extends I, ?>, Boolean> {
 	
-	protected final IdentifiedCollectionDiffer differ = new IdentifiedCollectionDiffer();
+	private final IdentifiedCollectionDiffer differ = new IdentifiedCollectionDiffer();
 	
 	private final Function<I, C> collectionGetter;
 	private final BiConsumer<O, I> reverseSetter;
@@ -44,13 +45,17 @@ public class CollectionUpdater<I extends Identified, O extends Identified, C ext
 		this.shouldDeleteRemoved = shouldDeleteRemoved;
 	}
 	
+	public IdentifiedCollectionDiffer getDiffer() {
+		return differ;
+	}
+	
 	@Override
 	public void accept(UpdatePayload<? extends I, ?> entry, Boolean allColumnsStatement) {
 		C modified = collectionGetter.apply(entry.getEntities().getLeft());
 		C unmodified = collectionGetter.apply(entry.getEntities().getRight());
-		Set<? extends AbstractDiff> diffSet = diff(modified, unmodified);
+		Set<? extends AbstractDiff<O>> diffSet = diff(modified, unmodified);
 		UpdateContext updateContext = newUpdateContext(entry);
-		for (AbstractDiff diff : diffSet) {
+		for (AbstractDiff<O> diff : diffSet) {
 			switch (diff.getState()) {
 				case ADDED:
 					onAddedTarget(updateContext, diff);
@@ -102,8 +107,8 @@ public class CollectionUpdater<I extends Identified, O extends Identified, C ext
 	/**
 	 * Method in charge of making the differences between 2 collections of entities (many side type)
 	 */
-	protected Set<? extends AbstractDiff> diff(Collection<O> modified, Collection<O> unmodified) {
-		return differ.diffSet((Set) unmodified, (Set) modified);
+	protected Set<? extends AbstractDiff<O>> diff(Collection<O> modified, Collection<O> unmodified) {
+		return differ.diffSet((Set<O>) unmodified, (Set<O>) modified);
 	}
 	
 	/**
@@ -120,7 +125,7 @@ public class CollectionUpdater<I extends Identified, O extends Identified, C ext
 	protected void onAddedTarget(UpdateContext updateContext, AbstractDiff<O> diff) {
 		// we insert only non persisted entities to prevent from a primary key conflict
 		if (Identified.NON_PERSISTED_PREDICATE.test(diff.getReplacingInstance())) {
-			updateContext.getEntitiesToBeInserted().add((O) diff.getReplacingInstance());
+			updateContext.getEntitiesToBeInserted().add(diff.getReplacingInstance());
 		}
 	}
 	
@@ -138,8 +143,8 @@ public class CollectionUpdater<I extends Identified, O extends Identified, C ext
 			if (reverseSetter != null) {
 				// we cut the link between target and source
 				// NB : we don't take versioning into account overall because we can't : how to do it since we miss the unmodified version ?
-				reverseSetter.accept((O) diff.getSourceInstance(), null);
-				targetPersister.updateById((O) diff.getSourceInstance());
+				reverseSetter.accept(diff.getSourceInstance(), null);
+				targetPersister.updateById(diff.getSourceInstance());
 			}
 	}
 	
@@ -157,8 +162,8 @@ public class CollectionUpdater<I extends Identified, O extends Identified, C ext
 			this.payload = updatePayload;
 		}
 		
-		public UpdatePayload<? extends I, ?> getPayload() {
-			return payload;
+		public UpdatePayload<I, Table> getPayload() {
+			return (UpdatePayload<I, Table>) payload;
 		}
 		
 		public List<O> getEntitiesToBeInserted() {

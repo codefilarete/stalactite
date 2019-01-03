@@ -1,10 +1,7 @@
 package org.gama.stalactite.persistence.engine.builder;
 
-import javax.persistence.CascadeType;
 import java.lang.reflect.Method;
 import java.util.Collection;
-import java.util.HashSet;
-import java.util.Set;
 import java.util.function.Function;
 
 import org.danekja.java.util.function.serializable.SerializableBiConsumer;
@@ -26,43 +23,42 @@ import org.gama.stalactite.persistence.structure.Table;
  */
 public class CascadeMany<SRC extends Identified, O extends Identified, J extends StatefullIdentifier, C extends Collection<O>> {
 	
-	/** the method that gets the "many" entities" from the "one" entity */
-	private final Function<SRC, C> targetProvider;
-	/** {@link Persister} for the "one" entity */
+	/** The method that gives the "many" entities" from the "one" entity */
+	private final Function<SRC, C> collectionProvider;
+	/** Same as {@link #collectionProvider}, but with the reflection API */
+	private final Method collectionGetter;
+	/** {@link Persister} for the "many" entity */
 	private final Persister<O, J, ? extends Table> persister;
-	private final Method member;
 	private final Class<C> collectionTargetClass;
 	/** the method that sets the "one" entity onto the "many" entities */
 	private SerializableBiConsumer<O, SRC> reverseSetter;
 	/** the method that gets the "one" entity from the "many" entities */
 	private SerializableFunction<O, SRC> reverseGetter;
 	private Column<Table, SRC> reverseColumn;
-	private final Set<CascadeType> cascadeTypes = new HashSet<>();
-	/** Should we delete removed entities from the Collection (for UPDATE cascade) */
-	private boolean deleteRemoved = false;
+	/** Default relationship mode is readonly */
 	private RelationshipMode relationshipMode = RelationshipMode.READ_ONLY;
 	
-	public CascadeMany(Function<SRC, C> targetProvider, Persister<O, J, ? extends Table> persister, Method method) {
-		this(targetProvider, persister, (Class<C>) Reflections.javaBeanTargetType(method), method);
+	public CascadeMany(Function<SRC, C> collectionProvider, Persister<O, J, ? extends Table> persister, Method collectionGetter) {
+		this(collectionProvider, persister, (Class<C>) Reflections.javaBeanTargetType(collectionGetter), collectionGetter);
 	}
 	
-	protected CascadeMany(Function<SRC, C> targetProvider, Persister<O, J, ? extends Table> persister, Class<C> collectionTargetClass, Method method) {
-		this.targetProvider = targetProvider;
+	protected CascadeMany(Function<SRC, C> collectionProvider, Persister<O, J, ? extends Table> persister, Class<C> collectionTargetClass, Method collectionGetter) {
+		this.collectionProvider = collectionProvider;
 		this.persister = persister;
-		this.member = method;
+		this.collectionGetter = collectionGetter;
 		this.collectionTargetClass = collectionTargetClass;
 	}
 	
-	public Function<SRC, C> getTargetProvider() {
-		return targetProvider;
+	public Function<SRC, C> getCollectionProvider() {
+		return collectionProvider;
+	}
+	
+	public Method getCollectionGetter() {
+		return collectionGetter;
 	}
 	
 	public Persister<O, J, ?> getPersister() {
 		return persister;
-	}
-	
-	public Method getMember() {
-		return member;
 	}
 	
 	public Class<C> getCollectionTargetClass() {
@@ -91,18 +87,6 @@ public class CascadeMany<SRC extends Identified, O extends Identified, J extends
 	
 	public void setReverseGetter(SerializableFunction<O, SRC> reverseGetter) {
 		this.reverseGetter = reverseGetter;
-	}
-	
-	public Set<CascadeType> getCascadeTypes() {
-		return cascadeTypes;
-	}
-	
-	public void addCascadeType(CascadeType cascadeType) {
-		this.cascadeTypes.add(cascadeType);
-	}
-	
-	public boolean shouldDeleteRemoved() {
-		return deleteRemoved;
 	}
 	
 	public RelationshipMode getRelationshipMode() {
