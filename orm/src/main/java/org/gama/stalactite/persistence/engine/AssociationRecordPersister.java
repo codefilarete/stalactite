@@ -23,7 +23,7 @@ public class AssociationRecordPersister<C extends AssociationRecord, T extends A
 		super(mappingStrategy, dialect, connectionProvider, jdbcBatchSize);
 	}
 	
-	protected AssociationRecordPersister(
+	public AssociationRecordPersister(
 			ClassMappingStrategy<C, C, T> mappingStrategy,
 			ConnectionProvider connectionProvider,
 			DMLGenerator dmlGenerator,

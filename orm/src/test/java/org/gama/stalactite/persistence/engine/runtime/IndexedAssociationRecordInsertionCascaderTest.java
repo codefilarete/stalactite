@@ -1,4 +1,4 @@
-package org.gama.stalactite.persistence.engine;
+package org.gama.stalactite.persistence.engine.runtime;
 
 import java.util.Collection;
 import java.util.List;
@@ -8,8 +8,10 @@ import org.gama.lang.StringAppender;
 import org.gama.lang.collection.Arrays;
 import org.gama.sql.ConnectionProvider;
 import org.gama.sql.binder.ParameterBinderIndex;
-import org.gama.stalactite.persistence.engine.AssociationRecordInsertionCascaderTest.Key;
-import org.gama.stalactite.persistence.engine.AssociationRecordInsertionCascaderTest.Keyboard;
+import org.gama.stalactite.persistence.engine.AssociationRecordPersister;
+import org.gama.stalactite.persistence.engine.IndexedAssociationRecord;
+import org.gama.stalactite.persistence.engine.runtime.AssociationRecordInsertionCascaderTest.Key;
+import org.gama.stalactite.persistence.engine.runtime.AssociationRecordInsertionCascaderTest.Keyboard;
 import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
 import org.gama.stalactite.persistence.mapping.IdMappingStrategy;
 import org.gama.stalactite.persistence.sql.dml.DMLGenerator;

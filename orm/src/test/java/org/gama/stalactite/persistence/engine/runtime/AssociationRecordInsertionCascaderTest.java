@@ -1,4 +1,4 @@
-package org.gama.stalactite.persistence.engine;
+package org.gama.stalactite.persistence.engine.runtime;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -9,6 +9,8 @@ import org.gama.lang.StringAppender;
 import org.gama.lang.collection.Arrays;
 import org.gama.sql.ConnectionProvider;
 import org.gama.sql.binder.ParameterBinderIndex;
+import org.gama.stalactite.persistence.engine.AssociationRecord;
+import org.gama.stalactite.persistence.engine.AssociationRecordPersister;
 import org.gama.stalactite.persistence.id.Identified;
 import org.gama.stalactite.persistence.id.Identifier;
 import org.gama.stalactite.persistence.id.PersistableIdentifier;
