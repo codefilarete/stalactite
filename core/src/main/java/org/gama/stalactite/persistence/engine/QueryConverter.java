@@ -32,6 +32,7 @@ import org.gama.sql.result.ResultSetRowAssembler;
 import org.gama.sql.result.ResultSetRowConverter;
 import org.gama.sql.result.SingleColumnReader;
 import org.gama.stalactite.persistence.structure.Table;
+import org.gama.stalactite.query.builder.SQLBuilder;
 
 import static org.gama.sql.binder.NullAwareParameterBinder.ALWAYS_SET_NULL_INSTANCE;
 
@@ -54,8 +55,8 @@ public class QueryConverter<C> {
 	/** Type of bean that will be built by {@link #execute(ConnectionProvider)} */
 	private final Class<C> rootBeanType;
 	
-	/** The sql that contains the select clause */
-	private final CharSequence sql;
+	/** The sql provider */
+	private final SQLBuilder sql;
 	
 	/** The definition of root bean instanciation */
 	private BeanCreationDefinition<?, C> beanCreationDefinition;
@@ -86,6 +87,17 @@ public class QueryConverter<C> {
 	}
 	
 	/**
+	 * Simple constructor
+	 *
+	 * @param rootBeanType type of built bean
+	 * @param sql the sql provider
+	 * @param parameterBinderProvider a provider for SQL parameters and selected column
+	 */
+	public QueryConverter(Class<C> rootBeanType, SQLBuilder sql, ParameterBinderProvider<Class> parameterBinderProvider) {
+		this(rootBeanType, sql, parameterBinderProvider, METHOD_REFERENCE_CAPTURER);
+	}
+	
+	/**
 	 * Constructor to share {@link MethodReferenceCapturer} between instance of {@link QueryConverter}
 	 * 
 	 * @param rootBeanType type of built bean
@@ -95,6 +107,19 @@ public class QueryConverter<C> {
 	 * default is {@link #METHOD_REFERENCE_CAPTURER}
 	 */
 	public QueryConverter(Class<C> rootBeanType, CharSequence sql, ParameterBinderProvider<Class> parameterBinderProvider, MethodReferenceCapturer methodReferenceCapturer) {
+		this(rootBeanType, () -> sql, parameterBinderProvider, methodReferenceCapturer);
+	}
+	
+	/**
+	 * Constructor to share {@link MethodReferenceCapturer} between instance of {@link QueryConverter}
+	 *
+	 * @param rootBeanType type of built bean
+	 * @param sql the sql provider
+	 * @param parameterBinderProvider a provider for SQL parameters and selected column
+	 * @param methodReferenceCapturer a method capturer (when column types are not given by {@link #map(String, SerializableBiConsumer)}),
+	 * default is {@link #METHOD_REFERENCE_CAPTURER}
+	 */
+	public QueryConverter(Class<C> rootBeanType, SQLBuilder sql, ParameterBinderProvider<Class> parameterBinderProvider, MethodReferenceCapturer methodReferenceCapturer) {
 		this.rootBeanType = rootBeanType;
 		this.sql = sql;
 		this.parameterBinderProvider = parameterBinderProvider;
@@ -319,7 +344,7 @@ public class QueryConverter<C> {
 		}
 		ResultSetConverterSupport<?, C> transformer = buildTransformer();
 		
-		StringParamedSQL parameterizedSQL = new StringParamedSQL(this.sql.toString(), sqlParameterBinders);
+		StringParamedSQL parameterizedSQL = new StringParamedSQL(this.sql.toSQL().toString(), sqlParameterBinders);
 		try (ReadOperation<String> readOperation = new ReadOperation<>(parameterizedSQL, connectionProvider)) {
 			readOperation.setValues(sqlArguments);
 			

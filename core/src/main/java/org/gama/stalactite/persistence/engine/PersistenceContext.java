@@ -1,13 +1,20 @@
 package org.gama.stalactite.persistence.engine;
 
+import java.lang.reflect.Constructor;
 import java.sql.Connection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Consumer;
 
+import org.danekja.java.util.function.serializable.SerializableBiConsumer;
+import org.danekja.java.util.function.serializable.SerializableBiFunction;
+import org.danekja.java.util.function.serializable.SerializableFunction;
 import org.gama.lang.collection.ValueFactoryHashMap;
+import org.gama.reflection.MethodReferenceCapturer;
 import org.gama.sql.ConnectionProvider;
 import org.gama.sql.binder.ParameterBinderProvider;
 import org.gama.sql.dml.PreparedSQL;
@@ -25,7 +32,10 @@ import org.gama.stalactite.persistence.sql.Dialect;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.query.builder.QueryBuilder;
+import org.gama.stalactite.query.builder.SQLBuilder;
+import org.gama.stalactite.query.model.CriteriaChain;
 import org.gama.stalactite.query.model.Query;
+import org.gama.stalactite.query.model.QueryEase;
 import org.gama.stalactite.query.model.QueryProvider;
 
 /**
@@ -142,7 +152,7 @@ public class PersistenceContext {
 	 * @see org.gama.stalactite.query.model.QueryEase
 	 */
 	public <C> QueryConverter<C> newQuery(QueryProvider queryProvider, Class<C> beanType) {
-		return newQuery(new QueryBuilder(queryProvider).toSQL(), beanType);
+		return newQuery(new QueryBuilder(queryProvider), beanType);
 	}
 	
 	/**
@@ -156,7 +166,7 @@ public class PersistenceContext {
 	 * @return a new {@link QueryConverter} that must be configured and executed
 	 */
 	public <C> QueryConverter<C> newQuery(Query query, Class<C> beanType) {
-		return newQuery(new QueryBuilder(query).toSQL(), beanType);
+		return newQuery(new QueryBuilder(query), beanType);
 	}
 	
 	/**
@@ -170,7 +180,163 @@ public class PersistenceContext {
 	 * @return a new {@link QueryConverter} that must be configured and executed
 	 */
 	public <C> QueryConverter<C> newQuery(CharSequence sql, Class<C> beanType) {
+		return newQuery(() -> sql, beanType);
+	}
+	
+	public <C> QueryConverter<C> newQuery(SQLBuilder sql, Class<C> beanType) {
 		return new QueryConverter<>(beanType, sql, ParameterBinderProvider.fromMap(getDialect().getColumnBinderRegistry().getParameterBinders()));
+	}
+	
+	/**
+	 * Queries the database for the given column and fills some beans from it with the given constructor.
+	 * 
+	 * Usage is for very simple cases because IT DOESN'T FILTER DATABASE ROWS : no where clause is appended to the query.
+	 * Moreover only column table is queried : no join nor assembly is made.
+	 * Prefer {@link #select(SerializableFunction, Column, Consumer, Consumer)} for a more complete use case, or even {@link #newQuery(SQLBuilder, Class)}
+	 * 
+	 * @param factory a one-argument bean constructor
+	 * @param column any table column (primary key may be prefered because its result is given to bean constructor but it is not expected)
+	 * @param <C> bean type
+	 * @param <I> constructor arg and column types
+	 * @param <T> table type
+	 * @return a list of all table records mapped to the given bean
+	 * @see #select(SerializableFunction, Column, Consumer, Consumer)
+	 * @see #newQuery(SQLBuilder, Class) 
+	 */
+	public <C, I, T extends Table> List<C> select(SerializableFunction<I, C> factory, Column<T, I> column) {
+		Constructor constructor = new MethodReferenceCapturer().findConstructor(factory);
+		return execute(newQuery(QueryEase
+				.select(column).from(column.getTable()), ((Class<C>) constructor.getDeclaringClass()))
+				.mapKey(factory, column));
+	}
+	
+	/**
+	 * Queries the database for the given columns and fills some beans from it with the given constructor.
+	 *
+	 * Usage is for very simple cases because IT DOESN'T FILTER DATABASE ROWS : no where clause is appended to the query.
+	 * Moreover only columns table is queried : no join nor assembly are processed.
+	 * Prefer {@link #select(SerializableBiFunction, Column, Column, Consumer, Consumer)} for a more complete use case, or even {@link #newQuery(SQLBuilder, Class)}
+	 *
+	 * @param factory a two-arguments bean constructor
+	 * @param column1 a table column (may be a primary key column because its result is given to bean constructor but it is not expected)
+	 * @param column2 a table column (may be a primary key column because its result is given to bean constructor but it is not expected)
+	 * @param <C> bean type
+	 * @param <I> constructor arg and column types
+	 * @param <T> table type
+	 * @return a list of all table records mapped to the given bean
+	 * @see #select(SerializableBiFunction, Column, Column, Consumer, Consumer)
+	 * @see #newQuery(SQLBuilder, Class)
+	 */
+	public <C, I, J, T extends Table> List<C> select(SerializableBiFunction<I, J, C> factory, Column<T, I> column1, Column<T, J> column2) {
+		Constructor constructor = new MethodReferenceCapturer().findConstructor(factory);
+		return execute(newQuery(QueryEase
+				.select(column1, column2).from(column1.getTable()), ((Class<C>) constructor.getDeclaringClass()))
+				.mapKey(factory, column1, column2));
+	}
+	
+	/**
+	 * Queries the database for the given column and fills some beans from it with the given constructor.
+	 *
+	 * Usage is for very simple cases because IT DOESN'T FILTER DATABASE ROWS : no where clause is appended to the query.
+	 * Moreover only column table is queried : no join nor assembly are processed.
+	 * Prefer {@link #select(SerializableFunction, Column, Consumer, Consumer)} for a more complete use case, or even {@link #newQuery(SQLBuilder, Class)}
+	 *
+	 * @param factory a one-argument bean constructor
+	 * @param column any table column (primary key may be prefered because its result is given to bean constructor but it is not expected)
+	 * @param selectMapping allow to add some mapping beyond instanciation time
+	 * @param <C> bean type
+	 * @param <I> constructor arg and column types
+	 * @param <T> table type
+	 * @return a list of all table records mapped to the given bean
+	 * @see #select(SerializableFunction, Column, Consumer, Consumer)
+	 * @see #newQuery(SQLBuilder, Class)
+	 */
+	public <C, I, T extends Table> List<C> select(SerializableFunction<I, C> factory, Column<T, I> column, Consumer<SelectMapping<C>> selectMapping) {
+		return select(factory, column, selectMapping, where -> {});
+	}
+	
+	/**
+	 * Queries the database for the given column and fills some beans from it with the given constructor.
+	 *
+	 * Usage is for very simple cases because IT DOESN'T FILTER DATABASE ROWS : no where clause is appended to the query.
+	 * Moreover only columns table is queried : no join nor assembly are processed.
+	 * Prefer {@link #select(SerializableFunction, Column, Consumer, Consumer)} for a more complete use case, or even {@link #newQuery(SQLBuilder, Class)}
+	 *
+	 * @param factory a two-arguments bean constructor
+	 * @param column1 a table column (may be a primary key column because its result is given to bean constructor but it is not expected)
+	 * @param column2 a table column (may be a primary key column because its result is given to bean constructor but it is not expected)
+	 * @param selectMapping allow to add some mapping beyond instanciation time
+	 * @param <C> bean type
+	 * @param <I> constructor arg and column types
+	 * @param <T> table type
+	 * @return a list of all table records mapped to the given bean
+	 * @see #select(SerializableFunction, Column, Consumer, Consumer)
+	 * @see #newQuery(SQLBuilder, Class)
+	 */
+	public <C, I, J, T extends Table> List<C> select(SerializableBiFunction<I, J, C> factory, Column<T, I> column1, Column<T, J> column2,
+													 Consumer<SelectMapping<C>> selectMapping) {
+		return select(factory, column1, column2, selectMapping, where -> {});
+	}
+	
+	/**
+	 * Queries the database for the given column and fills some beans from it with the given constructor.
+	 *
+	 * Usage is for very simple cases : only columns table is targeted (no join nor assembly are processed).
+	 * Prefer {@link #newQuery(SQLBuilder, Class)} for a more complete use case.
+	 *
+	 * @param factory a one-argument bean constructor
+	 * @param column any table column (primary key may be prefered because its result is given to bean constructor but it is not expected)
+	 * @param selectMapping allow to add some mapping beyond instanciation time
+	 * @param <C> bean type
+	 * @param <I> constructor arg and column types
+	 * @param <T> table type
+	 * @return a list of all table records mapped to the given bean
+	 * @see #newQuery(SQLBuilder, Class)
+	 */
+	public <C, I, T extends Table> List<C> select(SerializableFunction<I, C> factory, Column<T, I> column,
+												  Consumer<SelectMapping<C>> selectMapping,
+												  Consumer<CriteriaChain> where) {
+		Constructor constructor = new MethodReferenceCapturer().findConstructor(factory);
+		Query query = QueryEase.select(column).from(column.getTable()).getSelectQuery();
+		where.accept(query.getWhere());
+		SelectMapping<C> selectMappingSupport = new SelectMapping<>();
+		selectMapping.accept(selectMappingSupport);
+		QueryConverter<C> queryConverter = newQuery(query, ((Class<C>) constructor.getDeclaringClass())).mapKey(factory, column);
+		selectMappingSupport.appendTo(query, queryConverter);
+		return execute(queryConverter);
+	}
+	
+	/**
+	 * Queries the database for the given column and fills some beans from it with the given constructor.
+	 *
+	 * Usage is for very simple cases : only columns table is targeted (no join nor assembly are processed).
+	 * Prefer {@link #newQuery(SQLBuilder, Class)} for a more complete use case.
+	 *
+	 * @param factory a one-argument bean constructor
+	 * @param column1 a table column (may be a primary key column because its result is given to bean constructor but it is not expected)
+	 * @param column2 a table column (may be a primary key column because its result is given to bean constructor but it is not expected)
+	 * @param selectMapping allow to add some mapping beyond instanciation time
+	 * @param <C> bean type
+	 * @param <I> constructor arg and column types
+	 * @param <T> table type
+	 * @return a list of all table records mapped to the given bean
+	 * @see #newQuery(SQLBuilder, Class)
+	 */
+	public <C, I, J, T extends Table> List<C> select(SerializableBiFunction<I, J, C> factory, Column<T, I> column1, Column<T, J> column2,
+												  Consumer<SelectMapping<C>> selectMapping,
+												  Consumer<CriteriaChain> where) {
+		Constructor constructor = new MethodReferenceCapturer().findConstructor(factory);
+		Query query = QueryEase.select(column1,column2).from(column1.getTable()).getSelectQuery();
+		where.accept(query.getWhere());
+		SelectMapping<C> selectMappingSupport = new SelectMapping<>();
+		selectMapping.accept(selectMappingSupport);
+		QueryConverter<C> queryConverter = newQuery(query, ((Class<C>) constructor.getDeclaringClass())).mapKey(factory, column1, column2);
+		selectMappingSupport.appendTo(query, queryConverter);
+		return execute(queryConverter);
+	}
+	
+	public <C> List<C> execute(QueryConverter<C> queryProvider) {
+		return queryProvider.execute(getConnectionProvider());
 	}
 	
 	public <T extends Table> ExecutableUpdate<T> update(T table) {
@@ -185,9 +351,29 @@ public class PersistenceContext {
 		return new ExecutableDelete<>(table);
 	}
 	
+	/**
+	 * Small support to store additional mapping of select queries.
+	 * 
+	 * @param <C> resulting bean type
+	 */
+	public static class SelectMapping<C> {
+		
+		private final Map<Column<Table, ?>, SerializableBiConsumer<C, ?>> mapping = new HashMap<>();
+		
+		public <T extends Table, O> SelectMapping<C> add(Column<T, O> c, SerializableBiConsumer<C, O> setter) {
+			mapping.put((Column) c, setter);
+			return this;
+		}
+		
+		private void appendTo(Query query, QueryConverter<C> queryConverter) {
+			mapping.keySet().forEach(e -> query.select(e));
+			mapping.forEach((k, v) -> queryConverter.map((Column) k, v));
+		}
+	}
+	
 	public class ExecutableUpdate<T extends Table> extends Update<T> {
 		
-		public ExecutableUpdate(T targetTable) {
+		private ExecutableUpdate(T targetTable) {
 			super(targetTable);
 		}
 		
@@ -238,7 +424,7 @@ public class PersistenceContext {
 	
 	public class ExecutableInsert<T extends Table> extends Insert<T> {
 		
-		public ExecutableInsert(T table) {
+		private ExecutableInsert(T table) {
 			super(table);
 		}
 		
@@ -275,7 +461,7 @@ public class PersistenceContext {
 	
 	public class ExecutableDelete<T extends Table> extends Delete<T> {
 		
-		public ExecutableDelete(T table) {
+		private ExecutableDelete(T table) {
 			super(table);
 		}
 		

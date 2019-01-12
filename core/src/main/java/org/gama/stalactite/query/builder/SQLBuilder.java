@@ -7,5 +7,5 @@ package org.gama.stalactite.query.builder;
  */
 public interface SQLBuilder {
 	
-	String toSQL();
+	CharSequence toSQL();
 }
