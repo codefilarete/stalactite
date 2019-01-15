@@ -54,10 +54,10 @@ public class InsertExecutorTest extends AbstractDMLExecutorTest {
 		verify(dataSet.preparedStatement, times(12)).setInt(dataSet.indexCaptor.capture(), dataSet.valueCaptor.capture());
 		assertEquals("insert into Toto(a, b, c) values (?, ?, ?)", dataSet.statementArgCaptor.getValue());
 		PairSetList<Integer, Integer> expectedPairs = new PairSetList<Integer, Integer>()
-				.of(1, 1).add(2, 17).add(3, 23)
-				.of(1, 2).add(2, 29).add(3, 31)
-				.of(1, 3).add(2, 37).add(3, 41)
-				.of(1, 4).add(2, 43).add(3, 53);
+				.newRow(1, 1).add(2, 17).add(3, 23)
+				.newRow(1, 2).add(2, 29).add(3, 31)
+				.newRow(1, 3).add(2, 37).add(3, 41)
+				.newRow(1, 4).add(2, 43).add(3, 53);
 		assertCapturedPairsEqual(dataSet, expectedPairs);
 	}
 	
@@ -123,10 +123,10 @@ public class InsertExecutorTest extends AbstractDMLExecutorTest {
 			verify(dataSet.preparedStatement, times(8)).setInt(dataSet.indexCaptor.capture(), dataSet.valueCaptor.capture());
 			assertEquals("insert into Toto(b, c) values (?, ?)", dataSet.statementArgCaptor.getValue());
 			PairSetList<Integer, Integer> expectedPairs = new PairSetList<Integer, Integer>()
-					.of(1, 17).add(2, 23)
-					.of(1, 29).add(2, 31)
-					.of(1, 37).add(2, 41)
-					.of(1, 43).add(2, 53);
+					.newRow(1, 17).add(2, 23)
+					.newRow(1, 29).add(2, 31)
+					.newRow(1, 37).add(2, 41)
+					.newRow(1, 43).add(2, 53);
 			assertCapturedPairsEqual(dataSet, expectedPairs);
 			
 			verify(generatedKeyResultSetMock, times(6)).next();

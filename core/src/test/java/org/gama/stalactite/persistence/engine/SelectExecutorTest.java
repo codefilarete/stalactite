@@ -18,7 +18,9 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
+import static org.gama.stalactite.test.PairSetList.pairSetList;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -41,7 +43,7 @@ public class SelectExecutorTest extends AbstractDMLExecutorTest {
 	}
 	
 	@Test
-	public void testSelect_one() throws Exception {
+	public void testSelect_one() throws SQLException {
 		// mocking executeQuery not to return null because select method will use the ResultSet
 		ResultSet resultSetMock = mock(ResultSet.class);
 		when(dataSet.preparedStatement.executeQuery()).thenReturn(resultSetMock);
@@ -51,12 +53,12 @@ public class SelectExecutorTest extends AbstractDMLExecutorTest {
 		verify(dataSet.preparedStatement).executeQuery();
 		verify(dataSet.preparedStatement).setInt(dataSet.indexCaptor.capture(), dataSet.valueCaptor.capture());
 		assertEquals("select a, b, c from Toto where a in (?)", dataSet.statementArgCaptor.getValue());
-		PairSetList<Integer, Integer> expectedPairs = new PairSetList<Integer, Integer>().of(1, 7);
+		PairSetList<Integer, Integer> expectedPairs = pairSetList(1, 7);
 		assertCapturedPairsEqual(dataSet, expectedPairs);
 	}
 	
 	@Test
-	public void testSelect_multiple_lastBlockContainsOneValue() throws Exception {
+	public void testSelect_multiple_lastBlockContainsOneValue() throws SQLException {
 		// mocking executeQuery not to return null because select method will use the ResultSet
 		ResultSet resultSetMock = mock(ResultSet.class);
 		when(dataSet.preparedStatement.executeQuery()).thenReturn(resultSetMock);
@@ -67,12 +69,12 @@ public class SelectExecutorTest extends AbstractDMLExecutorTest {
 		verify(dataSet.preparedStatement, times(2)).executeQuery();
 		verify(dataSet.preparedStatement, times(4)).setInt(dataSet.indexCaptor.capture(), dataSet.valueCaptor.capture());
 		assertEquals(Arrays.asList("select a, b, c from Toto where a in (?, ?, ?)", "select a, b, c from Toto where a in (?)"), dataSet.statementArgCaptor.getAllValues());
-		PairSetList<Integer, Integer> expectedPairs = new PairSetList<Integer, Integer>().of(1, 11).add(2, 13).add(3, 17).of(1, 23);
+		PairSetList<Integer, Integer> expectedPairs = pairSetList(1, 11).add(2, 13).add(3, 17).newRow(1, 23);
 		assertCapturedPairsEqual(dataSet, expectedPairs);
 	}
 	
 	@Test
-	public void testSelect_multiple_lastBlockContainsMultipleValue() throws Exception {
+	public void testSelect_multiple_lastBlockContainsMultipleValue() throws SQLException {
 		// mocking executeQuery not to return null because select method will use the ResultSet
 		ResultSet resultSetMock = mock(ResultSet.class);
 		when(dataSet.preparedStatement.executeQuery()).thenReturn(resultSetMock);
@@ -83,12 +85,12 @@ public class SelectExecutorTest extends AbstractDMLExecutorTest {
 		verify(dataSet.preparedStatement, times(2)).executeQuery();
 		verify(dataSet.preparedStatement, times(5)).setInt(dataSet.indexCaptor.capture(), dataSet.valueCaptor.capture());
 		assertEquals(Arrays.asList("select a, b, c from Toto where a in (?, ?, ?)", "select a, b, c from Toto where a in (?, ?)"), dataSet.statementArgCaptor.getAllValues());
-		PairSetList<Integer, Integer> expectedPairs = new PairSetList<Integer, Integer>().of(1, 11).add(2, 13).add(3, 17).of(1, 23).add(2, 29);
+		PairSetList<Integer, Integer> expectedPairs = pairSetList(1, 11).add(2, 13).add(3, 17).newRow(1, 23).add(2, 29);
 		assertCapturedPairsEqual(dataSet, expectedPairs);
 	}
 	
 	@Test
-	public void testSelect_multiple_lastBlockSizeIsInOperatorSize() throws Exception {
+	public void testSelect_multiple_lastBlockSizeIsInOperatorSize() throws SQLException {
 		// mocking executeQuery not to return null because select method will use the ResultSet
 		ResultSet resultSetMock = mock(ResultSet.class);
 		when(dataSet.preparedStatement.executeQuery()).thenReturn(resultSetMock);
@@ -99,12 +101,44 @@ public class SelectExecutorTest extends AbstractDMLExecutorTest {
 		verify(dataSet.preparedStatement, times(2)).executeQuery();
 		verify(dataSet.preparedStatement, times(6)).setInt(dataSet.indexCaptor.capture(), dataSet.valueCaptor.capture());
 		assertEquals(Arrays.asList("select a, b, c from Toto where a in (?, ?, ?)"), dataSet.statementArgCaptor.getAllValues());
-		PairSetList<Integer, Integer> expectedPairs = new PairSetList<Integer, Integer>().of(1, 11).add(2, 13).add(3, 17).of(1, 23).add(2, 29).add(3, 31);
+		PairSetList<Integer, Integer> expectedPairs = pairSetList(1, 11).add(2, 13).add(3, 17).newRow(1, 23).add(2, 29).add(3, 31);
 		assertCapturedPairsEqual(dataSet, expectedPairs);
 	}
 	
 	@Test
-	public void testSelect_multiple_composedId_lastBlockContainsOneValue() throws Exception {
+	public void testSelect_multiple_argumentWithOneBlock() throws SQLException {
+		// mocking executeQuery not to return null because select method will use the ResultSet
+		ResultSet resultSetMock = mock(ResultSet.class);
+		when(dataSet.preparedStatement.executeQuery()).thenReturn(resultSetMock);
+		
+		testInstance.select(Arrays.asList(11, 13));
+		
+		// one query because in operator is bounded to 3 values
+		verify(dataSet.preparedStatement, times(1)).executeQuery();
+		verify(dataSet.preparedStatement, times(2)).setInt(dataSet.indexCaptor.capture(), dataSet.valueCaptor.capture());
+		assertEquals(Arrays.asList("select a, b, c from Toto where a in (?, ?)"), dataSet.statementArgCaptor.getAllValues());
+		PairSetList<Integer, Integer> expectedPairs = pairSetList(1, 11).add(2, 13);
+		assertCapturedPairsEqual(dataSet, expectedPairs);
+	}
+	
+	@Test
+	public void testSelect_multiple_emptyArgument() throws SQLException {
+		// mocking executeQuery not to return null because select method will use the ResultSet
+		ResultSet resultSetMock = mock(ResultSet.class);
+		when(dataSet.preparedStatement.executeQuery()).thenReturn(resultSetMock);
+		
+		List<Toto> result = testInstance.select(Arrays.asList());
+		
+		assertTrue(result.isEmpty());
+		
+		// No queries
+		verify(dataSet.preparedStatement, times(0)).executeQuery();
+		verify(dataSet.preparedStatement, times(0)).setInt(dataSet.indexCaptor.capture(), dataSet.valueCaptor.capture());
+		assertTrue(dataSet.statementArgCaptor.getAllValues().isEmpty());
+	}
+	
+	@Test
+	public void testSelect_multiple_composedId_lastBlockContainsOneValue() throws SQLException {
 		DataSetWithComposedId dataSet = new DataSetWithComposedId();
 		DMLGenerator dmlGenerator = new DMLGenerator(dataSet.dialect.getColumnBinderRegistry(), new DMLGenerator.CaseSensitiveSorter());
 		SelectExecutor<Toto, Toto, Table> testInstance = new SelectExecutor<>(dataSet.persistenceConfiguration.classMappingStrategy, dataSet.transactionManager, dmlGenerator, 3);
@@ -121,12 +155,12 @@ public class SelectExecutorTest extends AbstractDMLExecutorTest {
 		assertEquals(Arrays.asList("select a, b, c from Toto where (a, b) in ((?, ?), (?, ?), (?, ?))", "select a, b, c from Toto where (a, b) in ((?, ?))"), dataSet.statementArgCaptor.getAllValues());
 		PairSetList<Integer, Integer> expectedPairs = new PairSetList<Integer, Integer>()
 				.add(1, 1).add(2, 11).add(3, 2).add(4, 13).add(5, 3).add(6, 17)
-				.of(1, 4).add(2, 23);
+				.newRow(1, 4).add(2, 23);
 		assertCapturedPairsEqual(dataSet, expectedPairs);
 	}
 	
 	@Test
-	public void testSelect_multiple_composedId_lastBlockContainsMultipleValue() throws Exception {
+	public void testSelect_multiple_composedId_lastBlockContainsMultipleValue() throws SQLException {
 		DataSetWithComposedId dataSet = new DataSetWithComposedId();
 		DMLGenerator dmlGenerator = new DMLGenerator(dataSet.dialect.getColumnBinderRegistry(), new DMLGenerator.CaseSensitiveSorter());
 		SelectExecutor<Toto, Toto, Table> testInstance = new SelectExecutor<>(dataSet.persistenceConfiguration.classMappingStrategy, dataSet.transactionManager, dmlGenerator, 3);
@@ -143,12 +177,12 @@ public class SelectExecutorTest extends AbstractDMLExecutorTest {
 		assertEquals(Arrays.asList("select a, b, c from Toto where (a, b) in ((?, ?), (?, ?), (?, ?))", "select a, b, c from Toto where (a, b) in ((?, ?), (?, ?))"), dataSet.statementArgCaptor.getAllValues());
 		PairSetList<Integer, Integer> expectedPairs = new PairSetList<Integer, Integer>()
 				.add(1, 1).add(2, 11).add(3, 2).add(4, 13).add(5, 3).add(6, 17)
-				.of(1, 4).add(2, 23).add(3, 5).add(4, 29);
+				.newRow(1, 4).add(2, 23).add(3, 5).add(4, 29);
 		assertCapturedPairsEqual(dataSet, expectedPairs);
 	}
 	
 	@Test
-	public void testSelect_multiple_composedId_lastBlockSizeIsInOperatorSize() throws Exception {
+	public void testSelect_multiple_composedId_lastBlockSizeIsInOperatorSize() throws SQLException {
 		DataSetWithComposedId dataSet = new DataSetWithComposedId();
 		DMLGenerator dmlGenerator = new DMLGenerator(dataSet.dialect.getColumnBinderRegistry(), new DMLGenerator.CaseSensitiveSorter());
 		SelectExecutor<Toto, Toto, Table> testInstance = new SelectExecutor<>(dataSet.persistenceConfiguration.classMappingStrategy, dataSet.transactionManager, dmlGenerator, 3);
@@ -166,7 +200,7 @@ public class SelectExecutorTest extends AbstractDMLExecutorTest {
 		assertEquals(Arrays.asList("select a, b, c from Toto where (a, b) in ((?, ?), (?, ?), (?, ?))"), dataSet.statementArgCaptor.getAllValues());
 		PairSetList<Integer, Integer> expectedPairs = new PairSetList<Integer, Integer>()
 				.add(1, 1).add(2, 11).add(3, 2).add(4, 13).add(5, 3).add(6, 17)
-				.of(1, 4).add(2, 23).add(3, 5).add(4, 29).add(5, 6).add(6, 31);
+				.newRow(1, 4).add(2, 23).add(3, 5).add(4, 29).add(5, 6).add(6, 31);
 		assertCapturedPairsEqual(dataSet, expectedPairs);
 	}
 	

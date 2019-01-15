@@ -10,6 +10,7 @@ import org.gama.lang.collection.Collections;
 import org.gama.lang.collection.Iterables;
 import org.gama.lang.exception.Exceptions;
 import org.gama.sql.ConnectionProvider;
+import org.gama.sql.SimpleConnectionProvider;
 import org.gama.sql.dml.ReadOperation;
 import org.gama.sql.result.RowIterator;
 import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
@@ -31,26 +32,35 @@ public class SelectExecutor<C, I, T extends Table> extends DMLExecutor<C, I, T> 
 	}
 	
 	public List<C> select(Iterable<I> ids) {
-		CurrentConnectionProvider currentConnectionProvider = new CurrentConnectionProvider();
-		List<C> toReturn = new ArrayList<>(50);
 		int blockSize = getInOperatorMaxSize();
 		List<List<I>> parcels = Collections.parcel(ids, blockSize);
-		T targetTable = getMappingStrategy().getTargetTable();
-		Set<Column<T, Object>> columnsToRead = targetTable.getColumns();
-		
-		// We distinguish the default case where packets are of the same size from the (last) case where it's different
-		// So we can apply the same read operation to all the firsts packets
-		ReadOperation<Column<T, Object>> defaultReadOperation = newReadOperation(targetTable, columnsToRead, blockSize, currentConnectionProvider);
-		Collections.cutTail(parcels).forEach(parcel -> toReturn.addAll(select(parcel, defaultReadOperation)));
-		
-		// last packet treatment (packet size may be different)
-		List<I> lastParcel = Iterables.last(parcels);
-		int lastBlockSize = lastParcel.size();
-		ReadOperation<Column<T, Object>> lastReadOperation = lastBlockSize != blockSize
-				? newReadOperation(targetTable, columnsToRead, lastBlockSize, currentConnectionProvider)
-				: defaultReadOperation;
-		toReturn.addAll(select(lastParcel, lastReadOperation));
-		return toReturn;
+		List<C> result = new ArrayList<>(50);
+		if (!parcels.isEmpty()) {
+			List<I> lastParcel = Iterables.last(parcels, java.util.Collections.emptyList());
+			int lastBlockSize = lastParcel.size();
+			if (lastBlockSize != blockSize) {
+				parcels = Collections.cutTail(parcels);
+			} else {
+				lastParcel = java.util.Collections.emptyList();
+			}
+			// We ensure that the same Connection is used for all operations
+			ConnectionProvider localConnectionProvider = new SimpleConnectionProvider(getConnectionProvider().getCurrentConnection());
+			// We distinguish the default case where packets are of the same size from the (last) case where it's different
+			// So we can apply the same read operation to all the firsts packets
+			T targetTable = getMappingStrategy().getTargetTable();
+			Set<Column<T, Object>> columnsToRead = targetTable.getColumns();
+			if (!parcels.isEmpty()) {
+				ReadOperation<Column<T, Object>> defaultReadOperation = newReadOperation(targetTable, columnsToRead, blockSize, localConnectionProvider);
+				parcels.forEach(parcel -> result.addAll(select(parcel, defaultReadOperation)));
+			}
+			
+			// last packet treatment (packet size may be different)
+			if (!lastParcel.isEmpty()) {
+				ReadOperation<Column<T, Object>> lastReadOperation = newReadOperation(targetTable, columnsToRead, lastBlockSize, localConnectionProvider);
+				result.addAll(select(lastParcel, lastReadOperation));
+			}
+		}
+		return result;
 	}
 	
 	private List<C> select(List<I> ids, ReadOperation<Column<T, Object>> readOperation) {
@@ -59,10 +69,10 @@ public class SelectExecutor<C, I, T extends Table> extends DMLExecutor<C, I, T> 
 	}
 	
 	private ReadOperation<Column<T, Object>> newReadOperation(T targetTable, Set<Column<T, Object>> columnsToRead, int blockSize,
-												   CurrentConnectionProvider currentConnectionProvider) {
+												   ConnectionProvider connectionProvider) {
 		PrimaryKey<T> primaryKey = targetTable.getPrimaryKey();
 		ColumnParameterizedSelect<T> selectStatement = getDmlGenerator().buildSelectByKey(targetTable, columnsToRead, primaryKey.getColumns(), blockSize);
-		return (ReadOperation) new ReadOperation<>(selectStatement, currentConnectionProvider);
+		return new ReadOperation<>(selectStatement, connectionProvider);
 	}
 	
 	private List<C> execute(ReadOperation<Column<T, Object>> operation, Map<Column<T, Object>, Object> keyValues) {

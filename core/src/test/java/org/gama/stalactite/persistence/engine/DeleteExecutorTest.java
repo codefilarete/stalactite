@@ -10,6 +10,7 @@ import org.gama.stalactite.test.PairSetList;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import static org.gama.stalactite.test.PairSetList.pairSetList;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -36,7 +37,7 @@ public class DeleteExecutorTest extends AbstractDMLExecutorTest {
 		verify(dataSet.preparedStatement, times(0)).executeUpdate();
 		verify(dataSet.preparedStatement, times(1)).setInt(dataSet.indexCaptor.capture(), dataSet.valueCaptor.capture());
 		assertEquals("delete from Toto where a = ?", dataSet.statementArgCaptor.getValue());
-		PairSetList<Integer, Integer> expectedPairs = new PairSetList<Integer, Integer>().of(1, 7);
+		PairSetList<Integer, Integer> expectedPairs = pairSetList(1, 7);
 		assertCapturedPairsEqual(dataSet, expectedPairs);
 	}
 	
@@ -49,7 +50,7 @@ public class DeleteExecutorTest extends AbstractDMLExecutorTest {
 		verify(dataSet.preparedStatement, times(2)).executeBatch();
 		verify(dataSet.preparedStatement, times(0)).executeUpdate();
 		verify(dataSet.preparedStatement, times(4)).setInt(dataSet.indexCaptor.capture(), dataSet.valueCaptor.capture());
-		PairSetList<Integer, Integer> expectedPairs = new PairSetList<Integer, Integer>().of(1, 1).add(1, 2).add(1, 3).of(1, 4);
+		PairSetList<Integer, Integer> expectedPairs = pairSetList(1, 1).add(1, 2).add(1, 3).newRow(1, 4);
 		assertCapturedPairsEqual(dataSet, expectedPairs);
 	}
 	
@@ -62,7 +63,7 @@ public class DeleteExecutorTest extends AbstractDMLExecutorTest {
 		verify(dataSet.preparedStatement, times(1)).executeUpdate();
 		verify(dataSet.preparedStatement, times(1)).setInt(dataSet.indexCaptor.capture(), dataSet.valueCaptor.capture());
 		assertEquals("delete from Toto where a in (?)", dataSet.statementArgCaptor.getValue());
-		PairSetList<Integer, Integer> expectedPairs = new PairSetList<Integer, Integer>().of(1, 7);
+		PairSetList<Integer, Integer> expectedPairs = pairSetList(1, 7);
 		assertCapturedPairsEqual(dataSet, expectedPairs);
 	}
 	
@@ -77,7 +78,7 @@ public class DeleteExecutorTest extends AbstractDMLExecutorTest {
 		verify(dataSet.preparedStatement, times(1)).executeBatch();
 		verify(dataSet.preparedStatement, times(1)).executeUpdate();
 		verify(dataSet.preparedStatement, times(4)).setInt(dataSet.indexCaptor.capture(), dataSet.valueCaptor.capture());
-		PairSetList<Integer, Integer> expectedPairs = new PairSetList<Integer, Integer>().of(1, 1).add(2, 2).add(3, 3).of(1, 4);
+		PairSetList<Integer, Integer> expectedPairs = pairSetList(1, 1).add(2, 2).add(3, 3).newRow(1, 4);
 		assertCapturedPairsEqual(dataSet, expectedPairs);
 	}
 	
@@ -92,7 +93,7 @@ public class DeleteExecutorTest extends AbstractDMLExecutorTest {
 		verify(dataSet.preparedStatement, times(1)).executeBatch();
 		verify(dataSet.preparedStatement, times(1)).executeUpdate();
 		verify(dataSet.preparedStatement, times(5)).setInt(dataSet.indexCaptor.capture(), dataSet.valueCaptor.capture());
-		PairSetList<Integer, Integer> expectedPairs = new PairSetList<Integer, Integer>().of(1, 1).add(2, 2).add(3, 3).of(1, 4).add(2, 5);
+		PairSetList<Integer, Integer> expectedPairs = pairSetList(1, 1).add(2, 2).add(3, 3).newRow(1, 4).add(2, 5);
 		assertCapturedPairsEqual(dataSet, expectedPairs);
 	}
 	
@@ -108,8 +109,8 @@ public class DeleteExecutorTest extends AbstractDMLExecutorTest {
 		verify(dataSet.preparedStatement, times(0)).executeUpdate();
 		verify(dataSet.preparedStatement, times(6)).setInt(dataSet.indexCaptor.capture(), dataSet.valueCaptor.capture());
 		PairSetList<Integer, Integer> expectedPairs = new PairSetList<Integer, Integer>()
-				.of(1, 1).add(2, 2).add(3, 3)
-				.of(1, 4).add(2, 5).add(3, 6);
+				.newRow(1, 1).add(2, 2).add(3, 3)
+				.newRow(1, 4).add(2, 5).add(3, 6);
 		assertCapturedPairsEqual(dataSet, expectedPairs);
 	}
 	
@@ -131,7 +132,7 @@ public class DeleteExecutorTest extends AbstractDMLExecutorTest {
 		verify(dataSet.preparedStatement, times(8)).setInt(dataSet.indexCaptor.capture(), dataSet.valueCaptor.capture());
 		PairSetList<Integer, Integer> expectedPairs = new PairSetList<Integer, Integer>()
 				.add(1, 1).add(2, 17).add(3, 2).add(4, 29).add(5, 3).add(6, 37)
-				.of(1, 4).add(2, 43);
+				.newRow(1, 4).add(2, 43);
 		assertCapturedPairsEqual(dataSet, expectedPairs);
 	}
 	
@@ -153,7 +154,7 @@ public class DeleteExecutorTest extends AbstractDMLExecutorTest {
 		verify(dataSet.preparedStatement, times(10)).setInt(dataSet.indexCaptor.capture(), dataSet.valueCaptor.capture());
 		PairSetList<Integer, Integer> expectedPairs = new PairSetList<Integer, Integer>()
 				.add(1, 1).add(2, 17).add(3, 2).add(4, 29).add(5, 3).add(6, 37)
-				.of(1, 4).add(2, 43).add(3, 5).add(4, 59);
+				.newRow(1, 4).add(2, 43).add(3, 5).add(4, 59);
 		assertCapturedPairsEqual(dataSet, expectedPairs);
 	}
 	
@@ -175,7 +176,7 @@ public class DeleteExecutorTest extends AbstractDMLExecutorTest {
 		verify(dataSet.preparedStatement, times(12)).setInt(dataSet.indexCaptor.capture(), dataSet.valueCaptor.capture());
 		PairSetList<Integer, Integer> expectedPairs = new PairSetList<Integer, Integer>()
 				.add(1, 1).add(2, 17).add(3, 2).add(4, 29).add(5, 3).add(6, 37)
-				.of(1, 4).add(2, 43).add(3, 5).add(4, 59).add(5, 6).add(6, 67);
+				.newRow(1, 4).add(2, 43).add(3, 5).add(4, 59).add(5, 6).add(6, 67);
 		assertCapturedPairsEqual(dataSet, expectedPairs);
 	}
 }

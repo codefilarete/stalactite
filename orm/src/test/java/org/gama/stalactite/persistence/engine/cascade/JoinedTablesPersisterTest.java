@@ -226,15 +226,15 @@ public class JoinedTablesPersisterTest {
 		assertEquals(Arrays.asList("insert into Toto1(id, a, b) values (?, ?, ?)", "insert into Toto2(id, x, y, z) values (?, ?, ?, ?)"),
 				statementArgCaptor.getAllValues());
 		PairSetList<Integer, Integer> expectedPairs = new PairSetList<Integer, Integer>()
-				.of(1, 1).add(2, 17).add(3, 23)
-				.of(1, 2).add(2, 29).add(3, 31)
-				.of(1, 3).add(2, 37).add(3, 41)
-				.of(1, 4).add(2, 43).add(3, 53)
+				.newRow(1, 1).add(2, 17).add(3, 23)
+				.newRow(1, 2).add(2, 29).add(3, 31)
+				.newRow(1, 3).add(2, 37).add(3, 41)
+				.newRow(1, 4).add(2, 43).add(3, 53)
 				
-				.of(1, 1).add(2, 117).add(3, 123).add(4, -117)
-				.of(1, 2).add(2, 129).add(3, 131).add(4, -129)
-				.of(1, 3).add(2, 137).add(3, 141).add(4, -137)
-				.of(1, 4).add(2, 143).add(3, 153).add(4, -143);
+				.newRow(1, 1).add(2, 117).add(3, 123).add(4, -117)
+				.newRow(1, 2).add(2, 129).add(3, 131).add(4, -129)
+				.newRow(1, 3).add(2, 137).add(3, 141).add(4, -137)
+				.newRow(1, 4).add(2, 143).add(3, 153).add(4, -143);
 		assertCapturedPairsEqual(expectedPairs);
 	}
 	
@@ -253,15 +253,15 @@ public class JoinedTablesPersisterTest {
 		assertEquals(Arrays.asList("update Toto1 set a = ?, b = ? where id = ?", "update Toto2 set x = ?, y = ?, z = ? where id = ?"),
 				statementArgCaptor.getAllValues());
 		PairSetList<Integer, Integer> expectedPairs = new PairSetList<Integer, Integer>()
-				.of(1, 17).add(2, 23).add(3, 1)
-				.of(1, 29).add(2, 31).add(3, 2)
-				.of(1, 37).add(2, 41).add(3, 3)
-				.of(1, 43).add(2, 53).add(3, 4)
+				.newRow(1, 17).add(2, 23).add(3, 1)
+				.newRow(1, 29).add(2, 31).add(3, 2)
+				.newRow(1, 37).add(2, 41).add(3, 3)
+				.newRow(1, 43).add(2, 53).add(3, 4)
 				
-				.of(1, 117).add(2, 123).add(3, -117).add(4, 1)
-				.of(1, 129).add(2, 131).add(3, -129).add(4, 2)
-				.of(1, 137).add(2, 141).add(3, -137).add(4, 3)
-				.of(1, 143).add(2, 153).add(3, -143).add(4, 4);
+				.newRow(1, 117).add(2, 123).add(3, -117).add(4, 1)
+				.newRow(1, 129).add(2, 131).add(3, -129).add(4, 2)
+				.newRow(1, 137).add(2, 141).add(3, -137).add(4, 3)
+				.newRow(1, 143).add(2, 153).add(3, -143).add(4, 4);
 		assertCapturedPairsEqual(expectedPairs);
 	}
 	
@@ -275,8 +275,8 @@ public class JoinedTablesPersisterTest {
 		verify(preparedStatement, times(0)).executeUpdate();
 		verify(preparedStatement, times(2)).setInt(indexCaptor.capture(), valueCaptor.capture());
 		PairSetList<Integer, Integer> expectedPairs = new PairSetList<Integer, Integer>()
-				.of(1, 7)
-				.of(1, 7);
+				.newRow(1, 7)
+				.newRow(1, 7);
 		assertCapturedPairsEqual(expectedPairs);
 	}
 	
@@ -297,10 +297,10 @@ public class JoinedTablesPersisterTest {
 		verify(preparedStatement, times(0)).executeUpdate();
 		verify(preparedStatement, times(8)).setInt(indexCaptor.capture(), valueCaptor.capture());
 		PairSetList<Integer, Integer> expectedPairs = new PairSetList<Integer, Integer>()
-				.of(1, 1).add(1, 2).add(1, 3)
-				.of(1, 4)
-				.of(1, 1).add(1, 2).add(1, 3)
-				.of(1, 4);
+				.newRow(1, 1).add(1, 2).add(1, 3)
+				.newRow(1, 4)
+				.newRow(1, 1).add(1, 2).add(1, 3)
+				.newRow(1, 4);
 		assertCapturedPairsEqual(expectedPairs);
 	}
 	
@@ -314,7 +314,7 @@ public class JoinedTablesPersisterTest {
 		verify(preparedStatement, times(2)).executeUpdate();
 		verify(preparedStatement, times(2)).setInt(indexCaptor.capture(), valueCaptor.capture());
 		PairSetList<Integer, Integer> expectedPairs = new PairSetList<Integer, Integer>()
-				.of(1, 7);
+				.newRow(1, 7);
 		assertCapturedPairsEqual(expectedPairs);
 	}
 	
@@ -334,10 +334,10 @@ public class JoinedTablesPersisterTest {
 		verify(preparedStatement, times(2)).executeUpdate();
 		verify(preparedStatement, times(8)).setInt(indexCaptor.capture(), valueCaptor.capture());
 		PairSetList<Integer, Integer> expectedPairs = new PairSetList<Integer, Integer>()
-				.of(1, 1).add(2, 2).add(3, 3)
-				.of(1, 4)
-				.of(1, 1).add(2, 2).add(3, 3)
-				.of(1, 4);
+				.newRow(1, 1).add(2, 2).add(3, 3)
+				.newRow(1, 4)
+				.newRow(1, 1).add(2, 2).add(3, 3)
+				.newRow(1, 4);
 		assertCapturedPairsEqual(expectedPairs);
 	}
 	
@@ -386,7 +386,7 @@ public class JoinedTablesPersisterTest {
 						+ ", Toto2.z as " + toto2ZAlias
 						+ " from Toto1 inner join Toto2 on Toto1.id = Toto2.id where Toto1.id in (?)"),
 				statementArgCaptor.getAllValues());
-		PairSetList<Integer, Integer> expectedPairs = new PairSetList<Integer, Integer>().of(1, 7).add(2, 13).add(3, 17).add(1, 23);
+		PairSetList<Integer, Integer> expectedPairs = new PairSetList<Integer, Integer>().newRow(1, 7).add(2, 13).add(3, 17).add(1, 23);
 		assertCapturedPairsEqual(expectedPairs);
 		
 		assertEquals(Arrays.asList(

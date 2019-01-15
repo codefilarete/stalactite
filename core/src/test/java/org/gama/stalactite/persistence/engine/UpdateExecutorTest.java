@@ -58,10 +58,10 @@ public class UpdateExecutorTest extends AbstractDMLExecutorTest {
 		verify(dataSet.preparedStatement, times(12)).setInt(dataSet.indexCaptor.capture(), dataSet.valueCaptor.capture());
 		assertEquals("update Toto set b = ?, c = ? where a = ?", dataSet.statementArgCaptor.getValue());
 		PairSetList<Integer, Integer> expectedPairs = new PairSetList<Integer, Integer>()
-				.of(1, 17).add(2, 23).add(3, 1)
-				.of(1, 29).add(2, 31).add(3, 2)
-				.of(1, 37).add(2, 41).add(3, 3)
-				.of(1, 43).add(2, 53).add(3, 4);
+				.newRow(1, 17).add(2, 23).add(3, 1)
+				.newRow(1, 29).add(2, 31).add(3, 2)
+				.newRow(1, 37).add(2, 41).add(3, 3)
+				.newRow(1, 43).add(2, 53).add(3, 4);
 		assertCapturedPairsEqual(dataSet, expectedPairs);
 	}
 	
@@ -90,7 +90,7 @@ public class UpdateExecutorTest extends AbstractDMLExecutorTest {
 						new ExpectedResult_TestUpdate_diff(3, 1, 6,
 								asList("update Toto set b = ? where a = ?"),
 								new PairSetList<Integer, Integer>()
-										.of(1, 2).add(2, 1)
+										.newRow(1, 2).add(2, 1)
 										.add(1, 3).add(2, 2)
 										.add(1, 4).add(2, 3)) },
 				// case: always the same kind of modification: only "b" field, but batch should be called twice
@@ -99,7 +99,7 @@ public class UpdateExecutorTest extends AbstractDMLExecutorTest {
 						new ExpectedResult_TestUpdate_diff(4, 2, 8,
 								asList("update Toto set b = ? where a = ?"),
 								new PairSetList<Integer, Integer>()
-										.of(1, 2).add(2, 1)
+										.newRow(1, 2).add(2, 1)
 										.add(1, 3).add(2, 2)
 										.add(1, 4).add(2, 3)
 										.add(1, 5).add(2, 4)) },
@@ -109,7 +109,7 @@ public class UpdateExecutorTest extends AbstractDMLExecutorTest {
 						new ExpectedResult_TestUpdate_diff(4, 2, 12,
 								asList("update Toto set b = ?, c = ? where a = ?"),
 								new PairSetList<Integer, Integer>()
-										.of(1, 11).add(2, 11).add(3, 1)
+										.newRow(1, 11).add(2, 11).add(3, 1)
 										.add(1, 22).add(2, 22).add(3, 2)
 										.add(1, 33).add(2, 33).add(3, 3)
 										.add(1, 44).add(2, 44).add(3, 4)) },
@@ -123,7 +123,7 @@ public class UpdateExecutorTest extends AbstractDMLExecutorTest {
 						new ExpectedResult_TestUpdate_diff(6, 2, 15,
 								asList("update Toto set b = ? where a = ?", "update Toto set b = ?, c = ? where a = ?"),
 								new PairSetList<Integer, Integer>()
-										.of(1, 11).add(2, 1)
+										.newRow(1, 11).add(2, 1)
 										.add(1, 22).add(2, 2)
 										.add(1, 33).add(2, 3)
 										.add(1, 44).add(2, 444).add(3, 4)
@@ -183,10 +183,10 @@ public class UpdateExecutorTest extends AbstractDMLExecutorTest {
 		verify(dataSet.preparedStatement, times(12)).setInt(dataSet.indexCaptor.capture(), dataSet.valueCaptor.capture());
 		assertEquals(asList("update Toto set b = ?, c = ? where a = ?"), dataSet.statementArgCaptor.getAllValues());
 		PairSetList<Integer, Integer> expectedPairs = new PairSetList<Integer, Integer>()
-				.of(1, 17).add(2, 123).add(3, 1)
-				.of(1, 129).add(2, 31).add(3, 2)
-				.of(1, 137).add(2, 141).add(3, 3)
-				.of(1, 143).add(2, 153).add(3, 4);
+				.newRow(1, 17).add(2, 123).add(3, 1)
+				.newRow(1, 129).add(2, 31).add(3, 2)
+				.newRow(1, 137).add(2, 141).add(3, 3)
+				.newRow(1, 143).add(2, 153).add(3, 4);
 		assertCapturedPairsEqual(dataSet, expectedPairs);
 	}
 	
