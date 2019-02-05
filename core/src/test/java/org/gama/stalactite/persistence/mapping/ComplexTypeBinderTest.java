@@ -45,7 +45,7 @@ public class ComplexTypeBinderTest {
 				Toto.class,
 				targetTable,
 				persistentFieldHarverster.mapFields(Toto.class, targetTable),
-				Accessors.forProperty(persistentFieldHarverster.getField("id")),
+				Accessors.propertyAccessor(persistentFieldHarverster.getField("id")),
 				// Basic mapping to prevent NullPointerException, even if it's not the goal of our test
 				new AlreadyAssignedIdentifierManager<>(Integer.class));
 		

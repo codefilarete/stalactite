@@ -102,16 +102,16 @@ public class JoinedTablesPersisterTest {
 		columnMap2.get("id").setPrimaryKey(true);
 		
 		
-		PropertyAccessor<Toto, StatefullIdentifier<Integer>> identifierAccessor = Accessors.forProperty(fieldId);
+		PropertyAccessor<Toto, StatefullIdentifier<Integer>> identifierAccessor = Accessors.propertyAccessor(fieldId);
 		Map<PropertyAccessor<Toto, Object>, Column<Table, Object>> totoClassMapping1 = Maps.asMap(
 				(PropertyAccessor) identifierAccessor, (Column<Table, Object>) columnMap1.get("id"))
-				.add(Accessors.forProperty(fieldA), columnMap1.get("a"))
-				.add(Accessors.forProperty(fieldB), columnMap1.get("b"));
+				.add(Accessors.propertyAccessor(fieldA), columnMap1.get("a"))
+				.add(Accessors.propertyAccessor(fieldB), columnMap1.get("b"));
 		Map<PropertyAccessor<Toto, Object>, Column<Table, Object>> totoClassMapping2 = Maps.asMap(
 				(PropertyAccessor) identifierAccessor, (Column<Table, Object>) columnMap2.get("id"))
-				.add(Accessors.forProperty(fieldX), columnMap2.get("x"))
-				.add(Accessors.forProperty(fieldY), columnMap2.get("y"))
-				.add(Accessors.forProperty(fieldZ), columnMap2.get("z"));
+				.add(Accessors.propertyAccessor(fieldX), columnMap2.get("x"))
+				.add(Accessors.propertyAccessor(fieldY), columnMap2.get("y"))
+				.add(Accessors.propertyAccessor(fieldZ), columnMap2.get("z"));
 		
 		
 		identifierGenerator = new InMemoryCounterIdentifierGenerator();

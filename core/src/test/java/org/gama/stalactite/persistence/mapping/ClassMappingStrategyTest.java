@@ -61,10 +61,10 @@ public class ClassMappingStrategyTest {
 		colC = columnMapOnName.get("c");
 		
 		// Replacing default mapping for the List (attribute myList) by a dedicated strategy
-		myListField = Accessors.forProperty(Reflections.findField(Toto.class, "myList"));
+		myListField = Accessors.propertyAccessor(Reflections.findField(Toto.class, "myList"));
 		classMapping.remove(myListField);
 		// Replacing default mapping for the Map (attribute myMap) by a dedicated strategy
-		myMapField = Accessors.forProperty(Reflections.findField(Toto.class, "myMap"));
+		myMapField = Accessors.propertyAccessor(Reflections.findField(Toto.class, "myMap"));
 		classMapping.remove(myMapField);
 		
 		setUpTestInstance();
@@ -77,7 +77,7 @@ public class ClassMappingStrategyTest {
 				Toto.class,
 				targetTable,
 				(Map<IReversibleAccessor<Toto, Object>, Column<Table, Object>>) classMapping,
-				Accessors.forProperty(persistentFieldHarverster.getField("a")),
+				Accessors.propertyAccessor(persistentFieldHarverster.getField("a")),
 				// Basic mapping to prevent NullPointerException, even if it's not the goal of our test
 				new AlreadyAssignedIdentifierManager<>(Integer.class));
 		
@@ -259,10 +259,10 @@ public class ClassMappingStrategyTest {
 	
 	@Test
 	public void testBeanKeyIsPresent() {
-		PropertyAccessor<Toto, Integer> identifierAccesor = Accessors.forProperty(persistentFieldHarverster.getField("a"));
+		PropertyAccessor<Toto, Integer> identifierAccesor = Accessors.propertyAccessor(persistentFieldHarverster.getField("a"));
 		assertThrows(IllegalArgumentException.class, () -> new ClassMappingStrategy<>(Toto.class,
 				targetTable,
-				Maps.asMap(Accessors.forProperty(Toto.class, "b"), colB),
+				Maps.asMap(Accessors.propertyAccessor(Toto.class, "b"), colB),
 				// identifier is not present in previous statement so it leads to the expected exception
 				identifierAccesor,
 				new AlreadyAssignedIdentifierManager<>(Integer.class)),

@@ -44,7 +44,7 @@ public class PersistentFieldHarverster {
 			if (column == null) {
 				column = newColumn(targetTable, field);
 			} // else column already exists, skip it to avoid duplicate column (even if type is different)
-			fieldToColumn.put(Accessors.forProperty(field), column);
+			fieldToColumn.put(Accessors.propertyAccessor(field), column);
 			nameTofield.put(field.getName(), field);
 		}
 		return (Map) fieldToColumn;

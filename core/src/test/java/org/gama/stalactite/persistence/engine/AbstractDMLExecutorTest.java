@@ -283,7 +283,7 @@ public abstract class AbstractDMLExecutorTest {
 		}
 		
 		protected IReversibleAccessor<C, I> buildPrimaryKeyAccessor(TableAndClass<C> tableAndClass) {
-			return Accessors.forProperty(tableAndClass.configurePrimaryKey(primaryKeyFieldName));
+			return Accessors.propertyAccessor(tableAndClass.configurePrimaryKey(primaryKeyFieldName));
 		}
 		
 		protected TableAndClass<C> map(Class<C> mappedClass, String tableName) {
@@ -307,7 +307,7 @@ public abstract class AbstractDMLExecutorTest {
 			
 			protected Field configurePrimaryKey(String primaryKeyFieldName) {
 				Field primaryKeyField = persistentFieldHarverster.getField(primaryKeyFieldName);
-				Column primaryKey = persistentFieldHarverster.getColumn(Accessors.forProperty(primaryKeyField));
+				Column primaryKey = persistentFieldHarverster.getColumn(Accessors.propertyAccessor(primaryKeyField));
 				primaryKey.setPrimaryKey(true);
 				return primaryKeyField;
 			}

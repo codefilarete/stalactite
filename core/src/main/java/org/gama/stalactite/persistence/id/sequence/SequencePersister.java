@@ -82,8 +82,8 @@ public class SequencePersister extends Persister<Sequence, String, SequenceTable
 		
 		
 		static {
-			SEQUENCE_NAME_FIELD = Accessors.forProperty(Sequence.class, "sequenceName");
-			VALUE_FIELD = Accessors.forProperty(Sequence.class, "step");
+			SEQUENCE_NAME_FIELD = Accessors.propertyAccessor(Sequence.class, "sequenceName");
+			VALUE_FIELD = Accessors.propertyAccessor(Sequence.class, "step");
 		}
 		
 		private String sequenceName;

@@ -12,7 +12,7 @@ public class JoinColumnNamingStrategyTest {
 	
 	@Test
 	public void testDefaultGetName() {
-		Assertions.assertEquals("nameId", JoinColumnNamingStrategy.DEFAULT.giveName(Accessors.forProperty(Toto.class, "name")));
+		Assertions.assertEquals("nameId", JoinColumnNamingStrategy.DEFAULT.giveName(Accessors.propertyAccessor(Toto.class, "name")));
 		Assertions.assertEquals("nameId", JoinColumnNamingStrategy.DEFAULT.giveName(Accessors.of(Reflections.findMethod(Toto.class, "getName"))));
 	}
 	

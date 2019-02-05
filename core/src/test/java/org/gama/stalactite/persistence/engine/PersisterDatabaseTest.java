@@ -56,7 +56,7 @@ public class PersisterDatabaseTest {
 		columns.get("a").setPrimaryKey(true);
 		
 		identifierGenerator = new InMemoryCounterIdentifierGenerator();
-		PropertyAccessor<Toto, Integer> identifierAccessor = Accessors.forProperty(persistentFieldHarverster.getField("a"));
+		PropertyAccessor<Toto, Integer> identifierAccessor = Accessors.propertyAccessor(persistentFieldHarverster.getField("a"));
 		totoClassMappingStrategy = new ClassMappingStrategy<>(
 				Toto.class,
 				totoClassTable,
