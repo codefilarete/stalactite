@@ -48,7 +48,7 @@ public class SelectExecutor<C, I, T extends Table> extends DMLExecutor<C, I, T> 
 			// We distinguish the default case where packets are of the same size from the (last) case where it's different
 			// So we can apply the same read operation to all the firsts packets
 			T targetTable = getMappingStrategy().getTargetTable();
-			Set<Column<T, Object>> columnsToRead = targetTable.getColumns();
+			Set<Column<T, Object>> columnsToRead = getMappingStrategy().getSelectableColumns();
 			if (!parcels.isEmpty()) {
 				ReadOperation<Column<T, Object>> defaultReadOperation = newReadOperation(targetTable, columnsToRead, blockSize, localConnectionProvider);
 				parcels.forEach(parcel -> result.addAll(select(parcel, defaultReadOperation)));

@@ -14,6 +14,8 @@ public class Person implements Identified<Long> {
 	
 	private int version;
 	
+	private Timestamp timestamp;
+	
 	public Person() {
 	}
 	
@@ -36,5 +38,13 @@ public class Person implements Identified<Long> {
 	
 	public int getVersion() {
 		return version;
+	}
+	
+	public Timestamp getTimestamp() {
+		return timestamp;
+	}
+	
+	public void setTimestamp(Timestamp timestamp) {
+		this.timestamp = timestamp;
 	}
 }

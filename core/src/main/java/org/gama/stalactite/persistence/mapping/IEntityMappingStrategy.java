@@ -17,4 +17,6 @@ public interface IEntityMappingStrategy<C, I, T extends Table> extends IMappingS
 	 * @return true if the instance is not persisted, false if not (a row for its identifier already exists in the targeted table)
 	 */
 	boolean isNew(C c);
+	
+	IdMappingStrategy<C, I> getIdMappingStrategy();
 }

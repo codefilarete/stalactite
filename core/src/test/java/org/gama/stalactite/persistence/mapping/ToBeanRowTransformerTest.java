@@ -1,13 +1,13 @@
 package org.gama.stalactite.persistence.mapping;
 
 import org.gama.lang.collection.Maps;
+import org.gama.reflection.Accessors;
 import org.gama.reflection.IMutator;
 import org.gama.sql.result.Row;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
 import org.junit.jupiter.api.Test;
 
-import static org.gama.reflection.IMutator.mutator;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
@@ -21,8 +21,8 @@ class ToBeanRowTransformerTest {
 		Column columnA = table.addColumn("a", int.class);
 		Column columnB = table.addColumn("b", String.class);
 		ToBeanRowTransformer<Toto> testInstance = new ToBeanRowTransformer<>(Toto.class, Maps
-				.asMap(columnA, (IMutator) mutator(Toto::setProp1))
-				.add(columnB, mutator(Toto::setProp2)));
+				.asMap(columnA, (IMutator) Accessors.mutatorByMethodReference(Toto::setProp1))
+				.add(columnB, Accessors.mutatorByMethodReference(Toto::setProp2)));
 		Row row = new Row();
 		row.add(columnA.getName(), 1);
 		row.add(columnB.getName(), "hello");
@@ -39,8 +39,8 @@ class ToBeanRowTransformerTest {
 		Column columnA = table.addColumn("a", int.class);
 		Column columnB = table.addColumn("b", String.class);
 		ToBeanRowTransformer<Toto> testInstance = new ToBeanRowTransformer<>(Toto.class, Maps
-				.asMap(columnA, (IMutator) mutator(Toto::setProp1))
-				.add(columnB, mutator(Toto::setProp2)));
+				.asMap(columnA, (IMutator) Accessors.mutatorByMethodReference(Toto::setProp1))
+				.add(columnB, Accessors.mutatorByMethodReference(Toto::setProp2)));
 		testInstance = testInstance.copyWithAliases(column -> {
 			if (column == columnA) {
 				return "a_slided";

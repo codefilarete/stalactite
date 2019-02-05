@@ -1,14 +1,15 @@
 package org.gama.stalactite.persistence.engine;
 
 import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.SQLException;
 import java.util.Date;
 import java.util.Map;
 
+import org.gama.lang.Reflections;
 import org.gama.sql.SimpleConnectionProvider;
 import org.gama.sql.binder.DefaultParameterBinders;
 import org.gama.stalactite.persistence.engine.FluentMappingBuilder.IdentifierPolicy;
+import org.gama.stalactite.persistence.engine.IFluentMappingBuilder.IFluentMappingBuilderColumnOptions;
+import org.gama.stalactite.persistence.engine.model.Timestamp;
 import org.gama.stalactite.persistence.id.Identified;
 import org.gama.stalactite.persistence.id.Identifier;
 import org.gama.stalactite.persistence.id.manager.StatefullIdentifier;
@@ -18,17 +19,13 @@ import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-import org.mockito.ArgumentCaptor;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
 /**
  * @author Guillaume Mary
@@ -44,6 +41,19 @@ public class FluentMappingBuilderTest {
 		DIALECT.getJavaTypeToSqlTypeMapping().put(Identifier.class, "int");
 		DIALECT.getColumnBinderRegistry().register((Class) Identified.class, Identified.identifiedBinder(DefaultParameterBinders.LONG_PRIMITIVE_BINDER));
 		DIALECT.getJavaTypeToSqlTypeMapping().put(Identified.class, "int");
+	}
+	
+	@Test
+	public void testBuild_identifierIsNotDefined_throwsException() {
+		IFluentMappingBuilderColumnOptions<Toto, StatefullIdentifier> mappingStrategy = FluentMappingBuilder.from(Toto.class, StatefullIdentifier.class)
+				.add(Toto::getId)
+				.add(Toto::getName);
+		
+		// column should be correctly created
+		assertEquals("Identifier is not defined, please add one throught " +
+						"o.g.s.p.e.IFluentMappingBuilder o.g.s.p.e.ColumnOptions.identifier(o.g.s.p.e.FluentMappingBuilder$IdentifierPolicy)",
+				assertThrows(UnsupportedOperationException.class, () -> mappingStrategy.build(DIALECT))
+						.getMessage());
 	}
 	
 	@Test
@@ -79,39 +89,40 @@ public class FluentMappingBuilderTest {
 		Table toto = new Table("Toto");
 		FluentMappingBuilder.from(Toto.class, StatefullIdentifier.class, toto)
 			.add(Toto::getName).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
-			.build(DIALECT)
-		;
+			.build(DIALECT);
 		// column should be correctly created
 		Column columnForProperty = (Column) toto.mapColumnsOnName().get("name");
 		assertTrue(columnForProperty.isPrimaryKey());
 	}
 	
 	@Test
-	public void testAdd_identifierDefinedTwice_throwsException() {
+	public void testAdd_identifierDefinedTwice_throwsException() throws NoSuchMethodException {
 		Table toto = new Table("Toto");
-		assertThrows(IllegalArgumentException.class, () -> FluentMappingBuilder.from(Toto.class, StatefullIdentifier.class, toto)
-			.add(Toto::getName, "tata").identifier(IdentifierPolicy.ALREADY_ASSIGNED)
-			.add(Toto::getFirstName).identifier(IdentifierPolicy.ALREADY_ASSIGNED),
-			"Identifier is already defined by getName");
+		assertEquals("Identifier is already defined by " + Reflections.toString(Toto.class.getMethod("getName")),
+				assertThrows(IllegalArgumentException.class, () -> FluentMappingBuilder.from(Toto.class, StatefullIdentifier.class, toto)
+						.add(Toto::getName, "tata").identifier(IdentifierPolicy.ALREADY_ASSIGNED)
+						.add(Toto::getFirstName).identifier(IdentifierPolicy.ALREADY_ASSIGNED))
+						.getMessage());
 	}
 	
 	@Test
-	public void testAdd_mappingDefinedTwiceByMethod_throwsException() {
+	public void testAdd_mappingDefinedTwiceByMethod_throwsException() throws NoSuchMethodException {
 		Table toto = new Table("Toto");
-		assertThrows(IllegalArgumentException.class, () -> FluentMappingBuilder.from(Toto.class, StatefullIdentifier.class, toto)
-				.add(Toto::getName)
-				.add(Toto::setName),
-				"Mapping is already defined by the method"
-				);
+		assertEquals("Mapping is already defined by method " + Reflections.toString(Toto.class.getMethod("getName")),
+				assertThrows(IllegalArgumentException.class, () -> FluentMappingBuilder.from(Toto.class, StatefullIdentifier.class, toto)
+						.add(Toto::getName)
+						.add(Toto::setName))
+						.getMessage());
 	}
 	
 	@Test
 	public void testAdd_mappingDefinedTwiceByColumn_throwsException() {
 		Table toto = new Table("Toto");
-		assertThrows(IllegalArgumentException.class, () -> FluentMappingBuilder.from(Toto.class, StatefullIdentifier.class, toto)
-				.add(Toto::getName, "xyz")
-				.add(Toto::getFirstName, "xyz"),
-				"Mapping is already defined for xyz");
+		assertEquals("Mapping is already defined for column xyz",
+				assertThrows(IllegalArgumentException.class, () -> FluentMappingBuilder.from(Toto.class, StatefullIdentifier.class, toto)
+						.add(Toto::getName, "xyz")
+						.add(Toto::getFirstName, "xyz"))
+						.getMessage());
 	}
 	
 	@Test
@@ -192,38 +203,31 @@ public class FluentMappingBuilderTest {
 	}
 	
 	@Test
-	public void testEmbed_withOverridenColumn() throws SQLException {
-		Table toto = new Table("Toto");
-		Column<Table, Date> createdAt = toto.addColumn("createdAt", Date.class);
-		Column<Table, Date> modifiedAt = toto.addColumn("modifiedAt", Date.class);
+	public void testEmbed_withOverridenColumn() {
+		Table targetTable = new Table("Toto");
+		Column<Table, Date> createdAt = targetTable.addColumn("createdAt", Date.class);
+		Column<Table, Date> modifiedAt = targetTable.addColumn("modifiedAt", Date.class);
 		
 		// Preparation of column mapping check thought insert statement generation
 		Connection connectionMock = mock(Connection.class);
-		PreparedStatement preparedStatementMock = mock(PreparedStatement.class);
-		when(connectionMock.prepareStatement(anyString())).thenReturn(preparedStatementMock);
-		when(preparedStatementMock.executeBatch()).thenReturn(new int[]{ 1 });
-		ArgumentCaptor<String> argumentCaptor = ArgumentCaptor.forClass(String.class);
 		
-		Persister<Toto, StatefullIdentifier, ?> persister = FluentMappingBuilder.from(Toto.class, StatefullIdentifier.class, toto)
+		Persister<Toto, StatefullIdentifier, ?> persister = FluentMappingBuilder.from(Toto.class, StatefullIdentifier.class, targetTable)
 				.add(Toto::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.embed(Toto::getTimestamp)
-				.override(Timestamp::getCreationDate, createdAt)
-				.override(Timestamp::getModificationDate, modifiedAt)
+					.override(Timestamp::getCreationDate, createdAt)
+					.override(Timestamp::getModificationDate, modifiedAt)
 				.build(new PersistenceContext(new SimpleConnectionProvider(connectionMock), DIALECT));
 		
-		Map<String, Column> columnsByName = toto.mapColumnsOnName();
+		Map<String, Column> columnsByName = targetTable.mapColumnsOnName();
 		
 		// columns with getter name must be absent (hard to test: can be absent for many reasons !)
 		assertNull(columnsByName.get("creationDate"));
 		assertNull(columnsByName.get("modificationDate"));
 		
-		// checking that overriden column are well mapped: we use the insert command for that
-		Toto dummyInstance = new Toto();
-		dummyInstance.setTimestamp(new Timestamp());
-		persister.insert(dummyInstance);
-		verify(connectionMock).prepareStatement(argumentCaptor.capture());
-		// the insert SQL must contains overriden columns
-		assertEquals("insert into Toto(id, createdAt, modifiedAt) values (?, ?, ?)", argumentCaptor.getValue());
+		// checking that overriden column are in DML statements
+		assertEquals(targetTable.getColumns(), persister.getMappingStrategy().getInsertableColumns());
+		assertEquals(targetTable.getColumnsNoPrimaryKey(), persister.getMappingStrategy().getUpdatableColumns());
+		assertEquals(targetTable.getColumns(), persister.getMappingStrategy().getSelectableColumns());
 	}
 	
 	protected static class Toto implements Identified<Integer> {
@@ -281,18 +285,4 @@ public class FluentMappingBuilderTest {
 		}
 	}
 	
-	protected static class Timestamp {
-		
-		private Date creationDate;
-		
-		private Date modificationDate;
-		
-		public Date getCreationDate() {
-			return creationDate;
-		}
-		
-		public Date getModificationDate() {
-			return modificationDate;
-		}
-	}
 }

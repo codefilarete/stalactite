@@ -108,7 +108,6 @@ public class StrategyJoinsRowTransformer<T> {
 								() -> rowTransformer.transform(row));
 						
 						// TODO: implémenter l'héritage d'entité
-						// TODO: implémenter ManyToMany ?
 						join.getBeanRelationFixer().apply(rowInstance, rightInstance);
 						
 						// Adds the right strategy for further processing if it has some more joins so they'll also be taken into account

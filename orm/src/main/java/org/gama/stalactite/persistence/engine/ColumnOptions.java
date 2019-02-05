@@ -9,5 +9,11 @@ import org.gama.stalactite.persistence.id.manager.StatefullIdentifier;
  */
 public interface ColumnOptions<T extends Identified, I extends StatefullIdentifier> {
 	
+	/**
+	 * Defines the column as the identifier of the entity.
+	 * 
+	 * @param identifierPolicy an {@link IdentifierPolicy}
+	 * @return the enclosing {@link IFluentMappingBuilder}
+	 */
 	IFluentMappingBuilder<T, I> identifier(IdentifierPolicy identifierPolicy);
 }

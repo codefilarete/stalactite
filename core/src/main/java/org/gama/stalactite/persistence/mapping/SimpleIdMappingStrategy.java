@@ -49,7 +49,7 @@ public class SimpleIdMappingStrategy<C, I> implements IdMappingStrategy<C, I> {
 	public SimpleIdMappingStrategy(IReversibleAccessor<C, I> identifierAccessor,
 								   IdentifierInsertionManager<C, I> identifierInsertionManager,
 								   SimpleIdentifierAssembler identifierMarshaller) {
-		this(IdAccessor.idAccessor(identifierAccessor), identifierInsertionManager, identifierMarshaller);
+		this(new SinglePropertyIdAccessor<>(identifierAccessor), identifierInsertionManager, identifierMarshaller);
 	}
 	
 	@Override

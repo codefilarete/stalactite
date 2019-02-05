@@ -95,7 +95,7 @@ public class ClassMappingStrategy<C, I, T extends Table> implements IEntityMappi
 		}
 		this.targetTable = targetTable;
 		this.classToPersist = classToPersist;
-		this.mainMappingStrategy = new EmbeddedBeanMappingStrategy<>(classToPersist, propertyToColumn);
+		this.mainMappingStrategy = new EmbeddedBeanMappingStrategy<>(classToPersist, targetTable, propertyToColumn);
 		fillInsertableColumns();
 		fillUpdatableColumns();
 		fillSelectableColumns();
@@ -134,7 +134,7 @@ public class ClassMappingStrategy<C, I, T extends Table> implements IEntityMappi
 		}
 		this.targetTable = targetTable;
 		this.classToPersist = classToPersist;
-		this.mainMappingStrategy = new EmbeddedBeanMappingStrategy<>(classToPersist, propertyToColumn);
+		this.mainMappingStrategy = new EmbeddedBeanMappingStrategy<>(classToPersist, targetTable, propertyToColumn);
 		fillInsertableColumns();
 		fillUpdatableColumns();
 		fillSelectableColumns();
@@ -174,6 +174,7 @@ public class ClassMappingStrategy<C, I, T extends Table> implements IEntityMappi
 		return selectableColumns;
 	}
 	
+	@Override
 	public IdMappingStrategy<C, I> getIdMappingStrategy() {
 		return idMappingStrategy;
 	}
@@ -215,6 +216,7 @@ public class ClassMappingStrategy<C, I, T extends Table> implements IEntityMappi
 		// update columns lists
 		addInsertableColumns(mappingStrategy);
 		addUpdatableColumns(mappingStrategy);
+		addSelectableColumns(mappingStrategy);
 	}
 	
 	@Nonnull
@@ -299,6 +301,7 @@ public class ClassMappingStrategy<C, I, T extends Table> implements IEntityMappi
 	private void fillSelectableColumns() {
 		selectableColumns.clear();
 		addSelectableColumns(mainMappingStrategy);
+		selectableColumns.addAll(getTargetTable().getPrimaryKey().getColumns());
 		selectableColumns.addAll(versioningMapping.values());
 		mappingStrategies.values().forEach(this::addSelectableColumns);
 	}

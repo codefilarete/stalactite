@@ -10,6 +10,7 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.function.BiFunction;
 
@@ -27,6 +28,7 @@ import org.gama.stalactite.persistence.id.manager.IdentifierInsertionManager;
 import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
 import org.gama.stalactite.persistence.mapping.ComposedIdMappingStrategy;
 import org.gama.stalactite.persistence.mapping.IdAccessor;
+import org.gama.stalactite.persistence.mapping.SinglePropertyIdAccessor;
 import org.gama.stalactite.persistence.mapping.PersistentFieldHarverster;
 import org.gama.stalactite.persistence.sql.Dialect;
 import org.gama.stalactite.persistence.sql.ddl.JavaTypeToSqlTypeMapping;
@@ -96,7 +98,7 @@ public abstract class AbstractDMLExecutorTest {
 					.withTableAndClass("Toto", Toto.class, (mappedClass, primaryKeyField) -> {
 						Sequence<Integer> instance = InMemoryCounterIdentifierGenerator.INSTANCE;
 						IdentifierInsertionManager<Toto, Integer> identifierGenerator = new BeforeInsertIdentifierManager<>(
-								IdAccessor.idAccessor(primaryKeyField), instance, Integer.class);
+								new SinglePropertyIdAccessor<>(primaryKeyField), instance, Integer.class);
 						return new ClassMappingStrategy<Toto, Integer, org.gama.stalactite.persistence.structure.Table>(
 								mappedClass.mappedClass,
 								mappedClass.targetTable,
@@ -372,6 +374,20 @@ public abstract class AbstractDMLExecutorTest {
 			this.c = c;
 		}
 		
+		@Override
+		public boolean equals(Object o) {
+			if (this == o) return true;
+			if (o == null || getClass() != o.getClass()) return false;
+			Tata tata = (Tata) o;
+			return Objects.equals(id, tata.id) &&
+					Objects.equals(c, tata.c);
+		}
+		
+		@Override
+		public int hashCode() {
+			return Objects.hash(id, c);
+		}
+		
 		/** Implemented to ease comparison on tests */
 		@Override
 		public String toString() {
@@ -392,6 +408,20 @@ public abstract class AbstractDMLExecutorTest {
 		public ComposedId(Integer a, Integer b) {
 			this.a = a;
 			this.b = b;
+		}
+		
+		@Override
+		public boolean equals(Object o) {
+			if (this == o) return true;
+			if (o == null || getClass() != o.getClass()) return false;
+			ComposedId that = (ComposedId) o;
+			return Objects.equals(a, that.a) &&
+					Objects.equals(b, that.b);
+		}
+		
+		@Override
+		public int hashCode() {
+			return Objects.hash(a, b);
 		}
 		
 		/** Implemented to ease comparison on tests */

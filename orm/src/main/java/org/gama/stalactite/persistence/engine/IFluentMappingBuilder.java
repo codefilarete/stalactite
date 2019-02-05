@@ -10,6 +10,7 @@ import org.gama.lang.function.Serie;
 import org.gama.stalactite.persistence.id.Identified;
 import org.gama.stalactite.persistence.id.manager.StatefullIdentifier;
 import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
+import org.gama.stalactite.persistence.mapping.EmbeddedBeanMappingStrategy;
 import org.gama.stalactite.persistence.sql.Dialect;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
@@ -22,21 +23,25 @@ import org.gama.stalactite.persistence.structure.Table;
  * @see FluentMappingBuilder#from(Class, Class, Table)
  * @see #build(Dialect)
  */
-public interface IFluentMappingBuilder<T extends Identified, I extends StatefullIdentifier> {
+public interface IFluentMappingBuilder<C extends Identified, I extends StatefullIdentifier> extends IFluentEmbeddableMappingConfiguration<C> {
 	
-	<O> IFluentMappingBuilderColumnOptions<T, I> add(SerializableBiConsumer<T, O> setter);
+	<O> IFluentMappingBuilderColumnOptions<C, I> add(SerializableBiConsumer<C, O> setter);
 	
-	<O> IFluentMappingBuilderColumnOptions<T, I> add(SerializableFunction<T, O> getter);
+	<O> IFluentMappingBuilderColumnOptions<C, I> add(SerializableFunction<C, O> getter);
 	
-	<O> IFluentMappingBuilderColumnOptions<T, I> add(SerializableBiConsumer<T, O> setter, String columnName);
+	<O> IFluentMappingBuilderColumnOptions<C, I> add(SerializableBiConsumer<C, O> setter, String columnName);
 	
-	IFluentMappingBuilderColumnOptions<T, I> add(SerializableFunction<T, ?> function, String columnName);
+	IFluentMappingBuilderColumnOptions<C, I> add(SerializableFunction<C, ?> function, String columnName);
 	
-	<O> IFluentMappingBuilderColumnOptions<T, I> add(SerializableFunction<T, O> getter, Column<Table, O> column);
+	<O> IFluentMappingBuilderColumnOptions<C, I> add(SerializableFunction<C, O> getter, Column<Table, O> column);
+	
+	IFluentMappingBuilder<C, I> mapSuperClass(Class<? super C> superType, ClassMappingStrategy<? super C, ?, ?> mappingStrategy);
+	
+	IFluentMappingBuilder<C, I> mapSuperClass(Class<? super C> superType, EmbeddedBeanMappingStrategy<? super C, ?> mappingStrategy);
 	
 	<O extends Identified, J extends StatefullIdentifier>
-	IFluentMappingBuilderOneToOneOptions<T, I>
-	addOneToOne(SerializableFunction<T, O> getter, Persister<O, J, ? extends Table> persister);
+	IFluentMappingBuilderOneToOneOptions<C, I>
+	addOneToOne(SerializableFunction<C, O> getter, Persister<O, J, ? extends Table> persister);
 	
 	/**
 	 * Declares a relationship between an entity of type {@code T} and a {@link Set} of entities of type {@code O}.
@@ -47,13 +52,13 @@ public interface IFluentMappingBuilder<T extends Identified, I extends Statefull
 	 * @param persister the persister of the {@link Set} entities 
 	 * @param <O> type of {@link Set} element
 	 * @param <J> type of identifier of {@code O}
-	 * @param <C> refined {@link Set} type
+	 * @param <S> refined {@link Set} type
 	 * @return a enhanced version of {@code this} so one can add set options to the relationship or add mapping to {@code this}
 	 * @see #addOneToManyList(SerializableFunction, Persister)
 	 */
-	<O extends Identified, J extends StatefullIdentifier, C extends Collection<O>>
-	IFluentMappingBuilderOneToManyOptions<T, I, O>
-	addOneToManySet(SerializableFunction<T, C> getter, Persister<O, J, ? extends Table> persister);
+	<O extends Identified, J extends StatefullIdentifier, S extends Collection<O>>
+	IFluentMappingBuilderOneToManyOptions<C, I, O>
+	addOneToManySet(SerializableFunction<C, S> getter, Persister<O, J, ? extends Table> persister);
 	
 	/**
 	 * Declares a relationship between an entity of type {@code T} and a {@link List} of entities of type {@code O}.
@@ -64,25 +69,27 @@ public interface IFluentMappingBuilder<T extends Identified, I extends Statefull
 	 * @param persister the persister of the {@link List} entities 
 	 * @param <O> type of {@link List} element
 	 * @param <J> type of identifier of {@code O} (target entities)
-	 * @param <C> refined {@link List} type
+	 * @param <S> refined {@link List} type
 	 * @return a enhanced version of {@code this} so one can add set options to the relationship or add mapping to {@code this}
 	 * @see #addOneToManySet(SerializableFunction, Persister)
 	 */
-	<O extends Identified, J extends StatefullIdentifier, C extends List<O>>
-	IFluentMappingBuilderOneToManyListOptions<T, I, O>
-	addOneToManyList(SerializableFunction<T, C> getter, Persister<O, J, ? extends Table> persister);
+	<O extends Identified, J extends StatefullIdentifier, S extends List<O>>
+	IFluentMappingBuilderOneToManyListOptions<C, I, O>
+	addOneToManyList(SerializableFunction<C, S> getter, Persister<O, J, ? extends Table> persister);
 	
-	<O> IFluentMappingBuilderEmbedOptions<T, I> embed(SerializableBiConsumer<T, O> setter);
+	@Override
+	<O> IFluentMappingBuilderEmbedOptions<C, I> embed(SerializableBiConsumer<C, O> setter);
 	
-	<O> IFluentMappingBuilderEmbedOptions<T, I> embed(SerializableFunction<T, O> getter);
+	@Override
+	<O> IFluentMappingBuilderEmbedOptions<C, I> embed(SerializableFunction<C, O> getter);
 	
-	IFluentMappingBuilder<T, I> foreignKeyNamingStrategy(ForeignKeyNamingStrategy foreignKeyNamingStrategy);
+	IFluentMappingBuilder<C, I> foreignKeyNamingStrategy(ForeignKeyNamingStrategy foreignKeyNamingStrategy);
 	
-	IFluentMappingBuilder<T, I> joinColumnNamingStrategy(JoinColumnNamingStrategy columnNamingStrategy);
+	IFluentMappingBuilder<C, I> joinColumnNamingStrategy(JoinColumnNamingStrategy columnNamingStrategy);
 	
-	<C> IFluentMappingBuilder<T, I> versionedBy(SerializableFunction<T, C> getter);
+	<V> IFluentMappingBuilder<C, I> versionedBy(SerializableFunction<C, V> getter);
 	
-	<C> IFluentMappingBuilder<T, I> versionedBy(SerializableFunction<T, C> getter, Serie<C> sequence);
+	<V> IFluentMappingBuilder<C, I> versionedBy(SerializableFunction<C, V> getter, Serie<V> sequence);
 	
 	/**
 	 * Final method, builds the concrete persistence mapping
@@ -90,9 +97,11 @@ public interface IFluentMappingBuilder<T extends Identified, I extends Statefull
 	 * @param dialect the {@link Dialect} to build the mapping for
 	 * @return the finalized mapping, can be modified further
 	 */
-	ClassMappingStrategy<T, I, Table> build(Dialect dialect);
+	ClassMappingStrategy<C, I, Table> build(Dialect dialect);
 	
-	Persister<T, I, ?> build(PersistenceContext persistenceContext);
+	<CC extends Table> EmbeddedBeanMappingStrategy<C, CC> buildEmbeddable(Dialect dialect);
+		
+	Persister<C, I, ?> build(PersistenceContext persistenceContext);
 	
 	interface IFluentMappingBuilderColumnOptions<T extends Identified, I extends StatefullIdentifier> extends IFluentMappingBuilder<T, I>, ColumnOptions<T, I> {
 	}
@@ -148,7 +157,32 @@ public interface IFluentMappingBuilder<T extends Identified, I extends Statefull
 		IFluentMappingBuilderOneToManyListOptions<T, I, O> indexedBy(Column orderingColumn);
 	}
 	
-	interface IFluentMappingBuilderEmbedOptions<T extends Identified, I extends StatefullIdentifier> extends IFluentMappingBuilder<T, I>, EmbedOptions<T, I> {
+	interface IFluentMappingBuilderEmbedOptions<T extends Identified, I extends StatefullIdentifier>
+			extends IFluentMappingBuilder<T, I>, IFluentEmbeddableMappingConfigurationEmbedOptions<T>, EmbedWithColumnOptions<T> {
+		
+		/**
+		 * Overrides embedding with an existing column
+		 *
+		 * @param function the getter as a method reference
+		 * @param columnName a column name that's the target of the getter (will be added to the {@link Table} if not exists)
+		 * @param <IN> input of the function (type of the embedded element)
+		 * @return a mapping configurer, specialized for embedded elements
+		 */
+		@Override
+		<IN> IFluentMappingBuilderEmbedOptions<T, I> overrideName(SerializableFunction<IN, ?> function, String columnName);
+		
+		/**
+		 * Overrides embedding with an existing target column
+		 *
+		 * @param function the getter as a method reference
+		 * @param targetColumn a column that's the target of the getter
+		 * @param <IN> input of the function (type of the embedded element)
+		 * @param <OUT> ouput of the function (property type)
+		 * @return a mapping configurer, specialized for embedded elements
+		 */
+		@Override
+		<IN, OUT> IFluentMappingBuilderEmbedOptions<T, I> override(SerializableFunction<IN, OUT> function, Column<Table, OUT> targetColumn);
+		
 	}
 	
 }

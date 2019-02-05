@@ -2,11 +2,19 @@ package org.gama.stalactite.persistence.mapping;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Map.Entry;
 
+import org.gama.lang.Duo;
+import org.gama.lang.StringAppender;
+import org.gama.lang.collection.Arrays;
 import org.gama.lang.collection.Maps;
+import org.gama.reflection.AccessorChainMutator;
 import org.gama.reflection.Accessors;
+import org.gama.reflection.IMutator;
+import org.gama.reflection.MutatorByMethodReference;
 import org.gama.reflection.PropertyAccessor;
 import org.gama.sql.result.Row;
+import org.gama.stalactite.persistence.engine.QueryConverterTest.Toto;
 import org.gama.stalactite.persistence.mapping.IMappingStrategy.UpwhereColumn;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
@@ -16,8 +24,12 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
+import static org.gama.reflection.Accessors.*;
+import static org.gama.stalactite.persistence.mapping.EmbeddedBeanMappingStrategy.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
@@ -37,16 +49,16 @@ public class EmbeddedBeanMappingStrategyTest {
 		colA = targetTable.addColumn("a", Integer.class);
 		colB = targetTable.addColumn("b", Integer.class);
 		colC = targetTable.addColumn("c", Integer.class);
-		classMapping = Maps.asMap(Accessors.forProperty(Toto.class, "a"), colA)
-				.add(Accessors.forProperty(Toto.class, "b"), colB)
-				.add(Accessors.forProperty(Toto.class, "c"), colC);
+		classMapping = Maps.asMap(forProperty(Toto.class, "a"), colA)
+				.add(forProperty(Toto.class, "b"), colB)
+				.add(forProperty(Toto.class, "c"), colC);
 	}
 	
 	private EmbeddedBeanMappingStrategy<Toto, Table> testInstance;
 	
 	@BeforeEach
 	public void setUp() {
-		testInstance = new EmbeddedBeanMappingStrategy<Toto, Table>(Toto.class, (Map) classMapping);
+		testInstance = new EmbeddedBeanMappingStrategy<Toto, Table>(Toto.class, targetTable, (Map) classMapping);
 	}
 	
 	public static Object[][] testGetInsertValuesData() {
@@ -122,15 +134,56 @@ public class EmbeddedBeanMappingStrategyTest {
 	}
 	
 	@Test
+	public void testTransform_withNullValueInRow_returnsNotNull() {
+		Row row = new Row();
+		row.put("a", null);
+		row.put("b", null);
+		row.put("c", null);
+		EmbeddedBeanMappingStrategy<Toto, Table> testInstance = new EmbeddedBeanMappingStrategy<Toto, Table>(Toto.class, targetTable, (Map) classMapping);
+		Toto toto = testInstance.transform(row);
+		assertNotNull(toto);
+		assertNull(toto.a);
+		assertNull(toto.b);
+		assertNull(toto.c);
+	}
+	
+	@Test
+	public void testDefaultValueDeterminer() {
+		DefaultValueDeterminer testInstance = new DefaultValueDeterminer() {};
+		assertTrue(testInstance.isDefaultValue(new Duo<>(colA, forProperty(Toto.class, "a")), null));
+		assertTrue(testInstance.isDefaultValue(new Duo<>(colA, forProperty(ClassWithPrimitiveTypeProperties.class, "x")), 0));
+		assertTrue(testInstance.isDefaultValue(new Duo<>(colA, forProperty(ClassWithPrimitiveTypeProperties.class, "y")), false));
+		assertTrue(testInstance.isDefaultValue(new Duo<>(colA, mutatorByField(Toto.class, "a")), null));
+		assertTrue(testInstance.isDefaultValue(new Duo<>(colA, mutatorByField(ClassWithPrimitiveTypeProperties.class, "x")), 0));
+		assertTrue(testInstance.isDefaultValue(new Duo<>(colA, mutatorByField(ClassWithPrimitiveTypeProperties.class, "y")), false));
+		assertTrue(testInstance.isDefaultValue(new Duo<>(colA, mutatorByMethodReference(ClassWithPrimitiveTypeProperties::setX)), 0));
+		assertTrue(testInstance.isDefaultValue(new Duo<>(colA, mutatorByMethodReference(ClassWithPrimitiveTypeProperties::setY)), false));
+		assertTrue(testInstance.isDefaultValue(new Duo<>(colA, new AccessorChainMutator(
+				Arrays.asList(accessorByMethodReference(Object::toString)), mutatorByMethodReference(String::concat))), null));
+		
+		assertFalse(testInstance.isDefaultValue(new Duo<>(colA, forProperty(Toto.class, "a")), 42));
+		assertFalse(testInstance.isDefaultValue(new Duo<>(colA, forProperty(ClassWithPrimitiveTypeProperties.class, "x")), 42));
+		assertFalse(testInstance.isDefaultValue(new Duo<>(colA, forProperty(ClassWithPrimitiveTypeProperties.class, "y")), true));
+		assertFalse(testInstance.isDefaultValue(new Duo<>(colA, mutatorByField(Toto.class, "a")), 42));
+		assertFalse(testInstance.isDefaultValue(new Duo<>(colA, mutatorByField(ClassWithPrimitiveTypeProperties.class, "x")), 42));
+		assertFalse(testInstance.isDefaultValue(new Duo<>(colA, mutatorByField(ClassWithPrimitiveTypeProperties.class, "y")), true));
+		assertFalse(testInstance.isDefaultValue(new Duo<>(colA, mutatorByMethodReference(ClassWithPrimitiveTypeProperties::setX)), 42));
+		assertFalse(testInstance.isDefaultValue(new Duo<>(colA, mutatorByMethodReference(ClassWithPrimitiveTypeProperties::setY)), true));
+		assertFalse(testInstance.isDefaultValue(new Duo<>(colA, new AccessorChainMutator(
+				Arrays.asList(accessorByMethodReference(Object::toString)), mutatorByMethodReference(String::concat))), ""));
+		
+	}
+	
+	@Test
 	public void testConstructor_columnFiltering() {
 		Table targetTable = new Table("Toto");
 		Column<Table, Integer> colA = targetTable.addColumn("a", Integer.class).primaryKey();
 		Column<Table, Integer> colB = targetTable.addColumn("b", Integer.class).primaryKey().autoGenerated();
 		Column<Table, Integer> colC = targetTable.addColumn("c", Integer.class);
-		Map<PropertyAccessor<Toto, Object>, Column<Table, Integer>> classMapping = Maps.asMap(Accessors.forProperty(Toto.class, "a"), colA)
-				.add(Accessors.forProperty(Toto.class, "b"), colB)
-				.add(Accessors.forProperty(Toto.class, "c"), colC);
-		EmbeddedBeanMappingStrategy testInstance = new EmbeddedBeanMappingStrategy<Toto, Table>(Toto.class, (Map) classMapping);
+		Map<PropertyAccessor<Toto, Object>, Column<Table, Integer>> classMapping = Maps.asMap(forProperty(Toto.class, "a"), colA)
+				.add(forProperty(Toto.class, "b"), colB)
+				.add(forProperty(Toto.class, "c"), colC);
+		EmbeddedBeanMappingStrategy testInstance = new EmbeddedBeanMappingStrategy<Toto, Table>(Toto.class, targetTable, (Map) classMapping);
 		// primary key shall no be written by this class
 		assertFalse(testInstance.getPropertyToColumn().containsValue(colA));
 		assertTrue(testInstance.getRowTransformer().getColumnToMember().containsKey(colA));
@@ -160,5 +213,17 @@ public class EmbeddedBeanMappingStrategyTest {
 			return getClass().getSimpleName() + "[" + Maps.asMap("a", a).add("b", b).add("c", c) + "]";
 		}
 	}
-
+	
+	private static class ClassWithPrimitiveTypeProperties {
+		private int x;
+		private boolean y;
+		
+		public void setX(int x) {
+			this.x = x;
+		}
+		
+		public void setY(boolean y) {
+			this.y = y;
+		}
+	}
 }

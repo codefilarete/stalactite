@@ -4,7 +4,9 @@ import javax.sql.DataSource;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import org.gama.lang.collection.Arrays;
 import org.gama.lang.collection.Iterables;
@@ -209,7 +211,6 @@ public class SelectExecutorTest extends AbstractDMLExecutorTest {
 				// NB: Derby can't be tested because it doesn't support "tupled in"
 				new Object[] { new HSQLDBInMemoryDataSource() },
 				new Object[] { new MariaDBEmbeddableDataSource(3406) },
-			
 		};
 	}
 	
@@ -259,12 +260,12 @@ public class SelectExecutorTest extends AbstractDMLExecutorTest {
 		
 		SelectExecutor<Tata, ComposedId, Table> testInstance = new SelectExecutor<>(dataSet.persistenceConfiguration.classMappingStrategy, dataSet.transactionManager, dmlGenerator, 3);
 		List<Tata> result = testInstance.select(Arrays.asList(new ComposedId(1, 10), new ComposedId(2, 20), new ComposedId(3, 30), new ComposedId(4, 40)));
-		List<Tata> expectedResult = Arrays.asList(
+		Set<Tata> expectedResult = Arrays.asHashSet(
 				new Tata(1, 10, 100),
 				new Tata(2, 20, 200),
 				new Tata(3, 30, 300),
 				new Tata(4, 40, 400));
-		assertEquals(expectedResult.toString(), result.toString());
+		assertEquals(expectedResult, new HashSet<>(result));
 	}
 	
 	@ParameterizedTest

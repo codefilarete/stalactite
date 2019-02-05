@@ -106,8 +106,12 @@ public class ToBeanRowTransformer<T> extends AbstractTransformer<T> {
 	public void applyRowToBean(Row source, T targetRowBean) {
 		for (Entry<Column, IMutator> columnFieldEntry : columnToMember.entrySet()) {
 			Object propertyValue = columnedRow.getValue(columnFieldEntry.getKey(), source);
-			columnFieldEntry.getValue().set(targetRowBean, propertyValue);
+			applyValueToBean(targetRowBean, columnFieldEntry, propertyValue);
 		}
+	}
+	
+	protected void applyValueToBean(T targetRowBean, Entry<Column, IMutator> columnFieldEntry, Object propertyValue) {
+		columnFieldEntry.getValue().set(targetRowBean, propertyValue);
 	}
 	
 	/**

@@ -12,7 +12,9 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 
 import org.gama.lang.Duo;
+import org.gama.lang.Reflections;
 import org.gama.lang.bean.Objects;
+import org.gama.reflection.AccessorChain;
 import org.gama.reflection.IMutator;
 import org.gama.reflection.IReversibleAccessor;
 import org.gama.sql.result.Row;
@@ -24,11 +26,17 @@ import org.gama.stalactite.persistence.structure.Table;
  */
 public class EmbeddedBeanMappingStrategy<C, T extends Table> implements IEmbeddedBeanMappingStrategy<C, T> {
 	
+	private final Class<C> classToPersist;
+	
+	private final T targetTable;
+	
 	private final Map<IReversibleAccessor<C, Object>, Column<T, Object>> propertyToColumn;
 	
 	private final Set<Column<T, Object>> columns;
 	
 	private final ToBeanRowTransformer<C> rowTransformer;
+	
+	private DefaultValueDeterminer defaultValueDeterminer = new DefaultValueDeterminer() {};
 	
 	/**
 	 * Columns (and their value provider) which are not officially mapped by a bean property.
@@ -49,10 +57,13 @@ public class EmbeddedBeanMappingStrategy<C, T extends Table> implements IEmbedde
 	 * No control is done about that, caller must be aware of it.
 	 * First entry of {@code propertyToColumn} is used to pick up persisted class and target table.
 	 *
-	 * @param targetClass the class to persist
+	 * @param classToPersist the class to be persisted
+	 * @param targetTable the persisting table
 	 * @param propertyToColumn a mapping between Field and Column, expected to be coherent (fields of same class, column of same table)
 	 */
-	public EmbeddedBeanMappingStrategy(Class<C> targetClass, Map<? extends IReversibleAccessor<C, Object>, Column<T, Object>> propertyToColumn) {
+	public EmbeddedBeanMappingStrategy(Class<C> classToPersist, T targetTable, Map<? extends IReversibleAccessor<C, Object>, Column<T, Object>> propertyToColumn) {
+		this.classToPersist = classToPersist;
+		this.targetTable = targetTable;
 		this.propertyToColumn = new HashMap<>(propertyToColumn.size());
 		Map<Column, IMutator> columnToField = new HashMap<>();
 		for (Entry<? extends IReversibleAccessor<C, Object>, ? extends Column<T, Object>> fieldColumnEntry : propertyToColumn.entrySet()) {
@@ -64,8 +75,16 @@ public class EmbeddedBeanMappingStrategy<C, T extends Table> implements IEmbedde
 			}
 			columnToField.put(column, accessorByField.toMutator());
 		}
-		this.rowTransformer = new ToBeanRowTransformer<>(targetClass, columnToField);
+		this.rowTransformer = new EmbeddedBeanRowTransformer(classToPersist, columnToField);
 		this.columns = new LinkedHashSet<>(propertyToColumn.values());
+	}
+	
+	public Class<C> getClassToPersist() {
+		return classToPersist;
+	}
+	
+	public T getTargetTable() {
+		return targetTable;
 	}
 	
 	public Map<IReversibleAccessor<C, Object>, Column<T, Object>> getPropertyToColumn() {
@@ -84,6 +103,15 @@ public class EmbeddedBeanMappingStrategy<C, T extends Table> implements IEmbedde
 	
 	public ToBeanRowTransformer<C> getRowTransformer() {
 		return rowTransformer;
+	}
+	
+	/**
+	 * Changes current {@link DefaultValueDeterminer}
+	 * 
+	 * @param defaultValueDeterminer a {@link DefaultValueDeterminer}
+	 */
+	public void setDefaultValueDeterminer(DefaultValueDeterminer defaultValueDeterminer) {
+		this.defaultValueDeterminer = defaultValueDeterminer;
 	}
 	
 	@Override
@@ -154,12 +182,13 @@ public class EmbeddedBeanMappingStrategy<C, T extends Table> implements IEmbedde
 	
 	@Override
 	public C transform(Row row) {
+		// NB: please note that this transfomer will determine intermediary bean instanciation through isDefaultValue(..)
 		return this.rowTransformer.transform(row);
 	}
 	
 	private abstract class FieldVisitor<K> implements Consumer<Entry<IReversibleAccessor<C, Object>, Column<T, Object>>> {
 		
-		protected Map<K, Object> toReturn = new HashMap<>();
+		protected final Map<K, Object> toReturn = new HashMap<>();
 		
 		@Override
 		public final void accept(Entry<IReversibleAccessor<C, Object>, Column<T, Object>> fieldColumnEntry) {
@@ -169,4 +198,47 @@ public class EmbeddedBeanMappingStrategy<C, T extends Table> implements IEmbedde
 		protected abstract void visitField(Entry<IReversibleAccessor<C, Object>, Column<T, Object>> fieldColumnEntry);
 	}
 	
+	/**
+	 * Transformer aimed at detecting if bean instance must be created according to row values (used in the select phase).
+	 * For example, if all column values are null, bean will not be created.
+	 */
+	private class EmbeddedBeanRowTransformer extends ToBeanRowTransformer<C> {
+		
+		public EmbeddedBeanRowTransformer(Class<C> clazz, Map<Column, IMutator> columnToMember) {
+			super(clazz, columnToMember);
+		}
+		
+		@Override
+		protected void applyValueToBean(C targetRowBean, Entry<Column, IMutator> columnFieldEntry, Object propertyValue) {
+			boolean defaultValue = EmbeddedBeanMappingStrategy.this.defaultValueDeterminer.isDefaultValue(
+					new Duo<>(columnFieldEntry.getKey(), columnFieldEntry.getValue()), propertyValue);
+			if (!defaultValue) {
+				super.applyValueToBean(targetRowBean, columnFieldEntry, propertyValue);
+			}
+		}
+	}
+	
+	/**
+	 * Small constract that helps to determine if a value is a default one for a bean property.
+	 * Aimed at deciding if embedded beans must be instanciated or not according to row values (from {@link java.sql.ResultSet}
+	 * during the conversion phase
+	 */
+	public interface DefaultValueDeterminer {
+
+		/**
+		 * Default implementation considers null as a default value for non primitive types, and default primitive type values as such for
+		 * primitive types (took in {@link Reflections#PRIMITIVE_DEFAULT_VALUES}).
+		 * 
+		 * @param mappedProperty column and its mapped property (configured in the {@link EmbeddedBeanMappingStrategy}).
+		 * 						 So one can use either the column or the accessor for fine grained default value determination
+		 * @param value value coming from a JDBC {@link java.sql.ResultSet}, mapped by the couple {@link Column} + {@link IMutator}.
+		 * @return true if value is a default one for column/property
+		 */
+		default boolean isDefaultValue(Duo<Column, IMutator> mappedProperty, Object value) {
+			Class inputType = AccessorChain.getInputType(mappedProperty.getRight());
+			return (!inputType.isPrimitive() && value == null)
+					|| (inputType.isPrimitive() && Reflections.PRIMITIVE_DEFAULT_VALUES.get(inputType) == value);
+		}
+		
+	}
 }

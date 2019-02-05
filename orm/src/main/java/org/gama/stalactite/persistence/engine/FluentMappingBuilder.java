@@ -9,18 +9,21 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Set;
 import java.util.function.Predicate;
-import java.util.stream.Collectors;
 
 import org.danekja.java.util.function.serializable.SerializableBiConsumer;
+import org.danekja.java.util.function.serializable.SerializableBiFunction;
 import org.danekja.java.util.function.serializable.SerializableFunction;
 import org.gama.lang.Nullable;
 import org.gama.lang.Reflections;
 import org.gama.lang.bean.FieldIterator;
+import org.gama.lang.collection.Iterables;
 import org.gama.lang.exception.NotImplementedException;
 import org.gama.lang.function.Serie;
 import org.gama.lang.reflect.MethodDispatcher;
 import org.gama.reflection.Accessors;
+import org.gama.reflection.IReversibleAccessor;
 import org.gama.reflection.MethodReferenceCapturer;
 import org.gama.reflection.PropertyAccessor;
 import org.gama.stalactite.persistence.engine.AbstractVersioningStrategy.VersioningStrategySupport;
@@ -35,14 +38,19 @@ import org.gama.stalactite.persistence.id.manager.IdentifierInsertionManager;
 import org.gama.stalactite.persistence.id.manager.StatefullIdentifier;
 import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
 import org.gama.stalactite.persistence.mapping.EmbeddedBeanMappingStrategy;
+import org.gama.stalactite.persistence.mapping.IMappingStrategy;
+import org.gama.stalactite.persistence.mapping.IdAccessor;
+import org.gama.stalactite.persistence.mapping.SinglePropertyIdAccessor;
 import org.gama.stalactite.persistence.sql.Dialect;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
 
+import static org.gama.lang.collection.Iterables.collect;
+
 /**
  * @author Guillaume Mary
  */
-public class FluentMappingBuilder<T extends Identified, I extends StatefullIdentifier> implements IFluentMappingBuilder<T, I> {
+public class FluentMappingBuilder<C extends Identified, I extends StatefullIdentifier> implements IFluentMappingBuilder<C, I> {
 	
 	/**
 	 * Available identifier policies for entities.
@@ -84,23 +92,23 @@ public class FluentMappingBuilder<T extends Identified, I extends StatefullIdent
 		return new FluentMappingBuilder<>(persistedClass, table);
 	}
 	
-	private final Class<T> persistedClass;
+	private final Class<C> persistedClass;
 	
 	private final Table table;
 	
-	private List<Linkage> mapping;
+	private final List<Linkage> mapping = new ArrayList<>();
 	
-	private IdentifierInsertionManager<T, I> identifierInsertionManager;
+	private IdentifierInsertionManager<C, I> identifierInsertionManager;
 	
-	private PropertyAccessor<T, I> identifierAccessor;
+	private PropertyAccessor<C, I> identifierAccessor;
 	
-	private final MethodReferenceCapturer spy;
+	private final MethodReferenceCapturer methodSpy;
 	
-	private List<CascadeOne<T, ? extends Identified, ? extends StatefullIdentifier>> cascadeOnes = new ArrayList<>();
+	private final List<CascadeOne<C, ? extends Identified, ? extends StatefullIdentifier>> cascadeOnes = new ArrayList<>();
 	
-	private List<CascadeMany<T, ? extends Identified, ? extends StatefullIdentifier, ? extends Collection>> cascadeManys = new ArrayList<>();
+	private final List<CascadeMany<C, ? extends Identified, ? extends StatefullIdentifier, ? extends Collection>> cascadeManys = new ArrayList<>();
 	
-	private Collection<Inset<T, ?>> insets = new ArrayList<>();
+	private final Collection<Inset<C, ?>> insets = new ArrayList<>();
 	
 	private ForeignKeyNamingStrategy foreignKeyNamingStrategy = ForeignKeyNamingStrategy.DEFAULT;
 	
@@ -110,19 +118,20 @@ public class FluentMappingBuilder<T extends Identified, I extends StatefullIdent
 	
 	private OptimisticLockOption optimisticLockOption;
 	
+	private final Map<Class<? super C>, IMappingStrategy<? super C, ?>> inheritanceMapping = new HashMap<>();
+	
 	/**
 	 * Creates a builder to map the given class for persistence
 	 *
 	 * @param persistedClass the class to create a mapping for
 	 * @param table the target table of the persisted class
 	 */
-	public FluentMappingBuilder(Class<T> persistedClass, Table table) {
+	public FluentMappingBuilder(Class<C> persistedClass, Table table) {
 		this.persistedClass = persistedClass;
 		this.table = table;
-		this.mapping = new ArrayList<>();
 		
 		// Helper to capture Method behind method reference
-		this.spy = new MethodReferenceCapturer();
+		this.methodSpy = new MethodReferenceCapturer();
 	}
 	
 	/**
@@ -130,7 +139,7 @@ public class FluentMappingBuilder<T extends Identified, I extends StatefullIdent
 	 * 
 	 * @param persistedClass the class to create a mapping for
 	 */
-	public FluentMappingBuilder(Class<T> persistedClass) {
+	public FluentMappingBuilder(Class<C> persistedClass) {
 		this(persistedClass, new Table(persistedClass.getSimpleName()));
 	}
 	
@@ -139,64 +148,68 @@ public class FluentMappingBuilder<T extends Identified, I extends StatefullIdent
 	}
 	
 	private Method captureLambdaMethod(SerializableFunction getter) {
-		return this.spy.findMethod(getter);
+		return this.methodSpy.findMethod(getter);
 	}
 	
 	private Method captureLambdaMethod(SerializableBiConsumer setter) {
-		return this.spy.findMethod(setter);
+		return this.methodSpy.findMethod(setter);
 	}
 	
 	@Override
-	public <O> IFluentMappingBuilderColumnOptions<T, I> add(SerializableBiConsumer<T, O> setter) {
+	public <O> IFluentMappingBuilderColumnOptions<C, I> add(SerializableBiConsumer<C, O> setter) {
 		Method method = captureLambdaMethod(setter);
 		return add(method, (String) null);
 	}
 	
 	@Override
-	public <O> IFluentMappingBuilderColumnOptions<T, I> add(SerializableFunction<T, O> getter) {
+	public <O> IFluentMappingBuilderColumnOptions<C, I> add(SerializableFunction<C, O> getter) {
 		Method method = captureLambdaMethod(getter);
 		return add(method, (String) null);
 	}
 	
 	@Override
-	public <O> IFluentMappingBuilderColumnOptions<T, I> add(SerializableBiConsumer<T, O> setter, String columnName) {
+	public <O> IFluentMappingBuilderColumnOptions<C, I> add(SerializableBiConsumer<C, O> setter, String columnName) {
 		Method method = captureLambdaMethod(setter);
 		return add(method, columnName);
 	}
 	
 	@Override
-	public IFluentMappingBuilderColumnOptions<T, I> add(SerializableFunction<T, ?> getter, String columnName) {
+	public IFluentMappingBuilderColumnOptions<C, I> add(SerializableFunction<C, ?> getter, String columnName) {
 		Method method = captureLambdaMethod(getter);
 		return add(method, columnName);
 	}
 	
 	@Override
-	public <O> IFluentMappingBuilderColumnOptions<T, I> add(SerializableFunction<T, O> getter, Column<Table, O> column) {
+	public <O> IFluentMappingBuilderColumnOptions<C, I> add(SerializableFunction<C, O> getter, Column<Table, O> column) {
 		Method method = captureLambdaMethod(getter);
 		return add(method, column);
 	}
 	
-	private <O> IFluentMappingBuilderColumnOptions<T, I> add(Method method, Column<Table, O> column) {
-		Linkage<T> newMapping = addMapping(method, column);
-		return addMapping(method, newMapping);
+	private <O> IFluentMappingBuilderColumnOptions<C, I> add(Method method, Column<Table, O> column) {
+		Linkage<C> newMapping = addMapping(method, column);
+		return applyAdditionalOptions(method, newMapping);
 	}
 	
-	private IFluentMappingBuilderColumnOptions<T, I> add(Method method, @javax.annotation.Nullable String columnName) {
-		Linkage<T> newMapping = addMapping(method, columnName);
-		return addMapping(method, newMapping);
+	private IFluentMappingBuilderColumnOptions<C, I> add(Method method, @javax.annotation.Nullable String columnName) {
+		Linkage<C> newMapping = addMapping(method, columnName);
+		return applyAdditionalOptions(method, newMapping);
 	}
 	
 	/**
 	 * @return a new Column aded to the target table, throws an exception if already mapped
 	 */
-	private Linkage<T> addMapping(Method method, @javax.annotation.Nullable String columnName) {
+	private Linkage<C> addMapping(Method method, @javax.annotation.Nullable String columnName) {
 		PropertyAccessor<Object, Object> propertyAccessor = Accessors.of(method);
 		assertMappingIsNotAlreadyDefined(columnName, propertyAccessor);
 		String linkName = columnName;
-		if (columnName == null && Identified.class.isAssignableFrom(Reflections.javaBeanTargetType(method))) {
-			linkName = columnNamingStrategy.giveName(propertyAccessor);
+		if (columnName == null) { 
+			if (Identified.class.isAssignableFrom(Reflections.javaBeanTargetType(method))) {
+				linkName = columnNamingStrategy.giveName(propertyAccessor);
+			} else {
+				linkName = Reflections.propertyName(method);
+			}
 		}
-		Linkage<T>linkage = new LinkageByColumnName<>(method, linkName);
+		Linkage<C>linkage = new LinkageByColumnName<>(method, linkName);
 		this.mapping.add(linkage);
 		return linkage;
 	}
@@ -204,31 +217,31 @@ public class FluentMappingBuilder<T extends Identified, I extends StatefullIdent
 	/**
 	 * @return a new Column aded to the target table, throws an exception if already mapped
 	 */
-	private <O> Linkage<T> addMapping(Method method, Column<Table, O> column) {
+	private <O> Linkage<C> addMapping(Method method, Column<Table, O> column) {
 		PropertyAccessor<Object, Object> propertyAccessor = Accessors.of(method);
 		assertMappingIsNotAlreadyDefined(column.getName(), propertyAccessor);
-		Linkage<T> linkage = new LinkageByColumn<>(method, column);
+		Linkage<C> linkage = new LinkageByColumn<>(method, column);
 		this.mapping.add(linkage);
 		return linkage;
 	}
 	
 	private void assertMappingIsNotAlreadyDefined(@javax.annotation.Nullable String columnName, PropertyAccessor propertyAccessor) {
 		Predicate<Linkage> checker = ((Predicate<Linkage>) linkage -> {
-			PropertyAccessor<T, ?> accessor = linkage.getAccessor();
+			PropertyAccessor<C, ?> accessor = linkage.getAccessor();
 			if (accessor.equals(propertyAccessor)) {
-				throw new IllegalArgumentException("Mapping is already defined by the method " + accessor.getAccessor());
+				throw new IllegalArgumentException("Mapping is already defined by method " + accessor.getAccessor());
 			}
 			return true;
 		}).and(linkage -> {
 			if (columnName != null && columnName.equals(linkage.getColumnName())) {
-				throw new IllegalArgumentException("Mapping is already defined for " + columnName);
+				throw new IllegalArgumentException("Mapping is already defined for column " + columnName);
 			}
 			return true;
 		});
 		mapping.forEach(checker::test);
 	}
 	
-	private IFluentMappingBuilderColumnOptions<T, I> addMapping(Method method, Linkage newMapping) {
+	private IFluentMappingBuilderColumnOptions<C, I> applyAdditionalOptions(Method method, Linkage newMapping) {
 		return new MethodDispatcher()
 				.redirect(ColumnOptions.class, identifierPolicy -> {
 					if (FluentMappingBuilder.this.identifierAccessor != null) {
@@ -237,10 +250,10 @@ public class FluentMappingBuilder<T extends Identified, I extends StatefullIdent
 					if (identifierPolicy == IdentifierPolicy.ALREADY_ASSIGNED) {
 						Class<I> primaryKeyType = Reflections.propertyType(method);
 						FluentMappingBuilder.this.identifierInsertionManager = new AlreadyAssignedIdentifierManager<>(primaryKeyType);
-						if (newMapping instanceof FluentMappingBuilder.LinkageByColumnName) {
+						if (newMapping instanceof LinkageByColumnName) {
 							// we force primary key so it's no necessary to set it by caller
 							((LinkageByColumnName) newMapping).primaryKey();
-						} else if (newMapping instanceof FluentMappingBuilder.LinkageByColumn && !newMapping.isPrimaryKey()) {
+						} else if (newMapping instanceof LinkageByColumn && !newMapping.isPrimaryKey()) {
 							// safeguard about a missconfiguration, even if mapping would work it smells bad configuration
 							throw new IllegalArgumentException("Identifier policy is assigned on a non primary key column");
 						} else {
@@ -250,21 +263,33 @@ public class FluentMappingBuilder<T extends Identified, I extends StatefullIdent
 					} else {
 						throw new NotYetSupportedOperationException(identifierPolicy + " is not yet supported");
 					}
-					FluentMappingBuilder.this.identifierAccessor = (PropertyAccessor<T, I>) newMapping.getAccessor();
+					FluentMappingBuilder.this.identifierAccessor = (PropertyAccessor<C, I>) newMapping.getAccessor();
 					// we return the fluent builder so user can chain with any other configuration
 					return FluentMappingBuilder.this;
 				})
 				.fallbackOn(this)
-				.build((Class<IFluentMappingBuilderColumnOptions<T, I>>) (Class) IFluentMappingBuilderColumnOptions.class);
+				.build((Class<IFluentMappingBuilderColumnOptions<C, I>>) (Class) IFluentMappingBuilderColumnOptions.class);
 	}
 	
 	@Override
-	public <O extends Identified, J extends StatefullIdentifier> IFluentMappingBuilderOneToOneOptions<T, I> addOneToOne(SerializableFunction<T, O> getter,
+	public IFluentMappingBuilder<C, I> mapSuperClass(Class<? super C> superType, ClassMappingStrategy<? super C, ?, ?> mappingStrategy) {
+		inheritanceMapping.put(superType, mappingStrategy);
+		return this;
+	}
+	
+	@Override
+	public IFluentMappingBuilder<C, I> mapSuperClass(Class<? super C> superType, EmbeddedBeanMappingStrategy<? super C, ?> mappingStrategy) {
+		inheritanceMapping.put(superType, mappingStrategy);
+		return this;
+	}
+	
+	@Override
+	public <O extends Identified, J extends StatefullIdentifier> IFluentMappingBuilderOneToOneOptions<C, I> addOneToOne(SerializableFunction<C, O> getter,
 																														Persister<O, J, ? extends Table> persister) {
 		// we declare the column on our side: we do it first because it checks some rules
 		add(getter);
 		// we keep it
-		CascadeOne<T, O, J> cascadeOne = new CascadeOne<>(getter, persister, captureLambdaMethod(getter));
+		CascadeOne<C, O, J> cascadeOne = new CascadeOne<>(getter, persister, captureLambdaMethod(getter));
 		this.cascadeOnes.add(cascadeOne);
 		// then we return an object that allows fluent settings over our OneToOne cascade instance
 		return new MethodDispatcher()
@@ -282,24 +307,24 @@ public class FluentMappingBuilder<T extends Identified, I extends StatefullIdent
 					}
 				}, true)	// true to allow "return null" in implemented methods
 				.fallbackOn(this)
-				.build((Class<IFluentMappingBuilderOneToOneOptions<T, I>>) (Class) IFluentMappingBuilderOneToOneOptions.class);
+				.build((Class<IFluentMappingBuilderOneToOneOptions<C, I>>) (Class) IFluentMappingBuilderOneToOneOptions.class);
 	}
 	
 	@Override
-	public <O extends Identified, J extends StatefullIdentifier, C extends Collection<O>> IFluentMappingBuilderOneToManyOptions<T, I, O> addOneToManySet(
-			SerializableFunction<T, C> getter, Persister<O, J, ? extends Table> persister) {
-		CascadeMany<T, O, J, C> cascadeMany = new CascadeMany<>(getter, persister, captureLambdaMethod(getter));
+	public <O extends Identified, J extends StatefullIdentifier, S extends Collection<O>> IFluentMappingBuilderOneToManyOptions<C, I, O> addOneToManySet(
+			SerializableFunction<C, S> getter, Persister<O, J, ? extends Table> persister) {
+		CascadeMany<C, O, J, S> cascadeMany = new CascadeMany<>(getter, persister, captureLambdaMethod(getter));
 		this.cascadeManys.add(cascadeMany);
 		return new MethodDispatcher()
 				.redirect(OneToManyOptions.class, new OneToManyOptionsSupport<>(cascadeMany), true)	// true to allow "return null" in implemented methods
 				.fallbackOn(this)
-				.build((Class<IFluentMappingBuilderOneToManyOptions<T, I, O>>) (Class) IFluentMappingBuilderOneToManyOptions.class);
+				.build((Class<IFluentMappingBuilderOneToManyOptions<C, I, O>>) (Class) IFluentMappingBuilderOneToManyOptions.class);
 	}
 	
 	@Override
-	public <O extends Identified, J extends StatefullIdentifier, C extends List<O>> IFluentMappingBuilderOneToManyListOptions<T, I, O> addOneToManyList(
-			SerializableFunction<T, C> getter, Persister<O, J, ? extends Table> persister) {
-		CascadeManyList<T, O, J, ? extends List<O>> cascadeMany = new CascadeManyList<>(getter, persister, captureLambdaMethod(getter));
+	public <O extends Identified, J extends StatefullIdentifier, S extends List<O>> IFluentMappingBuilderOneToManyListOptions<C, I, O> addOneToManyList(
+			SerializableFunction<C, S> getter, Persister<O, J, ? extends Table> persister) {
+		CascadeManyList<C, O, J, ? extends List<O>> cascadeMany = new CascadeManyList<>(getter, persister, captureLambdaMethod(getter));
 		this.cascadeManys.add(cascadeMany);
 		return new MethodDispatcher()
 				.redirect(OneToManyOptions.class, new OneToManyOptionsSupport<>(cascadeMany), true)	// true to allow "return null" in implemented methods
@@ -308,26 +333,26 @@ public class FluentMappingBuilder<T extends Identified, I extends StatefullIdent
 					return null;	// we can return null because dispatcher will return proxy
 				}, true)	// true to allow "return null" in implemented methods
 				.fallbackOn(this)
-				.build((Class<IFluentMappingBuilderOneToManyListOptions<T, I, O>>) (Class) IFluentMappingBuilderOneToManyListOptions.class);
+				.build((Class<IFluentMappingBuilderOneToManyListOptions<C, I, O>>) (Class) IFluentMappingBuilderOneToManyListOptions.class);
 	}
 	
 	@Override
-	public <O> IFluentMappingBuilderEmbedOptions<T, I> embed(SerializableBiConsumer<T, O> setter) {
-		Inset<T, O> inset = new Inset<>(setter);
+	public <O> IFluentMappingBuilderEmbedOptions<C, I> embed(SerializableBiConsumer<C, O> setter) {
+		Inset<C, O> inset = new Inset<>(setter);
 		insets.add(inset);
 		return embed(inset);
 	}
 	
 	@Override
-	public <O> IFluentMappingBuilderEmbedOptions<T, I> embed(SerializableFunction<T, O> getter) {
-		Inset<T, O> inset = new Inset<>(getter);
+	public <O> IFluentMappingBuilderEmbedOptions<C, I> embed(SerializableFunction<C, O> getter) {
+		Inset<C, O> inset = new Inset<>(getter);
 		insets.add(inset);
 		return embed(inset);
 	}
 	
-	private <O> IFluentMappingBuilderEmbedOptions<T, I> embed(Inset<T, O> inset) {
+	private <O> IFluentMappingBuilderEmbedOptions<C, I> embed(Inset<C, O> inset) {
 		return new MethodDispatcher()
-				.redirect(EmbedOptions.class, new EmbedOptions() {
+				.redirect(EmbedWithColumnOptions.class, new EmbedWithColumnOptions() {
 					@Override
 					public IFluentMappingBuilderEmbedOptions overrideName(SerializableFunction getter, String columnName) {
 						inset.overrideName(getter, columnName);
@@ -345,17 +370,17 @@ public class FluentMappingBuilder<T extends Identified, I extends StatefullIdent
 					}
 				}, true)
 				.fallbackOn(this)
-				.build((Class<IFluentMappingBuilderEmbedOptions<T, I>>) (Class) IFluentMappingBuilderEmbedOptions.class);
+				.build((Class<IFluentMappingBuilderEmbedOptions<C, I>>) (Class) IFluentMappingBuilderEmbedOptions.class);
 	}
 	
 	@Override
-	public IFluentMappingBuilder<T, I> foreignKeyNamingStrategy(ForeignKeyNamingStrategy foreignKeyNamingStrategy) {
+	public IFluentMappingBuilder<C, I> foreignKeyNamingStrategy(ForeignKeyNamingStrategy foreignKeyNamingStrategy) {
 		this.foreignKeyNamingStrategy = foreignKeyNamingStrategy;
 		return this;
 	}
 	
 	@Override
-	public IFluentMappingBuilder<T, I> joinColumnNamingStrategy(JoinColumnNamingStrategy columnNamingStrategy) {
+	public IFluentMappingBuilder<C, I> joinColumnNamingStrategy(JoinColumnNamingStrategy columnNamingStrategy) {
 		this.columnNamingStrategy = columnNamingStrategy;
 		return this;
 	}
@@ -370,93 +395,145 @@ public class FluentMappingBuilder<T extends Identified, I extends StatefullIdent
 	 * </ul>
 	 * 
 	 * @param getter the funciton that gives access to the versioning property
-	 * @param <C> type of the versioning property, determines versioning policy
+	 * @param <V> type of the versioning property, determines versioning policy
 	 * @return this
 	 * @see #versionedBy(SerializableFunction, Serie)
 	 */
 	@Override
-	public <C> IFluentMappingBuilder<T, I> versionedBy(SerializableFunction<T, C> getter) {
+	public <V> IFluentMappingBuilder<C, I> versionedBy(SerializableFunction<C, V> getter) {
 		Method method = captureLambdaMethod(getter);
-		Serie<C> serie;
+		Serie<V> serie;
 		if (Integer.class.isAssignableFrom(method.getReturnType())) {
-			serie = (Serie<C>) Serie.INTEGER_SERIE;
+			serie = (Serie<V>) Serie.INTEGER_SERIE;
 		} else if (Long.class.isAssignableFrom(method.getReturnType())) {
-			serie = (Serie<C>) Serie.LONG_SERIE;
+			serie = (Serie<V>) Serie.LONG_SERIE;
 		} else if (Date.class.isAssignableFrom(method.getReturnType())) {
-			serie = (Serie<C>) Serie.NOW_SERIE;
+			serie = (Serie<V>) Serie.NOW_SERIE;
 		} else {
 			throw new NotImplementedException("Type of versioned property is not implemented, please provide a "
-					+ Serie.class.getSimpleName() + " for it : " + method.getReturnType());
+					+ Serie.class.getSimpleName() + " for it : " + Reflections.toString(method.getReturnType()));
 		}
 		return versionedBy(getter, method, serie);
 	}
 	
 	@Override
-	public <C> IFluentMappingBuilder<T, I> versionedBy(SerializableFunction<T, C> getter, Serie<C> serie) {
+	public <V> IFluentMappingBuilder<C, I> versionedBy(SerializableFunction<C, V> getter, Serie<V> serie) {
 		return versionedBy(getter, captureLambdaMethod(getter), serie);
 	}
 	
-	public <C> IFluentMappingBuilder<T, I> versionedBy(SerializableFunction<T, C> getter, Method method, Serie<C> serie) {
+	public <V> IFluentMappingBuilder<C, I> versionedBy(SerializableFunction<C, V> getter, Method method, Serie<V> serie) {
 		optimisticLockOption = new OptimisticLockOption<>(Accessors.of(method), serie);
 		add(getter);
 		return this;
 	}
 	
 	/**
-	 * Create all necessary columns on the table
+	 * Creates all necessary columns on the table
 	 * @param dialect necessary for some checking
 	 * @return the mapping between "property" to column
 	 */
-	private Map<PropertyAccessor, Column> buildMapping(Dialect dialect) {
-		Map<PropertyAccessor, Column> columnMapping = new HashMap<>();
+	private Map<IReversibleAccessor, Column> buildMapping(Dialect dialect) {
+		Map<IReversibleAccessor, Column> result = new HashMap<>();
+		// first we add mapping coming from inheritance, then it can be overwritten by class mapping 
+		result.putAll(buildMappingFromInheritance());
+		// converting mapping field to method result
 		mapping.forEach(linkage -> {
-					Column column;
-					if (linkage instanceof LinkageByColumnName) {
-						column = getTable().addColumn(linkage.getColumnName(), linkage.getColumnType());
-						// assert that column binder is registered : it will throw en exception if the binder is not found
-						dialect.getColumnBinderRegistry().getBinder(column);
-						// setting the primary key option as asked
-						if (linkage.isPrimaryKey()) {
-							column.primaryKey();
-						}
-					} else if (linkage instanceof LinkageByColumn) {
-						column = ((LinkageByColumn) linkage).getColumn();
-					} else {
-						throw new NotImplementedException(linkage.getClass());
-					}
-					columnMapping.put(linkage.getAccessor(), column);
+			Column column;
+			if (linkage instanceof LinkageByColumnName) {
+				column = getTable().addColumn(linkage.getColumnName(), linkage.getColumnType());
+				// assert that column binder is registered : it will throw en exception if the binder is not found
+				dialect.getColumnBinderRegistry().getBinder(column);
+				// setting the primary key option as asked
+				if (linkage.isPrimaryKey()) {
+					column.primaryKey();
 				}
-		);
-		return columnMapping;
+			} else if (linkage instanceof LinkageByColumn) {
+				column = ((LinkageByColumn) linkage).getColumn();
+			} else {
+				throw new NotImplementedException(linkage.getClass());
+			}
+			result.put(linkage.getAccessor(), column);
+		});
+		return result;
+	}
+	
+	private Map<IReversibleAccessor, Column> buildMappingFromInheritance() {
+		Map<IReversibleAccessor, Column> result = new HashMap<>();
+		inheritanceMapping.forEach((superType, mappingStrategy) -> {
+			// We transfer columns and mapping of the inherited source to the current mapping
+			EmbeddedBeanMappingStrategy<? super C, ?> embeddableMappingStrategy;
+			if (mappingStrategy instanceof EmbeddedBeanMappingStrategy) {
+				embeddableMappingStrategy = (EmbeddedBeanMappingStrategy) mappingStrategy;
+			} else if (mappingStrategy instanceof ClassMappingStrategy) {
+				embeddableMappingStrategy = ((ClassMappingStrategy) mappingStrategy).getMainMappingStrategy();
+			} else {
+				// in case of evolution in the Linkage API
+				throw new NotImplementedException(mappingStrategy.getClass());
+			}
+			result.putAll(collectMapping(embeddableMappingStrategy));
+			// Dealing with identifier
+			if (mappingStrategy instanceof ClassMappingStrategy) {
+				ClassMappingStrategy entityMappingStrategy = (ClassMappingStrategy) mappingStrategy;
+				result.putAll(collectIdMapping(entityMappingStrategy));
+				// getting identifier insertion manager, may be overwritten by class mapping
+				this.identifierInsertionManager = (IdentifierInsertionManager<C, I>) entityMappingStrategy.getIdMappingStrategy().getIdentifierInsertionManager();
+			}
+		});
+		return result;
+	}
+	
+	private Map<IReversibleAccessor, Column> collectMapping(EmbeddedBeanMappingStrategy<? super C, ?> embeddableMappingStrategy) {
+		Map<IReversibleAccessor, Column> result = new HashMap<>();
+		Map<? extends IReversibleAccessor<? super C, Object>, ? extends Column<?, Object>> propertyToColumn =
+			embeddableMappingStrategy.getPropertyToColumn();
+		propertyToColumn.forEach((accessor, column) -> {
+			Column projectedColumn = table.addColumn(column.getName(), column.getJavaType());
+			// Note that we don't transfert primaryKey because it is done some lines after
+			projectedColumn.setAutoGenerated(column.isAutoGenerated());
+			projectedColumn.setNullable(column.isNullable());
+			result.put(accessor, projectedColumn);
+		});
+		return result;
+	}
+	
+	private Map<IReversibleAccessor, Column> collectIdMapping(ClassMappingStrategy entityMappingStrategy) {
+		Map<IReversibleAccessor, Column> result = new HashMap<>();
+		IdAccessor<? super C, ?> idAccessor = entityMappingStrategy.getIdMappingStrategy().getIdAccessor();
+		if (!(idAccessor instanceof SinglePropertyIdAccessor)) {
+			throw new NotYetSupportedOperationException();
+		}
+		IReversibleAccessor<? super C, ?> identifierAccessor = ((SinglePropertyIdAccessor<? super C, ?>) idAccessor).getIdAccessor();
+		Set<Column> columns = entityMappingStrategy.getTargetTable().getPrimaryKey().getColumns();
+		// Because IdAccessor is a single column one (see assertion above) we can get the only column composing the primary key
+		Column primaryKey = Iterables.first(columns);
+		Column projectedPrimarkey = table.addColumn(primaryKey.getName(), primaryKey.getJavaType()).primaryKey();
+		projectedPrimarkey.setAutoGenerated(primaryKey.isAutoGenerated());
+		result.put(identifierAccessor, projectedPrimarkey);
+		return result;
 	}
 	
 	@Override
-	public ClassMappingStrategy<T, I, Table> build(Dialect dialect) {
-		return buildClassMappingStrategy(dialect);
-	}
-	
-	@Override
-	public Persister<T, I, ?> build(PersistenceContext persistenceContext) {
-		ClassMappingStrategy<T, I, Table> mappingStrategy = build(persistenceContext.getDialect());
+	public Persister<C, I, ?> build(PersistenceContext persistenceContext) {
+		ClassMappingStrategy<C, I, Table> mainMappingStrategy = build(persistenceContext.getDialect());
 		
 		// by default, result is the simple persister of the main strategy
-		Persister<T, I, ?> result = persistenceContext.add(mappingStrategy);
+		Persister<C, I, ?> result = persistenceContext.add(mainMappingStrategy);
 		
 		if (!cascadeOnes.isEmpty() || !cascadeManys.isEmpty()) {
-			JoinedTablesPersister<T, I, ?> joinedTablesPersister = new JoinedTablesPersister<>(persistenceContext, mappingStrategy);
+			JoinedTablesPersister<C, I, ?> joinedTablesPersister = new JoinedTablesPersister<>(persistenceContext, mainMappingStrategy);
 			result = joinedTablesPersister;
 			if (!cascadeOnes.isEmpty()) {
 				// adding persistence flag setters on this side
 				CascadeOneConfigurer cascadeOneConfigurer = new CascadeOneConfigurer();
-				for (CascadeOne<T, ? extends Identified, ? extends StatefullIdentifier> cascadeOne : cascadeOnes) {
-					cascadeOneConfigurer.appendCascade(cascadeOne, joinedTablesPersister, mappingStrategy, joinedTablesPersister,
+				for (CascadeOne<C, ? extends Identified, ? extends StatefullIdentifier> cascadeOne : cascadeOnes) {
+					cascadeOneConfigurer.appendCascade(cascadeOne, joinedTablesPersister, mainMappingStrategy, joinedTablesPersister,
 							foreignKeyNamingStrategy);
 				}
 			}
 			
 			if (!cascadeManys.isEmpty()) {
 				CascadeManyConfigurer cascadeManyConfigurer = new CascadeManyConfigurer();
-				for (CascadeMany<T, ? extends Identified, ? extends StatefullIdentifier, ? extends Collection> cascadeMany : cascadeManys) {
+				for (CascadeMany<C, ? extends Identified, ? extends StatefullIdentifier, ? extends Collection> cascadeMany : cascadeManys) {
 					cascadeManyConfigurer.appendCascade(cascadeMany, joinedTablesPersister, foreignKeyNamingStrategy, associationTableNamingStrategy,
 							persistenceContext.getDialect());
 				}
@@ -494,8 +571,8 @@ public class FluentMappingBuilder<T extends Identified, I extends StatefullIdent
 				propertyMapping.put(Accessors.of(field), targetColumn);
 			});
 			// We simply register a specialized mapping strategy for the field into the main strategy
-			EmbeddedBeanMappingStrategy beanMappingStrategy = new EmbeddedBeanMappingStrategy(inset.embeddedClass, propertyMapping);
-			mappingStrategy.put(Accessors.of(inset.insetAccessor), beanMappingStrategy);
+			EmbeddedBeanMappingStrategy beanMappingStrategy = new EmbeddedBeanMappingStrategy(inset.embeddedClass, table, propertyMapping);
+			mainMappingStrategy.put(Accessors.of(inset.insetAccessor), beanMappingStrategy);
 		}
 		
 		Nullable<VersioningStrategy> versionigStrategy = Nullable.nullable(optimisticLockOption).apply(OptimisticLockOption::getVersioningStrategy);
@@ -511,23 +588,33 @@ public class FluentMappingBuilder<T extends Identified, I extends StatefullIdent
 		
 		return result;
 	}
-
-	private ClassMappingStrategy<T, I, Table> buildClassMappingStrategy(Dialect dialect) {
-		Map<PropertyAccessor, Column> columnMapping = buildMapping(dialect);
-		List<Entry<PropertyAccessor, Column>> identifierProperties = columnMapping.entrySet().stream().filter(e -> e.getValue().isPrimaryKey())
-				.collect(Collectors.toList());
-		PropertyAccessor<T, I> identifierProperty;
-		switch (identifierProperties.size()) {
-			case 0:
-				throw new IllegalArgumentException("Table without primary key is not supported");
-			case 1:
-				identifierProperty = (PropertyAccessor<T, I>) identifierProperties.get(0).getKey();
-				break;
-			default:
-				throw new IllegalArgumentException("Multiple columned primary key is not supported");
+	
+	@Override
+	public ClassMappingStrategy<C, I, Table> build(Dialect dialect) {
+		if (this.identifierAccessor == null) {
+			SerializableBiFunction<ColumnOptions, IdentifierPolicy, IFluentMappingBuilder> identifierMethodReference = ColumnOptions::identifier;
+			Method identifierSetter = this.methodSpy.findMethod(identifierMethodReference);
+			throw new UnsupportedOperationException("Identifier is not defined, please add one throught " + Reflections.toString(identifierSetter));
+		}
+		Map<IReversibleAccessor, Column> columnMapping = buildMapping(dialect);
+		Column primaryKey = columnMapping.get(this.identifierAccessor);
+		if (primaryKey == null) {
+			throw new UnsupportedOperationException("Table without primary key is not supported");
+		} else {
+			List<IReversibleAccessor> identifierAccessors = collect(columnMapping.entrySet(), e -> e.getValue().isPrimaryKey(), Entry::getKey, ArrayList::new);
+			if (identifierAccessors.size() > 1) {
+				throw new NotYetSupportedOperationException("Composed primary key is not yet supported");
+			}
 		}
 		
-		return new ClassMappingStrategy<>(persistedClass, table, (Map) columnMapping, identifierProperty, this.identifierInsertionManager);
+		return new ClassMappingStrategy<>(persistedClass, table, (Map) columnMapping, identifierAccessor, this.identifierInsertionManager);
+	}
+	
+	
+	@Override
+	public <T extends Table> EmbeddedBeanMappingStrategy<C, T> buildEmbeddable(Dialect dialect) {
+		Map<IReversibleAccessor, Column> columnMapping = buildMapping(dialect);
+		return new EmbeddedBeanMappingStrategy<>(persistedClass, table, (Map) columnMapping);
 	}
 	
 	
@@ -553,13 +640,14 @@ public class FluentMappingBuilder<T extends Identified, I extends StatefullIdent
 		/**
 		 * Constructor by {@link Method}. Only accessor by method is implemented (since input is from method reference).
 		 * (Doing it for field accessor is simple work but not necessary)
+		 * 
 		 * @param method a {@link PropertyAccessor}
 		 * @param columnName an override of the default name that will be generated
 		 */
 		private LinkageByColumnName(Method method, String columnName) {
 			this.function = Accessors.of(method);
 			this.columnType = Reflections.propertyType(method);
-			this.columnName = columnName == null ? Reflections.propertyName(method) : columnName;
+			this.columnName = columnName;
 		}
 		
 		public <I> PropertyAccessor<T, I> getAccessor() {

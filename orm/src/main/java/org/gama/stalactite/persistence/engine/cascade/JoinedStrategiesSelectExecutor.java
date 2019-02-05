@@ -126,37 +126,38 @@ public class JoinedStrategiesSelectExecutor<C, I> {
 	public List<C> select(Collection<I> ids) {
 		// cutting ids into pieces, adjusting expected result size
 		List<List<I>> parcels = Collections.parcel(ids, blockSize);
-		
-		Query query = joinedStrategiesSelect.buildSelectQuery();
-		
-		// Creation of the where clause: we use a dynamic "in" operator clause to avoid multiple QueryBuilder instanciation
-		// NB: in the condition, table and columns are from the main strategy, so there's no need to use aliases
-		DMLNameProvider dmlNameProvider = new WhereClauseDMLNameProvider();
-		DMLGenerator dmlGenerator = new DMLGenerator(parameterBinderProvider, new NoopSorter(), dmlNameProvider);
-		DDLAppender whereClause = new JoinDMLAppender(dmlNameProvider);
-		query.getWhere().and(whereClause);
-		
-		// We ensure that the same Connection is used for all operations
-		ConnectionProvider localConnectionProvider = new SimpleConnectionProvider(connectionProvider.getCurrentConnection());
-		List<I> lastBlock = Iterables.last(parcels);
-		// keep only full blocks to run them on the fully filled "in" operator
-		int lastBlockSize = lastBlock.size();
-		if (lastBlockSize != blockSize) {
-			parcels = Collections.cutTail(parcels);
-		}
-		
 		List<C> result = new ArrayList<>(parcels.size() * blockSize);
-		QueryBuilder queryBuilder = new QueryBuilder(query);
 		if (!parcels.isEmpty()) {
-			// change parameter mark count to adapt "in" operator values
-			ParameterizedWhere tableParameterizedWhere = dmlGenerator.appendTupledWhere(whereClause, primaryKey.getColumns(), blockSize);
-			result.addAll(execute(localConnectionProvider, queryBuilder.toSQL(), parcels, tableParameterizedWhere.getColumnToIndex()));
-		}
-		if (!lastBlock.isEmpty()) {
-			// change parameter mark count to adapt "in" operator values, we must clear previous where clause
-			whereClause.getAppender().setLength(0);
-			ParameterizedWhere tableParameterizedWhere = dmlGenerator.appendTupledWhere(whereClause, primaryKey.getColumns(), lastBlock.size());
-			result.addAll(execute(localConnectionProvider, queryBuilder.toSQL(), java.util.Collections.singleton(lastBlock), tableParameterizedWhere.getColumnToIndex()));
+			Query query = joinedStrategiesSelect.buildSelectQuery();
+			
+			// Creation of the where clause: we use a dynamic "in" operator clause to avoid multiple QueryBuilder instanciation
+			// NB: in the condition, table and columns are from the main strategy, so there's no need to use aliases
+			DMLNameProvider dmlNameProvider = new WhereClauseDMLNameProvider();
+			DMLGenerator dmlGenerator = new DMLGenerator(parameterBinderProvider, new NoopSorter(), dmlNameProvider);
+			DDLAppender whereClause = new JoinDMLAppender(dmlNameProvider);
+			query.getWhere().and(whereClause);
+			
+			// We ensure that the same Connection is used for all operations
+			ConnectionProvider localConnectionProvider = new SimpleConnectionProvider(connectionProvider.getCurrentConnection());
+			List<I> lastBlock = Iterables.last(parcels, java.util.Collections.emptyList());
+			// keep only full blocks to run them on the fully filled "in" operator
+			int lastBlockSize = lastBlock.size();
+			if (lastBlockSize != blockSize) {
+				parcels = Collections.cutTail(parcels);
+			}
+			
+			QueryBuilder queryBuilder = new QueryBuilder(query);
+			if (!parcels.isEmpty()) {
+				// change parameter mark count to adapt "in" operator values
+				ParameterizedWhere tableParameterizedWhere = dmlGenerator.appendTupledWhere(whereClause, primaryKey.getColumns(), blockSize);
+				result.addAll(execute(localConnectionProvider, queryBuilder.toSQL(), parcels, tableParameterizedWhere.getColumnToIndex()));
+			}
+			if (!lastBlock.isEmpty()) {
+				// change parameter mark count to adapt "in" operator values, we must clear previous where clause
+				whereClause.getAppender().setLength(0);
+				ParameterizedWhere tableParameterizedWhere = dmlGenerator.appendTupledWhere(whereClause, primaryKey.getColumns(), lastBlock.size());
+				result.addAll(execute(localConnectionProvider, queryBuilder.toSQL(), java.util.Collections.singleton(lastBlock), tableParameterizedWhere.getColumnToIndex()));
+			}
 		}
 		return result;
 	}
