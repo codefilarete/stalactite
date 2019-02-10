@@ -1,32 +1,51 @@
 package org.gama.stalactite.persistence.engine;
 
 import java.lang.reflect.Field;
+import java.lang.reflect.Member;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Optional;
+import java.util.Set;
+import java.util.TreeSet;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
 import org.danekja.java.util.function.serializable.SerializableBiConsumer;
 import org.danekja.java.util.function.serializable.SerializableFunction;
 import org.gama.lang.Reflections;
 import org.gama.lang.bean.FieldIterator;
+import org.gama.lang.bean.Objects;
 import org.gama.lang.collection.Arrays;
+import org.gama.lang.collection.Iterables;
 import org.gama.lang.exception.NotImplementedException;
+import org.gama.lang.function.SerializableTriFunction;
 import org.gama.lang.reflect.MethodDispatcher;
+import org.gama.reflection.AccessorByMethod;
+import org.gama.reflection.AccessorByMethodReference;
 import org.gama.reflection.AccessorChain;
 import org.gama.reflection.AccessorChainMutator;
 import org.gama.reflection.Accessors;
 import org.gama.reflection.IReversibleAccessor;
 import org.gama.reflection.MethodReferenceCapturer;
+import org.gama.reflection.MethodReferences;
+import org.gama.reflection.MutatorByMethod;
+import org.gama.reflection.MutatorByMethodReference;
 import org.gama.reflection.PropertyAccessor;
 import org.gama.stalactite.persistence.id.Identified;
 import org.gama.stalactite.persistence.mapping.EmbeddedBeanMappingStrategy;
 import org.gama.stalactite.persistence.sql.Dialect;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
+
+import static org.gama.lang.bean.Objects.preventNull;
+import static org.gama.reflection.MethodReferences.toMethodReferenceString;
 
 /**
  * @author Guillaume Mary
@@ -93,7 +112,7 @@ public class FluentEmbeddableMappingConfigurationSupport<C> implements IFluentEm
 	}
 	
 	@Override
-	public IFluentEmbeddableMappingBuilder<C> add(SerializableFunction<C, ?> getter, String columnName) {
+	public <O> IFluentEmbeddableMappingBuilder<C> add(SerializableFunction<C, O> getter, String columnName) {
 		Method method = captureLambdaMethod(getter);
 		return add(method, columnName);
 	}
@@ -114,12 +133,12 @@ public class FluentEmbeddableMappingConfigurationSupport<C> implements IFluentEm
 		Predicate<Linkage> checker = ((Predicate<Linkage>) linkage -> {
 			PropertyAccessor<C, ?> accessor = linkage.getAccessor();
 			if (accessor.equals(propertyAccessor)) {
-				throw new IllegalArgumentException("Mapping is already defined by method " + accessor.getAccessor());
+				throw new MappingConfigurationException("Mapping is already defined by method " + accessor.getAccessor());
 			}
 			return true;
 		}).and(linkage -> {
 			if (columnName != null && columnName.equals(linkage.getColumnName())) {
-				throw new IllegalArgumentException("Mapping is already defined for column " + columnName);
+				throw new MappingConfigurationException("Mapping is already defined for column " + columnName);
 			}
 			return true;
 		});
@@ -133,32 +152,50 @@ public class FluentEmbeddableMappingConfigurationSupport<C> implements IFluentEm
 	}
 	
 	@Override
-	public <O> IFluentEmbeddableMappingBuilderEmbedOptions<C> embed(SerializableBiConsumer<C, O> setter) {
+	public <O> IFluentEmbeddableMappingBuilderEmbedOptions<C, O> embed(SerializableBiConsumer<C, O> setter) {
 		Inset<C, O> inset = new Inset<>(setter);
 		insets.add(inset);
 		return embed(inset);
 	}
 	
 	@Override
-	public <O> IFluentEmbeddableMappingBuilderEmbedOptions<C> embed(SerializableFunction<C, O> getter) {
+	public <O> IFluentEmbeddableMappingBuilderEmbedOptions<C, O> embed(SerializableFunction<C, O> getter) {
 		Inset<C, O> inset = new Inset<>(getter);
 		insets.add(inset);
 		return embed(inset);
 	}
 	
-	private <O> IFluentEmbeddableMappingBuilderEmbedOptions<C> embed(Inset<C, O> inset) {
-		return new MethodDispatcher()
+	private <O> IFluentEmbeddableMappingBuilderEmbedOptions<C, O> embed(Inset<C, O> inset) {
+		IFluentEmbeddableMappingBuilderEmbedOptions<C, O>[] build = new IFluentEmbeddableMappingBuilderEmbedOptions[1];
+		build[0] = new MethodDispatcher()
 				.redirect(EmbedOptions.class, new EmbedOptions() {
 					@Override
-					public IFluentEmbeddableMappingBuilderEmbedOptions overrideName(SerializableFunction getter, String columnName) {
+					public EmbedOptions overrideName(SerializableFunction getter, String columnName) {
 						inset.overrideName(getter, columnName);
 						// we can't return this nor FluentMappingBuilder.this because none of them implements IFluentMappingBuilderEmbedOptions
 						// so we return anything (null) and ask for returning proxy
-						return null;
+						return build[0];
 					}
-				}, true)
+					
+					@Override
+					public EmbedOptions innerEmbed(SerializableFunction getter) {
+						Inset<C, O> inset = new Inset<>(getter);
+						insets.add(inset);
+						// we return this local object so one can use overrideName(..) on it
+						return embed(inset);
+					}
+					
+					@Override
+					public EmbedOptions innerEmbed(SerializableBiConsumer setter) {
+						Inset<C, O> inset = new Inset<>(setter);
+						insets.add(inset);
+						// we return this local object so one can use overrideName(..) on it
+						return embed(inset);
+					}
+				}) // NB: we don't return proxy because implementation returns its own object, in order to "inner" insets
 				.fallbackOn(this)
-				.build((Class<IFluentEmbeddableMappingBuilderEmbedOptions<C>>) (Class) IFluentEmbeddableMappingBuilderEmbedOptions.class);
+				.build((Class<IFluentEmbeddableMappingBuilderEmbedOptions<C, O>>) (Class) IFluentEmbeddableMappingBuilderEmbedOptions.class);
+		return build[0];
 	}
 	
 	/**
@@ -238,23 +275,28 @@ public class FluentEmbeddableMappingConfigurationSupport<C> implements IFluentEm
 	 * @param <TRGT> the target type
 	 */
 	private class Inset<SRC, TRGT> {
+		private final PropertyAccessor<SRC, TRGT> accessor;
 		private final Class<TRGT> embeddedClass;
 		private final Method insetAccessor;
 		private final Map<Field, String> overridenColumnNames = new HashMap<>();
 		private final Map<Field, Column> overridenColumns = new HashMap<>();
 		
-		private Inset(SerializableBiConsumer<SRC, TRGT> targetProvider) {
-			this(captureLambdaMethod(targetProvider));
-		}
-		
-		private Inset(SerializableFunction<SRC, TRGT> targetProvider) {
-			this(captureLambdaMethod(targetProvider));
-		}
-		
-		private Inset(Method insetAccessor) {
-			this.insetAccessor = insetAccessor;
+		private Inset(SerializableBiConsumer<SRC, TRGT> targetSetter) {
+			this.insetAccessor = captureLambdaMethod(targetSetter);
+			this.accessor = new PropertyAccessor<>(
+					(AccessorByMethod<SRC, TRGT>) new MutatorByMethod<>(insetAccessor).toAccessor(),
+					new MutatorByMethodReference<>(targetSetter));
 			// looking for the target type because its necessary to find its persister (and other objects)
-			this.embeddedClass = (Class<TRGT>) Reflections.javaBeanTargetType(this.insetAccessor);
+			this.embeddedClass = (Class<TRGT>) Reflections.javaBeanTargetType(insetAccessor);
+		}
+		
+		private Inset(SerializableFunction<SRC, TRGT> targetGetter) {
+			this.insetAccessor = captureLambdaMethod(targetGetter);
+			this.accessor = new PropertyAccessor<>(
+					new AccessorByMethodReference<>(targetGetter),
+					((AccessorByMethod<SRC, TRGT>) new AccessorByMethod<>(insetAccessor)).toMutator());
+			// looking for the target type because its necessary to find its persister (and other objects)
+			this.embeddedClass = (Class<TRGT>) Reflections.javaBeanTargetType(insetAccessor);
 		}
 		
 		public void overrideName(SerializableFunction methodRef, String columnName) {
@@ -274,13 +316,14 @@ public class FluentEmbeddableMappingConfigurationSupport<C> implements IFluentEm
 		private final Dialect dialect;
 		private final Table targetTable;
 		
+		private Map<IReversibleAccessor, Column> result = new HashMap<>();
+		
 		public Builder(Dialect dialect, Table targetTable) {
 			this.dialect = dialect;
 			this.targetTable = targetTable;
 		}
 		
 		private Map<IReversibleAccessor, Column> build() {
-			Map<IReversibleAccessor, Column> result = new HashMap<>();
 			// first we add mapping coming from inheritance, then it can be overwritten by class mapping 
 			result.putAll(buildMappingFromInheritance());
 			// converting mapping field to method result
@@ -325,11 +368,48 @@ public class FluentEmbeddableMappingConfigurationSupport<C> implements IFluentEm
 		
 		private Map<IReversibleAccessor, Column> buildEmbeddedMapping() {
 			Map<String, Column<Table, Object>> columnsPerName = targetTable.mapColumnsOnName();
-			Map<IReversibleAccessor, Column> result = new HashMap<>();
-			for (Inset<?, ?> inset : insets) {
+			Map<IReversibleAccessor, Column> toReturn = new HashMap<>();
+			Set<Inset> treatedInsets = new HashSet<>();
+			Set<Member> insetsPropertyIndex = new TreeSet<>(new Comparator<Member>() {
+				@Override
+				public int compare(Member o1, Member o2) {
+					int classGap = o1.getDeclaringClass().hashCode() - o2.getDeclaringClass().hashCode();
+					int nameGap = properyName(o1).hashCode() - properyName(o2).hashCode();
+					return classGap * 31 + nameGap;
+				}
+				
+				private String properyName(Member member) {
+					if (member instanceof Method) {
+						return Reflections.propertyName((Method) member);
+					} else {
+						return member.getName();
+					}
+				}
+			});
+			insets.forEach(i -> insetsPropertyIndex.add(i.insetAccessor));
+			
+			insets.forEach(inset -> {
+				Optional<Inset> alreadyMappedType = treatedInsets.stream().filter(i -> i.embeddedClass == inset.embeddedClass).findFirst();
+				if (alreadyMappedType.isPresent()) {
+					Set<Field> expectedOverridenFields = new HashSet<>(Iterables.copy(new FieldIterator(inset.embeddedClass)));
+					Set<Field> overridenFields = inset.overridenColumnNames.keySet();
+					boolean allFieldsAreOverriden = overridenFields.equals(expectedOverridenFields);
+					if (!allFieldsAreOverriden) {
+						Method currentMethod = inset.insetAccessor;
+						String currentMethodReference = toMethodReferenceString(currentMethod);
+						Method conflictingMethod = alreadyMappedType.get().insetAccessor;
+						String conflictingDeclaration = toMethodReferenceString(conflictingMethod);
+						expectedOverridenFields.removeAll(overridenFields);
+						throw new MappingConfigurationException(
+								currentMethodReference + " conflicts with " + conflictingDeclaration + " for embedding a " + Reflections.toString(inset.embeddedClass)
+										+ ", field names should be overriden : "
+										+ Iterables.minus(expectedOverridenFields, overridenFields).stream().map(Reflections::toString).collect(Collectors.joining(", ")));
+					}
+				}
 				// Building the mapping of the value-object's fields to the table
 				FieldIterator fieldIterator = new FieldIterator(inset.embeddedClass);
-				fieldIterator.forEachRemaining(field -> {
+				// NB: we skip fields that are registered as inset (inner embeddable) because they'll be treated by their own, skipping them avoids conflicts
+				Iterables.consumeAll(fieldIterator, Objects.not(insetsPropertyIndex::contains), (field, i) -> {
 					// looking for the targeted column
 					Column targetColumn;
 					// overriden column is taken first
@@ -338,7 +418,8 @@ public class FluentEmbeddableMappingConfigurationSupport<C> implements IFluentEm
 						targetColumn = overridenColumn;
 					} else {
 						// then we try an overriden name 
-						targetColumn = columnsPerName.get(field.getName());
+						String fieldColumnName = preventNull(inset.overridenColumnNames.get(field), field.getName());
+						targetColumn = columnsPerName.get(fieldColumnName);
 						if (targetColumn == null) {
 							// Column isn't declared in table => we create one from field informations
 							String columnName = field.getName();
@@ -347,7 +428,23 @@ public class FluentEmbeddableMappingConfigurationSupport<C> implements IFluentEm
 								columnName = overridenName;
 							}
 							targetColumn = targetTable.addColumn(columnName, field.getType());
+							// adding the newly created column to our index for next iterations because it may conflicts with mapping of other iteration
 							columnsPerName.put(columnName, targetColumn);
+						} else {
+							// checking that column is not already mapped by a previous definition
+							Column finalTargetColumn = targetColumn;
+							Optional<Entry<IReversibleAccessor, Column>> existingMapping =
+									Builder.this.result.entrySet().stream().filter(entry -> entry.getValue().equals(finalTargetColumn)).findFirst();
+							if (existingMapping.isPresent()) {
+								Method currentMethod = inset.insetAccessor;
+								String currentMethodReference = toMethodReferenceString(currentMethod);
+								throw new MappingConfigurationException("Error while mapping "
+										+ currentMethodReference + " : field " + Reflections.toString(field.getDeclaringClass()) + '.' + field.getName()
+										+ " conflicts with " + existingMapping.get().getKey() + " because they use same column" +
+										", override one of their name to avoid the conflict" +
+										", see " + MethodReferences.toMethodReferenceString(
+												(SerializableTriFunction<EmbedOptions, SerializableFunction, String, EmbedOptions>) EmbedOptions::overrideName));
+							}
 						}
 					}
 					
@@ -355,7 +452,7 @@ public class FluentEmbeddableMappingConfigurationSupport<C> implements IFluentEm
 					// - returns null when bean are not instanciated, so null will be inserted/updated in embedded columns
 					// - initializes values when its mutator will be used, so bean will create its embedded properties on select
 					// (voluntary dissimetric behavior)
-					AccessorChain c = new AccessorChain(Arrays.asList(Accessors.of(inset.insetAccessor), Accessors.of(field))) {
+					AccessorChain c = new AccessorChain(Arrays.asList(inset.accessor, Accessors.of(field))) {
 						@Override
 						public AccessorChainMutator toMutator() {
 							AccessorChainMutator result = super.toMutator();
@@ -363,10 +460,11 @@ public class FluentEmbeddableMappingConfigurationSupport<C> implements IFluentEm
 							return result;
 						}
 					}.setNullValueHandler(AccessorChain.RETURN_NULL);
-					result.put(c, targetColumn);
+					toReturn.put(c, targetColumn);
 				});
-			}
-			return result;
+				treatedInsets.add(inset);
+			});
+			return toReturn;
 		}
 	}
 }

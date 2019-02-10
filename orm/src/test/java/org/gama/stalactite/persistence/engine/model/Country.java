@@ -10,7 +10,7 @@ import org.gama.stalactite.persistence.id.Identifier;
 /**
  * @author Guillaume Mary
  */
-public class Country implements Identified<Long> {
+public class Country extends AbstractCountry implements Identified<Long> {
 	
 	private Identifier<Long> id;
 	
@@ -29,6 +29,8 @@ public class Country implements Identified<Long> {
 	private int version;
 	
 	private LocalDateTime modificationDate;
+	
+	private Timestamp timestamp;
 	
 	public Country() {
 	}
@@ -132,6 +134,14 @@ public class Country implements Identified<Long> {
 	
 	public LocalDateTime getModificationDate() {
 		return modificationDate;
+	}
+	
+	public Timestamp getTimestamp() {
+		return timestamp;
+	}
+	
+	public void setTimestamp(Timestamp timestamp) {
+		this.timestamp = timestamp;
 	}
 	
 	@Override

@@ -31,7 +31,7 @@ public interface IFluentMappingBuilder<C extends Identified, I extends Statefull
 	
 	<O> IFluentMappingBuilderColumnOptions<C, I> add(SerializableBiConsumer<C, O> setter, String columnName);
 	
-	IFluentMappingBuilderColumnOptions<C, I> add(SerializableFunction<C, ?> function, String columnName);
+	<O> IFluentMappingBuilderColumnOptions<C, I> add(SerializableFunction<C, O> function, String columnName);
 	
 	<O> IFluentMappingBuilderColumnOptions<C, I> add(SerializableFunction<C, O> getter, Column<Table, O> column);
 	
@@ -78,10 +78,10 @@ public interface IFluentMappingBuilder<C extends Identified, I extends Statefull
 	addOneToManyList(SerializableFunction<C, S> getter, Persister<O, J, ? extends Table> persister);
 	
 	@Override
-	<O> IFluentMappingBuilderEmbedOptions<C, I> embed(SerializableBiConsumer<C, O> setter);
+	<O> IFluentMappingBuilderEmbedOptions<C, I, O> embed(SerializableBiConsumer<C, O> setter);
 	
 	@Override
-	<O> IFluentMappingBuilderEmbedOptions<C, I> embed(SerializableFunction<C, O> getter);
+	<O> IFluentMappingBuilderEmbedOptions<C, I, O> embed(SerializableFunction<C, O> getter);
 	
 	IFluentMappingBuilder<C, I> foreignKeyNamingStrategy(ForeignKeyNamingStrategy foreignKeyNamingStrategy);
 	
@@ -157,8 +157,8 @@ public interface IFluentMappingBuilder<C extends Identified, I extends Statefull
 		IFluentMappingBuilderOneToManyListOptions<T, I, O> indexedBy(Column orderingColumn);
 	}
 	
-	interface IFluentMappingBuilderEmbedOptions<T extends Identified, I extends StatefullIdentifier>
-			extends IFluentMappingBuilder<T, I>, IFluentEmbeddableMappingConfigurationEmbedOptions<T>, EmbedWithColumnOptions<T> {
+	interface IFluentMappingBuilderEmbedOptions<T extends Identified, I extends StatefullIdentifier, O>
+			extends IFluentMappingBuilder<T, I>, IFluentEmbeddableMappingConfigurationEmbedOptions<T, O>, EmbedWithColumnOptions<O> {
 		
 		/**
 		 * Overrides embedding with an existing column
@@ -169,7 +169,7 @@ public interface IFluentMappingBuilder<C extends Identified, I extends Statefull
 		 * @return a mapping configurer, specialized for embedded elements
 		 */
 		@Override
-		<IN> IFluentMappingBuilderEmbedOptions<T, I> overrideName(SerializableFunction<IN, ?> function, String columnName);
+		<IN> IFluentMappingBuilderEmbedOptions<T, I, O> overrideName(SerializableFunction<O, IN> function, String columnName);
 		
 		/**
 		 * Overrides embedding with an existing target column
@@ -181,7 +181,7 @@ public interface IFluentMappingBuilder<C extends Identified, I extends Statefull
 		 * @return a mapping configurer, specialized for embedded elements
 		 */
 		@Override
-		<IN, OUT> IFluentMappingBuilderEmbedOptions<T, I> override(SerializableFunction<IN, OUT> function, Column<Table, OUT> targetColumn);
+		<IN, OUT> IFluentMappingBuilderEmbedOptions<T, I, O> override(SerializableFunction<O, IN> function, Column<Table, OUT> targetColumn);
 		
 	}
 	

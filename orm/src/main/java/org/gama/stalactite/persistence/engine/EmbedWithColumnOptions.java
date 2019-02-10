@@ -20,5 +20,5 @@ public interface EmbedWithColumnOptions<T> extends EmbedOptions<T> {
 	 * @param <OUT> ouput of the function (property type)
 	 * @return a mapping configurer, specialized for embedded elements
 	 */
-	<IN, OUT> EmbedWithColumnOptions<T> override(SerializableFunction<IN, OUT> function, Column<Table, OUT> targetColumn);
+	<IN, OUT> EmbedWithColumnOptions<T> override(SerializableFunction<T, IN> function, Column<Table, OUT> targetColumn);
 }

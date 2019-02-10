@@ -1,5 +1,6 @@
 package org.gama.stalactite.persistence.engine;
 
+import org.danekja.java.util.function.serializable.SerializableBiConsumer;
 import org.danekja.java.util.function.serializable.SerializableFunction;
 import org.gama.stalactite.persistence.structure.Table;
 
@@ -18,6 +19,26 @@ public interface EmbedOptions<T> {
 	 * @param <IN> input of the function (type of the embedded element)
 	 * @return a mapping configurer, specialized for embedded elements
 	 */
-	<IN> EmbedOptions<T> overrideName(SerializableFunction<IN, ?> function, String columnName);
+	<IN> EmbedOptions<T> overrideName(SerializableFunction<T, IN> function, String columnName);
 	
+	/**
+	 * Adds a complex-typed property as embedded into this embedded
+	 * Getter must have a matching field (Java bean naming convention) in its declaring class.
+	 *
+	 * @param getter the complex-typed property getter as a method reference
+	 * @param <IN> input of the function (type of the embedded element)
+	 * @return a mapping configurer, specialized for embedded elements
+	 */
+	<IN> EmbedOptions<IN> innerEmbed(SerializableFunction<T, IN> getter);
+	
+	/**
+	 * Adds a complex-typed property as embedded into this embedded
+	 * Setter must have a matching field (Java bean naming convention) in its declaring class.
+	 *
+	 * @param setter the complex-typed property setter as a method reference
+	 * @param <IN> input of the function (type of the embedded element)
+	 * @return a mapping configurer, specialized for embedded elements
+	 */
+	
+	<IN> EmbedOptions<IN> innerEmbed(SerializableBiConsumer<T, IN> setter);
 }

@@ -1,9 +1,12 @@
 package org.gama.stalactite.persistence.engine;
 
 import java.util.Date;
+import java.util.HashMap;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import org.gama.lang.Reflections;
+import org.gama.lang.collection.Arrays;
 import org.gama.lang.collection.Maps;
 import org.gama.sql.binder.DefaultParameterBinders;
 import org.gama.sql.binder.LambdaParameterBinder;
@@ -11,6 +14,8 @@ import org.gama.sql.binder.NullAwareParameterBinder;
 import org.gama.sql.result.Row;
 import org.gama.stalactite.persistence.engine.FluentMappingBuilderInheritanceTest.Car;
 import org.gama.stalactite.persistence.engine.FluentMappingBuilderInheritanceTest.Color;
+import org.gama.stalactite.persistence.engine.IFluentEmbeddableMappingBuilder.IFluentEmbeddableMappingBuilderEmbedOptions;
+import org.gama.stalactite.persistence.engine.model.AbstractCountry;
 import org.gama.stalactite.persistence.engine.model.Country;
 import org.gama.stalactite.persistence.engine.model.Person;
 import org.gama.stalactite.persistence.engine.model.Timestamp;
@@ -87,7 +92,7 @@ class FluentEmbeddableMappingBuilderSupportTest {
 	public void testAdd_mappingDefinedTwiceByMethod_throwsException() throws NoSuchMethodException {
 		Table<?> countryTable = new Table<>("countryTable");
 		assertEquals("Mapping is already defined by method " + Reflections.toString(Country.class.getMethod("getName")),
-				assertThrows(IllegalArgumentException.class, () -> FluentEmbeddableMappingConfigurationSupport.from(Country.class)
+				assertThrows(MappingConfigurationException.class, () -> FluentEmbeddableMappingConfigurationSupport.from(Country.class)
 						.add(Country::getName)
 						.add(Country::setName)
 						.build(DIALECT, countryTable))
@@ -98,7 +103,7 @@ class FluentEmbeddableMappingBuilderSupportTest {
 	public void testAdd_mappingDefinedTwiceByColumn_throwsException() {
 		Table<?> countryTable = new Table<>("countryTable");
 		assertEquals("Mapping is already defined for column xyz",
-				assertThrows(IllegalArgumentException.class, () -> FluentEmbeddableMappingConfigurationSupport.from(Country.class)
+				assertThrows(MappingConfigurationException.class, () -> FluentEmbeddableMappingConfigurationSupport.from(Country.class)
 						.add(Country::getName, "xyz")
 						.add(Country::setDescription, "xyz")
 						.build(DIALECT, countryTable))
@@ -265,5 +270,148 @@ class FluentEmbeddableMappingBuilderSupportTest {
 		row.put(createdAtColumn.getName(), car.getTimestamp().getCreationDate());
 		loadedCar = carMappingStrategy.transform(row);
 		assertEquals(car.getTimestamp().getCreationDate(), loadedCar.getTimestamp().getCreationDate());
+	}
+	
+	/**
+	 * Test to check that the API returns right Object which means:
+	 * - interfaces are well written to return right types, so one can chain others methods
+	 * - at runtime instance of the right type is also returned
+	 * (avoid "java.lang.ClassCastException: com.sun.proxy.$Proxy10 cannot be cast to org.gama.stalactite.persistence.engine
+	 * .IFluentEmbeddableMappingBuilder")
+	 * <p>
+	 * As many as possible combinations of method chaining should be done here, because all combination seems impossible, this test must be
+	 * considered
+	 * as a best effort, and any regression found in user code should be added here
+	 */
+	@Test
+	public void testFluentAPIWriting() {
+		Table<?> countryTable = new Table<>("countryTable");
+		
+		try {
+			FluentEmbeddableMappingConfigurationSupport.from(Country.class)
+					.add(Country::getName)
+					.embed(Country::getPresident)
+						.overrideName(Person::getId, "personId")
+						.overrideName(Person::getName, "personName")
+						.innerEmbed(Person::getTimestamp)
+					.embed(Country::getTimestamp)
+					.add(Country::getId)
+					.add(Country::setDescription, "zxx")
+					.mapSuperClass(Object.class, new EmbeddedBeanMappingStrategy<>(Object.class, new Table<>(""), new HashMap<>()))
+					.build(DIALECT, countryTable);
+		} catch (RuntimeException e) {
+			// Since we only want to test compilation, we don't care about that the above code throws an exception or not
+		}
+		
+		try {
+			FluentEmbeddableMappingConfigurationSupport.from(Country.class)
+					.add(Country::getName)
+					.embed(Country::getPresident)
+						.innerEmbed(Person::getTimestamp)
+					.embed(Country::getTimestamp)
+					.add(Country::getId, "zz")
+					.mapSuperClass(AbstractCountry.class, new EmbeddedBeanMappingStrategy<>(Object.class, new Table<>(""), new HashMap<>()))
+					.add(Country::getDescription, "xx")
+					.build(DIALECT, countryTable);
+		} catch (RuntimeException e) {
+			// Since we only want to test compilation, we don't care about that the above code throws an exception or not
+		}
+		
+		try {
+			FluentEmbeddableMappingConfigurationSupport.from(Country.class)
+					.add(Country::getName)
+					.add(Country::getId, "zz")
+					.mapSuperClass(AbstractCountry.class, new EmbeddedBeanMappingStrategy<>(Object.class, new Table<>(""), new HashMap<>()))
+					// embed with setter
+					.embed(Country::setPresident)
+						// inner embed with setter
+						.innerEmbed(Person::setTimestamp)
+						// embed with setter
+					.embed(Country::setTimestamp)
+					.add(Country::getDescription, "xx")
+					.add(Country::getDummyProperty, "dd")
+					.build(DIALECT, countryTable);
+		} catch (RuntimeException e) {
+			// Since we only want to test compilation, we don't care about that the above code throws an exception or not
+		}
+}
+	
+	@Test
+	public void testBuild_innerEmbed_withTwiceSameInnerEmbeddableName() {
+		Table<?> countryTable = new Table<>("countryTable");
+		IFluentEmbeddableMappingBuilderEmbedOptions<Country, Timestamp> mappingBuilder = FluentEmbeddableMappingConfigurationSupport.from(Country.class)
+				.add(Country::getName)
+				.embed(Country::getPresident)
+					.overrideName(Person::getName, "presidentName")
+					.innerEmbed(Person::getTimestamp)
+				// this embed will conflict with Country one because its type is already mapped with no override
+				.embed(Country::getTimestamp);
+		MappingConfigurationException thrownException = assertThrows(MappingConfigurationException.class, () -> mappingBuilder
+				.build(DIALECT, countryTable));
+		assertEquals("Country::getTimestamp conflicts with Person::getTimestamp for embedding a o.g.s.p.e.m.Timestamp" +
+				", field names should be overriden : j.u.Date o.g.s.p.e.m.Timestamp.modificationDate, j.u.Date o.g.s.p.e.m.Timestamp.creationDate", thrownException.getMessage());
+		
+		// we add an override, exception must still be thrown, with different message
+		mappingBuilder.overrideName(Timestamp::getModificationDate, "modifiedAt");
+		
+		thrownException = assertThrows(MappingConfigurationException.class, () -> mappingBuilder
+				.build(DIALECT, countryTable));
+		assertEquals("Country::getTimestamp conflicts with Person::getTimestamp for embedding a o.g.s.p.e.m.Timestamp" +
+				", field names should be overriden : j.u.Date o.g.s.p.e.m.Timestamp.creationDate", thrownException.getMessage());
+		
+		// we override the last field, no exception is thrown
+		mappingBuilder.overrideName(Timestamp::getCreationDate, "createdAt");
+		mappingBuilder.build(DIALECT, countryTable);
+		
+		assertEquals(Arrays.asHashSet(
+				// from Country
+				"name",
+				// from Person
+				"id", "version", "presidentName", "creationDate", "modificationDate",
+				// from Country.timestamp
+				"createdAt", "modifiedAt"),
+				countryTable.getColumns().stream().map(Column::getName).collect(Collectors.toSet()));
+	}
+	
+	@Test
+	public void testBuild_innerEmbed_withOverridenColumnName() {
+		Table<?> countryTable = new Table<>("countryTable");
+		EmbeddedBeanMappingStrategy<Country, Table<?>> personMappingStrategy = FluentEmbeddableMappingConfigurationSupport.from(Country.class)
+				.add(Country::getName)
+				.embed(Country::getPresident)
+					.overrideName(Person::getName, "presidentName")
+					.innerEmbed(Person::getTimestamp)
+						.overrideName(Timestamp::getCreationDate, "createdAt")
+				.build(DIALECT, countryTable);
+		
+		Map<String, Column> columnsByName = (Map) personMappingStrategy.getTargetTable().mapColumnsOnName();
+		
+		assertEquals(Arrays.asHashSet(
+				// from Country
+				"name",
+				// from Person
+				"id", "presidentName", "version",
+				// from Person.timestamp
+				"createdAt", "modificationDate"),
+				countryTable.getColumns().stream().map(Column::getName).collect(Collectors.toSet()));
+		
+		// checking types
+		assertEquals(Date.class, columnsByName.get("modificationDate").getJavaType());
+		assertEquals(Date.class, columnsByName.get("createdAt").getJavaType());
+		assertEquals(String.class, columnsByName.get("presidentName").getJavaType());
+	}
+	
+	@Test
+	public void testBuild_withTwiceSameEmbeddableNames_throwsException() {
+		Table<?> countryTable = new Table<>("countryTable");
+		IFluentEmbeddableMappingBuilderEmbedOptions<Country, Person> mappingBuilder = FluentEmbeddableMappingConfigurationSupport.from(Country.class)
+				.add(Country::getName)
+				.embed(Country::getPresident);
+		MappingConfigurationException thrownException = assertThrows(MappingConfigurationException.class,
+				() -> mappingBuilder.build(DIALECT, countryTable));
+		assertEquals("Error while mapping Country::getPresident : field o.g.s.p.e.m.Person.name" +
+				" conflicts with j.l.String o.g.s.p.e.m.Country.getName() because they use same column," +
+				" override one of their name to avoid the conflict, see EmbedOptions::overrideName", thrownException.getMessage());
+		
 	}
 }

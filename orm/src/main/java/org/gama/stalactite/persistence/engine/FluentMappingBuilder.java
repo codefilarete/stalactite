@@ -174,7 +174,7 @@ public class FluentMappingBuilder<C extends Identified, I extends StatefullIdent
 	}
 	
 	@Override
-	public IFluentMappingBuilderColumnOptions<C, I> add(SerializableFunction<C, ?> getter, String columnName) {
+	public <O> IFluentMappingBuilderColumnOptions<C, I> add(SerializableFunction<C, O> getter, String columnName) {
 		Method method = captureLambdaMethod(getter);
 		return add(method, columnName);
 	}
@@ -337,20 +337,20 @@ public class FluentMappingBuilder<C extends Identified, I extends StatefullIdent
 	}
 	
 	@Override
-	public <O> IFluentMappingBuilderEmbedOptions<C, I> embed(SerializableBiConsumer<C, O> setter) {
+	public <O> IFluentMappingBuilderEmbedOptions<C, I, O> embed(SerializableBiConsumer<C, O> setter) {
 		Inset<C, O> inset = new Inset<>(setter);
 		insets.add(inset);
 		return embed(inset);
 	}
 	
 	@Override
-	public <O> IFluentMappingBuilderEmbedOptions<C, I> embed(SerializableFunction<C, O> getter) {
+	public <O> IFluentMappingBuilderEmbedOptions<C, I, O> embed(SerializableFunction<C, O> getter) {
 		Inset<C, O> inset = new Inset<>(getter);
 		insets.add(inset);
 		return embed(inset);
 	}
 	
-	private <O> IFluentMappingBuilderEmbedOptions<C, I> embed(Inset<C, O> inset) {
+	private <O> IFluentMappingBuilderEmbedOptions<C, I, O> embed(Inset<C, O> inset) {
 		return new MethodDispatcher()
 				.redirect(EmbedWithColumnOptions.class, new EmbedWithColumnOptions() {
 					@Override
@@ -368,9 +368,21 @@ public class FluentMappingBuilder<C extends Identified, I extends StatefullIdent
 						// so we return anything (null) and ask for returning proxy
 						return null;
 					}
+					
+					@Override
+					public EmbedOptions innerEmbed(SerializableFunction getter) {
+						insets.add(inset);
+						return null;
+					}
+					
+					@Override
+					public EmbedOptions innerEmbed(SerializableBiConsumer setter) {
+						insets.add(inset);
+						return null;
+					}
 				}, true)
 				.fallbackOn(this)
-				.build((Class<IFluentMappingBuilderEmbedOptions<C, I>>) (Class) IFluentMappingBuilderEmbedOptions.class);
+				.build((Class<IFluentMappingBuilderEmbedOptions<C, I, O>>) (Class) IFluentMappingBuilderEmbedOptions.class);
 	}
 	
 	@Override
