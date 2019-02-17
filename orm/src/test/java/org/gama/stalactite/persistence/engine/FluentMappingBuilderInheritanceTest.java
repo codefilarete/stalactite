@@ -3,6 +3,7 @@ package org.gama.stalactite.persistence.engine;
 import javax.sql.DataSource;
 import java.util.List;
 import java.util.Objects;
+import java.util.function.Consumer;
 
 import org.gama.lang.collection.Arrays;
 import org.gama.sql.ConnectionProvider;
@@ -33,6 +34,7 @@ import static org.gama.sql.binder.DefaultParameterBinders.LONG_PRIMITIVE_BINDER;
 import static org.gama.stalactite.persistence.id.Identifier.LONG_TYPE;
 import static org.gama.stalactite.persistence.id.Identifier.identifierBinder;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 /**
  * @author Guillaume Mary
@@ -71,41 +73,41 @@ public class FluentMappingBuilderInheritanceTest {
 		cityPersister = CITY_MAPPING_BUILDER.build(persistenceContext);
 	}
 	
-	@Nested
-	public class MappedSuperClass {
+	/**
+	 * Data and method for common tests of building a strategy from a mapped super class
+	 */
+	private class MappedSuperClassData {
 		
-		@Test
-		public void testInsert() {
-			class VehiculeTable<SELF extends VehiculeTable<SELF>> extends Table<SELF> {
-				final Column<SELF, Identifier<Long>> idColumn = addColumn("id", (Class<Identifier<Long>>) (Class) Identifier.class).primaryKey();
-				final Column<SELF, Color> colorColumn = addColumn("color", Color.class);
-				
-				public VehiculeTable(String name) {
-					super(name);
-				}
+		class VehiculeTable<SELF extends VehiculeTable<SELF>> extends Table<SELF> {
+			final Column<SELF, Identifier<Long>> idColumn = addColumn("id", (Class<Identifier<Long>>) (Class) Identifier.class).primaryKey();
+			final Column<SELF, Color> colorColumn = addColumn("color", Color.class);
+			
+			public VehiculeTable(String name) {
+				super(name);
 			}
+		}
+		
+		class CarTable extends VehiculeTable<CarTable> {
+			final Column<CarTable, String> modelColumn = addColumn("model", String.class);
 			
-			VehiculeTable vehicleTable = new VehiculeTable("vehicule");
-			
-			class CarTable extends VehiculeTable<CarTable> {
-				final Column<CarTable, String> modelColumn = addColumn("model", String.class);
-				
-				public CarTable(String name) {
-					super(name);
-				}
+			public CarTable(String name) {
+				super(name);
 			}
+		}
+		
+		private final VehiculeTable vehicleTable = new VehiculeTable("vehicule");
+		
+		private final CarTable carTable = new CarTable("car");
+		
+		void executeTest(Consumer<IFluentMappingBuilder<Car, Identifier<Long>>> additionalConfigurator) {
 			
-			CarTable carTable = new CarTable("car");
-			
-			EmbeddedBeanMappingStrategy<Vehicle, Table> vehicleMappingStrategy = FluentMappingBuilder.from(Vehicle.class, LONG_TYPE, vehicleTable)
-					.add(Vehicle::getColor)
-					.buildEmbeddable(DIALECT);
-			
-			Persister<Car, Identifier<Long>, ?> carPersister = FluentMappingBuilder.from(Car.class, LONG_TYPE)
-					.add(Vehicle::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
+			IFluentMappingBuilder<Car, Identifier<Long>> carMappingBuilder = FluentMappingBuilder.from(Car.class, LONG_TYPE)
 					.add(Car::getModel)
-					.mapSuperClass(Vehicle.class, vehicleMappingStrategy)
-					.embed(Car::getColor)
+					.add(Car::getColor);	// note : we don't need to embed Color because it is defined in the Dialect registry
+			
+			additionalConfigurator.accept(carMappingBuilder);
+			
+			Persister<Car, Identifier<Long>, ?> carPersister = carMappingBuilder
 					.build(persistenceContext);
 			
 			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
@@ -125,6 +127,105 @@ public class FluentMappingBuilderInheritanceTest {
 			assertEquals(dummyCar, loadedCar);
 		}
 		
+	}
+	
+	@Nested
+	public class MappedSuperClass {
+		
+		@Test
+		public void superClassIsEmbeddable_withIdDefinedInConcreteClass() {
+			MappedSuperClassData mappedSuperClassData = new MappedSuperClassData();
+			
+			EmbeddedBeanMappingStrategy<Vehicle, Table> vehicleMappingStrategy = FluentEmbeddableMappingConfigurationSupport
+					.from(Vehicle.class)
+					.add(Vehicle::getColor)
+					.build(DIALECT, mappedSuperClassData.vehicleTable);
+			
+			mappedSuperClassData.executeTest(carMappingBuilder ->
+					carMappingBuilder
+							// concrete class defines id
+							.add(Car::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
+							.mapSuperClass(Vehicle.class, vehicleMappingStrategy));
+		}
+		
+		@Test
+		public void superClassIsEmbeddable_withoutIdDefined_throwsException() {
+			MappedSuperClassData mappedSuperClassData = new MappedSuperClassData();
+			
+			EmbeddedBeanMappingStrategy<Vehicle, Table> vehicleMappingStrategy = FluentEmbeddableMappingConfigurationSupport
+					.from(Vehicle.class)
+					.add(Vehicle::getColor)
+					.build(DIALECT, mappedSuperClassData.vehicleTable);
+			
+			UnsupportedOperationException thrownException = assertThrows(UnsupportedOperationException.class,
+					() -> mappedSuperClassData.executeTest(carMappingBuilder ->
+							carMappingBuilder
+									.mapSuperClass(Vehicle.class, vehicleMappingStrategy)));
+			
+			assertEquals("Identifier is not defined,"
+							+ " please add one throught o.g.s.p.e.IFluentMappingBuilder o.g.s.p.e.ColumnOptions.identifier(o.g.s.p.e.FluentMappingBuilder$IdentifierPolicy)",
+					thrownException.getMessage());
+		}
+		
+		@Test
+		public void superClassIsEntity_withIdDefinedInSuperClass() {
+			MappedSuperClassData mappedSuperClassData = new MappedSuperClassData();
+			
+			ClassMappingStrategy<Vehicle, Identifier<Long>, Table> vehicleMappingStrategy = FluentMappingBuilder
+					.from(Vehicle.class, LONG_TYPE, mappedSuperClassData.vehicleTable)
+					// mapped super class defines id
+					.add(Vehicle::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
+					.build(DIALECT);
+			
+			mappedSuperClassData.executeTest(carMappingBuilder ->
+					carMappingBuilder
+							.mapSuperClass(Vehicle.class, vehicleMappingStrategy));
+		}
+		
+		@Test
+		public void superClassIsEntity_multipleInheritance() {
+			MappedSuperClassData mappedSuperClassData = new MappedSuperClassData();
+			
+			ClassMappingStrategy<AbstractVehicle, Identifier<Long>, Table> abstractVehicleMappingStrategy = FluentMappingBuilder
+					.from(AbstractVehicle.class, LONG_TYPE, mappedSuperClassData.vehicleTable)
+					// mapped super class defines id
+					.add(AbstractVehicle::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
+					.build(DIALECT);
+			
+			ClassMappingStrategy<Vehicle, Identifier<Long>, Table> vehicleMappingStrategy = FluentMappingBuilder
+					.from(Vehicle.class, LONG_TYPE, mappedSuperClassData.vehicleTable)
+					.mapSuperClass(AbstractVehicle.class, abstractVehicleMappingStrategy)
+					// mapped super class defines id
+					.add(Vehicle::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
+					.build(DIALECT);
+			
+			mappedSuperClassData.executeTest(carMappingBuilder ->
+					carMappingBuilder
+							.mapSuperClass(Vehicle.class, vehicleMappingStrategy));
+		}
+		
+		@Test
+		public void superClassIsEntity_multipleMappedSuperClass() {
+			MappedSuperClassData mappedSuperClassData = new MappedSuperClassData();
+			
+			ClassMappingStrategy<AbstractVehicle, Identifier<Long>, Table> abstractVehicleMappingStrategy = FluentMappingBuilder
+					.from(AbstractVehicle.class, LONG_TYPE, mappedSuperClassData.vehicleTable)
+					// mapped super class defines id
+					.add(AbstractVehicle::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
+					.build(DIALECT);
+			
+			ClassMappingStrategy<Vehicle, Identifier<Long>, Table> vehicleMappingStrategy = FluentMappingBuilder
+					.from(Vehicle.class, LONG_TYPE, mappedSuperClassData.vehicleTable)
+					// mapped super class defines id
+					.add(Vehicle::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
+					.build(DIALECT);
+			
+			mappedSuperClassData.executeTest(carMappingBuilder ->
+					carMappingBuilder
+							.mapSuperClass(Vehicle.class, vehicleMappingStrategy)
+							.mapSuperClass(AbstractVehicle.class, abstractVehicleMappingStrategy)
+			);
+		}
 	}
 	
 	// TODO: à tester
@@ -155,7 +256,6 @@ public class FluentMappingBuilderInheritanceTest {
 		public Identifier<Long> getId() {
 			return id;
 		}
-		
 		
 		public Timestamp getTimestamp() {
 			return timestamp;

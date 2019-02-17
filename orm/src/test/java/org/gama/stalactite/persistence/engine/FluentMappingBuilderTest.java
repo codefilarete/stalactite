@@ -3,12 +3,18 @@ package org.gama.stalactite.persistence.engine;
 import java.sql.Connection;
 import java.util.Date;
 import java.util.Map;
+import java.util.stream.Collectors;
 
+import org.gama.lang.InvocationHandlerSupport;
 import org.gama.lang.Reflections;
+import org.gama.lang.collection.Arrays;
 import org.gama.sql.SimpleConnectionProvider;
 import org.gama.sql.binder.DefaultParameterBinders;
 import org.gama.stalactite.persistence.engine.FluentMappingBuilder.IdentifierPolicy;
 import org.gama.stalactite.persistence.engine.IFluentMappingBuilder.IFluentMappingBuilderColumnOptions;
+import org.gama.stalactite.persistence.engine.IFluentMappingBuilder.IFluentMappingBuilderEmbedOptions;
+import org.gama.stalactite.persistence.engine.model.Country;
+import org.gama.stalactite.persistence.engine.model.Person;
 import org.gama.stalactite.persistence.engine.model.Timestamp;
 import org.gama.stalactite.persistence.id.Identified;
 import org.gama.stalactite.persistence.id.Identifier;
@@ -25,7 +31,6 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.Mockito.mock;
 
 /**
  * @author Guillaume Mary
@@ -109,7 +114,7 @@ public class FluentMappingBuilderTest {
 	public void testAdd_mappingDefinedTwiceByMethod_throwsException() throws NoSuchMethodException {
 		Table toto = new Table("Toto");
 		assertEquals("Mapping is already defined by method " + Reflections.toString(Toto.class.getMethod("getName")),
-				assertThrows(IllegalArgumentException.class, () -> FluentMappingBuilder.from(Toto.class, StatefullIdentifier.class, toto)
+				assertThrows(MappingConfigurationException.class, () -> FluentMappingBuilder.from(Toto.class, StatefullIdentifier.class, toto)
 						.add(Toto::getName)
 						.add(Toto::setName))
 						.getMessage());
@@ -119,7 +124,7 @@ public class FluentMappingBuilderTest {
 	public void testAdd_mappingDefinedTwiceByColumn_throwsException() {
 		Table toto = new Table("Toto");
 		assertEquals("Mapping is already defined for column xyz",
-				assertThrows(IllegalArgumentException.class, () -> FluentMappingBuilder.from(Toto.class, StatefullIdentifier.class, toto)
+				assertThrows(MappingConfigurationException.class, () -> FluentMappingBuilder.from(Toto.class, StatefullIdentifier.class, toto)
 						.add(Toto::getName, "xyz")
 						.add(Toto::getFirstName, "xyz"))
 						.getMessage());
@@ -208,8 +213,7 @@ public class FluentMappingBuilderTest {
 		Column<Table, Date> createdAt = targetTable.addColumn("createdAt", Date.class);
 		Column<Table, Date> modifiedAt = targetTable.addColumn("modifiedAt", Date.class);
 		
-		// Preparation of column mapping check thought insert statement generation
-		Connection connectionMock = mock(Connection.class);
+		Connection connectionMock = InvocationHandlerSupport.mock(Connection.class);
 		
 		Persister<Toto, StatefullIdentifier, ?> persister = FluentMappingBuilder.from(Toto.class, StatefullIdentifier.class, targetTable)
 				.add(Toto::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
@@ -221,6 +225,7 @@ public class FluentMappingBuilderTest {
 		Map<String, Column> columnsByName = targetTable.mapColumnsOnName();
 		
 		// columns with getter name must be absent (hard to test: can be absent for many reasons !)
+		// TODO: récupérer le Builder de FluentEmbddableMappingConfigurationSupport pour le mettre dnas FluentMappingBuilder et implémenter la surcharge de colonne
 		assertNull(columnsByName.get("creationDate"));
 		assertNull(columnsByName.get("modificationDate"));
 		
@@ -228,6 +233,48 @@ public class FluentMappingBuilderTest {
 		assertEquals(targetTable.getColumns(), persister.getMappingStrategy().getInsertableColumns());
 		assertEquals(targetTable.getColumnsNoPrimaryKey(), persister.getMappingStrategy().getUpdatableColumns());
 		assertEquals(targetTable.getColumns(), persister.getMappingStrategy().getSelectableColumns());
+		
+		// TODO: tester le mapSuperClass(Embeddable) pour vérifier que modif d'impl est OK, sauf si test existe déjà
+	}
+	
+	@Test
+	public void testBuild_innerEmbed_withTwiceSameInnerEmbeddableName() {
+		Table<?> countryTable = new Table<>("countryTable");
+		IFluentMappingBuilderEmbedOptions<Country, StatefullIdentifier, Timestamp> mappingBuilder = FluentMappingBuilder.from(Country.class,
+				StatefullIdentifier.class, countryTable)
+				.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
+				.add(Country::getName)
+				.embed(Country::getPresident)
+					.overrideName(Person::getId, "presidentId")
+					.overrideName(Person::getName, "presidentName")
+					.innerEmbed(Person::getTimestamp)
+				// this embed will conflict with Country one because its type is already mapped with no override
+				.embed(Country::getTimestamp);
+		MappingConfigurationException thrownException = assertThrows(MappingConfigurationException.class, () -> mappingBuilder
+				.build(DIALECT));
+		assertEquals("Country::getTimestamp conflicts with Person::getTimestamp for embedding a o.g.s.p.e.m.Timestamp" +
+				", field names should be overriden : j.u.Date o.g.s.p.e.m.Timestamp.modificationDate, j.u.Date o.g.s.p.e.m.Timestamp.creationDate", thrownException.getMessage());
+		
+		// we add an override, exception must still be thrown, with different message
+		mappingBuilder.overrideName(Timestamp::getModificationDate, "modifiedAt");
+		
+		thrownException = assertThrows(MappingConfigurationException.class, () -> mappingBuilder
+				.build(DIALECT));
+		assertEquals("Country::getTimestamp conflicts with Person::getTimestamp for embedding a o.g.s.p.e.m.Timestamp" +
+				", field names should be overriden : j.u.Date o.g.s.p.e.m.Timestamp.creationDate", thrownException.getMessage());
+		
+		// we override the last field, no exception is thrown
+		mappingBuilder.overrideName(Timestamp::getCreationDate, "createdAt");
+		mappingBuilder.build(DIALECT);
+		
+		assertEquals(Arrays.asHashSet(
+				// from Country
+				"id", "name",
+				// from Person
+				"presidentId", "version", "presidentName", "creationDate", "modificationDate",
+				// from Country.timestamp
+				"createdAt", "modifiedAt"),
+				countryTable.getColumns().stream().map(Column::getName).collect(Collectors.toSet()));
 	}
 	
 	protected static class Toto implements Identified<Integer> {

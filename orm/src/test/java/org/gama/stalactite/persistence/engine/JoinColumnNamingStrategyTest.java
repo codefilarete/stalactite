@@ -1,7 +1,6 @@
 package org.gama.stalactite.persistence.engine;
 
 import org.gama.lang.Reflections;
-import org.gama.reflection.Accessors;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
@@ -12,8 +11,8 @@ public class JoinColumnNamingStrategyTest {
 	
 	@Test
 	public void testDefaultGetName() {
-		Assertions.assertEquals("nameId", JoinColumnNamingStrategy.DEFAULT.giveName(Accessors.propertyAccessor(Toto.class, "name")));
-		Assertions.assertEquals("nameId", JoinColumnNamingStrategy.DEFAULT.giveName(Accessors.of(Reflections.findMethod(Toto.class, "getName"))));
+		Assertions.assertEquals("nameId", JoinColumnNamingStrategy.DEFAULT.giveName(Reflections.getMethod(Toto.class, "setName", int.class)));
+		Assertions.assertEquals("nameId", JoinColumnNamingStrategy.DEFAULT.giveName(Reflections.getMethod(Toto.class, "getName")));
 	}
 	
 	private static class Toto {
@@ -22,6 +21,10 @@ public class JoinColumnNamingStrategyTest {
 		
 		public int getName() {
 			return name;
+		}
+		
+		public void setName(int name) {
+			this.name = name;
 		}
 	}
 }

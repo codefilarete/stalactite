@@ -25,9 +25,9 @@ public interface IFluentEmbeddableMappingConfiguration<C> {
 	 */
 	IFluentEmbeddableMappingConfiguration<C> mapSuperClass(Class<? super C> superType, EmbeddedBeanMappingStrategy<? super C, ?> mappingStrategy);
 	
-	<O> IFluentEmbeddableMappingConfiguration<C> embed(SerializableBiConsumer<C, O> setter);
+	<O> IFluentEmbeddableMappingConfigurationEmbedOptions<C, O> embed(SerializableBiConsumer<C, O> setter);
 
-	<O> IFluentEmbeddableMappingConfiguration<C> embed(SerializableFunction<C, O> getter);
+	<O> IFluentEmbeddableMappingConfigurationEmbedOptions<C, O> embed(SerializableFunction<C, O> getter);
 	
 	/**
 	 * Crossover between {@link IFluentEmbeddableMappingConfiguration} and {@link EmbedOptions} in order that {@link #embed(SerializableFunction)} methods

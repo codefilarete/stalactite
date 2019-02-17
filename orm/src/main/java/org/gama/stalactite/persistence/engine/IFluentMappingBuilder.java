@@ -23,7 +23,8 @@ import org.gama.stalactite.persistence.structure.Table;
  * @see FluentMappingBuilder#from(Class, Class, Table)
  * @see #build(Dialect)
  */
-public interface IFluentMappingBuilder<C extends Identified, I extends StatefullIdentifier> extends IFluentEmbeddableMappingConfiguration<C> {
+public interface IFluentMappingBuilder<C extends Identified, I extends StatefullIdentifier>
+		extends IFluentEmbeddableMappingConfiguration<C> {
 	
 	<O> IFluentMappingBuilderColumnOptions<C, I> add(SerializableBiConsumer<C, O> setter);
 	
@@ -99,8 +100,6 @@ public interface IFluentMappingBuilder<C extends Identified, I extends Statefull
 	 */
 	ClassMappingStrategy<C, I, Table> build(Dialect dialect);
 	
-	<CC extends Table> EmbeddedBeanMappingStrategy<C, CC> buildEmbeddable(Dialect dialect);
-		
 	Persister<C, I, ?> build(PersistenceContext persistenceContext);
 	
 	interface IFluentMappingBuilderColumnOptions<T extends Identified, I extends StatefullIdentifier> extends IFluentMappingBuilder<T, I>, ColumnOptions<T, I> {
@@ -177,12 +176,13 @@ public interface IFluentMappingBuilder<C extends Identified, I extends Statefull
 		 * @param function the getter as a method reference
 		 * @param targetColumn a column that's the target of the getter
 		 * @param <IN> input of the function (type of the embedded element)
-		 * @param <OUT> ouput of the function (property type)
 		 * @return a mapping configurer, specialized for embedded elements
 		 */
 		@Override
-		<IN, OUT> IFluentMappingBuilderEmbedOptions<T, I, O> override(SerializableFunction<O, IN> function, Column<Table, OUT> targetColumn);
+		<IN> IFluentMappingBuilderEmbedOptions<T, I, O> override(SerializableFunction<O, IN> function, Column<Table, IN> targetColumn);
 		
+		@Override
+		<IN> IFluentMappingBuilderEmbedOptions<T, I, IN> innerEmbed(SerializableFunction<O, IN> getter);
 	}
 	
 }
