@@ -376,7 +376,7 @@ class FluentEmbeddableMappingConfigurationSupportTest {
 }
 	
 	@Test
-	public void testBuild_innerEmbed_withTwiceSameInnerEmbeddableName() {
+	public void testBuild_innerEmbed_withTwiceSameInnerEmbeddableName_throwException() {
 		Table<?> countryTable = new Table<>("countryTable");
 		IFluentEmbeddableMappingBuilderEmbedOptions<Country, Timestamp> mappingBuilder = FluentEmbeddableMappingConfigurationSupport.from(Country.class)
 				.add(Country::getName)
@@ -410,6 +410,18 @@ class FluentEmbeddableMappingConfigurationSupportTest {
 				// from Country.timestamp
 				"createdAt", "modifiedAt"),
 				countryTable.getColumns().stream().map(Column::getName).collect(Collectors.toSet()));
+	}
+	
+	@Test
+	public void testBuild_embed_definedTwice_throwException() {
+		Table<?> countryTable = new Table<>("countryTable");
+		IFluentEmbeddableMappingBuilderEmbedOptions<Country, Timestamp> mappingBuilder = FluentEmbeddableMappingConfigurationSupport.from(Country.class)
+				.add(Country::getName)
+				.embed(Country::getTimestamp)
+				.embed(Country::getTimestamp);
+		MappingConfigurationException thrownException = assertThrows(MappingConfigurationException.class, () -> mappingBuilder
+				.build(DIALECT, countryTable));
+		assertEquals("Country::getTimestamp is already mapped", thrownException.getMessage());
 	}
 	
 	@Test

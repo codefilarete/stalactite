@@ -64,17 +64,22 @@ public class FluentEmbeddableMappingConfigurationSupport<C> implements IFluentEm
 		return new FluentEmbeddableMappingConfigurationSupport<>(persistedClass);
 	}
 	
+	/** Owning class of mapped properties */
 	private final Class<C> persistedClass;
 	
-	private final MethodReferenceCapturer methodSpy;
-	
+	/** Mapiing defintions */
 	private final List<Linkage> mapping = new ArrayList<>();
 	
+	/** Collection of embedded elements, even inner ones to help final build process */
 	private final Collection<Inset<C, ?>> insets = new ArrayList<>();
 	
 	private final Map<Class<? super C>, EmbeddedBeanMappingStrategy<? super C, ?>> inheritanceMapping = new HashMap<>();
 	
+	/** Last embedded element, introduced to help inner embedding registration (kind of algorithm help). Has no purpose in whole mapping configuration. */
 	private Inset currentInset;
+	
+	/** Helper to unshell method references */
+	private final MethodReferenceCapturer methodSpy;
 	
 	/**
 	 * Creates a builder to map the given class for persistence
@@ -211,19 +216,23 @@ public class FluentEmbeddableMappingConfigurationSupport<C> implements IFluentEm
 					
 					@Override
 					public EmbedOptions innerEmbed(SerializableFunction getter) {
+						// this can hardly be reused in other innerMebd method due to currentInset() & newInset(..) invokation side effect :
+						// they must be call in order else it results in an endless loop
 						Inset parent = currentInset();
 						Inset<C, O> inset = newInset(getter);
 						inset.parent = parent;
-						embed(inset);
+						insets.add(inset);
 						return null;	// we can return null because dispatcher will return proxy
 					}
 					
 					@Override
 					public EmbedOptions innerEmbed(SerializableBiConsumer setter) {
+						// this can hardly be reused in other innerMebd method due to currentInset() & newInset(..) invokation side effect :
+						// they must be call in order else it results in an endless loop
 						Inset parent = currentInset();
 						Inset<C, O> inset = newInset(setter);
 						inset.parent = parent;
-						embed(inset);
+						insets.add(inset);
 						return null;	// we can return null because dispatcher will return proxy
 					}
 					
@@ -451,8 +460,7 @@ public class FluentEmbeddableMappingConfigurationSupport<C> implements IFluentEm
 			Map<String, Column<Table, Object>> columnsPerName = targetTable.mapColumnsOnName();
 			Map<IReversibleAccessor, Column> toReturn = new HashMap<>();
 			Set<Inset> treatedInsets = new HashSet<>();
-			// Registry of mapped "properties" to skip inner embeds. Should be done this way because insets are stored as a flat list
-			// This could be avoided if insets were stored as a tree
+			// Registry of mapped "properties" to skip inner embeds, check duplicates, etc.
 			Set<Member> insetsPropertyRegistry = new TreeSet<>(new Comparator<Member>() {
 				@Override
 				public int compare(Member o1, Member o2) {
@@ -477,6 +485,12 @@ public class FluentEmbeddableMappingConfigurationSupport<C> implements IFluentEm
 			insets.forEach(inset -> {
 				Optional<Inset> alreadyMappedType = treatedInsets.stream().filter(i -> i.embeddedClass == inset.embeddedClass).findFirst();
 				if (alreadyMappedType.isPresent()) {
+					if (alreadyMappedType.get().insetAccessor.equals(inset.insetAccessor)) {
+						Method currentMethod = inset.insetAccessor;
+						String currentMethodReference = toMethodReferenceString(currentMethod);
+						throw new MappingConfigurationException(currentMethodReference + " is already mapped");
+					}
+					
 					Set<Field> expectedOverridenFields = new HashSet<>(Iterables.copy(new FieldIterator(inset.embeddedClass)));
 					expectedOverridenFields.removeAll(inset.excludedProperties);
 					Set<Field> overridenFields = inset.overridenColumnNames.keySet();
