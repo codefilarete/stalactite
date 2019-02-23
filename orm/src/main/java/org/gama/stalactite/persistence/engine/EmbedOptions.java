@@ -41,4 +41,8 @@ public interface EmbedOptions<T> {
 	 */
 	
 	<IN> EmbedOptions<IN> innerEmbed(SerializableBiConsumer<T, IN> setter);
+	
+	<IN> EmbedOptions<T> exclude(SerializableFunction<T, IN> getter);
+	
+	<IN> EmbedOptions<T> exclude(SerializableBiConsumer<T, IN> setter);
 }

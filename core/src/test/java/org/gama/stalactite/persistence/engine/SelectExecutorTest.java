@@ -6,19 +6,25 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import org.gama.lang.collection.Arrays;
 import org.gama.lang.collection.Iterables;
+import org.gama.lang.collection.Maps;
+import org.gama.sql.dml.SQLOperation.SQLOperationListener;
+import org.gama.sql.dml.SQLStatement;
 import org.gama.sql.test.HSQLDBInMemoryDataSource;
 import org.gama.sql.test.MariaDBEmbeddableDataSource;
 import org.gama.stalactite.persistence.sql.dml.DMLGenerator;
+import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.test.PairSetList;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.mockito.ArgumentCaptor;
 
 import static org.gama.stalactite.test.PairSetList.pairSetList;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -57,6 +63,32 @@ public class SelectExecutorTest extends AbstractDMLExecutorTest {
 		assertEquals("select a, b, c from Toto where a in (?)", dataSet.statementArgCaptor.getValue());
 		PairSetList<Integer, Integer> expectedPairs = pairSetList(1, 7);
 		assertCapturedPairsEqual(dataSet, expectedPairs);
+	}
+	
+	@Test
+	public void listenerIsCalled() throws SQLException {
+		// mocking executeQuery not to return null because select method will use the ResultSet
+		ResultSet resultSetMock = mock(ResultSet.class);
+		when(dataSet.preparedStatement.executeQuery()).thenReturn(resultSetMock);
+		
+		SQLOperationListener<Column<Table, Object>> listenerMock = mock(SQLOperationListener.class);
+		testInstance.setOperationListener(listenerMock);
+		
+		ArgumentCaptor<Map<Column<Table, Object>, ?>> statementArgCaptor = ArgumentCaptor.forClass(Map.class);
+		ArgumentCaptor<SQLStatement<Column<Table, Object>>> sqlArgCaptor = ArgumentCaptor.forClass(SQLStatement.class);
+		
+		testInstance.select(Arrays.asList(1, 2));
+		
+		Table mappedTable = new Table("Toto");
+		Column colA = mappedTable.addColumn("a", Integer.class);
+		Column colB = mappedTable.addColumn("b", Integer.class);
+		Column colC = mappedTable.addColumn("c", Integer.class);
+		verify(listenerMock, times(1)).onValuesSet(statementArgCaptor.capture());
+		assertEquals(Arrays.asList(
+				Maps.asHashMap(colA, Arrays.asList(1, 2))
+		), statementArgCaptor.getAllValues());
+		verify(listenerMock, times(1)).onExecute(sqlArgCaptor.capture());
+		assertEquals("select a, b, c from Toto where a in (?, ?)", sqlArgCaptor.getValue().getSQL());
 	}
 	
 	@Test

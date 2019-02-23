@@ -98,9 +98,9 @@ public interface IFluentMappingBuilder<C extends Identified, I extends Statefull
 	 * @param dialect the {@link Dialect} to build the mapping for
 	 * @return the finalized mapping, can be modified further
 	 */
-	ClassMappingStrategy<C, I, Table> build(Dialect dialect);
+	<T extends Table> ClassMappingStrategy<C, I, T> build(Dialect dialect);
 	
-	Persister<C, I, ?> build(PersistenceContext persistenceContext);
+	<T extends Table> Persister<C, I, T> build(PersistenceContext persistenceContext);
 	
 	interface IFluentMappingBuilderColumnOptions<T extends Identified, I extends StatefullIdentifier> extends IFluentMappingBuilder<T, I>, ColumnOptions<T, I> {
 	}
@@ -183,6 +183,12 @@ public interface IFluentMappingBuilder<C extends Identified, I extends Statefull
 		
 		@Override
 		<IN> IFluentMappingBuilderEmbedOptions<T, I, IN> innerEmbed(SerializableFunction<O, IN> getter);
+		
+		@Override
+		<IN> IFluentMappingBuilderEmbedOptions<T, I, O> exclude(SerializableFunction<O, IN> getter);
+		
+		@Override
+		<IN> IFluentMappingBuilderEmbedOptions<T, I, O> exclude(SerializableBiConsumer<O, IN> setter);
 	}
 	
 }

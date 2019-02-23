@@ -1,17 +1,24 @@
 package org.gama.stalactite.persistence.engine;
 
 import java.sql.SQLException;
+import java.util.Map;
 
 import org.gama.lang.Retryer;
 import org.gama.lang.collection.Arrays;
+import org.gama.lang.collection.Maps;
+import org.gama.sql.dml.SQLOperation.SQLOperationListener;
+import org.gama.sql.dml.SQLStatement;
 import org.gama.stalactite.persistence.sql.dml.DMLGenerator;
+import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.test.PairSetList;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 
 import static org.gama.stalactite.test.PairSetList.pairSetList;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
@@ -39,6 +46,33 @@ public class DeleteExecutorTest extends AbstractDMLExecutorTest {
 		assertEquals("delete from Toto where a = ?", dataSet.statementArgCaptor.getValue());
 		PairSetList<Integer, Integer> expectedPairs = pairSetList(1, 7);
 		assertCapturedPairsEqual(dataSet, expectedPairs);
+	}
+	
+	@Test
+	public void listenerIsCalled() {
+		SQLOperationListener<Column<Table, Object>> listenerMock = mock(SQLOperationListener.class);
+		testInstance.setOperationListener(listenerMock);
+		
+		ArgumentCaptor<Map<Column<Table, Object>, ?>> statementArgCaptor = ArgumentCaptor.forClass(Map.class);
+		ArgumentCaptor<SQLStatement<Column<Table, Object>>> sqlArgCaptor = ArgumentCaptor.forClass(SQLStatement.class);
+		
+		try {
+			testInstance.delete(Arrays.asList(new Toto(1, 17, 23), new Toto(2, 29, 31)));
+		} catch (StaleObjectExcepion e) {
+			// we don't care about any existing data in the database, listener must be called, so we continue even if there are some stale objects
+		}
+		
+		Table mappedTable = new Table("Toto");
+		Column colA = mappedTable.addColumn("a", Integer.class);
+		Column colB = mappedTable.addColumn("b", Integer.class);
+		Column colC = mappedTable.addColumn("c", Integer.class);
+		verify(listenerMock, times(2)).onValuesSet(statementArgCaptor.capture());
+		assertEquals(Arrays.asList(
+				Maps.asHashMap(colA, 1),
+				Maps.asHashMap(colA, 2)
+		), statementArgCaptor.getAllValues());
+		verify(listenerMock, times(1)).onExecute(sqlArgCaptor.capture());
+		assertEquals("delete from Toto where a = ?", sqlArgCaptor.getValue().getSQL());
 	}
 	
 	@Test

@@ -22,4 +22,8 @@ public interface EmbedWithColumnOptions<T> extends EmbedOptions<T> {
 	 */
 	<IN> EmbedWithColumnOptions<T> override(SerializableFunction<T, IN> function, Column<Table, IN> targetColumn);
 	
+	<IN> EmbedWithColumnOptions<T> exclude(SerializableFunction<T, IN> getter);
+	
+	<IN> EmbedWithColumnOptions<T> exclude(SerializableBiConsumer<T, IN> setter);
+	
 }

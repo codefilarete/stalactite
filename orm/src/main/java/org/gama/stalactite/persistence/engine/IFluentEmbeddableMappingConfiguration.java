@@ -69,5 +69,9 @@ public interface IFluentEmbeddableMappingConfiguration<C> {
 		 */
 		<IN> IFluentEmbeddableMappingConfigurationEmbedOptions<T, IN> innerEmbed(SerializableBiConsumer<O, IN> setter);
 		
+		<IN> IFluentEmbeddableMappingConfigurationEmbedOptions<T, O> exclude(SerializableFunction<O, IN> getter);
+		
+		<IN> IFluentEmbeddableMappingConfigurationEmbedOptions<T, O> exclude(SerializableBiConsumer<O, IN> setter);
+		
 	}
 }

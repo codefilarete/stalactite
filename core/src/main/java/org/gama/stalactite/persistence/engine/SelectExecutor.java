@@ -12,6 +12,7 @@ import org.gama.lang.exception.Exceptions;
 import org.gama.sql.ConnectionProvider;
 import org.gama.sql.SimpleConnectionProvider;
 import org.gama.sql.dml.ReadOperation;
+import org.gama.sql.dml.SQLOperation.SQLOperationListener;
 import org.gama.sql.result.RowIterator;
 import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
 import org.gama.stalactite.persistence.sql.dml.ColumnParameterizedSelect;
@@ -27,8 +28,14 @@ import org.gama.stalactite.persistence.structure.Table;
  */
 public class SelectExecutor<C, I, T extends Table> extends DMLExecutor<C, I, T> {
 	
+	private SQLOperationListener<Column<T, Object>> operationListener;
+	
 	public SelectExecutor(ClassMappingStrategy<C, I, T> mappingStrategy, ConnectionProvider connectionProvider, DMLGenerator dmlGenerator, int inOperatorMaxSize) {
 		super(mappingStrategy, connectionProvider, dmlGenerator, inOperatorMaxSize);
+	}
+	
+	public void setOperationListener(SQLOperationListener<Column<T, Object>> operationListener) {
+		this.operationListener = operationListener;
 	}
 	
 	public List<C> select(Iterable<I> ids) {
@@ -72,7 +79,9 @@ public class SelectExecutor<C, I, T extends Table> extends DMLExecutor<C, I, T> 
 												   ConnectionProvider connectionProvider) {
 		PrimaryKey<T> primaryKey = targetTable.getPrimaryKey();
 		ColumnParameterizedSelect<T> selectStatement = getDmlGenerator().buildSelectByKey(targetTable, columnsToRead, primaryKey.getColumns(), blockSize);
-		return new ReadOperation<>(selectStatement, connectionProvider);
+		ReadOperation<Column<T, Object>> readOperation = new ReadOperation<>(selectStatement, connectionProvider);
+		readOperation.setListener(this.operationListener);
+		return readOperation;
 	}
 	
 	private List<C> execute(ReadOperation<Column<T, Object>> operation, Map<Column<T, Object>, Object> keyValues) {

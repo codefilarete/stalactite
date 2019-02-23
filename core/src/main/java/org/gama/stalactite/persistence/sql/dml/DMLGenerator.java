@@ -8,6 +8,7 @@ import java.util.Map;
 import java.util.TreeSet;
 
 import org.gama.lang.Strings;
+import org.gama.lang.bean.Objects;
 import org.gama.lang.collection.ISorter;
 import org.gama.lang.collection.Iterables;
 import org.gama.lang.trace.ModifiableInt;
@@ -36,7 +37,7 @@ public class DMLGenerator {
 	
 	private final ParameterBinderIndex<Column, ParameterBinder> columnBinderRegistry;
 	
-	private final ISorter<Iterable<? extends Column>> columnSorter;
+	private ISorter<Iterable<? extends Column>> columnSorter;
 	
 	private final DMLNameProvider dmlNameProvider;
 	
@@ -50,8 +51,23 @@ public class DMLGenerator {
 	
 	public DMLGenerator(ParameterBinderIndex<Column, ParameterBinder> columnBinderRegistry, ISorter<Iterable<? extends Column>> columnSorter, DMLNameProvider dmlNameProvider) {
 		this.columnBinderRegistry = columnBinderRegistry;
-		this.columnSorter = columnSorter;
+		setColumnSorter(columnSorter);
 		this.dmlNameProvider = dmlNameProvider;
+	}
+	
+	public void setColumnSorter(ISorter<Iterable<? extends Column>> columnSorter) {
+		// by default, no sort is made to avoid superfluous time consumption
+		this.columnSorter = Objects.preventNull(columnSorter, NoopSorter.INSTANCE);
+	}
+	
+	/**
+	 * Applies an alphabetical sorter on {@link Column}s given to DML generating methods.
+	 * Made to do steady checks on SQL orders generated in tests but can be used in production.
+	 * 
+	 * @see CaseSensitiveSorter#INSTANCE
+	 */
+	public void sortColumnsAlphabetically() {
+		this.setColumnSorter(CaseSensitiveSorter.INSTANCE);
 	}
 	
 	/**

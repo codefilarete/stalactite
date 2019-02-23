@@ -14,6 +14,8 @@ import org.gama.lang.collection.ValueFactoryHashMap;
 import org.gama.sql.ConnectionProvider;
 import org.gama.sql.RollbackListener;
 import org.gama.sql.RollbackObserver;
+import org.gama.sql.dml.SQLOperation.SQLOperationListener;
+import org.gama.sql.dml.SQLStatement;
 import org.gama.sql.dml.WriteOperation;
 import org.gama.stalactite.persistence.engine.RowCountManager.RowCounter;
 import org.gama.stalactite.persistence.engine.listening.UpdateListener.UpdatePayload;
@@ -38,6 +40,8 @@ public class UpdateExecutor<C, I, T extends Table> extends WriteExecutor<C, I, T
 	
 	private RowCountManager rowCountManager = RowCountManager.THROWING_ROW_COUNT_MANAGER;
 	
+	private SQLOperationListener<UpwhereColumn<T>> operationListener;
+	
 	public UpdateExecutor(ClassMappingStrategy<C, I, T> mappingStrategy, ConnectionProvider connectionProvider,
 						  DMLGenerator dmlGenerator, Retryer writeOperationRetryer,
 						  int batchSize, int inOperatorMaxSize) {
@@ -59,6 +63,16 @@ public class UpdateExecutor<C, I, T extends Table> extends WriteExecutor<C, I, T
 	
 	public void setOptimisticLockManager(OptimisticLockManager<T> optimisticLockManager) {
 		this.optimisticLockManager = optimisticLockManager;
+	}
+	
+	public void setOperationListener(SQLOperationListener<UpwhereColumn<T>> listener) {
+		this.operationListener = listener;
+	}
+	
+	private WriteOperation<UpwhereColumn<T>> newWriteOperation(SQLStatement<UpwhereColumn<T>> statement, CurrentConnectionProvider currentConnectionProvider) {
+		WriteOperation<UpwhereColumn<T>> writeOperation = new WriteOperation<>(statement, currentConnectionProvider, getWriteOperationRetryer());
+		writeOperation.setListener(this.operationListener);
+		return writeOperation;
 	}
 	
 	/**

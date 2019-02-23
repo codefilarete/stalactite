@@ -3,7 +3,6 @@ package org.gama.stalactite.persistence.engine;
 import org.gama.lang.Retryer;
 import org.gama.lang.collection.SteppingIterator;
 import org.gama.sql.ConnectionProvider;
-import org.gama.sql.dml.SQLStatement;
 import org.gama.sql.dml.WriteOperation;
 import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
 import org.gama.stalactite.persistence.sql.dml.DMLGenerator;
@@ -33,10 +32,6 @@ public abstract class WriteExecutor<C, I, T extends Table> extends DMLExecutor<C
 	
 	public Retryer getWriteOperationRetryer() {
 		return writeOperationRetryer;
-	}
-	
-	protected <P> WriteOperation<P> newWriteOperation(SQLStatement<P> statement, CurrentConnectionProvider currentConnectionProvider) {
-		return new WriteOperation<>(statement, currentConnectionProvider, getWriteOperationRetryer());
 	}
 	
 	/**

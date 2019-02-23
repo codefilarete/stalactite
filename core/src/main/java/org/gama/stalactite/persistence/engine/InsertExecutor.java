@@ -10,6 +10,7 @@ import org.gama.lang.Retryer;
 import org.gama.sql.ConnectionProvider;
 import org.gama.sql.RollbackListener;
 import org.gama.sql.RollbackObserver;
+import org.gama.sql.dml.SQLOperation.SQLOperationListener;
 import org.gama.sql.dml.SQLStatement;
 import org.gama.sql.dml.WriteOperation;
 import org.gama.stalactite.persistence.id.manager.IdentifierInsertionManager;
@@ -31,6 +32,8 @@ public class InsertExecutor<C, I, T extends Table> extends WriteExecutor<C, I, T
 	
 	private final IdentifierInsertionManager<C, I> identifierInsertionManager;
 	
+	private SQLOperationListener<Column<T, Object>> operationListener;
+	
 	public InsertExecutor(ClassMappingStrategy<C, I, T> mappingStrategy, ConnectionProvider connectionProvider,
 						  DMLGenerator dmlGenerator, Retryer writeOperationRetryer,
 						  int batchSize, int inOperatorMaxSize) {
@@ -49,15 +52,20 @@ public class InsertExecutor<C, I, T extends Table> extends WriteExecutor<C, I, T
 		this.optimisticLockManager = optimisticLockManager;
 	}
 	
-	@Override
-	protected <P> WriteOperation<P> newWriteOperation(SQLStatement<P> statement, CurrentConnectionProvider currentConnectionProvider) {
-		return new WriteOperation<P>(statement, currentConnectionProvider, getWriteOperationRetryer()) {
+	public void setOperationListener(SQLOperationListener<Column<T, Object>> listener) {
+		this.operationListener = listener;
+	}
+	
+	private WriteOperation<Column<T, Object>> newWriteOperation(SQLStatement<Column<T, Object>> statement, CurrentConnectionProvider currentConnectionProvider) {
+		WriteOperation<Column<T, Object>> writeOperation = new WriteOperation<Column<T, Object>>(statement, currentConnectionProvider, getWriteOperationRetryer()) {
 			@Override
 			protected void prepareStatement(Connection connection) throws SQLException {
 				// NB: simple implementation: we don't use the column-specifying signature since not all databases support reading by column name
 				this.preparedStatement = identifierInsertionManager.prepareStatement(connection, getSQL());
 			}
 		};
+		writeOperation.setListener(this.operationListener);
+		return writeOperation;
 	}
 	
 	public int insert(Iterable<? extends C> entities) {

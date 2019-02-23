@@ -305,9 +305,15 @@ public class FluentMappingBuilder<C extends Identified, I extends StatefullIdent
 					}
 					
 					@Override
-					public EmbedOptions innerEmbed(SerializableBiConsumer setter) {
-						insets.add(inset);
-						return null;
+					public EmbedWithColumnOptions exclude(SerializableFunction getter) {
+						embedSupport.exclude(getter);
+						return null;	// we can return null because dispatcher will return proxy
+					}
+					
+					@Override
+					public EmbedWithColumnOptions override(SerializableFunction function, Column targetColumn) {
+						fluentEntityMappingConfigurationSupport.currentInset().override(function, targetColumn);
+						return null;	// we can return null because dispatcher will return proxy
 					}
 				}, true)
 				.fallbackOn(this)
@@ -386,14 +392,14 @@ public class FluentMappingBuilder<C extends Identified, I extends StatefullIdent
 	}
 	
 	@Override
-	public Persister<C, I, ?> build(PersistenceContext persistenceContext) {
-		ClassMappingStrategy<C, I, Table> mainMappingStrategy = build(persistenceContext.getDialect());
+	public <T extends Table> Persister<C, I, T> build(PersistenceContext persistenceContext) {
+		ClassMappingStrategy<C, I, T> mainMappingStrategy = build(persistenceContext.getDialect());
 		
 		// by default, result is the simple persister of the main strategy
-		Persister<C, I, ?> result = persistenceContext.add(mainMappingStrategy);
+		Persister<C, I, T> result = persistenceContext.add(mainMappingStrategy);
 		
 		if (!cascadeOnes.isEmpty() || !cascadeManys.isEmpty()) {
-			JoinedTablesPersister<C, I, ?> joinedTablesPersister = new JoinedTablesPersister<>(persistenceContext, mainMappingStrategy);
+			JoinedTablesPersister<C, I, T> joinedTablesPersister = new JoinedTablesPersister<>(persistenceContext, mainMappingStrategy);
 			result = joinedTablesPersister;
 			if (!cascadeOnes.isEmpty()) {
 				// adding persistence flag setters on this side
@@ -428,7 +434,7 @@ public class FluentMappingBuilder<C extends Identified, I extends StatefullIdent
 	}
 	
 	@Override
-	public ClassMappingStrategy<C, I, Table> build(Dialect dialect) {
+	public <T extends Table> ClassMappingStrategy<C, I, T> build(Dialect dialect) {
 		IReversibleAccessor<C, I> localIdentifierAccessor = this.identifierAccessor;
 		if (localIdentifierAccessor == null) {
 			if (inheritanceMapping.size() == 0) {
@@ -460,7 +466,7 @@ public class FluentMappingBuilder<C extends Identified, I extends StatefullIdent
 			
 			/** Overriden to take primary key into account */
 			@Override
-			protected Column addLinkage(Linkage linkage) {
+			protected Column addLinkage(LinkageByColumnName linkage) {
 				Column column = super.addLinkage(linkage);
 				// setting the primary key option as asked
 				if (((EntityLinkage) linkage).isPrimaryKey()) {
@@ -605,7 +611,8 @@ public class FluentMappingBuilder<C extends Identified, I extends StatefullIdent
 		 *  
 		 * @return the last {@link Inset} built by {@link #newInset(SerializableFunction)} or {@link #newInset(SerializableBiConsumer)}
 		 */
-		OverridableColumnInset currentInset() {
+		@Override
+		protected OverridableColumnInset currentInset() {
 			return currentInset;
 		}
 		

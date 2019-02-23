@@ -10,6 +10,8 @@ import org.gama.lang.Retryer;
 import org.gama.lang.collection.Collections;
 import org.gama.lang.collection.Iterables;
 import org.gama.sql.ConnectionProvider;
+import org.gama.sql.dml.SQLOperation.SQLOperationListener;
+import org.gama.sql.dml.SQLStatement;
 import org.gama.sql.dml.WriteOperation;
 import org.gama.stalactite.persistence.engine.RowCountManager.RowCounter;
 import org.gama.stalactite.persistence.id.assembly.IdentifierAssembler;
@@ -28,6 +30,8 @@ public class DeleteExecutor<C, I, T extends Table> extends WriteExecutor<C, I, T
 	
 	private RowCountManager rowCountManager = RowCountManager.THROWING_ROW_COUNT_MANAGER;
 	
+	private SQLOperationListener<Column<T, Object>> operationListener;
+	
 	public DeleteExecutor(ClassMappingStrategy<C, I, T> mappingStrategy, ConnectionProvider connectionProvider,
 						  DMLGenerator dmlGenerator, Retryer writeOperationRetryer,
 						  int batchSize, int inOperatorMaxSize) {
@@ -36,6 +40,16 @@ public class DeleteExecutor<C, I, T extends Table> extends WriteExecutor<C, I, T
 	
 	public void setRowCountManager(RowCountManager rowCountManager) {
 		this.rowCountManager = rowCountManager;
+	}
+	
+	public void setOperationListener(SQLOperationListener<Column<T, Object>> listener) {
+		this.operationListener = listener;
+	}
+	
+	private WriteOperation<Column<T, Object>> newWriteOperation(SQLStatement<Column<T, Object>> statement, CurrentConnectionProvider currentConnectionProvider) {
+		WriteOperation<Column<T, Object>> writeOperation = new WriteOperation<>(statement, currentConnectionProvider, getWriteOperationRetryer());
+		writeOperation.setListener(operationListener);
+		return writeOperation;
 	}
 	
 	/**

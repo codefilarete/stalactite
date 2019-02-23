@@ -36,7 +36,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 /**
  * @author Guillaume Mary
  */
-class FluentEmbeddableMappingBuilderSupportTest {
+class FluentEmbeddableMappingConfigurationSupportTest {
 	
 	private static final HSQLDBDialect DIALECT = new HSQLDBDialect();
 	
@@ -270,6 +270,45 @@ class FluentEmbeddableMappingBuilderSupportTest {
 		row.put(createdAtColumn.getName(), car.getTimestamp().getCreationDate());
 		loadedCar = carMappingStrategy.transform(row);
 		assertEquals(car.getTimestamp().getCreationDate(), loadedCar.getTimestamp().getCreationDate());
+	}
+	
+	@Test
+	public void testEmbed_insertAndSelect_withSomeExcludedProperty() {
+		Table<?> personTable = new Table<>("personTable");
+		EmbeddedBeanMappingStrategy<Person, Table<?>> personMappingStrategy = FluentEmbeddableMappingConfigurationSupport.from(Person.class)
+				.add(Person::getName)
+				.embed(Person::setTimestamp)
+					.exclude(Timestamp::getCreationDate)
+				.overrideName(Timestamp::getModificationDate, "modifiedAt")
+				.build(DIALECT, personTable);
+		
+		Map<String, Column> columnsByName = (Map) personTable.mapColumnsOnName();
+		
+		// columns with getter name must be absent (hard to test: can be absent for many reasons !)
+		assertNull(columnsByName.get("creationDate"));
+		assertNull(columnsByName.get("modificationDate"));
+		
+		// Columns with good name must be present
+		Column modifiedAtColumn = columnsByName.get("modifiedAt");
+		assertNotNull(modifiedAtColumn);
+		assertEquals(Date.class, modifiedAtColumn.getJavaType());
+		
+		Person person = new Person();
+		person.setName("me");
+		person.setTimestamp(new Timestamp());
+		
+		// insert value should contain embedded bean values (Timestamp)
+		Map<Column<Table<?>, Object>, Object> insertValues = personMappingStrategy.getInsertValues(person);
+		assertEquals(Maps
+						.asHashMap(columnsByName.get("name"), (Object) person.getName())
+						.add(modifiedAtColumn, person.getTimestamp().getModificationDate())
+				, insertValues);
+		
+		Row row = new Row();
+		row.put(modifiedAtColumn.getName(), person.getTimestamp().getCreationDate());
+		
+		Person loadedPerson = personMappingStrategy.transform(row);
+		assertEquals(person.getTimestamp().getCreationDate(), loadedPerson.getTimestamp().getCreationDate());
 	}
 	
 	/**

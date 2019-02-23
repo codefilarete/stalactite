@@ -70,6 +70,10 @@ public interface IFluentEmbeddableMappingBuilder<C> extends IFluentEmbeddableMap
 		 * @return a mapping configurer, specialized for embedded elements
 		 */
 		<IN> IFluentEmbeddableMappingBuilderEmbedOptions<T, IN> innerEmbed(SerializableBiConsumer<O, IN> setter);
+		
+		<IN> IFluentEmbeddableMappingBuilderEmbedOptions<T, O> exclude(SerializableFunction<O, IN> getter);
+		
+		<IN> IFluentEmbeddableMappingBuilderEmbedOptions<T, O> exclude(SerializableBiConsumer<O, IN> setter);
 	}
 	
 }
