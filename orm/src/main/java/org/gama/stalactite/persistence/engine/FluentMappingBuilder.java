@@ -466,12 +466,17 @@ public class FluentMappingBuilder<C extends Identified, I extends StatefullIdent
 			
 			/** Overriden to take primary key into account */
 			@Override
-			protected Column addLinkage(LinkageByColumnName linkage) {
+			protected Column addLinkage(Linkage linkage) {
 				Column column = super.addLinkage(linkage);
 				// setting the primary key option as asked
-				if (((EntityLinkage) linkage).isPrimaryKey()) {
-					column.primaryKey();
+				if (linkage instanceof EntityLinkage) {	// should always be true, see FluentEntityMappingConfigurationSupport.newLinkage(..)
+					if (((EntityLinkage) linkage).isPrimaryKey()) {
+						column.primaryKey();
+					}
+				} else {
+					throw new NotImplementedException(linkage.getClass());
 				}
+				
 				return column;
 			}
 			

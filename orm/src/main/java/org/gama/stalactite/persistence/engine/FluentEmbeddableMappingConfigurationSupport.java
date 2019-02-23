@@ -26,7 +26,6 @@ import org.gama.lang.Reflections;
 import org.gama.lang.bean.FieldIterator;
 import org.gama.lang.bean.Objects;
 import org.gama.lang.collection.Iterables;
-import org.gama.lang.exception.NotImplementedException;
 import org.gama.lang.function.SerializableTriFunction;
 import org.gama.lang.reflect.MethodDispatcher;
 import org.gama.reflection.AccessorByMethod;
@@ -414,12 +413,7 @@ public class FluentEmbeddableMappingConfigurationSupport<C> implements IFluentEm
 			result.putAll(buildMappingFromInheritance());
 			// converting direct mapping
 			mapping.forEach(linkage -> {
-				Column column;
-				if (linkage instanceof LinkageByColumnName) {
-					column = addLinkage((LinkageByColumnName) linkage);
-				} else {
-					throw new NotImplementedException(linkage.getClass());
-				}
+				Column column = addLinkage(linkage);
 				result.put(linkage.getAccessor(), column);
 			});
 			// adding embeddable (no particular thinking about order compared to previous inherited & class mapping) 
@@ -427,7 +421,7 @@ public class FluentEmbeddableMappingConfigurationSupport<C> implements IFluentEm
 			return result;
 		}
 		
-		protected Column addLinkage(LinkageByColumnName linkage) {
+		protected Column addLinkage(Linkage linkage) {
 			Column column = targetTable.addColumn(linkage.getColumnName(), linkage.getColumnType());
 			// assert that column binder is registered : it will throw en exception if the binder is not found
 			dialect.getColumnBinderRegistry().getBinder(column);
