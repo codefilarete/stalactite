@@ -16,10 +16,12 @@ import org.apache.log4j.spi.LoggingEvent;
 import org.gama.lang.StringAppender;
 import org.gama.lang.collection.Arrays;
 import org.gama.lang.collection.Maps;
+import org.gama.lang.trace.ModifiableInt;
 import org.gama.sql.ConnectionProvider;
 import org.gama.sql.SimpleConnectionProvider;
 import org.gama.sql.binder.DefaultParameterBinders;
 import org.gama.sql.binder.ParameterBinder;
+import org.gama.sql.dml.SQLOperation.SQLOperationListener;
 import org.gama.sql.test.HSQLDBInMemoryDataSource;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -223,6 +225,35 @@ public class WriteOperationTest {
 		// back to normal
 		logger.setLevel(currentLevel);
 	}
+	
+	@Test
+	public void testListenerIsCalled() {
+		Map<Integer, ParameterBinder> parameterBinders = new HashMap<>();
+		parameterBinders.put(1, DefaultParameterBinders.LONG_PRIMITIVE_BINDER);
+		parameterBinders.put(2, DefaultParameterBinders.STRING_BINDER);
+		
+		ModifiableInt beforeValuesSetInvokationCount = new ModifiableInt();
+		Map<Integer, Object> capturedValues = new HashMap<>(); 
+		WriteOperation<Integer> testInstance = new WriteOperation<>(new PreparedSQL("insert into Toto(id, name) values(?, ?)", parameterBinders), connectionProvider);
+		testInstance.setListener(new SQLOperationListener<Integer>() {
+			@Override
+			public void onValuesSet(Map<Integer, ?> values) {
+				beforeValuesSetInvokationCount.increment();
+			}
+			
+			@Override
+			public void onValueSet(Integer param, Object value) {
+				capturedValues.put(param, value);
+			}
+		});
+		
+		testInstance.setValue(1, 1L);
+		testInstance.setValue(2, "tata");
+		assertEquals(0, beforeValuesSetInvokationCount.getValue());
+		assertEquals(Maps.asHashMap(1, (Object) 1L).add(2, "tata"), capturedValues);
+	}
+	
+	
 	
 	private static class TestLayout extends Layout {
 		

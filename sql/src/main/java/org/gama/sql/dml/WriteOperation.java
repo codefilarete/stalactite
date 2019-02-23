@@ -11,7 +11,6 @@ import org.gama.lang.Retryer.RetryException;
 import org.gama.lang.exception.Exceptions;
 import org.gama.lang.function.ThrowingExecutable;
 import org.gama.sql.ConnectionProvider;
-import org.gama.sql.dml.SQLStatement.BindingException;
 
 /**
  * {@link SQLOperation} dedicated to Inserts, Updates, Deletes ... so theses operations return number of affected rows
@@ -54,7 +53,7 @@ public class WriteOperation<ParamType> extends SQLOperation<ParamType> {
 	 * @see #setValues(Map)
 	 */
 	public int execute() {
-		applyValuesToEnsuredStatement();
+		prepareExecute();
 		return executeUpdate();
 	}
 	
@@ -76,9 +75,7 @@ public class WriteOperation<ParamType> extends SQLOperation<ParamType> {
 	}
 	
 	private int executeUpdate() {
-		logExecution();
 		try {
-			applyTimeout();
 			return doWithRetry(this::doExecuteUpdate);
 		} catch (SQLException | RetryException e) {
 			throw new SQLExecutionException(getSQL(), e);
@@ -116,6 +113,7 @@ public class WriteOperation<ParamType> extends SQLOperation<ParamType> {
 	} 
 	
 	private int[] doExecuteBatch() {
+		getListener().onExecute(getSqlStatement());
 		logExecution(() -> {
 			HashMap<Integer, Map<ParamType, ?>> valuesClone = new HashMap<>(batchedValues);
 			valuesClone.entrySet().forEach(e -> e.setValue(filterLoggable(e.getValue())));
@@ -156,15 +154,6 @@ public class WriteOperation<ParamType> extends SQLOperation<ParamType> {
 			this.preparedStatement.addBatch();
 		} catch (SQLException e) {
 			throw Exceptions.asRuntimeException(e);
-		}
-	}
-	
-	private void applyValuesToEnsuredStatement() {
-		try {
-			ensureStatement();
-			this.sqlStatement.applyValues(preparedStatement);
-		} catch (SQLException | RuntimeException t) {
-			throw new BindingException("Error while applying values " + this.sqlStatement.values + " on statement " + getSQL(), t);
 		}
 	}
 }

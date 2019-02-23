@@ -11,7 +11,9 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.Supplier;
 
+import org.gama.lang.bean.Objects;
 import org.gama.sql.ConnectionProvider;
+import org.gama.sql.dml.SQLStatement.BindingException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -34,11 +36,18 @@ public abstract class SQLOperation<ParamType> implements AutoCloseable {
 	
 	protected static final Logger LOGGER = LoggerFactory.getLogger(SQLOperation.class);
 	
+	/** Listener that does nothing, made to prevent from not-null-matching if */
+	public static final SQLOperationListener NOOP_LISTENER = new SQLOperationListener() {
+		/* Expected to do nothing, so we do nothing */
+	};
+	
 	protected final ConnectionProvider connectionProvider;
 	
 	protected PreparedStatement preparedStatement;
 	
 	protected final SQLStatement<ParamType> sqlStatement;
+	
+	private SQLOperationListener<ParamType> listener = NOOP_LISTENER;
 	
 	private String sql;
 	
@@ -53,12 +62,20 @@ public abstract class SQLOperation<ParamType> implements AutoCloseable {
 		this.connectionProvider = connectionProvider;
 	}
 	
+	public ConnectionProvider getConnectionProvider() {
+		return connectionProvider;
+	}
+	
 	public SQLStatement<ParamType> getSqlStatement() {
 		return sqlStatement;
 	}
 	
-	public ConnectionProvider getConnectionProvider() {
-		return connectionProvider;
+	public SQLOperationListener<ParamType> getListener() {
+		return listener;
+	}
+	
+	public void setListener(@Nullable SQLOperationListener<ParamType> listener) {
+		this.listener = Objects.preventNull(listener, NOOP_LISTENER);
 	}
 	
 	/**
@@ -66,6 +83,7 @@ public abstract class SQLOperation<ParamType> implements AutoCloseable {
 	 * @param values values for each parameter
 	 */
 	public void setValues(Map<ParamType, ?> values) {
+		this.listener.onValuesSet(values);
 		// we transfert data to our own structure
 		this.sqlStatement.setValues(values);
 	}
@@ -77,6 +95,7 @@ public abstract class SQLOperation<ParamType> implements AutoCloseable {
 	 * @param value parameter/index value
 	 */
 	public void setValue(ParamType index, Object value) {
+		this.listener.onValueSet(index, value);
 		this.sqlStatement.setValue(index, value);
 	}
 	
@@ -108,6 +127,26 @@ public abstract class SQLOperation<ParamType> implements AutoCloseable {
 			this.sql = sqlStatement.getSQL();
 		}
 		return this.sql;
+	}
+	
+	protected void prepareExecute() {
+		listener.onExecute(sqlStatement);
+		applyValuesToEnsuredStatement();
+		logExecution();
+		try {
+			applyTimeout();
+		} catch (SQLException e) {
+			throw new SQLExecutionException(getSQL(), e);
+		}
+	}
+	
+	protected void applyValuesToEnsuredStatement() {
+		try {
+			ensureStatement();
+			this.sqlStatement.applyValues(preparedStatement);
+		} catch (SQLException | RuntimeException t) {
+			throw new BindingException("Error while applying values " + this.sqlStatement.values + " on statement " + getSQL(), t);
+		}
 	}
 	
 	/**
@@ -192,6 +231,51 @@ public abstract class SQLOperation<ParamType> implements AutoCloseable {
 		}
 		if (LOGGER.isTraceEnabled()) {
 			LOGGER.debug("{} | {}", sqlStatement.getSQLSource(), valuesSupplier.get());
+		}
+	}
+	
+	/**
+	 * Contract to implement for being notified of actions on an {@link SQLOperation}
+	 * Created for use cases where listening to SQL orders is necessary but auditing logs is not enough because you only get a String version of
+	 * what is executed.
+	 * <strong>Be aware that sensible values are not filtered</strong> at the opposit to logged ones hence you get same values passed to SQL
+	 * order, DON'T LOG THEM. Hence this listener is not made to replace logging system.
+	 * 
+	 * @param <ParamType> type of the {@link SQLOperation} to be registered on
+	 */
+	public interface SQLOperationListener<ParamType> {
+		
+		/**
+		 * Called when the {@link SQLOperation#setValues(Map)} is called.
+		 * Please note that the given {@link Map} is writable which allow values to be modified, but this is not the primary goal on this method
+		 * and is not an active feature and may be changed in the future. This is done so because making it unmodifiable needs an superfluous
+		 * instanciation.
+		 * Please note also that this behavior defers from {@link #onValueSet(Object, Object)} where the value is "readonly" : since it is passed
+		 * by reference (Java language), simple (non complex) types are considered readonly.
+		 * 
+		 * <strong>Be aware that sensible values are not filtered</strong> at the opposit to logged ones hence you get same values passed to SQL
+		 * order, DON'T LOG THEM.
+		 * 
+		 * @param values
+		 */
+		default void onValuesSet(Map<ParamType, ?> values) {
+			// does nothing by default
+		}
+		
+		/**
+		 * Called when the {@link SQLOperation#setValue(Object, Object)} is called.
+		 * <strong>Be aware that sensible values are not filtered</strong> at the opposit to logged ones hence you get same values passed to SQL
+		 * order, DON'T LOG THEM.
+		 * 
+		 * @param param
+		 * @param value
+		 */
+		default void onValueSet(ParamType param, Object value) {
+			// does nothing by default
+		}
+		
+		default void onExecute(SQLStatement<ParamType> sqlStatement) {
+			
 		}
 	}
 }

@@ -23,11 +23,8 @@ public class ReadOperation<ParamType> extends SQLOperation<ParamType> {
 	 * @return the {@link ResultSet} from the database
 	 */
 	public ResultSet execute() {
+		prepareExecute();
 		try {
-			ensureStatement();
-			this.sqlStatement.applyValues(preparedStatement);
-			logExecution();
-			applyTimeout();
 			return this.preparedStatement.executeQuery();
 		} catch (SQLException e) {
 			throw new SQLExecutionException(getSQL(), e);

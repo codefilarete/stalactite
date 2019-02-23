@@ -7,10 +7,13 @@ import java.sql.Statement;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.gama.lang.collection.Maps;
+import org.gama.lang.trace.ModifiableInt;
 import org.gama.sql.ConnectionProvider;
 import org.gama.sql.SimpleConnectionProvider;
 import org.gama.sql.binder.DefaultParameterBinders;
 import org.gama.sql.binder.ParameterBinder;
+import org.gama.sql.dml.SQLOperation.SQLOperationListener;
 import org.gama.sql.test.HSQLDBInMemoryDataSource;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -63,4 +66,32 @@ public class ReadOperationTest {
 		assertTrue(resultSet.next());
 		assertEquals(0, resultSet.getInt(1));
 	}
+	
+	@Test
+	public void testListenerIsCalled() {
+		Map<String, ParameterBinder> parameterBinders = new HashMap<>();
+		parameterBinders.put("id", DefaultParameterBinders.LONG_PRIMITIVE_BINDER);
+		parameterBinders.put("name", DefaultParameterBinders.STRING_BINDER);
+		
+		ModifiableInt beforeValuesSetInvokationCount = new ModifiableInt();
+		Map<String, Object> capturedValues = new HashMap<>();
+		ReadOperation<String> testInstance = new ReadOperation<>(new StringParamedSQL("select count(*) from Toto where id = :id and name = :name", parameterBinders), connectionProvider);
+		testInstance.setListener(new SQLOperationListener<String>() {
+			@Override
+			public void onValuesSet(Map<String, ?> values) {
+				beforeValuesSetInvokationCount.increment();
+			}
+			
+			@Override
+			public void onValueSet(String param, Object value) {
+				capturedValues.put(param, value);
+			}
+		});
+		
+		testInstance.setValue("id", 1L);
+		testInstance.setValue("name", "tata");
+		assertEquals(0, beforeValuesSetInvokationCount.getValue());
+		assertEquals(Maps.asHashMap("id", (Object) 1L).add("name", "tata"), capturedValues);
+	}
+	
 }
