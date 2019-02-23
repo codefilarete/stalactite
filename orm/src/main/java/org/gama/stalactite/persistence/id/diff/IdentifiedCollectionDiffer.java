@@ -143,7 +143,7 @@ public class IdentifiedCollectionDiffer {
 	<E extends Identified> SortedSet<Integer> lookupIndexes(List<E> srcList, E searched) {
 		TreeSet<Integer> indexes = new TreeSet<>();
 		// comparison is done on equals()
-		Iterables.consumeAll(srcList, searched::equals, (e, i) -> indexes.add(i));
+		Iterables.consume(srcList, searched::equals, (e, i) -> indexes.add(i));
 		return indexes;
 	}
 	

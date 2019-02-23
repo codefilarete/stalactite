@@ -506,7 +506,7 @@ public class FluentEmbeddableMappingConfigurationSupport<C> implements IFluentEm
 				Predicate<Field> innerEmbeddableExcluder = Objects.not(insetsPropertyRegistry::contains);
 				// we also skip excluded fields by user
 				Predicate<Field> excludedFieldsExcluder = Objects.not(inset.excludedProperties::contains);
-				Iterables.consumeAll(fieldIterator, innerEmbeddableExcluder.and(excludedFieldsExcluder), (field, i) -> {
+				Iterables.consume(fieldIterator, innerEmbeddableExcluder.and(excludedFieldsExcluder), (field, i) -> {
 					// looking for the targeted column
 					Column targetColumn = findColumn(field, columnsPerName, inset);
 					if (targetColumn == null) {
