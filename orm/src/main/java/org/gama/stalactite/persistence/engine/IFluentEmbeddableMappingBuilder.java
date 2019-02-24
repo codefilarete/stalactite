@@ -26,6 +26,8 @@ public interface IFluentEmbeddableMappingBuilder<C> extends IFluentEmbeddableMap
 
 	<O> IFluentEmbeddableMappingBuilderEmbedOptions<C, O> embed(SerializableFunction<C, O> getter);
 	
+	<O> IFluentEmbeddableMappingBuilder<C> embed(SerializableFunction<C, O> getter, EmbeddedBeanMappingStrategyBuilder<O> embeddableMappingBuilder);
+	
 	/**
 	 * Crossover between {@link IFluentEmbeddableMappingConfigurationEmbedOptions} (refine its return types) and {@link IFluentEmbeddableMappingBuilder}
 	 * in order that {@link #embed(SerializableFunction)}

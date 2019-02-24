@@ -365,7 +365,7 @@ class FluentEmbeddableMappingConfigurationSupportTest {
 					.embed(Country::setPresident)
 						// inner embed with setter
 						.innerEmbed(Person::setTimestamp)
-						// embed with setter
+					// embed with setter
 					.embed(Country::setTimestamp)
 					.add(Country::getDescription, "xx")
 					.add(Country::getDummyProperty, "dd")
@@ -373,7 +373,22 @@ class FluentEmbeddableMappingConfigurationSupportTest {
 		} catch (RuntimeException e) {
 			// Since we only want to test compilation, we don't care about that the above code throws an exception or not
 		}
-}
+		
+		try {
+			EmbeddedBeanMappingStrategyBuilder<Person> personMappingBuilder = FluentEmbeddableMappingConfigurationSupport.from(Person.class)
+					.add(Person::getName);
+			
+			FluentEmbeddableMappingConfigurationSupport.from(Country.class)
+					.add(Country::getName)
+					.add(Country::getId, "zz")
+					.mapSuperClass(AbstractCountry.class, new EmbeddedBeanMappingStrategy<>(Object.class, new Table<>(""), new HashMap<>()))
+					// embed with setter
+					.embed(Country::getPresident, personMappingBuilder)
+					.build(DIALECT, countryTable);
+		} catch (RuntimeException e) {
+			// Since we only want to test compilation, we don't care about that the above code throws an exception or not
+		}
+	}
 	
 	@Test
 	public void testBuild_innerEmbed_withTwiceSameInnerEmbeddableName_throwException() {
@@ -464,5 +479,30 @@ class FluentEmbeddableMappingConfigurationSupportTest {
 				" conflicts with j.l.String o.g.s.p.e.m.Country.getName() because they use same column," +
 				" override one of their name to avoid the conflict, see EmbedOptions::overrideName", thrownException.getMessage());
 		
+	}
+	
+	@Test
+	public void testBuild_embed_withReusedEmbeddable() {
+		EmbeddedBeanMappingStrategyBuilder<Person> personMappingBuilder = FluentEmbeddableMappingConfigurationSupport.from(Person.class)
+				.add(Person::getName);
+		
+		Table<?> countryTable = new Table<>("countryTable");
+		EmbeddedBeanMappingStrategy<Country, Table<?>> personMappingStrategy = FluentEmbeddableMappingConfigurationSupport.from(Country.class)
+				.add(Country::getName, "countryName")
+				.embed(Country::getPresident, personMappingBuilder)
+				.build(DIALECT, countryTable);
+		
+		Map<String, Column> columnsByName = (Map) personMappingStrategy.getTargetTable().mapColumnsOnName();
+		
+		assertEquals(Arrays.asHashSet(
+				// from Country
+				"countryName",
+				// from Person
+				"name"),
+				countryTable.getColumns().stream().map(Column::getName).collect(Collectors.toSet()));
+		
+		// checking types
+		assertEquals(String.class, columnsByName.get("countryName").getJavaType());
+		assertEquals(String.class, columnsByName.get("name").getJavaType());
 	}
 }

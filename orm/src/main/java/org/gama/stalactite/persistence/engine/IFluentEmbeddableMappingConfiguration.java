@@ -29,6 +29,8 @@ public interface IFluentEmbeddableMappingConfiguration<C> {
 
 	<O> IFluentEmbeddableMappingConfigurationEmbedOptions<C, O> embed(SerializableFunction<C, O> getter);
 	
+	<O> IFluentEmbeddableMappingBuilder<C> embed(SerializableFunction<C, O> getter, EmbeddedBeanMappingStrategyBuilder<O> embeddableMappingBuilder);
+	
 	/**
 	 * Crossover between {@link IFluentEmbeddableMappingConfiguration} and {@link EmbedOptions} in order that {@link #embed(SerializableFunction)} methods
 	 * result can chain with some {@link EmbedOptions} as well as continue configuratio of an {@link IFluentEmbeddableMappingConfiguration}

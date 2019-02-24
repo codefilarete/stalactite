@@ -276,6 +276,12 @@ public class FluentMappingBuilder<C extends Identified, I extends StatefullIdent
 		return embed(fluentEntityMappingConfigurationSupport.embed(getter));
 	}
 	
+	@Override
+	public <O> IFluentEmbeddableMappingBuilder<C> embed(SerializableFunction<C, O> getter,
+														EmbeddedBeanMappingStrategyBuilder<O> embeddableMappingBuilder) {
+		return null;
+	}
+	
 	private <O> IFluentMappingBuilderEmbedOptions<C, I, O> embed(IFluentEmbeddableMappingBuilderEmbedOptions<C, O> embedSupport) {
 		return new MethodDispatcher()
 				.redirect(EmbedWithColumnOptions.class, new EmbedWithColumnOptions() {
@@ -589,7 +595,7 @@ public class FluentMappingBuilder<C extends Identified, I extends StatefullIdent
 	 */
 	class FluentEntityMappingConfigurationSupport extends FluentEmbeddableMappingConfigurationSupport<C> {
 		
-		private OverridableColumnInset currentInset;
+		private OverridableColumnInset<C, ?> currentInset;
 		
 		/**
 		 * Creates a builder to map the given class for persistence
@@ -603,13 +609,13 @@ public class FluentMappingBuilder<C extends Identified, I extends StatefullIdent
 		@Override
 		protected <O> Inset<C, O> newInset(SerializableBiConsumer<C, O> setter) {
 			this.currentInset = new OverridableColumnInset<>(setter, this);
-			return currentInset;
+			return (Inset<C, O>) currentInset;
 		}
 		
 		@Override
 		protected <O> Inset<C, O> newInset(SerializableFunction<C, O> getter) {
 			this.currentInset = new OverridableColumnInset<>(getter, this);
-			return currentInset;
+			return (Inset<C, O>) currentInset;
 		}
 		
 		/**
@@ -617,7 +623,7 @@ public class FluentMappingBuilder<C extends Identified, I extends StatefullIdent
 		 * @return the last {@link Inset} built by {@link #newInset(SerializableFunction)} or {@link #newInset(SerializableBiConsumer)}
 		 */
 		@Override
-		protected OverridableColumnInset currentInset() {
+		protected OverridableColumnInset<C, ?> currentInset() {
 			return currentInset;
 		}
 		
