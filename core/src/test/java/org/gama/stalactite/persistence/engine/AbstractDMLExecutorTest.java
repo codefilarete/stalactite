@@ -28,14 +28,15 @@ import org.gama.stalactite.persistence.id.manager.IdentifierInsertionManager;
 import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
 import org.gama.stalactite.persistence.mapping.ComposedIdMappingStrategy;
 import org.gama.stalactite.persistence.mapping.IdAccessor;
-import org.gama.stalactite.persistence.mapping.SinglePropertyIdAccessor;
 import org.gama.stalactite.persistence.mapping.PersistentFieldHarverster;
+import org.gama.stalactite.persistence.mapping.SinglePropertyIdAccessor;
 import org.gama.stalactite.persistence.sql.Dialect;
 import org.gama.stalactite.persistence.sql.ddl.JavaTypeToSqlTypeMapping;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.test.JdbcConnectionProvider;
 import org.gama.stalactite.test.PairSetList;
+import org.junit.jupiter.api.BeforeEach;
 import org.mockito.ArgumentCaptor;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -47,6 +48,11 @@ import static org.mockito.Mockito.when;
  * @author Guillaume Mary
  */
 public abstract class AbstractDMLExecutorTest {
+	
+	@BeforeEach
+	void initSequence() {
+		InMemoryCounterIdentifierGenerator.INSTANCE.reset();
+	}
 	
 	protected static abstract class AbstractDataSet<C, I> {
 		
