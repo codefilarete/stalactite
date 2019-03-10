@@ -15,6 +15,7 @@ import org.gama.lang.collection.Iterables;
 import org.gama.sql.binder.ParameterBinder;
 import org.gama.sql.binder.ParameterBinderIndex;
 import org.gama.sql.binder.ParameterBinderRegistry;
+import org.gama.sql.dml.SQLStatement.BindingException;
 import org.gama.stalactite.persistence.structure.Column;
 
 /**
@@ -44,7 +45,7 @@ public class ColumnBinderRegistry extends ParameterBinderRegistry implements Par
 	 *
 	 * @param column any non null {@link Column}
 	 * @return the binder for the column or for its Java type
-	 * @throws UnsupportedOperationException if the binder doesn't exist
+	 * @throws BindingException if the binder doesn't exist
 	 */
 	@Override
 	public ParameterBinder doGetBinder(@Nonnull Column column) {
@@ -74,8 +75,8 @@ public class ColumnBinderRegistry extends ParameterBinderRegistry implements Par
 		return parameterBinders.entrySet();
 	}
 	
-	private UnsupportedOperationException newMissingBinderException(Column column) {
-		return new UnsupportedOperationException("No parameter binder found for column " + column.getAbsoluteName()
+	private BindingException newMissingBinderException(Column column) {
+		return new BindingException("No parameter binder found for column " + column.getAbsoluteName()
 				+ " (type " + Reflections.toString(column.getJavaType()) + ")");
 	}
 }
