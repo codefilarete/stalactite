@@ -156,22 +156,26 @@ public class ClassMappingStrategy<C, I, T extends Table> implements IEntityMappi
 	
 	/**
 	 * Gives columns that can be inserted: columns minus generated keys
-	 * @return columns of all mapping strategies without auto-generated keys
+	 * @return columns of all mapping strategies without auto-generated keys, as an immutable {@link Set}
 	 */
 	public Set<Column<T, Object>> getInsertableColumns() {
-		return insertableColumns;
+		return Collections.unmodifiableSet(insertableColumns);
 	}
 	
 	/**
 	 * Gives columns that can be updated: columns minus keys
-	 * @return columns of all mapping strategies without getKey()
+	 * @return columns of all mapping strategies without getKey(), as an immutable {@link Set}
 	 */
 	public Set<Column<T, Object>> getUpdatableColumns() {
-		return updatableColumns;
+		return Collections.unmodifiableSet(updatableColumns);
 	}
 	
+	/**
+	 * Gives columns that can be selected
+	 * @return columns of all mapping strategies, as an immutable {@link Set}
+	 */
 	public Set<Column<T, Object>> getSelectableColumns() {
-		return selectableColumns;
+		return Collections.unmodifiableSet(selectableColumns);
 	}
 	
 	@Override

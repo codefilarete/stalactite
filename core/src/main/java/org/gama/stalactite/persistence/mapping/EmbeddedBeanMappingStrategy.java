@@ -2,6 +2,7 @@ package org.gama.stalactite.persistence.mapping;
 
 import javax.annotation.Nonnull;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -87,8 +88,11 @@ public class EmbeddedBeanMappingStrategy<C, T extends Table> implements IEmbedde
 		return targetTable;
 	}
 	
+	/**
+	 * @return an immutable {@link Map} of the configured mapping
+	 */
 	public Map<IReversibleAccessor<C, Object>, Column<T, Object>> getPropertyToColumn() {
-		return propertyToColumn;
+		return Collections.unmodifiableMap(propertyToColumn);
 	}
 	
 	/**
@@ -98,7 +102,7 @@ public class EmbeddedBeanMappingStrategy<C, T extends Table> implements IEmbedde
 	@Nonnull
 	@Override
 	public Set<Column<T, Object>> getColumns() {
-		return columns;
+		return Collections.unmodifiableSet(columns);
 	}
 	
 	public ToBeanRowTransformer<C> getRowTransformer() {
