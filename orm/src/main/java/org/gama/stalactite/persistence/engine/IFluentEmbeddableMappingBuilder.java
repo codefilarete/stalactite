@@ -26,19 +26,19 @@ public interface IFluentEmbeddableMappingBuilder<C> extends IFluentEmbeddableMap
 
 	<O> IFluentEmbeddableMappingBuilderEmbedOptions<C, O> embed(SerializableFunction<C, O> getter);
 	
-	<O> IFluentEmbeddableMappingBuilder<C> embed(SerializableFunction<C, O> getter, EmbeddedBeanMappingStrategyBuilder<O> embeddableMappingBuilder);
+	<O> IFluentEmbeddableMappingBuilderEmbeddableOptions<C, O> embed(SerializableFunction<C, O> getter, EmbeddedBeanMappingStrategyBuilder<O> embeddableMappingBuilder);
 	
 	/**
-	 * Crossover between {@link IFluentEmbeddableMappingConfigurationEmbedOptions} (refine its return types) and {@link IFluentEmbeddableMappingBuilder}
-	 * in order that {@link #embed(SerializableFunction)}
-	 * methods result can chain with some {@link EmbedOptions} as well as continue configuratio of an {@link IFluentEmbeddableMappingConfiguration}
+	 * Crossover between {@link IFluentEmbeddableMappingConfigurationEmbedOptions} (refines its return types) and {@link IFluentEmbeddableMappingBuilder}
+	 * in order that {@link #embed(SerializableFunction)} methods result can chain with some {@link EmbedOptions} as well as continue configuration
+	 * of an {@link IFluentEmbeddableMappingConfiguration}
 	 * 
 	 * @param <T> owner type
 	 * @param <O> type of the property that must be overriden
 	 */
 	interface IFluentEmbeddableMappingBuilderEmbedOptions<T, O>
 			extends IFluentEmbeddableMappingConfigurationEmbedOptions<T, O>,
-					EmbeddedBeanMappingStrategyBuilder<T>,	// This is superfluous because IFluentEmbeddableMappingBuilder already extends it.
+//					EmbeddedBeanMappingStrategyBuilder<T>,	// This is superfluous because IFluentEmbeddableMappingBuilder already extends it.
 					IFluentEmbeddableMappingBuilder<T> {	// This is necessary to benefit from refined return types, else API is broken (see dedicated unit tests).
 		
 		/**
@@ -78,4 +78,16 @@ public interface IFluentEmbeddableMappingBuilder<C> extends IFluentEmbeddableMap
 		<IN> IFluentEmbeddableMappingBuilderEmbedOptions<T, O> exclude(SerializableBiConsumer<O, IN> setter);
 	}
 	
+	
+	interface IFluentEmbeddableMappingBuilderEmbeddableOptions<T, O>
+			extends IFluentEmbeddableMappingConfigurationEmbeddableOptions<T, O>,
+//					EmbedingEmbeddableOptions<O>,	// This seems superfluous because IFluentEmbeddableMappingBuilder already extends it, but
+					IFluentEmbeddableMappingBuilder<T> {	// This is necessary to benefit from refined return types, else API is broken (see dedicated unit tests).
+		
+		@Override
+		<IN> IFluentEmbeddableMappingBuilderEmbeddableOptions<T, O> overrideName(SerializableFunction<O, IN> function, String columnName);
+		
+		@Override
+		<IN> IFluentEmbeddableMappingBuilderEmbeddableOptions<T, O> overrideName(SerializableBiConsumer<O, IN> function, String columnName);
+	}
 }

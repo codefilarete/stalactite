@@ -9,7 +9,7 @@ import org.gama.stalactite.persistence.structure.Table;
  * 
  * @author Guillaume Mary
  */
-public interface EmbedOptions<T> {
+public interface EmbedOptions<C> {
 	
 	/**
 	 * Overrides embedding with a column name
@@ -19,7 +19,7 @@ public interface EmbedOptions<T> {
 	 * @param <IN> input of the function (type of the embedded element)
 	 * @return a mapping configurer, specialized for embedded elements
 	 */
-	<IN> EmbedOptions<T> overrideName(SerializableFunction<T, IN> function, String columnName);
+	<IN> EmbedOptions<C> overrideName(SerializableFunction<C, IN> function, String columnName);
 	
 	/**
 	 * Adds a complex-typed property as embedded into this embedded
@@ -29,7 +29,7 @@ public interface EmbedOptions<T> {
 	 * @param <IN> input of the function (type of the embedded element)
 	 * @return a mapping configurer, specialized for embedded elements
 	 */
-	<IN> EmbedOptions<IN> innerEmbed(SerializableFunction<T, IN> getter);
+	<IN> EmbedOptions<IN> innerEmbed(SerializableFunction<C, IN> getter);
 	
 	/**
 	 * Adds a complex-typed property as embedded into this embedded
@@ -40,9 +40,9 @@ public interface EmbedOptions<T> {
 	 * @return a mapping configurer, specialized for embedded elements
 	 */
 	
-	<IN> EmbedOptions<IN> innerEmbed(SerializableBiConsumer<T, IN> setter);
+	<IN> EmbedOptions<IN> innerEmbed(SerializableBiConsumer<C, IN> setter);
 	
-	<IN> EmbedOptions<T> exclude(SerializableFunction<T, IN> getter);
+	<IN> EmbedOptions<C> exclude(SerializableFunction<C, IN> getter);
 	
-	<IN> EmbedOptions<T> exclude(SerializableBiConsumer<T, IN> setter);
+	<IN> EmbedOptions<C> exclude(SerializableBiConsumer<C, IN> setter);
 }

@@ -15,6 +15,7 @@ import org.gama.sql.result.Row;
 import org.gama.stalactite.persistence.engine.FluentMappingBuilderInheritanceTest.Car;
 import org.gama.stalactite.persistence.engine.FluentMappingBuilderInheritanceTest.Color;
 import org.gama.stalactite.persistence.engine.IFluentEmbeddableMappingBuilder.IFluentEmbeddableMappingBuilderEmbedOptions;
+import org.gama.stalactite.persistence.engine.IFluentEmbeddableMappingBuilder.IFluentEmbeddableMappingBuilderEmbeddableOptions;
 import org.gama.stalactite.persistence.engine.model.AbstractCountry;
 import org.gama.stalactite.persistence.engine.model.Country;
 import org.gama.stalactite.persistence.engine.model.Person;
@@ -106,6 +107,18 @@ class FluentEmbeddableMappingConfigurationSupportTest {
 				assertThrows(MappingConfigurationException.class, () -> FluentEmbeddableMappingConfigurationSupport.from(Country.class)
 						.add(Country::getName, "xyz")
 						.add(Country::setDescription, "xyz")
+						.build(DIALECT, countryTable))
+						.getMessage());
+	}
+	
+	@Test
+	public void testAdd_mappingAComplextType_throwsException() {
+		Table<?> countryTable = new Table<>("countryTable");
+		assertEquals("countryTable.timestamp has no matching binder, please consider adding one to dialect binder registry" +
+						" or use one of the IFluentEmbeddableMappingConfiguration::embed methods",
+				assertThrows(MappingConfigurationException.class, () -> FluentEmbeddableMappingConfigurationSupport.from(Country.class)
+						.add(Country::getName)
+						.add(Country::setTimestamp)
 						.build(DIALECT, countryTable))
 						.getMessage());
 	}
@@ -308,7 +321,8 @@ class FluentEmbeddableMappingConfigurationSupportTest {
 		row.put(modifiedAtColumn.getName(), person.getTimestamp().getCreationDate());
 		
 		Person loadedPerson = personMappingStrategy.transform(row);
-		assertEquals(person.getTimestamp().getCreationDate(), loadedPerson.getTimestamp().getCreationDate());
+		// we compare without with a round of 10ms because time laps between instanciation and database load
+		assertEquals(person.getTimestamp().getCreationDate().getTime() / 10, loadedPerson.getTimestamp().getCreationDate().getTime() / 10);
 	}
 	
 	/**
@@ -388,6 +402,26 @@ class FluentEmbeddableMappingConfigurationSupportTest {
 		} catch (RuntimeException e) {
 			// Since we only want to test compilation, we don't care about that the above code throws an exception or not
 		}
+		
+		try {
+			EmbeddedBeanMappingStrategyBuilder<Person> personMappingBuilder = FluentEmbeddableMappingConfigurationSupport.from(Person.class)
+					.add(Person::getName);
+			
+			FluentEmbeddableMappingConfigurationSupport.from(Country.class)
+					.add(Country::getName)
+					.add(Country::getId, "zz")
+					.embed(Country::getPresident, personMappingBuilder)
+					.mapSuperClass(AbstractCountry.class, new EmbeddedBeanMappingStrategy<>(Object.class, new Table<>(""), new HashMap<>()))
+					// reusing embeddable ...
+					.embed(Country::getPresident, personMappingBuilder)
+						// with getter override
+						.overrideName(Person::getName, "toto")
+						// with setter override
+						.overrideName(Person::setName, "tata")
+					.build(DIALECT, countryTable);
+		} catch (RuntimeException e) {
+			// Since we only want to test compilation, we don't care about that the above code throws an exception or not
+		}
 	}
 	
 	@Test
@@ -402,16 +436,16 @@ class FluentEmbeddableMappingConfigurationSupportTest {
 				.embed(Country::getTimestamp);
 		MappingConfigurationException thrownException = assertThrows(MappingConfigurationException.class, () -> mappingBuilder
 				.build(DIALECT, countryTable));
-		assertEquals("Country::getTimestamp conflicts with Person::getTimestamp for embedding a o.g.s.p.e.m.Timestamp" +
-				", field names should be overriden : j.u.Date o.g.s.p.e.m.Timestamp.modificationDate, j.u.Date o.g.s.p.e.m.Timestamp.creationDate", thrownException.getMessage());
+		assertEquals("Country::getTimestamp conflicts with Person::getTimestamp while embedding a o.g.s.p.e.m.Timestamp" +
+				", column names should be overriden : j.u.Date o.g.s.p.e.m.Timestamp.modificationDate, j.u.Date o.g.s.p.e.m.Timestamp.creationDate", thrownException.getMessage());
 		
 		// we add an override, exception must still be thrown, with different message
 		mappingBuilder.overrideName(Timestamp::getModificationDate, "modifiedAt");
 		
 		thrownException = assertThrows(MappingConfigurationException.class, () -> mappingBuilder
 				.build(DIALECT, countryTable));
-		assertEquals("Country::getTimestamp conflicts with Person::getTimestamp for embedding a o.g.s.p.e.m.Timestamp" +
-				", field names should be overriden : j.u.Date o.g.s.p.e.m.Timestamp.creationDate", thrownException.getMessage());
+		assertEquals("Country::getTimestamp conflicts with Person::getTimestamp while embedding a o.g.s.p.e.m.Timestamp" +
+				", column names should be overriden : j.u.Date o.g.s.p.e.m.Timestamp.creationDate", thrownException.getMessage());
 		
 		// we override the last field, no exception is thrown
 		mappingBuilder.overrideName(Timestamp::getCreationDate, "createdAt");
@@ -478,13 +512,12 @@ class FluentEmbeddableMappingConfigurationSupportTest {
 		assertEquals("Error while mapping Country::getPresident : field o.g.s.p.e.m.Person.name" +
 				" conflicts with j.l.String o.g.s.p.e.m.Country.getName() because they use same column," +
 				" override one of their name to avoid the conflict, see EmbedOptions::overrideName", thrownException.getMessage());
-		
 	}
 	
 	@Test
-	public void testBuild_embed_withReusedEmbeddable() {
+	public void testBuild_embedReusedEmbeddable_simpleCase() {
 		EmbeddedBeanMappingStrategyBuilder<Person> personMappingBuilder = FluentEmbeddableMappingConfigurationSupport.from(Person.class)
-				.add(Person::getName);
+				.add(Person::getId);
 		
 		Table<?> countryTable = new Table<>("countryTable");
 		EmbeddedBeanMappingStrategy<Country, Table<?>> personMappingStrategy = FluentEmbeddableMappingConfigurationSupport.from(Country.class)
@@ -498,11 +531,317 @@ class FluentEmbeddableMappingConfigurationSupportTest {
 				// from Country
 				"countryName",
 				// from Person
-				"name"),
+				"id"),
 				countryTable.getColumns().stream().map(Column::getName).collect(Collectors.toSet()));
 		
 		// checking types
 		assertEquals(String.class, columnsByName.get("countryName").getJavaType());
+		assertEquals(Identifier.class, columnsByName.get("id").getJavaType());
+	}
+	
+	@Test
+	public void testBuild_embedReusedEmbeddable_overrideName() {
+		EmbeddedBeanMappingStrategyBuilder<Person> personMappingBuilder = FluentEmbeddableMappingConfigurationSupport.from(Person.class)
+				.add(Person::getName)
+				.embed(Person::getTimestamp);
+		
+		Table<?> countryTable = new Table<>("countryTable");
+		EmbeddedBeanMappingStrategy<Country, Table<?>> personMappingStrategy = FluentEmbeddableMappingConfigurationSupport.from(Country.class)
+				.add(Country::getName)
+				.embed(Country::getPresident, personMappingBuilder)
+					.overrideName(Person::getName, "personName")
+				.build(DIALECT, countryTable);
+		
+		Map<String, Column> columnsByName = (Map) personMappingStrategy.getTargetTable().mapColumnsOnName();
+		
+		assertEquals(Arrays.asHashSet(
+				// from Country
+				"name",
+				// from Person
+				"personName", "modificationDate", "creationDate"),
+				countryTable.getColumns().stream().map(Column::getName).collect(Collectors.toSet()));
+		
+		// checking types
 		assertEquals(String.class, columnsByName.get("name").getJavaType());
+		assertEquals(String.class, columnsByName.get("personName").getJavaType());
+	}
+	
+	@Test
+	public void testBuild_embedReusedEmbeddable_definedTwice_throwException() {
+		EmbeddedBeanMappingStrategyBuilder<Person> personMappingBuilder = FluentEmbeddableMappingConfigurationSupport.from(Person.class)
+				.add(Person::getName, "myName");
+		
+		Table<?> countryTable = new Table<>("countryTable");
+		
+		IFluentEmbeddableMappingBuilder<Country> mappingBuilder = FluentEmbeddableMappingConfigurationSupport.from(Country.class)
+				.add(Country::getName)
+				.embed(Country::getPresident, personMappingBuilder)
+				// voluntary duplicate to fulfill goal of this test
+				.embed(Country::getPresident, personMappingBuilder);
+		MappingConfigurationException thrownException = assertThrows(MappingConfigurationException.class, () ->
+				mappingBuilder.build(DIALECT, countryTable));
+		assertEquals("Country::getPresident is already mapped", thrownException.getMessage());
+	}
+	
+	@Test
+	public void testBuild_embedReusedEmbeddable_conflictingColumnNameNotOverriden_throwsException() {
+		EmbeddedBeanMappingStrategyBuilder<Person> personMappingBuilder = FluentEmbeddableMappingConfigurationSupport.from(Person.class)
+				.add(Person::getName);
+		
+		Table<?> countryTable = new Table<>("countryTable");
+		IFluentEmbeddableMappingBuilderEmbeddableOptions<Country, Person> entityMappingBuilder = FluentEmbeddableMappingConfigurationSupport.from(Country.class)
+				.add(Country::getName)
+				.embed(Country::getPresident, personMappingBuilder);
+		
+		MappingConfigurationException thrownException = assertThrows(MappingConfigurationException.class, () ->
+				entityMappingBuilder.build(DIALECT, countryTable));
+		assertEquals("Some embedded columns conflict with entity ones on their name, please override it or change it :" + System.lineSeparator() 
+						+ "Embeddable definition 'j.l.String o.g.s.p.e.m.Person.getName()'" 
+						+ " vs entity definition 'j.l.String o.g.s.p.e.m.Country.getName()' on column name 'name'",
+				thrownException.getMessage());
+	}
+	
+	@Test
+	public void testBuild_embedReusedEmbeddable_columnNameOverridenOnConflictingName1_throwsException() {
+		// Overriden vs override
+		EmbeddedBeanMappingStrategyBuilder<Person> personMappingBuilder = FluentEmbeddableMappingConfigurationSupport.from(Person.class)
+				.add(Person::getName, "myName");
+		
+		Table<?> countryTable = new Table<>("countryTable");
+		IFluentEmbeddableMappingBuilderEmbeddableOptions<Country, Person> entityMappingBuilder = FluentEmbeddableMappingConfigurationSupport.from(Country.class)
+				.add(Country::getName, "myName")
+				.embed(Country::getPresident, personMappingBuilder);
+		
+		MappingConfigurationException thrownException = assertThrows(MappingConfigurationException.class, () ->
+				entityMappingBuilder.build(DIALECT, countryTable));
+		assertEquals("Some embedded columns conflict with entity ones on their name, please override it or change it :" + System.lineSeparator() 
+						+ "Embeddable definition 'j.l.String o.g.s.p.e.m.Person.getName()'" 
+						+ " vs entity definition 'j.l.String o.g.s.p.e.m.Country.getName()' on column name 'myName'",
+				thrownException.getMessage());
+	}
+	
+	@Test
+	public void testBuild_embedReusedEmbeddable_columnNameOverridenOnConflictingName2_throwsException() {
+		// Overriden vs standard name
+		EmbeddedBeanMappingStrategyBuilder<MyPerson> personMappingBuilder = FluentEmbeddableMappingConfigurationSupport.from(MyPerson.class)
+				.add(MyPerson::getName, "myName");
+		
+		Table<?> countryTable = new Table<>("countryTable");
+		IFluentEmbeddableMappingBuilderEmbeddableOptions<MyCountry, MyPerson> entityMappingBuilder = FluentEmbeddableMappingConfigurationSupport.from(MyCountry.class)
+				.add(MyCountry::getMyName)
+				.embed(MyCountry::getPresident, personMappingBuilder);
+		
+		MappingConfigurationException thrownException = assertThrows(MappingConfigurationException.class, () ->
+				entityMappingBuilder.build(DIALECT, countryTable));
+		assertEquals("Some embedded columns conflict with entity ones on their name, please override it or change it :" + System.lineSeparator()
+						+ "Embeddable definition 'j.l.String o.g.s.p.e.m.Person.getName()'" 
+						+ " vs entity definition 'j.l.String o.g.s.p.e.FluentEmbeddableMappingConfigurationSupportTest$MyCountry.getMyName()' on column name 'myName'",
+				thrownException.getMessage());
+	}
+	
+	@Test
+	public void testBuild_embedReusedEmbeddable_columnNameOverridenOnConflictingName3_throwsException() {
+		// Standard name vs override
+		EmbeddedBeanMappingStrategyBuilder<MyPerson> personMappingBuilder = FluentEmbeddableMappingConfigurationSupport.from(MyPerson.class)
+				.add(MyPerson::getMyName);
+		
+		Table<?> countryTable = new Table<>("countryTable");
+		IFluentEmbeddableMappingBuilderEmbeddableOptions<MyCountry, MyPerson> entityMappingBuilder = FluentEmbeddableMappingConfigurationSupport.from(MyCountry.class)
+				.add(Country::getName, "myName")
+				.embed(MyCountry::getPresident, personMappingBuilder);
+		
+		MappingConfigurationException thrownException = assertThrows(MappingConfigurationException.class, () ->
+				entityMappingBuilder.build(DIALECT, countryTable));
+		assertEquals("Some embedded columns conflict with entity ones on their name, please override it or change it :" + System.lineSeparator() 
+						+ "Embeddable definition 'j.l.String o.g.s.p.e.FluentEmbeddableMappingConfigurationSupportTest$MyPerson.getMyName()' vs entity definition" 
+						+ " 'j.l.String o.g.s.p.e.m.Country.getName()' on column name 'myName'",
+				thrownException.getMessage());
+	}
+	
+	@Test
+	public void testBuild_embedReusedEmbeddable_overrideNameOfUnmappedProperty_throwsException() {
+		EmbeddedBeanMappingStrategyBuilder<Person> personMappingBuilder = FluentEmbeddableMappingConfigurationSupport.from(Person.class)
+				.add(Person::getName);
+		
+		Table<?> countryTable = new Table<>("countryTable");
+		IFluentEmbeddableMappingBuilderEmbeddableOptions<Country, Person> entityMappingBuilder =
+				FluentEmbeddableMappingConfigurationSupport.from(Country.class)
+				.add(Country::getName)
+				.embed(Country::getPresident, personMappingBuilder)
+					.overrideName(Person::getName, "personName")
+					.overrideName(Person::getVersion, "personVersion");
+		MappingConfigurationException thrownException = assertThrows(MappingConfigurationException.class, () ->
+				entityMappingBuilder.build(DIALECT, countryTable));
+		assertEquals("Person::getVersion is not mapped by embeddable strategy, so its column name override 'personVersion' can't apply",
+				thrownException.getMessage());
+	}
+	
+	@Test
+	public void testBuild_embedReusedEmbeddable_embeddableContainsAnEmbeddedType() {
+		EmbeddedBeanMappingStrategyBuilder<Person> personMappingBuilder = FluentEmbeddableMappingConfigurationSupport.from(Person.class)
+				.add(Person::getName, "personName")
+				.embed(Person::getTimestamp)
+					.overrideName(Timestamp::getCreationDate, "personCreatedAt")
+					.overrideName(Timestamp::getModificationDate, "personModifiedAt");
+		
+		
+		Table<?> countryTable = new Table<>("countryTable");
+		EmbeddedBeanMappingStrategy<Country, Table<?>> personMappingStrategy = FluentEmbeddableMappingConfigurationSupport.from(Country.class)
+				.add(Country::getName)
+				.embed(Country::getTimestamp)
+					.overrideName(Timestamp::getCreationDate, "createdAt")
+					.overrideName(Timestamp::getModificationDate, "modifiedAt")
+				.embed(Country::getPresident, personMappingBuilder)
+					.overrideName(Person::getName, "presidentName")
+				.build(DIALECT, countryTable);
+		
+		Map<String, Column> columnsByName = (Map) personMappingStrategy.getTargetTable().mapColumnsOnName();
+		
+		assertEquals(Arrays.asHashSet(
+				// from Country
+				"name", "createdAt", "modifiedAt",
+				// from Person
+				"presidentName", "personCreatedAt", "personModifiedAt"),
+				countryTable.getColumns().stream().map(Column::getName).collect(Collectors.toSet()));
+		
+		// checking types
+		assertEquals(String.class, columnsByName.get("name").getJavaType());
+		assertEquals(Date.class, columnsByName.get("createdAt").getJavaType());
+		assertEquals(Date.class, columnsByName.get("modifiedAt").getJavaType());
+		assertEquals(String.class, columnsByName.get("presidentName").getJavaType());
+		assertEquals(Date.class, columnsByName.get("personCreatedAt").getJavaType());
+		assertEquals(Date.class, columnsByName.get("personModifiedAt").getJavaType());
+	}
+	
+	@Test
+	public void testBuild_embedReusedEmbeddable_embeddableContainsAnEmbeddedType1_throwsException() {
+		EmbeddedBeanMappingStrategyBuilder<Person> personMappingBuilder = FluentEmbeddableMappingConfigurationSupport.from(Person.class)
+				.embed(Person::getTimestamp);
+		
+		Table<?> countryTable = new Table<>("countryTable");
+		IFluentEmbeddableMappingBuilderEmbeddableOptions<Country, Person> mappingBuilder = FluentEmbeddableMappingConfigurationSupport.from(Country.class)
+				.add(Country::getName)
+				.embed(Country::getTimestamp)
+				.embed(Country::getPresident, personMappingBuilder);
+		
+		MappingConfigurationException thrownException = assertThrows(MappingConfigurationException.class, () ->
+				mappingBuilder.build(DIALECT, countryTable));
+		assertEquals("Some embedded columns conflict with entity ones on their name, please override it or change it :" + System.lineSeparator()
+				+ "Embeddable definition 'Person::getTimestamp > j.u.Date o.g.s.p.e.m.Timestamp.modificationDate'"
+				+ " vs entity definition 'Country::getTimestamp > j.u.Date o.g.s.p.e.m.Timestamp.modificationDate' on column name 'modificationDate'"
+				+ System.lineSeparator()
+				+ "Embeddable definition 'Person::getTimestamp > j.u.Date o.g.s.p.e.m.Timestamp.creationDate'"
+				+ " vs entity definition 'Country::getTimestamp > j.u.Date o.g.s.p.e.m.Timestamp.creationDate' on column name 'creationDate'",
+				thrownException.getMessage());
+	}
+	
+	@Test
+	public void testBuild_embedReusedEmbeddable_embeddableContainsAnEmbeddedType2_throwsException() {
+		EmbeddedBeanMappingStrategyBuilder<Person> personMappingBuilder = FluentEmbeddableMappingConfigurationSupport.from(Person.class)
+				.embed(Person::getTimestamp)
+				.overrideName(Timestamp::getCreationDate, "createdAt");
+		
+		Table<?> countryTable = new Table<>("countryTable");
+		IFluentEmbeddableMappingBuilderEmbeddableOptions<Country, Person> mappingBuilder = FluentEmbeddableMappingConfigurationSupport.from(Country.class)
+				.add(Country::getName)
+				.embed(Country::getTimestamp)
+				.embed(Country::getPresident, personMappingBuilder);
+		
+		MappingConfigurationException thrownException = assertThrows(MappingConfigurationException.class, () ->
+				mappingBuilder.build(DIALECT, countryTable));
+		assertEquals("Some embedded columns conflict with entity ones on their name, please override it or change it :" + System.lineSeparator()
+				+ "Embeddable definition 'Person::getTimestamp > j.u.Date o.g.s.p.e.m.Timestamp.modificationDate'"
+				+ " vs entity definition 'Country::getTimestamp > j.u.Date o.g.s.p.e.m.Timestamp.modificationDate' on column name 'modificationDate'",
+				thrownException.getMessage());
+	}
+	
+	@Test
+	public void testBuild_embedReusedEmbeddable_embeddableContainsAnEmbeddedType3_throwsException() {
+		EmbeddedBeanMappingStrategyBuilder<Person> personMappingBuilder = FluentEmbeddableMappingConfigurationSupport.from(Person.class)
+				.embed(Person::getTimestamp)
+				.exclude(Timestamp::getCreationDate);
+		
+		Table<?> countryTable = new Table<>("countryTable");
+		IFluentEmbeddableMappingBuilderEmbeddableOptions<Country, Person> mappingBuilder = FluentEmbeddableMappingConfigurationSupport.from(Country.class)
+				.add(Country::getName)
+				.embed(Country::getTimestamp)
+				.embed(Country::getPresident, personMappingBuilder)
+				;
+		
+		MappingConfigurationException thrownException = assertThrows(MappingConfigurationException.class, () ->
+				mappingBuilder.build(DIALECT, countryTable));
+		assertEquals("Some embedded columns conflict with entity ones on their name, please override it or change it :" + System.lineSeparator()
+				+ "Embeddable definition 'Person::getTimestamp > j.u.Date o.g.s.p.e.m.Timestamp.modificationDate'"
+				+ " vs entity definition 'Country::getTimestamp > j.u.Date o.g.s.p.e.m.Timestamp.modificationDate' on column name 'modificationDate'",
+				thrownException.getMessage());
+	}
+	
+	@Test
+	public void testBuild_embedReusedEmbeddable_embeddableContainsAnEmbeddedType4_throwsException() {
+		EmbeddedBeanMappingStrategyBuilder<Person> personMappingBuilder = FluentEmbeddableMappingConfigurationSupport.from(Person.class)
+				.embed(Person::getTimestamp);
+
+		Table<?> countryTable = new Table<>("countryTable");
+		IFluentEmbeddableMappingBuilderEmbeddableOptions<Country, Person> mappingBuilder = FluentEmbeddableMappingConfigurationSupport.from(Country.class)
+				.add(Country::getName)
+				.embed(Country::getTimestamp)
+				.embed(Country::getPresident, personMappingBuilder)
+					.overrideName(Person::getTimestamp, "createdAt");
+
+		MappingConfigurationException thrownException = assertThrows(MappingConfigurationException.class, () ->
+				mappingBuilder.build(DIALECT, countryTable));
+		assertEquals("Some embedded columns conflict with entity ones on their name, please override it or change it :" + System.lineSeparator()
+				+ "Embeddable definition 'Person::getTimestamp > j.u.Date o.g.s.p.e.m.Timestamp.modificationDate'"
+				+ " vs entity definition 'Country::getTimestamp > j.u.Date o.g.s.p.e.m.Timestamp.modificationDate' on column name 'modificationDate'",
+				thrownException.getMessage());
+	}
+	
+//	@Test
+//	public void testBuild_embedReusedEmbeddable_embeddableContainsAnEmbeddedType_throwsException() {
+//		EmbeddedBeanMappingStrategyBuilder<Person> personMappingBuilder = FluentEmbeddableMappingConfigurationSupport.from(Person.class)
+//				.embed(Person::getTimestamp)
+//				.exclude(Timestamp::getCreationDate);
+//
+//		Table<?> countryTable = new Table<>("countryTable");
+//		IFluentEmbeddableMappingBuilderEmbeddableOptions<Country, Person> mappingBuilder = FluentEmbeddableMappingConfigurationSupport.from(Country.class)
+//				.add(Country::getName)
+//				.embed(Country::getTimestamp)
+////					.overrideName(Timestamp::getCreationDate, "xx")
+//				.embed(Country::getPresident, personMappingBuilder)
+////					.overrideName(Person::getTimestamp, "personName")
+//				;
+//
+//		MappingConfigurationException thrownException = assertThrows(MappingConfigurationException.class, () ->
+//				mappingBuilder.build(DIALECT, countryTable));
+//		assertEquals("Some embedded columns conflict with entity ones on their name, please override it or change it :" + System.lineSeparator()
+//				+ "Embeddable definition 'Person::getTimestamp > j.u.Date o.g.s.p.e.m.Timestamp.modificationDate'"
+//				+ " vs entity definition 'Country::getTimestamp > j.u.Date o.g.s.p.e.m.Timestamp.modificationDate' on column name 'modificationDate'"
+//				+ System.lineSeparator()
+//				+ "Embeddable definition 'Person::getTimestamp > j.u.Date o.g.s.p.e.m.Timestamp.creationDate'"
+//				+ " vs entity definition 'Country::getTimestamp > j.u.Date o.g.s.p.e.m.Timestamp.creationDate' on column name 'creationDate'",
+//				thrownException.getMessage());
+//	}
+
+
+	
+	static public class MyPerson extends Person {
+		private String myName;
+		
+		public String getMyName() {
+			return myName;
+		}
+	}
+	
+	static public class MyCountry extends Country {
+		private String myName;
+		
+		public String getMyName() {
+			return myName;
+		}
+		
+		@Override
+		public MyPerson getPresident() {
+			return (MyPerson) super.getPresident();
+		}
 	}
 }

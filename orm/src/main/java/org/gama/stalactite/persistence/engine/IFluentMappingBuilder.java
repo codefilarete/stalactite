@@ -84,6 +84,14 @@ public interface IFluentMappingBuilder<C extends Identified, I extends Statefull
 	@Override
 	<O> IFluentMappingBuilderEmbedOptions<C, I, O> embed(SerializableFunction<C, O> getter);
 	
+	@Override
+	<O> IFluentMappingBuilderEmbeddableOptions<C, I, O> embed(SerializableFunction<C, O> getter,
+																			   EmbeddedBeanMappingStrategyBuilder<O> embeddableMappingBuilder);
+	
+	@Override
+	<O> IFluentMappingBuilderEmbeddableOptions<C, I, O> embed(SerializableBiConsumer<C, O> getter,
+																			   EmbeddedBeanMappingStrategyBuilder<O> embeddableMappingBuilder);
+	
 	IFluentMappingBuilder<C, I> foreignKeyNamingStrategy(ForeignKeyNamingStrategy foreignKeyNamingStrategy);
 	
 	IFluentMappingBuilder<C, I> joinColumnNamingStrategy(JoinColumnNamingStrategy columnNamingStrategy);
@@ -191,4 +199,9 @@ public interface IFluentMappingBuilder<C extends Identified, I extends Statefull
 		<IN> IFluentMappingBuilderEmbedOptions<T, I, O> exclude(SerializableBiConsumer<O, IN> setter);
 	}
 	
+	interface IFluentMappingBuilderEmbeddableOptions<T extends Identified, I extends StatefullIdentifier, O>
+		extends IFluentMappingBuilder<T, I>,
+			IFluentEmbeddableMappingConfigurationEmbeddableOptions<T, O> {
+		
+	}
 }

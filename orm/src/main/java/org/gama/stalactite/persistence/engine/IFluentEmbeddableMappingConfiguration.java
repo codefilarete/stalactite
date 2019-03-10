@@ -6,6 +6,8 @@ import org.gama.stalactite.persistence.mapping.EmbeddedBeanMappingStrategy;
 import org.gama.stalactite.persistence.structure.Table;
 
 /**
+ * @param <C> type that owns method  
+ * 
  * @author Guillaume Mary
  */
 public interface IFluentEmbeddableMappingConfiguration<C> {
@@ -29,16 +31,20 @@ public interface IFluentEmbeddableMappingConfiguration<C> {
 
 	<O> IFluentEmbeddableMappingConfigurationEmbedOptions<C, O> embed(SerializableFunction<C, O> getter);
 	
-	<O> IFluentEmbeddableMappingBuilder<C> embed(SerializableFunction<C, O> getter, EmbeddedBeanMappingStrategyBuilder<O> embeddableMappingBuilder);
+	<O> IFluentEmbeddableMappingConfigurationEmbeddableOptions<C, O> embed(SerializableFunction<C, O> getter,
+																		EmbeddedBeanMappingStrategyBuilder<O> embeddableMappingBuilder);
+	
+	<O> IFluentEmbeddableMappingConfigurationEmbeddableOptions<C, O> embed(SerializableBiConsumer<C, O> getter,
+																		EmbeddedBeanMappingStrategyBuilder<O> embeddableMappingBuilder);
 	
 	/**
 	 * Crossover between {@link IFluentEmbeddableMappingConfiguration} and {@link EmbedOptions} in order that {@link #embed(SerializableFunction)} methods
 	 * result can chain with some {@link EmbedOptions} as well as continue configuratio of an {@link IFluentEmbeddableMappingConfiguration}
 	 * 
-	 * @param <T> owner type
+	 * @param <C> owner type
 	 * @param <O> type of the property that must be overriden
 	 */
-	interface IFluentEmbeddableMappingConfigurationEmbedOptions<T, O> extends IFluentEmbeddableMappingConfiguration<T>, EmbedOptions<O> {
+	interface IFluentEmbeddableMappingConfigurationEmbedOptions<C, O> extends IFluentEmbeddableMappingConfiguration<C>, EmbedOptions<O> {
 		
 		/**
 		 * Overrides embedding with an existing column
@@ -49,7 +55,7 @@ public interface IFluentEmbeddableMappingConfiguration<C> {
 		 * @return a mapping configurer, specialized for embedded elements
 		 */
 		@Override
-		<IN> IFluentEmbeddableMappingConfigurationEmbedOptions<T, O> overrideName(SerializableFunction<O, IN> function, String columnName);
+		<IN> IFluentEmbeddableMappingConfigurationEmbedOptions<C, O> overrideName(SerializableFunction<O, IN> function, String columnName);
 		
 		/**
 		 * Adds a complex-typed property as embedded into this embedded
@@ -59,7 +65,7 @@ public interface IFluentEmbeddableMappingConfiguration<C> {
 		 * @param <IN> input of the function (type of the embedded element)
 		 * @return a mapping configurer, specialized for embedded elements
 		 */
-		<IN> IFluentEmbeddableMappingConfigurationEmbedOptions<T, IN> innerEmbed(SerializableFunction<O, IN> getter);
+		<IN> IFluentEmbeddableMappingConfigurationEmbedOptions<C, IN> innerEmbed(SerializableFunction<O, IN> getter);
 		
 		/**
 		 * Adds a complex-typed property as embedded into this embedded
@@ -69,11 +75,20 @@ public interface IFluentEmbeddableMappingConfiguration<C> {
 		 * @param <IN> input of the function (type of the embedded element)
 		 * @return a mapping configurer, specialized for embedded elements
 		 */
-		<IN> IFluentEmbeddableMappingConfigurationEmbedOptions<T, IN> innerEmbed(SerializableBiConsumer<O, IN> setter);
+		<IN> IFluentEmbeddableMappingConfigurationEmbedOptions<C, IN> innerEmbed(SerializableBiConsumer<O, IN> setter);
 		
-		<IN> IFluentEmbeddableMappingConfigurationEmbedOptions<T, O> exclude(SerializableFunction<O, IN> getter);
+		<IN> IFluentEmbeddableMappingConfigurationEmbedOptions<C, O> exclude(SerializableFunction<O, IN> getter);
 		
-		<IN> IFluentEmbeddableMappingConfigurationEmbedOptions<T, O> exclude(SerializableBiConsumer<O, IN> setter);
+		<IN> IFluentEmbeddableMappingConfigurationEmbedOptions<C, O> exclude(SerializableBiConsumer<O, IN> setter);
 		
+	}
+	
+	interface IFluentEmbeddableMappingConfigurationEmbeddableOptions<C, O> extends IFluentEmbeddableMappingConfiguration<C>, EmbedingEmbeddableOptions<O> {
+		
+		@Override
+		<IN> IFluentEmbeddableMappingConfigurationEmbeddableOptions<C, O> overrideName(SerializableFunction<O, IN> function, String columnName);
+		
+		@Override
+		<IN> IFluentEmbeddableMappingConfigurationEmbeddableOptions<C, O> overrideName(SerializableBiConsumer<O, IN> function, String columnName);
 	}
 }

@@ -30,10 +30,7 @@ import org.gama.stalactite.persistence.engine.FluentEmbeddableMappingConfigurati
 import org.gama.stalactite.persistence.engine.FluentEmbeddableMappingConfigurationSupport.Inset;
 import org.gama.stalactite.persistence.engine.FluentEmbeddableMappingConfigurationSupport.Linkage;
 import org.gama.stalactite.persistence.engine.FluentEmbeddableMappingConfigurationSupport.LinkageByColumnName;
-import org.gama.stalactite.persistence.engine.FluentMappingBuilder.IdentifierPolicy;
 import org.gama.stalactite.persistence.engine.IFluentEmbeddableMappingBuilder.IFluentEmbeddableMappingBuilderEmbedOptions;
-import org.gama.stalactite.persistence.engine.IFluentMappingBuilder.IFluentMappingBuilderColumnOptions;
-import org.gama.stalactite.persistence.engine.IFluentMappingBuilder.IFluentMappingBuilderOneToManyOptions;
 import org.gama.stalactite.persistence.engine.builder.CascadeMany;
 import org.gama.stalactite.persistence.engine.builder.CascadeManyList;
 import org.gama.stalactite.persistence.engine.cascade.JoinedTablesPersister;
@@ -277,8 +274,14 @@ public class FluentMappingBuilder<C extends Identified, I extends StatefullIdent
 	}
 	
 	@Override
-	public <O> IFluentEmbeddableMappingBuilder<C> embed(SerializableFunction<C, O> getter,
-														EmbeddedBeanMappingStrategyBuilder<O> embeddableMappingBuilder) {
+	public <O> IFluentMappingBuilderEmbeddableOptions<C, I, O> embed(SerializableFunction<C, O> getter,
+																				EmbeddedBeanMappingStrategyBuilder<O> embeddableMappingBuilder) {
+		return null;
+	}
+	
+	@Override
+	public <O> IFluentMappingBuilderEmbeddableOptions<C, I, O> embed(SerializableBiConsumer<C, O> getter,
+																				EmbeddedBeanMappingStrategyBuilder<O> embeddableMappingBuilder) {
 		return null;
 	}
 	
@@ -492,7 +495,7 @@ public class FluentMappingBuilder<C extends Identified, I extends StatefullIdent
 				inheritanceMapping.forEach((superType, mappingStrategy) -> {
 					// We transfer columns and mapping of the inherited source to the current mapping
 					EmbeddedBeanMappingStrategy<? super C, ?> embeddableMappingStrategy = mappingStrategy.getMainMappingStrategy();
-					superResult.putAll(collectMapping(embeddableMappingStrategy));
+					superResult.putAll(collectMapping(embeddableMappingStrategy, getTargetTable()));
 					// Dealing with identifier
 					Duo<IReversibleAccessor, Column> idMapping = collectIdMapping(mappingStrategy);
 					superResult.put(idMapping.getLeft(), idMapping.getRight());
