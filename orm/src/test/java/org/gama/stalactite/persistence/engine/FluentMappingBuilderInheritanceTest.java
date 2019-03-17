@@ -4,6 +4,7 @@ import javax.sql.DataSource;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.Consumer;
+import java.util.function.Function;
 
 import org.gama.lang.collection.Arrays;
 import org.gama.sql.ConnectionProvider;
@@ -100,6 +101,13 @@ public class FluentMappingBuilderInheritanceTest {
 		private final CarTable carTable = new CarTable("car");
 		
 		void executeTest(Consumer<IFluentMappingBuilder<Car, Identifier<Long>>> additionalConfigurator) {
+			executeTest(additionalConfigurator, context ->
+					context.select(Car::new, carTable.idColumn, m -> m
+					.add(carTable.modelColumn, Car::setModel)
+					.add(carTable.colorColumn, Car::setColor)));
+		}
+		
+		void executeTest(Consumer<IFluentMappingBuilder<Car, Identifier<Long>>> additionalConfigurator, Function<PersistenceContext, List<Car>> persistedCarsSupplier) {
 			
 			IFluentMappingBuilder<Car, Identifier<Long>> carMappingBuilder = FluentMappingBuilder.from(Car.class, LONG_TYPE)
 					.add(Car::getModel)
@@ -118,9 +126,7 @@ public class FluentMappingBuilderInheritanceTest {
 			dummyCar.setColor(new Color(666));
 			carPersister.insert(dummyCar);
 			
-			List<Car> allCars = persistenceContext.select(Car::new, carTable.idColumn, m -> m
-					.add(carTable.modelColumn, Car::setModel)
-					.add(carTable.colorColumn, Car::setColor));
+			List<Car> allCars = persistedCarsSupplier.apply(persistenceContext);
 			assertEquals(Arrays.asList(dummyCar), allCars);
 			
 			Car loadedCar = carPersister.select(new PersistedIdentifier<>(1L));
@@ -146,6 +152,31 @@ public class FluentMappingBuilderInheritanceTest {
 							// concrete class defines id
 							.add(Car::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 							.mapSuperClass(Vehicle.class, vehicleMappingStrategy));
+		}
+		
+		@Test
+		public void columnNamingStrategyChanged() {
+			MappedSuperClassData mappedSuperClassData = new MappedSuperClassData();
+			
+			EmbeddedBeanMappingStrategy<Vehicle, Table> vehicleMappingStrategy = FluentEmbeddableMappingConfigurationSupport
+					.from(Vehicle.class)
+					.columnNamingStrategy(accessor -> ColumnNamingStrategy.DEFAULT.giveName(accessor) + "_superCol")
+					.add(Vehicle::getColor)
+					.build(DIALECT, mappedSuperClassData.vehicleTable);
+			
+			mappedSuperClassData.executeTest(carMappingBuilder ->
+					carMappingBuilder
+							.columnNamingStrategy(accessor -> ColumnNamingStrategy.DEFAULT.giveName(accessor) + "_col")
+							// concrete class defines id
+							.add(Car::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
+							.mapSuperClass(Vehicle.class, vehicleMappingStrategy),
+					// NB: model column name is not taken into account because of its mapping precedence at runtime in this test
+					// due to the "additionalConfigurator" way of doing
+					context -> context.newQuery("select id_col, model, color_superCol from Car", Car.class)
+							.mapKey(Car::new, "id_col", (Class<Identifier<Long>>) (Class) Identifier.class)
+							.map("model", Car::setModel)
+							.map("color_superCol", Car::setColor)
+							.execute(context.getConnectionProvider()));
 		}
 		
 		@Test

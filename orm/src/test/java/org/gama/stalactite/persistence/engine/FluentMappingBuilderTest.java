@@ -388,16 +388,16 @@ public class FluentMappingBuilderTest {
 				.embed(Country::getTimestamp);
 		MappingConfigurationException thrownException = assertThrows(MappingConfigurationException.class, () -> mappingBuilder
 				.build(DIALECT));
-		assertEquals("Country::getTimestamp conflicts with Person::getTimestamp for embedding a o.g.s.p.e.m.Timestamp" +
-				", field names should be overriden : j.u.Date o.g.s.p.e.m.Timestamp.modificationDate, j.u.Date o.g.s.p.e.m.Timestamp.creationDate", thrownException.getMessage());
+		assertEquals("Country::getTimestamp conflicts with Person::getTimestamp while embedding a o.g.s.p.e.m.Timestamp" +
+				", column names should be overriden : j.u.Date o.g.s.p.e.m.Timestamp.getCreationDate(), j.u.Date o.g.s.p.e.m.Timestamp.getModificationDate()", thrownException.getMessage());
 		
 		// we add an override, exception must still be thrown, with different message
 		mappingBuilder.overrideName(Timestamp::getModificationDate, "modifiedAt");
 		
 		thrownException = assertThrows(MappingConfigurationException.class, () -> mappingBuilder
 				.build(DIALECT));
-		assertEquals("Country::getTimestamp conflicts with Person::getTimestamp for embedding a o.g.s.p.e.m.Timestamp" +
-				", field names should be overriden : j.u.Date o.g.s.p.e.m.Timestamp.creationDate", thrownException.getMessage());
+		assertEquals("Country::getTimestamp conflicts with Person::getTimestamp while embedding a o.g.s.p.e.m.Timestamp" +
+				", column names should be overriden : j.u.Date o.g.s.p.e.m.Timestamp.getCreationDate()", thrownException.getMessage());
 		
 		// we override the last field, no exception is thrown
 		mappingBuilder.overrideName(Timestamp::getCreationDate, "createdAt");

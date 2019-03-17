@@ -8,11 +8,28 @@ import static org.junit.jupiter.api.Assertions.assertIterableEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 /**
  * @author Guillaume Mary
  */
 public class TableTest {
+	
+	@Test
+	public void addColumn_alreadyExists_throwsException() {
+		Table testInstance = new Table("toto");
+		// empty columns should throw any exception nor found anything
+		testInstance.addColumn("xx", String.class);
+		
+		// same column with same type doesn't has any consequence
+		testInstance.addColumn("xx", String.class);
+		// same column with other type throws exception
+		IllegalArgumentException thrownException = assertThrows(IllegalArgumentException.class, () -> testInstance.addColumn("xx", Integer.class));
+		assertEquals("Trying to add a column that already exists with a different type : toto.xx j.l.String vs j.l.Integer", thrownException.getMessage());
+		// same column with other type throws exception
+		thrownException = assertThrows(IllegalArgumentException.class, () -> testInstance.addColumn("xx", String.class, 12));
+		assertEquals("Trying to add a column that already exists with a different type : toto.xx j.l.String vs j.l.String(12)", thrownException.getMessage());
+	}
 	
 	@Test
 	public void testFindColumn() {

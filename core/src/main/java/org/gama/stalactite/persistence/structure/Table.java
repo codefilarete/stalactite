@@ -2,8 +2,8 @@ package org.gama.stalactite.persistence.structure;
 
 import javax.annotation.Nullable;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
-import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -11,6 +11,8 @@ import java.util.Set;
 import java.util.function.Function;
 
 import org.gama.lang.Duo;
+import org.gama.lang.Reflections;
+import org.gama.lang.bean.Objects;
 import org.gama.lang.collection.Arrays;
 import org.gama.lang.collection.Iterables;
 import org.gama.lang.collection.KeepOrderSet;
@@ -27,19 +29,21 @@ import static org.gama.lang.Nullable.nullable;
  */
 public class Table<SELF extends Table<SELF>> {
 	
-	private Schema schema;
+	private final Schema schema;
 	
-	private String name;
+	private final String name;
 	
-	private String absoluteName;
+	private final String absoluteName;
 	
-	private KeepOrderSet<Column<SELF, Object>> columns = new KeepOrderSet<>();
+	private final KeepOrderSet<Column<SELF, Object>> columns = new KeepOrderSet<>();
 	
 	private PrimaryKey<SELF> primaryKey;
 	
-	private Set<Index> indexes = new HashSet<>();
+	private final Set<Index> indexes = new HashSet<>();
 	
-	private Set<ForeignKey<SELF, ? extends Table<?>>> foreignKeys = new HashSet<>();
+	private final Set<ForeignKey<SELF, ? extends Table<?>>> foreignKeys = new HashSet<>();
+	
+	private final Map<String, Column<SELF, ?>> columnsPerName = new HashMap<>();
 	
 	public Table(String name) {
 		this(null, name);
@@ -74,23 +78,36 @@ public class Table<SELF extends Table<SELF>> {
 	}
 	
 	public <O> Column<SELF, O> addColumn(String name, Class<O> javaType) {
-		Column<SELF, O> column = new Column<>((SELF) this, name, javaType);
-		this.columns.add((Column<SELF, Object>) column);
-		return column;
+		return addertColumn(new Column<>((SELF) this, name, javaType));
 	}
 	
 	public <O> Column<SELF, O> addColumn(String name, Class<O> javaType, int size) {
-		Column<SELF, O> column = new Column<>((SELF) this, name, javaType, size);
+		return addertColumn(new Column<>((SELF) this, name, javaType, size));
+	}
+	
+	/**
+	 * Add with presence assertion (add + assert = addert, poor naming)
+	 * 
+	 * @param column the column to be added
+	 * @param <O> column type
+	 * @return given column
+	 */
+	private <O> Column<SELF, O> addertColumn(Column<SELF, O> column) {
+		Column<SELF, ?> existingColumn = columnsPerName.get(column.getName());
+		if (existingColumn != null
+				&& (!existingColumn.getJavaType().equals(column.getJavaType())
+				|| !Objects.equalsWithNull(existingColumn.getSize(), column.getSize()))
+		) {
+			throw new IllegalArgumentException("Trying to add a column that already exists with a different type : "
+					+ column.getAbsoluteName() + " " + toString(existingColumn) + " vs " + toString(column));
+		}
 		this.columns.add((Column<SELF, Object>) column);
-		return column;
+		columnsPerName.put(column.getName(), column);
+		return Objects.preventNull((Column<SELF, O>) existingColumn, column);
 	}
 	
 	public Map<String, Column<SELF, Object>> mapColumnsOnName() {
-		Map<String, Column<SELF, Object>> mapColumnsOnName = new LinkedHashMap<>(columns.size());
-		for (Column<SELF, Object> column : columns) {
-			mapColumnsOnName.put(column.getName(), column);
-		}
-		return mapColumnsOnName;
+		return new HashMap<>((Map) columnsPerName);
 	}
 	
 	/**
@@ -175,4 +192,7 @@ public class Table<SELF extends Table<SELF>> {
 		return name.toUpperCase().hashCode();
 	}
 	
+	private String toString(Column column) {
+		return Reflections.toString(column.getJavaType()) + (column.getSize() != null ? "(" + column.getSize() + ")" : "");
+	}
 }

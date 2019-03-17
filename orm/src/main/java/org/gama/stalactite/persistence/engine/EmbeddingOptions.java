@@ -5,9 +5,11 @@ import org.danekja.java.util.function.serializable.SerializableFunction;
 import org.gama.stalactite.persistence.structure.Table;
 
 /**
+ * Contract to define options when embedding a bean
+ * 
  * @author Guillaume Mary
  */
-public interface EmbedingEmbeddableOptions<C> {
+public interface EmbeddingOptions<C> {
 	
 	/**
 	 * Overrides embedding with a column name
@@ -17,8 +19,8 @@ public interface EmbedingEmbeddableOptions<C> {
 	 * @param <IN> input of the function (type of the embedded element)
 	 * @return a mapping configurer, specialized for embedded elements
 	 */
-	<IN> EmbedingEmbeddableOptions<C> overrideName(SerializableFunction<C, IN> function, String columnName);
+	<IN> EmbeddingOptions<C> overrideName(SerializableFunction<C, IN> function, String columnName);
 	
-	<IN> EmbedingEmbeddableOptions<C> overrideName(SerializableBiConsumer<C, IN> function, String columnName);
+	<IN> EmbeddingOptions<C> overrideName(SerializableBiConsumer<C, IN> function, String columnName);
 	
 }

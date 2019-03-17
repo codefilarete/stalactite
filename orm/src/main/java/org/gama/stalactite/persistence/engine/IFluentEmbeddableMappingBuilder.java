@@ -2,6 +2,7 @@ package org.gama.stalactite.persistence.engine;
 
 import org.danekja.java.util.function.serializable.SerializableBiConsumer;
 import org.danekja.java.util.function.serializable.SerializableFunction;
+import org.gama.reflection.AccessorChain;
 import org.gama.stalactite.persistence.mapping.EmbeddedBeanMappingStrategy;
 import org.gama.stalactite.persistence.structure.Table;
 
@@ -10,7 +11,7 @@ import org.gama.stalactite.persistence.structure.Table;
  */
 public interface IFluentEmbeddableMappingBuilder<C> extends IFluentEmbeddableMappingConfiguration<C>, EmbeddedBeanMappingStrategyBuilder<C> {
 	
-	/* Overwritten methods for return type that must match this class */
+	/* Overwritting methods signature to return a type that aggregates options of this class */
 	
 	<O> IFluentEmbeddableMappingBuilder<C> add(SerializableBiConsumer<C, O> setter);
 	
@@ -18,7 +19,7 @@ public interface IFluentEmbeddableMappingBuilder<C> extends IFluentEmbeddableMap
 	
 	<O> IFluentEmbeddableMappingBuilder<C> add(SerializableBiConsumer<C, O> setter, String columnName);
 	
-	<O> IFluentEmbeddableMappingBuilder<C> add(SerializableFunction<C, O> function, String columnName);
+	<O> IFluentEmbeddableMappingBuilder<C> add(SerializableFunction<C, O> getter, String columnName);
 	
 	IFluentEmbeddableMappingBuilder<C> mapSuperClass(Class<? super C> superType, EmbeddedBeanMappingStrategy<? super C, ?> mappingStrategy);
 	
@@ -27,6 +28,8 @@ public interface IFluentEmbeddableMappingBuilder<C> extends IFluentEmbeddableMap
 	<O> IFluentEmbeddableMappingBuilderEmbedOptions<C, O> embed(SerializableFunction<C, O> getter);
 	
 	<O> IFluentEmbeddableMappingBuilderEmbeddableOptions<C, O> embed(SerializableFunction<C, O> getter, EmbeddedBeanMappingStrategyBuilder<O> embeddableMappingBuilder);
+	
+	IFluentEmbeddableMappingBuilder<C> columnNamingStrategy(ColumnNamingStrategy columnNamingStrategy);
 	
 	/**
 	 * Crossover between {@link IFluentEmbeddableMappingConfigurationEmbedOptions} (refines its return types) and {@link IFluentEmbeddableMappingBuilder}
@@ -38,7 +41,6 @@ public interface IFluentEmbeddableMappingBuilder<C> extends IFluentEmbeddableMap
 	 */
 	interface IFluentEmbeddableMappingBuilderEmbedOptions<T, O>
 			extends IFluentEmbeddableMappingConfigurationEmbedOptions<T, O>,
-//					EmbeddedBeanMappingStrategyBuilder<T>,	// This is superfluous because IFluentEmbeddableMappingBuilder already extends it.
 					IFluentEmbeddableMappingBuilder<T> {	// This is necessary to benefit from refined return types, else API is broken (see dedicated unit tests).
 		
 		/**
@@ -81,7 +83,6 @@ public interface IFluentEmbeddableMappingBuilder<C> extends IFluentEmbeddableMap
 	
 	interface IFluentEmbeddableMappingBuilderEmbeddableOptions<T, O>
 			extends IFluentEmbeddableMappingConfigurationEmbeddableOptions<T, O>,
-//					EmbedingEmbeddableOptions<O>,	// This seems superfluous because IFluentEmbeddableMappingBuilder already extends it, but
 					IFluentEmbeddableMappingBuilder<T> {	// This is necessary to benefit from refined return types, else API is broken (see dedicated unit tests).
 		
 		@Override
@@ -89,5 +90,9 @@ public interface IFluentEmbeddableMappingBuilder<C> extends IFluentEmbeddableMap
 		
 		@Override
 		<IN> IFluentEmbeddableMappingBuilderEmbeddableOptions<T, O> overrideName(SerializableBiConsumer<O, IN> function, String columnName);
+		
+		@Override
+		<IN> IFluentEmbeddableMappingBuilderEmbeddableOptions<T, O> overrideName(AccessorChain<O, IN> chain, String columnName);
+		
 	}
 }

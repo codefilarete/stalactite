@@ -7,6 +7,7 @@ import java.util.Set;
 import org.danekja.java.util.function.serializable.SerializableBiConsumer;
 import org.danekja.java.util.function.serializable.SerializableFunction;
 import org.gama.lang.function.Serie;
+import org.gama.reflection.AccessorChain;
 import org.gama.stalactite.persistence.id.Identified;
 import org.gama.stalactite.persistence.id.manager.StatefullIdentifier;
 import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
@@ -26,15 +27,19 @@ import org.gama.stalactite.persistence.structure.Table;
 public interface IFluentMappingBuilder<C extends Identified, I extends StatefullIdentifier>
 		extends IFluentEmbeddableMappingConfiguration<C> {
 	
+	/* Overwritting methods signature to return a type that aggregates options of this class */
+	
 	<O> IFluentMappingBuilderColumnOptions<C, I> add(SerializableBiConsumer<C, O> setter);
 	
 	<O> IFluentMappingBuilderColumnOptions<C, I> add(SerializableFunction<C, O> getter);
 	
 	<O> IFluentMappingBuilderColumnOptions<C, I> add(SerializableBiConsumer<C, O> setter, String columnName);
 	
-	<O> IFluentMappingBuilderColumnOptions<C, I> add(SerializableFunction<C, O> function, String columnName);
+	<O> IFluentMappingBuilderColumnOptions<C, I> add(SerializableFunction<C, O> getter, String columnName);
 	
 	<O> IFluentMappingBuilderColumnOptions<C, I> add(SerializableFunction<C, O> getter, Column<Table, O> column);
+	
+	IFluentMappingBuilder<C, I> columnNamingStrategy(ColumnNamingStrategy columnNamingStrategy);
 	
 	IFluentMappingBuilder<C, I> mapSuperClass(Class<? super C> superType, ClassMappingStrategy<? super C, ?, ?> mappingStrategy);
 	
@@ -94,7 +99,7 @@ public interface IFluentMappingBuilder<C extends Identified, I extends Statefull
 	
 	IFluentMappingBuilder<C, I> foreignKeyNamingStrategy(ForeignKeyNamingStrategy foreignKeyNamingStrategy);
 	
-	IFluentMappingBuilder<C, I> joinColumnNamingStrategy(JoinColumnNamingStrategy columnNamingStrategy);
+	IFluentMappingBuilder<C, I> joinColumnNamingStrategy(ColumnNamingStrategy columnNamingStrategy);
 	
 	<V> IFluentMappingBuilder<C, I> versionedBy(SerializableFunction<C, V> getter);
 	
@@ -199,9 +204,24 @@ public interface IFluentMappingBuilder<C extends Identified, I extends Statefull
 		<IN> IFluentMappingBuilderEmbedOptions<T, I, O> exclude(SerializableBiConsumer<O, IN> setter);
 	}
 	
+	/**
+	 * A combination 
+	 * @param <T>
+	 * @param <I>
+	 * @param <O>
+	 */
 	interface IFluentMappingBuilderEmbeddableOptions<T extends Identified, I extends StatefullIdentifier, O>
 		extends IFluentMappingBuilder<T, I>,
 			IFluentEmbeddableMappingConfigurationEmbeddableOptions<T, O> {
+		
+		@Override
+		<IN> IFluentMappingBuilderEmbeddableOptions<T, I, O> overrideName(SerializableFunction<O, IN> function, String columnName);
+		
+		@Override
+		<IN> IFluentMappingBuilderEmbeddableOptions<T, I, O> overrideName(SerializableBiConsumer<O, IN> function, String columnName);
+		
+		@Override
+		<IN> IFluentMappingBuilderEmbeddableOptions<T, I, O> overrideName(AccessorChain<O, IN> chain, String columnName);
 		
 	}
 }
