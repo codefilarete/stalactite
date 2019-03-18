@@ -9,6 +9,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.gama.sql.ConnectionProvider;
+import org.gama.sql.dml.SQLExecutionException;
 import org.gama.stalactite.ILogger;
 import org.gama.stalactite.Logger;
 import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
@@ -94,7 +95,7 @@ public class DDLDeployer {
 			LOGGER.debug(sql);
 			statement.execute(sql);
 		} catch (SQLException t) {
-			throw new RuntimeException("Error executing \"" + sql + "\"", t);
+			throw new SQLExecutionException("Error executing \"" + sql + "\"", t);
 		}
 	}
 	

@@ -366,7 +366,7 @@ public class PersistenceContext {
 		}
 		
 		private void appendTo(Query query, QueryConverter<C> queryConverter) {
-			mapping.keySet().forEach(e -> query.select(e));
+			mapping.keySet().forEach(query::select);
 			mapping.forEach((k, v) -> queryConverter.map((Column) k, v));
 		}
 	}

@@ -50,10 +50,6 @@ public class SequencePersister extends Persister<Sequence, String, SequenceTable
 		return jdbcOperation.getUpperBound();
 	}
 	
-	private Sequence readStep(String sequenceName) {
-		return select(sequenceName);
-	}
-	
 	public static class SequenceTable extends Table<SequenceTable> {
 		
 		private final Column<SequenceTable, Long> nextValColumn;
@@ -133,6 +129,10 @@ public class SequencePersister extends Persister<Sequence, String, SequenceTable
 				sequence.setStep(stepSize);
 				insert(sequence);
 			}
+		}
+		
+		private Sequence readStep(String sequenceName) {
+			return select(sequenceName);
 		}
 		
 		public long getUpperBound() {

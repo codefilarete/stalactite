@@ -36,7 +36,7 @@ public class NullAwarePreparedStatementWriter<T> implements PreparedStatementWri
 	 * @throws SQLException the possible error thrown by {@link PreparedStatement#setObject(int, Object)}
 	 */
 	protected void setNull(int valueIndex, PreparedStatement statement) throws SQLException {
-//		statement.setNull(valueIndex, statement.getParameterMetaData().getParameterType(valueIndex));
+		// could be : statement.setNull(valueIndex, statement.getParameterMetaData().getParameterType(valueIndex))
 		statement.setObject(valueIndex, null);
 	}
 	

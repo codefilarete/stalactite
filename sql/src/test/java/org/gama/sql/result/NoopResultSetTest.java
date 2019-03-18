@@ -9,6 +9,7 @@ import org.gama.lang.bean.MethodIterator;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * @author Guillaume Mary
@@ -23,7 +24,7 @@ public class NoopResultSetTest {
 		int methodCount = 0;
 		for (Method method : methods) {
 			if (method.getReturnType() != Void.class) {
-				Object result;
+				Object invokationResult;
 				try {
 					// we create default arguments otherwise we get IllegalArgumentException from the JVM at invoke() time
 					Object[] args = new Object[method.getParameterCount()];
@@ -36,13 +37,18 @@ public class NoopResultSetTest {
 							args[i] = Reflections.PRIMITIVE_DEFAULT_VALUES.getOrDefault(arg, null /* default value for any non-primitive Object */);
 						}
 					}
-					result = method.invoke(testInstance, args);
+					invokationResult = method.invoke(testInstance, args);
 					methodCount++;
 				} catch (ReflectiveOperationException | IllegalArgumentException e) {
 					throw new RuntimeException("Error executing " + Reflections.toString(method), e);
 				}
 				// invokation result must be a default value
-				assertEquals(Reflections.PRIMITIVE_DEFAULT_VALUES.get(method.getReturnType()), result);
+				if (method.getReturnType().isArray()) {
+					assertTrue(invokationResult.getClass().isArray());
+					assertEquals(method.getReturnType().getComponentType(), invokationResult.getClass().getComponentType());
+				} else {
+					assertEquals(Reflections.PRIMITIVE_DEFAULT_VALUES.get(method.getReturnType()), invokationResult);
+				}
 			}
 		}
 		// checking that iteration over methods really worked

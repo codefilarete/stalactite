@@ -59,7 +59,7 @@ public class SequencePersisterTest {
 		ddlDeployer.getDdlSchemaGenerator().setTables(Arrays.asList(testInstance.getMappingStrategy().getTargetTable()));
 		ddlDeployer.deployDDL();
 		long identifier = testInstance.reservePool("toto", 10);
-		assertEquals(identifier, 10);
+		assertEquals(10, identifier);
 		Connection currentConnection = persistenceContext.getCurrentConnection();
 		Statement statement = currentConnection.createStatement();
 		ResultSet resultSet = statement.executeQuery("select next_val from sequence_table where sequence_name = 'toto'");

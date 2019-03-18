@@ -154,6 +154,7 @@ public class OperandBuilder {
 		}
 	}
 	
+	@SuppressWarnings("squid:S3358")	// we can afford nesting ternary operators here, not so complex to understand 
 	public void catGreater(Greater greater, SQLAppender sql, Column column) {
 		sql.cat(greater.isNot()
 				? (greater.isEquals() ? "< ": "<= ")
@@ -161,6 +162,7 @@ public class OperandBuilder {
 			.catValue(column, greater.getValue());
 	}
 	
+	@SuppressWarnings("squid:S3358")	// we can afford nesting ternary operators here, not so complex to understand
 	public void catLower(Lower lower, SQLAppender sql, Column column) {
 		sql.cat(lower.isNot()
 				? (lower.isEquals() ? "> ": ">= ")

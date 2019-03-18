@@ -27,7 +27,7 @@ public class SelectBuilder implements SQLBuilder {
 	
 	public SelectBuilder(Select select, DMLNameProvider dmlNameProvider) {
 		this.select = select;
-		this.dmlNameProvider = dmlNameProvider;;
+		this.dmlNameProvider = dmlNameProvider;
 		this.operandBuilder = new OperandBuilder(this.dmlNameProvider);
 	}
 	

@@ -10,7 +10,8 @@ import org.gama.stalactite.query.builder.DMLNameProvider;
  */
 public class DDLAppender extends StringAppender {
 	
-	private final DMLNameProvider dmlNameProvider;
+	/** Made transient to comply with {@link java.io.Serializable} contract of parent class */
+	private final transient DMLNameProvider dmlNameProvider;
 	
 	public DDLAppender(DMLNameProvider dmlNameProvider, Object... o) {
 		this.dmlNameProvider = dmlNameProvider;

@@ -81,8 +81,8 @@ public class ToMultipleBeansRowTransformerTest {
 		
 		testInstance.transform(row);
 		
-		assertEquals(aCache.size(), 1);
-		assertEquals(aCache.get(1L).name, "Toto");
+		assertEquals(1, aCache.size());
+		assertEquals("Toto", aCache.get(1L).name);
 		
 		// row contains Toto and Tata data
 		row = new Row();
@@ -93,10 +93,10 @@ public class ToMultipleBeansRowTransformerTest {
 		
 		testInstance.transform(row);
 		
-		assertEquals(aCache.size(), 1);
-		assertEquals(bCache.size(), 1);
-		assertEquals(aCache.get(1L).name, "Toto");
-		assertEquals(bCache.get(1L).name, "Tata");
+		assertEquals(1, aCache.size());
+		assertEquals(1, bCache.size());
+		assertEquals("Toto", aCache.get(1L).name);
+		assertEquals("Tata", bCache.get(1L).name);
 		
 		// row contains Toto, Tata and Titi data
 		row = new Row();
@@ -109,12 +109,12 @@ public class ToMultipleBeansRowTransformerTest {
 		
 		testInstance.transform(row);
 		
-		assertEquals(aCache.size(), 1);
-		assertEquals(bCache.size(), 1);
-		assertEquals(cCache.size(), 1);
-		assertEquals(aCache.get(1L).name, "Toto");
-		assertEquals(bCache.get(1L).name, "Tata");
-		assertEquals(cCache.get(1L).name, "Titi");
+		assertEquals(1, aCache.size());
+		assertEquals(1, bCache.size());
+		assertEquals(1, cCache.size());
+		assertEquals("Toto", aCache.get(1L).name);
+		assertEquals("Tata", bCache.get(1L).name);
+		assertEquals("Titi", cCache.get(1L).name);
 		
 		Toto expectedToto = aCache.get(1L);
 		Tata expectedTata = bCache.get(1L);

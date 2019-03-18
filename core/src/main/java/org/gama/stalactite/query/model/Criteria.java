@@ -6,8 +6,8 @@ import java.util.List;
 
 import org.gama.stalactite.persistence.structure.Column;
 
-import static org.gama.stalactite.query.model.AbstractCriterion.LogicalOperator.And;
-import static org.gama.stalactite.query.model.AbstractCriterion.LogicalOperator.Or;
+import static org.gama.stalactite.query.model.AbstractCriterion.LogicalOperator.AND;
+import static org.gama.stalactite.query.model.AbstractCriterion.LogicalOperator.OR;
 
 /**
  * A basic implementation of {@link CriteriaChain}.
@@ -49,44 +49,44 @@ public class Criteria<SELF extends Criteria<SELF>> extends AbstractCriterion imp
 
 	@Override
 	public SELF and(Column column, CharSequence condition) {
-		return add(new ColumnCriterion(And, column, condition));
+		return add(new ColumnCriterion(AND, column, condition));
 	}
 	
 	@Override
 	public SELF and(Column column, Operand condition) {
-		return add(new ColumnCriterion(And, column, condition));
+		return add(new ColumnCriterion(AND, column, condition));
 	}
 
 	@Override
 	public SELF or(Column column, CharSequence condition) {
-		return add(new ColumnCriterion(Or, column, condition));
+		return add(new ColumnCriterion(OR, column, condition));
 	}
 	
 	@Override
 	public SELF or(Column column, Operand condition) {
-		return add(new ColumnCriterion(Or, column, condition));
+		return add(new ColumnCriterion(OR, column, condition));
 	}
 	
 	@Override
 	public SELF and(Criteria criteria) {
-		criteria.setOperator(And);
+		criteria.setOperator(AND);
 		return add(criteria);
 	}
 
 	@Override
 	public SELF or(Criteria criteria) {
-		criteria.setOperator(Or);
+		criteria.setOperator(OR);
 		return add(criteria);
 	}
 	
 	@Override
 	public SELF and(Object... columns) {
-		return add(new RawCriterion(And, columns));
+		return add(new RawCriterion(AND, columns));
 	}
 	
 	@Override
 	public SELF or(Object... columns) {
-		return add(new RawCriterion(Or, columns));
+		return add(new RawCriterion(OR, columns));
 	}
 
 	@Override

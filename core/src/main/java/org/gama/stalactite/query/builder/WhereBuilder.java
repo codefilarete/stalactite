@@ -168,9 +168,9 @@ public class WhereBuilder implements SQLBuilder, PreparedSQLBuilder {
 		
 		public String getName(LogicalOperator operator) {
 			switch (operator) {
-				case And:
+				case AND:
 					return AND;
-				case Or:
+				case OR:
 					return OR;
 				default:
 					throw new IllegalArgumentException("Operator " + operator + " is unknown");

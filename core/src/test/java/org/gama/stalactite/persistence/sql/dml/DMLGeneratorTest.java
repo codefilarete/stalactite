@@ -39,7 +39,7 @@ public class DMLGeneratorTest {
 		Column colB = toto.addColumn("B", String.class);
 
 		ColumnParameterizedSQL builtInsert = testInstance.buildInsert(toto.getColumns());
-		assertEquals(builtInsert.getSQL(), "insert into Toto(A, B) values (?, ?)");
+		assertEquals("insert into Toto(A, B) values (?, ?)", builtInsert.getSQL());
 		
 		assertEquals(1, builtInsert.getIndexes(colA)[0]);
 		assertEquals(2, builtInsert.getIndexes(colB)[0]);
@@ -65,7 +65,7 @@ public class DMLGeneratorTest {
 		DMLGenerator testInstance = new DMLGenerator(currentDialect.getColumnBinderRegistry(), NoopSorter.INSTANCE, dmlNameProvider);
 
 		ColumnParameterizedSQL builtInsert = testInstance.buildInsert(toto.getColumns());
-		assertEquals(builtInsert.getSQL(), "insert into Toto('key', B) values (?, ?)");
+		assertEquals("insert into Toto('key', B) values (?, ?)", builtInsert.getSQL());
 		
 		assertEquals(1, builtInsert.getIndexes(colA)[0]);
 		assertEquals(2, builtInsert.getIndexes(colB)[0]);
@@ -80,7 +80,7 @@ public class DMLGeneratorTest {
 		Column<Table, Object> colB = toto.addColumn("B", String.class);
 		
 		PreparedUpdate builtUpdate = testInstance.buildUpdate(toto.getColumns(), Arrays.asList(colA));
-		assertEquals(builtUpdate.getSQL(), "update Toto set A = ?, B = ? where A = ?");
+		assertEquals("update Toto set A = ?, B = ? where A = ?", builtUpdate.getSQL());
 
 		assertEquals(1, builtUpdate.getIndex(new UpwhereColumn<>(colA, true)));
 		assertEquals(2, builtUpdate.getIndex(new UpwhereColumn<>(colB, true)));
@@ -109,7 +109,7 @@ public class DMLGeneratorTest {
 		DMLGenerator testInstance = new DMLGenerator(currentDialect.getColumnBinderRegistry(), NoopSorter.INSTANCE, dmlNameProvider);
 		
 		PreparedUpdate builtUpdate = testInstance.buildUpdate(toto.getColumns(), Arrays.asList(colA, colB));
-		assertEquals(builtUpdate.getSQL(), "update Toto set 'key' = ?, B = ? where 'key' = ? and B = ?");
+		assertEquals("update Toto set 'key' = ?, B = ? where 'key' = ? and B = ?", builtUpdate.getSQL());
 
 		assertEquals(1, builtUpdate.getIndex(new UpwhereColumn<>(colA, true)));
 		assertEquals(2, builtUpdate.getIndex(new UpwhereColumn<>(colB, true)));

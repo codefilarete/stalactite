@@ -92,7 +92,7 @@ public class NoopResultSet implements ResultSet {
 	
 	@Override
 	public byte[] getBytes(int columnIndex) throws SQLException {
-		return null;
+		return new byte[0];
 	}
 	
 	@Override
@@ -172,7 +172,7 @@ public class NoopResultSet implements ResultSet {
 	
 	@Override
 	public byte[] getBytes(String columnLabel) throws SQLException {
-		return null;
+		return new byte[0];
 	}
 	
 	@Override

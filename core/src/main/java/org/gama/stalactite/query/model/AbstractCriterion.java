@@ -6,8 +6,8 @@ package org.gama.stalactite.query.model;
 public class AbstractCriterion {
 	
 	public enum LogicalOperator {
-		And,
-		Or,
+		AND,
+		OR,
 	}
 	
 	protected LogicalOperator operator;

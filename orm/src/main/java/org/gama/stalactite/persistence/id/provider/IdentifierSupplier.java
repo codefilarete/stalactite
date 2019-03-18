@@ -19,6 +19,6 @@ public class IdentifierSupplier<T> implements IdentifierProvider<T> {
 	
 	@Override
 	public final PersistableIdentifier<T> giveNewIdentifier() {
-		return new PersistableIdentifier<T>(surrogateSupplier.get());
+		return new PersistableIdentifier<>(surrogateSupplier.get());
 	}
 }

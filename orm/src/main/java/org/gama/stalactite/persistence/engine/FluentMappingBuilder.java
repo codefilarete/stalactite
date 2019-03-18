@@ -454,7 +454,7 @@ public class FluentMappingBuilder<C extends Identified, I extends StatefullIdent
 	public <T extends Table> ClassMappingStrategy<C, I, T> build(Dialect dialect) {
 		IReversibleAccessor<C, I> localIdentifierAccessor = this.identifierAccessor;
 		if (localIdentifierAccessor == null) {
-			if (inheritanceMapping.size() == 0) {
+			if (inheritanceMapping.isEmpty()) {
 				// no ClassMappingStratey in hierarchy, so we can't get an identifier from it => impossible
 				SerializableBiFunction<ColumnOptions, IdentifierPolicy, IFluentMappingBuilder> identifierMethodReference = ColumnOptions::identifier;
 				Method identifierSetter = this.methodSpy.findMethod(identifierMethodReference);

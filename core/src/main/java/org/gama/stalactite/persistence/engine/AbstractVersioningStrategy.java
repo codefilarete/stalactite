@@ -39,9 +39,6 @@ public abstract class AbstractVersioningStrategy<I, C> implements VersioningStra
 		return currentVersion;
 	}
 	
-	@Override
-	public abstract C next(C previousVersion);
-	
 	public static class VersioningStrategySupport<I, C> extends AbstractVersioningStrategy<I, C> {
 		
 		private final Serie<C> sequence;

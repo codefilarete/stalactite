@@ -218,7 +218,8 @@ public class JoinedStrategiesSelectExecutor<C, I> {
 	 */
 	private static class JoinDMLAppender extends DDLAppender {
 		
-		private final DMLNameProvider dmlNameProvider;
+		/** Made transient to comply with {@link java.io.Serializable} contract of parent class */
+		private final transient DMLNameProvider dmlNameProvider;
 		
 		public JoinDMLAppender(DMLNameProvider dmlNameProvider) {
 			super(dmlNameProvider);

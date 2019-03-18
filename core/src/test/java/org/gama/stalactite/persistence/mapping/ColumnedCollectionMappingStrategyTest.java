@@ -143,12 +143,12 @@ public class ColumnedCollectionMappingStrategyTest {
 		row.put(col3.getName(), "c");
 		List<String> toto = testInstance.transform(row);
 		// all 5th first element should be filled
-		assertEquals(toto.get(0), "a");
-		assertEquals(toto.get(1), "b");
-		assertEquals(toto.get(2), "c");
+		assertEquals("a", toto.get(0));
+		assertEquals("b", toto.get(1));
+		assertEquals("c", toto.get(2));
 		assertNull(toto.get(3));
 		assertNull(toto.get(4));
 		// there's not more element since mapping used 5 columns
-		assertEquals(toto.size(), 5);
+		assertEquals(5, toto.size());
 	}
 }

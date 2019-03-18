@@ -84,7 +84,7 @@ public class PooledHiLoSequence implements org.gama.lang.function.Sequence<Long>
 	 * Notifies when upper bound is reached.
 	 * @see #onBoundReached() 
 	 */
-	private static abstract class LongPool {
+	private abstract static class LongPool {
 		/** Pool size. Doesn't change */
 		private final int poolSize;
 		/** Incremented value */
