@@ -6,6 +6,7 @@ import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -834,7 +835,9 @@ public class FluentEmbeddableMappingConfigurationSupport<C> implements IFluentEm
 					// to prevent 2 properties from being mapped on same column
 					MethodIterator methodIterator = new MethodIterator(inset.getEmbeddedClass());
 					Set<ValueAccessPoint> expectedOverridenFields = new ValueAccessPointSet();
-					stream(() -> methodIterator).forEach(m -> {
+					// NB: stream is sorted to get a consistent result over executions because MethodIterator doesn't always return methods in same
+					// order, probably because JVM doesn't provide methods in a steady order over executions too. Mainly done for unit test checking.
+					stream(() -> methodIterator).sorted(Comparator.comparing(Reflections::toString)).forEach(m -> {
 						ValueAccessPoint o = Reflections.onJavaBeanPropertyWrapperNameGeneric(m.getName(), m,
 								AccessorByMethod::new,
 								MutatorByMethod::new,
