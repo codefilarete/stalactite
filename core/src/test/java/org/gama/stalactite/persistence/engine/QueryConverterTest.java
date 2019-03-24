@@ -10,7 +10,6 @@ import org.gama.lang.collection.Arrays;
 import org.gama.lang.collection.Iterables;
 import org.gama.lang.collection.Maps;
 import org.gama.lang.exception.Exceptions;
-import org.gama.sql.binder.ParameterBinderProvider;
 import org.gama.sql.result.InMemoryResultSet;
 import org.gama.stalactite.persistence.sql.dml.binder.ColumnBinderRegistry;
 import org.gama.stalactite.persistence.structure.Column;
@@ -34,7 +33,7 @@ import static org.mockito.Mockito.when;
 public class QueryConverterTest {
 	
 	public static Object[][] testNewQuery() {
-		ParameterBinderProvider<Class> parameterBinderProvider = ParameterBinderProvider.fromMap(new ColumnBinderRegistry().getParameterBinders());
+		ColumnBinderRegistry columnBinderRegistry = new ColumnBinderRegistry();
 		Table totoTable = new Table<>("Toto");
 		Column<Table, Long> id = totoTable.addColumn("id", Long.class).primaryKey();
 		Column<Table, String> name = totoTable.addColumn("name", String.class);
@@ -43,31 +42,31 @@ public class QueryConverterTest {
 		String dummySql = "never executed statement";
 		return new Object[][] {
 				{	// default API: constructor with 1 arg, column name, column type
-					new QueryConverter<>(Toto.class, dummySql, parameterBinderProvider)
+					new QueryConverter<>(Toto.class, dummySql, columnBinderRegistry)
 						.mapKey(Toto::new, "id", Long.class)
 						.map("name", Toto::setName, String.class)
 						.map("active", Toto::setActive) },
 				{	// with Java Bean constructor (no args)
-					new QueryConverter<>(Toto.class, dummySql, parameterBinderProvider)
+					new QueryConverter<>(Toto.class, dummySql, columnBinderRegistry)
 						.mapKey(Toto::new, "id", Toto::setId)
 						.map("name", Toto::setName, String.class)
 						.map("active", Toto::setActive) },
 				{	// with Java Bean constructor (no args)
-					new QueryConverter<>(Toto.class, dummySql, parameterBinderProvider)
+					new QueryConverter<>(Toto.class, dummySql, columnBinderRegistry)
 							.mapKey(Toto::new, id, Toto::setId)
 							.map(name, Toto::setName)
 							.map(active, Toto::setActive) },
 				{ 	// with Column API
-					new QueryConverter<>(Toto.class, dummySql, parameterBinderProvider)
+					new QueryConverter<>(Toto.class, dummySql, columnBinderRegistry)
 						.mapKey(Toto::new, id)
 						.map(name, Toto::setName)
 						.map(active, Toto::setActive) },
 				{	// with Java Bean constructor with 2 arguments
-						new QueryConverter<>(Toto.class, dummySql, parameterBinderProvider)
+						new QueryConverter<>(Toto.class, dummySql, columnBinderRegistry)
 						.mapKey(Toto::new, id, name)
 						.map(active, Toto::setActive)},
 				{	// with Java Bean constructor with 3 arguments
-						new QueryConverter<>(Toto.class, dummySql, parameterBinderProvider)
+						new QueryConverter<>(Toto.class, dummySql, columnBinderRegistry)
 						.mapKey(Toto::new, id, name, active) }
 		};
 	}
@@ -90,19 +89,19 @@ public class QueryConverterTest {
 	}
 	
 	public static Object[][] testNewQuery_withConverter() {
-		ParameterBinderProvider<Class> parameterBinderProvider = ParameterBinderProvider.fromMap(new ColumnBinderRegistry().getParameterBinders());
+		ColumnBinderRegistry columnBinderRegistry = new ColumnBinderRegistry();
 		Table toto = new Table<>("Toto");
 		Column<Table, Long> id = toto.addColumn("id", Long.class).primaryKey();
 		Column<Table, String> name = toto.addColumn("name", String.class);
 		
 		return new Object[][] {
-				{ new QueryConverter<>(Toto.class, "select id, name from Toto", parameterBinderProvider)
+				{ new QueryConverter<>(Toto.class, "select id, name from Toto", columnBinderRegistry)
 							.mapKey(Toto::new, "id", Toto::setId)
 							.map("name", Toto::setName, input -> "coucou") },
-				{ new QueryConverter<>(Toto.class, "select id, name from Toto", parameterBinderProvider)
+				{ new QueryConverter<>(Toto.class, "select id, name from Toto", columnBinderRegistry)
 							.mapKey(Toto::new, "id", Toto::setId)
 							.map("name", Toto::setName, String.class, input -> "coucou") },
-				{ new QueryConverter<>(Toto.class, "select id, name from Toto", parameterBinderProvider)
+				{ new QueryConverter<>(Toto.class, "select id, name from Toto", columnBinderRegistry)
 							.mapKey(Toto::new, id, Toto::setId)
 							.map(name, Toto::setName, input -> "coucou") }
 		};
@@ -142,9 +141,9 @@ public class QueryConverterTest {
 	
 	@Test
 	public void testNewQuery_withCondition() throws SQLException {
-		ParameterBinderProvider<Class> parameterBinderProvider = ParameterBinderProvider.fromMap(new ColumnBinderRegistry().getParameterBinders());
+		ColumnBinderRegistry columnBinderRegistry = new ColumnBinderRegistry();
 		// NB: SQL String is there only for clarification but is never executed
-		QueryConverter<Toto> queryConverter = new QueryConverter<>(Toto.class, "select id, name from Toto where id in (:id)", parameterBinderProvider)
+		QueryConverter<Toto> queryConverter = new QueryConverter<>(Toto.class, "select id, name from Toto where id in (:id)", columnBinderRegistry)
 				.mapKey(Toto::new, "id", Integer.class)
 				.set("id", Arrays.asList(1, 2), Integer.class);
 		
@@ -176,8 +175,8 @@ public class QueryConverterTest {
 	
 	@Test
 	public void testNewQuery_addAssembler() {
-		ParameterBinderProvider<Class> parameterBinderProvider = ParameterBinderProvider.fromMap(new ColumnBinderRegistry().getParameterBinders());
-		QueryConverter<Toto> queryConverter = new QueryConverter<>(Toto.class, "select id, name from Toto", parameterBinderProvider)
+		ColumnBinderRegistry columnBinderRegistry = new ColumnBinderRegistry();
+		QueryConverter<Toto> queryConverter = new QueryConverter<>(Toto.class, "select id, name from Toto", columnBinderRegistry)
 				.mapKey(Toto::new, "id", Toto::setId)
 				.add((rootBean, resultSet) -> rootBean.setName(resultSet.getString("name")));
 		

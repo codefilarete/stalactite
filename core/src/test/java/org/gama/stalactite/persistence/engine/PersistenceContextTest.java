@@ -9,6 +9,9 @@ import java.util.List;
 import org.gama.lang.collection.Arrays;
 import org.gama.lang.collection.Iterables;
 import org.gama.sql.SimpleConnectionProvider;
+import org.gama.sql.binder.DefaultParameterBinders;
+import org.gama.sql.binder.LambdaParameterBinder;
+import org.gama.sql.binder.NullAwareParameterBinder;
 import org.gama.sql.test.HSQLDBInMemoryDataSource;
 import org.gama.stalactite.persistence.engine.PersistenceContext.ExecutableDelete;
 import org.gama.stalactite.persistence.engine.PersistenceContext.ExecutableUpdate;
@@ -17,6 +20,7 @@ import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
 import org.junit.jupiter.api.Test;
 
+import static org.gama.lang.function.Functions.chain;
 import static org.gama.stalactite.query.model.Operand.eq;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -104,19 +108,83 @@ public class PersistenceContextTest {
 		assertEquals(Arrays.asList(new TotoRecord(2, "World")).toString(), records.toString());
 	}
 	
+	@Test
+	public void testSelect_columnTypeIsRegisteredInDialect() throws SQLException {
+		HSQLDBInMemoryDataSource hsqldbInMemoryDataSource = new HSQLDBInMemoryDataSource();
+		Connection connection = hsqldbInMemoryDataSource.getConnection();
+		HSQLDBDialect dialect = new HSQLDBDialect();
+		
+		PersistenceContext testInstance = new PersistenceContext(new SimpleConnectionProvider(connection), dialect);
+		Table toto = new Table("toto");
+		Column<Table, Integer> id = toto.addColumn("id", int.class);
+		Column<Table, Wrapper> dummyProp = toto.addColumn("dummyProp", Wrapper.class);
+		dialect.getColumnBinderRegistry().register(Wrapper.class, new NullAwareParameterBinder<>(
+				new LambdaParameterBinder<>(DefaultParameterBinders.STRING_BINDER, Wrapper::new, Wrapper::getSurrogate)));
+		dialect.getJavaTypeToSqlTypeMapping().put(Wrapper.class, "varchar(255)");
+				
+		DDLDeployer ddlDeployer = new DDLDeployer(testInstance);
+		ddlDeployer.getDdlSchemaGenerator().addTables(toto);
+		ddlDeployer.deployDDL();
+		
+		connection.prepareStatement("insert into Toto(id, dummyProp) values (1, 'Hello')").execute();
+		connection.prepareStatement("insert into Toto(id, dummyProp) values (2, 'World')").execute();
+		
+		List<TotoRecord> records = testInstance.select(TotoRecord::new, id, dummyProp);
+		assertEquals(Arrays.asList(new TotoRecord(1, new Wrapper("Hello")), new TotoRecord(2, new Wrapper("World"))).toString(), records.toString());
+		
+		records = testInstance.select(TotoRecord::new, id,
+				select -> select.add(dummyProp, TotoRecord::setDummyWrappedProp));
+		assertEquals(Arrays.asList("Hello", "World"), Iterables.collect(records, chain(TotoRecord::getDummyWrappedProp, Wrapper::getSurrogate), ArrayList::new));
+	}
+	
+	@Test
+	public void testSelect_columnIsRegisteredInDialect_butNotItsType() throws SQLException {
+		HSQLDBInMemoryDataSource hsqldbInMemoryDataSource = new HSQLDBInMemoryDataSource();
+		Connection connection = hsqldbInMemoryDataSource.getConnection();
+		HSQLDBDialect dialect = new HSQLDBDialect();
+		
+		PersistenceContext testInstance = new PersistenceContext(new SimpleConnectionProvider(connection), dialect);
+		Table toto = new Table("toto");
+		Column<Table, Integer> id = toto.addColumn("id", int.class);
+		Column<Table, Wrapper> dummyProp = toto.addColumn("dummyProp", Wrapper.class);
+		dialect.getColumnBinderRegistry().register(dummyProp, new NullAwareParameterBinder<>(
+				new LambdaParameterBinder<>(DefaultParameterBinders.STRING_BINDER, Wrapper::new, Wrapper::getSurrogate)));
+		dialect.getJavaTypeToSqlTypeMapping().put(dummyProp, "varchar(255)");
+				
+		DDLDeployer ddlDeployer = new DDLDeployer(testInstance);
+		ddlDeployer.getDdlSchemaGenerator().addTables(toto);
+		ddlDeployer.deployDDL();
+		
+		connection.prepareStatement("insert into Toto(id, dummyProp) values (1, 'Hello')").execute();
+		connection.prepareStatement("insert into Toto(id, dummyProp) values (2, 'World')").execute();
+		
+		List<TotoRecord> records = testInstance.select(TotoRecord::new, id, dummyProp);
+		assertEquals(Arrays.asList(new TotoRecord(1, new Wrapper("Hello")), new TotoRecord(2, new Wrapper("World"))).toString(), records.toString());
+		
+		records = testInstance.select(TotoRecord::new, id,
+				select -> select.add(dummyProp, TotoRecord::setDummyWrappedProp));
+		assertEquals(Arrays.asList("Hello", "World"), Iterables.collect(records, chain(TotoRecord::getDummyWrappedProp, Wrapper::getSurrogate), ArrayList::new));
+	}
+	
 	private static class TotoRecord {
 		
 		private final int id;
 		private String name;
 		private String name2;
+		private Wrapper dummyWrappedProp;
 		
 		public TotoRecord(int id) {
-			this(id, null);
+			this(id, (String) null);
 		}
 		
 		public TotoRecord(int id, String name) {
 			this.id = id;
 			this.name = name;
+		}
+		
+		public TotoRecord(int id, Wrapper dummyProp) {
+			this.id = id;
+			this.dummyWrappedProp = dummyProp;
 		}
 		
 		public int getId() {
@@ -142,6 +210,27 @@ public class PersistenceContextTest {
 		@Override
 		public String toString() {
 			return "TotoRecord{id=" + id + ", name='" + name + "\'}";
+		}
+		
+		public Wrapper getDummyWrappedProp() {
+			return dummyWrappedProp;
+		}
+		
+		public void setDummyWrappedProp(Wrapper dummyWrappedProp) {
+			this.dummyWrappedProp = dummyWrappedProp;
+		}
+	}
+	
+	private static class Wrapper {
+		
+		private final String surrogate;
+		
+		public Wrapper(String surrogate) {
+			this.surrogate = surrogate;
+		}
+		
+		public String getSurrogate() {
+			return surrogate;
 		}
 	}
 }

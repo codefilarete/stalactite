@@ -30,14 +30,14 @@ public class ColumnBinderRegistry extends ParameterBinderRegistry implements Par
 	/**
 	 * Registry for Columns
 	 */
-	private final Map<Column, ParameterBinder> parameterBinders = new HashMap<>();
+	private final Map<Column, ParameterBinder> bindersPerColumn = new HashMap<>();
 	
 	public ColumnBinderRegistry() {
 		// default constructor, properties are already assigned
 	}
 	
 	public <T> void register(Column column, ParameterBinder<T> parameterBinder) {
-		this.parameterBinders.put(column, parameterBinder);
+		this.bindersPerColumn.put(column, parameterBinder);
 	}
 	
 	/**
@@ -49,12 +49,12 @@ public class ColumnBinderRegistry extends ParameterBinderRegistry implements Par
 	 */
 	@Override
 	public ParameterBinder doGetBinder(@Nonnull Column column) {
-		ParameterBinder columnBinder = parameterBinders.get(column);
+		ParameterBinder columnBinder = bindersPerColumn.get(column);
 		try {
 			return columnBinder != null ? columnBinder : getBinder(column.getJavaType());
 		} catch (UnsupportedOperationException e) {
 			InterfaceIterator interfaceIterator = new InterfaceIterator(column.getJavaType());
-			Stream<ParameterBinder> stream = Iterables.stream(interfaceIterator).map(iface -> getParameterBinders().get(iface));
+			Stream<ParameterBinder> stream = Iterables.stream(interfaceIterator).map(iface -> getBindersPerType().get(iface));
 			columnBinder = stream.filter(Objects::nonNull).findFirst().orElse(null);
 			if (columnBinder != null) {
 				return columnBinder;
@@ -67,16 +67,16 @@ public class ColumnBinderRegistry extends ParameterBinderRegistry implements Par
 	
 	@Override
 	public Set<Column> keys() {
-		return parameterBinders.keySet();
+		return bindersPerColumn.keySet();
 	}
 	
 	@Override
 	public Set<Entry<Column, ParameterBinder>> all() {
-		return parameterBinders.entrySet();
+		return bindersPerColumn.entrySet();
 	}
 	
 	private BindingException newMissingBinderException(Column column) {
-		return new BindingException("No parameter binder found for column " + column.getAbsoluteName()
+		return new BindingException("No binder found for column " + column.getAbsoluteName()
 				+ " (type " + Reflections.toString(column.getJavaType()) + ")");
 	}
 }

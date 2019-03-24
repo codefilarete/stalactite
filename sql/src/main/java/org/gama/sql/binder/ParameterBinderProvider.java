@@ -2,6 +2,8 @@ package org.gama.sql.binder;
 
 import java.util.Map;
 
+import org.gama.sql.dml.SQLStatement.BindingException;
+
 /**
  * Simple contract for giving a {@link ParameterBinder} thanks to a certain kind of key.
  * 
@@ -19,7 +21,7 @@ public interface ParameterBinderProvider<K> extends PreparedStatementWriterProvi
 	default ParameterBinder getBinder(K key) {
 		ParameterBinder binder = doGetBinder(key);
 		if (binder == null) {
-			throw new RuntimeException("Binder for " + key + " is not registered");
+			throw new BindingException("Binder for " + key + " is not registered");
 		}
 		return binder;
 	}
@@ -29,15 +31,6 @@ public interface ParameterBinderProvider<K> extends PreparedStatementWriterProvi
 	@Override
 	default PreparedStatementWriter doGetWriter(K key) {
 		return doGetBinder(key);
-	}
-	
-	/**
-	 * Short way of getting a {@link ParameterBinderProvider} from a Map
-	 * @param parameterBinders the source of {@link ParameterBinder}
-	 * @return a {@link ParameterBinderProvider} backed by the Map
-	 */
-	static <K> ParameterBinderProvider<K> fromMap(Map<K, ParameterBinder> parameterBinders) {
-		return new ParameterBinderProviderFromMap<>(parameterBinders);
 	}
 	
 	/**

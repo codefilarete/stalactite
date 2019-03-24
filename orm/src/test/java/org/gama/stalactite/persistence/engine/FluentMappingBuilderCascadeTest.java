@@ -62,14 +62,12 @@ public class FluentMappingBuilderCascadeTest {
 	public void initTest() {
 		persistenceContext = new PersistenceContext(new JdbcConnectionProvider(dataSource), DIALECT);
 		
-		IFluentMappingBuilderColumnOptions<Person, Identifier<Long>> personMappingBuilder = FluentMappingBuilder.from(Person.class,
-				Identifier.LONG_TYPE)
+		IFluentMappingBuilderColumnOptions<Person, Identifier<Long>> personMappingBuilder = FluentMappingBuilder.from(Person.class, Identifier.LONG_TYPE)
 				.add(Person::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.add(Person::getName);
 		personPersister = personMappingBuilder.build(persistenceContext);
 		
-		IFluentMappingBuilderColumnOptions<City, Identifier<Long>> cityMappingBuilder = FluentMappingBuilder.from(City.class,
-				Identifier.LONG_TYPE)
+		IFluentMappingBuilderColumnOptions<City, Identifier<Long>> cityMappingBuilder = FluentMappingBuilder.from(City.class, Identifier.LONG_TYPE)
 				.add(City::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.add(City::getName);
 		cityPersister = cityMappingBuilder.build(persistenceContext);

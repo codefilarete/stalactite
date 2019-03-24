@@ -16,7 +16,6 @@ import org.danekja.java.util.function.serializable.SerializableFunction;
 import org.gama.lang.collection.ValueFactoryHashMap;
 import org.gama.reflection.MethodReferenceCapturer;
 import org.gama.sql.ConnectionProvider;
-import org.gama.sql.binder.ParameterBinderProvider;
 import org.gama.sql.dml.PreparedSQL;
 import org.gama.sql.dml.WriteOperation;
 import org.gama.stalactite.command.builder.DeleteCommandBuilder;
@@ -184,7 +183,7 @@ public class PersistenceContext {
 	}
 	
 	public <C> QueryConverter<C> newQuery(SQLBuilder sql, Class<C> beanType) {
-		return new QueryConverter<>(beanType, sql, ParameterBinderProvider.fromMap(getDialect().getColumnBinderRegistry().getParameterBinders()));
+		return new QueryConverter<>(beanType, sql, getDialect().getColumnBinderRegistry());
 	}
 	
 	/**

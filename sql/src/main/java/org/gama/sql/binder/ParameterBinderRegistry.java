@@ -6,10 +6,19 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.Date;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Set;
 import java.util.WeakHashMap;
 
 import org.gama.lang.Reflections;
+import org.gama.lang.bean.InterfaceIterator;
+import org.gama.lang.collection.Iterables;
+import org.gama.sql.dml.SQLStatement.BindingException;
+
+import static java.util.stream.Collectors.toSet;
+import static org.gama.lang.collection.Iterables.first;
 
 /**
  * Registry of {@link ParameterBinder}s according to their binding class.
@@ -23,18 +32,18 @@ import org.gama.lang.Reflections;
  */
 public class ParameterBinderRegistry {
 	
-	private final WeakHashMap<Class, ParameterBinder> parameterBinders = new WeakHashMap<>();
+	private final WeakHashMap<Class, ParameterBinder> bindersPerType = new WeakHashMap<>();
 	
 	public ParameterBinderRegistry() {
 		registerParameterBinders();
 	}
 	
-	public Map<Class, ParameterBinder> getParameterBinders() {
-		return parameterBinders;
+	public Map<Class, ParameterBinder> getBindersPerType() {
+		return bindersPerType;
 	}
 	
 	public <T> void register(Class<T> clazz, ParameterBinder<T> parameterBinder) {
-		parameterBinders.put(clazz, parameterBinder);
+		bindersPerType.put(clazz, parameterBinder);
 	}
 	
 	protected void registerParameterBinders() {
@@ -63,18 +72,37 @@ public class ParameterBinderRegistry {
 	 * 
 	 * @param clazz a class
 	 * @return the registered {@link ParameterBinder} for the given type
-	 * @throws UnsupportedOperationException if the binder doesn't exist
+	 * @throws BindingException if the binder doesn't exist
 	 */
-	public <T> ParameterBinder<T> getBinder(Class<T> clazz) throws UnsupportedOperationException {
-		ParameterBinder<T> parameterBinder = getParameterBinders().get(clazz);
+	public <T> ParameterBinder<T> getBinder(Class<T> clazz) {
+		ParameterBinder<T> parameterBinder = getBindersPerType().get(clazz);
 		if (parameterBinder == null) {
-			throw newMissingBinderException(clazz);
+			parameterBinder = lookupForBinder(clazz);
 		}
 		return parameterBinder;
 	}
 	
-	private UnsupportedOperationException newMissingBinderException(Class clazz) {
-		return new UnsupportedOperationException("No parameter binder found for type " + Reflections.toString(clazz));
+	private <T> ParameterBinder<T> lookupForBinder(Class<T> clazz) {
+		Set<Class> assignableType = new HashSet<>();
+		InterfaceIterator interfaceIterator = new InterfaceIterator(clazz);
+		Iterables.copy(interfaceIterator, assignableType);
+		Set<Entry<Class, ParameterBinder>> compatibleBinders =
+				bindersPerType.entrySet().stream().filter(e -> assignableType.contains(e.getKey())).collect(toSet());
+		if (compatibleBinders.size() == 1) {
+			ParameterBinder foundBinder = first(compatibleBinders).getValue();
+			// we put the found binder to save computation of a next call (optional action)
+			bindersPerType.put(clazz, foundBinder);
+			return foundBinder;
+		} else if (compatibleBinders.size() > 1) {
+			throw new BindingException("Multiple binders found for " + Reflections.toString(clazz)
+					+ ", please register a dedicated one : " + compatibleBinders.stream().map(Entry::getKey).map(Reflections::toString).collect(toSet()));
+		} else {
+			throw newMissingBinderException(clazz);
+		}
+	}
+	
+	private BindingException newMissingBinderException(Class clazz) {
+		return new BindingException("No binder found for type " + Reflections.toString(clazz));
 	}
 	
 }
