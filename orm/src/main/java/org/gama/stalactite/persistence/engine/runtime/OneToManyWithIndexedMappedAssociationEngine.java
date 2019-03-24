@@ -17,11 +17,8 @@ import org.gama.lang.collection.Iterables;
 import org.gama.stalactite.persistence.engine.Persister;
 import org.gama.stalactite.persistence.engine.RuntimeMappingException;
 import org.gama.stalactite.persistence.engine.cascade.JoinedTablesPersister;
-import org.gama.stalactite.persistence.engine.listening.PersisterListener;
 import org.gama.stalactite.persistence.engine.listening.SelectListener;
 import org.gama.stalactite.persistence.engine.listening.UpdateListener.UpdatePayload;
-import org.gama.stalactite.persistence.id.Identified;
-import org.gama.stalactite.persistence.id.Identifier;
 import org.gama.stalactite.persistence.id.diff.AbstractDiff;
 import org.gama.stalactite.persistence.id.diff.IndexedDiff;
 import org.gama.stalactite.persistence.structure.Column;
@@ -31,8 +28,8 @@ import static org.gama.lang.collection.Iterables.collectToList;
 /**
  * @author Guillaume Mary
  */
-public class OneToManyWithIndexedMappedAssociationEngine<I extends Identified, O extends Identified, J extends Identifier, C extends List<O>>
-		extends OneToManyWithMappedAssociationEngine<I, O, J, C> {
+public class OneToManyWithIndexedMappedAssociationEngine<SRC, TRGT, SRCID, TRGTID, C extends List<TRGT>>
+		extends OneToManyWithMappedAssociationEngine<SRC, TRGT, SRCID, TRGTID, C> {
 	
 	/**
 	 * Context for indexed mapped List. Will keep bean index (during insert, update and select) between "unrelated" methods/phases :
@@ -40,17 +37,16 @@ public class OneToManyWithIndexedMappedAssociationEngine<I extends Identified, O
 	 * and SQL) which is not implemented. In such circumstances, ThreadLocal comes to the rescue.
 	 * Could be static, but would lack the O typing, which leads to some generics errors, so left non static (acceptable small overhead)
 	 */
-	private final ThreadLocal<Map<O, Integer>> updatableListIndex = new ThreadLocal<>();
+	private final ThreadLocal<Map<TRGT, Integer>> updatableListIndex = new ThreadLocal<>();
 	
 	/** Column that stores index value, owned by reverse side table (table of targetPersister) */
 	private final Column indexingColumn;
 	
-	public OneToManyWithIndexedMappedAssociationEngine(PersisterListener<I, J> persisterListener,
-													   Persister<O, J, ?> targetPersister,
-													   IndexedMappedManyRelationDescriptor<I, O, C> manyRelationDefinition,
-													   JoinedTablesPersister<I, J, ?> joinedTablesPersister,
+	public OneToManyWithIndexedMappedAssociationEngine(Persister<TRGT, TRGTID, ?> targetPersister,
+													   IndexedMappedManyRelationDescriptor<SRC, TRGT, C> manyRelationDefinition,
+													   JoinedTablesPersister<SRC, SRCID, ?> joinedTablesPersister,
 													   Column indexingColumn) {
-		super(persisterListener, targetPersister, manyRelationDefinition, joinedTablesPersister);
+		super(targetPersister, manyRelationDefinition, joinedTablesPersister);
 		this.indexingColumn = indexingColumn;
 	}
 	
@@ -68,19 +64,19 @@ public class OneToManyWithIndexedMappedAssociationEngine<I extends Identified, O
 		// The latter is used because target List is already filled by the relationFixer
 		// If we use the former we must change the relation fixer and keep a temporary List. Seems little bit more complex.
 		// May be changed if any performance issue is noticed
-		persisterListener.addSelectListener(new SelectListener<I, J>() {
+		persisterListener.addSelectListener(new SelectListener<SRC, SRCID>() {
 			@Override
-			public void beforeSelect(Iterable<J> ids) {
+			public void beforeSelect(Iterable<SRCID> ids) {
 				updatableListIndex.set(new HashMap<>());
 			}
 			
 			@Override
-			public void afterSelect(Iterable<? extends I> result) {
+			public void afterSelect(Iterable<? extends SRC> result) {
 				try {
 					// reordering List element according to read indexes during the transforming phase (see below)
 					result.forEach(i -> {
-						List<O> apply = manyRelationDefinition.getCollectionGetter().apply(i);
-						apply.sort(Comparator.comparingInt(o -> updatableListIndex.get().get(o)));
+						List<TRGT> apply = manyRelationDefinition.getCollectionGetter().apply(i);
+						apply.sort(Comparator.comparingInt(TRGT -> updatableListIndex.get().get(TRGT)));
 					});
 				} finally {
 					cleanContext();
@@ -88,7 +84,7 @@ public class OneToManyWithIndexedMappedAssociationEngine<I extends Identified, O
 			}
 			
 			@Override
-			public void onError(Iterable<J> ids, RuntimeException exception) {
+			public void onError(Iterable<SRCID> ids, RuntimeException exception) {
 				cleanContext();
 			}
 			
@@ -99,7 +95,7 @@ public class OneToManyWithIndexedMappedAssociationEngine<I extends Identified, O
 		// Adding a transformer listener to keep track of the index column read from ResultSet/Row
 		// We place it into a ThreadLocal, then the select listener will use it to reorder loaded beans
 		targetPersister.getMappingStrategy().getRowTransformer().addTransformerListener((bean, row) -> {
-			Map<O, Integer> indexPerBean = updatableListIndex.get();
+			Map<TRGT, Integer> indexPerBean = updatableListIndex.get();
 			// Indexing column is not defined in targetPersister.getMappingStrategy().getRowTransformer() but is present in row
 			// because it was read from ResultSet
 			// So we get its alias from the object that managed id, and we simply read it from the row (but not from RowTransformer)
@@ -120,11 +116,11 @@ public class OneToManyWithIndexedMappedAssociationEngine<I extends Identified, O
 	 */
 	private void addIndexInsertion() {
 		// we declare the indexing column as a silent one, then AfterInsertCollectionCascader will insert it
-		targetPersister.getInsertExecutor().getMappingStrategy().addSilentColumnInserter(indexingColumn, (Function<O, Object>)
+		targetPersister.getInsertExecutor().getMappingStrategy().addSilentColumnInserter(indexingColumn, (Function<TRGT, Object>)
 				target -> {
-					IndexedMappedManyRelationDescriptor<I, O, C> manyRelationDefinition =
-							(IndexedMappedManyRelationDescriptor<I, O, C>) this.manyRelationDefinition;
-					I source = manyRelationDefinition.getReverseGetter().apply(target);
+					IndexedMappedManyRelationDescriptor<SRC, TRGT, C> manyRelationDefinition =
+							(IndexedMappedManyRelationDescriptor<SRC, TRGT, C>) this.manyRelationDefinition;
+					SRC source = manyRelationDefinition.getReverseGetter().apply(target);
 					if (source == null) {
 						throw new RuntimeMappingException("Can't get index : " + target + " is not associated with a "
 								+ Reflections.toString(joinedTablesPersister.getMappingStrategy().getClassToPersist()) + " : "
@@ -140,28 +136,28 @@ public class OneToManyWithIndexedMappedAssociationEngine<I extends Identified, O
 		
 		targetPersister.getMappingStrategy().addSilentColumnUpdater(indexingColumn,
 				// Thread safe by updatableListIndex access
-				(Function<O, Object>) o -> Nullable.nullable(updatableListIndex.get()).apply(m -> m.get(o)).get());
+				(Function<TRGT, Object>) TRGT -> Nullable.nullable(updatableListIndex.get()).apply(m -> m.get(TRGT)).get());
 		
-		BiConsumer<UpdatePayload<? extends I, ?>, Boolean> updateListener = new CollectionUpdater<I, O, C>(
+		BiConsumer<UpdatePayload<? extends SRC, ?>, Boolean> updateListener = new CollectionUpdater<SRC, TRGT, C>(
 				manyRelationDefinition.getCollectionGetter(),
 				targetPersister,
 				manyRelationDefinition.getReverseSetter(),
 				shouldDeleteRemoved) {
 			
 			@Override
-			protected Set<? extends AbstractDiff<O>> diff(Collection<O> modified, Collection<O> unmodified) {
-				return getDiffer().diffList((List<O>) unmodified, (List<O>) modified);
+			protected Set<? extends AbstractDiff<TRGT>> diff(Collection<TRGT> modified, Collection<TRGT> unmodified) {
+				return getDiffer().diffList((List<TRGT>) unmodified, (List<TRGT>) modified);
 			}
 			
 			@Override
-			protected UpdateContext newUpdateContext(UpdatePayload<? extends I, ?> updatePayload) {
+			protected UpdateContext newUpdateContext(UpdatePayload<? extends SRC, ?> updatePayload) {
 				return new IndexedMappedAssociationUpdateContext(updatePayload);
 			}
 			
 			@Override
-			protected void onHeldTarget(UpdateContext updateContext, AbstractDiff<O> diff) {
+			protected void onHeldTarget(UpdateContext updateContext, AbstractDiff<TRGT> diff) {
 				super.onHeldTarget(updateContext, diff);
-				Set<Integer> minus = Iterables.minus(((IndexedDiff<O>) diff).getReplacerIndexes(), ((IndexedDiff<O>) diff).getSourceIndexes());
+				Set<Integer> minus = Iterables.minus(((IndexedDiff<TRGT>) diff).getReplacerIndexes(), ((IndexedDiff<TRGT>) diff).getSourceIndexes());
 				Integer index = Iterables.first(minus);
 				if (index != null) {
 					((IndexedMappedAssociationUpdateContext) updateContext).getIndexUpdates().put(diff.getReplacingInstance(), index);
@@ -174,7 +170,7 @@ public class OneToManyWithIndexedMappedAssociationEngine<I extends Identified, O
 				// entities are stricly equal, but in fact this update() invokation triggers the "silent column" update, which is the index column
 				ThreadLocals.doWithThreadLocal(updatableListIndex, ((IndexedMappedAssociationUpdateContext) updateContext)::getIndexUpdates,
 						(Runnable) () -> {
-							List<Duo<? extends O, ? extends O>> entities = collectToList(updatableListIndex.get().keySet(), o -> new Duo<>(o, o));
+							List<Duo<? extends TRGT, ? extends TRGT>> entities = collectToList(updatableListIndex.get().keySet(), TRGT -> new Duo<>(TRGT, TRGT));
 							targetPersister.update(entities, false);
 						});
 			}
@@ -182,13 +178,13 @@ public class OneToManyWithIndexedMappedAssociationEngine<I extends Identified, O
 			class IndexedMappedAssociationUpdateContext extends UpdateContext {
 				
 				/** New indexes per entity */
-				private final Map<O, Integer> indexUpdates = new HashMap<>();
+				private final Map<TRGT, Integer> indexUpdates = new HashMap<>();
 				
-				public IndexedMappedAssociationUpdateContext(UpdatePayload<? extends I, ?> updatePayload) {
+				public IndexedMappedAssociationUpdateContext(UpdatePayload<? extends SRC, ?> updatePayload) {
 					super(updatePayload);
 				}
 				
-				public Map<O, Integer> getIndexUpdates() {
+				public Map<TRGT, Integer> getIndexUpdates() {
 					return indexUpdates;
 				}
 			}

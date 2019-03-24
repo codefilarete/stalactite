@@ -8,8 +8,6 @@ import org.danekja.java.util.function.serializable.SerializableBiConsumer;
 import org.danekja.java.util.function.serializable.SerializableFunction;
 import org.gama.lang.function.Serie;
 import org.gama.reflection.AccessorChain;
-import org.gama.stalactite.persistence.id.Identified;
-import org.gama.stalactite.persistence.id.manager.StatefullIdentifier;
 import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
 import org.gama.stalactite.persistence.mapping.EmbeddedBeanMappingStrategy;
 import org.gama.stalactite.persistence.sql.Dialect;
@@ -24,7 +22,7 @@ import org.gama.stalactite.persistence.structure.Table;
  * @see FluentMappingBuilder#from(Class, Class, Table)
  * @see #build(Dialect)
  */
-public interface IFluentMappingBuilder<C extends Identified, I extends StatefullIdentifier>
+public interface IFluentMappingBuilder<C, I>
 		extends IFluentEmbeddableMappingConfiguration<C> {
 	
 	/* Overwritting methods signature to return a type that aggregates options of this class */
@@ -45,7 +43,7 @@ public interface IFluentMappingBuilder<C extends Identified, I extends Statefull
 	
 	IFluentMappingBuilder<C, I> mapSuperClass(Class<? super C> superType, EmbeddedBeanMappingStrategy<? super C, ?> mappingStrategy);
 	
-	<O extends Identified, J extends StatefullIdentifier>
+	<O, J>
 	IFluentMappingBuilderOneToOneOptions<C, I>
 	addOneToOne(SerializableFunction<C, O> getter, Persister<O, J, ? extends Table> persister);
 	
@@ -62,7 +60,7 @@ public interface IFluentMappingBuilder<C extends Identified, I extends Statefull
 	 * @return a enhanced version of {@code this} so one can add set options to the relationship or add mapping to {@code this}
 	 * @see #addOneToManyList(SerializableFunction, Persister)
 	 */
-	<O extends Identified, J extends StatefullIdentifier, S extends Collection<O>>
+	<O, J, S extends Collection<O>>
 	IFluentMappingBuilderOneToManyOptions<C, I, O>
 	addOneToManySet(SerializableFunction<C, S> getter, Persister<O, J, ? extends Table> persister);
 	
@@ -79,7 +77,7 @@ public interface IFluentMappingBuilder<C extends Identified, I extends Statefull
 	 * @return a enhanced version of {@code this} so one can add set options to the relationship or add mapping to {@code this}
 	 * @see #addOneToManySet(SerializableFunction, Persister)
 	 */
-	<O extends Identified, J extends StatefullIdentifier, S extends List<O>>
+	<O, J, S extends List<O>>
 	IFluentMappingBuilderOneToManyListOptions<C, I, O>
 	addOneToManyList(SerializableFunction<C, S> getter, Persister<O, J, ? extends Table> persister);
 	
@@ -115,13 +113,13 @@ public interface IFluentMappingBuilder<C extends Identified, I extends Statefull
 	
 	<T extends Table> Persister<C, I, T> build(PersistenceContext persistenceContext);
 	
-	interface IFluentMappingBuilderColumnOptions<T extends Identified, I extends StatefullIdentifier> extends IFluentMappingBuilder<T, I>, ColumnOptions<T, I> {
+	interface IFluentMappingBuilderColumnOptions<T, I> extends IFluentMappingBuilder<T, I>, ColumnOptions<T, I> {
 	}
 	
-	interface IFluentMappingBuilderOneToOneOptions<T extends Identified, I extends StatefullIdentifier> extends IFluentMappingBuilder<T, I>, OneToOneOptions<T, I> {
+	interface IFluentMappingBuilderOneToOneOptions<T, I> extends IFluentMappingBuilder<T, I>, OneToOneOptions<T, I> {
 	}
 	
-	interface IFluentMappingBuilderOneToManyOptions<T extends Identified, I extends StatefullIdentifier, O extends Identified> extends IFluentMappingBuilder<T, I>, OneToManyOptions<T, I, O> {
+	interface IFluentMappingBuilderOneToManyOptions<T, I, O> extends IFluentMappingBuilder<T, I>, OneToManyOptions<T, I, O> {
 	}
 	
 	/**
@@ -132,7 +130,7 @@ public interface IFluentMappingBuilder<C extends Identified, I extends Statefull
 	 * @param <I> type of identifier of source entity
 	 * @param <O> type of target entities
 	 */
-	interface IFluentMappingBuilderOneToManyListOptions<T extends Identified, I extends StatefullIdentifier, O extends Identified>
+	interface IFluentMappingBuilderOneToManyListOptions<T, I, O>
 			extends IFluentMappingBuilderOneToManyOptions<T, I, O>, IndexableCollectionOptions<T, I, O> {
 		/**
 		 * Declaration overriden to adapt return type to this class.
@@ -169,7 +167,7 @@ public interface IFluentMappingBuilder<C extends Identified, I extends Statefull
 		IFluentMappingBuilderOneToManyListOptions<T, I, O> indexedBy(Column orderingColumn);
 	}
 	
-	interface IFluentMappingBuilderEmbedOptions<T extends Identified, I extends StatefullIdentifier, O>
+	interface IFluentMappingBuilderEmbedOptions<T, I, O>
 			extends IFluentMappingBuilder<T, I>, IFluentEmbeddableMappingConfigurationEmbedOptions<T, O>, EmbedWithColumnOptions<O> {
 		
 		/**
@@ -210,7 +208,7 @@ public interface IFluentMappingBuilder<C extends Identified, I extends Statefull
 	 * @param <I>
 	 * @param <O>
 	 */
-	interface IFluentMappingBuilderEmbeddableOptions<T extends Identified, I extends StatefullIdentifier, O>
+	interface IFluentMappingBuilderEmbeddableOptions<T, I, O>
 		extends IFluentMappingBuilder<T, I>,
 			IFluentEmbeddableMappingConfigurationEmbeddableOptions<T, O> {
 		

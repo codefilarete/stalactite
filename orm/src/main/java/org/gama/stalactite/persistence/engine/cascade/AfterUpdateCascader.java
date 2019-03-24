@@ -9,34 +9,38 @@ import org.gama.stalactite.persistence.engine.Persister;
 import org.gama.stalactite.persistence.engine.listening.UpdateListener;
 
 /**
- * Cascader for update, written for @OneToOne style of cascade where Trigger owns the relationship to Target.
+ * Cascader for update, written for one-to-one style of cascade where Trigger owns the relationship to Target.
  * Target instances are updated after Trigger instances
  *
- * @param <Trigger> the type of the source that triggered the event
- * @param <Target> the type of the instances of the relationship
+ * @param <TRIGGER> type of the elements that trigger this cascade
+ * @param <TARGET> relationship entity type
  * @author Guillaume Mary
  */
-public abstract class AfterUpdateCascader<Trigger, Target> implements UpdateListener<Trigger> {
+public abstract class AfterUpdateCascader<TRIGGER, TARGET> implements UpdateListener<TRIGGER> {
 	
-	private final Persister<Target, ?, ?> persister;
+	private final Persister<TARGET, ?, ?> persister;
 	
-	public AfterUpdateCascader(Persister<Target, ?, ?> persister) {
+	public AfterUpdateCascader(Persister<TARGET, ?, ?> persister) {
 		this.persister = persister;
-		this.persister.getPersisterListener().addUpdateListener(new UpdateListener<Target>() {
+		this.persister.getPersisterListener().addUpdateListener(new UpdateListener<TARGET>() {
 			@Override
-			public void afterUpdate(Iterable<UpdatePayload<? extends Target, ?>> entities, boolean allColumnsStatement) {
+			public void afterUpdate(Iterable<UpdatePayload<? extends TARGET, ?>> entities, boolean allColumnsStatement) {
 				postTargetUpdate(entities);
 			}
 		});
 	}
 	
+	public Persister<TARGET, ?, ?> getPersister() {
+		return persister;
+	}
+	
 	/**
 	 * Overriden to update Target instances of the Trigger instances.
-	 *  @param entities source entities previously updated
-	 * @param allColumnsStatement
+	 * @param entities source entities previously updated
+	 * @param allColumnsStatement true if all columns must be updated, false if only changed ones must be in the update statement
 	 */
 	@Override
-	public void afterUpdate(Iterable<UpdatePayload<? extends Trigger, ?>> entities, boolean allColumnsStatement) {
+	public void afterUpdate(Iterable<UpdatePayload<? extends TRIGGER, ?>> entities, boolean allColumnsStatement) {
 		this.persister.update(Iterables.stream(entities).map(e -> getTarget(e.getEntities().getLeft(), e.getEntities().getRight())).filter(Objects::nonNull)
 				.collect(Collectors.toList()), allColumnsStatement);
 	}
@@ -46,7 +50,7 @@ public abstract class AfterUpdateCascader<Trigger, Target> implements UpdateList
 	 *
 	 * @param entities entities updated by this listener
 	 */
-	protected abstract void postTargetUpdate(Iterable<UpdatePayload<? extends Target, ?>> entities);
+	protected abstract void postTargetUpdate(Iterable<UpdatePayload<? extends TARGET, ?>> entities);
 	
 	/**
 	 * Expected to give the Target instance of a Trigger (should simply give a field value of trigger)
@@ -55,6 +59,6 @@ public abstract class AfterUpdateCascader<Trigger, Target> implements UpdateList
 	 * @param unmodifiedTrigger the source instance from which to take the target
 	 * @return the linked objet or null if there's not (or shouldn't be persisted for whatever reason)
 	 */
-	protected abstract Duo<Target, Target> getTarget(Trigger modifiedTrigger, Trigger unmodifiedTrigger);
+	protected abstract Duo<TARGET, TARGET> getTarget(TRIGGER modifiedTrigger, TRIGGER unmodifiedTrigger);
 	
 }

@@ -10,27 +10,33 @@ import org.gama.stalactite.persistence.engine.Persister;
 import org.gama.stalactite.persistence.engine.listening.InsertListener;
 
 /**
- * Cascader for insert, written for @OneToMany style of cascade where Target owns the relationship to Trigger
+ * Cascader for insert, written for one-to-many style of cascade where Target owns the relationship to Trigger
  *
+ * @param <TRIGGER> type of the elements that trigger this collection cascade
+ * @param <TARGET> collection elements type
  * @author Guillaume Mary
  */
-public abstract class AfterInsertCollectionCascader<Trigger, Target> implements InsertListener<Trigger> {
+public abstract class AfterInsertCollectionCascader<TRIGGER, TARGET> implements InsertListener<TRIGGER> {
 	
-	private final Persister<Target, ?, ?> persister;
+	private final Persister<TARGET, ?, ?> persister;
 	
 	/**
 	 * Simple constructor. Created instance must be added to PersisterListener afterward.
 	 *
 	 * @param persister
 	 */
-	public AfterInsertCollectionCascader(Persister<Target, ?, ?> persister) {
+	public AfterInsertCollectionCascader(Persister<TARGET, ?, ?> persister) {
 		this.persister = persister;
-		this.persister.getPersisterListener().addInsertListener(new InsertListener<Target>() {
+		this.persister.getPersisterListener().addInsertListener(new InsertListener<TARGET>() {
 			@Override
-			public void afterInsert(Iterable<? extends Target> entities) {
+			public void afterInsert(Iterable<? extends TARGET> entities) {
 				postTargetInsert(entities);
 			}
 		});
+	}
+	
+	public Persister<TARGET, ?, ?> getPersister() {
+		return persister;
 	}
 	
 	/**
@@ -39,10 +45,10 @@ public abstract class AfterInsertCollectionCascader<Trigger, Target> implements 
 	 * @param entities source entities previously inserted
 	 */
 	@Override
-	public void afterInsert(Iterable<? extends Trigger> entities) {
-		Stream<? extends Trigger> stream = Iterables.stream(entities);
-		Stream<? extends Target> targetStream = stream.flatMap(c -> getTargets(c).stream());
-		List<? extends Target> collect = targetStream.collect(Collectors.toList());
+	public void afterInsert(Iterable<? extends TRIGGER> entities) {
+		Stream<? extends TRIGGER> stream = Iterables.stream(entities);
+		Stream<? extends TARGET> targetStream = stream.flatMap(c -> getTargets(c).stream());
+		List<? extends TARGET> collect = targetStream.collect(Collectors.toList());
 		this.persister.insert(collect);
 	}
 	
@@ -52,7 +58,7 @@ public abstract class AfterInsertCollectionCascader<Trigger, Target> implements 
 	 *
 	 * @param entities entities inserted by this listener
 	 */
-	protected abstract void postTargetInsert(Iterable<? extends Target> entities);
+	protected abstract void postTargetInsert(Iterable<? extends TARGET> entities);
 	
 	/**
 	 * Expected to give the Target instances of a Trigger (should simply give a field value of trigger)
@@ -60,6 +66,6 @@ public abstract class AfterInsertCollectionCascader<Trigger, Target> implements 
 	 * @param trigger the source instance from which to take the targets
 	 * @return the linked objets or null if there's not (or shouldn't be persisted for whatever reason)
 	 */
-	protected abstract Collection<Target> getTargets(Trigger trigger);
+	protected abstract Collection<TARGET> getTargets(TRIGGER trigger);
 	
 }

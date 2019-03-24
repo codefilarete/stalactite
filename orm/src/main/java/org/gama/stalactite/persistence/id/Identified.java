@@ -3,9 +3,7 @@ package org.gama.stalactite.persistence.id;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.function.Predicate;
 
-import org.gama.sql.binder.LambdaParameterBinder;
 import org.gama.sql.binder.NullAwareParameterBinder;
 import org.gama.sql.binder.ParameterBinder;
 
@@ -16,12 +14,6 @@ public interface Identified<I> {
 	
 	Identifier<I> getId();
 	
-	/** Sortcut to check if a {@link Identified} is persisted or not */
-	Predicate<Identified> PERSISTED_PREDICATE = target -> target.getId().isPersisted();
-	
-	/** Sortcut to check if a {@link Identified} is not persisted */
-	Predicate<Identified> NON_PERSISTED_PREDICATE = PERSISTED_PREDICATE.negate();
-	
 	/**
 	 * Gives a {@link ParameterBinder} for a general {@link Identified} to be declared in a {@link org.gama.sql.binder.ParameterBinderRegistry}
 	 * for SQL write operation purpose : it will use the surrogate id as a value for the {@link PreparedStatement}.
@@ -29,12 +21,12 @@ public interface Identified<I> {
 	 * it is called, the result is ignored by {@link org.gama.stalactite.persistence.engine.cascade.StrategyJoinsRowTransformer} which cleanly handle
 	 * instanciation and filling of the target.
 	 * 
-	 * @param lambdaParameterBinder the surrogate {@link ParameterBinder} (can be for primitive type because null is already handled by this method result)
+	 * @param parameterBinder the surrogate {@link ParameterBinder} (can be for primitive type because null is already handled by this method result)
 	 * @param <I> the type of the surrogate {@link Identifier}
-	 * @return a new {@link ParameterBinder} which will wrap/unwrap the result of lambdaParameterBinder
+	 * @return a new {@link ParameterBinder} which will wrap/unwrap the result of parameterBinder
 	 * @see org.gama.sql.binder.DefaultParameterBinders
 	 */
-	static <I> ParameterBinder<Identified<I>> identifiedBinder(LambdaParameterBinder<I> lambdaParameterBinder) {
+	static <I> ParameterBinder<Identified<I>> identifiedBinder(ParameterBinder<I> parameterBinder) {
 		return new NullAwareParameterBinder<>(new ParameterBinder<Identified<I>>() {
 			@Override
 			public Identified<I> get(ResultSet resultSet, String columnName) {
@@ -46,7 +38,7 @@ public interface Identified<I> {
 			
 			@Override
 			public void set(PreparedStatement statement, int valueIndex, Identified<I> value) throws SQLException {
-				lambdaParameterBinder.set(statement, valueIndex, value.getId().getSurrogate());
+				parameterBinder.set(statement, valueIndex, value.getId().getSurrogate());
 			}
 		});
 	}

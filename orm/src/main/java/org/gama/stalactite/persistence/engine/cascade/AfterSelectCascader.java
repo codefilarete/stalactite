@@ -8,30 +8,34 @@ import org.gama.stalactite.persistence.engine.Persister;
 import org.gama.stalactite.persistence.engine.listening.SelectListener;
 
 /**
- * Cascader for select, written for @OneToOne style of cascade where Trigger owns the relationship to Target.
+ * Cascader for select, written for one-to-one style of cascade where Trigger owns the relationship to Target.
  * Use carefully : this class triggers selects for Target instances so it will result in a N+1 symptom. Prefer using a join select.
- * 
- * @param <Trigger> source type that triggers this listener
- * @param <Target> type of loaded beans
- * @param <I> type of loaded beans key
+ *
+ * @param <TRIGGER> type of the elements that trigger this cascade
+ * @param <TARGET> relationship entity type
+ * @param <TARGETID> relationship entity identifier type
  * @author Guillaume Mary
  */
-public abstract class AfterSelectCascader<Trigger, Target, I> implements SelectListener<Trigger, I> {
+public abstract class AfterSelectCascader<TRIGGER, TARGET, TARGETID> implements SelectListener<TRIGGER, TARGETID> {
 	
-	private final Persister<Target, I, ?> persister;
+	private final Persister<TARGET, TARGETID, ?> persister;
 	
 	/**
 	 * Simple constructor. Created instance must be added to PersisterListener afterward.
 	 * @param persister
 	 */
-	public AfterSelectCascader(Persister<Target, I, ?> persister) {
+	public AfterSelectCascader(Persister<TARGET, TARGETID, ?> persister) {
 		this.persister = persister;
-		this.persister.getPersisterListener().addSelectListener(new SelectListener<Target, I>() {
+		this.persister.getPersisterListener().addSelectListener(new SelectListener<TARGET, TARGETID>() {
 			@Override
-			public void afterSelect(Iterable<? extends Target> entities) {
+			public void afterSelect(Iterable<? extends TARGET> entities) {
 				postTargetSelect(entities);
 			}
 		});
+	}
+	
+	public Persister<TARGET, TARGETID, ?> getPersister() {
+		return persister;
 	}
 	
 	/**
@@ -40,9 +44,9 @@ public abstract class AfterSelectCascader<Trigger, Target, I> implements SelectL
 	 * @param entities source entities previously selected
 	 */
 	@Override
-	public void afterSelect(Iterable<? extends Trigger> entities) {
-		List<I> targets = new ArrayList<>(50);
-		for (Trigger trigger : entities) {
+	public void afterSelect(Iterable<? extends TRIGGER> entities) {
+		List<TARGETID> targets = new ArrayList<>(50);
+		for (TRIGGER trigger : entities) {
 			targets.addAll(getTargetIds(trigger));
 		}
 		this.persister.select(targets);
@@ -53,7 +57,7 @@ public abstract class AfterSelectCascader<Trigger, Target, I> implements SelectL
 	 *
 	 * @param entities entities selected by this listener
 	 */
-	protected abstract void postTargetSelect(Iterable<? extends Target> entities);
+	protected abstract void postTargetSelect(Iterable<? extends TARGET> entities);
 	
 	/**
 	 * Expected to give the corresponding Target identifier of Trigger
@@ -61,6 +65,6 @@ public abstract class AfterSelectCascader<Trigger, Target, I> implements SelectL
 	 * @param trigger
 	 * @return
 	 */
-	protected abstract Collection<I> getTargetIds(Trigger trigger);
+	protected abstract Collection<TARGETID> getTargetIds(TRIGGER trigger);
 	
 }

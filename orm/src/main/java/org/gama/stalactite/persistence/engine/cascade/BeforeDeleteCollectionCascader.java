@@ -8,26 +8,32 @@ import org.gama.stalactite.persistence.engine.Persister;
 import org.gama.stalactite.persistence.engine.listening.DeleteListener;
 
 /**
- * Cascader for delete, written for @OneToMany style of cascade where Target owns the relationship to Trigger
- * 
+ * Cascader for delete, written for one-to-many style of cascade where Target owns the relationship to Trigger
+ *
+ * @param <TRIGGER> type of the elements that trigger this collection cascade
+ * @param <TARGET> collection elements type
  * @author Guillaume Mary
  */
-public abstract class BeforeDeleteCollectionCascader<Trigger, Target> implements DeleteListener<Trigger> {
+public abstract class BeforeDeleteCollectionCascader<TRIGGER, TARGET> implements DeleteListener<TRIGGER> {
 	
-	private final Persister<Target, ?, ?> persister;
+	private final Persister<TARGET, ?, ?> persister;
 	
 	/**
 	 * Simple constructor. Created instance must be added to PersisterListener afterward.
 	 * @param persister
 	 */
-	public BeforeDeleteCollectionCascader(Persister<Target, ?, ?> persister) {
+	public BeforeDeleteCollectionCascader(Persister<TARGET, ?, ?> persister) {
 		this.persister = persister;
-		this.persister.getPersisterListener().addDeleteListener(new DeleteListener<Target>() {
+		this.persister.getPersisterListener().addDeleteListener(new DeleteListener<TARGET>() {
 			@Override
-			public void afterDelete(Iterable<Target> entities) {
+			public void afterDelete(Iterable<TARGET> entities) {
 				postTargetDelete(entities);
 			}
 		});
+	}
+	
+	public Persister<TARGET, ?, ?> getPersister() {
+		return persister;
 	}
 	
 	/**
@@ -36,7 +42,7 @@ public abstract class BeforeDeleteCollectionCascader<Trigger, Target> implements
 	 * @param entities source entities previously deleted
 	 */
 	@Override
-	public void beforeDelete(Iterable<Trigger> entities) {
+	public void beforeDelete(Iterable<TRIGGER> entities) {
 		this.persister.delete(Iterables.stream(entities).flatMap(c -> getTargets(c).stream()).collect(Collectors.toList()));
 	}
 	
@@ -45,7 +51,7 @@ public abstract class BeforeDeleteCollectionCascader<Trigger, Target> implements
 	 * 
 	 * @param entities entities deleted by this listener
 	 */
-	protected abstract void postTargetDelete(Iterable<Target> entities);
+	protected abstract void postTargetDelete(Iterable<TARGET> entities);
 	
 	/**
 	 * Expected to give the Target instances of a Trigger (should simply give a field value of trigger)
@@ -53,6 +59,6 @@ public abstract class BeforeDeleteCollectionCascader<Trigger, Target> implements
 	 * @param trigger the source instance from which to take the targets
 	 * @return the linked objets or null if there's not (or shouldn't be persisted for whatever reason)
 	 */
-	protected abstract Collection<Target> getTargets(Trigger trigger);
+	protected abstract Collection<TARGET> getTargets(TRIGGER trigger);
 	
 }

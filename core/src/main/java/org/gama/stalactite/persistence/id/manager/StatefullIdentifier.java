@@ -28,4 +28,9 @@ public interface StatefullIdentifier<T> {
 	 * @return the persistence state of this identifier
 	 */
 	boolean isPersisted();
+	
+	/**
+	 * Method called after entity insertion to mark this instance as persisted
+	 */
+	void setPersisted();
 }

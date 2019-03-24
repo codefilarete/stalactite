@@ -10,7 +10,6 @@ import org.gama.lang.Duo;
 import org.gama.lang.bean.Objects;
 import org.gama.lang.collection.Iterables;
 import org.gama.stalactite.persistence.engine.BeanRelationFixer;
-import org.gama.stalactite.persistence.engine.CascadeOneConfigurer;
 import org.gama.stalactite.persistence.engine.NotYetSupportedOperationException;
 import org.gama.stalactite.persistence.engine.Persister;
 import org.gama.stalactite.persistence.engine.cascade.AfterInsertCollectionCascader;
@@ -20,18 +19,17 @@ import org.gama.stalactite.persistence.engine.cascade.BeforeDeleteCollectionCasc
 import org.gama.stalactite.persistence.engine.cascade.JoinedTablesPersister;
 import org.gama.stalactite.persistence.engine.listening.PersisterListener;
 import org.gama.stalactite.persistence.engine.listening.UpdateListener.UpdatePayload;
-import org.gama.stalactite.persistence.id.Identified;
-import org.gama.stalactite.persistence.id.Identifier;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
 
+import static org.gama.lang.bean.Objects.not;
 import static org.gama.lang.collection.Iterables.stream;
 import static org.gama.stalactite.persistence.engine.cascade.JoinedStrategiesSelect.FIRST_STRATEGY_NAME;
 
 /**
  * @author Guillaume Mary
  */
-public class OneToManyWithMappedAssociationEngine<I extends Identified, O extends Identified, J extends Identifier, C extends Collection<O>> {
+public class OneToManyWithMappedAssociationEngine<SRC, TRGT, SRCID, TRGTID, C extends Collection<TRGT>> {
 	
 	/** Empty setter for applying source entity to target entity (reverse side) */
 	protected static final BiConsumer NOOP_REVERSE_SETTER = (o, i) -> {
@@ -40,19 +38,18 @@ public class OneToManyWithMappedAssociationEngine<I extends Identified, O extend
 		 */
 	};
 	
-	protected final JoinedTablesPersister<I, J, ?> joinedTablesPersister;
+	protected final JoinedTablesPersister<SRC, SRCID, ?> joinedTablesPersister;
 	
-	protected final PersisterListener<I, J> persisterListener;
+	protected final PersisterListener<SRC, SRCID> persisterListener;
 	
-	protected final Persister<O, J, ?> targetPersister;
+	protected final Persister<TRGT, TRGTID, ?> targetPersister;
 	
-	protected final MappedManyRelationDescriptor<I, O, C> manyRelationDefinition;
+	protected final MappedManyRelationDescriptor<SRC, TRGT, C> manyRelationDefinition;
 	
-	public OneToManyWithMappedAssociationEngine(PersisterListener<I, J> persisterListener,
-												Persister<O, J, ?> targetPersister,
-												MappedManyRelationDescriptor<I, O, C> manyRelationDefinition,
-												JoinedTablesPersister<I, J, ?> joinedTablesPersister) {
-		this.persisterListener = persisterListener;
+	public OneToManyWithMappedAssociationEngine(Persister<TRGT, TRGTID, ?> targetPersister,
+												MappedManyRelationDescriptor<SRC, TRGT, C> manyRelationDefinition,
+												JoinedTablesPersister<SRC, SRCID, ?> joinedTablesPersister) {
+		this.persisterListener = joinedTablesPersister.getPersisterListener();
 		this.targetPersister = targetPersister;
 		this.manyRelationDefinition = manyRelationDefinition;
 		this.joinedTablesPersister = joinedTablesPersister;
@@ -62,7 +59,7 @@ public class OneToManyWithMappedAssociationEngine<I extends Identified, O extend
 								 Column relationshipOwner    // foreign key on target table
 	) {
 		// configuring select for fetching relation
-		BeanRelationFixer<I, O> relationFixer = BeanRelationFixer.of(
+		BeanRelationFixer<SRC, TRGT> relationFixer = BeanRelationFixer.of(
 				manyRelationDefinition.getCollectionSetter(),
 				manyRelationDefinition.getCollectionGetter(),
 				manyRelationDefinition.getCollectionClass(),
@@ -81,7 +78,7 @@ public class OneToManyWithMappedAssociationEngine<I extends Identified, O extend
 	}
 	
 	public void addUpdateCascade(boolean shouldDeleteRemoved) {
-		BiConsumer<UpdatePayload<? extends I, ?>, Boolean> updateListener = new CollectionUpdater<>(
+		BiConsumer<UpdatePayload<? extends SRC, ?>, Boolean> updateListener = new CollectionUpdater<>(
 				manyRelationDefinition.getCollectionGetter(),
 				targetPersister,
 				manyRelationDefinition.getReverseSetter(),
@@ -99,33 +96,33 @@ public class OneToManyWithMappedAssociationEngine<I extends Identified, O extend
 			if (manyRelationDefinition.getReverseSetter() != null) {
 				// we cut the link between target and source
 				// NB : we don't take versioning into account overall because we can't : how to do it since we miss the unmodified version ?
-				persisterListener.addDeleteListener(new BeforeDeleteCollectionCascader<I, O>(targetPersister) {
+				persisterListener.addDeleteListener(new BeforeDeleteCollectionCascader<SRC, TRGT>(targetPersister) {
 					
 					@Override
-					protected void postTargetDelete(Iterable<O> entities) {
+					protected void postTargetDelete(Iterable<TRGT> entities) {
 						// nothing to do after deletion
 					}
 					
 					@Override
-					public void beforeDelete(Iterable<I> entities) {
-						List<O> targets = stream(entities).flatMap(c -> getTargets(c).stream()).collect(Collectors.toList());
+					public void beforeDelete(Iterable<SRC> entities) {
+						List<TRGT> targets = stream(entities).flatMap(c -> getTargets(c).stream()).collect(Collectors.toList());
 						targets.forEach(e -> manyRelationDefinition.getReverseSetter().accept(e, null));
 						targetPersister.updateById(targets);
 					}
 					
 					@Override
-					protected Collection<O> getTargets(I i) {
-						Collection<O> targets = manyRelationDefinition.getCollectionGetter().apply(i);
+					protected Collection<TRGT> getTargets(SRC SRC) {
+						Collection<TRGT> targets = manyRelationDefinition.getCollectionGetter().apply(SRC);
 						// We only delete persisted instances (for logic and to prevent from non matching row count exception)
 						return stream(targets)
-								.filter(CascadeOneConfigurer.PERSISTED_PREDICATE)
+								.filter(not(targetPersister.getMappingStrategy()::isNew))
 								.collect(Collectors.toList());
 					}
 				});
 			}
 	}
 	
-	static class TargetInstancesInsertCascader<I extends Identified, O extends Identified, J extends Identifier> extends AfterInsertCollectionCascader<I, O> {
+	static class TargetInstancesInsertCascader<I, O, J> extends AfterInsertCollectionCascader<I, O> {
 		
 		private final Function<I, ? extends Collection<O>> collectionGetter;
 		
@@ -144,12 +141,12 @@ public class OneToManyWithMappedAssociationEngine<I extends Identified, O extend
 			Collection<O> targets = collectionGetter.apply(source);
 			// We only insert non-persisted instances (for logic and to prevent duplicate primary key error)
 			return Iterables.stream(targets)
-					.filter(CascadeOneConfigurer.NON_PERSISTED_PREDICATE)
+					.filter(getPersister().getMappingStrategy()::isNew)
 					.collect(Collectors.toList());
 		}
 	}
 	
-	static class TargetInstancesUpdateCascader<I extends Identified, O extends Identified> extends AfterUpdateCollectionCascader<I, O> {
+	static class TargetInstancesUpdateCascader<I, O> extends AfterUpdateCollectionCascader<I, O> {
 		
 		private final BiConsumer<UpdatePayload<? extends I, ?>, Boolean> updateListener;
 		
@@ -174,7 +171,7 @@ public class OneToManyWithMappedAssociationEngine<I extends Identified, O extend
 		}
 	}
 	
-	static class DeleteTargetEntitiesBeforeDeleteCascader<I extends Identified, O extends Identified> extends BeforeDeleteCollectionCascader<I, O> {
+	static class DeleteTargetEntitiesBeforeDeleteCascader<I, O> extends BeforeDeleteCollectionCascader<I, O> {
 		
 		private final Function<I, ? extends Collection<O>> collectionGetter;
 		
@@ -193,12 +190,12 @@ public class OneToManyWithMappedAssociationEngine<I extends Identified, O extend
 			Collection<O> targets = collectionGetter.apply(i);
 			// We only delete persisted instances (for logic and to prevent from non matching row count exception)
 			return stream(targets)
-					.filter(CascadeOneConfigurer.PERSISTED_PREDICATE)
+					.filter(not(getPersister().getMappingStrategy()::isNew))
 					.collect(Collectors.toList());
 		}
 	}
 	
-	static class DeleteByIdTargetEntitiesBeforeDeleteByIdCascader<I extends Identified, O extends Identified> extends BeforeDeleteByIdCollectionCascader<I, O> {
+	static class DeleteByIdTargetEntitiesBeforeDeleteByIdCascader<I, O> extends BeforeDeleteByIdCollectionCascader<I, O> {
 		
 		private final Function<I, ? extends Collection<O>> collectionGetter;
 		
@@ -218,7 +215,7 @@ public class OneToManyWithMappedAssociationEngine<I extends Identified, O extend
 			Collection<O> targets = collectionGetter.apply(i);
 			// We only delete persisted instances (for logic and to prevent from non matching row count exception)
 			return stream(targets)
-					.filter(CascadeOneConfigurer.PERSISTED_PREDICATE)
+					.filter(not(getPersister().getMappingStrategy()::isNew))
 					.collect(Collectors.toList());
 		}
 	}

@@ -1,13 +1,11 @@
 package org.gama.stalactite.persistence.engine;
 
-import org.gama.stalactite.persistence.id.Identified;
-import org.gama.stalactite.persistence.id.manager.StatefullIdentifier;
 import org.gama.stalactite.persistence.structure.Column;
 
 /**
  * @author Guillaume Mary
  */
-public interface IndexableCollectionOptions<T extends Identified, I extends StatefullIdentifier, O extends Identified> {
+public interface IndexableCollectionOptions<T, I, O> {
 	
 	/**
 	 * Defines the indexing column of the mapped {@link java.util.List}.

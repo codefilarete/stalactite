@@ -36,12 +36,10 @@ import org.gama.stalactite.persistence.engine.IFluentEmbeddableMappingBuilder.IF
 import org.gama.stalactite.persistence.engine.builder.CascadeMany;
 import org.gama.stalactite.persistence.engine.builder.CascadeManyList;
 import org.gama.stalactite.persistence.engine.cascade.JoinedTablesPersister;
-import org.gama.stalactite.persistence.engine.listening.InsertListener;
 import org.gama.stalactite.persistence.id.Identified;
-import org.gama.stalactite.persistence.id.PersistableIdentifier;
+import org.gama.stalactite.persistence.id.Identifier;
 import org.gama.stalactite.persistence.id.manager.AlreadyAssignedIdentifierManager;
 import org.gama.stalactite.persistence.id.manager.IdentifierInsertionManager;
-import org.gama.stalactite.persistence.id.manager.StatefullIdentifier;
 import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
 import org.gama.stalactite.persistence.mapping.EmbeddedBeanMappingStrategy;
 import org.gama.stalactite.persistence.mapping.IdAccessor;
@@ -55,7 +53,7 @@ import static org.gama.lang.collection.Iterables.collect;
 /**
  * @author Guillaume Mary
  */
-public class FluentMappingBuilder<C extends Identified, I extends StatefullIdentifier> implements IFluentMappingBuilder<C, I> {
+public class FluentMappingBuilder<C, I> implements IFluentMappingBuilder<C, I> {
 	
 	/**
 	 * Available identifier policies for entities.
@@ -63,6 +61,10 @@ public class FluentMappingBuilder<C extends Identified, I extends StatefullIdent
 	 * @see IdentifierInsertionManager
 	 */
 	public enum IdentifierPolicy {
+		/**
+		 * Policy for entities that have their id given before insertion.
+		 * <strong>Is only supported for entities that implements {@link Identified}</strong>
+		 */
 		ALREADY_ASSIGNED,
 		BEFORE_INSERT,
 		AFTER_INSERT
@@ -77,8 +79,7 @@ public class FluentMappingBuilder<C extends Identified, I extends StatefullIdent
 	 * @param <I> the type of the identifier
 	 * @return a new {@link FluentMappingBuilder}
 	 */
-	public static <T extends Identified, I extends StatefullIdentifier> FluentMappingBuilder<T, I> from(Class<T> persistedClass,
-																										Class<I> identifierClass) {
+	public static <T, I> FluentMappingBuilder<T, I> from(Class<T> persistedClass, Class<I> identifierClass) {
 		return from(persistedClass, identifierClass, new Table(persistedClass.getSimpleName()));
 	}
 	
@@ -93,8 +94,7 @@ public class FluentMappingBuilder<C extends Identified, I extends StatefullIdent
 	 * @return a new {@link FluentMappingBuilder}
 	 */
 	@SuppressWarnings("suid:S1172")	// identifierClass parameter needs to be present event if to used because it gives <I> Generic type
-	public static <T extends Identified, I extends StatefullIdentifier> FluentMappingBuilder<T, I> from(Class<T> persistedClass,
-																										Class<I> identifierClass, Table table) {
+	public static <T, I> FluentMappingBuilder<T, I> from(Class<T> persistedClass, Class<I> identifierClass, Table table) {
 		return new FluentMappingBuilder<>(persistedClass, table);
 	}
 	
@@ -108,9 +108,9 @@ public class FluentMappingBuilder<C extends Identified, I extends StatefullIdent
 	
 	private final MethodReferenceCapturer methodSpy;
 	
-	private final List<CascadeOne<C, ? extends Identified, ? extends StatefullIdentifier>> cascadeOnes = new ArrayList<>();
+	private final List<CascadeOne<C, ?, ?>> cascadeOnes = new ArrayList<>();
 	
-	private final List<CascadeMany<C, ? extends Identified, ? extends StatefullIdentifier, ? extends Collection>> cascadeManys = new ArrayList<>();
+	private final List<CascadeMany<C, ?, ?, ? extends Collection>> cascadeManys = new ArrayList<>();
 	
 	private final FluentEntityMappingConfigurationSupport fluentEntityMappingConfigurationSupport;
 	
@@ -214,7 +214,7 @@ public class FluentMappingBuilder<C extends Identified, I extends StatefullIdent
 	}
 	
 	@Override
-	public <O extends Identified, J extends StatefullIdentifier> IFluentMappingBuilderOneToOneOptions<C, I> addOneToOne(SerializableFunction<C, O> getter,
+	public <O, J> IFluentMappingBuilderOneToOneOptions<C, I> addOneToOne(SerializableFunction<C, O> getter,
 																														Persister<O, J, ? extends Table> persister) {
 		// we declare the column on our side: we do it first because it checks some rules
 		add(getter);
@@ -241,7 +241,7 @@ public class FluentMappingBuilder<C extends Identified, I extends StatefullIdent
 	}
 	
 	@Override
-	public <O extends Identified, J extends StatefullIdentifier, S extends Collection<O>> IFluentMappingBuilderOneToManyOptions<C, I, O> addOneToManySet(
+	public <O, J, S extends Collection<O>> IFluentMappingBuilderOneToManyOptions<C, I, O> addOneToManySet(
 			SerializableFunction<C, S> getter, Persister<O, J, ? extends Table> persister) {
 		CascadeMany<C, O, J, S> cascadeMany = new CascadeMany<>(getter, persister, captureLambdaMethod(getter));
 		this.cascadeManys.add(cascadeMany);
@@ -252,7 +252,7 @@ public class FluentMappingBuilder<C extends Identified, I extends StatefullIdent
 	}
 	
 	@Override
-	public <O extends Identified, J extends StatefullIdentifier, S extends List<O>> IFluentMappingBuilderOneToManyListOptions<C, I, O> addOneToManyList(
+	public <O, J, S extends List<O>> IFluentMappingBuilderOneToManyListOptions<C, I, O> addOneToManyList(
 			SerializableFunction<C, S> getter, Persister<O, J, ? extends Table> persister) {
 		CascadeManyList<C, O, J, ? extends List<O>> cascadeMany = new CascadeManyList<>(getter, persister, captureLambdaMethod(getter));
 		this.cascadeManys.add(cascadeMany);
@@ -419,21 +419,17 @@ public class FluentMappingBuilder<C extends Identified, I extends StatefullIdent
 		if (!cascadeOnes.isEmpty() || !cascadeManys.isEmpty()) {
 			JoinedTablesPersister<C, I, T> joinedTablesPersister = new JoinedTablesPersister<>(persistenceContext, mainMappingStrategy);
 			result = joinedTablesPersister;
-			if (!cascadeOnes.isEmpty()) {
-				// adding persistence flag setters on this side
-				CascadeOneConfigurer cascadeOneConfigurer = new CascadeOneConfigurer();
-				for (CascadeOne<C, ? extends Identified, ? extends StatefullIdentifier> cascadeOne : cascadeOnes) {
-					cascadeOneConfigurer.appendCascade(cascadeOne, joinedTablesPersister, mainMappingStrategy, joinedTablesPersister,
-							foreignKeyNamingStrategy);
-				}
+			
+			CascadeOneConfigurer<C, Object, Object> cascadeOneConfigurer = new CascadeOneConfigurer<>();
+			for (CascadeOne<C, ?, ?> cascadeOne : cascadeOnes) {
+				cascadeOneConfigurer.appendCascade((CascadeOne<C, Object, Object>) cascadeOne, joinedTablesPersister, mainMappingStrategy,
+						joinedTablesPersister, foreignKeyNamingStrategy);
 			}
 			
-			if (!cascadeManys.isEmpty()) {
-				CascadeManyConfigurer cascadeManyConfigurer = new CascadeManyConfigurer();
-				for (CascadeMany<C, ? extends Identified, ? extends StatefullIdentifier, ? extends Collection> cascadeMany : cascadeManys) {
-					cascadeManyConfigurer.appendCascade(cascadeMany, joinedTablesPersister, foreignKeyNamingStrategy, associationTableNamingStrategy,
-							persistenceContext.getDialect());
-				}
+			CascadeManyConfigurer cascadeManyConfigurer = new CascadeManyConfigurer();
+			for (CascadeMany<C, ?, ?, ? extends Collection> cascadeMany : cascadeManys) {
+				cascadeManyConfigurer.appendCascade(cascadeMany, joinedTablesPersister, foreignKeyNamingStrategy, associationTableNamingStrategy,
+						persistenceContext.getDialect());
 			}
 		}
 		
@@ -671,10 +667,15 @@ public class FluentMappingBuilder<C extends Identified, I extends StatefullIdent
 							throw new IllegalArgumentException("Identifier is already defined by " + identifierAccessor.getAccessor());
 						}
 						if (identifierPolicy == IdentifierPolicy.ALREADY_ASSIGNED) {
-							Class<I> primaryKeyType = Reflections.propertyType(method);
-							FluentMappingBuilder.this.identifierInsertionManager = new AlreadyAssignedIdentifierManager<>(primaryKeyType);
+							Class<I> identifierType = Reflections.propertyType(method);
+							if (Identified.class.isAssignableFrom(method.getDeclaringClass()) && Identifier.class.isAssignableFrom(identifierType)) {
+								FluentMappingBuilder.this.identifierInsertionManager = new IdentifiedIdentifierManager<>(identifierType);
+							} else {
+								throw new NotYetSupportedOperationException(
+										IdentifierPolicy.ALREADY_ASSIGNED + " is only supported with entities that implement " + Reflections.toString(Identified.class));
+							}
 							if (newMapping instanceof EntityLinkageByColumnName) {
-								// we force primary key so it's not necessary to set it by caller
+								// we force primary key so it's not necessary to be set by caller
 								((EntityLinkageByColumnName) newMapping).primaryKey();
 							} else if (newMapping instanceof EntityLinkageByColumn && !((EntityLinkageByColumn) newMapping).isPrimaryKey()) {
 								// safeguard about misconfiguration, even if mapping would work it smells bad configuration
@@ -718,20 +719,6 @@ public class FluentMappingBuilder<C extends Identified, I extends StatefullIdent
 		}
 	}
 	
-	public static class SetPersistedFlagAfterInsertListener implements InsertListener<Identified> {
-		
-		public static final SetPersistedFlagAfterInsertListener INSTANCE = new SetPersistedFlagAfterInsertListener();
-		
-		@Override
-		public void afterInsert(Iterable<? extends Identified> entities) {
-			for (Identified t : entities) {
-				if (t.getId() instanceof PersistableIdentifier) {
-					((PersistableIdentifier) t.getId()).setPersisted(true);
-				}
-			}
-		}
-	}
-	
 	private static class OptimisticLockOption<C> {
 		
 		private final VersioningStrategy<Object, C> versioningStrategy;
@@ -750,7 +737,7 @@ public class FluentMappingBuilder<C extends Identified, I extends StatefullIdent
 	/**
 	 * A small class for one-to-many options storage into a {@link CascadeMany}. Acts as a wrapper over it.
 	 */
-	private static class OneToManyOptionsSupport<T extends Identified, I extends StatefullIdentifier, O extends Identified>
+	private static class OneToManyOptionsSupport<T, I, O>
 			implements OneToManyOptions<T, I, O> {
 		
 		private final CascadeMany<T, O, I, ? extends Collection> cascadeMany;
@@ -782,6 +769,21 @@ public class FluentMappingBuilder<C extends Identified, I extends StatefullIdent
 			cascadeMany.setRelationshipMode(relationshipMode);
 			return null;	// we can return null because dispatcher will return proxy
 		}
+	}
+	
+	/**
+	 * Identifier manager dedicated to {@link Identified} entities
+	 * @param <C> entity type
+	 * @param <I> identifier type
+	 */
+	private static class IdentifiedIdentifierManager<C, I> extends AlreadyAssignedIdentifierManager<C, I> {
+		public IdentifiedIdentifierManager(Class<I> identifierType) {
+			super(identifierType);
+		}
 		
+		@Override
+		public void setPersistedFlag(C e) {
+			((Identified) e).getId().setPersisted();
+		}
 	}
 }

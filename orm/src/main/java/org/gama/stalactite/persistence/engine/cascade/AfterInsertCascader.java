@@ -6,29 +6,36 @@ import java.util.stream.Collectors;
 import org.gama.lang.collection.Iterables;
 import org.gama.stalactite.persistence.engine.Persister;
 import org.gama.stalactite.persistence.engine.listening.InsertListener;
+import org.gama.stalactite.persistence.engine.listening.PersisterListener;
 
 /**
- * Cascader for insert, written for @OneToOne style of cascade where Trigger owns the relationship to Target
+ * Cascader for insert, written for one-to-one style of cascade where Trigger owns the relationship to Target
  *
+ * @param <TRIGGER> type of the elements that trigger this cascade
+ * @param <TARGET> relationship entity type
  * @author Guillaume Mary
  */
-public abstract class AfterInsertCascader<Trigger, Target> implements InsertListener<Trigger> {
+public abstract class AfterInsertCascader<TRIGGER, TARGET> implements InsertListener<TRIGGER> {
 	
-	private final Persister<Target, ?, ?> persister;
+	private final Persister<TARGET, ?, ?> persister;
 	
 	/**
-	 * Simple constructor. Created instance must be added to PersisterListener afterward.
+	 * Simple constructor. Created instance must be added to {@link PersisterListener} afterward.
 	 *
 	 * @param persister
 	 */
-	public AfterInsertCascader(Persister<Target, ?, ?> persister) {
+	public AfterInsertCascader(Persister<TARGET, ?, ?> persister) {
 		this.persister = persister;
-		this.persister.getPersisterListener().addInsertListener(new InsertListener<Target>() {
+		this.persister.getPersisterListener().addInsertListener(new InsertListener<TARGET>() {
 			@Override
-			public void afterInsert(Iterable<? extends Target> entities) {
+			public void afterInsert(Iterable<? extends TARGET> entities) {
 				postTargetInsert(entities);
 			}
 		});
+	}
+	
+	public Persister<TARGET, ?, ?> getPersister() {
+		return persister;
 	}
 	
 	/**
@@ -37,7 +44,7 @@ public abstract class AfterInsertCascader<Trigger, Target> implements InsertList
 	 * @param entities source entities previously inserted
 	 */
 	@Override
-	public void afterInsert(Iterable<? extends Trigger> entities) {
+	public void afterInsert(Iterable<? extends TRIGGER> entities) {
 		this.persister.insert(Iterables.stream(entities).map(this::getTarget).filter(Objects::nonNull).collect(Collectors.toList()));
 	}
 	
@@ -47,7 +54,7 @@ public abstract class AfterInsertCascader<Trigger, Target> implements InsertList
 	 *
 	 * @param entities entities inserted by this listener
 	 */
-	protected abstract void postTargetInsert(Iterable<? extends Target> entities);
+	protected abstract void postTargetInsert(Iterable<? extends TARGET> entities);
 	
 	/**
 	 * Expected to give the Target instance of a Trigger (should simply give a field value of trigger)
@@ -55,6 +62,6 @@ public abstract class AfterInsertCascader<Trigger, Target> implements InsertList
 	 * @param trigger the source instance from which to take the target
 	 * @return the linked objet or null if there's not (or shouldn't be persisted for whatever reason)
 	 */
-	protected abstract Target getTarget(Trigger trigger);
+	protected abstract TARGET getTarget(TRIGGER trigger);
 	
 }

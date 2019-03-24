@@ -14,37 +14,39 @@ import org.gama.lang.Duo;
 import org.gama.lang.collection.Iterables;
 import org.gama.lang.collection.PairIterator.UntilBothIterator;
 import org.gama.lang.collection.ValueFactoryHashMap;
-import org.gama.lang.function.Functions;
 import org.gama.lang.trace.ModifiableInt;
 import org.gama.stalactite.persistence.id.Identified;
-import org.gama.stalactite.persistence.id.manager.StatefullIdentifier;
 
 import static org.gama.stalactite.persistence.id.diff.State.ADDED;
 import static org.gama.stalactite.persistence.id.diff.State.HELD;
 import static org.gama.stalactite.persistence.id.diff.State.REMOVED;
 
 /**
- * A class to compute the differences between 2 collections of {@link Identified}: addition, removal or held
+ * A class to compute the differences between 2 collections of objects: addition, removal or held
  *
+ * @param <I> bean type
  * @author Guillaume Mary
  */
-public class IdentifiedCollectionDiffer {
+public class CollectionDiffer<I> {
 	
-	private static final Function<Identified, Object> SURROGATE_ACCESSOR = Functions.chain(Identified::getId, StatefullIdentifier::getSurrogate);
+	private final Function<I, ?> idProvider;
+	
+	public CollectionDiffer(Function<I, ?> idProvider) {
+		this.idProvider = idProvider;
+	}
 	
 	/**
 	 * Computes the differences between 2 sets. Comparison between objects will be done onto instance equals() method
 	 *
 	 * @param before the "source" Set
 	 * @param after the modified Set
-	 * @param <I> the type of {@link Identified}
 	 * @param <C> the type of the payload onto comparison will be done
 	 * @return a set of differences between the 2 sets, never null, empty if the 2 sets are empty. If no modification, all instances will be
 	 * {@link State#HELD}.
 	 */
-	public <I extends Identified<C>, C> Set<Diff<I>> diffSet(Set<I> before, Set<I> after) {
-		Map<C, I> beforeMappedOnIdentifier = Iterables.map(before, (Function<I, C>) (Function) SURROGATE_ACCESSOR, Function.identity());
-		Map<C, I> afterMappedOnIdentifier = Iterables.map(after, (Function<I, C>) (Function) SURROGATE_ACCESSOR, Function.identity());
+	public <C> Set<Diff<I>> diffSet(Set<I> before, Set<I> after) {
+		Map<C, I> beforeMappedOnIdentifier = Iterables.map(before, (Function<I, C>) idProvider, Function.identity());
+		Map<C, I> afterMappedOnIdentifier = Iterables.map(after, (Function<I, C>) idProvider, Function.identity());
 		
 		Set<Diff<I>> result = new HashSet<>();
 		
@@ -68,11 +70,10 @@ public class IdentifiedCollectionDiffer {
 	 *
 	 * @param before the "source" List
 	 * @param after the modified List
-	 * @param <I> the type of {@link Identified}
 	 * @return a set of differences between the 2 sets, never null, empty if the 2 sets are empty. If no modification, all instances will be
 	 * {@link State#HELD}.
 	 */
-	public <I extends Identified> Set<IndexedDiff<I>> diffList(List<I> before, List<I> after) {
+	public Set<IndexedDiff<I>> diffList(List<I> before, List<I> after) {
 		// building Map of indexes per object
 		Map<I, Set<Integer>> beforeIndexes = new ValueFactoryHashMap<>(k -> new HashSet<>());
 		Map<I, Set<Integer>> afterIndexes = new ValueFactoryHashMap<>(k -> new HashSet<>());

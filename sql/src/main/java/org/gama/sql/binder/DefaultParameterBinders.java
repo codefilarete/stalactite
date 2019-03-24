@@ -9,9 +9,28 @@ import java.sql.Timestamp;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.util.UUID;
 
-import static org.gama.sql.binder.DefaultPreparedStatementWriters.*;
-import static org.gama.sql.binder.DefaultResultSetReaders.*;
+import static org.gama.sql.binder.DefaultPreparedStatementWriters.BINARYSTREAM_WRITER;
+import static org.gama.sql.binder.DefaultPreparedStatementWriters.BOOLEAN_PRIMITIVE_WRITER;
+import static org.gama.sql.binder.DefaultPreparedStatementWriters.DATE_SQL_WRITER;
+import static org.gama.sql.binder.DefaultPreparedStatementWriters.DOUBLE_PRIMITIVE_WRITER;
+import static org.gama.sql.binder.DefaultPreparedStatementWriters.FLOAT_PRIMITIVE_WRITER;
+import static org.gama.sql.binder.DefaultPreparedStatementWriters.INTEGER_PRIMITIVE_WRITER;
+import static org.gama.sql.binder.DefaultPreparedStatementWriters.LONG_PRIMITIVE_WRITER;
+import static org.gama.sql.binder.DefaultPreparedStatementWriters.STRING_WRITER;
+import static org.gama.sql.binder.DefaultPreparedStatementWriters.TIMESTAMP_WRITER;
+import static org.gama.sql.binder.DefaultPreparedStatementWriters.URL_WRITER;
+import static org.gama.sql.binder.DefaultResultSetReaders.BINARYSTREAM_READER;
+import static org.gama.sql.binder.DefaultResultSetReaders.BOOLEAN_PRIMITIVE_READER;
+import static org.gama.sql.binder.DefaultResultSetReaders.DATE_SQL_READER;
+import static org.gama.sql.binder.DefaultResultSetReaders.DOUBLE_PRIMITIVE_READER;
+import static org.gama.sql.binder.DefaultResultSetReaders.FLOAT_PRIMITIVE_READER;
+import static org.gama.sql.binder.DefaultResultSetReaders.INTEGER_PRIMITIVE_READER;
+import static org.gama.sql.binder.DefaultResultSetReaders.LONG_PRIMITIVE_READER;
+import static org.gama.sql.binder.DefaultResultSetReaders.STRING_READER;
+import static org.gama.sql.binder.DefaultResultSetReaders.TIMESTAMP_READER;
+import static org.gama.sql.binder.DefaultResultSetReaders.URL_READER;
 
 /**
  * Default {@link ParameterBinder}s mapped to methods of {@link ResultSet} and {@link PreparedStatement} 
@@ -129,5 +148,10 @@ public interface DefaultParameterBinders {
 	 * It may have little purpose alone, but has its interest with {@link java.time.ZonedDateTime}.
 	 */
 	ParameterBinder<ZoneId> ZONEID_BINDER = new NullAwareParameterBinder<>(new ZoneIdBinder());
+	
+	/**
+	 * {@link ParameterBinder} for {@link UUID}.
+	 */
+	ParameterBinder<UUID> UUID_PARAMETER_BINDER = new NullAwareParameterBinder<>(new UUIDParameterBinder());
 	
 }

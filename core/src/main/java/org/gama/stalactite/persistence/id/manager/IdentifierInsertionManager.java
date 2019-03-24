@@ -6,6 +6,7 @@ import java.sql.SQLException;
 
 import org.gama.sql.dml.WriteOperation;
 import org.gama.stalactite.persistence.engine.WriteExecutor.JDBCBatchingIterator;
+import org.gama.stalactite.persistence.engine.listening.InsertListener;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
 
@@ -14,7 +15,7 @@ import org.gama.stalactite.persistence.structure.Table;
  * 
  * @author Guillaume Mary
  */
-public interface IdentifierInsertionManager<T, I> {
+public interface IdentifierInsertionManager<C, I> {
 	
 	/**
 	 * @return the type of the identifier
@@ -43,5 +44,7 @@ public interface IdentifierInsertionManager<T, I> {
 	 * @param batchSize batch size to apply to the returned {@link JDBCBatchingIterator}
 	 * @return a new {@link JDBCBatchingIterator} 
 	 */
-	JDBCBatchingIterator<T> buildJDBCBatchingIterator(Iterable<? extends T> entities, WriteOperation<? extends Column<? extends Table, ?>> writeOperation, int batchSize);
+	JDBCBatchingIterator<C> buildJDBCBatchingIterator(Iterable<? extends C> entities, WriteOperation<? extends Column<? extends Table, ?>> writeOperation, int batchSize);
+	
+	InsertListener<C> getInsertListener();
 }

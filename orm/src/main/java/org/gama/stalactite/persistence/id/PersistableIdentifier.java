@@ -2,7 +2,7 @@ package org.gama.stalactite.persistence.id;
 
 import javax.annotation.Nonnull;
 
-import org.gama.stalactite.persistence.id.diff.IdentifiedCollectionDiffer;
+import org.gama.stalactite.persistence.id.diff.CollectionDiffer;
 
 /**
  * An identifier that can have its persisted state changed.
@@ -26,15 +26,15 @@ public class PersistableIdentifier<T> extends AbstractIdentifier<T> {
 	
 	/**
 	 * Changes the peristed state of this identifier. Expected to be used post-commit.
-	 * @param persisted true for persisted state, should never changed after.
 	 */
-	public void setPersisted(boolean persisted) {
-		this.persisted = persisted;
+	@Override
+	public void setPersisted() {
+		this.persisted = true;
 	}
 	
 	/**
 	 * Overriden to be compatible with {@link PersistedIdentifier}.
-	 * This is particularly usefull with {@link IdentifiedCollectionDiffer} because it may compare persisted and not persisted identifier.
+	 * This is particularly usefull with {@link CollectionDiffer} because it may compare persisted and not persisted identifier.
 	 * 
 	 * @param that another objet, not null, not this
 	 * @return true if persisted state are equal, or if this instance is persisted and {@code that} is a {@link PersistedIdentifier}

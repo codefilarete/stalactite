@@ -10,9 +10,8 @@ import java.util.function.Function;
 
 import org.gama.stalactite.persistence.engine.Persister;
 import org.gama.stalactite.persistence.engine.listening.UpdateListener.UpdatePayload;
-import org.gama.stalactite.persistence.id.Identified;
 import org.gama.stalactite.persistence.id.diff.AbstractDiff;
-import org.gama.stalactite.persistence.id.diff.IdentifiedCollectionDiffer;
+import org.gama.stalactite.persistence.id.diff.CollectionDiffer;
 import org.gama.stalactite.persistence.structure.Table;
 
 /**
@@ -22,10 +21,10 @@ import org.gama.stalactite.persistence.structure.Table;
  * 
  * @author Guillaume Mary
  */
-public class CollectionUpdater<I extends Identified, O extends Identified, C extends Collection<O>>
+public class CollectionUpdater<I, O, C extends Collection<O>>
 		implements BiConsumer<UpdatePayload<? extends I, ?>, Boolean> {
 	
-	private final IdentifiedCollectionDiffer differ = new IdentifiedCollectionDiffer();
+	private final CollectionDiffer differ;
 	
 	private final Function<I, C> collectionGetter;
 	private final BiConsumer<O, I> reverseSetter;
@@ -43,9 +42,10 @@ public class CollectionUpdater<I extends Identified, O extends Identified, C ext
 		this.reverseSetter = reverseSetter;
 		this.targetPersister = targetPersister;
 		this.shouldDeleteRemoved = shouldDeleteRemoved;
+		this.differ = new CollectionDiffer<>(targetPersister.getMappingStrategy().getIdMappingStrategy().getIdAccessor()::getId);
 	}
 	
-	public IdentifiedCollectionDiffer getDiffer() {
+	public CollectionDiffer getDiffer() {
 		return differ;
 	}
 	
@@ -124,7 +124,7 @@ public class CollectionUpdater<I extends Identified, O extends Identified, C ext
 	
 	protected void onAddedTarget(UpdateContext updateContext, AbstractDiff<O> diff) {
 		// we insert only non persisted entities to prevent from a primary key conflict
-		if (Identified.NON_PERSISTED_PREDICATE.test(diff.getReplacingInstance())) {
+		if (targetPersister.getMappingStrategy().isNew(diff.getReplacingInstance())) {
 			updateContext.getEntitiesToBeInserted().add(diff.getReplacingInstance());
 		}
 	}
@@ -136,7 +136,7 @@ public class CollectionUpdater<I extends Identified, O extends Identified, C ext
 	protected void onRemovedTarget(UpdateContext updateContext, AbstractDiff<O> diff) {
 		// we delete only persisted entity to prevent from a not found record
 		if (shouldDeleteRemoved) {
-			if (Identified.PERSISTED_PREDICATE.test(diff.getSourceInstance())) {
+			if (!targetPersister.getMappingStrategy().isNew(diff.getSourceInstance())) {
 				updateContext.getEntitiesToBeDeleted().add(diff.getSourceInstance());
 			}
 		} else // entity shouldn't be deleted, so we may have to update it

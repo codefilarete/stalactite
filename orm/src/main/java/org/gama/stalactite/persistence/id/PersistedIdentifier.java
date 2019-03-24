@@ -2,7 +2,7 @@ package org.gama.stalactite.persistence.id;
 
 import javax.annotation.Nonnull;
 
-import org.gama.stalactite.persistence.id.diff.IdentifiedCollectionDiffer;
+import org.gama.stalactite.persistence.id.diff.CollectionDiffer;
 
 /**
  * A decorator for already persisted bean identifier.
@@ -23,9 +23,14 @@ public class PersistedIdentifier<T> extends AbstractIdentifier<T> {
 		return true;
 	}
 	
+	@Override
+	public void setPersisted() {
+		// nothing to do because instances of this class are defacto considered as persisted
+	}
+	
 	/**
 	 * Overriden to be compatible with {@link PersistableIdentifier}.
-	 * This is particularly usefull with {@link IdentifiedCollectionDiffer} because it may compare persisted and not persisted identifier.
+	 * This is particularly usefull with {@link CollectionDiffer} because it may compare persisted and not persisted identifier.
 	 * 
 	 * @param that another objet, not null, not this
 	 * @return true if {@code that} is a {@link PersistedIdentifier}, or {@code that} is a {@link PersistableIdentifier} and its state is persisted 

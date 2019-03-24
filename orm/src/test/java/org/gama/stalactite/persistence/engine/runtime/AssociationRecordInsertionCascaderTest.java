@@ -18,8 +18,10 @@ import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
 import org.gama.stalactite.persistence.mapping.IdMappingStrategy;
 import org.gama.stalactite.persistence.sql.dml.DMLGenerator;
 import org.junit.jupiter.api.Test;
+import org.mockito.stubbing.Answer;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -31,12 +33,17 @@ class AssociationRecordInsertionCascaderTest {
 	@Test
 	void testAssociationRecordInsertionCascader_getTargets() {
 		ClassMappingStrategy classMappingStrategyMock = mock(ClassMappingStrategy.class);
+		when(classMappingStrategyMock.getId(any(Keyboard.class))).thenAnswer((Answer<Identifier<Long>>) invocation ->
+				((Keyboard) invocation.getArgument(0)).getId());
 		when(classMappingStrategyMock.getIdMappingStrategy()).thenReturn(mock(IdMappingStrategy.class));
+		ClassMappingStrategy keyClassMappingStrategyMock = mock(ClassMappingStrategy.class);
+		when(keyClassMappingStrategyMock.getId(any(Key.class))).thenAnswer((Answer<Identifier<Long>>) invocation ->
+				((Key) invocation.getArgument(0)).getId());
 		AssociationRecordPersister persisterStub =
 				new AssociationRecordPersister(classMappingStrategyMock, mock(ConnectionProvider.class),
 				new DMLGenerator(mock(ParameterBinderIndex.class)), Retryer.NO_RETRY, 1, 1);
-		AssociationRecordInsertionCascader<Keyboard, Key, List<Key>> testInstance
-				= new AssociationRecordInsertionCascader<>(persisterStub, Keyboard::getKeys);
+		AssociationRecordInsertionCascader<Keyboard, Key, Identifier, Identifier, List<Key>> testInstance
+				= new AssociationRecordInsertionCascader<>(persisterStub, Keyboard::getKeys, classMappingStrategyMock, keyClassMappingStrategyMock);
 		
 		Keyboard inputData = new Keyboard(1L);
 		Key key1 = new Key(1L);

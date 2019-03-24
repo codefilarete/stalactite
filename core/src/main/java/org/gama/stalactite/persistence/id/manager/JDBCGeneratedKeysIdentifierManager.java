@@ -17,6 +17,7 @@ import org.gama.sql.dml.GeneratedKeysReader;
 import org.gama.sql.dml.WriteOperation;
 import org.gama.sql.result.Row;
 import org.gama.stalactite.persistence.engine.WriteExecutor.JDBCBatchingIterator;
+import org.gama.stalactite.persistence.engine.listening.InsertListener;
 import org.gama.stalactite.persistence.mapping.IdAccessor;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
@@ -65,6 +66,11 @@ public class JDBCGeneratedKeysIdentifierManager<T, I> implements IdentifierInser
 	@Override
 	public JDBCBatchingIterator<T> buildJDBCBatchingIterator(Iterable<? extends T> entities, WriteOperation<? extends Column<? extends Table, ?>> writeOperation, int batchSize) {
 		return new JDBCBatchingIteratorGeneratedKeysAware<>(entities, writeOperation, batchSize, generatedKeysReader, identifierFixer);
+	}
+	
+	@Override
+	public InsertListener<T> getInsertListener() {
+		return new InsertListener<T>() {};
 	}
 	
 	/**

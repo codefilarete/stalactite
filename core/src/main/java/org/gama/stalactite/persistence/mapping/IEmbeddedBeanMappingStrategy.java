@@ -7,7 +7,7 @@ import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
 
 /**
- * Mapper for embedded beans in another. For instance a simple @OneToOne can be considered as an embedded bean.
+ * Mapper for embedded beans in another. For instance a simple one-to-one can be considered as an embedded bean.
  * 
  * @author Guillaume Mary
  */

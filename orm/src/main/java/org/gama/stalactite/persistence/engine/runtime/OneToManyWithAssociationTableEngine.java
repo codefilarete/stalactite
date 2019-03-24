@@ -7,31 +7,33 @@ import org.gama.stalactite.persistence.engine.AssociationRecord;
 import org.gama.stalactite.persistence.engine.AssociationRecordPersister;
 import org.gama.stalactite.persistence.engine.AssociationTable;
 import org.gama.stalactite.persistence.engine.Persister;
-import org.gama.stalactite.persistence.engine.listening.PersisterListener;
-import org.gama.stalactite.persistence.id.Identified;
-import org.gama.stalactite.persistence.id.Identifier;
+import org.gama.stalactite.persistence.engine.cascade.JoinedTablesPersister;
+import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
 
 /**
  * @author Guillaume Mary
  */
-public class OneToManyWithAssociationTableEngine<I extends Identified, O extends Identified, J extends Identifier, C extends Collection<O>>
-		extends AbstractOneToManyWithAssociationTableEngine<I, O, J, C, AssociationRecord, AssociationTable> {
+public class OneToManyWithAssociationTableEngine<SRC, TRGT, SRCID, TRGTID, C extends Collection<TRGT>>
+		extends AbstractOneToManyWithAssociationTableEngine<SRC, TRGT, SRCID, TRGTID, C, AssociationRecord, AssociationTable> {
 	
-	public OneToManyWithAssociationTableEngine(PersisterListener<I, J> persisterListener,
-											   Persister<O, J, ?> targetPersister,
-											   ManyRelationDescriptor<I, O, C> manyRelationDescriptor,
+	public OneToManyWithAssociationTableEngine(JoinedTablesPersister<SRC, SRCID, ?> joinedTablesPersister,
+											   Persister<TRGT, TRGTID, ?> targetPersister,
+											   ManyRelationDescriptor<SRC, TRGT, C> manyRelationDescriptor,
 											   AssociationRecordPersister<AssociationRecord, AssociationTable> associationPersister) {
-		super(persisterListener, targetPersister, manyRelationDescriptor, associationPersister);
+		super(joinedTablesPersister, targetPersister, manyRelationDescriptor, associationPersister);
 	}
 	
 	@Override
-	protected AssociationRecordInsertionCascader<I, O, C> newRecordInsertionCascader(Function<I, C> collectionGetter,
-																					 AssociationRecordPersister<AssociationRecord, AssociationTable> associationPersister) {
-		return new AssociationRecordInsertionCascader<>(associationPersister, collectionGetter);
+	protected AssociationRecordInsertionCascader<SRC, TRGT, SRCID, TRGTID, C> newRecordInsertionCascader(
+			Function<SRC, C> collectionGetter,
+			AssociationRecordPersister<AssociationRecord, AssociationTable> associationPersister,
+			ClassMappingStrategy<SRC, SRCID, ?> mappingStrategy,
+			ClassMappingStrategy<TRGT, TRGTID, ?> targetStrategy) {
+		return new AssociationRecordInsertionCascader<>(associationPersister, collectionGetter, mappingStrategy, targetStrategy);
 	}
 	
 	@Override
-	protected AssociationRecord newRecord(I e, O target, int index) {
-		return new AssociationRecord(e.getId(), target.getId());
+	protected AssociationRecord newRecord(SRC e, TRGT target, int index) {
+		return new AssociationRecord(joinedTablesPersister.getMappingStrategy().getId(e), targetPersister.getMappingStrategy().getId(target));
 	}
 }

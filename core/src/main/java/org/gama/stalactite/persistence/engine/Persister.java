@@ -167,7 +167,7 @@ public class Persister<C, I, T extends Table> {
 	 * Persists an instance either it is already persisted or not (insert or update).
 	 * 
 	 * Check between insert or update is determined by id state which itself depends on identifier policy,
-	 * see {@link SimpleIdMappingStrategy.IsNewDeterminer} implementations and
+	 * see {@link SimpleIdMappingStrategy#IsNewDeterminer} implementations and
 	 * {@link org.gama.stalactite.persistence.id.manager.IdentifierInsertionManager} implementations for id value computation. 
 	 * 
 	 * @param entity an entity to be persisted

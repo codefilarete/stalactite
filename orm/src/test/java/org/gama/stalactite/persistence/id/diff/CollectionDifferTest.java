@@ -29,11 +29,11 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 /**
  * @author Guillaume Mary
  */
-public class IdentifiedCollectionDifferTest {
+public class CollectionDifferTest {
 	
 	
 	private static String toString(Iterable<? extends AbstractDiff> diffs) {
-		return Iterables.stream(diffs).map(IdentifiedCollectionDifferTest::toString).collect(Collectors.joining(", "));
+		return Iterables.stream(diffs).map(CollectionDifferTest::toString).collect(Collectors.joining(", "));
 	}
 	
 	private static String toString(AbstractDiff diff) {
@@ -108,7 +108,7 @@ public class IdentifiedCollectionDifferTest {
 	@ParameterizedTest
 	@MethodSource("testDiffSet")
 	public void testDiffSet(Set<Country> set1, Set<Country> set2, Set<Diff<Country>> expectedResult) {
-		IdentifiedCollectionDiffer testInstance = new IdentifiedCollectionDiffer();
+		CollectionDiffer<Country> testInstance = new CollectionDiffer<>(Country::getId);
 		
 		Set<Diff<Country>> diffs = testInstance.diffSet(set1, set2);
 		
@@ -227,7 +227,7 @@ public class IdentifiedCollectionDifferTest {
 	@ParameterizedTest
 	@MethodSource("testDiffList")
 	public void testDiffList(List<Country> set1, List<Country> set2, Set<IndexedDiff<Country>> expectedResult) {
-		IdentifiedCollectionDiffer testInstance = new IdentifiedCollectionDiffer();
+		CollectionDiffer<Country> testInstance = new CollectionDiffer<>(Country::getId);
 		
 		Set<IndexedDiff<Country>> diffs = testInstance.diffList(set1, set2);
 		
@@ -254,7 +254,7 @@ public class IdentifiedCollectionDifferTest {
 	@ParameterizedTest
 	@MethodSource("testLookupIndexes")
 	public void testLookupIndexes(List<City> input, City lookupElement, Set<Integer> expected) {
-		IdentifiedCollectionDiffer testInstance = new IdentifiedCollectionDiffer();
+		CollectionDiffer<Country> testInstance = new CollectionDiffer<>(Country::getId);
 		Set<Integer> result = testInstance.lookupIndexes(input, lookupElement);
 		assertEquals(expected, result);
 	}

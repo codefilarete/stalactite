@@ -8,9 +8,12 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
+import org.gama.lang.Duo;
 import org.gama.lang.InvocationHandlerSupport;
 import org.gama.lang.Reflections;
 import org.gama.lang.collection.Arrays;
@@ -19,6 +22,7 @@ import org.gama.sql.SimpleConnectionProvider;
 import org.gama.sql.binder.DefaultParameterBinders;
 import org.gama.sql.dml.SQLOperation.SQLOperationListener;
 import org.gama.sql.dml.SQLStatement;
+import org.gama.sql.test.HSQLDBInMemoryDataSource;
 import org.gama.stalactite.persistence.engine.FluentMappingBuilder.IdentifierPolicy;
 import org.gama.stalactite.persistence.engine.IFluentMappingBuilder.IFluentMappingBuilderColumnOptions;
 import org.gama.stalactite.persistence.engine.IFluentMappingBuilder.IFluentMappingBuilderEmbedOptions;
@@ -33,6 +37,7 @@ import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
 import org.gama.stalactite.persistence.sql.HSQLDBDialect;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
+import org.gama.stalactite.test.JdbcConnectionProvider;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
@@ -104,23 +109,53 @@ public class FluentMappingBuilderTest {
 	}
 	
 	@Test
-	public void testAdd_definedAsIdentifier_columnBecomesPrimaryKey() {
+	public void testAdd_definedAsIdentifier_alreadyAssignedButDoesntImplementIdentifier_throwsException() {
 		Table toto = new Table("Toto");
-		FluentMappingBuilder.from(Toto.class, StatefullIdentifier.class, toto)
-			.add(Toto::getName).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
-			.build(DIALECT);
+		NotYetSupportedOperationException thrownException = assertThrows(NotYetSupportedOperationException.class,
+				() -> FluentMappingBuilder.from(Toto.class, StatefullIdentifier.class, toto)
+				.add(Toto::getName).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
+				.build(DIALECT));
+		assertEquals("ALREADY_ASSIGNED is only supported with entities that implement o.g.s.p.i.Identified", thrownException.getMessage());
+	}
+	
+	@Test
+	public void testAdd_definedAsIdentifier_identifierIsString() {
+		HSQLDBDialect dialect = new HSQLDBDialect();
+		PersistenceContext persistenceContext = new PersistenceContext(new JdbcConnectionProvider(new HSQLDBInMemoryDataSource()), dialect);
+		
+		Table totoTable = new Table("Toto");
+		Column id = totoTable.addColumn("id", Identifier.class).primaryKey();
+		Column name = totoTable.addColumn("name", String.class);
+		// binder creation for our identifier
+		dialect.getColumnBinderRegistry().register(id, Identifier.identifierBinder(DefaultParameterBinders.UUID_PARAMETER_BINDER));
+		dialect.getJavaTypeToSqlTypeMapping().put(id, "varchar(255)");
+		
+		Persister<Toto, StatefullIdentifier, Table> persister = FluentMappingBuilder.from(Toto.class, StatefullIdentifier.class, totoTable)
+				.add(Toto::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
+				.build(persistenceContext);
 		// column should be correctly created
-		Column columnForProperty = (Column) toto.mapColumnsOnName().get("name");
+		Column columnForProperty = (Column) totoTable.mapColumnsOnName().get("id");
 		assertTrue(columnForProperty.isPrimaryKey());
+		
+		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+		ddlDeployer.deployDDL();
+		
+		Toto toto = new Toto();
+		toto.setName("toto");
+		persister.persist(toto);
+		
+		List<Duo> select = persistenceContext.select(Duo::new, id, name);
+		assertEquals(1, select.size());
+		assertEquals(toto.getIdentifier().getSurrogate().toString(), ((Identifier) select.get(0).getLeft()).getSurrogate().toString());
 	}
 	
 	@Test
 	public void testAdd_identifierDefinedTwice_throwsException() throws NoSuchMethodException {
 		Table toto = new Table("Toto");
-		assertEquals("Identifier is already defined by " + Reflections.toString(Toto.class.getMethod("getName")),
+		assertEquals("Identifier is already defined by " + Reflections.toString(Toto.class.getMethod("getId")),
 				assertThrows(IllegalArgumentException.class, () -> FluentMappingBuilder.from(Toto.class, StatefullIdentifier.class, toto)
-						.add(Toto::getName, "tata").identifier(IdentifierPolicy.ALREADY_ASSIGNED)
-						.add(Toto::getFirstName).identifier(IdentifierPolicy.ALREADY_ASSIGNED))
+						.add(Toto::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
+						.add(Toto::getIdentifier).identifier(IdentifierPolicy.ALREADY_ASSIGNED))
 						.getMessage());
 	}
 	
@@ -413,7 +448,9 @@ public class FluentMappingBuilderTest {
 				countryTable.getColumns().stream().map(Column::getName).collect(Collectors.toSet()));
 	}
 	
-	protected static class Toto implements Identified<Integer> {
+	protected static class Toto implements Identified<UUID> {
+		
+		private final Identifier<UUID> identifier;
 		
 		private String name;
 		
@@ -422,6 +459,7 @@ public class FluentMappingBuilderTest {
 		private Timestamp timestamp;
 		
 		public Toto() {
+			identifier = new PersistableIdentifier<>(UUID.randomUUID());
 		}
 		
 		public String getName() {
@@ -434,6 +472,10 @@ public class FluentMappingBuilderTest {
 		
 		public String getFirstName() {
 			return name;
+		}
+		
+		public Identifier<UUID> getIdentifier() {
+			return identifier;
 		}
 		
 		public Long getNoMatchingField() {
@@ -451,11 +493,11 @@ public class FluentMappingBuilderTest {
 		}
 		
 		@Override
-		public Identifier<Integer> getId() {
-			return null;
+		public Identifier<UUID> getId() {
+			return identifier;
 		}
 		
-		public void setId(Identifier<Integer> id) {
+		public void setId(Identifier<UUID> id) {
 			
 		}
 		

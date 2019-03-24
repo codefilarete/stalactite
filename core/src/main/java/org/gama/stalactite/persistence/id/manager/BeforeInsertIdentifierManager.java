@@ -5,6 +5,7 @@ import java.util.function.Consumer;
 import org.gama.lang.function.Sequence;
 import org.gama.sql.dml.WriteOperation;
 import org.gama.stalactite.persistence.engine.WriteExecutor.JDBCBatchingIterator;
+import org.gama.stalactite.persistence.engine.listening.InsertListener;
 import org.gama.stalactite.persistence.mapping.IdAccessor;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
@@ -33,6 +34,11 @@ public class BeforeInsertIdentifierManager<T, I> implements IdentifierInsertionM
 	@Override
 	public JDBCBatchingIterator<T> buildJDBCBatchingIterator(Iterable<? extends T> entities, WriteOperation<? extends Column<? extends Table, ?>> writeOperation, int batchSize) {
 		return new JDBCBatchingIteratorIdAware<>(entities, writeOperation, batchSize, identifierFixer);
+	}
+	
+	@Override
+	public InsertListener<T> getInsertListener() {
+		return new InsertListener<T>() {};
 	}
 	
 	/**

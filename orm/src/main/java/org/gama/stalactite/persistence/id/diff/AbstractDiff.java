@@ -1,7 +1,5 @@
 package org.gama.stalactite.persistence.id.diff;
 
-import org.gama.stalactite.persistence.id.Identified;
-
 /**
  * Abstract contract for a change of place in a {@link java.util.Collection}.
  *
@@ -9,7 +7,7 @@ import org.gama.stalactite.persistence.id.Identified;
  * @see Diff
  * @see IndexedDiff
  */
-public class AbstractDiff<I extends Identified> {
+public class AbstractDiff<I> {
 	private final I sourceInstance;
 	private final I replacingInstance;
 	private final State state;

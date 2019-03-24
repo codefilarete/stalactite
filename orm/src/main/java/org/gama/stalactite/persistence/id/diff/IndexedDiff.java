@@ -5,15 +5,13 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 
-import org.gama.stalactite.persistence.id.Identified;
-
 /**
  * A specialized version of {@link AbstractDiff} for indexed {@link java.util.Collection} because it keeps indexes.
- * Result of a comparison made by {@link IdentifiedCollectionDiffer#diffList(List, List)}.
+ * Result of a comparison made by {@link CollectionDiffer#diffList(List, List)}.
  *
  * @author Guillaume Mary
  */
-public class IndexedDiff<I extends Identified> extends AbstractDiff<I> {
+public class IndexedDiff<I> extends AbstractDiff<I> {
 	
 	private final Set<Integer> sourceIndexes;
 	
@@ -57,7 +55,7 @@ public class IndexedDiff<I extends Identified> extends AbstractDiff<I> {
 	}
 	
 	/**
-	 * Implemented for the {@link IdentifiedCollectionDiffer#diffList(List, List)} method algorithm
+	 * Implemented for the {@link CollectionDiffer#diffList(List, List)} method algorithm
 	 * 
 	 * @param o any other object
 	 * @return true when source and replacing instances are equal (indexes are not taken into account)

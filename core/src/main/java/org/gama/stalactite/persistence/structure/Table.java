@@ -103,7 +103,7 @@ public class Table<SELF extends Table<SELF>> {
 		}
 		this.columns.add((Column<SELF, Object>) column);
 		columnsPerName.put(column.getName(), column);
-		return Objects.preventNull((Column<SELF, O>) existingColumn, column);
+		return column;
 	}
 	
 	public Map<String, Column<SELF, Object>> mapColumnsOnName() {

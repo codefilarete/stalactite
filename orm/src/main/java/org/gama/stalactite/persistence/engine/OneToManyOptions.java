@@ -3,15 +3,13 @@ package org.gama.stalactite.persistence.engine;
 import org.danekja.java.util.function.serializable.SerializableBiConsumer;
 import org.danekja.java.util.function.serializable.SerializableFunction;
 import org.gama.stalactite.persistence.engine.IFluentMappingBuilder.IFluentMappingBuilderOneToManyOptions;
-import org.gama.stalactite.persistence.id.Identified;
-import org.gama.stalactite.persistence.id.manager.StatefullIdentifier;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
 
 /**
  * @author Guillaume Mary
  */
-public interface OneToManyOptions<T extends Identified, I extends StatefullIdentifier, O extends Identified>
+public interface OneToManyOptions<T , I, O >
 	extends CascadeOptions<IFluentMappingBuilderOneToManyOptions<T, I, O>> {
 	
 	/**

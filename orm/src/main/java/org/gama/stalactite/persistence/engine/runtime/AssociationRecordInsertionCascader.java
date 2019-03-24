@@ -7,21 +7,28 @@ import java.util.stream.Collectors;
 import org.gama.stalactite.persistence.engine.AssociationRecord;
 import org.gama.stalactite.persistence.engine.AssociationRecordPersister;
 import org.gama.stalactite.persistence.engine.cascade.AfterInsertCollectionCascader;
-import org.gama.stalactite.persistence.id.Identified;
+import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
 
 import static org.gama.lang.collection.Iterables.stream;
 
 /**
  * @author Guillaume Mary
  */
-class AssociationRecordInsertionCascader<I extends Identified, O extends Identified, C extends Collection<O>>
-		extends AfterInsertCollectionCascader<I, AssociationRecord> {
+class AssociationRecordInsertionCascader<SRC, TRGT, SRCID, TRGTID, C extends Collection<TRGT>>
+		extends AfterInsertCollectionCascader<SRC, AssociationRecord> {
 	
-	private final Function<I, C> collectionGetter;
+	private final Function<SRC, C> collectionGetter;
+	private final ClassMappingStrategy<SRC, SRCID, ?> mappingStrategy;
+	private final ClassMappingStrategy<TRGT, TRGTID, ?> targetStrategy;
 	
-	public AssociationRecordInsertionCascader(AssociationRecordPersister<AssociationRecord, ?> persister, Function<I, C> collectionGetter) {
+	public AssociationRecordInsertionCascader(AssociationRecordPersister<AssociationRecord, ?> persister,
+											  Function<SRC, C> collectionGetter,
+											  ClassMappingStrategy<SRC, SRCID, ?> mappingStrategy,
+											  ClassMappingStrategy<TRGT, TRGTID, ?> targetStrategy) {
 		super(persister);
 		this.collectionGetter = collectionGetter;
+		this.mappingStrategy = mappingStrategy;
+		this.targetStrategy = targetStrategy;
 	}
 	
 	@Override
@@ -30,11 +37,11 @@ class AssociationRecordInsertionCascader<I extends Identified, O extends Identif
 	}
 	
 	@Override
-	protected Collection<AssociationRecord> getTargets(I i) {
-		Collection<O> targets = collectionGetter.apply(i);
+	protected Collection<AssociationRecord> getTargets(SRC src) {
+		Collection<TRGT> targets = collectionGetter.apply(src);
 		// We only insert non-persisted instances (for logic and to prevent duplicate primary key error)
 		return stream(targets)
-				.map(o -> new AssociationRecord(i.getId(), o.getId()))
+				.map(target -> new AssociationRecord(mappingStrategy.getId(src), targetStrategy.getId(target)))
 				.collect(Collectors.toList());
 	}
 }

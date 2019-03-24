@@ -17,7 +17,7 @@ public class PersistedIdentifierTest {
 		// test against PersistableIdentifier : are equal if persistable identifier is persisted 
 		PersistableIdentifier<Long> persistableIdentifier = new PersistableIdentifier<>(1L);
 		assertNotEquals(testInstance, persistableIdentifier);
-		persistableIdentifier.setPersisted(true);
+		persistableIdentifier.setPersisted();
 		assertEquals(testInstance, persistableIdentifier);
 	}
 	

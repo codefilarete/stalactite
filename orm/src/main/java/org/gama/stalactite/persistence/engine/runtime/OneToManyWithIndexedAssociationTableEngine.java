@@ -12,13 +12,12 @@ import org.gama.stalactite.persistence.engine.AssociationRecordPersister;
 import org.gama.stalactite.persistence.engine.IndexedAssociationRecord;
 import org.gama.stalactite.persistence.engine.IndexedAssociationTable;
 import org.gama.stalactite.persistence.engine.Persister;
-import org.gama.stalactite.persistence.engine.listening.PersisterListener;
+import org.gama.stalactite.persistence.engine.cascade.JoinedTablesPersister;
 import org.gama.stalactite.persistence.engine.listening.UpdateListener.UpdatePayload;
 import org.gama.stalactite.persistence.engine.runtime.OneToManyWithMappedAssociationEngine.TargetInstancesUpdateCascader;
-import org.gama.stalactite.persistence.id.Identified;
-import org.gama.stalactite.persistence.id.Identifier;
 import org.gama.stalactite.persistence.id.diff.AbstractDiff;
 import org.gama.stalactite.persistence.id.diff.IndexedDiff;
+import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
 
 import static org.gama.lang.collection.Iterables.first;
 import static org.gama.lang.collection.Iterables.minus;
@@ -26,14 +25,14 @@ import static org.gama.lang.collection.Iterables.minus;
 /**
  * @author Guillaume Mary
  */
-public class OneToManyWithIndexedAssociationTableEngine<I extends Identified, O extends Identified, J extends Identifier, C extends List<O>>
-		extends AbstractOneToManyWithAssociationTableEngine<I, O, J, C, IndexedAssociationRecord, IndexedAssociationTable> {
+public class OneToManyWithIndexedAssociationTableEngine<SRC, TRGT, SRCID, TRGTID, C extends List<TRGT>>
+		extends AbstractOneToManyWithAssociationTableEngine<SRC, TRGT, SRCID, TRGTID, C, IndexedAssociationRecord, IndexedAssociationTable> {
 	
-	public OneToManyWithIndexedAssociationTableEngine(PersisterListener<I, J> persisterListener,
-													  Persister<O, J, ?> leftPersister,
-													  ManyRelationDescriptor<I, O, C> manyRelationDescriptor,
+	public OneToManyWithIndexedAssociationTableEngine(JoinedTablesPersister<SRC, SRCID, ?> joinedTablesPersister,
+													  Persister<TRGT, TRGTID, ?> targetPersister,
+													  ManyRelationDescriptor<SRC, TRGT, C> manyRelationDescriptor,
 													  AssociationRecordPersister<IndexedAssociationRecord, IndexedAssociationTable> associationPersister) {
-		super(persisterListener, leftPersister, manyRelationDescriptor, associationPersister);
+		super(joinedTablesPersister, targetPersister, manyRelationDescriptor, associationPersister);
 	}
 	
 	@Override
@@ -41,21 +40,21 @@ public class OneToManyWithIndexedAssociationTableEngine<I extends Identified, O 
 		
 		// NB: we don't have any reverseSetter (for applying source entity to reverse side (target entity)), because this is only relevent
 		// when association is mapped without intermediary table (owned by "many-side" entity)
-		CollectionUpdater<I, O, C> updateListener = new CollectionUpdater<I, O, C>(manyRelationDescriptor.getCollectionGetter(), targetPersister, null, shouldDeleteRemoved) {
+		CollectionUpdater<SRC, TRGT, C> updateListener = new CollectionUpdater<SRC, TRGT, C>(manyRelationDescriptor.getCollectionGetter(), targetPersister, null, shouldDeleteRemoved) {
 			
 			@Override
-			protected AssociationTableUpdateContext newUpdateContext(UpdatePayload<? extends I, ?> updatePayload) {
+			protected AssociationTableUpdateContext newUpdateContext(UpdatePayload<? extends SRC, ?> updatePayload) {
 				return new AssociationTableUpdateContext(updatePayload);
 			}
 			
 			@Override
-			protected void onHeldTarget(UpdateContext updateContext, AbstractDiff<O> diff) {
+			protected void onHeldTarget(UpdateContext updateContext, AbstractDiff<TRGT> diff) {
 				super.onHeldTarget(updateContext, diff);
 				IndexedDiff indexedDiff = (IndexedDiff) diff;
 				Set<Integer> minus = minus(indexedDiff.getReplacerIndexes(), indexedDiff.getSourceIndexes());
 				Integer index = first(minus);
 				if (index != null ) {
-					I leftIdentifier = updateContext.getPayload().getEntities().getLeft();
+					SRC leftIdentifier = updateContext.getPayload().getEntities().getLeft();
 					PairIterator<Integer, Integer> diffIndexIterator = new PairIterator<>(indexedDiff.getReplacerIndexes(), indexedDiff.getSourceIndexes());
 					diffIndexIterator.forEachRemaining(d -> {
 						if (!d.getLeft().equals(d.getRight()))
@@ -67,24 +66,24 @@ public class OneToManyWithIndexedAssociationTableEngine<I extends Identified, O 
 			}
 			
 			@Override
-			protected Set<? extends AbstractDiff<O>> diff(Collection<O> modified, Collection<O> unmodified) {
-				return getDiffer().diffList((List<O>) unmodified, (List<O>) modified);
+			protected Set<? extends AbstractDiff<TRGT>> diff(Collection<TRGT> modified, Collection<TRGT> unmodified) {
+				return getDiffer().diffList((List<TRGT>) unmodified, (List<TRGT>) modified);
 			}
 			
 			@Override
-			protected void onAddedTarget(UpdateContext updateContext, AbstractDiff<O> diff) {
+			protected void onAddedTarget(UpdateContext updateContext, AbstractDiff<TRGT> diff) {
 				super.onAddedTarget(updateContext, diff);
-				I leftIdentifier = updateContext.getPayload().getEntities().getLeft();
-				((IndexedDiff<O>) diff).getReplacerIndexes().forEach(idx ->
+				SRC leftIdentifier = updateContext.getPayload().getEntities().getLeft();
+				((IndexedDiff<TRGT>) diff).getReplacerIndexes().forEach(idx ->
 						((AssociationTableUpdateContext) updateContext).getAssociationRecordstoBeInserted().add(
 								newRecord(leftIdentifier, diff.getReplacingInstance(), idx)));
 			}
 			
 			@Override
-			protected void onRemovedTarget(UpdateContext updateContext, AbstractDiff<O> diff) {
+			protected void onRemovedTarget(UpdateContext updateContext, AbstractDiff<TRGT> diff) {
 				super.onRemovedTarget(updateContext, diff);
-				I leftIdentifier = updateContext.getPayload().getEntities().getLeft();
-				((IndexedDiff<O>) diff).getSourceIndexes().forEach(idx ->
+				SRC leftIdentifier = updateContext.getPayload().getEntities().getLeft();
+				((IndexedDiff<TRGT>) diff).getSourceIndexes().forEach(idx ->
 						((AssociationTableUpdateContext) updateContext).getAssociationRecordstoBeDeleted().add(
 								newRecord(leftIdentifier, diff.getSourceInstance(), idx)));
 			}
@@ -116,7 +115,7 @@ public class OneToManyWithIndexedAssociationTableEngine<I extends Identified, O 
 				private final List<IndexedAssociationRecord> associationRecordstoBeDeleted = new ArrayList<>();
 				private final List<Duo<IndexedAssociationRecord, IndexedAssociationRecord>> associationRecordstoBeUpdated = new ArrayList<>();
 				
-				public AssociationTableUpdateContext(UpdatePayload<? extends I, ?> updatePayload) {
+				public AssociationTableUpdateContext(UpdatePayload<? extends SRC, ?> updatePayload) {
 					super(updatePayload);
 				}
 				
@@ -138,13 +137,16 @@ public class OneToManyWithIndexedAssociationTableEngine<I extends Identified, O 
 	}
 	
 	@Override
-	protected IndexedAssociationRecordInsertionCascader<I, O, C> newRecordInsertionCascader(Function<I, C> collectionGetter,
-																							AssociationRecordPersister<IndexedAssociationRecord, IndexedAssociationTable> associationPersister) {
-		return new IndexedAssociationRecordInsertionCascader<>(associationPersister, collectionGetter);
+	protected IndexedAssociationRecordInsertionCascader<SRC, TRGT, SRCID, TRGTID, C> newRecordInsertionCascader(
+			Function<SRC, C> collectionGetter,
+			AssociationRecordPersister<IndexedAssociationRecord, IndexedAssociationTable> associationPersister,
+			ClassMappingStrategy<SRC, SRCID, ?> mappingStrategy,
+			ClassMappingStrategy<TRGT, TRGTID, ?> targetStrategy) {
+		return new IndexedAssociationRecordInsertionCascader<>(associationPersister, collectionGetter, mappingStrategy, targetStrategy);
 	}
 	
 	@Override
-	protected IndexedAssociationRecord newRecord(I e, O target, int index) {
-		return new IndexedAssociationRecord(e.getId(), target.getId(), index);
+	protected IndexedAssociationRecord newRecord(SRC e, TRGT target, int index) {
+		return new IndexedAssociationRecord(joinedTablesPersister.getMappingStrategy().getId(e), targetPersister.getMappingStrategy().getId(target), index);
 	}
 }

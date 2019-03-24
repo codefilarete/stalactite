@@ -76,7 +76,7 @@ public class StrategyJoinsRowTransformerTest {
 	}
 	
 	/**
-	 * Test case with a root strategy joined with another one : @OneToOne case
+	 * Test case with a root strategy joined with another one : one-to-one case
 	 */
 	@Test
 	public void testTransform_with2strategies_oneToOne() {
@@ -124,7 +124,7 @@ public class StrategyJoinsRowTransformerTest {
 	}
 	
 	/**
-	 * Test case with a root strategy joined with 2 others by deep : nested @OneToOne case
+	 * Test case with a root strategy joined with 2 others by deep : nested one-to-one case
 	 */
 	@Test
 	public void testTransform_with3strategies_deep() {
@@ -191,7 +191,7 @@ public class StrategyJoinsRowTransformerTest {
 	}
 	
 	/**
-	 * Test case with a root strategy joined with 2 others flat : side-by-side @OneToOne case
+	 * Test case with a root strategy joined with 2 others flat : side-by-side one-to-one case
 	 */
 	@Test
 	public void testTransform_with3strategies_flat() {
@@ -258,7 +258,7 @@ public class StrategyJoinsRowTransformerTest {
 	}
 	
 	/**
-	 * Test case with a root strategy joined with another one : @OneToMany case
+	 * Test case with a root strategy joined with another one : one-to-many case
 	 */
 	@Test
 	public void testTransform_with2strategies_oneToMany() {

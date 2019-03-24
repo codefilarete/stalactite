@@ -9,40 +9,38 @@ import org.danekja.java.util.function.serializable.SerializableFunction;
 import org.gama.lang.Reflections;
 import org.gama.stalactite.persistence.engine.CascadeOptions.RelationshipMode;
 import org.gama.stalactite.persistence.engine.Persister;
-import org.gama.stalactite.persistence.id.Identified;
-import org.gama.stalactite.persistence.id.manager.StatefullIdentifier;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
 
 /**
  * 
  * @param <SRC> the "one" type
- * @param <O> the "many" type
- * @param <J> identifier type of O
+ * @param <TRGT> the "many" type
+ * @param <TRGTID> identifier type of TRGT
  * @param <C> the "many" collection type
  */
-public class CascadeMany<SRC extends Identified, O extends Identified, J extends StatefullIdentifier, C extends Collection<O>> {
+public class CascadeMany<SRC, TRGT, TRGTID, C extends Collection<TRGT>> {
 	
 	/** The method that gives the "many" entities" from the "one" entity */
 	private final Function<SRC, C> collectionProvider;
 	/** Same as {@link #collectionProvider}, but with the reflection API */
 	private final Method collectionGetter;
 	/** {@link Persister} for the "many" entity */
-	private final Persister<O, J, ? extends Table> persister;
+	private final Persister<TRGT, TRGTID, ? extends Table> persister;
 	private final Class<C> collectionTargetClass;
 	/** the method that sets the "one" entity onto the "many" entities */
-	private SerializableBiConsumer<O, SRC> reverseSetter;
+	private SerializableBiConsumer<TRGT, SRC> reverseSetter;
 	/** the method that gets the "one" entity from the "many" entities */
-	private SerializableFunction<O, SRC> reverseGetter;
+	private SerializableFunction<TRGT, SRC> reverseGetter;
 	private Column<Table, SRC> reverseColumn;
 	/** Default relationship mode is readonly */
 	private RelationshipMode relationshipMode = RelationshipMode.READ_ONLY;
 	
-	public CascadeMany(Function<SRC, C> collectionProvider, Persister<O, J, ? extends Table> persister, Method collectionGetter) {
+	public CascadeMany(Function<SRC, C> collectionProvider, Persister<TRGT, TRGTID, ? extends Table> persister, Method collectionGetter) {
 		this(collectionProvider, persister, (Class<C>) Reflections.javaBeanTargetType(collectionGetter), collectionGetter);
 	}
 	
-	protected CascadeMany(Function<SRC, C> collectionProvider, Persister<O, J, ? extends Table> persister, Class<C> collectionTargetClass, Method collectionGetter) {
+	protected CascadeMany(Function<SRC, C> collectionProvider, Persister<TRGT, TRGTID, ? extends Table> persister, Class<C> collectionTargetClass, Method collectionGetter) {
 		this.collectionProvider = collectionProvider;
 		this.persister = persister;
 		this.collectionGetter = collectionGetter;
@@ -57,7 +55,7 @@ public class CascadeMany<SRC extends Identified, O extends Identified, J extends
 		return collectionGetter;
 	}
 	
-	public Persister<O, J, ?> getPersister() {
+	public Persister<TRGT, TRGTID, ?> getPersister() {
 		return persister;
 	}
 	
@@ -65,11 +63,11 @@ public class CascadeMany<SRC extends Identified, O extends Identified, J extends
 		return collectionTargetClass;
 	}
 	
-	public SerializableBiConsumer<O, SRC> getReverseSetter() {
+	public SerializableBiConsumer<TRGT, SRC> getReverseSetter() {
 		return reverseSetter;
 	}
 	
-	public void setReverseSetter(SerializableBiConsumer<O, SRC> reverseSetter) {
+	public void setReverseSetter(SerializableBiConsumer<TRGT, SRC> reverseSetter) {
 		this.reverseSetter = reverseSetter;
 	}
 	
@@ -81,11 +79,11 @@ public class CascadeMany<SRC extends Identified, O extends Identified, J extends
 		this.reverseColumn = reverseColumn;
 	}
 	
-	public SerializableFunction<O, SRC> getReverseGetter() {
+	public SerializableFunction<TRGT, SRC> getReverseGetter() {
 		return reverseGetter;
 	}
 	
-	public void setReverseGetter(SerializableFunction<O, SRC> reverseGetter) {
+	public void setReverseGetter(SerializableFunction<TRGT, SRC> reverseGetter) {
 		this.reverseGetter = reverseGetter;
 	}
 	

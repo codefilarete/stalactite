@@ -8,27 +8,33 @@ import org.gama.stalactite.persistence.engine.Persister;
 import org.gama.stalactite.persistence.engine.listening.InsertListener;
 
 /**
- * Cascader for insert, written for @OneToOne style of cascade where Trigger owns the relationship to Target
+ * Cascader for insert, written for one-to-one style of cascade where Trigger owns the relationship to Target
  *
+ * @param <TRIGGER> type of the elements that trigger this cascade
+ * @param <TARGET> relationship entity type
  * @author Guillaume Mary
  */
-public abstract class BeforeInsertCascader<Trigger, Target> implements InsertListener<Trigger> {
+public abstract class BeforeInsertCascader<TRIGGER, TARGET> implements InsertListener<TRIGGER> {
 	
-	private final Persister<Target, ?, ?> persister;
+	private final Persister<TARGET, ?, ?> persister;
 	
 	/**
 	 * Simple constructor. Created instance must be added to PersisterListener afterward.
 	 *
 	 * @param persister
 	 */
-	public BeforeInsertCascader(Persister<Target, ?, ?> persister) {
+	public BeforeInsertCascader(Persister<TARGET, ?, ?> persister) {
 		this.persister = persister;
-		this.persister.getPersisterListener().addInsertListener(new InsertListener<Target>() {
+		this.persister.getPersisterListener().addInsertListener(new InsertListener<TARGET>() {
 			@Override
-			public void afterInsert(Iterable<? extends Target> entities) {
+			public void afterInsert(Iterable<? extends TARGET> entities) {
 				postTargetInsert(entities);
 			}
 		});
+	}
+	
+	public Persister<TARGET, ?, ?> getPersister() {
+		return persister;
 	}
 	
 	/**
@@ -37,7 +43,7 @@ public abstract class BeforeInsertCascader<Trigger, Target> implements InsertLis
 	 * @param entities source entities previously inserted
 	 */
 	@Override
-	public void beforeInsert(Iterable<? extends Trigger> entities) {
+	public void beforeInsert(Iterable<? extends TRIGGER> entities) {
 		this.persister.insert(Iterables.stream(entities).map(this::getTarget).filter(Objects::nonNull).collect(Collectors.toList()));
 	}
 	
@@ -47,7 +53,7 @@ public abstract class BeforeInsertCascader<Trigger, Target> implements InsertLis
 	 *
 	 * @param entities entities inserted by this listener
 	 */
-	protected abstract void postTargetInsert(Iterable<? extends Target> entities);
+	protected abstract void postTargetInsert(Iterable<? extends TARGET> entities);
 	
 	/**
 	 * Expected to give or create the corresponding Target instances of Trigger (should simply give a field)
@@ -55,6 +61,6 @@ public abstract class BeforeInsertCascader<Trigger, Target> implements InsertLis
 	 * @param trigger
 	 * @return
 	 */
-	protected abstract Target getTarget(Trigger trigger);
+	protected abstract TARGET getTarget(TRIGGER trigger);
 	
 }
