@@ -36,6 +36,8 @@ import org.gama.stalactite.query.builder.DMLNameProvider;
 import org.gama.stalactite.query.builder.QueryBuilder;
 import org.gama.stalactite.query.model.Query;
 
+import static org.gama.stalactite.persistence.engine.cascade.JoinedStrategiesSelect.FIRST_STRATEGY_NAME;
+
 /**
  * Class aimed at executing a SQL select statement from multiple joined {@link ClassMappingStrategy}.
  * Based on {@link JoinedStrategiesSelect} for storing the joins structure and {@link StrategyJoinsRowTransformer} for building the entities from
@@ -63,7 +65,7 @@ public class JoinedStrategiesSelectExecutor<C, I> {
 		this.identifierAssembler = classMappingStrategy.getIdMappingStrategy().getIdentifierAssembler();
 	}
 	
-	public <T extends Table<T>> JoinedStrategiesSelect<C, I, T> getJoinedStrategiesSelect() {
+	public <T extends Table> JoinedStrategiesSelect<C, I, T> getJoinedStrategiesSelect() {
 		return (JoinedStrategiesSelect<C, I, T>) joinedStrategiesSelect;
 	}
 	
@@ -187,8 +189,7 @@ public class JoinedStrategiesSelectExecutor<C, I> {
 	}
 	
 	List<C> transform(Iterator<Row> rowIterator) {
-		StrategyJoinsRowTransformer<C> strategyJoinsRowTransformer = new StrategyJoinsRowTransformer<>(
-				joinedStrategiesSelect.getStrategyJoins(JoinedStrategiesSelect.FIRST_STRATEGY_NAME));
+		StrategyJoinsRowTransformer<C> strategyJoinsRowTransformer = new StrategyJoinsRowTransformer<>(joinedStrategiesSelect.getStrategyJoins(FIRST_STRATEGY_NAME));
 		
 		strategyJoinsRowTransformer.setAliases(this.joinedStrategiesSelect.getAliases());
 		return strategyJoinsRowTransformer.transform(() -> rowIterator);
@@ -203,7 +204,7 @@ public class JoinedStrategiesSelectExecutor<C, I> {
 		/** Overriden to get alias from the root {@link StrategyJoins} table alias (if any) */
 		@Override
 		public String getAlias(Table table) {
-			StrategyJoins rootStrategyJoins = JoinedStrategiesSelectExecutor.this.joinedStrategiesSelect.getStrategyJoins(JoinedStrategiesSelect.FIRST_STRATEGY_NAME);
+			StrategyJoins rootStrategyJoins = JoinedStrategiesSelectExecutor.this.joinedStrategiesSelect.getStrategyJoins(FIRST_STRATEGY_NAME);
 			if (table == rootStrategyJoins.getTable()) {
 				return Objects.preventNull(rootStrategyJoins.getTableAlias(), table.getName());
 			} else {

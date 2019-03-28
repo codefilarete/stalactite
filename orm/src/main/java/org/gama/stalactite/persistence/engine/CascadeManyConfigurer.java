@@ -50,7 +50,8 @@ public class CascadeManyConfigurer<SRC, TRGT, SRCID, TRGTID, C extends Collectio
 	public <T extends Table<T>> void appendCascade(CascadeMany<SRC, TRGT, TRGTID, C> cascadeMany,
 												   JoinedTablesPersister<SRC, SRCID, T> joinedTablesPersister,
 												   ForeignKeyNamingStrategy foreignKeyNamingStrategy,
-												   AssociationTableNamingStrategy associationTableNamingStrategy, Dialect dialect) {
+												   AssociationTableNamingStrategy associationTableNamingStrategy,
+												   Dialect dialect) {
 		Persister<TRGT, TRGTID, ?> targetPersister = cascadeMany.getPersister();
 		
 		// adding persistence flag setters on both sides : this could be done by Persiter itself,
