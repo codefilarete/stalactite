@@ -10,11 +10,11 @@ import java.util.stream.Stream;
 
 import org.gama.sql.ConnectionProvider;
 import org.gama.sql.dml.SQLExecutionException;
-import org.gama.stalactite.ILogger;
-import org.gama.stalactite.Logger;
 import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
 import org.gama.stalactite.persistence.sql.ddl.DDLSchemaGenerator;
 import org.gama.stalactite.persistence.structure.Table;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * A class aimed at deploying DDL elements to a database. It gets its elements from a {@link DDLSchemaGenerator} and execute them
@@ -25,7 +25,7 @@ import org.gama.stalactite.persistence.structure.Table;
  */
 public class DDLDeployer {
 	
-	private static final ILogger LOGGER = Logger.getLogger(DDLDeployer.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(DDLDeployer.class);
 	
 	/**
 	 * Find all tables defined in the given {@link PersistenceContext}
