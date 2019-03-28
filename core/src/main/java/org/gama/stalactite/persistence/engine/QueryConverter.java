@@ -128,9 +128,6 @@ public class QueryConverter<C> {
 	/**
 	 * Defines the key column and the way to create the bean : a constructor with the key as parameter.
 	 *
-	 * Note that the same method without columnType can't be written because it is in conflict with other mapKey(..) methods and/or available
-	 * constructors in target bean class.
-	 *
 	 * @param <I> the type of the column, which is also that of the factory argument
 	 * @param factory the factory function that will instanciate new beans (with key as single argument)
 	 * @param columnName the key column name
@@ -139,6 +136,50 @@ public class QueryConverter<C> {
 	 */
 	public <I> QueryConverter<C> mapKey(SerializableFunction<I, C> factory, String columnName, Class<I> columnType) {
 		this.beanCreationDefinition = new BeanCreationDefinition<>(factory, columnName, columnType);
+		return this;
+	}
+	
+	/**
+	 * Defines key columns and the way to create the bean : a constructor with 2 arguments.
+	 *
+	 * @param <I> the type of the column, which is also that of the factory argument
+	 * @param factory the factory function that will instanciate new beans (with key as single argument)
+	 * @param column1Name the first key column name
+	 * @param column1Type the type of the first column, which is also that of the factory first argument
+	 * @param column2Name the second key column name
+	 * @param column2Type the type of the second column, which is also that of the factory second argument
+	 * @return this
+	 */
+	public <I, J> QueryConverter<C> mapKey(SerializableBiFunction<I, J, C> factory, String column1Name, Class<I> column1Type,
+			String column2Name, Class<J> column2Type) {
+		SerializableFunction<Object[], C> biArgsConstructorInvokation = args -> (C) factory.apply((I) args[0], (J) args[1]);
+		this.beanCreationDefinition = new BeanCreationDefinition<>(biArgsConstructorInvokation,
+				column1Name, column1Type,
+				column2Name, column2Type);
+		return this;
+	}
+	
+	/**
+	 * Defines key columns and the way to create the bean : a constructor with 3 arguments.
+	 *
+	 * @param <I> the type of the column, which is also that of the factory argument
+	 * @param factory the factory function that will instanciate new beans (with key as single argument)
+	 * @param column1Name the first key column name
+	 * @param column1Type the type of the first column, which is also that of the factory first argument
+	 * @param column2Name the second key column name
+	 * @param column2Type the type of the second column, which is also that of the factory second argument
+	 * @param column3Name the third key column name
+	 * @param column3Type the type of the third column, which is also that of the factory third argument
+	 * @return this
+	 */
+	public <I, J, K> QueryConverter<C> mapKey(SerializableTriFunction<I, J, K, C> factory, String column1Name, Class<I> column1Type,
+			String column2Name, Class<J> column2Type,
+			String column3Name, Class<K> column3Type) {
+		SerializableFunction<Object[], C> triArgsConstructorInvokation = args -> (C) factory.apply((I) args[0], (J) args[1], (K) args[2]);
+		this.beanCreationDefinition = new BeanCreationDefinition<>(triArgsConstructorInvokation,
+				column1Name, column1Type,
+				column2Name, column2Type,
+				column3Name, column3Type);
 		return this;
 	}
 	
@@ -534,6 +575,19 @@ public class QueryConverter<C> {
 			this.factory = factory;
 		}
 		
+		public BeanCreationDefinition(SerializableFunction<I, O> factory, String column1Name, Class column1Type,
+										  String column2Name, Class column2Type) {
+			this(factory, column1Name, column1Type);
+			this.columns.add(new StatementParameter<>(column2Name, column2Type));
+		}
+		
+		public BeanCreationDefinition(SerializableFunction<I, O> factory, String column1Name, Class column1Type,
+									  String column2Name, Class column2Type,
+									  String column3Name, Class column3Type) {
+			this(factory, column1Name, column1Type, column2Name, column2Type);
+			this.columns.add(new StatementParameter<>(column3Name, column3Type));
+		}
+
 		public BeanCreationDefinition(SerializableFunction<I, O> factory, org.gama.stalactite.persistence.structure.Column<?, I> column) {
 			this.columns.add(new ColumnWrapper<>(column));
 			this.factory = factory;
