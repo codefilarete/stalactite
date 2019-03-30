@@ -20,7 +20,6 @@ import org.gama.stalactite.persistence.engine.PersistenceContext;
 import org.gama.stalactite.persistence.engine.Persister;
 import org.gama.stalactite.persistence.id.manager.AlreadyAssignedIdentifierManager;
 import org.gama.stalactite.persistence.sql.HSQLDBDialect;
-import org.gama.stalactite.persistence.sql.ddl.DDLSchemaGenerator;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
 import org.junit.jupiter.api.Test;
@@ -62,9 +61,9 @@ public class ComplexTypeBinderTest {
 		// deploying schema to our database
 		ConnectionProvider connectionProvider = new DataSourceConnectionProvider(new HSQLDBInMemoryDataSource());
 		PersistenceContext persistenceContext = new PersistenceContext(connectionProvider, dialect);
-		DDLSchemaGenerator ddlSchemaGenerator = dialect.getDdlSchemaGenerator();
-		ddlSchemaGenerator.addTables(targetTable);
-		new DDLDeployer(ddlSchemaGenerator, connectionProvider).deployDDL();
+		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+		ddlDeployer.getDdlGenerator().addTables(targetTable);
+		ddlDeployer.deployDDL();
 		
 		// writing
 		Persister<Toto, Integer, ?> totoPersister = new Persister<>(persistenceContext, totoMappingStrategy);

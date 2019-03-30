@@ -57,8 +57,8 @@ public class ZonedDateTimeMappingStrategyTest {
 		// preparing schema
 		connectionProvider = new JdbcConnectionProvider(new HSQLDBInMemoryDataSource());
 		dialect = new HSQLDBDialect();
-		dialect.getDdlSchemaGenerator().addTables(targetTable);
-		DDLDeployer ddlDeployer = new DDLDeployer(dialect.getDdlSchemaGenerator(), connectionProvider);
+		DDLDeployer ddlDeployer = new DDLDeployer(dialect.getJavaTypeToSqlTypeMapping(), connectionProvider);
+		ddlDeployer.getDdlGenerator().addTables(targetTable);
 		ddlDeployer.deployDDL();
 	}
 	

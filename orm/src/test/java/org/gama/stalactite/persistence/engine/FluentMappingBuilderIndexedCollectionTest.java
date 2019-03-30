@@ -23,6 +23,7 @@ import org.gama.stalactite.persistence.id.Identifier;
 import org.gama.stalactite.persistence.id.PersistableIdentifier;
 import org.gama.stalactite.persistence.id.PersistedIdentifier;
 import org.gama.stalactite.persistence.id.manager.StatefullIdentifier;
+import org.gama.stalactite.persistence.sql.Dialect;
 import org.gama.stalactite.persistence.sql.HSQLDBDialect;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
@@ -50,7 +51,7 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
  */
 public class FluentMappingBuilderIndexedCollectionTest {
 	
-	private static final HSQLDBDialect DIALECT = new HSQLDBDialect();
+	private static final Dialect DIALECT = new HSQLDBDialect();
 	private final DataSource dataSource = new HSQLDBInMemoryDataSource();
 	private final ConnectionProvider connectionProvider = new JdbcConnectionProvider(dataSource);
 	private PersistenceContext persistenceContext;
@@ -480,6 +481,7 @@ public class FluentMappingBuilderIndexedCollectionTest {
 			
 			Question newQuestion = new Question(1L);
 			Choice choice1 = new Choice(10L);
+			choice1.setName("toto");
 			Choice choice2 = new Choice(20L);
 			Choice choice3 = new Choice(30L);
 			newQuestion.setChoices(Arrays.asList(choice1, choice2, choice3));
@@ -487,7 +489,7 @@ public class FluentMappingBuilderIndexedCollectionTest {
 			
 			Answer answer = new Answer(1L);
 			List<Choice> choices = Arrays.asList(choice1, choice2, choice2, choice3);
-			// we randomly shuffles choices so there's no risk to fall onto a green case due to unexpected database insertion or select behavior
+			// we shuffle choices so there's no risk to fall onto a green case due to unexpected database insertion or select behavior
 			Collections.shuffle(choices);
 			answer.setChoices(choices);
 			answerPersister.insert(answer);
@@ -495,9 +497,37 @@ public class FluentMappingBuilderIndexedCollectionTest {
 			Answer selectedAnswer = answerPersister.select(new PersistableIdentifier<>(1L));
 			
 			assertEquals((Long) 1L, selectedAnswer.getId().getSurrogate());
-			assertEquals(choices, selectedAnswer.getChoices());
+			assertEquals(Arrays.asList(choice1, choice2, choice2, choice3), selectedAnswer.getChoices());
 		}
-
+		
+		/** Test to check that loading a target entity from its persister still work (no use of the aggregate persister) */
+		@Test
+		public void testSelect_targets() {
+			persistenceContext = new PersistenceContext(connectionProvider, DIALECT);
+			
+			DuplicatesTestData duplicatesTestData = new DuplicatesTestData().build();
+			
+			Persister<Question, Identifier<Long>, ?> questionPersister = duplicatesTestData.getQuestionPersister();
+			
+			Question newQuestion = new Question(1L);
+			Choice choice1 = new Choice(10L);
+			Choice choice2 = new Choice(20L);
+			Choice choice3 = new Choice(30L);
+			List<Choice> randomizedOrderChoices = Arrays.asList(choice2, choice1, choice3);
+			// we shuffle choices so there's no risk to fall onto a green case due to unexpected database insertion or select behavior
+			Collections.shuffle(randomizedOrderChoices);
+			newQuestion.setChoices(randomizedOrderChoices);
+			questionPersister.insert(newQuestion);
+			
+			// does loading the target entity from its persister work ?
+			Choice loadedChoice = duplicatesTestData.choicePersister.select(new PersistableIdentifier<>(10L));
+			assertEquals(choice1, loadedChoice);
+			
+			// loading the target entity from its aggregate persister
+			Question loadedQuestion = duplicatesTestData.questionPersister.select(new PersistableIdentifier<>(1L));
+			assertEquals(newQuestion.getChoices(), loadedQuestion.getChoices());
+		}
+		
 		@Test
 		public void testDelete() {
 			persistenceContext = new PersistenceContext(connectionProvider, DIALECT);
@@ -1018,7 +1048,7 @@ public class FluentMappingBuilderIndexedCollectionTest {
 			answerChoicesTableChoiceId = answerChoicesTable.addColumn("choice_Id", Identifier.class).primaryKey();
 			
 			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
-			ddlDeployer.getDdlSchemaGenerator().addTables(answerChoicesTable);
+			ddlDeployer.getDdlGenerator().addTables(answerChoicesTable);
 			ddlDeployer.deployDDL();
 			return this;
 		}

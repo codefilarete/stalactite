@@ -3,6 +3,7 @@ package org.gama.stalactite.persistence.engine.cascade;
 import javax.annotation.Nonnull;
 import java.util.Collection;
 import java.util.List;
+import java.util.Set;
 
 import org.gama.lang.Nullable;
 import org.gama.sql.ConnectionProvider;
@@ -100,5 +101,10 @@ public class JoinedTablesPersister<C, I, T extends Table> extends Persister<C, I
 	 */
 	public ClassMappingStrategy giveJoinedStrategy(String nodeName) {
 		return Nullable.nullable(joinedStrategiesSelectExecutor.getJoinedStrategiesSelect().getStrategyJoins(nodeName)).orGet(StrategyJoins::getStrategy);
+	}
+	
+	@Override
+	public Set<Table> giveImpliedTables() {
+		return joinedStrategiesSelectExecutor.getJoinedStrategiesSelect().giveTables();
 	}
 }

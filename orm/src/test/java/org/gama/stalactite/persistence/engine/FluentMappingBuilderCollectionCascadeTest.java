@@ -191,14 +191,7 @@ public class FluentMappingBuilderCollectionCascadeTest {
 				.addOneToManySet(Country::getCities, cityPersister).cascading(READ_ONLY)
 				.build(persistenceContext);
 		
-		// We declare the table that will store our relationship, and overall our List index
-		// NB: names are hardcoded here because they are hardly accessible from outside of CascadeManyConfigurer
-		Table countryCitiesTable = new Table("Country_cities");
-		countryCitiesTable.addColumn("country_Id", Identifier.class).primaryKey();
-		countryCitiesTable.addColumn("city_Id", Identifier.class).primaryKey();
-		
 		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
-		ddlDeployer.getDdlSchemaGenerator().addTables(countryCitiesTable);
 		ddlDeployer.deployDDL();
 		
 		persistenceContext.getCurrentConnection().createStatement().executeUpdate("insert into Country(id, name) values (1, 'France')");
@@ -255,7 +248,7 @@ public class FluentMappingBuilderCollectionCascadeTest {
 				{ (ThrowingSupplier<Persister<Country, Identifier<Long>, ?>, SQLException>) () -> {
 					PersistenceContext persistenceContext = new PersistenceContext(new JdbcConnectionProvider(new HSQLDBInMemoryDataSource()), DIALECT);
 					Persister<City, Identifier<Long>, ?> cityPersister = CITY_MAPPING_BUILDER.build(persistenceContext);
-					Column<Table, Country> countryId = (Column<Table, Country>) (Column) cityPersister.getTargetTable().mapColumnsOnName().get("countryId");
+					Column<Table, Country> countryId = (Column<Table, Country>) (Column) cityPersister.getMainTable().mapColumnsOnName().get("countryId");
 					Persister<Country, Identifier<Long>, ?> countryPersister = FluentMappingBuilder.from(Country.class, Identifier.LONG_TYPE)
 							.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 							.add(Country::getName)
@@ -366,14 +359,7 @@ public class FluentMappingBuilderCollectionCascadeTest {
 				.addOneToManySet(Country::getCities, cityPersister).cascading(ALL)
 				.build(persistenceContext);
 		
-		// We declare the table that will store our relationship, and overall our List index
-		// NB: names are hardcoded here because they are hardly accessible from outside of CascadeManyConfigurer
-		Table countryCitiesTable = new Table("Country_cities");
-		countryCitiesTable.addColumn("country_Id", Identifier.class).primaryKey();
-		countryCitiesTable.addColumn("city_Id", Identifier.class).primaryKey();
-		
 		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
-		ddlDeployer.getDdlSchemaGenerator().addTables(countryCitiesTable);
 		ddlDeployer.deployDDL();
 		
 		LongProvider countryIdProvider = new LongProvider();
@@ -417,14 +403,7 @@ public class FluentMappingBuilderCollectionCascadeTest {
 				.addOneToManySet(Country::getCities, cityPersister).cascading(ALL)
 				.build(persistenceContext);
 		
-		// We declare the table that will store our relationship, and overall our List index
-		// NB: names are hardcoded here because they are hardly accessible from outside of CascadeManyConfigurer
-		Table countryCitiesTable = new Table("Country_cities");
-		countryCitiesTable.addColumn("country_Id", Identifier.class).primaryKey();
-		countryCitiesTable.addColumn("city_Id", Identifier.class).primaryKey();
-		
 		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
-		ddlDeployer.getDdlSchemaGenerator().addTables(countryCitiesTable);
 		ddlDeployer.deployDDL();
 		
 		LongProvider countryIdProvider = new LongProvider();
@@ -539,18 +518,7 @@ public class FluentMappingBuilderCollectionCascadeTest {
 					.addOneToManySet(Country::getCities, cityPersister).cascading(READ_ONLY)
 					.build(persistenceContext);
 			
-			// We declare the table that will store our relationship, and overall our List index
-			// NB: names are hardcoded here because they are hardly accessible from outside of CascadeManyConfigurer
-			Table countryCitiesTable = new Table("Country_cities");
-			countryCitiesTable.addColumn("country_Id", Identifier.class).primaryKey();
-			countryCitiesTable.addColumn("city_Id", Identifier.class).primaryKey();
-			
-			// this is a configuration safeguard, thus we ensure that configuration matches test below
-			assertEquals(countryCitiesTable, ((JoinedTablesPersister<Country, Identifier<Long>, ?>) countryPersister)
-					.giveJoinedStrategy("Country_cities0").getTargetTable());
-			
 			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
-			ddlDeployer.getDdlSchemaGenerator().addTables(countryCitiesTable);
 			ddlDeployer.deployDDL();
 			
 			// we only register one country without any city
@@ -640,18 +608,7 @@ public class FluentMappingBuilderCollectionCascadeTest {
 				.addOneToManySet(Country::getCities, cityPersister).cascading(ALL)
 				.build(persistenceContext);
 		
-		// We declare the table that will store our relationship, and overall our List index
-		// NB: names are hardcoded here because they are hardly accessible from outside of CascadeManyConfigurer
-		Table countryCitiesTable = new Table("Country_cities");
-		Column country_id = countryCitiesTable.addColumn("country_Id", Identifier.class).primaryKey();
-		Column city_id = countryCitiesTable.addColumn("city_Id", Identifier.class).primaryKey();
-		Column countryPK = Iterables.first(((Table<?>) countryPersister.getTargetTable()).getPrimaryKey().getColumns());
-		countryCitiesTable.addForeignKey("country_FK", country_id, countryPK);
-		Column cityPK = Iterables.first(((Table<?>) cityPersister.getTargetTable()).getPrimaryKey().getColumns());
-		countryCitiesTable.addForeignKey("city_FK", city_id, cityPK);
-		
 		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
-		ddlDeployer.getDdlSchemaGenerator().addTables(countryCitiesTable);
 		ddlDeployer.deployDDL();
 		
 		persistenceContext.getCurrentConnection().createStatement().executeUpdate("insert into Country(id) values (42, 666)");
@@ -719,18 +676,7 @@ public class FluentMappingBuilderCollectionCascadeTest {
 				.addOneToManySet(Country::getCities, cityPersister).cascading(ALL_ORPHAN_REMOVAL)
 				.build(persistenceContext);
 		
-		// We declare the table that will store our relationship, and overall our List index
-		// NB: names are hardcoded here because they are hardly accessible from outside of CascadeManyConfigurer
-		Table countryCitiesTable = new Table("Country_cities");
-		Column country_id = countryCitiesTable.addColumn("country_Id", Identifier.class).primaryKey();
-		Column city_id = countryCitiesTable.addColumn("city_Id", Identifier.class).primaryKey();
-		Column countryPK = Iterables.first(((Table<?>) countryPersister.getTargetTable()).getPrimaryKey().getColumns());
-		countryCitiesTable.addForeignKey("country_FK", country_id, countryPK);
-		Column cityPK = Iterables.first(((Table<?>) cityPersister.getTargetTable()).getPrimaryKey().getColumns());
-		countryCitiesTable.addForeignKey("city_FK", city_id, cityPK);
-		
 		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
-		ddlDeployer.getDdlSchemaGenerator().addTables(countryCitiesTable);
 		ddlDeployer.deployDDL();
 		
 		persistenceContext.getCurrentConnection().createStatement().executeUpdate("insert into Country(id) values (42, 666)");
@@ -789,18 +735,7 @@ public class FluentMappingBuilderCollectionCascadeTest {
 				.addOneToManySet(Country::getCities, cityPersister).cascading(ASSOCIATION_ONLY)
 				.build(persistenceContext);
 		
-		// We declare the table that will store our relationship, and overall our List index
-		// NB: names are hardcoded here because they are hardly accessible from outside of CascadeManyConfigurer
-		Table countryCitiesTable = new Table("Country_cities");
-		Column country_id = countryCitiesTable.addColumn("country_Id", Identifier.class).primaryKey();
-		Column city_id = countryCitiesTable.addColumn("city_Id", Identifier.class).primaryKey();
-		Column countryPK = Iterables.first(((Table<?>) countryPersister.getTargetTable()).getPrimaryKey().getColumns());
-		countryCitiesTable.addForeignKey("country_FK", country_id, countryPK);
-		Column cityPK = Iterables.first(((Table<?>) cityPersister.getTargetTable()).getPrimaryKey().getColumns());
-		countryCitiesTable.addForeignKey("city_FK", city_id, cityPK);
-		
 		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
-		ddlDeployer.getDdlSchemaGenerator().addTables(countryCitiesTable);
 		ddlDeployer.deployDDL();
 		
 		persistenceContext.getCurrentConnection().createStatement().executeUpdate("insert into Country(id) values (42, 666)");

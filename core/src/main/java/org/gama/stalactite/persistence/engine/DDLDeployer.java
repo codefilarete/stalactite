@@ -3,71 +3,84 @@ package org.gama.stalactite.persistence.engine;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import org.gama.sql.ConnectionProvider;
 import org.gama.sql.dml.SQLExecutionException;
-import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
-import org.gama.stalactite.persistence.sql.ddl.DDLSchemaGenerator;
+import org.gama.stalactite.persistence.sql.Dialect;
+import org.gama.stalactite.persistence.sql.ddl.DDLGenerator;
+import org.gama.stalactite.persistence.sql.ddl.DDLTableGenerator;
+import org.gama.stalactite.persistence.sql.ddl.JavaTypeToSqlTypeMapping;
 import org.gama.stalactite.persistence.structure.Table;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * A class aimed at deploying DDL elements to a database. It gets its elements from a {@link DDLSchemaGenerator} and execute them
+ * A class aimed at deploying DDL elements to a database. It gets its elements from a {@link DDLGenerator} and execute them
  * onto a {@link ConnectionProvider}, so it's more an entry point for high level usage.
  *
  * @author Guillaume Mary
- * @see DDLSchemaGenerator
+ * @see DDLGenerator
  */
 public class DDLDeployer {
 	
 	private static final Logger LOGGER = LoggerFactory.getLogger(DDLDeployer.class);
 	
 	/**
-	 * Find all tables defined in the given {@link PersistenceContext}
+	 * Collect tables defined in the given {@link PersistenceContext}
 	 *
 	 * @param persistenceContext a {@link PersistenceContext} to scan for tables
 	 * @return a {@link Collection} of found tables
 	 */
-	public static Collection<Table> lookupTables(PersistenceContext persistenceContext) {
-		Collection<ClassMappingStrategy> mappingStrategies = persistenceContext.getMappingStrategies().values();
-		Stream<Table> objectStream = mappingStrategies.stream().map(ClassMappingStrategy::getTargetTable);
-		return objectStream.collect(Collectors.toList());
+	public static Collection<Table> collectTables(PersistenceContext persistenceContext) {
+		List<Table> result = new ArrayList<>(20);
+		persistenceContext.getPersisters().forEach(p -> result.addAll(p.giveImpliedTables()));
+		return result;
 	}
 	
-	private final DDLSchemaGenerator ddlSchemaGenerator;
 	private final ConnectionProvider connectionProvider;
 	
+	private final DDLGenerator ddlGenerator;
+	
 	/**
-	 * Simple constructor that gets its informations from the passed {@link PersistenceContext}: {@link DDLSchemaGenerator} and
-	 * {@link ConnectionProvider}
+	 * Simple constructor that gets its informations from the given {@link PersistenceContext}: {@link DDLGenerator} from its
+	 * {@link Dialect} and {@link ConnectionProvider}
 	 * 
-	 * @param persistenceContext a {@link PersistenceContext}, source of arguments for {@link #DDLDeployer(DDLSchemaGenerator, ConnectionProvider)}
-	 * @see #DDLDeployer(DDLSchemaGenerator, ConnectionProvider)
+	 * @param persistenceContext a {@link PersistenceContext}, source of arguments for {@link #DDLDeployer(DDLTableGenerator, ConnectionProvider)}
+	 * @see #DDLDeployer(DDLTableGenerator, ConnectionProvider) 
 	 */
 	public DDLDeployer(PersistenceContext persistenceContext) {
-		this(persistenceContext.getDialect().getDdlSchemaGenerator(), persistenceContext.getConnectionProvider());
-		getDdlSchemaGenerator().setTables(lookupTables(persistenceContext));
+		this(persistenceContext.getDialect().getDdlTableGenerator(), persistenceContext.getConnectionProvider());
+		ddlGenerator.addTables(collectTables(persistenceContext));
+	}
+	
+	/**
+	 * Basic constructor that will create id own default {@link DDLGenerator}
+	 * Tables to deploy must be added throught {@link #getDdlGenerator()}.addTables(..)
+	 * 
+	 * @param javaTypeToSqlTypeMapping the SQL type per Java type provider
+	 * @param connectionProvider the {@link Connection} provider for executing SQL scripts
+	 */
+	public DDLDeployer(JavaTypeToSqlTypeMapping javaTypeToSqlTypeMapping, ConnectionProvider connectionProvider) {
+		this(new DDLTableGenerator(javaTypeToSqlTypeMapping), connectionProvider);
 	}
 	
 	/**
 	 * Main constructor with mandatory objects for its work.
-	 * <strong>Tables to be generated must be declared via {@link DDLSchemaGenerator#addTables(Table, Table...)} </strong>
+	 * Tables to deploy must be added throught {@link #getDdlGenerator()}.addTables(..)
 	 * 
-	 * @param ddlSchemaGenerator the SQL scripts provider
+	 * @param ddlTableGenerator the SQL scripts provider
 	 * @param connectionProvider the {@link Connection} provider for executing SQL scripts
 	 */
-	public DDLDeployer(DDLSchemaGenerator ddlSchemaGenerator, ConnectionProvider connectionProvider) {
-		this.ddlSchemaGenerator = ddlSchemaGenerator;
+	public DDLDeployer(DDLTableGenerator ddlTableGenerator, ConnectionProvider connectionProvider) {
 		this.connectionProvider = connectionProvider;
+		this.ddlGenerator = new DDLGenerator(ddlTableGenerator);
 	}
 	
-	public DDLSchemaGenerator getDdlSchemaGenerator() {
-		return ddlSchemaGenerator;
+	public DDLGenerator getDdlGenerator() {
+		return ddlGenerator;
 	}
 	
 	public void deployDDL() {
@@ -77,7 +90,7 @@ public class DDLDeployer {
 	}
 	
 	public List<String> getCreationScripts() {
-		return getDdlSchemaGenerator().getCreationScripts();
+		return getDdlGenerator().getCreationScripts();
 	}
 	
 	public void dropDDL() {
@@ -87,7 +100,7 @@ public class DDLDeployer {
 	}
 	
 	public List<String> getDropScripts() {
-		return getDdlSchemaGenerator().getDropScripts();
+		return getDdlGenerator().getDropScripts();
 	}
 	
 	protected void execute(String sql) {
@@ -95,7 +108,7 @@ public class DDLDeployer {
 			LOGGER.debug(sql);
 			statement.execute(sql);
 		} catch (SQLException t) {
-			throw new SQLExecutionException("Error executing \"" + sql + "\"", t);
+			throw new SQLExecutionException(sql, t);
 		}
 	}
 	

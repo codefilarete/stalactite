@@ -64,7 +64,7 @@ public class OneToManyWithIndexedMappedAssociationEngine<SRC, TRGT, SRCID, TRGTI
 		// The latter is used because target List is already filled by the relationFixer
 		// If we use the former we must change the relation fixer and keep a temporary List. Seems little bit more complex.
 		// May be changed if any performance issue is noticed
-		persisterListener.addSelectListener(new SelectListener<SRC, SRCID>() {
+		joinedTablesPersister.getPersisterListener().addSelectListener(new SelectListener<SRC, SRCID>() {
 			@Override
 			public void beforeSelect(Iterable<SRCID> ids) {
 				updatableListIndex.set(new HashMap<>());
@@ -96,11 +96,15 @@ public class OneToManyWithIndexedMappedAssociationEngine<SRC, TRGT, SRCID, TRGTI
 		// We place it into a ThreadLocal, then the select listener will use it to reorder loaded beans
 		targetPersister.getMappingStrategy().getRowTransformer().addTransformerListener((bean, row) -> {
 			Map<TRGT, Integer> indexPerBean = updatableListIndex.get();
-			// Indexing column is not defined in targetPersister.getMappingStrategy().getRowTransformer() but is present in row
-			// because it was read from ResultSet
-			// So we get its alias from the object that managed id, and we simply read it from the row (but not from RowTransformer)
-			Map<Column, String> aliases = joinedTablesPersister.getJoinedStrategiesSelectExecutor().getJoinedStrategiesSelect().getAliases();
-			indexPerBean.put(bean, (int) row.get(aliases.get(indexingColumn)));
+			// indexPerBean may not be present because its mecanism was added on persisterListener which is the one of the source bean
+			// so in case of entity loading from its own persister (targetPersister) ThreadLocal is not available
+			if (indexPerBean != null) {
+				// Indexing column is not defined in targetPersister.getMappingStrategy().getRowTransformer() but is present in row
+				// because it was read from ResultSet
+				// So we get its alias from the object that managed id, and we simply read it from the row (but not from RowTransformer)
+				Map<Column, String> aliases = joinedTablesPersister.getJoinedStrategiesSelectExecutor().getJoinedStrategiesSelect().getAliases();
+				indexPerBean.put(bean, (int) row.get(aliases.get(indexingColumn)));
+			}
 		});
 	}
 	
@@ -189,6 +193,6 @@ public class OneToManyWithIndexedMappedAssociationEngine<SRC, TRGT, SRCID, TRGTI
 				}
 			}
 		};
-		persisterListener.addUpdateListener(new TargetInstancesUpdateCascader<>(targetPersister, updateListener));
+		joinedTablesPersister.getPersisterListener().addUpdateListener(new TargetInstancesUpdateCascader<>(targetPersister, updateListener));
 	}
 }

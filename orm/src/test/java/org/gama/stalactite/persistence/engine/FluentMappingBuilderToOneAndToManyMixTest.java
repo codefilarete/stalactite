@@ -1,7 +1,6 @@
 package org.gama.stalactite.persistence.engine;
 
 import javax.sql.DataSource;
-
 import java.util.HashSet;
 
 import org.gama.lang.collection.Arrays;
@@ -19,7 +18,6 @@ import org.gama.stalactite.persistence.id.Identifier;
 import org.gama.stalactite.persistence.id.PersistedIdentifier;
 import org.gama.stalactite.persistence.id.provider.LongProvider;
 import org.gama.stalactite.persistence.sql.HSQLDBDialect;
-import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.test.JdbcConnectionProvider;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -66,7 +64,6 @@ public class FluentMappingBuilderToOneAndToManyMixTest {
 				Identifier.LONG_TYPE)
 				.add(City::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.add(City::getName)
-				//https://www.deezer.com/fr/profile/279878805/loved
 				.add(City::getCountry);
 		cityPersister = cityMappingBuilder.build(persistenceContext);
 	}
@@ -81,15 +78,7 @@ public class FluentMappingBuilderToOneAndToManyMixTest {
 				.addOneToManySet(Country::getCities, cityPersister).cascading(ALL)
 				.build(persistenceContext);
 		
-		// We declare the table that will store our relationship, and overall our List index
-		// NB: names are hardcoded here because they are hardly accessible from outside of CascadeManyConfigurer
-		// TODO: this table should be added by the persistent context, when fixed, remove same kind of code in other test classes
-		Table countryCitiesTable = new Table("Country_cities");
-		countryCitiesTable.addColumn("country_Id", Identifier.class).primaryKey();
-		countryCitiesTable.addColumn("city_Id", Identifier.class).primaryKey();
-		
 		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
-		ddlDeployer.getDdlSchemaGenerator().addTables(countryCitiesTable);
 		ddlDeployer.deployDDL();
 		
 		LongProvider countryIdProvider = new LongProvider();

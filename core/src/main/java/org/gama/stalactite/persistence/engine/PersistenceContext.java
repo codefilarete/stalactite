@@ -47,13 +47,9 @@ public class PersistenceContext {
 	private int jdbcBatchSize = 100;
 	private final Map<Class<?>, Persister> persisterCache = new ValueFactoryHashMap<>(10, this::newPersister);
 	
-	private Dialect dialect;
-	private ConnectionProvider connectionProvider;
+	private final Dialect dialect;
+	private final ConnectionProvider connectionProvider;
 	private final Map<Class, ClassMappingStrategy> mappingStrategies = new HashMap<>(50);
-	
-	public PersistenceContext() {
-		
-	}
 	
 	public PersistenceContext(ConnectionProvider connectionProvider, Dialect dialect) {
 		this.connectionProvider = connectionProvider;
@@ -113,13 +109,19 @@ public class PersistenceContext {
 		return persisterCache.get(clazz);
 	}
 	
-	public <C> void setPersister(Persister<C, ?, ?> persister) {
+	/**
+	 * Registers a {@link Persister} on this instance. May overwrite an existing one
+	 * 
+	 * @param persister any {@link Persister}
+	 * @param <C> type of persisted bean
+	 */
+	public <C> void addPersister(Persister<C, ?, ?> persister) {
 		persisterCache.put(persister.getMappingStrategy().getClassToPersist(), persister);
 	}
 	
 	protected <C, I, T extends Table<T>> Persister<C, I, T> newPersister(Class<C> clazz) {
-		ClassMappingStrategy<C, I, T> citClassMappingStrategy = ensureMappedClass(clazz);
-		return new Persister<>(this, citClassMappingStrategy);
+		ClassMappingStrategy<C, I, T> classMappingStrategy = ensureMappedClass(clazz);
+		return new Persister<>(this, classMappingStrategy);
 	}
 	
 	protected <C, I, T extends Table<T>> ClassMappingStrategy<C, I, T> ensureMappedClass(Class<C> clazz) {

@@ -5,14 +5,15 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 
 import org.gama.lang.Duo;
 import org.gama.lang.Retryer;
 import org.gama.lang.collection.Iterables;
 import org.gama.sql.ConnectionProvider;
+import org.gama.stalactite.persistence.engine.listening.PersisterListener;
 import org.gama.stalactite.persistence.engine.listening.UpdateListener;
 import org.gama.stalactite.persistence.engine.listening.UpdateListener.UpdatePayload;
-import org.gama.stalactite.persistence.engine.listening.PersisterListener;
 import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
 import org.gama.stalactite.persistence.mapping.SimpleIdMappingStrategy;
 import org.gama.stalactite.persistence.sql.Dialect;
@@ -126,8 +127,19 @@ public class Persister<C, I, T extends Table> {
 		return mappingStrategy;
 	}
 	
-	public T getTargetTable() {
+	public T getMainTable() {
 		return getMappingStrategy().getTargetTable();
+	}
+	
+	/**
+	 * Gives all tables implied in the persistence of the entity such as joined tables or duplicating tables (depending
+	 * on the implementation of this {@link Persister})
+	 * Usefull to generate schema creation script.
+	 * 
+	 * @return a {@link Set} of implied tables, not expected to be writable
+	 */
+	public Set<Table> giveImpliedTables() {
+		return Collections.singleton(getMainTable());
 	}
 	
 	public void setPersisterListener(PersisterListener<C, I> persisterListener) {

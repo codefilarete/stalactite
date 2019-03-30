@@ -253,8 +253,8 @@ public class SelectExecutorTest extends AbstractDMLExecutorTest {
 		DMLGenerator dmlGenerator = new DMLGenerator(dataSet.dialect.getColumnBinderRegistry(), new DMLGenerator.CaseSensitiveSorter());
 		
 		dataSet.transactionManager.setDataSource(dataSource);
-		DDLDeployer ddlDeployer = new DDLDeployer(dataSet.dialect.getDdlSchemaGenerator(), dataSet.transactionManager);
-		ddlDeployer.getDdlSchemaGenerator().addTables(dataSet.persistenceConfiguration.targetTable);
+		DDLDeployer ddlDeployer = new DDLDeployer(dataSet.dialect.getJavaTypeToSqlTypeMapping(), dataSet.transactionManager);
+		ddlDeployer.getDdlGenerator().addTables(dataSet.persistenceConfiguration.targetTable);
 		ddlDeployer.deployDDL();
 		Connection connection = dataSource.getConnection();
 		connection.prepareStatement("insert into Toto(a, b, c) values (1, 10, 100)").execute();
@@ -280,8 +280,8 @@ public class SelectExecutorTest extends AbstractDMLExecutorTest {
 		DMLGenerator dmlGenerator = new DMLGenerator(dataSet.dialect.getColumnBinderRegistry(), new DMLGenerator.CaseSensitiveSorter());
 		
 		dataSet.transactionManager.setDataSource(dataSource);
-		DDLDeployer ddlDeployer = new DDLDeployer(dataSet.dialect.getDdlSchemaGenerator(), dataSet.transactionManager);
-		ddlDeployer.getDdlSchemaGenerator().addTables(dataSet.persistenceConfiguration.targetTable);
+		DDLDeployer ddlDeployer = new DDLDeployer(dataSet.dialect.getJavaTypeToSqlTypeMapping(), dataSet.transactionManager);
+		ddlDeployer.getDdlGenerator().addTables(dataSet.persistenceConfiguration.targetTable);
 		ddlDeployer.deployDDL();
 		Connection connection = dataSource.getConnection();
 		connection.prepareStatement("insert into Tata(a, b, c) values (1, 10, 100)").execute();
@@ -304,8 +304,8 @@ public class SelectExecutorTest extends AbstractDMLExecutorTest {
 	@MethodSource("datasources")
 	public void testSelect_realLife(DataSource dataSource) throws SQLException {
 		dataSet.transactionManager.setDataSource(dataSource);
-		DDLDeployer ddlDeployer = new DDLDeployer(dataSet.dialect.getDdlSchemaGenerator(), dataSet.transactionManager);
-		ddlDeployer.getDdlSchemaGenerator().addTables(dataSet.persistenceConfiguration.targetTable);
+		DDLDeployer ddlDeployer = new DDLDeployer(dataSet.dialect.getJavaTypeToSqlTypeMapping(), dataSet.transactionManager);
+		ddlDeployer.getDdlGenerator().addTables(dataSet.persistenceConfiguration.targetTable);
 		ddlDeployer.deployDDL();
 		Connection connection = dataSource.getConnection();
 		connection.prepareStatement("insert into Toto(a, b, c) values (1, 10, 100)").execute();
@@ -327,7 +327,6 @@ public class SelectExecutorTest extends AbstractDMLExecutorTest {
 				new Toto(2, 20, 200),
 				new Toto(3, 30, 300),
 				new Toto(4, 40, 400));
-		System.out.println(totos);
 		assertEquals(expectedResult.toString(), totos.toString());
 	}
 	

@@ -12,7 +12,6 @@ import org.gama.lang.Retryer;
 import org.gama.lang.StringAppender;
 import org.gama.lang.collection.Arrays;
 import org.gama.lang.exception.Exceptions;
-import org.gama.stalactite.persistence.sql.ddl.DDLSchemaGenerator;
 import org.gama.stalactite.persistence.sql.ddl.DDLTableGenerator;
 import org.gama.stalactite.persistence.sql.ddl.JavaTypeToSqlTypeMapping;
 import org.gama.stalactite.persistence.sql.dml.binder.ColumnBinderRegistry;
@@ -52,10 +51,8 @@ public class MySQLDialect extends Dialect {
 	}
 	
 	@Override
-	public DDLSchemaGenerator newDdlSchemaGenerator() {
-		DDLSchemaGenerator ddlSchemaGenerator = super.newDdlSchemaGenerator();
-		ddlSchemaGenerator.setDdlTableGenerator(new MySQLDDLTableGenerator(getJavaTypeToSqlTypeMapping()));
-		return ddlSchemaGenerator;
+	public DDLTableGenerator newDdlTableGenerator() {
+		return new MySQLDDLTableGenerator(getJavaTypeToSqlTypeMapping());
 	}
 	
 	public static class MySQLTypeMapping extends DefaultTypeMapping {

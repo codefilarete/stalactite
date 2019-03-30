@@ -1,6 +1,5 @@
 package org.gama.stalactite.persistence.id.provider;
 
-import java.sql.SQLException;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
@@ -42,12 +41,12 @@ public class PooledSequenceIdentifierProviderTest {
 	}
 	
 	@Test
-	public void testGiveNewIdentifier() throws SQLException {
+	public void testGiveNewIdentifier() {
 		// Creation of an in-memory database pooled sequence generator
 		sequenceIdentifierGenerator = new PooledHiLoSequence(new PooledHiLoSequenceOptions(10, "Toto", SequenceStorageOptions.DEFAULT),
 				persistenceContext.getDialect(), (SeparateTransactionExecutor) persistenceContext.getConnectionProvider(), persistenceContext.getJDBCBatchSize());
 		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
-		ddlDeployer.getDdlSchemaGenerator().setTables(Arrays.asList(sequenceIdentifierGenerator.getPersister().getMappingStrategy().getTargetTable()));
+		ddlDeployer.getDdlGenerator().setTables(Arrays.asSet(sequenceIdentifierGenerator.getPersister().getMappingStrategy().getTargetTable()));
 		ddlDeployer.deployDDL();
 		
 		// Creation of our test instance
@@ -69,8 +68,4 @@ public class PooledSequenceIdentifierProviderTest {
 		// The generated values must be those expected
 		assertEquals(expectedGeneration, generated);
 	}
-	
-	// TODO: make PooledHiLoSequence be generic
-	// TODO: test Identifier with PersistenceContext: must implement the "embeddable" feature
-	
 }

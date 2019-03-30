@@ -90,13 +90,13 @@ public class PersisterDatabaseTest {
 	@MethodSource("dataSources")
 	public void testPersist(DataSource dataSource) throws SQLException {
 		transactionManager.setDataSource(dataSource);
-		DDLDeployer ddlDeployer = new DDLDeployer(dialect.getDdlSchemaGenerator(), transactionManager) {
+		DDLDeployer ddlDeployer = new DDLDeployer(dialect.getJavaTypeToSqlTypeMapping(), transactionManager) {
 			@Override
 			protected Connection getCurrentConnection() throws SQLException {
 				return dataSource.getConnection();
 			}
 		};
-		ddlDeployer.getDdlSchemaGenerator().setTables(Arrays.asList(totoClassTable));
+		ddlDeployer.getDdlGenerator().setTables(Arrays.asSet(totoClassTable));
 		ddlDeployer.deployDDL();
 		
 		// we simulate a database state to test entity update
@@ -131,13 +131,13 @@ public class PersisterDatabaseTest {
 	@MethodSource("dataSources")
 	public void testInsert(DataSource dataSource) throws SQLException {
 		transactionManager.setDataSource(dataSource);
-		DDLDeployer ddlDeployer = new DDLDeployer(dialect.getDdlSchemaGenerator(), transactionManager) {
+		DDLDeployer ddlDeployer = new DDLDeployer(dialect.getJavaTypeToSqlTypeMapping(), transactionManager) {
 			@Override
 			protected Connection getCurrentConnection() throws SQLException {
 				return dataSource.getConnection();
 			}
 		};
-		ddlDeployer.getDdlSchemaGenerator().setTables(Arrays.asList(totoClassTable));
+		ddlDeployer.getDdlGenerator().setTables(Arrays.asSet(totoClassTable));
 		ddlDeployer.deployDDL();
 		
 		Toto toBeInserted = new Toto(1, 10, 100);
@@ -163,13 +163,13 @@ public class PersisterDatabaseTest {
 	@MethodSource("dataSources")
 	public void testUpdate(DataSource dataSource) throws SQLException {
 		transactionManager.setDataSource(dataSource);
-		DDLDeployer ddlDeployer = new DDLDeployer(dialect.getDdlSchemaGenerator(), transactionManager) {
+		DDLDeployer ddlDeployer = new DDLDeployer(dialect.getJavaTypeToSqlTypeMapping(), transactionManager) {
 			@Override
 			protected Connection getCurrentConnection() throws SQLException {
 				return dataSource.getConnection();
 			}
 		};
-		ddlDeployer.getDdlSchemaGenerator().setTables(Arrays.asList(totoClassTable));
+		ddlDeployer.getDdlGenerator().setTables(Arrays.asSet(totoClassTable));
 		ddlDeployer.deployDDL();
 		
 		// we simulate a database state to test entity update
@@ -212,13 +212,13 @@ public class PersisterDatabaseTest {
 	@MethodSource("dataSources")
 	public void testDelete(DataSource dataSource) throws SQLException {
 		transactionManager.setDataSource(dataSource);
-		DDLDeployer ddlDeployer = new DDLDeployer(dialect.getDdlSchemaGenerator(), transactionManager) {
+		DDLDeployer ddlDeployer = new DDLDeployer(dialect.getJavaTypeToSqlTypeMapping(), transactionManager) {
 			@Override
 			protected Connection getCurrentConnection() throws SQLException {
 				return dataSource.getConnection();
 			}
 		};
-		ddlDeployer.getDdlSchemaGenerator().setTables(Arrays.asList(totoClassTable));
+		ddlDeployer.getDdlGenerator().setTables(Arrays.asSet(totoClassTable));
 		ddlDeployer.deployDDL();
 		
 		// we simulate a database state to test entity update
@@ -263,13 +263,13 @@ public class PersisterDatabaseTest {
 	@MethodSource("dataSources")
 	public void testSelect(DataSource dataSource) throws SQLException {
 		transactionManager.setDataSource(dataSource);
-		DDLDeployer ddlDeployer = new DDLDeployer(dialect.getDdlSchemaGenerator(), transactionManager) {
+		DDLDeployer ddlDeployer = new DDLDeployer(dialect.getJavaTypeToSqlTypeMapping(), transactionManager) {
 			@Override
 			protected Connection getCurrentConnection() throws SQLException {
 				return dataSource.getConnection();
 			}
 		};
-		ddlDeployer.getDdlSchemaGenerator().setTables(Arrays.asList(totoClassTable));
+		ddlDeployer.getDdlGenerator().setTables(Arrays.asSet(totoClassTable));
 		ddlDeployer.deployDDL();
 		Connection connection = dataSource.getConnection();
 		connection.prepareStatement("insert into Toto(a, b, c) values (1, 10, 100)").execute();
@@ -296,13 +296,13 @@ public class PersisterDatabaseTest {
 	@MethodSource("dataSources")
 	public void testSelect_rowCount(DataSource dataSource) throws SQLException {
 		transactionManager.setDataSource(dataSource);
-		DDLDeployer ddlDeployer = new DDLDeployer(dialect.getDdlSchemaGenerator(), transactionManager) {
+		DDLDeployer ddlDeployer = new DDLDeployer(dialect.getJavaTypeToSqlTypeMapping(), transactionManager) {
 			@Override
 			protected Connection getCurrentConnection() throws SQLException {
 				return dataSource.getConnection();
 			}
 		};
-		ddlDeployer.getDdlSchemaGenerator().setTables(Arrays.asList(totoClassTable));
+		ddlDeployer.getDdlGenerator().setTables(Arrays.asSet(totoClassTable));
 		ddlDeployer.deployDDL();
 		
 		

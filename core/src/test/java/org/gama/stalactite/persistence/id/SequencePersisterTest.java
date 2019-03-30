@@ -10,9 +10,10 @@ import org.gama.sql.test.HSQLDBInMemoryDataSource;
 import org.gama.stalactite.persistence.engine.DDLDeployer;
 import org.gama.stalactite.persistence.engine.PersistenceContext;
 import org.gama.stalactite.persistence.engine.SeparateTransactionExecutor;
-import org.gama.stalactite.persistence.id.sequence.SequenceStorageOptions;
 import org.gama.stalactite.persistence.id.sequence.SequencePersister;
+import org.gama.stalactite.persistence.id.sequence.SequenceStorageOptions;
 import org.gama.stalactite.persistence.sql.Dialect;
+import org.gama.stalactite.persistence.sql.ddl.DDLGenerator;
 import org.gama.stalactite.persistence.sql.ddl.JavaTypeToSqlTypeMapping;
 import org.gama.stalactite.test.JdbcConnectionProvider;
 import org.junit.jupiter.api.BeforeEach;
@@ -39,8 +40,9 @@ public class SequencePersisterTest {
 	
 	@Test
 	public void testGetCreationScripts() {
-		dialect.getDdlSchemaGenerator().addTables(testInstance.getMappingStrategy().getTargetTable());
-		List<String> creationScripts = dialect.getDdlSchemaGenerator().getCreationScripts();
+		DDLGenerator ddlGenerator = new DDLGenerator(dialect.getJavaTypeToSqlTypeMapping());
+		ddlGenerator.addTables(testInstance.getMappingStrategy().getTargetTable());
+		List<String> creationScripts = ddlGenerator.getCreationScripts();
 		assertEquals(Arrays.asList("create table sequence_table(sequence_name VARCHAR(255), next_val int, primary key (sequence_name))"), creationScripts);
 	}
 	
@@ -48,15 +50,16 @@ public class SequencePersisterTest {
 	public void testGetCreationScripts_customized() {
 		testInstance = new SequencePersister(new SequenceStorageOptions("myTable", "mySequenceNameCol", "myNextValCol"),
 				dialect, (SeparateTransactionExecutor) persistenceContext.getConnectionProvider(), persistenceContext.getJDBCBatchSize());
-		dialect.getDdlSchemaGenerator().addTables(testInstance.getMappingStrategy().getTargetTable());
-		List<String> creationScripts = dialect.getDdlSchemaGenerator().getCreationScripts();
+		DDLGenerator ddlGenerator = new DDLGenerator(dialect.getJavaTypeToSqlTypeMapping());
+		ddlGenerator.addTables(testInstance.getMappingStrategy().getTargetTable());
+		List<String> creationScripts = ddlGenerator.getCreationScripts();
 		assertEquals(Arrays.asList("create table myTable(mySequenceNameCol VARCHAR(255), myNextValCol int, primary key (mySequenceNameCol))"), creationScripts);
 	}
 	
 	@Test
 	public void testReservePool_emptyDatabase() throws Exception {
 		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
-		ddlDeployer.getDdlSchemaGenerator().setTables(Arrays.asList(testInstance.getMappingStrategy().getTargetTable()));
+		ddlDeployer.getDdlGenerator().setTables(Arrays.asSet(testInstance.getMappingStrategy().getTargetTable()));
 		ddlDeployer.deployDDL();
 		long identifier = testInstance.reservePool("toto", 10);
 		assertEquals(10, identifier);

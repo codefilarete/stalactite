@@ -82,7 +82,7 @@ public class FluentMappingBuilderForeignKeyTest {
 		
 		Connection currentConnection = persistenceContext.getCurrentConnection();
 		ResultSetIterator<JdbcForeignKey> fkPersonIterator = new ResultSetIterator<JdbcForeignKey>(currentConnection.getMetaData().getExportedKeys(null, null,
-				personPersister.getTargetTable().getName().toUpperCase())) {
+				personPersister.getMainTable().getName().toUpperCase())) {
 			@Override
 			public JdbcForeignKey convert(ResultSet rs) throws SQLException {
 				return new JdbcForeignKey(
@@ -97,7 +97,7 @@ public class FluentMappingBuilderForeignKeyTest {
 		assertEquals(expectedForeignKey.getSignature(), foundForeignKey.getSignature());
 		
 		ResultSetIterator<JdbcForeignKey> fkCityIterator = new ResultSetIterator<JdbcForeignKey>(currentConnection.getMetaData().getExportedKeys(null, null,
-				countryPersister.getTargetTable().getName().toUpperCase())) {
+				countryPersister.getMainTable().getName().toUpperCase())) {
 			@Override
 			public JdbcForeignKey convert(ResultSet rs) throws SQLException {
 				return new JdbcForeignKey(

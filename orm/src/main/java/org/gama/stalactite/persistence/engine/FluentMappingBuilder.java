@@ -77,9 +77,9 @@ public class FluentMappingBuilder<C, I> implements IFluentMappingBuilder<C, I> {
 	 * @param identifierClass the class of the identifier
 	 * @param <T> any type to be persisted
 	 * @param <I> the type of the identifier
-	 * @return a new {@link FluentMappingBuilder}
+	 * @return a new {@link IFluentMappingBuilder}
 	 */
-	public static <T, I> FluentMappingBuilder<T, I> from(Class<T> persistedClass, Class<I> identifierClass) {
+	public static <T, I> IFluentMappingBuilder<T, I> from(Class<T> persistedClass, Class<I> identifierClass) {
 		return from(persistedClass, identifierClass, new Table(persistedClass.getSimpleName()));
 	}
 	
@@ -91,10 +91,10 @@ public class FluentMappingBuilder<C, I> implements IFluentMappingBuilder<C, I> {
 	 * @param table the table which will store instances of the persistedClass
 	 * @param <T> any type to be persisted
 	 * @param <I> the type of the identifier
-	 * @return a new {@link FluentMappingBuilder}
+	 * @return a new {@link IFluentMappingBuilder}
 	 */
 	@SuppressWarnings("suid:S1172")	// identifierClass parameter needs to be present event if to used because it gives <I> Generic type
-	public static <T, I> FluentMappingBuilder<T, I> from(Class<T> persistedClass, Class<I> identifierClass, Table table) {
+	public static <T, I> IFluentMappingBuilder<T, I> from(Class<T> persistedClass, Class<I> identifierClass, Table table) {
 		return new FluentMappingBuilder<>(persistedClass, table);
 	}
 	
@@ -418,6 +418,9 @@ public class FluentMappingBuilder<C, I> implements IFluentMappingBuilder<C, I> {
 		
 		if (!cascadeOnes.isEmpty() || !cascadeManys.isEmpty()) {
 			JoinedTablesPersister<C, I, T> joinedTablesPersister = new JoinedTablesPersister<>(persistenceContext, mainMappingStrategy);
+			// don't forget to register this new persister, its usefull for schema deployment
+			// NB: this will overwrite the previous one, done by persistenceContext.add(mainMappingStrategy) some lines above
+			persistenceContext.addPersister(joinedTablesPersister);
 			result = joinedTablesPersister;
 			
 			CascadeOneConfigurer<C, Object, Object> cascadeOneConfigurer = new CascadeOneConfigurer<>();

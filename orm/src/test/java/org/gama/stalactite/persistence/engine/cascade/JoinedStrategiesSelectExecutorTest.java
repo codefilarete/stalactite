@@ -43,7 +43,6 @@ import org.gama.stalactite.persistence.mapping.IdMappingStrategy;
 import org.gama.stalactite.persistence.mapping.SinglePropertyIdAccessor;
 import org.gama.stalactite.persistence.sql.Dialect;
 import org.gama.stalactite.persistence.sql.HSQLDBDialect.HSQLDBTypeMapping;
-import org.gama.stalactite.persistence.sql.ddl.DDLSchemaGenerator;
 import org.gama.stalactite.persistence.sql.ddl.JavaTypeToSqlTypeMapping;
 import org.gama.stalactite.persistence.sql.dml.ColumnParameterizedSelect;
 import org.gama.stalactite.persistence.structure.Column;
@@ -270,9 +269,8 @@ public class JoinedStrategiesSelectExecutorTest {
 		Column<Table, String> name = targetTable.addColumn("name", String.class);
 		
 		JdbcConnectionProvider connectionProvider = new JdbcConnectionProvider(dataSource);
-		DDLSchemaGenerator ddlSchemaGenerator = new DDLSchemaGenerator(new HSQLDBTypeMapping());
-		ddlSchemaGenerator.addTables(targetTable);
-		DDLDeployer ddlDeployer = new DDLDeployer(ddlSchemaGenerator, connectionProvider);
+		DDLDeployer ddlDeployer = new DDLDeployer(new HSQLDBTypeMapping(), connectionProvider);
+		ddlDeployer.getDdlGenerator().addTables(targetTable);
 		ddlDeployer.deployDDL();
 		
 		Toto entity1 = new Toto(100, 1, "entity1");

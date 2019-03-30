@@ -39,7 +39,7 @@ public class PersistenceContextTest {
 		Column<Table, String> name = toto.addColumn("name", String.class);
 		
 		DDLDeployer ddlDeployer = new DDLDeployer(testInstance);
-		ddlDeployer.getDdlSchemaGenerator().addTables(toto);
+		ddlDeployer.getDdlGenerator().addTables(toto);
 		ddlDeployer.deployDDL();
 		
 		// test insert
@@ -81,7 +81,7 @@ public class PersistenceContextTest {
 		Column<Table, String> name = toto.addColumn("name", String.class);
 		
 		DDLDeployer ddlDeployer = new DDLDeployer(testInstance);
-		ddlDeployer.getDdlSchemaGenerator().addTables(toto);
+		ddlDeployer.getDdlGenerator().addTables(toto);
 		ddlDeployer.deployDDL();
 		
 		connection.prepareStatement("insert into Toto(id, name) values (1, 'Hello')").execute();
@@ -123,7 +123,7 @@ public class PersistenceContextTest {
 		dialect.getJavaTypeToSqlTypeMapping().put(Wrapper.class, "varchar(255)");
 				
 		DDLDeployer ddlDeployer = new DDLDeployer(testInstance);
-		ddlDeployer.getDdlSchemaGenerator().addTables(toto);
+		ddlDeployer.getDdlGenerator().addTables(toto);
 		ddlDeployer.deployDDL();
 		
 		connection.prepareStatement("insert into Toto(id, dummyProp) values (1, 'Hello')").execute();
@@ -152,7 +152,7 @@ public class PersistenceContextTest {
 		dialect.getJavaTypeToSqlTypeMapping().put(dummyProp, "varchar(255)");
 				
 		DDLDeployer ddlDeployer = new DDLDeployer(testInstance);
-		ddlDeployer.getDdlSchemaGenerator().addTables(toto);
+		ddlDeployer.getDdlGenerator().addTables(toto);
 		ddlDeployer.deployDDL();
 		
 		connection.prepareStatement("insert into Toto(id, dummyProp) values (1, 'Hello')").execute();

@@ -62,10 +62,10 @@ public class CascadeManyConfigurer<SRC, TRGT, SRCID, TRGTID, C extends Collectio
 				targetPersister.getMappingStrategy().getIdMappingStrategy().getIdentifierInsertionManager().getInsertListener());
 		
 		// finding joined columns: left one is primary key. Right one is given by the target strategy through the property accessor
-		if (joinedTablesPersister.getTargetTable().getPrimaryKey().getColumns().size() > 1) {
+		if (joinedTablesPersister.getMainTable().getPrimaryKey().getColumns().size() > 1) {
 			throw new NotYetSupportedOperationException("Joining tables on a composed primary key is not (yet) supported");
 		}
-		Column leftPrimaryKey = first(joinedTablesPersister.getTargetTable().getPrimaryKey().getColumns());
+		Column leftPrimaryKey = first(joinedTablesPersister.getMainTable().getPrimaryKey().getColumns());
 		
 		RelationshipMode maintenanceMode = cascadeMany.getRelationshipMode();
 		// selection is always present (else configuration is nonsense !)

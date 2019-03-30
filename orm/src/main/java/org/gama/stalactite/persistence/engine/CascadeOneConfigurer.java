@@ -55,7 +55,7 @@ public class CascadeOneConfigurer<SRC, TRGT, TRGTID> {
 		Column leftColumn = mappingStrategy.getMainMappingStrategy().getPropertyToColumn().get(targetAccessor);
 		// According to the nullable option, we specify the ddl schema option
 		leftColumn.nullable(cascadeOne.isNullable());
-		Column rightColumn = Iterables.first((Set<Column<?, Object>>) targetPersister.getTargetTable().getPrimaryKey().getColumns());
+		Column rightColumn = Iterables.first((Set<Column<?, Object>>) targetPersister.getMainTable().getPrimaryKey().getColumns());
 		
 		// adding foerign key constraint
 		leftColumn.getTable().addForeignKey(foreignKeyNamingStrategy.giveName(leftColumn, rightColumn), leftColumn, rightColumn);

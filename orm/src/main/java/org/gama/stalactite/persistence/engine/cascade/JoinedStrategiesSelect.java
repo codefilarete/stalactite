@@ -4,9 +4,11 @@ import javax.annotation.Nonnull;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
+import java.util.Set;
 
 import org.gama.lang.Strings;
 import org.gama.sql.binder.ParameterBinder;
@@ -17,8 +19,10 @@ import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.query.model.From;
-import org.gama.stalactite.query.model.From.AbstractJoin.JoinDirection;
 import org.gama.stalactite.query.model.Query;
+
+import static org.gama.stalactite.query.model.From.AbstractJoin.JoinDirection.INNER_JOIN;
+import static org.gama.stalactite.query.model.From.AbstractJoin.JoinDirection.LEFT_OUTER_JOIN;
 
 /**
  * Class that eases the creation of a SQL selection with multiple joined {@link ClassMappingStrategy}.
@@ -106,12 +110,31 @@ public class JoinedStrategiesSelect<C, I, T extends Table> {
 			addColumnsToSelect(joinTableAlias, join.getStrategy().getStrategy().getSelectableColumns(), query);
 			Column leftJoinColumn = join.getLeftJoinColumn();
 			Column rightJoinColumn = join.getRightJoinColumn();
-			from.add(from.new ColumnJoin(leftJoinColumn, rightJoinColumn, join.isOuter() ? JoinDirection.LEFT_OUTER_JOIN : JoinDirection.INNER_JOIN));
+			from.add(from.new ColumnJoin(leftJoinColumn, rightJoinColumn, join.isOuter() ? LEFT_OUTER_JOIN : INNER_JOIN));
 			
 			stack.addAll(join.getStrategy().getJoins());
 		}
 		
 		return query;
+	}
+	
+	/**
+	 * Provides tables implied in this join.
+	 * 
+	 * @return all tables used by this join
+	 */
+	public Set<Table> giveTables() {
+		Set<Table> result = new HashSet<>();
+		
+		// initialization of the from clause with the very first table
+		result.add(root.getTable());
+		Queue<Join> stack = new ArrayDeque<>(root.getJoins());
+		while (!stack.isEmpty()) {
+			Join<?, ?> join = stack.poll();
+			result.add(join.getStrategy().getTable());
+			stack.addAll(join.getStrategy().getJoins());
+		}
+		return result;
 	}
 	
 	/**

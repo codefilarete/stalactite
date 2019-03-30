@@ -2,7 +2,8 @@ package org.gama.stalactite.persistence.sql;
 
 import org.gama.lang.Retryer;
 import org.gama.lang.bean.Objects;
-import org.gama.stalactite.persistence.sql.ddl.DDLSchemaGenerator;
+import org.gama.stalactite.persistence.sql.ddl.DDLGenerator;
+import org.gama.stalactite.persistence.sql.ddl.DDLTableGenerator;
 import org.gama.stalactite.persistence.sql.ddl.JavaTypeToSqlTypeMapping;
 import org.gama.stalactite.persistence.sql.dml.DMLGenerator;
 import org.gama.stalactite.persistence.sql.dml.binder.ColumnBinderRegistry;
@@ -11,7 +12,7 @@ import org.gama.stalactite.persistence.sql.dml.binder.ColumnBinderRegistry;
  * Class that keeps objects necessary for "communication" with a Database at the SQL language level:
  * - column types for their creation: {@link JavaTypeToSqlTypeMapping} 
  * - column types for their read and write in {@link java.sql.PreparedStatement} and {@link java.sql.ResultSet}: {@link ColumnBinderRegistry}
- * - engines for SQL generation: {@link DDLSchemaGenerator} and {@link DMLGenerator}
+ * - engines for SQL generation: {@link DDLGenerator} and {@link DMLGenerator}
  * 
  * @author Guillaume Mary
  */
@@ -25,7 +26,7 @@ public class Dialect {
 	/** Maximum number of values for a "in" operator */
 	private int inOperatorMaxSize = 1000;
 	
-	private DDLSchemaGenerator ddlSchemaGenerator;
+	private DDLTableGenerator ddlTableGenerator;
 	
 	private DMLGenerator dmlGenerator;
 	
@@ -50,15 +51,15 @@ public class Dialect {
 		this.javaTypeToSqlTypeMapping = javaTypeToSqlTypeMapping;
 		this.columnBinderRegistry = columnBinderRegistry;
 		this.dmlGenerator = newDmlGenerator(columnBinderRegistry);
-		this.ddlSchemaGenerator = newDdlSchemaGenerator();
+		this.ddlTableGenerator = newDdlTableGenerator();
 	}
 	
-	protected DDLSchemaGenerator newDdlSchemaGenerator() {
-		return new DDLSchemaGenerator(getJavaTypeToSqlTypeMapping());
+	protected DDLTableGenerator newDdlTableGenerator() {
+		return new DDLTableGenerator(getJavaTypeToSqlTypeMapping());
 	}
 	
-	public DDLSchemaGenerator getDdlSchemaGenerator() {
-		return ddlSchemaGenerator;
+	public DDLTableGenerator getDdlTableGenerator() {
+		return ddlTableGenerator;
 	}
 	
 	protected DMLGenerator newDmlGenerator(ColumnBinderRegistry columnBinderRegistry) {

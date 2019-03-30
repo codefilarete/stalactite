@@ -87,8 +87,8 @@ public abstract class AbstractOneToManyWithAssociationTableEngine<SRC, TRGT, SRC
 				(BeanRelationFixer<SRC, R>)
 						// implementation to keep track of the relation, further usage is in afterSelect
 						(sourceEntity, record) -> leftAssociations.get().computeIfAbsent(sourceEntity, k -> new ArrayList<>()).add(record),
-				associationPersister.getTargetTable().getOneSidePrimaryKey(),
-				associationPersister.getTargetTable().getOneSideKeyColumn(),
+				associationPersister.getMainTable().getOneSidePrimaryKey(),
+				associationPersister.getMainTable().getOneSideKeyColumn(),
 				true);
 		// adding target table join
 		joinedTablesPersister.addPersister(associationTableJoinNodeName,
@@ -96,8 +96,8 @@ public abstract class AbstractOneToManyWithAssociationTableEngine<SRC, TRGT, SRC
 				(BeanRelationFixer<R, TRGT>)
 						// implementation to keep track of the relation, further usage is in afterSelect
 						(record, targetEntity) -> rightAssociations.get().put(record, targetEntity),
-				associationPersister.getTargetTable().getManySideKeyColumn(),
-				associationPersister.getTargetTable().getManySidePrimaryKey(),
+				associationPersister.getMainTable().getManySideKeyColumn(),
+				associationPersister.getMainTable().getManySidePrimaryKey(),
 				true);
 	}
 	
@@ -184,15 +184,16 @@ public abstract class AbstractOneToManyWithAssociationTableEngine<SRC, TRGT, SRC
 			
 			@Override
 			protected void insertTargets(UpdateContext updateContext) {
-				// we insert association records before targets to satisfy integrity constraint
-				associationPersister.insert(((AssociationTableUpdateContext) updateContext).getAssociationRecordstoBeInserted());
+				// we insert association records after targets to satisfy integrity constraint
 				super.insertTargets(updateContext);
+				associationPersister.insert(((AssociationTableUpdateContext) updateContext).getAssociationRecordstoBeInserted());
 			}
 			
 			@Override
 			protected void deleteTargets(UpdateContext updateContext) {
-				super.deleteTargets(updateContext);
+				// we delete association records before targets to satisfy integrity constraint
 				associationPersister.delete(((AssociationTableUpdateContext) updateContext).getAssociationRecordstoBeDeleted());
+				super.deleteTargets(updateContext);
 			}
 			
 			class AssociationTableUpdateContext extends UpdateContext {
@@ -255,9 +256,9 @@ public abstract class AbstractOneToManyWithAssociationTableEngine<SRC, TRGT, SRC
 				// We delete association records by entity keys, not their id because we don't have them (it is themselves and we don't have the full
 				// entities, only their id)
 				// We do it thanks to a SQL delete order ... not very coherent with beforeDelete(..) !
-				Delete<AssociationTable> delete = new Delete<>(associationPersister.getTargetTable());
+				Delete<AssociationTable> delete = new Delete<>(associationPersister.getMainTable());
 				Set<SRCID> identifiers = collect(entities, this::castId, HashSet::new);
-				delete.where(associationPersister.getTargetTable().getOneSideKeyColumn(), Operand.in(identifiers));
+				delete.where(associationPersister.getMainTable().getOneSideKeyColumn(), Operand.in(identifiers));
 				
 				PreparedSQL deleteStatement = new DeleteCommandBuilder<>(delete).toStatement(columnBinderRegistry);
 				try (WriteOperation<Integer> writeOperation = new WriteOperation<>(deleteStatement, associationPersister.getConnectionProvider())) {

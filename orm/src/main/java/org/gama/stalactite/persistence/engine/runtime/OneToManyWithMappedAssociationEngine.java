@@ -17,10 +17,8 @@ import org.gama.stalactite.persistence.engine.cascade.AfterUpdateCollectionCasca
 import org.gama.stalactite.persistence.engine.cascade.BeforeDeleteByIdCollectionCascader;
 import org.gama.stalactite.persistence.engine.cascade.BeforeDeleteCollectionCascader;
 import org.gama.stalactite.persistence.engine.cascade.JoinedTablesPersister;
-import org.gama.stalactite.persistence.engine.listening.PersisterListener;
 import org.gama.stalactite.persistence.engine.listening.UpdateListener.UpdatePayload;
 import org.gama.stalactite.persistence.structure.Column;
-import org.gama.stalactite.persistence.structure.Table;
 
 import static org.gama.lang.bean.Objects.not;
 import static org.gama.lang.collection.Iterables.stream;
@@ -40,8 +38,6 @@ public class OneToManyWithMappedAssociationEngine<SRC, TRGT, SRCID, TRGTID, C ex
 	
 	protected final JoinedTablesPersister<SRC, SRCID, ?> joinedTablesPersister;
 	
-	protected final PersisterListener<SRC, SRCID> persisterListener;
-	
 	protected final Persister<TRGT, TRGTID, ?> targetPersister;
 	
 	protected final MappedManyRelationDescriptor<SRC, TRGT, C> manyRelationDefinition;
@@ -49,7 +45,6 @@ public class OneToManyWithMappedAssociationEngine<SRC, TRGT, SRCID, TRGTID, C ex
 	public OneToManyWithMappedAssociationEngine(Persister<TRGT, TRGTID, ?> targetPersister,
 												MappedManyRelationDescriptor<SRC, TRGT, C> manyRelationDefinition,
 												JoinedTablesPersister<SRC, SRCID, ?> joinedTablesPersister) {
-		this.persisterListener = joinedTablesPersister.getPersisterListener();
 		this.targetPersister = targetPersister;
 		this.manyRelationDefinition = manyRelationDefinition;
 		this.joinedTablesPersister = joinedTablesPersister;
@@ -70,11 +65,12 @@ public class OneToManyWithMappedAssociationEngine<SRC, TRGT, SRCID, TRGTID, C ex
 				relationFixer,
 				sourcePrimaryKey,
 				relationshipOwner,
-				true);
+				true);	// outer join for empty relation cases
 	}
 	
 	public void addInsertCascade() {
-		persisterListener.addInsertListener(new OneToManyWithMappedAssociationEngine.TargetInstancesInsertCascader<>(targetPersister, manyRelationDefinition.getCollectionGetter()));
+		joinedTablesPersister.getPersisterListener().addInsertListener(
+				new OneToManyWithMappedAssociationEngine.TargetInstancesInsertCascader<>(targetPersister, manyRelationDefinition.getCollectionGetter()));
 	}
 	
 	public void addUpdateCascade(boolean shouldDeleteRemoved) {
@@ -83,20 +79,23 @@ public class OneToManyWithMappedAssociationEngine<SRC, TRGT, SRCID, TRGTID, C ex
 				targetPersister,
 				manyRelationDefinition.getReverseSetter(),
 				shouldDeleteRemoved);
-		persisterListener.addUpdateListener(new OneToManyWithMappedAssociationEngine.TargetInstancesUpdateCascader<>(targetPersister, updateListener));
+		joinedTablesPersister.getPersisterListener().addUpdateListener(
+				new OneToManyWithMappedAssociationEngine.TargetInstancesUpdateCascader<>(targetPersister, updateListener));
 	}
 	
-	public <T extends Table<T>> void addDeleteCascade(boolean deleteTargetEntities) {
+	public void addDeleteCascade(boolean deleteTargetEntities) {
 		if (deleteTargetEntities) {
 			// adding deletion of many-side entities
-			persisterListener.addDeleteListener(new DeleteTargetEntitiesBeforeDeleteCascader<>(targetPersister, manyRelationDefinition.getCollectionGetter()));
+			joinedTablesPersister.getPersisterListener().addDeleteListener(
+					new DeleteTargetEntitiesBeforeDeleteCascader<>(targetPersister, manyRelationDefinition.getCollectionGetter()));
 			// we add the deleteById event since we suppose that if delete is required then there's no reason that rough delete is not
-			persisterListener.addDeleteByIdListener(new DeleteByIdTargetEntitiesBeforeDeleteByIdCascader<>(targetPersister, manyRelationDefinition.getCollectionGetter()));
+			joinedTablesPersister.getPersisterListener().addDeleteByIdListener(
+					new DeleteByIdTargetEntitiesBeforeDeleteByIdCascader<>(targetPersister, manyRelationDefinition.getCollectionGetter()));
 		} else // entity shouldn't be deleted, so we may have to update it
 			if (manyRelationDefinition.getReverseSetter() != null) {
 				// we cut the link between target and source
 				// NB : we don't take versioning into account overall because we can't : how to do it since we miss the unmodified version ?
-				persisterListener.addDeleteListener(new BeforeDeleteCollectionCascader<SRC, TRGT>(targetPersister) {
+				joinedTablesPersister.getPersisterListener().addDeleteListener(new BeforeDeleteCollectionCascader<SRC, TRGT>(targetPersister) {
 					
 					@Override
 					protected void postTargetDelete(Iterable<TRGT> entities) {

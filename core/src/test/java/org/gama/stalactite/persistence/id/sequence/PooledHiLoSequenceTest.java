@@ -41,7 +41,7 @@ public class PooledHiLoSequenceTest {
 		
 		// Generating sequence table schema
 		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
-		ddlDeployer.getDdlSchemaGenerator().setTables(Arrays.asList(testInstance.getPersister().getMappingStrategy().getTargetTable()));
+		ddlDeployer.getDdlGenerator().setTables(Arrays.asSet(testInstance.getPersister().getMappingStrategy().getTargetTable()));
 		ddlDeployer.deployDDL();
 		
 		// we check that we can increment from an empty database

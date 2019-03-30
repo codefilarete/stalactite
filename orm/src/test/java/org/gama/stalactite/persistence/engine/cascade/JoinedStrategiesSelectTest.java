@@ -2,6 +2,7 @@ package org.gama.stalactite.persistence.engine.cascade;
 
 import java.util.Map;
 
+import org.gama.lang.collection.Arrays;
 import org.gama.lang.collection.Maps;
 import org.gama.sql.binder.ParameterBinder;
 import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
@@ -259,4 +260,29 @@ public class JoinedStrategiesSelectTest {
 				testInstance.getAliases());
 	}
 	
+	@Test
+	public void giveTables() {
+		ClassMappingStrategy totoMappingMock = buildMappingStrategyMock("Toto");
+		Table totoTable = totoMappingMock.getTargetTable();
+		Column totoPrimaryKey = totoTable.addColumn("id", long.class);
+		
+		ClassMappingStrategy tataMappingMock = buildMappingStrategyMock("Tata");
+		Table tataTable = tataMappingMock.getTargetTable();
+		Column tataPrimaryKey = tataTable.addColumn("id", long.class);
+		
+		ClassMappingStrategy tutuMappingMock = buildMappingStrategyMock("Tutu");
+		Table tutuTable = tutuMappingMock.getTargetTable();
+		Column tutuPrimaryKey = tutuTable.addColumn("id", long.class);
+		
+		ClassMappingStrategy titiMappingMock = buildMappingStrategyMock("Titi");
+		Table titiTable = titiMappingMock.getTargetTable();
+		Column titiPrimaryKey = titiTable.addColumn("id", long.class);
+		
+		JoinedStrategiesSelect testInstance = new JoinedStrategiesSelect(totoMappingMock, c -> mock(ParameterBinder.class));
+		String tataAddKey = testInstance.add(JoinedStrategiesSelect.FIRST_STRATEGY_NAME, tataMappingMock, totoPrimaryKey, tataPrimaryKey, false, null);
+		String tutuAddKey = testInstance.add(tataAddKey, tutuMappingMock, tataPrimaryKey, tutuPrimaryKey, false, null);
+		String titiAddKey = testInstance.add(JoinedStrategiesSelect.FIRST_STRATEGY_NAME, titiMappingMock, tataPrimaryKey, titiPrimaryKey, false, null);
+		
+		assertEquals(Arrays.asHashSet(totoTable, tataTable, tutuTable, titiTable), testInstance.giveTables());
+	}
 }
