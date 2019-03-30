@@ -52,6 +52,14 @@ public interface IFluentEmbeddableMappingConfiguration<C> {
 	 */
 	<O> IFluentEmbeddableMappingConfiguration<C> add(SerializableFunction<C, O> getter, String columnName);
 	
+	<E extends Enum<E>> IFluentEmbeddableMappingConfigurationEnumOptions<C> addEnum(SerializableBiConsumer<C, E> setter);
+	
+	<E extends Enum<E>> IFluentEmbeddableMappingConfigurationEnumOptions<C> addEnum(SerializableFunction<C, E> getter);
+	
+	<E extends Enum<E>> IFluentEmbeddableMappingConfigurationEnumOptions<C> addEnum(SerializableBiConsumer<C, E> setter, String columnName);
+	
+	<E extends Enum<E>> IFluentEmbeddableMappingConfigurationEnumOptions<C> addEnum(SerializableFunction<C, E> getter, String columnName);
+	
 	/**
 	 * Please note that we can't create a generic type for {@code ? super C} by prefixing the method signature with {@code <X super C>}
 	 * because it is not syntaxically valid (in Java 8). So it can't be mutualized between the 2 arguments {@code superType} and
@@ -63,7 +71,7 @@ public interface IFluentEmbeddableMappingConfiguration<C> {
 
 	<O> IFluentEmbeddableMappingConfigurationEmbedOptions<C, O> embed(SerializableFunction<C, O> getter);
 	
-	<O> IFluentEmbeddableMappingConfigurationEmbeddableOptions<C, O> embed(SerializableFunction<C, O> getter,
+	<O> IFluentEmbeddableMappingConfigurationEmbeddableOptions<C, O> embed(SerializableFunction<C, O> getter, 
 																		EmbeddedBeanMappingStrategyBuilder<O> embeddableMappingBuilder);
 	
 	<O> IFluentEmbeddableMappingConfigurationEmbeddableOptions<C, O> embed(SerializableBiConsumer<C, O> getter,
@@ -141,5 +149,14 @@ public interface IFluentEmbeddableMappingConfiguration<C> {
 		<IN> IFluentEmbeddableMappingConfigurationEmbeddableOptions<C, O> overrideName(SerializableBiConsumer<O, IN> function, String columnName);
 		
 		<IN> IFluentEmbeddableMappingConfigurationEmbeddableOptions<C, O> overrideName(AccessorChain<O, IN> chain, String columnName);
+	}
+	
+	interface IFluentEmbeddableMappingConfigurationEnumOptions<C> extends IFluentEmbeddableMappingConfiguration<C>, EnumOptions {
+		
+		@Override
+		IFluentEmbeddableMappingConfigurationEnumOptions<C> byName();
+		
+		@Override
+		IFluentEmbeddableMappingConfigurationEnumOptions<C> byOrdinal();
 	}
 }

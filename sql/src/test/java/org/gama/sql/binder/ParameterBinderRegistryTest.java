@@ -1,7 +1,9 @@
 package org.gama.sql.binder;
 
 import java.io.Serializable;
+import java.time.Month;
 
+import org.gama.sql.binder.ParameterBinderRegistry.EnumBindType;
 import org.gama.sql.dml.SQLStatement.BindingException;
 import org.junit.jupiter.api.Test;
 
@@ -53,5 +55,22 @@ class ParameterBinderRegistryTest {
 		BindingException thrownException = assertThrows(BindingException.class, () -> testInstance.getBinder(StringBuilder.class));
 		assertEquals("Multiple binders found for j.l.StringBuilder, please register a dedicated one : [j.l.CharSequence, j.i.Serializable]",
 				thrownException.getMessage());
+	}
+	
+	@Test
+	void getBinder_enum() {
+		ParameterBinderRegistry testInstance = new ParameterBinderRegistry();
+		
+		ParameterBinder<Month> registeredBinder;
+		
+		testInstance.registerEnum(Month.class, EnumBindType.NAME);
+		registeredBinder = testInstance.getBinder(Month.class);
+		assertTrue(registeredBinder instanceof NameEnumParameterBinder);
+		assertEquals(Month.class, ((NameEnumParameterBinder) registeredBinder).getEnumType());
+		
+		testInstance.registerEnum(Month.class, EnumBindType.ORDINAL);
+		registeredBinder = testInstance.getBinder(Month.class);
+		assertTrue(registeredBinder instanceof OrdinalEnumParameterBinder);
+		assertEquals(Month.class, ((OrdinalEnumParameterBinder) registeredBinder).getEnumType());
 	}
 }

@@ -1,5 +1,6 @@
 package org.gama.stalactite.persistence.engine;
 
+import javax.sql.DataSource;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
@@ -27,7 +28,9 @@ import org.gama.stalactite.persistence.engine.FluentMappingBuilder.IdentifierPol
 import org.gama.stalactite.persistence.engine.IFluentMappingBuilder.IFluentMappingBuilderColumnOptions;
 import org.gama.stalactite.persistence.engine.IFluentMappingBuilder.IFluentMappingBuilderEmbedOptions;
 import org.gama.stalactite.persistence.engine.model.Country;
+import org.gama.stalactite.persistence.engine.model.Gender;
 import org.gama.stalactite.persistence.engine.model.Person;
+import org.gama.stalactite.persistence.engine.model.PersonWithGender;
 import org.gama.stalactite.persistence.engine.model.Timestamp;
 import org.gama.stalactite.persistence.id.Identified;
 import org.gama.stalactite.persistence.id.Identifier;
@@ -39,6 +42,7 @@ import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.test.JdbcConnectionProvider;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -56,6 +60,8 @@ import static org.mockito.Mockito.when;
 public class FluentMappingBuilderTest {
 	
 	private static final HSQLDBDialect DIALECT = new HSQLDBDialect();
+	private DataSource dataSource = new HSQLDBInMemoryDataSource();
+	private PersistenceContext persistenceContext;
 	
 	@BeforeAll
 	public static void initBinders() {
@@ -65,6 +71,11 @@ public class FluentMappingBuilderTest {
 		DIALECT.getJavaTypeToSqlTypeMapping().put(Identifier.class, "int");
 		DIALECT.getColumnBinderRegistry().register((Class) Identified.class, Identified.identifiedBinder(DefaultParameterBinders.LONG_PRIMITIVE_BINDER));
 		DIALECT.getJavaTypeToSqlTypeMapping().put(Identified.class, "int");
+	}
+	
+	@BeforeEach
+	public void initTest() {
+		persistenceContext = new PersistenceContext(new JdbcConnectionProvider(dataSource), DIALECT);
 	}
 	
 	@Test
@@ -106,6 +117,10 @@ public class FluentMappingBuilderTest {
 		// column should not have been created
 		Column columnForProperty = (Column) mappingStrategy.getTargetTable().mapColumnsOnName().get("name");
 		assertNull(columnForProperty);
+		
+		// title column is expected to be added to the mapping and participate to DML actions 
+		assertEquals(Arrays.asSet("id", "title"), mappingStrategy.getInsertableColumns().stream().map(Column::getName).collect(Collectors.toSet()));
+		assertEquals(Arrays.asSet("title"), mappingStrategy.getUpdatableColumns().stream().map(Column::getName).collect(Collectors.toSet()));
 	}
 	
 	@Test
@@ -446,6 +461,85 @@ public class FluentMappingBuilderTest {
 				// from Country.timestamp
 				"createdAt", "modifiedAt"),
 				countryTable.getColumns().stream().map(Column::getName).collect(Collectors.toSet()));
+	}
+	
+	
+	@Test
+	public void testBuild_withEnumType_byDefault_nameIsUsed() {
+		Persister<PersonWithGender, Identifier<Long>, Table> personPersister = FluentMappingBuilder.from(PersonWithGender.class, Identifier.LONG_TYPE)
+				.add(Person::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
+				.add(Person::getName)
+				// no type of mapping given: neither ordinal nor name
+				.addEnum(PersonWithGender::getGender)
+				.build(persistenceContext);
+		
+		Column gender = (Column) personPersister.getMainTable().mapColumnsOnName().get("gender");
+		DIALECT.getJavaTypeToSqlTypeMapping().put(gender, "VARCHAR(255)");
+		
+		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+		ddlDeployer.deployDDL();
+		
+		PersonWithGender person = new PersonWithGender(new PersistableIdentifier<>(1L));
+		person.setName("toto");
+		person.setGender(Gender.FEMALE);
+		personPersister.insert(person);
+		
+		// checking that name was used
+		List<String> result = persistenceContext.newQuery("select * from PersonWithGender", String.class).mapKey(String::new, "gender", String.class)
+				.execute(persistenceContext.getConnectionProvider());
+		assertEquals(Arrays.asList("FEMALE"), result);
+	}
+	
+	@Test
+	public void testBuild_withEnumType_mappedWithOrdinal() {
+		Persister<PersonWithGender, Identifier<Long>, Table> personPersister = FluentMappingBuilder.from(PersonWithGender.class, Identifier.LONG_TYPE)
+				.add(Person::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
+				.add(Person::getName)
+				.addEnum(PersonWithGender::getGender).byOrdinal()
+				.build(persistenceContext);
+		
+		Column gender = (Column) personPersister.getMainTable().mapColumnsOnName().get("gender");
+		DIALECT.getJavaTypeToSqlTypeMapping().put(gender, "INT");
+		
+		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+		ddlDeployer.deployDDL();
+		
+		PersonWithGender person = new PersonWithGender(new PersistableIdentifier<>(1L));
+		person.setName("toto");
+		person.setGender(Gender.FEMALE);
+		personPersister.insert(person);
+		
+		// checking that ordinal was used
+		List<Integer> result = persistenceContext.newQuery("select * from PersonWithGender", Integer.class).mapKey(Integer::valueOf, "gender", String.class)
+				.execute(persistenceContext.getConnectionProvider());
+		assertEquals(Arrays.asList(person.getGender().ordinal()), result);
+	}
+	
+	@Test
+	public void testBuild_withEnumType_columnMappedWithOrdinal() {
+		Table personTable = new Table<>("PersonWithGender");
+		Column<Table, Gender> genderColumn = personTable.addColumn("gender", Gender.class);
+		
+		Persister<PersonWithGender, Identifier<Long>, ?> personPersister = FluentMappingBuilder.from(PersonWithGender.class, Identifier.LONG_TYPE, personTable)
+				.add(Person::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
+				.add(Person::getName)
+				.addEnum(PersonWithGender::getGender, genderColumn).byOrdinal()
+				.build(persistenceContext);
+		
+		DIALECT.getJavaTypeToSqlTypeMapping().put(genderColumn, "INT");
+		
+		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+		ddlDeployer.deployDDL();
+		
+		PersonWithGender person = new PersonWithGender(new PersistableIdentifier<>(1L));
+		person.setName("toto");
+		person.setGender(Gender.FEMALE);
+		personPersister.insert(person);
+		
+		// checking that ordinal was used
+		List<Integer> result = persistenceContext.newQuery("select * from PersonWithGender", Integer.class).mapKey(Integer::valueOf, "gender", String.class)
+				.execute(persistenceContext.getConnectionProvider());
+		assertEquals(Arrays.asList(person.getGender().ordinal()), result);
 	}
 	
 	protected static class Toto implements Identified<UUID> {

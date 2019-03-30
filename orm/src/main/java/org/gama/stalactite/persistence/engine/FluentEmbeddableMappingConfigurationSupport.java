@@ -53,6 +53,8 @@ import org.gama.reflection.ValueAccessPointByMethod;
 import org.gama.reflection.ValueAccessPointComparator;
 import org.gama.reflection.ValueAccessPointMap;
 import org.gama.reflection.ValueAccessPointSet;
+import org.gama.sql.binder.ParameterBinder;
+import org.gama.sql.binder.ParameterBinderRegistry.EnumBindType;
 import org.gama.sql.dml.SQLStatement.BindingException;
 import org.gama.stalactite.persistence.id.Identified;
 import org.gama.stalactite.persistence.mapping.EmbeddedBeanMappingStrategy;
@@ -90,7 +92,7 @@ public class FluentEmbeddableMappingConfigurationSupport<C> implements IFluentEm
 	private ColumnNamingStrategy columnNamingStrategy = ColumnNamingStrategy.DEFAULT;
 	
 	/** Mapiing definitions */
-	private final List<Linkage> mapping = new ArrayList<>();
+	final List<Linkage> mapping = new ArrayList<>();
 	
 	/** Collection of embedded elements, even inner ones to help final build process */
 	private final Collection<AbstractInset<C, ?>> insets = new ArrayList<>();
@@ -215,6 +217,60 @@ public class FluentEmbeddableMappingConfigurationSupport<C> implements IFluentEm
 	}
 	
 	@Override
+	public <E extends Enum<E>> IFluentEmbeddableMappingBuilderEnumOptions<C> addEnum(SerializableBiConsumer<C, E> setter) {
+		Method method = captureLambdaMethod(setter);
+		return addEnum(method, null);
+	}
+	
+	@Override
+	public <E extends Enum<E>> IFluentEmbeddableMappingBuilderEnumOptions<C> addEnum(SerializableFunction<C, E> getter) {
+		Method method = captureLambdaMethod(getter);
+		return addEnum(method, null);
+	}
+	
+	@Override
+	public <E extends Enum<E>> IFluentEmbeddableMappingBuilderEnumOptions<C> addEnum(SerializableBiConsumer<C, E> setter, String columnName) {
+		Method method = captureLambdaMethod(setter);
+		return addEnum(method, columnName);
+	}
+	
+	@Override
+	public <E extends Enum<E>> IFluentEmbeddableMappingBuilderEnumOptions<C> addEnum(SerializableFunction<C, E> getter, String columnName) {
+		Method method = captureLambdaMethod(getter);
+		return addEnum(method, columnName);
+	}
+	
+	IFluentEmbeddableMappingBuilderEnumOptions<C> addEnum(Method method, @Nullable String columnName) {
+		Linkage<C> linkage = addMapping(method, columnName);
+		return addEnumOptions(linkage);
+	}
+	
+	IFluentEmbeddableMappingBuilderEnumOptions<C> addEnumOptions(Linkage<C> linkage) {
+		linkage.setParameterBinder(EnumBindType.NAME.newParameterBinder((Class<Enum>) linkage.getColumnType()));
+		return new MethodReferenceDispatcher()
+				.redirect(EnumOptions.class, new EnumOptions() {
+					
+					@Override
+					public EnumOptions byName() {
+						setLinkageParameterBinder(EnumBindType.NAME);
+						return null;	// we can return null because dispatcher will return proxy
+					}
+					
+					@Override
+					public EnumOptions byOrdinal() {
+						setLinkageParameterBinder(EnumBindType.ORDINAL);
+						return null;	// we can return null because dispatcher will return proxy
+					}
+					
+					private void setLinkageParameterBinder(EnumBindType ordinal) {
+						linkage.setParameterBinder(ordinal.newParameterBinder((Class<Enum>) linkage.getColumnType()));
+					}
+				}, true)
+				.fallbackOn(this)
+				.build((Class<IFluentEmbeddableMappingBuilderEnumOptions<C>>) (Class) IFluentEmbeddableMappingBuilderEnumOptions.class);
+	}
+	
+	@Override
 	public IFluentEmbeddableMappingBuilder<C> mapSuperClass(Class<? super C> superType, EmbeddedBeanMappingStrategy<? super C, ?> mappingStrategy) {
 		inheritanceMapping.put(superType, mappingStrategy);
 		return this;
@@ -233,16 +289,16 @@ public class FluentEmbeddableMappingConfigurationSupport<C> implements IFluentEm
 	@Override
 	public <O> IFluentEmbeddableMappingBuilderEmbeddableOptions<C, O> embed(SerializableFunction<C, O> getter, EmbeddedBeanMappingStrategyBuilder<O> embeddableMappingBuilder) {
 		ImportedInset<C, O> importedInset = new ImportedInset<>(getter, this, embeddableMappingBuilder);
-		return getCoiFluentEmbeddableMappingBuilderEmbeddableOptions(importedInset);
+		return addImportedInset(importedInset);
 	}
 	
 	@Override
 	public <O> IFluentEmbeddableMappingBuilderEmbeddableOptions<C, O> embed(SerializableBiConsumer<C, O> getter, EmbeddedBeanMappingStrategyBuilder<O> embeddableMappingBuilder) {
 		ImportedInset<C, O> importedInset = new ImportedInset<>(getter, this, embeddableMappingBuilder);
-		return getCoiFluentEmbeddableMappingBuilderEmbeddableOptions(importedInset);
+		return addImportedInset(importedInset);
 	}
 	
-	private <O> IFluentEmbeddableMappingBuilderEmbeddableOptions<C, O> getCoiFluentEmbeddableMappingBuilderEmbeddableOptions(ImportedInset<C, O> importedInset) {
+	private <O> IFluentEmbeddableMappingBuilderEmbeddableOptions<C, O> addImportedInset(ImportedInset<C, O> importedInset) {
 		insets.add(importedInset);
 		return new MethodReferenceDispatcher()
 				// Why capturing overrideName(AccessorChain, String) this way ? (I mean with the "one method" capture instead of the usual "interface methods capture")
@@ -256,13 +312,13 @@ public class FluentEmbeddableMappingConfigurationSupport<C> implements IFluentEm
 					@Override
 					public <IN> EmbeddingOptions<C> overrideName(SerializableFunction<C, IN> function, String columnName) {
 						importedInset.overrideName(function, columnName);
-						return null;
+						return null;	// we can return null because dispatcher will return proxy
 					}
 
 					@Override
 					public <IN> EmbeddingOptions<C> overrideName(SerializableBiConsumer<C, IN> function, String columnName) {
 						importedInset.overrideName(function, columnName);
-						return null;
+						return null;	// we can return null because dispatcher will return proxy
 					}
 				}, true)
 				.fallbackOn(this)
@@ -353,6 +409,10 @@ public class FluentEmbeddableMappingConfigurationSupport<C> implements IFluentEm
 		String getColumnName();
 		
 		Class<?> getColumnType();
+		
+		void setParameterBinder(ParameterBinder parameterBinder);
+		
+		ParameterBinder getParameterBinder();
 	}
 	
 	/**
@@ -366,6 +426,8 @@ public class FluentEmbeddableMappingConfigurationSupport<C> implements IFluentEm
 		private final Class<?> columnType;
 		/** Column name override if not default */
 		private final String columnName;
+		/** Optional binder for this mapping */
+		private ParameterBinder parameterBinder;
 		
 		/**
 		 * Constructor by {@link Method}. Only accessor by method is implemented (since input is from method reference).
@@ -390,6 +452,16 @@ public class FluentEmbeddableMappingConfigurationSupport<C> implements IFluentEm
 		
 		public Class<?> getColumnType() {
 			return columnType;
+		}
+		
+		@Override
+		public void setParameterBinder(ParameterBinder parameterBinder) {
+			this.parameterBinder = parameterBinder;
+		}
+		
+		@Override
+		public ParameterBinder getParameterBinder() {
+			return parameterBinder;
 		}
 	}
 	
@@ -600,15 +672,19 @@ public class FluentEmbeddableMappingConfigurationSupport<C> implements IFluentEm
 		protected Column addLinkage(Linkage linkage) {
 			Column column = targetTable.addColumn(linkage.getColumnName(), linkage.getColumnType());
 			// assert that column binder is registered : it will throw en exception if the binder is not found
-			try {
-				dialect.getColumnBinderRegistry().getBinder(column);
-			} catch (BindingException e) {
-				throw new MappingConfigurationException(column.getAbsoluteName() + " has no matching binder,"
-						+ " please consider adding one to dialect binder registry or use one of the "
-						+ toMethodReferenceString(
-								(SerializableBiFunction<IFluentEmbeddableMappingConfiguration, SerializableFunction, IFluentEmbeddableMappingConfigurationEmbedOptions>)
-										IFluentEmbeddableMappingConfiguration::embed) + " methods"
-				);
+			if (linkage.getParameterBinder() != null) {
+				dialect.getColumnBinderRegistry().register(column, linkage.getParameterBinder());
+			} else {
+				try {
+					dialect.getColumnBinderRegistry().getBinder(column);
+				} catch (BindingException e) {
+					throw new MappingConfigurationException(column.getAbsoluteName() + " has no matching binder,"
+							+ " please consider adding one to dialect binder registry or use one of the "
+							+ toMethodReferenceString(
+							(SerializableBiFunction<IFluentEmbeddableMappingConfiguration, SerializableFunction, IFluentEmbeddableMappingConfigurationEmbedOptions>)
+									IFluentEmbeddableMappingConfiguration::embed) + " methods"
+					);
+				}
 			}
 			return column;
 		}

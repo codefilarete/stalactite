@@ -21,6 +21,14 @@ public interface IFluentEmbeddableMappingBuilder<C> extends IFluentEmbeddableMap
 	
 	<O> IFluentEmbeddableMappingBuilder<C> add(SerializableFunction<C, O> getter, String columnName);
 	
+	<E extends Enum<E>> IFluentEmbeddableMappingBuilderEnumOptions<C> addEnum(SerializableBiConsumer<C, E> setter);
+	
+	<E extends Enum<E>> IFluentEmbeddableMappingBuilderEnumOptions<C> addEnum(SerializableFunction<C, E> getter);
+	
+	<E extends Enum<E>> IFluentEmbeddableMappingBuilderEnumOptions<C> addEnum(SerializableBiConsumer<C, E> setter, String columnName);
+	
+	<E extends Enum<E>> IFluentEmbeddableMappingBuilderEnumOptions<C> addEnum(SerializableFunction<C, E> getter, String columnName);
+	
 	IFluentEmbeddableMappingBuilder<C> mapSuperClass(Class<? super C> superType, EmbeddedBeanMappingStrategy<? super C, ?> mappingStrategy);
 	
 	<O> IFluentEmbeddableMappingBuilderEmbedOptions<C, O> embed(SerializableBiConsumer<C, O> setter);
@@ -82,7 +90,6 @@ public interface IFluentEmbeddableMappingBuilder<C> extends IFluentEmbeddableMap
 		<IN> IFluentEmbeddableMappingBuilderEmbedOptions<T, O> exclude(SerializableBiConsumer<O, IN> setter);
 	}
 	
-	
 	interface IFluentEmbeddableMappingBuilderEmbeddableOptions<T, O>
 			extends IFluentEmbeddableMappingConfigurationEmbeddableOptions<T, O>,
 					IFluentEmbeddableMappingBuilder<T> {	// This is necessary to benefit from refined return types, else API is broken (see dedicated unit tests).
@@ -95,6 +102,18 @@ public interface IFluentEmbeddableMappingBuilder<C> extends IFluentEmbeddableMap
 		
 		@Override
 		<IN> IFluentEmbeddableMappingBuilderEmbeddableOptions<T, O> overrideName(AccessorChain<O, IN> chain, String columnName);
+		
+	}
+	
+	interface IFluentEmbeddableMappingBuilderEnumOptions<C>
+			extends IFluentEmbeddableMappingConfigurationEnumOptions<C>,
+			IFluentEmbeddableMappingBuilder<C> {
+		
+		@Override
+		IFluentEmbeddableMappingBuilderEnumOptions<C> byName();
+		
+		@Override
+		IFluentEmbeddableMappingBuilderEnumOptions<C> byOrdinal();
 		
 	}
 }

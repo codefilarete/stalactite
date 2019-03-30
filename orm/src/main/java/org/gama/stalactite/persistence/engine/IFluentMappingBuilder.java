@@ -37,6 +37,16 @@ public interface IFluentMappingBuilder<C, I>
 	
 	<O> IFluentMappingBuilderColumnOptions<C, I> add(SerializableFunction<C, O> getter, Column<Table, O> column);
 	
+	<E extends Enum<E>> IFluentMappingBuilderEnumOptions<C, I> addEnum(SerializableBiConsumer<C, E> setter);
+	
+	<E extends Enum<E>> IFluentMappingBuilderEnumOptions<C, I> addEnum(SerializableFunction<C, E> getter);
+	
+	<E extends Enum<E>> IFluentMappingBuilderEnumOptions<C, I> addEnum(SerializableBiConsumer<C, E> setter, String columnName);
+	
+	<E extends Enum<E>> IFluentMappingBuilderEnumOptions<C, I> addEnum(SerializableFunction<C, E> getter, String columnName);
+	
+	<E extends Enum<E>> IFluentMappingBuilderEnumOptions<C, I> addEnum(SerializableFunction<C, E> getter, Column<Table, E> column);
+	
 	IFluentMappingBuilder<C, I> columnNamingStrategy(ColumnNamingStrategy columnNamingStrategy);
 	
 	IFluentMappingBuilder<C, I> mapSuperClass(Class<? super C> superType, ClassMappingStrategy<? super C, ?, ?> mappingStrategy);
@@ -203,7 +213,7 @@ public interface IFluentMappingBuilder<C, I>
 	}
 	
 	/**
-	 * A combination 
+	 * A mashup that allows to come back to the "main" options as well as continue configuration of an "imported bean mapping" 
 	 * @param <T>
 	 * @param <I>
 	 * @param <O>
@@ -220,6 +230,18 @@ public interface IFluentMappingBuilder<C, I>
 		
 		@Override
 		<IN> IFluentMappingBuilderEmbeddableOptions<T, I, O> overrideName(AccessorChain<O, IN> chain, String columnName);
+		
+	}
+	
+	interface IFluentMappingBuilderEnumOptions<C, I>
+			extends IFluentEmbeddableMappingConfigurationEnumOptions<C>,
+			IFluentMappingBuilder<C, I> {
+		
+		@Override
+		IFluentMappingBuilderEnumOptions<C, I> byName();
+		
+		@Override
+		IFluentMappingBuilderEnumOptions<C, I> byOrdinal();
 		
 	}
 }

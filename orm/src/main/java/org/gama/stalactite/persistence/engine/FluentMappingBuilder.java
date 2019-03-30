@@ -24,15 +24,19 @@ import org.gama.reflection.AccessorByMethodReference;
 import org.gama.reflection.Accessors;
 import org.gama.reflection.IReversibleAccessor;
 import org.gama.reflection.MethodReferenceCapturer;
+import org.gama.reflection.MethodReferenceDispatcher;
 import org.gama.reflection.PropertyAccessor;
 import org.gama.reflection.ValueAccessPoint;
 import org.gama.reflection.ValueAccessPointMap;
+import org.gama.sql.binder.ParameterBinder;
+import org.gama.sql.binder.ParameterBinderRegistry.EnumBindType;
 import org.gama.stalactite.persistence.engine.AbstractVersioningStrategy.VersioningStrategySupport;
 import org.gama.stalactite.persistence.engine.FluentEmbeddableMappingConfigurationSupport.Builder;
 import org.gama.stalactite.persistence.engine.FluentEmbeddableMappingConfigurationSupport.Inset;
 import org.gama.stalactite.persistence.engine.FluentEmbeddableMappingConfigurationSupport.Linkage;
 import org.gama.stalactite.persistence.engine.FluentEmbeddableMappingConfigurationSupport.LinkageByColumnName;
 import org.gama.stalactite.persistence.engine.IFluentEmbeddableMappingBuilder.IFluentEmbeddableMappingBuilderEmbedOptions;
+import org.gama.stalactite.persistence.engine.IFluentEmbeddableMappingBuilder.IFluentEmbeddableMappingBuilderEnumOptions;
 import org.gama.stalactite.persistence.engine.builder.CascadeMany;
 import org.gama.stalactite.persistence.engine.builder.CascadeManyList;
 import org.gama.stalactite.persistence.engine.cascade.JoinedTablesPersister;
@@ -202,6 +206,52 @@ public class FluentMappingBuilder<C, I> implements IFluentMappingBuilder<C, I> {
 	}
 	
 	@Override
+	public <E extends Enum<E>> IFluentMappingBuilderEnumOptions<C, I> addEnum(SerializableBiConsumer<C, E> setter) {
+		Method method = captureLambdaMethod(setter);
+		return addEnum(method, null);
+	}
+	
+	@Override
+	public <E extends Enum<E>> IFluentMappingBuilderEnumOptions<C, I> addEnum(SerializableFunction<C, E> getter) {
+		Method method = captureLambdaMethod(getter);
+		return addEnum(method, null);
+	}
+	
+	@Override
+	public <E extends Enum<E>> IFluentMappingBuilderEnumOptions<C, I> addEnum(SerializableBiConsumer<C, E> setter, String columnName) {
+		Method method = captureLambdaMethod(setter);
+		return addEnum(method, columnName);
+	}
+	
+	@Override
+	public <E extends Enum<E>> IFluentMappingBuilderEnumOptions<C, I> addEnum(SerializableFunction<C, E> getter, String columnName) {
+		Method method = captureLambdaMethod(getter);
+		return addEnum(method, columnName);
+	}
+	
+	@Override
+	public <E extends Enum<E>> IFluentMappingBuilderEnumOptions<C, I> addEnum(SerializableFunction<C, E> getter, Column<Table, E> column) {
+		Method method = captureLambdaMethod(getter);
+		Linkage<C> linkage = fluentEntityMappingConfigurationSupport.addMapping(method, column);
+		IFluentEmbeddableMappingBuilderEnumOptions<C> enumOptionsHandler = fluentEntityMappingConfigurationSupport.addEnumOptions(linkage);
+		return new MethodDispatcher()
+				.redirect(EnumOptions.class, enumOptionsHandler, true)
+				.fallbackOn(this)
+				.build((Class<IFluentMappingBuilderEnumOptions<C, I>>) (Class) IFluentMappingBuilderEnumOptions.class);
+	}
+	
+	private IFluentMappingBuilderEnumOptions<C, I> addEnum(Method method, @javax.annotation.Nullable String columnName) {
+		Linkage<C> linkage = fluentEntityMappingConfigurationSupport.addMapping(method, columnName);
+		IFluentEmbeddableMappingBuilderEnumOptions<C> enumOptionsHandler = fluentEntityMappingConfigurationSupport.addEnumOptions(linkage);
+		// we redirect all of the EnumOptions method to the instance that can handle them, returning the dispatcher on this methods so one can chain
+		// with some other methods, other methods are redirected to this instance because it can handle them.
+		return new MethodDispatcher()
+				.redirect(EnumOptions.class, enumOptionsHandler, true)
+				.fallbackOn(this)
+				.build((Class<IFluentMappingBuilderEnumOptions<C, I>>) (Class) IFluentMappingBuilderEnumOptions.class);
+	}
+	
+	@Override
 	public IFluentMappingBuilder<C, I> mapSuperClass(Class<? super C> superType, ClassMappingStrategy<? super C, ?, ?> mappingStrategy) {
 		inheritanceMapping.put(superType, mappingStrategy);
 		return this;
@@ -214,8 +264,7 @@ public class FluentMappingBuilder<C, I> implements IFluentMappingBuilder<C, I> {
 	}
 	
 	@Override
-	public <O, J> IFluentMappingBuilderOneToOneOptions<C, I> addOneToOne(SerializableFunction<C, O> getter,
-																														Persister<O, J, ? extends Table> persister) {
+	public <O, J> IFluentMappingBuilderOneToOneOptions<C, I> addOneToOne(SerializableFunction<C, O> getter, Persister<O, J, ? extends Table> persister) {
 		// we declare the column on our side: we do it first because it checks some rules
 		add(getter);
 		// we keep it
@@ -566,6 +615,8 @@ public class FluentMappingBuilder<C, I> implements IFluentMappingBuilder<C, I> {
 		
 		private final PropertyAccessor function;
 		private final Column column;
+		/** Optional binder for this mapping */
+		private ParameterBinder parameterBinder;
 		
 		/**
 		 * Constructor by {@link Method}. Only accessor by method is implemented (since input is from method reference).
@@ -596,6 +647,16 @@ public class FluentMappingBuilder<C, I> implements IFluentMappingBuilder<C, I> {
 		
 		public Column getColumn() {
 			return column;
+		}
+		
+		@Override
+		public void setParameterBinder(ParameterBinder parameterBinder) {
+			this.parameterBinder = parameterBinder;
+		}
+		
+		@Override
+		public ParameterBinder getParameterBinder() {
+			return parameterBinder;
 		}
 	}
 	
@@ -654,12 +715,14 @@ public class FluentMappingBuilder<C, I> implements IFluentMappingBuilder<C, I> {
 		/**
 		 * Equivalent of {@link #addMapping(Method, String)} with a {@link Column}
 		 * 
-		 * @return a new Column aded to the target table, throws an exception if already mapped
+		 * @return a new Column added to the target table, throws an exception if already mapped
 		 */
 		<O> Linkage<C> addMapping(Method method, Column<Table, O> column) {
 			PropertyAccessor<Object, Object> propertyAccessor = Accessors.of(method);
 			assertMappingIsNotAlreadyDefined(column.getName(), propertyAccessor);
-			return new EntityLinkageByColumn<>(method, column);
+			EntityLinkageByColumn<C> newLinkage = new EntityLinkageByColumn<>(method, column);
+			mapping.add(newLinkage);
+			return newLinkage;
 		}
 		
 		private IFluentMappingBuilderColumnOptions<C, I> applyAdditionalOptions(Method method, Linkage newMapping) {

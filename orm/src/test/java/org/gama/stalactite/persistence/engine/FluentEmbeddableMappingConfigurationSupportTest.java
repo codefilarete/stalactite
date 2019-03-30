@@ -11,7 +11,10 @@ import org.gama.lang.collection.Maps;
 import org.gama.reflection.AccessorChain;
 import org.gama.sql.binder.DefaultParameterBinders;
 import org.gama.sql.binder.LambdaParameterBinder;
+import org.gama.sql.binder.NameEnumParameterBinder;
 import org.gama.sql.binder.NullAwareParameterBinder;
+import org.gama.sql.binder.OrdinalEnumParameterBinder;
+import org.gama.sql.binder.ParameterBinder;
 import org.gama.sql.result.Row;
 import org.gama.stalactite.persistence.engine.FluentMappingBuilderInheritanceTest.Car;
 import org.gama.stalactite.persistence.engine.FluentMappingBuilderInheritanceTest.Color;
@@ -19,7 +22,9 @@ import org.gama.stalactite.persistence.engine.IFluentEmbeddableMappingBuilder.IF
 import org.gama.stalactite.persistence.engine.IFluentEmbeddableMappingBuilder.IFluentEmbeddableMappingBuilderEmbeddableOptions;
 import org.gama.stalactite.persistence.engine.model.AbstractCountry;
 import org.gama.stalactite.persistence.engine.model.Country;
+import org.gama.stalactite.persistence.engine.model.Gender;
 import org.gama.stalactite.persistence.engine.model.Person;
+import org.gama.stalactite.persistence.engine.model.PersonWithGender;
 import org.gama.stalactite.persistence.engine.model.Timestamp;
 import org.gama.stalactite.persistence.id.Identifier;
 import org.gama.stalactite.persistence.mapping.EmbeddedBeanMappingStrategy;
@@ -34,6 +39,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * @author Guillaume Mary
@@ -441,6 +447,22 @@ class FluentEmbeddableMappingConfigurationSupportTest {
 						// with setter override
 						.overrideName(Person::setName, "tata")
 					.build(DIALECT, countryTable);
+		} catch (RuntimeException e) {
+			// Since we only want to test compilation, we don't care about that the above code throws an exception or not
+		}
+		
+		try {
+			FluentEmbeddableMappingConfigurationSupport.from(PersonWithGender.class)
+					.add(Person::getName)
+					.addEnum(PersonWithGender::getGender).byOrdinal()
+					.embed(Person::setTimestamp)
+						.overrideName(Timestamp::getCreationDate, "myDate")
+					.addEnum(PersonWithGender::getGender, "MM").byOrdinal()
+					.add(PersonWithGender::getId, "zz")
+					.addEnum(PersonWithGender::setGender).byName()
+					.embed(Person::getTimestamp)
+					.addEnum(PersonWithGender::setGender, "MM").byName()
+					.build(DIALECT, new Table<>("person"));
 		} catch (RuntimeException e) {
 			// Since we only want to test compilation, we don't care about that the above code throws an exception or not
 		}
@@ -909,6 +931,50 @@ class FluentEmbeddableMappingConfigurationSupportTest {
 				mappingBuilder.build(DIALECT, countryTable));
 		assertEquals("Person::getTimestamp > Timestamp::getModificationDate is not mapped by embeddable strategy, so its column name override 'electedAt' can't apply",
 				thrownException.getMessage());
+	}
+	
+	@Test
+	public void testBuild_withEnumType() {
+		Table<?> personTable = new Table<>("personTable");
+		EmbeddedBeanMappingStrategy<PersonWithGender, Table> personMappingBuilder = FluentEmbeddableMappingConfigurationSupport.from(PersonWithGender.class)
+				.add(Person::getName)
+				.addEnum(PersonWithGender::getGender)
+				.build(DIALECT, personTable);
+		
+		PersonWithGender person = new PersonWithGender();
+		person.setName("toto");
+		person.setGender(Gender.FEMALE);
+		Map<Column<Table, Object>, Object> insertValues = personMappingBuilder.getInsertValues(person);
+		assertEquals("toto", insertValues.get(personTable.mapColumnsOnName().get("name")));
+		assertEquals(Gender.FEMALE, insertValues.get(personTable.mapColumnsOnName().get("gender")));
+		
+		ParameterBinder genderColumnBinder = DIALECT.getColumnBinderRegistry().getBinder(personTable.mapColumnsOnName().get("gender"));
+		// by default, gender will be mapped on its name
+		assertTrue(genderColumnBinder instanceof NameEnumParameterBinder);
+		assertEquals(Gender.class, ((NameEnumParameterBinder) genderColumnBinder).getEnumType());
+		
+		
+		// changing mapping to ordinal
+		personMappingBuilder = FluentEmbeddableMappingConfigurationSupport.from(PersonWithGender.class)
+				.add(Person::getName)
+				.addEnum(PersonWithGender::getGender).byOrdinal()
+				.build(DIALECT, personTable);
+		
+		genderColumnBinder = DIALECT.getColumnBinderRegistry().getBinder(personTable.mapColumnsOnName().get("gender"));
+		// by default, gender will be mapped on its name
+		assertTrue(genderColumnBinder instanceof OrdinalEnumParameterBinder);
+		assertEquals(Gender.class, ((OrdinalEnumParameterBinder) genderColumnBinder).getEnumType());
+		
+		// changing mapping to name
+		personMappingBuilder = FluentEmbeddableMappingConfigurationSupport.from(PersonWithGender.class)
+				.add(Person::getName)
+				.addEnum(PersonWithGender::getGender).byName()
+				.build(DIALECT, personTable);
+		
+		genderColumnBinder = DIALECT.getColumnBinderRegistry().getBinder(personTable.mapColumnsOnName().get("gender"));
+		// by default, gender will be mapped on its name
+		assertTrue(genderColumnBinder instanceof NameEnumParameterBinder);
+		assertEquals(Gender.class, ((NameEnumParameterBinder) genderColumnBinder).getEnumType());
 	}
 	
 	static public class MyPerson extends Person {

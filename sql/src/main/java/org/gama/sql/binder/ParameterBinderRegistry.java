@@ -11,6 +11,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.WeakHashMap;
+import java.util.function.Function;
 
 import org.gama.lang.Reflections;
 import org.gama.lang.bean.InterfaceIterator;
@@ -32,6 +33,22 @@ import static org.gama.lang.collection.Iterables.first;
  */
 public class ParameterBinderRegistry {
 	
+	public enum EnumBindType {
+		
+		NAME(NameEnumParameterBinder::new),
+		ORDINAL(OrdinalEnumParameterBinder::new);
+		
+		private final Function<Class<? extends Enum>, AbstractEnumParameterBinder> factory;
+		
+		EnumBindType(Function<Class<? extends Enum>, AbstractEnumParameterBinder> factory) {
+			this.factory = factory;
+		}
+		
+		public <E extends Enum<E>> AbstractEnumParameterBinder<E> newParameterBinder(Class<E> enumType) {
+			return factory.apply(enumType);
+		}
+	}
+	
 	private final WeakHashMap<Class, ParameterBinder> bindersPerType = new WeakHashMap<>();
 	
 	public ParameterBinderRegistry() {
@@ -40,6 +57,10 @@ public class ParameterBinderRegistry {
 	
 	public Map<Class, ParameterBinder> getBindersPerType() {
 		return bindersPerType;
+	}
+	
+	public <E extends Enum<E>> void registerEnum(Class<E> enumType, EnumBindType bindType) {
+		bindersPerType.put(enumType, bindType.newParameterBinder(enumType));
 	}
 	
 	public <T> void register(Class<T> clazz, ParameterBinder<T> parameterBinder) {
