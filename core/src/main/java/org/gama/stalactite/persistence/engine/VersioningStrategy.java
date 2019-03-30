@@ -8,7 +8,7 @@ import org.gama.reflection.PropertyAccessor;
  */
 public interface VersioningStrategy<I, C> {
 	
-	PropertyAccessor<I, C> getPropertyAccessor();
+	PropertyAccessor<I, C> getVersionAccessor();
 	
 	C getVersion(I o);
 	

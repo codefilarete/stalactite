@@ -14,6 +14,7 @@ import org.gama.lang.collection.Iterables;
 import org.gama.lang.collection.Maps;
 import org.gama.reflection.Accessors;
 import org.gama.reflection.PropertyAccessor;
+import org.gama.sql.dml.SQLExecutionException;
 import org.gama.sql.result.ResultSetIterator;
 import org.gama.sql.test.DerbyInMemoryDataSource;
 import org.gama.sql.test.HSQLDBInMemoryDataSource;
@@ -92,8 +93,12 @@ public class PersisterDatabaseTest {
 		transactionManager.setDataSource(dataSource);
 		DDLDeployer ddlDeployer = new DDLDeployer(dialect.getJavaTypeToSqlTypeMapping(), transactionManager) {
 			@Override
-			protected Connection getCurrentConnection() throws SQLException {
-				return dataSource.getConnection();
+			protected Connection getCurrentConnection() {
+				try {
+					return dataSource.getConnection();
+				} catch (SQLException e) {
+					throw new SQLExecutionException(e);
+				}
 			}
 		};
 		ddlDeployer.getDdlGenerator().setTables(Arrays.asSet(totoClassTable));
@@ -133,8 +138,12 @@ public class PersisterDatabaseTest {
 		transactionManager.setDataSource(dataSource);
 		DDLDeployer ddlDeployer = new DDLDeployer(dialect.getJavaTypeToSqlTypeMapping(), transactionManager) {
 			@Override
-			protected Connection getCurrentConnection() throws SQLException {
-				return dataSource.getConnection();
+			protected Connection getCurrentConnection() {
+				try {
+					return dataSource.getConnection();
+				} catch (SQLException e) {
+					throw new SQLExecutionException(e);
+				}
 			}
 		};
 		ddlDeployer.getDdlGenerator().setTables(Arrays.asSet(totoClassTable));
@@ -165,8 +174,12 @@ public class PersisterDatabaseTest {
 		transactionManager.setDataSource(dataSource);
 		DDLDeployer ddlDeployer = new DDLDeployer(dialect.getJavaTypeToSqlTypeMapping(), transactionManager) {
 			@Override
-			protected Connection getCurrentConnection() throws SQLException {
-				return dataSource.getConnection();
+			protected Connection getCurrentConnection() {
+				try {
+					return dataSource.getConnection();
+				} catch (SQLException e) {
+					throw new SQLExecutionException(e);
+				}
 			}
 		};
 		ddlDeployer.getDdlGenerator().setTables(Arrays.asSet(totoClassTable));
@@ -214,8 +227,12 @@ public class PersisterDatabaseTest {
 		transactionManager.setDataSource(dataSource);
 		DDLDeployer ddlDeployer = new DDLDeployer(dialect.getJavaTypeToSqlTypeMapping(), transactionManager) {
 			@Override
-			protected Connection getCurrentConnection() throws SQLException {
-				return dataSource.getConnection();
+			protected Connection getCurrentConnection() {
+				try {
+					return dataSource.getConnection();
+				} catch (SQLException e) {
+					throw new SQLExecutionException(e);
+				}
 			}
 		};
 		ddlDeployer.getDdlGenerator().setTables(Arrays.asSet(totoClassTable));
@@ -265,8 +282,12 @@ public class PersisterDatabaseTest {
 		transactionManager.setDataSource(dataSource);
 		DDLDeployer ddlDeployer = new DDLDeployer(dialect.getJavaTypeToSqlTypeMapping(), transactionManager) {
 			@Override
-			protected Connection getCurrentConnection() throws SQLException {
-				return dataSource.getConnection();
+			protected Connection getCurrentConnection() {
+				try {
+					return dataSource.getConnection();
+				} catch (SQLException e) {
+					throw new SQLExecutionException(e);
+				}
 			}
 		};
 		ddlDeployer.getDdlGenerator().setTables(Arrays.asSet(totoClassTable));
@@ -294,12 +315,16 @@ public class PersisterDatabaseTest {
 	
 	@ParameterizedTest
 	@MethodSource("dataSources")
-	public void testSelect_rowCount(DataSource dataSource) throws SQLException {
+	public void testSelect_rowCount(DataSource dataSource) {
 		transactionManager.setDataSource(dataSource);
 		DDLDeployer ddlDeployer = new DDLDeployer(dialect.getJavaTypeToSqlTypeMapping(), transactionManager) {
 			@Override
-			protected Connection getCurrentConnection() throws SQLException {
-				return dataSource.getConnection();
+			protected Connection getCurrentConnection() {
+				try {
+					return dataSource.getConnection();
+				} catch (SQLException e) {
+					throw new SQLExecutionException(e);
+				}
 			}
 		};
 		ddlDeployer.getDdlGenerator().setTables(Arrays.asSet(totoClassTable));

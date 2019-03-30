@@ -576,6 +576,31 @@ class FluentEmbeddableMappingConfigurationSupportTest {
 	}
 	
 	@Test
+	public void testBuild_embedReusedEmbeddable_simpleCase_setter() {
+		EmbeddedBeanMappingStrategyBuilder<Person> personMappingBuilder = FluentEmbeddableMappingConfigurationSupport.from(Person.class)
+				.add(Person::getId);
+		
+		Table<?> countryTable = new Table<>("countryTable");
+		EmbeddedBeanMappingStrategy<Country, Table<?>> personMappingStrategy = FluentEmbeddableMappingConfigurationSupport.from(Country.class)
+				.add(Country::getName, "countryName")
+				.embed(Country::setPresident, personMappingBuilder)
+				.build(DIALECT, countryTable);
+		
+		Map<String, Column> columnsByName = (Map) personMappingStrategy.getTargetTable().mapColumnsOnName();
+		
+		assertEquals(Arrays.asHashSet(
+				// from Country
+				"countryName",
+				// from Person
+				"id"),
+				countryTable.getColumns().stream().map(Column::getName).collect(Collectors.toSet()));
+		
+		// checking types
+		assertEquals(String.class, columnsByName.get("countryName").getJavaType());
+		assertEquals(Identifier.class, columnsByName.get("id").getJavaType());
+	}
+	
+	@Test
 	public void testBuild_embedReusedEmbeddable_overrideName() {
 		EmbeddedBeanMappingStrategyBuilder<Person> personMappingBuilder = FluentEmbeddableMappingConfigurationSupport.from(Person.class)
 				.add(Person::getName)

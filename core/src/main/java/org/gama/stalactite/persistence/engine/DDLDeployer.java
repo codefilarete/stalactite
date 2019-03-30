@@ -112,7 +112,7 @@ public class DDLDeployer {
 		}
 	}
 	
-	protected Connection getCurrentConnection() throws SQLException {
+	protected Connection getCurrentConnection() {
 		return connectionProvider.getCurrentConnection();
 	}
 	
