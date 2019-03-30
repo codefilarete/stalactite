@@ -46,9 +46,12 @@ public class HSQLDBDialect extends Dialect {
 			return sqlType;
 		}
 		
-		/** Overriden to do nothing because HSQLDB does not support "primary key" and "identity" */
+		/** Overriden to implement HSQLDB "unique" keyword */
 		@Override
 		protected void generateCreatePrimaryKey(PrimaryKey primaryKey, DDLAppender sqlCreateTable) {
+			sqlCreateTable.cat(", unique (")
+					.ccat(primaryKey.getColumns(), ", ")
+					.cat(")");
 		}
 	}
 }
