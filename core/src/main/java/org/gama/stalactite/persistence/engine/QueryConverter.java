@@ -318,10 +318,9 @@ public class QueryConverter<C> {
 	 * @param setter the setter function
 	 * @param converter a converter of the read value from ResultSet
 	 * @param <I> the type of the setter argument, which is also that of the converter result
-	 * @param <J> the type of the column, which is also that of the converter argument
 	 * @return this
 	 */
-	public <I, J> QueryConverter<C> map(String columnName, SerializableBiConsumer<C, J> setter, SerializableFunction<I, J> converter) {
+	public <I> QueryConverter<C> map(String columnName, SerializableBiConsumer<C, I> setter, SerializableFunction<I, I> converter) {
 		Method method = methodReferenceCapturer.findMethod(setter);
 		Class<I> aClass = (Class<I>) method.getParameterTypes()[0];
 		return map(columnName, (SerializableBiConsumer<C, I>) (c, i) -> setter.accept(c, converter.apply(i)), aClass);

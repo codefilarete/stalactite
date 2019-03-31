@@ -116,9 +116,9 @@ public class QueryConverterTest {
 				{ new QueryConverter<>(Toto.class, "select id, name from Toto", columnBinderRegistry)
 							.mapKey(Toto::new, "id", Toto::setId)
 							.map("name", Toto::setName, input -> "coucou") },
-				{ new QueryConverter<>(Toto.class, "select id, name from Toto", columnBinderRegistry)
+				{ new QueryConverter<>(Toto.class, "select id, active from Toto", columnBinderRegistry)
 							.mapKey(Toto::new, "id", Toto::setId)
-							.map("name", Toto::setName, String.class, input -> "coucou") },
+							.map("active", Toto::setName, boolean.class, input -> "coucou") },
 				{ new QueryConverter<>(Toto.class, "select id, name from Toto", columnBinderRegistry)
 							.mapKey(Toto::new, id, Toto::setId)
 							.map(name, Toto::setName, input -> "coucou") }
@@ -129,8 +129,8 @@ public class QueryConverterTest {
 	@MethodSource("testNewQuery_withConverter")
 	public void testNewQuery_withConverter(QueryConverter<Toto> queryConverter) {
 		List<Map<String, Object>> resultSetData = Arrays.asList(
-				Maps.asHashMap("id", (Object) 42L).add("name", "ghoeihvoih"),
-				Maps.asHashMap("id", (Object) 43L).add("name", "oziuoie")
+				Maps.asHashMap("id", (Object) 42L).add("name", "ghoeihvoih").add("active", false),
+				Maps.asHashMap("id", (Object) 43L).add("name", "oziuoie").add("active", false)
 		);
 		
 		List<Toto> result = invokeExecuteWithData(queryConverter, resultSetData);
