@@ -258,8 +258,8 @@ public class FluentMappingBuilder<C, I> implements IFluentMappingBuilder<C, I> {
 	}
 	
 	@Override
-	public IFluentMappingBuilder<C, I> mapSuperClass(Class<? super C> superType, EmbeddedBeanMappingStrategy<? super C, ?> mappingStrategy) {
-		this.fluentEntityMappingConfigurationSupport.mapSuperClass(superType, mappingStrategy);
+	public IFluentMappingBuilder<C, I> mapSuperClass(EmbeddedBeanMappingStrategy<? super C, ?> mappingStrategy) {
+		this.fluentEntityMappingConfigurationSupport.mapSuperClass(mappingStrategy);
 		return this;
 	}
 	
@@ -290,7 +290,7 @@ public class FluentMappingBuilder<C, I> implements IFluentMappingBuilder<C, I> {
 	}
 	
 	@Override
-	public <O, J, S extends Collection<O>> IFluentMappingBuilderOneToManyOptions<C, I, O> addOneToManySet(
+	public <O, J, S extends Set<O>> IFluentMappingBuilderOneToManyOptions<C, I, O> addOneToManySet(
 			SerializableFunction<C, S> getter, Persister<O, J, ? extends Table> persister) {
 		CascadeMany<C, O, J, S> cascadeMany = new CascadeMany<>(getter, persister, captureLambdaMethod(getter));
 		this.cascadeManys.add(cascadeMany);

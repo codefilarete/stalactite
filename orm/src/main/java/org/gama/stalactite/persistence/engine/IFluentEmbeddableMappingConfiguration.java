@@ -65,7 +65,7 @@ public interface IFluentEmbeddableMappingConfiguration<C> {
 	 * because it is not syntaxically valid (in Java 8). So it can't be mutualized between the 2 arguments {@code superType} and
 	 * {@code mappingStrategy}. So user must be carefful to ensure by himself that both types are equal.
 	 */
-	IFluentEmbeddableMappingConfiguration<C> mapSuperClass(Class<? super C> superType, EmbeddedBeanMappingStrategy<? super C, ?> mappingStrategy);
+	IFluentEmbeddableMappingConfiguration<C> mapSuperClass(EmbeddedBeanMappingStrategy<? super C, ?> mappingStrategy);
 	
 	<O> IFluentEmbeddableMappingConfigurationEmbedOptions<C, O> embed(SerializableBiConsumer<C, O> setter);
 

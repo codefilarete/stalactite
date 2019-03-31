@@ -20,7 +20,6 @@ import org.gama.stalactite.persistence.engine.FluentMappingBuilderInheritanceTes
 import org.gama.stalactite.persistence.engine.FluentMappingBuilderInheritanceTest.Color;
 import org.gama.stalactite.persistence.engine.IFluentEmbeddableMappingBuilder.IFluentEmbeddableMappingBuilderEmbedOptions;
 import org.gama.stalactite.persistence.engine.IFluentEmbeddableMappingBuilder.IFluentEmbeddableMappingBuilderEmbeddableOptions;
-import org.gama.stalactite.persistence.engine.model.AbstractCountry;
 import org.gama.stalactite.persistence.engine.model.Country;
 import org.gama.stalactite.persistence.engine.model.Gender;
 import org.gama.stalactite.persistence.engine.model.Person;
@@ -378,7 +377,7 @@ class FluentEmbeddableMappingConfigurationSupportTest {
 					.embed(Country::getTimestamp)
 					.add(Country::getId)
 					.add(Country::setDescription, "zxx")
-					.mapSuperClass(Object.class, new EmbeddedBeanMappingStrategy<>(Object.class, new Table<>(""), new HashMap<>()))
+					.mapSuperClass(new EmbeddedBeanMappingStrategy<>(Object.class, new Table<>(""), new HashMap<>()))
 					.build(DIALECT, countryTable);
 		} catch (RuntimeException e) {
 			// Since we only want to test compilation, we don't care about that the above code throws an exception or not
@@ -391,7 +390,7 @@ class FluentEmbeddableMappingConfigurationSupportTest {
 						.innerEmbed(Person::getTimestamp)
 					.embed(Country::getTimestamp)
 					.add(Country::getId, "zz")
-					.mapSuperClass(AbstractCountry.class, new EmbeddedBeanMappingStrategy<>(Object.class, new Table<>(""), new HashMap<>()))
+					.mapSuperClass(new EmbeddedBeanMappingStrategy<>(Object.class, new Table<>(""), new HashMap<>()))
 					.add(Country::getDescription, "xx")
 					.build(DIALECT, countryTable);
 		} catch (RuntimeException e) {
@@ -402,7 +401,7 @@ class FluentEmbeddableMappingConfigurationSupportTest {
 			FluentEmbeddableMappingConfigurationSupport.from(Country.class)
 					.add(Country::getName)
 					.add(Country::getId, "zz")
-					.mapSuperClass(AbstractCountry.class, new EmbeddedBeanMappingStrategy<>(Object.class, new Table<>(""), new HashMap<>()))
+					.mapSuperClass(new EmbeddedBeanMappingStrategy<>(Object.class, new Table<>(""), new HashMap<>()))
 					// embed with setter
 					.embed(Country::setPresident)
 						// inner embed with setter
@@ -423,7 +422,7 @@ class FluentEmbeddableMappingConfigurationSupportTest {
 			FluentEmbeddableMappingConfigurationSupport.from(Country.class)
 					.add(Country::getName)
 					.add(Country::getId, "zz")
-					.mapSuperClass(AbstractCountry.class, new EmbeddedBeanMappingStrategy<>(Object.class, new Table<>(""), new HashMap<>()))
+					.mapSuperClass(new EmbeddedBeanMappingStrategy<>(Object.class, new Table<>(""), new HashMap<>()))
 					// embed with setter
 					.embed(Country::getPresident, personMappingBuilder)
 					.build(DIALECT, countryTable);
@@ -439,7 +438,7 @@ class FluentEmbeddableMappingConfigurationSupportTest {
 					.add(Country::getName)
 					.add(Country::getId, "zz")
 					.embed(Country::getPresident, personMappingBuilder)
-					.mapSuperClass(AbstractCountry.class, new EmbeddedBeanMappingStrategy<>(Object.class, new Table<>(""), new HashMap<>()))
+					.mapSuperClass(new EmbeddedBeanMappingStrategy<>(Object.class, new Table<>(""), new HashMap<>()))
 					// reusing embeddable ...
 					.embed(Country::getPresident, personMappingBuilder)
 						// with getter override

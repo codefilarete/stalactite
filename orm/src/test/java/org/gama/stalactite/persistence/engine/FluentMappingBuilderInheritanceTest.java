@@ -92,7 +92,7 @@ public class FluentMappingBuilderInheritanceTest {
 					.add(Car::getColor)    // note : we don't need to embed Color because it is defined in the Dialect registry
 					// concrete class defines id
 					.add(Car::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
-					.mapSuperClass(Vehicle.class, vehicleMappingStrategy)
+					.mapSuperClass(vehicleMappingStrategy)
 					.build(persistenceContext);
 			
 			// as a mapped super class, the table shouldn't be in the context, nor its persister exists
@@ -137,7 +137,7 @@ public class FluentMappingBuilderInheritanceTest {
 					.add(Car::getColor)    // note : we don't need to embed Color because it is defined in the Dialect registry
 					// concrete class defines id
 					.add(Car::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
-					.mapSuperClass(Vehicle.class, vehicleMappingStrategy)
+					.mapSuperClass(vehicleMappingStrategy)
 					.build(persistenceContext);
 			
 			// as a mapped super class, the table shouldn't be in the context, nor its persister exists
@@ -182,7 +182,7 @@ public class FluentMappingBuilderInheritanceTest {
 					.columnNamingStrategy(accessor -> ColumnNamingStrategy.DEFAULT.giveName(accessor) + "_col")
 					// concrete class defines id
 					.add(Car::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
-					.mapSuperClass(Vehicle.class, vehicleMappingStrategy)
+					.mapSuperClass(vehicleMappingStrategy)
 					.build(persistenceContext);
 			
 			// DML tests
@@ -224,7 +224,7 @@ public class FluentMappingBuilderInheritanceTest {
 					.columnNamingStrategy(accessor -> ColumnNamingStrategy.DEFAULT.giveName(accessor) + "_col")
 					// concrete class defines id
 					.add(Car::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
-					.mapSuperClass(Vehicle.class, vehicleMappingStrategy)
+					.mapSuperClass(vehicleMappingStrategy)
 					.build(persistenceContext);
 			
 			// DML tests
@@ -263,7 +263,7 @@ public class FluentMappingBuilderInheritanceTest {
 					() -> FluentMappingBuilder.from(Car.class, LONG_TYPE)
 							.add(Car::getModel)
 							.add(Car::getColor)
-							.mapSuperClass(Vehicle.class, vehicleMappingStrategy)
+							.mapSuperClass(vehicleMappingStrategy)
 							.build(persistenceContext));
 			
 			assertEquals("Identifier is not defined, please add one throught"
@@ -284,14 +284,8 @@ public class FluentMappingBuilderInheritanceTest {
 					.add(Car::getModel)
 					// concrete class defines id
 					.add(Car::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
-					.mapSuperClass(Vehicle.class, vehicleMappingStrategy)
+					.mapSuperClass(vehicleMappingStrategy)
 					.build(persistenceContext);
-			
-			// as a mapped super class, the table shouldn't be in the context, nor its persister exists
-			Collection<Table> tables = DDLDeployer.collectTables(persistenceContext);
-			assertFalse(tables.contains(mappedSuperClassData.vehicleTable));
-			IllegalArgumentException thrownException = assertThrows(IllegalArgumentException.class, () -> persistenceContext.getPersister(Vehicle.class));
-			assertEquals("Unmapped entity o.g.s.p.e.FluentMappingBuilderInheritanceTest$Vehicle", thrownException.getMessage());
 			
 			// DML tests
 			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
@@ -395,7 +389,6 @@ public class FluentMappingBuilderInheritanceTest {
 			ClassMappingStrategy<Vehicle, Identifier<Long>, Table> vehicleMappingStrategy = FluentMappingBuilder
 					.from(Vehicle.class, LONG_TYPE, mappedSuperClassData.vehicleTable)
 					.mapInheritance(abstractVehicleMappingStrategy)
-					.add(Vehicle::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 					.build(DIALECT);
 			
 			Persister<Car, Identifier<Long>, ?> carPersister = FluentMappingBuilder.from(Car.class, LONG_TYPE)
@@ -448,7 +441,7 @@ public class FluentMappingBuilderInheritanceTest {
 			Persister<Car, Identifier<Long>, ?> carPersister = FluentMappingBuilder.from(Car.class, LONG_TYPE)
 					.add(Car::getModel)
 					.add(Car::getColor)
-					.mapSuperClass(Vehicle.class, vehicleMappingStrategy)
+					.mapSuperClass(vehicleMappingStrategy)
 					.mapInheritance(abstractVehicleMappingStrategy)
 					.build(persistenceContext);
 			

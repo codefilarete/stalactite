@@ -1,6 +1,5 @@
 package org.gama.stalactite.persistence.engine;
 
-import java.util.Collection;
 import java.util.List;
 import java.util.Set;
 
@@ -49,18 +48,39 @@ public interface IFluentMappingBuilder<C, I>
 	
 	IFluentMappingBuilder<C, I> columnNamingStrategy(ColumnNamingStrategy columnNamingStrategy);
 	
+	/**
+	 * Declares the inherited mapping. Id policy must be defined in the given strategy.
+	 * 
+	 * @param mappingStrategy a mapping strategy of a super type of the current mapped type
+	 * @return a enhanced version of {@code this} so one can add set options to the relationship or add mapping to {@code this}
+	 */
 	IFluentMappingBuilder<C, I> mapInheritance(ClassMappingStrategy<? super C, I, ?> mappingStrategy);
 	
-	IFluentMappingBuilder<C, I> mapSuperClass(Class<? super C> superType, EmbeddedBeanMappingStrategy<? super C, ?> mappingStrategy);
+	/**
+	 * Declares the mapping of a super class.
+	 * 
+	 * @param mappingStrategy a mapping strategy of a super type of the current mapped type
+	 * @return a enhanced version of {@code this} so one can add set options to the relationship or add mapping to {@code this}
+	 */
+	IFluentMappingBuilder<C, I> mapSuperClass(EmbeddedBeanMappingStrategy<? super C, ?> mappingStrategy);
 	
+	/**
+	 * Declares a direct relationship between current entity and some of type {@code O}.
+	 * 
+	 * @param getter the way to get the target entity
+	 * @param persister the persister of the target entity
+	 * @param <O> type of target entity
+	 * @param <J> type of identifier of {@code O}
+	 * @return a enhanced version of {@code this} so one can add options to the relationship or add mapping to {@code this}
+	 */
 	<O, J>
 	IFluentMappingBuilderOneToOneOptions<C, I>
 	addOneToOne(SerializableFunction<C, O> getter, Persister<O, J, ? extends Table> persister);
 	
 	/**
-	 * Declares a relationship between an entity of type {@code T} and a {@link Set} of entities of type {@code O}.
-	 * This method is dedicated to {@link Set} because generic types are erased so you can't defined a generic method and refine return type
-	 * and arguments in order to distinct it from a {@link List} version.
+	 * Declares a relationship between current entity and some of type {@code O} throught a {@link Set}.
+	 * This method is dedicated to {@link Set} because generic types are erased so you can't defined a generic type extending {@link Set} and refine
+	 * return type or arguments in order to distinct it from a {@link List} version.
 	 *
 	 * @param getter the way to get the {@link Set} from source entities
 	 * @param persister the persister of the {@link Set} entities 
@@ -70,14 +90,14 @@ public interface IFluentMappingBuilder<C, I>
 	 * @return a enhanced version of {@code this} so one can add set options to the relationship or add mapping to {@code this}
 	 * @see #addOneToManyList(SerializableFunction, Persister)
 	 */
-	<O, J, S extends Collection<O>>
+	<O, J, S extends Set<O>>
 	IFluentMappingBuilderOneToManyOptions<C, I, O>
 	addOneToManySet(SerializableFunction<C, S> getter, Persister<O, J, ? extends Table> persister);
 	
 	/**
-	 * Declares a relationship between an entity of type {@code T} and a {@link List} of entities of type {@code O}.
-	 * This method is dedicated to {@link List} because generic types are erased so you can't defined a generic method and refine return type
-	 * and arguments in order to distinct it from a {@link Set} version.
+	 * Declares a relationship between current entity and some of type {@code O} throught a {@link List}.
+	 * This method is dedicated to {@link List} because generic types are erased so you can't defined a generic type extending {@link List} and refine
+	 * return type or arguments in order to distinct it from a {@link Set} version.
 	 * 
 	 * @param getter the way to get the {@link List} from source entities
 	 * @param persister the persister of the {@link List} entities 
