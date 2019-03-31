@@ -97,7 +97,7 @@ public class FluentEmbeddableMappingConfigurationSupport<C> implements IFluentEm
 	/** Collection of embedded elements, even inner ones to help final build process */
 	private final Collection<AbstractInset<C, ?>> insets = new ArrayList<>();
 	
-	private final Map<Class<? super C>, EmbeddedBeanMappingStrategy<? super C, ?>> inheritanceMapping = new HashMap<>();
+	private final Map<Class<? super C>, EmbeddedBeanMappingStrategy<? super C, ?>> mappedSuperClasses = new HashMap<>();
 	
 	/** Last embedded element, introduced to help inner embedding registration (kind of algorithm help). Has no purpose in whole mapping configuration. */
 	private Inset<C, ?> currentInset;
@@ -272,7 +272,7 @@ public class FluentEmbeddableMappingConfigurationSupport<C> implements IFluentEm
 	
 	@Override
 	public IFluentEmbeddableMappingBuilder<C> mapSuperClass(Class<? super C> superType, EmbeddedBeanMappingStrategy<? super C, ?> mappingStrategy) {
-		inheritanceMapping.put(superType, mappingStrategy);
+		mappedSuperClasses.put(superType, mappingStrategy);
 		return this;
 	}
 	
@@ -696,7 +696,7 @@ public class FluentEmbeddableMappingConfigurationSupport<C> implements IFluentEm
 		
 		protected Map<IReversibleAccessor, Column> buildMappingFromInheritance() {
 			Map<IReversibleAccessor, Column> inheritanceResult = new HashMap<>();
-			inheritanceMapping.forEach((superType, embeddableMappingStrategy) -> inheritanceResult.putAll(
+			mappedSuperClasses.forEach((superType, embeddableMappingStrategy) -> inheritanceResult.putAll(
 					collectMapping(embeddableMappingStrategy, targetTable, (a, c) -> c.getName()))
 			);
 			return inheritanceResult;

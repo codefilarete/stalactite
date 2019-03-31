@@ -126,7 +126,7 @@ public class FluentMappingBuilder<C, I> implements IFluentMappingBuilder<C, I> {
 	
 	private OptimisticLockOption optimisticLockOption;
 	
-	private final Map<Class<? super C>, ClassMappingStrategy<? super C, ?, ?>> inheritanceMapping = new HashMap<>();
+	private ClassMappingStrategy<? super C, I, ?> inheritanceMapping;
 	
 	/**
 	 * Creates a builder to map the given class for persistence
@@ -252,8 +252,8 @@ public class FluentMappingBuilder<C, I> implements IFluentMappingBuilder<C, I> {
 	}
 	
 	@Override
-	public IFluentMappingBuilder<C, I> mapSuperClass(Class<? super C> superType, ClassMappingStrategy<? super C, ?, ?> mappingStrategy) {
-		inheritanceMapping.put(superType, mappingStrategy);
+	public IFluentMappingBuilder<C, I> mapInheritance(ClassMappingStrategy<? super C, I, ?> mappingStrategy) {
+		inheritanceMapping = mappingStrategy;
 		return this;
 	}
 	
@@ -461,6 +461,9 @@ public class FluentMappingBuilder<C, I> implements IFluentMappingBuilder<C, I> {
 	@Override
 	public <T extends Table> Persister<C, I, T> build(PersistenceContext persistenceContext) {
 		ClassMappingStrategy<C, I, T> mainMappingStrategy = build(persistenceContext.getDialect());
+		if (inheritanceMapping != null) {
+			persistenceContext.add(inheritanceMapping);
+		}
 		
 		// by default, result is the simple persister of the main strategy
 		Persister<C, I, T> result = persistenceContext.add(mainMappingStrategy);
@@ -501,22 +504,23 @@ public class FluentMappingBuilder<C, I> implements IFluentMappingBuilder<C, I> {
 	@Override
 	public <T extends Table> ClassMappingStrategy<C, I, T> build(Dialect dialect) {
 		IReversibleAccessor<C, I> localIdentifierAccessor = this.identifierAccessor;
+		if (identifierAccessor != null && inheritanceMapping != null) {
+			throw new MappingConfigurationException("Defining an identifier while inheritance is used is not supported");
+		}
+		
 		if (localIdentifierAccessor == null) {
-			if (inheritanceMapping.isEmpty()) {
+			if (inheritanceMapping == null) {
 				// no ClassMappingStratey in hierarchy, so we can't get an identifier from it => impossible
 				SerializableBiFunction<ColumnOptions, IdentifierPolicy, IFluentMappingBuilder> identifierMethodReference = ColumnOptions::identifier;
 				Method identifierSetter = this.methodSpy.findMethod(identifierMethodReference);
 				throw new UnsupportedOperationException("Identifier is not defined, please add one throught " + Reflections.toString(identifierSetter));
 			} else {
-				// at least one parent ClassMappingStrategy exists, it necessarily defines an identifier
-				for (ClassMappingStrategy<? super C, ?, ?> inheritedMappingStrategy : inheritanceMapping.values()) {
-					IdAccessor<? super C, ?> idAccessor = inheritedMappingStrategy.getIdMappingStrategy().getIdAccessor();
-					if (!(idAccessor instanceof SinglePropertyIdAccessor)) {
-						throw new NotYetSupportedOperationException();
-					}
-					localIdentifierAccessor = ((SinglePropertyIdAccessor<C, I>) idAccessor).getIdAccessor();
-					break;
+				// at least one parent ClassMappingStrategy exists, it necessarily defines an identifier : we stop at the very first one
+				IdAccessor<? super C, ?> idAccessor = inheritanceMapping.getIdMappingStrategy().getIdAccessor();
+				if (!(idAccessor instanceof SinglePropertyIdAccessor)) {
+					throw new NotYetSupportedOperationException();
 				}
+				localIdentifierAccessor = ((SinglePropertyIdAccessor<C, I>) idAccessor).getIdAccessor();
 			}
 		}
 		
@@ -548,16 +552,16 @@ public class FluentMappingBuilder<C, I> implements IFluentMappingBuilder<C, I> {
 			@Override
 			protected Map<IReversibleAccessor, Column> buildMappingFromInheritance() {
 				Map<IReversibleAccessor, Column> superResult = super.buildMappingFromInheritance();
-				inheritanceMapping.forEach((superType, mappingStrategy) -> {
-					// We transfer columns and mapping of the inherited source to the current mapping
-					EmbeddedBeanMappingStrategy<? super C, ?> embeddableMappingStrategy = mappingStrategy.getMainMappingStrategy();
+				// We transfer columns and mapping of the inherited source to the current mapping
+				if (inheritanceMapping != null) {
+					EmbeddedBeanMappingStrategy<? super C, ?> embeddableMappingStrategy = inheritanceMapping.getMainMappingStrategy();
 					superResult.putAll(collectMapping(embeddableMappingStrategy, getTargetTable(), (a, c) -> c.getName()));
 					// Dealing with identifier
-					Duo<IReversibleAccessor, Column> idMapping = collectIdMapping(mappingStrategy);
+					Duo<IReversibleAccessor, Column> idMapping = collectIdMapping(inheritanceMapping);
 					superResult.put(idMapping.getLeft(), idMapping.getRight());
 					// getting identifier insertion manager, may be overwritten by class mapping
-					FluentMappingBuilder.this.identifierInsertionManager = (IdentifierInsertionManager<C, I>) mappingStrategy.getIdMappingStrategy().getIdentifierInsertionManager();
-				});
+					FluentMappingBuilder.this.identifierInsertionManager = (IdentifierInsertionManager<C, I>) inheritanceMapping.getIdMappingStrategy().getIdentifierInsertionManager();
+				}
 				return superResult;
 			}
 		};

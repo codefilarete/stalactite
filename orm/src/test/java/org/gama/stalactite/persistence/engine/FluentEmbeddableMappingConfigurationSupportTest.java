@@ -54,7 +54,7 @@ class FluentEmbeddableMappingConfigurationSupportTest {
 		DIALECT.getColumnBinderRegistry().register((Class) Identifier.class,
 				Identifier.identifierBinder(DefaultParameterBinders.LONG_PRIMITIVE_BINDER));
 		DIALECT.getJavaTypeToSqlTypeMapping().put(Identifier.class, "int");
-		DIALECT.getColumnBinderRegistry().register(Color.class, new NullAwareParameterBinder<>(new LambdaParameterBinder<>(INTEGER_PRIMITIVE_BINDER, Color::new, Color::getRGB)));
+		DIALECT.getColumnBinderRegistry().register(Color.class, new NullAwareParameterBinder<>(new LambdaParameterBinder<>(INTEGER_PRIMITIVE_BINDER, Color::new, Color::getRgb)));
 		DIALECT.getJavaTypeToSqlTypeMapping().put(Color.class, "int");
 	}
 	

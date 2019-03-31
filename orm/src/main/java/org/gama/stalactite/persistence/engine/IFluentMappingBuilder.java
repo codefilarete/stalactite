@@ -49,7 +49,7 @@ public interface IFluentMappingBuilder<C, I>
 	
 	IFluentMappingBuilder<C, I> columnNamingStrategy(ColumnNamingStrategy columnNamingStrategy);
 	
-	IFluentMappingBuilder<C, I> mapSuperClass(Class<? super C> superType, ClassMappingStrategy<? super C, ?, ?> mappingStrategy);
+	IFluentMappingBuilder<C, I> mapInheritance(ClassMappingStrategy<? super C, I, ?> mappingStrategy);
 	
 	IFluentMappingBuilder<C, I> mapSuperClass(Class<? super C> superType, EmbeddedBeanMappingStrategy<? super C, ?> mappingStrategy);
 	

@@ -13,6 +13,7 @@ import java.util.function.Consumer;
 import org.danekja.java.util.function.serializable.SerializableBiConsumer;
 import org.danekja.java.util.function.serializable.SerializableBiFunction;
 import org.danekja.java.util.function.serializable.SerializableFunction;
+import org.gama.lang.Reflections;
 import org.gama.lang.collection.ValueFactoryHashMap;
 import org.gama.reflection.MethodReferenceCapturer;
 import org.gama.sql.ConnectionProvider;
@@ -127,7 +128,7 @@ public class PersistenceContext {
 	protected <C, I, T extends Table<T>> ClassMappingStrategy<C, I, T> ensureMappedClass(Class<C> clazz) {
 		ClassMappingStrategy<C, I, T> mappingStrategy = getMappingStrategy(clazz);
 		if (mappingStrategy == null) {
-			throw new IllegalArgumentException("Unmapped entity " + clazz);
+			throw new IllegalArgumentException("Unmapped entity " + Reflections.toString(clazz));
 		} else {
 			return mappingStrategy;
 		}
