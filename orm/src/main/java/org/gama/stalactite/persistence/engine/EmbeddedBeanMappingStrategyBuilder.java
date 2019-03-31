@@ -9,6 +9,8 @@ import org.gama.stalactite.persistence.structure.Table;
  */
 public interface EmbeddedBeanMappingStrategyBuilder<C> {
 	
+	EmbeddedBeanMappingStrategy<C, Table> build(Dialect dialect);
+	
 	<T extends Table> EmbeddedBeanMappingStrategy<C, T> build(Dialect dialect, T targetTable);
 	
 }

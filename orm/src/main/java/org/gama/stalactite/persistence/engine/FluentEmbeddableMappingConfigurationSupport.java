@@ -393,6 +393,11 @@ public class FluentEmbeddableMappingConfigurationSupport<C> implements IFluentEm
 	}
 	
 	@Override
+	public EmbeddedBeanMappingStrategy<C, Table> build(Dialect dialect) {
+		return build(dialect, new Table<>(persistedClass.getSimpleName()));
+	}
+	
+	@Override
 	public <T extends Table> EmbeddedBeanMappingStrategy<C, T> build(Dialect dialect, T targetTable) {
 		return new EmbeddedBeanMappingStrategy<>(persistedClass, targetTable, (Map) buildMapping(dialect, targetTable));
 	}

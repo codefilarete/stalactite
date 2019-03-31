@@ -66,8 +66,7 @@ public class FluentMappingBuilderInheritanceTest {
 		
 		// We need to rebuild our cityPersister before each test because some of them alter it on country relationship.
 		// So schema contains FK twice with same name, ending in duplicate FK name exception
-		CITY_MAPPING_BUILDER = FluentMappingBuilder.from(City.class,
-				LONG_TYPE)
+		CITY_MAPPING_BUILDER = FluentMappingBuilder.from(City.class, LONG_TYPE)
 				.add(City::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.add(City::getName)
 				.add(City::getCountry);
@@ -100,23 +99,22 @@ public class FluentMappingBuilderInheritanceTest {
 		
 		private final CarTable carTable = new CarTable("car");
 		
-		void executeTest(Consumer<IFluentMappingBuilder<Car, Identifier<Long>>> additionalConfigurator) {
-			executeTest(additionalConfigurator, context ->
+		void executeTest(Consumer<IFluentMappingBuilder<Car, Identifier<Long>>> additionalConfigurer) {
+			executeTest(additionalConfigurer, context ->
 					context.select(Car::new, carTable.idColumn, m -> m
 					.add(carTable.modelColumn, Car::setModel)
 					.add(carTable.colorColumn, Car::setColor)));
 		}
 		
-		void executeTest(Consumer<IFluentMappingBuilder<Car, Identifier<Long>>> additionalConfigurator, Function<PersistenceContext, List<Car>> persistedCarsSupplier) {
+		void executeTest(Consumer<IFluentMappingBuilder<Car, Identifier<Long>>> additionalConfigurer, Function<PersistenceContext, List<Car>> persistedCarsSupplier) {
 			
 			IFluentMappingBuilder<Car, Identifier<Long>> carMappingBuilder = FluentMappingBuilder.from(Car.class, LONG_TYPE)
 					.add(Car::getModel)
 					.add(Car::getColor);	// note : we don't need to embed Color because it is defined in the Dialect registry
 			
-			additionalConfigurator.accept(carMappingBuilder);
+			additionalConfigurer.accept(carMappingBuilder);
 			
-			Persister<Car, Identifier<Long>, ?> carPersister = carMappingBuilder
-					.build(persistenceContext);
+			Persister<Car, Identifier<Long>, ?> carPersister = carMappingBuilder.build(persistenceContext);
 			
 			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
 			ddlDeployer.deployDDL();
@@ -124,11 +122,14 @@ public class FluentMappingBuilderInheritanceTest {
 			Car dummyCar = new Car(1L);
 			dummyCar.setModel("Renault");
 			dummyCar.setColor(new Color(666));
+			
+			// insert test
 			carPersister.insert(dummyCar);
 			
 			List<Car> allCars = persistedCarsSupplier.apply(persistenceContext);
 			assertEquals(Arrays.asList(dummyCar), allCars);
 			
+			// select test
 			Car loadedCar = carPersister.select(new PersistedIdentifier<>(1L));
 			assertEquals(dummyCar, loadedCar);
 		}
@@ -147,8 +148,22 @@ public class FluentMappingBuilderInheritanceTest {
 					.add(Vehicle::getColor)
 					.build(DIALECT, mappedSuperClassData.vehicleTable);
 			
-			mappedSuperClassData.executeTest(carMappingBuilder ->
-					carMappingBuilder
+			mappedSuperClassData.executeTest(carMappingBuilder -> carMappingBuilder
+							// concrete class defines id
+							.add(Car::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
+							.mapSuperClass(Vehicle.class, vehicleMappingStrategy));
+		}
+		
+		@Test
+		public void superClassIsEmbeddable_withIdDefinedInConcreteClass_withoutTable() {
+			MappedSuperClassData mappedSuperClassData = new MappedSuperClassData();
+			
+			EmbeddedBeanMappingStrategy<Vehicle, Table> vehicleMappingStrategy = FluentEmbeddableMappingConfigurationSupport
+					.from(Vehicle.class)
+					.add(Vehicle::getColor)
+					.build(DIALECT);
+			
+			mappedSuperClassData.executeTest(carMappingBuilder -> carMappingBuilder
 							// concrete class defines id
 							.add(Car::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 							.mapSuperClass(Vehicle.class, vehicleMappingStrategy));
@@ -189,8 +204,7 @@ public class FluentMappingBuilderInheritanceTest {
 					.build(DIALECT, mappedSuperClassData.vehicleTable);
 			
 			UnsupportedOperationException thrownException = assertThrows(UnsupportedOperationException.class,
-					() -> mappedSuperClassData.executeTest(carMappingBuilder ->
-							carMappingBuilder
+					() -> mappedSuperClassData.executeTest(carMappingBuilder -> carMappingBuilder
 									.mapSuperClass(Vehicle.class, vehicleMappingStrategy)));
 			
 			assertEquals("Identifier is not defined,"
@@ -208,8 +222,7 @@ public class FluentMappingBuilderInheritanceTest {
 					.add(Vehicle::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 					.build(DIALECT);
 			
-			mappedSuperClassData.executeTest(carMappingBuilder ->
-					carMappingBuilder
+			mappedSuperClassData.executeTest(carMappingBuilder -> carMappingBuilder
 							.mapSuperClass(Vehicle.class, vehicleMappingStrategy));
 		}
 		
