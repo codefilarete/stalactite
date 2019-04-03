@@ -62,21 +62,21 @@ import static org.gama.lang.collection.Iterables.stream;
 import static org.gama.reflection.MethodReferences.toMethodReferenceString;
 
 /**
- * Engine that converts mapping definition of the enclosing instance {@link FluentEmbeddableMappingConfigurationSupport} into a simple {@link Map}
+ * Engine that converts mapping definition of a {@link FluentEmbeddableMappingConfigurationSupport} into a simple {@link Map}
  *
  * @author Guillaume Mary
  * @see #build()
  */
 class EmbeddableMappingBuilder<C> {
 	
-	private final FluentEmbeddableMappingConfigurationSupport<C> fluentEmbeddableMappingConfigurationSupport;
+	private final FluentEmbeddableMappingConfigurationSupport<C> configurationSupport;
 	private final Dialect dialect;
 	private final Table targetTable;
 	/** Result of {@link #build()}, shared between methods */
 	private final Map<IReversibleAccessor, Column> result = new HashMap<>();
 	
-	EmbeddableMappingBuilder(FluentEmbeddableMappingConfigurationSupport<C> fluentEmbeddableMappingConfigurationSupport, Dialect dialect, Table targetTable) {
-		this.fluentEmbeddableMappingConfigurationSupport = fluentEmbeddableMappingConfigurationSupport;
+	EmbeddableMappingBuilder(FluentEmbeddableMappingConfigurationSupport<C> configurationSupport, Dialect dialect, Table targetTable) {
+		this.configurationSupport = configurationSupport;
 		this.dialect = dialect;
 		this.targetTable = targetTable;
 	}
@@ -109,7 +109,7 @@ class EmbeddableMappingBuilder<C> {
 	}
 	
 	protected void includeDirectMapping() {
-		fluentEmbeddableMappingConfigurationSupport.mapping.forEach(linkage -> {
+		configurationSupport.mapping.forEach(linkage -> {
 			Column column = addLinkage(linkage);
 			result.put(linkage.getAccessor(), column);
 		});
@@ -141,8 +141,8 @@ class EmbeddableMappingBuilder<C> {
 	
 	protected Map<IReversibleAccessor, Column> buildMappingFromInheritance(Table targetTable) {
 		Map<IReversibleAccessor, Column> inheritanceResult = new HashMap<>();
-		if (fluentEmbeddableMappingConfigurationSupport.getMappedSuperClass() != null) {
-			inheritanceResult.putAll(collectMapping(fluentEmbeddableMappingConfigurationSupport.getMappedSuperClass(), targetTable, (a, c) -> c.getName()));
+		if (configurationSupport.getMappedSuperClass() != null) {
+			inheritanceResult.putAll(collectMapping(configurationSupport.getMappedSuperClass(), targetTable, (a, c) -> c.getName()));
 		}
 		return inheritanceResult;
 	}
@@ -174,11 +174,11 @@ class EmbeddableMappingBuilder<C> {
 		Set<AbstractInset<C, ?>> treatedInsets = new HashSet<>();
 		// Registry of inner embedded properties, because they must be excluded during build process
 		Set<ValueAccessPoint> innerEmbeddedBeanRegistry = new ValueAccessPointSet();
-		fluentEmbeddableMappingConfigurationSupport.getInsets().stream().filter(Inset.class::isInstance).map(Inset.class::cast)
+		configurationSupport.getInsets().stream().filter(Inset.class::isInstance).map(Inset.class::cast)
 				.forEach(i -> innerEmbeddedBeanRegistry.add(i.getAccessor()));
 		
 		// starting mapping
-		fluentEmbeddableMappingConfigurationSupport.getInsets().forEach(inset -> {
+		configurationSupport.getInsets().forEach(inset -> {
 			assertNotAlreadyMapped(inset, treatedInsets);
 			
 			ValueAccessPointMap<String> overridenColumnNames = inset.getOverridenColumnNames();
@@ -261,7 +261,7 @@ class EmbeddableMappingBuilder<C> {
 					Column targetColumn = findColumn(valueAccessPoint, memberDefinition.getName(), columnsPerName, refinedInset);
 					if (targetColumn == null) {
 						// Column isn't declared in table => we create one from field informations
-						String columnName = fluentEmbeddableMappingConfigurationSupport.getColumnNamingStrategy().giveName(valueAccessPoint.getMethod());
+						String columnName = configurationSupport.getColumnNamingStrategy().giveName(valueAccessPoint.getMethod());
 						String overridenName = overridenColumnNames.get(valueAccessPoint);
 						if (overridenName != null) {
 							columnName = overridenName;

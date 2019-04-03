@@ -28,6 +28,7 @@ import org.gama.reflection.ValueAccessPoint;
 import org.gama.reflection.ValueAccessPointMap;
 import org.gama.sql.binder.ParameterBinder;
 import org.gama.stalactite.persistence.engine.AbstractVersioningStrategy.VersioningStrategySupport;
+import org.gama.stalactite.persistence.engine.ColumnOptions.IdentifierPolicy;
 import org.gama.stalactite.persistence.engine.FluentEmbeddableMappingConfigurationSupport.Inset;
 import org.gama.stalactite.persistence.engine.FluentEmbeddableMappingConfigurationSupport.Linkage;
 import org.gama.stalactite.persistence.engine.FluentEmbeddableMappingConfigurationSupport.LinkageByColumnName;
@@ -53,25 +54,10 @@ import static org.gama.lang.collection.Iterables.collect;
 /**
  * @author Guillaume Mary
  */
-public class FluentMappingBuilderSupport<C, I> implements IFluentMappingBuilder<C, I> {
+public class FluentEntityMappingConfigurationSupport<C, I> implements IFluentMappingBuilder<C, I> {
 	
 	/**
-	 * Available identifier policies for entities.
-	 * Only {@link #ALREADY_ASSIGNED} is supported for now
-	 * @see IdentifierInsertionManager
-	 */
-	public enum IdentifierPolicy {
-		/**
-		 * Policy for entities that have their id given before insertion.
-		 * <strong>Is only supported for entities that implements {@link Identified}</strong>
-		 */
-		ALREADY_ASSIGNED,
-		BEFORE_INSERT,
-		AFTER_INSERT
-	}
-	
-	/**
-	 * Will start a {@link FluentMappingBuilderSupport} for a given class which will target a table that as the class name.
+	 * Will start a {@link FluentEntityMappingConfigurationSupport} for a given class which will target a table that as the class name.
 	 *
 	 * @param persistedClass the class to be persisted by the {@link ClassMappingStrategy} that will be created by {@link #build(Dialect)}
 	 * @param identifierClass the class of the identifier
@@ -84,7 +70,7 @@ public class FluentMappingBuilderSupport<C, I> implements IFluentMappingBuilder<
 	}
 	
 	/**
-	 * Will start a {@link FluentMappingBuilderSupport} for a given class and a given target table.
+	 * Will start a {@link FluentEntityMappingConfigurationSupport} for a given class and a given target table.
 	 *
 	 * @param persistedClass the class to be persisted by the {@link ClassMappingStrategy} that will be created by {@link #build(Dialect)}
 	 * @param identifierClass the class of the identifier
@@ -95,7 +81,7 @@ public class FluentMappingBuilderSupport<C, I> implements IFluentMappingBuilder<
 	 */
 	@SuppressWarnings("suid:S1172")	// identifierClass parameter needs to be present event if to used because it gives <I> Generic type
 	public static <T, I> IFluentMappingBuilder<T, I> from(Class<T> persistedClass, Class<I> identifierClass, Table table) {
-		return new FluentMappingBuilderSupport<>(persistedClass, table);
+		return new FluentEntityMappingConfigurationSupport<>(persistedClass, table);
 	}
 	
 	private final Class<C> persistedClass;
@@ -112,7 +98,7 @@ public class FluentMappingBuilderSupport<C, I> implements IFluentMappingBuilder<
 	
 	private final List<CascadeMany<C, ?, ?, ? extends Collection>> cascadeManys = new ArrayList<>();
 	
-	private final FluentEntityMappingConfigurationSupport<C, I> fluentEntityMappingConfigurationSupport;
+	private final EntityDecoratedEmbeddableConfigurationSupport<C, I> entityDecoratedEmbeddableConfigurationSupport;
 	
 	private ForeignKeyNamingStrategy foreignKeyNamingStrategy = ForeignKeyNamingStrategy.DEFAULT;
 	
@@ -132,14 +118,14 @@ public class FluentMappingBuilderSupport<C, I> implements IFluentMappingBuilder<
 	 * @param persistedClass the class to create a mapping for
 	 * @param table the target table of the persisted class
 	 */
-	public FluentMappingBuilderSupport(Class<C> persistedClass, Table table) {
+	public FluentEntityMappingConfigurationSupport(Class<C> persistedClass, Table table) {
 		this.persistedClass = persistedClass;
 		this.table = table;
 		
 		// Helper to capture Method behind method reference
 		this.methodSpy = new MethodReferenceCapturer();
 		
-		this.fluentEntityMappingConfigurationSupport = new FluentEntityMappingConfigurationSupport(this, persistedClass);
+		this.entityDecoratedEmbeddableConfigurationSupport = new EntityDecoratedEmbeddableConfigurationSupport(this, persistedClass);
 	}
 	
 	/**
@@ -147,7 +133,7 @@ public class FluentMappingBuilderSupport<C, I> implements IFluentMappingBuilder<
 	 * 
 	 * @param persistedClass the class to create a mapping for
 	 */
-	public FluentMappingBuilderSupport(Class<C> persistedClass) {
+	public FluentEntityMappingConfigurationSupport(Class<C> persistedClass) {
 		this(persistedClass, new Table(persistedClass.getSimpleName()));
 	}
 	
@@ -198,13 +184,13 @@ public class FluentMappingBuilderSupport<C, I> implements IFluentMappingBuilder<
 	}
 	
 	private <O> IFluentMappingBuilderColumnOptions<C, I> add(Method method, Column<Table, O> column) {
-		Linkage<C> mapping = fluentEntityMappingConfigurationSupport.addMapping(method, column);
-		return this.fluentEntityMappingConfigurationSupport.applyAdditionalOptions(method, mapping);
+		Linkage<C> mapping = entityDecoratedEmbeddableConfigurationSupport.addMapping(method, column);
+		return this.entityDecoratedEmbeddableConfigurationSupport.applyAdditionalOptions(method, mapping);
 	}
 	
 	private IFluentMappingBuilderColumnOptions<C, I> add(Method method, @javax.annotation.Nullable String columnName) {
-		Linkage<C> mapping = fluentEntityMappingConfigurationSupport.addMapping(method, columnName);
-		return this.fluentEntityMappingConfigurationSupport.applyAdditionalOptions(method, mapping);
+		Linkage<C> mapping = entityDecoratedEmbeddableConfigurationSupport.addMapping(method, columnName);
+		return this.entityDecoratedEmbeddableConfigurationSupport.applyAdditionalOptions(method, mapping);
 	}
 	
 	@Override
@@ -234,8 +220,8 @@ public class FluentMappingBuilderSupport<C, I> implements IFluentMappingBuilder<
 	@Override
 	public <E extends Enum<E>> IFluentMappingBuilderEnumOptions<C, I> addEnum(SerializableFunction<C, E> getter, Column<Table, E> column) {
 		Method method = captureLambdaMethod(getter);
-		Linkage<C> linkage = fluentEntityMappingConfigurationSupport.addMapping(method, column);
-		IFluentEmbeddableMappingBuilderEnumOptions<C> enumOptionsHandler = fluentEntityMappingConfigurationSupport.addEnumOptions(linkage);
+		Linkage<C> linkage = entityDecoratedEmbeddableConfigurationSupport.addMapping(method, column);
+		IFluentEmbeddableMappingBuilderEnumOptions<C> enumOptionsHandler = entityDecoratedEmbeddableConfigurationSupport.addEnumOptions(linkage);
 		return new MethodDispatcher()
 				.redirect(EnumOptions.class, enumOptionsHandler, true)
 				.fallbackOn(this)
@@ -243,8 +229,8 @@ public class FluentMappingBuilderSupport<C, I> implements IFluentMappingBuilder<
 	}
 	
 	private IFluentMappingBuilderEnumOptions<C, I> addEnum(Method method, @javax.annotation.Nullable String columnName) {
-		Linkage<C> linkage = fluentEntityMappingConfigurationSupport.addMapping(method, columnName);
-		IFluentEmbeddableMappingBuilderEnumOptions<C> enumOptionsHandler = fluentEntityMappingConfigurationSupport.addEnumOptions(linkage);
+		Linkage<C> linkage = entityDecoratedEmbeddableConfigurationSupport.addMapping(method, columnName);
+		IFluentEmbeddableMappingBuilderEnumOptions<C> enumOptionsHandler = entityDecoratedEmbeddableConfigurationSupport.addEnumOptions(linkage);
 		// we redirect all of the EnumOptions method to the instance that can handle them, returning the dispatcher on this methods so one can chain
 		// with some other methods, other methods are redirected to this instance because it can handle them.
 		return new MethodDispatcher()
@@ -261,7 +247,7 @@ public class FluentMappingBuilderSupport<C, I> implements IFluentMappingBuilder<
 	
 	@Override
 	public IFluentMappingBuilder<C, I> mapSuperClass(EmbeddedBeanMappingStrategy<? super C, ?> mappingStrategy) {
-		this.fluentEntityMappingConfigurationSupport.mapSuperClass(mappingStrategy);
+		this.entityDecoratedEmbeddableConfigurationSupport.mapSuperClass(mappingStrategy);
 		return this;
 	}
 	
@@ -319,12 +305,12 @@ public class FluentMappingBuilderSupport<C, I> implements IFluentMappingBuilder<
 	
 	@Override
 	public <O> IFluentMappingBuilderEmbedOptions<C, I, O> embed(SerializableBiConsumer<C, O> setter) {
-		return embed(fluentEntityMappingConfigurationSupport.embed(setter));
+		return embed(entityDecoratedEmbeddableConfigurationSupport.embed(setter));
 	}
 	
 	@Override
 	public <O> IFluentMappingBuilderEmbedOptions<C, I, O> embed(SerializableFunction<C, O> getter) {
-		return embed(fluentEntityMappingConfigurationSupport.embed(getter));
+		return embed(entityDecoratedEmbeddableConfigurationSupport.embed(getter));
 	}
 	
 	@Override
@@ -375,7 +361,7 @@ public class FluentMappingBuilderSupport<C, I> implements IFluentMappingBuilder<
 					
 					@Override
 					public EmbedWithColumnOptions override(SerializableFunction function, Column targetColumn) {
-						fluentEntityMappingConfigurationSupport.currentInset().override(function, targetColumn);
+						entityDecoratedEmbeddableConfigurationSupport.currentInset().override(function, targetColumn);
 						return null;	// we can return null because dispatcher will return proxy
 					}
 				}, true)
@@ -391,7 +377,7 @@ public class FluentMappingBuilderSupport<C, I> implements IFluentMappingBuilder<
 	
 	@Override
 	public IFluentMappingBuilder<C, I> columnNamingStrategy(ColumnNamingStrategy columnNamingStrategy) {
-		this.fluentEntityMappingConfigurationSupport.columnNamingStrategy(columnNamingStrategy);
+		this.entityDecoratedEmbeddableConfigurationSupport.columnNamingStrategy(columnNamingStrategy);
 		return this;
 	}
 	
@@ -515,7 +501,7 @@ public class FluentMappingBuilderSupport<C, I> implements IFluentMappingBuilder<
 			}
 		}
 		
-		EmbeddableMappingBuilder builder = new EntityMappingBuilder<C>(dialect, fluentEntityMappingConfigurationSupport, this);
+		EmbeddableMappingBuilder<C> builder = new EntityMappingBuilder<>(dialect, this);
 		
 		Map<IReversibleAccessor, Column> columnMapping = builder.build();
 		
@@ -632,9 +618,9 @@ public class FluentMappingBuilderSupport<C, I> implements IFluentMappingBuilder<
 	 * Class very close to {@link FluentEmbeddableMappingConfigurationSupport}, but with dedicated methods to entity mapping such as
 	 * identifier definition or configuration override by {@link Column}
 	 */
-	static class FluentEntityMappingConfigurationSupport<C, I> extends FluentEmbeddableMappingConfigurationSupport<C> {
+	static class EntityDecoratedEmbeddableConfigurationSupport<C, I> extends FluentEmbeddableMappingConfigurationSupport<C> {
 		
-		private final FluentMappingBuilderSupport<C, I> fluentMappingBuilderSupport;
+		private final FluentEntityMappingConfigurationSupport<C, I> configurationSupport;
 		private OverridableColumnInset<C, ?> currentInset;
 		
 		/**
@@ -642,9 +628,9 @@ public class FluentMappingBuilderSupport<C, I> implements IFluentMappingBuilder<
 		 *
 		 * @param persistedClass the class to create a mapping for
 		 */
-		public FluentEntityMappingConfigurationSupport(FluentMappingBuilderSupport<C, I> fluentMappingBuilderSupport, Class<C> persistedClass) {
+		public EntityDecoratedEmbeddableConfigurationSupport(FluentEntityMappingConfigurationSupport<C, I> configurationSupport, Class<C> persistedClass) {
 			super(persistedClass);
-			this.fluentMappingBuilderSupport = fluentMappingBuilderSupport;
+			this.configurationSupport = configurationSupport;
 		}
 		
 		@Override
@@ -676,7 +662,7 @@ public class FluentMappingBuilderSupport<C, I> implements IFluentMappingBuilder<
 		@Override
 		protected String giveLinkName(Method method) {
 			if (Identified.class.isAssignableFrom(Reflections.javaBeanTargetType(method))) {
-				return fluentMappingBuilderSupport.joinColumnNamingStrategy.giveName(method);
+				return configurationSupport.joinColumnNamingStrategy.giveName(method);
 			} else {
 				return super.giveLinkName(method);
 			}
@@ -699,13 +685,13 @@ public class FluentMappingBuilderSupport<C, I> implements IFluentMappingBuilder<
 			return new MethodDispatcher()
 					.redirect(ColumnOptions.class, identifierPolicy -> {
 						// Please note that we don't check for any id presence in inheritance since this will override parent one (see final build()) 
-						if (fluentMappingBuilderSupport.identifierAccessor != null) {
-							throw new IllegalArgumentException("Identifier is already defined by " + fluentMappingBuilderSupport.identifierAccessor.getAccessor());
+						if (configurationSupport.identifierAccessor != null) {
+							throw new IllegalArgumentException("Identifier is already defined by " + configurationSupport.identifierAccessor.getAccessor());
 						}
 						if (identifierPolicy == IdentifierPolicy.ALREADY_ASSIGNED) {
 							Class<I> identifierType = Reflections.propertyType(method);
 							if (Identified.class.isAssignableFrom(method.getDeclaringClass()) && Identifier.class.isAssignableFrom(identifierType)) {
-								fluentMappingBuilderSupport.identifierInsertionManager = new IdentifiedIdentifierManager<>(identifierType);
+								configurationSupport.identifierInsertionManager = new IdentifiedIdentifierManager<>(identifierType);
 							} else {
 								throw new NotYetSupportedOperationException(
 										IdentifierPolicy.ALREADY_ASSIGNED + " is only supported with entities that implement " + Reflections.toString(Identified.class));
@@ -723,11 +709,11 @@ public class FluentMappingBuilderSupport<C, I> implements IFluentMappingBuilder<
 						} else {
 							throw new NotYetSupportedOperationException(identifierPolicy + " is not yet supported");
 						}
-						fluentMappingBuilderSupport.identifierAccessor = (PropertyAccessor<C, I>) newMapping.getAccessor();
+						configurationSupport.identifierAccessor = (PropertyAccessor<C, I>) newMapping.getAccessor();
 						// we return the fluent builder so user can chain with any other configuration
-						return fluentMappingBuilderSupport;
+						return configurationSupport;
 					})
-					.fallbackOn(fluentMappingBuilderSupport)
+					.fallbackOn(configurationSupport)
 					.build((Class<IFluentMappingBuilderColumnOptions<C, I>>) (Class) IFluentMappingBuilderColumnOptions.class);
 		}
 	}
@@ -825,17 +811,16 @@ public class FluentMappingBuilderSupport<C, I> implements IFluentMappingBuilder<
 	
 	private static class EntityMappingBuilder<C> extends EmbeddableMappingBuilder<C> {
 		
-		@javax.annotation.Nonnull
-		private final FluentMappingBuilderSupport<C, ?> entityBuilderSupport;
+		private final FluentEntityMappingConfigurationSupport<C, ?> configurationSupport;
 		
-		public <I> EntityMappingBuilder(Dialect dialect, FluentEntityMappingConfigurationSupport<C, I> configurationSupport, FluentMappingBuilderSupport<C, I> entityBuilderSupport) {
-			super(configurationSupport, dialect, entityBuilderSupport.table);
-			this.entityBuilderSupport = entityBuilderSupport;
+		public <I> EntityMappingBuilder(Dialect dialect, FluentEntityMappingConfigurationSupport<C, I> entityBuilderSupport) {
+			super(entityBuilderSupport.entityDecoratedEmbeddableConfigurationSupport, dialect, entityBuilderSupport.table);
+			this.configurationSupport = entityBuilderSupport;
 		}
 		
 		@Override
 		protected void includeInheritance() {
-			if (!entityBuilderSupport.joinTable) {
+			if (!configurationSupport.joinTable) {
 				super.includeInheritance();
 			}
 		}
@@ -852,7 +837,7 @@ public class FluentMappingBuilderSupport<C, I> implements IFluentMappingBuilder<
 		protected Column addLinkage(Linkage linkage) {
 			Column column = super.addLinkage(linkage);
 			// setting the primary key option as asked
-			if (linkage instanceof FluentMappingBuilderSupport.EntityLinkage) {	// should always be true, see FluentEntityMappingConfigurationSupport.newLinkage(..)
+			if (linkage instanceof FluentEntityMappingConfigurationSupport.EntityLinkage) {	// should always be true, see FluentEntityMappingConfigurationSupport.newLinkage(..)
 				if (((EntityLinkage) linkage).isPrimaryKey()) {
 					column.primaryKey();
 				}
@@ -866,16 +851,16 @@ public class FluentMappingBuilderSupport<C, I> implements IFluentMappingBuilder<
 		@Override
 		protected Map<IReversibleAccessor, Column> buildMappingFromInheritance(Table targetTable) {
 			Table parentTable = targetTable;
-			if (entityBuilderSupport.joinTable) {
-				parentTable = entityBuilderSupport.inheritanceMapping.getTargetTable();
+			if (configurationSupport.joinTable) {
+				parentTable = configurationSupport.inheritanceMapping.getTargetTable();
 			}
 			Map<IReversibleAccessor, Column> superResult = super.buildMappingFromInheritance(parentTable);
 			// We transfer columns and mapping of the inherited source to the current mapping
-			if (entityBuilderSupport.inheritanceMapping != null) {
-				EmbeddedBeanMappingStrategy<? super C, ?> embeddableMappingStrategy = entityBuilderSupport.inheritanceMapping.getMainMappingStrategy();
+			if (configurationSupport.inheritanceMapping != null) {
+				EmbeddedBeanMappingStrategy<? super C, ?> embeddableMappingStrategy = configurationSupport.inheritanceMapping.getMainMappingStrategy();
 				superResult.putAll(collectMapping(embeddableMappingStrategy, parentTable, (a, c) -> c.getName()));
 				// Dealing with identifier
-				Duo<IReversibleAccessor, Column> idMapping = collectIdMapping(entityBuilderSupport.inheritanceMapping);
+				Duo<IReversibleAccessor, Column> idMapping = collectIdMapping(configurationSupport.inheritanceMapping);
 				superResult.put(idMapping.getLeft(), idMapping.getRight());
 			}
 			return superResult;
@@ -891,7 +876,7 @@ public class FluentMappingBuilderSupport<C, I> implements IFluentMappingBuilder<
 			Set<Column> columns = entityMappingStrategy.getTargetTable().getPrimaryKey().getColumns();
 			// Because IdAccessor is a single column one (see assertion above) we can get the only column composing the primary key
 			Column primaryKey = Iterables.first(columns);
-			Column projectedPrimarkey = entityBuilderSupport.getTable().addColumn(primaryKey.getName(), primaryKey.getJavaType()).primaryKey();
+			Column projectedPrimarkey = configurationSupport.getTable().addColumn(primaryKey.getName(), primaryKey.getJavaType()).primaryKey();
 			projectedPrimarkey.setAutoGenerated(primaryKey.isAutoGenerated());
 			result.setLeft(entityIdentifierAccessor);
 			result.setRight(projectedPrimarkey);

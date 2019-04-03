@@ -24,7 +24,7 @@ import org.gama.sql.binder.DefaultParameterBinders;
 import org.gama.sql.dml.SQLOperation.SQLOperationListener;
 import org.gama.sql.dml.SQLStatement;
 import org.gama.sql.test.HSQLDBInMemoryDataSource;
-import org.gama.stalactite.persistence.engine.FluentMappingBuilderSupport.IdentifierPolicy;
+import org.gama.stalactite.persistence.engine.ColumnOptions.IdentifierPolicy;
 import org.gama.stalactite.persistence.engine.IFluentMappingBuilder.IFluentMappingBuilderColumnOptions;
 import org.gama.stalactite.persistence.engine.IFluentMappingBuilder.IFluentMappingBuilderEmbedOptions;
 import org.gama.stalactite.persistence.engine.model.Country;
@@ -57,7 +57,7 @@ import static org.mockito.Mockito.when;
 /**
  * @author Guillaume Mary
  */
-public class FluentMappingBuilderSupportTest {
+public class FluentEntityMappingConfigurationSupportTest {
 	
 	private static final HSQLDBDialect DIALECT = new HSQLDBDialect();
 	private DataSource dataSource = new HSQLDBInMemoryDataSource();
@@ -80,20 +80,20 @@ public class FluentMappingBuilderSupportTest {
 	
 	@Test
 	public void testBuild_identifierIsNotDefined_throwsException() {
-		IFluentMappingBuilderColumnOptions<Toto, StatefullIdentifier> mappingStrategy = FluentMappingBuilderSupport.from(Toto.class, StatefullIdentifier.class)
+		IFluentMappingBuilderColumnOptions<Toto, StatefullIdentifier> mappingStrategy = FluentEntityMappingConfigurationSupport.from(Toto.class, StatefullIdentifier.class)
 				.add(Toto::getId)
 				.add(Toto::getName);
 		
 		// column should be correctly created
 		assertEquals("Identifier is not defined, please add one throught " 
-						+ "o.g.s.p.e.IFluentMappingBuilder o.g.s.p.e.ColumnOptions.identifier(o.g.s.p.e.FluentMappingBuilderSupport$IdentifierPolicy)",
+						+ "o.g.s.p.e.IFluentMappingBuilder o.g.s.p.e.ColumnOptions.identifier(o.g.s.p.e.ColumnOptions$IdentifierPolicy)",
 				assertThrows(UnsupportedOperationException.class, () -> mappingStrategy.build(DIALECT))
 						.getMessage());
 	}
 	
 	@Test
 	public void testAdd_withoutName_targetedPropertyNameIsTaken() {
-		ClassMappingStrategy<Toto, StatefullIdentifier, Table> mappingStrategy = FluentMappingBuilderSupport.from(Toto.class, StatefullIdentifier.class)
+		ClassMappingStrategy<Toto, StatefullIdentifier, Table> mappingStrategy = FluentEntityMappingConfigurationSupport.from(Toto.class, StatefullIdentifier.class)
 				.add(Toto::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.add(Toto::getName)
 				.build(DIALECT);
@@ -109,7 +109,7 @@ public class FluentMappingBuilderSupportTest {
 	public void testAdd_withColumn_columnIsTaken() {
 		Table toto = new Table("Toto");
 		Column<Table, String> titleColumn = toto.addColumn("title", String.class);
-		ClassMappingStrategy<Toto, StatefullIdentifier, Table> mappingStrategy = FluentMappingBuilderSupport.from(Toto.class, StatefullIdentifier.class, toto)
+		ClassMappingStrategy<Toto, StatefullIdentifier, Table> mappingStrategy = FluentEntityMappingConfigurationSupport.from(Toto.class, StatefullIdentifier.class, toto)
 				.add(Toto::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.add(Toto::getName, titleColumn)
 				.build(DIALECT);
@@ -127,7 +127,7 @@ public class FluentMappingBuilderSupportTest {
 	public void testAdd_definedAsIdentifier_alreadyAssignedButDoesntImplementIdentifier_throwsException() {
 		Table toto = new Table("Toto");
 		NotYetSupportedOperationException thrownException = assertThrows(NotYetSupportedOperationException.class,
-				() -> FluentMappingBuilderSupport.from(Toto.class, StatefullIdentifier.class, toto)
+				() -> FluentEntityMappingConfigurationSupport.from(Toto.class, StatefullIdentifier.class, toto)
 				.add(Toto::getName).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.build(DIALECT));
 		assertEquals("ALREADY_ASSIGNED is only supported with entities that implement o.g.s.p.i.Identified", thrownException.getMessage());
@@ -145,7 +145,7 @@ public class FluentMappingBuilderSupportTest {
 		dialect.getColumnBinderRegistry().register(id, Identifier.identifierBinder(DefaultParameterBinders.UUID_PARAMETER_BINDER));
 		dialect.getJavaTypeToSqlTypeMapping().put(id, "varchar(255)");
 		
-		Persister<Toto, StatefullIdentifier, Table> persister = FluentMappingBuilderSupport.from(Toto.class, StatefullIdentifier.class, totoTable)
+		Persister<Toto, StatefullIdentifier, Table> persister = FluentEntityMappingConfigurationSupport.from(Toto.class, StatefullIdentifier.class, totoTable)
 				.add(Toto::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.build(persistenceContext);
 		// column should be correctly created
@@ -168,7 +168,7 @@ public class FluentMappingBuilderSupportTest {
 	public void testAdd_identifierDefinedTwice_throwsException() throws NoSuchMethodException {
 		Table toto = new Table("Toto");
 		assertEquals("Identifier is already defined by " + Reflections.toString(Toto.class.getMethod("getId")),
-				assertThrows(IllegalArgumentException.class, () -> FluentMappingBuilderSupport.from(Toto.class, StatefullIdentifier.class, toto)
+				assertThrows(IllegalArgumentException.class, () -> FluentEntityMappingConfigurationSupport.from(Toto.class, StatefullIdentifier.class, toto)
 						.add(Toto::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 						.add(Toto::getIdentifier).identifier(IdentifierPolicy.ALREADY_ASSIGNED))
 						.getMessage());
@@ -178,7 +178,7 @@ public class FluentMappingBuilderSupportTest {
 	public void testAdd_mappingDefinedTwiceByMethod_throwsException() throws NoSuchMethodException {
 		Table toto = new Table("Toto");
 		assertEquals("Mapping is already defined by method " + Reflections.toString(Toto.class.getMethod("getName")),
-				assertThrows(MappingConfigurationException.class, () -> FluentMappingBuilderSupport.from(Toto.class, StatefullIdentifier.class, toto)
+				assertThrows(MappingConfigurationException.class, () -> FluentEntityMappingConfigurationSupport.from(Toto.class, StatefullIdentifier.class, toto)
 						.add(Toto::getName)
 						.add(Toto::setName))
 						.getMessage());
@@ -188,7 +188,7 @@ public class FluentMappingBuilderSupportTest {
 	public void testAdd_mappingDefinedTwiceByColumn_throwsException() {
 		Table toto = new Table("Toto");
 		assertEquals("Mapping is already defined for column xyz",
-				assertThrows(MappingConfigurationException.class, () -> FluentMappingBuilderSupport.from(Toto.class, StatefullIdentifier.class, toto)
+				assertThrows(MappingConfigurationException.class, () -> FluentEntityMappingConfigurationSupport.from(Toto.class, StatefullIdentifier.class, toto)
 						.add(Toto::getName, "xyz")
 						.add(Toto::getFirstName, "xyz"))
 						.getMessage());
@@ -197,7 +197,7 @@ public class FluentMappingBuilderSupportTest {
 	@Test
 	public void testAdd_methodHasNoMatchingField_configurationIsStillValid() {
 		Table toto = new Table("Toto");
-		FluentMappingBuilderSupport.from(Toto.class, StatefullIdentifier.class, toto)
+		FluentEntityMappingConfigurationSupport.from(Toto.class, StatefullIdentifier.class, toto)
 				.add(Toto::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.add(Toto::getNoMatchingField)
 				.build(DIALECT);
@@ -210,7 +210,7 @@ public class FluentMappingBuilderSupportTest {
 	@Test
 	public void testAdd_methodIsASetter_configurationIsStillValid() {
 		Table toto = new Table("Toto");
-		FluentMappingBuilderSupport.from(Toto.class, StatefullIdentifier.class, toto)
+		FluentEntityMappingConfigurationSupport.from(Toto.class, StatefullIdentifier.class, toto)
 				.add(Toto::setId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.build(DIALECT);
 		
@@ -222,7 +222,7 @@ public class FluentMappingBuilderSupportTest {
 	@Test
 	public void testEmbed_definedByGetter() {
 		Table toto = new Table("Toto");
-		FluentMappingBuilderSupport.from(Toto.class, StatefullIdentifier.class, toto)
+		FluentEntityMappingConfigurationSupport.from(Toto.class, StatefullIdentifier.class, toto)
 				.add(Toto::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.embed(Toto::getTimestamp)
 				.build(new PersistenceContext(null, DIALECT));
@@ -235,7 +235,7 @@ public class FluentMappingBuilderSupportTest {
 	@Test
 	public void testEmbed_definedBySetter() {
 		Table toto = new Table("Toto");
-		FluentMappingBuilderSupport.from(Toto.class, StatefullIdentifier.class, toto)
+		FluentEntityMappingConfigurationSupport.from(Toto.class, StatefullIdentifier.class, toto)
 				.add(Toto::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.embed(Toto::setTimestamp)
 				.build(new PersistenceContext(null, DIALECT));
@@ -248,7 +248,7 @@ public class FluentMappingBuilderSupportTest {
 	@Test
 	public void testEmbed_withOverridenColumnName() {
 		Table toto = new Table("Toto");
-		FluentMappingBuilderSupport.from(Toto.class, StatefullIdentifier.class, toto)
+		FluentEntityMappingConfigurationSupport.from(Toto.class, StatefullIdentifier.class, toto)
 				.add(Toto::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.embed(Toto::getTimestamp)
 					.overrideName(Timestamp::getCreationDate, "createdAt")
@@ -279,7 +279,7 @@ public class FluentMappingBuilderSupportTest {
 		
 		Connection connectionMock = InvocationHandlerSupport.mock(Connection.class);
 		
-		Persister<Toto, StatefullIdentifier, ?> persister = FluentMappingBuilderSupport.from(Toto.class, StatefullIdentifier.class, targetTable)
+		Persister<Toto, StatefullIdentifier, ?> persister = FluentEntityMappingConfigurationSupport.from(Toto.class, StatefullIdentifier.class, targetTable)
 				.add(Toto::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.embed(Toto::getTimestamp)
 					.override(Timestamp::getCreationDate, createdAt)
@@ -305,7 +305,7 @@ public class FluentMappingBuilderSupportTest {
 		
 		Connection connectionMock = InvocationHandlerSupport.mock(Connection.class);
 		
-		Persister<Toto, StatefullIdentifier, ?> persister = FluentMappingBuilderSupport.from(Toto.class, StatefullIdentifier.class, targetTable)
+		Persister<Toto, StatefullIdentifier, ?> persister = FluentEntityMappingConfigurationSupport.from(Toto.class, StatefullIdentifier.class, targetTable)
 				.add(Toto::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.embed(Toto::getTimestamp)
 					.exclude(Timestamp::getCreationDate)
@@ -328,7 +328,7 @@ public class FluentMappingBuilderSupportTest {
 	public void testBuild_innerEmbed_withSomeExcludedProperty() throws SQLException {
 		Table<?> countryTable = new Table<>("countryTable");
 		
-		IFluentMappingBuilderEmbedOptions<Country, StatefullIdentifier, Timestamp> mappingBuilder = FluentMappingBuilderSupport.from(Country.class,
+		IFluentMappingBuilderEmbedOptions<Country, StatefullIdentifier, Timestamp> mappingBuilder = FluentEntityMappingConfigurationSupport.from(Country.class,
 				StatefullIdentifier.class, countryTable)
 				.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.add(Country::getName)
@@ -426,7 +426,7 @@ public class FluentMappingBuilderSupportTest {
 	@Test
 	public void testBuild_innerEmbed_withTwiceSameInnerEmbeddableName() {
 		Table<?> countryTable = new Table<>("countryTable");
-		IFluentMappingBuilderEmbedOptions<Country, StatefullIdentifier, Timestamp> mappingBuilder = FluentMappingBuilderSupport.from(Country.class,
+		IFluentMappingBuilderEmbedOptions<Country, StatefullIdentifier, Timestamp> mappingBuilder = FluentEntityMappingConfigurationSupport.from(Country.class,
 				StatefullIdentifier.class, countryTable)
 				.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.add(Country::getName)
@@ -466,7 +466,7 @@ public class FluentMappingBuilderSupportTest {
 	
 	@Test
 	public void testBuild_withEnumType_byDefault_nameIsUsed() {
-		Persister<PersonWithGender, Identifier<Long>, Table> personPersister = FluentMappingBuilderSupport.from(PersonWithGender.class, Identifier.LONG_TYPE)
+		Persister<PersonWithGender, Identifier<Long>, Table> personPersister = FluentEntityMappingConfigurationSupport.from(PersonWithGender.class, Identifier.LONG_TYPE)
 				.add(Person::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.add(Person::getName)
 				// no type of mapping given: neither ordinal nor name
@@ -492,7 +492,7 @@ public class FluentMappingBuilderSupportTest {
 	
 	@Test
 	public void testBuild_withEnumType_mappedWithOrdinal() {
-		Persister<PersonWithGender, Identifier<Long>, Table> personPersister = FluentMappingBuilderSupport.from(PersonWithGender.class, Identifier.LONG_TYPE)
+		Persister<PersonWithGender, Identifier<Long>, Table> personPersister = FluentEntityMappingConfigurationSupport.from(PersonWithGender.class, Identifier.LONG_TYPE)
 				.add(Person::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.add(Person::getName)
 				.addEnum(PersonWithGender::getGender).byOrdinal()
@@ -520,7 +520,7 @@ public class FluentMappingBuilderSupportTest {
 		Table personTable = new Table<>("PersonWithGender");
 		Column<Table, Gender> genderColumn = personTable.addColumn("gender", Gender.class);
 		
-		Persister<PersonWithGender, Identifier<Long>, ?> personPersister = FluentMappingBuilderSupport.from(PersonWithGender.class, Identifier.LONG_TYPE, personTable)
+		Persister<PersonWithGender, Identifier<Long>, ?> personPersister = FluentEntityMappingConfigurationSupport.from(PersonWithGender.class, Identifier.LONG_TYPE, personTable)
 				.add(Person::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.add(Person::getName)
 				.addEnum(PersonWithGender::getGender, genderColumn).byOrdinal()

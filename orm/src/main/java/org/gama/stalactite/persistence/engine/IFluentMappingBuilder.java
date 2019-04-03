@@ -14,15 +14,16 @@ import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
 
 /**
- * An interface describing a fluent way to declare the persistence mapping of a class 
+ * An interface describing a fluent way to declare the persistence mapping of a class. 
+ * Please note that it can't extend {@link IFluentEmbeddableMappingBuilder} because it clashes on the {@link #build(Dialect)} methods that don't
+ * have compatible return type.
  * 
  * @author Guillaume Mary
- * @see FluentMappingBuilderSupport#from(Class, Class)
- * @see FluentMappingBuilderSupport#from(Class, Class, Table)
+ * @see FluentEntityMappingConfigurationSupport#from(Class, Class)
+ * @see FluentEntityMappingConfigurationSupport#from(Class, Class, Table)
  * @see #build(Dialect)
  */
-public interface IFluentMappingBuilder<C, I>
-		extends IFluentEmbeddableMappingConfiguration<C> {
+public interface IFluentMappingBuilder<C, I> extends IFluentEmbeddableMappingConfiguration<C> {
 	
 	/* Overwritting methods signature to return a type that aggregates options of this class */
 	

@@ -15,7 +15,7 @@ import org.gama.sql.binder.DefaultParameterBinders;
 import org.gama.sql.result.ResultSetIterator;
 import org.gama.sql.test.HSQLDBInMemoryDataSource;
 import org.gama.stalactite.persistence.engine.CascadeOptions.RelationshipMode;
-import org.gama.stalactite.persistence.engine.FluentMappingBuilderSupport.IdentifierPolicy;
+import org.gama.stalactite.persistence.engine.ColumnOptions.IdentifierPolicy;
 import org.gama.stalactite.persistence.engine.IFluentMappingBuilder.IFluentMappingBuilderColumnOptions;
 import org.gama.stalactite.persistence.engine.IFluentMappingBuilder.IFluentMappingBuilderOneToManyOptions;
 import org.gama.stalactite.persistence.engine.cascade.JoinedTablesPersister;
@@ -43,7 +43,7 @@ import static org.gama.stalactite.persistence.engine.CascadeOptions.Relationship
 import static org.gama.stalactite.persistence.engine.CascadeOptions.RelationshipMode.ALL_ORPHAN_REMOVAL;
 import static org.gama.stalactite.persistence.engine.CascadeOptions.RelationshipMode.ASSOCIATION_ONLY;
 import static org.gama.stalactite.persistence.engine.CascadeOptions.RelationshipMode.READ_ONLY;
-import static org.gama.stalactite.persistence.engine.FluentMappingBuilderSupport.from;
+import static org.gama.stalactite.persistence.engine.FluentEntityMappingConfigurationSupport.from;
 import static org.gama.stalactite.persistence.id.Identifier.LONG_TYPE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -55,7 +55,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 /**
  * @author Guillaume Mary
  */
-public class FluentMappingBuilderSupportCollectionCascadeTest {
+public class FluentEntityMappingConfigurationSupportCollectionCascadeTest {
 	
 	private static final HSQLDBDialect DIALECT = new HSQLDBDialect();
 	private static IFluentMappingBuilderColumnOptions<City, Identifier<Long>> CITY_MAPPING_BUILDER;
@@ -79,7 +79,7 @@ public class FluentMappingBuilderSupportCollectionCascadeTest {
 		
 		// We need to rebuild our cityPersister before each test because some of them alter it on country relationship.
 		// So schema contains FK twice with same name, ending in duplicate FK name exception
-		CITY_MAPPING_BUILDER = FluentMappingBuilderSupport.from(City.class,
+		CITY_MAPPING_BUILDER = FluentEntityMappingConfigurationSupport.from(City.class,
 				Identifier.LONG_TYPE)
 				.add(City::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.add(City::getName)
@@ -107,21 +107,21 @@ public class FluentMappingBuilderSupportCollectionCascadeTest {
 	
 	@Test
 	public void testCascade_associationOnly_build_withoutAssociationTable_throwsException() {
-		IFluentMappingBuilderOneToManyOptions<Country, Identifier<Long>, City> mappingBuilder = FluentMappingBuilderSupport.from(Country.class, Identifier.LONG_TYPE)
+		IFluentMappingBuilderOneToManyOptions<Country, Identifier<Long>, City> mappingBuilder = FluentEntityMappingConfigurationSupport.from(Country.class, Identifier.LONG_TYPE)
 				.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.add(Country::getName)
 				.add(Country::getDescription)
 				// no cascade
 				.addOneToManySet(Country::getCities, cityPersister).mappedBy(City::setCountry).cascading(ASSOCIATION_ONLY);
 		
-		FluentMappingBuilderSupportCascadeTest.assertThrowsInHierarchy(() -> mappingBuilder.build(persistenceContext), MappingConfigurationException.class,
+		FluentEntityMappingConfigurationSupportCascadeTest.assertThrowsInHierarchy(() -> mappingBuilder.build(persistenceContext), MappingConfigurationException.class,
 				RelationshipMode.ASSOCIATION_ONLY + " is only relevent with an association table");
 	}
 	
 	@Test
 	public void testCascade_noCascade_defaultIsReadOnly() throws SQLException {
 		// mapping building thanks to fluent API
-		Persister<Country, Identifier<Long>, ?> countryPersister = FluentMappingBuilderSupport.from(Country.class, Identifier.LONG_TYPE)
+		Persister<Country, Identifier<Long>, ?> countryPersister = FluentEntityMappingConfigurationSupport.from(Country.class, Identifier.LONG_TYPE)
 				.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.add(Country::getName)
 				.add(Country::getDescription)
@@ -167,7 +167,7 @@ public class FluentMappingBuilderSupportCollectionCascadeTest {
 				.get(0));
 		
 		// delete throws integrity constraint because it doesn't delete target entity which own the relation
-		FluentMappingBuilderSupportCascadeTest.assertThrowsInHierarchy(() -> countryPersister.delete(loadedCountry), BatchUpdateException.class,
+		FluentEntityMappingConfigurationSupportCascadeTest.assertThrowsInHierarchy(() -> countryPersister.delete(loadedCountry), BatchUpdateException.class,
 				"integrity constraint violation: foreign key no action; FK_CITY_COUNTRYID_COUNTRY_ID table: CITY");
 		
 		assertEquals("touched France", persistenceContext.newQuery("select name from Country where id = 42", String.class)
@@ -183,7 +183,7 @@ public class FluentMappingBuilderSupportCollectionCascadeTest {
 	@Test
 	public void testCascade_readOnly_reverseSideIsNotMapped() throws SQLException {
 		// mapping building thantks to fluent API
-		Persister<Country, Identifier<Long>, ?> countryPersister = FluentMappingBuilderSupport.from(Country.class, Identifier.LONG_TYPE)
+		Persister<Country, Identifier<Long>, ?> countryPersister = FluentEntityMappingConfigurationSupport.from(Country.class, Identifier.LONG_TYPE)
 				.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.add(Country::getName)
 				.add(Country::getDescription)
@@ -218,7 +218,7 @@ public class FluentMappingBuilderSupportCollectionCascadeTest {
 				{ (ThrowingSupplier<Persister<Country, Identifier<Long>, ?>, SQLException>) () -> {
 					PersistenceContext persistenceContext = new PersistenceContext(new JdbcConnectionProvider(new HSQLDBInMemoryDataSource()), DIALECT);
 					Persister<City, Identifier<Long>, ?> cityPersister = CITY_MAPPING_BUILDER.build(persistenceContext);
-					Persister<Country, Identifier<Long>, ?> countryPersister = FluentMappingBuilderSupport.from(Country.class, Identifier.LONG_TYPE)
+					Persister<Country, Identifier<Long>, ?> countryPersister = FluentEntityMappingConfigurationSupport.from(Country.class, Identifier.LONG_TYPE)
 							.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 							.add(Country::getName)
 							.add(Country::getDescription)
@@ -233,7 +233,7 @@ public class FluentMappingBuilderSupportCollectionCascadeTest {
 				{ (ThrowingSupplier<Persister<Country, Identifier<Long>, ?>, SQLException>) () -> {
 					PersistenceContext persistenceContext = new PersistenceContext(new JdbcConnectionProvider(new HSQLDBInMemoryDataSource()), DIALECT);
 					Persister<City, Identifier<Long>, ?> cityPersister = CITY_MAPPING_BUILDER.build(persistenceContext);
-					Persister<Country, Identifier<Long>, ?> countryPersister = FluentMappingBuilderSupport.from(Country.class, Identifier.LONG_TYPE)
+					Persister<Country, Identifier<Long>, ?> countryPersister = FluentEntityMappingConfigurationSupport.from(Country.class, Identifier.LONG_TYPE)
 							.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 							.add(Country::getName)
 							.add(Country::getDescription)
@@ -249,7 +249,7 @@ public class FluentMappingBuilderSupportCollectionCascadeTest {
 					PersistenceContext persistenceContext = new PersistenceContext(new JdbcConnectionProvider(new HSQLDBInMemoryDataSource()), DIALECT);
 					Persister<City, Identifier<Long>, ?> cityPersister = CITY_MAPPING_BUILDER.build(persistenceContext);
 					Column<Table, Country> countryId = (Column<Table, Country>) (Column) cityPersister.getMainTable().mapColumnsOnName().get("countryId");
-					Persister<Country, Identifier<Long>, ?> countryPersister = FluentMappingBuilderSupport.from(Country.class, Identifier.LONG_TYPE)
+					Persister<Country, Identifier<Long>, ?> countryPersister = FluentEntityMappingConfigurationSupport.from(Country.class, Identifier.LONG_TYPE)
 							.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 							.add(Country::getName)
 							.add(Country::getDescription)
@@ -306,7 +306,7 @@ public class FluentMappingBuilderSupportCollectionCascadeTest {
 	
 	@Test
 	public void testCascade_all_update_mappedBy() {
-		Persister<Country, Identifier<Long>, ?> countryPersister = FluentMappingBuilderSupport.from(Country.class, Identifier.LONG_TYPE)
+		Persister<Country, Identifier<Long>, ?> countryPersister = FluentEntityMappingConfigurationSupport.from(Country.class, Identifier.LONG_TYPE)
 				.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.add(Country::getName)
 				.add(Country::getDescription)
@@ -351,7 +351,7 @@ public class FluentMappingBuilderSupportCollectionCascadeTest {
 	@Test
 	public void testCascade_all_update_noMappedBy_associationTableIsMaintained() {
 		// mapping building thantks to fluent API
-		Persister<Country, Identifier<Long>, ?> countryPersister = FluentMappingBuilderSupport.from(Country.class, Identifier.LONG_TYPE)
+		Persister<Country, Identifier<Long>, ?> countryPersister = FluentEntityMappingConfigurationSupport.from(Country.class, Identifier.LONG_TYPE)
 				.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.add(Country::getName)
 				.add(Country::getDescription)
@@ -396,7 +396,7 @@ public class FluentMappingBuilderSupportCollectionCascadeTest {
 	
 	@Test
 	public void testCascade_all_update_associationTable() {
-		Persister<Country, Identifier<Long>, ?> countryPersister = FluentMappingBuilderSupport.from(Country.class, Identifier.LONG_TYPE)
+		Persister<Country, Identifier<Long>, ?> countryPersister = FluentEntityMappingConfigurationSupport.from(Country.class, Identifier.LONG_TYPE)
 				.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.add(Country::getName)
 				.add(Country::getDescription)
@@ -441,7 +441,7 @@ public class FluentMappingBuilderSupportCollectionCascadeTest {
 	
 	@Test
 	public void testCascade_allOrphanRemoval_update_mappedBy_deleteRemoved() {
-		Persister<Country, Identifier<Long>, ?> countryPersister = FluentMappingBuilderSupport.from(Country.class, Identifier.LONG_TYPE)
+		Persister<Country, Identifier<Long>, ?> countryPersister = FluentEntityMappingConfigurationSupport.from(Country.class, Identifier.LONG_TYPE)
 				.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.add(Country::getName)
 				.add(Country::getDescription)
@@ -487,7 +487,7 @@ public class FluentMappingBuilderSupportCollectionCascadeTest {
 		
 		@Test
 		public void test_noAssociationTable() throws SQLException {
-			Persister<Country, Identifier<Long>, ?> countryPersister = FluentMappingBuilderSupport.from(Country.class, Identifier.LONG_TYPE)
+			Persister<Country, Identifier<Long>, ?> countryPersister = FluentEntityMappingConfigurationSupport.from(Country.class, Identifier.LONG_TYPE)
 					.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 					.add(Country::getName)
 					.add(Country::getDescription)
@@ -511,7 +511,7 @@ public class FluentMappingBuilderSupportCollectionCascadeTest {
 		
 		@Test
 		public void test_withAssociationTable() throws SQLException {
-			Persister<Country, Identifier<Long>, ?> countryPersister = FluentMappingBuilderSupport.from(Country.class, Identifier.LONG_TYPE)
+			Persister<Country, Identifier<Long>, ?> countryPersister = FluentEntityMappingConfigurationSupport.from(Country.class, Identifier.LONG_TYPE)
 					.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 					.add(Country::getName)
 					.add(Country::getDescription)
@@ -532,7 +532,7 @@ public class FluentMappingBuilderSupportCollectionCascadeTest {
 	
 	@Test
 	public void testCascade_all_delete_mappedBy() throws SQLException {
-		Persister<Country, Identifier<Long>, ?> countryPersister = FluentMappingBuilderSupport.from(Country.class, Identifier.LONG_TYPE)
+		Persister<Country, Identifier<Long>, ?> countryPersister = FluentEntityMappingConfigurationSupport.from(Country.class, Identifier.LONG_TYPE)
 				.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.add(Country::getName)
 				.add(Country::getDescription)
@@ -571,7 +571,7 @@ public class FluentMappingBuilderSupportCollectionCascadeTest {
 	
 	@Test
 	public void testCascade_allOrphanRemoval_delete_mappedBy() throws SQLException {
-		Persister<Country, Identifier<Long>, ?> countryPersister = FluentMappingBuilderSupport.from(Country.class, Identifier.LONG_TYPE)
+		Persister<Country, Identifier<Long>, ?> countryPersister = FluentEntityMappingConfigurationSupport.from(Country.class, Identifier.LONG_TYPE)
 				.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.add(Country::getName)
 				.add(Country::getDescription)
@@ -601,7 +601,7 @@ public class FluentMappingBuilderSupportCollectionCascadeTest {
 	
 	@Test
 	public void testCascade_all_delete_withAssociationTable_associationRecordsMustBeDeleted() throws SQLException {
-		Persister<Country, Identifier<Long>, ? extends Table> countryPersister = FluentMappingBuilderSupport.from(Country.class, Identifier.LONG_TYPE)
+		Persister<Country, Identifier<Long>, ? extends Table> countryPersister = FluentEntityMappingConfigurationSupport.from(Country.class, Identifier.LONG_TYPE)
 				.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.add(Country::getName)
 				.add(Country::getDescription)
@@ -669,7 +669,7 @@ public class FluentMappingBuilderSupportCollectionCascadeTest {
 	
 	@Test
 	public void testCascade_allOrphanRemoval_delete_withAssociationTable_associationRecordsMustBeDeleted() throws SQLException {
-		Persister<Country, Identifier<Long>, ? extends Table> countryPersister = FluentMappingBuilderSupport.from(Country.class, Identifier.LONG_TYPE)
+		Persister<Country, Identifier<Long>, ? extends Table> countryPersister = FluentEntityMappingConfigurationSupport.from(Country.class, Identifier.LONG_TYPE)
 				.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.add(Country::getName)
 				.add(Country::getDescription)
@@ -728,7 +728,7 @@ public class FluentMappingBuilderSupportCollectionCascadeTest {
 	
 	@Test
 	public void testCascade_associationOnly_delete_withAssociationTable_associationRecordsMustBeDeleted_butNotTargetEntities() throws SQLException {
-		Persister<Country, Identifier<Long>, ? extends Table> countryPersister = FluentMappingBuilderSupport.from(Country.class, Identifier.LONG_TYPE)
+		Persister<Country, Identifier<Long>, ? extends Table> countryPersister = FluentEntityMappingConfigurationSupport.from(Country.class, Identifier.LONG_TYPE)
 				.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.add(Country::getName)
 				.add(Country::getDescription)
@@ -785,7 +785,7 @@ public class FluentMappingBuilderSupportCollectionCascadeTest {
 	
 	@Test
 	public void testCascade_all_update_severalTimes() {
-		IFluentMappingBuilderColumnOptions<State, Identifier<Long>> stateMappingBuilder = FluentMappingBuilderSupport.from(State.class,
+		IFluentMappingBuilderColumnOptions<State, Identifier<Long>> stateMappingBuilder = FluentEntityMappingConfigurationSupport.from(State.class,
 				Identifier.LONG_TYPE)
 				.add(State::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.add(State::getName)
@@ -793,7 +793,7 @@ public class FluentMappingBuilderSupportCollectionCascadeTest {
 		Persister<State, Identifier<Long>, ?> statePersister = stateMappingBuilder.build(persistenceContext);
 		
 		
-		Persister<Country, Identifier<Long>, ?> countryPersister = FluentMappingBuilderSupport.from(Country.class, Identifier.LONG_TYPE)
+		Persister<Country, Identifier<Long>, ?> countryPersister = FluentEntityMappingConfigurationSupport.from(Country.class, Identifier.LONG_TYPE)
 				.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.add(Country::getName)
 				.add(Country::getDescription)

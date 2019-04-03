@@ -16,7 +16,7 @@ import org.gama.lang.collection.Iterables;
 import org.gama.sql.ConnectionProvider;
 import org.gama.sql.binder.DefaultParameterBinders;
 import org.gama.sql.test.HSQLDBInMemoryDataSource;
-import org.gama.stalactite.persistence.engine.FluentMappingBuilderSupport.IdentifierPolicy;
+import org.gama.stalactite.persistence.engine.ColumnOptions.IdentifierPolicy;
 import org.gama.stalactite.persistence.engine.listening.UpdateListener;
 import org.gama.stalactite.persistence.id.Identified;
 import org.gama.stalactite.persistence.id.Identifier;
@@ -37,7 +37,7 @@ import static org.gama.lang.function.Functions.chain;
 import static org.gama.stalactite.persistence.engine.CascadeOptions.RelationshipMode.ALL;
 import static org.gama.stalactite.persistence.engine.CascadeOptions.RelationshipMode.ALL_ORPHAN_REMOVAL;
 import static org.gama.stalactite.persistence.engine.CascadeOptions.RelationshipMode.ASSOCIATION_ONLY;
-import static org.gama.stalactite.persistence.engine.FluentMappingBuilderSupport.from;
+import static org.gama.stalactite.persistence.engine.FluentEntityMappingConfigurationSupport.from;
 import static org.gama.stalactite.persistence.id.Identifier.LONG_TYPE;
 import static org.gama.stalactite.query.model.QueryEase.select;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -49,7 +49,7 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 /**
  * @author Guillaume Mary
  */
-public class FluentMappingBuilderSupportIndexedCollectionTest {
+public class FluentEntityMappingConfigurationSupportIndexedCollectionTest {
 	
 	private static final Dialect DIALECT = new HSQLDBDialect();
 	private final DataSource dataSource = new HSQLDBInMemoryDataSource();
@@ -334,7 +334,7 @@ public class FluentMappingBuilderSupportIndexedCollectionTest {
 				.build(persistenceContext);
 		
 		assertEquals("Missing indexing column : relation is mapped by " +
-						"o.g.s.p.e.FluentMappingBuilderSupportIndexedCollectionTest$Question o.g.s.p.e.FluentMappingBuilderSupportIndexedCollectionTest$Choice.getQuestion() " +
+						"o.g.s.p.e.FluentEntityMappingConfigurationSupportIndexedCollectionTest$Question o.g.s.p.e.FluentEntityMappingConfigurationSupportIndexedCollectionTest$Choice.getQuestion() " +
 						"but no indexing property is defined",
 				assertThrows(UnsupportedOperationException.class, () ->
 						from(Question.class, LONG_TYPE)
@@ -371,9 +371,9 @@ public class FluentMappingBuilderSupportIndexedCollectionTest {
 		Choice choice = new Choice(4L);
 		question.addChoice(choice);
 		
-		assertEquals("Can't get index : " + choice.toString() + " is not associated with a o.g.s.p.e.FluentMappingBuilderSupportIndexedCollectionTest$Question : "
+		assertEquals("Can't get index : " + choice.toString() + " is not associated with a o.g.s.p.e.FluentEntityMappingConfigurationSupportIndexedCollectionTest$Question : "
 						+ "accessor for field" +
-						" o.g.s.p.e.FluentMappingBuilderSupportIndexedCollectionTest$Question o.g.s.p.e.FluentMappingBuilderSupportIndexedCollectionTest$Choice.questionWithNoGetter returned null",
+						" o.g.s.p.e.FluentEntityMappingConfigurationSupportIndexedCollectionTest$Question o.g.s.p.e.FluentEntityMappingConfigurationSupportIndexedCollectionTest$Choice.questionWithNoGetter returned null",
 				assertThrows(RuntimeMappingException.class, () -> persisterWithNonExistingSetter.insert(question)).getMessage());
 	}
 		
@@ -403,8 +403,8 @@ public class FluentMappingBuilderSupportIndexedCollectionTest {
 		Question question = new Question(1L);
 		question.getChoices().add(new Choice(4L));
 		
-		assertEquals("Can't get index : Choice{id=4, question=null, name='null'} is not associated with a o.g.s.p.e.FluentMappingBuilderSupportIndexedCollectionTest$Question : "
-						+ "o.g.s.p.e.FluentMappingBuilderSupportIndexedCollectionTest$Question o.g.s.p.e.FluentMappingBuilderSupportIndexedCollectionTest$Choice.getQuestion() returned null",
+		assertEquals("Can't get index : Choice{id=4, question=null, name='null'} is not associated with a o.g.s.p.e.FluentEntityMappingConfigurationSupportIndexedCollectionTest$Question : "
+						+ "o.g.s.p.e.FluentEntityMappingConfigurationSupportIndexedCollectionTest$Question o.g.s.p.e.FluentEntityMappingConfigurationSupportIndexedCollectionTest$Choice.getQuestion() returned null",
 				assertThrows(RuntimeMappingException.class, () -> persister.insert(question)).getMessage());
 	}
 		
@@ -424,7 +424,7 @@ public class FluentMappingBuilderSupportIndexedCollectionTest {
 				.build(persistenceContext);
 		
 		assertEquals("Indexing column is defined without owner : relation is only declared by" 
-						+ " j.u.List o.g.s.p.e.FluentMappingBuilderSupportIndexedCollectionTest$Question.getChoices()",
+						+ " j.u.List o.g.s.p.e.FluentEntityMappingConfigurationSupportIndexedCollectionTest$Question.getChoices()",
 				assertThrows(UnsupportedOperationException.class, () ->
 				from(Question.class, LONG_TYPE)
 						.add(Question::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
