@@ -40,11 +40,11 @@ import org.gama.stalactite.persistence.structure.Table;
 public class FluentEmbeddableMappingConfigurationSupport<C> implements IFluentEmbeddableMappingBuilder<C>, LambdaMethodUnsheller {
 	
 	/**
-	 * Will start a {@link FluentMappingBuilderSupport} for a given class which will target a table that as the class name.
+	 * Starts a {@link IFluentEmbeddableMappingBuilder} for a given class which will target a table that as the class name.
 	 *
 	 * @param persistedClass the class to be persisted by the {@link EmbeddedBeanMappingStrategy} that will be created by {@link #buildMapping(Dialect, Table)}}
 	 * @param <T> any type to be persisted
-	 * @return a new {@link FluentMappingBuilderSupport}
+	 * @return a new {@link FluentEmbeddableMappingConfigurationSupport}
 	 */
 	public static <T extends Identified> IFluentEmbeddableMappingBuilder<T> from(Class<T> persistedClass) {
 		return new FluentEmbeddableMappingConfigurationSupport<>(persistedClass);
