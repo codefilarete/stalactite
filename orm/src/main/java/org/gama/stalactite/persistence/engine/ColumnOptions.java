@@ -1,6 +1,6 @@
 package org.gama.stalactite.persistence.engine;
 
-import org.gama.stalactite.persistence.engine.FluentMappingBuilder.IdentifierPolicy;
+import org.gama.stalactite.persistence.engine.FluentMappingBuilderSupport.IdentifierPolicy;
 
 /**
  * @author Guillaume Mary

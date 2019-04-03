@@ -17,8 +17,8 @@ import org.gama.stalactite.persistence.structure.Table;
  * An interface describing a fluent way to declare the persistence mapping of a class 
  * 
  * @author Guillaume Mary
- * @see FluentMappingBuilder#from(Class, Class)
- * @see FluentMappingBuilder#from(Class, Class, Table)
+ * @see FluentMappingBuilderSupport#from(Class, Class)
+ * @see FluentMappingBuilderSupport#from(Class, Class, Table)
  * @see #build(Dialect)
  */
 public interface IFluentMappingBuilder<C, I>
@@ -142,6 +142,8 @@ public interface IFluentMappingBuilder<C, I>
 	<T extends Table> ClassMappingStrategy<C, I, T> build(Dialect dialect);
 	
 	<T extends Table> Persister<C, I, T> build(PersistenceContext persistenceContext);
+	
+	IFluentMappingBuilder<C, I> withJoinTable();
 	
 	interface IFluentMappingBuilderColumnOptions<T, I> extends IFluentMappingBuilder<T, I>, ColumnOptions<T, I> {
 	}
