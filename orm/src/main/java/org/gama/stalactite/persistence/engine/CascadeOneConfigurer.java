@@ -34,8 +34,6 @@ public class CascadeOneConfigurer<SRC, TRGT, TRGTID> {
 	
 	public <SRCID, T extends Table<T>> void appendCascade(
 			CascadeOne<SRC, TRGT, TRGTID> cascadeOne,
-			Persister<SRC, SRCID, T> srcPersister,
-			ClassMappingStrategy<SRC, SRCID, T> mappingStrategy,
 			JoinedTablesPersister<SRC, SRCID, T> joinedTablesPersister,
 			ForeignKeyNamingStrategy foreignKeyNamingStrategy) {
 		Persister<TRGT, TRGTID, Table> targetPersister = (Persister<TRGT, TRGTID, Table>) cascadeOne.getTargetPersister();
@@ -46,6 +44,7 @@ public class CascadeOneConfigurer<SRC, TRGT, TRGTID> {
 				targetPersister.getMappingStrategy().getIdMappingStrategy().getIdentifierInsertionManager().getInsertListener());
 		
 		PropertyAccessor<SRC, TRGT> targetAccessor = Accessors.of(cascadeOne.getMember());
+		ClassMappingStrategy<SRC, SRCID, T> mappingStrategy = joinedTablesPersister.getMappingStrategy();
 		// Finding joined columns:
 		// - left one is given by current mapping strategy through the property accessor.
 		// - Right one is target primary key because we don't yet support "not owner of the property"
@@ -60,7 +59,7 @@ public class CascadeOneConfigurer<SRC, TRGT, TRGTID> {
 		// adding foerign key constraint
 		leftColumn.getTable().addForeignKey(foreignKeyNamingStrategy.giveName(leftColumn, rightColumn), leftColumn, rightColumn);
 		
-		PersisterListener<SRC, SRCID> srcPersisterListener = srcPersister.getPersisterListener();
+		PersisterListener<SRC, SRCID> srcPersisterListener = joinedTablesPersister.getPersisterListener();
 		RelationshipMode maintenanceMode = cascadeOne.getRelationshipMode();
 		// selection is always present (else configuration is nonsense !)
 		addSelectCascade(cascadeOne, joinedTablesPersister, targetPersister, targetAccessor, leftColumn, rightColumn);

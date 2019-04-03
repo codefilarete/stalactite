@@ -477,8 +477,7 @@ public class FluentMappingBuilder<C, I> implements IFluentMappingBuilder<C, I> {
 			
 			CascadeOneConfigurer<C, Object, Object> cascadeOneConfigurer = new CascadeOneConfigurer<>();
 			for (CascadeOne<C, ?, ?> cascadeOne : cascadeOnes) {
-				cascadeOneConfigurer.appendCascade((CascadeOne<C, Object, Object>) cascadeOne, joinedTablesPersister, mainMappingStrategy,
-						joinedTablesPersister, foreignKeyNamingStrategy);
+				cascadeOneConfigurer.appendCascade((CascadeOne<C, Object, Object>) cascadeOne, joinedTablesPersister, foreignKeyNamingStrategy);
 			}
 			
 			CascadeManyConfigurer cascadeManyConfigurer = new CascadeManyConfigurer();
