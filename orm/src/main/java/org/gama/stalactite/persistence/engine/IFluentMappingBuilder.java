@@ -161,12 +161,12 @@ public interface IFluentMappingBuilder<C, I> extends IFluentEmbeddableMappingCon
 	 * A merge of {@link IFluentMappingBuilderOneToManyOptions} and {@link IndexableCollectionOptions} to defined a one-to-many relationship
 	 * with a indexed {@link java.util.Collection} such as a {@link List}
 	 * 
-	 * @param <T> type of source entity
+	 * @param <C> type of source entity
 	 * @param <I> type of identifier of source entity
 	 * @param <O> type of target entities
 	 */
-	interface IFluentMappingBuilderOneToManyListOptions<T, I, O>
-			extends IFluentMappingBuilderOneToManyOptions<T, I, O>, IndexableCollectionOptions<T, I, O> {
+	interface IFluentMappingBuilderOneToManyListOptions<C, I, O>
+			extends IFluentMappingBuilderOneToManyOptions<C, I, O>, IndexableCollectionOptions<C, I, O> {
 		/**
 		 * Declaration overriden to adapt return type to this class.
 		 *
@@ -174,7 +174,7 @@ public interface IFluentMappingBuilder<C, I> extends IFluentEmbeddableMappingCon
 		 * @return the global mapping configurer
 		 */
 		@Override
-		IFluentMappingBuilderOneToManyListOptions<T, I, O> mappedBy(SerializableBiConsumer<O, T> reverseLink);
+		IFluentMappingBuilderOneToManyListOptions<C, I, O> mappedBy(SerializableBiConsumer<O, C> reverseLink);
 		
 		/**
 		 * Declaration overriden to adapt return type to this class.
@@ -183,7 +183,7 @@ public interface IFluentMappingBuilder<C, I> extends IFluentEmbeddableMappingCon
 		 * @return the global mapping configurer
 		 */
 		@Override
-		IFluentMappingBuilderOneToManyListOptions<T, I, O> mappedBy(SerializableFunction<O, T> reverseLink);
+		IFluentMappingBuilderOneToManyListOptions<C, I, O> mappedBy(SerializableFunction<O, C> reverseLink);
 		
 		/**
 		 * Declaration overriden to adapt return type to this class.
@@ -192,18 +192,18 @@ public interface IFluentMappingBuilder<C, I> extends IFluentEmbeddableMappingCon
 		 * @return the global mapping configurer
 		 */
 		@Override
-		IFluentMappingBuilderOneToManyListOptions<T, I, O> mappedBy(Column<Table, T> reverseLink);
+		IFluentMappingBuilderOneToManyListOptions<C, I, O> mappedBy(Column<Table, C> reverseLink);
 		
 		/**
 		 * Defines the indexing column of the mapped {@link java.util.List}.
 		 * @param orderingColumn indexing column of the mapped {@link java.util.List}
 		 * @return the global mapping configurer
 		 */
-		IFluentMappingBuilderOneToManyListOptions<T, I, O> indexedBy(Column orderingColumn);
+		<T extends Table> IFluentMappingBuilderOneToManyListOptions<C, I, O> indexedBy(Column<T, Integer> orderingColumn);
 	}
 	
-	interface IFluentMappingBuilderEmbedOptions<T, I, O>
-			extends IFluentMappingBuilder<T, I>, IFluentEmbeddableMappingConfigurationEmbedOptions<T, O>, EmbedWithColumnOptions<O> {
+	interface IFluentMappingBuilderEmbedOptions<C, I, O>
+			extends IFluentMappingBuilder<C, I>, IFluentEmbeddableMappingConfigurationEmbedOptions<C, O>, EmbedWithColumnOptions<O> {
 		
 		/**
 		 * Overrides embedding with an existing column
@@ -214,7 +214,7 @@ public interface IFluentMappingBuilder<C, I> extends IFluentEmbeddableMappingCon
 		 * @return a mapping configurer, specialized for embedded elements
 		 */
 		@Override
-		<IN> IFluentMappingBuilderEmbedOptions<T, I, O> overrideName(SerializableFunction<O, IN> function, String columnName);
+		<IN> IFluentMappingBuilderEmbedOptions<C, I, O> overrideName(SerializableFunction<O, IN> function, String columnName);
 		
 		/**
 		 * Overrides embedding with an existing target column
@@ -225,36 +225,36 @@ public interface IFluentMappingBuilder<C, I> extends IFluentEmbeddableMappingCon
 		 * @return a mapping configurer, specialized for embedded elements
 		 */
 		@Override
-		<IN> IFluentMappingBuilderEmbedOptions<T, I, O> override(SerializableFunction<O, IN> function, Column<Table, IN> targetColumn);
+		<IN> IFluentMappingBuilderEmbedOptions<C, I, O> override(SerializableFunction<O, IN> function, Column<Table, IN> targetColumn);
 		
 		@Override
-		<IN> IFluentMappingBuilderEmbedOptions<T, I, IN> innerEmbed(SerializableFunction<O, IN> getter);
+		<IN> IFluentMappingBuilderEmbedOptions<C, I, IN> innerEmbed(SerializableFunction<O, IN> getter);
 		
 		@Override
-		<IN> IFluentMappingBuilderEmbedOptions<T, I, O> exclude(SerializableFunction<O, IN> getter);
+		<IN> IFluentMappingBuilderEmbedOptions<C, I, O> exclude(SerializableFunction<O, IN> getter);
 		
 		@Override
-		<IN> IFluentMappingBuilderEmbedOptions<T, I, O> exclude(SerializableBiConsumer<O, IN> setter);
+		<IN> IFluentMappingBuilderEmbedOptions<C, I, O> exclude(SerializableBiConsumer<O, IN> setter);
 	}
 	
 	/**
 	 * A mashup that allows to come back to the "main" options as well as continue configuration of an "imported bean mapping" 
-	 * @param <T>
+	 * @param <C>
 	 * @param <I>
 	 * @param <O>
 	 */
-	interface IFluentMappingBuilderEmbeddableOptions<T, I, O>
-		extends IFluentMappingBuilder<T, I>,
-			IFluentEmbeddableMappingConfigurationEmbeddableOptions<T, O> {
+	interface IFluentMappingBuilderEmbeddableOptions<C, I, O>
+		extends IFluentMappingBuilder<C, I>,
+			IFluentEmbeddableMappingConfigurationEmbeddableOptions<C, O> {
 		
 		@Override
-		<IN> IFluentMappingBuilderEmbeddableOptions<T, I, O> overrideName(SerializableFunction<O, IN> function, String columnName);
+		<IN> IFluentMappingBuilderEmbeddableOptions<C, I, O> overrideName(SerializableFunction<O, IN> function, String columnName);
 		
 		@Override
-		<IN> IFluentMappingBuilderEmbeddableOptions<T, I, O> overrideName(SerializableBiConsumer<O, IN> function, String columnName);
+		<IN> IFluentMappingBuilderEmbeddableOptions<C, I, O> overrideName(SerializableBiConsumer<O, IN> function, String columnName);
 		
 		@Override
-		<IN> IFluentMappingBuilderEmbeddableOptions<T, I, O> overrideName(AccessorChain<O, IN> chain, String columnName);
+		<IN> IFluentMappingBuilderEmbeddableOptions<C, I, O> overrideName(AccessorChain<O, IN> chain, String columnName);
 		
 	}
 	

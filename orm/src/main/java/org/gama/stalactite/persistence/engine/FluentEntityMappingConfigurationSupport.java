@@ -299,9 +299,12 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements IFluentMap
 		this.cascadeManys.add(cascadeMany);
 		return new MethodDispatcher()
 				.redirect(OneToManyOptions.class, new OneToManyOptionsSupport<>(cascadeMany), true)	// true to allow "return null" in implemented methods
-				.redirect(IndexableCollectionOptions.class, orderingColumn -> {
-					cascadeMany.setIndexingColumn(orderingColumn);
-					return null;	// we can return null because dispatcher will return proxy
+				.redirect(IndexableCollectionOptions.class, new IndexableCollectionOptions<C, I, O>() {
+					@Override
+					public <T extends Table> IndexableCollectionOptions<C, I, O> indexedBy(Column<T, Integer> orderingColumn) {
+						cascadeMany.setIndexingColumn(orderingColumn);
+						return null;
+					}
 				}, true)	// true to allow "return null" in implemented methods
 				.fallbackOn(this)
 				.build((Class<IFluentMappingBuilderOneToManyListOptions<C, I, O>>) (Class) IFluentMappingBuilderOneToManyListOptions.class);

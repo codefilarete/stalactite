@@ -24,7 +24,7 @@ public class CascadeManyList<SRC, O, J, C extends List<O>> extends CascadeMany<S
 		super(targetProvider, persister, (Class<C>) (Class) List.class, method);
 	}
 	
-	public void setIndexingColumn(Column indexingColumn) {
+	public void setIndexingColumn(Column<? extends Table, Integer> indexingColumn) {
 		this.indexingColumn = indexingColumn;
 	}
 	

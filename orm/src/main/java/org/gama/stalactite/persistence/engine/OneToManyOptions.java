@@ -9,8 +9,8 @@ import org.gama.stalactite.persistence.structure.Table;
 /**
  * @author Guillaume Mary
  */
-public interface OneToManyOptions<T , I, O >
-	extends CascadeOptions<IFluentMappingBuilderOneToManyOptions<T, I, O>> {
+public interface OneToManyOptions<C, I, O >
+	extends CascadeOptions<IFluentMappingBuilderOneToManyOptions<C, I, O>> {
 	
 	/**
 	 * Defines the bidirectional relationship.
@@ -22,7 +22,7 @@ public interface OneToManyOptions<T , I, O >
 	 * @param reverseLink opposite owner of the relation (setter)
 	 * @return the global mapping configurer
 	 */
-	IFluentMappingBuilderOneToManyOptions<T, I, O> mappedBy(SerializableBiConsumer<O, T> reverseLink);
+	IFluentMappingBuilderOneToManyOptions<C, I, O> mappedBy(SerializableBiConsumer<O, C> reverseLink);
 	
 	/**
 	 * Defines the bidirectional relationship.
@@ -34,7 +34,7 @@ public interface OneToManyOptions<T , I, O >
 	 * @param reverseLink opposite owner of the relation (getter)
 	 * @return the global mapping configurer
 	 */
-	IFluentMappingBuilderOneToManyOptions<T, I, O> mappedBy(SerializableFunction<O, T> reverseLink);
+	IFluentMappingBuilderOneToManyOptions<C, I, O> mappedBy(SerializableFunction<O, C> reverseLink);
 	
 	/**
 	 * Defines reverse side owner.
@@ -47,6 +47,6 @@ public interface OneToManyOptions<T , I, O >
 	 * @param reverseLink opposite owner of the relation
 	 * @return the global mapping configurer
 	 */
-	IFluentMappingBuilderOneToManyOptions<T, I, O> mappedBy(Column<Table, T> reverseLink);
+	IFluentMappingBuilderOneToManyOptions<C, I, O> mappedBy(Column<Table, C> reverseLink);
 	
 }
