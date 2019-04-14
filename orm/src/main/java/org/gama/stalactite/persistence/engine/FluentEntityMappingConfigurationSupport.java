@@ -66,27 +66,10 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements IFluentMap
 	 * @return a new {@link IFluentMappingBuilder}
 	 */
 	public static <T, I> IFluentMappingBuilder<T, I> from(Class<T> persistedClass, Class<I> identifierClass) {
-		return from(persistedClass, identifierClass, new Table(persistedClass.getSimpleName()));
-	}
-	
-	/**
-	 * Will start a {@link FluentEntityMappingConfigurationSupport} for a given class and a given target table.
-	 *
-	 * @param persistedClass the class to be persisted by the {@link ClassMappingStrategy} that will be created by {@link #build(Dialect)}
-	 * @param identifierClass the class of the identifier
-	 * @param table the table which will store instances of the persistedClass
-	 * @param <T> any type to be persisted
-	 * @param <I> the type of the identifier
-	 * @return a new {@link IFluentMappingBuilder}
-	 */
-	@SuppressWarnings("suid:S1172")	// identifierClass parameter needs to be present event if to used because it gives <I> Generic type
-	public static <T, I> IFluentMappingBuilder<T, I> from(Class<T> persistedClass, Class<I> identifierClass, Table table) {
-		return new FluentEntityMappingConfigurationSupport<>(persistedClass, table);
+		return new FluentEntityMappingConfigurationSupport<>(persistedClass);
 	}
 	
 	private final Class<C> persistedClass;
-	
-//	private final Table table;
 	
 	private IdentifierInsertionManager<C, I> identifierInsertionManager;
 	
@@ -116,11 +99,9 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements IFluentMap
 	 * Creates a builder to map the given class for persistence
 	 *
 	 * @param persistedClass the class to create a mapping for
-	 * @param table the target table of the persisted class
 	 */
-	public FluentEntityMappingConfigurationSupport(Class<C> persistedClass, Table table) {
+	public FluentEntityMappingConfigurationSupport(Class<C> persistedClass) {
 		this.persistedClass = persistedClass;
-//		this.table = table;
 		
 		// Helper to capture Method behind method reference
 		this.methodSpy = new MethodReferenceCapturer();
@@ -128,22 +109,9 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements IFluentMap
 		this.entityDecoratedEmbeddableConfigurationSupport = new EntityDecoratedEmbeddableConfigurationSupport<>(this, persistedClass);
 	}
 	
-	/**
-	 * Creates a builder to map the given class on a same name table
-	 * 
-	 * @param persistedClass the class to create a mapping for
-	 */
-	public FluentEntityMappingConfigurationSupport(Class<C> persistedClass) {
-		this(persistedClass, new Table(persistedClass.getSimpleName()));
-	}
-	
 	public Class<C> getPersistedClass() {
 		return persistedClass;
 	}
-	
-//	public Table getTable() {
-//		return table;
-//	}
 	
 	public ColumnNamingStrategy getJoinColumnNamingStrategy() {
 		return joinColumnNamingStrategy;

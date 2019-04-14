@@ -20,7 +20,7 @@ import org.gama.stalactite.persistence.structure.Table;
  * 
  * @author Guillaume Mary
  * @see FluentEntityMappingConfigurationSupport#from(Class, Class)
- * @see FluentEntityMappingConfigurationSupport#from(Class, Class, Table)
+ * @see #from(Class
  * @see #build(Dialect)
  */
 public interface IFluentMappingBuilder<C, I> extends IFluentEmbeddableMappingConfiguration<C> {

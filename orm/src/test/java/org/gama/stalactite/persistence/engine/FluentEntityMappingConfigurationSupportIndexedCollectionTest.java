@@ -74,11 +74,11 @@ public class FluentEntityMappingConfigurationSupportIndexedCollectionTest {
 		Column<Table, Identifier> id = choiceTable.addColumn("id", Identifier.class).primaryKey();
 		Column<Table, Integer> idx = choiceTable.addColumn("idx", int.class);
 		
-		Persister<Choice, Identifier<Long>, ?> choicePersister = from(Choice.class, LONG_TYPE, choiceTable)
+		Persister<Choice, Identifier<Long>, ?> choicePersister = from(Choice.class, LONG_TYPE)
 				.add(Choice::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.add(Choice::getName)
 				.add(Choice::getQuestion)
-				.build(persistenceContext);
+				.build(persistenceContext, choiceTable);
 		
 		Persister<Question, Identifier<Long>, ?> questionPersister = from(Question.class, LONG_TYPE)
 				.add(Question::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
@@ -263,12 +263,11 @@ public class FluentEntityMappingConfigurationSupportIndexedCollectionTest {
 		Column<Table, Identifier> id = choiceTable.addColumn("id", Identifier.class).primaryKey();
 		Column<Table, Integer> idx = choiceTable.addColumn("idx", int.class);
 		
-		Persister<Choice, Identifier<Long>, ?> choicePersister = from(Choice.class,
-				LONG_TYPE, choiceTable)
+		Persister<Choice, Identifier<Long>, ?> choicePersister = from(Choice.class, LONG_TYPE)
 				.add(Choice::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.add(Choice::getName)
 				.add(Choice::getQuestion)
-				.build(persistenceContext);
+				.build(persistenceContext, choiceTable);
 		
 		Persister<Question, Identifier<Long>, ?> questionPersister = from(Question.class, LONG_TYPE)
 				.add(Question::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
@@ -353,7 +352,7 @@ public class FluentEntityMappingConfigurationSupportIndexedCollectionTest {
 		Column<Table, Identifier> id = choiceTable.addColumn("id", Identifier.class).primaryKey();
 		Column<Table, Integer> idx = choiceTable.addColumn("idx", int.class);
 		
-		Persister<Choice, Identifier<Long>, ?> choicePersister = from(Choice.class, LONG_TYPE, choiceTable)
+		Persister<Choice, Identifier<Long>, ?> choicePersister = from(Choice.class, LONG_TYPE)
 				.add(Choice::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.add(Choice::getName)
 				.add(Choice::setQuestionWithNoGetter)
@@ -386,7 +385,7 @@ public class FluentEntityMappingConfigurationSupportIndexedCollectionTest {
 		Column<Table, Identifier> id = choiceTable.addColumn("id", Identifier.class).primaryKey();
 		Column<Table, Integer> idx = choiceTable.addColumn("idx", int.class);
 		
-		Persister<Choice, Identifier<Long>, ?> choicePersister = from(Choice.class, LONG_TYPE, choiceTable)
+		Persister<Choice, Identifier<Long>, ?> choicePersister = from(Choice.class, LONG_TYPE)
 				.add(Choice::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.add(Choice::getName)
 				.add(Choice::getQuestion)
@@ -417,7 +416,7 @@ public class FluentEntityMappingConfigurationSupportIndexedCollectionTest {
 		Column<Table, Identifier> id = choiceTable.addColumn("id", Identifier.class).primaryKey();
 		Column<Table, Integer> idx = choiceTable.addColumn("idx", int.class);
 		
-		Persister<Choice, Identifier<Long>, ?> choicePersister = from(Choice.class, LONG_TYPE, choiceTable)
+		Persister<Choice, Identifier<Long>, ?> choicePersister = from(Choice.class, LONG_TYPE)
 				.add(Choice::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.add(Choice::getName)
 				.add(Choice::getQuestion)
@@ -932,12 +931,11 @@ public class FluentEntityMappingConfigurationSupportIndexedCollectionTest {
 			id = choiceTable.addColumn("id", Identifier.class).primaryKey();
 			idx = choiceTable.addColumn("idx", int.class);
 			
-			choicePersister = from(Choice.class,
-					LONG_TYPE, choiceTable)
+			choicePersister = from(Choice.class, LONG_TYPE)
 					.add(Choice::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 					.add(Choice::getName)
 					.add(Choice::getQuestion)
-					.build(persistenceContext);
+					.build(persistenceContext, choiceTable);
 			
 			questionPersister = from(Question.class, LONG_TYPE)
 					.add(Question::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
@@ -1016,11 +1014,11 @@ public class FluentEntityMappingConfigurationSupportIndexedCollectionTest {
 			Column<Table, Identifier> id = choiceTable.addColumn("id", Identifier.class).primaryKey();
 			Column<Table, Integer> idx = choiceTable.addColumn("idx", int.class);
 			
-			choicePersister = from(Choice.class, LONG_TYPE, choiceTable)
+			choicePersister = from(Choice.class, LONG_TYPE)
 					.add(Choice::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 					.add(Choice::getName)
 					.add(Choice::getQuestion)
-					.build(persistenceContext);
+					.build(persistenceContext, choiceTable);
 			
 			questionPersister = from(Question.class, LONG_TYPE)
 					.add(Question::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
@@ -1031,10 +1029,10 @@ public class FluentEntityMappingConfigurationSupportIndexedCollectionTest {
 			// We create another choices persister dedicated to Answer association because usages are not the same :
 			// like Aggregate (in Domain Driven Design) or CQRS, Answers are not in the same context than Questions so it requires a different
 			// mapping. For instance there's no need of Question relationship mapping.
-			choiceReader = from(Choice.class, LONG_TYPE, choiceTable)
+			choiceReader = from(Choice.class, LONG_TYPE)
 					.add(Choice::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 					.add(Choice::getName)
-					.build(persistenceContext);
+					.build(persistenceContext, choiceTable);
 			
 			answerPersister = from(Answer.class, LONG_TYPE)
 					.add(Answer::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)

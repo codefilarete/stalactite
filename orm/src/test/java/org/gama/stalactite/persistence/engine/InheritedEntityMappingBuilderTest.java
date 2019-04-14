@@ -150,13 +150,13 @@ class InheritedEntityMappingBuilderTest {
 	
 	private Persister<Car, Identifier, Table> buildCRUDContext() {
 		Table superTable = new Table("toto");
-		ClassMappingStrategy<Vehicle, Identifier, Table> superClassMapping = new FluentEntityMappingConfigurationSupport<Vehicle, Identifier>(Vehicle.class, superTable)
+		ClassMappingStrategy<Vehicle, Identifier, Table> superClassMapping = new FluentEntityMappingConfigurationSupport<Vehicle, Identifier>(Vehicle.class)
 				.add(Vehicle::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.add(Vehicle::getColor)
 				.build(DIALECT, superTable);
 		
 		Table inheritedTable = new Table("tata");
-		FluentEntityMappingConfigurationSupport<Car, Identifier> configurationSupport = new FluentEntityMappingConfigurationSupport<>(Car.class, inheritedTable);
+		FluentEntityMappingConfigurationSupport<Car, Identifier> configurationSupport = new FluentEntityMappingConfigurationSupport<>(Car.class);
 		configurationSupport
 				.add(Car::getModel)
 				.mapInheritance(superClassMapping);
@@ -194,13 +194,13 @@ class InheritedEntityMappingBuilderTest {
 	
 	private Persister<Car, Identifier, Table> buildCRUDEmbeddedContext() {
 		Table superTable = new Table("toto");
-		ClassMappingStrategy<Vehicle, Identifier, Table> superClassMapping = new FluentEntityMappingConfigurationSupport<Vehicle, Identifier>(Vehicle.class, superTable)
+		ClassMappingStrategy<Vehicle, Identifier, Table> superClassMapping = new FluentEntityMappingConfigurationSupport<Vehicle, Identifier>(Vehicle.class)
 				.add(Vehicle::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.embed(Vehicle::getColor)
 				.build(DIALECT, superTable);
 		
 		Table inheritedTable = new Table("tata");
-		FluentEntityMappingConfigurationSupport<Car, Identifier> configurationSupport = new FluentEntityMappingConfigurationSupport<>(Car.class, inheritedTable);
+		FluentEntityMappingConfigurationSupport<Car, Identifier> configurationSupport = new FluentEntityMappingConfigurationSupport<>(Car.class);
 		configurationSupport
 				.add(Car::getModel)
 				.mapInheritance(superClassMapping);
@@ -243,13 +243,13 @@ class InheritedEntityMappingBuilderTest {
 				.build(persistenceContext);
 		
 		Table superTable = new Table("toto");
-		ClassMappingStrategy<Vehicle, Identifier, Table> superClassMapping = new FluentEntityMappingConfigurationSupport<Vehicle, Identifier>(Vehicle.class, superTable)
+		ClassMappingStrategy<Vehicle, Identifier, Table> superClassMapping = new FluentEntityMappingConfigurationSupport<Vehicle, Identifier>(Vehicle.class)
 				.add(Vehicle::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.addOneToOne(Vehicle::getEngine, enginePersister).cascading(RelationshipMode.ALL)
 				.build(DIALECT, superTable);
 		
 		Table inheritedTable = new Table("tata");
-		FluentEntityMappingConfigurationSupport<Car, Identifier> configurationSupport = new FluentEntityMappingConfigurationSupport<>(Car.class, inheritedTable);
+		FluentEntityMappingConfigurationSupport<Car, Identifier> configurationSupport = new FluentEntityMappingConfigurationSupport<>(Car.class);
 		configurationSupport
 				.add(Car::getModel)
 				.mapInheritance(superClassMapping);

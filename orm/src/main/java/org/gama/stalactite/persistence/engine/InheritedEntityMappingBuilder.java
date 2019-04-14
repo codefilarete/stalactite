@@ -94,9 +94,6 @@ public class InheritedEntityMappingBuilder<C, I> {
 		
 		EntityMappingBuilder<C, I> superBuilder = new EntityMappingBuilder<>(configurationSupport);
 		Persister<? super C, I, ?> superPersister = superBuilder.build(persistenceContext, configurationSupport.inheritanceMapping.getTargetTable());
-//		EntityMappingBuilder<C, I> superBuilder = new EntityMappingBuilder<>(configurationSupport);
-//		Persister<? super C, I, ?> superPersister = superBuilder.build(persistenceContext, configurationSupport.inheritanceMapping.getTargetTable());
-		
 		
 		JoinedStrategiesSelectExecutor<C, I> joinedStrategiesSelectExecutor = new JoinedStrategiesSelectExecutor<>(childClassMappingStrategy, persistenceContext.getDialect(), persistenceContext.getConnectionProvider());
 		Column subclassPK = Iterables.first((Set<Column<Table, Object>>) childClassTargetTable.getPrimaryKey().getColumns());
