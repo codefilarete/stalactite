@@ -86,19 +86,19 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements IFluentMap
 	
 	private final Class<C> persistedClass;
 	
-	private final Table table;
+//	private final Table table;
 	
 	private IdentifierInsertionManager<C, I> identifierInsertionManager;
 	
-	private PropertyAccessor<C, I> identifierAccessor;
+	PropertyAccessor<C, I> identifierAccessor;
 	
-	private final MethodReferenceCapturer methodSpy;
+	final MethodReferenceCapturer methodSpy;
 	
 	private final List<CascadeOne<C, ?, ?>> cascadeOnes = new ArrayList<>();
 	
 	private final List<CascadeMany<C, ?, ?, ? extends Collection>> cascadeManys = new ArrayList<>();
 	
-	private final EntityDecoratedEmbeddableConfigurationSupport<C, I> entityDecoratedEmbeddableConfigurationSupport;
+	final EntityDecoratedEmbeddableConfigurationSupport<C, I> entityDecoratedEmbeddableConfigurationSupport;
 	
 	private ForeignKeyNamingStrategy foreignKeyNamingStrategy = ForeignKeyNamingStrategy.DEFAULT;
 	
@@ -108,9 +108,9 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements IFluentMap
 	
 	private OptimisticLockOption optimisticLockOption;
 	
-	private ClassMappingStrategy<? super C, I, ?> inheritanceMapping;
+	ClassMappingStrategy<? super C, I, ?> inheritanceMapping;
 	
-	private boolean joinTable = false;
+	boolean joinTable = false;
 	
 	/**
 	 * Creates a builder to map the given class for persistence
@@ -120,12 +120,12 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements IFluentMap
 	 */
 	public FluentEntityMappingConfigurationSupport(Class<C> persistedClass, Table table) {
 		this.persistedClass = persistedClass;
-		this.table = table;
+//		this.table = table;
 		
 		// Helper to capture Method behind method reference
 		this.methodSpy = new MethodReferenceCapturer();
 		
-		this.entityDecoratedEmbeddableConfigurationSupport = new EntityDecoratedEmbeddableConfigurationSupport(this, persistedClass);
+		this.entityDecoratedEmbeddableConfigurationSupport = new EntityDecoratedEmbeddableConfigurationSupport<>(this, persistedClass);
 	}
 	
 	/**
@@ -137,9 +137,13 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements IFluentMap
 		this(persistedClass, new Table(persistedClass.getSimpleName()));
 	}
 	
-	public Table getTable() {
-		return table;
+	public Class<C> getPersistedClass() {
+		return persistedClass;
 	}
+	
+//	public Table getTable() {
+//		return table;
+//	}
 	
 	public ColumnNamingStrategy getJoinColumnNamingStrategy() {
 		return joinColumnNamingStrategy;
@@ -436,8 +440,18 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements IFluentMap
 	}
 	
 	@Override
-	public <T extends Table> Persister<C, I, T> build(PersistenceContext persistenceContext) {
-		ClassMappingStrategy<C, I, T> mainMappingStrategy = build(persistenceContext.getDialect());
+	public Persister<C, I, Table> build(PersistenceContext persistenceContext) {
+		return build(persistenceContext, new Table(getPersistedClass().getSimpleName()));
+	}
+	
+	@Override
+	public <T extends Table> Persister<C, I, T> build(PersistenceContext persistenceContext, T targetTable) {
+		if (joinTable && inheritanceMapping != null) {
+			return new InheritedEntityMappingBuilder<>(this)
+					.build(persistenceContext, targetTable);
+		}
+		
+		ClassMappingStrategy<C, I, T> mainMappingStrategy = build(persistenceContext.getDialect(), targetTable);
 		// we add super type mapping into the persistence context because it may haven't been put yet if it was built by build(Dialect)
 		if (inheritanceMapping != null) {
 			persistenceContext.add(inheritanceMapping);
@@ -480,55 +494,13 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements IFluentMap
 	
 	@Override
 	public <T extends Table> ClassMappingStrategy<C, I, T> build(Dialect dialect) {
-		IReversibleAccessor<C, I> localIdentifierAccessor = this.identifierAccessor;
-		if (identifierAccessor != null && inheritanceMapping != null) {
-			throw new MappingConfigurationException("Defining an identifier while inheritance is used is not supported");
-		}
-		
-		if (localIdentifierAccessor == null) {
-			if (inheritanceMapping == null) {
-				// no ClassMappingStratey in hierarchy, so we can't get an identifier from it => impossible
-				SerializableBiFunction<ColumnOptions, IdentifierPolicy, IFluentMappingBuilder> identifierMethodReference = ColumnOptions::identifier;
-				Method identifierSetter = this.methodSpy.findMethod(identifierMethodReference);
-				throw new UnsupportedOperationException("Identifier is not defined, please add one throught " + Reflections.toString(identifierSetter));
-			} else {
-				// at least one parent ClassMappingStrategy exists, it necessarily defines an identifier : we stop at the very first one
-				IdAccessor<? super C, ?> idAccessor = inheritanceMapping.getIdMappingStrategy().getIdAccessor();
-				if (!(idAccessor instanceof SinglePropertyIdAccessor)) {
-					throw new NotYetSupportedOperationException();
-				}
-				localIdentifierAccessor = ((SinglePropertyIdAccessor<C, I>) idAccessor).getIdAccessor();
-			}
-		}
-		
-		EmbeddableMappingBuilder<C> builder = new EntityMappingBuilder<>(dialect, this);
-		
-		Map<IReversibleAccessor, Column> columnMapping = builder.build();
-		
-		Column primaryKey = columnMapping.get(localIdentifierAccessor);
-		if (primaryKey == null) {
-			throw new UnsupportedOperationException("Table without primary key is not supported");
-		} else {
-			List<IReversibleAccessor> identifierAccessors = collect(columnMapping.entrySet(), e -> e.getValue().isPrimaryKey(), Entry::getKey, ArrayList::new);
-			if (identifierAccessors.size() > 1) {
-				throw new NotYetSupportedOperationException("Composed primary key is not yet supported");
-			}
-		}
-		
-		// getting identifier insertion manager, may be overwritten by class mapping
-//		FluentMappingBuilder.this.identifierInsertionManager = (IdentifierInsertionManager<C, I>) inheritanceMapping.getIdMappingStrategy().getIdentifierInsertionManager();
-		
-		IdentifierInsertionManager<C, I> identifierInsertionManager;
-		if (joinTable) {
-			identifierInsertionManager = new AlreadyAssignedIdentifierManager<>(inheritanceMapping.getIdMappingStrategy().getIdentifierInsertionManager().getIdentifierType()); 
-//			JoinedTablesInheritanceConfigurer cascadeOneConfigurer = new JoinedTablesInheritanceConfigurer();
-//			cascadeOneConfigurer.appendCascade(new JoinedTablesPersister(inheritanceMapping, dialect, ), );
-		} else {
-			identifierInsertionManager = this.inheritanceMapping == null
-					? this.identifierInsertionManager
-					: (IdentifierInsertionManager<C, I>) inheritanceMapping.getIdMappingStrategy().getIdentifierInsertionManager();
-		}
-		return new ClassMappingStrategy<>(persistedClass, table, (Map) columnMapping, localIdentifierAccessor, identifierInsertionManager);
+		return build(dialect, new Table(getPersistedClass().getSimpleName()));
+	}
+	
+	@Override
+	public <T extends Table> ClassMappingStrategy<C, I, T> build(Dialect dialect, Table targetTable) {
+		return new EntityMappingBuilder<>(this)
+				.build(dialect, targetTable);
 	}
 	
 	/**
@@ -809,78 +781,241 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements IFluentMap
 		}
 	}
 	
-	private static class EntityMappingBuilder<C> extends EmbeddableMappingBuilder<C> {
+	static class EntityMappingBuilder<C, I> {
 		
-		private final FluentEntityMappingConfigurationSupport<C, ?> configurationSupport;
+		private final FluentEntityMappingConfigurationSupport<C, I> configurationSupport;
 		
-		public <I> EntityMappingBuilder(Dialect dialect, FluentEntityMappingConfigurationSupport<C, I> entityBuilderSupport) {
-			super(entityBuilderSupport.entityDecoratedEmbeddableConfigurationSupport, dialect, entityBuilderSupport.table);
+		private final EmbeddableMappingBuilder<C> embeddableMappingBuilder;
+		
+		EntityMappingBuilder(FluentEntityMappingConfigurationSupport<C, I> entityBuilderSupport) {
 			this.configurationSupport = entityBuilderSupport;
-		}
-		
-		@Override
-		protected void includeInheritance() {
-			if (!configurationSupport.joinTable) {
-				super.includeInheritance();
-			}
-		}
-		
-		/** Overriden to take property definition by column into account */
-		@Override
-		protected Column findColumn(ValueAccessPoint valueAccessPoint, String defaultColumnName, Map<String, Column<Table, Object>> tableColumnsPerName, Inset<C, ?> configuration) {
-			Column overridenColumn = ((OverridableColumnInset<C, ?>) configuration).overridenColumns.get(valueAccessPoint);
-			return Nullable.nullable(overridenColumn).orGet(() -> super.findColumn(valueAccessPoint, defaultColumnName, tableColumnsPerName, configuration));
-		}
-		
-		/** Overriden to take primary key into account */
-		@Override
-		protected Column addLinkage(Linkage linkage) {
-			Column column = super.addLinkage(linkage);
-			// setting the primary key option as asked
-			if (linkage instanceof FluentEntityMappingConfigurationSupport.EntityLinkage) {	// should always be true, see FluentEntityMappingConfigurationSupport.newLinkage(..)
-				if (((EntityLinkage) linkage).isPrimaryKey()) {
-					column.primaryKey();
+			this.embeddableMappingBuilder = new EmbeddableMappingBuilder<C>(entityBuilderSupport.entityDecoratedEmbeddableConfigurationSupport) {
+				/** Overriden to take property definition by column into account */
+				@Override
+				protected Column findColumn(ValueAccessPoint valueAccessPoint, String defaultColumnName, Map<String, Column<Table, Object>> tableColumnsPerName, Inset<C, ?> configuration) {
+					Column overridenColumn = ((OverridableColumnInset<C, ?>) configuration).overridenColumns.get(valueAccessPoint);
+					return Nullable.nullable(overridenColumn).orGet(() -> super.findColumn(valueAccessPoint, defaultColumnName, tableColumnsPerName, configuration));
 				}
-			} else {
-				throw new NotImplementedException(linkage.getClass());
-			}
-			
-			return column;
+				
+				/** Overriden to take primary key into account */
+				@Override
+				protected Column addLinkage(Linkage linkage) {
+					Column column = super.addLinkage(linkage);
+					// setting the primary key option as asked
+					if (linkage instanceof FluentEntityMappingConfigurationSupport.EntityLinkage) {	// should always be true, see FluentEntityMappingConfigurationSupport.newLinkage(..)
+						if (((EntityLinkage) linkage).isPrimaryKey()) {
+							column.primaryKey();
+						}
+					} else {
+						throw new NotImplementedException(linkage.getClass());
+					}
+					
+					return column;
+				}
+				
+				@Override
+				protected Map<IReversibleAccessor, Column> buildMappingFromInheritance(Table targetTable) {
+					Table parentTable = targetTable;
+					if (configurationSupport.joinTable) {
+						parentTable = configurationSupport.inheritanceMapping.getTargetTable();
+					}
+					Map<IReversibleAccessor, Column> superResult = super.buildMappingFromInheritance(parentTable);
+					// We transfer columns and mapping of the inherited source to the current mapping
+					if (configurationSupport.inheritanceMapping != null) {
+						EmbeddedBeanMappingStrategy<? super C, ?> embeddableMappingStrategy = configurationSupport.inheritanceMapping.getMainMappingStrategy();
+						superResult.putAll(collectMapping(embeddableMappingStrategy, parentTable, (a, c) -> c.getName()));
+						// Dealing with identifier
+						Duo<IReversibleAccessor, Column> idMapping = collectIdMapping();
+						superResult.put(idMapping.getLeft(), idMapping.getRight());
+					}
+					return superResult;
+				}
+			};
 		}
 		
-		@Override
-		protected Map<IReversibleAccessor, Column> buildMappingFromInheritance(Table targetTable) {
-			Table parentTable = targetTable;
-			if (configurationSupport.joinTable) {
-				parentTable = configurationSupport.inheritanceMapping.getTargetTable();
-			}
-			Map<IReversibleAccessor, Column> superResult = super.buildMappingFromInheritance(parentTable);
-			// We transfer columns and mapping of the inherited source to the current mapping
-			if (configurationSupport.inheritanceMapping != null) {
-				EmbeddedBeanMappingStrategy<? super C, ?> embeddableMappingStrategy = configurationSupport.inheritanceMapping.getMainMappingStrategy();
-				superResult.putAll(collectMapping(embeddableMappingStrategy, parentTable, (a, c) -> c.getName()));
-				// Dealing with identifier
-				Duo<IReversibleAccessor, Column> idMapping = collectIdMapping(configurationSupport.inheritanceMapping);
-				superResult.put(idMapping.getLeft(), idMapping.getRight());
-			}
-			return superResult;
-		}
-		
-		private Duo<IReversibleAccessor, Column> collectIdMapping(ClassMappingStrategy entityMappingStrategy) {
+		private Duo<IReversibleAccessor, Column> collectIdMapping() {
 			Duo<IReversibleAccessor, Column> result = new Duo<>();
-			IdAccessor<? super C, ?> idAccessor = entityMappingStrategy.getIdMappingStrategy().getIdAccessor();
+			IdAccessor<? super C, ?> idAccessor = configurationSupport.inheritanceMapping.getIdMappingStrategy().getIdAccessor();
 			if (!(idAccessor instanceof SinglePropertyIdAccessor)) {
 				throw new NotYetSupportedOperationException();
 			}
 			IReversibleAccessor<? super C, ?> entityIdentifierAccessor = ((SinglePropertyIdAccessor<? super C, ?>) idAccessor).getIdAccessor();
-			Set<Column> columns = entityMappingStrategy.getTargetTable().getPrimaryKey().getColumns();
+			Set<Column> columns = configurationSupport.inheritanceMapping.getTargetTable().getPrimaryKey().getColumns();
 			// Because IdAccessor is a single column one (see assertion above) we can get the only column composing the primary key
 			Column primaryKey = Iterables.first(columns);
-			Column projectedPrimarkey = configurationSupport.getTable().addColumn(primaryKey.getName(), primaryKey.getJavaType()).primaryKey();
+			Column projectedPrimarkey = embeddableMappingBuilder.getTargetTable().addColumn(primaryKey.getName(), primaryKey.getJavaType()).primaryKey();
 			projectedPrimarkey.setAutoGenerated(primaryKey.isAutoGenerated());
 			result.setLeft(entityIdentifierAccessor);
 			result.setRight(projectedPrimarkey);
 			return result;
 		}
+		
+		public <T extends Table> ClassMappingStrategy<C, I, T> build(Dialect dialect, Table targetTable) {
+			IReversibleAccessor<C, I> localIdentifierAccessor = this.configurationSupport.identifierAccessor;
+			if (configurationSupport.identifierAccessor != null && configurationSupport.inheritanceMapping != null) {
+				throw new MappingConfigurationException("Defining an identifier while inheritance is used is not supported");
+			}
+			
+			if (localIdentifierAccessor == null) {
+				if (configurationSupport.inheritanceMapping == null) {
+					// no ClassMappingStratey in hierarchy, so we can't get an identifier from it => impossible
+					SerializableBiFunction<ColumnOptions, IdentifierPolicy, IFluentMappingBuilder> identifierMethodReference = ColumnOptions::identifier;
+					Method identifierSetter = this.configurationSupport.methodSpy.findMethod(identifierMethodReference);
+					throw new UnsupportedOperationException("Identifier is not defined, please add one throught " + Reflections.toString(identifierSetter));
+				} else {
+					// at least one parent ClassMappingStrategy exists, it necessarily defines an identifier : we stop at the very first one
+					IdAccessor<? super C, ?> idAccessor = configurationSupport.inheritanceMapping.getIdMappingStrategy().getIdAccessor();
+					if (!(idAccessor instanceof SinglePropertyIdAccessor)) {
+						throw new NotYetSupportedOperationException();
+					}
+					localIdentifierAccessor = ((SinglePropertyIdAccessor<C, I>) idAccessor).getIdAccessor();
+				}
+			}
+			
+			Map<IReversibleAccessor, Column> columnMapping = this.embeddableMappingBuilder.build(dialect, targetTable);
+			
+			Column primaryKey = columnMapping.get(localIdentifierAccessor);
+			if (primaryKey == null) {
+				throw new UnsupportedOperationException("Table without primary key is not supported");
+			} else {
+				List<IReversibleAccessor> identifierAccessors = collect(columnMapping.entrySet(), e -> e.getValue().isPrimaryKey(), Entry::getKey, ArrayList::new);
+				if (identifierAccessors.size() > 1) {
+					throw new NotYetSupportedOperationException("Composed primary key is not yet supported");
+				}
+			}
+			
+			// getting identifier insertion manager
+			IdentifierInsertionManager<C, I> identifierInsertionManager = this.configurationSupport.inheritanceMapping == null
+					? this.configurationSupport.identifierInsertionManager
+					: (IdentifierInsertionManager<C, I>) configurationSupport.inheritanceMapping.getIdMappingStrategy().getIdentifierInsertionManager();
+			return new ClassMappingStrategy<>(configurationSupport.persistedClass, embeddableMappingBuilder.getTargetTable(), (Map) columnMapping, localIdentifierAccessor, identifierInsertionManager);
+//			return new ClassMappingStrategy<>(configurationSupport.persistedClass, configurationSupport.table, (Map) columnMapping, localIdentifierAccessor, identifierInsertionManager);
+		}
+		
+		public Persister<C, I, Table> build(PersistenceContext persistenceContext) {
+			return build(persistenceContext, new Table(configurationSupport.getPersistedClass().getSimpleName()));
+		}
+		
+		public <T extends Table> Persister<C, I, T> build(PersistenceContext persistenceContext, T table) {
+			return build(persistenceContext, build(persistenceContext.getDialect(), table));
+		}
+		
+		<T extends Table> Persister<C, I, T> build(PersistenceContext persistenceContext, ClassMappingStrategy<C, I, T> mainMappingStrategy) {
+			// we add super type mapping into the persistence context because it may haven't been put yet if it was built by build(Dialect)
+//			if (this.configurationSupport.inheritanceMapping != null) {
+//				persistenceContext.add(this.configurationSupport.inheritanceMapping);
+//			}
+			
+			// by default, result is the simple persister of the main strategy
+			Persister<C, I, T> result = persistenceContext.add(mainMappingStrategy);
+			
+			if (!this.configurationSupport.cascadeOnes.isEmpty() || !this.configurationSupport.cascadeManys.isEmpty()) {
+				JoinedTablesPersister<C, I, T> joinedTablesPersister = new JoinedTablesPersister<>(persistenceContext, mainMappingStrategy);
+				// don't forget to register this new persister, its usefull for schema deployment
+				// NB: this will overwrite the previous one, done by persistenceContext.add(mainMappingStrategy) some lines above
+				persistenceContext.addPersister(joinedTablesPersister);
+				result = joinedTablesPersister;
+				
+				CascadeOneConfigurer<C, Object, Object> cascadeOneConfigurer = new CascadeOneConfigurer<>();
+				for (CascadeOne<C, ?, ?> cascadeOne : this.configurationSupport.cascadeOnes) {
+					cascadeOneConfigurer.appendCascade((CascadeOne<C, Object, Object>) cascadeOne, joinedTablesPersister, this.configurationSupport.foreignKeyNamingStrategy);
+				}
+				
+				CascadeManyConfigurer cascadeManyConfigurer = new CascadeManyConfigurer();
+				for (CascadeMany<C, ?, ?, ? extends Collection> cascadeMany : this.configurationSupport.cascadeManys) {
+					cascadeManyConfigurer.appendCascade(cascadeMany, joinedTablesPersister, this.configurationSupport.foreignKeyNamingStrategy, this.configurationSupport.associationTableNamingStrategy,
+							persistenceContext.getDialect());
+				}
+			}
+			
+			Nullable<VersioningStrategy> versionigStrategy = Nullable.nullable(this.configurationSupport.optimisticLockOption).apply(OptimisticLockOption::getVersioningStrategy);
+			if (versionigStrategy.isPresent()) {
+				// we have to declare it to the mapping strategy. To do that we must find the versionning column
+				Column column = result.getMappingStrategy().getMainMappingStrategy().getPropertyToColumn().get(this.configurationSupport.optimisticLockOption.propertyAccessor);
+				result.getMappingStrategy().addVersionedColumn(this.configurationSupport.optimisticLockOption.propertyAccessor, column);
+				// and don't forget to give it to the workers !
+				result.getUpdateExecutor().setVersioningStrategy(versionigStrategy.get());
+				result.getInsertExecutor().setVersioningStrategy(versionigStrategy.get());
+			}
+			
+			return result;
+		}
 	}
+	
+	
+	
+//	static class EntityMappingBuilder<C, I> extends EmbeddableMappingBuilder<C> {
+//		
+//		private final FluentEntityMappingConfigurationSupport<C, I> configurationSupport;
+//		
+//		EntityMappingBuilder(Dialect dialect, FluentEntityMappingConfigurationSupport<C, I> entityBuilderSupport) {
+//			super(entityBuilderSupport.entityDecoratedEmbeddableConfigurationSupport, dialect, entityBuilderSupport.table);
+//			this.configurationSupport = entityBuilderSupport;
+//		}
+//		
+//		@Override
+//		protected void includeInheritance() {
+//			if (!configurationSupport.joinTable) {
+//				super.includeInheritance();
+//			}
+//		}
+//		
+//		/** Overriden to take property definition by column into account */
+//		@Override
+//		protected Column findColumn(ValueAccessPoint valueAccessPoint, String defaultColumnName, Map<String, Column<Table, Object>> tableColumnsPerName, Inset<C, ?> configuration) {
+//			Column overridenColumn = ((OverridableColumnInset<C, ?>) configuration).overridenColumns.get(valueAccessPoint);
+//			return Nullable.nullable(overridenColumn).orGet(() -> super.findColumn(valueAccessPoint, defaultColumnName, tableColumnsPerName, configuration));
+//		}
+//		
+//		/** Overriden to take primary key into account */
+//		@Override
+//		protected Column addLinkage(Linkage linkage) {
+//			Column column = super.addLinkage(linkage);
+//			// setting the primary key option as asked
+//			if (linkage instanceof FluentEntityMappingConfigurationSupport.EntityLinkage) {	// should always be true, see FluentEntityMappingConfigurationSupport.newLinkage(..)
+//				if (((EntityLinkage) linkage).isPrimaryKey()) {
+//					column.primaryKey();
+//				}
+//			} else {
+//				throw new NotImplementedException(linkage.getClass());
+//			}
+//			
+//			return column;
+//		}
+//		
+//		@Override
+//		protected Map<IReversibleAccessor, Column> buildMappingFromInheritance(Table targetTable) {
+//			Table parentTable = targetTable;
+//			if (configurationSupport.joinTable) {
+//				parentTable = configurationSupport.inheritanceMapping.getTargetTable();
+//			}
+//			Map<IReversibleAccessor, Column> superResult = super.buildMappingFromInheritance(parentTable);
+//			// We transfer columns and mapping of the inherited source to the current mapping
+//			if (configurationSupport.inheritanceMapping != null) {
+//				EmbeddedBeanMappingStrategy<? super C, ?> embeddableMappingStrategy = configurationSupport.inheritanceMapping.getMainMappingStrategy();
+//				superResult.putAll(collectMapping(embeddableMappingStrategy, parentTable, (a, c) -> c.getName()));
+//				// Dealing with identifier
+//				Duo<IReversibleAccessor, Column> idMapping = collectIdMapping(configurationSupport.inheritanceMapping);
+//				superResult.put(idMapping.getLeft(), idMapping.getRight());
+//			}
+//			return superResult;
+//		}
+//		
+//		private Duo<IReversibleAccessor, Column> collectIdMapping(ClassMappingStrategy entityMappingStrategy) {
+//			Duo<IReversibleAccessor, Column> result = new Duo<>();
+//			IdAccessor<? super C, ?> idAccessor = entityMappingStrategy.getIdMappingStrategy().getIdAccessor();
+//			if (!(idAccessor instanceof SinglePropertyIdAccessor)) {
+//				throw new NotYetSupportedOperationException();
+//			}
+//			IReversibleAccessor<? super C, ?> entityIdentifierAccessor = ((SinglePropertyIdAccessor<? super C, ?>) idAccessor).getIdAccessor();
+//			Set<Column> columns = entityMappingStrategy.getTargetTable().getPrimaryKey().getColumns();
+//			// Because IdAccessor is a single column one (see assertion above) we can get the only column composing the primary key
+//			Column primaryKey = Iterables.first(columns);
+//			Column projectedPrimarkey = configurationSupport.getTable().addColumn(primaryKey.getName(), primaryKey.getJavaType()).primaryKey();
+//			projectedPrimarkey.setAutoGenerated(primaryKey.isAutoGenerated());
+//			result.setLeft(entityIdentifierAccessor);
+//			result.setRight(projectedPrimarkey);
+//			return result;
+//		}
+//	}
 }

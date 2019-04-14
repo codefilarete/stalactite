@@ -56,7 +56,7 @@ public class JoinedStrategiesSelectExecutor<C, I> {
 	private final PrimaryKey<Table> primaryKey;
 	private final IdentifierAssembler<I> identifierAssembler;
 	
-	JoinedStrategiesSelectExecutor(ClassMappingStrategy<C, I, ? extends Table> classMappingStrategy, Dialect dialect, ConnectionProvider connectionProvider) {
+	public JoinedStrategiesSelectExecutor(ClassMappingStrategy<C, I, ? extends Table> classMappingStrategy, Dialect dialect, ConnectionProvider connectionProvider) {
 		this.parameterBinderProvider = dialect.getColumnBinderRegistry();
 		this.joinedStrategiesSelect = new JoinedStrategiesSelect<>(classMappingStrategy, this.parameterBinderProvider);
 		this.connectionProvider = connectionProvider;

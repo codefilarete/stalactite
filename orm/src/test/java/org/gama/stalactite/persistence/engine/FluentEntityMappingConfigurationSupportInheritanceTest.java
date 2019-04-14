@@ -569,7 +569,13 @@ public class FluentEntityMappingConfigurationSupportInheritanceTest {
 		
 		private Color color;
 		
-		private Vehicle(Identifier<Long> id) {
+		private Engine engine;
+		
+		public Vehicle(Long id) {
+			this(new PersistableIdentifier<>(id));
+		}
+		
+		public Vehicle(Identifier<Long> id) {
 			super(id);
 		}
 		
@@ -582,6 +588,14 @@ public class FluentEntityMappingConfigurationSupportInheritanceTest {
 		
 		public void setColor(Color color) {
 			this.color = color;
+		}
+		
+		public Engine getEngine() {
+			return engine;
+		}
+		
+		public void setEngine(Engine engine) {
+			this.engine = engine;
 		}
 	}
 	
@@ -678,28 +692,20 @@ public class FluentEntityMappingConfigurationSupportInheritanceTest {
 		}
 	}
 	
-	public static class VehicleRecord {
+	static class Engine implements Identified<Long> {
 		
-		private final long id;
+		private final Identifier<Long> id;
 		
-		private final String color;
+		public Engine(Long id) {
+			this.id = new PersistableIdentifier<>(id);
+		}
 		
-		public VehicleRecord(long id, String color) {
+		public Engine(Identifier<Long> id) {
 			this.id = id;
-			this.color = color;
 		}
 		
-		public Long getId() {
+		public Identifier<Long> getId() {
 			return id;
-		}
-		
-		/**
-		 * Implemented for easier debug
-		 * @return a simple representation of this
-		 */
-		@Override
-		public String toString() {
-			return "VehicleRecord{id=" + id + ", color='" + color + '\'' + '}';
 		}
 	}
 }

@@ -65,36 +65,30 @@ import static org.gama.reflection.MethodReferences.toMethodReferenceString;
  * Engine that converts mapping definition of a {@link FluentEmbeddableMappingConfigurationSupport} into a simple {@link Map}
  *
  * @author Guillaume Mary
- * @see #build()
+ * @see #build(Dialect, Table) 
  */
 class EmbeddableMappingBuilder<C> {
 	
 	private final FluentEmbeddableMappingConfigurationSupport<C> configurationSupport;
-	private final Dialect dialect;
-	private final Table targetTable;
-	/** Result of {@link #build()}, shared between methods */
-	private final Map<IReversibleAccessor, Column> result = new HashMap<>();
+	private Dialect dialect;
+	private Table targetTable;
+	/** Result of {@link #build(Dialect, Table)}, shared between methods */
+	private Map<IReversibleAccessor, Column> result;
 	
-	EmbeddableMappingBuilder(FluentEmbeddableMappingConfigurationSupport<C> configurationSupport, Dialect dialect, Table targetTable) {
+	EmbeddableMappingBuilder(FluentEmbeddableMappingConfigurationSupport<C> configurationSupport) {
 		this.configurationSupport = configurationSupport;
-		this.dialect = dialect;
-		this.targetTable = targetTable;
-	}
-	
-	public Dialect getDialect() {
-		return dialect;
-	}
-	
-	public Table getTargetTable() {
-		return targetTable;
 	}
 	
 	/**
-	 * Converts mapping definition of the enclosing instance {@link FluentEmbeddableMappingConfigurationSupport} into a simple {@link Map} 
-	 * 
-	 * @return a {@link Map} representing the definition of the mapping done through the fluent API of {@link FluentEmbeddableMappingConfigurationSupport} 
+	 * Converts mapping definition of the enclosing instance {@link FluentEmbeddableMappingConfigurationSupport} into a simple {@link Map}
+	 *
+	 * @return a {@link Map} representing the definition of the mapping done through the fluent API of
+	 * {@link FluentEmbeddableMappingConfigurationSupport}
 	 */
-	Map<IReversibleAccessor, Column> build() {
+	Map<IReversibleAccessor, Column> build(Dialect dialect, Table targetTable) {
+		this.result = new HashMap<>();
+		this.dialect = dialect;
+		this.targetTable = targetTable;
 		// first we add mapping coming from inheritance, then it can be overwritten by class mapping 
 		includeInheritance();
 		// converting direct mapping
@@ -149,11 +143,11 @@ class EmbeddableMappingBuilder<C> {
 	
 	/**
 	 * Collects mapping of given {@link EmbeddedBeanMappingStrategy} and created equivalent {@link Column} on the given target table.
-	 * 
-	 * @param embeddableMappingStrategy the source of mapping 
+	 *
+	 * @param embeddableMappingStrategy the source of mapping
 	 * @param localTargetTable the table on which columns must be added
-	 * @param columnNameSupplier
-	 * @return a mapping between properties of {@link EmbeddedBeanMappingStrategy#getPropertyToColumn()} and their column in our {@link #getTargetTable()}
+	 * @return a mapping between properties of {@link EmbeddedBeanMappingStrategy#getPropertyToColumn()} and their column in our
+	 * {@link #targetTable}
 	 */
 	protected Map<IReversibleAccessor, Column> collectMapping(EmbeddedBeanMappingStrategy<? super C, ?> embeddableMappingStrategy,
 															  Table localTargetTable, BiFunction<IReversibleAccessor, Column, String> columnNameSupplier) {
@@ -225,7 +219,8 @@ class EmbeddableMappingBuilder<C> {
 					for (String conflict : conflictingMapping) {
 						conflicts.add(new Conflict(notOverridenColumnNames.get(conflict), alreadyMappedPropertyPerColumnName.get(conflict), conflict));
 					}
-					throw new MappingConfigurationException("Some embedded columns conflict with entity ones on their name, please override it or change it :"
+					throw new MappingConfigurationException(
+							"Some embedded columns conflict with entity ones on their name, please override it or change it :"
 							+ System.lineSeparator()
 							+ new StringAppender().ccat(conflicts, System.lineSeparator()));
 				}
@@ -242,7 +237,7 @@ class EmbeddableMappingBuilder<C> {
 					} else {
 						// Case : property is not mapped by embeddable strategy, so overriding it has no purpose
 						String methodSignature = MemberDefinition.toString(valueAccessPoint);
-						throw new MappingConfigurationException(methodSignature + " is not mapped by embeddable strategy," 
+						throw new MappingConfigurationException(methodSignature + " is not mapped by embeddable strategy,"
 								+ " so its column name override '" + nameOverride + "' can't apply");
 					}
 				});
@@ -395,7 +390,7 @@ class EmbeddableMappingBuilder<C> {
 	/**
 	 * Expected to give the {@link Column} for the given {@link Field} and {@link Inset} in the target {@link Table} (represented by its column
 	 * registry {@code tableColumnsPerName}).
-	 * 
+	 *
 	 * @param valueAccessPoint the property to be mapped
 	 * @param defaultColumnName name to search if not overriden
 	 * @param tableColumnsPerName persistence table's column registry
@@ -405,6 +400,10 @@ class EmbeddableMappingBuilder<C> {
 	protected Column findColumn(ValueAccessPoint valueAccessPoint, String defaultColumnName, Map<String, Column<Table, Object>> tableColumnsPerName, Inset<C, ?> configuration) {
 		String columnNameToSearch = preventNull(configuration.getOverridenColumnNames().get(valueAccessPoint), defaultColumnName);
 		return tableColumnsPerName.get(columnNameToSearch);
+	}
+	
+	public Table getTargetTable() {
+		return targetTable;
 	}
 	
 	private static class HierarchyIterator implements Iterator<Inset> {

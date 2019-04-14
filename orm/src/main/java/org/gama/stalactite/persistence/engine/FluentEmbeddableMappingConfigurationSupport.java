@@ -51,7 +51,7 @@ public class FluentEmbeddableMappingConfigurationSupport<C> implements IFluentEm
 	}
 	
 	/** Owning class of mapped properties */
-	private final Class<C> persistedClass;
+	private final Class<C> classToPersist;
 	
 	private ColumnNamingStrategy columnNamingStrategy = ColumnNamingStrategy.DEFAULT;
 	
@@ -72,13 +72,17 @@ public class FluentEmbeddableMappingConfigurationSupport<C> implements IFluentEm
 	/**
 	 * Creates a builder to map the given class for persistence
 	 *
-	 * @param persistedClass the class to create a mapping for
+	 * @param classToPersist the class to create a mapping for
 	 */
-	public FluentEmbeddableMappingConfigurationSupport(Class<C> persistedClass) {
-		this.persistedClass = persistedClass;
+	public FluentEmbeddableMappingConfigurationSupport(Class<C> classToPersist) {
+		this.classToPersist = classToPersist;
 		
 		// Helper to capture Method behind method reference
 		this.methodSpy = new MethodReferenceCapturer();
+	}
+	
+	public Class<C> getClassToPersist() {
+		return classToPersist;
 	}
 	
 	Collection<AbstractInset<C, ?>> getInsets() {
@@ -365,17 +369,17 @@ public class FluentEmbeddableMappingConfigurationSupport<C> implements IFluentEm
 	 * @return the mapping between "property" to column
 	 */
 	private Map<IReversibleAccessor, Column> buildMapping(Dialect dialect, Table targetTable) {
-		return new EmbeddableMappingBuilder(this, dialect, targetTable).build();
+		return new EmbeddableMappingBuilder<>(this).build(dialect, targetTable);
 	}
 	
 	@Override
 	public EmbeddedBeanMappingStrategy<C, Table> build(Dialect dialect) {
-		return build(dialect, new Table<>(persistedClass.getSimpleName()));
+		return build(dialect, new Table<>(classToPersist.getSimpleName()));
 	}
 	
 	@Override
 	public <T extends Table> EmbeddedBeanMappingStrategy<C, T> build(Dialect dialect, T targetTable) {
-		return new EmbeddedBeanMappingStrategy<>(persistedClass, targetTable, (Map) buildMapping(dialect, targetTable));
+		return new EmbeddedBeanMappingStrategy<>(classToPersist, targetTable, (Map) buildMapping(dialect, targetTable));
 	}
 	
 	/**

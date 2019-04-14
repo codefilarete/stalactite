@@ -119,12 +119,10 @@ public interface IFluentMappingBuilder<C, I> extends IFluentEmbeddableMappingCon
 	<O> IFluentMappingBuilderEmbedOptions<C, I, O> embed(SerializableFunction<C, O> getter);
 	
 	@Override
-	<O> IFluentMappingBuilderEmbeddableOptions<C, I, O> embed(SerializableFunction<C, O> getter,
-																			   EmbeddedBeanMappingStrategyBuilder<O> embeddableMappingBuilder);
+	<O> IFluentMappingBuilderEmbeddableOptions<C, I, O> embed(SerializableFunction<C, O> getter, EmbeddedBeanMappingStrategyBuilder<O> embeddableMappingBuilder);
 	
 	@Override
-	<O> IFluentMappingBuilderEmbeddableOptions<C, I, O> embed(SerializableBiConsumer<C, O> getter,
-																			   EmbeddedBeanMappingStrategyBuilder<O> embeddableMappingBuilder);
+	<O> IFluentMappingBuilderEmbeddableOptions<C, I, O> embed(SerializableBiConsumer<C, O> getter, EmbeddedBeanMappingStrategyBuilder<O> embeddableMappingBuilder);
 	
 	IFluentMappingBuilder<C, I> foreignKeyNamingStrategy(ForeignKeyNamingStrategy foreignKeyNamingStrategy);
 	
@@ -142,7 +140,11 @@ public interface IFluentMappingBuilder<C, I> extends IFluentEmbeddableMappingCon
 	 */
 	<T extends Table> ClassMappingStrategy<C, I, T> build(Dialect dialect);
 	
-	<T extends Table> Persister<C, I, T> build(PersistenceContext persistenceContext);
+	<T extends Table> ClassMappingStrategy<C, I, T> build(Dialect dialect, Table targetTable);
+	
+	Persister<C, I, Table> build(PersistenceContext persistenceContext);
+	
+	<T extends Table> Persister<C, I, T> build(PersistenceContext persistenceContext, T table);
 	
 	IFluentMappingBuilder<C, I> withJoinTable();
 	

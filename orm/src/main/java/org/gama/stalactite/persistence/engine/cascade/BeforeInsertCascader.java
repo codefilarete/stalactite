@@ -8,7 +8,8 @@ import org.gama.stalactite.persistence.engine.Persister;
 import org.gama.stalactite.persistence.engine.listening.InsertListener;
 
 /**
- * Cascader for insert, written for one-to-one style of cascade where Trigger owns the relationship to Target
+ * Cascader for insert, written for one-to-one style of cascade where Trigger owns the relationship to Target : Targets must be inserted before Triggers
+ * to get their primary keys and then put them as the foreign key in Triggers
  *
  * @param <TRIGGER> type of the elements that trigger this cascade
  * @param <TARGET> relationship entity type
