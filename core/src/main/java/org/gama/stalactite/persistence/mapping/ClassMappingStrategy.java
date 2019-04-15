@@ -14,6 +14,7 @@ import java.util.Set;
 import java.util.function.Function;
 
 import org.gama.lang.Reflections;
+import org.gama.reflection.AccessorChain;
 import org.gama.reflection.IReversibleAccessor;
 import org.gama.reflection.IReversibleMutator;
 import org.gama.reflection.PropertyAccessor;
@@ -51,8 +52,6 @@ import org.gama.stalactite.persistence.structure.Table;
  * @see org.gama.stalactite.query.model.Query
  */
 public class ClassMappingStrategy<C, I, T extends Table> implements IEntityMappingStrategy<C, I, T> {
-	
-	private final Class<C> classToPersist;
 	
 	private final EmbeddedBeanMappingStrategy<C, T> mainMappingStrategy;
 	
@@ -94,7 +93,6 @@ public class ClassMappingStrategy<C, I, T extends Table> implements IEntityMappi
 			throw new UnsupportedOperationException("No primary key column defined for " + targetTable.getAbsoluteName());
 		}
 		this.targetTable = targetTable;
-		this.classToPersist = classToPersist;
 		this.mainMappingStrategy = new EmbeddedBeanMappingStrategy<>(classToPersist, targetTable, propertyToColumn);
 		fillInsertableColumns();
 		fillUpdatableColumns();
@@ -133,7 +131,6 @@ public class ClassMappingStrategy<C, I, T extends Table> implements IEntityMappi
 			throw new UnsupportedOperationException("No primary key column defined for " + targetTable.getAbsoluteName());
 		}
 		this.targetTable = targetTable;
-		this.classToPersist = classToPersist;
 		this.mainMappingStrategy = new EmbeddedBeanMappingStrategy<>(classToPersist, targetTable, propertyToColumn);
 		fillInsertableColumns();
 		fillUpdatableColumns();
@@ -142,7 +139,7 @@ public class ClassMappingStrategy<C, I, T extends Table> implements IEntityMappi
 	}
 	
 	public Class<C> getClassToPersist() {
-		return classToPersist;
+		return mainMappingStrategy.getClassToPersist();
 	}
 	
 	@Override
@@ -152,6 +149,20 @@ public class ClassMappingStrategy<C, I, T extends Table> implements IEntityMappi
 	
 	public EmbeddedBeanMappingStrategy<C, T> getMainMappingStrategy() {
 		return mainMappingStrategy;
+	}
+	
+	/**
+	 * Implentation which returns all properties mapping, even embedded ones 
+	 * @return all properties mapping, even embedded ones
+	 */
+	@Override
+	public Map<IReversibleAccessor<C, Object>, Column<T, Object>> getPropertyToColumn() {
+		Map<IReversibleAccessor<C, Object>, Column<T, Object>> result = new HashMap<>();
+		result.putAll(getMainMappingStrategy().getPropertyToColumn());
+		for (Entry<IReversibleAccessor<C, Object>, IEmbeddedBeanMappingStrategy<Object, T>> value : mappingStrategies.entrySet()) {
+			value.getValue().getPropertyToColumn().forEach((k, v) -> result.put(new AccessorChain<>(value.getKey(), k), v));
+		}
+		return result;
 	}
 	
 	/**

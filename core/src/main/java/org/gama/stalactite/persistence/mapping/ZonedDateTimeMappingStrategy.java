@@ -13,6 +13,8 @@ import java.util.Set;
 import org.gama.lang.Reflections;
 import org.gama.lang.bean.Objects;
 import org.gama.lang.collection.Arrays;
+import org.gama.lang.exception.NotImplementedException;
+import org.gama.reflection.IReversibleAccessor;
 import org.gama.sql.result.Row;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
@@ -118,5 +120,11 @@ public class ZonedDateTimeMappingStrategy<T extends Table> implements IEmbeddedB
 		} else {
 			return ZonedDateTime.of((LocalDateTime) row.get(dateTimeColumn.getName()), (ZoneId) row.get(zoneColumn.getName()));
 		}
+	}
+	
+	@Override
+	public Map<IReversibleAccessor<ZonedDateTime, Object>, Column<T, Object>> getPropertyToColumn() {
+		throw new NotImplementedException(Reflections.toString(ZonedDateTimeMappingStrategy.class) + " can't export a mapping between some accessors and their columns" 
+				+ " because properties of " + Reflections.toString(ZonedDateTime.class) + " can't be set");
 	}
 }

@@ -143,9 +143,13 @@ public abstract class SQLOperation<ParamType> implements AutoCloseable {
 	protected void applyValuesToEnsuredStatement() {
 		try {
 			ensureStatement();
+		} catch (SQLException e) {
+			throw new BindingException("Error while creating statement " + getSQL(), e);
+		}
+		try {
 			this.sqlStatement.applyValues(preparedStatement);
-		} catch (SQLException | RuntimeException t) {
-			throw new BindingException("Error while applying values " + this.sqlStatement.values + " on statement " + getSQL(), t);
+		} catch (RuntimeException e) {
+			throw new BindingException("Error while applying values " + this.sqlStatement.values + " on statement " + getSQL(), e);
 		}
 	}
 	

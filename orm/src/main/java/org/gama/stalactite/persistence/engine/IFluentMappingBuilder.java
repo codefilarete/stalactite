@@ -55,7 +55,7 @@ public interface IFluentMappingBuilder<C, I> extends IFluentEmbeddableMappingCon
 	 * @param mappingStrategy a mapping strategy of a super type of the current mapped type
 	 * @return a enhanced version of {@code this} so one can add set options to the relationship or add mapping to {@code this}
 	 */
-	IFluentMappingBuilder<C, I> mapInheritance(ClassMappingStrategy<? super C, I, ?> mappingStrategy);
+	IFluentMappingBuilder<C, I> mapInheritance(Persister<? super C, I, ?> mappingStrategy);
 	
 	/**
 	 * Declares the mapping of a super class.

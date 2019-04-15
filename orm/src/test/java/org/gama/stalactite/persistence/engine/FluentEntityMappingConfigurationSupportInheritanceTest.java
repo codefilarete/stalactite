@@ -11,12 +11,12 @@ import org.gama.sql.binder.LambdaParameterBinder;
 import org.gama.sql.binder.NullAwareParameterBinder;
 import org.gama.sql.test.HSQLDBInMemoryDataSource;
 import org.gama.stalactite.persistence.engine.ColumnOptions.IdentifierPolicy;
+import org.gama.stalactite.persistence.engine.FluentEntityMappingConfigurationSupportInheritanceTest.MappedSuperClassData.VehiculeTable;
 import org.gama.stalactite.persistence.engine.model.Timestamp;
 import org.gama.stalactite.persistence.id.Identified;
 import org.gama.stalactite.persistence.id.Identifier;
 import org.gama.stalactite.persistence.id.PersistableIdentifier;
 import org.gama.stalactite.persistence.id.PersistedIdentifier;
-import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
 import org.gama.stalactite.persistence.mapping.EmbeddedBeanMappingStrategy;
 import org.gama.stalactite.persistence.sql.HSQLDBDialect;
 import org.gama.stalactite.persistence.structure.Column;
@@ -302,13 +302,11 @@ public class FluentEntityMappingConfigurationSupportInheritanceTest {
 		public void withIdDefinedInSuperClass() {
 			MappedSuperClassData mappedSuperClassData = new MappedSuperClassData();
 			
-			ClassMappingStrategy<Vehicle, Identifier<Long>, Table> vehicleMappingStrategy = FluentEntityMappingConfigurationSupport
+			Persister<Vehicle, Identifier<Long>, VehiculeTable> vehicleMappingStrategy = FluentEntityMappingConfigurationSupport
 					.from(Vehicle.class, LONG_TYPE)
 					// mapped super class defines id
 					.add(Vehicle::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
-					.build(DIALECT, mappedSuperClassData.vehicleTable);
-			// please note that the persister doesn't exist yet
-			assertTrue(persistenceContext.getPersisters().stream().map(p -> p.getMappingStrategy().getClassToPersist()).noneMatch(Vehicle.class::equals));
+					.build(persistenceContext, mappedSuperClassData.vehicleTable);
 			
 			Persister<Car, Identifier<Long>, ?> carPersister = FluentEntityMappingConfigurationSupport.from(Car.class, LONG_TYPE)
 					.add(Car::getModel)
@@ -346,10 +344,10 @@ public class FluentEntityMappingConfigurationSupportInheritanceTest {
 		public void multipleInheritance_identifierIsRedefined_throwsException() {
 			MappedSuperClassData mappedSuperClassData = new MappedSuperClassData();
 			
-			ClassMappingStrategy<AbstractVehicle, Identifier<Long>, Table> abstractVehicleMappingStrategy = FluentEntityMappingConfigurationSupport
+			Persister<AbstractVehicle, Identifier<Long>, Table> abstractVehicleMappingStrategy = FluentEntityMappingConfigurationSupport
 					.from(AbstractVehicle.class, LONG_TYPE)
 					.add(AbstractVehicle::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
-					.build(DIALECT);
+					.build(persistenceContext);
 			
 			MappingConfigurationException thrownException = assertThrows(MappingConfigurationException.class,
 					() -> FluentEntityMappingConfigurationSupport
@@ -364,15 +362,15 @@ public class FluentEntityMappingConfigurationSupportInheritanceTest {
 		public void multipleInheritance() {
 			MappedSuperClassData mappedSuperClassData = new MappedSuperClassData();
 			
-			ClassMappingStrategy<AbstractVehicle, Identifier<Long>, Table> abstractVehicleMappingStrategy = FluentEntityMappingConfigurationSupport
+			Persister<AbstractVehicle, Identifier<Long>, VehiculeTable> abstractVehicleMappingStrategy = FluentEntityMappingConfigurationSupport
 					.from(AbstractVehicle.class, LONG_TYPE)
 					.add(AbstractVehicle::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
-					.build(DIALECT, mappedSuperClassData.vehicleTable);
+					.build(persistenceContext, mappedSuperClassData.vehicleTable);
 			
-			ClassMappingStrategy<Vehicle, Identifier<Long>, Table> vehicleMappingStrategy = FluentEntityMappingConfigurationSupport
+			Persister<Vehicle, Identifier<Long>, VehiculeTable> vehicleMappingStrategy = FluentEntityMappingConfigurationSupport
 					.from(Vehicle.class, LONG_TYPE)
 					.mapInheritance(abstractVehicleMappingStrategy)
-					.build(DIALECT, mappedSuperClassData.vehicleTable);
+					.build(persistenceContext, mappedSuperClassData.vehicleTable);
 			
 			Persister<Car, Identifier<Long>, ?> carPersister = FluentEntityMappingConfigurationSupport.from(Car.class, LONG_TYPE)
 					.add(Car::getModel)
@@ -407,65 +405,41 @@ public class FluentEntityMappingConfigurationSupportInheritanceTest {
 		}
 		
 		@Test
-		public void mappedSuperClassMix() {
+		public void mappedSuperClass_and_entityInheritance_throwsException() {
 			MappedSuperClassData mappedSuperClassData = new MappedSuperClassData();
 			
-			ClassMappingStrategy<AbstractVehicle, Identifier<Long>, Table> abstractVehicleMappingStrategy = FluentEntityMappingConfigurationSupport
+			Persister<AbstractVehicle, Identifier<Long>, VehiculeTable> abstractVehicleMappingStrategy = FluentEntityMappingConfigurationSupport
 					.from(AbstractVehicle.class, LONG_TYPE)
 					// mapped super class defines id
 					.add(AbstractVehicle::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
-					.build(DIALECT, mappedSuperClassData.vehicleTable);
+					.build(persistenceContext, mappedSuperClassData.vehicleTable);
 			
 			EmbeddedBeanMappingStrategy<Vehicle, Table> vehicleMappingStrategy = FluentEmbeddableMappingConfigurationSupport
 					.from(Vehicle.class)
 					.add(Vehicle::getColor)
 					.build(DIALECT, mappedSuperClassData.vehicleTable);
 			
-			Persister<Car, Identifier<Long>, ?> carPersister = FluentEntityMappingConfigurationSupport.from(Car.class, LONG_TYPE)
+			IFluentMappingBuilder<Car, Identifier<Long>> mappingBuilder = FluentEntityMappingConfigurationSupport.from(Car.class
+					, LONG_TYPE)
 					.add(Car::getModel)
 					.add(Car::getColor)
 					.mapSuperClass(vehicleMappingStrategy)
-					.mapInheritance(abstractVehicleMappingStrategy)
-					.build(persistenceContext);
-			
-			// as an inherited entity, the table should be in the context, and its persister does exist
-			Collection<Table> tables = DDLDeployer.collectTables(persistenceContext);
-			assertTrue(tables.contains(mappedSuperClassData.vehicleTable));
-			assertNotNull(persistenceContext.getPersister(AbstractVehicle.class));
-			
-			// DML tests
-			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
-			ddlDeployer.deployDDL();
-			
-			Car dummyCar = new Car(1L);
-			dummyCar.setModel("Renault");
-			dummyCar.setColor(new Color(666));
-			
-			// insert test
-			carPersister.insert(dummyCar);
-			
-			List<Car> allCars = persistenceContext.select(Car::new, mappedSuperClassData.carTable.idColumn, m -> m
-					.add(mappedSuperClassData.carTable.modelColumn, Car::setModel)
-					.add(mappedSuperClassData.carTable.colorColumn, Car::setColor));
-			assertEquals(Arrays.asList(dummyCar), allCars);
-			
-			// select test
-			Car loadedCar = carPersister.select(new PersistedIdentifier<>(1L));
-			assertEquals(dummyCar, loadedCar);
+					.mapInheritance(abstractVehicleMappingStrategy);
+			MappingConfigurationException thrownException = assertThrows(MappingConfigurationException.class,
+					() -> mappingBuilder.build(persistenceContext));
+			assertEquals("Mapped super class and inheritance are not supported when they are combined, please remove one to them", thrownException.getMessage());
 		}
 		
 		@Test
 		public void joinedTables() {
 			MappedSuperClassData mappedSuperClassData = new MappedSuperClassData();
 			
-			ClassMappingStrategy<Vehicle, Identifier<Long>, Table> vehicleMappingStrategy = FluentEntityMappingConfigurationSupport
+			Persister<Vehicle, Identifier<Long>, VehiculeTable> vehicleMappingStrategy = FluentEntityMappingConfigurationSupport
 					.from(Vehicle.class, LONG_TYPE)
 					// mapped super class defines id
 					.add(Vehicle::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 					.add(Vehicle::getColor)
-					.build(DIALECT, mappedSuperClassData.vehicleTable);
-			// please note that the persister doesn't exist yet
-			assertTrue(persistenceContext.getPersisters().stream().map(p -> p.getMappingStrategy().getClassToPersist()).noneMatch(Vehicle.class::equals));
+					.build(persistenceContext, mappedSuperClassData.vehicleTable);
 			
 			Persister<Car, Identifier<Long>, ?> carPersister = FluentEntityMappingConfigurationSupport.from(Car.class, LONG_TYPE)
 					.add(Car::getModel)
@@ -517,7 +491,7 @@ public class FluentEntityMappingConfigurationSupportInheritanceTest {
 	/**
 	 * Data and method for common tests of building a strategy from a mapped super class
 	 */
-	private static class MappedSuperClassData {
+	static class MappedSuperClassData {
 		
 		abstract class AbstractVehiculeTable<SELF extends AbstractVehiculeTable<SELF>> extends Table<SELF> {
 			final Column<SELF, Identifier<Long>> idColumn = addColumn("id", (Class<Identifier<Long>>) (Class) Identifier.class).primaryKey();

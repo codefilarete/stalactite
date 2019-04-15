@@ -17,7 +17,6 @@ import org.gama.stalactite.persistence.engine.FluentEntityMappingConfigurationSu
 import org.gama.stalactite.persistence.id.Identified;
 import org.gama.stalactite.persistence.id.Identifier;
 import org.gama.stalactite.persistence.id.PersistedIdentifier;
-import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
 import org.gama.stalactite.persistence.sql.HSQLDBDialect;
 import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.test.JdbcConnectionProvider;
@@ -150,10 +149,10 @@ class InheritedEntityMappingBuilderTest {
 	
 	private Persister<Car, Identifier, Table> buildCRUDContext() {
 		Table superTable = new Table("toto");
-		ClassMappingStrategy<Vehicle, Identifier, Table> superClassMapping = new FluentEntityMappingConfigurationSupport<Vehicle, Identifier>(Vehicle.class)
+		Persister<Vehicle, Identifier, Table> superClassMapping = new FluentEntityMappingConfigurationSupport<Vehicle, Identifier>(Vehicle.class)
 				.add(Vehicle::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.add(Vehicle::getColor)
-				.build(DIALECT, superTable);
+				.build(persistenceContext, superTable);
 		
 		Table inheritedTable = new Table("tata");
 		FluentEntityMappingConfigurationSupport<Car, Identifier> configurationSupport = new FluentEntityMappingConfigurationSupport<>(Car.class);
@@ -194,10 +193,10 @@ class InheritedEntityMappingBuilderTest {
 	
 	private Persister<Car, Identifier, Table> buildCRUDEmbeddedContext() {
 		Table superTable = new Table("toto");
-		ClassMappingStrategy<Vehicle, Identifier, Table> superClassMapping = new FluentEntityMappingConfigurationSupport<Vehicle, Identifier>(Vehicle.class)
+		Persister<Vehicle, Identifier, Table> superClassMapping = new FluentEntityMappingConfigurationSupport<Vehicle, Identifier>(Vehicle.class)
 				.add(Vehicle::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.embed(Vehicle::getColor)
-				.build(DIALECT, superTable);
+				.build(persistenceContext, superTable);
 		
 		Table inheritedTable = new Table("tata");
 		FluentEntityMappingConfigurationSupport<Car, Identifier> configurationSupport = new FluentEntityMappingConfigurationSupport<>(Car.class);
@@ -214,7 +213,7 @@ class InheritedEntityMappingBuilderTest {
 	}
 	
 	@Test
-	void crud_withOneToOne() {
+	void crud_withOneToOne() throws SQLException {
 		
 		Persister<Car, Identifier, Table> carPersister = buildCRUDOneToOneContext();
 		
@@ -222,6 +221,7 @@ class InheritedEntityMappingBuilderTest {
 		Car myVehicle = new Car(1L);
 		myVehicle.setColor(new Color(123456));
 		myVehicle.setModel("Renault");
+		myVehicle.setEngine(new Engine(42L));
 		carPersister.insert(myVehicle);
 		
 		List<Duo> rawCars = persistenceContext.newQuery("select id, model from tata", Duo.class)
@@ -230,11 +230,59 @@ class InheritedEntityMappingBuilderTest {
 		assertEquals(new Duo<>(1L, "Renault"), first(rawCars));
 		assertEquals(1, rawCars.size());
 		
-		List<Duo> rawVehicles = persistenceContext.newQuery("select t.id, t.engineId, engine.id as enginePK from toto t left outer join engine on t.id = engine.id", Duo.class)
-				.mapKey(Duo::new, "engineId", long.class, "enginePK", long.class)
+		List<Duo> rawVehicles = persistenceContext.newQuery("select t.id as totoId, engine.id as engineId from toto t left outer join engine on t.engineId = engine.id", Duo.class)
+				.mapKey(Duo::new, "totoId", long.class, "engineId", long.class)
 				.execute(persistenceContext.getConnectionProvider());
-		assertEquals(new Duo<>(1L, 1L), first(rawVehicles));
+		assertEquals(new Duo<>(1L, 42L), first(rawVehicles));
 		assertEquals(1, rawVehicles.size());
+		
+		// update
+		Car myCarModified = new Car(1L);
+		myCarModified.setColor(new Color(654321));
+		myCarModified.setModel("Peugeot");
+		myCarModified.setEngine(new Engine(666L));
+//		carPersister.update(myCarModified, myVehicle, true);
+//		
+//		rawCars = persistenceContext.newQuery("select id, model from tata", Duo.class)
+//				.mapKey(Duo::new, "id", long.class, "model", String.class)
+//				.execute(persistenceContext.getConnectionProvider());
+//		assertEquals(new Duo<>(1L, "Peugeot"), first(rawCars));
+//		assertEquals(1, rawCars.size());
+//		
+//		rawVehicles = persistenceContext.newQuery("select t.id as totoId, engine.id as engineId from toto t left outer join engine on t.engineId = engine.id", Duo.class)
+//				.mapKey(Duo::new, "totoId", long.class, "engineId", long.class)
+//				.execute(persistenceContext.getConnectionProvider());
+//		assertEquals(new Duo<>(1L, 666L), first(rawVehicles));
+//		assertEquals(1, rawVehicles.size());
+		
+		// update by id TODO
+		
+		// select
+		Car selectedCar = carPersister.select(new PersistedIdentifier<>(1L));
+		assertEquals(new PersistedIdentifier<>(1L), selectedCar.getId());
+		assertEquals("Renault", selectedCar.getModel());
+		assertEquals(123456, selectedCar.getColor().getRgb());
+		assertEquals(42L, (long) selectedCar.getEngine().getId().getSurrogate());
+		
+		// delete
+		// commit is here to allow delelte by id test some lines below
+		persistenceContext.getConnectionProvider().getCurrentConnection().commit();
+		int deletedRowCount = carPersister.delete(myVehicle);
+		assertEquals(1, deletedRowCount);
+		rawCars = persistenceContext.newQuery("select id, model from tata", Duo.class)
+				.mapKey(Duo::new, "id", long.class, "model", String.class)
+				.execute(persistenceContext.getConnectionProvider());
+		assertTrue(rawCars.isEmpty());
+		
+		rawVehicles = persistenceContext.newQuery("select id, color from toto", Duo.class)
+				.mapKey(Duo::new, "id", long.class, "color", int.class)
+				.execute(persistenceContext.getConnectionProvider());
+		assertTrue(rawVehicles.isEmpty());
+		
+		List<Long> engineIds = persistenceContext.newQuery("select id from Engine", Long.class)
+				.mapKey(Long::new, "id", long.class)
+				.execute(persistenceContext.getConnectionProvider());
+		assertTrue(engineIds.isEmpty());
 	}
 	
 	private Persister<Car, Identifier, Table> buildCRUDOneToOneContext() {
@@ -243,10 +291,11 @@ class InheritedEntityMappingBuilderTest {
 				.build(persistenceContext);
 		
 		Table superTable = new Table("toto");
-		ClassMappingStrategy<Vehicle, Identifier, Table> superClassMapping = new FluentEntityMappingConfigurationSupport<Vehicle, Identifier>(Vehicle.class)
+		Persister<Vehicle, Identifier, Table> superClassMapping = new FluentEntityMappingConfigurationSupport<Vehicle, Identifier>(Vehicle.class)
 				.add(Vehicle::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
-				.addOneToOne(Vehicle::getEngine, enginePersister).cascading(RelationshipMode.ALL)
-				.build(DIALECT, superTable);
+				.addOneToOne(Vehicle::getEngine, enginePersister).cascading(RelationshipMode.ALL_ORPHAN_REMOVAL)
+				.add(Vehicle::getColor)
+				.build(persistenceContext, superTable);
 		
 		Table inheritedTable = new Table("tata");
 		FluentEntityMappingConfigurationSupport<Car, Identifier> configurationSupport = new FluentEntityMappingConfigurationSupport<>(Car.class);

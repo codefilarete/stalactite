@@ -8,6 +8,7 @@ import java.util.Map.Entry;
 import java.util.Set;
 import java.util.function.Function;
 
+import org.gama.reflection.IReversibleAccessor;
 import org.gama.sql.result.Row;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
@@ -90,6 +91,8 @@ public interface IMappingStrategy<C, T extends Table> {
 	default <O> void addSilentColumnUpdater(Column<T, O> column, Function<C, O> valueProvider) {
 		// does nothing by default
 	}
+	
+	Map<IReversibleAccessor<C, Object>, Column<T, Object>> getPropertyToColumn();
 	
 	/**
 	 * Wrapper for {@link Column} placed in an update statement so it can distinguish if it's for the Update or Where part 

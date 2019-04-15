@@ -93,7 +93,7 @@ public class CascadeOneConfigurer<SRC, TRGT, TRGTID> {
 	public void addDeleteCascade(CascadeOne<SRC, TRGT, TRGTID> cascadeOne,
 								 Persister<TRGT, TRGTID, Table> targetPersister,
 								 PersisterListener<SRC, ?> srcPersisterListener) {
-		// adding cascade treatment: before delete target is deleted (done before because of foreign key constraint)
+		// adding cascade treatment: target is deleted before source deletion (done before because of foreign key constraint)
 		srcPersisterListener.addDeleteListener(new AfterDeleteCascader<SRC, TRGT>(targetPersister) {
 			
 			@Override
@@ -133,7 +133,7 @@ public class CascadeOneConfigurer<SRC, TRGT, TRGTID> {
 			srcPersisterListener.addUpdateListener(
 					new MandatoryRelationCheckingBeforeUpdateListener<>(cascadeOne.getMember(), cascadeOne.getTargetProvider()));
 		}
-		// adding cascade treatment: after update target is updated too
+		// adding cascade treatment: after source update, target is updated too
 		srcPersisterListener.addUpdateListener(new AfterUpdateCascader<SRC, TRGT>(targetPersister) {
 			
 			@Override
@@ -156,7 +156,7 @@ public class CascadeOneConfigurer<SRC, TRGT, TRGTID> {
 			srcPersisterListener.addInsertListener(
 					new MandatoryRelationCheckingBeforeInsertListener<>(cascadeOne.getTargetProvider(), cascadeOne.getMember()));
 		}
-		// adding cascade treatment: after insert target is inserted too
+		// adding cascade treatment: after source insert, target is inserted too
 		srcPersisterListener.addInsertListener(new BeforeInsertCascader<SRC, TRGT>(targetPersister) {
 			
 			@Override

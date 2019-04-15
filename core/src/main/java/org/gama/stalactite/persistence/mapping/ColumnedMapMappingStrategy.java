@@ -8,8 +8,10 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 
+import org.gama.lang.Reflections;
 import org.gama.lang.bean.Objects;
 import org.gama.lang.collection.Collections;
+import org.gama.reflection.IReversibleAccessor;
 import org.gama.sql.result.Row;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
@@ -171,4 +173,10 @@ public abstract class ColumnedMapMappingStrategy<C extends Map<K, V>, K, V, T ex
 	public C transform(Row row) {
 		return this.rowTransformer.transform(row);
 	}
+	
+	@Override
+	public Map<IReversibleAccessor<C, Object>, Column<T, Object>> getPropertyToColumn() {
+		throw new UnsupportedOperationException(Reflections.toString(ColumnedMapMappingStrategy.class) + " can't export a mapping between some accessors and their columns");
+	}
+	
 }

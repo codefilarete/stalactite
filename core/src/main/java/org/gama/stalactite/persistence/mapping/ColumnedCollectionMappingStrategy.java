@@ -11,6 +11,7 @@ import java.util.Map;
 import java.util.Set;
 
 import org.gama.lang.Duo;
+import org.gama.lang.Reflections;
 import org.gama.lang.bean.Objects;
 import org.gama.lang.collection.Collections;
 import org.gama.lang.collection.Iterables;
@@ -18,6 +19,7 @@ import org.gama.lang.collection.PairIterator;
 import org.gama.lang.collection.PairIterator.EmptyIterator;
 import org.gama.lang.collection.PairIterator.InfiniteIterator;
 import org.gama.lang.collection.PairIterator.UntilBothIterator;
+import org.gama.reflection.IReversibleAccessor;
 import org.gama.sql.result.Row;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
@@ -152,5 +154,10 @@ public class ColumnedCollectionMappingStrategy<C extends Collection<O>, O, T ext
 	@Override
 	public C transform(Row row) {
 		return this.rowTransformer.transform(row);
+	}
+	
+	@Override
+	public Map<IReversibleAccessor<C, Object>, Column<T, Object>> getPropertyToColumn() {
+		throw new UnsupportedOperationException(Reflections.toString(ColumnedCollectionMappingStrategy.class) + " can't export a mapping between some accessors and their columns");
 	}
 }
