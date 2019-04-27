@@ -69,12 +69,14 @@ public class AfterUpdateCollectionCascaderTest extends AbstractCascaderTest {
 			}
 		};
 		
-		Toto triggeringInstance1 = new Toto(new Tata());
-		Toto triggeringInstance1_modified = new Toto(new Tata());
-		Toto triggeringInstance2 = new Toto(new Tata().setName("x"));
-		Toto triggeringInstance2_modified = new Toto(new Tata().setName("y"));
+		int tataId = 42;
+		Toto triggeringInstance1 = new Toto(new Tata().setId(tataId));
+		Toto triggeringInstance1_modified = new Toto(new Tata().setId(tataId));
+		Toto triggeringInstance2 = new Toto(new Tata().setName("x").setId(tataId));
+		Toto triggeringInstance2_modified = new Toto(new Tata().setName("y").setId(tataId));
 		// we give some instance with modifications (on name), so they'll be detected has modified (see Tata's strategy). Thus postTargetUpdate will be triggered
-		testInstance.afterUpdate(Arrays.asList(new UpdatePayload<>(new Duo<>(triggeringInstance1_modified, triggeringInstance1), new HashMap<>()),
+		testInstance.afterUpdate(Arrays.asList(
+				new UpdatePayload<>(new Duo<>(triggeringInstance1_modified, triggeringInstance1), new HashMap<>()),
 				new UpdatePayload<>(new Duo<>(triggeringInstance2_modified, triggeringInstance2), new HashMap<>())), true);
 		
 		// check actions are done in good order

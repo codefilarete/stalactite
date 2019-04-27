@@ -157,8 +157,8 @@ public class InheritedEntityMappingBuilder<C, I> {
 			}
 			
 			@Override
-			protected Duo<Object, Object> getTarget(Object modifiedTrigger, Object unmodifiedTrigger) {
-				return new Duo<>(modifiedTrigger, unmodifiedTrigger);
+			protected Object getTarget(Object trigger) {
+				return trigger;
 			}
 		});
 		

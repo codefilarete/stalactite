@@ -1,9 +1,5 @@
 package org.gama.stalactite.persistence.id;
 
-import javax.annotation.Nonnull;
-
-import org.gama.stalactite.persistence.id.diff.CollectionDiffer;
-
 /**
  * An identifier that can have its persisted state changed.
  * To be used for newly created instance that are not yet inserted in database.
@@ -30,27 +26,5 @@ public class PersistableIdentifier<T> extends AbstractIdentifier<T> {
 	@Override
 	public void setPersisted() {
 		this.persisted = true;
-	}
-	
-	/**
-	 * Overriden to be compatible with {@link PersistedIdentifier}.
-	 * This is particularly usefull with {@link CollectionDiffer} because it may compare persisted and not persisted identifier.
-	 * 
-	 * @param that another objet, not null, not this
-	 * @return true if persisted state are equal, or if this instance is persisted and {@code that} is a {@link PersistedIdentifier}
-	 */
-	@Override
-	protected boolean equalsDeeply(@Nonnull AbstractIdentifier<?> that) {
-		if (super.equalsDeeply(that)) {
-			if (that instanceof PersistableIdentifier) {
-				return this.persisted == ((PersistableIdentifier) that).persisted;
-			} else if (that instanceof PersistedIdentifier) {
-				return this.persisted;
-			} else {
-				return false;
-			}
-		} else {
-			return false;
-		}
 	}
 }

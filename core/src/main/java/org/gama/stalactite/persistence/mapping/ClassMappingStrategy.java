@@ -253,28 +253,34 @@ public class ClassMappingStrategy<C, I, T extends Table> implements IEntityMappi
 	@Nonnull
 	@Override
 	public Map<UpwhereColumn<T>, Object> getUpdateValues(C modified, C unmodified, boolean allColumns) {
-		Map<UpwhereColumn<T>, Object> toReturn = mainMappingStrategy.getUpdateValues(modified, unmodified, allColumns);
-		for (Entry<? extends IReversibleAccessor<C, Object>, IEmbeddedBeanMappingStrategy<Object, T>> fieldStrategyEntry : mappingStrategies.entrySet()) {
-			IReversibleAccessor<C, Object> accessor = fieldStrategyEntry.getKey();
-			Object modifiedValue = accessor.get(modified);
-			Object unmodifiedValue = unmodified == null ?  null : accessor.get(unmodified);
-			Map<UpwhereColumn<T>, Object> fieldUpdateValues = fieldStrategyEntry.getValue().getUpdateValues(modifiedValue, unmodifiedValue, allColumns);
-			for (Entry<UpwhereColumn<T>, Object> fieldUpdateValue : fieldUpdateValues.entrySet()) {
-				toReturn.put(fieldUpdateValue.getKey(), fieldUpdateValue.getValue());
-			}
-		}
-		if (!toReturn.isEmpty()) {
-			if (allColumns) {
-				Set<Column<T, Object>> missingColumns = new HashSet<>(getUpdatableColumns());
-				missingColumns.removeAll(UpwhereColumn.getUpdateColumns(toReturn).keySet());
-				for (Column<T, Object> missingColumn : missingColumns) {
-					toReturn.put(new UpwhereColumn<>(missingColumn, true), null);
+		Map<UpwhereColumn<T>, Object> toReturn;
+		if (modified != null && unmodified != null && !getId(modified).equals(getId(unmodified))) {
+			// entities are different, so there's no value to be updated 
+			toReturn = new HashMap<>();
+		} else {
+			toReturn = mainMappingStrategy.getUpdateValues(modified, unmodified, allColumns);
+			for (Entry<? extends IReversibleAccessor<C, Object>, IEmbeddedBeanMappingStrategy<Object, T>> fieldStrategyEntry : mappingStrategies.entrySet()) {
+				IReversibleAccessor<C, Object> accessor = fieldStrategyEntry.getKey();
+				Object modifiedValue = accessor.get(modified);
+				Object unmodifiedValue = unmodified == null ? null : accessor.get(unmodified);
+				Map<UpwhereColumn<T>, Object> fieldUpdateValues = fieldStrategyEntry.getValue().getUpdateValues(modifiedValue, unmodifiedValue, allColumns);
+				for (Entry<UpwhereColumn<T>, Object> fieldUpdateValue : fieldUpdateValues.entrySet()) {
+					toReturn.put(fieldUpdateValue.getKey(), fieldUpdateValue.getValue());
 				}
 			}
-			// Determining on which instance we should take where values : unmodified by default, modified for rough update (unmodified is null)
-			C whereSource = unmodified != null ? unmodified : modified;
-			for (Entry<Column<T, Object>, Object> entry : getVersionedKeyValues(whereSource).entrySet()) {
-				toReturn.put(new UpwhereColumn<>(entry.getKey(), false), entry.getValue());
+			if (!toReturn.isEmpty()) {
+				if (allColumns) {
+					Set<Column<T, Object>> missingColumns = new HashSet<>(getUpdatableColumns());
+					missingColumns.removeAll(UpwhereColumn.getUpdateColumns(toReturn).keySet());
+					for (Column<T, Object> missingColumn : missingColumns) {
+						toReturn.put(new UpwhereColumn<>(missingColumn, true), null);
+					}
+				}
+				// Determining on which instance we should take where values : unmodified by default, modified for rough update (unmodified is null)
+				C whereSource = unmodified != null ? unmodified : modified;
+				for (Entry<Column<T, Object>, Object> entry : getVersionedKeyValues(whereSource).entrySet()) {
+					toReturn.put(new UpwhereColumn<>(entry.getKey(), false), entry.getValue());
+				}
 			}
 		}
 		return toReturn;

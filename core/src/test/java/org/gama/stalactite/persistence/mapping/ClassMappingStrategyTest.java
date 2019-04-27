@@ -179,9 +179,7 @@ public class ClassMappingStrategyTest {
 				{ new Toto(1, 2, 3), new Toto(1, null, null), Maps.asMap(colB, 2).add(colC, 3) },
 				{ new Toto(1, 2, 3), new Toto(1, 2, 42), Maps.asMap(colC, 3) },
 				{ new Toto(1, null, null), new Toto(1, 2, 3), Maps.asMap(colB, null).add(colC, null) },
-				{ new Toto(null, null, null), new Toto(null, 2, 3), Maps.asMap(colB, null).add(colC, null) },
 				{ new Toto(1, 2, 3), new Toto(1, 2, 3), new HashMap<>() },
-				{ new Toto(null, null, null), new Toto(null, null, null), new HashMap<>() },
 				{ new Toto(1, 2, 3), null, Maps.asMap(colB, 2).add(colC, 3) },
 				{ new Toto(1, 2, 3, Arrays.asList("a")), new Toto(1, 5, 6, Arrays.asList("b")),
 						Maps.asMap(colB, (Object) 2).add(colC, 3).add(colD1, "a") },
@@ -189,6 +187,9 @@ public class ClassMappingStrategyTest {
 						Maps.asMap(colB, (Object) 2).add(colC, 3).add(colE1, "y") },
 				{ new Toto(1, 2, 3, Arrays.asList("a"), Maps.asMap("x", "y")), null,
 						Maps.asMap(colB, (Object) 2).add(colC, 3).add(colD1, "a").add(colE1, "y") },
+				// 2 different entities should not return modifications
+				{ new Toto(1, 2, 3), new Toto(10, 20, 30), new HashMap<>() },
+			
 		};
 	}
 	
@@ -220,14 +221,8 @@ public class ClassMappingStrategyTest {
 				{ new Toto(1, null, null),
 						new Toto(1, 2, 3),
 						Maps.asMap(colB, null).add(colC, null).add(colD1, null).add(colD2, null).add(colE1, null).add(colE2, null)},
-				{ new Toto(null, null, null),
-						new Toto(null, 2, 3),
-						Maps.asMap(colB, null).add(colC, null).add(colD1, null).add(colD2, null).add(colE1, null).add(colE2, null)},
 				{ new Toto(1, 2, 3),
 						new Toto(1, 2, 3),
-						new HashMap<>()},
-				{ new Toto(null, null, null),
-						new Toto(null, null, null),
 						new HashMap<>()},
 				{ new Toto(1, 2, 3),
 						null,

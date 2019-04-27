@@ -1,6 +1,5 @@
 package org.gama.stalactite.persistence.engine;
 
-import java.io.Serializable;
 import java.util.Collection;
 import java.util.Map;
 import java.util.function.BiPredicate;
@@ -30,25 +29,23 @@ import org.gama.stalactite.persistence.sql.dml.binder.ColumnBinderRegistry;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
 import org.junit.jupiter.api.Test;
-import org.mockito.ArgumentMatcher;
-import org.mockito.internal.util.Primitives;
+import org.mockito.ArgumentCaptor;
 
-import static org.gama.stalactite.persistence.engine.PersisterTest.Ensures.test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.clearInvocations;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
-import static org.mockito.internal.progress.ThreadSafeMockingProgress.mockingProgress;
 
 /**
  * @author Guillaume Mary
  */
-public class PersisterTest {
+class PersisterTest {
 	
 	@Test
-	public void testPersist() {
+	void testPersist() {
 		TotoTable totoTable = new TotoTable("TotoTable");
 		Column<TotoTable, Long> primaryKey = totoTable.addColumn("a", Long.class).primaryKey();
 		IReversibleAccessor<Toto, Long> identifier = Accessors.accessorByField(Toto.class, "a");
@@ -108,7 +105,7 @@ public class PersisterTest {
 	}
 	
 	@Test
-	public void testInsert() {
+	void testInsert() {
 		TotoTable totoTable = new TotoTable("TotoTable");
 		Column<TotoTable, Long> primaryKey = totoTable.addColumn("a", Long.class).primaryKey();
 		IReversibleAccessor<Toto, Long> identifier = Accessors.accessorByField(Toto.class, "a");
@@ -142,7 +139,7 @@ public class PersisterTest {
 	}
 	
 	@Test
-	public void testUpdate() {
+	void testUpdate() {
 		TotoTable totoTable = new TotoTable("TotoTable");
 		Column<TotoTable, Long> primaryKey = totoTable.addColumn("a", Long.class).primaryKey();
 		Column<TotoTable, Long> columnB = totoTable.addColumn("b", Long.class);
@@ -167,7 +164,7 @@ public class PersisterTest {
 		UpdateListener updateListener = mock(UpdateListener.class);
 		testInstance.getPersisterListener().addUpdateListener(updateListener);
 		
-		// when nothing to be deleted, listener is not invoked
+		// when nothing to be updated, listener is not invoked
 		testInstance.update(Arrays.asList(), false);
 		verifyNoMoreInteractions(updateListener);
 		testInstance.update(Arrays.asList(), true);
@@ -176,26 +173,29 @@ public class PersisterTest {
 		Toto original = new Toto(1, 2, 3);
 		Toto modified = new Toto(1, -2, -3);
 		
-		// On persist of a already persisted instance (with id), "rough update" chain must be invoked
+		// On update of an already persisted instance (with id), "rough update" chain must be invoked
 		testInstance.update(modified, original, false);
 		UpdatePayload<Toto, TotoTable> expectedPayload = new UpdatePayload<Toto, TotoTable>(
 				new Duo<>(modified, original),
 				(Map) Maps.asMap(new UpwhereColumn<>(columnB, true), -2)
 					.add(new UpwhereColumn<>(primaryKey, false), 1));
 		PayloadPredicate<Toto, TotoTable> payloadPredicate = new PayloadPredicate<>(expectedPayload);
-		verify(updateListener).beforeUpdate(test(Iterable.class, p -> payloadPredicate.test(Iterables.first(((Iterable<UpdatePayload<Toto, TotoTable>>) p).iterator()))), eq(false));
-		verify(updateListener).afterUpdate(test(Iterable.class, p -> payloadPredicate.test(Iterables.first(((Iterable<UpdatePayload<Toto, TotoTable>>) p).iterator()))), eq(false));
+		ArgumentCaptor<Iterable<UpdatePayload<Toto, TotoTable>>> listenerArgumentCaptor = ArgumentCaptor.forClass(Iterable.class);
+		verify(updateListener).beforeUpdate(listenerArgumentCaptor.capture(), eq(false));
+		assertTrue(payloadPredicate.test(Iterables.first(listenerArgumentCaptor.getValue())));
+		verify(updateListener).afterUpdate(listenerArgumentCaptor.capture(), eq(false));
+		assertTrue(payloadPredicate.test(Iterables.first(listenerArgumentCaptor.getValue())));
 	}
 	
-	public static class PayloadPredicate<A, B extends Table<B>> implements Predicate<UpdatePayload<A, B>> {
+	private static class PayloadPredicate<A, B extends Table<B>> implements Predicate<UpdatePayload<A, B>> {
 		
-		public static final BiPredicate<UpdatePayload<?, ?>, UpdatePayload<?, ?>> UPDATE_PAYLOAD_TESTER =
+		static final BiPredicate<UpdatePayload<?, ?>, UpdatePayload<?, ?>> UPDATE_PAYLOAD_TESTER =
 				(p1, p2) -> p1.getValues().equals(p2.getValues()) && p1.getEntities().equals(p2.getEntities());
 	
 		
 		private final UpdatePayload<A, B> expectedPayload;
 		
-		public PayloadPredicate(UpdatePayload<A, B> expectedPayload) {
+		private PayloadPredicate(UpdatePayload<A, B> expectedPayload) {
 			this.expectedPayload = expectedPayload;
 		}
 		
@@ -205,33 +205,8 @@ public class PersisterTest {
 		}
 	}
 	
-	/**
-	 * {@link ArgumentMatcher} to be plugged with a {@link Predicate}
-	 * 
-	 * @param <C> type of {@link Predicate}'s input
-	 */
-	public static class Ensures<C> implements ArgumentMatcher<C>, Serializable {
-		
-		/** Same as utility methods in {@link org.mockito.ArgumentMatchers} dedicated to {@link Ensures} */
-		public static <P> P test(Class<P> clazz, Predicate<P> matcher) {
-			mockingProgress().getArgumentMatcherStorage().reportMatcher(new Ensures<>(matcher));
-			return Primitives.defaultValue(clazz);
-		}
-		
-		private final Predicate<C> predicate;
-		
-		public Ensures(Predicate<C> predicate) {
-			this.predicate = predicate;
-		}
-		
-		public boolean matches(C actual) {
-			return predicate.test(actual);
-		}
-		
-	}
-	
 	@Test
-	public void testUpdateById() {
+	void testUpdateById() {
 		TotoTable totoTable = new TotoTable("TotoTable");
 		Column<TotoTable, Long> primaryKey = totoTable.addColumn("a", Long.class).primaryKey();
 		Column<TotoTable, Long> columnB = totoTable.addColumn("b", Long.class);
@@ -271,7 +246,7 @@ public class PersisterTest {
 	}
 	
 	@Test
-	public void testDelete() {
+	void testDelete() {
 		TotoTable totoTable = new TotoTable("TotoTable");
 		Column<TotoTable, Long> primaryKey = totoTable.addColumn("a", Long.class).primaryKey();
 		Column<TotoTable, Long> columnB = totoTable.addColumn("b", Long.class);
@@ -310,7 +285,7 @@ public class PersisterTest {
 	}
 	
 	@Test
-	public void testDeleteById() {
+	void testDeleteById() {
 		TotoTable totoTable = new TotoTable("TotoTable");
 		Column<TotoTable, Long> primaryKey = totoTable.addColumn("a", Long.class).primaryKey();
 		Column<TotoTable, Long> columnB = totoTable.addColumn("b", Long.class);

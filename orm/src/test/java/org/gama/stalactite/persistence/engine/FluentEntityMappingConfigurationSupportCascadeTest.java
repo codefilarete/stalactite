@@ -26,15 +26,19 @@ import org.gama.stalactite.persistence.sql.HSQLDBDialect;
 import org.gama.stalactite.test.JdbcConnectionProvider;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.function.Executable;
 import org.opentest4j.AssertionFailedError;
 
 import static org.gama.stalactite.persistence.engine.CascadeOptions.RelationshipMode.ALL;
+import static org.gama.stalactite.persistence.engine.CascadeOptions.RelationshipMode.ALL_ORPHAN_REMOVAL;
 import static org.gama.stalactite.persistence.engine.CascadeOptions.RelationshipMode.ASSOCIATION_ONLY;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -275,47 +279,129 @@ public class FluentEntityMappingConfigurationSupportCascadeTest {
 				"Non null value expected for relation o.g.s.p.e.m.Person o.g.s.p.e.m.Country.getPresident() on object org.gama.stalactite.persistence.engine.model.Country@0");
 	}
 	
-	@Test
-	public void testCascade_oneToOne_update() {
-		// mapping building thantks to fluent API
-		Persister<Country, Identifier<Long>, ?> countryPersister = FluentEntityMappingConfigurationSupport.from(Country.class, Identifier.LONG_TYPE)
-				.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
-				.add(Country::getName)
-				.add(Country::getDescription)
-				.addOneToOne(Country::getPresident, personPersister).cascading(ALL)
-				.build(persistenceContext);
+	@Nested
+	class CascadeOneToOneUpdate {
 		
-		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
-		ddlDeployer.deployDDL();
+		@Test
+		void relationChanged() {
+			// mapping building thanks to fluent API
+			Persister<Country, Identifier<Long>, ?> countryPersister = FluentEntityMappingConfigurationSupport.from(Country.class, Identifier.LONG_TYPE)
+					.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
+					.add(Country::getName)
+					.add(Country::getDescription)
+					.addOneToOne(Country::getPresident, personPersister).cascading(ALL)
+					.build(persistenceContext);
+			
+			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+			ddlDeployer.deployDDL();
+			
+			LongProvider countryIdProvider = new LongProvider();
+			LongProvider personIdProvider = new LongProvider();
+			Country dummyCountry = new Country(countryIdProvider.giveNewIdentifier());
+			dummyCountry.setName("France");
+			dummyCountry.setDescription("Smelly cheese !");
+			Person originalPresident = new Person(personIdProvider.giveNewIdentifier());
+			originalPresident.setName("French president");
+			dummyCountry.setPresident(originalPresident);
+			personPersister.insert(originalPresident);
+			countryPersister.insert(dummyCountry);
+			
+			// Changing president's name to see what happens when we save it to the database
+			Country persistedCountry = countryPersister.select(dummyCountry.getId());
+			persistedCountry.getPresident().setName("French president renamed");
+			countryPersister.update(persistedCountry, dummyCountry, true);
+			// Checking that changing president's name is pushed to the database when we save the country
+			Country countryFromDB = countryPersister.select(dummyCountry.getId());
+			assertEquals("French president renamed", countryFromDB.getPresident().getName());
+			assertTrue(persistedCountry.getPresident().getId().isPersisted());
+			
+			// Changing president
+			Person newPresident = new Person(personIdProvider.giveNewIdentifier());
+			newPresident.setName("new French president");
+			persistedCountry.setPresident(newPresident);
+			countryPersister.update(persistedCountry, countryFromDB, true);
+			// Checking that president has changed
+			countryFromDB = countryPersister.select(dummyCountry.getId());
+			assertEquals("new French president", countryFromDB.getPresident().getName());
+			assertEquals(newPresident.getId(), countryFromDB.getPresident().getId());
+			// and original one was left untouched
+			assertEquals("French president renamed", personPersister.select(originalPresident.getId()).getName());
+		}
+	
+		@Test
+		void relationNullified() {
+			// mapping building thanks to fluent API
+			Persister<Country, Identifier<Long>, ?> countryPersister = FluentEntityMappingConfigurationSupport.from(Country.class, Identifier.LONG_TYPE)
+					.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
+					.add(Country::getName)
+					.add(Country::getDescription)
+					.addOneToOne(Country::getPresident, personPersister).cascading(ALL)
+					.build(persistenceContext);
+			
+			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+			ddlDeployer.deployDDL();
+			
+			LongProvider countryIdProvider = new LongProvider();
+			LongProvider personIdProvider = new LongProvider();
+			Country dummyCountry = new Country(countryIdProvider.giveNewIdentifier());
+			dummyCountry.setName("France");
+			dummyCountry.setDescription("Smelly cheese !");
+			Person president = new Person(personIdProvider.giveNewIdentifier());
+			president.setName("French president");
+			dummyCountry.setPresident(president);
+			personPersister.insert(president);
+			countryPersister.insert(dummyCountry);
+			
+			// Removing president
+			Country persistedCountry = countryPersister.select(dummyCountry.getId());
+			persistedCountry.setPresident(null);
+			countryPersister.update(persistedCountry, dummyCountry, true);
+			// Checking that president is no more related to country
+			Country countryFromDB = countryPersister.select(dummyCountry.getId());
+			assertNull(countryFromDB.getPresident());
+			// President shouldn't be deleted because orphan removal wasn't asked
+			Person previousPresident = personPersister.select(president.getId());
+			assertNotNull(previousPresident);
+			// properties shouldn't have been nullified
+			assertNotNull(previousPresident.getName());
+		}
 		
-		LongProvider countryIdProvider = new LongProvider();
-		Country dummyCountry = new Country(countryIdProvider.giveNewIdentifier());
-		dummyCountry.setName("France");
-		dummyCountry.setDescription("Smelly cheese !");
-		Person person = new Person(new LongProvider().giveNewIdentifier());
-		person.setName("French president");
-		dummyCountry.setPresident(person);
-		personPersister.insert(person);
-		countryPersister.insert(dummyCountry);
-		
-		// Changing president's name to see what happens when we save it to the database
-		Country persistedCountry = countryPersister.select(dummyCountry.getId());
-		persistedCountry.getPresident().setName("French president");
-		countryPersister.update(persistedCountry, dummyCountry, true);
-		// Checking that changing president's name is pushed to the database when we save the country
-		Country countryFromDB = countryPersister.select(dummyCountry.getId());
-		assertEquals("French president", countryFromDB.getPresident().getName());
-		assertTrue(persistedCountry.getPresident().getId().isPersisted());
-		
-		// Changing president
-		Person newPresident = new Person(new LongProvider().giveNewIdentifier());
-		newPresident.setName("new French president");
-		persistedCountry.setPresident(newPresident);
-		countryPersister.update(persistedCountry, countryFromDB, true);
-		// Checking that president has changed
-		countryFromDB = countryPersister.select(dummyCountry.getId());
-		assertEquals("new French president", countryFromDB.getPresident().getName());
-		assertEquals(newPresident.getId().getSurrogate(), countryFromDB.getPresident().getId().getSurrogate());
+		@Test
+		void relationNullifiedWithOrphanRemoval() {
+			// mapping building thanks to fluent API
+			Persister<Country, Identifier<Long>, ?> countryPersister = FluentEntityMappingConfigurationSupport.from(Country.class, Identifier.LONG_TYPE)
+					.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
+					.add(Country::getName)
+					.add(Country::getDescription)
+					.addOneToOne(Country::getPresident, personPersister).cascading(ALL_ORPHAN_REMOVAL)
+					.build(persistenceContext);
+			
+			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+			ddlDeployer.deployDDL();
+			
+			LongProvider countryIdProvider = new LongProvider();
+			LongProvider personIdProvider = new LongProvider();
+			Country dummyCountry = new Country(countryIdProvider.giveNewIdentifier());
+			dummyCountry.setName("France");
+			dummyCountry.setDescription("Smelly cheese !");
+			Person president = new Person(personIdProvider.giveNewIdentifier());
+			president.setName("French president");
+			dummyCountry.setPresident(president);
+			personPersister.insert(president);
+			countryPersister.insert(dummyCountry);
+			
+			// Removing president
+			Country persistedCountry = countryPersister.select(dummyCountry.getId());
+			persistedCountry.setPresident(null);
+			countryPersister.update(persistedCountry, dummyCountry, true);
+			// Checking that president has changed
+			Country countryFromDB = countryPersister.select(dummyCountry.getId());
+			assertNull(countryFromDB.getPresident());
+			// previous president has been deleted
+			Person previousPresident = personPersister.select(president.getId());
+			assertNull(previousPresident);
+		}
+	
 	}
 	
 	@Test

@@ -30,5 +30,10 @@ public abstract class AbstractCascaderTest {
 			this.name = name;
 			return this;
 		}
+		
+		public Tata setId(long id) {
+			this.id = id;
+			return this;
+		}
 	}
 }

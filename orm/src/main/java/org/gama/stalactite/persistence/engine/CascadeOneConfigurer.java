@@ -1,6 +1,8 @@
 package org.gama.stalactite.persistence.engine;
 
 import java.lang.reflect.Method;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Set;
 import java.util.function.Function;
 
@@ -13,7 +15,6 @@ import org.gama.reflection.PropertyAccessor;
 import org.gama.stalactite.persistence.engine.CascadeOptions.RelationshipMode;
 import org.gama.stalactite.persistence.engine.cascade.AfterDeleteByIdCascader;
 import org.gama.stalactite.persistence.engine.cascade.AfterDeleteCascader;
-import org.gama.stalactite.persistence.engine.cascade.AfterUpdateCascader;
 import org.gama.stalactite.persistence.engine.cascade.BeforeInsertCascader;
 import org.gama.stalactite.persistence.engine.cascade.JoinedStrategiesSelect;
 import org.gama.stalactite.persistence.engine.cascade.JoinedTablesPersister;
@@ -130,22 +131,50 @@ public class CascadeOneConfigurer<SRC, TRGT, TRGTID> {
 								 PersisterListener<SRC, ?> srcPersisterListener) {
 		// if cascade is mandatory, then adding nullability checking before insert
 		if (!cascadeOne.isNullable()) {
-			srcPersisterListener.addUpdateListener(
-					new MandatoryRelationCheckingBeforeUpdateListener<>(cascadeOne.getMember(), cascadeOne.getTargetProvider()));
+			srcPersisterListener.addUpdateListener(new MandatoryRelationCheckingBeforeUpdateListener<>(cascadeOne.getMember(), cascadeOne.getTargetProvider()));
 		}
 		// adding cascade treatment: after source update, target is updated too
-		srcPersisterListener.addUpdateListener(new AfterUpdateCascader<SRC, TRGT>(targetPersister) {
+		srcPersisterListener.addUpdateListener(new UpdateListener<SRC>() {
 			
+			/**
+			 * Implementation made to insert non-persisted target instances to fulfill foreign key requirement if relation ownership is on source side
+			 *
+			 * @param entities source entities updated
+			 * @param allColumnsStatement true if all columns must be updated, false if only changed ones must be in the update statement
+			 */
 			@Override
-			protected void postTargetUpdate(Iterable<UpdatePayload<? extends TRGT, ?>> entities) {
-				// Nothing to do
+			public void beforeUpdate(Iterable<UpdatePayload<? extends SRC, ?>> entities, boolean allColumnsStatement) {
+				List<TRGT> targetsToBeInserted = new ArrayList<>();
+				Iterables.stream(entities).map(p -> p.getEntities().getLeft()).forEach((modifiedTrigger -> {
+					TRGT modifiedTriggerTarget = getTarget(modifiedTrigger);
+					if (modifiedTriggerTarget != null && targetPersister.getMappingStrategy().isNew(modifiedTriggerTarget)) {
+						targetsToBeInserted.add(modifiedTriggerTarget);
+					}
+				}));
+				targetPersister.insert(targetsToBeInserted);
 			}
 			
 			@Override
-			protected Duo<TRGT, TRGT> getTarget(SRC modifiedTrigger, SRC unmodifiedTrigger) {
-				return new Duo<>(cascadeOne.getTargetProvider().apply(modifiedTrigger), cascadeOne.getTargetProvider().apply(unmodifiedTrigger));
+			public void afterUpdate(Iterable<UpdatePayload<? extends SRC, ?>> payloads, boolean allColumnsStatement) {
+				List<Duo<TRGT, TRGT>> targetsToUpdate = Iterables.collect(payloads,
+						// targets of nullified relations don't need to be updated 
+						e -> getTarget(e.getEntities().getLeft()) != null,
+						e -> getTargets(e.getEntities().getLeft(), e.getEntities().getRight()),
+						ArrayList::new);
+				targetPersister.update(targetsToUpdate, allColumnsStatement);
+			}
+			
+			protected Duo<TRGT, TRGT> getTargets(SRC modifiedTrigger, SRC unmodifiedTrigger) {
+				return new Duo<>(getTarget(modifiedTrigger), getTarget(unmodifiedTrigger));
+			}
+			
+			protected TRGT getTarget(SRC src) {
+				return cascadeOne.getTargetProvider().apply(src);
 			}
 		});
+		if (cascadeOne.getRelationshipMode() == RelationshipMode.ALL_ORPHAN_REMOVAL) {
+			srcPersisterListener.addUpdateListener(new OrphanRemovalOnUpdate<>(targetPersister, cascadeOne.getTargetProvider()));
+		}
 	}
 	
 	public void addInsertCascade(CascadeOne<SRC, TRGT, TRGTID> cascadeOne,
@@ -219,5 +248,30 @@ public class CascadeOneConfigurer<SRC, TRGT, TRGTID> {
 	public static RuntimeMappingException newRuntimeMappingException(Object pawn, Method member) {
 		return new RuntimeMappingException("Non null value expected for relation "
 				+ Reflections.toString(member) + " on object " + pawn);
+	}
+	
+	private static class OrphanRemovalOnUpdate<SRC, TRGT> implements UpdateListener<SRC> {
+		
+		private final Persister<TRGT, ?, ?> targetPersister;
+		private final Function<SRC, TRGT> targetProvider;
+		
+		private OrphanRemovalOnUpdate(Persister<TRGT, ?, ?> targetPersister, Function<SRC, TRGT> targetProvider) {
+			this.targetPersister = targetPersister;
+			this.targetProvider = targetProvider;
+		}
+		
+		@Override
+		public void afterUpdate(Iterable<UpdatePayload<? extends SRC, ?>> payloads, boolean allColumnsStatement) {
+				List<TRGT> targetsToDeleteUpdate = Iterables.collect(payloads,
+						// targets of nullified relations don't need to be updated 
+						e -> getTarget(e.getEntities().getLeft()) == null,
+						e -> getTarget(e.getEntities().getRight()),
+						ArrayList::new);
+				targetPersister.delete(targetsToDeleteUpdate);
+		}
+		
+		private TRGT getTarget(SRC src) {
+			return targetProvider.apply(src);
+		}
 	}
 }

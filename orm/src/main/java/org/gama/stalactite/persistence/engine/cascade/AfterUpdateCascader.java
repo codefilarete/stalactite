@@ -1,8 +1,5 @@
 package org.gama.stalactite.persistence.engine.cascade;
 
-import java.util.Objects;
-import java.util.stream.Collectors;
-
 import org.gama.lang.Duo;
 import org.gama.lang.collection.Iterables;
 import org.gama.stalactite.persistence.engine.Persister;
@@ -36,13 +33,12 @@ public abstract class AfterUpdateCascader<TRIGGER, TARGET> implements UpdateList
 	
 	/**
 	 * Overriden to update Target instances of the Trigger instances.
-	 * @param entities source entities previously updated
+	 * @param entities source entities updated
 	 * @param allColumnsStatement true if all columns must be updated, false if only changed ones must be in the update statement
 	 */
 	@Override
 	public void afterUpdate(Iterable<UpdatePayload<? extends TRIGGER, ?>> entities, boolean allColumnsStatement) {
-		this.persister.update(Iterables.stream(entities).map(e -> getTarget(e.getEntities().getLeft(), e.getEntities().getRight())).filter(Objects::nonNull)
-				.collect(Collectors.toList()), allColumnsStatement);
+		this.persister.update(Iterables.collectToList(entities, e -> getTarget(e.getEntities().getLeft(), e.getEntities().getRight())), allColumnsStatement);
 	}
 	
 	/**
@@ -53,12 +49,22 @@ public abstract class AfterUpdateCascader<TRIGGER, TARGET> implements UpdateList
 	protected abstract void postTargetUpdate(Iterable<UpdatePayload<? extends TARGET, ?>> entities);
 	
 	/**
-	 * Expected to give the Target instance of a Trigger (should simply give a field value of trigger)
+	 * Expected to give the couple of Target instances of a couple of Trigger (should simply give a field value of trigger)
 	 * 
-	 * @param modifiedTrigger the source instance from which to take the target
-	 * @param unmodifiedTrigger the source instance from which to take the target
-	 * @return the linked objet or null if there's not (or shouldn't be persisted for whatever reason)
+	 * @param modifiedTrigger the modified instance from which to take its target
+	 * @param unmodifiedTrigger the unmodified instance from which to take its target
+	 * @return the linked objets
 	 */
-	protected abstract Duo<TARGET, TARGET> getTarget(TRIGGER modifiedTrigger, TRIGGER unmodifiedTrigger);
+	protected Duo<TARGET, TARGET> getTarget(TRIGGER modifiedTrigger, TRIGGER unmodifiedTrigger) {
+		return new Duo<>(getTarget(modifiedTrigger), getTarget(unmodifiedTrigger));
+	}
+	
+	/**
+	 * Expected to give the Target instances of a Trigger (should simply give a field value of trigger)
+	 *
+	 * @param trigger the source instance from which to take the target
+	 * @return the linked objet or null if there's not
+	 */
+	protected abstract TARGET getTarget(TRIGGER trigger);
 	
 }
