@@ -37,7 +37,10 @@ import org.gama.stalactite.persistence.structure.Table;
 /**
  * @author Guillaume Mary
  */
-public class FluentEmbeddableMappingConfigurationSupport<C> implements IFluentEmbeddableMappingBuilder<C>, LambdaMethodUnsheller {
+public class FluentEmbeddableMappingConfigurationSupport<C> implements IFluentEmbeddableMappingBuilder<C>, LambdaMethodUnsheller,
+		EmbeddableMappingConfiguration<C> {
+	
+	private EmbeddableMappingConfiguration<? super C> superMappingBuilder;
 	
 	/**
 	 * Starts a {@link IFluentEmbeddableMappingBuilder} for a given class which will target a table that as the class name.
@@ -61,8 +64,6 @@ public class FluentEmbeddableMappingConfigurationSupport<C> implements IFluentEm
 	/** Collection of embedded elements, even inner ones to help final build process */
 	private final Collection<AbstractInset<C, ?>> insets = new ArrayList<>();
 	
-	private EmbeddedBeanMappingStrategy<? super C, ?> mappedSuperClass;
-	
 	/** Last embedded element, introduced to help inner embedding registration (kind of algorithm help). Has no purpose in whole mapping configuration. */
 	private Inset<C, ?> currentInset;
 	
@@ -85,16 +86,29 @@ public class FluentEmbeddableMappingConfigurationSupport<C> implements IFluentEm
 		return classToPersist;
 	}
 	
-	Collection<AbstractInset<C, ?>> getInsets() {
+	@Override
+	public Collection<AbstractInset<C, ?>> getInsets() {
 		return insets;
 	}
 	
-	EmbeddedBeanMappingStrategy<? super C, ?> getMappedSuperClass() {
-		return mappedSuperClass;
+	@Override
+	public EmbeddableMappingConfiguration<? super C> getMappedSuperClassConfiguration() {
+		return superMappingBuilder;
 	}
 	
-	ColumnNamingStrategy getColumnNamingStrategy() {
+	@Override
+	public ColumnNamingStrategy getColumnNamingStrategy() {
 		return columnNamingStrategy;
+	}
+	
+	@Override
+	public List<Linkage> getPropertiesMapping() {
+		return mapping;
+	}
+	
+	@Override
+	public EmbeddableMappingConfiguration<C> getConfiguration() {
+		return this;
 	}
 	
 	@Override
@@ -160,14 +174,14 @@ public class FluentEmbeddableMappingConfigurationSupport<C> implements IFluentEm
 		return this;
 	}
 	
-	Linkage<C> addMapping(Method method, @Nullable String columnName) {
+	AbstractLinkage<C> addMapping(Method method, @Nullable String columnName) {
 		PropertyAccessor<Object, Object> propertyAccessor = Accessors.of(method);
 		assertMappingIsNotAlreadyDefined(columnName, propertyAccessor);
 		String linkName = columnName;
 		if (columnName == null) {
 			linkName = giveLinkName(method);
 		}
-		Linkage<C> linkage = newLinkage(method, linkName);
+		AbstractLinkage<C> linkage = newLinkage(method, linkName);
 		this.mapping.add(linkage);
 		return linkage;
 	}
@@ -221,11 +235,11 @@ public class FluentEmbeddableMappingConfigurationSupport<C> implements IFluentEm
 	}
 	
 	IFluentEmbeddableMappingBuilderEnumOptions<C> addEnum(Method method, @Nullable String columnName) {
-		Linkage<C> linkage = addMapping(method, columnName);
+		AbstractLinkage<C> linkage = addMapping(method, columnName);
 		return addEnumOptions(linkage);
 	}
 	
-	IFluentEmbeddableMappingBuilderEnumOptions<C> addEnumOptions(Linkage<C> linkage) {
+	IFluentEmbeddableMappingBuilderEnumOptions<C> addEnumOptions(AbstractLinkage<C> linkage) {
 		linkage.setParameterBinder(EnumBindType.NAME.newParameterBinder((Class<Enum>) linkage.getColumnType()));
 		return new MethodReferenceDispatcher()
 				.redirect(EnumOptions.class, new EnumOptions() {
@@ -251,8 +265,8 @@ public class FluentEmbeddableMappingConfigurationSupport<C> implements IFluentEm
 	}
 	
 	@Override
-	public IFluentEmbeddableMappingBuilder<C> mapSuperClass(EmbeddedBeanMappingStrategy<? super C, ?> mappingStrategy) {
-		mappedSuperClass = mappingStrategy;
+	public IFluentEmbeddableMappingBuilder<C> mapSuperClass(EmbeddableMappingConfiguration<? super C> superMappingConfiguration) {
+		this.superMappingBuilder = superMappingConfiguration;
 		return this;
 	}
 	
@@ -387,17 +401,19 @@ public class FluentEmbeddableMappingConfigurationSupport<C> implements IFluentEm
 	 * 
 	 * @param <T> property owner type
 	 */
-	interface Linkage<T> {
+	protected abstract static class AbstractLinkage<T> implements Linkage<T> {
 		
-		<I> PropertyAccessor<T, I> getAccessor();
+		/** Optional binder for this mapping */
+		private ParameterBinder parameterBinder;
 		
-		String getColumnName();
+		public void setParameterBinder(ParameterBinder parameterBinder) {
+			this.parameterBinder = parameterBinder;
+		}
 		
-		Class<?> getColumnType();
-		
-		void setParameterBinder(ParameterBinder parameterBinder);
-		
-		ParameterBinder getParameterBinder();
+		@Override
+		public ParameterBinder getParameterBinder() {
+			return parameterBinder;
+		}
 	}
 	
 	/**
@@ -405,14 +421,12 @@ public class FluentEmbeddableMappingConfigurationSupport<C> implements IFluentEm
 	 * 
 	 * @param <T> property owner type
 	 */
-	static class LinkageByColumnName<T> implements Linkage<T> {
+	static class LinkageByColumnName<T> extends AbstractLinkage<T> {
 		
 		private final PropertyAccessor function;
 		private final Class<?> columnType;
 		/** Column name override if not default */
 		private final String columnName;
-		/** Optional binder for this mapping */
-		private ParameterBinder parameterBinder;
 		
 		/**
 		 * Constructor by {@link Method}. Only accessor by method is implemented (since input is from method reference).
@@ -437,16 +451,6 @@ public class FluentEmbeddableMappingConfigurationSupport<C> implements IFluentEm
 		
 		public Class<?> getColumnType() {
 			return columnType;
-		}
-		
-		@Override
-		public void setParameterBinder(ParameterBinder parameterBinder) {
-			this.parameterBinder = parameterBinder;
-		}
-		
-		@Override
-		public ParameterBinder getParameterBinder() {
-			return parameterBinder;
 		}
 	}
 	

@@ -3,7 +3,6 @@ package org.gama.stalactite.persistence.engine;
 import org.danekja.java.util.function.serializable.SerializableBiConsumer;
 import org.danekja.java.util.function.serializable.SerializableFunction;
 import org.gama.reflection.AccessorChain;
-import org.gama.stalactite.persistence.mapping.EmbeddedBeanMappingStrategy;
 import org.gama.stalactite.persistence.structure.Table;
 
 /**
@@ -29,7 +28,7 @@ public interface IFluentEmbeddableMappingBuilder<C> extends IFluentEmbeddableMap
 	
 	<E extends Enum<E>> IFluentEmbeddableMappingBuilderEnumOptions<C> addEnum(SerializableFunction<C, E> getter, String columnName);
 	
-	IFluentEmbeddableMappingBuilder<C> mapSuperClass(EmbeddedBeanMappingStrategy<? super C, ?> mappingStrategy);
+	IFluentEmbeddableMappingBuilder<C> mapSuperClass(EmbeddableMappingConfiguration<? super C> superMappingConfiguration);
 	
 	<O> IFluentEmbeddableMappingBuilderEmbedOptions<C, O> embed(SerializableBiConsumer<C, O> setter);
 

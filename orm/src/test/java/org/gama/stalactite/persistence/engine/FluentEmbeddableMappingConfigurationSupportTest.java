@@ -1,7 +1,6 @@
 package org.gama.stalactite.persistence.engine;
 
 import java.util.Date;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.stream.Collectors;
 
@@ -48,7 +47,7 @@ class FluentEmbeddableMappingConfigurationSupportTest {
 	private static final HSQLDBDialect DIALECT = new HSQLDBDialect();
 	
 	@BeforeAll
-	public static void initBinders() {
+	static void initBinders() {
 		// binder creation for our identifier
 		DIALECT.getColumnBinderRegistry().register((Class) Identifier.class,
 				Identifier.identifierBinder(DefaultParameterBinders.LONG_PRIMITIVE_BINDER));
@@ -58,7 +57,7 @@ class FluentEmbeddableMappingConfigurationSupportTest {
 	}
 	
 	@Test
-	public void testAdd_withoutName_targetedPropertyNameIsTaken() {
+	void testAdd_withoutName_targetedPropertyNameIsTaken() {
 		Table<?> countryTable = new Table<>("countryTable");
 		EmbeddedBeanMappingStrategy<Country, Table> mappingStrategy = FluentEmbeddableMappingConfigurationSupport.from(Country.class)
 				.add(Country::getName)
@@ -77,7 +76,7 @@ class FluentEmbeddableMappingConfigurationSupportTest {
 	}
 	
 	@Test
-	public void testAdd_withoutName_withNamingStrategy_namingStrategyIsTaken_exceptIfColumnNameIsOverriden() {
+	void testAdd_withoutName_withNamingStrategy_namingStrategyIsTaken_exceptIfColumnNameIsOverriden() {
 		Table<?> countryTable = new Table<>("countryTable");
 		EmbeddedBeanMappingStrategy<Country, Table> mappingStrategy = FluentEmbeddableMappingConfigurationSupport.from(Country.class)
 				.columnNamingStrategy(accessor -> ColumnNamingStrategy.DEFAULT.giveName(accessor) + "_col")
@@ -98,7 +97,7 @@ class FluentEmbeddableMappingConfigurationSupportTest {
 	}
 	
 	@Test
-	public void testAdd_withOverwrittenName_overwrittenNameIsTaken() {
+	void testAdd_withOverwrittenName_overwrittenNameIsTaken() {
 		Table<?> countryTable = new Table<>("countryTable");
 		EmbeddedBeanMappingStrategy<Country, Table> mappingStrategy = FluentEmbeddableMappingConfigurationSupport.from(Country.class)
 				.add(Country::getName, "code")
@@ -117,7 +116,7 @@ class FluentEmbeddableMappingConfigurationSupportTest {
 	}
 	
 	@Test
-	public void testAdd_mappingDefinedTwiceByMethod_throwsException() throws NoSuchMethodException {
+	void testAdd_mappingDefinedTwiceByMethod_throwsException() throws NoSuchMethodException {
 		Table<?> countryTable = new Table<>("countryTable");
 		assertEquals("Mapping is already defined by method " + Reflections.toString(Country.class.getMethod("getName")),
 				assertThrows(MappingConfigurationException.class, () -> FluentEmbeddableMappingConfigurationSupport.from(Country.class)
@@ -128,7 +127,7 @@ class FluentEmbeddableMappingConfigurationSupportTest {
 	}
 	
 	@Test
-	public void testAdd_mappingDefinedTwiceByColumn_throwsException() {
+	void testAdd_mappingDefinedTwiceByColumn_throwsException() {
 		Table<?> countryTable = new Table<>("countryTable");
 		assertEquals("Mapping is already defined for column xyz",
 				assertThrows(MappingConfigurationException.class, () -> FluentEmbeddableMappingConfigurationSupport.from(Country.class)
@@ -139,7 +138,7 @@ class FluentEmbeddableMappingConfigurationSupportTest {
 	}
 	
 	@Test
-	public void testAdd_mappingAComplextType_throwsException() {
+	void testAdd_mappingAComplextType_throwsException() {
 		Table<?> countryTable = new Table<>("countryTable");
 		assertEquals("countryTable.timestamp has no matching binder, please consider adding one to dialect binder registry" +
 						" or use one of the IFluentEmbeddableMappingConfiguration::embed methods",
@@ -151,7 +150,7 @@ class FluentEmbeddableMappingConfigurationSupportTest {
 	}
 	
 	@Test
-	public void testEmbed_definedByGetter() {
+	void testEmbed_definedByGetter() {
 		Table<?> countryTable = new Table<>("countryTable");
 		FluentEmbeddableMappingConfigurationSupport.from(Person.class)
 				.embed(Person::getTimestamp)
@@ -163,7 +162,7 @@ class FluentEmbeddableMappingConfigurationSupportTest {
 	}
 	
 	@Test
-	public void testEmbed_definedBySetter() {
+	void testEmbed_definedBySetter() {
 		Table<?> countryTable = new Table<>("countryTable");
 		FluentEmbeddableMappingConfigurationSupport.from(Person.class)
 				.embed(Person::setTimestamp)
@@ -175,7 +174,7 @@ class FluentEmbeddableMappingConfigurationSupportTest {
 	}
 	
 	@Test
-	public void testEmbed_insertAndSelect_withOverridenColumnName() {
+	void testEmbed_insertAndSelect_withOverridenColumnName() {
 		Table<?> personTable = new Table<>("personTable");
 		EmbeddedBeanMappingStrategy<Person, Table<?>> personMappingStrategy = FluentEmbeddableMappingConfigurationSupport.from(Person.class)
 				.add(Person::getName)
@@ -218,7 +217,7 @@ class FluentEmbeddableMappingConfigurationSupportTest {
 	}
 	
 	@Test
-	public void testInheritance_parentColumnsMustBeAdded() {
+	void testInheritance_parentColumnsMustBeAdded() {
 		EmbeddedBeanMappingStrategy<Car, Table> carMappingStrategy = FluentEmbeddableMappingConfigurationSupport.from(Car.class)
 				// color is on a super class
 				.add(Car::getColor)
@@ -245,7 +244,7 @@ class FluentEmbeddableMappingConfigurationSupportTest {
 	}
 	
 	@Test
-	public void testEmbed_inheritance_embeddedParentColumnsMustBeAdded() {
+	void testEmbed_inheritance_embeddedParentColumnsMustBeAdded() {
 		EmbeddedBeanMappingStrategy<Car, Table> carMappingStrategy = FluentEmbeddableMappingConfigurationSupport.from(Car.class)
 				.add(Car::getColor)
 				.add(Car::getModel)
@@ -313,7 +312,7 @@ class FluentEmbeddableMappingConfigurationSupportTest {
 	}
 	
 	@Test
-	public void testEmbed_insertAndSelect_withSomeExcludedProperty() {
+	void testEmbed_insertAndSelect_withSomeExcludedProperty() {
 		Table<?> personTable = new Table<>("personTable");
 		EmbeddedBeanMappingStrategy<Person, Table<?>> personMappingStrategy = FluentEmbeddableMappingConfigurationSupport.from(Person.class)
 				.add(Person::getName)
@@ -364,7 +363,7 @@ class FluentEmbeddableMappingConfigurationSupportTest {
 	 * as a best effort, and any regression found in user code should be added here
 	 */
 	@Test
-	public void testFluentAPIWriting() {
+	void testFluentAPIWriting() {
 		Table<?> countryTable = new Table<>("countryTable");
 		
 		try {
@@ -377,7 +376,7 @@ class FluentEmbeddableMappingConfigurationSupportTest {
 					.embed(Country::getTimestamp)
 					.add(Country::getId)
 					.add(Country::setDescription, "zxx")
-					.mapSuperClass(new EmbeddedBeanMappingStrategy<>(Object.class, new Table<>(""), new HashMap<>()))
+					.mapSuperClass(new FluentEmbeddableMappingConfigurationSupport<>(Object.class))
 					.build(DIALECT, countryTable);
 		} catch (RuntimeException e) {
 			// Since we only want to test compilation, we don't care about that the above code throws an exception or not
@@ -390,7 +389,7 @@ class FluentEmbeddableMappingConfigurationSupportTest {
 						.innerEmbed(Person::getTimestamp)
 					.embed(Country::getTimestamp)
 					.add(Country::getId, "zz")
-					.mapSuperClass(new EmbeddedBeanMappingStrategy<>(Object.class, new Table<>(""), new HashMap<>()))
+					.mapSuperClass(new FluentEmbeddableMappingConfigurationSupport<>(Object.class))
 					.add(Country::getDescription, "xx")
 					.build(DIALECT, countryTable);
 		} catch (RuntimeException e) {
@@ -401,7 +400,7 @@ class FluentEmbeddableMappingConfigurationSupportTest {
 			FluentEmbeddableMappingConfigurationSupport.from(Country.class)
 					.add(Country::getName)
 					.add(Country::getId, "zz")
-					.mapSuperClass(new EmbeddedBeanMappingStrategy<>(Object.class, new Table<>(""), new HashMap<>()))
+					.mapSuperClass(new FluentEmbeddableMappingConfigurationSupport<>(Object.class))
 					// embed with setter
 					.embed(Country::setPresident)
 						// inner embed with setter
@@ -422,7 +421,7 @@ class FluentEmbeddableMappingConfigurationSupportTest {
 			FluentEmbeddableMappingConfigurationSupport.from(Country.class)
 					.add(Country::getName)
 					.add(Country::getId, "zz")
-					.mapSuperClass(new EmbeddedBeanMappingStrategy<>(Object.class, new Table<>(""), new HashMap<>()))
+					.mapSuperClass(new FluentEmbeddableMappingConfigurationSupport<>(Object.class))
 					// embed with setter
 					.embed(Country::getPresident, personMappingBuilder)
 					.build(DIALECT, countryTable);
@@ -438,7 +437,7 @@ class FluentEmbeddableMappingConfigurationSupportTest {
 					.add(Country::getName)
 					.add(Country::getId, "zz")
 					.embed(Country::getPresident, personMappingBuilder)
-					.mapSuperClass(new EmbeddedBeanMappingStrategy<>(Object.class, new Table<>(""), new HashMap<>()))
+					.mapSuperClass(new FluentEmbeddableMappingConfigurationSupport<>(Object.class))
 					// reusing embeddable ...
 					.embed(Country::getPresident, personMappingBuilder)
 						// with getter override
@@ -468,7 +467,7 @@ class FluentEmbeddableMappingConfigurationSupportTest {
 	}
 	
 	@Test
-	public void testBuild_embed_definedTwice_throwException() {
+	void testBuild_embed_definedTwice_throwException() {
 		Table<?> countryTable = new Table<>("countryTable");
 		IFluentEmbeddableMappingBuilderEmbedOptions<Country, Timestamp> mappingBuilder = FluentEmbeddableMappingConfigurationSupport.from(Country.class)
 				.add(Country::getName)
@@ -480,7 +479,7 @@ class FluentEmbeddableMappingConfigurationSupportTest {
 	}
 	
 	@Test
-	public void testBuild_embed() {
+	void testBuild_embed() {
 		Table<?> countryTable = new Table<>("countryTable");
 		IFluentEmbeddableMappingBuilderEmbedOptions<Country, Timestamp> mappingBuilder = FluentEmbeddableMappingConfigurationSupport.from(Country.class)
 				.columnNamingStrategy(accessor -> ColumnNamingStrategy.DEFAULT.giveName(accessor) + "_col")
@@ -493,7 +492,7 @@ class FluentEmbeddableMappingConfigurationSupportTest {
 	}
 	
 	@Test
-	public void testBuild_innerEmbed_withTwiceSameInnerEmbeddableName_throwException() {
+	void testBuild_innerEmbed_withTwiceSameInnerEmbeddableName_throwException() {
 		Table<?> countryTable = new Table<>("countryTable");
 		IFluentEmbeddableMappingBuilderEmbedOptions<Country, Timestamp> mappingBuilder = FluentEmbeddableMappingConfigurationSupport.from(Country.class)
 				.add(Country::getName)
@@ -531,7 +530,7 @@ class FluentEmbeddableMappingConfigurationSupportTest {
 	}
 	
 	@Test
-	public void testBuild_innerEmbed_withOverridenColumnName() {
+	void testBuild_innerEmbed_withOverridenColumnName() {
 		Table<?> countryTable = new Table<>("countryTable");
 		EmbeddedBeanMappingStrategy<Country, Table<?>> personMappingStrategy = FluentEmbeddableMappingConfigurationSupport.from(Country.class)
 				.add(Country::getName)
@@ -559,7 +558,7 @@ class FluentEmbeddableMappingConfigurationSupportTest {
 	}
 	
 	@Test
-	public void testBuild_withTwiceSameEmbeddableNames_throwsException() {
+	void testBuild_withTwiceSameEmbeddableNames_throwsException() {
 		Table<?> countryTable = new Table<>("countryTable");
 		IFluentEmbeddableMappingBuilderEmbedOptions<Country, Person> mappingBuilder = FluentEmbeddableMappingConfigurationSupport.from(Country.class)
 				.add(Country::getName)
@@ -572,7 +571,7 @@ class FluentEmbeddableMappingConfigurationSupportTest {
 	}
 	
 	@Test
-	public void testBuild_embedReusedEmbeddable_simpleCase() {
+	void testBuild_embedReusedEmbeddable_simpleCase() {
 		EmbeddedBeanMappingStrategyBuilder<Person> personMappingBuilder = FluentEmbeddableMappingConfigurationSupport.from(Person.class)
 				.add(Person::getId);
 		
@@ -597,7 +596,7 @@ class FluentEmbeddableMappingConfigurationSupportTest {
 	}
 	
 	@Test
-	public void testBuild_embedReusedEmbeddable_simpleCase_setter() {
+	void testBuild_embedReusedEmbeddable_simpleCase_setter() {
 		EmbeddedBeanMappingStrategyBuilder<Person> personMappingBuilder = FluentEmbeddableMappingConfigurationSupport.from(Person.class)
 				.add(Person::getId);
 		
@@ -622,7 +621,7 @@ class FluentEmbeddableMappingConfigurationSupportTest {
 	}
 	
 	@Test
-	public void testBuild_embedReusedEmbeddable_overrideName() {
+	void testBuild_embedReusedEmbeddable_overrideName() {
 		EmbeddedBeanMappingStrategyBuilder<Person> personMappingBuilder = FluentEmbeddableMappingConfigurationSupport.from(Person.class)
 				.add(Person::getName)
 				.embed(Person::getTimestamp);
@@ -649,7 +648,7 @@ class FluentEmbeddableMappingConfigurationSupportTest {
 	}
 	
 	@Test
-	public void testBuild_embedReusedEmbeddable_definedTwice_throwException() {
+	void testBuild_embedReusedEmbeddable_definedTwice_throwException() {
 		EmbeddedBeanMappingStrategyBuilder<Person> personMappingBuilder = FluentEmbeddableMappingConfigurationSupport.from(Person.class)
 				.add(Person::getName, "myName");
 		
@@ -666,7 +665,7 @@ class FluentEmbeddableMappingConfigurationSupportTest {
 	}
 	
 	@Test
-	public void testBuild_embedReusedEmbeddable_conflictingColumnNameNotOverriden_throwsException() {
+	void testBuild_embedReusedEmbeddable_conflictingColumnNameNotOverriden_throwsException() {
 		EmbeddedBeanMappingStrategyBuilder<Person> personMappingBuilder = FluentEmbeddableMappingConfigurationSupport.from(Person.class)
 				.add(Person::getName);
 		
@@ -684,7 +683,7 @@ class FluentEmbeddableMappingConfigurationSupportTest {
 	}
 	
 	@Test
-	public void testBuild_embedReusedEmbeddable_columnNameOverridenOnConflictingName1_throwsException() {
+	void testBuild_embedReusedEmbeddable_columnNameOverridenOnConflictingName1_throwsException() {
 		// Overriden vs override
 		EmbeddedBeanMappingStrategyBuilder<Person> personMappingBuilder = FluentEmbeddableMappingConfigurationSupport.from(Person.class)
 				.add(Person::getName, "myName");
@@ -703,7 +702,7 @@ class FluentEmbeddableMappingConfigurationSupportTest {
 	}
 	
 	@Test
-	public void testBuild_embedReusedEmbeddable_columnNameOverridenOnConflictingName2_throwsException() {
+	void testBuild_embedReusedEmbeddable_columnNameOverridenOnConflictingName2_throwsException() {
 		// Overriden vs standard name
 		EmbeddedBeanMappingStrategyBuilder<MyPerson> personMappingBuilder = FluentEmbeddableMappingConfigurationSupport.from(MyPerson.class)
 				.add(MyPerson::getName, "myName");
@@ -722,7 +721,7 @@ class FluentEmbeddableMappingConfigurationSupportTest {
 	}
 	
 	@Test
-	public void testBuild_embedReusedEmbeddable_columnNameOverridenOnConflictingName3_throwsException() {
+	void testBuild_embedReusedEmbeddable_columnNameOverridenOnConflictingName3_throwsException() {
 		// Standard name vs override
 		EmbeddedBeanMappingStrategyBuilder<MyPerson> personMappingBuilder = FluentEmbeddableMappingConfigurationSupport.from(MyPerson.class)
 				.add(MyPerson::getMyName);
@@ -741,7 +740,7 @@ class FluentEmbeddableMappingConfigurationSupportTest {
 	}
 	
 	@Test
-	public void testBuild_embedReusedEmbeddable_overrideNameOfUnmappedProperty_throwsException() {
+	void testBuild_embedReusedEmbeddable_overrideNameOfUnmappedProperty_throwsException() {
 		EmbeddedBeanMappingStrategyBuilder<Person> personMappingBuilder = FluentEmbeddableMappingConfigurationSupport.from(Person.class)
 				.add(Person::getName);
 		
@@ -759,7 +758,7 @@ class FluentEmbeddableMappingConfigurationSupportTest {
 	}
 	
 	@Test
-	public void testBuild_embedReusedEmbeddable_embeddableContainsAnEmbeddedType() {
+	void testBuild_embedReusedEmbeddable_embeddableContainsAnEmbeddedType() {
 		EmbeddedBeanMappingStrategyBuilder<Person> personMappingBuilder = FluentEmbeddableMappingConfigurationSupport.from(Person.class)
 				.add(Person::getName, "personName")
 				.embed(Person::getTimestamp)
@@ -796,7 +795,7 @@ class FluentEmbeddableMappingConfigurationSupportTest {
 	}
 	
 	@Test
-	public void testBuild_embedReusedEmbeddable_embeddableContainsAnEmbeddedType2() {
+	void testBuild_embedReusedEmbeddable_embeddableContainsAnEmbeddedType2() {
 		EmbeddedBeanMappingStrategyBuilder<Person> personMappingBuilder = FluentEmbeddableMappingConfigurationSupport.from(Person.class)
 				.add(Person::getName, "personName")
 				.embed(Person::getTimestamp)
@@ -833,7 +832,7 @@ class FluentEmbeddableMappingConfigurationSupportTest {
 	}
 	
 	@Test
-	public void testBuild_embedReusedEmbeddable_embeddableContainsAnEmbeddedType_throwsException() {
+	void testBuild_embedReusedEmbeddable_embeddableContainsAnEmbeddedType_throwsException() {
 		EmbeddedBeanMappingStrategyBuilder<Person> personMappingBuilder = FluentEmbeddableMappingConfigurationSupport.from(Person.class)
 				.embed(Person::getTimestamp);
 		
@@ -855,7 +854,7 @@ class FluentEmbeddableMappingConfigurationSupportTest {
 	}
 	
 	@Test
-	public void testBuild_embedReusedEmbeddable_embeddableContainsAnEmbeddedType_withOverridenName_throwsException() {
+	void testBuild_embedReusedEmbeddable_embeddableContainsAnEmbeddedType_withOverridenName_throwsException() {
 		EmbeddedBeanMappingStrategyBuilder<Person> personMappingBuilder = FluentEmbeddableMappingConfigurationSupport.from(Person.class)
 				.embed(Person::getTimestamp)
 				.overrideName(Timestamp::getCreationDate, "createdAt");
@@ -875,7 +874,7 @@ class FluentEmbeddableMappingConfigurationSupportTest {
 	}
 	
 	@Test
-	public void testBuild_embedReusedEmbeddable_embeddableContainsAnEmbeddedType_withExclusion_throwsException() {
+	void testBuild_embedReusedEmbeddable_embeddableContainsAnEmbeddedType_withExclusion_throwsException() {
 		EmbeddedBeanMappingStrategyBuilder<Person> personMappingBuilder = FluentEmbeddableMappingConfigurationSupport.from(Person.class)
 				.embed(Person::getTimestamp)
 				.exclude(Timestamp::getCreationDate);
@@ -895,7 +894,7 @@ class FluentEmbeddableMappingConfigurationSupportTest {
 	}
 	
 	@Test
-	public void testBuild_embedReusedEmbeddable_embeddableContainsAnEmbeddedType_andIsOverriden_throwsException() {
+	void testBuild_embedReusedEmbeddable_embeddableContainsAnEmbeddedType_andIsOverriden_throwsException() {
 		EmbeddedBeanMappingStrategyBuilder<Person> personMappingBuilder = FluentEmbeddableMappingConfigurationSupport.from(Person.class)
 				.embed(Person::getTimestamp);
 
@@ -915,7 +914,7 @@ class FluentEmbeddableMappingConfigurationSupportTest {
 	}
 	
 	@Test
-	public void testBuild_embedReusedEmbeddable__embeddableContainsAnEmbeddedType_overrideNameOfUnmappedProperty_throwsException() {
+	void testBuild_embedReusedEmbeddable__embeddableContainsAnEmbeddedType_overrideNameOfUnmappedProperty_throwsException() {
 		EmbeddedBeanMappingStrategyBuilder<Person> personMappingBuilder = FluentEmbeddableMappingConfigurationSupport.from(Person.class)
 				.embed(Person::getTimestamp)
 					.exclude(Timestamp::getModificationDate);
@@ -933,7 +932,7 @@ class FluentEmbeddableMappingConfigurationSupportTest {
 	}
 	
 	@Test
-	public void testBuild_withEnumType() {
+	void testBuild_withEnumType() {
 		Table<?> personTable = new Table<>("personTable");
 		EmbeddedBeanMappingStrategy<PersonWithGender, Table> personMappingBuilder = FluentEmbeddableMappingConfigurationSupport.from(PersonWithGender.class)
 				.add(Person::getName)
@@ -954,7 +953,7 @@ class FluentEmbeddableMappingConfigurationSupportTest {
 		
 		
 		// changing mapping to ordinal
-		personMappingBuilder = FluentEmbeddableMappingConfigurationSupport.from(PersonWithGender.class)
+		FluentEmbeddableMappingConfigurationSupport.from(PersonWithGender.class)
 				.add(Person::getName)
 				.addEnum(PersonWithGender::getGender).byOrdinal()
 				.build(DIALECT, personTable);
@@ -965,7 +964,7 @@ class FluentEmbeddableMappingConfigurationSupportTest {
 		assertEquals(Gender.class, ((OrdinalEnumParameterBinder) genderColumnBinder).getEnumType());
 		
 		// changing mapping to name
-		personMappingBuilder = FluentEmbeddableMappingConfigurationSupport.from(PersonWithGender.class)
+		FluentEmbeddableMappingConfigurationSupport.from(PersonWithGender.class)
 				.add(Person::getName)
 				.addEnum(PersonWithGender::getGender).byName()
 				.build(DIALECT, personTable);
@@ -976,7 +975,7 @@ class FluentEmbeddableMappingConfigurationSupportTest {
 		assertEquals(Gender.class, ((NameEnumParameterBinder) genderColumnBinder).getEnumType());
 	}
 	
-	static public class MyPerson extends Person {
+	static class MyPerson extends Person {
 		private String myName;
 		
 		public String getMyName() {
@@ -984,7 +983,7 @@ class FluentEmbeddableMappingConfigurationSupportTest {
 		}
 	}
 	
-	static public class MyCountry extends Country {
+	static class MyCountry extends Country {
 		private String myName;
 		
 		public String getMyName() {

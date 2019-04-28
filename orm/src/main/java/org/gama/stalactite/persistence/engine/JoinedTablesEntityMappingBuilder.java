@@ -1,142 +1,116 @@
 package org.gama.stalactite.persistence.engine;
 
-import java.lang.reflect.Method;
 import java.util.Map;
 import java.util.Set;
 
-import org.danekja.java.util.function.serializable.SerializableBiFunction;
-import org.gama.lang.Duo;
-import org.gama.lang.Reflections;
+import org.gama.lang.bean.Objects;
 import org.gama.lang.collection.Iterables;
 import org.gama.reflection.IReversibleAccessor;
-import org.gama.stalactite.persistence.engine.ColumnOptions.IdentifierPolicy;
-import org.gama.stalactite.persistence.engine.FluentEntityMappingConfigurationSupport.EntityDecoratedEmbeddableConfigurationSupport;
+import org.gama.reflection.MethodReferenceCapturer;
 import org.gama.stalactite.persistence.engine.FluentEntityMappingConfigurationSupport.EntityMappingBuilder;
 import org.gama.stalactite.persistence.engine.cascade.AfterUpdateCascader;
 import org.gama.stalactite.persistence.engine.cascade.BeforeDeleteCascader;
 import org.gama.stalactite.persistence.engine.cascade.BeforeInsertCascader;
 import org.gama.stalactite.persistence.engine.cascade.JoinedStrategiesSelect;
-import org.gama.stalactite.persistence.engine.cascade.JoinedStrategiesSelectExecutor;
 import org.gama.stalactite.persistence.engine.cascade.JoinedTablesPersister;
 import org.gama.stalactite.persistence.engine.listening.DeleteByIdListener;
 import org.gama.stalactite.persistence.engine.listening.UpdateByIdListener;
 import org.gama.stalactite.persistence.id.manager.AlreadyAssignedIdentifierManager;
 import org.gama.stalactite.persistence.id.manager.IdentifierInsertionManager;
 import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
+import org.gama.stalactite.persistence.mapping.IEntityMappingStrategy;
 import org.gama.stalactite.persistence.mapping.IdAccessor;
 import org.gama.stalactite.persistence.mapping.SinglePropertyIdAccessor;
+import org.gama.stalactite.persistence.sql.Dialect;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
 
 /**
+ * Classes aimed at building a persister for joined tables inheritance
+ * 
  * @author Guillaume Mary
  */
-public class InheritedEntityMappingBuilder<C, I> {
+public class JoinedTablesEntityMappingBuilder<C, I> {
 	
-	// En cas d'héritage par jointure:
-	// - Une classe sur 2 tables
-	// - identifier accessor : pas modif d'algo de recherche
-	// - la colonne d'id est sur la table parente
-	// - 2 EntityMapping : 1 pour la mère, une autre pour la fille
-	// - la fille est TOUJOURS en already assigned
-	// - attention si un persister existe déjà pour la mère, que faire ? le mieux, faire un diff
-	// - créer un JoinedTablePersister avec les insert/update/delete cascade
-	// - n'est possible que sur build(PeristenceContext)
+	private final EntityMappingConfiguration<C, I> configurationSupport;
 	
-	private final FluentEntityMappingConfigurationSupport<C, I> configurationSupport;
+	private final MethodReferenceCapturer methodSpy;
 	
-	public InheritedEntityMappingBuilder(FluentEntityMappingConfigurationSupport<C, I> configurationSupport) {
-		this.configurationSupport = configurationSupport;
+	public JoinedTablesEntityMappingBuilder(EntityMappingConfiguration<C, I> entityMappingConfiguration, MethodReferenceCapturer methodSpy) {
+		this.configurationSupport = entityMappingConfiguration;
+		this.methodSpy = methodSpy;
 	}
 	
-	// dedicated to configurationSupport.joinTable = true
 	public Persister<C, I, Table> build(PersistenceContext persistenceContext) {
 		return build(persistenceContext, new Table(configurationSupport.getPersistedClass().getSimpleName()));
 	}
 	
 	public <T extends Table> Persister<C, I, T> build(PersistenceContext persistenceContext, T childClassTargetTable) {
-		IReversibleAccessor<C, I> localIdentifierAccessor = configurationSupport.identifierAccessor;
-		
-		ClassMappingStrategy<? super C, I, ?> parentMappingStrategy = configurationSupport.inheritanceMapping.getMappingStrategy();
-		if (localIdentifierAccessor == null) {
-			if (configurationSupport.inheritanceMapping == null) {
-				// no ClassMappingStratey in hierarchy, so we can't get an identifier from it => impossible
-				SerializableBiFunction<ColumnOptions, IdentifierPolicy, IFluentMappingBuilder> identifierMethodReference = ColumnOptions::identifier;
-				Method identifierSetter = configurationSupport.methodSpy.findMethod(identifierMethodReference);
-				throw new UnsupportedOperationException("Identifier is not defined, please add one throught " + Reflections.toString(identifierSetter));
-			} else {
-				// at least one parent ClassMappingStrategy exists, it necessarily defines an identifier : we stop at the very first one
-				IdAccessor<? super C, ?> idAccessor = parentMappingStrategy.getIdMappingStrategy().getIdAccessor();
-				if (!(idAccessor instanceof SinglePropertyIdAccessor)) {
-					throw new NotYetSupportedOperationException();
-				}
-				localIdentifierAccessor = ((SinglePropertyIdAccessor<C, I>) idAccessor).getIdAccessor();
-			}
+		if (configurationSupport.getIdentifierAccessor() != null && configurationSupport.getInheritanceConfiguration() != null) {
+			throw new MappingConfigurationException("Defining an identifier while inheritance is used is not supported");
 		}
 		
-		EntityDecoratedEmbeddableConfigurationSupport<C, I> entityMappingConfiguration = configurationSupport.entityDecoratedEmbeddableConfigurationSupport;
-		EmbeddableMappingBuilder<C> builder = new EmbeddableMappingBuilder<>(entityMappingConfiguration);
+		// We gonna create 2 JoinedTablesPersister (one for parent strategy, one for child strategy) then we will join them alltogether
+		// on primary key, so select will result in a join on those 2 strategies.
+		// OneToOne and OneToMany will be managed by their respective JoinedTablesPersister (actually done by Persister)
 		
-		Map<IReversibleAccessor, Column> childClassColumnMapping = builder.build(persistenceContext.getDialect(), childClassTargetTable);
-		// creating primary key columns on child table as they are on parent table
-		Set<Column<Table, Object>> primaryKey = parentMappingStrategy.getTargetTable().getPrimaryKey().getColumns();
-		for (Column column : primaryKey) {
-			childClassTargetTable.addColumn(column.getName(), column.getJavaType()).primaryKey();
-		}
+		// NB : this persister is in fact a JoinedTablesPersister but its type doesn't matter here
+		Persister<? super C, I, Table> superPersister = buildSuperPersister(persistenceContext);
 		
-		// for now only single column primary key are really supported
-		Set<Column<Table, Object>> columns = childClassTargetTable.getPrimaryKey().getColumns();
-		childClassColumnMapping.put(localIdentifierAccessor, Iterables.first(columns));
+		ClassMappingStrategy<? super C, I, ?> parentMappingStrategy = superPersister.getMappingStrategy();
+		IReversibleAccessor<C, I> identifierAccessor = giveIdentifierAccessor(parentMappingStrategy);
 		
-		IdentifierInsertionManager<C, I> identifierInsertionManager = new AlreadyAssignedIdentifierManager<>(parentMappingStrategy.getIdMappingStrategy().getIdentifierInsertionManager().getIdentifierType());
-		ClassMappingStrategy<C, I, T> childClassMappingStrategy = new ClassMappingStrategy<>(entityMappingConfiguration.getClassToPersist(),
-						childClassTargetTable, (Map) childClassColumnMapping, localIdentifierAccessor, identifierInsertionManager);
+		ClassMappingStrategy<C, I, T> childClassMappingStrategy = buildChildClassMappingStrategy(
+				// identifier type can also be deduced from identifierAccessor with Accessor.giveReturnType(..) but getting it from insertion manager
+				// is more straightforward because it doesn't need any algorithm to discover accessor type (see giveReturnType(..))
+				parentMappingStrategy.getIdMappingStrategy().getIdentifierInsertionManager().getIdentifierType(),
+				identifierAccessor,
+				childClassTargetTable,
+				superPersister.getMainTable(),
+				persistenceContext.getDialect());
 		
-		Persister<? super C, I, ?> superPersister = configurationSupport.inheritanceMapping;
-		
-		JoinedStrategiesSelectExecutor<C, I> joinedStrategiesSelectExecutor = new JoinedStrategiesSelectExecutor<>(childClassMappingStrategy, persistenceContext.getDialect(), persistenceContext.getConnectionProvider());
+		// NB : result is added to persistenceContext by build(..) method (to participate to DDL deployment)
+		JoinedTablesPersister result = new EntityMappingBuilder<>(configurationSupport, methodSpy).build(persistenceContext, childClassMappingStrategy);
+		// adding join on parent table
 		Column subclassPK = Iterables.first((Set<Column<Table, Object>>) childClassTargetTable.getPrimaryKey().getColumns());
-		Column superclassPK = Iterables.first((Set<Column<Table, Object>>) parentMappingStrategy.getTargetTable().getPrimaryKey().getColumns());
-		joinedStrategiesSelectExecutor.addComplementaryTables(JoinedStrategiesSelect.FIRST_STRATEGY_NAME, parentMappingStrategy, (target, input) -> {
+		Column superclassPK = Iterables.first((Set<Column<Table, Object>>) superPersister.getMainTable().getPrimaryKey().getColumns());
+		result.getJoinedStrategiesSelectExecutor().addComplementaryTables(JoinedStrategiesSelect.FIRST_STRATEGY_NAME, parentMappingStrategy, (target, input) -> {
 			// applying values from inherited bean (input) to subclass one (target)
 			for (IReversibleAccessor columnFieldEntry : parentMappingStrategy.getPropertyToColumn().keySet()) {
 				columnFieldEntry.toMutator().set(target, columnFieldEntry.get(input));
 			}
 		}, subclassPK, superclassPK, false);
 		
-		Persister result = new EntityMappingBuilder<>(configurationSupport).build(persistenceContext, childClassMappingStrategy.getTargetTable());
-		// adding join on parent table
-		if (!(result instanceof JoinedTablesPersister)) {
-			result = new JoinedTablesPersister<>(persistenceContext, childClassMappingStrategy);
-		}
-		if (result instanceof JoinedTablesPersister) {
-			((JoinedTablesPersister) result).getJoinedStrategiesSelectExecutor().addComplementaryTables(JoinedStrategiesSelect.FIRST_STRATEGY_NAME, parentMappingStrategy, (target, input) -> {
-				// applying values from inherited bean (input) to subclass one (target)
-				for (IReversibleAccessor columnFieldEntry : parentMappingStrategy.getPropertyToColumn().keySet()) {
-					columnFieldEntry.toMutator().set(target, columnFieldEntry.get(input));
-				}
-			}, subclassPK, superclassPK, false);
-		}
+		addCascadesBetweenChildAndParentTable(superPersister, result);
 		
-//		Persister<C, I, T> result = new Persister<C, I, T>(persistenceContext, childClassMappingStrategy) {
-//			@Override
-//			protected List<C> doSelect(Collection ids) {
-//				return joinedStrategiesSelectExecutor.select(ids);
-//			}
-//			
-//			@Override
-//			public Set<Table> giveImpliedTables() {
-//				return joinedStrategiesSelectExecutor.getJoinedStrategiesSelect().giveTables();
-//			}
-//		};
-		
-		if (superPersister instanceof JoinedTablesPersister) {
-			// one-to-one or one-to-many present in parent => we must get its joins in our own persister
-			
+		return result;
+	}
+	
+	private <T extends Table> ClassMappingStrategy<C, I, T> buildChildClassMappingStrategy(Class<I> identifierType,
+																						   IReversibleAccessor<C, I> identifierAccessor,
+																						   T childTargetTable,
+																						   Table parentTargetTable,
+																						   Dialect dialect) {
+		EmbeddableMappingBuilder<C> builder = new EmbeddableMappingBuilder<>(configurationSupport.getPropertiesMapping());
+		Map<IReversibleAccessor, Column> childClassColumnMapping = builder.build(dialect, childTargetTable);
+		// getting primary key from parent table and applying it to child table
+		Set<Column<Table, Object>> primaryKey = parentTargetTable.getPrimaryKey().getColumns();
+		for (Column column : primaryKey) {
+			childTargetTable.addColumn(column.getName(), column.getJavaType()).primaryKey();
 		}
 		
-		// made so inheritanceMapping participate into persistenceContext such as DDL deployment (quite mandatory)
-		persistenceContext.addPersister(result);
+		// for now only single column primary key are really supported
+		Set<Column<Table, Object>> columns = childTargetTable.getPrimaryKey().getColumns();
+		childClassColumnMapping.put(identifierAccessor, Iterables.first(columns));
+		
+		// Child class insertion manager is always an "Already assigned" one because parent manages it for her
+		IdentifierInsertionManager<C, I> identifierInsertionManager = new AlreadyAssignedIdentifierManager<>(identifierType);
+		return new ClassMappingStrategy<>(configurationSupport.getPersistedClass(),
+				childTargetTable, (Map) childClassColumnMapping, identifierAccessor, identifierInsertionManager);
+	}
+	
+	private void addCascadesBetweenChildAndParentTable(Persister<? super C, I, Table> superPersister, JoinedTablesPersister result) {
+		// Before insert of child we must insert parent
 		result.getPersisterListener().addInsertListener(new BeforeInsertCascader<C, Object>((Persister<Object, ?, ?>) superPersister) {
 			
 			@Override
@@ -150,6 +124,7 @@ public class InheritedEntityMappingBuilder<C, I> {
 			}
 		});
 		
+		// On child update, parent must be updated too, no constraint on order for this, after is arbitrarly choosen 
 		result.getPersisterListener().addUpdateListener(new AfterUpdateCascader<C, Object>((Persister<Object, ?, ?>) superPersister) {
 			@Override
 			protected void postTargetUpdate(Iterable entities) {
@@ -161,7 +136,7 @@ public class InheritedEntityMappingBuilder<C, I> {
 				return trigger;
 			}
 		});
-		
+		// idem for updateById
 		result.getPersisterListener().addUpdateByIdListener(new UpdateByIdListener<C>() {
 			@Override
 			public void afterUpdateById(Iterable<C> entities) {
@@ -169,6 +144,7 @@ public class InheritedEntityMappingBuilder<C, I> {
 			}
 		});
 		
+		// On child deletion, parent must be deleted first 
 		result.getPersisterListener().addDeleteListener(new BeforeDeleteCascader<C, Object>((Persister<Object, ?, ?>) superPersister) {
 			
 			@Override
@@ -181,13 +157,26 @@ public class InheritedEntityMappingBuilder<C, I> {
 				return c;
 			}
 		});
-		
+		// idem for deleteById
 		result.getPersisterListener().addDeleteByIdListener(new DeleteByIdListener<C>() {
 			@Override
 			public void afterDeleteById(Iterable<C> entities) {
 				superPersister.deleteById((Iterable) entities);
 			}
 		});
-		return result;
+	}
+	
+	private IReversibleAccessor<C, I> giveIdentifierAccessor(IEntityMappingStrategy<? super C, I, ?> parentMappingStrategy) {
+		IdAccessor<? super C, ?> idAccessor = parentMappingStrategy.getIdMappingStrategy().getIdAccessor();
+		if (!(idAccessor instanceof SinglePropertyIdAccessor)) {
+			throw new NotYetSupportedOperationException();
+		}
+		return ((SinglePropertyIdAccessor<C, I>) idAccessor).getIdAccessor();
+	}
+	
+	private Persister<? super C, I, Table> buildSuperPersister(PersistenceContext persistenceContext) {
+		EntityMappingBuilder<? super C, I> inheritanceMappingBuilder = new EntityMappingBuilder<>(configurationSupport.getInheritanceConfiguration(), methodSpy);
+		Table inheritanceTable = Objects.preventNull(configurationSupport.getInheritanceTable(), new Table(configurationSupport.getInheritanceConfiguration().getPersistedClass().getSimpleName()));
+		return inheritanceMappingBuilder.build(persistenceContext, inheritanceTable);
 	}
 }

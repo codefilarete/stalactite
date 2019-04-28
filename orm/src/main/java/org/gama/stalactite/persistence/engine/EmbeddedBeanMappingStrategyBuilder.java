@@ -5,9 +5,15 @@ import org.gama.stalactite.persistence.sql.Dialect;
 import org.gama.stalactite.persistence.structure.Table;
 
 /**
+ * Builder of an {@link EmbeddedBeanMappingStrategy}
+ * 
  * @author Guillaume Mary
+ * @see #build(Dialect)
+ * @see #build(Dialect, Table)
  */
 public interface EmbeddedBeanMappingStrategyBuilder<C> {
+	
+	EmbeddableMappingConfiguration<C> getConfiguration();
 	
 	EmbeddedBeanMappingStrategy<C, Table> build(Dialect dialect);
 	

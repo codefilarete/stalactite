@@ -3,7 +3,6 @@ package org.gama.stalactite.persistence.engine;
 import org.danekja.java.util.function.serializable.SerializableBiConsumer;
 import org.danekja.java.util.function.serializable.SerializableFunction;
 import org.gama.reflection.AccessorChain;
-import org.gama.stalactite.persistence.mapping.EmbeddedBeanMappingStrategy;
 import org.gama.stalactite.persistence.structure.Table;
 
 /**
@@ -65,7 +64,7 @@ public interface IFluentEmbeddableMappingConfiguration<C> {
 	 * because it is not syntaxically valid (in Java 8). So it can't be mutualized between the 2 arguments {@code superType} and
 	 * {@code mappingStrategy}. So user must be carefful to ensure by himself that both types are equal.
 	 */
-	IFluentEmbeddableMappingConfiguration<C> mapSuperClass(EmbeddedBeanMappingStrategy<? super C, ?> mappingStrategy);
+	IFluentEmbeddableMappingConfiguration<C> mapSuperClass(EmbeddableMappingConfiguration<? super C> superMappingConfiguration);
 	
 	<O> IFluentEmbeddableMappingConfigurationEmbedOptions<C, O> embed(SerializableBiConsumer<C, O> setter);
 

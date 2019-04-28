@@ -46,7 +46,7 @@ import org.gama.sql.dml.SQLStatement.BindingException;
 import org.gama.stalactite.persistence.engine.FluentEmbeddableMappingConfigurationSupport.AbstractInset;
 import org.gama.stalactite.persistence.engine.FluentEmbeddableMappingConfigurationSupport.ImportedInset;
 import org.gama.stalactite.persistence.engine.FluentEmbeddableMappingConfigurationSupport.Inset;
-import org.gama.stalactite.persistence.engine.FluentEmbeddableMappingConfigurationSupport.Linkage;
+import org.gama.stalactite.persistence.engine.EmbeddableMappingConfiguration.Linkage;
 import org.gama.stalactite.persistence.engine.IFluentEmbeddableMappingConfiguration.IFluentEmbeddableMappingConfigurationEmbedOptions;
 import org.gama.stalactite.persistence.mapping.EmbeddedBeanMappingStrategy;
 import org.gama.stalactite.persistence.mapping.IMappingStrategy;
@@ -63,28 +63,27 @@ import static org.gama.lang.collection.Iterables.stream;
 import static org.gama.reflection.MethodReferences.toMethodReferenceString;
 
 /**
- * Engine that converts mapping definition of a {@link FluentEmbeddableMappingConfigurationSupport} into a simple {@link Map}
+ * Engine that converts mapping definition of a {@link EmbeddableMappingConfiguration} into a simple {@link Map}
  *
  * @author Guillaume Mary
  * @see #build(Dialect, Table) 
  */
 class EmbeddableMappingBuilder<C> {
 	
-	private final FluentEmbeddableMappingConfigurationSupport<C> configurationSupport;
+	private final EmbeddableMappingConfiguration<C> mappingConfiguration;
 	private Dialect dialect;
 	private Table targetTable;
 	/** Result of {@link #build(Dialect, Table)}, shared between methods */
 	private Map<IReversibleAccessor, Column> result;
 	
-	EmbeddableMappingBuilder(FluentEmbeddableMappingConfigurationSupport<C> configurationSupport) {
-		this.configurationSupport = configurationSupport;
+	EmbeddableMappingBuilder(EmbeddableMappingConfiguration<C> mappingConfiguration) {
+		this.mappingConfiguration = mappingConfiguration;
 	}
 	
 	/**
-	 * Converts mapping definition of the enclosing instance {@link FluentEmbeddableMappingConfigurationSupport} into a simple {@link Map}
+	 * Converts mapping definition of a {@link EmbeddableMappingConfiguration} into a simple {@link Map}
 	 *
-	 * @return a {@link Map} representing the definition of the mapping done through the fluent API of
-	 * {@link FluentEmbeddableMappingConfigurationSupport}
+	 * @return a {@link Map} representing the definition of the mapping declared by the {@link EmbeddableMappingConfiguration}
 	 */
 	Map<IReversibleAccessor, Column> build(Dialect dialect, Table targetTable) {
 		this.result = new HashMap<>();
@@ -99,12 +98,16 @@ class EmbeddableMappingBuilder<C> {
 		return result;
 	}
 	
+	protected Table getTargetTable() {
+		return targetTable;
+	}
+	
 	protected void includeInheritance() {
-		result.putAll(buildMappingFromInheritance(targetTable));
+		result.putAll(buildMappingFromInheritance());
 	}
 	
 	protected void includeDirectMapping() {
-		configurationSupport.mapping.forEach(linkage -> {
+		mappingConfiguration.getPropertiesMapping().forEach(linkage -> {
 			Column column = addLinkage(linkage);
 			result.put(linkage.getAccessor(), column);
 		});
@@ -134,10 +137,12 @@ class EmbeddableMappingBuilder<C> {
 		return column;
 	}
 	
-	protected Map<IReversibleAccessor, Column> buildMappingFromInheritance(Table targetTable) {
+	protected Map<IReversibleAccessor, Column> buildMappingFromInheritance() {
 		Map<IReversibleAccessor, Column> inheritanceResult = new HashMap<>();
-		if (configurationSupport.getMappedSuperClass() != null) {
-			inheritanceResult.putAll(collectMapping(configurationSupport.getMappedSuperClass(), targetTable, (a, c) -> c.getName()));
+		if (mappingConfiguration.getMappedSuperClassConfiguration() != null) {
+			EmbeddableMappingBuilder<? super C> superMappingBuilder = new EmbeddableMappingBuilder<>(mappingConfiguration.getMappedSuperClassConfiguration());
+			Map<IReversibleAccessor, Column> columnMap = superMappingBuilder.build(dialect, targetTable);
+			inheritanceResult.putAll(columnMap);
 		}
 		return inheritanceResult;
 	}
@@ -169,11 +174,11 @@ class EmbeddableMappingBuilder<C> {
 		Set<AbstractInset<C, ?>> treatedInsets = new HashSet<>();
 		// Registry of inner embedded properties, because they must be excluded during build process
 		Set<ValueAccessPoint> innerEmbeddedBeanRegistry = new ValueAccessPointSet();
-		configurationSupport.getInsets().stream().filter(Inset.class::isInstance).map(Inset.class::cast)
+		mappingConfiguration.getInsets().stream().filter(Inset.class::isInstance).map(Inset.class::cast)
 				.forEach(i -> innerEmbeddedBeanRegistry.add(i.getAccessor()));
 		
 		// starting mapping
-		configurationSupport.getInsets().forEach(inset -> {
+		mappingConfiguration.getInsets().forEach(inset -> {
 			assertNotAlreadyMapped(inset, treatedInsets);
 			
 			ValueAccessPointMap<String> overridenColumnNames = inset.getOverridenColumnNames();
@@ -257,7 +262,7 @@ class EmbeddableMappingBuilder<C> {
 					Column targetColumn = findColumn(valueAccessPoint, memberDefinition.getName(), columnsPerName, refinedInset);
 					if (targetColumn == null) {
 						// Column isn't declared in table => we create one from field informations
-						String columnName = configurationSupport.getColumnNamingStrategy().giveName(valueAccessPoint.getMethod());
+						String columnName = mappingConfiguration.getColumnNamingStrategy().giveName(valueAccessPoint.getMethod());
 						String overridenName = overridenColumnNames.get(valueAccessPoint);
 						if (overridenName != null) {
 							columnName = overridenName;
@@ -401,10 +406,6 @@ class EmbeddableMappingBuilder<C> {
 	protected Column findColumn(ValueAccessPoint valueAccessPoint, String defaultColumnName, Map<String, Column<Table, Object>> tableColumnsPerName, Inset<C, ?> configuration) {
 		String columnNameToSearch = preventNull(configuration.getOverridenColumnNames().get(valueAccessPoint), defaultColumnName);
 		return tableColumnsPerName.get(columnNameToSearch);
-	}
-	
-	public Table getTargetTable() {
-		return targetTable;
 	}
 	
 	private static class HierarchyIterator implements Iterator<Inset> {

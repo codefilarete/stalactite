@@ -7,23 +7,19 @@ import org.danekja.java.util.function.serializable.SerializableBiConsumer;
 import org.danekja.java.util.function.serializable.SerializableFunction;
 import org.gama.lang.function.Serie;
 import org.gama.reflection.AccessorChain;
-import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
-import org.gama.stalactite.persistence.mapping.EmbeddedBeanMappingStrategy;
-import org.gama.stalactite.persistence.sql.Dialect;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
 
 /**
  * An interface describing a fluent way to declare the persistence mapping of a class. 
- * Please note that it can't extend {@link IFluentEmbeddableMappingBuilder} because it clashes on the {@link #build(Dialect)} methods that don't
+ * Please note that it can't extend {@link IFluentEmbeddableMappingBuilder} because it clashes on the {@link #build(PersistenceContext)} methods that don't
  * have compatible return type.
  * 
  * @author Guillaume Mary
  * @see FluentEntityMappingConfigurationSupport#from(Class, Class)
- * @see #from(Class
- * @see #build(Dialect)
+ * @see #build(PersistenceContext)
  */
-public interface IFluentMappingBuilder<C, I> extends IFluentEmbeddableMappingConfiguration<C> {
+public interface IFluentMappingBuilder<C, I> extends IFluentEmbeddableMappingConfiguration<C>, PersisterBuilder<C, I> {
 	
 	/* Overwritting methods signature to return a type that aggregates options of this class */
 	
@@ -52,18 +48,18 @@ public interface IFluentMappingBuilder<C, I> extends IFluentEmbeddableMappingCon
 	/**
 	 * Declares the inherited mapping. Id policy must be defined in the given strategy.
 	 * 
-	 * @param mappingStrategy a mapping strategy of a super type of the current mapped type
+	 * @param mappingConfiguration a mapping configuration of a super type of the current mapped type
 	 * @return a enhanced version of {@code this} so one can add set options to the relationship or add mapping to {@code this}
 	 */
-	IFluentMappingBuilder<C, I> mapInheritance(Persister<? super C, I, ?> mappingStrategy);
+	IFluentMappingBuilder<C, I> mapInheritance(EntityMappingConfiguration<? super C, I> mappingConfiguration);
 	
 	/**
 	 * Declares the mapping of a super class.
 	 * 
-	 * @param mappingStrategy a mapping strategy of a super type of the current mapped type
+	 * @param superMappingConfiguration a mapping configuration of a super type of the current mapped type
 	 * @return a enhanced version of {@code this} so one can add set options to the relationship or add mapping to {@code this}
 	 */
-	IFluentMappingBuilder<C, I> mapSuperClass(EmbeddedBeanMappingStrategy<? super C, ?> mappingStrategy);
+	IFluentMappingBuilder<C, I> mapSuperClass(EmbeddableMappingConfiguration<? super C> superMappingConfiguration);
 	
 	/**
 	 * Declares a direct relationship between current entity and some of type {@code O}.
@@ -132,21 +128,9 @@ public interface IFluentMappingBuilder<C, I> extends IFluentEmbeddableMappingCon
 	
 	<V> IFluentMappingBuilder<C, I> versionedBy(SerializableFunction<C, V> getter, Serie<V> sequence);
 	
-	/**
-	 * Final method, builds the concrete persistence mapping
-	 * 
-	 * @param dialect the {@link Dialect} to build the mapping for
-	 * @return the finalized mapping, can be modified further
-	 */
-	<T extends Table> ClassMappingStrategy<C, I, T> build(Dialect dialect);
-	
-	<T extends Table> ClassMappingStrategy<C, I, T> build(Dialect dialect, Table targetTable);
-	
-	Persister<C, I, Table> build(PersistenceContext persistenceContext);
-	
-	<T extends Table> Persister<C, I, T> build(PersistenceContext persistenceContext, T table);
-	
 	IFluentMappingBuilder<C, I> withJoinTable();
+	
+	IFluentMappingBuilder<C, I> withJoinTable(Table parentTable);
 	
 	interface IFluentMappingBuilderColumnOptions<T, I> extends IFluentMappingBuilder<T, I>, ColumnOptions<T, I> {
 	}

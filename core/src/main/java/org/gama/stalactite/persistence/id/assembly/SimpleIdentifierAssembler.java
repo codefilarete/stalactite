@@ -28,6 +28,10 @@ public class SimpleIdentifierAssembler<I> implements IdentifierAssembler<I> {
 		this.primaryKey = (Column) primaryKey;
 	}
 	
+	public Column<Table, I> getColumn() {
+		return primaryKey;
+	}
+	
 	@Override
 	public I assemble(@Nonnull Row row, @Nonnull ColumnedRow rowAliaser) {
 		return (I) rowAliaser.getValue(primaryKey, row);
