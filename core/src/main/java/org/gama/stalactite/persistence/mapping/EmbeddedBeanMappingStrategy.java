@@ -15,7 +15,7 @@ import java.util.function.Function;
 import org.gama.lang.Duo;
 import org.gama.lang.Reflections;
 import org.gama.lang.bean.Objects;
-import org.gama.reflection.AccessorChain;
+import org.gama.reflection.Accessors;
 import org.gama.reflection.IMutator;
 import org.gama.reflection.IReversibleAccessor;
 import org.gama.sql.result.Row;
@@ -239,7 +239,7 @@ public class EmbeddedBeanMappingStrategy<C, T extends Table> implements IEmbedde
 		 * @return true if value is a default one for column/property
 		 */
 		default boolean isDefaultValue(Duo<Column, IMutator> mappedProperty, Object value) {
-			Class inputType = AccessorChain.getInputType(mappedProperty.getRight());
+			Class inputType = Accessors.giveInputType(mappedProperty.getRight());
 			return (!inputType.isPrimitive() && value == null)
 					|| (inputType.isPrimitive() && Reflections.PRIMITIVE_DEFAULT_VALUES.get(inputType) == value);
 		}
