@@ -70,11 +70,11 @@ import static org.gama.reflection.MethodReferences.toMethodReferenceString;
  */
 class EmbeddableMappingBuilder<C> {
 	
-	private final EmbeddableMappingConfiguration<C> mappingConfiguration;
+	protected final EmbeddableMappingConfiguration<C> mappingConfiguration;
 	private Dialect dialect;
 	private Table targetTable;
 	/** Result of {@link #build(Dialect, Table)}, shared between methods */
-	private Map<IReversibleAccessor, Column> result;
+	protected Map<IReversibleAccessor, Column> result;
 	
 	EmbeddableMappingBuilder(EmbeddableMappingConfiguration<C> mappingConfiguration) {
 		this.mappingConfiguration = mappingConfiguration;

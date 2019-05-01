@@ -7,7 +7,6 @@ import org.gama.lang.bean.Objects;
 import org.gama.lang.collection.Iterables;
 import org.gama.reflection.IReversibleAccessor;
 import org.gama.reflection.MethodReferenceCapturer;
-import org.gama.stalactite.persistence.engine.FluentEntityMappingConfigurationSupport.EntityMappingBuilder;
 import org.gama.stalactite.persistence.engine.cascade.AfterUpdateCascader;
 import org.gama.stalactite.persistence.engine.cascade.BeforeDeleteCascader;
 import org.gama.stalactite.persistence.engine.cascade.BeforeInsertCascader;

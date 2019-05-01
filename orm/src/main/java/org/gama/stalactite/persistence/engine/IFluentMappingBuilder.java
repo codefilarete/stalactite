@@ -135,7 +135,39 @@ public interface IFluentMappingBuilder<C, I> extends IFluentEmbeddableMappingCon
 	interface IFluentMappingBuilderColumnOptions<T, I> extends IFluentMappingBuilder<T, I>, ColumnOptions<T, I> {
 	}
 	
-	interface IFluentMappingBuilderOneToOneOptions<T, I> extends IFluentMappingBuilder<T, I>, OneToOneOptions<T, I> {
+	interface IFluentMappingBuilderOneToOneOptions<C, I> extends IFluentMappingBuilder<C, I>, OneToOneOptions<C, I> {
+		
+		/**
+		 * {@inheritDoc}
+		 * Declaration overriden to adapt return type to this class.
+		 *
+		 * @param reverseLink opposite owner of the relation (setter)
+		 * @param <O> owner type
+		 * @return the global mapping configurer
+		 */
+		@Override
+		<O> IFluentMappingBuilderOneToOneOptions<C, I> mappedBy(SerializableBiConsumer<O, C> reverseLink);
+		
+		/**
+		 * {@inheritDoc}
+		 * Declaration overriden to adapt return type to this class.
+		 *
+		 * @param reverseLink opposite owner of the relation (getter)
+		 * @param <O> owner type
+		 * @return the global mapping configurer
+		 */
+		@Override
+		<O> IFluentMappingBuilderOneToOneOptions<C, I> mappedBy(SerializableFunction<O, C> reverseLink);
+		
+		/**
+		 * {@inheritDoc}
+		 * Declaration overriden to adapt return type to this class.
+		 *
+		 * @param reverseLink opposite owner of the relation
+		 * @return the global mapping configurer
+		 */
+		@Override
+		IFluentMappingBuilderOneToOneOptions<C, I> mappedBy(Column<Table, C> reverseLink);
 	}
 	
 	interface IFluentMappingBuilderOneToManyOptions<T, I, O> extends IFluentMappingBuilder<T, I>, OneToManyOptions<T, I, O> {

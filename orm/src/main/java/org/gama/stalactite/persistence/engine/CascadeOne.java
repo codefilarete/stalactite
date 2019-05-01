@@ -3,6 +3,8 @@ package org.gama.stalactite.persistence.engine;
 import java.lang.reflect.Method;
 import java.util.function.Function;
 
+import org.danekja.java.util.function.serializable.SerializableBiConsumer;
+import org.danekja.java.util.function.serializable.SerializableFunction;
 import org.gama.stalactite.persistence.engine.CascadeOptions.RelationshipMode;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
@@ -12,11 +14,25 @@ import org.gama.stalactite.persistence.structure.Table;
  */
 public class CascadeOne<SRC, TRGT, TRGTID> {
 	
+	/** The method that gives the target entity from the source one */
 	private final Function<SRC, TRGT> targetProvider;
+	
+	/** Same as {@link #targetProvider}, but with the reflection API */
 	private final Method member;
+	
+	/** Target entity {@link Persister} */
 	private final Persister<TRGT, TRGTID, ? extends Table> targetPersister;
-	private Column reverseSide;
+	
 	private boolean nullable = true;
+	
+	/** the method that gets the "one" entity from the "many" entities */
+	private SerializableFunction<TRGT, SRC> reverseGetter;
+	
+	/** the method that sets the "one" entity onto the "many" entities */
+	private SerializableBiConsumer<TRGT, SRC> reverseSetter;
+	
+	private Column<Table, SRC> reverseColumn;
+	
 	private RelationshipMode relationshipMode = RelationshipMode.READ_ONLY;
 	
 	CascadeOne(Function<SRC, TRGT> targetProvider, Persister<TRGT, TRGTID, ? extends Table> targetPersister, Method method) {
@@ -50,12 +66,28 @@ public class CascadeOne<SRC, TRGT, TRGTID> {
 		this.nullable = nullable;
 	}
 	
-	public Column getReverseSide() {
-		return reverseSide;
+	public SerializableFunction<TRGT, SRC> getReverseGetter() {
+		return reverseGetter;
 	}
 	
-	public void setReverseSide(Column reverseSide) {
-		this.reverseSide = reverseSide;
+	public void setReverseGetter(SerializableFunction<TRGT, SRC> reverseGetter) {
+		this.reverseGetter = reverseGetter;
+	}
+	
+	public SerializableBiConsumer<TRGT, SRC> getReverseSetter() {
+		return reverseSetter;
+	}
+	
+	public void setReverseSetter(SerializableBiConsumer<TRGT, SRC> reverseSetter) {
+		this.reverseSetter = reverseSetter;
+	}
+	
+	public Column getReverseColumn() {
+		return reverseColumn;
+	}
+	
+	public void setReverseColumn(Column reverseSide) {
+		this.reverseColumn = reverseSide;
 	}
 	
 	public RelationshipMode getRelationshipMode() {
