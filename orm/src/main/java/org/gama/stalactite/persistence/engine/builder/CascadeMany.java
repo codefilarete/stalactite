@@ -21,18 +21,25 @@ import org.gama.stalactite.persistence.structure.Table;
  */
 public class CascadeMany<SRC, TRGT, TRGTID, C extends Collection<TRGT>> {
 	
-	/** The method that gives the "many" entities" from the "one" entity */
+	/** The method that gives the "many" entities from the "one" entity */
 	private final Function<SRC, C> collectionProvider;
+	
 	/** Same as {@link #collectionProvider}, but with the reflection API */
 	private final Method collectionGetter;
-	/** {@link Persister} for the "many" entity */
+	
+	/** "many" entity {@link Persister} */
 	private final Persister<TRGT, TRGTID, ? extends Table> persister;
+	
 	private final Class<C> collectionTargetClass;
-	/** the method that sets the "one" entity onto the "many" entities */
-	private SerializableBiConsumer<TRGT, SRC> reverseSetter;
+	
 	/** the method that gets the "one" entity from the "many" entities */
 	private SerializableFunction<TRGT, SRC> reverseGetter;
+	
+	/** the method that sets the "one" entity onto the "many" entities */
+	private SerializableBiConsumer<TRGT, SRC> reverseSetter;
+	
 	private Column<Table, SRC> reverseColumn;
+	
 	/** Default relationship mode is readonly */
 	private RelationshipMode relationshipMode = RelationshipMode.READ_ONLY;
 	
@@ -63,6 +70,14 @@ public class CascadeMany<SRC, TRGT, TRGTID, C extends Collection<TRGT>> {
 		return collectionTargetClass;
 	}
 	
+	public SerializableFunction<TRGT, SRC> getReverseGetter() {
+		return reverseGetter;
+	}
+	
+	public void setReverseGetter(SerializableFunction<TRGT, SRC> reverseGetter) {
+		this.reverseGetter = reverseGetter;
+	}
+	
 	public SerializableBiConsumer<TRGT, SRC> getReverseSetter() {
 		return reverseSetter;
 	}
@@ -77,14 +92,6 @@ public class CascadeMany<SRC, TRGT, TRGTID, C extends Collection<TRGT>> {
 	
 	public void setReverseColumn(Column<Table, SRC> reverseColumn) {
 		this.reverseColumn = reverseColumn;
-	}
-	
-	public SerializableFunction<TRGT, SRC> getReverseGetter() {
-		return reverseGetter;
-	}
-	
-	public void setReverseGetter(SerializableFunction<TRGT, SRC> reverseGetter) {
-		this.reverseGetter = reverseGetter;
 	}
 	
 	public RelationshipMode getRelationshipMode() {
