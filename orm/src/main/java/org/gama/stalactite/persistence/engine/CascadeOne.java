@@ -1,10 +1,8 @@
 package org.gama.stalactite.persistence.engine;
 
-import java.lang.reflect.Method;
-import java.util.function.Function;
-
 import org.danekja.java.util.function.serializable.SerializableBiConsumer;
 import org.danekja.java.util.function.serializable.SerializableFunction;
+import org.gama.reflection.IReversibleAccessor;
 import org.gama.stalactite.persistence.engine.CascadeOptions.RelationshipMode;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
@@ -15,10 +13,7 @@ import org.gama.stalactite.persistence.structure.Table;
 public class CascadeOne<SRC, TRGT, TRGTID> {
 	
 	/** The method that gives the target entity from the source one */
-	private final Function<SRC, TRGT> targetProvider;
-	
-	/** Same as {@link #targetProvider}, but with the reflection API */
-	private final Method member;
+	private final IReversibleAccessor<SRC, TRGT> targetAccessor;
 	
 	/** Target entity {@link Persister} */
 	private final Persister<TRGT, TRGTID, ? extends Table> targetPersister;
@@ -35,21 +30,14 @@ public class CascadeOne<SRC, TRGT, TRGTID> {
 	
 	private RelationshipMode relationshipMode = RelationshipMode.READ_ONLY;
 	
-	CascadeOne(Function<SRC, TRGT> targetProvider, Persister<TRGT, TRGTID, ? extends Table> targetPersister, Method method) {
-		this.targetProvider = targetProvider;
+	CascadeOne(IReversibleAccessor<SRC, TRGT> targetProvider, Persister<TRGT, TRGTID, ? extends Table> targetPersister) {
 		this.targetPersister = targetPersister;
-		// looking for the target type because its necessary to find its persister (and other objects). Done thru a method capturer (weird thing).
-		this.member = method;
+		targetAccessor = targetProvider;
 	}
 	
 	/** Original method reference given for mapping */
-	public Function<SRC, TRGT> getTargetProvider() {
-		return targetProvider;
-	}
-	
-	/** Equivalent of {@link #targetProvider} as a Reflection API element */
-	public Method getMember() {
-		return member;
+	public IReversibleAccessor<SRC, TRGT> getTargetProvider() {
+		return targetAccessor;
 	}
 	
 	/** The {@link Persister} that will be used to persist the target of the relation */
@@ -96,5 +84,13 @@ public class CascadeOne<SRC, TRGT, TRGTID> {
 	
 	public void setRelationshipMode(RelationshipMode relationshipMode) {
 		this.relationshipMode = relationshipMode;
+	}
+	
+	/**
+	 * Indicates if relation is owned by target entities table
+	 * @return true if one of {@link #getReverseSetter()}, {@link #getReverseGetter()}, {@link #getReverseColumn()} is not null
+	 */
+	public boolean isOwnedByReverseSide() {
+		return getReverseSetter() != null || getReverseGetter() != null || getReverseColumn() != null;
 	}
 }

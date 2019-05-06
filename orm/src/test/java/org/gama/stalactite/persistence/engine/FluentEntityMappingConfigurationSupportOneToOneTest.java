@@ -2,12 +2,15 @@ package org.gama.stalactite.persistence.engine;
 
 import javax.sql.DataSource;
 import java.sql.BatchUpdateException;
+import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
+import org.gama.lang.collection.Iterables;
 import org.gama.lang.collection.Maps;
 import org.gama.lang.exception.Exceptions;
 import org.gama.sql.binder.DefaultParameterBinders;
+import org.gama.sql.result.ResultSetIterator;
 import org.gama.sql.result.RowIterator;
 import org.gama.sql.test.HSQLDBInMemoryDataSource;
 import org.gama.stalactite.persistence.engine.CascadeOptions.RelationshipMode;
@@ -23,6 +26,8 @@ import org.gama.stalactite.persistence.id.PersistableIdentifier;
 import org.gama.stalactite.persistence.id.PersistedIdentifier;
 import org.gama.stalactite.persistence.id.provider.LongProvider;
 import org.gama.stalactite.persistence.sql.HSQLDBDialect;
+import org.gama.stalactite.persistence.structure.Column;
+import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.test.JdbcConnectionProvider;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -45,7 +50,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 /**
  * @author Guillaume Mary
  */
-public class FluentEntityMappingConfigurationSupportCascadeTest {
+public class FluentEntityMappingConfigurationSupportOneToOneTest {
 	
 	private static final HSQLDBDialect DIALECT = new HSQLDBDialect();
 	private DataSource dataSource = new HSQLDBInMemoryDataSource();
@@ -78,7 +83,7 @@ public class FluentEntityMappingConfigurationSupportCascadeTest {
 	}
 	
 	@Test
-	public void testCascade_oneToOne_cascade_associationOnly_throwsException() {
+	public void cascade_associationOnly_throwsException() {
 		IFluentMappingBuilderOneToOneOptions<Country, Identifier<Long>> mappingBuilder = FluentEntityMappingConfigurationSupport.from(Country.class, Identifier.LONG_TYPE)
 				.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.add(Country::getName)
@@ -91,8 +96,8 @@ public class FluentEntityMappingConfigurationSupportCascadeTest {
 	}
 	
 	@Test
-	public void testCascade_oneToOne_noCascade_defaultIsReadOnly() throws SQLException {
-		// mapping building thantks to fluent API
+	public void cascade_noCascade_defaultIsReadOnly() throws SQLException {
+		// mapping building thanks to fluent API
 		Persister<Country, Identifier<Long>, ?> countryPersister = FluentEntityMappingConfigurationSupport.from(Country.class, Identifier.LONG_TYPE)
 				.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.add(Country::getName)
@@ -168,8 +173,8 @@ public class FluentEntityMappingConfigurationSupportCascadeTest {
 	 * @throws SQLException
 	 */
 	@Test
-	public void testCascade_lightOneToOne_relationIsPersisted() throws SQLException {
-		// mapping building thantks to fluent API
+	public void lightOneToOne_relationIsPersisted() throws SQLException {
+		// mapping building thanks to fluent API
 		Persister<Country, Identifier<Long>, ?> countryPersister = FluentEntityMappingConfigurationSupport.from(Country.class, Identifier.LONG_TYPE)
 				.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.add(Country::getName)
@@ -216,8 +221,8 @@ public class FluentEntityMappingConfigurationSupportCascadeTest {
 	}
 	
 	@Test
-	public void testCascade_oneToOne_insert() {
-		// mapping building thantks to fluent API
+	public void cascade_insert() {
+		// mapping building thanks to fluent API
 		Persister<Country, Identifier<Long>, ?> countryPersister = FluentEntityMappingConfigurationSupport.from(Country.class, Identifier.LONG_TYPE)
 				.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.add(Country::getName)
@@ -260,8 +265,8 @@ public class FluentEntityMappingConfigurationSupportCascadeTest {
 	}
 	
 	@Test
-	public void testCascade_oneToOne_insert_mandatory() {
-		// mapping building thantks to fluent API
+	public void cascade_insert_mandatory() {
+		// mapping building thanks to fluent API
 		Persister<Country, Identifier<Long>, ?> countryPersister = FluentEntityMappingConfigurationSupport.from(Country.class, Identifier.LONG_TYPE)
 				.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.add(Country::getName)
@@ -279,8 +284,189 @@ public class FluentEntityMappingConfigurationSupportCascadeTest {
 				"Non null value expected for relation o.g.s.p.e.m.Person o.g.s.p.e.m.Country.getPresident() on object org.gama.stalactite.persistence.engine.model.Country@0");
 	}
 	
+	@Test
+	void foreignKeyIsCreated() throws SQLException {
+		// mapping building thantks to fluent API
+		FluentEntityMappingConfigurationSupport.from(Country.class, Identifier.LONG_TYPE)
+				// setting a foreign key naming strategy to be tested
+				.foreignKeyNamingStrategy(ForeignKeyNamingStrategy.DEFAULT)
+				.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
+				.add(Country::getName)
+				.add(Country::getDescription)
+				.addOneToOne(Country::getCapital, cityPersister)
+				.build(persistenceContext);
+		
+		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+		ddlDeployer.deployDDL();
+		
+		Connection currentConnection = persistenceContext.getCurrentConnection();
+		ResultSetIterator<JdbcForeignKey> fkPersonIterator = new ResultSetIterator<JdbcForeignKey>(currentConnection.getMetaData().getExportedKeys(null, null,
+				cityPersister.getMainTable().getName().toUpperCase())) {
+			@Override
+			public JdbcForeignKey convert(ResultSet rs) throws SQLException {
+				return new JdbcForeignKey(
+						rs.getString("FK_NAME"),
+						rs.getString("FKTABLE_NAME"), rs.getString("FKCOLUMN_NAME"),
+						rs.getString("PKTABLE_NAME"), rs.getString("PKCOLUMN_NAME")
+				);
+			}
+		};
+		JdbcForeignKey foundForeignKey = Iterables.first(fkPersonIterator);
+		JdbcForeignKey expectedForeignKey = new JdbcForeignKey("FK_COUNTRY_CAPITALID_CITY_ID", "COUNTRY", "CAPITALID", "CITY", "ID");
+		assertEquals(expectedForeignKey.getSignature(), foundForeignKey.getSignature());
+	}
+	
+	@Test
+	void foreignKeyIsCreated_relationOwnedByTargetSide() throws SQLException {
+		// mapping building thantks to fluent API
+		Persister<Country, Identifier<Long>, Table> countryPersister = FluentEntityMappingConfigurationSupport.from(Country.class, Identifier.LONG_TYPE)
+				// setting a foreign key naming strategy to be tested
+				.foreignKeyNamingStrategy(ForeignKeyNamingStrategy.DEFAULT)
+				.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
+				.add(Country::getName)
+				.add(Country::getDescription)
+				.addOneToOne(Country::getCapital, cityPersister).mappedBy(City::getCountry)
+				.build(persistenceContext);
+		
+		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+		ddlDeployer.deployDDL();
+		
+		Connection currentConnection = persistenceContext.getCurrentConnection();
+		ResultSetIterator<JdbcForeignKey> fkPersonIterator = new ResultSetIterator<JdbcForeignKey>(currentConnection.getMetaData().getExportedKeys(null, null,
+				countryPersister.getMainTable().getName().toUpperCase())) {
+			@Override
+			public JdbcForeignKey convert(ResultSet rs) throws SQLException {
+				return new JdbcForeignKey(
+						rs.getString("FK_NAME"),
+						rs.getString("FKTABLE_NAME"), rs.getString("FKCOLUMN_NAME"),
+						rs.getString("PKTABLE_NAME"), rs.getString("PKCOLUMN_NAME")
+				);
+			}
+		};
+		JdbcForeignKey foundForeignKey = Iterables.first(fkPersonIterator);
+		JdbcForeignKey expectedForeignKey = new JdbcForeignKey("FK_CITY_COUNTRY_COUNTRY_ID", "CITY", "COUNTRY", "COUNTRY", "ID");
+		assertEquals(expectedForeignKey.getSignature(), foundForeignKey.getSignature());
+	}
+	
+	@Test
+	void foreignKeyIsCreated_relationIsDefinedByColumnOnTargetSide() throws SQLException {
+		IFluentMappingBuilderColumnOptions<City, Identifier<Long>> cityMappingBuilder = FluentEntityMappingConfigurationSupport.from(City.class, Identifier.LONG_TYPE)
+				.add(City::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
+				.add(City::getName);
+		Table cityTable = new Table("city");
+		Column<Table, Country> stateColumn = cityTable.addColumn("state", Country.class);
+		Persister<City, Identifier<Long>, ?> cityPersister = cityMappingBuilder.build(persistenceContext, cityTable);
+		
+		// mapping building thantks to fluent API
+		Persister<Country, Identifier<Long>, Table> countryPersister = FluentEntityMappingConfigurationSupport.from(Country.class, Identifier.LONG_TYPE)
+				// setting a foreign key naming strategy to be tested
+				.foreignKeyNamingStrategy(ForeignKeyNamingStrategy.DEFAULT)
+				.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
+				.add(Country::getName)
+				.add(Country::getDescription)
+				.addOneToOne(Country::getCapital, cityPersister).mappedBy(stateColumn)
+				.build(persistenceContext);
+		
+		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+		ddlDeployer.deployDDL();
+		
+		Connection currentConnection = persistenceContext.getCurrentConnection();
+		ResultSetIterator<JdbcForeignKey> fkPersonIterator = new ResultSetIterator<JdbcForeignKey>(currentConnection.getMetaData().getExportedKeys(null, null,
+				countryPersister.getMainTable().getName().toUpperCase())) {
+			@Override
+			public JdbcForeignKey convert(ResultSet rs) throws SQLException {
+				return new JdbcForeignKey(
+						rs.getString("FK_NAME"),
+						rs.getString("FKTABLE_NAME"), rs.getString("FKCOLUMN_NAME"),
+						rs.getString("PKTABLE_NAME"), rs.getString("PKCOLUMN_NAME")
+				);
+			}
+		};
+		JdbcForeignKey foundForeignKey = Iterables.first(fkPersonIterator);
+		JdbcForeignKey expectedForeignKey = new JdbcForeignKey("FK_CITY_STATE_COUNTRY_ID", "CITY", "STATE", "COUNTRY", "ID");
+		assertEquals(expectedForeignKey.getSignature(), foundForeignKey.getSignature());
+	}
+	
+	@Test
+	void foreignKeyIsCreated_relationIsDefinedByColumnOnTargetSideAndReverseAccessorIsUsed_columnOverrideIsUsed() throws SQLException {
+		IFluentMappingBuilderColumnOptions<City, Identifier<Long>> cityMappingBuilder = FluentEntityMappingConfigurationSupport.from(City.class, Identifier.LONG_TYPE)
+				.add(City::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
+				.add(City::getName);
+		Table cityTable = new Table("city");
+		Column<Table, Country> stateColumn = cityTable.addColumn("state", Country.class);
+		Persister<City, Identifier<Long>, ?> cityPersister = cityMappingBuilder.build(persistenceContext, cityTable);
+		
+		// mapping building thantks to fluent API
+		Persister<Country, Identifier<Long>, Table> countryPersister = FluentEntityMappingConfigurationSupport.from(Country.class, Identifier.LONG_TYPE)
+				// setting a foreign key naming strategy to be tested
+				.foreignKeyNamingStrategy(ForeignKeyNamingStrategy.DEFAULT)
+				.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
+				.add(Country::getName)
+				.add(Country::getDescription)
+				.addOneToOne(Country::getCapital, cityPersister).mappedBy(stateColumn).mappedBy(City::getCountry)
+				.build(persistenceContext);
+		
+		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+		ddlDeployer.deployDDL();
+		
+		Connection currentConnection = persistenceContext.getCurrentConnection();
+		ResultSetIterator<JdbcForeignKey> fkPersonIterator = new ResultSetIterator<JdbcForeignKey>(currentConnection.getMetaData().getExportedKeys(null, null,
+				countryPersister.getMainTable().getName().toUpperCase())) {
+			@Override
+			public JdbcForeignKey convert(ResultSet rs) throws SQLException {
+				return new JdbcForeignKey(
+						rs.getString("FK_NAME"),
+						rs.getString("FKTABLE_NAME"), rs.getString("FKCOLUMN_NAME"),
+						rs.getString("PKTABLE_NAME"), rs.getString("PKCOLUMN_NAME")
+				);
+			}
+		};
+		JdbcForeignKey foundForeignKey = Iterables.first(fkPersonIterator);
+		JdbcForeignKey expectedForeignKey = new JdbcForeignKey("FK_CITY_STATE_COUNTRY_ID", "CITY", "STATE", "COUNTRY", "ID");
+		assertEquals(expectedForeignKey.getSignature(), foundForeignKey.getSignature());
+	}
+	
+	@Test
+	void foreignKeyIsCreated_relationIsDefinedByColumnOnTargetSideAndReverseMutatorIsUsed_columnOverrideIsUsed() throws SQLException {
+		IFluentMappingBuilderColumnOptions<City, Identifier<Long>> cityMappingBuilder = FluentEntityMappingConfigurationSupport.from(City.class, Identifier.LONG_TYPE)
+				.add(City::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
+				.add(City::getName);
+		Table cityTable = new Table("city");
+		Column<Table, Country> stateColumn = cityTable.addColumn("state", Country.class);
+		Persister<City, Identifier<Long>, ?> cityPersister = cityMappingBuilder.build(persistenceContext, cityTable);
+		
+		// mapping building thantks to fluent API
+		Persister<Country, Identifier<Long>, Table> countryPersister = FluentEntityMappingConfigurationSupport.from(Country.class, Identifier.LONG_TYPE)
+				// setting a foreign key naming strategy to be tested
+				.foreignKeyNamingStrategy(ForeignKeyNamingStrategy.DEFAULT)
+				.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
+				.add(Country::getName)
+				.add(Country::getDescription)
+				.addOneToOne(Country::getCapital, cityPersister).mappedBy(stateColumn).mappedBy(City::setCountry)
+				.build(persistenceContext);
+		
+		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+		ddlDeployer.deployDDL();
+		
+		Connection currentConnection = persistenceContext.getCurrentConnection();
+		ResultSetIterator<JdbcForeignKey> fkPersonIterator = new ResultSetIterator<JdbcForeignKey>(currentConnection.getMetaData().getExportedKeys(null, null,
+				countryPersister.getMainTable().getName().toUpperCase())) {
+			@Override
+			public JdbcForeignKey convert(ResultSet rs) throws SQLException {
+				return new JdbcForeignKey(
+						rs.getString("FK_NAME"),
+						rs.getString("FKTABLE_NAME"), rs.getString("FKCOLUMN_NAME"),
+						rs.getString("PKTABLE_NAME"), rs.getString("PKCOLUMN_NAME")
+				);
+			}
+		};
+		JdbcForeignKey foundForeignKey = Iterables.first(fkPersonIterator);
+		JdbcForeignKey expectedForeignKey = new JdbcForeignKey("FK_CITY_STATE_COUNTRY_ID", "CITY", "STATE", "COUNTRY", "ID");
+		assertEquals(expectedForeignKey.getSignature(), foundForeignKey.getSignature());
+	}
+	
 	@Nested
-	class CascadeOneToOneUpdate {
+	class CascadeUpdate {
 		
 		@Test
 		void relationChanged() {
@@ -405,8 +591,8 @@ public class FluentEntityMappingConfigurationSupportCascadeTest {
 	}
 	
 	@Test
-	public void testCascade_oneToOne_update_mandatory() {
-		// mapping building thantks to fluent API
+	void cascade_update_mandatory() {
+		// mapping building thanks to fluent API
 		Persister<Country, Identifier<Long>, ?> countryPersister = FluentEntityMappingConfigurationSupport.from(Country.class, Identifier.LONG_TYPE)
 				.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.add(Country::getName)
@@ -434,12 +620,42 @@ public class FluentEntityMappingConfigurationSupportCascadeTest {
 	}
 	
 	@Test
-	public void testCascade_oneToOne_delete() throws SQLException {
-		// mapping building thantks to fluent API
+	void cascade_delete() throws SQLException {
+		// mapping building thanks to fluent API
 		Persister<Country, Identifier<Long>, ?> countryPersister = FluentEntityMappingConfigurationSupport.from(Country.class, Identifier.LONG_TYPE)
 				.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.add(Country::getDescription)
 				.addOneToOne(Country::getPresident, personPersister).cascading(ALL)
+				.build(persistenceContext);
+		
+		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+		ddlDeployer.deployDDL();
+		
+		persistenceContext.getCurrentConnection().createStatement().executeUpdate("insert into Person(id) values (42), (666)");
+		persistenceContext.getCurrentConnection().createStatement().executeUpdate("insert into Country(id, presidentId) values (100, 42), (200, 666)");
+		
+		Country persistedCountry = countryPersister.select(new PersistedIdentifier<>(100L));
+		countryPersister.delete(persistedCountry);
+		ResultSet resultSet;
+		// Checking that we deleted what we wanted
+		resultSet = persistenceContext.getCurrentConnection().createStatement().executeQuery("select id from Country where id = 100");
+		assertFalse(resultSet.next());
+		resultSet = persistenceContext.getCurrentConnection().createStatement().executeQuery("select id from Person where id = 42");
+		assertTrue(resultSet.next());
+		// but we didn't delete everything !
+		resultSet = persistenceContext.getCurrentConnection().createStatement().executeQuery("select id from Country where id = 200");
+		assertTrue(resultSet.next());
+		resultSet = persistenceContext.getCurrentConnection().createStatement().executeQuery("select id from Person where id = 666");
+		assertTrue(resultSet.next());
+	}
+	
+	@Test
+	void cascade_deleteWithOrphanRemoval() throws SQLException {
+		// mapping building thanks to fluent API
+		Persister<Country, Identifier<Long>, ?> countryPersister = FluentEntityMappingConfigurationSupport.from(Country.class, Identifier.LONG_TYPE)
+				.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
+				.add(Country::getDescription)
+				.addOneToOne(Country::getPresident, personPersister).cascading(ALL_ORPHAN_REMOVAL)
 				.build(persistenceContext);
 		
 		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
@@ -464,70 +680,8 @@ public class FluentEntityMappingConfigurationSupportCascadeTest {
 	}
 	
 	@Test
-	public void testCascade_oneToOne_all() throws SQLException {
-		// mapping building thantks to fluent API
-		Persister<Country, Identifier<Long>, ?> countryPersister = FluentEntityMappingConfigurationSupport.from(Country.class, Identifier.LONG_TYPE)
-				.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
-				.add(Country::getDescription)
-				.addOneToOne(Country::getPresident, personPersister).cascading(ALL)
-				.build(persistenceContext);
-		
-		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
-		ddlDeployer.deployDDL();
-		
-		LongProvider countryIdProvider = new LongProvider();
-		Country dummyCountry = new Country(countryIdProvider.giveNewIdentifier());
-		dummyCountry.setName("France");
-		dummyCountry.setDescription("Smelly cheese !");
-		
-		Person person = new Person(new LongProvider().giveNewIdentifier());
-		person.setName("French president");
-		dummyCountry.setPresident(person);
-		
-		// testing insert cascade
-		countryPersister.insert(dummyCountry);
-		Country persistedCountry = countryPersister.select(dummyCountry.getId());
-		assertEquals(new PersistedIdentifier<>(0L), persistedCountry.getId());
-		assertEquals("Smelly cheese !", persistedCountry.getDescription());
-		assertEquals("French president", persistedCountry.getPresident().getName());
-		assertTrue(persistedCountry.getPresident().getId().isPersisted());
-		
-		// testing insert cascade with another Country reusing OneToOne entity
-		Country dummyCountry2 = new Country(countryIdProvider.giveNewIdentifier());
-		dummyCountry2.setName("France 2");
-		dummyCountry2.setPresident(person);
-		countryPersister.insert(dummyCountry2);
-		// database must be up to date
-		Country persistedCountry2 = countryPersister.select(dummyCountry2.getId());
-		assertEquals(new PersistedIdentifier<>(1L), persistedCountry2.getId());
-		assertEquals("French president", persistedCountry2.getPresident().getName());
-		assertEquals(persistedCountry.getPresident().getId().getSurrogate(), persistedCountry2.getPresident().getId().getSurrogate());
-		assertNotSame(persistedCountry.getPresident(), persistedCountry2.getPresident());
-		
-		// testing update cascade
-		persistedCountry2.getPresident().setName("French president renamed");
-		countryPersister.update(persistedCountry2, persistedCountry, true);
-		// database must be up to date
-		ResultSet resultSet;
-		resultSet = persistenceContext.getCurrentConnection().createStatement().executeQuery("select name from Person");
-		resultSet.next();
-		assertEquals("French president renamed", resultSet.getString("name"));
-		
-		// testing delete cascade
-		// but we have to remove first the other country that points to the same president, else will get a constraint violation
-		assertEquals(1, persistenceContext.getCurrentConnection().createStatement().executeUpdate(
-				"update Country set presidentId = null where id = " + dummyCountry2.getId().getSurrogate()));
-		countryPersister.delete(persistedCountry);
-		// database must be up to date
-		resultSet = persistenceContext.getCurrentConnection().createStatement().executeQuery("select id from Country where id = 0");
-		assertFalse(resultSet.next());
-		resultSet = persistenceContext.getCurrentConnection().createStatement().executeQuery("select id from Person");
-		assertFalse(resultSet.next());
-	}
-	
-	@Test
-	public void testCascade_multiple_oneToOne_all() throws SQLException {
-		// mapping building thantks to fluent API
+	void multiple_oneToOne() throws SQLException {
+		// mapping building thanks to fluent API
 		Persister<Country, Identifier<Long>, ?> countryPersister = FluentEntityMappingConfigurationSupport.from(Country.class, Identifier.LONG_TYPE)
 				.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.add(Country::getDescription)
@@ -578,15 +732,17 @@ public class FluentEntityMappingConfigurationSupportCascadeTest {
 		// testing update cascade
 		persistedCountry2.getPresident().setName("French president renamed");
 		persistedCountry2.getCapital().setName("Paris renamed");
-		countryPersister.update(persistedCountry2, persistedCountry, true);
+		countryPersister.update(persistedCountry2, dummyCountry2, true);
 		// database must be up to date
 		ResultSet resultSet;
 		resultSet = persistenceContext.getCurrentConnection().createStatement().executeQuery("select name from Person");
 		resultSet.next();
 		assertEquals("French president renamed", resultSet.getString("name"));
+		assertFalse(resultSet.next());
 		resultSet = persistenceContext.getCurrentConnection().createStatement().executeQuery("select name from City");
 		resultSet.next();
 		assertEquals("Paris renamed", resultSet.getString("name"));
+		assertFalse(resultSet.next());
 		
 		// testing delete cascade
 		// but we have to remove first the other country that points to the same president, else will get a constraint violation
@@ -594,11 +750,197 @@ public class FluentEntityMappingConfigurationSupportCascadeTest {
 				"update Country set presidentId = null, capitalId = null where id = " + dummyCountry2.getId().getSurrogate()));
 		countryPersister.delete(persistedCountry);
 		// database must be up to date
-		resultSet = persistenceContext.getCurrentConnection().createStatement().executeQuery("select id from Country where id = 0");
+		resultSet = persistenceContext.getCurrentConnection().createStatement().executeQuery("select id from Country where id = " + persistedCountry.getId().getSurrogate());
 		assertFalse(resultSet.next());
-		resultSet = persistenceContext.getCurrentConnection().createStatement().executeQuery("select id from Person");
+		resultSet = persistenceContext.getCurrentConnection().createStatement().executeQuery("select id from Person where id = " + persistedCountry.getPresident().getId().getSurrogate());
+		assertTrue(resultSet.next());
+		resultSet = persistenceContext.getCurrentConnection().createStatement().executeQuery("select id from City where id = " + persistedCountry.getCapital().getId().getSurrogate());
+		assertTrue(resultSet.next());
+	}
+	
+	@Test
+	void multiple_oneToOne_partialOrphanRemoval() throws SQLException {
+		// mapping building thanks to fluent API
+		Persister<Country, Identifier<Long>, ?> countryPersister = FluentEntityMappingConfigurationSupport.from(Country.class, Identifier.LONG_TYPE)
+				.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
+				.add(Country::getDescription)
+				.addOneToOne(Country::getPresident, personPersister).cascading(ALL_ORPHAN_REMOVAL)
+				.addOneToOne(Country::getCapital, cityPersister).cascading(ALL)
+				.build(persistenceContext);
+		
+		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+		ddlDeployer.deployDDL();
+		
+		LongProvider countryIdProvider = new LongProvider();
+		Country dummyCountry = new Country(countryIdProvider.giveNewIdentifier());
+		dummyCountry.setName("France");
+		dummyCountry.setDescription("Smelly cheese !");
+		
+		Person person = new Person(new LongProvider().giveNewIdentifier());
+		person.setName("French president");
+		dummyCountry.setPresident(person);
+		
+		City capital = new City(new LongProvider().giveNewIdentifier());
+		capital.setName("Paris");
+		dummyCountry.setCapital(capital);
+		
+		// testing insert cascade
+		countryPersister.insert(dummyCountry);
+		Country persistedCountry = countryPersister.select(dummyCountry.getId());
+		assertEquals(new PersistedIdentifier<>(0L), persistedCountry.getId());
+		assertEquals("French president", persistedCountry.getPresident().getName());
+		assertEquals("Paris", persistedCountry.getCapital().getName());
+		assertTrue(persistedCountry.getPresident().getId().isPersisted());
+		assertTrue(persistedCountry.getCapital().getId().isPersisted());
+		
+		// testing insert cascade with another Country reusing OneToOne entities
+		Country dummyCountry2 = new Country(countryIdProvider.giveNewIdentifier());
+		dummyCountry2.setName("France 2");
+		dummyCountry2.setPresident(person);
+		dummyCountry2.setCapital(capital);
+		countryPersister.insert(dummyCountry2);
+		// database must be up to date
+		Country persistedCountry2 = countryPersister.select(dummyCountry2.getId());
+		assertEquals(new PersistedIdentifier<>(1L), persistedCountry2.getId());
+		assertEquals("French president", persistedCountry2.getPresident().getName());
+		assertEquals(persistedCountry.getPresident().getId().getSurrogate(), persistedCountry2.getPresident().getId().getSurrogate());
+		assertEquals(persistedCountry.getCapital().getId().getSurrogate(), persistedCountry2.getCapital().getId().getSurrogate());
+		assertNotSame(persistedCountry.getPresident(), persistedCountry2.getPresident());
+		assertNotSame(persistedCountry.getCapital(), persistedCountry2.getCapital());
+		
+		// testing update cascade
+		// but we have to remove first the other country that points to the same president, else will get a constraint violation
+		assertEquals(1, persistenceContext.getCurrentConnection().createStatement().executeUpdate(
+				"update Country set presidentId = null, capitalId = null where id = " + dummyCountry.getId().getSurrogate()));
+		persistedCountry2.setPresident(null);
+		persistedCountry2.getCapital().setName("Paris renamed");
+		countryPersister.update(persistedCountry2, dummyCountry2, true);
+		// database must be up to date
+		ResultSet resultSet;
+		resultSet = persistenceContext.getCurrentConnection().createStatement().executeQuery("select name from Person");
 		assertFalse(resultSet.next());
-		resultSet = persistenceContext.getCurrentConnection().createStatement().executeQuery("select id from City");
+		resultSet = persistenceContext.getCurrentConnection().createStatement().executeQuery("select name from City");
+		resultSet.next();
+		assertEquals("Paris renamed", resultSet.getString("name"));
 		assertFalse(resultSet.next());
+		
+		// testing delete cascade
+		countryPersister.delete(persistedCountry2);
+		// database must be up to date
+		resultSet = persistenceContext.getCurrentConnection().createStatement().executeQuery("select id from Country where id = " + persistedCountry2.getId().getSurrogate());
+		assertFalse(resultSet.next());
+		resultSet = persistenceContext.getCurrentConnection().createStatement().executeQuery("select id from Person where id = " + dummyCountry2.getPresident().getId().getSurrogate());
+		assertFalse(resultSet.next());
+		resultSet = persistenceContext.getCurrentConnection().createStatement().executeQuery("select id from City where id = " + persistedCountry2.getCapital().getId().getSurrogate());
+		assertTrue(resultSet.next());
+	}
+	
+	
+	@Nested
+	class CascadeAll {
+		
+		@Test
+		void ownedBySourceSide() {
+			// mapping building thanks to fluent API
+			Persister<Country, Identifier<Long>, ?> countryPersister = FluentEntityMappingConfigurationSupport.from(Country.class, Identifier.LONG_TYPE)
+					.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
+					.add(Country::getDescription)
+					.addOneToOne(Country::getCapital, cityPersister).cascading(ALL).mappedBy(City::getCountry)
+					.build(persistenceContext);
+			
+			testCascadeAll(countryPersister);
+		}
+		
+		@Test
+		void ownedByReverseSideGetter() {
+			// mapping building thanks to fluent API
+			Persister<Country, Identifier<Long>, ?> countryPersister = FluentEntityMappingConfigurationSupport.from(Country.class, Identifier.LONG_TYPE)
+					.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
+					.add(Country::getDescription)
+					.addOneToOne(Country::getCapital, cityPersister).cascading(ALL).mappedBy(City::getCountry)
+					.build(persistenceContext);
+			
+			testCascadeAll(countryPersister);
+		}
+		
+		@Test
+		void ownedByReverseSideSetter() {
+			// mapping building thanks to fluent API
+			Persister<Country, Identifier<Long>, ?> countryPersister = FluentEntityMappingConfigurationSupport.from(Country.class, Identifier.LONG_TYPE)
+					.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
+					.add(Country::getDescription)
+					.addOneToOne(Country::getCapital, cityPersister).cascading(ALL).mappedBy(City::setCountry)
+					.build(persistenceContext);
+			
+			testCascadeAll(countryPersister);
+		}
+		
+		/**
+		 * Common tests of cascade-all with different owner definition.
+		 * Should have been done with a @ParameterizedTest but can't be done in such a way due to database commit between tests and cityPersister
+		 * dependency
+		 */
+		private void testCascadeAll(Persister<Country, Identifier<Long>, ?> countryPersister) {
+			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+			ddlDeployer.deployDDL();
+			
+			LongProvider countryIdProvider = new LongProvider();
+			Country dummyCountry = new Country(countryIdProvider.giveNewIdentifier());
+			dummyCountry.setName("France");
+			dummyCountry.setDescription("Smelly cheese !");
+			
+			LongProvider cityIdProvider = new LongProvider();
+			City paris = new City(cityIdProvider.giveNewIdentifier());
+			paris.setName("Paris");
+			dummyCountry.setCapital(paris);
+			
+			// insert cascade test
+			countryPersister.insert(dummyCountry);
+			Country persistedCountry = countryPersister.select(dummyCountry.getId());
+			assertEquals(new PersistedIdentifier<>(0L), persistedCountry.getId());
+			assertEquals("Smelly cheese !", persistedCountry.getDescription());
+			assertEquals("Paris", persistedCountry.getCapital().getName());
+			assertTrue(persistedCountry.getCapital().getId().isPersisted());
+			
+			// choosing better names for next tests
+			Country modifiedCountry = persistedCountry;
+			Country referentCountry = dummyCountry;
+			
+			// nullifiying relation test
+			modifiedCountry.setCapital(null);
+			countryPersister.update(modifiedCountry, referentCountry, false);
+			modifiedCountry = countryPersister.select(referentCountry.getId());
+			assertNull(modifiedCountry.getCapital());
+			// ensuring that capital was not deleted nor updated (we didn't asked for orphan removal)
+			City loadedParis = cityPersister.select(paris.getId());
+			assertEquals("Paris", loadedParis.getName());
+			// but relation is cut on both sides (because setCapital(..) calls setCountry(..))
+			assertNull(loadedParis.getCountry());
+			
+			// from null to a (new) object
+			referentCountry = countryPersister.select(referentCountry.getId());
+			City lyon = new City(cityIdProvider.giveNewIdentifier());
+			lyon.setName("Lyon");
+			modifiedCountry.setCapital(lyon);
+			countryPersister.update(modifiedCountry, referentCountry, false);
+			modifiedCountry = countryPersister.select(referentCountry.getId());
+			assertEquals(lyon, modifiedCountry.getCapital());
+			// ensuring that capital was not deleted nor updated
+			assertEquals("Lyon", cityPersister.select(lyon.getId()).getName());
+			
+			// testing update cascade
+			modifiedCountry.getCapital().setName("Lyon renamed");
+			countryPersister.update(modifiedCountry, referentCountry, false);
+			modifiedCountry = countryPersister.select(referentCountry.getId());
+			// ensuring that capital was not deleted nor updated
+			assertEquals("Lyon renamed", cityPersister.select(lyon.getId()).getName());
+			
+			// testing delete cascade
+			countryPersister.delete(modifiedCountry);
+			// ensuring that capital was not deleted nor updated
+			City loadedLyon = cityPersister.select(lyon.getId());
+			assertEquals("Lyon renamed", loadedLyon.getName());
+			assertNull(loadedLyon.getCountry());
+		}
 	}
 }

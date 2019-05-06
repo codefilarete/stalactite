@@ -7,7 +7,7 @@ import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
 
 /**
- * Mapper for embedded beans in another. For instance a simple one-to-one can be considered as an embedded bean.
+ * Contract for embedding beans in another
  * 
  * @author Guillaume Mary
  */
@@ -15,7 +15,7 @@ public interface IEmbeddedBeanMappingStrategy<C, T extends Table> extends IMappi
 	
 	/**
 	 * Gives the columns implied in the persistence. Used as a reference for CRUD operations.
-	 * Result is not expected to change between calls and should be constant (unless you have special use case).
+	 * Result is not expected to change between calls and should be constant
 	 * 
 	 * @return a non null set of columns to be written and read
 	 */

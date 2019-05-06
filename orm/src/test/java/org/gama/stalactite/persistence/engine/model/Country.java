@@ -99,7 +99,13 @@ public class Country extends AbstractCountry implements Identified<Long> {
 	}
 	
 	public void setCapital(City capital) {
+		if (this.capital != null) {
+			this.capital.setCountry(null);
+		}
 		this.capital = capital;
+		if (this.capital != null) {
+			this.capital.setCountry(this);
+		}
 	}
 	
 	public Set<City> getCities() {

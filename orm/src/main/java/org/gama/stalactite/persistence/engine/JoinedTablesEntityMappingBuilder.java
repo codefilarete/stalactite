@@ -2,17 +2,21 @@ package org.gama.stalactite.persistence.engine;
 
 import java.util.Map;
 import java.util.Set;
+import java.util.function.BiConsumer;
+import java.util.function.Consumer;
+import java.util.function.Function;
 
+import org.gama.lang.Duo;
 import org.gama.lang.bean.Objects;
 import org.gama.lang.collection.Iterables;
 import org.gama.reflection.IReversibleAccessor;
 import org.gama.reflection.MethodReferenceCapturer;
-import org.gama.stalactite.persistence.engine.cascade.AfterUpdateCascader;
-import org.gama.stalactite.persistence.engine.cascade.BeforeDeleteCascader;
-import org.gama.stalactite.persistence.engine.cascade.BeforeInsertCascader;
+import org.gama.stalactite.persistence.engine.cascade.AfterUpdateSupport;
+import org.gama.stalactite.persistence.engine.cascade.BeforeDeleteByIdSupport;
+import org.gama.stalactite.persistence.engine.cascade.BeforeDeleteSupport;
+import org.gama.stalactite.persistence.engine.cascade.BeforeInsertSupport;
 import org.gama.stalactite.persistence.engine.cascade.JoinedStrategiesSelect;
 import org.gama.stalactite.persistence.engine.cascade.JoinedTablesPersister;
-import org.gama.stalactite.persistence.engine.listening.DeleteByIdListener;
 import org.gama.stalactite.persistence.engine.listening.UpdateByIdListener;
 import org.gama.stalactite.persistence.id.manager.AlreadyAssignedIdentifierManager;
 import org.gama.stalactite.persistence.id.manager.IdentifierInsertionManager;
@@ -69,7 +73,7 @@ public class JoinedTablesEntityMappingBuilder<C, I> {
 				persistenceContext.getDialect());
 		
 		// NB : result is added to persistenceContext by build(..) method (to participate to DDL deployment)
-		JoinedTablesPersister result = new EntityMappingBuilder<>(configurationSupport, methodSpy).build(persistenceContext, childClassMappingStrategy);
+		JoinedTablesPersister<C, I, T> result = new EntityMappingBuilder<>(configurationSupport, methodSpy).build(persistenceContext, childClassMappingStrategy);
 		// adding join on parent table
 		Column subclassPK = Iterables.first((Set<Column<Table, Object>>) childClassTargetTable.getPrimaryKey().getColumns());
 		Column superclassPK = Iterables.first((Set<Column<Table, Object>>) superPersister.getMainTable().getPrimaryKey().getColumns());
@@ -108,33 +112,16 @@ public class JoinedTablesEntityMappingBuilder<C, I> {
 				childTargetTable, (Map) childClassColumnMapping, identifierAccessor, identifierInsertionManager);
 	}
 	
-	private void addCascadesBetweenChildAndParentTable(Persister<? super C, I, Table> superPersister, JoinedTablesPersister result) {
+	private void addCascadesBetweenChildAndParentTable(Persister<? super C, I, Table> superPersister, JoinedTablesPersister<C, I, ?> result) {
 		// Before insert of child we must insert parent
-		result.getPersisterListener().addInsertListener(new BeforeInsertCascader<C, Object>((Persister<Object, ?, ?>) superPersister) {
-			
-			@Override
-			protected void postTargetInsert(Iterable<? extends Object> entities) {
-				// nothing
-			}
-			
-			@Override
-			protected Object getTarget(C o) {
-				return o;
-			}
-		});
+		// this weird cast is due to <? super C> ...
+		Consumer<Iterable<C>> superEntitiesInsertor = (Consumer) (Consumer<Iterable>) superPersister::insert;
+		result.getPersisterListener().addInsertListener(new BeforeInsertSupport<>(superEntitiesInsertor, Function.identity()));
 		
-		// On child update, parent must be updated too, no constraint on order for this, after is arbitrarly choosen 
-		result.getPersisterListener().addUpdateListener(new AfterUpdateCascader<C, Object>((Persister<Object, ?, ?>) superPersister) {
-			@Override
-			protected void postTargetUpdate(Iterable entities) {
-				// nothing
-			}
-			
-			@Override
-			protected Object getTarget(Object trigger) {
-				return trigger;
-			}
-		});
+		// On child update, parent must be updated too, no constraint on order for this, after is arbitrarly choosen
+		// this weird cast is due to <? super C> ...
+		BiConsumer<Iterable<Duo<C, C>>, Boolean> superEntitiesUpdator = (BiConsumer) (BiConsumer<Iterable, Boolean>) superPersister::update;
+		result.getPersisterListener().addUpdateListener(new AfterUpdateSupport<>(superEntitiesUpdator, Function.identity()));
 		// idem for updateById
 		result.getPersisterListener().addUpdateByIdListener(new UpdateByIdListener<C>() {
 			@Override
@@ -143,26 +130,13 @@ public class JoinedTablesEntityMappingBuilder<C, I> {
 			}
 		});
 		
-		// On child deletion, parent must be deleted first 
-		result.getPersisterListener().addDeleteListener(new BeforeDeleteCascader<C, Object>((Persister<Object, ?, ?>) superPersister) {
-			
-			@Override
-			protected void postTargetDelete(Iterable<Object> entities) {
-				// nothing
-			}
-			
-			@Override
-			protected Object getTarget(C c) {
-				return c;
-			}
-		});
+		// On child deletion, parent must be deleted first
+		// this weird cast is due to <? super C> ...
+		Consumer<Iterable<C>> superEntitiesDeletor = (Consumer) (Consumer<Iterable>) superPersister::delete;
+		result.getPersisterListener().addDeleteListener(new BeforeDeleteSupport<>(superEntitiesDeletor, Function.identity()));
 		// idem for deleteById
-		result.getPersisterListener().addDeleteByIdListener(new DeleteByIdListener<C>() {
-			@Override
-			public void afterDeleteById(Iterable<C> entities) {
-				superPersister.deleteById((Iterable) entities);
-			}
-		});
+		Consumer<Iterable<C>> superEntitiesDeletorById = (Consumer) (Consumer<Iterable>) superPersister::deleteById;
+		result.getPersisterListener().addDeleteByIdListener(new BeforeDeleteByIdSupport<>(superEntitiesDeletorById, Function.identity()));
 	}
 	
 	private IReversibleAccessor<C, I> giveIdentifierAccessor(IEntityMappingStrategy<? super C, I, ?> parentMappingStrategy) {

@@ -14,6 +14,7 @@ import org.gama.lang.Reflections;
 import org.gama.lang.exception.NotImplementedException;
 import org.gama.lang.function.Serie;
 import org.gama.lang.reflect.MethodDispatcher;
+import org.gama.reflection.AccessorByMethod;
 import org.gama.reflection.AccessorByMethodReference;
 import org.gama.reflection.Accessors;
 import org.gama.reflection.IReversibleAccessor;
@@ -106,11 +107,11 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements IFluentMap
 		return joinColumnNamingStrategy;
 	}
 	
-	private Method captureLambdaMethod(SerializableFunction getter) {
+	private Method captureMethod(SerializableFunction getter) {
 		return this.methodSpy.findMethod(getter);
 	}
 	
-	private Method captureLambdaMethod(SerializableBiConsumer setter) {
+	private Method captureMethod(SerializableBiConsumer setter) {
 		return this.methodSpy.findMethod(setter);
 	}
 	
@@ -176,31 +177,31 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements IFluentMap
 	
 	@Override
 	public <O> IFluentMappingBuilderColumnOptions<C, I> add(SerializableBiConsumer<C, O> setter) {
-		Method method = captureLambdaMethod(setter);
+		Method method = captureMethod(setter);
 		return add(method, (String) null);
 	}
 	
 	@Override
 	public <O> IFluentMappingBuilderColumnOptions<C, I> add(SerializableFunction<C, O> getter) {
-		Method method = captureLambdaMethod(getter);
+		Method method = captureMethod(getter);
 		return add(method, (String) null);
 	}
 	
 	@Override
 	public <O> IFluentMappingBuilderColumnOptions<C, I> add(SerializableBiConsumer<C, O> setter, String columnName) {
-		Method method = captureLambdaMethod(setter);
+		Method method = captureMethod(setter);
 		return add(method, columnName);
 	}
 	
 	@Override
 	public <O> IFluentMappingBuilderColumnOptions<C, I> add(SerializableFunction<C, O> getter, String columnName) {
-		Method method = captureLambdaMethod(getter);
+		Method method = captureMethod(getter);
 		return add(method, columnName);
 	}
 	
 	@Override
 	public <O> IFluentMappingBuilderColumnOptions<C, I> add(SerializableFunction<C, O> getter, Column<Table, O> column) {
-		Method method = captureLambdaMethod(getter);
+		Method method = captureMethod(getter);
 		return add(method, column);
 	}
 	
@@ -216,31 +217,31 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements IFluentMap
 	
 	@Override
 	public <E extends Enum<E>> IFluentMappingBuilderEnumOptions<C, I> addEnum(SerializableBiConsumer<C, E> setter) {
-		Method method = captureLambdaMethod(setter);
+		Method method = captureMethod(setter);
 		return addEnum(method, null);
 	}
 	
 	@Override
 	public <E extends Enum<E>> IFluentMappingBuilderEnumOptions<C, I> addEnum(SerializableFunction<C, E> getter) {
-		Method method = captureLambdaMethod(getter);
+		Method method = captureMethod(getter);
 		return addEnum(method, null);
 	}
 	
 	@Override
 	public <E extends Enum<E>> IFluentMappingBuilderEnumOptions<C, I> addEnum(SerializableBiConsumer<C, E> setter, String columnName) {
-		Method method = captureLambdaMethod(setter);
+		Method method = captureMethod(setter);
 		return addEnum(method, columnName);
 	}
 	
 	@Override
 	public <E extends Enum<E>> IFluentMappingBuilderEnumOptions<C, I> addEnum(SerializableFunction<C, E> getter, String columnName) {
-		Method method = captureLambdaMethod(getter);
+		Method method = captureMethod(getter);
 		return addEnum(method, columnName);
 	}
 	
 	@Override
 	public <E extends Enum<E>> IFluentMappingBuilderEnumOptions<C, I> addEnum(SerializableFunction<C, E> getter, Column<Table, E> column) {
-		Method method = captureLambdaMethod(getter);
+		Method method = captureMethod(getter);
 		AbstractLinkage<C> linkage = propertiesMappingConfigurationSurrogate.addMapping(method, column);
 		IFluentEmbeddableMappingBuilderEnumOptions<C> enumOptionsHandler = propertiesMappingConfigurationSurrogate.addEnumOptions(linkage);
 		return new MethodDispatcher()
@@ -277,7 +278,12 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements IFluentMap
 		// we declare the column on our side: we do it first because it checks some rules
 		add(getter);
 		// we keep it
-		CascadeOne<C, O, J> cascadeOne = new CascadeOne<>(getter, persister, captureLambdaMethod(getter));
+		IReversibleAccessor<C, O> propertyAccessor = new PropertyAccessor<>(
+				// we keep close to user demand : we keep its method reference ...
+				Accessors.accessorByMethodReference(getter),
+				// ... but we can't do it for mutator, so we use the most equivalent manner : a mutator based on setter method (fallback to property if not present)
+				new AccessorByMethod<C, O>(captureMethod(getter)).toMutator());
+		CascadeOne<C, O, J> cascadeOne = new CascadeOne<>(propertyAccessor, persister);
 		this.cascadeOnes.add(cascadeOne);
 		// then we return an object that allows fluent settings over our OneToOne cascade instance
 		return new MethodDispatcher()
@@ -319,7 +325,7 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements IFluentMap
 	@Override
 	public <O, J, S extends Set<O>> IFluentMappingBuilderOneToManyOptions<C, I, O> addOneToManySet(
 			SerializableFunction<C, S> getter, Persister<O, J, ? extends Table> persister) {
-		CascadeMany<C, O, J, S> cascadeMany = new CascadeMany<>(getter, persister, captureLambdaMethod(getter));
+		CascadeMany<C, O, J, S> cascadeMany = new CascadeMany<>(getter, persister, captureMethod(getter));
 		this.cascadeManys.add(cascadeMany);
 		return new MethodDispatcher()
 				.redirect(OneToManyOptions.class, new OneToManyOptionsSupport<>(cascadeMany), true)	// true to allow "return null" in implemented methods
@@ -330,7 +336,7 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements IFluentMap
 	@Override
 	public <O, J, S extends List<O>> IFluentMappingBuilderOneToManyListOptions<C, I, O> addOneToManyList(
 			SerializableFunction<C, S> getter, Persister<O, J, ? extends Table> persister) {
-		CascadeManyList<C, O, J, ? extends List<O>> cascadeMany = new CascadeManyList<>(getter, persister, captureLambdaMethod(getter));
+		CascadeManyList<C, O, J, ? extends List<O>> cascadeMany = new CascadeManyList<>(getter, persister, captureMethod(getter));
 		this.cascadeManys.add(cascadeMany);
 		return new MethodDispatcher()
 				.redirect(OneToManyOptions.class, new OneToManyOptionsSupport<>(cascadeMany), true)	// true to allow "return null" in implemented methods
@@ -445,7 +451,7 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements IFluentMap
 	 */
 	@Override
 	public <V> IFluentMappingBuilder<C, I> versionedBy(SerializableFunction<C, V> getter) {
-		Method method = captureLambdaMethod(getter);
+		Method method = captureMethod(getter);
 		Serie<V> serie;
 		if (Integer.class.isAssignableFrom(method.getReturnType())) {
 			serie = (Serie<V>) Serie.INTEGER_SERIE;
@@ -462,7 +468,7 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements IFluentMap
 	
 	@Override
 	public <V> IFluentMappingBuilder<C, I> versionedBy(SerializableFunction<C, V> getter, Serie<V> serie) {
-		return versionedBy(getter, captureLambdaMethod(getter), serie);
+		return versionedBy(getter, captureMethod(getter), serie);
 	}
 	
 	public <V> IFluentMappingBuilder<C, I> versionedBy(SerializableFunction<C, V> getter, Method method, Serie<V> serie) {

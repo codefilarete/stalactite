@@ -1,12 +1,17 @@
 package org.gama.stalactite.persistence.engine;
 
 import javax.sql.DataSource;
+import java.sql.Connection;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.HashSet;
 
 import org.gama.lang.collection.Arrays;
 import org.gama.lang.collection.Iterables;
 import org.gama.sql.binder.DefaultParameterBinders;
+import org.gama.sql.result.ResultSetIterator;
 import org.gama.sql.test.HSQLDBInMemoryDataSource;
+import org.gama.stalactite.persistence.engine.CascadeOptions.RelationshipMode;
 import org.gama.stalactite.persistence.engine.ColumnOptions.IdentifierPolicy;
 import org.gama.stalactite.persistence.engine.IFluentMappingBuilder.IFluentMappingBuilderColumnOptions;
 import org.gama.stalactite.persistence.engine.model.City;
@@ -66,6 +71,55 @@ public class FluentEntityMappingConfigurationSupportToOneAndToManyMixTest {
 				.add(City::getName)
 				.add(City::getCountry);
 		cityPersister = cityMappingBuilder.build(persistenceContext);
+	}
+	
+	@Test
+	void foreignKeyIsCreated() throws SQLException {
+		// mapping building thantks to fluent API
+		Persister<Country, Identifier<Long>, ?> countryPersister = FluentEntityMappingConfigurationSupport.from(Country.class,
+				Identifier.LONG_TYPE)
+				// setting a foreign key naming strategy to be tested
+				.foreignKeyNamingStrategy(ForeignKeyNamingStrategy.DEFAULT)
+				.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
+				.add(Country::getName)
+				.add(Country::getDescription)
+				.addOneToOne(Country::getPresident, personPersister)
+				.addOneToManySet(Country::getCities, cityPersister).mappedBy(City::setCountry).cascading(RelationshipMode.READ_ONLY)
+				.build(persistenceContext);
+		
+		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+		ddlDeployer.deployDDL();
+		
+		Connection currentConnection = persistenceContext.getCurrentConnection();
+		ResultSetIterator<JdbcForeignKey> fkPersonIterator = new ResultSetIterator<JdbcForeignKey>(currentConnection.getMetaData().getExportedKeys(null, null,
+				personPersister.getMainTable().getName().toUpperCase())) {
+			@Override
+			public JdbcForeignKey convert(ResultSet rs) throws SQLException {
+				return new JdbcForeignKey(
+						rs.getString("FK_NAME"),
+						rs.getString("FKTABLE_NAME"), rs.getString("FKCOLUMN_NAME"),
+						rs.getString("PKTABLE_NAME"), rs.getString("PKCOLUMN_NAME")
+				);
+			}
+		};
+		JdbcForeignKey foundForeignKey = Iterables.first(fkPersonIterator);
+		JdbcForeignKey expectedForeignKey = new JdbcForeignKey("FK_COUNTRY_PRESIDENTID_PERSON_ID", "COUNTRY", "PRESIDENTID", "PERSON", "ID");
+		assertEquals(expectedForeignKey.getSignature(), foundForeignKey.getSignature());
+		
+		ResultSetIterator<JdbcForeignKey> fkCityIterator = new ResultSetIterator<JdbcForeignKey>(currentConnection.getMetaData().getExportedKeys(null, null,
+				countryPersister.getMainTable().getName().toUpperCase())) {
+			@Override
+			public JdbcForeignKey convert(ResultSet rs) throws SQLException {
+				return new JdbcForeignKey(
+						rs.getString("FK_NAME"),
+						rs.getString("FKTABLE_NAME"), rs.getString("FKCOLUMN_NAME"),
+						rs.getString("PKTABLE_NAME"), rs.getString("PKCOLUMN_NAME")
+				);
+			}
+		};
+		foundForeignKey = Iterables.first(fkCityIterator);
+		expectedForeignKey = new JdbcForeignKey("FK_CITY_COUNTRYID_COUNTRY_ID", "CITY", "COUNTRYID", "COUNTRY", "ID");
+		assertEquals(expectedForeignKey.getSignature(), foundForeignKey.getSignature());
 	}
 	
 	@Test

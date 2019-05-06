@@ -8,12 +8,11 @@ import java.util.Map;
 import java.util.Map.Entry;
 
 import org.danekja.java.util.function.serializable.SerializableBiFunction;
-import org.danekja.java.util.function.serializable.SerializableFunction;
 import org.gama.lang.Duo;
 import org.gama.lang.Nullable;
 import org.gama.lang.Reflections;
+import org.gama.lang.collection.Iterables;
 import org.gama.lang.exception.NotImplementedException;
-import org.gama.reflection.Accessors;
 import org.gama.reflection.IReversibleAccessor;
 import org.gama.reflection.MemberDefinition;
 import org.gama.reflection.MethodReferenceCapturer;
@@ -66,16 +65,25 @@ class EntityMappingBuilder<C, I> {
 				return Nullable.nullable(overridenColumn).orGet(() -> super.findColumn(valueAccessPoint, defaultColumnName, tableColumnsPerName, configuration));
 			}
 			
+			/**
+			 * Overriden to remove properties of one-to-one relation that are not owned by this side but owned by the reverse side
+			 */
 			@Override
 			protected void includeDirectMapping() {
-				ValueAccessPointSet oneToOneProperties = new ValueAccessPointSet();
-				configurationSupport.getOneToOnes().forEach(cascadeOne -> {
-						oneToOneProperties.add(Accessors.accessorByMethodReference((SerializableFunction) cascadeOne.getTargetProvider()));
-				});
-				mappingConfiguration.getPropertiesMapping().stream().filter(linkage -> !oneToOneProperties.contains(linkage.getAccessor())).forEach(linkage -> {
-					Column column = addLinkage(linkage);
-					result.put(linkage.getAccessor(), column);
-				});
+				// CascadeOne.getTargetProvider() returns a method reference that can't be compared to PropertyAccessor (of Linkage.getAccessor
+				// in mappingConfiguration.getPropertiesMapping() keys) so we use a ValueAccessPoint to do it 
+				ValueAccessPointSet oneToOnePropertiesOwnedByReverseSide = Iterables.collect(
+						configurationSupport.getOneToOnes(),
+						CascadeOne::isOwnedByReverseSide,
+						// Method reference must be converted to a ValueAccessPoint such as AccessorByMetohdReference
+						CascadeOne::getTargetProvider,
+						ValueAccessPointSet::new);
+				mappingConfiguration.getPropertiesMapping().stream()
+						.filter(linkage -> !oneToOnePropertiesOwnedByReverseSide.contains(linkage.getAccessor()))
+						.forEach(linkage -> {
+							Column column = addLinkage(linkage);
+							result.put(linkage.getAccessor(), column);
+						});
 			}
 			
 			/** Overriden to take primary key into account */

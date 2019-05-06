@@ -107,7 +107,6 @@ public class StrategyJoinsRowTransformer<T> {
 						Object rightInstance = entityCacheWrapper.computeIfAbsent(rightStrategy.getClassToPersist(), rightIdentifier,
 								() -> rowTransformer.transform(row));
 						
-						// TODO: implémenter l'héritage d'entité
 						join.getBeanRelationFixer().apply(rowInstance, rightInstance);
 						
 						// Adds the right strategy for further processing if it has some more joins so they'll also be taken into account
