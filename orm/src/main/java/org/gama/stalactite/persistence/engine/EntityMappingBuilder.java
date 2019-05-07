@@ -3,9 +3,11 @@ package org.gama.stalactite.persistence.engine;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Set;
 
 import org.danekja.java.util.function.serializable.SerializableBiFunction;
 import org.gama.lang.Duo;
@@ -22,6 +24,7 @@ import org.gama.stalactite.persistence.engine.ColumnOptions.IdentifierPolicy;
 import org.gama.stalactite.persistence.engine.EmbeddableMappingConfiguration.Linkage;
 import org.gama.stalactite.persistence.engine.FluentEmbeddableMappingConfigurationSupport.Inset;
 import org.gama.stalactite.persistence.engine.FluentEntityMappingConfigurationSupport.EntityLinkage;
+import org.gama.stalactite.persistence.engine.FluentEntityMappingConfigurationSupport.EntityLinkageByColumn;
 import org.gama.stalactite.persistence.engine.FluentEntityMappingConfigurationSupport.OverridableColumnInset;
 import org.gama.stalactite.persistence.engine.builder.CascadeMany;
 import org.gama.stalactite.persistence.engine.cascade.JoinedTablesPersister;
@@ -34,6 +37,7 @@ import org.gama.stalactite.persistence.sql.Dialect;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
 
+import static org.gama.lang.Nullable.nullable;
 import static org.gama.lang.collection.Iterables.collect;
 
 /**
@@ -80,18 +84,37 @@ class EntityMappingBuilder<C, I> {
 						ValueAccessPointSet::new);
 				mappingConfiguration.getPropertiesMapping().stream()
 						.filter(linkage -> !oneToOnePropertiesOwnedByReverseSide.contains(linkage.getAccessor()))
-						.forEach(linkage -> {
-							Column column = addLinkage(linkage);
-							result.put(linkage.getAccessor(), column);
-						});
+						.forEach(this::includeMapping);
+			}
+			
+			@Override
+			protected void ensureColumnBinding(Linkage linkage, Column column) {
+				if (linkage instanceof EntityLinkageByColumn) {
+					// we add
+					Column mappedColumn = ((EntityLinkageByColumn) linkage).getColumn();
+					if (!dialect.getColumnBinderRegistry().keys().contains(mappedColumn)) {
+						super.ensureColumnBinding(linkage, column);
+					}
+					if (!targetTable.getColumns().contains(mappedColumn)) {
+						throw new MappingConfigurationException("Column specified for mapping " + MemberDefinition.toString(linkage.getAccessor())
+								+ " is not in target table : column " + mappedColumn.getAbsoluteName() + " is not in table " + targetTable.getName());
+					}
+				} else {
+					super.ensureColumnBinding(linkage, column);
+				}
 			}
 			
 			/** Overriden to take primary key into account */
 			@Override
 			protected Column addLinkage(Linkage linkage) {
-				Column column = super.addLinkage(linkage);
+				Column column;
+				if (linkage instanceof EntityLinkageByColumn) {
+					column = ((EntityLinkageByColumn) linkage).getColumn();
+				} else {
+					column = super.addLinkage(linkage);
+				}
 				// setting the primary key option as asked
-				if (linkage instanceof FluentEntityMappingConfigurationSupport.EntityLinkage) {    // should always be true, see FluentEntityMappingConfigurationSupport.newLinkage(..)
+				if (linkage instanceof EntityLinkage) {    // should always be true, see FluentEntityMappingConfigurationSupport.newLinkage(..)
 					if (((EntityLinkage) linkage).isPrimaryKey()) {
 						column.primaryKey();
 					}
@@ -197,6 +220,9 @@ class EntityMappingBuilder<C, I> {
 	}
 	
 	public <T extends Table> Persister<C, I, T> build(PersistenceContext persistenceContext, T table) {
+		if (table == null) {
+			table = (T) nullable(giveTableUsedInMapping()).orGet(() -> new Table(configurationSupport.getPersistedClass().getSimpleName()));
+		}
 		if (configurationSupport.getInheritanceConfiguration() != null) {
 			if (configurationSupport.isJoinTable()) {
 				// Note that generics can't be used be cause "<? super C> can't be instantiated directly"
@@ -211,6 +237,21 @@ class EntityMappingBuilder<C, I> {
 		}
 		
 		return build(persistenceContext, buildClassMappingStrategy(persistenceContext.getDialect(), table));
+	}
+	
+	private Table giveTableUsedInMapping() {
+		Set<Table> usedTablesInMapping = Iterables.collect(configurationSupport.getPropertiesMapping().getPropertiesMapping(),
+				linkage -> linkage instanceof EntityLinkageByColumn,
+				linkage -> ((EntityLinkageByColumn) linkage).getColumn().getTable(),
+				HashSet::new);
+		switch (usedTablesInMapping.size()) {
+			case 0:
+				return null;
+			case 1:
+				return Iterables.first(usedTablesInMapping);
+			default:
+				throw new MappingConfigurationException("Different tables found in columns given as parameter of methods mapping : " + usedTablesInMapping);
+		}
 	}
 	
 	<T extends Table> JoinedTablesPersister<C, I, T> build(PersistenceContext persistenceContext, ClassMappingStrategy<C, I, T> mainMappingStrategy) {

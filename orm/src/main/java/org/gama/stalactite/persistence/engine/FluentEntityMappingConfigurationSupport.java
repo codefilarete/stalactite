@@ -239,20 +239,18 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements IFluentMap
 		return addEnum(method, columnName);
 	}
 	
-	@Override
-	public <E extends Enum<E>> IFluentMappingBuilderEnumOptions<C, I> addEnum(SerializableFunction<C, E> getter, Column<Table, E> column) {
-		Method method = captureMethod(getter);
-		AbstractLinkage<C> linkage = propertiesMappingConfigurationSurrogate.addMapping(method, column);
-		IFluentEmbeddableMappingBuilderEnumOptions<C> enumOptionsHandler = propertiesMappingConfigurationSurrogate.addEnumOptions(linkage);
-		return new MethodDispatcher()
-				.redirect(EnumOptions.class, enumOptionsHandler, true)
-				.fallbackOn(this)
-				.build((Class<IFluentMappingBuilderEnumOptions<C, I>>) (Class) IFluentMappingBuilderEnumOptions.class);
-	}
-	
 	private IFluentMappingBuilderEnumOptions<C, I> addEnum(Method method, @javax.annotation.Nullable String columnName) {
 		AbstractLinkage<C> linkage = propertiesMappingConfigurationSurrogate.addMapping(method, columnName);
-		IFluentEmbeddableMappingBuilderEnumOptions<C> enumOptionsHandler = propertiesMappingConfigurationSurrogate.addEnumOptions(linkage);
+		return handleEnumOptions(propertiesMappingConfigurationSurrogate.addEnumOptions(linkage));
+	}
+	
+	@Override
+	public <E extends Enum<E>> IFluentMappingBuilderEnumOptions<C, I> addEnum(SerializableFunction<C, E> getter, Column<Table, E> column) {
+		AbstractLinkage<C> linkage = propertiesMappingConfigurationSurrogate.addMapping(captureMethod(getter), column);
+		return handleEnumOptions(propertiesMappingConfigurationSurrogate.addEnumOptions(linkage));
+	}
+	
+	private IFluentMappingBuilderEnumOptions<C, I> handleEnumOptions(IFluentEmbeddableMappingBuilderEnumOptions<C> enumOptionsHandler) {
 		// we redirect all of the EnumOptions method to the instance that can handle them, returning the dispatcher on this methods so one can chain
 		// with some other methods, other methods are redirected to this instance because it can handle them.
 		return new MethodDispatcher()
@@ -492,7 +490,7 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements IFluentMap
 	
 	@Override
 	public Persister<C, I, Table> build(PersistenceContext persistenceContext) {
-		return build(persistenceContext, new Table(getPersistedClass().getSimpleName()));
+		return build(persistenceContext, null);
 	}
 	
 	@Override
@@ -560,18 +558,22 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements IFluentMap
 			this.column = column;
 		}
 		
+		@Override
 		public <I> PropertyAccessor<T, I> getAccessor() {
 			return function;
 		}
 		
+		@Override
 		public String getColumnName() {
 			return column.getName();
 		}
 		
+		@Override
 		public Class<?> getColumnType() {
 			return column.getJavaType();
 		}
 		
+		@Override
 		public boolean isPrimaryKey() {
 			return column.isPrimaryKey();
 		}
@@ -668,7 +670,7 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements IFluentMap
 								((EntityLinkageByColumnName) newMapping).primaryKey();
 							} else if (newMapping instanceof EntityLinkageByColumn && !((EntityLinkageByColumn) newMapping).isPrimaryKey()) {
 								// safeguard about misconfiguration, even if mapping would work it smells bad configuration
-								throw new IllegalArgumentException("Identifier policy is assigned on a non primary key column");
+								throw new IllegalArgumentException("Identifier policy is assigned to a non primary key column");
 							} else {
 								// in case of evolution in the Linkage API
 								throw new NotImplementedException(newMapping.getClass());

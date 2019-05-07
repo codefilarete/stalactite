@@ -71,8 +71,8 @@ import static org.gama.reflection.MethodReferences.toMethodReferenceString;
 class EmbeddableMappingBuilder<C> {
 	
 	protected final EmbeddableMappingConfiguration<C> mappingConfiguration;
-	private Dialect dialect;
-	private Table targetTable;
+	protected Dialect dialect;
+	protected Table targetTable;
 	/** Result of {@link #build(Dialect, Table)}, shared between methods */
 	protected Map<IReversibleAccessor, Column> result;
 	
@@ -107,10 +107,13 @@ class EmbeddableMappingBuilder<C> {
 	}
 	
 	protected void includeDirectMapping() {
-		mappingConfiguration.getPropertiesMapping().forEach(linkage -> {
-			Column column = addLinkage(linkage);
-			result.put(linkage.getAccessor(), column);
-		});
+		mappingConfiguration.getPropertiesMapping().forEach(this::includeMapping);
+	}
+	
+	protected void includeMapping(Linkage linkage) {
+		Column column = addLinkage(linkage);
+		ensureColumnBinding(linkage, column);
+		result.put(linkage.getAccessor(), column);
 	}
 	
 	protected void includeEmbeddedMapping() {
@@ -118,7 +121,10 @@ class EmbeddableMappingBuilder<C> {
 	}
 	
 	protected Column addLinkage(Linkage linkage) {
-		Column column = targetTable.addColumn(linkage.getColumnName(), linkage.getColumnType());
+		return targetTable.addColumn(linkage.getColumnName(), linkage.getColumnType());
+	}
+	
+	protected void ensureColumnBinding(Linkage linkage, Column column) {
 		// assert that column binder is registered : it will throw en exception if the binder is not found
 		if (linkage.getParameterBinder() != null) {
 			dialect.getColumnBinderRegistry().register(column, linkage.getParameterBinder());
@@ -134,7 +140,6 @@ class EmbeddableMappingBuilder<C> {
 				);
 			}
 		}
-		return column;
 	}
 	
 	protected Map<IReversibleAccessor, Column> buildMappingFromInheritance() {
