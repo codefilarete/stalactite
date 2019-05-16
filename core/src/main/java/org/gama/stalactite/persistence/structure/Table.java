@@ -12,10 +12,10 @@ import java.util.function.Function;
 
 import org.gama.lang.Duo;
 import org.gama.lang.Reflections;
-import org.gama.lang.bean.Objects;
 import org.gama.lang.collection.Arrays;
 import org.gama.lang.collection.Iterables;
 import org.gama.lang.collection.KeepOrderSet;
+import org.gama.lang.function.Predicates;
 import org.gama.stalactite.persistence.structure.Database.Schema;
 
 import static org.gama.lang.Nullable.nullable;
@@ -96,7 +96,7 @@ public class Table<SELF extends Table<SELF>> {
 		Column<SELF, ?> existingColumn = columnsPerName.get(column.getName());
 		if (existingColumn != null
 				&& (!existingColumn.getJavaType().equals(column.getJavaType())
-				|| !Objects.equalsWithNull(existingColumn.getSize(), column.getSize()))
+				|| !Predicates.equalOrNull(existingColumn.getSize(), column.getSize()))
 		) {
 			throw new IllegalArgumentException("Trying to add a column that already exists with a different type : "
 					+ column.getAbsoluteName() + " " + toString(existingColumn) + " vs " + toString(column));

@@ -11,9 +11,9 @@ import java.util.Map.Entry;
 import java.util.Set;
 
 import org.gama.lang.Reflections;
-import org.gama.lang.bean.Objects;
 import org.gama.lang.collection.Arrays;
 import org.gama.lang.exception.NotImplementedException;
+import org.gama.lang.function.Predicates;
 import org.gama.reflection.IReversibleAccessor;
 import org.gama.sql.result.Row;
 import org.gama.stalactite.persistence.structure.Column;
@@ -87,13 +87,13 @@ public class ZonedDateTimeMappingStrategy<T extends Table> implements IEmbeddedB
 		// getting differences side by side
 		if (modified != null) {
 			LocalDateTime modifiedDateTime = unmodified == null ? null : unmodified.toLocalDateTime();
-			if (!Objects.equalsWithNull(modified.toLocalDateTime(), modifiedDateTime)) {
+			if (!Predicates.equalOrNull(modified.toLocalDateTime(), modifiedDateTime)) {
 				toReturn.put(dateTimeUpdateColumn, modified.toLocalDateTime());
 			} else {
 				unmodifiedColumns.put(dateTimeColumn, modifiedDateTime);
 			}
 			ZoneId modifiedZone = unmodified == null ? null : unmodified.getZone();
-			if (!Objects.equalsWithNull(modified.getZone(), modifiedZone)) {
+			if (!Predicates.equalOrNull(modified.getZone(), modifiedZone)) {
 				toReturn.put(zoneUpdateColumn, modified.getZone());
 			} else {
 				unmodifiedColumns.put(zoneColumn, modifiedZone);

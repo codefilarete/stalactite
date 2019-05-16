@@ -12,13 +12,13 @@ import java.util.Set;
 
 import org.gama.lang.Duo;
 import org.gama.lang.Reflections;
-import org.gama.lang.bean.Objects;
 import org.gama.lang.collection.Collections;
 import org.gama.lang.collection.Iterables;
 import org.gama.lang.collection.PairIterator;
 import org.gama.lang.collection.PairIterator.EmptyIterator;
 import org.gama.lang.collection.PairIterator.InfiniteIterator;
 import org.gama.lang.collection.PairIterator.UntilBothIterator;
+import org.gama.lang.function.Predicates;
 import org.gama.reflection.IReversibleAccessor;
 import org.gama.sql.result.Row;
 import org.gama.stalactite.persistence.structure.Column;
@@ -94,7 +94,7 @@ public class ColumnedCollectionMappingStrategy<C extends Collection<O>, O, T ext
 			valueColumnPairIterator.forEachRemaining(diffEntry -> {
 				Column fieldColumn = diffEntry.getLeft();
 				Duo<? extends O, ? extends O> toBeCompared = diffEntry.getRight();
-				if (!Objects.equalsWithNull(toBeCompared.getLeft(), toBeCompared.getRight())) {
+				if (!Predicates.equalOrNull(toBeCompared.getLeft(), toBeCompared.getRight())) {
 					toReturn.put(fieldColumn, toDatabaseValue(toBeCompared.getLeft()));
 				} else {
 					unmodifiedColumns.put(fieldColumn, toBeCompared.getRight());

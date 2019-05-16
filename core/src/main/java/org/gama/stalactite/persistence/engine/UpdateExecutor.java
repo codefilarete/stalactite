@@ -6,11 +6,11 @@ import java.util.Map;
 import java.util.Set;
 
 import org.gama.lang.Retryer;
-import org.gama.lang.bean.Objects;
 import org.gama.lang.collection.ArrayIterator;
 import org.gama.lang.collection.Iterables;
 import org.gama.lang.collection.ReadOnlyIterator;
 import org.gama.lang.collection.ValueFactoryHashMap;
+import org.gama.lang.function.Predicates;
 import org.gama.sql.ConnectionProvider;
 import org.gama.sql.RollbackListener;
 import org.gama.sql.RollbackObserver;
@@ -355,7 +355,7 @@ public class UpdateExecutor<C, I, T extends Table> extends WriteExecutor<C, I, T
 		public void manageLock(Object modified, Object unmodified, Map<UpwhereColumn<T>, Object> updateValues) {
 			Object modifiedVersion = versioningStrategy.getVersion(modified);
 			Object unmodifiedVersion = versioningStrategy.getVersion(unmodified);
-			if (!Objects.equalsWithNull(modifiedVersion, modifiedVersion)) {
+			if (!Predicates.equalOrNull(modifiedVersion, modifiedVersion)) {
 				throw new IllegalStateException();
 			}
 			versioningStrategy.upgrade(modified);

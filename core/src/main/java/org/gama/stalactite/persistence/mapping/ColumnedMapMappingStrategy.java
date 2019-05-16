@@ -9,8 +9,8 @@ import java.util.Map.Entry;
 import java.util.Set;
 
 import org.gama.lang.Reflections;
-import org.gama.lang.bean.Objects;
 import org.gama.lang.collection.Collections;
+import org.gama.lang.function.Predicates;
 import org.gama.reflection.IReversibleAccessor;
 import org.gama.sql.result.Row;
 import org.gama.stalactite.persistence.structure.Column;
@@ -94,7 +94,7 @@ public abstract class ColumnedMapMappingStrategy<C extends Map<K, V>, K, V, T ex
 				K modifiedKey = modifiedEntry.getKey();
 				V modifiedValue = modifiedEntry.getValue();
 				Column<T, Object> column = getColumn(modifiedKey);
-				if (!Objects.equalsWithNull(modifiedValue, unmodified == null ? null : unmodified.get(modifiedKey))) {
+				if (!Predicates.equalOrNull(modifiedValue, unmodified == null ? null : unmodified.get(modifiedKey))) {
 					toReturn.put(column, modifiedValue);
 				} else {
 					unmodifiedColumns.put(column, modifiedValue);

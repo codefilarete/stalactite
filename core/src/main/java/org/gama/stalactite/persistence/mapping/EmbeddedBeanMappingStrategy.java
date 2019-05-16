@@ -14,7 +14,7 @@ import java.util.function.Function;
 
 import org.gama.lang.Duo;
 import org.gama.lang.Reflections;
-import org.gama.lang.bean.Objects;
+import org.gama.lang.function.Predicates;
 import org.gama.reflection.Accessors;
 import org.gama.reflection.IMutator;
 import org.gama.reflection.IReversibleAccessor;
@@ -153,7 +153,7 @@ public class EmbeddedBeanMappingStrategy<C, T extends Table> implements IEmbedde
 				Object modifiedValue = accessor.get(modified);
 				Object unmodifiedValue = unmodified == null ? null : accessor.get(unmodified);
 				Column<T, Object> fieldColumn = fieldColumnEntry.getValue();
-				if (!Objects.equalsWithNull(modifiedValue, unmodifiedValue)
+				if (!Predicates.equalOrNull(modifiedValue, unmodifiedValue)
 						// OR is here to take cases where getUpdateValues(..) gets only "modified" parameter (such as for updateById) and
 						// some modified properties are null, without this OR such properties won't be updated (set to null)
 						// and, overall, if they are all null, modifiedFields is empty then causing a statement without values 
