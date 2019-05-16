@@ -15,8 +15,10 @@ public class CascadeOne<SRC, TRGT, TRGTID> {
 	/** The method that gives the target entity from the source one */
 	private final IReversibleAccessor<SRC, TRGT> targetAccessor;
 	
-	/** Target entity {@link Persister} */
-	private final Persister<TRGT, TRGTID, ? extends Table> targetPersister;
+	/** Configuration used for target beans persistence */
+	private final EntityMappingConfiguration<TRGT, TRGTID> targetMappingConfiguration;
+	
+	private Table targetTable;
 	
 	private boolean nullable = true;
 	
@@ -30,9 +32,9 @@ public class CascadeOne<SRC, TRGT, TRGTID> {
 	
 	private RelationshipMode relationshipMode = RelationshipMode.READ_ONLY;
 	
-	CascadeOne(IReversibleAccessor<SRC, TRGT> targetProvider, Persister<TRGT, TRGTID, ? extends Table> targetPersister) {
-		this.targetPersister = targetPersister;
-		targetAccessor = targetProvider;
+	CascadeOne(IReversibleAccessor<SRC, TRGT> targetProvider, EntityMappingConfiguration<TRGT, TRGTID> targetMappingConfiguration) {
+		this.targetMappingConfiguration = targetMappingConfiguration;
+		this.targetAccessor = targetProvider;
 	}
 	
 	/** Original method reference given for mapping */
@@ -40,9 +42,17 @@ public class CascadeOne<SRC, TRGT, TRGTID> {
 		return targetAccessor;
 	}
 	
-	/** The {@link Persister} that will be used to persist the target of the relation */
-	public Persister<TRGT, TRGTID, ?> getTargetPersister() {
-		return targetPersister;
+	/** @return the configuration used for target beans persistence */
+	public EntityMappingConfiguration<TRGT, TRGTID> getTargetMappingConfiguration() {
+		return targetMappingConfiguration;
+	}
+	
+	public Table getTargetTable() {
+		return this.targetTable;
+	}
+	
+	public void setTargetTable(Table targetTable) {
+		this.targetTable = targetTable;
 	}
 	
 	/** Nullable option, mainly for column join and DDL schema generation */
@@ -70,8 +80,8 @@ public class CascadeOne<SRC, TRGT, TRGTID> {
 		this.reverseSetter = reverseSetter;
 	}
 	
-	public Column getReverseColumn() {
-		return reverseColumn;
+	public <T extends Table, O> Column<T, O> getReverseColumn() {
+		return (Column<T, O>) reverseColumn;
 	}
 	
 	public void setReverseColumn(Column reverseSide) {

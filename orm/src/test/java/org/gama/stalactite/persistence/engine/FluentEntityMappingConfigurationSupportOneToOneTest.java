@@ -5,10 +5,12 @@ import java.sql.BatchUpdateException;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.HashSet;
 
+import org.gama.lang.collection.Arrays;
 import org.gama.lang.collection.Iterables;
 import org.gama.lang.collection.Maps;
-import org.gama.lang.exception.Exceptions;
+import org.gama.lang.test.Assertions;
 import org.gama.sql.binder.DefaultParameterBinders;
 import org.gama.sql.result.ResultSetIterator;
 import org.gama.sql.result.RowIterator;
@@ -33,8 +35,6 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.function.Executable;
-import org.opentest4j.AssertionFailedError;
 
 import static org.gama.stalactite.persistence.engine.CascadeOptions.RelationshipMode.ALL;
 import static org.gama.stalactite.persistence.engine.CascadeOptions.RelationshipMode.ALL_ORPHAN_REMOVAL;
@@ -55,7 +55,9 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 	private static final HSQLDBDialect DIALECT = new HSQLDBDialect();
 	private DataSource dataSource = new HSQLDBInMemoryDataSource();
 	private Persister<Person, Identifier<Long>, ?> personPersister;
+	private EntityMappingConfiguration<Person, Identifier<Long>> personConfiguration;
 	private Persister<City, Identifier<Long>, ?> cityPersister;
+	private EntityMappingConfiguration<City, Identifier<Long>> cityConfiguration;
 	private PersistenceContext persistenceContext;
 	
 	@BeforeAll
@@ -74,11 +76,13 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 		IFluentMappingBuilderColumnOptions<Person, Identifier<Long>> personMappingBuilder = FluentEntityMappingConfigurationSupport.from(Person.class, Identifier.LONG_TYPE)
 				.add(Person::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.add(Person::getName);
+		personConfiguration = personMappingBuilder.getConfiguration();
 		personPersister = personMappingBuilder.build(persistenceContext);
 		
 		IFluentMappingBuilderColumnOptions<City, Identifier<Long>> cityMappingBuilder = FluentEntityMappingConfigurationSupport.from(City.class, Identifier.LONG_TYPE)
 				.add(City::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.add(City::getName);
+		cityConfiguration = cityMappingBuilder.getConfiguration();
 		cityPersister = cityMappingBuilder.build(persistenceContext);
 	}
 	
@@ -89,21 +93,20 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 				.add(Country::getName)
 				.add(Country::getDescription)
 				// no cascade
-				.addOneToOne(Country::getPresident, personPersister).cascading(ASSOCIATION_ONLY);
+				.addOneToOne(Country::getPresident, personConfiguration).cascading(ASSOCIATION_ONLY);
 		
-		assertThrowsInHierarchy(() -> mappingBuilder.build(persistenceContext), MappingConfigurationException.class,
-				RelationshipMode.ASSOCIATION_ONLY + " is only relevent for one-to-many association");
+		Assertions.assertThrows(() -> mappingBuilder.build(persistenceContext), Assertions.hasExceptionInHierarchy(MappingConfigurationException.class)
+				.andProjection(Assertions.hasMessage(RelationshipMode.ASSOCIATION_ONLY + " is only relevent for one-to-many association")));
 	}
 	
 	@Test
 	public void cascade_noCascade_defaultIsReadOnly() throws SQLException {
-		// mapping building thanks to fluent API
 		Persister<Country, Identifier<Long>, ?> countryPersister = FluentEntityMappingConfigurationSupport.from(Country.class, Identifier.LONG_TYPE)
 				.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.add(Country::getName)
 				.add(Country::getDescription)
 				// no cascade
-				.addOneToOne(Country::getPresident, personPersister)
+				.addOneToOne(Country::getPresident, personConfiguration)
 				.build(persistenceContext);
 		
 		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
@@ -117,8 +120,8 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 		dummyCountry.setPresident(person);
 		
 		// insert throws integrity constraint because it doesn't save target entity
-		assertThrowsInHierarchy(() -> countryPersister.insert(dummyCountry), BatchUpdateException.class,
-				"integrity constraint violation: foreign key no parent; FK_COUNTRY_PRESIDENTID_PERSON_ID table: COUNTRY");
+		Assertions.assertThrows(() -> countryPersister.insert(dummyCountry), Assertions.hasExceptionInHierarchy(BatchUpdateException.class)
+				.andProjection(Assertions.hasMessage("integrity constraint violation: foreign key no parent; FK_COUNTRY_PRESIDENTID_PERSON_ID table: COUNTRY")));
 		
 		persistenceContext.getCurrentConnection().prepareStatement("insert into Person(id, name) values (1, 'French president')").execute();
 		persistenceContext.getCurrentConnection().prepareStatement("insert into Country(id, name, presidentId) values (42, 'France', 1)").execute();
@@ -150,21 +153,6 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 				.get(0));
 	}
 	
-	static void assertThrowsInHierarchy(Executable executable, Class<? extends Throwable> expectedException, String expectedMessage) {
-		try {
-			executable.execute();
-		} catch (Throwable actualException) {
-			Throwable exceptionInHierarchy = Exceptions.findExceptionInHierarchy(actualException, expectedException);
-			if (exceptionInHierarchy == null) {
-				throw new AssertionFailedError("Unexpected exception thrown", expectedException, actualException);
-			} else {
-				assertEquals(expectedMessage, exceptionInHierarchy.getMessage());
-				return;
-			}
-		}
-		throw new AssertionFailedError("Expected exception to be thrown, but nothing was thrown.");
-	}
-	
 	/**
 	 * Thanks to the registering of Identified instances into the ColumnBinderRegistry (cf test preparation) it's possible to have a light relation
 	 * between 2 mappings: kind of OneToOne without any cascade, just column of the relation is inserted/updated.
@@ -174,7 +162,6 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 	 */
 	@Test
 	public void lightOneToOne_relationIsPersisted() throws SQLException {
-		// mapping building thanks to fluent API
 		Persister<Country, Identifier<Long>, ?> countryPersister = FluentEntityMappingConfigurationSupport.from(Country.class, Identifier.LONG_TYPE)
 				.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.add(Country::getName)
@@ -222,12 +209,11 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 	
 	@Test
 	public void cascade_insert() {
-		// mapping building thanks to fluent API
 		Persister<Country, Identifier<Long>, ?> countryPersister = FluentEntityMappingConfigurationSupport.from(Country.class, Identifier.LONG_TYPE)
 				.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.add(Country::getName)
 				.add(Country::getDescription)
-				.addOneToOne(Country::getPresident, personPersister).cascading(ALL)
+				.addOneToOne(Country::getPresident, personConfiguration).cascading(ALL)
 				.build(persistenceContext);
 		
 		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
@@ -266,12 +252,11 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 	
 	@Test
 	public void cascade_insert_mandatory() {
-		// mapping building thanks to fluent API
 		Persister<Country, Identifier<Long>, ?> countryPersister = FluentEntityMappingConfigurationSupport.from(Country.class, Identifier.LONG_TYPE)
 				.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.add(Country::getName)
 				.add(Country::getDescription)
-				.addOneToOne(Country::getPresident, personPersister).cascading(ALL).mandatory()
+				.addOneToOne(Country::getPresident, personConfiguration).cascading(ALL).mandatory()
 				.build(persistenceContext);
 		
 		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
@@ -286,14 +271,13 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 	
 	@Test
 	void foreignKeyIsCreated() throws SQLException {
-		// mapping building thantks to fluent API
 		FluentEntityMappingConfigurationSupport.from(Country.class, Identifier.LONG_TYPE)
 				// setting a foreign key naming strategy to be tested
 				.foreignKeyNamingStrategy(ForeignKeyNamingStrategy.DEFAULT)
 				.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.add(Country::getName)
 				.add(Country::getDescription)
-				.addOneToOne(Country::getCapital, cityPersister)
+				.addOneToOne(Country::getCapital, cityConfiguration)
 				.build(persistenceContext);
 		
 		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
@@ -318,14 +302,13 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 	
 	@Test
 	void foreignKeyIsCreated_relationOwnedByTargetSide() throws SQLException {
-		// mapping building thantks to fluent API
 		Persister<Country, Identifier<Long>, Table> countryPersister = FluentEntityMappingConfigurationSupport.from(Country.class, Identifier.LONG_TYPE)
 				// setting a foreign key naming strategy to be tested
 				.foreignKeyNamingStrategy(ForeignKeyNamingStrategy.DEFAULT)
 				.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.add(Country::getName)
 				.add(Country::getDescription)
-				.addOneToOne(Country::getCapital, cityPersister).mappedBy(City::getCountry)
+				.addOneToOne(Country::getCapital, cityConfiguration).mappedBy(City::getCountry)
 				.build(persistenceContext);
 		
 		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
@@ -353,20 +336,23 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 		IFluentMappingBuilderColumnOptions<City, Identifier<Long>> cityMappingBuilder = FluentEntityMappingConfigurationSupport.from(City.class, Identifier.LONG_TYPE)
 				.add(City::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.add(City::getName);
-		Table cityTable = new Table("city");
-		Column<Table, Country> stateColumn = cityTable.addColumn("state", Country.class);
-		Persister<City, Identifier<Long>, ?> cityPersister = cityMappingBuilder.build(persistenceContext, cityTable);
+		Table<?> cityTable = new Table("city");
+		Column<?, Country> stateColumn = cityTable.addColumn("state", Country.class);
 		
-		// mapping building thantks to fluent API
 		Persister<Country, Identifier<Long>, Table> countryPersister = FluentEntityMappingConfigurationSupport.from(Country.class, Identifier.LONG_TYPE)
 				// setting a foreign key naming strategy to be tested
 				.foreignKeyNamingStrategy(ForeignKeyNamingStrategy.DEFAULT)
 				.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.add(Country::getName)
 				.add(Country::getDescription)
-				.addOneToOne(Country::getCapital, cityPersister).mappedBy(stateColumn)
+				.addOneToOne(Country::getCapital, cityMappingBuilder.getConfiguration()).mappedBy(stateColumn)
 				.build(persistenceContext);
 		
+		// ensuring that the foreign key is present on table, hence testing that cityTable was used, not a clone created by build(..) 
+		JdbcForeignKey expectedForeignKey = new JdbcForeignKey("FK_city_state_Country_id", "city", "state", "Country", "id");
+		Assertions.assertEquals(Arrays.asHashSet(expectedForeignKey), Iterables.collect(cityTable.getForeignKeys(), JdbcForeignKey::new, HashSet::new), JdbcForeignKey::getSignature);
+		
+		// ensuring that the foreign key is also deployed
 		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
 		ddlDeployer.deployDDL();
 		
@@ -383,8 +369,7 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 			}
 		};
 		JdbcForeignKey foundForeignKey = Iterables.first(fkPersonIterator);
-		JdbcForeignKey expectedForeignKey = new JdbcForeignKey("FK_CITY_STATE_COUNTRY_ID", "CITY", "STATE", "COUNTRY", "ID");
-		assertEquals(expectedForeignKey.getSignature(), foundForeignKey.getSignature());
+		Assertions.assertEquals(expectedForeignKey.getSignature(), foundForeignKey.getSignature(), String.CASE_INSENSITIVE_ORDER);
 	}
 	
 	@Test
@@ -394,16 +379,14 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 				.add(City::getName);
 		Table cityTable = new Table("city");
 		Column<Table, Country> stateColumn = cityTable.addColumn("state", Country.class);
-		Persister<City, Identifier<Long>, ?> cityPersister = cityMappingBuilder.build(persistenceContext, cityTable);
 		
-		// mapping building thantks to fluent API
 		Persister<Country, Identifier<Long>, Table> countryPersister = FluentEntityMappingConfigurationSupport.from(Country.class, Identifier.LONG_TYPE)
 				// setting a foreign key naming strategy to be tested
 				.foreignKeyNamingStrategy(ForeignKeyNamingStrategy.DEFAULT)
 				.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.add(Country::getName)
 				.add(Country::getDescription)
-				.addOneToOne(Country::getCapital, cityPersister).mappedBy(stateColumn).mappedBy(City::getCountry)
+				.addOneToOne(Country::getCapital, cityMappingBuilder.getConfiguration()).mappedBy(stateColumn).mappedBy(City::getCountry)
 				.build(persistenceContext);
 		
 		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
@@ -435,14 +418,13 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 		Column<Table, Country> stateColumn = cityTable.addColumn("state", Country.class);
 		Persister<City, Identifier<Long>, ?> cityPersister = cityMappingBuilder.build(persistenceContext, cityTable);
 		
-		// mapping building thantks to fluent API
 		Persister<Country, Identifier<Long>, Table> countryPersister = FluentEntityMappingConfigurationSupport.from(Country.class, Identifier.LONG_TYPE)
 				// setting a foreign key naming strategy to be tested
 				.foreignKeyNamingStrategy(ForeignKeyNamingStrategy.DEFAULT)
 				.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.add(Country::getName)
 				.add(Country::getDescription)
-				.addOneToOne(Country::getCapital, cityPersister).mappedBy(stateColumn).mappedBy(City::setCountry)
+				.addOneToOne(Country::getCapital, cityMappingBuilder.getConfiguration()).mappedBy(stateColumn).mappedBy(City::setCountry)
 				.build(persistenceContext);
 		
 		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
@@ -470,12 +452,11 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 		
 		@Test
 		void relationChanged() {
-			// mapping building thanks to fluent API
 			Persister<Country, Identifier<Long>, ?> countryPersister = FluentEntityMappingConfigurationSupport.from(Country.class, Identifier.LONG_TYPE)
 					.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 					.add(Country::getName)
 					.add(Country::getDescription)
-					.addOneToOne(Country::getPresident, personPersister).cascading(ALL)
+					.addOneToOne(Country::getPresident, personConfiguration).cascading(ALL)
 					.build(persistenceContext);
 			
 			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
@@ -489,7 +470,6 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 			Person originalPresident = new Person(personIdProvider.giveNewIdentifier());
 			originalPresident.setName("French president");
 			dummyCountry.setPresident(originalPresident);
-			personPersister.insert(originalPresident);
 			countryPersister.insert(dummyCountry);
 			
 			// Changing president's name to see what happens when we save it to the database
@@ -516,12 +496,11 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 	
 		@Test
 		void relationNullified() {
-			// mapping building thanks to fluent API
 			Persister<Country, Identifier<Long>, ?> countryPersister = FluentEntityMappingConfigurationSupport.from(Country.class, Identifier.LONG_TYPE)
 					.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 					.add(Country::getName)
 					.add(Country::getDescription)
-					.addOneToOne(Country::getPresident, personPersister).cascading(ALL)
+					.addOneToOne(Country::getPresident, personConfiguration).cascading(ALL)
 					.build(persistenceContext);
 			
 			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
@@ -535,7 +514,6 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 			Person president = new Person(personIdProvider.giveNewIdentifier());
 			president.setName("French president");
 			dummyCountry.setPresident(president);
-			personPersister.insert(president);
 			countryPersister.insert(dummyCountry);
 			
 			// Removing president
@@ -554,12 +532,11 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 		
 		@Test
 		void relationNullifiedWithOrphanRemoval() {
-			// mapping building thanks to fluent API
 			Persister<Country, Identifier<Long>, ?> countryPersister = FluentEntityMappingConfigurationSupport.from(Country.class, Identifier.LONG_TYPE)
 					.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 					.add(Country::getName)
 					.add(Country::getDescription)
-					.addOneToOne(Country::getPresident, personPersister).cascading(ALL_ORPHAN_REMOVAL)
+					.addOneToOne(Country::getPresident, personConfiguration).cascading(ALL_ORPHAN_REMOVAL)
 					.build(persistenceContext);
 			
 			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
@@ -573,7 +550,6 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 			Person president = new Person(personIdProvider.giveNewIdentifier());
 			president.setName("French president");
 			dummyCountry.setPresident(president);
-			personPersister.insert(president);
 			countryPersister.insert(dummyCountry);
 			
 			// Removing president
@@ -592,12 +568,11 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 	
 	@Test
 	void cascade_update_mandatory() {
-		// mapping building thanks to fluent API
 		Persister<Country, Identifier<Long>, ?> countryPersister = FluentEntityMappingConfigurationSupport.from(Country.class, Identifier.LONG_TYPE)
 				.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.add(Country::getName)
 				.add(Country::getDescription)
-				.addOneToOne(Country::getPresident, personPersister).cascading(ALL).mandatory()
+				.addOneToOne(Country::getPresident, personConfiguration).cascading(ALL).mandatory()
 				.build(persistenceContext);
 		
 		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
@@ -609,7 +584,6 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 		Person person = new Person(new LongProvider().giveNewIdentifier());
 		person.setName("French president");
 		dummyCountry.setPresident(person);
-		personPersister.insert(person);
 		countryPersister.insert(dummyCountry);
 		
 		// Changing president's name to see what happens when we save it to the database
@@ -621,11 +595,10 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 	
 	@Test
 	void cascade_delete() throws SQLException {
-		// mapping building thanks to fluent API
 		Persister<Country, Identifier<Long>, ?> countryPersister = FluentEntityMappingConfigurationSupport.from(Country.class, Identifier.LONG_TYPE)
 				.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.add(Country::getDescription)
-				.addOneToOne(Country::getPresident, personPersister).cascading(ALL)
+				.addOneToOne(Country::getPresident, personConfiguration).cascading(ALL)
 				.build(persistenceContext);
 		
 		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
@@ -651,11 +624,10 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 	
 	@Test
 	void cascade_deleteWithOrphanRemoval() throws SQLException {
-		// mapping building thanks to fluent API
 		Persister<Country, Identifier<Long>, ?> countryPersister = FluentEntityMappingConfigurationSupport.from(Country.class, Identifier.LONG_TYPE)
 				.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.add(Country::getDescription)
-				.addOneToOne(Country::getPresident, personPersister).cascading(ALL_ORPHAN_REMOVAL)
+				.addOneToOne(Country::getPresident, personConfiguration).cascading(ALL_ORPHAN_REMOVAL)
 				.build(persistenceContext);
 		
 		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
@@ -681,12 +653,11 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 	
 	@Test
 	void multiple_oneToOne() throws SQLException {
-		// mapping building thanks to fluent API
 		Persister<Country, Identifier<Long>, ?> countryPersister = FluentEntityMappingConfigurationSupport.from(Country.class, Identifier.LONG_TYPE)
 				.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.add(Country::getDescription)
-				.addOneToOne(Country::getPresident, personPersister).cascading(ALL)
-				.addOneToOne(Country::getCapital, cityPersister).cascading(ALL)
+				.addOneToOne(Country::getPresident, personConfiguration).cascading(ALL)
+				.addOneToOne(Country::getCapital, cityConfiguration).cascading(ALL)
 				.build(persistenceContext);
 		
 		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
@@ -760,12 +731,11 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 	
 	@Test
 	void multiple_oneToOne_partialOrphanRemoval() throws SQLException {
-		// mapping building thanks to fluent API
 		Persister<Country, Identifier<Long>, ?> countryPersister = FluentEntityMappingConfigurationSupport.from(Country.class, Identifier.LONG_TYPE)
 				.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.add(Country::getDescription)
-				.addOneToOne(Country::getPresident, personPersister).cascading(ALL_ORPHAN_REMOVAL)
-				.addOneToOne(Country::getCapital, cityPersister).cascading(ALL)
+				.addOneToOne(Country::getPresident, personConfiguration).cascading(ALL_ORPHAN_REMOVAL)
+				.addOneToOne(Country::getCapital, cityConfiguration).cascading(ALL)
 				.build(persistenceContext);
 		
 		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
@@ -841,11 +811,10 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 		
 		@Test
 		void ownedBySourceSide() {
-			// mapping building thanks to fluent API
 			Persister<Country, Identifier<Long>, ?> countryPersister = FluentEntityMappingConfigurationSupport.from(Country.class, Identifier.LONG_TYPE)
 					.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 					.add(Country::getDescription)
-					.addOneToOne(Country::getCapital, cityPersister).cascading(ALL).mappedBy(City::getCountry)
+					.addOneToOne(Country::getCapital, cityConfiguration).cascading(ALL).mappedBy(City::getCountry)
 					.build(persistenceContext);
 			
 			testCascadeAll(countryPersister);
@@ -853,11 +822,10 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 		
 		@Test
 		void ownedByReverseSideGetter() {
-			// mapping building thanks to fluent API
 			Persister<Country, Identifier<Long>, ?> countryPersister = FluentEntityMappingConfigurationSupport.from(Country.class, Identifier.LONG_TYPE)
 					.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 					.add(Country::getDescription)
-					.addOneToOne(Country::getCapital, cityPersister).cascading(ALL).mappedBy(City::getCountry)
+					.addOneToOne(Country::getCapital, cityConfiguration).cascading(ALL).mappedBy(City::getCountry)
 					.build(persistenceContext);
 			
 			testCascadeAll(countryPersister);
@@ -865,11 +833,10 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 		
 		@Test
 		void ownedByReverseSideSetter() {
-			// mapping building thanks to fluent API
 			Persister<Country, Identifier<Long>, ?> countryPersister = FluentEntityMappingConfigurationSupport.from(Country.class, Identifier.LONG_TYPE)
 					.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 					.add(Country::getDescription)
-					.addOneToOne(Country::getCapital, cityPersister).cascading(ALL).mappedBy(City::setCountry)
+					.addOneToOne(Country::getCapital, cityConfiguration).cascading(ALL).mappedBy(City::setCountry)
 					.build(persistenceContext);
 			
 			testCascadeAll(countryPersister);

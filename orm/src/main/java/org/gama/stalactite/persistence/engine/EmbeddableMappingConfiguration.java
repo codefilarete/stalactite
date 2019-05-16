@@ -3,7 +3,7 @@ package org.gama.stalactite.persistence.engine;
 import java.util.Collection;
 import java.util.List;
 
-import org.gama.reflection.PropertyAccessor;
+import org.gama.reflection.IReversibleAccessor;
 import org.gama.sql.binder.ParameterBinder;
 import org.gama.stalactite.persistence.engine.FluentEmbeddableMappingConfigurationSupport.AbstractInset;
 
@@ -29,7 +29,7 @@ public interface EmbeddableMappingConfiguration<C> {
 	 */
 	interface Linkage<T> {
 		
-		<I> PropertyAccessor<T, I> getAccessor();
+		<I> IReversibleAccessor<T, I> getAccessor();
 		
 		String getColumnName();
 		

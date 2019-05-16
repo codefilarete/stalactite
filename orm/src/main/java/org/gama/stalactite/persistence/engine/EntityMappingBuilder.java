@@ -66,7 +66,7 @@ class EntityMappingBuilder<C, I> {
 			@Override
 			protected Column findColumn(ValueAccessPoint valueAccessPoint, String defaultColumnName, Map<String, Column<Table, Object>> tableColumnsPerName, Inset<C, ?> configuration) {
 				Column overridenColumn = ((OverridableColumnInset<C, ?>) configuration).getOverridenColumns().get(valueAccessPoint);
-				return Nullable.nullable(overridenColumn).orGet(() -> super.findColumn(valueAccessPoint, defaultColumnName, tableColumnsPerName, configuration));
+				return nullable(overridenColumn).orGet(() -> super.findColumn(valueAccessPoint, defaultColumnName, tableColumnsPerName, configuration));
 			}
 			
 			/**
@@ -79,7 +79,6 @@ class EntityMappingBuilder<C, I> {
 				ValueAccessPointSet oneToOnePropertiesOwnedByReverseSide = Iterables.collect(
 						configurationSupport.getOneToOnes(),
 						CascadeOne::isOwnedByReverseSide,
-						// Method reference must be converted to a ValueAccessPoint such as AccessorByMetohdReference
 						CascadeOne::getTargetProvider,
 						ValueAccessPointSet::new);
 				mappingConfiguration.getPropertiesMapping().stream()
@@ -119,7 +118,8 @@ class EntityMappingBuilder<C, I> {
 						column.primaryKey();
 					}
 				} else {
-					throw new NotImplementedException(linkage.getClass());
+					throw new NotImplementedException("Expect at least " + Reflections.toString(EntityLinkage.class)
+							+ " but argument was " + Reflections.toString(linkage.getClass()));
 				}
 				
 				return column;
@@ -157,9 +157,9 @@ class EntityMappingBuilder<C, I> {
 		};
 	}
 	
-	private <T extends Table> ClassMappingStrategy<C, I, T> buildClassMappingStrategy(Dialect dialect, Table targetTable) {
-		// dealing with identifier
-		Duo<IReversibleAccessor<C, I>, IdentifierInsertionManager<C, I>> identification = determineIdentification();
+	private <T extends Table> ClassMappingStrategy<C, I, T> buildClassMappingStrategy(Dialect dialect,
+																					  Table targetTable,
+																					  Duo<IReversibleAccessor<C, I>, IdentifierInsertionManager<C, I>> identification) {
 		IReversibleAccessor<C, I> identifierAccessor = identification.getLeft();
 		IdentifierInsertionManager<C, I> identifierInsertionManager = identification.getRight();
 		
@@ -177,7 +177,7 @@ class EntityMappingBuilder<C, I> {
 			}
 		}
 		
-		return new ClassMappingStrategy<C, I, T>(configurationSupport.getPersistedClass(), (T) embeddableMappingBuilder.getTargetTable(),
+		return new ClassMappingStrategy<C, I, T>(configurationSupport.getPersistedClass(), (T) targetTable,
 				(Map) columnMapping, identifierAccessor, identifierInsertionManager);
 	}
 	
@@ -215,17 +215,43 @@ class EntityMappingBuilder<C, I> {
 		return new Duo<>(identifierAccessor, identifierInsertionManager);
 	}
 	
+	/**
+	 * Build a {@link Persister} from the given configuration at contruction time.
+	 * {@link Table}s and columns will be created to fulfill the requirements needed by the configuration.
+	 * 
+	 * @param persistenceContext the {@link PersistenceContext} in which the resulting {@link Persister} will be put, also needed for Dialect purpose 
+	 * @return the built {@link Persister}
+	 */
 	public Persister<C, I, Table> build(PersistenceContext persistenceContext) {
-		return build(persistenceContext, new Table(configurationSupport.getPersistedClass().getSimpleName()));
+		return build(persistenceContext, (Table) null);
 	}
 	
-	public <T extends Table> Persister<C, I, T> build(PersistenceContext persistenceContext, T table) {
+	/**
+	 * Build a {@link Persister} from the given configuration at contruction time.
+	 * The (optional) given {@link Table} may be fulfilled with some required columns and foreign keys as needed by the configuration
+	 * if they are not already declared in the table.
+	 *
+	 * @param persistenceContext the {@link PersistenceContext} in which the resulting {@link Persister} will be put, also needed for Dialect purpose 
+	 * @return the built {@link Persister}
+	 */
+	public <T extends Table> Persister<C, I, T> build(PersistenceContext persistenceContext, @javax.annotation.Nullable T table) {
+		// Very first thing, determine identifier management and check some configuration
+		Duo<IReversibleAccessor<C, I>, IdentifierInsertionManager<C, I>> identification = determineIdentification();
+		
+		// Table must be created before giving it to further methods because it is mandatory for them
 		if (table == null) {
-			table = (T) nullable(giveTableUsedInMapping()).orGet(() -> new Table(configurationSupport.getPersistedClass().getSimpleName()));
+			table = (T) nullable(giveTableUsedInMapping()).orGet(() -> new Table(configurationSupport.getTableNamingStrategy().giveName(configurationSupport.getPersistedClass())));
+			
+			// if there's no inheritance we can create the primary key of the table
+			if (configurationSupport.getInheritanceConfiguration() == null) {
+				MemberDefinition identifierDefinition = MemberDefinition.giveMemberDefinition(configurationSupport.getIdentifierAccessor());
+				table.addColumn(configurationSupport.getPropertiesMapping().getColumnNamingStrategy().giveName(identifierDefinition), identifierDefinition.getMemberType()).primaryKey();
+			}
 		}
+		
 		if (configurationSupport.getInheritanceConfiguration() != null) {
 			if (configurationSupport.isJoinTable()) {
-				// Note that generics can't be used be cause "<? super C> can't be instantiated directly"
+				// Note that generics can't be used because "<? super C> can't be instantiated directly"
 				inheritanceMappingStrategy = new JoinedTablesEntityMappingBuilder(configurationSupport.getInheritanceConfiguration(), methodSpy)
 						.build(persistenceContext, table)
 						.getMappingStrategy();
@@ -236,7 +262,7 @@ class EntityMappingBuilder<C, I> {
 			}
 		}
 		
-		return build(persistenceContext, buildClassMappingStrategy(persistenceContext.getDialect(), table));
+		return build(persistenceContext, buildClassMappingStrategy(persistenceContext.getDialect(), table, identification));
 	}
 	
 	private Table giveTableUsedInMapping() {
@@ -259,10 +285,10 @@ class EntityMappingBuilder<C, I> {
 		// because in such cases no join is required, but it would have introduced inconsistent return type depending on configuration
 		// which is hard to manage by JoinedTablesEntityMappingBuilder that uses this method
 		JoinedTablesPersister<C, I, T> result = new JoinedTablesPersister<>(persistenceContext, mainMappingStrategy);
-		// don't forget to register this new persister, its usefull for schema deployment
+		// don't forget to register this new persister, it's usefull for schema deployment
 		persistenceContext.addPersister(result);
 		
-		CascadeOneConfigurer cascadeOneConfigurer = new CascadeOneConfigurer<>();
+		CascadeOneConfigurer cascadeOneConfigurer = new CascadeOneConfigurer<>(persistenceContext);
 		for (CascadeOne<C, ?, ?> cascadeOne : this.configurationSupport.getOneToOnes()) {
 			cascadeOneConfigurer.appendCascade(cascadeOne, result, this.configurationSupport.getForeignKeyNamingStrategy());
 		}
@@ -273,14 +299,14 @@ class EntityMappingBuilder<C, I> {
 					persistenceContext.getDialect());
 		}
 		
-		Nullable<VersioningStrategy> versionigStrategy = Nullable.nullable(this.configurationSupport.getOptimisticLockOption());
-		if (versionigStrategy.isPresent()) {
+		Nullable<VersioningStrategy> versioningStrategy = nullable(this.configurationSupport.getOptimisticLockOption());
+		if (versioningStrategy.isPresent()) {
 			// we have to declare it to the mapping strategy. To do that we must find the versionning column
 			Column column = result.getMappingStrategy().getMainMappingStrategy().getPropertyToColumn().get(this.configurationSupport.getOptimisticLockOption().getVersionAccessor());
 			result.getMappingStrategy().addVersionedColumn(this.configurationSupport.getOptimisticLockOption().getVersionAccessor(), column);
 			// and don't forget to give it to the workers !
-			result.getUpdateExecutor().setVersioningStrategy(versionigStrategy.get());
-			result.getInsertExecutor().setVersioningStrategy(versionigStrategy.get());
+			result.getUpdateExecutor().setVersioningStrategy(versioningStrategy.get());
+			result.getInsertExecutor().setVersioningStrategy(versioningStrategy.get());
 		}
 		
 		return result;

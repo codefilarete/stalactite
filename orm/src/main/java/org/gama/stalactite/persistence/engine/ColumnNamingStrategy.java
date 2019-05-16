@@ -1,9 +1,11 @@
 package org.gama.stalactite.persistence.engine;
 
-import java.lang.reflect.Method;
-
 import org.gama.lang.Reflections;
 import org.gama.lang.Strings;
+import org.gama.reflection.MemberDefinition;
+
+import static org.gama.lang.Reflections.GET_SET_PREFIX_REMOVER;
+import static org.gama.lang.Reflections.IS_PREFIX_REMOVER;
 
 /**
  * @author Guillaume Mary
@@ -11,17 +13,19 @@ import org.gama.lang.Strings;
 public interface ColumnNamingStrategy {
 	
 	/**
-	 * Expected to generate a name for the column that will join on the identifier of another one.
-	 * @param accessor the method (getter or setter) of the entity relation
+	 * Expected to generate a name for the given method definition that maps a property to a column
+	 * 
+	 * @param memberDefinition a representation of the method (getter or setter) that gives the property to be persisted
 	 */
-	String giveName(Method accessor);
+	String giveName(MemberDefinition memberDefinition);
 	
 	String DEFAULT_JOIN_COLUMN_SUFFIX = "Id";
 	
 	/**
 	 * Strategy to give property name as the column name, property name is taken from method according to the Java Bean naming convention
 	 */
-	ColumnNamingStrategy DEFAULT = accessor -> Strings.uncapitalize(Reflections.JAVA_BEAN_ACCESSOR_PREFIX_REMOVER.apply(accessor));
+	ColumnNamingStrategy DEFAULT = accessor -> Strings.uncapitalize(Reflections.onJavaBeanPropertyWrapperNameGeneric(accessor.getName(), accessor.getName(),
+			GET_SET_PREFIX_REMOVER, GET_SET_PREFIX_REMOVER, IS_PREFIX_REMOVER, s -> s));
 	
 	/**
 	 * Adds {@value #DEFAULT_JOIN_COLUMN_SUFFIX} to the {@link #DEFAULT} naming strategy 

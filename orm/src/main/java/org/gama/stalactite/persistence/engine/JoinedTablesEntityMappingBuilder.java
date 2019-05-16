@@ -1,5 +1,7 @@
 package org.gama.stalactite.persistence.engine;
 
+import javax.annotation.Nullable;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.BiConsumer;
@@ -11,6 +13,7 @@ import org.gama.lang.bean.Objects;
 import org.gama.lang.collection.Iterables;
 import org.gama.reflection.IReversibleAccessor;
 import org.gama.reflection.MethodReferenceCapturer;
+import org.gama.stalactite.persistence.engine.FluentEntityMappingConfigurationSupport.EntityLinkageByColumn;
 import org.gama.stalactite.persistence.engine.cascade.AfterUpdateSupport;
 import org.gama.stalactite.persistence.engine.cascade.BeforeDeleteByIdSupport;
 import org.gama.stalactite.persistence.engine.cascade.BeforeDeleteSupport;
@@ -27,6 +30,8 @@ import org.gama.stalactite.persistence.mapping.SinglePropertyIdAccessor;
 import org.gama.stalactite.persistence.sql.Dialect;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
+
+import static org.gama.lang.Nullable.nullable;
 
 /**
  * Classes aimed at building a persister for joined tables inheritance
@@ -45,10 +50,14 @@ public class JoinedTablesEntityMappingBuilder<C, I> {
 	}
 	
 	public Persister<C, I, Table> build(PersistenceContext persistenceContext) {
-		return build(persistenceContext, new Table(configurationSupport.getPersistedClass().getSimpleName()));
+		return build(persistenceContext, null);
 	}
 	
-	public <T extends Table> Persister<C, I, T> build(PersistenceContext persistenceContext, T childClassTargetTable) {
+	public <T extends Table> Persister<C, I, T> build(PersistenceContext persistenceContext, @Nullable T childClassTargetTable) {
+		if (childClassTargetTable == null) {
+			childClassTargetTable = (T) nullable(giveTableUsedInMapping()).orGet(() -> new Table(configurationSupport.getTableNamingStrategy().giveName(configurationSupport.getPersistedClass())));
+		}
+		
 		if (configurationSupport.getIdentifierAccessor() != null && configurationSupport.getInheritanceConfiguration() != null) {
 			throw new MappingConfigurationException("Defining an identifier while inheritance is used is not supported");
 		}
@@ -87,6 +96,21 @@ public class JoinedTablesEntityMappingBuilder<C, I> {
 		addCascadesBetweenChildAndParentTable(superPersister, result);
 		
 		return result;
+	}
+	
+	private Table giveTableUsedInMapping() {
+		Set<Table> usedTablesInMapping = Iterables.collect(configurationSupport.getPropertiesMapping().getPropertiesMapping(),
+				linkage -> linkage instanceof FluentEntityMappingConfigurationSupport.EntityLinkageByColumn,
+				linkage -> ((EntityLinkageByColumn) linkage).getColumn().getTable(),
+				HashSet::new);
+		switch (usedTablesInMapping.size()) {
+			case 0:
+				return null;
+			case 1:
+				return Iterables.first(usedTablesInMapping);
+			default:
+				throw new MappingConfigurationException("Different tables found in columns given as parameter of methods mapping : " + usedTablesInMapping);
+		}
 	}
 	
 	private <T extends Table> ClassMappingStrategy<C, I, T> buildChildClassMappingStrategy(Class<I> identifierType,

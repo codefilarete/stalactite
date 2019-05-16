@@ -11,6 +11,7 @@ import java.util.HashSet;
 import org.gama.lang.collection.Arrays;
 import org.gama.lang.collection.Iterables;
 import org.gama.lang.function.ThrowingSupplier;
+import org.gama.lang.test.Assertions;
 import org.gama.sql.ConnectionProvider;
 import org.gama.sql.binder.DefaultParameterBinders;
 import org.gama.sql.result.ResultSetIterator;
@@ -40,6 +41,8 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import static java.util.stream.Collectors.toSet;
+import static org.gama.lang.test.Assertions.hasExceptionInHierarchy;
+import static org.gama.lang.test.Assertions.hasMessage;
 import static org.gama.stalactite.persistence.engine.CascadeOptions.RelationshipMode.ALL;
 import static org.gama.stalactite.persistence.engine.CascadeOptions.RelationshipMode.ALL_ORPHAN_REMOVAL;
 import static org.gama.stalactite.persistence.engine.CascadeOptions.RelationshipMode.ASSOCIATION_ONLY;
@@ -149,8 +152,8 @@ class FluentEntityMappingConfigurationSupportOneToManyTest {
 				// no cascade
 				.addOneToManySet(Country::getCities, cityPersister).mappedBy(City::setCountry).cascading(ASSOCIATION_ONLY);
 		
-		FluentEntityMappingConfigurationSupportOneToOneTest.assertThrowsInHierarchy(() -> mappingBuilder.build(persistenceContext), MappingConfigurationException.class,
-				RelationshipMode.ASSOCIATION_ONLY + " is only relevent with an association table");
+		Assertions.assertThrows(() -> mappingBuilder.build(persistenceContext), hasExceptionInHierarchy(MappingConfigurationException.class)
+				.andProjection(hasMessage(RelationshipMode.ASSOCIATION_ONLY + " is only relevent with an association table")));
 	}
 	
 	@Test
@@ -202,8 +205,8 @@ class FluentEntityMappingConfigurationSupportOneToManyTest {
 				.get(0));
 		
 		// delete throws integrity constraint because it doesn't delete target entity which own the relation
-		FluentEntityMappingConfigurationSupportOneToOneTest.assertThrowsInHierarchy(() -> countryPersister.delete(loadedCountry), BatchUpdateException.class,
-				"integrity constraint violation: foreign key no action; FK_CITY_COUNTRYID_COUNTRY_ID table: CITY");
+		Assertions.assertThrows(() -> countryPersister.delete(loadedCountry), hasExceptionInHierarchy(BatchUpdateException.class)
+				.andProjection(hasMessage("integrity constraint violation: foreign key no action; FK_CITY_COUNTRYID_COUNTRY_ID table: CITY")));
 		
 		assertEquals("touched France", persistenceContext.newQuery("select name from Country where id = 42", String.class)
 				.mapKey(String::new, "name", String.class)

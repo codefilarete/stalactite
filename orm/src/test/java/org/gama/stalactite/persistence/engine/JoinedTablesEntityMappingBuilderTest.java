@@ -346,9 +346,9 @@ class JoinedTablesEntityMappingBuilderTest {
 	}
 	
 	private Persister<Car, Identifier, Table> buildCRUDOneToOneInChildClassContext() {
-		Persister<Engine, Long, Table> enginePersister = new FluentEntityMappingConfigurationSupport<Engine, Long>(Engine.class)
+		EntityMappingConfiguration<Engine, Long> engineConfiguration = new FluentEntityMappingConfigurationSupport<Engine, Long>(Engine.class)
 				.add(Engine::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
-				.build(persistenceContext);
+				.getConfiguration();
 		
 		EntityMappingConfiguration<Vehicle, Identifier> superClassMapping = new FluentEntityMappingConfigurationSupport<Vehicle, Identifier>(Vehicle.class)
 				.add(Vehicle::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
@@ -359,7 +359,7 @@ class JoinedTablesEntityMappingBuilderTest {
 		FluentEntityMappingConfigurationSupport<Car, Identifier> configurationSupport = new FluentEntityMappingConfigurationSupport<>(Car.class);
 		configurationSupport
 				.add(Car::getModel)
-				.addOneToOne(Vehicle::getEngine, enginePersister).cascading(RelationshipMode.ALL_ORPHAN_REMOVAL)
+				.addOneToOne(Vehicle::getEngine, engineConfiguration).cascading(RelationshipMode.ALL_ORPHAN_REMOVAL)
 				.mapInheritance(superClassMapping).withJoinTable(new Table("toto"));
 		
 		JoinedTablesEntityMappingBuilder<Car, Identifier> testInstance = new JoinedTablesEntityMappingBuilder<>(configurationSupport, methodSpy);
@@ -485,13 +485,13 @@ class JoinedTablesEntityMappingBuilderTest {
 	}
 	
 	private Persister<Car, Identifier, Table> buildCRUDOneToOneInSuperClassContext() {
-		Persister<Engine, Long, Table> enginePersister = new FluentEntityMappingConfigurationSupport<Engine, Long>(Engine.class)
+		EntityMappingConfiguration<Engine, Long> engineConfiguration = new FluentEntityMappingConfigurationSupport<Engine, Long>(Engine.class)
 				.add(Engine::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
-				.build(persistenceContext);
+				.getConfiguration();
 		
 		EntityMappingConfiguration<Vehicle, Identifier> superClassMapping = new FluentEntityMappingConfigurationSupport<Vehicle, Identifier>(Vehicle.class)
 				.add(Vehicle::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
-				.addOneToOne(Vehicle::getEngine, enginePersister).cascading(RelationshipMode.ALL_ORPHAN_REMOVAL)
+				.addOneToOne(Vehicle::getEngine, engineConfiguration).cascading(RelationshipMode.ALL_ORPHAN_REMOVAL)
 				.add(Vehicle::getColor)
 				.getConfiguration();
 		

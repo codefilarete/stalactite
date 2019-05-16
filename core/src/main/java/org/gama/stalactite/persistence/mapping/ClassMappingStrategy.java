@@ -17,6 +17,7 @@ import org.gama.lang.Reflections;
 import org.gama.reflection.AccessorChain;
 import org.gama.reflection.IReversibleAccessor;
 import org.gama.reflection.IReversibleMutator;
+import org.gama.reflection.MemberDefinition;
 import org.gama.reflection.PropertyAccessor;
 import org.gama.sql.result.Row;
 import org.gama.stalactite.persistence.id.assembly.SimpleIdentifierAssembler;
@@ -67,7 +68,7 @@ public class ClassMappingStrategy<C, I, T extends Table> implements IEntityMappi
 	
 	private final IdMappingStrategy<C, I> idMappingStrategy;
 	
-	private final Map<PropertyAccessor, Column<T, Object>> versioningMapping = new HashMap<>();
+	private final Map<IReversibleAccessor, Column<T, Object>> versioningMapping = new HashMap<>();
 	
 	/**
 	 * Main constructor
@@ -100,10 +101,10 @@ public class ClassMappingStrategy<C, I, T extends Table> implements IEntityMappi
 		// identifierAccessor must be the same instance as those stored in propertyToColumn for Map.remove method used in foreach()
 		Column<T, I> identifierColumn = (Column<T, I>) propertyToColumn.get(identifierProperty);
 		if (identifierColumn == null) {
-			throw new IllegalArgumentException("Bean identifier '" + identifierProperty + "' must have its matching column in the mapping");
+			throw new IllegalArgumentException("Bean identifier '" + MemberDefinition.toString(identifierProperty) + "' must have its matching column in the mapping");
 		}
 		if (!identifierColumn.isPrimaryKey()) {
-			throw new UnsupportedOperationException("Accessor '" + identifierProperty
+			throw new UnsupportedOperationException("Accessor '" + MemberDefinition.toString(identifierProperty)
 					+ "' is declared as identifier but mapped column " + identifierColumn.toString() + " is not the primary key of table");
 		}
 		this.idMappingStrategy = new SimpleIdMappingStrategy<>(identifierProperty, identifierInsertionManager, new SimpleIdentifierAssembler<>(identifierColumn));
@@ -194,7 +195,7 @@ public class ClassMappingStrategy<C, I, T extends Table> implements IEntityMappi
 		return idMappingStrategy;
 	}
 	
-	public void addVersionedColumn(PropertyAccessor propertyAccessor, Column<T, Object> column) {
+	public void addVersionedColumn(IReversibleAccessor propertyAccessor, Column<T, Object> column) {
 		this.versioningMapping.put(propertyAccessor, column);
 	}
 	
@@ -340,7 +341,7 @@ public class ClassMappingStrategy<C, I, T extends Table> implements IEntityMappi
 	
 	private Map<Column<T, Object>, Object> getVersionedColumnsValues(C c) {
 		Map<Column<T, Object>, Object> toReturn = new HashMap<>();
-		for (Entry<PropertyAccessor, Column<T, Object>> columnEntry : versioningMapping.entrySet()) {
+		for (Entry<IReversibleAccessor, Column<T, Object>> columnEntry : versioningMapping.entrySet()) {
 			toReturn.put(columnEntry.getValue(), columnEntry.getKey().get(c));
 		}
 		return toReturn;

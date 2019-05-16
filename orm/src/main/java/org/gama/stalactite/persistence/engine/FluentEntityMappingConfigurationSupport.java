@@ -18,8 +18,11 @@ import org.gama.reflection.AccessorByMethod;
 import org.gama.reflection.AccessorByMethodReference;
 import org.gama.reflection.Accessors;
 import org.gama.reflection.IReversibleAccessor;
+import org.gama.reflection.MemberDefinition;
 import org.gama.reflection.MethodReferenceCapturer;
+import org.gama.reflection.MutatorByMethodReference;
 import org.gama.reflection.PropertyAccessor;
+import org.gama.reflection.ValueAccessPointByMethodReference;
 import org.gama.reflection.ValueAccessPointMap;
 import org.gama.stalactite.persistence.engine.AbstractVersioningStrategy.VersioningStrategySupport;
 import org.gama.stalactite.persistence.engine.ColumnOptions.IdentifierPolicy;
@@ -60,7 +63,9 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements IFluentMap
 	
 	private IdentifierInsertionManager<C, I> identifierInsertionManager;
 	
-	PropertyAccessor<C, I> identifierAccessor;
+	private TableNamingStrategy tableNamingStrategy = TableNamingStrategy.DEFAULT;
+	
+	private PropertyAccessor<C, I> identifierAccessor;
 	
 	private final MethodReferenceCapturer methodSpy;
 	
@@ -101,6 +106,11 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements IFluentMap
 	@Override
 	public Class<C> getPersistedClass() {
 		return persistedClass;
+	}
+	
+	@Override
+	public TableNamingStrategy getTableNamingStrategy() {
+		return tableNamingStrategy;
 	}
 	
 	public ColumnNamingStrategy getJoinColumnNamingStrategy() {
@@ -177,76 +187,69 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements IFluentMap
 	
 	@Override
 	public <O> IFluentMappingBuilderColumnOptions<C, I> add(SerializableBiConsumer<C, O> setter) {
-		Method method = captureMethod(setter);
-		return add(method, (String) null);
+		return add(setter, (String) null);
 	}
 	
 	@Override
 	public <O> IFluentMappingBuilderColumnOptions<C, I> add(SerializableFunction<C, O> getter) {
-		Method method = captureMethod(getter);
-		return add(method, (String) null);
+		return add(getter, (String) null);
 	}
 	
 	@Override
 	public <O> IFluentMappingBuilderColumnOptions<C, I> add(SerializableBiConsumer<C, O> setter, String columnName) {
-		Method method = captureMethod(setter);
-		return add(method, columnName);
+		Linkage<C> mapping = propertiesMappingConfigurationSurrogate.addMapping(setter, columnName);
+		return this.propertiesMappingConfigurationSurrogate.applyAdditionalOptions(setter, mapping);
 	}
 	
 	@Override
 	public <O> IFluentMappingBuilderColumnOptions<C, I> add(SerializableFunction<C, O> getter, String columnName) {
-		Method method = captureMethod(getter);
-		return add(method, columnName);
+		Linkage<C> mapping = propertiesMappingConfigurationSurrogate.addMapping(getter, columnName);
+		return this.propertiesMappingConfigurationSurrogate.applyAdditionalOptions(getter, mapping);
+	}
+	
+	@Override
+	public <O> IFluentMappingBuilderColumnOptions<C, I> add(SerializableBiConsumer<C, O> setter, Column<Table, O> column) {
+		Linkage<C> mapping = propertiesMappingConfigurationSurrogate.addMapping(setter, column);
+		return this.propertiesMappingConfigurationSurrogate.applyAdditionalOptions(setter, mapping);
 	}
 	
 	@Override
 	public <O> IFluentMappingBuilderColumnOptions<C, I> add(SerializableFunction<C, O> getter, Column<Table, O> column) {
-		Method method = captureMethod(getter);
-		return add(method, column);
-	}
-	
-	private <O> IFluentMappingBuilderColumnOptions<C, I> add(Method method, Column<Table, O> column) {
-		Linkage<C> mapping = propertiesMappingConfigurationSurrogate.addMapping(method, column);
-		return this.propertiesMappingConfigurationSurrogate.applyAdditionalOptions(method, mapping);
-	}
-	
-	private IFluentMappingBuilderColumnOptions<C, I> add(Method method, @javax.annotation.Nullable String columnName) {
-		Linkage<C> mapping = propertiesMappingConfigurationSurrogate.addMapping(method, columnName);
-		return this.propertiesMappingConfigurationSurrogate.applyAdditionalOptions(method, mapping);
+		Linkage<C> mapping = propertiesMappingConfigurationSurrogate.addMapping(getter, column);
+		return this.propertiesMappingConfigurationSurrogate.applyAdditionalOptions(getter, mapping);
 	}
 	
 	@Override
 	public <E extends Enum<E>> IFluentMappingBuilderEnumOptions<C, I> addEnum(SerializableBiConsumer<C, E> setter) {
-		Method method = captureMethod(setter);
-		return addEnum(method, null);
+		return addEnum(setter, (String) null);
 	}
 	
 	@Override
 	public <E extends Enum<E>> IFluentMappingBuilderEnumOptions<C, I> addEnum(SerializableFunction<C, E> getter) {
-		Method method = captureMethod(getter);
-		return addEnum(method, null);
+		return addEnum(getter, (String) null);
 	}
 	
 	@Override
-	public <E extends Enum<E>> IFluentMappingBuilderEnumOptions<C, I> addEnum(SerializableBiConsumer<C, E> setter, String columnName) {
-		Method method = captureMethod(setter);
-		return addEnum(method, columnName);
+	public <E extends Enum<E>> IFluentMappingBuilderEnumOptions<C, I> addEnum(SerializableBiConsumer<C, E> setter, @javax.annotation.Nullable String columnName) {
+		AbstractLinkage<C> linkage = propertiesMappingConfigurationSurrogate.addMapping(setter, columnName);
+		return handleEnumOptions(propertiesMappingConfigurationSurrogate.addEnumOptions(linkage));
 	}
 	
 	@Override
-	public <E extends Enum<E>> IFluentMappingBuilderEnumOptions<C, I> addEnum(SerializableFunction<C, E> getter, String columnName) {
-		Method method = captureMethod(getter);
-		return addEnum(method, columnName);
+	public <E extends Enum<E>> IFluentMappingBuilderEnumOptions<C, I> addEnum(SerializableFunction<C, E> getter, @javax.annotation.Nullable String columnName) {
+		AbstractLinkage<C> linkage = propertiesMappingConfigurationSurrogate.addMapping(getter, columnName);
+		return handleEnumOptions(propertiesMappingConfigurationSurrogate.addEnumOptions(linkage));
 	}
 	
-	private IFluentMappingBuilderEnumOptions<C, I> addEnum(Method method, @javax.annotation.Nullable String columnName) {
-		AbstractLinkage<C> linkage = propertiesMappingConfigurationSurrogate.addMapping(method, columnName);
+	@Override
+	public <E extends Enum<E>> IFluentMappingBuilderEnumOptions<C, I> addEnum(SerializableBiConsumer<C, E> setter, Column<Table, E> column) {
+		AbstractLinkage<C> linkage = propertiesMappingConfigurationSurrogate.addMapping(setter, column);
 		return handleEnumOptions(propertiesMappingConfigurationSurrogate.addEnumOptions(linkage));
 	}
 	
 	@Override
 	public <E extends Enum<E>> IFluentMappingBuilderEnumOptions<C, I> addEnum(SerializableFunction<C, E> getter, Column<Table, E> column) {
-		AbstractLinkage<C> linkage = propertiesMappingConfigurationSurrogate.addMapping(captureMethod(getter), column);
+		AbstractLinkage<C> linkage = propertiesMappingConfigurationSurrogate.addMapping(getter, column);
 		return handleEnumOptions(propertiesMappingConfigurationSurrogate.addEnumOptions(linkage));
 	}
 	
@@ -272,7 +275,7 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements IFluentMap
 	}
 	
 	@Override
-	public <O, J> IFluentMappingBuilderOneToOneOptions<C, I> addOneToOne(SerializableFunction<C, O> getter, Persister<O, J, ? extends Table> persister) {
+	public <O, J> IFluentMappingBuilderOneToOneOptions<C, I> addOneToOne(SerializableFunction<C, O> getter, EntityMappingConfiguration<O, J> mappingConfiguration) {
 		// we declare the column on our side: we do it first because it checks some rules
 		add(getter);
 		// we keep it
@@ -281,37 +284,37 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements IFluentMap
 				Accessors.accessorByMethodReference(getter),
 				// ... but we can't do it for mutator, so we use the most equivalent manner : a mutator based on setter method (fallback to property if not present)
 				new AccessorByMethod<C, O>(captureMethod(getter)).toMutator());
-		CascadeOne<C, O, J> cascadeOne = new CascadeOne<>(propertyAccessor, persister);
+		CascadeOne<C, O, J> cascadeOne = new CascadeOne<>(propertyAccessor, mappingConfiguration);
 		this.cascadeOnes.add(cascadeOne);
 		// then we return an object that allows fluent settings over our OneToOne cascade instance
 		return new MethodDispatcher()
-				.redirect(OneToOneOptions.class, new OneToOneOptions() {
+				.redirect(OneToOneOptions.class, new OneToOneOptions<C, I>() {
 					@Override
-					public IFluentMappingBuilderOneToOneOptions cascading(RelationshipMode relationshipMode) {
+					public IFluentMappingBuilderOneToOneOptions<C, I> cascading(RelationshipMode relationshipMode) {
 						cascadeOne.setRelationshipMode(relationshipMode);
 						return null;	// we can return null because dispatcher will return proxy
 					}
 					
 					@Override
-					public IFluentMappingBuilderOneToOneOptions mandatory() {
+					public IFluentMappingBuilderOneToOneOptions<C, I> mandatory() {
 						cascadeOne.setNullable(false);
 						return null;	// we can return null because dispatcher will return proxy
 					}
 					
 					@Override
-					public IFluentMappingBuilderOneToOneOptions mappedBy(SerializableFunction reverseLink) {
+					public IFluentMappingBuilderOneToOneOptions<C, I> mappedBy(SerializableFunction reverseLink) {
 						cascadeOne.setReverseGetter(reverseLink);
 						return null;	// we can return null because dispatcher will return proxy
 					}
 					
 					@Override
-					public IFluentMappingBuilderOneToOneOptions mappedBy(SerializableBiConsumer reverseLink) {
+					public IFluentMappingBuilderOneToOneOptions<C, I> mappedBy(SerializableBiConsumer reverseLink) {
 						cascadeOne.setReverseSetter(reverseLink);
 						return null;	// we can return null because dispatcher will return proxy
 					}
 					
 					@Override
-					public IFluentMappingBuilderOneToOneOptions mappedBy(Column reverseLink) {
+					public <T extends Table> IFluentMappingBuilderOneToOneOptions<C, I> mappedBy(Column<T, C> reverseLink) {
 						cascadeOne.setReverseColumn(reverseLink);
 						return null;	// we can return null because dispatcher will return proxy
 					}
@@ -449,28 +452,28 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements IFluentMap
 	 */
 	@Override
 	public <V> IFluentMappingBuilder<C, I> versionedBy(SerializableFunction<C, V> getter) {
-		Method method = captureMethod(getter);
+		AccessorByMethodReference methodReference = Accessors.accessorByMethodReference(getter);
 		Serie<V> serie;
-		if (Integer.class.isAssignableFrom(method.getReturnType())) {
+		if (Integer.class.isAssignableFrom(methodReference.getPropertyType())) {
 			serie = (Serie<V>) Serie.INTEGER_SERIE;
-		} else if (Long.class.isAssignableFrom(method.getReturnType())) {
+		} else if (Long.class.isAssignableFrom(methodReference.getPropertyType())) {
 			serie = (Serie<V>) Serie.LONG_SERIE;
-		} else if (Date.class.isAssignableFrom(method.getReturnType())) {
+		} else if (Date.class.isAssignableFrom(methodReference.getPropertyType())) {
 			serie = (Serie<V>) Serie.NOW_SERIE;
 		} else {
 			throw new NotImplementedException("Type of versioned property is not implemented, please provide a "
-					+ Serie.class.getSimpleName() + " for it : " + Reflections.toString(method.getReturnType()));
+					+ Serie.class.getSimpleName() + " for it : " + Reflections.toString(methodReference.getPropertyType()));
 		}
-		return versionedBy(getter, method, serie);
+		return versionedBy(getter, methodReference, serie);
 	}
 	
 	@Override
 	public <V> IFluentMappingBuilder<C, I> versionedBy(SerializableFunction<C, V> getter, Serie<V> serie) {
-		return versionedBy(getter, captureMethod(getter), serie);
+		return versionedBy(getter, new AccessorByMethodReference<>(getter), serie);
 	}
 	
-	public <V> IFluentMappingBuilder<C, I> versionedBy(SerializableFunction<C, V> getter, Method method, Serie<V> serie) {
-		optimisticLockOption = new OptimisticLockOption<>(Accessors.of(method), serie);
+	private <V> IFluentMappingBuilder<C, I> versionedBy(SerializableFunction<C, V> getter, AccessorByMethodReference methodReference, Serie<V> serie) {
+		optimisticLockOption = new OptimisticLockOption<>(methodReference, serie);
 		add(getter);
 		return this;
 	}
@@ -494,7 +497,7 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements IFluentMap
 	}
 	
 	@Override
-	public <T extends Table> Persister<C, I, T> build(PersistenceContext persistenceContext, T targetTable) {
+	public <T extends Table> Persister<C, I, T> build(PersistenceContext persistenceContext, @javax.annotation.Nullable T targetTable) {
 		if (inheritanceConfiguration != null && propertiesMappingConfigurationSurrogate.getMappedSuperClassConfiguration() != null) {
 			throw new MappingConfigurationException("Mapped super class and inheritance are not supported when they are combined, please remove one of them");
 		}
@@ -518,19 +521,19 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements IFluentMap
 		boolean isPrimaryKey();
 	}
 	
-	private static class EntityLinkageByColumnName<T>  extends LinkageByColumnName<T> implements EntityLinkage<T> {
+	static class EntityLinkageByColumnName<T>  extends LinkageByColumnName<T> implements EntityLinkage<T> {
 		
 		private boolean primaryKey;
 		
 		/**
-		 * Constructor by {@link Method}. Only accessor by method is implemented (since input is from method reference).
-		 * (Doing it for field accessor is simple work but not necessary)
+		 * Constructor
 		 * 
-		 * @param method a {@link PropertyAccessor}
+		 * @param accessor a {@link IReversibleAccessor}
+		 * @param columnType the Java type of the column, will be converted to sql type thanks to {@link org.gama.stalactite.persistence.sql.ddl.JavaTypeToSqlTypeMapping}
 		 * @param columnName an override of the default name that will be generated
 		 */
-		private EntityLinkageByColumnName(Method method, String columnName) {
-			super(method, columnName);
+		<O> EntityLinkageByColumnName(IReversibleAccessor<T, O> accessor, Class<O> columnType, String columnName) {
+			super(accessor, columnType, columnName);
 		}
 		
 		public boolean isPrimaryKey() {
@@ -542,25 +545,25 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements IFluentMap
 		}
 	}
 	
-	private static class EntityLinkageByColumn<T> extends AbstractLinkage<T> implements EntityLinkage<T> {
+	static class EntityLinkageByColumn<T> extends AbstractLinkage<T> implements EntityLinkage<T> {
 		
-		private final PropertyAccessor function;
+		private final PropertyAccessor<T, ?> function;
 		private final Column column;
 		
 		/**
-		 * Constructor by {@link Method}. Only accessor by method is implemented (since input is from method reference).
-		 * (Doing it for field accessor is simple work but not necessary)
-		 * @param method a {@link PropertyAccessor}
+		 * Constructor with mandatory objects
+		 * 
+		 * @param propertyAccessor a {@link PropertyAccessor}
 		 * @param column an override of the default column that would have been generated
 		 */
-		private EntityLinkageByColumn(Method method, Column column) {
-			this.function = Accessors.of(method);
+		<I> EntityLinkageByColumn(PropertyAccessor<T, I> propertyAccessor, Column column) {
+			this.function = propertyAccessor;
 			this.column = column;
 		}
 		
 		@Override
 		public <I> PropertyAccessor<T, I> getAccessor() {
-			return function;
+			return (PropertyAccessor<T, I>) function;
 		}
 		
 		@Override
@@ -624,42 +627,70 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements IFluentMap
 		}
 		
 		@Override
-		protected LinkageByColumnName<C> newLinkage(Method method, String linkName) {
-			return new EntityLinkageByColumnName<>(method, linkName);
+		protected <O> EntityLinkageByColumnName<C> newLinkage(IReversibleAccessor<C, O> accessor, Class<O> returnType, String linkName) {
+			return new EntityLinkageByColumnName<>(accessor, returnType, linkName);
 		}
 		
 		@Override
-		protected String giveLinkName(Method method) {
-			if (Identified.class.isAssignableFrom(Reflections.javaBeanTargetType(method))) {
-				return entityConfigurationSupport.joinColumnNamingStrategy.giveName(method);
+		protected String giveLinkName(MemberDefinition memberDefinition) {
+			if (Identified.class.isAssignableFrom(memberDefinition.getMemberType())) {
+				return entityConfigurationSupport.joinColumnNamingStrategy.giveName(memberDefinition);
 			} else {
-				return super.giveLinkName(method);
+				return super.giveLinkName(memberDefinition);
 			}
 		}
 		
+		
+		<E> AbstractLinkage<C> addMapping(SerializableBiConsumer<C, E> setter, Column column) {
+			MutatorByMethodReference<C, E> mutatorByMethodReference = Accessors.mutatorByMethodReference(setter);
+			PropertyAccessor<C, E> propertyAccessor = new PropertyAccessor<>(
+					Accessors.accessor(mutatorByMethodReference.getDeclaringClass(), Reflections.propertyName(mutatorByMethodReference.getMethodName())),
+					mutatorByMethodReference
+			);
+			return addMapping(propertyAccessor, column);
+		}
+		
+		<E> AbstractLinkage<C> addMapping(SerializableFunction<C, E> getter, Column column) {
+			AccessorByMethodReference<C, E> accessorByMethodReference = Accessors.accessorByMethodReference(getter);
+			PropertyAccessor<C, E> propertyAccessor = new PropertyAccessor<>(
+					accessorByMethodReference,
+					Accessors.mutator(accessorByMethodReference.getDeclaringClass(), Reflections.propertyName(accessorByMethodReference.getMethodName()), accessorByMethodReference.getPropertyType())
+			);
+			return addMapping(propertyAccessor, column);
+		}
+		
 		/**
-		 * Equivalent of {@link #addMapping(Method, String)} with a {@link Column}
+		 * Equivalent of {@link #addMapping(PropertyAccessor, ValueAccessPointByMethodReference, String)} with a {@link Column}
 		 * 
 		 * @return a new Column added to the target table, throws an exception if already mapped
 		 */
-		<O> AbstractLinkage<C> addMapping(Method method, Column<Table, O> column) {
-			PropertyAccessor<Object, Object> propertyAccessor = Accessors.of(method);
+		AbstractLinkage<C> addMapping(PropertyAccessor<C, ?> propertyAccessor, Column column) {
 			assertMappingIsNotAlreadyDefined(column.getName(), propertyAccessor);
-			EntityLinkageByColumn<C> newLinkage = new EntityLinkageByColumn<>(method, column);
+			EntityLinkageByColumn<C> newLinkage = new EntityLinkageByColumn<>(propertyAccessor, column);
 			mapping.add(newLinkage);
 			return newLinkage;
 		}
 		
-		private IFluentMappingBuilderColumnOptions<C, I> applyAdditionalOptions(Method method, Linkage newMapping) {
+		private IFluentMappingBuilderColumnOptions<C, I> applyAdditionalOptions(SerializableBiConsumer<C, ?> setter, Linkage newMapping) {
+			MutatorByMethodReference<C, ?> mutatorByMethodReference = Accessors.mutatorByMethodReference(setter);
+			return applyAdditionalOptions(mutatorByMethodReference, newMapping);
+		}
+		
+		private IFluentMappingBuilderColumnOptions<C, I> applyAdditionalOptions(SerializableFunction<C, ?> getter, Linkage newMapping) {
+			AccessorByMethodReference<C, ?> accessorByMethodReference = Accessors.accessorByMethodReference(getter);
+			return applyAdditionalOptions(accessorByMethodReference, newMapping);
+		}
+		
+		private IFluentMappingBuilderColumnOptions<C, I> applyAdditionalOptions(ValueAccessPointByMethodReference methodReference, Linkage newMapping) {
 			return new MethodDispatcher()
 					.redirect(ColumnOptions.class, identifierPolicy -> {
 						// Please note that we don't check for any id presence in inheritance since this will override parent one (see final build()) 
 						if (entityConfigurationSupport.identifierAccessor != null) {
-							throw new IllegalArgumentException("Identifier is already defined by " + entityConfigurationSupport.identifierAccessor.getAccessor());
+							throw new IllegalArgumentException("Identifier is already defined by " + MemberDefinition.toString(entityConfigurationSupport.identifierAccessor.getAccessor()));
 						}
 						if (identifierPolicy == IdentifierPolicy.ALREADY_ASSIGNED) {
-							Class<I> identifierType = Reflections.propertyType(method);
-							if (Identified.class.isAssignableFrom(method.getDeclaringClass()) && Identifier.class.isAssignableFrom(identifierType)) {
+							Class<I> identifierType = methodReference.getPropertyType();
+							if (Identified.class.isAssignableFrom(methodReference.getDeclaringClass()) && Identifier.class.isAssignableFrom(identifierType)) {
 								entityConfigurationSupport.identifierInsertionManager = new IdentifiedIdentifierManager<>(identifierType);
 							} else {
 								throw new NotYetSupportedOperationException(
@@ -718,8 +749,11 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements IFluentMap
 		
 		private final VersioningStrategy<Object, C> versioningStrategy;
 		
-		public OptimisticLockOption(PropertyAccessor<Object, C> propertyAccessor, Serie<C> serie) {
-			this.versioningStrategy = new VersioningStrategySupport<>(propertyAccessor, serie);
+		public OptimisticLockOption(AccessorByMethodReference<Object, C> versionAccessor, Serie<C> serie) {
+			this.versioningStrategy = new VersioningStrategySupport<>(new PropertyAccessor<>(
+					versionAccessor,
+					Accessors.mutator(versionAccessor.getDeclaringClass(), Reflections.propertyName(versionAccessor.getMethodName()), versionAccessor.getPropertyType())
+			), serie);
 		}
 		
 		public VersioningStrategy getVersioningStrategy() {

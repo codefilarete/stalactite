@@ -16,7 +16,6 @@ import java.util.stream.Collectors;
 
 import org.gama.lang.Duo;
 import org.gama.lang.InvocationHandlerSupport;
-import org.gama.lang.Reflections;
 import org.gama.lang.collection.Arrays;
 import org.gama.lang.collection.Maps;
 import org.gama.sql.SimpleConnectionProvider;
@@ -132,7 +131,7 @@ public class FluentEntityMappingConfigurationSupportTest {
 	}
 	
 	@Test
-	public void testAdd_definedAsIdentifier_identifierIsString() {
+	public void testAdd_definedAsIdentifier_identifierIsStoredAsString() {
 		HSQLDBDialect dialect = new HSQLDBDialect();
 		PersistenceContext persistenceContext = new PersistenceContext(new JdbcConnectionProvider(new HSQLDBInMemoryDataSource()), dialect);
 		
@@ -159,13 +158,12 @@ public class FluentEntityMappingConfigurationSupportTest {
 		
 		List<Duo> select = persistenceContext.select(Duo::new, id, name);
 		assertEquals(1, select.size());
-		assertEquals(toto.getIdentifier().getSurrogate().toString(), ((Identifier) select.get(0).getLeft()).getSurrogate().toString());
+		assertEquals(toto.getId().getSurrogate().toString(), ((Identifier) select.get(0).getLeft()).getSurrogate().toString());
 	}
 	
 	@Test
-	public void testAdd_identifierDefinedTwice_throwsException() throws NoSuchMethodException {
-		Table toto = new Table("Toto");
-		assertEquals("Identifier is already defined by " + Reflections.toString(Toto.class.getMethod("getId")),
+	public void testAdd_identifierDefinedTwice_throwsException() {
+		assertEquals("Identifier is already defined by Toto::getId",
 				assertThrows(IllegalArgumentException.class, () -> FluentEntityMappingConfigurationSupport.from(Toto.class, StatefullIdentifier.class)
 						.add(Toto::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 						.add(Toto::getIdentifier).identifier(IdentifierPolicy.ALREADY_ASSIGNED))
@@ -173,9 +171,8 @@ public class FluentEntityMappingConfigurationSupportTest {
 	}
 	
 	@Test
-	public void testAdd_mappingDefinedTwiceByMethod_throwsException() throws NoSuchMethodException {
-		Table toto = new Table("Toto");
-		assertEquals("Mapping is already defined by method " + Reflections.toString(Toto.class.getMethod("getName")),
+	public void testAdd_mappingDefinedTwiceByMethod_throwsException() {
+		assertEquals("Mapping is already defined by method Toto::getName",
 				assertThrows(MappingConfigurationException.class, () -> FluentEntityMappingConfigurationSupport.from(Toto.class, StatefullIdentifier.class)
 						.add(Toto::getName)
 						.add(Toto::setName))
@@ -184,7 +181,6 @@ public class FluentEntityMappingConfigurationSupportTest {
 	
 	@Test
 	public void testAdd_mappingDefinedTwiceByColumn_throwsException() {
-		Table toto = new Table("Toto");
 		assertEquals("Mapping is already defined for column xyz",
 				assertThrows(MappingConfigurationException.class, () -> FluentEntityMappingConfigurationSupport.from(Toto.class, StatefullIdentifier.class)
 						.add(Toto::getName, "xyz")
@@ -542,7 +538,9 @@ public class FluentEntityMappingConfigurationSupportTest {
 	
 	protected static class Toto implements Identified<UUID> {
 		
-		private final Identifier<UUID> identifier;
+		private final Identifier<UUID> id;
+		
+		private Identifier<UUID> identifier;
 		
 		private String name;
 		
@@ -551,7 +549,7 @@ public class FluentEntityMappingConfigurationSupportTest {
 		private Timestamp timestamp;
 		
 		public Toto() {
-			identifier = new PersistableIdentifier<>(UUID.randomUUID());
+			id = new PersistableIdentifier<>(UUID.randomUUID());
 		}
 		
 		public String getName() {
@@ -570,6 +568,10 @@ public class FluentEntityMappingConfigurationSupportTest {
 			return identifier;
 		}
 		
+		public void setIdentifier(Identifier<UUID> id) {
+			this.identifier = id;
+		}
+		
 		public Long getNoMatchingField() {
 			return null;
 		}
@@ -586,7 +588,7 @@ public class FluentEntityMappingConfigurationSupportTest {
 		
 		@Override
 		public Identifier<UUID> getId() {
-			return identifier;
+			return id;
 		}
 		
 		public void setId(Identifier<UUID> id) {

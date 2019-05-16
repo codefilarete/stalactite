@@ -1,6 +1,6 @@
 package org.gama.stalactite.persistence.engine;
 
-import org.gama.reflection.PropertyAccessor;
+import org.gama.reflection.IReversibleAccessor;
 
 /**
  * @author Guillaume Mary
@@ -8,7 +8,7 @@ import org.gama.reflection.PropertyAccessor;
  */
 public interface VersioningStrategy<I, C> {
 	
-	PropertyAccessor<I, C> getVersionAccessor();
+	IReversibleAccessor<I, C> getVersionAccessor();
 	
 	C getVersion(I o);
 	

@@ -19,11 +19,15 @@ import org.gama.reflection.AccessorByMethodReference;
 import org.gama.reflection.AccessorChain;
 import org.gama.reflection.Accessors;
 import org.gama.reflection.IReversibleAccessor;
+import org.gama.reflection.MemberDefinition;
 import org.gama.reflection.MethodReferenceCapturer;
 import org.gama.reflection.MethodReferenceDispatcher;
 import org.gama.reflection.MutatorByMethod;
 import org.gama.reflection.MutatorByMethodReference;
 import org.gama.reflection.PropertyAccessor;
+import org.gama.reflection.ValueAccessPoint;
+import org.gama.reflection.ValueAccessPointByMethodReference;
+import org.gama.reflection.ValueAccessPointComparator;
 import org.gama.reflection.ValueAccessPointMap;
 import org.gama.reflection.ValueAccessPointSet;
 import org.gama.sql.binder.ParameterBinder;
@@ -147,58 +151,72 @@ public class FluentEmbeddableMappingConfigurationSupport<C> implements IFluentEm
 	
 	@Override
 	public <O> IFluentEmbeddableMappingBuilder<C> add(SerializableBiConsumer<C, O> setter) {
-		Method method = captureLambdaMethod(setter);
-		return add(method, null);
+		addMapping(setter, null);
+		return this;
 	}
 	
 	@Override
 	public <O> IFluentEmbeddableMappingBuilder<C> add(SerializableFunction<C, O> getter) {
-		Method method = captureLambdaMethod(getter);
-		return add(method, null);
+		addMapping(getter, null);
+		return this;
 	}
 	
 	@Override
 	public <O> IFluentEmbeddableMappingBuilder<C> add(SerializableBiConsumer<C, O> setter, String columnName) {
-		Method method = captureLambdaMethod(setter);
-		return add(method, columnName);
+		addMapping(setter, columnName);
+		return this;
 	}
 	
 	@Override
 	public <O> IFluentEmbeddableMappingBuilder<C> add(SerializableFunction<C, O> getter, String columnName) {
-		Method method = captureLambdaMethod(getter);
-		return add(method, columnName);
-	}
-	
-	private IFluentEmbeddableMappingBuilder<C> add(Method method, @Nullable String columnName) {
-		addMapping(method, columnName);
+		addMapping(getter, columnName);
 		return this;
 	}
 	
-	AbstractLinkage<C> addMapping(Method method, @Nullable String columnName) {
-		PropertyAccessor<Object, Object> propertyAccessor = Accessors.of(method);
+	<E> AbstractLinkage<C> addMapping(SerializableBiConsumer<C, E> setter, @Nullable String columnName) {
+		MutatorByMethodReference<C, E> mutatorByMethodReference = Accessors.mutatorByMethodReference(setter);
+		PropertyAccessor<C, E> propertyAccessor = new PropertyAccessor<>(
+				Accessors.accessor(mutatorByMethodReference.getDeclaringClass(), Reflections.propertyName(mutatorByMethodReference.getMethodName())),
+				mutatorByMethodReference
+		);
+		return addMapping(propertyAccessor, mutatorByMethodReference, columnName);
+	}
+	
+	<E> AbstractLinkage<C> addMapping(SerializableFunction<C, E> getter, @Nullable String columnName) {
+		AccessorByMethodReference<C, E> accessorByMethodReference = Accessors.accessorByMethodReference(getter);
+		PropertyAccessor<C, E> propertyAccessor = new PropertyAccessor<>(
+				accessorByMethodReference,
+				Accessors.mutator(accessorByMethodReference.getDeclaringClass(), Reflections.propertyName(accessorByMethodReference.getMethodName()), accessorByMethodReference.getPropertyType())
+		);
+		return addMapping(propertyAccessor, accessorByMethodReference, columnName);
+	}
+	
+	AbstractLinkage<C> addMapping(PropertyAccessor<C, ?> propertyAccessor, ValueAccessPointByMethodReference accessPoint, @Nullable String columnName) {
 		assertMappingIsNotAlreadyDefined(columnName, propertyAccessor);
 		String linkName = columnName;
 		if (columnName == null) {
-			linkName = giveLinkName(method);
+			MemberDefinition memberDefinition = new MemberDefinition(accessPoint.getDeclaringClass(), accessPoint.getMethodName(), accessPoint.getPropertyType());
+			linkName = giveLinkName(memberDefinition);
 		}
-		AbstractLinkage<C> linkage = newLinkage(method, linkName);
+		AbstractLinkage<C> linkage = newLinkage(propertyAccessor, accessPoint.getPropertyType(), linkName);
 		this.mapping.add(linkage);
 		return linkage;
 	}
 	
-	protected String giveLinkName(Method method) {
-		return columnNamingStrategy.giveName(method);
+	protected String giveLinkName(MemberDefinition memberDefinition) {
+		return columnNamingStrategy.giveName(memberDefinition);
 	}
 	
-	protected LinkageByColumnName<C> newLinkage(Method method, String linkName) {
-		return new LinkageByColumnName<>(method, linkName);
+	protected <O> LinkageByColumnName<C> newLinkage(IReversibleAccessor<C, O> accessor, Class<O> returnType, String linkName) {
+		return new LinkageByColumnName<>(accessor, returnType, linkName);
 	}
 	
-	protected void assertMappingIsNotAlreadyDefined(String columnName, PropertyAccessor propertyAccessor) {
+	protected void assertMappingIsNotAlreadyDefined(String columnName, ValueAccessPoint propertyAccessor) {
+		ValueAccessPointComparator valueAccessPointComparator = new ValueAccessPointComparator();
 		Predicate<Linkage> checker = ((Predicate<Linkage>) linkage -> {
-			PropertyAccessor<C, ?> accessor = linkage.getAccessor();
-			if (accessor.equals(propertyAccessor)) {
-				throw new MappingConfigurationException("Mapping is already defined by method " + accessor.getAccessor());
+			IReversibleAccessor accessor = linkage.getAccessor();
+			if (valueAccessPointComparator.compare(accessor, propertyAccessor) == 0) {
+				throw new MappingConfigurationException("Mapping is already defined by method " + MemberDefinition.toString(accessor));
 			}
 			return true;
 		}).and(linkage -> {
@@ -212,30 +230,25 @@ public class FluentEmbeddableMappingConfigurationSupport<C> implements IFluentEm
 	
 	@Override
 	public <E extends Enum<E>> IFluentEmbeddableMappingBuilderEnumOptions<C> addEnum(SerializableBiConsumer<C, E> setter) {
-		Method method = captureLambdaMethod(setter);
-		return addEnum(method, null);
+		AbstractLinkage<C> linkage = addMapping(setter, null);
+		return addEnumOptions(linkage);
 	}
 	
 	@Override
 	public <E extends Enum<E>> IFluentEmbeddableMappingBuilderEnumOptions<C> addEnum(SerializableFunction<C, E> getter) {
-		Method method = captureLambdaMethod(getter);
-		return addEnum(method, null);
+		AbstractLinkage<C> linkage = addMapping(getter, null);
+		return addEnumOptions(linkage);
 	}
 	
 	@Override
 	public <E extends Enum<E>> IFluentEmbeddableMappingBuilderEnumOptions<C> addEnum(SerializableBiConsumer<C, E> setter, String columnName) {
-		Method method = captureLambdaMethod(setter);
-		return addEnum(method, columnName);
+		AbstractLinkage<C> linkage = addMapping(setter, columnName);
+		return addEnumOptions(linkage);
 	}
 	
 	@Override
 	public <E extends Enum<E>> IFluentEmbeddableMappingBuilderEnumOptions<C> addEnum(SerializableFunction<C, E> getter, String columnName) {
-		Method method = captureLambdaMethod(getter);
-		return addEnum(method, columnName);
-	}
-	
-	IFluentEmbeddableMappingBuilderEnumOptions<C> addEnum(Method method, @Nullable String columnName) {
-		AbstractLinkage<C> linkage = addMapping(method, columnName);
+		AbstractLinkage<C> linkage = addMapping(getter, columnName);
 		return addEnumOptions(linkage);
 	}
 	
@@ -423,26 +436,26 @@ public class FluentEmbeddableMappingConfigurationSupport<C> implements IFluentEm
 	 */
 	static class LinkageByColumnName<T> extends AbstractLinkage<T> {
 		
-		private final PropertyAccessor function;
+		private final IReversibleAccessor<T, ?> function;
 		private final Class<?> columnType;
 		/** Column name override if not default */
 		private final String columnName;
 		
 		/**
-		 * Constructor by {@link Method}. Only accessor by method is implemented (since input is from method reference).
-		 * (Doing it for field accessor is simple work but not necessary)
+		 * Constructor by {@link IReversibleAccessor}
 		 *
-		 * @param method a {@link PropertyAccessor}
+		 * @param accessor a {@link IReversibleAccessor}
+		 * @param columnType the Java type of the column, will be converted to sql type thanks to {@link org.gama.stalactite.persistence.sql.ddl.JavaTypeToSqlTypeMapping}
 		 * @param columnName an override of the default name that will be generated
 		 */
-		LinkageByColumnName(Method method, String columnName) {
-			this.function = Accessors.of(method);
-			this.columnType = Reflections.propertyType(method);
+		<O> LinkageByColumnName(IReversibleAccessor<T, O> accessor, Class<O> columnType, String columnName) {
+			this.function = accessor;
+			this.columnType = columnType;
 			this.columnName = columnName;
 		}
 		
-		public <I> PropertyAccessor<T, I> getAccessor() {
-			return function;
+		public <O> IReversibleAccessor<T, O> getAccessor() {
+			return (IReversibleAccessor<T, O>) function;
 		}
 		
 		public String getColumnName() {

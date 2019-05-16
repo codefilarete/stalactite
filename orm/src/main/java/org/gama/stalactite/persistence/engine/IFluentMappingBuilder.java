@@ -31,6 +31,8 @@ public interface IFluentMappingBuilder<C, I> extends IFluentEmbeddableMappingCon
 	
 	<O> IFluentMappingBuilderColumnOptions<C, I> add(SerializableFunction<C, O> getter, String columnName);
 	
+	<O> IFluentMappingBuilderColumnOptions<C, I> add(SerializableBiConsumer<C, O> getter, Column<Table, O> column);
+	
 	<O> IFluentMappingBuilderColumnOptions<C, I> add(SerializableFunction<C, O> getter, Column<Table, O> column);
 	
 	<E extends Enum<E>> IFluentMappingBuilderEnumOptions<C, I> addEnum(SerializableBiConsumer<C, E> setter);
@@ -40,6 +42,8 @@ public interface IFluentMappingBuilder<C, I> extends IFluentEmbeddableMappingCon
 	<E extends Enum<E>> IFluentMappingBuilderEnumOptions<C, I> addEnum(SerializableBiConsumer<C, E> setter, String columnName);
 	
 	<E extends Enum<E>> IFluentMappingBuilderEnumOptions<C, I> addEnum(SerializableFunction<C, E> getter, String columnName);
+	
+	<E extends Enum<E>> IFluentMappingBuilderEnumOptions<C, I> addEnum(SerializableBiConsumer<C, E> getter, Column<Table, E> column);
 	
 	<E extends Enum<E>> IFluentMappingBuilderEnumOptions<C, I> addEnum(SerializableFunction<C, E> getter, Column<Table, E> column);
 	
@@ -65,14 +69,12 @@ public interface IFluentMappingBuilder<C, I> extends IFluentEmbeddableMappingCon
 	 * Declares a direct relationship between current entity and some of type {@code O}.
 	 * 
 	 * @param getter the way to get the target entity
-	 * @param persister the persister of the target entity
+	 * @param mappingConfiguration the mapping configuration of the target entity
 	 * @param <O> type of target entity
 	 * @param <J> type of identifier of {@code O}
 	 * @return a enhanced version of {@code this} so one can add options to the relationship or add mapping to {@code this}
 	 */
-	<O, J>
-	IFluentMappingBuilderOneToOneOptions<C, I>
-	addOneToOne(SerializableFunction<C, O> getter, Persister<O, J, ? extends Table> persister);
+	<O, J> IFluentMappingBuilderOneToOneOptions<C, I> addOneToOne(SerializableFunction<C, O> getter, EntityMappingConfiguration<O, J> mappingConfiguration);
 	
 	/**
 	 * Declares a relationship between current entity and some of type {@code O} throught a {@link Set}.
@@ -167,7 +169,7 @@ public interface IFluentMappingBuilder<C, I> extends IFluentEmbeddableMappingCon
 		 * @return the global mapping configurer
 		 */
 		@Override
-		IFluentMappingBuilderOneToOneOptions<C, I> mappedBy(Column<Table, C> reverseLink);
+		<T extends Table> IFluentMappingBuilderOneToOneOptions<C, I> mappedBy(Column<T, C> reverseLink);
 	}
 	
 	interface IFluentMappingBuilderOneToManyOptions<T, I, O> extends IFluentMappingBuilder<T, I>, OneToManyOptions<T, I, O> {

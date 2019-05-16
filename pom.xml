@@ -38,6 +38,13 @@
 			<version>${junit.version}</version>
 			<scope>test</scope>
 		</dependency>
+		<dependency>
+			<groupId>org.gama</groupId>
+			<artifactId>tools</artifactId>
+			<type>test-jar</type>
+			<version>1.0-SNAPSHOT</version>
+			<scope>test</scope>
+		</dependency>
 	</dependencies>
 	
 	<build>

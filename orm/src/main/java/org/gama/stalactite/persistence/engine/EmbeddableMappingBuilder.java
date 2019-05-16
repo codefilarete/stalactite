@@ -43,10 +43,10 @@ import org.gama.reflection.ValueAccessPointComparator;
 import org.gama.reflection.ValueAccessPointMap;
 import org.gama.reflection.ValueAccessPointSet;
 import org.gama.sql.dml.SQLStatement.BindingException;
+import org.gama.stalactite.persistence.engine.EmbeddableMappingConfiguration.Linkage;
 import org.gama.stalactite.persistence.engine.FluentEmbeddableMappingConfigurationSupport.AbstractInset;
 import org.gama.stalactite.persistence.engine.FluentEmbeddableMappingConfigurationSupport.ImportedInset;
 import org.gama.stalactite.persistence.engine.FluentEmbeddableMappingConfigurationSupport.Inset;
-import org.gama.stalactite.persistence.engine.EmbeddableMappingConfiguration.Linkage;
 import org.gama.stalactite.persistence.engine.IFluentEmbeddableMappingConfiguration.IFluentEmbeddableMappingConfigurationEmbedOptions;
 import org.gama.stalactite.persistence.mapping.EmbeddedBeanMappingStrategy;
 import org.gama.stalactite.persistence.mapping.IMappingStrategy;
@@ -267,7 +267,11 @@ class EmbeddableMappingBuilder<C> {
 					Column targetColumn = findColumn(valueAccessPoint, memberDefinition.getName(), columnsPerName, refinedInset);
 					if (targetColumn == null) {
 						// Column isn't declared in table => we create one from field informations
-						String columnName = mappingConfiguration.getColumnNamingStrategy().giveName(valueAccessPoint.getMethod());
+						String columnName = mappingConfiguration.getColumnNamingStrategy().giveName(new MemberDefinition(
+								valueAccessPoint.getMethod().getDeclaringClass(),
+								valueAccessPoint.getMethod().getName(),
+								Reflections.onJavaBeanPropertyWrapperName(valueAccessPoint.getMethod(), Method::getReturnType, method -> method.getParameterTypes()[0], Method::getReturnType)
+						));
 						String overridenName = overridenColumnNames.get(valueAccessPoint);
 						if (overridenName != null) {
 							columnName = overridenName;
@@ -285,7 +289,7 @@ class EmbeddableMappingBuilder<C> {
 							String currentMethodReference = toMethodReferenceString(currentMethod);
 							throw new MappingConfigurationException("Error while mapping "
 									+ currentMethodReference + " : " + memberDefinition.toString()
-									+ " conflicts with " + existingMapping.get().getKey() + " because they use same column" +
+									+ " conflicts with " + MemberDefinition.toString(existingMapping.get().getKey()) + " because they use same column" +
 									", override one of their name to avoid the conflict" +
 									", see " + MethodReferences.toMethodReferenceString(
 									(SerializableTriFunction<EmbedOptions, SerializableFunction, String, EmbedOptions>) EmbedOptions::overrideName));
@@ -347,7 +351,7 @@ class EmbeddableMappingBuilder<C> {
 						AccessorByMethod::new,
 						MutatorByMethod::new,
 						AccessorByMethod::new,
-						() -> null /* non Java Bean naming convention compliant method */))
+						method -> null /* non Java Bean naming convention compliant method */))
 				.filter(java.util.Objects::nonNull)
 				.filter(innerEmbeddableExcluder.and(excludedFieldsExcluder));
 	}
@@ -374,7 +378,7 @@ class EmbeddableMappingBuilder<C> {
 							AccessorByMethod::new,
 							MutatorByMethod::new,
 							AccessorByMethod::new,
-							() -> null);
+							method -> null);
 					if (o != null) {
 						expectedOverridenFields.add(o);
 					}

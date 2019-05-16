@@ -4,7 +4,6 @@ import java.util.Date;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-import org.gama.lang.Reflections;
 import org.gama.lang.collection.Arrays;
 import org.gama.lang.collection.Maps;
 import org.gama.reflection.AccessorChain;
@@ -118,7 +117,7 @@ class FluentEmbeddableMappingConfigurationSupportTest {
 	@Test
 	void testAdd_mappingDefinedTwiceByMethod_throwsException() throws NoSuchMethodException {
 		Table<?> countryTable = new Table<>("countryTable");
-		assertEquals("Mapping is already defined by method " + Reflections.toString(Country.class.getMethod("getName")),
+		assertEquals("Mapping is already defined by method Country::getName",
 				assertThrows(MappingConfigurationException.class, () -> FluentEmbeddableMappingConfigurationSupport.from(Country.class)
 						.add(Country::getName)
 						.add(Country::setName)
@@ -566,7 +565,7 @@ class FluentEmbeddableMappingConfigurationSupportTest {
 		MappingConfigurationException thrownException = assertThrows(MappingConfigurationException.class,
 				() -> mappingBuilder.build(DIALECT, countryTable));
 		assertEquals("Error while mapping Country::getPresident : o.g.s.p.e.m.Person.name" +
-				" conflicts with j.l.String o.g.s.p.e.m.Country.getName() because they use same column," +
+				" conflicts with Country::getName because they use same column," +
 				" override one of their name to avoid the conflict, see EmbedOptions::overrideName", thrownException.getMessage());
 	}
 	
@@ -677,8 +676,8 @@ class FluentEmbeddableMappingConfigurationSupportTest {
 		MappingConfigurationException thrownException = assertThrows(MappingConfigurationException.class, () ->
 				entityMappingBuilder.build(DIALECT, countryTable));
 		assertEquals("Some embedded columns conflict with entity ones on their name, please override it or change it :" + System.lineSeparator() 
-						+ "Embeddable definition 'j.l.String o.g.s.p.e.m.Person.getName()'" 
-						+ " vs entity definition 'j.l.String o.g.s.p.e.m.Country.getName()' on column name 'name'",
+						+ "Embeddable definition 'Person::getName'" 
+						+ " vs entity definition 'Country::getName' on column name 'name'",
 				thrownException.getMessage());
 	}
 	
@@ -696,8 +695,8 @@ class FluentEmbeddableMappingConfigurationSupportTest {
 		MappingConfigurationException thrownException = assertThrows(MappingConfigurationException.class, () ->
 				entityMappingBuilder.build(DIALECT, countryTable));
 		assertEquals("Some embedded columns conflict with entity ones on their name, please override it or change it :" + System.lineSeparator() 
-						+ "Embeddable definition 'j.l.String o.g.s.p.e.m.Person.getName()'" 
-						+ " vs entity definition 'j.l.String o.g.s.p.e.m.Country.getName()' on column name 'myName'",
+						+ "Embeddable definition 'Person::getName'" 
+						+ " vs entity definition 'Country::getName' on column name 'myName'",
 				thrownException.getMessage());
 	}
 	
@@ -715,8 +714,8 @@ class FluentEmbeddableMappingConfigurationSupportTest {
 		MappingConfigurationException thrownException = assertThrows(MappingConfigurationException.class, () ->
 				entityMappingBuilder.build(DIALECT, countryTable));
 		assertEquals("Some embedded columns conflict with entity ones on their name, please override it or change it :" + System.lineSeparator()
-						+ "Embeddable definition 'j.l.String o.g.s.p.e.m.Person.getName()'" 
-						+ " vs entity definition 'j.l.String o.g.s.p.e.FluentEmbeddableMappingConfigurationSupportTest$MyCountry.getMyName()' on column name 'myName'",
+						+ "Embeddable definition 'Person::getName'" 
+						+ " vs entity definition 'MyCountry::getMyName' on column name 'myName'",
 				thrownException.getMessage());
 	}
 	
@@ -734,8 +733,8 @@ class FluentEmbeddableMappingConfigurationSupportTest {
 		MappingConfigurationException thrownException = assertThrows(MappingConfigurationException.class, () ->
 				entityMappingBuilder.build(DIALECT, countryTable));
 		assertEquals("Some embedded columns conflict with entity ones on their name, please override it or change it :" + System.lineSeparator() 
-						+ "Embeddable definition 'j.l.String o.g.s.p.e.FluentEmbeddableMappingConfigurationSupportTest$MyPerson.getMyName()' vs entity definition" 
-						+ " 'j.l.String o.g.s.p.e.m.Country.getName()' on column name 'myName'",
+						+ "Embeddable definition 'MyPerson::getMyName' vs entity definition" 
+						+ " 'Country::getName' on column name 'myName'",
 				thrownException.getMessage());
 	}
 	

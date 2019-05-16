@@ -9,8 +9,7 @@ import org.gama.stalactite.persistence.structure.Table;
 /**
  * @author Guillaume Mary
  */
-public interface OneToOneOptions<C, I>
-		extends CascadeOptions<IFluentMappingBuilderOneToOneOptions<C, I>> {
+public interface OneToOneOptions<C, I> extends CascadeOptions<IFluentMappingBuilderOneToOneOptions<C, I>> {
 	
 	/** Marks the relation as mandatory. Hence joins will be inner ones and a checking for non null value will be done before insert and update */
 	IFluentMappingBuilderOneToOneOptions<C, I> mandatory();
@@ -52,5 +51,5 @@ public interface OneToOneOptions<C, I>
 	 * @param reverseLink opposite owner of the relation
 	 * @return the global mapping configurer
 	 */
-	IFluentMappingBuilderOneToOneOptions<C, I> mappedBy(Column<Table, C> reverseLink);
+	<T extends Table> IFluentMappingBuilderOneToOneOptions<C, I> mappedBy(Column<T, C> reverseLink);
 }

@@ -1,6 +1,8 @@
 package org.gama.stalactite.persistence.engine;
 
 import org.gama.lang.function.Serie;
+import org.gama.reflection.IMutator;
+import org.gama.reflection.IReversibleAccessor;
 import org.gama.reflection.PropertyAccessor;
 
 /**
@@ -13,14 +15,17 @@ import org.gama.reflection.PropertyAccessor;
  */
 public abstract class AbstractVersioningStrategy<I, C> implements VersioningStrategy<I, C>, Serie<C> {
 	
-	private final PropertyAccessor<I, C> versionAccessor;
+	private final IReversibleAccessor<I, C> versionAccessor;
+	/** {@link IMutator} took from {@link #versionAccessor} to prevent to ask for it at every upgrade because the toMutator() may be costy */
+	private final IMutator<I, C> versionMutator;
 	
-	public AbstractVersioningStrategy(PropertyAccessor<I, C> versioningAttributeAccessor) {
+	public AbstractVersioningStrategy(IReversibleAccessor<I, C> versioningAttributeAccessor) {
 		this.versionAccessor = versioningAttributeAccessor;
+		this.versionMutator = versionAccessor.toMutator();
 	}
 	
 	@Override
-	public PropertyAccessor<I, C> getVersionAccessor() {
+	public IReversibleAccessor<I, C> getVersionAccessor() {
 		return versionAccessor;
 	}
 	
@@ -33,14 +38,14 @@ public abstract class AbstractVersioningStrategy<I, C> implements VersioningStra
 	public C upgrade(I o) {
 		C currentVersion = getVersion(o);
 		C nextVersion = next(currentVersion);
-		versionAccessor.set(o, nextVersion);
+		versionMutator.set(o, nextVersion);
 		return currentVersion;
 	}
 	
 	@Override
 	public C revert(I o, C previousValue) {
 		C currentVersion = getVersion(o);
-		versionAccessor.set(o, previousValue);
+		versionMutator.set(o, previousValue);
 		return currentVersion;
 	}
 	

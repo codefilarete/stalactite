@@ -15,6 +15,7 @@ import org.gama.reflection.MethodReferenceCapturer;
 import org.gama.reflection.MutatorByMember;
 import org.gama.reflection.MutatorByMethod;
 import org.gama.reflection.PropertyAccessor;
+import org.gama.reflection.ValueAccessPointMap;
 import org.gama.stalactite.persistence.engine.CascadeOptions.RelationshipMode;
 import org.gama.stalactite.persistence.engine.builder.CascadeMany;
 import org.gama.stalactite.persistence.engine.builder.CascadeManyList;
@@ -249,7 +250,11 @@ public class CascadeManyConfigurer<SRC, TRGT, SRCID, TRGTID, C extends Collectio
 					getterSignature = Reflections.toString(reverseMethod);
 				}
 				PropertyAccessor<TRGT, SRC> reversePropertyAccessor = of(reverseMethod);
-				foreignKey = manyAssociationConfiguration.targetPersister.getMappingStrategy().getMainMappingStrategy().getPropertyToColumn().get(reversePropertyAccessor);
+				// Since reverse property accessor may not be declared the same way that it is present in ClassMappingStrategy
+				// we must use a ValueAccessPointMap which allows to compare different ValueAccessPoints
+				ValueAccessPointMap<? extends Column<?, Object>> accessPointMap =
+						new ValueAccessPointMap<>(manyAssociationConfiguration.targetPersister.getMappingStrategy().getMainMappingStrategy().getPropertyToColumn());
+				foreignKey = accessPointMap.get(reversePropertyAccessor);
 				if (foreignKey == null) {
 					// This should not happen, left for bug safety
 					throw new NotYetSupportedOperationException("Can't build a relation with on a non mapped property, please add the mapping of a "

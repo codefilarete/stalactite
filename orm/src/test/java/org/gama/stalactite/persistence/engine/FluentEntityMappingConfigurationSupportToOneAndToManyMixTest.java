@@ -45,6 +45,8 @@ public class FluentEntityMappingConfigurationSupportToOneAndToManyMixTest {
 	private Persister<Person, Identifier<Long>, ?> personPersister;
 	private Persister<City, Identifier<Long>, ?> cityPersister;
 	private PersistenceContext persistenceContext;
+	private EntityMappingConfiguration<City, Identifier<Long>> cityMappingConfiguration;
+	private EntityMappingConfiguration<Person, Identifier<Long>> personMappingConfiguration;
 	
 	@BeforeAll
 	public static void initBinders() {
@@ -63,6 +65,7 @@ public class FluentEntityMappingConfigurationSupportToOneAndToManyMixTest {
 				Identifier.LONG_TYPE)
 				.add(Person::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.add(Person::getName);
+		personMappingConfiguration = personMappingBuilder.getConfiguration();
 		personPersister = personMappingBuilder.build(persistenceContext);
 		
 		IFluentMappingBuilderColumnOptions<City, Identifier<Long>> cityMappingBuilder = FluentEntityMappingConfigurationSupport.from(City.class,
@@ -70,6 +73,7 @@ public class FluentEntityMappingConfigurationSupportToOneAndToManyMixTest {
 				.add(City::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.add(City::getName)
 				.add(City::getCountry);
+		cityMappingConfiguration = cityMappingBuilder.getConfiguration();
 		cityPersister = cityMappingBuilder.build(persistenceContext);
 	}
 	
@@ -83,7 +87,7 @@ public class FluentEntityMappingConfigurationSupportToOneAndToManyMixTest {
 				.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.add(Country::getName)
 				.add(Country::getDescription)
-				.addOneToOne(Country::getPresident, personPersister)
+				.addOneToOne(Country::getPresident, personMappingConfiguration)
 				.addOneToManySet(Country::getCities, cityPersister).mappedBy(City::setCountry).cascading(RelationshipMode.READ_ONLY)
 				.build(persistenceContext);
 		
@@ -128,7 +132,7 @@ public class FluentEntityMappingConfigurationSupportToOneAndToManyMixTest {
 		Persister<Country, Identifier<Long>, ?> countryPersister = FluentEntityMappingConfigurationSupport.from(Country.class, Identifier.LONG_TYPE)
 				.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.add(Country::getName)
-				.addOneToOne(Country::getPresident, personPersister).cascading(ALL)
+				.addOneToOne(Country::getPresident, personMappingConfiguration).cascading(ALL)
 				.addOneToManySet(Country::getCities, cityPersister).cascading(ALL)
 				.build(persistenceContext);
 		

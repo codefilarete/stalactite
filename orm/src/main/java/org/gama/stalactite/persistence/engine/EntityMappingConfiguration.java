@@ -17,6 +17,8 @@ public interface EntityMappingConfiguration<C, I> {
 	
 	Class<C> getPersistedClass();
 	
+	TableNamingStrategy getTableNamingStrategy();
+	
 	IReversibleAccessor getIdentifierAccessor();
 	
 	IdentifierInsertionManager<C, I> getIdentifierInsertionManager();

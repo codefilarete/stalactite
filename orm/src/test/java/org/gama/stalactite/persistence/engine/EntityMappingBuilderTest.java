@@ -42,7 +42,7 @@ class EntityMappingBuilderTest {
 		MappingConfigurationException thrownException = assertThrows(MappingConfigurationException.class, () ->
 			testInstance.build(new PersistenceContext(mock(ConnectionProvider.class), dialect), targetTable)
 		);
-		assertEquals("Column specified for mapping o.g.s.p.e.m.Gender o.g.s.p.e.m.PersonWithGender.getGender() is not in target table : column xx.aa is not in table person",
+		assertEquals("Column specified for mapping PersonWithGender::getGender is not in target table : column xx.aa is not in table person",
 				thrownException.getMessage());
 	}
 }
