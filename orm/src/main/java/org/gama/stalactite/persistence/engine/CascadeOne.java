@@ -18,7 +18,7 @@ public class CascadeOne<SRC, TRGT, TRGTID> {
 	/** Configuration used for target beans persistence */
 	private final EntityMappingConfiguration<TRGT, TRGTID> targetMappingConfiguration;
 	
-	private Table targetTable;
+	private final Table targetTable;
 	
 	private boolean nullable = true;
 	
@@ -32,9 +32,10 @@ public class CascadeOne<SRC, TRGT, TRGTID> {
 	
 	private RelationshipMode relationshipMode = RelationshipMode.READ_ONLY;
 	
-	CascadeOne(IReversibleAccessor<SRC, TRGT> targetProvider, EntityMappingConfiguration<TRGT, TRGTID> targetMappingConfiguration) {
+	<T extends Table> CascadeOne(IReversibleAccessor<SRC, TRGT> targetProvider, EntityMappingConfiguration<TRGT, TRGTID> targetMappingConfiguration, T table) {
 		this.targetMappingConfiguration = targetMappingConfiguration;
 		this.targetAccessor = targetProvider;
+		this.targetTable = table;
 	}
 	
 	/** Original method reference given for mapping */
@@ -49,10 +50,6 @@ public class CascadeOne<SRC, TRGT, TRGTID> {
 	
 	public Table getTargetTable() {
 		return this.targetTable;
-	}
-	
-	public void setTargetTable(Table targetTable) {
-		this.targetTable = targetTable;
 	}
 	
 	/** Nullable option, mainly for column join and DDL schema generation */

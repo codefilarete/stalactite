@@ -9,10 +9,10 @@ import org.gama.stalactite.persistence.structure.Table;
 /**
  * @author Guillaume Mary
  */
-public interface OneToOneOptions<C, I> extends CascadeOptions<IFluentMappingBuilderOneToOneOptions<C, I>> {
+public interface OneToOneOptions<C, I, T extends Table> extends CascadeOptions<IFluentMappingBuilderOneToOneOptions<C, I, T>> {
 	
 	/** Marks the relation as mandatory. Hence joins will be inner ones and a checking for non null value will be done before insert and update */
-	IFluentMappingBuilderOneToOneOptions<C, I> mandatory();
+	IFluentMappingBuilderOneToOneOptions<C, I, T> mandatory();
 	
 	/**
 	 * Defines the bidirectional relationship.
@@ -25,7 +25,7 @@ public interface OneToOneOptions<C, I> extends CascadeOptions<IFluentMappingBuil
 	 * @param <O> owner type
 	 * @return the global mapping configurer
 	 */
-	<O> IFluentMappingBuilderOneToOneOptions<C, I> mappedBy(SerializableBiConsumer<O, C> reverseLink);
+	<O> IFluentMappingBuilderOneToOneOptions<C, I, T> mappedBy(SerializableBiConsumer<O, C> reverseLink);
 	
 	/**
 	 * Defines the bidirectional relationship.
@@ -38,7 +38,7 @@ public interface OneToOneOptions<C, I> extends CascadeOptions<IFluentMappingBuil
 	 * @param <O> owner type
 	 * @return the global mapping configurer
 	 */
-	<O> IFluentMappingBuilderOneToOneOptions<C, I> mappedBy(SerializableFunction<O, C> reverseLink);
+	<O> IFluentMappingBuilderOneToOneOptions<C, I, T> mappedBy(SerializableFunction<O, C> reverseLink);
 	
 	/**
 	 * Defines reverse side owner.
@@ -51,5 +51,5 @@ public interface OneToOneOptions<C, I> extends CascadeOptions<IFluentMappingBuil
 	 * @param reverseLink opposite owner of the relation
 	 * @return the global mapping configurer
 	 */
-	<T extends Table> IFluentMappingBuilderOneToOneOptions<C, I> mappedBy(Column<T, C> reverseLink);
+	IFluentMappingBuilderOneToOneOptions<C, I, T> mappedBy(Column<T, C> reverseLink);
 }

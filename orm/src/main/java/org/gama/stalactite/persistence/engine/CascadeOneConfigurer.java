@@ -102,7 +102,8 @@ public class CascadeOneConfigurer<SRC, TRGT, ID> {
 			EntityMappingConfiguration<TRGT, ID> targetMappingConfiguration = cascadeOne.getTargetMappingConfiguration();
 			
 			Persister<TRGT, ID, Table> targetPersister = new EntityMappingBuilder<>(targetMappingConfiguration, new MethodReferenceCapturer())
-					.build(persistenceContext, Nullable.nullable(cascadeOne.getReverseColumn()).apply(Column::getTable).get());
+					.build(persistenceContext, Nullable.nullable(cascadeOne.getTargetTable()).orGet(Nullable.nullable(cascadeOne.getReverseColumn()).apply(Column::getTable).get()));
+//					.build(persistenceContext, Nullable.nullable(cascadeOne.getReverseColumn()).apply(Column::getTable).get());
 			ClassMappingStrategy<TRGT, ID, Table> targetMappingStrategy = targetPersister.getMappingStrategy();
 			
 			// Finding joined columns

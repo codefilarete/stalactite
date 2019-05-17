@@ -88,7 +88,7 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 	
 	@Test
 	public void cascade_associationOnly_throwsException() {
-		IFluentMappingBuilderOneToOneOptions<Country, Identifier<Long>> mappingBuilder = FluentEntityMappingConfigurationSupport.from(Country.class, Identifier.LONG_TYPE)
+		IFluentMappingBuilderOneToOneOptions<Country, Identifier<Long>, ?> mappingBuilder = FluentEntityMappingConfigurationSupport.from(Country.class, Identifier.LONG_TYPE)
 				.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.add(Country::getName)
 				.add(Country::getDescription)
@@ -337,7 +337,7 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 				.add(City::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.add(City::getName);
 		Table<?> cityTable = new Table("city");
-		Column<?, Country> stateColumn = cityTable.addColumn("state", Country.class);
+		Column<Table, Country> stateColumn = (Column<Table, Country>) cityTable.addColumn("state", Country.class);
 		
 		Persister<Country, Identifier<Long>, Table> countryPersister = FluentEntityMappingConfigurationSupport.from(Country.class, Identifier.LONG_TYPE)
 				// setting a foreign key naming strategy to be tested

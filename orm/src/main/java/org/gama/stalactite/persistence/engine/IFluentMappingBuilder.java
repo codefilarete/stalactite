@@ -74,10 +74,22 @@ public interface IFluentMappingBuilder<C, I> extends IFluentEmbeddableMappingCon
 	 * @param <J> type of identifier of {@code O}
 	 * @return a enhanced version of {@code this} so one can add options to the relationship or add mapping to {@code this}
 	 */
-	<O, J> IFluentMappingBuilderOneToOneOptions<C, I> addOneToOne(SerializableFunction<C, O> getter, EntityMappingConfiguration<O, J> mappingConfiguration);
+	<O, J, T extends Table> IFluentMappingBuilderOneToOneOptions<C, I, T> addOneToOne(SerializableFunction<C, O> getter, EntityMappingConfiguration<O, J> mappingConfiguration);
 	
 	/**
-	 * Declares a relationship between current entity and some of type {@code O} throught a {@link Set}.
+	 * Declares a direct relation between current entity and some of type {@code O}.
+	 *
+	 * @param getter the way to get the target entity
+	 * @param mappingConfiguration the mapping configuration of the target entity
+	 * @param table target table of the mapped configuration
+	 * @param <O> type of target entity
+	 * @param <J> type of identifier of {@code O}
+	 * @return a enhanced version of {@code this} so one can add options to the relation or add mapping to {@code this}
+	 */
+	<O, J, T extends Table> IFluentMappingBuilderOneToOneOptions<C, I, T> addOneToOne(SerializableFunction<C, O> getter, EntityMappingConfiguration<O, J> mappingConfiguration, T table);
+	
+	/**
+	 * Declares a relation between current entity and some of type {@code O} throught a {@link Set}.
 	 * This method is dedicated to {@link Set} because generic types are erased so you can't defined a generic type extending {@link Set} and refine
 	 * return type or arguments in order to distinct it from a {@link List} version.
 	 *
@@ -86,7 +98,7 @@ public interface IFluentMappingBuilder<C, I> extends IFluentEmbeddableMappingCon
 	 * @param <O> type of {@link Set} element
 	 * @param <J> type of identifier of {@code O}
 	 * @param <S> refined {@link Set} type
-	 * @return a enhanced version of {@code this} so one can add set options to the relationship or add mapping to {@code this}
+	 * @return a enhanced version of {@code this} so one can add set options to the relation or add mapping to {@code this}
 	 * @see #addOneToManyList(SerializableFunction, Persister)
 	 */
 	<O, J, S extends Set<O>>
@@ -94,7 +106,7 @@ public interface IFluentMappingBuilder<C, I> extends IFluentEmbeddableMappingCon
 	addOneToManySet(SerializableFunction<C, S> getter, Persister<O, J, ? extends Table> persister);
 	
 	/**
-	 * Declares a relationship between current entity and some of type {@code O} throught a {@link List}.
+	 * Declares a relation between current entity and some of type {@code O} throught a {@link List}.
 	 * This method is dedicated to {@link List} because generic types are erased so you can't defined a generic type extending {@link List} and refine
 	 * return type or arguments in order to distinct it from a {@link Set} version.
 	 * 
@@ -103,7 +115,7 @@ public interface IFluentMappingBuilder<C, I> extends IFluentEmbeddableMappingCon
 	 * @param <O> type of {@link List} element
 	 * @param <J> type of identifier of {@code O} (target entities)
 	 * @param <S> refined {@link List} type
-	 * @return a enhanced version of {@code this} so one can add set options to the relationship or add mapping to {@code this}
+	 * @return a enhanced version of {@code this} so one can add set options to the relation or add mapping to {@code this}
 	 * @see #addOneToManySet(SerializableFunction, Persister)
 	 */
 	<O, J, S extends List<O>>
@@ -137,7 +149,7 @@ public interface IFluentMappingBuilder<C, I> extends IFluentEmbeddableMappingCon
 	interface IFluentMappingBuilderColumnOptions<T, I> extends IFluentMappingBuilder<T, I>, ColumnOptions<T, I> {
 	}
 	
-	interface IFluentMappingBuilderOneToOneOptions<C, I> extends IFluentMappingBuilder<C, I>, OneToOneOptions<C, I> {
+	interface IFluentMappingBuilderOneToOneOptions<C, I, T extends Table> extends IFluentMappingBuilder<C, I>, OneToOneOptions<C, I, T> {
 		
 		/**
 		 * {@inheritDoc}
@@ -148,7 +160,7 @@ public interface IFluentMappingBuilder<C, I> extends IFluentEmbeddableMappingCon
 		 * @return the global mapping configurer
 		 */
 		@Override
-		<O> IFluentMappingBuilderOneToOneOptions<C, I> mappedBy(SerializableBiConsumer<O, C> reverseLink);
+		<O> IFluentMappingBuilderOneToOneOptions<C, I, T> mappedBy(SerializableBiConsumer<O, C> reverseLink);
 		
 		/**
 		 * {@inheritDoc}
@@ -159,7 +171,7 @@ public interface IFluentMappingBuilder<C, I> extends IFluentEmbeddableMappingCon
 		 * @return the global mapping configurer
 		 */
 		@Override
-		<O> IFluentMappingBuilderOneToOneOptions<C, I> mappedBy(SerializableFunction<O, C> reverseLink);
+		<O> IFluentMappingBuilderOneToOneOptions<C, I, T> mappedBy(SerializableFunction<O, C> reverseLink);
 		
 		/**
 		 * {@inheritDoc}
@@ -169,14 +181,14 @@ public interface IFluentMappingBuilder<C, I> extends IFluentEmbeddableMappingCon
 		 * @return the global mapping configurer
 		 */
 		@Override
-		<T extends Table> IFluentMappingBuilderOneToOneOptions<C, I> mappedBy(Column<T, C> reverseLink);
+		IFluentMappingBuilderOneToOneOptions<C, I, T> mappedBy(Column<T, C> reverseLink);
 	}
 	
 	interface IFluentMappingBuilderOneToManyOptions<T, I, O> extends IFluentMappingBuilder<T, I>, OneToManyOptions<T, I, O> {
 	}
 	
 	/**
-	 * A merge of {@link IFluentMappingBuilderOneToManyOptions} and {@link IndexableCollectionOptions} to defined a one-to-many relationship
+	 * A merge of {@link IFluentMappingBuilderOneToManyOptions} and {@link IndexableCollectionOptions} to defined a one-to-many relation
 	 * with a indexed {@link java.util.Collection} such as a {@link List}
 	 * 
 	 * @param <C> type of source entity

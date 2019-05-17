@@ -275,7 +275,12 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements IFluentMap
 	}
 	
 	@Override
-	public <O, J> IFluentMappingBuilderOneToOneOptions<C, I> addOneToOne(SerializableFunction<C, O> getter, EntityMappingConfiguration<O, J> mappingConfiguration) {
+	public <O, J, T extends Table> IFluentMappingBuilderOneToOneOptions<C, I, T> addOneToOne(SerializableFunction<C, O> getter, EntityMappingConfiguration<O, J> mappingConfiguration) {
+		return addOneToOne(getter, mappingConfiguration, null);
+	}
+	
+	@Override
+	public <O, J, T extends Table> IFluentMappingBuilderOneToOneOptions<C, I, T> addOneToOne(SerializableFunction<C, O> getter, EntityMappingConfiguration<O, J> mappingConfiguration, T table) {
 		// we declare the column on our side: we do it first because it checks some rules
 		add(getter);
 		// we keep it
@@ -284,43 +289,43 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements IFluentMap
 				Accessors.accessorByMethodReference(getter),
 				// ... but we can't do it for mutator, so we use the most equivalent manner : a mutator based on setter method (fallback to property if not present)
 				new AccessorByMethod<C, O>(captureMethod(getter)).toMutator());
-		CascadeOne<C, O, J> cascadeOne = new CascadeOne<>(propertyAccessor, mappingConfiguration);
+		CascadeOne<C, O, J> cascadeOne = new CascadeOne<>(propertyAccessor, mappingConfiguration, table);
 		this.cascadeOnes.add(cascadeOne);
 		// then we return an object that allows fluent settings over our OneToOne cascade instance
 		return new MethodDispatcher()
-				.redirect(OneToOneOptions.class, new OneToOneOptions<C, I>() {
+				.redirect(OneToOneOptions.class, new OneToOneOptions<C, I, T>() {
 					@Override
-					public IFluentMappingBuilderOneToOneOptions<C, I> cascading(RelationshipMode relationshipMode) {
+					public IFluentMappingBuilderOneToOneOptions<C, I, T> cascading(RelationshipMode relationshipMode) {
 						cascadeOne.setRelationshipMode(relationshipMode);
 						return null;	// we can return null because dispatcher will return proxy
 					}
 					
 					@Override
-					public IFluentMappingBuilderOneToOneOptions<C, I> mandatory() {
+					public IFluentMappingBuilderOneToOneOptions<C, I, T> mandatory() {
 						cascadeOne.setNullable(false);
 						return null;	// we can return null because dispatcher will return proxy
 					}
 					
 					@Override
-					public IFluentMappingBuilderOneToOneOptions<C, I> mappedBy(SerializableFunction reverseLink) {
+					public IFluentMappingBuilderOneToOneOptions<C, I, T> mappedBy(SerializableFunction reverseLink) {
 						cascadeOne.setReverseGetter(reverseLink);
 						return null;	// we can return null because dispatcher will return proxy
 					}
 					
 					@Override
-					public IFluentMappingBuilderOneToOneOptions<C, I> mappedBy(SerializableBiConsumer reverseLink) {
+					public IFluentMappingBuilderOneToOneOptions<C, I, T> mappedBy(SerializableBiConsumer reverseLink) {
 						cascadeOne.setReverseSetter(reverseLink);
 						return null;	// we can return null because dispatcher will return proxy
 					}
 					
 					@Override
-					public <T extends Table> IFluentMappingBuilderOneToOneOptions<C, I> mappedBy(Column<T, C> reverseLink) {
+					public IFluentMappingBuilderOneToOneOptions<C, I, T> mappedBy(Column<T, C> reverseLink) {
 						cascadeOne.setReverseColumn(reverseLink);
 						return null;	// we can return null because dispatcher will return proxy
 					}
 				}, true)	// true to allow "return null" in implemented methods
 				.fallbackOn(this)
-				.build((Class<IFluentMappingBuilderOneToOneOptions<C, I>>) (Class) IFluentMappingBuilderOneToOneOptions.class);
+				.build((Class<IFluentMappingBuilderOneToOneOptions<C, I, T>>) (Class) IFluentMappingBuilderOneToOneOptions.class);
 	}
 	
 	@Override
