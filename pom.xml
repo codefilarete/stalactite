@@ -20,8 +20,8 @@
 	
 	<properties>
 		<encoding>UTF-8</encoding>
-		<junit.version>5.3.1</junit.version>
-		<mockito.version>2.22.0</mockito.version>
+		<junit.version>5.4.2</junit.version>
+		<mockito.version>2.27.0</mockito.version>
 		<slf4j-api.version>1.7.21</slf4j-api.version>
 	</properties>
 	
@@ -70,6 +70,19 @@
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-surefire-plugin</artifactId>
 				<version>3.0.0-M3</version>
+				<!-- Necessary for surefire to run with JUnit 5 -->
+				<dependencies>
+					<dependency>
+						<groupId>org.junit.platform</groupId>
+						<artifactId>junit-platform-surefire-provider</artifactId>
+						<version>1.3.2</version>
+					</dependency>
+					<dependency>
+						<groupId>org.junit.jupiter</groupId>
+						<artifactId>junit-jupiter-engine</artifactId>
+						<version>${junit.version}</version>
+					</dependency>
+				</dependencies>
 			</plugin>
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
