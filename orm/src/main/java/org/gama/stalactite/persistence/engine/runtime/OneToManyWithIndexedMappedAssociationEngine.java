@@ -76,7 +76,7 @@ public class OneToManyWithIndexedMappedAssociationEngine<SRC, TRGT, SRCID, TRGTI
 					// reordering List element according to read indexes during the transforming phase (see below)
 					result.forEach(i -> {
 						List<TRGT> apply = manyRelationDefinition.getCollectionGetter().apply(i);
-						apply.sort(Comparator.comparingInt(TRGT -> updatableListIndex.get().get(TRGT)));
+						apply.sort(Comparator.comparingInt(target -> updatableListIndex.get().get(target)));
 					});
 				} finally {
 					cleanContext();
@@ -140,7 +140,7 @@ public class OneToManyWithIndexedMappedAssociationEngine<SRC, TRGT, SRCID, TRGTI
 		
 		targetPersister.getMappingStrategy().addSilentColumnUpdater(indexingColumn,
 				// Thread safe by updatableListIndex access
-				(Function<TRGT, Object>) TRGT -> Nullable.nullable(updatableListIndex.get()).apply(m -> m.get(TRGT)).get());
+				(Function<TRGT, Object>) target -> Nullable.nullable(updatableListIndex.get()).apply(m -> m.get(target)).get());
 		
 		BiConsumer<UpdatePayload<? extends SRC, ?>, Boolean> updateListener = new CollectionUpdater<SRC, TRGT, C>(
 				manyRelationDefinition.getCollectionGetter(),
@@ -174,7 +174,7 @@ public class OneToManyWithIndexedMappedAssociationEngine<SRC, TRGT, SRCID, TRGTI
 				// entities are stricly equal, but in fact this update() invokation triggers the "silent column" update, which is the index column
 				ThreadLocals.doWithThreadLocal(updatableListIndex, ((IndexedMappedAssociationUpdateContext) updateContext)::getIndexUpdates,
 						(Runnable) () -> {
-							List<Duo<? extends TRGT, ? extends TRGT>> entities = collectToList(updatableListIndex.get().keySet(), TRGT -> new Duo<>(TRGT, TRGT));
+							List<Duo<? extends TRGT, ? extends TRGT>> entities = collectToList(updatableListIndex.get().keySet(), target -> new Duo<>(target, target));
 							targetPersister.update(entities, false);
 						});
 			}

@@ -91,8 +91,8 @@ public class FluentEmbeddableMappingConfigurationSupport<C> implements IFluentEm
 	}
 	
 	@Override
-	public Collection<AbstractInset<C, ?>> getInsets() {
-		return insets;
+	public <I extends AbstractInset<C, ?>> Collection<I> getInsets() {
+		return (Collection<I>) insets;
 	}
 	
 	@Override

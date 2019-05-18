@@ -31,6 +31,7 @@ public interface EntityMappingConfiguration<C, I> {
 	
 	VersioningStrategy getOptimisticLockOption();
 	
+	@SuppressWarnings("squid:S1452" /* Can't remove wildcard here because it requires to create a local generic "super" type which is forbidden */)
 	EntityMappingConfiguration<? super C, I> getInheritanceConfiguration();
 	
 	boolean isJoinTable();

@@ -68,11 +68,13 @@ public class CascadeOneConfigurer<SRC, TRGT, ID> {
 			JoinedTablesPersister<SRC, ID, T> sourcePersister,
 			ForeignKeyNamingStrategy foreignKeyNamingStrategy) {
 		
-		if (cascadeOne.getReverseGetter() == null && cascadeOne.getReverseSetter() == null && cascadeOne.getReverseColumn() == null) {
-			new RelationOwnedBySourceConfigurer<SRC, TRGT, ID>(persistenceContext).appendCascade(cascadeOne, sourcePersister, foreignKeyNamingStrategy);
+		ConfigurerTemplate<SRC, TRGT, ID> configurer;
+		if (cascadeOne.isOwnedByReverseSide()) {
+			configurer = new RelationOwnedByTargetConfigurer<>(persistenceContext);
 		} else {
-			new RelationOwnedByTargetConfigurer<SRC, TRGT, ID>(persistenceContext).appendCascade(cascadeOne, sourcePersister, foreignKeyNamingStrategy);
+			configurer = new RelationOwnedBySourceConfigurer<>(persistenceContext);
 		}
+		configurer.appendCascade(cascadeOne, sourcePersister, foreignKeyNamingStrategy);
 	}
 	
 	private abstract static class ConfigurerTemplate<SRC, TRGT, ID> {
@@ -103,7 +105,6 @@ public class CascadeOneConfigurer<SRC, TRGT, ID> {
 			
 			Persister<TRGT, ID, Table> targetPersister = new EntityMappingBuilder<>(targetMappingConfiguration, new MethodReferenceCapturer())
 					.build(persistenceContext, Nullable.nullable(cascadeOne.getTargetTable()).orGet(Nullable.nullable(cascadeOne.getReverseColumn()).apply(Column::getTable).get()));
-//					.build(persistenceContext, Nullable.nullable(cascadeOne.getReverseColumn()).apply(Column::getTable).get());
 			ClassMappingStrategy<TRGT, ID, Table> targetMappingStrategy = targetPersister.getMappingStrategy();
 			
 			// Finding joined columns
@@ -139,7 +140,6 @@ public class CascadeOneConfigurer<SRC, TRGT, ID> {
 																							   IReversibleAccessor<SRC, TRGT> targetAccessor,
 																							   ClassMappingStrategy<TRGT, ID, Table> targetMappingStrategy,
 																							   ForeignKeyNamingStrategy foreignKeyNamingStrategy);
-		
 		protected void addInsertCascade(CascadeOne<SRC, TRGT, ID> cascadeOne,
 												 Persister<TRGT, ID, Table> targetPersister,
 												 PersisterListener<SRC, ID> srcPersisterListener) {
@@ -147,7 +147,10 @@ public class CascadeOneConfigurer<SRC, TRGT, ID> {
 			// but we would loose the reason why it does it : the cascade functionnality
 			targetPersister.getPersisterListener().addInsertListener(
 					targetPersister.getMappingStrategy().getIdMappingStrategy().getIdentifierInsertionManager().getInsertListener());
-			
+			// if cascade is mandatory, then adding nullability checking before insert
+			if (!cascadeOne.isNullable()) {
+				srcPersisterListener.addInsertListener(new MandatoryRelationCheckingBeforeInsertListener<>(cascadeOne.getTargetProvider()));
+			}
 		}
 		
 		protected abstract void addUpdateCascade(CascadeOne<SRC, TRGT, ID> cascadeOne, Persister<TRGT, ID, Table> targetPersister,
@@ -199,12 +202,8 @@ public class CascadeOneConfigurer<SRC, TRGT, ID> {
 									 Persister<TRGT, ID, Table> targetPersister,
 									 PersisterListener<SRC, ID> srcPersisterListener) {
 			super.addInsertCascade(cascadeOne, targetPersister, srcPersisterListener);
-			// if cascade is mandatory, then adding nullability checking before insert
-			if (!cascadeOne.isNullable()) {
-				srcPersisterListener.addInsertListener(new MandatoryRelationCheckingBeforeInsertListener<>(cascadeOne.getTargetProvider()));
-			}
 			// adding cascade treatment: before source insert, target is inserted to comply with foreign key constraint
-			Predicate<TRGT> insertionPredicate = ((Predicate<TRGT>) Objects::nonNull).and(targetPersister.getMappingStrategy().getIdMappingStrategy()::isNew);
+			Predicate<TRGT> insertionPredicate = ((Predicate<TRGT>) Objects::nonNull).and(targetPersister.getMappingStrategy()::isNew);
 			srcPersisterListener.addInsertListener(new BeforeInsertSupport<>(targetPersister::insert, cascadeOne.getTargetProvider()::get, insertionPredicate));
 		}
 		
@@ -287,6 +286,7 @@ public class CascadeOneConfigurer<SRC, TRGT, ID> {
 		// Gets source from target to update relation at update time, stored as an instance field to pass it from creating method to consuming method
 		// but shouldn't be kept, bad design but couldn't find another solution
 		private Function<TRGT, SRC> reverseGetter;
+		@SuppressWarnings("squid:S2259")
 		private Column rightColumn;
 		
 		private RelationOwnedByTargetConfigurer(PersistenceContext persistenceContext) {
@@ -303,7 +303,6 @@ public class CascadeOneConfigurer<SRC, TRGT, ID> {
 			// left column is always left table primary key
 			Column leftColumn = Iterables.first(mappingStrategy.getTargetTable().getPrimaryKey().getColumns());
 			// right column depends on relation owner
-			rightColumn = null;
 			if (cascadeOne.getReverseColumn() != null) {
 				rightColumn = cascadeOne.getReverseColumn();
 			}
@@ -340,12 +339,12 @@ public class CascadeOneConfigurer<SRC, TRGT, ID> {
 					sourceIntoTargetFixer.set(target, input);
 				};
 				this.reverseGetter = localReverseGetter;
-			} else {
-				// non bidirectional relation (both getter and setter are null)
-			}
+			} // else : non bidirectional relation (both getter and setter are null), nothing to do
 			
 			// adding foreign key constraint
 			String foreignKeyName = foreignKeyNamingStrategy.giveName(rightColumn, leftColumn);
+			// Note that rightColumn can't be null because RelationOwnedByTargetConfigurer is used when one of cascadeOne.getReverseColumn(),
+			// cascadeOne.getReverseGetter() and cascadeOne.getReverseSetter() is not null
 			rightColumn.getTable().addForeignKey(foreignKeyName, rightColumn, leftColumn);
 			return new Duo<>(leftColumn, rightColumn);
 		}
@@ -372,12 +371,8 @@ public class CascadeOneConfigurer<SRC, TRGT, ID> {
 									  Persister<TRGT, ID, Table> targetPersister,
 									  PersisterListener<SRC, ID> srcPersisterListener) {
 			super.addInsertCascade(cascadeOne, targetPersister, srcPersisterListener);
-			// if cascade is mandatory, then adding nullability checking before insert
-			if (!cascadeOne.isNullable()) {
-				srcPersisterListener.addInsertListener(new MandatoryRelationCheckingBeforeInsertListener<>(cascadeOne.getTargetProvider()));
-			}
 			// adding cascade treatment: after source insert, target is inserted to comply with foreign key constraint
-			Predicate<TRGT> insertionPredicate = ((Predicate<TRGT>) Objects::nonNull).and(targetPersister.getMappingStrategy().getIdMappingStrategy()::isNew);
+			Predicate<TRGT> insertionPredicate = ((Predicate<TRGT>) Objects::nonNull).and(targetPersister.getMappingStrategy()::isNew);
 			srcPersisterListener.addInsertListener(new AfterInsertSupport<>(targetPersister::insert, cascadeOne.getTargetProvider()::get, insertionPredicate));
 			targetPersister.getMappingStrategy().addSilentColumnInserter(rightColumn, this.reverseGetter);
 		}

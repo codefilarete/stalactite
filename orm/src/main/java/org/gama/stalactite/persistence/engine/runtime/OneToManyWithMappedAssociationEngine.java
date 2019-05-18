@@ -110,8 +110,8 @@ public class OneToManyWithMappedAssociationEngine<SRC, TRGT, SRCID, TRGTID, C ex
 					}
 					
 					@Override
-					protected Collection<TRGT> getTargets(SRC SRC) {
-						Collection<TRGT> targets = manyRelationDefinition.getCollectionGetter().apply(SRC);
+					protected Collection<TRGT> getTargets(SRC src) {
+						Collection<TRGT> targets = manyRelationDefinition.getCollectionGetter().apply(src);
 						// We only delete persisted instances (for logic and to prevent from non matching row count exception)
 						return stream(targets)
 								.filter(not(targetPersister.getMappingStrategy()::isNew))

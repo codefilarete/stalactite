@@ -21,6 +21,7 @@ import java.util.stream.Stream;
 
 import org.danekja.java.util.function.serializable.SerializableBiFunction;
 import org.danekja.java.util.function.serializable.SerializableFunction;
+import org.gama.lang.Nullable;
 import org.gama.lang.Reflections;
 import org.gama.lang.StringAppender;
 import org.gama.lang.bean.InstanceMethodIterator;
@@ -374,14 +375,11 @@ class EmbeddableMappingBuilder<C> {
 				// NB: stream is sorted to get a consistent result over executions because MethodIterator doesn't always return methods in same
 				// order, probably because JVM doesn't provide methods in a steady order over executions too. Mainly done for unit test checking.
 				stream(() -> methodIterator).sorted(Comparator.comparing(Reflections::toString)).forEach(m -> {
-					ValueAccessPoint o = Reflections.onJavaBeanPropertyWrapperNameGeneric(m.getName(), m,
+					Nullable.nullable((ValueAccessPoint) Reflections.onJavaBeanPropertyWrapperNameGeneric(m.getName(), m,
 							AccessorByMethod::new,
 							MutatorByMethod::new,
 							AccessorByMethod::new,
-							method -> null);
-					if (o != null) {
-						expectedOverridenFields.add(o);
-					}
+							method -> null)).accept(expectedOverridenFields::add);
 				});
 				expectedOverridenFields.removeAll(inset.getExcludedProperties());
 				Set<ValueAccessPoint> overridenFields = inset.getOverridenColumnNames().keySet();

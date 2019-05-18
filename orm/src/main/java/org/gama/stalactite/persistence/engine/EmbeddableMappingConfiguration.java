@@ -14,11 +14,12 @@ import org.gama.stalactite.persistence.engine.FluentEmbeddableMappingConfigurati
  */
 public interface EmbeddableMappingConfiguration<C> {
 	
+	@SuppressWarnings("squid:S1452" /* Can't remove wildcard here because it requires to create a local generic "super" type which is forbidden */)
 	EmbeddableMappingConfiguration<? super C> getMappedSuperClassConfiguration();
 	
 	List<Linkage> getPropertiesMapping();
 	
-	Collection<AbstractInset<C, ?>> getInsets();
+	<I extends AbstractInset<C, ?>> Collection<I> getInsets();
 	
 	ColumnNamingStrategy getColumnNamingStrategy();
 	

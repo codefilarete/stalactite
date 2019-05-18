@@ -27,6 +27,7 @@ public class HSQLDBDialect extends Dialect {
 		}
 	}
 	
+	@Override
 	protected HSQLDBDDLTableGenerator newDdlTableGenerator() {
 		return new HSQLDBDDLTableGenerator(getJavaTypeToSqlTypeMapping());
 	}
