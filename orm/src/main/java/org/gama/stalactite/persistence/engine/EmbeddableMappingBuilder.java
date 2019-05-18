@@ -374,13 +374,13 @@ class EmbeddableMappingBuilder<C> {
 				Set<ValueAccessPoint> expectedOverridenFields = new ValueAccessPointSet();
 				// NB: stream is sorted to get a consistent result over executions because MethodIterator doesn't always return methods in same
 				// order, probably because JVM doesn't provide methods in a steady order over executions too. Mainly done for unit test checking.
-				stream(() -> methodIterator).sorted(Comparator.comparing(Reflections::toString)).forEach(m -> {
+				stream(() -> methodIterator).sorted(Comparator.comparing(Reflections::toString)).forEach(m ->
 					Nullable.nullable((ValueAccessPoint) Reflections.onJavaBeanPropertyWrapperNameGeneric(m.getName(), m,
 							AccessorByMethod::new,
 							MutatorByMethod::new,
 							AccessorByMethod::new,
-							method -> null)).accept(expectedOverridenFields::add);
-				});
+							method -> null)).accept(expectedOverridenFields::add)
+				);
 				expectedOverridenFields.removeAll(inset.getExcludedProperties());
 				Set<ValueAccessPoint> overridenFields = inset.getOverridenColumnNames().keySet();
 				boolean allFieldsAreOverriden = overridenFields.equals(expectedOverridenFields);
