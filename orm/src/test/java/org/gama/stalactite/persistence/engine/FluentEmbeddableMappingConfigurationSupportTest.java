@@ -503,7 +503,7 @@ class FluentEmbeddableMappingConfigurationSupportTest {
 		MappingConfigurationException thrownException = assertThrows(MappingConfigurationException.class, () -> mappingBuilder
 				.build(DIALECT, countryTable));
 		assertEquals("Country::getTimestamp conflicts with Person::getTimestamp while embedding a o.g.s.p.e.m.Timestamp" +
-				", column names should be overriden : j.u.Date o.g.s.p.e.m.Timestamp.getCreationDate(), j.u.Date o.g.s.p.e.m.Timestamp.getModificationDate()",
+				", column names should be overriden : o.g.s.p.e.m.Timestamp.getCreationDate(), o.g.s.p.e.m.Timestamp.getModificationDate()",
 				thrownException.getMessage());
 		
 		// we add an override, exception must still be thrown, with different message
@@ -512,7 +512,7 @@ class FluentEmbeddableMappingConfigurationSupportTest {
 		thrownException = assertThrows(MappingConfigurationException.class, () -> mappingBuilder
 				.build(DIALECT, countryTable));
 		assertEquals("Country::getTimestamp conflicts with Person::getTimestamp while embedding a o.g.s.p.e.m.Timestamp" +
-				", column names should be overriden : j.u.Date o.g.s.p.e.m.Timestamp.getCreationDate()", thrownException.getMessage());
+				", column names should be overriden : o.g.s.p.e.m.Timestamp.getCreationDate()", thrownException.getMessage());
 		
 		// we override the last field, no exception is thrown
 		mappingBuilder.overrideName(Timestamp::getCreationDate, "createdAt");
@@ -844,11 +844,11 @@ class FluentEmbeddableMappingConfigurationSupportTest {
 		MappingConfigurationException thrownException = assertThrows(MappingConfigurationException.class, () ->
 				mappingBuilder.build(DIALECT, countryTable));
 		assertEquals("Some embedded columns conflict with entity ones on their name, please override it or change it :" + System.lineSeparator()
-				+ "Embeddable definition 'Person::getTimestamp > j.u.Date o.g.s.p.e.m.Timestamp.getModificationDate()'"
-				+ " vs entity definition 'Country::getTimestamp > j.u.Date o.g.s.p.e.m.Timestamp.getModificationDate()' on column name 'modificationDate'"
+				+ "Embeddable definition 'Person::getTimestamp > o.g.s.p.e.m.Timestamp.getModificationDate()'"
+				+ " vs entity definition 'Country::getTimestamp > o.g.s.p.e.m.Timestamp.getModificationDate()' on column name 'modificationDate'"
 				+ System.lineSeparator()
-				+ "Embeddable definition 'Person::getTimestamp > j.u.Date o.g.s.p.e.m.Timestamp.getCreationDate()'"
-				+ " vs entity definition 'Country::getTimestamp > j.u.Date o.g.s.p.e.m.Timestamp.getCreationDate()' on column name 'creationDate'",
+				+ "Embeddable definition 'Person::getTimestamp > o.g.s.p.e.m.Timestamp.getCreationDate()'"
+				+ " vs entity definition 'Country::getTimestamp > o.g.s.p.e.m.Timestamp.getCreationDate()' on column name 'creationDate'",
 				thrownException.getMessage());
 	}
 	
@@ -867,8 +867,8 @@ class FluentEmbeddableMappingConfigurationSupportTest {
 		MappingConfigurationException thrownException = assertThrows(MappingConfigurationException.class, () ->
 				mappingBuilder.build(DIALECT, countryTable));
 		assertEquals("Some embedded columns conflict with entity ones on their name, please override it or change it :" + System.lineSeparator()
-				+ "Embeddable definition 'Person::getTimestamp > j.u.Date o.g.s.p.e.m.Timestamp.getModificationDate()'"
-				+ " vs entity definition 'Country::getTimestamp > j.u.Date o.g.s.p.e.m.Timestamp.getModificationDate()' on column name 'modificationDate'",
+				+ "Embeddable definition 'Person::getTimestamp > o.g.s.p.e.m.Timestamp.getModificationDate()'"
+				+ " vs entity definition 'Country::getTimestamp > o.g.s.p.e.m.Timestamp.getModificationDate()' on column name 'modificationDate'",
 				thrownException.getMessage());
 	}
 	
@@ -887,8 +887,8 @@ class FluentEmbeddableMappingConfigurationSupportTest {
 		MappingConfigurationException thrownException = assertThrows(MappingConfigurationException.class, () ->
 				mappingBuilder.build(DIALECT, countryTable));
 		assertEquals("Some embedded columns conflict with entity ones on their name, please override it or change it :" + System.lineSeparator()
-				+ "Embeddable definition 'Person::getTimestamp > j.u.Date o.g.s.p.e.m.Timestamp.getModificationDate()'"
-				+ " vs entity definition 'Country::getTimestamp > j.u.Date o.g.s.p.e.m.Timestamp.getModificationDate()' on column name 'modificationDate'",
+				+ "Embeddable definition 'Person::getTimestamp > o.g.s.p.e.m.Timestamp.getModificationDate()'"
+				+ " vs entity definition 'Country::getTimestamp > o.g.s.p.e.m.Timestamp.getModificationDate()' on column name 'modificationDate'",
 				thrownException.getMessage());
 	}
 	
@@ -907,8 +907,8 @@ class FluentEmbeddableMappingConfigurationSupportTest {
 		MappingConfigurationException thrownException = assertThrows(MappingConfigurationException.class, () ->
 				mappingBuilder.build(DIALECT, countryTable));
 		assertEquals("Some embedded columns conflict with entity ones on their name, please override it or change it :" + System.lineSeparator()
-				+ "Embeddable definition 'Person::getTimestamp > j.u.Date o.g.s.p.e.m.Timestamp.getModificationDate()'"
-				+ " vs entity definition 'Country::getTimestamp > j.u.Date o.g.s.p.e.m.Timestamp.getModificationDate()' on column name 'modificationDate'",
+				+ "Embeddable definition 'Person::getTimestamp > o.g.s.p.e.m.Timestamp.getModificationDate()'"
+				+ " vs entity definition 'Country::getTimestamp > o.g.s.p.e.m.Timestamp.getModificationDate()' on column name 'modificationDate'",
 				thrownException.getMessage());
 	}
 	

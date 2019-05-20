@@ -232,7 +232,7 @@ class FluentEntityMappingConfigurationSupportInheritanceTest {
 							.build(persistenceContext));
 			
 			assertEquals("Identifier is not defined for o.g.s.p.e.FluentEntityMappingConfigurationSupportInheritanceTest$Car," 
-							+ " please add one throught o.g.s.p.e.IFluentMappingBuilder o.g.s.p.e.ColumnOptions.identifier(o.g.s.p.e.ColumnOptions$IdentifierPolicy)",
+							+ " please add one throught o.g.s.p.e.ColumnOptions.identifier(o.g.s.p.e.ColumnOptions$IdentifierPolicy)",
 					thrownException.getMessage());
 		}
 		

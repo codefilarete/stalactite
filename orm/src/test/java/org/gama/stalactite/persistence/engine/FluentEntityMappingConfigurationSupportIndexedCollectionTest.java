@@ -334,7 +334,7 @@ class FluentEntityMappingConfigurationSupportIndexedCollectionTest {
 				.getConfiguration();
 		
 		assertEquals("Missing indexing column : relation is mapped by " +
-						"o.g.s.p.e.FluentEntityMappingConfigurationSupportIndexedCollectionTest$Question o.g.s.p.e.FluentEntityMappingConfigurationSupportIndexedCollectionTest$Choice.getQuestion() " +
+						"o.g.s.p.e.FluentEntityMappingConfigurationSupportIndexedCollectionTest$Choice.getQuestion() " +
 						"but no indexing property is defined",
 				assertThrows(UnsupportedOperationException.class, () ->
 						from(Question.class, LONG_TYPE)
@@ -373,7 +373,7 @@ class FluentEntityMappingConfigurationSupportIndexedCollectionTest {
 		
 		assertEquals("Can't get index : " + choice.toString() + " is not associated with a o.g.s.p.e.FluentEntityMappingConfigurationSupportIndexedCollectionTest$Question : "
 						+ "accessor for field" +
-						" o.g.s.p.e.FluentEntityMappingConfigurationSupportIndexedCollectionTest$Question o.g.s.p.e.FluentEntityMappingConfigurationSupportIndexedCollectionTest$Choice.questionWithNoGetter returned null",
+						" o.g.s.p.e.FluentEntityMappingConfigurationSupportIndexedCollectionTest$Choice.questionWithNoGetter returned null",
 				assertThrows(RuntimeMappingException.class, () -> persisterWithNonExistingSetter.insert(question)).getMessage());
 	}
 		
@@ -404,7 +404,7 @@ class FluentEntityMappingConfigurationSupportIndexedCollectionTest {
 		question.getChoices().add(new Choice(4L));
 		
 		assertEquals("Can't get index : Choice{id=4, question=null, name='null'} is not associated with a o.g.s.p.e.FluentEntityMappingConfigurationSupportIndexedCollectionTest$Question : "
-						+ "o.g.s.p.e.FluentEntityMappingConfigurationSupportIndexedCollectionTest$Question o.g.s.p.e.FluentEntityMappingConfigurationSupportIndexedCollectionTest$Choice.getQuestion() returned null",
+						+ "o.g.s.p.e.FluentEntityMappingConfigurationSupportIndexedCollectionTest$Choice.getQuestion() returned null",
 				assertThrows(RuntimeMappingException.class, () -> persister.insert(question)).getMessage());
 	}
 		

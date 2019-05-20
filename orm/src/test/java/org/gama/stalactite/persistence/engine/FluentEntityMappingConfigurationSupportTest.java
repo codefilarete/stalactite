@@ -84,7 +84,7 @@ public class FluentEntityMappingConfigurationSupportTest {
 		
 		// column should be correctly created
 		assertEquals("Identifier is not defined for o.g.s.p.e.FluentEntityMappingConfigurationSupportTest$Toto," 
-						+ " please add one throught o.g.s.p.e.IFluentMappingBuilder o.g.s.p.e.ColumnOptions.identifier(o.g.s.p.e.ColumnOptions$IdentifierPolicy)",
+						+ " please add one throught o.g.s.p.e.ColumnOptions.identifier(o.g.s.p.e.ColumnOptions$IdentifierPolicy)",
 				assertThrows(UnsupportedOperationException.class, () -> mappingStrategy.build(persistenceContext))
 						.getMessage());
 	}
@@ -433,7 +433,7 @@ public class FluentEntityMappingConfigurationSupportTest {
 		MappingConfigurationException thrownException = assertThrows(MappingConfigurationException.class, () -> mappingBuilder
 				.build(persistenceContext, countryTable));
 		assertEquals("Country::getTimestamp conflicts with Person::getTimestamp while embedding a o.g.s.p.e.m.Timestamp" +
-				", column names should be overriden : j.u.Date o.g.s.p.e.m.Timestamp.getCreationDate(), j.u.Date o.g.s.p.e.m.Timestamp.getModificationDate()", thrownException.getMessage());
+				", column names should be overriden : o.g.s.p.e.m.Timestamp.getCreationDate(), o.g.s.p.e.m.Timestamp.getModificationDate()", thrownException.getMessage());
 		
 		// we add an override, exception must still be thrown, with different message
 		mappingBuilder.overrideName(Timestamp::getModificationDate, "modifiedAt");
@@ -441,7 +441,7 @@ public class FluentEntityMappingConfigurationSupportTest {
 		thrownException = assertThrows(MappingConfigurationException.class, () -> mappingBuilder
 				.build(persistenceContext));
 		assertEquals("Country::getTimestamp conflicts with Person::getTimestamp while embedding a o.g.s.p.e.m.Timestamp" +
-				", column names should be overriden : j.u.Date o.g.s.p.e.m.Timestamp.getCreationDate()", thrownException.getMessage());
+				", column names should be overriden : o.g.s.p.e.m.Timestamp.getCreationDate()", thrownException.getMessage());
 		
 		// we override the last field, no exception is thrown
 		mappingBuilder.overrideName(Timestamp::getCreationDate, "createdAt");
