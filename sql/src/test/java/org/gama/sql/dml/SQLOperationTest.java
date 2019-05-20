@@ -36,7 +36,7 @@ public class SQLOperationTest {
 						(Predicate<Throwable>) Objects::isNull },
 				{ new MariaDBEmbeddableDataSource(3406), "lock table Toto WRITE",
 						// MySQL throws an exception on query cancelation (https://mariadb.com/kb/en/library/multi-threading-and-statementcancel/), we check it.
-						(Predicate<Throwable>) t -> Exceptions.findExceptionInHierarchy(t, SQLTransientException.class, "Query execution was interrupted") != null },
+						(Predicate<Throwable>) t -> Exceptions.findExceptionInCauses(t, SQLTransientException.class, "Query execution was interrupted") != null },
 		};
 	}
 	

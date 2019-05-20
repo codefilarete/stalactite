@@ -45,7 +45,7 @@ public class MySQLDialect extends Dialect {
 		setWriteOperationRetryer(new Retryer(3, 200) {
 			@Override
 			protected boolean shouldRetry(Throwable t) {
-				return Exceptions.findExceptionInHierarchy(t, SQLException.class, "Lock wait timeout exceeded; try restarting transaction") != null;
+				return Exceptions.findExceptionInCauses(t, SQLException.class, "Lock wait timeout exceeded; try restarting transaction") != null;
 			}
 		});
 	}
