@@ -34,6 +34,7 @@ import static org.gama.stalactite.persistence.id.Identifier.identifierBinder;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -83,8 +84,7 @@ class FluentEntityMappingConfigurationSupportInheritanceTest {
 			// as a mapped super class, the table shouldn't be in the context, nor its persister exists
 			Collection<Table> tables = DDLDeployer.collectTables(persistenceContext);
 			assertFalse(tables.contains(mappedSuperClassData.vehicleTable));
-			IllegalArgumentException thrownException = assertThrows(IllegalArgumentException.class, () -> persistenceContext.getPersister(Vehicle.class));
-			assertEquals("Unmapped entity o.g.s.p.e.FluentEntityMappingConfigurationSupportInheritanceTest$Vehicle", thrownException.getMessage());
+			assertNull(persistenceContext.getPersister(Vehicle.class));
 			
 			// DML tests
 			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
@@ -124,8 +124,7 @@ class FluentEntityMappingConfigurationSupportInheritanceTest {
 			// as a mapped super class, the table shouldn't be in the context, nor its persister exists
 			Collection<Table> tables = DDLDeployer.collectTables(persistenceContext);
 			assertFalse(tables.contains(mappedSuperClassData.vehicleTable));
-			IllegalArgumentException thrownException = assertThrows(IllegalArgumentException.class, () -> persistenceContext.getPersister(Vehicle.class));
-			assertEquals("Unmapped entity o.g.s.p.e.FluentEntityMappingConfigurationSupportInheritanceTest$Vehicle", thrownException.getMessage());
+			assertNull(persistenceContext.getPersister(Vehicle.class));
 			
 			// DML tests
 			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);

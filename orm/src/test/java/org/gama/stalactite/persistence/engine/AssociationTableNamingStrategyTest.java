@@ -3,6 +3,7 @@ package org.gama.stalactite.persistence.engine;
 import java.util.HashSet;
 import java.util.Set;
 
+import org.gama.reflection.MemberDefinition;
 import org.gama.stalactite.persistence.engine.AssociationTableNamingStrategy.DefaultAssociationTableNamingStrategy;
 import org.gama.stalactite.persistence.engine.model.City;
 import org.gama.stalactite.persistence.structure.Column;
@@ -17,7 +18,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 class AssociationTableNamingStrategyTest {
 	
 	@Test
-	void giveManySideColumnName() throws NoSuchMethodException {
+	void giveManySideColumnName() {
 		Table countryTable = new Table(null, "CountryTable");
 		Column countryPK = countryTable.addColumn("id", String.class).primaryKey();
 		Table cityTable = new Table(null, "CityTable");
@@ -27,8 +28,8 @@ class AssociationTableNamingStrategyTest {
 		
 		DefaultAssociationTableNamingStrategy testInstance = new DefaultAssociationTableNamingStrategy();
 		
-		assertEquals("CountryTable_cities", testInstance.giveName(Country.class.getDeclaredMethod("getCities"), countryPK, countryFK));
-		assertEquals("CountryTable_CityTables", testInstance.giveName(Country.class.getDeclaredMethod("giveCities"), countryPK, countryFK));
+		assertEquals("CountryTable_cities", testInstance.giveName(new MemberDefinition(Country.class, "getCities", Set.class), countryPK, countryFK));
+		assertEquals("CountryTable_CityTables", testInstance.giveName(new MemberDefinition(Country.class, "giveCities", Set.class), countryPK, countryFK));
 		
 	}
 	

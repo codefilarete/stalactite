@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
+import java.util.function.BiPredicate;
 
 import org.danekja.java.util.function.serializable.SerializableBiFunction;
 import org.gama.lang.Duo;
@@ -15,6 +16,7 @@ import org.gama.lang.Nullable;
 import org.gama.lang.Reflections;
 import org.gama.lang.collection.Iterables;
 import org.gama.lang.exception.NotImplementedException;
+import org.gama.lang.function.Predicates;
 import org.gama.reflection.IReversibleAccessor;
 import org.gama.reflection.MemberDefinition;
 import org.gama.reflection.MethodReferenceCapturer;
@@ -286,17 +288,37 @@ class EntityMappingBuilder<C, I> {
 		// which is hard to manage by JoinedTablesEntityMappingBuilder that uses this method
 		JoinedTablesPersister<C, I, T> result = new JoinedTablesPersister<>(persistenceContext, mainMappingStrategy);
 		// don't forget to register this new persister, it's usefull for schema deployment
-		persistenceContext.addPersister(result);
+		Persister<C, Object, T> existingPersister = persistenceContext.getPersister(result.getMappingStrategy().getClassToPersist());
+		if (existingPersister == null) {
+			persistenceContext.addPersister(result);
+		} else {
+			ClassMappingStrategy<C, Object, T> existingMappingStrategy = existingPersister.getMappingStrategy();
+			
+			System.out.println(existingMappingStrategy.getSelectableColumns());
+			System.out.println(mainMappingStrategy.getSelectableColumns());
+			
+			BiPredicate<ClassMappingStrategy, ClassMappingStrategy> and = Predicates.and(
+					ClassMappingStrategy::getTargetTable,
+					ClassMappingStrategy::getPropertyToColumn,
+					ClassMappingStrategy::getVersionedKeys,
+					ClassMappingStrategy::getSelectableColumns,
+					ClassMappingStrategy::getUpdatableColumns,
+					ClassMappingStrategy::getInsertableColumns
+			);
+			if (!and.test(existingMappingStrategy, mainMappingStrategy)) {
+				
+				throw new IllegalArgumentException("Persister already exists for " + Reflections.toString(result.getMappingStrategy().getClassToPersist()));
+			}
+		}
 		
 		CascadeOneConfigurer cascadeOneConfigurer = new CascadeOneConfigurer<>(persistenceContext);
 		for (CascadeOne<C, ?, ?> cascadeOne : this.configurationSupport.getOneToOnes()) {
 			cascadeOneConfigurer.appendCascade(cascadeOne, result, this.configurationSupport.getForeignKeyNamingStrategy());
 		}
-		CascadeManyConfigurer cascadeManyConfigurer = new CascadeManyConfigurer();
+		CascadeManyConfigurer cascadeManyConfigurer = new CascadeManyConfigurer(persistenceContext);
 		for (CascadeMany<C, ?, ?, ? extends Collection> cascadeMany : this.configurationSupport.getOneToManys()) {
 			cascadeManyConfigurer.appendCascade(cascadeMany, result, this.configurationSupport.getForeignKeyNamingStrategy(),
-					this.configurationSupport.getAssociationTableNamingStrategy(),
-					persistenceContext.getDialect());
+					this.configurationSupport.getAssociationTableNamingStrategy());
 		}
 		
 		Nullable<VersioningStrategy> versioningStrategy = nullable(this.configurationSupport.getOptimisticLockOption());

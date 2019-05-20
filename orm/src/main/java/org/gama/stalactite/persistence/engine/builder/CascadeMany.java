@@ -1,14 +1,14 @@
 package org.gama.stalactite.persistence.engine.builder;
 
-import java.lang.reflect.Method;
+import javax.annotation.Nullable;
 import java.util.Collection;
-import java.util.function.Function;
 
 import org.danekja.java.util.function.serializable.SerializableBiConsumer;
 import org.danekja.java.util.function.serializable.SerializableFunction;
-import org.gama.lang.Reflections;
+import org.gama.reflection.IReversibleAccessor;
+import org.gama.reflection.ValueAccessPointByMethodReference;
 import org.gama.stalactite.persistence.engine.CascadeOptions.RelationshipMode;
-import org.gama.stalactite.persistence.engine.Persister;
+import org.gama.stalactite.persistence.engine.EntityMappingConfiguration;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
 
@@ -22,15 +22,13 @@ import org.gama.stalactite.persistence.structure.Table;
 public class CascadeMany<SRC, TRGT, TRGTID, C extends Collection<TRGT>> {
 	
 	/** The method that gives the "many" entities from the "one" entity */
-	private final Function<SRC, C> collectionProvider;
+	private final IReversibleAccessor<SRC, C> collectionProvider;
 	
-	/** Same as {@link #collectionProvider}, but with the reflection API */
-	private final Method collectionGetter;
+	private final ValueAccessPointByMethodReference methodReference;
+	/** Configuration used for "many" side beans persistence */
+	private final EntityMappingConfiguration<TRGT, TRGTID> targetMappingConfiguration;
 	
-	/** "many" entity {@link Persister} */
-	private final Persister<TRGT, TRGTID, ? extends Table> persister;
-	
-	private final Class<C> collectionTargetClass;
+	private final Table targetTable;
 	
 	/** the method that gets the "one" entity from the "many" entities */
 	private SerializableFunction<TRGT, SRC> reverseGetter;
@@ -43,31 +41,29 @@ public class CascadeMany<SRC, TRGT, TRGTID, C extends Collection<TRGT>> {
 	/** Default relationship mode is readonly */
 	private RelationshipMode relationshipMode = RelationshipMode.READ_ONLY;
 	
-	public CascadeMany(Function<SRC, C> collectionProvider, Persister<TRGT, TRGTID, ? extends Table> persister, Method collectionGetter) {
-		this(collectionProvider, persister, (Class<C>) Reflections.javaBeanTargetType(collectionGetter), collectionGetter);
-	}
-	
-	protected CascadeMany(Function<SRC, C> collectionProvider, Persister<TRGT, TRGTID, ? extends Table> persister, Class<C> collectionTargetClass, Method collectionGetter) {
+	public <T extends Table> CascadeMany(IReversibleAccessor<SRC, C> collectionProvider, ValueAccessPointByMethodReference methodReference, EntityMappingConfiguration<TRGT, TRGTID> targetMappingConfiguration, T targetTable) {
 		this.collectionProvider = collectionProvider;
-		this.persister = persister;
-		this.collectionGetter = collectionGetter;
-		this.collectionTargetClass = collectionTargetClass;
+		this.methodReference = methodReference;
+		this.targetMappingConfiguration = targetMappingConfiguration;
+		this.targetTable = targetTable;
 	}
 	
-	public Function<SRC, C> getCollectionProvider() {
+	public IReversibleAccessor<SRC, C> getCollectionProvider() {
 		return collectionProvider;
 	}
 	
-	public Method getCollectionGetter() {
-		return collectionGetter;
+	public ValueAccessPointByMethodReference getMethodReference() {
+		return methodReference;
 	}
 	
-	public Persister<TRGT, TRGTID, ?> getPersister() {
-		return persister;
+	/** @return the configuration used for "many" side beans persistence */
+	public EntityMappingConfiguration<TRGT, TRGTID> getTargetMappingConfiguration() {
+		return targetMappingConfiguration;
 	}
 	
-	public Class<C> getCollectionTargetClass() {
-		return collectionTargetClass;
+	@Nullable
+	public Table getTargetTable() {
+		return targetTable;
 	}
 	
 	public SerializableFunction<TRGT, SRC> getReverseGetter() {
@@ -101,4 +97,13 @@ public class CascadeMany<SRC, TRGT, TRGTID, C extends Collection<TRGT>> {
 	public void setRelationshipMode(RelationshipMode relationshipMode) {
 		this.relationshipMode = relationshipMode;
 	}
+	
+	/**
+	 * Indicates if relation is owned by target entities table
+	 * @return true if one of {@link #getReverseSetter()}, {@link #getReverseGetter()}, {@link #getReverseColumn()} is not null
+	 */
+	public boolean isOwnedByReverseSide() {
+		return getReverseSetter() != null || getReverseGetter() != null || getReverseColumn() != null;
+	}
+	
 }

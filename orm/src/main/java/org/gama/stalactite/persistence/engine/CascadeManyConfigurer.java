@@ -3,16 +3,19 @@ package org.gama.stalactite.persistence.engine;
 import java.lang.reflect.Member;
 import java.lang.reflect.Method;
 import java.util.Collection;
+import java.util.Set;
 import java.util.function.BiConsumer;
-import java.util.function.Function;
 
 import org.danekja.java.util.function.serializable.SerializableBiConsumer;
 import org.danekja.java.util.function.serializable.SerializableFunction;
 import org.gama.lang.Reflections;
+import org.gama.lang.StringAppender;
+import org.gama.lang.collection.Arrays;
 import org.gama.reflection.AccessorByMember;
-import org.gama.reflection.AccessorByMethod;
+import org.gama.reflection.IMutator;
+import org.gama.reflection.IReversibleAccessor;
+import org.gama.reflection.MemberDefinition;
 import org.gama.reflection.MethodReferenceCapturer;
-import org.gama.reflection.MutatorByMember;
 import org.gama.reflection.MutatorByMethod;
 import org.gama.reflection.PropertyAccessor;
 import org.gama.reflection.ValueAccessPointMap;
@@ -32,6 +35,7 @@ import org.gama.stalactite.persistence.sql.Dialect;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
 
+import static org.gama.lang.Nullable.nullable;
 import static org.gama.lang.collection.Iterables.first;
 import static org.gama.reflection.Accessors.of;
 import static org.gama.stalactite.persistence.engine.CascadeOptions.RelationshipMode.ALL_ORPHAN_REMOVAL;
@@ -48,25 +52,46 @@ import static org.gama.stalactite.persistence.engine.CascadeOptions.Relationship
  */
 public class CascadeManyConfigurer<SRC, TRGT, SRCID, TRGTID, C extends Collection<TRGT>> {
 	
+	private final PersistenceContext persistenceContext;
+	
+	public CascadeManyConfigurer(PersistenceContext persistenceContext) {
+		this.persistenceContext = persistenceContext;
+	}
+	
 	public <T extends Table<T>> void appendCascade(CascadeMany<SRC, TRGT, TRGTID, C> cascadeMany,
-												   JoinedTablesPersister<SRC, SRCID, T> joinedTablesPersister,
+												   JoinedTablesPersister<SRC, SRCID, T> sourcePersister,
 												   ForeignKeyNamingStrategy foreignKeyNamingStrategy,
-												   AssociationTableNamingStrategy associationTableNamingStrategy,
-												   Dialect dialect) {
-		Persister<TRGT, TRGTID, ?> targetPersister = cascadeMany.getPersister();
+												   AssociationTableNamingStrategy associationTableNamingStrategy) {
+		Table reverseTable = nullable(cascadeMany.getReverseColumn()).apply(Column::getTable).get();
+		Table indexingTable = nullable((Column<?, ?>) (cascadeMany instanceof CascadeManyList ? ((CascadeManyList) cascadeMany).getIndexingColumn() : null)).apply(Column::getTable).get();
+		Set<Table> availableTables = Arrays.asHashSet(cascadeMany.getTargetTable(), reverseTable, indexingTable);
+		availableTables.remove(null);
+		if (availableTables.size() > 1) {
+			throw new MappingConfigurationException("Different tables used for configuring mapping : " + new StringAppender() {
+				@Override
+				public StringAppender cat(Object table) {
+					return super.cat(((Table) table).getName());
+				}
+			}.ccat(availableTables, ", "));
+		}
+		
+		// please note that even if no table is found in configuration, build(..) will create one
+		Table targetTable = nullable(cascadeMany.getTargetTable()).orSet(reverseTable).orSet(indexingTable).get();
+		Persister<TRGT, TRGTID, ?> targetPersister = new EntityMappingBuilder<>(cascadeMany.getTargetMappingConfiguration(), new MethodReferenceCapturer())
+				.build(persistenceContext, targetTable);
 		
 		// adding persistence flag setters on both sides : this could be done by Persiter itself,
 		// but we would loose the reason why it does it : the cascade functionnality
-		joinedTablesPersister.getPersisterListener().addInsertListener(
-				joinedTablesPersister.getMappingStrategy().getIdMappingStrategy().getIdentifierInsertionManager().getInsertListener());
+		sourcePersister.getPersisterListener().addInsertListener(
+				sourcePersister.getMappingStrategy().getIdMappingStrategy().getIdentifierInsertionManager().getInsertListener());
 		targetPersister.getPersisterListener().addInsertListener(
 				targetPersister.getMappingStrategy().getIdMappingStrategy().getIdentifierInsertionManager().getInsertListener());
 		
 		// finding joined columns: left one is primary key. Right one is given by the target strategy through the property accessor
-		if (joinedTablesPersister.getMainTable().getPrimaryKey().getColumns().size() > 1) {
+		if (sourcePersister.getMainTable().getPrimaryKey().getColumns().size() > 1) {
 			throw new NotYetSupportedOperationException("Joining tables on a composed primary key is not (yet) supported");
 		}
-		Column leftPrimaryKey = first(joinedTablesPersister.getMainTable().getPrimaryKey().getColumns());
+		Column leftPrimaryKey = first(sourcePersister.getMainTable().getPrimaryKey().getColumns());
 		
 		RelationshipMode maintenanceMode = cascadeMany.getRelationshipMode();
 		// selection is always present (else configuration is nonsense !)
@@ -74,13 +99,13 @@ public class CascadeManyConfigurer<SRC, TRGT, SRCID, TRGTID, C extends Collectio
 		boolean writeAuthorized = maintenanceMode != READ_ONLY;
 		
 		ManyAssociationConfiguration<SRC, TRGT, SRCID, TRGTID, C> manyAssociationConfiguration = new ManyAssociationConfiguration<>(cascadeMany,
-				joinedTablesPersister, targetPersister, leftPrimaryKey, foreignKeyNamingStrategy,
+				sourcePersister, targetPersister, leftPrimaryKey, foreignKeyNamingStrategy,
 				orphanRemoval, writeAuthorized);
-		if (cascadeMany.getReverseSetter() == null && cascadeMany.getReverseGetter() == null && cascadeMany.getReverseColumn() == null) {
-			new CascadeManyWithAssociationTableConfigurer<>(manyAssociationConfiguration, associationTableNamingStrategy, dialect).configure();
-		} else {
+		if (cascadeMany.isOwnedByReverseSide()) {
 			// case : reverse property is defined through one of the setter, getter or column on the reverse side
 			new CascadeManyWithMappedAssociationConfigurer<>(manyAssociationConfiguration, maintenanceMode).configure();
+		} else {
+			new CascadeManyWithAssociationTableConfigurer<>(manyAssociationConfiguration, associationTableNamingStrategy, persistenceContext.getDialect()).configure();
 		}
 	}
 	
@@ -94,12 +119,13 @@ public class CascadeManyConfigurer<SRC, TRGT, SRCID, TRGTID, C extends Collectio
 		private final Persister<TRGT, TRGTID, ?> targetPersister;
 		private final Column leftPrimaryKey;
 		private final ForeignKeyNamingStrategy foreignKeyNamingStrategy;
-		private final Function<SRC, C> collectionGetter;
-		private final MutatorByMember<SRC, C, ? extends Member> setter;
+		private final IReversibleAccessor<SRC, C> collectionGetter;
+		private final IMutator<SRC, C> setter;
 		private final boolean orphanRemoval;
 		private final boolean writeAuthorized;
+		private final MemberDefinition memberDefinition;
 		
-		public ManyAssociationConfiguration(CascadeMany<SRC, TRGT, TRGTID, C> cascadeMany,
+		private ManyAssociationConfiguration(CascadeMany<SRC, TRGT, TRGTID, C> cascadeMany,
 											JoinedTablesPersister<SRC, SRCID, ?> joinedTablesPersister,
 											Persister<TRGT, TRGTID, ?> targetPersister,
 											Column leftPrimaryKey,
@@ -112,7 +138,13 @@ public class CascadeManyConfigurer<SRC, TRGT, SRCID, TRGTID, C extends Collectio
 			this.leftPrimaryKey = leftPrimaryKey;
 			this.foreignKeyNamingStrategy = foreignKeyNamingStrategy;
 			this.collectionGetter = cascadeMany.getCollectionProvider();
-			this.setter = new AccessorByMethod<SRC, C>(cascadeMany.getCollectionGetter()).toMutator();
+			this.setter = collectionGetter.toMutator();
+			// we don't use MemberDefinition.giveMemberDefinition(..) because it gives a cross-member definition, loosing get/set for example,
+			// whereas we need this information to build better association table name
+			this.memberDefinition = new MemberDefinition(
+					cascadeMany.getMethodReference().getDeclaringClass(),
+					cascadeMany.getMethodReference().getMethodName(),
+					cascadeMany.getMethodReference().getPropertyType());
 			this.orphanRemoval = orphanRemoval;
 			this.writeAuthorized = writeAuthorized;
 		}
@@ -140,11 +172,12 @@ public class CascadeManyConfigurer<SRC, TRGT, SRCID, TRGTID, C extends Collectio
 			Table<?> rightTable = manyAssociationConfiguration.targetPersister.getMappingStrategy().getTargetTable();
 			Column rightPrimaryKey = first(rightTable.getPrimaryKey().getColumns());
 			
-			String associationTableName = associationTableNamingStrategy.giveName(manyAssociationConfiguration.cascadeMany.getCollectionGetter(),
+			String associationTableName = associationTableNamingStrategy.giveName(manyAssociationConfiguration.memberDefinition,
 					manyAssociationConfiguration.leftPrimaryKey, rightPrimaryKey);
 			AbstractOneToManyWithAssociationTableEngine<SRC, TRGT, SRCID, TRGTID, C, ? extends AssociationRecord, ? extends AssociationTable> oneToManyWithAssociationTableEngine;
-			ManyRelationDescriptor<SRC, TRGT, C> manyRelationDescriptor = new ManyRelationDescriptor<>(manyAssociationConfiguration.collectionGetter,
-					manyAssociationConfiguration.setter::set, manyAssociationConfiguration.cascadeMany.getCollectionTargetClass());
+			ManyRelationDescriptor<SRC, TRGT, C> manyRelationDescriptor = new ManyRelationDescriptor<>(
+					manyAssociationConfiguration.collectionGetter::get, manyAssociationConfiguration.setter::set,
+					(Class<C>) manyAssociationConfiguration.memberDefinition.getMemberType());
 			if (manyAssociationConfiguration.cascadeMany instanceof CascadeManyList) {
 				oneToManyWithAssociationTableEngine = configureIndexedAssociation(rightPrimaryKey, associationTableName, manyRelationDescriptor);
 			} else {
@@ -185,7 +218,7 @@ public class CascadeManyConfigurer<SRC, TRGT, SRCID, TRGTID, C extends Collectio
 			
 			if (((CascadeManyList) manyAssociationConfiguration.cascadeMany).getIndexingColumn() != null) {
 				throw new UnsupportedOperationException("Indexing column is defined without owner : relation is only declared by "
-						+ Reflections.toString(manyAssociationConfiguration.cascadeMany.getCollectionGetter()));
+						+ MemberDefinition.toString(manyAssociationConfiguration.collectionGetter));
 			}
 			
 			// NB: index column is part of the primary key
@@ -229,14 +262,16 @@ public class CascadeManyConfigurer<SRC, TRGT, SRCID, TRGTID, C extends Collectio
 			}
 			
 			// We're looking for the foreign key (for necessary join) and for getter/setter required to manage the relation 
-			Column foreignKey = manyAssociationConfiguration.cascadeMany.getReverseColumn();
+			Column reverseColumn = manyAssociationConfiguration.cascadeMany.getReverseColumn();
 			Method reverseMethod = null;
 			String getterSignature = null;
 			// Setter for applying source entity to reverse side (target entities)
 			SerializableBiConsumer<TRGT, SRC> reverseSetter = null;
 			SerializableFunction<TRGT, SRC> reverseGetter = null;
-			if (foreignKey == null) {
-				// Here reverse side is surely defined by method reference (because of assertion some lines upper), we look for the matching column
+			if (reverseColumn == null) {
+				// Reverse side is surely defined by reverse method (because CascadeManyWithMappedAssociationConfigurer is invoked only
+				// when association is mapped by reverse side and reverse column is null),
+				// we look for the matching column
 				MethodReferenceCapturer methodReferenceCapturer = new MethodReferenceCapturer();
 				if (manyAssociationConfiguration.cascadeMany.getReverseSetter() != null) {
 					reverseSetter = manyAssociationConfiguration.cascadeMany.getReverseSetter();
@@ -254,12 +289,12 @@ public class CascadeManyConfigurer<SRC, TRGT, SRCID, TRGTID, C extends Collectio
 				// we must use a ValueAccessPointMap which allows to compare different ValueAccessPoints
 				ValueAccessPointMap<? extends Column<?, Object>> accessPointMap =
 						new ValueAccessPointMap<>(manyAssociationConfiguration.targetPersister.getMappingStrategy().getMainMappingStrategy().getPropertyToColumn());
-				foreignKey = accessPointMap.get(reversePropertyAccessor);
-				if (foreignKey == null) {
+				reverseColumn = accessPointMap.get(reversePropertyAccessor);
+				if (reverseColumn == null) {
 					// This should not happen, left for bug safety
 					throw new NotYetSupportedOperationException("Can't build a relation with on a non mapped property, please add the mapping of a "
 							+ Reflections.toString(manyAssociationConfiguration.joinedTablesPersister.getMappingStrategy().getClassToPersist())
-							+ " to persister of " + Reflections.toString(manyAssociationConfiguration.cascadeMany.getPersister().getMappingStrategy().getClassToPersist()));
+							+ " to persister of " + Reflections.toString(manyAssociationConfiguration.cascadeMany.getTargetMappingConfiguration().getPersistedClass()));
 				}
 			}
 			
@@ -278,8 +313,8 @@ public class CascadeManyConfigurer<SRC, TRGT, SRCID, TRGTID, C extends Collectio
 			}
 			
 			// adding foreign key constraint
-			foreignKey.getTable().addForeignKey(manyAssociationConfiguration.foreignKeyNamingStrategy.giveName(foreignKey,
-					manyAssociationConfiguration.leftPrimaryKey), foreignKey, manyAssociationConfiguration.leftPrimaryKey);
+			reverseColumn.getTable().addForeignKey(manyAssociationConfiguration.foreignKeyNamingStrategy.giveName(reverseColumn,
+					manyAssociationConfiguration.leftPrimaryKey), reverseColumn, manyAssociationConfiguration.leftPrimaryKey);
 			
 			// we have a direct relation : relationship is owned by target table as a foreign key
 			OneToManyWithMappedAssociationEngine<SRC, TRGT, SRCID, TRGTID, C> mappedAssociationEngine;
@@ -288,7 +323,7 @@ public class CascadeManyConfigurer<SRC, TRGT, SRCID, TRGTID, C extends Collectio
 			} else {
 				mappedAssociationEngine = configureNonIndexedAssociation(reverseSetter);
 			}
-			mappedAssociationEngine.addSelectCascade(manyAssociationConfiguration.leftPrimaryKey, foreignKey);
+			mappedAssociationEngine.addSelectCascade(manyAssociationConfiguration.leftPrimaryKey, reverseColumn);
 			if (manyAssociationConfiguration.writeAuthorized) {
 				mappedAssociationEngine.addInsertCascade();
 				mappedAssociationEngine.addUpdateCascade(manyAssociationConfiguration.orphanRemoval);
@@ -299,8 +334,8 @@ public class CascadeManyConfigurer<SRC, TRGT, SRCID, TRGTID, C extends Collectio
 		private OneToManyWithMappedAssociationEngine<SRC, TRGT, SRCID, TRGTID, C> configureNonIndexedAssociation(BiConsumer<TRGT, SRC> reverseSetter) {
 			OneToManyWithMappedAssociationEngine<SRC, TRGT, SRCID, TRGTID, C> mappedAssociationEngine;
 			MappedManyRelationDescriptor<SRC, TRGT, C> manyRelationDefinition = new MappedManyRelationDescriptor<>(
-					manyAssociationConfiguration.collectionGetter, manyAssociationConfiguration.setter::set,
-					manyAssociationConfiguration.cascadeMany.getCollectionTargetClass(), reverseSetter);
+					manyAssociationConfiguration.collectionGetter::get, manyAssociationConfiguration.setter::set,
+					(Class<C>) manyAssociationConfiguration.memberDefinition.getMemberType(), reverseSetter);
 			mappedAssociationEngine = new OneToManyWithMappedAssociationEngine<>(
 					manyAssociationConfiguration.targetPersister,
 					manyRelationDefinition,
@@ -312,8 +347,8 @@ public class CascadeManyConfigurer<SRC, TRGT, SRCID, TRGTID, C extends Collectio
 																									  SerializableFunction<TRGT, SRC> reverseGetter) {
 			OneToManyWithMappedAssociationEngine<SRC, TRGT, SRCID, TRGTID, C> mappedAssociationEngine;
 			IndexedMappedManyRelationDescriptor<SRC, TRGT, C> manyRelationDefinition = new IndexedMappedManyRelationDescriptor<>(
-					manyAssociationConfiguration.collectionGetter, manyAssociationConfiguration.setter::set,
-					manyAssociationConfiguration.cascadeMany.getCollectionTargetClass(), reverseSetter, reverseGetter, getterSignature);
+					manyAssociationConfiguration.collectionGetter::get, manyAssociationConfiguration.setter::set,
+					(Class<C>) manyAssociationConfiguration.memberDefinition.getMemberType(), reverseSetter, reverseGetter, getterSignature);
 			mappedAssociationEngine = (OneToManyWithMappedAssociationEngine) new OneToManyWithIndexedMappedAssociationEngine<>(
 					manyAssociationConfiguration.targetPersister,
 					(IndexedMappedManyRelationDescriptor) manyRelationDefinition,

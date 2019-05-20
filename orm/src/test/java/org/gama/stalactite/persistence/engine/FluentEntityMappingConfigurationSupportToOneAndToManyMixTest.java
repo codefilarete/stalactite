@@ -5,6 +5,7 @@ import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.HashSet;
+import java.util.List;
 
 import org.gama.lang.collection.Arrays;
 import org.gama.lang.collection.Iterables;
@@ -42,8 +43,6 @@ public class FluentEntityMappingConfigurationSupportToOneAndToManyMixTest {
 	
 	private static final HSQLDBDialect DIALECT = new HSQLDBDialect();
 	private DataSource dataSource = new HSQLDBInMemoryDataSource();
-	private Persister<Person, Identifier<Long>, ?> personPersister;
-	private Persister<City, Identifier<Long>, ?> cityPersister;
 	private PersistenceContext persistenceContext;
 	private EntityMappingConfiguration<City, Identifier<Long>> cityMappingConfiguration;
 	private EntityMappingConfiguration<Person, Identifier<Long>> personMappingConfiguration;
@@ -66,7 +65,6 @@ public class FluentEntityMappingConfigurationSupportToOneAndToManyMixTest {
 				.add(Person::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.add(Person::getName);
 		personMappingConfiguration = personMappingBuilder.getConfiguration();
-		personPersister = personMappingBuilder.build(persistenceContext);
 		
 		IFluentMappingBuilderColumnOptions<City, Identifier<Long>> cityMappingBuilder = FluentEntityMappingConfigurationSupport.from(City.class,
 				Identifier.LONG_TYPE)
@@ -74,7 +72,6 @@ public class FluentEntityMappingConfigurationSupportToOneAndToManyMixTest {
 				.add(City::getName)
 				.add(City::getCountry);
 		cityMappingConfiguration = cityMappingBuilder.getConfiguration();
-		cityPersister = cityMappingBuilder.build(persistenceContext);
 	}
 	
 	@Test
@@ -88,7 +85,7 @@ public class FluentEntityMappingConfigurationSupportToOneAndToManyMixTest {
 				.add(Country::getName)
 				.add(Country::getDescription)
 				.addOneToOne(Country::getPresident, personMappingConfiguration)
-				.addOneToManySet(Country::getCities, cityPersister).mappedBy(City::setCountry).cascading(RelationshipMode.READ_ONLY)
+				.addOneToManySet(Country::getCities, cityMappingConfiguration).mappedBy(City::setCountry).cascading(RelationshipMode.READ_ONLY)
 				.build(persistenceContext);
 		
 		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
@@ -96,7 +93,7 @@ public class FluentEntityMappingConfigurationSupportToOneAndToManyMixTest {
 		
 		Connection currentConnection = persistenceContext.getCurrentConnection();
 		ResultSetIterator<JdbcForeignKey> fkPersonIterator = new ResultSetIterator<JdbcForeignKey>(currentConnection.getMetaData().getExportedKeys(null, null,
-				personPersister.getMainTable().getName().toUpperCase())) {
+				persistenceContext.getPersister(Person.class).getMainTable().getName().toUpperCase())) {
 			@Override
 			public JdbcForeignKey convert(ResultSet rs) throws SQLException {
 				return new JdbcForeignKey(
@@ -133,7 +130,7 @@ public class FluentEntityMappingConfigurationSupportToOneAndToManyMixTest {
 				.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.add(Country::getName)
 				.addOneToOne(Country::getPresident, personMappingConfiguration).cascading(ALL)
-				.addOneToManySet(Country::getCities, cityPersister).cascading(ALL)
+				.addOneToManySet(Country::getCities, cityMappingConfiguration).cascading(ALL)
 				.build(persistenceContext);
 		
 		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
@@ -184,15 +181,13 @@ public class FluentEntityMappingConfigurationSupportToOneAndToManyMixTest {
 				.add(State::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.add(State::getName)
 				.add(State::getCountry);	// allow to declare the owner column of the relation
-		Persister<State, Identifier<Long>, ?> statePersister = stateMappingBuilder.build(persistenceContext);
-		
 		
 		Persister<Country, Identifier<Long>, ?> countryPersister = FluentEntityMappingConfigurationSupport.from(Country.class, Identifier.LONG_TYPE)
 				.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.add(Country::getName)
 				.add(Country::getDescription)
-				.addOneToManySet(Country::getCities, cityPersister).mappedBy(City::setCountry).cascading(ALL_ORPHAN_REMOVAL)
-				.addOneToManySet(Country::getStates, statePersister).mappedBy(State::setCountry).cascading(ALL)
+				.addOneToManySet(Country::getCities, cityMappingConfiguration).mappedBy(City::setCountry).cascading(ALL_ORPHAN_REMOVAL)
+				.addOneToManySet(Country::getStates, stateMappingBuilder.getConfiguration()).mappedBy(State::setCountry).cascading(ALL)
 				.build(persistenceContext);
 		
 		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
@@ -247,7 +242,9 @@ public class FluentEntityMappingConfigurationSupportToOneAndToManyMixTest {
 		assertEquals(Arrays.asHashSet("changed", "ardeche"), persistedCountry2.getStates().stream().map(State::getName).collect(toSet()));
 		
 		// Ain should'nt have been deleted because we didn't asked for orphan removal
-		State loadedAin = statePersister.select(ain.getId());
-		assertNotNull(loadedAin);
+		List<Long> loadedAin = persistenceContext.newQuery("select id from State where id = " + ain.getId().getSurrogate(), Long.class)
+				.mapKey(Long::new, "id", long.class)
+				.execute(persistenceContext.getConnectionProvider());
+		assertNotNull(Iterables.first(loadedAin));
 	}
 }

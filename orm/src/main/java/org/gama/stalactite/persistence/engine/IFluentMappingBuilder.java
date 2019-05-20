@@ -94,16 +94,24 @@ public interface IFluentMappingBuilder<C, I> extends IFluentEmbeddableMappingCon
 	 * return type or arguments in order to distinct it from a {@link List} version.
 	 *
 	 * @param getter the way to get the {@link Set} from source entities
-	 * @param persister the persister of the {@link Set} entities 
+	 * @param mappingConfiguration the mapping configuration of the {@link Set} entities 
 	 * @param <O> type of {@link Set} element
 	 * @param <J> type of identifier of {@code O}
 	 * @param <S> refined {@link Set} type
 	 * @return a enhanced version of {@code this} so one can add set options to the relation or add mapping to {@code this}
-	 * @see #addOneToManyList(SerializableFunction, Persister)
+	 * @see #addOneToManyList(SerializableFunction, EntityMappingConfiguration)
 	 */
 	<O, J, S extends Set<O>>
 	IFluentMappingBuilderOneToManyOptions<C, I, O>
-	addOneToManySet(SerializableFunction<C, S> getter, Persister<O, J, ? extends Table> persister);
+	addOneToManySet(SerializableFunction<C, S> getter, EntityMappingConfiguration<O, J> mappingConfiguration);
+	
+	<O, J, S extends Set<O>, T extends Table>
+	IFluentMappingBuilderOneToManyOptions<C, I, O>
+	addOneToManySet(SerializableFunction<C, S> getter, EntityMappingConfiguration<O, J> mappingConfiguration, @javax.annotation.Nullable T table);
+	
+	<O, J, S extends Set<O>, T extends Table>
+	IFluentMappingBuilderOneToManyOptions<C, I, O>
+	addOneToManySet(SerializableBiConsumer<C, S> setter, EntityMappingConfiguration<O, J> mappingConfiguration, @javax.annotation.Nullable T table);
 	
 	/**
 	 * Declares a relation between current entity and some of type {@code O} throught a {@link List}.
@@ -111,16 +119,24 @@ public interface IFluentMappingBuilder<C, I> extends IFluentEmbeddableMappingCon
 	 * return type or arguments in order to distinct it from a {@link Set} version.
 	 * 
 	 * @param getter the way to get the {@link List} from source entities
-	 * @param persister the persister of the {@link List} entities 
+	 * @param mappingConfiguration the mapping configuration of the {@link List} entities 
 	 * @param <O> type of {@link List} element
 	 * @param <J> type of identifier of {@code O} (target entities)
 	 * @param <S> refined {@link List} type
 	 * @return a enhanced version of {@code this} so one can add set options to the relation or add mapping to {@code this}
-	 * @see #addOneToManySet(SerializableFunction, Persister)
+	 * @see #addOneToManySet(SerializableFunction, EntityMappingConfiguration)
 	 */
 	<O, J, S extends List<O>>
 	IFluentMappingBuilderOneToManyListOptions<C, I, O>
-	addOneToManyList(SerializableFunction<C, S> getter, Persister<O, J, ? extends Table> persister);
+	addOneToManyList(SerializableFunction<C, S> getter, EntityMappingConfiguration<O, J> mappingConfiguration);
+	
+	<O, J, S extends List<O>, T extends Table>
+	IFluentMappingBuilderOneToManyListOptions<C, I, O>
+	addOneToManyList(SerializableFunction<C, S> getter, EntityMappingConfiguration<O, J> mappingConfiguration, @javax.annotation.Nullable T table);
+	
+	<O, J, S extends List<O>, T extends Table>
+	IFluentMappingBuilderOneToManyListOptions<C, I, O>
+	addOneToManyList(SerializableBiConsumer<C, S> setter, EntityMappingConfiguration<O, J> mappingConfiguration, @javax.annotation.Nullable T table);
 	
 	@Override
 	<O> IFluentMappingBuilderEmbedOptions<C, I, O> embed(SerializableBiConsumer<C, O> setter);

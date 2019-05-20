@@ -13,8 +13,6 @@ import java.util.function.Consumer;
 import org.danekja.java.util.function.serializable.SerializableBiConsumer;
 import org.danekja.java.util.function.serializable.SerializableBiFunction;
 import org.danekja.java.util.function.serializable.SerializableFunction;
-import org.gama.lang.Reflections;
-import org.gama.lang.collection.ValueFactoryHashMap;
 import org.gama.reflection.MethodReferenceCapturer;
 import org.gama.sql.ConnectionProvider;
 import org.gama.sql.dml.PreparedSQL;
@@ -46,7 +44,7 @@ import org.gama.stalactite.query.model.QueryProvider;
 public class PersistenceContext {
 	
 	private int jdbcBatchSize = 100;
-	private final Map<Class<?>, Persister> persisterCache = new ValueFactoryHashMap<>(10, this::newPersister);
+	private final Map<Class<?>, Persister> persisterCache = new HashMap<>();
 	
 	private final Dialect dialect;
 	private final ConnectionProvider connectionProvider;
@@ -80,7 +78,7 @@ public class PersistenceContext {
 	public <C, I, T extends Table<T>> Persister<C, I, T> add(ClassMappingStrategy<C, I, T> classMappingStrategy) {
 		mappingStrategies.put(classMappingStrategy.getClassToPersist(), classMappingStrategy);
 		Persister<C, I, T> persister = new Persister<>(this, classMappingStrategy);
-		persisterCache.put(classMappingStrategy.getClassToPersist(), persister);
+		addPersister(persister);
 		return persister;
 	}
 	
@@ -117,21 +115,12 @@ public class PersistenceContext {
 	 * @param <C> type of persisted bean
 	 */
 	public <C> void addPersister(Persister<C, ?, ?> persister) {
+//		Persister existingPersister = persisterCache.get(persister.getMappingStrategy().getClassToPersist());
+//		if (existingPersister != null && existingPersister != persister) {
+//			throw new IllegalArgumentException("Persister already exists for class " + Reflections.toString(persister.getMappingStrategy().getClassToPersist()));
+//		} // else : trying to add twice the same persister, it doesn't matter
+		
 		persisterCache.put(persister.getMappingStrategy().getClassToPersist(), persister);
-	}
-	
-	protected <C, I, T extends Table<T>> Persister<C, I, T> newPersister(Class<C> clazz) {
-		ClassMappingStrategy<C, I, T> classMappingStrategy = ensureMappedClass(clazz);
-		return new Persister<>(this, classMappingStrategy);
-	}
-	
-	protected <C, I, T extends Table<T>> ClassMappingStrategy<C, I, T> ensureMappedClass(Class<C> clazz) {
-		ClassMappingStrategy<C, I, T> mappingStrategy = getMappingStrategy(clazz);
-		if (mappingStrategy == null) {
-			throw new IllegalArgumentException("Unmapped entity " + Reflections.toString(clazz));
-		} else {
-			return mappingStrategy;
-		}
 	}
 	
 	public int getJDBCBatchSize() {
@@ -438,22 +427,12 @@ public class PersistenceContext {
 		}
 		
 		/**
-		 * Executes this insert statement. To be used when insert has no parameters on where clause, else use {@link #execute(Map)}
-		 *
-		 * @return the inserted row count
-		 */
-		public int execute() {
-			return execute(Collections.emptyMap());
-		}
-		
-		/**
 		 * Executes this insert statement.
 		 *
 		 * @return the inserted row count
 		 */
-		public int execute(Map<Column, Object> values) {
+		public int execute() {
 			InsertStatement<T> insertStatement = new InsertCommandBuilder<>(this).toStatement(getDialect().getColumnBinderRegistry());
-			values.forEach(insertStatement::setValue);
 			try (WriteOperation<Integer> writeOperation = new WriteOperation<>(insertStatement, connectionProvider)) {
 				writeOperation.setValues(insertStatement.getValues());
 				return writeOperation.execute();

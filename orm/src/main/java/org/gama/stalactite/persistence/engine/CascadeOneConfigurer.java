@@ -104,6 +104,7 @@ public class CascadeOneConfigurer<SRC, TRGT, ID> {
 			EntityMappingConfiguration<TRGT, ID> targetMappingConfiguration = cascadeOne.getTargetMappingConfiguration();
 			
 			Persister<TRGT, ID, Table> targetPersister = new EntityMappingBuilder<>(targetMappingConfiguration, new MethodReferenceCapturer())
+					// please note that even if no table is found in configuration, build(..) will create one
 					.build(persistenceContext, Nullable.nullable(cascadeOne.getTargetTable()).orGet(Nullable.nullable(cascadeOne.getReverseColumn()).apply(Column::getTable).get()));
 			ClassMappingStrategy<TRGT, ID, Table> targetMappingStrategy = targetPersister.getMappingStrategy();
 			
@@ -181,12 +182,12 @@ public class CascadeOneConfigurer<SRC, TRGT, ID> {
 		
 		@Override
 		protected <T extends Table<T>> Duo<Column, Column> determineForeignKeyColumns(CascadeOne<SRC, TRGT, ID> cascadeOne,
-																					  ClassMappingStrategy<SRC, ID, T> mappingStrategy,
+																					  ClassMappingStrategy<SRC, ID, T> srcMappingStrategy,
 																					  IReversibleAccessor<SRC, TRGT> targetAccessor,
 																					  ClassMappingStrategy<TRGT, ID, Table> targetMappingStrategy,
 																					  ForeignKeyNamingStrategy foreignKeyNamingStrategy) {
-			// targetAccessor may not be the one that was declared is propertyToColumn, so we need to wrap them into a more flexible search structure : ValueAccessPointMap
-			Column<T, ID> leftColumn = (Column<T, ID>) new ValueAccessPointMap<Column>(mappingStrategy.getMainMappingStrategy().getPropertyToColumn()).get(targetAccessor);
+			// targetAccessor may not be the one that was declared in propertyToColumn, so we need to wrap them into a more flexible search structure : ValueAccessPointMap
+			Column<T, ID> leftColumn = (Column<T, ID>) new ValueAccessPointMap<Column>(srcMappingStrategy.getMainMappingStrategy().getPropertyToColumn()).get(targetAccessor);
 			// According to the nullable option, we specify the ddl schema option
 			leftColumn.nullable(cascadeOne.isNullable());
 			Column<?, ID> rightColumn = (Column<?, ID>) Iterables.first((Set<Column<?, Object>>) targetMappingStrategy.getTargetTable().getPrimaryKey().getColumns());

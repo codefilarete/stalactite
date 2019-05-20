@@ -54,9 +54,7 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 	
 	private static final HSQLDBDialect DIALECT = new HSQLDBDialect();
 	private DataSource dataSource = new HSQLDBInMemoryDataSource();
-	private Persister<Person, Identifier<Long>, ?> personPersister;
 	private EntityMappingConfiguration<Person, Identifier<Long>> personConfiguration;
-	private Persister<City, Identifier<Long>, ?> cityPersister;
 	private EntityMappingConfiguration<City, Identifier<Long>> cityConfiguration;
 	private PersistenceContext persistenceContext;
 	
@@ -77,13 +75,11 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 				.add(Person::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.add(Person::getName);
 		personConfiguration = personMappingBuilder.getConfiguration();
-		personPersister = personMappingBuilder.build(persistenceContext);
 		
 		IFluentMappingBuilderColumnOptions<City, Identifier<Long>> cityMappingBuilder = FluentEntityMappingConfigurationSupport.from(City.class, Identifier.LONG_TYPE)
 				.add(City::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.add(City::getName);
 		cityConfiguration = cityMappingBuilder.getConfiguration();
-		cityPersister = cityMappingBuilder.build(persistenceContext);
 	}
 	
 	@Test
@@ -175,7 +171,6 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 		LongProvider personIdProvider = new LongProvider(123);
 		Person person = new Person(personIdProvider.giveNewIdentifier());
 		person.setName("France president");
-		personPersister.insert(person);
 		
 		LongProvider countryIdProvider = new LongProvider(456);
 		Country dummyCountry = new Country(countryIdProvider.giveNewIdentifier());
@@ -195,7 +190,7 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 		// update test
 		Person person2 = new Person(personIdProvider.giveNewIdentifier());
 		person2.setName("French president");
-		personPersister.insert(person2);
+		
 		dummyCountry.setPresident(person2);
 		countryPersister.update(dummyCountry, selectedCountry, false);
 		
@@ -285,7 +280,7 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 		
 		Connection currentConnection = persistenceContext.getCurrentConnection();
 		ResultSetIterator<JdbcForeignKey> fkPersonIterator = new ResultSetIterator<JdbcForeignKey>(currentConnection.getMetaData().getExportedKeys(null, null,
-				cityPersister.getMainTable().getName().toUpperCase())) {
+				persistenceContext.getPersister(City.class).getMainTable().getName().toUpperCase())) {
 			@Override
 			public JdbcForeignKey convert(ResultSet rs) throws SQLException {
 				return new JdbcForeignKey(
@@ -350,7 +345,7 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 		
 		// ensuring that the foreign key is present on table, hence testing that cityTable was used, not a clone created by build(..) 
 		JdbcForeignKey expectedForeignKey = new JdbcForeignKey("FK_city_state_Country_id", "city", "state", "Country", "id");
-		Assertions.assertEquals(Arrays.asHashSet(expectedForeignKey), Iterables.collect(cityTable.getForeignKeys(), JdbcForeignKey::new, HashSet::new), JdbcForeignKey::getSignature);
+		Assertions.assertAllEquals(Arrays.asHashSet(expectedForeignKey), Iterables.collect(cityTable.getForeignKeys(), JdbcForeignKey::new, HashSet::new), JdbcForeignKey::getSignature);
 		
 		// ensuring that the foreign key is also deployed
 		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
@@ -416,7 +411,6 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 				.add(City::getName);
 		Table cityTable = new Table("city");
 		Column<Table, Country> stateColumn = cityTable.addColumn("state", Country.class);
-		Persister<City, Identifier<Long>, ?> cityPersister = cityMappingBuilder.build(persistenceContext, cityTable);
 		
 		Persister<Country, Identifier<Long>, Table> countryPersister = FluentEntityMappingConfigurationSupport.from(Country.class, Identifier.LONG_TYPE)
 				// setting a foreign key naming strategy to be tested
@@ -491,6 +485,7 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 			assertEquals("new French president", countryFromDB.getPresident().getName());
 			assertEquals(newPresident.getId(), countryFromDB.getPresident().getId());
 			// and original one was left untouched
+			Persister<Person, Identifier<Long>, ?> personPersister = persistenceContext.getPersister(Person.class);
 			assertEquals("French president renamed", personPersister.select(originalPresident.getId()).getName());
 		}
 	
@@ -524,6 +519,7 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 			Country countryFromDB = countryPersister.select(dummyCountry.getId());
 			assertNull(countryFromDB.getPresident());
 			// President shouldn't be deleted because orphan removal wasn't asked
+			Persister<Person, Identifier<Long>, ?> personPersister = persistenceContext.getPersister(Person.class);
 			Person previousPresident = personPersister.select(president.getId());
 			assertNotNull(previousPresident);
 			// properties shouldn't have been nullified
@@ -560,6 +556,7 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 			Country countryFromDB = countryPersister.select(dummyCountry.getId());
 			assertNull(countryFromDB.getPresident());
 			// previous president has been deleted
+			Persister<Person, Identifier<Long>, ?> personPersister = persistenceContext.getPersister(Person.class);
 			Person previousPresident = personPersister.select(president.getId());
 			assertNull(previousPresident);
 		}
@@ -873,6 +870,7 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 			Country modifiedCountry = persistedCountry;
 			Country referentCountry = dummyCountry;
 			
+			Persister<City, Object, ?> cityPersister = persistenceContext.getPersister(City.class);
 			// nullifiying relation test
 			modifiedCountry.setCapital(null);
 			countryPersister.update(modifiedCountry, referentCountry, false);

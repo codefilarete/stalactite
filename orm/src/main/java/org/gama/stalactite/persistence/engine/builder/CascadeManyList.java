@@ -1,10 +1,10 @@
 package org.gama.stalactite.persistence.engine.builder;
 
-import java.lang.reflect.Method;
 import java.util.List;
-import java.util.function.Function;
 
-import org.gama.stalactite.persistence.engine.Persister;
+import org.gama.reflection.IReversibleAccessor;
+import org.gama.reflection.ValueAccessPointByMethodReference;
+import org.gama.stalactite.persistence.engine.EntityMappingConfiguration;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
 
@@ -13,15 +13,15 @@ import org.gama.stalactite.persistence.structure.Table;
  * 
  * 
  * @param <SRC> the "one" type
- * @param <O> the "many" type
- * @param <J> identifier type of O
+ * @param <TRGT> the "many" type
+ * @param <TRGTID> identifier type of O
  */
-public class CascadeManyList<SRC, O, J, C extends List<O>> extends CascadeMany<SRC, O, J, C> {
+public class CascadeManyList<SRC, TRGT, TRGTID, C extends List<TRGT>> extends CascadeMany<SRC, TRGT, TRGTID, C> {
 	
 	private Column indexingColumn;
 	
-	public CascadeManyList(Function<SRC, C> targetProvider, Persister<O, J, ? extends Table> persister, Method method) {
-		super(targetProvider, persister, (Class<C>) (Class) List.class, method);
+	public <T extends Table> CascadeManyList(IReversibleAccessor<SRC, C> collectionProvider, ValueAccessPointByMethodReference methodReference, EntityMappingConfiguration<TRGT, TRGTID> targetMappingConfiguration, T targetTable) {
+		super(collectionProvider, methodReference, targetMappingConfiguration, targetTable);
 	}
 	
 	public void setIndexingColumn(Column<? extends Table, Integer> indexingColumn) {
