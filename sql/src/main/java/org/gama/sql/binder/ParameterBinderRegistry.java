@@ -59,10 +59,6 @@ public class ParameterBinderRegistry {
 		return bindersPerType;
 	}
 	
-	public <E extends Enum<E>> void registerEnum(Class<E> enumType, EnumBindType bindType) {
-		bindersPerType.put(enumType, bindType.newParameterBinder(enumType));
-	}
-	
 	public <T> void register(Class<T> clazz, ParameterBinder<T> parameterBinder) {
 		bindersPerType.put(clazz, parameterBinder);
 	}
