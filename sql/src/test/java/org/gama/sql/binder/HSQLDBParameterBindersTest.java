@@ -32,7 +32,7 @@ public class HSQLDBParameterBindersTest {
 		LinkedHashSet<InputStream> valuesToInsert = Arrays.asSet(inputStream, null);
 		ParameterBinder<InputStream> binarystreamBinder = HSQLDBParameterBinders.BINARYSTREAM_BINDER;
 		Set<InputStream> databaseContent = DefaultParameterBindersTest.insertAndSelect(dataSource, binarystreamBinder, "blob", valuesToInsert);
-		assertEquals(Arrays.asSet(null, "Hello world !"), DefaultParameterBindersTest.convertToString(databaseContent));
+		assertEquals(Arrays.asSet(null, "Hello world !"), DefaultParameterBindersTest.convertInputStreamToString(databaseContent));
 	}
 	
 }

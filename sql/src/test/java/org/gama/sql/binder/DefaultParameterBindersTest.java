@@ -4,6 +4,9 @@ import javax.sql.DataSource;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.math.BigDecimal;
+import java.math.MathContext;
+import java.sql.Blob;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -21,6 +24,7 @@ import org.gama.lang.Nullable;
 import org.gama.lang.collection.Arrays;
 import org.gama.lang.collection.Iterables;
 import org.gama.lang.io.IOs;
+import org.gama.sql.dml.SQLExecutionException;
 import org.gama.sql.result.ResultSetIterator;
 import org.gama.sql.test.DerbyInMemoryDataSource;
 import org.gama.sql.test.HSQLDBInMemoryDataSource;
@@ -84,6 +88,42 @@ public class DefaultParameterBindersTest {
 	
 	@ParameterizedTest
 	@MethodSource("dataSources")
+	public void testByteBinder(DataSource dataSource) throws SQLException {
+		testParameterBinder(DefaultParameterBinders.BYTE_BINDER, dataSource, "int", Arrays.asSet(null, (byte) 42));
+	}
+	
+	@ParameterizedTest
+	@MethodSource("dataSources")
+	public void testBytePrimitiveBinder(DataSource dataSource) throws SQLException {
+		testParameterBinder(DefaultParameterBinders.BYTE_PRIMITIVE_BINDER, dataSource, "int not null", Arrays.asSet((byte) 42));
+	}
+	
+	@ParameterizedTest
+	@MethodSource("dataSources")
+	public void testBytePrimitiveBinder_nullValuePassed_NPEThrown(DataSource dataSource) throws SQLException {
+		assertThrows(NullPointerException.class, () -> testParameterBinder(DefaultParameterBinders.BYTE_PRIMITIVE_BINDER, dataSource,
+				"int not null", Arrays.asSet(null)));
+	}
+	
+	@ParameterizedTest
+	@MethodSource("dataSources")
+	public void testBytesBinder(DataSource dataSource) throws SQLException {
+		byte[] inputStream = "Hello world !".getBytes();
+		Set<byte[]> valuesToInsert = Arrays.asSet(inputStream, null);
+		ParameterBinder<byte[]> binarystreamBinder = DefaultParameterBinders.BYTES_BINDER;
+		if (dataSource instanceof DerbyInMemoryDataSource) {
+			binarystreamBinder = DerbyParameterBinders.BYTES_BINDER;
+		}
+		Set<byte[]> databaseContent = insertAndSelect(dataSource, binarystreamBinder, "blob", valuesToInsert);
+		assertEquals(Arrays.asSet(null, "Hello world !"), convertBytesToString(databaseContent));
+	}
+	
+	static Set<String> convertBytesToString(Set<byte[]> databaseContent) {
+		return databaseContent.stream().map(s -> Nullable.nullable(s).apply(String::new).get()).collect(Collectors.toSet());
+	}
+	
+	@ParameterizedTest
+	@MethodSource("dataSources")
 	public void testDoubleBinder(DataSource dataSource) throws SQLException {
 		testParameterBinder(DefaultParameterBinders.DOUBLE_BINDER, dataSource, "double", Arrays.asSet(null, 42.57D));
 	}
@@ -118,6 +158,12 @@ public class DefaultParameterBindersTest {
 	public void testFloatPrimitiveBinder_nullValuePassed_NPEThrown(DataSource dataSource) throws SQLException {
 		assertThrows(NullPointerException.class, () -> testParameterBinder(DefaultParameterBinders.FLOAT_PRIMITIVE_BINDER, dataSource,
 				"double not null", Arrays.asSet(null)));
+	}
+	
+	@ParameterizedTest
+	@MethodSource("dataSources")
+	public void testBigDecimalBinder(DataSource dataSource) throws SQLException {
+		testParameterBinder(DefaultParameterBinders.BIGDECIMAL_BINDER, dataSource, "DECIMAL(10, 4)", Arrays.asSet(null, new BigDecimal(42.66, new MathContext(6))));
 	}
 	
 	@ParameterizedTest
@@ -207,10 +253,10 @@ public class DefaultParameterBindersTest {
 			binarystreamBinder = DerbyParameterBinders.BINARYSTREAM_BINDER;
 		}
 		Set<InputStream> databaseContent = insertAndSelect(dataSource, binarystreamBinder, "blob", valuesToInsert);
-		assertEquals(Arrays.asSet(null, "Hello world !"), convertToString(databaseContent));
+		assertEquals(Arrays.asSet(null, "Hello world !"), convertInputStreamToString(databaseContent));
 	}
 	
-	static Set<String> convertToString(Set<InputStream> databaseContent) {
+	static Set<String> convertInputStreamToString(Set<InputStream> databaseContent) {
 		return databaseContent.stream().map(s -> Nullable.nullable(s).apply(inputStream -> {
 			try(InputStream closeable = inputStream) {
 				return new String(IOs.toByteArray(closeable));
@@ -218,6 +264,42 @@ public class DefaultParameterBindersTest {
 				throw new RuntimeException(e);
 			}
 		}).get()).collect(Collectors.toSet());
+	}
+	
+	@ParameterizedTest
+	@MethodSource("dataSources")
+	public void testBlobBinder(DataSource dataSource) throws SQLException {
+		Blob blob = new InMemoryBlobSupport("Hello world !".getBytes());
+		Set<Blob> valuesToInsert = Arrays.asSet(blob, null);
+		ParameterBinder<Blob> binarystreamBinder = DefaultParameterBinders.BLOB_BINDER;
+		if (dataSource instanceof DerbyInMemoryDataSource) {
+			binarystreamBinder = DerbyParameterBinders.BLOB_BINDER;
+		}
+		Set<Blob> databaseContent = insertAndSelect(dataSource, binarystreamBinder, "blob", valuesToInsert);
+		assertEquals(Arrays.asSet(null, "Hello world !"), convertBlobToString(databaseContent));
+	}
+	
+	static Set<String> convertBlobToString(Set<Blob> databaseContent) {
+		return databaseContent.stream().map(b -> {
+			try {
+				return Nullable.nullable(b).applyThrowing(blob -> new String(blob.getBytes(1, (int) blob.length()))).get();
+			} catch (SQLException e) {
+				throw new SQLExecutionException(e);
+			}
+		}).collect(Collectors.toSet());
+	}
+	
+	@ParameterizedTest
+	@MethodSource("dataSources")
+	public void testBlobBinder_inputStream(DataSource dataSource) throws SQLException {
+		InputStream inputStream = new ByteArrayInputStream("Hello world !".getBytes());
+		Set<InputStream> valuesToInsert = Arrays.asSet(inputStream, null);
+		ParameterBinder<InputStream> binarystreamBinder = DefaultParameterBinders.BLOB_INPUTSTREAM_BINDER;
+		if (dataSource instanceof DerbyInMemoryDataSource) {
+			binarystreamBinder = DerbyParameterBinders.BLOB_INPUTSTREAM_BINDER;
+		}
+		Set<InputStream> databaseContent = insertAndSelect(dataSource, binarystreamBinder, "blob", valuesToInsert);
+		assertEquals(Arrays.asSet(null, "Hello world !"), convertInputStreamToString(databaseContent));
 	}
 	
 	private <T> void testParameterBinder(ParameterBinder<T> testInstance, DataSource dataSource, String sqlColumnType, Set<T> valuesToInsert) throws SQLException {

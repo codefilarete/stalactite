@@ -31,8 +31,13 @@ public class NullAwareParameterBinder<T> implements ParameterBinder<T> {
 	private final NullAwarePreparedStatementWriter<T> nullAwarePreparedStatementWriter;
 	
 	public NullAwareParameterBinder(ParameterBinder<T> surrogate) {
-		this.nullAwareResultSetReader = new NullAwareResultSetReader<>(surrogate);
-		this.nullAwarePreparedStatementWriter = new NullAwarePreparedStatementWriter<>(surrogate);
+		this(new NullAwareResultSetReader<>(surrogate), new NullAwarePreparedStatementWriter<>(surrogate));
+	}
+	
+	public NullAwareParameterBinder(NullAwareResultSetReader<T> nullAwareResultSetReader,
+									NullAwarePreparedStatementWriter<T> nullAwarePreparedStatementWriter) {
+		this.nullAwareResultSetReader = nullAwareResultSetReader;
+		this.nullAwarePreparedStatementWriter = nullAwarePreparedStatementWriter;
 	}
 	
 	@Override

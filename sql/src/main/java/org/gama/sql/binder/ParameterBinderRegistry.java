@@ -1,7 +1,9 @@
 package org.gama.sql.binder;
 
 import java.io.InputStream;
+import java.math.BigDecimal;
 import java.net.URL;
+import java.sql.Blob;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
@@ -69,10 +71,14 @@ public class ParameterBinderRegistry {
 		register(Double.TYPE, DefaultParameterBinders.DOUBLE_PRIMITIVE_BINDER);
 		register(Float.class, DefaultParameterBinders.FLOAT_BINDER);
 		register(Float.TYPE, DefaultParameterBinders.FLOAT_PRIMITIVE_BINDER);
+		register(BigDecimal.class, DefaultParameterBinders.BIGDECIMAL_BINDER);
 		register(Long.class, DefaultParameterBinders.LONG_BINDER);
 		register(Long.TYPE, DefaultParameterBinders.LONG_PRIMITIVE_BINDER);
 		register(Integer.class, DefaultParameterBinders.INTEGER_BINDER);
 		register(Integer.TYPE, DefaultParameterBinders.INTEGER_PRIMITIVE_BINDER);
+		register(Byte.class, DefaultParameterBinders.BYTE_BINDER);
+		register(Byte.TYPE, DefaultParameterBinders.BYTE_PRIMITIVE_BINDER);
+		register(byte[].class, DefaultParameterBinders.BYTES_BINDER);
 		register(Date.class, DefaultParameterBinders.DATE_BINDER);
 		register(java.sql.Date.class, DefaultParameterBinders.DATE_SQL_BINDER);
 		register(LocalDate.class, DefaultParameterBinders.LOCALDATE_BINDER);
@@ -80,6 +86,7 @@ public class ParameterBinderRegistry {
 		register(Boolean.class, DefaultParameterBinders.BOOLEAN_BINDER);
 		register(Boolean.TYPE, DefaultParameterBinders.BOOLEAN_PRIMITIVE_BINDER);
 		register(InputStream.class, DefaultParameterBinders.BINARYSTREAM_BINDER);
+		register(Blob.class, DefaultParameterBinders.BLOB_BINDER);
 		register(URL.class, DefaultParameterBinders.URL_BINDER);
 		register(ZoneId.class, DefaultParameterBinders.ZONEID_BINDER);
 	}
