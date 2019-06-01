@@ -64,6 +64,10 @@ public class Persister<C, I, T extends Table> {
 		this.deleteExecutor = newDeleteExecutor(mappingStrategy, connectionProvider, dmlGenerator,
 				writeOperationRetryer, jdbcBatchSize, inOperatorMaxSize);
 		this.selectExecutor = newSelectExecutor(mappingStrategy, connectionProvider, dmlGenerator, inOperatorMaxSize);
+		
+		// Transfering identifier manager InsertListerner to here
+		getPersisterListener().addInsertListener(
+				getMappingStrategy().getIdMappingStrategy().getIdentifierInsertionManager().getInsertListener());
 	}
 	
 	protected <U> InsertExecutor<U, I, T> newInsertExecutor(ClassMappingStrategy<U, I, T> mappingStrategy,

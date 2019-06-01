@@ -14,6 +14,7 @@ import org.gama.stalactite.persistence.engine.AssociationRecordPersister;
 import org.gama.stalactite.persistence.id.Identified;
 import org.gama.stalactite.persistence.id.Identifier;
 import org.gama.stalactite.persistence.id.PersistableIdentifier;
+import org.gama.stalactite.persistence.id.manager.IdentifierInsertionManager;
 import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
 import org.gama.stalactite.persistence.mapping.IdMappingStrategy;
 import org.gama.stalactite.persistence.sql.dml.DMLGenerator;
@@ -35,7 +36,12 @@ class AssociationRecordInsertionCascaderTest {
 		ClassMappingStrategy classMappingStrategyMock = mock(ClassMappingStrategy.class);
 		when(classMappingStrategyMock.getId(any(Keyboard.class))).thenAnswer((Answer<Identifier<Long>>) invocation ->
 				((Keyboard) invocation.getArgument(0)).getId());
-		when(classMappingStrategyMock.getIdMappingStrategy()).thenReturn(mock(IdMappingStrategy.class));
+		
+		// mocking Persister action of adding identifier manager InsertListeners
+		IdMappingStrategy idMappingStrategymock = mock(IdMappingStrategy.class);
+		when(idMappingStrategymock.getIdentifierInsertionManager()).thenReturn(mock(IdentifierInsertionManager.class));
+		when(classMappingStrategyMock.getIdMappingStrategy()).thenReturn(idMappingStrategymock);
+		
 		ClassMappingStrategy keyClassMappingStrategyMock = mock(ClassMappingStrategy.class);
 		when(keyClassMappingStrategyMock.getId(any(Key.class))).thenAnswer((Answer<Identifier<Long>>) invocation ->
 				((Key) invocation.getArgument(0)).getId());

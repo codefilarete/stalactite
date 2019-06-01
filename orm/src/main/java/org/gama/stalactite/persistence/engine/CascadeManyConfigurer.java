@@ -80,13 +80,6 @@ public class CascadeManyConfigurer<SRC, TRGT, SRCID, TRGTID, C extends Collectio
 		Persister<TRGT, TRGTID, ?> targetPersister = new EntityMappingBuilder<>(cascadeMany.getTargetMappingConfiguration(), new MethodReferenceCapturer())
 				.build(persistenceContext, targetTable);
 		
-		// adding persistence flag setters on both sides : this could be done by Persiter itself,
-		// but we would loose the reason why it does it : the cascade functionnality
-		sourcePersister.getPersisterListener().addInsertListener(
-				sourcePersister.getMappingStrategy().getIdMappingStrategy().getIdentifierInsertionManager().getInsertListener());
-		targetPersister.getPersisterListener().addInsertListener(
-				targetPersister.getMappingStrategy().getIdMappingStrategy().getIdentifierInsertionManager().getInsertListener());
-		
 		// finding joined columns: left one is primary key. Right one is given by the target strategy through the property accessor
 		if (sourcePersister.getMainTable().getPrimaryKey().getColumns().size() > 1) {
 			throw new NotYetSupportedOperationException("Joining tables on a composed primary key is not (yet) supported");

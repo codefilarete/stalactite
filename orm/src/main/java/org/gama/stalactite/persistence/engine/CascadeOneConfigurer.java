@@ -144,10 +144,6 @@ public class CascadeOneConfigurer<SRC, TRGT, ID> {
 		protected void addInsertCascade(CascadeOne<SRC, TRGT, ID> cascadeOne,
 												 Persister<TRGT, ID, Table> targetPersister,
 												 PersisterListener<SRC, ID> srcPersisterListener) {
-			// adding persistence flag setters on other side : this could be done by Persister itself,
-			// but we would loose the reason why it does it : the cascade functionnality
-			targetPersister.getPersisterListener().addInsertListener(
-					targetPersister.getMappingStrategy().getIdMappingStrategy().getIdentifierInsertionManager().getInsertListener());
 			// if cascade is mandatory, then adding nullability checking before insert
 			if (!cascadeOne.isNullable()) {
 				srcPersisterListener.addInsertListener(new MandatoryRelationCheckingBeforeInsertListener<>(cascadeOne.getTargetProvider()));
