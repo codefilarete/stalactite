@@ -131,14 +131,14 @@ public class InsertExecutorTest extends AbstractDMLExecutorTest {
 		Column pk = totoTable.addColumn("id", Integer.class).primaryKey();
 		Column versionColumn = totoTable.addColumn("version", Long.class);
 		Map<IReversibleAccessor, Column> mapping = Maps.asMap((IReversibleAccessor)
-				PropertyAccessor.fromLambda(VersionnedToto::getVersion, VersionnedToto::setVersion), versionColumn)
-				.add(PropertyAccessor.fromLambda(VersionnedToto::getA, VersionnedToto::setA), pk);
+				PropertyAccessor.fromMethodReference(VersionnedToto::getVersion, VersionnedToto::setVersion), versionColumn)
+				.add(PropertyAccessor.fromMethodReference(VersionnedToto::getA, VersionnedToto::setA), pk);
 		testInstance = new InsertExecutor<>(new ClassMappingStrategy<VersionnedToto, Integer, Table>(VersionnedToto.class, totoTable, (Map) mapping,
-				PropertyAccessor.fromLambda(VersionnedToto::getA, VersionnedToto::setA),
+				PropertyAccessor.fromMethodReference(VersionnedToto::getA, VersionnedToto::setA),
 				new AlreadyAssignedIdentifierManager<>(Integer.class)),
 				connectionProvider, dmlGenerator, Retryer.NO_RETRY, 3, 3);
 		
-		PropertyAccessor<VersionnedToto, Long> versioningAttributeAccessor = PropertyAccessor.fromLambda(VersionnedToto::getVersion, VersionnedToto::setVersion);
+		PropertyAccessor<VersionnedToto, Long> versioningAttributeAccessor = PropertyAccessor.fromMethodReference(VersionnedToto::getVersion, VersionnedToto::setVersion);
 		testInstance.setVersioningStrategy(new VersioningStrategySupport<>(versioningAttributeAccessor, input -> ++input));
 		
 		VersionnedToto toto = new VersionnedToto(42, 17, 23);
