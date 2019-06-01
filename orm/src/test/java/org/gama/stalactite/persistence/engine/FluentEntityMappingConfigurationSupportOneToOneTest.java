@@ -96,7 +96,7 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 	}
 	
 	@Test
-	public void cascade_noCascade_defaultIsReadOnly() throws SQLException {
+	public void cascade_none_defaultIsReadOnly_getter() throws SQLException {
 		Persister<Country, Identifier<Long>, ?> countryPersister = FluentEntityMappingConfigurationSupport.from(Country.class, Identifier.LONG_TYPE)
 				.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.add(Country::getName)
@@ -105,6 +105,23 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 				.addOneToOne(Country::getPresident, personConfiguration)
 				.build(persistenceContext);
 		
+		assert_cascade_noCascade_defaultIsReadOnly(countryPersister);
+	}
+	
+	@Test
+	public void cascade_none_defaultIsReadOnly_setter() throws SQLException {
+		Persister<Country, Identifier<Long>, ?> countryPersister = FluentEntityMappingConfigurationSupport.from(Country.class, Identifier.LONG_TYPE)
+				.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
+				.add(Country::getName)
+				.add(Country::getDescription)
+				// no cascade
+				.addOneToOne(Country::setPresident, personConfiguration)
+				.build(persistenceContext);
+		
+		assert_cascade_noCascade_defaultIsReadOnly(countryPersister);
+	}
+	
+	private void assert_cascade_noCascade_defaultIsReadOnly(Persister<Country, Identifier<Long>, ?> countryPersister) throws SQLException {
 		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
 		ddlDeployer.deployDDL();
 		

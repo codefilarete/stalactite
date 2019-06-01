@@ -366,121 +366,6 @@ class FluentEmbeddableMappingConfigurationSupportTest {
 		assertEquals(person.getTimestamp().getCreationDate().getTime() / 100, loadedPerson.getTimestamp().getCreationDate().getTime() / 100);
 	}
 	
-	/**
-	 * Test to check that the API returns right Object which means:
-	 * - interfaces are well written to return right types, so one can chain others methods
-	 * - at runtime instance of the right type is also returned
-	 * (avoid "java.lang.ClassCastException: com.sun.proxy.$Proxy10 cannot be cast to org.gama.stalactite.persistence.engine
-	 * .IFluentEmbeddableMappingBuilder")
-	 * <p>
-	 * As many as possible combinations of method chaining should be done here, because all combination seems impossible, this test must be
-	 * considered
-	 * as a best effort, and any regression found in user code should be added here
-	 */
-	@Test
-	void testFluentAPIWriting() {
-		Table<?> countryTable = new Table<>("countryTable");
-		
-		try {
-			FluentEmbeddableMappingConfigurationSupport.from(Country.class)
-					.add(Country::getName)
-					.embed(Country::getPresident)
-						.overrideName(Person::getId, "personId")
-						.overrideName(Person::getName, "personName")
-						.innerEmbed(Person::getTimestamp)
-					.embed(Country::getTimestamp)
-					.add(Country::getId)
-					.add(Country::setDescription, "zxx")
-					.mapSuperClass(new FluentEmbeddableMappingConfigurationSupport<>(Object.class))
-					.build(dialect, countryTable);
-		} catch (RuntimeException e) {
-			// Since we only want to test compilation, we don't care about that the above code throws an exception or not
-		}
-		
-		try {
-			FluentEmbeddableMappingConfigurationSupport.from(Country.class)
-					.add(Country::getName)
-					.embed(Country::getPresident)
-						.innerEmbed(Person::getTimestamp)
-					.embed(Country::getTimestamp)
-					.add(Country::getId, "zz")
-					.mapSuperClass(new FluentEmbeddableMappingConfigurationSupport<>(Object.class))
-					.add(Country::getDescription, "xx")
-					.build(dialect, countryTable);
-		} catch (RuntimeException e) {
-			// Since we only want to test compilation, we don't care about that the above code throws an exception or not
-		}
-		
-		try {
-			FluentEmbeddableMappingConfigurationSupport.from(Country.class)
-					.add(Country::getName)
-					.add(Country::getId, "zz")
-					.mapSuperClass(new FluentEmbeddableMappingConfigurationSupport<>(Object.class))
-					// embed with setter
-					.embed(Country::setPresident)
-						// inner embed with setter
-						.innerEmbed(Person::setTimestamp)
-					// embed with setter
-					.embed(Country::setTimestamp)
-					.add(Country::getDescription, "xx")
-					.add(Country::getDummyProperty, "dd")
-					.build(dialect, countryTable);
-		} catch (RuntimeException e) {
-			// Since we only want to test compilation, we don't care about that the above code throws an exception or not
-		}
-		
-		try {
-			EmbeddedBeanMappingStrategyBuilder<Person> personMappingBuilder = FluentEmbeddableMappingConfigurationSupport.from(Person.class)
-					.add(Person::getName);
-			
-			FluentEmbeddableMappingConfigurationSupport.from(Country.class)
-					.add(Country::getName)
-					.add(Country::getId, "zz")
-					.mapSuperClass(new FluentEmbeddableMappingConfigurationSupport<>(Object.class))
-					// embed with setter
-					.embed(Country::getPresident, personMappingBuilder)
-					.build(dialect, countryTable);
-		} catch (RuntimeException e) {
-			// Since we only want to test compilation, we don't care about that the above code throws an exception or not
-		}
-		
-		try {
-			EmbeddedBeanMappingStrategyBuilder<Person> personMappingBuilder = FluentEmbeddableMappingConfigurationSupport.from(Person.class)
-					.add(Person::getName);
-			
-			FluentEmbeddableMappingConfigurationSupport.from(Country.class)
-					.add(Country::getName)
-					.add(Country::getId, "zz")
-					.embed(Country::getPresident, personMappingBuilder)
-					.mapSuperClass(new FluentEmbeddableMappingConfigurationSupport<>(Object.class))
-					// reusing embeddable ...
-					.embed(Country::getPresident, personMappingBuilder)
-						// with getter override
-						.overrideName(Person::getName, "toto")
-						// with setter override
-						.overrideName(Person::setName, "tata")
-					.build(dialect, countryTable);
-		} catch (RuntimeException e) {
-			// Since we only want to test compilation, we don't care about that the above code throws an exception or not
-		}
-		
-		try {
-			FluentEmbeddableMappingConfigurationSupport.from(PersonWithGender.class)
-					.add(Person::getName)
-					.addEnum(PersonWithGender::getGender).byOrdinal()
-					.embed(Person::setTimestamp)
-						.overrideName(Timestamp::getCreationDate, "myDate")
-					.addEnum(PersonWithGender::getGender, "MM").byOrdinal()
-					.add(PersonWithGender::getId, "zz")
-					.addEnum(PersonWithGender::setGender).byName()
-					.embed(Person::getTimestamp)
-					.addEnum(PersonWithGender::setGender, "MM").byName()
-					.build(dialect, new Table<>("person"));
-		} catch (RuntimeException e) {
-			// Since we only want to test compilation, we don't care about that the above code throws an exception or not
-		}
-	}
-	
 	@Test
 	void testBuild_embed_definedTwice_throwException() {
 		Table<?> countryTable = new Table<>("countryTable");
@@ -1022,6 +907,121 @@ class FluentEmbeddableMappingConfigurationSupportTest {
 		
 		// mandatory property sets column as mandatory
 		assertFalse(personTable.mapColumnsOnName().get("gender").isNullable());
+	}
+	
+	/**
+	 * Test to check that the API returns right Object which means:
+	 * - interfaces are well written to return right types, so one can chain others methods
+	 * - at runtime instance of the right type is also returned
+	 * (avoid "java.lang.ClassCastException: com.sun.proxy.$Proxy10 cannot be cast to org.gama.stalactite.persistence.engine
+	 * .IFluentEmbeddableMappingBuilder")
+	 * <p>
+	 * As many as possible combinations of method chaining should be done here, because all combination seems impossible, this test must be
+	 * considered
+	 * as a best effort, and any regression found in user code should be added here
+	 */
+	@Test
+	void testFluentAPIWriting() {
+		Table<?> countryTable = new Table<>("countryTable");
+		
+		try {
+			FluentEmbeddableMappingConfigurationSupport.from(Country.class)
+					.add(Country::getName)
+					.embed(Country::getPresident)
+					.overrideName(Person::getId, "personId")
+					.overrideName(Person::getName, "personName")
+					.innerEmbed(Person::getTimestamp)
+					.embed(Country::getTimestamp)
+					.add(Country::getId)
+					.add(Country::setDescription, "zxx")
+					.mapSuperClass(new FluentEmbeddableMappingConfigurationSupport<>(Object.class))
+					.build(dialect, countryTable);
+		} catch (RuntimeException e) {
+			// Since we only want to test compilation, we don't care about that the above code throws an exception or not
+		}
+		
+		try {
+			FluentEmbeddableMappingConfigurationSupport.from(Country.class)
+					.add(Country::getName)
+					.embed(Country::getPresident)
+					.innerEmbed(Person::getTimestamp)
+					.embed(Country::getTimestamp)
+					.add(Country::getId, "zz")
+					.mapSuperClass(new FluentEmbeddableMappingConfigurationSupport<>(Object.class))
+					.add(Country::getDescription, "xx")
+					.build(dialect, countryTable);
+		} catch (RuntimeException e) {
+			// Since we only want to test compilation, we don't care about that the above code throws an exception or not
+		}
+		
+		try {
+			FluentEmbeddableMappingConfigurationSupport.from(Country.class)
+					.add(Country::getName)
+					.add(Country::getId, "zz")
+					.mapSuperClass(new FluentEmbeddableMappingConfigurationSupport<>(Object.class))
+					// embed with setter
+					.embed(Country::setPresident)
+					// inner embed with setter
+					.innerEmbed(Person::setTimestamp)
+					// embed with setter
+					.embed(Country::setTimestamp)
+					.add(Country::getDescription, "xx")
+					.add(Country::getDummyProperty, "dd")
+					.build(dialect, countryTable);
+		} catch (RuntimeException e) {
+			// Since we only want to test compilation, we don't care about that the above code throws an exception or not
+		}
+		
+		try {
+			EmbeddedBeanMappingStrategyBuilder<Person> personMappingBuilder = FluentEmbeddableMappingConfigurationSupport.from(Person.class)
+					.add(Person::getName);
+			
+			FluentEmbeddableMappingConfigurationSupport.from(Country.class)
+					.add(Country::getName)
+					.add(Country::getId, "zz")
+					.mapSuperClass(new FluentEmbeddableMappingConfigurationSupport<>(Object.class))
+					// embed with setter
+					.embed(Country::getPresident, personMappingBuilder)
+					.build(dialect, countryTable);
+		} catch (RuntimeException e) {
+			// Since we only want to test compilation, we don't care about that the above code throws an exception or not
+		}
+		
+		try {
+			EmbeddedBeanMappingStrategyBuilder<Person> personMappingBuilder = FluentEmbeddableMappingConfigurationSupport.from(Person.class)
+					.add(Person::getName);
+			
+			FluentEmbeddableMappingConfigurationSupport.from(Country.class)
+					.add(Country::getName)
+					.add(Country::getId, "zz")
+					.embed(Country::getPresident, personMappingBuilder)
+					.mapSuperClass(new FluentEmbeddableMappingConfigurationSupport<>(Object.class))
+					// reusing embeddable ...
+					.embed(Country::getPresident, personMappingBuilder)
+					// with getter override
+					.overrideName(Person::getName, "toto")
+					// with setter override
+					.overrideName(Person::setName, "tata")
+					.build(dialect, countryTable);
+		} catch (RuntimeException e) {
+			// Since we only want to test compilation, we don't care about that the above code throws an exception or not
+		}
+		
+		try {
+			FluentEmbeddableMappingConfigurationSupport.from(PersonWithGender.class)
+					.add(Person::getName)
+					.addEnum(PersonWithGender::getGender).byOrdinal()
+					.embed(Person::setTimestamp)
+					.overrideName(Timestamp::getCreationDate, "myDate")
+					.addEnum(PersonWithGender::getGender, "MM").byOrdinal()
+					.add(PersonWithGender::getId, "zz")
+					.addEnum(PersonWithGender::setGender).byName()
+					.embed(Person::getTimestamp)
+					.addEnum(PersonWithGender::setGender, "MM").byName()
+					.build(dialect, new Table<>("person"));
+		} catch (RuntimeException e) {
+			// Since we only want to test compilation, we don't care about that the above code throws an exception or not
+		}
 	}
 	
 	static class MyPerson extends Person {

@@ -77,6 +77,17 @@ public interface IFluentMappingBuilder<C, I> extends IFluentEmbeddableMappingCon
 	<O, J, T extends Table> IFluentMappingBuilderOneToOneOptions<C, I, T> addOneToOne(SerializableFunction<C, O> getter, EntityMappingConfiguration<O, J> mappingConfiguration);
 	
 	/**
+	 * Declares a direct relationship between current entity and some of type {@code O}.
+	 *
+	 * @param setter the way to get the target entity
+	 * @param mappingConfiguration the mapping configuration of the target entity
+	 * @param <O> type of target entity
+	 * @param <J> type of identifier of {@code O}
+	 * @return a enhanced version of {@code this} so one can add options to the relationship or add mapping to {@code this}
+	 */
+	<O, J, T extends Table> IFluentMappingBuilderOneToOneOptions<C, I, T> addOneToOne(SerializableBiConsumer<C, O> setter, EntityMappingConfiguration<O, J> mappingConfiguration);
+	
+	/**
 	 * Declares a direct relation between current entity and some of type {@code O}.
 	 *
 	 * @param getter the way to get the target entity
@@ -87,6 +98,18 @@ public interface IFluentMappingBuilder<C, I> extends IFluentEmbeddableMappingCon
 	 * @return a enhanced version of {@code this} so one can add options to the relation or add mapping to {@code this}
 	 */
 	<O, J, T extends Table> IFluentMappingBuilderOneToOneOptions<C, I, T> addOneToOne(SerializableFunction<C, O> getter, EntityMappingConfiguration<O, J> mappingConfiguration, T table);
+	
+	/**
+	 * Declares a direct relation between current entity and some of type {@code O}.
+	 *
+	 * @param setter the way to get the target entity
+	 * @param mappingConfiguration the mapping configuration of the target entity
+	 * @param table target table of the mapped configuration
+	 * @param <O> type of target entity
+	 * @param <J> type of identifier of {@code O}
+	 * @return a enhanced version of {@code this} so one can add options to the relation or add mapping to {@code this}
+	 */
+	<O, J, T extends Table> IFluentMappingBuilderOneToOneOptions<C, I, T> addOneToOne(SerializableBiConsumer<C, O> setter, EntityMappingConfiguration<O, J> mappingConfiguration, T table);
 	
 	/**
 	 * Declares a relation between current entity and some of type {@code O} throught a {@link Set}.
@@ -281,6 +304,9 @@ public interface IFluentMappingBuilder<C, I> extends IFluentEmbeddableMappingCon
 		
 		@Override
 		<IN> IFluentMappingBuilderEmbedOptions<C, I, IN> innerEmbed(SerializableFunction<O, IN> getter);
+		
+		@Override
+		<IN> IFluentMappingBuilderEmbedOptions<C, I, IN> innerEmbed(SerializableBiConsumer<O, IN> setter);
 		
 		@Override
 		<IN> IFluentMappingBuilderEmbedOptions<C, I, O> exclude(SerializableFunction<O, IN> getter);

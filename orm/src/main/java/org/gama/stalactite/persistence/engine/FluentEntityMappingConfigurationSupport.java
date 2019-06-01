@@ -20,6 +20,7 @@ import org.gama.reflection.Accessors;
 import org.gama.reflection.IReversibleAccessor;
 import org.gama.reflection.MemberDefinition;
 import org.gama.reflection.MethodReferenceCapturer;
+import org.gama.reflection.MutatorByMethod;
 import org.gama.reflection.MutatorByMethodReference;
 import org.gama.reflection.PropertyAccessor;
 import org.gama.reflection.ValueAccessPointByMethodReference;
@@ -282,6 +283,29 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements IFluentMap
 	
 	@Override
 	public <O, J, T extends Table> IFluentMappingBuilderOneToOneOptions<C, I, T> addOneToOne(
+			SerializableBiConsumer<C, O> setter,
+			EntityMappingConfiguration<O, J> mappingConfiguration) {
+		return addOneToOne(setter, mappingConfiguration, null);
+	}
+	
+	@Override
+	public <O, J, T extends Table> IFluentMappingBuilderOneToOneOptions<C, I, T> addOneToOne(
+			SerializableBiConsumer<C, O> setter,
+			EntityMappingConfiguration<O, J> mappingConfiguration,
+			T table) {
+		// we declare the column on our side: we do it first because it checks some rules
+		add(setter);
+		// we keep it
+		IReversibleAccessor<C, O> propertyAccessor = new PropertyAccessor<>(
+				// we keep close to user demand : we keep its method reference ...
+				new MutatorByMethod<C, O>(captureMethod(setter)).toAccessor(),
+				// ... but we can't do it for mutator, so we use the most equivalent manner : a mutator based on setter method (fallback to property if not present)
+				Accessors.mutatorByMethodReference(setter));
+		return addOneToOnae(propertyAccessor, mappingConfiguration, table);
+	}
+	
+	@Override
+	public <O, J, T extends Table> IFluentMappingBuilderOneToOneOptions<C, I, T> addOneToOne(
 			SerializableFunction<C, O> getter,
 			EntityMappingConfiguration<O, J> mappingConfiguration,
 			T table) {
@@ -293,6 +317,12 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements IFluentMap
 				Accessors.accessorByMethodReference(getter),
 				// ... but we can't do it for mutator, so we use the most equivalent manner : a mutator based on setter method (fallback to property if not present)
 				new AccessorByMethod<C, O>(captureMethod(getter)).toMutator());
+		return addOneToOnae(propertyAccessor, mappingConfiguration, table);
+	}
+	
+	private <O, J, T extends Table> IFluentMappingBuilderOneToOneOptions<C, I, T> addOneToOnae(IReversibleAccessor<C, O> propertyAccessor,
+																							   EntityMappingConfiguration<O, J> mappingConfiguration,
+																							   T table) {
 		CascadeOne<C, O, J> cascadeOne = new CascadeOne<>(propertyAccessor, mappingConfiguration, table);
 		this.cascadeOnes.add(cascadeOne);
 		// then we return an object that allows fluent settings over our OneToOne cascade instance

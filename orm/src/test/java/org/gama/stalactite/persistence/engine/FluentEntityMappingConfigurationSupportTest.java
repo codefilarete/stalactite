@@ -27,6 +27,7 @@ import org.gama.sql.test.HSQLDBInMemoryDataSource;
 import org.gama.stalactite.persistence.engine.ColumnOptions.IdentifierPolicy;
 import org.gama.stalactite.persistence.engine.IFluentMappingBuilder.IFluentMappingBuilderEmbedOptions;
 import org.gama.stalactite.persistence.engine.IFluentMappingBuilder.IFluentMappingBuilderPropertyOptions;
+import org.gama.stalactite.persistence.engine.model.City;
 import org.gama.stalactite.persistence.engine.model.Country;
 import org.gama.stalactite.persistence.engine.model.Gender;
 import org.gama.stalactite.persistence.engine.model.Person;
@@ -678,6 +679,126 @@ public class FluentEntityMappingConfigurationSupportTest {
 		assertEquals(1, updatedRowCount);
 	}
 	
+	/**
+	 * Test to check that the API returns right Object which means:
+	 * - interfaces are well written to return right types, so one can chain others methods
+	 * - at runtime instance of the right type is also returned
+	 * (avoid "java.lang.ClassCastException: com.sun.proxy.$Proxy10 cannot be cast to org.gama.stalactite.persistence.engine
+	 * .IFluentEmbeddableMappingBuilder")
+	 * <p>
+	 * As many as possible combinations of method chaining should be done here, because all combination seems impossible, this test must be
+	 * considered
+	 * as a best effort, and any regression found in user code should be added here
+	 */
+	@Test
+	void testFluentAPIWriting() {
+		try {
+			FluentEntityMappingConfigurationSupport.from(Country.class, long.class)
+					.add(Country::getName).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
+					.embed(Country::getPresident)
+					.overrideName(Person::getId, "personId")
+					.overrideName(Person::getName, "personName")
+					.innerEmbed(Person::getTimestamp)
+					.embed(Country::getTimestamp)
+					.add(Country::getId)
+					.add(Country::setDescription, "zxx")
+					.mapSuperClass(new FluentEmbeddableMappingConfigurationSupport<>(Object.class))
+					.build(persistenceContext);
+		} catch (RuntimeException e) {
+			// Since we only want to test compilation, we don't care about that the above code throws an exception or not
+		}
+		
+		try {
+			Persister<Country, Long, Table> persister = FluentEntityMappingConfigurationSupport.from(Country.class, long.class)
+					.add(Country::getName).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
+					.embed(Country::getPresident)
+					.innerEmbed(Person::getTimestamp)
+					.embed(Country::getTimestamp)
+					.add(Country::getId, "zz")
+					.addOneToOne(Country::getPresident, FluentEntityMappingConfigurationSupport.from(Person.class, long.class)
+							.getConfiguration())
+					.mapSuperClass(new FluentEmbeddableMappingConfigurationSupport<>(Object.class))
+					.add(Country::getDescription, "xx")
+					.build(persistenceContext);
+		} catch (RuntimeException e) {
+			// Since we only want to test compilation, we don't care about that the above code throws an exception or not
+		}
+		
+		try {
+			FluentEntityMappingConfigurationSupport.from(Country.class, long.class)
+					.add(Country::getName)
+					.add(Country::getId, "zz")
+					.mapSuperClass(new FluentEmbeddableMappingConfigurationSupport<>(Object.class))
+					// embed with setter
+					.embed(Country::setPresident)
+					// inner embed with setter
+					.innerEmbed(Person::setTimestamp)
+					// embed with setter
+					.embed(Country::setTimestamp)
+					.addOneToManySet(Country::getCities, FluentEntityMappingConfigurationSupport.from(City.class, long.class)
+							.getConfiguration())
+					.add(Country::getDescription, "xx")
+					.add(Country::getDummyProperty, "dd")
+					.build(persistenceContext);
+		} catch (RuntimeException e) {
+			// Since we only want to test compilation, we don't care about that the above code throws an exception or not
+		}
+		
+		try {
+			EmbeddedBeanMappingStrategyBuilder<Person> personMappingBuilder = FluentEmbeddableMappingConfigurationSupport.from(Person.class)
+					.add(Person::getName);
+			
+			FluentEntityMappingConfigurationSupport.from(Country.class, long.class)
+					.add(Country::getName)
+					.add(Country::getId, "zz")
+					.addOneToOne(Country::setPresident, FluentEntityMappingConfigurationSupport.from(Person.class, long.class)
+							.getConfiguration())
+					.mapSuperClass(new FluentEmbeddableMappingConfigurationSupport<>(Object.class))
+					// embed with setter
+					.embed(Country::getPresident, personMappingBuilder)
+					.build(persistenceContext);
+		} catch (RuntimeException e) {
+			// Since we only want to test compilation, we don't care about that the above code throws an exception or not
+		}
+		
+		try {
+			EmbeddedBeanMappingStrategyBuilder<Person> personMappingBuilder = FluentEmbeddableMappingConfigurationSupport.from(Person.class)
+					.add(Person::getName);
+			
+			FluentEntityMappingConfigurationSupport.from(Country.class, long.class)
+					.add(Country::getName)
+					.add(Country::getId, "zz")
+					.embed(Country::getPresident, personMappingBuilder)
+					.mapSuperClass(new FluentEmbeddableMappingConfigurationSupport<>(Object.class))
+					.addOneToOne(Country::setPresident, FluentEntityMappingConfigurationSupport.from(Person.class, long.class)
+							.getConfiguration())
+					// reusing embeddable ...
+					.embed(Country::getPresident, personMappingBuilder)
+					// with getter override
+					.overrideName(Person::getName, "toto")
+					// with setter override
+					.overrideName(Person::setName, "tata")
+					.build(persistenceContext);
+		} catch (RuntimeException e) {
+			// Since we only want to test compilation, we don't care about that the above code throws an exception or not
+		}
+		
+		try {
+			FluentEntityMappingConfigurationSupport.from(PersonWithGender.class, long.class)
+					.add(Person::getName)
+					.addEnum(PersonWithGender::getGender).byOrdinal()
+					.embed(Person::setTimestamp)
+					.overrideName(Timestamp::getCreationDate, "myDate")
+					.addEnum(PersonWithGender::getGender, "MM").byOrdinal()
+					.add(PersonWithGender::getId, "zz")
+					.addEnum(PersonWithGender::setGender).byName()
+					.embed(Person::getTimestamp)
+					.addEnum(PersonWithGender::setGender, "MM").byName()
+					.build(persistenceContext, new Table<>("person"));
+		} catch (RuntimeException e) {
+			// Since we only want to test compilation, we don't care about that the above code throws an exception or not
+		}
+	}
 	
 	protected static class Toto implements Identified<UUID> {
 		
