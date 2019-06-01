@@ -234,9 +234,9 @@ public class FluentEntityMappingConfigurationSupportVersioningTest {
 		dummyCountryClone.setName("Tata");
 		// the following should go wrong since version is not up to date on the clone and the original
 		Assertions.assertThrows(() -> countryPersister.update(dummyCountryClone, dummyCountry, true),
-				Assertions.hasExceptionInHierarchy(StaleObjectExcepion.class).andProjection(Assertions.hasMessage("1 rows were expected to be hit but only 0 were effectively")));
+				Assertions.hasExceptionInCauses(StaleObjectExcepion.class).andProjection(Assertions.hasMessage("1 rows were expected to be hit but only 0 were effectively")));
 		Assertions.assertThrows(() -> countryPersister.delete(dummyCountry),
-				Assertions.hasExceptionInHierarchy(StaleObjectExcepion.class).andProjection(Assertions.hasMessage("1 rows were expected to be hit but only 0 were effectively")));
+				Assertions.hasExceptionInCauses(StaleObjectExcepion.class).andProjection(Assertions.hasMessage("1 rows were expected to be hit but only 0 were effectively")));
 		// version is not reverted because rollback wasn't invoked 
 		assertEquals(2, dummyCountryClone.getVersion());
 		// ... but it is when we rollback

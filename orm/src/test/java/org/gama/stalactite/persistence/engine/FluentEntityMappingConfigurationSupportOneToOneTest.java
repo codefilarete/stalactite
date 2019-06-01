@@ -91,7 +91,7 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 				// no cascade
 				.addOneToOne(Country::getPresident, personConfiguration).cascading(ASSOCIATION_ONLY);
 		
-		Assertions.assertThrows(() -> mappingBuilder.build(persistenceContext), Assertions.hasExceptionInHierarchy(MappingConfigurationException.class)
+		Assertions.assertThrows(() -> mappingBuilder.build(persistenceContext), Assertions.hasExceptionInCauses(MappingConfigurationException.class)
 				.andProjection(Assertions.hasMessage(RelationshipMode.ASSOCIATION_ONLY + " is only relevent for one-to-many association")));
 	}
 	
@@ -116,7 +116,7 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 		dummyCountry.setPresident(person);
 		
 		// insert throws integrity constraint because it doesn't save target entity
-		Assertions.assertThrows(() -> countryPersister.insert(dummyCountry), Assertions.hasExceptionInHierarchy(BatchUpdateException.class)
+		Assertions.assertThrows(() -> countryPersister.insert(dummyCountry), Assertions.hasExceptionInCauses(BatchUpdateException.class)
 				.andProjection(Assertions.hasMessage("integrity constraint violation: foreign key no parent; FK_COUNTRY_PRESIDENTID_PERSON_ID table: COUNTRY")));
 		
 		persistenceContext.getCurrentConnection().prepareStatement("insert into Person(id, name) values (1, 'French president')").execute();

@@ -36,7 +36,7 @@ class InMemoryBlobSupportTest {
 	void getBinaryStream_offsetAndLength() throws SQLException, IOException {
 		InMemoryBlobSupport testInstance = new InMemoryBlobSupport("Hello".getBytes());
 		assertEquals("ell", new String(IOs.toByteArray(testInstance.getBinaryStream(2, 3))));
-		Assertions.assertThrows(() -> testInstance.getBinaryStream(2, 55), Assertions.hasExceptionInHierarchy(SQLException.class)
+		Assertions.assertThrows(() -> testInstance.getBinaryStream(2, 55), Assertions.hasExceptionInCauses(SQLException.class)
 				.andProjection(Assertions.hasMessage("Incompatible position or length with actual byte count : 5 vs 2 + 55")));
 	}
 	
@@ -144,7 +144,7 @@ class InMemoryBlobSupportTest {
 		
 		testInstance = new InMemoryBlobSupport("Hello world !".getBytes());
 		testInstance.free();
-		Assertions.assertThrows(testInstance::getBinaryStream, Assertions.hasExceptionInHierarchy(SQLException.class)
+		Assertions.assertThrows(testInstance::getBinaryStream, Assertions.hasExceptionInCauses(SQLException.class)
 				.andProjection(Assertions.hasMessage("Blob data is no more available because it was freed")));
 	}
 }

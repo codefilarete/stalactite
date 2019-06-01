@@ -372,7 +372,7 @@ class FluentEntityMappingConfigurationSupportIndexedCollectionTest {
 		Choice choice = new Choice(4L);
 		question.addChoice(choice);
 		
-		Assertions.assertThrows(() -> persisterWithNonExistingSetter.insert(question), Assertions.hasExceptionInHierarchy(RuntimeMappingException.class)
+		Assertions.assertThrows(() -> persisterWithNonExistingSetter.insert(question), Assertions.hasExceptionInCauses(RuntimeMappingException.class)
 				.andProjection(Assertions.hasMessage("Can't get index : " + choice.toString() + " is not associated with a o.g.s.p.e.FluentEntityMappingConfigurationSupportIndexedCollectionTest$Question : "
 				+ "accessor for field" +
 				" o.g.s.p.e.FluentEntityMappingConfigurationSupportIndexedCollectionTest$Choice.questionWithNoGetter returned null")));
@@ -404,7 +404,7 @@ class FluentEntityMappingConfigurationSupportIndexedCollectionTest {
 		Question question = new Question(1L);
 		question.getChoices().add(new Choice(4L));
 		
-		Assertions.assertThrows(() -> persister.insert(question), Assertions.hasExceptionInHierarchy(RuntimeMappingException.class)
+		Assertions.assertThrows(() -> persister.insert(question), Assertions.hasExceptionInCauses(RuntimeMappingException.class)
 				.andProjection(Assertions.hasMessage("Can't get index : Choice{id=4, question=null, name='null'} is not associated with a o.g.s.p.e.FluentEntityMappingConfigurationSupportIndexedCollectionTest$Question : "
 						+ "o.g.s.p.e.FluentEntityMappingConfigurationSupportIndexedCollectionTest$Choice.getQuestion() returned null")));
 	}

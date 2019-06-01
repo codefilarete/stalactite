@@ -42,7 +42,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import static java.util.stream.Collectors.toSet;
-import static org.gama.lang.test.Assertions.hasExceptionInHierarchy;
+import static org.gama.lang.test.Assertions.hasExceptionInCauses;
 import static org.gama.lang.test.Assertions.hasMessage;
 import static org.gama.stalactite.persistence.engine.CascadeOptions.RelationshipMode.ALL;
 import static org.gama.stalactite.persistence.engine.CascadeOptions.RelationshipMode.ALL_ORPHAN_REMOVAL;
@@ -190,7 +190,7 @@ class FluentEntityMappingConfigurationSupportOneToManyTest {
 				.get(0));
 		
 		// delete throws integrity constraint because it doesn't delete target entity which own the relation
-		Assertions.assertThrows(() -> countryPersister.delete(loadedCountry), hasExceptionInHierarchy(BatchUpdateException.class)
+		Assertions.assertThrows(() -> countryPersister.delete(loadedCountry), hasExceptionInCauses(BatchUpdateException.class)
 				.andProjection(hasMessage("integrity constraint violation: foreign key no action; FK_CITY_COUNTRYID_COUNTRY_ID table: CITY")));
 		
 		assertEquals("touched France", persistenceContext.newQuery("select name from Country where id = 42", String.class)
@@ -821,7 +821,7 @@ class FluentEntityMappingConfigurationSupportOneToManyTest {
 					// no cascade
 					.addOneToManySet(Country::getCities, CITY_MAPPING_CONFIGURATION).mappedBy(City::setCountry).cascading(ASSOCIATION_ONLY);
 			
-			Assertions.assertThrows(() -> mappingBuilder.build(persistenceContext), hasExceptionInHierarchy(MappingConfigurationException.class)
+			Assertions.assertThrows(() -> mappingBuilder.build(persistenceContext), hasExceptionInCauses(MappingConfigurationException.class)
 					.andProjection(hasMessage(RelationshipMode.ASSOCIATION_ONLY + " is only relevent with an association table")));
 		}
 		

@@ -7,7 +7,7 @@ import org.gama.stalactite.persistence.structure.Table;
 import org.junit.jupiter.api.Test;
 
 import static org.gama.lang.test.Assertions.assertThrows;
-import static org.gama.lang.test.Assertions.hasExceptionInHierarchy;
+import static org.gama.lang.test.Assertions.hasExceptionInCauses;
 import static org.gama.lang.test.Assertions.hasMessage;
 
 /**
@@ -26,7 +26,7 @@ class ColumnBinderRegistryTest {
 		// registering the same binder has no consequence
 		testInstance.register(nameColumn, DefaultParameterBinders.STRING_BINDER);
 		// but doing it with a different binder throws an exception
-		assertThrows(() -> testInstance.register(nameColumn, DefaultParameterBinders.INTEGER_BINDER), hasExceptionInHierarchy(BindingException.class)
+		assertThrows(() -> testInstance.register(nameColumn, DefaultParameterBinders.INTEGER_BINDER), hasExceptionInCauses(BindingException.class)
 				.andProjection(hasMessage("Binder for column toto.name already exists")));
 	}
 	
