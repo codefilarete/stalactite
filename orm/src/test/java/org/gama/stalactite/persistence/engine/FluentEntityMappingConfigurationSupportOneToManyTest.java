@@ -19,8 +19,8 @@ import org.gama.sql.result.ResultSetIterator;
 import org.gama.sql.test.HSQLDBInMemoryDataSource;
 import org.gama.stalactite.persistence.engine.CascadeOptions.RelationshipMode;
 import org.gama.stalactite.persistence.engine.ColumnOptions.IdentifierPolicy;
-import org.gama.stalactite.persistence.engine.IFluentMappingBuilder.IFluentMappingBuilderColumnOptions;
 import org.gama.stalactite.persistence.engine.IFluentMappingBuilder.IFluentMappingBuilderOneToManyOptions;
+import org.gama.stalactite.persistence.engine.IFluentMappingBuilder.IFluentMappingBuilderPropertyOptions;
 import org.gama.stalactite.persistence.engine.cascade.JoinedTablesPersister;
 import org.gama.stalactite.persistence.engine.model.City;
 import org.gama.stalactite.persistence.engine.model.Country;
@@ -63,10 +63,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class FluentEntityMappingConfigurationSupportOneToManyTest {
 	
 	private static final HSQLDBDialect DIALECT = new HSQLDBDialect();
-	private static IFluentMappingBuilderColumnOptions<City, Identifier<Long>> CITY_MAPPING_BUILDER;
+	private static EntityMappingConfiguration<City, Identifier<Long>> CITY_MAPPING_CONFIGURATION;
 	private final DataSource dataSource = new HSQLDBInMemoryDataSource();
 	private ConnectionProvider connectionProvider = new JdbcConnectionProvider(dataSource);
-	private EntityMappingConfiguration<City, Identifier<Long>> cityConfiguration;
 	private PersistenceContext persistenceContext;
 	
 	@BeforeAll
@@ -84,11 +83,12 @@ class FluentEntityMappingConfigurationSupportOneToManyTest {
 		
 		// We need to rebuild our cityPersister before each test because some of them alter it on country relationship.
 		// So schema contains FK twice with same name, ending in duplicate FK name exception
-		CITY_MAPPING_BUILDER = FluentEntityMappingConfigurationSupport.from(City.class, Identifier.LONG_TYPE)
+		CITY_MAPPING_CONFIGURATION = FluentEntityMappingConfigurationSupport.from(City.class,
+				Identifier.LONG_TYPE)
 				.add(City::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.add(City::getName)
-				.add(City::getCountry);
-		cityConfiguration = CITY_MAPPING_BUILDER.getConfiguration();
+				.add(City::getCountry)
+				.getConfiguration();
 	}
 	
 	@Test
@@ -101,7 +101,7 @@ class FluentEntityMappingConfigurationSupportOneToManyTest {
 				.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.add(Country::getName)
 				.add(Country::getDescription)
-				.addOneToManySet(Country::getCities, cityConfiguration).mappedBy(City::setCountry).cascading(RelationshipMode.READ_ONLY)
+				.addOneToManySet(Country::getCities, CITY_MAPPING_CONFIGURATION).mappedBy(City::setCountry).cascading(RelationshipMode.READ_ONLY)
 				.build(persistenceContext);
 		
 		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
@@ -149,7 +149,7 @@ class FluentEntityMappingConfigurationSupportOneToManyTest {
 				.add(Country::getName)
 				.add(Country::getDescription)
 				// no cascade
-				.addOneToManySet(Country::getCities, cityConfiguration).mappedBy(City::setCountry)
+				.addOneToManySet(Country::getCities, CITY_MAPPING_CONFIGURATION).mappedBy(City::setCountry)
 				.build(persistenceContext);
 		
 		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
@@ -210,7 +210,7 @@ class FluentEntityMappingConfigurationSupportOneToManyTest {
 				.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.add(Country::getName)
 				// no cascade
-				.addOneToManySet(Country::getCities, cityConfiguration).mappedBy(City::setCountry)
+				.addOneToManySet(Country::getCities, CITY_MAPPING_CONFIGURATION).mappedBy(City::setCountry)
 				.build(persistenceContext);
 		
 		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
@@ -237,7 +237,7 @@ class FluentEntityMappingConfigurationSupportOneToManyTest {
 							.add(Country::getName)
 							.add(Country::getDescription)
 							// relation defined by setter
-							.addOneToManySet(Country::getCities, CITY_MAPPING_BUILDER.getConfiguration()).mappedBy(City::setCountry)
+							.addOneToManySet(Country::getCities, CITY_MAPPING_CONFIGURATION).mappedBy(City::setCountry)
 							.cascading(ALL)
 							.build(persistenceContext);
 					DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
@@ -251,7 +251,7 @@ class FluentEntityMappingConfigurationSupportOneToManyTest {
 							.add(Country::getName)
 							.add(Country::getDescription)
 							// relation defined by getter
-							.addOneToManySet(Country::getCities, CITY_MAPPING_BUILDER.getConfiguration()).mappedBy(City::getCountry)
+							.addOneToManySet(Country::getCities, CITY_MAPPING_CONFIGURATION).mappedBy(City::getCountry)
 							.cascading(ALL)
 							.build(persistenceContext);
 					DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
@@ -267,7 +267,7 @@ class FluentEntityMappingConfigurationSupportOneToManyTest {
 							.add(Country::getName)
 							.add(Country::getDescription)
 							// relation defined by column
-							.addOneToManySet(Country::getCities, CITY_MAPPING_BUILDER.getConfiguration()).mappedBy(countryId)
+							.addOneToManySet(Country::getCities, CITY_MAPPING_CONFIGURATION).mappedBy(countryId)
 							.cascading(ALL)
 							.build(persistenceContext);
 					DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
@@ -328,7 +328,7 @@ class FluentEntityMappingConfigurationSupportOneToManyTest {
 					.add(Country::getName)
 					.add(Country::getDescription)
 					// no cascade, nor reverse side
-					.addOneToManySet(Country::getCities, cityConfiguration).cascading(READ_ONLY)
+					.addOneToManySet(Country::getCities, CITY_MAPPING_CONFIGURATION).cascading(READ_ONLY)
 					.build(persistenceContext);
 			
 			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
@@ -360,7 +360,7 @@ class FluentEntityMappingConfigurationSupportOneToManyTest {
 					.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 					.add(Country::getName)
 					.add(Country::getDescription)
-					.addOneToManySet(Country::getCities, cityConfiguration).mappedBy(City::setCountry).cascading(ALL)
+					.addOneToManySet(Country::getCities, CITY_MAPPING_CONFIGURATION).mappedBy(City::setCountry).cascading(ALL)
 					.build(persistenceContext);
 			
 			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
@@ -406,7 +406,7 @@ class FluentEntityMappingConfigurationSupportOneToManyTest {
 					.add(Country::getName)
 					.add(Country::getDescription)
 					// no cascade, nor reverse side
-					.addOneToManySet(Country::getCities, cityConfiguration).cascading(ALL)
+					.addOneToManySet(Country::getCities, CITY_MAPPING_CONFIGURATION).cascading(ALL)
 					.build(persistenceContext);
 			
 			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
@@ -450,7 +450,7 @@ class FluentEntityMappingConfigurationSupportOneToManyTest {
 					.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 					.add(Country::getName)
 					.add(Country::getDescription)
-					.addOneToManySet(Country::getCities, cityConfiguration).cascading(ALL)
+					.addOneToManySet(Country::getCities, CITY_MAPPING_CONFIGURATION).cascading(ALL)
 					.build(persistenceContext);
 			
 			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
@@ -491,7 +491,7 @@ class FluentEntityMappingConfigurationSupportOneToManyTest {
 		
 		@Test
 		void update_multipleTimes() {
-			IFluentMappingBuilderColumnOptions<State, Identifier<Long>> stateMappingBuilder = FluentEntityMappingConfigurationSupport.from(State.class,
+			IFluentMappingBuilderPropertyOptions<State, Identifier<Long>> stateMappingBuilder = FluentEntityMappingConfigurationSupport.from(State.class,
 					Identifier.LONG_TYPE)
 					.add(State::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 					.add(State::getName)
@@ -501,7 +501,7 @@ class FluentEntityMappingConfigurationSupportOneToManyTest {
 					.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 					.add(Country::getName)
 					.add(Country::getDescription)
-					.addOneToManySet(Country::getCities, cityConfiguration).mappedBy(City::setCountry).cascading(ALL_ORPHAN_REMOVAL)
+					.addOneToManySet(Country::getCities, CITY_MAPPING_CONFIGURATION).mappedBy(City::setCountry).cascading(ALL_ORPHAN_REMOVAL)
 					.addOneToManySet(Country::getStates, stateMappingBuilder.getConfiguration()).mappedBy(State::setCountry).cascading(ALL)
 					.build(persistenceContext);
 			
@@ -569,7 +569,7 @@ class FluentEntityMappingConfigurationSupportOneToManyTest {
 					.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 					.add(Country::getName)
 					.add(Country::getDescription)
-					.addOneToManySet(Country::getCities, cityConfiguration).mappedBy(City::setCountry).cascading(ALL)
+					.addOneToManySet(Country::getCities, CITY_MAPPING_CONFIGURATION).mappedBy(City::setCountry).cascading(ALL)
 					.build(persistenceContext);
 			
 			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
@@ -608,7 +608,7 @@ class FluentEntityMappingConfigurationSupportOneToManyTest {
 					.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 					.add(Country::getName)
 					.add(Country::getDescription)
-					.addOneToManySet(Country::getCities, cityConfiguration).cascading(ALL)
+					.addOneToManySet(Country::getCities, CITY_MAPPING_CONFIGURATION).cascading(ALL)
 					.build(persistenceContext);
 			
 			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
@@ -683,7 +683,7 @@ class FluentEntityMappingConfigurationSupportOneToManyTest {
 					.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 					.add(Country::getName)
 					.add(Country::getDescription)
-					.addOneToManySet(Country::getCities, cityConfiguration).mappedBy(City::setCountry).cascading(ALL_ORPHAN_REMOVAL)
+					.addOneToManySet(Country::getCities, CITY_MAPPING_CONFIGURATION).mappedBy(City::setCountry).cascading(ALL_ORPHAN_REMOVAL)
 					.build(persistenceContext);
 			
 			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
@@ -726,7 +726,7 @@ class FluentEntityMappingConfigurationSupportOneToManyTest {
 					.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 					.add(Country::getName)
 					.add(Country::getDescription)
-					.addOneToManySet(Country::getCities, cityConfiguration).mappedBy(City::setCountry).cascading(ALL_ORPHAN_REMOVAL)
+					.addOneToManySet(Country::getCities, CITY_MAPPING_CONFIGURATION).mappedBy(City::setCountry).cascading(ALL_ORPHAN_REMOVAL)
 					.build(persistenceContext);
 			
 			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
@@ -756,7 +756,7 @@ class FluentEntityMappingConfigurationSupportOneToManyTest {
 					.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 					.add(Country::getName)
 					.add(Country::getDescription)
-					.addOneToManySet(Country::getCities, cityConfiguration).cascading(ALL_ORPHAN_REMOVAL)
+					.addOneToManySet(Country::getCities, CITY_MAPPING_CONFIGURATION).cascading(ALL_ORPHAN_REMOVAL)
 					.build(persistenceContext);
 			
 			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
@@ -819,7 +819,7 @@ class FluentEntityMappingConfigurationSupportOneToManyTest {
 					.add(Country::getName)
 					.add(Country::getDescription)
 					// no cascade
-					.addOneToManySet(Country::getCities, cityConfiguration).mappedBy(City::setCountry).cascading(ASSOCIATION_ONLY);
+					.addOneToManySet(Country::getCities, CITY_MAPPING_CONFIGURATION).mappedBy(City::setCountry).cascading(ASSOCIATION_ONLY);
 			
 			Assertions.assertThrows(() -> mappingBuilder.build(persistenceContext), hasExceptionInHierarchy(MappingConfigurationException.class)
 					.andProjection(hasMessage(RelationshipMode.ASSOCIATION_ONLY + " is only relevent with an association table")));
@@ -831,7 +831,7 @@ class FluentEntityMappingConfigurationSupportOneToManyTest {
 					.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 					.add(Country::getName)
 					.add(Country::getDescription)
-					.addOneToManySet(Country::getCities, cityConfiguration).cascading(ASSOCIATION_ONLY)
+					.addOneToManySet(Country::getCities, CITY_MAPPING_CONFIGURATION).cascading(ASSOCIATION_ONLY)
 					.build(persistenceContext);
 			
 			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
@@ -892,7 +892,7 @@ class FluentEntityMappingConfigurationSupportOneToManyTest {
 					.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 					.add(Country::getName)
 					.add(Country::getDescription)
-					.addOneToManySet(Country::getCities, cityConfiguration).mappedBy(City::setCountry).cascading(READ_ONLY)
+					.addOneToManySet(Country::getCities, CITY_MAPPING_CONFIGURATION).mappedBy(City::setCountry).cascading(READ_ONLY)
 					.build(persistenceContext);
 			
 			// this is a configuration safeguard, thus we ensure that configuration matches test below
@@ -916,7 +916,7 @@ class FluentEntityMappingConfigurationSupportOneToManyTest {
 					.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 					.add(Country::getName)
 					.add(Country::getDescription)
-					.addOneToManySet(Country::getCities, cityConfiguration).cascading(READ_ONLY)
+					.addOneToManySet(Country::getCities, CITY_MAPPING_CONFIGURATION).cascading(READ_ONLY)
 					.build(persistenceContext);
 			
 			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);

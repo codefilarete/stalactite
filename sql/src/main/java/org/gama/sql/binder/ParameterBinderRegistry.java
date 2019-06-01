@@ -46,8 +46,8 @@ public class ParameterBinderRegistry {
 			this.factory = factory;
 		}
 		
-		public <E extends Enum<E>> AbstractEnumParameterBinder<E> newParameterBinder(Class<E> enumType) {
-			return factory.apply(enumType);
+		public <E extends Enum<E>> ParameterBinder<E> newParameterBinder(Class<E> enumType) {
+			return new NullAwareParameterBinder<E>(factory.apply(enumType));
 		}
 	}
 	

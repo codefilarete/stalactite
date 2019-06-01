@@ -3,15 +3,20 @@ package org.gama.stalactite.persistence.engine;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Savepoint;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 
 import org.gama.lang.Retryer;
+import org.gama.lang.StringAppender;
+import org.gama.lang.collection.Iterables;
 import org.gama.sql.ConnectionProvider;
 import org.gama.sql.RollbackListener;
 import org.gama.sql.RollbackObserver;
 import org.gama.sql.dml.SQLOperation.SQLOperationListener;
 import org.gama.sql.dml.SQLStatement;
+import org.gama.sql.dml.SQLStatement.BindingException;
 import org.gama.sql.dml.WriteOperation;
 import org.gama.stalactite.persistence.id.manager.IdentifierInsertionManager;
 import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
@@ -75,11 +80,28 @@ public class InsertExecutor<C, I, T extends Table> extends WriteExecutor<C, I, T
 		JDBCBatchingIterator<C> jdbcBatchingIterator = identifierInsertionManager.buildJDBCBatchingIterator(entities, writeOperation, getBatchSize());
 		
 		jdbcBatchingIterator.forEachRemaining(c -> {
-			Map<Column<T, Object>, Object> insertValues = getMappingStrategy().getInsertValues(c);
-			optimisticLockManager.manageLock(c, insertValues);
-			writeOperation.addBatch(insertValues);
+			try {
+				addToBatch(c, writeOperation);
+			} catch (RuntimeException e) {
+				throw new RuntimeException("Error while inserting values for " + c, e);
+			}
 		});
 		return jdbcBatchingIterator.getUpdatedRowCount();
+	}
+	
+	private void addToBatch(C c, WriteOperation<Column<T, Object>> writeOperation) {
+		Map<Column<T, Object>, Object> insertValues = getMappingStrategy().getInsertValues(c);
+		assertMandatoryColumnsHaveNonNullValues(insertValues);
+		optimisticLockManager.manageLock(c, insertValues);
+		writeOperation.addBatch(insertValues);
+	}
+	
+	private void assertMandatoryColumnsHaveNonNullValues(Map<Column<T, Object>, Object> insertValues) {
+		Set<Column> nonNullColumnsWithNullValues = Iterables.collect(insertValues.entrySet(),
+				e -> !e.getKey().isNullable() && e.getValue() == null, Entry::getKey, HashSet::new);
+		if (!nonNullColumnsWithNullValues.isEmpty()) {
+			throw new BindingException("Expected non null value for : " + new StringAppender().ccat(nonNullColumnsWithNullValues, ", "));
+		}
 	}
 	
 	/**

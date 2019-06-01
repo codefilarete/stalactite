@@ -33,6 +33,7 @@ import org.mockito.ArgumentCaptor;
 
 import static org.gama.lang.collection.Arrays.asList;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -67,6 +68,19 @@ public class UpdateExecutorTest extends AbstractDMLExecutorTest {
 				.newRow(1, 37).add(2, 41).add(3, 3)
 				.newRow(1, 43).add(2, 53).add(3, 4);
 		assertCapturedPairsEqual(dataSet, expectedPairs);
+	}
+	
+	@Test
+	public void update_mandatoryColumn() {
+		Column<Table, Object> bColumn = (Column<Table, Object>) testInstance.getMappingStrategy().getTargetTable().mapColumnsOnName().get("b");
+		bColumn.setNullable(false);
+		
+		List<Duo<Toto, Toto>> differencesIterable = asList(new Duo<>(new Toto(1, null, 23), new Toto(1, 42, 23)));
+		Iterable<UpdatePayload<Toto, Table>> payloads = UpdateListener.computePayloads(differencesIterable, true,
+				testInstance.getMappingStrategy());
+		
+		RuntimeException thrownException = assertThrows(IllegalArgumentException.class, () -> testInstance.updateMappedColumns(payloads));
+		assertEquals("Expected non null value for column Toto.b on instance Toto{a=1, b=null, c=23}", thrownException.getMessage());
 	}
 	
 	@Test
@@ -228,7 +242,7 @@ public class UpdateExecutorTest extends AbstractDMLExecutorTest {
 		AccessorByField<SimpleEntity, Long> idAccessor = Accessors.accessorByField(SimpleEntity.class, "id");
 		ClassMappingStrategy<SimpleEntity, Long, T> simpleEntityPersistenceMapping = new ClassMappingStrategy<SimpleEntity, Long, T>
 				(SimpleEntity.class, table, (Map) Maps.asMap(idAccessor, id), idAccessor, AlreadyAssignedIdentifierManager.INSTANCE);
-		UpdateExecutor<SimpleEntity, Long, T> testInstance = new UpdateExecutor<SimpleEntity, Long, T>(
+		UpdateExecutor<SimpleEntity, Long, T> testInstance = new UpdateExecutor<>(
 				simpleEntityPersistenceMapping, mock(ConnectionProvider.class), new DMLGenerator(new ColumnBinderRegistry()), Retryer.NO_RETRY, 3, 4);
 		
 		

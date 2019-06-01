@@ -122,7 +122,9 @@ class EmbeddableMappingBuilder<C> {
 	}
 	
 	protected Column addLinkage(Linkage linkage) {
-		return targetTable.addColumn(linkage.getColumnName(), linkage.getColumnType());
+		Column addedColumn = targetTable.addColumn(linkage.getColumnName(), linkage.getColumnType());
+		addedColumn.setNullable(linkage.isNullable());
+		return addedColumn;
 	}
 	
 	protected void ensureColumnBinding(Linkage linkage, Column column) {

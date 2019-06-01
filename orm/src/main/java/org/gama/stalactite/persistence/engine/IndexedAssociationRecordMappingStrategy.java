@@ -56,7 +56,7 @@ class IndexedAssociationRecordMappingStrategy extends ClassMappingStrategy<Index
 					}
 				}));
 		// because main mapping forbids to update primary key (see EmbeddedBeanMappingStrategy), but index is part of it and will be updated,
-		// we need to add it to mapping
+		// we need to add it to the mapping
 		getMainMappingStrategy().addSilentColumnInserter((Column) targetTable.getIndexColumn(), (Function<IndexedAssociationRecord, Object>) IndexedAssociationRecord.INDEX_ACCESSOR::get);
 		getMainMappingStrategy().addSilentColumnUpdater((Column) targetTable.getIndexColumn(), (Function<IndexedAssociationRecord, Object>) IndexedAssociationRecord.INDEX_ACCESSOR::get);
 	}

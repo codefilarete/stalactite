@@ -16,7 +16,18 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 public class TableTest {
 	
 	@Test
-	public void addColumn_alreadyExists_throwsException() {
+	public void addColumn_alreadyExists_returnsExistingOne() {
+		Table testInstance = new Table("toto");
+		// empty columns should throw any exception nor found anything
+		Column xxColumn = testInstance.addColumn("xx", String.class);
+		
+		// same column with same type doesn't has any consequence
+		Column newColumn = testInstance.addColumn("xx", String.class);
+		assertSame(xxColumn, newColumn);
+	}
+	
+	@Test
+	public void addColumn_alreadyExistsWithDifferentType_throwsException() {
 		Table testInstance = new Table("toto");
 		// empty columns should throw any exception nor found anything
 		testInstance.addColumn("xx", String.class);

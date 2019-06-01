@@ -24,7 +24,7 @@ public interface EmbeddableMappingConfiguration<C> {
 	ColumnNamingStrategy getColumnNamingStrategy();
 	
 	/**
-	 * Small constract for defining property storage
+	 * Small constract for defining property configuration storage
 	 * 
 	 * @param <T> property owner type
 	 */
@@ -37,5 +37,7 @@ public interface EmbeddableMappingConfiguration<C> {
 		Class<?> getColumnType();
 		
 		ParameterBinder getParameterBinder();
+		
+		boolean isNullable();
 	}
 }

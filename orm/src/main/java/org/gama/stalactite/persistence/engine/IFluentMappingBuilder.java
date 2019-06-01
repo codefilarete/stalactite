@@ -23,17 +23,17 @@ public interface IFluentMappingBuilder<C, I> extends IFluentEmbeddableMappingCon
 	
 	/* Overwritting methods signature to return a type that aggregates options of this class */
 	
-	<O> IFluentMappingBuilderColumnOptions<C, I> add(SerializableBiConsumer<C, O> setter);
+	<O> IFluentMappingBuilderPropertyOptions<C, I> add(SerializableBiConsumer<C, O> setter);
 	
-	<O> IFluentMappingBuilderColumnOptions<C, I> add(SerializableFunction<C, O> getter);
+	<O> IFluentMappingBuilderPropertyOptions<C, I> add(SerializableFunction<C, O> getter);
 	
-	<O> IFluentMappingBuilderColumnOptions<C, I> add(SerializableBiConsumer<C, O> setter, String columnName);
+	<O> IFluentMappingBuilderPropertyOptions<C, I> add(SerializableBiConsumer<C, O> setter, String columnName);
 	
-	<O> IFluentMappingBuilderColumnOptions<C, I> add(SerializableFunction<C, O> getter, String columnName);
+	<O> IFluentMappingBuilderPropertyOptions<C, I> add(SerializableFunction<C, O> getter, String columnName);
 	
-	<O> IFluentMappingBuilderColumnOptions<C, I> add(SerializableBiConsumer<C, O> getter, Column<Table, O> column);
+	<O> IFluentMappingBuilderPropertyOptions<C, I> add(SerializableBiConsumer<C, O> getter, Column<Table, O> column);
 	
-	<O> IFluentMappingBuilderColumnOptions<C, I> add(SerializableFunction<C, O> getter, Column<Table, O> column);
+	<O> IFluentMappingBuilderPropertyOptions<C, I> add(SerializableFunction<C, O> getter, Column<Table, O> column);
 	
 	<E extends Enum<E>> IFluentMappingBuilderEnumOptions<C, I> addEnum(SerializableBiConsumer<C, E> setter);
 	
@@ -162,7 +162,13 @@ public interface IFluentMappingBuilder<C, I> extends IFluentEmbeddableMappingCon
 	
 	IFluentMappingBuilder<C, I> withJoinTable(Table parentTable);
 	
-	interface IFluentMappingBuilderColumnOptions<T, I> extends IFluentMappingBuilder<T, I>, ColumnOptions<T, I> {
+	interface IFluentMappingBuilderPropertyOptions<C, I> extends IFluentMappingBuilder<C, I>, IFluentEmbeddableMappingConfigurationPropertyOptions<C>, ColumnOptions<C, I> {
+		
+		@Override
+		IFluentMappingBuilderPropertyOptions<C, I> identifier(IdentifierPolicy identifierPolicy);
+		
+		@Override
+		IFluentMappingBuilderPropertyOptions<C, I> mandatory();
 	}
 	
 	interface IFluentMappingBuilderOneToOneOptions<C, I, T extends Table> extends IFluentMappingBuilder<C, I>, OneToOneOptions<C, I, T> {
@@ -305,8 +311,8 @@ public interface IFluentMappingBuilder<C, I> extends IFluentEmbeddableMappingCon
 	}
 	
 	interface IFluentMappingBuilderEnumOptions<C, I>
-			extends IFluentEmbeddableMappingConfigurationEnumOptions<C>,
-			IFluentMappingBuilder<C, I> {
+			extends IFluentMappingBuilder<C, I>,
+			IFluentEmbeddableMappingConfigurationEnumOptions<C> {
 		
 		@Override
 		IFluentMappingBuilderEnumOptions<C, I> byName();
@@ -314,5 +320,7 @@ public interface IFluentMappingBuilder<C, I> extends IFluentEmbeddableMappingCon
 		@Override
 		IFluentMappingBuilderEnumOptions<C, I> byOrdinal();
 		
+		@Override
+		IFluentMappingBuilderEnumOptions<C, I> mandatory();
 	}
 }

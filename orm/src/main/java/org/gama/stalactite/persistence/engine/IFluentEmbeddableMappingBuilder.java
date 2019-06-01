@@ -12,13 +12,13 @@ public interface IFluentEmbeddableMappingBuilder<C> extends IFluentEmbeddableMap
 	
 	/* Overwritting methods signature to return a type that aggregates options of this class */
 	
-	<O> IFluentEmbeddableMappingBuilder<C> add(SerializableBiConsumer<C, O> setter);
+	<O> IFluentEmbeddableMappingBuilderPropertyOptions<C> add(SerializableBiConsumer<C, O> setter);
 	
-	<O> IFluentEmbeddableMappingBuilder<C> add(SerializableFunction<C, O> getter);
+	<O> IFluentEmbeddableMappingBuilderPropertyOptions<C> add(SerializableFunction<C, O> getter);
 	
-	<O> IFluentEmbeddableMappingBuilder<C> add(SerializableBiConsumer<C, O> setter, String columnName);
+	<O> IFluentEmbeddableMappingBuilderPropertyOptions<C> add(SerializableBiConsumer<C, O> setter, String columnName);
 	
-	<O> IFluentEmbeddableMappingBuilder<C> add(SerializableFunction<C, O> getter, String columnName);
+	<O> IFluentEmbeddableMappingBuilderPropertyOptions<C> add(SerializableFunction<C, O> getter, String columnName);
 	
 	<E extends Enum<E>> IFluentEmbeddableMappingBuilderEnumOptions<C> addEnum(SerializableBiConsumer<C, E> setter);
 	
@@ -114,5 +114,14 @@ public interface IFluentEmbeddableMappingBuilder<C> extends IFluentEmbeddableMap
 		@Override
 		IFluentEmbeddableMappingBuilderEnumOptions<C> byOrdinal();
 		
+		@Override
+		IFluentEmbeddableMappingBuilderEnumOptions<C> mandatory();
+		
+	}
+	
+	interface IFluentEmbeddableMappingBuilderPropertyOptions<C> extends IFluentEmbeddableMappingConfigurationPropertyOptions<C>, IFluentEmbeddableMappingBuilder<C> {
+		
+		@Override
+		IFluentEmbeddableMappingBuilderPropertyOptions<C> mandatory();
 	}
 }

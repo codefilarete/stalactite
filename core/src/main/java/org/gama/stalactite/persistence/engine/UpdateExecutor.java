@@ -1,7 +1,9 @@
 package org.gama.stalactite.persistence.engine;
 
 import java.sql.Savepoint;
+import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -114,11 +116,10 @@ public class UpdateExecutor<C, I, T extends Table> extends WriteExecutor<C, I, T
 	 */
 	public int updateVariousColumns(Iterable<UpdatePayload<C, T>> updatePayloads) {
 		// we update only entities that have values to be modified
-		Iterable<UpdatePayload<C, T>> toUpdate = collectNonEmptyValues(ReadOnlyIterator.wrap(updatePayloads));
+		Iterable<UpdatePayload<C, T>> toUpdate = collectAndAssertNonNullValues(ReadOnlyIterator.wrap(updatePayloads));
 		if (!Iterables.isEmpty(toUpdate)) {
 			CurrentConnectionProvider currentConnectionProvider = new CurrentConnectionProvider();
-			DifferenceUpdater differenceUpdater = new DifferenceUpdater(new JDBCBatchingOperationCache(currentConnectionProvider));
-			return differenceUpdater.update(toUpdate);
+			return executeUpdate(toUpdate, new JDBCBatchingOperationCache(currentConnectionProvider));
 		} else {
 			return 0;
 		}
@@ -138,22 +139,29 @@ public class UpdateExecutor<C, I, T extends Table> extends WriteExecutor<C, I, T
 		// we ask the strategy to lookup for updatable columns (not taken directly on mapping strategy target table)
 		Set<Column<T, Object>> columnsToUpdate = getMappingStrategy().getUpdatableColumns();
 		if (columnsToUpdate.isEmpty()) {
-			// nothing to update, this prevent a NPE in buildUpdate due to lack of any (first) element
+			// nothing to update, this prevent from a NPE in buildUpdate(..) due to lack of any (first) element
 			return 0;
 		} else {
 			// we update only entities that have values to be modified
-			Iterable<UpdatePayload<C, T>> toUpdate = collectNonEmptyValues(ReadOnlyIterator.wrap(updatePayloads));
+			Iterable<UpdatePayload<C, T>> toUpdate = collectAndAssertNonNullValues(ReadOnlyIterator.wrap(updatePayloads));
 			if (!Iterables.isEmpty(toUpdate)) {
 				PreparedUpdate<T> preparedUpdate = getDmlGenerator().buildUpdate(columnsToUpdate, getMappingStrategy().getVersionedKeys());
 				WriteOperation<UpwhereColumn<T>> writeOperation = newWriteOperation(preparedUpdate, new CurrentConnectionProvider());
 				// Since all columns are updated we can benefit from JDBC batch
-				JDBCBatchingOperation jdbcBatchingOperation = new JDBCBatchingOperation<>(writeOperation, getBatchSize());
-				
-				DifferenceUpdater differenceUpdater = new DifferenceUpdater(new SingleJDBCBatchingOperation(jdbcBatchingOperation));
-				return differenceUpdater.update(toUpdate);
+				JDBCBatchingOperation<T> jdbcBatchingOperation = new JDBCBatchingOperation<>(writeOperation, getBatchSize());
+				return executeUpdate(toUpdate, new SingleJDBCBatchingOperation(jdbcBatchingOperation));
 			} else {
 				return 0;
 			}
+		}
+	}
+	
+	private int executeUpdate(Iterable<UpdatePayload<C, T>> entitiesPayloads, JDBCBatchingOperationProvider<T> batchingOperationProvider) {
+		try {
+			DifferenceUpdater differenceUpdater = new DifferenceUpdater(batchingOperationProvider);
+			return differenceUpdater.update(entitiesPayloads);
+		} catch (RuntimeException e) {
+			throw new RuntimeException("Error while updating values", e);
 		}
 	}
 	
@@ -163,9 +171,23 @@ public class UpdateExecutor<C, I, T extends Table> extends WriteExecutor<C, I, T
 	 * 
 	 * @param updatePayloads payloads expected to be updated 
 	 * @return a copy of the argument, without those which values are empty
+	 * @throws IllegalArgumentException
 	 */
-	private Iterable<UpdatePayload<C, T>> collectNonEmptyValues(ReadOnlyIterator<UpdatePayload<C, T>> updatePayloads) {
-		return Iterables.filter(Iterables.copy(updatePayloads), u -> !u.getValues().isEmpty());
+	private Iterable<UpdatePayload<C, T>> collectAndAssertNonNullValues(ReadOnlyIterator<UpdatePayload<C, T>> updatePayloads) {
+		List<UpdatePayload<C, T>> result = new ArrayList<>();
+		updatePayloads.forEachRemaining(payload -> {
+			if (!payload.getValues().isEmpty()) {
+				payload.getValues().forEach((k, v) -> {
+					if (!k.getColumn().isNullable() && v == null) {
+						throw new IllegalArgumentException("Expected non null value for column " + k.getColumn()
+								// we print the instance roughly, how could we do better ?
+								+ " on instance " + payload.getEntities().getLeft());
+					}
+				});
+				result.add(payload);
+			}
+		});
+		return result;
 	}
 	
 	/**

@@ -93,7 +93,7 @@ public class Table<SELF extends Table<SELF>> {
 	 * @return given column
 	 */
 	private <O> Column<SELF, O> addertColumn(Column<SELF, O> column) {
-		Column<SELF, ?> existingColumn = columnsPerName.get(column.getName());
+		Column<SELF, O> existingColumn = getColumn(column.getName());
 		if (existingColumn != null
 				&& (!existingColumn.getJavaType().equals(column.getJavaType())
 				|| !Predicates.equalOrNull(existingColumn.getSize(), column.getSize()))
@@ -101,13 +101,21 @@ public class Table<SELF extends Table<SELF>> {
 			throw new IllegalArgumentException("Trying to add a column that already exists with a different type : "
 					+ column.getAbsoluteName() + " " + toString(existingColumn) + " vs " + toString(column));
 		}
-		this.columns.add((Column<SELF, Object>) column);
-		columnsPerName.put(column.getName(), column);
-		return column;
+		if (existingColumn == null) {
+			columns.add((Column<SELF, Object>) column);
+			columnsPerName.put(column.getName(), column);
+			return column;
+		} else {
+			return existingColumn;
+		}
 	}
 	
 	public Map<String, Column<SELF, Object>> mapColumnsOnName() {
 		return new HashMap<>((Map) columnsPerName);
+	}
+	
+	public <C> Column<SELF, C> getColumn(String columnName) {
+		return (Column<SELF, C>) columnsPerName.get(columnName);
 	}
 	
 	/**

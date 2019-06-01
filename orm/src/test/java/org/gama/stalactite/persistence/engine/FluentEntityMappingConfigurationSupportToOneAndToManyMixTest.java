@@ -14,7 +14,7 @@ import org.gama.sql.result.ResultSetIterator;
 import org.gama.sql.test.HSQLDBInMemoryDataSource;
 import org.gama.stalactite.persistence.engine.CascadeOptions.RelationshipMode;
 import org.gama.stalactite.persistence.engine.ColumnOptions.IdentifierPolicy;
-import org.gama.stalactite.persistence.engine.IFluentMappingBuilder.IFluentMappingBuilderColumnOptions;
+import org.gama.stalactite.persistence.engine.IFluentMappingBuilder.IFluentMappingBuilderPropertyOptions;
 import org.gama.stalactite.persistence.engine.model.City;
 import org.gama.stalactite.persistence.engine.model.Country;
 import org.gama.stalactite.persistence.engine.model.Person;
@@ -60,13 +60,13 @@ public class FluentEntityMappingConfigurationSupportToOneAndToManyMixTest {
 	public void initTest() {
 		persistenceContext = new PersistenceContext(new JdbcConnectionProvider(dataSource), DIALECT);
 		
-		IFluentMappingBuilderColumnOptions<Person, Identifier<Long>> personMappingBuilder = FluentEntityMappingConfigurationSupport.from(Person.class,
+		IFluentMappingBuilderPropertyOptions<Person, Identifier<Long>> personMappingBuilder = FluentEntityMappingConfigurationSupport.from(Person.class,
 				Identifier.LONG_TYPE)
 				.add(Person::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.add(Person::getName);
 		personMappingConfiguration = personMappingBuilder.getConfiguration();
 		
-		IFluentMappingBuilderColumnOptions<City, Identifier<Long>> cityMappingBuilder = FluentEntityMappingConfigurationSupport.from(City.class,
+		IFluentMappingBuilderPropertyOptions<City, Identifier<Long>> cityMappingBuilder = FluentEntityMappingConfigurationSupport.from(City.class,
 				Identifier.LONG_TYPE)
 				.add(City::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.add(City::getName)
@@ -176,7 +176,7 @@ public class FluentEntityMappingConfigurationSupportToOneAndToManyMixTest {
 	
 	@Test
 	public void testCascade_multipleOneToMany_update() {
-		IFluentMappingBuilderColumnOptions<State, Identifier<Long>> stateMappingBuilder = FluentEntityMappingConfigurationSupport.from(State.class,
+		IFluentMappingBuilderPropertyOptions<State, Identifier<Long>> stateMappingBuilder = FluentEntityMappingConfigurationSupport.from(State.class,
 				Identifier.LONG_TYPE)
 				.add(State::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.add(State::getName)

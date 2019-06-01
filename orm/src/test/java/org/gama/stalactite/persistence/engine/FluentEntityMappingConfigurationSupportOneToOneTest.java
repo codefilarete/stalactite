@@ -17,8 +17,8 @@ import org.gama.sql.result.RowIterator;
 import org.gama.sql.test.HSQLDBInMemoryDataSource;
 import org.gama.stalactite.persistence.engine.CascadeOptions.RelationshipMode;
 import org.gama.stalactite.persistence.engine.ColumnOptions.IdentifierPolicy;
-import org.gama.stalactite.persistence.engine.IFluentMappingBuilder.IFluentMappingBuilderColumnOptions;
 import org.gama.stalactite.persistence.engine.IFluentMappingBuilder.IFluentMappingBuilderOneToOneOptions;
+import org.gama.stalactite.persistence.engine.IFluentMappingBuilder.IFluentMappingBuilderPropertyOptions;
 import org.gama.stalactite.persistence.engine.model.City;
 import org.gama.stalactite.persistence.engine.model.Country;
 import org.gama.stalactite.persistence.engine.model.Person;
@@ -71,12 +71,12 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 	public void initTest() {
 		persistenceContext = new PersistenceContext(new JdbcConnectionProvider(dataSource), DIALECT);
 		
-		IFluentMappingBuilderColumnOptions<Person, Identifier<Long>> personMappingBuilder = FluentEntityMappingConfigurationSupport.from(Person.class, Identifier.LONG_TYPE)
+		IFluentMappingBuilderPropertyOptions<Person, Identifier<Long>> personMappingBuilder = FluentEntityMappingConfigurationSupport.from(Person.class, Identifier.LONG_TYPE)
 				.add(Person::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.add(Person::getName);
 		personConfiguration = personMappingBuilder.getConfiguration();
 		
-		IFluentMappingBuilderColumnOptions<City, Identifier<Long>> cityMappingBuilder = FluentEntityMappingConfigurationSupport.from(City.class, Identifier.LONG_TYPE)
+		IFluentMappingBuilderPropertyOptions<City, Identifier<Long>> cityMappingBuilder = FluentEntityMappingConfigurationSupport.from(City.class, Identifier.LONG_TYPE)
 				.add(City::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.add(City::getName);
 		cityConfiguration = cityMappingBuilder.getConfiguration();
@@ -328,7 +328,7 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 	
 	@Test
 	void foreignKeyIsCreated_relationIsDefinedByColumnOnTargetSide() throws SQLException {
-		IFluentMappingBuilderColumnOptions<City, Identifier<Long>> cityMappingBuilder = FluentEntityMappingConfigurationSupport.from(City.class, Identifier.LONG_TYPE)
+		IFluentMappingBuilderPropertyOptions<City, Identifier<Long>> cityMappingBuilder = FluentEntityMappingConfigurationSupport.from(City.class, Identifier.LONG_TYPE)
 				.add(City::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.add(City::getName);
 		Table<?> cityTable = new Table("city");
@@ -369,7 +369,7 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 	
 	@Test
 	void foreignKeyIsCreated_relationIsDefinedByColumnOnTargetSideAndReverseAccessorIsUsed_columnOverrideIsUsed() throws SQLException {
-		IFluentMappingBuilderColumnOptions<City, Identifier<Long>> cityMappingBuilder = FluentEntityMappingConfigurationSupport.from(City.class, Identifier.LONG_TYPE)
+		IFluentMappingBuilderPropertyOptions<City, Identifier<Long>> cityMappingBuilder = FluentEntityMappingConfigurationSupport.from(City.class, Identifier.LONG_TYPE)
 				.add(City::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.add(City::getName);
 		Table cityTable = new Table("city");
@@ -406,7 +406,7 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 	
 	@Test
 	void foreignKeyIsCreated_relationIsDefinedByColumnOnTargetSideAndReverseMutatorIsUsed_columnOverrideIsUsed() throws SQLException {
-		IFluentMappingBuilderColumnOptions<City, Identifier<Long>> cityMappingBuilder = FluentEntityMappingConfigurationSupport.from(City.class, Identifier.LONG_TYPE)
+		IFluentMappingBuilderPropertyOptions<City, Identifier<Long>> cityMappingBuilder = FluentEntityMappingConfigurationSupport.from(City.class, Identifier.LONG_TYPE)
 				.add(City::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.add(City::getName);
 		Table cityTable = new Table("city");

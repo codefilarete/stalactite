@@ -209,7 +209,7 @@ class EntityMappingBuilder<C, I> {
 		}
 		if (identifierAccessor == null) {
 			// no ClassMappingStratey in hierarchy, so we can't get an identifier from it => impossible
-			SerializableBiFunction<ColumnOptions, IdentifierPolicy, IFluentMappingBuilder> identifierMethodReference = ColumnOptions::identifier;
+			SerializableBiFunction<ColumnOptions, IdentifierPolicy, ColumnOptions> identifierMethodReference = ColumnOptions::identifier;
 			Method identifierSetter = this.methodSpy.findMethod(identifierMethodReference);
 			throw new UnsupportedOperationException("Identifier is not defined for " + Reflections.toString(configurationSupport.getPersistedClass())
 					+ ", please add one throught " + Reflections.toString(identifierSetter));
@@ -294,10 +294,7 @@ class EntityMappingBuilder<C, I> {
 		} else {
 			ClassMappingStrategy<C, Object, T> existingMappingStrategy = existingPersister.getMappingStrategy();
 			
-			System.out.println(existingMappingStrategy.getSelectableColumns());
-			System.out.println(mainMappingStrategy.getSelectableColumns());
-			
-			BiPredicate<ClassMappingStrategy, ClassMappingStrategy> and = Predicates.and(
+			BiPredicate<ClassMappingStrategy, ClassMappingStrategy> mappingConfigurationComparator = Predicates.and(
 					ClassMappingStrategy::getTargetTable,
 					ClassMappingStrategy::getPropertyToColumn,
 					ClassMappingStrategy::getVersionedKeys,
@@ -305,8 +302,7 @@ class EntityMappingBuilder<C, I> {
 					ClassMappingStrategy::getUpdatableColumns,
 					ClassMappingStrategy::getInsertableColumns
 			);
-			if (!and.test(existingMappingStrategy, mainMappingStrategy)) {
-				
+			if (!mappingConfigurationComparator.test(existingMappingStrategy, mainMappingStrategy)) {
 				throw new IllegalArgumentException("Persister already exists for " + Reflections.toString(result.getMappingStrategy().getClassToPersist()));
 			}
 		}

@@ -5,9 +5,11 @@ package org.gama.stalactite.persistence.engine;
  * 
  * @author Guillaume Mary
  */
-public interface EnumOptions {
+public interface EnumOptions extends PropertyOptions {
 	
 	EnumOptions byName();
 	
 	EnumOptions byOrdinal();
+	
+	EnumOptions mandatory();
 }

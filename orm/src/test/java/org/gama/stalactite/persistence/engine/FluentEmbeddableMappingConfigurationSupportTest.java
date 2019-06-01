@@ -1,5 +1,7 @@
 package org.gama.stalactite.persistence.engine;
 
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
 import java.util.Date;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -9,9 +11,7 @@ import org.gama.lang.collection.Maps;
 import org.gama.reflection.AccessorChain;
 import org.gama.sql.binder.DefaultParameterBinders;
 import org.gama.sql.binder.LambdaParameterBinder;
-import org.gama.sql.binder.NameEnumParameterBinder;
 import org.gama.sql.binder.NullAwareParameterBinder;
-import org.gama.sql.binder.OrdinalEnumParameterBinder;
 import org.gama.sql.binder.ParameterBinder;
 import org.gama.sql.result.Row;
 import org.gama.stalactite.persistence.engine.FluentEntityMappingConfigurationSupportInheritanceTest.Car;
@@ -28,40 +28,44 @@ import org.gama.stalactite.persistence.mapping.EmbeddedBeanMappingStrategy;
 import org.gama.stalactite.persistence.sql.HSQLDBDialect;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
-import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import static org.gama.sql.binder.DefaultParameterBinders.INTEGER_PRIMITIVE_BINDER;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 
 /**
  * @author Guillaume Mary
  */
 class FluentEmbeddableMappingConfigurationSupportTest {
 	
-	private static final HSQLDBDialect DIALECT = new HSQLDBDialect();
+	// NB: dialect is made non static because we register binder for the same column several times in these tests
+	// and this is not supported : the very first one takes priority  
+	private HSQLDBDialect dialect = new HSQLDBDialect();
 	
-	@BeforeAll
-	static void initBinders() {
+	@BeforeEach
+	public void initTest() {
 		// binder creation for our identifier
-		DIALECT.getColumnBinderRegistry().register((Class) Identifier.class,
+		dialect.getColumnBinderRegistry().register((Class) Identifier.class,
 				Identifier.identifierBinder(DefaultParameterBinders.LONG_PRIMITIVE_BINDER));
-		DIALECT.getJavaTypeToSqlTypeMapping().put(Identifier.class, "int");
-		DIALECT.getColumnBinderRegistry().register(Color.class, new NullAwareParameterBinder<>(new LambdaParameterBinder<>(INTEGER_PRIMITIVE_BINDER, Color::new, Color::getRgb)));
-		DIALECT.getJavaTypeToSqlTypeMapping().put(Color.class, "int");
+		dialect.getJavaTypeToSqlTypeMapping().put(Identifier.class, "int");
+		dialect.getColumnBinderRegistry().register(Color.class, new NullAwareParameterBinder<>(new LambdaParameterBinder<>(INTEGER_PRIMITIVE_BINDER, Color::new, Color::getRgb)));
+		dialect.getJavaTypeToSqlTypeMapping().put(Color.class, "int");
 	}
 	
 	@Test
-	void testAdd_withoutName_targetedPropertyNameIsTaken() {
+	void add_withoutName_targetedPropertyNameIsTaken() {
 		Table<?> countryTable = new Table<>("countryTable");
 		EmbeddedBeanMappingStrategy<Country, Table> mappingStrategy = FluentEmbeddableMappingConfigurationSupport.from(Country.class)
 				.add(Country::getName)
 				.add(Country::setDescription)
-				.build(DIALECT, countryTable);
+				.build(dialect, countryTable);
 		
 		// column should be correctly created
 		assertEquals(countryTable, mappingStrategy.getTargetTable());
@@ -75,13 +79,13 @@ class FluentEmbeddableMappingConfigurationSupportTest {
 	}
 	
 	@Test
-	void testAdd_withoutName_withNamingStrategy_namingStrategyIsTaken_exceptIfColumnNameIsOverriden() {
+	void add_withoutName_withNamingStrategy_namingStrategyIsTaken_exceptIfColumnNameIsOverriden() {
 		Table<?> countryTable = new Table<>("countryTable");
 		EmbeddedBeanMappingStrategy<Country, Table> mappingStrategy = FluentEmbeddableMappingConfigurationSupport.from(Country.class)
 				.columnNamingStrategy(accessor -> ColumnNamingStrategy.DEFAULT.giveName(accessor) + "_col")
 				.add(Country::getName)
 				.add(Country::getDescription, "descriptionColumn")
-				.build(DIALECT, countryTable);
+				.build(dialect, countryTable);
 		
 		// column should be correctly created
 		assertEquals(countryTable, mappingStrategy.getTargetTable());
@@ -96,12 +100,12 @@ class FluentEmbeddableMappingConfigurationSupportTest {
 	}
 	
 	@Test
-	void testAdd_withOverwrittenName_overwrittenNameIsTaken() {
+	void add_withOverwrittenName_overwrittenNameIsTaken() {
 		Table<?> countryTable = new Table<>("countryTable");
 		EmbeddedBeanMappingStrategy<Country, Table> mappingStrategy = FluentEmbeddableMappingConfigurationSupport.from(Country.class)
 				.add(Country::getName, "code")
 				.add(Country::setDescription, "desc")
-				.build(DIALECT, countryTable);
+				.build(dialect, countryTable);
 		
 		// column should be correctly created
 		assertEquals(countryTable, mappingStrategy.getTargetTable());
@@ -115,37 +119,49 @@ class FluentEmbeddableMappingConfigurationSupportTest {
 	}
 	
 	@Test
-	void testAdd_mappingDefinedTwiceByMethod_throwsException() throws NoSuchMethodException {
+	void add_mappingDefinedTwiceByMethod_throwsException() {
 		Table<?> countryTable = new Table<>("countryTable");
 		assertEquals("Mapping is already defined by method Country::getName",
 				assertThrows(MappingConfigurationException.class, () -> FluentEmbeddableMappingConfigurationSupport.from(Country.class)
 						.add(Country::getName)
 						.add(Country::setName)
-						.build(DIALECT, countryTable))
+						.build(dialect, countryTable))
 						.getMessage());
 	}
 	
 	@Test
-	void testAdd_mappingDefinedTwiceByColumn_throwsException() {
+	void add_mappingDefinedTwiceByColumn_throwsException() {
 		Table<?> countryTable = new Table<>("countryTable");
 		assertEquals("Mapping is already defined for column xyz",
 				assertThrows(MappingConfigurationException.class, () -> FluentEmbeddableMappingConfigurationSupport.from(Country.class)
 						.add(Country::getName, "xyz")
 						.add(Country::setDescription, "xyz")
-						.build(DIALECT, countryTable))
+						.build(dialect, countryTable))
 						.getMessage());
 	}
 	
 	@Test
-	void testAdd_mappingAComplextType_throwsException() {
+	void add_mappingAComplextType_throwsException() {
 		Table<?> countryTable = new Table<>("countryTable");
 		assertEquals("countryTable.timestamp has no matching binder, please consider adding one to dialect binder registry" +
 						" or use one of the IFluentEmbeddableMappingConfiguration::embed methods",
 				assertThrows(MappingConfigurationException.class, () -> FluentEmbeddableMappingConfigurationSupport.from(Country.class)
 						.add(Country::getName)
 						.add(Country::setTimestamp)
-						.build(DIALECT, countryTable))
+						.build(dialect, countryTable))
 						.getMessage());
+	}
+	
+	@Test
+	void add_mandatory() {
+		Table<?> countryTable = new Table<>("countryTable");
+		FluentEmbeddableMappingConfigurationSupport.from(Country.class)
+				.add(Country::getName).mandatory()
+				.add(Country::setDescription)
+				.build(dialect, countryTable);
+		
+		// mandatory property sets column as mandatory
+		assertFalse(countryTable.mapColumnsOnName().get("name").isNullable());
 	}
 	
 	@Test
@@ -153,7 +169,7 @@ class FluentEmbeddableMappingConfigurationSupportTest {
 		Table<?> countryTable = new Table<>("countryTable");
 		FluentEmbeddableMappingConfigurationSupport.from(Person.class)
 				.embed(Person::getTimestamp)
-				.build(DIALECT, countryTable);
+				.build(dialect, countryTable);
 		
 		Column creationDateColumn = countryTable.mapColumnsOnName().get("creationDate");
 		assertNotNull(creationDateColumn);
@@ -165,7 +181,7 @@ class FluentEmbeddableMappingConfigurationSupportTest {
 		Table<?> countryTable = new Table<>("countryTable");
 		FluentEmbeddableMappingConfigurationSupport.from(Person.class)
 				.embed(Person::setTimestamp)
-				.build(DIALECT, countryTable);
+				.build(dialect, countryTable);
 		
 		Column creationDateColumn = countryTable.mapColumnsOnName().get("creationDate");
 		assertNotNull(creationDateColumn);
@@ -180,7 +196,7 @@ class FluentEmbeddableMappingConfigurationSupportTest {
 				.embed(Person::setTimestamp)
 					.overrideName(Timestamp::getCreationDate, "createdAt")
 					.overrideName(Timestamp::getModificationDate, "modifiedAt")
-				.build(DIALECT, personTable);
+				.build(dialect, personTable);
 		
 		Map<String, Column> columnsByName = (Map) personTable.mapColumnsOnName();
 		
@@ -221,7 +237,7 @@ class FluentEmbeddableMappingConfigurationSupportTest {
 				// color is on a super class
 				.add(Car::getColor)
 				.add(Car::getModel)
-				.build(DIALECT, new Table<>("car"));
+				.build(dialect, new Table<>("car"));
 		
 		Map<String, Column> columnsByName = (Map) carMappingStrategy.getTargetTable().mapColumnsOnName();
 		
@@ -251,7 +267,7 @@ class FluentEmbeddableMappingConfigurationSupportTest {
 				.embed(Car::setTimestamp)
 					.overrideName(Timestamp::getCreationDate, "createdAt")
 					.overrideName(Timestamp::getModificationDate, "modifiedAt")
-				.build(DIALECT, new Table<>("car"));
+				.build(dialect, new Table<>("car"));
 		
 		Map<String, Column> columnsByName = (Map) carMappingStrategy.getTargetTable().mapColumnsOnName();
 		
@@ -318,7 +334,7 @@ class FluentEmbeddableMappingConfigurationSupportTest {
 				.embed(Person::setTimestamp)
 					.exclude(Timestamp::getCreationDate)
 					.overrideName(Timestamp::getModificationDate, "modifiedAt")
-				.build(DIALECT, personTable);
+				.build(dialect, personTable);
 		
 		Map<String, Column> columnsByName = (Map) personTable.mapColumnsOnName();
 		
@@ -376,7 +392,7 @@ class FluentEmbeddableMappingConfigurationSupportTest {
 					.add(Country::getId)
 					.add(Country::setDescription, "zxx")
 					.mapSuperClass(new FluentEmbeddableMappingConfigurationSupport<>(Object.class))
-					.build(DIALECT, countryTable);
+					.build(dialect, countryTable);
 		} catch (RuntimeException e) {
 			// Since we only want to test compilation, we don't care about that the above code throws an exception or not
 		}
@@ -390,7 +406,7 @@ class FluentEmbeddableMappingConfigurationSupportTest {
 					.add(Country::getId, "zz")
 					.mapSuperClass(new FluentEmbeddableMappingConfigurationSupport<>(Object.class))
 					.add(Country::getDescription, "xx")
-					.build(DIALECT, countryTable);
+					.build(dialect, countryTable);
 		} catch (RuntimeException e) {
 			// Since we only want to test compilation, we don't care about that the above code throws an exception or not
 		}
@@ -408,7 +424,7 @@ class FluentEmbeddableMappingConfigurationSupportTest {
 					.embed(Country::setTimestamp)
 					.add(Country::getDescription, "xx")
 					.add(Country::getDummyProperty, "dd")
-					.build(DIALECT, countryTable);
+					.build(dialect, countryTable);
 		} catch (RuntimeException e) {
 			// Since we only want to test compilation, we don't care about that the above code throws an exception or not
 		}
@@ -423,7 +439,7 @@ class FluentEmbeddableMappingConfigurationSupportTest {
 					.mapSuperClass(new FluentEmbeddableMappingConfigurationSupport<>(Object.class))
 					// embed with setter
 					.embed(Country::getPresident, personMappingBuilder)
-					.build(DIALECT, countryTable);
+					.build(dialect, countryTable);
 		} catch (RuntimeException e) {
 			// Since we only want to test compilation, we don't care about that the above code throws an exception or not
 		}
@@ -443,7 +459,7 @@ class FluentEmbeddableMappingConfigurationSupportTest {
 						.overrideName(Person::getName, "toto")
 						// with setter override
 						.overrideName(Person::setName, "tata")
-					.build(DIALECT, countryTable);
+					.build(dialect, countryTable);
 		} catch (RuntimeException e) {
 			// Since we only want to test compilation, we don't care about that the above code throws an exception or not
 		}
@@ -459,7 +475,7 @@ class FluentEmbeddableMappingConfigurationSupportTest {
 					.addEnum(PersonWithGender::setGender).byName()
 					.embed(Person::getTimestamp)
 					.addEnum(PersonWithGender::setGender, "MM").byName()
-					.build(DIALECT, new Table<>("person"));
+					.build(dialect, new Table<>("person"));
 		} catch (RuntimeException e) {
 			// Since we only want to test compilation, we don't care about that the above code throws an exception or not
 		}
@@ -473,7 +489,7 @@ class FluentEmbeddableMappingConfigurationSupportTest {
 				.embed(Country::getTimestamp)
 				.embed(Country::getTimestamp);
 		MappingConfigurationException thrownException = assertThrows(MappingConfigurationException.class, () -> mappingBuilder
-				.build(DIALECT, countryTable));
+				.build(dialect, countryTable));
 		assertEquals("Country::getTimestamp is already mapped", thrownException.getMessage());
 	}
 	
@@ -483,7 +499,7 @@ class FluentEmbeddableMappingConfigurationSupportTest {
 		IFluentEmbeddableMappingBuilderEmbedOptions<Country, Timestamp> mappingBuilder = FluentEmbeddableMappingConfigurationSupport.from(Country.class)
 				.columnNamingStrategy(accessor -> ColumnNamingStrategy.DEFAULT.giveName(accessor) + "_col")
 				.embed(Country::getTimestamp);
-		EmbeddedBeanMappingStrategy<Country, ? extends Table<?>> mappingStrategy = mappingBuilder.build(DIALECT, countryTable);
+		EmbeddedBeanMappingStrategy<Country, ? extends Table<?>> mappingStrategy = mappingBuilder.build(dialect, countryTable);
 		
 		Map<String, ? extends Column<?, Object>> columnsByName = mappingStrategy.getTargetTable().mapColumnsOnName();
 		assertNotNull(columnsByName.get("creationDate_col"));
@@ -501,7 +517,7 @@ class FluentEmbeddableMappingConfigurationSupportTest {
 				// this embed will conflict with Country one because its type is already mapped with no override
 				.embed(Country::getTimestamp);
 		MappingConfigurationException thrownException = assertThrows(MappingConfigurationException.class, () -> mappingBuilder
-				.build(DIALECT, countryTable));
+				.build(dialect, countryTable));
 		assertEquals("Country::getTimestamp conflicts with Person::getTimestamp while embedding a o.g.s.p.e.m.Timestamp" +
 				", column names should be overriden : o.g.s.p.e.m.Timestamp.getCreationDate(), o.g.s.p.e.m.Timestamp.getModificationDate()",
 				thrownException.getMessage());
@@ -510,13 +526,13 @@ class FluentEmbeddableMappingConfigurationSupportTest {
 		mappingBuilder.overrideName(Timestamp::getModificationDate, "modifiedAt");
 		
 		thrownException = assertThrows(MappingConfigurationException.class, () -> mappingBuilder
-				.build(DIALECT, countryTable));
+				.build(dialect, countryTable));
 		assertEquals("Country::getTimestamp conflicts with Person::getTimestamp while embedding a o.g.s.p.e.m.Timestamp" +
 				", column names should be overriden : o.g.s.p.e.m.Timestamp.getCreationDate()", thrownException.getMessage());
 		
 		// we override the last field, no exception is thrown
 		mappingBuilder.overrideName(Timestamp::getCreationDate, "createdAt");
-		mappingBuilder.build(DIALECT, countryTable);
+		mappingBuilder.build(dialect, countryTable);
 		
 		assertEquals(Arrays.asHashSet(
 				// from Country
@@ -537,7 +553,7 @@ class FluentEmbeddableMappingConfigurationSupportTest {
 					.overrideName(Person::getName, "presidentName")
 					.innerEmbed(Person::getTimestamp)
 						.overrideName(Timestamp::getCreationDate, "createdAt")
-				.build(DIALECT, countryTable);
+				.build(dialect, countryTable);
 		
 		Map<String, Column> columnsByName = (Map) personMappingStrategy.getTargetTable().mapColumnsOnName();
 		
@@ -563,7 +579,7 @@ class FluentEmbeddableMappingConfigurationSupportTest {
 				.add(Country::getName)
 				.embed(Country::getPresident);
 		MappingConfigurationException thrownException = assertThrows(MappingConfigurationException.class,
-				() -> mappingBuilder.build(DIALECT, countryTable));
+				() -> mappingBuilder.build(dialect, countryTable));
 		assertEquals("Error while mapping Country::getPresident : o.g.s.p.e.m.Person.name" +
 				" conflicts with Country::getName because they use same column," +
 				" override one of their name to avoid the conflict, see EmbedOptions::overrideName", thrownException.getMessage());
@@ -578,7 +594,7 @@ class FluentEmbeddableMappingConfigurationSupportTest {
 		EmbeddedBeanMappingStrategy<Country, Table<?>> personMappingStrategy = FluentEmbeddableMappingConfigurationSupport.from(Country.class)
 				.add(Country::getName, "countryName")
 				.embed(Country::getPresident, personMappingBuilder)
-				.build(DIALECT, countryTable);
+				.build(dialect, countryTable);
 		
 		Map<String, Column> columnsByName = (Map) personMappingStrategy.getTargetTable().mapColumnsOnName();
 		
@@ -603,7 +619,7 @@ class FluentEmbeddableMappingConfigurationSupportTest {
 		EmbeddedBeanMappingStrategy<Country, Table<?>> personMappingStrategy = FluentEmbeddableMappingConfigurationSupport.from(Country.class)
 				.add(Country::getName, "countryName")
 				.embed(Country::setPresident, personMappingBuilder)
-				.build(DIALECT, countryTable);
+				.build(dialect, countryTable);
 		
 		Map<String, Column> columnsByName = (Map) personMappingStrategy.getTargetTable().mapColumnsOnName();
 		
@@ -630,7 +646,7 @@ class FluentEmbeddableMappingConfigurationSupportTest {
 				.add(Country::getName)
 				.embed(Country::getPresident, personMappingBuilder)
 					.overrideName(Person::getName, "personName")
-				.build(DIALECT, countryTable);
+				.build(dialect, countryTable);
 		
 		Map<String, Column> columnsByName = (Map) personMappingStrategy.getTargetTable().mapColumnsOnName();
 		
@@ -659,7 +675,7 @@ class FluentEmbeddableMappingConfigurationSupportTest {
 				// voluntary duplicate to fulfill goal of this test
 				.embed(Country::getPresident, personMappingBuilder);
 		MappingConfigurationException thrownException = assertThrows(MappingConfigurationException.class, () ->
-				mappingBuilder.build(DIALECT, countryTable));
+				mappingBuilder.build(dialect, countryTable));
 		assertEquals("Country::getPresident is already mapped", thrownException.getMessage());
 	}
 	
@@ -674,7 +690,7 @@ class FluentEmbeddableMappingConfigurationSupportTest {
 				.embed(Country::getPresident, personMappingBuilder);
 		
 		MappingConfigurationException thrownException = assertThrows(MappingConfigurationException.class, () ->
-				entityMappingBuilder.build(DIALECT, countryTable));
+				entityMappingBuilder.build(dialect, countryTable));
 		assertEquals("Some embedded columns conflict with entity ones on their name, please override it or change it :" + System.lineSeparator() 
 						+ "Embeddable definition 'Person::getName'" 
 						+ " vs entity definition 'Country::getName' on column name 'name'",
@@ -693,7 +709,7 @@ class FluentEmbeddableMappingConfigurationSupportTest {
 				.embed(Country::getPresident, personMappingBuilder);
 		
 		MappingConfigurationException thrownException = assertThrows(MappingConfigurationException.class, () ->
-				entityMappingBuilder.build(DIALECT, countryTable));
+				entityMappingBuilder.build(dialect, countryTable));
 		assertEquals("Some embedded columns conflict with entity ones on their name, please override it or change it :" + System.lineSeparator() 
 						+ "Embeddable definition 'Person::getName'" 
 						+ " vs entity definition 'Country::getName' on column name 'myName'",
@@ -712,7 +728,7 @@ class FluentEmbeddableMappingConfigurationSupportTest {
 				.embed(MyCountry::getPresident, personMappingBuilder);
 		
 		MappingConfigurationException thrownException = assertThrows(MappingConfigurationException.class, () ->
-				entityMappingBuilder.build(DIALECT, countryTable));
+				entityMappingBuilder.build(dialect, countryTable));
 		assertEquals("Some embedded columns conflict with entity ones on their name, please override it or change it :" + System.lineSeparator()
 						+ "Embeddable definition 'Person::getName'" 
 						+ " vs entity definition 'MyCountry::getMyName' on column name 'myName'",
@@ -731,7 +747,7 @@ class FluentEmbeddableMappingConfigurationSupportTest {
 				.embed(MyCountry::getPresident, personMappingBuilder);
 		
 		MappingConfigurationException thrownException = assertThrows(MappingConfigurationException.class, () ->
-				entityMappingBuilder.build(DIALECT, countryTable));
+				entityMappingBuilder.build(dialect, countryTable));
 		assertEquals("Some embedded columns conflict with entity ones on their name, please override it or change it :" + System.lineSeparator() 
 						+ "Embeddable definition 'MyPerson::getMyName' vs entity definition" 
 						+ " 'Country::getName' on column name 'myName'",
@@ -751,7 +767,7 @@ class FluentEmbeddableMappingConfigurationSupportTest {
 					.overrideName(Person::getName, "personName")
 					.overrideName(Person::getVersion, "personVersion");
 		MappingConfigurationException thrownException = assertThrows(MappingConfigurationException.class, () ->
-				entityMappingBuilder.build(DIALECT, countryTable));
+				entityMappingBuilder.build(dialect, countryTable));
 		assertEquals("Person::getVersion is not mapped by embeddable strategy, so its column name override 'personVersion' can't apply",
 				thrownException.getMessage());
 	}
@@ -773,7 +789,7 @@ class FluentEmbeddableMappingConfigurationSupportTest {
 					.overrideName(Timestamp::getModificationDate, "modifiedAt")
 				.embed(Country::getPresident, personMappingBuilder)
 					.overrideName(Person::getName, "presidentName")
-				.build(DIALECT, countryTable);
+				.build(dialect, countryTable);
 		
 		Map<String, Column> columnsByName = (Map) personMappingStrategy.getTargetTable().mapColumnsOnName();
 		
@@ -811,7 +827,7 @@ class FluentEmbeddableMappingConfigurationSupportTest {
 				.embed(Country::getPresident, personMappingBuilder)
 					.overrideName(Person::getName, "presidentName")
 					.overrideName(AccessorChain.chain(Person::getTimestamp, Timestamp::getCreationDate), "presidentElectedAt")
-				.build(DIALECT, countryTable);
+				.build(dialect, countryTable);
 		
 		Map<String, Column> columnsByName = (Map) personMappingStrategy.getTargetTable().mapColumnsOnName();
 		
@@ -842,7 +858,7 @@ class FluentEmbeddableMappingConfigurationSupportTest {
 				.embed(Country::getPresident, personMappingBuilder);
 		
 		MappingConfigurationException thrownException = assertThrows(MappingConfigurationException.class, () ->
-				mappingBuilder.build(DIALECT, countryTable));
+				mappingBuilder.build(dialect, countryTable));
 		assertEquals("Some embedded columns conflict with entity ones on their name, please override it or change it :" + System.lineSeparator()
 				+ "Embeddable definition 'Person::getTimestamp > o.g.s.p.e.m.Timestamp.getModificationDate()'"
 				+ " vs entity definition 'Country::getTimestamp > o.g.s.p.e.m.Timestamp.getModificationDate()' on column name 'modificationDate'"
@@ -865,7 +881,7 @@ class FluentEmbeddableMappingConfigurationSupportTest {
 				.embed(Country::getPresident, personMappingBuilder);
 		
 		MappingConfigurationException thrownException = assertThrows(MappingConfigurationException.class, () ->
-				mappingBuilder.build(DIALECT, countryTable));
+				mappingBuilder.build(dialect, countryTable));
 		assertEquals("Some embedded columns conflict with entity ones on their name, please override it or change it :" + System.lineSeparator()
 				+ "Embeddable definition 'Person::getTimestamp > o.g.s.p.e.m.Timestamp.getModificationDate()'"
 				+ " vs entity definition 'Country::getTimestamp > o.g.s.p.e.m.Timestamp.getModificationDate()' on column name 'modificationDate'",
@@ -885,7 +901,7 @@ class FluentEmbeddableMappingConfigurationSupportTest {
 				.embed(Country::getPresident, personMappingBuilder);
 		
 		MappingConfigurationException thrownException = assertThrows(MappingConfigurationException.class, () ->
-				mappingBuilder.build(DIALECT, countryTable));
+				mappingBuilder.build(dialect, countryTable));
 		assertEquals("Some embedded columns conflict with entity ones on their name, please override it or change it :" + System.lineSeparator()
 				+ "Embeddable definition 'Person::getTimestamp > o.g.s.p.e.m.Timestamp.getModificationDate()'"
 				+ " vs entity definition 'Country::getTimestamp > o.g.s.p.e.m.Timestamp.getModificationDate()' on column name 'modificationDate'",
@@ -896,7 +912,7 @@ class FluentEmbeddableMappingConfigurationSupportTest {
 	void testBuild_embedReusedEmbeddable_embeddableContainsAnEmbeddedType_andIsOverriden_throwsException() {
 		EmbeddedBeanMappingStrategyBuilder<Person> personMappingBuilder = FluentEmbeddableMappingConfigurationSupport.from(Person.class)
 				.embed(Person::getTimestamp);
-
+		
 		Table<?> countryTable = new Table<>("countryTable");
 		IFluentEmbeddableMappingBuilder<Country> mappingBuilder = FluentEmbeddableMappingConfigurationSupport.from(Country.class)
 				.add(Country::getName)
@@ -905,7 +921,7 @@ class FluentEmbeddableMappingConfigurationSupportTest {
 					.overrideName(AccessorChain.chain(Person::getTimestamp, Timestamp::getCreationDate), "createdAt");
 		
 		MappingConfigurationException thrownException = assertThrows(MappingConfigurationException.class, () ->
-				mappingBuilder.build(DIALECT, countryTable));
+				mappingBuilder.build(dialect, countryTable));
 		assertEquals("Some embedded columns conflict with entity ones on their name, please override it or change it :" + System.lineSeparator()
 				+ "Embeddable definition 'Person::getTimestamp > o.g.s.p.e.m.Timestamp.getModificationDate()'"
 				+ " vs entity definition 'Country::getTimestamp > o.g.s.p.e.m.Timestamp.getModificationDate()' on column name 'modificationDate'",
@@ -925,53 +941,87 @@ class FluentEmbeddableMappingConfigurationSupportTest {
 					.overrideName(AccessorChain.chain(Person::getTimestamp, Timestamp::getModificationDate), "electedAt");
 		
 		MappingConfigurationException thrownException = assertThrows(MappingConfigurationException.class, () ->
-				mappingBuilder.build(DIALECT, countryTable));
+				mappingBuilder.build(dialect, countryTable));
 		assertEquals("Person::getTimestamp > Timestamp::getModificationDate is not mapped by embeddable strategy, so its column name override 'electedAt' can't apply",
 				thrownException.getMessage());
 	}
 	
 	@Test
-	void testBuild_withEnumType() {
+	void addEnum() throws SQLException {
 		Table<?> personTable = new Table<>("personTable");
-		EmbeddedBeanMappingStrategy<PersonWithGender, Table> personMappingBuilder = FluentEmbeddableMappingConfigurationSupport.from(PersonWithGender.class)
+		EmbeddedBeanMappingStrategy<PersonWithGender, Table> personMappingStrategy = FluentEmbeddableMappingConfigurationSupport.from(PersonWithGender.class)
 				.add(Person::getName)
 				.addEnum(PersonWithGender::getGender)
-				.build(DIALECT, personTable);
+				.build(dialect, personTable);
 		
 		PersonWithGender person = new PersonWithGender();
 		person.setName("toto");
 		person.setGender(Gender.FEMALE);
-		Map<Column<Table, Object>, Object> insertValues = personMappingBuilder.getInsertValues(person);
+		Map<Column<Table, Object>, Object> insertValues = personMappingStrategy.getInsertValues(person);
 		assertEquals("toto", insertValues.get(personTable.mapColumnsOnName().get("name")));
 		assertEquals(Gender.FEMALE, insertValues.get(personTable.mapColumnsOnName().get("gender")));
 		
-		ParameterBinder genderColumnBinder = DIALECT.getColumnBinderRegistry().getBinder(personTable.mapColumnsOnName().get("gender"));
+		ParameterBinder genderColumnBinder = dialect.getColumnBinderRegistry().getBinder(personTable.mapColumnsOnName().get("gender"));
 		// by default, gender will be mapped on its name
-		assertTrue(genderColumnBinder instanceof NameEnumParameterBinder);
-		assertEquals(Gender.class, ((NameEnumParameterBinder) genderColumnBinder).getEnumType());
+		PreparedStatement mock = mock(PreparedStatement.class);
+		genderColumnBinder.set(mock, 1, person.getGender());
+		verify(mock).setString(1, "FEMALE");
+	}
 		
-		
-		// changing mapping to ordinal
-		FluentEmbeddableMappingConfigurationSupport.from(PersonWithGender.class)
+	@Test
+		void addEnum_byOrdinal() throws SQLException {
+		Table<?> personTable = new Table<>("personTable");
+		EmbeddedBeanMappingStrategy<PersonWithGender, Table> personMappingStrategy = FluentEmbeddableMappingConfigurationSupport.from(PersonWithGender.class)
 				.add(Person::getName)
 				.addEnum(PersonWithGender::getGender).byOrdinal()
-				.build(DIALECT, personTable);
+				.build(dialect, personTable);
 		
-		genderColumnBinder = DIALECT.getColumnBinderRegistry().getBinder(personTable.mapColumnsOnName().get("gender"));
-		// by default, gender will be mapped on its name
-		assertTrue(genderColumnBinder instanceof OrdinalEnumParameterBinder);
-		assertEquals(Gender.class, ((OrdinalEnumParameterBinder) genderColumnBinder).getEnumType());
+		PersonWithGender person = new PersonWithGender();
+		person.setName("toto");
+		person.setGender(Gender.FEMALE);
+		Map<Column<Table, Object>, Object> insertValues = personMappingStrategy.getInsertValues(person);
+		assertEquals("toto", insertValues.get(personTable.mapColumnsOnName().get("name")));
+		assertEquals(Gender.FEMALE, insertValues.get(personTable.mapColumnsOnName().get("gender")));
 		
-		// changing mapping to name
-		FluentEmbeddableMappingConfigurationSupport.from(PersonWithGender.class)
+		ParameterBinder genderColumnBinder = dialect.getColumnBinderRegistry().getBinder(personTable.mapColumnsOnName().get("gender"));
+		// checking that binder send ordinal value to JDBC
+		PreparedStatement mock = mock(PreparedStatement.class);
+		genderColumnBinder.set(mock, 1, person.getGender());
+		verify(mock).setInt(1, 1);
+	}
+	
+	@Test
+	void addEnum_byName() throws SQLException {
+		Table<?> personTable = new Table<>("personTable");
+		EmbeddedBeanMappingStrategy<PersonWithGender, Table> personMappingStrategy = FluentEmbeddableMappingConfigurationSupport.from(PersonWithGender.class)
 				.add(Person::getName)
 				.addEnum(PersonWithGender::getGender).byName()
-				.build(DIALECT, personTable);
+				.build(dialect, personTable);
 		
-		genderColumnBinder = DIALECT.getColumnBinderRegistry().getBinder(personTable.mapColumnsOnName().get("gender"));
-		// by default, gender will be mapped on its name
-		assertTrue(genderColumnBinder instanceof NameEnumParameterBinder);
-		assertEquals(Gender.class, ((NameEnumParameterBinder) genderColumnBinder).getEnumType());
+		PersonWithGender person = new PersonWithGender();
+		person.setName("toto");
+		person.setGender(Gender.FEMALE);
+		Map<Column<Table, Object>, Object> insertValues = personMappingStrategy.getInsertValues(person);
+		assertEquals("toto", insertValues.get(personTable.mapColumnsOnName().get("name")));
+		assertEquals(Gender.FEMALE, insertValues.get(personTable.mapColumnsOnName().get("gender")));
+		
+		ParameterBinder genderColumnBinder = dialect.getColumnBinderRegistry().getBinder(personTable.mapColumnsOnName().get("gender"));
+		// checking that binder send name to JDBC
+		PreparedStatement mock = mock(PreparedStatement.class);
+		genderColumnBinder.set(mock, 1, person.getGender());
+		verify(mock).setString(1, "FEMALE");
+	}
+	
+	@Test
+	void addEnum_mandatory() {
+		Table<?> personTable = new Table<>("personTable");
+		FluentEmbeddableMappingConfigurationSupport.from(PersonWithGender.class)
+				.add(Person::getName)
+				.addEnum(PersonWithGender::getGender).mandatory()
+				.build(dialect, personTable);
+		
+		// mandatory property sets column as mandatory
+		assertFalse(personTable.mapColumnsOnName().get("gender").isNullable());
 	}
 	
 	static class MyPerson extends Person {

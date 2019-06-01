@@ -22,10 +22,11 @@ import org.gama.sql.SimpleConnectionProvider;
 import org.gama.sql.binder.DefaultParameterBinders;
 import org.gama.sql.dml.SQLOperation.SQLOperationListener;
 import org.gama.sql.dml.SQLStatement;
+import org.gama.sql.dml.SQLStatement.BindingException;
 import org.gama.sql.test.HSQLDBInMemoryDataSource;
 import org.gama.stalactite.persistence.engine.ColumnOptions.IdentifierPolicy;
-import org.gama.stalactite.persistence.engine.IFluentMappingBuilder.IFluentMappingBuilderColumnOptions;
 import org.gama.stalactite.persistence.engine.IFluentMappingBuilder.IFluentMappingBuilderEmbedOptions;
+import org.gama.stalactite.persistence.engine.IFluentMappingBuilder.IFluentMappingBuilderPropertyOptions;
 import org.gama.stalactite.persistence.engine.model.Country;
 import org.gama.stalactite.persistence.engine.model.Gender;
 import org.gama.stalactite.persistence.engine.model.Person;
@@ -39,11 +40,11 @@ import org.gama.stalactite.persistence.sql.HSQLDBDialect;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.test.JdbcConnectionProvider;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -57,28 +58,27 @@ import static org.mockito.Mockito.when;
  */
 public class FluentEntityMappingConfigurationSupportTest {
 	
-	private static final HSQLDBDialect DIALECT = new HSQLDBDialect();
+	// NB: dialect is made non static because we register binder for the same column several times in these tests
+	// and this is not supported : the very first one takes priority  
+	private HSQLDBDialect dialect = new HSQLDBDialect();
 	private DataSource dataSource = new HSQLDBInMemoryDataSource();
 	private PersistenceContext persistenceContext;
 	
-	@BeforeAll
-	public static void initBinders() {
-		DIALECT.getDmlGenerator().sortColumnsAlphabetically();	// for steady checks on SQL orders
-		// binder creation for our identifier
-		DIALECT.getColumnBinderRegistry().register((Class) Identifier.class, Identifier.identifierBinder(DefaultParameterBinders.LONG_PRIMITIVE_BINDER));
-		DIALECT.getJavaTypeToSqlTypeMapping().put(Identifier.class, "int");
-		DIALECT.getColumnBinderRegistry().register((Class) Identified.class, Identified.identifiedBinder(DefaultParameterBinders.LONG_PRIMITIVE_BINDER));
-		DIALECT.getJavaTypeToSqlTypeMapping().put(Identified.class, "int");
-	}
-	
 	@BeforeEach
 	public void initTest() {
-		persistenceContext = new PersistenceContext(new JdbcConnectionProvider(dataSource), DIALECT);
+		dialect.getDmlGenerator().sortColumnsAlphabetically();	// for steady checks on SQL orders
+		// binder creation for our identifier
+		dialect.getColumnBinderRegistry().register((Class) Identifier.class, Identifier.identifierBinder(DefaultParameterBinders.LONG_PRIMITIVE_BINDER));
+		dialect.getJavaTypeToSqlTypeMapping().put(Identifier.class, "int");
+		dialect.getColumnBinderRegistry().register((Class) Identified.class, Identified.identifiedBinder(DefaultParameterBinders.LONG_PRIMITIVE_BINDER));
+		dialect.getJavaTypeToSqlTypeMapping().put(Identified.class, "int");
+		
+		persistenceContext = new PersistenceContext(new JdbcConnectionProvider(dataSource), dialect);
 	}
 	
 	@Test
-	public void testBuild_identifierIsNotDefined_throwsException() {
-		IFluentMappingBuilderColumnOptions<Toto, StatefullIdentifier> mappingStrategy = FluentEntityMappingConfigurationSupport.from(Toto.class, StatefullIdentifier.class)
+	public void build_identifierIsNotDefined_throwsException() {
+		IFluentMappingBuilderPropertyOptions<Toto, StatefullIdentifier> mappingStrategy = FluentEntityMappingConfigurationSupport.from(Toto.class, StatefullIdentifier.class)
 				.add(Toto::getId)
 				.add(Toto::getName);
 		
@@ -90,7 +90,7 @@ public class FluentEntityMappingConfigurationSupportTest {
 	}
 	
 	@Test
-	public void testAdd_withoutName_targetedPropertyNameIsTaken() {
+	public void add_withoutName_targetedPropertyNameIsTaken() {
 		Persister<Toto, StatefullIdentifier, Table> persister = FluentEntityMappingConfigurationSupport.from(Toto.class, StatefullIdentifier.class)
 				.add(Toto::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.add(Toto::getName)
@@ -104,7 +104,41 @@ public class FluentEntityMappingConfigurationSupportTest {
 	}
 	
 	@Test
-	public void testAdd_withColumn_columnIsTaken() {
+	public void add_mandatory_onMissingValue_throwsException() {
+		Table totoTable = new Table("Toto");
+		Column idColumn = totoTable.addColumn("id", StatefullIdentifier.class);
+		dialect.getColumnBinderRegistry().register(idColumn, Identifier.identifierBinder(DefaultParameterBinders.UUID_PARAMETER_BINDER));
+		dialect.getJavaTypeToSqlTypeMapping().put(idColumn, "VARCHAR(255)");
+		
+		Persister<Toto, StatefullIdentifier, Table> persister = FluentEntityMappingConfigurationSupport.from(Toto.class, StatefullIdentifier.class)
+				.add(Toto::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
+				.add(Toto::getName).mandatory()
+				.add(Toto::getFirstName).mandatory()
+				.build(persistenceContext);
+		
+		// column should be correctly created
+		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+		ddlDeployer.deployDDL();
+		
+		Toto toto = new Toto();
+		RuntimeException thrownException = assertThrows(RuntimeException.class, () -> persister.insert(toto));
+		assertEquals("Error while inserting values for " + toto, thrownException.getMessage());
+		assertEquals(BindingException.class, thrownException.getCause().getClass());
+		assertEquals("Expected non null value for : Toto.firstName, Toto.name", thrownException.getCause().getMessage());
+	}
+	
+	@Test
+	public void add_mandatory_columnConstraintIsAdded() throws SQLException {
+		Persister<Toto, StatefullIdentifier, Table> totoPersister = FluentEntityMappingConfigurationSupport.from(Toto.class, StatefullIdentifier.class)
+				.add(Toto::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
+				.add(Toto::getName).mandatory()
+				.build(persistenceContext);
+		
+		assertFalse(totoPersister.getMainTable().getColumn("name").isNullable());
+	}
+	
+	@Test
+	public void add_withColumn_columnIsTaken() {
 		Table toto = new Table("Toto");
 		Column<Table, String> titleColumn = toto.addColumn("title", String.class);
 		Persister<Toto, StatefullIdentifier, Table> persister = FluentEntityMappingConfigurationSupport.from(Toto.class, StatefullIdentifier.class)
@@ -122,7 +156,7 @@ public class FluentEntityMappingConfigurationSupportTest {
 	}
 	
 	@Test
-	public void testAdd_definedAsIdentifier_alreadyAssignedButDoesntImplementIdentifier_throwsException() {
+	public void add_definedAsIdentifier_alreadyAssignedButDoesntImplementIdentifier_throwsException() {
 		NotYetSupportedOperationException thrownException = assertThrows(NotYetSupportedOperationException.class,
 				() -> FluentEntityMappingConfigurationSupport.from(Toto.class, StatefullIdentifier.class)
 				.add(Toto::getName).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
@@ -131,7 +165,7 @@ public class FluentEntityMappingConfigurationSupportTest {
 	}
 	
 	@Test
-	public void testAdd_definedAsIdentifier_identifierIsStoredAsString() {
+	public void add_definedAsIdentifier_identifierIsStoredAsString() {
 		HSQLDBDialect dialect = new HSQLDBDialect();
 		PersistenceContext persistenceContext = new PersistenceContext(new JdbcConnectionProvider(new HSQLDBInMemoryDataSource()), dialect);
 		
@@ -146,8 +180,7 @@ public class FluentEntityMappingConfigurationSupportTest {
 				.add(Toto::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.build(persistenceContext, totoTable);
 		// column should be correctly created
-		Column columnForProperty = (Column) totoTable.mapColumnsOnName().get("id");
-		assertTrue(columnForProperty.isPrimaryKey());
+		assertTrue(totoTable.getColumn("id").isPrimaryKey());
 		
 		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
 		ddlDeployer.deployDDL();
@@ -162,7 +195,7 @@ public class FluentEntityMappingConfigurationSupportTest {
 	}
 	
 	@Test
-	public void testAdd_identifierDefinedTwice_throwsException() {
+	public void add_identifierDefinedTwice_throwsException() {
 		assertEquals("Identifier is already defined by Toto::getId",
 				assertThrows(IllegalArgumentException.class, () -> FluentEntityMappingConfigurationSupport.from(Toto.class, StatefullIdentifier.class)
 						.add(Toto::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
@@ -171,7 +204,7 @@ public class FluentEntityMappingConfigurationSupportTest {
 	}
 	
 	@Test
-	public void testAdd_mappingDefinedTwiceByMethod_throwsException() {
+	public void add_mappingDefinedTwiceByMethod_throwsException() {
 		assertEquals("Mapping is already defined by method Toto::getName",
 				assertThrows(MappingConfigurationException.class, () -> FluentEntityMappingConfigurationSupport.from(Toto.class, StatefullIdentifier.class)
 						.add(Toto::getName)
@@ -180,7 +213,7 @@ public class FluentEntityMappingConfigurationSupportTest {
 	}
 	
 	@Test
-	public void testAdd_mappingDefinedTwiceByColumn_throwsException() {
+	public void add_mappingDefinedTwiceByColumn_throwsException() {
 		assertEquals("Mapping is already defined for column xyz",
 				assertThrows(MappingConfigurationException.class, () -> FluentEntityMappingConfigurationSupport.from(Toto.class, StatefullIdentifier.class)
 						.add(Toto::getName, "xyz")
@@ -189,7 +222,7 @@ public class FluentEntityMappingConfigurationSupportTest {
 	}
 	
 	@Test
-	public void testAdd_methodHasNoMatchingField_configurationIsStillValid() {
+	public void add_methodHasNoMatchingField_configurationIsStillValid() {
 		Table toto = new Table("Toto");
 		FluentEntityMappingConfigurationSupport.from(Toto.class, StatefullIdentifier.class)
 				.add(Toto::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
@@ -202,7 +235,7 @@ public class FluentEntityMappingConfigurationSupportTest {
 	}
 	
 	@Test
-	public void testAdd_methodIsASetter_configurationIsStillValid() {
+	public void add_methodIsASetter_configurationIsStillValid() {
 		Table toto = new Table("Toto");
 		FluentEntityMappingConfigurationSupport.from(Toto.class, StatefullIdentifier.class)
 				.add(Toto::setId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
@@ -219,7 +252,7 @@ public class FluentEntityMappingConfigurationSupportTest {
 		FluentEntityMappingConfigurationSupport.from(Toto.class, StatefullIdentifier.class)
 				.add(Toto::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.embed(Toto::getTimestamp)
-				.build(new PersistenceContext(null, DIALECT), toto);
+				.build(new PersistenceContext(null, dialect), toto);
 		
 		Column columnForProperty = (Column) toto.mapColumnsOnName().get("creationDate");
 		assertNotNull(columnForProperty);
@@ -232,7 +265,7 @@ public class FluentEntityMappingConfigurationSupportTest {
 		FluentEntityMappingConfigurationSupport.from(Toto.class, StatefullIdentifier.class)
 				.add(Toto::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.embed(Toto::setTimestamp)
-				.build(new PersistenceContext(null, DIALECT), toto);
+				.build(new PersistenceContext(null, dialect), toto);
 		
 		Column columnForProperty = (Column) toto.mapColumnsOnName().get("creationDate");
 		assertNotNull(columnForProperty);
@@ -247,7 +280,7 @@ public class FluentEntityMappingConfigurationSupportTest {
 				.embed(Toto::getTimestamp)
 					.overrideName(Timestamp::getCreationDate, "createdAt")
 					.overrideName(Timestamp::getModificationDate, "modifiedAt")
-				.build(new PersistenceContext(null, DIALECT), toto);
+				.build(new PersistenceContext(null, dialect), toto);
 		
 		Map<String, Column> columnsByName = toto.mapColumnsOnName();
 		
@@ -278,7 +311,7 @@ public class FluentEntityMappingConfigurationSupportTest {
 				.embed(Toto::getTimestamp)
 					.override(Timestamp::getCreationDate, createdAt)
 					.override(Timestamp::getModificationDate, modifiedAt)
-				.build(new PersistenceContext(new SimpleConnectionProvider(connectionMock), DIALECT), targetTable);
+				.build(new PersistenceContext(new SimpleConnectionProvider(connectionMock), dialect), targetTable);
 		
 		Map<String, Column> columnsByName = targetTable.mapColumnsOnName();
 		
@@ -304,7 +337,7 @@ public class FluentEntityMappingConfigurationSupportTest {
 				.embed(Toto::getTimestamp)
 					.exclude(Timestamp::getCreationDate)
 					.override(Timestamp::getModificationDate, modifiedAt)
-				.build(new PersistenceContext(new SimpleConnectionProvider(connectionMock), DIALECT), targetTable);
+				.build(new PersistenceContext(new SimpleConnectionProvider(connectionMock), dialect), targetTable);
 		
 		Map<String, Column> columnsByName = targetTable.mapColumnsOnName();
 		
@@ -319,7 +352,7 @@ public class FluentEntityMappingConfigurationSupportTest {
 	}
 	
 	@Test
-	public void testBuild_innerEmbed_withSomeExcludedProperty() throws SQLException {
+	public void build_innerEmbed_withSomeExcludedProperty() throws SQLException {
 		Table<?> countryTable = new Table<>("countryTable");
 		
 		IFluentMappingBuilderEmbedOptions<Country, StatefullIdentifier, Timestamp> mappingBuilder = FluentEntityMappingConfigurationSupport
@@ -353,7 +386,7 @@ public class FluentEntityMappingConfigurationSupportTest {
 		
 		
 		Persister<Country, StatefullIdentifier, Table> persister = mappingBuilder.build(
-				new PersistenceContext(new SimpleConnectionProvider(connectionMock), DIALECT), countryTable);
+				new PersistenceContext(new SimpleConnectionProvider(connectionMock), dialect), countryTable);
 		
 		Map<String, ? extends Column> columnsByName = countryTable.mapColumnsOnName();
 		
@@ -418,7 +451,7 @@ public class FluentEntityMappingConfigurationSupportTest {
 	}
 	
 	@Test
-	public void testBuild_innerEmbed_withTwiceSameInnerEmbeddableName() {
+	public void build_innerEmbed_withTwiceSameInnerEmbeddableName() {
 		Table<?> countryTable = new Table<>("countryTable");
 		IFluentMappingBuilderEmbedOptions<Country, StatefullIdentifier, Timestamp> mappingBuilder = FluentEntityMappingConfigurationSupport.from(Country.class,
 				StatefullIdentifier.class)
@@ -459,7 +492,7 @@ public class FluentEntityMappingConfigurationSupportTest {
 	
 	
 	@Test
-	public void testBuild_withEnumType_byDefault_nameIsUsed() {
+	public void build_withEnum_byDefault_nameIsUsed() {
 		Persister<PersonWithGender, Identifier<Long>, Table> personPersister = FluentEntityMappingConfigurationSupport.from(PersonWithGender.class, Identifier.LONG_TYPE)
 				.add(Person::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.add(Person::getName)
@@ -468,7 +501,7 @@ public class FluentEntityMappingConfigurationSupportTest {
 				.build(persistenceContext);
 		
 		Column gender = (Column) personPersister.getMainTable().mapColumnsOnName().get("gender");
-		DIALECT.getJavaTypeToSqlTypeMapping().put(gender, "VARCHAR(255)");
+		dialect.getJavaTypeToSqlTypeMapping().put(gender, "VARCHAR(255)");
 		
 		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
 		ddlDeployer.deployDDL();
@@ -485,7 +518,44 @@ public class FluentEntityMappingConfigurationSupportTest {
 	}
 	
 	@Test
-	public void testBuild_withEnumType_mappedWithOrdinal() {
+	public void addEnum_mandatory_onMissingValue_throwsException() {
+		Persister<PersonWithGender, Identifier<Long>, Table> personPersister = FluentEntityMappingConfigurationSupport.from(PersonWithGender.class, Identifier.LONG_TYPE)
+				.add(Person::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
+				.add(Person::getName)
+				// no type of mapping given: neither ordinal nor name
+				.addEnum(PersonWithGender::getGender).mandatory()
+				.build(persistenceContext);
+		
+		Column gender = (Column) personPersister.getMainTable().mapColumnsOnName().get("gender");
+		dialect.getJavaTypeToSqlTypeMapping().put(gender, "VARCHAR(255)");
+		
+		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+		ddlDeployer.deployDDL();
+		
+		PersonWithGender person = new PersonWithGender(new PersistableIdentifier<>(1L));
+		person.setName("toto");
+		person.setGender(null);
+		
+		RuntimeException thrownException = assertThrows(RuntimeException.class, () -> personPersister.insert(person));
+		assertEquals("Error while inserting values for " + person, thrownException.getMessage());
+		assertEquals(BindingException.class, thrownException.getCause().getClass());
+		assertEquals("Expected non null value for : PersonWithGender.gender", thrownException.getCause().getMessage());
+	}
+	
+	@Test
+	public void addEnum_mandatory_columnConstraintIsAdded() throws SQLException {
+		Persister<PersonWithGender, Identifier<Long>, Table> personPersister = FluentEntityMappingConfigurationSupport.from(PersonWithGender.class, Identifier.LONG_TYPE)
+				.add(Person::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
+				.add(Person::getName)
+				// no type of mapping given: neither ordinal nor name
+				.addEnum(PersonWithGender::getGender).mandatory()
+				.build(persistenceContext);
+		
+		assertFalse(personPersister.getMainTable().getColumn("gender").isNullable());
+	}
+	
+	@Test
+	public void build_withEnum_mappedWithOrdinal() {
 		Persister<PersonWithGender, Identifier<Long>, Table> personPersister = FluentEntityMappingConfigurationSupport.from(PersonWithGender.class, Identifier.LONG_TYPE)
 				.add(Person::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.add(Person::getName)
@@ -493,7 +563,7 @@ public class FluentEntityMappingConfigurationSupportTest {
 				.build(persistenceContext);
 		
 		Column gender = (Column) personPersister.getMainTable().mapColumnsOnName().get("gender");
-		DIALECT.getJavaTypeToSqlTypeMapping().put(gender, "INT");
+		dialect.getJavaTypeToSqlTypeMapping().put(gender, "INT");
 		
 		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
 		ddlDeployer.deployDDL();
@@ -510,7 +580,7 @@ public class FluentEntityMappingConfigurationSupportTest {
 	}
 	
 	@Test
-	public void testBuild_withEnumType_columnMappedWithOrdinal() {
+	public void build_withEnum_columnMappedWithOrdinal() {
 		Table personTable = new Table<>("PersonWithGender");
 		Column<Table, Gender> genderColumn = personTable.addColumn("gender", Gender.class);
 		
@@ -520,7 +590,7 @@ public class FluentEntityMappingConfigurationSupportTest {
 				.addEnum(PersonWithGender::getGender, genderColumn).byOrdinal()
 				.build(persistenceContext);
 		
-		DIALECT.getJavaTypeToSqlTypeMapping().put(genderColumn, "INT");
+		dialect.getJavaTypeToSqlTypeMapping().put(genderColumn, "INT");
 		
 		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
 		ddlDeployer.deployDDL();
@@ -535,6 +605,79 @@ public class FluentEntityMappingConfigurationSupportTest {
 				.execute(persistenceContext.getConnectionProvider());
 		assertEquals(Arrays.asList(person.getGender().ordinal()), result);
 	}
+	
+	@Test
+	public void insert() {
+		Persister<PersonWithGender, Identifier<Long>, Table> personPersister = FluentEntityMappingConfigurationSupport.from(PersonWithGender.class, Identifier.LONG_TYPE)
+				.add(Person::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
+				.add(Person::getName)
+				// no type of mapping given: neither ordinal nor name
+				.addEnum(PersonWithGender::getGender)
+				.build(persistenceContext);
+		
+		Column gender = (Column) personPersister.getMainTable().mapColumnsOnName().get("gender");
+		dialect.getJavaTypeToSqlTypeMapping().put(gender, "VARCHAR(255)");
+		
+		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+		ddlDeployer.deployDDL();
+		
+		PersonWithGender person = new PersonWithGender(new PersistableIdentifier<>(1L));
+		person.setName(null);
+		person.setGender(null);
+		
+		personPersister.insert(person);
+	}
+	
+	@Test
+	public void insert_nullValues() {
+		Persister<PersonWithGender, Identifier<Long>, Table> personPersister = FluentEntityMappingConfigurationSupport.from(PersonWithGender.class, Identifier.LONG_TYPE)
+				.add(Person::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
+				.add(Person::getName)
+				// no type of mapping given: neither ordinal nor name
+				.addEnum(PersonWithGender::getGender)
+				.build(persistenceContext);
+		
+		Column gender = (Column) personPersister.getMainTable().mapColumnsOnName().get("gender");
+		dialect.getJavaTypeToSqlTypeMapping().put(gender, "VARCHAR(255)");
+		
+		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+		ddlDeployer.deployDDL();
+		
+		PersonWithGender person = new PersonWithGender(new PersistableIdentifier<>(1L));
+		person.setName(null);
+		person.setGender(null);
+		
+		personPersister.insert(person);
+	}
+	
+	@Test
+	public void update_nullValues() {
+		Persister<PersonWithGender, Identifier<Long>, Table> personPersister = FluentEntityMappingConfigurationSupport.from(PersonWithGender.class, Identifier.LONG_TYPE)
+				.add(Person::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
+				.add(Person::getName)
+				// no type of mapping given: neither ordinal nor name
+				.addEnum(PersonWithGender::getGender)
+				.build(persistenceContext);
+		
+		Column gender = (Column) personPersister.getMainTable().mapColumnsOnName().get("gender");
+		dialect.getJavaTypeToSqlTypeMapping().put(gender, "VARCHAR(255)");
+		
+		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+		ddlDeployer.deployDDL();
+		
+		PersonWithGender person = new PersonWithGender(new PersistableIdentifier<>(1L));
+		person.setName("toto");
+		person.setGender(Gender.MALE);
+		
+		personPersister.insert(person);
+		
+		Identifier<Long> id = person.getId();
+		System.out.println(id.isPersisted());
+		PersonWithGender updatedPerson = new PersonWithGender(id);
+		int updatedRowCount = personPersister.update(updatedPerson, person, true);
+		assertEquals(1, updatedRowCount);
+	}
+	
 	
 	protected static class Toto implements Identified<UUID> {
 		

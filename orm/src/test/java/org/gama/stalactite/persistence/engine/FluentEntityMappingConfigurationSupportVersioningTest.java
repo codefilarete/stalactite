@@ -8,12 +8,13 @@ import java.util.List;
 
 import org.gama.lang.function.Serie.IntegerSerie;
 import org.gama.lang.function.Serie.NowSerie;
+import org.gama.lang.test.Assertions;
 import org.gama.sql.ConnectionProvider;
 import org.gama.sql.TransactionObserverConnectionProvider;
 import org.gama.sql.binder.DefaultParameterBinders;
 import org.gama.sql.test.HSQLDBInMemoryDataSource;
 import org.gama.stalactite.persistence.engine.ColumnOptions.IdentifierPolicy;
-import org.gama.stalactite.persistence.engine.IFluentMappingBuilder.IFluentMappingBuilderColumnOptions;
+import org.gama.stalactite.persistence.engine.IFluentMappingBuilder.IFluentMappingBuilderPropertyOptions;
 import org.gama.stalactite.persistence.engine.model.City;
 import org.gama.stalactite.persistence.engine.model.Country;
 import org.gama.stalactite.persistence.engine.model.Person;
@@ -55,13 +56,13 @@ public class FluentEntityMappingConfigurationSupportVersioningTest {
 	public void initTest() {
 		persistenceContext = new PersistenceContext(new JdbcConnectionProvider(dataSource), DIALECT);
 		
-		IFluentMappingBuilderColumnOptions<Person, Identifier<Long>> personMappingBuilder = FluentEntityMappingConfigurationSupport.from(Person.class,
+		IFluentMappingBuilderPropertyOptions<Person, Identifier<Long>> personMappingBuilder = FluentEntityMappingConfigurationSupport.from(Person.class,
 				Identifier.LONG_TYPE)
 				.add(Person::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.add(Person::getName);
 		personPersister = personMappingBuilder.build(persistenceContext);
 		
-		IFluentMappingBuilderColumnOptions<City, Identifier<Long>> cityMappingBuilder = FluentEntityMappingConfigurationSupport.from(City.class,
+		IFluentMappingBuilderPropertyOptions<City, Identifier<Long>> cityMappingBuilder = FluentEntityMappingConfigurationSupport.from(City.class,
 				Identifier.LONG_TYPE)
 				.add(City::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.add(City::getName)
@@ -232,8 +233,10 @@ public class FluentEntityMappingConfigurationSupportVersioningTest {
 		// the update must fail because the updated object is out of sync
 		dummyCountryClone.setName("Tata");
 		// the following should go wrong since version is not up to date on the clone and the original
-		assertThrows(StaleObjectExcepion.class, () -> countryPersister.update(dummyCountryClone, dummyCountry, true));
-		assertThrows(StaleObjectExcepion.class, () -> countryPersister.delete(dummyCountry));
+		Assertions.assertThrows(() -> countryPersister.update(dummyCountryClone, dummyCountry, true),
+				Assertions.hasExceptionInHierarchy(StaleObjectExcepion.class).andProjection(Assertions.hasMessage("1 rows were expected to be hit but only 0 were effectively")));
+		Assertions.assertThrows(() -> countryPersister.delete(dummyCountry),
+				Assertions.hasExceptionInHierarchy(StaleObjectExcepion.class).andProjection(Assertions.hasMessage("1 rows were expected to be hit but only 0 were effectively")));
 		// version is not reverted because rollback wasn't invoked 
 		assertEquals(2, dummyCountryClone.getVersion());
 		// ... but it is when we rollback

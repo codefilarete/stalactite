@@ -150,27 +150,33 @@ public class FluentEmbeddableMappingConfigurationSupport<C> implements IFluentEm
 	}
 	
 	@Override
-	public <O> IFluentEmbeddableMappingBuilder<C> add(SerializableBiConsumer<C, O> setter) {
-		addMapping(setter, null);
-		return this;
+	public <O> IFluentEmbeddableMappingBuilderPropertyOptions<C> add(SerializableBiConsumer<C, O> setter) {
+		return addPropertyOptions(addMapping(setter, null));
 	}
 	
 	@Override
-	public <O> IFluentEmbeddableMappingBuilder<C> add(SerializableFunction<C, O> getter) {
-		addMapping(getter, null);
-		return this;
+	public <O> IFluentEmbeddableMappingBuilderPropertyOptions<C> add(SerializableFunction<C, O> getter) {
+		return addPropertyOptions(addMapping(getter, null));
 	}
 	
 	@Override
-	public <O> IFluentEmbeddableMappingBuilder<C> add(SerializableBiConsumer<C, O> setter, String columnName) {
-		addMapping(setter, columnName);
-		return this;
+	public <O> IFluentEmbeddableMappingBuilderPropertyOptions<C> add(SerializableBiConsumer<C, O> setter, String columnName) {
+		return addPropertyOptions(addMapping(setter, columnName));
 	}
 	
 	@Override
-	public <O> IFluentEmbeddableMappingBuilder<C> add(SerializableFunction<C, O> getter, String columnName) {
-		addMapping(getter, columnName);
-		return this;
+	public <O> IFluentEmbeddableMappingBuilderPropertyOptions<C> add(SerializableFunction<C, O> getter, String columnName) {
+		return addPropertyOptions(addMapping(getter, columnName));
+	}
+	
+	IFluentEmbeddableMappingBuilderPropertyOptions<C> addPropertyOptions(AbstractLinkage<C> linkage) {
+		return new MethodReferenceDispatcher()
+				.redirect(PropertyOptions.class, () -> {
+					linkage.setNullable(false);
+					return null;	// we can return null because dispatcher will return proxy
+				}, true)
+				.fallbackOn(this)
+				.build((Class<IFluentEmbeddableMappingBuilderPropertyOptions<C>>) (Class) IFluentEmbeddableMappingBuilderPropertyOptions.class);
 	}
 	
 	<E> AbstractLinkage<C> addMapping(SerializableBiConsumer<C, E> setter, @Nullable String columnName) {
@@ -253,6 +259,7 @@ public class FluentEmbeddableMappingConfigurationSupport<C> implements IFluentEm
 	}
 	
 	IFluentEmbeddableMappingBuilderEnumOptions<C> addEnumOptions(AbstractLinkage<C> linkage) {
+		// Setting default parameter binding on enum name
 		linkage.setParameterBinder(EnumBindType.NAME.newParameterBinder((Class<Enum>) linkage.getColumnType()));
 		return new MethodReferenceDispatcher()
 				.redirect(EnumOptions.class, new EnumOptions() {
@@ -271,6 +278,12 @@ public class FluentEmbeddableMappingConfigurationSupport<C> implements IFluentEm
 					
 					private void setLinkageParameterBinder(EnumBindType ordinal) {
 						linkage.setParameterBinder(ordinal.newParameterBinder((Class<Enum>) linkage.getColumnType()));
+					}
+					
+					@Override
+					public EnumOptions mandatory() {
+						linkage.setNullable(false);
+						return null;	// we can return null because dispatcher will return proxy
 					}
 				}, true)
 				.fallbackOn(this)
@@ -419,6 +432,8 @@ public class FluentEmbeddableMappingConfigurationSupport<C> implements IFluentEm
 		/** Optional binder for this mapping */
 		private ParameterBinder parameterBinder;
 		
+		private boolean nullable = true;
+		
 		public void setParameterBinder(ParameterBinder parameterBinder) {
 			this.parameterBinder = parameterBinder;
 		}
@@ -426,6 +441,15 @@ public class FluentEmbeddableMappingConfigurationSupport<C> implements IFluentEm
 		@Override
 		public ParameterBinder getParameterBinder() {
 			return parameterBinder;
+		}
+		
+		@Override
+		public boolean isNullable() {
+			return nullable;
+		}
+		
+		public void setNullable(boolean nullable) {
+			this.nullable = nullable;
 		}
 	}
 	

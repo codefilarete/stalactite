@@ -14,6 +14,7 @@ import org.danekja.java.util.function.serializable.SerializableFunction;
 import org.gama.lang.collection.Arrays;
 import org.gama.lang.collection.Iterables;
 import org.gama.lang.function.Predicates;
+import org.gama.lang.test.Assertions;
 import org.gama.sql.ConnectionProvider;
 import org.gama.sql.binder.DefaultParameterBinders;
 import org.gama.sql.test.HSQLDBInMemoryDataSource;
@@ -371,10 +372,10 @@ class FluentEntityMappingConfigurationSupportIndexedCollectionTest {
 		Choice choice = new Choice(4L);
 		question.addChoice(choice);
 		
-		assertEquals("Can't get index : " + choice.toString() + " is not associated with a o.g.s.p.e.FluentEntityMappingConfigurationSupportIndexedCollectionTest$Question : "
-						+ "accessor for field" +
-						" o.g.s.p.e.FluentEntityMappingConfigurationSupportIndexedCollectionTest$Choice.questionWithNoGetter returned null",
-				assertThrows(RuntimeMappingException.class, () -> persisterWithNonExistingSetter.insert(question)).getMessage());
+		Assertions.assertThrows(() -> persisterWithNonExistingSetter.insert(question), Assertions.hasExceptionInHierarchy(RuntimeMappingException.class)
+				.andProjection(Assertions.hasMessage("Can't get index : " + choice.toString() + " is not associated with a o.g.s.p.e.FluentEntityMappingConfigurationSupportIndexedCollectionTest$Question : "
+				+ "accessor for field" +
+				" o.g.s.p.e.FluentEntityMappingConfigurationSupportIndexedCollectionTest$Choice.questionWithNoGetter returned null")));
 	}
 		
 	@Test
@@ -403,9 +404,9 @@ class FluentEntityMappingConfigurationSupportIndexedCollectionTest {
 		Question question = new Question(1L);
 		question.getChoices().add(new Choice(4L));
 		
-		assertEquals("Can't get index : Choice{id=4, question=null, name='null'} is not associated with a o.g.s.p.e.FluentEntityMappingConfigurationSupportIndexedCollectionTest$Question : "
-						+ "o.g.s.p.e.FluentEntityMappingConfigurationSupportIndexedCollectionTest$Choice.getQuestion() returned null",
-				assertThrows(RuntimeMappingException.class, () -> persister.insert(question)).getMessage());
+		Assertions.assertThrows(() -> persister.insert(question), Assertions.hasExceptionInHierarchy(RuntimeMappingException.class)
+				.andProjection(Assertions.hasMessage("Can't get index : Choice{id=4, question=null, name='null'} is not associated with a o.g.s.p.e.FluentEntityMappingConfigurationSupportIndexedCollectionTest$Question : "
+						+ "o.g.s.p.e.FluentEntityMappingConfigurationSupportIndexedCollectionTest$Choice.getQuestion() returned null")));
 	}
 		
 	@Test

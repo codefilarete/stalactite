@@ -37,6 +37,10 @@ public class ColumnBinderRegistry extends ParameterBinderRegistry implements Par
 	}
 	
 	public <T> void register(Column column, ParameterBinder<T> parameterBinder) {
+		ParameterBinder existingBinder = this.bindersPerColumn.get(column);
+		if (existingBinder != null && parameterBinder != existingBinder) { 
+			throw new BindingException("Binder for column " + column + " already exists");
+		}
 		this.bindersPerColumn.put(column, parameterBinder);
 	}
 	

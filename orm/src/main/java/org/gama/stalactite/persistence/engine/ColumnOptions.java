@@ -3,7 +3,7 @@ package org.gama.stalactite.persistence.engine;
 /**
  * @author Guillaume Mary
  */
-public interface ColumnOptions<T, I> {
+public interface ColumnOptions<T, I> extends PropertyOptions {
 	
 	/**
 	 * Defines the column as the identifier of the entity.
@@ -11,7 +11,10 @@ public interface ColumnOptions<T, I> {
 	 * @param identifierPolicy an {@link IdentifierPolicy}
 	 * @return the enclosing {@link IFluentMappingBuilder}
 	 */
-	IFluentMappingBuilder<T, I> identifier(IdentifierPolicy identifierPolicy);
+	ColumnOptions<T, I> identifier(IdentifierPolicy identifierPolicy);
+	
+	/** Marks the property as mandatory. Note that using this method on an identifier one as no purpose because identifiers are already madatory. */
+	ColumnOptions<T, I> mandatory();
 	
 	/**
 	 * Available identifier policies for entities.

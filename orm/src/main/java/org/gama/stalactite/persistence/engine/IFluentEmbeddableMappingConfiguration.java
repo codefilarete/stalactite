@@ -21,7 +21,7 @@ public interface IFluentEmbeddableMappingConfiguration<C> {
 	 * @return this
 	 * @see #columnNamingStrategy(ColumnNamingStrategy) 
 	 */
-	<O> IFluentEmbeddableMappingConfiguration<C> add(SerializableBiConsumer<C, O> setter);
+	<O> IFluentEmbeddableMappingConfigurationPropertyOptions<C> add(SerializableBiConsumer<C, O> setter);
 	
 	/**
 	 * Adds a property to be mapped. Column name will be extracted from getter according to the Java Bean convention naming.
@@ -31,7 +31,7 @@ public interface IFluentEmbeddableMappingConfiguration<C> {
 	 * @return this
 	 * @see #columnNamingStrategy(ColumnNamingStrategy)
 	 */
-	<O> IFluentEmbeddableMappingConfiguration<C> add(SerializableFunction<C, O> getter);
+	<O> IFluentEmbeddableMappingConfigurationPropertyOptions<C> add(SerializableFunction<C, O> getter);
 	
 	/**
 	 * Adds a property to be mapped and overrides its default column name.
@@ -40,7 +40,7 @@ public interface IFluentEmbeddableMappingConfiguration<C> {
 	 * @param <O> setter return type / property type to be mapped
 	 * @return this
 	 */
-	<O> IFluentEmbeddableMappingConfiguration<C> add(SerializableBiConsumer<C, O> setter, String columnName);
+	<O> IFluentEmbeddableMappingConfigurationPropertyOptions<C> add(SerializableBiConsumer<C, O> setter, String columnName);
 	
 	/**
 	 * Adds a property to be mapped and overrides its default column name.
@@ -49,7 +49,7 @@ public interface IFluentEmbeddableMappingConfiguration<C> {
 	 * @param <O> getter input type / property type to be mapped
 	 * @return this
 	 */
-	<O> IFluentEmbeddableMappingConfiguration<C> add(SerializableFunction<C, O> getter, String columnName);
+	<O> IFluentEmbeddableMappingConfigurationPropertyOptions<C> add(SerializableFunction<C, O> getter, String columnName);
 	
 	<E extends Enum<E>> IFluentEmbeddableMappingConfigurationEnumOptions<C> addEnum(SerializableBiConsumer<C, E> setter);
 	
@@ -157,5 +157,14 @@ public interface IFluentEmbeddableMappingConfiguration<C> {
 		
 		@Override
 		IFluentEmbeddableMappingConfigurationEnumOptions<C> byOrdinal();
+		
+		@Override
+		IFluentEmbeddableMappingConfigurationEnumOptions<C> mandatory();
+	}
+	
+	interface IFluentEmbeddableMappingConfigurationPropertyOptions<C> extends IFluentEmbeddableMappingConfiguration<C>, PropertyOptions {
+		
+		@Override
+		IFluentEmbeddableMappingConfigurationPropertyOptions mandatory();
 	}
 }

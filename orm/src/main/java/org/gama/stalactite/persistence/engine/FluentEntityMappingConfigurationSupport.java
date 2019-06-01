@@ -25,7 +25,6 @@ import org.gama.reflection.PropertyAccessor;
 import org.gama.reflection.ValueAccessPointByMethodReference;
 import org.gama.reflection.ValueAccessPointMap;
 import org.gama.stalactite.persistence.engine.AbstractVersioningStrategy.VersioningStrategySupport;
-import org.gama.stalactite.persistence.engine.ColumnOptions.IdentifierPolicy;
 import org.gama.stalactite.persistence.engine.EmbeddableMappingConfiguration.Linkage;
 import org.gama.stalactite.persistence.engine.FluentEmbeddableMappingConfigurationSupport.AbstractLinkage;
 import org.gama.stalactite.persistence.engine.FluentEmbeddableMappingConfigurationSupport.Inset;
@@ -186,36 +185,36 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements IFluentMap
 	}
 	
 	@Override
-	public <O> IFluentMappingBuilderColumnOptions<C, I> add(SerializableBiConsumer<C, O> setter) {
+	public <O> IFluentMappingBuilderPropertyOptions<C, I> add(SerializableBiConsumer<C, O> setter) {
 		return add(setter, (String) null);
 	}
 	
 	@Override
-	public <O> IFluentMappingBuilderColumnOptions<C, I> add(SerializableFunction<C, O> getter) {
+	public <O> IFluentMappingBuilderPropertyOptions<C, I> add(SerializableFunction<C, O> getter) {
 		return add(getter, (String) null);
 	}
 	
 	@Override
-	public <O> IFluentMappingBuilderColumnOptions<C, I> add(SerializableBiConsumer<C, O> setter, String columnName) {
-		Linkage<C> mapping = propertiesMappingConfigurationSurrogate.addMapping(setter, columnName);
+	public <O> IFluentMappingBuilderPropertyOptions<C, I> add(SerializableBiConsumer<C, O> setter, String columnName) {
+		AbstractLinkage<C> mapping = propertiesMappingConfigurationSurrogate.addMapping(setter, columnName);
 		return this.propertiesMappingConfigurationSurrogate.applyAdditionalOptions(setter, mapping);
 	}
 	
 	@Override
-	public <O> IFluentMappingBuilderColumnOptions<C, I> add(SerializableFunction<C, O> getter, String columnName) {
-		Linkage<C> mapping = propertiesMappingConfigurationSurrogate.addMapping(getter, columnName);
+	public <O> IFluentMappingBuilderPropertyOptions<C, I> add(SerializableFunction<C, O> getter, String columnName) {
+		AbstractLinkage<C> mapping = propertiesMappingConfigurationSurrogate.addMapping(getter, columnName);
 		return this.propertiesMappingConfigurationSurrogate.applyAdditionalOptions(getter, mapping);
 	}
 	
 	@Override
-	public <O> IFluentMappingBuilderColumnOptions<C, I> add(SerializableBiConsumer<C, O> setter, Column<Table, O> column) {
-		Linkage<C> mapping = propertiesMappingConfigurationSurrogate.addMapping(setter, column);
+	public <O> IFluentMappingBuilderPropertyOptions<C, I> add(SerializableBiConsumer<C, O> setter, Column<Table, O> column) {
+		AbstractLinkage<C> mapping = propertiesMappingConfigurationSurrogate.addMapping(setter, column);
 		return this.propertiesMappingConfigurationSurrogate.applyAdditionalOptions(setter, mapping);
 	}
 	
 	@Override
-	public <O> IFluentMappingBuilderColumnOptions<C, I> add(SerializableFunction<C, O> getter, Column<Table, O> column) {
-		Linkage<C> mapping = propertiesMappingConfigurationSurrogate.addMapping(getter, column);
+	public <O> IFluentMappingBuilderPropertyOptions<C, I> add(SerializableFunction<C, O> getter, Column<Table, O> column) {
+		AbstractLinkage<C> mapping = propertiesMappingConfigurationSurrogate.addMapping(getter, column);
 		return this.propertiesMappingConfigurationSurrogate.applyAdditionalOptions(getter, mapping);
 	}
 	
@@ -757,50 +756,58 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements IFluentMap
 			return newLinkage;
 		}
 		
-		private IFluentMappingBuilderColumnOptions<C, I> applyAdditionalOptions(SerializableBiConsumer<C, ?> setter, Linkage newMapping) {
+		private IFluentMappingBuilderPropertyOptions<C, I> applyAdditionalOptions(SerializableBiConsumer<C, ?> setter, AbstractLinkage newMapping) {
 			MutatorByMethodReference<C, ?> mutatorByMethodReference = Accessors.mutatorByMethodReference(setter);
 			return applyAdditionalOptions(mutatorByMethodReference, newMapping);
 		}
 		
-		private IFluentMappingBuilderColumnOptions<C, I> applyAdditionalOptions(SerializableFunction<C, ?> getter, Linkage newMapping) {
+		private IFluentMappingBuilderPropertyOptions<C, I> applyAdditionalOptions(SerializableFunction<C, ?> getter, AbstractLinkage newMapping) {
 			AccessorByMethodReference<C, ?> accessorByMethodReference = Accessors.accessorByMethodReference(getter);
 			return applyAdditionalOptions(accessorByMethodReference, newMapping);
 		}
 		
-		private IFluentMappingBuilderColumnOptions<C, I> applyAdditionalOptions(ValueAccessPointByMethodReference methodReference, Linkage newMapping) {
+		private IFluentMappingBuilderPropertyOptions<C, I> applyAdditionalOptions(ValueAccessPointByMethodReference methodReference, AbstractLinkage newMapping) {
 			return new MethodDispatcher()
-					.redirect(ColumnOptions.class, identifierPolicy -> {
-						// Please note that we don't check for any id presence in inheritance since this will override parent one (see final build()) 
-						if (entityConfigurationSupport.identifierAccessor != null) {
-							throw new IllegalArgumentException("Identifier is already defined by " + MemberDefinition.toString(entityConfigurationSupport.identifierAccessor.getAccessor()));
-						}
-						if (identifierPolicy == IdentifierPolicy.ALREADY_ASSIGNED) {
-							Class<I> identifierType = methodReference.getPropertyType();
-							if (Identified.class.isAssignableFrom(methodReference.getDeclaringClass()) && Identifier.class.isAssignableFrom(identifierType)) {
-								entityConfigurationSupport.identifierInsertionManager = new IdentifiedIdentifierManager<>(identifierType);
-							} else {
-								throw new NotYetSupportedOperationException(
-										IdentifierPolicy.ALREADY_ASSIGNED + " is only supported with entities that implement " + Reflections.toString(Identified.class));
+					.redirect(ColumnOptions.class, new ColumnOptions() {
+						@Override
+						public ColumnOptions identifier(IdentifierPolicy identifierPolicy) {
+							// Please note that we don't check for any id presence in inheritance since this will override parent one (see final build()) 
+							if (entityConfigurationSupport.identifierAccessor != null) {
+								throw new IllegalArgumentException("Identifier is already defined by " + MemberDefinition.toString(entityConfigurationSupport.identifierAccessor.getAccessor()));
 							}
-							if (newMapping instanceof EntityLinkageByColumnName) {
-								// we force primary key so it's not necessary to be set by caller
-								((EntityLinkageByColumnName) newMapping).primaryKey();
-							} else if (newMapping instanceof EntityLinkageByColumn && !((EntityLinkageByColumn) newMapping).isPrimaryKey()) {
-								// safeguard about misconfiguration, even if mapping would work it smells bad configuration
-								throw new IllegalArgumentException("Identifier policy is assigned to a non primary key column");
+							if (identifierPolicy == IdentifierPolicy.ALREADY_ASSIGNED) {
+								Class<I> identifierType = methodReference.getPropertyType();
+								if (Identified.class.isAssignableFrom(methodReference.getDeclaringClass()) && Identifier.class.isAssignableFrom(identifierType)) {
+									entityConfigurationSupport.identifierInsertionManager = new IdentifiedIdentifierManager<>(identifierType);
+								} else {
+									throw new NotYetSupportedOperationException(
+											IdentifierPolicy.ALREADY_ASSIGNED + " is only supported with entities that implement " + Reflections.toString(Identified.class));
+								}
+								if (newMapping instanceof EntityLinkageByColumnName) {
+									// we force primary key so it's not necessary to be set by caller
+									((EntityLinkageByColumnName) newMapping).primaryKey();
+								} else if (newMapping instanceof EntityLinkageByColumn && !((EntityLinkageByColumn) newMapping).isPrimaryKey()) {
+									// safeguard about misconfiguration, even if mapping would work it smells bad configuration
+									throw new IllegalArgumentException("Identifier policy is assigned to a non primary key column");
+								} else {
+									// in case of evolution in the Linkage API
+									throw new NotImplementedException(newMapping.getClass());
+								}
 							} else {
-								// in case of evolution in the Linkage API
-								throw new NotImplementedException(newMapping.getClass());
+								throw new NotYetSupportedOperationException(identifierPolicy + " is not yet supported");
 							}
-						} else {
-							throw new NotYetSupportedOperationException(identifierPolicy + " is not yet supported");
+							entityConfigurationSupport.identifierAccessor = (PropertyAccessor<C, I>) newMapping.getAccessor();
+							return null;
 						}
-						entityConfigurationSupport.identifierAccessor = (PropertyAccessor<C, I>) newMapping.getAccessor();
-						// we return the fluent builder so user can chain with any other configuration
-						return entityConfigurationSupport;
-					})
+						
+						@Override
+						public ColumnOptions mandatory() {
+							newMapping.setNullable(false);
+							return null;
+						}
+					}, true)
 					.fallbackOn(entityConfigurationSupport)
-					.build((Class<IFluentMappingBuilderColumnOptions<C, I>>) (Class) IFluentMappingBuilderColumnOptions.class);
+					.build((Class<IFluentMappingBuilderPropertyOptions<C, I>>) (Class) IFluentMappingBuilderPropertyOptions.class);
 		}
 	}
 	
