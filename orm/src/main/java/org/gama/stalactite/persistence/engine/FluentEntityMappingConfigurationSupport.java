@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.Set;
 
 import org.danekja.java.util.function.serializable.SerializableBiConsumer;
+import org.danekja.java.util.function.serializable.SerializableBiFunction;
 import org.danekja.java.util.function.serializable.SerializableFunction;
 import org.gama.lang.Nullable;
 import org.gama.lang.Reflections;
@@ -20,6 +21,7 @@ import org.gama.reflection.Accessors;
 import org.gama.reflection.IReversibleAccessor;
 import org.gama.reflection.MemberDefinition;
 import org.gama.reflection.MethodReferenceCapturer;
+import org.gama.reflection.MethodReferenceDispatcher;
 import org.gama.reflection.MutatorByMethod;
 import org.gama.reflection.MutatorByMethodReference;
 import org.gama.reflection.PropertyAccessor;
@@ -263,9 +265,15 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements IFluentMap
 	}
 	
 	@Override
-	public IFluentMappingBuilder<C, I> mapInheritance(EntityMappingConfiguration<? super C, I> mappingConfiguration) {
+	public IFluentMappingBuilderInheritanceOptions<C, I> mapInheritance(EntityMappingConfiguration<? super C, I> mappingConfiguration) {
 		inheritanceConfiguration = mappingConfiguration;
-		return this;
+		return new MethodReferenceDispatcher()
+				.redirect((SerializableFunction<InheritanceOptions, InheritanceOptions>) InheritanceOptions::withJoinTable,
+						() -> this.joinTable = true)
+				.redirect((SerializableBiFunction<InheritanceOptions, Table, InheritanceOptions>) InheritanceOptions::withJoinTable,
+						t -> { this.joinTable = true; this.targetParentTable = t;})
+				.fallbackOn(this)
+				.build((Class<IFluentMappingBuilderInheritanceOptions<C, I>>) (Class) IFluentMappingBuilderInheritanceOptions.class);
 	}
 	
 	@Override
@@ -590,19 +598,6 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements IFluentMap
 	private <V> IFluentMappingBuilder<C, I> versionedBy(SerializableFunction<C, V> getter, AccessorByMethodReference methodReference, Serie<V> serie) {
 		optimisticLockOption = new OptimisticLockOption<>(methodReference, serie);
 		add(getter);
-		return this;
-	}
-	
-	@Override
-	public IFluentMappingBuilder<C, I> withJoinTable() {
-		this.joinTable = true;
-		return this;
-	}
-	
-	@Override
-	public IFluentMappingBuilder<C, I> withJoinTable(Table parentTable) {
-		withJoinTable();
-		this.targetParentTable = parentTable;
 		return this;
 	}
 	

@@ -55,7 +55,7 @@ public interface IFluentMappingBuilder<C, I> extends IFluentEmbeddableMappingCon
 	 * @param mappingConfiguration a mapping configuration of a super type of the current mapped type
 	 * @return a enhanced version of {@code this} so one can add set options to the relationship or add mapping to {@code this}
 	 */
-	IFluentMappingBuilder<C, I> mapInheritance(EntityMappingConfiguration<? super C, I> mappingConfiguration);
+	IFluentMappingBuilderInheritanceOptions<C, I> mapInheritance(EntityMappingConfiguration<? super C, I> mappingConfiguration);
 	
 	/**
 	 * Declares the mapping of a super class.
@@ -180,10 +180,6 @@ public interface IFluentMappingBuilder<C, I> extends IFluentEmbeddableMappingCon
 	<V> IFluentMappingBuilder<C, I> versionedBy(SerializableFunction<C, V> getter);
 	
 	<V> IFluentMappingBuilder<C, I> versionedBy(SerializableFunction<C, V> getter, Serie<V> sequence);
-	
-	IFluentMappingBuilder<C, I> withJoinTable();
-	
-	IFluentMappingBuilder<C, I> withJoinTable(Table parentTable);
 	
 	interface IFluentMappingBuilderPropertyOptions<C, I> extends IFluentMappingBuilder<C, I>, IFluentEmbeddableMappingConfigurationPropertyOptions<C>, ColumnOptions<C, I> {
 		
@@ -348,5 +344,17 @@ public interface IFluentMappingBuilder<C, I> extends IFluentEmbeddableMappingCon
 		
 		@Override
 		IFluentMappingBuilderEnumOptions<C, I> mandatory();
+	}
+	
+	interface IFluentMappingBuilderInheritanceOptions<C, I>
+			extends IFluentMappingBuilder<C, I>,
+			InheritanceOptions {
+		
+		@Override
+		IFluentMappingBuilderInheritanceOptions<C, I> withJoinTable();
+		
+		@Override
+		IFluentMappingBuilderInheritanceOptions<C, I> withJoinTable(Table parentTable);
+		
 	}
 }
