@@ -3,27 +3,23 @@ package org.gama.stalactite.persistence.query;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
 
-import com.sun.java.util.jar.pack.Package.Class;
 import org.danekja.java.util.function.serializable.SerializableBiConsumer;
 import org.danekja.java.util.function.serializable.SerializableFunction;
 import org.gama.reflection.AccessorByMethodReference;
-import org.gama.reflection.IReversibleAccessor;
 import org.gama.reflection.MemberDefinition;
 import org.gama.reflection.MutatorByMethodReference;
 import org.gama.reflection.ValueAccessPointMap;
+import org.gama.stalactite.persistence.engine.cascade.JoinedStrategiesSelectExecutor;
 import org.gama.stalactite.persistence.id.assembly.SimpleIdentifierAssembler;
 import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
-import org.gama.stalactite.persistence.mapping.IEmbeddedBeanMappingStrategy;
-import org.gama.stalactite.persistence.mapping.IEntityMappingStrategy;
 import org.gama.stalactite.persistence.mapping.IdMappingStrategy;
 import org.gama.stalactite.persistence.mapping.SimpleIdMappingStrategy;
 import org.gama.stalactite.persistence.query.ValueAccessPointCriterion.LogicalOperator;
 import org.gama.stalactite.persistence.structure.Column;
+import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.query.model.AbstractOperator;
 import org.gama.stalactite.query.model.Query;
-import org.gama.stalactite.query.model.operand.Greater;
 
 /**
  * @author Guillaume Mary
@@ -31,6 +27,7 @@ import org.gama.stalactite.query.model.operand.Greater;
 public class EntityCriteriaSupport<C> implements EntityCriteria<C> {
 	
 	
+	private final JoinedStrategiesSelectExecutor<C, ?, ?> joinedStrategiesSelectExecutor;
 	/** Criteria, ClosedCriteria */
 	private List<ValueAccessPointCriterion> conditions = new ArrayList<>();
 	
@@ -38,33 +35,36 @@ public class EntityCriteriaSupport<C> implements EntityCriteria<C> {
 	
 	private ValueAccessPointMap<Column> propertyToColumn;
 	private Column primaryKey;
-	private ClassMappingStrategy<C, ?, ?> entityMappingStrategy;
 	
 	
-	private EntityCriteriaSupport(ClassMappingStrategy<C, ?, ?> entityMappingStrategy) {
-		this.entityMappingStrategy = entityMappingStrategy;
-		propertyToColumn = new ValueAccessPointMap<>(this.entityMappingStrategy.getPropertyToColumn());
+	private EntityCriteriaSupport(JoinedStrategiesSelectExecutor<C, ?, ?> joinedStrategiesSelectExecutor) {
+		this.joinedStrategiesSelectExecutor = joinedStrategiesSelectExecutor;
+		propertyToColumn = new ValueAccessPointMap<>(this.joinedStrategiesSelectExecutor.getMappingStrategy().getPropertyToColumn());
 		// we add the identifier and primary key because they are not in the property mapping 
-		IdMappingStrategy<C, ?> idMappingStrategy = entityMappingStrategy.getIdMappingStrategy();
+		IdMappingStrategy<C, ?> idMappingStrategy = this.joinedStrategiesSelectExecutor.getMappingStrategy().getIdMappingStrategy();
 		if (idMappingStrategy instanceof SimpleIdMappingStrategy) {
 			primaryKey = ((SimpleIdentifierAssembler) idMappingStrategy.getIdentifierAssembler()).getColumn();
 			propertyToColumn.put(
 					((SimpleIdMappingStrategy<C, ?>) idMappingStrategy).getIdAccessor().getIdAccessor(),
 					primaryKey);
 		}
-		query.from(entityMappingStrategy.getTargetTable());
+		query.from(getMappingStrategy().getTargetTable());
 		// NB : select(Collection) is not implemented
 		propertyToColumn.values().forEach(query::select);
 	}
 	
-	public <O> EntityCriteriaSupport(ClassMappingStrategy<C, ?, ?> entityMappingStrategy, SerializableFunction<C, O> getter, AbstractOperator<O> operand) {
-		this(entityMappingStrategy);
+	public <O, I, T extends Table> EntityCriteriaSupport(JoinedStrategiesSelectExecutor<C, I, T> joinedStrategiesSelectExecutor, SerializableFunction<C, O> getter, AbstractOperator<O> operand) {
+		this(joinedStrategiesSelectExecutor);
 		add(null, getter, operand);
 	}
 	
-	public <O> EntityCriteriaSupport(ClassMappingStrategy<C, ?, ?> entityMappingStrategy, SerializableBiConsumer<C, O> setter, AbstractOperator<O> operand) {
-		this(entityMappingStrategy);
+	public <O> EntityCriteriaSupport(JoinedStrategiesSelectExecutor<C, ?, ?> joinedStrategiesSelectExecutor, SerializableBiConsumer<C, O> setter, AbstractOperator<O> operand) {
+		this(joinedStrategiesSelectExecutor);
 		add(null, setter, operand);
+	}
+	
+	private ClassMappingStrategy<C, ?, ?> getMappingStrategy() {
+		return this.joinedStrategiesSelectExecutor.getMappingStrategy();
 	}
 	
 	private <O> EntityCriteriaSupport<C> add(LogicalOperator operator, SerializableFunction<C, O> getter, AbstractOperator<O> operand) {
@@ -115,15 +115,15 @@ public class EntityCriteriaSupport<C> implements EntityCriteria<C> {
 		return add(LogicalOperator.OR, setter, operand);
 	}
 	
-	@Override
-	public <A, B> EntityCriteria<C> and(SerializableBiConsumer<C, A> setter, SerializableFunction<A, B> getter, AbstractOperator<B> operand) {
-		ValueAccessPointMap<IEmbeddedBeanMappingStrategy<Object, ?>> mappingStrategies =
-				new ValueAccessPointMap<>(entityMappingStrategy.getMappingStrategies());
-		
-		query.getFrom().innerJoin(primaryKey, mappingStrategies).getTargetTable());
-		return add(LogicalOperator.AND, setter, operand);
-	}
-	
+//	@Override
+//	public <A, B> EntityCriteria<C> and(SerializableBiConsumer<C, A> setter, SerializableFunction<A, B> getter, AbstractOperator<B> operand) {
+//		ValueAccessPointMap<IEmbeddedBeanMappingStrategy<Object, ?>> mappingStrategies =
+//				new ValueAccessPointMap<>(getMappingStrategy().getMappingStrategies());
+//		
+//		query.getFrom().innerJoin(primaryKey, mappingStrategies).getTargetTable());
+//		return add(LogicalOperator.AND, setter, operand);
+//	}
+//	
 	@Override
 	public Iterator<ValueAccessPointCriterion> iterator() {
 		return this.conditions.iterator();
