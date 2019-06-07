@@ -10,9 +10,11 @@ import org.gama.sql.ConnectionProvider;
 import org.gama.stalactite.persistence.engine.BeanRelationFixer;
 import org.gama.stalactite.persistence.engine.PersistenceContext;
 import org.gama.stalactite.persistence.engine.Persister;
+import org.gama.stalactite.persistence.engine.SelectExecutor;
 import org.gama.stalactite.persistence.engine.cascade.JoinedStrategiesSelect.StrategyJoins;
 import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
 import org.gama.stalactite.persistence.sql.Dialect;
+import org.gama.stalactite.persistence.sql.dml.DMLGenerator;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
 
@@ -31,7 +33,7 @@ import org.gama.stalactite.persistence.structure.Table;
 public class JoinedTablesPersister<C, I, T extends Table> extends Persister<C, I, T> {
 	
 	/** Select clause helper because of its complexity */
-	private final JoinedStrategiesSelectExecutor<C, I> joinedStrategiesSelectExecutor;
+	private final JoinedStrategiesSelectExecutor<C, I, T> joinedStrategiesSelectExecutor;
 	
 	public JoinedTablesPersister(PersistenceContext persistenceContext, ClassMappingStrategy<C, I, T> mainMappingStrategy) {
 		this(mainMappingStrategy, persistenceContext.getDialect(), persistenceContext.getConnectionProvider(), persistenceContext.getJDBCBatchSize());
@@ -43,12 +45,24 @@ public class JoinedTablesPersister<C, I, T extends Table> extends Persister<C, I
 		this.joinedStrategiesSelectExecutor = new JoinedStrategiesSelectExecutor<>(mainMappingStrategy, dialect, connectionProvider);
 	}
 	
+	@Override
+	protected <U> SelectExecutor<U, I, T> newSelectExecutor(ClassMappingStrategy<U, I, T> mappingStrategy, ConnectionProvider connectionProvider,
+															DMLGenerator dmlGenerator, int inOperatorMaxSize) {
+//		return new JoinedStrategiesSelectExecutor<>(mappingStrategy, dialect, connectionProvider);
+		return null;
+	}
+	
 	/**
 	 * Gives access to the select executor for further manipulations on {@link JoinedStrategiesSelect} for advanced usage
 	 * @return never null
 	 */
 	@Nonnull
-	public JoinedStrategiesSelectExecutor<C, I> getJoinedStrategiesSelectExecutor() {
+	public JoinedStrategiesSelectExecutor<C, I, T> getJoinedStrategiesSelectExecutor() {
+		return joinedStrategiesSelectExecutor;
+	}
+	
+	@Override
+	public JoinedStrategiesSelectExecutor<C, I, T> getSelectExecutor() {
 		return joinedStrategiesSelectExecutor;
 	}
 	

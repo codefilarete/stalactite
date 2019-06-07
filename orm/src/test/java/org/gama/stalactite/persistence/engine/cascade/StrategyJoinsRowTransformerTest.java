@@ -66,7 +66,7 @@ public class StrategyJoinsRowTransformerTest {
 				Maps.asMap(totoColumnId, (Object) 1L)
 						.add(totoColumnName, "toto"),
 				testInstance.getAliasProvider());
-		List result = testInstance.transform(Arrays.asList(row1));
+		List result = testInstance.transform(Arrays.asList(row1), 1);
 		
 		Object firstObject = Iterables.first(result);
 		assertNotNull(firstObject);
@@ -111,7 +111,7 @@ public class StrategyJoinsRowTransformerTest {
 						.add(tataColumnId, 1L)
 						.add(tataColumnFirstName, "tata"),
 				testInstance.getAliasProvider());
-		List result = testInstance.transform(Arrays.asList(row1));
+		List result = testInstance.transform(Arrays.asList(row1), 1);
 		
 		Object firstObject = Iterables.first(result);
 		assertNotNull(firstObject);
@@ -174,7 +174,7 @@ public class StrategyJoinsRowTransformerTest {
 						.add(titiColumnId, 1L)
 						.add(titiColumnLastName, "titi"),
 				testInstance.getAliasProvider());
-		List result = testInstance.transform(Arrays.asList(row));
+		List result = testInstance.transform(Arrays.asList(row), 1);
 		
 		Object firstObject = Iterables.first(result);
 		assertNotNull(firstObject);
@@ -241,7 +241,7 @@ public class StrategyJoinsRowTransformerTest {
 						.add(titiColumnId, 1L)
 						.add(titiColumnLastName, "titi"),
 				testInstance.getAliasProvider());
-		List result = testInstance.transform(Arrays.asList(row));
+		List result = testInstance.transform(Arrays.asList(row), 1);
 		
 		Object firstObject = Iterables.first(result);
 		assertNotNull(firstObject);
@@ -300,7 +300,7 @@ public class StrategyJoinsRowTransformerTest {
 						.add(tataColumnId, 2L)
 						.add(tataColumnFirstName, "tata2"),
 				testInstance.getAliasProvider());
-		List<Toto> result = testInstance.transform(Arrays.asList(row1, row2));
+		List<Toto> result = testInstance.transform(Arrays.asList(row1, row2), 1);
 		
 		assertEquals(1, result.size());
 		Toto firstResult = result.get(0);
@@ -360,7 +360,7 @@ public class StrategyJoinsRowTransformerTest {
 		);
 		
 		// executing the test
-		List<Toto> result = testInstance.transform(Arrays.asList(row));
+		List<Toto> result = testInstance.transform(Arrays.asList(row), 1);
 		
 		// checking
 		assertEquals(1, result.size());

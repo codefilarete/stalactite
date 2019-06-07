@@ -313,7 +313,7 @@ public class JoinedStrategiesSelectExecutorTest {
 		);
 		
 		// Checking that selected entities by their id are those expected
-		JoinedStrategiesSelectExecutor<Toto, Toto> testInstance = new JoinedStrategiesSelectExecutor<>(classMappingStrategy, new Dialect(), connectionProvider);
+		JoinedStrategiesSelectExecutor<Toto, Toto, ?> testInstance = new JoinedStrategiesSelectExecutor<>(classMappingStrategy, new Dialect(), connectionProvider);
 		List<Toto> select = testInstance.select(Arrays.asList(new Toto(100, 1)));
 		assertEquals(Arrays.asList(entity1).toString(), select.toString());
 		

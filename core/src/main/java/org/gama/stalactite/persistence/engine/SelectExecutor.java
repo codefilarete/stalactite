@@ -2,6 +2,7 @@ package org.gama.stalactite.persistence.engine;
 
 import java.sql.ResultSet;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -9,11 +10,12 @@ import java.util.Set;
 import com.google.common.annotations.VisibleForTesting;
 import org.gama.lang.collection.Collections;
 import org.gama.lang.collection.Iterables;
-import org.gama.lang.exception.Exceptions;
 import org.gama.sql.ConnectionProvider;
 import org.gama.sql.SimpleConnectionProvider;
 import org.gama.sql.dml.ReadOperation;
+import org.gama.sql.dml.SQLExecutionException;
 import org.gama.sql.dml.SQLOperation.SQLOperationListener;
+import org.gama.sql.result.Row;
 import org.gama.sql.result.RowIterator;
 import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
 import org.gama.stalactite.persistence.sql.dml.ColumnParameterizedSelect;
@@ -59,21 +61,16 @@ public class SelectExecutor<C, I, T extends Table> extends DMLExecutor<C, I, T> 
 			Set<Column<T, Object>> columnsToRead = getMappingStrategy().getSelectableColumns();
 			if (!parcels.isEmpty()) {
 				ReadOperation<Column<T, Object>> defaultReadOperation = newReadOperation(targetTable, columnsToRead, blockSize, localConnectionProvider);
-				parcels.forEach(parcel -> result.addAll(select(parcel, defaultReadOperation)));
+				parcels.forEach(parcel -> result.addAll(execute(defaultReadOperation, parcel)));
 			}
 			
 			// last packet treatment (packet size may be different)
 			if (!lastParcel.isEmpty()) {
 				ReadOperation<Column<T, Object>> lastReadOperation = newReadOperation(targetTable, columnsToRead, lastBlockSize, localConnectionProvider);
-				result.addAll(select(lastParcel, lastReadOperation));
+				result.addAll(execute(lastReadOperation, lastParcel));
 			}
 		}
 		return result;
-	}
-	
-	private List<C> select(List<I> ids, ReadOperation<Column<T, Object>> readOperation) {
-		Map<Column<T, Object>, Object> pkValues = getMappingStrategy().getIdMappingStrategy().getIdentifierAssembler().getColumnValues(ids);
-		return execute(readOperation, pkValues);
 	}
 	
 	private ReadOperation<Column<T, Object>> newReadOperation(T targetTable, Set<Column<T, Object>> columnsToRead, int blockSize,
@@ -85,18 +82,25 @@ public class SelectExecutor<C, I, T extends Table> extends DMLExecutor<C, I, T> 
 		return readOperation;
 	}
 	
-	private List<C> execute(ReadOperation<Column<T, Object>> operation, Map<Column<T, Object>, Object> keyValues) {
-		List<C> toReturn = new ArrayList<>(keyValues.size());
+	@VisibleForTesting
+	public List<C> execute(ReadOperation<Column<T, Object>> operation, List<I> ids) {
+		Map<Column<T, Object>, Object> primaryKeyValues = getMappingStrategy().getIdMappingStrategy().getIdentifierAssembler().getColumnValues(ids);
 		try (ReadOperation<Column<T, Object>> closeableOperation = operation) {
-			closeableOperation.setValues(keyValues);
-			ResultSet resultSet = closeableOperation.execute();
-			RowIterator rowIterator = new RowIterator(resultSet, ((ColumnParameterizedSelect) closeableOperation.getSqlStatement()).getSelectParameterBinders());
-			while (rowIterator.hasNext()) {
-				toReturn.add(getMappingStrategy().transform(rowIterator.next()));
-			}
-		} catch (Exception e) {
-			throw Exceptions.asRuntimeException(e);
+			closeableOperation.setValues(primaryKeyValues);
+			return transform(closeableOperation, primaryKeyValues.size());
+		} catch (RuntimeException e) {
+			throw new SQLExecutionException(e);
 		}
-		return toReturn;
+	}
+	
+	protected List<C> transform(ReadOperation<Column<T, Object>> closeableOperation, int size) {
+		ResultSet resultSet = closeableOperation.execute();
+		// NB: we give the same ParametersBinders of those given at ColumnParameterizedSelect since the row iterator is expected to read column from it
+		RowIterator rowIterator = new RowIterator(resultSet, ((ColumnParameterizedSelect) closeableOperation.getSqlStatement()).getSelectParameterBinders());
+		return transform(rowIterator, size);
+	}
+	
+	protected List<C> transform(Iterator<Row> rowIterator, int resultSize) {
+		return Iterables.collect(() -> rowIterator, getMappingStrategy()::transform, () -> new ArrayList<>(resultSize));
 	}
 }

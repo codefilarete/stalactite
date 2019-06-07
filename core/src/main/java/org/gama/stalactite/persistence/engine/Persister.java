@@ -385,4 +385,9 @@ public class Persister<C, I, T extends Table> {
 	protected List<C> doSelect(Collection<I> ids) {
 		return selectExecutor.select(ids);
 	}
+	
+	public void findAll() {
+//		selectExecutor.select()
+		
+	}
 }

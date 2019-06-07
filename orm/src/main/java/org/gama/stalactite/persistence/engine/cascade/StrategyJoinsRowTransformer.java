@@ -59,14 +59,14 @@ public class StrategyJoinsRowTransformer<T> {
 	
 	/**
 	 * Changes the alias provider (default is {@link Column#getAlias()}) by giving the map between {@link Column} and their alias.
-	 * @param aliases the mapping between {@link Column} and their alias in the Rows of {@link #transform(Iterable)}
+	 * @param aliases the mapping between {@link Column} and their alias in the Rows of {@link #transform(Iterable, int)}
 	 */
 	public void setAliases(Map<Column, String> aliases) {
 		this.aliasProvider = aliases::get;
 	}
 	
-	public List<T> transform(Iterable<Row> rows) {
-		List<T> result = new ArrayList<>();
+	public List<T> transform(Iterable<Row> rows, int resultSize) {
+		List<T> result = new ArrayList<>(resultSize);
 		EntityCacheWrapper entityCacheWrapper = new EntityCacheWrapper(entityCache);
 		
 		for (Row row : rows) {

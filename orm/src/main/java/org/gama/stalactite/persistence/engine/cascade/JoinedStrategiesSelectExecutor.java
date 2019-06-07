@@ -11,17 +11,15 @@ import org.gama.lang.StringAppender;
 import org.gama.lang.bean.Objects;
 import org.gama.lang.collection.Collections;
 import org.gama.lang.collection.Iterables;
-import org.gama.lang.exception.Exceptions;
 import org.gama.sql.ConnectionProvider;
 import org.gama.sql.SimpleConnectionProvider;
 import org.gama.sql.binder.ParameterBinder;
 import org.gama.sql.binder.ParameterBinderIndex;
 import org.gama.sql.dml.ReadOperation;
 import org.gama.sql.result.Row;
-import org.gama.sql.result.RowIterator;
 import org.gama.stalactite.persistence.engine.BeanRelationFixer;
+import org.gama.stalactite.persistence.engine.SelectExecutor;
 import org.gama.stalactite.persistence.engine.cascade.JoinedStrategiesSelect.StrategyJoins;
-import org.gama.stalactite.persistence.id.assembly.IdentifierAssembler;
 import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
 import org.gama.stalactite.persistence.sql.Dialect;
 import org.gama.stalactite.persistence.sql.ddl.DDLAppender;
@@ -45,28 +43,27 @@ import static org.gama.stalactite.persistence.engine.cascade.JoinedStrategiesSel
  * 
  * @author Guillaume Mary
  */
-public class JoinedStrategiesSelectExecutor<C, I> {
+public class JoinedStrategiesSelectExecutor<C, I, T extends Table> extends SelectExecutor<C, I, T>  {
 	
 	/** The surrogate for joining the strategies, will help to build the SQL */
-	private final JoinedStrategiesSelect<C, I, ? extends Table> joinedStrategiesSelect;
+	private final JoinedStrategiesSelect<C, I, T> joinedStrategiesSelect;
 	private final ParameterBinderIndex<Column, ParameterBinder> parameterBinderProvider;
 	private final int blockSize;
 	private final ConnectionProvider connectionProvider;
 	
 	private final PrimaryKey<Table> primaryKey;
-	private final IdentifierAssembler<I> identifierAssembler;
 	
-	public JoinedStrategiesSelectExecutor(ClassMappingStrategy<C, I, ? extends Table> classMappingStrategy, Dialect dialect, ConnectionProvider connectionProvider) {
+	public JoinedStrategiesSelectExecutor(ClassMappingStrategy<C, I, T> classMappingStrategy, Dialect dialect, ConnectionProvider connectionProvider) {
+		super(classMappingStrategy, connectionProvider, dialect.getDmlGenerator(), dialect.getInOperatorMaxSize());
 		this.parameterBinderProvider = dialect.getColumnBinderRegistry();
 		this.joinedStrategiesSelect = new JoinedStrategiesSelect<>(classMappingStrategy, this.parameterBinderProvider);
 		this.connectionProvider = connectionProvider;
 		this.blockSize = dialect.getInOperatorMaxSize();
 		this.primaryKey = classMappingStrategy.getTargetTable().getPrimaryKey();
-		this.identifierAssembler = classMappingStrategy.getIdMappingStrategy().getIdentifierAssembler();
 	}
 	
-	public <T extends Table> JoinedStrategiesSelect<C, I, T> getJoinedStrategiesSelect() {
-		return (JoinedStrategiesSelect<C, I, T>) joinedStrategiesSelect;
+	public JoinedStrategiesSelect<C, I, T> getJoinedStrategiesSelect() {
+		return joinedStrategiesSelect;
 	}
 	
 	public ParameterBinderIndex<Column, ParameterBinder> getParameterBinderProvider() {
@@ -167,7 +164,7 @@ public class JoinedStrategiesSelectExecutor<C, I> {
 	List<C> execute(ConnectionProvider connectionProvider, String sql, Collection<? extends List<I>> idsParcels, Map<Column, int[]> inOperatorValueIndexes) {
 		List<C> result = new ArrayList<>(idsParcels.size() * blockSize);
 		ColumnParameterizedSelect preparedSelect = new ColumnParameterizedSelect(sql, inOperatorValueIndexes, parameterBinderProvider, joinedStrategiesSelect.getSelectParameterBinders());
-		try (ReadOperation<Column<Table, Object>> columnReadOperation = new ReadOperation<>(preparedSelect, connectionProvider)) {
+		try (ReadOperation<Column<T, Object>> columnReadOperation = new ReadOperation<>(preparedSelect, connectionProvider)) {
 			for (List<I> parcel : idsParcels) {
 				result.addAll(execute(columnReadOperation, parcel));
 			}
@@ -175,24 +172,11 @@ public class JoinedStrategiesSelectExecutor<C, I> {
 		return result;
 	}
 	
-	List<C> execute(ReadOperation<Column<Table, Object>> operation, List<I> ids) {
-		Map<Column<Table, Object>, Object> primaryKeyValues = identifierAssembler.getColumnValues(ids);
-		try (ReadOperation<Column<Table, Object>> closeableOperation = operation) {
-			closeableOperation.setValues(primaryKeyValues);
-			ResultSet resultSet = closeableOperation.execute();
-			// NB: we give the same ParametersBinders of those given at ColumnParamedSelect since the row iterator is expected to read column from it
-			RowIterator rowIterator = new RowIterator(resultSet, ((ColumnParameterizedSelect) closeableOperation.getSqlStatement()).getSelectParameterBinders());
-			return transform(rowIterator);
-		} catch (Exception e) {
-			throw Exceptions.asRuntimeException(e);
-		}
-	}
-	
-	List<C> transform(Iterator<Row> rowIterator) {
+	@Override
+	protected List<C> transform(Iterator<Row> rowIterator, int resultSize) {
 		StrategyJoinsRowTransformer<C> strategyJoinsRowTransformer = new StrategyJoinsRowTransformer<>(joinedStrategiesSelect.getStrategyJoins(FIRST_STRATEGY_NAME));
-		
 		strategyJoinsRowTransformer.setAliases(this.joinedStrategiesSelect.getAliases());
-		return strategyJoinsRowTransformer.transform(() -> rowIterator);
+		return strategyJoinsRowTransformer.transform(() -> rowIterator, resultSize);
 	}
 	
 	private class WhereClauseDMLNameProvider extends DMLNameProvider {
