@@ -3,7 +3,7 @@ package org.gama.stalactite.query.model;
 /**
  * @author Guillaume Mary
  */
-public class AbstractCriterion {
+public abstract class AbstractCriterion {
 	
 	public enum LogicalOperator {
 		AND,

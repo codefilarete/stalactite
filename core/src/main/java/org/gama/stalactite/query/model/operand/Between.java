@@ -1,7 +1,6 @@
 package org.gama.stalactite.query.model.operand;
 
-import org.gama.lang.Reflections;
-import org.gama.stalactite.query.model.Operand;
+import org.gama.stalactite.query.model.AbstractOperator;
 
 /**
  * Represents a between operand.
@@ -9,14 +8,16 @@ import org.gama.stalactite.query.model.Operand;
  * 
  * @author Guillaume Mary
  */
-public class Between extends Operand {
+public class Between<O> extends AbstractOperator<O> {
 	
-	public Between(Interval value) {
-		super(value);
+	private final Interval<O> value;
+	
+	public Between(Interval<O> value) {
+		this.value = value;
 	}
 	
-	public <O> Between(O value1, O value2) {
-		this(new Interval(value1, value2));
+	public Between(O value1, O value2) {
+		this(new Interval<>(value1, value2));
 	}
 	
 	/**
@@ -25,29 +26,24 @@ public class Between extends Operand {
 	 * 
 	 * @return null if value boundaries are both null.
 	 */
-	@Override
-	public Interval getValue() {
-		Interval interval = (Interval) super.getValue();
-		return (interval == null || interval.isEmpty()) ? null : interval;
+	public Interval<O> getValue() {
+		return (value == null || value.isEmpty()) ? null : value;
 	}
 	
 	@Override
-	public void setValue(Object value) {
-		if (!(value instanceof Interval)) {
-			throw new IllegalArgumentException(Reflections.toString(getClass()) + " only supports " + Reflections.toString(Interval.class) + " as value");
-		}
-		super.setValue(value);
+	public boolean isNull() {
+		return getValue() == null;
 	}
 	
 	/**
 	 * A small class to store between values
 	 */
-	public static class Interval {
+	public static class Interval<O> {
 		
 		private final Object value1;
 		private final Object value2;
 		
-		public <O> Interval(O value1, O value2) {
+		public Interval(O value1, O value2) {
 			this.value1 = value1;
 			this.value2 = value2;
 		}

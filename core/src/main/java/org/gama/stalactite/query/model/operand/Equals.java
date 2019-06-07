@@ -1,15 +1,15 @@
 package org.gama.stalactite.query.model.operand;
 
-import org.gama.stalactite.query.model.Operand;
+import org.gama.stalactite.query.model.UnitaryOperator;
 
 /**
  * Represents an equals comparison
  * 
  * @author Guillaume Mary
  */
-public class Equals extends Operand {
+public class Equals<O> extends UnitaryOperator<O> {
 	
-	public Equals(Object value) {
+	public Equals(O value) {
 		super(value);
 	}
 }

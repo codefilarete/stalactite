@@ -5,10 +5,10 @@ import java.util.Map;
 import org.gama.lang.Reflections;
 import org.gama.lang.StringAppender;
 import org.gama.lang.Strings;
-import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.persistence.structure.Column;
+import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.query.builder.OperandBuilder.StringAppenderWrapper;
-import org.gama.stalactite.query.model.Operand;
+import org.gama.stalactite.query.model.AbstractOperator;
 import org.gama.stalactite.query.model.Select;
 import org.gama.stalactite.query.model.Select.AliasedColumn;
 
@@ -43,8 +43,8 @@ public class SelectBuilder implements SQLBuilder {
 				cat((Column) o, sql);
 			} else if (o instanceof AliasedColumn) {
 				cat((AliasedColumn) o, sql);
-			} else if (o instanceof Operand) {
-				cat((Operand) o, appenderWrapper);
+			} else if (o instanceof AbstractOperator) {
+				cat((AbstractOperator) o, appenderWrapper);
 			} else {
 				throw new UnsupportedOperationException("Operator " + Reflections.toString(o.getClass()) + " is not implemented");
 			}
@@ -67,7 +67,7 @@ public class SelectBuilder implements SQLBuilder {
 		sql.cat(dmlNameProvider.getName(o.getColumn())).catIf(!Strings.isEmpty(o.getAlias()), " as ", o.getAlias());
 	}
 	
-	private void cat(Operand operand, StringAppenderWrapper appenderWrapper) {
+	private void cat(AbstractOperator operand, StringAppenderWrapper appenderWrapper) {
 		operandBuilder.cat(operand, appenderWrapper);
 	}
 }

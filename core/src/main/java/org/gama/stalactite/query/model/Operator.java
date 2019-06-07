@@ -23,13 +23,14 @@ import org.gama.stalactite.query.model.operand.Sum;
  * 
  * @author Guillaume Mary
  */
-public abstract class Operand {
+// Left abstract with package-private constructor so no one else but classes of this packahe can extend it because only OperandBuilder know all of them
+public abstract class Operator {
 	
-	public static Equals eq(Object value) {
-		return new Equals(value);
+	public static <O> Equals<O> eq(O value) {
+		return new Equals<>(value);
 	}
 	
-	public static <I extends Operand> I not(I operand) {
+	public static <I extends AbstractOperator> I not(I operand) {
 		operand.setNot();
 		return operand;
 	}
@@ -57,8 +58,8 @@ public abstract class Operand {
 	 * @param value a value, null accepted, transformed to "is null" by {@link OperandBuilder})
 	 * @return a new instance of {@link Greater}
 	 */
-	public static Greater gt(Object value) {
-		return new Greater(value);
+	public static <O> Greater<O>  gt(O value) {
+		return new Greater<>(value);
 	}
 	
 	/**
@@ -66,8 +67,8 @@ public abstract class Operand {
 	 * @param value a value, null accepted, transformed to "is null" by {@link OperandBuilder})
 	 * @return a new instance of {@link Greater} with equals checking
 	 */
-	public static Greater gteq(Object value) {
-		return new Greater(value, true);
+	public static <O> Greater<O> gteq(O value) {
+		return new Greater<>(value, true);
 	}
 	
 	/**
@@ -76,8 +77,8 @@ public abstract class Operand {
 	 * @param value2 a value, null accepted, transformed to "is null" by {@link OperandBuilder}) if both values are
 	 * @return a new instance of {@link Between} with equals checking
 	 */
-	public static <O> Between between(O value1, O value2) {
-		return new Between(value1, value2);
+	public static <O> Between<O> between(O value1, O value2) {
+		return new Between<>(value1, value2);
 	}
 	
 	/**
@@ -85,8 +86,8 @@ public abstract class Operand {
 	 * @param value a value, null accepted, transformed to "is null" by {@link OperandBuilder})
 	 * @return a new instance of {@link In}
 	 */
-	public static In in(Iterable value) {
-		return new In(value);
+	public static <O> In<O> in(Iterable<O> value) {
+		return new In<>(value);
 	}
 	
 	/**
@@ -97,8 +98,8 @@ public abstract class Operand {
 	 * @return a new instance of {@link In}
 	 * @see #in(Iterable)
 	 */
-	public static In in(Object ... value) {
-		return new In(value);
+	public static <O> In<O> in(O ... value) {
+		return new In<>(value);
 	}
 	
 	/**
@@ -153,8 +154,8 @@ public abstract class Operand {
 	 * Shortcut to <code>new Sum(column)</code> to ease a fluent write of queries for "sum" operation
 	 * @return a new instance of {@link Sum}
 	 */
-	public static Sum sum(Column column) {
-		return new Sum(column);
+	public static <N extends Number> Sum<N> sum(Column<?, N> column) {
+		return new Sum<>(column);
 	}
 	
 	/**
@@ -181,61 +182,4 @@ public abstract class Operand {
 		return new Max(column);
 	}
 	
-	/** Value of the operator */
-	private Object value;
-	
-	/** Is this operator must be negated ? */
-	private boolean not;
-	
-	/**
-	 * Single constructor, basic
-	 * @param value the value of the operator
-	 */
-	protected Operand(Object value) {
-		this.value = value;
-	}
-	
-	/**
-	 * @return the value of this operand
-	 */
-	public Object getValue() {
-		return value;
-	}
-	
-	/**
-	 * Sets the value of this operant
-	 * @param value the new value
-	 */
-	public void setValue(Object value) {
-		this.value = value;
-	}
-	
-	/**
-	 * @return true if this operand uses "not"
-	 */
-	public boolean isNot() {
-		return not;
-	}
-	
-	/**
-	 * Sets "not" value
-	 * @param not true for this operand to use "not", false to let it use normal operand
-	 */
-	public void setNot(boolean not) {
-		this.not = not;
-	}
-	
-	/**
-	 * Negates this operand
-	 */
-	public void setNot() {
-		setNot(true);
-	}
-	
-	/**
-	 * Reverses logical operator
-	 */
-	public void switchNot() {
-		this.not = !this.not;
-	}
 }

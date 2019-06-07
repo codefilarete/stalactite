@@ -1,21 +1,21 @@
 package org.gama.stalactite.query.model.operand;
 
-import org.gama.stalactite.query.model.Operand;
+import org.gama.stalactite.query.model.UnitaryOperator;
 
 /**
  * Represents a greater (< or <=) comparison
  * 
  * @author Guillaume Mary
  */
-public class Greater extends Operand {
+public class Greater<O> extends UnitaryOperator<O> {
 	
 	private boolean equals;
 	
-	public Greater(Object value) {
+	public Greater(O value) {
 		this(value, false);
 	}
 	
-	public Greater(Object value, boolean equals) {
+	public Greater(O value, boolean equals) {
 		super(value);
 		setEquals(equals);
 	}

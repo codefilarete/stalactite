@@ -6,14 +6,13 @@ import java.util.Map;
 
 import org.gama.lang.Reflections;
 import org.gama.lang.StringAppender;
-import org.gama.lang.collection.ArrayIterator;
-import org.gama.lang.collection.Iterables;
 import org.gama.lang.trace.ModifiableInt;
 import org.gama.sql.binder.ParameterBinder;
 import org.gama.stalactite.persistence.sql.dml.binder.ColumnBinderRegistry;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
-import org.gama.stalactite.query.model.Operand;
+import org.gama.stalactite.query.model.AbstractOperator;
+import org.gama.stalactite.query.model.Operator;
 import org.gama.stalactite.query.model.operand.Between;
 import org.gama.stalactite.query.model.operand.Between.Interval;
 import org.gama.stalactite.query.model.operand.Count;
@@ -28,7 +27,7 @@ import org.gama.stalactite.query.model.operand.Min;
 import org.gama.stalactite.query.model.operand.Sum;
 
 /**
- * A class made to print a {@link Operand}
+ * A class made to print a {@link Operator}
  * 
  * @author Guillaume Mary
  */
@@ -48,15 +47,15 @@ public class OperandBuilder {
 		this.dmlNameProvider = dmlNameProvider;
 	}
 	
-	public void cat(Operand operand, SQLAppender sql) {
+	public void cat(AbstractOperator operand, SQLAppender sql) {
 		cat(null, operand, sql);
 	}
 	
 	/**
 	 * Main entry point
 	 */
-	public void cat(Column column, Operand operand, SQLAppender sql) {
-		if (operand.getValue() == null) {
+	public void cat(Column column, AbstractOperator operand, SQLAppender sql) {
+		if (operand.isNull()) {
 			catNullValue(operand.isNot(), sql);
 		} else {
 			// uggly way of dispatching concatenation, can't find a better way without heavying classes or struggling with single responsability design
@@ -111,13 +110,13 @@ public class OperandBuilder {
 	public void catIn(In in, SQLAppender sql, Column column) {
 		// we take collection into account : iterating over it to cat all values
 		Object value = in.getValue();
-		// we adapt the value to an Iterable, avoiding multiple cases and falling into a simple foreach loop 
-		if (!(value instanceof Iterable)) {
-			if (!value.getClass().isArray()) {
-				value = new Object[] { value };
-			}
-			value = Iterables.asIterable(new ArrayIterator<>((Object[]) value));
-		}
+//		// we adapt the value to an Iterable, avoiding multiple cases and falling into a simple foreach loop 
+//		if (!(value instanceof Iterable)) {
+//			if (!value.getClass().isArray()) {
+//				value = new Object[] { value };
+//			}
+//			value = Iterables.asIterable(new ArrayIterator<>((Object[]) value));
+//		}
 		sql.catIf(in.isNot(), "not ").cat("in (");
 		catInValue((Iterable) value, sql, column);
 		sql.cat(")");

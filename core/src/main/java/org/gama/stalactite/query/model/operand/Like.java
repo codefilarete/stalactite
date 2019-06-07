@@ -1,6 +1,6 @@
 package org.gama.stalactite.query.model.operand;
 
-import org.gama.stalactite.query.model.Operand;
+import org.gama.stalactite.query.model.UnitaryOperator;
 
 /**
  * Represents a like comparison.
@@ -8,7 +8,7 @@ import org.gama.stalactite.query.model.Operand;
  * 
  * @author Guillaume Mary
  */
-public class Like extends Operand {
+public class Like extends UnitaryOperator<CharSequence> {
 	
 	private boolean leadingStar;
 	private boolean endingStar;

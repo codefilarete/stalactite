@@ -1,13 +1,13 @@
 package org.gama.stalactite.query.model.operand;
 
-import org.gama.stalactite.query.model.Operand;
+import org.gama.stalactite.query.model.UnitaryOperator;
 
 /**
  * Represents a greater (> or >=) comparison
  * 
  * @author Guillaume Mary
  */
-public class Lower extends Operand {
+public class Lower extends UnitaryOperator {
 	
 	private boolean equals;
 	

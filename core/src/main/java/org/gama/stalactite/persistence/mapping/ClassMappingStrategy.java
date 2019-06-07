@@ -152,6 +152,10 @@ public class ClassMappingStrategy<C, I, T extends Table> implements IEntityMappi
 		return mainMappingStrategy;
 	}
 	
+	public Map<IReversibleAccessor<C, Object>, IEmbeddedBeanMappingStrategy<Object, T>> getMappingStrategies() {
+		return mappingStrategies;
+	}
+	
 	/**
 	 * Implentation which returns all properties mapping, even embedded ones 
 	 * @return all properties mapping, even embedded ones

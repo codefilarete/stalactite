@@ -3,29 +3,29 @@ package org.gama.stalactite.query.builder;
 import java.util.Collections;
 
 import org.gama.lang.StringAppender;
-import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.persistence.structure.Column;
+import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.query.builder.OperandBuilder.StringAppenderWrapper;
-import org.gama.stalactite.query.model.Operand;
+import org.gama.stalactite.query.model.AbstractOperator;
 import org.gama.stalactite.query.model.operand.IsNull;
 import org.gama.stalactite.query.model.operand.Like;
 import org.junit.jupiter.api.Test;
 
-import static org.gama.stalactite.query.model.Operand.between;
-import static org.gama.stalactite.query.model.Operand.contains;
-import static org.gama.stalactite.query.model.Operand.count;
-import static org.gama.stalactite.query.model.Operand.endsWith;
-import static org.gama.stalactite.query.model.Operand.eq;
-import static org.gama.stalactite.query.model.Operand.gt;
-import static org.gama.stalactite.query.model.Operand.gteq;
-import static org.gama.stalactite.query.model.Operand.in;
-import static org.gama.stalactite.query.model.Operand.lt;
-import static org.gama.stalactite.query.model.Operand.lteq;
-import static org.gama.stalactite.query.model.Operand.max;
-import static org.gama.stalactite.query.model.Operand.min;
-import static org.gama.stalactite.query.model.Operand.not;
-import static org.gama.stalactite.query.model.Operand.startsWith;
-import static org.gama.stalactite.query.model.Operand.sum;
+import static org.gama.stalactite.query.model.Operator.between;
+import static org.gama.stalactite.query.model.Operator.contains;
+import static org.gama.stalactite.query.model.Operator.count;
+import static org.gama.stalactite.query.model.Operator.endsWith;
+import static org.gama.stalactite.query.model.Operator.eq;
+import static org.gama.stalactite.query.model.Operator.gt;
+import static org.gama.stalactite.query.model.Operator.gteq;
+import static org.gama.stalactite.query.model.Operator.in;
+import static org.gama.stalactite.query.model.Operator.lt;
+import static org.gama.stalactite.query.model.Operator.lteq;
+import static org.gama.stalactite.query.model.Operator.max;
+import static org.gama.stalactite.query.model.Operator.min;
+import static org.gama.stalactite.query.model.Operator.not;
+import static org.gama.stalactite.query.model.Operator.startsWith;
+import static org.gama.stalactite.query.model.Operator.sum;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
@@ -40,7 +40,12 @@ public class OperandBuilderTest {
 		OperandBuilder testInstance = new OperandBuilder();
 		StringAppender result = new StringAppender();
 		
-		testInstance.cat(new Operand(null) {}, new StringAppenderWrapper(result, dmlNameProvider));
+		testInstance.cat(new AbstractOperator() {
+			@Override
+			public boolean isNull() {
+				return true;
+			}
+		}, new StringAppenderWrapper(result, dmlNameProvider));
 		assertEquals("is null", result.toString());
 	}
 	

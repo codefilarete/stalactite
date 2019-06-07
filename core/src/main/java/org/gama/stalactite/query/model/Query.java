@@ -204,7 +204,7 @@ public class Query implements FromAware, WhereAware, HavingAware, OrderByAware, 
 	}
 	
 	@Override
-	public FluentWhere where(Column column, Operand condition) {
+	public FluentWhere where(Column column, AbstractOperator condition) {
 		return this.where.and(new ColumnCriterion(column, condition));
 	}
 	

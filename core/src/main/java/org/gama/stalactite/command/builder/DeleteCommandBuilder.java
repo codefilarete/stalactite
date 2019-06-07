@@ -19,7 +19,7 @@ import org.gama.stalactite.query.builder.OperandBuilder.StringAppenderWrapper;
 import org.gama.stalactite.query.builder.SQLBuilder;
 import org.gama.stalactite.query.builder.WhereBuilder;
 import org.gama.stalactite.query.model.ColumnCriterion;
-import org.gama.stalactite.query.model.Operand;
+import org.gama.stalactite.query.model.UnitaryOperator;
 
 /**
  * A SQL builder for {@link Delete} objects
@@ -50,8 +50,8 @@ public class DeleteCommandBuilder<T extends Table> implements SQLBuilder {
 			if (c instanceof ColumnCriterion) {
 				whereColumns.add(((ColumnCriterion) c).getColumn());
 				Object condition = ((ColumnCriterion) c).getCondition();
-				if (condition instanceof Operand && ((Operand) condition).getValue() instanceof Column) {
-					whereColumns.add((Column) ((Operand) condition).getValue());
+				if (condition instanceof UnitaryOperator && ((UnitaryOperator) condition).getValue() instanceof Column) {
+					whereColumns.add((Column) ((UnitaryOperator) condition).getValue());
 				}
 			}
 		});

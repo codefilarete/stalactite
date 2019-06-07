@@ -13,9 +13,9 @@ import org.gama.stalactite.query.builder.OperandBuilder.SQLAppender;
 import org.gama.stalactite.query.builder.OperandBuilder.StringAppenderWrapper;
 import org.gama.stalactite.query.model.AbstractCriterion;
 import org.gama.stalactite.query.model.AbstractCriterion.LogicalOperator;
+import org.gama.stalactite.query.model.AbstractOperator;
 import org.gama.stalactite.query.model.ColumnCriterion;
 import org.gama.stalactite.query.model.CriteriaChain;
-import org.gama.stalactite.query.model.Operand;
 import org.gama.stalactite.query.model.RawCriterion;
 
 /**
@@ -126,8 +126,8 @@ public class WhereBuilder implements SQLBuilder, PreparedSQLBuilder {
 					sql.cat(")");
 				} else if (o instanceof Column) {
 					cat((Column) o);
-				} else if (o instanceof Operand) {
-					cat((Operand) o);
+				} else if (o instanceof AbstractOperator) {
+					cat((AbstractOperator) o);
 				} else {
 					throw new IllegalArgumentException("Unknown criterion type " + Reflections.toString(o.getClass()));
 				}
@@ -140,8 +140,8 @@ public class WhereBuilder implements SQLBuilder, PreparedSQLBuilder {
 			Object o = criterion.getCondition();
 			if (o instanceof CharSequence) {
 				sql.cat(o.toString());
-			} else if (o instanceof Operand) {
-				cat(criterion.getColumn(), (Operand) o);
+			} else if (o instanceof AbstractOperator) {
+				cat(criterion.getColumn(), (AbstractOperator) o);
 			} else {
 				throw new IllegalArgumentException("Unknown criterion type " + Reflections.toString(o.getClass()));
 			}
@@ -158,11 +158,11 @@ public class WhereBuilder implements SQLBuilder, PreparedSQLBuilder {
 			}
 		}
 		
-		public void cat(Operand operand) {
+		public void cat(AbstractOperator operand) {
 			operandBuilder.cat(operand, sql);
 		}
 		
-		public void cat(Column column, Operand operand) {
+		public void cat(Column column, AbstractOperator operand) {
 			operandBuilder.cat(column, operand, sql);
 		}
 		

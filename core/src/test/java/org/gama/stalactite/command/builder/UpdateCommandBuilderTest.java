@@ -10,7 +10,7 @@ import org.gama.stalactite.command.model.Update;
 import org.gama.stalactite.persistence.sql.dml.binder.ColumnBinderRegistry;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
-import org.gama.stalactite.query.model.Operand;
+import org.gama.stalactite.query.model.Operator;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -31,7 +31,7 @@ public class UpdateCommandBuilderTest {
 		Update<Table> update = new Update<Table>(totoTable)
 				.set(columnA)
 				.set(columnB);
-		update.where(columnA, Operand.eq(44)).or(columnA, Operand.eq(columnB));
+		update.where(columnA, Operator.eq(44)).or(columnA, Operator.eq(columnB));
 		UpdateCommandBuilder<Table> testInstance = new UpdateCommandBuilder<>(update);
 		assertEquals("update Toto set a = ?, b = ? where a = 44 or a = b", testInstance.toSQL());
 		
@@ -59,13 +59,13 @@ public class UpdateCommandBuilderTest {
 		Update<Table> update = new Update<Table>(totoTable)
 				.set(columnA)
 				.set(columnB);
-		update.where(columnA, Operand.eq(columnX)).or(columnA, Operand.eq(columnY));
+		update.where(columnA, Operator.eq(columnX)).or(columnA, Operator.eq(columnY));
 		UpdateCommandBuilder<Table> testInstance = new UpdateCommandBuilder<>(update);
 		assertEquals("update Toto, Tata set Toto.a = ?, Toto.b = ? where Toto.a = Tata.x or Toto.a = Tata.y", testInstance.toSQL());
 		
 		update = new Update<Table>(totoTable)
 				.set(columnA, columnB);
-		update.where(columnA, Operand.eq(columnX)).or(columnA, Operand.eq(columnY));
+		update.where(columnA, Operator.eq(columnX)).or(columnA, Operator.eq(columnY));
 		testInstance = new UpdateCommandBuilder<Table>(update);
 		assertEquals("update Toto, Tata set Toto.a = Toto.b where Toto.a = Tata.x or Toto.a = Tata.y", testInstance.toSQL());
 	}
@@ -83,7 +83,7 @@ public class UpdateCommandBuilderTest {
 				.set(columnB, columnA)
 				.set(columnC, "tata")
 				.set(columnD);
-		update.where(columnA, Operand.in(42L, 43L)).or(columnA, Operand.eq(columnB));
+		update.where(columnA, Operator.in(42L, 43L)).or(columnA, Operator.eq(columnB));
 		UpdateCommandBuilder<Table> testInstance = new UpdateCommandBuilder<>(update);
 		
 		ColumnBinderRegistry binderRegistry = new ColumnBinderRegistry();

@@ -16,7 +16,7 @@ import org.gama.stalactite.persistence.id.manager.StatefullIdentifier;
  */
 public class SimpleIdMappingStrategy<C, I> implements IdMappingStrategy<C, I> {
 	
-	private final IdAccessor<C, I> idAccessor;
+	private final SinglePropertyIdAccessor<C, I> idAccessor;
 	
 	private final IdentifierInsertionManager<C, I> identifierInsertionManager;
 	
@@ -31,7 +31,7 @@ public class SimpleIdMappingStrategy<C, I> implements IdMappingStrategy<C, I> {
 	 * @param identifierInsertionManager defines the way the id is persisted into the database
 	 * @param identifierMarshaller defines the way the id is read from the database
 	 */
-	public SimpleIdMappingStrategy(IdAccessor<C, I> idAccessor,
+	public SimpleIdMappingStrategy(SinglePropertyIdAccessor<C, I> idAccessor,
 								   IdentifierInsertionManager<C, I> identifierInsertionManager,
 								   SimpleIdentifierAssembler<I> identifierMarshaller) {
 		this.idAccessor = idAccessor;
@@ -53,7 +53,7 @@ public class SimpleIdMappingStrategy<C, I> implements IdMappingStrategy<C, I> {
 	}
 	
 	@Override
-	public IdAccessor<C, I> getIdAccessor() {
+	public SinglePropertyIdAccessor<C, I> getIdAccessor() {
 		return idAccessor;
 	}
 	

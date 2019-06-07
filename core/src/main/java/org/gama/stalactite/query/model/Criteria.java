@@ -26,7 +26,7 @@ public class Criteria<SELF extends Criteria<SELF>> extends AbstractCriterion imp
 		add(new ColumnCriterion(column, condition));
 	}
 	
-	public Criteria(Column column, Operand condition) {
+	public Criteria(Column column, AbstractOperator condition) {
 		add(new ColumnCriterion(column, condition));
 	}
 	
@@ -53,7 +53,7 @@ public class Criteria<SELF extends Criteria<SELF>> extends AbstractCriterion imp
 	}
 	
 	@Override
-	public SELF and(Column column, Operand condition) {
+	public SELF and(Column column, AbstractOperator condition) {
 		return add(new ColumnCriterion(AND, column, condition));
 	}
 
@@ -63,7 +63,7 @@ public class Criteria<SELF extends Criteria<SELF>> extends AbstractCriterion imp
 	}
 	
 	@Override
-	public SELF or(Column column, Operand condition) {
+	public SELF or(Column column, AbstractOperator condition) {
 		return add(new ColumnCriterion(OR, column, condition));
 	}
 	

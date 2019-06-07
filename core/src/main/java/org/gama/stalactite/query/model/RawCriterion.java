@@ -5,7 +5,7 @@ import java.util.List;
 import org.gama.lang.collection.Arrays;
 
 /**
- * Class aimed at designing criteria that can't be epxressed with {@link ColumnCriterion}, for example criteria with function, exists, etc.
+ * Class aimed at designing criteria that can't be expressed with {@link ColumnCriterion}, for example criteria with function, exists, etc.
  * 
  * @author Guillaume Mary
  */
