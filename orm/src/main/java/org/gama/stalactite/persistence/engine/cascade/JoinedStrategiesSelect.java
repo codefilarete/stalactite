@@ -91,7 +91,7 @@ public class JoinedStrategiesSelect<C, I, T extends Table> {
 		return aliases;
 	}
 	
-	StrategyJoins getStrategyJoins(String leftStrategyName) {
+	public StrategyJoins getStrategyJoins(String leftStrategyName) {
 		return this.strategyIndex.get(leftStrategyName);
 	}
 	

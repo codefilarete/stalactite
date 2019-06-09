@@ -49,7 +49,6 @@ public class JoinedStrategiesSelectExecutor<C, I, T extends Table> extends Selec
 	private final JoinedStrategiesSelect<C, I, T> joinedStrategiesSelect;
 	private final ParameterBinderIndex<Column, ParameterBinder> parameterBinderProvider;
 	private final int blockSize;
-	private final ConnectionProvider connectionProvider;
 	
 	private final PrimaryKey<Table> primaryKey;
 	
@@ -57,7 +56,6 @@ public class JoinedStrategiesSelectExecutor<C, I, T extends Table> extends Selec
 		super(classMappingStrategy, connectionProvider, dialect.getDmlGenerator(), dialect.getInOperatorMaxSize());
 		this.parameterBinderProvider = dialect.getColumnBinderRegistry();
 		this.joinedStrategiesSelect = new JoinedStrategiesSelect<>(classMappingStrategy, this.parameterBinderProvider);
-		this.connectionProvider = connectionProvider;
 		this.blockSize = dialect.getInOperatorMaxSize();
 		this.primaryKey = classMappingStrategy.getTargetTable().getPrimaryKey();
 	}
@@ -131,13 +129,13 @@ public class JoinedStrategiesSelectExecutor<C, I, T extends Table> extends Selec
 			
 			// Creation of the where clause: we use a dynamic "in" operator clause to avoid multiple QueryBuilder instanciation
 			// NB: in the condition, table and columns are from the main strategy, so there's no need to use aliases
-			DMLNameProvider dmlNameProvider = new WhereClauseDMLNameProvider();
+			DMLNameProvider dmlNameProvider = new WhereClauseDMLNameProvider(joinedStrategiesSelect);
 			DMLGenerator dmlGenerator = new DMLGenerator(parameterBinderProvider, new NoopSorter(), dmlNameProvider);
-			DDLAppender whereClause = new JoinDMLAppender(dmlNameProvider);
-			query.getWhere().and(whereClause);
+			DDLAppender identifierCriteria = new JoinDDLAppender(dmlNameProvider);
+			query.getWhere().and(identifierCriteria);
 			
 			// We ensure that the same Connection is used for all operations
-			ConnectionProvider localConnectionProvider = new SimpleConnectionProvider(connectionProvider.getCurrentConnection());
+			ConnectionProvider localConnectionProvider = new SimpleConnectionProvider(getConnectionProvider().getCurrentConnection());
 			List<I> lastBlock = Iterables.last(parcels, java.util.Collections.emptyList());
 			// keep only full blocks to run them on the fully filled "in" operator
 			int lastBlockSize = lastBlock.size();
@@ -148,13 +146,13 @@ public class JoinedStrategiesSelectExecutor<C, I, T extends Table> extends Selec
 			QueryBuilder queryBuilder = new QueryBuilder(query);
 			if (!parcels.isEmpty()) {
 				// change parameter mark count to adapt "in" operator values
-				ParameterizedWhere tableParameterizedWhere = dmlGenerator.appendTupledWhere(whereClause, primaryKey.getColumns(), blockSize);
+				ParameterizedWhere tableParameterizedWhere = dmlGenerator.appendTupledWhere(identifierCriteria, primaryKey.getColumns(), blockSize);
 				result.addAll(execute(localConnectionProvider, queryBuilder.toSQL(), parcels, tableParameterizedWhere.getColumnToIndex()));
 			}
 			if (!lastBlock.isEmpty()) {
 				// change parameter mark count to adapt "in" operator values, we must clear previous where clause
-				whereClause.getAppender().setLength(0);
-				ParameterizedWhere tableParameterizedWhere = dmlGenerator.appendTupledWhere(whereClause, primaryKey.getColumns(), lastBlock.size());
+				identifierCriteria.getAppender().setLength(0);
+				ParameterizedWhere tableParameterizedWhere = dmlGenerator.appendTupledWhere(identifierCriteria, primaryKey.getColumns(), lastBlock.size());
 				result.addAll(execute(localConnectionProvider, queryBuilder.toSQL(), java.util.Collections.singleton(lastBlock), tableParameterizedWhere.getColumnToIndex()));
 			}
 		}
@@ -179,16 +177,20 @@ public class JoinedStrategiesSelectExecutor<C, I, T extends Table> extends Selec
 		return strategyJoinsRowTransformer.transform(() -> rowIterator, resultSize);
 	}
 	
-	private class WhereClauseDMLNameProvider extends DMLNameProvider {
-		public WhereClauseDMLNameProvider() {
+	private static class WhereClauseDMLNameProvider extends DMLNameProvider {
+		
+		private final JoinedStrategiesSelect joinedStrategiesSelect;
+		
+		private WhereClauseDMLNameProvider(JoinedStrategiesSelect joinedStrategiesSelect) {
 			// we don't care about the aliases because we redefine our way of getting them, see #getAlias
 			super(java.util.Collections.emptyMap());
+			this.joinedStrategiesSelect = joinedStrategiesSelect;
 		}
 		
 		/** Overriden to get alias from the root {@link StrategyJoins} table alias (if any) */
 		@Override
 		public String getAlias(Table table) {
-			StrategyJoins rootStrategyJoins = JoinedStrategiesSelectExecutor.this.joinedStrategiesSelect.getStrategyJoins(FIRST_STRATEGY_NAME);
+			StrategyJoins rootStrategyJoins = joinedStrategiesSelect.getStrategyJoins(FIRST_STRATEGY_NAME);
 			if (table == rootStrategyJoins.getTable()) {
 				return Objects.preventNull(rootStrategyJoins.getTableAlias(), table.getName());
 			} else {
@@ -201,12 +203,12 @@ public class JoinedStrategiesSelectExecutor<C, I, T extends Table> extends Selec
 	/**
 	 * A dedicated {@link DDLAppender} for joins : it prefixes columns with their table alias (or name)
 	 */
-	private static class JoinDMLAppender extends DDLAppender {
+	private static class JoinDDLAppender extends DDLAppender {
 		
 		/** Made transient to comply with {@link java.io.Serializable} contract of parent class */
 		private final transient DMLNameProvider dmlNameProvider;
 		
-		public JoinDMLAppender(DMLNameProvider dmlNameProvider) {
+		private JoinDDLAppender(DMLNameProvider dmlNameProvider) {
 			super(dmlNameProvider);
 			this.dmlNameProvider = dmlNameProvider;
 		}

@@ -10,7 +10,7 @@ import org.gama.stalactite.query.model.AbstractOperator;
  * @param <C> root entity type
  * @author Guillaume Mary
  */
-public interface EntityCriteria<C> extends Iterable<ValueAccessPointCriterion> {
+public interface EntityCriteria<C> {
 	
 	<O> EntityCriteria<C> and(SerializableFunction<C, O> getter, AbstractOperator<O> operand);
 	
@@ -20,5 +20,5 @@ public interface EntityCriteria<C> extends Iterable<ValueAccessPointCriterion> {
 	
 	<O> EntityCriteria<C> or(SerializableBiConsumer<C, O> setter, AbstractOperator<O> operand);
 	
-//	<A, B> EntityCriteria<C> and(SerializableBiConsumer<C, A> setter, SerializableFunction<A, B> getter, AbstractOperator<B> operand);
+	<A, B> EntityCriteria<C> and(SerializableFunction<C, A> getter1, SerializableFunction<A, B> getter2, AbstractOperator<B> operand);
 }

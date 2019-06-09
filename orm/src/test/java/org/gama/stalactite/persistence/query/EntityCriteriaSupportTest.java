@@ -1,5 +1,8 @@
 package org.gama.stalactite.persistence.query;
 
+import java.util.HashMap;
+
+import org.gama.lang.collection.ValueFactoryMap;
 import org.gama.sql.ConnectionProvider;
 import org.gama.sql.binder.DefaultParameterBinders;
 import org.gama.stalactite.persistence.engine.ColumnOptions.IdentifierPolicy;
@@ -12,7 +15,8 @@ import org.gama.stalactite.persistence.id.Identified;
 import org.gama.stalactite.persistence.id.Identifier;
 import org.gama.stalactite.persistence.sql.Dialect;
 import org.gama.stalactite.persistence.structure.Table;
-import org.gama.stalactite.query.builder.QueryBuilder;
+import org.gama.stalactite.query.builder.DMLNameProvider;
+import org.gama.stalactite.query.builder.WhereBuilder;
 import org.gama.stalactite.query.model.Operator;
 import org.junit.jupiter.api.Test;
 
@@ -40,7 +44,7 @@ class EntityCriteriaSupportTest {
 				)
 				.build(new PersistenceContext(mock(ConnectionProvider.class), dialect));
 		
-		EntityCriteria<Country> countryEntityCriteriaSupport = new EntityCriteriaSupport<>(persister.getJoinedStrategiesSelectExecutor(), Country::getName, Operator.eq(""))
+		EntityCriteria<Country> countryEntityCriteriaSupport = new EntityCriteriaSupport<>(persister.getMappingStrategy(), Country::getName, Operator.eq(""))
 				.and(Country::getId, Operator.in("11"))
 				.and(Country::getName, Operator.eq("toto"))
 				.and(Country::getName, Operator.between("11", ""))
@@ -48,7 +52,6 @@ class EntityCriteriaSupportTest {
 				.and(Country::setName, Operator.in("11"))
 				.and(Country::setName, Operator.between("11", ""))
 				.and(Country::setName, Operator.gteq("11"))
-//				.and(Country::setCapital, City::getName, Operator.gteq("11"))
 				.or(Country::getId, Operator.in("11"))
 				.or(Country::getName, Operator.eq("toto"))
 				.or(Country::getName, Operator.between("11", ""))
@@ -58,7 +61,7 @@ class EntityCriteriaSupportTest {
 				.or(Country::setName, Operator.gteq("11"))
 				;
 		
-		QueryBuilder queryBuilder = new QueryBuilder(((EntityCriteriaSupport) countryEntityCriteriaSupport).getQuery());
+		WhereBuilder queryBuilder = new WhereBuilder(((EntityCriteriaSupport) countryEntityCriteriaSupport).getQuery(), new DMLNameProvider(new ValueFactoryMap<>(new HashMap<>(), Table::getName)));
 		System.out.println(queryBuilder.toSQL());
 	}
 	

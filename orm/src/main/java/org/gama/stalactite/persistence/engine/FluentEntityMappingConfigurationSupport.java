@@ -309,7 +309,7 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements IFluentMap
 				new MutatorByMethod<C, O>(captureMethod(setter)).toAccessor(),
 				// ... but we can't do it for mutator, so we use the most equivalent manner : a mutator based on setter method (fallback to property if not present)
 				Accessors.mutatorByMethodReference(setter));
-		return addOneToOnae(propertyAccessor, mappingConfiguration, table);
+		return addOneToOne(propertyAccessor, mappingConfiguration, table);
 	}
 	
 	@Override
@@ -325,12 +325,12 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements IFluentMap
 				Accessors.accessorByMethodReference(getter),
 				// ... but we can't do it for mutator, so we use the most equivalent manner : a mutator based on setter method (fallback to property if not present)
 				new AccessorByMethod<C, O>(captureMethod(getter)).toMutator());
-		return addOneToOnae(propertyAccessor, mappingConfiguration, table);
+		return addOneToOne(propertyAccessor, mappingConfiguration, table);
 	}
 	
-	private <O, J, T extends Table> IFluentMappingBuilderOneToOneOptions<C, I, T> addOneToOnae(IReversibleAccessor<C, O> propertyAccessor,
-																							   EntityMappingConfiguration<O, J> mappingConfiguration,
-																							   T table) {
+	private <O, J, T extends Table> IFluentMappingBuilderOneToOneOptions<C, I, T> addOneToOne(IReversibleAccessor<C, O> propertyAccessor,
+																							  EntityMappingConfiguration<O, J> mappingConfiguration,
+																							  T table) {
 		CascadeOne<C, O, J> cascadeOne = new CascadeOne<>(propertyAccessor, mappingConfiguration, table);
 		this.cascadeOnes.add(cascadeOne);
 		// then we return an object that allows fluent settings over our OneToOne cascade instance

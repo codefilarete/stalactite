@@ -12,8 +12,12 @@ public class Timestamp {
 	private Date modificationDate;
 	
 	public Timestamp() {
-		this.creationDate = new Date();
-		this.modificationDate = new Date();
+		this(new Date(), new Date());
+	}
+	
+	public Timestamp(Date creationDate, Date modificationDate) {
+		this.creationDate = creationDate;
+		this.modificationDate = modificationDate;
 	}
 	
 	public Date getCreationDate() {
