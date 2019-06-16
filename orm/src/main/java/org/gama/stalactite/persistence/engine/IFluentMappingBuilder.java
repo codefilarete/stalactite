@@ -177,6 +177,8 @@ public interface IFluentMappingBuilder<C, I> extends IFluentEmbeddableMappingCon
 	
 	IFluentMappingBuilder<C, I> joinColumnNamingStrategy(ColumnNamingStrategy columnNamingStrategy);
 	
+	IFluentMappingBuilder<C, I> associationTableNamingStrategy(AssociationTableNamingStrategy associationTableNamingStrategy);
+	
 	<V> IFluentMappingBuilder<C, I> versionedBy(SerializableFunction<C, V> getter);
 	
 	<V> IFluentMappingBuilder<C, I> versionedBy(SerializableFunction<C, V> getter, Serie<V> sequence);

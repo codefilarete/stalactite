@@ -1,5 +1,8 @@
 package org.gama.stalactite.persistence.engine.model;
 
+import java.util.HashSet;
+import java.util.Set;
+
 import org.gama.stalactite.persistence.id.Identified;
 import org.gama.stalactite.persistence.id.Identifier;
 
@@ -13,6 +16,8 @@ public class State implements Identified<Long> {
 	private String name;
 	
 	private Country country;
+	
+	private Set<City> cities = new HashSet<>();
 	
 	public State() {
 	}
@@ -66,6 +71,14 @@ public class State implements Identified<Long> {
 	
 	public Country getCountry() {
 		return country;
+	}
+	
+	public Set<City> getCities() {
+		return cities;
+	}
+	
+	public void setCities(Set<City> cities) {
+		this.cities = cities;
 	}
 	
 	@Override

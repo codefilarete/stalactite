@@ -64,7 +64,7 @@ public class OneToManyWithIndexedMappedAssociationEngine<SRC, TRGT, SRCID, TRGTI
 		// The latter is used because target List is already filled by the relationFixer
 		// If we use the former we must change the relation fixer and keep a temporary List. Seems little bit more complex.
 		// May be changed if any performance issue is noticed
-		joinedTablesPersister.getPersisterListener().addSelectListener(new SelectListener<SRC, SRCID>() {
+		sourcePersister.getPersisterListener().addSelectListener(new SelectListener<SRC, SRCID>() {
 			@Override
 			public void beforeSelect(Iterable<SRCID> ids) {
 				updatableListIndex.set(new HashMap<>());
@@ -102,7 +102,7 @@ public class OneToManyWithIndexedMappedAssociationEngine<SRC, TRGT, SRCID, TRGTI
 				// Indexing column is not defined in targetPersister.getMappingStrategy().getRowTransformer() but is present in row
 				// because it was read from ResultSet
 				// So we get its alias from the object that managed id, and we simply read it from the row (but not from RowTransformer)
-				Map<Column, String> aliases = joinedTablesPersister.getJoinedStrategiesSelectExecutor().getJoinedStrategiesSelect().getAliases();
+				Map<Column, String> aliases = sourcePersister.getJoinedStrategiesSelectExecutor().getJoinedStrategiesSelect().getAliases();
 				indexPerBean.put(bean, (int) row.get(aliases.get(indexingColumn)));
 			}
 		});
@@ -127,7 +127,7 @@ public class OneToManyWithIndexedMappedAssociationEngine<SRC, TRGT, SRCID, TRGTI
 					SRC source = manyRelationDefinition.getReverseGetter().apply(target);
 					if (source == null) {
 						throw new RuntimeMappingException("Can't get index : " + target + " is not associated with a "
-								+ Reflections.toString(joinedTablesPersister.getMappingStrategy().getClassToPersist()) + " : "
+								+ Reflections.toString(sourcePersister.getMappingStrategy().getClassToPersist()) + " : "
 								// NB: we let Mutator print itself because it has a self defined toString()
 								+ manyRelationDefinition.getReverseGetterSignature() + " returned null");
 					}
@@ -193,6 +193,6 @@ public class OneToManyWithIndexedMappedAssociationEngine<SRC, TRGT, SRCID, TRGTI
 				}
 			}
 		};
-		joinedTablesPersister.getPersisterListener().addUpdateListener(new TargetInstancesUpdateCascader<>(targetPersister, updateListener));
+		sourcePersister.getPersisterListener().addUpdateListener(new TargetInstancesUpdateCascader<>(targetPersister, updateListener));
 	}
 }

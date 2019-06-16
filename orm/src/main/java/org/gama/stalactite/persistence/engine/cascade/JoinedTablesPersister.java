@@ -79,18 +79,16 @@ public class JoinedTablesPersister<C, I, T extends Table> extends Persister<C, I
 	 * @param isOuterJoin true to use a left outer join (optional relation)
 	 * @see JoinedStrategiesSelect#add(String, ClassMappingStrategy, Column, Column, boolean, BeanRelationFixer)
 	 */
-	public <U, J, Z> String addPersister(String ownerStrategyName, Persister<U, J, ?> persister,
-																BeanRelationFixer<Z, U> beanRelationFixer,
-																Column leftJoinColumn, Column rightJoinColumn, boolean isOuterJoin) {
+	public <U, J, Z> String addPersister(String ownerStrategyName,
+										 Persister<U, J, ?> persister,
+										 BeanRelationFixer<Z, U> beanRelationFixer,
+										 Column leftJoinColumn,
+										 Column rightJoinColumn,
+										 boolean isOuterJoin) {
 		ClassMappingStrategy<U, J, ?> mappingStrategy = persister.getMappingStrategy();
 		
-		// We use our own select system since ISelectListener is not aimed at joining table
-		return addSelectExecutor(ownerStrategyName, mappingStrategy, beanRelationFixer, leftJoinColumn, rightJoinColumn, isOuterJoin);
-	}
-	
-	private <U, J> String addSelectExecutor(String ownerStrategyName, ClassMappingStrategy<U, J, ?> mappingStrategy, BeanRelationFixer beanRelationFixer,
-										 Column leftJoinColumn, Column rightJoinColumn, boolean isOuterJoin) {
-		return joinedStrategiesSelectExecutor.addComplementaryTables(ownerStrategyName, mappingStrategy, beanRelationFixer,
+		// We use our own select system since SelectListener is not aimed at joining table
+		return joinedStrategiesSelectExecutor.addComplementaryTable(ownerStrategyName, mappingStrategy, beanRelationFixer,
 				leftJoinColumn, rightJoinColumn, isOuterJoin);
 	}
 	

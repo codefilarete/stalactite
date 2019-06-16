@@ -200,25 +200,25 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements IFluentMap
 	@Override
 	public <O> IFluentMappingBuilderPropertyOptions<C, I> add(SerializableBiConsumer<C, O> setter, String columnName) {
 		AbstractLinkage<C> mapping = propertiesMappingConfigurationSurrogate.addMapping(setter, columnName);
-		return this.propertiesMappingConfigurationSurrogate.applyAdditionalOptions(setter, mapping);
+		return this.propertiesMappingConfigurationSurrogate.wrapForAdditionalOptions(setter, mapping);
 	}
 	
 	@Override
 	public <O> IFluentMappingBuilderPropertyOptions<C, I> add(SerializableFunction<C, O> getter, String columnName) {
 		AbstractLinkage<C> mapping = propertiesMappingConfigurationSurrogate.addMapping(getter, columnName);
-		return this.propertiesMappingConfigurationSurrogate.applyAdditionalOptions(getter, mapping);
+		return this.propertiesMappingConfigurationSurrogate.wrapForAdditionalOptions(getter, mapping);
 	}
 	
 	@Override
 	public <O> IFluentMappingBuilderPropertyOptions<C, I> add(SerializableBiConsumer<C, O> setter, Column<Table, O> column) {
 		AbstractLinkage<C> mapping = propertiesMappingConfigurationSurrogate.addMapping(setter, column);
-		return this.propertiesMappingConfigurationSurrogate.applyAdditionalOptions(setter, mapping);
+		return this.propertiesMappingConfigurationSurrogate.wrapForAdditionalOptions(setter, mapping);
 	}
 	
 	@Override
 	public <O> IFluentMappingBuilderPropertyOptions<C, I> add(SerializableFunction<C, O> getter, Column<Table, O> column) {
 		AbstractLinkage<C> mapping = propertiesMappingConfigurationSurrogate.addMapping(getter, column);
-		return this.propertiesMappingConfigurationSurrogate.applyAdditionalOptions(getter, mapping);
+		return this.propertiesMappingConfigurationSurrogate.wrapForAdditionalOptions(getter, mapping);
 	}
 	
 	@Override
@@ -301,15 +301,16 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements IFluentMap
 			SerializableBiConsumer<C, O> setter,
 			EntityMappingConfiguration<O, J> mappingConfiguration,
 			T table) {
-		// we declare the column on our side: we do it first because it checks some rules
-		add(setter);
-		// we keep it
+		// we declare the column on our side
+		propertiesMappingConfigurationSurrogate.addMapping(setter, (String) null);
 		IReversibleAccessor<C, O> propertyAccessor = new PropertyAccessor<>(
 				// we keep close to user demand : we keep its method reference ...
 				new MutatorByMethod<C, O>(captureMethod(setter)).toAccessor(),
 				// ... but we can't do it for mutator, so we use the most equivalent manner : a mutator based on setter method (fallback to property if not present)
 				Accessors.mutatorByMethodReference(setter));
-		return addOneToOne(propertyAccessor, mappingConfiguration, table);
+		CascadeOne<C, O, J> cascadeOne = new CascadeOne<>(propertyAccessor, mappingConfiguration, table);
+		this.cascadeOnes.add(cascadeOne);
+		return wrapForAdditionalOptions(cascadeOne);
 	}
 	
 	@Override
@@ -317,22 +318,19 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements IFluentMap
 			SerializableFunction<C, O> getter,
 			EntityMappingConfiguration<O, J> mappingConfiguration,
 			T table) {
-		// we declare the column on our side: we do it first because it checks some rules
-		add(getter);
-		// we keep it
+		// we declare the column on our side
+		propertiesMappingConfigurationSurrogate.addMapping(getter, (String) null);
 		IReversibleAccessor<C, O> propertyAccessor = new PropertyAccessor<>(
 				// we keep close to user demand : we keep its method reference ...
 				Accessors.accessorByMethodReference(getter),
 				// ... but we can't do it for mutator, so we use the most equivalent manner : a mutator based on setter method (fallback to property if not present)
 				new AccessorByMethod<C, O>(captureMethod(getter)).toMutator());
-		return addOneToOne(propertyAccessor, mappingConfiguration, table);
-	}
-	
-	private <O, J, T extends Table> IFluentMappingBuilderOneToOneOptions<C, I, T> addOneToOne(IReversibleAccessor<C, O> propertyAccessor,
-																							  EntityMappingConfiguration<O, J> mappingConfiguration,
-																							  T table) {
 		CascadeOne<C, O, J> cascadeOne = new CascadeOne<>(propertyAccessor, mappingConfiguration, table);
 		this.cascadeOnes.add(cascadeOne);
+		return wrapForAdditionalOptions(cascadeOne);
+	}
+	
+	private <O, J, T extends Table> IFluentMappingBuilderOneToOneOptions<C, I, T> wrapForAdditionalOptions(final CascadeOne<C, O, J> cascadeOne) {
 		// then we return an object that allows fluent settings over our OneToOne cascade instance
 		return new MethodDispatcher()
 				.redirect(OneToOneOptions.class, new OneToOneOptions<C, I, T>() {
@@ -559,6 +557,12 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements IFluentMap
 		return this;
 	}
 	
+	@Override
+	public IFluentMappingBuilder<C, I> associationTableNamingStrategy(AssociationTableNamingStrategy associationTableNamingStrategy) {
+		this.associationTableNamingStrategy = associationTableNamingStrategy;
+		return this;
+	}
+	
 	/**
 	 * Defines the versioning property of beans. This implies that Optmistic Locking will be applied on those beans.
 	 * Versioning policy is supported for following types:
@@ -781,17 +785,17 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements IFluentMap
 			return newLinkage;
 		}
 		
-		private IFluentMappingBuilderPropertyOptions<C, I> applyAdditionalOptions(SerializableBiConsumer<C, ?> setter, AbstractLinkage newMapping) {
+		private IFluentMappingBuilderPropertyOptions<C, I> wrapForAdditionalOptions(SerializableBiConsumer<C, ?> setter, AbstractLinkage newMapping) {
 			MutatorByMethodReference<C, ?> mutatorByMethodReference = Accessors.mutatorByMethodReference(setter);
-			return applyAdditionalOptions(mutatorByMethodReference, newMapping);
+			return wrapForAdditionalOptions(mutatorByMethodReference, newMapping);
 		}
 		
-		private IFluentMappingBuilderPropertyOptions<C, I> applyAdditionalOptions(SerializableFunction<C, ?> getter, AbstractLinkage newMapping) {
+		private IFluentMappingBuilderPropertyOptions<C, I> wrapForAdditionalOptions(SerializableFunction<C, ?> getter, AbstractLinkage newMapping) {
 			AccessorByMethodReference<C, ?> accessorByMethodReference = Accessors.accessorByMethodReference(getter);
-			return applyAdditionalOptions(accessorByMethodReference, newMapping);
+			return wrapForAdditionalOptions(accessorByMethodReference, newMapping);
 		}
 		
-		private IFluentMappingBuilderPropertyOptions<C, I> applyAdditionalOptions(ValueAccessPointByMethodReference methodReference, AbstractLinkage newMapping) {
+		private IFluentMappingBuilderPropertyOptions<C, I> wrapForAdditionalOptions(ValueAccessPointByMethodReference methodReference, AbstractLinkage newMapping) {
 			return new MethodDispatcher()
 					.redirect(ColumnOptions.class, new ColumnOptions() {
 						@Override

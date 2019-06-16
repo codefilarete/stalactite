@@ -1,6 +1,7 @@
 package org.gama.stalactite.persistence.engine.runtime;
 
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
@@ -16,7 +17,10 @@ import org.gama.stalactite.persistence.engine.cascade.AfterInsertCollectionCasca
 import org.gama.stalactite.persistence.engine.cascade.AfterUpdateCollectionCascader;
 import org.gama.stalactite.persistence.engine.cascade.BeforeDeleteByIdCollectionCascader;
 import org.gama.stalactite.persistence.engine.cascade.BeforeDeleteCollectionCascader;
+import org.gama.stalactite.persistence.engine.cascade.JoinedStrategiesSelect;
+import org.gama.stalactite.persistence.engine.cascade.JoinedStrategiesSelect.StrategyJoins;
 import org.gama.stalactite.persistence.engine.cascade.JoinedTablesPersister;
+import org.gama.stalactite.persistence.engine.listening.SelectListener;
 import org.gama.stalactite.persistence.engine.listening.UpdateListener.UpdatePayload;
 import org.gama.stalactite.persistence.structure.Column;
 
@@ -36,7 +40,7 @@ public class OneToManyWithMappedAssociationEngine<SRC, TRGT, SRCID, TRGTID, C ex
 		 */
 	};
 	
-	protected final JoinedTablesPersister<SRC, SRCID, ?> joinedTablesPersister;
+	protected final JoinedTablesPersister<SRC, SRCID, ?> sourcePersister;
 	
 	protected final Persister<TRGT, TRGTID, ?> targetPersister;
 	
@@ -44,10 +48,10 @@ public class OneToManyWithMappedAssociationEngine<SRC, TRGT, SRCID, TRGTID, C ex
 	
 	public OneToManyWithMappedAssociationEngine(Persister<TRGT, TRGTID, ?> targetPersister,
 												MappedManyRelationDescriptor<SRC, TRGT, C> manyRelationDefinition,
-												JoinedTablesPersister<SRC, SRCID, ?> joinedTablesPersister) {
+												JoinedTablesPersister<SRC, SRCID, ?> sourcePersister) {
 		this.targetPersister = targetPersister;
 		this.manyRelationDefinition = manyRelationDefinition;
-		this.joinedTablesPersister = joinedTablesPersister;
+		this.sourcePersister = sourcePersister;
 	}
 	
 	public void addSelectCascade(Column sourcePrimaryKey,
@@ -60,16 +64,52 @@ public class OneToManyWithMappedAssociationEngine<SRC, TRGT, SRCID, TRGTID, C ex
 				manyRelationDefinition.getCollectionClass(),
 				Objects.preventNull(manyRelationDefinition.getReverseSetter(), NOOP_REVERSE_SETTER));
 		
-		joinedTablesPersister.addPersister(FIRST_STRATEGY_NAME,
+		String createdJoinNodeName = sourcePersister.addPersister(FIRST_STRATEGY_NAME,
 				targetPersister,
 				relationFixer,
 				sourcePrimaryKey,
 				relationshipOwner,
-				true);	// outer join for empty relation cases
+				true);// outer join for empty relation cases
+		if (targetPersister instanceof JoinedTablesPersister) {
+			addSubgraphSelect(createdJoinNodeName, sourcePersister, (JoinedTablesPersister<TRGT, TRGTID, ?>) targetPersister, manyRelationDefinition.getCollectionGetter());
+		}
+	}
+	
+	private void addSubgraphSelect(String joinName,
+								   JoinedTablesPersister<SRC, SRCID, ?> sourcePersister,
+								   JoinedTablesPersister<TRGT, TRGTID, ?> targetPersister,
+								   final Function<SRC, C> targetProvider) {
+		// we add target subgraph joins to the one that was created 
+		StrategyJoins targetJoinsSubgraphRoot = targetPersister.getJoinedStrategiesSelectExecutor().getJoinedStrategiesSelect().getJoinsRoot();
+		JoinedStrategiesSelect sourceSelector = sourcePersister.getJoinedStrategiesSelectExecutor().getJoinedStrategiesSelect();
+		targetJoinsSubgraphRoot.copyTo(sourceSelector, joinName);
+		
+		// we must trigger subgraph event on loading of our own graph, this is mainly for event that initializes thngs because given ids
+		// are not those of their entity
+		SelectListener targetSelectListener = targetPersister.getPersisterListener().getSelectListener();
+		sourcePersister.getPersisterListener().addSelectListener(new SelectListener<SRC, SRCID>() {
+			@Override
+			public void beforeSelect(Iterable<SRCID> ids) {
+				// since ids are not those of its entities, we should not pass them as argument, this will only initialize things if needed
+				targetSelectListener.beforeSelect(Collections.emptyList());
+			}
+
+			@Override
+			public void afterSelect(Iterable<? extends SRC> result) {
+				Iterable collect = Iterables.stream(result).flatMap(src -> targetProvider.apply(src).stream()).collect(Collectors.toSet());
+				targetSelectListener.afterSelect(collect);
+			}
+
+			@Override
+			public void onError(Iterable<SRCID> ids, RuntimeException exception) {
+				// since ids are not those of its entities, we should not pass them as argument
+				targetSelectListener.onError(Collections.emptyList(), exception);
+			}
+		});
 	}
 	
 	public void addInsertCascade() {
-		joinedTablesPersister.getPersisterListener().addInsertListener(
+		sourcePersister.getPersisterListener().addInsertListener(
 				new OneToManyWithMappedAssociationEngine.TargetInstancesInsertCascader<>(targetPersister, manyRelationDefinition.getCollectionGetter()));
 	}
 	
@@ -79,23 +119,23 @@ public class OneToManyWithMappedAssociationEngine<SRC, TRGT, SRCID, TRGTID, C ex
 				targetPersister,
 				manyRelationDefinition.getReverseSetter(),
 				shouldDeleteRemoved);
-		joinedTablesPersister.getPersisterListener().addUpdateListener(
+		sourcePersister.getPersisterListener().addUpdateListener(
 				new OneToManyWithMappedAssociationEngine.TargetInstancesUpdateCascader<>(targetPersister, updateListener));
 	}
 	
 	public void addDeleteCascade(boolean deleteTargetEntities) {
 		if (deleteTargetEntities) {
 			// adding deletion of many-side entities
-			joinedTablesPersister.getPersisterListener().addDeleteListener(
+			sourcePersister.getPersisterListener().addDeleteListener(
 					new DeleteTargetEntitiesBeforeDeleteCascader<>(targetPersister, manyRelationDefinition.getCollectionGetter()));
 			// we add the deleteById event since we suppose that if delete is required then there's no reason that rough delete is not
-			joinedTablesPersister.getPersisterListener().addDeleteByIdListener(
+			sourcePersister.getPersisterListener().addDeleteByIdListener(
 					new DeleteByIdTargetEntitiesBeforeDeleteByIdCascader<>(targetPersister, manyRelationDefinition.getCollectionGetter()));
 		} else // entity shouldn't be deleted, so we may have to update it
 			if (manyRelationDefinition.getReverseSetter() != null) {
 				// we cut the link between target and source
 				// NB : we don't take versioning into account overall because we can't : how to do it since we miss the unmodified version ?
-				joinedTablesPersister.getPersisterListener().addDeleteListener(new BeforeDeleteCollectionCascader<SRC, TRGT>(targetPersister) {
+				sourcePersister.getPersisterListener().addDeleteListener(new BeforeDeleteCollectionCascader<SRC, TRGT>(targetPersister) {
 					
 					@Override
 					protected void postTargetDelete(Iterable<TRGT> entities) {

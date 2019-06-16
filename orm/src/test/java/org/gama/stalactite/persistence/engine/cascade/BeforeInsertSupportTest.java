@@ -29,7 +29,7 @@ class BeforeInsertSupportTest {
 		when(targetFilterMock.test(any())).thenAnswer(invocation -> !"B".equals(invocation.getArgument(0)));
 		BeforeInsertSupport testInstance = new BeforeInsertSupport(actionMock, targetProviderMock, targetFilterMock);
 		testInstance.beforeInsert(Arrays.asList("a", "b", "c"));
-		verify(actionMock).accept(eq(Arrays.asList("A", "C")));
+		verify(actionMock).accept(eq(Arrays.asHashSet("A", "C")));
 		verify(targetProviderMock, times(3)).apply(any());
 		verify(targetFilterMock, times(3)).test(any());
 	}
@@ -41,7 +41,7 @@ class BeforeInsertSupportTest {
 		when(targetProviderMock.apply(any())).thenAnswer((Answer<String>) invocation -> ((String) invocation.getArgument(0)).toUpperCase());
 		BeforeInsertSupport testInstance = new BeforeInsertSupport(actionMock, targetProviderMock);
 		testInstance.beforeInsert(Arrays.asList("a", "b", "c"));
-		verify(actionMock).accept(eq(Arrays.asList("A", "B", "C")));
+		verify(actionMock).accept(eq(Arrays.asHashSet("A", "B", "C")));
 		verify(targetProviderMock, times(3)).apply(any());
 	}
 }

@@ -54,133 +54,11 @@ class EntityMappingBuilder<C, I> {
 	
 	private final EntityMappingConfiguration<C, I> configurationSupport;
 	
-	private final EmbeddableMappingBuilder<C> embeddableMappingBuilder;
-	/** Mapping of the super class, build early by {@link #build(PersistenceContext, ClassMappingStrategy)} */
-	private ClassMappingStrategy<? super C, I, Table> inheritanceMappingStrategy;
-	
 	private final MethodReferenceCapturer methodSpy;
 	
 	EntityMappingBuilder(EntityMappingConfiguration<C, I> entityBuilderSupport, MethodReferenceCapturer methodSpy) {
 		this.configurationSupport = entityBuilderSupport;
 		this.methodSpy = methodSpy;
-		this.embeddableMappingBuilder = new EmbeddableMappingBuilder<C>(entityBuilderSupport.getPropertiesMapping()) {
-			/** Overriden to take property definition by column into account */
-			@Override
-			protected Column findColumn(ValueAccessPoint valueAccessPoint, String defaultColumnName, Map<String, Column<Table, Object>> tableColumnsPerName, Inset<C, ?> configuration) {
-				Column overridenColumn = ((OverridableColumnInset<C, ?>) configuration).getOverridenColumns().get(valueAccessPoint);
-				return nullable(overridenColumn).orGet(() -> super.findColumn(valueAccessPoint, defaultColumnName, tableColumnsPerName, configuration));
-			}
-			
-			/**
-			 * Overriden to remove properties of one-to-one relation that are not owned by this side but owned by the reverse side
-			 */
-			@Override
-			protected void includeDirectMapping() {
-				// CascadeOne.getTargetProvider() returns a method reference that can't be compared to PropertyAccessor (of Linkage.getAccessor
-				// in mappingConfiguration.getPropertiesMapping() keys) so we use a ValueAccessPoint to do it 
-				ValueAccessPointSet oneToOnePropertiesOwnedByReverseSide = Iterables.collect(
-						configurationSupport.getOneToOnes(),
-						CascadeOne::isOwnedByReverseSide,
-						CascadeOne::getTargetProvider,
-						ValueAccessPointSet::new);
-				mappingConfiguration.getPropertiesMapping().stream()
-						.filter(linkage -> !oneToOnePropertiesOwnedByReverseSide.contains(linkage.getAccessor()))
-						.forEach(this::includeMapping);
-			}
-			
-			@Override
-			protected void ensureColumnBinding(Linkage linkage, Column column) {
-				if (linkage instanceof EntityLinkageByColumn) {
-					// we add
-					Column mappedColumn = ((EntityLinkageByColumn) linkage).getColumn();
-					if (!dialect.getColumnBinderRegistry().keys().contains(mappedColumn)) {
-						super.ensureColumnBinding(linkage, column);
-					}
-					if (!targetTable.getColumns().contains(mappedColumn)) {
-						throw new MappingConfigurationException("Column specified for mapping " + MemberDefinition.toString(linkage.getAccessor())
-								+ " is not in target table : column " + mappedColumn.getAbsoluteName() + " is not in table " + targetTable.getName());
-					}
-				} else {
-					super.ensureColumnBinding(linkage, column);
-				}
-			}
-			
-			/** Overriden to take primary key into account */
-			@Override
-			protected Column addLinkage(Linkage linkage) {
-				Column column;
-				if (linkage instanceof EntityLinkageByColumn) {
-					column = ((EntityLinkageByColumn) linkage).getColumn();
-				} else {
-					column = super.addLinkage(linkage);
-				}
-				// setting the primary key option as asked
-				if (linkage instanceof EntityLinkage) {    // should always be true, see FluentEntityMappingConfigurationSupport.newLinkage(..)
-					if (((EntityLinkage) linkage).isPrimaryKey()) {
-						column.primaryKey();
-					}
-				} else {
-					throw new NotImplementedException("Expect at least " + Reflections.toString(EntityLinkage.class)
-							+ " but argument was " + Reflections.toString(linkage.getClass()));
-				}
-				
-				return column;
-			}
-			
-			@Override
-			protected Map<IReversibleAccessor, Column> buildMappingFromInheritance() {
-				// adding mapped super class properties (if present)
-				Map<IReversibleAccessor, Column> result = super.buildMappingFromInheritance();
-				// adding inherited class properties (if present)
-				if (inheritanceMappingStrategy != null) {
-					result.putAll(collectMapping(inheritanceMappingStrategy, super.getTargetTable(), (a, c) -> c.getName()));
-					// Dealing with identifier
-					Duo<IReversibleAccessor, Column> idMapping = collectIdMapping();
-					result.put(idMapping.getLeft(), idMapping.getRight());
-				}
-				return result;
-			}
-			
-			private Duo<IReversibleAccessor, Column> collectIdMapping() {
-				Duo<IReversibleAccessor, Column> result = new Duo<>();
-				IdAccessor<? super C, ?> idAccessor = inheritanceMappingStrategy.getIdMappingStrategy().getIdAccessor();
-				if (!(idAccessor instanceof SinglePropertyIdAccessor)) {
-					throw new NotYetSupportedOperationException();
-				}
-				IReversibleAccessor<? super C, ?> entityIdentifierAccessor = ((SinglePropertyIdAccessor<? super C, ?>) idAccessor).getIdAccessor();
-				// Because IdAccessor is a single column one (see assertion above) we can get the only column composing the primary key
-				Column primaryKey = ((SimpleIdentifierAssembler) inheritanceMappingStrategy.getIdMappingStrategy().getIdentifierAssembler()).getColumn();
-				Column projectedPrimarykey = super.getTargetTable().addColumn(primaryKey.getName(), primaryKey.getJavaType()).primaryKey();
-				projectedPrimarykey.setAutoGenerated(primaryKey.isAutoGenerated());
-				result.setLeft(entityIdentifierAccessor);
-				result.setRight(projectedPrimarykey);
-				return result;
-			}
-		};
-	}
-	
-	private <T extends Table> ClassMappingStrategy<C, I, T> buildClassMappingStrategy(Dialect dialect,
-																					  Table targetTable,
-																					  Duo<IReversibleAccessor<C, I>, IdentifierInsertionManager<C, I>> identification) {
-		IReversibleAccessor<C, I> identifierAccessor = identification.getLeft();
-		IdentifierInsertionManager<C, I> identifierInsertionManager = identification.getRight();
-		
-		Map<IReversibleAccessor, Column> columnMapping = this.embeddableMappingBuilder.build(dialect, targetTable);
-		
-		Column primaryKey = columnMapping.get(identifierAccessor);
-		if (primaryKey == null) {
-			// since this instance manage table_per_class or single_table inheritance, primary key is expected to be on target table 
-			throw new UnsupportedOperationException("No matching primary key columns for identifier "
-					+ MemberDefinition.toString(identifierAccessor) + " in table " + targetTable.getName());
-		} else {
-			List<IReversibleAccessor> identifierAccessors = collect(columnMapping.entrySet(), e -> e.getValue().isPrimaryKey(), Entry::getKey, ArrayList::new);
-			if (identifierAccessors.size() > 1) {
-				throw new NotYetSupportedOperationException("Composed primary key is not yet supported");
-			}
-		}
-		
-		return new ClassMappingStrategy<C, I, T>(configurationSupport.getPersistedClass(), (T) targetTable,
-				(Map) columnMapping, identifierAccessor, identifierInsertionManager);
 	}
 	
 	/**
@@ -236,7 +114,7 @@ class EntityMappingBuilder<C, I> {
 	 * @param persistenceContext the {@link PersistenceContext} in which the resulting {@link Persister} will be put, also needed for Dialect purpose 
 	 * @return the built {@link Persister}
 	 */
-	public <T extends Table> Persister<C, I, T> build(PersistenceContext persistenceContext, @javax.annotation.Nullable T table) {
+	public <T extends Table<?>> JoinedTablesPersister<C, I, T> build(PersistenceContext persistenceContext, @javax.annotation.Nullable T table) {
 		// Very first thing, determine identifier management and check some configuration
 		Duo<IReversibleAccessor<C, I>, IdentifierInsertionManager<C, I>> identification = determineIdentification();
 		
@@ -251,6 +129,7 @@ class EntityMappingBuilder<C, I> {
 			}
 		}
 		
+		ClassMappingStrategy<? super C, I, Table> inheritanceMappingStrategy = null;
 		if (configurationSupport.getInheritanceConfiguration() != null) {
 			if (configurationSupport.isJoinTable()) {
 				// Note that generics can't be used because "<? super C> can't be instantiated directly"
@@ -264,7 +143,10 @@ class EntityMappingBuilder<C, I> {
 			}
 		}
 		
-		return build(persistenceContext, buildClassMappingStrategy(persistenceContext.getDialect(), table, identification));
+		EntityDecoratedEmbeddableMappingBuilder<C> embeddableMappingBuilder = new EntityDecoratedEmbeddableMappingBuilder<>(
+				configurationSupport.getPropertiesMapping(), configurationSupport.getOneToOnes(), inheritanceMappingStrategy);
+		
+		return build(persistenceContext, embeddableMappingBuilder.buildClassMappingStrategy(persistenceContext.getDialect(), table, identification));
 	}
 	
 	private Table giveTableUsedInMapping() {
@@ -313,7 +195,8 @@ class EntityMappingBuilder<C, I> {
 		}
 		CascadeManyConfigurer cascadeManyConfigurer = new CascadeManyConfigurer(persistenceContext);
 		for (CascadeMany<C, ?, ?, ? extends Collection> cascadeMany : this.configurationSupport.getOneToManys()) {
-			cascadeManyConfigurer.appendCascade(cascadeMany, result, this.configurationSupport.getForeignKeyNamingStrategy(),
+			cascadeManyConfigurer.appendCascade(cascadeMany, result,
+					this.configurationSupport.getForeignKeyNamingStrategy(),
 					this.configurationSupport.getAssociationTableNamingStrategy());
 		}
 		
@@ -328,5 +211,142 @@ class EntityMappingBuilder<C, I> {
 		}
 		
 		return result;
+	}
+	
+	/**
+	 * Enhanced version of {@link EmbeddableMappingBuilder} to add entity features such as id mapping and inheritance 
+	 * 
+	 * @param <C>
+	 * @see #buildClassMappingStrategy(Dialect, Table, Duo) 
+	 */
+	private static class EntityDecoratedEmbeddableMappingBuilder<C> extends EmbeddableMappingBuilder<C> {
+		
+		private final ClassMappingStrategy<? super C, ?, Table> inheritanceMappingStrategy;
+		/** Keep track of oneToOne properties to be removed of direct mapping */
+		private final ValueAccessPointSet oneToOnePropertiesOwnedByReverseSide;
+		
+		public EntityDecoratedEmbeddableMappingBuilder(EmbeddableMappingConfiguration<C> propertiesMapping,
+													   List<CascadeOne<C, ?, ?>> oneToOnes,
+													   @javax.annotation.Nullable ClassMappingStrategy<? super C, ?, Table> inheritanceMappingStrategy) {
+			super(propertiesMapping);
+			this.inheritanceMappingStrategy = inheritanceMappingStrategy;
+			// CascadeOne.getTargetProvider() returns a method reference that can't be compared to PropertyAccessor (of Linkage.getAccessor
+			// in mappingConfiguration.getPropertiesMapping() keys) so we use a ValueAccessPoint to do it 
+			this.oneToOnePropertiesOwnedByReverseSide = Iterables.collect(
+					oneToOnes,
+					CascadeOne::isOwnedByReverseSide,
+					CascadeOne::getTargetProvider,
+					ValueAccessPointSet::new);
+		}
+		
+		/** Overriden to take property definition by column into account */
+		@Override
+		protected Column findColumn(ValueAccessPoint valueAccessPoint, String defaultColumnName, Map<String, Column<Table, Object>> tableColumnsPerName, Inset<C, ?> configuration) {
+			Column overridenColumn = ((OverridableColumnInset<C, ?>) configuration).getOverridenColumns().get(valueAccessPoint);
+			return nullable(overridenColumn).orGet(() -> super.findColumn(valueAccessPoint, defaultColumnName, tableColumnsPerName, configuration));
+		}
+		
+		/**
+		 * Overriden to remove properties of one-to-one relation that are not owned by this side but owned by the reverse side
+		 */
+		@Override
+		protected void includeDirectMapping() {
+			mappingConfiguration.getPropertiesMapping().stream()
+					.filter(linkage -> !oneToOnePropertiesOwnedByReverseSide.contains(linkage.getAccessor()))
+					.forEach(this::includeMapping);
+		}
+		
+		@Override
+		protected void ensureColumnBinding(Linkage linkage, Column column) {
+			if (linkage instanceof FluentEntityMappingConfigurationSupport.EntityLinkageByColumn) {
+				// we add
+				Column mappedColumn = ((EntityLinkageByColumn) linkage).getColumn();
+				if (!dialect.getColumnBinderRegistry().keys().contains(mappedColumn)) {
+					super.ensureColumnBinding(linkage, column);
+				}
+				if (!targetTable.getColumns().contains(mappedColumn)) {
+					throw new MappingConfigurationException("Column specified for mapping " + MemberDefinition.toString(linkage.getAccessor())
+							+ " is not in target table : column " + mappedColumn.getAbsoluteName() + " is not in table " + targetTable.getName());
+				}
+			} else {
+				super.ensureColumnBinding(linkage, column);
+			}
+		}
+		
+		/** Overriden to take primary key into account */
+		@Override
+		protected Column addLinkage(Linkage linkage) {
+			Column column;
+			if (linkage instanceof EntityLinkageByColumn) {
+				column = ((EntityLinkageByColumn) linkage).getColumn();
+			} else {
+				column = super.addLinkage(linkage);
+			}
+			// setting the primary key option as asked
+			if (linkage instanceof FluentEntityMappingConfigurationSupport.EntityLinkage) {    // should always be true, see FluentEntityMappingConfigurationSupport.newLinkage(..)
+				if (((EntityLinkage) linkage).isPrimaryKey()) {
+					column.primaryKey();
+				}
+			} else {
+				throw new NotImplementedException("Expect at least " + Reflections.toString(EntityLinkage.class)
+						+ " but argument was " + Reflections.toString(linkage.getClass()));
+			}
+			
+			return column;
+		}
+		
+		@Override
+		protected Map<IReversibleAccessor, Column> buildMappingFromInheritance() {
+			// adding mapped super class properties (if present)
+			Map<IReversibleAccessor, Column> result = super.buildMappingFromInheritance();
+			// adding inherited class properties (if present)
+			if (inheritanceMappingStrategy != null) {
+				result.putAll(collectMapping(inheritanceMappingStrategy, super.getTargetTable(), (a, c) -> c.getName()));
+				// Dealing with identifier
+				Duo<IReversibleAccessor, Column> idMapping = collectIdMapping();
+				result.put(idMapping.getLeft(), idMapping.getRight());
+			}
+			return result;
+		}
+		
+		private Duo<IReversibleAccessor, Column> collectIdMapping() {
+			Duo<IReversibleAccessor, Column> result = new Duo<>();
+			IdAccessor<? super C, ?> idAccessor = inheritanceMappingStrategy.getIdMappingStrategy().getIdAccessor();
+			if (!(idAccessor instanceof SinglePropertyIdAccessor)) {
+				throw new NotYetSupportedOperationException();
+			}
+			IReversibleAccessor<? super C, ?> entityIdentifierAccessor = ((SinglePropertyIdAccessor<? super C, ?>) idAccessor).getIdAccessor();
+			// Because IdAccessor is a single column one (see assertion above) we can get the only column composing the primary key
+			Column primaryKey = ((SimpleIdentifierAssembler) inheritanceMappingStrategy.getIdMappingStrategy().getIdentifierAssembler()).getColumn();
+			Column projectedPrimarykey = super.getTargetTable().addColumn(primaryKey.getName(), primaryKey.getJavaType()).primaryKey();
+			projectedPrimarykey.setAutoGenerated(primaryKey.isAutoGenerated());
+			result.setLeft(entityIdentifierAccessor);
+			result.setRight(projectedPrimarykey);
+			return result;
+		}
+		
+		private <T extends Table, I> ClassMappingStrategy<C, I, T> buildClassMappingStrategy(Dialect dialect,
+																							 Table targetTable,
+																							 Duo<IReversibleAccessor<C, I>, IdentifierInsertionManager<C, I>> identification) {
+			IReversibleAccessor<C, I> identifierAccessor = identification.getLeft();
+			IdentifierInsertionManager<C, I> identifierInsertionManager = identification.getRight();
+			
+			Map<IReversibleAccessor, Column> columnMapping = super.build(dialect, targetTable);
+			
+			Column primaryKey = columnMapping.get(identifierAccessor);
+			if (primaryKey == null) {
+				// since this instance manage table_per_class or single_table inheritance, primary key is expected to be on target table 
+				throw new UnsupportedOperationException("No matching primary key columns for identifier "
+						+ MemberDefinition.toString(identifierAccessor) + " in table " + targetTable.getName());
+			} else {
+				List<IReversibleAccessor> identifierAccessors = collect(columnMapping.entrySet(), e -> e.getValue().isPrimaryKey(), Entry::getKey, ArrayList::new);
+				if (identifierAccessors.size() > 1) {
+					throw new NotYetSupportedOperationException("Composed primary key is not yet supported");
+				}
+			}
+			
+			return new ClassMappingStrategy<C, I, T>(mappingConfiguration.getClassToPersist(), (T) targetTable,
+					(Map) columnMapping, identifierAccessor, identifierInsertionManager);
+		}
 	}
 }

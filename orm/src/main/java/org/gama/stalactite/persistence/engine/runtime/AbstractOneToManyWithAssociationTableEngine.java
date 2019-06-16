@@ -2,13 +2,16 @@ package org.gama.stalactite.persistence.engine.runtime;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
+import org.gama.lang.collection.Iterables;
 import org.gama.sql.dml.PreparedSQL;
 import org.gama.sql.dml.WriteOperation;
 import org.gama.stalactite.command.builder.DeleteCommandBuilder;
@@ -19,6 +22,8 @@ import org.gama.stalactite.persistence.engine.AssociationTable;
 import org.gama.stalactite.persistence.engine.BeanRelationFixer;
 import org.gama.stalactite.persistence.engine.Persister;
 import org.gama.stalactite.persistence.engine.cascade.AfterInsertCollectionCascader;
+import org.gama.stalactite.persistence.engine.cascade.JoinedStrategiesSelect;
+import org.gama.stalactite.persistence.engine.cascade.JoinedStrategiesSelect.StrategyJoins;
 import org.gama.stalactite.persistence.engine.cascade.JoinedTablesPersister;
 import org.gama.stalactite.persistence.engine.listening.DeleteByIdListener;
 import org.gama.stalactite.persistence.engine.listening.DeleteListener;
@@ -73,7 +78,7 @@ public abstract class AbstractOneToManyWithAssociationTableEngine<SRC, TRGT, SRC
 		this.associationPersister = associationPersister;
 	}
 	
-	public void addSelectCascade(JoinedTablesPersister<SRC, SRCID, ?> joinedTablesPersister) {
+	public void addSelectCascade(JoinedTablesPersister<SRC, SRCID, ?> sourcePersister) {
 		
 		// we must join on the association table and add in-memory reassociation
 		// Relation is kept on each row by the "relation fixer" passed to JoinedTablePersister below, because it seems more complex to read it
@@ -82,7 +87,7 @@ public abstract class AbstractOneToManyWithAssociationTableEngine<SRC, TRGT, SRC
 		// Relation will be fixed after all rows read (SelectListener.afterSelect)
 		addRelationReadOnSelect();
 		// adding association table join
-		String associationTableJoinNodeName = joinedTablesPersister.addPersister(FIRST_STRATEGY_NAME,
+		String associationTableJoinNodeName = sourcePersister.addPersister(FIRST_STRATEGY_NAME,
 				associationPersister,
 				(BeanRelationFixer<SRC, R>)
 						// implementation to keep track of the relation, further usage is in afterSelect
@@ -91,7 +96,7 @@ public abstract class AbstractOneToManyWithAssociationTableEngine<SRC, TRGT, SRC
 				associationPersister.getMainTable().getOneSideKeyColumn(),
 				true);
 		// adding target table join
-		joinedTablesPersister.addPersister(associationTableJoinNodeName,
+		String createdJoinNodeName = sourcePersister.addPersister(associationTableJoinNodeName,
 				targetPersister,
 				(BeanRelationFixer<R, TRGT>)
 						// implementation to keep track of the relation, further usage is in afterSelect
@@ -99,6 +104,43 @@ public abstract class AbstractOneToManyWithAssociationTableEngine<SRC, TRGT, SRC
 				associationPersister.getMainTable().getManySideKeyColumn(),
 				associationPersister.getMainTable().getManySidePrimaryKey(),
 				true);
+		
+		if (targetPersister instanceof JoinedTablesPersister) {
+			addSubgraphSelect(createdJoinNodeName, sourcePersister, (JoinedTablesPersister<TRGT, TRGTID, ?>) targetPersister, manyRelationDescriptor.getCollectionGetter());
+		}
+	}
+	
+	private void addSubgraphSelect(String joinName,
+								   JoinedTablesPersister<SRC, SRCID, ?> sourcePersister,
+								   JoinedTablesPersister<TRGT, TRGTID, ?> targetPersister,
+								   final Function<SRC, C> targetProvider) {
+		// we add target subgraph joins to the one that was created 
+		StrategyJoins targetJoinsSubgraphRoot = targetPersister.getJoinedStrategiesSelectExecutor().getJoinedStrategiesSelect().getJoinsRoot();
+		JoinedStrategiesSelect sourceSelector = sourcePersister.getJoinedStrategiesSelectExecutor().getJoinedStrategiesSelect();
+		targetJoinsSubgraphRoot.copyTo(sourceSelector, joinName);
+		
+		// we must trigger subgraph event on loading of our own graph, this is mainly for event that initializes thngs because given ids
+		// are not those of their entity
+		SelectListener targetSelectListener = targetPersister.getPersisterListener().getSelectListener();
+		sourcePersister.getPersisterListener().addSelectListener(new SelectListener<SRC, SRCID>() {
+			@Override
+			public void beforeSelect(Iterable<SRCID> ids) {
+				// since ids are not those of its entities, we should not pass them as argument, this will only initialize things if needed
+				targetSelectListener.beforeSelect(Collections.emptyList());
+			}
+
+			@Override
+			public void afterSelect(Iterable<? extends SRC> result) {
+				Iterable collect = Iterables.stream(result).flatMap(src -> targetProvider.apply(src).stream()).collect(Collectors.toSet());
+				targetSelectListener.afterSelect(collect);
+			}
+
+			@Override
+			public void onError(Iterable<SRCID> ids, RuntimeException exception) {
+				// since ids are not those of its entities, we should not pass them as argument
+				targetSelectListener.onError(Collections.emptyList(), exception);
+			}
+		});
 	}
 	
 	private void addRelationReadOnSelect() {

@@ -2,7 +2,10 @@ package org.gama.stalactite.persistence.engine;
 
 import java.lang.reflect.Member;
 import java.lang.reflect.Method;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.function.BiConsumer;
 
@@ -141,6 +144,20 @@ public class CascadeManyConfigurer<SRC, TRGT, SRCID, TRGTID, C extends Collectio
 			this.orphanRemoval = orphanRemoval;
 			this.writeAuthorized = writeAuthorized;
 		}
+		
+		/**
+		 * Expected to give concrete class to be instanciated.
+		 * @return a concrete and instanciable type compatible with acccessor input type
+		 */
+		protected Class<C> giveInstanciationType() {
+			if (List.class.equals(memberDefinition.getMemberType())) {
+				return (Class<C>) (Class) ArrayList.class;
+			} else if (Set.class.equals(memberDefinition.getMemberType())) {
+				return (Class<C>) (Class) HashSet.class;
+			} else {
+				return memberDefinition.getMemberType();
+			}
+		}
 	}
 	
 	/**
@@ -170,7 +187,7 @@ public class CascadeManyConfigurer<SRC, TRGT, SRCID, TRGTID, C extends Collectio
 			AbstractOneToManyWithAssociationTableEngine<SRC, TRGT, SRCID, TRGTID, C, ? extends AssociationRecord, ? extends AssociationTable> oneToManyWithAssociationTableEngine;
 			ManyRelationDescriptor<SRC, TRGT, C> manyRelationDescriptor = new ManyRelationDescriptor<>(
 					manyAssociationConfiguration.collectionGetter::get, manyAssociationConfiguration.setter::set,
-					(Class<C>) manyAssociationConfiguration.memberDefinition.getMemberType());
+					manyAssociationConfiguration.giveInstanciationType());
 			if (manyAssociationConfiguration.cascadeMany instanceof CascadeManyList) {
 				oneToManyWithAssociationTableEngine = configureIndexedAssociation(rightPrimaryKey, associationTableName, manyRelationDescriptor);
 			} else {
@@ -240,8 +257,8 @@ public class CascadeManyConfigurer<SRC, TRGT, SRCID, TRGTID, C extends Collectio
 	 */
 	private static class CascadeManyWithMappedAssociationConfigurer<SRC, TRGT, SRCID, TRGTID, C extends Collection<TRGT>> {
 		
-		private final RelationshipMode maintenanceMode;
 		private final ManyAssociationConfiguration<SRC, TRGT, SRCID, TRGTID, C> manyAssociationConfiguration;
+		private final RelationshipMode maintenanceMode;
 		
 		private CascadeManyWithMappedAssociationConfigurer(ManyAssociationConfiguration<SRC, TRGT, SRCID, TRGTID, C> manyAssociationConfiguration,
 														   RelationshipMode maintenanceMode) {
@@ -328,7 +345,7 @@ public class CascadeManyConfigurer<SRC, TRGT, SRCID, TRGTID, C extends Collectio
 			OneToManyWithMappedAssociationEngine<SRC, TRGT, SRCID, TRGTID, C> mappedAssociationEngine;
 			MappedManyRelationDescriptor<SRC, TRGT, C> manyRelationDefinition = new MappedManyRelationDescriptor<>(
 					manyAssociationConfiguration.collectionGetter::get, manyAssociationConfiguration.setter::set,
-					(Class<C>) manyAssociationConfiguration.memberDefinition.getMemberType(), reverseSetter);
+					manyAssociationConfiguration.giveInstanciationType(), reverseSetter);
 			mappedAssociationEngine = new OneToManyWithMappedAssociationEngine<>(
 					manyAssociationConfiguration.targetPersister,
 					manyRelationDefinition,
@@ -341,7 +358,7 @@ public class CascadeManyConfigurer<SRC, TRGT, SRCID, TRGTID, C extends Collectio
 			OneToManyWithMappedAssociationEngine<SRC, TRGT, SRCID, TRGTID, C> mappedAssociationEngine;
 			IndexedMappedManyRelationDescriptor<SRC, TRGT, C> manyRelationDefinition = new IndexedMappedManyRelationDescriptor<>(
 					manyAssociationConfiguration.collectionGetter::get, manyAssociationConfiguration.setter::set,
-					(Class<C>) manyAssociationConfiguration.memberDefinition.getMemberType(), reverseSetter, reverseGetter, getterSignature);
+					manyAssociationConfiguration.giveInstanciationType(), reverseSetter, reverseGetter, getterSignature);
 			mappedAssociationEngine = (OneToManyWithMappedAssociationEngine) new OneToManyWithIndexedMappedAssociationEngine<>(
 					manyAssociationConfiguration.targetPersister,
 					(IndexedMappedManyRelationDescriptor) manyRelationDefinition,

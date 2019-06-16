@@ -1,6 +1,7 @@
 package org.gama.stalactite.persistence.engine;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -35,10 +36,12 @@ import org.gama.stalactite.persistence.engine.cascade.BeforeDeleteSupport;
 import org.gama.stalactite.persistence.engine.cascade.BeforeInsertSupport;
 import org.gama.stalactite.persistence.engine.cascade.BeforeUpdateSupport;
 import org.gama.stalactite.persistence.engine.cascade.JoinedStrategiesSelect;
+import org.gama.stalactite.persistence.engine.cascade.JoinedStrategiesSelect.StrategyJoins;
 import org.gama.stalactite.persistence.engine.cascade.JoinedTablesPersister;
 import org.gama.stalactite.persistence.engine.listening.DeleteListener;
 import org.gama.stalactite.persistence.engine.listening.InsertListener;
 import org.gama.stalactite.persistence.engine.listening.PersisterListener;
+import org.gama.stalactite.persistence.engine.listening.SelectListener;
 import org.gama.stalactite.persistence.engine.listening.UpdateListener;
 import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
 import org.gama.stalactite.persistence.structure.Column;
@@ -87,14 +90,14 @@ public class CascadeOneConfigurer<SRC, TRGT, ID> {
 		
 		<T extends Table<T>> void appendCascade(
 				CascadeOne<SRC, TRGT, ID> cascadeOne,
-				JoinedTablesPersister<SRC, ID, T> joinedTablesPersister,
+				JoinedTablesPersister<SRC, ID, T> sourcePersister,
 				ForeignKeyNamingStrategy foreignKeyNamingStrategy) {
 			
 			RelationshipMode maintenanceMode = cascadeOne.getRelationshipMode();
 			if (maintenanceMode == ASSOCIATION_ONLY) {
 				throw new MappingConfigurationException(ASSOCIATION_ONLY + " is only relevent for one-to-many association");
 			}
-			ClassMappingStrategy<SRC, ID, T> mappingStrategy = joinedTablesPersister.getMappingStrategy();
+			ClassMappingStrategy<SRC, ID, T> mappingStrategy = sourcePersister.getMappingStrategy();
 			if (mappingStrategy.getTargetTable().getPrimaryKey().getColumns().size() > 1) {
 				throw new NotYetSupportedOperationException("Joining tables on a composed primary key is not (yet) supported");
 			}
@@ -117,10 +120,10 @@ public class CascadeOneConfigurer<SRC, TRGT, ID> {
 			
 			// selection is always present (else configuration is nonsense !)
 			BeanRelationFixer<SRC, TRGT> beanRelationFixer = determineRelationFixer(targetAccessor);
-			addSelectCascade(cascadeOne, joinedTablesPersister, targetPersister, leftColumn, rightColumn, beanRelationFixer);
+			addSelectCascade(cascadeOne, sourcePersister, targetPersister, leftColumn, rightColumn, beanRelationFixer);
 			
 			// additionnal cascade
-			PersisterListener<SRC, ID> srcPersisterListener = joinedTablesPersister.getPersisterListener();
+			PersisterListener<SRC, ID> srcPersisterListener = sourcePersister.getPersisterListener();
 			boolean orphanRemoval = maintenanceMode == ALL_ORPHAN_REMOVAL;
 			boolean writeAuthorized = maintenanceMode != READ_ONLY;
 			if (writeAuthorized) {
@@ -156,16 +159,55 @@ public class CascadeOneConfigurer<SRC, TRGT, ID> {
 		protected abstract void addDeleteCascade(CascadeOne<SRC, TRGT, ID> cascadeOne, Persister<TRGT, ID, Table> targetPersister,
 												 PersisterListener<SRC, ID> srcPersisterListener, boolean orphanRemoval);
 		
+		/**
+		 * @return join key name added to in the {@link JoinedTablesPersister} 
+		 */
 		protected <T extends Table<T>> void addSelectCascade(CascadeOne<SRC, TRGT, ID> cascadeOne,
-															 JoinedTablesPersister<SRC, ID, T> joinedTablesPersister,
-															 Persister<TRGT, ID, Table> targetPersister,
-															 Column leftColumn,
-															 Column rightColumn,
-															 BeanRelationFixer<SRC, TRGT> beanRelationFixer) {
+															   JoinedTablesPersister<SRC, ID, T> sourcePersister,
+															   Persister<TRGT, ID, Table> targetPersister,
+															   Column leftColumn,
+															   Column rightColumn,
+															   BeanRelationFixer<SRC, TRGT> beanRelationFixer) {
 			// configuring select for fetching relation
-			joinedTablesPersister.addPersister(JoinedStrategiesSelect.FIRST_STRATEGY_NAME, targetPersister,
+			String createdJoinNodeName = sourcePersister.addPersister(JoinedStrategiesSelect.FIRST_STRATEGY_NAME, targetPersister,
 					beanRelationFixer,
 					leftColumn, rightColumn, cascadeOne.isNullable());
+			if (targetPersister instanceof JoinedTablesPersister) {
+				addSubgraphSelect(createdJoinNodeName, sourcePersister, (JoinedTablesPersister<TRGT, ID, ?>) targetPersister, cascadeOne.getTargetProvider()::get);
+			}
+		}
+		
+		private void addSubgraphSelect(String joinName,
+									   JoinedTablesPersister<SRC, ID, ?> sourcePersister,
+									   JoinedTablesPersister<TRGT, ID, ?> targetPersister,
+									   final Function<SRC, TRGT> targetProvider) {
+			// we add target subgraph joins to the one that was created 
+			StrategyJoins targetJoinsSubgraphRoot = targetPersister.getJoinedStrategiesSelectExecutor().getJoinedStrategiesSelect().getJoinsRoot();
+			JoinedStrategiesSelect sourceSelector = sourcePersister.getJoinedStrategiesSelectExecutor().getJoinedStrategiesSelect();
+			targetJoinsSubgraphRoot.copyTo(sourceSelector, joinName);
+			
+			// we must trigger subgraph event on loading of our graph, this is mainly for event that initializes things because given ids
+			// are not those of their entity
+			SelectListener targetSelectListener = targetPersister.getPersisterListener().getSelectListener();
+			sourcePersister.getPersisterListener().addSelectListener(new SelectListener<SRC, ID>() {
+				@Override
+				public void beforeSelect(Iterable<ID> ids) {
+					// since ids are not those of its entities, we should not pass them as argument, this will only initialize things if needed
+					targetSelectListener.beforeSelect(Collections.emptyList());
+				}
+
+				@Override
+				public void afterSelect(Iterable<? extends SRC> result) {
+					Iterable collect = Iterables.collectToList(result, targetProvider);
+					targetSelectListener.afterSelect(collect);
+				}
+
+				@Override
+				public void onError(Iterable<ID> ids, RuntimeException exception) {
+					// since ids are not those of its entities, we should not pass them as argument
+					targetSelectListener.onError(Collections.emptyList(), exception);
+				}
+			});
 		}
 		
 	}
@@ -351,7 +393,7 @@ public class CascadeOneConfigurer<SRC, TRGT, ID> {
 				// no reverse column was given, so we look for the one mapped under the reverse getter
 				reverseColumn = targetMappingStrategy.getMainMappingStrategy().getPropertyToColumn().get(reverseGetter);
 				if (reverseColumn == null) {
-					// no coumn is defined under the getter, then we have to create one
+					// no column is defined under the getter, then we have to create one
 					reverseColumn = targetMappingStrategy.getTargetTable().addColumn(memberDefinition.getName(), memberDefinition.getMemberType());
 				}
 			}

@@ -237,7 +237,7 @@ public class JoinedStrategiesSelectTest {
 		JoinedStrategiesSelect testInstance = new JoinedStrategiesSelect(totoMappingMock, c -> mock(ParameterBinder.class));
 		String tataAddKey = testInstance.add(JoinedStrategiesSelect.FIRST_STRATEGY_NAME, tataMappingMock, totoPrimaryKey, tataPrimaryKey, false, null);
 		String tutuAddKey = testInstance.add(tataAddKey, tutuMappingMock, tataPrimaryKey, tutuPrimaryKey, false, null);
-		String titiAddKey = testInstance.add(JoinedStrategiesSelect.FIRST_STRATEGY_NAME, titiMappingMock, tataPrimaryKey, titiPrimaryKey, false, null);
+		String titiAddKey = testInstance.add(JoinedStrategiesSelect.FIRST_STRATEGY_NAME, titiMappingMock, totoPrimaryKey, titiPrimaryKey, false, null);
 		QueryBuilder queryBuilder = new QueryBuilder(testInstance.buildSelectQuery());
 		assertEquals("select"
 						+ " Toto.id as Toto_id, Toto.name as Toto_name"
@@ -246,7 +246,7 @@ public class JoinedStrategiesSelectTest {
 						+ ", Tutu.id as Tutu_id, Tutu.name as Tutu_name"
 						+ " from Toto"
 						+ " inner join Tata on Toto.id = Tata.id"
-						+ " inner join Titi on Tata.id = Titi.id"
+						+ " inner join Titi on Toto.id = Titi.id"
 						+ " inner join Tutu on Tata.id = Tutu.id"
 				, queryBuilder.toSQL());
 		assertEquals(Maps.asMap(totoPrimaryKey, "Toto_id")
@@ -281,8 +281,65 @@ public class JoinedStrategiesSelectTest {
 		JoinedStrategiesSelect testInstance = new JoinedStrategiesSelect(totoMappingMock, c -> mock(ParameterBinder.class));
 		String tataAddKey = testInstance.add(JoinedStrategiesSelect.FIRST_STRATEGY_NAME, tataMappingMock, totoPrimaryKey, tataPrimaryKey, false, null);
 		String tutuAddKey = testInstance.add(tataAddKey, tutuMappingMock, tataPrimaryKey, tutuPrimaryKey, false, null);
-		String titiAddKey = testInstance.add(JoinedStrategiesSelect.FIRST_STRATEGY_NAME, titiMappingMock, tataPrimaryKey, titiPrimaryKey, false, null);
+		String titiAddKey = testInstance.add(JoinedStrategiesSelect.FIRST_STRATEGY_NAME, titiMappingMock, totoPrimaryKey, titiPrimaryKey, false, null);
 		
 		assertEquals(Arrays.asHashSet(totoTable, tataTable, tutuTable, titiTable), testInstance.giveTables());
+	}
+	
+	@Test
+	public void testCopyTo() {
+		ClassMappingStrategy totoMappingMock = buildMappingStrategyMock("Toto");
+		Table totoTable = totoMappingMock.getTargetTable();
+		Column totoPrimaryKey = totoTable.addColumn("id", long.class);
+		// column for "noise" in select
+		Column totoNameColumn = totoTable.addColumn("name", String.class);
+		
+		ClassMappingStrategy tataMappingMock = buildMappingStrategyMock("Tata");
+		Table tataTable = tataMappingMock.getTargetTable();
+		Column tataPrimaryKey = tataTable.addColumn("id", long.class);
+		// column for "noise" in select
+		Column tataNameColumn = tataTable.addColumn("name", String.class);
+		
+		ClassMappingStrategy tutuMappingMock = buildMappingStrategyMock("Tutu");
+		Table tutuTable = tutuMappingMock.getTargetTable();
+		Column tutuPrimaryKey = tutuTable.addColumn("id", long.class);
+		// column for "noise" in select
+		Column tutuNameColumn = tutuTable.addColumn("name", String.class);
+		
+		ClassMappingStrategy titiMappingMock = buildMappingStrategyMock("Titi");
+		Table titiTable = titiMappingMock.getTargetTable();
+		Column titiPrimaryKey = titiTable.addColumn("id", long.class);
+		// column for "noise" in select
+		Column titiNameColumn = titiTable.addColumn("name", String.class);
+		
+		JoinedStrategiesSelect testInstance1 = new JoinedStrategiesSelect(totoMappingMock, c -> mock(ParameterBinder.class));
+		String tataAddKey = testInstance1.add(JoinedStrategiesSelect.FIRST_STRATEGY_NAME, tataMappingMock, totoPrimaryKey, tataPrimaryKey, false, null);
+		String tutuAddKey = testInstance1.add(tataAddKey, tutuMappingMock, tataPrimaryKey, tutuPrimaryKey, false, null);
+		
+		JoinedStrategiesSelect testInstance2 = new JoinedStrategiesSelect(tataMappingMock, c -> mock(ParameterBinder.class));
+		String titiAddKey = testInstance2.add(JoinedStrategiesSelect.FIRST_STRATEGY_NAME, titiMappingMock, tataPrimaryKey, titiPrimaryKey, false, null);
+		
+		testInstance2.getStrategyJoins(JoinedStrategiesSelect.FIRST_STRATEGY_NAME).copyTo(testInstance1, tataAddKey);
+		
+		QueryBuilder queryBuilder = new QueryBuilder(testInstance1.buildSelectQuery());
+		assertEquals("select"
+						+ " Toto.id as Toto_id, Toto.name as Toto_name"
+						+ ", Tata.id as Tata_id, Tata.name as Tata_name"
+						+ ", Tutu.id as Tutu_id, Tutu.name as Tutu_name"
+						+ ", Titi.id as Titi_id, Titi.name as Titi_name"
+						+ " from Toto"
+						+ " inner join Tata on Toto.id = Tata.id"
+						+ " inner join Tutu on Tata.id = Tutu.id"
+						+ " inner join Titi on Tata.id = Titi.id"
+				, queryBuilder.toSQL());
+		assertEquals(Maps.asMap(totoPrimaryKey, "Toto_id")
+						.add(totoNameColumn, "Toto_name")
+						.add(tataPrimaryKey, "Tata_id")
+						.add(tataNameColumn, "Tata_name")
+						.add(tutuPrimaryKey, "Tutu_id")
+						.add(tutuNameColumn, "Tutu_name")
+						.add(titiPrimaryKey, "Titi_id")
+						.add(titiNameColumn, "Titi_name"),
+				testInstance1.getAliases());
 	}
 }

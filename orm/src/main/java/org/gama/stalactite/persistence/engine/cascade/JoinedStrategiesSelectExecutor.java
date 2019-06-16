@@ -83,7 +83,7 @@ public class JoinedStrategiesSelectExecutor<C, I, T extends Table> extends Selec
 	 * @param <ID> type of joined values
 	 * @return the name of the created join, to be used as a key for other joins (through this method {@code leftStrategyName} argument)
 	 */
-	public <U, T1 extends Table<T1>, T2 extends Table<T2>, ID> String addComplementaryTables(
+	public <U, T1 extends Table<T1>, T2 extends Table<T2>, ID> String addComplementaryTable(
 			String leftStrategyName,
 			ClassMappingStrategy<U, ID, T2> strategy,
 			BeanRelationFixer beanRelationFixer,
@@ -91,7 +91,7 @@ public class JoinedStrategiesSelectExecutor<C, I, T extends Table> extends Selec
 			Column<T2, ID> rightJoinColumn) {
 		// we outer join nullable columns
 		boolean isOuterJoin = rightJoinColumn.isNullable();
-		return addComplementaryTables(leftStrategyName, strategy, beanRelationFixer, leftJoinColumn, rightJoinColumn, isOuterJoin);
+		return addComplementaryTable(leftStrategyName, strategy, beanRelationFixer, leftJoinColumn, rightJoinColumn, isOuterJoin);
 	}
 	
 	/**
@@ -110,7 +110,7 @@ public class JoinedStrategiesSelectExecutor<C, I, T extends Table> extends Selec
 	 * @param <ID> type of joined values
 	 * @return the name of the created join, to be used as a key for other joins (through this method {@code leftStrategyName} argument)
 	 */
-	public <U, T1 extends Table<T1>, T2 extends Table<T2>, ID> String addComplementaryTables(
+	public <U, T1 extends Table<T1>, T2 extends Table<T2>, ID> String addComplementaryTable(
 			String leftStrategyName,
 			ClassMappingStrategy<U, ID, T2> strategy,
 			BeanRelationFixer beanRelationFixer,

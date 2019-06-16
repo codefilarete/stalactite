@@ -32,6 +32,6 @@ public class AfterInsertSupport<TRIGGER, TARGET> implements InsertListener<TRIGG
 
 	@Override
 	public void afterInsert(Iterable<? extends TRIGGER> entities) {
-		afterInsertAction.accept(Iterables.stream(entities).map(targetProvider).filter(targetFilter).collect(Collectors.toList()));
+		afterInsertAction.accept(Iterables.stream(entities).map(targetProvider).filter(targetFilter).collect(Collectors.toSet()));
 	}
 }

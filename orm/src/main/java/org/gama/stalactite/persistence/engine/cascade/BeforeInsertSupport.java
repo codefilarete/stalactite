@@ -32,6 +32,6 @@ public class BeforeInsertSupport<TRIGGER, TARGET> implements InsertListener<TRIG
 
 	@Override
 	public void beforeInsert(Iterable<? extends TRIGGER> entities) {
-		beforeInsertAction.accept(Iterables.stream(entities).map(targetProvider).filter(targetFilter).collect(Collectors.toList()));
+		beforeInsertAction.accept(Iterables.stream(entities).map(targetProvider).filter(targetFilter).collect(Collectors.toSet()));
 	}
 }

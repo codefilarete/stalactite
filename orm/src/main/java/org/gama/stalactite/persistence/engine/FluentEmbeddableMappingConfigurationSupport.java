@@ -86,6 +86,7 @@ public class FluentEmbeddableMappingConfigurationSupport<C> implements IFluentEm
 		this.methodSpy = new MethodReferenceCapturer();
 	}
 	
+	@Override
 	public Class<C> getClassToPersist() {
 		return classToPersist;
 	}

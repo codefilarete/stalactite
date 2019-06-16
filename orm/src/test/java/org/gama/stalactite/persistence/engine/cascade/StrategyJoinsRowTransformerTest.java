@@ -303,7 +303,7 @@ public class StrategyJoinsRowTransformerTest {
 		List<Toto> result = testInstance.transform(Arrays.asList(row1, row2), 1);
 		
 		assertEquals(1, result.size());
-		Toto firstResult = result.get(0);
+		Toto firstResult = Iterables.first(result);
 		assertEquals(1L, (Object) firstResult.id);
 		assertEquals("toto", firstResult.name);
 		assertNotNull(firstResult.oneToMany);
@@ -364,7 +364,7 @@ public class StrategyJoinsRowTransformerTest {
 		
 		// checking
 		assertEquals(1, result.size());
-		Toto firstResult = result.get(0);
+		Toto firstResult = Iterables.first(result);
 		assertEquals((Object) 1L, firstResult.id);
 		assertEquals((Object) 2L, firstResult.getSibling().id);
 		assertEquals("toto1", firstResult.name);
