@@ -1,7 +1,9 @@
 package org.gama.stalactite.persistence.engine.model;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 import org.gama.stalactite.persistence.id.Identified;
@@ -23,6 +25,9 @@ public class Country extends AbstractCountry implements Identified<Long> {
 	private City capital;
 	
 	private Set<City> cities = new HashSet<>();
+	
+	// anything that is a List with a reverse relation-owning column
+	private List<City> ancientCities = new ArrayList<>();
 	
 	private Set<State> states = new HashSet<>();
 	
@@ -118,6 +123,19 @@ public class Country extends AbstractCountry implements Identified<Long> {
 	
 	public void addCity(City city) {
 		this.cities.add(city);
+		city.setCountry(this);
+	}
+	
+	public List<City> getAncientCities() {
+		return ancientCities;
+	}
+	
+	public void setAncientCities(List<City> ancientCities) {
+		this.ancientCities = ancientCities;
+	}
+	
+	public void addAncientCity(City city) {
+		this.ancientCities.add(city);
 		city.setCountry(this);
 	}
 	

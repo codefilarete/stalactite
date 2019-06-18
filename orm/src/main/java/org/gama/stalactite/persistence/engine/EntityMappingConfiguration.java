@@ -42,4 +42,5 @@ public interface EntityMappingConfiguration<C, I> {
 	
 	AssociationTableNamingStrategy getAssociationTableNamingStrategy();
 	
+	ColumnNamingStrategy getJoinColumnNamingStrategy();
 }

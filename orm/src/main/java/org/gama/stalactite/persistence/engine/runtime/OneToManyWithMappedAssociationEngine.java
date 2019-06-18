@@ -69,7 +69,7 @@ public class OneToManyWithMappedAssociationEngine<SRC, TRGT, SRCID, TRGTID, C ex
 				relationFixer,
 				sourcePrimaryKey,
 				relationshipOwner,
-				true);// outer join for empty relation cases
+				relationshipOwner.isNullable()); // outer join for empty relation cases
 		if (targetPersister instanceof JoinedTablesPersister) {
 			addSubgraphSelect(createdJoinNodeName, sourcePersister, (JoinedTablesPersister<TRGT, TRGTID, ?>) targetPersister, manyRelationDefinition.getCollectionGetter());
 		}

@@ -195,7 +195,7 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 		dummyCountry.setPresident(person);
 		countryPersister.insert(dummyCountry);
 		
-		// Checking that the country has the tight president in the database
+		// Checking that the country has the right president in the database
 		ResultSet resultSet = persistenceContext.getCurrentConnection().createStatement().executeQuery(
 				"select count(*) as countryCount from Country where presidentId = " + person.getId().getSurrogate());
 		RowIterator resultSetIterator = new RowIterator(resultSet, Maps.asMap("countryCount", DefaultParameterBinders.INTEGER_PRIMITIVE_BINDER));

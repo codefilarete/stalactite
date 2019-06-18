@@ -74,8 +74,8 @@ public class OneToManyWithIndexedMappedAssociationEngine<SRC, TRGT, SRCID, TRGTI
 			public void afterSelect(Iterable<? extends SRC> result) {
 				try {
 					// reordering List element according to read indexes during the transforming phase (see below)
-					result.forEach(i -> {
-						List<TRGT> apply = manyRelationDefinition.getCollectionGetter().apply(i);
+					result.forEach(src -> {
+						List<TRGT> apply = manyRelationDefinition.getCollectionGetter().apply(src);
 						apply.sort(Comparator.comparingInt(target -> updatableListIndex.get().get(target)));
 					});
 				} finally {

@@ -54,7 +54,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
@@ -126,19 +125,180 @@ class FluentEntityMappingConfigurationSupportOneToManyTest {
 	}
 	
 	@Test
-	void build_mappedByNonDeclaredMapping_throwsException() {
+	void build_mappedByDeclaredMapping_CRUDWorks() {
 		EntityMappingConfiguration<City, Identifier<Long>> cityConfiguration = from(City.class, LONG_TYPE)
 				.add(City::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.add(City::getName)
-				// we don't add getQuestion() to the mapping, that's the goal of our test
+				// we add getCountry() to the mapping, that's the goal of our test
+				.add(City::getCountry)
+				.getConfiguration();
+		
+		Persister<Country, Identifier<Long>, Table> persister = from(Country.class, LONG_TYPE)
+				.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
+				.addOneToManySet(Country::getCities, cityConfiguration)
+					// we indicates that relation is owned by reverse side, which is already declared in persister configuration
+					.mappedBy(City::getCountry).cascading(ALL)
+				.build(persistenceContext);
+		
+		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+		ddlDeployer.deployDDL();
+		
+		Country country = new Country(new PersistableIdentifier<>(1L));
+		City grenoble = new City(new PersistableIdentifier<>(13L));
+		grenoble.setName("Grenoble");
+		country.addCity(grenoble);
+		City lyon = new City(new PersistableIdentifier<>(17L));
+		lyon.setName("Lyon");
+		country.addCity(lyon);
+		persister.insert(country);
+		
+		List<Long> cityCountryIds = persistenceContext.newQuery("select countryId from city", Long.class)
+				.mapKey(i -> i, "countryId", Long.class)
+				.execute(connectionProvider);
+		
+		assertEquals(Arrays.asSet(country.getId().getSurrogate()), new HashSet<>(cityCountryIds));
+		
+		// testing select
+		Country loadedCountry = persister.select(country.getId());
+		assertEquals(Arrays.asHashSet("Grenoble", "Lyon"), Iterables.collect(loadedCountry.getCities(), City::getName, HashSet::new));
+		assertEquals(loadedCountry, Iterables.first(loadedCountry.getCities()).getCountry());
+		
+		// testing update : removal of a city, reversed column must be set to null
+		Country modifiedCountry = new Country(country.getId());
+		modifiedCountry.addCity(Iterables.first(country.getCities()));
+		
+		persister.update(modifiedCountry, country, false);
+		
+		cityCountryIds = persistenceContext.newQuery("select countryId from city", Long.class)
+				.mapKey(i -> i, "countryId", Long.class)
+				.execute(connectionProvider);
+		assertEquals(Arrays.asSet(country.getId().getSurrogate(), null), new HashSet<>(cityCountryIds));
+		
+		// testing delete
+		persister.delete(modifiedCountry);
+		// referencing columns must be set to null (we didn't ask for delete orphan)
+		cityCountryIds = persistenceContext.newQuery("select countryId from city", Long.class)
+				.mapKey(i -> i, "countryId", Long.class)
+				.execute(connectionProvider);
+		assertEquals(Arrays.asSet((Long) null), new HashSet<>(cityCountryIds));
+	}
+	
+	@Test
+	void build_mappedByNonDeclaredMapping_Set_CRUDWorks() {
+		EntityMappingConfiguration<City, Identifier<Long>> cityConfiguration = from(City.class, LONG_TYPE)
+				.add(City::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
+				.add(City::getName)
+				// we don't add getCountry() to the mapping, that's the goal of our test
+				//.add(City::getCountry)
+				.getConfiguration();
+
+		Persister<Country, Identifier<Long>, Table> persister = from(Country.class, LONG_TYPE)
+				.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
+				.addOneToManySet(Country::getCities, cityConfiguration)
+					.mappedBy(City::getCountry).cascading(ALL)
+				.build(persistenceContext);
+
+		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+		ddlDeployer.deployDDL();
+
+		Country country = new Country(new PersistableIdentifier<>(1L));
+		City grenoble = new City(new PersistableIdentifier<>(13L));
+		grenoble.setName("Grenoble");
+		country.addCity(grenoble);
+		City lyon = new City(new PersistableIdentifier<>(17L));
+		lyon.setName("Lyon");
+		country.addCity(lyon);
+		persister.insert(country);
+
+		List<Long> cityCountryIds = persistenceContext.newQuery("select countryId from city", Long.class)
+				.mapKey(i -> i, "countryId", Long.class)
+				.execute(connectionProvider);
+		
+		assertEquals(Arrays.asSet(country.getId().getSurrogate()), new HashSet<>(cityCountryIds));
+		
+		// testing select
+		Country loadedCountry = persister.select(country.getId());
+		assertEquals(Arrays.asHashSet("Grenoble", "Lyon"), Iterables.collect(loadedCountry.getCities(), City::getName, HashSet::new));
+		assertEquals(loadedCountry, Iterables.first(loadedCountry.getCities()).getCountry());
+		
+		// testing update : removal of a city, reversed column must be set to null
+		Country modifiedCountry = new Country(country.getId());
+		modifiedCountry.addCity(Iterables.first(country.getCities()));
+		
+		persister.update(modifiedCountry, country, false);
+		
+		cityCountryIds = persistenceContext.newQuery("select countryId from city", Long.class)
+				.mapKey(i -> i, "countryId", Long.class)
+				.execute(connectionProvider);
+		assertEquals(Arrays.asSet(country.getId().getSurrogate(), null), new HashSet<>(cityCountryIds));
+		
+		// testing delete
+		persister.delete(modifiedCountry);
+		// referencing columns must be set to null (we didn't ask for delete orphan)
+		cityCountryIds = persistenceContext.newQuery("select countryId from city", Long.class)
+				.mapKey(i -> i, "countryId", Long.class)
+				.execute(connectionProvider);
+		assertEquals(Arrays.asSet((Long) null), new HashSet<>(cityCountryIds));
+	}
+	
+	@Test
+	void build_mappedByNonDeclaredMapping_List_CRUDWorks() {
+		EntityMappingConfiguration<City, Identifier<Long>> stateConfiguration = from(City.class, LONG_TYPE)
+				.add(City::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
+				.add(City::getName)
+				// we don't add getCountry() to the mapping, that's the goal of our test
 				//.add(City::getCountry)
 				.getConfiguration();
 		
-		assertEquals("Can't build a relation with on a non mapped property, please add the mapping of a o.g.s.p.e.m.Country to persister of o.g.s.p.e.m.City",
-				assertThrows(NotYetSupportedOperationException.class, () -> from(Country.class, LONG_TYPE)
-						.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
-						.addOneToManySet(Country::getCities, cityConfiguration).mappedBy(City::getCountry).cascading(ALL)
-						.build(persistenceContext)).getMessage());
+		Table ancientCitiesTable = new Table("AncientCities");
+		Column<?, Integer> idx = ancientCitiesTable.addColumn("idx", Integer.class);
+		Persister<Country, Identifier<Long>, Table> persister = from(Country.class, LONG_TYPE)
+				.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
+				.addOneToManyList(Country::getAncientCities, stateConfiguration)
+					.mappedBy(City::getCountry).indexedBy(idx).cascading(ALL)
+				.build(persistenceContext);
+
+		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+		ddlDeployer.deployDDL();
+
+		Country country = new Country(new PersistableIdentifier<>(1L));
+		City grenoble = new City(new PersistableIdentifier<>(13L));
+		grenoble.setName("Grenoble");
+		country.addAncientCity(grenoble);
+		City lyon = new City(new PersistableIdentifier<>(17L));
+		lyon.setName("Lyon");
+		country.addAncientCity(lyon);
+		persister.insert(country);
+
+		List<Long> cityCountryIds = persistenceContext.newQuery("select countryId from AncientCities", Long.class)
+				.mapKey(i -> i, "countryId", Long.class)
+				.execute(connectionProvider);
+		
+		assertEquals(Arrays.asSet(country.getId().getSurrogate()), new HashSet<>(cityCountryIds));
+		
+		// testing select
+		Country loadedCountry = persister.select(country.getId());
+		assertEquals(Arrays.asHashSet("Grenoble", "Lyon"), Iterables.collect(loadedCountry.getAncientCities(), City::getName, HashSet::new));
+		assertEquals(loadedCountry, Iterables.first(loadedCountry.getAncientCities()).getCountry());
+		
+		// testing update : removal of a city, reversed column must be set to null
+		Country modifiedCountry = new Country(country.getId());
+		modifiedCountry.addAncientCity(Iterables.first(country.getAncientCities()));
+		
+		persister.update(modifiedCountry, country, false);
+		
+		cityCountryIds = persistenceContext.newQuery("select countryId from AncientCities", Long.class)
+				.mapKey(i -> i, "countryId", Long.class)
+				.execute(connectionProvider);
+		assertEquals(Arrays.asSet(country.getId().getSurrogate(), null), new HashSet<>(cityCountryIds));
+		
+		// testing delete
+		persister.delete(modifiedCountry);
+		// referencing columns must be set to null (we didn't ask for delete orphan)
+		cityCountryIds = persistenceContext.newQuery("select countryId from AncientCities", Long.class)
+				.mapKey(i -> i, "countryId", Long.class)
+				.execute(connectionProvider);
+		assertEquals(Arrays.asSet((Long) null), new HashSet<>(cityCountryIds));
 	}
 	
 	@Test
@@ -539,7 +699,7 @@ class FluentEntityMappingConfigurationSupportOneToManyTest {
 			Iterables.first(persistedCountry.getCities()).setName("changed");
 			
 			persistedCountry.getStates().remove(ain);
-			State ardeche = new State(cityIdProvider.giveNewIdentifier());
+			State ardeche = new State(stateIdProvider.giveNewIdentifier());
 			ardeche.setName("ardeche");
 			persistedCountry.addState(ardeche);
 			Iterables.first(persistedCountry.getStates()).setName("changed");

@@ -1,5 +1,6 @@
 package org.gama.stalactite.persistence.engine;
 
+import javax.annotation.Nullable;
 import java.lang.reflect.Member;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
@@ -8,12 +9,14 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.function.BiConsumer;
+import java.util.function.Function;
 
 import org.danekja.java.util.function.serializable.SerializableBiConsumer;
 import org.danekja.java.util.function.serializable.SerializableFunction;
 import org.gama.lang.Reflections;
 import org.gama.lang.StringAppender;
 import org.gama.lang.collection.Arrays;
+import org.gama.lang.collection.Iterables;
 import org.gama.reflection.AccessorByMember;
 import org.gama.reflection.IMutator;
 import org.gama.reflection.IReversibleAccessor;
@@ -34,8 +37,11 @@ import org.gama.stalactite.persistence.engine.runtime.OneToManyWithAssociationTa
 import org.gama.stalactite.persistence.engine.runtime.OneToManyWithIndexedAssociationTableEngine;
 import org.gama.stalactite.persistence.engine.runtime.OneToManyWithIndexedMappedAssociationEngine;
 import org.gama.stalactite.persistence.engine.runtime.OneToManyWithMappedAssociationEngine;
+import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
+import org.gama.stalactite.persistence.mapping.IdAccessor;
 import org.gama.stalactite.persistence.sql.Dialect;
 import org.gama.stalactite.persistence.structure.Column;
+import org.gama.stalactite.persistence.structure.PrimaryKey;
 import org.gama.stalactite.persistence.structure.Table;
 
 import static org.gama.lang.Nullable.nullable;
@@ -64,6 +70,7 @@ public class CascadeManyConfigurer<SRC, TRGT, SRCID, TRGTID, C extends Collectio
 	public <T extends Table<T>> void appendCascade(CascadeMany<SRC, TRGT, TRGTID, C> cascadeMany,
 												   JoinedTablesPersister<SRC, SRCID, T> sourcePersister,
 												   ForeignKeyNamingStrategy foreignKeyNamingStrategy,
+												   ColumnNamingStrategy joinColumnNamingStrategy,
 												   AssociationTableNamingStrategy associationTableNamingStrategy) {
 		Table reverseTable = nullable(cascadeMany.getReverseColumn()).apply(Column::getTable).get();
 		Table indexingTable = nullable((Column<?, ?>) (cascadeMany instanceof CascadeManyList ? ((CascadeManyList) cascadeMany).getIndexingColumn() : null)).apply(Column::getTable).get();
@@ -95,7 +102,7 @@ public class CascadeManyConfigurer<SRC, TRGT, SRCID, TRGTID, C extends Collectio
 		boolean writeAuthorized = maintenanceMode != READ_ONLY;
 		
 		ManyAssociationConfiguration<SRC, TRGT, SRCID, TRGTID, C> manyAssociationConfiguration = new ManyAssociationConfiguration<>(cascadeMany,
-				sourcePersister, targetPersister, leftPrimaryKey, foreignKeyNamingStrategy,
+				sourcePersister, targetPersister, leftPrimaryKey, foreignKeyNamingStrategy, joinColumnNamingStrategy,
 				orphanRemoval, writeAuthorized);
 		if (cascadeMany.isOwnedByReverseSide()) {
 			// case : reverse property is defined through one of the setter, getter or column on the reverse side
@@ -115,6 +122,7 @@ public class CascadeManyConfigurer<SRC, TRGT, SRCID, TRGTID, C extends Collectio
 		private final Persister<TRGT, TRGTID, ?> targetPersister;
 		private final Column leftPrimaryKey;
 		private final ForeignKeyNamingStrategy foreignKeyNamingStrategy;
+		private final ColumnNamingStrategy joinColumnNamingStrategy;
 		private final IReversibleAccessor<SRC, C> collectionGetter;
 		private final IMutator<SRC, C> setter;
 		private final boolean orphanRemoval;
@@ -126,6 +134,7 @@ public class CascadeManyConfigurer<SRC, TRGT, SRCID, TRGTID, C extends Collectio
 											Persister<TRGT, TRGTID, ?> targetPersister,
 											Column leftPrimaryKey,
 											ForeignKeyNamingStrategy foreignKeyNamingStrategy,
+											 ColumnNamingStrategy joinColumnNamingStrategy,
 											boolean orphanRemoval,
 											boolean writeAuthorized) {
 			this.cascadeMany = cascadeMany;
@@ -133,6 +142,7 @@ public class CascadeManyConfigurer<SRC, TRGT, SRCID, TRGTID, C extends Collectio
 			this.targetPersister = targetPersister;
 			this.leftPrimaryKey = leftPrimaryKey;
 			this.foreignKeyNamingStrategy = foreignKeyNamingStrategy;
+			this.joinColumnNamingStrategy = joinColumnNamingStrategy;
 			this.collectionGetter = cascadeMany.getCollectionProvider();
 			this.setter = collectionGetter.toMutator();
 			// we don't use MemberDefinition.giveMemberDefinition(..) because it gives a cross-member definition, loosing get/set for example,
@@ -278,6 +288,7 @@ public class CascadeManyConfigurer<SRC, TRGT, SRCID, TRGTID, C extends Collectio
 			// Setter for applying source entity to reverse side (target entities)
 			SerializableBiConsumer<TRGT, SRC> reverseSetter = null;
 			SerializableFunction<TRGT, SRC> reverseGetter = null;
+			PropertyAccessor<TRGT, SRC> reversePropertyAccessor = null;
 			if (reverseColumn == null) {
 				// Reverse side is surely defined by reverse method (because CascadeManyWithMappedAssociationConfigurer is invoked only
 				// when association is mapped by reverse side and reverse column is null),
@@ -294,17 +305,27 @@ public class CascadeManyConfigurer<SRC, TRGT, SRCID, TRGTID, C extends Collectio
 					reverseMethod = methodReferenceCapturer.findMethod(reverseGetter);
 					getterSignature = Reflections.toString(reverseMethod);
 				}
-				PropertyAccessor<TRGT, SRC> reversePropertyAccessor = of(reverseMethod);
+				reversePropertyAccessor = of(reverseMethod);
 				// Since reverse property accessor may not be declared the same way that it is present in ClassMappingStrategy
 				// we must use a ValueAccessPointMap which allows to compare different ValueAccessPoints
-				ValueAccessPointMap<? extends Column<?, Object>> accessPointMap =
-						new ValueAccessPointMap<>(manyAssociationConfiguration.targetPersister.getMappingStrategy().getMainMappingStrategy().getPropertyToColumn());
+				ClassMappingStrategy<TRGT, TRGTID, ?> targetMappingStrategy = manyAssociationConfiguration.targetPersister.getMappingStrategy();
+				ValueAccessPointMap<? extends Column<?, Object>> accessPointMap = new ValueAccessPointMap<>(targetMappingStrategy.getMainMappingStrategy().getPropertyToColumn());
 				reverseColumn = accessPointMap.get(reversePropertyAccessor);
 				if (reverseColumn == null) {
-					// This should not happen, left for bug safety
-					throw new NotYetSupportedOperationException("Can't build a relation with on a non mapped property, please add the mapping of a "
-							+ Reflections.toString(manyAssociationConfiguration.joinedTablesPersister.getMappingStrategy().getClassToPersist())
-							+ " to persister of " + Reflections.toString(manyAssociationConfiguration.cascadeMany.getTargetMappingConfiguration().getPersistedClass()));
+					ClassMappingStrategy<SRC, SRCID, ?> sourceMappingStrategy = manyAssociationConfiguration.joinedTablesPersister.getMappingStrategy();
+					// no column found for reverse side owner, we create it
+					PrimaryKey<?> primaryKey = sourceMappingStrategy.getTargetTable().getPrimaryKey();
+					reverseColumn = targetMappingStrategy.getTargetTable().addColumn(
+							manyAssociationConfiguration.joinColumnNamingStrategy.giveName(MemberDefinition.giveMemberDefinition(reversePropertyAccessor)),
+							Iterables.first(primaryKey.getColumns()).getJavaType());
+					// column can be null if we don't remove orphans
+					reverseColumn.setNullable(maintenanceMode != ALL_ORPHAN_REMOVAL);
+					
+					SerializableFunction<TRGT, SRC> finalReverseGetter = reverseGetter;
+					IdAccessor<SRC, SRCID> idAccessor = sourceMappingStrategy.getIdMappingStrategy().getIdAccessor();
+					Function<TRGT, SRCID> srcidFromTargetSupplier = trgt -> nullable(finalReverseGetter.apply(trgt)).apply(idAccessor::getId).orGet((SRCID) null);
+					targetMappingStrategy.addSilentColumnInserter(reverseColumn, srcidFromTargetSupplier);
+					targetMappingStrategy.addSilentColumnUpdater(reverseColumn, srcidFromTargetSupplier);
 				}
 			}
 			
@@ -329,9 +350,9 @@ public class CascadeManyConfigurer<SRC, TRGT, SRCID, TRGTID, C extends Collectio
 			// we have a direct relation : relationship is owned by target table as a foreign key
 			OneToManyWithMappedAssociationEngine<SRC, TRGT, SRCID, TRGTID, C> mappedAssociationEngine;
 			if (manyAssociationConfiguration.cascadeMany instanceof CascadeManyList) {
-				mappedAssociationEngine = configureIndexedAssociation(getterSignature, reverseSetter, reverseGetter);
+				mappedAssociationEngine = configureIndexedAssociation(getterSignature, reversePropertyAccessor == null ? null : reversePropertyAccessor::set, reverseGetter);
 			} else {
-				mappedAssociationEngine = configureNonIndexedAssociation(reverseSetter);
+				mappedAssociationEngine = configureNonIndexedAssociation(reversePropertyAccessor == null ? null : reversePropertyAccessor::set);
 			}
 			mappedAssociationEngine.addSelectCascade(manyAssociationConfiguration.leftPrimaryKey, reverseColumn);
 			if (manyAssociationConfiguration.writeAuthorized) {
@@ -341,7 +362,7 @@ public class CascadeManyConfigurer<SRC, TRGT, SRCID, TRGTID, C extends Collectio
 			}
 		}
 		
-		private OneToManyWithMappedAssociationEngine<SRC, TRGT, SRCID, TRGTID, C> configureNonIndexedAssociation(BiConsumer<TRGT, SRC> reverseSetter) {
+		private OneToManyWithMappedAssociationEngine<SRC, TRGT, SRCID, TRGTID, C> configureNonIndexedAssociation(@Nullable BiConsumer<TRGT, SRC> reverseSetter) {
 			OneToManyWithMappedAssociationEngine<SRC, TRGT, SRCID, TRGTID, C> mappedAssociationEngine;
 			MappedManyRelationDescriptor<SRC, TRGT, C> manyRelationDefinition = new MappedManyRelationDescriptor<>(
 					manyAssociationConfiguration.collectionGetter::get, manyAssociationConfiguration.setter::set,
@@ -353,8 +374,9 @@ public class CascadeManyConfigurer<SRC, TRGT, SRCID, TRGTID, C extends Collectio
 			return mappedAssociationEngine;
 		}
 		
-		private OneToManyWithMappedAssociationEngine<SRC, TRGT, SRCID, TRGTID, C> configureIndexedAssociation(String getterSignature, BiConsumer<TRGT, SRC> reverseSetter,
-																									  SerializableFunction<TRGT, SRC> reverseGetter) {
+		private OneToManyWithMappedAssociationEngine<SRC, TRGT, SRCID, TRGTID, C> configureIndexedAssociation(String getterSignature,
+																											  @Nullable BiConsumer<TRGT, SRC> reverseSetter,
+																											  SerializableFunction<TRGT, SRC> reverseGetter) {
 			OneToManyWithMappedAssociationEngine<SRC, TRGT, SRCID, TRGTID, C> mappedAssociationEngine;
 			IndexedMappedManyRelationDescriptor<SRC, TRGT, C> manyRelationDefinition = new IndexedMappedManyRelationDescriptor<>(
 					manyAssociationConfiguration.collectionGetter::get, manyAssociationConfiguration.setter::set,

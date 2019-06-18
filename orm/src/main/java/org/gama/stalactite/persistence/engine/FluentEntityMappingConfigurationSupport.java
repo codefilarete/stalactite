@@ -115,6 +115,7 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements IFluentMap
 		return tableNamingStrategy;
 	}
 	
+	@Override
 	public ColumnNamingStrategy getJoinColumnNamingStrategy() {
 		return joinColumnNamingStrategy;
 	}

@@ -197,6 +197,7 @@ class EntityMappingBuilder<C, I> {
 		for (CascadeMany<C, ?, ?, ? extends Collection> cascadeMany : this.configurationSupport.getOneToManys()) {
 			cascadeManyConfigurer.appendCascade(cascadeMany, result,
 					this.configurationSupport.getForeignKeyNamingStrategy(),
+					this.configurationSupport.getJoinColumnNamingStrategy(),
 					this.configurationSupport.getAssociationTableNamingStrategy());
 		}
 		
