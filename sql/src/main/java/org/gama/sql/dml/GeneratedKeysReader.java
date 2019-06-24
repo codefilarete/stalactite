@@ -3,9 +3,11 @@ package org.gama.sql.dml;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.util.ArrayList;
 import java.util.List;
 
+import org.gama.lang.collection.Iterables;
+import org.gama.sql.binder.DefaultResultSetReaders;
+import org.gama.sql.binder.ResultSetReader;
 import org.gama.sql.result.ResultSetIterator;
 import org.gama.sql.result.Row;
 
@@ -29,8 +31,28 @@ public class GeneratedKeysReader {
 	
 	private final String keyName;
 	
+	/** Underlying reader of generated value */
+	private final ResultSetReader typeReader;
+	
+	/**
+	 * Constructor dedicated to {@link Long} value reader.
+	 * 
+	 * @param keyName column name to be read on generated {@link ResultSet}
+	 */
 	public GeneratedKeysReader(String keyName) {
 		this.keyName = keyName;
+		this.typeReader = DefaultResultSetReaders.LONG_PRIMITIVE_READER;
+	}
+	
+	/**
+	 * Constructor.
+	 * 
+	 * @param keyName column name to be read on generated {@link ResultSet}
+	 * @param typeReader reader of generated key column
+	 */
+	public GeneratedKeysReader(String keyName, ResultSetReader typeReader) {
+		this.keyName = keyName;
+		this.typeReader = typeReader;
 	}
 	
 	public String getKeyName() {
@@ -39,7 +61,6 @@ public class GeneratedKeysReader {
 	
 	public List<Row> read(WriteOperation writeOperation) throws SQLException {
 		try (ResultSet generatedKeys = writeOperation.preparedStatement.getGeneratedKeys()) {
-			List<Row> toReturn = new ArrayList<>();
 			ResultSetIterator<Row> iterator = new ResultSetIterator<Row>(generatedKeys) {
 				@Override
 				public Row convert(ResultSet rs) throws SQLException {
@@ -48,11 +69,7 @@ public class GeneratedKeysReader {
 					return toReturn;
 				}
 			};
-			while (iterator.hasNext()) {
-				Row row = iterator.next();
-				toReturn.add(row);
-			}
-			return toReturn;
+			return Iterables.copy(iterator);
 		}
 	}
 	
@@ -61,6 +78,6 @@ public class GeneratedKeysReader {
 	}
 	
 	protected Object readKey(ResultSet rs) throws SQLException {
-		return rs.getLong(getKeyName());
+		return typeReader.get(rs, getKeyName());
 	}
 }
