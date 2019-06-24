@@ -143,7 +143,7 @@ public abstract class SQLOperation<ParamType> implements AutoCloseable {
 	protected void applyValuesToEnsuredStatement() {
 		try {
 			ensureStatement();
-		} catch (SQLException e) {
+		} catch (RuntimeException | SQLException e) {
 			throw new BindingException("Error while creating statement " + getSQL(), e);
 		}
 		try {
