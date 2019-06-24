@@ -138,18 +138,39 @@ public class JoinedTablesPersister<C, I, T extends Table> extends Persister<C, I
 	}
 	
 	private EntityCriteriaSupport<C> newWhere() {
+		// we must clone the underlying support, else it would be modified for all subsequent invokations and criteria will aggregate
 		return new EntityCriteriaSupport<>(criteriaSupport);
 	}
 	
-	public <O> ExecutableEntityQuery<C> selectWhere(SerializableFunction<C, O> getter, AbstractOperator<O> operand) {
+	/**
+	 * Creates a query which criteria target mapped properties.
+	 * <strong>As for now aggregate result is truncated to entities returned by SQL selection : for example, if criteria on collection is used,
+	 * only entities returned by SQL criteria will be loaded. This does not respect aggregate principle and should be enhanced in future.</strong>
+	 * 
+	 * @param getter a property accessor
+	 * @param operator criteria for the property
+	 * @param <O> value type returned by property accessor
+	 * @return a {@link EntityCriteria} enhance to be executed through {@link ExecutableQuery#execute()}
+	 */
+	public <O> ExecutableEntityQuery<C> selectWhere(SerializableFunction<C, O> getter, AbstractOperator<O> operator) {
 		EntityCriteriaSupport<C> localCriteriaSupport = newWhere();
-		localCriteriaSupport.and(getter, operand);
+		localCriteriaSupport.and(getter, operator);
 		return wrapIntoExecutable(localCriteriaSupport);
 	}
 	
-	public <O> ExecutableEntityQuery<C> selectWhere(SerializableBiConsumer<C, O> getter, AbstractOperator<O> operand) {
+	/**
+	 * Creates a query which criteria target mapped properties
+	 * <strong>As for now aggregate result is truncated to entities returned by SQL selection : for example, if criteria on collection is used,
+	 * only entities returned by SQL criteria will be loaded. This does not respect aggregate principle and should be enhanced in future.</strong>
+	 *
+	 * @param setter a property accessor
+	 * @param operator criteria for the property
+	 * @param <O> value type returned by property accessor
+	 * @return a {@link EntityCriteria} enhance to be executed through {@link ExecutableQuery#execute()}
+	 */
+	public <O> ExecutableEntityQuery<C> selectWhere(SerializableBiConsumer<C, O> setter, AbstractOperator<O> operator) {
 		EntityCriteriaSupport<C> localCriteriaSupport = newWhere();
-		localCriteriaSupport.and(getter, operand);
+		localCriteriaSupport.and(setter, operator);
 		return wrapIntoExecutable(localCriteriaSupport);
 	}
 	
