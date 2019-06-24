@@ -30,8 +30,8 @@ public interface Identified<I> {
 		return new NullAwareParameterBinder<>(new ParameterBinder<Identified<I>>() {
 			@Override
 			public Identified<I> get(ResultSet resultSet, String columnName) {
-				// we can't instantiate the right Identified because we don't have its class, moreover we should fill the instance property
-				// but we don't have the material to do it, as such, the select decoding process is done differenly elsewhere in
+				// we can't instantiate the right Identified because we don't have its class, moreover we should fill the instance properties
+				// but we don't have the material to do it, hence the select decoding process is done differenly elsewhere in
 				// StrategyJoinsRowTransformer, so we can return anything here 
 				return null;
 			}

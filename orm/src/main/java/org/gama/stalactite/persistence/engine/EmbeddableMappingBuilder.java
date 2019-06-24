@@ -122,9 +122,13 @@ class EmbeddableMappingBuilder<C> {
 	}
 	
 	protected Column addLinkage(Linkage linkage) {
-		Column addedColumn = targetTable.addColumn(linkage.getColumnName(), linkage.getColumnType());
+		Column addedColumn = targetTable.addColumn(giveColumnName(linkage), linkage.getColumnType());
 		addedColumn.setNullable(linkage.isNullable());
 		return addedColumn;
+	}
+	
+	protected String giveColumnName(Linkage linkage) {
+		return linkage.getColumnName();
 	}
 	
 	protected void ensureColumnBinding(Linkage linkage, Column column) {
@@ -270,11 +274,7 @@ class EmbeddableMappingBuilder<C> {
 					Column targetColumn = findColumn(valueAccessPoint, memberDefinition.getName(), columnsPerName, refinedInset);
 					if (targetColumn == null) {
 						// Column isn't declared in table => we create one from field informations
-						String columnName = mappingConfiguration.getColumnNamingStrategy().giveName(new MemberDefinition(
-								valueAccessPoint.getMethod().getDeclaringClass(),
-								valueAccessPoint.getMethod().getName(),
-								Reflections.onJavaBeanPropertyWrapperName(valueAccessPoint.getMethod(), Method::getReturnType, method -> method.getParameterTypes()[0], Method::getReturnType)
-						));
+						String columnName = mappingConfiguration.getColumnNamingStrategy().giveName(memberDefinition);
 						String overridenName = overridenColumnNames.get(valueAccessPoint);
 						if (overridenName != null) {
 							columnName = overridenName;

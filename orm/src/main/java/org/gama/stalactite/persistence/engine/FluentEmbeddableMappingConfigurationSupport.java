@@ -26,7 +26,6 @@ import org.gama.reflection.MutatorByMethod;
 import org.gama.reflection.MutatorByMethodReference;
 import org.gama.reflection.PropertyAccessor;
 import org.gama.reflection.ValueAccessPoint;
-import org.gama.reflection.ValueAccessPointByMethodReference;
 import org.gama.reflection.ValueAccessPointComparator;
 import org.gama.reflection.ValueAccessPointMap;
 import org.gama.reflection.ValueAccessPointSet;
@@ -186,7 +185,7 @@ public class FluentEmbeddableMappingConfigurationSupport<C> implements IFluentEm
 				Accessors.accessor(mutatorByMethodReference.getDeclaringClass(), Reflections.propertyName(mutatorByMethodReference.getMethodName())),
 				mutatorByMethodReference
 		);
-		return addMapping(propertyAccessor, mutatorByMethodReference, columnName);
+		return addMapping(propertyAccessor, MemberDefinition.giveMemberDefinition(mutatorByMethodReference), columnName);
 	}
 	
 	<E> AbstractLinkage<C> addMapping(SerializableFunction<C, E> getter, @Nullable String columnName) {
@@ -195,22 +194,21 @@ public class FluentEmbeddableMappingConfigurationSupport<C> implements IFluentEm
 				accessorByMethodReference,
 				Accessors.mutator(accessorByMethodReference.getDeclaringClass(), Reflections.propertyName(accessorByMethodReference.getMethodName()), accessorByMethodReference.getPropertyType())
 		);
-		return addMapping(propertyAccessor, accessorByMethodReference, columnName);
+		return addMapping(propertyAccessor, MemberDefinition.giveMemberDefinition(accessorByMethodReference), columnName);
 	}
 	
-	AbstractLinkage<C> addMapping(PropertyAccessor<C, ?> propertyAccessor, ValueAccessPointByMethodReference accessPoint, @Nullable String columnName) {
+	AbstractLinkage<C> addMapping(PropertyAccessor<C, ?> propertyAccessor, MemberDefinition memberDefinition, @Nullable String columnName) {
 		assertMappingIsNotAlreadyDefined(columnName, propertyAccessor);
-		String linkName = columnName;
+		String linkageName = columnName;
 		if (columnName == null) {
-			MemberDefinition memberDefinition = new MemberDefinition(accessPoint.getDeclaringClass(), accessPoint.getMethodName(), accessPoint.getPropertyType());
-			linkName = giveLinkName(memberDefinition);
+			linkageName = giveLinkageName(memberDefinition);
 		}
-		AbstractLinkage<C> linkage = newLinkage(propertyAccessor, accessPoint.getPropertyType(), linkName);
+		AbstractLinkage<C> linkage = newLinkage(propertyAccessor, memberDefinition.getMemberType(), linkageName);
 		this.mapping.add(linkage);
 		return linkage;
 	}
 	
-	protected String giveLinkName(MemberDefinition memberDefinition) {
+	protected String giveLinkageName(MemberDefinition memberDefinition) {
 		return columnNamingStrategy.giveName(memberDefinition);
 	}
 	
@@ -479,14 +477,17 @@ public class FluentEmbeddableMappingConfigurationSupport<C> implements IFluentEm
 			this.columnName = columnName;
 		}
 		
+		@Override
 		public <O> IReversibleAccessor<T, O> getAccessor() {
 			return (IReversibleAccessor<T, O>) function;
 		}
 		
+		@Override
 		public String getColumnName() {
 			return columnName;
 		}
 		
+		@Override
 		public Class<?> getColumnType() {
 			return columnType;
 		}

@@ -69,7 +69,8 @@ public class CascadeOneConfigurer<SRC, TRGT, ID> {
 	public <T extends Table<T>> void appendCascade(
 			CascadeOne<SRC, TRGT, ID> cascadeOne,
 			JoinedTablesPersister<SRC, ID, T> sourcePersister,
-			ForeignKeyNamingStrategy foreignKeyNamingStrategy) {
+			ForeignKeyNamingStrategy foreignKeyNamingStrategy,
+			ColumnNamingStrategy joinColumnNamingStrategy) {
 		
 		ConfigurerTemplate<SRC, TRGT, ID> configurer;
 		if (cascadeOne.isOwnedByReverseSide()) {
@@ -77,7 +78,7 @@ public class CascadeOneConfigurer<SRC, TRGT, ID> {
 		} else {
 			configurer = new RelationOwnedBySourceConfigurer<>(persistenceContext);
 		}
-		configurer.appendCascade(cascadeOne, sourcePersister, foreignKeyNamingStrategy);
+		configurer.appendCascade(cascadeOne, sourcePersister, foreignKeyNamingStrategy, joinColumnNamingStrategy);
 	}
 	
 	private abstract static class ConfigurerTemplate<SRC, TRGT, ID> {
@@ -91,7 +92,8 @@ public class CascadeOneConfigurer<SRC, TRGT, ID> {
 		<T extends Table<T>> void appendCascade(
 				CascadeOne<SRC, TRGT, ID> cascadeOne,
 				JoinedTablesPersister<SRC, ID, T> sourcePersister,
-				ForeignKeyNamingStrategy foreignKeyNamingStrategy) {
+				ForeignKeyNamingStrategy foreignKeyNamingStrategy,
+				ColumnNamingStrategy joinColumnNamingStrategy) {
 			
 			RelationshipMode maintenanceMode = cascadeOne.getRelationshipMode();
 			if (maintenanceMode == ASSOCIATION_ONLY) {
@@ -113,7 +115,7 @@ public class CascadeOneConfigurer<SRC, TRGT, ID> {
 			
 			// Finding joined columns
 			Duo<Column, Column> foreignKeyColumns = determineForeignKeyColumns(cascadeOne, mappingStrategy, targetAccessor,
-					targetMappingStrategy, foreignKeyNamingStrategy);
+					targetMappingStrategy, foreignKeyNamingStrategy, joinColumnNamingStrategy);
 			
 			Column leftColumn = foreignKeyColumns.getLeft();
 			Column rightColumn = foreignKeyColumns.getRight();
@@ -143,7 +145,8 @@ public class CascadeOneConfigurer<SRC, TRGT, ID> {
 																							   ClassMappingStrategy<SRC, ID, T> mappingStrategy,
 																							   IReversibleAccessor<SRC, TRGT> targetAccessor,
 																							   ClassMappingStrategy<TRGT, ID, Table> targetMappingStrategy,
-																							   ForeignKeyNamingStrategy foreignKeyNamingStrategy);
+																							   ForeignKeyNamingStrategy foreignKeyNamingStrategy,
+																							   ColumnNamingStrategy joinColumnNamingStrategy);
 		protected void addInsertCascade(CascadeOne<SRC, TRGT, ID> cascadeOne,
 												 Persister<TRGT, ID, Table> targetPersister,
 												 PersisterListener<SRC, ID> srcPersisterListener) {
@@ -223,7 +226,8 @@ public class CascadeOneConfigurer<SRC, TRGT, ID> {
 																					  ClassMappingStrategy<SRC, ID, T> srcMappingStrategy,
 																					  IReversibleAccessor<SRC, TRGT> targetAccessor,
 																					  ClassMappingStrategy<TRGT, ID, Table> targetMappingStrategy,
-																					  ForeignKeyNamingStrategy foreignKeyNamingStrategy) {
+																					  ForeignKeyNamingStrategy foreignKeyNamingStrategy,
+																					  ColumnNamingStrategy joinColumnNamingStrategy) {
 			// targetAccessor may not be the one that was declared in propertyToColumn, so we need to wrap them into a more flexible search structure : ValueAccessPointMap
 			Column<T, ID> leftColumn = (Column<T, ID>) new ValueAccessPointMap<Column>(srcMappingStrategy.getMainMappingStrategy().getPropertyToColumn()).get(targetAccessor);
 			// According to the nullable option, we specify the ddl schema option
@@ -337,7 +341,8 @@ public class CascadeOneConfigurer<SRC, TRGT, ID> {
 																					  ClassMappingStrategy<SRC, ID, T> mappingStrategy,
 																					  IReversibleAccessor<SRC, TRGT> targetAccessor,
 																					  ClassMappingStrategy<TRGT, ID, Table> targetMappingStrategy,
-																					  ForeignKeyNamingStrategy foreignKeyNamingStrategy) {
+																					  ForeignKeyNamingStrategy foreignKeyNamingStrategy,
+																					  ColumnNamingStrategy joinColumnNamingStrategy) {
 			
 			// left column is always left table primary key
 			Column leftColumn = Iterables.first(mappingStrategy.getTargetTable().getPrimaryKey().getColumns());
@@ -350,7 +355,7 @@ public class CascadeOneConfigurer<SRC, TRGT, ID> {
 				AccessorByMethodReference<TRGT, SRC> localReverseGetter = Accessors.accessorByMethodReference(cascadeOne.getReverseGetter());
 				MemberDefinition memberDefinition = MemberDefinition.giveMemberDefinition(localReverseGetter);
 				// we add a column for reverse mapping if one is not already declared
-				rightColumn = createOrUseReverseColumn(targetMappingStrategy, cascadeOne.getReverseColumn(), localReverseGetter, memberDefinition);
+				rightColumn = createOrUseReverseColumn(targetMappingStrategy, cascadeOne.getReverseColumn(), localReverseGetter, memberDefinition, joinColumnNamingStrategy);
 				
 				// we take advantage of forign key computing and presence of MemberDefinition to build relation fixer which is needed lately in determineRelationFixer(..) 
 				IMutator<TRGT, SRC> targetIntoSourceFixer = Accessors.mutatorByMethod(memberDefinition.getDeclaringClass(), memberDefinition.getName());
@@ -365,7 +370,8 @@ public class CascadeOneConfigurer<SRC, TRGT, ID> {
 				ValueAccessPoint reverseSetter = Accessors.mutatorByMethodReference(cascadeOne.getReverseSetter());
 				MemberDefinition memberDefinition = MemberDefinition.giveMemberDefinition(reverseSetter);
 				// we add a column for reverse mapping if one is not already declared
-				rightColumn = createOrUseReverseColumn(targetMappingStrategy, cascadeOne.getReverseColumn(), reverseSetter, memberDefinition);
+				rightColumn = createOrUseReverseColumn(targetMappingStrategy, cascadeOne.getReverseColumn(), reverseSetter, memberDefinition,
+						joinColumnNamingStrategy);
 				
 				AccessorByMethod<TRGT, SRC> accessorByMethod = Accessors.accessorByMethod(memberDefinition.getDeclaringClass(), memberDefinition.getName());
 				SerializableFunction<TRGT, SRC> localReverseGetter = accessorByMethod::get;
@@ -388,13 +394,15 @@ public class CascadeOneConfigurer<SRC, TRGT, ID> {
 			return new Duo<>(leftColumn, rightColumn);
 		}
 		
-		private Column createOrUseReverseColumn(ClassMappingStrategy<TRGT, ID, Table> targetMappingStrategy, Column reverseColumn, ValueAccessPoint reverseGetter, MemberDefinition memberDefinition) {
+		private Column createOrUseReverseColumn(ClassMappingStrategy<TRGT, ID, Table> targetMappingStrategy, Column reverseColumn,
+												ValueAccessPoint reverseGetter, MemberDefinition memberDefinition,
+												ColumnNamingStrategy joinColumnNamingStrategy) {
 			if (reverseColumn == null) {
 				// no reverse column was given, so we look for the one mapped under the reverse getter
 				reverseColumn = targetMappingStrategy.getMainMappingStrategy().getPropertyToColumn().get(reverseGetter);
 				if (reverseColumn == null) {
 					// no column is defined under the getter, then we have to create one
-					reverseColumn = targetMappingStrategy.getTargetTable().addColumn(memberDefinition.getName(), memberDefinition.getMemberType());
+					reverseColumn = targetMappingStrategy.getTargetTable().addColumn(joinColumnNamingStrategy.giveName(memberDefinition), memberDefinition.getMemberType());
 				}
 			}
 			return reverseColumn;

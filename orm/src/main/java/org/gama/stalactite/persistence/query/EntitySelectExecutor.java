@@ -15,6 +15,7 @@ import org.gama.stalactite.persistence.engine.cascade.StrategyJoinsRowTransforme
 import org.gama.stalactite.persistence.sql.dml.binder.ColumnBinderRegistry;
 import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.query.builder.QueryBuilder;
+import org.gama.stalactite.query.model.CriteriaChain;
 import org.gama.stalactite.query.model.Query;
 
 import static org.gama.stalactite.persistence.engine.cascade.JoinedStrategiesSelect.FIRST_STRATEGY_NAME;
@@ -35,18 +36,22 @@ public class EntitySelectExecutor<C, I, T extends Table> {
 	private final JoinedStrategiesSelect<C, I, T> joinedStrategiesSelect;
 	private final ColumnBinderRegistry parameterBinderProvider;
 	
-	public EntitySelectExecutor(JoinedStrategiesSelect<C, I, T> joinedStrategiesSelect, ConnectionProvider connectionProvider,
+	public EntitySelectExecutor(JoinedStrategiesSelect<C, I, T> joinedStrategiesSelect,
+								ConnectionProvider connectionProvider,
 								ColumnBinderRegistry columnBinderRegistry) {
-		this.parameterBinderProvider = columnBinderRegistry;
-		this.connectionProvider = connectionProvider;
 		this.joinedStrategiesSelect = joinedStrategiesSelect;
+		this.connectionProvider = connectionProvider;
+		this.parameterBinderProvider = columnBinderRegistry;
 	}
 	
 	public List<C> select(EntityCriteriaSupport<C> entityCriteria) {
 		Query query = joinedStrategiesSelect.buildSelectQuery();
 		
 		QueryBuilder queryBuilder = new QueryBuilder(query);
-		query.getWhere().and(entityCriteria.getQuery());
+		CriteriaChain where = entityCriteria.getCriteria();
+		if (where.iterator().hasNext()) {	// prevents from empty where causing malformed SQL
+			query.getWhere().and(where);
+		}
 		
 		PreparedSQL preparedSQL = queryBuilder.toPreparedSQL(parameterBinderProvider);
 		return execute(preparedSQL);

@@ -79,7 +79,7 @@ public class JoinedTablesEntityMappingBuilder<C, I> {
 				persistenceContext.getDialect());
 		
 		// NB : result is added to persistenceContext by build(..) method (to participate to DDL deployment)
-		JoinedTablesPersister<C, I, T> result = new EntityMappingBuilder<>(configurationSupport, methodSpy).build(persistenceContext, childClassMappingStrategy);
+		JoinedTablesPersister<C, I, T> result = new EntityMappingBuilder<>(configurationSupport, methodSpy).configureRelations(persistenceContext, childClassMappingStrategy);
 		// adding join on parent table
 		Column subclassPK = Iterables.first((Set<Column<Table, Object>>) childClassTargetTable.getPrimaryKey().getColumns());
 		Column superclassPK = Iterables.first((Set<Column<Table, Object>>) superPersister.getMainTable().getPrimaryKey().getColumns());

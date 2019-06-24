@@ -6,12 +6,14 @@ import java.util.Collection;
 import java.util.Date;
 import java.util.List;
 import java.util.Set;
+import java.util.TreeSet;
 
 import org.danekja.java.util.function.serializable.SerializableBiConsumer;
 import org.danekja.java.util.function.serializable.SerializableBiFunction;
 import org.danekja.java.util.function.serializable.SerializableFunction;
 import org.gama.lang.Nullable;
 import org.gama.lang.Reflections;
+import org.gama.lang.collection.Iterables;
 import org.gama.lang.exception.NotImplementedException;
 import org.gama.lang.function.Serie;
 import org.gama.lang.reflect.MethodDispatcher;
@@ -42,6 +44,9 @@ import org.gama.stalactite.persistence.id.manager.AlreadyAssignedIdentifierManag
 import org.gama.stalactite.persistence.id.manager.IdentifierInsertionManager;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
+
+import static org.gama.reflection.MemberDefinition.*;
+import static org.gama.stalactite.persistence.id.manager.JDBCGeneratedKeysIdentifierManager.keyMapper;
 
 /**
  * @author Guillaume Mary
@@ -302,15 +307,16 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements IFluentMap
 			SerializableBiConsumer<C, O> setter,
 			EntityMappingConfiguration<O, J> mappingConfiguration,
 			T table) {
-		// we declare the column on our side
-		propertiesMappingConfigurationSurrogate.addMapping(setter, (String) null);
-		IReversibleAccessor<C, O> propertyAccessor = new PropertyAccessor<>(
+		MutatorByMethodReference<C, O> mutatorByMethodReference = Accessors.mutatorByMethodReference(setter);
+		PropertyAccessor<C, O> propertyAccessor = new PropertyAccessor<>(
 				// we keep close to user demand : we keep its method reference ...
 				new MutatorByMethod<C, O>(captureMethod(setter)).toAccessor(),
 				// ... but we can't do it for mutator, so we use the most equivalent manner : a mutator based on setter method (fallback to property if not present)
-				Accessors.mutatorByMethodReference(setter));
+				mutatorByMethodReference);
 		CascadeOne<C, O, J> cascadeOne = new CascadeOne<>(propertyAccessor, mappingConfiguration, table);
 		this.cascadeOnes.add(cascadeOne);
+		// we declare the column on our side
+		propertiesMappingConfigurationSurrogate.addMapping(propertyAccessor, giveMemberDefinition(mutatorByMethodReference), null);
 		return wrapForAdditionalOptions(cascadeOne);
 	}
 	
@@ -319,15 +325,16 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements IFluentMap
 			SerializableFunction<C, O> getter,
 			EntityMappingConfiguration<O, J> mappingConfiguration,
 			T table) {
-		// we declare the column on our side
-		propertiesMappingConfigurationSurrogate.addMapping(getter, (String) null);
-		IReversibleAccessor<C, O> propertyAccessor = new PropertyAccessor<>(
+		AccessorByMethodReference<C, O> accessorByMethodReference = Accessors.accessorByMethodReference(getter);
+		PropertyAccessor<C, O> propertyAccessor = new PropertyAccessor<>(
 				// we keep close to user demand : we keep its method reference ...
-				Accessors.accessorByMethodReference(getter),
+				accessorByMethodReference,
 				// ... but we can't do it for mutator, so we use the most equivalent manner : a mutator based on setter method (fallback to property if not present)
 				new AccessorByMethod<C, O>(captureMethod(getter)).toMutator());
 		CascadeOne<C, O, J> cascadeOne = new CascadeOne<>(propertyAccessor, mappingConfiguration, table);
 		this.cascadeOnes.add(cascadeOne);
+		// we declare the column on our side
+		propertiesMappingConfigurationSurrogate.addMapping(propertyAccessor, giveMemberDefinition(accessorByMethodReference), null);
 		return wrapForAdditionalOptions(cascadeOne);
 	}
 	
@@ -747,14 +754,15 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements IFluentMap
 		}
 		
 		@Override
-		protected String giveLinkName(MemberDefinition memberDefinition) {
-			if (Identified.class.isAssignableFrom(memberDefinition.getMemberType())) {
+		protected String giveLinkageName(MemberDefinition memberDefinition) {
+			// MemberDefinition computation could be done statically, but it must be done dynamically because giveLinkageName(..) is used along fluent API invokation
+			TreeSet<MemberDefinition> memberDefinitions = Iterables.collect(entityConfigurationSupport.cascadeOnes, cascadeOne -> giveMemberDefinition(cascadeOne.getTargetProvider()), TreeSet::new);
+			if (memberDefinitions.contains(memberDefinition)) {
 				return entityConfigurationSupport.joinColumnNamingStrategy.giveName(memberDefinition);
 			} else {
-				return super.giveLinkName(memberDefinition);
+				return super.giveLinkageName(memberDefinition);
 			}
 		}
-		
 		
 		<E> AbstractLinkage<C> addMapping(SerializableBiConsumer<C, E> setter, Column column) {
 			MutatorByMethodReference<C, E> mutatorByMethodReference = Accessors.mutatorByMethodReference(setter);
@@ -775,7 +783,7 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements IFluentMap
 		}
 		
 		/**
-		 * Equivalent of {@link #addMapping(PropertyAccessor, ValueAccessPointByMethodReference, String)} with a {@link Column}
+		 * Equivalent of {@link #addMapping(PropertyAccessor, MemberDefinition, String)} with a {@link Column}
 		 * 
 		 * @return a new Column added to the target table, throws an exception if already mapped
 		 */

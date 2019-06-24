@@ -179,7 +179,7 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 				.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.add(Country::getName)
 				.add(Country::getDescription)
-				.add(Country::getPresident)	// this is not a true relation, it's only for presidentId insert/update
+				.add(Country::getPresident, "presidentId")	// this is not a true relation, it's only for presidentId insert/update
 				.build(persistenceContext);
 		
 		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
@@ -339,7 +339,7 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 			}
 		};
 		JdbcForeignKey foundForeignKey = Iterables.first(fkPersonIterator);
-		JdbcForeignKey expectedForeignKey = new JdbcForeignKey("FK_CITY_COUNTRY_COUNTRY_ID", "CITY", "COUNTRY", "COUNTRY", "ID");
+		JdbcForeignKey expectedForeignKey = new JdbcForeignKey("FK_CITY_COUNTRYID_COUNTRY_ID", "CITY", "COUNTRYID", "COUNTRY", "ID");
 		assertEquals(expectedForeignKey.getSignature(), foundForeignKey.getSignature());
 	}
 	

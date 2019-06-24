@@ -35,6 +35,7 @@ import org.gama.stalactite.persistence.id.manager.IdentifierInsertionManager;
 import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
 import org.gama.stalactite.persistence.mapping.IdAccessor;
 import org.gama.stalactite.persistence.mapping.SinglePropertyIdAccessor;
+import org.gama.stalactite.persistence.query.EntityCriteriaSupport.EntityGraphNode;
 import org.gama.stalactite.persistence.sql.Dialect;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
@@ -52,13 +53,29 @@ import static org.gama.lang.collection.Iterables.collect;
  */
 class EntityMappingBuilder<C, I> {
 	
+	/**
+	 * Tracker of entities that are mapped along the process. Used for column naming : columns that target an entity may use a different
+	 * strategy than common properties. And in particular for reverse column naming or bidirectional relation. 
+	 * Works because constructor adds its entity class to it, and since sub-related entities are built first (in a kind of recursive way),
+	 * upper ones know them.
+	 */
+	private static final ThreadLocal<Set<Class>> ENTITY_CANDIDATES = ThreadLocal.withInitial(HashSet::new);
+	
 	private final EntityMappingConfiguration<C, I> configurationSupport;
 	
 	private final MethodReferenceCapturer methodSpy;
 	
+	/**
+	 * Internal marker for this instance to cleanup {@link #ENTITY_CANDIDATES}. Made because multiple {@link EntityMappingBuilder} are recursively
+	 * created to build an aggregate.
+	 */
+	private final boolean isInitiator;
+	
 	EntityMappingBuilder(EntityMappingConfiguration<C, I> entityBuilderSupport, MethodReferenceCapturer methodSpy) {
 		this.configurationSupport = entityBuilderSupport;
 		this.methodSpy = methodSpy;
+		this.isInitiator = ENTITY_CANDIDATES.get().isEmpty();
+		ENTITY_CANDIDATES.get().add(entityBuilderSupport.getPersistedClass());
 	}
 	
 	/**
@@ -144,9 +161,21 @@ class EntityMappingBuilder<C, I> {
 		}
 		
 		EntityDecoratedEmbeddableMappingBuilder<C> embeddableMappingBuilder = new EntityDecoratedEmbeddableMappingBuilder<>(
-				configurationSupport.getPropertiesMapping(), configurationSupport.getOneToOnes(), inheritanceMappingStrategy);
+				configurationSupport.getPropertiesMapping(),
+				configurationSupport.getOneToOnes(),
+				inheritanceMappingStrategy,
+				configurationSupport.getJoinColumnNamingStrategy());
 		
-		return build(persistenceContext, embeddableMappingBuilder.buildClassMappingStrategy(persistenceContext.getDialect(), table, identification));
+		JoinedTablesPersister<C, I, T> result = configureRelations(persistenceContext,
+				embeddableMappingBuilder.buildClassMappingStrategy(persistenceContext.getDialect(), table, identification));
+		
+		handleVersioningStrategy(result);
+		
+		// cleaning resources
+		if (this.isInitiator) {
+			ENTITY_CANDIDATES.remove();
+		}
+		return result;
 	}
 	
 	private Table giveTableUsedInMapping() {
@@ -164,7 +193,15 @@ class EntityMappingBuilder<C, I> {
 		}
 	}
 	
-	<T extends Table> JoinedTablesPersister<C, I, T> build(PersistenceContext persistenceContext, ClassMappingStrategy<C, I, T> mainMappingStrategy) {
+	/**
+	 * Configures relations of our {@link EntityMappingConfiguration} onto the given {@link ClassMappingStrategy} previously built.
+	 * 
+	 * @param persistenceContext our current {@link PersistenceContext}
+	 * @param mainMappingStrategy the mapping of simple properties
+	 * @param <T> table type
+	 * @return a {@link JoinedTablesPersister} that allow to persist the entity with its relations
+	 */
+	<T extends Table> JoinedTablesPersister<C, I, T> configureRelations(PersistenceContext persistenceContext, ClassMappingStrategy<C, I, T> mainMappingStrategy) {
 		// Please note that we could have created a simple Persister for cases of no one-to-one neither one-to-many relations
 		// because in such cases no join is required, but it would have introduced inconsistent return type depending on configuration
 		// which is hard to manage by JoinedTablesEntityMappingBuilder that uses this method
@@ -191,7 +228,7 @@ class EntityMappingBuilder<C, I> {
 		
 		CascadeOneConfigurer cascadeOneConfigurer = new CascadeOneConfigurer<>(persistenceContext);
 		for (CascadeOne<C, ?, ?> cascadeOne : this.configurationSupport.getOneToOnes()) {
-			cascadeOneConfigurer.appendCascade(cascadeOne, result, this.configurationSupport.getForeignKeyNamingStrategy());
+			cascadeOneConfigurer.appendCascade(cascadeOne, result, this.configurationSupport.getForeignKeyNamingStrategy(), this.configurationSupport.getJoinColumnNamingStrategy());
 		}
 		CascadeManyConfigurer cascadeManyConfigurer = new CascadeManyConfigurer(persistenceContext);
 		for (CascadeMany<C, ?, ?, ? extends Collection> cascadeMany : this.configurationSupport.getOneToManys()) {
@@ -200,7 +237,12 @@ class EntityMappingBuilder<C, I> {
 					this.configurationSupport.getJoinColumnNamingStrategy(),
 					this.configurationSupport.getAssociationTableNamingStrategy());
 		}
+		registerRelations(persistenceContext, result.getCriteriaSupport().getRootConfiguration(), configurationSupport);
 		
+		return result;
+	}
+	
+	private <T extends Table> void handleVersioningStrategy(JoinedTablesPersister<C, I, T> result) {
 		Nullable<VersioningStrategy> versioningStrategy = nullable(this.configurationSupport.getOptimisticLockOption());
 		if (versioningStrategy.isPresent()) {
 			// we have to declare it to the mapping strategy. To do that we must find the versionning column
@@ -210,8 +252,6 @@ class EntityMappingBuilder<C, I> {
 			result.getUpdateExecutor().setVersioningStrategy(versioningStrategy.get());
 			result.getInsertExecutor().setVersioningStrategy(versioningStrategy.get());
 		}
-		
-		return result;
 	}
 	
 	/**
@@ -226,9 +266,12 @@ class EntityMappingBuilder<C, I> {
 		/** Keep track of oneToOne properties to be removed of direct mapping */
 		private final ValueAccessPointSet oneToOnePropertiesOwnedByReverseSide;
 		
+		private final ColumnNamingStrategy joinColumnNamingStrategy;
+		
 		public EntityDecoratedEmbeddableMappingBuilder(EmbeddableMappingConfiguration<C> propertiesMapping,
 													   List<CascadeOne<C, ?, ?>> oneToOnes,
-													   @javax.annotation.Nullable ClassMappingStrategy<? super C, ?, Table> inheritanceMappingStrategy) {
+													   @javax.annotation.Nullable ClassMappingStrategy<? super C, ?, Table> inheritanceMappingStrategy,
+													   ColumnNamingStrategy joinColumnNamingStrategy) {
 			super(propertiesMapping);
 			this.inheritanceMappingStrategy = inheritanceMappingStrategy;
 			// CascadeOne.getTargetProvider() returns a method reference that can't be compared to PropertyAccessor (of Linkage.getAccessor
@@ -238,6 +281,7 @@ class EntityMappingBuilder<C, I> {
 					CascadeOne::isOwnedByReverseSide,
 					CascadeOne::getTargetProvider,
 					ValueAccessPointSet::new);
+			this.joinColumnNamingStrategy = joinColumnNamingStrategy;
 		}
 		
 		/** Overriden to take property definition by column into account */
@@ -296,6 +340,16 @@ class EntityMappingBuilder<C, I> {
 			return column;
 		}
 		
+		/** Overriden to invoke join column naming strategy if necessary */
+		@Override
+		protected String giveColumnName(Linkage linkage) {
+			if (ENTITY_CANDIDATES.get().contains(linkage.getColumnType())) {
+				return this.joinColumnNamingStrategy.giveName(MemberDefinition.giveMemberDefinition(linkage.getAccessor()));
+			} else {
+				return super.giveColumnName(linkage);
+			}
+		}
+		
 		@Override
 		protected Map<IReversibleAccessor, Column> buildMappingFromInheritance() {
 			// adding mapped super class properties (if present)
@@ -349,5 +403,28 @@ class EntityMappingBuilder<C, I> {
 			return new ClassMappingStrategy<C, I, T>(mappingConfiguration.getClassToPersist(), (T) targetTable,
 					(Map) columnMapping, identifierAccessor, identifierInsertionManager);
 		}
+	}
+	
+	/**
+	 * Adds one-to-one and one-to-many graph node to the given root. Used for select by entity properties because without this it could not load
+	 * while entity graph
+	 * 
+	 * @param persistenceContext used as a per-entity {@link ClassMappingStrategy} registry 
+	 * @param root the node on which to add sub graph elements
+	 * @param configurationSupport current entity mapping configuration (that contains the root)
+	 */
+	private void registerRelations(PersistenceContext persistenceContext, EntityGraphNode root, EntityMappingConfiguration configurationSupport) {
+		List<CascadeMany> oneToManys = configurationSupport.getOneToManys();
+		oneToManys.forEach((CascadeMany cascadeMany) -> {
+			EntityGraphNode entityGraphNode = root.registerRelation(cascadeMany.getCollectionProvider(),
+					persistenceContext.getPersister(cascadeMany.getTargetMappingConfiguration().getPersistedClass()).getMappingStrategy());
+			registerRelations(persistenceContext, entityGraphNode, cascadeMany.getTargetMappingConfiguration());
+		});
+		List<CascadeOne> oneToOnes1 = configurationSupport.getOneToOnes();
+		oneToOnes1.forEach((CascadeOne cascadeOne) -> {
+			EntityGraphNode entityGraphNode = root.registerRelation(cascadeOne.getTargetProvider(),
+					persistenceContext.getPersister(cascadeOne.getTargetMappingConfiguration().getPersistedClass()).getMappingStrategy());
+			registerRelations(persistenceContext, entityGraphNode, cascadeOne.getTargetMappingConfiguration());
+		});
 	}
 }

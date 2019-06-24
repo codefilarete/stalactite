@@ -1,5 +1,7 @@
 package org.gama.stalactite.persistence.query;
 
+import java.util.Collection;
+
 import org.danekja.java.util.function.serializable.SerializableBiConsumer;
 import org.danekja.java.util.function.serializable.SerializableFunction;
 import org.gama.stalactite.query.model.AbstractOperator;
@@ -21,4 +23,6 @@ public interface EntityCriteria<C> {
 	<O> EntityCriteria<C> or(SerializableBiConsumer<C, O> setter, AbstractOperator<O> operand);
 	
 	<A, B> EntityCriteria<C> and(SerializableFunction<C, A> getter1, SerializableFunction<A, B> getter2, AbstractOperator<B> operand);
+	
+	<S extends Collection<A>, A, B> EntityCriteria<C> andMany(SerializableFunction<C, S> getter1, SerializableFunction<A, B> getter2, AbstractOperator<B> operand);
 }

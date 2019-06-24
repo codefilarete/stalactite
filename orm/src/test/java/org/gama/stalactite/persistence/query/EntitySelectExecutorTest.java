@@ -146,13 +146,14 @@ class EntitySelectExecutorTest {
 	}
 	
 	@Test
-	void select_oneToOneCase() {
+	void select_oneToOneCase() throws SQLException {
 		createConnectionProvider(Arrays.asList(
 				Maps.asMap("Country_name", (Object) "France").add("Country_id", 12L).add("Country_capitalId", 42L)
 						.add("City_id", 42L).add("City_name", "Paris")
 		));
 		
-		Persister<Country, Identifier, Table> persister = FluentEntityMappingConfigurationSupport.from(Country.class, Identifier.class)
+		JoinedTablesPersister<Country, Identifier, Table> persister = (JoinedTablesPersister<Country, Identifier, Table>)
+				FluentEntityMappingConfigurationSupport.from(Country.class, Identifier.class)
 				.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.add(Country::getName)
 				.addOneToOne(Country::getCapital, FluentEntityMappingConfigurationSupport.from(City.class, Identifier.class)
@@ -163,13 +164,14 @@ class EntitySelectExecutorTest {
 		
 		ColumnBinderRegistry columnBinderRegistry = dialect.getColumnBinderRegistry();
 		JoinedStrategiesSelect<Country, Identifier, Table> joinedStrategiesSelect =
-				((JoinedTablesPersister<Country, Identifier, Table>) persister).getJoinedStrategiesSelectExecutor().getJoinedStrategiesSelect();
+				persister.getJoinedStrategiesSelectExecutor().getJoinedStrategiesSelect();
 		EntitySelectExecutor<Country, Identifier, Table> testInstance = new EntitySelectExecutor<>(joinedStrategiesSelect, connectionProviderMock, columnBinderRegistry);
 		
-		EntityCriteria<Country> countryEntityCriteriaSupport = new EntityCriteriaSupport<>(persister.getMappingStrategy(), Country::getName, Operator.eq(""))
+		EntityCriteria<Country> countryEntityCriteriaSupport = persister
 				// actually we don't care about criteria since data is hardly tied to the connection (see createConnectionProvider(..))
-				.and(Country::getId, Operator.<Identifier>in(new PersistedIdentifier<>(11L)))
-				.and(Country::getName, Operator.eq("toto"));
+				.selectWhere(Country::getId, Operator.<Identifier>in(new PersistedIdentifier<>(11L)))
+				.and(Country::getName, Operator.eq("toto"))
+				.and(Country::getCapital, City::getName, Operator.eq("Grenoble"));
 		
 		List<Country> select = testInstance.select(((EntityCriteriaSupport<Country>) countryEntityCriteriaSupport));
 		Country expectedCountry = new Country(new PersistedIdentifier<>(12L));
@@ -181,10 +183,14 @@ class EntitySelectExecutorTest {
 		assertEquals(expectedCountry, Iterables.first(select), Country::getName);
 		assertEquals(expectedCountry, Iterables.first(select), link(Country::getCapital, City::getId));
 		assertEquals(expectedCountry, Iterables.first(select), link(Country::getCapital, City::getName));
+		
+		// checking that criteria is in the where clause
+		verify(connectionMock).prepareStatement(sqlCaptor.capture());
+		assertEquals("and Country.name = ? and City.name = ?)", sqlCaptor.getValue(), s -> Strings.tail(s, 29));
 	}
 	
 	@Test
-	void select_oneToManyCase() {
+	void select_oneToManyCase() throws SQLException {
 		createConnectionProvider(Arrays.asList(
 				Maps.asMap("Country_name", (Object) "France").add("Country_id", 12L)
 						.add("Country_cities_Country_id", 12L).add("Country_cities_City_id", 42L)
@@ -197,7 +203,8 @@ class EntitySelectExecutorTest {
 						.add("City_id", 44L).add("City_name", "Grenoble")
 		));
 		
-		Persister<Country, Identifier, Table> persister = FluentEntityMappingConfigurationSupport.from(Country.class, Identifier.class)
+		JoinedTablesPersister<Country, Identifier, Table> persister = (JoinedTablesPersister<Country, Identifier, Table>)
+				FluentEntityMappingConfigurationSupport.from(Country.class, Identifier.class)
 				.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.add(Country::getName)
 				.addOneToManySet(Country::getCities, FluentEntityMappingConfigurationSupport.from(City.class, Identifier.class)
@@ -208,13 +215,14 @@ class EntitySelectExecutorTest {
 		
 		ColumnBinderRegistry columnBinderRegistry = dialect.getColumnBinderRegistry();
 		JoinedStrategiesSelect<Country, Identifier, Table> joinedStrategiesSelect =
-				((JoinedTablesPersister<Country, Identifier, Table>) persister).getJoinedStrategiesSelectExecutor().getJoinedStrategiesSelect();
+				persister.getJoinedStrategiesSelectExecutor().getJoinedStrategiesSelect();
 		EntitySelectExecutor<Country, Identifier, Table> testInstance = new EntitySelectExecutor<>(joinedStrategiesSelect, connectionProviderMock, columnBinderRegistry);
 		
-		EntityCriteria<Country> countryEntityCriteriaSupport = new EntityCriteriaSupport<>(persister.getMappingStrategy(), Country::getName, Operator.eq(""))
-				// actually we don't care about criteria since data is hardly tied to the connection (see createConnectionProvider(..))
-				.and(Country::getId, Operator.<Identifier>in(new PersistedIdentifier<>(11L)))
-				.and(Country::getName, Operator.eq("toto"));
+		// actually we don't care about criteria since data is hardly tied to the connection (see createConnectionProvider(..))
+		EntityCriteria<Country> countryEntityCriteriaSupport =
+				persister.selectWhere(Country::getId, Operator.<Identifier>in(new PersistedIdentifier<>(11L)))
+				.and(Country::getName, Operator.eq("toto"))
+				.andMany(Country::getCities, City::getName, Operator.eq("Grenoble"));
 		
 		
 		Country expectedCountry = new Country(new PersistedIdentifier<>(12L));
@@ -236,6 +244,10 @@ class EntitySelectExecutorTest {
 		assertEquals(expectedCountry, Iterables.first(select), Country::getName);
 		assertAllEquals(expectedCountry.getCities(), Iterables.first(select).getCities(), City::getId);
 		assertAllEquals(expectedCountry.getCities(), Iterables.first(select).getCities(), City::getName);
+		
+		// checking that criteria is in the where clause
+		verify(connectionMock).prepareStatement(sqlCaptor.capture());
+		assertEquals("and Country.name = ? and City.name = ?)", sqlCaptor.getValue(), s -> Strings.tail(s, 29));
 	}
 	
 }
