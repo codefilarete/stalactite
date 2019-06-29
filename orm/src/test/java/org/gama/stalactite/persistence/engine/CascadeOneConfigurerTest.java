@@ -1,5 +1,8 @@
 package org.gama.stalactite.persistence.engine;
 
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Map;
@@ -14,12 +17,13 @@ import org.gama.reflection.MutatorByMethodReference;
 import org.gama.reflection.PropertyAccessor;
 import org.gama.sql.ConnectionProvider;
 import org.gama.sql.binder.DefaultParameterBinders;
+import org.gama.sql.binder.ParameterBinder;
 import org.gama.stalactite.persistence.engine.FluentEntityMappingConfigurationSupport.EntityLinkageByColumnName;
 import org.gama.stalactite.persistence.engine.cascade.JoinedTablesPersister;
 import org.gama.stalactite.persistence.engine.model.City;
 import org.gama.stalactite.persistence.engine.model.Country;
-import org.gama.stalactite.persistence.id.Identified;
 import org.gama.stalactite.persistence.id.Identifier;
+import org.gama.stalactite.persistence.id.PersistableIdentifier;
 import org.gama.stalactite.persistence.id.manager.AlreadyAssignedIdentifierManager;
 import org.gama.stalactite.persistence.id.manager.IdentifierInsertionManager;
 import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
@@ -30,7 +34,12 @@ import org.gama.stalactite.persistence.structure.Table;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 /**
@@ -39,7 +48,8 @@ import static org.mockito.Mockito.when;
 class CascadeOneConfigurerTest {
 	
 	@Test
-	void tableStructure() {
+	void tableStructure() throws SQLException {
+		// Given
 		// defining Country mapping
 		Table<?> countryTable = new Table<>("country");
 		Column countryTableIdColumn = countryTable.addColumn("id", long.class).primaryKey();
@@ -77,6 +87,7 @@ class CascadeOneConfigurerTest {
 		);
 		EmbeddableMappingConfiguration<City> cityPropertiesMapping = mock(EmbeddableMappingConfiguration.class);
 		// declaring mapping
+		when(cityPropertiesMapping.getClassToPersist()).thenReturn(City.class);
 		when(cityPropertiesMapping.getPropertiesMapping()).thenReturn(Arrays.asList(identifierLinkage, nameLinkage));
 		// preventing NullPointerException
 		when(cityPropertiesMapping.getInsets()).thenReturn(Collections.emptyList());
@@ -102,14 +113,14 @@ class CascadeOneConfigurerTest {
 		Dialect dialect = new Dialect();
 		dialect.getColumnBinderRegistry().register((Class) Identifier.class, Identifier.identifierBinder(DefaultParameterBinders.LONG_PRIMITIVE_BINDER));
 		dialect.getJavaTypeToSqlTypeMapping().put(Identifier.class, "int");
-		dialect.getColumnBinderRegistry().register((Class) Identified.class, Identified.identifiedBinder(DefaultParameterBinders.LONG_PRIMITIVE_BINDER));
-		dialect.getJavaTypeToSqlTypeMapping().put(Identified.class, "int");
 		
+		// When
 		CascadeOneConfigurer<Country, City, Identifier<Long>> testInstance = new CascadeOneConfigurer<>(new PersistenceContext(mock(ConnectionProvider.class), dialect));
 		JoinedTablesPersister<Country, Identifier<Long>, Table> countryPersister = new JoinedTablesPersister<>(countryClassMappingStrategy, dialect,
 				mock(ConnectionProvider.class), 10);
 		testInstance.appendCascade(countryCapitalRelation, countryPersister, ForeignKeyNamingStrategy.DEFAULT, ColumnNamingStrategy.JOIN_DEFAULT);
 		
+		// Then
 		assertEquals(Arrays.asSet("id", "capitalId", "name"), countryTable.mapColumnsOnName().keySet());
 		assertEquals(Arrays.asSet("FK_country_capitalId_city_id"), Iterables.collect(countryTable.getForeignKeys(), ForeignKey::getName, HashSet::new));
 		assertEquals(countryTableCapitalColumn, Iterables.first(Iterables.first(countryTable.getForeignKeys()).getColumns()));
@@ -117,6 +128,20 @@ class CascadeOneConfigurerTest {
 		
 		assertEquals(Arrays.asSet("id", "name"), cityTable.mapColumnsOnName().keySet());
 		assertEquals(Arrays.asSet(), Iterables.collect(cityTable.getForeignKeys(), ForeignKey::getName, HashSet::new));
+		
+		// City must have a binder due to relation owned by source throught Country::getCapital
+		// This binder must only set value on PreparedStatement and doesn't read because it can't created a consistent City from values read from Country table
+		ParameterBinder<City> cityParameterBinder = dialect.getColumnBinderRegistry().getBinder(City.class);
+		assertNotNull(cityParameterBinder);
+		PreparedStatement preparedStatementMock = mock(PreparedStatement.class);
+		cityParameterBinder.set(preparedStatementMock, 1, new City(new PersistableIdentifier<>(4L)));
+		verify(preparedStatementMock).setLong(eq(1), eq(4L));
+		ResultSet resultSetMock = mock(ResultSet.class);
+		// because City ParameterBinder is a NullAwareParameterBinder that wraps the interestic one, we must mimic a non null value in ResultSet
+		// to make underlying binder being called
+		when(resultSetMock.getObject(anyString())).thenReturn(new Object());
+		when(resultSetMock.wasNull()).thenReturn(false);
+		assertNull(cityParameterBinder.get(resultSetMock, "whateverColumn"));
 	}
 	
 	@Test
@@ -182,9 +207,6 @@ class CascadeOneConfigurerTest {
 		Dialect dialect = new Dialect();
 		dialect.getColumnBinderRegistry().register((Class) Identifier.class, Identifier.identifierBinder(DefaultParameterBinders.LONG_PRIMITIVE_BINDER));
 		dialect.getJavaTypeToSqlTypeMapping().put(Identifier.class, "int");
-		dialect.getColumnBinderRegistry().register((Class) Identified.class, Identified.identifiedBinder(DefaultParameterBinders.LONG_PRIMITIVE_BINDER));
-		dialect.getJavaTypeToSqlTypeMapping().put(Identified.class, "int");
-		
 		
 		CascadeOneConfigurer<Country, City, Identifier<Long>> testInstance = new CascadeOneConfigurer<>(new PersistenceContext(mock(ConnectionProvider.class), dialect));
 		JoinedTablesPersister<Country, Identifier<Long>, Table> countryPersister = new JoinedTablesPersister<>(countryClassMappingStrategy, dialect,

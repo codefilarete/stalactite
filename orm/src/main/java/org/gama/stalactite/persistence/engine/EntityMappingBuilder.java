@@ -1,6 +1,7 @@
 package org.gama.stalactite.persistence.engine;
 
 import java.lang.reflect.Method;
+import java.sql.ResultSet;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
@@ -262,6 +263,7 @@ class EntityMappingBuilder<C, I> {
 	 */
 	private static class EntityDecoratedEmbeddableMappingBuilder<C> extends EmbeddableMappingBuilder<C> {
 		
+		private final List<CascadeOne<C, ?, ?>> oneToOnes;
 		private final ClassMappingStrategy<? super C, ?, Table> inheritanceMappingStrategy;
 		/** Keep track of oneToOne properties to be removed of direct mapping */
 		private final ValueAccessPointSet oneToOnePropertiesOwnedByReverseSide;
@@ -273,6 +275,7 @@ class EntityMappingBuilder<C, I> {
 													   @javax.annotation.Nullable ClassMappingStrategy<? super C, ?, Table> inheritanceMappingStrategy,
 													   ColumnNamingStrategy joinColumnNamingStrategy) {
 			super(propertiesMapping);
+			this.oneToOnes = oneToOnes;
 			this.inheritanceMappingStrategy = inheritanceMappingStrategy;
 			// CascadeOne.getTargetProvider() returns a method reference that can't be compared to PropertyAccessor (of Linkage.getAccessor
 			// in mappingConfiguration.getPropertiesMapping() keys) so we use a ValueAccessPoint to do it 
@@ -304,16 +307,35 @@ class EntityMappingBuilder<C, I> {
 		@Override
 		protected void ensureColumnBinding(Linkage linkage, Column column) {
 			if (linkage instanceof FluentEntityMappingConfigurationSupport.EntityLinkageByColumn) {
-				// we add
+				// we ensure that column has an associated binder
 				Column mappedColumn = ((EntityLinkageByColumn) linkage).getColumn();
 				if (!dialect.getColumnBinderRegistry().keys().contains(mappedColumn)) {
-					super.ensureColumnBinding(linkage, column);
+					ensureColumnBindingExceptOneToOne(linkage, column);
 				}
+				// and it should be in target table !
 				if (!targetTable.getColumns().contains(mappedColumn)) {
 					throw new MappingConfigurationException("Column specified for mapping " + MemberDefinition.toString(linkage.getAccessor())
 							+ " is not in target table : column " + mappedColumn.getAbsoluteName() + " is not in table " + targetTable.getName());
 				}
 			} else {
+				ensureColumnBindingExceptOneToOne(linkage, column);
+			}
+		}
+		
+		/**
+		 * Same as {@link #ensureColumnBinding(Linkage, Column)} but will do nothing for one-to-one relation because it would try to find a
+		 * binder for an entity (which may exist if user declare it) which can hardly/never implement correctly the reading process because
+		 * target entity should be created with a complete information set, which is not possible throught {@link org.gama.sql.binder.ResultSetReader#get(ResultSet, String)}.
+		 * Entity will be crate correctly by {@link org.gama.stalactite.persistence.engine.cascade.StrategyJoinsRowTransformer}
+		 * 
+		 * @param linkage
+		 * @param column
+		 */
+		private void ensureColumnBindingExceptOneToOne(Linkage linkage, Column column) {
+			// we should not check for column binding of owner because its column will be mange by CascadeOneConfigurer. Without this, we get a
+			// BindingException at each OneToOne
+			// NB: we can use equals(..) here because Linkage was created from oneToOne information, no need to create a MemberDefinition for comparison
+			if (this.oneToOnes.stream().noneMatch(cascadeOne -> cascadeOne.getTargetProvider().equals(linkage.getAccessor()))) {
 				super.ensureColumnBinding(linkage, column);
 			}
 		}

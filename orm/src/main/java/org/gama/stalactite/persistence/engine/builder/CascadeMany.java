@@ -30,13 +30,17 @@ public class CascadeMany<SRC, TRGT, TRGTID, C extends Collection<TRGT>> {
 	
 	private final Table targetTable;
 	
-	/** the method that gets the "one" entity from the "many" entities */
+	/** The method that gets the "one" entity from the "many" entities, may be null */
 	private SerializableFunction<TRGT, SRC> reverseGetter;
 	
-	/** the method that sets the "one" entity onto the "many" entities */
+	/** The method that sets the "one" entity onto the "many" entities, may be null */
 	private SerializableBiConsumer<TRGT, SRC> reverseSetter;
 	
-	private Column<Table, SRC> reverseColumn;
+	/**
+	 * The column that stores relation, may be null.
+	 * Its type is undetermined (not forced at SRC) because it can only be a reference, such as an id.
+	 */
+	private Column<Table, ?> reverseColumn;
 	
 	/** Default relationship mode is readonly */
 	private RelationshipMode relationshipMode = RelationshipMode.READ_ONLY;
@@ -66,6 +70,7 @@ public class CascadeMany<SRC, TRGT, TRGTID, C extends Collection<TRGT>> {
 		return targetTable;
 	}
 	
+	@Nullable
 	public SerializableFunction<TRGT, SRC> getReverseGetter() {
 		return reverseGetter;
 	}
@@ -74,6 +79,7 @@ public class CascadeMany<SRC, TRGT, TRGTID, C extends Collection<TRGT>> {
 		this.reverseGetter = reverseGetter;
 	}
 	
+	@Nullable
 	public SerializableBiConsumer<TRGT, SRC> getReverseSetter() {
 		return reverseSetter;
 	}
@@ -82,11 +88,12 @@ public class CascadeMany<SRC, TRGT, TRGTID, C extends Collection<TRGT>> {
 		this.reverseSetter = reverseSetter;
 	}
 	
-	public Column<Table, SRC> getReverseColumn() {
+	@Nullable
+	public Column<Table, ?> getReverseColumn() {
 		return reverseColumn;
 	}
 	
-	public void setReverseColumn(Column<Table, SRC> reverseColumn) {
+	public void setReverseColumn(Column<Table, ?> reverseColumn) {
 		this.reverseColumn = reverseColumn;
 	}
 	

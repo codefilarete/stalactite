@@ -331,7 +331,7 @@ public class CascadeManyConfigurer<SRC, TRGT, SRCID, TRGTID, C extends Collectio
 			
 			if (manyAssociationConfiguration.cascadeMany instanceof CascadeManyList) {
 				if (reverseGetter == null) {
-					throw new UnsupportedOperationException("Indexed collection without getter is not supporter : relation is mapped by "
+					throw new UnsupportedOperationException("Indexed collection without getter is not supported : relation is mapped by "
 							+ (reverseMethod != null ? Reflections.toString(reverseMethod) : manyAssociationConfiguration.cascadeMany.getReverseColumn())
 							+ " but no indexing property is defined");
 				}

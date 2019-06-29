@@ -47,6 +47,6 @@ public interface OneToManyOptions<C, I, O >
 	 * @param reverseLink opposite owner of the relation
 	 * @return the global mapping configurer
 	 */
-	IFluentMappingBuilderOneToManyOptions<C, I, O> mappedBy(Column<Table, C> reverseLink);
+	IFluentMappingBuilderOneToManyOptions<C, I, O> mappedBy(Column<Table, ?> reverseLink);
 	
 }

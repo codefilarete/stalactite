@@ -265,7 +265,7 @@ public interface IFluentMappingBuilder<C, I> extends IFluentEmbeddableMappingCon
 		 * @return the global mapping configurer
 		 */
 		@Override
-		IFluentMappingBuilderOneToManyListOptions<C, I, O> mappedBy(Column<Table, C> reverseLink);
+		IFluentMappingBuilderOneToManyListOptions<C, I, O> mappedBy(Column<Table, ?> reverseLink);
 		
 		/**
 		 * Defines the indexing column of the mapped {@link java.util.List}.

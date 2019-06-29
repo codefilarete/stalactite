@@ -895,35 +895,35 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements IFluentMap
 	/**
 	 * A small class for one-to-many options storage into a {@link CascadeMany}. Acts as a wrapper over it.
 	 */
-	private static class OneToManyOptionsSupport<T, I, O>
-			implements OneToManyOptions<T, I, O> {
+	private static class OneToManyOptionsSupport<C, I, O>
+			implements OneToManyOptions<C, I, O> {
 		
-		private final CascadeMany<T, O, I, ? extends Collection> cascadeMany;
+		private final CascadeMany<C, O, I, ? extends Collection> cascadeMany;
 		
-		public OneToManyOptionsSupport(CascadeMany<T, O, I, ? extends Collection> cascadeMany) {
+		public OneToManyOptionsSupport(CascadeMany<C, O, I, ? extends Collection> cascadeMany) {
 			this.cascadeMany = cascadeMany;
 		}
 		
 		@Override
-		public IFluentMappingBuilderOneToManyOptions<T, I, O> mappedBy(SerializableBiConsumer<O, T> reverseLink) {
+		public IFluentMappingBuilderOneToManyOptions<C, I, O> mappedBy(SerializableBiConsumer<O, C> reverseLink) {
 			cascadeMany.setReverseSetter(reverseLink);
 			return null;	// we can return null because dispatcher will return proxy
 		}
 		
 		@Override
-		public IFluentMappingBuilderOneToManyOptions<T, I, O> mappedBy(SerializableFunction<O, T> reverseLink) {
+		public IFluentMappingBuilderOneToManyOptions<C, I, O> mappedBy(SerializableFunction<O, C> reverseLink) {
 			cascadeMany.setReverseGetter(reverseLink);
 			return null;	// we can return null because dispatcher will return proxy
 		}
 		
 		@Override
-		public IFluentMappingBuilderOneToManyOptions<T, I, O> mappedBy(Column<Table, T> reverseLink) {
+		public IFluentMappingBuilderOneToManyOptions<C, I, O> mappedBy(Column<Table, ?> reverseLink) {
 			cascadeMany.setReverseColumn(reverseLink);
 			return null;	// we can return null because dispatcher will return proxy
 		}
 		
 		@Override
-		public IFluentMappingBuilderOneToManyOptions<T, I, O> cascading(RelationshipMode relationshipMode) {
+		public IFluentMappingBuilderOneToManyOptions<C, I, O> cascading(RelationshipMode relationshipMode) {
 			cascadeMany.setRelationshipMode(relationshipMode);
 			return null;	// we can return null because dispatcher will return proxy
 		}

@@ -31,7 +31,6 @@ import org.gama.reflection.ValueAccessPointMap;
 import org.gama.reflection.ValueAccessPointSet;
 import org.gama.sql.binder.ParameterBinder;
 import org.gama.sql.binder.ParameterBinderRegistry.EnumBindType;
-import org.gama.stalactite.persistence.id.Identified;
 import org.gama.stalactite.persistence.mapping.EmbeddedBeanMappingStrategy;
 import org.gama.stalactite.persistence.sql.Dialect;
 import org.gama.stalactite.persistence.structure.Column;
@@ -52,7 +51,7 @@ public class FluentEmbeddableMappingConfigurationSupport<C> implements IFluentEm
 	 * @param <T> any type to be persisted
 	 * @return a new {@link FluentEmbeddableMappingConfigurationSupport}
 	 */
-	public static <T extends Identified> IFluentEmbeddableMappingBuilder<T> from(Class<T> persistedClass) {
+	public static <T> IFluentEmbeddableMappingBuilder<T> from(Class<T> persistedClass) {
 		return new FluentEmbeddableMappingConfigurationSupport<>(persistedClass);
 	}
 	

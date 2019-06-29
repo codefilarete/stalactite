@@ -59,7 +59,9 @@ class EntitySelectExecutorTest {
 	void initTest() {
 		dialect = new Dialect();
 		dialect.getColumnBinderRegistry().register((Class) Identifier.class, Identifier.identifierBinder(DefaultParameterBinders.LONG_PRIMITIVE_BINDER));
+		dialect.getJavaTypeToSqlTypeMapping().put(Identifier.class, "bigint");
 		dialect.getColumnBinderRegistry().register((Class) Identified.class, Identified.identifiedBinder(DefaultParameterBinders.LONG_PRIMITIVE_BINDER));
+		dialect.getJavaTypeToSqlTypeMapping().put(Identified.class, "bigint");
 	}
 	
 	private void createConnectionProvider(List<Map<String, Object>> data) {
