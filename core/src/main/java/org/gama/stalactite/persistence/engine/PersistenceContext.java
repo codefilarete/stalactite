@@ -13,6 +13,7 @@ import java.util.function.Consumer;
 import org.danekja.java.util.function.serializable.SerializableBiConsumer;
 import org.danekja.java.util.function.serializable.SerializableBiFunction;
 import org.danekja.java.util.function.serializable.SerializableFunction;
+import org.gama.lang.Reflections;
 import org.gama.reflection.MethodReferenceCapturer;
 import org.gama.sql.ConnectionProvider;
 import org.gama.sql.dml.PreparedSQL;
@@ -115,10 +116,10 @@ public class PersistenceContext {
 	 * @param <C> type of persisted bean
 	 */
 	public <C> void addPersister(Persister<C, ?, ?> persister) {
-//		Persister existingPersister = persisterCache.get(persister.getMappingStrategy().getClassToPersist());
-//		if (existingPersister != null && existingPersister != persister) {
-//			throw new IllegalArgumentException("Persister already exists for class " + Reflections.toString(persister.getMappingStrategy().getClassToPersist()));
-//		} // else : trying to add twice the same persister, it doesn't matter
+		Persister existingPersister = persisterCache.get(persister.getMappingStrategy().getClassToPersist());
+		if (existingPersister != null && existingPersister != persister) {
+			throw new IllegalArgumentException("Persister already exists for class " + Reflections.toString(persister.getMappingStrategy().getClassToPersist()));
+		}
 		
 		persisterCache.put(persister.getMappingStrategy().getClassToPersist(), persister);
 	}

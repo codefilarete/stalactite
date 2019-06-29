@@ -374,12 +374,4 @@ class PersisterTest {
 		verify(deleteListener).beforeDeleteById(eq(Arrays.asList(toBeDeleted)));
 		verify(deleteListener).afterDeleteById(eq(Arrays.asList(toBeDeleted)));
 	}
-	
-	@Test
-	void queryByProperies() {
-		Persister<Toto, Long, Table> xx = null;
-		xx.findAll();
-//		xx.findWhere(Toto::getName, Operand.like("ll"));
-	}
-	
 }

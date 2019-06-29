@@ -45,6 +45,9 @@ public class Table<SELF extends Table<SELF>> {
 	
 	private final Map<String, Column<SELF, ?>> columnsPerName = new HashMap<>();
 	
+	/** Made to avoid name & uppercase computation at each invokation of hashCode(). Made by principle, not for any performance issue observation */
+	private final int hashCode;
+	
 	public Table(String name) {
 		this(null, name);
 	}
@@ -53,6 +56,7 @@ public class Table<SELF extends Table<SELF>> {
 		this.schema = schema;
 		this.name = name;
 		this.absoluteName = (schema == null ? "" : (schema.getName() + ".")) + name;
+		this.hashCode = name.toUpperCase().hashCode();
 	}
 	
 	public Schema getSchema() {
@@ -197,7 +201,7 @@ public class Table<SELF extends Table<SELF>> {
 	 */
 	@Override
 	public int hashCode() {
-		return name.toUpperCase().hashCode();
+		return hashCode;
 	}
 	
 	private String toString(Column column) {
