@@ -30,6 +30,7 @@ import org.gama.reflection.PropertyAccessor;
 import org.gama.reflection.ValueAccessPointByMethodReference;
 import org.gama.reflection.ValueAccessPointMap;
 import org.gama.stalactite.persistence.engine.AbstractVersioningStrategy.VersioningStrategySupport;
+import org.gama.stalactite.persistence.engine.ColumnOptions.IdentifierPolicy;
 import org.gama.stalactite.persistence.engine.EmbeddableMappingConfiguration.Linkage;
 import org.gama.stalactite.persistence.engine.FluentEmbeddableMappingConfigurationSupport.AbstractLinkage;
 import org.gama.stalactite.persistence.engine.FluentEmbeddableMappingConfigurationSupport.Inset;
@@ -39,14 +40,11 @@ import org.gama.stalactite.persistence.engine.IFluentEmbeddableMappingBuilder.IF
 import org.gama.stalactite.persistence.engine.builder.CascadeMany;
 import org.gama.stalactite.persistence.engine.builder.CascadeManyList;
 import org.gama.stalactite.persistence.id.Identified;
-import org.gama.stalactite.persistence.id.Identifier;
 import org.gama.stalactite.persistence.id.manager.AlreadyAssignedIdentifierManager;
-import org.gama.stalactite.persistence.id.manager.IdentifierInsertionManager;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
 
-import static org.gama.reflection.MemberDefinition.*;
-import static org.gama.stalactite.persistence.id.manager.JDBCGeneratedKeysIdentifierManager.keyMapper;
+import static org.gama.reflection.MemberDefinition.giveMemberDefinition;
 
 /**
  * @author Guillaume Mary
@@ -68,7 +66,7 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements IFluentMap
 	
 	private final Class<C> persistedClass;
 	
-	private IdentifierInsertionManager<C, I> identifierInsertionManager;
+	private IdentifierPolicy identifierPolicy;
 	
 	private TableNamingStrategy tableNamingStrategy = TableNamingStrategy.DEFAULT;
 	
@@ -134,13 +132,13 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements IFluentMap
 	}
 	
 	@Override
-	public IReversibleAccessor getIdentifierAccessor() {
-		return this.identifierAccessor;
+	public IdentifierPolicy getIdentifierPolicy() {
+		return identifierPolicy;
 	}
 	
 	@Override
-	public IdentifierInsertionManager<C, I> getIdentifierInsertionManager() {
-		return this.identifierInsertionManager;
+	public IReversibleAccessor getIdentifierAccessor() {
+		return this.identifierAccessor;
 	}
 	
 	@Override
@@ -206,25 +204,25 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements IFluentMap
 	@Override
 	public <O> IFluentMappingBuilderPropertyOptions<C, I> add(SerializableBiConsumer<C, O> setter, String columnName) {
 		AbstractLinkage<C> mapping = propertiesMappingConfigurationSurrogate.addMapping(setter, columnName);
-		return this.propertiesMappingConfigurationSurrogate.wrapForAdditionalOptions(setter, mapping);
+		return this.propertiesMappingConfigurationSurrogate.wrapForAdditionalOptions(mapping);
 	}
 	
 	@Override
 	public <O> IFluentMappingBuilderPropertyOptions<C, I> add(SerializableFunction<C, O> getter, String columnName) {
 		AbstractLinkage<C> mapping = propertiesMappingConfigurationSurrogate.addMapping(getter, columnName);
-		return this.propertiesMappingConfigurationSurrogate.wrapForAdditionalOptions(getter, mapping);
+		return this.propertiesMappingConfigurationSurrogate.wrapForAdditionalOptions(mapping);
 	}
 	
 	@Override
 	public <O> IFluentMappingBuilderPropertyOptions<C, I> add(SerializableBiConsumer<C, O> setter, Column<Table, O> column) {
 		AbstractLinkage<C> mapping = propertiesMappingConfigurationSurrogate.addMapping(setter, column);
-		return this.propertiesMappingConfigurationSurrogate.wrapForAdditionalOptions(setter, mapping);
+		return this.propertiesMappingConfigurationSurrogate.wrapForAdditionalOptions(mapping);
 	}
 	
 	@Override
 	public <O> IFluentMappingBuilderPropertyOptions<C, I> add(SerializableFunction<C, O> getter, Column<Table, O> column) {
 		AbstractLinkage<C> mapping = propertiesMappingConfigurationSurrogate.addMapping(getter, column);
-		return this.propertiesMappingConfigurationSurrogate.wrapForAdditionalOptions(getter, mapping);
+		return this.propertiesMappingConfigurationSurrogate.wrapForAdditionalOptions(mapping);
 	}
 	
 	@Override
@@ -794,17 +792,7 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements IFluentMap
 			return newLinkage;
 		}
 		
-		private IFluentMappingBuilderPropertyOptions<C, I> wrapForAdditionalOptions(SerializableBiConsumer<C, ?> setter, AbstractLinkage newMapping) {
-			MutatorByMethodReference<C, ?> mutatorByMethodReference = Accessors.mutatorByMethodReference(setter);
-			return wrapForAdditionalOptions(mutatorByMethodReference, newMapping);
-		}
-		
-		private IFluentMappingBuilderPropertyOptions<C, I> wrapForAdditionalOptions(SerializableFunction<C, ?> getter, AbstractLinkage newMapping) {
-			AccessorByMethodReference<C, ?> accessorByMethodReference = Accessors.accessorByMethodReference(getter);
-			return wrapForAdditionalOptions(accessorByMethodReference, newMapping);
-		}
-		
-		private IFluentMappingBuilderPropertyOptions<C, I> wrapForAdditionalOptions(ValueAccessPointByMethodReference methodReference, AbstractLinkage newMapping) {
+		private IFluentMappingBuilderPropertyOptions<C, I> wrapForAdditionalOptions(AbstractLinkage newMapping) {
 			return new MethodDispatcher()
 					.redirect(ColumnOptions.class, new ColumnOptions() {
 						@Override
@@ -813,28 +801,19 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements IFluentMap
 							if (entityConfigurationSupport.identifierAccessor != null) {
 								throw new IllegalArgumentException("Identifier is already defined by " + MemberDefinition.toString(entityConfigurationSupport.identifierAccessor.getAccessor()));
 							}
-							if (identifierPolicy == IdentifierPolicy.ALREADY_ASSIGNED) {
-								Class<I> identifierType = methodReference.getPropertyType();
-								if (Identified.class.isAssignableFrom(methodReference.getDeclaringClass()) && Identifier.class.isAssignableFrom(identifierType)) {
-									entityConfigurationSupport.identifierInsertionManager = new IdentifiedIdentifierManager<>(identifierType);
-								} else {
-									throw new NotYetSupportedOperationException(
-											IdentifierPolicy.ALREADY_ASSIGNED + " is only supported with entities that implement " + Reflections.toString(Identified.class));
-								}
-								if (newMapping instanceof EntityLinkageByColumnName) {
-									// we force primary key so it's not necessary to be set by caller
-									((EntityLinkageByColumnName) newMapping).primaryKey();
-								} else if (newMapping instanceof EntityLinkageByColumn && !((EntityLinkageByColumn) newMapping).isPrimaryKey()) {
-									// safeguard about misconfiguration, even if mapping would work it smells bad configuration
-									throw new IllegalArgumentException("Identifier policy is assigned to a non primary key column");
-								} else {
-									// in case of evolution in the Linkage API
-									throw new NotImplementedException(newMapping.getClass());
-								}
-							} else {
-								throw new NotYetSupportedOperationException(identifierPolicy + " is not yet supported");
-							}
 							entityConfigurationSupport.identifierAccessor = (PropertyAccessor<C, I>) newMapping.getAccessor();
+							entityConfigurationSupport.identifierPolicy = identifierPolicy;
+							
+							if (newMapping instanceof FluentEntityMappingConfigurationSupport.EntityLinkageByColumnName) {
+								// we force primary key so it's not necessary to be set by caller
+								((EntityLinkageByColumnName) newMapping).primaryKey();
+							} else if (newMapping instanceof EntityLinkageByColumn && !((EntityLinkageByColumn) newMapping).isPrimaryKey()) {
+								// safeguard about misconfiguration, even if mapping would work it smells bad configuration
+								throw new IllegalArgumentException("Identifier policy is assigned to a non primary key column");
+							} else {
+								// in case of evolution in the Linkage API
+								throw new NotImplementedException(newMapping.getClass());
+							}
 							return null;
 						}
 						

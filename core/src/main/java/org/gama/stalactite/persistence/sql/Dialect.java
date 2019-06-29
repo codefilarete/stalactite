@@ -2,6 +2,7 @@ package org.gama.stalactite.persistence.sql;
 
 import org.gama.lang.Retryer;
 import org.gama.lang.bean.Objects;
+import org.gama.sql.dml.GeneratedKeysReader;
 import org.gama.stalactite.persistence.sql.ddl.DDLGenerator;
 import org.gama.stalactite.persistence.sql.ddl.DDLTableGenerator;
 import org.gama.stalactite.persistence.sql.ddl.JavaTypeToSqlTypeMapping;
@@ -95,5 +96,9 @@ public class Dialect {
 			throw new IllegalArgumentException("SQL operator 'in' must contain at least 1 element");
 		}
 		this.inOperatorMaxSize = inOperatorMaxSize;
+	}
+	
+	public <I> GeneratedKeysReader<I> buildGeneratedKeysReader(String keyName, Class<I> columnType) {
+		return new GeneratedKeysReader<>(keyName, getColumnBinderRegistry().getBinder(columnType));
 	}
 }

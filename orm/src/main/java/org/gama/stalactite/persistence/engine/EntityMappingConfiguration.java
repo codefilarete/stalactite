@@ -4,8 +4,8 @@ import java.util.Collection;
 import java.util.List;
 
 import org.gama.reflection.IReversibleAccessor;
+import org.gama.stalactite.persistence.engine.ColumnOptions.IdentifierPolicy;
 import org.gama.stalactite.persistence.engine.builder.CascadeMany;
-import org.gama.stalactite.persistence.id.manager.IdentifierInsertionManager;
 import org.gama.stalactite.persistence.structure.Table;
 
 /**
@@ -19,9 +19,9 @@ public interface EntityMappingConfiguration<C, I> {
 	
 	TableNamingStrategy getTableNamingStrategy();
 	
-	IReversibleAccessor getIdentifierAccessor();
+	IdentifierPolicy getIdentifierPolicy();
 	
-	IdentifierInsertionManager<C, I> getIdentifierInsertionManager();
+	IReversibleAccessor getIdentifierAccessor();
 	
 	EmbeddableMappingConfiguration<C> getPropertiesMapping();
 	

@@ -1,15 +1,14 @@
 package org.gama.sql.dml;
 
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.List;
 
 import org.gama.lang.collection.Iterables;
-import org.gama.sql.binder.DefaultResultSetReaders;
 import org.gama.sql.binder.ResultSetReader;
 import org.gama.sql.result.ResultSetIterator;
-import org.gama.sql.result.Row;
 
 /**
  * Default implementation of a {@link ResultSet} returned by {@link Statement#getGeneratedKeys()}.
@@ -25,24 +24,15 @@ import org.gama.sql.result.Row;
  * If only one row is returned even in multi-row statement (Derby behaves like this, see https://issues.apache.org/jira/browse/DERBY-3609),
  * then you may override {@link #read(WriteOperation)} to simulate multiple rows reading.
  * 
+ * @param <I> generated keys type
  * @author Guillaume Mary
  */
-public class GeneratedKeysReader {
+public class GeneratedKeysReader<I> {
 	
 	private final String keyName;
 	
 	/** Underlying reader of generated value */
-	private final ResultSetReader typeReader;
-	
-	/**
-	 * Constructor dedicated to {@link Long} value reader.
-	 * 
-	 * @param keyName column name to be read on generated {@link ResultSet}
-	 */
-	public GeneratedKeysReader(String keyName) {
-		this.keyName = keyName;
-		this.typeReader = DefaultResultSetReaders.LONG_PRIMITIVE_READER;
-	}
+	private final ResultSetReader<I> typeReader;
 	
 	/**
 	 * Constructor.
@@ -50,7 +40,7 @@ public class GeneratedKeysReader {
 	 * @param keyName column name to be read on generated {@link ResultSet}
 	 * @param typeReader reader of generated key column
 	 */
-	public GeneratedKeysReader(String keyName, ResultSetReader typeReader) {
+	public GeneratedKeysReader(String keyName, ResultSetReader<I> typeReader) {
 		this.keyName = keyName;
 		this.typeReader = typeReader;
 	}
@@ -59,25 +49,29 @@ public class GeneratedKeysReader {
 		return keyName;
 	}
 	
-	public List<Row> read(WriteOperation writeOperation) throws SQLException {
+	/**
+	 * Method that must be called after insert or update operation to read generated values through {@link PreparedStatement#getGeneratedKeys()}.
+	 * Please note that {@link PreparedStatement} should have been created with {@link java.sql.Connection#prepareStatement(String, int)} and
+	 * {@link Statement#RETURN_GENERATED_KEYS} argument.
+	 * 
+	 * 
+	 * @param writeOperation any insert operation (can't be a {@link PreparedStatement} because some implementations needs more information (see Derby override)
+	 * @return a {@link List} of database-generated keys during operation execution
+	 * @throws SQLException in case of reading problem
+	 */
+	public List<I> read(WriteOperation writeOperation) throws SQLException {
 		try (ResultSet generatedKeys = writeOperation.preparedStatement.getGeneratedKeys()) {
-			ResultSetIterator<Row> iterator = new ResultSetIterator<Row>(generatedKeys) {
+			ResultSetIterator<I> iterator = new ResultSetIterator<I>(generatedKeys) {
 				@Override
-				public Row convert(ResultSet rs) throws SQLException {
-					Row toReturn = new Row();
-					fillRow(toReturn, rs);
-					return toReturn;
+				public I convert(ResultSet rs) throws SQLException {
+					return readKey(rs);
 				}
 			};
 			return Iterables.copy(iterator);
 		}
 	}
 	
-	protected void fillRow(Row row, ResultSet rs) throws SQLException {
-		row.put(keyName, readKey(rs));
-	}
-	
-	protected Object readKey(ResultSet rs) throws SQLException {
+	protected I readKey(ResultSet rs) throws SQLException {
 		return typeReader.get(rs, getKeyName());
 	}
 }

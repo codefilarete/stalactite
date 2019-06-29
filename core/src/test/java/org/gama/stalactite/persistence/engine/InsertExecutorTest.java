@@ -180,7 +180,6 @@ public class InsertExecutorTest extends AbstractDMLExecutorTest {
 									new JDBCGeneratedKeysIdentifierManager<>(
 											new SinglePropertyIdAccessor<>(primaryKeyField),
 											new GeneratedKeysReaderAsInt(primaryColumnName),
-											primaryColumnName,
 											Integer.class));
 						})
 						.withPrimaryKeyFieldName("a");
@@ -198,9 +197,9 @@ public class InsertExecutorTest extends AbstractDMLExecutorTest {
 			when(dataSet.preparedStatement.getGeneratedKeys()).thenReturn(generatedKeyResultSetMock);
 			// the ResultSet instance will be called for all batch operations so values returned must reflect that
 			when(generatedKeyResultSetMock.next()).thenReturn(true, true, true, false, true, false);
-			when(generatedKeyResultSetMock.getInt(eq(1))).thenReturn(1, 2, 3, 4);
+			when(generatedKeyResultSetMock.getInt(eq("a"))).thenReturn(1, 2, 3, 4);
 			// getObject is for null value detection, so values are not really important
-			when(generatedKeyResultSetMock.getObject(eq(1))).thenReturn(1, 2, 3, 4);
+			when(generatedKeyResultSetMock.getObject(eq("a"))).thenReturn(1, 2, 3, 4);
 			
 			// we rebind statement argument capture because by default it's bound to the "non-generating keys" preparedStatement(..) signature 
 			when(dataSet.connection.prepareStatement(dataSet.statementArgCaptor.capture(), eq(Statement.RETURN_GENERATED_KEYS))).thenReturn(dataSet.preparedStatement);
@@ -223,13 +222,10 @@ public class InsertExecutorTest extends AbstractDMLExecutorTest {
 			assertCapturedPairsEqual(dataSet, expectedPairs);
 			
 			verify(generatedKeyResultSetMock, times(6)).next();
-			verify(generatedKeyResultSetMock, times(4)).getInt(eq(1));
+			verify(generatedKeyResultSetMock, times(4)).getInt(eq("a"));
 			
 			// Verfy that database generated keys were set into Java instances
-			int i = 1;
-			for (Toto toto : totoList) {
-				assertEquals(i++, (int) toto.a);
-			}
+			assertEquals(Arrays.asList(1, 2, 3, 4), Iterables.collectToList(totoList, toto -> toto.a));
 		}
 	}
 	

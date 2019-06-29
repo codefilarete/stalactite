@@ -14,9 +14,7 @@ import org.gama.sql.test.HSQLDBInMemoryDataSource;
 import org.gama.stalactite.persistence.engine.CascadeOptions.RelationshipMode;
 import org.gama.stalactite.persistence.engine.ColumnOptions.IdentifierPolicy;
 import org.gama.stalactite.persistence.engine.FluentEntityMappingConfigurationSupport.EntityLinkageByColumnName;
-import org.gama.stalactite.persistence.engine.WriteExecutor.JDBCBatchingIterator;
 import org.gama.stalactite.persistence.engine.cascade.JoinedTablesPersister;
-import org.gama.stalactite.persistence.engine.listening.InsertListener;
 import org.gama.stalactite.persistence.engine.listening.SelectListener;
 import org.gama.stalactite.persistence.engine.model.City;
 import org.gama.stalactite.persistence.engine.model.Country;
@@ -27,23 +25,18 @@ import org.gama.stalactite.persistence.engine.model.State;
 import org.gama.stalactite.persistence.id.Identified;
 import org.gama.stalactite.persistence.id.Identifier;
 import org.gama.stalactite.persistence.id.PersistableIdentifier;
-import org.gama.stalactite.persistence.id.manager.IdentifierInsertionManager;
 import org.gama.stalactite.persistence.sql.Dialect;
 import org.gama.stalactite.persistence.sql.HSQLDBDialect;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.test.JdbcConnectionProvider;
 import org.junit.jupiter.api.Test;
-import org.mockito.ArgumentMatchers;
 import org.mockito.internal.stubbing.defaultanswers.ReturnsMocks;
 
 import static org.gama.stalactite.persistence.engine.FluentEntityMappingConfigurationSupport.from;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 /**
@@ -57,19 +50,16 @@ class EntityMappingBuilderTest {
 		dialect.getColumnBinderRegistry().register((Class) Identifier.class, Identifier.identifierBinder(DefaultParameterBinders.LONG_PRIMITIVE_BINDER));
 		dialect.getJavaTypeToSqlTypeMapping().put(Identifier.class, "int");
 		
-		// mocking Persister action of adding identifier manager InsertListeners
-		IdentifierInsertionManager identifierInsertionManagerMock = mock(IdentifierInsertionManager.class);
-		when(identifierInsertionManagerMock.getIdentifierType()).thenReturn(Identifier.class);
-		JDBCBatchingIterator iteratorMock = mock(JDBCBatchingIterator.class);
-		when(identifierInsertionManagerMock.buildJDBCBatchingIterator(any(), any(), anyInt())).thenReturn(iteratorMock);
-		InsertListener insertListenerMock = mock(InsertListener.class);
-		when(identifierInsertionManagerMock.getInsertListener()).thenReturn(insertListenerMock);
-		
+		// building mapping manually
 		IReversibleAccessor<Person, Identifier> identifierAccessor = Accessors.propertyAccessor(Person.class, "id");
+		IReversibleAccessor<Person, String> nameAccessor = Accessors.propertyAccessor(Person.class, "name");
 		
 		EmbeddableMappingConfiguration<Person> personPropertiesMapping = mock(EmbeddableMappingConfiguration.class);
 		// declaring mapping
-		when(personPropertiesMapping.getPropertiesMapping()).thenReturn(Arrays.asList(new EntityLinkageByColumnName<>(identifierAccessor, Identifier.class, "id")));
+		when(personPropertiesMapping.getPropertiesMapping()).thenReturn(Arrays.asList(
+				new EntityLinkageByColumnName<>(identifierAccessor, Identifier.class, "id"),
+				new EntityLinkageByColumnName<>(nameAccessor, String.class, "name")
+		));
 		// preventing NullPointerException
 		when(personPropertiesMapping.getInsets()).thenReturn(Collections.emptyList());
 		when(personPropertiesMapping.getColumnNamingStrategy()).thenReturn(ColumnNamingStrategy.DEFAULT);
@@ -77,7 +67,7 @@ class EntityMappingBuilderTest {
 		EntityMappingConfiguration<Person, Identifier<Long>> configuration = mock(EntityMappingConfiguration.class);
 		// declaring mapping
 		when(configuration.getPropertiesMapping()).thenReturn(personPropertiesMapping);
-		when(configuration.getIdentifierInsertionManager()).thenReturn(identifierInsertionManagerMock);
+		when(configuration.getIdentifierPolicy()).thenReturn(IdentifierPolicy.AFTER_INSERT);
 		// preventing NullPointerException
 		when(configuration.getPersistedClass()).thenReturn(Person.class);
 		when(configuration.getTableNamingStrategy()).thenReturn(TableNamingStrategy.DEFAULT);
@@ -90,7 +80,6 @@ class EntityMappingBuilderTest {
 				.build(new PersistenceContext(connectionProviderMock, dialect));
 		Person person = new Person(new PersistableIdentifier<>(1L));
 		testInstance.insert(person);
-		verify(insertListenerMock).afterInsert(ArgumentMatchers.eq(Arrays.asList(person)));
 	}
 	
 	@Test

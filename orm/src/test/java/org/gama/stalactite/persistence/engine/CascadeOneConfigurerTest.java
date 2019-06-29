@@ -18,6 +18,7 @@ import org.gama.reflection.PropertyAccessor;
 import org.gama.sql.ConnectionProvider;
 import org.gama.sql.binder.DefaultParameterBinders;
 import org.gama.sql.binder.ParameterBinder;
+import org.gama.stalactite.persistence.engine.ColumnOptions.IdentifierPolicy;
 import org.gama.stalactite.persistence.engine.FluentEntityMappingConfigurationSupport.EntityLinkageByColumnName;
 import org.gama.stalactite.persistence.engine.cascade.JoinedTablesPersister;
 import org.gama.stalactite.persistence.engine.model.City;
@@ -99,7 +100,7 @@ class CascadeOneConfigurerTest {
 		// preventing NullPointerException
 		when(cityMappingConfiguration.getTableNamingStrategy()).thenReturn(TableNamingStrategy.DEFAULT);
 		when(cityMappingConfiguration.getIdentifierAccessor()).thenReturn(cityIdentifierAccessorByMethodReference);
-		when(cityMappingConfiguration.getIdentifierInsertionManager()).thenReturn((IdentifierInsertionManager) new AlreadyAssignedIdentifierManager<City, Identifier>(Identifier.class));
+		when(cityMappingConfiguration.getIdentifierPolicy()).thenReturn(IdentifierPolicy.ALREADY_ASSIGNED);
 		when(cityMappingConfiguration.getOneToOnes()).thenReturn(Collections.emptyList());
 		when(cityMappingConfiguration.getOneToManys()).thenReturn(Collections.emptyList());
 		
@@ -196,7 +197,7 @@ class CascadeOneConfigurerTest {
 		// preventing NullPointerException
 		when(cityMappingConfiguration.getTableNamingStrategy()).thenReturn(TableNamingStrategy.DEFAULT);
 		when(cityMappingConfiguration.getIdentifierAccessor()).thenReturn(cityIdentifierAccessorByMethodReference);
-		when(cityMappingConfiguration.getIdentifierInsertionManager()).thenReturn((IdentifierInsertionManager) new AlreadyAssignedIdentifierManager<City, Identifier>(Identifier.class));
+		when(cityMappingConfiguration.getIdentifierPolicy()).thenReturn(IdentifierPolicy.ALREADY_ASSIGNED);
 		when(cityMappingConfiguration.getOneToOnes()).thenReturn(Collections.emptyList());		
 		when(cityMappingConfiguration.getOneToManys()).thenReturn(Collections.emptyList());		
 		

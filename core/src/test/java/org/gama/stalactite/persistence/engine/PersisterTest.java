@@ -31,6 +31,7 @@ import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
+import org.mockito.ArgumentMatchers;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -45,6 +46,39 @@ import static org.mockito.Mockito.when;
  * @author Guillaume Mary
  */
 class PersisterTest {
+	
+	@Test
+	void constructor_mustIncludeIdMappingListener() {
+		TotoTable totoTable = new TotoTable("TotoTable");
+		Column<TotoTable, Long> primaryKey = totoTable.addColumn("a", Long.class).primaryKey();
+		IReversibleAccessor<Toto, Long> identifier = Accessors.accessorByField(Toto.class, "a");
+		Map<? extends IReversibleAccessor<Toto, Object>, Column<TotoTable, Object>> mapping = (Map) Maps.asMap(identifier, primaryKey);
+		IdentifierInsertionManager<Toto, Long> identifierInsertionManagerMock = mock(IdentifierInsertionManager.class);
+		when(identifierInsertionManagerMock.getIdentifierType()).thenReturn(Long.class);
+		InsertListener identifierManagerInsertListenerMock = mock(InsertListener.class);
+		when(identifierInsertionManagerMock.getInsertListener()).thenReturn(identifierManagerInsertListenerMock);
+		ClassMappingStrategy<Toto, Long, TotoTable> classMappingStrategy = new ClassMappingStrategy<>(Toto.class, totoTable,
+				mapping, identifier,
+				identifierInsertionManagerMock);
+		Persister<Toto, Long, TotoTable> testInstance = new Persister<Toto, Long, TotoTable>(classMappingStrategy,
+				mock(ConnectionProvider.class), new DMLGenerator(new ColumnBinderRegistry()), Retryer.NO_RETRY, 0, 0) {
+			/** Overriden to prevent from building real world SQL statement because ConnectionProvider is mocked */
+			@Override
+			protected int doInsert(Iterable entities) {
+				return ((Collection) entities).size();
+			}
+			
+			/** Overriden to prevent from building real world SQL statement because ConnectionProvider is mocked */
+			@Override
+			protected int doUpdateById(Iterable<Toto> entities) {
+				return ((Collection) entities).size();
+			}
+		};
+		
+		Toto toto = new Toto();
+		testInstance.insert(toto);
+		verify(identifierManagerInsertListenerMock).afterInsert(ArgumentMatchers.eq(Arrays.asList(toto)));
+	}
 	
 	@Test
 	void testPersist() {
