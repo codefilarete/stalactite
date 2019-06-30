@@ -2,17 +2,17 @@ package org.gama.stalactite.query.model;
 
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.query.builder.OperatorBuilder;
-import org.gama.stalactite.query.model.operand.Between;
-import org.gama.stalactite.query.model.operand.Count;
-import org.gama.stalactite.query.model.operand.Equals;
-import org.gama.stalactite.query.model.operand.Greater;
-import org.gama.stalactite.query.model.operand.In;
-import org.gama.stalactite.query.model.operand.IsNull;
-import org.gama.stalactite.query.model.operand.Like;
-import org.gama.stalactite.query.model.operand.Lower;
-import org.gama.stalactite.query.model.operand.Max;
-import org.gama.stalactite.query.model.operand.Min;
-import org.gama.stalactite.query.model.operand.Sum;
+import org.gama.stalactite.query.model.operator.Between;
+import org.gama.stalactite.query.model.operator.Count;
+import org.gama.stalactite.query.model.operator.Equals;
+import org.gama.stalactite.query.model.operator.Greater;
+import org.gama.stalactite.query.model.operator.In;
+import org.gama.stalactite.query.model.operator.IsNull;
+import org.gama.stalactite.query.model.operator.Like;
+import org.gama.stalactite.query.model.operator.Lower;
+import org.gama.stalactite.query.model.operator.Max;
+import org.gama.stalactite.query.model.operator.Min;
+import org.gama.stalactite.query.model.operator.Sum;
 
 /**
  * General contract for operators such as <code>in, like, =, <, >, ... </code>.

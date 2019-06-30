@@ -12,18 +12,18 @@ import org.gama.stalactite.persistence.sql.dml.binder.ColumnBinderRegistry;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.query.model.AbstractRelationalOperator;
-import org.gama.stalactite.query.model.operand.Between;
-import org.gama.stalactite.query.model.operand.Between.Interval;
-import org.gama.stalactite.query.model.operand.Count;
-import org.gama.stalactite.query.model.operand.Equals;
-import org.gama.stalactite.query.model.operand.Greater;
-import org.gama.stalactite.query.model.operand.In;
-import org.gama.stalactite.query.model.operand.IsNull;
-import org.gama.stalactite.query.model.operand.Like;
-import org.gama.stalactite.query.model.operand.Lower;
-import org.gama.stalactite.query.model.operand.Max;
-import org.gama.stalactite.query.model.operand.Min;
-import org.gama.stalactite.query.model.operand.Sum;
+import org.gama.stalactite.query.model.operator.Between;
+import org.gama.stalactite.query.model.operator.Between.Interval;
+import org.gama.stalactite.query.model.operator.Count;
+import org.gama.stalactite.query.model.operator.Equals;
+import org.gama.stalactite.query.model.operator.Greater;
+import org.gama.stalactite.query.model.operator.In;
+import org.gama.stalactite.query.model.operator.IsNull;
+import org.gama.stalactite.query.model.operator.Like;
+import org.gama.stalactite.query.model.operator.Lower;
+import org.gama.stalactite.query.model.operator.Max;
+import org.gama.stalactite.query.model.operator.Min;
+import org.gama.stalactite.query.model.operator.Sum;
 
 /**
  * A class made to print a {@link AbstractRelationalOperator}

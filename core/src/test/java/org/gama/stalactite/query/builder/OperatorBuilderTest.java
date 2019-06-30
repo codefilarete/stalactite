@@ -7,8 +7,8 @@ import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.query.builder.OperatorBuilder.StringAppenderWrapper;
 import org.gama.stalactite.query.model.AbstractRelationalOperator;
-import org.gama.stalactite.query.model.operand.IsNull;
-import org.gama.stalactite.query.model.operand.Like;
+import org.gama.stalactite.query.model.operator.IsNull;
+import org.gama.stalactite.query.model.operator.Like;
 import org.junit.jupiter.api.Test;
 
 import static org.gama.stalactite.query.model.Operators.between;
