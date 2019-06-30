@@ -11,8 +11,7 @@ import org.gama.sql.binder.ParameterBinder;
 import org.gama.stalactite.persistence.sql.dml.binder.ColumnBinderRegistry;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
-import org.gama.stalactite.query.model.AbstractOperator;
-import org.gama.stalactite.query.model.Operator;
+import org.gama.stalactite.query.model.AbstractRelationalOperator;
 import org.gama.stalactite.query.model.operand.Between;
 import org.gama.stalactite.query.model.operand.Between.Interval;
 import org.gama.stalactite.query.model.operand.Count;
@@ -27,62 +26,62 @@ import org.gama.stalactite.query.model.operand.Min;
 import org.gama.stalactite.query.model.operand.Sum;
 
 /**
- * A class made to print a {@link Operator}
+ * A class made to print a {@link AbstractRelationalOperator}
  * 
  * @author Guillaume Mary
  */
-public class OperandBuilder {
+public class OperatorBuilder {
 	
 	private final DMLNameProvider dmlNameProvider;
 	
-	public OperandBuilder() {
+	public OperatorBuilder() {
 		this(Collections.emptyMap());
 	}
 	
-	public OperandBuilder(Map<? extends Table, String> tableAliases) {
+	public OperatorBuilder(Map<? extends Table, String> tableAliases) {
 		this(new DMLNameProvider(tableAliases));
 	}
 	
-	public OperandBuilder(DMLNameProvider dmlNameProvider) {
+	public OperatorBuilder(DMLNameProvider dmlNameProvider) {
 		this.dmlNameProvider = dmlNameProvider;
 	}
 	
-	public void cat(AbstractOperator operand, SQLAppender sql) {
-		cat(null, operand, sql);
+	public void cat(AbstractRelationalOperator operator, SQLAppender sql) {
+		cat(null, operator, sql);
 	}
 	
 	/**
 	 * Main entry point
 	 */
-	public void cat(Column column, AbstractOperator operand, SQLAppender sql) {
-		if (operand.isNull()) {
-			catNullValue(operand.isNot(), sql);
+	public void cat(Column column, AbstractRelationalOperator operator, SQLAppender sql) {
+		if (operator.isNull()) {
+			catNullValue(operator.isNot(), sql);
 		} else {
 			// uggly way of dispatching concatenation, can't find a better way without heavying classes or struggling with single responsability design
-			if (operand instanceof Equals) {
-				catEquals((Equals) operand, sql, column);
-			} else if (operand instanceof Lower) {
-				catLower((Lower) operand, sql, column);
-			} else if (operand instanceof Greater) {
-				catGreater((Greater) operand, sql, column);
-			} else if (operand instanceof Between) {
-				catBetween((Between) operand, sql, column);
-			} else if (operand instanceof In) {
-				catIn((In) operand, sql, column);
-			} else if (operand instanceof Like) {
-				catLike((Like) operand, sql, column);
-			} else if (operand instanceof IsNull) {
-				catIsNull((IsNull) operand, sql);
-			} else if (operand instanceof Sum) {
-				catSum((Sum) operand, sql);
-			} else if (operand instanceof Count) {
-				catCount((Count) operand, sql);
-			} else if (operand instanceof Min) {
-				catMin((Min) operand, sql);
-			} else if (operand instanceof Max) {
-				catMax((Max) operand, sql);
+			if (operator instanceof Equals) {
+				catEquals((Equals) operator, sql, column);
+			} else if (operator instanceof Lower) {
+				catLower((Lower) operator, sql, column);
+			} else if (operator instanceof Greater) {
+				catGreater((Greater) operator, sql, column);
+			} else if (operator instanceof Between) {
+				catBetween((Between) operator, sql, column);
+			} else if (operator instanceof In) {
+				catIn((In) operator, sql, column);
+			} else if (operator instanceof Like) {
+				catLike((Like) operator, sql, column);
+			} else if (operator instanceof IsNull) {
+				catIsNull((IsNull) operator, sql);
+			} else if (operator instanceof Sum) {
+				catSum((Sum) operator, sql);
+			} else if (operator instanceof Count) {
+				catCount((Count) operator, sql);
+			} else if (operator instanceof Min) {
+				catMin((Min) operator, sql);
+			} else if (operator instanceof Max) {
+				catMax((Max) operator, sql);
 			} else {
-				throw new UnsupportedOperationException("Operator " + Reflections.toString(operand.getClass()) + " is not implemented");
+				throw new UnsupportedOperationException("Operator " + Reflections.toString(operator.getClass()) + " is not implemented");
 			}
 		}
 	}
@@ -109,16 +108,9 @@ public class OperandBuilder {
 	
 	public void catIn(In in, SQLAppender sql, Column column) {
 		// we take collection into account : iterating over it to cat all values
-		Object value = in.getValue();
-//		// we adapt the value to an Iterable, avoiding multiple cases and falling into a simple foreach loop 
-//		if (!(value instanceof Iterable)) {
-//			if (!value.getClass().isArray()) {
-//				value = new Object[] { value };
-//			}
-//			value = Iterables.asIterable(new ArrayIterator<>((Object[]) value));
-//		}
+		Iterable value = in.getValue();
 		sql.catIf(in.isNot(), "not ").cat("in (");
-		catInValue((Iterable) value, sql, column);
+		catInValue(value, sql, column);
 		sql.cat(")");
 	}
 	

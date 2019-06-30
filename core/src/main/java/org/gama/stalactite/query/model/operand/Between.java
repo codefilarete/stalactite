@@ -1,14 +1,14 @@
 package org.gama.stalactite.query.model.operand;
 
-import org.gama.stalactite.query.model.AbstractOperator;
+import org.gama.stalactite.query.model.AbstractRelationalOperator;
 
 /**
- * Represents a between operand.
+ * Represents a between operator.
  * Values will be stored as {@link Interval}.
  * 
  * @author Guillaume Mary
  */
-public class Between<O> extends AbstractOperator<O> {
+public class Between<O> extends AbstractRelationalOperator<O> {
 	
 	private final Interval<O> value;
 	

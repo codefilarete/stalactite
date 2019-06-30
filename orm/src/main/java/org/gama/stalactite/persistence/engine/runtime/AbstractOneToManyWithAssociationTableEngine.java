@@ -37,7 +37,7 @@ import org.gama.stalactite.persistence.engine.runtime.OneToManyWithMappedAssocia
 import org.gama.stalactite.persistence.id.diff.AbstractDiff;
 import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
 import org.gama.stalactite.persistence.sql.dml.binder.ColumnBinderRegistry;
-import org.gama.stalactite.query.model.Operator;
+import org.gama.stalactite.query.model.Operators;
 
 import static org.gama.lang.collection.Iterables.collect;
 import static org.gama.stalactite.persistence.engine.cascade.JoinedStrategiesSelect.FIRST_STRATEGY_NAME;
@@ -300,7 +300,7 @@ public abstract class AbstractOneToManyWithAssociationTableEngine<SRC, TRGT, SRC
 				// We do it thanks to a SQL delete order ... not very coherent with beforeDelete(..) !
 				Delete<AssociationTable> delete = new Delete<>(associationPersister.getMainTable());
 				Set<SRCID> identifiers = collect(entities, this::castId, HashSet::new);
-				delete.where(associationPersister.getMainTable().getOneSideKeyColumn(), Operator.in(identifiers));
+				delete.where(associationPersister.getMainTable().getOneSideKeyColumn(), Operators.in(identifiers));
 				
 				PreparedSQL deleteStatement = new DeleteCommandBuilder<>(delete).toStatement(columnBinderRegistry);
 				try (WriteOperation<Integer> writeOperation = new WriteOperation<>(deleteStatement, associationPersister.getConnectionProvider())) {

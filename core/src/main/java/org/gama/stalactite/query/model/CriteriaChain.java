@@ -11,9 +11,9 @@ public interface CriteriaChain<SELF extends CriteriaChain<SELF>> extends Iterabl
 	
 	SELF or(Column column, CharSequence condition);
 	
-	SELF and(Column column, AbstractOperator condition);
+	SELF and(Column column, AbstractRelationalOperator condition);
 	
-	SELF or(Column column, AbstractOperator condition);
+	SELF or(Column column, AbstractRelationalOperator condition);
 	
 	SELF and(Criteria criteria);
 	

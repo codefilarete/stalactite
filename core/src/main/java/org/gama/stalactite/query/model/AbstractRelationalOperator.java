@@ -1,18 +1,18 @@
 package org.gama.stalactite.query.model;
 
 /**
+ * General contract for SQL operator such as in, =, <, >, like, between, etc. 
  * 
  * @param <V> dealing-with value type (not always value type)
  * @author Guillaume Mary
  */
-// TODO : to be renamed in RelationalOperator
-public abstract class AbstractOperator<V> {
+public abstract class AbstractRelationalOperator<V> {
 	
 	/** Is this operator must be negated ? */
 	private boolean not;
 	
 	/**
-	 * @return true if this operand uses "not"
+	 * @return true if this operator uses "not"
 	 */
 	public boolean isNot() {
 		return not;
@@ -20,14 +20,14 @@ public abstract class AbstractOperator<V> {
 	
 	/**
 	 * Sets "not" value
-	 * @param not true for this operand to use "not", false to let it use normal operand
+	 * @param not true for this operator to use "not", false to let it use normal operator
 	 */
 	public void setNot(boolean not) {
 		this.not = not;
 	}
 	
 	/**
-	 * Negates this operand
+	 * Negates this operator
 	 */
 	public void setNot() {
 		setNot(true);

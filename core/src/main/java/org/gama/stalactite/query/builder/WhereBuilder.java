@@ -8,12 +8,12 @@ import org.gama.sql.dml.PreparedSQL;
 import org.gama.stalactite.persistence.sql.dml.binder.ColumnBinderRegistry;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
-import org.gama.stalactite.query.builder.OperandBuilder.PreparedSQLWrapper;
-import org.gama.stalactite.query.builder.OperandBuilder.SQLAppender;
-import org.gama.stalactite.query.builder.OperandBuilder.StringAppenderWrapper;
+import org.gama.stalactite.query.builder.OperatorBuilder.PreparedSQLWrapper;
+import org.gama.stalactite.query.builder.OperatorBuilder.SQLAppender;
+import org.gama.stalactite.query.builder.OperatorBuilder.StringAppenderWrapper;
 import org.gama.stalactite.query.model.AbstractCriterion;
 import org.gama.stalactite.query.model.AbstractCriterion.LogicalOperator;
-import org.gama.stalactite.query.model.AbstractOperator;
+import org.gama.stalactite.query.model.AbstractRelationalOperator;
 import org.gama.stalactite.query.model.ColumnCriterion;
 import org.gama.stalactite.query.model.CriteriaChain;
 import org.gama.stalactite.query.model.RawCriterion;
@@ -78,13 +78,13 @@ public class WhereBuilder implements SQLBuilder, PreparedSQLBuilder {
 		
 		private final SQLAppender sql;
 		
-		private final OperandBuilder operandBuilder;
+		private final OperatorBuilder operatorBuilder;
 		
 		private final DMLNameProvider dmlNameProvider;
 		
 		public WhereAppender(SQLAppender sql, DMLNameProvider dmlNameProvider) {
 			this.sql = sql;
-			this.operandBuilder = new OperandBuilder(dmlNameProvider);
+			this.operatorBuilder = new OperatorBuilder(dmlNameProvider);
 			this.dmlNameProvider = dmlNameProvider;
 		}
 		
@@ -126,8 +126,8 @@ public class WhereBuilder implements SQLBuilder, PreparedSQLBuilder {
 					sql.cat(")");
 				} else if (o instanceof Column) {
 					cat((Column) o);
-				} else if (o instanceof AbstractOperator) {
-					cat((AbstractOperator) o);
+				} else if (o instanceof AbstractRelationalOperator) {
+					cat((AbstractRelationalOperator) o);
 				} else {
 					throw new IllegalArgumentException("Unknown criterion type " + Reflections.toString(o.getClass()));
 				}
@@ -140,8 +140,8 @@ public class WhereBuilder implements SQLBuilder, PreparedSQLBuilder {
 			Object o = criterion.getCondition();
 			if (o instanceof CharSequence) {
 				sql.cat(o.toString());
-			} else if (o instanceof AbstractOperator) {
-				cat(criterion.getColumn(), (AbstractOperator) o);
+			} else if (o instanceof AbstractRelationalOperator) {
+				cat(criterion.getColumn(), (AbstractRelationalOperator) o);
 			} else {
 				throw new IllegalArgumentException("Unknown criterion type " + Reflections.toString(o.getClass()));
 			}
@@ -158,12 +158,12 @@ public class WhereBuilder implements SQLBuilder, PreparedSQLBuilder {
 			}
 		}
 		
-		public void cat(AbstractOperator operand) {
-			operandBuilder.cat(operand, sql);
+		public void cat(AbstractRelationalOperator operator) {
+			operatorBuilder.cat(operator, sql);
 		}
 		
-		public void cat(Column column, AbstractOperator operand) {
-			operandBuilder.cat(column, operand, sql);
+		public void cat(Column column, AbstractRelationalOperator operator) {
+			operatorBuilder.cat(column, operator, sql);
 		}
 		
 		public String getName(LogicalOperator operator) {

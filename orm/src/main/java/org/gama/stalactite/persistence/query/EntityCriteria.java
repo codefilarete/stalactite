@@ -4,7 +4,7 @@ import java.util.Collection;
 
 import org.danekja.java.util.function.serializable.SerializableBiConsumer;
 import org.danekja.java.util.function.serializable.SerializableFunction;
-import org.gama.stalactite.query.model.AbstractOperator;
+import org.gama.stalactite.query.model.AbstractRelationalOperator;
 
 /**
  * API to follow for writing criteria on some entity
@@ -14,15 +14,15 @@ import org.gama.stalactite.query.model.AbstractOperator;
  */
 public interface EntityCriteria<C> {
 	
-	<O> EntityCriteria<C> and(SerializableFunction<C, O> getter, AbstractOperator<O> operand);
+	<O> EntityCriteria<C> and(SerializableFunction<C, O> getter, AbstractRelationalOperator<O> operator);
 	
-	<O> EntityCriteria<C> and(SerializableBiConsumer<C, O> setter, AbstractOperator<O> operand);
+	<O> EntityCriteria<C> and(SerializableBiConsumer<C, O> setter, AbstractRelationalOperator<O> operator);
 	
-	<O> EntityCriteria<C> or(SerializableFunction<C, O> getter, AbstractOperator<O> operand);
+	<O> EntityCriteria<C> or(SerializableFunction<C, O> getter, AbstractRelationalOperator<O> operator);
 	
-	<O> EntityCriteria<C> or(SerializableBiConsumer<C, O> setter, AbstractOperator<O> operand);
+	<O> EntityCriteria<C> or(SerializableBiConsumer<C, O> setter, AbstractRelationalOperator<O> operator);
 	
-	<A, B> EntityCriteria<C> and(SerializableFunction<C, A> getter1, SerializableFunction<A, B> getter2, AbstractOperator<B> operand);
+	<A, B> EntityCriteria<C> and(SerializableFunction<C, A> getter1, SerializableFunction<A, B> getter2, AbstractRelationalOperator<B> operator);
 	
-	<S extends Collection<A>, A, B> EntityCriteria<C> andMany(SerializableFunction<C, S> getter1, SerializableFunction<A, B> getter2, AbstractOperator<B> operand);
+	<S extends Collection<A>, A, B> EntityCriteria<C> andMany(SerializableFunction<C, S> getter1, SerializableFunction<A, B> getter2, AbstractRelationalOperator<B> operator);
 }

@@ -1,9 +1,11 @@
 package org.gama.stalactite.query.model;
 
 /**
+ * Parent class for operators that don't need a comparison value
+ * 
  * @author Guillaume Mary
  */
-public class UnitaryOperator<V> extends AbstractOperator<V> {
+public abstract class UnitaryOperator<V> extends AbstractRelationalOperator<V> {
 	
 	/** Value of the operator */
 	private V value;
@@ -13,14 +15,14 @@ public class UnitaryOperator<V> extends AbstractOperator<V> {
 	}
 	
 	/**
-	 * @return the value of this operand
+	 * @return the value of this operator
 	 */
 	public V getValue() {
 		return value;
 	}
 	
 	/**
-	 * Sets the value of this operant
+	 * Sets the value of this operator
 	 * @param value the new value
 	 */
 	public void setValue(V value) {

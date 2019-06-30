@@ -1,14 +1,14 @@
 package org.gama.stalactite.query.model.operand;
 
 import org.gama.lang.collection.Arrays;
-import org.gama.stalactite.query.model.AbstractOperator;
+import org.gama.stalactite.query.model.AbstractRelationalOperator;
 
 /**
  * Represents a "in" comparison
  * 
  * @author Guillaume Mary
  */
-public class In<O> extends AbstractOperator<O> {
+public class In<O> extends AbstractRelationalOperator<O> {
 	
 	private final Iterable<O> value;
 	

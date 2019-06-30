@@ -17,4 +17,9 @@ public class IsNull extends UnitaryOperator {
 	public void setValue(Object value) {
 		// setting a value on this as no effect because it has no sense
 	}
+	
+	@Override
+	public final boolean isNull() {
+		return true;
+	}
 }

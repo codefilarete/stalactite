@@ -110,7 +110,7 @@ public abstract class ResultSetIterator<T> extends ReadOnlyIterator<T> implement
 	@Override
 	public boolean hasNext() {
 		try {
-			// Warn: operand order is very important to prevent next() to be called unecessarly
+			// Warn: operator order is very important to prevent next() to be called unecessarly
 			return (hasNext = !nextCalled && resultSet.next());
 		} catch (SQLException e) {
 			throw Exceptions.asRuntimeException(e);

@@ -5,42 +5,42 @@ import java.util.Collections;
 import org.gama.lang.StringAppender;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
-import org.gama.stalactite.query.builder.OperandBuilder.StringAppenderWrapper;
-import org.gama.stalactite.query.model.AbstractOperator;
+import org.gama.stalactite.query.builder.OperatorBuilder.StringAppenderWrapper;
+import org.gama.stalactite.query.model.AbstractRelationalOperator;
 import org.gama.stalactite.query.model.operand.IsNull;
 import org.gama.stalactite.query.model.operand.Like;
 import org.junit.jupiter.api.Test;
 
-import static org.gama.stalactite.query.model.Operator.between;
-import static org.gama.stalactite.query.model.Operator.contains;
-import static org.gama.stalactite.query.model.Operator.count;
-import static org.gama.stalactite.query.model.Operator.endsWith;
-import static org.gama.stalactite.query.model.Operator.eq;
-import static org.gama.stalactite.query.model.Operator.gt;
-import static org.gama.stalactite.query.model.Operator.gteq;
-import static org.gama.stalactite.query.model.Operator.in;
-import static org.gama.stalactite.query.model.Operator.lt;
-import static org.gama.stalactite.query.model.Operator.lteq;
-import static org.gama.stalactite.query.model.Operator.max;
-import static org.gama.stalactite.query.model.Operator.min;
-import static org.gama.stalactite.query.model.Operator.not;
-import static org.gama.stalactite.query.model.Operator.startsWith;
-import static org.gama.stalactite.query.model.Operator.sum;
+import static org.gama.stalactite.query.model.Operators.between;
+import static org.gama.stalactite.query.model.Operators.contains;
+import static org.gama.stalactite.query.model.Operators.count;
+import static org.gama.stalactite.query.model.Operators.endsWith;
+import static org.gama.stalactite.query.model.Operators.eq;
+import static org.gama.stalactite.query.model.Operators.gt;
+import static org.gama.stalactite.query.model.Operators.gteq;
+import static org.gama.stalactite.query.model.Operators.in;
+import static org.gama.stalactite.query.model.Operators.lt;
+import static org.gama.stalactite.query.model.Operators.lteq;
+import static org.gama.stalactite.query.model.Operators.max;
+import static org.gama.stalactite.query.model.Operators.min;
+import static org.gama.stalactite.query.model.Operators.not;
+import static org.gama.stalactite.query.model.Operators.startsWith;
+import static org.gama.stalactite.query.model.Operators.sum;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
  * @author Guillaume Mary
  */
-public class OperandBuilderTest {
+public class OperatorBuilderTest {
 	
 	private DMLNameProvider dmlNameProvider = new DMLNameProvider(Collections.emptyMap());
 	
 	@Test
 	public void cat_nullValue_isTransformedToIsNull() {
-		OperandBuilder testInstance = new OperandBuilder();
+		OperatorBuilder testInstance = new OperatorBuilder();
 		StringAppender result = new StringAppender();
 		
-		testInstance.cat(new AbstractOperator() {
+		testInstance.cat(new AbstractRelationalOperator() {
 			@Override
 			public boolean isNull() {
 				return true;
@@ -51,7 +51,7 @@ public class OperandBuilderTest {
 	
 	@Test
 	public void catNullValue() {
-		OperandBuilder testInstance = new OperandBuilder();
+		OperatorBuilder testInstance = new OperatorBuilder();
 		StringAppender result = new StringAppender();
 		
 		testInstance.catNullValue(false, new StringAppenderWrapper(result, dmlNameProvider));
@@ -64,7 +64,7 @@ public class OperandBuilderTest {
 	
 	@Test
 	public void catIsNull() {
-		OperandBuilder testInstance = new OperandBuilder();
+		OperatorBuilder testInstance = new OperatorBuilder();
 		StringAppender result = new StringAppender();
 		
 		testInstance.catIsNull(new IsNull(), new StringAppenderWrapper(result, dmlNameProvider));
@@ -84,7 +84,7 @@ public class OperandBuilderTest {
 	
 	@Test
 	public void catLike() {
-		OperandBuilder testInstance = new OperandBuilder();
+		OperatorBuilder testInstance = new OperatorBuilder();
 		StringAppender result = new StringAppender();
 		
 		testInstance.catLike(new Like("a"), new StringAppenderWrapper(result, dmlNameProvider), null);
@@ -104,7 +104,7 @@ public class OperandBuilderTest {
 	
 	@Test
 	public void catIn() {
-		OperandBuilder testInstance = new OperandBuilder();
+		OperatorBuilder testInstance = new OperatorBuilder();
 		StringAppender result = new StringAppender();
 		
 		testInstance.catIn(in("a", "b"), new StringAppenderWrapper(result, dmlNameProvider), null);
@@ -123,7 +123,7 @@ public class OperandBuilderTest {
 	
 	@Test
 	public void catBetween() {
-		OperandBuilder testInstance = new OperandBuilder();
+		OperatorBuilder testInstance = new OperatorBuilder();
 		StringAppender result = new StringAppender();
 		
 		testInstance.catBetween(between(1, 2), new StringAppenderWrapper(result, dmlNameProvider), null);
@@ -140,7 +140,7 @@ public class OperandBuilderTest {
 	
 	@Test
 	public void catGreater() {
-		OperandBuilder testInstance = new OperandBuilder();
+		OperatorBuilder testInstance = new OperatorBuilder();
 		StringAppender result = new StringAppender();
 		
 		testInstance.catGreater(gt(1), new StringAppenderWrapper(result, dmlNameProvider), null);
@@ -161,7 +161,7 @@ public class OperandBuilderTest {
 	
 	@Test
 	public void catLower() {
-		OperandBuilder testInstance = new OperandBuilder();
+		OperatorBuilder testInstance = new OperatorBuilder();
 		StringAppender result = new StringAppender();
 		
 		testInstance.catLower(lt(1), new StringAppenderWrapper(result, dmlNameProvider), null);
@@ -182,7 +182,7 @@ public class OperandBuilderTest {
 	
 	@Test
 	public void catEquals() {
-		OperandBuilder testInstance = new OperandBuilder();
+		OperatorBuilder testInstance = new OperatorBuilder();
 		StringAppender result = new StringAppender();
 		
 		testInstance.catEquals(eq(1), new StringAppenderWrapper(result, dmlNameProvider), null);
@@ -191,7 +191,7 @@ public class OperandBuilderTest {
 	
 	@Test
 	public void catEquals_column() {
-		OperandBuilder testInstance = new OperandBuilder();
+		OperatorBuilder testInstance = new OperatorBuilder();
 		StringAppender result = new StringAppender();
 		
 		Table tableToto = new Table("Toto");
@@ -203,7 +203,7 @@ public class OperandBuilderTest {
 	
 	@Test
 	public void catSum() {
-		OperandBuilder testInstance = new OperandBuilder();
+		OperatorBuilder testInstance = new OperatorBuilder();
 		StringAppender result = new StringAppender();
 		
 		Table tableToto = new Table("Toto");
@@ -215,7 +215,7 @@ public class OperandBuilderTest {
 	
 	@Test
 	public void catCount() {
-		OperandBuilder testInstance = new OperandBuilder();
+		OperatorBuilder testInstance = new OperatorBuilder();
 		StringAppender result = new StringAppender();
 		
 		Table tableToto = new Table("Toto");
@@ -227,7 +227,7 @@ public class OperandBuilderTest {
 	
 	@Test
 	public void catMin() {
-		OperandBuilder testInstance = new OperandBuilder();
+		OperatorBuilder testInstance = new OperatorBuilder();
 		StringAppender result = new StringAppender();
 		
 		Table tableToto = new Table("Toto");
@@ -239,7 +239,7 @@ public class OperandBuilderTest {
 	
 	@Test
 	public void catMax() {
-		OperandBuilder testInstance = new OperandBuilder();
+		OperatorBuilder testInstance = new OperatorBuilder();
 		StringAppender result = new StringAppender();
 		
 		Table tableToto = new Table("Toto");

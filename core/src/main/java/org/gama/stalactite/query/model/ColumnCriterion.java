@@ -14,7 +14,7 @@ public class ColumnCriterion extends AbstractCriterion {
 		this(null, column, condition);
 	}
 	
-	public ColumnCriterion(Column column, AbstractOperator operator) {
+	public ColumnCriterion(Column column, AbstractRelationalOperator operator) {
 		this(null, column, operator);
 	}
 	

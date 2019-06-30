@@ -10,7 +10,7 @@ import org.gama.stalactite.command.model.Delete;
 import org.gama.stalactite.persistence.sql.dml.binder.ColumnBinderRegistry;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
-import org.gama.stalactite.query.model.Operator;
+import org.gama.stalactite.query.model.Operators;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -30,7 +30,7 @@ public class DeleteCommandBuilderTest {
 		Column<Table, String> columnB = totoTable.addColumn("b", String.class);
 		
 		Delete<Table> delete = new Delete<Table>(totoTable);
-		delete.where(columnA, Operator.eq(44)).or(columnA, Operator.eq(columnB));
+		delete.where(columnA, Operators.eq(44)).or(columnA, Operators.eq(columnB));
 		
 		DeleteCommandBuilder<Table> testInstance = new DeleteCommandBuilder<>(delete);
 		
@@ -54,14 +54,14 @@ public class DeleteCommandBuilderTest {
 		Column<Table, String> columnY = tataTable.addColumn("y", String.class);
 		
 		Delete<Table> delete = new Delete<Table>(totoTable);
-		delete.where(columnA, Operator.eq(columnX)).or(columnA, Operator.eq(columnY));
+		delete.where(columnA, Operators.eq(columnX)).or(columnA, Operators.eq(columnY));
 		
 		DeleteCommandBuilder<Table> testInstance = new DeleteCommandBuilder<>(delete);
 		
 		assertEquals("delete from Toto, Tata where Toto.a = Tata.x or Toto.a = Tata.y", testInstance.toSQL());
 		
 		delete = new Delete<Table>(totoTable);
-		delete.where(columnA, Operator.eq(columnX)).or(columnA, Operator.eq(columnY));
+		delete.where(columnA, Operators.eq(columnX)).or(columnA, Operators.eq(columnY));
 		
 		testInstance = new DeleteCommandBuilder<>(delete);
 		
@@ -75,7 +75,7 @@ public class DeleteCommandBuilderTest {
 		Column<Table, String> columnB = totoTable.addColumn("b", String.class);
 		
 		Delete<Table> delete = new Delete<Table>(totoTable);
-		delete.where(columnA,  Operator.in(42L, 43L)).or(columnA, Operator.eq(columnB));
+		delete.where(columnA,  Operators.in(42L, 43L)).or(columnA, Operators.eq(columnB));
 		
 		DeleteCommandBuilder<Table> testInstance = new DeleteCommandBuilder<>(delete);
 		

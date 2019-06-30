@@ -1,7 +1,7 @@
 package org.gama.stalactite.query.model;
 
 import org.gama.stalactite.persistence.structure.Column;
-import org.gama.stalactite.query.builder.OperandBuilder;
+import org.gama.stalactite.query.builder.OperatorBuilder;
 import org.gama.stalactite.query.model.operand.Between;
 import org.gama.stalactite.query.model.operand.Count;
 import org.gama.stalactite.query.model.operand.Equals;
@@ -23,21 +23,21 @@ import org.gama.stalactite.query.model.operand.Sum;
  * 
  * @author Guillaume Mary
  */
-// Left abstract with package-private constructor so no one else but classes of this packahe can extend it because only OperandBuilder know all of them
-public abstract class Operator {
+// Left abstract with package-private constructor so no one else but classes of this package can extend it because only OperatorBuilder know all of them
+public abstract class Operators {
 	
 	public static <O> Equals<O> eq(O value) {
 		return new Equals<>(value);
 	}
 	
-	public static <I extends AbstractOperator> I not(I operand) {
-		operand.setNot();
-		return operand;
+	public static <I extends AbstractRelationalOperator> I not(I operator) {
+		operator.setNot();
+		return operator;
 	}
 	
 	/**
 	 * Shortcut to <code>new Lower(value)</code> to ease a fluent write of queries for "lower than" comparisons
-	 * @param value a value, null accepted, transformed to "is null" by {@link OperandBuilder})
+	 * @param value a value, null accepted, transformed to "is null" by {@link OperatorBuilder})
 	 * @return a new instance of {@link Lower}
 	 */
 	public static Lower lt(Object value) {
@@ -46,7 +46,7 @@ public abstract class Operator {
 	
 	/**
 	 * Shortcut to <code>new Lower(value, true)</code> to ease a fluent write of queries for "lower than equals" comparisons
-	 * @param value a value, null accepted, transformed to "is null" by {@link OperandBuilder})
+	 * @param value a value, null accepted, transformed to "is null" by {@link OperatorBuilder})
 	 * @return a new instance of {@link Lower} with equals checking
 	 */
 	public static Lower lteq(Object value) {
@@ -55,7 +55,7 @@ public abstract class Operator {
 	
 	/**
 	 * Shortcut to <code>new Greater(value)</code> to ease a fluent write of queries for "greater than" comparisons
-	 * @param value a value, null accepted, transformed to "is null" by {@link OperandBuilder})
+	 * @param value a value, null accepted, transformed to "is null" by {@link OperatorBuilder})
 	 * @return a new instance of {@link Greater}
 	 */
 	public static <O> Greater<O>  gt(O value) {
@@ -64,7 +64,7 @@ public abstract class Operator {
 	
 	/**
 	 * Shortcut to <code>new Greater(value, true)</code> to ease a fluent write of queries for "greater than equals" comparisons
-	 * @param value a value, null accepted, transformed to "is null" by {@link OperandBuilder})
+	 * @param value a value, null accepted, transformed to "is null" by {@link OperatorBuilder})
 	 * @return a new instance of {@link Greater} with equals checking
 	 */
 	public static <O> Greater<O> gteq(O value) {
@@ -73,8 +73,8 @@ public abstract class Operator {
 	
 	/**
 	 * Shortcut to <code>new Between(value1, value2)</code> to ease a fluent write of queries for "between" comparisons
-	 * @param value1 a value, null accepted, transformed to "is null" by {@link OperandBuilder}) if both values are
-	 * @param value2 a value, null accepted, transformed to "is null" by {@link OperandBuilder}) if both values are
+	 * @param value1 a value, null accepted, transformed to "is null" by {@link OperatorBuilder}) if both values are
+	 * @param value2 a value, null accepted, transformed to "is null" by {@link OperatorBuilder}) if both values are
 	 * @return a new instance of {@link Between} with equals checking
 	 */
 	public static <O> Between<O> between(O value1, O value2) {
@@ -83,7 +83,7 @@ public abstract class Operator {
 	
 	/**
 	 * Shortcut to <code>new In(value)</code> to ease a fluent write of queries for "in" comparisons
-	 * @param value a value, null accepted, transformed to "is null" by {@link OperandBuilder})
+	 * @param value a value, null accepted, transformed to "is null" by {@link OperatorBuilder})
 	 * @return a new instance of {@link In}
 	 */
 	public static <O> In<O> in(Iterable<O> value) {
@@ -92,9 +92,9 @@ public abstract class Operator {
 	
 	/**
 	 * Shortcut to <code>new In(value)</code> to ease a fluent write of queries for "in" comparisons.
-	 * Note that this signature won't transform null values to "is null" by {@link OperandBuilder}), prefers {@link #in(Iterable)} for it.
+	 * Note that this signature won't transform null values to "is null" by {@link OperatorBuilder}), prefers {@link #in(Iterable)} for it.
 	 * 
-	 * @param value a value, null accepted <b>but won't be transformed</b> to "is null" by {@link OperandBuilder})
+	 * @param value a value, null accepted <b>but won't be transformed</b> to "is null" by {@link OperatorBuilder})
 	 * @return a new instance of {@link In}
 	 * @see #in(Iterable)
 	 */

@@ -11,9 +11,9 @@ import org.gama.stalactite.query.model.QueryProvider;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
-import static org.gama.stalactite.query.model.Operator.eq;
-import static org.gama.stalactite.query.model.Operator.gt;
-import static org.gama.stalactite.query.model.Operator.sum;
+import static org.gama.stalactite.query.model.Operators.eq;
+import static org.gama.stalactite.query.model.Operators.gt;
+import static org.gama.stalactite.query.model.Operators.sum;
 import static org.gama.stalactite.query.model.OrderByChain.Order.ASC;
 import static org.gama.stalactite.query.model.OrderByChain.Order.DESC;
 import static org.gama.stalactite.query.model.QueryEase.select;

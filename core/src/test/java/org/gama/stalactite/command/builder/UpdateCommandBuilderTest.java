@@ -10,7 +10,7 @@ import org.gama.stalactite.command.model.Update;
 import org.gama.stalactite.persistence.sql.dml.binder.ColumnBinderRegistry;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
-import org.gama.stalactite.query.model.Operator;
+import org.gama.stalactite.query.model.Operators;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -28,20 +28,20 @@ public class UpdateCommandBuilderTest {
 		Column<Table, String> columnA = totoTable.addColumn("a", String.class);
 		Column<Table, String> columnB = totoTable.addColumn("b", String.class);
 		
-		Update<Table> update = new Update<Table>(totoTable)
+		Update<Table> update = new Update<>(totoTable)
 				.set(columnA)
 				.set(columnB);
-		update.where(columnA, Operator.eq(44)).or(columnA, Operator.eq(columnB));
+		update.where(columnA, Operators.eq(44)).or(columnA, Operators.eq(columnB));
 		UpdateCommandBuilder<Table> testInstance = new UpdateCommandBuilder<>(update);
 		assertEquals("update Toto set a = ?, b = ? where a = 44 or a = b", testInstance.toSQL());
 		
-		update = new Update<Table>(totoTable)
+		update = new Update<>(totoTable)
 				.set(columnA, columnB);
 		testInstance = new UpdateCommandBuilder<>(update);
 		assertEquals("update Toto set a = b", testInstance.toSQL());
 		
 		
-		update = new Update<Table>(totoTable)
+		update = new Update<>(totoTable)
 				.set(columnA, "tata");
 		testInstance = new UpdateCommandBuilder<>(update);
 		assertEquals("update Toto set a = 'tata'", testInstance.toSQL());
@@ -56,17 +56,17 @@ public class UpdateCommandBuilderTest {
 		Column<Table, Long> columnX = tataTable.addColumn("x", Long.class);
 		Column<Table, String> columnY = tataTable.addColumn("y", String.class);
 		
-		Update<Table> update = new Update<Table>(totoTable)
+		Update<Table> update = new Update<>(totoTable)
 				.set(columnA)
 				.set(columnB);
-		update.where(columnA, Operator.eq(columnX)).or(columnA, Operator.eq(columnY));
+		update.where(columnA, Operators.eq(columnX)).or(columnA, Operators.eq(columnY));
 		UpdateCommandBuilder<Table> testInstance = new UpdateCommandBuilder<>(update);
 		assertEquals("update Toto, Tata set Toto.a = ?, Toto.b = ? where Toto.a = Tata.x or Toto.a = Tata.y", testInstance.toSQL());
 		
-		update = new Update<Table>(totoTable)
+		update = new Update<>(totoTable)
 				.set(columnA, columnB);
-		update.where(columnA, Operator.eq(columnX)).or(columnA, Operator.eq(columnY));
-		testInstance = new UpdateCommandBuilder<Table>(update);
+		update.where(columnA, Operators.eq(columnX)).or(columnA, Operators.eq(columnY));
+		testInstance = new UpdateCommandBuilder<>(update);
 		assertEquals("update Toto, Tata set Toto.a = Toto.b where Toto.a = Tata.x or Toto.a = Tata.y", testInstance.toSQL());
 	}
 	
@@ -78,12 +78,12 @@ public class UpdateCommandBuilderTest {
 		Column<Table, String> columnC = totoTable.addColumn("c", String.class);
 		Column<Table, String> columnD = totoTable.addColumn("d", String.class);
 		
-		Update<Table> update = new Update<Table>(totoTable)
+		Update<Table> update = new Update<>(totoTable)
 				.set(columnA)
 				.set(columnB, columnA)
 				.set(columnC, "tata")
 				.set(columnD);
-		update.where(columnA, Operator.in(42L, 43L)).or(columnA, Operator.eq(columnB));
+		update.where(columnA, Operators.in(42L, 43L)).or(columnA, Operators.eq(columnB));
 		UpdateCommandBuilder<Table> testInstance = new UpdateCommandBuilder<>(update);
 		
 		ColumnBinderRegistry binderRegistry = new ColumnBinderRegistry();

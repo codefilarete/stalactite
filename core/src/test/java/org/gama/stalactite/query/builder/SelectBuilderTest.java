@@ -10,8 +10,8 @@ import org.gama.stalactite.query.model.Select;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
-import static org.gama.stalactite.query.model.Operator.max;
-import static org.gama.stalactite.query.model.Operator.min;
+import static org.gama.stalactite.query.model.Operators.max;
+import static org.gama.stalactite.query.model.Operators.min;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**

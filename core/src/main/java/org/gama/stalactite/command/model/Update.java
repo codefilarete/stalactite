@@ -5,7 +5,7 @@ import java.util.Set;
 
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
-import org.gama.stalactite.query.model.AbstractOperator;
+import org.gama.stalactite.query.model.AbstractRelationalOperator;
 import org.gama.stalactite.query.model.Criteria;
 import org.gama.stalactite.query.model.CriteriaChain;
 
@@ -90,7 +90,7 @@ public class Update<T extends Table> {
 	 * @param condition the condition
 	 * @return this
 	 */
-	public CriteriaChain where(Column column, AbstractOperator condition) {
+	public CriteriaChain where(Column column, AbstractRelationalOperator condition) {
 		return criteriaSurrogate.and(column, condition);
 	}
 	

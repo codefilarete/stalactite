@@ -21,7 +21,7 @@ import org.gama.stalactite.persistence.structure.Table;
 import org.junit.jupiter.api.Test;
 
 import static org.gama.lang.function.Functions.chain;
-import static org.gama.stalactite.query.model.Operator.eq;
+import static org.gama.stalactite.query.model.Operators.eq;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**

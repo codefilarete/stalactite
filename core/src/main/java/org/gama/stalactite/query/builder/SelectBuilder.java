@@ -7,8 +7,8 @@ import org.gama.lang.StringAppender;
 import org.gama.lang.Strings;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
-import org.gama.stalactite.query.builder.OperandBuilder.StringAppenderWrapper;
-import org.gama.stalactite.query.model.AbstractOperator;
+import org.gama.stalactite.query.builder.OperatorBuilder.StringAppenderWrapper;
+import org.gama.stalactite.query.model.AbstractRelationalOperator;
 import org.gama.stalactite.query.model.Select;
 import org.gama.stalactite.query.model.Select.AliasedColumn;
 
@@ -19,7 +19,7 @@ public class SelectBuilder implements SQLBuilder {
 	
 	private final Select select;
 	private final DMLNameProvider dmlNameProvider;
-	private final OperandBuilder operandBuilder;
+	private final OperatorBuilder operatorBuilder;
 	
 	public SelectBuilder(Select select, Map<Table, String> tableAliases) {
 		this(select, new DMLNameProvider(tableAliases));
@@ -28,7 +28,7 @@ public class SelectBuilder implements SQLBuilder {
 	public SelectBuilder(Select select, DMLNameProvider dmlNameProvider) {
 		this.select = select;
 		this.dmlNameProvider = dmlNameProvider;
-		this.operandBuilder = new OperandBuilder(this.dmlNameProvider);
+		this.operatorBuilder = new OperatorBuilder(this.dmlNameProvider);
 	}
 	
 	@Override
@@ -43,8 +43,8 @@ public class SelectBuilder implements SQLBuilder {
 				cat((Column) o, sql);
 			} else if (o instanceof AliasedColumn) {
 				cat((AliasedColumn) o, sql);
-			} else if (o instanceof AbstractOperator) {
-				cat((AbstractOperator) o, appenderWrapper);
+			} else if (o instanceof AbstractRelationalOperator) {
+				cat((AbstractRelationalOperator) o, appenderWrapper);
 			} else {
 				throw new UnsupportedOperationException("Operator " + Reflections.toString(o.getClass()) + " is not implemented");
 			}
@@ -67,7 +67,7 @@ public class SelectBuilder implements SQLBuilder {
 		sql.cat(dmlNameProvider.getName(o.getColumn())).catIf(!Strings.isEmpty(o.getAlias()), " as ", o.getAlias());
 	}
 	
-	private void cat(AbstractOperator operand, StringAppenderWrapper appenderWrapper) {
-		operandBuilder.cat(operand, appenderWrapper);
+	private void cat(AbstractRelationalOperator operator, StringAppenderWrapper appenderWrapper) {
+		operatorBuilder.cat(operator, appenderWrapper);
 	}
 }

@@ -31,7 +31,7 @@ import org.gama.stalactite.persistence.id.PersistedIdentifier;
 import org.gama.stalactite.persistence.sql.Dialect;
 import org.gama.stalactite.persistence.sql.dml.binder.ColumnBinderRegistry;
 import org.gama.stalactite.persistence.structure.Table;
-import org.gama.stalactite.query.model.Operator;
+import org.gama.stalactite.query.model.Operators;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -96,10 +96,10 @@ class EntitySelectExecutorTest {
 				((JoinedTablesPersister<Country, Identifier, Table>) persister).getJoinedStrategiesSelectExecutor().getJoinedStrategiesSelect();
 		EntitySelectExecutor<Country, Identifier, Table> testInstance = new EntitySelectExecutor<>(joinedStrategiesSelect, connectionProviderMock, columnBinderRegistry);
 		
-		EntityCriteria<Country> countryEntityCriteriaSupport = new EntityCriteriaSupport<>(persister.getMappingStrategy(), Country::getName, Operator.eq(""))
+		EntityCriteria<Country> countryEntityCriteriaSupport = new EntityCriteriaSupport<>(persister.getMappingStrategy(), Country::getName, Operators.eq(""))
 				// actually we don't care about criteria since data is hardly tied to the connection (see createConnectionProvider(..))
-				.and(Country::getId, Operator.<Identifier>in(new PersistedIdentifier<>(11L)))
-				.and(Country::getName, Operator.eq("toto"));
+				.and(Country::getId, Operators.<Identifier>in(new PersistedIdentifier<>(11L)))
+				.and(Country::getName, Operators.eq("toto"));
 		
 		List<Country> select = testInstance.select(((EntityCriteriaSupport<Country>) countryEntityCriteriaSupport));
 		Country expectedCountry = new Country(new PersistedIdentifier<>(12L));
@@ -126,12 +126,12 @@ class EntitySelectExecutorTest {
 				((JoinedTablesPersister<Country, Identifier, Table>) persister).getJoinedStrategiesSelectExecutor().getJoinedStrategiesSelect();
 		EntitySelectExecutor<Country, Identifier, Table> testInstance = new EntitySelectExecutor<>(joinedStrategiesSelect, connectionProviderMock, columnBinderRegistry);
 		
-		EntityCriteria<Country> countryEntityCriteriaSupport = new EntityCriteriaSupport<>(persister.getMappingStrategy(), Country::getName, Operator.eq(""))
+		EntityCriteria<Country> countryEntityCriteriaSupport = new EntityCriteriaSupport<>(persister.getMappingStrategy(), Country::getName, Operators.eq(""))
 				// actually we don't care about criteria since data is hardly tied to the connection (see createConnectionProvider(..))
-				.and(Country::getId, Operator.<Identifier>in(new PersistedIdentifier<>(11L)))
-				.and(Country::getName, Operator.eq("toto"))
+				.and(Country::getId, Operators.<Identifier>in(new PersistedIdentifier<>(11L)))
+				.and(Country::getName, Operators.eq("toto"))
 				// but we care about this since we can check that criteria on embedded values works
-				.and(Country::getTimestamp, Timestamp::getModificationDate, Operator.eq(new Date()));
+				.and(Country::getTimestamp, Timestamp::getModificationDate, Operators.eq(new Date()));
 		
 		List<Country> select = testInstance.select(((EntityCriteriaSupport<Country>) countryEntityCriteriaSupport));
 		Country expectedCountry = new Country(new PersistedIdentifier<>(12L));
@@ -171,9 +171,9 @@ class EntitySelectExecutorTest {
 		
 		EntityCriteria<Country> countryEntityCriteriaSupport = persister
 				// actually we don't care about criteria since data is hardly tied to the connection (see createConnectionProvider(..))
-				.selectWhere(Country::getId, Operator.<Identifier>in(new PersistedIdentifier<>(11L)))
-				.and(Country::getName, Operator.eq("toto"))
-				.and(Country::getCapital, City::getName, Operator.eq("Grenoble"));
+				.selectWhere(Country::getId, Operators.<Identifier>in(new PersistedIdentifier<>(11L)))
+				.and(Country::getName, Operators.eq("toto"))
+				.and(Country::getCapital, City::getName, Operators.eq("Grenoble"));
 		
 		List<Country> select = testInstance.select(((EntityCriteriaSupport<Country>) countryEntityCriteriaSupport));
 		Country expectedCountry = new Country(new PersistedIdentifier<>(12L));
@@ -222,9 +222,9 @@ class EntitySelectExecutorTest {
 		
 		// actually we don't care about criteria since data is hardly tied to the connection (see createConnectionProvider(..))
 		EntityCriteria<Country> countryEntityCriteriaSupport =
-				persister.selectWhere(Country::getId, Operator.<Identifier>in(new PersistedIdentifier<>(11L)))
-				.and(Country::getName, Operator.eq("toto"))
-				.andMany(Country::getCities, City::getName, Operator.eq("Grenoble"));
+				persister.selectWhere(Country::getId, Operators.<Identifier>in(new PersistedIdentifier<>(11L)))
+				.and(Country::getName, Operators.eq("toto"))
+				.andMany(Country::getCities, City::getName, Operators.eq("Grenoble"));
 		
 		
 		Country expectedCountry = new Country(new PersistedIdentifier<>(12L));

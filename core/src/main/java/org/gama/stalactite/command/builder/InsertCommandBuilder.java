@@ -14,9 +14,9 @@ import org.gama.stalactite.persistence.sql.dml.binder.ColumnBinderRegistry;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.query.builder.DMLNameProvider;
-import org.gama.stalactite.query.builder.OperandBuilder.PreparedSQLWrapper;
-import org.gama.stalactite.query.builder.OperandBuilder.SQLAppender;
-import org.gama.stalactite.query.builder.OperandBuilder.StringAppenderWrapper;
+import org.gama.stalactite.query.builder.OperatorBuilder.PreparedSQLWrapper;
+import org.gama.stalactite.query.builder.OperatorBuilder.SQLAppender;
+import org.gama.stalactite.query.builder.OperatorBuilder.StringAppenderWrapper;
 import org.gama.stalactite.query.builder.SQLBuilder;
 
 /**

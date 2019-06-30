@@ -22,7 +22,7 @@ public class Like extends UnitaryOperator<CharSequence> {
 	}
 	
 	/**
-	 * Constructor for "startsWith" and "endsWith" operand
+	 * Constructor for "startsWith" and "endsWith" operator
 	 * @param value something that looks like a String, may contain '%' characters
 	 * @param leadingStar true to add a leading generic '%' character
 	 * @param endingStar true to add a ending generic '%' character
