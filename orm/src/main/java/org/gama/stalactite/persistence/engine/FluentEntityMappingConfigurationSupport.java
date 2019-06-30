@@ -39,8 +39,6 @@ import org.gama.stalactite.persistence.engine.IFluentEmbeddableMappingBuilder.IF
 import org.gama.stalactite.persistence.engine.IFluentEmbeddableMappingBuilder.IFluentEmbeddableMappingBuilderEnumOptions;
 import org.gama.stalactite.persistence.engine.builder.CascadeMany;
 import org.gama.stalactite.persistence.engine.builder.CascadeManyList;
-import org.gama.stalactite.persistence.id.Identified;
-import org.gama.stalactite.persistence.id.manager.AlreadyAssignedIdentifierManager;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
 
@@ -60,6 +58,7 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements IFluentMap
 	 * @param <I> the type of the identifier
 	 * @return a new {@link IFluentMappingBuilder}
 	 */
+	@SuppressWarnings("squid:S1172")	// identifierClass is used to sign result
 	public static <T, I> IFluentMappingBuilder<T, I> from(Class<T> persistedClass, Class<I> identifierClass) {
 		return new FluentEntityMappingConfigurationSupport<>(persistedClass);
 	}
@@ -468,12 +467,9 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements IFluentMap
 		this.cascadeManys.add(cascadeMany);
 		return new MethodDispatcher()
 				.redirect(OneToManyOptions.class, new OneToManyOptionsSupport<>(cascadeMany), true)	// true to allow "return null" in implemented methods
-				.redirect(IndexableCollectionOptions.class, new IndexableCollectionOptions<C, I, O>() {
-					@Override
-					public <T extends Table> IndexableCollectionOptions<C, I, O> indexedBy(Column<T, Integer> orderingColumn) {
+				.redirect(IndexableCollectionOptions.class, orderingColumn -> {
 						cascadeMany.setIndexingColumn(orderingColumn);
 						return null;
-					}
 				}, true)	// true to allow "return null" in implemented methods
 				.fallbackOn(this)
 				.build((Class<IFluentMappingBuilderOneToManyListOptions<C, I, O>>) (Class) IFluentMappingBuilderOneToManyListOptions.class);
@@ -905,22 +901,6 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements IFluentMap
 		public IFluentMappingBuilderOneToManyOptions<C, I, O> cascading(RelationMode relationMode) {
 			cascadeMany.setRelationMode(relationMode);
 			return null;	// we can return null because dispatcher will return proxy
-		}
-	}
-	
-	/**
-	 * Identifier manager dedicated to {@link Identified} entities
-	 * @param <C> entity type
-	 * @param <I> identifier type
-	 */
-	private static class IdentifiedIdentifierManager<C, I> extends AlreadyAssignedIdentifierManager<C, I> {
-		public IdentifiedIdentifierManager(Class<I> identifierType) {
-			super(identifierType);
-		}
-		
-		@Override
-		public void setPersistedFlag(C e) {
-			((Identified) e).getId().setPersisted();
 		}
 	}
 	

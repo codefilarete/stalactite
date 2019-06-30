@@ -175,7 +175,7 @@ public class JoinedTablesPersister<C, I, T extends Table> extends Persister<C, I
 	
 	private ExecutableEntityQuery<C> wrapIntoExecutable(EntityCriteriaSupport<C> localCriteriaSupport) {
 		MethodReferenceDispatcher methodDispatcher = new MethodReferenceDispatcher();
-		SerializableFunction<ExecutableQuery, List<C>> execute = (SerializableFunction<ExecutableQuery, List<C>>) ExecutableQuery::execute;
+		SerializableFunction<ExecutableQuery, List<C>> execute = ExecutableQuery::execute;
 		return methodDispatcher
 				.redirect(execute, () -> getPersisterListener().doWithSelectListener(emptyList(), () -> entitySelectExecutor.select(localCriteriaSupport)))
 				.redirect(EntityCriteria.class, localCriteriaSupport)

@@ -23,14 +23,13 @@ import org.gama.stalactite.query.model.operator.Sum;
  * 
  * @author Guillaume Mary
  */
-// Left abstract with package-private constructor so no one else but classes of this package can extend it because only OperatorBuilder know all of them
-public abstract class Operators {
+public interface Operators {
 	
-	public static <O> Equals<O> eq(O value) {
+	static <O> Equals<O> eq(O value) {
 		return new Equals<>(value);
 	}
 	
-	public static <I extends AbstractRelationalOperator> I not(I operator) {
+	static <I extends AbstractRelationalOperator> I not(I operator) {
 		operator.setNot();
 		return operator;
 	}
@@ -40,7 +39,7 @@ public abstract class Operators {
 	 * @param value a value, null accepted, transformed to "is null" by {@link OperatorBuilder})
 	 * @return a new instance of {@link Lower}
 	 */
-	public static Lower lt(Object value) {
+	static Lower lt(Object value) {
 		return new Lower(value);
 	}
 	
@@ -49,7 +48,7 @@ public abstract class Operators {
 	 * @param value a value, null accepted, transformed to "is null" by {@link OperatorBuilder})
 	 * @return a new instance of {@link Lower} with equals checking
 	 */
-	public static Lower lteq(Object value) {
+	static Lower lteq(Object value) {
 		return new Lower(value, true);
 	}
 	
@@ -58,7 +57,7 @@ public abstract class Operators {
 	 * @param value a value, null accepted, transformed to "is null" by {@link OperatorBuilder})
 	 * @return a new instance of {@link Greater}
 	 */
-	public static <O> Greater<O>  gt(O value) {
+	static <O> Greater<O>  gt(O value) {
 		return new Greater<>(value);
 	}
 	
@@ -67,7 +66,7 @@ public abstract class Operators {
 	 * @param value a value, null accepted, transformed to "is null" by {@link OperatorBuilder})
 	 * @return a new instance of {@link Greater} with equals checking
 	 */
-	public static <O> Greater<O> gteq(O value) {
+	static <O> Greater<O> gteq(O value) {
 		return new Greater<>(value, true);
 	}
 	
@@ -77,7 +76,7 @@ public abstract class Operators {
 	 * @param value2 a value, null accepted, transformed to "is null" by {@link OperatorBuilder}) if both values are
 	 * @return a new instance of {@link Between} with equals checking
 	 */
-	public static <O> Between<O> between(O value1, O value2) {
+	static <O> Between<O> between(O value1, O value2) {
 		return new Between<>(value1, value2);
 	}
 	
@@ -86,7 +85,7 @@ public abstract class Operators {
 	 * @param value a value, null accepted, transformed to "is null" by {@link OperatorBuilder})
 	 * @return a new instance of {@link In}
 	 */
-	public static <O> In<O> in(Iterable<O> value) {
+	static <O> In<O> in(Iterable<O> value) {
 		return new In<>(value);
 	}
 	
@@ -98,7 +97,7 @@ public abstract class Operators {
 	 * @return a new instance of {@link In}
 	 * @see #in(Iterable)
 	 */
-	public static <O> In<O> in(O ... value) {
+	static <O> In<O> in(O ... value) {
 		return new In<>(value);
 	}
 	
@@ -106,7 +105,7 @@ public abstract class Operators {
 	 * Shortcut to <code>new IsNull()</code> to ease a fluent write of queries for "is null" comparisons
 	 * @return a new instance of {@link IsNull}
 	 */
-	public static IsNull isNull() {
+	static IsNull isNull() {
 		return new IsNull();
 	}
 	
@@ -114,7 +113,7 @@ public abstract class Operators {
 	 * Shortcut to <code>not(new IsNull())</code> to ease a fluent write of queries for "is not null" comparisons
 	 * @return a new instance, negative form, of {@link IsNull}
 	 */
-	public static IsNull isNotNull() {
+	static IsNull isNotNull() {
 		return not(isNull());
 	}
 	
@@ -122,7 +121,7 @@ public abstract class Operators {
 	 * Shortcut to <code>new Like(value)</code> to ease a fluent write of queries for "like" comparisons
 	 * @return a new instance of {@link Like}
 	 */
-	public static Like like(CharSequence value) {
+	static Like like(CharSequence value) {
 		return new Like(value);
 	}
 	
@@ -130,7 +129,7 @@ public abstract class Operators {
 	 * Shortcut to <code>new Like(value, true, true)</code> to ease a fluent write of queries for "contains" comparisons
 	 * @return a new instance of {@link Like}
 	 */
-	public static Like contains(CharSequence value) {
+	static Like contains(CharSequence value) {
 		return new Like(value, true, true);
 	}
 	
@@ -138,7 +137,7 @@ public abstract class Operators {
 	 * Shortcut to <code>new Like(value, false, true)</code> to ease a fluent write of queries for "startsWith" comparisons
 	 * @return a new instance of {@link Like}
 	 */
-	public static Like startsWith(CharSequence value) {
+	static Like startsWith(CharSequence value) {
 		return new Like(value, false, true);
 	}
 	
@@ -146,7 +145,7 @@ public abstract class Operators {
 	 * Shortcut to <code>new Like(value, true, false)</code> to ease a fluent write of queries for "endsWith" comparisons
 	 * @return a new instance of {@link Like}
 	 */
-	public static Like endsWith(CharSequence value) {
+	static Like endsWith(CharSequence value) {
 		return new Like(value, true, false);
 	}
 	
@@ -154,7 +153,7 @@ public abstract class Operators {
 	 * Shortcut to <code>new Sum(column)</code> to ease a fluent write of queries for "sum" operation
 	 * @return a new instance of {@link Sum}
 	 */
-	public static <N extends Number> Sum<N> sum(Column<?, N> column) {
+	static <N extends Number> Sum<N> sum(Column<?, N> column) {
 		return new Sum<>(column);
 	}
 	
@@ -162,7 +161,7 @@ public abstract class Operators {
 	 * Shortcut to <code>new Count(column)</code> to ease a fluent write of queries for "count" operation
 	 * @return a new instance of {@link Count}
 	 */
-	public static Count count(Column column) {
+	static Count count(Column column) {
 		return new Count(column);
 	}
 	
@@ -170,7 +169,7 @@ public abstract class Operators {
 	 * Shortcut to <code>new Min(column)</code> to ease a fluent write of queries for "min" operation
 	 * @return a new instance of {@link Min}
 	 */
-	public static Min min(Column column) {
+	static Min min(Column column) {
 		return new Min(column);
 	}
 	
@@ -178,7 +177,7 @@ public abstract class Operators {
 	 * Shortcut to <code>new Max(column)</code> to ease a fluent write of queries for "max" operation
 	 * @return a new instance of {@link Max}
 	 */
-	public static Max max(Column column) {
+	static Max max(Column column) {
 		return new Max(column);
 	}
 	

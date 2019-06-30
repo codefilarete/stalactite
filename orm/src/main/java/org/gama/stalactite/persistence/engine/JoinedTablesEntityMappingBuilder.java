@@ -136,12 +136,12 @@ public class JoinedTablesEntityMappingBuilder<C, I> {
 	private void addCascadesBetweenChildAndParentTable(PersisterListener<C, I> persisterListener, Persister<? super C, I, Table> superPersister) {
 		// Before insert of child we must insert parent
 		// this weird cast is due to <? super C> ...
-		Consumer<Iterable<C>> superEntitiesInsertor = (Consumer) (Consumer<Iterable>) superPersister::insert;
+		Consumer<Iterable<C>> superEntitiesInsertor = superPersister::insert;
 		persisterListener.addInsertListener(new BeforeInsertSupport<>(superEntitiesInsertor, Function.identity()));
 		
 		// On child update, parent must be updated too, no constraint on order for this, after is arbitrarly choosen
 		// this weird cast is due to <? super C> ...
-		BiConsumer<Iterable<Duo<C, C>>, Boolean> superEntitiesUpdator = (BiConsumer) (BiConsumer<Iterable, Boolean>) superPersister::update;
+		BiConsumer<Iterable<Duo<C, C>>, Boolean> superEntitiesUpdator = superPersister::update;
 		persisterListener.addUpdateListener(new AfterUpdateSupport<>(superEntitiesUpdator, Function.identity()));
 		// idem for updateById
 		persisterListener.addUpdateByIdListener(new UpdateByIdListener<C>() {

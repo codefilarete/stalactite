@@ -45,7 +45,9 @@ public class CascadeMany<SRC, TRGT, TRGTID, C extends Collection<TRGT>> {
 	/** Default relation mode is {@link RelationMode#ALL} */
 	private RelationMode relationMode = RelationMode.ALL;
 	
-	public <T extends Table> CascadeMany(IReversibleAccessor<SRC, C> collectionProvider, ValueAccessPointByMethodReference methodReference, EntityMappingConfiguration<TRGT, TRGTID> targetMappingConfiguration, T targetTable) {
+	public <T extends Table> CascadeMany(IReversibleAccessor<SRC, C> collectionProvider,
+										 ValueAccessPointByMethodReference methodReference,
+										 EntityMappingConfiguration<TRGT, TRGTID> targetMappingConfiguration, T targetTable) {
 		this.collectionProvider = collectionProvider;
 		this.methodReference = methodReference;
 		this.targetMappingConfiguration = targetMappingConfiguration;
@@ -89,8 +91,8 @@ public class CascadeMany<SRC, TRGT, TRGTID, C extends Collection<TRGT>> {
 	}
 	
 	@Nullable
-	public Column<Table, ?> getReverseColumn() {
-		return reverseColumn;
+	public <O> Column<Table, O> getReverseColumn() {
+		return (Column<Table, O>) reverseColumn;
 	}
 	
 	public void setReverseColumn(Column<Table, ?> reverseColumn) {

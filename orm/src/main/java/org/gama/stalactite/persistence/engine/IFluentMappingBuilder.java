@@ -272,7 +272,7 @@ public interface IFluentMappingBuilder<C, I> extends IFluentEmbeddableMappingCon
 		 * @param orderingColumn indexing column of the mapped {@link java.util.List}
 		 * @return the global mapping configurer
 		 */
-		<T extends Table> IFluentMappingBuilderOneToManyListOptions<C, I, O> indexedBy(Column<T, Integer> orderingColumn);
+		IFluentMappingBuilderOneToManyListOptions<C, I, O> indexedBy(Column<?, Integer> orderingColumn);
 	}
 	
 	interface IFluentMappingBuilderEmbedOptions<C, I, O>

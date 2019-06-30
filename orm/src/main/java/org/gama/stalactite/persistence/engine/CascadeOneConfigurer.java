@@ -143,30 +143,6 @@ public class CascadeOneConfigurer<SRC, TRGT, ID> {
 				addDeleteCascade(cascadeOne, targetPersister, srcPersisterListener, orphanRemoval);
 			}
 			
-//			IdMappingStrategy<TRGT, ID> targetIdMappingStrategy = targetPersister.getMappingStrategy().getIdMappingStrategy();
-//			Column targetPrimaryKey = ((SimpleIdentifierAssembler) targetIdMappingStrategy.getIdentifierAssembler()).getColumn();
-//			IReversibleAccessor targetIdAccessor = ((SinglePropertyIdAccessor) targetIdMappingStrategy.getIdAccessor()).getIdAccessor();
-//			MemberDefinition memberDefinition = MemberDefinition.giveMemberDefinition(targetIdAccessor);
-//			String targetPrimaryKeySqlTypeName = persistenceContext.getDialect().getJavaTypeToSqlTypeMapping().getTypeName(targetPrimaryKey);
-//			persistenceContext.getDialect().getJavaTypeToSqlTypeMapping().put(targetPersister.getMappingStrategy().getClassToPersist(), targetPrimaryKeySqlTypeName);
-//			ParameterBinder ownerBinder = persistenceContext.getDialect().getColumnBinderRegistry().getBinder(memberDefinition.getMemberType());
-//			persistenceContext.getDialect().getColumnBinderRegistry().register(targetPersister.getMappingStrategy().getClassToPersist(), new NullAwareParameterBinder<>(new ParameterBinder<TRGT>() {
-//				@Override
-//				public void set(PreparedStatement preparedStatement, int valueIndex, TRGT value) throws SQLException {
-//					ownerBinder.set(preparedStatement, valueIndex, targetIdAccessor.get(value));
-//				}
-//				
-//				/**
-//				 * This is never used because it should return an entity which can't be build here.
-//				 * It will be by {@link org.gama.stalactite.persistence.engine.cascade.StrategyJoinsRowTransformer}
-//				 * Hence this implementation returns null
-//				 */
-//				@Override
-//				public TRGT get(ResultSet resultSet, String columnName) {
-//					return null;
-//				}
-//			}));
-			
 			return targetPersister;
 		}
 		
@@ -181,6 +157,8 @@ public class CascadeOneConfigurer<SRC, TRGT, ID> {
 																							   ClassMappingStrategy<TRGT, ID, Table> targetMappingStrategy,
 																							   ForeignKeyNamingStrategy foreignKeyNamingStrategy,
 																							   ColumnNamingStrategy joinColumnNamingStrategy);
+		
+		@SuppressWarnings("squid:S1172")	// argument targetPersister is used by subclasses
 		protected void addInsertCascade(CascadeOne<SRC, TRGT, ID> cascadeOne,
 												 Persister<TRGT, ID, Table> targetPersister,
 												 PersisterListener<SRC, ID> srcPersisterListener) {
