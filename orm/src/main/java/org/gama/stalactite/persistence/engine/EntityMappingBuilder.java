@@ -8,6 +8,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.BiPredicate;
 
@@ -145,11 +146,15 @@ class EntityMappingBuilder<C, I> {
 						IdentifierPolicy.ALREADY_ASSIGNED + " is only supported with entities that implement " + Reflections.toString(Identified.class));
 			}
 		} else if (identifierPolicy == IdentifierPolicy.AFTER_INSERT) {
-			Linkage identifierLinkage = propertiesMapping.stream().filter(
-							linkage -> linkage.getAccessor().equals(identifierAccessor)).findFirst().get();
+			// NB: we can use equals(..) here because Linkage was created from accessor information, no need to create a MemberDefinition for comparison
+			Optional<Linkage> identifierLinkage = propertiesMapping.stream().filter(
+					linkage -> linkage.getAccessor().equals(identifierAccessor)).findFirst();
+			if (!identifierLinkage.isPresent()) {
+				throw new IllegalStateException("Identifier accessor expected to be found in mapping but wasn't. Identification cannot be built.");
+			}
 			identifierInsertionManager = new JDBCGeneratedKeysIdentifierManager<>(
 					new SinglePropertyIdAccessor<>(identifierAccessor),
-					dialect.buildGeneratedKeysReader(identifierLinkage.getColumnName(), identifierType),
+					dialect.buildGeneratedKeysReader(identifierLinkage.get().getColumnName(), identifierType),
 					identifierType
 			);
 		} else {

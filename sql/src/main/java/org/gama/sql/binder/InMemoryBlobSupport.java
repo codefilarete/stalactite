@@ -64,17 +64,17 @@ public class InMemoryBlobSupport implements Blob {
 	public long position(byte[] pattern, long start) throws SQLException {
 		assertNotFreed();
 		boolean found = true;
-		int currIdx = (int) start-1;
+		int currIdx = (int) start-1;	// -1 because our internal array starts at 0 and argument starts at 1
 		int offset = 0;
 		while(found && currIdx < this.buffer.length && offset < pattern.length) {
 			found = this.buffer[currIdx] == pattern[offset];
 			offset++;
-			currIdx = (int) (start-1 + offset);
+			currIdx++;
 		}
 		if (offset != pattern.length) {
 			return position(pattern, start +1);
 		} else {
-			return currIdx - offset + 1;
+			return (long) currIdx - offset + 1;
 		}
 	}
 	
