@@ -159,37 +159,53 @@ public class InsertExecutor<C, I, T extends Table> extends WriteExecutor<C, I, T
 			this.versioningStrategy.upgrade(instance);
 			Object newVersion = versioningStrategy.getVersion(instance);
 			updateValues.put(versionColumn, newVersion);
-			rollbackObserver.addRollbackListener(new RollbackListener() {
-				@Override
-				public void beforeRollback() {
-					// no pre rollabck treatment to do
-				}
-				
-				@Override
-				public void afterRollback() {
-					// We revert the upgrade
-					versioningStrategy.revert(instance, previousVersion);
-				}
-				
-				@Override
-				public void beforeRollback(Savepoint savepoint) {
-					// not implemented
-				}
-				
-				@Override
-				public void afterRollback(Savepoint savepoint) {
-					// not implemented : should we do the same as default rollback ?
-					// it depends on if entity versioning was done during this savepoint ... how to know ?
-				}
-				
-				@Override
-				public boolean isTemporary() {
-					// we don't need this on each rollback
-					return true;
-				}
-			});
+			rollbackObserver.addRollbackListener(new VersioningStrategyRollbackListener<>(versioningStrategy, instance, previousVersion));
+		}
+	}
+	
+	/**
+	 * 
+	 * @param <C>
+	 */
+	static class VersioningStrategyRollbackListener<C> implements RollbackListener {
+		private final VersioningStrategy<C, Object> versioningStrategy;
+		private final C instance;
+		private final Object previousVersion;
+		
+		public VersioningStrategyRollbackListener(VersioningStrategy<C, Object> versioningStrategy, C instance, Object previousVersion) {
+			this.versioningStrategy = versioningStrategy;
+			this.instance = instance;
+			this.previousVersion = previousVersion;
 		}
 		
+		@Override
+		public void beforeRollback() {
+			// no pre rollabck treatment to do
+		}
+		
+		@Override
+		public void afterRollback() {
+			// We revert the upgrade
+			versioningStrategy.revert(instance, previousVersion);
+		}
+		
+		@Override
+		public void beforeRollback(Savepoint savepoint) {
+			// not implemented
+		}
+		
+		@Override
+		public void afterRollback(Savepoint savepoint) {
+			// not implemented : should we do the same as default rollback ?
+			// it depends on if entity versioning was done during this savepoint ... how to know ?
+		}
+		
+		@Override
+		public boolean isTemporary() {
+			// we don't need this on each rollback
+			return true;
+		}
 	}
+	
 }
 

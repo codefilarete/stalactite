@@ -4,15 +4,15 @@ import org.gama.reflection.IReversibleAccessor;
 
 /**
  * @author Guillaume Mary
- * @param <C> the upgrade value type
+ * @param <V> the upgrade value type
  */
-public interface VersioningStrategy<I, C> {
+public interface VersioningStrategy<C, V> {
 	
-	IReversibleAccessor<I, C> getVersionAccessor();
+	IReversibleAccessor<C, V> getVersionAccessor();
 	
-	C getVersion(I o);
+	V getVersion(C o);
 	
-	C upgrade(I o);
+	V upgrade(C o);
 	
-	C revert(I o, C previousValue);
+	V revert(C o, V previousValue);
 }

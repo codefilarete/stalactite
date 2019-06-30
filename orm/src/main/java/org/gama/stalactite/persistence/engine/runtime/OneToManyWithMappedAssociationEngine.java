@@ -75,7 +75,7 @@ public class OneToManyWithMappedAssociationEngine<SRC, TRGT, SRCID, TRGTID, C ex
 		}
 	}
 	
-	private void addSubgraphSelect(String joinName,
+	static <SRC, TRGT, SRCID, TRGTID, C extends Collection<TRGT>> void addSubgraphSelect(String joinName,
 								   JoinedTablesPersister<SRC, SRCID, ?> sourcePersister,
 								   JoinedTablesPersister<TRGT, TRGTID, ?> targetPersister,
 								   final Function<SRC, C> targetProvider) {

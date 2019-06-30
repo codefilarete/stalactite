@@ -1,6 +1,5 @@
 package org.gama.stalactite.persistence.engine;
 
-import java.sql.Savepoint;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -14,11 +13,11 @@ import org.gama.lang.collection.ReadOnlyIterator;
 import org.gama.lang.collection.ValueFactoryHashMap;
 import org.gama.lang.function.Predicates;
 import org.gama.sql.ConnectionProvider;
-import org.gama.sql.RollbackListener;
 import org.gama.sql.RollbackObserver;
 import org.gama.sql.dml.SQLOperation.SQLOperationListener;
 import org.gama.sql.dml.SQLStatement;
 import org.gama.sql.dml.WriteOperation;
+import org.gama.stalactite.persistence.engine.InsertExecutor.VersioningStrategyRollbackListener;
 import org.gama.stalactite.persistence.engine.RowCountManager.RowCounter;
 import org.gama.stalactite.persistence.engine.listening.UpdateListener.UpdatePayload;
 import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
@@ -383,35 +382,7 @@ public class UpdateExecutor<C, I, T extends Table> extends WriteExecutor<C, I, T
 			versioningStrategy.upgrade(modified);
 			updateValues.put(new UpwhereColumn<T>(versionColumn, true), versioningStrategy.getVersion(modified));
 			updateValues.put(new UpwhereColumn<T>(versionColumn, false), unmodifiedVersion);
-			rollbackObserver.addRollbackListener(new RollbackListener() {
-				@Override
-				public void beforeRollback() {
-					// no pre rollabck treatment to do
-				}
-				
-				@Override
-				public void afterRollback() {
-					// We revert the upgrade
-					versioningStrategy.revert(modified, modifiedVersion);
-				}
-				
-				@Override
-				public void beforeRollback(Savepoint savepoint) {
-					// not implemented
-				}
-				
-				@Override
-				public void afterRollback(Savepoint savepoint) {
-					// not implemented : should we do the same as default rollback ?
-					// it depends on if entity versioning was done during this savepoint ... how to know ?
-				}
-				
-				@Override
-				public boolean isTemporary() {
-					// we don't need this on each rollback
-					return true;
-				}
-			});
+			rollbackObserver.addRollbackListener(new VersioningStrategyRollbackListener<>(versioningStrategy, modified, modifiedVersion));
 		}
 		
 	}
