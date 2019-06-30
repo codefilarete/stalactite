@@ -32,7 +32,7 @@ import org.gama.reflection.ValueAccessPoint;
 import org.gama.reflection.ValueAccessPointMap;
 import org.gama.sql.binder.NullAwareParameterBinder;
 import org.gama.sql.binder.ParameterBinder;
-import org.gama.stalactite.persistence.engine.CascadeOptions.RelationshipMode;
+import org.gama.stalactite.persistence.engine.CascadeOptions.RelationMode;
 import org.gama.stalactite.persistence.engine.cascade.AfterDeleteByIdSupport;
 import org.gama.stalactite.persistence.engine.cascade.AfterDeleteSupport;
 import org.gama.stalactite.persistence.engine.cascade.AfterInsertSupport;
@@ -56,9 +56,9 @@ import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
 
 import static org.gama.lang.function.Predicates.not;
-import static org.gama.stalactite.persistence.engine.CascadeOptions.RelationshipMode.ALL_ORPHAN_REMOVAL;
-import static org.gama.stalactite.persistence.engine.CascadeOptions.RelationshipMode.ASSOCIATION_ONLY;
-import static org.gama.stalactite.persistence.engine.CascadeOptions.RelationshipMode.READ_ONLY;
+import static org.gama.stalactite.persistence.engine.CascadeOptions.RelationMode.ALL_ORPHAN_REMOVAL;
+import static org.gama.stalactite.persistence.engine.CascadeOptions.RelationMode.ASSOCIATION_ONLY;
+import static org.gama.stalactite.persistence.engine.CascadeOptions.RelationMode.READ_ONLY;
 
 /**
  * @param <SRC> type of input (left/source entities)
@@ -103,7 +103,7 @@ public class CascadeOneConfigurer<SRC, TRGT, ID> {
 				ForeignKeyNamingStrategy foreignKeyNamingStrategy,
 				ColumnNamingStrategy joinColumnNamingStrategy) {
 			
-			RelationshipMode maintenanceMode = cascadeOne.getRelationshipMode();
+			RelationMode maintenanceMode = cascadeOne.getRelationMode();
 			if (maintenanceMode == ASSOCIATION_ONLY) {
 				throw new MappingConfigurationException(ASSOCIATION_ONLY + " is only relevent for one-to-many association");
 			}

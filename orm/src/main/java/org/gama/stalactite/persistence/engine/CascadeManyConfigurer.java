@@ -25,7 +25,7 @@ import org.gama.reflection.MethodReferenceCapturer;
 import org.gama.reflection.MutatorByMethod;
 import org.gama.reflection.PropertyAccessor;
 import org.gama.reflection.ValueAccessPointMap;
-import org.gama.stalactite.persistence.engine.CascadeOptions.RelationshipMode;
+import org.gama.stalactite.persistence.engine.CascadeOptions.RelationMode;
 import org.gama.stalactite.persistence.engine.builder.CascadeMany;
 import org.gama.stalactite.persistence.engine.builder.CascadeManyList;
 import org.gama.stalactite.persistence.engine.cascade.JoinedTablesPersister;
@@ -47,9 +47,9 @@ import org.gama.stalactite.persistence.structure.Table;
 import static org.gama.lang.Nullable.nullable;
 import static org.gama.lang.collection.Iterables.first;
 import static org.gama.reflection.Accessors.of;
-import static org.gama.stalactite.persistence.engine.CascadeOptions.RelationshipMode.ALL_ORPHAN_REMOVAL;
-import static org.gama.stalactite.persistence.engine.CascadeOptions.RelationshipMode.ASSOCIATION_ONLY;
-import static org.gama.stalactite.persistence.engine.CascadeOptions.RelationshipMode.READ_ONLY;
+import static org.gama.stalactite.persistence.engine.CascadeOptions.RelationMode.ALL_ORPHAN_REMOVAL;
+import static org.gama.stalactite.persistence.engine.CascadeOptions.RelationMode.ASSOCIATION_ONLY;
+import static org.gama.stalactite.persistence.engine.CascadeOptions.RelationMode.READ_ONLY;
 
 /**
  * @param <SRC> type of input (left/source entities)
@@ -96,7 +96,7 @@ public class CascadeManyConfigurer<SRC, TRGT, SRCID, TRGTID, C extends Collectio
 		}
 		Column leftPrimaryKey = first(sourcePersister.getMainTable().getPrimaryKey().getColumns());
 		
-		RelationshipMode maintenanceMode = cascadeMany.getRelationshipMode();
+		RelationMode maintenanceMode = cascadeMany.getRelationMode();
 		// selection is always present (else configuration is nonsense !)
 		boolean orphanRemoval = maintenanceMode == ALL_ORPHAN_REMOVAL;
 		boolean writeAuthorized = maintenanceMode != READ_ONLY;
@@ -268,17 +268,17 @@ public class CascadeManyConfigurer<SRC, TRGT, SRCID, TRGTID, C extends Collectio
 	private static class CascadeManyWithMappedAssociationConfigurer<SRC, TRGT, SRCID, TRGTID, C extends Collection<TRGT>> {
 		
 		private final ManyAssociationConfiguration<SRC, TRGT, SRCID, TRGTID, C> manyAssociationConfiguration;
-		private final RelationshipMode maintenanceMode;
+		private final RelationMode maintenanceMode;
 		
 		private CascadeManyWithMappedAssociationConfigurer(ManyAssociationConfiguration<SRC, TRGT, SRCID, TRGTID, C> manyAssociationConfiguration,
-														   RelationshipMode maintenanceMode) {
+														   RelationMode maintenanceMode) {
 			this.manyAssociationConfiguration = manyAssociationConfiguration;
 			this.maintenanceMode = maintenanceMode;
 		}
 		
 		private void configure() {
 			if (maintenanceMode == ASSOCIATION_ONLY) {
-				throw new MappingConfigurationException(RelationshipMode.ASSOCIATION_ONLY + " is only relevent with an association table");
+				throw new MappingConfigurationException(RelationMode.ASSOCIATION_ONLY + " is only relevent with an association table");
 			}
 			
 			// We're looking for the foreign key (for necessary join) and for getter/setter required to manage the relation 

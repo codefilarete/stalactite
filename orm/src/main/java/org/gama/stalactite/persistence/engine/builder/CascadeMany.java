@@ -7,7 +7,7 @@ import org.danekja.java.util.function.serializable.SerializableBiConsumer;
 import org.danekja.java.util.function.serializable.SerializableFunction;
 import org.gama.reflection.IReversibleAccessor;
 import org.gama.reflection.ValueAccessPointByMethodReference;
-import org.gama.stalactite.persistence.engine.CascadeOptions.RelationshipMode;
+import org.gama.stalactite.persistence.engine.CascadeOptions.RelationMode;
 import org.gama.stalactite.persistence.engine.EntityMappingConfiguration;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
@@ -42,8 +42,8 @@ public class CascadeMany<SRC, TRGT, TRGTID, C extends Collection<TRGT>> {
 	 */
 	private Column<Table, ?> reverseColumn;
 	
-	/** Default relationship mode is readonly */
-	private RelationshipMode relationshipMode = RelationshipMode.READ_ONLY;
+	/** Default relation mode is {@link RelationMode#ALL} */
+	private RelationMode relationMode = RelationMode.ALL;
 	
 	public <T extends Table> CascadeMany(IReversibleAccessor<SRC, C> collectionProvider, ValueAccessPointByMethodReference methodReference, EntityMappingConfiguration<TRGT, TRGTID> targetMappingConfiguration, T targetTable) {
 		this.collectionProvider = collectionProvider;
@@ -97,12 +97,12 @@ public class CascadeMany<SRC, TRGT, TRGTID, C extends Collection<TRGT>> {
 		this.reverseColumn = reverseColumn;
 	}
 	
-	public RelationshipMode getRelationshipMode() {
-		return relationshipMode;
+	public RelationMode getRelationMode() {
+		return relationMode;
 	}
 	
-	public void setRelationshipMode(RelationshipMode relationshipMode) {
-		this.relationshipMode = relationshipMode;
+	public void setRelationMode(RelationMode relationMode) {
+		this.relationMode = relationMode;
 	}
 	
 	/**

@@ -10,12 +10,12 @@ public interface CascadeOptions<R> {
 	/**
 	 * Specifies relationship maintenance mode.
 	 * 
-	 * @param relationshipMode any {@link RelationshipMode}
+	 * @param relationMode any {@link RelationMode}
 	 * @return the global mapping configurer
 	 */
-	R cascading(RelationshipMode relationshipMode);
+	R cascading(RelationMode relationMode);
 	
-	enum RelationshipMode {
+	enum RelationMode {
 		/**
 		 * Will cascade any insert, update or delete order to target entities and any association record if present
 		 * (case of relation not owned by target entities). 

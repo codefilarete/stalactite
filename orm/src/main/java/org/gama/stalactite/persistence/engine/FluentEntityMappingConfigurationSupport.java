@@ -341,8 +341,8 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements IFluentMap
 		return new MethodDispatcher()
 				.redirect(OneToOneOptions.class, new OneToOneOptions<C, I, T>() {
 					@Override
-					public IFluentMappingBuilderOneToOneOptions<C, I, T> cascading(RelationshipMode relationshipMode) {
-						cascadeOne.setRelationshipMode(relationshipMode);
+					public IFluentMappingBuilderOneToOneOptions<C, I, T> cascading(RelationMode relationMode) {
+						cascadeOne.setRelationMode(relationMode);
 						return null;	// we can return null because dispatcher will return proxy
 					}
 					
@@ -902,8 +902,8 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements IFluentMap
 		}
 		
 		@Override
-		public IFluentMappingBuilderOneToManyOptions<C, I, O> cascading(RelationshipMode relationshipMode) {
-			cascadeMany.setRelationshipMode(relationshipMode);
+		public IFluentMappingBuilderOneToManyOptions<C, I, O> cascading(RelationMode relationMode) {
+			cascadeMany.setRelationMode(relationMode);
 			return null;	// we can return null because dispatcher will return proxy
 		}
 	}

@@ -11,7 +11,7 @@ import org.gama.reflection.MethodReferenceCapturer;
 import org.gama.sql.ConnectionProvider;
 import org.gama.sql.binder.DefaultParameterBinders;
 import org.gama.sql.test.HSQLDBInMemoryDataSource;
-import org.gama.stalactite.persistence.engine.CascadeOptions.RelationshipMode;
+import org.gama.stalactite.persistence.engine.CascadeOptions.RelationMode;
 import org.gama.stalactite.persistence.engine.ColumnOptions.IdentifierPolicy;
 import org.gama.stalactite.persistence.engine.FluentEntityMappingConfigurationSupport.EntityLinkageByColumnName;
 import org.gama.stalactite.persistence.engine.cascade.JoinedTablesPersister;
@@ -146,9 +146,9 @@ class EntityMappingBuilderTest {
 							.add(Person::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 							.add(Person::getName)
 							.getConfiguration())
-						.cascading(RelationshipMode.ALL)
+						.cascading(RelationMode.ALL)
 						.getConfiguration())
-				.cascading(RelationshipMode.ALL)
+				.cascading(RelationMode.ALL)
 				.build(persistenceContext);
 		
 		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
@@ -212,9 +212,9 @@ class EntityMappingBuilderTest {
 								.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 								.add(Country::getName)
 								.getConfiguration())
-						.cascading(RelationshipMode.ALL)
+						.cascading(RelationMode.ALL)
 						.getConfiguration())
-				.cascading(RelationshipMode.ALL)
+				.cascading(RelationMode.ALL)
 				.build(persistenceContext);
 		
 		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);

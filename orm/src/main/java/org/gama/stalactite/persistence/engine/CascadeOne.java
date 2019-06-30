@@ -5,7 +5,7 @@ import javax.annotation.Nullable;
 import org.danekja.java.util.function.serializable.SerializableBiConsumer;
 import org.danekja.java.util.function.serializable.SerializableFunction;
 import org.gama.reflection.IReversibleAccessor;
-import org.gama.stalactite.persistence.engine.CascadeOptions.RelationshipMode;
+import org.gama.stalactite.persistence.engine.CascadeOptions.RelationMode;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
 
@@ -32,7 +32,8 @@ public class CascadeOne<SRC, TRGT, TRGTID> {
 	
 	private Column<Table, SRC> reverseColumn;
 	
-	private RelationshipMode relationshipMode = RelationshipMode.READ_ONLY;
+	/** Default relation mode is {@link RelationMode#ALL} */
+	private RelationMode relationMode = RelationMode.ALL;
 	
 	<T extends Table> CascadeOne(IReversibleAccessor<SRC, TRGT> targetProvider, EntityMappingConfiguration<TRGT, TRGTID> targetMappingConfiguration, T table) {
 		this.targetMappingConfiguration = targetMappingConfiguration;
@@ -88,12 +89,12 @@ public class CascadeOne<SRC, TRGT, TRGTID> {
 		this.reverseColumn = reverseSide;
 	}
 	
-	public RelationshipMode getRelationshipMode() {
-		return relationshipMode;
+	public RelationMode getRelationMode() {
+		return relationMode;
 	}
 	
-	public void setRelationshipMode(RelationshipMode relationshipMode) {
-		this.relationshipMode = relationshipMode;
+	public void setRelationMode(RelationMode relationMode) {
+		this.relationMode = relationMode;
 	}
 	
 	/**

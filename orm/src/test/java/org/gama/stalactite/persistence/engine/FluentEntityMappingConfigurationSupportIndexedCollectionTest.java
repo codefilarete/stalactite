@@ -36,9 +36,9 @@ import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
 import static org.gama.lang.function.Functions.chain;
-import static org.gama.stalactite.persistence.engine.CascadeOptions.RelationshipMode.ALL;
-import static org.gama.stalactite.persistence.engine.CascadeOptions.RelationshipMode.ALL_ORPHAN_REMOVAL;
-import static org.gama.stalactite.persistence.engine.CascadeOptions.RelationshipMode.ASSOCIATION_ONLY;
+import static org.gama.stalactite.persistence.engine.CascadeOptions.RelationMode.ALL;
+import static org.gama.stalactite.persistence.engine.CascadeOptions.RelationMode.ALL_ORPHAN_REMOVAL;
+import static org.gama.stalactite.persistence.engine.CascadeOptions.RelationMode.ASSOCIATION_ONLY;
 import static org.gama.stalactite.persistence.engine.FluentEntityMappingConfigurationSupport.from;
 import static org.gama.stalactite.persistence.id.Identifier.LONG_TYPE;
 import static org.gama.stalactite.query.model.QueryEase.select;

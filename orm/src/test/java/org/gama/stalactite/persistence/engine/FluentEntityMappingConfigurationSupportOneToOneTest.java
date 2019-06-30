@@ -15,7 +15,7 @@ import org.gama.sql.binder.DefaultParameterBinders;
 import org.gama.sql.result.ResultSetIterator;
 import org.gama.sql.result.RowIterator;
 import org.gama.sql.test.HSQLDBInMemoryDataSource;
-import org.gama.stalactite.persistence.engine.CascadeOptions.RelationshipMode;
+import org.gama.stalactite.persistence.engine.CascadeOptions.RelationMode;
 import org.gama.stalactite.persistence.engine.ColumnOptions.IdentifierPolicy;
 import org.gama.stalactite.persistence.engine.IFluentMappingBuilder.IFluentMappingBuilderOneToOneOptions;
 import org.gama.stalactite.persistence.engine.IFluentMappingBuilder.IFluentMappingBuilderPropertyOptions;
@@ -36,9 +36,10 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
-import static org.gama.stalactite.persistence.engine.CascadeOptions.RelationshipMode.ALL;
-import static org.gama.stalactite.persistence.engine.CascadeOptions.RelationshipMode.ALL_ORPHAN_REMOVAL;
-import static org.gama.stalactite.persistence.engine.CascadeOptions.RelationshipMode.ASSOCIATION_ONLY;
+import static org.gama.stalactite.persistence.engine.CascadeOptions.RelationMode.ALL;
+import static org.gama.stalactite.persistence.engine.CascadeOptions.RelationMode.ALL_ORPHAN_REMOVAL;
+import static org.gama.stalactite.persistence.engine.CascadeOptions.RelationMode.ASSOCIATION_ONLY;
+import static org.gama.stalactite.persistence.engine.CascadeOptions.RelationMode.READ_ONLY;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -92,11 +93,11 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 				.addOneToOne(Country::getPresident, personConfiguration).cascading(ASSOCIATION_ONLY);
 		
 		Assertions.assertThrows(() -> mappingBuilder.build(persistenceContext), Assertions.hasExceptionInCauses(MappingConfigurationException.class)
-				.andProjection(Assertions.hasMessage(RelationshipMode.ASSOCIATION_ONLY + " is only relevent for one-to-many association")));
+				.andProjection(Assertions.hasMessage(RelationMode.ASSOCIATION_ONLY + " is only relevent for one-to-many association")));
 	}
 	
 	@Test
-	public void cascade_none_defaultIsReadOnly_getter() throws SQLException {
+	public void cascade_none_defaultIsAll_getter() {
 		Persister<Country, Identifier<Long>, ?> countryPersister = FluentEntityMappingConfigurationSupport.from(Country.class, Identifier.LONG_TYPE)
 				.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.add(Country::getName)
@@ -105,23 +106,51 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 				.addOneToOne(Country::getPresident, personConfiguration)
 				.build(persistenceContext);
 		
-		assert_cascade_noCascade_defaultIsReadOnly(countryPersister);
+		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+		ddlDeployer.deployDDL();
+		
+		Country country = new Country(new PersistableIdentifier<>(42L));
+		country.setPresident(new Person(new PersistableIdentifier<>(666L)));
+		countryPersister.insert(country);
+		
+		Country selectedCountry = countryPersister.select(new PersistedIdentifier<>(42L));
+		assertEquals(42L, selectedCountry.getId().getSurrogate());
+		assertEquals(666L, selectedCountry.getPresident().getId().getSurrogate());
+		
+		countryPersister.delete(selectedCountry);
+		
+		assertEquals(null, countryPersister.select(new PersistedIdentifier<>(42L)));
+		// orphan was'nt removed because cascade is ALL, not ALL_ORPHAN_REMOVAL
+		assertEquals(666L, persistenceContext.getPersister(Person.class).select(new PersistedIdentifier<>(666L)).getId().getSurrogate());
 	}
 	
 	@Test
-	public void cascade_none_defaultIsReadOnly_setter() throws SQLException {
+	public void cascade_readOnly_getter() throws SQLException {
 		Persister<Country, Identifier<Long>, ?> countryPersister = FluentEntityMappingConfigurationSupport.from(Country.class, Identifier.LONG_TYPE)
 				.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.add(Country::getName)
 				.add(Country::getDescription)
 				// no cascade
-				.addOneToOne(Country::setPresident, personConfiguration)
+				.addOneToOne(Country::getPresident, personConfiguration).cascading(READ_ONLY)
 				.build(persistenceContext);
 		
-		assert_cascade_noCascade_defaultIsReadOnly(countryPersister);
+		assert_cascade_readOnly(countryPersister);
 	}
 	
-	private void assert_cascade_noCascade_defaultIsReadOnly(Persister<Country, Identifier<Long>, ?> countryPersister) throws SQLException {
+	@Test
+	public void cascade_readOnly_setter() throws SQLException {
+		Persister<Country, Identifier<Long>, ?> countryPersister = FluentEntityMappingConfigurationSupport.from(Country.class, Identifier.LONG_TYPE)
+				.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
+				.add(Country::getName)
+				.add(Country::getDescription)
+				// no cascade
+				.addOneToOne(Country::setPresident, personConfiguration).cascading(READ_ONLY)
+				.build(persistenceContext);
+		
+		assert_cascade_readOnly(countryPersister);
+	}
+	
+	private void assert_cascade_readOnly(Persister<Country, Identifier<Long>, ?> countryPersister) throws SQLException {
 		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
 		ddlDeployer.deployDDL();
 		

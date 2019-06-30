@@ -10,7 +10,7 @@ import org.gama.sql.binder.DefaultParameterBinders;
 import org.gama.sql.binder.LambdaParameterBinder;
 import org.gama.sql.binder.NullAwareParameterBinder;
 import org.gama.sql.test.HSQLDBInMemoryDataSource;
-import org.gama.stalactite.persistence.engine.CascadeOptions.RelationshipMode;
+import org.gama.stalactite.persistence.engine.CascadeOptions.RelationMode;
 import org.gama.stalactite.persistence.engine.ColumnOptions.IdentifierPolicy;
 import org.gama.stalactite.persistence.engine.FluentEntityMappingConfigurationSupportInheritanceTest.Car;
 import org.gama.stalactite.persistence.engine.FluentEntityMappingConfigurationSupportInheritanceTest.Color;
@@ -359,7 +359,7 @@ class JoinedTablesEntityMappingBuilderTest {
 		FluentEntityMappingConfigurationSupport<Car, Identifier> configurationSupport = new FluentEntityMappingConfigurationSupport<>(Car.class);
 		configurationSupport
 				.add(Car::getModel)
-				.addOneToOne(Vehicle::getEngine, engineConfiguration).cascading(RelationshipMode.ALL_ORPHAN_REMOVAL)
+				.addOneToOne(Vehicle::getEngine, engineConfiguration).cascading(RelationMode.ALL_ORPHAN_REMOVAL)
 				.mapInheritance(superClassMapping).withJoinTable(new Table("toto"));
 		
 		JoinedTablesEntityMappingBuilder<Car, Identifier> testInstance = new JoinedTablesEntityMappingBuilder<>(configurationSupport, methodSpy);
@@ -491,7 +491,7 @@ class JoinedTablesEntityMappingBuilderTest {
 		
 		EntityMappingConfiguration<Vehicle, Identifier> superClassMapping = new FluentEntityMappingConfigurationSupport<Vehicle, Identifier>(Vehicle.class)
 				.add(Vehicle::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
-				.addOneToOne(Vehicle::getEngine, engineConfiguration).cascading(RelationshipMode.ALL_ORPHAN_REMOVAL)
+				.addOneToOne(Vehicle::getEngine, engineConfiguration).cascading(RelationMode.ALL_ORPHAN_REMOVAL)
 				.add(Vehicle::getColor)
 				.getConfiguration();
 		

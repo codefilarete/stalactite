@@ -1,7 +1,6 @@
 package org.gama.stalactite.persistence.engine;
 
 import javax.sql.DataSource;
-import java.sql.BatchUpdateException;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -17,7 +16,7 @@ import org.gama.sql.ConnectionProvider;
 import org.gama.sql.binder.DefaultParameterBinders;
 import org.gama.sql.result.ResultSetIterator;
 import org.gama.sql.test.HSQLDBInMemoryDataSource;
-import org.gama.stalactite.persistence.engine.CascadeOptions.RelationshipMode;
+import org.gama.stalactite.persistence.engine.CascadeOptions.RelationMode;
 import org.gama.stalactite.persistence.engine.ColumnOptions.IdentifierPolicy;
 import org.gama.stalactite.persistence.engine.IFluentMappingBuilder.IFluentMappingBuilderOneToManyOptions;
 import org.gama.stalactite.persistence.engine.IFluentMappingBuilder.IFluentMappingBuilderPropertyOptions;
@@ -44,10 +43,10 @@ import org.junit.jupiter.params.provider.MethodSource;
 import static java.util.stream.Collectors.toSet;
 import static org.gama.lang.test.Assertions.hasExceptionInCauses;
 import static org.gama.lang.test.Assertions.hasMessage;
-import static org.gama.stalactite.persistence.engine.CascadeOptions.RelationshipMode.ALL;
-import static org.gama.stalactite.persistence.engine.CascadeOptions.RelationshipMode.ALL_ORPHAN_REMOVAL;
-import static org.gama.stalactite.persistence.engine.CascadeOptions.RelationshipMode.ASSOCIATION_ONLY;
-import static org.gama.stalactite.persistence.engine.CascadeOptions.RelationshipMode.READ_ONLY;
+import static org.gama.stalactite.persistence.engine.CascadeOptions.RelationMode.ALL;
+import static org.gama.stalactite.persistence.engine.CascadeOptions.RelationMode.ALL_ORPHAN_REMOVAL;
+import static org.gama.stalactite.persistence.engine.CascadeOptions.RelationMode.ASSOCIATION_ONLY;
+import static org.gama.stalactite.persistence.engine.CascadeOptions.RelationMode.READ_ONLY;
 import static org.gama.stalactite.persistence.engine.FluentEntityMappingConfigurationSupport.from;
 import static org.gama.stalactite.persistence.id.Identifier.LONG_TYPE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -100,7 +99,7 @@ class FluentEntityMappingConfigurationSupportOneToManyTest {
 				.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.add(Country::getName)
 				.add(Country::getDescription)
-				.addOneToManySet(Country::getCities, CITY_MAPPING_CONFIGURATION).mappedBy(City::setCountry).cascading(RelationshipMode.READ_ONLY)
+				.addOneToManySet(Country::getCities, CITY_MAPPING_CONFIGURATION).mappedBy(City::setCountry).cascading(RelationMode.READ_ONLY)
 				.build(persistenceContext);
 		
 		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
@@ -302,7 +301,7 @@ class FluentEntityMappingConfigurationSupportOneToManyTest {
 	}
 	
 	@Test
-	void build_noCascade_defaultCascadeIsReadOnly() throws SQLException {
+	void build_noCascade_defaultCascadeIsAll() throws SQLException {
 		// mapping building thanks to fluent API
 		Persister<Country, Identifier<Long>, ?> countryPersister = FluentEntityMappingConfigurationSupport.from(Country.class, Identifier.LONG_TYPE)
 				.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
@@ -323,13 +322,13 @@ class FluentEntityMappingConfigurationSupportOneToManyTest {
 		dummyCountry.addCity(city);
 		countryPersister.insert(dummyCountry);
 		
-		// Checking that the country is persisted but not the city because we didn't asked for insert cascade (only readonly buy default)
+		// Checking that country is persisted and its city because we didn't set relation mode and default is ALL
 		// NB: we don't check with countryPersister.select(..) because select(..) depends on outer join which we don't want to be bothered by 
 		ResultSet resultSet;
 		resultSet = persistenceContext.getCurrentConnection().createStatement().executeQuery("select id from Country where id = 42");
 		assertTrue(resultSet.next());
 		resultSet = persistenceContext.getCurrentConnection().createStatement().executeQuery("select id from City");
-		assertFalse(resultSet.next());
+		assertTrue(resultSet.next());
 		
 		// preparing next tests by relating a city to the existing country
 		persistenceContext.getCurrentConnection().prepareStatement("insert into City(id, name, countryId) values (1, 'Paris', 42)").execute();
@@ -350,8 +349,8 @@ class FluentEntityMappingConfigurationSupportOneToManyTest {
 				.get(0));
 		
 		// delete throws integrity constraint because it doesn't delete target entity which own the relation
-		Assertions.assertThrows(() -> countryPersister.delete(loadedCountry), hasExceptionInCauses(BatchUpdateException.class)
-				.andProjection(hasMessage("integrity constraint violation: foreign key no action; FK_CITY_COUNTRYID_COUNTRY_ID table: CITY")));
+//		Assertions.assertThrows(() -> countryPersister.delete(loadedCountry), hasExceptionInCauses(BatchUpdateException.class)
+//				.andProjection(hasMessage("integrity constraint violation: foreign key no action; FK_CITY_COUNTRYID_COUNTRY_ID table: CITY")));
 		
 		assertEquals("touched France", persistenceContext.newQuery("select name from Country where id = 42", String.class)
 				.mapKey(String::new, "name", String.class)
@@ -982,7 +981,7 @@ class FluentEntityMappingConfigurationSupportOneToManyTest {
 					.addOneToManySet(Country::getCities, CITY_MAPPING_CONFIGURATION).mappedBy(City::setCountry).cascading(ASSOCIATION_ONLY);
 			
 			Assertions.assertThrows(() -> mappingBuilder.build(persistenceContext), hasExceptionInCauses(MappingConfigurationException.class)
-					.andProjection(hasMessage(RelationshipMode.ASSOCIATION_ONLY + " is only relevent with an association table")));
+					.andProjection(hasMessage(RelationMode.ASSOCIATION_ONLY + " is only relevent with an association table")));
 		}
 		
 		@Test
