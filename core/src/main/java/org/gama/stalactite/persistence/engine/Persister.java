@@ -2,14 +2,16 @@ package org.gama.stalactite.persistence.engine;
 
 import javax.annotation.Nonnull;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.gama.lang.Duo;
 import org.gama.lang.Retryer;
 import org.gama.lang.collection.Iterables;
+import org.gama.lang.collection.Maps;
 import org.gama.sql.ConnectionProvider;
 import org.gama.stalactite.persistence.engine.listening.PersisterListener;
 import org.gama.stalactite.persistence.engine.listening.UpdateListener;
@@ -197,6 +199,15 @@ public class Persister<C, I, T extends Table> {
 		return persist(Collections.singleton(entity));
 	}
 	
+	/**
+	 * Saves given entities : will apply insert or update according to entities persistent state.
+	 * Triggers cascade on relations. Please note that in case of already-persisted entities (not new), entities will be reloaded from database
+	 * to compute differences and cascade only modifications.
+	 * If one already has a copy of the "unmodified" instance, you may prefer to direcly use {@link #update(Object, Object, boolean)}
+	 * 
+	 * @param entities some entities, can be a mix of none-persistent or already-persisted entities
+	 * @return number of rows inserted and updated (relation-less counter) (maximum is argument size, may be 0 if no modifications were found between memory and database)
+	 */
 	public int persist(Iterable<C> entities) {
 		if (Iterables.isEmpty(entities)) {
 			return 0;
@@ -216,13 +227,29 @@ public class Persister<C, I, T extends Table> {
 			writtenRowCount += insert(toInsert);
 		}
 		if (!toUpdate.isEmpty()) {
-			writtenRowCount += updateById(toUpdate);
+			// creating couple of modified and unmodified entities
+			List<C> loadedEntities = select(toUpdate.stream().map(e -> getMappingStrategy().getId(e)).collect(Collectors.toList()));
+			Map<I, C> loadedEntitiesPerId = Iterables.map(loadedEntities, e -> getMappingStrategy().getId(e));
+			Map<I, C> modifiedEntitiesPerId = Iterables.map(toUpdate, e -> getMappingStrategy().getId(e));
+			Map<C, C> modifiedVSunmodified = Maps.innerJoin(modifiedEntitiesPerId, loadedEntitiesPerId);
+			List<Duo<C, C>> updateArg = new ArrayList<>();
+			modifiedVSunmodified.forEach((k, v) -> updateArg.add(new Duo<>(k , v)));
+			writtenRowCount += update(updateArg, true);
 		}
 		return writtenRowCount;
 	}
 	
-	public int insert(C c) {
-		return insert(Collections.singletonList(c));
+	/**
+	 * Saves given entity : will apply insert or update according to entity persistent state.
+	 * Triggers cascade on relations. Please note that in case of already-persisted entity (not new), entity will be reloaded from database
+	 * to compute differences and cascade only modifications.
+	 * If one already has a copy of the "unmodified" instance, you may prefer to direcly use {@link #update(Object, Object, boolean)}
+	 *
+	 * @param entity an entity, none-persistent or already-persisted
+	 * @return number of rows inserted and updated (relation-less counter) (maximum is 1, may be 0 if no modifications were found between memory and database)
+	 */
+	public int insert(C entity) {
+		return insert(Collections.singletonList(entity));
 	}
 	
 	public int insert(Iterable<? extends C> entities) {
@@ -237,14 +264,21 @@ public class Persister<C, I, T extends Table> {
 		return insertExecutor.insert(entities);
 	}
 	
-	public int updateById(C c) {
-		return updateById(Collections.singletonList(c));
+	/**
+	 * Updates roughly given entity: no differences are computed, only update statements (full column) are applied.
+	 *
+	 * @param entity an entity
+	 * @return number of rows updated (relation-less counter) (maximum is 1, may be 0 if row wasn't found in database)
+	 */
+	public int updateById(C entity) {
+		return updateById(Collections.singletonList(entity));
 	}
 	
 	/**
-	 * Updates roughly some instances: no difference are computed, only update statements (full column) are applied.
+	 * Updates roughly some entities: no differences are computed, only update statements (full column) are applied.
 	 * 
 	 * @param entities iterable of entities
+	 * @return number of rows updated (relation-less counter) (maximum is argument size, may be 0 if rows weren't found in database)
 	 */
 	public int updateById(Iterable<C> entities) {
 		if (Iterables.isEmpty(entities)) {
@@ -374,7 +408,7 @@ public class Persister<C, I, T extends Table> {
 		return Iterables.first(select(Collections.singleton(id)));
 	}
 	
-	public List<C> select(Collection<I> ids) {
+	public List<C> select(Iterable<I> ids) {
 		if (Iterables.isEmpty(ids)) {
 			return new ArrayList<>();
 		} else {
@@ -382,7 +416,7 @@ public class Persister<C, I, T extends Table> {
 		}
 	}
 	
-	protected List<C> doSelect(Collection<I> ids) {
+	protected List<C> doSelect(Iterable<I> ids) {
 		return selectExecutor.select(ids);
 	}
 }

@@ -1,7 +1,6 @@
 package org.gama.stalactite.persistence.engine.cascade;
 
 import javax.annotation.Nonnull;
-import java.util.Collection;
 import java.util.List;
 import java.util.Set;
 
@@ -116,7 +115,7 @@ public class JoinedTablesPersister<C, I, T extends Table> extends Persister<C, I
 	 * @return a List of loaded entities corresponding to identifiers passed as parameter
 	 */
 	@Override
-	protected List<C> doSelect(Collection<I> ids) {
+	protected List<C> doSelect(Iterable<I> ids) {
 		return joinedStrategiesSelectExecutor.select(ids);
 	}
 	

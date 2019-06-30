@@ -1,7 +1,9 @@
 package org.gama.stalactite.persistence.engine;
 
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.function.BiPredicate;
 import java.util.function.Predicate;
 
@@ -10,6 +12,7 @@ import org.gama.lang.Retryer;
 import org.gama.lang.collection.Arrays;
 import org.gama.lang.collection.Iterables;
 import org.gama.lang.collection.Maps;
+import org.gama.lang.test.Assertions;
 import org.gama.reflection.Accessors;
 import org.gama.reflection.IReversibleAccessor;
 import org.gama.sql.ConnectionProvider;
@@ -83,17 +86,17 @@ class PersisterTest {
 	@Test
 	void testPersist() {
 		TotoTable totoTable = new TotoTable("TotoTable");
-		Column<TotoTable, Long> primaryKey = totoTable.addColumn("a", Long.class).primaryKey();
-		IReversibleAccessor<Toto, Long> identifier = Accessors.accessorByField(Toto.class, "a");
+		Column<TotoTable, Integer> primaryKey = totoTable.addColumn("a", Integer.class).primaryKey();
+		IReversibleAccessor<Toto, Integer> identifier = Accessors.accessorByField(Toto.class, "a");
 		Map<? extends IReversibleAccessor<Toto, Object>, Column<TotoTable, Object>> mapping = (Map) Maps.asMap(identifier, primaryKey);
-		IdentifierInsertionManager<Toto, Long> identifierInsertionManagerMock = mock(IdentifierInsertionManager.class);
-		when(identifierInsertionManagerMock.getIdentifierType()).thenReturn(Long.class);
+		IdentifierInsertionManager<Toto, Integer> identifierInsertionManagerMock = mock(IdentifierInsertionManager.class);
+		when(identifierInsertionManagerMock.getIdentifierType()).thenReturn(Integer.class);
 		InsertListener identifierManagerInsertListenerMock = mock(InsertListener.class);
 		when(identifierInsertionManagerMock.getInsertListener()).thenReturn(identifierManagerInsertListenerMock);
-		ClassMappingStrategy<Toto, Long, TotoTable> classMappingStrategy = new ClassMappingStrategy<>(Toto.class, totoTable,
+		ClassMappingStrategy<Toto, Integer, TotoTable> classMappingStrategy = new ClassMappingStrategy<>(Toto.class, totoTable,
 				mapping, identifier,
 				identifierInsertionManagerMock);
-		Persister<Toto, Long, TotoTable> testInstance = new Persister<Toto, Long, TotoTable>(classMappingStrategy,
+		Persister<Toto, Integer, TotoTable> testInstance = new Persister<Toto, Integer, TotoTable>(classMappingStrategy,
 				mock(ConnectionProvider.class), new DMLGenerator(new ColumnBinderRegistry()), Retryer.NO_RETRY, 0, 0) {
 			/** Overriden to prevent from building real world SQL statement because ConnectionProvider is mocked */
 			@Override
@@ -103,16 +106,21 @@ class PersisterTest {
 			
 			/** Overriden to prevent from building real world SQL statement because ConnectionProvider is mocked */
 			@Override
-			protected int doUpdateById(Iterable<Toto> entities) {
+			protected int doUpdate(Iterable<UpdatePayload<Toto, TotoTable>> entities, boolean allColumnsStatement) {
 				return ((Collection) entities).size();
+			}
+			
+			@Override
+			protected List<Toto> doSelect(Iterable<Integer> ids) {
+				return Iterables.collectToList(ids, id -> new Toto(id, null, null));
 			}
 		};
 		
 		
 		InsertListener insertListener = mock(InsertListener.class);
 		testInstance.getPersisterListener().addInsertListener(insertListener);
-		UpdateByIdListener updateListener = mock(UpdateByIdListener.class);
-		testInstance.getPersisterListener().addUpdateByIdListener(updateListener);
+		UpdateListener updateListener = mock(UpdateListener.class);
+		testInstance.getPersisterListener().addUpdateListener(updateListener);
 		
 		int rowCount = testInstance.persist(Arrays.asList());
 		assertEquals(0, rowCount);
@@ -133,9 +141,13 @@ class PersisterTest {
 		// On persist of a already persisted instance (with id), "rough update" chain must be invoked
 		rowCount = testInstance.persist(persisted);
 		assertEquals(1, rowCount);
-		verify(updateListener).beforeUpdateById(eq(Arrays.asList(persisted)));
-		verify(updateListener).afterUpdateById(eq(Arrays.asList(persisted)));
-		
+		ArgumentCaptor<Iterable<UpdatePayload>> updateArgCaptor = ArgumentCaptor.forClass(Iterable.class);
+		verify(updateListener).beforeUpdate(updateArgCaptor.capture(), eq(true));
+		Assertions.assertAllEquals(Arrays.asList(new Duo<>(persisted, new Toto(1, null, null))), Iterables.collectToList(updateArgCaptor.getValue(), UpdatePayload::getEntities),
+				Objects::toString, Objects::toString);
+		verify(updateListener).afterUpdate(updateArgCaptor.capture(), eq(true));
+		Assertions.assertAllEquals(Arrays.asList(new Duo<>(persisted, new Toto(1, null, null))), Iterables.collectToList(updateArgCaptor.getValue(), UpdatePayload::getEntities),
+				Objects::toString, Objects::toString);
 		
 		clearInvocations(insertListener, identifierManagerInsertListenerMock, updateListener);
 		// mix
@@ -145,8 +157,12 @@ class PersisterTest {
 		verify(insertListener).afterInsert(eq(Arrays.asList(unPersisted)));
 		verify(identifierManagerInsertListenerMock).beforeInsert(eq(Arrays.asList(unPersisted)));
 		verify(identifierManagerInsertListenerMock).afterInsert(eq(Arrays.asList(unPersisted)));
-		verify(updateListener).beforeUpdateById(eq(Arrays.asList(persisted)));
-		verify(updateListener).afterUpdateById(eq(Arrays.asList(persisted)));
+		verify(updateListener).beforeUpdate(updateArgCaptor.capture(), eq(true));
+		Assertions.assertAllEquals(Arrays.asList(new Duo<>(persisted, new Toto(1, null, null))), Iterables.collectToList(updateArgCaptor.getValue(), UpdatePayload::getEntities),
+				Objects::toString, Objects::toString);
+		verify(updateListener).afterUpdate(updateArgCaptor.capture(), eq(true));
+		Assertions.assertAllEquals(Arrays.asList(new Duo<>(persisted, new Toto(1, null, null))), Iterables.collectToList(updateArgCaptor.getValue(), UpdatePayload::getEntities),
+				Objects::toString, Objects::toString);
 	}
 	
 	@Test

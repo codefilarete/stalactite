@@ -120,7 +120,8 @@ public class JoinedStrategiesSelectExecutor<C, I, T extends Table> extends Selec
 		return joinedStrategiesSelect.add(leftStrategyName, strategy, leftJoinColumn, rightJoinColumn, isOuterJoin, beanRelationFixer);
 	}
 	
-	public List<C> select(Collection<I> ids) {
+	@Override
+	public List<C> select(Iterable<I> ids) {
 		// cutting ids into pieces, adjusting expected result size
 		List<List<I>> parcels = Collections.parcel(ids, blockSize);
 		List<C> result = new ArrayList<>(parcels.size() * blockSize);

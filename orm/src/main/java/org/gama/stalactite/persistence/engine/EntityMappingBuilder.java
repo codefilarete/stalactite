@@ -102,7 +102,8 @@ class EntityMappingBuilder<C, I> {
 				// no ClassMappingStratey in hierarchy, so we can't get an identifier from it => impossible
 				return throwMissingIdentificationException();
 			}
-			identifierInsertionManager = buildIdentifierInsertionManager(dialect, identifierAccessor, configurationSupport.getIdentifierPolicy(), configurationSupport.getPropertiesMapping().getPropertiesMapping());
+			identifierInsertionManager = buildIdentifierInsertionManager(dialect, identifierAccessor, configurationSupport.getIdentifierPolicy(),
+					configurationSupport.getPropertiesMapping().getPropertiesMapping());
 		} else {
 			// mapping with inheritance : identifier is expected to be defined on it
 			// at least one parent ClassMappingStrategy exists, it necessarily defines an identifier : we stop at the very first one
@@ -110,7 +111,8 @@ class EntityMappingBuilder<C, I> {
 			while (identifierAccessor == null && pawn != null) {
 				identifierAccessor = pawn.getIdentifierAccessor();
 				if (identifierAccessor != null) {
-					identifierInsertionManager = buildIdentifierInsertionManager(dialect, identifierAccessor, pawn.getIdentifierPolicy(), pawn.getPropertiesMapping().getPropertiesMapping());
+					identifierInsertionManager = buildIdentifierInsertionManager(dialect, identifierAccessor, pawn.getIdentifierPolicy(),
+							pawn.getPropertiesMapping().getPropertiesMapping());
 				}
 				pawn = pawn.getInheritanceConfiguration();
 			}
