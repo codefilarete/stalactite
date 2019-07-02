@@ -94,14 +94,14 @@ class EntityMappingBuilder<C, I> {
 		if (configurationSupport.getIdentifierAccessor() != null && configurationSupport.getInheritanceConfiguration() != null) {
 			throw new MappingConfigurationException("Defining an identifier while inheritance is used is not supported");
 		}
-		IReversibleAccessor<C, I> identifierAccessor = null;
-		IdentifierInsertionManager<C, I> identifierInsertionManager = null;
+		IReversibleAccessor<? super C, I> identifierAccessor = null;
+		IdentifierInsertionManager<? super C, I> identifierInsertionManager = null;
 		if (configurationSupport.getInheritanceConfiguration() == null) {
 			identifierAccessor = configurationSupport.getIdentifierAccessor();
 			
 			if (identifierAccessor == null) {
 				// no ClassMappingStratey in hierarchy, so we can't get an identifier from it => impossible
-				return throwMissingIdentificationException();
+				throw newMissingIdentificationException();
 			}
 			identifierInsertionManager = buildIdentifierInsertionManager(dialect, identifierAccessor, configurationSupport.getIdentifierPolicy(),
 					configurationSupport.getPropertiesMapping().getPropertiesMapping());
@@ -119,23 +119,23 @@ class EntityMappingBuilder<C, I> {
 			}
 			if (identifierAccessor == null) {
 				// no ClassMappingStratey in hierarchy, so we can't get an identifier from it => impossible
-				return throwMissingIdentificationException();
+				throw newMissingIdentificationException();
 			}
 		}
 		
-		return new Duo<>(identifierAccessor, identifierInsertionManager);
+		return new Duo(identifierAccessor, identifierInsertionManager);
 	}
 	
-	private Duo<IReversibleAccessor<C, I>, IdentifierInsertionManager<C, I>> throwMissingIdentificationException() {
+	private UnsupportedOperationException newMissingIdentificationException() {
 		SerializableBiFunction<ColumnOptions, IdentifierPolicy, ColumnOptions> identifierMethodReference = ColumnOptions::identifier;
 		Method identifierSetter = this.methodSpy.findMethod(identifierMethodReference);
-		throw new UnsupportedOperationException("Identifier is not defined for " + Reflections.toString(configurationSupport.getPersistedClass())
+		return new UnsupportedOperationException("Identifier is not defined for " + Reflections.toString(configurationSupport.getPersistedClass())
 				+ ", please add one throught " + Reflections.toString(identifierSetter));
 	}
 	
-	private IdentifierInsertionManager<C, I> buildIdentifierInsertionManager(Dialect dialect, IReversibleAccessor<C, I> identifierAccessor,
+	private IdentifierInsertionManager<? super C, I> buildIdentifierInsertionManager(Dialect dialect, IReversibleAccessor<? super C, I> identifierAccessor,
 																			 IdentifierPolicy identifierPolicy, List<Linkage> propertiesMapping) {
-		IdentifierInsertionManager<C, I> identifierInsertionManager;
+		IdentifierInsertionManager<? super C, I> identifierInsertionManager;
 		MemberDefinition methodReference = MemberDefinition.giveMemberDefinition(identifierAccessor);
 		Class<I> identifierType = methodReference.getMemberType();
 		if (identifierPolicy == IdentifierPolicy.ALREADY_ASSIGNED) {

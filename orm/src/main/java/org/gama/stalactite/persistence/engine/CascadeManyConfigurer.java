@@ -46,7 +46,7 @@ import org.gama.stalactite.persistence.structure.Table;
 
 import static org.gama.lang.Nullable.nullable;
 import static org.gama.lang.collection.Iterables.first;
-import static org.gama.reflection.Accessors.of;
+import static org.gama.reflection.Accessors.accessor;
 import static org.gama.stalactite.persistence.engine.CascadeOptions.RelationMode.ALL_ORPHAN_REMOVAL;
 import static org.gama.stalactite.persistence.engine.CascadeOptions.RelationMode.ASSOCIATION_ONLY;
 import static org.gama.stalactite.persistence.engine.CascadeOptions.RelationMode.READ_ONLY;
@@ -305,7 +305,7 @@ public class CascadeManyConfigurer<SRC, TRGT, SRCID, TRGTID, C extends Collectio
 					reverseMethod = methodReferenceCapturer.findMethod(reverseGetter);
 					getterSignature = Reflections.toString(reverseMethod);
 				}
-				reversePropertyAccessor = of(reverseMethod);
+				reversePropertyAccessor = accessor(reverseMethod);
 				// Since reverse property accessor may not be declared the same way that it is present in ClassMappingStrategy
 				// we must use a ValueAccessPointMap which allows to compare different ValueAccessPoints
 				ClassMappingStrategy<TRGT, TRGTID, ?> targetMappingStrategy = manyAssociationConfiguration.targetPersister.getMappingStrategy();

@@ -51,13 +51,13 @@ class EntityMappingBuilderTest {
 		dialect.getJavaTypeToSqlTypeMapping().put(Identifier.class, "int");
 		
 		// building mapping manually
-		IReversibleAccessor<Person, Identifier> identifierAccessor = Accessors.propertyAccessor(Person.class, "id");
+		IReversibleAccessor<Person, Identifier<Long>> identifierAccessor = Accessors.propertyAccessor(Person.class, "id");
 		IReversibleAccessor<Person, String> nameAccessor = Accessors.propertyAccessor(Person.class, "name");
 		
 		EmbeddableMappingConfiguration<Person> personPropertiesMapping = mock(EmbeddableMappingConfiguration.class);
 		// declaring mapping
 		when(personPropertiesMapping.getPropertiesMapping()).thenReturn(Arrays.asList(
-				new EntityLinkageByColumnName<>(identifierAccessor, Identifier.class, "id"),
+				new EntityLinkageByColumnName<>(identifierAccessor, (Class<Identifier<Long>>) (Class) Identifier.class, "id"),
 				new EntityLinkageByColumnName<>(nameAccessor, String.class, "name")
 		));
 		// preventing NullPointerException

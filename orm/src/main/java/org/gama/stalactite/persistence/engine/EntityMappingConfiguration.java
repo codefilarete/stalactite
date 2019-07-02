@@ -21,7 +21,7 @@ public interface EntityMappingConfiguration<C, I> {
 	
 	IdentifierPolicy getIdentifierPolicy();
 	
-	IReversibleAccessor getIdentifierAccessor();
+	IReversibleAccessor<C, I> getIdentifierAccessor();
 	
 	EmbeddableMappingConfiguration<C> getPropertiesMapping();
 	

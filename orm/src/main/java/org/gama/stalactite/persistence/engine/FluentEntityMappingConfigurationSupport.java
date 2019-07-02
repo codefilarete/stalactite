@@ -42,6 +42,7 @@ import org.gama.stalactite.persistence.engine.builder.CascadeManyList;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
 
+import static org.gama.lang.Reflections.propertyName;
 import static org.gama.reflection.MemberDefinition.giveMemberDefinition;
 
 /**
@@ -69,7 +70,7 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements IFluentMap
 	
 	private TableNamingStrategy tableNamingStrategy = TableNamingStrategy.DEFAULT;
 	
-	private PropertyAccessor<C, I> identifierAccessor;
+	private IReversibleAccessor<C, I> identifierAccessor;
 	
 	private final MethodReferenceCapturer methodSpy;
 	
@@ -136,7 +137,7 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements IFluentMap
 	}
 	
 	@Override
-	public IReversibleAccessor getIdentifierAccessor() {
+	public IReversibleAccessor<C, I> getIdentifierAccessor() {
 		return this.identifierAccessor;
 	}
 	
@@ -403,7 +404,7 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements IFluentMap
 		
 		MutatorByMethodReference<C, S> setterReference = Accessors.mutatorByMethodReference(setter);
 		PropertyAccessor<C, S> propertyAccessor = new PropertyAccessor<>(
-				Accessors.accessor(setterReference.getDeclaringClass(), Reflections.propertyName(setterReference.getMethodName())),
+				Accessors.accessor(setterReference.getDeclaringClass(), propertyName(setterReference.getMethodName())),
 				setterReference
 		);
 		return addOneToManySet(propertyAccessor, setterReference, mappingConfiguration, table);
@@ -452,7 +453,7 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements IFluentMap
 		
 		MutatorByMethodReference<C, S> setterReference = Accessors.mutatorByMethodReference(setter);
 		PropertyAccessor<C, S> propertyAccessor = new PropertyAccessor<>(
-				Accessors.accessor(setterReference.getDeclaringClass(), Reflections.propertyName(setterReference.getMethodName())),
+				Accessors.accessor(setterReference.getDeclaringClass(), propertyName(setterReference.getMethodName())),
 				setterReference
 		);
 		return addOneToManyList(propertyAccessor, setterReference, mappingConfiguration, table);
@@ -663,23 +664,23 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements IFluentMap
 	
 	static class EntityLinkageByColumn<T> extends AbstractLinkage<T> implements EntityLinkage<T> {
 		
-		private final PropertyAccessor<T, ?> function;
+		private final IReversibleAccessor<T, ?> function;
 		private final Column column;
 		
 		/**
 		 * Constructor with mandatory objects
 		 * 
-		 * @param propertyAccessor a {@link PropertyAccessor}
+		 * @param propertyAccessor a {@link IReversibleAccessor}
 		 * @param column an override of the default column that would have been generated
 		 */
-		<I> EntityLinkageByColumn(PropertyAccessor<T, I> propertyAccessor, Column column) {
+		EntityLinkageByColumn(IReversibleAccessor<T, ?> propertyAccessor, Column column) {
 			this.function = propertyAccessor;
 			this.column = column;
 		}
 		
 		@Override
-		public <I> PropertyAccessor<T, I> getAccessor() {
-			return (PropertyAccessor<T, I>) function;
+		public <I> IReversibleAccessor<T, I> getAccessor() {
+			return (IReversibleAccessor<T, I>) function;
 		}
 		
 		@Override
@@ -759,45 +760,35 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements IFluentMap
 		}
 		
 		<E> AbstractLinkage<C> addMapping(SerializableBiConsumer<C, E> setter, Column column) {
-			MutatorByMethodReference<C, E> mutatorByMethodReference = Accessors.mutatorByMethodReference(setter);
-			PropertyAccessor<C, E> propertyAccessor = new PropertyAccessor<>(
-					Accessors.accessor(mutatorByMethodReference.getDeclaringClass(), Reflections.propertyName(mutatorByMethodReference.getMethodName())),
-					mutatorByMethodReference
-			);
-			return addMapping(propertyAccessor, column);
+			return addMapping(Accessors.mutator(setter), column);
 		}
 		
 		<E> AbstractLinkage<C> addMapping(SerializableFunction<C, E> getter, Column column) {
-			AccessorByMethodReference<C, E> accessorByMethodReference = Accessors.accessorByMethodReference(getter);
-			PropertyAccessor<C, E> propertyAccessor = new PropertyAccessor<>(
-					accessorByMethodReference,
-					Accessors.mutator(accessorByMethodReference.getDeclaringClass(), Reflections.propertyName(accessorByMethodReference.getMethodName()), accessorByMethodReference.getPropertyType())
-			);
-			return addMapping(propertyAccessor, column);
+			return addMapping(Accessors.accessor(getter), column);
 		}
 		
 		/**
-		 * Equivalent of {@link #addMapping(PropertyAccessor, MemberDefinition, String)} with a {@link Column}
+		 * Equivalent of {@link #addMapping(IReversibleAccessor, MemberDefinition, String)} with a {@link Column}
 		 * 
 		 * @return a new Column added to the target table, throws an exception if already mapped
 		 */
-		AbstractLinkage<C> addMapping(PropertyAccessor<C, ?> propertyAccessor, Column column) {
+		AbstractLinkage<C> addMapping(IReversibleAccessor<C, ?> propertyAccessor, Column column) {
 			assertMappingIsNotAlreadyDefined(column.getName(), propertyAccessor);
 			EntityLinkageByColumn<C> newLinkage = new EntityLinkageByColumn<>(propertyAccessor, column);
 			mapping.add(newLinkage);
 			return newLinkage;
 		}
 		
-		private IFluentMappingBuilderPropertyOptions<C, I> wrapForAdditionalOptions(AbstractLinkage newMapping) {
+		private IFluentMappingBuilderPropertyOptions<C, I> wrapForAdditionalOptions(AbstractLinkage<C> newMapping) {
 			return new MethodDispatcher()
 					.redirect(ColumnOptions.class, new ColumnOptions() {
 						@Override
 						public ColumnOptions identifier(IdentifierPolicy identifierPolicy) {
 							// Please note that we don't check for any id presence in inheritance since this will override parent one (see final build()) 
 							if (entityConfigurationSupport.identifierAccessor != null) {
-								throw new IllegalArgumentException("Identifier is already defined by " + MemberDefinition.toString(entityConfigurationSupport.identifierAccessor.getAccessor()));
+								throw new IllegalArgumentException("Identifier is already defined by " + MemberDefinition.toString(entityConfigurationSupport.identifierAccessor));
 							}
-							entityConfigurationSupport.identifierAccessor = (PropertyAccessor<C, I>) newMapping.getAccessor();
+							entityConfigurationSupport.identifierAccessor = newMapping.getAccessor();
 							entityConfigurationSupport.identifierPolicy = identifierPolicy;
 							
 							if (newMapping instanceof FluentEntityMappingConfigurationSupport.EntityLinkageByColumnName) {
@@ -858,7 +849,7 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements IFluentMap
 		public OptimisticLockOption(AccessorByMethodReference<Object, C> versionAccessor, Serie<C> serie) {
 			this.versioningStrategy = new VersioningStrategySupport<>(new PropertyAccessor<>(
 					versionAccessor,
-					Accessors.mutator(versionAccessor.getDeclaringClass(), Reflections.propertyName(versionAccessor.getMethodName()), versionAccessor.getPropertyType())
+					Accessors.mutator(versionAccessor.getDeclaringClass(), propertyName(versionAccessor.getMethodName()), versionAccessor.getPropertyType())
 			), serie);
 		}
 		

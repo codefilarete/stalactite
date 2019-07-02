@@ -179,24 +179,16 @@ public class FluentEmbeddableMappingConfigurationSupport<C> implements IFluentEm
 	}
 	
 	<E> AbstractLinkage<C> addMapping(SerializableBiConsumer<C, E> setter, @Nullable String columnName) {
-		MutatorByMethodReference<C, E> mutatorByMethodReference = Accessors.mutatorByMethodReference(setter);
-		PropertyAccessor<C, E> propertyAccessor = new PropertyAccessor<>(
-				Accessors.accessor(mutatorByMethodReference.getDeclaringClass(), Reflections.propertyName(mutatorByMethodReference.getMethodName())),
-				mutatorByMethodReference
-		);
-		return addMapping(propertyAccessor, MemberDefinition.giveMemberDefinition(mutatorByMethodReference), columnName);
+		IReversibleAccessor<C, E> mutator = Accessors.mutator(setter);
+		return addMapping(mutator, MemberDefinition.giveMemberDefinition(mutator), columnName);
 	}
 	
 	<E> AbstractLinkage<C> addMapping(SerializableFunction<C, E> getter, @Nullable String columnName) {
-		AccessorByMethodReference<C, E> accessorByMethodReference = Accessors.accessorByMethodReference(getter);
-		PropertyAccessor<C, E> propertyAccessor = new PropertyAccessor<>(
-				accessorByMethodReference,
-				Accessors.mutator(accessorByMethodReference.getDeclaringClass(), Reflections.propertyName(accessorByMethodReference.getMethodName()), accessorByMethodReference.getPropertyType())
-		);
-		return addMapping(propertyAccessor, MemberDefinition.giveMemberDefinition(accessorByMethodReference), columnName);
+		IReversibleAccessor<C, E> accessor = Accessors.accessor(getter);
+		return addMapping(accessor, MemberDefinition.giveMemberDefinition(accessor), columnName);
 	}
 	
-	AbstractLinkage<C> addMapping(PropertyAccessor<C, ?> propertyAccessor, MemberDefinition memberDefinition, @Nullable String columnName) {
+	AbstractLinkage<C> addMapping(IReversibleAccessor<C, ?> propertyAccessor, MemberDefinition memberDefinition, @Nullable String columnName) {
 		assertMappingIsNotAlreadyDefined(columnName, propertyAccessor);
 		String linkageName = columnName;
 		if (columnName == null) {

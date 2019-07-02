@@ -28,11 +28,11 @@ public interface EmbeddableMappingConfiguration<C> {
 	/**
 	 * Small constract for defining property configuration storage
 	 * 
-	 * @param <T> property owner type
+	 * @param <C> property owner type
 	 */
-	interface Linkage<T> {
+	interface Linkage<C> {
 		
-		<I> IReversibleAccessor<T, I> getAccessor();
+		<I> IReversibleAccessor<C, I> getAccessor();
 		
 		String getColumnName();
 		
