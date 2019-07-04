@@ -244,7 +244,7 @@ public class FluentEntityMappingConfigurationSupportToOneAndToManyMixTest {
 		// Ain should'nt have been deleted because we didn't asked for orphan removal
 		List<Long> loadedAin = persistenceContext.newQuery("select id from State where id = " + ain.getId().getSurrogate(), Long.class)
 				.mapKey(Long::new, "id", long.class)
-				.execute(persistenceContext.getConnectionProvider());
+				.execute();
 		assertNotNull(Iterables.first(loadedAin));
 	}
 }

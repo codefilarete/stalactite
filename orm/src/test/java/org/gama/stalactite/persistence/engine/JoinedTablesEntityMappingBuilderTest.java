@@ -71,13 +71,13 @@ class JoinedTablesEntityMappingBuilderTest {
 		
 		List<Duo> rawCars = persistenceContext.newQuery("select id, model from tata", Duo.class)
 				.mapKey(Duo::new, "id", long.class, "model", String.class)
-				.execute(persistenceContext.getConnectionProvider());
+				.execute();
 		assertEquals(new Duo<>(1L, "Renault"), first(rawCars));
 		assertEquals(1, rawCars.size());
 		
 		List<Duo> rawVehicles = persistenceContext.newQuery("select id, color from toto", Duo.class)
 				.mapKey(Duo::new, "id", long.class, "color", int.class)
-				.execute(persistenceContext.getConnectionProvider());
+				.execute();
 		assertEquals(new Duo<>(1L, 123456), first(rawVehicles));
 		assertEquals(1, rawVehicles.size());
 		
@@ -89,13 +89,13 @@ class JoinedTablesEntityMappingBuilderTest {
 		
 		rawCars = persistenceContext.newQuery("select id, model from tata", Duo.class)
 				.mapKey(Duo::new, "id", long.class, "model", String.class)
-				.execute(persistenceContext.getConnectionProvider());
+				.execute();
 		assertEquals(new Duo<>(1L, "Peugeot"), first(rawCars));
 		assertEquals(1, rawCars.size());
 		
 		rawVehicles = persistenceContext.newQuery("select id, color from toto", Duo.class)
 				.mapKey(Duo::new, "id", long.class, "color", int.class)
-				.execute(persistenceContext.getConnectionProvider());
+				.execute();
 		assertEquals(new Duo<>(1L, 654321), first(rawVehicles));
 		
 		// update by id
@@ -106,13 +106,13 @@ class JoinedTablesEntityMappingBuilderTest {
 		
 		rawCars = persistenceContext.newQuery("select id, model from tata", Duo.class)
 				.mapKey(Duo::new, "id", long.class, "model", String.class)
-				.execute(persistenceContext.getConnectionProvider());
+				.execute();
 		assertEquals(new Duo<>(1L, "Renault"), first(rawCars));
 		assertEquals(1, rawCars.size());
 		
 		rawVehicles = persistenceContext.newQuery("select id, color from toto", Duo.class)
 				.mapKey(Duo::new, "id", long.class, "color", int.class)
-				.execute(persistenceContext.getConnectionProvider());
+				.execute();
 		assertEquals(new Duo<>(1L, 123456), first(rawVehicles));
 		
 		// select
@@ -128,12 +128,12 @@ class JoinedTablesEntityMappingBuilderTest {
 		assertEquals(1, deletedRowCount);
 		rawCars = persistenceContext.newQuery("select id, model from tata", Duo.class)
 				.mapKey(Duo::new, "id", long.class, "model", String.class)
-				.execute(persistenceContext.getConnectionProvider());
+				.execute();
 		assertTrue(rawCars.isEmpty());
 		
 		rawVehicles = persistenceContext.newQuery("select id, color from toto", Duo.class)
 				.mapKey(Duo::new, "id", long.class, "color", int.class)
-				.execute(persistenceContext.getConnectionProvider());
+				.execute();
 		assertTrue(rawVehicles.isEmpty());
 		
 		// delete by id
@@ -143,12 +143,12 @@ class JoinedTablesEntityMappingBuilderTest {
 		assertEquals(1, deletedRowCount);
 		rawCars = persistenceContext.newQuery("select id, model from tata", Duo.class)
 				.mapKey(Duo::new, "id", long.class, "model", String.class)
-				.execute(persistenceContext.getConnectionProvider());
+				.execute();
 		assertTrue(rawCars.isEmpty());
 		
 		rawVehicles = persistenceContext.newQuery("select id, color from toto", Duo.class)
 				.mapKey(Duo::new, "id", long.class, "color", int.class)
-				.execute(persistenceContext.getConnectionProvider());
+				.execute();
 		assertTrue(rawVehicles.isEmpty());
 	}
 	
@@ -204,13 +204,13 @@ class JoinedTablesEntityMappingBuilderTest {
 		
 		List<Duo> rawCars = persistenceContext.newQuery("select id, model from tata", Duo.class)
 				.mapKey(Duo::new, "id", long.class, "model", String.class)
-				.execute(persistenceContext.getConnectionProvider());
+				.execute();
 		assertEquals(new Duo<>(1L, "Renault"), first(rawCars));
 		assertEquals(1, rawCars.size());
 		
 		List<Duo> rawVehicles = persistenceContext.newQuery("select id, rgb from toto", Duo.class)
 				.mapKey(Duo::new, "id", long.class, "rgb", int.class)
-				.execute(persistenceContext.getConnectionProvider());
+				.execute();
 		assertEquals(new Duo<>(1L, 123456), first(rawVehicles));
 		assertEquals(1, rawVehicles.size());
 	}
@@ -249,13 +249,13 @@ class JoinedTablesEntityMappingBuilderTest {
 		
 		List<Duo> rawCars = persistenceContext.newQuery("select id, model from tata", Duo.class)
 				.mapKey(Duo::new, "id", long.class, "model", String.class)
-				.execute(persistenceContext.getConnectionProvider());
+				.execute();
 		assertEquals(new Duo<>(1L, "Renault"), first(rawCars));
 		assertEquals(1, rawCars.size());
 		
 		List<Duo> rawVehicles = persistenceContext.newQuery("select t.id as tataId, engine.id as engineId from tata t left outer join engine on t.engineId = engine.id", Duo.class)
 				.mapKey(Duo::new, "tataId", long.class, "engineId", long.class)
-				.execute(persistenceContext.getConnectionProvider());
+				.execute();
 		assertEquals(new Duo<>(1L, 42L), first(rawVehicles));
 		assertEquals(1, rawVehicles.size());
 		
@@ -268,13 +268,13 @@ class JoinedTablesEntityMappingBuilderTest {
 		
 		rawCars = persistenceContext.newQuery("select id, model from tata", Duo.class)
 				.mapKey(Duo::new, "id", long.class, "model", String.class)
-				.execute(persistenceContext.getConnectionProvider());
+				.execute();
 		assertEquals(new Duo<>(1L, "Peugeot"), first(rawCars));
 		assertEquals(1, rawCars.size());
 
 		rawVehicles = persistenceContext.newQuery("select t.id as tataId, engine.id as engineId from tata t left outer join engine on t.engineId = engine.id", Duo.class)
 				.mapKey(Duo::new, "tataId", long.class, "engineId", long.class)
-				.execute(persistenceContext.getConnectionProvider());
+				.execute();
 		assertEquals(new Duo<>(1L, 666L), first(rawVehicles));
 		assertEquals(1, rawVehicles.size());
 		
@@ -287,13 +287,13 @@ class JoinedTablesEntityMappingBuilderTest {
 //		
 //		rawCars = persistenceContext.newQuery("select id, model from tata", Duo.class)
 //				.mapKey(Duo::new, "id", long.class, "model", String.class)
-//				.execute(persistenceContext.getConnectionProvider());
+//				.execute();
 //		assertEquals(new Duo<>(1L, "Renault"), first(rawCars));
 //		assertEquals(1, rawCars.size());
 //		
 //		rawVehicles = persistenceContext.newQuery("select id, color from toto", Duo.class)
 //				.mapKey(Duo::new, "id", long.class, "color", int.class)
-//				.execute(persistenceContext.getConnectionProvider());
+//				.execute();
 //		assertEquals(new Duo<>(1L, 123456), first(rawVehicles));
 //		
 //		// select
@@ -310,17 +310,17 @@ class JoinedTablesEntityMappingBuilderTest {
 		assertEquals(1, deletedRowCount);
 		rawCars = persistenceContext.newQuery("select id, model from tata", Duo.class)
 				.mapKey(Duo::new, "id", long.class, "model", String.class)
-				.execute(persistenceContext.getConnectionProvider());
+				.execute();
 		assertTrue(rawCars.isEmpty());
 		
 		rawVehicles = persistenceContext.newQuery("select id, color from toto", Duo.class)
 				.mapKey(Duo::new, "id", long.class, "color", int.class)
-				.execute(persistenceContext.getConnectionProvider());
+				.execute();
 		assertTrue(rawVehicles.isEmpty());
 		
 		List<Long> engineIds = persistenceContext.newQuery("select id from Engine", Long.class)
 				.mapKey(Long::new, "id", long.class)
-				.execute(persistenceContext.getConnectionProvider());
+				.execute();
 		// 666 was deleted because cascade is configurer with orphan removal
 		assertEquals(Arrays.asSet(42L).toString(), engineIds.toString());
 		
@@ -331,17 +331,17 @@ class JoinedTablesEntityMappingBuilderTest {
 		assertEquals(1, deletedRowCount);
 		rawCars = persistenceContext.newQuery("select id, model from tata", Duo.class)
 				.mapKey(Duo::new, "id", long.class, "model", String.class)
-				.execute(persistenceContext.getConnectionProvider());
+				.execute();
 		assertTrue(rawCars.isEmpty());
 		
 		rawVehicles = persistenceContext.newQuery("select id, color from toto", Duo.class)
 				.mapKey(Duo::new, "id", long.class, "color", int.class)
-				.execute(persistenceContext.getConnectionProvider());
+				.execute();
 		assertTrue(rawVehicles.isEmpty());
 		
 		engineIds = persistenceContext.newQuery("select id from Engine", Long.class)
 				.mapKey(Long::new, "id", long.class)
-				.execute(persistenceContext.getConnectionProvider());
+				.execute();
 		assertEquals(Arrays.asSet(42L).toString(), engineIds.toString());
 	}
 	
@@ -384,7 +384,7 @@ class JoinedTablesEntityMappingBuilderTest {
 		
 		List<Duo> rawCars = persistenceContext.newQuery("select id, model from tata", Duo.class)
 				.mapKey(Duo::new, "id", long.class, "model", String.class)
-				.execute(persistenceContext.getConnectionProvider());
+				.execute();
 		assertEquals(new Duo<>(1L, "Renault"), first(rawCars));
 		assertEquals(1, rawCars.size());
 		
@@ -392,7 +392,7 @@ class JoinedTablesEntityMappingBuilderTest {
 				+ " from tata t inner join toto on t.id = toto.id" 
 				+ " left outer join engine on toto.engineId = engine.id", Duo.class)
 				.mapKey(Duo::new, "tataId", long.class, "engineId", long.class)
-				.execute(persistenceContext.getConnectionProvider());
+				.execute();
 		assertEquals(new Duo<>(1L, 42L), first(rawVehicles));
 		assertEquals(1, rawVehicles.size());
 		
@@ -405,7 +405,7 @@ class JoinedTablesEntityMappingBuilderTest {
 		
 		rawCars = persistenceContext.newQuery("select id, model from tata", Duo.class)
 				.mapKey(Duo::new, "id", long.class, "model", String.class)
-				.execute(persistenceContext.getConnectionProvider());
+				.execute();
 		assertEquals(new Duo<>(1L, "Peugeot"), first(rawCars));
 		assertEquals(1, rawCars.size());
 		
@@ -413,7 +413,7 @@ class JoinedTablesEntityMappingBuilderTest {
 				+ " from tata t inner join toto on t.id = toto.id" 
 				+ " left outer join engine on toto.engineId = engine.id", Duo.class)
 				.mapKey(Duo::new, "tataId", long.class, "engineId", long.class)
-				.execute(persistenceContext.getConnectionProvider());
+				.execute();
 		assertEquals(new Duo<>(1L, 666L), first(rawVehicles));
 		assertEquals(1, rawVehicles.size());
 		
@@ -426,13 +426,13 @@ class JoinedTablesEntityMappingBuilderTest {
 //		
 //		rawCars = persistenceContext.newQuery("select id, model from tata", Duo.class)
 //				.mapKey(Duo::new, "id", long.class, "model", String.class)
-//				.execute(persistenceContext.getConnectionProvider());
+//				.execute();
 //		assertEquals(new Duo<>(1L, "Renault"), first(rawCars));
 //		assertEquals(1, rawCars.size());
 //		
 //		rawVehicles = persistenceContext.newQuery("select id, color from toto", Duo.class)
 //				.mapKey(Duo::new, "id", long.class, "color", int.class)
-//				.execute(persistenceContext.getConnectionProvider());
+//				.execute();
 //		assertEquals(new Duo<>(1L, 123456), first(rawVehicles));
 //		
 //		// select
@@ -449,17 +449,17 @@ class JoinedTablesEntityMappingBuilderTest {
 		assertEquals(1, deletedRowCount);
 		rawCars = persistenceContext.newQuery("select id, model from tata", Duo.class)
 				.mapKey(Duo::new, "id", long.class, "model", String.class)
-				.execute(persistenceContext.getConnectionProvider());
+				.execute();
 		assertTrue(rawCars.isEmpty());
 		
 		rawVehicles = persistenceContext.newQuery("select id, color from toto", Duo.class)
 				.mapKey(Duo::new, "id", long.class, "color", int.class)
-				.execute(persistenceContext.getConnectionProvider());
+				.execute();
 		assertTrue(rawVehicles.isEmpty());
 		
 		List<Long> engineIds = persistenceContext.newQuery("select id from Engine", Long.class)
 				.mapKey(Long::new, "id", long.class)
-				.execute(persistenceContext.getConnectionProvider());
+				.execute();
 		// 666 was deleted because cascade is configurer with orphan removal
 		assertEquals(Arrays.asSet(42L).toString(), engineIds.toString());
 		
@@ -470,17 +470,17 @@ class JoinedTablesEntityMappingBuilderTest {
 		assertEquals(1, deletedRowCount);
 		rawCars = persistenceContext.newQuery("select id, model from tata", Duo.class)
 				.mapKey(Duo::new, "id", long.class, "model", String.class)
-				.execute(persistenceContext.getConnectionProvider());
+				.execute();
 		assertTrue(rawCars.isEmpty());
 		
 		rawVehicles = persistenceContext.newQuery("select id, color from toto", Duo.class)
 				.mapKey(Duo::new, "id", long.class, "color", int.class)
-				.execute(persistenceContext.getConnectionProvider());
+				.execute();
 		assertTrue(rawVehicles.isEmpty());
 		
 		engineIds = persistenceContext.newQuery("select id from Engine", Long.class)
 				.mapKey(Long::new, "id", long.class)
-				.execute(persistenceContext.getConnectionProvider());
+				.execute();
 		assertEquals(Arrays.asSet(42L).toString(), engineIds.toString());
 	}
 	

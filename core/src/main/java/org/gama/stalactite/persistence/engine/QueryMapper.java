@@ -43,7 +43,7 @@ import static org.gama.sql.binder.NullAwareParameterBinder.ALWAYS_SET_NULL_INSTA
  * 
  * @author Guillaume Mary
  */
-public class QueryConverter<C> {
+public class QueryMapper<C> implements MappableQuery<C> {
 	
 	/** Default method capturer. Shared to cache result of each lookup. */
 	private static final MethodReferenceCapturer METHOD_REFERENCE_CAPTURER = new MethodReferenceCapturer();
@@ -81,7 +81,7 @@ public class QueryConverter<C> {
 	 * @param sql the sql to execute
 	 * @param columnBinderRegistry a provider for SQL parameters and selected column
 	 */
-	public QueryConverter(Class<C> rootBeanType, CharSequence sql, ColumnBinderRegistry columnBinderRegistry) {
+	public QueryMapper(Class<C> rootBeanType, CharSequence sql, ColumnBinderRegistry columnBinderRegistry) {
 		this(rootBeanType, sql, columnBinderRegistry, METHOD_REFERENCE_CAPTURER);
 	}
 	
@@ -92,12 +92,12 @@ public class QueryConverter<C> {
 	 * @param sql the sql provider
 	 * @param columnBinderRegistry a provider for SQL parameters and selected column
 	 */
-	public QueryConverter(Class<C> rootBeanType, SQLBuilder sql, ColumnBinderRegistry columnBinderRegistry) {
+	public QueryMapper(Class<C> rootBeanType, SQLBuilder sql, ColumnBinderRegistry columnBinderRegistry) {
 		this(rootBeanType, sql, columnBinderRegistry, METHOD_REFERENCE_CAPTURER);
 	}
 	
 	/**
-	 * Constructor to share {@link MethodReferenceCapturer} between instance of {@link QueryConverter}
+	 * Constructor to share {@link MethodReferenceCapturer} between instance of {@link QueryMapper}
 	 * 
 	 * @param rootBeanType type of built bean
 	 * @param sql the sql to execute
@@ -105,12 +105,12 @@ public class QueryConverter<C> {
 	 * @param methodReferenceCapturer a method capturer (when column types are not given by {@link #map(String, SerializableBiConsumer)}),
 	 * default is {@link #METHOD_REFERENCE_CAPTURER}
 	 */
-	public QueryConverter(Class<C> rootBeanType, CharSequence sql, ColumnBinderRegistry columnBinderRegistry, MethodReferenceCapturer methodReferenceCapturer) {
+	public QueryMapper(Class<C> rootBeanType, CharSequence sql, ColumnBinderRegistry columnBinderRegistry, MethodReferenceCapturer methodReferenceCapturer) {
 		this(rootBeanType, () -> sql, columnBinderRegistry, methodReferenceCapturer);
 	}
 	
 	/**
-	 * Constructor to share {@link MethodReferenceCapturer} between instance of {@link QueryConverter}
+	 * Constructor to share {@link MethodReferenceCapturer} between instance of {@link QueryMapper}
 	 *
 	 * @param rootBeanType type of built bean
 	 * @param sql the sql provider
@@ -118,7 +118,7 @@ public class QueryConverter<C> {
 	 * @param methodReferenceCapturer a method capturer (when column types are not given by {@link #map(String, SerializableBiConsumer)}),
 	 * default is {@link #METHOD_REFERENCE_CAPTURER}
 	 */
-	public QueryConverter(Class<C> rootBeanType, SQLBuilder sql, ColumnBinderRegistry columnBinderRegistry, MethodReferenceCapturer methodReferenceCapturer) {
+	public QueryMapper(Class<C> rootBeanType, SQLBuilder sql, ColumnBinderRegistry columnBinderRegistry, MethodReferenceCapturer methodReferenceCapturer) {
 		this.rootBeanType = rootBeanType;
 		this.sql = sql;
 		this.columnBinderRegistry = columnBinderRegistry;
@@ -134,7 +134,8 @@ public class QueryConverter<C> {
 	 * @param columnType the type of the column, which is also that of the factory argument
 	 * @return this
 	 */
-	public <I> QueryConverter<C> mapKey(SerializableFunction<I, C> factory, String columnName, Class<I> columnType) {
+	@Override
+	public <I> QueryMapper<C> mapKey(SerializableFunction<I, C> factory, String columnName, Class<I> columnType) {
 		this.beanCreationDefinition = new BeanCreationDefinition<>(factory, columnName, columnType);
 		return this;
 	}
@@ -150,8 +151,9 @@ public class QueryConverter<C> {
 	 * @param column2Type the type of the second column, which is also that of the factory second argument
 	 * @return this
 	 */
-	public <I, J> QueryConverter<C> mapKey(SerializableBiFunction<I, J, C> factory, String column1Name, Class<I> column1Type,
-			String column2Name, Class<J> column2Type) {
+	@Override
+	public <I, J> QueryMapper<C> mapKey(SerializableBiFunction<I, J, C> factory, String column1Name, Class<I> column1Type,
+										String column2Name, Class<J> column2Type) {
 		SerializableFunction<Object[], C> biArgsConstructorInvokation = args -> (C) factory.apply((I) args[0], (J) args[1]);
 		this.beanCreationDefinition = new BeanCreationDefinition<>(biArgsConstructorInvokation,
 				column1Name, column1Type,
@@ -172,9 +174,10 @@ public class QueryConverter<C> {
 	 * @param column3Type the type of the third column, which is also that of the factory third argument
 	 * @return this
 	 */
-	public <I, J, K> QueryConverter<C> mapKey(SerializableTriFunction<I, J, K, C> factory, String column1Name, Class<I> column1Type,
-			String column2Name, Class<J> column2Type,
-			String column3Name, Class<K> column3Type) {
+	@Override
+	public <I, J, K> QueryMapper<C> mapKey(SerializableTriFunction<I, J, K, C> factory, String column1Name, Class<I> column1Type,
+										   String column2Name, Class<J> column2Type,
+										   String column3Name, Class<K> column3Type) {
 		SerializableFunction<Object[], C> triArgsConstructorInvokation = args -> (C) factory.apply((I) args[0], (J) args[1], (K) args[2]);
 		this.beanCreationDefinition = new BeanCreationDefinition<>(triArgsConstructorInvokation,
 				column1Name, column1Type,
@@ -191,8 +194,9 @@ public class QueryConverter<C> {
 	 * @param column the mapped column used as a key
 	 * @return this
 	 */
-	public <I> QueryConverter<C> mapKey(SerializableFunction<I, C> factory,
-										org.gama.stalactite.persistence.structure.Column<? extends Table, I> column) {
+	@Override
+	public <I> QueryMapper<C> mapKey(SerializableFunction<I, C> factory,
+									 org.gama.stalactite.persistence.structure.Column<? extends Table, I> column) {
 		this.beanCreationDefinition = new BeanCreationDefinition<>(factory, column);
 		return this;
 	}
@@ -206,9 +210,10 @@ public class QueryConverter<C> {
 	 * @param column2 the second column of the key
 	 * @return this
 	 */
-	public <I, J> QueryConverter<C> mapKey(SerializableBiFunction<I, J, C> factory,
-										   org.gama.stalactite.persistence.structure.Column<? extends Table, I> column1,
-										   org.gama.stalactite.persistence.structure.Column<? extends Table, J> column2
+	@Override
+	public <I, J> QueryMapper<C> mapKey(SerializableBiFunction<I, J, C> factory,
+										org.gama.stalactite.persistence.structure.Column<? extends Table, I> column1,
+										org.gama.stalactite.persistence.structure.Column<? extends Table, J> column2
 	) {
 		SerializableFunction<Object[], C> biArgsConstructorInvokation = args -> (C) factory.apply((I) args[0], (J) args[1]);
 		this.beanCreationDefinition = new BeanCreationDefinition<>(biArgsConstructorInvokation, Arrays.asSet(column1, column2));
@@ -225,10 +230,11 @@ public class QueryConverter<C> {
 	 * @param column3 the third column of the key
 	 * @return this
 	 */
-	public <I, J, K> QueryConverter<C> mapKey(SerializableTriFunction<I, J, K, C> factory,
-											  org.gama.stalactite.persistence.structure.Column<? extends Table, I> column1,
-											  org.gama.stalactite.persistence.structure.Column<? extends Table, J> column2,
-											  org.gama.stalactite.persistence.structure.Column<? extends Table, K> column3
+	@Override
+	public <I, J, K> QueryMapper<C> mapKey(SerializableTriFunction<I, J, K, C> factory,
+										   org.gama.stalactite.persistence.structure.Column<? extends Table, I> column1,
+										   org.gama.stalactite.persistence.structure.Column<? extends Table, J> column2,
+										   org.gama.stalactite.persistence.structure.Column<? extends Table, K> column3
 	) {
 		SerializableFunction<Object[], C> triArgsConstructorInvokation = args -> (C) factory.apply((I) args[0], (J) args[1], (K) args[2]);
 		this.beanCreationDefinition = new BeanCreationDefinition<>(triArgsConstructorInvokation, Arrays.asSet(column1, column2, column3));
@@ -245,7 +251,8 @@ public class QueryConverter<C> {
 	 * @param keySetter setter for key
 	 * @return this
 	 */
-	public <I> QueryConverter<C> mapKey(SerializableSupplier<C> javaBeanCtor, String columnName, SerializableBiConsumer<C, I> keySetter) {
+	@Override
+	public <I> QueryMapper<C> mapKey(SerializableSupplier<C> javaBeanCtor, String columnName, SerializableBiConsumer<C, I> keySetter) {
 		this.beanCreationDefinition = new BeanCreationDefinition<>(i -> javaBeanCtor.get(), columnName, giveColumnType(keySetter));
 		map(columnName, keySetter);
 		return this;
@@ -259,9 +266,10 @@ public class QueryConverter<C> {
 	 * @param column the mapped column used as a key
 	 * @return this
 	 */
-	public <I> QueryConverter<C> mapKey(SerializableSupplier<C> javaBeanCtor,
-										org.gama.stalactite.persistence.structure.Column<? extends Table, I> column,
-										SerializableBiConsumer<C, I> keySetter) {
+	@Override
+	public <I> QueryMapper<C> mapKey(SerializableSupplier<C> javaBeanCtor,
+									 org.gama.stalactite.persistence.structure.Column<? extends Table, I> column,
+									 SerializableBiConsumer<C, I> keySetter) {
 		return mapKey(javaBeanCtor, column.getName(), keySetter);
 	}
 	
@@ -274,7 +282,8 @@ public class QueryConverter<C> {
 	 * @param <I> the type of the column, which is also that of the setter argument
 	 * @return this
 	 */
-	public <I> QueryConverter<C> map(String columnName, SerializableBiConsumer<C, I> setter, Class<I> columnType) {
+	@Override
+	public <I> QueryMapper<C> map(String columnName, SerializableBiConsumer<C, I> setter, Class<I> columnType) {
 		add(new ColumnMapping<>(columnName, setter, columnType));
 		return this;
 	}
@@ -291,7 +300,8 @@ public class QueryConverter<C> {
 	 * @param <J> the type of the column, which is also that of the converter argument
 	 * @return this
 	 */
-	public <I, J> QueryConverter<C> map(String columnName, SerializableBiConsumer<C, J> setter, Class<I> columnType, SerializableFunction<I, J> converter) {
+	@Override
+	public <I, J> QueryMapper<C> map(String columnName, SerializableBiConsumer<C, J> setter, Class<I> columnType, SerializableFunction<I, J> converter) {
 		return map(columnName, (c, i) -> setter.accept(c, converter.apply(i)), columnType);
 	}
 	
@@ -305,7 +315,8 @@ public class QueryConverter<C> {
 	 * @param <I> the type of the column, which is also that of the setter argument
 	 * @return this
 	 */
-	public <I> QueryConverter<C> map(String columnName, SerializableBiConsumer<C, I> setter) {
+	@Override
+	public <I> QueryMapper<C> map(String columnName, SerializableBiConsumer<C, I> setter) {
 		map(columnName, setter, giveColumnType(setter));
 		return this;
 	}
@@ -320,7 +331,8 @@ public class QueryConverter<C> {
 	 * @param <I> the type of the setter argument, which is also that of the converter result
 	 * @return this
 	 */
-	public <I> QueryConverter<C> map(String columnName, SerializableBiConsumer<C, I> setter, SerializableFunction<I, I> converter) {
+	@Override
+	public <I> QueryMapper<C> map(String columnName, SerializableBiConsumer<C, I> setter, SerializableFunction<I, I> converter) {
 		Method method = methodReferenceCapturer.findMethod(setter);
 		Class<I> aClass = (Class<I>) method.getParameterTypes()[0];
 		return map(columnName, (SerializableBiConsumer<C, I>) (c, i) -> setter.accept(c, converter.apply(i)), aClass);
@@ -334,7 +346,8 @@ public class QueryConverter<C> {
 	 * @param <I> the type of the column, which is also that of the setter argument
 	 * @return this
 	 */
-	public <I> QueryConverter<C> map(org.gama.stalactite.persistence.structure.Column<? extends Table, I> column, SerializableBiConsumer<C, I> setter) {
+	@Override
+	public <I> QueryMapper<C> map(org.gama.stalactite.persistence.structure.Column<? extends Table, I> column, SerializableBiConsumer<C, I> setter) {
 		add(new ColumnMapping<>(column, setter));
 		return this;
 	}
@@ -350,8 +363,10 @@ public class QueryConverter<C> {
 	 * @param <J> the type of the column, which is also that of the converter argument
 	 * @return this
 	 */
-	public <I, J> QueryConverter<C> map(org.gama.stalactite.persistence.structure.Column<? extends Table, I> column, SerializableBiConsumer<C, J> setter,
-										ThrowingConverter<I, J, RuntimeException> converter) {
+	@Override
+	public <I, J> QueryMapper<C> map(org.gama.stalactite.persistence.structure.Column<? extends Table, I> column,
+									 SerializableBiConsumer<C, J> setter,
+									 ThrowingConverter<I, J, RuntimeException> converter) {
 		return map(column, (SerializableBiConsumer<C, I>) (c, i) -> setter.accept(c, converter.convert(i)));
 	}
 	
@@ -359,7 +374,8 @@ public class QueryConverter<C> {
 		this.columnMappings.add(columnMapping);
 	}
 	
-	public QueryConverter<C> add(ResultSetRowAssembler<C> assembler) {
+	@Override
+	public QueryMapper<C> add(ResultSetRowAssembler<C> assembler) {
 		rawMappers.add(assembler);
 		return this;
 	}
@@ -448,9 +464,8 @@ public class QueryConverter<C> {
 	 * @param value the value of the parameter
 	 * @return this
 	 * @see #set(String, Iterable, Class)
-	 * @see #clear(String)
 	 */
-	public QueryConverter<C> set(String paramName, Object value) {
+	public QueryMapper<C> set(String paramName, Object value) {
 		return set(paramName, value, value == null ? null : (Class) value.getClass());
 	}
 	
@@ -464,9 +479,8 @@ public class QueryConverter<C> {
 	 * @param valueType the content type of the {@link Iterable}, more exactly will determine which {@link ParameterBinder} to be used
 	 * @return this
 	 * @see #set(String, Iterable, Class)
-	 * @see #clear(String)
 	 */
-	public <O> QueryConverter<C> set(String paramName, O value, Class<? super O> valueType) {
+	public <O> QueryMapper<C> set(String paramName, O value, Class<? super O> valueType) {
 		sqlParameterBinders.put(paramName, value == null ? ALWAYS_SET_NULL_INSTANCE : columnBinderRegistry.getBinder(valueType));
 		this.sqlArguments.put(paramName, value);
 		return this;
@@ -482,24 +496,10 @@ public class QueryConverter<C> {
 	 * @param value the value of the parameter
 	 * @param valueType the content type of the {@link Iterable}, more exactly will determine which {@link ParameterBinder} to be used
 	 * @return this
-	 * @see #clear(String)
 	 */
-	public <O> QueryConverter<C> set(String paramName, Iterable<O> value, Class<? super O> valueType) {
+	public <O> QueryMapper<C> set(String paramName, Iterable<O> value, Class<? super O> valueType) {
 		this.sqlParameterBinders.put(paramName, value == null ? ALWAYS_SET_NULL_INSTANCE : columnBinderRegistry.getBinder(valueType));
 		this.sqlArguments.put(paramName, value);
-		return this;
-	}
-	
-	/**
-	 * Remove the value of a parameter (previously set by set(..) methods)
-	 * 
-	 * @param paramName the name of the parameter to clear
-	 * @return this
-	 * @see #set(String, Object) 
-	 */
-	public QueryConverter<C> clear(String paramName) {
-		this.sqlParameterBinders.remove(paramName);
-		this.sqlArguments.remove(paramName);
 		return this;
 	}
 	
@@ -514,7 +514,7 @@ public class QueryConverter<C> {
 		ParameterBinder<T> getBinder();
 	}
 	
-	private class StatementParameter<T> implements QueryConverter.Column<T> {
+	private class StatementParameter<T> implements QueryMapper.Column<T> {
 		
 		private final String name;
 		
@@ -534,7 +534,7 @@ public class QueryConverter<C> {
 		}
 	}
 	
-	private class ColumnWrapper<T> implements QueryConverter.Column<T> {
+	private class ColumnWrapper<T> implements QueryMapper.Column<T> {
 		
 		private final org.gama.stalactite.persistence.structure.Column<?, T> column;
 		
@@ -598,7 +598,7 @@ public class QueryConverter<C> {
 			this.factory = factory;
 		}
 		
-		public Set<QueryConverter.Column> getColumns() {
+		public Set<QueryMapper.Column> getColumns() {
 			return columns;
 		}
 		
@@ -615,7 +615,7 @@ public class QueryConverter<C> {
 	 */
 	private class ColumnMapping<T, I> {
 		
-		private final QueryConverter.Column<I> column;
+		private final QueryMapper.Column<I> column;
 		
 		private final SerializableBiConsumer<T, I> setter;
 		

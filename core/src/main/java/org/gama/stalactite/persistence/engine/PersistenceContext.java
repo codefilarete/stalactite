@@ -13,11 +13,16 @@ import java.util.function.Consumer;
 import org.danekja.java.util.function.serializable.SerializableBiConsumer;
 import org.danekja.java.util.function.serializable.SerializableBiFunction;
 import org.danekja.java.util.function.serializable.SerializableFunction;
+import org.danekja.java.util.function.serializable.SerializableSupplier;
 import org.gama.lang.Reflections;
+import org.gama.lang.function.SerializableTriFunction;
+import org.gama.lang.function.ThrowingConverter;
 import org.gama.reflection.MethodReferenceCapturer;
+import org.gama.reflection.MethodReferenceDispatcher;
 import org.gama.sql.ConnectionProvider;
 import org.gama.sql.dml.PreparedSQL;
 import org.gama.sql.dml.WriteOperation;
+import org.gama.sql.result.ResultSetRowAssembler;
 import org.gama.stalactite.command.builder.DeleteCommandBuilder;
 import org.gama.stalactite.command.builder.InsertCommandBuilder;
 import org.gama.stalactite.command.builder.InsertCommandBuilder.InsertStatement;
@@ -133,50 +138,54 @@ public class PersistenceContext {
 	}
 	
 	/**
-	 * Creates a {@link QueryConverter} from a {@link QueryProvider}, so it helps to build beans from a {@link Query}.
-	 * Should be chained with {@link QueryConverter} mapping methods and obviously with its {@link QueryConverter#execute(ConnectionProvider)}
+	 * Creates a {@link ExecutableSelect} from a {@link QueryProvider}, so it helps to build beans from a {@link Query}.
+	 * Should be chained with {@link QueryMapper} mapping methods and obviously with its {@link ExecutableQuery#execute()}
 	 * method with {@link #getConnectionProvider()} as argument (for instance)
 	 * 
 	 * @param queryProvider the query provider to give the {@link Query} execute to populate beans
 	 * @param beanType type of created beans, used for returned type marker
 	 * @param <C> type of created beans
-	 * @return a new {@link QueryConverter} that must be configured and executed
+	 * @return a new {@link ExecutableSelect} that must be configured and executed
 	 * @see org.gama.stalactite.query.model.QueryEase
 	 */
-	public <C> QueryConverter<C> newQuery(QueryProvider queryProvider, Class<C> beanType) {
+	public <C> ExecutableSelect<C> newQuery(QueryProvider queryProvider, Class<C> beanType) {
 		return newQuery(new QueryBuilder(queryProvider), beanType);
 	}
 	
 	/**
-	 * Creates a {@link QueryConverter} from a {@link Query} in order to build beans from the {@link Query}.
-	 * Should be chained with {@link QueryConverter} mapping methods and obviously with its {@link QueryConverter#execute(ConnectionProvider)}
+	 * Creates a {@link ExecutableSelect} from a {@link Query} in order to build beans from the {@link Query}.
+	 * Should be chained with {@link MappableQuery} mapping methods and obviously with its {@link ExecutableQuery#execute()}
 	 * method with {@link #getConnectionProvider()} as argument (for instance)
 	 * 
 	 * @param query the query to execute to populate beans
 	 * @param beanType type of created beans, used for returned type marker
 	 * @param <C> type of created beans
-	 * @return a new {@link QueryConverter} that must be configured and executed
+	 * @return a new {@link ExecutableSelect} that must be configured and executed
 	 */
-	public <C> QueryConverter<C> newQuery(Query query, Class<C> beanType) {
+	public <C> ExecutableSelect<C> newQuery(Query query, Class<C> beanType) {
 		return newQuery(new QueryBuilder(query), beanType);
 	}
 	
 	/**
-	 * Creates a {@link QueryConverter} from some SQL in order to build beans from the SQL.
-	 * Should be chained with {@link QueryConverter} mapping methods and obviously with its {@link QueryConverter#execute(ConnectionProvider)}
+	 * Creates a {@link ExecutableSelect} from some SQL in order to build beans from the SQL.
+	 * Should be chained with {@link ExecutableSelect} mapping methods and obviously with its {@link ExecutableQuery#execute()}
 	 * method with {@link #getConnectionProvider()} as argument (for instance)
 	 * 
 	 * @param sql the sql to execute to populate beans
 	 * @param beanType type of created beans, used for returned type marker
 	 * @param <C> type of created beans
-	 * @return a new {@link QueryConverter} that must be configured and executed
+	 * @return a new {@link ExecutableSelect} that must be configured and executed
 	 */
-	public <C> QueryConverter<C> newQuery(CharSequence sql, Class<C> beanType) {
+	public <C> ExecutableSelect<C> newQuery(CharSequence sql, Class<C> beanType) {
 		return newQuery(() -> sql, beanType);
 	}
 	
-	public <C> QueryConverter<C> newQuery(SQLBuilder sql, Class<C> beanType) {
-		return new QueryConverter<>(beanType, sql, getDialect().getColumnBinderRegistry());
+	public <C> ExecutableSelect<C> newQuery(SQLBuilder sql, Class<C> beanType) {
+		return wrapIntoExecutable(newConvertibleQuery(sql, beanType));
+	}
+	
+	private <C> QueryMapper<C> newConvertibleQuery(SQLBuilder sql, Class<C> beanType) {
+		return new QueryMapper<>(beanType, sql, getDialect().getColumnBinderRegistry());
 	}
 	
 	/**
@@ -197,9 +206,19 @@ public class PersistenceContext {
 	 */
 	public <C, I, T extends Table> List<C> select(SerializableFunction<I, C> factory, Column<T, I> column) {
 		Constructor constructor = new MethodReferenceCapturer().findConstructor(factory);
-		return execute(newQuery(QueryEase
+		return newQuery(QueryEase
 				.select(column).from(column.getTable()), ((Class<C>) constructor.getDeclaringClass()))
-				.mapKey(factory, column));
+				.mapKey(factory, column)
+				.execute();
+	}
+	
+	private <C> ExecutableSelect<C> wrapIntoExecutable(QueryMapper<C> queryMapperSupport) {
+		MethodReferenceDispatcher methodDispatcher = new MethodReferenceDispatcher();
+		SerializableFunction<ExecutableQuery, List<C>> execute = ExecutableQuery::execute;
+		return methodDispatcher
+				.redirect(execute, () -> execute(queryMapperSupport))
+				.redirect(MappableQuery.class, queryMapperSupport, true)
+				.build((Class<ExecutableSelect<C>>) (Class) ExecutableSelect.class);
 	}
 	
 	/**
@@ -221,9 +240,9 @@ public class PersistenceContext {
 	 */
 	public <C, I, J, T extends Table> List<C> select(SerializableBiFunction<I, J, C> factory, Column<T, I> column1, Column<T, J> column2) {
 		Constructor constructor = new MethodReferenceCapturer().findConstructor(factory);
-		return execute(newQuery(QueryEase
-				.select(column1, column2).from(column1.getTable()), ((Class<C>) constructor.getDeclaringClass()))
-				.mapKey(factory, column1, column2));
+		return newQuery(QueryEase.select(column1, column2).from(column1.getTable()), ((Class<C>) constructor.getDeclaringClass()))
+				.mapKey(factory, column1, column2)
+				.execute();
 	}
 	
 	/**
@@ -293,9 +312,10 @@ public class PersistenceContext {
 		where.accept(query.getWhere());
 		SelectMapping<C> selectMappingSupport = new SelectMapping<>();
 		selectMapping.accept(selectMappingSupport);
-		QueryConverter<C> queryConverter = newQuery(query, ((Class<C>) constructor.getDeclaringClass())).mapKey(factory, column);
-		selectMappingSupport.appendTo(query, queryConverter);
-		return execute(queryConverter);
+		QueryMapper<C> queryMapper = newConvertibleQuery(new QueryBuilder(query), ((Class<C>) constructor.getDeclaringClass()));
+		queryMapper.mapKey(factory, column);
+		selectMappingSupport.appendTo(query, queryMapper);
+		return execute(queryMapper);
 	}
 	
 	/**
@@ -322,12 +342,13 @@ public class PersistenceContext {
 		where.accept(query.getWhere());
 		SelectMapping<C> selectMappingSupport = new SelectMapping<>();
 		selectMapping.accept(selectMappingSupport);
-		QueryConverter<C> queryConverter = newQuery(query, ((Class<C>) constructor.getDeclaringClass())).mapKey(factory, column1, column2);
-		selectMappingSupport.appendTo(query, queryConverter);
-		return execute(queryConverter);
+		QueryMapper<C> queryMapper = newConvertibleQuery(new QueryBuilder(query), ((Class<C>) constructor.getDeclaringClass()));
+		queryMapper.mapKey(factory, column1, column2);
+		selectMappingSupport.appendTo(query, queryMapper);
+		return execute(queryMapper);
 	}
 	
-	public <C> List<C> execute(QueryConverter<C> queryProvider) {
+	public <C> List<C> execute(QueryMapper<C> queryProvider) {
 		return queryProvider.execute(getConnectionProvider());
 	}
 	
@@ -357,9 +378,9 @@ public class PersistenceContext {
 			return this;
 		}
 		
-		private void appendTo(Query query, QueryConverter<C> queryConverter) {
+		private void appendTo(Query query, QueryMapper<C> queryMapper) {
 			mapping.keySet().forEach(query::select);
-			mapping.forEach((k, v) -> queryConverter.map((Column) k, v));
+			mapping.forEach((k, v) -> queryMapper.map((Column) k, v));
 		}
 	}
 	
@@ -459,5 +480,73 @@ public class PersistenceContext {
 				return writeOperation.execute();
 			}
 		}
+	}
+	
+	/**
+	 * Mashup between {@link MappableQuery} and {@link ExecutableQuery} to make an {@link MappableQuery} executable
+	 * @param <C> type of object returned by query execution
+	 */
+	public interface ExecutableSelect<C> extends MappableQuery<C>, ExecutableQuery<C> {
+		
+		@Override
+		<I> ExecutableSelect<C> mapKey(SerializableFunction<I, C> factory, String columnName, Class<I> columnType);
+		
+		@Override
+		<I, J> ExecutableSelect<C> mapKey(SerializableBiFunction<I, J, C> factory, String column1Name, Class<I> column1Type,
+										  String column2Name, Class<J> column2Type);
+		
+		@Override
+		<I, J, K> ExecutableSelect<C> mapKey(SerializableTriFunction<I, J, K, C> factory, String column1Name, Class<I> column1Type,
+											 String column2Name, Class<J> column2Type,
+											 String column3Name, Class<K> column3Type);
+		
+		@Override
+		<I> ExecutableSelect<C> mapKey(SerializableFunction<I, C> factory, Column<? extends Table, I> column);
+		
+		@Override
+		<I, J> ExecutableSelect<C> mapKey(SerializableBiFunction<I, J, C> factory, Column<? extends Table, I> column1, Column<? extends Table, J> column2);
+		
+		@Override
+		<I, J, K> ExecutableSelect<C> mapKey(SerializableTriFunction<I, J, K, C> factory,
+											 Column<? extends Table, I> column1,
+											 Column<? extends Table, J> column2,
+											 Column<? extends Table, K> column3
+		);
+		
+		@Override
+		<I> ExecutableSelect<C> mapKey(SerializableSupplier<C> javaBeanCtor, String columnName, SerializableBiConsumer<C, I> keySetter);
+		
+		@Override
+		<I> ExecutableSelect<C> mapKey(SerializableSupplier<C> javaBeanCtor, Column<? extends Table, I> column, SerializableBiConsumer<C, I> keySetter);
+		
+		@Override
+		<I> ExecutableSelect<C> map(String columnName, SerializableBiConsumer<C, I> setter, Class<I> columnType);
+		
+		@Override
+		<I, J> ExecutableSelect<C> map(String columnName, SerializableBiConsumer<C, J> setter, Class<I> columnType, SerializableFunction<I, J> converter);
+		
+		@Override
+		<I> ExecutableSelect<C> map(String columnName, SerializableBiConsumer<C, I> setter);
+		
+		@Override
+		<I> ExecutableSelect<C> map(String columnName, SerializableBiConsumer<C, I> setter, SerializableFunction<I, I> converter);
+		
+		@Override
+		<I> ExecutableSelect<C> map(Column<? extends Table, I> column, SerializableBiConsumer<C, I> setter);
+		
+		@Override
+		<I, J> ExecutableSelect<C> map(Column<? extends Table, I> column, SerializableBiConsumer<C, J> setter, ThrowingConverter<I, J, RuntimeException> converter);
+		
+		@Override
+		ExecutableSelect<C> add(ResultSetRowAssembler<C> assembler);
+		
+		@Override
+		ExecutableSelect<C> set(String paramName, Object value);
+		
+		@Override
+		<O> ExecutableSelect<C> set(String paramName, O value, Class<? super O> valueType);
+		
+		@Override
+		<O> ExecutableSelect<C> set(String paramName, Iterable<O> value, Class<? super O> valueType);
 	}
 }

@@ -19,6 +19,7 @@ import org.gama.sql.ConnectionProvider;
 import org.gama.sql.binder.DefaultParameterBinders;
 import org.gama.sql.test.HSQLDBInMemoryDataSource;
 import org.gama.stalactite.persistence.engine.ColumnOptions.IdentifierPolicy;
+import org.gama.stalactite.persistence.engine.PersistenceContext.ExecutableSelect;
 import org.gama.stalactite.persistence.engine.listening.UpdateListener;
 import org.gama.stalactite.persistence.id.Identified;
 import org.gama.stalactite.persistence.id.Identifier;
@@ -100,7 +101,7 @@ class FluentEntityMappingConfigurationSupportIndexedCollectionTest {
 		List<Result> persistedChoices = persistenceContext.newQuery(select(id, idx).from(choiceTable).getSelectQuery().orderBy(id), Result.class)
 				.mapKey(Result::new, id)
 				.map(idx, (SerializableBiConsumer<Result, Integer>) Result::setIdx)
-				.execute(connectionProvider);
+				.execute();
 		assertEquals(Arrays.asList(10L, 20L, 30L), Iterables.collectToList(persistedChoices, Result::getId));
 		// stating that indexes are in same order than instances
 		assertEquals(Arrays.asList(0, 1, 2), Iterables.collectToList(persistedChoices, Result::getIdx));
@@ -130,7 +131,7 @@ class FluentEntityMappingConfigurationSupportIndexedCollectionTest {
 			List<Result> persistedChoices = persistenceContext.newQuery(select(id, idx).from(choiceTable).getSelectQuery().orderBy(id), Result.class)
 					.mapKey(Result::new, id)
 					.map(idx, (SerializableBiConsumer<Result, Integer>) Result::setIdx)
-					.execute(connectionProvider);
+					.execute();
 			// id should be left unmodified
 			assertEquals(Arrays.asList(10L, 20L, 30L), Iterables.collectToList(persistedChoices, Result::getId));
 			// but indexes must reflect swap done on instances
@@ -160,7 +161,7 @@ class FluentEntityMappingConfigurationSupportIndexedCollectionTest {
 			List<Result> persistedChoices = persistenceContext.newQuery(select(id, idx).from(choiceTable).getSelectQuery().orderBy(id), Result.class)
 					.mapKey(Result::new, id)
 					.map(idx, (SerializableBiConsumer<Result, Integer>) Result::setIdx)
-					.execute(connectionProvider);
+					.execute();
 			// nothing should have changed
 			assertEquals(Arrays.asList(10L, 20L, 30L), Iterables.collectToList(persistedChoices, Result::getId));
 			assertEquals(Arrays.asList(0, 1, 2), Iterables.collectToList(persistedChoices, Result::getIdx));
@@ -188,7 +189,7 @@ class FluentEntityMappingConfigurationSupportIndexedCollectionTest {
 			List<Result> persistedChoices = persistenceContext.newQuery(select(id, idx).from(choiceTable).getSelectQuery().orderBy(id), Result.class)
 					.mapKey(Result::new, id)
 					.map(idx, (SerializableBiConsumer<Result, Integer>) Result::setIdx)
-					.execute(connectionProvider);
+					.execute();
 			// id should left unmodified
 			assertEquals(Arrays.asList(10L, 20L, 30L, 40L), Iterables.collectToList(persistedChoices, Result::getId));
 			// but indexes must reflect modifications
@@ -217,7 +218,7 @@ class FluentEntityMappingConfigurationSupportIndexedCollectionTest {
 			List<Result> persistedChoices = persistenceContext.newQuery(select(id, idx).from(choiceTable).getSelectQuery().orderBy(id), Result.class)
 					.mapKey(Result::new, id)
 					.map(idx, (SerializableBiConsumer<Result, Integer>) Result::setIdx)
-					.execute(connectionProvider);
+					.execute();
 			// the removed id must be missing (entity asked for deletion)
 			assertEquals(Arrays.asList(10L, 30L), Iterables.collectToList(persistedChoices, Result::getId));
 			// choice 1 (10) is last, choice 3 (30) is first
@@ -248,7 +249,7 @@ class FluentEntityMappingConfigurationSupportIndexedCollectionTest {
 			List<Result> persistedChoices = persistenceContext.newQuery(select(id, idx).from(choiceTable).getSelectQuery().orderBy(id), Result.class)
 					.mapKey(Result::new, id)
 					.map(idx, (SerializableBiConsumer<Result, Integer>) Result::setIdx)
-					.execute(connectionProvider);
+					.execute();
 			// the removed id must be missing (entity asked for deletion)
 			assertEquals(Arrays.asList(10L, 30L), Iterables.collectToList(persistedChoices, Result::getId));
 			// choice 1 (10) is last, choice 3 (30) is first
@@ -460,12 +461,12 @@ class FluentEntityMappingConfigurationSupportIndexedCollectionTest {
 			answer.takeChoices(Arrays.asList(choice1, choice2, choice2, choice3));
 			answerPersister.insert(answer);
 			
-			QueryConverter<RawAnswer> query = persistenceContext.newQuery(
+			ExecutableSelect<RawAnswer> query = persistenceContext.newQuery(
 					select(answerChoicesTableId, answerChoicesTableIdx, answerChoicesTableChoiceId)
 							.from(answerChoicesTable).getSelectQuery().orderBy(answerChoicesTableIdx), RawAnswer.class);
 			List<RawAnswer> persistedChoices = query
 					.mapKey(RawAnswer::new, answerChoicesTableId, answerChoicesTableIdx, answerChoicesTableChoiceId)
-					.execute(connectionProvider);
+					.execute();
 			assertEquals(Arrays.asList(10L, 20L, 20L, 30L), Iterables.collectToList(persistedChoices, RawAnswer::getChoiceId));
 			// stating that indexes are in same order than instances
 			assertEquals(Arrays.asList(0, 1, 2, 3), Iterables.collectToList(persistedChoices, RawAnswer::getChoiceIdx));
@@ -557,14 +558,14 @@ class FluentEntityMappingConfigurationSupportIndexedCollectionTest {
 			Table answerChoicesTable = duplicatesTestData.getAnswerChoicesTable();
 			List<Long> persistedChoices = persistenceContext.newQuery(select("count(*) as c").from(answerChoicesTable), Long.class)
 					.mapKey(SerializableFunction.identity(), "c", long.class)
-					.execute(connectionProvider);
+					.execute();
 			assertEquals((Long) 0L, persistedChoices.get(0));
 			
 			// No choice must be deleted
 			// NB : we use choiceReader instead of choicePersister because the latter needs the idx column which is not mapped for Answer -> Choice
 			List<Long> remainingChoices = persistenceContext.newQuery("select id from Choice", Long.class)
 					.mapKey(SerializableFunction.identity(), "id", long.class)
-					.execute(persistenceContext.getConnectionProvider());
+					.execute();
 			assertEquals(Arrays.asSet(choice1.getId().getSurrogate(), choice2.getId().getSurrogate(), choice3.getId().getSurrogate()), new HashSet<>(remainingChoices));
 		}
 		
@@ -595,14 +596,14 @@ class FluentEntityMappingConfigurationSupportIndexedCollectionTest {
 			Table answerChoicesTable = duplicatesTestData.getAnswerChoicesTable();
 			List<Long> persistedChoices = persistenceContext.newQuery(select("count(*) as c").from(answerChoicesTable).getSelectQuery(), Long.class)
 					.mapKey(SerializableFunction.identity(), "c", long.class)
-					.execute(connectionProvider);
+					.execute();
 			assertEquals((Long) 0L, persistedChoices.get(0));
 			
 			// No choice must be deleted
 			// NB : we use choiceReader instead of choicePersister because the latter needs the idx column which is not mapped for Answer -> Choice
 			List<Long> remainingChoices = persistenceContext.newQuery("select id from Choice", Long.class)
 					.mapKey(SerializableFunction.identity(), "id", long.class)
-					.execute(persistenceContext.getConnectionProvider());
+					.execute();
 			assertEquals(Arrays.asSet(choice1.getId().getSurrogate(), choice2.getId().getSurrogate(), choice3.getId().getSurrogate()), new HashSet<>(remainingChoices));
 		}
 
@@ -643,12 +644,12 @@ class FluentEntityMappingConfigurationSupportIndexedCollectionTest {
 			selectedAnswer.takeChoices(Arrays.asList(choice1, choice2, newChoice, choice2, choice3, choice1, choice4));
 			answerPersister.update(selectedAnswer, answer, true);
 			
-			QueryConverter<RawAnswer> query = persistenceContext.newQuery(
+			ExecutableSelect<RawAnswer> query = persistenceContext.newQuery(
 					select(answerChoicesTableId, answerChoicesTableIdx, answerChoicesTableChoiceId)
 							.from(answerChoicesTable).getSelectQuery().orderBy(answerChoicesTableIdx), RawAnswer.class);
 			List<RawAnswer> persistedChoices = query
 					.mapKey(RawAnswer::new, answerChoicesTableId, answerChoicesTableIdx, answerChoicesTableChoiceId)
-					.execute(connectionProvider);
+					.execute();
 			assertEquals(Arrays.asList(10L, 20L, 50L, 20L, 30L, 10L, 40L), Iterables.collectToList(persistedChoices, RawAnswer::getChoiceId));
 			// stating that indexes are in same order than instances
 			assertEquals(Arrays.asList(0, 1, 2, 3, 4, 5, 6), Iterables.collectToList(persistedChoices, RawAnswer::getChoiceIdx));
@@ -663,7 +664,7 @@ class FluentEntityMappingConfigurationSupportIndexedCollectionTest {
 							.from(answerChoicesTable).getSelectQuery().orderBy(answerChoicesTableIdx), RawAnswer.class);
 			persistedChoices = query
 					.mapKey(RawAnswer::new, answerChoicesTableId, answerChoicesTableIdx, answerChoicesTableChoiceId)
-					.execute(connectionProvider);
+					.execute();
 			assertEquals(Arrays.asList(10L, 20L, 10L), Iterables.collectToList(persistedChoices, RawAnswer::getChoiceId));
 			// stating that indexes are in same order than instances
 			assertEquals(Arrays.asList(0, 1, 2), Iterables.collectToList(persistedChoices, RawAnswer::getChoiceIdx));
@@ -999,7 +1000,7 @@ class FluentEntityMappingConfigurationSupportIndexedCollectionTest {
 			List<Result> persistedChoices = persistenceContext.newQuery(select(id, idx).from(choiceTable).getSelectQuery().orderBy(id), Result.class)
 					.mapKey(Result::new, id)
 					.map(idx, (SerializableBiConsumer<Result, Integer>) Result::setIdx)
-					.execute(connectionProvider);
+					.execute();
 			assertEquals(Arrays.asList(10L, 20L, 30L), Iterables.collectToList(persistedChoices, Result::getId));
 			// stating that indexes are in same order than instances
 			assertEquals(Arrays.asList(0, 1, 2), Iterables.collectToList(persistedChoices, Result::getIdx));

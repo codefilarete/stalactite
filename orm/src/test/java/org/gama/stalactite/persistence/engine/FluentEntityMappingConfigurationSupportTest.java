@@ -514,7 +514,7 @@ public class FluentEntityMappingConfigurationSupportTest {
 		
 		// checking that name was used
 		List<String> result = persistenceContext.newQuery("select * from PersonWithGender", String.class).mapKey(String::new, "gender", String.class)
-				.execute(persistenceContext.getConnectionProvider());
+				.execute();
 		assertEquals(Arrays.asList("FEMALE"), result);
 	}
 	
@@ -576,7 +576,7 @@ public class FluentEntityMappingConfigurationSupportTest {
 		
 		// checking that ordinal was used
 		List<Integer> result = persistenceContext.newQuery("select * from PersonWithGender", Integer.class).mapKey(Integer::valueOf, "gender", String.class)
-				.execute(persistenceContext.getConnectionProvider());
+				.execute();
 		assertEquals(Arrays.asList(person.getGender().ordinal()), result);
 	}
 	
@@ -603,7 +603,7 @@ public class FluentEntityMappingConfigurationSupportTest {
 		
 		// checking that ordinal was used
 		List<Integer> result = persistenceContext.newQuery("select * from PersonWithGender", Integer.class).mapKey(Integer::valueOf, "gender", String.class)
-				.execute(persistenceContext.getConnectionProvider());
+				.execute();
 		assertEquals(Arrays.asList(person.getGender().ordinal()), result);
 	}
 	

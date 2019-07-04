@@ -10,6 +10,7 @@ import org.gama.lang.Nullable;
 import org.gama.reflection.MethodReferenceDispatcher;
 import org.gama.sql.ConnectionProvider;
 import org.gama.stalactite.persistence.engine.BeanRelationFixer;
+import org.gama.stalactite.persistence.engine.ExecutableQuery;
 import org.gama.stalactite.persistence.engine.PersistenceContext;
 import org.gama.stalactite.persistence.engine.Persister;
 import org.gama.stalactite.persistence.engine.SelectExecutor;
@@ -195,17 +196,6 @@ public class JoinedTablesPersister<C, I, T extends Table> extends Persister<C, I
 	
 	public EntityCriteriaSupport<C> getCriteriaSupport() {
 		return criteriaSupport;
-	}
-	
-	/**
-	 * Little interface to declare a Query as executable, see {@link ExecutableEntityQuery}
-	 * 
-	 * @param <C> type of object returned by query execution
-	 */
-	public interface ExecutableQuery<C> {
-		
-		List<C> execute();
-		
 	}
 	
 	/**

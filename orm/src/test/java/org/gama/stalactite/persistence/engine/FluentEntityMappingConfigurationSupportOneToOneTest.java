@@ -180,18 +180,18 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 		// president is left untouched because association is read only
 		assertEquals("French president", persistenceContext.newQuery("select name from Person where id = 1", String.class)
 				.mapKey(String::new, "name", String.class)
-				.execute(persistenceContext.getConnectionProvider())
+				.execute()
 				.get(0));
 		
 		// deletion has no action on target
 		countryPersister.delete(loadedCountry);
 		assertTrue(persistenceContext.newQuery("select name from Country", String.class)
 				.mapKey(String::new, "name", String.class)
-				.execute(persistenceContext.getConnectionProvider())
+				.execute()
 				.isEmpty());
 		assertEquals("French president", persistenceContext.newQuery("select name from Person where id = 1", String.class)
 				.mapKey(String::new, "name", String.class)
-				.execute(persistenceContext.getConnectionProvider())
+				.execute()
 				.get(0));
 	}
 	

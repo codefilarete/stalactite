@@ -176,7 +176,7 @@ class FluentEntityMappingConfigurationSupportInheritanceTest {
 					.mapKey(Car::new, "id_col", (Class<Identifier<Long>>) (Class) Identifier.class)
 					.map("model", Car::setModel)
 					.map("color", Car::setColor)
-					.execute(persistenceContext.getConnectionProvider());
+					.execute();
 			assertEquals(Arrays.asList(dummyCar), allCars);
 			
 			// select test
@@ -213,7 +213,7 @@ class FluentEntityMappingConfigurationSupportInheritanceTest {
 					.mapKey(Car::new, "id_col", (Class<Identifier<Long>>) (Class) Identifier.class)
 					.map("model", Car::setModel)
 					.map("color_superCol", Car::setColor)
-					.execute(persistenceContext.getConnectionProvider());
+					.execute();
 			assertEquals(Arrays.asList(dummyCar), allCars);
 			
 			// select test
@@ -268,7 +268,7 @@ class FluentEntityMappingConfigurationSupportInheritanceTest {
 					.mapKey(Car::new, "id", (Class<Identifier<Long>>) (Class) Identifier.class)
 					.map("model", Car::setModel)
 					.map("rgb", Car::setColor, int.class, Color::new)
-					.execute(persistenceContext.getConnectionProvider());
+					.execute();
 			assertEquals(Arrays.asList(dummyCar), allCars);
 		}
 	}
@@ -487,7 +487,7 @@ class FluentEntityMappingConfigurationSupportInheritanceTest {
 					.mapKey(Car::new, mappedSuperClassData.carTable.idColumn)
 					.map(mappedSuperClassData.carTable.modelColumn, Car::setModel)
 					.map(mappedSuperClassData.vehicleTable.colorColumn, Car::setColor)
-					.execute(connectionProvider);
+					.execute();
 			assertEquals(Arrays.asList(dummyCar), allCars);
 			
 			// select test
@@ -528,7 +528,7 @@ class FluentEntityMappingConfigurationSupportInheritanceTest {
 					.mapKey(Car::new, "id", (Class<Identifier<Long>>) (Class) Identifier.class)
 					.map("model", Car::setModel)
 					.map("rgb", Car::setColor, int.class, Color::new)
-					.execute(persistenceContext.getConnectionProvider());
+					.execute();
 			assertEquals(Arrays.asList(dummyCar), allCars);
 		}
 	}

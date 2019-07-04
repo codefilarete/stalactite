@@ -53,7 +53,7 @@ public class FluentEntityMappingConfigurationSupportPostInsertIdentifierTest {
 		List<Car> allCars = persistenceContext.newQuery("select id, model from Car", Car.class)
 				.mapKey(Car::new, "id", long.class)
 				.map("model", Car::setModel)
-				.execute(persistenceContext.getConnectionProvider());
+				.execute();
 		assertEquals(Arrays.asList(dummyCar), allCars);
 		
 		// select test
@@ -94,7 +94,7 @@ public class FluentEntityMappingConfigurationSupportPostInsertIdentifierTest {
 		List<Car> allCars = persistenceContext.newQuery("select id, model from Car", Car.class)
 				.mapKey(Car::new, "id", long.class)
 				.map("model", Car::setModel)
-				.execute(persistenceContext.getConnectionProvider());
+				.execute();
 		assertEquals(Arrays.asList(dummyCar), allCars);
 		
 		// select test
@@ -139,7 +139,7 @@ public class FluentEntityMappingConfigurationSupportPostInsertIdentifierTest {
 		List<Car> allCars = persistenceContext.newQuery("select id, model from Car", Car.class)
 				.mapKey(Car::new, "id", long.class)
 				.map("model", Car::setModel)
-				.execute(persistenceContext.getConnectionProvider());
+				.execute();
 		assertEquals(Arrays.asList(dummyCar), allCars);
 		
 		// select test

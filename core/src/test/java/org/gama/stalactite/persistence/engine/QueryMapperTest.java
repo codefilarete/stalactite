@@ -30,7 +30,7 @@ import static org.mockito.Mockito.when;
 /**
  * @author Guillaume Mary
  */
-public class QueryConverterTest {
+public class QueryMapperTest {
 	
 	public static Object[][] testNewQuery() {
 		ColumnBinderRegistry columnBinderRegistry = new ColumnBinderRegistry();
@@ -47,61 +47,61 @@ public class QueryConverterTest {
 		String dummySql = "never executed statement";
 		return new Object[][] {
 				{	// default API: constructor with 1 arg, column name, column type
-					new QueryConverter<>(Toto.class, dummySql, columnBinderRegistry)
+					new QueryMapper<>(Toto.class, dummySql, columnBinderRegistry)
 						.mapKey(Toto::new, "id", Long.class)
 						.map("name", Toto::setName, String.class)
 						.map("active", Toto::setActive), expected },
 				{	// with Java Bean constructor (no args)
-					new QueryConverter<>(Toto.class, dummySql, columnBinderRegistry)
+					new QueryMapper<>(Toto.class, dummySql, columnBinderRegistry)
 						.mapKey(Toto::new, "id", Toto::setId)
 						.map("name", Toto::setName, String.class)
 						.map("active", Toto::setActive), expected },
 				{	// with Java Bean constructor (no args)
-					new QueryConverter<>(Toto.class, dummySql, columnBinderRegistry)
+					new QueryMapper<>(Toto.class, dummySql, columnBinderRegistry)
 							.mapKey(Toto::new, id, Toto::setId)
 							.map(name, Toto::setName)
 							.map(active, Toto::setActive), expected },
 				{ 	// with Column API
-					new QueryConverter<>(Toto.class, dummySql, columnBinderRegistry)
+					new QueryMapper<>(Toto.class, dummySql, columnBinderRegistry)
 						.mapKey(Toto::new, id)
 						.map(name, Toto::setName)
 						.map(active, Toto::setActive), expected },
 				{	// with Java Bean constructor with 2 arguments
-						new QueryConverter<>(Toto.class, dummySql, columnBinderRegistry)
+						new QueryMapper<>(Toto.class, dummySql, columnBinderRegistry)
 						.mapKey(Toto::new, id, name)
 						.map(active, Toto::setActive), expected },
 				{	// with Java Bean constructor with 3 arguments
-						new QueryConverter<>(Toto.class, dummySql, columnBinderRegistry)
+						new QueryMapper<>(Toto.class, dummySql, columnBinderRegistry)
 						.mapKey(Toto::new, id, name, active), expected },
 				{	// with Java Bean constructor with 1 argument
-						new QueryConverter<>(Toto.class, dummySql, columnBinderRegistry)
+						new QueryMapper<>(Toto.class, dummySql, columnBinderRegistry)
 						.mapKey(Toto::new, "id", long.class),
 						Arrays.asList(
 								new Toto(42, null, false),
 								new Toto(43, null, false)
 						) },
 				{	// with Java Bean constructor with 2 arguments
-						new QueryConverter<>(Toto.class, dummySql, columnBinderRegistry)
+						new QueryMapper<>(Toto.class, dummySql, columnBinderRegistry)
 						.mapKey(Toto::new, "id", long.class, "name", String.class),
 						Arrays.asList(
 								new Toto(42, "coucou", false),
 								new Toto(43, "hello", false)
 						) },
 				{	// with Java Bean constructor with 3 arguments
-						new QueryConverter<>(Toto.class, dummySql, columnBinderRegistry)
+						new QueryMapper<>(Toto.class, dummySql, columnBinderRegistry)
 						.mapKey(Toto::new, "id", long.class, "name", String.class, "active", boolean.class), expected}
 		};
 	}
 	
 	@ParameterizedTest
 	@MethodSource("testNewQuery")
-	public void testNewQuery(QueryConverter<Toto> queryConverter, List<Toto> expected) {
+	public void testNewQuery(QueryMapper<Toto> queryMapper, List<Toto> expected) {
 		List<Map<String, Object>> resultSetData = Arrays.asList(
 				Maps.asHashMap("id", (Object) 42L).add("name", "coucou").add("active", true),
 				Maps.asHashMap("id", (Object) 43L).add("name", "hello").add("active", false)
 		);
 		
-		List<Toto> result = invokeExecuteWithData(queryConverter, resultSetData);
+		List<Toto> result = invokeExecuteWithData(queryMapper, resultSetData);
 		
 		assertEquals(expected.toString(), result.toString());
 	}
@@ -113,13 +113,13 @@ public class QueryConverterTest {
 		Column<Table, String> name = toto.addColumn("name", String.class);
 		
 		return new Object[][] {
-				{ new QueryConverter<>(Toto.class, "select id, name from Toto", columnBinderRegistry)
+				{ new QueryMapper<>(Toto.class, "select id, name from Toto", columnBinderRegistry)
 							.mapKey(Toto::new, "id", Toto::setId)
 							.map("name", Toto::setName, input -> "coucou") },
-				{ new QueryConverter<>(Toto.class, "select id, active from Toto", columnBinderRegistry)
+				{ new QueryMapper<>(Toto.class, "select id, active from Toto", columnBinderRegistry)
 							.mapKey(Toto::new, "id", Toto::setId)
 							.map("active", Toto::setName, boolean.class, input -> "coucou") },
-				{ new QueryConverter<>(Toto.class, "select id, name from Toto", columnBinderRegistry)
+				{ new QueryMapper<>(Toto.class, "select id, name from Toto", columnBinderRegistry)
 							.mapKey(Toto::new, id, Toto::setId)
 							.map(name, Toto::setName, input -> "coucou") }
 		};
@@ -127,13 +127,13 @@ public class QueryConverterTest {
 	
 	@ParameterizedTest
 	@MethodSource("testNewQuery_withConverter")
-	public void testNewQuery_withConverter(QueryConverter<Toto> queryConverter) {
+	public void testNewQuery_withConverter(QueryMapper<Toto> queryMapper) {
 		List<Map<String, Object>> resultSetData = Arrays.asList(
 				Maps.asHashMap("id", (Object) 42L).add("name", "ghoeihvoih").add("active", false),
 				Maps.asHashMap("id", (Object) 43L).add("name", "oziuoie").add("active", false)
 		);
 		
-		List<Toto> result = invokeExecuteWithData(queryConverter, resultSetData);
+		List<Toto> result = invokeExecuteWithData(queryMapper, resultSetData);
 		
 		List<Toto> expected = Arrays.asList(
 				new Toto(42, "coucou", false),
@@ -142,7 +142,7 @@ public class QueryConverterTest {
 		assertEquals(expected.toString(), result.toString());
 	}
 	
-	private List<Toto> invokeExecuteWithData(QueryConverter<Toto> queryConverter, List<Map<String, Object>> resultSetData) {
+	private List<Toto> invokeExecuteWithData(QueryMapper<Toto> queryMapper, List<Map<String, Object>> resultSetData) {
 		// creation of a Connection that will give our test case data
 		Connection connectionMock = mock(Connection.class);
 		try {
@@ -154,14 +154,14 @@ public class QueryConverterTest {
 			throw Exceptions.asRuntimeException(e);
 		}
 		
-		return queryConverter.execute(() -> connectionMock);
+		return queryMapper.execute(() -> connectionMock);
 	}
 	
 	@Test
 	public void testNewQuery_withCondition() throws SQLException {
 		ColumnBinderRegistry columnBinderRegistry = new ColumnBinderRegistry();
 		// NB: SQL String is there only for clarification but is never executed
-		QueryConverter<Toto> queryConverter = new QueryConverter<>(Toto.class, "select id, name from Toto where id in (:id)", columnBinderRegistry)
+		QueryMapper<Toto> queryMapper = new QueryMapper<>(Toto.class, "select id, name from Toto where id in (:id)", columnBinderRegistry)
 				.mapKey(Toto::new, "id", Integer.class)
 				.set("id", Arrays.asList(1, 2), Integer.class);
 		
@@ -183,7 +183,7 @@ public class QueryConverterTest {
 			throw Exceptions.asRuntimeException(e);
 		}
 		
-		List<Toto> result = queryConverter.execute(() -> mock);
+		List<Toto> result = queryMapper.execute(() -> mock);
 		// Checking that setters were called
 		verify(statementMock, times(2)).setInt(anyInt(), captor.capture());
 		assertEquals(Arrays.asList(1, 2), captor.getAllValues());
@@ -194,7 +194,7 @@ public class QueryConverterTest {
 	@Test
 	public void testNewQuery_addAssembler() {
 		ColumnBinderRegistry columnBinderRegistry = new ColumnBinderRegistry();
-		QueryConverter<Toto> queryConverter = new QueryConverter<>(Toto.class, "select id, name from Toto", columnBinderRegistry)
+		QueryMapper<Toto> queryMapper = new QueryMapper<>(Toto.class, "select id, name from Toto", columnBinderRegistry)
 				.mapKey(Toto::new, "id", Toto::setId)
 				.add((rootBean, resultSet) -> rootBean.setName(resultSet.getString("name")));
 		
@@ -203,7 +203,7 @@ public class QueryConverterTest {
 				Maps.asHashMap("id", (Object) 43L).add("name", "oziuoie")
 		);
 		
-		List<Toto> result = invokeExecuteWithData(queryConverter, resultSetData);
+		List<Toto> result = invokeExecuteWithData(queryMapper, resultSetData);
 		
 		List<Toto> expected = Arrays.asList(
 				new Toto(42, "ghoeihvoih", false),

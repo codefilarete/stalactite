@@ -153,7 +153,7 @@ class FluentEntityMappingConfigurationSupportOneToManyTest {
 		
 		List<Long> cityCountryIds = persistenceContext.newQuery("select countryId from city", Long.class)
 				.mapKey(i -> i, "countryId", Long.class)
-				.execute(connectionProvider);
+				.execute();
 		
 		assertEquals(Arrays.asSet(country.getId().getSurrogate()), new HashSet<>(cityCountryIds));
 		
@@ -170,7 +170,7 @@ class FluentEntityMappingConfigurationSupportOneToManyTest {
 		
 		cityCountryIds = persistenceContext.newQuery("select countryId from city", Long.class)
 				.mapKey(i -> i, "countryId", Long.class)
-				.execute(connectionProvider);
+				.execute();
 		assertEquals(Arrays.asSet(country.getId().getSurrogate(), null), new HashSet<>(cityCountryIds));
 		
 		// testing delete
@@ -178,7 +178,7 @@ class FluentEntityMappingConfigurationSupportOneToManyTest {
 		// referencing columns must be set to null (we didn't ask for delete orphan)
 		cityCountryIds = persistenceContext.newQuery("select countryId from city", Long.class)
 				.mapKey(i -> i, "countryId", Long.class)
-				.execute(connectionProvider);
+				.execute();
 		assertEquals(Arrays.asSet((Long) null), new HashSet<>(cityCountryIds));
 	}
 	
@@ -211,7 +211,7 @@ class FluentEntityMappingConfigurationSupportOneToManyTest {
 
 		List<Long> cityCountryIds = persistenceContext.newQuery("select countryId from city", Long.class)
 				.mapKey(i -> i, "countryId", Long.class)
-				.execute(connectionProvider);
+				.execute();
 		
 		assertEquals(Arrays.asSet(country.getId().getSurrogate()), new HashSet<>(cityCountryIds));
 		
@@ -228,7 +228,7 @@ class FluentEntityMappingConfigurationSupportOneToManyTest {
 		
 		cityCountryIds = persistenceContext.newQuery("select countryId from city", Long.class)
 				.mapKey(i -> i, "countryId", Long.class)
-				.execute(connectionProvider);
+				.execute();
 		assertEquals(Arrays.asSet(country.getId().getSurrogate(), null), new HashSet<>(cityCountryIds));
 		
 		// testing delete
@@ -236,7 +236,7 @@ class FluentEntityMappingConfigurationSupportOneToManyTest {
 		// referencing columns must be set to null (we didn't ask for delete orphan)
 		cityCountryIds = persistenceContext.newQuery("select countryId from city", Long.class)
 				.mapKey(i -> i, "countryId", Long.class)
-				.execute(connectionProvider);
+				.execute();
 		assertEquals(Arrays.asSet((Long) null), new HashSet<>(cityCountryIds));
 	}
 	
@@ -271,7 +271,7 @@ class FluentEntityMappingConfigurationSupportOneToManyTest {
 
 		List<Long> cityCountryIds = persistenceContext.newQuery("select countryId from AncientCities", Long.class)
 				.mapKey(i -> i, "countryId", Long.class)
-				.execute(connectionProvider);
+				.execute();
 		
 		assertEquals(Arrays.asSet(country.getId().getSurrogate()), new HashSet<>(cityCountryIds));
 		
@@ -288,7 +288,7 @@ class FluentEntityMappingConfigurationSupportOneToManyTest {
 		
 		cityCountryIds = persistenceContext.newQuery("select countryId from AncientCities", Long.class)
 				.mapKey(i -> i, "countryId", Long.class)
-				.execute(connectionProvider);
+				.execute();
 		assertEquals(Arrays.asSet(country.getId().getSurrogate(), null), new HashSet<>(cityCountryIds));
 		
 		// testing delete
@@ -296,7 +296,7 @@ class FluentEntityMappingConfigurationSupportOneToManyTest {
 		// referencing columns must be set to null (we didn't ask for delete orphan)
 		cityCountryIds = persistenceContext.newQuery("select countryId from AncientCities", Long.class)
 				.mapKey(i -> i, "countryId", Long.class)
-				.execute(connectionProvider);
+				.execute();
 		assertEquals(Arrays.asSet((Long) null), new HashSet<>(cityCountryIds));
 	}
 	
@@ -308,7 +308,7 @@ class FluentEntityMappingConfigurationSupportOneToManyTest {
 				.add(Country::getName)
 				.add(Country::getDescription)
 				// no cascade
-				.addOneToManySet(Country::getCities, CITY_MAPPING_CONFIGURATION).mappedBy(City::setCountry)
+				.addOneToManySet(Country::getCities, CITY_MAPPING_CONFIGURATION).mappedBy(City::setCountry).cascading(ALL)
 				.build(persistenceContext);
 		
 		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
@@ -333,7 +333,7 @@ class FluentEntityMappingConfigurationSupportOneToManyTest {
 		// preparing next tests by relating a city to the existing country
 		persistenceContext.getCurrentConnection().prepareStatement("insert into City(id, name, countryId) values (1, 'Paris', 42)").execute();
 		
-		// select selects entity and relationship
+		// select selects entity and relations
 		Country loadedCountry = countryPersister.select(new PersistedIdentifier<>(42L));
 		assertEquals("France", loadedCountry.getName());
 		assertEquals("Paris", Iterables.first(loadedCountry.getCities()).getName());
@@ -345,7 +345,7 @@ class FluentEntityMappingConfigurationSupportOneToManyTest {
 		// city is left untouched because association is read only
 		assertEquals("Paris", persistenceContext.newQuery("select name from City where id = 1", String.class)
 				.mapKey(String::new, "name", String.class)
-				.execute(persistenceContext.getConnectionProvider())
+				.execute()
 				.get(0));
 		
 		// delete throws integrity constraint because it doesn't delete target entity which own the relation
@@ -354,11 +354,11 @@ class FluentEntityMappingConfigurationSupportOneToManyTest {
 		
 		assertEquals("touched France", persistenceContext.newQuery("select name from Country where id = 42", String.class)
 				.mapKey(String::new, "name", String.class)
-				.execute(persistenceContext.getConnectionProvider())
+				.execute()
 				.get(0));
 		assertEquals("Paris", persistenceContext.newQuery("select name from City where id = 1", String.class)
 				.mapKey(String::new, "name", String.class)
-				.execute(persistenceContext.getConnectionProvider())
+				.execute()
 				.get(0));
 	}
 	
@@ -718,7 +718,7 @@ class FluentEntityMappingConfigurationSupportOneToManyTest {
 			// Ain should'nt have been deleted because we didn't asked for orphan removal
 			List<Long> loadedAin = persistenceContext.newQuery("select id from State where id = " + ain.getId().getSurrogate(), Long.class)
 					.mapKey(Long::new, "id", long.class)
-					.execute(persistenceContext.getConnectionProvider());
+					.execute();
 			assertNotNull(Iterables.first(loadedAin));
 		}
 		
