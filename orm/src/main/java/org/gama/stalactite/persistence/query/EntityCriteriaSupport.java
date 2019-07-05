@@ -20,6 +20,7 @@ import org.gama.reflection.MutatorByMethodReference;
 import org.gama.reflection.ValueAccessPoint;
 import org.gama.reflection.ValueAccessPointByMethodReference;
 import org.gama.reflection.ValueAccessPointMap;
+import org.gama.stalactite.persistence.engine.RuntimeMappingException;
 import org.gama.stalactite.persistence.id.assembly.SimpleIdentifierAssembler;
 import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
 import org.gama.stalactite.persistence.mapping.IdMappingStrategy;
@@ -77,37 +78,20 @@ public class EntityCriteriaSupport<C> implements EntityCriteria<C> {
 	}
 	
 	private <O> EntityCriteriaSupport<C> add(LogicalOperator logicalOperator, SerializableFunction<C, O> getter, AbstractRelationalOperator<O> operator) {
-		if (logicalOperator == LogicalOperator.OR) {
-			criteria.or(getColumn(getter), operator);
-		} else {
-			criteria.and(getColumn(getter), operator);
-		}
-		return this;
-	}
-	
-	private <O> Column getColumn(SerializableFunction<C, O> getter) {
-		Column column = rootConfiguration.getColumn(new AccessorByMethodReference<>(getter));
-		if (column == null) {
-			throw new IllegalArgumentException("No column found for " + MemberDefinition.toString(new AccessorByMethodReference<>(getter)));
-		}
-		return column;
+		return add(logicalOperator, getColumn(new AccessorByMethodReference<>(getter)), operator);
 	}
 	
 	private <O> EntityCriteriaSupport<C> add(LogicalOperator logicalOperator, SerializableBiConsumer<C, O> setter, AbstractRelationalOperator<O> operator) {
-		if (logicalOperator == LogicalOperator.OR) {
-			criteria.or(getColumn(setter), operator);
-		} else {
-			criteria.and(getColumn(setter), operator);
-		}
-		return this;
+		return add(logicalOperator, getColumn(new MutatorByMethodReference<>(setter)), operator);
 	}
 	
-	private <O> Column getColumn(SerializableBiConsumer<C, O> setter) {
-		Column column = rootConfiguration.getColumn(new MutatorByMethodReference<>(setter));
-		if (column == null) {
-			throw new IllegalArgumentException("No column found for " + MemberDefinition.toString(new MutatorByMethodReference<>(setter)));
+	private <O> EntityCriteriaSupport<C> add(LogicalOperator logicalOperator, Column column, AbstractRelationalOperator<O> operator) {
+		if (logicalOperator == LogicalOperator.OR) {
+			criteria.or(column, operator);
+		} else {
+			criteria.and(column, operator);
 		}
-		return column;
+		return this;
 	}
 	
 	@Override
@@ -132,14 +116,22 @@ public class EntityCriteriaSupport<C> implements EntityCriteria<C> {
 	
 	@Override
 	public <A, B> EntityCriteria<C> and(SerializableFunction<C, A> getter1, SerializableFunction<A, B> getter2, AbstractRelationalOperator<B> operator) {
-		criteria.and(rootConfiguration.getColumn(new AccessorByMethodReference<>(getter1), new AccessorByMethodReference<>(getter2)), operator);
+		criteria.and(getColumn(new AccessorByMethodReference<>(getter1), new AccessorByMethodReference<>(getter2)), operator);
 		return this;
 	}
 	
 	@Override
 	public <S extends Collection<A>, A, B> EntityCriteria<C> andMany(SerializableFunction<C, S> getter1, SerializableFunction<A, B> getter2, AbstractRelationalOperator<B> operator) {
-		criteria.and(rootConfiguration.getColumn(new AccessorByMethodReference<>(getter1), new AccessorByMethodReference<>(getter2)), operator);
+		criteria.and(getColumn(new AccessorByMethodReference<>(getter1), new AccessorByMethodReference<>(getter2)), operator);
 		return this;
+	}
+	
+	private Column getColumn(ValueAccessPointByMethodReference ... methodReferences) {
+		Column column = rootConfiguration.getColumn(methodReferences);
+		if (column == null) {
+			throw new IllegalArgumentException("No column found for " + MemberDefinition.toString(Arrays.asList(methodReferences)));
+		}
+		return column;
 	}
 	
 	public CriteriaChain getCriteria() {
@@ -150,7 +142,6 @@ public class EntityCriteriaSupport<C> implements EntityCriteria<C> {
 	 * Represents a bean mapping : its simple or embedded properties bound to columns, and its relations which are themselves a mapping between
 	 * a method (as a generic {@link ValueAccessPoint}) and another {@link EntityGraphNode}
 	 */
-	@VisibleForTesting
 	public static class EntityGraphNode {
 		
 		/** Owned properties mapping */
@@ -175,11 +166,17 @@ public class EntityCriteriaSupport<C> implements EntityCriteria<C> {
 			);
 		}
 		
-		@VisibleForTesting
+		/**
+		 * Adds a {@link ClassMappingStrategy} as a relation of this node
+		 * 
+		 * @param relationProvider the accessor that gives access to a bean mapped by the {@link ClassMappingStrategy}
+		 * @param mappingStrategy a {@link ClassMappingStrategy}
+		 * @return a new {@link EntityGraphNode} containing
+		 */
 		public EntityGraphNode registerRelation(ValueAccessPoint relationProvider, ClassMappingStrategy<?, ?, ?> mappingStrategy) {
 			EntityGraphNode graphNode = new EntityGraphNode(mappingStrategy);
-			// the relation may be already as a simple property because mapping strategy needs its column for insertion for example, but here
-			// we don't need it. Note that it should be removed when propertyToColumn is populated but we don't have this information (relationship)
+			// the relation may already be present as a simple property because mapping strategy needs its column for insertion for example, but we
+			// won't need it anymore. Note that it should be removed when propertyToColumn is populated but we don't have the relation information
 			// at this time
 			propertyToColumn.remove(relationProvider);
 			relations.put(relationProvider, graphNode);
@@ -219,7 +216,7 @@ public class EntityCriteriaSupport<C> implements EntityCriteria<C> {
 			if (column != null) {
 				return column;
 			} else {
-				throw new IllegalArgumentException("Column for " + MemberDefinition.toString(Arrays.asList(accessPoints)) + " was not found");
+				throw new RuntimeMappingException("Column for " + MemberDefinition.toString(Arrays.asList(accessPoints)) + " was not found");
 			}
 		}
 		

@@ -38,8 +38,10 @@ public class EntitySelectExecutor<C, I, T extends Table> {
 	private static final String PRIMARY_KEY_ALIAS = "rootId";
 	
 	private final ConnectionProvider connectionProvider;
-	/** The surrogate for joining the strategies, will help to build the SQL */
+	
+	/** Surrogate for joining strategies, will help to build the SQL */
 	private final JoinedStrategiesSelect<C, I, T> joinedStrategiesSelect;
+	
 	private final ColumnBinderRegistry parameterBinderProvider;
 	
 	public EntitySelectExecutor(JoinedStrategiesSelect<C, I, T> joinedStrategiesSelect,
@@ -78,13 +80,13 @@ public class EntitySelectExecutor<C, I, T extends Table> {
 	public List<C> loadGraph(EntityCriteriaSupport<C> entityCriteria) {
 		Query query = joinedStrategiesSelect.buildSelectQuery();
 		
-		SQLQueryBuilder SQLQueryBuilder = createQueryBuilder(entityCriteria, query);
+		SQLQueryBuilder sqlQueryBuilder = createQueryBuilder(entityCriteria, query);
 		
 		// First phase : selecting ids (made by clearing selected elements for performance issue)
 		List<Object> columns = query.getSelectSurrogate().clear();
 		Column<T, I> pk = (Column<T, I>) Iterables.first(joinedStrategiesSelect.getJoinsRoot().getTable().getPrimaryKey().getColumns());
 		query.select(pk, PRIMARY_KEY_ALIAS);
-		List<I> ids = readIds(SQLQueryBuilder, pk);
+		List<I> ids = readIds(sqlQueryBuilder, pk);
 		
 		// Second phase : selecting elements by main table pk (adding necessary columns)
 		query.getSelectSurrogate().remove(0);	// previous pk selection removal
@@ -92,17 +94,17 @@ public class EntitySelectExecutor<C, I, T extends Table> {
 		query.getWhereSurrogate().clear();
 		query.where(pk, in(ids));
 		
-		PreparedSQL preparedSQL = SQLQueryBuilder.toPreparedSQL(parameterBinderProvider);
+		PreparedSQL preparedSQL = sqlQueryBuilder.toPreparedSQL(parameterBinderProvider);
 		return execute(preparedSQL);
 	}
 	
 	private SQLQueryBuilder createQueryBuilder(EntityCriteriaSupport<C> entityCriteria, Query query) {
-		SQLQueryBuilder SQLQueryBuilder = new SQLQueryBuilder(query);
+		SQLQueryBuilder sqlQueryBuilder = new SQLQueryBuilder(query);
 		CriteriaChain where = entityCriteria.getCriteria();
 		if (where.iterator().hasNext()) {    // prevents from empty where causing malformed SQL
 			query.getWhere().and(where);
 		}
-		return SQLQueryBuilder;
+		return sqlQueryBuilder;
 	}
 	
 	private List<I> readIds(SQLQueryBuilder SQLQueryBuilder, Column<T, I> pk) {

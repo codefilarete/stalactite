@@ -10,6 +10,7 @@ import org.gama.sql.binder.DefaultParameterBinders;
 import org.gama.stalactite.persistence.engine.ColumnOptions.IdentifierPolicy;
 import org.gama.stalactite.persistence.engine.FluentEntityMappingConfigurationSupport;
 import org.gama.stalactite.persistence.engine.PersistenceContext;
+import org.gama.stalactite.persistence.engine.RuntimeMappingException;
 import org.gama.stalactite.persistence.engine.cascade.JoinedTablesPersister;
 import org.gama.stalactite.persistence.engine.model.City;
 import org.gama.stalactite.persistence.engine.model.Country;
@@ -163,6 +164,24 @@ class EntityCriteriaSupportTest {
 		
 		EntityGraphNode testInstance = new EntityGraphNode(mappingStrategy);
 		Assertions.assertThrows(() -> testInstance.getColumn(new AccessorByMethodReference<>(Country::getName)),
-				Assertions.hasExceptionInCauses(IllegalArgumentException.class).andProjection(Assertions.hasMessage("Column for Country::getName was not found")));
+				Assertions.hasExceptionInCauses(RuntimeMappingException.class).andProjection(Assertions.hasMessage("Column for Country::getName was not found")));
+	}
+	
+	@Test
+	void graphNode_getColumn_many_doesntExist_throwsException() {
+		Dialect dialect = new Dialect();
+		dialect.getColumnBinderRegistry().register((Class) Identifier.class, Identifier.identifierBinder(DefaultParameterBinders.LONG_PRIMITIVE_BINDER));
+		dialect.getColumnBinderRegistry().register((Class) Identified.class, Identified.identifiedBinder(DefaultParameterBinders.LONG_PRIMITIVE_BINDER));
+		
+		PersistenceContext dummyPersistenceContext = new PersistenceContext(mock(ConnectionProvider.class), dialect);
+		Table countryTable = new Table("Country");
+		ClassMappingStrategy<Country, Long, Table> mappingStrategy = FluentEntityMappingConfigurationSupport.from(Country.class, long.class)
+				.add(Country::getId).identifier(IdentifierPolicy.AFTER_INSERT)
+				.build(dummyPersistenceContext, countryTable)
+				.getMappingStrategy();
+		
+		EntityCriteriaSupport<Country> testInstance = new EntityCriteriaSupport<>(mappingStrategy);
+		Assertions.assertThrows(() -> testInstance.andMany(Country::getCities, City::getName, Operators.eq("Grenoble")),
+				Assertions.hasExceptionInCauses(RuntimeMappingException.class).andProjection(Assertions.hasMessage("Column for Country::getCities > City::getName was not found")));
 	}
 }
