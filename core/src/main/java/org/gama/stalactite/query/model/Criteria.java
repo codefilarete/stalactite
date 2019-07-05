@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
+import org.gama.lang.collection.Iterables;
 import org.gama.stalactite.persistence.structure.Column;
 
 import static org.gama.stalactite.query.model.AbstractCriterion.LogicalOperator.AND;
@@ -88,7 +89,17 @@ public class Criteria<SELF extends Criteria<SELF>> extends AbstractCriterion imp
 	public SELF or(Object... columns) {
 		return add(new RawCriterion(OR, columns));
 	}
-
+	
+	public Object remove(int index) {
+		return this.conditions.remove(index);
+	}
+	
+	public List<AbstractCriterion> clear() {
+		List<AbstractCriterion> result = Iterables.copy(this.conditions);
+		this.conditions.clear();
+		return result;
+	}
+	
 	@Override
 	public Iterator<AbstractCriterion> iterator() {
 		return this.conditions.iterator();

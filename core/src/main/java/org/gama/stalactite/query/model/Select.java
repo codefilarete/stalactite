@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
+import org.gama.lang.collection.Iterables;
 import org.gama.stalactite.persistence.structure.Column;
 
 /**
@@ -55,6 +56,16 @@ public class Select implements Iterable<Object /* String, Column or AliasedColum
 	public Select distinct() {
 		this.distinct = true;
 		return this;
+	}
+	
+	public Object remove(int index) {
+		return this.columns.remove(index);
+	}
+	
+	public List<Object> clear() {
+		List<Object> result = Iterables.copy(this.columns);
+		this.columns.clear();
+		return result;
 	}
 	
 	public Object get(int index) {

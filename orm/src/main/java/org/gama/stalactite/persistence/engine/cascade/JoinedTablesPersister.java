@@ -178,7 +178,7 @@ public class JoinedTablesPersister<C, I, T extends Table> extends Persister<C, I
 		MethodReferenceDispatcher methodDispatcher = new MethodReferenceDispatcher();
 		SerializableFunction<ExecutableQuery, List<C>> execute = ExecutableQuery::execute;
 		return methodDispatcher
-				.redirect(execute, () -> getPersisterListener().doWithSelectListener(emptyList(), () -> entitySelectExecutor.select(localCriteriaSupport)))
+				.redirect(execute, () -> getPersisterListener().doWithSelectListener(emptyList(), () -> entitySelectExecutor.loadGraph(localCriteriaSupport)))
 				.redirect(EntityCriteria.class, localCriteriaSupport)
 				.build((Class<ExecutableEntityQuery<C>>) (Class) ExecutableEntityQuery.class);
 	}
@@ -190,7 +190,7 @@ public class JoinedTablesPersister<C, I, T extends Table> extends Persister<C, I
 	 */
 	public List<C> selectAll() {
 		return getPersisterListener().doWithSelectListener(emptyList(), () ->
-				entitySelectExecutor.select(newWhere())
+				entitySelectExecutor.loadGraph(newWhere())
 		);
 	}
 	

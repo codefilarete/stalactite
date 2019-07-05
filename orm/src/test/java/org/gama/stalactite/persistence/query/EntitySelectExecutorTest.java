@@ -14,9 +14,12 @@ import org.gama.lang.collection.Iterables;
 import org.gama.lang.collection.Maps;
 import org.gama.lang.exception.Exceptions;
 import org.gama.sql.ConnectionProvider;
+import org.gama.sql.DataSourceConnectionProvider;
 import org.gama.sql.binder.DefaultParameterBinders;
 import org.gama.sql.result.InMemoryResultSet;
+import org.gama.sql.test.HSQLDBInMemoryDataSource;
 import org.gama.stalactite.persistence.engine.ColumnOptions.IdentifierPolicy;
+import org.gama.stalactite.persistence.engine.DDLDeployer;
 import org.gama.stalactite.persistence.engine.FluentEntityMappingConfigurationSupport;
 import org.gama.stalactite.persistence.engine.PersistenceContext;
 import org.gama.stalactite.persistence.engine.Persister;
@@ -29,6 +32,7 @@ import org.gama.stalactite.persistence.id.Identified;
 import org.gama.stalactite.persistence.id.Identifier;
 import org.gama.stalactite.persistence.id.PersistedIdentifier;
 import org.gama.stalactite.persistence.sql.Dialect;
+import org.gama.stalactite.persistence.sql.HSQLDBDialect;
 import org.gama.stalactite.persistence.sql.dml.binder.ColumnBinderRegistry;
 import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.query.model.Operators;
@@ -81,7 +85,7 @@ class EntitySelectExecutorTest {
 	}
 	
 	@Test
-	void select_simpleCase() {
+	void loadSelection_simpleCase() {
 		createConnectionProvider(Arrays.asList(
 				Maps.asMap("Country_name", (Object) "France").add("Country_id", 12L)
 		));
@@ -101,7 +105,8 @@ class EntitySelectExecutorTest {
 				.and(Country::getId, Operators.<Identifier>in(new PersistedIdentifier<>(11L)))
 				.and(Country::getName, Operators.eq("toto"));
 		
-		List<Country> select = testInstance.select(((EntityCriteriaSupport<Country>) countryEntityCriteriaSupport));
+		// When
+		List<Country> select = testInstance.loadSelection(((EntityCriteriaSupport<Country>) countryEntityCriteriaSupport));
 		Country expectedCountry = new Country(new PersistedIdentifier<>(12L));
 		expectedCountry.setName("France");
 		assertEquals(expectedCountry, Iterables.first(select), Country::getId);
@@ -109,7 +114,7 @@ class EntitySelectExecutorTest {
 	}
 	
 	@Test
-	void select_embedCase() throws SQLException {
+	void loadSelection_embedCase() throws SQLException {
 		createConnectionProvider(Arrays.asList(
 				Maps.asMap("Country_name", (Object) "France").add("Country_id", 12L)
 						.add("Country_creationDate", new java.sql.Timestamp(0)).add("Country_modificationDate", new java.sql.Timestamp(0))
@@ -133,7 +138,8 @@ class EntitySelectExecutorTest {
 				// but we care about this since we can check that criteria on embedded values works
 				.and(Country::getTimestamp, Timestamp::getModificationDate, Operators.eq(new Date()));
 		
-		List<Country> select = testInstance.select(((EntityCriteriaSupport<Country>) countryEntityCriteriaSupport));
+		// When
+		List<Country> select = testInstance.loadSelection(((EntityCriteriaSupport<Country>) countryEntityCriteriaSupport));
 		Country expectedCountry = new Country(new PersistedIdentifier<>(12L));
 		expectedCountry.setName("France");
 		expectedCountry.setTimestamp(new Timestamp(new Date(0), new Date(0)));
@@ -148,7 +154,7 @@ class EntitySelectExecutorTest {
 	}
 	
 	@Test
-	void select_oneToOneCase() throws SQLException {
+	void loadSelection_oneToOneCase() throws SQLException {
 		createConnectionProvider(Arrays.asList(
 				Maps.asMap("Country_name", (Object) "France").add("Country_id", 12L).add("Country_capitalId", 42L)
 						.add("City_id", 42L).add("City_name", "Paris")
@@ -175,7 +181,8 @@ class EntitySelectExecutorTest {
 				.and(Country::getName, Operators.eq("toto"))
 				.and(Country::getCapital, City::getName, Operators.eq("Grenoble"));
 		
-		List<Country> select = testInstance.select(((EntityCriteriaSupport<Country>) countryEntityCriteriaSupport));
+		// When
+		List<Country> select = testInstance.loadSelection(((EntityCriteriaSupport<Country>) countryEntityCriteriaSupport));
 		Country expectedCountry = new Country(new PersistedIdentifier<>(12L));
 		expectedCountry.setName("France");
 		City capital = new City(new PersistedIdentifier<>(42L));
@@ -192,7 +199,7 @@ class EntitySelectExecutorTest {
 	}
 	
 	@Test
-	void select_oneToManyCase() throws SQLException {
+	void loadSelection_oneToManyCase() throws SQLException {
 		createConnectionProvider(Arrays.asList(
 				Maps.asMap("Country_name", (Object) "France").add("Country_id", 12L)
 						.add("Country_cities_Country_id", 12L).add("Country_cities_City_id", 42L)
@@ -237,9 +244,11 @@ class EntitySelectExecutorTest {
 		grenoble.setName("Grenoble");
 		expectedCountry.setCities(Arrays.asSet(paris, lyon, grenoble));
 		
-		// we must wrap the select call into the select listener because it is the way expected by ManyCascadeConfigurer to initialize some variables (ThreadLocal ones)
+		// When
+		// we must wrap the loadSelection(..) call into the select listener because it is the way expected by ManyCascadeConfigurer
+		// to initialize some variables (ThreadLocal ones)
 		List<Country> select = persister.getPersisterListener().doWithSelectListener(Collections.emptyList(), () ->
-				testInstance.select(((EntityCriteriaSupport<Country>) countryEntityCriteriaSupport))
+				testInstance.loadSelection(((EntityCriteriaSupport<Country>) countryEntityCriteriaSupport))
 		);
 		
 		assertEquals(expectedCountry, Iterables.first(select), Country::getId);
@@ -250,6 +259,69 @@ class EntitySelectExecutorTest {
 		// checking that criteria is in the where clause
 		verify(connectionMock).prepareStatement(sqlCaptor.capture());
 		assertEquals("and Country.name = ? and City.name = ?)", sqlCaptor.getValue(), s -> Strings.tail(s, 29));
+	}
+	
+	@Test
+	void loadGraph() throws SQLException {
+		// This test must be done with a real Database because 2 queries are executed which can hardly be mocked
+		// Hence this test is more an integration test, but since it runs fast, we don't care
+		DataSourceConnectionProvider connectionProvider = new DataSourceConnectionProvider(new HSQLDBInMemoryDataSource());
+		
+		HSQLDBDialect dialect = new HSQLDBDialect();
+		dialect.getColumnBinderRegistry().register((Class) Identifier.class, Identifier.identifierBinder(DefaultParameterBinders.LONG_PRIMITIVE_BINDER));
+		dialect.getJavaTypeToSqlTypeMapping().put(Identifier.class, "bigint");
+		
+		PersistenceContext persistenceContext = new PersistenceContext(connectionProvider, dialect);
+		JoinedTablesPersister<Country, Identifier, Table> persister = (JoinedTablesPersister<Country, Identifier, Table>)
+				FluentEntityMappingConfigurationSupport.from(Country.class, Identifier.class)
+				.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
+				.add(Country::getName)
+				.addOneToManySet(Country::getCities, FluentEntityMappingConfigurationSupport.from(City.class, Identifier.class)
+						.add(City::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
+						.add(City::getName)
+						.getConfiguration())
+						.mappedBy(City::getCountry)
+				.build(persistenceContext);
+		
+		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+		ddlDeployer.deployDDL();
+		
+		Connection currentConnection = connectionProvider.getCurrentConnection();
+		currentConnection.prepareStatement("insert into Country(id, name) values(12, 'France')").execute();
+		currentConnection.prepareStatement("insert into City(id, name, countryId) values(42, 'Paris', 12)").execute();
+		currentConnection.prepareStatement("insert into City(id, name, countryId) values(43, 'Lyon', 12)").execute();
+		currentConnection.prepareStatement("insert into City(id, name, countryId) values(44, 'Grenoble', 12)").execute();
+		
+		ColumnBinderRegistry columnBinderRegistry = dialect.getColumnBinderRegistry();
+		JoinedStrategiesSelect<Country, Identifier, Table> joinedStrategiesSelect =
+				persister.getJoinedStrategiesSelectExecutor().getJoinedStrategiesSelect();
+		EntitySelectExecutor<Country, Identifier, Table> testInstance = new EntitySelectExecutor<>(joinedStrategiesSelect, connectionProvider, columnBinderRegistry);
+		
+		// actually we don't care about criteria since data is hardly tied to the connection (see createConnectionProvider(..))
+		EntityCriteria<Country> countryEntityCriteriaSupport =
+				persister.selectWhere(Country::getName, Operators.eq("France"))
+				.andMany(Country::getCities, City::getName, Operators.eq("Grenoble"));
+		
+		
+		Country expectedCountry = new Country(new PersistedIdentifier<>(12L));
+		expectedCountry.setName("France");
+		City paris = new City(new PersistedIdentifier<>(42L));
+		paris.setName("Paris");
+		City lyon = new City(new PersistedIdentifier<>(43L));
+		lyon.setName("Lyon");
+		City grenoble = new City(new PersistedIdentifier<>(44L));
+		grenoble.setName("Grenoble");
+		expectedCountry.setCities(Arrays.asSet(paris, lyon, grenoble));
+		
+		// we must wrap the select call into the select listener because it is the way expected by ManyCascadeConfigurer to initialize some variables (ThreadLocal ones)
+		List<Country> select = persister.getPersisterListener().doWithSelectListener(Collections.emptyList(), () ->
+				testInstance.loadGraph(((EntityCriteriaSupport<Country>) countryEntityCriteriaSupport))
+		);
+		
+		assertEquals(expectedCountry, Iterables.first(select), Country::getId);
+		assertEquals(expectedCountry, Iterables.first(select), Country::getName);
+		assertAllEquals(expectedCountry.getCities(), Iterables.first(select).getCities(), City::getId);
+		assertAllEquals(expectedCountry.getCities(), Iterables.first(select).getCities(), City::getName);
 	}
 	
 }
