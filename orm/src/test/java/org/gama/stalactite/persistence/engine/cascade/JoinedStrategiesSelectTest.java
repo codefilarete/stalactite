@@ -8,7 +8,7 @@ import org.gama.sql.binder.ParameterBinder;
 import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
-import org.gama.stalactite.query.builder.QueryBuilder;
+import org.gama.stalactite.query.builder.SQLQueryBuilder;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -53,8 +53,8 @@ public class JoinedStrategiesSelectTest {
 	public void testToSQL_singleStrategy(Table table, String expected, Map<Column, String> expectedAliases) {
 		ClassMappingStrategy mappingStrategyMock = buildMappingStrategyMock(table);
 		JoinedStrategiesSelect testInstance = new JoinedStrategiesSelect<>(mappingStrategyMock, c -> mock(ParameterBinder.class));
-		QueryBuilder queryBuilder = new QueryBuilder(testInstance.buildSelectQuery());
-		assertEquals(expected, queryBuilder.toSQL());
+		SQLQueryBuilder SQLQueryBuilder = new SQLQueryBuilder(testInstance.buildSelectQuery());
+		assertEquals(expected, SQLQueryBuilder.toSQL());
 		assertEquals(expectedAliases, testInstance.getAliases());
 	}
 	
@@ -118,8 +118,8 @@ public class JoinedStrategiesSelectTest {
 										   String expected) {
 		JoinedStrategiesSelect testInstance = new JoinedStrategiesSelect(rootMappingStrategy, c -> mock(ParameterBinder.class));
 		testInstance.add(JoinedStrategiesSelect.FIRST_STRATEGY_NAME, classMappingStrategy, leftJoinColumn, rightJoinColumn, false, null);
-		QueryBuilder queryBuilder = new QueryBuilder(testInstance.buildSelectQuery());
-		assertEquals(expected, queryBuilder.toSQL());
+		SQLQueryBuilder SQLQueryBuilder = new SQLQueryBuilder(testInstance.buildSelectQuery());
+		assertEquals(expected, SQLQueryBuilder.toSQL());
 	}
 	
 	@Test
@@ -145,7 +145,7 @@ public class JoinedStrategiesSelectTest {
 		JoinedStrategiesSelect testInstance = new JoinedStrategiesSelect(totoMappingMock, c -> mock(ParameterBinder.class));
 		String tataAddKey = testInstance.add(JoinedStrategiesSelect.FIRST_STRATEGY_NAME, tataMappingMock, totoPrimaryKey, tataPrimaryKey, false, null);
 		testInstance.add(tataAddKey, tutuMappingMock, tataPrimaryKey, tutuPrimaryKey, false, null);
-		QueryBuilder queryBuilder = new QueryBuilder(testInstance.buildSelectQuery());
+		SQLQueryBuilder SQLQueryBuilder = new SQLQueryBuilder(testInstance.buildSelectQuery());
 		assertEquals("select"
 						+ " Toto.id as Toto_id, Toto.name as Toto_name"
 						+ ", Tata.id as Tata_id, Tata.name as Tata_name"
@@ -153,7 +153,7 @@ public class JoinedStrategiesSelectTest {
 						+ " from Toto"
 						+ " inner join Tata on Toto.id = Tata.id"
 						+ " inner join Tutu on Tata.id = Tutu.id"
-				, queryBuilder.toSQL());
+				, SQLQueryBuilder.toSQL());
 		assertEquals(Maps.asMap(totoPrimaryKey, "Toto_id")
 				.add(totoNameColumn, "Toto_name")
 				.add(tataPrimaryKey, "Tata_id")
@@ -188,7 +188,7 @@ public class JoinedStrategiesSelectTest {
 		JoinedStrategiesSelect testInstance = new JoinedStrategiesSelect(totoMappingMock, c -> mock(ParameterBinder.class));
 		String tataAddKey = testInstance.add(JoinedStrategiesSelect.FIRST_STRATEGY_NAME, tataMappingMock, tataId, tataPrimaryKey, false, null);
 		testInstance.add(tataAddKey, tutuMappingMock, tutuId, tutuPrimaryKey, true, null);
-		QueryBuilder queryBuilder = new QueryBuilder(testInstance.buildSelectQuery());
+		SQLQueryBuilder SQLQueryBuilder = new SQLQueryBuilder(testInstance.buildSelectQuery());
 		assertEquals("select"
 						+ " Toto.id as Toto_id, Toto.name as Toto_name, Toto.tataId as Toto_tataId, Toto.tutuId as Toto_tutuId"
 						+ ", Tata.id as Tata_id, Tata.name as Tata_name"
@@ -196,7 +196,7 @@ public class JoinedStrategiesSelectTest {
 						+ " from Toto"
 						+ " inner join Tata on Toto.tataId = Tata.id"
 						+ " left outer join Tutu on Toto.tutuId = Tutu.id"
-				, queryBuilder.toSQL());
+				, SQLQueryBuilder.toSQL());
 		assertEquals(Maps.asMap(totoPrimaryKey, "Toto_id")
 						.add(totoNameColumn, "Toto_name")
 						.add(tataId, "Toto_tataId")
@@ -238,7 +238,7 @@ public class JoinedStrategiesSelectTest {
 		String tataAddKey = testInstance.add(JoinedStrategiesSelect.FIRST_STRATEGY_NAME, tataMappingMock, totoPrimaryKey, tataPrimaryKey, false, null);
 		String tutuAddKey = testInstance.add(tataAddKey, tutuMappingMock, tataPrimaryKey, tutuPrimaryKey, false, null);
 		String titiAddKey = testInstance.add(JoinedStrategiesSelect.FIRST_STRATEGY_NAME, titiMappingMock, totoPrimaryKey, titiPrimaryKey, false, null);
-		QueryBuilder queryBuilder = new QueryBuilder(testInstance.buildSelectQuery());
+		SQLQueryBuilder SQLQueryBuilder = new SQLQueryBuilder(testInstance.buildSelectQuery());
 		assertEquals("select"
 						+ " Toto.id as Toto_id, Toto.name as Toto_name"
 						+ ", Tata.id as Tata_id, Tata.name as Tata_name"
@@ -248,7 +248,7 @@ public class JoinedStrategiesSelectTest {
 						+ " inner join Tata on Toto.id = Tata.id"
 						+ " inner join Titi on Toto.id = Titi.id"
 						+ " inner join Tutu on Tata.id = Tutu.id"
-				, queryBuilder.toSQL());
+				, SQLQueryBuilder.toSQL());
 		assertEquals(Maps.asMap(totoPrimaryKey, "Toto_id")
 						.add(totoNameColumn, "Toto_name")
 						.add(tataPrimaryKey, "Tata_id")
@@ -321,7 +321,7 @@ public class JoinedStrategiesSelectTest {
 		
 		testInstance2.getStrategyJoins(JoinedStrategiesSelect.FIRST_STRATEGY_NAME).copyTo(testInstance1, tataAddKey);
 		
-		QueryBuilder queryBuilder = new QueryBuilder(testInstance1.buildSelectQuery());
+		SQLQueryBuilder SQLQueryBuilder = new SQLQueryBuilder(testInstance1.buildSelectQuery());
 		assertEquals("select"
 						+ " Toto.id as Toto_id, Toto.name as Toto_name"
 						+ ", Tata.id as Tata_id, Tata.name as Tata_name"
@@ -331,7 +331,7 @@ public class JoinedStrategiesSelectTest {
 						+ " inner join Tata on Toto.id = Tata.id"
 						+ " inner join Tutu on Tata.id = Tutu.id"
 						+ " inner join Titi on Tata.id = Titi.id"
-				, queryBuilder.toSQL());
+				, SQLQueryBuilder.toSQL());
 		assertEquals(Maps.asMap(totoPrimaryKey, "Toto_id")
 						.add(totoNameColumn, "Toto_name")
 						.add(tataPrimaryKey, "Tata_id")

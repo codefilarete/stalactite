@@ -1,7 +1,5 @@
 package org.gama.stalactite.query.builder;
 
-import javax.annotation.Nonnull;
-
 import org.gama.lang.StringAppender;
 import org.gama.sql.dml.PreparedSQL;
 import org.gama.stalactite.persistence.sql.dml.binder.ColumnBinderRegistry;
@@ -18,9 +16,13 @@ import org.gama.stalactite.query.model.Query;
 import org.gama.stalactite.query.model.QueryProvider;
 
 /**
+ * Builder of SQL from {@link Query}.
+ * 
  * @author Guillaume Mary
+ * @see #toSQL()
+ * @see #toPreparedSQL(ColumnBinderRegistry) 
  */
-public class QueryBuilder implements SQLBuilder, PreparedSQLBuilder {
+public class SQLQueryBuilder implements SQLBuilder, PreparedSQLBuilder {
 	
 	private final DMLNameProvider dmlNameProvider;
 	private final Query query;
@@ -34,7 +36,7 @@ public class QueryBuilder implements SQLBuilder, PreparedSQLBuilder {
 	 * 
 	 * @param query a {@link QueryProvider}
 	 */
-	public QueryBuilder(@Nonnull QueryProvider query) {
+	public SQLQueryBuilder(QueryProvider query) {
 		this(query.getSelectQuery());
 	}
 	
@@ -43,7 +45,7 @@ public class QueryBuilder implements SQLBuilder, PreparedSQLBuilder {
 	 * 
 	 * @param query a {@link Query}
 	 */
-	public QueryBuilder(@Nonnull Query query) {
+	public SQLQueryBuilder(Query query) {
 		this.dmlNameProvider = new DMLNameProvider(query.getFromSurrogate().getTableAliases());
 		this.query = query;
 		this.selectBuilder = new SelectBuilder(query.getSelectSurrogate(), dmlNameProvider);
@@ -52,6 +54,14 @@ public class QueryBuilder implements SQLBuilder, PreparedSQLBuilder {
 		this.havingBuilder = new WhereBuilder(query.getHavingSurrogate(), dmlNameProvider);
 	}
 	
+	/**
+	 * Creates a String from Query given at construction time.
+	 * <strong>SQL contains criteria values which may not be a good idea to be executed because it is exposed to SQL injection. Please don't run
+	 * the returned SQL, else you know what you're doing, use it for debugging purpose for instance.</strong>
+	 * One may prefer {@link #toPreparedSQL(ColumnBinderRegistry)}
+	 * 
+	 * @return the SQL represented by Query given at construction time
+	 */
 	@Override
 	public String toSQL() {
 		StringAppender sql = new StringAppender(500);
@@ -83,6 +93,11 @@ public class QueryBuilder implements SQLBuilder, PreparedSQLBuilder {
 		return sql.toString();
 	}
 	
+	/**
+	 * Creates a {@link PreparedSQL} from Query given at construction time.
+	 * 
+	 * @return a {@link PreparedSQL} from Query given at construction time
+	 */
 	@Override
 	public PreparedSQL toPreparedSQL(ColumnBinderRegistry parameterBinderRegistry) {
 		StringAppender sql = new StringAppender(500);

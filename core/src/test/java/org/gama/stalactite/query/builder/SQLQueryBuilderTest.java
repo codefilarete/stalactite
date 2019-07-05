@@ -22,7 +22,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 /**
  * @author Guillaume Mary
  */
-public class QueryBuilderTest {
+public class SQLQueryBuilderTest {
 	
 	public static Object[][] testToSQL_data() {
 		final Table tableToto = new Table(null, "Toto");
@@ -107,7 +107,7 @@ public class QueryBuilderTest {
 	@ParameterizedTest
 	@MethodSource("testToSQL_data")
 	public void testToSQL(QueryProvider queryProvider, String expected) {
-		QueryBuilder testInstance = new QueryBuilder(queryProvider.getSelectQuery());
+		SQLQueryBuilder testInstance = new SQLQueryBuilder(queryProvider.getSelectQuery());
 		assertEquals(expected, testInstance.toSQL());
 	}
 	
@@ -139,7 +139,7 @@ public class QueryBuilderTest {
 	@MethodSource("testToPreparedSQL_data")
 	public void testToPreparedSQL(QueryProvider queryProvider,
 								  String expectedPreparedStatement, Map<Integer, Object> expectedValues) {
-		QueryBuilder testInstance = new QueryBuilder(queryProvider);
+		SQLQueryBuilder testInstance = new SQLQueryBuilder(queryProvider);
 		ColumnBinderRegistry parameterBinderRegistry = new ColumnBinderRegistry();
 		PreparedSQL preparedSQL = testInstance.toPreparedSQL(parameterBinderRegistry);
 		assertEquals(expectedPreparedStatement, preparedSQL.getSQL());

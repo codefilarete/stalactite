@@ -5,15 +5,15 @@ import java.util.Map;
 import org.gama.lang.reflect.MethodDispatcher;
 import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.persistence.structure.Column;
-import org.gama.stalactite.query.builder.QueryBuilder;
+import org.gama.stalactite.query.builder.SQLQueryBuilder;
 import org.gama.stalactite.query.model.OrderByChain.Order;
 
 /**
  * A support for a SQL query, trying to be closest as possible to a real select query syntax and implementing the most simple/common usage. 
- * No syntax validation is done. Final printing can be made by {@link QueryBuilder}
+ * No syntax validation is done. Final printing can be made by {@link SQLQueryBuilder}
  * 
  * @author Guillaume Mary
- * @see QueryBuilder
+ * @see SQLQueryBuilder
  * @see QueryEase
  */
 public class Query implements FromAware, WhereAware, HavingAware, OrderByAware, LimitAware, QueryProvider {

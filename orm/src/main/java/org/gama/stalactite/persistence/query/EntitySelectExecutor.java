@@ -17,7 +17,7 @@ import org.gama.stalactite.persistence.engine.cascade.StrategyJoinsRowTransforme
 import org.gama.stalactite.persistence.sql.dml.binder.ColumnBinderRegistry;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
-import org.gama.stalactite.query.builder.QueryBuilder;
+import org.gama.stalactite.query.builder.SQLQueryBuilder;
 import org.gama.stalactite.query.model.CriteriaChain;
 import org.gama.stalactite.query.model.Query;
 
@@ -59,8 +59,8 @@ public class EntitySelectExecutor<C, I, T extends Table> {
 	 * @return beans loaded from rows selected by given criteria
 	 */
 	public List<C> loadSelection(EntityCriteriaSupport<C> entityCriteria) {
-		QueryBuilder queryBuilder = createQueryBuilder(entityCriteria, joinedStrategiesSelect.buildSelectQuery());
-		PreparedSQL preparedSQL = queryBuilder.toPreparedSQL(parameterBinderProvider);
+		SQLQueryBuilder SQLQueryBuilder = createQueryBuilder(entityCriteria, joinedStrategiesSelect.buildSelectQuery());
+		PreparedSQL preparedSQL = SQLQueryBuilder.toPreparedSQL(parameterBinderProvider);
 		return execute(preparedSQL);
 	}
 	
@@ -78,13 +78,13 @@ public class EntitySelectExecutor<C, I, T extends Table> {
 	public List<C> loadGraph(EntityCriteriaSupport<C> entityCriteria) {
 		Query query = joinedStrategiesSelect.buildSelectQuery();
 		
-		QueryBuilder queryBuilder = createQueryBuilder(entityCriteria, query);
+		SQLQueryBuilder SQLQueryBuilder = createQueryBuilder(entityCriteria, query);
 		
 		// First phase : selecting ids (made by clearing selected elements for performance issue)
 		List<Object> columns = query.getSelectSurrogate().clear();
 		Column<T, I> pk = (Column<T, I>) Iterables.first(joinedStrategiesSelect.getJoinsRoot().getTable().getPrimaryKey().getColumns());
 		query.select(pk, PRIMARY_KEY_ALIAS);
-		List<I> ids = readIds(queryBuilder, pk);
+		List<I> ids = readIds(SQLQueryBuilder, pk);
 		
 		// Second phase : selecting elements by main table pk (adding necessary columns)
 		query.getSelectSurrogate().remove(0);	// previous pk selection removal
@@ -92,21 +92,21 @@ public class EntitySelectExecutor<C, I, T extends Table> {
 		query.getWhereSurrogate().clear();
 		query.where(pk, in(ids));
 		
-		PreparedSQL preparedSQL = queryBuilder.toPreparedSQL(parameterBinderProvider);
+		PreparedSQL preparedSQL = SQLQueryBuilder.toPreparedSQL(parameterBinderProvider);
 		return execute(preparedSQL);
 	}
 	
-	private QueryBuilder createQueryBuilder(EntityCriteriaSupport<C> entityCriteria, Query query) {
-		QueryBuilder queryBuilder = new QueryBuilder(query);
+	private SQLQueryBuilder createQueryBuilder(EntityCriteriaSupport<C> entityCriteria, Query query) {
+		SQLQueryBuilder SQLQueryBuilder = new SQLQueryBuilder(query);
 		CriteriaChain where = entityCriteria.getCriteria();
 		if (where.iterator().hasNext()) {    // prevents from empty where causing malformed SQL
 			query.getWhere().and(where);
 		}
-		return queryBuilder;
+		return SQLQueryBuilder;
 	}
 	
-	private List<I> readIds(QueryBuilder queryBuilder, Column<T, I> pk) {
-		ReadOperation<Integer> operation = new ReadOperation<>(queryBuilder.toPreparedSQL(parameterBinderProvider), connectionProvider);
+	private List<I> readIds(SQLQueryBuilder SQLQueryBuilder, Column<T, I> pk) {
+		ReadOperation<Integer> operation = new ReadOperation<>(SQLQueryBuilder.toPreparedSQL(parameterBinderProvider), connectionProvider);
 		try (ReadOperation<Integer> closeableOperation = operation) {
 			ResultSet resultSet = closeableOperation.execute();
 			RowIterator rowIterator = new RowIterator(resultSet, Maps.asMap(PRIMARY_KEY_ALIAS, parameterBinderProvider.getBinder(pk)));

@@ -35,7 +35,7 @@ import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
 import org.gama.stalactite.persistence.sql.Dialect;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
-import org.gama.stalactite.query.builder.QueryBuilder;
+import org.gama.stalactite.query.builder.SQLQueryBuilder;
 import org.gama.stalactite.query.builder.SQLBuilder;
 import org.gama.stalactite.query.model.CriteriaChain;
 import org.gama.stalactite.query.model.Query;
@@ -149,7 +149,7 @@ public class PersistenceContext {
 	 * @see org.gama.stalactite.query.model.QueryEase
 	 */
 	public <C> ExecutableSelect<C> newQuery(QueryProvider queryProvider, Class<C> beanType) {
-		return newQuery(new QueryBuilder(queryProvider), beanType);
+		return newQuery(new SQLQueryBuilder(queryProvider), beanType);
 	}
 	
 	/**
@@ -163,7 +163,7 @@ public class PersistenceContext {
 	 * @return a new {@link ExecutableSelect} that must be configured and executed
 	 */
 	public <C> ExecutableSelect<C> newQuery(Query query, Class<C> beanType) {
-		return newQuery(new QueryBuilder(query), beanType);
+		return newQuery(new SQLQueryBuilder(query), beanType);
 	}
 	
 	/**
@@ -312,7 +312,7 @@ public class PersistenceContext {
 		where.accept(query.getWhere());
 		SelectMapping<C> selectMappingSupport = new SelectMapping<>();
 		selectMapping.accept(selectMappingSupport);
-		QueryMapper<C> queryMapper = newConvertibleQuery(new QueryBuilder(query), ((Class<C>) constructor.getDeclaringClass()));
+		QueryMapper<C> queryMapper = newConvertibleQuery(new SQLQueryBuilder(query), ((Class<C>) constructor.getDeclaringClass()));
 		queryMapper.mapKey(factory, column);
 		selectMappingSupport.appendTo(query, queryMapper);
 		return execute(queryMapper);
@@ -342,7 +342,7 @@ public class PersistenceContext {
 		where.accept(query.getWhere());
 		SelectMapping<C> selectMappingSupport = new SelectMapping<>();
 		selectMapping.accept(selectMappingSupport);
-		QueryMapper<C> queryMapper = newConvertibleQuery(new QueryBuilder(query), ((Class<C>) constructor.getDeclaringClass()));
+		QueryMapper<C> queryMapper = newConvertibleQuery(new SQLQueryBuilder(query), ((Class<C>) constructor.getDeclaringClass()));
 		queryMapper.mapKey(factory, column1, column2);
 		selectMappingSupport.appendTo(query, queryMapper);
 		return execute(queryMapper);

@@ -9,6 +9,7 @@ import org.gama.sql.binder.PreparedStatementWriterIndex;
 
 /**
  * Class that applies values to {@link PreparedStatement} according to SQL that contains indexed parameters.
+ * Can be given to a {@link ReadOperation} or {@link WriteOperation} for execution.
  * 
  * @author Guillaume Mary
  */

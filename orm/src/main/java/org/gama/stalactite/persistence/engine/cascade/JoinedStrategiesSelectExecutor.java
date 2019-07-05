@@ -31,7 +31,7 @@ import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.PrimaryKey;
 import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.query.builder.DMLNameProvider;
-import org.gama.stalactite.query.builder.QueryBuilder;
+import org.gama.stalactite.query.builder.SQLQueryBuilder;
 import org.gama.stalactite.query.model.Query;
 
 import static org.gama.stalactite.persistence.engine.cascade.JoinedStrategiesSelect.FIRST_STRATEGY_NAME;
@@ -144,17 +144,17 @@ public class JoinedStrategiesSelectExecutor<C, I, T extends Table> extends Selec
 				parcels = Collections.cutTail(parcels);
 			}
 			
-			QueryBuilder queryBuilder = new QueryBuilder(query);
+			SQLQueryBuilder SQLQueryBuilder = new SQLQueryBuilder(query);
 			if (!parcels.isEmpty()) {
 				// change parameter mark count to adapt "in" operator values
 				ParameterizedWhere tableParameterizedWhere = dmlGenerator.appendTupledWhere(identifierCriteria, primaryKey.getColumns(), blockSize);
-				result.addAll(execute(localConnectionProvider, queryBuilder.toSQL(), parcels, tableParameterizedWhere.getColumnToIndex()));
+				result.addAll(execute(localConnectionProvider, SQLQueryBuilder.toSQL(), parcels, tableParameterizedWhere.getColumnToIndex()));
 			}
 			if (!lastBlock.isEmpty()) {
 				// change parameter mark count to adapt "in" operator values, we must clear previous where clause
 				identifierCriteria.getAppender().setLength(0);
 				ParameterizedWhere tableParameterizedWhere = dmlGenerator.appendTupledWhere(identifierCriteria, primaryKey.getColumns(), lastBlock.size());
-				result.addAll(execute(localConnectionProvider, queryBuilder.toSQL(), java.util.Collections.singleton(lastBlock), tableParameterizedWhere.getColumnToIndex()));
+				result.addAll(execute(localConnectionProvider, SQLQueryBuilder.toSQL(), java.util.Collections.singleton(lastBlock), tableParameterizedWhere.getColumnToIndex()));
 			}
 		}
 		return result;

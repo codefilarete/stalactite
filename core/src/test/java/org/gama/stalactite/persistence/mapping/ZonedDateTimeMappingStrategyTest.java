@@ -20,7 +20,7 @@ import org.gama.stalactite.persistence.mapping.IMappingStrategy.UpwhereColumn;
 import org.gama.stalactite.persistence.sql.dml.PreparedUpdate;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
-import org.gama.stalactite.query.builder.QueryBuilder;
+import org.gama.stalactite.query.builder.SQLQueryBuilder;
 import org.gama.stalactite.test.JdbcConnectionProvider;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -76,7 +76,7 @@ public class ZonedDateTimeMappingStrategyTest {
 		writeOperation.execute();
 		
 		// selecting it to see if it is correctly read
-		ResultSet resultSet = connectionProvider.getCurrentConnection().prepareStatement(new QueryBuilder(select(colA, colB).from(targetTable)).toSQL()).executeQuery();
+		ResultSet resultSet = connectionProvider.getCurrentConnection().prepareStatement(new SQLQueryBuilder(select(colA, colB).from(targetTable)).toSQL()).executeQuery();
 		RowIterator rowIterator = new RowIterator(resultSet,
 				Maps.asMap(colA.getName(), dialect.getColumnBinderRegistry().getBinder(colA))
 						.add(colB.getName(), dialect.getColumnBinderRegistry().getBinder(colB)));
@@ -111,7 +111,7 @@ public class ZonedDateTimeMappingStrategyTest {
 		new WriteOperation<>(updateOrder, connectionProvider).execute();
 		
 		// selecting it to see if it is correctly read
-		ResultSet resultSet = connectionProvider.getCurrentConnection().prepareStatement(new QueryBuilder(select(colA, colB).from(targetTable)).toSQL()).executeQuery();
+		ResultSet resultSet = connectionProvider.getCurrentConnection().prepareStatement(new SQLQueryBuilder(select(colA, colB).from(targetTable)).toSQL()).executeQuery();
 		RowIterator rowIterator = new RowIterator(resultSet,
 				Maps.asMap(colA.getName(), dialect.getColumnBinderRegistry().getBinder(colA))
 						.add(colB.getName(), dialect.getColumnBinderRegistry().getBinder(colB)));
@@ -145,7 +145,7 @@ public class ZonedDateTimeMappingStrategyTest {
 		new WriteOperation<>(updateOrder, connectionProvider).execute();
 		
 		// selecting it to see if it is correctly read
-		ResultSet resultSet = connectionProvider.getCurrentConnection().prepareStatement(new QueryBuilder(select(colA, colB).from(targetTable)).toSQL()).executeQuery();
+		ResultSet resultSet = connectionProvider.getCurrentConnection().prepareStatement(new SQLQueryBuilder(select(colA, colB).from(targetTable)).toSQL()).executeQuery();
 		RowIterator rowIterator = new RowIterator(resultSet,
 				Maps.asMap(colA.getName(), dialect.getColumnBinderRegistry().getBinder(colA))
 						.add(colB.getName(), dialect.getColumnBinderRegistry().getBinder(colB)));
