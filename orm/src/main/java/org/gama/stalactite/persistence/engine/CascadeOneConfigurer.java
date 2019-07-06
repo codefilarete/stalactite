@@ -116,7 +116,7 @@ public class CascadeOneConfigurer<SRC, TRGT, ID> {
 			
 			EntityMappingConfiguration<TRGT, ID> targetMappingConfiguration = cascadeOne.getTargetMappingConfiguration();
 			
-			Persister<TRGT, ID, Table> targetPersister = new EntityMappingBuilder<>(targetMappingConfiguration, new MethodReferenceCapturer())
+			JoinedTablesPersister<TRGT, ID, Table> targetPersister = new EntityMappingBuilder<>(targetMappingConfiguration, new MethodReferenceCapturer())
 					// please note that even if no table is found in configuration, build(..) will create one
 					.build(persistenceContext, Nullable.nullable(cascadeOne.getTargetTable()).orGet(Nullable.nullable(cascadeOne.getReverseColumn()).apply(Column::getTable).get()));
 			ClassMappingStrategy<TRGT, ID, Table> targetMappingStrategy = targetPersister.getMappingStrategy();
@@ -179,7 +179,7 @@ public class CascadeOneConfigurer<SRC, TRGT, ID> {
 		 */
 		protected <T extends Table<T>> void addSelectCascade(CascadeOne<SRC, TRGT, ID> cascadeOne,
 															   JoinedTablesPersister<SRC, ID, T> sourcePersister,
-															   Persister<TRGT, ID, Table> targetPersister,
+															   JoinedTablesPersister<TRGT, ID, Table> targetPersister,
 															   Column leftColumn,
 															   Column rightColumn,
 															   BeanRelationFixer<SRC, TRGT> beanRelationFixer) {
@@ -188,7 +188,7 @@ public class CascadeOneConfigurer<SRC, TRGT, ID> {
 					beanRelationFixer,
 					leftColumn, rightColumn, cascadeOne.isNullable());
 			if (targetPersister instanceof JoinedTablesPersister) {
-				addSubgraphSelect(createdJoinNodeName, sourcePersister, (JoinedTablesPersister<TRGT, ID, ?>) targetPersister, cascadeOne.getTargetProvider()::get);
+				addSubgraphSelect(createdJoinNodeName, sourcePersister, targetPersister, cascadeOne.getTargetProvider()::get);
 			}
 		}
 		

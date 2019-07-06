@@ -137,7 +137,7 @@ class EntityMappingBuilderTest {
 		PersistenceContext persistenceContext = new PersistenceContext(new JdbcConnectionProvider(new HSQLDBInMemoryDataSource()), dialect);
 		
 		// creating a complex graph
-		JoinedTablesPersister<Country, Identifier, Table> persister = (JoinedTablesPersister<Country, Identifier, Table>) from(Country.class, Identifier.class)
+		JoinedTablesPersister<Country, Identifier, Table> persister = from(Country.class, Identifier.class)
 				.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.add(Country::getName)
 				.addOneToOne(Country::getCapital,
@@ -201,7 +201,7 @@ class EntityMappingBuilderTest {
 		PersistenceContext persistenceContext = new PersistenceContext(new JdbcConnectionProvider(new HSQLDBInMemoryDataSource()), dialect);
 		
 		// creating a complex graph
-		JoinedTablesPersister<State, Identifier, Table> persister = (JoinedTablesPersister<State, Identifier, Table>) from(State.class, Identifier.class)
+		JoinedTablesPersister<State, Identifier, Table> persister = from(State.class, Identifier.class)
 				.add(State::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.add(State::getName)
 				.addOneToManySet(State::getCities, from(City.class, Identifier.class)

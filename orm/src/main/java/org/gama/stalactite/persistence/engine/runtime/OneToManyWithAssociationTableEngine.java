@@ -6,7 +6,6 @@ import java.util.function.Function;
 import org.gama.stalactite.persistence.engine.AssociationRecord;
 import org.gama.stalactite.persistence.engine.AssociationRecordPersister;
 import org.gama.stalactite.persistence.engine.AssociationTable;
-import org.gama.stalactite.persistence.engine.Persister;
 import org.gama.stalactite.persistence.engine.cascade.JoinedTablesPersister;
 import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
 
@@ -17,7 +16,7 @@ public class OneToManyWithAssociationTableEngine<SRC, TRGT, SRCID, TRGTID, C ext
 		extends AbstractOneToManyWithAssociationTableEngine<SRC, TRGT, SRCID, TRGTID, C, AssociationRecord, AssociationTable> {
 	
 	public OneToManyWithAssociationTableEngine(JoinedTablesPersister<SRC, SRCID, ?> joinedTablesPersister,
-											   Persister<TRGT, TRGTID, ?> targetPersister,
+											   JoinedTablesPersister<TRGT, TRGTID, ?> targetPersister,
 											   ManyRelationDescriptor<SRC, TRGT, C> manyRelationDescriptor,
 											   AssociationRecordPersister<AssociationRecord, AssociationTable> associationPersister) {
 		super(joinedTablesPersister, targetPersister, manyRelationDescriptor, associationPersister);

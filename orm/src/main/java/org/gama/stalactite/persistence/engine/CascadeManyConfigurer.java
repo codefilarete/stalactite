@@ -87,7 +87,7 @@ public class CascadeManyConfigurer<SRC, TRGT, SRCID, TRGTID, C extends Collectio
 		
 		// please note that even if no table is found in configuration, build(..) will create one
 		Table targetTable = nullable(cascadeMany.getTargetTable()).orSet(reverseTable).orSet(indexingTable).get();
-		Persister<TRGT, TRGTID, ?> targetPersister = new EntityMappingBuilder<>(cascadeMany.getTargetMappingConfiguration(), new MethodReferenceCapturer())
+		JoinedTablesPersister<TRGT, TRGTID, ?> targetPersister = new EntityMappingBuilder<>(cascadeMany.getTargetMappingConfiguration(), new MethodReferenceCapturer())
 				.build(persistenceContext, targetTable);
 		
 		// finding joined columns: left one is primary key. Right one is given by the target strategy through the property accessor
@@ -119,7 +119,7 @@ public class CascadeManyConfigurer<SRC, TRGT, SRCID, TRGTID, C extends Collectio
 		
 		private final CascadeMany<SRC, TRGT, TRGTID, C> cascadeMany;
 		private final JoinedTablesPersister<SRC, SRCID, ?> joinedTablesPersister;
-		private final Persister<TRGT, TRGTID, ?> targetPersister;
+		private final JoinedTablesPersister<TRGT, TRGTID, ?> targetPersister;
 		private final Column leftPrimaryKey;
 		private final ForeignKeyNamingStrategy foreignKeyNamingStrategy;
 		private final ColumnNamingStrategy joinColumnNamingStrategy;
@@ -131,10 +131,10 @@ public class CascadeManyConfigurer<SRC, TRGT, SRCID, TRGTID, C extends Collectio
 		
 		private ManyAssociationConfiguration(CascadeMany<SRC, TRGT, TRGTID, C> cascadeMany,
 											JoinedTablesPersister<SRC, SRCID, ?> joinedTablesPersister,
-											Persister<TRGT, TRGTID, ?> targetPersister,
+											JoinedTablesPersister<TRGT, TRGTID, ?> targetPersister,
 											Column leftPrimaryKey,
 											ForeignKeyNamingStrategy foreignKeyNamingStrategy,
-											 ColumnNamingStrategy joinColumnNamingStrategy,
+											ColumnNamingStrategy joinColumnNamingStrategy,
 											boolean orphanRemoval,
 											boolean writeAuthorized) {
 			this.cascadeMany = cascadeMany;

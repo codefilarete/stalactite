@@ -39,6 +39,7 @@ import org.gama.stalactite.persistence.engine.IFluentEmbeddableMappingBuilder.IF
 import org.gama.stalactite.persistence.engine.IFluentEmbeddableMappingBuilder.IFluentEmbeddableMappingBuilderEnumOptions;
 import org.gama.stalactite.persistence.engine.builder.CascadeMany;
 import org.gama.stalactite.persistence.engine.builder.CascadeManyList;
+import org.gama.stalactite.persistence.engine.cascade.JoinedTablesPersister;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
 
@@ -609,12 +610,12 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements IFluentEnt
 	}
 	
 	@Override
-	public Persister<C, I, Table> build(PersistenceContext persistenceContext) {
+	public JoinedTablesPersister<C, I, Table> build(PersistenceContext persistenceContext) {
 		return build(persistenceContext, null);
 	}
 	
 	@Override
-	public <T extends Table> Persister<C, I, T> build(PersistenceContext persistenceContext, @javax.annotation.Nullable T targetTable) {
+	public <T extends Table> JoinedTablesPersister<C, I, T> build(PersistenceContext persistenceContext, @javax.annotation.Nullable T targetTable) {
 		if (inheritanceConfiguration != null && propertiesMappingConfigurationSurrogate.getMappedSuperClassConfiguration() != null) {
 			throw new MappingConfigurationException("Mapped super class and inheritance are not supported when they are combined, please remove one of them");
 		}

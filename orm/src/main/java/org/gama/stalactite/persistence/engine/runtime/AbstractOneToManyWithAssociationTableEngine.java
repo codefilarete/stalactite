@@ -59,12 +59,12 @@ public abstract class AbstractOneToManyWithAssociationTableEngine<SRC, TRGT, SRC
 	
 	protected final JoinedTablesPersister<SRC, SRCID, ?> joinedTablesPersister;
 	
-	protected final Persister<TRGT, TRGTID, ?> targetPersister;
+	protected final JoinedTablesPersister<TRGT, TRGTID, ?> targetPersister;
 	
 	protected final ManyRelationDescriptor<SRC, TRGT, C> manyRelationDescriptor;
 	
 	public AbstractOneToManyWithAssociationTableEngine(JoinedTablesPersister<SRC, SRCID, ?> joinedTablesPersister,
-													   Persister<TRGT, TRGTID, ?> targetPersister,
+													   JoinedTablesPersister<TRGT, TRGTID, ?> targetPersister,
 													   ManyRelationDescriptor<SRC, TRGT, C> manyRelationDescriptor,
 													   AssociationRecordPersister<R, T> associationPersister) {
 		this.joinedTablesPersister = joinedTablesPersister;
@@ -101,9 +101,7 @@ public abstract class AbstractOneToManyWithAssociationTableEngine<SRC, TRGT, SRC
 				associationPersister.getMainTable().getManySidePrimaryKey(),
 				true);
 		
-		if (targetPersister instanceof JoinedTablesPersister) {
-			addSubgraphSelect(createdJoinNodeName, sourcePersister, (JoinedTablesPersister<TRGT, TRGTID, ?>) targetPersister, manyRelationDescriptor.getCollectionGetter());
-		}
+		addSubgraphSelect(createdJoinNodeName, sourcePersister, targetPersister, manyRelationDescriptor.getCollectionGetter());
 	}
 	
 	private void addRelationReadOnSelect() {

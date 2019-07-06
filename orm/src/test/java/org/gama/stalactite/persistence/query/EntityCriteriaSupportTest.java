@@ -43,7 +43,7 @@ class EntityCriteriaSupportTest {
 		dialect.getColumnBinderRegistry().register((Class) Identified.class, Identified.identifiedBinder(DefaultParameterBinders.LONG_PRIMITIVE_BINDER));
 		dialect.getJavaTypeToSqlTypeMapping().put(Identified.class, "bigint");
 		
-		JoinedTablesPersister<Country, Long, Table> persister = (JoinedTablesPersister<Country, Long, Table>) FluentEntityMappingConfigurationSupport.from(Country.class, long.class)
+		JoinedTablesPersister<Country, Long, Table> persister = FluentEntityMappingConfigurationSupport.from(Country.class, long.class)
 				.add(Country::getId).identifier(IdentifierPolicy.AFTER_INSERT)
 				.add(Country::getName)
 				.addOneToOne(Country::getCapital, FluentEntityMappingConfigurationSupport.from(City.class, long.class)

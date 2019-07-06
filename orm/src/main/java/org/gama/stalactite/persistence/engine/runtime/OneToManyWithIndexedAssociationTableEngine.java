@@ -11,7 +11,6 @@ import org.gama.lang.collection.PairIterator;
 import org.gama.stalactite.persistence.engine.AssociationRecordPersister;
 import org.gama.stalactite.persistence.engine.IndexedAssociationRecord;
 import org.gama.stalactite.persistence.engine.IndexedAssociationTable;
-import org.gama.stalactite.persistence.engine.Persister;
 import org.gama.stalactite.persistence.engine.cascade.JoinedTablesPersister;
 import org.gama.stalactite.persistence.engine.listening.UpdateListener.UpdatePayload;
 import org.gama.stalactite.persistence.engine.runtime.OneToManyWithMappedAssociationEngine.TargetInstancesUpdateCascader;
@@ -29,7 +28,7 @@ public class OneToManyWithIndexedAssociationTableEngine<SRC, TRGT, SRCID, TRGTID
 		extends AbstractOneToManyWithAssociationTableEngine<SRC, TRGT, SRCID, TRGTID, C, IndexedAssociationRecord, IndexedAssociationTable> {
 	
 	public OneToManyWithIndexedAssociationTableEngine(JoinedTablesPersister<SRC, SRCID, ?> joinedTablesPersister,
-													  Persister<TRGT, TRGTID, ?> targetPersister,
+													  JoinedTablesPersister<TRGT, TRGTID, ?> targetPersister,
 													  ManyRelationDescriptor<SRC, TRGT, C> manyRelationDescriptor,
 													  AssociationRecordPersister<IndexedAssociationRecord, IndexedAssociationTable> associationPersister) {
 		super(joinedTablesPersister, targetPersister, manyRelationDescriptor, associationPersister);

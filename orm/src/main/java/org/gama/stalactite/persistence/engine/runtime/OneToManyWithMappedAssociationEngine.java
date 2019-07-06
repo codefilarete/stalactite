@@ -42,11 +42,11 @@ public class OneToManyWithMappedAssociationEngine<SRC, TRGT, SRCID, TRGTID, C ex
 	
 	protected final JoinedTablesPersister<SRC, SRCID, ?> sourcePersister;
 	
-	protected final Persister<TRGT, TRGTID, ?> targetPersister;
+	protected final JoinedTablesPersister<TRGT, TRGTID, ?> targetPersister;
 	
 	protected final MappedManyRelationDescriptor<SRC, TRGT, C> manyRelationDefinition;
 	
-	public OneToManyWithMappedAssociationEngine(Persister<TRGT, TRGTID, ?> targetPersister,
+	public OneToManyWithMappedAssociationEngine(JoinedTablesPersister<TRGT, TRGTID, ?> targetPersister,
 												MappedManyRelationDescriptor<SRC, TRGT, C> manyRelationDefinition,
 												JoinedTablesPersister<SRC, SRCID, ?> sourcePersister) {
 		this.targetPersister = targetPersister;
@@ -70,9 +70,7 @@ public class OneToManyWithMappedAssociationEngine<SRC, TRGT, SRCID, TRGTID, C ex
 				sourcePrimaryKey,
 				relationshipOwner,
 				relationshipOwner.isNullable()); // outer join for empty relation cases
-		if (targetPersister instanceof JoinedTablesPersister) {
-			addSubgraphSelect(createdJoinNodeName, sourcePersister, (JoinedTablesPersister<TRGT, TRGTID, ?>) targetPersister, manyRelationDefinition.getCollectionGetter());
-		}
+		addSubgraphSelect(createdJoinNodeName, sourcePersister, targetPersister, manyRelationDefinition.getCollectionGetter());
 	}
 	
 	static <SRC, TRGT, SRCID, TRGTID, C extends Collection<TRGT>> void addSubgraphSelect(String joinName,

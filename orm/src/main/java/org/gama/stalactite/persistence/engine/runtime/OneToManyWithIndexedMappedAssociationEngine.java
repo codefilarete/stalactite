@@ -14,7 +14,6 @@ import org.gama.lang.Nullable;
 import org.gama.lang.Reflections;
 import org.gama.lang.ThreadLocals;
 import org.gama.lang.collection.Iterables;
-import org.gama.stalactite.persistence.engine.Persister;
 import org.gama.stalactite.persistence.engine.RuntimeMappingException;
 import org.gama.stalactite.persistence.engine.cascade.JoinedTablesPersister;
 import org.gama.stalactite.persistence.engine.listening.SelectListener;
@@ -42,7 +41,7 @@ public class OneToManyWithIndexedMappedAssociationEngine<SRC, TRGT, SRCID, TRGTI
 	/** Column that stores index value, owned by reverse side table (table of targetPersister) */
 	private final Column indexingColumn;
 	
-	public OneToManyWithIndexedMappedAssociationEngine(Persister<TRGT, TRGTID, ?> targetPersister,
+	public OneToManyWithIndexedMappedAssociationEngine(JoinedTablesPersister<TRGT, TRGTID, ?> targetPersister,
 													   IndexedMappedManyRelationDescriptor<SRC, TRGT, C> manyRelationDefinition,
 													   JoinedTablesPersister<SRC, SRCID, ?> joinedTablesPersister,
 													   Column indexingColumn) {
