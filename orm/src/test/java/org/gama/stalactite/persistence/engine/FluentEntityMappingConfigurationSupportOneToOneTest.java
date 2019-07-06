@@ -72,12 +72,12 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 	public void initTest() {
 		persistenceContext = new PersistenceContext(new JdbcConnectionProvider(dataSource), DIALECT);
 		
-		IFluentMappingBuilderPropertyOptions<Person, Identifier<Long>> personMappingBuilder = FluentEntityMappingConfigurationSupport.from(Person.class, Identifier.LONG_TYPE)
+		IFluentMappingBuilderPropertyOptions<Person, Identifier<Long>> personMappingBuilder = MappingEase.mappingBuilder(Person.class, Identifier.LONG_TYPE)
 				.add(Person::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.add(Person::getName);
 		personConfiguration = personMappingBuilder;
 		
-		IFluentMappingBuilderPropertyOptions<City, Identifier<Long>> cityMappingBuilder = FluentEntityMappingConfigurationSupport.from(City.class, Identifier.LONG_TYPE)
+		IFluentMappingBuilderPropertyOptions<City, Identifier<Long>> cityMappingBuilder = MappingEase.mappingBuilder(City.class, Identifier.LONG_TYPE)
 				.add(City::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.add(City::getName);
 		cityConfiguration = cityMappingBuilder;
@@ -85,7 +85,7 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 	
 	@Test
 	public void cascade_associationOnly_throwsException() {
-		IFluentMappingBuilderOneToOneOptions<Country, Identifier<Long>, ?> mappingBuilder = FluentEntityMappingConfigurationSupport.from(Country.class, Identifier.LONG_TYPE)
+		IFluentMappingBuilderOneToOneOptions<Country, Identifier<Long>, ?> mappingBuilder = MappingEase.mappingBuilder(Country.class, Identifier.LONG_TYPE)
 				.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.add(Country::getName)
 				.add(Country::getDescription)
@@ -98,7 +98,7 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 	
 	@Test
 	public void cascade_none_defaultIsAll_getter() {
-		Persister<Country, Identifier<Long>, ?> countryPersister = FluentEntityMappingConfigurationSupport.from(Country.class, Identifier.LONG_TYPE)
+		Persister<Country, Identifier<Long>, ?> countryPersister = MappingEase.mappingBuilder(Country.class, Identifier.LONG_TYPE)
 				.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.add(Country::getName)
 				.add(Country::getDescription)
@@ -126,7 +126,7 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 	
 	@Test
 	public void cascade_readOnly_getter() throws SQLException {
-		Persister<Country, Identifier<Long>, ?> countryPersister = FluentEntityMappingConfigurationSupport.from(Country.class, Identifier.LONG_TYPE)
+		Persister<Country, Identifier<Long>, ?> countryPersister = MappingEase.mappingBuilder(Country.class, Identifier.LONG_TYPE)
 				.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.add(Country::getName)
 				.add(Country::getDescription)
@@ -139,7 +139,7 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 	
 	@Test
 	public void cascade_readOnly_setter() throws SQLException {
-		Persister<Country, Identifier<Long>, ?> countryPersister = FluentEntityMappingConfigurationSupport.from(Country.class, Identifier.LONG_TYPE)
+		Persister<Country, Identifier<Long>, ?> countryPersister = MappingEase.mappingBuilder(Country.class, Identifier.LONG_TYPE)
 				.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.add(Country::getName)
 				.add(Country::getDescription)
@@ -204,7 +204,7 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 	 */
 	@Test
 	public void lightOneToOne_relationIsPersisted() throws SQLException {
-		Persister<Country, Identifier<Long>, ?> countryPersister = FluentEntityMappingConfigurationSupport.from(Country.class, Identifier.LONG_TYPE)
+		Persister<Country, Identifier<Long>, ?> countryPersister = MappingEase.mappingBuilder(Country.class, Identifier.LONG_TYPE)
 				.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.add(Country::getName)
 				.add(Country::getDescription)
@@ -250,7 +250,7 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 	
 	@Test
 	public void cascade_insert() {
-		Persister<Country, Identifier<Long>, ?> countryPersister = FluentEntityMappingConfigurationSupport.from(Country.class, Identifier.LONG_TYPE)
+		Persister<Country, Identifier<Long>, ?> countryPersister = MappingEase.mappingBuilder(Country.class, Identifier.LONG_TYPE)
 				.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.add(Country::getName)
 				.add(Country::getDescription)
@@ -293,7 +293,7 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 	
 	@Test
 	public void cascade_insert_mandatory() {
-		Persister<Country, Identifier<Long>, ?> countryPersister = FluentEntityMappingConfigurationSupport.from(Country.class, Identifier.LONG_TYPE)
+		Persister<Country, Identifier<Long>, ?> countryPersister = MappingEase.mappingBuilder(Country.class, Identifier.LONG_TYPE)
 				.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.add(Country::getName)
 				.add(Country::getDescription)
@@ -312,7 +312,7 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 	
 	@Test
 	void foreignKeyIsCreated() throws SQLException {
-		FluentEntityMappingConfigurationSupport.from(Country.class, Identifier.LONG_TYPE)
+		MappingEase.mappingBuilder(Country.class, Identifier.LONG_TYPE)
 				// setting a foreign key naming strategy to be tested
 				.foreignKeyNamingStrategy(ForeignKeyNamingStrategy.DEFAULT)
 				.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
@@ -343,7 +343,7 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 	
 	@Test
 	void foreignKeyIsCreated_relationOwnedByTargetSide() throws SQLException {
-		Persister<Country, Identifier<Long>, Table> countryPersister = FluentEntityMappingConfigurationSupport.from(Country.class, Identifier.LONG_TYPE)
+		Persister<Country, Identifier<Long>, Table> countryPersister = MappingEase.mappingBuilder(Country.class, Identifier.LONG_TYPE)
 				// setting a foreign key naming strategy to be tested
 				.foreignKeyNamingStrategy(ForeignKeyNamingStrategy.DEFAULT)
 				.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
@@ -374,13 +374,13 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 	
 	@Test
 	void foreignKeyIsCreated_relationIsDefinedByColumnOnTargetSide() throws SQLException {
-		IFluentMappingBuilderPropertyOptions<City, Identifier<Long>> cityMappingBuilder = FluentEntityMappingConfigurationSupport.from(City.class, Identifier.LONG_TYPE)
+		IFluentMappingBuilderPropertyOptions<City, Identifier<Long>> cityMappingBuilder = MappingEase.mappingBuilder(City.class, Identifier.LONG_TYPE)
 				.add(City::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.add(City::getName);
 		Table<?> cityTable = new Table("city");
 		Column<Table, Country> stateColumn = (Column<Table, Country>) cityTable.addColumn("state", Country.class);
 		
-		Persister<Country, Identifier<Long>, Table> countryPersister = FluentEntityMappingConfigurationSupport.from(Country.class, Identifier.LONG_TYPE)
+		Persister<Country, Identifier<Long>, Table> countryPersister = MappingEase.mappingBuilder(Country.class, Identifier.LONG_TYPE)
 				// setting a foreign key naming strategy to be tested
 				.foreignKeyNamingStrategy(ForeignKeyNamingStrategy.DEFAULT)
 				.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
@@ -415,13 +415,13 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 	
 	@Test
 	void foreignKeyIsCreated_relationIsDefinedByColumnOnTargetSideAndReverseAccessorIsUsed_columnOverrideIsUsed() throws SQLException {
-		IFluentMappingBuilderPropertyOptions<City, Identifier<Long>> cityMappingBuilder = FluentEntityMappingConfigurationSupport.from(City.class, Identifier.LONG_TYPE)
+		IFluentMappingBuilderPropertyOptions<City, Identifier<Long>> cityMappingBuilder = MappingEase.mappingBuilder(City.class, Identifier.LONG_TYPE)
 				.add(City::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.add(City::getName);
 		Table cityTable = new Table("city");
 		Column<Table, Country> stateColumn = cityTable.addColumn("state", Country.class);
 		
-		Persister<Country, Identifier<Long>, Table> countryPersister = FluentEntityMappingConfigurationSupport.from(Country.class, Identifier.LONG_TYPE)
+		Persister<Country, Identifier<Long>, Table> countryPersister = MappingEase.mappingBuilder(Country.class, Identifier.LONG_TYPE)
 				// setting a foreign key naming strategy to be tested
 				.foreignKeyNamingStrategy(ForeignKeyNamingStrategy.DEFAULT)
 				.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
@@ -452,13 +452,13 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 	
 	@Test
 	void foreignKeyIsCreated_relationIsDefinedByColumnOnTargetSideAndReverseMutatorIsUsed_columnOverrideIsUsed() throws SQLException {
-		IFluentMappingBuilderPropertyOptions<City, Identifier<Long>> cityMappingBuilder = FluentEntityMappingConfigurationSupport.from(City.class, Identifier.LONG_TYPE)
+		IFluentMappingBuilderPropertyOptions<City, Identifier<Long>> cityMappingBuilder = MappingEase.mappingBuilder(City.class, Identifier.LONG_TYPE)
 				.add(City::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.add(City::getName);
 		Table cityTable = new Table("city");
 		Column<Table, Country> stateColumn = cityTable.addColumn("state", Country.class);
 		
-		Persister<Country, Identifier<Long>, Table> countryPersister = FluentEntityMappingConfigurationSupport.from(Country.class, Identifier.LONG_TYPE)
+		Persister<Country, Identifier<Long>, Table> countryPersister = MappingEase.mappingBuilder(Country.class, Identifier.LONG_TYPE)
 				// setting a foreign key naming strategy to be tested
 				.foreignKeyNamingStrategy(ForeignKeyNamingStrategy.DEFAULT)
 				.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
@@ -492,7 +492,7 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 		
 		@Test
 		void relationChanged() {
-			Persister<Country, Identifier<Long>, ?> countryPersister = FluentEntityMappingConfigurationSupport.from(Country.class, Identifier.LONG_TYPE)
+			Persister<Country, Identifier<Long>, ?> countryPersister = MappingEase.mappingBuilder(Country.class, Identifier.LONG_TYPE)
 					.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 					.add(Country::getName)
 					.add(Country::getDescription)
@@ -537,7 +537,7 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 	
 		@Test
 		void relationNullified() {
-			Persister<Country, Identifier<Long>, ?> countryPersister = FluentEntityMappingConfigurationSupport.from(Country.class, Identifier.LONG_TYPE)
+			Persister<Country, Identifier<Long>, ?> countryPersister = MappingEase.mappingBuilder(Country.class, Identifier.LONG_TYPE)
 					.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 					.add(Country::getName)
 					.add(Country::getDescription)
@@ -574,7 +574,7 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 		
 		@Test
 		void relationNullifiedWithOrphanRemoval() {
-			Persister<Country, Identifier<Long>, ?> countryPersister = FluentEntityMappingConfigurationSupport.from(Country.class, Identifier.LONG_TYPE)
+			Persister<Country, Identifier<Long>, ?> countryPersister = MappingEase.mappingBuilder(Country.class, Identifier.LONG_TYPE)
 					.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 					.add(Country::getName)
 					.add(Country::getDescription)
@@ -611,7 +611,7 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 	
 	@Test
 	void cascade_update_mandatory() {
-		Persister<Country, Identifier<Long>, ?> countryPersister = FluentEntityMappingConfigurationSupport.from(Country.class, Identifier.LONG_TYPE)
+		Persister<Country, Identifier<Long>, ?> countryPersister = MappingEase.mappingBuilder(Country.class, Identifier.LONG_TYPE)
 				.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.add(Country::getName)
 				.add(Country::getDescription)
@@ -638,7 +638,7 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 	
 	@Test
 	void cascade_delete() throws SQLException {
-		Persister<Country, Identifier<Long>, ?> countryPersister = FluentEntityMappingConfigurationSupport.from(Country.class, Identifier.LONG_TYPE)
+		Persister<Country, Identifier<Long>, ?> countryPersister = MappingEase.mappingBuilder(Country.class, Identifier.LONG_TYPE)
 				.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.add(Country::getDescription)
 				.addOneToOne(Country::getPresident, personConfiguration).cascading(ALL)
@@ -667,7 +667,7 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 	
 	@Test
 	void cascade_deleteWithOrphanRemoval() throws SQLException {
-		Persister<Country, Identifier<Long>, ?> countryPersister = FluentEntityMappingConfigurationSupport.from(Country.class, Identifier.LONG_TYPE)
+		Persister<Country, Identifier<Long>, ?> countryPersister = MappingEase.mappingBuilder(Country.class, Identifier.LONG_TYPE)
 				.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.add(Country::getDescription)
 				.addOneToOne(Country::getPresident, personConfiguration).cascading(ALL_ORPHAN_REMOVAL)
@@ -696,7 +696,7 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 	
 	@Test
 	void multiple_oneToOne() throws SQLException {
-		Persister<Country, Identifier<Long>, ?> countryPersister = FluentEntityMappingConfigurationSupport.from(Country.class, Identifier.LONG_TYPE)
+		Persister<Country, Identifier<Long>, ?> countryPersister = MappingEase.mappingBuilder(Country.class, Identifier.LONG_TYPE)
 				.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.add(Country::getDescription)
 				.addOneToOne(Country::getPresident, personConfiguration).cascading(ALL)
@@ -774,7 +774,7 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 	
 	@Test
 	void multiple_oneToOne_partialOrphanRemoval() throws SQLException {
-		Persister<Country, Identifier<Long>, ?> countryPersister = FluentEntityMappingConfigurationSupport.from(Country.class, Identifier.LONG_TYPE)
+		Persister<Country, Identifier<Long>, ?> countryPersister = MappingEase.mappingBuilder(Country.class, Identifier.LONG_TYPE)
 				.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.add(Country::getDescription)
 				.addOneToOne(Country::getPresident, personConfiguration).cascading(ALL_ORPHAN_REMOVAL)
@@ -854,7 +854,7 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 		
 		@Test
 		void ownedBySourceSide() {
-			Persister<Country, Identifier<Long>, ?> countryPersister = FluentEntityMappingConfigurationSupport.from(Country.class, Identifier.LONG_TYPE)
+			Persister<Country, Identifier<Long>, ?> countryPersister = MappingEase.mappingBuilder(Country.class, Identifier.LONG_TYPE)
 					.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 					.add(Country::getDescription)
 					.addOneToOne(Country::getCapital, cityConfiguration).cascading(ALL).mappedBy(City::getCountry)
@@ -865,7 +865,7 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 		
 		@Test
 		void ownedByReverseSideGetter() {
-			Persister<Country, Identifier<Long>, ?> countryPersister = FluentEntityMappingConfigurationSupport.from(Country.class, Identifier.LONG_TYPE)
+			Persister<Country, Identifier<Long>, ?> countryPersister = MappingEase.mappingBuilder(Country.class, Identifier.LONG_TYPE)
 					.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 					.add(Country::getDescription)
 					.addOneToOne(Country::getCapital, cityConfiguration).cascading(ALL).mappedBy(City::getCountry)
@@ -876,7 +876,7 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 		
 		@Test
 		void ownedByReverseSideSetter() {
-			Persister<Country, Identifier<Long>, ?> countryPersister = FluentEntityMappingConfigurationSupport.from(Country.class, Identifier.LONG_TYPE)
+			Persister<Country, Identifier<Long>, ?> countryPersister = MappingEase.mappingBuilder(Country.class, Identifier.LONG_TYPE)
 					.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 					.add(Country::getDescription)
 					.addOneToOne(Country::getCapital, cityConfiguration).cascading(ALL).mappedBy(City::setCountry)

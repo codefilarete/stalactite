@@ -51,20 +51,6 @@ import static org.gama.reflection.MemberDefinition.giveMemberDefinition;
  */
 public class FluentEntityMappingConfigurationSupport<C, I> implements IFluentEntityMappingBuilder<C, I>, EntityMappingConfiguration<C, I> {
 	
-	/**
-	 * Will start a {@link FluentEntityMappingConfigurationSupport} for a given class which will target a table that as the class name.
-	 *
-	 * @param persistedClass the class to be persisted by the {@link Persister} that will be created by {@link #build(PersistenceContext)}
-	 * @param identifierClass the class of the identifier
-	 * @param <T> any type to be persisted
-	 * @param <I> the type of the identifier
-	 * @return a new {@link IFluentEntityMappingBuilder}
-	 */
-	@SuppressWarnings("squid:S1172")	// identifierClass is used to sign result
-	public static <T, I> IFluentEntityMappingBuilder<T, I> from(Class<T> persistedClass, Class<I> identifierClass) {
-		return new FluentEntityMappingConfigurationSupport<>(persistedClass);
-	}
-	
 	private final Class<C> persistedClass;
 	
 	private IdentifierPolicy identifierPolicy;

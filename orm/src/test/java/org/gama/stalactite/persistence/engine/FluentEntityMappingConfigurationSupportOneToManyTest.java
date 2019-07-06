@@ -47,7 +47,7 @@ import static org.gama.stalactite.persistence.engine.CascadeOptions.RelationMode
 import static org.gama.stalactite.persistence.engine.CascadeOptions.RelationMode.ALL_ORPHAN_REMOVAL;
 import static org.gama.stalactite.persistence.engine.CascadeOptions.RelationMode.ASSOCIATION_ONLY;
 import static org.gama.stalactite.persistence.engine.CascadeOptions.RelationMode.READ_ONLY;
-import static org.gama.stalactite.persistence.engine.FluentEntityMappingConfigurationSupport.from;
+import static org.gama.stalactite.persistence.engine.MappingEase.mappingBuilder;
 import static org.gama.stalactite.persistence.id.Identifier.LONG_TYPE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -81,7 +81,7 @@ class FluentEntityMappingConfigurationSupportOneToManyTest {
 		
 		// We need to rebuild our cityPersister before each test because some of them alter it on country relationship.
 		// So schema contains FK twice with same name, ending in duplicate FK name exception
-		CITY_MAPPING_CONFIGURATION = FluentEntityMappingConfigurationSupport.from(City.class,
+		CITY_MAPPING_CONFIGURATION = MappingEase.mappingBuilder(City.class,
 				Identifier.LONG_TYPE)
 				.add(City::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.add(City::getName)
@@ -91,7 +91,7 @@ class FluentEntityMappingConfigurationSupportOneToManyTest {
 	@Test
 	void build_mappedBy_foreignKeyIsCreated() throws SQLException {
 		// mapping building thantks to fluent API
-		Persister<Country, Identifier<Long>, ?> countryPersister = FluentEntityMappingConfigurationSupport.from(Country.class,
+		Persister<Country, Identifier<Long>, ?> countryPersister = MappingEase.mappingBuilder(Country.class,
 				Identifier.LONG_TYPE)
 				// setting a foreign key naming strategy to be tested
 				.foreignKeyNamingStrategy(ForeignKeyNamingStrategy.DEFAULT)
@@ -124,13 +124,13 @@ class FluentEntityMappingConfigurationSupportOneToManyTest {
 	
 	@Test
 	void build_mappedByDeclaredMapping_CRUDWorks() {
-		IFluentMappingBuilderPropertyOptions<City, Identifier<Long>> cityConfiguration = from(City.class, LONG_TYPE)
+		IFluentMappingBuilderPropertyOptions<City, Identifier<Long>> cityConfiguration = mappingBuilder(City.class, LONG_TYPE)
 				.add(City::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.add(City::getName)
 				// we add getCountry() to the mapping, that's the goal of our test
 				.add(City::getCountry);
 		
-		Persister<Country, Identifier<Long>, Table> persister = from(Country.class, LONG_TYPE)
+		Persister<Country, Identifier<Long>, Table> persister = mappingBuilder(Country.class, LONG_TYPE)
 				.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.addOneToManySet(Country::getCities, cityConfiguration)
 					// we indicates that relation is owned by reverse side, which is already declared in persister configuration
@@ -182,14 +182,14 @@ class FluentEntityMappingConfigurationSupportOneToManyTest {
 	
 	@Test
 	void build_mappedByNonDeclaredMapping_Set_CRUDWorks() {
-		IFluentMappingBuilderPropertyOptions<City, Identifier<Long>> cityConfiguration = from(City.class, LONG_TYPE)
+		IFluentMappingBuilderPropertyOptions<City, Identifier<Long>> cityConfiguration = mappingBuilder(City.class, LONG_TYPE)
 				.add(City::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.add(City::getName)
 				// we don't add getCountry() to the mapping, that's the goal of our test
 				//.add(City::getCountry)
 				;
 
-		Persister<Country, Identifier<Long>, Table> persister = from(Country.class, LONG_TYPE)
+		Persister<Country, Identifier<Long>, Table> persister = mappingBuilder(Country.class, LONG_TYPE)
 				.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.addOneToManySet(Country::getCities, cityConfiguration)
 					.mappedBy(City::getCountry).cascading(ALL)
@@ -240,7 +240,7 @@ class FluentEntityMappingConfigurationSupportOneToManyTest {
 	
 	@Test
 	void build_mappedByNonDeclaredMapping_List_CRUDWorks() {
-		IFluentMappingBuilderPropertyOptions<City, Identifier<Long>> stateConfiguration = from(City.class, LONG_TYPE)
+		IFluentMappingBuilderPropertyOptions<City, Identifier<Long>> stateConfiguration = mappingBuilder(City.class, LONG_TYPE)
 				.add(City::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.add(City::getName)
 				// we don't add getCountry() to the mapping, that's the goal of our test
@@ -249,7 +249,7 @@ class FluentEntityMappingConfigurationSupportOneToManyTest {
 		
 		Table ancientCitiesTable = new Table("AncientCities");
 		Column<?, Integer> idx = ancientCitiesTable.addColumn("idx", Integer.class);
-		Persister<Country, Identifier<Long>, Table> persister = from(Country.class, LONG_TYPE)
+		Persister<Country, Identifier<Long>, Table> persister = mappingBuilder(Country.class, LONG_TYPE)
 				.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.addOneToManyList(Country::getAncientCities, stateConfiguration)
 					.mappedBy(City::getCountry).indexedBy(idx).cascading(ALL)
@@ -301,7 +301,7 @@ class FluentEntityMappingConfigurationSupportOneToManyTest {
 	@Test
 	void build_noCascade_defaultCascadeIsAll() throws SQLException {
 		// mapping building thanks to fluent API
-		Persister<Country, Identifier<Long>, ?> countryPersister = FluentEntityMappingConfigurationSupport.from(Country.class, Identifier.LONG_TYPE)
+		Persister<Country, Identifier<Long>, ?> countryPersister = MappingEase.mappingBuilder(Country.class, Identifier.LONG_TYPE)
 				.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.add(Country::getName)
 				.add(Country::getDescription)
@@ -363,7 +363,7 @@ class FluentEntityMappingConfigurationSupportOneToManyTest {
 	@Test
 	void build_mappedBy_entitiesAreLoaded() throws SQLException {
 		// mapping building thanks to fluent API
-		Persister<Country, Identifier<Long>, ?> countryPersister = FluentEntityMappingConfigurationSupport.from(Country.class, Identifier.LONG_TYPE)
+		Persister<Country, Identifier<Long>, ?> countryPersister = MappingEase.mappingBuilder(Country.class, Identifier.LONG_TYPE)
 				.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.add(Country::getName)
 				// no cascade
@@ -389,7 +389,7 @@ class FluentEntityMappingConfigurationSupportOneToManyTest {
 		return new Object[][] {
 				{ (ThrowingSupplier<Persister<Country, Identifier<Long>, ?>, SQLException>) () -> {
 					PersistenceContext persistenceContext = new PersistenceContext(new JdbcConnectionProvider(new HSQLDBInMemoryDataSource()), DIALECT);
-					Persister<Country, Identifier<Long>, ?> countryPersister = FluentEntityMappingConfigurationSupport.from(Country.class, Identifier.LONG_TYPE)
+					Persister<Country, Identifier<Long>, ?> countryPersister = MappingEase.mappingBuilder(Country.class, Identifier.LONG_TYPE)
 							.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 							.add(Country::getName)
 							.add(Country::getDescription)
@@ -403,7 +403,7 @@ class FluentEntityMappingConfigurationSupportOneToManyTest {
 				}},
 				{ (ThrowingSupplier<Persister<Country, Identifier<Long>, ?>, SQLException>) () -> {
 					PersistenceContext persistenceContext = new PersistenceContext(new JdbcConnectionProvider(new HSQLDBInMemoryDataSource()), DIALECT);
-					Persister<Country, Identifier<Long>, ?> countryPersister = FluentEntityMappingConfigurationSupport.from(Country.class, Identifier.LONG_TYPE)
+					Persister<Country, Identifier<Long>, ?> countryPersister = MappingEase.mappingBuilder(Country.class, Identifier.LONG_TYPE)
 							.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 							.add(Country::getName)
 							.add(Country::getDescription)
@@ -419,7 +419,7 @@ class FluentEntityMappingConfigurationSupportOneToManyTest {
 					PersistenceContext persistenceContext = new PersistenceContext(new JdbcConnectionProvider(new HSQLDBInMemoryDataSource()), DIALECT);
 					Table cityTable = new Table("city");
 					Column<Table, Country> countryId = cityTable.addColumn("countryId", Country.class);
-					Persister<Country, Identifier<Long>, ?> countryPersister = FluentEntityMappingConfigurationSupport.from(Country.class, Identifier.LONG_TYPE)
+					Persister<Country, Identifier<Long>, ?> countryPersister = MappingEase.mappingBuilder(Country.class, Identifier.LONG_TYPE)
 							.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 							.add(Country::getName)
 							.add(Country::getDescription)
@@ -480,7 +480,7 @@ class FluentEntityMappingConfigurationSupportOneToManyTest {
 		@Test
 		void testCascade_readOnly_reverseSideIsNotMapped() throws SQLException {
 			// mapping building thantks to fluent API
-			Persister<Country, Identifier<Long>, ?> countryPersister = FluentEntityMappingConfigurationSupport.from(Country.class, Identifier.LONG_TYPE)
+			Persister<Country, Identifier<Long>, ?> countryPersister = MappingEase.mappingBuilder(Country.class, Identifier.LONG_TYPE)
 					.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 					.add(Country::getName)
 					.add(Country::getDescription)
@@ -513,7 +513,7 @@ class FluentEntityMappingConfigurationSupportOneToManyTest {
 		
 		@Test
 		void update_mappedBy() {
-			Persister<Country, Identifier<Long>, ?> countryPersister = FluentEntityMappingConfigurationSupport.from(Country.class, Identifier.LONG_TYPE)
+			Persister<Country, Identifier<Long>, ?> countryPersister = MappingEase.mappingBuilder(Country.class, Identifier.LONG_TYPE)
 					.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 					.add(Country::getName)
 					.add(Country::getDescription)
@@ -558,7 +558,7 @@ class FluentEntityMappingConfigurationSupportOneToManyTest {
 		@Test
 		void update_noMappedBy_associationTableIsMaintained() {
 			// mapping building thantks to fluent API
-			Persister<Country, Identifier<Long>, ?> countryPersister = FluentEntityMappingConfigurationSupport.from(Country.class, Identifier.LONG_TYPE)
+			Persister<Country, Identifier<Long>, ?> countryPersister = MappingEase.mappingBuilder(Country.class, Identifier.LONG_TYPE)
 					.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 					.add(Country::getName)
 					.add(Country::getDescription)
@@ -603,7 +603,7 @@ class FluentEntityMappingConfigurationSupportOneToManyTest {
 		
 		@Test
 		void update_associationTable() {
-			Persister<Country, Identifier<Long>, ?> countryPersister = FluentEntityMappingConfigurationSupport.from(Country.class, Identifier.LONG_TYPE)
+			Persister<Country, Identifier<Long>, ?> countryPersister = MappingEase.mappingBuilder(Country.class, Identifier.LONG_TYPE)
 					.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 					.add(Country::getName)
 					.add(Country::getDescription)
@@ -648,13 +648,13 @@ class FluentEntityMappingConfigurationSupportOneToManyTest {
 		
 		@Test
 		void update_multipleTimes() {
-			IFluentMappingBuilderPropertyOptions<State, Identifier<Long>> stateMappingBuilder = FluentEntityMappingConfigurationSupport.from(State.class,
+			IFluentMappingBuilderPropertyOptions<State, Identifier<Long>> stateMappingBuilder = MappingEase.mappingBuilder(State.class,
 					Identifier.LONG_TYPE)
 					.add(State::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 					.add(State::getName)
 					.add(State::getCountry);	// allow to declare the owner column of the relation
 			
-			Persister<Country, Identifier<Long>, ?> countryPersister = FluentEntityMappingConfigurationSupport.from(Country.class, Identifier.LONG_TYPE)
+			Persister<Country, Identifier<Long>, ?> countryPersister = MappingEase.mappingBuilder(Country.class, Identifier.LONG_TYPE)
 					.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 					.add(Country::getName)
 					.add(Country::getDescription)
@@ -722,7 +722,7 @@ class FluentEntityMappingConfigurationSupportOneToManyTest {
 		
 		@Test
 		void delete_mappedRelation() throws SQLException {
-			Persister<Country, Identifier<Long>, ?> countryPersister = FluentEntityMappingConfigurationSupport.from(Country.class, Identifier.LONG_TYPE)
+			Persister<Country, Identifier<Long>, ?> countryPersister = MappingEase.mappingBuilder(Country.class, Identifier.LONG_TYPE)
 					.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 					.add(Country::getName)
 					.add(Country::getDescription)
@@ -761,7 +761,7 @@ class FluentEntityMappingConfigurationSupportOneToManyTest {
 		
 		@Test
 		void delete_withAssociationTable_associationRecordsMustBeDeleted() throws SQLException {
-			Persister<Country, Identifier<Long>, ? extends Table> countryPersister = FluentEntityMappingConfigurationSupport.from(Country.class, Identifier.LONG_TYPE)
+			Persister<Country, Identifier<Long>, ? extends Table> countryPersister = MappingEase.mappingBuilder(Country.class, Identifier.LONG_TYPE)
 					.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 					.add(Country::getName)
 					.add(Country::getDescription)
@@ -836,7 +836,7 @@ class FluentEntityMappingConfigurationSupportOneToManyTest {
 		
 		@Test
 		void update_mappedBy_removedElementsAreDeleted() {
-			Persister<Country, Identifier<Long>, ?> countryPersister = FluentEntityMappingConfigurationSupport.from(Country.class, Identifier.LONG_TYPE)
+			Persister<Country, Identifier<Long>, ?> countryPersister = MappingEase.mappingBuilder(Country.class, Identifier.LONG_TYPE)
 					.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 					.add(Country::getName)
 					.add(Country::getDescription)
@@ -879,7 +879,7 @@ class FluentEntityMappingConfigurationSupportOneToManyTest {
 		
 		@Test
 		void delete_mappedBy() throws SQLException {
-			Persister<Country, Identifier<Long>, ?> countryPersister = FluentEntityMappingConfigurationSupport.from(Country.class, Identifier.LONG_TYPE)
+			Persister<Country, Identifier<Long>, ?> countryPersister = MappingEase.mappingBuilder(Country.class, Identifier.LONG_TYPE)
 					.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 					.add(Country::getName)
 					.add(Country::getDescription)
@@ -909,7 +909,7 @@ class FluentEntityMappingConfigurationSupportOneToManyTest {
 		
 		@Test
 		void delete_withAssociationTable_associationRecordsMustBeDeleted() throws SQLException {
-			Persister<Country, Identifier<Long>, ? extends Table> countryPersister = FluentEntityMappingConfigurationSupport.from(Country.class, Identifier.LONG_TYPE)
+			Persister<Country, Identifier<Long>, ? extends Table> countryPersister = MappingEase.mappingBuilder(Country.class, Identifier.LONG_TYPE)
 					.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 					.add(Country::getName)
 					.add(Country::getDescription)
@@ -971,7 +971,7 @@ class FluentEntityMappingConfigurationSupportOneToManyTest {
 		
 		@Test
 		void build_withoutAssociationTable_throwsException() {
-			IFluentMappingBuilderOneToManyOptions<Country, Identifier<Long>, City> mappingBuilder = FluentEntityMappingConfigurationSupport.from(Country.class, Identifier.LONG_TYPE)
+			IFluentMappingBuilderOneToManyOptions<Country, Identifier<Long>, City> mappingBuilder = MappingEase.mappingBuilder(Country.class, Identifier.LONG_TYPE)
 					.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 					.add(Country::getName)
 					.add(Country::getDescription)
@@ -984,7 +984,7 @@ class FluentEntityMappingConfigurationSupportOneToManyTest {
 		
 		@Test
 		void delete_withAssociationTable_associationRecordsMustBeDeleted_butNotTargetEntities() throws SQLException {
-			Persister<Country, Identifier<Long>, ? extends Table> countryPersister = FluentEntityMappingConfigurationSupport.from(Country.class, Identifier.LONG_TYPE)
+			Persister<Country, Identifier<Long>, ? extends Table> countryPersister = MappingEase.mappingBuilder(Country.class, Identifier.LONG_TYPE)
 					.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 					.add(Country::getName)
 					.add(Country::getDescription)
@@ -1045,7 +1045,7 @@ class FluentEntityMappingConfigurationSupportOneToManyTest {
 		
 		@Test
 		void build_noAssociationTable() throws SQLException {
-			Persister<Country, Identifier<Long>, ?> countryPersister = FluentEntityMappingConfigurationSupport.from(Country.class, Identifier.LONG_TYPE)
+			Persister<Country, Identifier<Long>, ?> countryPersister = MappingEase.mappingBuilder(Country.class, Identifier.LONG_TYPE)
 					.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 					.add(Country::getName)
 					.add(Country::getDescription)
@@ -1069,7 +1069,7 @@ class FluentEntityMappingConfigurationSupportOneToManyTest {
 		
 		@Test
 		void build_withAssociationTable() throws SQLException {
-			Persister<Country, Identifier<Long>, ?> countryPersister = FluentEntityMappingConfigurationSupport.from(Country.class, Identifier.LONG_TYPE)
+			Persister<Country, Identifier<Long>, ?> countryPersister = MappingEase.mappingBuilder(Country.class, Identifier.LONG_TYPE)
 					.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 					.add(Country::getName)
 					.add(Country::getDescription)

@@ -8,7 +8,7 @@ import org.gama.reflection.AccessorByMethodReference;
 import org.gama.sql.ConnectionProvider;
 import org.gama.sql.binder.DefaultParameterBinders;
 import org.gama.stalactite.persistence.engine.ColumnOptions.IdentifierPolicy;
-import org.gama.stalactite.persistence.engine.FluentEntityMappingConfigurationSupport;
+import org.gama.stalactite.persistence.engine.MappingEase;
 import org.gama.stalactite.persistence.engine.PersistenceContext;
 import org.gama.stalactite.persistence.engine.RuntimeMappingException;
 import org.gama.stalactite.persistence.engine.cascade.JoinedTablesPersister;
@@ -43,10 +43,10 @@ class EntityCriteriaSupportTest {
 		dialect.getColumnBinderRegistry().register((Class) Identified.class, Identified.identifiedBinder(DefaultParameterBinders.LONG_PRIMITIVE_BINDER));
 		dialect.getJavaTypeToSqlTypeMapping().put(Identified.class, "bigint");
 		
-		JoinedTablesPersister<Country, Long, Table> persister = FluentEntityMappingConfigurationSupport.from(Country.class, long.class)
+		JoinedTablesPersister<Country, Long, Table> persister = MappingEase.mappingBuilder(Country.class, long.class)
 				.add(Country::getId).identifier(IdentifierPolicy.AFTER_INSERT)
 				.add(Country::getName)
-				.addOneToOne(Country::getCapital, FluentEntityMappingConfigurationSupport.from(City.class, long.class)
+				.addOneToOne(Country::getCapital, MappingEase.mappingBuilder(City.class, long.class)
 						.add(City::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 						.add(City::getName))
 				.build(new PersistenceContext(mock(ConnectionProvider.class), dialect));
@@ -81,7 +81,7 @@ class EntityCriteriaSupportTest {
 		PersistenceContext dummyPersistenceContext = new PersistenceContext(mock(ConnectionProvider.class), dialect);
 		Table countryTable = new Table("Country");
 		Column nameColumn = countryTable.addColumn("name", String.class);
-		ClassMappingStrategy<Country, Long, Table> mappingStrategy = FluentEntityMappingConfigurationSupport.from(Country.class, long.class)
+		ClassMappingStrategy<Country, Long, Table> mappingStrategy = MappingEase.mappingBuilder(Country.class, long.class)
 				.add(Country::getId).identifier(IdentifierPolicy.AFTER_INSERT)
 				.add(Country::getName)
 				.build(dummyPersistenceContext, countryTable)
@@ -103,10 +103,10 @@ class EntityCriteriaSupportTest {
 		Table countryTable = new Table("Country");
 		Table cityTable = new Table("City");
 		Column nameColumn = cityTable.addColumn("name", String.class);
-		ClassMappingStrategy<Country, Long, Table> mappingStrategy = FluentEntityMappingConfigurationSupport.from(Country.class, long.class)
+		ClassMappingStrategy<Country, Long, Table> mappingStrategy = MappingEase.mappingBuilder(Country.class, long.class)
 				.add(Country::getId).identifier(IdentifierPolicy.AFTER_INSERT)
 				.add(Country::getName)
-				.addOneToOne(Country::getCapital, FluentEntityMappingConfigurationSupport.from(City.class, long.class)
+				.addOneToOne(Country::getCapital, MappingEase.mappingBuilder(City.class, long.class)
 						.add(City::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 						.add(City::getName), cityTable)
 				.build(dummyPersistenceContext, countryTable)
@@ -128,10 +128,10 @@ class EntityCriteriaSupportTest {
 		Table countryTable = new Table("Country");
 		Table cityTable = new Table("City");
 		Column nameColumn = cityTable.addColumn("name", String.class);
-		ClassMappingStrategy<Country, Long, Table> mappingStrategy = FluentEntityMappingConfigurationSupport.from(Country.class, long.class)
+		ClassMappingStrategy<Country, Long, Table> mappingStrategy = MappingEase.mappingBuilder(Country.class, long.class)
 				.add(Country::getId).identifier(IdentifierPolicy.AFTER_INSERT)
 				.add(Country::getName)
-				.addOneToManySet(Country::getCities, FluentEntityMappingConfigurationSupport.from(City.class, long.class)
+				.addOneToManySet(Country::getCities, MappingEase.mappingBuilder(City.class, long.class)
 						.add(City::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 						.add(City::getName), cityTable
 				)
@@ -152,7 +152,7 @@ class EntityCriteriaSupportTest {
 		
 		PersistenceContext dummyPersistenceContext = new PersistenceContext(mock(ConnectionProvider.class), dialect);
 		Table countryTable = new Table("Country");
-		ClassMappingStrategy<Country, Long, Table> mappingStrategy = FluentEntityMappingConfigurationSupport.from(Country.class, long.class)
+		ClassMappingStrategy<Country, Long, Table> mappingStrategy = MappingEase.mappingBuilder(Country.class, long.class)
 				.add(Country::getId).identifier(IdentifierPolicy.AFTER_INSERT)
 				.build(dummyPersistenceContext, countryTable)
 				.getMappingStrategy();
@@ -170,7 +170,7 @@ class EntityCriteriaSupportTest {
 		
 		PersistenceContext dummyPersistenceContext = new PersistenceContext(mock(ConnectionProvider.class), dialect);
 		Table countryTable = new Table("Country");
-		ClassMappingStrategy<Country, Long, Table> mappingStrategy = FluentEntityMappingConfigurationSupport.from(Country.class, long.class)
+		ClassMappingStrategy<Country, Long, Table> mappingStrategy = MappingEase.mappingBuilder(Country.class, long.class)
 				.add(Country::getId).identifier(IdentifierPolicy.AFTER_INSERT)
 				.build(dummyPersistenceContext, countryTable)
 				.getMappingStrategy();

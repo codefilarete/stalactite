@@ -35,7 +35,7 @@ public class FluentEntityMappingConfigurationSupportPostInsertIdentifierTest {
 	
 	@Test
 	void insert_basic() {
-		Persister<Car, Long, ?> carPersister = FluentEntityMappingConfigurationSupport.from(Car.class, long.class)
+		Persister<Car, Long, ?> carPersister = MappingEase.mappingBuilder(Car.class, long.class)
 				.add(Car::getId).identifier(IdentifierPolicy.AFTER_INSERT)
 				.add(Car::getModel)
 				.build(persistenceContext);
@@ -63,18 +63,18 @@ public class FluentEntityMappingConfigurationSupportPostInsertIdentifierTest {
 	
 	@Test
 	void multipleInheritance() {
-		EntityMappingConfiguration<AbstractVehicle, Long> inheritanceConfiguration = FluentEntityMappingConfigurationSupport
-				.from(AbstractVehicle.class, long.class)
+		EntityMappingConfiguration<AbstractVehicle, Long> inheritanceConfiguration = MappingEase
+				.mappingBuilder(AbstractVehicle.class, long.class)
 				.add(AbstractVehicle::getId).identifier(IdentifierPolicy.AFTER_INSERT)
 				.getConfiguration();
 		
-		EntityMappingConfiguration<Vehicle, Long> inheritanceConfiguration2 = FluentEntityMappingConfigurationSupport
-				.from(Vehicle.class, long.class)
+		EntityMappingConfiguration<Vehicle, Long> inheritanceConfiguration2 = MappingEase
+				.mappingBuilder(Vehicle.class, long.class)
 				.mapInheritance(inheritanceConfiguration)
 				.getConfiguration();
 		
-		Persister<Car, Long, ?> carPersister = FluentEntityMappingConfigurationSupport
-				.from(Car.class, long.class)
+		Persister<Car, Long, ?> carPersister = MappingEase
+				.mappingBuilder(Car.class, long.class)
 				.add(Car::getModel)
 				.mapInheritance(inheritanceConfiguration2)
 				.build(persistenceContext);
@@ -104,18 +104,18 @@ public class FluentEntityMappingConfigurationSupportPostInsertIdentifierTest {
 	
 	@Test
 	void multipleInheritance_joinedTables() {
-		EntityMappingConfiguration<AbstractVehicle, Long> inheritanceConfiguration = FluentEntityMappingConfigurationSupport
-				.from(AbstractVehicle.class, long.class)
+		EntityMappingConfiguration<AbstractVehicle, Long> inheritanceConfiguration = MappingEase
+				.mappingBuilder(AbstractVehicle.class, long.class)
 				.add(AbstractVehicle::getId).identifier(IdentifierPolicy.AFTER_INSERT)
 				.getConfiguration();
 		
-		EntityMappingConfiguration<Vehicle, Long> inheritanceConfiguration2 = FluentEntityMappingConfigurationSupport
-				.from(Vehicle.class, long.class)
+		EntityMappingConfiguration<Vehicle, Long> inheritanceConfiguration2 = MappingEase
+				.mappingBuilder(Vehicle.class, long.class)
 				.mapInheritance(inheritanceConfiguration).withJoinTable()
 				.getConfiguration();
 		
-		Persister<Car, Long, ?> carPersister = FluentEntityMappingConfigurationSupport
-				.from(Car.class, long.class)
+		Persister<Car, Long, ?> carPersister = MappingEase
+				.mappingBuilder(Car.class, long.class)
 				.add(Car::getModel)
 				.mapInheritance(inheritanceConfiguration2).withJoinTable()
 				.build(persistenceContext);

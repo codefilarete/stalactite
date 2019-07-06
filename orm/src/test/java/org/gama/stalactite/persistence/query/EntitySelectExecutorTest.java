@@ -43,7 +43,7 @@ import static org.gama.lang.function.Functions.chain;
 import static org.gama.lang.function.Functions.link;
 import static org.gama.lang.test.Assertions.assertAllEquals;
 import static org.gama.lang.test.Assertions.assertEquals;
-import static org.gama.stalactite.persistence.engine.FluentEntityMappingConfigurationSupport.from;
+import static org.gama.stalactite.persistence.engine.MappingEase.mappingBuilder;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -90,7 +90,7 @@ class EntitySelectExecutorTest {
 				Maps.asMap("Country_name", (Object) "France").add("Country_id", 12L)
 		));
 		
-		Persister<Country, Identifier, Table> persister = from(Country.class, Identifier.class)
+		Persister<Country, Identifier, Table> persister = mappingBuilder(Country.class, Identifier.class)
 				.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.add(Country::getName)
 				.build(new PersistenceContext(connectionProviderMock, dialect));
@@ -120,7 +120,7 @@ class EntitySelectExecutorTest {
 						.add("Country_creationDate", new java.sql.Timestamp(0)).add("Country_modificationDate", new java.sql.Timestamp(0))
 		));
 		
-		Persister<Country, Identifier, Table> persister = from(Country.class, Identifier.class)
+		Persister<Country, Identifier, Table> persister = mappingBuilder(Country.class, Identifier.class)
 				.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.add(Country::getName)
 				.embed(Country::getTimestamp)
@@ -160,11 +160,11 @@ class EntitySelectExecutorTest {
 						.add("City_id", 42L).add("City_name", "Paris")
 		));
 		
-		JoinedTablesPersister<Country, Identifier, Table> persister = from(Country.class, Identifier.class)
+		JoinedTablesPersister<Country, Identifier, Table> persister = mappingBuilder(Country.class, Identifier.class)
 		.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 		.add(Country::getName)
 		.addOneToOne(Country::getCapital,
-				from(City.class, Identifier.class)
+				mappingBuilder(City.class, Identifier.class)
 				.add(City::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.add(City::getName))
 		.build(new PersistenceContext(connectionProviderMock, dialect));
@@ -211,10 +211,10 @@ class EntitySelectExecutorTest {
 						.add("City_id", 44L).add("City_name", "Grenoble")
 		));
 		
-		JoinedTablesPersister<Country, Identifier, Table> persister = from(Country.class, Identifier.class)
+		JoinedTablesPersister<Country, Identifier, Table> persister = mappingBuilder(Country.class, Identifier.class)
 		.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 		.add(Country::getName)
-		.addOneToManySet(Country::getCities, from(City.class, Identifier.class)
+		.addOneToManySet(Country::getCities, mappingBuilder(City.class, Identifier.class)
 				.add(City::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.add(City::getName))
 		.build(new PersistenceContext(connectionProviderMock, dialect));
@@ -269,10 +269,10 @@ class EntitySelectExecutorTest {
 		dialect.getJavaTypeToSqlTypeMapping().put(Identifier.class, "bigint");
 		
 		PersistenceContext persistenceContext = new PersistenceContext(connectionProvider, dialect);
-		JoinedTablesPersister<Country, Identifier, Table> persister = from(Country.class, Identifier.class)
+		JoinedTablesPersister<Country, Identifier, Table> persister = mappingBuilder(Country.class, Identifier.class)
 		.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 		.add(Country::getName)
-		.addOneToManySet(Country::getCities, from(City.class, Identifier.class)
+		.addOneToManySet(Country::getCities, mappingBuilder(City.class, Identifier.class)
 				.add(City::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.add(City::getName))
 				.mappedBy(City::getCountry)
