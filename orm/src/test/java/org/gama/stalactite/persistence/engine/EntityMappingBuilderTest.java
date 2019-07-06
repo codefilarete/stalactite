@@ -140,14 +140,13 @@ class EntityMappingBuilderTest {
 		JoinedTablesPersister<Country, Identifier, Table> persister = (JoinedTablesPersister<Country, Identifier, Table>) from(Country.class, Identifier.class)
 				.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.add(Country::getName)
-				.addOneToOne(Country::getCapital, from(City.class, Identifier.class)
+				.addOneToOne(Country::getCapital,
+						from(City.class, Identifier.class)
 						.add(City::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 						.addOneToManySet(City::getPersons, from(Person.class, Identifier.class)
 							.add(Person::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
-							.add(Person::getName)
-							.getConfiguration())
-						.cascading(RelationMode.ALL)
-						.getConfiguration())
+							.add(Person::getName))
+						.cascading(RelationMode.ALL))
 				.cascading(RelationMode.ALL)
 				.build(persistenceContext);
 		
@@ -210,10 +209,8 @@ class EntityMappingBuilderTest {
 						.add(City::getName)
 						.addOneToOne(City::getCountry, from(Country.class, Identifier.class)
 								.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
-								.add(Country::getName)
-								.getConfiguration())
-						.cascading(RelationMode.ALL)
-						.getConfiguration())
+								.add(Country::getName))
+						.cascading(RelationMode.ALL))
 				.cascading(RelationMode.ALL)
 				.build(persistenceContext);
 		

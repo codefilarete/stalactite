@@ -48,9 +48,7 @@ class EntityCriteriaSupportTest {
 				.add(Country::getName)
 				.addOneToOne(Country::getCapital, FluentEntityMappingConfigurationSupport.from(City.class, long.class)
 						.add(City::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
-						.add(City::getName)
-						.getConfiguration()
-				)
+						.add(City::getName))
 				.build(new PersistenceContext(mock(ConnectionProvider.class), dialect));
 		
 		EntityCriteria<Country> countryEntityCriteriaSupport = new EntityCriteriaSupport<>(persister.getMappingStrategy(), Country::getName, Operators.eq(""))
@@ -110,9 +108,7 @@ class EntityCriteriaSupportTest {
 				.add(Country::getName)
 				.addOneToOne(Country::getCapital, FluentEntityMappingConfigurationSupport.from(City.class, long.class)
 						.add(City::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
-						.add(City::getName)
-						.getConfiguration(), cityTable
-				)
+						.add(City::getName), cityTable)
 				.build(dummyPersistenceContext, countryTable)
 				.getMappingStrategy();
 		
@@ -137,8 +133,7 @@ class EntityCriteriaSupportTest {
 				.add(Country::getName)
 				.addOneToManySet(Country::getCities, FluentEntityMappingConfigurationSupport.from(City.class, long.class)
 						.add(City::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
-						.add(City::getName)
-						.getConfiguration(), cityTable
+						.add(City::getName), cityTable
 				)
 				.build(dummyPersistenceContext, countryTable)
 				.getMappingStrategy();

@@ -16,6 +16,7 @@ import org.gama.stalactite.persistence.engine.FluentEntityMappingConfigurationSu
 import org.gama.stalactite.persistence.engine.FluentEntityMappingConfigurationSupportInheritanceTest.Color;
 import org.gama.stalactite.persistence.engine.FluentEntityMappingConfigurationSupportInheritanceTest.Engine;
 import org.gama.stalactite.persistence.engine.FluentEntityMappingConfigurationSupportInheritanceTest.Vehicle;
+import org.gama.stalactite.persistence.engine.IFluentEntityMappingBuilder.IFluentMappingBuilderPropertyOptions;
 import org.gama.stalactite.persistence.id.Identified;
 import org.gama.stalactite.persistence.id.Identifier;
 import org.gama.stalactite.persistence.id.PersistedIdentifier;
@@ -346,9 +347,8 @@ class JoinedTablesEntityMappingBuilderTest {
 	}
 	
 	private Persister<Car, Identifier, Table> buildCRUDOneToOneInChildClassContext() {
-		EntityMappingConfiguration<Engine, Long> engineConfiguration = new FluentEntityMappingConfigurationSupport<Engine, Long>(Engine.class)
-				.add(Engine::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
-				.getConfiguration();
+		IFluentMappingBuilderPropertyOptions<Engine, Long> engineConfiguration = new FluentEntityMappingConfigurationSupport<Engine, Long>(Engine.class)
+				.add(Engine::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED);
 		
 		EntityMappingConfiguration<Vehicle, Identifier> superClassMapping = new FluentEntityMappingConfigurationSupport<Vehicle, Identifier>(Vehicle.class)
 				.add(Vehicle::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
@@ -485,9 +485,8 @@ class JoinedTablesEntityMappingBuilderTest {
 	}
 	
 	private Persister<Car, Identifier, Table> buildCRUDOneToOneInSuperClassContext() {
-		EntityMappingConfiguration<Engine, Long> engineConfiguration = new FluentEntityMappingConfigurationSupport<Engine, Long>(Engine.class)
-				.add(Engine::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
-				.getConfiguration();
+		IFluentMappingBuilderPropertyOptions<Engine, Long> engineConfiguration = new FluentEntityMappingConfigurationSupport<Engine, Long>(Engine.class)
+				.add(Engine::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED);
 		
 		EntityMappingConfiguration<Vehicle, Identifier> superClassMapping = new FluentEntityMappingConfigurationSupport<Vehicle, Identifier>(Vehicle.class)
 				.add(Vehicle::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)

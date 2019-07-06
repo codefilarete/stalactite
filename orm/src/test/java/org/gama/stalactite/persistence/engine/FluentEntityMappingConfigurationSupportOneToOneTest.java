@@ -55,8 +55,8 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 	
 	private static final HSQLDBDialect DIALECT = new HSQLDBDialect();
 	private DataSource dataSource = new HSQLDBInMemoryDataSource();
-	private EntityMappingConfiguration<Person, Identifier<Long>> personConfiguration;
-	private EntityMappingConfiguration<City, Identifier<Long>> cityConfiguration;
+	private IFluentMappingBuilderPropertyOptions<Person, Identifier<Long>> personConfiguration;
+	private IFluentMappingBuilderPropertyOptions<City, Identifier<Long>> cityConfiguration;
 	private PersistenceContext persistenceContext;
 	
 	@BeforeAll
@@ -75,12 +75,12 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 		IFluentMappingBuilderPropertyOptions<Person, Identifier<Long>> personMappingBuilder = FluentEntityMappingConfigurationSupport.from(Person.class, Identifier.LONG_TYPE)
 				.add(Person::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.add(Person::getName);
-		personConfiguration = personMappingBuilder.getConfiguration();
+		personConfiguration = personMappingBuilder;
 		
 		IFluentMappingBuilderPropertyOptions<City, Identifier<Long>> cityMappingBuilder = FluentEntityMappingConfigurationSupport.from(City.class, Identifier.LONG_TYPE)
 				.add(City::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.add(City::getName);
-		cityConfiguration = cityMappingBuilder.getConfiguration();
+		cityConfiguration = cityMappingBuilder;
 	}
 	
 	@Test
@@ -386,7 +386,7 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 				.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.add(Country::getName)
 				.add(Country::getDescription)
-				.addOneToOne(Country::getCapital, cityMappingBuilder.getConfiguration()).mappedBy(stateColumn)
+				.addOneToOne(Country::getCapital, cityMappingBuilder).mappedBy(stateColumn)
 				.build(persistenceContext);
 		
 		// ensuring that the foreign key is present on table, hence testing that cityTable was used, not a clone created by build(..) 
@@ -427,7 +427,7 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 				.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.add(Country::getName)
 				.add(Country::getDescription)
-				.addOneToOne(Country::getCapital, cityMappingBuilder.getConfiguration()).mappedBy(stateColumn).mappedBy(City::getCountry)
+				.addOneToOne(Country::getCapital, cityMappingBuilder).mappedBy(stateColumn).mappedBy(City::getCountry)
 				.build(persistenceContext);
 		
 		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
@@ -464,7 +464,7 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 				.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.add(Country::getName)
 				.add(Country::getDescription)
-				.addOneToOne(Country::getCapital, cityMappingBuilder.getConfiguration()).mappedBy(stateColumn).mappedBy(City::setCountry)
+				.addOneToOne(Country::getCapital, cityMappingBuilder).mappedBy(stateColumn).mappedBy(City::setCountry)
 				.build(persistenceContext);
 		
 		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);

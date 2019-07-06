@@ -44,8 +44,8 @@ public class FluentEntityMappingConfigurationSupportToOneAndToManyMixTest {
 	private static final HSQLDBDialect DIALECT = new HSQLDBDialect();
 	private DataSource dataSource = new HSQLDBInMemoryDataSource();
 	private PersistenceContext persistenceContext;
-	private EntityMappingConfiguration<City, Identifier<Long>> cityMappingConfiguration;
-	private EntityMappingConfiguration<Person, Identifier<Long>> personMappingConfiguration;
+	private IFluentMappingBuilderPropertyOptions<City, Identifier<Long>> cityMappingConfiguration;
+	private IFluentMappingBuilderPropertyOptions<Person, Identifier<Long>> personMappingConfiguration;
 	
 	@BeforeAll
 	public static void initBinders() {
@@ -64,14 +64,14 @@ public class FluentEntityMappingConfigurationSupportToOneAndToManyMixTest {
 				Identifier.LONG_TYPE)
 				.add(Person::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.add(Person::getName);
-		personMappingConfiguration = personMappingBuilder.getConfiguration();
+		personMappingConfiguration = personMappingBuilder;
 		
 		IFluentMappingBuilderPropertyOptions<City, Identifier<Long>> cityMappingBuilder = FluentEntityMappingConfigurationSupport.from(City.class,
 				Identifier.LONG_TYPE)
 				.add(City::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.add(City::getName)
 				.add(City::getCountry);
-		cityMappingConfiguration = cityMappingBuilder.getConfiguration();
+		cityMappingConfiguration = cityMappingBuilder;
 	}
 	
 	@Test
@@ -187,7 +187,7 @@ public class FluentEntityMappingConfigurationSupportToOneAndToManyMixTest {
 				.add(Country::getName)
 				.add(Country::getDescription)
 				.addOneToManySet(Country::getCities, cityMappingConfiguration).mappedBy(City::setCountry).cascading(ALL_ORPHAN_REMOVAL)
-				.addOneToManySet(Country::getStates, stateMappingBuilder.getConfiguration()).mappedBy(State::setCountry).cascading(ALL)
+				.addOneToManySet(Country::getStates, stateMappingBuilder).mappedBy(State::setCountry).cascading(ALL)
 				.build(persistenceContext);
 		
 		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);

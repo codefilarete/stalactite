@@ -9,9 +9,7 @@ import org.gama.stalactite.persistence.structure.Table;
  * @see #build(PersistenceContext)
  * @see #build(PersistenceContext, Table)
  */
-public interface PersisterBuilder<C, I> {
-	
-	EntityMappingConfiguration<C, I> getConfiguration();
+public interface PersisterBuilder<C, I> extends EntityMappingConfigurationProvider<C, I> {
 	
 	Persister<C, I, Table> build(PersistenceContext persistenceContext);
 	

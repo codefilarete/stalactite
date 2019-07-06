@@ -19,6 +19,7 @@ import org.gama.sql.ConnectionProvider;
 import org.gama.sql.binder.DefaultParameterBinders;
 import org.gama.sql.test.HSQLDBInMemoryDataSource;
 import org.gama.stalactite.persistence.engine.ColumnOptions.IdentifierPolicy;
+import org.gama.stalactite.persistence.engine.IFluentEntityMappingBuilder.IFluentMappingBuilderPropertyOptions;
 import org.gama.stalactite.persistence.engine.PersistenceContext.ExecutableSelect;
 import org.gama.stalactite.persistence.engine.listening.UpdateListener;
 import org.gama.stalactite.persistence.id.Identified;
@@ -77,11 +78,10 @@ class FluentEntityMappingConfigurationSupportIndexedCollectionTest {
 		Column<Table, Identifier> id = choiceTable.addColumn("id", Identifier.class).primaryKey();
 		Column<Table, Integer> idx = choiceTable.addColumn("idx", int.class);
 		
-		EntityMappingConfiguration<Choice, Identifier<Long>> choiceMappingConfiguration = from(Choice.class, LONG_TYPE)
+		IFluentMappingBuilderPropertyOptions<Choice, Identifier<Long>> choiceMappingConfiguration = from(Choice.class, LONG_TYPE)
 				.add(Choice::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.add(Choice::getName)
-				.add(Choice::getQuestion)
-				.getConfiguration();
+				.add(Choice::getQuestion);
 		
 		Persister<Question, Identifier<Long>, ?> questionPersister = from(Question.class, LONG_TYPE)
 				.add(Question::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
@@ -266,11 +266,10 @@ class FluentEntityMappingConfigurationSupportIndexedCollectionTest {
 		Column<Table, Identifier> id = choiceTable.addColumn("id", Identifier.class).primaryKey();
 		Column<Table, Integer> idx = choiceTable.addColumn("idx", int.class);
 		
-		EntityMappingConfiguration<Choice, Identifier<Long>> choiceMappingConfiguration = from(Choice.class, LONG_TYPE)
+		IFluentMappingBuilderPropertyOptions<Choice, Identifier<Long>> choiceMappingConfiguration = from(Choice.class, LONG_TYPE)
 				.add(Choice::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.add(Choice::getName)
-				.add(Choice::getQuestion)
-				.getConfiguration();
+				.add(Choice::getQuestion);
 		
 		Persister<Question, Identifier<Long>, ?> questionPersister = from(Question.class, LONG_TYPE)
 				.add(Question::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
@@ -329,11 +328,10 @@ class FluentEntityMappingConfigurationSupportIndexedCollectionTest {
 	void oneToManyList_withOwnerButWithoutIndexedBy_throwsException() {
 		persistenceContext = new PersistenceContext(connectionProvider, DIALECT);
 		
-		EntityMappingConfiguration<Choice, Identifier<Long>> choiceMappingConfiguration = from(Choice.class, LONG_TYPE)
+		IFluentMappingBuilderPropertyOptions<Choice, Identifier<Long>> choiceMappingConfiguration = from(Choice.class, LONG_TYPE)
 				.add(Choice::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.add(Choice::getName)
-				.add(Choice::getQuestion)
-				.getConfiguration();
+				.add(Choice::getQuestion);
 		
 		assertEquals("Missing indexing column : relation is mapped by " +
 						"o.g.s.p.e.FluentEntityMappingConfigurationSupportIndexedCollectionTest$Choice.getQuestion() " +
@@ -355,11 +353,10 @@ class FluentEntityMappingConfigurationSupportIndexedCollectionTest {
 		Column<Table, Identifier> id = choiceTable.addColumn("id", Identifier.class).primaryKey();
 		Column<Table, Integer> idx = choiceTable.addColumn("idx", int.class);
 		
-		EntityMappingConfiguration<Choice, Identifier<Long>> choiceMappingConfiguration = from(Choice.class, LONG_TYPE)
+		IFluentMappingBuilderPropertyOptions<Choice, Identifier<Long>> choiceMappingConfiguration = from(Choice.class, LONG_TYPE)
 				.add(Choice::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.add(Choice::getName)
-				.add(Choice::setQuestionWithNoGetter)
-				.getConfiguration();
+				.add(Choice::setQuestionWithNoGetter);
 		
 		Persister<Question, Identifier<Long>, ?> persisterWithNonExistingSetter = from(Question.class, LONG_TYPE)
 				.add(Question::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
@@ -388,11 +385,10 @@ class FluentEntityMappingConfigurationSupportIndexedCollectionTest {
 		Column<Table, Identifier> id = choiceTable.addColumn("id", Identifier.class).primaryKey();
 		Column<Table, Integer> idx = choiceTable.addColumn("idx", int.class);
 		
-		EntityMappingConfiguration<Choice, Identifier<Long>> choiceMappingConfiguration = from(Choice.class, LONG_TYPE)
+		IFluentMappingBuilderPropertyOptions<Choice, Identifier<Long>> choiceMappingConfiguration = from(Choice.class, LONG_TYPE)
 				.add(Choice::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.add(Choice::getName)
-				.add(Choice::getQuestion)
-				.getConfiguration();
+				.add(Choice::getQuestion);
 		
 		Persister<Question, Identifier<Long>, ?> persister = from(Question.class, LONG_TYPE)
 				.add(Question::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
@@ -419,11 +415,10 @@ class FluentEntityMappingConfigurationSupportIndexedCollectionTest {
 		Column<Table, Identifier> id = choiceTable.addColumn("id", Identifier.class).primaryKey();
 		Column<Table, Integer> idx = choiceTable.addColumn("idx", int.class);
 		
-		EntityMappingConfiguration<Choice, Identifier<Long>> choiceMappingConfiguration = from(Choice.class, LONG_TYPE)
+		IFluentMappingBuilderPropertyOptions<Choice, Identifier<Long>> choiceMappingConfiguration = from(Choice.class, LONG_TYPE)
 				.add(Choice::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.add(Choice::getName)
-				.add(Choice::getQuestion)
-				.getConfiguration();
+				.add(Choice::getQuestion);
 		
 		assertEquals("Indexing column is defined without owner : relation is only declared by Question::getChoices",
 				assertThrows(UnsupportedOperationException.class, () ->
@@ -974,11 +969,10 @@ class FluentEntityMappingConfigurationSupportIndexedCollectionTest {
 			id = choiceTable.addColumn("id", Identifier.class).primaryKey();
 			idx = choiceTable.addColumn("idx", int.class);
 			
-			EntityMappingConfiguration<Choice, Identifier<Long>> choiceMappingConfiguration = from(Choice.class, LONG_TYPE)
+			IFluentMappingBuilderPropertyOptions<Choice, Identifier<Long>> choiceMappingConfiguration = from(Choice.class, LONG_TYPE)
 					.add(Choice::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 					.add(Choice::getName)
-					.add(Choice::getQuestion)
-					.getConfiguration();
+					.add(Choice::getQuestion);
 			
 			questionPersister = from(Question.class, LONG_TYPE)
 					.add(Question::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
@@ -1047,11 +1041,10 @@ class FluentEntityMappingConfigurationSupportIndexedCollectionTest {
 			Column<Table, Identifier> id = choiceTable.addColumn("id", Identifier.class).primaryKey();
 			Column<Table, Integer> idx = choiceTable.addColumn("idx", int.class);
 			
-			EntityMappingConfiguration<Choice, Identifier<Long>> choiceMappingConfiguration = from(Choice.class, LONG_TYPE)
+			IFluentMappingBuilderPropertyOptions<Choice, Identifier<Long>> choiceMappingConfiguration = from(Choice.class, LONG_TYPE)
 					.add(Choice::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 					.add(Choice::getName)
-					.add(Choice::getQuestion)
-					.getConfiguration();
+					.add(Choice::getQuestion);
 			
 			questionPersister = from(Question.class, LONG_TYPE)
 					.add(Question::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
@@ -1063,10 +1056,9 @@ class FluentEntityMappingConfigurationSupportIndexedCollectionTest {
 			// like Aggregate (in Domain Driven Design) or CQRS, Answers are not in the same context than Questions so it requires a different
 			// mapping. For instance there's no need of Question relationship mapping.
 			// BE AWARE THAT mapping Choice a second time is a bad practise
-			EntityMappingConfiguration<AnswerChoice, Identifier<Long>> answerChoiceMappingConfiguration = from(AnswerChoice.class, LONG_TYPE)
+			IFluentMappingBuilderPropertyOptions<AnswerChoice, Identifier<Long>> answerChoiceMappingConfiguration = from(AnswerChoice.class, LONG_TYPE)
 					.add(AnswerChoice::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
-					.add(AnswerChoice::getName)
-					.getConfiguration();
+					.add(AnswerChoice::getName);
 			
 			answerPersister = from(Answer.class, LONG_TYPE)
 					.add(Answer::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)

@@ -164,10 +164,10 @@ class EntitySelectExecutorTest {
 				FluentEntityMappingConfigurationSupport.from(Country.class, Identifier.class)
 				.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.add(Country::getName)
-				.addOneToOne(Country::getCapital, FluentEntityMappingConfigurationSupport.from(City.class, Identifier.class)
+				.addOneToOne(Country::getCapital,
+						FluentEntityMappingConfigurationSupport.from(City.class, Identifier.class)
 						.add(City::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
-						.add(City::getName)
-						.getConfiguration())
+						.add(City::getName))
 				.build(new PersistenceContext(connectionProviderMock, dialect));
 		
 		ColumnBinderRegistry columnBinderRegistry = dialect.getColumnBinderRegistry();
@@ -218,8 +218,7 @@ class EntitySelectExecutorTest {
 				.add(Country::getName)
 				.addOneToManySet(Country::getCities, FluentEntityMappingConfigurationSupport.from(City.class, Identifier.class)
 						.add(City::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
-						.add(City::getName)
-						.getConfiguration())
+						.add(City::getName))
 				.build(new PersistenceContext(connectionProviderMock, dialect));
 		
 		ColumnBinderRegistry columnBinderRegistry = dialect.getColumnBinderRegistry();
@@ -278,8 +277,7 @@ class EntitySelectExecutorTest {
 				.add(Country::getName)
 				.addOneToManySet(Country::getCities, FluentEntityMappingConfigurationSupport.from(City.class, Identifier.class)
 						.add(City::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
-						.add(City::getName)
-						.getConfiguration())
+						.add(City::getName))
 						.mappedBy(City::getCountry)
 				.build(persistenceContext);
 		

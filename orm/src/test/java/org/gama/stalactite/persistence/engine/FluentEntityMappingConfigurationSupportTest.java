@@ -715,8 +715,7 @@ public class FluentEntityMappingConfigurationSupportTest {
 					.innerEmbed(Person::getTimestamp)
 					.embed(Country::getTimestamp)
 					.add(Country::getId, "zz")
-					.addOneToOne(Country::getPresident, FluentEntityMappingConfigurationSupport.from(Person.class, long.class)
-							.getConfiguration())
+					.addOneToOne(Country::getPresident, FluentEntityMappingConfigurationSupport.from(Person.class, long.class))
 					.mapSuperClass(new FluentEmbeddableMappingConfigurationSupport<>(Object.class))
 					.add(Country::getDescription, "xx")
 					.build(persistenceContext);
@@ -735,8 +734,7 @@ public class FluentEntityMappingConfigurationSupportTest {
 					.innerEmbed(Person::setTimestamp)
 					// embed with setter
 					.embed(Country::setTimestamp)
-					.addOneToManySet(Country::getCities, FluentEntityMappingConfigurationSupport.from(City.class, long.class)
-							.getConfiguration())
+					.addOneToManySet(Country::getCities, FluentEntityMappingConfigurationSupport.from(City.class, long.class))
 					.add(Country::getDescription, "xx")
 					.add(Country::getDummyProperty, "dd")
 					.build(persistenceContext);
@@ -751,8 +749,7 @@ public class FluentEntityMappingConfigurationSupportTest {
 			FluentEntityMappingConfigurationSupport.from(Country.class, long.class)
 					.add(Country::getName)
 					.add(Country::getId, "zz")
-					.addOneToOne(Country::setPresident, FluentEntityMappingConfigurationSupport.from(Person.class, long.class)
-							.getConfiguration())
+					.addOneToOne(Country::setPresident, FluentEntityMappingConfigurationSupport.from(Person.class, long.class))
 					.mapSuperClass(new FluentEmbeddableMappingConfigurationSupport<>(Object.class))
 					// embed with setter
 					.embed(Country::getPresident, personMappingBuilder)
@@ -770,8 +767,7 @@ public class FluentEntityMappingConfigurationSupportTest {
 					.add(Country::getId, "zz")
 					.embed(Country::getPresident, personMappingBuilder)
 					.mapSuperClass(new FluentEmbeddableMappingConfigurationSupport<>(Object.class))
-					.addOneToOne(Country::setPresident, FluentEntityMappingConfigurationSupport.from(Person.class, long.class)
-							.getConfiguration())
+					.addOneToOne(Country::setPresident, FluentEntityMappingConfigurationSupport.from(Person.class, long.class))
 					// reusing embeddable ...
 					.embed(Country::getPresident, personMappingBuilder)
 					// with getter override

@@ -74,7 +74,7 @@ public interface IFluentEntityMappingBuilder<C, I> extends IFluentEmbeddableMapp
 	 * @param <J> type of identifier of {@code O}
 	 * @return a enhanced version of {@code this} so one can add options to the relationship or add mapping to {@code this}
 	 */
-	<O, J, T extends Table> IFluentMappingBuilderOneToOneOptions<C, I, T> addOneToOne(SerializableFunction<C, O> getter, EntityMappingConfiguration<O, J> mappingConfiguration);
+	<O, J, T extends Table> IFluentMappingBuilderOneToOneOptions<C, I, T> addOneToOne(SerializableFunction<C, O> getter, EntityMappingConfigurationProvider<O, J> mappingConfiguration);
 	
 	/**
 	 * Declares a direct relationship between current entity and some of type {@code O}.
@@ -85,7 +85,7 @@ public interface IFluentEntityMappingBuilder<C, I> extends IFluentEmbeddableMapp
 	 * @param <J> type of identifier of {@code O}
 	 * @return a enhanced version of {@code this} so one can add options to the relationship or add mapping to {@code this}
 	 */
-	<O, J, T extends Table> IFluentMappingBuilderOneToOneOptions<C, I, T> addOneToOne(SerializableBiConsumer<C, O> setter, EntityMappingConfiguration<O, J> mappingConfiguration);
+	<O, J, T extends Table> IFluentMappingBuilderOneToOneOptions<C, I, T> addOneToOne(SerializableBiConsumer<C, O> setter, EntityMappingConfigurationProvider<O, J> mappingConfiguration);
 	
 	/**
 	 * Declares a direct relation between current entity and some of type {@code O}.
@@ -97,7 +97,7 @@ public interface IFluentEntityMappingBuilder<C, I> extends IFluentEmbeddableMapp
 	 * @param <J> type of identifier of {@code O}
 	 * @return a enhanced version of {@code this} so one can add options to the relation or add mapping to {@code this}
 	 */
-	<O, J, T extends Table> IFluentMappingBuilderOneToOneOptions<C, I, T> addOneToOne(SerializableFunction<C, O> getter, EntityMappingConfiguration<O, J> mappingConfiguration, T table);
+	<O, J, T extends Table> IFluentMappingBuilderOneToOneOptions<C, I, T> addOneToOne(SerializableFunction<C, O> getter, EntityMappingConfigurationProvider<O, J> mappingConfiguration, T table);
 	
 	/**
 	 * Declares a direct relation between current entity and some of type {@code O}.
@@ -109,7 +109,7 @@ public interface IFluentEntityMappingBuilder<C, I> extends IFluentEmbeddableMapp
 	 * @param <J> type of identifier of {@code O}
 	 * @return a enhanced version of {@code this} so one can add options to the relation or add mapping to {@code this}
 	 */
-	<O, J, T extends Table> IFluentMappingBuilderOneToOneOptions<C, I, T> addOneToOne(SerializableBiConsumer<C, O> setter, EntityMappingConfiguration<O, J> mappingConfiguration, T table);
+	<O, J, T extends Table> IFluentMappingBuilderOneToOneOptions<C, I, T> addOneToOne(SerializableBiConsumer<C, O> setter, EntityMappingConfigurationProvider<O, J> mappingConfiguration, T table);
 	
 	/**
 	 * Declares a relation between current entity and some of type {@code O} throught a {@link Set}.
@@ -122,19 +122,19 @@ public interface IFluentEntityMappingBuilder<C, I> extends IFluentEmbeddableMapp
 	 * @param <J> type of identifier of {@code O}
 	 * @param <S> refined {@link Set} type
 	 * @return a enhanced version of {@code this} so one can add set options to the relation or add mapping to {@code this}
-	 * @see #addOneToManyList(SerializableFunction, EntityMappingConfiguration)
+	 * @see #addOneToManyList(SerializableFunction, EntityMappingConfigurationProvider)
 	 */
 	<O, J, S extends Set<O>>
 	IFluentMappingBuilderOneToManyOptions<C, I, O>
-	addOneToManySet(SerializableFunction<C, S> getter, EntityMappingConfiguration<O, J> mappingConfiguration);
+	addOneToManySet(SerializableFunction<C, S> getter, EntityMappingConfigurationProvider<O, J> mappingConfiguration);
 	
 	<O, J, S extends Set<O>, T extends Table>
 	IFluentMappingBuilderOneToManyOptions<C, I, O>
-	addOneToManySet(SerializableFunction<C, S> getter, EntityMappingConfiguration<O, J> mappingConfiguration, @javax.annotation.Nullable T table);
+	addOneToManySet(SerializableFunction<C, S> getter, EntityMappingConfigurationProvider<O, J> mappingConfiguration, @javax.annotation.Nullable T table);
 	
 	<O, J, S extends Set<O>, T extends Table>
 	IFluentMappingBuilderOneToManyOptions<C, I, O>
-	addOneToManySet(SerializableBiConsumer<C, S> setter, EntityMappingConfiguration<O, J> mappingConfiguration, @javax.annotation.Nullable T table);
+	addOneToManySet(SerializableBiConsumer<C, S> setter, EntityMappingConfigurationProvider<O, J> mappingConfiguration, @javax.annotation.Nullable T table);
 	
 	/**
 	 * Declares a relation between current entity and some of type {@code O} throught a {@link List}.
@@ -147,19 +147,19 @@ public interface IFluentEntityMappingBuilder<C, I> extends IFluentEmbeddableMapp
 	 * @param <J> type of identifier of {@code O} (target entities)
 	 * @param <S> refined {@link List} type
 	 * @return a enhanced version of {@code this} so one can add set options to the relation or add mapping to {@code this}
-	 * @see #addOneToManySet(SerializableFunction, EntityMappingConfiguration)
+	 * @see #addOneToManySet(SerializableFunction, EntityMappingConfigurationProvider)
 	 */
 	<O, J, S extends List<O>>
 	IFluentMappingBuilderOneToManyListOptions<C, I, O>
-	addOneToManyList(SerializableFunction<C, S> getter, EntityMappingConfiguration<O, J> mappingConfiguration);
+	addOneToManyList(SerializableFunction<C, S> getter, EntityMappingConfigurationProvider<O, J> mappingConfiguration);
 	
 	<O, J, S extends List<O>, T extends Table>
 	IFluentMappingBuilderOneToManyListOptions<C, I, O>
-	addOneToManyList(SerializableFunction<C, S> getter, EntityMappingConfiguration<O, J> mappingConfiguration, @javax.annotation.Nullable T table);
+	addOneToManyList(SerializableFunction<C, S> getter, EntityMappingConfigurationProvider<O, J> mappingConfiguration, @javax.annotation.Nullable T table);
 	
 	<O, J, S extends List<O>, T extends Table>
 	IFluentMappingBuilderOneToManyListOptions<C, I, O>
-	addOneToManyList(SerializableBiConsumer<C, S> setter, EntityMappingConfiguration<O, J> mappingConfiguration, @javax.annotation.Nullable T table);
+	addOneToManyList(SerializableBiConsumer<C, S> setter, EntityMappingConfigurationProvider<O, J> mappingConfiguration, @javax.annotation.Nullable T table);
 	
 	@Override
 	<O> IFluentMappingBuilderEmbedOptions<C, I, O> embed(SerializableBiConsumer<C, O> setter);

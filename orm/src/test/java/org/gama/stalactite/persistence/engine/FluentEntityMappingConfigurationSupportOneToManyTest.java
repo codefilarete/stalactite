@@ -61,7 +61,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class FluentEntityMappingConfigurationSupportOneToManyTest {
 	
 	private static final HSQLDBDialect DIALECT = new HSQLDBDialect();
-	private static EntityMappingConfiguration<City, Identifier<Long>> CITY_MAPPING_CONFIGURATION;
+	private static IFluentMappingBuilderPropertyOptions<City, Identifier<Long>> CITY_MAPPING_CONFIGURATION;
 	private final DataSource dataSource = new HSQLDBInMemoryDataSource();
 	private ConnectionProvider connectionProvider = new JdbcConnectionProvider(dataSource);
 	private PersistenceContext persistenceContext;
@@ -85,8 +85,7 @@ class FluentEntityMappingConfigurationSupportOneToManyTest {
 				Identifier.LONG_TYPE)
 				.add(City::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.add(City::getName)
-				.add(City::getCountry)
-				.getConfiguration();
+				.add(City::getCountry);
 	}
 	
 	@Test
@@ -125,12 +124,11 @@ class FluentEntityMappingConfigurationSupportOneToManyTest {
 	
 	@Test
 	void build_mappedByDeclaredMapping_CRUDWorks() {
-		EntityMappingConfiguration<City, Identifier<Long>> cityConfiguration = from(City.class, LONG_TYPE)
+		IFluentMappingBuilderPropertyOptions<City, Identifier<Long>> cityConfiguration = from(City.class, LONG_TYPE)
 				.add(City::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.add(City::getName)
 				// we add getCountry() to the mapping, that's the goal of our test
-				.add(City::getCountry)
-				.getConfiguration();
+				.add(City::getCountry);
 		
 		Persister<Country, Identifier<Long>, Table> persister = from(Country.class, LONG_TYPE)
 				.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
@@ -184,12 +182,12 @@ class FluentEntityMappingConfigurationSupportOneToManyTest {
 	
 	@Test
 	void build_mappedByNonDeclaredMapping_Set_CRUDWorks() {
-		EntityMappingConfiguration<City, Identifier<Long>> cityConfiguration = from(City.class, LONG_TYPE)
+		IFluentMappingBuilderPropertyOptions<City, Identifier<Long>> cityConfiguration = from(City.class, LONG_TYPE)
 				.add(City::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.add(City::getName)
 				// we don't add getCountry() to the mapping, that's the goal of our test
 				//.add(City::getCountry)
-				.getConfiguration();
+				;
 
 		Persister<Country, Identifier<Long>, Table> persister = from(Country.class, LONG_TYPE)
 				.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
@@ -242,12 +240,12 @@ class FluentEntityMappingConfigurationSupportOneToManyTest {
 	
 	@Test
 	void build_mappedByNonDeclaredMapping_List_CRUDWorks() {
-		EntityMappingConfiguration<City, Identifier<Long>> stateConfiguration = from(City.class, LONG_TYPE)
+		IFluentMappingBuilderPropertyOptions<City, Identifier<Long>> stateConfiguration = from(City.class, LONG_TYPE)
 				.add(City::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.add(City::getName)
 				// we don't add getCountry() to the mapping, that's the goal of our test
 				//.add(City::getCountry)
-				.getConfiguration();
+				;
 		
 		Table ancientCitiesTable = new Table("AncientCities");
 		Column<?, Integer> idx = ancientCitiesTable.addColumn("idx", Integer.class);
@@ -661,7 +659,7 @@ class FluentEntityMappingConfigurationSupportOneToManyTest {
 					.add(Country::getName)
 					.add(Country::getDescription)
 					.addOneToManySet(Country::getCities, CITY_MAPPING_CONFIGURATION).mappedBy(City::setCountry).cascading(ALL_ORPHAN_REMOVAL)
-					.addOneToManySet(Country::getStates, stateMappingBuilder.getConfiguration()).mappedBy(State::setCountry).cascading(ALL)
+					.addOneToManySet(Country::getStates, stateMappingBuilder).mappedBy(State::setCountry).cascading(ALL)
 					.build(persistenceContext);
 			
 			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
