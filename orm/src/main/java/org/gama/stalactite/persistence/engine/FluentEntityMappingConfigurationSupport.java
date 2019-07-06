@@ -48,7 +48,7 @@ import static org.gama.reflection.MemberDefinition.giveMemberDefinition;
 /**
  * @author Guillaume Mary
  */
-public class FluentEntityMappingConfigurationSupport<C, I> implements IFluentMappingBuilder<C, I>, EntityMappingConfiguration<C, I> {
+public class FluentEntityMappingConfigurationSupport<C, I> implements IFluentEntityMappingBuilder<C, I>, EntityMappingConfiguration<C, I> {
 	
 	/**
 	 * Will start a {@link FluentEntityMappingConfigurationSupport} for a given class which will target a table that as the class name.
@@ -57,10 +57,10 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements IFluentMap
 	 * @param identifierClass the class of the identifier
 	 * @param <T> any type to be persisted
 	 * @param <I> the type of the identifier
-	 * @return a new {@link IFluentMappingBuilder}
+	 * @return a new {@link IFluentEntityMappingBuilder}
 	 */
 	@SuppressWarnings("squid:S1172")	// identifierClass is used to sign result
-	public static <T, I> IFluentMappingBuilder<T, I> from(Class<T> persistedClass, Class<I> identifierClass) {
+	public static <T, I> IFluentEntityMappingBuilder<T, I> from(Class<T> persistedClass, Class<I> identifierClass) {
 		return new FluentEntityMappingConfigurationSupport<>(persistedClass);
 	}
 	
@@ -281,7 +281,7 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements IFluentMap
 	}
 	
 	@Override
-	public IFluentMappingBuilder<C, I> mapSuperClass(EmbeddableMappingConfiguration<? super C> superMappingConfiguration) {
+	public IFluentEntityMappingBuilder<C, I> mapSuperClass(EmbeddableMappingConfiguration<? super C> superMappingConfiguration) {
 		this.propertiesMappingConfigurationSurrogate.mapSuperClass(superMappingConfiguration);
 		return this;
 	}
@@ -543,25 +543,25 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements IFluentMap
 	}
 	
 	@Override
-	public IFluentMappingBuilder<C, I> foreignKeyNamingStrategy(ForeignKeyNamingStrategy foreignKeyNamingStrategy) {
+	public IFluentEntityMappingBuilder<C, I> foreignKeyNamingStrategy(ForeignKeyNamingStrategy foreignKeyNamingStrategy) {
 		this.foreignKeyNamingStrategy = foreignKeyNamingStrategy;
 		return this;
 	}
 	
 	@Override
-	public IFluentMappingBuilder<C, I> columnNamingStrategy(ColumnNamingStrategy columnNamingStrategy) {
+	public IFluentEntityMappingBuilder<C, I> columnNamingStrategy(ColumnNamingStrategy columnNamingStrategy) {
 		this.propertiesMappingConfigurationSurrogate.columnNamingStrategy(columnNamingStrategy);
 		return this;
 	}
 	
 	@Override
-	public IFluentMappingBuilder<C, I> joinColumnNamingStrategy(ColumnNamingStrategy columnNamingStrategy) {
+	public IFluentEntityMappingBuilder<C, I> joinColumnNamingStrategy(ColumnNamingStrategy columnNamingStrategy) {
 		this.joinColumnNamingStrategy = columnNamingStrategy;
 		return this;
 	}
 	
 	@Override
-	public IFluentMappingBuilder<C, I> associationTableNamingStrategy(AssociationTableNamingStrategy associationTableNamingStrategy) {
+	public IFluentEntityMappingBuilder<C, I> associationTableNamingStrategy(AssociationTableNamingStrategy associationTableNamingStrategy) {
 		this.associationTableNamingStrategy = associationTableNamingStrategy;
 		return this;
 	}
@@ -581,7 +581,7 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements IFluentMap
 	 * @see #versionedBy(SerializableFunction, Serie)
 	 */
 	@Override
-	public <V> IFluentMappingBuilder<C, I> versionedBy(SerializableFunction<C, V> getter) {
+	public <V> IFluentEntityMappingBuilder<C, I> versionedBy(SerializableFunction<C, V> getter) {
 		AccessorByMethodReference methodReference = Accessors.accessorByMethodReference(getter);
 		Serie<V> serie;
 		if (Integer.class.isAssignableFrom(methodReference.getPropertyType())) {
@@ -598,11 +598,11 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements IFluentMap
 	}
 	
 	@Override
-	public <V> IFluentMappingBuilder<C, I> versionedBy(SerializableFunction<C, V> getter, Serie<V> serie) {
+	public <V> IFluentEntityMappingBuilder<C, I> versionedBy(SerializableFunction<C, V> getter, Serie<V> serie) {
 		return versionedBy(getter, new AccessorByMethodReference<>(getter), serie);
 	}
 	
-	private <V> IFluentMappingBuilder<C, I> versionedBy(SerializableFunction<C, V> getter, AccessorByMethodReference methodReference, Serie<V> serie) {
+	private <V> IFluentEntityMappingBuilder<C, I> versionedBy(SerializableFunction<C, V> getter, AccessorByMethodReference methodReference, Serie<V> serie) {
 		optimisticLockOption = new OptimisticLockOption<>(methodReference, serie);
 		add(getter);
 		return this;

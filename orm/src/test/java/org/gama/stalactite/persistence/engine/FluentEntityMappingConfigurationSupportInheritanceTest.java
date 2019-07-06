@@ -437,7 +437,7 @@ class FluentEntityMappingConfigurationSupportInheritanceTest {
 					.add(AbstractVehicle::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 					.getConfiguration();
 			
-			IFluentMappingBuilder<Car, Identifier<Long>> mappingBuilder = FluentEntityMappingConfigurationSupport.from(Car.class
+			IFluentEntityMappingBuilder<Car, Identifier<Long>> mappingBuilder = FluentEntityMappingConfigurationSupport.from(Car.class
 					, LONG_TYPE)
 					.add(Car::getModel)
 					.add(Car::getColor)

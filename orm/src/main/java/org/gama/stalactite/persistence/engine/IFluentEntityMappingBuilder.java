@@ -19,7 +19,7 @@ import org.gama.stalactite.persistence.structure.Table;
  * @see FluentEntityMappingConfigurationSupport#from(Class, Class)
  * @see #build(PersistenceContext)
  */
-public interface IFluentMappingBuilder<C, I> extends IFluentEmbeddableMappingConfiguration<C>, PersisterBuilder<C, I> {
+public interface IFluentEntityMappingBuilder<C, I> extends IFluentEmbeddableMappingConfiguration<C>, PersisterBuilder<C, I> {
 	
 	/* Overwritting methods signature to return a type that aggregates options of this class */
 	
@@ -47,7 +47,7 @@ public interface IFluentMappingBuilder<C, I> extends IFluentEmbeddableMappingCon
 	
 	<E extends Enum<E>> IFluentMappingBuilderEnumOptions<C, I> addEnum(SerializableFunction<C, E> getter, Column<Table, E> column);
 	
-	IFluentMappingBuilder<C, I> columnNamingStrategy(ColumnNamingStrategy columnNamingStrategy);
+	IFluentEntityMappingBuilder<C, I> columnNamingStrategy(ColumnNamingStrategy columnNamingStrategy);
 	
 	/**
 	 * Declares the inherited mapping. Id policy must be defined in the given strategy.
@@ -63,7 +63,7 @@ public interface IFluentMappingBuilder<C, I> extends IFluentEmbeddableMappingCon
 	 * @param superMappingConfiguration a mapping configuration of a super type of the current mapped type
 	 * @return a enhanced version of {@code this} so one can add set options to the relationship or add mapping to {@code this}
 	 */
-	IFluentMappingBuilder<C, I> mapSuperClass(EmbeddableMappingConfiguration<? super C> superMappingConfiguration);
+	IFluentEntityMappingBuilder<C, I> mapSuperClass(EmbeddableMappingConfiguration<? super C> superMappingConfiguration);
 	
 	/**
 	 * Declares a direct relationship between current entity and some of type {@code O}.
@@ -173,17 +173,17 @@ public interface IFluentMappingBuilder<C, I> extends IFluentEmbeddableMappingCon
 	@Override
 	<O> IFluentMappingBuilderEmbeddableOptions<C, I, O> embed(SerializableBiConsumer<C, O> getter, EmbeddedBeanMappingStrategyBuilder<O> embeddableMappingBuilder);
 	
-	IFluentMappingBuilder<C, I> foreignKeyNamingStrategy(ForeignKeyNamingStrategy foreignKeyNamingStrategy);
+	IFluentEntityMappingBuilder<C, I> foreignKeyNamingStrategy(ForeignKeyNamingStrategy foreignKeyNamingStrategy);
 	
-	IFluentMappingBuilder<C, I> joinColumnNamingStrategy(ColumnNamingStrategy columnNamingStrategy);
+	IFluentEntityMappingBuilder<C, I> joinColumnNamingStrategy(ColumnNamingStrategy columnNamingStrategy);
 	
-	IFluentMappingBuilder<C, I> associationTableNamingStrategy(AssociationTableNamingStrategy associationTableNamingStrategy);
+	IFluentEntityMappingBuilder<C, I> associationTableNamingStrategy(AssociationTableNamingStrategy associationTableNamingStrategy);
 	
-	<V> IFluentMappingBuilder<C, I> versionedBy(SerializableFunction<C, V> getter);
+	<V> IFluentEntityMappingBuilder<C, I> versionedBy(SerializableFunction<C, V> getter);
 	
-	<V> IFluentMappingBuilder<C, I> versionedBy(SerializableFunction<C, V> getter, Serie<V> sequence);
+	<V> IFluentEntityMappingBuilder<C, I> versionedBy(SerializableFunction<C, V> getter, Serie<V> sequence);
 	
-	interface IFluentMappingBuilderPropertyOptions<C, I> extends IFluentMappingBuilder<C, I>, IFluentEmbeddableMappingConfigurationPropertyOptions<C>, ColumnOptions<C, I> {
+	interface IFluentMappingBuilderPropertyOptions<C, I> extends IFluentEntityMappingBuilder<C, I>, IFluentEmbeddableMappingConfigurationPropertyOptions<C>, ColumnOptions<C, I> {
 		
 		@Override
 		IFluentMappingBuilderPropertyOptions<C, I> identifier(IdentifierPolicy identifierPolicy);
@@ -192,7 +192,7 @@ public interface IFluentMappingBuilder<C, I> extends IFluentEmbeddableMappingCon
 		IFluentMappingBuilderPropertyOptions<C, I> mandatory();
 	}
 	
-	interface IFluentMappingBuilderOneToOneOptions<C, I, T extends Table> extends IFluentMappingBuilder<C, I>, OneToOneOptions<C, I, T> {
+	interface IFluentMappingBuilderOneToOneOptions<C, I, T extends Table> extends IFluentEntityMappingBuilder<C, I>, OneToOneOptions<C, I, T> {
 		
 		/**
 		 * {@inheritDoc}
@@ -227,7 +227,7 @@ public interface IFluentMappingBuilder<C, I> extends IFluentEmbeddableMappingCon
 		IFluentMappingBuilderOneToOneOptions<C, I, T> mappedBy(Column<T, C> reverseLink);
 	}
 	
-	interface IFluentMappingBuilderOneToManyOptions<T, I, O> extends IFluentMappingBuilder<T, I>, OneToManyOptions<T, I, O> {
+	interface IFluentMappingBuilderOneToManyOptions<T, I, O> extends IFluentEntityMappingBuilder<T, I>, OneToManyOptions<T, I, O> {
 	}
 	
 	/**
@@ -276,7 +276,7 @@ public interface IFluentMappingBuilder<C, I> extends IFluentEmbeddableMappingCon
 	}
 	
 	interface IFluentMappingBuilderEmbedOptions<C, I, O>
-			extends IFluentMappingBuilder<C, I>, IFluentEmbeddableMappingConfigurationEmbedOptions<C, O>, EmbedWithColumnOptions<O> {
+			extends IFluentEntityMappingBuilder<C, I>, IFluentEmbeddableMappingConfigurationEmbedOptions<C, O>, EmbedWithColumnOptions<O> {
 		
 		/**
 		 * Overrides embedding with an existing column
@@ -320,7 +320,7 @@ public interface IFluentMappingBuilder<C, I> extends IFluentEmbeddableMappingCon
 	 * @param <O>
 	 */
 	interface IFluentMappingBuilderEmbeddableOptions<C, I, O>
-		extends IFluentMappingBuilder<C, I>,
+		extends IFluentEntityMappingBuilder<C, I>,
 			IFluentEmbeddableMappingConfigurationEmbeddableOptions<C, O> {
 		
 		@Override
@@ -335,7 +335,7 @@ public interface IFluentMappingBuilder<C, I> extends IFluentEmbeddableMappingCon
 	}
 	
 	interface IFluentMappingBuilderEnumOptions<C, I>
-			extends IFluentMappingBuilder<C, I>,
+			extends IFluentEntityMappingBuilder<C, I>,
 			IFluentEmbeddableMappingConfigurationEnumOptions<C> {
 		
 		@Override
@@ -349,7 +349,7 @@ public interface IFluentMappingBuilder<C, I> extends IFluentEmbeddableMappingCon
 	}
 	
 	interface IFluentMappingBuilderInheritanceOptions<C, I>
-			extends IFluentMappingBuilder<C, I>,
+			extends IFluentEntityMappingBuilder<C, I>,
 			InheritanceOptions {
 		
 		@Override
