@@ -26,7 +26,7 @@ public final class DerbyParameterBinders {
 	 * Looks like https://issues.apache.org/jira/browse/DERBY-6341 but I don't get where I'm wrong (don't see where I read twice the ResultSet).
 	 */
 	public static final ParameterBinder<InputStream> BINARYSTREAM_BINDER = new LambdaParameterBinder<>((resultSet, columnName) ->
-			Nullable.nullable(resultSet.getBinaryStream(columnName)).applyThrowing(inputStream -> {
+			Nullable.nullable(resultSet.getBinaryStream(columnName)).mapThrower(inputStream -> {
 				try {
 					return IOs.toByteArrayInputStream(inputStream);
 				} catch (IOException e) {
@@ -35,7 +35,7 @@ public final class DerbyParameterBinders {
 			}).get(), BINARYSTREAM_WRITER);
 	
 	public static final ParameterBinder<InputStream> BLOB_INPUTSTREAM_BINDER = new LambdaParameterBinder<>((resultSet, columnName) ->
-			Nullable.nullable(resultSet.getBinaryStream(columnName)).applyThrowing(inputStream -> {
+			Nullable.nullable(resultSet.getBinaryStream(columnName)).mapThrower(inputStream -> {
 				try {
 					return IOs.toByteArrayInputStream(inputStream);
 				} catch (IOException e) {
@@ -48,14 +48,14 @@ public final class DerbyParameterBinders {
 	 * with "Stream or LOB value cannot be retrieved more than once".
 	 */
 	public static final ParameterBinder<byte[]> BYTES_BINDER = new LambdaParameterBinder<>((resultSet, columnName) ->
-			Nullable.nullable(resultSet.getBytes(columnName)).applyThrowing(bytes -> Arrays.copyOf(bytes, bytes.length)).get(), BYTES_WRITER);
+			Nullable.nullable(resultSet.getBytes(columnName)).mapThrower(bytes -> Arrays.copyOf(bytes, bytes.length)).get(), BYTES_WRITER);
 	
 	/**
 	 * Equivalent to {@link DefaultParameterBinders#BLOB_BINDER} but makes a copy of the read binary stream from ResultSet, else later reading fails
 	 * with "Stream or LOB value cannot be retrieved more than once".
 	 */
 	public static final ParameterBinder<Blob> BLOB_BINDER = new LambdaParameterBinder<>((resultSet, columnName) ->
-			Nullable.nullable(resultSet.getBlob(columnName)).applyThrowing(blob -> new InMemoryBlobSupport(blob.getBytes(1, (int) blob.length()))).get(), BLOB_WRITER);
+			Nullable.nullable(resultSet.getBlob(columnName)).mapThrower(blob -> new InMemoryBlobSupport(blob.getBytes(1, (int) blob.length()))).get(), BLOB_WRITER);
 	
 	private DerbyParameterBinders() {
 	}

@@ -77,7 +77,7 @@ public class Table<SELF extends Table<SELF>> {
 	
 	public Set<Column<SELF, Object>> getColumnsNoPrimaryKey() {
 		LinkedHashSet<Column<SELF, Object>> result = this.columns.asSet();
-		result.removeAll(org.gama.lang.Nullable.nullable(getPrimaryKey()).apply(PrimaryKey::getColumns).orGet(Collections.emptySet()));
+		result.removeAll(org.gama.lang.Nullable.nullable(getPrimaryKey()).map(PrimaryKey::getColumns).getOr(Collections.emptySet()));
 		return result;
 	}
 	
@@ -129,7 +129,7 @@ public class Table<SELF extends Table<SELF>> {
 	 * @return null if not found
 	 */
 	public Column<SELF, Object> findColumn(String columnName) {
-		return nullable(Iterables.find(columns, Column::getName, columnName::equals)).apply(Duo::getLeft).get();
+		return nullable(Iterables.find(columns, Column::getName, columnName::equals)).map(Duo::getLeft).get();
 	}
 	
 	/**

@@ -72,8 +72,8 @@ public class CascadeManyConfigurer<SRC, TRGT, SRCID, TRGTID, C extends Collectio
 												   ForeignKeyNamingStrategy foreignKeyNamingStrategy,
 												   ColumnNamingStrategy joinColumnNamingStrategy,
 												   AssociationTableNamingStrategy associationTableNamingStrategy) {
-		Table reverseTable = nullable(cascadeMany.getReverseColumn()).apply(Column::getTable).get();
-		Table indexingTable = nullable((Column<?, ?>) (cascadeMany instanceof CascadeManyList ? ((CascadeManyList) cascadeMany).getIndexingColumn() : null)).apply(Column::getTable).get();
+		Table reverseTable = nullable(cascadeMany.getReverseColumn()).map(Column::getTable).get();
+		Table indexingTable = nullable((Column<?, ?>) (cascadeMany instanceof CascadeManyList ? ((CascadeManyList) cascadeMany).getIndexingColumn() : null)).map(Column::getTable).get();
 		Set<Table> availableTables = Arrays.asHashSet(cascadeMany.getTargetTable(), reverseTable, indexingTable);
 		availableTables.remove(null);
 		if (availableTables.size() > 1) {
@@ -86,7 +86,7 @@ public class CascadeManyConfigurer<SRC, TRGT, SRCID, TRGTID, C extends Collectio
 		}
 		
 		// please note that even if no table is found in configuration, build(..) will create one
-		Table targetTable = nullable(cascadeMany.getTargetTable()).orSet(reverseTable).orSet(indexingTable).get();
+		Table targetTable = nullable(cascadeMany.getTargetTable()).elseSet(reverseTable).elseSet(indexingTable).get();
 		JoinedTablesPersister<TRGT, TRGTID, ?> targetPersister = new EntityMappingBuilder<>(cascadeMany.getTargetMappingConfiguration(), new MethodReferenceCapturer())
 				.build(persistenceContext, targetTable);
 		
@@ -323,7 +323,7 @@ public class CascadeManyConfigurer<SRC, TRGT, SRCID, TRGTID, C extends Collectio
 					
 					SerializableFunction<TRGT, SRC> finalReverseGetter = reverseGetter;
 					IdAccessor<SRC, SRCID> idAccessor = sourceMappingStrategy.getIdMappingStrategy().getIdAccessor();
-					Function<TRGT, SRCID> srcidFromTargetSupplier = trgt -> nullable(finalReverseGetter.apply(trgt)).apply(idAccessor::getId).orGet((SRCID) null);
+					Function<TRGT, SRCID> srcidFromTargetSupplier = trgt -> nullable(finalReverseGetter.apply(trgt)).map(idAccessor::getId).getOr((SRCID) null);
 					targetMappingStrategy.addSilentColumnInserter(reverseColumn, srcidFromTargetSupplier);
 					targetMappingStrategy.addSilentColumnUpdater(reverseColumn, srcidFromTargetSupplier);
 				}

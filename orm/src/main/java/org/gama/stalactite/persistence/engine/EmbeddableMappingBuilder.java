@@ -381,7 +381,7 @@ class EmbeddableMappingBuilder<C> {
 							AccessorByMethod::new,
 							MutatorByMethod::new,
 							AccessorByMethod::new,
-							method -> null)).accept(expectedOverridenFields::add)
+							method -> null)).invoke(expectedOverridenFields::add)
 				);
 				expectedOverridenFields.removeAll(inset.getExcludedProperties());
 				Set<ValueAccessPoint> overridenFields = inset.getOverridenColumnNames().keySet();

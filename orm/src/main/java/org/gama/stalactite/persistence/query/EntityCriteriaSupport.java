@@ -194,7 +194,7 @@ public class EntityCriteriaSupport<C> implements EntityCriteria<C> {
 				} else {
 					// This means an internal bad usage
 					throw new UnsupportedOperationException("Creating a chain from something else than accessor is not supported : "
-							+ Nullable.nullable(accessPoint).apply(Object::getClass).apply(Reflections::toString).orGet("null"));
+							+ Nullable.nullable(accessPoint).map(Object::getClass).map(Reflections::toString).getOr("null"));
 				}
 			}
 			return result;

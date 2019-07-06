@@ -270,7 +270,7 @@ public class FluentEntityMappingConfigurationSupportPostInsertIdentifierTest {
 		 */
 		@Override
 		public String toString() {
-			return "Car{id=" + getId() + ", color=" + nullable(getColor()).orGet(Color::getRgb) + ", model='" + model + "\'}";
+			return "Car{id=" + getId() + ", color=" + nullable(getColor()).map(Color::getRgb).get() + ", model='" + model + "\'}";
 		}
 	}
 }

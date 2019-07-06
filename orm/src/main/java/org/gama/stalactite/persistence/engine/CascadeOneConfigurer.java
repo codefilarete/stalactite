@@ -118,7 +118,7 @@ public class CascadeOneConfigurer<SRC, TRGT, ID> {
 			
 			JoinedTablesPersister<TRGT, ID, Table> targetPersister = new EntityMappingBuilder<>(targetMappingConfiguration, new MethodReferenceCapturer())
 					// please note that even if no table is found in configuration, build(..) will create one
-					.build(persistenceContext, Nullable.nullable(cascadeOne.getTargetTable()).orGet(Nullable.nullable(cascadeOne.getReverseColumn()).apply(Column::getTable).get()));
+					.build(persistenceContext, Nullable.nullable(cascadeOne.getTargetTable()).getOr(Nullable.nullable(cascadeOne.getReverseColumn()).map(Column::getTable).get()));
 			ClassMappingStrategy<TRGT, ID, Table> targetMappingStrategy = targetPersister.getMappingStrategy();
 			
 			// Finding joined columns

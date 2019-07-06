@@ -119,7 +119,7 @@ public class DefaultParameterBindersTest {
 	}
 	
 	static Set<String> convertBytesToString(Set<byte[]> databaseContent) {
-		return databaseContent.stream().map(s -> Nullable.nullable(s).apply(String::new).get()).collect(Collectors.toSet());
+		return databaseContent.stream().map(s -> Nullable.nullable(s).map(String::new).get()).collect(Collectors.toSet());
 	}
 	
 	@ParameterizedTest
@@ -257,7 +257,7 @@ public class DefaultParameterBindersTest {
 	}
 	
 	static Set<String> convertInputStreamToString(Set<InputStream> databaseContent) {
-		return databaseContent.stream().map(s -> Nullable.nullable(s).apply(inputStream -> {
+		return databaseContent.stream().map(s -> Nullable.nullable(s).map(inputStream -> {
 			try(InputStream closeable = inputStream) {
 				return new String(IOs.toByteArray(closeable));
 			} catch (IOException e) {
@@ -282,7 +282,7 @@ public class DefaultParameterBindersTest {
 	static Set<String> convertBlobToString(Set<Blob> databaseContent) {
 		return databaseContent.stream().map(b -> {
 			try {
-				return Nullable.nullable(b).applyThrowing(blob -> new String(blob.getBytes(1, (int) blob.length()))).get();
+				return Nullable.nullable(b).mapThrower(blob -> new String(blob.getBytes(1, (int) blob.length()))).get();
 			} catch (SQLException e) {
 				throw new SQLExecutionException(e);
 			}

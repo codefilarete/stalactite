@@ -139,7 +139,7 @@ public class OneToManyWithIndexedMappedAssociationEngine<SRC, TRGT, SRCID, TRGTI
 		
 		targetPersister.getMappingStrategy().addSilentColumnUpdater(indexingColumn,
 				// Thread safe by updatableListIndex access
-				(Function<TRGT, Object>) target -> Nullable.nullable(updatableListIndex.get()).apply(m -> m.get(target)).get());
+				(Function<TRGT, Object>) target -> Nullable.nullable(updatableListIndex.get()).map(m -> m.get(target)).get());
 		
 		BiConsumer<UpdatePayload<? extends SRC, ?>, Boolean> updateListener = new CollectionUpdater<SRC, TRGT, C>(
 				manyRelationDefinition.getCollectionGetter(),

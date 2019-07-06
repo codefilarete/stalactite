@@ -129,7 +129,7 @@ public class JoinedTablesPersister<C, I, T extends Table> extends Persister<C, I
 	 * @return the {@link ClassMappingStrategy} behind a join node, null if not found
 	 */
 	public ClassMappingStrategy giveJoinedStrategy(String nodeName) {
-		return Nullable.nullable(joinedStrategiesSelectExecutor.getJoinedStrategiesSelect().getStrategyJoins(nodeName)).orGet(StrategyJoins::getStrategy);
+		return Nullable.nullable(joinedStrategiesSelectExecutor.getJoinedStrategiesSelect().getStrategyJoins(nodeName)).map(StrategyJoins::getStrategy).get();
 	}
 	
 	@Override

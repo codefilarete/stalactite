@@ -204,7 +204,7 @@ class EntityMappingBuilder<C, I> {
 		
 		// Table must be created before giving it to further methods because it is mandatory for them
 		if (table == null) {
-			table = (T) nullable(giveTableUsedInMapping()).orGet(() -> new Table(configurationSupport.getTableNamingStrategy().giveName(configurationSupport.getPersistedClass())));
+			table = (T) nullable(giveTableUsedInMapping()).getOr(() -> new Table(configurationSupport.getTableNamingStrategy().giveName(configurationSupport.getPersistedClass())));
 			
 			// if there's no inheritance we can create the primary key of the table
 			if (configurationSupport.getInheritanceConfiguration() == null) {
@@ -360,7 +360,7 @@ class EntityMappingBuilder<C, I> {
 		@Override
 		protected Column findColumn(ValueAccessPoint valueAccessPoint, String defaultColumnName, Map<String, Column<Table, Object>> tableColumnsPerName, Inset<C, ?> configuration) {
 			Column overridenColumn = ((OverridableColumnInset<C, ?>) configuration).getOverridenColumns().get(valueAccessPoint);
-			return nullable(overridenColumn).orGet(() -> super.findColumn(valueAccessPoint, defaultColumnName, tableColumnsPerName, configuration));
+			return nullable(overridenColumn).getOr(() -> super.findColumn(valueAccessPoint, defaultColumnName, tableColumnsPerName, configuration));
 		}
 		
 		/**

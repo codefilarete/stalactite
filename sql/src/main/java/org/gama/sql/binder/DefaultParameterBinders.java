@@ -185,7 +185,7 @@ public interface DefaultParameterBinders {
 	 */
 	ParameterBinder<InputStream> BLOB_INPUTSTREAM_BINDER = new LambdaParameterBinder<>(BLOB_READER.thenApply(stream -> {
 		try {
-			return Nullable.nullable(stream).applyThrowing(Blob::getBinaryStream).get();
+			return Nullable.nullable(stream).mapThrower(Blob::getBinaryStream).get();
 		} catch (SQLException e) {
 			throw new SQLExecutionException(e);
 		}
