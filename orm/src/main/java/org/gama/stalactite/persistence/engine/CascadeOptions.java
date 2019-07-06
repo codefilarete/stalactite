@@ -30,7 +30,7 @@ public interface CascadeOptions<R> {
 		 * <p/>
 		 * Sets target entities as readonly, so only association record will be maintained.
 		 * Usefull when an aggregate (Domain Driven Design term) wants to be linked to an entity of another aggregate without modifying it: this mode
-		 * will only manage assocciation table records.
+		 * will only manage association table records.
 		 */
 		ASSOCIATION_ONLY,
 		/**
