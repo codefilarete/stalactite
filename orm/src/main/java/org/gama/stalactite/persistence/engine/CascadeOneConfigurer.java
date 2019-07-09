@@ -301,8 +301,7 @@ public class CascadeOneConfigurer<SRC, TRGT, ID> {
 									 PersisterListener<SRC, ID> srcPersisterListener) {
 			super.addInsertCascade(cascadeOne, targetPersister, srcPersisterListener);
 			// adding cascade treatment: before source insert, target is inserted to comply with foreign key constraint
-			Predicate<TRGT> insertionPredicate = ((Predicate<TRGT>) Objects::nonNull).and(targetPersister.getMappingStrategy()::isNew);
-			srcPersisterListener.addInsertListener(new BeforeInsertSupport<>(targetPersister::insert, cascadeOne.getTargetProvider()::get, insertionPredicate));
+			srcPersisterListener.addInsertListener(new BeforeInsertSupport<>(targetPersister::persist, cascadeOne.getTargetProvider()::get));
 		}
 		
 		@Override
@@ -474,8 +473,7 @@ public class CascadeOneConfigurer<SRC, TRGT, ID> {
 									  PersisterListener<SRC, ID> srcPersisterListener) {
 			super.addInsertCascade(cascadeOne, targetPersister, srcPersisterListener);
 			// adding cascade treatment: after source insert, target is inserted to comply with foreign key constraint
-			Predicate<TRGT> insertionPredicate = ((Predicate<TRGT>) Objects::nonNull).and(targetPersister.getMappingStrategy()::isNew);
-			srcPersisterListener.addInsertListener(new AfterInsertSupport<>(targetPersister::insert, cascadeOne.getTargetProvider()::get, insertionPredicate));
+			srcPersisterListener.addInsertListener(new AfterInsertSupport<>(targetPersister::persist, cascadeOne.getTargetProvider()::get));
 			targetPersister.getMappingStrategy().addSilentColumnInserter(rightColumn, this.reverseGetter);
 		}
 		

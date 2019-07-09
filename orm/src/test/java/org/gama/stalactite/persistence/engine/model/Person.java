@@ -16,6 +16,8 @@ public class Person implements Identified<Long> {
 	
 	private Timestamp timestamp;
 	
+	private Country country;
+	
 	public Person() {
 	}
 	
@@ -46,5 +48,13 @@ public class Person implements Identified<Long> {
 	
 	public void setTimestamp(Timestamp timestamp) {
 		this.timestamp = timestamp;
+	}
+	
+	public Country getCountry() {
+		return country;
+	}
+	
+	public void setCountry(Country country) {
+		this.country = country;
 	}
 }

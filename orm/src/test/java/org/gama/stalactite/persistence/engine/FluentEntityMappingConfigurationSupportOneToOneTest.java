@@ -6,6 +6,7 @@ import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.HashSet;
+import java.util.List;
 
 import org.gama.lang.collection.Arrays;
 import org.gama.lang.collection.Iterables;
@@ -804,6 +805,83 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 						"Non null value expected for relation o.g.s.p.e.m.Person o.g.s.p.e.m.Country.getPresident() on object org.gama.stalactite.persistence.engine.model.Country@0");
 			}
 			
+			@Test
+			void insert_targetInstanceIsUpdated() {
+				Persister<Country, Identifier<Long>, ?> countryPersister = MappingEase.mappingBuilder(Country.class, Identifier.LONG_TYPE)
+						.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
+						.add(Country::getName)
+						.add(Country::getDescription)
+						.addOneToOne(Country::getPresident, personConfiguration).cascading(ALL)
+						.build(persistenceContext);
+				
+				DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+				ddlDeployer.deployDDL();
+				
+				LongProvider countryIdProvider = new LongProvider();
+				Country dummyCountry = new Country(countryIdProvider.giveNewIdentifier());
+				dummyCountry.setName("France");
+				dummyCountry.setDescription("Smelly cheese !");
+				Person person = new Person(new LongProvider().giveNewIdentifier());
+				person.setName("French president");
+				dummyCountry.setPresident(person);
+				countryPersister.insert(dummyCountry);
+				
+				// Creating a new country with the same president (!) and changing president
+				person.setName("Me !!");
+				Country dummyCountry2 = new Country(countryIdProvider.giveNewIdentifier());
+				dummyCountry2.setName("France 2");
+				dummyCountry2.setPresident(person);
+				countryPersister.insert(dummyCountry2);
+				
+				// Checking that president is modified
+				Country persistedCountry = countryPersister.select(dummyCountry2.getId());
+				assertEquals("Me !!", persistedCountry.getPresident().getName());
+				// ... and we still a 2 countries (no deletion was done)
+				List<Long> countryCount = persistenceContext.newQuery("select count(*) as countryCount from Country", Long.class)
+						.mapKey(Long::new, "countryCount", Long.class)
+						.execute();
+				assertEquals(2, Iterables.first(countryCount));
+			}
+			
+			@Test
+			void insert_targetInstanceIsUpdated_ownedByReverseSide() {
+				Persister<Country, Identifier<Long>, ?> countryPersister = MappingEase.mappingBuilder(Country.class, Identifier.LONG_TYPE)
+						.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
+						.add(Country::getName)
+						.add(Country::getDescription)
+						.addOneToOne(Country::getPresident, personConfiguration).cascading(ALL).mappedBy(Person::getCountry)
+						.build(persistenceContext);
+				
+				DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+				ddlDeployer.deployDDL();
+				
+				LongProvider countryIdProvider = new LongProvider();
+				Country dummyCountry = new Country(countryIdProvider.giveNewIdentifier());
+				dummyCountry.setName("France");
+				dummyCountry.setDescription("Smelly cheese !");
+				Person person = new Person(new LongProvider().giveNewIdentifier());
+				person.setName("French president");
+				dummyCountry.setPresident(person);
+				person.setCountry(dummyCountry);
+				countryPersister.insert(dummyCountry);
+				
+				// Creating a new country with the same president (!) and changing president
+				person.setName("Me !!");
+				Country dummyCountry2 = new Country(countryIdProvider.giveNewIdentifier());
+				dummyCountry2.setName("France 2");
+				dummyCountry2.setPresident(person);
+				person.setCountry(dummyCountry2);
+				countryPersister.insert(dummyCountry2);
+				
+				// Checking that president is modified
+				Country persistedCountry = countryPersister.select(dummyCountry2.getId());
+				assertEquals("Me !!", persistedCountry.getPresident().getName());
+				// ... and we still a 2 countries (no deletion was done)
+				List<Long> countryCount = persistenceContext.newQuery("select count(*) as countryCount from Country", Long.class)
+						.mapKey(Long::new, "countryCount", Long.class)
+						.execute();
+				assertEquals(2, Iterables.first(countryCount));
+			}
 		}
 		
 		@Nested

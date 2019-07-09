@@ -9,6 +9,7 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -44,6 +45,7 @@ import org.gama.stalactite.test.JdbcConnectionProvider;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import static org.gama.lang.collection.Iterables.collect;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -363,6 +365,7 @@ public class FluentEntityMappingConfigurationSupportTest {
 				.embed(Country::getPresident)
 					.exclude(Person::getId)
 					.exclude(Person::getVersion)
+					.exclude(Person::getCountry)
 					.overrideName(Person::getName, "presidentName")
 					.innerEmbed(Person::getTimestamp)
 						.exclude(Timestamp::getCreationDate)
@@ -381,7 +384,7 @@ public class FluentEntityMappingConfigurationSupportTest {
 				"presidentName", "persidentElectedAt",
 				// from Country.timestamp
 				"countryCreatedAt"),
-				countryTable.getColumns().stream().map(Column::getName).collect(Collectors.toSet()));
+				collect(countryTable.getColumns(), Column::getName, HashSet::new));
 		
 		Connection connectionMock = mock(Connection.class);
 		
@@ -459,6 +462,7 @@ public class FluentEntityMappingConfigurationSupportTest {
 				.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.add(Country::getName)
 				.embed(Country::getPresident)
+					.exclude(Person::getCountry)
 					.overrideName(Person::getId, "presidentId")
 					.overrideName(Person::getName, "presidentName")
 					.innerEmbed(Person::getTimestamp)
@@ -488,7 +492,7 @@ public class FluentEntityMappingConfigurationSupportTest {
 				"presidentId", "version", "presidentName", "creationDate", "modificationDate",
 				// from Country.timestamp
 				"createdAt", "modifiedAt"),
-				countryTable.getColumns().stream().map(Column::getName).collect(Collectors.toSet()));
+				collect(countryTable.getColumns(), Column::getName, HashSet::new));
 	}
 	
 	

@@ -3,6 +3,7 @@ package org.gama.stalactite.persistence.engine;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.Date;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.stream.Collectors;
 
@@ -31,6 +32,7 @@ import org.gama.stalactite.persistence.structure.Table;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import static org.gama.lang.collection.Iterables.collect;
 import static org.gama.sql.binder.DefaultParameterBinders.INTEGER_PRIMITIVE_BINDER;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -397,6 +399,7 @@ class FluentEmbeddableMappingConfigurationSupportTest {
 		IFluentEmbeddableMappingBuilderEmbedOptions<Country, Timestamp> mappingBuilder = FluentEmbeddableMappingConfigurationSupport.from(Country.class)
 				.add(Country::getName)
 				.embed(Country::getPresident)
+					.exclude(Person::getCountry)
 					.overrideName(Person::getName, "presidentName")
 					.innerEmbed(Person::getTimestamp)
 				// this embed will conflict with Country one because its type is already mapped with no override
@@ -426,7 +429,7 @@ class FluentEmbeddableMappingConfigurationSupportTest {
 				"id", "version", "presidentName", "creationDate", "modificationDate",
 				// from Country.timestamp
 				"createdAt", "modifiedAt"),
-				countryTable.getColumns().stream().map(Column::getName).collect(Collectors.toSet()));
+				collect(countryTable.getColumns(), Column::getName, HashSet::new));
 	}
 	
 	@Test
@@ -435,6 +438,7 @@ class FluentEmbeddableMappingConfigurationSupportTest {
 		EmbeddedBeanMappingStrategy<Country, Table<?>> personMappingStrategy = FluentEmbeddableMappingConfigurationSupport.from(Country.class)
 				.add(Country::getName)
 				.embed(Country::getPresident)
+					.exclude(Person::getCountry)
 					.overrideName(Person::getName, "presidentName")
 					.innerEmbed(Person::getTimestamp)
 						.overrideName(Timestamp::getCreationDate, "createdAt")
@@ -449,7 +453,7 @@ class FluentEmbeddableMappingConfigurationSupportTest {
 				"id", "presidentName", "version",
 				// from Person.timestamp
 				"createdAt", "modificationDate"),
-				countryTable.getColumns().stream().map(Column::getName).collect(Collectors.toSet()));
+				collect(countryTable.getColumns(), Column::getName, HashSet::new));
 		
 		// checking types
 		assertEquals(Date.class, columnsByName.get("modificationDate").getJavaType());
