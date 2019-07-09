@@ -369,7 +369,7 @@ public class FluentEntityMappingConfigurationSupportTest {
 					.overrideName(Person::getName, "presidentName")
 					.innerEmbed(Person::getTimestamp)
 						.exclude(Timestamp::getCreationDate)
-						.overrideName(Timestamp::getModificationDate, "persidentElectedAt")
+						.overrideName(Timestamp::getModificationDate, "presidentElectedAt")
 				// this embed will conflict with Country one because its type is already mapped with no override
 				.embed(Country::getTimestamp)
 					.exclude(Timestamp::getModificationDate)
@@ -381,7 +381,7 @@ public class FluentEntityMappingConfigurationSupportTest {
 				// from Country
 				"id", "name",
 				// from Person
-				"presidentName", "persidentElectedAt",
+				"presidentName", "presidentElectedAt",
 				// from Country.timestamp
 				"countryCreatedAt"),
 				collect(countryTable.getColumns(), Column::getName, HashSet::new));
@@ -444,10 +444,10 @@ public class FluentEntityMappingConfigurationSupportTest {
 		// Testing ...
 		persister.insert(country);
 		
-		assertEquals("insert into countryTable(countryCreatedAt, id, name, persidentElectedAt, presidentName) values (?, ?, ?, ?, ?)",
+		assertEquals("insert into countryTable(countryCreatedAt, id, name, presidentElectedAt, presidentName) values (?, ?, ?, ?, ?)",
 				capturedSQL.toString());
 		assertEquals(Maps.asHashMap((Column) columnsByName.get("presidentName"), (Object) country.getPresident().getName())
-				.add(columnsByName.get("persidentElectedAt"), country.getPresident().getTimestamp().getModificationDate())
+				.add(columnsByName.get("presidentElectedAt"), country.getPresident().getTimestamp().getModificationDate())
 				.add(columnsByName.get("name"), country.getName())
 				.add(columnsByName.get("countryCreatedAt"), country.getTimestamp().getCreationDate())
 				.add(columnsByName.get("id"), country.getId())
