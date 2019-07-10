@@ -10,11 +10,14 @@ import java.util.List;
 
 import org.gama.lang.collection.Arrays;
 import org.gama.lang.collection.Iterables;
+import org.gama.lang.collection.Maps;
 import org.gama.lang.function.ThrowingSupplier;
 import org.gama.lang.test.Assertions;
 import org.gama.sql.ConnectionProvider;
 import org.gama.sql.binder.DefaultParameterBinders;
 import org.gama.sql.result.ResultSetIterator;
+import org.gama.sql.result.Row;
+import org.gama.sql.result.RowIterator;
 import org.gama.sql.test.HSQLDBInMemoryDataSource;
 import org.gama.stalactite.persistence.engine.CascadeOptions.RelationMode;
 import org.gama.stalactite.persistence.engine.ColumnOptions.IdentifierPolicy;
@@ -980,6 +983,144 @@ class FluentEntityMappingConfigurationSupportOneToManyTest {
 			
 			Assertions.assertThrows(() -> mappingBuilder.build(persistenceContext), hasExceptionInCauses(MappingConfigurationException.class)
 					.andProjection(hasMessage(RelationMode.ASSOCIATION_ONLY + " is only relevent with an association table")));
+		}
+		
+		@Test
+		void insert_withAssociationTable_associationRecordsMustBeInserted_butNotTargetEntities() throws SQLException {
+			Persister<Country, Identifier<Long>, ? extends Table> countryPersister = MappingEase.mappingBuilder(Country.class, Identifier.LONG_TYPE)
+					.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
+					.add(Country::getName)
+					.add(Country::getDescription)
+					.addOneToManySet(Country::getCities, CITY_MAPPING_CONFIGURATION).cascading(ASSOCIATION_ONLY)
+					.build(persistenceContext);
+			
+			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+			ddlDeployer.deployDDL();
+			
+			// We need to insert target cities because they won't be inserted by ASSOCIATION_ONLY cascade
+			// If they were inserted by cascade an constraint violation error will be thrown 
+			persistenceContext.getCurrentConnection().createStatement().executeUpdate("insert into City(id) values (100), (200), (300)");
+			
+			Country country1 = new Country(new PersistableIdentifier<>(42L));
+			City city1 = new City(new PersistableIdentifier<>(100L));
+			City city2 = new City(new PersistableIdentifier<>(200L));
+			country1.addCity(city1);
+			country1.addCity(city2);
+			Country country2 = new Country(new PersistableIdentifier<>(666L));
+			City city3 = new City(new PersistableIdentifier<>(300L));
+			country2.addCity(city3);
+			
+			// testing insertion
+			countryPersister.insert(Arrays.asList(country1, country2));
+			
+			ResultSet resultSet;
+			// Checking that we inserted what we wanted
+			resultSet = persistenceContext.getCurrentConnection().createStatement().executeQuery("select id from Country where id = 42");
+			assertTrue(resultSet.next());
+			resultSet = persistenceContext.getCurrentConnection().createStatement().executeQuery("select id from Country where id = 666");
+			assertTrue(resultSet.next());
+			// this test is unnecessary because foreign keys should have been violated, left for more ensurance
+			resultSet = persistenceContext.getCurrentConnection().createStatement().executeQuery("select * from Country_cities where country_Id = 42");
+			assertTrue(resultSet.next());
+			resultSet = persistenceContext.getCurrentConnection().createStatement().executeQuery("select * from Country_cities where country_Id = 666");
+			assertTrue(resultSet.next());
+		}
+		
+		@Test
+		void update_withAssociationTable_associationRecordsMustBeUpdated_butNotTargetEntities() throws SQLException {
+			Persister<Country, Identifier<Long>, ? extends Table> countryPersister = MappingEase.mappingBuilder(Country.class, Identifier.LONG_TYPE)
+					.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
+					.add(Country::getName)
+					.add(Country::getDescription)
+					.addOneToManySet(Country::getCities, CITY_MAPPING_CONFIGURATION).cascading(ASSOCIATION_ONLY)
+					.build(persistenceContext);
+			
+			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+			ddlDeployer.deployDDL();
+			
+			// we need to insert target cities because they won't be inserted by ASSOCIATION_ONLY cascade
+			persistenceContext.getCurrentConnection().createStatement().executeUpdate("insert into City(id) values (100), (200)");
+			
+			Country country1 = new Country(new PersistableIdentifier<>(42L));
+			City city1 = new City(new PersistableIdentifier<>(100L));
+			City city2 = new City(new PersistableIdentifier<>(200L));
+			country1.addCity(city1);
+			country1.addCity(city2);
+			
+			countryPersister.insert(country1);
+			
+			// changinf values before update
+			country1.setName("France");
+			city1.setName("Grenoble");
+			countryPersister.update(country1, countryPersister.select(country1.getId()), true);
+			
+			ResultSet resultSet;
+			// Checking that country name was updated
+			resultSet = persistenceContext.getCurrentConnection().createStatement().executeQuery("select name from Country where id = 42");
+			ResultSetIterator<Row> countryIterator = new RowIterator(resultSet, Maps.asMap("name", DefaultParameterBinders.STRING_BINDER));
+			assertEquals(Arrays.asList("France"), Iterables.collectToList(() -> countryIterator, row -> row.get("name")));
+			// .. but not its city name
+			resultSet = persistenceContext.getCurrentConnection().createStatement().executeQuery("select name from City where id = 100");
+			ResultSetIterator<Row> cityIterator = new RowIterator(resultSet, Maps.asMap("name", DefaultParameterBinders.STRING_BINDER));
+			assertEquals(Arrays.asList((Object) null), Iterables.collectToList(() -> cityIterator, row -> row.get("name")));
+			
+			// removing city doesn't have any effect either
+			assertEquals(2, country1.getCities().size());	// safeguard for unwanted regression on city removal, because it would totally corrupt this test
+			country1.getCities().remove(city1);
+			assertEquals(1, country1.getCities().size());	// safeguard for unwanted regression on city removal, because it would totally corrupt this test
+			countryPersister.update(country1, countryPersister.select(country1.getId()), true);
+			resultSet = persistenceContext.getCurrentConnection().createStatement().executeQuery("select name from City where id = 100");
+			ResultSetIterator<Row> cityIterator2 = new RowIterator(resultSet, Maps.asMap("name", DefaultParameterBinders.STRING_BINDER));
+			assertEquals(Arrays.asList((Object) null), Iterables.collectToList(() -> cityIterator2, row -> row.get("name")));
+		}
+		
+		
+		@Test
+		void update_withAssociationTable_associationRecordsMustBeUpdated_butNotTargetEntities_list() throws SQLException {
+			Persister<Country, Identifier<Long>, ? extends Table> countryPersister = MappingEase.mappingBuilder(Country.class, Identifier.LONG_TYPE)
+					.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
+					.add(Country::getName)
+					.add(Country::getDescription)
+					.addOneToManyList(Country::getAncientCities, CITY_MAPPING_CONFIGURATION).cascading(ASSOCIATION_ONLY)
+					.build(persistenceContext);
+			
+			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+			ddlDeployer.deployDDL();
+			
+			// we need to insert target cities because they won't be inserted by ASSOCIATION_ONLY cascade
+			persistenceContext.getCurrentConnection().createStatement().executeUpdate("insert into City(id) values (100), (200)");
+			
+			Country country1 = new Country(new PersistableIdentifier<>(42L));
+			City city1 = new City(new PersistableIdentifier<>(100L));
+			City city2 = new City(new PersistableIdentifier<>(200L));
+			country1.addAncientCity(city1);
+			country1.addAncientCity(city2);
+			
+			countryPersister.insert(country1);
+			
+			// changinf values before update
+			country1.setName("France");
+			city1.setName("Grenoble");
+			countryPersister.update(country1, countryPersister.select(country1.getId()), true);
+			
+			ResultSet resultSet;
+			// Checking that country name was updated
+			resultSet = persistenceContext.getCurrentConnection().createStatement().executeQuery("select name from Country where id = 42");
+			ResultSetIterator<Row> countryIterator = new RowIterator(resultSet, Maps.asMap("name", DefaultParameterBinders.STRING_BINDER));
+			assertEquals(Arrays.asList("France"), Iterables.collectToList(() -> countryIterator, row -> row.get("name")));
+			// .. but not its city name
+			resultSet = persistenceContext.getCurrentConnection().createStatement().executeQuery("select name from City where id = 100");
+			ResultSetIterator<Row> cityIterator = new RowIterator(resultSet, Maps.asMap("name", DefaultParameterBinders.STRING_BINDER));
+			assertEquals(Arrays.asList((Object) null), Iterables.collectToList(() -> cityIterator, row -> row.get("name")));
+			
+			// removing city doesn't have any effect either
+			assertEquals(2, country1.getAncientCities().size());	// safeguard for unwanted regression on city removal, because it would totally corrupt this test
+			country1.getAncientCities().remove(city1);
+			assertEquals(1, country1.getAncientCities().size());	// safeguard for unwanted regression on city removal, because it would totally corrupt this test
+			countryPersister.update(country1, countryPersister.select(country1.getId()), true);
+			resultSet = persistenceContext.getCurrentConnection().createStatement().executeQuery("select name from City where id = 100");
+			ResultSetIterator<Row> cityIterator2 = new RowIterator(resultSet, Maps.asMap("name", DefaultParameterBinders.STRING_BINDER));
+			assertEquals(Arrays.asList((Object) null), Iterables.collectToList(() -> cityIterator2, row -> row.get("name")));
 		}
 		
 		@Test

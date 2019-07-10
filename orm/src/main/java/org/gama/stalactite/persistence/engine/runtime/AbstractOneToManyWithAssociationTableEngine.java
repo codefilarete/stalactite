@@ -149,8 +149,11 @@ public abstract class AbstractOneToManyWithAssociationTableEngine<SRC, TRGT, SRC
 		});
 	}
 	
-	public void addInsertCascade() {
-		persisterListener.addInsertListener(new TargetInstancesInsertCascader<>(targetPersister, manyRelationDescriptor.getCollectionGetter()));
+	public void addInsertCascade(boolean maintainAssociationOnly) {
+		// Can we cascade insert on target entities ? it depends on relation maintenance mode
+		if (!maintainAssociationOnly) {
+			persisterListener.addInsertListener(new TargetInstancesInsertCascader<>(targetPersister, manyRelationDescriptor.getCollectionGetter()));
+		}
 		
 		persisterListener.addInsertListener(newRecordInsertionCascader(
 				manyRelationDescriptor.getCollectionGetter(),
@@ -159,7 +162,7 @@ public abstract class AbstractOneToManyWithAssociationTableEngine<SRC, TRGT, SRC
 				targetPersister.getMappingStrategy()));
 	}
 	
-	public void addUpdateCascade(boolean shouldDeleteRemoved) {
+	public void addUpdateCascade(boolean shouldDeleteRemoved, boolean maintainAssociationOnly) {
 		
 		// NB: we don't have any reverseSetter (for applying source entity to reverse side (target entity)), because this is only relevent
 		// when association is mapped without intermediary table (owned by "many-side" entity)
@@ -218,7 +221,10 @@ public abstract class AbstractOneToManyWithAssociationTableEngine<SRC, TRGT, SRC
 			}
 		};
 		
-		persisterListener.addUpdateListener(new TargetInstancesUpdateCascader<>(targetPersister, updateListener));
+		// Can we cascade update on target entities ? it depends on relation maintenance mode
+		if (!maintainAssociationOnly) {
+			persisterListener.addUpdateListener(new TargetInstancesUpdateCascader<>(targetPersister, updateListener));
+		}
 	}
 	
 	/**

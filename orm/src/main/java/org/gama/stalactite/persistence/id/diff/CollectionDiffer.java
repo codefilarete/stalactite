@@ -14,6 +14,7 @@ import org.gama.lang.Duo;
 import org.gama.lang.collection.Iterables;
 import org.gama.lang.collection.PairIterator.UntilBothIterator;
 import org.gama.lang.collection.ValueFactoryHashMap;
+import org.gama.lang.function.Predicates;
 import org.gama.lang.trace.ModifiableInt;
 import org.gama.stalactite.persistence.id.Identified;
 
@@ -77,9 +78,9 @@ public class CollectionDiffer<I> {
 		// building Map of indexes per object
 		Map<I, Set<Integer>> beforeIndexes = new ValueFactoryHashMap<>(k -> new HashSet<>());
 		Map<I, Set<Integer>> afterIndexes = new ValueFactoryHashMap<>(k -> new HashSet<>());
-		ModifiableInt beforeIndex = new ModifiableInt(-1);
+		ModifiableInt beforeIndex = new ModifiableInt(-1);	// because indexes should start at 0 as List does
 		before.forEach(o -> beforeIndexes.get(o).add(beforeIndex.increment()));
-		ModifiableInt afterIndex = new ModifiableInt(-1);
+		ModifiableInt afterIndex = new ModifiableInt(-1);		// because indexes should start at 0 as List does
 		after.forEach(o -> afterIndexes.get(o).add(afterIndex.increment()));
 		
 		Set<IndexedDiff<I>> result = new HashSet<>();
@@ -105,7 +106,12 @@ public class CollectionDiffer<I> {
 			Iterable<Duo<? extends Integer, ? extends Integer>> indexPairs = () -> new UntilBothIterator<>(beforeIndexes.get(i), afterIndexes.get(i));
 			// NB: These instances may no be added to result, it depends on iteration
 			IndexedDiff<I> removed = new IndexedDiff<>(REMOVED, i, null);
-			IndexedDiff<I> held = new IndexedDiff<>(HELD, i, i);
+			Object id = idProvider.apply(i);
+			IndexedDiff<I> held = new IndexedDiff<>(HELD,
+					// Is this can be more efficient ? shouldn't we compute a Map of i vs before/after instead of iterating on before/after for each held ?
+					// ... benchmark should be done
+					Iterables.find(before, e -> Predicates.equalOrNull(idProvider.apply(e), id)),
+					Iterables.find(after, e -> Predicates.equalOrNull(idProvider.apply(e), id)));
 			IndexedDiff<I> added = new IndexedDiff<>(ADDED, null, i);
 			for (Duo<? extends Integer, ? extends Integer> indexPair : indexPairs) {
 				if (indexPair.getLeft() != null && indexPair.getRight() != null) {

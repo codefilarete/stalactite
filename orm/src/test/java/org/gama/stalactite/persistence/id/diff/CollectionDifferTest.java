@@ -10,11 +10,13 @@ import java.util.stream.Collectors;
 import org.gama.lang.collection.Arrays;
 import org.gama.lang.collection.Iterables;
 import org.gama.lang.function.Functions;
+import org.gama.lang.test.Assertions;
 import org.gama.stalactite.persistence.engine.model.City;
 import org.gama.stalactite.persistence.engine.model.Country;
 import org.gama.stalactite.persistence.id.Identified;
 import org.gama.stalactite.persistence.id.PersistedIdentifier;
 import org.gama.stalactite.persistence.id.provider.LongProvider;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
@@ -49,8 +51,8 @@ public class CollectionDifferTest {
 			.andThen(statefullIdentifier -> (Comparable) statefullIdentifier.getSurrogate());
 	private static final Function<AbstractDiff<? extends Identified>, Comparable> REPLACING_ID_GETTER = Functions.link(GET_REPLACING_INSTANCE, Identified::getId)
 			.andThen(statefullIdentifier -> (Comparable) statefullIdentifier.getSurrogate());
-	private static final Comparator<AbstractDiff<? extends Identified>> COMPARING = Comparator.comparing(GET_STATE);
-	private static final Comparator<AbstractDiff<? extends Identified>> STATE_THEN_INSTANCES_COMPARATOR = COMPARING
+	private static final Comparator<AbstractDiff<? extends Identified>> STATE_COMPARATOR = Comparator.comparing(GET_STATE);
+	private static final Comparator<AbstractDiff<? extends Identified>> STATE_THEN_ID_COMPARATOR = STATE_COMPARATOR
 			.thenComparing(SOURCE_ID_GETTER, Comparator.nullsFirst(Comparator.naturalOrder()))
 			.thenComparing(REPLACING_ID_GETTER, Comparator.nullsFirst(Comparator.naturalOrder()));
 	
@@ -114,8 +116,8 @@ public class CollectionDifferTest {
 		
 		// we must use a comparator to ensure same order then use a ToString, because the default solution of using assertEquals(..) needs
 		// an implementation of equals(..) and hashCode() which would have been made only for testing purpose
-		TreeSet<Diff<Country>> sortedExpectation = Arrays.asTreeSet(STATE_THEN_INSTANCES_COMPARATOR, expectedResult);
-		TreeSet<Diff<Country>> sortedResult = Arrays.asTreeSet(STATE_THEN_INSTANCES_COMPARATOR, diffs);
+		TreeSet<Diff<Country>> sortedExpectation = Arrays.asTreeSet(STATE_THEN_ID_COMPARATOR, expectedResult);
+		TreeSet<Diff<Country>> sortedResult = Arrays.asTreeSet(STATE_THEN_ID_COMPARATOR, diffs);
 		
 		assertEquals(toString(sortedExpectation), toString(sortedResult));
 	}
@@ -233,9 +235,34 @@ public class CollectionDifferTest {
 		
 		// we must use a comparator to ensure same order then use a ToString, because the default solution of using assertEquals(..) needs
 		// an implementation of equals(..) and hashCode() which would have been made only for testing purpose
-		TreeSet<IndexedDiff<Country>> treeSet1 = Arrays.asTreeSet(STATE_THEN_INSTANCES_COMPARATOR, diffs);
-		TreeSet<IndexedDiff<Country>> treeSet2 = Arrays.asTreeSet(STATE_THEN_INSTANCES_COMPARATOR, expectedResult);
+		TreeSet<IndexedDiff<Country>> treeSet1 = Arrays.asTreeSet(STATE_THEN_ID_COMPARATOR, diffs);
+		TreeSet<IndexedDiff<Country>> treeSet2 = Arrays.asTreeSet(STATE_THEN_ID_COMPARATOR, expectedResult);
 		assertEquals(toString(treeSet2), toString(treeSet1));
+	}
+	
+	@Test
+	public void testDiffList_withClone_cloneMustBeReplacingInstance() {
+		TestData testData = new TestData();
+		Country country1Clone = new Country(testData.country1.getId());
+		country1Clone.setName(testData.country1.getName());
+		List<Country> set1 = asList(testData.country1, testData.country2, testData.country3);
+		List<Country> set2 = asList(testData.country2, country1Clone, testData.country3);
+		
+		CollectionDiffer<Country> testInstance = new CollectionDiffer<>(Country::getName);	// we use a different predicate to prevent from using same comparator that equals(..) method 
+		Set<IndexedDiff<Country>> diffs = testInstance.diffList(set1, set2);
+		
+		Assertions.assertAllEquals(diffs, Arrays.asHashSet(
+				new IndexedDiff<>(HELD, testData.country1, country1Clone, Arrays.asHashSet(0), Arrays.asHashSet(1)),
+				new IndexedDiff<>(HELD, testData.country2, testData.country2, Arrays.asHashSet(1), Arrays.asHashSet(0)),
+				new IndexedDiff<>(HELD, testData.country3, testData.country3, Arrays.asHashSet(2), Arrays.asHashSet(2))),
+				(countryIndexedDiffComputed, countryIndexedDiffExpected) ->
+						countryIndexedDiffComputed.getState().equals(countryIndexedDiffExpected.getState())
+						// Comparing result on source and replacing instance because equals(..) is true on clone
+						&& countryIndexedDiffComputed.getSourceInstance() == countryIndexedDiffExpected.getSourceInstance()
+						&& countryIndexedDiffComputed.getReplacingInstance() == countryIndexedDiffExpected.getReplacingInstance()
+						&& countryIndexedDiffComputed.getSourceIndexes().equals(countryIndexedDiffExpected.getSourceIndexes())
+						&& countryIndexedDiffComputed.getReplacerIndexes().equals(countryIndexedDiffExpected.getReplacerIndexes())
+		);
 	}
 	
 	public static Object[][] testLookupIndexes() {

@@ -40,7 +40,6 @@ import org.mockito.Mockito;
 import static org.gama.lang.function.Functions.chain;
 import static org.gama.stalactite.persistence.engine.CascadeOptions.RelationMode.ALL;
 import static org.gama.stalactite.persistence.engine.CascadeOptions.RelationMode.ALL_ORPHAN_REMOVAL;
-import static org.gama.stalactite.persistence.engine.CascadeOptions.RelationMode.ASSOCIATION_ONLY;
 import static org.gama.stalactite.persistence.engine.MappingEase.mappingBuilder;
 import static org.gama.stalactite.persistence.id.Identifier.LONG_TYPE;
 import static org.gama.stalactite.query.model.QueryEase.select;
@@ -1062,7 +1061,7 @@ class FluentEntityMappingConfigurationSupportIndexedCollectionTest {
 			
 			answerPersister = mappingBuilder(Answer.class, LONG_TYPE)
 					.add(Answer::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
-					.addOneToManyList(Answer::getChoices, answerChoiceMappingConfiguration, choiceTable).cascading(ASSOCIATION_ONLY)
+					.addOneToManyList(Answer::getChoices, answerChoiceMappingConfiguration, choiceTable).cascading(ALL)
 					.build(persistenceContext);
 			
 			// We declare the table that will store our relationship, and overall our List index

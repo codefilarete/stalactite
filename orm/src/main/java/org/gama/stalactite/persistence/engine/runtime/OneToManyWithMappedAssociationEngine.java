@@ -11,7 +11,6 @@ import org.gama.lang.Duo;
 import org.gama.lang.bean.Objects;
 import org.gama.lang.collection.Iterables;
 import org.gama.stalactite.persistence.engine.BeanRelationFixer;
-import org.gama.stalactite.persistence.engine.NotYetSupportedOperationException;
 import org.gama.stalactite.persistence.engine.Persister;
 import org.gama.stalactite.persistence.engine.cascade.AfterInsertCollectionCascader;
 import org.gama.stalactite.persistence.engine.cascade.AfterUpdateCollectionCascader;
@@ -204,7 +203,7 @@ public class OneToManyWithMappedAssociationEngine<SRC, TRGT, SRCID, TRGTID, C ex
 		
 		@Override
 		protected Collection<Duo<O, O>> getTargets(I modifiedTrigger, I unmodifiedTrigger) {
-			throw new NotYetSupportedOperationException();
+			throw new UnsupportedOperationException();
 		}
 	}
 	

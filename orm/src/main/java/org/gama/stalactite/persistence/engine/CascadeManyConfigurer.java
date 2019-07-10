@@ -106,9 +106,16 @@ public class CascadeManyConfigurer<SRC, TRGT, SRCID, TRGTID, C extends Collectio
 				orphanRemoval, writeAuthorized);
 		if (cascadeMany.isOwnedByReverseSide()) {
 			// case : reverse property is defined through one of the setter, getter or column on the reverse side
-			new CascadeManyWithMappedAssociationConfigurer<>(manyAssociationConfiguration, maintenanceMode).configure();
+			if (maintenanceMode == ASSOCIATION_ONLY) {
+				throw new MappingConfigurationException(RelationMode.ASSOCIATION_ONLY + " is only relevent with an association table");
+			}
+			new CascadeManyWithMappedAssociationConfigurer<>(manyAssociationConfiguration, orphanRemoval).configure();
 		} else {
-			new CascadeManyWithAssociationTableConfigurer<>(manyAssociationConfiguration, associationTableNamingStrategy, persistenceContext.getDialect()).configure();
+			new CascadeManyWithAssociationTableConfigurer<>(manyAssociationConfiguration,
+					associationTableNamingStrategy,
+					persistenceContext.getDialect(),
+					maintenanceMode == ASSOCIATION_ONLY)
+					.configure();
 		}
 	}
 	
@@ -178,13 +185,15 @@ public class CascadeManyConfigurer<SRC, TRGT, SRCID, TRGTID, C extends Collectio
 		private final AssociationTableNamingStrategy associationTableNamingStrategy;
 		private final Dialect dialect;
 		private final ManyAssociationConfiguration<SRC, TRGT, SRCID, TRGTID, C> manyAssociationConfiguration;
+		private final boolean maintainAssociationOnly;
 		
 		private CascadeManyWithAssociationTableConfigurer(ManyAssociationConfiguration<SRC, TRGT, SRCID, TRGTID, C> manyAssociationConfiguration,
 														  AssociationTableNamingStrategy associationTableNamingStrategy,
-														  Dialect dialect) {
+														  Dialect dialect, boolean maintainAssociationOnly) {
 			this.manyAssociationConfiguration = manyAssociationConfiguration;
 			this.associationTableNamingStrategy = associationTableNamingStrategy;
 			this.dialect = dialect;
+			this.maintainAssociationOnly = maintainAssociationOnly;
 		}
 		
 		private void configure() {
@@ -206,8 +215,8 @@ public class CascadeManyConfigurer<SRC, TRGT, SRCID, TRGTID, C extends Collectio
 			
 			oneToManyWithAssociationTableEngine.addSelectCascade(manyAssociationConfiguration.joinedTablesPersister);
 			if (manyAssociationConfiguration.writeAuthorized) {
-				oneToManyWithAssociationTableEngine.addInsertCascade();
-				oneToManyWithAssociationTableEngine.addUpdateCascade(manyAssociationConfiguration.orphanRemoval);
+				oneToManyWithAssociationTableEngine.addInsertCascade(maintainAssociationOnly);
+				oneToManyWithAssociationTableEngine.addUpdateCascade(manyAssociationConfiguration.orphanRemoval, maintainAssociationOnly);
 				oneToManyWithAssociationTableEngine.addDeleteCascade(manyAssociationConfiguration.orphanRemoval, dialect.getColumnBinderRegistry());
 			}
 		}
@@ -268,19 +277,15 @@ public class CascadeManyConfigurer<SRC, TRGT, SRCID, TRGTID, C extends Collectio
 	private static class CascadeManyWithMappedAssociationConfigurer<SRC, TRGT, SRCID, TRGTID, C extends Collection<TRGT>> {
 		
 		private final ManyAssociationConfiguration<SRC, TRGT, SRCID, TRGTID, C> manyAssociationConfiguration;
-		private final RelationMode maintenanceMode;
+		private final boolean allowOrphanRemoval;
 		
 		private CascadeManyWithMappedAssociationConfigurer(ManyAssociationConfiguration<SRC, TRGT, SRCID, TRGTID, C> manyAssociationConfiguration,
-														   RelationMode maintenanceMode) {
+														   boolean allowOrphanRemoval) {
 			this.manyAssociationConfiguration = manyAssociationConfiguration;
-			this.maintenanceMode = maintenanceMode;
+			this.allowOrphanRemoval = allowOrphanRemoval;
 		}
 		
 		private void configure() {
-			if (maintenanceMode == ASSOCIATION_ONLY) {
-				throw new MappingConfigurationException(RelationMode.ASSOCIATION_ONLY + " is only relevent with an association table");
-			}
-			
 			// We're looking for the foreign key (for necessary join) and for getter/setter required to manage the relation 
 			Column reverseColumn = manyAssociationConfiguration.cascadeMany.getReverseColumn();
 			Method reverseMethod = null;
@@ -319,7 +324,7 @@ public class CascadeManyConfigurer<SRC, TRGT, SRCID, TRGTID, C extends Collectio
 							manyAssociationConfiguration.joinColumnNamingStrategy.giveName(MemberDefinition.giveMemberDefinition(reversePropertyAccessor)),
 							Iterables.first(primaryKey.getColumns()).getJavaType());
 					// column can be null if we don't remove orphans
-					reverseColumn.setNullable(maintenanceMode != ALL_ORPHAN_REMOVAL);
+					reverseColumn.setNullable(!allowOrphanRemoval);
 					
 					SerializableFunction<TRGT, SRC> finalReverseGetter = reverseGetter;
 					IdAccessor<SRC, SRCID> idAccessor = sourceMappingStrategy.getIdMappingStrategy().getIdAccessor();

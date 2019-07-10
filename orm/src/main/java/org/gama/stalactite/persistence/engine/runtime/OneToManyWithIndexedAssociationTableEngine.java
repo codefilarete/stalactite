@@ -35,7 +35,7 @@ public class OneToManyWithIndexedAssociationTableEngine<SRC, TRGT, SRCID, TRGTID
 	}
 	
 	@Override
-	public void addUpdateCascade(boolean shouldDeleteRemoved) {
+	public void addUpdateCascade(boolean shouldDeleteRemoved, boolean maintainAssociationOnly) {
 		
 		// NB: we don't have any reverseSetter (for applying source entity to reverse side (target entity)), because this is only relevent
 		// when association is mapped without intermediary table (owned by "many-side" entity)
@@ -132,7 +132,10 @@ public class OneToManyWithIndexedAssociationTableEngine<SRC, TRGT, SRCID, TRGTID
 			}
 		};
 		
-		persisterListener.addUpdateListener(new TargetInstancesUpdateCascader<>(targetPersister, updateListener));
+		// Can we cascade update on target entities ? it depends on relation maintenance mode
+		if (!maintainAssociationOnly) {
+			persisterListener.addUpdateListener(new TargetInstancesUpdateCascader<>(targetPersister, updateListener));
+		}
 	}
 	
 	@Override
