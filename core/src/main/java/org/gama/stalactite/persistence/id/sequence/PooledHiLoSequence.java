@@ -69,10 +69,8 @@ public class PooledHiLoSequence implements org.gama.lang.function.Sequence<Long>
 				persister.reservePool(sequenceName, getPoolSize());
 			}
 		};
-		// if no sequence exists we consider that a new boundary is reached in order to insert initial state
-		if (existingSequence == null) {
-			sequenceState.onBoundReached();
-		}
+		// we consider that a new boundary is reached in order to insert next state
+		sequenceState.onBoundReached();
 	}
 	
 	protected String getSequenceName() {

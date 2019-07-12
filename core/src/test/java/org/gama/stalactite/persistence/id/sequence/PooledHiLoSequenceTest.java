@@ -1,8 +1,13 @@
 package org.gama.stalactite.persistence.id.sequence;
 
+import java.sql.PreparedStatement;
 import java.sql.SQLException;
 
 import org.gama.lang.collection.Arrays;
+import org.gama.lang.collection.Maps;
+import org.gama.sql.binder.DefaultResultSetReaders;
+import org.gama.sql.result.Row;
+import org.gama.sql.result.RowIterator;
 import org.gama.sql.test.HSQLDBInMemoryDataSource;
 import org.gama.stalactite.persistence.engine.DDLDeployer;
 import org.gama.stalactite.persistence.engine.PersistenceContext;
@@ -49,6 +54,17 @@ public class PooledHiLoSequenceTest {
 			assertEquals(i, testInstance.next().intValue());
 		}
 		
+		SequenceStorageOptions sequenceStorageOptions = totoSequenceOptions.getStorageOptions();
+		PreparedStatement sequenceValueReader = connectionProvider.getCurrentConnection().prepareStatement(
+				"select " + sequenceStorageOptions.getValueColumn()
+						+ " from " + sequenceStorageOptions.getTable()
+						+ " where " + sequenceStorageOptions.getSequenceNameColumn() + " = ?");
+		sequenceValueReader.setString(1, totoSequenceOptions.getSequenceName());
+		RowIterator sequenceValues = new RowIterator(sequenceValueReader.executeQuery(), Maps.asMap(sequenceStorageOptions.getValueColumn(), DefaultResultSetReaders.INTEGER_PRIMITIVE_READER));
+		sequenceValues.hasNext();
+		Row row = sequenceValues.next();
+		assertEquals(50, row.get(sequenceStorageOptions.getValueColumn()));
+		
 		// we check that we can increment from a database with a new sequence in the same table
 		PooledHiLoSequenceOptions tataSequenceOptions = new PooledHiLoSequenceOptions(10, "Tata", SequenceStorageOptions.DEFAULT);
 		testInstance = new PooledHiLoSequence(tataSequenceOptions, dialect, connectionProvider, jdbcBatchSize);
@@ -58,7 +74,16 @@ public class PooledHiLoSequenceTest {
 		
 		// we check that we can increment from a database with an existing sequence
 		testInstance = new PooledHiLoSequence(totoSequenceOptions, dialect, connectionProvider, jdbcBatchSize);
-		for (int i = 0; i < 45; i++) {
+		assertEquals(50, testInstance.next().intValue());
+		// after first access, sequence must be incremented
+		sequenceValueReader.setString(1, totoSequenceOptions.getSequenceName());
+		sequenceValues = new RowIterator(sequenceValueReader.executeQuery(), Maps.asMap(sequenceStorageOptions.getValueColumn(), DefaultResultSetReaders.INTEGER_PRIMITIVE_READER));
+		sequenceValues.hasNext();
+		row = sequenceValues.next();
+		// previous call ends at 50, so first increment mus put it to 50
+		assertEquals(60, row.get(sequenceStorageOptions.getValueColumn()));
+
+		for (int i = 1; i < 45; i++) {
 			// 50 because previous call to Toto sequence had a pool size of 10, and its last call was 45. So the external state was 50.
 			// (upper bound of 45 by step of 10)
 			assertEquals(50+i, testInstance.next().intValue());
