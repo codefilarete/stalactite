@@ -7,6 +7,7 @@ import org.gama.lang.StringAppender;
 import org.gama.lang.Strings;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
+import org.gama.stalactite.query.builder.OperatorBuilder.SQLAppender;
 import org.gama.stalactite.query.builder.OperatorBuilder.StringAppenderWrapper;
 import org.gama.stalactite.query.model.AbstractRelationalOperator;
 import org.gama.stalactite.query.model.Select;
@@ -34,9 +35,14 @@ public class SelectBuilder implements SQLBuilder {
 	@Override
 	public String toSQL() {
 		StringAppender sql = new StringAppender(200);
-		StringAppenderWrapper appenderWrapper = new StringAppenderWrapper(sql, dmlNameProvider);
 		sql.catIf(this.select.isDistinct(), "distinct ");
-		for (Object o : this.select) {
+		cat(this.select, sql);
+		return sql.toString();
+	}
+	
+	private void cat(Iterable<Object /* String, Column or AliasedColumn */> select, StringAppender sql) {
+		StringAppenderWrapper appenderWrapper = new StringAppenderWrapper(sql, dmlNameProvider);
+		for (Object o : select) {
 			if (o instanceof String) {
 				cat((String) o, sql);
 			} else if (o instanceof Column) {
@@ -45,14 +51,17 @@ public class SelectBuilder implements SQLBuilder {
 				cat((AliasedColumn) o, sql);
 			} else if (o instanceof AbstractRelationalOperator) {
 				cat((AbstractRelationalOperator) o, appenderWrapper);
+			} else if (o instanceof Iterable) {
+				cat((Iterable<Object /* String, Column or AliasedColumn */>) o, sql);
 			} else {
 				throw new UnsupportedOperationException("Operator " + Reflections.toString(o.getClass()) + " is not implemented");
 			}
 			sql.cat(", ");
 		}
-		// cut the always traling comma
-		sql.cutTail(2);
-		return sql.toString();
+		if (Strings.tail(sql, 2).equals(", ")) {	// if not, means select was empty
+			// cut the traling comma
+			sql.cutTail(2);
+		}
 	}
 	
 	protected void cat(String o, StringAppender sql) {
@@ -67,7 +76,7 @@ public class SelectBuilder implements SQLBuilder {
 		sql.cat(dmlNameProvider.getName(o.getColumn())).catIf(!Strings.isEmpty(o.getAlias()), " as ", o.getAlias());
 	}
 	
-	private void cat(AbstractRelationalOperator operator, StringAppenderWrapper appenderWrapper) {
+	private void cat(AbstractRelationalOperator operator, SQLAppender appenderWrapper) {
 		operatorBuilder.cat(operator, appenderWrapper);
 	}
 }

@@ -3,6 +3,7 @@ package org.gama.stalactite.query.builder;
 import java.util.Collections;
 import java.util.Map;
 
+import org.gama.lang.collection.Arrays;
 import org.gama.lang.collection.Maps;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
@@ -44,6 +45,7 @@ public class SelectBuilderTest {
 				{ new Select().add(colTotoA, "A"), emptyMap, "Toto.a as A" },
 				{ new Select().add(colTotoA, "A"), tableAliases, "to.a as A" },
 				{ new Select().add(min(colTotoA), max(colTotoA)), tableAliases, "min(to.a), max(to.a)" },
+				{ new Select().add(Arrays.asList(colTotoA, colTotoB)).add(colTataA), emptyMap, "Toto.a, Toto.b, Tata.a" },
 		};
 	}
 	
