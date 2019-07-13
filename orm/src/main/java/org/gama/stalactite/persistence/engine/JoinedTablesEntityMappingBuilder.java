@@ -4,11 +4,9 @@ import javax.annotation.Nullable;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
-import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
-import org.gama.lang.Duo;
 import org.gama.lang.bean.Objects;
 import org.gama.lang.collection.Iterables;
 import org.gama.reflection.IReversibleAccessor;
@@ -135,14 +133,10 @@ public class JoinedTablesEntityMappingBuilder<C, I> {
 	
 	private void addCascadesBetweenChildAndParentTable(PersisterListener<C, I> persisterListener, Persister<? super C, I, Table> superPersister) {
 		// Before insert of child we must insert parent
-		// this weird cast is due to <? super C> ...
-		Consumer<Iterable<C>> superEntitiesInsertor = superPersister::insert;
-		persisterListener.addInsertListener(new BeforeInsertSupport<>(superEntitiesInsertor, Function.identity()));
+		persisterListener.addInsertListener(new BeforeInsertSupport<>(superPersister::insert, Function.identity()));
 		
 		// On child update, parent must be updated too, no constraint on order for this, after is arbitrarly choosen
-		// this weird cast is due to <? super C> ...
-		BiConsumer<Iterable<Duo<C, C>>, Boolean> superEntitiesUpdator = superPersister::update;
-		persisterListener.addUpdateListener(new AfterUpdateSupport<>(superEntitiesUpdator, Function.identity()));
+		persisterListener.addUpdateListener(new AfterUpdateSupport<>(superPersister::update, Function.identity()));
 		// idem for updateById
 		persisterListener.addUpdateByIdListener(new UpdateByIdListener<C>() {
 			@Override
