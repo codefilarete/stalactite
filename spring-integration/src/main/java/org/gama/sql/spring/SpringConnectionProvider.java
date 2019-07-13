@@ -9,6 +9,7 @@ import org.springframework.jdbc.datasource.DataSourceUtils;
 import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.TransactionStatus;
 import org.springframework.transaction.support.TransactionCallbackWithoutResult;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.transaction.support.TransactionTemplate;
 
 /**
@@ -27,7 +28,12 @@ public class SpringConnectionProvider implements SeparateTransactionExecutor {
 	@Nonnull
 	@Override
 	public Connection getCurrentConnection() {
-		return DataSourceUtils.getConnection(transactionManager.getDataSource());
+		// DataSourceUtils.getConnection(..) gets a connection even if no surrounding transaction exists so we have to check it before
+		if (!TransactionSynchronizationManager.isActualTransactionActive()) {
+			throw new IllegalStateException("No active transaction");
+		} else {
+			return DataSourceUtils.getConnection(transactionManager.getDataSource());
+		}
 	}
 	
 	@Override

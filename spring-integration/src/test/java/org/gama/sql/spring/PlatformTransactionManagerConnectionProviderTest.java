@@ -18,8 +18,6 @@ import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 
-//import static org.gama.lang.InvocationHandlerSupport.mock;
-
 /**
  * @author Guillaume Mary
  */
