@@ -24,6 +24,7 @@ import org.gama.reflection.MemberDefinition;
 import org.gama.reflection.MethodReferenceCapturer;
 import org.gama.reflection.ValueAccessPoint;
 import org.gama.reflection.ValueAccessPointSet;
+import org.gama.stalactite.persistence.engine.ColumnOptions.BeforeInsertIdentifierPolicy;
 import org.gama.stalactite.persistence.engine.ColumnOptions.IdentifierPolicy;
 import org.gama.stalactite.persistence.engine.EmbeddableMappingConfiguration.Linkage;
 import org.gama.stalactite.persistence.engine.FluentEmbeddableMappingConfigurationSupport.Inset;
@@ -36,6 +37,7 @@ import org.gama.stalactite.persistence.id.Identified;
 import org.gama.stalactite.persistence.id.Identifier;
 import org.gama.stalactite.persistence.id.assembly.SimpleIdentifierAssembler;
 import org.gama.stalactite.persistence.id.manager.AlreadyAssignedIdentifierManager;
+import org.gama.stalactite.persistence.id.manager.BeforeInsertIdentifierManager;
 import org.gama.stalactite.persistence.id.manager.IdentifierInsertionManager;
 import org.gama.stalactite.persistence.id.manager.JDBCGeneratedKeysIdentifierManager;
 import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
@@ -143,7 +145,7 @@ class EntityMappingBuilder<C, I> {
 				identifierInsertionManager = new IdentifiedIdentifierManager<>(identifierType);
 			} else {
 				throw new NotYetSupportedOperationException(
-						IdentifierPolicy.ALREADY_ASSIGNED + " is only supported with entities that implement " + Reflections.toString(Identified.class));
+						"Already-assigned identifier policy is only supported with entities that implement " + Reflections.toString(Identified.class));
 			}
 		} else if (identifierPolicy == IdentifierPolicy.AFTER_INSERT) {
 			// NB: we can use equals(..) here because Linkage was created from accessor information, no need to create a MemberDefinition for comparison
@@ -157,8 +159,17 @@ class EntityMappingBuilder<C, I> {
 					dialect.buildGeneratedKeysReader(identifierLinkage.get().getColumnName(), identifierType),
 					identifierType
 			);
+		} else if (identifierPolicy instanceof ColumnOptions.BeforeInsertIdentifierPolicy) {
+			// NB: we can use equals(..) here because Linkage was created from accessor information, no need to create a MemberDefinition for comparison
+			Optional<Linkage> identifierLinkage = propertiesMapping.stream().filter(
+					linkage -> linkage.getAccessor().equals(identifierAccessor)).findFirst();
+			if (!identifierLinkage.isPresent()) {
+				throw new IllegalStateException("Identifier accessor expected to be found in mapping but wasn't. Identification cannot be built.");
+			}
+			identifierInsertionManager = new BeforeInsertIdentifierManager<>(
+					new SinglePropertyIdAccessor<>(identifierAccessor), ((BeforeInsertIdentifierPolicy<I>) identifierPolicy).getIdentifierProvider(), identifierType);
 		} else {
-			throw new NotYetSupportedOperationException(identifierPolicy + " is not yet supported");
+			throw new UnsupportedOperationException(identifierPolicy + " is not supported");
 		}
 		return identifierInsertionManager;
 	}
@@ -401,10 +412,10 @@ class EntityMappingBuilder<C, I> {
 		 * @param column
 		 */
 		private void ensureColumnBindingExceptOneToOne(Linkage linkage, Column column) {
-			// we should not check for column binding of owner because its column will be mange by CascadeOneConfigurer. Without this, we get a
+			// we should not check for column binding of owner because its column will be manage by CascadeOneConfigurer. Without this, we get a
 			// BindingException at each OneToOne
 			// NB: we can use equals(..) here because Linkage was created from oneToOne information, no need to create a MemberDefinition for comparison
-			if (this.oneToOnes.stream().noneMatch(cascadeOne -> cascadeOne.getTargetProvider().equals(linkage.getAccessor()))) {
+			if (!Iterables.contains(this.oneToOnes.iterator(), cascadeOne -> cascadeOne.getTargetProvider().equals(linkage.getAccessor()))) {
 				super.ensureColumnBinding(linkage, column);
 			}
 		}

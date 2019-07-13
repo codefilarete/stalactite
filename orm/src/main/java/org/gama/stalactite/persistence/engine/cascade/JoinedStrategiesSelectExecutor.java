@@ -6,6 +6,7 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
 
 import org.gama.lang.StringAppender;
 import org.gama.lang.bean.Objects;
@@ -15,6 +16,7 @@ import org.gama.sql.ConnectionProvider;
 import org.gama.sql.SimpleConnectionProvider;
 import org.gama.sql.binder.ParameterBinder;
 import org.gama.sql.binder.ParameterBinderIndex;
+import org.gama.sql.binder.ParameterBinderIndex.ParameterBinderIndexFromMap;
 import org.gama.sql.dml.ReadOperation;
 import org.gama.sql.result.Row;
 import org.gama.stalactite.persistence.engine.BeanRelationFixer;
@@ -160,9 +162,14 @@ public class JoinedStrategiesSelectExecutor<C, I, T extends Table> extends Selec
 		return result;
 	}
 	
-	List<C> execute(ConnectionProvider connectionProvider, String sql, Collection<? extends List<I>> idsParcels, Map<Column, int[]> inOperatorValueIndexes) {
+	List<C> execute(ConnectionProvider connectionProvider, String sql, Collection<? extends List<I>> idsParcels, Map<Column<T, Object>, int[]> inOperatorValueIndexes) {
+		// binders must be exactly the ones necessary to the request, else an IllegalArgumentException is thrown at execution time
+		// so we have to extract them from what is in the request : only primary key columns are parameterized 
+		Map<Column<T, Object>, ParameterBinder> primaryKeyBinders = Iterables.map(getMappingStrategy().getTargetTable().getPrimaryKey().getColumns(), Function.identity(), parameterBinderProvider::getBinder);
+		ColumnParameterizedSelect<T> preparedSelect = new ColumnParameterizedSelect<>(sql, inOperatorValueIndexes,
+				new ParameterBinderIndexFromMap<>(primaryKeyBinders),
+				joinedStrategiesSelect.getSelectParameterBinders());
 		List<C> result = new ArrayList<>(idsParcels.size() * blockSize);
-		ColumnParameterizedSelect preparedSelect = new ColumnParameterizedSelect(sql, inOperatorValueIndexes, parameterBinderProvider, joinedStrategiesSelect.getSelectParameterBinders());
 		try (ReadOperation<Column<T, Object>> columnReadOperation = new ReadOperation<>(preparedSelect, connectionProvider)) {
 			for (List<I> parcel : idsParcels) {
 				result.addAll(execute(columnReadOperation, parcel));

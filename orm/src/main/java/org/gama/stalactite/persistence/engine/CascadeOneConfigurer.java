@@ -14,13 +14,11 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
-import org.danekja.java.util.function.serializable.SerializableFunction;
 import org.gama.lang.Duo;
 import org.gama.lang.Nullable;
 import org.gama.lang.ThreadLocals;
 import org.gama.lang.collection.Iterables;
 import org.gama.lang.function.Predicates;
-import org.gama.reflection.AccessorByMethod;
 import org.gama.reflection.AccessorByMethodReference;
 import org.gama.reflection.Accessors;
 import org.gama.reflection.IAccessor;
@@ -52,6 +50,7 @@ import org.gama.stalactite.persistence.id.assembly.SimpleIdentifierAssembler;
 import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
 import org.gama.stalactite.persistence.mapping.IdMappingStrategy;
 import org.gama.stalactite.persistence.mapping.SinglePropertyIdAccessor;
+import org.gama.stalactite.persistence.sql.Dialect;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
 
@@ -237,45 +236,14 @@ public class CascadeOneConfigurer<SRC, TRGT, ID> {
 		<T extends Table<T>> Persister<TRGT, ID, Table> appendCascade(CascadeOne<SRC, TRGT, ID> cascadeOne, JoinedTablesPersister<SRC, ID, T> sourcePersister,
 												ForeignKeyNamingStrategy foreignKeyNamingStrategy, ColumnNamingStrategy joinColumnNamingStrategy) {
 			Persister<TRGT, ID, Table> targetPersister = super.appendCascade(cascadeOne, sourcePersister, foreignKeyNamingStrategy, joinColumnNamingStrategy);
-			
+			Column owningColumn = sourcePersister.getMappingStrategy().getPropertyToColumn().get(cascadeOne.getTargetProvider());
 			// we have to register a parameter binder for target entity so inserts & updates can get value from the property, without it, engine
 			// tries to find a binder for target entity which doesn't exist 
-			registerTargetEntityBinder(targetPersister);
+			registerEntityBinder(owningColumn, targetPersister.getMappingStrategy(), persistenceContext.getDialect());
 			
 			return targetPersister;
 		}
-		
-		private void registerTargetEntityBinder(Persister<TRGT, ID, Table> targetPersister) {
-			// Note : for now only single primary key column is supported
-			IdMappingStrategy<TRGT, ID> targetIdMappingStrategy = targetPersister.getMappingStrategy().getIdMappingStrategy();
-			Column targetPrimaryKey = ((SimpleIdentifierAssembler) targetIdMappingStrategy.getIdentifierAssembler()).getColumn();
-			IReversibleAccessor targetIdAccessor = ((SinglePropertyIdAccessor) targetIdMappingStrategy.getIdAccessor()).getIdAccessor();
-			MemberDefinition memberDefinition = MemberDefinition.giveMemberDefinition(targetIdAccessor);
-			
-			// Binding sql column type
-			String targetPrimaryKeySqlTypeName = persistenceContext.getDialect().getJavaTypeToSqlTypeMapping().getTypeName(targetPrimaryKey);
-			persistenceContext.getDialect().getJavaTypeToSqlTypeMapping().put(targetPersister.getMappingStrategy().getClassToPersist(), targetPrimaryKeySqlTypeName);
-			// Binding entity type : binder will get entity identifier
-			ParameterBinder ownerBinder = persistenceContext.getDialect().getColumnBinderRegistry().getBinder(memberDefinition.getMemberType());
-			persistenceContext.getDialect().getColumnBinderRegistry().register(targetPersister.getMappingStrategy().getClassToPersist(),
-					new NullAwareParameterBinder<>(new ParameterBinder<TRGT>() {
-				@Override
-				public void set(PreparedStatement preparedStatement, int valueIndex, TRGT value) throws SQLException {
-					ownerBinder.set(preparedStatement, valueIndex, targetIdAccessor.get(value));
-				}
 				
-				/**
-				 * This is never used because it should return an entity which can't be build here.
-				 * It will be by {@link org.gama.stalactite.persistence.engine.cascade.StrategyJoinsRowTransformer}
-				 * Hence this implementation returns null
-				 */
-				@Override
-				public TRGT get(ResultSet resultSet, String columnName) {
-					return null;
-				}
-			}));
-		}
-		
 		@Override
 		protected <T extends Table<T>> Duo<Column, Column> determineForeignKeyColumns(CascadeOne<SRC, TRGT, ID> cascadeOne,
 																					  ClassMappingStrategy<SRC, ID, T> srcMappingStrategy,
@@ -410,6 +378,7 @@ public class CascadeOneConfigurer<SRC, TRGT, ID> {
 				MemberDefinition memberDefinition = MemberDefinition.giveMemberDefinition(localReverseGetter);
 				// we add a column for reverse mapping if one is not already declared
 				rightColumn = createOrUseReverseColumn(targetMappingStrategy, cascadeOne.getReverseColumn(), localReverseGetter, memberDefinition, joinColumnNamingStrategy);
+				registerEntityBinder(rightColumn, mappingStrategy, persistenceContext.getDialect());
 				
 				// we take advantage of forign key computing and presence of MemberDefinition to build relation fixer which is needed lately in determineRelationFixer(..) 
 				IMutator<TRGT, SRC> targetIntoSourceFixer = Accessors.mutatorByMethod(memberDefinition.getDeclaringClass(), memberDefinition.getName());
@@ -426,10 +395,9 @@ public class CascadeOneConfigurer<SRC, TRGT, ID> {
 				// we add a column for reverse mapping if one is not already declared
 				rightColumn = createOrUseReverseColumn(targetMappingStrategy, cascadeOne.getReverseColumn(), reverseSetter, memberDefinition,
 						joinColumnNamingStrategy);
+				registerEntityBinder(rightColumn, mappingStrategy, persistenceContext.getDialect());
 				
-				AccessorByMethod<TRGT, SRC> accessorByMethod = Accessors.accessorByMethod(memberDefinition.getDeclaringClass(), memberDefinition.getName());
-				SerializableFunction<TRGT, SRC> localReverseGetter = accessorByMethod::get;
-				
+				IAccessor<TRGT, SRC> accessor = Accessors.accessor(memberDefinition.getDeclaringClass(), memberDefinition.getName());
 				// we take advantage of forign key computing and presence of MemberDefinition to build relation fixer which is needed lately in determineRelationFixer(..) 
 				beanRelationFixer = (target, input) -> {
 					// fixing target on source side
@@ -437,7 +405,7 @@ public class CascadeOneConfigurer<SRC, TRGT, ID> {
 					// fixing source on target side
 					sourceIntoTargetFixer.set(target, input);
 				};
-				this.reverseGetter = localReverseGetter;
+				this.reverseGetter = accessor::get;
 			} // else : non bidirectional relation (both getter and setter are null), nothing to do
 			
 			// adding foreign key constraint
@@ -659,5 +627,46 @@ public class CascadeOneConfigurer<SRC, TRGT, ID> {
 		private TRGT getTarget(SRC src) {
 			return targetAccessor.get(src);
 		}
+	}
+	
+	/**
+	 * Registers given {@link Column} into {@link Dialect} binder registry. Made for one-to-one cases because relation-owning property must be persisted
+	 * as a foreign key, so identifier must be extracted from target entity.
+	 * 
+	 * @param owningColumn the column that owns relation property
+	 * @param mappingStrategy mapping strategy of entity targeted by column (may be root or child dependeing of ownership) 
+	 * @param dialect dialect to register binders
+	 * @param <TRGT> target type of the column
+	 * @param <ID> identifier type
+	 */
+	private static <TRGT, ID> void registerEntityBinder(Column owningColumn, ClassMappingStrategy<TRGT, ID, ? extends Table> mappingStrategy, Dialect dialect) {
+		// Note : for now only single primary key column is supported
+		IdMappingStrategy<TRGT, ID> targetIdMappingStrategy = mappingStrategy.getIdMappingStrategy();
+		Column targetPrimaryKey = ((SimpleIdentifierAssembler) targetIdMappingStrategy.getIdentifierAssembler()).getColumn();
+		IReversibleAccessor targetIdAccessor = ((SinglePropertyIdAccessor) targetIdMappingStrategy.getIdAccessor()).getIdAccessor();
+		MemberDefinition memberDefinition = MemberDefinition.giveMemberDefinition(targetIdAccessor);
+		
+		// Binding sql column type
+		String targetPrimaryKeySqlTypeName = dialect.getJavaTypeToSqlTypeMapping().getTypeName(targetPrimaryKey);
+		dialect.getJavaTypeToSqlTypeMapping().put(owningColumn, targetPrimaryKeySqlTypeName);
+		// Binding entity type : binder will get entity identifier
+		ParameterBinder ownerBinder = dialect.getColumnBinderRegistry().getBinder(memberDefinition.getMemberType());
+		dialect.getColumnBinderRegistry().register(owningColumn,
+				new NullAwareParameterBinder<>(new ParameterBinder<TRGT>() {
+					@Override
+					public void set(PreparedStatement preparedStatement, int valueIndex, TRGT value) throws SQLException {
+						ownerBinder.set(preparedStatement, valueIndex, targetIdAccessor.get(value));
+					}
+					
+					/**
+					 * This is never used because it should return an entity which can't be build here.
+					 * It will be by {@link org.gama.stalactite.persistence.engine.cascade.StrategyJoinsRowTransformer}
+					 * Hence this implementation returns null
+					 */
+					@Override
+					public TRGT get(ResultSet resultSet, String columnName) {
+						return null;
+					}
+				}));
 	}
 }

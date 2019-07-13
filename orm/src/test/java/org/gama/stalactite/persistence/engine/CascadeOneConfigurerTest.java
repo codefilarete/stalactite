@@ -132,7 +132,7 @@ class CascadeOneConfigurerTest {
 		
 		// City must have a binder due to relation owned by source throught Country::getCapital
 		// This binder must only set value on PreparedStatement and doesn't read because it can't created a consistent City from values read from Country table
-		ParameterBinder<City> cityParameterBinder = dialect.getColumnBinderRegistry().getBinder(City.class);
+		ParameterBinder<City> cityParameterBinder = dialect.getColumnBinderRegistry().getBinder(countryTableCapitalColumn);
 		assertNotNull(cityParameterBinder);
 		PreparedStatement preparedStatementMock = mock(PreparedStatement.class);
 		cityParameterBinder.set(preparedStatementMock, 1, new City(new PersistableIdentifier<>(4L)));

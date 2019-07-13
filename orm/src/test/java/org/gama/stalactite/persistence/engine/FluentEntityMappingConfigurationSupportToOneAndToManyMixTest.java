@@ -25,7 +25,6 @@ import org.gama.stalactite.persistence.id.PersistedIdentifier;
 import org.gama.stalactite.persistence.id.provider.LongProvider;
 import org.gama.stalactite.persistence.sql.HSQLDBDialect;
 import org.gama.stalactite.test.JdbcConnectionProvider;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -41,24 +40,20 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  */
 public class FluentEntityMappingConfigurationSupportToOneAndToManyMixTest {
 	
-	private static final HSQLDBDialect DIALECT = new HSQLDBDialect();
-	private DataSource dataSource = new HSQLDBInMemoryDataSource();
+	private final HSQLDBDialect dialect = new HSQLDBDialect();
+	private final DataSource dataSource = new HSQLDBInMemoryDataSource();
 	private PersistenceContext persistenceContext;
 	private IFluentMappingBuilderPropertyOptions<City, Identifier<Long>> cityMappingConfiguration;
 	private IFluentMappingBuilderPropertyOptions<Person, Identifier<Long>> personMappingConfiguration;
 	
-	@BeforeAll
-	public static void initBinders() {
-		// binder creation for our identifier
-		DIALECT.getColumnBinderRegistry().register((Class) Identifier.class, Identifier.identifierBinder(DefaultParameterBinders.LONG_PRIMITIVE_BINDER));
-		DIALECT.getJavaTypeToSqlTypeMapping().put(Identifier.class, "int");
-		DIALECT.getColumnBinderRegistry().register((Class) Identified.class, Identified.identifiedBinder(DefaultParameterBinders.LONG_PRIMITIVE_BINDER));
-		DIALECT.getJavaTypeToSqlTypeMapping().put(Identified.class, "int");
-	}
-	
 	@BeforeEach
 	public void initTest() {
-		persistenceContext = new PersistenceContext(new JdbcConnectionProvider(dataSource), DIALECT);
+		// binder creation for our identifier
+		dialect.getColumnBinderRegistry().register((Class) Identifier.class, Identifier.identifierBinder(DefaultParameterBinders.LONG_PRIMITIVE_BINDER));
+		dialect.getJavaTypeToSqlTypeMapping().put(Identifier.class, "int");
+		dialect.getColumnBinderRegistry().register((Class) Identified.class, Identified.identifiedBinder(DefaultParameterBinders.LONG_PRIMITIVE_BINDER));
+		dialect.getJavaTypeToSqlTypeMapping().put(Identified.class, "int");
+		persistenceContext = new PersistenceContext(new JdbcConnectionProvider(dataSource), dialect);
 		
 		IFluentMappingBuilderPropertyOptions<Person, Identifier<Long>> personMappingBuilder = MappingEase.mappingBuilder(Person.class,
 				Identifier.LONG_TYPE)

@@ -164,7 +164,7 @@ public class FluentEntityMappingConfigurationSupportTest {
 				() -> MappingEase.mappingBuilder(Toto.class, StatefullIdentifier.class)
 				.add(Toto::getName).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.build(persistenceContext));
-		assertEquals("ALREADY_ASSIGNED is only supported with entities that implement o.g.s.p.i.Identified", thrownException.getMessage());
+		assertEquals("Already-assigned identifier policy is only supported with entities that implement o.g.s.p.i.Identified", thrownException.getMessage());
 	}
 	
 	@Test
