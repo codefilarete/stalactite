@@ -8,7 +8,6 @@ import java.util.stream.Collectors;
 import org.gama.lang.collection.Arrays;
 import org.gama.sql.test.HSQLDBInMemoryDataSource;
 import org.gama.stalactite.persistence.engine.ColumnOptions.IdentifierPolicy;
-import org.gama.stalactite.persistence.engine.FluentEntityMappingConfigurationSupportInheritanceTest.Engine;
 import org.gama.stalactite.persistence.engine.model.Timestamp;
 import org.gama.stalactite.persistence.sql.HSQLDBDialect;
 import org.gama.stalactite.persistence.structure.Table;
@@ -17,7 +16,9 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import static org.gama.lang.Nullable.nullable;
+import static org.gama.stalactite.persistence.engine.MappingEase.mappingBuilder;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 /**
  * @author Guillaume Mary
@@ -59,6 +60,40 @@ public class FluentEntityMappingConfigurationSupportPostInsertIdentifierTest {
 		// select test
 		Car loadedCar = carPersister.select(1L);
 		assertEquals(dummyCar, loadedCar);
+	}
+	
+	@Test
+	void insert_oneToOne() {
+		Persister<Car, Long, ?> carPersister = mappingBuilder(Car.class, long.class)
+				.add(Car::getId).identifier(IdentifierPolicy.AFTER_INSERT)
+				.add(Car::getModel)
+				.addOneToOne(Car::getEngine, mappingBuilder(Engine.class, long.class)
+						.add(Engine::getId).identifier(IdentifierPolicy.AFTER_INSERT)
+						.add(Engine::getModel))
+				.build(persistenceContext);
+		
+		// DML tests
+		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+		ddlDeployer.deployDDL();
+		
+		Car dummyCar = new Car();
+		dummyCar.setModel("Renault");
+		dummyCar.setEngine(new Engine("XFE45K-TRE"));
+		
+		// insert test
+		carPersister.insert(dummyCar);
+		assertNotNull(dummyCar.getEngine().getId());
+		
+		List<Car> allCars = persistenceContext.newQuery("select id, model from Car", Car.class)
+				.mapKey(Car::new, "id", long.class)
+				.map("model", Car::setModel)
+				.execute();
+		assertEquals(Arrays.asList(dummyCar), allCars);
+		
+		// select test
+		Car loadedCar = carPersister.select(1L);
+		assertEquals(dummyCar, loadedCar);
+		assertEquals(dummyCar.getEngine(), loadedCar.getEngine());
 	}
 	
 	@Test
@@ -271,6 +306,50 @@ public class FluentEntityMappingConfigurationSupportPostInsertIdentifierTest {
 		@Override
 		public String toString() {
 			return "Car{id=" + getId() + ", color=" + nullable(getColor()).map(Color::getRgb).get() + ", model='" + model + "\'}";
+		}
+	}
+	
+	static class Engine {
+		
+		private Long id;
+		
+		private String model;
+		
+		public Engine() {
+		}
+		
+		public Engine(String model) {
+			this.model = model;
+		}
+		
+		public Long getId() {
+			return id;
+		}
+		
+		public String getModel() {
+			return model;
+		}
+		
+		@Override
+		public boolean equals(Object o) {
+			if (this == o) return true;
+			if (o == null || getClass() != o.getClass()) return false;
+			Engine engine = (Engine) o;
+			return Objects.equals(id, engine.id);
+		}
+		
+		@Override
+		public int hashCode() {
+			return id != null ? id.hashCode() : 0;
+		}
+		
+		/**
+		 * Implemented for easier debug
+		 * @return a simple representation of this
+		 */
+		@Override
+		public String toString() {
+			return "Engine{id=" + id + '}';
 		}
 	}
 }
