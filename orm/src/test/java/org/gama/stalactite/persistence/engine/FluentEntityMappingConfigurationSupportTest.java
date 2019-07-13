@@ -695,7 +695,7 @@ public class FluentEntityMappingConfigurationSupportTest {
 	 * as a best effort, and any regression found in user code should be added here
 	 */
 	@Test
-	void testFluentAPIWriting() {
+	void apiUsage() {
 		try {
 			MappingEase.mappingBuilder(Country.class, long.class)
 					.add(Country::getName).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
@@ -783,13 +783,25 @@ public class FluentEntityMappingConfigurationSupportTest {
 			// Since we only want to test compilation, we don't care about that the above code throws an exception or not
 		}
 		
+		class PersonTable extends Table<PersonTable> {
+			
+			Column<PersonTable, Gender> gender = addColumn("gender", Gender.class);
+			Column<PersonTable, String> name = addColumn("name", String.class);
+			
+			PersonTable() {
+				super("Person");
+			}
+		}
+		PersonTable personTable = new PersonTable();
 		try {
 			MappingEase.mappingBuilder(PersonWithGender.class, long.class)
 					.add(Person::getName)
+					.add(Person::getName, personTable.name)
 					.addEnum(PersonWithGender::getGender).byOrdinal()
 					.embed(Person::setTimestamp)
 					.overrideName(Timestamp::getCreationDate, "myDate")
 					.addEnum(PersonWithGender::getGender, "MM").byOrdinal()
+					.addEnum(PersonWithGender::getGender, personTable.gender).byOrdinal()
 					.add(PersonWithGender::getId, "zz")
 					.addEnum(PersonWithGender::setGender).byName()
 					.embed(Person::getTimestamp)

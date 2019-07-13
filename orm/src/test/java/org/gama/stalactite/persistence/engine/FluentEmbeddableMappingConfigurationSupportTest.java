@@ -925,7 +925,7 @@ class FluentEmbeddableMappingConfigurationSupportTest {
 	 * as a best effort, and any regression found in user code should be added here
 	 */
 	@Test
-	void testFluentAPIWriting() {
+	void apiUsage() {
 		Table<?> countryTable = new Table<>("countryTable");
 		
 		try {

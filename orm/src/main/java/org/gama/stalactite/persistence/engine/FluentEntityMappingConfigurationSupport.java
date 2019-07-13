@@ -201,13 +201,13 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements IFluentEnt
 	}
 	
 	@Override
-	public <O> IFluentMappingBuilderPropertyOptions<C, I> add(SerializableBiConsumer<C, O> setter, Column<Table, O> column) {
+	public <O> IFluentMappingBuilderPropertyOptions<C, I> add(SerializableBiConsumer<C, O> setter, Column<? extends Table, O> column) {
 		AbstractLinkage<C> mapping = propertiesMappingConfigurationSurrogate.addMapping(setter, column);
 		return this.propertiesMappingConfigurationSurrogate.wrapForAdditionalOptions(mapping);
 	}
 	
 	@Override
-	public <O> IFluentMappingBuilderPropertyOptions<C, I> add(SerializableFunction<C, O> getter, Column<Table, O> column) {
+	public <O> IFluentMappingBuilderPropertyOptions<C, I> add(SerializableFunction<C, O> getter, Column<? extends Table, O> column) {
 		AbstractLinkage<C> mapping = propertiesMappingConfigurationSurrogate.addMapping(getter, column);
 		return this.propertiesMappingConfigurationSurrogate.wrapForAdditionalOptions(mapping);
 	}
@@ -235,13 +235,13 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements IFluentEnt
 	}
 	
 	@Override
-	public <E extends Enum<E>> IFluentMappingBuilderEnumOptions<C, I> addEnum(SerializableBiConsumer<C, E> setter, Column<Table, E> column) {
+	public <E extends Enum<E>> IFluentMappingBuilderEnumOptions<C, I> addEnum(SerializableBiConsumer<C, E> setter, Column<? extends Table, E> column) {
 		AbstractLinkage<C> linkage = propertiesMappingConfigurationSurrogate.addMapping(setter, column);
 		return handleEnumOptions(propertiesMappingConfigurationSurrogate.addEnumOptions(linkage));
 	}
 	
 	@Override
-	public <E extends Enum<E>> IFluentMappingBuilderEnumOptions<C, I> addEnum(SerializableFunction<C, E> getter, Column<Table, E> column) {
+	public <E extends Enum<E>> IFluentMappingBuilderEnumOptions<C, I> addEnum(SerializableFunction<C, E> getter, Column<? extends Table, E> column) {
 		AbstractLinkage<C> linkage = propertiesMappingConfigurationSurrogate.addMapping(getter, column);
 		return handleEnumOptions(propertiesMappingConfigurationSurrogate.addEnumOptions(linkage));
 	}
@@ -778,12 +778,14 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements IFluentEnt
 							entityConfigurationSupport.identifierAccessor = newMapping.getAccessor();
 							entityConfigurationSupport.identifierPolicy = identifierPolicy;
 							
-							if (newMapping instanceof FluentEntityMappingConfigurationSupport.EntityLinkageByColumnName) {
-								// we force primary key so it's not necessary to be set by caller
+							if (newMapping instanceof EntityLinkageByColumnName) {
+								// we force primary key
 								((EntityLinkageByColumnName) newMapping).primaryKey();
-							} else if (newMapping instanceof EntityLinkageByColumn && !((EntityLinkageByColumn) newMapping).isPrimaryKey()) {
-								// safeguard about misconfiguration, even if mapping would work it smells bad configuration
-								throw new IllegalArgumentException("Identifier policy is assigned to a non primary key column");
+							} else if (newMapping instanceof EntityLinkageByColumn) {
+								if (!((EntityLinkageByColumn) newMapping).isPrimaryKey()){
+									// safeguard about misconfiguration, even if mapping would work it smells bad configuration
+									throw new IllegalArgumentException("Identifier policy is assigned to a non primary key column");
+								}
 							} else {
 								// in case of evolution in the Linkage API
 								throw new NotImplementedException(newMapping.getClass());
