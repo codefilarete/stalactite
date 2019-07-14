@@ -354,9 +354,10 @@ class FluentEntityMappingConfigurationSupportInheritanceTest {
 					.mapInheritance(inheritanceConfiguration2)
 					.build(persistenceContext);
 			
-			// as an inherited entity, the table should be in the context, and its persister does exist
+			// as an inherited entity, the table should not be in the context, and its persister does not exist
 			Collection<Table> tables = DDLDeployer.collectTables(persistenceContext);
 			assertFalse(tables.contains(mappedSuperClassData.vehicleTable));
+			assertTrue(tables.contains(mappedSuperClassData.carTable));
 			assertNotNull(persistenceContext.getPersister(Vehicle.class));
 			
 			// DML tests
@@ -391,14 +392,14 @@ class FluentEntityMappingConfigurationSupportInheritanceTest {
 			
 			EntityMappingConfiguration<Vehicle, Identifier<Long>> inheritanceConfiguration2 = MappingEase
 					.entityBuilder(Vehicle.class, LONG_TYPE)
-					.mapInheritance(inheritanceConfiguration).withJoinTable()
+					.mapInheritance(inheritanceConfiguration).withJoinedTable()
 					.getConfiguration();
 			
 			Persister<Car, Identifier<Long>, ?> carPersister = MappingEase
 					.entityBuilder(Car.class, LONG_TYPE)
 					.add(Car::getModel)
 					.add(Car::getColor)
-					.mapInheritance(inheritanceConfiguration2).withJoinTable()
+					.mapInheritance(inheritanceConfiguration2).withJoinedTable()
 					.build(persistenceContext);
 			
 			// as an inherited entity, the table should be in the context, and its persister does exist
@@ -464,7 +465,7 @@ class FluentEntityMappingConfigurationSupportInheritanceTest {
 			Persister<Car, Identifier<Long>, ?> carPersister = MappingEase.entityBuilder(Car.class, LONG_TYPE)
 					.add(Car::getModel)
 					.mapInheritance(inheritanceConfiguration)
-						.withJoinTable()
+						.withJoinedTable()
 					.build(persistenceContext, mappedSuperClassData.carTable);
 			
 			// as an inherited entity, the table should be in the context

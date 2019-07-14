@@ -353,10 +353,10 @@ public interface IFluentEntityMappingBuilder<C, I> extends IFluentEmbeddableMapp
 			InheritanceOptions {
 		
 		@Override
-		IFluentMappingBuilderInheritanceOptions<C, I> withJoinTable();
+		IFluentMappingBuilderInheritanceOptions<C, I> withJoinedTable();
 		
 		@Override
-		IFluentMappingBuilderInheritanceOptions<C, I> withJoinTable(Table parentTable);
+		IFluentMappingBuilderInheritanceOptions<C, I> withJoinedTable(Table parentTable);
 		
 	}
 }

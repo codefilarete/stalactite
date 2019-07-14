@@ -190,12 +190,12 @@ public class FluentEntityMappingConfigurationSupportBeforeInsertIdentifierTest {
 				.getConfiguration();
 		
 		EntityMappingConfiguration<Vehicle, Long> inheritanceConfiguration2 = entityBuilder(Vehicle.class, long.class)
-				.mapInheritance(inheritanceConfiguration).withJoinTable()
+				.mapInheritance(inheritanceConfiguration).withJoinedTable()
 				.getConfiguration();
 		
 		Persister<Car, Long, ?> carPersister = entityBuilder(Car.class, long.class)
 				.add(Car::getModel)
-				.mapInheritance(inheritanceConfiguration2).withJoinTable()
+				.mapInheritance(inheritanceConfiguration2).withJoinedTable()
 				.build(persistenceContext);
 		
 		assertEquals(Arrays.asHashSet("Car", "Vehicle", "AbstractVehicle"),

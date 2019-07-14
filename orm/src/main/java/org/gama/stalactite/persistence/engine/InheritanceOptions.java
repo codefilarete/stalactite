@@ -9,8 +9,8 @@ import org.gama.stalactite.persistence.structure.Table;
  */
 public interface InheritanceOptions {
 	
-	InheritanceOptions withJoinTable();
+	InheritanceOptions withJoinedTable();
 	
-	InheritanceOptions withJoinTable(Table parentTable);
+	InheritanceOptions withJoinedTable(Table parentTable);
 	
 }

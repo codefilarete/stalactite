@@ -146,13 +146,13 @@ public class FluentEntityMappingConfigurationSupportPostInsertIdentifierTest {
 		
 		EntityMappingConfiguration<Vehicle, Long> inheritanceConfiguration2 = MappingEase
 				.entityBuilder(Vehicle.class, long.class)
-				.mapInheritance(inheritanceConfiguration).withJoinTable()
+				.mapInheritance(inheritanceConfiguration).withJoinedTable()
 				.getConfiguration();
 		
 		Persister<Car, Long, ?> carPersister = MappingEase
 				.entityBuilder(Car.class, long.class)
 				.add(Car::getModel)
-				.mapInheritance(inheritanceConfiguration2).withJoinTable()
+				.mapInheritance(inheritanceConfiguration2).withJoinedTable()
 				.build(persistenceContext);
 		
 		assertEquals(Arrays.asHashSet("Car", "Vehicle", "AbstractVehicle"),

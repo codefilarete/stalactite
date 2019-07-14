@@ -163,7 +163,7 @@ class JoinedTablesEntityMappingBuilderTest {
 		FluentEntityMappingConfigurationSupport<Car, Identifier> configurationSupport = new FluentEntityMappingConfigurationSupport<>(Car.class);
 		configurationSupport
 				.add(Car::getModel)
-				.mapInheritance(inheritanceConfiguration).withJoinTable(new Table("toto"));
+				.mapInheritance(inheritanceConfiguration).withJoinedTable(new Table("toto"));
 		
 		JoinedTablesEntityMappingBuilder<Car, Identifier> testInstance = new JoinedTablesEntityMappingBuilder<>(configurationSupport, methodSpy);
 		Persister<Car, Identifier, Table> carPersister = testInstance.build(persistenceContext, inheritedTable);
@@ -185,7 +185,7 @@ class JoinedTablesEntityMappingBuilderTest {
 		configurationSupport
 				.add(Car::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.add(Car::getModel)
-				.mapInheritance(inheritanceConfiguration).withJoinTable(new Table("toto"));
+				.mapInheritance(inheritanceConfiguration).withJoinedTable(new Table("toto"));
 		
 		JoinedTablesEntityMappingBuilder<Car, Identifier> testInstance = new JoinedTablesEntityMappingBuilder<>(configurationSupport, methodSpy);
 		MappingConfigurationException thrownException = assertThrows(MappingConfigurationException.class,
@@ -226,7 +226,7 @@ class JoinedTablesEntityMappingBuilderTest {
 		FluentEntityMappingConfigurationSupport<Car, Identifier> configurationSupport = new FluentEntityMappingConfigurationSupport<>(Car.class);
 		configurationSupport
 				.add(Car::getModel)
-				.mapInheritance(superClassMapping).withJoinTable(new Table("toto"));
+				.mapInheritance(superClassMapping).withJoinedTable(new Table("toto"));
 		
 		JoinedTablesEntityMappingBuilder<Car, Identifier> testInstance = new JoinedTablesEntityMappingBuilder<>(configurationSupport, methodSpy);
 		Persister<Car, Identifier, Table> carPersister = testInstance.build(persistenceContext, inheritedTable);
@@ -360,7 +360,7 @@ class JoinedTablesEntityMappingBuilderTest {
 		configurationSupport
 				.add(Car::getModel)
 				.addOneToOne(Vehicle::getEngine, engineConfiguration).cascading(RelationMode.ALL_ORPHAN_REMOVAL)
-				.mapInheritance(superClassMapping).withJoinTable(new Table("toto"));
+				.mapInheritance(superClassMapping).withJoinedTable(new Table("toto"));
 		
 		JoinedTablesEntityMappingBuilder<Car, Identifier> testInstance = new JoinedTablesEntityMappingBuilder<>(configurationSupport, methodSpy);
 		Persister<Car, Identifier, Table> carPersister = testInstance.build(persistenceContext, inheritedTable);
@@ -498,7 +498,7 @@ class JoinedTablesEntityMappingBuilderTest {
 		FluentEntityMappingConfigurationSupport<Car, Identifier> configurationSupport = new FluentEntityMappingConfigurationSupport<>(Car.class);
 		configurationSupport
 				.add(Car::getModel)
-				.mapInheritance(superClassMapping).withJoinTable(new Table("toto"));
+				.mapInheritance(superClassMapping).withJoinedTable(new Table("toto"));
 		
 		JoinedTablesEntityMappingBuilder<Car, Identifier> testInstance = new JoinedTablesEntityMappingBuilder<>(configurationSupport, methodSpy);
 		Persister<Car, Identifier, Table> carPersister = testInstance.build(persistenceContext, inheritedTable);

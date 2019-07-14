@@ -259,9 +259,9 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements IFluentEnt
 	public IFluentMappingBuilderInheritanceOptions<C, I> mapInheritance(EntityMappingConfiguration<? super C, I> mappingConfiguration) {
 		inheritanceConfiguration = mappingConfiguration;
 		return new MethodReferenceDispatcher()
-				.redirect((SerializableFunction<InheritanceOptions, InheritanceOptions>) InheritanceOptions::withJoinTable,
+				.redirect((SerializableFunction<InheritanceOptions, InheritanceOptions>) InheritanceOptions::withJoinedTable,
 						() -> this.joinTable = true)
-				.redirect((SerializableBiFunction<InheritanceOptions, Table, InheritanceOptions>) InheritanceOptions::withJoinTable,
+				.redirect((SerializableBiFunction<InheritanceOptions, Table, InheritanceOptions>) InheritanceOptions::withJoinedTable,
 						t -> { this.joinTable = true; this.targetParentTable = t;})
 				.fallbackOn(this)
 				.build((Class<IFluentMappingBuilderInheritanceOptions<C, I>>) (Class) IFluentMappingBuilderInheritanceOptions.class);
