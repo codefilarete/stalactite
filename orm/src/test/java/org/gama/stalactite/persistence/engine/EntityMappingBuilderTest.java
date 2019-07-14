@@ -33,7 +33,7 @@ import org.gama.stalactite.test.JdbcConnectionProvider;
 import org.junit.jupiter.api.Test;
 import org.mockito.internal.stubbing.defaultanswers.ReturnsMocks;
 
-import static org.gama.stalactite.persistence.engine.MappingEase.mappingBuilder;
+import static org.gama.stalactite.persistence.engine.MappingEase.entityBuilder;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
@@ -91,7 +91,7 @@ class EntityMappingBuilderTest {
 		
 		Table<?> targetTable = new Table<>("person");
 		Column<Table, String> unkownColumnInTargetTable = new Column<>(new Table<>("xx"), "aa", String.class);
-		EntityMappingConfiguration<PersonWithGender, Identifier> configuration = mappingBuilder(PersonWithGender.class, Identifier.class)
+		EntityMappingConfiguration<PersonWithGender, Identifier> configuration = entityBuilder(PersonWithGender.class, Identifier.class)
 						.add(Person::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 						.add(Person::getName, unkownColumnInTargetTable)
 						.getConfiguration();
@@ -112,7 +112,7 @@ class EntityMappingBuilderTest {
 		
 		Table<?> targetTable = new Table<>("person");
 		Column<Table, Gender> unkownColumnInTargetTable = new Column<>(new Table<>("xx"), "aa", Gender.class);
-		EntityMappingConfiguration<PersonWithGender, Identifier> configuration = mappingBuilder(PersonWithGender.class, Identifier.class)
+		EntityMappingConfiguration<PersonWithGender, Identifier> configuration = entityBuilder(PersonWithGender.class, Identifier.class)
 				.add(Person::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.add(Person::getName)
 				.addEnum(PersonWithGender::getGender, unkownColumnInTargetTable).byOrdinal()
@@ -137,13 +137,13 @@ class EntityMappingBuilderTest {
 		PersistenceContext persistenceContext = new PersistenceContext(new JdbcConnectionProvider(new HSQLDBInMemoryDataSource()), dialect);
 		
 		// creating a complex graph
-		JoinedTablesPersister<Country, Identifier, Table> persister = mappingBuilder(Country.class, Identifier.class)
+		JoinedTablesPersister<Country, Identifier, Table> persister = entityBuilder(Country.class, Identifier.class)
 				.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.add(Country::getName)
 				.addOneToOne(Country::getCapital,
-						mappingBuilder(City.class, Identifier.class)
+						entityBuilder(City.class, Identifier.class)
 						.add(City::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
-						.addOneToManySet(City::getPersons, mappingBuilder(Person.class, Identifier.class)
+						.addOneToManySet(City::getPersons, entityBuilder(Person.class, Identifier.class)
 							.add(Person::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 							.add(Person::getName))
 						.cascading(RelationMode.ALL))
@@ -201,13 +201,13 @@ class EntityMappingBuilderTest {
 		PersistenceContext persistenceContext = new PersistenceContext(new JdbcConnectionProvider(new HSQLDBInMemoryDataSource()), dialect);
 		
 		// creating a complex graph
-		JoinedTablesPersister<State, Identifier, Table> persister = mappingBuilder(State.class, Identifier.class)
+		JoinedTablesPersister<State, Identifier, Table> persister = entityBuilder(State.class, Identifier.class)
 				.add(State::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.add(State::getName)
-				.addOneToManySet(State::getCities, mappingBuilder(City.class, Identifier.class)
+				.addOneToManySet(State::getCities, entityBuilder(City.class, Identifier.class)
 						.add(City::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 						.add(City::getName)
-						.addOneToOne(City::getCountry, mappingBuilder(Country.class, Identifier.class)
+						.addOneToOne(City::getCountry, entityBuilder(Country.class, Identifier.class)
 								.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 								.add(Country::getName))
 						.cascading(RelationMode.ALL))

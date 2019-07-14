@@ -56,13 +56,13 @@ public class FluentEntityMappingConfigurationSupportVersioningTest {
 	public void initTest() {
 		persistenceContext = new PersistenceContext(new JdbcConnectionProvider(dataSource), DIALECT);
 		
-		IFluentMappingBuilderPropertyOptions<Person, Identifier<Long>> personMappingBuilder = MappingEase.mappingBuilder(Person.class,
+		IFluentMappingBuilderPropertyOptions<Person, Identifier<Long>> personMappingBuilder = MappingEase.entityBuilder(Person.class,
 				Identifier.LONG_TYPE)
 				.add(Person::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.add(Person::getName);
 		personPersister = personMappingBuilder.build(persistenceContext);
 		
-		IFluentMappingBuilderPropertyOptions<City, Identifier<Long>> cityMappingBuilder = MappingEase.mappingBuilder(City.class,
+		IFluentMappingBuilderPropertyOptions<City, Identifier<Long>> cityMappingBuilder = MappingEase.entityBuilder(City.class,
 				Identifier.LONG_TYPE)
 				.add(City::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.add(City::getName)
@@ -73,7 +73,7 @@ public class FluentEntityMappingConfigurationSupportVersioningTest {
 	@Test
 	public void testBuild_connectionProviderIsNotRollbackObserver_throwsException() {
 		PersistenceContext persistenceContext = new PersistenceContext(new JdbcConnectionProvider(dataSource), DIALECT);
-		assertThrows(UnsupportedOperationException.class, () -> MappingEase.mappingBuilder(Country.class,
+		assertThrows(UnsupportedOperationException.class, () -> MappingEase.entityBuilder(Country.class,
 				Identifier.LONG_TYPE)
 				// setting a foreign key naming strategy to be tested
 				.foreignKeyNamingStrategy(ForeignKeyNamingStrategy.DEFAULT)
@@ -87,7 +87,7 @@ public class FluentEntityMappingConfigurationSupportVersioningTest {
 	@Test
 	public void testBuild_versionedPropertyIsOfUnsupportedType_throwsException() {
 		PersistenceContext persistenceContext = new PersistenceContext(new JdbcConnectionProvider(dataSource), DIALECT);
-		assertThrows(UnsupportedOperationException.class, () -> MappingEase.mappingBuilder(Country.class,
+		assertThrows(UnsupportedOperationException.class, () -> MappingEase.entityBuilder(Country.class,
 				Identifier.LONG_TYPE)
 				// setting a foreign key naming strategy to be tested
 				.foreignKeyNamingStrategy(ForeignKeyNamingStrategy.DEFAULT)
@@ -104,7 +104,7 @@ public class FluentEntityMappingConfigurationSupportVersioningTest {
 		ConnectionProvider connectionProvider = new TransactionObserverConnectionProvider(surrogateConnectionProvider);
 		persistenceContext = new PersistenceContext(connectionProvider, DIALECT);
 		// mapping building thantks to fluent API
-		Persister<Country, Identifier<Long>, ?> countryPersister = MappingEase.mappingBuilder(Country.class,
+		Persister<Country, Identifier<Long>, ?> countryPersister = MappingEase.entityBuilder(Country.class,
 				Identifier.LONG_TYPE)
 				// setting a foreign key naming strategy to be tested
 				.foreignKeyNamingStrategy(ForeignKeyNamingStrategy.DEFAULT)
@@ -151,7 +151,7 @@ public class FluentEntityMappingConfigurationSupportVersioningTest {
 		persistenceContext = new PersistenceContext(connectionProvider, DIALECT);
 		// mapping building thantks to fluent API
 		List<LocalDateTime> nowHistory = new ArrayList<>();
-		Persister<Country, Identifier<Long>, ?> countryPersister = MappingEase.mappingBuilder(Country.class,
+		Persister<Country, Identifier<Long>, ?> countryPersister = MappingEase.entityBuilder(Country.class,
 				Identifier.LONG_TYPE)
 				// setting a foreign key naming strategy to be tested
 				.foreignKeyNamingStrategy(ForeignKeyNamingStrategy.DEFAULT)
@@ -204,7 +204,7 @@ public class FluentEntityMappingConfigurationSupportVersioningTest {
 		ConnectionProvider connectionProvider = new TransactionObserverConnectionProvider(surrogateConnectionProvider);
 		persistenceContext = new PersistenceContext(connectionProvider, DIALECT);
 		// mapping building thantks to fluent API
-		Persister<Country, Identifier<Long>, ?> countryPersister = MappingEase.mappingBuilder(Country.class,
+		Persister<Country, Identifier<Long>, ?> countryPersister = MappingEase.entityBuilder(Country.class,
 				Identifier.LONG_TYPE)
 				// setting a foreign key naming strategy to be tested
 				.foreignKeyNamingStrategy(ForeignKeyNamingStrategy.DEFAULT)

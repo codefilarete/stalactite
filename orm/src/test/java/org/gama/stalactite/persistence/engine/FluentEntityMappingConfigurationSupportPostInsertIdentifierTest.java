@@ -16,7 +16,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import static org.gama.lang.Nullable.nullable;
-import static org.gama.stalactite.persistence.engine.MappingEase.mappingBuilder;
+import static org.gama.stalactite.persistence.engine.MappingEase.entityBuilder;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
@@ -36,7 +36,7 @@ public class FluentEntityMappingConfigurationSupportPostInsertIdentifierTest {
 	
 	@Test
 	void insert_basic() {
-		Persister<Car, Long, ?> carPersister = MappingEase.mappingBuilder(Car.class, long.class)
+		Persister<Car, Long, ?> carPersister = MappingEase.entityBuilder(Car.class, long.class)
 				.add(Car::getId).identifier(IdentifierPolicy.AFTER_INSERT)
 				.add(Car::getModel)
 				.build(persistenceContext);
@@ -64,10 +64,10 @@ public class FluentEntityMappingConfigurationSupportPostInsertIdentifierTest {
 	
 	@Test
 	void insert_oneToOne() {
-		Persister<Car, Long, ?> carPersister = mappingBuilder(Car.class, long.class)
+		Persister<Car, Long, ?> carPersister = entityBuilder(Car.class, long.class)
 				.add(Car::getId).identifier(IdentifierPolicy.AFTER_INSERT)
 				.add(Car::getModel)
-				.addOneToOne(Car::getEngine, mappingBuilder(Engine.class, long.class)
+				.addOneToOne(Car::getEngine, entityBuilder(Engine.class, long.class)
 						.add(Engine::getId).identifier(IdentifierPolicy.AFTER_INSERT)
 						.add(Engine::getModel))
 				.build(persistenceContext);
@@ -99,17 +99,17 @@ public class FluentEntityMappingConfigurationSupportPostInsertIdentifierTest {
 	@Test
 	void multipleInheritance() {
 		EntityMappingConfiguration<AbstractVehicle, Long> inheritanceConfiguration = MappingEase
-				.mappingBuilder(AbstractVehicle.class, long.class)
+				.entityBuilder(AbstractVehicle.class, long.class)
 				.add(AbstractVehicle::getId).identifier(IdentifierPolicy.AFTER_INSERT)
 				.getConfiguration();
 		
 		EntityMappingConfiguration<Vehicle, Long> inheritanceConfiguration2 = MappingEase
-				.mappingBuilder(Vehicle.class, long.class)
+				.entityBuilder(Vehicle.class, long.class)
 				.mapInheritance(inheritanceConfiguration)
 				.getConfiguration();
 		
 		Persister<Car, Long, ?> carPersister = MappingEase
-				.mappingBuilder(Car.class, long.class)
+				.entityBuilder(Car.class, long.class)
 				.add(Car::getModel)
 				.mapInheritance(inheritanceConfiguration2)
 				.build(persistenceContext);
@@ -140,17 +140,17 @@ public class FluentEntityMappingConfigurationSupportPostInsertIdentifierTest {
 	@Test
 	void multipleInheritance_joinedTables() {
 		EntityMappingConfiguration<AbstractVehicle, Long> inheritanceConfiguration = MappingEase
-				.mappingBuilder(AbstractVehicle.class, long.class)
+				.entityBuilder(AbstractVehicle.class, long.class)
 				.add(AbstractVehicle::getId).identifier(IdentifierPolicy.AFTER_INSERT)
 				.getConfiguration();
 		
 		EntityMappingConfiguration<Vehicle, Long> inheritanceConfiguration2 = MappingEase
-				.mappingBuilder(Vehicle.class, long.class)
+				.entityBuilder(Vehicle.class, long.class)
 				.mapInheritance(inheritanceConfiguration).withJoinTable()
 				.getConfiguration();
 		
 		Persister<Car, Long, ?> carPersister = MappingEase
-				.mappingBuilder(Car.class, long.class)
+				.entityBuilder(Car.class, long.class)
 				.add(Car::getModel)
 				.mapInheritance(inheritanceConfiguration2).withJoinTable()
 				.build(persistenceContext);

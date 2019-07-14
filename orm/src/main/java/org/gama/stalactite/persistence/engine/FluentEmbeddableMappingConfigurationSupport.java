@@ -44,17 +44,6 @@ public class FluentEmbeddableMappingConfigurationSupport<C> implements IFluentEm
 	
 	private EmbeddableMappingConfiguration<? super C> superMappingBuilder;
 	
-	/**
-	 * Starts a {@link IFluentEmbeddableMappingBuilder} for a given class which will target a table that as the class name.
-	 *
-	 * @param persistedClass the class to be persisted by the {@link EmbeddedBeanMappingStrategy} that will be created by {@link #buildMapping(Dialect, Table)}}
-	 * @param <T> any type to be persisted
-	 * @return a new {@link FluentEmbeddableMappingConfigurationSupport}
-	 */
-	public static <T> IFluentEmbeddableMappingBuilder<T> from(Class<T> persistedClass) {
-		return new FluentEmbeddableMappingConfigurationSupport<>(persistedClass);
-	}
-	
 	/** Owning class of mapped properties */
 	private final Class<C> classToPersist;
 	

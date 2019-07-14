@@ -72,13 +72,13 @@ class FluentEntityMappingConfigurationSupportInheritanceTest {
 		void simpleCase() {
 			MappedSuperClassData mappedSuperClassData = new MappedSuperClassData();
 			
-			Persister<Car, Identifier<Long>, ?> carPersister = MappingEase.mappingBuilder(Car.class, LONG_TYPE)
+			Persister<Car, Identifier<Long>, ?> carPersister = MappingEase.entityBuilder(Car.class, LONG_TYPE)
 					.add(Car::getModel)
 					.add(Car::getColor)    // note : we don't need to embed Color because it is defined in the Dialect registry
 					// concrete class defines id
 					.add(Car::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
-					.mapSuperClass(FluentEmbeddableMappingConfigurationSupport
-							.from(Vehicle.class)
+					.mapSuperClass(MappingEase
+							.embeddableBuilder(Vehicle.class)
 							.add(Vehicle::getColor).getConfiguration())
 					.build(persistenceContext);
 			
@@ -112,13 +112,13 @@ class FluentEntityMappingConfigurationSupportInheritanceTest {
 		void simpleCase_withTableDefinedInSuperClass() {
 			MappedSuperClassData mappedSuperClassData = new MappedSuperClassData();
 			
-			Persister<Car, Identifier<Long>, ?> carPersister = MappingEase.mappingBuilder(Car.class, LONG_TYPE)
+			Persister<Car, Identifier<Long>, ?> carPersister = MappingEase.entityBuilder(Car.class, LONG_TYPE)
 					.add(Car::getModel)
 					.add(Car::getColor)    // note : we don't need to embed Color because it is defined in the Dialect registry
 					// concrete class defines id
 					.add(Car::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
-					.mapSuperClass(FluentEmbeddableMappingConfigurationSupport
-							.from(Vehicle.class)
+					.mapSuperClass(MappingEase
+							.embeddableBuilder(Vehicle.class)
 							.add(Vehicle::getColor).getConfiguration())
 					.build(persistenceContext);
 			
@@ -150,14 +150,14 @@ class FluentEntityMappingConfigurationSupportInheritanceTest {
 		
 		@Test
 		void columnNamingStrategyChanged() {
-			Persister<Car, Identifier<Long>, ?> carPersister = MappingEase.mappingBuilder(Car.class, LONG_TYPE)
+			Persister<Car, Identifier<Long>, ?> carPersister = MappingEase.entityBuilder(Car.class, LONG_TYPE)
 					.add(Car::getModel)
 					.add(Car::getColor)    // note : we don't need to embed Color because it is defined in the Dialect registry
 					.columnNamingStrategy(accessor -> ColumnNamingStrategy.DEFAULT.giveName(accessor) + "_col")
 					// concrete class defines id
 					.add(Car::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
-					.mapSuperClass(FluentEmbeddableMappingConfigurationSupport
-							.from(Vehicle.class)
+					.mapSuperClass(MappingEase
+							.embeddableBuilder(Vehicle.class)
 							.add(Vehicle::getColor).getConfiguration())
 					.build(persistenceContext);
 			
@@ -186,14 +186,14 @@ class FluentEntityMappingConfigurationSupportInheritanceTest {
 		
 		@Test
 		void columnNamingStrategyChanged_inBoth() {
-			Persister<Car, Identifier<Long>, ?> carPersister = MappingEase.mappingBuilder(Car.class, LONG_TYPE)
+			Persister<Car, Identifier<Long>, ?> carPersister = MappingEase.entityBuilder(Car.class, LONG_TYPE)
 					.add(Car::getModel)
 					.add(Car::getColor)    // note : we don't need to embed Color because it is defined in the Dialect registry
 					.columnNamingStrategy(accessor -> ColumnNamingStrategy.DEFAULT.giveName(accessor) + "_col")
 					// concrete class defines id
 					.add(Car::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
-					.mapSuperClass(FluentEmbeddableMappingConfigurationSupport
-							.from(Vehicle.class)
+					.mapSuperClass(MappingEase
+							.embeddableBuilder(Vehicle.class)
 							.columnNamingStrategy(accessor -> ColumnNamingStrategy.DEFAULT.giveName(accessor) + "_superCol")
 							.add(Vehicle::getColor).getConfiguration())
 					.build(persistenceContext);
@@ -224,11 +224,11 @@ class FluentEntityMappingConfigurationSupportInheritanceTest {
 		@Test
 		void withoutIdDefined_throwsException() {
 			UnsupportedOperationException thrownException = assertThrows(UnsupportedOperationException.class,
-					() -> MappingEase.mappingBuilder(Car.class, LONG_TYPE)
+					() -> MappingEase.entityBuilder(Car.class, LONG_TYPE)
 							.add(Car::getModel)
 							.add(Car::getColor)
-							.mapSuperClass(FluentEmbeddableMappingConfigurationSupport
-									.from(Vehicle.class)
+							.mapSuperClass(MappingEase
+									.embeddableBuilder(Vehicle.class)
 									.add(Vehicle::getColor).getConfiguration())
 							.build(persistenceContext));
 			
@@ -239,12 +239,12 @@ class FluentEntityMappingConfigurationSupportInheritanceTest {
 		
 		@Test
 		void withEmbeddable() {
-			Persister<Car, Identifier<Long>, ?> carPersister = MappingEase.mappingBuilder(Car.class, LONG_TYPE)
+			Persister<Car, Identifier<Long>, ?> carPersister = MappingEase.entityBuilder(Car.class, LONG_TYPE)
 					.add(Car::getModel)
 					// concrete class defines id
 					.add(Car::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
-					.mapSuperClass(FluentEmbeddableMappingConfigurationSupport
-							.from(Vehicle.class)
+					.mapSuperClass(MappingEase
+							.embeddableBuilder(Vehicle.class)
 							.embed(Vehicle::getColor).getConfiguration())
 					.build(persistenceContext);
 			
@@ -281,12 +281,12 @@ class FluentEntityMappingConfigurationSupportInheritanceTest {
 			MappedSuperClassData mappedSuperClassData = new MappedSuperClassData();
 			
 			EntityMappingConfiguration<Vehicle, Identifier<Long>> inheritanceConfiguration = MappingEase
-					.mappingBuilder(Vehicle.class, LONG_TYPE)
+					.entityBuilder(Vehicle.class, LONG_TYPE)
 					// mapped super class defines id
 					.add(Vehicle::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 					.getConfiguration();
 			
-			Persister<Car, Identifier<Long>, ?> carPersister = MappingEase.mappingBuilder(Car.class, LONG_TYPE)
+			Persister<Car, Identifier<Long>, ?> carPersister = MappingEase.entityBuilder(Car.class, LONG_TYPE)
 					.add(Car::getModel)
 					.add(Car::getColor)	// note : we don't need to embed Color because it is defined in the Dialect registry
 					.mapInheritance(inheritanceConfiguration)
@@ -321,12 +321,12 @@ class FluentEntityMappingConfigurationSupportInheritanceTest {
 		@Test
 		void identifierIsRedefined_throwsException() {
 			EntityMappingConfiguration<AbstractVehicle, Identifier<Long>> inheritanceConfiguration = MappingEase
-					.mappingBuilder(AbstractVehicle.class, LONG_TYPE)
+					.entityBuilder(AbstractVehicle.class, LONG_TYPE)
 					.add(AbstractVehicle::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED).getConfiguration();
 			
 			MappingConfigurationException thrownException = assertThrows(MappingConfigurationException.class,
 					() -> MappingEase
-					.mappingBuilder(Vehicle.class, LONG_TYPE)
+					.entityBuilder(Vehicle.class, LONG_TYPE)
 					.mapInheritance(inheritanceConfiguration)
 					.add(Vehicle::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 					.build(persistenceContext));
@@ -338,17 +338,17 @@ class FluentEntityMappingConfigurationSupportInheritanceTest {
 			MappedSuperClassData mappedSuperClassData = new MappedSuperClassData();
 			
 			EntityMappingConfiguration<AbstractVehicle, Identifier<Long>> inheritanceConfiguration = MappingEase
-					.mappingBuilder(AbstractVehicle.class, LONG_TYPE)
+					.entityBuilder(AbstractVehicle.class, LONG_TYPE)
 					.add(AbstractVehicle::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 					.getConfiguration();
 			
 			EntityMappingConfiguration<Vehicle, Identifier<Long>> inheritanceConfiguration2 = MappingEase
-					.mappingBuilder(Vehicle.class, LONG_TYPE)
+					.entityBuilder(Vehicle.class, LONG_TYPE)
 					.mapInheritance(inheritanceConfiguration)
 					.getConfiguration();
 			
 			Persister<Car, Identifier<Long>, ?> carPersister = MappingEase
-					.mappingBuilder(Car.class, LONG_TYPE)
+					.entityBuilder(Car.class, LONG_TYPE)
 					.add(Car::getModel)
 					.add(Car::getColor)
 					.mapInheritance(inheritanceConfiguration2)
@@ -385,17 +385,17 @@ class FluentEntityMappingConfigurationSupportInheritanceTest {
 			MappedSuperClassData mappedSuperClassData = new MappedSuperClassData();
 			
 			EntityMappingConfiguration<AbstractVehicle, Identifier<Long>> inheritanceConfiguration = MappingEase
-					.mappingBuilder(AbstractVehicle.class, LONG_TYPE)
+					.entityBuilder(AbstractVehicle.class, LONG_TYPE)
 					.add(AbstractVehicle::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 					.getConfiguration();
 			
 			EntityMappingConfiguration<Vehicle, Identifier<Long>> inheritanceConfiguration2 = MappingEase
-					.mappingBuilder(Vehicle.class, LONG_TYPE)
+					.entityBuilder(Vehicle.class, LONG_TYPE)
 					.mapInheritance(inheritanceConfiguration).withJoinTable()
 					.getConfiguration();
 			
 			Persister<Car, Identifier<Long>, ?> carPersister = MappingEase
-					.mappingBuilder(Car.class, LONG_TYPE)
+					.entityBuilder(Car.class, LONG_TYPE)
 					.add(Car::getModel)
 					.add(Car::getColor)
 					.mapInheritance(inheritanceConfiguration2).withJoinTable()
@@ -432,17 +432,17 @@ class FluentEntityMappingConfigurationSupportInheritanceTest {
 		@Test
 		void mappedSuperClass_and_entityInheritance_throwsException() {
 			EntityMappingConfiguration<AbstractVehicle, Identifier<Long>> inheritanceConfiguration = MappingEase
-					.mappingBuilder(AbstractVehicle.class, LONG_TYPE)
+					.entityBuilder(AbstractVehicle.class, LONG_TYPE)
 					// mapped super class defines id
 					.add(AbstractVehicle::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 					.getConfiguration();
 			
-			IFluentEntityMappingBuilder<Car, Identifier<Long>> mappingBuilder = MappingEase.mappingBuilder(Car.class
+			IFluentEntityMappingBuilder<Car, Identifier<Long>> mappingBuilder = MappingEase.entityBuilder(Car.class
 					, LONG_TYPE)
 					.add(Car::getModel)
 					.add(Car::getColor)
-					.mapSuperClass(FluentEmbeddableMappingConfigurationSupport
-							.from(Vehicle.class)
+					.mapSuperClass(MappingEase
+							.embeddableBuilder(Vehicle.class)
 							.add(Vehicle::getColor).getConfiguration())
 					.mapInheritance(inheritanceConfiguration);
 			MappingConfigurationException thrownException = assertThrows(MappingConfigurationException.class,
@@ -455,13 +455,13 @@ class FluentEntityMappingConfigurationSupportInheritanceTest {
 			MappedSuperClassData mappedSuperClassData = new MappedSuperClassData();
 			
 			EntityMappingConfiguration<Vehicle, Identifier<Long>> inheritanceConfiguration = MappingEase
-					.mappingBuilder(Vehicle.class, LONG_TYPE)
+					.entityBuilder(Vehicle.class, LONG_TYPE)
 					// mapped super class defines id
 					.add(Vehicle::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 					.add(Vehicle::getColor)
 					.getConfiguration();
 			
-			Persister<Car, Identifier<Long>, ?> carPersister = MappingEase.mappingBuilder(Car.class, LONG_TYPE)
+			Persister<Car, Identifier<Long>, ?> carPersister = MappingEase.entityBuilder(Car.class, LONG_TYPE)
 					.add(Car::getModel)
 					.mapInheritance(inheritanceConfiguration)
 						.withJoinTable()
@@ -498,12 +498,12 @@ class FluentEntityMappingConfigurationSupportInheritanceTest {
 		@Test
 		void withEmbeddable() {
 			EntityMappingConfiguration<Vehicle, Identifier<Long>> inheritanceConfiguration = MappingEase
-					.mappingBuilder(Vehicle.class, LONG_TYPE)
+					.entityBuilder(Vehicle.class, LONG_TYPE)
 					.add(Vehicle::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 					.embed(Vehicle::getColor)
 					.getConfiguration();
 			
-			Persister<Car, Identifier<Long>, ?> carPersister = MappingEase.mappingBuilder(Car.class, LONG_TYPE)
+			Persister<Car, Identifier<Long>, ?> carPersister = MappingEase.entityBuilder(Car.class, LONG_TYPE)
 					.add(Car::getModel)
 					.mapInheritance(inheritanceConfiguration)
 					.build(persistenceContext);

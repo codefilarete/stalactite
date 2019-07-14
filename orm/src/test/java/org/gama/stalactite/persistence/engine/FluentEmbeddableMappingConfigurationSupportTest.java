@@ -64,7 +64,7 @@ class FluentEmbeddableMappingConfigurationSupportTest {
 	@Test
 	void add_withoutName_targetedPropertyNameIsTaken() {
 		Table<?> countryTable = new Table<>("countryTable");
-		EmbeddedBeanMappingStrategy<Country, Table> mappingStrategy = FluentEmbeddableMappingConfigurationSupport.from(Country.class)
+		EmbeddedBeanMappingStrategy<Country, Table> mappingStrategy = MappingEase.embeddableBuilder(Country.class)
 				.add(Country::getName)
 				.add(Country::setDescription)
 				.build(dialect, countryTable);
@@ -83,7 +83,7 @@ class FluentEmbeddableMappingConfigurationSupportTest {
 	@Test
 	void add_withoutName_withNamingStrategy_namingStrategyIsTaken_exceptIfColumnNameIsOverriden() {
 		Table<?> countryTable = new Table<>("countryTable");
-		EmbeddedBeanMappingStrategy<Country, Table> mappingStrategy = FluentEmbeddableMappingConfigurationSupport.from(Country.class)
+		EmbeddedBeanMappingStrategy<Country, Table> mappingStrategy = MappingEase.embeddableBuilder(Country.class)
 				.columnNamingStrategy(accessor -> ColumnNamingStrategy.DEFAULT.giveName(accessor) + "_col")
 				.add(Country::getName)
 				.add(Country::getDescription, "descriptionColumn")
@@ -104,7 +104,7 @@ class FluentEmbeddableMappingConfigurationSupportTest {
 	@Test
 	void add_withOverwrittenName_overwrittenNameIsTaken() {
 		Table<?> countryTable = new Table<>("countryTable");
-		EmbeddedBeanMappingStrategy<Country, Table> mappingStrategy = FluentEmbeddableMappingConfigurationSupport.from(Country.class)
+		EmbeddedBeanMappingStrategy<Country, Table> mappingStrategy = MappingEase.embeddableBuilder(Country.class)
 				.add(Country::getName, "code")
 				.add(Country::setDescription, "desc")
 				.build(dialect, countryTable);
@@ -124,7 +124,7 @@ class FluentEmbeddableMappingConfigurationSupportTest {
 	void add_mappingDefinedTwiceByMethod_throwsException() {
 		Table<?> countryTable = new Table<>("countryTable");
 		assertEquals("Mapping is already defined by method Country::getName",
-				assertThrows(MappingConfigurationException.class, () -> FluentEmbeddableMappingConfigurationSupport.from(Country.class)
+				assertThrows(MappingConfigurationException.class, () -> MappingEase.embeddableBuilder(Country.class)
 						.add(Country::getName)
 						.add(Country::setName)
 						.build(dialect, countryTable))
@@ -135,7 +135,7 @@ class FluentEmbeddableMappingConfigurationSupportTest {
 	void add_mappingDefinedTwiceByColumn_throwsException() {
 		Table<?> countryTable = new Table<>("countryTable");
 		assertEquals("Mapping is already defined for column xyz",
-				assertThrows(MappingConfigurationException.class, () -> FluentEmbeddableMappingConfigurationSupport.from(Country.class)
+				assertThrows(MappingConfigurationException.class, () -> MappingEase.embeddableBuilder(Country.class)
 						.add(Country::getName, "xyz")
 						.add(Country::setDescription, "xyz")
 						.build(dialect, countryTable))
@@ -147,7 +147,7 @@ class FluentEmbeddableMappingConfigurationSupportTest {
 		Table<?> countryTable = new Table<>("countryTable");
 		assertEquals("countryTable.timestamp has no matching binder, please consider adding one to dialect binder registry" +
 						" or use one of the IFluentEmbeddableMappingConfiguration::embed methods",
-				assertThrows(MappingConfigurationException.class, () -> FluentEmbeddableMappingConfigurationSupport.from(Country.class)
+				assertThrows(MappingConfigurationException.class, () -> MappingEase.embeddableBuilder(Country.class)
 						.add(Country::getName)
 						.add(Country::setTimestamp)
 						.build(dialect, countryTable))
@@ -157,7 +157,7 @@ class FluentEmbeddableMappingConfigurationSupportTest {
 	@Test
 	void add_mandatory() {
 		Table<?> countryTable = new Table<>("countryTable");
-		FluentEmbeddableMappingConfigurationSupport.from(Country.class)
+		MappingEase.embeddableBuilder(Country.class)
 				.add(Country::getName).mandatory()
 				.add(Country::setDescription)
 				.build(dialect, countryTable);
@@ -169,7 +169,7 @@ class FluentEmbeddableMappingConfigurationSupportTest {
 	@Test
 	void testEmbed_definedByGetter() {
 		Table<?> countryTable = new Table<>("countryTable");
-		FluentEmbeddableMappingConfigurationSupport.from(Person.class)
+		MappingEase.embeddableBuilder(Person.class)
 				.embed(Person::getTimestamp)
 				.build(dialect, countryTable);
 		
@@ -181,7 +181,7 @@ class FluentEmbeddableMappingConfigurationSupportTest {
 	@Test
 	void testEmbed_definedBySetter() {
 		Table<?> countryTable = new Table<>("countryTable");
-		FluentEmbeddableMappingConfigurationSupport.from(Person.class)
+		MappingEase.embeddableBuilder(Person.class)
 				.embed(Person::setTimestamp)
 				.build(dialect, countryTable);
 		
@@ -193,7 +193,7 @@ class FluentEmbeddableMappingConfigurationSupportTest {
 	@Test
 	void testEmbed_insertAndSelect_withOverridenColumnName() {
 		Table<?> personTable = new Table<>("personTable");
-		EmbeddedBeanMappingStrategy<Person, Table<?>> personMappingStrategy = FluentEmbeddableMappingConfigurationSupport.from(Person.class)
+		EmbeddedBeanMappingStrategy<Person, Table<?>> personMappingStrategy = MappingEase.embeddableBuilder(Person.class)
 				.add(Person::getName)
 				.embed(Person::setTimestamp)
 					.overrideName(Timestamp::getCreationDate, "createdAt")
@@ -235,7 +235,7 @@ class FluentEmbeddableMappingConfigurationSupportTest {
 	
 	@Test
 	void testInheritance_parentColumnsMustBeAdded() {
-		EmbeddedBeanMappingStrategy<Car, Table> carMappingStrategy = FluentEmbeddableMappingConfigurationSupport.from(Car.class)
+		EmbeddedBeanMappingStrategy<Car, Table> carMappingStrategy = MappingEase.embeddableBuilder(Car.class)
 				// color is on a super class
 				.add(Car::getColor)
 				.add(Car::getModel)
@@ -262,7 +262,7 @@ class FluentEmbeddableMappingConfigurationSupportTest {
 	
 	@Test
 	void testEmbed_inheritance_embeddedParentColumnsMustBeAdded() {
-		EmbeddedBeanMappingStrategy<Car, Table> carMappingStrategy = FluentEmbeddableMappingConfigurationSupport.from(Car.class)
+		EmbeddedBeanMappingStrategy<Car, Table> carMappingStrategy = MappingEase.embeddableBuilder(Car.class)
 				.add(Car::getColor)
 				.add(Car::getModel)
 				// timestamp is on a super class
@@ -331,7 +331,7 @@ class FluentEmbeddableMappingConfigurationSupportTest {
 	@Test
 	void testEmbed_insertAndSelect_withSomeExcludedProperty() {
 		Table<?> personTable = new Table<>("personTable");
-		EmbeddedBeanMappingStrategy<Person, Table<?>> personMappingStrategy = FluentEmbeddableMappingConfigurationSupport.from(Person.class)
+		EmbeddedBeanMappingStrategy<Person, Table<?>> personMappingStrategy = MappingEase.embeddableBuilder(Person.class)
 				.add(Person::getName)
 				.embed(Person::setTimestamp)
 					.exclude(Timestamp::getCreationDate)
@@ -371,7 +371,7 @@ class FluentEmbeddableMappingConfigurationSupportTest {
 	@Test
 	void testBuild_embed_definedTwice_throwException() {
 		Table<?> countryTable = new Table<>("countryTable");
-		IFluentEmbeddableMappingBuilderEmbedOptions<Country, Timestamp> mappingBuilder = FluentEmbeddableMappingConfigurationSupport.from(Country.class)
+		IFluentEmbeddableMappingBuilderEmbedOptions<Country, Timestamp> mappingBuilder = MappingEase.embeddableBuilder(Country.class)
 				.add(Country::getName)
 				.embed(Country::getTimestamp)
 				.embed(Country::getTimestamp);
@@ -383,7 +383,7 @@ class FluentEmbeddableMappingConfigurationSupportTest {
 	@Test
 	void testBuild_embed() {
 		Table<?> countryTable = new Table<>("countryTable");
-		IFluentEmbeddableMappingBuilderEmbedOptions<Country, Timestamp> mappingBuilder = FluentEmbeddableMappingConfigurationSupport.from(Country.class)
+		IFluentEmbeddableMappingBuilderEmbedOptions<Country, Timestamp> mappingBuilder = MappingEase.embeddableBuilder(Country.class)
 				.columnNamingStrategy(accessor -> ColumnNamingStrategy.DEFAULT.giveName(accessor) + "_col")
 				.embed(Country::getTimestamp);
 		EmbeddedBeanMappingStrategy<Country, ? extends Table<?>> mappingStrategy = mappingBuilder.build(dialect, countryTable);
@@ -396,7 +396,7 @@ class FluentEmbeddableMappingConfigurationSupportTest {
 	@Test
 	void testBuild_innerEmbed_withTwiceSameInnerEmbeddableName_throwException() {
 		Table<?> countryTable = new Table<>("countryTable");
-		IFluentEmbeddableMappingBuilderEmbedOptions<Country, Timestamp> mappingBuilder = FluentEmbeddableMappingConfigurationSupport.from(Country.class)
+		IFluentEmbeddableMappingBuilderEmbedOptions<Country, Timestamp> mappingBuilder = MappingEase.embeddableBuilder(Country.class)
 				.add(Country::getName)
 				.embed(Country::getPresident)
 					.exclude(Person::getCountry)
@@ -435,7 +435,7 @@ class FluentEmbeddableMappingConfigurationSupportTest {
 	@Test
 	void testBuild_innerEmbed_withOverridenColumnName() {
 		Table<?> countryTable = new Table<>("countryTable");
-		EmbeddedBeanMappingStrategy<Country, Table<?>> personMappingStrategy = FluentEmbeddableMappingConfigurationSupport.from(Country.class)
+		EmbeddedBeanMappingStrategy<Country, Table<?>> personMappingStrategy = MappingEase.embeddableBuilder(Country.class)
 				.add(Country::getName)
 				.embed(Country::getPresident)
 					.exclude(Person::getCountry)
@@ -464,7 +464,7 @@ class FluentEmbeddableMappingConfigurationSupportTest {
 	@Test
 	void testBuild_withTwiceSameEmbeddableNames_throwsException() {
 		Table<?> countryTable = new Table<>("countryTable");
-		IFluentEmbeddableMappingBuilderEmbedOptions<Country, Person> mappingBuilder = FluentEmbeddableMappingConfigurationSupport.from(Country.class)
+		IFluentEmbeddableMappingBuilderEmbedOptions<Country, Person> mappingBuilder = MappingEase.embeddableBuilder(Country.class)
 				.add(Country::getName)
 				.embed(Country::getPresident);
 		MappingConfigurationException thrownException = assertThrows(MappingConfigurationException.class,
@@ -476,11 +476,11 @@ class FluentEmbeddableMappingConfigurationSupportTest {
 	
 	@Test
 	void testBuild_embedReusedEmbeddable_simpleCase() {
-		EmbeddedBeanMappingStrategyBuilder<Person> personMappingBuilder = FluentEmbeddableMappingConfigurationSupport.from(Person.class)
+		EmbeddedBeanMappingStrategyBuilder<Person> personMappingBuilder = MappingEase.embeddableBuilder(Person.class)
 				.add(Person::getId);
 		
 		Table<?> countryTable = new Table<>("countryTable");
-		EmbeddedBeanMappingStrategy<Country, Table<?>> personMappingStrategy = FluentEmbeddableMappingConfigurationSupport.from(Country.class)
+		EmbeddedBeanMappingStrategy<Country, Table<?>> personMappingStrategy = MappingEase.embeddableBuilder(Country.class)
 				.add(Country::getName, "countryName")
 				.embed(Country::getPresident, personMappingBuilder)
 				.build(dialect, countryTable);
@@ -501,11 +501,11 @@ class FluentEmbeddableMappingConfigurationSupportTest {
 	
 	@Test
 	void testBuild_embedReusedEmbeddable_simpleCase_setter() {
-		EmbeddedBeanMappingStrategyBuilder<Person> personMappingBuilder = FluentEmbeddableMappingConfigurationSupport.from(Person.class)
+		EmbeddedBeanMappingStrategyBuilder<Person> personMappingBuilder = MappingEase.embeddableBuilder(Person.class)
 				.add(Person::getId);
 		
 		Table<?> countryTable = new Table<>("countryTable");
-		EmbeddedBeanMappingStrategy<Country, Table<?>> personMappingStrategy = FluentEmbeddableMappingConfigurationSupport.from(Country.class)
+		EmbeddedBeanMappingStrategy<Country, Table<?>> personMappingStrategy = MappingEase.embeddableBuilder(Country.class)
 				.add(Country::getName, "countryName")
 				.embed(Country::setPresident, personMappingBuilder)
 				.build(dialect, countryTable);
@@ -526,12 +526,12 @@ class FluentEmbeddableMappingConfigurationSupportTest {
 	
 	@Test
 	void testBuild_embedReusedEmbeddable_overrideName() {
-		EmbeddedBeanMappingStrategyBuilder<Person> personMappingBuilder = FluentEmbeddableMappingConfigurationSupport.from(Person.class)
+		EmbeddedBeanMappingStrategyBuilder<Person> personMappingBuilder = MappingEase.embeddableBuilder(Person.class)
 				.add(Person::getName)
 				.embed(Person::getTimestamp);
 		
 		Table<?> countryTable = new Table<>("countryTable");
-		EmbeddedBeanMappingStrategy<Country, Table<?>> personMappingStrategy = FluentEmbeddableMappingConfigurationSupport.from(Country.class)
+		EmbeddedBeanMappingStrategy<Country, Table<?>> personMappingStrategy = MappingEase.embeddableBuilder(Country.class)
 				.add(Country::getName)
 				.embed(Country::getPresident, personMappingBuilder)
 					.overrideName(Person::getName, "personName")
@@ -553,12 +553,12 @@ class FluentEmbeddableMappingConfigurationSupportTest {
 	
 	@Test
 	void testBuild_embedReusedEmbeddable_definedTwice_throwException() {
-		EmbeddedBeanMappingStrategyBuilder<Person> personMappingBuilder = FluentEmbeddableMappingConfigurationSupport.from(Person.class)
+		EmbeddedBeanMappingStrategyBuilder<Person> personMappingBuilder = MappingEase.embeddableBuilder(Person.class)
 				.add(Person::getName, "myName");
 		
 		Table<?> countryTable = new Table<>("countryTable");
 		
-		IFluentEmbeddableMappingBuilder<Country> mappingBuilder = FluentEmbeddableMappingConfigurationSupport.from(Country.class)
+		IFluentEmbeddableMappingBuilder<Country> mappingBuilder = MappingEase.embeddableBuilder(Country.class)
 				.add(Country::getName)
 				.embed(Country::getPresident, personMappingBuilder)
 				// voluntary duplicate to fulfill goal of this test
@@ -570,11 +570,11 @@ class FluentEmbeddableMappingConfigurationSupportTest {
 	
 	@Test
 	void testBuild_embedReusedEmbeddable_conflictingColumnNameNotOverriden_throwsException() {
-		EmbeddedBeanMappingStrategyBuilder<Person> personMappingBuilder = FluentEmbeddableMappingConfigurationSupport.from(Person.class)
+		EmbeddedBeanMappingStrategyBuilder<Person> personMappingBuilder = MappingEase.embeddableBuilder(Person.class)
 				.add(Person::getName);
 		
 		Table<?> countryTable = new Table<>("countryTable");
-		IFluentEmbeddableMappingBuilderEmbeddableOptions<Country, Person> entityMappingBuilder = FluentEmbeddableMappingConfigurationSupport.from(Country.class)
+		IFluentEmbeddableMappingBuilderEmbeddableOptions<Country, Person> entityMappingBuilder = MappingEase.embeddableBuilder(Country.class)
 				.add(Country::getName)
 				.embed(Country::getPresident, personMappingBuilder);
 		
@@ -589,11 +589,11 @@ class FluentEmbeddableMappingConfigurationSupportTest {
 	@Test
 	void testBuild_embedReusedEmbeddable_columnNameOverridenOnConflictingName1_throwsException() {
 		// Overriden vs override
-		EmbeddedBeanMappingStrategyBuilder<Person> personMappingBuilder = FluentEmbeddableMappingConfigurationSupport.from(Person.class)
+		EmbeddedBeanMappingStrategyBuilder<Person> personMappingBuilder = MappingEase.embeddableBuilder(Person.class)
 				.add(Person::getName, "myName");
 		
 		Table<?> countryTable = new Table<>("countryTable");
-		IFluentEmbeddableMappingBuilderEmbeddableOptions<Country, Person> entityMappingBuilder = FluentEmbeddableMappingConfigurationSupport.from(Country.class)
+		IFluentEmbeddableMappingBuilderEmbeddableOptions<Country, Person> entityMappingBuilder = MappingEase.embeddableBuilder(Country.class)
 				.add(Country::getName, "myName")
 				.embed(Country::getPresident, personMappingBuilder);
 		
@@ -608,11 +608,11 @@ class FluentEmbeddableMappingConfigurationSupportTest {
 	@Test
 	void testBuild_embedReusedEmbeddable_columnNameOverridenOnConflictingName2_throwsException() {
 		// Overriden vs standard name
-		EmbeddedBeanMappingStrategyBuilder<MyPerson> personMappingBuilder = FluentEmbeddableMappingConfigurationSupport.from(MyPerson.class)
+		EmbeddedBeanMappingStrategyBuilder<MyPerson> personMappingBuilder = MappingEase.embeddableBuilder(MyPerson.class)
 				.add(MyPerson::getName, "myName");
 		
 		Table<?> countryTable = new Table<>("countryTable");
-		IFluentEmbeddableMappingBuilderEmbeddableOptions<MyCountry, MyPerson> entityMappingBuilder = FluentEmbeddableMappingConfigurationSupport.from(MyCountry.class)
+		IFluentEmbeddableMappingBuilderEmbeddableOptions<MyCountry, MyPerson> entityMappingBuilder = MappingEase.embeddableBuilder(MyCountry.class)
 				.add(MyCountry::getMyName)
 				.embed(MyCountry::getPresident, personMappingBuilder);
 		
@@ -627,11 +627,11 @@ class FluentEmbeddableMappingConfigurationSupportTest {
 	@Test
 	void testBuild_embedReusedEmbeddable_columnNameOverridenOnConflictingName3_throwsException() {
 		// Standard name vs override
-		EmbeddedBeanMappingStrategyBuilder<MyPerson> personMappingBuilder = FluentEmbeddableMappingConfigurationSupport.from(MyPerson.class)
+		EmbeddedBeanMappingStrategyBuilder<MyPerson> personMappingBuilder = MappingEase.embeddableBuilder(MyPerson.class)
 				.add(MyPerson::getMyName);
 		
 		Table<?> countryTable = new Table<>("countryTable");
-		IFluentEmbeddableMappingBuilderEmbeddableOptions<MyCountry, MyPerson> entityMappingBuilder = FluentEmbeddableMappingConfigurationSupport.from(MyCountry.class)
+		IFluentEmbeddableMappingBuilderEmbeddableOptions<MyCountry, MyPerson> entityMappingBuilder = MappingEase.embeddableBuilder(MyCountry.class)
 				.add(Country::getName, "myName")
 				.embed(MyCountry::getPresident, personMappingBuilder);
 		
@@ -645,12 +645,12 @@ class FluentEmbeddableMappingConfigurationSupportTest {
 	
 	@Test
 	void testBuild_embedReusedEmbeddable_overrideNameOfUnmappedProperty_throwsException() {
-		EmbeddedBeanMappingStrategyBuilder<Person> personMappingBuilder = FluentEmbeddableMappingConfigurationSupport.from(Person.class)
+		EmbeddedBeanMappingStrategyBuilder<Person> personMappingBuilder = MappingEase.embeddableBuilder(Person.class)
 				.add(Person::getName);
 		
 		Table<?> countryTable = new Table<>("countryTable");
 		IFluentEmbeddableMappingBuilderEmbeddableOptions<Country, Person> entityMappingBuilder =
-				FluentEmbeddableMappingConfigurationSupport.from(Country.class)
+				MappingEase.embeddableBuilder(Country.class)
 				.add(Country::getName)
 				.embed(Country::getPresident, personMappingBuilder)
 					.overrideName(Person::getName, "personName")
@@ -663,7 +663,7 @@ class FluentEmbeddableMappingConfigurationSupportTest {
 	
 	@Test
 	void testBuild_embedReusedEmbeddable_embeddableContainsAnEmbeddedType() {
-		EmbeddedBeanMappingStrategyBuilder<Person> personMappingBuilder = FluentEmbeddableMappingConfigurationSupport.from(Person.class)
+		EmbeddedBeanMappingStrategyBuilder<Person> personMappingBuilder = MappingEase.embeddableBuilder(Person.class)
 				.add(Person::getName, "personName")
 				.embed(Person::getTimestamp)
 					.overrideName(Timestamp::getCreationDate, "personCreatedAt")
@@ -671,7 +671,7 @@ class FluentEmbeddableMappingConfigurationSupportTest {
 		
 		
 		Table<?> countryTable = new Table<>("countryTable");
-		EmbeddedBeanMappingStrategy<Country, Table<?>> personMappingStrategy = FluentEmbeddableMappingConfigurationSupport.from(Country.class)
+		EmbeddedBeanMappingStrategy<Country, Table<?>> personMappingStrategy = MappingEase.embeddableBuilder(Country.class)
 				.add(Country::getName)
 				.embed(Country::getTimestamp)
 					.overrideName(Timestamp::getCreationDate, "createdAt")
@@ -700,7 +700,7 @@ class FluentEmbeddableMappingConfigurationSupportTest {
 	
 	@Test
 	void testBuild_embedReusedEmbeddable_embeddableContainsAnEmbeddedType2() {
-		EmbeddedBeanMappingStrategyBuilder<Person> personMappingBuilder = FluentEmbeddableMappingConfigurationSupport.from(Person.class)
+		EmbeddedBeanMappingStrategyBuilder<Person> personMappingBuilder = MappingEase.embeddableBuilder(Person.class)
 				.add(Person::getName, "personName")
 				.embed(Person::getTimestamp)
 					.overrideName(Timestamp::getCreationDate, "personCreatedAt")
@@ -708,7 +708,7 @@ class FluentEmbeddableMappingConfigurationSupportTest {
 		
 		
 		Table<?> countryTable = new Table<>("countryTable");
-		EmbeddedBeanMappingStrategy<Country, Table<?>> personMappingStrategy = FluentEmbeddableMappingConfigurationSupport.from(Country.class)
+		EmbeddedBeanMappingStrategy<Country, Table<?>> personMappingStrategy = MappingEase.embeddableBuilder(Country.class)
 				.add(Country::getName)
 				.embed(Country::getTimestamp)
 					.overrideName(Timestamp::getCreationDate, "createdAt")
@@ -737,11 +737,11 @@ class FluentEmbeddableMappingConfigurationSupportTest {
 	
 	@Test
 	void testBuild_embedReusedEmbeddable_embeddableContainsAnEmbeddedType_throwsException() {
-		EmbeddedBeanMappingStrategyBuilder<Person> personMappingBuilder = FluentEmbeddableMappingConfigurationSupport.from(Person.class)
+		EmbeddedBeanMappingStrategyBuilder<Person> personMappingBuilder = MappingEase.embeddableBuilder(Person.class)
 				.embed(Person::getTimestamp);
 		
 		Table<?> countryTable = new Table<>("countryTable");
-		IFluentEmbeddableMappingBuilderEmbeddableOptions<Country, Person> mappingBuilder = FluentEmbeddableMappingConfigurationSupport.from(Country.class)
+		IFluentEmbeddableMappingBuilderEmbeddableOptions<Country, Person> mappingBuilder = MappingEase.embeddableBuilder(Country.class)
 				.add(Country::getName)
 				.embed(Country::getTimestamp)
 				.embed(Country::getPresident, personMappingBuilder);
@@ -759,12 +759,12 @@ class FluentEmbeddableMappingConfigurationSupportTest {
 	
 	@Test
 	void testBuild_embedReusedEmbeddable_embeddableContainsAnEmbeddedType_withOverridenName_throwsException() {
-		EmbeddedBeanMappingStrategyBuilder<Person> personMappingBuilder = FluentEmbeddableMappingConfigurationSupport.from(Person.class)
+		EmbeddedBeanMappingStrategyBuilder<Person> personMappingBuilder = MappingEase.embeddableBuilder(Person.class)
 				.embed(Person::getTimestamp)
 				.overrideName(Timestamp::getCreationDate, "createdAt");
 		
 		Table<?> countryTable = new Table<>("countryTable");
-		IFluentEmbeddableMappingBuilderEmbeddableOptions<Country, Person> mappingBuilder = FluentEmbeddableMappingConfigurationSupport.from(Country.class)
+		IFluentEmbeddableMappingBuilderEmbeddableOptions<Country, Person> mappingBuilder = MappingEase.embeddableBuilder(Country.class)
 				.add(Country::getName)
 				.embed(Country::getTimestamp)
 				.embed(Country::getPresident, personMappingBuilder);
@@ -779,12 +779,12 @@ class FluentEmbeddableMappingConfigurationSupportTest {
 	
 	@Test
 	void testBuild_embedReusedEmbeddable_embeddableContainsAnEmbeddedType_withExclusion_throwsException() {
-		EmbeddedBeanMappingStrategyBuilder<Person> personMappingBuilder = FluentEmbeddableMappingConfigurationSupport.from(Person.class)
+		EmbeddedBeanMappingStrategyBuilder<Person> personMappingBuilder = MappingEase.embeddableBuilder(Person.class)
 				.embed(Person::getTimestamp)
 				.exclude(Timestamp::getCreationDate);
 		
 		Table<?> countryTable = new Table<>("countryTable");
-		IFluentEmbeddableMappingBuilderEmbeddableOptions<Country, Person> mappingBuilder = FluentEmbeddableMappingConfigurationSupport.from(Country.class)
+		IFluentEmbeddableMappingBuilderEmbeddableOptions<Country, Person> mappingBuilder = MappingEase.embeddableBuilder(Country.class)
 				.add(Country::getName)
 				.embed(Country::getTimestamp)
 				.embed(Country::getPresident, personMappingBuilder);
@@ -799,11 +799,11 @@ class FluentEmbeddableMappingConfigurationSupportTest {
 	
 	@Test
 	void testBuild_embedReusedEmbeddable_embeddableContainsAnEmbeddedType_andIsOverriden_throwsException() {
-		EmbeddedBeanMappingStrategyBuilder<Person> personMappingBuilder = FluentEmbeddableMappingConfigurationSupport.from(Person.class)
+		EmbeddedBeanMappingStrategyBuilder<Person> personMappingBuilder = MappingEase.embeddableBuilder(Person.class)
 				.embed(Person::getTimestamp);
 		
 		Table<?> countryTable = new Table<>("countryTable");
-		IFluentEmbeddableMappingBuilder<Country> mappingBuilder = FluentEmbeddableMappingConfigurationSupport.from(Country.class)
+		IFluentEmbeddableMappingBuilder<Country> mappingBuilder = MappingEase.embeddableBuilder(Country.class)
 				.add(Country::getName)
 				.embed(Country::getTimestamp)
 				.embed(Country::getPresident, personMappingBuilder)
@@ -819,12 +819,12 @@ class FluentEmbeddableMappingConfigurationSupportTest {
 	
 	@Test
 	void testBuild_embedReusedEmbeddable__embeddableContainsAnEmbeddedType_overrideNameOfUnmappedProperty_throwsException() {
-		EmbeddedBeanMappingStrategyBuilder<Person> personMappingBuilder = FluentEmbeddableMappingConfigurationSupport.from(Person.class)
+		EmbeddedBeanMappingStrategyBuilder<Person> personMappingBuilder = MappingEase.embeddableBuilder(Person.class)
 				.embed(Person::getTimestamp)
 					.exclude(Timestamp::getModificationDate);
 		
 		Table<?> countryTable = new Table<>("countryTable");
-		IFluentEmbeddableMappingBuilder<Country> mappingBuilder = FluentEmbeddableMappingConfigurationSupport.from(Country.class)
+		IFluentEmbeddableMappingBuilder<Country> mappingBuilder = MappingEase.embeddableBuilder(Country.class)
 				.add(Country::getName)
 				.embed(Country::getPresident, personMappingBuilder)
 					.overrideName(AccessorChain.chain(Person::getTimestamp, Timestamp::getModificationDate), "electedAt");
@@ -838,7 +838,7 @@ class FluentEmbeddableMappingConfigurationSupportTest {
 	@Test
 	void addEnum() throws SQLException {
 		Table<?> personTable = new Table<>("personTable");
-		EmbeddedBeanMappingStrategy<PersonWithGender, Table> personMappingStrategy = FluentEmbeddableMappingConfigurationSupport.from(PersonWithGender.class)
+		EmbeddedBeanMappingStrategy<PersonWithGender, Table> personMappingStrategy = MappingEase.embeddableBuilder(PersonWithGender.class)
 				.add(Person::getName)
 				.addEnum(PersonWithGender::getGender)
 				.build(dialect, personTable);
@@ -860,7 +860,7 @@ class FluentEmbeddableMappingConfigurationSupportTest {
 	@Test
 		void addEnum_byOrdinal() throws SQLException {
 		Table<?> personTable = new Table<>("personTable");
-		EmbeddedBeanMappingStrategy<PersonWithGender, Table> personMappingStrategy = FluentEmbeddableMappingConfigurationSupport.from(PersonWithGender.class)
+		EmbeddedBeanMappingStrategy<PersonWithGender, Table> personMappingStrategy = MappingEase.embeddableBuilder(PersonWithGender.class)
 				.add(Person::getName)
 				.addEnum(PersonWithGender::getGender).byOrdinal()
 				.build(dialect, personTable);
@@ -882,7 +882,7 @@ class FluentEmbeddableMappingConfigurationSupportTest {
 	@Test
 	void addEnum_byName() throws SQLException {
 		Table<?> personTable = new Table<>("personTable");
-		EmbeddedBeanMappingStrategy<PersonWithGender, Table> personMappingStrategy = FluentEmbeddableMappingConfigurationSupport.from(PersonWithGender.class)
+		EmbeddedBeanMappingStrategy<PersonWithGender, Table> personMappingStrategy = MappingEase.embeddableBuilder(PersonWithGender.class)
 				.add(Person::getName)
 				.addEnum(PersonWithGender::getGender).byName()
 				.build(dialect, personTable);
@@ -904,7 +904,7 @@ class FluentEmbeddableMappingConfigurationSupportTest {
 	@Test
 	void addEnum_mandatory() {
 		Table<?> personTable = new Table<>("personTable");
-		FluentEmbeddableMappingConfigurationSupport.from(PersonWithGender.class)
+		MappingEase.embeddableBuilder(PersonWithGender.class)
 				.add(Person::getName)
 				.addEnum(PersonWithGender::getGender).mandatory()
 				.build(dialect, personTable);
@@ -929,7 +929,7 @@ class FluentEmbeddableMappingConfigurationSupportTest {
 		Table<?> countryTable = new Table<>("countryTable");
 		
 		try {
-			FluentEmbeddableMappingConfigurationSupport.from(Country.class)
+			MappingEase.embeddableBuilder(Country.class)
 					.add(Country::getName)
 					.embed(Country::getPresident)
 					.overrideName(Person::getId, "personId")
@@ -945,7 +945,7 @@ class FluentEmbeddableMappingConfigurationSupportTest {
 		}
 		
 		try {
-			FluentEmbeddableMappingConfigurationSupport.from(Country.class)
+			MappingEase.embeddableBuilder(Country.class)
 					.add(Country::getName)
 					.embed(Country::getPresident)
 					.innerEmbed(Person::getTimestamp)
@@ -959,7 +959,7 @@ class FluentEmbeddableMappingConfigurationSupportTest {
 		}
 		
 		try {
-			FluentEmbeddableMappingConfigurationSupport.from(Country.class)
+			MappingEase.embeddableBuilder(Country.class)
 					.add(Country::getName)
 					.add(Country::getId, "zz")
 					.mapSuperClass(new FluentEmbeddableMappingConfigurationSupport<>(Object.class))
@@ -977,10 +977,10 @@ class FluentEmbeddableMappingConfigurationSupportTest {
 		}
 		
 		try {
-			EmbeddedBeanMappingStrategyBuilder<Person> personMappingBuilder = FluentEmbeddableMappingConfigurationSupport.from(Person.class)
+			EmbeddedBeanMappingStrategyBuilder<Person> personMappingBuilder = MappingEase.embeddableBuilder(Person.class)
 					.add(Person::getName);
 			
-			FluentEmbeddableMappingConfigurationSupport.from(Country.class)
+			MappingEase.embeddableBuilder(Country.class)
 					.add(Country::getName)
 					.add(Country::getId, "zz")
 					.mapSuperClass(new FluentEmbeddableMappingConfigurationSupport<>(Object.class))
@@ -992,10 +992,10 @@ class FluentEmbeddableMappingConfigurationSupportTest {
 		}
 		
 		try {
-			EmbeddedBeanMappingStrategyBuilder<Person> personMappingBuilder = FluentEmbeddableMappingConfigurationSupport.from(Person.class)
+			EmbeddedBeanMappingStrategyBuilder<Person> personMappingBuilder = MappingEase.embeddableBuilder(Person.class)
 					.add(Person::getName);
 			
-			FluentEmbeddableMappingConfigurationSupport.from(Country.class)
+			MappingEase.embeddableBuilder(Country.class)
 					.add(Country::getName)
 					.add(Country::getId, "zz")
 					.embed(Country::getPresident, personMappingBuilder)
@@ -1012,7 +1012,7 @@ class FluentEmbeddableMappingConfigurationSupportTest {
 		}
 		
 		try {
-			FluentEmbeddableMappingConfigurationSupport.from(PersonWithGender.class)
+			MappingEase.embeddableBuilder(PersonWithGender.class)
 					.add(Person::getName)
 					.addEnum(PersonWithGender::getGender).byOrdinal()
 					.embed(Person::setTimestamp)

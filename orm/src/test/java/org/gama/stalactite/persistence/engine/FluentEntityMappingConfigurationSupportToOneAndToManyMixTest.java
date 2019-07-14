@@ -55,13 +55,13 @@ public class FluentEntityMappingConfigurationSupportToOneAndToManyMixTest {
 		dialect.getJavaTypeToSqlTypeMapping().put(Identified.class, "int");
 		persistenceContext = new PersistenceContext(new JdbcConnectionProvider(dataSource), dialect);
 		
-		IFluentMappingBuilderPropertyOptions<Person, Identifier<Long>> personMappingBuilder = MappingEase.mappingBuilder(Person.class,
+		IFluentMappingBuilderPropertyOptions<Person, Identifier<Long>> personMappingBuilder = MappingEase.entityBuilder(Person.class,
 				Identifier.LONG_TYPE)
 				.add(Person::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.add(Person::getName);
 		personMappingConfiguration = personMappingBuilder;
 		
-		IFluentMappingBuilderPropertyOptions<City, Identifier<Long>> cityMappingBuilder = MappingEase.mappingBuilder(City.class,
+		IFluentMappingBuilderPropertyOptions<City, Identifier<Long>> cityMappingBuilder = MappingEase.entityBuilder(City.class,
 				Identifier.LONG_TYPE)
 				.add(City::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.add(City::getName)
@@ -72,7 +72,7 @@ public class FluentEntityMappingConfigurationSupportToOneAndToManyMixTest {
 	@Test
 	void foreignKeyIsCreated() throws SQLException {
 		// mapping building thantks to fluent API
-		Persister<Country, Identifier<Long>, ?> countryPersister = MappingEase.mappingBuilder(Country.class,
+		Persister<Country, Identifier<Long>, ?> countryPersister = MappingEase.entityBuilder(Country.class,
 				Identifier.LONG_TYPE)
 				// setting a foreign key naming strategy to be tested
 				.foreignKeyNamingStrategy(ForeignKeyNamingStrategy.DEFAULT)
@@ -121,7 +121,7 @@ public class FluentEntityMappingConfigurationSupportToOneAndToManyMixTest {
 	@Test
 	public void testCascade_oneToOneAndOneToMany_CRUD() {
 		// mapping building thantks to fluent API
-		Persister<Country, Identifier<Long>, ?> countryPersister = MappingEase.mappingBuilder(Country.class, Identifier.LONG_TYPE)
+		Persister<Country, Identifier<Long>, ?> countryPersister = MappingEase.entityBuilder(Country.class, Identifier.LONG_TYPE)
 				.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.add(Country::getName)
 				.addOneToOne(Country::getPresident, personMappingConfiguration).cascading(ALL)
@@ -171,13 +171,13 @@ public class FluentEntityMappingConfigurationSupportToOneAndToManyMixTest {
 	
 	@Test
 	public void testCascade_multipleOneToMany_update() {
-		IFluentMappingBuilderPropertyOptions<State, Identifier<Long>> stateMappingBuilder = MappingEase.mappingBuilder(State.class,
+		IFluentMappingBuilderPropertyOptions<State, Identifier<Long>> stateMappingBuilder = MappingEase.entityBuilder(State.class,
 				Identifier.LONG_TYPE)
 				.add(State::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.add(State::getName)
 				.add(State::getCountry);	// allow to declare the owner column of the relation
 		
-		Persister<Country, Identifier<Long>, ?> countryPersister = MappingEase.mappingBuilder(Country.class, Identifier.LONG_TYPE)
+		Persister<Country, Identifier<Long>, ?> countryPersister = MappingEase.entityBuilder(Country.class, Identifier.LONG_TYPE)
 				.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.add(Country::getName)
 				.add(Country::getDescription)

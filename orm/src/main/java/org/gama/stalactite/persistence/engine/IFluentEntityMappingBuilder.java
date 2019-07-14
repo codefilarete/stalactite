@@ -16,7 +16,7 @@ import org.gama.stalactite.persistence.structure.Table;
  * have compatible return type.
  * 
  * @author Guillaume Mary
- * @see MappingEase#mappingBuilder(Class, Class)
+ * @see MappingEase#entityBuilder(Class, Class)
  * @see #build(PersistenceContext)
  */
 public interface IFluentEntityMappingBuilder<C, I> extends IFluentEmbeddableMappingConfiguration<C>, PersisterBuilder<C, I> {
