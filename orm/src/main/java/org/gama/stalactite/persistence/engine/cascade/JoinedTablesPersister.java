@@ -1,6 +1,7 @@
 package org.gama.stalactite.persistence.engine.cascade;
 
 import javax.annotation.Nonnull;
+import java.util.Collection;
 import java.util.List;
 import java.util.Set;
 
@@ -179,7 +180,7 @@ public class JoinedTablesPersister<C, I, T extends Table> extends Persister<C, I
 		SerializableFunction<ExecutableQuery, List<C>> execute = ExecutableQuery::execute;
 		return methodDispatcher
 				.redirect(execute, () -> getPersisterListener().doWithSelectListener(emptyList(), () -> entitySelectExecutor.loadGraph(localCriteriaSupport)))
-				.redirect(EntityCriteria.class, localCriteriaSupport)
+				.redirect(EntityCriteria.class, localCriteriaSupport, true)
 				.build((Class<ExecutableEntityQuery<C>>) (Class) ExecutableEntityQuery.class);
 	}
 	
@@ -203,6 +204,18 @@ public class JoinedTablesPersister<C, I, T extends Table> extends Persister<C, I
 	 * @param <C> type of object returned by query execution
 	 */
 	public interface ExecutableEntityQuery<C> extends EntityCriteria<C>, ExecutableQuery<C> {
+		
+		<O> ExecutableEntityQuery<C> and(SerializableFunction<C, O> getter, AbstractRelationalOperator<O> operator);
+		
+		<O> ExecutableEntityQuery<C> and(SerializableBiConsumer<C, O> setter, AbstractRelationalOperator<O> operator);
+		
+		<O> ExecutableEntityQuery<C> or(SerializableFunction<C, O> getter, AbstractRelationalOperator<O> operator);
+		
+		<O> ExecutableEntityQuery<C> or(SerializableBiConsumer<C, O> setter, AbstractRelationalOperator<O> operator);
+		
+		<A, B> ExecutableEntityQuery<C> and(SerializableFunction<C, A> getter1, SerializableFunction<A, B> getter2, AbstractRelationalOperator<B> operator);
+		
+		<S extends Collection<A>, A, B> ExecutableEntityQuery<C> andMany(SerializableFunction<C, S> getter1, SerializableFunction<A, B> getter2, AbstractRelationalOperator<B> operator);
 		
 	}
 }
