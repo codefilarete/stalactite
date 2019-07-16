@@ -25,6 +25,7 @@ import org.gama.stalactite.persistence.sql.dml.DMLGenerator;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.query.model.AbstractRelationalOperator;
+import org.gama.stalactite.query.model.CriteriaChain;
 
 import static java.util.Collections.emptyList;
 
@@ -179,7 +180,8 @@ public class JoinedTablesPersister<C, I, T extends Table> extends Persister<C, I
 		MethodReferenceDispatcher methodDispatcher = new MethodReferenceDispatcher();
 		SerializableFunction<ExecutableQuery, List<C>> execute = ExecutableQuery::execute;
 		return methodDispatcher
-				.redirect(execute, () -> getPersisterListener().doWithSelectListener(emptyList(), () -> entitySelectExecutor.loadGraph(localCriteriaSupport)))
+				.redirect(execute, () -> getPersisterListener().doWithSelectListener(emptyList(), () -> entitySelectExecutor.loadGraph(localCriteriaSupport.getCriteria())))
+				.redirect(CriteriaProvider::getCriteria, localCriteriaSupport::getCriteria)
 				.redirect(EntityCriteria.class, localCriteriaSupport, true)
 				.build((Class<ExecutableEntityQuery<C>>) (Class) ExecutableEntityQuery.class);
 	}
@@ -191,7 +193,7 @@ public class JoinedTablesPersister<C, I, T extends Table> extends Persister<C, I
 	 */
 	public List<C> selectAll() {
 		return getPersisterListener().doWithSelectListener(emptyList(), () ->
-				entitySelectExecutor.loadGraph(newWhere())
+				entitySelectExecutor.loadGraph(newWhere().getCriteria())
 		);
 	}
 	
@@ -203,7 +205,7 @@ public class JoinedTablesPersister<C, I, T extends Table> extends Persister<C, I
 	 * Mashup between {@link EntityCriteria} and {@link ExecutableQuery} to make an {@link EntityCriteria} executable
 	 * @param <C> type of object returned by query execution
 	 */
-	public interface ExecutableEntityQuery<C> extends EntityCriteria<C>, ExecutableQuery<C> {
+	public interface ExecutableEntityQuery<C> extends EntityCriteria<C>, ExecutableQuery<C>, CriteriaProvider {
 		
 		<O> ExecutableEntityQuery<C> and(SerializableFunction<C, O> getter, AbstractRelationalOperator<O> operator);
 		
@@ -216,6 +218,17 @@ public class JoinedTablesPersister<C, I, T extends Table> extends Persister<C, I
 		<A, B> ExecutableEntityQuery<C> and(SerializableFunction<C, A> getter1, SerializableFunction<A, B> getter2, AbstractRelationalOperator<B> operator);
 		
 		<S extends Collection<A>, A, B> ExecutableEntityQuery<C> andMany(SerializableFunction<C, S> getter1, SerializableFunction<A, B> getter2, AbstractRelationalOperator<B> operator);
+		
+	}
+	
+	/**
+	 * Interface that allows access to the {@link CriteriaChain} of the {@link EntityCriteriaSupport} wrapped into the proxy returned by
+	 * {@link #wrapIntoExecutable(EntityCriteriaSupport)}.
+	 * Mainly created from test purpose that requires access to underlying objects
+	 */
+	public interface CriteriaProvider {
+		
+		CriteriaChain getCriteria();
 		
 	}
 }

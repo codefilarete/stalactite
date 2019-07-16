@@ -95,33 +95,33 @@ public class EntityCriteriaSupport<C> implements EntityCriteria<C> {
 	}
 	
 	@Override
-	public <O> EntityCriteria<C> and(SerializableFunction<C, O> getter, AbstractRelationalOperator<O> operator) {
+	public <O> EntityCriteriaSupport<C> and(SerializableFunction<C, O> getter, AbstractRelationalOperator<O> operator) {
 		return add(LogicalOperator.AND, getter, operator);
 	}
 	
 	@Override
-	public <O> EntityCriteria<C> and(SerializableBiConsumer<C, O> setter, AbstractRelationalOperator<O> operator) {
+	public <O> EntityCriteriaSupport<C> and(SerializableBiConsumer<C, O> setter, AbstractRelationalOperator<O> operator) {
 		return add(LogicalOperator.AND, setter, operator);
 	}
 	
 	@Override
-	public <O> EntityCriteria<C> or(SerializableFunction<C, O> getter, AbstractRelationalOperator<O> operator) {
+	public <O> EntityCriteriaSupport<C> or(SerializableFunction<C, O> getter, AbstractRelationalOperator<O> operator) {
 		return add(LogicalOperator.OR, getter, operator);
 	}
 	
 	@Override
-	public <O> EntityCriteria<C> or(SerializableBiConsumer<C, O> setter, AbstractRelationalOperator<O> operator) {
+	public <O> EntityCriteriaSupport<C> or(SerializableBiConsumer<C, O> setter, AbstractRelationalOperator<O> operator) {
 		return add(LogicalOperator.OR, setter, operator);
 	}
 	
 	@Override
-	public <A, B> EntityCriteria<C> and(SerializableFunction<C, A> getter1, SerializableFunction<A, B> getter2, AbstractRelationalOperator<B> operator) {
+	public <A, B> EntityCriteriaSupport<C> and(SerializableFunction<C, A> getter1, SerializableFunction<A, B> getter2, AbstractRelationalOperator<B> operator) {
 		criteria.and(getColumn(new AccessorByMethodReference<>(getter1), new AccessorByMethodReference<>(getter2)), operator);
 		return this;
 	}
 	
 	@Override
-	public <S extends Collection<A>, A, B> EntityCriteria<C> andMany(SerializableFunction<C, S> getter1, SerializableFunction<A, B> getter2, AbstractRelationalOperator<B> operator) {
+	public <S extends Collection<A>, A, B> EntityCriteriaSupport<C> andMany(SerializableFunction<C, S> getter1, SerializableFunction<A, B> getter2, AbstractRelationalOperator<B> operator) {
 		criteria.and(getColumn(new AccessorByMethodReference<>(getter1), new AccessorByMethodReference<>(getter2)), operator);
 		return this;
 	}

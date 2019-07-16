@@ -1,6 +1,7 @@
 package org.gama.stalactite.persistence.query;
 
 import java.sql.ResultSet;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 
@@ -31,7 +32,8 @@ import static org.gama.stalactite.query.model.Operators.in;
  * hence it is based on {@link JoinedStrategiesSelect} to build the bean graph.
  * 
  * @author Guillaume Mary
- * @see #loadSelection(EntityCriteriaSupport)
+ * @see #loadGraph(CriteriaChain)
+ * @see #loadSelection(CriteriaChain)
  */
 public class EntitySelectExecutor<C, I, T extends Table> {
 	
@@ -54,14 +56,14 @@ public class EntitySelectExecutor<C, I, T extends Table> {
 	
 	/**
 	 * Loads beans selected by the given criteria.
-	 * <strong>Please note that as a difference from {@link #loadGraph(EntityCriteriaSupport)} only beans present in the selection will be loaded,
+	 * <strong>Please note that as a difference from {@link #loadGraph(CriteriaChain)} only beans present in the selection will be loaded,
 	 * which means that collections may be partial if criteria contain any criterion on their entity properties</strong>
 	 * 
-	 * @param entityCriteria some criteria for graph selection
+	 * @param where some criteria for graph selection
 	 * @return beans loaded from rows selected by given criteria
 	 */
-	public List<C> loadSelection(EntityCriteriaSupport<C> entityCriteria) {
-		SQLQueryBuilder SQLQueryBuilder = createQueryBuilder(entityCriteria, joinedStrategiesSelect.buildSelectQuery());
+	public List<C> loadSelection(CriteriaChain where) {
+		SQLQueryBuilder SQLQueryBuilder = createQueryBuilder(where, joinedStrategiesSelect.buildSelectQuery());
 		PreparedSQL preparedSQL = SQLQueryBuilder.toPreparedSQL(parameterBinderProvider);
 		return execute(preparedSQL);
 	}
@@ -69,18 +71,18 @@ public class EntitySelectExecutor<C, I, T extends Table> {
 	/**
 	 * Loads a bean graph that matches given criteria.
 	 * 
-	 * <strong>Please note that as a difference from {@link #loadSelection(EntityCriteriaSupport)} all beans under aggregate root will be loaded
+	 * <strong>Please note that as a difference from {@link #loadSelection(CriteriaChain)} all beans under aggregate root will be loaded
 	 * (aggregate that matches criteria will be fully loaded)</strong>
 	 * 
-	 * Implementation note : the load is done in 2 phases : one for root ids selection from criteria, a second from full graph load from root ids.
+	 * Implementation note : the load is done in 2 phases : one for root ids selection from criteria, a second from full graph load from found root ids.
 	 *
-	 * @param entityCriteria some criteria for aggregate selection
+	 * @param where some criteria for aggregate selection
 	 * @return root beans of aggregates that match criteria
 	 */
-	public List<C> loadGraph(EntityCriteriaSupport<C> entityCriteria) {
+	public List<C> loadGraph(CriteriaChain where) {
 		Query query = joinedStrategiesSelect.buildSelectQuery();
 		
-		SQLQueryBuilder sqlQueryBuilder = createQueryBuilder(entityCriteria, query);
+		SQLQueryBuilder sqlQueryBuilder = createQueryBuilder(where, query);
 		
 		// First phase : selecting ids (made by clearing selected elements for performance issue)
 		List<Object> columns = query.getSelectSurrogate().clear();
@@ -88,19 +90,23 @@ public class EntitySelectExecutor<C, I, T extends Table> {
 		query.select(pk, PRIMARY_KEY_ALIAS);
 		List<I> ids = readIds(sqlQueryBuilder, pk);
 		
-		// Second phase : selecting elements by main table pk (adding necessary columns)
-		query.getSelectSurrogate().remove(0);	// previous pk selection removal
-		columns.forEach(query::select);
-		query.getWhereSurrogate().clear();
-		query.where(pk, in(ids));
-		
-		PreparedSQL preparedSQL = sqlQueryBuilder.toPreparedSQL(parameterBinderProvider);
-		return execute(preparedSQL);
+		if (ids.isEmpty()) {
+			// No result found, we must stop here because request below doesn't support in(..) without values (SQL error from database)
+			return Collections.emptyList();
+		} else {
+			// Second phase : selecting elements by main table pk (adding necessary columns)
+			query.getSelectSurrogate().remove(0);    // previous pk selection removal
+			columns.forEach(query::select);
+			query.getWhereSurrogate().clear();
+			query.where(pk, in(ids));
+			
+			PreparedSQL preparedSQL = sqlQueryBuilder.toPreparedSQL(parameterBinderProvider);
+			return execute(preparedSQL);
+		}
 	}
 	
-	private SQLQueryBuilder createQueryBuilder(EntityCriteriaSupport<C> entityCriteria, Query query) {
+	private SQLQueryBuilder createQueryBuilder(CriteriaChain where, Query query) {
 		SQLQueryBuilder sqlQueryBuilder = new SQLQueryBuilder(query);
-		CriteriaChain where = entityCriteria.getCriteria();
 		if (where.iterator().hasNext()) {    // prevents from empty where causing malformed SQL
 			query.getWhere().and(where);
 		}
