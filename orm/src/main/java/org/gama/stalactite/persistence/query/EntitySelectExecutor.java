@@ -63,8 +63,8 @@ public class EntitySelectExecutor<C, I, T extends Table> {
 	 * @return beans loaded from rows selected by given criteria
 	 */
 	public List<C> loadSelection(CriteriaChain where) {
-		SQLQueryBuilder SQLQueryBuilder = createQueryBuilder(where, joinedStrategiesSelect.buildSelectQuery());
-		PreparedSQL preparedSQL = SQLQueryBuilder.toPreparedSQL(parameterBinderProvider);
+		SQLQueryBuilder sqlQueryBuilder = createQueryBuilder(where, joinedStrategiesSelect.buildSelectQuery());
+		PreparedSQL preparedSQL = sqlQueryBuilder.toPreparedSQL(parameterBinderProvider);
 		return execute(preparedSQL);
 	}
 	
@@ -113,14 +113,14 @@ public class EntitySelectExecutor<C, I, T extends Table> {
 		return sqlQueryBuilder;
 	}
 	
-	private List<I> readIds(SQLQueryBuilder SQLQueryBuilder, Column<T, I> pk) {
-		ReadOperation<Integer> operation = new ReadOperation<>(SQLQueryBuilder.toPreparedSQL(parameterBinderProvider), connectionProvider);
-		try (ReadOperation<Integer> closeableOperation = operation) {
+	private List<I> readIds(SQLQueryBuilder sqlQueryBuilder, Column<T, I> pk) {
+		PreparedSQL preparedSQL = sqlQueryBuilder.toPreparedSQL(parameterBinderProvider);
+		try (ReadOperation<Integer> closeableOperation = new ReadOperation<>(preparedSQL, connectionProvider)) {
 			ResultSet resultSet = closeableOperation.execute();
 			RowIterator rowIterator = new RowIterator(resultSet, Maps.asMap(PRIMARY_KEY_ALIAS, parameterBinderProvider.getBinder(pk)));
 			return Iterables.collectToList(() -> rowIterator, row -> (I) row.get(PRIMARY_KEY_ALIAS));
 		} catch (RuntimeException e) {
-			throw new SQLExecutionException(operation.getSqlStatement().getSQL(), e);
+			throw new SQLExecutionException(preparedSQL.getSQL(), e);
 		}
 	}
 	

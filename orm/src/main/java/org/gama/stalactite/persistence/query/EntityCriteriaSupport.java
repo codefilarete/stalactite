@@ -25,7 +25,6 @@ import org.gama.stalactite.persistence.id.assembly.SimpleIdentifierAssembler;
 import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
 import org.gama.stalactite.persistence.mapping.IdMappingStrategy;
 import org.gama.stalactite.persistence.mapping.SimpleIdMappingStrategy;
-import org.gama.stalactite.persistence.query.ValueAccessPointCriterion.LogicalOperator;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.query.model.AbstractRelationalOperator;
 import org.gama.stalactite.query.model.Criteria;

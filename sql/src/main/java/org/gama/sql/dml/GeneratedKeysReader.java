@@ -6,6 +6,7 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.List;
 
+import com.google.common.annotations.VisibleForTesting;
 import org.gama.lang.collection.Iterables;
 import org.gama.sql.binder.ResultSetReader;
 import org.gama.sql.result.ResultSetIterator;
@@ -61,14 +62,19 @@ public class GeneratedKeysReader<I> {
 	 */
 	public List<I> read(WriteOperation writeOperation) throws SQLException {
 		try (ResultSet generatedKeys = writeOperation.preparedStatement.getGeneratedKeys()) {
-			ResultSetIterator<I> iterator = new ResultSetIterator<I>(generatedKeys) {
-				@Override
-				public I convert(ResultSet rs) throws SQLException {
-					return readKey(rs);
-				}
-			};
-			return Iterables.copy(iterator);
+			return read(generatedKeys);
 		}
+	}
+	
+	@VisibleForTesting
+	List<I> read(ResultSet generatedKeys) {
+		ResultSetIterator<I> iterator = new ResultSetIterator<I>(generatedKeys) {
+			@Override
+			public I convert(ResultSet rs) throws SQLException {
+				return readKey(rs);
+			}
+		};
+		return Iterables.copy(iterator);
 	}
 	
 	protected I readKey(ResultSet rs) throws SQLException {
