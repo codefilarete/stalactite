@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
+import java.util.function.Supplier;
 
 import org.danekja.java.util.function.serializable.SerializableBiConsumer;
 import org.danekja.java.util.function.serializable.SerializableFunction;
@@ -163,6 +164,19 @@ public class CascadeManyConfigurer<SRC, TRGT, SRCID, TRGTID, C extends Collectio
 		}
 		
 		/**
+		 * Gives the collection factory used to instanciate relation field.
+		 * 
+		 * @return the one given by {@link CascadeMany#getCollectionFactory()} or one deduced from member signature
+		 */
+		protected Supplier<C> giveCollectionFactory() {
+			Supplier<C> collectionFactory = cascadeMany.getCollectionFactory();
+			if (collectionFactory == null) {
+				collectionFactory = () -> Reflections.newInstance(giveInstanciationType());
+			}
+			return collectionFactory;
+		}
+		
+		/**
 		 * Expected to give concrete class to be instanciated.
 		 * @return a concrete and instanciable type compatible with acccessor input type
 		 */
@@ -206,7 +220,7 @@ public class CascadeManyConfigurer<SRC, TRGT, SRCID, TRGTID, C extends Collectio
 			AbstractOneToManyWithAssociationTableEngine<SRC, TRGT, SRCID, TRGTID, C, ? extends AssociationRecord, ? extends AssociationTable> oneToManyWithAssociationTableEngine;
 			ManyRelationDescriptor<SRC, TRGT, C> manyRelationDescriptor = new ManyRelationDescriptor<>(
 					manyAssociationConfiguration.collectionGetter::get, manyAssociationConfiguration.setter::set,
-					manyAssociationConfiguration.giveInstanciationType());
+					manyAssociationConfiguration.giveCollectionFactory());
 			if (manyAssociationConfiguration.cascadeMany instanceof CascadeManyList) {
 				oneToManyWithAssociationTableEngine = configureIndexedAssociation(rightPrimaryKey, associationTableName, manyRelationDescriptor);
 			} else {
@@ -371,7 +385,7 @@ public class CascadeManyConfigurer<SRC, TRGT, SRCID, TRGTID, C extends Collectio
 			OneToManyWithMappedAssociationEngine<SRC, TRGT, SRCID, TRGTID, C> mappedAssociationEngine;
 			MappedManyRelationDescriptor<SRC, TRGT, C> manyRelationDefinition = new MappedManyRelationDescriptor<>(
 					manyAssociationConfiguration.collectionGetter::get, manyAssociationConfiguration.setter::set,
-					manyAssociationConfiguration.giveInstanciationType(), reverseSetter);
+					manyAssociationConfiguration.giveCollectionFactory(), reverseSetter);
 			mappedAssociationEngine = new OneToManyWithMappedAssociationEngine<>(
 					manyAssociationConfiguration.targetPersister,
 					manyRelationDefinition,
@@ -385,7 +399,7 @@ public class CascadeManyConfigurer<SRC, TRGT, SRCID, TRGTID, C extends Collectio
 			OneToManyWithMappedAssociationEngine<SRC, TRGT, SRCID, TRGTID, C> mappedAssociationEngine;
 			IndexedMappedManyRelationDescriptor<SRC, TRGT, C> manyRelationDefinition = new IndexedMappedManyRelationDescriptor<>(
 					manyAssociationConfiguration.collectionGetter::get, manyAssociationConfiguration.setter::set,
-					manyAssociationConfiguration.giveInstanciationType(), reverseSetter, reverseGetter, getterSignature);
+					manyAssociationConfiguration.giveCollectionFactory(), reverseSetter, reverseGetter, getterSignature);
 			mappedAssociationEngine = (OneToManyWithMappedAssociationEngine) new OneToManyWithIndexedMappedAssociationEngine<>(
 					manyAssociationConfiguration.targetPersister,
 					(IndexedMappedManyRelationDescriptor) manyRelationDefinition,

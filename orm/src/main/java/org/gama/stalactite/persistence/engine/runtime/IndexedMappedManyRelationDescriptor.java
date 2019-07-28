@@ -4,6 +4,7 @@ import javax.annotation.Nullable;
 import java.util.Collection;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
+import java.util.function.Supplier;
 
 /**
  * Container to store information of a one-to-many indexed mapped relation (by a column on the reverse side)
@@ -26,7 +27,7 @@ public class IndexedMappedManyRelationDescriptor<I, O, C extends Collection<O>> 
 	 * 
 	 * @param collectionGetter collection accessor
 	 * @param collectionSetter collection setter
-	 * @param collectionClass collection type
+	 * @param collectionFactory collection factory
 	 * @param reverseSetter setter on the owning side for source bean, optional
 	 * @param reverseGetter getter on the owning side for source bean, required to find out entity index into the collection
 	 * @param reverseGetterSignature signature of the reverse getter, for better message on exception. Can't be deduce from {@code reverseGetter}
@@ -35,11 +36,11 @@ public class IndexedMappedManyRelationDescriptor<I, O, C extends Collection<O>> 
 	 */
 	public IndexedMappedManyRelationDescriptor(Function<I, C> collectionGetter,
 											   BiConsumer<I, C> collectionSetter,
-											   Class<C> collectionClass,
+											   Supplier<C> collectionFactory,
 											   @Nullable BiConsumer<O, I> reverseSetter,
 											   Function<O, I> reverseGetter,
 											   String reverseGetterSignature) {
-		super(collectionGetter, collectionSetter, collectionClass, reverseSetter);
+		super(collectionGetter, collectionSetter, collectionFactory, reverseSetter);
 		this.reverseGetter = reverseGetter;
 		this.reverseGetterSignature = reverseGetterSignature;
 	}

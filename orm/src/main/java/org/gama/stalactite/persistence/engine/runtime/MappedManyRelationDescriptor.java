@@ -4,6 +4,7 @@ import javax.annotation.Nullable;
 import java.util.Collection;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
+import java.util.function.Supplier;
 
 /**
  * Container to store information of a one-to-many mapped relation (by a column on the reverse side)
@@ -19,14 +20,14 @@ public class MappedManyRelationDescriptor<I, O, C extends Collection<O>> extends
 	 * 
 	 * @param collectionGetter collection accessor
 	 * @param collectionSetter collection setter
-	 * @param collectionClass collection type
+	 * @param collectionFactory collection factory
 	 * @param reverseSetter setter on the owning side for source bean, optional
 	 */
 	public MappedManyRelationDescriptor(Function<I, C> collectionGetter,
 										BiConsumer<I, C> collectionSetter,
-										Class<C> collectionClass,
+										Supplier<C> collectionFactory,
 										@Nullable BiConsumer<O, I> reverseSetter) {
-		super(collectionGetter, collectionSetter, collectionClass);
+		super(collectionGetter, collectionSetter, collectionFactory);
 		this.reverseSetter = reverseSetter;
 	}
 	

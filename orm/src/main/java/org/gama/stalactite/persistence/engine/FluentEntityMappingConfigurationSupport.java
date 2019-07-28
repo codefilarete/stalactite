@@ -7,6 +7,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.function.Supplier;
 
 import org.danekja.java.util.function.serializable.SerializableBiConsumer;
 import org.danekja.java.util.function.serializable.SerializableBiFunction;
@@ -362,14 +363,14 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements IFluentEnt
 	}
 	
 	@Override
-	public <O, J, S extends Set<O>> IFluentMappingBuilderOneToManyOptions<C, I, O> addOneToManySet(
+	public <O, J, S extends Set<O>> IFluentMappingBuilderOneToManyOptions<C, I, O, S> addOneToManySet(
 			SerializableFunction<C, S> getter,
 			EntityMappingConfigurationProvider<O, J> mappingConfiguration) {
 		return addOneToManySet(getter, mappingConfiguration, null);
 	}
 		
 	@Override
-	public <O, J, S extends Set<O>, T extends Table> IFluentMappingBuilderOneToManyOptions<C, I, O> addOneToManySet(
+	public <O, J, S extends Set<O>, T extends Table> IFluentMappingBuilderOneToManyOptions<C, I, O, S> addOneToManySet(
 			SerializableFunction<C, S> getter,
 			EntityMappingConfigurationProvider<O, J> mappingConfiguration,
 			@javax.annotation.Nullable T table) {
@@ -384,7 +385,7 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements IFluentEnt
 	}
 	
 	@Override
-	public <O, J, S extends Set<O>, T extends Table> IFluentMappingBuilderOneToManyOptions<C, I, O> addOneToManySet(
+	public <O, J, S extends Set<O>, T extends Table> IFluentMappingBuilderOneToManyOptions<C, I, O, S> addOneToManySet(
 			SerializableBiConsumer<C, S> setter,
 			EntityMappingConfigurationProvider<O, J> mappingConfiguration,
 			@javax.annotation.Nullable T table) {
@@ -397,7 +398,7 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements IFluentEnt
 		return addOneToManySet(propertyAccessor, setterReference, mappingConfiguration, table);
 	}
 	
-	private <O, J, S extends Set<O>, T extends Table> IFluentMappingBuilderOneToManyOptions<C, I, O> addOneToManySet(
+	private <O, J, S extends Set<O>, T extends Table> IFluentMappingBuilderOneToManyOptions<C, I, O, S> addOneToManySet(
 			IReversibleAccessor<C, S> propertyAccessor,
 			ValueAccessPointByMethodReference methodReference,
 			EntityMappingConfigurationProvider<O, J> mappingConfiguration,
@@ -407,18 +408,18 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements IFluentEnt
 		return new MethodDispatcher()
 				.redirect(OneToManyOptions.class, new OneToManyOptionsSupport<>(cascadeMany), true)	// true to allow "return null" in implemented methods
 				.fallbackOn(this)
-				.build((Class<IFluentMappingBuilderOneToManyOptions<C, I, O>>) (Class) IFluentMappingBuilderOneToManyOptions.class);
+				.build((Class<IFluentMappingBuilderOneToManyOptions<C, I, O, S>>) (Class) IFluentMappingBuilderOneToManyOptions.class);
 	}
 	
 	@Override
-	public <O, J, S extends List<O>> IFluentMappingBuilderOneToManyListOptions<C, I, O> addOneToManyList(
+	public <O, J, S extends List<O>> IFluentMappingBuilderOneToManyListOptions<C, I, O, S> addOneToManyList(
 			SerializableFunction<C, S> getter,
 			EntityMappingConfigurationProvider<O, J> mappingConfiguration) {
 		return addOneToManyList(getter, mappingConfiguration, null);
 	}
 		
 	@Override
-	public <O, J, S extends List<O>, T extends Table> IFluentMappingBuilderOneToManyListOptions<C, I, O> addOneToManyList(
+	public <O, J, S extends List<O>, T extends Table> IFluentMappingBuilderOneToManyListOptions<C, I, O, S> addOneToManyList(
 			SerializableFunction<C, S> getter,
 			EntityMappingConfigurationProvider<O, J> mappingConfiguration,
 			@javax.annotation.Nullable T table) {
@@ -433,7 +434,7 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements IFluentEnt
 	}
 	
 	@Override
-	public <O, J, S extends List<O>, T extends Table> IFluentMappingBuilderOneToManyListOptions<C, I, O> addOneToManyList(
+	public <O, J, S extends List<O>, T extends Table> IFluentMappingBuilderOneToManyListOptions<C, I, O, S> addOneToManyList(
 			SerializableBiConsumer<C, S> setter,
 			EntityMappingConfigurationProvider<O, J> mappingConfiguration,
 			@javax.annotation.Nullable T table) {
@@ -446,7 +447,7 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements IFluentEnt
 		return addOneToManyList(propertyAccessor, setterReference, mappingConfiguration, table);
 	}
 	
-	private <O, J, S extends List<O>, T extends Table> IFluentMappingBuilderOneToManyListOptions<C, I, O> addOneToManyList(
+	private <O, J, S extends List<O>, T extends Table> IFluentMappingBuilderOneToManyListOptions<C, I, O, S> addOneToManyList(
 			IReversibleAccessor<C, S> propertyAccessor,
 			ValueAccessPointByMethodReference methodReference,
 			EntityMappingConfigurationProvider<O, J> mappingConfiguration,
@@ -460,7 +461,7 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements IFluentEnt
 						return null;
 				}, true)	// true to allow "return null" in implemented methods
 				.fallbackOn(this)
-				.build((Class<IFluentMappingBuilderOneToManyListOptions<C, I, O>>) (Class) IFluentMappingBuilderOneToManyListOptions.class);
+				.build((Class<IFluentMappingBuilderOneToManyListOptions<C, I, O, S>>) (Class) IFluentMappingBuilderOneToManyListOptions.class);
 	}
 	
 	@Override
@@ -850,35 +851,41 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements IFluentEnt
 	/**
 	 * A small class for one-to-many options storage into a {@link CascadeMany}. Acts as a wrapper over it.
 	 */
-	private static class OneToManyOptionsSupport<C, I, O>
-			implements OneToManyOptions<C, I, O> {
+	private static class OneToManyOptionsSupport<C, I, O, S extends Collection<O>>
+			implements OneToManyOptions<C, I, O, S> {
 		
-		private final CascadeMany<C, O, I, ? extends Collection> cascadeMany;
+		private final CascadeMany<C, O, I, S> cascadeMany;
 		
-		public OneToManyOptionsSupport(CascadeMany<C, O, I, ? extends Collection> cascadeMany) {
+		public OneToManyOptionsSupport(CascadeMany<C, O, I, S> cascadeMany) {
 			this.cascadeMany = cascadeMany;
 		}
 		
 		@Override
-		public IFluentMappingBuilderOneToManyOptions<C, I, O> mappedBy(SerializableBiConsumer<O, C> reverseLink) {
+		public IFluentMappingBuilderOneToManyOptions<C, I, O, S> mappedBy(SerializableBiConsumer<O, C> reverseLink) {
 			cascadeMany.setReverseSetter(reverseLink);
 			return null;	// we can return null because dispatcher will return proxy
 		}
 		
 		@Override
-		public IFluentMappingBuilderOneToManyOptions<C, I, O> mappedBy(SerializableFunction<O, C> reverseLink) {
+		public IFluentMappingBuilderOneToManyOptions<C, I, O, S> mappedBy(SerializableFunction<O, C> reverseLink) {
 			cascadeMany.setReverseGetter(reverseLink);
 			return null;	// we can return null because dispatcher will return proxy
 		}
 		
 		@Override
-		public IFluentMappingBuilderOneToManyOptions<C, I, O> mappedBy(Column<Table, ?> reverseLink) {
+		public IFluentMappingBuilderOneToManyOptions<C, I, O, S> mappedBy(Column<Table, ?> reverseLink) {
 			cascadeMany.setReverseColumn(reverseLink);
 			return null;	// we can return null because dispatcher will return proxy
 		}
 		
 		@Override
-		public IFluentMappingBuilderOneToManyOptions<C, I, O> cascading(RelationMode relationMode) {
+		public IFluentMappingBuilderOneToManyOptions<C, I, O, S> initializeWith(Supplier<S> collectionFactory) {
+			cascadeMany.setCollectionFactory(collectionFactory);
+			return null;	// we can return null because dispatcher will return proxy
+		}
+		
+		@Override
+		public IFluentMappingBuilderOneToManyOptions<C, I, O, S> cascading(RelationMode relationMode) {
 			cascadeMany.setRelationMode(relationMode);
 			return null;	// we can return null because dispatcher will return proxy
 		}

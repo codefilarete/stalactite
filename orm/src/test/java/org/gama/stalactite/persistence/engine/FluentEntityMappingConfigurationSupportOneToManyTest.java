@@ -4,9 +4,11 @@ import javax.sql.DataSource;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
+import java.util.TreeSet;
+import java.util.function.Function;
 
 import org.gama.lang.collection.Arrays;
 import org.gama.lang.collection.Iterables;
@@ -21,7 +23,6 @@ import org.gama.sql.result.RowIterator;
 import org.gama.sql.test.HSQLDBInMemoryDataSource;
 import org.gama.stalactite.persistence.engine.CascadeOptions.RelationMode;
 import org.gama.stalactite.persistence.engine.ColumnOptions.IdentifierPolicy;
-import org.gama.stalactite.persistence.engine.IFluentEntityMappingBuilder.IFluentMappingBuilderOneToManyOptions;
 import org.gama.stalactite.persistence.engine.IFluentEntityMappingBuilder.IFluentMappingBuilderPropertyOptions;
 import org.gama.stalactite.persistence.engine.cascade.JoinedTablesPersister;
 import org.gama.stalactite.persistence.engine.model.City;
@@ -44,6 +45,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import static java.util.stream.Collectors.toSet;
+import static org.gama.lang.test.Assertions.assertAllEquals;
 import static org.gama.lang.test.Assertions.hasExceptionInCauses;
 import static org.gama.lang.test.Assertions.hasMessage;
 import static org.gama.stalactite.persistence.engine.CascadeOptions.RelationMode.ALL;
@@ -385,6 +387,31 @@ class FluentEntityMappingConfigurationSupportOneToManyTest {
 		assertEquals(Arrays.asHashSet("Paris", "Lyon"), Iterables.collect(loadedCountry.getCities(), City::getName, HashSet::new));
 	}
 	
+	@Test
+	void build_mappedBy_collectionFactory() throws SQLException {
+		// mapping building thanks to fluent API
+		Persister<Country, Identifier<Long>, ?> countryPersister = MappingEase.entityBuilder(Country.class, Identifier.LONG_TYPE)
+				.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
+				.add(Country::getName)
+				.addOneToManySet(Country::getCities, CITY_MAPPING_CONFIGURATION)
+					.mappedBy(City::setCountry)
+					// applying a Set that will sort cities by their name
+					.initializeWith(() -> new TreeSet<>(Comparator.comparing(City::getName)))
+				.build(persistenceContext);
+		
+		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+		ddlDeployer.deployDDL();
+		
+		// preparing data
+		persistenceContext.getCurrentConnection().prepareStatement("insert into Country(id, name) values (42, 'France')").execute();
+		persistenceContext.getCurrentConnection().prepareStatement("insert into City(id, name, countryId) values (1, 'Paris', 42)").execute();
+		persistenceContext.getCurrentConnection().prepareStatement("insert into City(id, name, countryId) values (2, 'Lyon', 42)").execute();
+		
+		Country loadedCountry = countryPersister.select(new PersistedIdentifier<>(42L));
+		assertEquals(TreeSet.class, loadedCountry.getCities().getClass());
+		assertAllEquals(Arrays.asList("Lyon", "Paris"), loadedCountry.getCities(), Function.identity(), City::getName);
+	}
+	
 	static Object[][] mappedBy_differentWays_data() {
 		// we recreate all the context of our test, else we end up in a static/non-static variable and method conflict because @MethodSource
 		// needs a static provider, whereas a majority of our variables are class attributes, and database schema must be erased between tests
@@ -474,7 +501,7 @@ class FluentEntityMappingConfigurationSupportOneToManyTest {
 		Country persistedCountry2 = countryPersister.select(dummyCountry2.getId());
 		assertEquals(new PersistedIdentifier<>(1L), persistedCountry2.getId());
 		// the reloaded country has no cities because those haven't been updated in database so the link is "broken" and still onto country 1
-		assertEquals(0, persistedCountry2.getCities().size());
+		assertEquals(null, persistedCountry2.getCities());
 	}
 	
 	@Nested
@@ -782,11 +809,11 @@ class FluentEntityMappingConfigurationSupportOneToManyTest {
 			Country country1 = new Country(new PersistedIdentifier<>(42L));
 			City city1 = new City(new PersistedIdentifier<>(100L));
 			City city2 = new City(new PersistedIdentifier<>(200L));
-			country1.getCities().add(city1);
-			country1.getCities().add(city2);
+			country1.addCity(city1);
+			country1.addCity(city2);
 			Country country2 = new Country(new PersistedIdentifier<>(666L));
 			City city3 = new City(new PersistedIdentifier<>(300L));
-			country2.getCities().add(city3);
+			country2.addCity(city3);
 			
 			// testing deletion
 			countryPersister.delete(country1);
@@ -930,11 +957,11 @@ class FluentEntityMappingConfigurationSupportOneToManyTest {
 			Country country1 = new Country(new PersistedIdentifier<>(42L));
 			City city1 = new City(new PersistedIdentifier<>(100L));
 			City city2 = new City(new PersistedIdentifier<>(200L));
-			country1.getCities().add(city1);
-			country1.getCities().add(city2);
+			country1.addCity(city1);
+			country1.addCity(city2);
 			Country country2 = new Country(new PersistedIdentifier<>(666L));
 			City city3 = new City(new PersistedIdentifier<>(300L));
-			country2.getCities().add(city3);
+			country2.addCity(city3);
 			
 			// testing deletion
 			countryPersister.delete(country1);
@@ -974,7 +1001,7 @@ class FluentEntityMappingConfigurationSupportOneToManyTest {
 		
 		@Test
 		void build_withoutAssociationTable_throwsException() {
-			IFluentMappingBuilderOneToManyOptions<Country, Identifier<Long>, City> mappingBuilder = MappingEase.entityBuilder(Country.class, Identifier.LONG_TYPE)
+			IFluentEntityMappingBuilder<Country, Identifier<Long>> mappingBuilder = MappingEase.entityBuilder(Country.class, Identifier.LONG_TYPE)
 					.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 					.add(Country::getName)
 					.add(Country::getDescription)
@@ -1204,7 +1231,7 @@ class FluentEntityMappingConfigurationSupportOneToManyTest {
 			
 			// Then : Country must exist and have an empty city collection
 			Country loadedCountry = countryPersister.select(new PersistedIdentifier<>(42L));
-			assertEquals(Collections.emptySet(), loadedCountry.getCities());
+			assertEquals(null, loadedCountry.getCities());
 			
 		}
 		
@@ -1225,7 +1252,7 @@ class FluentEntityMappingConfigurationSupportOneToManyTest {
 			
 			// Then : Country must exist and have an empty city collection
 			Country loadedCountry = countryPersister.select(new PersistedIdentifier<>(42L));
-			assertEquals(Collections.emptySet(), loadedCountry.getCities());
+			assertEquals(null, loadedCountry.getCities());
 		}
 	}
 }

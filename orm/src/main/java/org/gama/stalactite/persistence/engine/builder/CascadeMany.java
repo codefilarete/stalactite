@@ -2,6 +2,7 @@ package org.gama.stalactite.persistence.engine.builder;
 
 import javax.annotation.Nullable;
 import java.util.Collection;
+import java.util.function.Supplier;
 
 import org.danekja.java.util.function.serializable.SerializableBiConsumer;
 import org.danekja.java.util.function.serializable.SerializableFunction;
@@ -44,6 +45,8 @@ public class CascadeMany<SRC, TRGT, TRGTID, C extends Collection<TRGT>> {
 	
 	/** Default relation mode is {@link RelationMode#ALL} */
 	private RelationMode relationMode = RelationMode.ALL;
+	/** Optional provider of collection instance to be used if collection value is null */
+	private Supplier<C> collectionFactory;
 	
 	public <T extends Table> CascadeMany(IReversibleAccessor<SRC, C> collectionProvider,
 										 ValueAccessPointByMethodReference methodReference,
@@ -115,4 +118,12 @@ public class CascadeMany<SRC, TRGT, TRGTID, C extends Collection<TRGT>> {
 		return getReverseSetter() != null || getReverseGetter() != null || getReverseColumn() != null;
 	}
 	
+	@Nullable
+	public Supplier<C> getCollectionFactory() {
+		return collectionFactory;
+	}
+	
+	public void setCollectionFactory(Supplier<C> collectionFactory) {
+		this.collectionFactory = collectionFactory;
+	}
 }

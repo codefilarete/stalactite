@@ -109,7 +109,7 @@ public abstract class AbstractOneToManyWithAssociationTableEngine<SRC, TRGT, SRC
 		BeanRelationFixer<SRC, TRGT> beanRelationFixer = BeanRelationFixer.of(
 				manyRelationDescriptor.getCollectionSetter(),
 				manyRelationDescriptor.getCollectionGetter(),
-				manyRelationDescriptor.getCollectionClass(),
+				manyRelationDescriptor.getCollectionFactory(),
 				OneToManyWithMappedAssociationEngine.NOOP_REVERSE_SETTER);
 		persisterListener.addSelectListener(new SelectListener<SRC, SRCID>() {
 			@Override

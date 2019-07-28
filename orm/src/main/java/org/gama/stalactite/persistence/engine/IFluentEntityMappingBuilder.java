@@ -1,7 +1,9 @@
 package org.gama.stalactite.persistence.engine;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Set;
+import java.util.function.Supplier;
 
 import org.danekja.java.util.function.serializable.SerializableBiConsumer;
 import org.danekja.java.util.function.serializable.SerializableFunction;
@@ -125,15 +127,15 @@ public interface IFluentEntityMappingBuilder<C, I> extends IFluentEmbeddableMapp
 	 * @see #addOneToManyList(SerializableFunction, EntityMappingConfigurationProvider)
 	 */
 	<O, J, S extends Set<O>>
-	IFluentMappingBuilderOneToManyOptions<C, I, O>
+	IFluentMappingBuilderOneToManyOptions<C, I, O, S>
 	addOneToManySet(SerializableFunction<C, S> getter, EntityMappingConfigurationProvider<O, J> mappingConfiguration);
 	
 	<O, J, S extends Set<O>, T extends Table>
-	IFluentMappingBuilderOneToManyOptions<C, I, O>
+	IFluentMappingBuilderOneToManyOptions<C, I, O, S>
 	addOneToManySet(SerializableFunction<C, S> getter, EntityMappingConfigurationProvider<O, J> mappingConfiguration, @javax.annotation.Nullable T table);
 	
 	<O, J, S extends Set<O>, T extends Table>
-	IFluentMappingBuilderOneToManyOptions<C, I, O>
+	IFluentMappingBuilderOneToManyOptions<C, I, O, S>
 	addOneToManySet(SerializableBiConsumer<C, S> setter, EntityMappingConfigurationProvider<O, J> mappingConfiguration, @javax.annotation.Nullable T table);
 	
 	/**
@@ -150,15 +152,15 @@ public interface IFluentEntityMappingBuilder<C, I> extends IFluentEmbeddableMapp
 	 * @see #addOneToManySet(SerializableFunction, EntityMappingConfigurationProvider)
 	 */
 	<O, J, S extends List<O>>
-	IFluentMappingBuilderOneToManyListOptions<C, I, O>
+	IFluentMappingBuilderOneToManyListOptions<C, I, O, S>
 	addOneToManyList(SerializableFunction<C, S> getter, EntityMappingConfigurationProvider<O, J> mappingConfiguration);
 	
 	<O, J, S extends List<O>, T extends Table>
-	IFluentMappingBuilderOneToManyListOptions<C, I, O>
+	IFluentMappingBuilderOneToManyListOptions<C, I, O, S>
 	addOneToManyList(SerializableFunction<C, S> getter, EntityMappingConfigurationProvider<O, J> mappingConfiguration, @javax.annotation.Nullable T table);
 	
 	<O, J, S extends List<O>, T extends Table>
-	IFluentMappingBuilderOneToManyListOptions<C, I, O>
+	IFluentMappingBuilderOneToManyListOptions<C, I, O, S>
 	addOneToManyList(SerializableBiConsumer<C, S> setter, EntityMappingConfigurationProvider<O, J> mappingConfiguration, @javax.annotation.Nullable T table);
 	
 	@Override
@@ -225,9 +227,46 @@ public interface IFluentEntityMappingBuilder<C, I> extends IFluentEmbeddableMapp
 		 */
 		@Override
 		IFluentMappingBuilderOneToOneOptions<C, I, T> mappedBy(Column<T, C> reverseLink);
+		
+		@Override
+		IFluentMappingBuilderOneToOneOptions<C, I, T> cascading(RelationMode relationMode);
 	}
 	
-	interface IFluentMappingBuilderOneToManyOptions<T, I, O> extends IFluentEntityMappingBuilder<T, I>, OneToManyOptions<T, I, O> {
+	interface IFluentMappingBuilderOneToManyOptions<C, I, O, S extends Collection<O>> extends IFluentEntityMappingBuilder<C, I>, OneToManyOptions<C, I, O, S> {
+		
+		/**
+		 * Declaration overriden to adapt return type to this class.
+		 *
+		 * @param reverseLink opposite owner of the relation (setter)
+		 * @return the global mapping configurer
+		 */
+		@Override
+		IFluentMappingBuilderOneToManyOptions<C, I, O, S> mappedBy(SerializableBiConsumer<O, C> reverseLink);
+		
+		/**
+		 * Declaration overriden to adapt return type to this class.
+		 *
+		 * @param reverseLink opposite owner of the relation (setter)
+		 * @return the global mapping configurer
+		 */
+		@Override
+		IFluentMappingBuilderOneToManyOptions<C, I, O, S> mappedBy(SerializableFunction<O, C> reverseLink);
+		
+		/**
+		 * Declaration overriden to adapt return type to this class.
+		 *
+		 * @param reverseLink opposite owner of the relation (setter)
+		 * @return the global mapping configurer
+		 */
+		@Override
+		IFluentMappingBuilderOneToManyOptions<C, I, O, S> mappedBy(Column<Table, ?> reverseLink);
+		
+		@Override
+		IFluentMappingBuilderOneToManyOptions<C, I, O, S> initializeWith(Supplier<S> collectionFactory);
+		
+		@Override
+		IFluentMappingBuilderOneToManyOptions<C, I, O, S> cascading(RelationMode relationMode);
+		
 	}
 	
 	/**
@@ -238,8 +277,8 @@ public interface IFluentEntityMappingBuilder<C, I> extends IFluentEmbeddableMapp
 	 * @param <I> type of identifier of source entity
 	 * @param <O> type of target entities
 	 */
-	interface IFluentMappingBuilderOneToManyListOptions<C, I, O>
-			extends IFluentMappingBuilderOneToManyOptions<C, I, O>, IndexableCollectionOptions<C, I, O> {
+	interface IFluentMappingBuilderOneToManyListOptions<C, I, O, S extends List<O>>
+			extends IFluentMappingBuilderOneToManyOptions<C, I, O, S>, IndexableCollectionOptions<C, I, O> {
 		/**
 		 * Declaration overriden to adapt return type to this class.
 		 *
@@ -247,7 +286,7 @@ public interface IFluentEntityMappingBuilder<C, I> extends IFluentEmbeddableMapp
 		 * @return the global mapping configurer
 		 */
 		@Override
-		IFluentMappingBuilderOneToManyListOptions<C, I, O> mappedBy(SerializableBiConsumer<O, C> reverseLink);
+		IFluentMappingBuilderOneToManyListOptions<C, I, O, S> mappedBy(SerializableBiConsumer<O, C> reverseLink);
 		
 		/**
 		 * Declaration overriden to adapt return type to this class.
@@ -256,7 +295,7 @@ public interface IFluentEntityMappingBuilder<C, I> extends IFluentEmbeddableMapp
 		 * @return the global mapping configurer
 		 */
 		@Override
-		IFluentMappingBuilderOneToManyListOptions<C, I, O> mappedBy(SerializableFunction<O, C> reverseLink);
+		IFluentMappingBuilderOneToManyListOptions<C, I, O, S> mappedBy(SerializableFunction<O, C> reverseLink);
 		
 		/**
 		 * Declaration overriden to adapt return type to this class.
@@ -265,14 +304,21 @@ public interface IFluentEntityMappingBuilder<C, I> extends IFluentEmbeddableMapp
 		 * @return the global mapping configurer
 		 */
 		@Override
-		IFluentMappingBuilderOneToManyListOptions<C, I, O> mappedBy(Column<Table, ?> reverseLink);
+		IFluentMappingBuilderOneToManyListOptions<C, I, O, S> mappedBy(Column<Table, ?> reverseLink);
+		
+		@Override
+		IFluentMappingBuilderOneToManyListOptions<C, I, O, S> initializeWith(Supplier<S> collectionFactory);
 		
 		/**
 		 * Defines the indexing column of the mapped {@link java.util.List}.
 		 * @param orderingColumn indexing column of the mapped {@link java.util.List}
 		 * @return the global mapping configurer
 		 */
-		IFluentMappingBuilderOneToManyListOptions<C, I, O> indexedBy(Column<?, Integer> orderingColumn);
+		@Override
+		IFluentMappingBuilderOneToManyListOptions<C, I, O, S> indexedBy(Column<?, Integer> orderingColumn);
+		
+		@Override
+		IFluentMappingBuilderOneToManyListOptions<C, I, O, S> cascading(RelationMode relationMode);
 	}
 	
 	interface IFluentMappingBuilderEmbedOptions<C, I, O>

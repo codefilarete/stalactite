@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.function.Supplier;
 
 import org.gama.stalactite.persistence.id.Identified;
 import org.gama.stalactite.persistence.id.Identifier;
@@ -24,7 +25,8 @@ public class Country extends AbstractCountry implements Identified<Long> {
 	
 	private City capital;
 	
-	private Set<City> cities = new HashSet<>();
+	/** Country cities, lazily initialized to test initialization by Stalactite with {@link org.gama.stalactite.persistence.engine.OneToManyOptions#initializeWith(Supplier)} */
+	private Set<City> cities;
 	
 	// anything that is a List with a reverse relation-owning column
 	private List<City> ancientCities = new ArrayList<>();
@@ -122,6 +124,9 @@ public class Country extends AbstractCountry implements Identified<Long> {
 	}
 	
 	public void addCity(City city) {
+		if (cities == null) {
+			cities = new HashSet<>();
+		}
 		this.cities.add(city);
 		city.setCountry(this);
 	}

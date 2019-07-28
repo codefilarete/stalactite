@@ -6,8 +6,10 @@ import java.util.List;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.gama.lang.Duo;
+import org.gama.lang.Nullable;
 import org.gama.lang.bean.Objects;
 import org.gama.lang.collection.Iterables;
 import org.gama.stalactite.persistence.engine.BeanRelationFixer;
@@ -60,7 +62,7 @@ public class OneToManyWithMappedAssociationEngine<SRC, TRGT, SRCID, TRGTID, C ex
 		BeanRelationFixer<SRC, TRGT> relationFixer = BeanRelationFixer.of(
 				manyRelationDefinition.getCollectionSetter(),
 				manyRelationDefinition.getCollectionGetter(),
-				manyRelationDefinition.getCollectionClass(),
+				manyRelationDefinition.getCollectionFactory(),
 				Objects.preventNull(manyRelationDefinition.getReverseSetter(), NOOP_REVERSE_SETTER));
 		
 		String createdJoinNodeName = sourcePersister.addPersister(FIRST_STRATEGY_NAME,
@@ -93,7 +95,7 @@ public class OneToManyWithMappedAssociationEngine<SRC, TRGT, SRCID, TRGTID, C ex
 
 			@Override
 			public void afterSelect(Iterable<? extends SRC> result) {
-				Iterable collect = Iterables.stream(result).flatMap(src -> targetProvider.apply(src).stream()).collect(Collectors.toSet());
+				Iterable collect = Iterables.stream(result).flatMap(src -> Nullable.nullable(targetProvider.apply(src)).map(Collection::stream).getOr(Stream.empty())).collect(Collectors.toSet());
 				targetSelectListener.afterSelect(collect);
 			}
 

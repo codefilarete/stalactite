@@ -3,6 +3,7 @@ package org.gama.stalactite.persistence.engine.runtime;
 import java.util.Collection;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
+import java.util.function.Supplier;
 
 /**
  * Container to store information of a one-to-many relation
@@ -15,18 +16,18 @@ public class ManyRelationDescriptor<I, O, C extends Collection<O>> {
 	
 	private final BiConsumer<I, C> collectionSetter;
 	
-	private final Class<C> collectionClass;
+	private final Supplier<C> collectionFactory;
 	
 	/**
 	 *
 	 * @param collectionGetter collection accessor
 	 * @param collectionSetter collection setter
-	 * @param collectionClass collection type
+	 * @param collectionFactory collection factory
 	 */
-	public ManyRelationDescriptor(Function<I, C> collectionGetter, BiConsumer<I, C> collectionSetter, Class<C> collectionClass) {
+	public ManyRelationDescriptor(Function<I, C> collectionGetter, BiConsumer<I, C> collectionSetter, Supplier<C> collectionFactory) {
 		this.collectionGetter = collectionGetter;
 		this.collectionSetter = collectionSetter;
-		this.collectionClass = collectionClass;
+		this.collectionFactory = collectionFactory;
 	}
 	
 	public Function<I, C> getCollectionGetter() {
@@ -37,7 +38,7 @@ public class ManyRelationDescriptor<I, O, C extends Collection<O>> {
 		return collectionSetter;
 	}
 	
-	public Class<C> getCollectionClass() {
-		return collectionClass;
+	public Supplier<C> getCollectionFactory() {
+		return collectionFactory;
 	}
 }

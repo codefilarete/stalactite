@@ -142,7 +142,7 @@ public class FluentEntityMappingConfigurationSupportToOneAndToManyMixTest {
 		LongProvider cityIdentifierProvider = new LongProvider();
 		City capital = new City(cityIdentifierProvider.giveNewIdentifier());
 		capital.setName("Paris");
-		dummyCountry.getCities().add(capital);
+		dummyCountry.addCity(capital);
 		
 		// testing insert cascade
 		countryPersister.insert(dummyCountry);
@@ -157,7 +157,7 @@ public class FluentEntityMappingConfigurationSupportToOneAndToManyMixTest {
 		persistedCountry.getPresident().setName("New french president");
 		City grenoble = new City(cityIdentifierProvider.giveNewIdentifier());
 		grenoble.setName("Grenoble");
-		persistedCountry.getCities().add(grenoble);
+		persistedCountry.addCity(grenoble);
 		countryPersister.update(persistedCountry, dummyCountry, true);
 		
 		persistedCountry = countryPersister.select(dummyCountry.getId());

@@ -1,16 +1,18 @@
 package org.gama.stalactite.persistence.engine;
 
+import java.util.Collection;
+import java.util.function.Supplier;
+
 import org.danekja.java.util.function.serializable.SerializableBiConsumer;
 import org.danekja.java.util.function.serializable.SerializableFunction;
-import org.gama.stalactite.persistence.engine.IFluentEntityMappingBuilder.IFluentMappingBuilderOneToManyOptions;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
 
 /**
  * @author Guillaume Mary
  */
-public interface OneToManyOptions<C, I, O >
-	extends CascadeOptions<IFluentMappingBuilderOneToManyOptions<C, I, O>> {
+public interface OneToManyOptions<C, I, O, S extends Collection<O>>
+	extends CascadeOptions<OneToManyOptions<C, I, O, S>> {
 	
 	/**
 	 * Defines the bidirectional relationship.
@@ -22,7 +24,7 @@ public interface OneToManyOptions<C, I, O >
 	 * @param reverseLink opposite owner of the relation (setter)
 	 * @return the global mapping configurer
 	 */
-	IFluentMappingBuilderOneToManyOptions<C, I, O> mappedBy(SerializableBiConsumer<O, C> reverseLink);
+	OneToManyOptions<C, I, O, S> mappedBy(SerializableBiConsumer<O, C> reverseLink);
 	
 	/**
 	 * Defines the bidirectional relationship.
@@ -34,7 +36,7 @@ public interface OneToManyOptions<C, I, O >
 	 * @param reverseLink opposite owner of the relation (getter)
 	 * @return the global mapping configurer
 	 */
-	IFluentMappingBuilderOneToManyOptions<C, I, O> mappedBy(SerializableFunction<O, C> reverseLink);
+	OneToManyOptions<C, I, O, S> mappedBy(SerializableFunction<O, C> reverseLink);
 	
 	/**
 	 * Defines reverse side owner.
@@ -47,6 +49,15 @@ public interface OneToManyOptions<C, I, O >
 	 * @param reverseLink opposite owner of the relation
 	 * @return the global mapping configurer
 	 */
-	IFluentMappingBuilderOneToManyOptions<C, I, O> mappedBy(Column<Table, ?> reverseLink);
+	OneToManyOptions<C, I, O, S> mappedBy(Column<Table, ?> reverseLink);
+	
+	/**
+	 * Defines the collection factory to be used at load time to initialize property if it is null.
+	 * Usefull for cases where property is lazily initialized in bean.
+	 * 
+	 * @param collectionFactory a collection factory
+	 * @return the global mapping configurer
+	 */
+	OneToManyOptions<C, I, O, S> initializeWith(Supplier<S> collectionFactory);
 	
 }
