@@ -43,7 +43,7 @@ import org.gama.reflection.ValueAccessPointByMethod;
 import org.gama.reflection.ValueAccessPointComparator;
 import org.gama.reflection.ValueAccessPointMap;
 import org.gama.reflection.ValueAccessPointSet;
-import org.gama.sql.dml.SQLStatement.BindingException;
+import org.gama.stalactite.sql.dml.SQLStatement.BindingException;
 import org.gama.stalactite.persistence.engine.EmbeddableMappingConfiguration.Linkage;
 import org.gama.stalactite.persistence.engine.FluentEmbeddableMappingConfigurationSupport.AbstractInset;
 import org.gama.stalactite.persistence.engine.FluentEmbeddableMappingConfigurationSupport.ImportedInset;

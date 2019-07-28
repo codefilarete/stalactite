@@ -3,7 +3,7 @@ package org.gama.stalactite.query.builder;
 import java.util.Map;
 
 import org.gama.lang.collection.Maps;
-import org.gama.sql.dml.PreparedSQL;
+import org.gama.stalactite.sql.dml.PreparedSQL;
 import org.gama.stalactite.persistence.sql.dml.binder.ColumnBinderRegistry;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;

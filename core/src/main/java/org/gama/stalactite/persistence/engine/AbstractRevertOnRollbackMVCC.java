@@ -1,7 +1,7 @@
 package org.gama.stalactite.persistence.engine;
 
-import org.gama.sql.ConnectionProvider;
-import org.gama.sql.RollbackObserver;
+import org.gama.stalactite.sql.ConnectionProvider;
+import org.gama.stalactite.sql.RollbackObserver;
 import org.gama.stalactite.persistence.structure.Column;
 
 /**

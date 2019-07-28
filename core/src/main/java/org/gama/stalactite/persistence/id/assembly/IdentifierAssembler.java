@@ -4,7 +4,7 @@ import javax.annotation.Nonnull;
 import java.util.List;
 import java.util.Map;
 
-import org.gama.sql.result.Row;
+import org.gama.stalactite.sql.result.Row;
 import org.gama.stalactite.persistence.mapping.ColumnedRow;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
@@ -40,7 +40,7 @@ public interface IdentifierAssembler<I> {
 	/**
 	 * A Collection-form of {@link #getColumnValues(Object)}.
 	 * Should give, for each primary key column, all values of the given identifiers. So result should be a {@code Map<Column, List>}, but, due to
-	 * potential misunderstanding in {@link org.gama.sql.dml.ExpandableStatement}, if ids is single, result must contains single instead of {@link List}
+	 * potential misunderstanding in {@link org.gama.stalactite.sql.dml.ExpandableStatement}, if ids is single, result must contains single instead of {@link List}
 	 * so result signature is {@code Map<Column, Object>}
 	 * 
 	 * @param ids identifiers

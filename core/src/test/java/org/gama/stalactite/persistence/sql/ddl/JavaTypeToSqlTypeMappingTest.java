@@ -1,6 +1,6 @@
 package org.gama.stalactite.persistence.sql.ddl;
 
-import org.gama.sql.dml.SQLStatement.BindingException;
+import org.gama.stalactite.sql.dml.SQLStatement.BindingException;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
 import org.junit.jupiter.api.Test;

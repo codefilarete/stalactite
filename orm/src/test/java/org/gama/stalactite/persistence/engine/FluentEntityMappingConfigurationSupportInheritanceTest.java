@@ -8,10 +8,10 @@ import java.util.stream.Collectors;
 
 import org.gama.lang.collection.Arrays;
 import org.gama.lang.collection.Iterables;
-import org.gama.sql.ConnectionProvider;
-import org.gama.sql.binder.LambdaParameterBinder;
-import org.gama.sql.binder.NullAwareParameterBinder;
-import org.gama.sql.test.HSQLDBInMemoryDataSource;
+import org.gama.stalactite.sql.ConnectionProvider;
+import org.gama.stalactite.sql.binder.LambdaParameterBinder;
+import org.gama.stalactite.sql.binder.NullAwareParameterBinder;
+import org.gama.stalactite.sql.test.HSQLDBInMemoryDataSource;
 import org.gama.stalactite.persistence.engine.ColumnOptions.IdentifierPolicy;
 import org.gama.stalactite.persistence.engine.model.Timestamp;
 import org.gama.stalactite.persistence.id.Identified;
@@ -28,8 +28,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
-import static org.gama.sql.binder.DefaultParameterBinders.INTEGER_PRIMITIVE_BINDER;
-import static org.gama.sql.binder.DefaultParameterBinders.LONG_PRIMITIVE_BINDER;
+import static org.gama.stalactite.sql.binder.DefaultParameterBinders.INTEGER_PRIMITIVE_BINDER;
+import static org.gama.stalactite.sql.binder.DefaultParameterBinders.LONG_PRIMITIVE_BINDER;
 import static org.gama.stalactite.persistence.id.Identifier.LONG_TYPE;
 import static org.gama.stalactite.persistence.id.Identifier.identifierBinder;
 import static org.junit.jupiter.api.Assertions.assertEquals;

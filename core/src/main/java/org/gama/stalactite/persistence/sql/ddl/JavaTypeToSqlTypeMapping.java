@@ -10,7 +10,7 @@ import java.util.stream.Stream;
 import org.gama.lang.bean.InterfaceIterator;
 import org.gama.lang.collection.Iterables;
 import org.gama.lang.collection.ValueFactoryHashMap;
-import org.gama.sql.dml.SQLStatement.BindingException;
+import org.gama.stalactite.sql.dml.SQLStatement.BindingException;
 import org.gama.stalactite.persistence.structure.Column;
 
 /**

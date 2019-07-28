@@ -15,7 +15,7 @@ import org.gama.lang.collection.Arrays;
 import org.gama.lang.exception.NotImplementedException;
 import org.gama.lang.function.Predicates;
 import org.gama.reflection.IReversibleAccessor;
-import org.gama.sql.result.Row;
+import org.gama.stalactite.sql.result.Row;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
 
@@ -26,7 +26,7 @@ import org.gama.stalactite.persistence.structure.Table;
  * <li>{@link LocalDateTime}</li>
  * <li>{@link ZoneId}</li>
  * </ul>
- * Thus, the {@link org.gama.stalactite.persistence.sql.ddl.JavaTypeToSqlTypeMapping} and {@link org.gama.sql.binder.ParameterBinderRegistry}
+ * Thus, the {@link org.gama.stalactite.persistence.sql.ddl.JavaTypeToSqlTypeMapping} and {@link org.gama.stalactite.sql.binder.ParameterBinderRegistry}
  * of your {@link org.gama.stalactite.persistence.sql.Dialect} must have them registered (which is done by default).
  * 
  * @author Guillaume Mary

@@ -18,7 +18,7 @@ import org.gama.lang.function.Predicates;
 import org.gama.reflection.Accessors;
 import org.gama.reflection.IMutator;
 import org.gama.reflection.IReversibleAccessor;
-import org.gama.sql.result.Row;
+import org.gama.stalactite.sql.result.Row;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
 

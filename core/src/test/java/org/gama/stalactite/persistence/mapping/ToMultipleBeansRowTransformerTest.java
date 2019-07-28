@@ -7,7 +7,7 @@ import java.util.Map;
 
 import org.gama.lang.collection.Arrays;
 import org.gama.lang.collection.Maps;
-import org.gama.sql.result.Row;
+import org.gama.stalactite.sql.result.Row;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;

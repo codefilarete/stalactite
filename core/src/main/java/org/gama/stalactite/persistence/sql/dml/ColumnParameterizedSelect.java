@@ -2,9 +2,9 @@ package org.gama.stalactite.persistence.sql.dml;
 
 import java.util.Map;
 
-import org.gama.sql.binder.ParameterBinder;
-import org.gama.sql.binder.ParameterBinderIndex;
-import org.gama.sql.binder.PreparedStatementWriterIndex;
+import org.gama.stalactite.sql.binder.ParameterBinder;
+import org.gama.stalactite.sql.binder.ParameterBinderIndex;
+import org.gama.stalactite.sql.binder.PreparedStatementWriterIndex;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
 

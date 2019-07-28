@@ -2,7 +2,7 @@ package org.gama.stalactite.persistence.sql;
 
 import org.gama.lang.Retryer;
 import org.gama.lang.bean.Objects;
-import org.gama.sql.dml.GeneratedKeysReader;
+import org.gama.stalactite.sql.dml.GeneratedKeysReader;
 import org.gama.stalactite.persistence.sql.ddl.DDLGenerator;
 import org.gama.stalactite.persistence.sql.ddl.DDLTableGenerator;
 import org.gama.stalactite.persistence.sql.ddl.JavaTypeToSqlTypeMapping;

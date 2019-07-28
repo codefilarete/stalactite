@@ -8,11 +8,11 @@ import java.util.List;
 
 import org.gama.lang.collection.Arrays;
 import org.gama.lang.collection.Iterables;
-import org.gama.sql.SimpleConnectionProvider;
-import org.gama.sql.binder.DefaultParameterBinders;
-import org.gama.sql.binder.LambdaParameterBinder;
-import org.gama.sql.binder.NullAwareParameterBinder;
-import org.gama.sql.test.HSQLDBInMemoryDataSource;
+import org.gama.stalactite.sql.SimpleConnectionProvider;
+import org.gama.stalactite.sql.binder.DefaultParameterBinders;
+import org.gama.stalactite.sql.binder.LambdaParameterBinder;
+import org.gama.stalactite.sql.binder.NullAwareParameterBinder;
+import org.gama.stalactite.sql.test.HSQLDBInMemoryDataSource;
 import org.gama.stalactite.persistence.engine.PersistenceContext.ExecutableDelete;
 import org.gama.stalactite.persistence.engine.PersistenceContext.ExecutableUpdate;
 import org.gama.stalactite.persistence.sql.HSQLDBDialect;

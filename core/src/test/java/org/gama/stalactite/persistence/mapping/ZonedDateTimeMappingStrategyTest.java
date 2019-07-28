@@ -9,9 +9,9 @@ import java.time.ZonedDateTime;
 import java.util.Map;
 
 import org.gama.lang.collection.Maps;
-import org.gama.sql.dml.WriteOperation;
-import org.gama.sql.result.RowIterator;
-import org.gama.sql.test.HSQLDBInMemoryDataSource;
+import org.gama.stalactite.sql.dml.WriteOperation;
+import org.gama.stalactite.sql.result.RowIterator;
+import org.gama.stalactite.sql.test.HSQLDBInMemoryDataSource;
 import org.gama.stalactite.persistence.engine.DDLDeployer;
 import org.gama.stalactite.persistence.sql.HSQLDBDialect;
 import org.gama.stalactite.persistence.sql.dml.ColumnParameterizedSQL;

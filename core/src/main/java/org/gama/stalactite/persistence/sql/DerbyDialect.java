@@ -5,9 +5,9 @@ import java.sql.SQLException;
 import java.util.List;
 
 import org.gama.lang.collection.Iterables;
-import org.gama.sql.binder.DefaultParameterBinders;
-import org.gama.sql.dml.GeneratedKeysReader;
-import org.gama.sql.dml.WriteOperation;
+import org.gama.stalactite.sql.binder.DefaultParameterBinders;
+import org.gama.stalactite.sql.dml.GeneratedKeysReader;
+import org.gama.stalactite.sql.dml.WriteOperation;
 
 /**
  * @author Guillaume Mary

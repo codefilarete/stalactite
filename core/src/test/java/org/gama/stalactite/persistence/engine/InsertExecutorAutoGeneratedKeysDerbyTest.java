@@ -7,7 +7,7 @@ import java.util.Map;
 import java.util.Set;
 
 import org.gama.lang.collection.Iterables;
-import org.gama.sql.test.DerbyInMemoryDataSource;
+import org.gama.stalactite.sql.test.DerbyInMemoryDataSource;
 import org.gama.stalactite.persistence.id.manager.JDBCGeneratedKeysIdentifierManager;
 import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
 import org.gama.stalactite.persistence.mapping.SinglePropertyIdAccessor;

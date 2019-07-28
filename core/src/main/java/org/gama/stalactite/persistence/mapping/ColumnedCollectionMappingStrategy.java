@@ -20,7 +20,7 @@ import org.gama.lang.collection.PairIterator.InfiniteIterator;
 import org.gama.lang.collection.PairIterator.UntilBothIterator;
 import org.gama.lang.function.Predicates;
 import org.gama.reflection.IReversibleAccessor;
-import org.gama.sql.result.Row;
+import org.gama.stalactite.sql.result.Row;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
 
@@ -128,7 +128,7 @@ public class ColumnedCollectionMappingStrategy<C extends Collection<O>, O, T ext
 	/**
 	 * Gives the database (JDBC) value of the argument.
 	 * This implementation returns the given argument without transformation.
-	 * This may duplicate behavior of {@link org.gama.sql.binder.PreparedStatementWriter} in some way, but is located to this strategy so can be
+	 * This may duplicate behavior of {@link org.gama.stalactite.sql.binder.PreparedStatementWriter} in some way, but is located to this strategy so can be
 	 * more accurate.
 	 * 
 	 * @param object any object took from a pesistent collection
@@ -141,7 +141,7 @@ public class ColumnedCollectionMappingStrategy<C extends Collection<O>, O, T ext
 	/**
 	 * Opposit of {@link #toDatabaseValue(Object)}: converts the database value for the collection value
 	 * This implementation returns the given argument without transformation.
-	 * This may duplicate behavior of {@link org.gama.sql.binder.ResultSetReader} in some way, but is located to this strategy so can be
+	 * This may duplicate behavior of {@link org.gama.stalactite.sql.binder.ResultSetReader} in some way, but is located to this strategy so can be
 	 * more accurate.
 	 * 
 	 * @param object the value coming from the database {@link java.sql.ResultSet}

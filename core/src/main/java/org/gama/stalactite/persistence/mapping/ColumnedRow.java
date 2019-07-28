@@ -3,7 +3,7 @@ package org.gama.stalactite.persistence.mapping;
 import javax.annotation.Nullable;
 import java.util.function.Function;
 
-import org.gama.sql.result.Row;
+import org.gama.stalactite.sql.result.Row;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
 

@@ -19,7 +19,7 @@ import org.gama.reflection.IReversibleAccessor;
 import org.gama.reflection.IReversibleMutator;
 import org.gama.reflection.MemberDefinition;
 import org.gama.reflection.PropertyAccessor;
-import org.gama.sql.result.Row;
+import org.gama.stalactite.sql.result.Row;
 import org.gama.stalactite.persistence.id.assembly.SimpleIdentifierAssembler;
 import org.gama.stalactite.persistence.id.manager.IdentifierInsertionManager;
 import org.gama.stalactite.persistence.structure.Column;

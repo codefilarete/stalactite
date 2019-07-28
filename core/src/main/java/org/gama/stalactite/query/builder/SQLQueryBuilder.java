@@ -1,7 +1,7 @@
 package org.gama.stalactite.query.builder;
 
 import org.gama.lang.StringAppender;
-import org.gama.sql.dml.PreparedSQL;
+import org.gama.stalactite.sql.dml.PreparedSQL;
 import org.gama.stalactite.persistence.sql.dml.binder.ColumnBinderRegistry;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.query.builder.OperatorBuilder.PreparedSQLWrapper;

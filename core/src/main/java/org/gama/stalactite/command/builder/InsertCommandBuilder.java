@@ -6,8 +6,8 @@ import java.util.Map;
 
 import org.gama.lang.StringAppender;
 import org.gama.lang.trace.ModifiableInt;
-import org.gama.sql.binder.ParameterBinder;
-import org.gama.sql.dml.PreparedSQL;
+import org.gama.stalactite.sql.binder.ParameterBinder;
+import org.gama.stalactite.sql.dml.PreparedSQL;
 import org.gama.stalactite.command.model.Insert;
 import org.gama.stalactite.command.model.Update.UpdateColumn;
 import org.gama.stalactite.persistence.sql.dml.binder.ColumnBinderRegistry;

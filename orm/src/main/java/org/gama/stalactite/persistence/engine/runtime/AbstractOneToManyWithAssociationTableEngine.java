@@ -9,8 +9,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
 
-import org.gama.sql.dml.PreparedSQL;
-import org.gama.sql.dml.WriteOperation;
+import org.gama.stalactite.sql.dml.PreparedSQL;
+import org.gama.stalactite.sql.dml.WriteOperation;
 import org.gama.stalactite.command.builder.DeleteCommandBuilder;
 import org.gama.stalactite.command.model.Delete;
 import org.gama.stalactite.persistence.engine.AssociationRecord;

@@ -4,7 +4,7 @@ import java.util.Map;
 
 import org.gama.lang.collection.Arrays;
 import org.gama.lang.collection.Maps;
-import org.gama.sql.binder.ParameterBinder;
+import org.gama.stalactite.sql.binder.ParameterBinder;
 import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;

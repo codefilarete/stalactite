@@ -1,7 +1,7 @@
 package org.gama.stalactite.persistence.engine;
 
 import org.gama.lang.Retryer;
-import org.gama.sql.ConnectionProvider;
+import org.gama.stalactite.sql.ConnectionProvider;
 import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
 import org.gama.stalactite.persistence.sql.Dialect;
 import org.gama.stalactite.persistence.sql.dml.DMLGenerator;

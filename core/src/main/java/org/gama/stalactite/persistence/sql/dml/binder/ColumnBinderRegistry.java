@@ -12,10 +12,10 @@ import java.util.stream.Stream;
 import org.gama.lang.Reflections;
 import org.gama.lang.bean.InterfaceIterator;
 import org.gama.lang.collection.Iterables;
-import org.gama.sql.binder.ParameterBinder;
-import org.gama.sql.binder.ParameterBinderIndex;
-import org.gama.sql.binder.ParameterBinderRegistry;
-import org.gama.sql.dml.SQLStatement.BindingException;
+import org.gama.stalactite.sql.binder.ParameterBinder;
+import org.gama.stalactite.sql.binder.ParameterBinderIndex;
+import org.gama.stalactite.sql.binder.ParameterBinderRegistry;
+import org.gama.stalactite.sql.dml.SQLStatement.BindingException;
 import org.gama.stalactite.persistence.structure.Column;
 
 /**

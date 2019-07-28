@@ -4,7 +4,7 @@ import java.sql.PreparedStatement;
 import java.sql.SQLException;
 
 import org.gama.lang.collection.Maps;
-import org.gama.sql.binder.DefaultParameterBinders;
+import org.gama.stalactite.sql.binder.DefaultParameterBinders;
 import org.gama.stalactite.command.builder.InsertCommandBuilder.InsertStatement;
 import org.gama.stalactite.command.model.Insert;
 import org.gama.stalactite.persistence.sql.dml.binder.ColumnBinderRegistry;

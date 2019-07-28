@@ -6,7 +6,7 @@ import org.danekja.java.util.function.serializable.SerializableFunction;
 import org.danekja.java.util.function.serializable.SerializableSupplier;
 import org.gama.lang.function.SerializableTriFunction;
 import org.gama.lang.function.ThrowingConverter;
-import org.gama.sql.result.ResultSetRowAssembler;
+import org.gama.stalactite.sql.result.ResultSetRowAssembler;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
 

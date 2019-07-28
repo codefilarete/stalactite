@@ -4,7 +4,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 
-import org.gama.sql.result.Row;
+import org.gama.stalactite.sql.result.Row;
 
 /**
  * Class for transforming columns into multiple beans.

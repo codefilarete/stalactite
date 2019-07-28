@@ -4,8 +4,8 @@ import java.sql.PreparedStatement;
 import java.sql.SQLException;
 
 import org.gama.lang.collection.Maps;
-import org.gama.sql.binder.DefaultParameterBinders;
-import org.gama.sql.dml.PreparedSQL;
+import org.gama.stalactite.sql.binder.DefaultParameterBinders;
+import org.gama.stalactite.sql.dml.PreparedSQL;
 import org.gama.stalactite.command.model.Delete;
 import org.gama.stalactite.persistence.sql.dml.binder.ColumnBinderRegistry;
 import org.gama.stalactite.persistence.structure.Column;

@@ -10,7 +10,7 @@ import org.gama.lang.collection.Arrays;
 import org.gama.lang.collection.Iterables;
 import org.gama.lang.collection.Maps;
 import org.gama.lang.exception.Exceptions;
-import org.gama.sql.result.InMemoryResultSet;
+import org.gama.stalactite.sql.result.InMemoryResultSet;
 import org.gama.stalactite.persistence.sql.dml.binder.ColumnBinderRegistry;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;

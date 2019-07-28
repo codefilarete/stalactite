@@ -3,7 +3,7 @@ package org.gama.stalactite.persistence.mapping;
 import java.util.function.Supplier;
 
 import org.gama.lang.Reflections;
-import org.gama.sql.result.Row;
+import org.gama.stalactite.sql.result.Row;
 
 /**
  * A very general frame to transform {@link Row}s

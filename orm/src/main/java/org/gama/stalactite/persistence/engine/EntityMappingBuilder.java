@@ -405,7 +405,7 @@ class EntityMappingBuilder<C, I> {
 		/**
 		 * Same as {@link #ensureColumnBinding(Linkage, Column)} but will do nothing for one-to-one relation because it would try to find a
 		 * binder for an entity (which may exist if user declare it) which can hardly/never implement correctly the reading process because
-		 * target entity should be created with a complete information set, which is not possible throught {@link org.gama.sql.binder.ResultSetReader#get(ResultSet, String)}.
+		 * target entity should be created with a complete information set, which is not possible throught {@link org.gama.stalactite.sql.binder.ResultSetReader#get(ResultSet, String)}.
 		 * Entity will be crate correctly by {@link org.gama.stalactite.persistence.engine.cascade.StrategyJoinsRowTransformer}
 		 * 
 		 * @param linkage

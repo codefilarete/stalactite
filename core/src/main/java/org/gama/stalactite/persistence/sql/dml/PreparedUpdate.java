@@ -3,10 +3,10 @@ package org.gama.stalactite.persistence.sql.dml;
 import java.sql.PreparedStatement;
 import java.util.Map;
 
-import org.gama.sql.binder.ParameterBinder;
-import org.gama.sql.binder.PreparedStatementWriter;
-import org.gama.sql.binder.PreparedStatementWriterIndex;
-import org.gama.sql.dml.SQLStatement;
+import org.gama.stalactite.sql.binder.ParameterBinder;
+import org.gama.stalactite.sql.binder.PreparedStatementWriter;
+import org.gama.stalactite.sql.binder.PreparedStatementWriterIndex;
+import org.gama.stalactite.sql.dml.SQLStatement;
 import org.gama.stalactite.persistence.mapping.IMappingStrategy.UpwhereColumn;
 import org.gama.stalactite.persistence.structure.Table;
 

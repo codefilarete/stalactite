@@ -12,8 +12,8 @@ import org.gama.lang.bean.Objects;
 import org.gama.lang.collection.ISorter;
 import org.gama.lang.collection.Iterables;
 import org.gama.lang.trace.ModifiableInt;
-import org.gama.sql.binder.ParameterBinder;
-import org.gama.sql.binder.ParameterBinderIndex;
+import org.gama.stalactite.sql.binder.ParameterBinder;
+import org.gama.stalactite.sql.binder.ParameterBinderIndex;
 import org.gama.stalactite.persistence.engine.DMLExecutor;
 import org.gama.stalactite.persistence.mapping.IMappingStrategy.UpwhereColumn;
 import org.gama.stalactite.persistence.sql.ddl.DDLAppender;
@@ -21,10 +21,10 @@ import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.query.builder.DMLNameProvider;
 
-import static org.gama.sql.dml.ExpandableSQL.ExpandableParameter.SQL_PARAMETER_MARK;
-import static org.gama.sql.dml.ExpandableSQL.ExpandableParameter.SQL_PARAMETER_MARK_1;
-import static org.gama.sql.dml.ExpandableSQL.ExpandableParameter.SQL_PARAMETER_MARK_10;
-import static org.gama.sql.dml.ExpandableSQL.ExpandableParameter.SQL_PARAMETER_MARK_100;
+import static org.gama.stalactite.sql.dml.ExpandableSQL.ExpandableParameter.SQL_PARAMETER_MARK;
+import static org.gama.stalactite.sql.dml.ExpandableSQL.ExpandableParameter.SQL_PARAMETER_MARK_1;
+import static org.gama.stalactite.sql.dml.ExpandableSQL.ExpandableParameter.SQL_PARAMETER_MARK_10;
+import static org.gama.stalactite.sql.dml.ExpandableSQL.ExpandableParameter.SQL_PARAMETER_MARK_100;
 
 /**
  * Class for DML generation dedicated to {@link DMLExecutor}. Not expected to be used elsewhere.

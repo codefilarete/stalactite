@@ -5,10 +5,10 @@ import java.sql.SQLException;
 
 import org.gama.lang.collection.Arrays;
 import org.gama.lang.collection.Maps;
-import org.gama.sql.binder.DefaultResultSetReaders;
-import org.gama.sql.result.Row;
-import org.gama.sql.result.RowIterator;
-import org.gama.sql.test.HSQLDBInMemoryDataSource;
+import org.gama.stalactite.sql.binder.DefaultResultSetReaders;
+import org.gama.stalactite.sql.result.Row;
+import org.gama.stalactite.sql.result.RowIterator;
+import org.gama.stalactite.sql.test.HSQLDBInMemoryDataSource;
 import org.gama.stalactite.persistence.engine.DDLDeployer;
 import org.gama.stalactite.persistence.engine.PersistenceContext;
 import org.gama.stalactite.persistence.engine.SeparateTransactionExecutor;

@@ -15,7 +15,7 @@ import org.gama.lang.collection.Maps;
 import org.gama.lang.test.Assertions;
 import org.gama.reflection.Accessors;
 import org.gama.reflection.IReversibleAccessor;
-import org.gama.sql.ConnectionProvider;
+import org.gama.stalactite.sql.ConnectionProvider;
 import org.gama.stalactite.persistence.engine.PersisterDatabaseTest.Toto;
 import org.gama.stalactite.persistence.engine.PersisterDatabaseTest.TotoTable;
 import org.gama.stalactite.persistence.engine.listening.DeleteByIdListener;

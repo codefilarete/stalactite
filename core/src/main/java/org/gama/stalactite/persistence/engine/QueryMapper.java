@@ -20,20 +20,20 @@ import org.gama.lang.collection.KeepOrderSet;
 import org.gama.lang.function.SerializableTriFunction;
 import org.gama.lang.function.ThrowingConverter;
 import org.gama.reflection.MethodReferenceCapturer;
-import org.gama.sql.ConnectionProvider;
-import org.gama.sql.binder.ParameterBinder;
-import org.gama.sql.dml.ReadOperation;
-import org.gama.sql.dml.StringParamedSQL;
-import org.gama.sql.result.MultipleColumnsReader;
-import org.gama.sql.result.ResultSetConverterSupport;
-import org.gama.sql.result.ResultSetRowAssembler;
-import org.gama.sql.result.ResultSetRowConverter;
-import org.gama.sql.result.SingleColumnReader;
+import org.gama.stalactite.sql.ConnectionProvider;
+import org.gama.stalactite.sql.binder.ParameterBinder;
+import org.gama.stalactite.sql.dml.ReadOperation;
+import org.gama.stalactite.sql.dml.StringParamedSQL;
+import org.gama.stalactite.sql.result.MultipleColumnsReader;
+import org.gama.stalactite.sql.result.ResultSetConverterSupport;
+import org.gama.stalactite.sql.result.ResultSetRowAssembler;
+import org.gama.stalactite.sql.result.ResultSetRowConverter;
+import org.gama.stalactite.sql.result.SingleColumnReader;
 import org.gama.stalactite.persistence.sql.dml.binder.ColumnBinderRegistry;
 import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.query.builder.SQLBuilder;
 
-import static org.gama.sql.binder.NullAwareParameterBinder.ALWAYS_SET_NULL_INSTANCE;
+import static org.gama.stalactite.sql.binder.NullAwareParameterBinder.ALWAYS_SET_NULL_INSTANCE;
 
 /**
  * A class aimed at querying the database and creating Java beans from it.

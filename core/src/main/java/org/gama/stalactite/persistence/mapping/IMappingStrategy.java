@@ -9,7 +9,7 @@ import java.util.Set;
 import java.util.function.Function;
 
 import org.gama.reflection.IReversibleAccessor;
-import org.gama.sql.result.Row;
+import org.gama.stalactite.sql.result.Row;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
 

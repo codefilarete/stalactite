@@ -6,9 +6,9 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 
 import org.gama.lang.function.ThrowingConverter;
-import org.gama.sql.binder.LambdaParameterBinder;
-import org.gama.sql.binder.NullAwareParameterBinder;
-import org.gama.sql.binder.ParameterBinder;
+import org.gama.stalactite.sql.binder.LambdaParameterBinder;
+import org.gama.stalactite.sql.binder.NullAwareParameterBinder;
+import org.gama.stalactite.sql.binder.ParameterBinder;
 
 /**
  * Frame for handling unexpected type (from the library) that needs to be persisted into a single column.

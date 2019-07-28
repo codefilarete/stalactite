@@ -3,7 +3,7 @@ package org.gama.stalactite.persistence.id.manager;
 import java.util.function.Consumer;
 
 import org.gama.lang.function.Sequence;
-import org.gama.sql.dml.WriteOperation;
+import org.gama.stalactite.sql.dml.WriteOperation;
 import org.gama.stalactite.persistence.engine.WriteExecutor.JDBCBatchingIterator;
 import org.gama.stalactite.persistence.engine.listening.InsertListener;
 import org.gama.stalactite.persistence.mapping.IdAccessor;

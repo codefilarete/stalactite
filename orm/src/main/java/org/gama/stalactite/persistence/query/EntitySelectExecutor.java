@@ -7,12 +7,12 @@ import java.util.List;
 
 import org.gama.lang.collection.Iterables;
 import org.gama.lang.collection.Maps;
-import org.gama.sql.ConnectionProvider;
-import org.gama.sql.dml.PreparedSQL;
-import org.gama.sql.dml.ReadOperation;
-import org.gama.sql.dml.SQLExecutionException;
-import org.gama.sql.result.Row;
-import org.gama.sql.result.RowIterator;
+import org.gama.stalactite.sql.ConnectionProvider;
+import org.gama.stalactite.sql.dml.PreparedSQL;
+import org.gama.stalactite.sql.dml.ReadOperation;
+import org.gama.stalactite.sql.dml.SQLExecutionException;
+import org.gama.stalactite.sql.result.Row;
+import org.gama.stalactite.sql.result.RowIterator;
 import org.gama.stalactite.persistence.engine.cascade.JoinedStrategiesSelect;
 import org.gama.stalactite.persistence.engine.cascade.StrategyJoinsRowTransformer;
 import org.gama.stalactite.persistence.sql.dml.binder.ColumnBinderRegistry;

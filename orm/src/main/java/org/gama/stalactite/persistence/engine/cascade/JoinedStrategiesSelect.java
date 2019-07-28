@@ -12,8 +12,8 @@ import java.util.Queue;
 import java.util.Set;
 
 import org.gama.lang.Strings;
-import org.gama.sql.binder.ParameterBinder;
-import org.gama.sql.binder.ParameterBinderProvider;
+import org.gama.stalactite.sql.binder.ParameterBinder;
+import org.gama.stalactite.sql.binder.ParameterBinderProvider;
 import org.gama.stalactite.persistence.engine.BeanRelationFixer;
 import org.gama.stalactite.persistence.engine.cascade.JoinedStrategiesSelect.StrategyJoins.Join;
 import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
