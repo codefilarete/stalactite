@@ -523,19 +523,19 @@ public class PersistenceContext {
 		<I> ExecutableSelect<C> map(String columnName, SerializableBiConsumer<C, I> setter, Class<I> columnType);
 		
 		@Override
-		<I, J> ExecutableSelect<C> map(String columnName, SerializableBiConsumer<C, J> setter, Class<I> columnType, SerializableFunction<I, J> converter);
+		<I, J, E extends RuntimeException> ExecutableSelect<C> map(String columnName, SerializableBiConsumer<C, J> setter, Class<I> columnType, ThrowingConverter<I, J, E> converter);
 		
 		@Override
 		<I> ExecutableSelect<C> map(String columnName, SerializableBiConsumer<C, I> setter);
 		
 		@Override
-		<I> ExecutableSelect<C> map(String columnName, SerializableBiConsumer<C, I> setter, SerializableFunction<I, I> converter);
+		<I, E extends RuntimeException> ExecutableSelect<C> map(String columnName, SerializableBiConsumer<C, I> setter, ThrowingConverter<I, I, E> converter);
 		
 		@Override
 		<I> ExecutableSelect<C> map(Column<? extends Table, I> column, SerializableBiConsumer<C, I> setter);
 		
 		@Override
-		<I, J> ExecutableSelect<C> map(Column<? extends Table, I> column, SerializableBiConsumer<C, J> setter, ThrowingConverter<I, J, RuntimeException> converter);
+		<I, J, E extends RuntimeException> ExecutableSelect<C> map(Column<? extends Table, I> column, SerializableBiConsumer<C, J> setter, ThrowingConverter<I, J, E> converter);
 		
 		@Override
 		ExecutableSelect<C> add(ResultSetRowAssembler<C> assembler);

@@ -158,7 +158,7 @@ public class QueryMapperTest {
 	}
 	
 	@Test
-	public void testNewQuery_withCondition() throws SQLException {
+	public void testWithParameter() throws SQLException {
 		ColumnBinderRegistry columnBinderRegistry = new ColumnBinderRegistry();
 		// NB: SQL String is there only for clarification but is never executed
 		QueryMapper<Toto> queryMapper = new QueryMapper<>(Toto.class, "select id, name from Toto where id in (:id)", columnBinderRegistry)
@@ -166,8 +166,7 @@ public class QueryMapperTest {
 				.set("id", Arrays.asList(1, 2), Integer.class);
 		
 		// Very simple data are necessary for the ResultSet since only id is mapped 
-		Map<String, Object> testCaseData = Maps.asHashMap("id", 42);
-		List<Map<String, Object>> resultSetData = Arrays.asList(testCaseData);
+		List<Map<String, Object>> resultSetData = Arrays.asList(Maps.asHashMap("id", 42));
 		
 		// creation of a Connection that will give our test case data and will capture statement arguments
 		Connection mock = mock(Connection.class);
@@ -192,7 +191,7 @@ public class QueryMapperTest {
 	}
 	
 	@Test
-	public void testNewQuery_addAssembler() {
+	public void testWithAssembler() {
 		ColumnBinderRegistry columnBinderRegistry = new ColumnBinderRegistry();
 		QueryMapper<Toto> queryMapper = new QueryMapper<>(Toto.class, "select id, name from Toto", columnBinderRegistry)
 				.mapKey(Toto::new, "id", Toto::setId)

@@ -301,8 +301,8 @@ public class QueryMapper<C> implements MappableQuery<C> {
 	 * @return this
 	 */
 	@Override
-	public <I, J> QueryMapper<C> map(String columnName, SerializableBiConsumer<C, J> setter, Class<I> columnType, SerializableFunction<I, J> converter) {
-		return map(columnName, (c, i) -> setter.accept(c, converter.apply(i)), columnType);
+	public <I, J, E extends RuntimeException> QueryMapper<C> map(String columnName, SerializableBiConsumer<C, J> setter, Class<I> columnType, ThrowingConverter<I, J, E> converter) {
+		return map(columnName, (c, i) -> setter.accept(c, converter.convert(i)), columnType);
 	}
 	
 	/**
@@ -332,10 +332,10 @@ public class QueryMapper<C> implements MappableQuery<C> {
 	 * @return this
 	 */
 	@Override
-	public <I> QueryMapper<C> map(String columnName, SerializableBiConsumer<C, I> setter, SerializableFunction<I, I> converter) {
+	public <I, E extends RuntimeException> QueryMapper<C> map(String columnName, SerializableBiConsumer<C, I> setter, ThrowingConverter<I, I, E> converter) {
 		Method method = methodReferenceCapturer.findMethod(setter);
 		Class<I> aClass = (Class<I>) method.getParameterTypes()[0];
-		return map(columnName, (SerializableBiConsumer<C, I>) (c, i) -> setter.accept(c, converter.apply(i)), aClass);
+		return map(columnName, (SerializableBiConsumer<C, I>) (c, i) -> setter.accept(c, converter.convert(i)), aClass);
 	}
 	
 	/**
@@ -364,9 +364,9 @@ public class QueryMapper<C> implements MappableQuery<C> {
 	 * @return this
 	 */
 	@Override
-	public <I, J> QueryMapper<C> map(org.gama.stalactite.persistence.structure.Column<? extends Table, I> column,
+	public <I, J, E extends RuntimeException> QueryMapper<C> map(org.gama.stalactite.persistence.structure.Column<? extends Table, I> column,
 									 SerializableBiConsumer<C, J> setter,
-									 ThrowingConverter<I, J, RuntimeException> converter) {
+									 ThrowingConverter<I, J, E> converter) {
 		return map(column, (SerializableBiConsumer<C, I>) (c, i) -> setter.accept(c, converter.convert(i)));
 	}
 	
