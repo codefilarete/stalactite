@@ -82,6 +82,8 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements IFluentEnt
 	
 	private Table targetParentTable;
 	
+	private PolymorphismPolicy polymorphismPolicy;
+	
 	/**
 	 * Creates a builder to map the given class for persistence
 	 *
@@ -177,6 +179,11 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements IFluentEnt
 	@Override
 	public EntityMappingConfiguration<C, I> getConfiguration() {
 		return this;
+	}
+	
+	@Override
+	public PolymorphismPolicy getPolymorphismPolicy() {
+		return polymorphismPolicy;
 	}
 	
 	@Override
@@ -593,6 +600,12 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements IFluentEnt
 	private <V> IFluentEntityMappingBuilder<C, I> versionedBy(SerializableFunction<C, V> getter, AccessorByMethodReference methodReference, Serie<V> serie) {
 		optimisticLockOption = new OptimisticLockOption<>(methodReference, serie);
 		add(getter);
+		return this;
+	}
+	
+	@Override
+	public IFluentEntityMappingBuilder<C, I> mapPolymorphism(PolymorphismPolicy polymorphismPolicy) {
+		this.polymorphismPolicy = polymorphismPolicy;
 		return this;
 	}
 	
