@@ -66,7 +66,7 @@ public class JoinedTablesPersister<C, I, T extends Table> extends Persister<C, I
 	@Override
 	protected <U> SelectExecutor<U, I, T> newSelectExecutor(ClassMappingStrategy<U, I, T> mappingStrategy, ConnectionProvider connectionProvider,
 															DMLGenerator dmlGenerator, int inOperatorMaxSize) {
-		// since getSelectExecutor() is overriden we don't care about returning a good instance, actually it implies that EntitySelectExecutor
+		// since getSelectExecutor() is overriden we don't care about returning a good instance, actually it implies that JoinedStrategiesSelectExecutor
 		// is a subtype of SelectExecutor which is not the case, and can hardly be the case
 		return null;
 	}
@@ -104,10 +104,8 @@ public class JoinedTablesPersister<C, I, T extends Table> extends Persister<C, I
 										 Column leftJoinColumn,
 										 Column rightJoinColumn,
 										 boolean isOuterJoin) {
-		ClassMappingStrategy<U, J, ?> mappingStrategy = persister.getMappingStrategy();
-		
 		// We use our own select system since SelectListener is not aimed at joining table
-		return joinedStrategiesSelectExecutor.addComplementaryTable(ownerStrategyName, mappingStrategy, beanRelationFixer,
+		return joinedStrategiesSelectExecutor.addComplementaryTable(ownerStrategyName, persister.getMappingStrategy(), beanRelationFixer,
 				leftJoinColumn, rightJoinColumn, isOuterJoin);
 	}
 	

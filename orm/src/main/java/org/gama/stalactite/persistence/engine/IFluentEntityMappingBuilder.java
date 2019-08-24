@@ -52,7 +52,9 @@ public interface IFluentEntityMappingBuilder<C, I> extends IFluentEmbeddableMapp
 	IFluentEntityMappingBuilder<C, I> columnNamingStrategy(ColumnNamingStrategy columnNamingStrategy);
 	
 	/**
-	 * Declares the inherited mapping. Id policy must be defined in the given strategy.
+	 * Declares the inherited mapping.
+	 * Id policy must be defined in the given strategy, not by current configuration : if id policy is also / only defined by the current builder,
+	 * an exception will be thrown at build time.
 	 * 
 	 * @param mappingConfiguration a mapping configuration of a super type of the current mapped type
 	 * @return a enhanced version of {@code this} so one can add set options to the relationship or add mapping to {@code this}

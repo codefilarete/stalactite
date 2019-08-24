@@ -19,6 +19,10 @@ import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
 
 /**
+ * Tranformer of a graph of joins to a graph of entities.
+ * 
+ * Non Thread-safe : contains a cache of bean being loaded.
+ * 
  * @param <T> type of generated beans
  * @author Guillaume Mary
  */
@@ -31,17 +35,19 @@ public class StrategyJoinsRowTransformer<T> {
 	 */
 	public static final Function<Column, String> DEFAULT_ALIAS_PROVIDER = Column::getAlias;
 	
-	private final StrategyJoins<T> rootStrategyJoins;
+	private final StrategyJoins<T, ?> rootStrategyJoins;
 	private Map<Class, Map<Object /* identifier */, Object /* entity */>> entityCache = new HashMap<>();
 	private Function<Column, String> aliasProvider = DEFAULT_ALIAS_PROVIDER;
 	
-	public StrategyJoinsRowTransformer(StrategyJoins<T> rootStrategyJoins) {
+	public StrategyJoinsRowTransformer(StrategyJoins<T, ?> rootStrategyJoins) {
 		this.rootStrategyJoins = rootStrategyJoins;
 	}
 	
 	/**
-	 * Give an entity pool (cache ?) to this instance, to be used for filling relations by getting them from it instead of creating clones.
+	 * Gives an entity cache to this instance, the cache is used for filling relations by getting them from it instead of creating clones.
 	 * Will be filled by newly created entity.
+	 * Should be used before calling {@link #transform(Iterable, int)}.
+	 * Can be used to set a bigger cache coming from a wider scope. 
 	 * 
 	 * @param entityCache the Maps of entities per identifier, mapped by Class persistence 
 	 */
@@ -82,7 +88,7 @@ public class StrategyJoinsRowTransformer<T> {
 			while (!stack.isEmpty()) {
 				
 				// treating the current depth
-				StrategyJoins<Object> strategyJoins = stack.poll();
+				StrategyJoins<Object, Object> strategyJoins = stack.poll();
 				ClassMappingStrategy<Object, Object, Table> leftStrategy = strategyJoins.getStrategy();
 				ToBeanRowTransformer mainRowTransformer = beanTransformerCache.computeIfAbsent(leftStrategy, s -> s.getRowTransformer().copyWithAliases(aliasProvider));
 				Object identifier = leftStrategy.getIdMappingStrategy().getIdentifierAssembler().assemble(row, columnedRow);

@@ -47,7 +47,7 @@ public class JoinedStrategiesSelect<C, I, T extends Table> {
 	/** Will give the {@link ParameterBinder} for the reading of the final select clause */
 	private final ParameterBinderProvider<Column> parameterBinderProvider;
 	/** The very first {@link ClassMappingStrategy} on which other strategies will be joined */
-	private final StrategyJoins<C> root;
+	private final StrategyJoins<C, I> root;
 	/**
 	 * A mapping between a name and join to help finding them when we want to join them with a new one
 	 * @see #add(String, ClassMappingStrategy, Column, Column, boolean, BeanRelationFixer) 
@@ -96,7 +96,7 @@ public class JoinedStrategiesSelect<C, I, T extends Table> {
 	 * Give the root of all joins needed by the strategy to build its entity graph at load time and persist it.  
 	 * @return a {@link StrategyJoins} which is the root of the graph, which {@link ClassMappingStrategy} is the one given at construction time of this instance
 	 */
-	public StrategyJoins<C> getJoinsRoot() {
+	public StrategyJoins<C, I> getJoinsRoot() {
 		return root;
 	}
 	
@@ -206,20 +206,20 @@ public class JoinedStrategiesSelect<C, I, T extends Table> {
 	 *
 	 * @param <I> the type of the entity mapped by the {@link ClassMappingStrategy}
 	 */
-	public static class StrategyJoins<I> {
+	public static class StrategyJoins<E, I> {
 		/** The left part of the join */
-		private final ClassMappingStrategy<I, Object, ? extends Table> strategy;
+		private final ClassMappingStrategy<E, ?, ? extends Table> strategy;
 		/** Joins */
 		private final List<Join> joins = new ArrayList<>();
 		
 		private String tableAlias;
 		
-		<T extends Table<T>> StrategyJoins(ClassMappingStrategy<I, ?, T> strategy) {
+		StrategyJoins(ClassMappingStrategy<E, ?, ? extends Table> strategy) {
 			this(strategy, strategy.getTargetTable().getAbsoluteName());
 		}
 		
-		<T extends Table<T>> StrategyJoins(ClassMappingStrategy<I, ?, T> strategy, String absoluteName) {
-			this.strategy = (ClassMappingStrategy<I, Object, ? extends Table>) strategy;
+		StrategyJoins(ClassMappingStrategy<E, ?, ? extends Table> strategy, String absoluteName) {
+			this.strategy = strategy;
 			this.tableAlias = absoluteName;
 		}
 		
@@ -276,7 +276,7 @@ public class JoinedStrategiesSelect<C, I, T extends Table> {
 		/** The "right part" of a join between between 2 {@link ClassMappingStrategy} */
 		public static class Join<I, O> {
 			/** The right part of the join */
-			private final StrategyJoins<O> strategy;
+			private final StrategyJoins<O, I> strategy;
 			/** Join column with previous strategy table */
 			private final Column leftJoinColumn;
 			/** Join column with next strategy table */
@@ -286,7 +286,7 @@ public class JoinedStrategiesSelect<C, I, T extends Table> {
 			/** Relation fixer for instances of this strategy on owning strategy entities */
 			private final BeanRelationFixer beanRelationFixer;
 			
-			private Join(ClassMappingStrategy<O, ?, Table> strategy, Column leftJoinColumn, Column rightJoinColumn, boolean outer, BeanRelationFixer beanRelationFixer) {
+			private Join(ClassMappingStrategy<O, ?, ? extends Table> strategy, Column leftJoinColumn, Column rightJoinColumn, boolean outer, BeanRelationFixer beanRelationFixer) {
 				this.strategy = new StrategyJoins<>(strategy);
 				this.leftJoinColumn = leftJoinColumn;
 				this.rightJoinColumn = rightJoinColumn;
@@ -294,7 +294,7 @@ public class JoinedStrategiesSelect<C, I, T extends Table> {
 				this.beanRelationFixer = beanRelationFixer;
 			}
 			
-			StrategyJoins<O> getStrategy() {
+			StrategyJoins<O, I> getStrategy() {
 				return strategy;
 			}
 			

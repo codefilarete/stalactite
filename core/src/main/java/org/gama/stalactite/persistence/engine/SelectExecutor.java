@@ -89,7 +89,7 @@ public class SelectExecutor<C, I, T extends Table> extends DMLExecutor<C, I, T> 
 			closeableOperation.setValues(primaryKeyValues);
 			return transform(closeableOperation, primaryKeyValues.size());
 		} catch (RuntimeException e) {
-			throw new SQLExecutionException(e);
+			throw new SQLExecutionException(operation.getSqlStatement().getSQL(), e);
 		}
 	}
 	

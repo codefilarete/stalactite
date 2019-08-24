@@ -246,7 +246,7 @@ public class Persister<C, I, T extends Table> {
 	 * If one already has a copy of the "unmodified" instance, you may prefer to direcly use {@link #update(Object, Object, boolean)}
 	 *
 	 * @param entity an entity, none-persistent or already-persisted
-	 * @return number of rows inserted and updated (relation-less counter) (maximum is 1, may be 0 if no modifications were found between memory and database)
+	 * @return number of rows inserted (relation-less counter) (maximum is argument size)
 	 */
 	public int insert(C entity) {
 		return insert(Collections.singletonList(entity));
@@ -301,6 +301,7 @@ public class Persister<C, I, T extends Table> {
 	 * @param modified the supposing entity that has differences againt {@code unmodified} entity
 	 * @param unmodified the "original" (freshly loaded from database ?) entity
 	 * @param allColumnsStatement true if all columns must be in the SQL statement, false if only modified ones should be in
+	 * @return number of rows updated (relation-less counter) (maximum is 1, may be 0 if row wasn't found in database)
 	 */
 	public int update(C modified, C unmodified, boolean allColumnsStatement) {
 		return update(Collections.singletonList(new Duo<>(modified, unmodified)), allColumnsStatement);
@@ -313,6 +314,7 @@ public class Persister<C, I, T extends Table> {
 	 * 
 	 * @param differencesIterable pairs of modified-unmodified instances, used to compute differences side by side
 	 * @param allColumnsStatement true if all columns must be in the SQL statement, false if only modified ones should be in
+	 * @return number of rows updated (relation-less counter) (maximum is argument size, may be 0 if row wasn't found in database)
 	 */
 	public int update(Iterable<? extends Duo<? extends C, ? extends C>> differencesIterable, boolean allColumnsStatement) {
 		Iterable<UpdatePayload<C, T>> updatePayloads = UpdateListener.computePayloads(differencesIterable, allColumnsStatement, getMappingStrategy());

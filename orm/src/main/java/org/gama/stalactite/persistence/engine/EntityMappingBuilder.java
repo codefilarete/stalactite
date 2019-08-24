@@ -90,7 +90,7 @@ class EntityMappingBuilder<C, I> {
 	 * Looks for identifier as well as its inserter, throwing exception if configuration is not coherent
 	 *
 	 * @return a couple that defines identification of the mapping
-	 * @param dialect
+	 * @param dialect database dialect to deal with generated keys reading which differs from database vendor to database vendor
 	 */
 	private Duo<IReversibleAccessor<C, I>, IdentifierInsertionManager<C, I>> determineIdentification(Dialect dialect) {
 		if (configurationSupport.getIdentifierAccessor() != null && configurationSupport.getInheritanceConfiguration() != null) {
@@ -522,8 +522,8 @@ class EntityMappingBuilder<C, I> {
 					persistenceContext.getPersister(cascadeMany.getTargetMappingConfiguration().getPersistedClass()).getMappingStrategy());
 			registerRelations(persistenceContext, entityGraphNode, cascadeMany.getTargetMappingConfiguration());
 		});
-		List<CascadeOne> oneToOnes1 = configurationSupport.getOneToOnes();
-		oneToOnes1.forEach((CascadeOne cascadeOne) -> {
+		List<CascadeOne> oneToOnes = configurationSupport.getOneToOnes();
+		oneToOnes.forEach((CascadeOne cascadeOne) -> {
 			EntityGraphNode entityGraphNode = root.registerRelation(cascadeOne.getTargetProvider(),
 					persistenceContext.getPersister(cascadeOne.getTargetMappingConfiguration().getPersistedClass()).getMappingStrategy());
 			registerRelations(persistenceContext, entityGraphNode, cascadeOne.getTargetMappingConfiguration());
