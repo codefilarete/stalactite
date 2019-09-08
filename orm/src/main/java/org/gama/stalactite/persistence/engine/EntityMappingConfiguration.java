@@ -3,6 +3,7 @@ package org.gama.stalactite.persistence.engine;
 import java.util.Collection;
 import java.util.List;
 
+import org.gama.lang.collection.ReadOnlyIterator;
 import org.gama.reflection.IReversibleAccessor;
 import org.gama.stalactite.persistence.engine.ColumnOptions.IdentifierPolicy;
 import org.gama.stalactite.persistence.engine.builder.CascadeMany;
@@ -45,4 +46,27 @@ public interface EntityMappingConfiguration<C, I> {
 	ColumnNamingStrategy getJoinColumnNamingStrategy();
 	
 	PolymorphismPolicy getPolymorphismPolicy();
+	
+	/**
+	 * @return an iterable for all inheritance configurations, including this
+	 */
+	default Iterable<EntityMappingConfiguration> inheritanceIterable() {
+		
+		return () -> new ReadOnlyIterator<EntityMappingConfiguration>() {
+			
+			private EntityMappingConfiguration next = EntityMappingConfiguration.this;
+			
+			@Override
+			public boolean hasNext() {
+				return next != null;
+			}
+			
+			@Override
+			public EntityMappingConfiguration next() {
+				EntityMappingConfiguration result = this.next;
+				this.next = this.next.getInheritanceConfiguration();
+				return result;
+			}
+		};
+	}
 }

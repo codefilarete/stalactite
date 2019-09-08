@@ -76,7 +76,6 @@ class FluentEntityMappingConfigurationSupportInheritanceTest {
 			
 			Persister<Car, Identifier<Long>, ?> carPersister = entityBuilder(Car.class, LONG_TYPE)
 					.add(Car::getModel)
-					.add(Car::getColor)    // note : we don't need to embed Color because it is defined in the Dialect registry
 					// concrete class defines id
 					.add(Car::getId).identifier(ALREADY_ASSIGNED)
 					.mapSuperClass(MappingEase
@@ -116,7 +115,6 @@ class FluentEntityMappingConfigurationSupportInheritanceTest {
 			
 			Persister<Car, Identifier<Long>, ?> carPersister = entityBuilder(Car.class, LONG_TYPE)
 					.add(Car::getModel)
-					.add(Car::getColor)    // note : we don't need to embed Color because it is defined in the Dialect registry
 					// concrete class defines id
 					.add(Car::getId).identifier(ALREADY_ASSIGNED)
 					.mapSuperClass(MappingEase
@@ -154,7 +152,6 @@ class FluentEntityMappingConfigurationSupportInheritanceTest {
 		void columnNamingStrategyChanged() {
 			Persister<Car, Identifier<Long>, ?> carPersister = entityBuilder(Car.class, LONG_TYPE)
 					.add(Car::getModel)
-					.add(Car::getColor)    // note : we don't need to embed Color because it is defined in the Dialect registry
 					.columnNamingStrategy(accessor -> ColumnNamingStrategy.DEFAULT.giveName(accessor) + "_col")
 					// concrete class defines id
 					.add(Car::getId).identifier(ALREADY_ASSIGNED)
@@ -174,10 +171,10 @@ class FluentEntityMappingConfigurationSupportInheritanceTest {
 			// insert test
 			carPersister.insert(dummyCar);
 			
-			List<Car> allCars = persistenceContext.newQuery("select id_col, model, color from Car", Car.class)
+			List<Car> allCars = persistenceContext.newQuery("select id_col, model_col, color_col from Car", Car.class)
 					.mapKey(Car::new, "id_col", (Class<Identifier<Long>>) (Class) Identifier.class)
-					.map("model", Car::setModel)
-					.map("color", Car::setColor)
+					.map("model_col", Car::setModel)
+					.map("color_col", Car::setColor)
 					.execute();
 			assertEquals(Arrays.asList(dummyCar), allCars);
 			
@@ -187,10 +184,45 @@ class FluentEntityMappingConfigurationSupportInheritanceTest {
 		}
 		
 		@Test
-		void columnNamingStrategyChanged_inBoth() {
+		void columnNamingStrategyChanged_inParent() {
 			Persister<Car, Identifier<Long>, ?> carPersister = entityBuilder(Car.class, LONG_TYPE)
 					.add(Car::getModel)
-					.add(Car::getColor)    // note : we don't need to embed Color because it is defined in the Dialect registry
+					// concrete class defines id
+					.add(Car::getId).identifier(ALREADY_ASSIGNED)
+					.mapSuperClass(MappingEase
+							.embeddableBuilder(Vehicle.class)
+							.add(Vehicle::getColor)
+							.columnNamingStrategy(accessor -> ColumnNamingStrategy.DEFAULT.giveName(accessor) + "_supercol")
+							.getConfiguration())
+					.build(persistenceContext);
+			
+			// DML tests
+			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+			ddlDeployer.deployDDL();
+			
+			Car dummyCar = new Car(1L);
+			dummyCar.setModel("Renault");
+			dummyCar.setColor(new Color(666));
+			
+			// insert test
+			carPersister.insert(dummyCar);
+			
+			List<Car> allCars = persistenceContext.newQuery("select id_supercol, model_supercol, color_supercol from Car", Car.class)
+					.mapKey(Car::new, "id_supercol", (Class<Identifier<Long>>) (Class) Identifier.class)
+					.map("model_supercol", Car::setModel)
+					.map("color_supercol", Car::setColor)
+					.execute();
+			assertEquals(Arrays.asList(dummyCar), allCars);
+			
+			// select test
+			Car loadedCar = carPersister.select(new PersistedIdentifier<>(1L));
+			assertEquals(dummyCar, loadedCar);
+		}
+		
+		@Test
+		void columnNamingStrategyChanged_inBoth_lowestTakesPriority() {
+			Persister<Car, Identifier<Long>, ?> carPersister = entityBuilder(Car.class, LONG_TYPE)
+					.add(Car::getModel)
 					.columnNamingStrategy(accessor -> ColumnNamingStrategy.DEFAULT.giveName(accessor) + "_col")
 					// concrete class defines id
 					.add(Car::getId).identifier(ALREADY_ASSIGNED)
@@ -211,10 +243,10 @@ class FluentEntityMappingConfigurationSupportInheritanceTest {
 			// insert test
 			carPersister.insert(dummyCar);
 			
-			List<Car> allCars = persistenceContext.newQuery("select id_col, model, color_superCol from Car", Car.class)
+			List<Car> allCars = persistenceContext.newQuery("select id_col, model_col, color_col from Car", Car.class)
 					.mapKey(Car::new, "id_col", (Class<Identifier<Long>>) (Class) Identifier.class)
-					.map("model", Car::setModel)
-					.map("color_superCol", Car::setColor)
+					.map("model_col", Car::setModel)
+					.map("color_col", Car::setColor)
 					.execute();
 			assertEquals(Arrays.asList(dummyCar), allCars);
 			

@@ -210,8 +210,10 @@ public class FluentEntityMappingConfigurationSupportTest {
 	public void add_mappingDefinedTwiceByMethod_throwsException() {
 		assertEquals("Mapping is already defined by method Toto::getName",
 				assertThrows(MappingConfigurationException.class, () -> MappingEase.entityBuilder(Toto.class, StatefullIdentifier.class)
+						.add(Toto::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 						.add(Toto::getName)
-						.add(Toto::setName))
+						.add(Toto::setName)
+						.build(persistenceContext))
 						.getMessage());
 	}
 	
@@ -219,8 +221,10 @@ public class FluentEntityMappingConfigurationSupportTest {
 	public void add_mappingDefinedTwiceByColumn_throwsException() {
 		assertEquals("Mapping is already defined for column xyz",
 				assertThrows(MappingConfigurationException.class, () -> MappingEase.entityBuilder(Toto.class, StatefullIdentifier.class)
+						.add(Toto::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 						.add(Toto::getName, "xyz")
-						.add(Toto::getFirstName, "xyz"))
+						.add(Toto::getFirstName, "xyz")
+						.build(persistenceContext))
 						.getMessage());
 	}
 	

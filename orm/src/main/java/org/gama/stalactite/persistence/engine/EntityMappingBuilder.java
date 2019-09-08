@@ -1,5 +1,6 @@
 package org.gama.stalactite.persistence.engine;
 
+import javax.annotation.Nonnull;
 import java.lang.reflect.Method;
 import java.sql.ResultSet;
 import java.util.ArrayList;
@@ -26,6 +27,7 @@ import org.gama.reflection.ValueAccessPoint;
 import org.gama.reflection.ValueAccessPointSet;
 import org.gama.stalactite.persistence.engine.ColumnOptions.BeforeInsertIdentifierPolicy;
 import org.gama.stalactite.persistence.engine.ColumnOptions.IdentifierPolicy;
+import org.gama.stalactite.persistence.engine.EmbeddableMappingBuilder.ColumnNameProvider;
 import org.gama.stalactite.persistence.engine.EmbeddableMappingConfiguration.Linkage;
 import org.gama.stalactite.persistence.engine.FluentEmbeddableMappingConfigurationSupport.Inset;
 import org.gama.stalactite.persistence.engine.FluentEntityMappingConfigurationSupport.EntityLinkage;
@@ -59,135 +61,10 @@ import static org.gama.lang.collection.Iterables.collect;
  * 
  * @author Guillaume Mary
  */
-class EntityMappingBuilder<C, I> {
-	
-	/**
-	 * Tracker of entities that are mapped along the process. Used for column naming : columns that target an entity may use a different
-	 * strategy than common properties. And in particular for reverse column naming or bidirectional relation. 
-	 * Works because constructor adds its entity class to it, and since sub-related entities are built first (in a kind of recursive way),
-	 * upper ones know them.
-	 */
-	private static final ThreadLocal<Set<Class>> ENTITY_CANDIDATES = ThreadLocal.withInitial(HashSet::new);
-	
-	private final EntityMappingConfiguration<C, I> configurationSupport;
-	
-	private final MethodReferenceCapturer methodSpy;
-	
-	/**
-	 * Internal marker for this instance to cleanup {@link #ENTITY_CANDIDATES}. Made because multiple {@link EntityMappingBuilder} are recursively
-	 * created to build an aggregate.
-	 */
-	private final boolean isInitiator;
+class EntityMappingBuilder<C, I> extends AbstractEntityMappingBuilder<C, I> {
 	
 	EntityMappingBuilder(EntityMappingConfiguration<C, I> entityBuilderSupport, MethodReferenceCapturer methodSpy) {
-		this.configurationSupport = entityBuilderSupport;
-		this.methodSpy = methodSpy;
-		this.isInitiator = ENTITY_CANDIDATES.get().isEmpty();
-		ENTITY_CANDIDATES.get().add(entityBuilderSupport.getPersistedClass());
-	}
-	
-	/**
-	 * Looks for identifier as well as its inserter, throwing exception if configuration is not coherent
-	 *
-	 * @return a couple that defines identification of the mapping
-	 * @param dialect database dialect to deal with generated keys reading which differs from database vendor to database vendor
-	 */
-	private Duo<IReversibleAccessor<C, I>, IdentifierInsertionManager<C, I>> determineIdentification(Dialect dialect) {
-		if (configurationSupport.getIdentifierAccessor() != null && configurationSupport.getInheritanceConfiguration() != null) {
-			throw new MappingConfigurationException("Defining an identifier while inheritance is used is not supported");
-		}
-		IReversibleAccessor<? super C, I> identifierAccessor = null;
-		IdentifierInsertionManager<? super C, I> identifierInsertionManager = null;
-		if (configurationSupport.getInheritanceConfiguration() == null) {
-			identifierAccessor = configurationSupport.getIdentifierAccessor();
-			
-			if (identifierAccessor == null) {
-				// no ClassMappingStratey in hierarchy, so we can't get an identifier from it => impossible
-				throw newMissingIdentificationException();
-			}
-			identifierInsertionManager = buildIdentifierInsertionManager(dialect, identifierAccessor, configurationSupport.getIdentifierPolicy(),
-					configurationSupport.getPropertiesMapping().getPropertiesMapping());
-		} else {
-			// mapping with inheritance : identifier is expected to be defined on it
-			// at least one parent ClassMappingStrategy exists, it necessarily defines an identifier : we stop at the very first one
-			EntityMappingConfiguration<? super C, I> pawn = configurationSupport.getInheritanceConfiguration();
-			while (identifierAccessor == null && pawn != null) {
-				identifierAccessor = pawn.getIdentifierAccessor();
-				if (identifierAccessor != null) {
-					identifierInsertionManager = buildIdentifierInsertionManager(dialect, identifierAccessor, pawn.getIdentifierPolicy(),
-							pawn.getPropertiesMapping().getPropertiesMapping());
-				}
-				pawn = pawn.getInheritanceConfiguration();
-			}
-			if (identifierAccessor == null) {
-				// no ClassMappingStratey in hierarchy, so we can't get an identifier from it => impossible
-				throw newMissingIdentificationException();
-			}
-		}
-		
-		return new Duo(identifierAccessor, identifierInsertionManager);
-	}
-	
-	private UnsupportedOperationException newMissingIdentificationException() {
-		SerializableBiFunction<ColumnOptions, IdentifierPolicy, ColumnOptions> identifierMethodReference = ColumnOptions::identifier;
-		Method identifierSetter = this.methodSpy.findMethod(identifierMethodReference);
-		return new UnsupportedOperationException("Identifier is not defined for " + Reflections.toString(configurationSupport.getPersistedClass())
-				+ ", please add one throught " + Reflections.toString(identifierSetter));
-	}
-	
-	private IdentifierInsertionManager<? super C, I> buildIdentifierInsertionManager(Dialect dialect, IReversibleAccessor<? super C, I> identifierAccessor,
-																			 IdentifierPolicy identifierPolicy, List<Linkage> propertiesMapping) {
-		IdentifierInsertionManager<? super C, I> identifierInsertionManager;
-		MemberDefinition methodReference = MemberDefinition.giveMemberDefinition(identifierAccessor);
-		Class<I> identifierType = methodReference.getMemberType();
-		if (identifierPolicy == IdentifierPolicy.ALREADY_ASSIGNED) {
-			if (Identified.class.isAssignableFrom(methodReference.getDeclaringClass()) && Identifier.class.isAssignableFrom(identifierType)) {
-				identifierInsertionManager = new IdentifiedIdentifierManager<>(identifierType);
-			} else {
-				throw new NotYetSupportedOperationException(
-						"Already-assigned identifier policy is only supported with entities that implement " + Reflections.toString(Identified.class));
-			}
-		} else if (identifierPolicy == IdentifierPolicy.AFTER_INSERT) {
-			// NB: we can use equals(..) here because Linkage was created from accessor information, no need to create a MemberDefinition for comparison
-			Optional<Linkage> identifierLinkage = propertiesMapping.stream().filter(
-					linkage -> linkage.getAccessor().equals(identifierAccessor)).findFirst();
-			if (!identifierLinkage.isPresent()) {
-				throw new IllegalStateException("Identifier accessor expected to be found in mapping but wasn't. Identification cannot be built.");
-			}
-			identifierInsertionManager = new JDBCGeneratedKeysIdentifierManager<>(
-					new SinglePropertyIdAccessor<>(identifierAccessor),
-					dialect.buildGeneratedKeysReader(identifierLinkage.get().getColumnName(), identifierType),
-					identifierType
-			);
-		} else if (identifierPolicy instanceof ColumnOptions.BeforeInsertIdentifierPolicy) {
-			// NB: we can use equals(..) here because Linkage was created from accessor information, no need to create a MemberDefinition for comparison
-			Optional<Linkage> identifierLinkage = propertiesMapping.stream().filter(
-					linkage -> linkage.getAccessor().equals(identifierAccessor)).findFirst();
-			if (!identifierLinkage.isPresent()) {
-				throw new IllegalStateException("Identifier accessor expected to be found in mapping but wasn't. Identification cannot be built.");
-			}
-			identifierInsertionManager = new BeforeInsertIdentifierManager<>(
-					new SinglePropertyIdAccessor<>(identifierAccessor), ((BeforeInsertIdentifierPolicy<I>) identifierPolicy).getIdentifierProvider(), identifierType);
-		} else {
-			throw new UnsupportedOperationException(identifierPolicy + " is not supported");
-		}
-		return identifierInsertionManager;
-	}
-	
-	/**
-	 * Identifier manager dedicated to {@link Identified} entities
-	 * @param <C> entity type
-	 * @param <I> identifier type
-	 */
-	private static class IdentifiedIdentifierManager<C, I> extends AlreadyAssignedIdentifierManager<C, I> {
-		public IdentifiedIdentifierManager(Class<I> identifierType) {
-			super(identifierType);
-		}
-		
-		@Override
-		public void setPersistedFlag(C e) {
-			((Identified) e).getId().setPersisted();
-		}
+		super(entityBuilderSupport, methodSpy);
 	}
 	
 	/**
@@ -209,23 +86,23 @@ class EntityMappingBuilder<C, I> {
 	 * @param persistenceContext the {@link PersistenceContext} in which the resulting {@link Persister} will be put, also needed for Dialect purpose 
 	 * @return the built {@link Persister}
 	 */
-	public <T extends Table<?>> JoinedTablesPersister<C, I, T> build(PersistenceContext persistenceContext, @javax.annotation.Nullable T table) {
+	@Override
+	protected <T extends Table<?>> JoinedTablesPersister<C, I, T> doBuild(PersistenceContext persistenceContext, @javax.annotation.Nullable T table) {
 		// Very first thing, determine identifier management and check some configuration
-		Duo<IReversibleAccessor<C, I>, IdentifierInsertionManager<C, I>> identification = determineIdentification(persistenceContext.getDialect());
-		
 		// Table must be created before giving it to further methods because it is mandatory for them
 		if (table == null) {
 			table = (T) nullable(giveTableUsedInMapping()).getOr(() -> new Table(configurationSupport.getTableNamingStrategy().giveName(configurationSupport.getPersistedClass())));
-			
-			// if there's no inheritance we can create the primary key of the table
-			if (configurationSupport.getInheritanceConfiguration() == null) {
-				MemberDefinition identifierDefinition = MemberDefinition.giveMemberDefinition(configurationSupport.getIdentifierAccessor());
-				table.addColumn(configurationSupport.getPropertiesMapping().getColumnNamingStrategy().giveName(identifierDefinition), identifierDefinition.getMemberType()).primaryKey();
-				if (configurationSupport.getIdentifierPolicy() == IdentifierPolicy.AFTER_INSERT) {
-					table.getPrimaryKey().getColumns().forEach((Column c) -> c.setAutoGenerated(true));
-				}
-			}
 		}
+		
+		IdentificationDeterminer<C, I> identificationDeterminer = new IdentificationDeterminer<>(
+				configurationSupport.getInheritanceConfiguration(),
+				configurationSupport.getIdentifierAccessor(),
+				configurationSupport.getIdentifierPolicy(),
+				configurationSupport.getPersistedClass(),
+				columnNameProvider,
+				configurationSupport.getPropertiesMapping().getPropertiesMapping(),
+				this.methodSpy);
+		Duo<IReversibleAccessor<C, I>, IdentifierInsertionManager<C, I>> identification = identificationDeterminer.determineIdentification(persistenceContext.getDialect(), table);
 		
 		ClassMappingStrategy<? super C, I, Table> inheritanceMappingStrategy = null;
 		if (configurationSupport.getInheritanceConfiguration() != null) {
@@ -243,19 +120,15 @@ class EntityMappingBuilder<C, I> {
 		
 		EntityDecoratedEmbeddableMappingBuilder<C> embeddableMappingBuilder = new EntityDecoratedEmbeddableMappingBuilder<>(
 				configurationSupport.getPropertiesMapping(),
+				columnNameProvider, 
 				configurationSupport.getOneToOnes(),
-				inheritanceMappingStrategy,
-				configurationSupport.getJoinColumnNamingStrategy());
+				inheritanceMappingStrategy);
 		
 		JoinedTablesPersister<C, I, T> result = configureRelations(persistenceContext,
 				embeddableMappingBuilder.buildClassMappingStrategy(persistenceContext.getDialect(), table, identification));
 		
 		handleVersioningStrategy(result);
 		
-		// cleaning resources
-		if (this.isInitiator) {
-			ENTITY_CANDIDATES.remove();
-		}
 		return result;
 	}
 	
@@ -341,20 +214,18 @@ class EntityMappingBuilder<C, I> {
 	 * @param <C>
 	 * @see #buildClassMappingStrategy(Dialect, Table, Duo) 
 	 */
-	private static class EntityDecoratedEmbeddableMappingBuilder<C> extends EmbeddableMappingBuilder<C> {
+	static class EntityDecoratedEmbeddableMappingBuilder<C> extends EmbeddableMappingBuilder<C> {
 		
 		private final List<CascadeOne<C, ?, ?>> oneToOnes;
 		private final ClassMappingStrategy<? super C, ?, Table> inheritanceMappingStrategy;
 		/** Keep track of oneToOne properties to be removed of direct mapping */
 		private final ValueAccessPointSet oneToOnePropertiesOwnedByReverseSide;
 		
-		private final ColumnNamingStrategy joinColumnNamingStrategy;
-		
-		public EntityDecoratedEmbeddableMappingBuilder(EmbeddableMappingConfiguration<C> propertiesMapping,
+		EntityDecoratedEmbeddableMappingBuilder(EmbeddableMappingConfiguration<C> propertiesMapping,
+													   ColumnNameProvider columnNameProvider,
 													   List<CascadeOne<C, ?, ?>> oneToOnes,
-													   @javax.annotation.Nullable ClassMappingStrategy<? super C, ?, Table> inheritanceMappingStrategy,
-													   ColumnNamingStrategy joinColumnNamingStrategy) {
-			super(propertiesMapping);
+													   @javax.annotation.Nullable ClassMappingStrategy<? super C, ?, Table> inheritanceMappingStrategy) {
+			super(propertiesMapping, columnNameProvider);
 			this.oneToOnes = oneToOnes;
 			this.inheritanceMappingStrategy = inheritanceMappingStrategy;
 			// CascadeOne.getTargetProvider() returns a method reference that can't be compared to PropertyAccessor (of Linkage.getAccessor
@@ -364,7 +235,6 @@ class EntityMappingBuilder<C, I> {
 					CascadeOne::isOwnedByReverseSide,
 					CascadeOne::getTargetProvider,
 					ValueAccessPointSet::new);
-			this.joinColumnNamingStrategy = joinColumnNamingStrategy;
 		}
 		
 		/** Overriden to take property definition by column into account */
@@ -440,16 +310,6 @@ class EntityMappingBuilder<C, I> {
 			}
 			
 			return column;
-		}
-		
-		/** Overriden to invoke join column naming strategy if necessary */
-		@Override
-		protected String giveColumnName(Linkage linkage) {
-			if (ENTITY_CANDIDATES.get().contains(linkage.getColumnType())) {
-				return this.joinColumnNamingStrategy.giveName(MemberDefinition.giveMemberDefinition(linkage.getAccessor()));
-			} else {
-				return super.giveColumnName(linkage);
-			}
 		}
 		
 		@Override
@@ -528,5 +388,166 @@ class EntityMappingBuilder<C, I> {
 					persistenceContext.getPersister(cascadeOne.getTargetMappingConfiguration().getPersistedClass()).getMappingStrategy());
 			registerRelations(persistenceContext, entityGraphNode, cascadeOne.getTargetMappingConfiguration());
 		});
+	}
+	
+	/**
+	 * Identifier manager dedicated to {@link Identified} entities
+	 * @param <C> entity type
+	 * @param <I> identifier type
+	 */
+	private static class IdentifiedIdentifierManager<C, I> extends AlreadyAssignedIdentifierManager<C, I> {
+		public IdentifiedIdentifierManager(Class<I> identifierType) {
+			super(identifierType);
+		}
+		
+		@Override
+		public void setPersistedFlag(C e) {
+			((Identified) e).getId().setPersisted();
+		}
+	}
+	
+	/**
+	 * Local class aimed at helping to determine identifier elements
+	 *
+	 * @param <C> entity type
+	 * @param <I> identifier type
+	 */
+	private static class IdentificationDeterminer<C, I> {
+		
+		private final EntityMappingConfiguration<? super C, I> inheritanceConfiguration;
+		private final IReversibleAccessor<C, I> identifierAccessor;
+		private final IdentifierPolicy identifierPolicy;
+		private final Class<C> persistedClass;
+		private final ColumnNameProvider columnNameProvider;
+		private final List<Linkage> propertiesMapping;
+		private final MethodReferenceCapturer methodSpy;
+		
+		public IdentificationDeterminer(EntityMappingConfiguration<? super C, I> inheritanceConfiguration,
+										IReversibleAccessor<C, I> identifierAccessor,
+										IdentifierPolicy identifierPolicy, Class<C> persistedClass,
+										ColumnNameProvider columnNameProvider,
+										List<Linkage> propertiesMapping,
+										MethodReferenceCapturer methodSpy) {
+			this.inheritanceConfiguration = inheritanceConfiguration;
+			this.identifierAccessor = identifierAccessor;
+			this.identifierPolicy = identifierPolicy;
+			this.persistedClass = persistedClass;
+			this.columnNameProvider = columnNameProvider;
+			this.propertiesMapping = propertiesMapping;
+			this.methodSpy = methodSpy;
+		}
+		
+		/**
+		 * Looks for identifier as well as its inserter, throwing exception if configuration is not coherent
+		 *
+		 * @return a couple that defines identification of the mapping
+		 * @param dialect database dialect to deal with generated keys reading which differs from database vendor to database vendor
+		 */
+		public <T extends Table<?>> Duo<IReversibleAccessor<C, I>, IdentifierInsertionManager<C, I>> determineIdentification(Dialect dialect, T table) {
+			if (identifierAccessor != null && inheritanceConfiguration != null) {
+				throw new MappingConfigurationException("Defining an identifier while inheritance is used is not supported");
+			}
+			
+			IReversibleAccessor<? super C, I> localIdentifierAccessor = null;
+			IdentifierInsertionManager<? super C, I> identifierInsertionManager = null;
+			if (inheritanceConfiguration == null) {
+				localIdentifierAccessor = this.identifierAccessor;
+				if (localIdentifierAccessor == null) {
+					// no ClassMappingStratey in hierarchy, so we can't get an identifier from it => impossible
+					throw newMissingIdentificationException();
+				}
+				
+				addPrimaryKey(table);
+				
+				identifierInsertionManager = buildIdentifierInsertionManager(dialect, localIdentifierAccessor, identifierPolicy, propertiesMapping);
+			} else {
+				// mapping with inheritance : identifier is expected to be defined on it
+				// at least one parent ClassMappingStrategy exists, it necessarily defines an identifier : we stop at the very first one
+				EntityMappingConfiguration<? super C, I> pawn = inheritanceConfiguration;
+				while (localIdentifierAccessor == null && pawn != null) {
+					localIdentifierAccessor = pawn.getIdentifierAccessor();
+					if (localIdentifierAccessor != null) {
+						identifierInsertionManager = buildIdentifierInsertionManager(dialect, localIdentifierAccessor, pawn.getIdentifierPolicy(),
+								pawn.getPropertiesMapping().getPropertiesMapping());
+					}
+					pawn = pawn.getInheritanceConfiguration();
+				}
+				if (localIdentifierAccessor == null) {
+					// no ClassMappingStratey in hierarchy, so we can't get an identifier from it => impossible
+					throw newMissingIdentificationException();
+				}
+			}
+			
+			return new Duo(localIdentifierAccessor, identifierInsertionManager);
+		}
+		
+		/**
+		 * Adds primary key to given {@link Table}. Primary key information are took on internal configuration
+		 *
+		 * @param table the {@link Table} to add primary key to
+		 * @param <T> fine-grained table type
+		 */
+		private <T extends Table<?>> void addPrimaryKey(T table) {
+			String primaryKeyColumnName = giveColumnName(identifierAccessor);
+			MemberDefinition identifierDefinition = MemberDefinition.giveMemberDefinition(identifierAccessor);
+			table.addColumn(primaryKeyColumnName, identifierDefinition.getMemberType()).primaryKey();
+			if (identifierPolicy == IdentifierPolicy.AFTER_INSERT) {
+				table.getPrimaryKey().getColumns().forEach((Column c) -> c.setAutoGenerated(true));
+			}
+		}
+		
+		private UnsupportedOperationException newMissingIdentificationException() {
+			SerializableBiFunction<ColumnOptions, IdentifierPolicy, ColumnOptions> identifierMethodReference = ColumnOptions::identifier;
+			Method identifierSetter = this.methodSpy.findMethod(identifierMethodReference);
+			return new UnsupportedOperationException("Identifier is not defined for " + Reflections.toString(persistedClass)
+					+ ", please add one throught " + Reflections.toString(identifierSetter));
+		}
+		
+		private IdentifierInsertionManager<? super C, I> buildIdentifierInsertionManager(Dialect dialect, IReversibleAccessor<? super C, I> identifierAccessor,
+																						 IdentifierPolicy identifierPolicy, List<Linkage> propertiesMapping) {
+			IdentifierInsertionManager<? super C, I> identifierInsertionManager;
+			MemberDefinition methodReference = MemberDefinition.giveMemberDefinition(identifierAccessor);
+			Class<I> identifierType = methodReference.getMemberType();
+			if (identifierPolicy == IdentifierPolicy.ALREADY_ASSIGNED) {
+				if (Identified.class.isAssignableFrom(methodReference.getDeclaringClass()) && Identifier.class.isAssignableFrom(identifierType)) {
+					identifierInsertionManager = new IdentifiedIdentifierManager<>(identifierType);
+				} else {
+					throw new NotYetSupportedOperationException(
+							"Already-assigned identifier policy is only supported with entities that implement " + Reflections.toString(Identified.class));
+				}
+			} else if (identifierPolicy == IdentifierPolicy.AFTER_INSERT) {
+				Linkage identifierLinkage = assertIdentifierIsDefined(identifierAccessor, propertiesMapping);
+				identifierInsertionManager = new JDBCGeneratedKeysIdentifierManager<>(
+						new SinglePropertyIdAccessor<>(identifierAccessor),
+						dialect.buildGeneratedKeysReader(giveColumnName(identifierLinkage.getAccessor()), identifierType),
+						identifierType
+				);
+			} else if (identifierPolicy instanceof ColumnOptions.BeforeInsertIdentifierPolicy) {
+				// NB: we can use equals(..) here because Linkage was created from accessor information, no need to create a MemberDefinition for comparison
+				Linkage identifierLinkage = assertIdentifierIsDefined(identifierAccessor, propertiesMapping);
+				identifierInsertionManager = new BeforeInsertIdentifierManager<>(
+						new SinglePropertyIdAccessor<>(identifierAccessor), ((BeforeInsertIdentifierPolicy<I>) identifierPolicy).getIdentifierProvider(), identifierType);
+			} else {
+				throw new UnsupportedOperationException(identifierPolicy + " is not supported");
+			}
+			return identifierInsertionManager;
+		}
+		
+		@Nonnull
+		private Linkage assertIdentifierIsDefined(IReversibleAccessor<? super C, I> identifierAccessor, List<Linkage> propertiesMapping) {
+			// NB: we can use equals(..) here because Linkage was created from accessor information, no need to create a MemberDefinition for 
+			// comparison
+			Optional<Linkage> identifierLinkage = propertiesMapping.stream().filter(
+					linkage -> linkage.getAccessor().equals(identifierAccessor)).findFirst();
+			if (!identifierLinkage.isPresent()) {
+				throw new IllegalStateException("Identifier accessor expected to be found in mapping but wasn't. Identification cannot be built.");
+			}
+			return identifierLinkage.get();
+		}
+		
+		private String giveColumnName(IReversibleAccessor accessor) {
+			return columnNameProvider.giveColumnName(MemberDefinition.giveMemberDefinition(accessor));
+		}
+		
 	}
 }

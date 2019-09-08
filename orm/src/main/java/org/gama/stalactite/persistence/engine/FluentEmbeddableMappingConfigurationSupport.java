@@ -7,7 +7,6 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.function.BiConsumer;
-import java.util.function.Predicate;
 
 import org.danekja.java.util.function.serializable.SerializableBiConsumer;
 import org.danekja.java.util.function.serializable.SerializableFunction;
@@ -25,16 +24,14 @@ import org.gama.reflection.MethodReferenceDispatcher;
 import org.gama.reflection.MutatorByMethod;
 import org.gama.reflection.MutatorByMethodReference;
 import org.gama.reflection.PropertyAccessor;
-import org.gama.reflection.ValueAccessPoint;
-import org.gama.reflection.ValueAccessPointComparator;
 import org.gama.reflection.ValueAccessPointMap;
 import org.gama.reflection.ValueAccessPointSet;
-import org.gama.stalactite.sql.binder.ParameterBinder;
-import org.gama.stalactite.sql.binder.ParameterBinderRegistry.EnumBindType;
 import org.gama.stalactite.persistence.mapping.EmbeddedBeanMappingStrategy;
 import org.gama.stalactite.persistence.sql.Dialect;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
+import org.gama.stalactite.sql.binder.ParameterBinder;
+import org.gama.stalactite.sql.binder.ParameterBinderRegistry.EnumBindType;
 
 /**
  * @author Guillaume Mary
@@ -47,7 +44,7 @@ public class FluentEmbeddableMappingConfigurationSupport<C> implements IFluentEm
 	/** Owning class of mapped properties */
 	private final Class<C> classToPersist;
 	
-	private ColumnNamingStrategy columnNamingStrategy = ColumnNamingStrategy.DEFAULT;
+	private ColumnNamingStrategy columnNamingStrategy;
 	
 	/** Mapiing definitions */
 	final List<Linkage> mapping = new ArrayList<>();
@@ -178,39 +175,13 @@ public class FluentEmbeddableMappingConfigurationSupport<C> implements IFluentEm
 	}
 	
 	AbstractLinkage<C> addMapping(IReversibleAccessor<C, ?> propertyAccessor, MemberDefinition memberDefinition, @Nullable String columnName) {
-		assertMappingIsNotAlreadyDefined(columnName, propertyAccessor);
-		String linkageName = columnName;
-		if (columnName == null) {
-			linkageName = giveLinkageName(memberDefinition);
-		}
-		AbstractLinkage<C> linkage = newLinkage(propertyAccessor, memberDefinition.getMemberType(), linkageName);
+		AbstractLinkage<C> linkage = newLinkage(propertyAccessor, memberDefinition.getMemberType(), columnName);
 		this.mapping.add(linkage);
 		return linkage;
 	}
 	
-	protected String giveLinkageName(MemberDefinition memberDefinition) {
-		return columnNamingStrategy.giveName(memberDefinition);
-	}
-	
 	protected <O> LinkageByColumnName<C> newLinkage(IReversibleAccessor<C, O> accessor, Class<O> returnType, String linkName) {
 		return new LinkageByColumnName<>(accessor, returnType, linkName);
-	}
-	
-	protected void assertMappingIsNotAlreadyDefined(String columnName, ValueAccessPoint propertyAccessor) {
-		ValueAccessPointComparator valueAccessPointComparator = new ValueAccessPointComparator();
-		Predicate<Linkage> checker = ((Predicate<Linkage>) linkage -> {
-			IReversibleAccessor accessor = linkage.getAccessor();
-			if (valueAccessPointComparator.compare(accessor, propertyAccessor) == 0) {
-				throw new MappingConfigurationException("Mapping is already defined by method " + MemberDefinition.toString(accessor));
-			}
-			return true;
-		}).and(linkage -> {
-			if (columnName != null && columnName.equals(linkage.getColumnName())) {
-				throw new MappingConfigurationException("Mapping is already defined for column " + columnName);
-			}
-			return true;
-		});
-		mapping.forEach(checker::test);
 	}
 	
 	@Override

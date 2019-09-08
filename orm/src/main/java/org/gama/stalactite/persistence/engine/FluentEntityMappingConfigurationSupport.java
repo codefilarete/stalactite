@@ -6,7 +6,6 @@ import java.util.Collection;
 import java.util.Date;
 import java.util.List;
 import java.util.Set;
-import java.util.TreeSet;
 import java.util.function.Supplier;
 
 import org.danekja.java.util.function.serializable.SerializableBiConsumer;
@@ -14,7 +13,6 @@ import org.danekja.java.util.function.serializable.SerializableBiFunction;
 import org.danekja.java.util.function.serializable.SerializableFunction;
 import org.gama.lang.Nullable;
 import org.gama.lang.Reflections;
-import org.gama.lang.collection.Iterables;
 import org.gama.lang.exception.NotImplementedException;
 import org.gama.lang.function.Serie;
 import org.gama.lang.reflect.MethodDispatcher;
@@ -749,17 +747,6 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements IFluentEnt
 			return new EntityLinkageByColumnName<>(accessor, returnType, linkName);
 		}
 		
-		@Override
-		protected String giveLinkageName(MemberDefinition memberDefinition) {
-			// MemberDefinition computation could be done statically, but it must be done dynamically because giveLinkageName(..) is used along fluent API invokation
-			TreeSet<MemberDefinition> memberDefinitions = Iterables.collect(entityConfigurationSupport.cascadeOnes, cascadeOne -> giveMemberDefinition(cascadeOne.getTargetProvider()), TreeSet::new);
-			if (memberDefinitions.contains(memberDefinition)) {
-				return entityConfigurationSupport.joinColumnNamingStrategy.giveName(memberDefinition);
-			} else {
-				return super.giveLinkageName(memberDefinition);
-			}
-		}
-		
 		<E> AbstractLinkage<C> addMapping(SerializableBiConsumer<C, E> setter, Column column) {
 			return addMapping(Accessors.mutator(setter), column);
 		}
@@ -774,7 +761,6 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements IFluentEnt
 		 * @return a new Column added to the target table, throws an exception if already mapped
 		 */
 		AbstractLinkage<C> addMapping(IReversibleAccessor<C, ?> propertyAccessor, Column column) {
-			assertMappingIsNotAlreadyDefined(column.getName(), propertyAccessor);
 			EntityLinkageByColumn<C> newLinkage = new EntityLinkageByColumn<>(propertyAccessor, column);
 			mapping.add(newLinkage);
 			return newLinkage;

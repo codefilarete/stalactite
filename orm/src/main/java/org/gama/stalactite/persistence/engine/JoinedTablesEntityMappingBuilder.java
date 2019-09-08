@@ -37,18 +37,14 @@ import static org.gama.lang.Nullable.nullable;
  * 
  * @author Guillaume Mary
  */
-public class JoinedTablesEntityMappingBuilder<C, I> {
-	
-	private final EntityMappingConfiguration<C, I> configurationSupport;
-	
-	private final MethodReferenceCapturer methodSpy;
+public class JoinedTablesEntityMappingBuilder<C, I> extends AbstractEntityMappingBuilder<C, I> {
 	
 	public JoinedTablesEntityMappingBuilder(EntityMappingConfiguration<C, I> entityMappingConfiguration, MethodReferenceCapturer methodSpy) {
-		this.configurationSupport = entityMappingConfiguration;
-		this.methodSpy = methodSpy;
+		super(entityMappingConfiguration, methodSpy);
 	}
 	
-	public <T extends Table> JoinedTablesPersister<C, I, T> build(PersistenceContext persistenceContext, @Nullable T childClassTargetTable) {
+	@Override
+	protected <T extends Table<?>> JoinedTablesPersister<C, I, T> doBuild(PersistenceContext persistenceContext, @Nullable T childClassTargetTable) {
 		if (childClassTargetTable == null) {
 			childClassTargetTable = (T) nullable(giveTableUsedInMapping()).getOr(() -> new Table(configurationSupport.getTableNamingStrategy().giveName(configurationSupport.getPersistedClass())));
 		}
@@ -79,8 +75,8 @@ public class JoinedTablesEntityMappingBuilder<C, I> {
 		// NB : result is added to persistenceContext by build(..) method (to participate to DDL deployment)
 		JoinedTablesPersister<C, I, T> result = new EntityMappingBuilder<>(configurationSupport, methodSpy).configureRelations(persistenceContext, childClassMappingStrategy);
 		// adding join on parent table
-		Column subclassPK = Iterables.first((Set<Column<Table, Object>>) childClassTargetTable.getPrimaryKey().getColumns());
-		Column superclassPK = Iterables.first((Set<Column<Table, Object>>) superPersister.getMainTable().getPrimaryKey().getColumns());
+		Column subclassPK = Iterables.first((Set<? extends Column<?, Object>>) childClassTargetTable.getPrimaryKey().getColumns());
+		Column superclassPK = Iterables.first((Set<? extends Column<?, Object>>) superPersister.getMainTable().getPrimaryKey().getColumns());
 		result.getJoinedStrategiesSelectExecutor().addComplementaryTable(JoinedStrategiesSelect.FIRST_STRATEGY_NAME, parentMappingStrategy, (target, input) -> {
 			// applying values from inherited bean (input) to subclass one (target)
 			for (IReversibleAccessor columnFieldEntry : parentMappingStrategy.getPropertyToColumn().keySet()) {
@@ -113,7 +109,7 @@ public class JoinedTablesEntityMappingBuilder<C, I> {
 																						   T childTargetTable,
 																						   Table parentTargetTable,
 																						   Dialect dialect) {
-		EmbeddableMappingBuilder<C> builder = new EmbeddableMappingBuilder<>(configurationSupport.getPropertiesMapping());
+		EmbeddableMappingBuilder<C> builder = new EmbeddableMappingBuilder<>(configurationSupport.getPropertiesMapping(), columnNameProvider);
 		Map<IReversibleAccessor, Column> childClassColumnMapping = builder.build(dialect, childTargetTable);
 		// getting primary key from parent table and applying it to child table
 		Set<Column<Table, Object>> primaryKey = parentTargetTable.getPrimaryKey().getColumns();
@@ -122,7 +118,7 @@ public class JoinedTablesEntityMappingBuilder<C, I> {
 		}
 		
 		// for now only single column primary key are really supported
-		Set<Column<Table, Object>> columns = childTargetTable.getPrimaryKey().getColumns();
+		Set<? extends Column<?, Object>> columns = childTargetTable.getPrimaryKey().getColumns();
 		childClassColumnMapping.put(identifierAccessor, Iterables.first(columns));
 		
 		// Child class insertion manager is always an "Already assigned" one because parent manages it for her
