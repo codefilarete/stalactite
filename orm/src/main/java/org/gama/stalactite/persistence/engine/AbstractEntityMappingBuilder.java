@@ -10,8 +10,11 @@ import org.gama.reflection.MethodReferenceCapturer;
 import org.gama.reflection.MethodReferenceDispatcher;
 import org.gama.stalactite.persistence.engine.EmbeddableMappingBuilder.ColumnNameProvider;
 import org.gama.stalactite.persistence.engine.EmbeddableMappingConfiguration.Linkage;
+import org.gama.stalactite.persistence.engine.FluentEntityMappingConfigurationSupport.EntityLinkageByColumn;
 import org.gama.stalactite.persistence.engine.cascade.JoinedTablesPersister;
 import org.gama.stalactite.persistence.structure.Table;
+
+import static org.gama.lang.Nullable.nullable;
 
 /**
  * Parent class of entity mapping builders
@@ -99,6 +102,10 @@ public abstract class AbstractEntityMappingBuilder<C, I> {
 	}
 
 	public <T extends Table<?>> JoinedTablesPersister<C, I, T> build(PersistenceContext persistenceContext, @Nullable T targetTable) {
+		// Table must be created before giving it to further methods because it is mandatory for them
+		if (targetTable == null) {
+			targetTable = (T) nullable(giveTableUsedInMapping()).getOr(() -> new Table(configurationSupport.getTableNamingStrategy().giveName(configurationSupport.getPersistedClass())));
+		}
 		try {
 			return this.doBuild(persistenceContext, targetTable);
 		} finally {
@@ -108,7 +115,23 @@ public abstract class AbstractEntityMappingBuilder<C, I> {
 		}
 	}
 	
-	protected abstract <T extends Table<?>> JoinedTablesPersister<C, I, T> doBuild(PersistenceContext persistenceContext, @Nullable T targetTable);
+	protected abstract <T extends Table<?>> JoinedTablesPersister<C, I, T> doBuild(PersistenceContext persistenceContext, T targetTable);
+	
+	@Nullable
+	protected Table giveTableUsedInMapping() {
+		Set<Table> usedTablesInMapping = Iterables.collect(configurationSupport.getPropertiesMapping().getPropertiesMapping(),
+				linkage -> linkage instanceof FluentEntityMappingConfigurationSupport.EntityLinkageByColumn,
+				linkage -> ((EntityLinkageByColumn) linkage).getColumn().getTable(),
+				HashSet::new);
+		switch (usedTablesInMapping.size()) {
+			case 0:
+				return null;
+			case 1:
+				return Iterables.first(usedTablesInMapping);
+			default:
+				throw new MappingConfigurationException("Different tables found in columns given as parameter of methods mapping : " + usedTablesInMapping);
+		}
+	}
 	
 	/**
 	 * Creates a proxy that gives the effective configuration (about column naming strategy) by taking inheritance into account

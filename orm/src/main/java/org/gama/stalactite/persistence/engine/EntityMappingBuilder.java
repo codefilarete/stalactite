@@ -5,12 +5,10 @@ import java.lang.reflect.Method;
 import java.sql.ResultSet;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
-import java.util.Set;
 import java.util.function.BiPredicate;
 
 import org.danekja.java.util.function.serializable.SerializableBiFunction;
@@ -87,13 +85,8 @@ class EntityMappingBuilder<C, I> extends AbstractEntityMappingBuilder<C, I> {
 	 * @return the built {@link Persister}
 	 */
 	@Override
-	protected <T extends Table<?>> JoinedTablesPersister<C, I, T> doBuild(PersistenceContext persistenceContext, @javax.annotation.Nullable T table) {
+	protected <T extends Table<?>> JoinedTablesPersister<C, I, T> doBuild(PersistenceContext persistenceContext, T table) {
 		// Very first thing, determine identifier management and check some configuration
-		// Table must be created before giving it to further methods because it is mandatory for them
-		if (table == null) {
-			table = (T) nullable(giveTableUsedInMapping()).getOr(() -> new Table(configurationSupport.getTableNamingStrategy().giveName(configurationSupport.getPersistedClass())));
-		}
-		
 		IdentificationDeterminer<C, I> identificationDeterminer = new IdentificationDeterminer<>(
 				configurationSupport.getInheritanceConfiguration(),
 				configurationSupport.getIdentifierAccessor(),
@@ -130,21 +123,6 @@ class EntityMappingBuilder<C, I> extends AbstractEntityMappingBuilder<C, I> {
 		handleVersioningStrategy(result);
 		
 		return result;
-	}
-	
-	private Table giveTableUsedInMapping() {
-		Set<Table> usedTablesInMapping = Iterables.collect(configurationSupport.getPropertiesMapping().getPropertiesMapping(),
-				linkage -> linkage instanceof EntityLinkageByColumn,
-				linkage -> ((EntityLinkageByColumn) linkage).getColumn().getTable(),
-				HashSet::new);
-		switch (usedTablesInMapping.size()) {
-			case 0:
-				return null;
-			case 1:
-				return Iterables.first(usedTablesInMapping);
-			default:
-				throw new MappingConfigurationException("Different tables found in columns given as parameter of methods mapping : " + usedTablesInMapping);
-		}
 	}
 	
 	/**
