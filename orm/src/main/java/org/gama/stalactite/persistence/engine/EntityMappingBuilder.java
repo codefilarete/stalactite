@@ -42,6 +42,7 @@ import org.gama.stalactite.persistence.id.manager.IdentifierInsertionManager;
 import org.gama.stalactite.persistence.id.manager.JDBCGeneratedKeysIdentifierManager;
 import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
 import org.gama.stalactite.persistence.mapping.IdAccessor;
+import org.gama.stalactite.persistence.mapping.IdMappingStrategy;
 import org.gama.stalactite.persistence.mapping.SinglePropertyIdAccessor;
 import org.gama.stalactite.persistence.query.EntityCriteriaSupport.EntityGraphNode;
 import org.gama.stalactite.persistence.sql.Dialect;
@@ -97,31 +98,37 @@ class EntityMappingBuilder<C, I> extends AbstractEntityMappingBuilder<C, I> {
 				this.methodSpy);
 		Duo<IReversibleAccessor<C, I>, IdentifierInsertionManager<C, I>> identification = identificationDeterminer.determineIdentification(persistenceContext.getDialect(), table);
 		
-		ClassMappingStrategy<? super C, I, Table> inheritanceMappingStrategy = null;
-		if (configurationSupport.getInheritanceConfiguration() != null) {
-			if (configurationSupport.isJoinTable()) {
-				// Note that generics can't be used because "<? super C> can't be instantiated directly"
-				inheritanceMappingStrategy = new JoinedTablesEntityMappingBuilder(configurationSupport, methodSpy)
-						.build(persistenceContext, table)
-						.getMappingStrategy();
-			} else {
-				inheritanceMappingStrategy = new EntityMappingBuilder(configurationSupport.getInheritanceConfiguration(), methodSpy)
-						.build(persistenceContext, table)
-						.getMappingStrategy();
-			}
-		}
+		ClassMappingStrategy<? super C, I, Table> inheritanceMapping = giveInheritanceMapping(persistenceContext, table);
 		
 		EntityDecoratedEmbeddableMappingBuilder<C> embeddableMappingBuilder = new EntityDecoratedEmbeddableMappingBuilder<>(
 				configurationSupport.getPropertiesMapping(),
 				columnNameProvider, 
 				configurationSupport.getOneToOnes(),
-				inheritanceMappingStrategy);
+				inheritanceMapping);
 		
 		JoinedTablesPersister<C, I, T> result = configureRelations(persistenceContext,
 				embeddableMappingBuilder.buildClassMappingStrategy(persistenceContext.getDialect(), table, identification));
 		
 		handleVersioningStrategy(result);
 		
+		return result;
+	}
+	
+	@javax.annotation.Nullable
+	private <T extends Table<?>> ClassMappingStrategy<? super C, I, Table> giveInheritanceMapping(PersistenceContext persistenceContext, T table) {
+		ClassMappingStrategy<? super C, I, Table> result = null;
+		if (configurationSupport.getInheritanceConfiguration() != null) {
+			if (configurationSupport.isJoinTable()) {
+				// Note that generics can't be used because "<? super C> can't be instantiated directly"
+				result = new JoinedTablesEntityMappingBuilder(configurationSupport, methodSpy)
+						.build(persistenceContext, table)
+						.getMappingStrategy();
+			} else {
+				result = new EntityMappingBuilder(configurationSupport.getInheritanceConfiguration(), methodSpy)
+						.build(persistenceContext, table)
+						.getMappingStrategy();
+			}
+		}
 		return result;
 	}
 	
@@ -200,9 +207,9 @@ class EntityMappingBuilder<C, I> extends AbstractEntityMappingBuilder<C, I> {
 		private final ValueAccessPointSet oneToOnePropertiesOwnedByReverseSide;
 		
 		EntityDecoratedEmbeddableMappingBuilder(EmbeddableMappingConfiguration<C> propertiesMapping,
-													   ColumnNameProvider columnNameProvider,
-													   List<CascadeOne<C, ?, ?>> oneToOnes,
-													   @javax.annotation.Nullable ClassMappingStrategy<? super C, ?, Table> inheritanceMappingStrategy) {
+											    ColumnNameProvider columnNameProvider,
+											    List<CascadeOne<C, ?, ?>> oneToOnes,
+											    @javax.annotation.Nullable ClassMappingStrategy<? super C, ?, Table> inheritanceMappingStrategy) {
 			super(propertiesMapping, columnNameProvider);
 			this.oneToOnes = oneToOnes;
 			this.inheritanceMappingStrategy = inheritanceMappingStrategy;
@@ -296,23 +303,26 @@ class EntityMappingBuilder<C, I> extends AbstractEntityMappingBuilder<C, I> {
 			Map<IReversibleAccessor, Column> result = super.buildMappingFromInheritance();
 			// adding inherited class properties (if present)
 			if (inheritanceMappingStrategy != null) {
-				result.putAll(collectMapping(inheritanceMappingStrategy, super.getTargetTable(), (a, c) -> c.getName()));
-				// Dealing with identifier
-				Duo<IReversibleAccessor, Column> idMapping = collectIdMapping();
-				result.put(idMapping.getLeft(), idMapping.getRight());
+				result.putAll(projectColumns((Map) inheritanceMappingStrategy.getPropertyToColumn(), super.getTargetTable(), (a, c) -> c.getName()));
+				// Adding identifier to result because result is given to a ClassMappingStrategy which expects identifier to be present in mapping
+				// Note that idMapping can't be empty because when inheritance is defined, it is required that it also defines identification
+				// (see determineIdentification(..))
+//				Duo<IReversibleAccessor, Column> idMapping = giveIdentifierMapping();
+//				result.put(idMapping.getLeft(), idMapping.getRight());
 			}
 			return result;
 		}
 		
-		private Duo<IReversibleAccessor, Column> collectIdMapping() {
+		private Duo<IReversibleAccessor, Column> giveIdentifierMapping() {
 			Duo<IReversibleAccessor, Column> result = new Duo<>();
-			IdAccessor<? super C, ?> idAccessor = inheritanceMappingStrategy.getIdMappingStrategy().getIdAccessor();
+			IdMappingStrategy<? super C, ?> idMappingStrategy = inheritanceMappingStrategy.getIdMappingStrategy();
+			IdAccessor<? super C, ?> idAccessor = idMappingStrategy.getIdAccessor();
 			if (!(idAccessor instanceof SinglePropertyIdAccessor)) {
 				throw new NotYetSupportedOperationException();
 			}
 			IReversibleAccessor<? super C, ?> entityIdentifierAccessor = ((SinglePropertyIdAccessor<? super C, ?>) idAccessor).getIdAccessor();
 			// Because IdAccessor is a single column one (see assertion above) we can get the only column composing the primary key
-			Column primaryKey = ((SimpleIdentifierAssembler) inheritanceMappingStrategy.getIdMappingStrategy().getIdentifierAssembler()).getColumn();
+			Column primaryKey = ((SimpleIdentifierAssembler) idMappingStrategy.getIdentifierAssembler()).getColumn();
 			Column projectedPrimarykey = super.getTargetTable().addColumn(primaryKey.getName(), primaryKey.getJavaType()).primaryKey();
 			projectedPrimarykey.setAutoGenerated(primaryKey.isAutoGenerated());
 			result.setLeft(entityIdentifierAccessor);

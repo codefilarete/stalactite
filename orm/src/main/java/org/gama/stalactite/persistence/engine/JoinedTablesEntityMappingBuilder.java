@@ -5,7 +5,6 @@ import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
-import org.gama.lang.bean.Objects;
 import org.gama.lang.collection.Iterables;
 import org.gama.reflection.IReversibleAccessor;
 import org.gama.reflection.MethodReferenceCapturer;
@@ -26,6 +25,8 @@ import org.gama.stalactite.persistence.mapping.SinglePropertyIdAccessor;
 import org.gama.stalactite.persistence.sql.Dialect;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
+
+import static org.gama.lang.Nullable.nullable;
 
 /**
  * Classes aimed at building a persister for joined tables inheritance
@@ -136,7 +137,8 @@ public class JoinedTablesEntityMappingBuilder<C, I> extends AbstractEntityMappin
 	
 	private Persister<? super C, I, Table> buildSuperPersister(PersistenceContext persistenceContext) {
 		EntityMappingBuilder<? super C, I> inheritanceMappingBuilder = new EntityMappingBuilder<>(configurationSupport.getInheritanceConfiguration(), methodSpy);
-		Table inheritanceTable = Objects.preventNull(configurationSupport.getInheritanceTable(), new Table(configurationSupport.getInheritanceConfiguration().getPersistedClass().getSimpleName()));
+		Table inheritanceTable = nullable(configurationSupport.getInheritanceTable()).getOr(
+				() -> new Table(configurationSupport.getTableNamingStrategy().giveName(configurationSupport.getInheritanceConfiguration().getPersistedClass())));
 		return inheritanceMappingBuilder.build(persistenceContext, inheritanceTable);
 	}
 }
