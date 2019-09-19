@@ -59,6 +59,8 @@ import static org.gama.lang.collection.Iterables.collect;
  * abstraction.
  * 
  * @author Guillaume Mary
+ * @see #build(PersistenceContext)
+ * @see #build(PersistenceContext, Table) 
  */
 class EntityMappingBuilder<C, I> extends AbstractEntityMappingBuilder<C, I> {
 	
@@ -73,7 +75,7 @@ class EntityMappingBuilder<C, I> extends AbstractEntityMappingBuilder<C, I> {
 	 * @param persistenceContext the {@link PersistenceContext} in which the resulting {@link Persister} will be put, also needed for Dialect purpose 
 	 * @return the built {@link Persister}
 	 */
-	public Persister<C, I, Table> build(PersistenceContext persistenceContext) {
+	public JoinedTablesPersister<C, I, Table> build(PersistenceContext persistenceContext) {
 		return build(persistenceContext, null);
 	}
 	
@@ -150,7 +152,6 @@ class EntityMappingBuilder<C, I> extends AbstractEntityMappingBuilder<C, I> {
 		if (existingPersister == null) {
 			persistenceContext.addPersister(result);
 		} else {
-			ClassMappingStrategy<C, Object, T> existingMappingStrategy = existingPersister.getMappingStrategy();
 			
 			BiPredicate<ClassMappingStrategy, ClassMappingStrategy> mappingConfigurationComparator = Predicates.and(
 					ClassMappingStrategy::getTargetTable,
@@ -160,7 +161,7 @@ class EntityMappingBuilder<C, I> extends AbstractEntityMappingBuilder<C, I> {
 					ClassMappingStrategy::getUpdatableColumns,
 					ClassMappingStrategy::getInsertableColumns
 			);
-			if (!mappingConfigurationComparator.test(existingMappingStrategy, mainMappingStrategy)) {
+			if (!mappingConfigurationComparator.test(existingPersister.getMappingStrategy(), mainMappingStrategy)) {
 				throw new IllegalArgumentException("Persister already exists for " + Reflections.toString(result.getMappingStrategy().getClassToPersist()));
 			}
 		}

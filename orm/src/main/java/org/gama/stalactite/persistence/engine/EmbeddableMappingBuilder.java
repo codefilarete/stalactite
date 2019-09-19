@@ -217,6 +217,11 @@ class EmbeddableMappingBuilder<C> {
 		return localResult;
 	}
 	
+	/**
+	 * Builds embedded beans mapping
+	 * 
+	 * @return embedded beans accessor mapped to their column
+	 */
 	private Map<IReversibleAccessor, Column> buildEmbeddedMapping() {
 		Map<String, Column<Table, Object>> columnsPerName = targetTable.mapColumnsOnName();
 		Map<IReversibleAccessor, Column> toReturn = new HashMap<>();

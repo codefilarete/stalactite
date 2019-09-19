@@ -462,8 +462,8 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements IFluentEnt
 		return new MethodDispatcher()
 				.redirect(OneToManyOptions.class, new OneToManyOptionsSupport<>(cascadeMany), true)	// true to allow "return null" in implemented methods
 				.redirect(IndexableCollectionOptions.class, orderingColumn -> {
-						cascadeMany.setIndexingColumn(orderingColumn);
-						return null;
+					cascadeMany.setIndexingColumn(orderingColumn);
+					return null;
 				}, true)	// true to allow "return null" in implemented methods
 				.fallbackOn(this)
 				.build((Class<IFluentMappingBuilderOneToManyListOptions<C, I, O, S>>) (Class) IFluentMappingBuilderOneToManyListOptions.class);
@@ -481,13 +481,13 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements IFluentEnt
 	
 	@Override
 	public <O> IFluentMappingBuilderEmbeddableOptions<C, I, O> embed(SerializableFunction<C, O> getter,
-																				EmbeddedBeanMappingStrategyBuilder<O> embeddableMappingBuilder) {
+																	 EmbeddedBeanMappingStrategyBuilder<O> embeddableMappingBuilder) {
 		return null;
 	}
 	
 	@Override
 	public <O> IFluentMappingBuilderEmbeddableOptions<C, I, O> embed(SerializableBiConsumer<C, O> getter,
-																				EmbeddedBeanMappingStrategyBuilder<O> embeddableMappingBuilder) {
+																	 EmbeddedBeanMappingStrategyBuilder<O> embeddableMappingBuilder) {
 		return null;
 	}
 	

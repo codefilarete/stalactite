@@ -81,10 +81,31 @@ public class Table<SELF extends Table<SELF>> {
 		return result;
 	}
 	
+	/**
+	 * Adds a column to this table.
+	 * May do nothing if a column already exists with same name and type.
+	 * Will throw an exception if a column with same name but with different type already exists.
+	 * 
+	 * @param name column name
+	 * @param javaType column type
+	 * @param <O> column type
+	 * @return the create column or the existing one
+	 */
 	public <O> Column<SELF, O> addColumn(String name, Class<O> javaType) {
 		return addertColumn(new Column<>((SELF) this, name, javaType));
 	}
 	
+	/**
+	 * Adds a column to this table.
+	 * May do nothing if a column already exists with same name, size and type.
+	 * Will throw an exception if a column with same name but with different type or size already exists.
+	 *
+	 * @param name column name
+	 * @param javaType column type
+	 * @param size column type size
+	 * @param <O> column type
+	 * @return the create column or the existing one
+	 */
 	public <O> Column<SELF, O> addColumn(String name, Class<O> javaType, int size) {
 		return addertColumn(new Column<>((SELF) this, name, javaType, size));
 	}

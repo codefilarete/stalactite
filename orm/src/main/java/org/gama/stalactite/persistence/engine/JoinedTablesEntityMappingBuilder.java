@@ -29,12 +29,19 @@ import org.gama.stalactite.persistence.structure.Table;
 import static org.gama.lang.Nullable.nullable;
 
 /**
- * Classes aimed at building a persister for joined tables inheritance
+ * Class aimed at building a persister for joined tables inheritance
  * 
  * @author Guillaume Mary
+ * @see #build(PersistenceContext, Table) 
  */
 public class JoinedTablesEntityMappingBuilder<C, I> extends AbstractEntityMappingBuilder<C, I> {
 	
+	/**
+	 * Constructor with madatory parameters
+	 * 
+	 * @param entityMappingConfiguration the {@link EntityMappingConfiguration} which has a parent configuration
+	 * @param methodSpy capturer of {@link java.lang.reflect.Method}s behind method references, passed as argument to benefit from its cache
+	 */
 	public JoinedTablesEntityMappingBuilder(EntityMappingConfiguration<C, I> entityMappingConfiguration, MethodReferenceCapturer methodSpy) {
 		super(entityMappingConfiguration, methodSpy);
 	}
@@ -49,8 +56,7 @@ public class JoinedTablesEntityMappingBuilder<C, I> extends AbstractEntityMappin
 		// on primary key, so select will result in a join on those 2 strategies.
 		// OneToOne and OneToMany will be managed by their respective JoinedTablesPersister (actually done by Persister)
 		
-		// NB : this persister is in fact a JoinedTablesPersister but its type doesn't matter here
-		Persister<? super C, I, Table> superPersister = buildSuperPersister(persistenceContext);
+		JoinedTablesPersister<? super C, I, Table> superPersister = buildSuperPersister(persistenceContext);
 		
 		ClassMappingStrategy<? super C, I, ?> parentMappingStrategy = superPersister.getMappingStrategy();
 		IReversibleAccessor<C, I> identifierAccessor = giveIdentifierAccessor(parentMappingStrategy);
@@ -64,7 +70,6 @@ public class JoinedTablesEntityMappingBuilder<C, I> extends AbstractEntityMappin
 				superPersister.getMainTable(),
 				persistenceContext.getDialect());
 		
-		// NB : result is added to persistenceContext by build(..) method (to participate to DDL deployment)
 		JoinedTablesPersister<C, I, T> result = new EntityMappingBuilder<>(configurationSupport, methodSpy).configureRelations(persistenceContext, childClassMappingStrategy);
 		// adding join on parent table
 		Column subclassPK = Iterables.first((Set<? extends Column<?, Object>>) childClassTargetTable.getPrimaryKey().getColumns());
@@ -135,7 +140,7 @@ public class JoinedTablesEntityMappingBuilder<C, I> extends AbstractEntityMappin
 		return ((SinglePropertyIdAccessor<C, I>) idAccessor).getIdAccessor();
 	}
 	
-	private Persister<? super C, I, Table> buildSuperPersister(PersistenceContext persistenceContext) {
+	private JoinedTablesPersister<? super C, I, Table> buildSuperPersister(PersistenceContext persistenceContext) {
 		EntityMappingBuilder<? super C, I> inheritanceMappingBuilder = new EntityMappingBuilder<>(configurationSupport.getInheritanceConfiguration(), methodSpy);
 		Table inheritanceTable = nullable(configurationSupport.getInheritanceTable()).getOr(
 				() -> new Table(configurationSupport.getTableNamingStrategy().giveName(configurationSupport.getInheritanceConfiguration().getPersistedClass())));
