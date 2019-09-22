@@ -12,6 +12,7 @@ import java.util.Queue;
 import java.util.Set;
 
 import org.gama.lang.Strings;
+import org.gama.stalactite.persistence.mapping.IEntityMappingStrategy;
 import org.gama.stalactite.sql.binder.ParameterBinder;
 import org.gama.stalactite.sql.binder.ParameterBinderProvider;
 import org.gama.stalactite.persistence.engine.BeanRelationFixer;
@@ -50,7 +51,7 @@ public class JoinedStrategiesSelect<C, I, T extends Table> {
 	private final StrategyJoins<C, I> root;
 	/**
 	 * A mapping between a name and join to help finding them when we want to join them with a new one
-	 * @see #add(String, ClassMappingStrategy, Column, Column, boolean, BeanRelationFixer) 
+	 * @see #add(String, IEntityMappingStrategy, Column, Column, boolean, BeanRelationFixer) 
 	 */
 	private final Map<String, StrategyJoins> strategyIndex = new HashMap<>();
 	/** The objet that will help to give names of strategies into the index (no impact on the generated SQL) */
@@ -64,7 +65,7 @@ public class JoinedStrategiesSelect<C, I, T extends Table> {
 	 * @param classMappingStrategy the root strategy, added strategy will be joined wih it
 	 * @param parameterBinderProvider the objet that will give {@link ParameterBinder} to read the selected columns
 	 */
-	JoinedStrategiesSelect(ClassMappingStrategy<C, I, T> classMappingStrategy, ParameterBinderProvider<Column> parameterBinderProvider) {
+	JoinedStrategiesSelect(IEntityMappingStrategy<C, I, T> classMappingStrategy, ParameterBinderProvider<Column> parameterBinderProvider) {
 		this(classMappingStrategy, parameterBinderProvider, FIRST_STRATEGY_NAME);
 	}
 	
@@ -75,7 +76,7 @@ public class JoinedStrategiesSelect<C, I, T extends Table> {
 	 * @param parameterBinderProvider the objet that will give {@link ParameterBinder} to read the selected columns
 	 * @param strategyName the very first strategy name
 	 */
-	JoinedStrategiesSelect(ClassMappingStrategy<C, I, T> classMappingStrategy, ParameterBinderProvider<Column> parameterBinderProvider, String strategyName) {
+	JoinedStrategiesSelect(IEntityMappingStrategy<C, I, T> classMappingStrategy, ParameterBinderProvider<Column> parameterBinderProvider, String strategyName) {
 		this.parameterBinderProvider = parameterBinderProvider;
 		this.root = new StrategyJoins<>(classMappingStrategy);
 		this.strategyIndex.put(strategyName, this.root);
@@ -102,7 +103,7 @@ public class JoinedStrategiesSelect<C, I, T extends Table> {
 	
 	/**
 	 * Gives a particular node of the joins graph by its name. Joins graph name are given in return of
-	 * {@link #add(String, ClassMappingStrategy, Column, Column, boolean, BeanRelationFixer)}.
+	 * {@link #add(String, IEntityMappingStrategy, Column, Column, boolean, BeanRelationFixer)}.
 	 * Prefer usage of {@link #getJoinsRoot()} when retrieval of root is requested (to prevent exposing {@link #FIRST_STRATEGY_NAME})
 	 * 
 	 * @param leftStrategyName join node name to be given
@@ -171,9 +172,11 @@ public class JoinedStrategiesSelect<C, I, T extends Table> {
 	 * @param <ID> type of joined values
 	 * @return the name of the created join, to be used as a key for other joins (through this method {@code leftStrategyName} argument)
 	 */
-	public <U, T1 extends Table<T1>, T2 extends Table<T2>, ID> String add(String leftStrategyName, ClassMappingStrategy<U, ID, T2> strategy,
+	public <U, T1 extends Table<T1>, T2 extends Table<T2>, ID> String add(String leftStrategyName,
+																		  IEntityMappingStrategy<U, ID, T2> strategy,
 																		  Column<T1, ID> leftJoinColumn, Column<T2, ID> rightJoinColumn,
-																		  boolean isOuterJoin, BeanRelationFixer beanRelationFixer) {
+																		  boolean isOuterJoin,
+																		  BeanRelationFixer beanRelationFixer) {
 		StrategyJoins hangingJoins = getStrategyJoins(leftStrategyName);
 		if (hangingJoins == null) {
 			throw new IllegalArgumentException("No strategy with name " + leftStrategyName + " exists to add a new strategy on");
@@ -181,7 +184,7 @@ public class JoinedStrategiesSelect<C, I, T extends Table> {
 		return add(hangingJoins, strategy, leftJoinColumn, rightJoinColumn, isOuterJoin, beanRelationFixer);
 	}
 	
-	private <U, T1 extends Table<T1>, T2 extends Table<T2>, ID> String add(StrategyJoins owner, ClassMappingStrategy<U, ID, T2> strategy,
+	private <U, T1 extends Table<T1>, T2 extends Table<T2>, ID> String add(StrategyJoins owner, IEntityMappingStrategy<U, ID, T2> strategy,
 						   Column<T1, ID> leftJoinColumn, Column<T2, ID> rightJoinColumn, boolean isOuterJoin,
 						   BeanRelationFixer beanRelationFixer) {
 		Join join = owner.add(strategy, leftJoinColumn, rightJoinColumn, isOuterJoin, beanRelationFixer);
@@ -208,23 +211,23 @@ public class JoinedStrategiesSelect<C, I, T extends Table> {
 	 */
 	public static class StrategyJoins<E, I> {
 		/** The left part of the join */
-		private final ClassMappingStrategy<E, ?, ? extends Table> strategy;
+		private final IEntityMappingStrategy<E, ?, ? extends Table> strategy;
 		/** Joins */
 		private final List<Join> joins = new ArrayList<>();
 		
 		private String tableAlias;
 		
-		StrategyJoins(ClassMappingStrategy<E, ?, ? extends Table> strategy) {
+		StrategyJoins(IEntityMappingStrategy<E, ?, ? extends Table> strategy) {
 			this(strategy, strategy.getTargetTable().getAbsoluteName());
 		}
 		
-		StrategyJoins(ClassMappingStrategy<E, ?, ? extends Table> strategy, String absoluteName) {
+		StrategyJoins(IEntityMappingStrategy<E, ?, ? extends Table> strategy, String absoluteName) {
 			this.strategy = strategy;
 			this.tableAlias = absoluteName;
 		}
 		
-		public <T extends Table<T>> ClassMappingStrategy<I, Object, T> getStrategy() {
-			return (ClassMappingStrategy<I, Object, T>) strategy;
+		public <T extends Table<T>> IEntityMappingStrategy<I, Object, T> getStrategy() {
+			return (IEntityMappingStrategy<I, Object, T>) strategy;
 		}
 		
 		public List<Join> getJoins() {
@@ -256,7 +259,7 @@ public class JoinedStrategiesSelect<C, I, T extends Table> {
 		 * @param beanRelationFixer will help to apply the instance of the new strategy on the owned one
 		 * @return the created join
 		 */
-		<U> Join<I, U> add(ClassMappingStrategy strategy, Column leftJoinColumn, Column rightJoinColumn, boolean isOuterJoin, BeanRelationFixer beanRelationFixer) {
+		<U> Join<I, U> add(IEntityMappingStrategy strategy, Column leftJoinColumn, Column rightJoinColumn, boolean isOuterJoin, BeanRelationFixer beanRelationFixer) {
 			Join<I, U> join = new Join<>(strategy, leftJoinColumn, rightJoinColumn, isOuterJoin, beanRelationFixer);
 			this.joins.add(join);
 			return join;
@@ -286,7 +289,7 @@ public class JoinedStrategiesSelect<C, I, T extends Table> {
 			/** Relation fixer for instances of this strategy on owning strategy entities */
 			private final BeanRelationFixer beanRelationFixer;
 			
-			private Join(ClassMappingStrategy<O, ?, ? extends Table> strategy, Column leftJoinColumn, Column rightJoinColumn, boolean outer, BeanRelationFixer beanRelationFixer) {
+			private Join(IEntityMappingStrategy<O, ?, ? extends Table> strategy, Column leftJoinColumn, Column rightJoinColumn, boolean outer, BeanRelationFixer beanRelationFixer) {
 				this.strategy = new StrategyJoins<>(strategy);
 				this.leftJoinColumn = leftJoinColumn;
 				this.rightJoinColumn = rightJoinColumn;
@@ -320,7 +323,7 @@ public class JoinedStrategiesSelect<C, I, T extends Table> {
 		
 		private int aliasCount = 0;
 		
-		private String generateName(ClassMappingStrategy classMappingStrategy) {
+		private String generateName(IEntityMappingStrategy classMappingStrategy) {
 			return classMappingStrategy.getTargetTable().getAbsoluteName() + aliasCount++;
 		}
 	}

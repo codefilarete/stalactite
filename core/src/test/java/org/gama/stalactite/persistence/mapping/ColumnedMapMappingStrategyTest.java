@@ -2,6 +2,7 @@ package org.gama.stalactite.persistence.mapping;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.function.Function;
 
 import org.gama.lang.collection.Maps;
 import org.gama.lang.collection.Maps.ChainingMap;
@@ -32,7 +33,6 @@ public class ColumnedMapMappingStrategyTest {
 	private static Map<Integer, Column> columnToKey;
 	private static Map<Column, Integer> keyToColumn;
 	
-//	@BeforeClass
 	public static void setUpClass() {
 		totoTable = new Table(null, "Toto");
 		final int nbCol = 5;
@@ -79,6 +79,11 @@ public class ColumnedMapMappingStrategyTest {
 			@Override
 			protected String toMapValue(Integer key, Object s) {
 				return s == null ? null : s.toString();
+			}
+			
+			@Override
+			public AbstractTransformer<Map<Integer, String>> copyTransformerWithAliases(Function<Column, String> aliasProvider) {
+				return null;
 			}
 		};
 		

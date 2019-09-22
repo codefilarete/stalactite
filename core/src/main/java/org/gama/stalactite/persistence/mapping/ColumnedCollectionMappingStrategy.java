@@ -9,6 +9,7 @@ import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Function;
 
 import org.gama.lang.Duo;
 import org.gama.lang.Reflections;
@@ -20,9 +21,9 @@ import org.gama.lang.collection.PairIterator.InfiniteIterator;
 import org.gama.lang.collection.PairIterator.UntilBothIterator;
 import org.gama.lang.function.Predicates;
 import org.gama.reflection.IReversibleAccessor;
-import org.gama.stalactite.sql.result.Row;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
+import org.gama.stalactite.sql.result.Row;
 
 /**
  * A class that "roughly" persists a Collection of {@link Column}s, without any bean class.
@@ -35,6 +36,7 @@ public class ColumnedCollectionMappingStrategy<C extends Collection<O>, O, T ext
 	private final T targetTable;
 	private final Set<Column<T, Object>> columns;
 	private final ToCollectionRowTransformer<C> rowTransformer;
+	private final Class<C> persistedClass;
 	
 	/**
 	 * Constructor 
@@ -46,7 +48,9 @@ public class ColumnedCollectionMappingStrategy<C extends Collection<O>, O, T ext
 	public ColumnedCollectionMappingStrategy(T targetTable, Set<Column<T, Object>> columns, Class<C> rowClass) {
 		this.targetTable = targetTable;
 		this.columns = columns;
-		this.rowTransformer = new ToCollectionRowTransformer<C>(rowClass) {
+		this.persistedClass = rowClass;
+		this.rowTransformer = new ToCollectionRowTransformer<C>(this.persistedClass) {
+			
 			/** We bind conversion on {@link ColumnedCollectionMappingStrategy} conversion methods */
 			@Override
 			protected void applyRowToBean(Row row, C collection) {
@@ -56,6 +60,10 @@ public class ColumnedCollectionMappingStrategy<C extends Collection<O>, O, T ext
 				}
 			}
 		};
+	}
+	
+	public Class<C> getPersistedClass() {
+		return persistedClass;
 	}
 	
 	public T getTargetTable() {
@@ -159,5 +167,19 @@ public class ColumnedCollectionMappingStrategy<C extends Collection<O>, O, T ext
 	@Override
 	public Map<IReversibleAccessor<C, Object>, Column<T, Object>> getPropertyToColumn() {
 		throw new UnsupportedOperationException(Reflections.toString(ColumnedCollectionMappingStrategy.class) + " can't export a mapping between some accessors and their columns");
+	}
+	
+	@Override
+	public AbstractTransformer<C> copyTransformerWithAliases(Function<Column, String> aliasProvider) {
+		return new ToCollectionRowTransformer<C>(getPersistedClass()) {
+			/** We bind conversion on {@link ColumnedCollectionMappingStrategy} conversion methods */
+			@Override
+			protected void applyRowToBean(Row row, C collection) {
+				for (Column column : getColumns()) {
+					Object value = row.get(aliasProvider.apply(column));
+					collection.add(toCollectionValue(value));
+				}
+			}
+		};
 	}
 }

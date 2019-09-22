@@ -12,6 +12,7 @@ import org.gama.lang.StringAppender;
 import org.gama.lang.bean.Objects;
 import org.gama.lang.collection.Collections;
 import org.gama.lang.collection.Iterables;
+import org.gama.stalactite.persistence.mapping.IEntityMappingStrategy;
 import org.gama.stalactite.sql.ConnectionProvider;
 import org.gama.stalactite.sql.SimpleConnectionProvider;
 import org.gama.stalactite.sql.binder.ParameterBinder;
@@ -54,7 +55,7 @@ public class JoinedStrategiesSelectExecutor<C, I, T extends Table> extends Selec
 	
 	private final PrimaryKey<Table> primaryKey;
 	
-	public JoinedStrategiesSelectExecutor(ClassMappingStrategy<C, I, T> classMappingStrategy, Dialect dialect, ConnectionProvider connectionProvider) {
+	public JoinedStrategiesSelectExecutor(IEntityMappingStrategy<C, I, T> classMappingStrategy, Dialect dialect, ConnectionProvider connectionProvider) {
 		super(classMappingStrategy, connectionProvider, dialect.getDmlGenerator(), dialect.getInOperatorMaxSize());
 		this.parameterBinderProvider = dialect.getColumnBinderRegistry();
 		this.joinedStrategiesSelect = new JoinedStrategiesSelect<>(classMappingStrategy, this.parameterBinderProvider);
@@ -72,7 +73,7 @@ public class JoinedStrategiesSelectExecutor<C, I, T extends Table> extends Selec
 	
 	/**
 	 * Adds an inner join to this executor.
-	 * Shorcu for {@link JoinedStrategiesSelect#add(String, ClassMappingStrategy, Column, Column, boolean, BeanRelationFixer)}
+	 * Shorcu for {@link JoinedStrategiesSelect#add(String, IEntityMappingStrategy, Column, Column, boolean, BeanRelationFixer)}
 	 *
 	 * @param leftStrategyName the name of a (previously) registered join. {@code leftJoinColumn} must be a {@link Column} of its left {@link Table}
 	 * @param strategy the strategy of the mapped bean. Used to give {@link Column}s and {@link org.gama.stalactite.persistence.mapping.IRowTransformer}
@@ -98,7 +99,7 @@ public class JoinedStrategiesSelectExecutor<C, I, T extends Table> extends Selec
 	
 	/**
 	 * Adds a join to this executor.
-	 * Shorcu for {@link JoinedStrategiesSelect#add(String, ClassMappingStrategy, Column, Column, boolean, BeanRelationFixer)}
+	 * Shorcu for {@link JoinedStrategiesSelect#add(String, IEntityMappingStrategy, Column, Column, boolean, BeanRelationFixer)}
 	 *
 	 * @param leftStrategyName the name of a (previously) registered join. {@code leftJoinColumn} must be a {@link Column} of its left {@link Table}
 	 * @param strategy the strategy of the mapped bean. Used to give {@link Column}s and {@link org.gama.stalactite.persistence.mapping.IRowTransformer}
@@ -114,7 +115,7 @@ public class JoinedStrategiesSelectExecutor<C, I, T extends Table> extends Selec
 	 */
 	public <U, T1 extends Table<T1>, T2 extends Table<T2>, ID> String addComplementaryTable(
 			String leftStrategyName,
-			ClassMappingStrategy<U, ID, T2> strategy,
+			IEntityMappingStrategy<U, ID, T2> strategy,
 			BeanRelationFixer beanRelationFixer,
 			Column<T1, ID> leftJoinColumn,
 			Column<T2, ID> rightJoinColumn,

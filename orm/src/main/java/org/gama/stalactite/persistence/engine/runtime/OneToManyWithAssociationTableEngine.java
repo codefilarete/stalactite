@@ -7,7 +7,7 @@ import org.gama.stalactite.persistence.engine.AssociationRecord;
 import org.gama.stalactite.persistence.engine.AssociationRecordPersister;
 import org.gama.stalactite.persistence.engine.AssociationTable;
 import org.gama.stalactite.persistence.engine.cascade.JoinedTablesPersister;
-import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
+import org.gama.stalactite.persistence.mapping.IEntityMappingStrategy;
 
 /**
  * @author Guillaume Mary
@@ -26,8 +26,8 @@ public class OneToManyWithAssociationTableEngine<SRC, TRGT, SRCID, TRGTID, C ext
 	protected AssociationRecordInsertionCascader<SRC, TRGT, SRCID, TRGTID, C> newRecordInsertionCascader(
 			Function<SRC, C> collectionGetter,
 			AssociationRecordPersister<AssociationRecord, AssociationTable> associationPersister,
-			ClassMappingStrategy<SRC, SRCID, ?> mappingStrategy,
-			ClassMappingStrategy<TRGT, TRGTID, ?> targetStrategy) {
+			IEntityMappingStrategy<SRC, SRCID, ?> mappingStrategy,
+			IEntityMappingStrategy<TRGT, TRGTID, ?> targetStrategy) {
 		return new AssociationRecordInsertionCascader<>(associationPersister, collectionGetter, mappingStrategy, targetStrategy);
 	}
 	

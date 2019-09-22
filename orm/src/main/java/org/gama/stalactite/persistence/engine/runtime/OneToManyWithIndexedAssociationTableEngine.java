@@ -16,7 +16,7 @@ import org.gama.stalactite.persistence.engine.listening.UpdateListener.UpdatePay
 import org.gama.stalactite.persistence.engine.runtime.OneToManyWithMappedAssociationEngine.TargetInstancesUpdateCascader;
 import org.gama.stalactite.persistence.id.diff.AbstractDiff;
 import org.gama.stalactite.persistence.id.diff.IndexedDiff;
-import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
+import org.gama.stalactite.persistence.mapping.IEntityMappingStrategy;
 
 import static org.gama.lang.collection.Iterables.first;
 import static org.gama.lang.collection.Iterables.minus;
@@ -142,8 +142,8 @@ public class OneToManyWithIndexedAssociationTableEngine<SRC, TRGT, SRCID, TRGTID
 	protected IndexedAssociationRecordInsertionCascader<SRC, TRGT, SRCID, TRGTID, C> newRecordInsertionCascader(
 			Function<SRC, C> collectionGetter,
 			AssociationRecordPersister<IndexedAssociationRecord, IndexedAssociationTable> associationPersister,
-			ClassMappingStrategy<SRC, SRCID, ?> mappingStrategy,
-			ClassMappingStrategy<TRGT, TRGTID, ?> targetStrategy) {
+			IEntityMappingStrategy<SRC, SRCID, ?> mappingStrategy,
+			IEntityMappingStrategy<TRGT, TRGTID, ?> targetStrategy) {
 		return new IndexedAssociationRecordInsertionCascader<>(associationPersister, collectionGetter, mappingStrategy, targetStrategy);
 	}
 	

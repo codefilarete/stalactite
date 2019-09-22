@@ -58,7 +58,7 @@ public class JoinedTablesEntityMappingBuilder<C, I> extends AbstractEntityMappin
 		
 		JoinedTablesPersister<? super C, I, Table> superPersister = buildSuperPersister(persistenceContext);
 		
-		ClassMappingStrategy<? super C, I, ?> parentMappingStrategy = superPersister.getMappingStrategy();
+		IEntityMappingStrategy<? super C, I, ?> parentMappingStrategy = superPersister.getMappingStrategy();
 		IReversibleAccessor<C, I> identifierAccessor = giveIdentifierAccessor(parentMappingStrategy);
 		
 		ClassMappingStrategy<C, I, T> childClassMappingStrategy = buildChildClassMappingStrategy(

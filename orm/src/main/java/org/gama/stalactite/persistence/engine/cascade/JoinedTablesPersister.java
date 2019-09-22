@@ -9,6 +9,7 @@ import org.danekja.java.util.function.serializable.SerializableBiConsumer;
 import org.danekja.java.util.function.serializable.SerializableFunction;
 import org.gama.lang.Nullable;
 import org.gama.reflection.MethodReferenceDispatcher;
+import org.gama.stalactite.persistence.mapping.IEntityMappingStrategy;
 import org.gama.stalactite.sql.ConnectionProvider;
 import org.gama.stalactite.persistence.engine.BeanRelationFixer;
 import org.gama.stalactite.persistence.engine.ExecutableQuery;
@@ -54,7 +55,7 @@ public class JoinedTablesPersister<C, I, T extends Table> extends Persister<C, I
 		this(mainMappingStrategy, persistenceContext.getDialect(), persistenceContext.getConnectionProvider(), persistenceContext.getJDBCBatchSize());
 	}
 	
-	public JoinedTablesPersister(ClassMappingStrategy<C, I, T> mainMappingStrategy, Dialect dialect, ConnectionProvider connectionProvider, int jdbcBatchSize) {
+	public JoinedTablesPersister(IEntityMappingStrategy<C, I, T> mainMappingStrategy, Dialect dialect, ConnectionProvider connectionProvider, int jdbcBatchSize) {
 		super(mainMappingStrategy, connectionProvider, dialect.getDmlGenerator(),
 				dialect.getWriteOperationRetryer(), jdbcBatchSize, dialect.getInOperatorMaxSize());
 		this.joinedStrategiesSelectExecutor = new JoinedStrategiesSelectExecutor<>(mainMappingStrategy, dialect, connectionProvider);
@@ -64,7 +65,7 @@ public class JoinedTablesPersister<C, I, T extends Table> extends Persister<C, I
 	}
 	
 	@Override
-	protected <U> SelectExecutor<U, I, T> newSelectExecutor(ClassMappingStrategy<U, I, T> mappingStrategy, ConnectionProvider connectionProvider,
+	protected <U> SelectExecutor<U, I, T> newSelectExecutor(IEntityMappingStrategy<U, I, T> mappingStrategy, ConnectionProvider connectionProvider,
 															DMLGenerator dmlGenerator, int inOperatorMaxSize) {
 		// since getSelectExecutor() is overriden we don't care about returning a good instance, actually it implies that JoinedStrategiesSelectExecutor
 		// is a subtype of SelectExecutor which is not the case, and can hardly be the case
@@ -96,7 +97,7 @@ public class JoinedTablesPersister<C, I, T extends Table> extends Persister<C, I
 	 * @param leftJoinColumn the column of the owning strategy to be used for joining with the newly added one (mappingStrategy parameter)
 	 * @param rightJoinColumn the column of the newly added strategy to be used for joining with the owning one
 	 * @param isOuterJoin true to use a left outer join (optional relation)
-	 * @see JoinedStrategiesSelect#add(String, ClassMappingStrategy, Column, Column, boolean, BeanRelationFixer)
+	 * @see JoinedStrategiesSelect#add(String, IEntityMappingStrategy, Column, Column, boolean, BeanRelationFixer)
 	 */
 	public <U, J, Z> String addPersister(String ownerStrategyName,
 										 Persister<U, J, ?> persister,
@@ -128,7 +129,7 @@ public class JoinedTablesPersister<C, I, T extends Table> extends Persister<C, I
 	 * @param nodeName a name of a added strategy
 	 * @return the {@link ClassMappingStrategy} behind a join node, null if not found
 	 */
-	public ClassMappingStrategy giveJoinedStrategy(String nodeName) {
+	public IEntityMappingStrategy giveJoinedStrategy(String nodeName) {
 		return Nullable.nullable(joinedStrategiesSelectExecutor.getJoinedStrategiesSelect().getStrategyJoins(nodeName)).map(StrategyJoins::getStrategy).get();
 	}
 	

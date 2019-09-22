@@ -1,5 +1,6 @@
 package org.gama.stalactite.persistence.mapping;
 
+import java.util.function.Function;
 import java.util.function.Supplier;
 
 import org.gama.lang.Reflections;
@@ -7,20 +8,20 @@ import org.gama.stalactite.sql.result.Row;
 
 /**
  * A very general frame to transform {@link Row}s
- * 
+ *
  * @author Guillaume Mary
  */
 public abstract class AbstractTransformer<T> implements IRowTransformer<T> {
 	
-	protected final Supplier<T> constructor;
+	protected final Function<Row, T> beanFactory;
 	
 	/**
 	 * Constructor for beans to be instanciated with their default constructor.
-	 * 
+	 *
 	 * @param clazz bean class
 	 */
 	public AbstractTransformer(Class<T> clazz) {
-		this(() -> Reflections.newInstance(clazz));
+		this(row -> Reflections.newInstance(clazz));
 	}
 	
 	/**
@@ -28,13 +29,13 @@ public abstract class AbstractTransformer<T> implements IRowTransformer<T> {
 	 *
 	 * @param factory the factory of beans
 	 */
-	public AbstractTransformer(Supplier<T> factory) {
-		this.constructor = factory;
+	public AbstractTransformer(Function<Row, T> factory) {
+		this.beanFactory = factory;
 	}
 	
 	@Override
 	public T transform(Row row) {
-		T bean = newBeanInstance();
+		T bean = newBeanInstance(row);
 		applyRowToBean(row, bean);
 		return bean;
 	}
@@ -44,9 +45,10 @@ public abstract class AbstractTransformer<T> implements IRowTransformer<T> {
 	/**
 	 * Instanciates a bean 
 	 * 
+	 * @param row current {@link java.sql.ResultSet} row, may be used to defined which bean to instanciate
 	 * @return a new instance of bean T
 	 */
-	public T newBeanInstance() {
-		return constructor.get();
+	public T newBeanInstance(Row row) {
+		return beanFactory.apply(row);
 	}
 }

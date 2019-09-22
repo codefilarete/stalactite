@@ -11,7 +11,6 @@ import java.util.stream.Collectors;
 import org.gama.lang.collection.Arrays;
 import org.gama.lang.collection.Iterables;
 import org.gama.lang.collection.Maps;
-import org.gama.stalactite.sql.result.Row;
 import org.gama.stalactite.persistence.engine.BeanRelationFixer;
 import org.gama.stalactite.persistence.engine.cascade.JoinedStrategiesSelect.StrategyJoins;
 import org.gama.stalactite.persistence.engine.cascade.JoinedStrategiesSelect.StrategyJoins.Join;
@@ -22,12 +21,16 @@ import org.gama.stalactite.persistence.mapping.IdMappingStrategy;
 import org.gama.stalactite.persistence.mapping.ToBeanRowTransformer;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
+import org.gama.stalactite.sql.result.Row;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.invocation.InvocationOnMock;
+import org.mockito.stubbing.Answer;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -59,7 +62,7 @@ public class StrategyJoinsRowTransformerTest {
 	
 	@Test
 	public void testTransform_with1strategy() {
-		when(rootStrategy.getRowTransformer()).thenReturn(new ToBeanRowTransformer<>(Toto.class, totoTable, false));
+		when(rootStrategy.copyTransformerWithAliases(any())).thenAnswer(new ToBeanRowTransformerAnswer<>(Toto.class, totoTable));
 		
 		StrategyJoinsRowTransformer testInstance = new StrategyJoinsRowTransformer(new StrategyJoins<>(rootStrategy));
 		Row row1 = buildRow(
@@ -101,8 +104,8 @@ public class StrategyJoinsRowTransformerTest {
 		
 		
 		// Telling mocks which instance to create
-		when(rootStrategy.getRowTransformer()).thenReturn(new ToBeanRowTransformer<>(Toto.class, totoTable, false));
-		when(joinedStrategy.getRowTransformer()).thenReturn(new ToBeanRowTransformer<>(Tata.class, tataTable, false));
+		when(rootStrategy.copyTransformerWithAliases(any())).thenAnswer(new ToBeanRowTransformerAnswer<>(Toto.class, totoTable));
+		when(joinedStrategy.copyTransformerWithAliases(any())).thenAnswer(new ToBeanRowTransformerAnswer<>(Tata.class, tataTable));
 		
 		StrategyJoinsRowTransformer<Toto> testInstance = new StrategyJoinsRowTransformer<>(rootStrategyJoins);
 		Row row1 = buildRow(
@@ -161,9 +164,9 @@ public class StrategyJoinsRowTransformerTest {
 				BeanRelationFixer.of(Tata::setOneToOne));
 		
 		// Telling mocks which instance to create
-		when(rootStrategy.getRowTransformer()).thenReturn(new ToBeanRowTransformer<>(Toto.class, totoTable, false));
-		when(joinedStrategy1.getRowTransformer()).thenReturn(new ToBeanRowTransformer<>(Tata.class, tataTable, false));
-		when(joinedStrategy2.getRowTransformer()).thenReturn(new ToBeanRowTransformer<>(Titi.class, titiTable, false));
+		when(rootStrategy.copyTransformerWithAliases(any())).thenAnswer(new ToBeanRowTransformerAnswer<>(Toto.class, totoTable));
+		when(joinedStrategy1.copyTransformerWithAliases(any())).thenAnswer(new ToBeanRowTransformerAnswer<>(Tata.class, tataTable));
+		when(joinedStrategy2.copyTransformerWithAliases(any())).thenAnswer(new ToBeanRowTransformerAnswer<>(Titi.class, titiTable));
 		
 		StrategyJoinsRowTransformer testInstance = new StrategyJoinsRowTransformer(rootStrategyJoins);
 		Row row = buildRow(
@@ -228,9 +231,9 @@ public class StrategyJoinsRowTransformerTest {
 				BeanRelationFixer.of(Toto::setOneToOneOther));
 		
 		// Telling mocks which instance to create
-		when(rootStrategy.getRowTransformer()).thenReturn(new ToBeanRowTransformer<>(Toto.class, totoTable, false));
-		when(joinedStrategy1.getRowTransformer()).thenReturn(new ToBeanRowTransformer<>(Tata.class, tataTable, false));
-		when(joinedStrategy2.getRowTransformer()).thenReturn(new ToBeanRowTransformer<>(Titi.class, titiTable, false));
+		when(rootStrategy.copyTransformerWithAliases(any())).thenAnswer(new ToBeanRowTransformerAnswer<>(Toto.class, totoTable));
+		when(joinedStrategy1.copyTransformerWithAliases(any())).thenAnswer(new ToBeanRowTransformerAnswer<>(Tata.class, tataTable));
+		when(joinedStrategy2.copyTransformerWithAliases(any())).thenAnswer(new ToBeanRowTransformerAnswer<>(Titi.class, titiTable));
 		
 		StrategyJoinsRowTransformer testInstance = new StrategyJoinsRowTransformer(rootStrategyJoins);
 		Row row = buildRow(
@@ -283,8 +286,8 @@ public class StrategyJoinsRowTransformerTest {
 				BeanRelationFixer.of(Toto::setOneToMany, Toto::getOneToMany, ArrayList::new));
 		
 		// Telling mocks which instance to create
-		when(rootStrategy.getRowTransformer()).thenReturn(new ToBeanRowTransformer<>(Toto.class, totoTable, false));
-		when(joinedStrategy.getRowTransformer()).thenReturn(new ToBeanRowTransformer<>(Tata.class, tataTable, false));
+		when(rootStrategy.copyTransformerWithAliases(any())).thenAnswer(new ToBeanRowTransformerAnswer<>(Toto.class, totoTable));
+		when(joinedStrategy.copyTransformerWithAliases(any())).thenAnswer(new ToBeanRowTransformerAnswer<>(Tata.class, tataTable));
 		
 		StrategyJoinsRowTransformer testInstance = new StrategyJoinsRowTransformer(rootStrategyJoins);
 		
@@ -338,8 +341,8 @@ public class StrategyJoinsRowTransformerTest {
 		
 		
 		// Telling mocks which instance to create
-		when(rootStrategy.getRowTransformer()).thenReturn(new ToBeanRowTransformer<>(Toto.class, totoTable, false));
-		when(joinedStrategy.getRowTransformer()).thenReturn(new ToBeanRowTransformer<>(Toto.class, totoTable2, false));
+		when(rootStrategy.copyTransformerWithAliases(any())).thenAnswer(new ToBeanRowTransformerAnswer<>(Toto.class, totoTable));
+		when(joinedStrategy.copyTransformerWithAliases(any())).thenAnswer(new ToBeanRowTransformerAnswer<>(Toto.class, totoTable2));
 		
 		StrategyJoinsRowTransformer<Toto> testInstance = new StrategyJoinsRowTransformer<>(rootStrategyJoins);
 		
@@ -440,5 +443,21 @@ public class StrategyJoinsRowTransformerTest {
 	public static class Titi {
 		private Long id;
 		private String lastName;
+	}
+	
+	private static class ToBeanRowTransformerAnswer<C> implements Answer<ToBeanRowTransformer<C>> {
+		
+		private final Class<C> instanceClass;
+		private final Table table;
+		
+		private ToBeanRowTransformerAnswer(Class<C> instanceClass,  Table table) {
+			this.instanceClass = instanceClass;
+			this.table = table;
+		}
+		
+		@Override
+		public ToBeanRowTransformer<C> answer(InvocationOnMock invocation) {
+			return new ToBeanRowTransformer<>(instanceClass, table, false).copyWithAliases((Function<Column, String>) invocation.getArguments()[0]);
+		}
 	}
 }

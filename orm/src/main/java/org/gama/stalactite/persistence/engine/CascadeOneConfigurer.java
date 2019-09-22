@@ -28,8 +28,6 @@ import org.gama.reflection.MemberDefinition;
 import org.gama.reflection.MethodReferenceCapturer;
 import org.gama.reflection.ValueAccessPoint;
 import org.gama.reflection.ValueAccessPointMap;
-import org.gama.stalactite.sql.binder.NullAwareParameterBinder;
-import org.gama.stalactite.sql.binder.ParameterBinder;
 import org.gama.stalactite.persistence.engine.CascadeOptions.RelationMode;
 import org.gama.stalactite.persistence.engine.cascade.AfterDeleteByIdSupport;
 import org.gama.stalactite.persistence.engine.cascade.AfterDeleteSupport;
@@ -47,12 +45,14 @@ import org.gama.stalactite.persistence.engine.listening.PersisterListener;
 import org.gama.stalactite.persistence.engine.listening.SelectListener;
 import org.gama.stalactite.persistence.engine.listening.UpdateListener;
 import org.gama.stalactite.persistence.id.assembly.SimpleIdentifierAssembler;
-import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
+import org.gama.stalactite.persistence.mapping.IEntityMappingStrategy;
 import org.gama.stalactite.persistence.mapping.IdMappingStrategy;
 import org.gama.stalactite.persistence.mapping.SinglePropertyIdAccessor;
 import org.gama.stalactite.persistence.sql.Dialect;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
+import org.gama.stalactite.sql.binder.NullAwareParameterBinder;
+import org.gama.stalactite.sql.binder.ParameterBinder;
 
 import static org.gama.lang.function.Predicates.not;
 import static org.gama.stalactite.persistence.engine.CascadeOptions.RelationMode.ALL_ORPHAN_REMOVAL;
@@ -106,7 +106,7 @@ public class CascadeOneConfigurer<SRC, TRGT, ID> {
 			if (maintenanceMode == ASSOCIATION_ONLY) {
 				throw new MappingConfigurationException(ASSOCIATION_ONLY + " is only relevent for one-to-many association");
 			}
-			ClassMappingStrategy<SRC, ID, T> mappingStrategy = sourcePersister.getMappingStrategy();
+			IEntityMappingStrategy<SRC, ID, T> mappingStrategy = sourcePersister.getMappingStrategy();
 			if (mappingStrategy.getTargetTable().getPrimaryKey().getColumns().size() > 1) {
 				throw new NotYetSupportedOperationException("Joining tables on a composed primary key is not (yet) supported");
 			}
@@ -118,7 +118,7 @@ public class CascadeOneConfigurer<SRC, TRGT, ID> {
 			JoinedTablesPersister<TRGT, ID, Table> targetPersister = new EntityMappingBuilder<>(targetMappingConfiguration, new MethodReferenceCapturer())
 					// please note that even if no table is found in configuration, build(..) will create one
 					.build(persistenceContext, Nullable.nullable(cascadeOne.getTargetTable()).getOr(Nullable.nullable(cascadeOne.getReverseColumn()).map(Column::getTable).get()));
-			ClassMappingStrategy<TRGT, ID, Table> targetMappingStrategy = targetPersister.getMappingStrategy();
+			IEntityMappingStrategy<TRGT, ID, Table> targetMappingStrategy = targetPersister.getMappingStrategy();
 			
 			// Finding joined columns
 			Duo<Column, Column> foreignKeyColumns = determineForeignKeyColumns(cascadeOne, mappingStrategy, targetAccessor,
@@ -151,9 +151,9 @@ public class CascadeOneConfigurer<SRC, TRGT, ID> {
 		}
 		
 		protected abstract <T extends Table<T>> Duo<Column, Column> determineForeignKeyColumns(CascadeOne<SRC, TRGT, ID> cascadeOne,
-																							   ClassMappingStrategy<SRC, ID, T> mappingStrategy,
+																							   IEntityMappingStrategy<SRC, ID, T> mappingStrategy,
 																							   IReversibleAccessor<SRC, TRGT> targetAccessor,
-																							   ClassMappingStrategy<TRGT, ID, Table> targetMappingStrategy,
+																							   IEntityMappingStrategy<TRGT, ID, Table> targetMappingStrategy,
 																							   ForeignKeyNamingStrategy foreignKeyNamingStrategy,
 																							   ColumnNamingStrategy joinColumnNamingStrategy);
 		
@@ -246,13 +246,13 @@ public class CascadeOneConfigurer<SRC, TRGT, ID> {
 				
 		@Override
 		protected <T extends Table<T>> Duo<Column, Column> determineForeignKeyColumns(CascadeOne<SRC, TRGT, ID> cascadeOne,
-																					  ClassMappingStrategy<SRC, ID, T> srcMappingStrategy,
+																					  IEntityMappingStrategy<SRC, ID, T> srcMappingStrategy,
 																					  IReversibleAccessor<SRC, TRGT> targetAccessor,
-																					  ClassMappingStrategy<TRGT, ID, Table> targetMappingStrategy,
+																					  IEntityMappingStrategy<TRGT, ID, Table> targetMappingStrategy,
 																					  ForeignKeyNamingStrategy foreignKeyNamingStrategy,
 																					  ColumnNamingStrategy joinColumnNamingStrategy) {
 			// targetAccessor may not be the one that was declared in propertyToColumn, so we need to wrap them into a more flexible search structure : ValueAccessPointMap
-			Column<T, ID> leftColumn = (Column<T, ID>) new ValueAccessPointMap<Column>(srcMappingStrategy.getMainMappingStrategy().getPropertyToColumn()).get(targetAccessor);
+			Column<T, ID> leftColumn = (Column<T, ID>) new ValueAccessPointMap<Column>(srcMappingStrategy.getPropertyToColumn()).get(targetAccessor);
 			// According to the nullable option, we specify the ddl schema option
 			leftColumn.nullable(cascadeOne.isNullable());
 			Column<?, ID> rightColumn = (Column<?, ID>) Iterables.first((Set<Column<?, Object>>) targetMappingStrategy.getTargetTable().getPrimaryKey().getColumns());
@@ -360,9 +360,9 @@ public class CascadeOneConfigurer<SRC, TRGT, ID> {
 		
 		@Override
 		protected <T extends Table<T>> Duo<Column, Column> determineForeignKeyColumns(CascadeOne<SRC, TRGT, ID> cascadeOne,
-																					  ClassMappingStrategy<SRC, ID, T> mappingStrategy,
+																					  IEntityMappingStrategy<SRC, ID, T> mappingStrategy,
 																					  IReversibleAccessor<SRC, TRGT> targetAccessor,
-																					  ClassMappingStrategy<TRGT, ID, Table> targetMappingStrategy,
+																					  IEntityMappingStrategy<TRGT, ID, Table> targetMappingStrategy,
 																					  ForeignKeyNamingStrategy foreignKeyNamingStrategy,
 																					  ColumnNamingStrategy joinColumnNamingStrategy) {
 			
@@ -416,12 +416,12 @@ public class CascadeOneConfigurer<SRC, TRGT, ID> {
 			return new Duo<>(leftColumn, rightColumn);
 		}
 		
-		private Column createOrUseReverseColumn(ClassMappingStrategy<TRGT, ID, Table> targetMappingStrategy, Column reverseColumn,
+		private Column createOrUseReverseColumn(IEntityMappingStrategy<TRGT, ID, Table> targetMappingStrategy, Column reverseColumn,
 												ValueAccessPoint reverseGetter, MemberDefinition memberDefinition,
 												ColumnNamingStrategy joinColumnNamingStrategy) {
 			if (reverseColumn == null) {
 				// no reverse column was given, so we look for the one mapped under the reverse getter
-				reverseColumn = targetMappingStrategy.getMainMappingStrategy().getPropertyToColumn().get(reverseGetter);
+				reverseColumn = targetMappingStrategy.getPropertyToColumn().get(reverseGetter);
 				if (reverseColumn == null) {
 					// no column is defined under the getter, then we have to create one
 					reverseColumn = targetMappingStrategy.getTargetTable().addColumn(joinColumnNamingStrategy.giveName(memberDefinition), memberDefinition.getMemberType());
@@ -639,7 +639,7 @@ public class CascadeOneConfigurer<SRC, TRGT, ID> {
 	 * @param <TRGT> target type of the column
 	 * @param <ID> identifier type
 	 */
-	private static <TRGT, ID> void registerEntityBinder(Column owningColumn, ClassMappingStrategy<TRGT, ID, ? extends Table> mappingStrategy, Dialect dialect) {
+	private static <TRGT, ID> void registerEntityBinder(Column owningColumn, IEntityMappingStrategy<TRGT, ID, ? extends Table> mappingStrategy, Dialect dialect) {
 		// Note : for now only single primary key column is supported
 		IdMappingStrategy<TRGT, ID> targetIdMappingStrategy = mappingStrategy.getIdMappingStrategy();
 		Column targetPrimaryKey = ((SimpleIdentifierAssembler) targetIdMappingStrategy.getIdentifierAssembler()).getColumn();

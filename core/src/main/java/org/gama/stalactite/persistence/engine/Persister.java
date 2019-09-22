@@ -12,6 +12,7 @@ import org.gama.lang.Duo;
 import org.gama.lang.Retryer;
 import org.gama.lang.collection.Iterables;
 import org.gama.lang.collection.Maps;
+import org.gama.stalactite.persistence.mapping.IEntityMappingStrategy;
 import org.gama.stalactite.sql.ConnectionProvider;
 import org.gama.stalactite.persistence.engine.listening.PersisterListener;
 import org.gama.stalactite.persistence.engine.listening.UpdateListener;
@@ -35,23 +36,23 @@ public class Persister<C, I, T extends Table> {
 	private final Retryer writeOperationRetryer;
 	private final int batchSize;
 	private final int inOperatorMaxSize;
-	private ClassMappingStrategy<C, I, T> mappingStrategy;
+	private IEntityMappingStrategy<C, I, T> mappingStrategy;
 	private PersisterListener<C, I> persisterListener = new PersisterListener<>();
 	private InsertExecutor<C, I, T> insertExecutor;
 	private UpdateExecutor<C, I, T> updateExecutor;
 	private DeleteExecutor<C, I, T> deleteExecutor;
 	private SelectExecutor<C, I, T> selectExecutor;
 	
-	public Persister(PersistenceContext persistenceContext, ClassMappingStrategy<C, I, T> mappingStrategy) {
+	public Persister(PersistenceContext persistenceContext, IEntityMappingStrategy<C, I, T> mappingStrategy) {
 		this(mappingStrategy, persistenceContext.getDialect(), persistenceContext.getConnectionProvider(), persistenceContext.getJDBCBatchSize());
 	}
 	
-	public Persister(ClassMappingStrategy<C, I, T> mappingStrategy, Dialect dialect, ConnectionProvider connectionProvider, int jdbcBatchSize) {
+	public Persister(IEntityMappingStrategy<C, I, T> mappingStrategy, Dialect dialect, ConnectionProvider connectionProvider, int jdbcBatchSize) {
 		this(mappingStrategy, connectionProvider, dialect.getDmlGenerator(),
 				dialect.getWriteOperationRetryer(), jdbcBatchSize, dialect.getInOperatorMaxSize());
 	}
 	
-	protected Persister(ClassMappingStrategy<C, I, T> mappingStrategy, ConnectionProvider connectionProvider,
+	protected Persister(IEntityMappingStrategy<C, I, T> mappingStrategy, ConnectionProvider connectionProvider,
 						DMLGenerator dmlGenerator, Retryer writeOperationRetryer, int jdbcBatchSize, int inOperatorMaxSize) {
 		this.mappingStrategy = mappingStrategy;
 		this.connectionProvider = connectionProvider;
@@ -72,7 +73,7 @@ public class Persister<C, I, T extends Table> {
 				getMappingStrategy().getIdMappingStrategy().getIdentifierInsertionManager().getInsertListener());
 	}
 	
-	protected <U> InsertExecutor<U, I, T> newInsertExecutor(ClassMappingStrategy<U, I, T> mappingStrategy,
+	protected <U> InsertExecutor<U, I, T> newInsertExecutor(IEntityMappingStrategy<U, I, T> mappingStrategy,
 																ConnectionProvider connectionProvider,
 																DMLGenerator dmlGenerator,
 																Retryer writeOperationRetryer,
@@ -82,7 +83,7 @@ public class Persister<C, I, T extends Table> {
 				writeOperationRetryer, jdbcBatchSize, inOperatorMaxSize);
 	}
 	
-	protected <U> UpdateExecutor<U, I, T> newUpdateExecutor(ClassMappingStrategy<U, I, T> mappingStrategy,
+	protected <U> UpdateExecutor<U, I, T> newUpdateExecutor(IEntityMappingStrategy<U, I, T> mappingStrategy,
 													  ConnectionProvider connectionProvider,
 													  DMLGenerator dmlGenerator,
 													  Retryer writeOperationRetryer,
@@ -92,7 +93,7 @@ public class Persister<C, I, T extends Table> {
 				writeOperationRetryer, jdbcBatchSize, inOperatorMaxSize);
 	}
 	
-	protected <U> DeleteExecutor<U, I, T> newDeleteExecutor(ClassMappingStrategy<U, I, T> mappingStrategy,
+	protected <U> DeleteExecutor<U, I, T> newDeleteExecutor(IEntityMappingStrategy<U, I, T> mappingStrategy,
 															ConnectionProvider connectionProvider,
 															DMLGenerator dmlGenerator,
 															Retryer writeOperationRetryer,
@@ -102,7 +103,7 @@ public class Persister<C, I, T extends Table> {
 				writeOperationRetryer, jdbcBatchSize, inOperatorMaxSize);
 	}
 	
-	protected <U> SelectExecutor<U, I, T> newSelectExecutor(ClassMappingStrategy<U, I, T> mappingStrategy,
+	protected <U> SelectExecutor<U, I, T> newSelectExecutor(IEntityMappingStrategy<U, I, T> mappingStrategy,
 																ConnectionProvider connectionProvider,
 																DMLGenerator dmlGenerator,
 																int inOperatorMaxSize) {
@@ -129,7 +130,7 @@ public class Persister<C, I, T extends Table> {
 		return inOperatorMaxSize;
 	}
 	
-	public ClassMappingStrategy<C, I, T> getMappingStrategy() {
+	public IEntityMappingStrategy<C, I, T> getMappingStrategy() {
 		return mappingStrategy;
 	}
 	

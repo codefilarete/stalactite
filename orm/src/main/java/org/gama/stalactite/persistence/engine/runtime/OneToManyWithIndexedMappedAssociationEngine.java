@@ -93,7 +93,7 @@ public class OneToManyWithIndexedMappedAssociationEngine<SRC, TRGT, SRCID, TRGTI
 		});
 		// Adding a transformer listener to keep track of the index column read from ResultSet/Row
 		// We place it into a ThreadLocal, then the select listener will use it to reorder loaded beans
-		targetPersister.getMappingStrategy().getRowTransformer().addTransformerListener((bean, row) -> {
+		targetPersister.getMappingStrategy().addTransformerListener((bean, row) -> {
 			Map<TRGT, Integer> indexPerBean = updatableListIndex.get();
 			// indexPerBean may not be present because its mecanism was added on persisterListener which is the one of the source bean
 			// so in case of entity loading from its own persister (targetPersister) ThreadLocal is not available

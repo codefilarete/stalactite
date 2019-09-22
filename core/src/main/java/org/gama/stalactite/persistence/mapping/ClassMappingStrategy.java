@@ -19,11 +19,12 @@ import org.gama.reflection.IReversibleAccessor;
 import org.gama.reflection.IReversibleMutator;
 import org.gama.reflection.MemberDefinition;
 import org.gama.reflection.PropertyAccessor;
-import org.gama.stalactite.sql.result.Row;
 import org.gama.stalactite.persistence.id.assembly.SimpleIdentifierAssembler;
 import org.gama.stalactite.persistence.id.manager.IdentifierInsertionManager;
+import org.gama.stalactite.persistence.mapping.ToBeanRowTransformer.TransformerListener;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
+import org.gama.stalactite.sql.result.Row;
 
 /**
  * <p>
@@ -388,8 +389,17 @@ public class ClassMappingStrategy<C, I, T extends Table> implements IEntityMappi
 		return toReturn;
 	}
 	
+	@Override
+	public ToBeanRowTransformer<C> copyTransformerWithAliases(Function<Column, String> aliasProvider) {
+		return getRowTransformer().copyWithAliases(aliasProvider);
+	}
+	
 	public ToBeanRowTransformer<C> getRowTransformer() {
 		return mainMappingStrategy.getRowTransformer();
 	}
 	
+	@Override
+	public void addTransformerListener(TransformerListener<C> listener) {
+		getRowTransformer().addTransformerListener(listener);
+	}
 }

@@ -5,8 +5,6 @@ import java.util.HashMap;
 import org.gama.lang.collection.ValueFactoryMap;
 import org.gama.lang.test.Assertions;
 import org.gama.reflection.AccessorByMethodReference;
-import org.gama.stalactite.sql.ConnectionProvider;
-import org.gama.stalactite.sql.binder.DefaultParameterBinders;
 import org.gama.stalactite.persistence.engine.ColumnOptions.IdentifierPolicy;
 import org.gama.stalactite.persistence.engine.MappingEase;
 import org.gama.stalactite.persistence.engine.PersistenceContext;
@@ -16,7 +14,7 @@ import org.gama.stalactite.persistence.engine.model.City;
 import org.gama.stalactite.persistence.engine.model.Country;
 import org.gama.stalactite.persistence.id.Identified;
 import org.gama.stalactite.persistence.id.Identifier;
-import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
+import org.gama.stalactite.persistence.mapping.IEntityMappingStrategy;
 import org.gama.stalactite.persistence.query.EntityCriteriaSupport.EntityGraphNode;
 import org.gama.stalactite.persistence.sql.Dialect;
 import org.gama.stalactite.persistence.structure.Column;
@@ -24,6 +22,8 @@ import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.query.builder.DMLNameProvider;
 import org.gama.stalactite.query.builder.WhereBuilder;
 import org.gama.stalactite.query.model.Operators;
+import org.gama.stalactite.sql.ConnectionProvider;
+import org.gama.stalactite.sql.binder.DefaultParameterBinders;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -81,7 +81,7 @@ class EntityCriteriaSupportTest {
 		PersistenceContext dummyPersistenceContext = new PersistenceContext(mock(ConnectionProvider.class), dialect);
 		Table countryTable = new Table("Country");
 		Column nameColumn = countryTable.addColumn("name", String.class);
-		ClassMappingStrategy<Country, Long, Table> mappingStrategy = MappingEase.entityBuilder(Country.class, long.class)
+		IEntityMappingStrategy<Country, Long, Table> mappingStrategy = MappingEase.entityBuilder(Country.class, long.class)
 				.add(Country::getId).identifier(IdentifierPolicy.AFTER_INSERT)
 				.add(Country::getName)
 				.build(dummyPersistenceContext, countryTable)
@@ -103,7 +103,7 @@ class EntityCriteriaSupportTest {
 		Table countryTable = new Table("Country");
 		Table cityTable = new Table("City");
 		Column nameColumn = cityTable.addColumn("name", String.class);
-		ClassMappingStrategy<Country, Long, Table> mappingStrategy = MappingEase.entityBuilder(Country.class, long.class)
+		IEntityMappingStrategy<Country, Long, Table> mappingStrategy = MappingEase.entityBuilder(Country.class, long.class)
 				.add(Country::getId).identifier(IdentifierPolicy.AFTER_INSERT)
 				.add(Country::getName)
 				.addOneToOne(Country::getCapital, MappingEase.entityBuilder(City.class, long.class)
@@ -128,7 +128,7 @@ class EntityCriteriaSupportTest {
 		Table countryTable = new Table("Country");
 		Table cityTable = new Table("City");
 		Column nameColumn = cityTable.addColumn("name", String.class);
-		ClassMappingStrategy<Country, Long, Table> mappingStrategy = MappingEase.entityBuilder(Country.class, long.class)
+		IEntityMappingStrategy<Country, Long, Table> mappingStrategy = MappingEase.entityBuilder(Country.class, long.class)
 				.add(Country::getId).identifier(IdentifierPolicy.AFTER_INSERT)
 				.add(Country::getName)
 				.addOneToManySet(Country::getCities, MappingEase.entityBuilder(City.class, long.class)
@@ -152,7 +152,7 @@ class EntityCriteriaSupportTest {
 		
 		PersistenceContext dummyPersistenceContext = new PersistenceContext(mock(ConnectionProvider.class), dialect);
 		Table countryTable = new Table("Country");
-		ClassMappingStrategy<Country, Long, Table> mappingStrategy = MappingEase.entityBuilder(Country.class, long.class)
+		IEntityMappingStrategy<Country, Long, Table> mappingStrategy = MappingEase.entityBuilder(Country.class, long.class)
 				.add(Country::getId).identifier(IdentifierPolicy.AFTER_INSERT)
 				.build(dummyPersistenceContext, countryTable)
 				.getMappingStrategy();
@@ -170,7 +170,7 @@ class EntityCriteriaSupportTest {
 		
 		PersistenceContext dummyPersistenceContext = new PersistenceContext(mock(ConnectionProvider.class), dialect);
 		Table countryTable = new Table("Country");
-		ClassMappingStrategy<Country, Long, Table> mappingStrategy = MappingEase.entityBuilder(Country.class, long.class)
+		IEntityMappingStrategy<Country, Long, Table> mappingStrategy = MappingEase.entityBuilder(Country.class, long.class)
 				.add(Country::getId).identifier(IdentifierPolicy.AFTER_INSERT)
 				.build(dummyPersistenceContext, countryTable)
 				.getMappingStrategy();

@@ -9,9 +9,10 @@ import java.util.Set;
 import java.util.function.Function;
 
 import org.gama.reflection.IReversibleAccessor;
-import org.gama.stalactite.sql.result.Row;
+import org.gama.stalactite.persistence.mapping.ToBeanRowTransformer.TransformerListener;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
+import org.gama.stalactite.sql.result.Row;
 
 /**
  * A very general contract for mapping a type to a database table. Not expected to be used as this (for instance it lacks deletion contract)
@@ -93,6 +94,16 @@ public interface IMappingStrategy<C, T extends Table> {
 	}
 	
 	Map<IReversibleAccessor<C, Object>, Column<T, Object>> getPropertyToColumn();
+	
+	AbstractTransformer<C> copyTransformerWithAliases(Function<Column, String> aliasProvider);
+	
+	/**
+	 * Adds a tranformer listener, optional operation
+	 * @param listener the listener to be notify of transformation
+	 */
+	default void addTransformerListener(TransformerListener<C> listener) {
+		// does nothing by default
+	}
 	
 	/**
 	 * Wrapper for {@link Column} placed in an update statement so it can distinguish if it's for the Update or Where part 

@@ -190,6 +190,11 @@ public class EmbeddedBeanMappingStrategy<C, T extends Table> implements IEmbedde
 		return this.rowTransformer.transform(row);
 	}
 	
+	@Override
+	public AbstractTransformer<C> copyTransformerWithAliases(Function<Column, String> aliasProvider) {
+		return getRowTransformer().copyWithAliases(aliasProvider);
+	}
+	
 	private abstract class FieldVisitor<K> implements Consumer<Entry<IReversibleAccessor<C, Object>, Column<T, Object>>> {
 		
 		protected final Map<K, Object> toReturn = new HashMap<>();

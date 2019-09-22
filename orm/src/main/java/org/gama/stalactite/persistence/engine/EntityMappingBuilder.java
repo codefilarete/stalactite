@@ -40,6 +40,7 @@ import org.gama.stalactite.persistence.id.manager.BeforeInsertIdentifierManager;
 import org.gama.stalactite.persistence.id.manager.IdentifierInsertionManager;
 import org.gama.stalactite.persistence.id.manager.JDBCGeneratedKeysIdentifierManager;
 import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
+import org.gama.stalactite.persistence.mapping.IEntityMappingStrategy;
 import org.gama.stalactite.persistence.mapping.IdAccessor;
 import org.gama.stalactite.persistence.mapping.IdMappingStrategy;
 import org.gama.stalactite.persistence.mapping.SinglePropertyIdAccessor;
@@ -100,7 +101,7 @@ class EntityMappingBuilder<C, I> extends AbstractEntityMappingBuilder<C, I> {
 				this.methodSpy);
 		Duo<IReversibleAccessor<C, I>, IdentifierInsertionManager<C, I>> identification = identificationDeterminer.determineIdentification(persistenceContext.getDialect(), table);
 		
-		ClassMappingStrategy<? super C, I, Table> inheritanceMapping = giveInheritanceMapping(persistenceContext, table);
+		IEntityMappingStrategy<? super C, I, Table> inheritanceMapping = giveInheritanceMapping(persistenceContext, table);
 		
 		InheritanceInfo<C> inheritanceInfo = null;
 		if (inheritanceMapping != null) {
@@ -125,7 +126,7 @@ class EntityMappingBuilder<C, I> extends AbstractEntityMappingBuilder<C, I> {
 		
 		EntityDecoratedEmbeddableMappingBuilder<C> embeddableMappingBuilder = new EntityDecoratedEmbeddableMappingBuilder<>(
 				configurationSupport.getPropertiesMapping(),
-				columnNameProvider, 
+				columnNameProvider,
 				configurationSupport.getOneToOnes(),
 				inheritanceInfo);
 		
@@ -138,8 +139,8 @@ class EntityMappingBuilder<C, I> extends AbstractEntityMappingBuilder<C, I> {
 	}
 	
 	@javax.annotation.Nullable
-	private <T extends Table<?>> ClassMappingStrategy<? super C, I, Table> giveInheritanceMapping(PersistenceContext persistenceContext, T table) {
-		ClassMappingStrategy<? super C, I, Table> result = null;
+	private <T extends Table<?>> IEntityMappingStrategy<? super C, I, Table> giveInheritanceMapping(PersistenceContext persistenceContext, T table) {
+		IEntityMappingStrategy<? super C, I, Table> result = null;
 		if (configurationSupport.getInheritanceConfiguration() != null) {
 			if (configurationSupport.isJoinTable()) {
 				// Note that generics can't be used because "<? super C> can't be instantiated directly"
@@ -173,14 +174,13 @@ class EntityMappingBuilder<C, I> extends AbstractEntityMappingBuilder<C, I> {
 		if (existingPersister == null) {
 			persistenceContext.addPersister(result);
 		} else {
-			
-			BiPredicate<ClassMappingStrategy, ClassMappingStrategy> mappingConfigurationComparator = Predicates.and(
-					ClassMappingStrategy::getTargetTable,
-					ClassMappingStrategy::getPropertyToColumn,
-					ClassMappingStrategy::getVersionedKeys,
-					ClassMappingStrategy::getSelectableColumns,
-					ClassMappingStrategy::getUpdatableColumns,
-					ClassMappingStrategy::getInsertableColumns
+			BiPredicate<IEntityMappingStrategy, IEntityMappingStrategy> mappingConfigurationComparator = Predicates.and(
+					IEntityMappingStrategy::getTargetTable,
+					IEntityMappingStrategy::getPropertyToColumn,
+					IEntityMappingStrategy::getVersionedKeys,
+					IEntityMappingStrategy::getSelectableColumns,
+					IEntityMappingStrategy::getUpdatableColumns,
+					IEntityMappingStrategy::getInsertableColumns
 			);
 			if (!mappingConfigurationComparator.test(existingPersister.getMappingStrategy(), mainMappingStrategy)) {
 				throw new IllegalArgumentException("Persister already exists for " + Reflections.toString(result.getMappingStrategy().getClassToPersist()));
@@ -207,8 +207,8 @@ class EntityMappingBuilder<C, I> extends AbstractEntityMappingBuilder<C, I> {
 		Nullable<VersioningStrategy> versioningStrategy = nullable(this.configurationSupport.getOptimisticLockOption());
 		if (versioningStrategy.isPresent()) {
 			// we have to declare it to the mapping strategy. To do that we must find the versionning column
-			Column column = result.getMappingStrategy().getMainMappingStrategy().getPropertyToColumn().get(this.configurationSupport.getOptimisticLockOption().getVersionAccessor());
-			result.getMappingStrategy().addVersionedColumn(this.configurationSupport.getOptimisticLockOption().getVersionAccessor(), column);
+			Column column = result.getMappingStrategy().getPropertyToColumn().get(this.configurationSupport.getOptimisticLockOption().getVersionAccessor());
+			((ClassMappingStrategy) result.getMappingStrategy()).addVersionedColumn(this.configurationSupport.getOptimisticLockOption().getVersionAccessor(), column);
 			// and don't forget to give it to the workers !
 			result.getUpdateExecutor().setVersioningStrategy(versioningStrategy.get());
 			result.getInsertExecutor().setVersioningStrategy(versioningStrategy.get());
