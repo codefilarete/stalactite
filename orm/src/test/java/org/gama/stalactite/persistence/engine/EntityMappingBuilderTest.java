@@ -8,9 +8,6 @@ import org.gama.lang.trace.ModifiableInt;
 import org.gama.reflection.Accessors;
 import org.gama.reflection.IReversibleAccessor;
 import org.gama.reflection.MethodReferenceCapturer;
-import org.gama.stalactite.sql.ConnectionProvider;
-import org.gama.stalactite.sql.binder.DefaultParameterBinders;
-import org.gama.stalactite.sql.test.HSQLDBInMemoryDataSource;
 import org.gama.stalactite.persistence.engine.CascadeOptions.RelationMode;
 import org.gama.stalactite.persistence.engine.ColumnOptions.IdentifierPolicy;
 import org.gama.stalactite.persistence.engine.FluentEntityMappingConfigurationSupport.EntityLinkageByColumnName;
@@ -29,13 +26,18 @@ import org.gama.stalactite.persistence.sql.Dialect;
 import org.gama.stalactite.persistence.sql.HSQLDBDialect;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
+import org.gama.stalactite.sql.ConnectionProvider;
+import org.gama.stalactite.sql.binder.DefaultParameterBinders;
+import org.gama.stalactite.sql.test.HSQLDBInMemoryDataSource;
 import org.gama.stalactite.test.JdbcConnectionProvider;
 import org.junit.jupiter.api.Test;
 import org.mockito.internal.stubbing.defaultanswers.ReturnsMocks;
 
 import static org.gama.stalactite.persistence.engine.MappingEase.entityBuilder;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.Mockito.CALLS_REAL_METHODS;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -45,7 +47,7 @@ import static org.mockito.Mockito.when;
 class EntityMappingBuilderTest {
 	
 	@Test
-	void build_invokeIdentifierManagerAfterInsertListener() {
+	void build_addsPrimaryKeyToTargetTable() {
 		Dialect dialect = new Dialect();
 		dialect.getColumnBinderRegistry().register((Class) Identifier.class, Identifier.identifierBinder(DefaultParameterBinders.LONG_PRIMITIVE_BINDER));
 		dialect.getJavaTypeToSqlTypeMapping().put(Identifier.class, "int");
@@ -74,12 +76,14 @@ class EntityMappingBuilderTest {
 		when(configuration.getIdentifierAccessor()).thenReturn(identifierAccessor);
 		when(configuration.getOneToOnes()).thenReturn(Collections.emptyList());
 		when(configuration.getOneToManys()).thenReturn(Collections.emptyList());
+		when(configuration.inheritanceIterable()).thenAnswer(CALLS_REAL_METHODS);
 		
 		ConnectionProvider connectionProviderMock = mock(ConnectionProvider.class, new ReturnsMocks());
-		Persister<Person, Identifier<Long>, Table> testInstance = new EntityMappingBuilder<>(configuration, new MethodReferenceCapturer())
-				.build(new PersistenceContext(connectionProviderMock, dialect));
-		Person person = new Person(new PersistableIdentifier<>(1L));
-		testInstance.insert(person);
+		EntityMappingBuilder<Person, Identifier<Long>> testInstance = new EntityMappingBuilder<>(configuration, new MethodReferenceCapturer());
+		
+		Table dummyTable = new Table<>("dummyTable");
+		testInstance.build(new PersistenceContext(connectionProviderMock, dialect), dummyTable);
+		assertNotNull(dummyTable.getPrimaryKey());
 	}
 	
 	@Test

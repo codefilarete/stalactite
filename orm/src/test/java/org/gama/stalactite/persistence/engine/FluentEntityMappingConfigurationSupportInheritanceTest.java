@@ -462,8 +462,7 @@ class FluentEntityMappingConfigurationSupportInheritanceTest {
 					.add(AbstractVehicle::getId).identifier(ALREADY_ASSIGNED)
 					.getConfiguration();
 			
-			IFluentEntityMappingBuilder<Car, Identifier<Long>> mappingBuilder = entityBuilder(Car.class
-					, LONG_TYPE)
+			IFluentEntityMappingBuilder<Car, Identifier<Long>> mappingBuilder = entityBuilder(Car.class, LONG_TYPE)
 					.add(Car::getModel)
 					.add(Car::getColor)
 					.mapSuperClass(MappingEase
@@ -561,23 +560,23 @@ class FluentEntityMappingConfigurationSupportInheritanceTest {
 	 */
 	static class MappedSuperClassData {
 		
-		abstract class AbstractVehiculeTable<SELF extends AbstractVehiculeTable<SELF>> extends Table<SELF> {
+		abstract class AbstractVehicleTable<SELF extends AbstractVehicleTable<SELF>> extends Table<SELF> {
 			final Column<SELF, Identifier<Long>> idColumn = addColumn("id", (Class<Identifier<Long>>) (Class) Identifier.class).primaryKey();
 			final Column<SELF, Color> colorColumn = addColumn("color", Color.class);
 			
-			public AbstractVehiculeTable(String name) {
+			public AbstractVehicleTable(String name) {
 				super(name);
 			}
 		}
 		
-		class VehiculeTable extends AbstractVehiculeTable<VehiculeTable> {
+		class VehicleTable extends AbstractVehicleTable<VehicleTable> {
 			
-			public VehiculeTable(String name) {
+			public VehicleTable(String name) {
 				super(name);
 			}
 		}
 		
-		class CarTable extends AbstractVehiculeTable<CarTable> {
+		class CarTable extends AbstractVehicleTable<CarTable> {
 			final Column<CarTable, String> modelColumn = addColumn("model", String.class);
 			
 			public CarTable(String name) {
@@ -585,7 +584,7 @@ class FluentEntityMappingConfigurationSupportInheritanceTest {
 			}
 		}
 		
-		private final VehiculeTable vehicleTable = new VehiculeTable("vehicle");
+		private final VehicleTable vehicleTable = new VehicleTable("vehicle");
 		
 		private final CarTable carTable = new CarTable("car");
 	}

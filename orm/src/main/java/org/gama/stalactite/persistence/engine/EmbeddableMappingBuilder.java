@@ -93,7 +93,7 @@ class EmbeddableMappingBuilder<C> {
 	 *
 	 * @return a {@link Map} representing the definition of the mapping declared by the {@link EmbeddableMappingConfiguration}
 	 */
-	Map<IReversibleAccessor, Column> build(Dialect dialect, Table targetTable) {
+	public Map<IReversibleAccessor, Column> build(Dialect dialect, Table targetTable) {
 		this.result = new HashMap<>();
 		this.dialect = dialect;
 		this.targetTable = targetTable;
@@ -111,7 +111,7 @@ class EmbeddableMappingBuilder<C> {
 	}
 	
 	protected void includeInheritance() {
-		result.putAll(buildMappingFromInheritance());
+		result.putAll(giveMappingFromInheritance());
 	}
 	
 	protected void includeDirectMapping() {
@@ -120,7 +120,7 @@ class EmbeddableMappingBuilder<C> {
 	
 	protected void includeMapping(Linkage linkage) {
 		Column column = addLinkage(linkage);
-		ensureColumnBinding(linkage, column);
+		ensureColumnBindingInRegistry(linkage, column);
 		result.put(linkage.getAccessor(), column);
 	}
 	
@@ -169,7 +169,7 @@ class EmbeddableMappingBuilder<C> {
 		}
 	}
 	
-	protected void ensureColumnBinding(Linkage linkage, Column column) {
+	protected void ensureColumnBindingInRegistry(Linkage linkage, Column column) {
 		// assert that column binder is registered : it will throw en exception if the binder is not found
 		if (linkage.getParameterBinder() != null) {
 			dialect.getColumnBinderRegistry().register(column, linkage.getParameterBinder());
@@ -187,7 +187,12 @@ class EmbeddableMappingBuilder<C> {
 		}
 	}
 	
-	protected Map<IReversibleAccessor, Column> buildMappingFromInheritance() {
+	/**
+	 * Gives property mapping from mapped super class
+	 * 
+	 * @return the mapping between property accessor and their column in target table, may be empty if no mapped super class was configured, never null
+	 */
+	protected Map<IReversibleAccessor, Column> giveMappingFromInheritance() {
 		Map<IReversibleAccessor, Column> inheritanceResult = new HashMap<>();
 		if (mappingConfiguration.getMappedSuperClassConfiguration() != null) {
 			EmbeddableMappingBuilder<? super C> superMappingBuilder = new EmbeddableMappingBuilder<>(mappingConfiguration.getMappedSuperClassConfiguration());

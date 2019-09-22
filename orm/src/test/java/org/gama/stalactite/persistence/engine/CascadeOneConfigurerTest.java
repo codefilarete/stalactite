@@ -39,6 +39,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.CALLS_REAL_METHODS;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -96,6 +97,7 @@ class CascadeOneConfigurerTest {
 		
 		EntityMappingConfiguration<City, Identifier<Long>> cityMappingConfiguration = mock(EntityMappingConfiguration.class);
 		// declaring mapping
+		when(cityMappingConfiguration.getPersistedClass()).thenReturn(City.class);
 		when(cityMappingConfiguration.getPropertiesMapping()).thenReturn(cityPropertiesMapping);
 		// preventing NullPointerException
 		when(cityMappingConfiguration.getTableNamingStrategy()).thenReturn(TableNamingStrategy.DEFAULT);
@@ -103,6 +105,7 @@ class CascadeOneConfigurerTest {
 		when(cityMappingConfiguration.getIdentifierPolicy()).thenReturn(IdentifierPolicy.ALREADY_ASSIGNED);
 		when(cityMappingConfiguration.getOneToOnes()).thenReturn(Collections.emptyList());
 		when(cityMappingConfiguration.getOneToManys()).thenReturn(Collections.emptyList());
+		when(cityMappingConfiguration.inheritanceIterable()).thenAnswer(CALLS_REAL_METHODS);
 		
 
 		// defining Country -> City relation through capital property
@@ -193,13 +196,15 @@ class CascadeOneConfigurerTest {
 		
 		EntityMappingConfiguration<City, Identifier<Long>> cityMappingConfiguration = mock(EntityMappingConfiguration.class);
 		// declaring mapping
+		when(cityMappingConfiguration.getPersistedClass()).thenReturn(City.class);
 		when(cityMappingConfiguration.getPropertiesMapping()).thenReturn(cityPropertiesMapping);
 		// preventing NullPointerException
 		when(cityMappingConfiguration.getTableNamingStrategy()).thenReturn(TableNamingStrategy.DEFAULT);
 		when(cityMappingConfiguration.getIdentifierAccessor()).thenReturn(cityIdentifierAccessorByMethodReference);
 		when(cityMappingConfiguration.getIdentifierPolicy()).thenReturn(IdentifierPolicy.ALREADY_ASSIGNED);
-		when(cityMappingConfiguration.getOneToOnes()).thenReturn(Collections.emptyList());		
-		when(cityMappingConfiguration.getOneToManys()).thenReturn(Collections.emptyList());		
+		when(cityMappingConfiguration.getOneToOnes()).thenReturn(Collections.emptyList());
+		when(cityMappingConfiguration.getOneToManys()).thenReturn(Collections.emptyList());
+		when(cityMappingConfiguration.inheritanceIterable()).thenAnswer(CALLS_REAL_METHODS);
 		
 		CascadeOne<Country, City, Identifier<Long>> countryCapitalRelation = new CascadeOne<>(capitalAccessPoint, cityMappingConfiguration, cityTable);
 		countryCapitalRelation.setReverseColumn(cityTableCountryColumn);

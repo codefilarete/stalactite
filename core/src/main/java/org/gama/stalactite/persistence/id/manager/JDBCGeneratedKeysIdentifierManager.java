@@ -26,6 +26,8 @@ import org.gama.stalactite.persistence.structure.Table;
  */
 public class JDBCGeneratedKeysIdentifierManager<T, I> implements IdentifierInsertionManager<T, I> {
 	
+	private static final InsertListener NOOP_INSERT_LISTENER = new InsertListener() {};
+	
 	private final Class<I> identifierType;
 	
 	private final AfterInsertIdentifierFixer<T, I> identifierFixer;
@@ -55,7 +57,7 @@ public class JDBCGeneratedKeysIdentifierManager<T, I> implements IdentifierInser
 	
 	@Override
 	public InsertListener<T> getInsertListener() {
-		return new InsertListener<T>() {};
+		return NOOP_INSERT_LISTENER;
 	}
 	
 	/**

@@ -1,5 +1,6 @@
 package org.gama.stalactite.persistence.engine;
 
+import javax.annotation.Nullable;
 import java.util.Collection;
 import java.util.List;
 
@@ -34,6 +35,7 @@ public interface EmbeddableMappingConfiguration<C> {
 		
 		<I> IReversibleAccessor<C, I> getAccessor();
 		
+		@Nullable
 		String getColumnName();
 		
 		Class<?> getColumnType();
