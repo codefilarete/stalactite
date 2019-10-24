@@ -65,7 +65,7 @@ public class JoinedStrategiesSelect<C, I, T extends Table> {
 	 * @param classMappingStrategy the root strategy, added strategy will be joined wih it
 	 * @param parameterBinderProvider the objet that will give {@link ParameterBinder} to read the selected columns
 	 */
-	JoinedStrategiesSelect(IEntityMappingStrategy<C, I, T> classMappingStrategy, ParameterBinderProvider<Column> parameterBinderProvider) {
+	public JoinedStrategiesSelect(IEntityMappingStrategy<C, I, T> classMappingStrategy, ParameterBinderProvider<Column> parameterBinderProvider) {
 		this(classMappingStrategy, parameterBinderProvider, FIRST_STRATEGY_NAME);
 	}
 	
@@ -91,6 +91,10 @@ public class JoinedStrategiesSelect<C, I, T extends Table> {
 	 */
 	public Map<Column, String> getAliases() {
 		return aliases;
+	}
+	
+	public String getAlias(Column column) {
+		return aliases.get(column);
 	}
 	
 	/**
@@ -226,7 +230,7 @@ public class JoinedStrategiesSelect<C, I, T extends Table> {
 			this.tableAlias = absoluteName;
 		}
 		
-		public <T extends Table<T>> IEntityMappingStrategy<I, Object, T> getStrategy() {
+		public <T extends Table> IEntityMappingStrategy<I, Object, T> getStrategy() {
 			return (IEntityMappingStrategy<I, Object, T>) strategy;
 		}
 		
@@ -297,15 +301,15 @@ public class JoinedStrategiesSelect<C, I, T extends Table> {
 				this.beanRelationFixer = beanRelationFixer;
 			}
 			
-			StrategyJoins<O, I> getStrategy() {
+			public StrategyJoins<O, I> getStrategy() {
 				return strategy;
 			}
 			
-			private Column getLeftJoinColumn() {
+			public Column getLeftJoinColumn() {
 				return leftJoinColumn;
 			}
 			
-			private Column getRightJoinColumn() {
+			public Column getRightJoinColumn() {
 				return rightJoinColumn;
 			}
 			

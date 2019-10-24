@@ -71,7 +71,7 @@ public class FluentEmbeddableMappingConfigurationSupport<C> implements IFluentEm
 	}
 	
 	@Override
-	public Class<C> getClassToPersist() {
+	public Class<C> getBeanType() {
 		return classToPersist;
 	}
 	

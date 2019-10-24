@@ -149,10 +149,15 @@ public class ToMultipleBeansRowTransformerTest {
 		private final String idColumn;
 		private final String nameColumn;
 		
-		public ToEntityRowTransformer(Class<E> clazz, String idColumn, String nameColumn) throws NoSuchMethodException {
+		public ToEntityRowTransformer(Class<E> clazz, String idColumn, String nameColumn) {
 			super(clazz);
 			this.idColumn = idColumn;
 			this.nameColumn = nameColumn;
+		}
+		
+		@Override
+		public AbstractTransformer<E> copyWithAliases(ColumnedRow columnedRow) {
+			return null;
 		}
 		
 		@Override

@@ -8,6 +8,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.function.BiPredicate;
+import java.util.function.Function;
 
 import org.danekja.java.util.function.serializable.SerializableBiFunction;
 import org.gama.lang.Duo;
@@ -43,6 +44,7 @@ import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
 import org.gama.stalactite.persistence.mapping.IEntityMappingStrategy;
 import org.gama.stalactite.persistence.mapping.IdAccessor;
 import org.gama.stalactite.persistence.mapping.IdMappingStrategy;
+import org.gama.stalactite.persistence.mapping.SimpleIdMappingStrategy;
 import org.gama.stalactite.persistence.mapping.SinglePropertyIdAccessor;
 import org.gama.stalactite.persistence.query.EntityCriteriaSupport.EntityGraphNode;
 import org.gama.stalactite.persistence.sql.Dialect;
@@ -70,17 +72,6 @@ class EntityMappingBuilder<C, I> extends AbstractEntityMappingBuilder<C, I> {
 	
 	/**
 	 * Build a {@link Persister} from the given configuration at contruction time.
-	 * {@link Table}s and columns will be created to fulfill the requirements needed by the configuration.
-	 * 
-	 * @param persistenceContext the {@link PersistenceContext} in which the resulting {@link Persister} will be put, also needed for Dialect purpose 
-	 * @return the built {@link Persister}
-	 */
-	public JoinedTablesPersister<C, I, Table> build(PersistenceContext persistenceContext) {
-		return build(persistenceContext, null);
-	}
-	
-	/**
-	 * Build a {@link Persister} from the given configuration at contruction time.
 	 * The (optional) given {@link Table} may be fulfilled with some required columns and foreign keys as needed by the configuration
 	 * if they are not already declared in the table.
 	 *
@@ -89,12 +80,8 @@ class EntityMappingBuilder<C, I> extends AbstractEntityMappingBuilder<C, I> {
 	 */
 	@Override
 	protected <T extends Table<?>> JoinedTablesPersister<C, I, T> doBuild(PersistenceContext persistenceContext, T table) {
-		// Very first thing, determine identifier management and check some configuration
-		if (configurationSupport.getIdentifierAccessor() != null && configurationSupport.getInheritanceConfiguration() != null) {
-			throw new MappingConfigurationException("Defining an identifier while inheritance is used is not supported");
-		}
 		IdentificationDeterminer<C, I> identificationDeterminer = new IdentificationDeterminer<>(
-				configurationSupport.getPersistedClass(),
+				configurationSupport.getEntityType(),
 				configurationSupport.inheritanceIterable().iterator(),
 				configurationSupport.getIdentifierPolicy(),
 				columnNameProvider,
@@ -125,12 +112,13 @@ class EntityMappingBuilder<C, I> extends AbstractEntityMappingBuilder<C, I> {
 		}
 		
 		EntityDecoratedEmbeddableMappingBuilder<C> embeddableMappingBuilder = new EntityDecoratedEmbeddableMappingBuilder<>(
+				configurationSupport.getEntityFactory(),
 				configurationSupport.getPropertiesMapping(),
 				columnNameProvider,
 				configurationSupport.getOneToOnes(),
 				inheritanceInfo);
 		
-		JoinedTablesPersister<C, I, T> result = configureRelations(persistenceContext,
+		JoinedTablesPersister<C, I, T> result = createPersister(persistenceContext,
 				embeddableMappingBuilder.buildClassMappingStrategy(persistenceContext.getDialect(), table, identification));
 		
 		handleVersioningStrategy(result);
@@ -148,7 +136,16 @@ class EntityMappingBuilder<C, I> extends AbstractEntityMappingBuilder<C, I> {
 						.build(persistenceContext, table)
 						.getMappingStrategy();
 			} else {
-				result = new EntityMappingBuilder(configurationSupport.getInheritanceConfiguration(), methodSpy)
+				result = new EntityMappingBuilder(configurationSupport.getInheritanceConfiguration(), methodSpy) {
+					/**
+					 * Overriden to invoke enclosing instance method because it can be overriden too, and this instance must call en enclosing one.
+					 * Else it is impossible to overriden inheritance registration
+					 */
+					@Override
+					protected void registerPersister(JoinedTablesPersister persister, PersistenceContext persistenceContext) {
+						EntityMappingBuilder.this.registerPersister(persister, persistenceContext);
+					}
+				}
 						.build(persistenceContext, table)
 						.getMappingStrategy();
 			}
@@ -164,15 +161,28 @@ class EntityMappingBuilder<C, I> extends AbstractEntityMappingBuilder<C, I> {
 	 * @param <T> table type
 	 * @return a {@link JoinedTablesPersister} that allow to persist the entity with its relations
 	 */
-	<T extends Table> JoinedTablesPersister<C, I, T> configureRelations(PersistenceContext persistenceContext, ClassMappingStrategy<C, I, T> mainMappingStrategy) {
+	<T extends Table> JoinedTablesPersister<C, I, T> createPersister(PersistenceContext persistenceContext, IEntityMappingStrategy<C, I, T> mainMappingStrategy) {
 		// Please note that we could have created a simple Persister for cases of no one-to-one neither one-to-many relations
 		// because in such cases no join is required, but it would have introduced inconsistent return type depending on configuration
 		// which is hard to manage by JoinedTablesEntityMappingBuilder that uses this method
-		JoinedTablesPersister<C, I, T> result = new JoinedTablesPersister<>(persistenceContext, mainMappingStrategy);
+		JoinedTablesPersister<C, I, T> result = newJoinedTablesPersister(persistenceContext, mainMappingStrategy);
 		// don't forget to register this new persister, it's usefull for schema deployment
-		Persister<C, Object, T> existingPersister = persistenceContext.getPersister(result.getMappingStrategy().getClassToPersist());
+		registerPersister(result, persistenceContext);
+		
+		configureRelations(persistenceContext, result);
+		
+		return result;
+	}
+	
+	protected <T extends Table> JoinedTablesPersister<C, I, T> newJoinedTablesPersister(PersistenceContext persistenceContext,
+																						IEntityMappingStrategy<C, I, T> mainMappingStrategy) {
+		return new JoinedTablesPersister<>(persistenceContext, mainMappingStrategy);
+	}
+	
+	protected <T extends Table> void registerPersister(JoinedTablesPersister<C, I, T> persister, PersistenceContext persistenceContext) {
+		Persister<C, Object, T> existingPersister = persistenceContext.getPersister(persister.getMappingStrategy().getClassToPersist());
 		if (existingPersister == null) {
-			persistenceContext.addPersister(result);
+			persistenceContext.addPersister(persister);
 		} else {
 			BiPredicate<IEntityMappingStrategy, IEntityMappingStrategy> mappingConfigurationComparator = Predicates.and(
 					IEntityMappingStrategy::getTargetTable,
@@ -182,11 +192,13 @@ class EntityMappingBuilder<C, I> extends AbstractEntityMappingBuilder<C, I> {
 					IEntityMappingStrategy::getUpdatableColumns,
 					IEntityMappingStrategy::getInsertableColumns
 			);
-			if (!mappingConfigurationComparator.test(existingPersister.getMappingStrategy(), mainMappingStrategy)) {
-				throw new IllegalArgumentException("Persister already exists for " + Reflections.toString(result.getMappingStrategy().getClassToPersist()));
+			if (!mappingConfigurationComparator.test(existingPersister.getMappingStrategy(), persister.getMappingStrategy())) {
+				throw new IllegalArgumentException("Persister already exists for " + Reflections.toString(persister.getMappingStrategy().getClassToPersist()));
 			}
 		}
-		
+	}
+	
+	private <T extends Table> void configureRelations(PersistenceContext persistenceContext, JoinedTablesPersister<C, I, T> result) {
 		CascadeOneConfigurer cascadeOneConfigurer = new CascadeOneConfigurer<>(persistenceContext);
 		for (CascadeOne<C, ?, ?> cascadeOne : this.configurationSupport.getOneToOnes()) {
 			cascadeOneConfigurer.appendCascade(cascadeOne, result, this.configurationSupport.getForeignKeyNamingStrategy(), this.configurationSupport.getJoinColumnNamingStrategy());
@@ -198,9 +210,7 @@ class EntityMappingBuilder<C, I> extends AbstractEntityMappingBuilder<C, I> {
 					this.configurationSupport.getJoinColumnNamingStrategy(),
 					this.configurationSupport.getAssociationTableNamingStrategy());
 		}
-		registerRelations(persistenceContext, result.getCriteriaSupport().getRootConfiguration(), configurationSupport);
-		
-		return result;
+		registerRelations(configurationSupport, result.getCriteriaSupport().getRootConfiguration(), persistenceContext);
 	}
 	
 	private <T extends Table> void handleVersioningStrategy(JoinedTablesPersister<C, I, T> result) {
@@ -239,16 +249,19 @@ class EntityMappingBuilder<C, I> extends AbstractEntityMappingBuilder<C, I> {
 			
 		}
 		
+		private final Function<Function<Column, Object>, C> entityFactory;
 		private final List<CascadeOne<C, ?, ?>> oneToOnes;
 		private final InheritanceInfo<C> inheritanceInfo;
 		/** Keep track of oneToOne properties to be removed of direct mapping */
 		private final ValueAccessPointSet oneToOnePropertiesOwnedByReverseSide;
 		
-		EntityDecoratedEmbeddableMappingBuilder(EmbeddableMappingConfiguration<C> propertiesMapping,
-											    ColumnNameProvider columnNameProvider,
-											    List<CascadeOne<C, ?, ?>> oneToOnes,
-											    @javax.annotation.Nullable InheritanceInfo<C> inheritanceInfo) {
+		EntityDecoratedEmbeddableMappingBuilder(Function<Function<Column, Object>, C> entityFactory,
+												EmbeddableMappingConfiguration<C> propertiesMapping,
+												ColumnNameProvider columnNameProvider,
+												List<CascadeOne<C, ?, ?>> oneToOnes,
+												@javax.annotation.Nullable InheritanceInfo<C> inheritanceInfo) {
 			super(propertiesMapping, columnNameProvider);
+			this.entityFactory = entityFactory;
 			this.oneToOnes = oneToOnes;
 			this.inheritanceInfo = inheritanceInfo;
 			// CascadeOne.getTargetProvider() returns a method reference that can't be compared to PropertyAccessor (of Linkage.getAccessor
@@ -373,16 +386,16 @@ class EntityMappingBuilder<C, I> extends AbstractEntityMappingBuilder<C, I> {
 		}
 		
 		/**
-		 * Creates a {@link ClassMappingStrategy} from elements given at construction time targeting given {@link Dialect} and {@link Table}.
+		 * Creates a {@link IEntityMappingStrategy} from elements given at construction time targeting given {@link Dialect} and {@link Table}.
 		 * 
 		 * @param dialect {@link Dialect} to be used to create {@link Column}s in table
 		 * @param targetTable entity persistence {@link Table}
 		 * @param identification identifier elements, expecting that primary key is present in target table
 		 * @param <T> target table type
 		 * @param <I> entity identifier type
-		 * @return a new {@link ClassMappingStrategy} that can persist entities onto target table
+		 * @return a new {@link IEntityMappingStrategy} that can persist entities onto target table
 		 */
-		public <T extends Table, I> ClassMappingStrategy<C, I, T> buildClassMappingStrategy(Dialect dialect,
+		public <T extends Table, I> IEntityMappingStrategy<C, I, T> buildClassMappingStrategy(Dialect dialect,
 																							Table targetTable,
 																							Duo<IReversibleAccessor<C, I>, IdentifierInsertionManager<C, I>> identification) {
 			IReversibleAccessor<C, I> identifierAccessor = identification.getLeft();
@@ -390,8 +403,11 @@ class EntityMappingBuilder<C, I> extends AbstractEntityMappingBuilder<C, I> {
 			
 			Map<IReversibleAccessor, Column> columnMapping = super.build(dialect, targetTable);
 			
-			return new ClassMappingStrategy<C, I, T>(mappingConfiguration.getClassToPersist(), (T) targetTable,
-					(Map) columnMapping, identifierAccessor, identifierInsertionManager);
+			Column<T, I> primaryKey = (Column<T, I>) Iterables.first(targetTable.getPrimaryKey().getColumns());
+			return new ClassMappingStrategy<C, I, T>(mappingConfiguration.getBeanType(), (T) targetTable,
+					(Map) columnMapping,
+					new SimpleIdMappingStrategy<>(identifierAccessor, identifierInsertionManager, new SimpleIdentifierAssembler<>(primaryKey)),
+					entityFactory);
 		}
 	}
 	
@@ -399,22 +415,22 @@ class EntityMappingBuilder<C, I> extends AbstractEntityMappingBuilder<C, I> {
 	 * Adds one-to-one and one-to-many graph node to the given root. Used for select by entity properties because without this it could not load
 	 * while entity graph
 	 * 
-	 * @param persistenceContext used as a per-entity {@link ClassMappingStrategy} registry 
-	 * @param root the node on which to add sub graph elements
-	 * @param configurationSupport current entity mapping configuration (that contains the root)
+	 * @param configurationSupport entity mapping configuration which relations must be registered onto target
+	 * @param target the node on which to add sub graph elements
+	 * @param persistenceContext used as a per-entity {@link IEntityMappingStrategy} registry 
 	 */
-	private void registerRelations(PersistenceContext persistenceContext, EntityGraphNode root, EntityMappingConfiguration configurationSupport) {
+	private void registerRelations(EntityMappingConfiguration configurationSupport, EntityGraphNode target, PersistenceContext persistenceContext) {
 		List<CascadeMany> oneToManys = configurationSupport.getOneToManys();
 		oneToManys.forEach((CascadeMany cascadeMany) -> {
-			EntityGraphNode entityGraphNode = root.registerRelation(cascadeMany.getCollectionProvider(),
-					persistenceContext.getPersister(cascadeMany.getTargetMappingConfiguration().getPersistedClass()).getMappingStrategy());
-			registerRelations(persistenceContext, entityGraphNode, cascadeMany.getTargetMappingConfiguration());
+			EntityGraphNode entityGraphNode = target.registerRelation(cascadeMany.getCollectionProvider(),
+					persistenceContext.getPersister(cascadeMany.getTargetMappingConfiguration().getEntityType()).getMappingStrategy());
+			registerRelations(cascadeMany.getTargetMappingConfiguration(), entityGraphNode, persistenceContext);
 		});
 		List<CascadeOne> oneToOnes = configurationSupport.getOneToOnes();
 		oneToOnes.forEach((CascadeOne cascadeOne) -> {
-			EntityGraphNode entityGraphNode = root.registerRelation(cascadeOne.getTargetProvider(),
-					persistenceContext.getPersister(cascadeOne.getTargetMappingConfiguration().getPersistedClass()).getMappingStrategy());
-			registerRelations(persistenceContext, entityGraphNode, cascadeOne.getTargetMappingConfiguration());
+			EntityGraphNode entityGraphNode = target.registerRelation(cascadeOne.getTargetProvider(),
+					persistenceContext.getPersister(cascadeOne.getTargetMappingConfiguration().getEntityType()).getMappingStrategy());
+			registerRelations(cascadeOne.getTargetMappingConfiguration(), entityGraphNode, persistenceContext);
 		});
 	}
 	

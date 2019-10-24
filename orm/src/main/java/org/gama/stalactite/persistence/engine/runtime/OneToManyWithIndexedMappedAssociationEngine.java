@@ -17,7 +17,6 @@ import org.gama.lang.collection.Iterables;
 import org.gama.stalactite.persistence.engine.RuntimeMappingException;
 import org.gama.stalactite.persistence.engine.cascade.JoinedTablesPersister;
 import org.gama.stalactite.persistence.engine.listening.SelectListener;
-import org.gama.stalactite.persistence.engine.listening.UpdateListener.UpdatePayload;
 import org.gama.stalactite.persistence.id.diff.AbstractDiff;
 import org.gama.stalactite.persistence.id.diff.IndexedDiff;
 import org.gama.stalactite.persistence.structure.Column;
@@ -56,7 +55,7 @@ public class OneToManyWithIndexedMappedAssociationEngine<SRC, TRGT, SRCID, TRGTI
 	}
 	
 	private void addIndexSelection() {
-		targetPersister.getSelectExecutor().getMappingStrategy().addSilentColumnSelecter(indexingColumn);
+		targetPersister.getSelectExecutor().getMappingStrategy().addSilentColumnToSelect(indexingColumn);
 		// Implementation note: 2 possiblities
 		// - keep object indexes and put sorted beans in a temporary List, then add them all to the target List
 		// - keep object indexes and sort the target List throught a comparator of indexes
@@ -141,7 +140,7 @@ public class OneToManyWithIndexedMappedAssociationEngine<SRC, TRGT, SRCID, TRGTI
 				// Thread safe by updatableListIndex access
 				(Function<TRGT, Object>) target -> Nullable.nullable(updatableListIndex.get()).map(m -> m.get(target)).get());
 		
-		BiConsumer<UpdatePayload<? extends SRC, ?>, Boolean> updateListener = new CollectionUpdater<SRC, TRGT, C>(
+		BiConsumer<Duo<SRC, SRC>, Boolean> updateListener = new CollectionUpdater<SRC, TRGT, C>(
 				manyRelationDefinition.getCollectionGetter(),
 				targetPersister,
 				manyRelationDefinition.getReverseSetter(),
@@ -153,7 +152,7 @@ public class OneToManyWithIndexedMappedAssociationEngine<SRC, TRGT, SRCID, TRGTI
 			}
 			
 			@Override
-			protected UpdateContext newUpdateContext(UpdatePayload<? extends SRC, ?> updatePayload) {
+			protected UpdateContext newUpdateContext(Duo<SRC, SRC> updatePayload) {
 				return new IndexedMappedAssociationUpdateContext(updatePayload);
 			}
 			
@@ -183,7 +182,7 @@ public class OneToManyWithIndexedMappedAssociationEngine<SRC, TRGT, SRCID, TRGTI
 				/** New indexes per entity */
 				private final Map<TRGT, Integer> indexUpdates = new HashMap<>();
 				
-				public IndexedMappedAssociationUpdateContext(UpdatePayload<? extends SRC, ?> updatePayload) {
+				public IndexedMappedAssociationUpdateContext(Duo<SRC, SRC> updatePayload) {
 					super(updatePayload);
 				}
 				

@@ -48,11 +48,7 @@ public class JoinedTablesEntityMappingBuilder<C, I> extends AbstractEntityMappin
 	
 	@Override
 	protected <T extends Table<?>> JoinedTablesPersister<C, I, T> doBuild(PersistenceContext persistenceContext, T childClassTargetTable) {
-		if (configurationSupport.getIdentifierAccessor() != null && configurationSupport.getInheritanceConfiguration() != null) {
-			throw new MappingConfigurationException("Defining an identifier while inheritance is used is not supported");
-		}
-		
-		// We gonna create 2 JoinedTablesPersister (one for parent strategy, one for child strategy) then we will join them alltogether
+		// We're going to create 2 JoinedTablesPersister (one for parent strategy, one for child strategy) then we will join them alltogether
 		// on primary key, so select will result in a join on those 2 strategies.
 		// OneToOne and OneToMany will be managed by their respective JoinedTablesPersister (actually done by Persister)
 		
@@ -70,7 +66,7 @@ public class JoinedTablesEntityMappingBuilder<C, I> extends AbstractEntityMappin
 				superPersister.getMainTable(),
 				persistenceContext.getDialect());
 		
-		JoinedTablesPersister<C, I, T> result = new EntityMappingBuilder<>(configurationSupport, methodSpy).configureRelations(persistenceContext, childClassMappingStrategy);
+		JoinedTablesPersister<C, I, T> result = new EntityMappingBuilder<>(configurationSupport, methodSpy).createPersister(persistenceContext, childClassMappingStrategy);
 		// adding join on parent table
 		Column subclassPK = Iterables.first((Set<? extends Column<?, Object>>) childClassTargetTable.getPrimaryKey().getColumns());
 		Column superclassPK = Iterables.first((Set<? extends Column<?, Object>>) superPersister.getMainTable().getPrimaryKey().getColumns());
@@ -105,7 +101,7 @@ public class JoinedTablesEntityMappingBuilder<C, I> extends AbstractEntityMappin
 		
 		// Child class insertion manager is always an "Already assigned" one because parent manages it for her
 		IdentifierInsertionManager<C, I> identifierInsertionManager = new AlreadyAssignedIdentifierManager<>(identifierType);
-		return new ClassMappingStrategy<>(configurationSupport.getPersistedClass(),
+		return new ClassMappingStrategy<>(configurationSupport.getEntityType(),
 				childTargetTable, (Map) childClassColumnMapping, identifierAccessor, identifierInsertionManager);
 	}
 	
@@ -143,7 +139,7 @@ public class JoinedTablesEntityMappingBuilder<C, I> extends AbstractEntityMappin
 	private JoinedTablesPersister<? super C, I, Table> buildSuperPersister(PersistenceContext persistenceContext) {
 		EntityMappingBuilder<? super C, I> inheritanceMappingBuilder = new EntityMappingBuilder<>(configurationSupport.getInheritanceConfiguration(), methodSpy);
 		Table inheritanceTable = nullable(configurationSupport.getInheritanceTable()).getOr(
-				() -> new Table(configurationSupport.getTableNamingStrategy().giveName(configurationSupport.getInheritanceConfiguration().getPersistedClass())));
+				() -> new Table(configurationSupport.getTableNamingStrategy().giveName(configurationSupport.getInheritanceConfiguration().getEntityType())));
 		return inheritanceMappingBuilder.build(persistenceContext, inheritanceTable);
 	}
 }

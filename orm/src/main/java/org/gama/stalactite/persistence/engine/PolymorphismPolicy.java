@@ -14,13 +14,13 @@ import org.gama.stalactite.persistence.structure.Table;
 /**
  * @author Guillaume Mary
  */
-public abstract class PolymorphismPolicy {
+public interface PolymorphismPolicy {
 	
-	public static <C, I> TablePerClassPolymorphism<C, I> tablePerClass() {
+	static <C, I> TablePerClassPolymorphism<C, I> tablePerClass() {
 		return new TablePerClassPolymorphism<>();
 	}
 	
-	public static <C, I> JoinedTablesPolymorphism<C, I> joinedTables() {
+	static <C, I> JoinedTablesPolymorphism<C, I> joinedTables() {
 		return new JoinedTablesPolymorphism<>();
 	}
 	
@@ -30,15 +30,15 @@ public abstract class PolymorphismPolicy {
 	 * @param <I> identifier type
 	 * @return a new {@link SingleTablePolymorphism} with "DTYPE" as String discriminator column
 	 */
-	public static <C, I> SingleTablePolymorphism<C, I, String> singleTable() {
+	static <C, I> SingleTablePolymorphism<C, I, String> singleTable() {
 		return singleTable("DTYPE");
 	}
 	
-	public static <C, I> SingleTablePolymorphism<C, I, String> singleTable(String discriminatorColumnName) {
+	static <C, I> SingleTablePolymorphism<C, I, String> singleTable(String discriminatorColumnName) {
 		return new SingleTablePolymorphism<>(discriminatorColumnName, String.class);
 	}
 	
-	public static class TablePerClassPolymorphism<C, I> extends PolymorphismPolicy {
+	class TablePerClassPolymorphism<C, I> implements PolymorphismPolicy {
 		
 		private final Set<Duo<EntityMappingConfigurationProvider<? extends C, I>, Table /* Nullable */>> subClasses = new HashSet<>();
 		
@@ -62,7 +62,7 @@ public abstract class PolymorphismPolicy {
 		}
 	}
 	
-	public static class JoinedTablesPolymorphism<C, I> extends PolymorphismPolicy {
+	class JoinedTablesPolymorphism<C, I> implements PolymorphismPolicy {
 		
 		private final Set<Duo<EntityMappingConfigurationProvider<? extends C, I>, Table /* Nullable */>> subClasses = new HashSet<>();
 		
@@ -86,7 +86,7 @@ public abstract class PolymorphismPolicy {
 		}
 	}
 	
-	public static class SingleTablePolymorphism<C, I, D> extends PolymorphismPolicy {
+	class SingleTablePolymorphism<C, I, D> implements PolymorphismPolicy {
 		
 		private final String discriminatorColumn;
 		
@@ -113,11 +113,11 @@ public abstract class PolymorphismPolicy {
 		}
 		
 		public Class<? extends C> getClass(D discriminatorValue) {
-			return subClasses.get(discriminatorValue).getConfiguration().getPersistedClass();
+			return subClasses.get(discriminatorValue).getConfiguration().getEntityType();
 		}
 		
 		public D getDiscriminatorValue(Class<? extends C> instanceType) {
-			return Iterables.find(subClasses.entrySet(), e -> e.getValue().getConfiguration().getPersistedClass().equals(instanceType)).getKey();
+			return Iterables.find(subClasses.entrySet(), e -> e.getValue().getConfiguration().getEntityType().equals(instanceType)).getKey();
 		}
 		
 		public Collection<EntityMappingConfigurationProvider<? extends C, I>> getSubClasses() {

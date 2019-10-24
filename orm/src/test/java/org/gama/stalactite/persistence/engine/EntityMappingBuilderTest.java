@@ -71,7 +71,7 @@ class EntityMappingBuilderTest {
 		when(configuration.getPropertiesMapping()).thenReturn(personPropertiesMapping);
 		when(configuration.getIdentifierPolicy()).thenReturn(IdentifierPolicy.AFTER_INSERT);
 		// preventing NullPointerException
-		when(configuration.getPersistedClass()).thenReturn(Person.class);
+		when(configuration.getEntityType()).thenReturn(Person.class);
 		when(configuration.getTableNamingStrategy()).thenReturn(TableNamingStrategy.DEFAULT);
 		when(configuration.getIdentifierAccessor()).thenReturn(identifierAccessor);
 		when(configuration.getOneToOnes()).thenReturn(Collections.emptyList());

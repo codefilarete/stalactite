@@ -7,10 +7,7 @@ import java.util.function.BiFunction;
 import org.gama.lang.Duo;
 import org.gama.lang.collection.Iterables;
 import org.gama.lang.function.ThrowingExecutable;
-import org.gama.stalactite.persistence.engine.listening.UpdateListener.UpdatePayload;
 import org.gama.stalactite.persistence.structure.Table;
-
-import static org.gama.lang.function.Functions.chain;
 
 /**
  * Simple class that centralize persistence event listening. Delegates listening to encapsulated instance.
@@ -73,17 +70,17 @@ public class PersisterListener<C, I> {
 		return this;
 	}
 	
-	public <R, T extends Table<T>> R doWithUpdateListener(Iterable<UpdatePayload<C, T>> differencesIterable, boolean allColumnsStatement,
-														  BiFunction<Iterable<UpdatePayload<C, T>>, Boolean, R> delegate) {
-		updateListener.beforeUpdate((Iterable) differencesIterable, allColumnsStatement);
+	public <R, T extends Table<T>> R doWithUpdateListener(Iterable<? extends Duo<? extends C, ? extends C>> differencesIterable, boolean allColumnsStatement,
+														  BiFunction<Iterable<? extends Duo<? extends C, ? extends C>>, Boolean, R> delegate) {
+		updateListener.beforeUpdate(differencesIterable, allColumnsStatement);
 		R result;
 		try {
 			result = delegate.apply(differencesIterable, allColumnsStatement);
 		} catch (RuntimeException e) {
-			updateListener.onError(Iterables.collectToList(differencesIterable, chain(UpdatePayload::getEntities, Duo::getLeft)), e);
+			updateListener.onError(Iterables.collectToList(differencesIterable, Duo::getLeft), e);
 			throw e;
 		}
-		updateListener.afterUpdate((Iterable) differencesIterable, allColumnsStatement);
+		updateListener.afterUpdate(differencesIterable, allColumnsStatement);
 		return result;
 	}
 	

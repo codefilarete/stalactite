@@ -3,6 +3,7 @@ package org.gama.stalactite.persistence.engine.cascade;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
@@ -17,6 +18,7 @@ import org.gama.stalactite.persistence.engine.cascade.JoinedStrategiesSelect.Str
 import org.gama.stalactite.persistence.id.assembly.IdentifierAssembler;
 import org.gama.stalactite.persistence.id.assembly.SimpleIdentifierAssembler;
 import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
+import org.gama.stalactite.persistence.mapping.ColumnedRow;
 import org.gama.stalactite.persistence.mapping.IdMappingStrategy;
 import org.gama.stalactite.persistence.mapping.ToBeanRowTransformer;
 import org.gama.stalactite.persistence.structure.Column;
@@ -69,7 +71,7 @@ public class StrategyJoinsRowTransformerTest {
 				Maps.asMap(totoColumnId, (Object) 1L)
 						.add(totoColumnName, "toto"),
 				testInstance.getAliasProvider());
-		List result = testInstance.transform(Arrays.asList(row1), 1);
+		List result = testInstance.transform(Arrays.asList(row1), 1, new HashMap<>());
 		
 		Object firstObject = Iterables.first(result);
 		assertNotNull(firstObject);
@@ -114,7 +116,7 @@ public class StrategyJoinsRowTransformerTest {
 						.add(tataColumnId, 1L)
 						.add(tataColumnFirstName, "tata"),
 				testInstance.getAliasProvider());
-		List result = testInstance.transform(Arrays.asList(row1), 1);
+		List result = testInstance.transform(Arrays.asList(row1), 1, new HashMap<>());
 		
 		Object firstObject = Iterables.first(result);
 		assertNotNull(firstObject);
@@ -177,7 +179,7 @@ public class StrategyJoinsRowTransformerTest {
 						.add(titiColumnId, 1L)
 						.add(titiColumnLastName, "titi"),
 				testInstance.getAliasProvider());
-		List result = testInstance.transform(Arrays.asList(row), 1);
+		List result = testInstance.transform(Arrays.asList(row), 1, new HashMap<>());
 		
 		Object firstObject = Iterables.first(result);
 		assertNotNull(firstObject);
@@ -244,7 +246,7 @@ public class StrategyJoinsRowTransformerTest {
 						.add(titiColumnId, 1L)
 						.add(titiColumnLastName, "titi"),
 				testInstance.getAliasProvider());
-		List result = testInstance.transform(Arrays.asList(row), 1);
+		List result = testInstance.transform(Arrays.asList(row), 1, new HashMap<>());
 		
 		Object firstObject = Iterables.first(result);
 		assertNotNull(firstObject);
@@ -303,7 +305,7 @@ public class StrategyJoinsRowTransformerTest {
 						.add(tataColumnId, 2L)
 						.add(tataColumnFirstName, "tata2"),
 				testInstance.getAliasProvider());
-		List<Toto> result = testInstance.transform(Arrays.asList(row1, row2), 1);
+		List<Toto> result = testInstance.transform(Arrays.asList(row1, row2), 1, new HashMap<>());
 		
 		assertEquals(1, result.size());
 		Toto firstResult = Iterables.first(result);
@@ -349,10 +351,11 @@ public class StrategyJoinsRowTransformerTest {
 		Function<Column, String> aliasGenerator = c -> (c.getTable() == totoTable ? "table1_" : "table2_") + c.getName();
 		// we give the aliases to our test instance
 		Comparator<Column> columnComparator = (c1, c2) -> aliasGenerator.apply(c1).compareToIgnoreCase(aliasGenerator.apply(c2));
-		testInstance.setAliases(Maps.asComparingMap(columnComparator, totoColumnId, aliasGenerator.apply(totoColumnId))
+		Map<Column, String> aliases = Maps.asComparingMap(columnComparator, totoColumnId, aliasGenerator.apply(totoColumnId))
 				.add(totoColumnName, aliasGenerator.apply(totoColumnName))
 				.add(toto2ColumnId, aliasGenerator.apply(toto2ColumnId))
-				.add(toto2ColumnName, aliasGenerator.apply(toto2ColumnName)));
+				.add(toto2ColumnName, aliasGenerator.apply(toto2ColumnName));
+		testInstance.setAliasProvider(aliases::get);
 		// the row must math the aliases given to the instance
 		Row row = buildRow(
 				Maps.asComparingMap(columnComparator, totoColumnId, (Object) 1L)
@@ -363,7 +366,7 @@ public class StrategyJoinsRowTransformerTest {
 		);
 		
 		// executing the test
-		List<Toto> result = testInstance.transform(Arrays.asList(row), 1);
+		List<Toto> result = testInstance.transform(Arrays.asList(row), 1, new HashMap<>());
 		
 		// checking
 		assertEquals(1, result.size());
@@ -457,7 +460,7 @@ public class StrategyJoinsRowTransformerTest {
 		
 		@Override
 		public ToBeanRowTransformer<C> answer(InvocationOnMock invocation) {
-			return new ToBeanRowTransformer<>(instanceClass, table, false).copyWithAliases((Function<Column, String>) invocation.getArguments()[0]);
+			return new ToBeanRowTransformer<>(instanceClass, table, false).copyWithAliases((ColumnedRow) invocation.getArguments()[0]);
 		}
 	}
 }

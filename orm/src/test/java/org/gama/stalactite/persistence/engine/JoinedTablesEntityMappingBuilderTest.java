@@ -190,7 +190,9 @@ class JoinedTablesEntityMappingBuilderTest {
 		JoinedTablesEntityMappingBuilder<Car, Identifier> testInstance = new JoinedTablesEntityMappingBuilder<>(configurationSupport, methodSpy);
 		MappingConfigurationException thrownException = assertThrows(MappingConfigurationException.class,
 				() -> testInstance.build(persistenceContext, inheritedTable));
-		assertEquals("Defining an identifier while inheritance is used is not supported", thrownException.getMessage());
+		assertEquals("Defining an identifier while inheritance is used is not supported" 
+				+ " : o.g.s.p.e.FluentEntityMappingConfigurationSupportInheritanceTest$Car defined identifier AbstractVehicle::getId" 
+				+ " while it inherits from o.g.s.p.e.FluentEntityMappingConfigurationSupportInheritanceTest$Vehicle", thrownException.getMessage());
 	}
 	
 	@Test

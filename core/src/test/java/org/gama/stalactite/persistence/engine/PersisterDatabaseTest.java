@@ -8,27 +8,25 @@ import java.util.List;
 import java.util.Map;
 
 import org.gama.lang.Duo;
-import org.gama.lang.Retryer;
 import org.gama.lang.collection.Arrays;
 import org.gama.lang.collection.Iterables;
 import org.gama.lang.collection.Maps;
 import org.gama.reflection.Accessors;
 import org.gama.reflection.PropertyAccessor;
+import org.gama.stalactite.persistence.id.manager.BeforeInsertIdentifierManager;
+import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
+import org.gama.stalactite.persistence.mapping.PersistentFieldHarverster;
+import org.gama.stalactite.persistence.mapping.SinglePropertyIdAccessor;
+import org.gama.stalactite.persistence.sql.Dialect;
+import org.gama.stalactite.persistence.sql.ddl.JavaTypeToSqlTypeMapping;
+import org.gama.stalactite.persistence.structure.Column;
+import org.gama.stalactite.persistence.structure.Database.Schema;
+import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.sql.dml.SQLExecutionException;
 import org.gama.stalactite.sql.result.ResultSetIterator;
 import org.gama.stalactite.sql.test.DerbyInMemoryDataSource;
 import org.gama.stalactite.sql.test.HSQLDBInMemoryDataSource;
 import org.gama.stalactite.sql.test.MariaDBEmbeddableDataSource;
-import org.gama.stalactite.persistence.id.manager.BeforeInsertIdentifierManager;
-import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
-import org.gama.stalactite.persistence.mapping.SinglePropertyIdAccessor;
-import org.gama.stalactite.persistence.mapping.PersistentFieldHarverster;
-import org.gama.stalactite.persistence.sql.Dialect;
-import org.gama.stalactite.persistence.sql.ddl.JavaTypeToSqlTypeMapping;
-import org.gama.stalactite.persistence.sql.dml.DMLGenerator;
-import org.gama.stalactite.persistence.structure.Column;
-import org.gama.stalactite.persistence.structure.Database.Schema;
-import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.test.JdbcConnectionProvider;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -75,8 +73,7 @@ public class PersisterDatabaseTest {
 		// reset id counter between 2 tests else id "overflows"
 		identifierGenerator.reset();
 		
-		testInstance = new Persister<>(totoClassMappingStrategy, transactionManager,
-				new DMLGenerator(dialect.getColumnBinderRegistry() , DMLGenerator.CaseSensitiveSorter.INSTANCE), Retryer.NO_RETRY, 3, 3);
+		testInstance = new Persister<>(totoClassMappingStrategy, dialect, transactionManager, 3);
 	}
 	
 	public static Object[][] dataSources() {

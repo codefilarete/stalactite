@@ -82,7 +82,7 @@ public class ColumnedMapMappingStrategyTest {
 			}
 			
 			@Override
-			public AbstractTransformer<Map<Integer, String>> copyTransformerWithAliases(Function<Column, String> aliasProvider) {
+			public AbstractTransformer<Map<Integer, String>> copyTransformerWithAliases(ColumnedRow columnedRow) {
 				return null;
 			}
 		};

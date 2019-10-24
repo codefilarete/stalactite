@@ -49,17 +49,7 @@ public class ColumnedCollectionMappingStrategy<C extends Collection<O>, O, T ext
 		this.targetTable = targetTable;
 		this.columns = columns;
 		this.persistedClass = rowClass;
-		this.rowTransformer = new ToCollectionRowTransformer<C>(this.persistedClass) {
-			
-			/** We bind conversion on {@link ColumnedCollectionMappingStrategy} conversion methods */
-			@Override
-			protected void applyRowToBean(Row row, C collection) {
-				for (Column column : getColumns()) {
-					Object value = row.get(column.getName());
-					collection.add(toCollectionValue(value));
-				}
-			}
-		};
+		this.rowTransformer = new LocalToCollectionRowTransformer<C>(getPersistedClass(), (Set) getColumns(), this::toCollectionValue);
 	}
 	
 	public Class<C> getPersistedClass() {
@@ -170,16 +160,40 @@ public class ColumnedCollectionMappingStrategy<C extends Collection<O>, O, T ext
 	}
 	
 	@Override
-	public AbstractTransformer<C> copyTransformerWithAliases(Function<Column, String> aliasProvider) {
-		return new ToCollectionRowTransformer<C>(getPersistedClass()) {
-			/** We bind conversion on {@link ColumnedCollectionMappingStrategy} conversion methods */
-			@Override
-			protected void applyRowToBean(Row row, C collection) {
-				for (Column column : getColumns()) {
-					Object value = row.get(aliasProvider.apply(column));
-					collection.add(toCollectionValue(value));
-				}
+	public AbstractTransformer<C> copyTransformerWithAliases(ColumnedRow columnedRow) {
+		return this.rowTransformer.copyWithAliases(columnedRow);
+	}
+	
+	private static class LocalToCollectionRowTransformer<C extends Collection> extends ToCollectionRowTransformer<C> {
+		
+		private final Iterable<Column> columns;
+		private final Function<Object, Object> databaseValueConverter;
+		
+		private LocalToCollectionRowTransformer(Class<C> persistedClass, Iterable<Column> columns, Function<Object, Object> databaseValueConverter) {
+			super(persistedClass);
+			this.columns = columns;
+			this.databaseValueConverter = databaseValueConverter;
+		}
+		
+		private LocalToCollectionRowTransformer(Function<Function<Column, Object>, C> beanFactory, ColumnedRow columnedRow,
+												Iterable<Column> columns, Function<Object, Object> databaseValueConverter) {
+			super(beanFactory, columnedRow);
+			this.columns = columns;
+			this.databaseValueConverter = databaseValueConverter;
+		}
+			
+		@Override
+		public AbstractTransformer<C> copyWithAliases(ColumnedRow columnedRow) {
+			return new LocalToCollectionRowTransformer<>(this.beanFactory, columnedRow, this.columns, this.databaseValueConverter);
+		}
+		
+		/** We bind conversion on {@link ColumnedCollectionMappingStrategy} conversion methods */
+		@Override
+		protected void applyRowToBean(Row row, C collection) {
+			for (Column column : this.columns) {
+				Object value = row.get(column.getName());
+				collection.add(this.databaseValueConverter.apply(value));
 			}
-		};
+		}
 	}
 }

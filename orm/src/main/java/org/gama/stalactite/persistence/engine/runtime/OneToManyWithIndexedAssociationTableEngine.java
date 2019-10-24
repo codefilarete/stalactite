@@ -12,7 +12,6 @@ import org.gama.stalactite.persistence.engine.AssociationRecordPersister;
 import org.gama.stalactite.persistence.engine.IndexedAssociationRecord;
 import org.gama.stalactite.persistence.engine.IndexedAssociationTable;
 import org.gama.stalactite.persistence.engine.cascade.JoinedTablesPersister;
-import org.gama.stalactite.persistence.engine.listening.UpdateListener.UpdatePayload;
 import org.gama.stalactite.persistence.engine.runtime.OneToManyWithMappedAssociationEngine.TargetInstancesUpdateCascader;
 import org.gama.stalactite.persistence.id.diff.AbstractDiff;
 import org.gama.stalactite.persistence.id.diff.IndexedDiff;
@@ -42,7 +41,7 @@ public class OneToManyWithIndexedAssociationTableEngine<SRC, TRGT, SRCID, TRGTID
 		CollectionUpdater<SRC, TRGT, C> updateListener = new CollectionUpdater<SRC, TRGT, C>(manyRelationDescriptor.getCollectionGetter(), targetPersister, null, shouldDeleteRemoved) {
 			
 			@Override
-			protected AssociationTableUpdateContext newUpdateContext(UpdatePayload<? extends SRC, ?> updatePayload) {
+			protected AssociationTableUpdateContext newUpdateContext(Duo<SRC, SRC> updatePayload) {
 				return new AssociationTableUpdateContext(updatePayload);
 			}
 			
@@ -53,7 +52,7 @@ public class OneToManyWithIndexedAssociationTableEngine<SRC, TRGT, SRCID, TRGTID
 				Set<Integer> minus = minus(indexedDiff.getReplacerIndexes(), indexedDiff.getSourceIndexes());
 				Integer index = first(minus);
 				if (index != null ) {
-					SRC leftIdentifier = updateContext.getPayload().getEntities().getLeft();
+					SRC leftIdentifier = updateContext.getPayload().getLeft();
 					PairIterator<Integer, Integer> diffIndexIterator = new PairIterator<>(indexedDiff.getReplacerIndexes(), indexedDiff.getSourceIndexes());
 					diffIndexIterator.forEachRemaining(d -> {
 						if (!d.getLeft().equals(d.getRight()))
@@ -72,7 +71,7 @@ public class OneToManyWithIndexedAssociationTableEngine<SRC, TRGT, SRCID, TRGTID
 			@Override
 			protected void onAddedTarget(UpdateContext updateContext, AbstractDiff<TRGT> diff) {
 				super.onAddedTarget(updateContext, diff);
-				SRC leftIdentifier = updateContext.getPayload().getEntities().getLeft();
+				SRC leftIdentifier = updateContext.getPayload().getLeft();
 				((IndexedDiff<TRGT>) diff).getReplacerIndexes().forEach(idx ->
 						((AssociationTableUpdateContext) updateContext).getAssociationRecordstoBeInserted().add(
 								newRecord(leftIdentifier, diff.getReplacingInstance(), idx)));
@@ -81,7 +80,7 @@ public class OneToManyWithIndexedAssociationTableEngine<SRC, TRGT, SRCID, TRGTID
 			@Override
 			protected void onRemovedTarget(UpdateContext updateContext, AbstractDiff<TRGT> diff) {
 				super.onRemovedTarget(updateContext, diff);
-				SRC leftIdentifier = updateContext.getPayload().getEntities().getLeft();
+				SRC leftIdentifier = updateContext.getPayload().getLeft();
 				((IndexedDiff<TRGT>) diff).getSourceIndexes().forEach(idx ->
 						((AssociationTableUpdateContext) updateContext).getAssociationRecordstoBeDeleted().add(
 								newRecord(leftIdentifier, diff.getSourceInstance(), idx)));
@@ -114,7 +113,7 @@ public class OneToManyWithIndexedAssociationTableEngine<SRC, TRGT, SRCID, TRGTID
 				private final List<IndexedAssociationRecord> associationRecordstoBeDeleted = new ArrayList<>();
 				private final List<Duo<IndexedAssociationRecord, IndexedAssociationRecord>> associationRecordstoBeUpdated = new ArrayList<>();
 				
-				public AssociationTableUpdateContext(UpdatePayload<? extends SRC, ?> updatePayload) {
+				public AssociationTableUpdateContext(Duo<SRC, SRC> updatePayload) {
 					super(updatePayload);
 				}
 				

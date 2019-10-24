@@ -10,7 +10,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
-import java.util.function.Function;
 
 import org.gama.lang.Reflections;
 import org.gama.lang.collection.Arrays;
@@ -128,16 +127,21 @@ public class ZonedDateTimeMappingStrategy<T extends Table> implements IEmbeddedB
 	}
 	
 	@Override
-	public ZonedDateTimeToBeanRowTransformer copyTransformerWithAliases(Function<Column, String> aliasProvider) {
-		return this.zonedDateTimeRowTransformer.copyWithAliases(aliasProvider);
+	public ZonedDateTimeToBeanRowTransformer copyTransformerWithAliases(ColumnedRow columnedRow) {
+		return this.zonedDateTimeRowTransformer.copyWithAliases(columnedRow);
 	}
 	
 	@Nullable
-	private ZonedDateTime buildZonedDateTime(Row row, String dateTimeColumnName, String zoneColumnName) {
-		if (row.get(dateTimeColumnName) == null || row.get(zoneColumnName) == null) {
+	private ZonedDateTime buildZonedDateTime(ColumnedRow columnedRow, Row row) {
+		return buildZonedDateTime(columnedRow.getValue(dateTimeColumn, row), columnedRow.getValue(zoneColumn, row));
+	}
+	
+	@Nullable
+	private ZonedDateTime buildZonedDateTime(LocalDateTime dateTimeColumnName, ZoneId zoneColumnName) {
+		if (dateTimeColumnName == null || zoneColumnName == null) {
 			return null;
 		} else {
-			return ZonedDateTime.of((LocalDateTime) row.get(dateTimeColumnName), (ZoneId) row.get(zoneColumnName));
+			return ZonedDateTime.of(dateTimeColumnName, zoneColumnName);
 		}
 	}
 	
@@ -150,16 +154,16 @@ public class ZonedDateTimeMappingStrategy<T extends Table> implements IEmbeddedB
 		@Nullable
 		@Override
 		public ZonedDateTime newBeanInstance(Row row) {
-			return buildZonedDateTime(row, dateTimeColumn.getName(), zoneColumn.getName());
+			return buildZonedDateTime(new ColumnedRow(), row);
 		}
 		
 		@Override
-		public ZonedDateTimeToBeanRowTransformer copyWithAliases(Function<Column, String> aliasProvider) {
+		public ZonedDateTimeToBeanRowTransformer copyWithAliases(ColumnedRow columnedRow) {
 			return new ZonedDateTimeToBeanRowTransformer() {
 				@Nullable
 				@Override
 				public ZonedDateTime newBeanInstance(Row row) {
-					return buildZonedDateTime(row, aliasProvider.apply(dateTimeColumn), aliasProvider.apply(zoneColumn));
+					return buildZonedDateTime(columnedRow, row);
 				}
 			};
 		}

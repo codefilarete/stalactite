@@ -95,7 +95,7 @@ public interface IMappingStrategy<C, T extends Table> {
 	
 	Map<IReversibleAccessor<C, Object>, Column<T, Object>> getPropertyToColumn();
 	
-	AbstractTransformer<C> copyTransformerWithAliases(Function<Column, String> aliasProvider);
+	AbstractTransformer<C> copyTransformerWithAliases(ColumnedRow columnedRow);
 	
 	/**
 	 * Adds a tranformer listener, optional operation

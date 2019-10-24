@@ -10,7 +10,7 @@ import org.gama.stalactite.persistence.engine.Persister;
 import org.gama.stalactite.persistence.engine.listening.UpdateListener;
 
 /**
- * Cascader for update, written for one-to-one style of cascade where Trigger owns the relationship to Target.
+ * Cascader for update, written for one-to-many style of cascade where Trigger owns the relationship to Target.
  * Target instances are updated after Trigger instances
  *
  * @param <TRIGGER> type of the elements that trigger this cascade
@@ -25,7 +25,7 @@ public abstract class AfterUpdateCollectionCascader<TRIGGER, TARGET> implements 
 		this.persister = persister;
 		this.persister.getPersisterListener().addUpdateListener(new UpdateListener<TARGET>() {
 			@Override
-			public void afterUpdate(Iterable<UpdatePayload<? extends TARGET, ?>> entities, boolean allColumnsStatement) {
+			public void afterUpdate(Iterable<? extends Duo<? extends TARGET, ? extends TARGET>> entities, boolean allColumnsStatement) {
 				postTargetUpdate(entities);
 			}
 		});
@@ -41,8 +41,8 @@ public abstract class AfterUpdateCollectionCascader<TRIGGER, TARGET> implements 
 	 * @param allColumnsStatement true if all columns must be updated, false if only changed ones must be in the update statement
 	 */
 	@Override
-	public void afterUpdate(Iterable<UpdatePayload<? extends TRIGGER, ?>> entities, boolean allColumnsStatement) {
-		this.persister.update(Iterables.stream(entities).flatMap(e -> getTargets(e.getEntities().getLeft(), e.getEntities().getRight()).stream()).filter(Objects::nonNull)
+	public void afterUpdate(Iterable<? extends Duo<? extends TRIGGER, ? extends TRIGGER>> entities, boolean allColumnsStatement) {
+		this.persister.update(Iterables.stream(entities).flatMap(e -> getTargets(e.getLeft(), e.getRight()).stream()).filter(Objects::nonNull)
 				.collect(Collectors.toList()), allColumnsStatement);
 	}
 	
@@ -51,7 +51,7 @@ public abstract class AfterUpdateCollectionCascader<TRIGGER, TARGET> implements 
 	 *
 	 * @param entities entities updated by this listener
 	 */
-	protected abstract void postTargetUpdate(Iterable<UpdatePayload<? extends TARGET, ?>> entities);
+	protected abstract void postTargetUpdate(Iterable<? extends Duo<? extends TARGET, ? extends TARGET>> entities);
 	
 	/**
 	 * Expected to give the Target instance of a Trigger (should simply give a field value of trigger)

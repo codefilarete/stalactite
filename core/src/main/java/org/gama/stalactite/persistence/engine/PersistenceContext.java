@@ -83,7 +83,7 @@ public class PersistenceContext {
 	 */
 	public <C, I, T extends Table<T>> Persister<C, I, T> add(ClassMappingStrategy<C, I, T> classMappingStrategy) {
 		mappingStrategies.put(classMappingStrategy.getClassToPersist(), classMappingStrategy);
-		Persister<C, I, T> persister = new Persister<>(this, classMappingStrategy);
+		Persister<C, I, T> persister = new Persister<>(classMappingStrategy, this);
 		addPersister(persister);
 		return persister;
 	}

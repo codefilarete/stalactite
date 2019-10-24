@@ -2,17 +2,12 @@ package org.gama.stalactite.persistence.query;
 
 import java.sql.ResultSet;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 
 import org.gama.lang.collection.Iterables;
 import org.gama.lang.collection.Maps;
-import org.gama.stalactite.sql.ConnectionProvider;
-import org.gama.stalactite.sql.dml.PreparedSQL;
-import org.gama.stalactite.sql.dml.ReadOperation;
-import org.gama.stalactite.sql.dml.SQLExecutionException;
-import org.gama.stalactite.sql.result.Row;
-import org.gama.stalactite.sql.result.RowIterator;
 import org.gama.stalactite.persistence.engine.cascade.JoinedStrategiesSelect;
 import org.gama.stalactite.persistence.engine.cascade.StrategyJoinsRowTransformer;
 import org.gama.stalactite.persistence.sql.dml.binder.ColumnBinderRegistry;
@@ -21,6 +16,12 @@ import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.query.builder.SQLQueryBuilder;
 import org.gama.stalactite.query.model.CriteriaChain;
 import org.gama.stalactite.query.model.Query;
+import org.gama.stalactite.sql.ConnectionProvider;
+import org.gama.stalactite.sql.dml.PreparedSQL;
+import org.gama.stalactite.sql.dml.ReadOperation;
+import org.gama.stalactite.sql.dml.SQLExecutionException;
+import org.gama.stalactite.sql.result.Row;
+import org.gama.stalactite.sql.result.RowIterator;
 
 import static org.gama.stalactite.persistence.engine.cascade.JoinedStrategiesSelect.FIRST_STRATEGY_NAME;
 import static org.gama.stalactite.query.model.Operators.in;
@@ -46,12 +47,23 @@ public class EntitySelectExecutor<C, I, T extends Table> {
 	
 	private final ColumnBinderRegistry parameterBinderProvider;
 	
+	private final StrategyJoinsRowTransformer<C> rowTransformer;
+	
 	public EntitySelectExecutor(JoinedStrategiesSelect<C, I, T> joinedStrategiesSelect,
 								ConnectionProvider connectionProvider,
 								ColumnBinderRegistry columnBinderRegistry) {
+		this(joinedStrategiesSelect, connectionProvider, columnBinderRegistry, new StrategyJoinsRowTransformer<>(joinedStrategiesSelect.getStrategyJoins(FIRST_STRATEGY_NAME)));
+	}
+	
+	public EntitySelectExecutor(JoinedStrategiesSelect<C, I, T> joinedStrategiesSelect,
+								ConnectionProvider connectionProvider,
+								ColumnBinderRegistry columnBinderRegistry,
+								StrategyJoinsRowTransformer<C> rowTransformer) {
 		this.joinedStrategiesSelect = joinedStrategiesSelect;
 		this.connectionProvider = connectionProvider;
 		this.parameterBinderProvider = columnBinderRegistry;
+		this.rowTransformer = rowTransformer;
+		this.rowTransformer.setAliasProvider(this.joinedStrategiesSelect::getAlias);
 	}
 	
 	/**
@@ -105,7 +117,7 @@ public class EntitySelectExecutor<C, I, T extends Table> {
 		}
 	}
 	
-	private SQLQueryBuilder createQueryBuilder(CriteriaChain where, Query query) {
+	protected SQLQueryBuilder createQueryBuilder(CriteriaChain where, Query query) {
 		SQLQueryBuilder sqlQueryBuilder = new SQLQueryBuilder(query);
 		if (where.iterator().hasNext()) {    // prevents from empty where causing malformed SQL
 			query.getWhere().and(where);
@@ -146,8 +158,6 @@ public class EntitySelectExecutor<C, I, T extends Table> {
 	}
 	
 	protected List<C> transform(Iterator<Row> rowIterator) {
-		StrategyJoinsRowTransformer<C> strategyJoinsRowTransformer = new StrategyJoinsRowTransformer<>(joinedStrategiesSelect.getStrategyJoins(FIRST_STRATEGY_NAME));
-		strategyJoinsRowTransformer.setAliases(this.joinedStrategiesSelect.getAliases());
-		return strategyJoinsRowTransformer.transform(() -> rowIterator, 50);
+		return this.rowTransformer.transform(() -> rowIterator, 50, new HashMap<>());
 	}
 }

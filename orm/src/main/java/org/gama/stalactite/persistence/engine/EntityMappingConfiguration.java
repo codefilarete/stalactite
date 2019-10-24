@@ -2,11 +2,13 @@ package org.gama.stalactite.persistence.engine;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.function.Function;
 
 import org.gama.lang.collection.ReadOnlyIterator;
 import org.gama.reflection.IReversibleAccessor;
 import org.gama.stalactite.persistence.engine.ColumnOptions.IdentifierPolicy;
 import org.gama.stalactite.persistence.engine.builder.CascadeMany;
+import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
 
 /**
@@ -16,7 +18,10 @@ import org.gama.stalactite.persistence.structure.Table;
  */
 public interface EntityMappingConfiguration<C, I> {
 	
-	Class<C> getPersistedClass();
+	Class<C> getEntityType();
+	
+	@SuppressWarnings("squid:S1452")
+	Function<Function<Column, Object>, C> getEntityFactory();
 	
 	TableNamingStrategy getTableNamingStrategy();
 	

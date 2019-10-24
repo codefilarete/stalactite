@@ -1,29 +1,25 @@
 package org.gama.stalactite.persistence.engine.cascade;
 
+import javax.annotation.Nullable;
 import java.sql.ResultSet;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 
 import org.gama.lang.StringAppender;
 import org.gama.lang.bean.Objects;
 import org.gama.lang.collection.Collections;
 import org.gama.lang.collection.Iterables;
-import org.gama.stalactite.persistence.mapping.IEntityMappingStrategy;
-import org.gama.stalactite.sql.ConnectionProvider;
-import org.gama.stalactite.sql.SimpleConnectionProvider;
-import org.gama.stalactite.sql.binder.ParameterBinder;
-import org.gama.stalactite.sql.binder.ParameterBinderIndex;
-import org.gama.stalactite.sql.binder.ParameterBinderIndex.ParameterBinderIndexFromMap;
-import org.gama.stalactite.sql.dml.ReadOperation;
-import org.gama.stalactite.sql.result.Row;
 import org.gama.stalactite.persistence.engine.BeanRelationFixer;
 import org.gama.stalactite.persistence.engine.SelectExecutor;
 import org.gama.stalactite.persistence.engine.cascade.JoinedStrategiesSelect.StrategyJoins;
 import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
+import org.gama.stalactite.persistence.mapping.IEntityMappingStrategy;
 import org.gama.stalactite.persistence.sql.Dialect;
 import org.gama.stalactite.persistence.sql.ddl.DDLAppender;
 import org.gama.stalactite.persistence.sql.dml.ColumnParameterizedSelect;
@@ -36,6 +32,13 @@ import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.query.builder.DMLNameProvider;
 import org.gama.stalactite.query.builder.SQLQueryBuilder;
 import org.gama.stalactite.query.model.Query;
+import org.gama.stalactite.sql.ConnectionProvider;
+import org.gama.stalactite.sql.SimpleConnectionProvider;
+import org.gama.stalactite.sql.binder.ParameterBinder;
+import org.gama.stalactite.sql.binder.ParameterBinderIndex;
+import org.gama.stalactite.sql.binder.ParameterBinderIndex.ParameterBinderIndexFromMap;
+import org.gama.stalactite.sql.dml.ReadOperation;
+import org.gama.stalactite.sql.result.Row;
 
 import static org.gama.stalactite.persistence.engine.cascade.JoinedStrategiesSelect.FIRST_STRATEGY_NAME;
 
@@ -54,6 +57,8 @@ public class JoinedStrategiesSelectExecutor<C, I, T extends Table> extends Selec
 	private final int blockSize;
 	
 	private final PrimaryKey<Table> primaryKey;
+	private final WhereClauseDMLNameProvider whereClauseDMLNameProvider;
+	private final StrategyJoinsRowTransformer<C> strategyJoinsRowTransformer;
 	
 	public JoinedStrategiesSelectExecutor(IEntityMappingStrategy<C, I, T> classMappingStrategy, Dialect dialect, ConnectionProvider connectionProvider) {
 		super(classMappingStrategy, connectionProvider, dialect.getDmlGenerator(), dialect.getInOperatorMaxSize());
@@ -61,10 +66,37 @@ public class JoinedStrategiesSelectExecutor<C, I, T extends Table> extends Selec
 		this.joinedStrategiesSelect = new JoinedStrategiesSelect<>(classMappingStrategy, this.parameterBinderProvider);
 		this.blockSize = dialect.getInOperatorMaxSize();
 		this.primaryKey = classMappingStrategy.getTargetTable().getPrimaryKey();
+		// NB: in the condition, table and columns are from the main strategy, so there's no need to use aliases
+		this.whereClauseDMLNameProvider = new WhereClauseDMLNameProvider(classMappingStrategy.getTargetTable(), classMappingStrategy.getTargetTable().getAbsoluteName());
+
+		this.strategyJoinsRowTransformer = new StrategyJoinsRowTransformer<>(joinedStrategiesSelect.getStrategyJoins(FIRST_STRATEGY_NAME));
+		// aliases are computed on select build (done by JoinedStrategiesSelect) so we take it with a very dynamic alias provider by using
+		// a Function on JoinedStrategiesSelect
+		this.strategyJoinsRowTransformer.setAliasProvider(this.joinedStrategiesSelect::getAlias);
+
+	}
+	
+	public JoinedStrategiesSelectExecutor(IEntityMappingStrategy<C, I, T> classMappingStrategy, Dialect dialect, ConnectionProvider connectionProvider,
+										  BiFunction<StrategyJoins<C, ?> /* root strategy join */, Function<Column, String> /* alias provider */, StrategyJoinsRowTransformer<C>> rowTransformerFactory) {
+		super(classMappingStrategy, connectionProvider, dialect.getDmlGenerator(), dialect.getInOperatorMaxSize());
+		this.parameterBinderProvider = dialect.getColumnBinderRegistry();
+		this.joinedStrategiesSelect = new JoinedStrategiesSelect<>(classMappingStrategy, this.parameterBinderProvider);
+		this.blockSize = dialect.getInOperatorMaxSize();
+		this.primaryKey = classMappingStrategy.getTargetTable().getPrimaryKey();
+		// NB: in the condition, table and columns are from the main strategy, so there's no need to use aliases
+		this.whereClauseDMLNameProvider = new WhereClauseDMLNameProvider(classMappingStrategy.getTargetTable(), classMappingStrategy.getTargetTable().getAbsoluteName());
+		
+		// aliases are computed on select build (done by JoinedStrategiesSelect) so we take it with a very dynamic alias provider by using
+		// a Function on JoinedStrategiesSelect
+		this.strategyJoinsRowTransformer = rowTransformerFactory.apply(joinedStrategiesSelect.getStrategyJoins(FIRST_STRATEGY_NAME), this.joinedStrategiesSelect::getAlias);
 	}
 	
 	public JoinedStrategiesSelect<C, I, T> getJoinedStrategiesSelect() {
 		return joinedStrategiesSelect;
+	}
+	
+	public StrategyJoinsRowTransformer<C> getStrategyJoinsRowTransformer() {
+		return strategyJoinsRowTransformer;
 	}
 	
 	public ParameterBinderIndex<Column, ParameterBinder> getParameterBinderProvider() {
@@ -73,7 +105,7 @@ public class JoinedStrategiesSelectExecutor<C, I, T extends Table> extends Selec
 	
 	/**
 	 * Adds an inner join to this executor.
-	 * Shorcu for {@link JoinedStrategiesSelect#add(String, IEntityMappingStrategy, Column, Column, boolean, BeanRelationFixer)}
+	 * Shorcut for {@link JoinedStrategiesSelect#add(String, IEntityMappingStrategy, Column, Column, boolean, BeanRelationFixer)}
 	 *
 	 * @param leftStrategyName the name of a (previously) registered join. {@code leftJoinColumn} must be a {@link Column} of its left {@link Table}
 	 * @param strategy the strategy of the mapped bean. Used to give {@link Column}s and {@link org.gama.stalactite.persistence.mapping.IRowTransformer}
@@ -88,7 +120,7 @@ public class JoinedStrategiesSelectExecutor<C, I, T extends Table> extends Selec
 	 */
 	public <U, T1 extends Table<T1>, T2 extends Table<T2>, ID> String addComplementaryTable(
 			String leftStrategyName,
-			ClassMappingStrategy<U, ID, T2> strategy,
+			IEntityMappingStrategy<U, ID, T2> strategy,
 			BeanRelationFixer beanRelationFixer,
 			Column<T1, ID> leftJoinColumn,
 			Column<T2, ID> rightJoinColumn) {
@@ -99,7 +131,7 @@ public class JoinedStrategiesSelectExecutor<C, I, T extends Table> extends Selec
 	
 	/**
 	 * Adds a join to this executor.
-	 * Shorcu for {@link JoinedStrategiesSelect#add(String, IEntityMappingStrategy, Column, Column, boolean, BeanRelationFixer)}
+	 * Shorcut for {@link JoinedStrategiesSelect#add(String, IEntityMappingStrategy, Column, Column, boolean, BeanRelationFixer)}
 	 *
 	 * @param leftStrategyName the name of a (previously) registered join. {@code leftJoinColumn} must be a {@link Column} of its left {@link Table}
 	 * @param strategy the strategy of the mapped bean. Used to give {@link Column}s and {@link org.gama.stalactite.persistence.mapping.IRowTransformer}
@@ -132,10 +164,8 @@ public class JoinedStrategiesSelectExecutor<C, I, T extends Table> extends Selec
 			Query query = joinedStrategiesSelect.buildSelectQuery();
 			
 			// Creation of the where clause: we use a dynamic "in" operator clause to avoid multiple QueryBuilder instanciation
-			// NB: in the condition, table and columns are from the main strategy, so there's no need to use aliases
-			DMLNameProvider dmlNameProvider = new WhereClauseDMLNameProvider(joinedStrategiesSelect);
-			DMLGenerator dmlGenerator = new DMLGenerator(parameterBinderProvider, new NoopSorter(), dmlNameProvider);
-			DDLAppender identifierCriteria = new JoinDDLAppender(dmlNameProvider);
+			DMLGenerator dmlGenerator = new DMLGenerator(parameterBinderProvider, new NoopSorter(), whereClauseDMLNameProvider);
+			DDLAppender identifierCriteria = new JoinDDLAppender(whereClauseDMLNameProvider);
 			query.getWhere().and(identifierCriteria);
 			
 			// We ensure that the same Connection is used for all operations
@@ -147,17 +177,17 @@ public class JoinedStrategiesSelectExecutor<C, I, T extends Table> extends Selec
 				parcels = Collections.cutTail(parcels);
 			}
 			
-			SQLQueryBuilder SQLQueryBuilder = new SQLQueryBuilder(query);
+			SQLQueryBuilder sqlQueryBuilder = new SQLQueryBuilder(query);
 			if (!parcels.isEmpty()) {
 				// change parameter mark count to adapt "in" operator values
 				ParameterizedWhere tableParameterizedWhere = dmlGenerator.appendTupledWhere(identifierCriteria, primaryKey.getColumns(), blockSize);
-				result.addAll(execute(localConnectionProvider, SQLQueryBuilder.toSQL(), parcels, tableParameterizedWhere.getColumnToIndex()));
+				result.addAll(execute(localConnectionProvider, sqlQueryBuilder.toSQL(), parcels, tableParameterizedWhere.getColumnToIndex()));
 			}
 			if (!lastBlock.isEmpty()) {
 				// change parameter mark count to adapt "in" operator values, we must clear previous where clause
 				identifierCriteria.getAppender().setLength(0);
 				ParameterizedWhere tableParameterizedWhere = dmlGenerator.appendTupledWhere(identifierCriteria, primaryKey.getColumns(), lastBlock.size());
-				result.addAll(execute(localConnectionProvider, SQLQueryBuilder.toSQL(), java.util.Collections.singleton(lastBlock), tableParameterizedWhere.getColumnToIndex()));
+				result.addAll(execute(localConnectionProvider, sqlQueryBuilder.toSQL(), java.util.Collections.singleton(lastBlock), tableParameterizedWhere.getColumnToIndex()));
 			}
 		}
 		return result;
@@ -181,27 +211,26 @@ public class JoinedStrategiesSelectExecutor<C, I, T extends Table> extends Selec
 	
 	@Override
 	protected List<C> transform(Iterator<Row> rowIterator, int resultSize) {
-		StrategyJoinsRowTransformer<C> strategyJoinsRowTransformer = new StrategyJoinsRowTransformer<>(joinedStrategiesSelect.getStrategyJoins(FIRST_STRATEGY_NAME));
-		strategyJoinsRowTransformer.setAliases(this.joinedStrategiesSelect.getAliases());
-		return strategyJoinsRowTransformer.transform(() -> rowIterator, resultSize);
+		return strategyJoinsRowTransformer.transform(() -> rowIterator, resultSize, new HashMap<>());
 	}
 	
 	private static class WhereClauseDMLNameProvider extends DMLNameProvider {
 		
-		private final JoinedStrategiesSelect joinedStrategiesSelect;
+		private final Table whereTable;
+		private final String whereTableAlias;
 		
-		private WhereClauseDMLNameProvider(JoinedStrategiesSelect joinedStrategiesSelect) {
+		private WhereClauseDMLNameProvider(Table whereTable, @Nullable String whereTableAlias) {
 			// we don't care about the aliases because we redefine our way of getting them, see #getAlias
 			super(java.util.Collections.emptyMap());
-			this.joinedStrategiesSelect = joinedStrategiesSelect;
+			this.whereTable = whereTable;
+			this.whereTableAlias = whereTableAlias;
 		}
 		
 		/** Overriden to get alias from the root {@link StrategyJoins} table alias (if any) */
 		@Override
 		public String getAlias(Table table) {
-			StrategyJoins rootStrategyJoins = joinedStrategiesSelect.getStrategyJoins(FIRST_STRATEGY_NAME);
-			if (table == rootStrategyJoins.getTable()) {
-				return Objects.preventNull(rootStrategyJoins.getTableAlias(), table.getName());
+			if (table == whereTable) {
+				return Objects.preventNull(whereTableAlias, table.getName());
 			} else {
 				// anti unexpected usage
 				throw new IllegalArgumentException("Table " + table.getName() + " is not expected to be used in the where clause");

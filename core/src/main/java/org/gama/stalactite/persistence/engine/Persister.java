@@ -12,16 +12,14 @@ import org.gama.lang.Duo;
 import org.gama.lang.Retryer;
 import org.gama.lang.collection.Iterables;
 import org.gama.lang.collection.Maps;
-import org.gama.stalactite.persistence.mapping.IEntityMappingStrategy;
-import org.gama.stalactite.sql.ConnectionProvider;
 import org.gama.stalactite.persistence.engine.listening.PersisterListener;
-import org.gama.stalactite.persistence.engine.listening.UpdateListener;
-import org.gama.stalactite.persistence.engine.listening.UpdateListener.UpdatePayload;
 import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
+import org.gama.stalactite.persistence.mapping.IEntityMappingStrategy;
 import org.gama.stalactite.persistence.mapping.SimpleIdMappingStrategy;
 import org.gama.stalactite.persistence.sql.Dialect;
 import org.gama.stalactite.persistence.sql.dml.DMLGenerator;
 import org.gama.stalactite.persistence.structure.Table;
+import org.gama.stalactite.sql.ConnectionProvider;
 
 /**
  * CRUD Persistent features dedicated to an entity class. Entry point for persistent operations on entities.
@@ -43,37 +41,31 @@ public class Persister<C, I, T extends Table> {
 	private DeleteExecutor<C, I, T> deleteExecutor;
 	private SelectExecutor<C, I, T> selectExecutor;
 	
-	public Persister(PersistenceContext persistenceContext, IEntityMappingStrategy<C, I, T> mappingStrategy) {
+	public Persister(IEntityMappingStrategy<C, I, T> mappingStrategy, PersistenceContext persistenceContext) {
 		this(mappingStrategy, persistenceContext.getDialect(), persistenceContext.getConnectionProvider(), persistenceContext.getJDBCBatchSize());
 	}
 	
 	public Persister(IEntityMappingStrategy<C, I, T> mappingStrategy, Dialect dialect, ConnectionProvider connectionProvider, int jdbcBatchSize) {
-		this(mappingStrategy, connectionProvider, dialect.getDmlGenerator(),
-				dialect.getWriteOperationRetryer(), jdbcBatchSize, dialect.getInOperatorMaxSize());
-	}
-	
-	protected Persister(IEntityMappingStrategy<C, I, T> mappingStrategy, ConnectionProvider connectionProvider,
-						DMLGenerator dmlGenerator, Retryer writeOperationRetryer, int jdbcBatchSize, int inOperatorMaxSize) {
 		this.mappingStrategy = mappingStrategy;
 		this.connectionProvider = connectionProvider;
-		this.dmlGenerator = dmlGenerator;
-		this.writeOperationRetryer = writeOperationRetryer;
+		this.dmlGenerator = dialect.getDmlGenerator();
+		this.writeOperationRetryer = dialect.getWriteOperationRetryer();
 		this.batchSize = jdbcBatchSize;
-		this.inOperatorMaxSize = inOperatorMaxSize;
+		this.inOperatorMaxSize = dialect.getInOperatorMaxSize();
 		this.insertExecutor = newInsertExecutor(mappingStrategy, connectionProvider, dmlGenerator,
 				writeOperationRetryer, jdbcBatchSize, inOperatorMaxSize);
 		this.updateExecutor = newUpdateExecutor(mappingStrategy, connectionProvider, dmlGenerator,
 				writeOperationRetryer, jdbcBatchSize, inOperatorMaxSize);
 		this.deleteExecutor = newDeleteExecutor(mappingStrategy, connectionProvider, dmlGenerator,
 				writeOperationRetryer, jdbcBatchSize, inOperatorMaxSize);
-		this.selectExecutor = newSelectExecutor(mappingStrategy, connectionProvider, dmlGenerator, inOperatorMaxSize);
+		this.selectExecutor = newSelectExecutor(mappingStrategy, connectionProvider, dialect);
 		
 		// Transfering identifier manager InsertListerner to here
 		getPersisterListener().addInsertListener(
 				getMappingStrategy().getIdMappingStrategy().getIdentifierInsertionManager().getInsertListener());
 	}
 	
-	protected <U> InsertExecutor<U, I, T> newInsertExecutor(IEntityMappingStrategy<U, I, T> mappingStrategy,
+	protected InsertExecutor<C, I, T> newInsertExecutor(IEntityMappingStrategy<C, I, T> mappingStrategy,
 																ConnectionProvider connectionProvider,
 																DMLGenerator dmlGenerator,
 																Retryer writeOperationRetryer,
@@ -83,7 +75,7 @@ public class Persister<C, I, T extends Table> {
 				writeOperationRetryer, jdbcBatchSize, inOperatorMaxSize);
 	}
 	
-	protected <U> UpdateExecutor<U, I, T> newUpdateExecutor(IEntityMappingStrategy<U, I, T> mappingStrategy,
+	protected UpdateExecutor<C, I, T> newUpdateExecutor(IEntityMappingStrategy<C, I, T> mappingStrategy,
 													  ConnectionProvider connectionProvider,
 													  DMLGenerator dmlGenerator,
 													  Retryer writeOperationRetryer,
@@ -93,7 +85,7 @@ public class Persister<C, I, T extends Table> {
 				writeOperationRetryer, jdbcBatchSize, inOperatorMaxSize);
 	}
 	
-	protected <U> DeleteExecutor<U, I, T> newDeleteExecutor(IEntityMappingStrategy<U, I, T> mappingStrategy,
+	protected DeleteExecutor<C, I, T> newDeleteExecutor(IEntityMappingStrategy<C, I, T> mappingStrategy,
 															ConnectionProvider connectionProvider,
 															DMLGenerator dmlGenerator,
 															Retryer writeOperationRetryer,
@@ -103,11 +95,10 @@ public class Persister<C, I, T extends Table> {
 				writeOperationRetryer, jdbcBatchSize, inOperatorMaxSize);
 	}
 	
-	protected <U> SelectExecutor<U, I, T> newSelectExecutor(IEntityMappingStrategy<U, I, T> mappingStrategy,
+	protected SelectExecutor<C, I, T> newSelectExecutor(IEntityMappingStrategy<C, I, T> mappingStrategy,
 																ConnectionProvider connectionProvider,
-																DMLGenerator dmlGenerator,
-																int inOperatorMaxSize) {
-		return new SelectExecutor<>(mappingStrategy, connectionProvider, dmlGenerator, inOperatorMaxSize);
+																Dialect dialect) {
+		return new SelectExecutor<>(mappingStrategy, connectionProvider, dialect.getDmlGenerator(), dialect.getInOperatorMaxSize());
 	}
 	
 	public ConnectionProvider getConnectionProvider() {
@@ -318,21 +309,16 @@ public class Persister<C, I, T extends Table> {
 	 * @return number of rows updated (relation-less counter) (maximum is argument size, may be 0 if row wasn't found in database)
 	 */
 	public int update(Iterable<? extends Duo<? extends C, ? extends C>> differencesIterable, boolean allColumnsStatement) {
-		Iterable<UpdatePayload<C, T>> updatePayloads = UpdateListener.computePayloads(differencesIterable, allColumnsStatement, getMappingStrategy());
-		if (Iterables.isEmpty(updatePayloads)) {
+		if (Iterables.isEmpty(differencesIterable)) {
 			// nothing to update => we return immediatly without any call to listeners
 			return 0;
 		} else {
-			return getPersisterListener().doWithUpdateListener(updatePayloads, allColumnsStatement, this::doUpdate);
+			return getPersisterListener().doWithUpdateListener(differencesIterable, allColumnsStatement, this::doUpdate);
 		}
 	}
 	
-	protected int doUpdate(Iterable<UpdatePayload<C, T>> updatePayloads, boolean allColumnsStatement) {
-		if (allColumnsStatement) {
-			return updateExecutor.updateMappedColumns(updatePayloads);
-		} else {
-			return updateExecutor.updateVariousColumns(updatePayloads);
-		}
+	protected int doUpdate(Iterable<? extends Duo<? extends C, ? extends C>> entities, boolean allColumnsStatement) {
+		return updateExecutor.update(entities, allColumnsStatement);
 	}
 	
 	/**

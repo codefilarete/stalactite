@@ -124,18 +124,19 @@ class EmbeddableMappingBuilder<C> {
 		result.put(linkage.getAccessor(), column);
 	}
 	
-	protected void assertMappingIsNotAlreadyDefined(String columnName, Linkage linkage) {
+	protected void assertMappingIsNotAlreadyDefined(Linkage linkage, String columnName) {
 		IReversibleAccessor propertyAccessor = linkage.getAccessor();
 		ValueAccessPointComparator valueAccessPointComparator = new ValueAccessPointComparator();
 		Predicate<Linkage> checker = ((Predicate<Linkage>) pawn -> {
 			IReversibleAccessor accessor = pawn.getAccessor();
-			if (valueAccessPointComparator.compare(accessor, propertyAccessor) == 0) {
+			if (valueAccessPointComparator.compare(accessor, propertyAccessor) == 0 && !columnName.equals(columnNameProvider.giveColumnName(pawn))) {
 				throw new MappingConfigurationException("Mapping is already defined by method " + MemberDefinition.toString(linkage.getAccessor()));
 			}
 			return true;
 		}).and(pawn -> {
 			if (columnName != null && columnName.equals(columnNameProvider.giveColumnName(pawn))) {
-				throw new MappingConfigurationException("Mapping is already defined for column " + columnName);
+				throw new MappingConfigurationException("Column " + columnName + " of mapping " + MemberDefinition.toString(linkage.getAccessor())
+						+ " is already targetted by " + MemberDefinition.toString(pawn.getAccessor()));
 			}
 			return true;
 		});
@@ -153,7 +154,7 @@ class EmbeddableMappingBuilder<C> {
 	
 	protected Column addLinkage(Linkage linkage) {
 		String columnName = columnNameProvider.giveColumnName(linkage);
-		assertMappingIsNotAlreadyDefined(columnName, linkage);
+		assertMappingIsNotAlreadyDefined(linkage, columnName);
 		Column addedColumn = targetTable.addColumn(columnName, linkage.getColumnType());
 		addedColumn.setNullable(linkage.isNullable());
 		return addedColumn;
@@ -493,7 +494,7 @@ class EmbeddableMappingBuilder<C> {
 		private final ColumnNamingStrategy columnNamingStrategy;
 		
 		ColumnNameProvider(@Nullable ColumnNamingStrategy columnNamingStrategy) {
-			this.columnNamingStrategy = nullable(columnNamingStrategy).getOr(ColumnNamingStrategy.DEFAULT);;
+			this.columnNamingStrategy = nullable(columnNamingStrategy).getOr(ColumnNamingStrategy.DEFAULT);
 		}
 		
 		protected String giveColumnName(Linkage linkage) {

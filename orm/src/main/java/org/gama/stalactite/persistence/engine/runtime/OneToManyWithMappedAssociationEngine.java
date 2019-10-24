@@ -22,7 +22,6 @@ import org.gama.stalactite.persistence.engine.cascade.JoinedStrategiesSelect;
 import org.gama.stalactite.persistence.engine.cascade.JoinedStrategiesSelect.StrategyJoins;
 import org.gama.stalactite.persistence.engine.cascade.JoinedTablesPersister;
 import org.gama.stalactite.persistence.engine.listening.SelectListener;
-import org.gama.stalactite.persistence.engine.listening.UpdateListener.UpdatePayload;
 import org.gama.stalactite.persistence.structure.Column;
 
 import static org.gama.lang.bean.Objects.not;
@@ -113,7 +112,7 @@ public class OneToManyWithMappedAssociationEngine<SRC, TRGT, SRCID, TRGTID, C ex
 	}
 	
 	public void addUpdateCascade(boolean shouldDeleteRemoved) {
-		BiConsumer<UpdatePayload<? extends SRC, ?>, Boolean> updateListener = new CollectionUpdater<>(
+		BiConsumer<Duo<SRC, SRC>, Boolean> updateListener = new CollectionUpdater<>(
 				manyRelationDefinition.getCollectionGetter(),
 				targetPersister,
 				manyRelationDefinition.getReverseSetter(),
@@ -186,20 +185,20 @@ public class OneToManyWithMappedAssociationEngine<SRC, TRGT, SRCID, TRGTID, C ex
 	
 	static class TargetInstancesUpdateCascader<I, O> extends AfterUpdateCollectionCascader<I, O> {
 		
-		private final BiConsumer<UpdatePayload<? extends I, ?>, Boolean> updateListener;
+		private final BiConsumer<Duo<? extends I, ? extends I>, Boolean> updateListener;
 		
-		public TargetInstancesUpdateCascader(Persister<O, ?, ?> targetPersister, BiConsumer<UpdatePayload<? extends I, ?>, Boolean> updateListener) {
+		public TargetInstancesUpdateCascader(Persister<O, ?, ?> targetPersister, BiConsumer<? extends Duo<? extends I, ? extends I>, Boolean> updateListener) {
 			super(targetPersister);
-			this.updateListener = updateListener;
+			this.updateListener = (BiConsumer<Duo<? extends I, ? extends I>, Boolean>) updateListener;
 		}
 		
 		@Override
-		public void afterUpdate(Iterable<UpdatePayload<? extends I, ?>> entities, boolean allColumnsStatement) {
+		public void afterUpdate(Iterable<? extends Duo<? extends I, ? extends I>> entities, boolean allColumnsStatement) {
 			entities.forEach(entry -> updateListener.accept(entry, allColumnsStatement));
 		}
 		
 		@Override
-		protected void postTargetUpdate(Iterable<UpdatePayload<? extends O, ?>> entities) {
+		protected void postTargetUpdate(Iterable<? extends Duo<? extends O, ? extends O>> entities) {
 			// Nothing to do
 		}
 		

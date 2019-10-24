@@ -4,6 +4,7 @@ import javax.annotation.Nullable;
 import java.util.HashSet;
 import java.util.Set;
 
+import org.gama.lang.Reflections;
 import org.gama.lang.collection.Iterables;
 import org.gama.reflection.MemberDefinition;
 import org.gama.reflection.MethodReferenceCapturer;
@@ -81,7 +82,7 @@ public abstract class AbstractEntityMappingBuilder<C, I> {
 		Set<Class> result = new HashSet<>();
 		
 		for (EntityMappingConfiguration mappingConfiguration : entityMappingConfiguration.inheritanceIterable()) {
-			result.add(mappingConfiguration.getPersistedClass());
+			result.add(mappingConfiguration.getEntityType());
 			result.addAll(collectRelationEntities(mappingConfiguration));
 		}
 		
@@ -92,23 +93,44 @@ public abstract class AbstractEntityMappingBuilder<C, I> {
 	private Set<Class> collectRelationEntities(EntityMappingConfiguration<?, ?> entityMappingConfiguration) {
 		Set<Class> result = new HashSet<>();
 		// one to manys
-		Iterables.collect(entityMappingConfiguration.getOneToManys(), cascadeMany -> cascadeMany.getTargetMappingConfiguration().getPersistedClass(), () -> result);
+		Iterables.collect(entityMappingConfiguration.getOneToManys(), cascadeMany -> cascadeMany.getTargetMappingConfiguration().getEntityType(), () -> result);
 		// one to ones
-		Iterables.collect(entityMappingConfiguration.getOneToOnes(), cascadeOne -> cascadeOne.getTargetMappingConfiguration().getPersistedClass(), () -> result);
+		Iterables.collect(entityMappingConfiguration.getOneToOnes(), cascadeOne -> cascadeOne.getTargetMappingConfiguration().getEntityType(), () -> result);
 		// we add ourselve for any bidirectional relation (could have been done only in case of real bidirectionality)
-		result.add(entityMappingConfiguration.getPersistedClass());
+		result.add(entityMappingConfiguration.getEntityType());
 		
 		return result;
 	}
-
-	public <T extends Table<?>> JoinedTablesPersister<C, I, T> build(PersistenceContext persistenceContext, @Nullable T targetTable) {
-		// Table must be created before giving it to further methods because it is mandatory for them
-		if (targetTable == null) {
-			targetTable = (T) nullable(giveTableUsedInMapping()).getOr(() -> new Table(configurationSupport.getTableNamingStrategy().giveName(configurationSupport.getPersistedClass())));
-		}
+	
+	/**
+	 * Build a {@link Persister} from the given configuration at contruction time.
+	 * {@link Table}s and columns will be created to fulfill the requirements needed by the configuration.
+	 *
+	 * @param persistenceContext the {@link PersistenceContext} in which the resulting {@link Persister} will be put, also needed for Dialect purpose 
+	 * @return the built {@link Persister}
+	 */
+	public JoinedTablesPersister<C, I, Table> build(PersistenceContext persistenceContext) {
+		return build(persistenceContext, null);
+	}
+	
+	public <T extends Table> JoinedTablesPersister<C, I, T> build(PersistenceContext persistenceContext, @Nullable T targetTable) {
 		try {
+			// Very first thing, determine identifier management and check some configuration
+			if (configurationSupport.getIdentifierAccessor() != null && configurationSupport.getInheritanceConfiguration() != null
+					// TODO : check for removal of this condition when subclasses will be defined with EmbeddableConfiguration, not EntityConfiguration
+					&& configurationSupport.getInheritanceConfiguration().getPolymorphismPolicy() == null) {
+				throw new MappingConfigurationException("Defining an identifier while inheritance is used is not supported : "
+						+ Reflections.toString(configurationSupport.getEntityType()) + " defined identifier " + MemberDefinition.toString(configurationSupport.getIdentifierAccessor())
+						+ " while it inherits from " + Reflections.toString(configurationSupport.getInheritanceConfiguration().getEntityType()));
+			}
+			
+			// Table must be created before giving it to further methods because it is mandatory for them
+			if (targetTable == null) {
+				targetTable = (T) nullable(giveTableUsedInMapping()).getOr(() -> new Table(configurationSupport.getTableNamingStrategy().giveName(configurationSupport.getEntityType())));
+			}
 			return this.doBuild(persistenceContext, targetTable);
 		} finally {
+			// we clear entity candidates in any cases
 			if (this.isInitiator) {
 				ENTITY_CANDIDATES.remove();
 			}

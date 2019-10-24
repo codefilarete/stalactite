@@ -15,7 +15,7 @@ import org.gama.stalactite.persistence.engine.FluentEmbeddableMappingConfigurati
  */
 public interface EmbeddableMappingConfiguration<C> {
 	
-	Class<C> getClassToPersist();
+	Class<C> getBeanType();
 	
 	@SuppressWarnings("squid:S1452" /* Can't remove wildcard here because it requires to create a local generic "super" type which is forbidden */)
 	EmbeddableMappingConfiguration<? super C> getMappedSuperClassConfiguration();

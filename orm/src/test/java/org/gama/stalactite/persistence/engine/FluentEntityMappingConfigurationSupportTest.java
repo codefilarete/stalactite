@@ -208,7 +208,7 @@ public class FluentEntityMappingConfigurationSupportTest {
 	
 	@Test
 	public void add_mappingDefinedTwiceByMethod_throwsException() {
-		assertEquals("Mapping is already defined by method Toto::getName",
+		assertEquals("Column name of mapping Toto::getName is already targetted by o.g.s.p.e.FluentEntityMappingConfigurationSupportTest$Toto.getName()",
 				assertThrows(MappingConfigurationException.class, () -> MappingEase.entityBuilder(Toto.class, StatefullIdentifier.class)
 						.add(Toto::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 						.add(Toto::getName)
@@ -219,7 +219,7 @@ public class FluentEntityMappingConfigurationSupportTest {
 	
 	@Test
 	public void add_mappingDefinedTwiceByColumn_throwsException() {
-		assertEquals("Mapping is already defined for column xyz",
+		assertEquals("Column xyz of mapping Toto::getName is already targetted by Toto::getFirstName",
 				assertThrows(MappingConfigurationException.class, () -> MappingEase.entityBuilder(Toto.class, StatefullIdentifier.class)
 						.add(Toto::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 						.add(Toto::getName, "xyz")

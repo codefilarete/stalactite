@@ -294,11 +294,11 @@ public class CascadeOneConfigurer<SRC, TRGT, ID> {
 			srcPersisterListener.addUpdateListener(new UpdateListener<SRC>() {
 				
 				@Override
-				public void afterUpdate(Iterable<UpdatePayload<? extends SRC, ?>> payloads, boolean allColumnsStatement) {
+				public void afterUpdate(Iterable<? extends Duo<? extends SRC, ? extends SRC>> payloads, boolean allColumnsStatement) {
 					List<Duo<TRGT, TRGT>> targetsToUpdate = Iterables.collect(payloads,
 							// targets of nullified relations don't need to be updated 
-							e -> getTarget(e.getEntities().getLeft()) != null,
-							e -> getTargets(e.getEntities().getLeft(), e.getEntities().getRight()),
+							e -> getTarget(e.getLeft()) != null,
+							e -> getTargets(e.getLeft(), e.getRight()),
 							ArrayList::new);
 					targetPersister.update(targetsToUpdate, allColumnsStatement);
 				}
@@ -471,12 +471,12 @@ public class CascadeOneConfigurer<SRC, TRGT, ID> {
 			srcPersisterListener.addUpdateListener(new UpdateListener<SRC>() {
 				
 				@Override
-				public void afterUpdate(Iterable<UpdatePayload<? extends SRC, ?>> payloads, boolean allColumnsStatement) {
+				public void afterUpdate(Iterable<? extends Duo<? extends SRC, ? extends SRC>> payloads, boolean allColumnsStatement) {
 					ThreadLocals.doWithThreadLocal(foreignKeyValueProvider, HashMap::new, (Runnable) () -> {
 						List<Duo<TRGT, TRGT>> targetsToUpdate = Iterables.collect(payloads,
 								e -> {
-									TRGT targetOfModified = getTarget(e.getEntities().getLeft());
-									TRGT targetOfUnmodified = getTarget(e.getEntities().getRight());
+									TRGT targetOfModified = getTarget(e.getLeft());
+									TRGT targetOfUnmodified = getTarget(e.getRight());
 									if (targetOfModified == null && targetOfUnmodified != null) {
 										// "REMOVED"
 										// relation is nullified : relation column should be nullified too
@@ -496,7 +496,7 @@ public class CascadeOneConfigurer<SRC, TRGT, ID> {
 										// - else : both instance are null => nothing to do, return false
 									}
 								},
-								e -> getTargets(e.getEntities().getLeft(), e.getEntities().getRight()),
+								e -> getTargets(e.getLeft(), e.getRight()),
 								ArrayList::new);
 						targetPersister.update(targetsToUpdate, allColumnsStatement);
 						targetPersister.updateById(foreignKeyValueProvider.get().keySet());
@@ -588,9 +588,9 @@ public class CascadeOneConfigurer<SRC, TRGT, ID> {
 		}
 		
 		@Override
-		public void beforeUpdate(Iterable<UpdatePayload<? extends C, ?>> payloads, boolean allColumnsStatement) {
-			for (UpdatePayload<? extends C, ?> payload : payloads) {
-				C modifiedEntity = payload.getEntities().getLeft();
+		public void beforeUpdate(Iterable<? extends Duo<? extends C, ? extends C>> payloads, boolean allColumnsStatement) {
+			for (Duo<? extends C, ? extends C> payload : payloads) {
+				C modifiedEntity = payload.getLeft();
 				Object modifiedTarget = targetAccessor.get(modifiedEntity);
 				if (modifiedTarget == null) {
 					throw newRuntimeMappingException(modifiedEntity, targetAccessor);
@@ -615,11 +615,11 @@ public class CascadeOneConfigurer<SRC, TRGT, ID> {
 		}
 		
 		@Override
-		public void afterUpdate(Iterable<UpdatePayload<? extends SRC, ?>> payloads, boolean allColumnsStatement) {
+		public void afterUpdate(Iterable<? extends Duo<? extends SRC, ? extends SRC>> payloads, boolean allColumnsStatement) {
 				List<TRGT> targetsToDeleteUpdate = Iterables.collect(payloads,
 						// targets of nullified relations don't need to be updated 
-						e -> getTarget(e.getEntities().getLeft()) == null,
-						e -> getTarget(e.getEntities().getRight()),
+						e -> getTarget(e.getLeft()) == null,
+						e -> getTarget(e.getRight()),
 						ArrayList::new);
 				targetPersister.delete(targetsToDeleteUpdate);
 		}

@@ -33,11 +33,11 @@ public interface IEntityMappingStrategy<C, I, T extends Table> extends IMappingS
 	
 	Set<Column<T, Object>> getUpdatableColumns();
 	
-	<O> void addSilentColumnSelecter(Column<T, O> column);
+	<O> void addSilentColumnToSelect(Column<T, O> column);
 	
 	Iterable<Column<T, Object>> getVersionedKeys();
 	
 	Map<Column<T, Object>, Object> getVersionedKeyValues(C c);
 	
-	Map<IReversibleAccessor<C, Object>, IEmbeddedBeanMappingStrategy<Object, T>> getMappingStrategies();
+	Map<IReversibleAccessor<C, Object>, IEmbeddedBeanMappingStrategy<Object, T>> getEmbeddedBeanStrategies();
 }

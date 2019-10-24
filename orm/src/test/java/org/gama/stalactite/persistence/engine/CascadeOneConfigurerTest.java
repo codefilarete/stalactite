@@ -89,7 +89,7 @@ class CascadeOneConfigurerTest {
 		);
 		EmbeddableMappingConfiguration<City> cityPropertiesMapping = mock(EmbeddableMappingConfiguration.class);
 		// declaring mapping
-		when(cityPropertiesMapping.getClassToPersist()).thenReturn(City.class);
+		when(cityPropertiesMapping.getBeanType()).thenReturn(City.class);
 		when(cityPropertiesMapping.getPropertiesMapping()).thenReturn(Arrays.asList(identifierLinkage, nameLinkage));
 		// preventing NullPointerException
 		when(cityPropertiesMapping.getInsets()).thenReturn(Collections.emptyList());
@@ -97,7 +97,7 @@ class CascadeOneConfigurerTest {
 		
 		EntityMappingConfiguration<City, Identifier<Long>> cityMappingConfiguration = mock(EntityMappingConfiguration.class);
 		// declaring mapping
-		when(cityMappingConfiguration.getPersistedClass()).thenReturn(City.class);
+		when(cityMappingConfiguration.getEntityType()).thenReturn(City.class);
 		when(cityMappingConfiguration.getPropertiesMapping()).thenReturn(cityPropertiesMapping);
 		// preventing NullPointerException
 		when(cityMappingConfiguration.getTableNamingStrategy()).thenReturn(TableNamingStrategy.DEFAULT);
@@ -196,7 +196,7 @@ class CascadeOneConfigurerTest {
 		
 		EntityMappingConfiguration<City, Identifier<Long>> cityMappingConfiguration = mock(EntityMappingConfiguration.class);
 		// declaring mapping
-		when(cityMappingConfiguration.getPersistedClass()).thenReturn(City.class);
+		when(cityMappingConfiguration.getEntityType()).thenReturn(City.class);
 		when(cityMappingConfiguration.getPropertiesMapping()).thenReturn(cityPropertiesMapping);
 		// preventing NullPointerException
 		when(cityMappingConfiguration.getTableNamingStrategy()).thenReturn(TableNamingStrategy.DEFAULT);

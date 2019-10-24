@@ -9,6 +9,7 @@ import java.util.Queue;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
+import org.gama.lang.Nullable;
 import org.gama.stalactite.persistence.engine.cascade.JoinedStrategiesSelect.StrategyJoins;
 import org.gama.stalactite.persistence.engine.cascade.JoinedStrategiesSelect.StrategyJoins.Join;
 import org.gama.stalactite.persistence.mapping.AbstractTransformer;
@@ -36,25 +37,18 @@ public class StrategyJoinsRowTransformer<T> {
 	public static final Function<Column, String> DEFAULT_ALIAS_PROVIDER = Column::getAlias;
 	
 	private final StrategyJoins<T, ?> rootStrategyJoins;
-	private Map<Class, Map<Object /* identifier */, Object /* entity */>> entityCache = new HashMap<>();
 	private Function<Column, String> aliasProvider = DEFAULT_ALIAS_PROVIDER;
 	
 	public StrategyJoinsRowTransformer(StrategyJoins<T, ?> rootStrategyJoins) {
 		this.rootStrategyJoins = rootStrategyJoins;
 	}
 	
-	/**
-	 * Gives an entity cache to this instance, the cache is used for filling relations by getting them from it instead of creating clones.
-	 * Will be filled by newly created entity.
-	 * Should be used before calling {@link #transform(Iterable, int)}.
-	 * Can be used to set a bigger cache coming from a wider scope. 
-	 * 
-	 * @param entityCache the Maps of entities per identifier, mapped by Class persistence 
-	 */
-	public void setEntityCache(Map<Class, Map<Object /* identifier */, Object /* entity */>> entityCache) {
-		this.entityCache = entityCache;
+	public StrategyJoinsRowTransformer(StrategyJoins<T, ?> rootStrategyJoins, Function<Column, String> aliasProvider) {
+		this.rootStrategyJoins = rootStrategyJoins;
+		this.aliasProvider = aliasProvider;
 	}
 	
+
 	/**
 	 * 
 	 * @return
@@ -65,13 +59,21 @@ public class StrategyJoinsRowTransformer<T> {
 	
 	/**
 	 * Changes the alias provider (default is {@link Column#getAlias()}) by giving the map between {@link Column} and their alias.
-	 * @param aliases the mapping between {@link Column} and their alias in the Rows of {@link #transform(Iterable, int)}
+	 * @param aliasProvider mapper between {@link Column} and their alias in the Rows of {@link #transform(Iterable, int, Map)}
 	 */
-	public void setAliases(Map<Column, String> aliases) {
-		this.aliasProvider = aliases::get;
+	public void setAliasProvider(Function<Column, String> aliasProvider) {
+		this.aliasProvider = aliasProvider;
 	}
 	
-	public List<T> transform(Iterable<Row> rows, int resultSize) {
+	/**
+	 * 
+	 * @param rows
+	 * @param resultSize
+	 * @param entityCache used for filling relations by getting beans them from it instead of creating clones. Will be filled by newly created entity.
+	 * 					  Can be used to set a bigger cache coming from a wider scope. 
+	 * @return
+	 */
+	public List<T> transform(Iterable<Row> rows, int resultSize, Map<Class, Map<Object /* identifier */, Object /* entity */>> entityCache) {
 		List<T> result = new ArrayList<>(resultSize);
 		EntityCacheWrapper entityCacheWrapper = new EntityCacheWrapper(entityCache);
 		
@@ -80,45 +82,52 @@ public class StrategyJoinsRowTransformer<T> {
 			// We start by the root of the hierarchy.
 			// We process the entity of the current depth, then process the direct relations, add those relations to the depth iterator
 			
-			ColumnedRow columnedRow = new ColumnedRow(aliasProvider);
-			Queue<StrategyJoins> stack = new ArrayDeque<>();
-			stack.add(rootStrategyJoins);
-			// we use a local cache of bean tranformer because we'll ask a slide of them with aliasProvider which creates an instance at each invokation
-			Map<IEntityMappingStrategy, AbstractTransformer> beanTransformerCache = new HashMap<>();
-			while (!stack.isEmpty()) {
+			Nullable<T> newInstance = transform(entityCacheWrapper, row);
+			newInstance.invoke(result::add);
+		}
+		return result;
+	}
+	
+	public Nullable<T> transform(EntityCacheWrapper entityCacheWrapper, Row row) {
+		Nullable<T> result = Nullable.empty();
+		ColumnedRow columnedRow = new ColumnedRow(aliasProvider);
+		Queue<StrategyJoins> stack = new ArrayDeque<>();
+		stack.add(rootStrategyJoins);
+		// we use a local cache of bean tranformer because we'll ask a slide of them with aliasProvider which creates an instance at each invokation
+		Map<IEntityMappingStrategy, AbstractTransformer> beanTransformerCache = new HashMap<>();
+		while (!stack.isEmpty()) {
+			
+			// treating the current depth
+			StrategyJoins<Object, Object> strategyJoins = stack.poll();
+			IEntityMappingStrategy<Object, Object, Table> leftStrategy = strategyJoins.getStrategy();
+			AbstractTransformer mainRowTransformer = beanTransformerCache.computeIfAbsent(leftStrategy, s -> s.copyTransformerWithAliases(columnedRow));
+			Object identifier = leftStrategy.getIdMappingStrategy().getIdentifierAssembler().assemble(row, columnedRow);
+			
+			Object rowInstance = entityCacheWrapper.computeIfAbsent(leftStrategy.getClassToPersist(), identifier, () -> {
+				Object newInstance = mainRowTransformer.transform(row);
+				if (strategyJoins == rootStrategyJoins) {
+					result.elseSet((T) newInstance);
+				}
+				return newInstance;
+			});
+			
+			// processing the direct relations
+			for (Join join : strategyJoins.getJoins()) {
+				StrategyJoins subJoins = join.getStrategy();
+				IEntityMappingStrategy rightStrategy = subJoins.getStrategy();
+				AbstractTransformer rowTransformer = beanTransformerCache.computeIfAbsent(rightStrategy, s -> s.copyTransformerWithAliases(columnedRow));
+				Object rightIdentifier = rightStrategy.getIdMappingStrategy().getIdentifierAssembler().assemble(row, columnedRow);
 				
-				// treating the current depth
-				StrategyJoins<Object, Object> strategyJoins = stack.poll();
-				IEntityMappingStrategy<Object, Object, Table> leftStrategy = strategyJoins.getStrategy();
-				AbstractTransformer mainRowTransformer = beanTransformerCache.computeIfAbsent(leftStrategy, s -> s.copyTransformerWithAliases(aliasProvider));
-				Object identifier = leftStrategy.getIdMappingStrategy().getIdentifierAssembler().assemble(row, columnedRow);
-				
-				Object rowInstance = entityCacheWrapper.computeIfAbsent(leftStrategy.getClassToPersist(), identifier, () -> {
-					Object newInstance = mainRowTransformer.transform(row);
-					if (strategyJoins == rootStrategyJoins) {
-						result.add((T) newInstance);
-					}
-					return newInstance;
-				});
-				
-				// processing the direct relations
-				for (Join join : strategyJoins.getJoins()) {
-					StrategyJoins subJoins = join.getStrategy();
-					IEntityMappingStrategy rightStrategy = subJoins.getStrategy();
-					AbstractTransformer rowTransformer = beanTransformerCache.computeIfAbsent(rightStrategy, s -> s.copyTransformerWithAliases(aliasProvider));
-					Object rightIdentifier = rightStrategy.getIdMappingStrategy().getIdentifierAssembler().assemble(row, columnedRow);
+				// primary key null means no entity => nothing to do
+				if (rightIdentifier != null) {
+					Object rightInstance = entityCacheWrapper.computeIfAbsent(rightStrategy.getClassToPersist(), rightIdentifier,
+							() -> rowTransformer.transform(row));
 					
-					// primary key null means no entity => nothing to do
-					if (rightIdentifier != null) {
-						Object rightInstance = entityCacheWrapper.computeIfAbsent(rightStrategy.getClassToPersist(), rightIdentifier,
-								() -> rowTransformer.transform(row));
-						
-						join.getBeanRelationFixer().apply(rowInstance, rightInstance);
-						
-						// Adds the right strategy for further processing if it has some more joins so they'll also be taken into account
-						if (!subJoins.getJoins().isEmpty()) {
-							stack.add(subJoins);
-						}
+					join.getBeanRelationFixer().apply(rowInstance, rightInstance);
+					
+					// Adds the right strategy for further processing if it has some more joins so they'll also be taken into account
+					if (!subJoins.getJoins().isEmpty()) {
+						stack.add(subJoins);
 					}
 				}
 			}
@@ -130,11 +139,11 @@ public class StrategyJoinsRowTransformer<T> {
 	 * Simple class to ease access or creation to entity from the cache
 	 * @see #computeIfAbsent(Class, Object, Supplier) 
 	 */
-	private static final class EntityCacheWrapper {
+	public static final class EntityCacheWrapper {
 		
 		private final Map<Class, Map<Object, Object>> entityCache;
 		
-		private EntityCacheWrapper(Map<Class, Map<Object, Object>> entityCache) {
+		public EntityCacheWrapper(Map<Class, Map<Object, Object>> entityCache) {
 			this.entityCache = entityCache;
 		}
 		

@@ -1,10 +1,8 @@
 package org.gama.stalactite.persistence.engine;
 
-import org.gama.lang.Retryer;
-import org.gama.stalactite.sql.ConnectionProvider;
 import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
 import org.gama.stalactite.persistence.sql.Dialect;
-import org.gama.stalactite.persistence.sql.dml.DMLGenerator;
+import org.gama.stalactite.sql.ConnectionProvider;
 
 /**
  * Persister dedicated to record of association table (case of one-to-many association without owning column on target side).
@@ -15,7 +13,7 @@ import org.gama.stalactite.persistence.sql.dml.DMLGenerator;
  */
 public class AssociationRecordPersister<C extends AssociationRecord, T extends AssociationTable> extends Persister<C, C, T> {
 	
-	protected AssociationRecordPersister(
+	public AssociationRecordPersister(
 			ClassMappingStrategy<C, C, T> mappingStrategy,
 			Dialect dialect,
 			ConnectionProvider connectionProvider,
@@ -23,13 +21,4 @@ public class AssociationRecordPersister<C extends AssociationRecord, T extends A
 		super(mappingStrategy, dialect, connectionProvider, jdbcBatchSize);
 	}
 	
-	public AssociationRecordPersister(
-			ClassMappingStrategy<C, C, T> mappingStrategy,
-			ConnectionProvider connectionProvider,
-			DMLGenerator dmlGenerator,
-			Retryer writeOperationRetryer,
-			int jdbcBatchSize,
-			int inOperatorMaxSize) {
-		super(mappingStrategy, connectionProvider, dmlGenerator, writeOperationRetryer, jdbcBatchSize, inOperatorMaxSize);
-	}
 }

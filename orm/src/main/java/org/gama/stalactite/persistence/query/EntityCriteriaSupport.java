@@ -159,7 +159,7 @@ public class EntityCriteriaSupport<C> implements EntityCriteria<C> {
 				Column primaryKey = ((SimpleIdentifierAssembler) idMappingStrategy.getIdentifierAssembler()).getColumn();
 				propertyToColumn.put(((SimpleIdMappingStrategy<?, ?>) idMappingStrategy).getIdAccessor().getIdAccessor(), primaryKey);
 			}
-			mappingStrategy.getMappingStrategies().forEach((k, v) ->
+			mappingStrategy.getEmbeddedBeanStrategies().forEach((k, v) ->
 					v.getPropertyToColumn().forEach((p, c) ->
 							propertyToColumn.put(new AccessorChain<>(k, p), c)
 					)

@@ -3,11 +3,8 @@ package org.gama.stalactite.persistence.engine.runtime;
 import java.util.Collection;
 import java.util.List;
 
-import org.gama.lang.Retryer;
 import org.gama.lang.StringAppender;
 import org.gama.lang.collection.Arrays;
-import org.gama.stalactite.sql.ConnectionProvider;
-import org.gama.stalactite.sql.binder.ParameterBinderIndex;
 import org.gama.stalactite.persistence.engine.AssociationRecordPersister;
 import org.gama.stalactite.persistence.engine.IndexedAssociationRecord;
 import org.gama.stalactite.persistence.engine.runtime.AssociationRecordInsertionCascaderTest.Key;
@@ -16,7 +13,8 @@ import org.gama.stalactite.persistence.id.Identifier;
 import org.gama.stalactite.persistence.id.manager.IdentifierInsertionManager;
 import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
 import org.gama.stalactite.persistence.mapping.IdMappingStrategy;
-import org.gama.stalactite.persistence.sql.dml.DMLGenerator;
+import org.gama.stalactite.persistence.sql.Dialect;
+import org.gama.stalactite.sql.ConnectionProvider;
 import org.junit.jupiter.api.Test;
 import org.mockito.stubbing.Answer;
 
@@ -45,8 +43,7 @@ class IndexedAssociationRecordInsertionCascaderTest {
 		when(keyClassMappingStrategyMock.getId(any(Key.class))).thenAnswer((Answer<Identifier<Long>>) invocation ->
 				((Key) invocation.getArgument(0)).getId());
 		AssociationRecordPersister persisterStub =
-				new AssociationRecordPersister(classMappingStrategyMock, mock(ConnectionProvider.class),
-				new DMLGenerator(mock(ParameterBinderIndex.class)), Retryer.NO_RETRY, 1, 1);
+				new AssociationRecordPersister(classMappingStrategyMock, new Dialect(), mock(ConnectionProvider.class), 1);
 		IndexedAssociationRecordInsertionCascader<Keyboard, Key, Identifier, Identifier, List<Key>> testInstance
 				= new IndexedAssociationRecordInsertionCascader<>(persisterStub, Keyboard::getKeys, classMappingStrategyMock, keyClassMappingStrategyMock);
 		

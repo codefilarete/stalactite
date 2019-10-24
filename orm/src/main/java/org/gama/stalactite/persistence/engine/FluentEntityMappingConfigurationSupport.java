@@ -6,6 +6,7 @@ import java.util.Collection;
 import java.util.Date;
 import java.util.List;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.function.Supplier;
 
 import org.danekja.java.util.function.serializable.SerializableBiConsumer;
@@ -97,8 +98,14 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements IFluentEnt
 	}
 	
 	@Override
-	public Class<C> getPersistedClass() {
+	public Class<C> getEntityType() {
 		return persistedClass;
+	}
+	
+	@Override
+	public Function<Function<Column, Object>, C> getEntityFactory() {
+		// for now (until reason to expose this to user) instanciation type is the same as entity one
+		return row -> Reflections.newInstance(getEntityType());
 	}
 	
 	@Override
@@ -620,6 +627,9 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements IFluentEnt
 		
 		if (inheritanceConfiguration != null && isJoinTable()) {
 			return new JoinedTablesEntityMappingBuilder<>(this, methodSpy)
+					.build(persistenceContext, targetTable);
+		} else if (polymorphismPolicy != null) {
+			return new PolymorphicMappingBuilder<>(this, methodSpy)
 					.build(persistenceContext, targetTable);
 		} else {
 			return new EntityMappingBuilder<>(this, methodSpy)

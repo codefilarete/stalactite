@@ -142,7 +142,7 @@ public class ClassMappingStrategyTest {
 			}
 			
 			@Override
-			public AbstractTransformer<Map<String, String>> copyTransformerWithAliases(Function<Column, String> aliasProvider) {
+			public AbstractTransformer<Map<String, String>> copyTransformerWithAliases(ColumnedRow columnedRow) {
 				return null;
 			}
 		});

@@ -14,11 +14,11 @@ import org.gama.stalactite.persistence.structure.Table;
  */
 public interface UpdateListener<C> {
 	
-	default void beforeUpdate(Iterable<UpdatePayload<? extends C, ?>> payloads, boolean allColumnsStatement) {
+	default void beforeUpdate(Iterable<? extends Duo<? extends C, ? extends C>> payloads, boolean allColumnsStatement) {
 		
 	}
 	
-	default void afterUpdate(Iterable<UpdatePayload<? extends C, ?>> entities, boolean allColumnsStatement) {
+	default void afterUpdate(Iterable<? extends Duo<? extends C, ? extends C>> entities, boolean allColumnsStatement) {
 		
 	}
 	

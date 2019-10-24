@@ -361,7 +361,9 @@ class FluentEntityMappingConfigurationSupportInheritanceTest {
 							.mapInheritance(inheritanceConfiguration)
 							.add(Vehicle::getId).identifier(ALREADY_ASSIGNED)
 							.build(persistenceContext));
-			assertEquals("Defining an identifier while inheritance is used is not supported", thrownException.getMessage());
+			assertEquals("Defining an identifier while inheritance is used is not supported" 
+					+ " : o.g.s.p.e.FluentEntityMappingConfigurationSupportInheritanceTest$Vehicle defined identifier AbstractVehicle::getId" 
+					+ " while it inherits from o.g.s.p.e.FluentEntityMappingConfigurationSupportInheritanceTest$AbstractVehicle", thrownException.getMessage());
 		}
 		
 		@Test

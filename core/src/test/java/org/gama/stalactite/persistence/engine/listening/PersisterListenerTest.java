@@ -101,7 +101,7 @@ public class PersisterListenerTest {
 		UpdateListener listenerMock = mock(UpdateListener.class);
 		testInstance.addUpdateListener(listenerMock);
 		
-		ArrayList<UpdatePayload> entities = new ArrayList<>();
+		ArrayList<Duo> entities = new ArrayList<>();
 		RuntimeException error = new RuntimeException("This is the expected exception to be thrown");
 		RuntimeException thrownException = assertThrows(RuntimeException.class, () -> testInstance.doWithUpdateListener(entities, true, (p, b) -> { throw error; }));
 		assertSame(error, thrownException);

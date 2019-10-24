@@ -1,9 +1,9 @@
 package org.gama.stalactite.persistence.mapping;
 
 import java.util.function.Function;
-import java.util.function.Supplier;
 
 import org.gama.lang.Reflections;
+import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.sql.result.Row;
 
 /**
@@ -13,7 +13,10 @@ import org.gama.stalactite.sql.result.Row;
  */
 public abstract class AbstractTransformer<T> implements IRowTransformer<T> {
 	
-	protected final Function<Row, T> beanFactory;
+	protected final Function<Function<Column, Object>, T> beanFactory;
+	
+	/** A kind of {@link Column} aliaser, mainly usefull in case of {@link #copyWithAliases(ColumnedRow)} usage */
+	private final ColumnedRow columnedRow;
 	
 	/**
 	 * Constructor for beans to be instanciated with their default constructor.
@@ -21,17 +24,24 @@ public abstract class AbstractTransformer<T> implements IRowTransformer<T> {
 	 * @param clazz bean class
 	 */
 	public AbstractTransformer(Class<T> clazz) {
-		this(row -> Reflections.newInstance(clazz));
+		this(row -> Reflections.newInstance(clazz), new ColumnedRow());
 	}
 	
 	/**
-	 * Constructor with a general bean {@link Supplier}
+	 * Constructor with a general bean constructor
 	 *
 	 * @param factory the factory of beans
 	 */
-	public AbstractTransformer(Function<Row, T> factory) {
+	public AbstractTransformer(Function<Function<Column, Object>, T> factory, ColumnedRow columnedRow) {
 		this.beanFactory = factory;
+		this.columnedRow = columnedRow;
 	}
+	
+	public ColumnedRow getColumnedRow() {
+		return columnedRow;
+	}
+	
+	public abstract AbstractTransformer<T> copyWithAliases(ColumnedRow columnedRow);
 	
 	@Override
 	public T transform(Row row) {
@@ -49,6 +59,6 @@ public abstract class AbstractTransformer<T> implements IRowTransformer<T> {
 	 * @return a new instance of bean T
 	 */
 	public T newBeanInstance(Row row) {
-		return beanFactory.apply(row);
+		return (T) beanFactory.apply(c -> this.columnedRow.getValue(c, row));
 	}
 }

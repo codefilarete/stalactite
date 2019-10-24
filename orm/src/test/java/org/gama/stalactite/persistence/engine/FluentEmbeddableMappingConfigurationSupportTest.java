@@ -123,7 +123,7 @@ class FluentEmbeddableMappingConfigurationSupportTest {
 	@Test
 	void add_mappingDefinedTwiceByMethod_throwsException() {
 		Table<?> countryTable = new Table<>("countryTable");
-		assertEquals("Mapping is already defined by method Country::getName",
+		assertEquals("Column name of mapping Country::getName is already targetted by o.g.s.p.e.m.Country.getName()",
 				assertThrows(MappingConfigurationException.class, () -> MappingEase.embeddableBuilder(Country.class)
 						.add(Country::getName)
 						.add(Country::setName)
@@ -134,7 +134,7 @@ class FluentEmbeddableMappingConfigurationSupportTest {
 	@Test
 	void add_mappingDefinedTwiceByColumn_throwsException() {
 		Table<?> countryTable = new Table<>("countryTable");
-		assertEquals("Mapping is already defined for column xyz",
+		assertEquals("Column xyz of mapping Country::getName is already targetted by o.g.s.p.e.m.Country.getDescription()",
 				assertThrows(MappingConfigurationException.class, () -> MappingEase.embeddableBuilder(Country.class)
 						.add(Country::getName, "xyz")
 						.add(Country::setDescription, "xyz")

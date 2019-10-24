@@ -9,6 +9,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
 
+import org.gama.lang.Duo;
 import org.gama.stalactite.command.builder.DeleteCommandBuilder;
 import org.gama.stalactite.command.model.Delete;
 import org.gama.stalactite.persistence.engine.AssociationRecord;
@@ -22,7 +23,6 @@ import org.gama.stalactite.persistence.engine.listening.DeleteByIdListener;
 import org.gama.stalactite.persistence.engine.listening.DeleteListener;
 import org.gama.stalactite.persistence.engine.listening.PersisterListener;
 import org.gama.stalactite.persistence.engine.listening.SelectListener;
-import org.gama.stalactite.persistence.engine.listening.UpdateListener.UpdatePayload;
 import org.gama.stalactite.persistence.engine.runtime.OneToManyWithMappedAssociationEngine.DeleteByIdTargetEntitiesBeforeDeleteByIdCascader;
 import org.gama.stalactite.persistence.engine.runtime.OneToManyWithMappedAssociationEngine.DeleteTargetEntitiesBeforeDeleteCascader;
 import org.gama.stalactite.persistence.engine.runtime.OneToManyWithMappedAssociationEngine.TargetInstancesInsertCascader;
@@ -169,14 +169,14 @@ public abstract class AbstractOneToManyWithAssociationTableEngine<SRC, TRGT, SRC
 		CollectionUpdater<SRC, TRGT, C> updateListener = new CollectionUpdater<SRC, TRGT, C>(manyRelationDescriptor.getCollectionGetter(), targetPersister, null, shouldDeleteRemoved) {
 			
 			@Override
-			protected AssociationTableUpdateContext newUpdateContext(UpdatePayload<? extends SRC, ?> updatePayload) {
+			protected AssociationTableUpdateContext newUpdateContext(Duo<SRC, SRC> updatePayload) {
 				return new AssociationTableUpdateContext(updatePayload);
 			}
 			
 			@Override
 			protected void onAddedTarget(UpdateContext updateContext, AbstractDiff<TRGT> diff) {
 				super.onAddedTarget(updateContext, diff);
-				R associationRecord = newRecord(updateContext.getPayload().getEntities().getLeft(), diff.getReplacingInstance(), 0);
+				R associationRecord = newRecord(updateContext.getPayload().getLeft(), diff.getReplacingInstance(), 0);
 				((AssociationTableUpdateContext) updateContext).getAssociationRecordstoBeInserted().add(associationRecord);
 			}
 			
@@ -184,7 +184,7 @@ public abstract class AbstractOneToManyWithAssociationTableEngine<SRC, TRGT, SRC
 			protected void onRemovedTarget(UpdateContext updateContext, AbstractDiff<TRGT> diff) {
 				super.onRemovedTarget(updateContext, diff);
 				
-				R associationRecord = newRecord(updateContext.getPayload().getEntities().getLeft(), diff.getSourceInstance(), 0);
+				R associationRecord = newRecord(updateContext.getPayload().getLeft(), diff.getSourceInstance(), 0);
 				((AssociationTableUpdateContext) updateContext).getAssociationRecordstoBeDeleted().add(associationRecord);
 			}
 			
@@ -207,7 +207,7 @@ public abstract class AbstractOneToManyWithAssociationTableEngine<SRC, TRGT, SRC
 				private final List<R> associationRecordstoBeInserted = new ArrayList<>();
 				private final List<R> associationRecordstoBeDeleted = new ArrayList<>();
 				
-				public AssociationTableUpdateContext(UpdatePayload<? extends SRC, ?> updatePayload) {
+				public AssociationTableUpdateContext(Duo<SRC, SRC> updatePayload) {
 					super(updatePayload);
 				}
 				

@@ -24,7 +24,7 @@ public class SimpleIdentifierAssembler<I> implements IdentifierAssembler<I> {
 	
 	private final Column<Table, I> primaryKey;
 	
-	public <T extends Table<T>> SimpleIdentifierAssembler(Column<T, I> primaryKey) {
+	public <T extends Table> SimpleIdentifierAssembler(Column<T, I> primaryKey) {
 		this.primaryKey = (Column) primaryKey;
 	}
 	
