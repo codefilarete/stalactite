@@ -189,7 +189,7 @@ public class ColumnedCollectionMappingStrategy<C extends Collection<O>, O, T ext
 		
 		/** We bind conversion on {@link ColumnedCollectionMappingStrategy} conversion methods */
 		@Override
-		protected void applyRowToBean(Row row, C collection) {
+		public void applyRowToBean(Row row, C collection) {
 			for (Column column : this.columns) {
 				Object value = row.get(column.getName());
 				collection.add(this.databaseValueConverter.apply(value));

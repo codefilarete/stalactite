@@ -50,7 +50,7 @@ public abstract class AbstractTransformer<T> implements IRowTransformer<T> {
 		return bean;
 	}
 	
-	protected abstract void applyRowToBean(Row row, T bean);
+	public abstract void applyRowToBean(Row row, T bean);
 	
 	/**
 	 * Instanciates a bean 

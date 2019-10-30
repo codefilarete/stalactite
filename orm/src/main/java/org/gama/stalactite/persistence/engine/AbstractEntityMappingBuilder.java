@@ -137,7 +137,7 @@ public abstract class AbstractEntityMappingBuilder<C, I> {
 		}
 	}
 	
-	protected abstract <T extends Table<?>> JoinedTablesPersister<C, I, T> doBuild(PersistenceContext persistenceContext, T targetTable);
+	protected abstract <T extends Table> JoinedTablesPersister<C, I, T> doBuild(PersistenceContext persistenceContext, T targetTable);
 	
 	@Nullable
 	protected Table giveTableUsedInMapping() {

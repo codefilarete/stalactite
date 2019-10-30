@@ -79,7 +79,7 @@ class EntityMappingBuilder<C, I> extends AbstractEntityMappingBuilder<C, I> {
 	 * @return the built {@link Persister}
 	 */
 	@Override
-	protected <T extends Table<?>> JoinedTablesPersister<C, I, T> doBuild(PersistenceContext persistenceContext, T table) {
+	protected <T extends Table> JoinedTablesPersister<C, I, T> doBuild(PersistenceContext persistenceContext, T table) {
 		IdentificationDeterminer<C, I> identificationDeterminer = new IdentificationDeterminer<>(
 				configurationSupport.getEntityType(),
 				configurationSupport.inheritanceIterable().iterator(),

@@ -116,18 +116,27 @@ public class StrategyJoinsRowTransformer<T> {
 				StrategyJoins subJoins = join.getStrategy();
 				IEntityMappingStrategy rightStrategy = subJoins.getStrategy();
 				AbstractTransformer rowTransformer = beanTransformerCache.computeIfAbsent(rightStrategy, s -> s.copyTransformerWithAliases(columnedRow));
-				Object rightIdentifier = rightStrategy.getIdMappingStrategy().getIdentifierAssembler().assemble(row, columnedRow);
-				
-				// primary key null means no entity => nothing to do
-				if (rightIdentifier != null) {
-					Object rightInstance = entityCacheWrapper.computeIfAbsent(rightStrategy.getClassToPersist(), rightIdentifier,
-							() -> rowTransformer.transform(row));
-					
-					join.getBeanRelationFixer().apply(rowInstance, rightInstance);
-					
+				if (join.shouldMerge()) {
+					rowTransformer.applyRowToBean(row, rowInstance);
 					// Adds the right strategy for further processing if it has some more joins so they'll also be taken into account
 					if (!subJoins.getJoins().isEmpty()) {
 						stack.add(subJoins);
+					}
+				} else {
+					
+					Object rightIdentifier = rightStrategy.getIdMappingStrategy().getIdentifierAssembler().assemble(row, columnedRow);
+					
+					// primary key null means no entity => nothing to do
+					if (rightIdentifier != null) {
+						Object rightInstance = entityCacheWrapper.computeIfAbsent(rightStrategy.getClassToPersist(), rightIdentifier,
+								() -> rowTransformer.transform(row));
+						
+						join.getBeanRelationFixer().apply(rowInstance, rightInstance);
+						
+						// Adds the right strategy for further processing if it has some more joins so they'll also be taken into account
+						if (!subJoins.getJoins().isEmpty()) {
+							stack.add(subJoins);
+						}
 					}
 				}
 			}

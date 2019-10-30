@@ -16,11 +16,13 @@ import org.gama.stalactite.persistence.engine.cascade.JoinedStrategiesSelect;
 import org.gama.stalactite.persistence.engine.cascade.JoinedTablesPersister;
 import org.gama.stalactite.persistence.engine.listening.PersisterListener;
 import org.gama.stalactite.persistence.engine.listening.UpdateByIdListener;
+import org.gama.stalactite.persistence.id.assembly.SimpleIdentifierAssembler;
 import org.gama.stalactite.persistence.id.manager.AlreadyAssignedIdentifierManager;
 import org.gama.stalactite.persistence.id.manager.IdentifierInsertionManager;
 import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
 import org.gama.stalactite.persistence.mapping.IEntityMappingStrategy;
 import org.gama.stalactite.persistence.mapping.IdAccessor;
+import org.gama.stalactite.persistence.mapping.SimpleIdMappingStrategy;
 import org.gama.stalactite.persistence.mapping.SinglePropertyIdAccessor;
 import org.gama.stalactite.persistence.sql.Dialect;
 import org.gama.stalactite.persistence.structure.Column;
@@ -47,7 +49,7 @@ public class JoinedTablesEntityMappingBuilder<C, I> extends AbstractEntityMappin
 	}
 	
 	@Override
-	protected <T extends Table<?>> JoinedTablesPersister<C, I, T> doBuild(PersistenceContext persistenceContext, T childClassTargetTable) {
+	protected <T extends Table> JoinedTablesPersister<C, I, T> doBuild(PersistenceContext persistenceContext, T childClassTargetTable) {
 		// We're going to create 2 JoinedTablesPersister (one for parent strategy, one for child strategy) then we will join them alltogether
 		// on primary key, so select will result in a join on those 2 strategies.
 		// OneToOne and OneToMany will be managed by their respective JoinedTablesPersister (actually done by Persister)
@@ -97,12 +99,17 @@ public class JoinedTablesEntityMappingBuilder<C, I> extends AbstractEntityMappin
 		
 		// for now only single column primary key are really supported
 		Set<? extends Column<?, Object>> columns = childTargetTable.getPrimaryKey().getColumns();
-		childClassColumnMapping.put(identifierAccessor, Iterables.first(columns));
+		Column<?, Object> singlePrimaryKey = Iterables.first(columns);
+		childClassColumnMapping.put(identifierAccessor, singlePrimaryKey);
 		
 		// Child class insertion manager is always an "Already assigned" one because parent manages it for her
 		IdentifierInsertionManager<C, I> identifierInsertionManager = new AlreadyAssignedIdentifierManager<>(identifierType);
-		return new ClassMappingStrategy<>(configurationSupport.getEntityType(),
-				childTargetTable, (Map) childClassColumnMapping, identifierAccessor, identifierInsertionManager);
+		
+		SimpleIdMappingStrategy<C, I> simpleIdMappingStrategy = new SimpleIdMappingStrategy<>(identifierAccessor, identifierInsertionManager,
+				new SimpleIdentifierAssembler<>(singlePrimaryKey));
+		
+		return new ClassMappingStrategy<C, I, T>(configurationSupport.getEntityType(),
+				childTargetTable, (Map) childClassColumnMapping, simpleIdMappingStrategy, configurationSupport.getEntityFactory());
 	}
 	
 	private void addCascadesBetweenChildAndParentTable(PersisterListener<C, I> persisterListener, Persister<? super C, I, Table> superPersister) {

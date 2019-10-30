@@ -692,6 +692,15 @@ class FluentEntityMappingConfigurationSupportInheritanceTest {
 		public int hashCode() {
 			return Objects.hash(rgb);
 		}
+		
+		/**
+		 * Implemented for easier debug
+		 * @return a simple representation of this
+		 */
+		@Override
+		public String toString() {
+			return "Color{rgb=" + rgb + "}";
+		}
 	}
 	
 	static class Car extends Vehicle {

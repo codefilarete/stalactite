@@ -292,6 +292,7 @@ public class JoinedStrategiesSelect<C, I, T extends Table> {
 			private final boolean outer;
 			/** Relation fixer for instances of this strategy on owning strategy entities */
 			private final BeanRelationFixer beanRelationFixer;
+			private boolean merge;
 			
 			private Join(IEntityMappingStrategy<O, ?, ? extends Table> strategy, Column leftJoinColumn, Column rightJoinColumn, boolean outer, BeanRelationFixer beanRelationFixer) {
 				this.strategy = new StrategyJoins<>(strategy);
@@ -319,6 +320,14 @@ public class JoinedStrategiesSelect<C, I, T extends Table> {
 			
 			public BeanRelationFixer getBeanRelationFixer() {
 				return beanRelationFixer;
+			}
+			
+			public void setMerge(boolean merge) {
+				this.merge = merge;
+			}
+			
+			public boolean shouldMerge() {
+				return merge;
 			}
 		}
 	}

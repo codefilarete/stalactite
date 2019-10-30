@@ -84,28 +84,28 @@ class FluentEntityMappingConfigurationSupportPolymorphismTest {
 		PersistenceContext persistenceContext2 = new PersistenceContext(new JdbcConnectionProvider(new HSQLDBInMemoryDataSource()), DIALECT);
 		PersistenceContext persistenceContext3 = new PersistenceContext(new JdbcConnectionProvider(new HSQLDBInMemoryDataSource()), DIALECT);
 		Object[][] result = new Object[][] {
-				{	"single table",
-					entityBuilder(AbstractVehicle.class, LONG_TYPE)
-						.add(AbstractVehicle::getId).identifier(ALREADY_ASSIGNED)
-						.mapPolymorphism(PolymorphismPolicy.<AbstractVehicle, Identifier<Long>>singleTable()
-								.addSubClass(entityBuilder(Car.class, LONG_TYPE)
-										.add(Car::getId).identifier(ALREADY_ASSIGNED)
-										.add(Car::getModel), "CAR")
-								.addSubClass(entityBuilder(Truk.class, LONG_TYPE)
-										.add(Truk::getId).identifier(ALREADY_ASSIGNED)
-										.add(Truk::getColor), "TRUK"))
-						.build(persistenceContext1) },
-//				{	"joined tables",
+//				{	"single table",
 //					entityBuilder(AbstractVehicle.class, LONG_TYPE)
 //						.add(AbstractVehicle::getId).identifier(ALREADY_ASSIGNED)
-//						.mapPolymorphism(PolymorphismPolicy.<AbstractVehicle, Identifier<Long>>joinedTables()
+//						.mapPolymorphism(PolymorphismPolicy.<AbstractVehicle, Identifier<Long>>singleTable()
 //								.addSubClass(entityBuilder(Car.class, LONG_TYPE)
 //										.add(Car::getId).identifier(ALREADY_ASSIGNED)
-//										.add(Car::getModel))
+//										.add(Car::getModel), "CAR")
 //								.addSubClass(entityBuilder(Truk.class, LONG_TYPE)
 //										.add(Truk::getId).identifier(ALREADY_ASSIGNED)
-//										.add(Truk::getColor)))
-//						.build(persistenceContext2) },
+//										.add(Truk::getColor), "TRUK"))
+//						.build(persistenceContext1) },
+				{	"joined tables",
+					entityBuilder(AbstractVehicle.class, LONG_TYPE)
+						.add(AbstractVehicle::getId).identifier(ALREADY_ASSIGNED)
+						.mapPolymorphism(PolymorphismPolicy.<AbstractVehicle, Identifier<Long>>joinedTables()
+								.addSubClass(entityBuilder(Car.class, LONG_TYPE)
+										.add(Car::getId).identifier(ALREADY_ASSIGNED)
+										.add(Car::getModel))
+								.addSubClass(entityBuilder(Truk.class, LONG_TYPE)
+										.add(Truk::getId).identifier(ALREADY_ASSIGNED)
+										.add(Truk::getColor)))
+						.build(persistenceContext2) },
 //				{	"table per class",
 //					entityBuilder(AbstractVehicle.class, LONG_TYPE)
 //						.add(AbstractVehicle::getId).identifier(ALREADY_ASSIGNED)
@@ -341,13 +341,19 @@ class FluentEntityMappingConfigurationSupportPolymorphismTest {
 			Vehicle loadedVehicle;
 			loadedVehicle = abstractVehiclePersister.select(new PersistedIdentifier<>(1L));
 			assertEquals(dummyCar, loadedVehicle);
+			
+			// update test by modifying only parent property
+			dummyCar.setColor(new Color(256));
+			int updatedRowCount = abstractVehiclePersister.update(dummyCar, loadedVehicle, false);
+			assertEquals(1, updatedRowCount);
+			
 			loadedVehicle = abstractVehiclePersister.select(new PersistedIdentifier<>(2L));
 			assertEquals(dummyTruk, loadedVehicle);
 			
 			List<? extends Vehicle> loadedVehicles = abstractVehiclePersister.selectWhere(Vehicle::getColor, Operators.eq(new Color(42))).execute();
 			Assertions.assertAllEquals(Arrays.asHashSet(dummyTruk), new HashSet<>(loadedVehicles));
 			
-			loadedVehicles = abstractVehiclePersister.selectWhere(Vehicle::getColor, Operators.eq(new Color(666))).execute();
+			loadedVehicles = abstractVehiclePersister.selectWhere(Vehicle::getColor, Operators.eq(new Color(256))).execute();
 			Assertions.assertAllEquals(Arrays.asHashSet(dummyCar), new HashSet<>(loadedVehicles));
 			
 			// delete test
@@ -543,7 +549,7 @@ class FluentEntityMappingConfigurationSupportPolymorphismTest {
 			assertEquals(dummyTruk, loadedVehicle);
 			
 			List<? extends AbstractVehicle> loadedVehicles = abstractVehiclePersister.selectAll();
-			assertEquals(Arrays.asList(dummyCar, dummyTruk), loadedVehicles);
+			assertEquals(Arrays.asHashSet(dummyCar, dummyTruk), new HashSet<>(loadedVehicles));
 			
 			// delete test
 			abstractVehiclePersister.delete(Arrays.asList(dummyCar, dummyTruk));
@@ -571,6 +577,100 @@ class FluentEntityMappingConfigurationSupportPolymorphismTest {
 			assertEquals(0, trukCount);
 		}
 		
+		
+		@Test
+		void twoSubClasses_withCommonProperties() {
+			JoinedTablesPersister<Vehicle, Identifier<Long>, ?> abstractVehiclePersister = entityBuilder(Vehicle.class, LONG_TYPE)
+					// mapped super class defines id
+					.add(Vehicle::getId).identifier(ALREADY_ASSIGNED)
+					.add(Vehicle::getColor)
+					.mapPolymorphism(PolymorphismPolicy.<AbstractVehicle, Identifier<Long>>joinedTables()
+							.addSubClass(entityBuilder(Car.class, LONG_TYPE)
+									.add(Car::getId).identifier(ALREADY_ASSIGNED)
+									.add(Car::getModel))
+							.addSubClass(entityBuilder(Truk.class, LONG_TYPE)
+									.add(Truk::getId).identifier(ALREADY_ASSIGNED)))
+					.build(persistenceContext);
+			
+			// Schema contains main and children tables
+			HashSet<String> tables = Iterables.collect(DDLDeployer.collectTables(persistenceContext), Table::getName, HashSet::new);
+			assertEquals(Arrays.asHashSet("Vehicle", "Car", "Truk"), tables);
+			
+			// Subclasses are not present in context (because doing so they would be accessible but without wrong behavior since some are configured on parent's persister)
+			assertEquals(Arrays.asHashSet(Vehicle.class), Iterables.collect(persistenceContext.getPersisters(), p -> p.getMappingStrategy().getClassToPersist(), HashSet::new));
+			
+			// DML tests
+			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+			ddlDeployer.deployDDL();
+			
+			Car dummyCar = new Car(1L);
+			dummyCar.setModel("Renault");
+			dummyCar.setColor(new Color(666));
+			
+			Truk dummyTruk = new Truk(2L);
+			dummyTruk.setColor(new Color(42));
+			
+			// insert test
+			abstractVehiclePersister.insert(Arrays.asList(dummyCar, dummyTruk));
+			
+			ExecutableSelect<Integer> vehicleIdQuery = persistenceContext.newQuery("select id from Vehicle", Integer.class)
+					.mapKey(SerializableFunction.identity(), "id", Integer.class);
+			
+			List<Integer> vehicleIds = vehicleIdQuery.execute();
+			assertEquals(Arrays.asList(1, 2), vehicleIds);
+			
+			ExecutableSelect<Integer> carIdQuery = persistenceContext.newQuery("select id from car", Integer.class)
+					.mapKey(SerializableFunction.identity(), "id", Integer.class);
+			
+			List<Integer> carIds = carIdQuery.execute();
+			assertEquals(Arrays.asList(1), carIds);
+			
+			ExecutableSelect<Integer> trukIdQuery = persistenceContext.newQuery("select id from truk", Integer.class)
+					.mapKey(SerializableFunction.identity(), "id", Integer.class);
+			
+			List<Integer> trukIds = trukIdQuery.execute();
+			assertEquals(Arrays.asList(2), trukIds);
+			
+			// update test
+			dummyCar.setModel("Peugeot");
+			abstractVehiclePersister.persist(dummyCar);
+			
+			// select test
+			Vehicle loadedVehicle;
+			loadedVehicle = abstractVehiclePersister.select(new PersistedIdentifier<>(1L));
+			assertEquals(dummyCar, loadedVehicle);
+			
+			// update test by modifying only parent property
+			dummyCar.setColor(new Color(256));
+			int updatedRowCount = abstractVehiclePersister.update(dummyCar, loadedVehicle, false);
+			assertEquals(1, updatedRowCount);
+			
+			loadedVehicle = abstractVehiclePersister.select(new PersistedIdentifier<>(2L));
+			assertEquals(dummyTruk, loadedVehicle);
+			
+			List<? extends Vehicle> loadedVehicles = abstractVehiclePersister.selectWhere(Vehicle::getColor, Operators.eq(new Color(42))).execute();
+			Assertions.assertAllEquals(Arrays.asHashSet(dummyTruk), new HashSet<>(loadedVehicles));
+			
+			loadedVehicles = abstractVehiclePersister.selectWhere(Vehicle::getColor, Operators.eq(new Color(256))).execute();
+			Assertions.assertAllEquals(Arrays.asHashSet(dummyCar), new HashSet<>(loadedVehicles));
+			
+			// delete test
+			abstractVehiclePersister.delete(Arrays.asList(dummyCar, dummyTruk));
+			
+			ExecutableSelect<Integer> carQuery = persistenceContext.newQuery("select"
+					+ " count(*) as carCount from Vehicle where id = " + dummyCar.getId().getSurrogate(), Integer.class)
+					.mapKey(SerializableFunction.identity(), "carCount", Integer.class);
+			
+			Integer carCount = Iterables.first(carQuery.execute());
+			assertEquals(0, carCount);
+			
+			ExecutableSelect<Integer> trukQuery = persistenceContext.newQuery("select"
+					+ " count(*) as trukCount from Vehicle where id = " + dummyTruk.getId().getSurrogate(), Integer.class)
+					.mapKey(SerializableFunction.identity(), "trukCount", Integer.class);
+			
+			Integer trukCount = Iterables.first(trukQuery.execute());
+			assertEquals(0, trukCount);
+		}
 		
 		@Test
 		void listenersAreNotified() {

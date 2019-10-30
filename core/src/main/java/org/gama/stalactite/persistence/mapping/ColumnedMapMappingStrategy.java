@@ -210,7 +210,7 @@ public abstract class ColumnedMapMappingStrategy<C extends Map<K, V>, K, V, T ex
 		
 		/** We bind conversion on {@link ColumnedCollectionMappingStrategy} conversion methods */
 		@Override
-		protected void applyRowToBean(Row row, M map) {
+		public void applyRowToBean(Row row, M map) {
 			for (Column column : this.columns) {
 				K key = keyProvider.apply(column);
 				V value = (V) getColumnedRow().getValue(column, row);
