@@ -88,7 +88,7 @@ public class JoinedTablesPersister<C, I, T extends Table> extends Persister<C, I
 	 * @param leftJoinColumn the column of the owning strategy to be used for joining with the newly added one (mappingStrategy parameter)
 	 * @param rightJoinColumn the column of the newly added strategy to be used for joining with the owning one
 	 * @param isOuterJoin true to use a left outer join (optional relation)
-	 * @see JoinedStrategiesSelect#add(String, IEntityMappingStrategy, Column, Column, boolean, BeanRelationFixer)
+	 * @see JoinedStrategiesSelect#addRelationJoin(String, IEntityMappingStrategy, Column, Column, boolean, BeanRelationFixer)
 	 */
 	public <U, J, Z> String addPersister(String ownerStrategyName,
 										 Persister<U, J, ?> persister,
@@ -97,7 +97,7 @@ public class JoinedTablesPersister<C, I, T extends Table> extends Persister<C, I
 										 Column rightJoinColumn,
 										 boolean isOuterJoin) {
 		// We use our own select system since SelectListener is not aimed at joining table
-		return getJoinedStrategiesSelectExecutor().addComplementaryTable(ownerStrategyName, persister.getMappingStrategy(), beanRelationFixer,
+		return getJoinedStrategiesSelectExecutor().addRelation(ownerStrategyName, persister.getMappingStrategy(), beanRelationFixer,
 				leftJoinColumn, rightJoinColumn, isOuterJoin);
 	}
 	

@@ -64,7 +64,7 @@ public class JoinedStrategiesSelectTest {
 		JoinedStrategiesSelect testInstance = new JoinedStrategiesSelect<>(mappingStrategyMock, c -> mock(ParameterBinder.class));
 		IllegalArgumentException thrownException = assertThrows(IllegalArgumentException.class, () -> {
 			// we don't care about other arguments (null passed) because existing strategy name is checked first
-			testInstance.add("XX", null, null, null, true, null);
+			testInstance.addRelationJoin("XX", null, null, null, true, null);
 		});
 		assertEquals("No strategy with name XX exists to add a new strategy on", thrownException.getMessage());
 	}
@@ -117,7 +117,7 @@ public class JoinedStrategiesSelectTest {
 										   Column leftJoinColumn, Column rightJoinColumn,
 										   String expected) {
 		JoinedStrategiesSelect testInstance = new JoinedStrategiesSelect(rootMappingStrategy, c -> mock(ParameterBinder.class));
-		testInstance.add(JoinedStrategiesSelect.FIRST_STRATEGY_NAME, classMappingStrategy, leftJoinColumn, rightJoinColumn, false, null);
+		testInstance.addRelationJoin(JoinedStrategiesSelect.FIRST_STRATEGY_NAME, classMappingStrategy, leftJoinColumn, rightJoinColumn, false, null);
 		SQLQueryBuilder SQLQueryBuilder = new SQLQueryBuilder(testInstance.buildSelectQuery());
 		assertEquals(expected, SQLQueryBuilder.toSQL());
 	}
@@ -143,8 +143,8 @@ public class JoinedStrategiesSelectTest {
 		Column tutuNameColumn = tutuTable.addColumn("name", String.class);
 		
 		JoinedStrategiesSelect testInstance = new JoinedStrategiesSelect(totoMappingMock, c -> mock(ParameterBinder.class));
-		String tataAddKey = testInstance.add(JoinedStrategiesSelect.FIRST_STRATEGY_NAME, tataMappingMock, totoPrimaryKey, tataPrimaryKey, false, null);
-		testInstance.add(tataAddKey, tutuMappingMock, tataPrimaryKey, tutuPrimaryKey, false, null);
+		String tataAddKey = testInstance.addRelationJoin(JoinedStrategiesSelect.FIRST_STRATEGY_NAME, tataMappingMock, totoPrimaryKey, tataPrimaryKey, false, null);
+		testInstance.addRelationJoin(tataAddKey, tutuMappingMock, tataPrimaryKey, tutuPrimaryKey, false, null);
 		SQLQueryBuilder SQLQueryBuilder = new SQLQueryBuilder(testInstance.buildSelectQuery());
 		assertEquals("select"
 						+ " Toto.id as Toto_id, Toto.name as Toto_name"
@@ -186,8 +186,8 @@ public class JoinedStrategiesSelectTest {
 		Column tutuNameColumn = tutuTable.addColumn("name", String.class);
 		
 		JoinedStrategiesSelect testInstance = new JoinedStrategiesSelect(totoMappingMock, c -> mock(ParameterBinder.class));
-		String tataAddKey = testInstance.add(JoinedStrategiesSelect.FIRST_STRATEGY_NAME, tataMappingMock, tataId, tataPrimaryKey, false, null);
-		testInstance.add(tataAddKey, tutuMappingMock, tutuId, tutuPrimaryKey, true, null);
+		String tataAddKey = testInstance.addRelationJoin(JoinedStrategiesSelect.FIRST_STRATEGY_NAME, tataMappingMock, tataId, tataPrimaryKey, false, null);
+		testInstance.addRelationJoin(tataAddKey, tutuMappingMock, tutuId, tutuPrimaryKey, true, null);
 		SQLQueryBuilder SQLQueryBuilder = new SQLQueryBuilder(testInstance.buildSelectQuery());
 		assertEquals("select"
 						+ " Toto.id as Toto_id, Toto.name as Toto_name, Toto.tataId as Toto_tataId, Toto.tutuId as Toto_tutuId"
@@ -235,9 +235,9 @@ public class JoinedStrategiesSelectTest {
 		Column titiNameColumn = titiTable.addColumn("name", String.class);
 		
 		JoinedStrategiesSelect testInstance = new JoinedStrategiesSelect(totoMappingMock, c -> mock(ParameterBinder.class));
-		String tataAddKey = testInstance.add(JoinedStrategiesSelect.FIRST_STRATEGY_NAME, tataMappingMock, totoPrimaryKey, tataPrimaryKey, false, null);
-		String tutuAddKey = testInstance.add(tataAddKey, tutuMappingMock, tataPrimaryKey, tutuPrimaryKey, false, null);
-		String titiAddKey = testInstance.add(JoinedStrategiesSelect.FIRST_STRATEGY_NAME, titiMappingMock, totoPrimaryKey, titiPrimaryKey, false, null);
+		String tataAddKey = testInstance.addRelationJoin(JoinedStrategiesSelect.FIRST_STRATEGY_NAME, tataMappingMock, totoPrimaryKey, tataPrimaryKey, false, null);
+		String tutuAddKey = testInstance.addRelationJoin(tataAddKey, tutuMappingMock, tataPrimaryKey, tutuPrimaryKey, false, null);
+		String titiAddKey = testInstance.addRelationJoin(JoinedStrategiesSelect.FIRST_STRATEGY_NAME, titiMappingMock, totoPrimaryKey, titiPrimaryKey, false, null);
 		SQLQueryBuilder SQLQueryBuilder = new SQLQueryBuilder(testInstance.buildSelectQuery());
 		assertEquals("select"
 						+ " Toto.id as Toto_id, Toto.name as Toto_name"
@@ -279,9 +279,9 @@ public class JoinedStrategiesSelectTest {
 		Column titiPrimaryKey = titiTable.addColumn("id", long.class);
 		
 		JoinedStrategiesSelect testInstance = new JoinedStrategiesSelect(totoMappingMock, c -> mock(ParameterBinder.class));
-		String tataAddKey = testInstance.add(JoinedStrategiesSelect.FIRST_STRATEGY_NAME, tataMappingMock, totoPrimaryKey, tataPrimaryKey, false, null);
-		String tutuAddKey = testInstance.add(tataAddKey, tutuMappingMock, tataPrimaryKey, tutuPrimaryKey, false, null);
-		String titiAddKey = testInstance.add(JoinedStrategiesSelect.FIRST_STRATEGY_NAME, titiMappingMock, totoPrimaryKey, titiPrimaryKey, false, null);
+		String tataAddKey = testInstance.addRelationJoin(JoinedStrategiesSelect.FIRST_STRATEGY_NAME, tataMappingMock, totoPrimaryKey, tataPrimaryKey, false, null);
+		String tutuAddKey = testInstance.addRelationJoin(tataAddKey, tutuMappingMock, tataPrimaryKey, tutuPrimaryKey, false, null);
+		String titiAddKey = testInstance.addRelationJoin(JoinedStrategiesSelect.FIRST_STRATEGY_NAME, titiMappingMock, totoPrimaryKey, titiPrimaryKey, false, null);
 		
 		assertEquals(Arrays.asHashSet(totoTable, tataTable, tutuTable, titiTable), testInstance.giveTables());
 	}
@@ -313,11 +313,11 @@ public class JoinedStrategiesSelectTest {
 		Column titiNameColumn = titiTable.addColumn("name", String.class);
 		
 		JoinedStrategiesSelect testInstance1 = new JoinedStrategiesSelect(totoMappingMock, c -> mock(ParameterBinder.class));
-		String tataAddKey = testInstance1.add(JoinedStrategiesSelect.FIRST_STRATEGY_NAME, tataMappingMock, totoPrimaryKey, tataPrimaryKey, false, null);
-		String tutuAddKey = testInstance1.add(tataAddKey, tutuMappingMock, tataPrimaryKey, tutuPrimaryKey, false, null);
+		String tataAddKey = testInstance1.addRelationJoin(JoinedStrategiesSelect.FIRST_STRATEGY_NAME, tataMappingMock, totoPrimaryKey, tataPrimaryKey, false, null);
+		String tutuAddKey = testInstance1.addRelationJoin(tataAddKey, tutuMappingMock, tataPrimaryKey, tutuPrimaryKey, false, null);
 		
 		JoinedStrategiesSelect testInstance2 = new JoinedStrategiesSelect(tataMappingMock, c -> mock(ParameterBinder.class));
-		String titiAddKey = testInstance2.add(JoinedStrategiesSelect.FIRST_STRATEGY_NAME, titiMappingMock, tataPrimaryKey, titiPrimaryKey, false, null);
+		String titiAddKey = testInstance2.addRelationJoin(JoinedStrategiesSelect.FIRST_STRATEGY_NAME, titiMappingMock, tataPrimaryKey, titiPrimaryKey, false, null);
 		
 		testInstance2.getStrategyJoins(JoinedStrategiesSelect.FIRST_STRATEGY_NAME).copyTo(testInstance1, tataAddKey);
 		

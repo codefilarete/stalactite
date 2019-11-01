@@ -105,7 +105,7 @@ public class JoinedStrategiesSelectExecutor<C, I, T extends Table> extends Selec
 	
 	/**
 	 * Adds an inner join to this executor.
-	 * Shorcut for {@link JoinedStrategiesSelect#add(String, IEntityMappingStrategy, Column, Column, boolean, BeanRelationFixer)}
+	 * Shorcut for {@link JoinedStrategiesSelect#addRelationJoin(String, IEntityMappingStrategy, Column, Column, boolean, BeanRelationFixer)}
 	 *
 	 * @param leftStrategyName the name of a (previously) registered join. {@code leftJoinColumn} must be a {@link Column} of its left {@link Table}
 	 * @param strategy the strategy of the mapped bean. Used to give {@link Column}s and {@link org.gama.stalactite.persistence.mapping.IRowTransformer}
@@ -118,7 +118,7 @@ public class JoinedStrategiesSelectExecutor<C, I, T extends Table> extends Selec
 	 * @param <ID> type of joined values
 	 * @return the name of the created join, to be used as a key for other joins (through this method {@code leftStrategyName} argument)
 	 */
-	public <U, T1 extends Table<T1>, T2 extends Table<T2>, ID> String addComplementaryTable(
+	public <U, T1 extends Table<T1>, T2 extends Table<T2>, ID> String addRelation(
 			String leftStrategyName,
 			IEntityMappingStrategy<U, ID, T2> strategy,
 			BeanRelationFixer beanRelationFixer,
@@ -126,12 +126,12 @@ public class JoinedStrategiesSelectExecutor<C, I, T extends Table> extends Selec
 			Column<T2, ID> rightJoinColumn) {
 		// we outer join nullable columns
 		boolean isOuterJoin = rightJoinColumn.isNullable();
-		return addComplementaryTable(leftStrategyName, strategy, beanRelationFixer, leftJoinColumn, rightJoinColumn, isOuterJoin);
+		return addRelation(leftStrategyName, strategy, beanRelationFixer, leftJoinColumn, rightJoinColumn, isOuterJoin);
 	}
 	
 	/**
 	 * Adds a join to this executor.
-	 * Shorcut for {@link JoinedStrategiesSelect#add(String, IEntityMappingStrategy, Column, Column, boolean, BeanRelationFixer)}
+	 * Shorcut for {@link JoinedStrategiesSelect#addRelationJoin(String, IEntityMappingStrategy, Column, Column, boolean, BeanRelationFixer)}
 	 *
 	 * @param leftStrategyName the name of a (previously) registered join. {@code leftJoinColumn} must be a {@link Column} of its left {@link Table}
 	 * @param strategy the strategy of the mapped bean. Used to give {@link Column}s and {@link org.gama.stalactite.persistence.mapping.IRowTransformer}
@@ -145,14 +145,22 @@ public class JoinedStrategiesSelectExecutor<C, I, T extends Table> extends Selec
 	 * @param <ID> type of joined values
 	 * @return the name of the created join, to be used as a key for other joins (through this method {@code leftStrategyName} argument)
 	 */
-	public <U, T1 extends Table<T1>, T2 extends Table<T2>, ID> String addComplementaryTable(
+	public <U, T1 extends Table<T1>, T2 extends Table<T2>, ID> String addRelation(
 			String leftStrategyName,
 			IEntityMappingStrategy<U, ID, T2> strategy,
 			BeanRelationFixer beanRelationFixer,
 			Column<T1, ID> leftJoinColumn,
 			Column<T2, ID> rightJoinColumn,
 			boolean isOuterJoin) {
-		return joinedStrategiesSelect.add(leftStrategyName, strategy, leftJoinColumn, rightJoinColumn, isOuterJoin, beanRelationFixer);
+		return joinedStrategiesSelect.addRelationJoin(leftStrategyName, strategy, leftJoinColumn, rightJoinColumn, isOuterJoin, beanRelationFixer);
+	}
+	
+	public <U, T1 extends Table<T1>, T2 extends Table<T2>, ID> String addComplementaryJoin(
+			String leftStrategyName,
+			IEntityMappingStrategy<U, ID, T2> strategy,
+			Column<T1, ID> leftJoinColumn,
+			Column<T2, ID> rightJoinColumn) {
+		return joinedStrategiesSelect.addMergeJoin(leftStrategyName, strategy, leftJoinColumn, rightJoinColumn);
 	}
 	
 	@Override

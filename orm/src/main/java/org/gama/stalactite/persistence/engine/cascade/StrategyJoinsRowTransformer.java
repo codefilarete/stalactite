@@ -10,8 +10,10 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 
 import org.gama.lang.Nullable;
+import org.gama.lang.Reflections;
 import org.gama.stalactite.persistence.engine.cascade.JoinedStrategiesSelect.StrategyJoins;
-import org.gama.stalactite.persistence.engine.cascade.JoinedStrategiesSelect.StrategyJoins.Join;
+import org.gama.stalactite.persistence.engine.cascade.JoinedStrategiesSelect.StrategyJoins.MergeJoin;
+import org.gama.stalactite.persistence.engine.cascade.JoinedStrategiesSelect.StrategyJoins.RelationJoin;
 import org.gama.stalactite.persistence.mapping.AbstractTransformer;
 import org.gama.stalactite.persistence.mapping.ColumnedRow;
 import org.gama.stalactite.persistence.mapping.IEntityMappingStrategy;
@@ -112,17 +114,17 @@ public class StrategyJoinsRowTransformer<T> {
 			});
 			
 			// processing the direct relations
-			for (Join join : strategyJoins.getJoins()) {
+			for (AbstractJoin join : strategyJoins.getJoins()) {
 				StrategyJoins subJoins = join.getStrategy();
 				IEntityMappingStrategy rightStrategy = subJoins.getStrategy();
 				AbstractTransformer rowTransformer = beanTransformerCache.computeIfAbsent(rightStrategy, s -> s.copyTransformerWithAliases(columnedRow));
-				if (join.shouldMerge()) {
+				if (join instanceof MergeJoin) {
 					rowTransformer.applyRowToBean(row, rowInstance);
 					// Adds the right strategy for further processing if it has some more joins so they'll also be taken into account
 					if (!subJoins.getJoins().isEmpty()) {
 						stack.add(subJoins);
 					}
-				} else {
+				} else if (join instanceof RelationJoin) {
 					
 					Object rightIdentifier = rightStrategy.getIdMappingStrategy().getIdentifierAssembler().assemble(row, columnedRow);
 					
@@ -131,13 +133,18 @@ public class StrategyJoinsRowTransformer<T> {
 						Object rightInstance = entityCacheWrapper.computeIfAbsent(rightStrategy.getClassToPersist(), rightIdentifier,
 								() -> rowTransformer.transform(row));
 						
-						join.getBeanRelationFixer().apply(rowInstance, rightInstance);
+						((RelationJoin) join).getBeanRelationFixer().apply(rowInstance, rightInstance);
 						
 						// Adds the right strategy for further processing if it has some more joins so they'll also be taken into account
 						if (!subJoins.getJoins().isEmpty()) {
 							stack.add(subJoins);
 						}
 					}
+				} else {
+					// Developer made something wrong because other types than MergeJoin and RelationJoin are not expected
+					throw new IllegalArgumentException("Unexpected join type, only "
+							+ Reflections.toString(MergeJoin.class) + " and " + Reflections.toString(RelationJoin.class) + " are handled" 
+							+ ", not " + Reflections.toString(join.getClass()));
 				}
 			}
 		}

@@ -72,7 +72,7 @@ public class JoinedTablesEntityMappingBuilder<C, I> extends AbstractEntityMappin
 		// adding join on parent table
 		Column subclassPK = Iterables.first((Set<? extends Column<?, Object>>) childClassTargetTable.getPrimaryKey().getColumns());
 		Column superclassPK = Iterables.first((Set<? extends Column<?, Object>>) superPersister.getMainTable().getPrimaryKey().getColumns());
-		result.getJoinedStrategiesSelectExecutor().addComplementaryTable(JoinedStrategiesSelect.FIRST_STRATEGY_NAME, parentMappingStrategy, (target, input) -> {
+		result.getJoinedStrategiesSelectExecutor().addRelation(JoinedStrategiesSelect.FIRST_STRATEGY_NAME, parentMappingStrategy, (target, input) -> {
 			// applying values from inherited bean (input) to subclass one (target)
 			for (IReversibleAccessor columnFieldEntry : parentMappingStrategy.getPropertyToColumn().keySet()) {
 				columnFieldEntry.toMutator().set(target, columnFieldEntry.get(input));

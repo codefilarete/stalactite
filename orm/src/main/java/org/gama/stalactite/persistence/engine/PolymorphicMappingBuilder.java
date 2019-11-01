@@ -27,8 +27,8 @@ import org.gama.stalactite.persistence.engine.EmbeddableMappingConfiguration.Lin
 import org.gama.stalactite.persistence.engine.PolymorphismPolicy.JoinedTablesPolymorphism;
 import org.gama.stalactite.persistence.engine.PolymorphismPolicy.SingleTablePolymorphism;
 import org.gama.stalactite.persistence.engine.PolymorphismPolicy.TablePerClassPolymorphism;
+import org.gama.stalactite.persistence.engine.cascade.AbstractJoin;
 import org.gama.stalactite.persistence.engine.cascade.JoinedStrategiesSelect;
-import org.gama.stalactite.persistence.engine.cascade.JoinedStrategiesSelect.StrategyJoins.Join;
 import org.gama.stalactite.persistence.engine.cascade.JoinedStrategiesSelectExecutor;
 import org.gama.stalactite.persistence.engine.cascade.JoinedTablesPersister;
 import org.gama.stalactite.persistence.mapping.ColumnedRow;
@@ -232,13 +232,12 @@ public class PolymorphicMappingBuilder<C, I> extends AbstractEntityMappingBuilde
 						// we get all joins of originally-computed JoinedStrategiesSelectExecutor (built by super.newSelectExecutor(..)))
 						// and pass them to our dispatching one (passed as argument)
 						String currentJoinName = JoinedStrategiesSelect.FIRST_STRATEGY_NAME;
-						Queue<Join> joins = new ArrayDeque<>();
+						Queue<AbstractJoin> joins = new ArrayDeque<>();
 						joins.addAll(originalJoinedStrategiesSelectExecutor.getJoinedStrategiesSelect().getJoinsRoot().getJoins());
 						while(!joins.isEmpty()) {
-							Join join = joins.poll();
+							AbstractJoin join = joins.poll();
 							// TODO: finish tree traversal (in depth)
-							joinedStrategiesSelectExecutor.addComplementaryTable(currentJoinName, join.getStrategy().getStrategy(),
-									join.getBeanRelationFixer(), join.getLeftJoinColumn(), join.getRightJoinColumn(), join.isOuter());
+							joinedStrategiesSelectExecutor.getJoinedStrategiesSelect().addJoin(currentJoinName, join.getStrategy().getStrategy(), s -> join);
 						}
 						
 						return new EntitySelectExecutor<C, I, T>(joinedStrategiesSelectExecutor.getJoinedStrategiesSelect(), connectionProvider,
@@ -384,11 +383,9 @@ public class PolymorphicMappingBuilder<C, I> extends AbstractEntityMappingBuilde
 					// Adding join with parent table to select
 					Column subEntityPrimaryKey = (Column) Iterables.first(subentityTargetTable.getPrimaryKey().getColumns());
 					Column entityPrimaryKey = (Column) Iterables.first(targetTable.getPrimaryKey().getColumns());
-					pseudoParentPersister.getJoinedStrategiesSelectExecutor().addComplementaryTable(JoinedStrategiesSelect.FIRST_STRATEGY_NAME, subEntityJoinedTablesPersister.getMappingStrategy(),
-							(target, input) -> { }, entityPrimaryKey, subEntityPrimaryKey, false);
-					List<Join> joins =
-							pseudoParentPersister.getJoinedStrategiesSelectExecutor().getJoinedStrategiesSelect().getStrategyJoins(JoinedStrategiesSelect.FIRST_STRATEGY_NAME).getJoins();
-					joins.get(0).setMerge(true);
+					String joinName =
+							pseudoParentPersister.getJoinedStrategiesSelectExecutor().addComplementaryJoin(JoinedStrategiesSelect.FIRST_STRATEGY_NAME,
+									subEntityJoinedTablesPersister.getMappingStrategy(), entityPrimaryKey, subEntityPrimaryKey);
 					
 					persisterPerSubclass2.put(subEntityEffectiveConfiguration.getEntityType(), pseudoParentPersister);
 				}
@@ -552,13 +549,12 @@ public class PolymorphicMappingBuilder<C, I> extends AbstractEntityMappingBuilde
 						// we get all joins of originally-computed JoinedStrategiesSelectExecutor (built by super.newSelectExecutor(..)))
 						// and pass them to our dispatching one (passed as argument)
 						String currentJoinName = JoinedStrategiesSelect.FIRST_STRATEGY_NAME;
-						Queue<Join> joins = new ArrayDeque<>();
+						Queue<AbstractJoin> joins = new ArrayDeque<>();
 						joins.addAll(originalJoinedStrategiesSelectExecutor.getJoinedStrategiesSelect().getJoinsRoot().getJoins());
 						while (!joins.isEmpty()) {
-							Join join = joins.poll();
+							AbstractJoin join = joins.poll();
 							// TODO: finish tree traversal (in depth)
-							joinedStrategiesSelectExecutor.addComplementaryTable(currentJoinName, join.getStrategy().getStrategy(),
-									join.getBeanRelationFixer(), join.getLeftJoinColumn(), join.getRightJoinColumn(), join.isOuter());
+							joinedStrategiesSelectExecutor.getJoinedStrategiesSelect().addJoin(currentJoinName, join.getStrategy().getStrategy(), s -> join);
 						}
 						
 						return new EntitySelectExecutor<C, I, T>(joinedStrategiesSelectExecutor.getJoinedStrategiesSelect(), connectionProvider,
