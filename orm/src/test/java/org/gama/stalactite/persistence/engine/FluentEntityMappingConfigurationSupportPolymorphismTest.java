@@ -106,17 +106,17 @@ class FluentEntityMappingConfigurationSupportPolymorphismTest {
 										.add(Truk::getId).identifier(ALREADY_ASSIGNED)
 										.add(Truk::getColor)))
 						.build(persistenceContext2) },
-//				{	"table per class",
-//					entityBuilder(AbstractVehicle.class, LONG_TYPE)
-//						.add(AbstractVehicle::getId).identifier(ALREADY_ASSIGNED)
-//						.mapPolymorphism(PolymorphismPolicy.<AbstractVehicle, Identifier<Long>>tablePerClass()
-//								.addSubClass(entityBuilder(Car.class, LONG_TYPE)
-//										.add(Car::getId).identifier(ALREADY_ASSIGNED)
-//										.add(Car::getModel))
-//								.addSubClass(entityBuilder(Truk.class, LONG_TYPE)
-//										.add(Truk::getId).identifier(ALREADY_ASSIGNED)
-//										.add(Truk::getColor)))
-//						.build(persistenceContext3) },
+				{	"table per class",
+					entityBuilder(AbstractVehicle.class, LONG_TYPE)
+						.add(AbstractVehicle::getId).identifier(ALREADY_ASSIGNED)
+						.mapPolymorphism(PolymorphismPolicy.<AbstractVehicle, Identifier<Long>>tablePerClass()
+								.addSubClass(entityBuilder(Car.class, LONG_TYPE)
+										.add(Car::getId).identifier(ALREADY_ASSIGNED)
+										.add(Car::getModel))
+								.addSubClass(entityBuilder(Truk.class, LONG_TYPE)
+										.add(Truk::getId).identifier(ALREADY_ASSIGNED)
+										.add(Truk::getColor)))
+						.build(persistenceContext3) },
 		};
 		new DDLDeployer(persistenceContext1).deployDDL();
 		new DDLDeployer(persistenceContext2).deployDDL();

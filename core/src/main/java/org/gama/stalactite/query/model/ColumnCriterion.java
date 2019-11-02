@@ -32,4 +32,7 @@ public class ColumnCriterion extends AbstractCriterion {
 		return condition;
 	}
 	
+	public ColumnCriterion copyFor(Column column) {
+		return new ColumnCriterion(getOperator(), column, getCondition());
+	}
 }

@@ -42,8 +42,15 @@ public class Criteria<SELF extends Criteria<SELF>> extends AbstractCriterion imp
 	public List<AbstractCriterion> getConditions() {
 		return conditions;
 	}
-
-	protected SELF add(AbstractCriterion condition) {
+	
+	/**
+	 * Adds a criterion to this chain.
+	 * Made public for special dedicated usage
+	 * 
+	 * @param condition any criteria 
+	 * @return this
+	 */
+	public SELF add(AbstractCriterion condition) {
 		this.conditions.add(condition);
 		return (SELF) this;
 	}

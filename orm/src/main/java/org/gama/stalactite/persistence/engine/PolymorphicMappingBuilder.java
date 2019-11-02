@@ -3,7 +3,6 @@ package org.gama.stalactite.persistence.engine;
 import java.sql.ResultSet;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -15,8 +14,10 @@ import java.util.Set;
 import java.util.function.Function;
 
 import org.gama.lang.Duo;
+import org.gama.lang.Nullable;
 import org.gama.lang.Reflections;
 import org.gama.lang.Retryer;
+import org.gama.lang.StringAppender;
 import org.gama.lang.bean.Objects;
 import org.gama.lang.collection.Iterables;
 import org.gama.lang.collection.Maps;
@@ -40,13 +41,18 @@ import org.gama.stalactite.persistence.sql.dml.DMLGenerator;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.query.builder.SQLQueryBuilder;
+import org.gama.stalactite.query.model.AbstractCriterion;
+import org.gama.stalactite.query.model.ColumnCriterion;
 import org.gama.stalactite.query.model.CriteriaChain;
 import org.gama.stalactite.query.model.Operators;
 import org.gama.stalactite.query.model.Query;
 import org.gama.stalactite.query.model.QueryEase;
 import org.gama.stalactite.query.model.Select.AliasedColumn;
+import org.gama.stalactite.query.model.Where;
 import org.gama.stalactite.sql.ConnectionProvider;
 import org.gama.stalactite.sql.SimpleConnectionProvider;
+import org.gama.stalactite.sql.binder.ParameterBinder;
+import org.gama.stalactite.sql.binder.PreparedStatementWriter;
 import org.gama.stalactite.sql.binder.ResultSetReader;
 import org.gama.stalactite.sql.dml.PreparedSQL;
 import org.gama.stalactite.sql.dml.ReadOperation;
@@ -489,7 +495,6 @@ public class PolymorphicMappingBuilder<C, I> extends AbstractEntityMappingBuilde
 								
 								
 								Column<T, I> primaryKey = (Column<T, I>) Iterables.first(getMainTable().getPrimaryKey().getColumns());
-								Set<Column<T, ?>> columns = new HashSet<>(getMainTable().getPrimaryKey().getColumns());
 								Query query = QueryEase.
 										select(primaryKey, primaryKey.getAlias())
 										.from(targetTable)
@@ -566,7 +571,6 @@ public class PolymorphicMappingBuilder<C, I> extends AbstractEntityMappingBuilde
 								Query query = joinedStrategiesSelect.buildSelectQuery();
 								
 								Column<T, I> primaryKey = (Column<T, I>) Iterables.first(getMainTable().getPrimaryKey().getColumns());
-								Set<Column<T, ?>> columns = new HashSet<>(getMainTable().getPrimaryKey().getColumns());
 								persisterPerSubclass.values().forEach(subclassPersister -> {
 									Column subclassPrimaryKey = Iterables.first(
 											(Set<Column>) subclassPersister.getMainTable().getPrimaryKey().getColumns());
@@ -657,8 +661,311 @@ public class PolymorphicMappingBuilder<C, I> extends AbstractEntityMappingBuilde
 			TablePerClassPolymorphism<C, I> polymorphismPolicy,
 			PersistenceContext persistenceContext,
 			T targetTable) {
-		Collection<EntityMappingConfigurationProvider<? extends C, I>> subClasses = polymorphismPolicy.getSubClasses();
-		return null;
+		
+		// grouping all mapped properties into a mapping strategy so they can fit into the same table
+		List<Linkage> linkages = new ArrayList<>(configurationSupport.getPropertiesMapping().getPropertiesMapping());
+		for (EntityMappingConfigurationProvider<? extends C, I> subClass : polymorphismPolicy.getSubClasses()) {
+			// TODO: shall be removed when subclasses configurations will be embeddable ones, not entity ones (because we don't need identification to be redefined)
+			linkages.removeIf(linkage -> linkage.getAccessor() == subClass.getConfiguration().getIdentifierAccessor());
+		}
+		
+		EmbeddableMappingConfiguration allInheritedPropertiesConfiguration = new MethodReferenceDispatcher()
+				.redirect(EmbeddableMappingConfiguration<ColumnNamingStrategy>::getPropertiesMapping, () -> linkages)
+				.fallbackOn(configurationSupport.getPropertiesMapping())
+				.build(EmbeddableMappingConfiguration.class);
+		
+		// we give parent configuration to child one (because it hasn't it) by assembling a new configuration mainly made of subclass one
+		// and inheritance elements by "overriding" properties given by sub configuration
+		EntityMappingConfiguration<C, I> subClassEffectiveConfiguration = new MethodReferenceDispatcher()
+				// TODO: check if redirecting inheritance wouldn't be better (would allow to get relations too)
+				.redirect(EntityMappingConfiguration<C, I>::getPropertiesMapping, () -> allInheritedPropertiesConfiguration)
+				.fallbackOn(configurationSupport)
+				.build((Class<EntityMappingConfiguration<C, I>>) (Class) EntityMappingConfiguration.class);
+		
+		Map<EntityMappingConfiguration, Table> subclassTables = new HashMap<>();
+		for (EntityMappingConfigurationProvider<? extends C, I> subConfiguration : polymorphismPolicy.getSubClasses()) {
+			Table subclassTable = Nullable.nullable(polymorphismPolicy.giveTable(subConfiguration))
+					.getOr(() -> new Table(configurationSupport.getTableNamingStrategy().giveName(subConfiguration.getConfiguration().getEntityType())));
+			subclassTables.put(subConfiguration.getConfiguration(), subclassTable);
+		}
+		
+		EntityMappingBuilder<C, I> polymorphicMappingBuilder = new EntityMappingBuilder<C, I>(subClassEffectiveConfiguration, methodSpy) {
+			@Override
+			protected <T extends Table> JoinedTablesPersister<C, I, T> newJoinedTablesPersister(PersistenceContext persistenceContext,
+																								IEntityMappingStrategy<C, I, T> mainMappingStrategy) {
+				
+				Map<Class<? extends C>, JoinedTablesPersister<C, I, T>> persisterPerSubclass = new HashMap<>();
+				
+				for (EntityMappingConfigurationProvider<? extends C, I> subConfiguration : polymorphismPolicy.getSubClasses()) {
+					EntityMappingConfiguration<C, I> subEntityConfiguration = (EntityMappingConfiguration<C, I>) subConfiguration.getConfiguration();
+					
+					
+					// Adding parent properties to subclass mapping, mainly for select purpose, because it is done by subclass persister
+					// whereas insert / update / delete are done by their own executor 
+					EntityMappingConfiguration<C, I> subEntityEffectiveConfiguration = new MethodReferenceDispatcher()
+							.redirect(EntityMappingConfiguration<C, I>::getInheritanceConfiguration, () -> subClassEffectiveConfiguration)
+							.fallbackOn(subEntityConfiguration)
+							.build((Class<EntityMappingConfiguration<C, I>>) (Class) EntityMappingConfiguration.class);
+					
+					
+					EntityMappingBuilder<C, I> subclassMappingBuilder = new EntityMappingBuilder<C, I>(subEntityEffectiveConfiguration, methodSpy) {
+						
+						@Override
+						protected void registerPersister(JoinedTablesPersister persister, PersistenceContext persistenceContext) {
+							// does nothing because we don't want subclasses to be part of persistence context, else their persister would be available
+							// through PersistenceContext#getPersister(Class) which is not expected from a implicit polymorphism (as opposed to an explicit one)
+						}
+					};
+					JoinedTablesPersister subclassPersister = subclassMappingBuilder.build(persistenceContext, subclassTables.get(subEntityConfiguration));
+					persisterPerSubclass.put(subConfiguration.getConfiguration().getEntityType(), subclassPersister);
+				}
+				
+				return new JoinedTablesPersister<C, I, T>(persistenceContext, mainMappingStrategy) {
+					private JoinedStrategiesSelectExecutor<C, I, T> originalJoinedStrategiesSelectExecutor;
+					
+					@Override
+					public Set<Table> giveImpliedTables() {
+						return new HashSet<>(subclassTables.values());
+					}
+					
+					/* No need to override delete executor instanciation because all subclasses are stored in the same table than the one
+					 * given to constructor, and since there's no need to distinguish subclass instances (no field computation), they'll deleted correctly
+					 */
+					
+					@Override
+					protected InsertExecutor<C, I, T> newInsertExecutor(IEntityMappingStrategy<C, I, T> mappingStrategy, ConnectionProvider connectionProvider,
+																		DMLGenerator dmlGenerator, Retryer writeOperationRetryer, int jdbcBatchSize,
+																		int inOperatorMaxSize) {
+						
+						Map<Class<? extends C>, InsertExecutor<C, I, T>> subclassInsertExecutors =
+								Iterables.map(persisterPerSubclass.entrySet(), Entry::getKey, e -> e.getValue().getInsertExecutor());
+						
+						return new PolymorphicInsertExecutor<>(mappingStrategy, connectionProvider, dmlGenerator,
+								writeOperationRetryer, jdbcBatchSize, inOperatorMaxSize,
+								subclassInsertExecutors);
+					}
+					
+					@Override
+					protected UpdateExecutor<C, I, T> newUpdateExecutor(IEntityMappingStrategy<C, I, T> mappingStrategy,
+																		ConnectionProvider connectionProvider, DMLGenerator dmlGenerator,
+																		Retryer writeOperationRetryer, int jdbcBatchSize,
+																		int inOperatorMaxSize) {
+						Map<Class<? extends C>, UpdateExecutor<C, I, T>> subclassUpdateExecutors =
+								Iterables.map(persisterPerSubclass.entrySet(), Entry::getKey, e -> e.getValue().getUpdateExecutor());
+						
+						return new PolymorphicUpdateExecutor<>(mappingStrategy, connectionProvider, dmlGenerator,
+								writeOperationRetryer, jdbcBatchSize, inOperatorMaxSize,
+								subclassUpdateExecutors);
+					}
+					
+					@Override
+					protected DeleteExecutor<C, I, T> newDeleteExecutor(IEntityMappingStrategy<C, I, T> mappingStrategy,
+																		ConnectionProvider connectionProvider, DMLGenerator dmlGenerator,
+																		Retryer writeOperationRetryer, int jdbcBatchSize, int inOperatorMaxSize) {
+						Map<Class<? extends C>, DeleteExecutor<C, I, T>> subclassesDeleteExecutors =
+								Iterables.map(persisterPerSubclass.entrySet(), Entry::getKey, e -> e.getValue().getDeleteExecutor());
+						
+						return new PolymorphicDeleteExecutor<>(mappingStrategy, connectionProvider, dmlGenerator, writeOperationRetryer,
+								jdbcBatchSize, inOperatorMaxSize, subclassesDeleteExecutors);
+					}
+					
+					@Override
+					protected JoinedStrategiesSelectExecutor<C, I, T> newSelectExecutor(IEntityMappingStrategy<C, I, T> mappingStrategy,
+																						ConnectionProvider connectionProvider,
+																						Dialect dialect) {
+						
+						// necessary to be able to invoke getJoinedStrategiesSelect() below
+						originalJoinedStrategiesSelectExecutor = super.newSelectExecutor(mappingStrategy, connectionProvider, dialect);
+						
+						return new JoinedStrategiesSelectExecutor<C, I, T>(mappingStrategy, dialect, connectionProvider) {
+							@Override
+							public List<C> select(Iterable<I> ids) {
+								// Doing this in 2 phases
+								// - make a select with id + discriminator in select clause and ids in where to determine ids per subclass type
+								// - call the right subclass joinExecutor with dedicated ids
+								// TODO : (with which listener ?)
+								
+								Set<PreparedSQL> queries = new HashSet<>();
+								Map<String, Class> discriminatorValues = new HashMap<>();
+								String discriminatorAlias = "Y";
+								String pkAlias = "PK";
+								Map<String, ResultSetReader> aliases = new HashMap<>();
+								aliases.put(discriminatorAlias, dialect.getColumnBinderRegistry().getBinder(String.class));
+								ParameterBinder pkBinder = dialect.getColumnBinderRegistry().getBinder(
+										(Column) Iterables.first(getMainTable().getPrimaryKey().getColumns()));
+								aliases.put(pkAlias, pkBinder);
+								subclassTables.forEach((subEntityConfiguration, subEntityTable) -> {
+									Column<T, I> primaryKey = (Column<T, I>) Iterables.first(subEntityTable.getPrimaryKey().getColumns());
+									String discriminatorValue = subEntityConfiguration.getEntityType().getSimpleName();
+									discriminatorValues.put(discriminatorValue, subEntityConfiguration.getEntityType());
+									Query query = QueryEase.
+											select(primaryKey, pkAlias)
+											.add("'"+ discriminatorValue +"' as " + discriminatorAlias)
+											.from(subEntityTable)
+											.where(primaryKey, Operators.in(ids)).getSelectQuery();
+									SQLQueryBuilder sqlQueryBuilder = new SQLQueryBuilder(query);
+									PreparedSQL preparedSQL = sqlQueryBuilder.toPreparedSQL(dialect.getColumnBinderRegistry());
+									queries.add(preparedSQL);
+								});
+								
+								Map<Integer, PreparedStatementWriter> parameterBinders = new HashMap<>();
+								Map<Integer, Object> values = new HashMap<>();
+								StringAppender unionSql = new StringAppender();
+								ModifiableInt parameterIndex = new ModifiableInt(1);
+								queries.forEach(preparedSQL -> {
+									unionSql.cat(preparedSQL.getSQL(), ") union all (");
+									preparedSQL.getValues().values().forEach(value -> {
+										// since ids are all
+										values.put(parameterIndex.getValue(), value);
+										// NB: parameter binder is expected to be always the same since we always put ids
+										parameterBinders.put(parameterIndex.getValue(), pkBinder);
+										parameterIndex.increment();
+									});
+								});
+								unionSql.cutTail(") union all (".length());
+								unionSql.wrap("(", ")");
+								
+								PreparedSQL preparedSQL = new PreparedSQL(unionSql.toString(), parameterBinders);
+								preparedSQL.setValues(values);
+								
+
+								Map<Class, Set<I>> idsPerSubclass = new HashMap<>();
+								try (ReadOperation readOperation = new ReadOperation<>(preparedSQL, getConnectionProvider())) {
+									ResultSet resultSet = readOperation.execute();
+									RowIterator resultSetIterator = new RowIterator(resultSet, aliases);
+									resultSetIterator.forEachRemaining(row -> {
+										
+										// looking for entity type on row : we read each subclass PK and check for nullity. The non-null one is the 
+										// right one
+										String discriminatorValue = (String) row.get(discriminatorAlias);
+										// NB: we trim bacause some database (as HSQLDB) adds some padding in order that all values get same length
+										Class<? extends C> entitySubclass = discriminatorValues.get(discriminatorValue.trim());
+										
+										// adding identifier to subclass' ids
+										idsPerSubclass.computeIfAbsent(entitySubclass, k -> new HashSet<>())
+												.add((I) row.get(pkAlias));
+									});
+								}
+								
+								List<C> result = new ArrayList<>();
+								idsPerSubclass.forEach((subclass, subclassIds) -> result.addAll(persisterPerSubclass.get(subclass).select(subclassIds)));
+								
+								return result;
+							}
+						};
+					}
+					
+					@Override
+					protected EntitySelectExecutor<C, I, T> newEntitySelectExecutor(JoinedStrategiesSelectExecutor<C, I, T> joinedStrategiesSelectExecutor, ConnectionProvider connectionProvider, Dialect dialect) {
+						// we get all joins of originally-computed JoinedStrategiesSelectExecutor (built by super.newSelectExecutor(..)))
+						// and pass them to our dispatching one (passed as argument)
+						String currentJoinName = JoinedStrategiesSelect.FIRST_STRATEGY_NAME;
+						Queue<AbstractJoin> joins = new ArrayDeque<>();
+						joins.addAll(originalJoinedStrategiesSelectExecutor.getJoinedStrategiesSelect().getJoinsRoot().getJoins());
+						while(!joins.isEmpty()) {
+							AbstractJoin join = joins.poll();
+							// TODO: finish tree traversal (in depth)
+							joinedStrategiesSelectExecutor.getJoinedStrategiesSelect().addJoin(currentJoinName, join.getStrategy().getStrategy(), s -> join);
+						}
+						
+						return new EntitySelectExecutor<C, I, T>(joinedStrategiesSelectExecutor.getJoinedStrategiesSelect(), connectionProvider,
+								dialect.getColumnBinderRegistry(), joinedStrategiesSelectExecutor.getStrategyJoinsRowTransformer()) {
+							
+							@Override
+							public List<C> loadGraph(CriteriaChain where) {
+								Set<PreparedSQL> queries = new HashSet<>();
+								Map<String, Class> discriminatorValues = new HashMap<>();
+								String discriminatorAlias = "Y";
+								String pkAlias = "PK";
+								Map<String, ResultSetReader> aliases = new HashMap<>();
+								aliases.put(discriminatorAlias, dialect.getColumnBinderRegistry().getBinder(String.class));
+								ParameterBinder pkBinder = dialect.getColumnBinderRegistry().getBinder(
+										(Column) Iterables.first(getMainTable().getPrimaryKey().getColumns()));
+								aliases.put(pkAlias, pkBinder);
+								subclassTables.forEach((subEntityConfiguration, subEntityTable) -> {
+									Column<T, I> primaryKey = (Column<T, I>) Iterables.first(subEntityTable.getPrimaryKey().getColumns());
+									String discriminatorValue = subEntityConfiguration.getEntityType().getSimpleName();
+									discriminatorValues.put(discriminatorValue, subEntityConfiguration.getEntityType());
+									Query query = QueryEase.
+											select(primaryKey, pkAlias)
+											.add("'"+ discriminatorValue +"' as " + discriminatorAlias)
+											.from(subEntityTable)
+											.getSelectQuery();
+									
+									Where projectedWhere = new Where();
+									for(AbstractCriterion c : ((CriteriaChain<?>) where)) {
+										// TODO: take other types into acount
+										if (c instanceof ColumnCriterion) {
+											ColumnCriterion columnCriterion = (ColumnCriterion) c;
+											Column projectedColumn = subEntityTable.getColumn(columnCriterion.getColumn().getName());
+											projectedWhere.add(columnCriterion.copyFor(projectedColumn));
+										}
+									}
+									if (projectedWhere.iterator().hasNext()) {    // prevents from empty where causing malformed SQL
+										query.getWhere().and(projectedWhere);
+									}
+									
+									SQLQueryBuilder sqlQueryBuilder = new SQLQueryBuilder(query);
+									PreparedSQL preparedSQL = sqlQueryBuilder.toPreparedSQL(dialect.getColumnBinderRegistry());
+									queries.add(preparedSQL);
+								});
+								
+								Map<Integer, PreparedStatementWriter> parameterBinders = new HashMap<>();
+								Map<Integer, Object> values = new HashMap<>();
+								StringAppender unionSql = new StringAppender();
+								ModifiableInt parameterIndex = new ModifiableInt(1);
+								queries.forEach(preparedSQL -> {
+									unionSql.cat(preparedSQL.getSQL(), ") union all (");
+									preparedSQL.getValues().values().forEach(value -> {
+										// since ids are all
+										values.put(parameterIndex.getValue(), value);
+										// NB: parameter binder is expected to be always the same since we always put ids
+										parameterBinders.put(parameterIndex.getValue(),
+												preparedSQL.getParameterBinder(1 + parameterIndex.getValue() % preparedSQL.getValues().size()));
+										parameterIndex.increment();
+									});
+								});
+								unionSql.cutTail(") union all (".length());
+								unionSql.wrap("(", ")");
+								
+								PreparedSQL preparedSQL = new PreparedSQL(unionSql.toString(), parameterBinders);
+								preparedSQL.setValues(values);
+								
+								
+								Map<Class, Set<I>> idsPerSubclass = new HashMap<>();
+								try (ReadOperation readOperation = new ReadOperation<>(preparedSQL, getConnectionProvider())) {
+									ResultSet resultSet = readOperation.execute();
+									RowIterator resultSetIterator = new RowIterator(resultSet, aliases);
+									resultSetIterator.forEachRemaining(row -> {
+										
+										// looking for entity type on row : we read each subclass PK and check for nullity. The non-null one is the 
+										// right one
+										String discriminatorValue = (String) row.get(discriminatorAlias);
+										// NB: we trim bacause some database (as HSQLDB) adds some padding in order that all values get same length
+										Class<? extends C> entitySubclass = discriminatorValues.get(discriminatorValue.trim());
+										
+										// adding identifier to subclass' ids
+										idsPerSubclass.computeIfAbsent(entitySubclass, k -> new HashSet<>())
+												.add((I) row.get(pkAlias));
+									});
+								}
+								
+								List<C> result = new ArrayList<>();
+								idsPerSubclass.forEach((subclass, subclassIds) -> result.addAll(persisterPerSubclass.get(subclass).select(subclassIds)));
+								
+								
+								return result;
+							}
+							
+						};
+					}
+				};
+			}
+			
+		};
+		
+		
+		return polymorphicMappingBuilder.build(persistenceContext, targetTable);
 	}
 	
 	private static class PolymorphicUpdateExecutor<C, I, T extends Table> extends UpdateExecutor<C, I, T> {
