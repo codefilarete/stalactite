@@ -36,7 +36,7 @@ import static org.gama.stalactite.query.model.Operators.in;
  * @see #loadGraph(CriteriaChain)
  * @see #loadSelection(CriteriaChain)
  */
-public class EntitySelectExecutor<C, I, T extends Table> {
+public class EntitySelectExecutor<C, I, T extends Table> implements IEntitySelectExecutor<C> {
 	
 	private static final String PRIMARY_KEY_ALIAS = "rootId";
 	
@@ -75,7 +75,7 @@ public class EntitySelectExecutor<C, I, T extends Table> {
 	 * @return beans loaded from rows selected by given criteria
 	 */
 	public List<C> loadSelection(CriteriaChain where) {
-		SQLQueryBuilder sqlQueryBuilder = createQueryBuilder(where, joinedStrategiesSelect.buildSelectQuery());
+		SQLQueryBuilder sqlQueryBuilder = IEntitySelectExecutor.createQueryBuilder(where, joinedStrategiesSelect.buildSelectQuery());
 		PreparedSQL preparedSQL = sqlQueryBuilder.toPreparedSQL(parameterBinderProvider);
 		return execute(preparedSQL);
 	}
@@ -94,7 +94,7 @@ public class EntitySelectExecutor<C, I, T extends Table> {
 	public List<C> loadGraph(CriteriaChain where) {
 		Query query = joinedStrategiesSelect.buildSelectQuery();
 		
-		SQLQueryBuilder sqlQueryBuilder = createQueryBuilder(where, query);
+		SQLQueryBuilder sqlQueryBuilder = IEntitySelectExecutor.createQueryBuilder(where, query);
 		
 		// First phase : selecting ids (made by clearing selected elements for performance issue)
 		List<Object> columns = query.getSelectSurrogate().clear();
@@ -115,14 +115,6 @@ public class EntitySelectExecutor<C, I, T extends Table> {
 			PreparedSQL preparedSQL = sqlQueryBuilder.toPreparedSQL(parameterBinderProvider);
 			return execute(preparedSQL);
 		}
-	}
-	
-	protected SQLQueryBuilder createQueryBuilder(CriteriaChain where, Query query) {
-		SQLQueryBuilder sqlQueryBuilder = new SQLQueryBuilder(query);
-		if (where.iterator().hasNext()) {    // prevents from empty where causing malformed SQL
-			query.getWhere().and(where);
-		}
-		return sqlQueryBuilder;
 	}
 	
 	private List<I> readIds(SQLQueryBuilder sqlQueryBuilder, Column<T, I> pk) {

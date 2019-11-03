@@ -11,6 +11,7 @@ import org.gama.lang.Nullable;
 import org.gama.reflection.MethodReferenceDispatcher;
 import org.gama.stalactite.persistence.engine.BeanRelationFixer;
 import org.gama.stalactite.persistence.engine.ExecutableQuery;
+import org.gama.stalactite.persistence.engine.ISelectExecutor;
 import org.gama.stalactite.persistence.engine.PersistenceContext;
 import org.gama.stalactite.persistence.engine.Persister;
 import org.gama.stalactite.persistence.engine.cascade.JoinedStrategiesSelect.StrategyJoins;
@@ -19,6 +20,7 @@ import org.gama.stalactite.persistence.mapping.IEntityMappingStrategy;
 import org.gama.stalactite.persistence.query.EntityCriteria;
 import org.gama.stalactite.persistence.query.EntityCriteriaSupport;
 import org.gama.stalactite.persistence.query.EntitySelectExecutor;
+import org.gama.stalactite.persistence.query.IEntitySelectExecutor;
 import org.gama.stalactite.persistence.sql.Dialect;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
@@ -43,7 +45,7 @@ import static java.util.Collections.emptyList;
 public class JoinedTablesPersister<C, I, T extends Table> extends Persister<C, I, T> {
 	
 	/** Support for {@link EntityCriteria} query execution */
-	private EntitySelectExecutor<C, I, T> entitySelectExecutor;
+	private IEntitySelectExecutor<C> entitySelectExecutor;
 	/** Support for defining Entity criteria on {@link #newWhere()} */
 	private final EntityCriteriaSupport<C> criteriaSupport;
 	
@@ -54,18 +56,18 @@ public class JoinedTablesPersister<C, I, T extends Table> extends Persister<C, I
 	public JoinedTablesPersister(IEntityMappingStrategy<C, I, T> mainMappingStrategy, Dialect dialect, ConnectionProvider connectionProvider, int jdbcBatchSize) {
 		super(mainMappingStrategy, dialect, connectionProvider, jdbcBatchSize);
 		this.criteriaSupport = new EntityCriteriaSupport<>(getMappingStrategy());
-		this.entitySelectExecutor = newEntitySelectExecutor(getJoinedStrategiesSelectExecutor(), getConnectionProvider(), dialect);
+		this.entitySelectExecutor = newEntitySelectExecutor(dialect);
+//		this.entitySelectExecutor = newEntitySelectExecutor(getJoinedStrategiesSelectExecutor().getJoinedStrategiesSelect(), getConnectionProvider(), dialect);
 	}
 	
 	@Override
-	protected JoinedStrategiesSelectExecutor<C, I, T> newSelectExecutor(IEntityMappingStrategy<C, I, T> mappingStrategy, ConnectionProvider connectionProvider,
-															Dialect dialect) {
+	protected ISelectExecutor<C, I> newSelectExecutor(IEntityMappingStrategy<C, I, T> mappingStrategy, ConnectionProvider connectionProvider,
+													  Dialect dialect) {
 		return new JoinedStrategiesSelectExecutor<>(mappingStrategy, dialect, connectionProvider);
 	}
 	
-	protected EntitySelectExecutor<C, I, T> newEntitySelectExecutor(JoinedStrategiesSelectExecutor<C, I, T> joinedStrategiesSelectExecutor, ConnectionProvider connectionProvider, Dialect dialect) {
-		return new EntitySelectExecutor<>(joinedStrategiesSelectExecutor.getJoinedStrategiesSelect(), connectionProvider,
-				dialect.getColumnBinderRegistry());
+	protected IEntitySelectExecutor<C> newEntitySelectExecutor(Dialect dialect) {
+		return new EntitySelectExecutor<>(getJoinedStrategiesSelectExecutor().getJoinedStrategiesSelect(), getConnectionProvider(), dialect.getColumnBinderRegistry());
 	}
 	
 	/**
@@ -109,7 +111,7 @@ public class JoinedTablesPersister<C, I, T extends Table> extends Persister<C, I
 	 */
 	@Override
 	protected List<C> doSelect(Iterable<I> ids) {
-		return getJoinedStrategiesSelectExecutor().select(ids);
+		return getSelectExecutor().select(ids);
 	}
 	
 	/**

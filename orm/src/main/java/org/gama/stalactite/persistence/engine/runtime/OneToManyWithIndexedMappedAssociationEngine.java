@@ -55,7 +55,8 @@ public class OneToManyWithIndexedMappedAssociationEngine<SRC, TRGT, SRCID, TRGTI
 	}
 	
 	private void addIndexSelection() {
-		targetPersister.getSelectExecutor().getMappingStrategy().addSilentColumnToSelect(indexingColumn);
+		// NB: should be "targetPersister.getSelectExecutor().getMappingStrategy().." but can't be due to interface ISelectExecutor
+		targetPersister.getMappingStrategy().addSilentColumnToSelect(indexingColumn);
 		// Implementation note: 2 possiblities
 		// - keep object indexes and put sorted beans in a temporary List, then add them all to the target List
 		// - keep object indexes and sort the target List throught a comparator of indexes

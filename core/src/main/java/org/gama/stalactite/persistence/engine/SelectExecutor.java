@@ -29,7 +29,7 @@ import org.gama.stalactite.sql.result.RowIterator;
  * 
  * @author Guillaume Mary
  */
-public class SelectExecutor<C, I, T extends Table> extends DMLExecutor<C, I, T> {
+public class SelectExecutor<C, I, T extends Table> extends DMLExecutor<C, I, T> implements ISelectExecutor<C, I> {
 	
 	private SQLOperationListener<Column<T, Object>> operationListener;
 	
@@ -41,6 +41,7 @@ public class SelectExecutor<C, I, T extends Table> extends DMLExecutor<C, I, T> 
 		this.operationListener = operationListener;
 	}
 	
+	@Override
 	public List<C> select(Iterable<I> ids) {
 		int blockSize = getInOperatorMaxSize();
 		List<List<I>> parcels = Collections.parcel(ids, blockSize);

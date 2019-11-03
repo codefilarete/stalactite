@@ -39,7 +39,7 @@ public class Persister<C, I, T extends Table> {
 	private InsertExecutor<C, I, T> insertExecutor;
 	private UpdateExecutor<C, I, T> updateExecutor;
 	private DeleteExecutor<C, I, T> deleteExecutor;
-	private SelectExecutor<C, I, T> selectExecutor;
+	private ISelectExecutor<C, I> selectExecutor;
 	
 	public Persister(IEntityMappingStrategy<C, I, T> mappingStrategy, PersistenceContext persistenceContext) {
 		this(mappingStrategy, persistenceContext.getDialect(), persistenceContext.getConnectionProvider(), persistenceContext.getJDBCBatchSize());
@@ -95,9 +95,9 @@ public class Persister<C, I, T extends Table> {
 				writeOperationRetryer, jdbcBatchSize, inOperatorMaxSize);
 	}
 	
-	protected SelectExecutor<C, I, T> newSelectExecutor(IEntityMappingStrategy<C, I, T> mappingStrategy,
-																ConnectionProvider connectionProvider,
-																Dialect dialect) {
+	protected ISelectExecutor<C, I> newSelectExecutor(IEntityMappingStrategy<C, I, T> mappingStrategy,
+													  ConnectionProvider connectionProvider,
+													  Dialect dialect) {
 		return new SelectExecutor<>(mappingStrategy, connectionProvider, dialect.getDmlGenerator(), dialect.getInOperatorMaxSize());
 	}
 	
@@ -169,7 +169,7 @@ public class Persister<C, I, T extends Table> {
 		return deleteExecutor;
 	}
 	
-	public SelectExecutor<C, I, T> getSelectExecutor() {
+	public ISelectExecutor<C, I> getSelectExecutor() {
 		return selectExecutor;
 	}
 	
