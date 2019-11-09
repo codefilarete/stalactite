@@ -2,7 +2,6 @@ package org.gama.stalactite.persistence.mapping;
 
 import javax.annotation.Nonnull;
 import java.lang.reflect.Field;
-import java.lang.reflect.Member;
 import java.lang.reflect.Method;
 import java.util.Collections;
 import java.util.HashMap;
@@ -250,8 +249,8 @@ public class ClassMappingStrategy<C, I, T extends Table> implements IEntityMappi
 	}
 	
 	/**
-	 * Gives a particular strategy for a given {@link Member}.
-	 * The {@link Member} is supposed to be a complex type so it needs multiple columns for persistence and then needs an {@link IEmbeddedBeanMappingStrategy}
+	 * Sets a particular strategy for a given property.
+	 * The property type is supposed to be complex so it needs multiple columns for persistence and then needs an {@link IEmbeddedBeanMappingStrategy}
 	 * 
 	 * @param property an object representing a {@link Field} or {@link Method}
 	 * @param mappingStrategy the strategy that should be used to persist the member
