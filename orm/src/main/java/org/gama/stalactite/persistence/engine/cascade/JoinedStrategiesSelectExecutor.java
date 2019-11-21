@@ -16,6 +16,7 @@ import org.gama.lang.bean.Objects;
 import org.gama.lang.collection.Collections;
 import org.gama.lang.collection.Iterables;
 import org.gama.stalactite.persistence.engine.BeanRelationFixer;
+import org.gama.stalactite.persistence.engine.JoinableSelectExecutor;
 import org.gama.stalactite.persistence.engine.SelectExecutor;
 import org.gama.stalactite.persistence.engine.cascade.JoinedStrategiesSelect.StrategyJoins;
 import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
@@ -49,7 +50,7 @@ import static org.gama.stalactite.persistence.engine.cascade.JoinedStrategiesSel
  * 
  * @author Guillaume Mary
  */
-public class JoinedStrategiesSelectExecutor<C, I, T extends Table> extends SelectExecutor<C, I, T>  {
+public class JoinedStrategiesSelectExecutor<C, I, T extends Table> extends SelectExecutor<C, I, T> implements JoinableSelectExecutor {
 	
 	/** The surrogate for joining the strategies, will help to build the SQL */
 	private final JoinedStrategiesSelect<C, I, T> joinedStrategiesSelect;

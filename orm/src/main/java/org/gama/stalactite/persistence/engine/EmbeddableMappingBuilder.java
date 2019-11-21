@@ -21,6 +21,7 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import com.google.common.annotations.VisibleForTesting;
 import org.danekja.java.util.function.serializable.SerializableBiFunction;
 import org.danekja.java.util.function.serializable.SerializableFunction;
 import org.gama.lang.Reflections;
@@ -119,7 +120,7 @@ class EmbeddableMappingBuilder<C> {
 	}
 	
 	protected void includeMapping(Linkage linkage) {
-		Column column = addLinkage(linkage);
+		Column column = addColumnToTable(linkage);
 		ensureColumnBindingInRegistry(linkage, column);
 		result.put(linkage.getAccessor(), column);
 	}
@@ -152,8 +153,8 @@ class EmbeddableMappingBuilder<C> {
 		result.putAll(buildEmbeddedMapping());
 	}
 	
-	protected Column addLinkage(Linkage linkage) {
-		String columnName = columnNameProvider.giveColumnName(linkage);
+	protected Column addColumnToTable(Linkage linkage) {
+		String columnName = nullable(linkage.getColumnName()).getOr(() -> columnNameProvider.giveColumnName(linkage));
 		assertMappingIsNotAlreadyDefined(linkage, columnName);
 		Column addedColumn = targetTable.addColumn(columnName, linkage.getColumnType());
 		addedColumn.setNullable(linkage.isNullable());
@@ -347,8 +348,7 @@ class EmbeddableMappingBuilder<C> {
 						}
 					}
 					
-					String chainDescription = inset.getAccessor() + " > " + memberDefinition.toString();
-					AccessorChain chain = getAccessorChain(rootAccessors, valueAccessPoint, chainDescription);
+					AccessorChain chain = newAccessorChain(rootAccessors, valueAccessPoint);
 					toReturn.put(chain, targetColumn);
 				});
 			}
@@ -357,9 +357,10 @@ class EmbeddableMappingBuilder<C> {
 		return toReturn;
 	}
 	
-	private AccessorChain getAccessorChain(List<ValueAccessPoint> rootAccessors, ValueAccessPointByMethod terminalAccessor, String chainDescription) {
+	@VisibleForTesting
+	static AccessorChain newAccessorChain(List<ValueAccessPoint> rootAccessors, ValueAccessPointByMethod terminalAccessor) {
 		// we must clone rootAccessors to prevent from accessor mixing
-		rootAccessors = new ArrayList<>(rootAccessors);
+		List<ValueAccessPoint> finalAccessors = new ArrayList<>(rootAccessors);
 		IAccessor accessor;
 		if (terminalAccessor instanceof IAccessor) {
 			accessor = (IAccessor) terminalAccessor;
@@ -369,22 +370,17 @@ class EmbeddableMappingBuilder<C> {
 			// Something has change in ValueAccessPoint hierarchy, it should be fixed (grave)
 			throw new IllegalArgumentException(Reflections.toString(terminalAccessor.getClass()) + " is unknown from chain creation algorithm");
 		}
-		rootAccessors.add(accessor);
+		finalAccessors.add(accessor);
 		// we create a chain that
 		// - returns null when beans are not instanciated, so null will be inserted/updated in embedded columns
 		// - initializes values when its mutator will be used, so bean will create its embedded properties on select
 		// (voluntary dissimetric behavior)
-		return new AccessorChain(rootAccessors) {
+		return new AccessorChain(finalAccessors) {
 			@Override
 			public AccessorChainMutator toMutator() {
 				AccessorChainMutator toReturn = super.toMutator();
 				toReturn.setNullValueHandler(AccessorChain.INITIALIZE_VALUE);
 				return toReturn;
-			}
-			
-			@Override
-			public String toString() {
-				return chainDescription;
 			}
 		}.setNullValueHandler(AccessorChain.RETURN_NULL);
 	}

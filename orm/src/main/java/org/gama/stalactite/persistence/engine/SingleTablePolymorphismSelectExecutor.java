@@ -12,6 +12,7 @@ import org.gama.lang.collection.Iterables;
 import org.gama.stalactite.persistence.engine.PolymorphismPolicy.SingleTablePolymorphism;
 import org.gama.stalactite.persistence.engine.cascade.JoinedTablesPersister;
 import org.gama.stalactite.persistence.mapping.ColumnedRow;
+import org.gama.stalactite.persistence.mapping.IEntityMappingStrategy;
 import org.gama.stalactite.persistence.sql.Dialect;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
@@ -27,7 +28,8 @@ import org.gama.stalactite.sql.result.RowIterator;
 /**
  * @author Guillaume Mary
  */
-public class SingleTablePolymorphismSelectExecutor<C, I, T extends Table, D> implements ISelectExecutor<C, I> {
+public class SingleTablePolymorphismSelectExecutor<C, I, T extends Table, D>
+		implements ISelectExecutor<C, I>, JoinableSelectExecutor {
 	
 	private final Map<Class<? extends C>, JoinedTablesPersister<C, I, T>> persisterPerSubclass;
 	private final Column discriminatorColumn;
@@ -48,6 +50,10 @@ public class SingleTablePolymorphismSelectExecutor<C, I, T extends Table, D> imp
 		this.dialect = dialect;
 		this.discriminatorColumn = discriminatorColumn;
 		this.persisterPerSubclass = persisterPerSubclass;
+	}
+	
+	public Map<Class<? extends C>, JoinedTablesPersister<C, I, T>> getPersisterPerSubclass() {
+		return persisterPerSubclass;
 	}
 	
 	@Override
@@ -86,5 +92,49 @@ public class SingleTablePolymorphismSelectExecutor<C, I, T extends Table, D> imp
 		idsPerSubclass.forEach((subclass, subclassIds) -> result.addAll(persisterPerSubclass.get(subclass).select(subclassIds)));
 		
 		return result;
+	}
+	
+	@Override
+	public <U, T1 extends Table<T1>, T2 extends Table<T2>, ID> String addRelation(String leftStrategyName,
+																				  IEntityMappingStrategy<U, ID, T2> strategy,
+																				  BeanRelationFixer beanRelationFixer,
+																				  Column<T1, ID> leftJoinColumn,
+																				  Column<T2, ID> rightJoinColumn,
+																				  boolean isOuterJoin) {
+		Set<String> joinNames = new HashSet<>();
+		persisterPerSubclass.forEach((entityClass, persister) -> {
+			String joinName = persister.getJoinedStrategiesSelectExecutor().addRelation(leftStrategyName, strategy, beanRelationFixer,
+					leftJoinColumn, rightJoinColumn, isOuterJoin);
+			joinNames.add(joinName);
+		});
+		if (joinNames.size() == 1) {
+			return Iterables.first(joinNames);
+		} else {
+			// Grave : this class is a kind of proxy for subEntities mapping. The addRelation(..) can only be done for parent-common properties
+			// of entities, hence it is not expected that join names would be different, else caller isn't able to find created join.
+			// This code is made as a safeguard
+			throw new IllegalStateException("Different names for same join is not expected");
+		}
+	}
+	
+	@Override
+	public <U, T1 extends Table<T1>, T2 extends Table<T2>, ID> String addComplementaryJoin(String leftStrategyName,
+																						   IEntityMappingStrategy<U, ID, T2> strategy,
+																						   Column<T1, ID> leftJoinColumn,
+																						   Column<T2, ID> rightJoinColumn) {
+		Set<String> joinNames = new HashSet<>();
+		persisterPerSubclass.forEach((entityClass, persister) -> {
+			String joinName = persister.getJoinedStrategiesSelectExecutor().addComplementaryJoin(leftStrategyName, strategy,
+					leftJoinColumn, rightJoinColumn);
+			joinNames.add(joinName);
+		});
+		if (joinNames.size() == 1) {
+			return Iterables.first(joinNames);
+		} else {
+			// Grave : this class is a kind of proxy for subEntities mapping. The addRelation(..) can only be done for parent-common properties
+			// of entities, hence it is not expected that join names would be different, else caller isn't able to find created join.
+			// This code is made as a safeguard
+			throw new IllegalStateException("Different names for same join is not expected");
+		}
 	}
 }

@@ -25,6 +25,7 @@ import org.gama.stalactite.persistence.engine.PolymorphismPolicy.JoinedTablesPol
 import org.gama.stalactite.persistence.engine.PolymorphismPolicy.SingleTablePolymorphism;
 import org.gama.stalactite.persistence.engine.PolymorphismPolicy.TablePerClassPolymorphism;
 import org.gama.stalactite.persistence.engine.cascade.JoinedStrategiesSelect;
+import org.gama.stalactite.persistence.engine.cascade.JoinedStrategiesSelect.StrategyJoins;
 import org.gama.stalactite.persistence.engine.cascade.JoinedStrategiesSelectExecutor;
 import org.gama.stalactite.persistence.engine.cascade.JoinedTablesPersister;
 import org.gama.stalactite.persistence.mapping.IEntityMappingStrategy;
@@ -105,7 +106,7 @@ public class PolymorphicMappingBuilder<C, I> extends AbstractEntityMappingBuilde
 					// Adding parent properties to subclass mapping, mainly for select purpose, because it is done by subclass persister
 					// whereas insert / update / delete are done by their own executor 
 					EntityMappingConfiguration<C, I> subEntityEffectiveConfiguration = new MethodReferenceDispatcher()
-							.redirect(EntityMappingConfiguration<C, I>::getInheritanceConfiguration, () -> subClassEffectiveConfiguration)
+							.redirect(EntityMappingConfiguration<C, I>::getInheritanceConfiguration, () -> configurationSupport)
 							.fallbackOn(subEntityConfiguration)
 							.build((Class<EntityMappingConfiguration<C, I>>) (Class) EntityMappingConfiguration.class);
 					
@@ -188,6 +189,26 @@ public class PolymorphicMappingBuilder<C, I> extends AbstractEntityMappingBuilde
 						
 						return new SingleTablePolymorphismEntitySelectExecutor<>(persisterPerSubclass, discriminatorColumn, polymorphismPolicy,
 								defaultJoinedStrategiesSelectExecutor.getJoinedStrategiesSelect(), getConnectionProvider(), dialect);
+					}
+					
+					@Override
+					public <U, J, Z> String addPersister(String ownerStrategyName, Persister<U, J, ?> persister,
+														 BeanRelationFixer<Z, U> beanRelationFixer, Column leftJoinColumn, Column rightJoinColumn,
+														 boolean isOuterJoin) {
+						return getSingleTablePolymorphismSelectExecutor().addRelation(ownerStrategyName, persister.getMappingStrategy(), beanRelationFixer,
+								leftJoinColumn, rightJoinColumn, isOuterJoin);
+					}
+
+					private SingleTablePolymorphismSelectExecutor<C, I, T, ?> getSingleTablePolymorphismSelectExecutor() {
+						return (SingleTablePolymorphismSelectExecutor<C, I, T, ?>) super.getSelectExecutor();
+					}
+					
+					@Override
+					public void addPersisterJoins(String joinName, JoinedTablesPersister<?, I, ?> sourcePersister) {
+						StrategyJoins sourceJoinsSubgraphRoot = sourcePersister.getJoinedStrategiesSelectExecutor().getJoinedStrategiesSelect().getJoinsRoot();
+						getSingleTablePolymorphismSelectExecutor().getPersisterPerSubclass().values().forEach(select -> {
+							sourceJoinsSubgraphRoot.copyTo(select.getJoinedStrategiesSelectExecutor().getJoinedStrategiesSelect(), joinName);
+						});
 					}
 					
 				};

@@ -14,6 +14,7 @@ import org.gama.lang.test.Assertions;
 import org.gama.stalactite.persistence.engine.FluentEntityMappingConfigurationSupportInheritanceTest.AbstractVehicle;
 import org.gama.stalactite.persistence.engine.FluentEntityMappingConfigurationSupportInheritanceTest.Car;
 import org.gama.stalactite.persistence.engine.FluentEntityMappingConfigurationSupportInheritanceTest.Color;
+import org.gama.stalactite.persistence.engine.FluentEntityMappingConfigurationSupportInheritanceTest.Engine;
 import org.gama.stalactite.persistence.engine.FluentEntityMappingConfigurationSupportInheritanceTest.Truk;
 import org.gama.stalactite.persistence.engine.FluentEntityMappingConfigurationSupportInheritanceTest.Vehicle;
 import org.gama.stalactite.persistence.engine.PersistenceContext.ExecutableSelect;
@@ -55,7 +56,7 @@ import static org.mockito.Mockito.verify;
 /**
  * @author Guillaume Mary
  */
-class FluentEntityMappingConfigurationSupportPolymorphismTest {
+class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 	
 	private static final HSQLDBDialect DIALECT = new HSQLDBDialect();
 	private final DataSource dataSource = new HSQLDBInMemoryDataSource();
@@ -85,8 +86,10 @@ class FluentEntityMappingConfigurationSupportPolymorphismTest {
 		PersistenceContext persistenceContext3 = new PersistenceContext(new JdbcConnectionProvider(new HSQLDBInMemoryDataSource()), DIALECT);
 		Object[][] result = new Object[][] {
 				{	"single table",
-					entityBuilder(AbstractVehicle.class, LONG_TYPE)
-						.add(AbstractVehicle::getId).identifier(ALREADY_ASSIGNED)
+					entityBuilder(Vehicle.class, LONG_TYPE)
+						.add(Vehicle::getId).identifier(ALREADY_ASSIGNED)
+						.addOneToOne(Vehicle::getEngine, entityBuilder(Engine.class, LONG_TYPE)
+																.add(Engine::getId).identifier(ALREADY_ASSIGNED))
 						.mapPolymorphism(PolymorphismPolicy.<AbstractVehicle, Identifier<Long>>singleTable()
 								.addSubClass(entityBuilder(Car.class, LONG_TYPE)
 										.add(Car::getId).identifier(ALREADY_ASSIGNED)
@@ -95,28 +98,28 @@ class FluentEntityMappingConfigurationSupportPolymorphismTest {
 										.add(Truk::getId).identifier(ALREADY_ASSIGNED)
 										.add(Truk::getColor), "TRUK"))
 						.build(persistenceContext1) },
-				{	"joined tables",
-					entityBuilder(AbstractVehicle.class, LONG_TYPE)
-						.add(AbstractVehicle::getId).identifier(ALREADY_ASSIGNED)
-						.mapPolymorphism(PolymorphismPolicy.<AbstractVehicle, Identifier<Long>>joinedTables()
-								.addSubClass(entityBuilder(Car.class, LONG_TYPE)
-										.add(Car::getId).identifier(ALREADY_ASSIGNED)
-										.add(Car::getModel))
-								.addSubClass(entityBuilder(Truk.class, LONG_TYPE)
-										.add(Truk::getId).identifier(ALREADY_ASSIGNED)
-										.add(Truk::getColor)))
-						.build(persistenceContext2) },
-				{	"table per class",
-					entityBuilder(AbstractVehicle.class, LONG_TYPE)
-						.add(AbstractVehicle::getId).identifier(ALREADY_ASSIGNED)
-						.mapPolymorphism(PolymorphismPolicy.<AbstractVehicle, Identifier<Long>>tablePerClass()
-								.addSubClass(entityBuilder(Car.class, LONG_TYPE)
-										.add(Car::getId).identifier(ALREADY_ASSIGNED)
-										.add(Car::getModel))
-								.addSubClass(entityBuilder(Truk.class, LONG_TYPE)
-										.add(Truk::getId).identifier(ALREADY_ASSIGNED)
-										.add(Truk::getColor)))
-						.build(persistenceContext3) },
+//				{	"joined tables",
+//					entityBuilder(AbstractVehicle.class, LONG_TYPE)
+//						.add(AbstractVehicle::getId).identifier(ALREADY_ASSIGNED)
+//						.mapPolymorphism(PolymorphismPolicy.<AbstractVehicle, Identifier<Long>>joinedTables()
+//								.addSubClass(entityBuilder(Car.class, LONG_TYPE)
+//										.add(Car::getId).identifier(ALREADY_ASSIGNED)
+//										.add(Car::getModel))
+//								.addSubClass(entityBuilder(Truk.class, LONG_TYPE)
+//										.add(Truk::getId).identifier(ALREADY_ASSIGNED)
+//										.add(Truk::getColor)))
+//						.build(persistenceContext2) },
+//				{	"table per class",
+//					entityBuilder(AbstractVehicle.class, LONG_TYPE)
+//						.add(AbstractVehicle::getId).identifier(ALREADY_ASSIGNED)
+//						.mapPolymorphism(PolymorphismPolicy.<AbstractVehicle, Identifier<Long>>tablePerClass()
+//								.addSubClass(entityBuilder(Car.class, LONG_TYPE)
+//										.add(Car::getId).identifier(ALREADY_ASSIGNED)
+//										.add(Car::getModel))
+//								.addSubClass(entityBuilder(Truk.class, LONG_TYPE)
+//										.add(Truk::getId).identifier(ALREADY_ASSIGNED)
+//										.add(Truk::getColor)))
+//						.build(persistenceContext3) },
 		};
 		new DDLDeployer(persistenceContext1).deployDDL();
 		new DDLDeployer(persistenceContext2).deployDDL();
@@ -130,6 +133,7 @@ class FluentEntityMappingConfigurationSupportPolymorphismTest {
 	void crud(String testDisplayName, Persister<AbstractVehicle, Identifier<Long>, ?> persister) throws SQLException {
 		Car dummyCar = new Car(1L);
 		dummyCar.setModel("Renault");
+		dummyCar.setEngine(new Engine(100L));
 		Truk dummyTruk = new Truk(2L);
 		dummyTruk.setColor(new Color(42));
 		
@@ -138,6 +142,7 @@ class FluentEntityMappingConfigurationSupportPolymorphismTest {
 		
 		Car dummyCarModfied = new Car(1L);
 		dummyCarModfied.setModel("Peugeot");
+		dummyCarModfied.setEngine(new Engine(200L));
 		Truk dummyTrukModfied = new Truk(2L);
 		dummyTrukModfied.setColor(new Color(99));
 		

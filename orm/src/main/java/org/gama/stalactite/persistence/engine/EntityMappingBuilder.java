@@ -53,6 +53,7 @@ import org.gama.stalactite.persistence.structure.Table;
 
 import static org.gama.lang.Nullable.nullable;
 import static org.gama.lang.collection.Iterables.collect;
+import static org.gama.reflection.MemberDefinition.giveMemberDefinition;
 
 /**
  * Engine that converts mapping definition of a {@link EntityMappingConfiguration} into a {@link Persister}.
@@ -111,12 +112,7 @@ class EntityMappingBuilder<C, I> extends AbstractEntityMappingBuilder<C, I> {
 			};
 		}
 		
-		EntityDecoratedEmbeddableMappingBuilder<C> embeddableMappingBuilder = new EntityDecoratedEmbeddableMappingBuilder<>(
-				configurationSupport.getEntityFactory(),
-				configurationSupport.getPropertiesMapping(),
-				columnNameProvider,
-				configurationSupport.getOneToOnes(),
-				inheritanceInfo);
+		EntityDecoratedEmbeddableMappingBuilder<C> embeddableMappingBuilder = getEmbeddableMappingBuilder(inheritanceInfo);
 		
 		JoinedTablesPersister<C, I, T> result = createPersister(persistenceContext,
 				embeddableMappingBuilder.buildClassMappingStrategy(persistenceContext.getDialect(), table, identification));
@@ -124,6 +120,15 @@ class EntityMappingBuilder<C, I> extends AbstractEntityMappingBuilder<C, I> {
 		handleVersioningStrategy(result);
 		
 		return result;
+	}
+	
+	protected EntityDecoratedEmbeddableMappingBuilder<C> getEmbeddableMappingBuilder(InheritanceInfo<C> inheritanceInfo) {
+		return new EntityDecoratedEmbeddableMappingBuilder<>(
+				configurationSupport.getEntityFactory(),
+				configurationSupport.getPropertiesMapping(),
+				columnNameProvider,
+				configurationSupport.getOneToOnes(),
+				inheritanceInfo);
 	}
 	
 	@javax.annotation.Nullable
@@ -136,13 +141,13 @@ class EntityMappingBuilder<C, I> extends AbstractEntityMappingBuilder<C, I> {
 						.build(persistenceContext, table)
 						.getMappingStrategy();
 			} else {
-				result = new EntityMappingBuilder(configurationSupport.getInheritanceConfiguration(), methodSpy) {
+				result = (IEntityMappingStrategy) new EntityMappingBuilder<C, I>((EntityMappingConfiguration<C, I>) configurationSupport.getInheritanceConfiguration(), methodSpy) {
 					/**
 					 * Overriden to invoke enclosing instance method because it can be overriden too, and this instance must call en enclosing one.
 					 * Else it is impossible to overriden inheritance registration
 					 */
 					@Override
-					protected void registerPersister(JoinedTablesPersister persister, PersistenceContext persistenceContext) {
+					protected <T extends Table> void registerPersister(JoinedTablesPersister<C, I, T> persister, PersistenceContext persistenceContext) {
 						EntityMappingBuilder.this.registerPersister(persister, persistenceContext);
 					}
 				}
@@ -198,19 +203,29 @@ class EntityMappingBuilder<C, I> extends AbstractEntityMappingBuilder<C, I> {
 		}
 	}
 	
-	private <T extends Table> void configureRelations(PersistenceContext persistenceContext, JoinedTablesPersister<C, I, T> result) {
-		CascadeOneConfigurer cascadeOneConfigurer = new CascadeOneConfigurer<>(persistenceContext);
+	protected  <T extends Table> void configureRelations(PersistenceContext persistenceContext, JoinedTablesPersister<C, I, T> sourcePersister) {
+		CascadeOneConfigurer cascadeOneConfigurer = giveCascadeOneConfigurer(persistenceContext);
 		for (CascadeOne<C, ?, ?> cascadeOne : this.configurationSupport.getOneToOnes()) {
-			cascadeOneConfigurer.appendCascade(cascadeOne, result, this.configurationSupport.getForeignKeyNamingStrategy(), this.configurationSupport.getJoinColumnNamingStrategy());
+			cascadeOneConfigurer.appendCascade(cascadeOne, sourcePersister,
+					this.configurationSupport.getForeignKeyNamingStrategy(),
+					this.configurationSupport.getJoinColumnNamingStrategy());
 		}
-		CascadeManyConfigurer cascadeManyConfigurer = new CascadeManyConfigurer(persistenceContext);
+		CascadeManyConfigurer cascadeManyConfigurer = giveCascadeManyConfigurer(persistenceContext);
 		for (CascadeMany<C, ?, ?, ? extends Collection> cascadeMany : this.configurationSupport.getOneToManys()) {
-			cascadeManyConfigurer.appendCascade(cascadeMany, result,
+			cascadeManyConfigurer.appendCascade(cascadeMany, sourcePersister,
 					this.configurationSupport.getForeignKeyNamingStrategy(),
 					this.configurationSupport.getJoinColumnNamingStrategy(),
 					this.configurationSupport.getAssociationTableNamingStrategy());
 		}
-		registerRelations(configurationSupport, result.getCriteriaSupport().getRootConfiguration(), persistenceContext);
+		registerRelations(configurationSupport, sourcePersister.getCriteriaSupport().getRootConfiguration(), persistenceContext);
+	}
+	
+	protected CascadeOneConfigurer giveCascadeOneConfigurer(PersistenceContext persistenceContext) {
+		return new CascadeOneConfigurer<>(persistenceContext);
+	}
+	
+	protected CascadeManyConfigurer giveCascadeManyConfigurer(PersistenceContext persistenceContext) {
+		return new CascadeManyConfigurer(persistenceContext);
 	}
 	
 	private <T extends Table> void handleVersioningStrategy(JoinedTablesPersister<C, I, T> result) {
@@ -328,12 +343,12 @@ class EntityMappingBuilder<C, I> extends AbstractEntityMappingBuilder<C, I> {
 		
 		/** Overriden to take primary key into account */
 		@Override
-		protected Column addLinkage(Linkage linkage) {
+		protected Column addColumnToTable(Linkage linkage) {
 			Column column;
 			if (linkage instanceof EntityLinkageByColumn) {
 				column = ((EntityLinkageByColumn) linkage).getColumn();
 			} else {
-				column = super.addLinkage(linkage);
+				column = super.addColumnToTable(linkage);
 			}
 			// setting the primary key option as asked
 			if (linkage instanceof FluentEntityMappingConfigurationSupport.EntityLinkage) {    // should always be true, see FluentEntityMappingConfigurationSupport.newLinkage(..)
@@ -354,7 +369,7 @@ class EntityMappingBuilder<C, I> extends AbstractEntityMappingBuilder<C, I> {
 			if (inheritanceInfo != null) {
 				Map<IReversibleAccessor, Column> result = new HashMap<>();
 				if (inheritanceInfo.inheritancePropertiesAreInTargetTable()) {
-					// we copy mapped columns into target table so then can be selected, updated, etc.
+					// we copy mapped columns into target table so they can be selected, updated, etc.
 					result.putAll(projectColumns((Map) inheritanceInfo.getPropertyToColumn(), getTargetTable(), (a, c) -> c.getName()));
 				}
 				// Adding identifier to result because result is given to a ClassMappingStrategy which expects identifier to be present in mapping
@@ -531,7 +546,7 @@ class EntityMappingBuilder<C, I> extends AbstractEntityMappingBuilder<C, I> {
 		 */
 		private <T extends Table<?>> void addPrimaryKey(T table, IReversibleAccessor<? super C, I> identifierAccessor, boolean isAutoGenerated) {
 			String primaryKeyColumnName = giveColumnName(identifierAccessor);
-			MemberDefinition identifierDefinition = MemberDefinition.giveMemberDefinition(identifierAccessor);
+			MemberDefinition identifierDefinition = giveMemberDefinition(identifierAccessor);
 			table.addColumn(primaryKeyColumnName, identifierDefinition.getMemberType()).primaryKey();
 			if (isAutoGenerated) {
 				table.getPrimaryKey().getColumns().forEach((Column c) -> c.setAutoGenerated(true));
@@ -550,7 +565,7 @@ class EntityMappingBuilder<C, I> extends AbstractEntityMappingBuilder<C, I> {
 																						 IdentifierPolicy identifierPolicy,
 																						 Table table) {
 			IdentifierInsertionManager<? super C, I> identifierInsertionManager;
-			MemberDefinition methodReference = MemberDefinition.giveMemberDefinition(identifierAccessor);
+			MemberDefinition methodReference = giveMemberDefinition(identifierAccessor);
 			Class<I> identifierType = methodReference.getMemberType();
 			if (identifierPolicy == IdentifierPolicy.ALREADY_ASSIGNED) {
 				if (Identified.class.isAssignableFrom(methodReference.getDeclaringClass()) && Identifier.class.isAssignableFrom(identifierType)) {
@@ -575,7 +590,7 @@ class EntityMappingBuilder<C, I> extends AbstractEntityMappingBuilder<C, I> {
 		}
 		
 		private String giveColumnName(IReversibleAccessor accessor) {
-			return columnNameProvider.giveColumnName(MemberDefinition.giveMemberDefinition(accessor));
+			return columnNameProvider.giveColumnName(giveMemberDefinition(accessor));
 		}
 		
 	}

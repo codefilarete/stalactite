@@ -37,7 +37,6 @@ import org.gama.stalactite.persistence.engine.cascade.BeforeDeleteSupport;
 import org.gama.stalactite.persistence.engine.cascade.BeforeInsertSupport;
 import org.gama.stalactite.persistence.engine.cascade.BeforeUpdateSupport;
 import org.gama.stalactite.persistence.engine.cascade.JoinedStrategiesSelect;
-import org.gama.stalactite.persistence.engine.cascade.JoinedStrategiesSelect.StrategyJoins;
 import org.gama.stalactite.persistence.engine.cascade.JoinedTablesPersister;
 import org.gama.stalactite.persistence.engine.listening.DeleteListener;
 import org.gama.stalactite.persistence.engine.listening.InsertListener;
@@ -195,10 +194,8 @@ public class CascadeOneConfigurer<SRC, TRGT, ID> {
 									   JoinedTablesPersister<SRC, ID, ?> sourcePersister,
 									   JoinedTablesPersister<TRGT, ID, ?> targetPersister,
 									   final Function<SRC, TRGT> targetProvider) {
-			// we add target subgraph joins to the one that was created 
-			StrategyJoins targetJoinsSubgraphRoot = targetPersister.getJoinedStrategiesSelectExecutor().getJoinedStrategiesSelect().getJoinsRoot();
-			JoinedStrategiesSelect sourceSelector = sourcePersister.getJoinedStrategiesSelectExecutor().getJoinedStrategiesSelect();
-			targetJoinsSubgraphRoot.copyTo(sourceSelector, joinName);
+			// we add target subgraph joins to the one that was created
+			sourcePersister.addPersisterJoins(joinName, targetPersister);
 			
 			// we must trigger subgraph event on loading of our graph, this is mainly for event that initializes things because given ids
 			// are not those of their entity

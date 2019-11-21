@@ -6,6 +6,10 @@ import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
+import org.apache.commons.lang3.builder.EqualsBuilder;
+import org.apache.commons.lang3.builder.HashCodeBuilder;
+import org.apache.commons.lang3.builder.ToStringBuilder;
+import org.apache.commons.lang3.builder.ToStringStyle;
 import org.gama.lang.collection.Arrays;
 import org.gama.lang.collection.Iterables;
 import org.gama.stalactite.persistence.engine.model.Timestamp;
@@ -26,7 +30,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
-import static org.gama.lang.Nullable.nullable;
 import static org.gama.stalactite.persistence.engine.ColumnOptions.IdentifierPolicy.ALREADY_ASSIGNED;
 import static org.gama.stalactite.persistence.engine.MappingEase.entityBuilder;
 import static org.gama.stalactite.persistence.id.Identifier.LONG_TYPE;
@@ -610,8 +613,13 @@ class FluentEntityMappingConfigurationSupportInheritanceTest {
 		}
 		
 		@Override
+		public boolean equals(Object o) {
+			return EqualsBuilder.reflectionEquals(this, o);
+		}
+		
+		@Override
 		public int hashCode() {
-			return getId().hashCode();
+			return HashCodeBuilder.reflectionHashCode(this);
 		}
 		
 		public Timestamp getTimestamp() {
@@ -620,6 +628,15 @@ class FluentEntityMappingConfigurationSupportInheritanceTest {
 		
 		public void setTimestamp(Timestamp timestamp) {
 			this.timestamp = timestamp;
+		}
+		
+		/**
+		 * Implemented for easier debug
+		 * @return a simple representation of this
+		 */
+		@Override
+		public String toString() {
+			return ToStringBuilder.reflectionToString(this, ToStringStyle.SHORT_PREFIX_STYLE);
 		}
 	}
 	
@@ -638,14 +655,6 @@ class FluentEntityMappingConfigurationSupportInheritanceTest {
 		}
 		
 		public Vehicle() {
-		}
-		
-		@Override
-		public boolean equals(Object o) {
-			if (this == o) return true;
-			if (o == null || getClass() != o.getClass()) return false;
-			Vehicle car = (Vehicle) o;
-			return Objects.equals(getColor(), car.getColor());
 		}
 		
 		public Color getColor() {
@@ -699,7 +708,7 @@ class FluentEntityMappingConfigurationSupportInheritanceTest {
 		 */
 		@Override
 		public String toString() {
-			return "Color{rgb=" + rgb + "}";
+			return ToStringBuilder.reflectionToString(this, ToStringStyle.SHORT_PREFIX_STYLE);
 		}
 	}
 	
@@ -735,26 +744,6 @@ class FluentEntityMappingConfigurationSupportInheritanceTest {
 			this.model = model;
 		}
 		
-		@Override
-		public boolean equals(Object o) {
-			return super.equals(o) && Objects.equals(model, ((Car) o).model);
-		}
-		
-		/**
-		 * Implemented for easier debug
-		 * @return a simple representation of this
-		 */
-		@Override
-		public String toString() {
-			return "Car{id=" + getId().getSurrogate() + ", color=" + nullable(getColor()).map(Color::getRgb).get() + ", model='" + model + "\'}";
-		}
-	}
-	
-	static class Bicycle extends Vehicle {
-		
-		Bicycle(Identifier<Long> id) {
-			super(id);
-		}
 	}
 	
 	static class Truk extends Vehicle {
@@ -768,15 +757,6 @@ class FluentEntityMappingConfigurationSupportInheritanceTest {
 		
 		Truk(Identifier<Long> id) {
 			super(id);
-		}
-		
-		/**
-		 * Implemented for easier debug
-		 * @return a simple representation of this
-		 */
-		@Override
-		public String toString() {
-			return "Truk{id=" + getId().getSurrogate() + ", color=" + nullable(getColor()).map(Color::getRgb).get() + "}";
 		}
 	}
 	
@@ -797,6 +777,30 @@ class FluentEntityMappingConfigurationSupportInheritanceTest {
 		
 		public Identifier<Long> getId() {
 			return id;
+		}
+		
+		@Override
+		public boolean equals(Object o) {
+			if (this == o) return true;
+			if (o == null || getClass() != o.getClass()) return false;
+			
+			Engine engine = (Engine) o;
+			
+			return Objects.equals(id, engine.id);
+		}
+		
+		@Override
+		public int hashCode() {
+			return id.hashCode();
+		}
+		
+		/**
+		 * Implemented for easier debug
+		 * @return a simple representation of this
+		 */
+		@Override
+		public String toString() {
+			return ToStringBuilder.reflectionToString(this, ToStringStyle.SHORT_PREFIX_STYLE);
 		}
 	}
 }

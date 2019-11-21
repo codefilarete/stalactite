@@ -1,6 +1,5 @@
 package org.gama.stalactite.persistence.engine.cascade;
 
-import javax.annotation.Nonnull;
 import java.util.Collection;
 import java.util.List;
 import java.util.Set;
@@ -57,7 +56,6 @@ public class JoinedTablesPersister<C, I, T extends Table> extends Persister<C, I
 		super(mainMappingStrategy, dialect, connectionProvider, jdbcBatchSize);
 		this.criteriaSupport = new EntityCriteriaSupport<>(getMappingStrategy());
 		this.entitySelectExecutor = newEntitySelectExecutor(dialect);
-//		this.entitySelectExecutor = newEntitySelectExecutor(getJoinedStrategiesSelectExecutor().getJoinedStrategiesSelect(), getConnectionProvider(), dialect);
 	}
 	
 	@Override
@@ -72,9 +70,8 @@ public class JoinedTablesPersister<C, I, T extends Table> extends Persister<C, I
 	
 	/**
 	 * Gives access to the select executor for further manipulations on {@link JoinedStrategiesSelect} for advanced usage
-	 * @return never null
+	 * @return parent {@link org.gama.stalactite.persistence.engine.ISelectExecutor} casted as a {@link JoinedStrategiesSelectExecutor}
 	 */
-	@Nonnull
 	public JoinedStrategiesSelectExecutor<C, I, T> getJoinedStrategiesSelectExecutor() {
 		return (JoinedStrategiesSelectExecutor<C, I, T>) super.getSelectExecutor();
 	}
@@ -191,6 +188,11 @@ public class JoinedTablesPersister<C, I, T extends Table> extends Persister<C, I
 	
 	public EntityCriteriaSupport<C> getCriteriaSupport() {
 		return criteriaSupport;
+	}
+	
+	public void addPersisterJoins(String joinName, JoinedTablesPersister<?, I, ?> sourcePersister) {
+		StrategyJoins sourceJoinsSubgraphRoot = sourcePersister.getJoinedStrategiesSelectExecutor().getJoinedStrategiesSelect().getJoinsRoot();
+		sourceJoinsSubgraphRoot.copyTo(getJoinedStrategiesSelectExecutor().getJoinedStrategiesSelect(), joinName);
 	}
 	
 	/**
