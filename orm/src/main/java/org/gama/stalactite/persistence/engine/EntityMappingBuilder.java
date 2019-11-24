@@ -28,8 +28,6 @@ import org.gama.stalactite.persistence.engine.EmbeddableMappingBuilder.ColumnNam
 import org.gama.stalactite.persistence.engine.EmbeddableMappingConfiguration.Linkage;
 import org.gama.stalactite.persistence.engine.EntityMappingBuilder.EntityDecoratedEmbeddableMappingBuilder.InheritanceInfo;
 import org.gama.stalactite.persistence.engine.FluentEmbeddableMappingConfigurationSupport.Inset;
-import org.gama.stalactite.persistence.engine.FluentEntityMappingConfigurationSupport.EntityLinkage;
-import org.gama.stalactite.persistence.engine.FluentEntityMappingConfigurationSupport.EntityLinkageByColumn;
 import org.gama.stalactite.persistence.engine.FluentEntityMappingConfigurationSupport.OverridableColumnInset;
 import org.gama.stalactite.persistence.engine.builder.CascadeMany;
 import org.gama.stalactite.persistence.engine.cascade.JoinedTablesPersister;
@@ -307,7 +305,7 @@ class EntityMappingBuilder<C, I> extends AbstractEntityMappingBuilder<C, I> {
 		
 		@Override
 		protected void ensureColumnBindingInRegistry(Linkage linkage, Column column) {
-			if (linkage instanceof FluentEntityMappingConfigurationSupport.EntityLinkageByColumn) {
+			if (linkage instanceof EntityLinkageByColumn) {
 				// we ensure that column has an associated binder
 				Column mappedColumn = ((EntityLinkageByColumn) linkage).getColumn();
 				if (!dialect.getColumnBinderRegistry().keys().contains(mappedColumn)) {
@@ -351,7 +349,7 @@ class EntityMappingBuilder<C, I> extends AbstractEntityMappingBuilder<C, I> {
 				column = super.addColumnToTable(linkage);
 			}
 			// setting the primary key option as asked
-			if (linkage instanceof FluentEntityMappingConfigurationSupport.EntityLinkage) {    // should always be true, see FluentEntityMappingConfigurationSupport.newLinkage(..)
+			if (linkage instanceof EntityLinkage) {    // should always be true, see FluentEntityMappingConfigurationSupport.newLinkage(..)
 				if (((EntityLinkage) linkage).isPrimaryKey()) {
 					column.primaryKey();
 				}

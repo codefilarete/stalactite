@@ -68,11 +68,6 @@ public class PolymorphicMappingBuilder<C, I> extends AbstractEntityMappingBuilde
 		
 		// grouping all mapped properties into a mapping strategy so they can fit into the same table
 		List<Linkage> linkages = new ArrayList<>(configurationSupport.getPropertiesMapping().getPropertiesMapping());
-		for (EntityMappingConfigurationProvider<? extends C, I> subClass : polymorphismPolicy.getSubClasses()) {
-			// TODO: shall be removed when subclasses configurations will be embeddable ones, not entity ones (because we don't need identification to be redefined)
-			linkages.removeIf(linkage -> linkage.getAccessor() == subClass.getConfiguration().getIdentifierAccessor());
-		}
-		
 		EmbeddableMappingConfiguration allInheritedPropertiesConfiguration = new MethodReferenceDispatcher()
 				.redirect(EmbeddableMappingConfiguration<ColumnNamingStrategy>::getPropertiesMapping, () -> linkages)
 				.fallbackOn(configurationSupport.getPropertiesMapping())
@@ -99,17 +94,9 @@ public class PolymorphicMappingBuilder<C, I> extends AbstractEntityMappingBuilde
 				Map<Class<? extends C>, JoinedTablesPersister<C, I, T>> persisterPerSubclass = new HashMap<>();
 				mainMappingStrategy.addSilentColumnToSelect(discriminatorColumn);
 				
-				for (EntityMappingConfigurationProvider<? extends C, I> subConfiguration : polymorphismPolicy.getSubClasses()) {
-					EntityMappingConfiguration<C, I> subEntityConfiguration = (EntityMappingConfiguration<C, I>) subConfiguration.getConfiguration();
-					
-					
-					// Adding parent properties to subclass mapping, mainly for select purpose, because it is done by subclass persister
-					// whereas insert / update / delete are done by their own executor 
-					EntityMappingConfiguration<C, I> subEntityEffectiveConfiguration = new MethodReferenceDispatcher()
-							.redirect(EntityMappingConfiguration<C, I>::getInheritanceConfiguration, () -> configurationSupport)
-							.fallbackOn(subEntityConfiguration)
-							.build((Class<EntityMappingConfiguration<C, I>>) (Class) EntityMappingConfiguration.class);
-					
+				for (SubEntityMappingConfiguration<? extends C, I> subConfiguration : polymorphismPolicy.getSubClasses()) {
+					EntityMappingConfiguration<C, I> subEntityEffectiveConfiguration = composeEntityMappingConfiguration(
+							subConfiguration, configurationSupport, subClassEffectiveConfiguration);
 					
 					EntityMappingBuilder<C, I> subclassMappingBuilder = new EntityMappingBuilder<C, I>(subEntityEffectiveConfiguration, methodSpy) {
 						
@@ -120,7 +107,7 @@ public class PolymorphicMappingBuilder<C, I> extends AbstractEntityMappingBuilde
 						}
 					};
 					JoinedTablesPersister subclassPersister = subclassMappingBuilder.build(persistenceContext, targetTable);
-					persisterPerSubclass.put(subConfiguration.getConfiguration().getEntityType(), subclassPersister);
+					persisterPerSubclass.put(subConfiguration.getEntityType(), subclassPersister);
 				}
 				
 				return new JoinedTablesPersister<C, I, T>(persistenceContext, mainMappingStrategy) {
@@ -225,13 +212,6 @@ public class PolymorphicMappingBuilder<C, I> extends AbstractEntityMappingBuilde
 			JoinedTablesPolymorphism<C, I> polymorphismPolicy,
 			PersistenceContext persistenceContext,
 			T targetTable) {
-		
-		// grouping all mapped properties into a mapping strategy so they can fit into the same table
-		List<Linkage> linkages = new ArrayList<>(configurationSupport.getPropertiesMapping().getPropertiesMapping());
-		for (EntityMappingConfigurationProvider<? extends C, I> subClass : polymorphismPolicy.getSubClasses()) {
-			// TODO: shall be removed when subclasses configurations will be embeddable ones, not entity ones (because we don't need identification to be redefined)
-			linkages.removeIf(linkage -> linkage.getAccessor() == subClass.getConfiguration().getIdentifierAccessor());
-		}
 
 		EntityMappingBuilder<C, I> polymorphicMappingBuilder = new EntityMappingBuilder<C, I>(configurationSupport, methodSpy) {
 			@Override
@@ -243,8 +223,9 @@ public class PolymorphicMappingBuilder<C, I> extends AbstractEntityMappingBuilde
 				// subclass persister : contains only subclass properties
 				Map<Class<? extends C>, JoinedTablesPersister<C, I, T>> persisterPerSubclass = new HashMap<>();
 				
-				for (EntityMappingConfigurationProvider<? extends C, I> subConfiguration : polymorphismPolicy.getSubClasses()) {
-					EntityMappingConfiguration<C, I> subEntityConfiguration = (EntityMappingConfiguration<C, I>) subConfiguration.getConfiguration();
+				for (SubEntityMappingConfiguration<? extends C, I> subConfiguration : polymorphismPolicy.getSubClasses()) {
+					EntityMappingConfiguration<C, I> subEntityConfiguration = composeEntityMappingConfiguration(
+							subConfiguration, configurationSupport, null);
 					
 					EntityMappingBuilder<C, I> subclassMappingBuilder = new EntityMappingBuilder<C, I>(subEntityConfiguration, methodSpy) {
 
@@ -257,7 +238,7 @@ public class PolymorphicMappingBuilder<C, I> extends AbstractEntityMappingBuilde
 					Table subEntityTargetTable = new Table(configurationSupport.getTableNamingStrategy().giveName(subEntityConfiguration.getEntityType()));
 					JoinedTablesPersister subclassPersister = subclassMappingBuilder.build(persistenceContext, subEntityTargetTable);
 					
-					persisterPerSubclass.put(subConfiguration.getConfiguration().getEntityType(), subclassPersister);
+					persisterPerSubclass.put(subConfiguration.getEntityType(), subclassPersister);
 					Column subEntityPrimaryKey = (Column) Iterables.first(subEntityTargetTable.getPrimaryKey().getColumns());
 					Column entityPrimaryKey = (Column) Iterables.first(targetTable.getPrimaryKey().getColumns());
 					subEntityTargetTable.addForeignKey(configurationSupport.getForeignKeyNamingStrategy().giveName(subEntityPrimaryKey, entityPrimaryKey),
@@ -267,8 +248,9 @@ public class PolymorphicMappingBuilder<C, I> extends AbstractEntityMappingBuilde
 				// subclass persister 2 : contains subclass properties only
 				Map<Class<? extends C>, JoinedTablesPersister<C, I, T>> persisterPerSubclass2 = new HashMap<>();
 				
-				for (EntityMappingConfigurationProvider<? extends C, I> subConfiguration : polymorphismPolicy.getSubClasses()) {
-					final EntityMappingConfiguration<? extends C, I> subEntityEffectiveConfiguration = subConfiguration.getConfiguration();
+				for (SubEntityMappingConfiguration<? extends C, I> subConfiguration : polymorphismPolicy.getSubClasses()) {
+					EntityMappingConfiguration<C, I> subEntityConfiguration = composeEntityMappingConfiguration(
+							subConfiguration, configurationSupport, null);
 					
 					EntityMappingConfiguration<C, I> parentEffectiveConfiguration = new MethodReferenceDispatcher()
 							.redirect(EntityMappingConfiguration<C, I>::getPropertiesMapping, () -> {
@@ -276,17 +258,17 @@ public class PolymorphicMappingBuilder<C, I> extends AbstractEntityMappingBuilde
 								// uppest parent join persister that will be registered further
 								// also done to instantiate rigth type : subentity one
 								return new MethodReferenceDispatcher()
-										.redirect(EmbeddableMappingConfiguration<C>::getBeanType, () -> subEntityEffectiveConfiguration.getEntityType())
+										.redirect(EmbeddableMappingConfiguration<C>::getBeanType, () -> subEntityConfiguration.getEntityType())
 										.fallbackOn(configurationSupport.getPropertiesMapping())
 										.build((Class<EmbeddableMappingConfiguration<C>>) (Class) EmbeddableMappingConfiguration.class);
 							})
-							.redirect(EntityMappingConfiguration<C, I>::getEntityFactory, () -> (Function<Column, Object> f) -> Reflections.newInstance(subEntityEffectiveConfiguration.getEntityType()))
+							.redirect(EntityMappingConfiguration<C, I>::getEntityFactory, () -> (Function<Column, Object> f) -> Reflections.newInstance(subEntityConfiguration.getEntityType()))
 							.fallbackOn(configurationSupport)
 							.build((Class<EntityMappingConfiguration<C, I>>) (Class) EntityMappingConfiguration.class);
 					
 					
 					T subentityTargetTable =
-							persisterPerSubclass.get(subEntityEffectiveConfiguration.getEntityType()).getMappingStrategy().getTargetTable();
+							persisterPerSubclass.get(subEntityConfiguration.getEntityType()).getMappingStrategy().getTargetTable();
 					
 					EntityMappingBuilder<C, I> joinedTablesEntityMappingBuilder = new EntityMappingBuilder<C, I>(parentEffectiveConfiguration, methodSpy) {
 						@Override
@@ -298,8 +280,7 @@ public class PolymorphicMappingBuilder<C, I> extends AbstractEntityMappingBuilde
 					JoinedTablesPersister<C, I, T> pseudoParentPersister = (JoinedTablesPersister<C, I, T>) joinedTablesEntityMappingBuilder.doBuild(persistenceContext, targetTable);
 					
 					
-					EntityMappingBuilder<C, I> subEntityJoinedTablesEntityMappingBuilder = new EntityMappingBuilder<C, I>(
-							(EntityMappingConfiguration<C, I>) subEntityEffectiveConfiguration, methodSpy) {
+					EntityMappingBuilder<C, I> subEntityJoinedTablesEntityMappingBuilder = new EntityMappingBuilder<C, I>(subEntityConfiguration, methodSpy) {
 						
 						@Override
 						protected void registerPersister(JoinedTablesPersister persister, PersistenceContext persistenceContext) {
@@ -315,7 +296,7 @@ public class PolymorphicMappingBuilder<C, I> extends AbstractEntityMappingBuilde
 					pseudoParentPersister.getJoinedStrategiesSelectExecutor().addComplementaryJoin(JoinedStrategiesSelect.FIRST_STRATEGY_NAME,
 							subEntityJoinedTablesPersister.getMappingStrategy(), entityPrimaryKey, subEntityPrimaryKey);
 					
-					persisterPerSubclass2.put(subEntityEffectiveConfiguration.getEntityType(), pseudoParentPersister);
+					persisterPerSubclass2.put(subEntityConfiguration.getEntityType(), pseudoParentPersister);
 				}
 				
 				JoinedTablesPersister<C, I, T> result = new JoinedTablesPersister<C, I, T>(persistenceContext, mainMappingStrategy) {
@@ -434,11 +415,6 @@ public class PolymorphicMappingBuilder<C, I> extends AbstractEntityMappingBuilde
 		
 		// grouping all mapped properties into a mapping strategy so they can fit into the same table
 		List<Linkage> linkages = new ArrayList<>(configurationSupport.getPropertiesMapping().getPropertiesMapping());
-		for (EntityMappingConfigurationProvider<? extends C, I> subClass : polymorphismPolicy.getSubClasses()) {
-			// TODO: shall be removed when subclasses configurations will be embeddable ones, not entity ones (because we don't need identification to be redefined)
-			linkages.removeIf(linkage -> linkage.getAccessor() == subClass.getConfiguration().getIdentifierAccessor());
-		}
-		
 		EmbeddableMappingConfiguration allInheritedPropertiesConfiguration = new MethodReferenceDispatcher()
 				.redirect(EmbeddableMappingConfiguration<ColumnNamingStrategy>::getPropertiesMapping, () -> linkages)
 				.fallbackOn(configurationSupport.getPropertiesMapping())
@@ -452,11 +428,11 @@ public class PolymorphicMappingBuilder<C, I> extends AbstractEntityMappingBuilde
 				.fallbackOn(configurationSupport)
 				.build((Class<EntityMappingConfiguration<C, I>>) (Class) EntityMappingConfiguration.class);
 		
-		Map<EntityMappingConfiguration, Table> subclassTables = new HashMap<>();
-		for (EntityMappingConfigurationProvider<? extends C, I> subConfiguration : polymorphismPolicy.getSubClasses()) {
+		Map<SubEntityMappingConfiguration, Table> subclassTables = new HashMap<>();
+		for (SubEntityMappingConfiguration<? extends C, I> subConfiguration : polymorphismPolicy.getSubClasses()) {
 			Table subclassTable = Nullable.nullable(polymorphismPolicy.giveTable(subConfiguration))
-					.getOr(() -> new Table(configurationSupport.getTableNamingStrategy().giveName(subConfiguration.getConfiguration().getEntityType())));
-			subclassTables.put(subConfiguration.getConfiguration(), subclassTable);
+					.getOr(() -> new Table(configurationSupport.getTableNamingStrategy().giveName(subConfiguration.getEntityType())));
+			subclassTables.put(subConfiguration, subclassTable);
 		}
 		
 		EntityMappingBuilder<C, I> polymorphicMappingBuilder = new EntityMappingBuilder<C, I>(subClassEffectiveConfiguration, methodSpy) {
@@ -466,17 +442,9 @@ public class PolymorphicMappingBuilder<C, I> extends AbstractEntityMappingBuilde
 				
 				Map<Class<? extends C>, JoinedTablesPersister<C, I, T>> persisterPerSubclass = new HashMap<>();
 				
-				for (EntityMappingConfigurationProvider<? extends C, I> subConfiguration : polymorphismPolicy.getSubClasses()) {
-					EntityMappingConfiguration<C, I> subEntityConfiguration = (EntityMappingConfiguration<C, I>) subConfiguration.getConfiguration();
-					
-					
-					// Adding parent properties to subclass mapping, mainly for select purpose, because it is done by subclass persister
-					// whereas insert / update / delete are done by their own executor 
-					EntityMappingConfiguration<C, I> subEntityEffectiveConfiguration = new MethodReferenceDispatcher()
-							.redirect(EntityMappingConfiguration<C, I>::getInheritanceConfiguration, () -> subClassEffectiveConfiguration)
-							.fallbackOn(subEntityConfiguration)
-							.build((Class<EntityMappingConfiguration<C, I>>) (Class) EntityMappingConfiguration.class);
-					
+				for (SubEntityMappingConfiguration<? extends C, I> subConfiguration : polymorphismPolicy.getSubClasses()) {
+					EntityMappingConfiguration<C, I> subEntityEffectiveConfiguration = composeEntityMappingConfiguration(
+							subConfiguration, configurationSupport, subClassEffectiveConfiguration);
 					
 					EntityMappingBuilder<C, I> subclassMappingBuilder = new EntityMappingBuilder<C, I>(subEntityEffectiveConfiguration, methodSpy) {
 						
@@ -486,8 +454,8 @@ public class PolymorphicMappingBuilder<C, I> extends AbstractEntityMappingBuilde
 							// through PersistenceContext#getPersister(Class) which is not expected from a implicit polymorphism (as opposed to an explicit one)
 						}
 					};
-					JoinedTablesPersister subclassPersister = subclassMappingBuilder.build(persistenceContext, subclassTables.get(subEntityConfiguration));
-					persisterPerSubclass.put(subConfiguration.getConfiguration().getEntityType(), subclassPersister);
+					JoinedTablesPersister subclassPersister = subclassMappingBuilder.build(persistenceContext, subclassTables.get(subConfiguration));
+					persisterPerSubclass.put(subConfiguration.getEntityType(), subclassPersister);
 				}
 				
 				return new JoinedTablesPersister<C, I, T>(persistenceContext, mainMappingStrategy) {
@@ -737,5 +705,45 @@ public class PolymorphicMappingBuilder<C, I> extends AbstractEntityMappingBuilde
 			// NB: row count shall be the same between main inserts and subentities one
 			return mainDeleteExecutor.delete(entities);
 		}
+	}
+	
+	/**
+	 * Composes an {@link EntityMappingConfiguration} from a {@link SubEntityMappingConfiguration} making it looks like a real {@link EntityMappingConfiguration}.
+	 * Missing informations (such as identification, inheritance, etc) are taken from the given {@link EntityMappingConfiguration} which is expected
+	 * to be the parent configuration of the sub-entity one.
+	 * 
+	 * @param subEntityConfiguration the sub-entity configuration to be completed as an entity one
+	 * @param entityConfiguration the configuration that contains missing informations to the sub-entity configuration
+	 * @param entityInheritedConfiguration may be null, necessary to be given when table contains all properties (single-table or table-per-class)
+	 * @param <C> entity type
+	 * @param <I> identifier type
+	 * @return a new {@link EntityMappingConfiguration} that is a composition of sub-entity informations and entity ones
+	 */
+	private static <C, I> EntityMappingConfiguration<C, I> composeEntityMappingConfiguration(SubEntityMappingConfiguration<? extends C, I> subEntityConfiguration,
+																							 EntityMappingConfiguration<C, I> entityConfiguration,
+																							 EntityMappingConfiguration<C, I> entityInheritedConfiguration) {
+		return new MethodReferenceDispatcher()
+				.redirect(EntityMappingConfiguration<C, I>::getTableNamingStrategy, () -> entityConfiguration.getTableNamingStrategy())
+				.redirect(EntityMappingConfiguration<C, I>::getIdentifierPolicy, () -> entityConfiguration.getIdentifierPolicy())
+				.redirect(EntityMappingConfiguration<C, I>::getIdentifierAccessor, () -> entityConfiguration.getIdentifierAccessor())
+				.redirect(EntityMappingConfiguration<C, I>::getOptimisticLockOption, () -> entityConfiguration.getOptimisticLockOption())
+				// Adding parent properties to subclass mapping, mainly for select purpose, because it is done by subclass persister
+				// whereas insert / update / delete are done by their own executor
+				.redirect(EntityMappingConfiguration<C, I>::getInheritanceConfiguration, () -> entityInheritedConfiguration)
+				.redirect(EntityMappingConfiguration<C, I>::isJoinTable, () -> false)
+				.redirect(EntityMappingConfiguration<C, I>::getInheritanceTable, () -> null)
+				.redirect(EntityMappingConfiguration<C, I>::getForeignKeyNamingStrategy, () -> entityConfiguration.getForeignKeyNamingStrategy())
+				.redirect(EntityMappingConfiguration<C, I>::getAssociationTableNamingStrategy, () -> entityConfiguration.getAssociationTableNamingStrategy())
+				.redirect(EntityMappingConfiguration<C, I>::getJoinColumnNamingStrategy, () -> entityConfiguration.getJoinColumnNamingStrategy())
+				.redirect(EntityMappingConfiguration<C, I>::getPolymorphismPolicy, () -> null)	// throw new IllegalStateException() ?
+				//java.lang.IllegalArgumentException: Wrong given instance while invoking o.g.s.p.e.EntityMappingConfiguration.getPropertiesMapping(): expected org.gama.stalactite.persistence.engine.EntityMappingConfiguration but Dispatcher to org.gama.stalactite.persistence.engine.FluentSubEntityMappingConfigurationSupport@4516af24 was given
+				.redirect(EntityMappingConfiguration<C, I>::getPropertiesMapping, () -> subEntityConfiguration.getPropertiesMapping())
+				.redirect(EntityMappingConfiguration<C, I>::getEntityType, () -> subEntityConfiguration.getEntityType())
+				.redirect(EntityMappingConfiguration<C, I>::getEntityFactory, () -> subEntityConfiguration.getEntityFactory())
+				.redirect(EntityMappingConfiguration<C, I>::getOneToOnes, () -> subEntityConfiguration.getOneToOnes())
+				.redirect(EntityMappingConfiguration<C, I>::getOneToManys, () -> subEntityConfiguration.getOneToManys())
+				.redirect(EntityMappingConfiguration<C, I>::inheritanceIterable, () -> Arrays.asSet(entityConfiguration))
+				.fallbackOn(subEntityConfiguration)
+				.build((Class<EntityMappingConfiguration<C, I>>) (Class) EntityMappingConfiguration.class);
 	}
 }

@@ -11,7 +11,6 @@ import org.gama.reflection.MethodReferenceCapturer;
 import org.gama.reflection.MethodReferenceDispatcher;
 import org.gama.stalactite.persistence.engine.EmbeddableMappingBuilder.ColumnNameProvider;
 import org.gama.stalactite.persistence.engine.EmbeddableMappingConfiguration.Linkage;
-import org.gama.stalactite.persistence.engine.FluentEntityMappingConfigurationSupport.EntityLinkageByColumn;
 import org.gama.stalactite.persistence.engine.cascade.JoinedTablesPersister;
 import org.gama.stalactite.persistence.structure.Table;
 
@@ -142,7 +141,7 @@ public abstract class AbstractEntityMappingBuilder<C, I> {
 	@Nullable
 	protected Table giveTableUsedInMapping() {
 		Set<Table> usedTablesInMapping = Iterables.collect(configurationSupport.getPropertiesMapping().getPropertiesMapping(),
-				linkage -> linkage instanceof FluentEntityMappingConfigurationSupport.EntityLinkageByColumn,
+				linkage -> linkage instanceof EntityLinkageByColumn,
 				linkage -> ((EntityLinkageByColumn) linkage).getColumn().getTable(),
 				HashSet::new);
 		switch (usedTablesInMapping.size()) {

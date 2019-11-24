@@ -7,21 +7,32 @@ import java.util.function.Supplier;
 
 import org.danekja.java.util.function.serializable.SerializableBiConsumer;
 import org.danekja.java.util.function.serializable.SerializableFunction;
-import org.gama.lang.function.Serie;
 import org.gama.reflection.AccessorChain;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
 
 /**
- * An interface describing a fluent way to declare the persistence mapping of a class. 
- * Please note that it can't extend {@link IFluentEmbeddableMappingBuilder} because it clashes on the {@link #build(PersistenceContext)} methods that don't
- * have compatible return type.
- * 
+ * An interface describing a fluent way to declare a sub-entity (from polymorphism point of view) mapping of a class.
+ * As a difference with {@link IFluentEntityMappingBuilder}, there's no need to declare a build(..) method for it because it only acts as a
+ * configuration storage.
+ *
  * @author Guillaume Mary
  * @see MappingEase#entityBuilder(Class, Class)
- * @see #build(PersistenceContext)
  */
-public interface IFluentEntityMappingBuilder<C, I> extends IFluentEmbeddableMappingConfiguration<C>, PersisterBuilder<C, I> {
+public interface IFluentSubEntityMappingConfiguration<C, I> extends IFluentEmbeddableMappingConfiguration<C>, SubEntityMappingConfiguration<C, I> {
+	
+	/**
+	 * Always throws an exception since mapped super class is not supported in polymorphism definition.
+	 * The method comes from {@link IFluentEmbeddableMappingConfiguration}, extending it is a pure short-term design to quickly proof-of-concept the
+	 * idea : this design should be enhanced.
+	 * 
+	 * @param superMappingConfiguration
+	 * @return nothing since it always throws an exception
+	 */
+	@Override
+	default IFluentEmbeddableMappingConfiguration<C> mapSuperClass(EmbeddableMappingConfiguration<? super C> superMappingConfiguration) {
+		throw new UnsupportedOperationException();
+	}
 	
 	/* Overwritting methods signature to return a type that aggregates options of this class */
 	
@@ -49,29 +60,11 @@ public interface IFluentEntityMappingBuilder<C, I> extends IFluentEmbeddableMapp
 	
 	<E extends Enum<E>> IFluentMappingBuilderEnumOptions<C, I> addEnum(SerializableFunction<C, E> getter, Column<? extends Table, E> column);
 	
-	IFluentEntityMappingBuilder<C, I> columnNamingStrategy(ColumnNamingStrategy columnNamingStrategy);
-	
-	/**
-	 * Declares the inherited mapping.
-	 * Id policy must be defined in the given strategy, not by current configuration : if id policy is also / only defined by the current builder,
-	 * an exception will be thrown at build time.
-	 * 
-	 * @param mappingConfiguration a mapping configuration of a super type of the current mapped type
-	 * @return a enhanced version of {@code this} so one can add set options to the relationship or add mapping to {@code this}
-	 */
-	IFluentMappingBuilderInheritanceOptions<C, I> mapInheritance(EntityMappingConfiguration<? super C, I> mappingConfiguration);
-	
-	/**
-	 * Declares the mapping of a super class.
-	 * 
-	 * @param superMappingConfiguration a mapping configuration of a super type of the current mapped type
-	 * @return a enhanced version of {@code this} so one can add set options to the relationship or add mapping to {@code this}
-	 */
-	IFluentEntityMappingBuilder<C, I> mapSuperClass(EmbeddableMappingConfiguration<? super C> superMappingConfiguration);
+	IFluentSubEntityMappingConfiguration<C, I> columnNamingStrategy(ColumnNamingStrategy columnNamingStrategy);
 	
 	/**
 	 * Declares a direct relationship between current entity and some of type {@code O}.
-	 * 
+	 *
 	 * @param getter the way to get the target entity
 	 * @param mappingConfiguration the mapping configuration of the target entity
 	 * @param <O> type of target entity
@@ -144,7 +137,7 @@ public interface IFluentEntityMappingBuilder<C, I> extends IFluentEmbeddableMapp
 	 * Declares a relation between current entity and some of type {@code O} throught a {@link List}.
 	 * This method is dedicated to {@link List} because generic types are erased so you can't defined a generic type extending {@link List} and refine
 	 * return type or arguments in order to distinct it from a {@link Set} version.
-	 * 
+	 *
 	 * @param getter the way to get the {@link List} from source entities
 	 * @param mappingConfiguration the mapping configuration of the {@link List} entities 
 	 * @param <O> type of {@link List} element
@@ -177,28 +170,13 @@ public interface IFluentEntityMappingBuilder<C, I> extends IFluentEmbeddableMapp
 	@Override
 	<O> IFluentMappingBuilderEmbeddableOptions<C, I, O> embed(SerializableBiConsumer<C, O> getter, EmbeddedBeanMappingStrategyBuilder<O> embeddableMappingBuilder);
 	
-	IFluentEntityMappingBuilder<C, I> foreignKeyNamingStrategy(ForeignKeyNamingStrategy foreignKeyNamingStrategy);
-	
-	IFluentEntityMappingBuilder<C, I> joinColumnNamingStrategy(ColumnNamingStrategy columnNamingStrategy);
-	
-	IFluentEntityMappingBuilder<C, I> associationTableNamingStrategy(AssociationTableNamingStrategy associationTableNamingStrategy);
-	
-	<V> IFluentEntityMappingBuilder<C, I> versionedBy(SerializableFunction<C, V> getter);
-	
-	<V> IFluentEntityMappingBuilder<C, I> versionedBy(SerializableFunction<C, V> getter, Serie<V> sequence);
-	
-	IFluentEntityMappingBuilder<C, I> mapPolymorphism(PolymorphismPolicy polymorphismPolicy);
-	
-	interface IFluentMappingBuilderPropertyOptions<C, I> extends IFluentEntityMappingBuilder<C, I>, IFluentEmbeddableMappingConfigurationPropertyOptions<C>, ColumnOptions<C, I> {
-		
-		@Override
-		IFluentMappingBuilderPropertyOptions<C, I> identifier(IdentifierPolicy identifierPolicy);
+	interface IFluentMappingBuilderPropertyOptions<C, I> extends IFluentSubEntityMappingConfiguration<C, I>, IFluentEmbeddableMappingConfigurationPropertyOptions<C>, PropertyOptions {
 		
 		@Override
 		IFluentMappingBuilderPropertyOptions<C, I> mandatory();
 	}
 	
-	interface IFluentMappingBuilderOneToOneOptions<C, I, T extends Table> extends IFluentEntityMappingBuilder<C, I>,
+	interface IFluentMappingBuilderOneToOneOptions<C, I, T extends Table> extends IFluentSubEntityMappingConfiguration<C, I>, // OneToOneOptions<C, I, T> {
 			OneToOneOptions<IFluentMappingBuilderOneToOneOptions<C, I, T>, C, I, T> {
 		
 		/**
@@ -237,7 +215,7 @@ public interface IFluentEntityMappingBuilder<C, I> extends IFluentEmbeddableMapp
 		IFluentMappingBuilderOneToOneOptions<C, I, T> cascading(RelationMode relationMode);
 	}
 	
-	interface IFluentMappingBuilderOneToManyOptions<C, I, O, S extends Collection<O>> extends IFluentEntityMappingBuilder<C, I>, OneToManyOptions<C, I, O, S> {
+	interface IFluentMappingBuilderOneToManyOptions<C, I, O, S extends Collection<O>> extends IFluentSubEntityMappingConfiguration<C, I>, OneToManyOptions<C, I, O, S> {
 		
 		/**
 		 * Declaration overriden to adapt return type to this class.
@@ -277,7 +255,7 @@ public interface IFluentEntityMappingBuilder<C, I> extends IFluentEmbeddableMapp
 	/**
 	 * A merge of {@link IFluentMappingBuilderOneToManyOptions} and {@link IndexableCollectionOptions} to defined a one-to-many relation
 	 * with a indexed {@link java.util.Collection} such as a {@link List}
-	 * 
+	 *
 	 * @param <C> type of source entity
 	 * @param <I> type of identifier of source entity
 	 * @param <O> type of target entities
@@ -327,7 +305,7 @@ public interface IFluentEntityMappingBuilder<C, I> extends IFluentEmbeddableMapp
 	}
 	
 	interface IFluentMappingBuilderEmbedOptions<C, I, O>
-			extends IFluentEntityMappingBuilder<C, I>, IFluentEmbeddableMappingConfigurationEmbedOptions<C, O>, EmbedWithColumnOptions<O> {
+			extends IFluentSubEntityMappingConfiguration<C, I>, IFluentEmbeddableMappingConfigurationEmbedOptions<C, O>, EmbedWithColumnOptions<O> {
 		
 		/**
 		 * Overrides embedding with an existing column
@@ -371,7 +349,7 @@ public interface IFluentEntityMappingBuilder<C, I> extends IFluentEmbeddableMapp
 	 * @param <O>
 	 */
 	interface IFluentMappingBuilderEmbeddableOptions<C, I, O>
-		extends IFluentEntityMappingBuilder<C, I>,
+			extends IFluentSubEntityMappingConfiguration<C, I>,
 			IFluentEmbeddableMappingConfigurationEmbeddableOptions<C, O> {
 		
 		@Override
@@ -386,7 +364,7 @@ public interface IFluentEntityMappingBuilder<C, I> extends IFluentEmbeddableMapp
 	}
 	
 	interface IFluentMappingBuilderEnumOptions<C, I>
-			extends IFluentEntityMappingBuilder<C, I>,
+			extends IFluentSubEntityMappingConfiguration<C, I>,
 			IFluentEmbeddableMappingConfigurationEnumOptions<C> {
 		
 		@Override
@@ -399,15 +377,4 @@ public interface IFluentEntityMappingBuilder<C, I> extends IFluentEmbeddableMapp
 		IFluentMappingBuilderEnumOptions<C, I> mandatory();
 	}
 	
-	interface IFluentMappingBuilderInheritanceOptions<C, I>
-			extends IFluentEntityMappingBuilder<C, I>,
-			InheritanceOptions {
-		
-		@Override
-		IFluentMappingBuilderInheritanceOptions<C, I> withJoinedTable();
-		
-		@Override
-		IFluentMappingBuilderInheritanceOptions<C, I> withJoinedTable(Table parentTable);
-		
-	}
 }
