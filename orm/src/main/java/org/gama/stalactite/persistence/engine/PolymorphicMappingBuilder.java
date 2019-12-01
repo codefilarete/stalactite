@@ -21,6 +21,7 @@ import org.gama.lang.trace.ModifiableInt;
 import org.gama.reflection.MethodReferenceCapturer;
 import org.gama.reflection.MethodReferenceDispatcher;
 import org.gama.stalactite.persistence.engine.EmbeddableMappingConfiguration.Linkage;
+import org.gama.stalactite.persistence.engine.EntityMappingConfiguration.InheritanceConfiguration;
 import org.gama.stalactite.persistence.engine.PolymorphismPolicy.JoinedTablesPolymorphism;
 import org.gama.stalactite.persistence.engine.PolymorphismPolicy.SingleTablePolymorphism;
 import org.gama.stalactite.persistence.engine.PolymorphismPolicy.TablePerClassPolymorphism;
@@ -729,9 +730,22 @@ public class PolymorphicMappingBuilder<C, I> extends AbstractEntityMappingBuilde
 				.redirect(EntityMappingConfiguration<C, I>::getOptimisticLockOption, () -> entityConfiguration.getOptimisticLockOption())
 				// Adding parent properties to subclass mapping, mainly for select purpose, because it is done by subclass persister
 				// whereas insert / update / delete are done by their own executor
-				.redirect(EntityMappingConfiguration<C, I>::getInheritanceConfiguration, () -> entityInheritedConfiguration)
-				.redirect(EntityMappingConfiguration<C, I>::isJoinTable, () -> false)
-				.redirect(EntityMappingConfiguration<C, I>::getInheritanceTable, () -> null)
+				.redirect(EntityMappingConfiguration<C, I>::getInheritanceConfiguration, () -> entityInheritedConfiguration == null ? null : new InheritanceConfiguration() {
+					@Override
+					public EntityMappingConfiguration getConfiguration() {
+						return entityInheritedConfiguration;
+					}
+					
+					@Override
+					public boolean isJoinTable() {
+						return false;
+					}
+					
+					@Override
+					public Table getTable() {
+						return null;
+					}
+				})
 				.redirect(EntityMappingConfiguration<C, I>::getForeignKeyNamingStrategy, () -> entityConfiguration.getForeignKeyNamingStrategy())
 				.redirect(EntityMappingConfiguration<C, I>::getAssociationTableNamingStrategy, () -> entityConfiguration.getAssociationTableNamingStrategy())
 				.redirect(EntityMappingConfiguration<C, I>::getJoinColumnNamingStrategy, () -> entityConfiguration.getJoinColumnNamingStrategy())

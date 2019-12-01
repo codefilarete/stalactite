@@ -133,13 +133,13 @@ class EntityMappingBuilder<C, I> extends AbstractEntityMappingBuilder<C, I> {
 	private <T extends Table<?>> IEntityMappingStrategy<? super C, I, Table> giveInheritanceMapping(PersistenceContext persistenceContext, T table) {
 		IEntityMappingStrategy<? super C, I, Table> result = null;
 		if (configurationSupport.getInheritanceConfiguration() != null) {
-			if (configurationSupport.isJoinTable()) {
+			if (configurationSupport.getInheritanceConfiguration().isJoinTable()) {
 				// Note that generics can't be used because "<? super C> can't be instantiated directly"
 				result = new JoinedTablesEntityMappingBuilder(configurationSupport, methodSpy)
 						.build(persistenceContext, table)
 						.getMappingStrategy();
 			} else {
-				result = (IEntityMappingStrategy) new EntityMappingBuilder<C, I>((EntityMappingConfiguration<C, I>) configurationSupport.getInheritanceConfiguration(), methodSpy) {
+				result = (IEntityMappingStrategy) new EntityMappingBuilder<C, I>((EntityMappingConfiguration<C, I>) configurationSupport.getInheritanceConfiguration().getConfiguration(), methodSpy) {
 					/**
 					 * Overriden to invoke enclosing instance method because it can be overriden too, and this instance must call en enclosing one.
 					 * Else it is impossible to overriden inheritance registration

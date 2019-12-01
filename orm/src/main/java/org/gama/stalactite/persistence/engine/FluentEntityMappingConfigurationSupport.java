@@ -75,11 +75,7 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements IFluentEnt
 	
 	private OptimisticLockOption optimisticLockOption;
 	
-	private EntityMappingConfiguration<? super C, I> inheritanceConfiguration;
-	
-	private boolean joinTable = false;
-	
-	private Table targetParentTable;
+	private InheritanceConfigurationSupport<? super C, I> inheritanceConfiguration;
 	
 	private PolymorphismPolicy polymorphismPolicy;
 	
@@ -157,18 +153,8 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements IFluentEnt
 	}
 	
 	@Override
-	public EntityMappingConfiguration<? super C, I> getInheritanceConfiguration() {
+	public InheritanceConfiguration<? super C, I> getInheritanceConfiguration() {
 		return inheritanceConfiguration;
-	}
-	
-	@Override
-	public boolean isJoinTable() {
-		return this.joinTable;
-	}
-	
-	@Override
-	public Table getInheritanceTable() {
-		return targetParentTable;
 	}
 	
 	@Override
@@ -270,12 +256,12 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements IFluentEnt
 	
 	@Override
 	public IFluentMappingBuilderInheritanceOptions<C, I> mapInheritance(EntityMappingConfiguration<? super C, I> mappingConfiguration) {
-		inheritanceConfiguration = mappingConfiguration;
+		inheritanceConfiguration = new InheritanceConfigurationSupport<>(mappingConfiguration);
 		return new MethodReferenceDispatcher()
 				.redirect((SerializableFunction<InheritanceOptions, InheritanceOptions>) InheritanceOptions::withJoinedTable,
-						() -> this.joinTable = true)
+						() -> this.inheritanceConfiguration.joinTable = true)
 				.redirect((SerializableBiFunction<InheritanceOptions, Table, InheritanceOptions>) InheritanceOptions::withJoinedTable,
-						t -> { this.joinTable = true; this.targetParentTable = t;})
+						t -> { this.inheritanceConfiguration.joinTable = true; this.inheritanceConfiguration.table = t;})
 				.fallbackOn(this)
 				.build((Class<IFluentMappingBuilderInheritanceOptions<C, I>>) (Class) IFluentMappingBuilderInheritanceOptions.class);
 	}
@@ -625,7 +611,7 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements IFluentEnt
 			throw new MappingConfigurationException("Mapped super class and inheritance are not supported when they are combined, please remove one of them");
 		}
 		
-		if (inheritanceConfiguration != null && isJoinTable()) {
+		if (inheritanceConfiguration != null && inheritanceConfiguration.isJoinTable()) {
 			return new JoinedTablesEntityMappingBuilder<>(this, methodSpy)
 					.build(persistenceContext, targetTable);
 		} else if (polymorphismPolicy != null) {
@@ -825,4 +811,37 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements IFluentEnt
 		}
 	}
 	
+	/**
+	 * Stores informations of {@link InheritanceConfiguration}
+	 * 
+	 * @param <E> entity type
+	 * @param <I> identifier type
+	 */
+	static class InheritanceConfigurationSupport<E, I> implements InheritanceConfiguration<E, I> {
+		
+		private final EntityMappingConfiguration<E, I> configuration;
+		
+		private boolean joinTable = false;
+		
+		private Table table;
+		
+		InheritanceConfigurationSupport(EntityMappingConfiguration<E, I> configuration) {
+			this.configuration = configuration;
+		}
+		
+		@Override
+		public EntityMappingConfiguration<E, I> getConfiguration() {
+			return configuration;
+		}
+		
+		@Override
+		public boolean isJoinTable() {
+			return this.joinTable;
+		}
+		
+		@Override
+		public Table getTable() {
+			return this.table;
+		}
+	}
 }

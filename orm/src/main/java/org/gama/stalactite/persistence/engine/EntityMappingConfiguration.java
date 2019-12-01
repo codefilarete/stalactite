@@ -4,6 +4,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.function.Function;
 
+import org.gama.lang.Nullable;
 import org.gama.lang.collection.ReadOnlyIterator;
 import org.gama.reflection.IReversibleAccessor;
 import org.gama.stalactite.persistence.engine.ColumnOptions.IdentifierPolicy;
@@ -37,12 +38,10 @@ public interface EntityMappingConfiguration<C, I> {
 	
 	VersioningStrategy getOptimisticLockOption();
 	
+	/** Gives inheritance informations if inheritance has been defined, else returns null */
 	@SuppressWarnings("squid:S1452" /* Can't remove wildcard here because it requires to create a local generic "super" type which is forbidden */)
-	EntityMappingConfiguration<? super C, I> getInheritanceConfiguration();
-	
-	boolean isJoinTable();
-	
-	Table getInheritanceTable();
+	@javax.annotation.Nullable
+	InheritanceConfiguration<? super C, I> getInheritanceConfiguration();
 	
 	ForeignKeyNamingStrategy getForeignKeyNamingStrategy();
 	
@@ -69,9 +68,20 @@ public interface EntityMappingConfiguration<C, I> {
 			@Override
 			public EntityMappingConfiguration next() {
 				EntityMappingConfiguration result = this.next;
-				this.next = this.next.getInheritanceConfiguration();
+				this.next = Nullable.nullable(this.next.getInheritanceConfiguration()).map(InheritanceConfiguration::getConfiguration).get();
 				return result;
 			}
 		};
+	}
+	
+	interface InheritanceConfiguration<E, I> {
+		
+		/** Entity configuration */
+		EntityMappingConfiguration<E, I> getConfiguration();
+		
+		boolean isJoinTable();
+		
+		/** Table to be used in case of joined tables ({@link #isJoinTable()} returns true) */
+		Table getTable();
 	}
 }

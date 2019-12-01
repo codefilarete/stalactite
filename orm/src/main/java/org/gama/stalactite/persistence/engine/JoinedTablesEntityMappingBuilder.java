@@ -8,6 +8,7 @@ import java.util.function.Function;
 import org.gama.lang.collection.Iterables;
 import org.gama.reflection.IReversibleAccessor;
 import org.gama.reflection.MethodReferenceCapturer;
+import org.gama.stalactite.persistence.engine.EntityMappingConfiguration.InheritanceConfiguration;
 import org.gama.stalactite.persistence.engine.cascade.AfterUpdateSupport;
 import org.gama.stalactite.persistence.engine.cascade.BeforeDeleteByIdSupport;
 import org.gama.stalactite.persistence.engine.cascade.BeforeDeleteSupport;
@@ -144,9 +145,10 @@ public class JoinedTablesEntityMappingBuilder<C, I> extends AbstractEntityMappin
 	}
 	
 	private JoinedTablesPersister<? super C, I, Table> buildSuperPersister(PersistenceContext persistenceContext) {
-		EntityMappingBuilder<? super C, I> inheritanceMappingBuilder = new EntityMappingBuilder<>(configurationSupport.getInheritanceConfiguration(), methodSpy);
-		Table inheritanceTable = nullable(configurationSupport.getInheritanceTable()).getOr(
-				() -> new Table(configurationSupport.getTableNamingStrategy().giveName(configurationSupport.getInheritanceConfiguration().getEntityType())));
+		InheritanceConfiguration<? super C, I> inheritanceConfiguration = configurationSupport.getInheritanceConfiguration();
+		EntityMappingBuilder<? super C, I> inheritanceMappingBuilder = new EntityMappingBuilder<>(inheritanceConfiguration.getConfiguration(), methodSpy);
+		Table inheritanceTable = nullable(inheritanceConfiguration.getTable()).getOr(
+				() -> new Table(configurationSupport.getTableNamingStrategy().giveName(inheritanceConfiguration.getConfiguration().getEntityType())));
 		return inheritanceMappingBuilder.build(persistenceContext, inheritanceTable);
 	}
 }

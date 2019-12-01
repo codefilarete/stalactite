@@ -117,10 +117,10 @@ public abstract class AbstractEntityMappingBuilder<C, I> {
 			// Very first thing, determine identifier management and check some configuration
 			if (configurationSupport.getIdentifierAccessor() != null && configurationSupport.getInheritanceConfiguration() != null
 					// TODO : check for removal of this condition when subclasses will be defined with EmbeddableConfiguration, not EntityConfiguration
-					&& configurationSupport.getInheritanceConfiguration().getPolymorphismPolicy() == null) {
+					&& configurationSupport.getInheritanceConfiguration().getConfiguration().getPolymorphismPolicy() == null) {
 				throw new MappingConfigurationException("Defining an identifier while inheritance is used is not supported : "
 						+ Reflections.toString(configurationSupport.getEntityType()) + " defined identifier " + MemberDefinition.toString(configurationSupport.getIdentifierAccessor())
-						+ " while it inherits from " + Reflections.toString(configurationSupport.getInheritanceConfiguration().getEntityType()));
+						+ " while it inherits from " + Reflections.toString(configurationSupport.getInheritanceConfiguration().getConfiguration().getEntityType()));
 			}
 			
 			// Table must be created before giving it to further methods because it is mandatory for them
