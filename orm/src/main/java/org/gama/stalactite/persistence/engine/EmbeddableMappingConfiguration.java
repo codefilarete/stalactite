@@ -4,9 +4,10 @@ import javax.annotation.Nullable;
 import java.util.Collection;
 import java.util.List;
 
+import org.gama.lang.collection.ReadOnlyIterator;
 import org.gama.reflection.IReversibleAccessor;
-import org.gama.stalactite.sql.binder.ParameterBinder;
 import org.gama.stalactite.persistence.engine.FluentEmbeddableMappingConfigurationSupport.AbstractInset;
+import org.gama.stalactite.sql.binder.ParameterBinder;
 
 /**
  * Defines elements needed to configure a mapping of an embeddable class
@@ -25,6 +26,29 @@ public interface EmbeddableMappingConfiguration<C> {
 	<I extends AbstractInset<C, ?>> Collection<I> getInsets();
 	
 	ColumnNamingStrategy getColumnNamingStrategy();
+	
+	/**
+	 * @return an iterable for all inheritance configurations, including this
+	 */
+	default Iterable<EmbeddableMappingConfiguration> inheritanceIterable() {
+		
+		return () -> new ReadOnlyIterator<EmbeddableMappingConfiguration>() {
+			
+			private EmbeddableMappingConfiguration next = EmbeddableMappingConfiguration.this;
+			
+			@Override
+			public boolean hasNext() {
+				return next != null;
+			}
+			
+			@Override
+			public EmbeddableMappingConfiguration next() {
+				EmbeddableMappingConfiguration result = this.next;
+				this.next = this.next.getMappedSuperClassConfiguration();
+				return result;
+			}
+		};
+	}
 	
 	/**
 	 * Small constract for defining property configuration storage

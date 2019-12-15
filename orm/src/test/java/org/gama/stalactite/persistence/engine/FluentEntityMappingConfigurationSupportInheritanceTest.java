@@ -47,7 +47,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 /**
  * @author Guillaume Mary
  */
-class FluentEntityMappingConfigurationSupportInheritanceTest {
+public class FluentEntityMappingConfigurationSupportInheritanceTest {
 	
 	private static final HSQLDBDialect DIALECT = new HSQLDBDialect();
 	private final DataSource dataSource = new HSQLDBInMemoryDataSource();
@@ -594,7 +594,7 @@ class FluentEntityMappingConfigurationSupportInheritanceTest {
 		private final CarTable carTable = new CarTable("car");
 	}
 	
-	static abstract class AbstractVehicle implements Identified<Long> {
+	public static abstract class AbstractVehicle implements Identified<Long> {
 		
 		private Identifier<Long> id;
 		
@@ -640,7 +640,7 @@ class FluentEntityMappingConfigurationSupportInheritanceTest {
 		}
 	}
 	
-	static class Vehicle extends AbstractVehicle {
+	public static class Vehicle extends AbstractVehicle {
 		
 		private Color color;
 		
@@ -674,7 +674,7 @@ class FluentEntityMappingConfigurationSupportInheritanceTest {
 		}
 	}
 	
-	static class Color {
+	public static class Color {
 		
 		private int rgb;
 		
@@ -712,7 +712,7 @@ class FluentEntityMappingConfigurationSupportInheritanceTest {
 		}
 	}
 	
-	static class Car extends Vehicle {
+	public static class Car extends Vehicle {
 		
 		private String model;
 		
@@ -746,7 +746,7 @@ class FluentEntityMappingConfigurationSupportInheritanceTest {
 		
 	}
 	
-	static class Truk extends Vehicle {
+	public static class Truk extends Vehicle {
 		
 		public Truk() {
 		}
@@ -760,9 +760,11 @@ class FluentEntityMappingConfigurationSupportInheritanceTest {
 		}
 	}
 	
-	static class Engine implements Identified<Long> {
+	public static class Engine implements Identified<Long> {
 		
 		private Identifier<Long> id;
+		
+		private double displacement;
 		
 		public Engine() {
 		}
@@ -777,6 +779,14 @@ class FluentEntityMappingConfigurationSupportInheritanceTest {
 		
 		public Identifier<Long> getId() {
 			return id;
+		}
+		
+		public double getDisplacement() {
+			return displacement;
+		}
+		
+		public void setDisplacement(double displacement) {
+			this.displacement = displacement;
 		}
 		
 		@Override

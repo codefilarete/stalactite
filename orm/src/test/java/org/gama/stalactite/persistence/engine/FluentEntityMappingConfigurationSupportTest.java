@@ -710,7 +710,7 @@ public class FluentEntityMappingConfigurationSupportTest {
 					.embed(Country::getTimestamp)
 					.add(Country::getId)
 					.add(Country::setDescription, "zxx")
-					.mapSuperClass(new FluentEmbeddableMappingConfigurationSupport<>(Object.class))
+					.mapSuperClass(new FluentEmbeddableMappingConfigurationSupport<>(Country.class).getConfiguration())
 					.build(persistenceContext);
 		} catch (RuntimeException e) {
 			// Since we only want to test compilation, we don't care about that the above code throws an exception or not
@@ -724,7 +724,7 @@ public class FluentEntityMappingConfigurationSupportTest {
 					.embed(Country::getTimestamp)
 					.add(Country::getId, "zz")
 					.addOneToOne(Country::getPresident, MappingEase.entityBuilder(Person.class, long.class))
-					.mapSuperClass(new FluentEmbeddableMappingConfigurationSupport<>(Object.class))
+					.mapSuperClass((EmbeddableMappingConfigurationProvider<Country>) new FluentEmbeddableMappingConfigurationSupport<>(Country.class))
 					.add(Country::getDescription, "xx")
 					.build(persistenceContext);
 		} catch (RuntimeException e) {
@@ -735,7 +735,7 @@ public class FluentEntityMappingConfigurationSupportTest {
 			MappingEase.entityBuilder(Country.class, long.class)
 					.add(Country::getName)
 					.add(Country::getId, "zz")
-					.mapSuperClass(new FluentEmbeddableMappingConfigurationSupport<>(Object.class))
+					.mapSuperClass((EmbeddableMappingConfigurationProvider<Country>) new FluentEmbeddableMappingConfigurationSupport<>(Country.class))
 					// embed with setter
 					.embed(Country::setPresident)
 					// inner embed with setter
@@ -758,7 +758,7 @@ public class FluentEntityMappingConfigurationSupportTest {
 					.add(Country::getName)
 					.add(Country::getId, "zz")
 					.addOneToOne(Country::setPresident, MappingEase.entityBuilder(Person.class, long.class))
-					.mapSuperClass(new FluentEmbeddableMappingConfigurationSupport<>(Object.class))
+					.mapSuperClass((EmbeddableMappingConfigurationProvider<Country>) new FluentEmbeddableMappingConfigurationSupport<>(Country.class))
 					// embed with setter
 					.embed(Country::getPresident, personMappingBuilder)
 					.build(persistenceContext);
@@ -774,7 +774,7 @@ public class FluentEntityMappingConfigurationSupportTest {
 					.add(Country::getName)
 					.add(Country::getId, "zz")
 					.embed(Country::getPresident, personMappingBuilder)
-					.mapSuperClass(new FluentEmbeddableMappingConfigurationSupport<>(Object.class))
+					.mapSuperClass(new FluentEmbeddableMappingConfigurationSupport<>(Country.class).getConfiguration())
 					.addOneToOne(Country::setPresident, MappingEase.entityBuilder(Person.class, long.class))
 					// reusing embeddable ...
 					.embed(Country::getPresident, personMappingBuilder)

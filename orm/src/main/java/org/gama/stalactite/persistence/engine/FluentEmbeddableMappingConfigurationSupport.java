@@ -309,7 +309,7 @@ public class FluentEmbeddableMappingConfigurationSupport<C> implements IFluentEm
 					
 					@Override
 					public EmbedOptions innerEmbed(SerializableFunction getter) {
-						// this can hardly be reused in other innerMebd method due to currentInset() & newInset(..) invokation side effect :
+						// this can hardly be reused in other innerEmbed method due to currentInset() & newInset(..) invokation side effect :
 						// they must be call in order else it results in an endless loop
 						Inset parent = currentInset();
 						Inset<C, O> inset = newInset(getter);
@@ -320,7 +320,7 @@ public class FluentEmbeddableMappingConfigurationSupport<C> implements IFluentEm
 					
 					@Override
 					public EmbedOptions innerEmbed(SerializableBiConsumer setter) {
-						// this can hardly be reused in other innerMebd method due to currentInset() & newInset(..) invokation side effect :
+						// this can hardly be reused in other innerEmbed method due to currentInset() & newInset(..) invokation side effect :
 						// they must be call in order else it results in an endless loop
 						Inset parent = currentInset();
 						Inset<C, O> inset = newInset(setter);
@@ -444,7 +444,7 @@ public class FluentEmbeddableMappingConfigurationSupport<C> implements IFluentEm
 		}
 	}
 	
-	abstract static class AbstractInset<SRC, TRGT> {
+	public abstract static class AbstractInset<SRC, TRGT> {
 		private final Class<TRGT> embeddedClass;
 		private final PropertyAccessor<SRC, TRGT> accessor;
 		private final Method insetAccessor;
@@ -484,7 +484,7 @@ public class FluentEmbeddableMappingConfigurationSupport<C> implements IFluentEm
 		public abstract ValueAccessPointMap<String> getOverridenColumnNames();
 	}
 	
-	static class ImportedInset<SRC, TRGT> extends AbstractInset<SRC, TRGT> implements LambdaMethodUnsheller {
+	public static class ImportedInset<SRC, TRGT> extends AbstractInset<SRC, TRGT> implements LambdaMethodUnsheller {
 		
 		private final EmbeddedBeanMappingStrategyBuilder<TRGT> beanMappingBuilder;
 		private final ValueAccessPointMap<String> overridenColumnNames = new ValueAccessPointMap<>();
@@ -547,7 +547,7 @@ public class FluentEmbeddableMappingConfigurationSupport<C> implements IFluentEm
 	 * @param <SRC> the owner type
 	 * @param <TRGT> the target type
 	 */
-	static class Inset<SRC, TRGT> extends AbstractInset<SRC, TRGT> implements LambdaMethodUnsheller {
+	public static class Inset<SRC, TRGT> extends AbstractInset<SRC, TRGT> implements LambdaMethodUnsheller {
 		private final ValueAccessPointMap<String> overridenColumnNames = new ValueAccessPointMap<>();
 		private final ValueAccessPointSet excludedProperties = new ValueAccessPointSet();
 		private final LambdaMethodUnsheller lambdaMethodUnsheller;

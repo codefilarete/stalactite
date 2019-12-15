@@ -181,8 +181,8 @@ public class Table<SELF extends Table<SELF>> {
 		return newIndex;
 	}
 	
-	public Set<ForeignKey<SELF, Table>> getForeignKeys() {
-		return (Set<ForeignKey<SELF, Table>>) (Set) Collections.unmodifiableSet(foreignKeys);
+	public Set<ForeignKey<SELF, ?>> getForeignKeys() {
+		return Collections.unmodifiableSet(foreignKeys);
 	}
 	
 	public <T extends Table<T>, I> ForeignKey addForeignKey(String name, Column<SELF, I> column, Column<T, I> targetColumn) {

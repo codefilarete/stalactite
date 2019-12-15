@@ -11,9 +11,7 @@ import org.gama.stalactite.persistence.structure.Table;
  * @see #build(Dialect)
  * @see #build(Dialect, Table)
  */
-public interface EmbeddedBeanMappingStrategyBuilder<C> {
-	
-	EmbeddableMappingConfiguration<C> getConfiguration();
+public interface EmbeddedBeanMappingStrategyBuilder<C> extends EmbeddableMappingConfigurationProvider<C> {
 	
 	EmbeddedBeanMappingStrategy<C, Table> build(Dialect dialect);
 	

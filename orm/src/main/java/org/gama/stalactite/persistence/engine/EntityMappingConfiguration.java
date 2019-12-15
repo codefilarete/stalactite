@@ -54,11 +54,11 @@ public interface EntityMappingConfiguration<C, I> {
 	/**
 	 * @return an iterable for all inheritance configurations, including this
 	 */
-	default Iterable<EntityMappingConfiguration> inheritanceIterable() {
+	default Iterable<EntityMappingConfiguration<? super C, I>> inheritanceIterable() {
 		
-		return () -> new ReadOnlyIterator<EntityMappingConfiguration>() {
+		return () -> new ReadOnlyIterator<EntityMappingConfiguration<? super C, I>>() {
 			
-			private EntityMappingConfiguration next = EntityMappingConfiguration.this;
+			private EntityMappingConfiguration<? super C, I> next = EntityMappingConfiguration.this;
 			
 			@Override
 			public boolean hasNext() {
@@ -66,8 +66,8 @@ public interface EntityMappingConfiguration<C, I> {
 			}
 			
 			@Override
-			public EntityMappingConfiguration next() {
-				EntityMappingConfiguration result = this.next;
+			public EntityMappingConfiguration<? super C, I> next() {
+				EntityMappingConfiguration<? super C, I> result = this.next;
 				this.next = Nullable.nullable(this.next.getInheritanceConfiguration()).map(InheritanceConfiguration::getConfiguration).get();
 				return result;
 			}

@@ -61,6 +61,10 @@ public interface IFluentEntityMappingBuilder<C, I> extends IFluentEmbeddableMapp
 	 */
 	IFluentMappingBuilderInheritanceOptions<C, I> mapInheritance(EntityMappingConfiguration<? super C, I> mappingConfiguration);
 	
+	default IFluentMappingBuilderInheritanceOptions<C, I> mapInheritance(EntityMappingConfigurationProvider<? super C, I> mappingConfigurationProvider) {
+		return this.mapInheritance(mappingConfigurationProvider.getConfiguration());
+	}
+	
 	/**
 	 * Declares the mapping of a super class.
 	 * 
@@ -68,6 +72,10 @@ public interface IFluentEntityMappingBuilder<C, I> extends IFluentEmbeddableMapp
 	 * @return a enhanced version of {@code this} so one can add set options to the relationship or add mapping to {@code this}
 	 */
 	IFluentEntityMappingBuilder<C, I> mapSuperClass(EmbeddableMappingConfiguration<? super C> superMappingConfiguration);
+	
+	default IFluentEntityMappingBuilder<C, I> mapSuperClass(EmbeddableMappingConfigurationProvider<? super C> superMappingConfigurationProvider) {
+		return this.mapSuperClass(superMappingConfigurationProvider.getConfiguration());
+	}
 	
 	/**
 	 * Declares a direct relationship between current entity and some of type {@code O}.

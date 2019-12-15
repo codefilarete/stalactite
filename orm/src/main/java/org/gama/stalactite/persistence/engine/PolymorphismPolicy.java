@@ -81,7 +81,7 @@ public interface PolymorphismPolicy {
 		}
 		
 		@Nullable
-		public Table giveTable(EntityMappingConfigurationProvider<? extends C, I> key) {
+		public Table giveTable(SubEntityMappingConfiguration key) {
 			return Iterables.find(subClasses, duo -> duo.getLeft().equals(key)).getRight();
 		}
 	}

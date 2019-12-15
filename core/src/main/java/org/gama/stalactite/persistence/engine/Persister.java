@@ -29,17 +29,17 @@ import org.gama.stalactite.sql.ConnectionProvider;
 @Nonnull
 public class Persister<C, I, T extends Table> {
 	
+	private final IEntityMappingStrategy<C, I, T> mappingStrategy;
 	private final ConnectionProvider connectionProvider;
 	private final DMLGenerator dmlGenerator;
 	private final Retryer writeOperationRetryer;
 	private final int batchSize;
 	private final int inOperatorMaxSize;
-	private IEntityMappingStrategy<C, I, T> mappingStrategy;
 	private PersisterListener<C, I> persisterListener = new PersisterListener<>();
-	private InsertExecutor<C, I, T> insertExecutor;
-	private UpdateExecutor<C, I, T> updateExecutor;
-	private DeleteExecutor<C, I, T> deleteExecutor;
-	private ISelectExecutor<C, I> selectExecutor;
+	private final InsertExecutor<C, I, T> insertExecutor;
+	private final UpdateExecutor<C, I, T> updateExecutor;
+	private final DeleteExecutor<C, I, T> deleteExecutor;
+	private final ISelectExecutor<C, I> selectExecutor;
 	
 	public Persister(IEntityMappingStrategy<C, I, T> mappingStrategy, PersistenceContext persistenceContext) {
 		this(mappingStrategy, persistenceContext.getDialect(), persistenceContext.getConnectionProvider(), persistenceContext.getJDBCBatchSize());
@@ -65,12 +65,27 @@ public class Persister<C, I, T extends Table> {
 				getMappingStrategy().getIdMappingStrategy().getIdentifierInsertionManager().getInsertListener());
 	}
 	
+	public Persister(ConnectionProvider connectionProvider, DMLGenerator dmlGenerator, Retryer writeOperationRetryer, int batchSize,
+					 int inOperatorMaxSize, IEntityMappingStrategy<C, I, T> mappingStrategy, InsertExecutor<C, I, T> insertExecutor,
+					 UpdateExecutor<C, I, T> updateExecutor, DeleteExecutor<C, I, T> deleteExecutor, ISelectExecutor<C, I> selectExecutor) {
+		this.mappingStrategy = mappingStrategy;
+		this.connectionProvider = connectionProvider;
+		this.dmlGenerator = dmlGenerator;
+		this.writeOperationRetryer = writeOperationRetryer;
+		this.batchSize = batchSize;
+		this.inOperatorMaxSize = inOperatorMaxSize;
+		this.insertExecutor = insertExecutor;
+		this.updateExecutor = updateExecutor;
+		this.deleteExecutor = deleteExecutor;
+		this.selectExecutor = selectExecutor;
+	}
+	
 	protected InsertExecutor<C, I, T> newInsertExecutor(IEntityMappingStrategy<C, I, T> mappingStrategy,
-																ConnectionProvider connectionProvider,
-																DMLGenerator dmlGenerator,
-																Retryer writeOperationRetryer,
-																int jdbcBatchSize,
-																int inOperatorMaxSize) {
+														ConnectionProvider connectionProvider,
+														DMLGenerator dmlGenerator,
+														Retryer writeOperationRetryer,
+														int jdbcBatchSize,
+														int inOperatorMaxSize) {
 		return new InsertExecutor<>(mappingStrategy, connectionProvider, dmlGenerator,
 				writeOperationRetryer, jdbcBatchSize, inOperatorMaxSize);
 	}

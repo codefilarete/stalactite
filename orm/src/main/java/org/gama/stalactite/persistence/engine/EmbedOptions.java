@@ -39,7 +39,6 @@ public interface EmbedOptions<C> {
 	 * @param <IN> input of the function (type of the embedded element)
 	 * @return a mapping configurer, specialized for embedded elements
 	 */
-	
 	<IN> EmbedOptions<IN> innerEmbed(SerializableBiConsumer<C, IN> setter);
 	
 	<IN> EmbedOptions<C> exclude(SerializableFunction<C, IN> getter);

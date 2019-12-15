@@ -16,7 +16,7 @@ import static org.gama.lang.collection.Iterables.pair;
  * 
  * @author Guillaume Mary
  */
-public class ForeignKey<T extends Table, U extends Table> {
+public class ForeignKey<T extends Table<T>, U extends Table<U>> {
 	
 	private final T table;
 	private final String name;
