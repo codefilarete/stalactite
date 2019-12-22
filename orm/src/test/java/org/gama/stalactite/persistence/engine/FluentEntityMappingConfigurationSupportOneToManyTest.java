@@ -7,6 +7,7 @@ import java.sql.SQLException;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.TreeSet;
 import java.util.function.Function;
 
@@ -15,12 +16,6 @@ import org.gama.lang.collection.Iterables;
 import org.gama.lang.collection.Maps;
 import org.gama.lang.function.ThrowingSupplier;
 import org.gama.lang.test.Assertions;
-import org.gama.stalactite.sql.ConnectionProvider;
-import org.gama.stalactite.sql.binder.DefaultParameterBinders;
-import org.gama.stalactite.sql.result.ResultSetIterator;
-import org.gama.stalactite.sql.result.Row;
-import org.gama.stalactite.sql.result.RowIterator;
-import org.gama.stalactite.sql.test.HSQLDBInMemoryDataSource;
 import org.gama.stalactite.persistence.engine.CascadeOptions.RelationMode;
 import org.gama.stalactite.persistence.engine.ColumnOptions.IdentifierPolicy;
 import org.gama.stalactite.persistence.engine.IFluentEntityMappingBuilder.IFluentMappingBuilderPropertyOptions;
@@ -36,6 +31,12 @@ import org.gama.stalactite.persistence.id.provider.LongProvider;
 import org.gama.stalactite.persistence.sql.HSQLDBDialect;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
+import org.gama.stalactite.sql.ConnectionProvider;
+import org.gama.stalactite.sql.binder.DefaultParameterBinders;
+import org.gama.stalactite.sql.result.ResultSetIterator;
+import org.gama.stalactite.sql.result.Row;
+import org.gama.stalactite.sql.result.RowIterator;
+import org.gama.stalactite.sql.test.HSQLDBInMemoryDataSource;
 import org.gama.stalactite.test.JdbcConnectionProvider;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -89,8 +90,7 @@ class FluentEntityMappingConfigurationSupportOneToManyTest {
 		CITY_MAPPING_CONFIGURATION = MappingEase.entityBuilder(City.class,
 				Identifier.LONG_TYPE)
 				.add(City::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
-				.add(City::getName)
-				.add(City::getCountry);
+				.add(City::getName);
 	}
 	
 	@Test
@@ -122,18 +122,16 @@ class FluentEntityMappingConfigurationSupportOneToManyTest {
 				);
 			}
 		};
-		JdbcForeignKey foundForeignKey = Iterables.first(fkCityIterator);
+		Set<String> foundForeignKey = Iterables.collect(() -> fkCityIterator, JdbcForeignKey::getSignature, HashSet::new);
 		JdbcForeignKey expectedForeignKey = new JdbcForeignKey("FK_CITY_COUNTRYID_COUNTRY_ID", "CITY", "COUNTRYID", "COUNTRY", "ID");
-		assertEquals(expectedForeignKey.getSignature(), foundForeignKey.getSignature());
+		assertEquals(Arrays.asHashSet(expectedForeignKey.getSignature()), foundForeignKey);
 	}
 	
 	@Test
 	void build_mappedByDeclaredMapping_CRUDWorks() {
 		IFluentMappingBuilderPropertyOptions<City, Identifier<Long>> cityConfiguration = entityBuilder(City.class, LONG_TYPE)
 				.add(City::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
-				.add(City::getName)
-				// we add getCountry() to the mapping, that's the goal of our test
-				.add(City::getCountry);
+				.add(City::getName);
 		
 		Persister<Country, Identifier<Long>, Table> persister = entityBuilder(Country.class, LONG_TYPE)
 				.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
@@ -154,64 +152,6 @@ class FluentEntityMappingConfigurationSupportOneToManyTest {
 		country.addCity(lyon);
 		persister.insert(country);
 		
-		List<Long> cityCountryIds = persistenceContext.newQuery("select countryId from city", Long.class)
-				.mapKey(i -> i, "countryId", Long.class)
-				.execute();
-		
-		assertEquals(Arrays.asSet(country.getId().getSurrogate()), new HashSet<>(cityCountryIds));
-		
-		// testing select
-		Country loadedCountry = persister.select(country.getId());
-		assertEquals(Arrays.asHashSet("Grenoble", "Lyon"), Iterables.collect(loadedCountry.getCities(), City::getName, HashSet::new));
-		assertEquals(loadedCountry, Iterables.first(loadedCountry.getCities()).getCountry());
-		
-		// testing update : removal of a city, reversed column must be set to null
-		Country modifiedCountry = new Country(country.getId());
-		modifiedCountry.addCity(Iterables.first(country.getCities()));
-		
-		persister.update(modifiedCountry, country, false);
-		
-		cityCountryIds = persistenceContext.newQuery("select countryId from city", Long.class)
-				.mapKey(i -> i, "countryId", Long.class)
-				.execute();
-		assertEquals(Arrays.asSet(country.getId().getSurrogate(), null), new HashSet<>(cityCountryIds));
-		
-		// testing delete
-		persister.delete(modifiedCountry);
-		// referencing columns must be set to null (we didn't ask for delete orphan)
-		cityCountryIds = persistenceContext.newQuery("select countryId from city", Long.class)
-				.mapKey(i -> i, "countryId", Long.class)
-				.execute();
-		assertEquals(Arrays.asSet((Long) null), new HashSet<>(cityCountryIds));
-	}
-	
-	@Test
-	void build_mappedByNonDeclaredMapping_Set_CRUDWorks() {
-		IFluentMappingBuilderPropertyOptions<City, Identifier<Long>> cityConfiguration = entityBuilder(City.class, LONG_TYPE)
-				.add(City::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
-				.add(City::getName)
-				// we don't add getCountry() to the mapping, that's the goal of our test
-				//.add(City::getCountry)
-				;
-
-		Persister<Country, Identifier<Long>, Table> persister = entityBuilder(Country.class, LONG_TYPE)
-				.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
-				.addOneToManySet(Country::getCities, cityConfiguration)
-					.mappedBy(City::getCountry).cascading(ALL)
-				.build(persistenceContext);
-
-		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
-		ddlDeployer.deployDDL();
-
-		Country country = new Country(new PersistableIdentifier<>(1L));
-		City grenoble = new City(new PersistableIdentifier<>(13L));
-		grenoble.setName("Grenoble");
-		country.addCity(grenoble);
-		City lyon = new City(new PersistableIdentifier<>(17L));
-		lyon.setName("Lyon");
-		country.addCity(lyon);
-		persister.insert(country);
-
 		List<Long> cityCountryIds = persistenceContext.newQuery("select countryId from city", Long.class)
 				.mapKey(i -> i, "countryId", Long.class)
 				.execute();
@@ -448,7 +388,7 @@ class FluentEntityMappingConfigurationSupportOneToManyTest {
 				{ (ThrowingSupplier<Persister<Country, Identifier<Long>, ?>, SQLException>) () -> {
 					PersistenceContext persistenceContext = new PersistenceContext(new JdbcConnectionProvider(new HSQLDBInMemoryDataSource()), DIALECT);
 					Table cityTable = new Table("city");
-					Column<Table, Country> countryId = cityTable.addColumn("countryId", Country.class);
+					Column<Table, Identifier> countryId = cityTable.addColumn("countryId", Identifier.class);
 					Persister<Country, Identifier<Long>, ?> countryPersister = MappingEase.entityBuilder(Country.class, Identifier.LONG_TYPE)
 							.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 							.add(Country::getName)

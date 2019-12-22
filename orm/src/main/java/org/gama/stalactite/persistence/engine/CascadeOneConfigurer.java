@@ -25,7 +25,6 @@ import org.gama.reflection.IAccessor;
 import org.gama.reflection.IMutator;
 import org.gama.reflection.IReversibleAccessor;
 import org.gama.reflection.MemberDefinition;
-import org.gama.reflection.MethodReferenceCapturer;
 import org.gama.reflection.ValueAccessPoint;
 import org.gama.reflection.ValueAccessPointMap;
 import org.gama.stalactite.persistence.engine.CascadeOptions.RelationMode;
@@ -38,6 +37,7 @@ import org.gama.stalactite.persistence.engine.cascade.BeforeInsertSupport;
 import org.gama.stalactite.persistence.engine.cascade.BeforeUpdateSupport;
 import org.gama.stalactite.persistence.engine.cascade.JoinedStrategiesSelect;
 import org.gama.stalactite.persistence.engine.cascade.JoinedTablesPersister;
+import org.gama.stalactite.persistence.engine.configurer.PersisterBuilderImpl;
 import org.gama.stalactite.persistence.engine.listening.DeleteListener;
 import org.gama.stalactite.persistence.engine.listening.InsertListener;
 import org.gama.stalactite.persistence.engine.listening.PersisterListener;
@@ -67,9 +67,15 @@ import static org.gama.stalactite.persistence.engine.CascadeOptions.RelationMode
 public class CascadeOneConfigurer<SRC, TRGT, ID> {
 	
 	private final PersistenceContext persistenceContext;
+	private final PersisterBuilderImpl<TRGT, ID> persisterBuilder;
 	
 	public CascadeOneConfigurer(PersistenceContext persistenceContext) {
+		this(persistenceContext, null);
+	}
+	
+	public CascadeOneConfigurer(PersistenceContext persistenceContext, PersisterBuilderImpl<TRGT, ID> persisterBuilder) {
 		this.persistenceContext = persistenceContext;
+		this.persisterBuilder = persisterBuilder;
 	}
 	
 	public <T extends Table<T>> void appendCascade(
@@ -80,9 +86,9 @@ public class CascadeOneConfigurer<SRC, TRGT, ID> {
 		
 		ConfigurerTemplate<SRC, TRGT, ID> configurer;
 		if (cascadeOne.isOwnedByReverseSide()) {
-			configurer = new RelationOwnedByTargetConfigurer<>(persistenceContext);
+			configurer = new RelationOwnedByTargetConfigurer<>(persistenceContext, persisterBuilder);
 		} else {
-			configurer = new RelationOwnedBySourceConfigurer<>(persistenceContext);
+			configurer = new RelationOwnedBySourceConfigurer<>(persistenceContext, persisterBuilder);
 		}
 		configurer.appendCascade(cascadeOne, sourcePersister, foreignKeyNamingStrategy, joinColumnNamingStrategy);
 	}
@@ -90,9 +96,11 @@ public class CascadeOneConfigurer<SRC, TRGT, ID> {
 	private abstract static class ConfigurerTemplate<SRC, TRGT, ID> {
 		
 		protected final PersistenceContext persistenceContext;
+		private final PersisterBuilder<TRGT, ID> persisterBuilder;
 		
-		ConfigurerTemplate(PersistenceContext persistenceContext) {
+		protected ConfigurerTemplate(PersistenceContext persistenceContext, PersisterBuilder<TRGT, ID> persisterBuilder) {
 			this.persistenceContext = persistenceContext;
+			this.persisterBuilder = persisterBuilder;
 		}
 		
 		<T extends Table<T>> Persister<TRGT, ID, Table> appendCascade(
@@ -114,7 +122,7 @@ public class CascadeOneConfigurer<SRC, TRGT, ID> {
 			
 			EntityMappingConfiguration<TRGT, ID> targetMappingConfiguration = cascadeOne.getTargetMappingConfiguration();
 			
-			JoinedTablesPersister<TRGT, ID, Table> targetPersister = new EntityMappingBuilder<>(targetMappingConfiguration, new MethodReferenceCapturer())
+			JoinedTablesPersister<TRGT, ID, Table> targetPersister = persisterBuilder
 					// please note that even if no table is found in configuration, build(..) will create one
 					.build(persistenceContext, Nullable.nullable(cascadeOne.getTargetTable()).getOr(Nullable.nullable(cascadeOne.getReverseColumn()).map(Column::getTable).get()));
 			IEntityMappingStrategy<TRGT, ID, Table> targetMappingStrategy = targetPersister.getMappingStrategy();
@@ -225,8 +233,8 @@ public class CascadeOneConfigurer<SRC, TRGT, ID> {
 	
 	private static class RelationOwnedBySourceConfigurer<SRC, TRGT, ID> extends ConfigurerTemplate<SRC, TRGT, ID> {
 		
-		private RelationOwnedBySourceConfigurer(PersistenceContext persistenceContext) {
-			super(persistenceContext);
+		private RelationOwnedBySourceConfigurer(PersistenceContext persistenceContext, PersisterBuilder<TRGT, ID> persisterBuilder) {
+			super(persistenceContext, persisterBuilder);
 		}
 		
 		@Override
@@ -351,8 +359,8 @@ public class CascadeOneConfigurer<SRC, TRGT, ID> {
 		@SuppressWarnings("squid:S2259")
 		private Column rightColumn;
 		
-		private RelationOwnedByTargetConfigurer(PersistenceContext persistenceContext) {
-			super(persistenceContext);
+		private RelationOwnedByTargetConfigurer(PersistenceContext persistenceContext, PersisterBuilder<TRGT, ID> persisterBuilder) {
+			super(persistenceContext, persisterBuilder);
 		}
 		
 		@Override

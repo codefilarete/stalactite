@@ -19,6 +19,8 @@ import org.gama.lang.StringAppender;
 import org.gama.lang.collection.Arrays;
 import org.gama.lang.collection.Iterables;
 import org.gama.reflection.AccessorByMember;
+import org.gama.reflection.AccessorByMethod;
+import org.gama.reflection.Accessors;
 import org.gama.reflection.IMutator;
 import org.gama.reflection.IReversibleAccessor;
 import org.gama.reflection.MemberDefinition;
@@ -30,6 +32,7 @@ import org.gama.stalactite.persistence.engine.CascadeOptions.RelationMode;
 import org.gama.stalactite.persistence.engine.builder.CascadeMany;
 import org.gama.stalactite.persistence.engine.builder.CascadeManyList;
 import org.gama.stalactite.persistence.engine.cascade.JoinedTablesPersister;
+import org.gama.stalactite.persistence.engine.configurer.PersisterBuilderImpl;
 import org.gama.stalactite.persistence.engine.runtime.AbstractOneToManyWithAssociationTableEngine;
 import org.gama.stalactite.persistence.engine.runtime.IndexedMappedManyRelationDescriptor;
 import org.gama.stalactite.persistence.engine.runtime.ManyRelationDescriptor;
@@ -63,9 +66,16 @@ import static org.gama.stalactite.persistence.engine.CascadeOptions.RelationMode
 public class CascadeManyConfigurer<SRC, TRGT, SRCID, TRGTID, C extends Collection<TRGT>> {
 	
 	private final PersistenceContext persistenceContext;
+	private final PersisterBuilderImpl<TRGT, TRGTID> persisterBuilder;
 	
 	public CascadeManyConfigurer(PersistenceContext persistenceContext) {
 		this.persistenceContext = persistenceContext;
+		this.persisterBuilder = null;
+	}
+	
+	public CascadeManyConfigurer(PersistenceContext persistenceContext, PersisterBuilderImpl<TRGT, TRGTID> persisterBuilder) {
+		this.persistenceContext = persistenceContext;
+		this.persisterBuilder = persisterBuilder;
 	}
 	
 	public <T extends Table<T>> void appendCascade(CascadeMany<SRC, TRGT, TRGTID, C> cascadeMany,
@@ -88,7 +98,7 @@ public class CascadeManyConfigurer<SRC, TRGT, SRCID, TRGTID, C extends Collectio
 		
 		// please note that even if no table is found in configuration, build(..) will create one
 		Table targetTable = nullable(cascadeMany.getTargetTable()).elseSet(reverseTable).elseSet(indexingTable).get();
-		JoinedTablesPersister<TRGT, TRGTID, ?> targetPersister = new EntityMappingBuilder<>(cascadeMany.getTargetMappingConfiguration(), new MethodReferenceCapturer())
+		JoinedTablesPersister<TRGT, TRGTID, ?> targetPersister = this.persisterBuilder
 				.build(persistenceContext, targetTable);
 		
 		// finding joined columns: left one is primary key. Right one is given by the target strategy through the property accessor
@@ -265,7 +275,7 @@ public class CascadeManyConfigurer<SRC, TRGT, SRCID, TRGTID, C extends Collectio
 			}
 			
 			// NB: index column is part of the primary key
-			AssociationTable intermediaryTable = new IndexedAssociationTable(null,
+			IndexedAssociationTable intermediaryTable = new IndexedAssociationTable(null,
 					associationTableName,
 					manyAssociationConfiguration.leftPrimaryKey,
 					rightPrimaryKey,
@@ -273,7 +283,7 @@ public class CascadeManyConfigurer<SRC, TRGT, SRCID, TRGTID, C extends Collectio
 					manyAssociationConfiguration.foreignKeyNamingStrategy);
 			AssociationRecordPersister<IndexedAssociationRecord, IndexedAssociationTable> indexedAssociationPersister =
 					new AssociationRecordPersister<>(
-							new IndexedAssociationRecordMappingStrategy((IndexedAssociationTable) intermediaryTable),
+							new IndexedAssociationRecordMappingStrategy(intermediaryTable),
 							dialect,
 							manyAssociationConfiguration.joinedTablesPersister.getConnectionProvider(),
 							manyAssociationConfiguration.joinedTablesPersister.getBatchSize());
@@ -346,6 +356,33 @@ public class CascadeManyConfigurer<SRC, TRGT, SRCID, TRGTID, C extends Collectio
 					targetMappingStrategy.addSilentColumnInserter(reverseColumn, srcidFromTargetSupplier);
 					targetMappingStrategy.addSilentColumnUpdater(reverseColumn, srcidFromTargetSupplier);
 				}
+			} else {
+				// Since reverse property accessor may not be declared the same way that it is present in ClassMappingStrategy
+				// we must use a ValueAccessPointMap which allows to compare different ValueAccessPoints
+				IEntityMappingStrategy<TRGT, TRGTID, ?> targetMappingStrategy = manyAssociationConfiguration.targetPersister.getMappingStrategy();
+				IEntityMappingStrategy<SRC, SRCID, ?> sourceMappingStrategy = manyAssociationConfiguration.joinedTablesPersister.getMappingStrategy();
+				
+				// Reverse side is surely defined by reverse method (because CascadeManyWithMappedAssociationConfigurer is invoked only
+				// when association is mapped by reverse side and reverse column is null),
+				// we look for the matching column
+				SerializableFunction<TRGT, SRC> finalReverseGetter;
+				if (manyAssociationConfiguration.cascadeMany.getReverseGetter() != null) {
+					finalReverseGetter = manyAssociationConfiguration.cascadeMany.getReverseGetter();
+				} else {
+					AccessorByMethod<TRGT, SRC> accessor = Accessors.accessorByMethod(
+							targetMappingStrategy.getClassToPersist(),
+							sourceMappingStrategy.getClassToPersist().getSimpleName().toLowerCase()
+					);
+					reversePropertyAccessor = new PropertyAccessor<>(accessor);
+					reverseGetter = accessor::get;
+					getterSignature = accessor.toString();
+					finalReverseGetter = reverseGetter;
+				}
+				
+				IdAccessor<SRC, SRCID> idAccessor = sourceMappingStrategy.getIdMappingStrategy().getIdAccessor();
+				Function<TRGT, SRCID> srcidFromTargetSupplier = trgt -> nullable(finalReverseGetter.apply(trgt)).map(idAccessor::getId).getOr((SRCID) null);
+				targetMappingStrategy.addSilentColumnInserter(reverseColumn, srcidFromTargetSupplier);
+				targetMappingStrategy.addSilentColumnUpdater(reverseColumn, srcidFromTargetSupplier);
 			}
 			
 			if (manyAssociationConfiguration.cascadeMany instanceof CascadeManyList) {

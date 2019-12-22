@@ -39,7 +39,6 @@ import static org.gama.stalactite.sql.binder.DefaultParameterBinders.INTEGER_PRI
 import static org.gama.stalactite.sql.binder.DefaultParameterBinders.LONG_PRIMITIVE_BINDER;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -224,14 +223,20 @@ public class FluentEntityMappingConfigurationSupportInheritanceTest {
 		
 		@Test
 		void columnNamingStrategyChanged_inBoth_lowestTakesPriority() {
+			ColumnNamingStrategy columnNamingStrategy = accessor -> {
+				if (accessor.getName().contains("Color")) {
+					return ColumnNamingStrategy.DEFAULT.giveName(accessor) + "_superCol";
+				} else {
+					return ColumnNamingStrategy.DEFAULT.giveName(accessor) + "_col";
+				}
+			};
 			Persister<Car, Identifier<Long>, ?> carPersister = entityBuilder(Car.class, LONG_TYPE)
 					.add(Car::getModel)
-					.columnNamingStrategy(accessor -> ColumnNamingStrategy.DEFAULT.giveName(accessor) + "_col")
+					.columnNamingStrategy(columnNamingStrategy)
 					// concrete class defines id
 					.add(Car::getId).identifier(ALREADY_ASSIGNED)
 					.mapSuperClass(MappingEase
 							.embeddableBuilder(Vehicle.class)
-							.columnNamingStrategy(accessor -> ColumnNamingStrategy.DEFAULT.giveName(accessor) + "_superCol")
 							.add(Vehicle::getColor).getConfiguration())
 					.build(persistenceContext);
 			
@@ -328,10 +333,10 @@ public class FluentEntityMappingConfigurationSupportInheritanceTest {
 					.mapInheritance(inheritanceConfiguration)
 					.build(persistenceContext);
 			
-			// as an inherited entity of non joined_tables policy, the table should not be in the context, but its persister does exist
+			// as an inherited entity of non joined_tables policy, the table should not be in the context, but its persister does not exist
 			Collection<Table> tables = DDLDeployer.collectTables(persistenceContext);
 			assertFalse(tables.contains(mappedSuperClassData.vehicleTable));
-			assertNotNull(persistenceContext.getPersister(Vehicle.class));
+			assertNull(persistenceContext.getPersister(Vehicle.class));
 			
 			// DML tests
 			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
@@ -391,7 +396,7 @@ public class FluentEntityMappingConfigurationSupportInheritanceTest {
 			Collection<Table> tables = DDLDeployer.collectTables(persistenceContext);
 			assertFalse(tables.contains(mappedSuperClassData.vehicleTable));
 			assertTrue(tables.contains(mappedSuperClassData.carTable));
-			assertNotNull(persistenceContext.getPersister(Vehicle.class));
+			assertNull(persistenceContext.getPersister(Vehicle.class));
 			
 			// DML tests
 			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
@@ -435,8 +440,6 @@ public class FluentEntityMappingConfigurationSupportInheritanceTest {
 			// as an inherited entity, the table should be in the context, and its persister does exist
 			assertEquals(Arrays.asHashSet("Car", "Vehicle", "AbstractVehicle"),
 					DDLDeployer.collectTables(persistenceContext).stream().map(Table::getName).collect(Collectors.toSet()));
-			assertEquals("AbstractVehicle", persistenceContext.getPersister(AbstractVehicle.class).getMainTable().getName());
-			assertEquals("Vehicle", persistenceContext.getPersister(Vehicle.class).getMainTable().getName());
 			assertEquals("Car", persistenceContext.getPersister(Car.class).getMainTable().getName());
 			
 			// DML tests

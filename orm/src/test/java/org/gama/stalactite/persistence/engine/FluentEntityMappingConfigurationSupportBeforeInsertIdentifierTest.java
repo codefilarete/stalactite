@@ -160,7 +160,7 @@ public class FluentEntityMappingConfigurationSupportBeforeInsertIdentifierTest {
 				.mapInheritance(inheritanceConfiguration2)
 				.build(persistenceContext);
 		
-		assertEquals("Car", persistenceContext.getPersister(Vehicle.class).getMainTable().getName());
+		assertEquals("Car", persistenceContext.getPersister(Car.class).getMainTable().getName());
 		
 		// DML tests
 		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
@@ -200,8 +200,6 @@ public class FluentEntityMappingConfigurationSupportBeforeInsertIdentifierTest {
 		
 		assertEquals(Arrays.asHashSet("Car", "Vehicle", "AbstractVehicle"),
 				DDLDeployer.collectTables(persistenceContext).stream().map(Table::getName).collect(Collectors.toSet()));
-		assertEquals("AbstractVehicle", persistenceContext.getPersister(AbstractVehicle.class).getMainTable().getName());
-		assertEquals("Vehicle", persistenceContext.getPersister(Vehicle.class).getMainTable().getName());
 		assertEquals("Car", persistenceContext.getPersister(Car.class).getMainTable().getName());
 		
 		// DML tests

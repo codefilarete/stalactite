@@ -38,6 +38,7 @@ import org.gama.stalactite.persistence.engine.IFluentEmbeddableMappingBuilder.IF
 import org.gama.stalactite.persistence.engine.builder.CascadeMany;
 import org.gama.stalactite.persistence.engine.builder.CascadeManyList;
 import org.gama.stalactite.persistence.engine.cascade.JoinedTablesPersister;
+import org.gama.stalactite.persistence.engine.configurer.PersisterBuilderImpl;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
 
@@ -318,7 +319,7 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements IFluentEnt
 		CascadeOne<C, O, J> cascadeOne = new CascadeOne<>(propertyAccessor, mappingConfiguration.getConfiguration(), table);
 		this.cascadeOnes.add(cascadeOne);
 		// we declare the column on our side
-		propertiesMappingConfigurationSurrogate.addMapping(propertyAccessor, giveMemberDefinition(accessorByMethodReference), null);
+//		propertiesMappingConfigurationSurrogate.addMapping(propertyAccessor, giveMemberDefinition(accessorByMethodReference), null);
 		return wrapForAdditionalOptions(cascadeOne);
 	}
 	
@@ -607,20 +608,21 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements IFluentEnt
 	
 	@Override
 	public <T extends Table> JoinedTablesPersister<C, I, T> build(PersistenceContext persistenceContext, @javax.annotation.Nullable T targetTable) {
-		if (inheritanceConfiguration != null && propertiesMappingConfigurationSurrogate.getMappedSuperClassConfiguration() != null) {
-			throw new MappingConfigurationException("Mapped super class and inheritance are not supported when they are combined, please remove one of them");
-		}
-		
-		if (inheritanceConfiguration != null && inheritanceConfiguration.isJoinTable()) {
-			return new JoinedTablesEntityMappingBuilder<>(this, methodSpy)
-					.build(persistenceContext, targetTable);
-		} else if (polymorphismPolicy != null) {
-			return new PolymorphicMappingBuilder<>(this, methodSpy)
-					.build(persistenceContext, targetTable);
-		} else {
-			return new EntityMappingBuilder<>(this, methodSpy)
-					.build(persistenceContext, targetTable);
-		}
+		return new PersisterBuilderImpl<>(this.getConfiguration()).build(persistenceContext, targetTable);
+//		if (inheritanceConfiguration != null && propertiesMappingConfigurationSurrogate.getMappedSuperClassConfiguration() != null) {
+//			throw new MappingConfigurationException("Mapped super class and inheritance are not supported when they are combined, please remove one of them");
+//		}
+//		
+//		if (inheritanceConfiguration != null && inheritanceConfiguration.isJoinTable()) {
+//			return new JoinedTablesEntityMappingBuilder<>(this, methodSpy)
+//					.build(persistenceContext, targetTable);
+//		} else if (polymorphismPolicy != null) {
+//			return new PolymorphicMappingBuilder<>(this, methodSpy)
+//					.build(persistenceContext, targetTable);
+//		} else {
+//			return new EntityMappingBuilder<>(this, methodSpy)
+//					.build(persistenceContext, targetTable);
+//		}
 	}
 	
 	/**

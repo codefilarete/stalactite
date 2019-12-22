@@ -21,7 +21,7 @@ import org.gama.stalactite.persistence.structure.Table;
  * @see MappingEase#entityBuilder(Class, Class)
  * @see #build(PersistenceContext)
  */
-public interface IFluentEntityMappingBuilder<C, I> extends IFluentEmbeddableMappingConfiguration<C>, PersisterBuilder<C, I> {
+public interface IFluentEntityMappingBuilder<C, I> extends IFluentEmbeddableMappingConfiguration<C>, PersisterBuilder<C, I>, EntityMappingConfigurationProvider<C, I> {
 	
 	/* Overwritting methods signature to return a type that aggregates options of this class */
 	

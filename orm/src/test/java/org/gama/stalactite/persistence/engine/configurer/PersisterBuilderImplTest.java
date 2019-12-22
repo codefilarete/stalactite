@@ -21,6 +21,7 @@ import org.gama.lang.test.Assertions;
 import org.gama.reflection.AccessorChain;
 import org.gama.reflection.IReversibleAccessor;
 import org.gama.reflection.PropertyAccessor;
+import org.gama.stalactite.persistence.engine.ColumnNamingStrategy;
 import org.gama.stalactite.persistence.engine.ColumnOptions.IdentifierPolicy;
 import org.gama.stalactite.persistence.engine.EntityMappingConfiguration;
 import org.gama.stalactite.persistence.engine.FluentEntityMappingConfigurationSupportInheritanceTest.AbstractVehicle;
@@ -28,6 +29,7 @@ import org.gama.stalactite.persistence.engine.FluentEntityMappingConfigurationSu
 import org.gama.stalactite.persistence.engine.FluentEntityMappingConfigurationSupportInheritanceTest.Color;
 import org.gama.stalactite.persistence.engine.FluentEntityMappingConfigurationSupportInheritanceTest.Truk;
 import org.gama.stalactite.persistence.engine.FluentEntityMappingConfigurationSupportInheritanceTest.Vehicle;
+import org.gama.stalactite.persistence.engine.ForeignKeyNamingStrategy;
 import org.gama.stalactite.persistence.engine.PersistenceContext;
 import org.gama.stalactite.persistence.engine.PolymorphismPolicy;
 import org.gama.stalactite.persistence.engine.TableNamingStrategy;
@@ -287,32 +289,35 @@ class PersisterBuilderImplTest {
 	
 	@Test
 	void collectEmbeddedMappingFromSubEntities() {
+		Table dummyCarTable = new Table("dummyCarTable");
 		PersisterBuilderImpl testInstance = new PersisterBuilderImpl(
 				entityBuilder(Car.class, Identifier.class)
 						.add(AbstractVehicle::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 						.embed(AbstractVehicle::getTimestamp)
 						.mapPolymorphism(PolymorphismPolicy.joinedTables()
 								.addSubClass(subentityBuilder(Car.class)
-									.add(Car::getModel))
+									.add(Car::getModel), dummyCarTable)
 								.addSubClass(subentityBuilder(Truk.class)
 									.add(Truk::getEngine))
 						));
 		
 		Table dummyTable = new Table("dummyTable");
 		testInstance.setColumnBinderRegistry(DIALECT.getColumnBinderRegistry())
+				.setTableNamingStrategy(TableNamingStrategy.DEFAULT)
 				.setTable(dummyTable);
 		
-		MappingPerTable map = testInstance.collectEmbeddedMappingFromSubEntities();
+		MappingPerTable mappingFromSubEntities = testInstance.collectEmbeddedMappingFromSubEntities();
+		Table trukTable = Iterables.find(mappingFromSubEntities.giveTables(), t -> "Truk".equals(t.getName()));
 		
 		// NB: containsOnly() doesn't work : returns false whereas result is good
 		// (probably due to ValueAccessPoint Comparator not used by containsOnly() method)
 		ArrayList<Entry<IReversibleAccessor, Column>> expected = new ArrayList<>(Maps
 				.forHashMap(IReversibleAccessor.class, Column.class)
 				.add(new PropertyAccessor<>(accessorByMethodReference(Car::getModel), mutatorByField(Car.class, "model")),
-						dummyTable.getColumn("model"))
+						dummyCarTable.getColumn("model"))
 				.entrySet());
 		expected.sort((e1, e2) -> String.CASE_INSENSITIVE_ORDER.compare(e1.toString(), e2.toString()));
-		ArrayList<Entry<IReversibleAccessor, Column>> actual = new ArrayList<>(map.giveMapping(new Table("Car")).entrySet());
+		ArrayList<Entry<IReversibleAccessor, Column>> actual = new ArrayList<>(mappingFromSubEntities.giveMapping(dummyCarTable).entrySet());
 		actual.sort((e1, e2) -> String.CASE_INSENSITIVE_ORDER.compare(e1.toString(), e2.toString()));
 		// Objects are similar but not equals so we compare them throught their footprint (truely comparing them is quite hard)
 		assertAllEquals(expected, actual, Object::toString);
@@ -320,10 +325,10 @@ class PersisterBuilderImplTest {
 		ArrayList<Entry<IReversibleAccessor, Column>> expected2 = new ArrayList<>(Maps
 				.forHashMap(IReversibleAccessor.class, Column.class)
 				.add(new PropertyAccessor<>(accessorByMethodReference(Truk::getEngine), mutatorByField(Truk.class, "engine")),
-						dummyTable.getColumn("engine"))
+						trukTable.getColumn("engine"))
 				.entrySet());
 		expected2.sort((e1, e2) -> String.CASE_INSENSITIVE_ORDER.compare(e1.toString(), e2.toString()));
-		ArrayList<Entry<IReversibleAccessor, Column>> actual2 = new ArrayList<>(map.giveMapping(new Table("Truk")).entrySet());
+		ArrayList<Entry<IReversibleAccessor, Column>> actual2 = new ArrayList<>(mappingFromSubEntities.giveMapping(trukTable).entrySet());
 		actual2.sort((e1, e2) -> String.CASE_INSENSITIVE_ORDER.compare(e1.toString(), e2.toString()));
 		// Objects are similar but not equals so we compare them throught their footprint (truely comparing them is quite hard)
 		assertAllEquals(expected2, actual2, Object::toString);
@@ -337,7 +342,9 @@ class PersisterBuilderImplTest {
 		
 		Table mainTable = new Table("AbstractVehicle");
 		PersisterBuilderImpl testInstance = new PersisterBuilderImpl(identifyingConfiguration)
-				.setTable(mainTable);
+				.setTable(mainTable)
+				.setColumnNamingStrategy(ColumnNamingStrategy.DEFAULT)
+				.setForeignKeyNamingStrategy(ForeignKeyNamingStrategy.DEFAULT);
 		testInstance.mapEntityConfigurationPerTable();
 		
 		Table tableB = new Table("Vehicle");

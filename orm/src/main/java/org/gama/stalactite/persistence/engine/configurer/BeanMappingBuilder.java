@@ -98,7 +98,7 @@ class BeanMappingBuilder {
 	 *
 	 * @return a {@link Map} representing the definition of the mapping declared by the {@link EmbeddableMappingConfiguration}
 	 */
-	private Map<IReversibleAccessor, Column> build(EmbeddableMappingConfiguration mappingConfiguration,
+	Map<IReversibleAccessor, Column> build(EmbeddableMappingConfiguration mappingConfiguration,
 												   Table targetTable, ColumnBinderRegistry columnBinderRegistry, ColumnNameProvider columnNameProvider) {
 		this.mappingConfiguration = mappingConfiguration;
 		this.columnNameProvider = columnNameProvider;
