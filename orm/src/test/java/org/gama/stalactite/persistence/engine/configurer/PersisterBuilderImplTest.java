@@ -104,6 +104,7 @@ class PersisterBuilderImplTest {
 		
 		Table dummyTable = new Table("Car");
 		testInstance.setColumnBinderRegistry(DIALECT.getColumnBinderRegistry())
+				.setColumnNamingStrategy(ColumnNamingStrategy.DEFAULT)
 				.setTable(dummyTable)
 				.mapEntityConfigurationPerTable();
 		
@@ -144,6 +145,7 @@ class PersisterBuilderImplTest {
 		
 		Table dummyTable = new Table("Car");
 		testInstance.setColumnBinderRegistry(DIALECT.getColumnBinderRegistry())
+				.setColumnNamingStrategy(ColumnNamingStrategy.DEFAULT)
 				.setTable(dummyTable)
 				.mapEntityConfigurationPerTable();
 		
@@ -192,6 +194,7 @@ class PersisterBuilderImplTest {
 		
 		
 		testInstance.setColumnBinderRegistry(DIALECT.getColumnBinderRegistry())
+				.setColumnNamingStrategy(ColumnNamingStrategy.DEFAULT)
 				.setTable(carTable)
 				.setTableNamingStrategy(TableNamingStrategy.DEFAULT)
 				.mapEntityConfigurationPerTable();
@@ -260,6 +263,7 @@ class PersisterBuilderImplTest {
 		
 		Table dummyTable = new Table("Car");
 		testInstance.setColumnBinderRegistry(DIALECT.getColumnBinderRegistry())
+				.setColumnNamingStrategy(ColumnNamingStrategy.DEFAULT)
 				.setTable(dummyTable)
 				.mapEntityConfigurationPerTable();
 		
@@ -303,6 +307,7 @@ class PersisterBuilderImplTest {
 		
 		Table dummyTable = new Table("dummyTable");
 		testInstance.setColumnBinderRegistry(DIALECT.getColumnBinderRegistry())
+				.setColumnNamingStrategy(ColumnNamingStrategy.DEFAULT)
 				.setTableNamingStrategy(TableNamingStrategy.DEFAULT)
 				.setTable(dummyTable);
 		

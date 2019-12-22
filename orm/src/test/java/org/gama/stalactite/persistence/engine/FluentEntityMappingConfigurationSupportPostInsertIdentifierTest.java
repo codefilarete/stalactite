@@ -114,6 +114,7 @@ public class FluentEntityMappingConfigurationSupportPostInsertIdentifierTest {
 				.mapInheritance(inheritanceConfiguration2)
 				.build(persistenceContext);
 		
+		// by default inheritance is single_table one, to comply with default JPA inheritance strategy
 		assertEquals("Car", persistenceContext.getPersister(Vehicle.class).getMainTable().getName());
 		
 		// DML tests
@@ -165,7 +166,7 @@ public class FluentEntityMappingConfigurationSupportPostInsertIdentifierTest {
 		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
 		ddlDeployer.deployDDL();
 		
-		Car dummyCar = new Car(1L);
+		Car dummyCar = new Car(null);
 		dummyCar.setModel("Renault");
 		
 		// insert test

@@ -39,6 +39,7 @@ import static org.gama.stalactite.sql.binder.DefaultParameterBinders.INTEGER_PRI
 import static org.gama.stalactite.sql.binder.DefaultParameterBinders.LONG_PRIMITIVE_BINDER;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -333,10 +334,10 @@ public class FluentEntityMappingConfigurationSupportInheritanceTest {
 					.mapInheritance(inheritanceConfiguration)
 					.build(persistenceContext);
 			
-			// as an inherited entity of non joined_tables policy, the table should not be in the context, but its persister does not exist
+			// as an inherited entity of non joined_tables policy, the table should not be in the context, but its persister does exist
 			Collection<Table> tables = DDLDeployer.collectTables(persistenceContext);
 			assertFalse(tables.contains(mappedSuperClassData.vehicleTable));
-			assertNull(persistenceContext.getPersister(Vehicle.class));
+			assertNotNull(persistenceContext.getPersister(Vehicle.class));
 			
 			// DML tests
 			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
@@ -392,11 +393,11 @@ public class FluentEntityMappingConfigurationSupportInheritanceTest {
 					.mapInheritance(inheritanceConfiguration2)
 					.build(persistenceContext);
 			
-			// as an inherited entity, the table should not be in the context, and its persister does not exist
+			// as an inherited entity, the table should not be in the context, and its persister does exist
 			Collection<Table> tables = DDLDeployer.collectTables(persistenceContext);
 			assertFalse(tables.contains(mappedSuperClassData.vehicleTable));
 			assertTrue(tables.contains(mappedSuperClassData.carTable));
-			assertNull(persistenceContext.getPersister(Vehicle.class));
+			assertNotNull(persistenceContext.getPersister(Vehicle.class));
 			
 			// DML tests
 			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);

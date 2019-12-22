@@ -43,7 +43,6 @@ import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
 
 import static org.gama.lang.Reflections.propertyName;
-import static org.gama.reflection.MemberDefinition.giveMemberDefinition;
 
 /**
  * A class that stores configuration made throught a {@link IFluentEntityMappingBuilder}
@@ -301,7 +300,6 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements IFluentEnt
 		CascadeOne<C, O, J> cascadeOne = new CascadeOne<>(propertyAccessor, mappingConfiguration.getConfiguration(), table);
 		this.cascadeOnes.add(cascadeOne);
 		// we declare the column on our side
-		propertiesMappingConfigurationSurrogate.addMapping(propertyAccessor, giveMemberDefinition(mutatorByMethodReference), null);
 		return wrapForAdditionalOptions(cascadeOne);
 	}
 	
@@ -319,7 +317,6 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements IFluentEnt
 		CascadeOne<C, O, J> cascadeOne = new CascadeOne<>(propertyAccessor, mappingConfiguration.getConfiguration(), table);
 		this.cascadeOnes.add(cascadeOne);
 		// we declare the column on our side
-//		propertiesMappingConfigurationSurrogate.addMapping(propertyAccessor, giveMemberDefinition(accessorByMethodReference), null);
 		return wrapForAdditionalOptions(cascadeOne);
 	}
 	
@@ -733,7 +730,7 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements IFluentEnt
 	 * @param <SRC> the owner type
 	 * @param <TRGT> the target type
 	 */
-	static class OverridableColumnInset<SRC, TRGT> extends Inset<SRC, TRGT> {
+	public static class OverridableColumnInset<SRC, TRGT> extends Inset<SRC, TRGT> {
 		
 		private final ValueAccessPointMap<Column> overridenColumns = new ValueAccessPointMap<>();
 		
@@ -749,7 +746,7 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements IFluentEnt
 			this.overridenColumns.put(new AccessorByMethodReference(methodRef), column);
 		}
 		
-		ValueAccessPointMap<Column> getOverridenColumns() {
+		public ValueAccessPointMap<Column> getOverridenColumns() {
 			return overridenColumns;
 		}
 	}

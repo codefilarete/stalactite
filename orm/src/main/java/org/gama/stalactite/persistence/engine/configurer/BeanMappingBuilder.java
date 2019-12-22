@@ -52,6 +52,7 @@ import org.gama.stalactite.persistence.engine.EmbeddableMappingConfiguration.Lin
 import org.gama.stalactite.persistence.engine.FluentEmbeddableMappingConfigurationSupport;
 import org.gama.stalactite.persistence.engine.FluentEmbeddableMappingConfigurationSupport.AbstractInset;
 import org.gama.stalactite.persistence.engine.FluentEmbeddableMappingConfigurationSupport.Inset;
+import org.gama.stalactite.persistence.engine.FluentEntityMappingConfigurationSupport.OverridableColumnInset;
 import org.gama.stalactite.persistence.engine.IFluentEmbeddableMappingConfiguration;
 import org.gama.stalactite.persistence.engine.IFluentEmbeddableMappingConfiguration.IFluentEmbeddableMappingConfigurationEmbedOptions;
 import org.gama.stalactite.persistence.engine.MappingConfigurationException;
@@ -76,7 +77,6 @@ import static org.gama.reflection.MethodReferences.toMethodReferenceString;
  * (hence they are not thread-safe) so one can override this class and reuse its instance to get same behavior.
  * 
  * @author Guillaume Mary
- * @see #build(EmbeddableMappingConfiguration, Table, ColumnBinderRegistry)   
  * @see #build(EmbeddableMappingConfiguration, Table, ColumnBinderRegistry, ColumnNameProvider)    
  */
 class BeanMappingBuilder {
@@ -87,11 +87,6 @@ class BeanMappingBuilder {
 	private ColumnBinderRegistry columnBinderRegistry;
 	/** Result of {@link #build(EmbeddableMappingConfiguration, Table, ColumnBinderRegistry, ColumnNameProvider)}, shared between methods */
 	protected Map<IReversibleAccessor, Column> result;
-	
-	Map<IReversibleAccessor, Column> build(EmbeddableMappingConfiguration mappingConfiguration,
-										   Table targetTable, ColumnBinderRegistry columnBinderRegistry) {
-		return build(mappingConfiguration, targetTable, columnBinderRegistry, new ColumnNameProvider(mappingConfiguration.getColumnNamingStrategy()));
-	}
 	
 	/**
 	 * Converts mapping definition of a {@link EmbeddableMappingConfiguration} into a simple {@link Map}
@@ -299,14 +294,14 @@ class BeanMappingBuilder {
 					} else {
 						// checking that column is not already mapped by a previous definition
 						Column finalTargetColumn = targetColumn;
-						Optional<Entry<IReversibleAccessor, Column>> existingMapping =
-								BeanMappingBuilder.this.result.entrySet().stream().filter(entry -> entry.getValue().equals(finalTargetColumn)).findFirst();
-						if (existingMapping.isPresent()) {
+						Entry<IReversibleAccessor, Column> existingMapping = Iterables.find(BeanMappingBuilder.this.result.entrySet(),
+								entry -> entry.getValue().equals(finalTargetColumn));
+						if (existingMapping != null) {
 							Method currentMethod = inset.getInsetAccessor();
 							String currentMethodReference = toMethodReferenceString(currentMethod);
 							throw new MappingConfigurationException("Error while mapping "
 									+ currentMethodReference + " : " + memberDefinition.toString()
-									+ " conflicts with " + MemberDefinition.toString(existingMapping.get().getKey()) + " because they use same column" +
+									+ " conflicts with " + MemberDefinition.toString(existingMapping.getKey()) + " because they use same column" +
 									", override one of their name to avoid the conflict" +
 									", see " + MethodReferences.toMethodReferenceString(
 									(SerializableTriFunction<EmbedOptions, SerializableFunction, String, EmbedOptions>) EmbedOptions::overrideName));
@@ -422,8 +417,12 @@ class BeanMappingBuilder {
 	 * @return the {@link Column} of the target table that should be used to the field
 	 */
 	protected Column findColumn(ValueAccessPoint valueAccessPoint, String defaultColumnName, Map<String, Column<Table, Object>> tableColumnsPerName, Inset<?, ?> configuration) {
-		String columnNameToSearch = preventNull(configuration.getOverridenColumnNames().get(valueAccessPoint), defaultColumnName);
-		return tableColumnsPerName.get(columnNameToSearch);
+		if (configuration instanceof OverridableColumnInset) {
+			return ((OverridableColumnInset<?, ?>) configuration).getOverridenColumns().get(valueAccessPoint);
+		} else {
+			String columnNameToSearch = preventNull(configuration.getOverridenColumnNames().get(valueAccessPoint), defaultColumnName);
+			return tableColumnsPerName.get(columnNameToSearch);
+		}
 	}
 	
 	/**
