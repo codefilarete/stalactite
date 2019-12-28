@@ -29,6 +29,7 @@ import org.gama.stalactite.persistence.engine.SubEntityMappingConfiguration;
 import org.gama.stalactite.persistence.engine.TableNamingStrategy;
 import org.gama.stalactite.persistence.engine.TablePerClassPolymorphicEntitySelectExecutor;
 import org.gama.stalactite.persistence.engine.TablePerClassPolymorphicSelectExecutor;
+import org.gama.stalactite.persistence.engine.cascade.JoinedStrategiesSelect;
 import org.gama.stalactite.persistence.engine.cascade.JoinedTablesPersister;
 import org.gama.stalactite.persistence.engine.cascade.JoinedTablesPersister.CriteriaProvider;
 import org.gama.stalactite.persistence.engine.cascade.JoinedTablesPersister.RelationalExecutableEntityQuery;
@@ -144,6 +145,13 @@ abstract class TablePerClassPolymorphismBuilder<C, I, T extends Table> implement
 				Entry::getKey,
 				Functions.<Entry<Class, JoinedTablesPersister>, JoinedTablesPersister, Table>chain(Entry::getValue, JoinedTablesPersister::getMainTable));
 		
+		
+		subEntitiesPersisters.forEach((type, persister) -> {
+			mainPersister.getJoinedStrategiesSelectExecutor().getJoinedStrategiesSelect().getJoinsRoot().projectTo(
+					persister.getJoinedStrategiesSelectExecutor().getJoinedStrategiesSelect(),
+					JoinedStrategiesSelect.FIRST_STRATEGY_NAME
+			);
+		});
 		
 		Map<Class<? extends C>, ISelectExecutor<C, I>> subEntitiesSelectors = Iterables.map(subEntitiesPersisters.entrySet(),
 				Entry::getKey,

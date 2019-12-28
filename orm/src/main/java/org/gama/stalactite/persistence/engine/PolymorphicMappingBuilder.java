@@ -194,7 +194,7 @@ public class PolymorphicMappingBuilder<C, I> extends AbstractEntityMappingBuilde
 					@Override
 					public void addPersisterJoins(String joinName, JoinedTablesPersister<?, I, ?> sourcePersister) {
 						StrategyJoins sourceJoinsSubgraphRoot = sourcePersister.getJoinedStrategiesSelectExecutor().getJoinedStrategiesSelect().getJoinsRoot();
-						getSingleTablePolymorphismSelectExecutor().getPersisterPerSubclass().values().forEach(select -> {
+						getSingleTablePolymorphismSelectExecutor().getSubEntitiesPersisters().values().forEach(select -> {
 							sourceJoinsSubgraphRoot.copyTo(select.getJoinedStrategiesSelectExecutor().getJoinedStrategiesSelect(), joinName);
 						});
 					}

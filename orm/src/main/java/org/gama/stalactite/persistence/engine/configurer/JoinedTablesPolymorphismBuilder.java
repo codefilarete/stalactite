@@ -199,6 +199,14 @@ abstract class JoinedTablesPolymorphismBuilder<C, I, T extends Table> implements
 				Iterables.map(entries, Entry::getKey, e -> e.getValue().getDeleteExecutor());
 		
 		
+		
+		subEntitiesPersisters.forEach((type, persister) -> {
+			mainPersister.getJoinedStrategiesSelectExecutor().getJoinedStrategiesSelect().getJoinsRoot().copyTo(
+					persister.getJoinedStrategiesSelectExecutor().getJoinedStrategiesSelect(),
+					JoinedStrategiesSelect.FIRST_STRATEGY_NAME
+			);
+		});
+		
 		JoinedTablesPolymorphismSelectExecutor<C, I, T> selectExecutor = new JoinedTablesPolymorphismSelectExecutor<>(
 				Iterables.map(subEntitiesPersisters.entrySet(),
 						Entry::getKey, Functions.chain(Entry<Class<? extends C>, JoinedTablesPersister<C, I, T>>::getValue, JoinedTablesPersister::getMainTable)),

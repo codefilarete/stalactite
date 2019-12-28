@@ -89,7 +89,7 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 					entityBuilder(Vehicle.class, LONG_TYPE)
 						.add(Vehicle::getId).identifier(ALREADY_ASSIGNED)
 						.addOneToOne(Vehicle::getEngine, entityBuilder(Engine.class, LONG_TYPE)
-																.add(Engine::getId).identifier(ALREADY_ASSIGNED))
+								.add(Engine::getId).identifier(ALREADY_ASSIGNED))
 						.mapPolymorphism(PolymorphismPolicy.<AbstractVehicle, Identifier<Long>>singleTable()
 								.addSubClass(subentityBuilder(Car.class)
 										.add(Car::getModel), "CAR")
@@ -98,20 +98,22 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 						.build(persistenceContext1),
 						persistenceContext1.getConnectionProvider() },
 				{	"joined tables",
-					entityBuilder(AbstractVehicle.class, LONG_TYPE)
-						.add(AbstractVehicle::getId).identifier(ALREADY_ASSIGNED)
+					entityBuilder(Vehicle.class, LONG_TYPE)
+						.add(Vehicle::getId).identifier(ALREADY_ASSIGNED)
+						.addOneToOne(Vehicle::getEngine, entityBuilder(Engine.class, LONG_TYPE)
+								.add(Engine::getId).identifier(ALREADY_ASSIGNED))
 						.mapPolymorphism(PolymorphismPolicy.<AbstractVehicle, Identifier<Long>>joinedTables()
 								.addSubClass(subentityBuilder(Car.class)
-										.add(Car::getId)
 										.add(Car::getModel))
 								.addSubClass(subentityBuilder(Truk.class)
-										.add(Truk::getId)
 										.add(Truk::getColor)))
 						.build(persistenceContext2),
 						persistenceContext2.getConnectionProvider() },
 				{	"table per class",
-					entityBuilder(AbstractVehicle.class, LONG_TYPE)
-						.add(AbstractVehicle::getId).identifier(ALREADY_ASSIGNED)
+					entityBuilder(Vehicle.class, LONG_TYPE)
+						.add(Vehicle::getId).identifier(ALREADY_ASSIGNED)
+							.addOneToOne(Vehicle::getEngine, entityBuilder(Engine.class, LONG_TYPE)
+									.add(Engine::getId).identifier(ALREADY_ASSIGNED))
 						.mapPolymorphism(PolymorphismPolicy.<AbstractVehicle, Identifier<Long>>tablePerClass()
 								.addSubClass(subentityBuilder(Car.class)
 										.add(Car::getModel))

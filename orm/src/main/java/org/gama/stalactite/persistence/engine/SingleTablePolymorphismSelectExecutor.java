@@ -31,14 +31,14 @@ import org.gama.stalactite.sql.result.RowIterator;
 public class SingleTablePolymorphismSelectExecutor<C, I, T extends Table, D>
 		implements ISelectExecutor<C, I>, JoinableSelectExecutor {
 	
-	private final Map<Class<? extends C>, JoinedTablesPersister<C, I, T>> persisterPerSubclass;
+	private final Map<Class<? extends C>, JoinedTablesPersister<C, I, T>> subEntitiesPersisters;
 	private final Column discriminatorColumn;
 	private final SingleTablePolymorphism polymorphismPolicy;
 	private final T table;
 	private final ConnectionProvider connectionProvider;
 	private final Dialect dialect;
 	
-	public SingleTablePolymorphismSelectExecutor(Map<Class<? extends C>, JoinedTablesPersister<C, I, T>> persisterPerSubclass,
+	public SingleTablePolymorphismSelectExecutor(Map<Class<? extends C>, JoinedTablesPersister<C, I, T>> subEntitiesPersisters,
 													   Column<T, D> discriminatorColumn,
 													   SingleTablePolymorphism polymorphismPolicy,
 													   T table,
@@ -49,11 +49,11 @@ public class SingleTablePolymorphismSelectExecutor<C, I, T extends Table, D>
 		this.connectionProvider = connectionProvider;
 		this.dialect = dialect;
 		this.discriminatorColumn = discriminatorColumn;
-		this.persisterPerSubclass = persisterPerSubclass;
+		this.subEntitiesPersisters = subEntitiesPersisters;
 	}
 	
-	public Map<Class<? extends C>, JoinedTablesPersister<C, I, T>> getPersisterPerSubclass() {
-		return persisterPerSubclass;
+	public Map<Class<? extends C>, JoinedTablesPersister<C, I, T>> getSubEntitiesPersisters() {
+		return subEntitiesPersisters;
 	}
 	
 	@Override
@@ -89,7 +89,7 @@ public class SingleTablePolymorphismSelectExecutor<C, I, T extends Table, D>
 		}
 		
 		List<C> result = new ArrayList<>();
-		idsPerSubclass.forEach((subclass, subclassIds) -> result.addAll(persisterPerSubclass.get(subclass).select(subclassIds)));
+		idsPerSubclass.forEach((subclass, subclassIds) -> result.addAll(subEntitiesPersisters.get(subclass).select(subclassIds)));
 		
 		return result;
 	}
@@ -102,7 +102,7 @@ public class SingleTablePolymorphismSelectExecutor<C, I, T extends Table, D>
 																				  Column<T2, ID> rightJoinColumn,
 																				  boolean isOuterJoin) {
 		Set<String> joinNames = new HashSet<>();
-		persisterPerSubclass.forEach((entityClass, persister) -> {
+		subEntitiesPersisters.forEach((entityClass, persister) -> {
 			String joinName = persister.getJoinedStrategiesSelectExecutor().addRelation(leftStrategyName, strategy, beanRelationFixer,
 					leftJoinColumn, rightJoinColumn, isOuterJoin);
 			joinNames.add(joinName);
@@ -123,7 +123,7 @@ public class SingleTablePolymorphismSelectExecutor<C, I, T extends Table, D>
 																						   Column<T1, ID> leftJoinColumn,
 																						   Column<T2, ID> rightJoinColumn) {
 		Set<String> joinNames = new HashSet<>();
-		persisterPerSubclass.forEach((entityClass, persister) -> {
+		subEntitiesPersisters.forEach((entityClass, persister) -> {
 			String joinName = persister.getJoinedStrategiesSelectExecutor().addComplementaryJoin(leftStrategyName, strategy,
 					leftJoinColumn, rightJoinColumn);
 			joinNames.add(joinName);

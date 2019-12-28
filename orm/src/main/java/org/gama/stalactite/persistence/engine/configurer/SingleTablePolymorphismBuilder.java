@@ -25,6 +25,7 @@ import org.gama.stalactite.persistence.engine.PolymorphismPolicy.SingleTablePoly
 import org.gama.stalactite.persistence.engine.SingleTablePolymorphismEntitySelectExecutor;
 import org.gama.stalactite.persistence.engine.SingleTablePolymorphismSelectExecutor;
 import org.gama.stalactite.persistence.engine.SubEntityMappingConfiguration;
+import org.gama.stalactite.persistence.engine.cascade.JoinedStrategiesSelect;
 import org.gama.stalactite.persistence.engine.cascade.JoinedTablesPersister;
 import org.gama.stalactite.persistence.engine.cascade.JoinedTablesPersister.CriteriaProvider;
 import org.gama.stalactite.persistence.engine.cascade.JoinedTablesPersister.RelationalExecutableEntityQuery;
@@ -135,14 +136,28 @@ class SingleTablePolymorphismBuilder<C, I, T extends Table, D> implements Polymo
 						c -> polymorphismPolicy.getDiscriminatorValue((Class<? extends C>) c.getClass()))
 		);
 		
+		subEntitiesPersisters.forEach((type, persister) -> {
+			mainPersister.getJoinedStrategiesSelectExecutor().getJoinedStrategiesSelect().getJoinsRoot().copyTo(
+					persister.getJoinedStrategiesSelectExecutor().getJoinedStrategiesSelect(),
+					JoinedStrategiesSelect.FIRST_STRATEGY_NAME
+			);
+		});
+		
 		SingleTablePolymorphismSelectExecutor<C, I, T, D> selectExecutor = new SingleTablePolymorphismSelectExecutor<>(
 				subEntitiesPersisters,
-				discriminatorColumn, polymorphismPolicy,
-				mainPersister.getMainTable(), connectionProvider, dialect);
+				discriminatorColumn,
+				polymorphismPolicy,
+				mainPersister.getMainTable(),
+				connectionProvider,
+				dialect);
 		
-		SingleTablePolymorphismEntitySelectExecutor<C, I, T, D> entitySelectExecutor =
-				new SingleTablePolymorphismEntitySelectExecutor<>(subEntitiesPersisters, discriminatorColumn, polymorphismPolicy,
-						mainPersister.getJoinedStrategiesSelectExecutor().getJoinedStrategiesSelect(), connectionProvider, dialect);
+		SingleTablePolymorphismEntitySelectExecutor<C, I, T, D> entitySelectExecutor = new SingleTablePolymorphismEntitySelectExecutor<>(
+				subEntitiesPersisters,
+				discriminatorColumn,
+				polymorphismPolicy,
+				mainPersister.getJoinedStrategiesSelectExecutor().getJoinedStrategiesSelect(),
+				connectionProvider,
+				dialect);
 		
 		EntityCriteriaSupport<C> criteriaSupport = new EntityCriteriaSupport<>(mainPersister.getMappingStrategy());
 		
@@ -212,6 +227,7 @@ class SingleTablePolymorphismBuilder<C, I, T extends Table, D> implements Polymo
 			
 			@Override
 			public int delete(Iterable<C> entities) {
+				// deleting throught main entity is suffiscient because subentities tables is also main entity one
 				return mainPersister.delete(entities);
 			}
 			

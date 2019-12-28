@@ -35,4 +35,6 @@ public abstract class AbstractJoin<O> {
 	public Column getRightJoinColumn() {
 		return rightJoinColumn;
 	}
+	
+	public abstract AbstractJoin<O> copyTo(Column leftJoinColumn);
 }

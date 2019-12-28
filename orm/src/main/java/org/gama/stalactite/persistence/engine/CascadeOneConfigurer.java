@@ -647,22 +647,44 @@ public class CascadeOneConfigurer<SRC, TRGT, ID> {
 		dialect.getJavaTypeToSqlTypeMapping().put(owningColumn, targetPrimaryKeySqlTypeName);
 		// Binding entity type : binder will get entity identifier
 		ParameterBinder ownerBinder = dialect.getColumnBinderRegistry().getBinder(memberDefinition.getMemberType());
-		dialect.getColumnBinderRegistry().register(owningColumn,
-				new NullAwareParameterBinder<>(new ParameterBinder<TRGT>() {
-					@Override
-					public void set(PreparedStatement preparedStatement, int valueIndex, TRGT value) throws SQLException {
-						ownerBinder.set(preparedStatement, valueIndex, targetIdAccessor.get(value));
-					}
-					
-					/**
-					 * This is never used because it should return an entity which can't be build here.
-					 * It will be by {@link org.gama.stalactite.persistence.engine.cascade.StrategyJoinsRowTransformer}
-					 * Hence this implementation returns null
-					 */
-					@Override
-					public TRGT get(ResultSet resultSet, String columnName) {
-						return null;
-					}
-				}));
+		dialect.getColumnBinderRegistry().register(owningColumn, new EntityBinder<>(ownerBinder, targetIdAccessor));
+	}
+	
+	private static class EntityBinder<E> extends NullAwareParameterBinder<E> {
+		
+		private final ParameterBinder ownerBinder;
+		private final IReversibleAccessor targetIdAccessor;
+		
+		private EntityBinder(ParameterBinder ownerBinder, IReversibleAccessor targetIdAccessor) {
+			super(new ParameterBinder<E>() {
+				@Override
+				public void set(PreparedStatement preparedStatement, int valueIndex, E value) throws SQLException {
+					ownerBinder.set(preparedStatement, valueIndex, targetIdAccessor.get(value));
+				}
+				
+				/**
+				 * This is never used because it should return an entity which can't be build here.
+				 * It will be by {@link org.gama.stalactite.persistence.engine.cascade.StrategyJoinsRowTransformer}
+				 * Hence this implementation returns null
+				 */
+				@Override
+				public E get(ResultSet resultSet, String columnName) {
+					return null;
+				}
+			});
+			this.ownerBinder = ownerBinder;
+			this.targetIdAccessor = targetIdAccessor;
+		}
+		
+		@Override
+		public boolean equals(Object o) {
+			if (this == o) return true;
+			if (!(o instanceof EntityBinder)) return false;
+			
+			EntityBinder<?> that = (EntityBinder<?>) o;
+			
+			if (!ownerBinder.equals(that.ownerBinder)) return false;
+			return targetIdAccessor.equals(that.targetIdAccessor);
+		}
 	}
 }

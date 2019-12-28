@@ -13,6 +13,7 @@ import java.util.Set;
 import java.util.function.Function;
 
 import org.gama.lang.Strings;
+import org.gama.lang.collection.Iterables;
 import org.gama.stalactite.persistence.engine.BeanRelationFixer;
 import org.gama.stalactite.persistence.engine.cascade.JoinedStrategiesSelect.StrategyJoins.RelationJoin;
 import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
@@ -345,11 +346,26 @@ public class JoinedStrategiesSelect<C, I, T extends Table> {
 		 * Copies this instance into given target at given join node name.
 		 * Used to plug this graph as a subgraph of a join node of the given target.
 		 * 
-		 * @param target the graph that must contain this subgraph
+		 * @param target the graph that will contain this subgraph after copy
 		 * @param targetJoinsNodeName join node target
 		 */
 		public void copyTo(JoinedStrategiesSelect target, String targetJoinsNodeName) {
 			target.getStrategyJoins(targetJoinsNodeName).joins.addAll(this.joins);
+		}
+		
+		/**
+		 * Almost the same as {@link #copyTo(JoinedStrategiesSelect, String)} but replaces left join columns (of this) by columns of
+		 * the targeted select table, this allows to copy current joins to another select table which is not the same as the current one. 
+		 *
+		 * @param target the graph that will contain this subgraph after copy
+		 * @param targetJoinsNodeName join node target
+		 */
+		public void projectTo(JoinedStrategiesSelect target, String targetJoinsNodeName) {
+			StrategyJoins targetJoins = target.getStrategyJoins(targetJoinsNodeName);
+			List<AbstractJoin> projectedJoins = Iterables.collectToList(this.joins, abstractJoin ->
+				abstractJoin.copyTo(targetJoins.getTable().getColumn(abstractJoin.getLeftJoinColumn().getName()))
+			);
+			targetJoins.joins.addAll(projectedJoins);
 		}
 		
 		/**
@@ -375,6 +391,11 @@ public class JoinedStrategiesSelect<C, I, T extends Table> {
 				return beanRelationFixer;
 			}
 			
+			@Override
+			public AbstractJoin<O> copyTo(Column leftJoinColumn) {
+				return new RelationJoin(getStrategy().getStrategy(), leftJoinColumn, getRightJoinColumn(), isOuter(), getBeanRelationFixer());
+			}
+			
 		}
 		
 		/**
@@ -386,6 +407,11 @@ public class JoinedStrategiesSelect<C, I, T extends Table> {
 			
 			private MergeJoin(IEntityMappingStrategy<O, ?, ? extends Table> strategy, Column leftJoinColumn, Column rightJoinColumn) {
 				super(strategy, leftJoinColumn, rightJoinColumn);
+			}
+			
+			@Override
+			public AbstractJoin<O> copyTo(Column leftJoinColumn) {
+				return new MergeJoin<>(getStrategy().getStrategy(), leftJoinColumn, getRightJoinColumn());
 			}
 		}
 	}
