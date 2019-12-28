@@ -68,11 +68,6 @@ public class CascadeManyConfigurer<SRC, TRGT, SRCID, TRGTID, C extends Collectio
 	private final PersistenceContext persistenceContext;
 	private final PersisterBuilderImpl<TRGT, TRGTID> persisterBuilder;
 	
-	public CascadeManyConfigurer(PersistenceContext persistenceContext) {
-		this.persistenceContext = persistenceContext;
-		this.persisterBuilder = null;
-	}
-	
 	public CascadeManyConfigurer(PersistenceContext persistenceContext, PersisterBuilderImpl<TRGT, TRGTID> persisterBuilder) {
 		this.persistenceContext = persistenceContext;
 		this.persisterBuilder = persisterBuilder;
@@ -98,7 +93,7 @@ public class CascadeManyConfigurer<SRC, TRGT, SRCID, TRGTID, C extends Collectio
 		
 		// please note that even if no table is found in configuration, build(..) will create one
 		Table targetTable = nullable(cascadeMany.getTargetTable()).elseSet(reverseTable).elseSet(indexingTable).get();
-		JoinedTablesPersister<TRGT, TRGTID, ?> targetPersister = this.persisterBuilder
+		JoinedTablesPersister<TRGT, TRGTID, ?> targetPersister = (JoinedTablesPersister<TRGT, TRGTID, ?>) this.persisterBuilder
 				.build(persistenceContext, targetTable);
 		
 		// finding joined columns: left one is primary key. Right one is given by the target strategy through the property accessor

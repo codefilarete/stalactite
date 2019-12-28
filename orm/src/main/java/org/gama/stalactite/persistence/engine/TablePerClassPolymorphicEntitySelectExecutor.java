@@ -6,10 +6,12 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 
 import org.gama.lang.StringAppender;
 import org.gama.lang.collection.Iterables;
+import org.gama.lang.function.Functions;
 import org.gama.lang.trace.ModifiableInt;
 import org.gama.stalactite.persistence.engine.cascade.JoinedTablesPersister;
 import org.gama.stalactite.persistence.query.IEntitySelectExecutor;
@@ -36,7 +38,7 @@ import org.gama.stalactite.sql.result.RowIterator;
  */
 public class TablePerClassPolymorphicEntitySelectExecutor<C, I, T extends Table> implements IEntitySelectExecutor<C> {
 	
-	private final Map<SubEntityMappingConfiguration, Table> tablePerSubConfiguration;
+	private final Map<Class, Table> tablePerSubConfiguration;
 	private final Map<Class<? extends C>, JoinedTablesPersister<C, I, T>> persisterPerSubclass;
 	private final ConnectionProvider connectionProvider;
 	private final ColumnBinderRegistry columnBinderRegistry;
@@ -44,6 +46,22 @@ public class TablePerClassPolymorphicEntitySelectExecutor<C, I, T extends Table>
 	
 	public TablePerClassPolymorphicEntitySelectExecutor(
 			Map<SubEntityMappingConfiguration, Table> tablePerSubConfiguration,
+			Map<Class<? extends C>, JoinedTablesPersister<C, I, T>> persisterPerSubclass,
+			T mainTable,
+			ConnectionProvider connectionProvider,
+			ColumnBinderRegistry columnBinderRegistry,
+			boolean safeGuard
+	) {
+		this.tablePerSubConfiguration = Iterables.map(tablePerSubConfiguration.entrySet(),
+				Functions.chain(Entry<SubEntityMappingConfiguration, Table>::getKey, SubEntityMappingConfiguration::getEntityType), Entry::getValue);
+		this.persisterPerSubclass = persisterPerSubclass;
+		this.connectionProvider = connectionProvider;
+		this.columnBinderRegistry = columnBinderRegistry;
+		this.mainTable = mainTable;
+	}
+	
+	public TablePerClassPolymorphicEntitySelectExecutor(
+			Map<Class, Table> tablePerSubConfiguration,
 			Map<Class<? extends C>, JoinedTablesPersister<C, I, T>> persisterPerSubclass,
 			T mainTable,
 			ConnectionProvider connectionProvider,
@@ -55,6 +73,8 @@ public class TablePerClassPolymorphicEntitySelectExecutor<C, I, T extends Table>
 		this.columnBinderRegistry = columnBinderRegistry;
 		this.mainTable = mainTable;
 	}
+	
+	
 	
 	@Override
 	public List<C> loadSelection(CriteriaChain where) {
@@ -71,10 +91,10 @@ public class TablePerClassPolymorphicEntitySelectExecutor<C, I, T extends Table>
 		aliases.put(discriminatorAlias, columnBinderRegistry.getBinder(String.class));
 		ParameterBinder pkBinder = columnBinderRegistry.getBinder((Column) Iterables.first(mainTable.getPrimaryKey().getColumns()));
 		aliases.put(pkAlias, pkBinder);
-		tablePerSubConfiguration.forEach((subEntityConfiguration, subEntityTable) -> {
+		tablePerSubConfiguration.forEach((subEntityType, subEntityTable) -> {
 			Column<T, I> primaryKey = (Column<T, I>) Iterables.first(subEntityTable.getPrimaryKey().getColumns());
-			String discriminatorValue = subEntityConfiguration.getEntityType().getSimpleName();
-			discriminatorValues.put(discriminatorValue, subEntityConfiguration.getEntityType());
+			String discriminatorValue = subEntityType.getSimpleName();
+			discriminatorValues.put(discriminatorValue, subEntityType);
 			Query query = QueryEase.
 					select(primaryKey, pkAlias)
 					.add("'"+ discriminatorValue +"' as " + discriminatorAlias)

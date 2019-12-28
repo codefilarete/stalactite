@@ -11,6 +11,7 @@ import java.util.Map.Entry;
 import java.util.Set;
 
 import org.gama.lang.collection.Iterables;
+import org.gama.lang.function.Functions;
 import org.gama.stalactite.persistence.engine.cascade.JoinedTablesPersister;
 import org.gama.stalactite.persistence.mapping.ColumnedRow;
 import org.gama.stalactite.persistence.sql.Dialect;
@@ -32,8 +33,8 @@ import org.gama.stalactite.sql.result.RowIterator;
  */
 public class JoinedTablesPolymorphismSelectExecutor<C, I, T extends Table> implements ISelectExecutor<C, I> {
 	
-	private final Map<Class<? extends C>, JoinedTablesPersister<C, I, T>> persisterPerSubclass;
-	private final Map<Class<? extends C>, JoinedTablesPersister<C, I, T>> persisterPerSubclass2;
+	private final Map<Class<? extends C>, Table> tablePerSubEntity;
+	private final Map<Class<? extends C>, ISelectExecutor<C, I>> subEntitiesSelectors;
 	private final T mainTable;
 	private final ConnectionProvider connectionProvider;
 	private final Dialect dialect;
@@ -42,9 +43,27 @@ public class JoinedTablesPolymorphismSelectExecutor<C, I, T extends Table> imple
 												  Map<Class<? extends C>, JoinedTablesPersister<C, I, T>> persisterPerSubclass2,
 												  T mainTable,
 												  ConnectionProvider connectionProvider,
-												  Dialect dialect) {
-		this.persisterPerSubclass = persisterPerSubclass;
-		this.persisterPerSubclass2 = persisterPerSubclass2;
+												  Dialect dialect,
+												  boolean safeGuard) {
+		this.tablePerSubEntity = Iterables.map(persisterPerSubclass.entrySet(),
+				Entry::getKey, Functions.chain(Entry<Class<? extends C>, JoinedTablesPersister<C, I, T>>::getValue, JoinedTablesPersister::getMainTable));
+		this.subEntitiesSelectors = Iterables.map(persisterPerSubclass2.entrySet(),
+				Entry::getKey,
+				Functions.chain(Entry::getValue, JoinedTablesPersister::getSelectExecutor));
+		this.mainTable = mainTable;
+		this.connectionProvider = connectionProvider;
+		this.dialect = dialect;
+	}
+	
+	public JoinedTablesPolymorphismSelectExecutor(
+			Map<Class<? extends C>, Table> tablePerSubEntity,
+			Map<Class<? extends C>, ISelectExecutor<C, I>> subEntitiesSelectors,
+			T mainTable,
+			ConnectionProvider connectionProvider,
+			Dialect dialect
+	) {
+		this.tablePerSubEntity = tablePerSubEntity;
+		this.subEntitiesSelectors = subEntitiesSelectors;
 		this.mainTable = mainTable;
 		this.connectionProvider = connectionProvider;
 		this.dialect = dialect;
@@ -75,9 +94,9 @@ public class JoinedTablesPolymorphismSelectExecutor<C, I, T extends Table> imple
 				select(primaryKey, primaryKey.getAlias())
 				.from(mainTable)
 				.where(primaryKey, Operators.in(ids)).getSelectQuery();
-		persisterPerSubclass.values().forEach(subclassPersister -> {
+		tablePerSubEntity.values().forEach(subTable -> {
 			Column subclassPrimaryKey = Iterables.first(
-					(Set<Column>) subclassPersister.getMainTable().getPrimaryKey().getColumns());
+					(Set<Column>) subTable.getPrimaryKey().getColumns());
 			query.select(subclassPrimaryKey, subclassPrimaryKey.getAlias());
 			query.getFrom().leftOuterJoin(primaryKey, subclassPrimaryKey);
 		});
@@ -98,11 +117,11 @@ public class JoinedTablesPolymorphismSelectExecutor<C, I, T extends Table> imple
 				// looking for entity type on row : we read each subclass PK and check for nullity. The non-null one is the 
 				// right one
 				Class<? extends C> entitySubclass;
-				Set<Entry<Class<? extends C>, JoinedTablesPersister<C, I, T>>> entries = persisterPerSubclass.entrySet();
-				Entry<Class<? extends C>, JoinedTablesPersister<C, I, T>> subclassEntityOnRow = Iterables.find(entries,
+				Set<Entry<Class<? extends C>, Table>> entries = tablePerSubEntity.entrySet();
+				Entry<Class<? extends C>, Table> subclassEntityOnRow = Iterables.find(entries,
 						e -> {
 							boolean isPKEmpty = true;
-							Iterator<Column> columnIt = e.getValue().getMainTable().getPrimaryKey().getColumns().iterator();
+							Iterator<Column> columnIt = e.getValue().getPrimaryKey().getColumns().iterator();
 							while (isPKEmpty && columnIt.hasNext()) {
 								Column column = columnIt.next();
 								isPKEmpty = columnedRow.getValue(column, row) != null;
@@ -118,7 +137,7 @@ public class JoinedTablesPolymorphismSelectExecutor<C, I, T extends Table> imple
 		}
 		
 		List<C> result = new ArrayList<>();
-		idsPerSubclass.forEach((subclass, subclassIds) -> result.addAll(persisterPerSubclass2.get(subclass).select(subclassIds)));
+		idsPerSubclass.forEach((subclass, subclassIds) -> result.addAll(subEntitiesSelectors.get(subclass).select(subclassIds)));
 		
 		return result;
 	}

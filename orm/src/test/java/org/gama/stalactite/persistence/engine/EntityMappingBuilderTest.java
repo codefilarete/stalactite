@@ -140,7 +140,7 @@ class EntityMappingBuilderTest {
 		PersistenceContext persistenceContext = new PersistenceContext(new JdbcConnectionProvider(new HSQLDBInMemoryDataSource()), dialect);
 		
 		// creating a complex graph
-		JoinedTablesPersister<Country, Identifier, Table> persister = entityBuilder(Country.class, Identifier.class)
+		IPersister<Country, Identifier> persister = entityBuilder(Country.class, Identifier.class)
 				.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.add(Country::getName)
 				.addOneToOne(Country::getCapital,
@@ -171,14 +171,14 @@ class EntityMappingBuilderTest {
 		persister.persist(country);
 		
 		ModifiableInt citySelectListenerCounter = new ModifiableInt();
-		persistenceContext.getPersister(City.class).getPersisterListener().addSelectListener(new SelectListener<City, Object>() {
+		persistenceContext.getPersister(City.class).addSelectListener(new SelectListener<City, Object>() {
 			@Override
 			public void beforeSelect(Iterable<Object> ids) {
 				citySelectListenerCounter.increment();
 			}
 		});
 		ModifiableInt personSelectListenerCounter = new ModifiableInt();
-		persistenceContext.getPersister(Person.class).getPersisterListener().addSelectListener(new SelectListener<Person, Object>() {
+		persistenceContext.getPersister(Person.class).addSelectListener(new SelectListener<Person, Object>() {
 			@Override
 			public void beforeSelect(Iterable<Object> ids) {
 				personSelectListenerCounter.increment();
@@ -204,7 +204,7 @@ class EntityMappingBuilderTest {
 		PersistenceContext persistenceContext = new PersistenceContext(new JdbcConnectionProvider(new HSQLDBInMemoryDataSource()), dialect);
 		
 		// creating a complex graph
-		JoinedTablesPersister<State, Identifier, Table> persister = entityBuilder(State.class, Identifier.class)
+		IPersister<State, Identifier> persister = entityBuilder(State.class, Identifier.class)
 				.add(State::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.add(State::getName)
 				.addOneToManySet(State::getCities, entityBuilder(City.class, Identifier.class)
@@ -238,14 +238,14 @@ class EntityMappingBuilderTest {
 		persister.persist(state);
 		
 		ModifiableInt citySelectListenerCounter = new ModifiableInt();
-		persistenceContext.getPersister(City.class).getPersisterListener().addSelectListener(new SelectListener<City, Object>() {
+		persistenceContext.getPersister(City.class).addSelectListener(new SelectListener<City, Object>() {
 			@Override
 			public void beforeSelect(Iterable<Object> ids) {
 				citySelectListenerCounter.increment();
 			}
 		});
 		ModifiableInt countrySelectListenerCounter = new ModifiableInt();
-		persistenceContext.getPersister(Country.class).getPersisterListener().addSelectListener(new SelectListener<Country, Object>() {
+		persistenceContext.getPersister(Country.class).addSelectListener(new SelectListener<Country, Object>() {
 			@Override
 			public void beforeSelect(Iterable<Object> ids) {
 				countrySelectListenerCounter.increment();

@@ -183,7 +183,7 @@ class EntityMappingBuilder<C, I> extends AbstractEntityMappingBuilder<C, I> {
 	}
 	
 	protected <T extends Table> void registerPersister(JoinedTablesPersister<C, I, T> persister, PersistenceContext persistenceContext) {
-		Persister<C, Object, T> existingPersister = persistenceContext.getPersister(persister.getMappingStrategy().getClassToPersist());
+		IPersister<C, Object> existingPersister = persistenceContext.getPersister(persister.getMappingStrategy().getClassToPersist());
 		if (existingPersister == null) {
 			persistenceContext.addPersister(persister);
 		} else {
@@ -219,11 +219,11 @@ class EntityMappingBuilder<C, I> extends AbstractEntityMappingBuilder<C, I> {
 	}
 	
 	protected CascadeOneConfigurer giveCascadeOneConfigurer(PersistenceContext persistenceContext) {
-		return new CascadeOneConfigurer<>(persistenceContext);
+		return new CascadeOneConfigurer<>(persistenceContext, null);
 	}
 	
 	protected CascadeManyConfigurer giveCascadeManyConfigurer(PersistenceContext persistenceContext) {
-		return new CascadeManyConfigurer(persistenceContext);
+		return new CascadeManyConfigurer(persistenceContext, null);
 	}
 	
 	private <T extends Table> void handleVersioningStrategy(JoinedTablesPersister<C, I, T> result) {

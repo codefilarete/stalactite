@@ -78,7 +78,7 @@ public class JoinedStrategiesSelectExecutor<C, I, T extends Table> extends Selec
 	}
 	
 	public JoinedStrategiesSelectExecutor(IEntityMappingStrategy<C, I, T> classMappingStrategy, Dialect dialect, ConnectionProvider connectionProvider,
-										  BiFunction<StrategyJoins<C, ?> /* root strategy join */, Function<Column, String> /* alias provider */, StrategyJoinsRowTransformer<C>> rowTransformerFactory) {
+										  BiFunction<StrategyJoins<C> /* root strategy join */, Function<Column, String> /* alias provider */, StrategyJoinsRowTransformer<C>> rowTransformerFactory) {
 		super(classMappingStrategy, connectionProvider, dialect.getDmlGenerator(), dialect.getInOperatorMaxSize());
 		this.parameterBinderProvider = dialect.getColumnBinderRegistry();
 		this.joinedStrategiesSelect = new JoinedStrategiesSelect<>(classMappingStrategy, this.parameterBinderProvider);

@@ -85,7 +85,7 @@ public class StrategyJoinsRowTransformerTest {
 	 */
 	@Test
 	public void testTransform_with2strategies_oneToOne() {
-		StrategyJoins<Toto, ?> rootStrategyJoins = new StrategyJoins<>(rootStrategy);
+		StrategyJoins<Toto> rootStrategyJoins = new StrategyJoins<>(rootStrategy);
 		
 		// creating another strategy that will be joined to the root one (goal of this test)
 		ClassMappingStrategy<Tata, Long, Table> joinedStrategy = mock(ClassMappingStrategy.class);

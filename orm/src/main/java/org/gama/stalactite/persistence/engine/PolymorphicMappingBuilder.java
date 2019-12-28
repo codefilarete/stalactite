@@ -374,7 +374,7 @@ public class PolymorphicMappingBuilder<C, I> extends AbstractEntityMappingBuilde
 								new JoinedStrategiesSelectExecutor<>(getMappingStrategy(), dialect, getConnectionProvider());
 						
 						return new JoinedTablesPolymorphismSelectExecutor<>(persisterPerSubclass, persisterPerSubclass2, getMainTable(),
-								getConnectionProvider(), dialect);
+								getConnectionProvider(), dialect, true);
 						
 					}
 					
@@ -508,13 +508,13 @@ public class PolymorphicMappingBuilder<C, I> extends AbstractEntityMappingBuilde
 																	  ConnectionProvider connectionProvider,
 																	  Dialect dialect) {
 						
-						return new TablePerClassPolymorphicSelectExecutor<>(subclassTables, persisterPerSubclass, getMainTable(), connectionProvider, dialect.getColumnBinderRegistry());
+						return new TablePerClassPolymorphicSelectExecutor<>(subclassTables, persisterPerSubclass, getMainTable(), connectionProvider, dialect.getColumnBinderRegistry(), true);
 					}
 					
 					@Override
 					protected IEntitySelectExecutor<C> newEntitySelectExecutor(Dialect dialect) {
 						return new TablePerClassPolymorphicEntitySelectExecutor<>(subclassTables, persisterPerSubclass,
-								getMainTable(), getConnectionProvider(), dialect.getColumnBinderRegistry());
+								getMainTable(), getConnectionProvider(), dialect.getColumnBinderRegistry(), true);
 					}
 				};
 			}
@@ -667,7 +667,7 @@ public class PolymorphicMappingBuilder<C, I> extends AbstractEntityMappingBuilde
 		
 	}
 	
-	private class SingleTablePolymorphicInsertExecutor<C, I, T extends Table> extends PolymorphicInsertExecutor<C, I, T> {
+	private static class SingleTablePolymorphicInsertExecutor<C, I, T extends Table> extends PolymorphicInsertExecutor<C, I, T> {
 		private final InsertExecutor<C, I, T> mainInsertExecutor;
 		
 		public SingleTablePolymorphicInsertExecutor(IEntityMappingStrategy<C, I, T> mappingStrategy, ConnectionProvider connectionProvider,
@@ -688,7 +688,7 @@ public class PolymorphicMappingBuilder<C, I> extends AbstractEntityMappingBuilde
 	}
 	
 	
-	private class SingleTablePolymorphicDeleteExecutor<C, I, T extends Table> extends PolymorphicDeleteExecutor<C, I, T> {
+	private static class SingleTablePolymorphicDeleteExecutor<C, I, T extends Table> extends PolymorphicDeleteExecutor<C, I, T> {
 		private final DeleteExecutor<C, I, T> mainDeleteExecutor;
 		
 		public SingleTablePolymorphicDeleteExecutor(IEntityMappingStrategy<C, I, T> mappingStrategy, ConnectionProvider connectionProvider,

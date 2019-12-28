@@ -38,20 +38,20 @@ public class SingleTablePolymorphismEntitySelectExecutor<C, I, T extends Table, 
 	private final Map<Class<? extends C>, JoinedTablesPersister<C, I, T>> persisterPerSubclass;
 	private final Column discriminatorColumn;
 	private final SingleTablePolymorphism polymorphismPolicy;
-	private final JoinedStrategiesSelect<C, I, T> joinedStrategiesSelect;
+	private final JoinedStrategiesSelect<C, I, T> mainJoinedStrategiesSelect;
 	private final ConnectionProvider connectionProvider;
 	private final Dialect dialect;
 	
 	public SingleTablePolymorphismEntitySelectExecutor(Map<Class<? extends C>, JoinedTablesPersister<C, I, T>> persisterPerSubclass,
 												Column<T, D> discriminatorColumn,
 												SingleTablePolymorphism polymorphismPolicy,
-												JoinedStrategiesSelect<C, I, T> joinedStrategiesSelect,
+												JoinedStrategiesSelect<C, I, T> mainJoinedStrategiesSelect,
 												ConnectionProvider connectionProvider,
 												Dialect dialect) {
 		this.persisterPerSubclass = persisterPerSubclass;
 		this.discriminatorColumn = discriminatorColumn;
 		this.polymorphismPolicy = polymorphismPolicy;
-		this.joinedStrategiesSelect = joinedStrategiesSelect;
+		this.mainJoinedStrategiesSelect = mainJoinedStrategiesSelect;
 		this.connectionProvider = connectionProvider;
 		this.dialect = dialect;
 	}
@@ -63,12 +63,12 @@ public class SingleTablePolymorphismEntitySelectExecutor<C, I, T extends Table, 
 	
 	@Override
 	public List<C> loadGraph(CriteriaChain where) {
-		Query query = joinedStrategiesSelect.buildSelectQuery();
+		Query query = mainJoinedStrategiesSelect.buildSelectQuery();
 		
 		SQLQueryBuilder sqlQueryBuilder = IEntitySelectExecutor.createQueryBuilder(where, query);
 		
 		// selecting ids and their discriminator
-		Column<T, I> pk = (Column<T, I>) Iterables.first(joinedStrategiesSelect.getJoinsRoot().getTable().getPrimaryKey().getColumns());
+		Column<T, I> pk = (Column<T, I>) Iterables.first(mainJoinedStrategiesSelect.getJoinsRoot().getTable().getPrimaryKey().getColumns());
 		query.select(pk, PRIMARY_KEY_ALIAS);
 		query.select(discriminatorColumn, DISCRIMINATOR_ALIAS);
 		List<Duo<I, D>> ids = readIds(sqlQueryBuilder, pk);

@@ -6,10 +6,11 @@ import org.gama.lang.collection.ValueFactoryMap;
 import org.gama.lang.test.Assertions;
 import org.gama.reflection.AccessorByMethodReference;
 import org.gama.stalactite.persistence.engine.ColumnOptions.IdentifierPolicy;
+import org.gama.stalactite.persistence.engine.IPersister;
+import org.gama.stalactite.persistence.engine.IPersister.EntityCriteria;
 import org.gama.stalactite.persistence.engine.MappingEase;
 import org.gama.stalactite.persistence.engine.PersistenceContext;
 import org.gama.stalactite.persistence.engine.RuntimeMappingException;
-import org.gama.stalactite.persistence.engine.cascade.JoinedTablesPersister;
 import org.gama.stalactite.persistence.engine.model.City;
 import org.gama.stalactite.persistence.engine.model.Country;
 import org.gama.stalactite.persistence.id.Identified;
@@ -43,7 +44,7 @@ class EntityCriteriaSupportTest {
 		dialect.getColumnBinderRegistry().register((Class) Identified.class, Identified.identifiedBinder(DefaultParameterBinders.LONG_PRIMITIVE_BINDER));
 		dialect.getJavaTypeToSqlTypeMapping().put(Identified.class, "bigint");
 		
-		JoinedTablesPersister<Country, Long, Table> persister = MappingEase.entityBuilder(Country.class, long.class)
+		IPersister<Country, Long> persister = MappingEase.entityBuilder(Country.class, long.class)
 				.add(Country::getId).identifier(IdentifierPolicy.AFTER_INSERT)
 				.add(Country::getName)
 				.addOneToOne(Country::getCapital, MappingEase.entityBuilder(City.class, long.class)

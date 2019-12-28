@@ -8,17 +8,26 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import org.danekja.java.util.function.serializable.SerializableBiConsumer;
+import org.danekja.java.util.function.serializable.SerializableFunction;
 import org.gama.lang.Duo;
 import org.gama.lang.Retryer;
 import org.gama.lang.collection.Iterables;
 import org.gama.lang.collection.Maps;
+import org.gama.lang.exception.NotImplementedException;
+import org.gama.stalactite.persistence.engine.listening.DeleteByIdListener;
+import org.gama.stalactite.persistence.engine.listening.DeleteListener;
+import org.gama.stalactite.persistence.engine.listening.InsertListener;
 import org.gama.stalactite.persistence.engine.listening.PersisterListener;
+import org.gama.stalactite.persistence.engine.listening.SelectListener;
+import org.gama.stalactite.persistence.engine.listening.UpdateListener;
 import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
 import org.gama.stalactite.persistence.mapping.IEntityMappingStrategy;
 import org.gama.stalactite.persistence.mapping.SimpleIdMappingStrategy;
 import org.gama.stalactite.persistence.sql.Dialect;
 import org.gama.stalactite.persistence.sql.dml.DMLGenerator;
 import org.gama.stalactite.persistence.structure.Table;
+import org.gama.stalactite.query.model.AbstractRelationalOperator;
 import org.gama.stalactite.sql.ConnectionProvider;
 
 /**
@@ -27,7 +36,7 @@ import org.gama.stalactite.sql.ConnectionProvider;
  * @author Guillaume Mary
  */
 @Nonnull
-public class Persister<C, I, T extends Table> {
+public class Persister<C, I, T extends Table> implements IPersister<C, I> {
 	
 	private final IEntityMappingStrategy<C, I, T> mappingStrategy;
 	private final ConnectionProvider connectionProvider;
@@ -136,6 +145,7 @@ public class Persister<C, I, T extends Table> {
 		return inOperatorMaxSize;
 	}
 	
+	@Override
 	public IEntityMappingStrategy<C, I, T> getMappingStrategy() {
 		return mappingStrategy;
 	}
@@ -189,24 +199,6 @@ public class Persister<C, I, T extends Table> {
 	}
 	
 	/**
-	 * Persists an instance either it is already persisted or not (insert or update).
-	 * 
-	 * Check between insert or update is determined by id state which itself depends on identifier policy,
-	 * see {@link SimpleIdMappingStrategy#IsNewDeterminer} implementations and
-	 * {@link org.gama.stalactite.persistence.id.manager.IdentifierInsertionManager} implementations for id value computation. 
-	 * 
-	 * @param entity an entity to be persisted
-	 * @return persisted + updated rows count
-	 * @throws StaleObjectExcepion if updated row count differs from entities count
-	 * @see #insert(Iterable) 
-	 * @see #update(Iterable, boolean)  
-	 */
-	public int persist(C entity) {
-		// determine insert or update operation
-		return persist(Collections.singleton(entity));
-	}
-	
-	/**
 	 * Saves given entities : will apply insert or update according to entities persistent state.
 	 * Triggers cascade on relations. Please note that in case of already-persisted entities (not new), entities will be reloaded from database
 	 * to compute differences and cascade only modifications.
@@ -215,6 +207,7 @@ public class Persister<C, I, T extends Table> {
 	 * @param entities some entities, can be a mix of none-persistent or already-persisted entities
 	 * @return number of rows inserted and updated (relation-less counter) (maximum is argument size, may be 0 if no modifications were found between memory and database)
 	 */
+	@Override
 	public int persist(Iterable<C> entities) {
 		if (Iterables.isEmpty(entities)) {
 			return 0;
@@ -246,19 +239,56 @@ public class Persister<C, I, T extends Table> {
 		return writtenRowCount;
 	}
 	
+	@Override
+	public <O> ExecutableEntityQuery<C> selectWhere(SerializableFunction<C, O> getter, AbstractRelationalOperator<O> operator) {
+		throw new NotImplementedException("Not yet implemented");
+	}
+	
+	@Override
+	public <O> ExecutableEntityQuery<C> selectWhere(SerializableBiConsumer<C, O> setter, AbstractRelationalOperator<O> operator) {
+		throw new NotImplementedException("Not yet implemented");
+	}
+	
+	@Override
+	public List<C> selectAll() {
+		throw new NotImplementedException("Not yet implemented");
+	}
+	
+	@Override
+	public void addInsertListener(InsertListener insertListener) {
+		getPersisterListener().addInsertListener(insertListener);
+	}
+	
+	@Override
+	public void addUpdateListener(UpdateListener updateListener) {
+		getPersisterListener().addUpdateListener(updateListener);
+	}
+	
+	@Override
+	public void addSelectListener(SelectListener selectListener) {
+		getPersisterListener().addSelectListener(selectListener);
+	}
+	
+	@Override
+	public void addDeleteListener(DeleteListener deleteListener) {
+		getPersisterListener().addDeleteListener(deleteListener);
+	}
+	
+	@Override
+	public void addDeleteByIdListener(DeleteByIdListener deleteListener) {
+		getPersisterListener().addDeleteByIdListener(deleteListener);
+	}
+	
 	/**
 	 * Saves given entity : will apply insert or update according to entity persistent state.
 	 * Triggers cascade on relations. Please note that in case of already-persisted entity (not new), entity will be reloaded from database
 	 * to compute differences and cascade only modifications.
 	 * If one already has a copy of the "unmodified" instance, you may prefer to direcly use {@link #update(Object, Object, boolean)}
 	 *
-	 * @param entity an entity, none-persistent or already-persisted
+	 * @param entities entities, none-persistent or already-persisted
 	 * @return number of rows inserted (relation-less counter) (maximum is argument size)
 	 */
-	public int insert(C entity) {
-		return insert(Collections.singletonList(entity));
-	}
-	
+	@Override
 	public int insert(Iterable<? extends C> entities) {
 		if (Iterables.isEmpty(entities)) {
 			return 0;
@@ -287,6 +317,7 @@ public class Persister<C, I, T extends Table> {
 	 * @param entities iterable of entities
 	 * @return number of rows updated (relation-less counter) (maximum is argument size, may be 0 if rows weren't found in database)
 	 */
+	@Override
 	public int updateById(Iterable<C> entities) {
 		if (Iterables.isEmpty(entities)) {
 			// nothing to update => we return immediatly without any call to listeners
@@ -301,20 +332,6 @@ public class Persister<C, I, T extends Table> {
 	}
 	
 	/**
-	 * Updates an instance that may have changes.
-	 * Groups statements to benefit from JDBC batch. Usefull overall when allColumnsStatement
-	 * is set to false.
-	 *
-	 * @param modified the supposing entity that has differences againt {@code unmodified} entity
-	 * @param unmodified the "original" (freshly loaded from database ?) entity
-	 * @param allColumnsStatement true if all columns must be in the SQL statement, false if only modified ones should be in
-	 * @return number of rows updated (relation-less counter) (maximum is 1, may be 0 if row wasn't found in database)
-	 */
-	public int update(C modified, C unmodified, boolean allColumnsStatement) {
-		return update(Collections.singletonList(new Duo<>(modified, unmodified)), allColumnsStatement);
-	}
-	
-	/**
 	 * Updates instances that may have changes.
 	 * Groups statements to benefit from JDBC batch. Usefull overall when allColumnsStatement
 	 * is set to false.
@@ -323,6 +340,7 @@ public class Persister<C, I, T extends Table> {
 	 * @param allColumnsStatement true if all columns must be in the SQL statement, false if only modified ones should be in
 	 * @return number of rows updated (relation-less counter) (maximum is argument size, may be 0 if row wasn't found in database)
 	 */
+	@Override
 	public int update(Iterable<? extends Duo<? extends C, ? extends C>> differencesIterable, boolean allColumnsStatement) {
 		if (Iterables.isEmpty(differencesIterable)) {
 			// nothing to update => we return immediatly without any call to listeners
@@ -340,22 +358,11 @@ public class Persister<C, I, T extends Table> {
 	 * Deletes instances.
 	 * Takes optimistic lock into account.
 	 *
-	 * @param entity entity to be deleted
-	 * @return deleted row count
-	 * @throws StaleObjectExcepion if deleted row count differs from entities count
-	 */
-	public int delete(C entity) {
-		return delete(Collections.singletonList(entity));
-	}
-	
-	/**
-	 * Deletes instances.
-	 * Takes optimistic lock into account.
-	 *
 	 * @param entities entites to be deleted
 	 * @return deleted row count
 	 * @throws StaleObjectExcepion if deleted row count differs from entities count
 	 */
+	@Override
 	public int delete(Iterable<C> entities) {
 		if (Iterables.isEmpty(entities)) {
 			return 0;
@@ -371,20 +378,10 @@ public class Persister<C, I, T extends Table> {
 	 * Will delete instances only by their identifier.
 	 * This method will not take optimisic lock (versioned entity) into account, so it will delete database rows "roughly".
 	 *
-	 * @param entity entity to be deleted
-	 * @return deleted row count
-	 */
-	public int deleteById(C entity) {
-		return deleteById(Collections.singletonList(entity));
-	}
-	
-	/**
-	 * Will delete instances only by their identifier.
-	 * This method will not take optimisic lock (versioned entity) into account, so it will delete database rows "roughly".
-	 *
 	 * @param entities entites to be deleted
 	 * @return deleted row count
 	 */
+	@Override
 	public int deleteById(Iterable<C> entities) {
 		if (Iterables.isEmpty(entities)) {
 			return 0;
@@ -408,10 +405,7 @@ public class Persister<C, I, T extends Table> {
 		return mappingStrategy.isNew(c);
 	}
 	
-	public C select(I id) {
-		return Iterables.first(select(Collections.singleton(id)));
-	}
-	
+	@Override
 	public List<C> select(Iterable<I> ids) {
 		if (Iterables.isEmpty(ids)) {
 			return new ArrayList<>();

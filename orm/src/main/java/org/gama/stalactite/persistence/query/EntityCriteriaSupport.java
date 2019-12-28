@@ -20,6 +20,7 @@ import org.gama.reflection.MutatorByMethodReference;
 import org.gama.reflection.ValueAccessPoint;
 import org.gama.reflection.ValueAccessPointByMethodReference;
 import org.gama.reflection.ValueAccessPointMap;
+import org.gama.stalactite.persistence.engine.IPersister.EntityCriteria;
 import org.gama.stalactite.persistence.engine.RuntimeMappingException;
 import org.gama.stalactite.persistence.id.assembly.SimpleIdentifierAssembler;
 import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
@@ -37,7 +38,7 @@ import org.gama.stalactite.query.model.CriteriaChain;
  * @author Guillaume Mary
  * @see #registerRelation(ValueAccessPoint, ClassMappingStrategy) 
  */
-public class EntityCriteriaSupport<C> implements EntityCriteria<C> {
+public class EntityCriteriaSupport<C> implements RelationalEntityCriteria<C> {
 	
 	/** Delegate of the query : targets of the API methods */
 	private Criteria criteria = new Criteria();
@@ -212,7 +213,7 @@ public class EntityCriteriaSupport<C> implements EntityCriteria<C> {
 				return embeddedColumn;
 			}
 			
-			Column column = getRelationColumn(accessPoints);
+			Column column = giveRelationColumn(accessPoints);
 			if (column != null) {
 				return column;
 			} else {
@@ -224,7 +225,7 @@ public class EntityCriteriaSupport<C> implements EntityCriteria<C> {
 			return this.propertyToColumn.get(toAccessorChain(accessPoints));
 		}
 		
-		private Column getRelationColumn(ValueAccessPointByMethodReference... accessPoints) {
+		private Column giveRelationColumn(ValueAccessPointByMethodReference... accessPoints) {
 			Deque<ValueAccessPoint> stack = new ArrayDeque<>();
 			stack.addAll(Arrays.asList(accessPoints));
 			EntityGraphNode currentNode = this;

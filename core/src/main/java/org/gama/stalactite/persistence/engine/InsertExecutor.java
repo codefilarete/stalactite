@@ -30,7 +30,7 @@ import org.gama.stalactite.sql.dml.WriteOperation;
  *
  * @author Guillaume Mary
  */
-public class InsertExecutor<C, I, T extends Table> extends WriteExecutor<C, I, T> {
+public class InsertExecutor<C, I, T extends Table> extends WriteExecutor<C, I, T> implements IInsertExecutor<C> {
 	
 	/** Entity lock manager, default is no operation as soon as a {@link VersioningStrategy} is given */
 	private OptimisticLockManager optimisticLockManager = OptimisticLockManager.NOOP_OPTIMISTIC_LOCK_MANAGER;
@@ -73,6 +73,7 @@ public class InsertExecutor<C, I, T extends Table> extends WriteExecutor<C, I, T
 		return writeOperation;
 	}
 	
+	@Override
 	public int insert(Iterable<? extends C> entities) {
 		Set<Column<T, Object>> columns = getMappingStrategy().getInsertableColumns();
 		ColumnParameterizedSQL<T> insertStatement = getDmlGenerator().buildInsert(columns);

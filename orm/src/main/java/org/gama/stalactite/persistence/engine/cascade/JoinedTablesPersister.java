@@ -16,10 +16,10 @@ import org.gama.stalactite.persistence.engine.Persister;
 import org.gama.stalactite.persistence.engine.cascade.JoinedStrategiesSelect.StrategyJoins;
 import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
 import org.gama.stalactite.persistence.mapping.IEntityMappingStrategy;
-import org.gama.stalactite.persistence.query.EntityCriteria;
 import org.gama.stalactite.persistence.query.EntityCriteriaSupport;
 import org.gama.stalactite.persistence.query.EntitySelectExecutor;
 import org.gama.stalactite.persistence.query.IEntitySelectExecutor;
+import org.gama.stalactite.persistence.query.RelationalEntityCriteria;
 import org.gama.stalactite.persistence.sql.Dialect;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
@@ -143,7 +143,8 @@ public class JoinedTablesPersister<C, I, T extends Table> extends Persister<C, I
 	 * @param <O> value type returned by property accessor
 	 * @return a {@link EntityCriteria} enhance to be executed through {@link ExecutableQuery#execute()}
 	 */
-	public <O> ExecutableEntityQuery<C> selectWhere(SerializableFunction<C, O> getter, AbstractRelationalOperator<O> operator) {
+	@Override
+	public <O> RelationalExecutableEntityQuery<C> selectWhere(SerializableFunction<C, O> getter, AbstractRelationalOperator<O> operator) {
 		EntityCriteriaSupport<C> localCriteriaSupport = newWhere();
 		localCriteriaSupport.and(getter, operator);
 		return wrapIntoExecutable(localCriteriaSupport);
@@ -159,20 +160,21 @@ public class JoinedTablesPersister<C, I, T extends Table> extends Persister<C, I
 	 * @param <O> value type returned by property accessor
 	 * @return a {@link EntityCriteria} enhance to be executed through {@link ExecutableQuery#execute()}
 	 */
-	public <O> ExecutableEntityQuery<C> selectWhere(SerializableBiConsumer<C, O> setter, AbstractRelationalOperator<O> operator) {
+	@Override
+	public <O> RelationalExecutableEntityQuery<C> selectWhere(SerializableBiConsumer<C, O> setter, AbstractRelationalOperator<O> operator) {
 		EntityCriteriaSupport<C> localCriteriaSupport = newWhere();
 		localCriteriaSupport.and(setter, operator);
 		return wrapIntoExecutable(localCriteriaSupport);
 	}
 	
-	private ExecutableEntityQuery<C> wrapIntoExecutable(EntityCriteriaSupport<C> localCriteriaSupport) {
+	private RelationalExecutableEntityQuery<C> wrapIntoExecutable(EntityCriteriaSupport<C> localCriteriaSupport) {
 		MethodReferenceDispatcher methodDispatcher = new MethodReferenceDispatcher();
 		return methodDispatcher
 				.redirect((SerializableFunction<ExecutableQuery, List<C>>) ExecutableQuery::execute,
 						() -> getPersisterListener().doWithSelectListener(emptyList(), () -> entitySelectExecutor.loadGraph(localCriteriaSupport.getCriteria())))
 				.redirect(CriteriaProvider::getCriteria, localCriteriaSupport::getCriteria)
-				.redirect(EntityCriteria.class, localCriteriaSupport, true)
-				.build((Class<ExecutableEntityQuery<C>>) (Class) ExecutableEntityQuery.class);
+				.redirect(RelationalEntityCriteria.class, localCriteriaSupport, true)
+				.build((Class<RelationalExecutableEntityQuery<C>>) (Class) RelationalExecutableEntityQuery.class);
 	}
 	
 	/**
@@ -199,19 +201,19 @@ public class JoinedTablesPersister<C, I, T extends Table> extends Persister<C, I
 	 * Mashup between {@link EntityCriteria} and {@link ExecutableQuery} to make an {@link EntityCriteria} executable
 	 * @param <C> type of object returned by query execution
 	 */
-	public interface ExecutableEntityQuery<C> extends EntityCriteria<C>, ExecutableQuery<C>, CriteriaProvider {
+	public interface RelationalExecutableEntityQuery<C> extends ExecutableEntityQuery<C>, CriteriaProvider, RelationalEntityCriteria<C> {
 		
-		<O> ExecutableEntityQuery<C> and(SerializableFunction<C, O> getter, AbstractRelationalOperator<O> operator);
+		<O> RelationalExecutableEntityQuery<C> and(SerializableFunction<C, O> getter, AbstractRelationalOperator<O> operator);
 		
-		<O> ExecutableEntityQuery<C> and(SerializableBiConsumer<C, O> setter, AbstractRelationalOperator<O> operator);
+		<O> RelationalExecutableEntityQuery<C> and(SerializableBiConsumer<C, O> setter, AbstractRelationalOperator<O> operator);
 		
-		<O> ExecutableEntityQuery<C> or(SerializableFunction<C, O> getter, AbstractRelationalOperator<O> operator);
+		<O> RelationalExecutableEntityQuery<C> or(SerializableFunction<C, O> getter, AbstractRelationalOperator<O> operator);
 		
-		<O> ExecutableEntityQuery<C> or(SerializableBiConsumer<C, O> setter, AbstractRelationalOperator<O> operator);
+		<O> RelationalExecutableEntityQuery<C> or(SerializableBiConsumer<C, O> setter, AbstractRelationalOperator<O> operator);
 		
-		<A, B> ExecutableEntityQuery<C> and(SerializableFunction<C, A> getter1, SerializableFunction<A, B> getter2, AbstractRelationalOperator<B> operator);
+		<A, B> RelationalExecutableEntityQuery<C> and(SerializableFunction<C, A> getter1, SerializableFunction<A, B> getter2, AbstractRelationalOperator<B> operator);
 		
-		<S extends Collection<A>, A, B> ExecutableEntityQuery<C> andMany(SerializableFunction<C, S> getter1, SerializableFunction<A, B> getter2, AbstractRelationalOperator<B> operator);
+		<S extends Collection<A>, A, B> RelationalExecutableEntityQuery<C> andMany(SerializableFunction<C, S> getter1, SerializableFunction<A, B> getter2, AbstractRelationalOperator<B> operator);
 		
 	}
 	

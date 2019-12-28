@@ -18,7 +18,6 @@ import org.gama.stalactite.persistence.engine.FluentEntityMappingConfigurationSu
 import org.gama.stalactite.persistence.engine.FluentEntityMappingConfigurationSupportInheritanceTest.Truk;
 import org.gama.stalactite.persistence.engine.FluentEntityMappingConfigurationSupportInheritanceTest.Vehicle;
 import org.gama.stalactite.persistence.engine.PersistenceContext.ExecutableSelect;
-import org.gama.stalactite.persistence.engine.cascade.JoinedTablesPersister;
 import org.gama.stalactite.persistence.engine.listening.DeleteListener;
 import org.gama.stalactite.persistence.engine.listening.InsertListener;
 import org.gama.stalactite.persistence.engine.listening.SelectListener;
@@ -93,34 +92,33 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 																.add(Engine::getId).identifier(ALREADY_ASSIGNED))
 						.mapPolymorphism(PolymorphismPolicy.<AbstractVehicle, Identifier<Long>>singleTable()
 								.addSubClass(subentityBuilder(Car.class)
-										.add(Car::getId)
 										.add(Car::getModel), "CAR")
 								.addSubClass(subentityBuilder(Truk.class)
-										.add(Truk::getId)
 										.add(Truk::getColor), "TRUK"))
-						.build(persistenceContext1) },
-//				{	"joined tables",
-//					entityBuilder(AbstractVehicle.class, LONG_TYPE)
-//						.add(AbstractVehicle::getId).identifier(ALREADY_ASSIGNED)
-//						.mapPolymorphism(PolymorphismPolicy.<AbstractVehicle, Identifier<Long>>joinedTables()
-//								.addSubClass(subentityBuilder(Car.class)
-//										.add(Car::getId)
-//										.add(Car::getModel))
-//								.addSubClass(subentityBuilder(Truk.class)
-//										.add(Truk::getId)
-//										.add(Truk::getColor)))
-//						.build(persistenceContext2) },
-//				{	"table per class",
-//					entityBuilder(AbstractVehicle.class, LONG_TYPE)
-//						.add(AbstractVehicle::getId).identifier(ALREADY_ASSIGNED)
-//						.mapPolymorphism(PolymorphismPolicy.<AbstractVehicle, Identifier<Long>>tablePerClass()
-//								.addSubClass(subentityBuilder(Car.class)
-//										.add(Car::getId)
-//										.add(Car::getModel))
-//								.addSubClass(subentityBuilder(Truk.class)
-//										.add(Truk::getId)
-//										.add(Truk::getColor)))
-//						.build(persistenceContext3) },
+						.build(persistenceContext1),
+						persistenceContext1.getConnectionProvider() },
+				{	"joined tables",
+					entityBuilder(AbstractVehicle.class, LONG_TYPE)
+						.add(AbstractVehicle::getId).identifier(ALREADY_ASSIGNED)
+						.mapPolymorphism(PolymorphismPolicy.<AbstractVehicle, Identifier<Long>>joinedTables()
+								.addSubClass(subentityBuilder(Car.class)
+										.add(Car::getId)
+										.add(Car::getModel))
+								.addSubClass(subentityBuilder(Truk.class)
+										.add(Truk::getId)
+										.add(Truk::getColor)))
+						.build(persistenceContext2),
+						persistenceContext2.getConnectionProvider() },
+				{	"table per class",
+					entityBuilder(AbstractVehicle.class, LONG_TYPE)
+						.add(AbstractVehicle::getId).identifier(ALREADY_ASSIGNED)
+						.mapPolymorphism(PolymorphismPolicy.<AbstractVehicle, Identifier<Long>>tablePerClass()
+								.addSubClass(subentityBuilder(Car.class)
+										.add(Car::getModel))
+								.addSubClass(subentityBuilder(Truk.class)
+										.add(Truk::getColor)))
+						.build(persistenceContext3),
+						persistenceContext3.getConnectionProvider() },
 		};
 		new DDLDeployer(persistenceContext1).deployDDL();
 		new DDLDeployer(persistenceContext2).deployDDL();
@@ -131,7 +129,7 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 	
 	@ParameterizedTest(name="{0}")
 	@MethodSource("polymorphicPersisters")
-	void crud(String testDisplayName, Persister<AbstractVehicle, Identifier<Long>, ?> persister) throws SQLException {
+	void crud(String testDisplayName, IPersister<AbstractVehicle, Identifier<Long>> persister, ConnectionProvider connectionProvider) throws SQLException {
 		Car dummyCar = new Car(1L);
 		dummyCar.setModel("Renault");
 		dummyCar.setEngine(new Engine(100L));
@@ -151,14 +149,14 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 		
 		persister.update(dummyTrukModfied, dummyTruk, true);
 		
-		persister.getConnectionProvider().getCurrentConnection().commit();
+		connectionProvider.getCurrentConnection().commit();
 		assertEquals(1, persister.delete(dummyCarModfied));
 		assertEquals(1, persister.delete(dummyTrukModfied));
-		persister.getConnectionProvider().getCurrentConnection().rollback();
+		connectionProvider.getCurrentConnection().rollback();
 		
 		assertEquals(2, persister.delete(Arrays.asList(dummyCarModfied, dummyTrukModfied)));
 		
-		persister.getConnectionProvider().getCurrentConnection().rollback();
+		connectionProvider.getCurrentConnection().rollback();
 		
 		assertEquals(dummyTrukModfied, persister.select(dummyTruk.getId()));
 		assertEquals(dummyCarModfied, persister.select(dummyCar.getId()));
@@ -170,7 +168,7 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 		
 		@Test
 		void oneSubClass() {
-			Persister<AbstractVehicle, Identifier<Long>, ?> abstractVehiclePersister = entityBuilder(AbstractVehicle.class, LONG_TYPE)
+			IPersister<AbstractVehicle, Identifier<Long>> abstractVehiclePersister = entityBuilder(AbstractVehicle.class, LONG_TYPE)
 					// mapped super class defines id
 					.add(AbstractVehicle::getId).identifier(ALREADY_ASSIGNED)
 					.mapPolymorphism(PolymorphismPolicy.<AbstractVehicle, Identifier<Long>>singleTable()
@@ -224,7 +222,7 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 		
 		@Test
 		void twoSubClasses() {
-			JoinedTablesPersister<AbstractVehicle, Identifier<Long>, ?> abstractVehiclePersister = entityBuilder(AbstractVehicle.class, LONG_TYPE)
+			IPersister<AbstractVehicle, Identifier<Long>> abstractVehiclePersister = entityBuilder(AbstractVehicle.class, LONG_TYPE)
 							// mapped super class defines id
 							.add(AbstractVehicle::getId).identifier(ALREADY_ASSIGNED)
 							.mapPolymorphism(PolymorphismPolicy.<AbstractVehicle, Identifier<Long>>singleTable()
@@ -294,7 +292,7 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 		
 		@Test
 		void twoSubClasses_withCommonProperties() {
-			JoinedTablesPersister<Vehicle, Identifier<Long>, ?> abstractVehiclePersister = entityBuilder(Vehicle.class, LONG_TYPE)
+			IPersister<Vehicle, Identifier<Long>> abstractVehiclePersister = entityBuilder(Vehicle.class, LONG_TYPE)
 					// mapped super class defines id
 					.add(Vehicle::getId).identifier(ALREADY_ASSIGNED)
 					.add(Vehicle::getColor)
@@ -382,7 +380,7 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 		
 		@Test
 		void listenersAreNotified() {
-			Persister<AbstractVehicle, Identifier<Long>, ?> abstractVehiclePersister = entityBuilder(AbstractVehicle.class, LONG_TYPE)
+			IPersister<AbstractVehicle, Identifier<Long>> abstractVehiclePersister = entityBuilder(AbstractVehicle.class, LONG_TYPE)
 					// mapped super class defines id
 					.add(AbstractVehicle::getId).identifier(ALREADY_ASSIGNED)
 					.mapPolymorphism(PolymorphismPolicy.<AbstractVehicle, Identifier<Long>>singleTable()
@@ -404,10 +402,10 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 			UpdateListener updateListenerMock = mock(UpdateListener.class);
 			SelectListener selectListenerMock = mock(SelectListener.class);
 			DeleteListener deleteListenerMock = mock(DeleteListener.class);
-			abstractVehiclePersister.getPersisterListener().addInsertListener(insertListenerMock);
-			abstractVehiclePersister.getPersisterListener().addUpdateListener(updateListenerMock);
-			abstractVehiclePersister.getPersisterListener().addSelectListener(selectListenerMock);
-			abstractVehiclePersister.getPersisterListener().addDeleteListener(deleteListenerMock);
+			abstractVehiclePersister.addInsertListener(insertListenerMock);
+			abstractVehiclePersister.addUpdateListener(updateListenerMock);
+			abstractVehiclePersister.addSelectListener(selectListenerMock);
+			abstractVehiclePersister.addDeleteListener(deleteListenerMock);
 			
 			// insert test
 			abstractVehiclePersister.insert(dummyCar);
@@ -437,7 +435,7 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 		
 		@Test
 		void oneSubClass() {
-			Persister<AbstractVehicle, Identifier<Long>, ?> abstractVehiclePersister = entityBuilder(AbstractVehicle.class, LONG_TYPE)
+			IPersister<AbstractVehicle, Identifier<Long>> abstractVehiclePersister = entityBuilder(AbstractVehicle.class, LONG_TYPE)
 					// mapped super class defines id
 					.add(AbstractVehicle::getId).identifier(ALREADY_ASSIGNED)
 					.mapPolymorphism(PolymorphismPolicy.<AbstractVehicle, Identifier<Long>>joinedTables()
@@ -491,7 +489,7 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 		
 		@Test
 		void twoSubClasses() {
-			JoinedTablesPersister<AbstractVehicle, Identifier<Long>, ?> abstractVehiclePersister = entityBuilder(AbstractVehicle.class, LONG_TYPE)
+			IPersister<AbstractVehicle, Identifier<Long>> abstractVehiclePersister = entityBuilder(AbstractVehicle.class, LONG_TYPE)
 					// mapped super class defines id
 					.add(AbstractVehicle::getId).identifier(ALREADY_ASSIGNED)
 					.mapPolymorphism(PolymorphismPolicy.<AbstractVehicle, Identifier<Long>>joinedTables()
@@ -586,7 +584,7 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 		
 		@Test
 		void twoSubClasses_withCommonProperties() {
-			JoinedTablesPersister<Vehicle, Identifier<Long>, ?> abstractVehiclePersister = entityBuilder(Vehicle.class, LONG_TYPE)
+			IPersister<Vehicle, Identifier<Long>> abstractVehiclePersister = entityBuilder(Vehicle.class, LONG_TYPE)
 					// mapped super class defines id
 					.add(Vehicle::getId).identifier(ALREADY_ASSIGNED)
 					.add(Vehicle::getColor)
@@ -680,7 +678,7 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 		
 		@Test
 		void listenersAreNotified() {
-			Persister<AbstractVehicle, Identifier<Long>, ?> abstractVehiclePersister = entityBuilder(AbstractVehicle.class, LONG_TYPE)
+			IPersister<AbstractVehicle, Identifier<Long>> abstractVehiclePersister = entityBuilder(AbstractVehicle.class, LONG_TYPE)
 					// mapped super class defines id
 					.add(AbstractVehicle::getId).identifier(ALREADY_ASSIGNED)
 					.mapPolymorphism(PolymorphismPolicy.<AbstractVehicle, Identifier<Long>>joinedTables()
@@ -702,10 +700,10 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 			UpdateListener updateListenerMock = mock(UpdateListener.class);
 			SelectListener selectListenerMock = mock(SelectListener.class);
 			DeleteListener deleteListenerMock = mock(DeleteListener.class);
-			abstractVehiclePersister.getPersisterListener().addInsertListener(insertListenerMock);
-			abstractVehiclePersister.getPersisterListener().addUpdateListener(updateListenerMock);
-			abstractVehiclePersister.getPersisterListener().addSelectListener(selectListenerMock);
-			abstractVehiclePersister.getPersisterListener().addDeleteListener(deleteListenerMock);
+			abstractVehiclePersister.addInsertListener(insertListenerMock);
+			abstractVehiclePersister.addUpdateListener(updateListenerMock);
+			abstractVehiclePersister.addSelectListener(selectListenerMock);
+			abstractVehiclePersister.addDeleteListener(deleteListenerMock);
 			
 			// insert test
 			abstractVehiclePersister.insert(dummyCar);
@@ -735,7 +733,7 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 		
 		@Test
 		void oneSubClass() {
-			Persister<AbstractVehicle, Identifier<Long>, ?> abstractVehiclePersister = entityBuilder(AbstractVehicle.class, LONG_TYPE)
+			IPersister<AbstractVehicle, Identifier<Long>> abstractVehiclePersister = entityBuilder(AbstractVehicle.class, LONG_TYPE)
 					// mapped super class defines id
 					.add(AbstractVehicle::getId).identifier(ALREADY_ASSIGNED)
 					.mapPolymorphism(PolymorphismPolicy.<AbstractVehicle, Identifier<Long>>tablePerClass()
@@ -789,7 +787,7 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 		
 		@Test
 		void twoSubClasses() {
-			JoinedTablesPersister<AbstractVehicle, Identifier<Long>, ?> abstractVehiclePersister = entityBuilder(AbstractVehicle.class, LONG_TYPE)
+			IPersister<AbstractVehicle, Identifier<Long>> abstractVehiclePersister = entityBuilder(AbstractVehicle.class, LONG_TYPE)
 					// mapped super class defines id
 					.add(AbstractVehicle::getId).identifier(ALREADY_ASSIGNED)
 					.mapPolymorphism(PolymorphismPolicy.<AbstractVehicle, Identifier<Long>>tablePerClass()
@@ -869,7 +867,7 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 		
 		@Test
 		void twoSubClasses_withCommonProperties() {
-			JoinedTablesPersister<Vehicle, Identifier<Long>, ?> abstractVehiclePersister = entityBuilder(Vehicle.class, LONG_TYPE)
+			IPersister<Vehicle, Identifier<Long>> abstractVehiclePersister = entityBuilder(Vehicle.class, LONG_TYPE)
 					// mapped super class defines id
 					.add(Vehicle::getId).identifier(ALREADY_ASSIGNED)
 					.add(Vehicle::getColor)
@@ -951,7 +949,7 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 		
 		@Test
 		void listenersAreNotified() {
-			Persister<AbstractVehicle, Identifier<Long>, ?> abstractVehiclePersister = entityBuilder(AbstractVehicle.class, LONG_TYPE)
+			IPersister<AbstractVehicle, Identifier<Long>> abstractVehiclePersister = entityBuilder(AbstractVehicle.class, LONG_TYPE)
 					// mapped super class defines id
 					.add(AbstractVehicle::getId).identifier(ALREADY_ASSIGNED)
 					.mapPolymorphism(PolymorphismPolicy.<AbstractVehicle, Identifier<Long>>tablePerClass()
@@ -973,10 +971,10 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 			UpdateListener updateListenerMock = mock(UpdateListener.class);
 			SelectListener selectListenerMock = mock(SelectListener.class);
 			DeleteListener deleteListenerMock = mock(DeleteListener.class);
-			abstractVehiclePersister.getPersisterListener().addInsertListener(insertListenerMock);
-			abstractVehiclePersister.getPersisterListener().addUpdateListener(updateListenerMock);
-			abstractVehiclePersister.getPersisterListener().addSelectListener(selectListenerMock);
-			abstractVehiclePersister.getPersisterListener().addDeleteListener(deleteListenerMock);
+			abstractVehiclePersister.addInsertListener(insertListenerMock);
+			abstractVehiclePersister.addUpdateListener(updateListenerMock);
+			abstractVehiclePersister.addSelectListener(selectListenerMock);
+			abstractVehiclePersister.addDeleteListener(deleteListenerMock);
 			
 			// insert test
 			abstractVehiclePersister.insert(dummyCar);

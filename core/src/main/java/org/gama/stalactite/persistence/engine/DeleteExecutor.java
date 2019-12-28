@@ -26,7 +26,7 @@ import org.gama.stalactite.sql.dml.WriteOperation;
  * 
  * @author Guillaume Mary
  */
-public class DeleteExecutor<C, I, T extends Table> extends WriteExecutor<C, I, T> {
+public class DeleteExecutor<C, I, T extends Table> extends WriteExecutor<C, I, T> implements IDeleteExecutor<C, I> {
 	
 	private RowCountManager rowCountManager = RowCountManager.THROWING_ROW_COUNT_MANAGER;
 	
@@ -60,6 +60,7 @@ public class DeleteExecutor<C, I, T extends Table> extends WriteExecutor<C, I, T
 	 * @return deleted row count
 	 * @throws StaleObjectExcepion if deleted row count differs from entities count
 	 */
+	@Override
 	public int delete(Iterable<C> entities) {
 		ColumnParameterizedSQL<T> deleteStatement = getDmlGenerator().buildDelete(getMappingStrategy().getTargetTable(), getMappingStrategy().getVersionedKeys());
 		WriteOperation<Column<T, Object>> writeOperation = newWriteOperation(deleteStatement, new CurrentConnectionProvider());
@@ -83,6 +84,7 @@ public class DeleteExecutor<C, I, T extends Table> extends WriteExecutor<C, I, T
 	 * @param entities entites to be deleted
 	 * @return deleted row count
 	 */
+	@Override
 	public int deleteById(Iterable<C> entities) {
 		// get ids before passing them to deleteFromId
 		List<I> ids = new ArrayList<>();
@@ -101,6 +103,7 @@ public class DeleteExecutor<C, I, T extends Table> extends WriteExecutor<C, I, T
 	 * @param ids entities identifiers
 	 * @return deleted row count
 	 */
+//	@Override
 	public int deleteFromId(Iterable<I> ids) {
 		int blockSize = getInOperatorMaxSize();
 		List<List<I>> parcels = Collections.parcel(ids, blockSize);

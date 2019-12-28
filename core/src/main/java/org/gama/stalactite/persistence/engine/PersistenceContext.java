@@ -50,7 +50,7 @@ import org.gama.stalactite.query.model.QueryProvider;
 public class PersistenceContext {
 	
 	private int jdbcBatchSize = 100;
-	private final Map<Class<?>, Persister> persisterCache = new HashMap<>();
+	private final Map<Class<?>, IPersister> persisterCache = new HashMap<>();
 	
 	private final Dialect dialect;
 	private final ConnectionProvider connectionProvider;
@@ -96,7 +96,7 @@ public class PersistenceContext {
 		return connectionProvider.getCurrentConnection();
 	}
 	
-	public Set<Persister> getPersisters() {
+	public Set<IPersister> getPersisters() {
 		// copy the Set because values() is backed by the Map and getPersisters() is not expected to permit such modifications
 		return new HashSet<>(persisterCache.values());
 	}
@@ -110,7 +110,7 @@ public class PersistenceContext {
 	 * @return never null
 	 * @throws IllegalArgumentException if the class is not mapped
 	 */
-	public <C, I, T extends Table<T>> Persister<C, I, T> getPersister(Class<C> clazz) {
+	public <C, I> IPersister<C, I> getPersister(Class<C> clazz) {
 		return persisterCache.get(clazz);
 	}
 	
@@ -120,8 +120,8 @@ public class PersistenceContext {
 	 * @param persister any {@link Persister}
 	 * @param <C> type of persisted bean
 	 */
-	public <C> void addPersister(Persister<C, ?, ?> persister) {
-		Persister existingPersister = persisterCache.get(persister.getMappingStrategy().getClassToPersist());
+	public <C> void addPersister(IPersister<C, ?> persister) {
+		IPersister<C, ?> existingPersister = persisterCache.get(persister.getMappingStrategy().getClassToPersist());
 		if (existingPersister != null && existingPersister != persister) {
 			throw new IllegalArgumentException("Persister already exists for class " + Reflections.toString(persister.getMappingStrategy().getClassToPersist()));
 		}

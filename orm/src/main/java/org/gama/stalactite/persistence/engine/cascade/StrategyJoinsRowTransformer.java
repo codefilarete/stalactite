@@ -38,14 +38,14 @@ public class StrategyJoinsRowTransformer<T> {
 	 */
 	public static final Function<Column, String> DEFAULT_ALIAS_PROVIDER = Column::getAlias;
 	
-	private final StrategyJoins<T, ?> rootStrategyJoins;
+	private final StrategyJoins<T> rootStrategyJoins;
 	private Function<Column, String> aliasProvider = DEFAULT_ALIAS_PROVIDER;
 	
-	public StrategyJoinsRowTransformer(StrategyJoins<T, ?> rootStrategyJoins) {
+	public StrategyJoinsRowTransformer(StrategyJoins<T> rootStrategyJoins) {
 		this.rootStrategyJoins = rootStrategyJoins;
 	}
 	
-	public StrategyJoinsRowTransformer(StrategyJoins<T, ?> rootStrategyJoins, Function<Column, String> aliasProvider) {
+	public StrategyJoinsRowTransformer(StrategyJoins<T> rootStrategyJoins, Function<Column, String> aliasProvider) {
 		this.rootStrategyJoins = rootStrategyJoins;
 		this.aliasProvider = aliasProvider;
 	}
@@ -100,7 +100,7 @@ public class StrategyJoinsRowTransformer<T> {
 		while (!stack.isEmpty()) {
 			
 			// treating the current depth
-			StrategyJoins<Object, Object> strategyJoins = stack.poll();
+			StrategyJoins<Object> strategyJoins = stack.poll();
 			IEntityMappingStrategy<Object, Object, Table> leftStrategy = strategyJoins.getStrategy();
 			AbstractTransformer mainRowTransformer = beanTransformerCache.computeIfAbsent(leftStrategy, s -> s.copyTransformerWithAliases(columnedRow));
 			Object identifier = leftStrategy.getIdMappingStrategy().getIdentifierAssembler().assemble(row, columnedRow);

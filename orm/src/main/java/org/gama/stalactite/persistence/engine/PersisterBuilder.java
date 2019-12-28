@@ -1,6 +1,5 @@
 package org.gama.stalactite.persistence.engine;
 
-import org.gama.stalactite.persistence.engine.cascade.JoinedTablesPersister;
 import org.gama.stalactite.persistence.structure.Table;
 
 /**
@@ -12,7 +11,7 @@ import org.gama.stalactite.persistence.structure.Table;
  */
 public interface PersisterBuilder<C, I>  {
 	
-	JoinedTablesPersister<C, I, Table> build(PersistenceContext persistenceContext);
+	IPersister<C, I> build(PersistenceContext persistenceContext);
 	
-	<T extends Table> JoinedTablesPersister<C, I, T> build(PersistenceContext persistenceContext, T table);
+	<T extends Table> IPersister<C, I> build(PersistenceContext persistenceContext, T table);
 }

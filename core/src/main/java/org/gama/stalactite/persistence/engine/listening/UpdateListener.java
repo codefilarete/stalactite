@@ -76,16 +76,27 @@ public interface UpdateListener<C> {
 	static <C, T extends Table<T>> Iterable<UpdatePayload<C, T>> computePayloads(Iterable<? extends Duo<? extends C, ? extends C>> entities,
 																			 boolean allColumns,
 																			 IMappingStrategy<C, T> mappingStrategy) {
-		List<UpdatePayload<C, T>> result = new ArrayList<>();
+		return (Iterable<UpdatePayload<C, T>>) (Iterable) computePayloads(entities, allColumns,
+				(modified, unmodified, allColumns1) -> (Map<UpwhereColumn<Table>, Object>) (Map) mappingStrategy.getUpdateValues(modified, unmodified, allColumns1));
+	}
+	
+	static <C> Iterable<UpdatePayload<C, Table>> computePayloads(Iterable<? extends Duo<? extends C, ? extends C>> entities,
+																				 boolean allColumns,
+																				 UpdateValuesProvider<C> mappingStrategy) {
+		List<UpdatePayload<C, Table>> result = new ArrayList<>();
 		for (Duo<? extends C, ? extends C> next : entities) {
 			C modified = next.getLeft();
 			C unmodified = next.getRight();
 			// finding differences between modified instances and unmodified ones
-			Map<UpwhereColumn<T>, Object> updateValues = mappingStrategy.getUpdateValues(modified, unmodified, allColumns);
-			UpdatePayload<C, T> payload = new UpdatePayload<>(next, updateValues);
+			Map<UpwhereColumn<Table>, Object> updateValues = mappingStrategy.getUpdateValues(modified, unmodified, allColumns);
+			UpdatePayload<C, Table> payload = new UpdatePayload<>(next, updateValues);
 			result.add(payload);
 		}
 		return result;
+	}
+	
+	interface UpdateValuesProvider<C> {
+		Map<UpwhereColumn<Table>, Object> getUpdateValues(C modified, C unmodified, boolean allColumns);
 	}
 	
 }

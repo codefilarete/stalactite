@@ -170,7 +170,7 @@ class BeanMappingBuilder {
 	 * @param localTargetTable the table on which columns must be added
 	 * @return a mapping between properties of given {@link Map} keys and their column in given {@link Table}
 	 */
-	protected Map<IReversibleAccessor, Column> projectColumns(Map<? extends IReversibleAccessor, ? extends Column> propertyToColumn,
+	protected static Map<IReversibleAccessor, Column> projectColumns(Map<? extends IReversibleAccessor, ? extends Column> propertyToColumn,
 															  Table localTargetTable,
 															  BiFunction<IReversibleAccessor, Column, String> columnNameSupplier) {
 		Map<IReversibleAccessor, Column> localResult = new HashMap<>();

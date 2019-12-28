@@ -13,19 +13,14 @@ import org.gama.lang.collection.Arrays;
 import org.gama.lang.collection.Iterables;
 import org.gama.lang.collection.Maps;
 import org.gama.lang.exception.Exceptions;
-import org.gama.stalactite.sql.ConnectionProvider;
-import org.gama.stalactite.sql.DataSourceConnectionProvider;
-import org.gama.stalactite.sql.binder.DefaultParameterBinders;
-import org.gama.stalactite.sql.result.InMemoryResultSet;
-import org.gama.stalactite.sql.test.HSQLDBInMemoryDataSource;
 import org.gama.stalactite.persistence.engine.ColumnOptions.IdentifierPolicy;
 import org.gama.stalactite.persistence.engine.DDLDeployer;
+import org.gama.stalactite.persistence.engine.IPersister.EntityCriteria;
+import org.gama.stalactite.persistence.engine.IPersister.ExecutableEntityQuery;
 import org.gama.stalactite.persistence.engine.PersistenceContext;
-import org.gama.stalactite.persistence.engine.Persister;
 import org.gama.stalactite.persistence.engine.cascade.JoinedStrategiesSelect;
 import org.gama.stalactite.persistence.engine.cascade.JoinedTablesPersister;
 import org.gama.stalactite.persistence.engine.cascade.JoinedTablesPersister.CriteriaProvider;
-import org.gama.stalactite.persistence.engine.cascade.JoinedTablesPersister.ExecutableEntityQuery;
 import org.gama.stalactite.persistence.engine.model.City;
 import org.gama.stalactite.persistence.engine.model.Country;
 import org.gama.stalactite.persistence.engine.model.Timestamp;
@@ -37,6 +32,11 @@ import org.gama.stalactite.persistence.sql.HSQLDBDialect;
 import org.gama.stalactite.persistence.sql.dml.binder.ColumnBinderRegistry;
 import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.query.model.Operators;
+import org.gama.stalactite.sql.ConnectionProvider;
+import org.gama.stalactite.sql.DataSourceConnectionProvider;
+import org.gama.stalactite.sql.binder.DefaultParameterBinders;
+import org.gama.stalactite.sql.result.InMemoryResultSet;
+import org.gama.stalactite.sql.test.HSQLDBInMemoryDataSource;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -46,7 +46,7 @@ import static org.gama.lang.function.Functions.link;
 import static org.gama.lang.test.Assertions.assertAllEquals;
 import static org.gama.lang.test.Assertions.assertEquals;
 import static org.gama.stalactite.persistence.engine.MappingEase.entityBuilder;
-import static org.gama.stalactite.query.model.Operators.*;
+import static org.gama.stalactite.query.model.Operators.eq;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -93,14 +93,14 @@ class EntitySelectExecutorTest {
 				Maps.asMap("Country_name", (Object) "France").add("Country_id", 12L)
 		));
 		
-		Persister<Country, Identifier, Table> persister = entityBuilder(Country.class, Identifier.class)
+		JoinedTablesPersister<Country, Identifier, Table> persister = (JoinedTablesPersister<Country, Identifier, Table>) entityBuilder(Country.class, Identifier.class)
 				.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.add(Country::getName)
 				.build(new PersistenceContext(connectionProviderMock, dialect));
 		
 		ColumnBinderRegistry columnBinderRegistry = dialect.getColumnBinderRegistry();
 		JoinedStrategiesSelect<Country, Identifier, Table> joinedStrategiesSelect =
-				((JoinedTablesPersister<Country, Identifier, Table>) persister).getJoinedStrategiesSelectExecutor().getJoinedStrategiesSelect();
+				persister.getJoinedStrategiesSelectExecutor().getJoinedStrategiesSelect();
 		EntitySelectExecutor<Country, Identifier, Table> testInstance = new EntitySelectExecutor<>(joinedStrategiesSelect, connectionProviderMock, columnBinderRegistry);
 		
 		EntityCriteriaSupport<Country> countryEntityCriteriaSupport = new EntityCriteriaSupport<>(persister.getMappingStrategy(), Country::getName, eq(""))
@@ -123,7 +123,7 @@ class EntitySelectExecutorTest {
 						.add("Country_creationDate", new java.sql.Timestamp(0)).add("Country_modificationDate", new java.sql.Timestamp(0))
 		));
 		
-		Persister<Country, Identifier, Table> persister = entityBuilder(Country.class, Identifier.class)
+		JoinedTablesPersister<Country, Identifier, Table> persister = (JoinedTablesPersister<Country, Identifier, Table>) entityBuilder(Country.class, Identifier.class)
 				.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.add(Country::getName)
 				.embed(Country::getTimestamp)
@@ -131,7 +131,7 @@ class EntitySelectExecutorTest {
 		
 		ColumnBinderRegistry columnBinderRegistry = dialect.getColumnBinderRegistry();
 		JoinedStrategiesSelect<Country, Identifier, Table> joinedStrategiesSelect =
-				((JoinedTablesPersister<Country, Identifier, Table>) persister).getJoinedStrategiesSelectExecutor().getJoinedStrategiesSelect();
+				persister.getJoinedStrategiesSelectExecutor().getJoinedStrategiesSelect();
 		EntitySelectExecutor<Country, Identifier, Table> testInstance = new EntitySelectExecutor<>(joinedStrategiesSelect, connectionProviderMock, columnBinderRegistry);
 		
 		EntityCriteriaSupport<Country> countryEntityCriteriaSupport = new EntityCriteriaSupport<>(persister.getMappingStrategy(), Country::getName, eq(""))
@@ -163,14 +163,14 @@ class EntitySelectExecutorTest {
 						.add("City_id", 42L).add("City_name", "Paris")
 		));
 		
-		JoinedTablesPersister<Country, Identifier, Table> persister = entityBuilder(Country.class, Identifier.class)
-		.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
-		.add(Country::getName)
-		.addOneToOne(Country::getCapital,
-				entityBuilder(City.class, Identifier.class)
-				.add(City::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
-				.add(City::getName))
-		.build(new PersistenceContext(connectionProviderMock, dialect));
+		JoinedTablesPersister<Country, Identifier, Table> persister = (JoinedTablesPersister<Country, Identifier, Table>) entityBuilder(Country.class, Identifier.class)
+			.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
+			.add(Country::getName)
+			.addOneToOne(Country::getCapital,
+					entityBuilder(City.class, Identifier.class)
+					.add(City::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
+					.add(City::getName))
+			.build(new PersistenceContext(connectionProviderMock, dialect));
 		
 		ColumnBinderRegistry columnBinderRegistry = dialect.getColumnBinderRegistry();
 		JoinedStrategiesSelect<Country, Identifier, Table> joinedStrategiesSelect =
@@ -214,7 +214,7 @@ class EntitySelectExecutorTest {
 						.add("City_id", 44L).add("City_name", "Grenoble")
 		));
 		
-		JoinedTablesPersister<Country, Identifier, Table> persister = entityBuilder(Country.class, Identifier.class)
+		JoinedTablesPersister<Country, Identifier, Table> persister = (JoinedTablesPersister<Country, Identifier, Table>) entityBuilder(Country.class, Identifier.class)
 		.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 		.add(Country::getName)
 		.addOneToManySet(Country::getCities, entityBuilder(City.class, Identifier.class)
@@ -272,7 +272,7 @@ class EntitySelectExecutorTest {
 		dialect.getJavaTypeToSqlTypeMapping().put(Identifier.class, "bigint");
 		
 		PersistenceContext persistenceContext = new PersistenceContext(connectionProvider, dialect);
-		JoinedTablesPersister<Country, Identifier, Table> persister = entityBuilder(Country.class, Identifier.class)
+		JoinedTablesPersister<Country, Identifier, Table> persister = (JoinedTablesPersister<Country, Identifier, Table>) entityBuilder(Country.class, Identifier.class)
 		.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 		.add(Country::getName)
 		.addOneToManySet(Country::getCities, entityBuilder(City.class, Identifier.class)
@@ -333,7 +333,7 @@ class EntitySelectExecutorTest {
 		dialect.getJavaTypeToSqlTypeMapping().put(Identifier.class, "bigint");
 		
 		PersistenceContext persistenceContext = new PersistenceContext(connectionProvider, dialect);
-		JoinedTablesPersister<Country, Identifier, Table> persister = entityBuilder(Country.class, Identifier.class)
+		JoinedTablesPersister<Country, Identifier, Table> persister = (JoinedTablesPersister<Country, Identifier, Table>) entityBuilder(Country.class, Identifier.class)
 				.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.add(Country::getName)
 				.addOneToManySet(Country::getCities, entityBuilder(City.class, Identifier.class)

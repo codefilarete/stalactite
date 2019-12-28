@@ -37,7 +37,7 @@ import static org.gama.stalactite.persistence.engine.RowCountManager.THROWING_RO
  * 
  * @author Guillaume Mary
  */
-public class UpdateExecutor<C, I, T extends Table> extends WriteExecutor<C, I, T> {
+public class UpdateExecutor<C, I, T extends Table> extends WriteExecutor<C, I, T> implements IUpdateExecutor<C> {
 	
 	/** Entity lock manager, default is no operation as soon as a {@link VersioningStrategy} is given */
 	private OptimisticLockManager<T> optimisticLockManager = OptimisticLockManager.NOOP_OPTIMISTIC_LOCK_MANAGER;
@@ -84,6 +84,7 @@ public class UpdateExecutor<C, I, T extends Table> extends WriteExecutor<C, I, T
 	 * 
 	 * @param entities iterable of entities
 	 */
+	@Override
 	public int updateById(Iterable<C> entities) {
 		Set<Column<T, Object>> columnsToUpdate = getMappingStrategy().getUpdatableColumns();
 		if (columnsToUpdate.isEmpty()) {
@@ -103,6 +104,7 @@ public class UpdateExecutor<C, I, T extends Table> extends WriteExecutor<C, I, T
 		}
 	}
 	
+	@Override
 	public int update(Iterable<? extends Duo<? extends C, ? extends C>> differencesIterable, boolean allColumnsStatement) {
 		Iterable<UpdatePayload<C, T>> updatePayloads = computePayloads(differencesIterable, allColumnsStatement);
 		if (Iterables.isEmpty(updatePayloads)) {
@@ -125,7 +127,7 @@ public class UpdateExecutor<C, I, T extends Table> extends WriteExecutor<C, I, T
 	}
 	
 	// can't be named "update" due to naming conflict with the one with Iterable<Duo>
-	protected int updateDifferences(Iterable<UpdatePayload<C, T>> updatePayloads, boolean allColumnsStatement) {
+	public int updateDifferences(Iterable<UpdatePayload<C, T>> updatePayloads, boolean allColumnsStatement) {
 		if (allColumnsStatement) {
 			return updateMappedColumns(updatePayloads);
 		} else {
@@ -170,7 +172,7 @@ public class UpdateExecutor<C, I, T extends Table> extends WriteExecutor<C, I, T
 		// we ask the strategy to lookup for updatable columns (not taken directly on mapping strategy target table)
 		Set<Column<T, Object>> columnsToUpdate = getMappingStrategy().getUpdatableColumns();
 		if (columnsToUpdate.isEmpty()) {
-			// nothing to update, this prevent from a NPE in buildUpdate(..) due to lack of any (first) element
+			// nothing to update, this prevent from a NPE in buildUpdate(..) due to lack of any element
 			return 0;
 		} else {
 			// we update only entities that have values to be modified

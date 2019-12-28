@@ -39,8 +39,8 @@ import org.gama.stalactite.persistence.engine.cascade.JoinedStrategiesSelect;
 import org.gama.stalactite.persistence.engine.cascade.JoinedTablesPersister;
 import org.gama.stalactite.persistence.engine.configurer.PersisterBuilderImpl;
 import org.gama.stalactite.persistence.engine.listening.DeleteListener;
+import org.gama.stalactite.persistence.engine.listening.IPersisterListener;
 import org.gama.stalactite.persistence.engine.listening.InsertListener;
-import org.gama.stalactite.persistence.engine.listening.PersisterListener;
 import org.gama.stalactite.persistence.engine.listening.SelectListener;
 import org.gama.stalactite.persistence.engine.listening.UpdateListener;
 import org.gama.stalactite.persistence.id.assembly.SimpleIdentifierAssembler;
@@ -68,10 +68,6 @@ public class CascadeOneConfigurer<SRC, TRGT, ID> {
 	
 	private final PersistenceContext persistenceContext;
 	private final PersisterBuilderImpl<TRGT, ID> persisterBuilder;
-	
-	public CascadeOneConfigurer(PersistenceContext persistenceContext) {
-		this(persistenceContext, null);
-	}
 	
 	public CascadeOneConfigurer(PersistenceContext persistenceContext, PersisterBuilderImpl<TRGT, ID> persisterBuilder) {
 		this.persistenceContext = persistenceContext;
@@ -120,9 +116,7 @@ public class CascadeOneConfigurer<SRC, TRGT, ID> {
 			
 			IReversibleAccessor<SRC, TRGT> targetAccessor = cascadeOne.getTargetProvider();
 			
-			EntityMappingConfiguration<TRGT, ID> targetMappingConfiguration = cascadeOne.getTargetMappingConfiguration();
-			
-			JoinedTablesPersister<TRGT, ID, Table> targetPersister = persisterBuilder
+			JoinedTablesPersister<TRGT, ID, Table> targetPersister = (JoinedTablesPersister<TRGT, ID, Table>) persisterBuilder
 					// please note that even if no table is found in configuration, build(..) will create one
 					.build(persistenceContext, Nullable.nullable(cascadeOne.getTargetTable()).getOr(Nullable.nullable(cascadeOne.getReverseColumn()).map(Column::getTable).get()));
 			IEntityMappingStrategy<TRGT, ID, Table> targetMappingStrategy = targetPersister.getMappingStrategy();
@@ -139,14 +133,13 @@ public class CascadeOneConfigurer<SRC, TRGT, ID> {
 			addSelectCascade(cascadeOne, sourcePersister, targetPersister, leftColumn, rightColumn, beanRelationFixer);
 			
 			// additionnal cascade
-			PersisterListener<SRC, ID> srcPersisterListener = sourcePersister.getPersisterListener();
 			boolean orphanRemoval = maintenanceMode == ALL_ORPHAN_REMOVAL;
 			boolean writeAuthorized = maintenanceMode != READ_ONLY;
 			if (writeAuthorized) {
 				// NB: "delete removed" will be treated internally by updateCascade() and deleteCascade()
-				addInsertCascade(cascadeOne, targetPersister, srcPersisterListener);
-				addUpdateCascade(cascadeOne, targetPersister, srcPersisterListener, orphanRemoval);
-				addDeleteCascade(cascadeOne, targetPersister, srcPersisterListener, orphanRemoval);
+				addInsertCascade(cascadeOne, targetPersister, sourcePersister);
+				addUpdateCascade(cascadeOne, targetPersister, sourcePersister, orphanRemoval);
+				addDeleteCascade(cascadeOne, targetPersister, sourcePersister, orphanRemoval);
 			}
 			
 			return targetPersister;
@@ -167,7 +160,7 @@ public class CascadeOneConfigurer<SRC, TRGT, ID> {
 		@SuppressWarnings("squid:S1172")	// argument targetPersister is used by subclasses
 		protected void addInsertCascade(CascadeOne<SRC, TRGT, ID> cascadeOne,
 												 Persister<TRGT, ID, Table> targetPersister,
-												 PersisterListener<SRC, ID> srcPersisterListener) {
+												 IPersisterListener<SRC, ID> srcPersisterListener) {
 			// if cascade is mandatory, then adding nullability checking before insert
 			if (!cascadeOne.isNullable()) {
 				srcPersisterListener.addInsertListener(new MandatoryRelationCheckingBeforeInsertListener<>(cascadeOne.getTargetProvider()));
@@ -175,10 +168,10 @@ public class CascadeOneConfigurer<SRC, TRGT, ID> {
 		}
 		
 		protected abstract void addUpdateCascade(CascadeOne<SRC, TRGT, ID> cascadeOne, Persister<TRGT, ID, Table> targetPersister,
-												 PersisterListener<SRC, ID> srcPersisterListener, boolean orphanRemoval);
+												 IPersisterListener<SRC, ID> srcPersisterListener, boolean orphanRemoval);
 		
 		protected abstract void addDeleteCascade(CascadeOne<SRC, TRGT, ID> cascadeOne, Persister<TRGT, ID, Table> targetPersister,
-												 PersisterListener<SRC, ID> srcPersisterListener, boolean orphanRemoval);
+												 IPersisterListener<SRC, ID> srcPersisterListener, boolean orphanRemoval);
 		
 		/**
 		 * @return join key name added to in the {@link JoinedTablesPersister} 
@@ -193,9 +186,7 @@ public class CascadeOneConfigurer<SRC, TRGT, ID> {
 			String createdJoinNodeName = sourcePersister.addPersister(JoinedStrategiesSelect.FIRST_STRATEGY_NAME, targetPersister,
 					beanRelationFixer,
 					leftColumn, rightColumn, cascadeOne.isNullable());
-			if (targetPersister instanceof JoinedTablesPersister) {
-				addSubgraphSelect(createdJoinNodeName, sourcePersister, targetPersister, cascadeOne.getTargetProvider()::get);
-			}
+			addSubgraphSelect(createdJoinNodeName, sourcePersister, targetPersister, cascadeOne.getTargetProvider()::get);
 		}
 		
 		private void addSubgraphSelect(String joinName,
@@ -270,8 +261,8 @@ public class CascadeOneConfigurer<SRC, TRGT, ID> {
 		
 		@Override
 		protected void addInsertCascade(CascadeOne<SRC, TRGT, ID> cascadeOne,
-									 Persister<TRGT, ID, Table> targetPersister,
-									 PersisterListener<SRC, ID> srcPersisterListener) {
+										Persister<TRGT, ID, Table> targetPersister,
+										IPersisterListener<SRC, ID> srcPersisterListener) {
 			super.addInsertCascade(cascadeOne, targetPersister, srcPersisterListener);
 			// adding cascade treatment: before source insert, target is inserted to comply with foreign key constraint
 			srcPersisterListener.addInsertListener(new BeforeInsertSupport<>(targetPersister::persist, cascadeOne.getTargetProvider()::get, Objects::nonNull));
@@ -280,7 +271,7 @@ public class CascadeOneConfigurer<SRC, TRGT, ID> {
 		@Override
 		protected void addUpdateCascade(CascadeOne<SRC, TRGT, ID> cascadeOne,
 										Persister<TRGT, ID, Table> targetPersister,
-										PersisterListener<SRC, ID> srcPersisterListener,
+										IPersisterListener<SRC, ID> srcPersisterListener,
 										boolean orphanRemoval) {
 			// if cascade is mandatory, then adding nullability checking before insert
 			if (!cascadeOne.isNullable()) {
@@ -323,8 +314,8 @@ public class CascadeOneConfigurer<SRC, TRGT, ID> {
 		
 		@Override
 		protected void addDeleteCascade(CascadeOne<SRC, TRGT, ID> cascadeOne,
-									  Persister<TRGT, ID, Table> targetPersister,
-									  PersisterListener<SRC, ID> srcPersisterListener, boolean orphanRemoval) {
+									  	Persister<TRGT, ID, Table> targetPersister,
+										IPersisterListener<SRC, ID> srcPersisterListener, boolean orphanRemoval) {
 			if (orphanRemoval) {
 				// adding cascade treatment: target is deleted after source deletion (because of foreign key constraint)
 				Predicate<TRGT> deletionPredicate = ((Predicate<TRGT>) Objects::nonNull).and(not(targetPersister.getMappingStrategy().getIdMappingStrategy()::isNew));
@@ -442,8 +433,8 @@ public class CascadeOneConfigurer<SRC, TRGT, ID> {
 		
 		@Override
 		protected void addInsertCascade(CascadeOne<SRC, TRGT, ID> cascadeOne,
-									  Persister<TRGT, ID, Table> targetPersister,
-									  PersisterListener<SRC, ID> srcPersisterListener) {
+									 	Persister<TRGT, ID, Table> targetPersister,
+										IPersisterListener<SRC, ID> srcPersisterListener) {
 			super.addInsertCascade(cascadeOne, targetPersister, srcPersisterListener);
 			// adding cascade treatment: after source insert, target is inserted to comply with foreign key constraint
 			srcPersisterListener.addInsertListener(new AfterInsertSupport<>(targetPersister::persist, cascadeOne.getTargetProvider()::get, Objects::nonNull));
@@ -453,7 +444,7 @@ public class CascadeOneConfigurer<SRC, TRGT, ID> {
 		@Override
 		protected void addUpdateCascade(CascadeOne<SRC, TRGT, ID> cascadeOne,
 										Persister<TRGT, ID, Table> targetPersister,
-										PersisterListener<SRC, ID> srcPersisterListener,
+										IPersisterListener<SRC, ID> srcPersisterListener,
 										boolean orphanRemoval) {
 			// if cascade is mandatory, then adding nullability checking before insert
 			if (!cascadeOne.isNullable()) {
@@ -523,8 +514,8 @@ public class CascadeOneConfigurer<SRC, TRGT, ID> {
 		
 		@Override
 		protected void addDeleteCascade(CascadeOne<SRC, TRGT, ID> cascadeOne,
-									  Persister<TRGT, ID, Table> targetPersister,
-									  PersisterListener<SRC, ID> srcPersisterListener, boolean deleteTargetEntities) {
+									  	Persister<TRGT, ID, Table> targetPersister,
+										IPersisterListener<SRC, ID> srcPersisterListener, boolean deleteTargetEntities) {
 			if (deleteTargetEntities) {
 				// adding cascade treatment: target is deleted before source deletion (because of foreign key constraint)
 				Predicate<TRGT> deletionPredicate = ((Predicate<TRGT>) Objects::nonNull).and(not(targetPersister.getMappingStrategy().getIdMappingStrategy()::isNew));

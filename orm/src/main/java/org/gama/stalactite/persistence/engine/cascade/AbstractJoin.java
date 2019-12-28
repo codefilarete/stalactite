@@ -10,9 +10,9 @@ import org.gama.stalactite.persistence.structure.Table;
  * 
  * @author Guillaume Mary
  */
-public abstract class AbstractJoin<I, O> {
+public abstract class AbstractJoin<O> {
 	/** The right part of the join */
-	protected final StrategyJoins<O, I> strategy;
+	protected final StrategyJoins<O> strategy;
 	/** Join column with previous strategy table */
 	protected final Column leftJoinColumn;
 	/** Join column with next strategy table */
@@ -24,7 +24,7 @@ public abstract class AbstractJoin<I, O> {
 		this.rightJoinColumn = rightJoinColumn;
 	}
 	
-	public StrategyJoins<O, I> getStrategy() {
+	public StrategyJoins<O> getStrategy() {
 		return strategy;
 	}
 	

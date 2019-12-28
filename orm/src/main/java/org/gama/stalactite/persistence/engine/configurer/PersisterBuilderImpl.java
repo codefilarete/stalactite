@@ -16,9 +16,8 @@ import com.google.common.annotations.VisibleForTesting;
 import org.danekja.java.util.function.serializable.SerializableBiFunction;
 import org.gama.lang.Reflections;
 import org.gama.lang.StringAppender;
-import org.gama.lang.collection.Collections;
+import org.gama.lang.collection.Arrays;
 import org.gama.lang.collection.Iterables;
-import org.gama.lang.collection.IteratorIterator;
 import org.gama.lang.collection.KeepOrderSet;
 import org.gama.lang.function.Functions;
 import org.gama.lang.function.Hanger.Holder;
@@ -40,6 +39,7 @@ import org.gama.stalactite.persistence.engine.EntityMappingConfiguration;
 import org.gama.stalactite.persistence.engine.EntityMappingConfiguration.InheritanceConfiguration;
 import org.gama.stalactite.persistence.engine.EntityMappingConfigurationProvider;
 import org.gama.stalactite.persistence.engine.ForeignKeyNamingStrategy;
+import org.gama.stalactite.persistence.engine.IPersister;
 import org.gama.stalactite.persistence.engine.MappingConfigurationException;
 import org.gama.stalactite.persistence.engine.NotYetSupportedOperationException;
 import org.gama.stalactite.persistence.engine.PersistenceContext;
@@ -94,7 +94,8 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 	 * Made static because several {@link PersisterBuilderImpl}s are instanciated along the build process.
 	 * Not the best design ever, but works !
 	 */
-	private static final ThreadLocal<Set<Class>> ENTITY_CANDIDATES = new ThreadLocal<>();
+	@VisibleForTesting
+	static final ThreadLocal<Set<Class>> ENTITY_CANDIDATES = new ThreadLocal<>();
 	
 	private final EntityMappingConfiguration<C, I> entityMappingConfiguration;
 	private final MethodReferenceCapturer methodSpy;
@@ -155,12 +156,12 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 	}
 	
 	@Override
-	public JoinedTablesPersister<C, I, Table> build(PersistenceContext persistenceContext) {
+	public IPersister<C, I> build(PersistenceContext persistenceContext) {
 		return build(persistenceContext, null);
 	}
 	
 	@Override
-	public <T extends Table> JoinedTablesPersister<C, I, T> build(PersistenceContext persistenceContext, @Nullable T table) {
+	public <T extends Table> IPersister<C, I> build(PersistenceContext persistenceContext, @Nullable T table) {
 		boolean isInitiator = ENTITY_CANDIDATES.get() == null;
 		
 		if (isInitiator) {
@@ -171,12 +172,12 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 			return doBuild(persistenceContext, table);
 		} finally {
 			if (isInitiator) {
-				ENTITY_CANDIDATES.get().clear();
+				ENTITY_CANDIDATES.remove();
 			}
 		}
 	}
 	
-	private <T extends Table> JoinedTablesPersister<C, I, T> doBuild(PersistenceContext persistenceContext, @Nullable T table) {
+	private <T extends Table> IPersister<C, I> doBuild(PersistenceContext persistenceContext, @Nullable T table) {
 		init(persistenceContext.getDialect().getColumnBinderRegistry(), table);
 		
 		if (this.table == null) {
@@ -204,19 +205,75 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 			}
 		});
 		
-		// collecting mapping of sub-entities
-		MappingPerTable subEntitiesMappingPerTable = collectEmbeddedMappingFromSubEntities();
-		
 		// add primary key and foreign key to all tables
-		Set<Table> impliedTables = new HashSet<>(Collections.cat(inheritanceMappingPerTable.giveTables(), subEntitiesMappingPerTable.giveTables()));
-		addPrimarykeys(identification, impliedTables);
-		addIdentificationToMapping(identification, () -> new IteratorIterator<>(inheritanceMappingPerTable.getMappings(), subEntitiesMappingPerTable.getMappings()));
+		addPrimarykeys(identification, inheritanceMappingPerTable.giveTables());
+		addForeignKeys(identification, inheritanceMappingPerTable.giveTables());
+		addIdentificationToMapping(identification, inheritanceMappingPerTable.getMappings());
 		
-		// Creating JoinedTablePersister from adhoc Insert/Update/Delete/Select Executors
-		// with discriminator for polymorphism single-table
+		// Creating main persister 
 		Mapping mainMapping = Iterables.first(inheritanceMappingPerTable.getMappings());
 		JoinedTablesPersister<C, I, T> mainPersister = buildMainPersister(identification, mainMapping, persistenceContext);
 		ENTITY_CANDIDATES.get().add(mainPersister.getMappingStrategy().getClassToPersist());
+		
+		IPersister<C, I> result = mainPersister;
+		// polymorphism handling
+		PolymorphismPolicy polymorphismPolicy = this.entityMappingConfiguration.getPolymorphismPolicy();
+		if (polymorphismPolicy != null) {
+			// collecting mapping of sub-entities
+//			MappingPerTable subEntitiesMappingPerTable = collectEmbeddedMappingFromSubEntities();
+//			addPrimarykeys(identification, subEntitiesMappingPerTable.giveTables());
+//			addIdentificationToMapping(identification, subEntitiesMappingPerTable.getMappings());
+			
+			PolymorphismBuilder<C, I, T> polymorphismBuilder = null;
+			if (polymorphismPolicy instanceof SingleTablePolymorphism) {
+				polymorphismBuilder = new SingleTablePolymorphismBuilder<>((SingleTablePolymorphism<C, I, ?>) polymorphismPolicy,
+						identification, mainPersister, mainMapping, this.columnBinderRegistry, this.columnNameProvider);
+			} else if (polymorphismPolicy instanceof TablePerClassPolymorphism) {
+				// in table-per-table polymorphism, main properties must be given to sub-entities ones, because CRUD operations are dipatched to them
+				// by a proxy and main persister is not so much used
+//				subEntitiesMappingPerTable.getMappings().forEach(m -> m.getMapping().putAll(mainMapping.mapping));
+				
+				polymorphismBuilder = new TablePerClassPolymorphismBuilder<C, I, T>((TablePerClassPolymorphism<C, I>) polymorphismPolicy,
+						identification, mainPersister, mainMapping, this.columnBinderRegistry, this.columnNameProvider, this.tableNamingStrategy) {
+					@Override
+					void addPrimarykey(Identification identification, Table table) {
+						PersisterBuilderImpl.this.addPrimarykeys(identification, Arrays.asSet(table));
+					}
+					
+					@Override
+					void addIdentificationToMapping(Identification identification, Mapping mapping) {
+						PersisterBuilderImpl.this.addIdentificationToMapping(identification, Arrays.asSet(mapping));
+					}
+				};
+			} else if (polymorphismPolicy instanceof JoinedTablesPolymorphism) {
+				polymorphismBuilder = new JoinedTablesPolymorphismBuilder<C, I, T>((JoinedTablesPolymorphism<C, I>) polymorphismPolicy,
+						identification, mainPersister, mainMapping, this.columnBinderRegistry, this.columnNameProvider, this.tableNamingStrategy) {
+					@Override
+					void addPrimarykey(Identification identification, Table table) {
+						PersisterBuilderImpl.this.addPrimarykeys(identification, Arrays.asSet(table));
+					}
+					
+					@Override
+					void addForeignKey(Identification identification, Table table) {
+						PersisterBuilderImpl.this.addForeignKeys(identification, Arrays.asSet(table));
+					}
+					
+					@Override
+					void addIdentificationToMapping(Identification identification, Mapping mapping) {
+						PersisterBuilderImpl.this.addIdentificationToMapping(identification, Arrays.asSet(mapping));
+					}
+				};
+			}
+			result = polymorphismBuilder.build(persistenceContext);
+			// by principle and in particular for StatefullIdentifier state change and relationship cascade triggering
+			result.addInsertListener(mainPersister.getPersisterListener().getInsertListener());
+			result.addUpdateListener(mainPersister.getPersisterListener().getUpdateListener());
+			result.addSelectListener(mainPersister.getPersisterListener().getSelectListener());
+			result.addDeleteListener(mainPersister.getPersisterListener().getDeleteListener());
+			result.addDeleteByIdListener(mainPersister.getPersisterListener().getDeleteByIdListener());
+		}
+		
+		
 		
 		// parent persister must be kept in ascending order for further treatments
 		Iterator<Mapping> mappings = Iterables.filter(Iterables.reverseIterator(inheritanceMappingPerTable.getMappings().asSet()),
@@ -228,19 +285,19 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 		addCascadesBetweenChildAndParentTable(mainPersister, parentPersisters);
 		
 		inheritanceMappingPerTable.getMappings().stream().map(Mapping::getMappingConfiguration)
-				.filter(EntityMappingConfiguration.class::isInstance).map(EntityMappingConfiguration.class::cast).forEach(entityMappingConfiguration -> {
-			configureRelations(entityMappingConfiguration, persistenceContext, mainPersister);
-		});
+				.filter(EntityMappingConfiguration.class::isInstance).map(EntityMappingConfiguration.class::cast).forEach(entityMappingConfiguration ->
+			configureRelations(entityMappingConfiguration, persistenceContext, mainPersister)
+		);
 		
 		handleVersioningStrategy(mainPersister);
 		
-		persistenceContext.addPersister(mainPersister);
+		persistenceContext.addPersister(result);
 		parentPersisters.forEach(persistenceContext::addPersister);
 		
-		return mainPersister;
+		return result;
 	}
 	
-	protected  <T extends Table> void configureRelations(EntityMappingConfiguration<C, I> entityMappingConfiguration,
+	protected <T extends Table> void configureRelations(EntityMappingConfiguration<C, I> entityMappingConfiguration,
 														 PersistenceContext persistenceContext,
 														 JoinedTablesPersister<C, I, T> sourcePersister) {
 		for (CascadeOne<C, ?, ?> cascadeOne : entityMappingConfiguration.getOneToOnes()) {
@@ -305,23 +362,18 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 			Column subclassPK = (Column) Iterables.first(mapping.targetTable.getPrimaryKey().getColumns());
 			mapping.mapping.put(identification.getIdAccessor(), subclassPK);
 			ClassMappingStrategy<C, I, Table> currentMappingStrategy = createClassMappingStrategy(
-					mapping.giveEmbeddableConfiguration(),
+					identification.getIdentificationDefiner().getPropertiesMapping() == mapping.giveEmbeddableConfiguration(),
 					mapping.targetTable,
 					mapping.mapping,
 					identification,
-					persistenceContext.getDialect()::buildGeneratedKeysReader);
+					persistenceContext.getDialect()::buildGeneratedKeysReader, mapping.giveEmbeddableConfiguration().getBeanType());
 			
 			JoinedTablesPersister<C, I, Table> currentPersister = new JoinedTablesPersister<>(persistenceContext, currentMappingStrategy);
 			parentPersisters.add(currentPersister);
 			// a join is necessary to select entity, only if target table changes
 			if (!currentPersister.getMainTable().equals(currentTable.get())) {
-				mainPersister.getJoinedStrategiesSelectExecutor().addRelation(JoinedStrategiesSelect.FIRST_STRATEGY_NAME, currentMappingStrategy,
-						(target, input) -> {
-							// applying values from inherited bean (input) to subclass one (target)
-							for (IReversibleAccessor columnFieldEntry : currentMappingStrategy.getPropertyToColumn().keySet()) {
-								columnFieldEntry.toMutator().set(target, columnFieldEntry.get(input));
-							}
-						}, superclassPK, subclassPK, false);
+				mainPersister.getJoinedStrategiesSelectExecutor().addComplementaryJoin(JoinedStrategiesSelect.FIRST_STRATEGY_NAME, currentMappingStrategy,
+					superclassPK, subclassPK);
 				currentTable.set(currentPersister.getMainTable());
 			}
 		});
@@ -330,12 +382,17 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 	
 	private <T extends Table> JoinedTablesPersister<C, I, T> buildMainPersister(Identification identification, Mapping mapping, PersistenceContext persistenceContext) {
 		ClassMappingStrategy<C, I, T> parentMappingStrategy = createClassMappingStrategy(
-				((EntityMappingConfiguration) mapping.mappingConfiguration).getPropertiesMapping(),
+				identification.getIdentificationDefiner().getPropertiesMapping() == ((EntityMappingConfiguration) mapping.mappingConfiguration).getPropertiesMapping(),
 				mapping.targetTable,
 				mapping.mapping,
 				identification,
-				persistenceContext.getDialect()::buildGeneratedKeysReader);
+				persistenceContext.getDialect()::buildGeneratedKeysReader, ((EntityMappingConfiguration) mapping.mappingConfiguration).getPropertiesMapping().getBeanType());
 		return (JoinedTablesPersister<C, I, T>) new JoinedTablesPersister(persistenceContext, parentMappingStrategy);
+	}
+	
+	interface PolymorphismBuilder<C, I, T extends Table> {
+		
+		IPersister<C, I> build(PersistenceContext persistenceContext);
 	}
 	
 	/**
@@ -489,8 +546,26 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 			Column newColumn = t.addColumn(columnNamingStrategy.giveName(memberDefinition), memberDefinition.getMemberType());
 			newColumn.setNullable(false);	// may not be necessary because of primary key, let for principle
 			newColumn.primaryKey();
-			t.addForeignKey(foreignKeyNamingStrategy.giveName(newColumn, previousPk[0]), newColumn, previousPk[0]);
 			previousPk[0] = newColumn;
+		});
+		
+	}
+	
+	void addForeignKeys(Identification identification, Set<Table> joinedTables) {
+		Table pkTable = this.tableMap.get(identification.identificationDefiner);
+		if (pkTable == null) {
+			// Should not happen except during this class development
+			throw new IllegalArgumentException("Table for primary key wasn't found in given tables : looking for "
+					+ this.tableNamingStrategy.giveName(identification.identificationDefiner.getEntityType())
+					+ " in [" + new StringAppender().ccat(Iterables.collectToList(joinedTables, Table::getAbsoluteName), ", ") + "]");
+		}
+
+		Column primaryKey = (Column) Iterables.first(pkTable.getPrimaryKey().getColumns());
+		final Column[] previousPk = { primaryKey };
+		joinedTables.stream().filter(not(primaryKey.getTable()::equals)).forEach(t -> {
+			Column currentPrimaryKey = (Column) Iterables.first(t.getPrimaryKey().getColumns());
+			t.addForeignKey(foreignKeyNamingStrategy.giveName(currentPrimaryKey, previousPk[0]), currentPrimaryKey, previousPk[0]);
+			previousPk[0] = currentPrimaryKey;
 		});
 		
 	}
@@ -660,21 +735,22 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 				+ ", please add one throught " + Reflections.toString(identifierSetter));
 	}
 	
-	private <T extends Table> ClassMappingStrategy<C, I, T> createClassMappingStrategy(
-			EmbeddableMappingConfiguration<C> entityMappingConfiguration,
+	static <X, I, T extends Table> ClassMappingStrategy<X, I, T> createClassMappingStrategy(
+			boolean isIdentifyingConfiguration,
 			T targetTable,
 			Map<? extends IReversibleAccessor, Column> mapping,
 			Identification identification,
-			GeneratedKeysReaderBuilder generatedKeysReaderBuilder) {
+			GeneratedKeysReaderBuilder generatedKeysReaderBuilder,
+			Class<X> beanType) {
 		// Child class insertion manager is always an "Already assigned" one because parent manages it for her
-		IdentifierInsertionManager<C, I> identifierInsertionManager = null;
+		IdentifierInsertionManager<X, I> identifierInsertionManager = null;
 		
 		Column primaryKey = (Column) Iterables.first(targetTable.getPrimaryKey().getColumns());
 		IdentifierPolicy identifierPolicy = identification.getIdentificationDefiner().getIdentifierPolicy();
 		IReversibleAccessor idAccessor = identification.getIdAccessor();
 		MemberDefinition idDefinition = MemberDefinition.giveMemberDefinition(idAccessor);
 		Class identifierType = idDefinition.getMemberType();
-		if (identification.getIdentificationDefiner().getPropertiesMapping() == entityMappingConfiguration) {
+		if (isIdentifyingConfiguration) {
 			if (identifierPolicy == AFTER_INSERT) {
 				identifierInsertionManager = new JDBCGeneratedKeysIdentifierManager<>(
 						new SinglePropertyIdAccessor<>(idAccessor),
@@ -695,11 +771,10 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 		} else {
 			identifierInsertionManager = new AlreadyAssignedIdentifierManager<>(identifierType);
 		}
-		SimpleIdMappingStrategy<C, I> simpleIdMappingStrategy = new SimpleIdMappingStrategy<>(idAccessor, identifierInsertionManager,
+		SimpleIdMappingStrategy<X, I> simpleIdMappingStrategy = new SimpleIdMappingStrategy<>(idAccessor, identifierInsertionManager,
 				new SimpleIdentifierAssembler<>(primaryKey));
 		
-		return new ClassMappingStrategy<C, I, T>(entityMappingConfiguration.getBeanType(),
-				targetTable, (Map) mapping, simpleIdMappingStrategy, c -> Reflections.newInstance(this.entityMappingConfiguration.getEntityType()));
+		return new ClassMappingStrategy<X, I, T>(beanType, targetTable, (Map) mapping, simpleIdMappingStrategy, c -> Reflections.newInstance(beanType));
 	}
 	
 	/**
@@ -773,13 +848,13 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 			return mappings;
 		}
 		
-		public class Mapping {
+		static class Mapping {
 			private final Object /* EntityMappingConfiguration, EmbeddableMappingConfiguration, SubEntityMappingConfiguration */ mappingConfiguration;
 			private final Table targetTable;
 			private final Map<IReversibleAccessor, Column> mapping;
 			private final boolean mappedSuperClass;
 			
-			private Mapping(Object mappingConfiguration, Table targetTable, Map<IReversibleAccessor, Column> mapping, boolean mappedSuperClass) {
+			Mapping(Object mappingConfiguration, Table targetTable, Map<IReversibleAccessor, Column> mapping, boolean mappedSuperClass) {
 				this.mappingConfiguration = mappingConfiguration;
 				this.targetTable = targetTable;
 				this.mapping = mapping;
