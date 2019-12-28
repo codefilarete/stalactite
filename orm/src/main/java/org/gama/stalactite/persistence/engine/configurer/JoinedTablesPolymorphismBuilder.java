@@ -297,8 +297,9 @@ abstract class JoinedTablesPolymorphismBuilder<C, I, T extends Table> implements
 						deleteCount.increment(deleteExecutor.delete(subtypeEntities));
 					}
 				});
-				
-				return mainPersister.delete(entities);
+				// NB: we use deleteExecutor not to trigger listener, because they should be triggered by wrapper, else we would try to delete twice
+				// related beans for instance
+				return mainPersister.getDeleteExecutor().delete(entities);
 			}
 			
 			@Override
@@ -314,8 +315,9 @@ abstract class JoinedTablesPolymorphismBuilder<C, I, T extends Table> implements
 						deleteCount.increment(deleteExecutor.deleteById(subtypeEntities));
 					}
 				});
-				
-				return mainPersister.deleteById(entities);
+				// NB: we use deleteExecutor not to trigger listener, because they should be triggered by wrapper, else we would try to delete twice
+				// related beans for instance
+				return mainPersister.getDeleteExecutor().deleteById(entities);
 			}
 			
 			@Override

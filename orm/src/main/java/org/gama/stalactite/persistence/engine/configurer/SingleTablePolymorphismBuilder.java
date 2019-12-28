@@ -228,12 +228,16 @@ class SingleTablePolymorphismBuilder<C, I, T extends Table, D> implements Polymo
 			@Override
 			public int delete(Iterable<C> entities) {
 				// deleting throught main entity is suffiscient because subentities tables is also main entity one
-				return mainPersister.delete(entities);
+				// NB: we use deleteExecutor not to trigger listener, because they should be triggered by wrapper, else we would try to delete twice
+				// related beans for instance
+				return mainPersister.getDeleteExecutor().delete(entities);
 			}
 			
 			@Override
 			public int deleteById(Iterable<C> entities) {
-				return mainPersister.deleteById(entities);
+				// NB: we use deleteExecutor not to trigger listener, because they should be triggered by wrapper, else we would try to delete twice
+				// related beans for instance
+				return mainPersister.getDeleteExecutor().deleteById(entities);
 			}
 			
 			@Override

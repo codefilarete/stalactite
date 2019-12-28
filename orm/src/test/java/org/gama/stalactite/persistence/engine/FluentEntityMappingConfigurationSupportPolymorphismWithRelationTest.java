@@ -2,6 +2,7 @@ package org.gama.stalactite.persistence.engine;
 
 import javax.sql.DataSource;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
@@ -11,6 +12,7 @@ import org.gama.lang.Duo;
 import org.gama.lang.collection.Arrays;
 import org.gama.lang.collection.Iterables;
 import org.gama.lang.test.Assertions;
+import org.gama.stalactite.persistence.engine.CascadeOptions.RelationMode;
 import org.gama.stalactite.persistence.engine.FluentEntityMappingConfigurationSupportInheritanceTest.AbstractVehicle;
 import org.gama.stalactite.persistence.engine.FluentEntityMappingConfigurationSupportInheritanceTest.Car;
 import org.gama.stalactite.persistence.engine.FluentEntityMappingConfigurationSupportInheritanceTest.Color;
@@ -170,9 +172,12 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 		
 		@Test
 		void oneSubClass() {
-			IPersister<AbstractVehicle, Identifier<Long>> abstractVehiclePersister = entityBuilder(AbstractVehicle.class, LONG_TYPE)
+			IPersister<Vehicle, Identifier<Long>> abstractVehiclePersister = entityBuilder(Vehicle.class, LONG_TYPE)
 					// mapped super class defines id
-					.add(AbstractVehicle::getId).identifier(ALREADY_ASSIGNED)
+					.add(Vehicle::getId).identifier(ALREADY_ASSIGNED)
+					.addOneToOne(Vehicle::getEngine, entityBuilder(Engine.class, LONG_TYPE)
+							.add(Engine::getId).identifier(ALREADY_ASSIGNED))
+							.cascading(RelationMode.ALL_ORPHAN_REMOVAL)
 					.mapPolymorphism(PolymorphismPolicy.<AbstractVehicle, Identifier<Long>>singleTable()
 							.addSubClass(subentityBuilder(Car.class)
 										.add(Car::getId)
@@ -182,10 +187,10 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 			
 			// Schema contains only one table : parent class one
 			HashSet<String> tables = Iterables.collect(DDLDeployer.collectTables(persistenceContext), Table::getName, HashSet::new);
-			assertEquals(Arrays.asHashSet("AbstractVehicle"), tables);
+			assertEquals(Arrays.asHashSet("Vehicle", "Engine"), tables);
 			
 			// Subclasses are not present in context (because doing so they would be accessible but without wrong behavior since some are configured on parent's persister)
-			assertEquals(Arrays.asHashSet(AbstractVehicle.class), Iterables.collect(persistenceContext.getPersisters(), p -> p.getMappingStrategy().getClassToPersist(), HashSet::new));
+			assertEquals(Arrays.asHashSet(Vehicle.class, Engine.class), Iterables.collect(persistenceContext.getPersisters(), p -> p.getMappingStrategy().getClassToPersist(), HashSet::new));
 			
 			// DML tests
 			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
@@ -193,12 +198,13 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 			
 			Car dummyCar = new Car(1L);
 			dummyCar.setModel("Renault");
+			dummyCar.setEngine(new Engine(100L));
 			dummyCar.setColor(new Color(666));
 			
 			// insert test
 			abstractVehiclePersister.insert(dummyCar);
 			
-			ExecutableSelect<String> modelQuery = persistenceContext.newQuery("select * from abstractVehicle", String.class)
+			ExecutableSelect<String> modelQuery = persistenceContext.newQuery("select * from Vehicle", String.class)
 					.mapKey(SerializableFunction.identity(), "model", String.class);
 			
 			List<String> allCars = modelQuery.execute();
@@ -220,29 +226,36 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 			
 			existingModels = modelQuery.execute();
 			assertEquals(Collections.emptyList(), existingModels);
+			
+			// because we asked for orphan removal, engine should not be present anymore
+			ExecutableSelect<Long> engineQuery = persistenceContext.newQuery("select id from Engine", Long.class)
+					.mapKey(SerializableFunction.identity(), "id", Long.class);
+			
+			assertEquals(new ArrayList<>(), engineQuery.execute());
 		}
 		
 		@Test
 		void twoSubClasses() {
-			IPersister<AbstractVehicle, Identifier<Long>> abstractVehiclePersister = entityBuilder(AbstractVehicle.class, LONG_TYPE)
-							// mapped super class defines id
-							.add(AbstractVehicle::getId).identifier(ALREADY_ASSIGNED)
-							.mapPolymorphism(PolymorphismPolicy.<AbstractVehicle, Identifier<Long>>singleTable()
-									.addSubClass(subentityBuilder(Car.class)
-											.add(Car::getId)
-											.add(Car::getModel)
-											.add(Car::getColor), "CAR")
-									.addSubClass(subentityBuilder(Truk.class)
-											.add(Truk::getId)
-											.add(Truk::getColor), "TRUK"))
-							.build(persistenceContext);
+			IPersister<Vehicle, Identifier<Long>> abstractVehiclePersister = entityBuilder(Vehicle.class, LONG_TYPE)
+					// mapped super class defines id
+					.add(Vehicle::getId).identifier(ALREADY_ASSIGNED)
+					.addOneToOne(Vehicle::getEngine, entityBuilder(Engine.class, LONG_TYPE)
+							.add(Engine::getId).identifier(ALREADY_ASSIGNED))
+							.cascading(RelationMode.ALL_ORPHAN_REMOVAL)
+					.mapPolymorphism(PolymorphismPolicy.<AbstractVehicle, Identifier<Long>>singleTable()
+							.addSubClass(subentityBuilder(Car.class)
+									.add(Car::getModel)
+									.add(Car::getColor), "CAR")
+							.addSubClass(subentityBuilder(Truk.class)
+									.add(Truk::getColor), "TRUK"))
+					.build(persistenceContext);
 			
 			// Schema contains only one table : parent class one
 			HashSet<String> tables = Iterables.collect(DDLDeployer.collectTables(persistenceContext), Table::getName, HashSet::new);
-			assertEquals(Arrays.asHashSet("AbstractVehicle"), tables);
+			assertEquals(Arrays.asHashSet("Vehicle", "Engine"), tables);
 			
 			// Subclasses are not present in context (because doing so they would be accessible but without wrong behavior since some are configured on parent's persister)
-			assertEquals(Arrays.asHashSet(AbstractVehicle.class), Iterables.collect(persistenceContext.getPersisters(), p -> p.getMappingStrategy().getClassToPersist(), HashSet::new));
+			assertEquals(Arrays.asHashSet(Vehicle.class, Engine.class), Iterables.collect(persistenceContext.getPersisters(), p -> p.getMappingStrategy().getClassToPersist(), HashSet::new));
 			
 			// DML tests
 			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
@@ -250,6 +263,7 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 			
 			Car dummyCar = new Car(1L);
 			dummyCar.setModel("Renault");
+			dummyCar.setEngine(new Engine(100L));
 			dummyCar.setColor(new Color(666));
 			
 			Truk dummyTruk = new Truk(2L);
@@ -258,7 +272,7 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 			// insert test
 			abstractVehiclePersister.insert(Arrays.asList(dummyCar, dummyTruk));
 			
-			ExecutableSelect<Duo<String, Integer>> modelQuery = persistenceContext.newQuery("select * from abstractVehicle", (Class<Duo<String, Integer>>) (Class) Duo.class)
+			ExecutableSelect<Duo<String, Integer>> modelQuery = persistenceContext.newQuery("select * from Vehicle", (Class<Duo<String, Integer>>) (Class) Duo.class)
 					.mapKey(Duo::new, "model", String.class, "color", Integer.class);
 			
 			List<Duo<String, Integer>> allCars = modelQuery.execute();
@@ -290,6 +304,12 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 			abstractVehiclePersister.delete(dummyTruk);
 			existingModels = modelQuery.execute();
 			assertEquals(Collections.emptyList(), existingModels);
+			
+			// because we asked for orphan removal, engine should not be present anymore
+			ExecutableSelect<Long> engineQuery = persistenceContext.newQuery("select id from Engine", Long.class)
+					.mapKey(SerializableFunction.identity(), "id", Long.class);
+			
+			assertEquals(new ArrayList<>(), engineQuery.execute());
 		}
 		
 		@Test
@@ -298,20 +318,22 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 					// mapped super class defines id
 					.add(Vehicle::getId).identifier(ALREADY_ASSIGNED)
 					.add(Vehicle::getColor)
+					.addOneToOne(Vehicle::getEngine, entityBuilder(Engine.class, LONG_TYPE)
+							.add(Engine::getId).identifier(ALREADY_ASSIGNED))
+							.cascading(RelationMode.ALL_ORPHAN_REMOVAL)
 					.mapPolymorphism(PolymorphismPolicy.<AbstractVehicle, Identifier<Long>>singleTable()
 							.addSubClass(subentityBuilder(Car.class)
-									.add(Car::getId)
 									.add(Car::getModel), "CAR")
-							.addSubClass(subentityBuilder(Truk.class)
-									.add(Truk::getId), "TRUK"))
+							.addSubClass(subentityBuilder(Truk.class),
+									"TRUK"))
 					.build(persistenceContext);
 			
 			// Schema contains only one table : parent class one
 			HashSet<String> tables = Iterables.collect(DDLDeployer.collectTables(persistenceContext), Table::getName, HashSet::new);
-			assertEquals(Arrays.asHashSet("Vehicle"), tables);
+			assertEquals(Arrays.asHashSet("Vehicle", "Engine"), tables);
 			
 			// Subclasses are not present in context (because doing so they would be accessible but without wrong behavior since some are configured on parent's persister)
-			assertEquals(Arrays.asHashSet(Vehicle.class), Iterables.collect(persistenceContext.getPersisters(), p -> p.getMappingStrategy().getClassToPersist(), HashSet::new));
+			assertEquals(Arrays.asHashSet(Vehicle.class, Engine.class), Iterables.collect(persistenceContext.getPersisters(), p -> p.getMappingStrategy().getClassToPersist(), HashSet::new));
 			
 			// DML tests
 			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
@@ -319,9 +341,11 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 			
 			Car dummyCar = new Car(1L);
 			dummyCar.setModel("Renault");
+			dummyCar.setEngine(new Engine(100L));
 			dummyCar.setColor(new Color(666));
 			
 			Truk dummyTruk = new Truk(2L);
+			dummyCar.setEngine(new Engine(200L));
 			dummyTruk.setColor(new Color(42));
 			
 			// insert test
@@ -378,16 +402,24 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 			
 			Integer trukCount = Iterables.first(trukQuery.execute());
 			assertEquals(0, trukCount);
+			
+			// because we asked for orphan removal, engine should not be present anymore
+			ExecutableSelect<Long> engineQuery = persistenceContext.newQuery("select id from Engine", Long.class)
+					.mapKey(SerializableFunction.identity(), "id", Long.class);
+			
+			assertEquals(new ArrayList<>(), engineQuery.execute());
 		}
 		
 		@Test
 		void listenersAreNotified() {
-			IPersister<AbstractVehicle, Identifier<Long>> abstractVehiclePersister = entityBuilder(AbstractVehicle.class, LONG_TYPE)
+			IPersister<Vehicle, Identifier<Long>> abstractVehiclePersister = entityBuilder(Vehicle.class, LONG_TYPE)
 					// mapped super class defines id
-					.add(AbstractVehicle::getId).identifier(ALREADY_ASSIGNED)
+					.add(Vehicle::getId).identifier(ALREADY_ASSIGNED)
+					.addOneToOne(Vehicle::getEngine, entityBuilder(Engine.class, LONG_TYPE)
+							.add(Engine::getId).identifier(ALREADY_ASSIGNED))
+							.cascading(RelationMode.ALL_ORPHAN_REMOVAL)
 					.mapPolymorphism(PolymorphismPolicy.<AbstractVehicle, Identifier<Long>>singleTable()
 							.addSubClass(subentityBuilder(Car.class)
-									.add(Car::getId)
 									.add(Car::getModel)
 									.add(Car::getColor), "CAR"))
 					.build(persistenceContext);
@@ -398,6 +430,7 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 			
 			Car dummyCar = new Car(1L);
 			dummyCar.setModel("Renault");
+			dummyCar.setEngine(new Engine(100L));
 			dummyCar.setColor(new Color(666));
 			
 			InsertListener insertListenerMock = mock(InsertListener.class);
@@ -437,22 +470,24 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 		
 		@Test
 		void oneSubClass() {
-			IPersister<AbstractVehicle, Identifier<Long>> abstractVehiclePersister = entityBuilder(AbstractVehicle.class, LONG_TYPE)
+			IPersister<Vehicle, Identifier<Long>> abstractVehiclePersister = entityBuilder(Vehicle.class, LONG_TYPE)
 					// mapped super class defines id
-					.add(AbstractVehicle::getId).identifier(ALREADY_ASSIGNED)
+					.add(Vehicle::getId).identifier(ALREADY_ASSIGNED)
+					.addOneToOne(Vehicle::getEngine, entityBuilder(Engine.class, LONG_TYPE)
+							.add(Engine::getId).identifier(ALREADY_ASSIGNED))
+							.cascading(RelationMode.ALL_ORPHAN_REMOVAL)
 					.mapPolymorphism(PolymorphismPolicy.<AbstractVehicle, Identifier<Long>>joinedTables()
 							.addSubClass(subentityBuilder(Car.class)
-									.add(Car::getId)
 									.add(Car::getModel)
 									.add(Car::getColor)))
 					.build(persistenceContext);
 			
 			// Schema contains main and children tables
 			HashSet<String> tables = Iterables.collect(DDLDeployer.collectTables(persistenceContext), Table::getName, HashSet::new);
-			assertEquals(Arrays.asHashSet("AbstractVehicle", "Car"), tables);
+			assertEquals(Arrays.asHashSet("Vehicle", "Car", "Engine"), tables);
 			
 			// Subclasses are not present in context (because doing so they would be accessible but without wrong behavior since some are configured on parent's persister)
-			assertEquals(Arrays.asHashSet(AbstractVehicle.class), Iterables.collect(persistenceContext.getPersisters(), p -> p.getMappingStrategy().getClassToPersist(), HashSet::new));
+			assertEquals(Arrays.asHashSet(Vehicle.class, Engine.class), Iterables.collect(persistenceContext.getPersisters(), p -> p.getMappingStrategy().getClassToPersist(), HashSet::new));
 			
 			// DML tests
 			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
@@ -460,12 +495,13 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 			
 			Car dummyCar = new Car(1L);
 			dummyCar.setModel("Renault");
+			dummyCar.setEngine(new Engine(100L));
 			dummyCar.setColor(new Color(666));
 			
 			// insert test
 			abstractVehiclePersister.insert(dummyCar);
 			
-			ExecutableSelect<String> modelQuery = persistenceContext.newQuery("select * from abstractVehicle left outer join car on abstractVehicle.id = car.id", String.class)
+			ExecutableSelect<String> modelQuery = persistenceContext.newQuery("select * from Vehicle left outer join car on Vehicle.id = car.id", String.class)
 					.mapKey(SerializableFunction.identity(), "model", String.class);
 			
 			List<String> allCars = modelQuery.execute();
@@ -487,13 +523,22 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 			
 			existingModels = modelQuery.execute();
 			assertEquals(Collections.emptyList(), existingModels);
+			
+			// because we asked for orphan removal, engine should not be present anymore
+			ExecutableSelect<Long> engineQuery = persistenceContext.newQuery("select id from Engine", Long.class)
+					.mapKey(SerializableFunction.identity(), "id", Long.class);
+			
+			assertEquals(new ArrayList<>(), engineQuery.execute());
 		}
 		
 		@Test
 		void twoSubClasses() {
-			IPersister<AbstractVehicle, Identifier<Long>> abstractVehiclePersister = entityBuilder(AbstractVehicle.class, LONG_TYPE)
+			IPersister<Vehicle, Identifier<Long>> abstractVehiclePersister = entityBuilder(Vehicle.class, LONG_TYPE)
 					// mapped super class defines id
-					.add(AbstractVehicle::getId).identifier(ALREADY_ASSIGNED)
+					.add(Vehicle::getId).identifier(ALREADY_ASSIGNED)
+					.addOneToOne(Vehicle::getEngine, entityBuilder(Engine.class, LONG_TYPE)
+							.add(Engine::getId).identifier(ALREADY_ASSIGNED))
+							.cascading(RelationMode.ALL_ORPHAN_REMOVAL)
 					.mapPolymorphism(PolymorphismPolicy.<AbstractVehicle, Identifier<Long>>joinedTables()
 							.addSubClass(subentityBuilder(Car.class)
 									.add(Car::getId)
@@ -506,10 +551,10 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 			
 			// Schema contains main and children tables
 			HashSet<String> tables = Iterables.collect(DDLDeployer.collectTables(persistenceContext), Table::getName, HashSet::new);
-			assertEquals(Arrays.asHashSet("AbstractVehicle", "Car", "Truk"), tables);
+			assertEquals(Arrays.asHashSet("Vehicle", "Car", "Truk", "Engine"), tables);
 			
 			// Subclasses are not present in context (because doing so they would be accessible but without wrong behavior since some are configured on parent's persister)
-			assertEquals(Arrays.asHashSet(AbstractVehicle.class), Iterables.collect(persistenceContext.getPersisters(), p -> p.getMappingStrategy().getClassToPersist(), HashSet::new));
+			assertEquals(Arrays.asHashSet(Vehicle.class, Engine.class), Iterables.collect(persistenceContext.getPersisters(), p -> p.getMappingStrategy().getClassToPersist(), HashSet::new));
 			
 			// DML tests
 			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
@@ -517,15 +562,17 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 			
 			Car dummyCar = new Car(1L);
 			dummyCar.setModel("Renault");
+			dummyCar.setEngine(new Engine(100L));
 			dummyCar.setColor(new Color(666));
 			
 			Truk dummyTruk = new Truk(2L);
+			dummyCar.setEngine(new Engine(200L));
 			dummyTruk.setColor(new Color(42));
 			
 			// insert test
 			abstractVehiclePersister.insert(Arrays.asList(dummyCar, dummyTruk));
 			
-			ExecutableSelect<Integer> vehicleIdQuery = persistenceContext.newQuery("select id from abstractVehicle", Integer.class)
+			ExecutableSelect<Integer> vehicleIdQuery = persistenceContext.newQuery("select id from Vehicle", Integer.class)
 					.mapKey(SerializableFunction.identity(), "id", Integer.class);
 			
 			List<Integer> vehicleIds = vehicleIdQuery.execute();
@@ -561,7 +608,7 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 			abstractVehiclePersister.delete(Arrays.asList(dummyCar, dummyTruk));
 			
 			ExecutableSelect<Integer> vehicleQuery = persistenceContext.newQuery("select"
-					+ " count(*) as vehicleCount from abstractVehicle where id in ("
+					+ " count(*) as vehicleCount from Vehicle where id in ("
 					+ dummyCar.getId().getSurrogate() + ", " + + dummyTruk.getId().getSurrogate() + ")", Integer.class)
 					.mapKey(SerializableFunction.identity(), "vehicleCount", Integer.class);
 			
@@ -581,6 +628,12 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 			
 			Integer trukCount = Iterables.first(trukQuery.execute());
 			assertEquals(0, trukCount);
+			
+			// because we asked for orphan removal, engine should not be present anymore
+			ExecutableSelect<Long> engineQuery = persistenceContext.newQuery("select id from Engine", Long.class)
+					.mapKey(SerializableFunction.identity(), "id", Long.class);
+			
+			assertEquals(new ArrayList<>(), engineQuery.execute());
 		}
 		
 		
@@ -590,20 +643,22 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 					// mapped super class defines id
 					.add(Vehicle::getId).identifier(ALREADY_ASSIGNED)
 					.add(Vehicle::getColor)
+					.addOneToOne(Vehicle::getEngine, entityBuilder(Engine.class, LONG_TYPE)
+							.add(Engine::getId).identifier(ALREADY_ASSIGNED))
+							.cascading(RelationMode.ALL_ORPHAN_REMOVAL)
 					.mapPolymorphism(PolymorphismPolicy.<AbstractVehicle, Identifier<Long>>joinedTables()
 							.addSubClass(subentityBuilder(Car.class)
-									.add(Car::getId)
 									.add(Car::getModel))
 							.addSubClass(subentityBuilder(Truk.class)
-									.add(Truk::getId)))
+									))
 					.build(persistenceContext);
 			
 			// Schema contains main and children tables
 			HashSet<String> tables = Iterables.collect(DDLDeployer.collectTables(persistenceContext), Table::getName, HashSet::new);
-			assertEquals(Arrays.asHashSet("Vehicle", "Car", "Truk"), tables);
+			assertEquals(Arrays.asHashSet("Vehicle", "Car", "Truk", "Engine"), tables);
 			
 			// Subclasses are not present in context (because doing so they would be accessible but without wrong behavior since some are configured on parent's persister)
-			assertEquals(Arrays.asHashSet(Vehicle.class), Iterables.collect(persistenceContext.getPersisters(), p -> p.getMappingStrategy().getClassToPersist(), HashSet::new));
+			assertEquals(Arrays.asHashSet(Vehicle.class, Engine.class), Iterables.collect(persistenceContext.getPersisters(), p -> p.getMappingStrategy().getClassToPersist(), HashSet::new));
 			
 			// DML tests
 			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
@@ -611,9 +666,11 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 			
 			Car dummyCar = new Car(1L);
 			dummyCar.setModel("Renault");
+			dummyCar.setEngine(new Engine(100L));
 			dummyCar.setColor(new Color(666));
 			
 			Truk dummyTruk = new Truk(2L);
+			dummyCar.setEngine(new Engine(200L));
 			dummyTruk.setColor(new Color(42));
 			
 			// insert test
@@ -676,16 +733,24 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 			
 			Integer trukCount = Iterables.first(trukQuery.execute());
 			assertEquals(0, trukCount);
+			
+			// because we asked for orphan removal, engine should not be present anymore
+			ExecutableSelect<Long> engineQuery = persistenceContext.newQuery("select id from Engine", Long.class)
+					.mapKey(SerializableFunction.identity(), "id", Long.class);
+			
+			assertEquals(new ArrayList<>(), engineQuery.execute());
 		}
 		
 		@Test
 		void listenersAreNotified() {
-			IPersister<AbstractVehicle, Identifier<Long>> abstractVehiclePersister = entityBuilder(AbstractVehicle.class, LONG_TYPE)
+			IPersister<Vehicle, Identifier<Long>> abstractVehiclePersister = entityBuilder(Vehicle.class, LONG_TYPE)
 					// mapped super class defines id
-					.add(AbstractVehicle::getId).identifier(ALREADY_ASSIGNED)
+					.add(Vehicle::getId).identifier(ALREADY_ASSIGNED)
+					.addOneToOne(Vehicle::getEngine, entityBuilder(Engine.class, LONG_TYPE)
+							.add(Engine::getId).identifier(ALREADY_ASSIGNED))
+							.cascading(RelationMode.ALL_ORPHAN_REMOVAL)
 					.mapPolymorphism(PolymorphismPolicy.<AbstractVehicle, Identifier<Long>>joinedTables()
 							.addSubClass(subentityBuilder(Car.class)
-									.add(Car::getId)
 									.add(Car::getModel)
 									.add(Car::getColor)))
 					.build(persistenceContext);
@@ -696,6 +761,7 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 			
 			Car dummyCar = new Car(1L);
 			dummyCar.setModel("Renault");
+			dummyCar.setEngine(new Engine(100L));
 			dummyCar.setColor(new Color(666));
 			
 			InsertListener insertListenerMock = mock(InsertListener.class);
@@ -735,9 +801,12 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 		
 		@Test
 		void oneSubClass() {
-			IPersister<AbstractVehicle, Identifier<Long>> abstractVehiclePersister = entityBuilder(AbstractVehicle.class, LONG_TYPE)
+			IPersister<Vehicle, Identifier<Long>> abstractVehiclePersister = entityBuilder(Vehicle.class, LONG_TYPE)
 					// mapped super class defines id
-					.add(AbstractVehicle::getId).identifier(ALREADY_ASSIGNED)
+					.add(Vehicle::getId).identifier(ALREADY_ASSIGNED)
+					.addOneToOne(Vehicle::getEngine, entityBuilder(Engine.class, LONG_TYPE)
+							.add(Engine::getId).identifier(ALREADY_ASSIGNED))
+							.cascading(RelationMode.ALL_ORPHAN_REMOVAL)
 					.mapPolymorphism(PolymorphismPolicy.<AbstractVehicle, Identifier<Long>>tablePerClass()
 							.addSubClass(subentityBuilder(Car.class)
 									.add(Car::getId)
@@ -747,10 +816,10 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 			
 			// Schema contains children tables
 			HashSet<String> tables = Iterables.collect(DDLDeployer.collectTables(persistenceContext), Table::getName, HashSet::new);
-			assertEquals(Arrays.asHashSet("Car"), tables);
+			assertEquals(Arrays.asHashSet("Car", "Engine"), tables);
 			
 			// Subclasses are not present in context (because doing so they would be accessible but without wrong behavior since some are configured on parent's persister)
-			assertEquals(Arrays.asHashSet(AbstractVehicle.class), Iterables.collect(persistenceContext.getPersisters(), p -> p.getMappingStrategy().getClassToPersist(), HashSet::new));
+			assertEquals(Arrays.asHashSet(Vehicle.class, Engine.class), Iterables.collect(persistenceContext.getPersisters(), p -> p.getMappingStrategy().getClassToPersist(), HashSet::new));
 			
 			// DML tests
 			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
@@ -758,6 +827,7 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 			
 			Car dummyCar = new Car(1L);
 			dummyCar.setModel("Renault");
+			dummyCar.setEngine(new Engine(100L));
 			dummyCar.setColor(new Color(666));
 			
 			// insert test
@@ -785,29 +855,36 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 			
 			existingModels = modelQuery.execute();
 			assertEquals(Collections.emptyList(), existingModels);
+			
+			// because we asked for orphan removal, engine should not be present anymore
+			ExecutableSelect<Long> engineQuery = persistenceContext.newQuery("select id from Engine", Long.class)
+					.mapKey(SerializableFunction.identity(), "id", Long.class);
+			
+			assertEquals(new ArrayList<>(), engineQuery.execute());
 		}
 		
 		@Test
 		void twoSubClasses() {
-			IPersister<AbstractVehicle, Identifier<Long>> abstractVehiclePersister = entityBuilder(AbstractVehicle.class, LONG_TYPE)
+			IPersister<Vehicle, Identifier<Long>> abstractVehiclePersister = entityBuilder(Vehicle.class, LONG_TYPE)
 					// mapped super class defines id
-					.add(AbstractVehicle::getId).identifier(ALREADY_ASSIGNED)
+					.add(Vehicle::getId).identifier(ALREADY_ASSIGNED)
+					.addOneToOne(Vehicle::getEngine, entityBuilder(Engine.class, LONG_TYPE)
+							.add(Engine::getId).identifier(ALREADY_ASSIGNED))
+							.cascading(RelationMode.ALL_ORPHAN_REMOVAL)
 					.mapPolymorphism(PolymorphismPolicy.<AbstractVehicle, Identifier<Long>>tablePerClass()
 							.addSubClass(subentityBuilder(Car.class)
-									.add(Car::getId)
 									.add(Car::getModel)
 									.add(Car::getColor))
 							.addSubClass(subentityBuilder(Truk.class)
-									.add(Truk::getId)
 									.add(Truk::getColor)))
 					.build(persistenceContext);
 
 			// Schema contains children tables
 			HashSet<String> tables = Iterables.collect(DDLDeployer.collectTables(persistenceContext), Table::getName, HashSet::new);
-			assertEquals(Arrays.asHashSet("Car", "Truk"), tables);
+			assertEquals(Arrays.asHashSet("Car", "Truk", "Engine"), tables);
 			
 			// Subclasses are not present in context (because doing so they would be accessible but without wrong behavior since some are configured on parent's persister)
-			assertEquals(Arrays.asHashSet(AbstractVehicle.class), Iterables.collect(persistenceContext.getPersisters(), p -> p.getMappingStrategy().getClassToPersist(), HashSet::new));
+			assertEquals(Arrays.asHashSet(Vehicle.class, Engine.class), Iterables.collect(persistenceContext.getPersisters(), p -> p.getMappingStrategy().getClassToPersist(), HashSet::new));
 
 			// DML tests
 			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
@@ -815,9 +892,11 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 
 			Car dummyCar = new Car(1L);
 			dummyCar.setModel("Renault");
+			dummyCar.setEngine(new Engine(100L));
 			dummyCar.setColor(new Color(666));
 
 			Truk dummyTruk = new Truk(2L);
+			dummyCar.setEngine(new Engine(200L));
 			dummyTruk.setColor(new Color(42));
 
 			// insert test
@@ -865,6 +944,12 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 
 			Integer trukCount = Iterables.first(trukQuery.execute());
 			assertEquals(0, trukCount);
+			
+			// because we asked for orphan removal, engine should not be present anymore
+			ExecutableSelect<Long> engineQuery = persistenceContext.newQuery("select id from Engine", Long.class)
+					.mapKey(SerializableFunction.identity(), "id", Long.class);
+			
+			assertEquals(new ArrayList<>(), engineQuery.execute());
 		}
 		
 		@Test
@@ -873,20 +958,22 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 					// mapped super class defines id
 					.add(Vehicle::getId).identifier(ALREADY_ASSIGNED)
 					.add(Vehicle::getColor)
+					.addOneToOne(Vehicle::getEngine, entityBuilder(Engine.class, LONG_TYPE)
+							.add(Engine::getId).identifier(ALREADY_ASSIGNED))
+							.cascading(RelationMode.ALL_ORPHAN_REMOVAL)
 					.mapPolymorphism(PolymorphismPolicy.<AbstractVehicle, Identifier<Long>>tablePerClass()
 							.addSubClass(subentityBuilder(Car.class)
-									.add(Car::getId)
 									.add(Car::getModel))
 							.addSubClass(subentityBuilder(Truk.class)
-									.add(Truk::getId)))
+									))
 					.build(persistenceContext);
 
 			// Schema contains children tables
 			HashSet<String> tables = Iterables.collect(DDLDeployer.collectTables(persistenceContext), Table::getName, HashSet::new);
-			assertEquals(Arrays.asHashSet("Car", "Truk"), tables);
+			assertEquals(Arrays.asHashSet("Car", "Truk", "Engine"), tables);
 			
 			// Subclasses are not present in context (because doing so they would be accessible but without wrong behavior since some are configured on parent's persister)
-			assertEquals(Arrays.asHashSet(Vehicle.class), Iterables.collect(persistenceContext.getPersisters(), p -> p.getMappingStrategy().getClassToPersist(), HashSet::new));
+			assertEquals(Arrays.asHashSet(Vehicle.class, Engine.class), Iterables.collect(persistenceContext.getPersisters(), p -> p.getMappingStrategy().getClassToPersist(), HashSet::new));
 
 			// DML tests
 			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
@@ -894,9 +981,11 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 
 			Car dummyCar = new Car(1L);
 			dummyCar.setModel("Renault");
+			dummyCar.setEngine(new Engine(100L));
 			dummyCar.setColor(new Color(666));
 
 			Truk dummyTruk = new Truk(2L);
+			dummyCar.setEngine(new Engine(200L));
 			dummyTruk.setColor(new Color(42));
 
 			// insert test
@@ -947,16 +1036,24 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 
 			Integer trukCount = Iterables.first(trukQuery.execute());
 			assertEquals(0, trukCount);
+			
+			// because we asked for orphan removal, engine should not be present anymore
+			ExecutableSelect<Long> engineQuery = persistenceContext.newQuery("select id from Engine", Long.class)
+					.mapKey(SerializableFunction.identity(), "id", Long.class);
+			
+			assertEquals(new ArrayList<>(), engineQuery.execute());
 		}
 		
 		@Test
 		void listenersAreNotified() {
-			IPersister<AbstractVehicle, Identifier<Long>> abstractVehiclePersister = entityBuilder(AbstractVehicle.class, LONG_TYPE)
+			IPersister<Vehicle, Identifier<Long>> abstractVehiclePersister = entityBuilder(Vehicle.class, LONG_TYPE)
 					// mapped super class defines id
-					.add(AbstractVehicle::getId).identifier(ALREADY_ASSIGNED)
+					.add(Vehicle::getId).identifier(ALREADY_ASSIGNED)
+					.addOneToOne(Vehicle::getEngine, entityBuilder(Engine.class, LONG_TYPE)
+							.add(Engine::getId).identifier(ALREADY_ASSIGNED))
+							.cascading(RelationMode.ALL_ORPHAN_REMOVAL)
 					.mapPolymorphism(PolymorphismPolicy.<AbstractVehicle, Identifier<Long>>tablePerClass()
 							.addSubClass(subentityBuilder(Car.class)
-									.add(Car::getId)
 									.add(Car::getModel)
 									.add(Car::getColor)))
 					.build(persistenceContext);
@@ -967,6 +1064,7 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 			
 			Car dummyCar = new Car(1L);
 			dummyCar.setModel("Renault");
+			dummyCar.setEngine(new Engine(100L));
 			dummyCar.setColor(new Color(666));
 			
 			InsertListener insertListenerMock = mock(InsertListener.class);
