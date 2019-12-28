@@ -11,6 +11,8 @@ import java.util.Set;
 import org.danekja.java.util.function.serializable.SerializableBiConsumer;
 import org.danekja.java.util.function.serializable.SerializableFunction;
 import org.gama.lang.Duo;
+import org.gama.lang.Reflections;
+import org.gama.lang.StringAppender;
 import org.gama.lang.bean.Objects;
 import org.gama.lang.collection.Iterables;
 import org.gama.lang.trace.ModifiableInt;
@@ -174,6 +176,25 @@ class SingleTablePolymorphismBuilder<C, I, T extends Table, D> implements Polymo
 				for (C entity : entities) {
 					entitiesPerType.computeIfAbsent(entity.getClass(), cClass -> new HashSet<>()).add(entity);
 				}
+				
+				// We "warn" user if he didn't give some configured instances (such as main type entities, only sub types are expected)
+				Set<Class> entitiesTypes = new HashSet<>(entitiesPerType.keySet());
+				entitiesTypes.removeAll(subclassInsertExecutors.keySet());
+				if (!entitiesTypes.isEmpty()) {
+					StringAppender ccat = new StringAppender() {
+						@Override
+						public StringAppender cat(Object s) {
+							if (s instanceof Class) {
+								return super.cat(Reflections.toString((Class) s));
+							} else {
+								return super.cat(s);
+							}
+						}
+					};
+					ccat.ccat(entitiesTypes, ", ");
+					throw new IllegalArgumentException("Some entities can't be inserted because their mapping is undefined : " + ccat);
+				}
+				
 				ModifiableInt insertCount = new ModifiableInt();
 				subclassInsertExecutors.forEach((subclass, insertExecutor) -> {
 					Set<C> subtypeEntities = entitiesPerType.get(subclass);

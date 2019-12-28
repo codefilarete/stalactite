@@ -13,20 +13,26 @@ import org.gama.lang.collection.Arrays;
 import org.gama.lang.collection.Iterables;
 import org.gama.lang.test.Assertions;
 import org.gama.stalactite.persistence.engine.CascadeOptions.RelationMode;
+import org.gama.stalactite.persistence.engine.ColumnOptions.IdentifierPolicy;
 import org.gama.stalactite.persistence.engine.FluentEntityMappingConfigurationSupportInheritanceTest.AbstractVehicle;
 import org.gama.stalactite.persistence.engine.FluentEntityMappingConfigurationSupportInheritanceTest.Car;
 import org.gama.stalactite.persistence.engine.FluentEntityMappingConfigurationSupportInheritanceTest.Color;
 import org.gama.stalactite.persistence.engine.FluentEntityMappingConfigurationSupportInheritanceTest.Engine;
 import org.gama.stalactite.persistence.engine.FluentEntityMappingConfigurationSupportInheritanceTest.Truk;
 import org.gama.stalactite.persistence.engine.FluentEntityMappingConfigurationSupportInheritanceTest.Vehicle;
+import org.gama.stalactite.persistence.engine.IFluentEntityMappingBuilder.IFluentMappingBuilderPropertyOptions;
 import org.gama.stalactite.persistence.engine.PersistenceContext.ExecutableSelect;
 import org.gama.stalactite.persistence.engine.listening.DeleteListener;
 import org.gama.stalactite.persistence.engine.listening.InsertListener;
 import org.gama.stalactite.persistence.engine.listening.SelectListener;
 import org.gama.stalactite.persistence.engine.listening.UpdateListener;
+import org.gama.stalactite.persistence.engine.model.City;
+import org.gama.stalactite.persistence.engine.model.Country;
+import org.gama.stalactite.persistence.engine.model.Person;
 import org.gama.stalactite.persistence.id.Identified;
 import org.gama.stalactite.persistence.id.Identifier;
 import org.gama.stalactite.persistence.id.PersistedIdentifier;
+import org.gama.stalactite.persistence.id.provider.LongProvider;
 import org.gama.stalactite.persistence.sql.HSQLDBDialect;
 import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.query.model.Operators;
@@ -50,6 +56,7 @@ import static org.gama.stalactite.persistence.id.Identifier.identifierBinder;
 import static org.gama.stalactite.sql.binder.DefaultParameterBinders.INTEGER_PRIMITIVE_BINDER;
 import static org.gama.stalactite.sql.binder.DefaultParameterBinders.LONG_PRIMITIVE_BINDER;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
@@ -82,7 +89,7 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 	}
 	
 	
-	static Object[][] polymorphicPersisters() {
+	static Object[][] polymorphicPersistersOneToOne() {
 		PersistenceContext persistenceContext1 = new PersistenceContext(new JdbcConnectionProvider(new HSQLDBInMemoryDataSource()), DIALECT);
 		PersistenceContext persistenceContext2 = new PersistenceContext(new JdbcConnectionProvider(new HSQLDBInMemoryDataSource()), DIALECT);
 		PersistenceContext persistenceContext3 = new PersistenceContext(new JdbcConnectionProvider(new HSQLDBInMemoryDataSource()), DIALECT);
@@ -132,8 +139,8 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 	
 	
 	@ParameterizedTest(name="{0}")
-	@MethodSource("polymorphicPersisters")
-	void crud(String testDisplayName, IPersister<AbstractVehicle, Identifier<Long>> persister, ConnectionProvider connectionProvider) throws SQLException {
+	@MethodSource("polymorphicPersistersOneToOne")
+	void crudOneToOne(String testDisplayName, IPersister<AbstractVehicle, Identifier<Long>> persister, ConnectionProvider connectionProvider) throws SQLException {
 		Car dummyCar = new Car(1L);
 		dummyCar.setModel("Renault");
 		dummyCar.setEngine(new Engine(100L));
@@ -166,6 +173,110 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 		assertEquals(dummyCarModfied, persister.select(dummyCar.getId()));
 		assertEquals(Arrays.asSet(dummyCarModfied, dummyTrukModfied), new HashSet<>(persister.select(Arrays.asSet(dummyCar.getId(), dummyTruk.getId()))));
 	}
+	
+	static Object[][] polymorphicPersistersOneToMany() {
+		PersistenceContext persistenceContext1 = new PersistenceContext(new JdbcConnectionProvider(new HSQLDBInMemoryDataSource()), DIALECT);
+		PersistenceContext persistenceContext2 = new PersistenceContext(new JdbcConnectionProvider(new HSQLDBInMemoryDataSource()), DIALECT);
+		PersistenceContext persistenceContext3 = new PersistenceContext(new JdbcConnectionProvider(new HSQLDBInMemoryDataSource()), DIALECT);
+		
+		IFluentMappingBuilderPropertyOptions<Person, Identifier<Long>> personMappingBuilder = MappingEase.entityBuilder(Person.class,
+				Identifier.LONG_TYPE)
+				.add(Person::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
+				.add(Person::getName);
+		
+		IFluentMappingBuilderPropertyOptions<City, Identifier<Long>> cityMappingBuilder = MappingEase.entityBuilder(City.class,
+				Identifier.LONG_TYPE)
+				.add(City::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
+				.add(City::getName)
+				.add(City::getCountry);
+		
+		Object[][] result = new Object[][] {
+				{	"single table",
+						entityBuilder(Country.class, Identifier.LONG_TYPE)
+								.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
+								.add(Country::getName)
+								.add(Country::getDescription)
+								.addOneToOne(Country::getPresident, personMappingBuilder)
+								.addOneToManySet(Country::getCities, cityMappingBuilder).mappedBy(City::setCountry)
+								.mapPolymorphism(PolymorphismPolicy.<Republic, Identifier<Long>>singleTable()
+										.addSubClass(subentityBuilder(Republic.class)
+												.add(Republic::getDeputeCount), "Republic"))
+								.build(persistenceContext1),
+						persistenceContext1 },
+				{	"joined tables",
+						entityBuilder(Country.class, Identifier.LONG_TYPE)
+								.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
+								.add(Country::getName)
+								.add(Country::getDescription)
+								.addOneToOne(Country::getPresident, personMappingBuilder)
+								.addOneToManySet(Country::getCities, cityMappingBuilder).mappedBy(City::setCountry)
+								.mapPolymorphism(PolymorphismPolicy.<Republic, Identifier<Long>>joinedTables()
+										.addSubClass(subentityBuilder(Republic.class)
+												.add(Republic::getDeputeCount)))
+								.build(persistenceContext2),
+						persistenceContext2 },
+				// Not implementable : one-to-many with mappedby targeting a table-per-class polymorphism is not implemented due to fk constraint, how to ? forget foreign key ?
+//				{	"table per class",
+//						entityBuilder(Country.class, Identifier.LONG_TYPE)
+//								.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
+//								.add(Country::getName)
+//								.add(Country::getDescription)
+//								.addOneToOne(Country::getPresident, personMappingBuilder)
+//								.addOneToManySet(Country::getCities, cityMappingBuilder).mappedBy(City::setCountry).cascading(RelationMode.READ_ONLY)
+//								.mapPolymorphism(PolymorphismPolicy.<Republic, Identifier<Long>>tablePerClass()
+//										.addSubClass(subentityBuilder(Republic.class)
+//												.add(Republic::getDeputeCount)))
+//								.build(persistenceContext3),
+//						persistenceContext3 },
+		};
+		new DDLDeployer(persistenceContext1).deployDDL();
+		new DDLDeployer(persistenceContext2).deployDDL();
+		new DDLDeployer(persistenceContext3).deployDDL();
+		return result;
+	}
+	
+	@ParameterizedTest(name="{0}")
+	@MethodSource("polymorphicPersistersOneToMany")
+	void crudOneToMany(String testDisplayName, IPersister<Country, Identifier<Long>> countryPersister, PersistenceContext connectionProvider) throws SQLException {
+		LongProvider countryIdProvider = new LongProvider();
+		Republic dummyCountry = new Republic(countryIdProvider.giveNewIdentifier());
+		dummyCountry.setDeputeCount(250);
+		dummyCountry.setName("France");
+		
+		Person person = new Person(new LongProvider().giveNewIdentifier());
+		person.setName("French president");
+		dummyCountry.setPresident(person);
+		
+		LongProvider cityIdentifierProvider = new LongProvider();
+		City capital = new City(cityIdentifierProvider.giveNewIdentifier());
+		capital.setName("Paris");
+		dummyCountry.addCity(capital);
+		
+		// testing insert cascade
+		countryPersister.insert(dummyCountry);
+		Republic persistedCountry = (Republic) countryPersister.select(dummyCountry.getId());
+		assertEquals(new PersistedIdentifier<>(0L), persistedCountry.getId());
+		assertEquals("French president", persistedCountry.getPresident().getName());
+		assertEquals("Paris", Iterables.first(persistedCountry.getCities()).getName());
+		assertEquals(250, persistedCountry.getDeputeCount());
+		assertTrue(persistedCountry.getPresident().getId().isPersisted());
+		assertTrue(Iterables.first(persistedCountry.getCities()).getId().isPersisted());
+		
+		// testing update cascade
+		persistedCountry.getPresident().setName("New french president");
+		City grenoble = new City(cityIdentifierProvider.giveNewIdentifier());
+		grenoble.setName("Grenoble");
+		persistedCountry.addCity(grenoble);
+		countryPersister.update(persistedCountry, dummyCountry, true);
+		
+		persistedCountry = (Republic) countryPersister.select(dummyCountry.getId());
+		assertEquals(new PersistedIdentifier<>(0L), persistedCountry.getId());
+		assertEquals("New french president", persistedCountry.getPresident().getName());
+		assertEquals(Arrays.asHashSet("Grenoble", "Paris"), Iterables.collect(persistedCountry.getCities(), City::getName, HashSet::new));
+		assertTrue(persistedCountry.getPresident().getId().isPersisted());
+		assertTrue(Iterables.first(persistedCountry.getCities()).getId().isPersisted());
+	}
+	
 	
 	@Nested
 	class SingleTable {
@@ -1096,6 +1207,36 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 			abstractVehiclePersister.delete(dummyCar);
 			verify(deleteListenerMock).beforeDelete(Arrays.asList(dummyCar));
 			verify(deleteListenerMock).afterDelete(Arrays.asList(dummyCar));
+		}
+	}
+	
+	private static class Republic extends Country {
+		
+		private Person primeMinister;
+		
+		private int deputeCount;
+		
+		public Republic() {
+		}
+		
+		public Republic(Identifier<Long> id) {
+			super(id);
+		}
+		
+		public Person getPrimeMinister() {
+			return primeMinister;
+		}
+		
+		public void setPrimeMinister(Person primeMinister) {
+			this.primeMinister = primeMinister;
+		}
+		
+		public int getDeputeCount() {
+			return deputeCount;
+		}
+		
+		public void setDeputeCount(int deputeCount) {
+			this.deputeCount = deputeCount;
 		}
 	}
 }
