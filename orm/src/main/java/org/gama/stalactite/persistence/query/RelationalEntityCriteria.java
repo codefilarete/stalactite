@@ -3,7 +3,7 @@ package org.gama.stalactite.persistence.query;
 import java.util.Collection;
 
 import org.danekja.java.util.function.serializable.SerializableFunction;
-import org.gama.stalactite.persistence.engine.IPersister.EntityCriteria;
+import org.gama.stalactite.persistence.engine.IEntityPersister.EntityCriteria;
 import org.gama.stalactite.query.model.AbstractRelationalOperator;
 
 /**

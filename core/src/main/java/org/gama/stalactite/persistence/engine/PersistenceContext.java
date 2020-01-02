@@ -19,10 +19,6 @@ import org.gama.lang.function.SerializableTriFunction;
 import org.gama.lang.function.ThrowingConverter;
 import org.gama.reflection.MethodReferenceCapturer;
 import org.gama.reflection.MethodReferenceDispatcher;
-import org.gama.stalactite.sql.ConnectionProvider;
-import org.gama.stalactite.sql.dml.PreparedSQL;
-import org.gama.stalactite.sql.dml.WriteOperation;
-import org.gama.stalactite.sql.result.ResultSetRowAssembler;
 import org.gama.stalactite.command.builder.DeleteCommandBuilder;
 import org.gama.stalactite.command.builder.InsertCommandBuilder;
 import org.gama.stalactite.command.builder.InsertCommandBuilder.InsertStatement;
@@ -33,14 +29,20 @@ import org.gama.stalactite.command.model.Insert;
 import org.gama.stalactite.command.model.Update;
 import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
 import org.gama.stalactite.persistence.sql.Dialect;
+import org.gama.stalactite.persistence.sql.IConnectionConfiguration;
+import org.gama.stalactite.persistence.sql.IConnectionConfiguration.ConnectionConfigurationSupport;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
-import org.gama.stalactite.query.builder.SQLQueryBuilder;
 import org.gama.stalactite.query.builder.SQLBuilder;
+import org.gama.stalactite.query.builder.SQLQueryBuilder;
 import org.gama.stalactite.query.model.CriteriaChain;
 import org.gama.stalactite.query.model.Query;
 import org.gama.stalactite.query.model.QueryEase;
 import org.gama.stalactite.query.model.QueryProvider;
+import org.gama.stalactite.sql.ConnectionProvider;
+import org.gama.stalactite.sql.dml.PreparedSQL;
+import org.gama.stalactite.sql.dml.WriteOperation;
+import org.gama.stalactite.sql.result.ResultSetRowAssembler;
 
 /**
  * Entry point for persistence in a database. Mix of configuration (Transaction, Dialect, ...) and registry for {@link Persister}s.
@@ -49,20 +51,30 @@ import org.gama.stalactite.query.model.QueryProvider;
  */
 public class PersistenceContext {
 	
-	private int jdbcBatchSize = 100;
-	private final Map<Class<?>, IPersister> persisterCache = new HashMap<>();
-	
+	private final Map<Class<?>, IEntityPersister> persisterCache = new HashMap<>();
 	private final Dialect dialect;
-	private final ConnectionProvider connectionProvider;
+	private final IConnectionConfiguration connectionConfiguration;
 	private final Map<Class, ClassMappingStrategy> mappingStrategies = new HashMap<>(50);
 	
 	public PersistenceContext(ConnectionProvider connectionProvider, Dialect dialect) {
-		this.connectionProvider = connectionProvider;
+		this(new ConnectionConfigurationSupport(connectionProvider, 100), dialect);
+	}
+	
+	public PersistenceContext(IConnectionConfiguration connectionConfiguration, Dialect dialect) {
+		this.connectionConfiguration = connectionConfiguration;
 		this.dialect = dialect;
 	}
 	
 	public ConnectionProvider getConnectionProvider() {
-		return connectionProvider;
+		return connectionConfiguration.getConnectionProvider();
+	}
+	
+	public Connection getCurrentConnection() {
+		return getConnectionProvider().getCurrentConnection();
+	}
+	
+	public int getJDBCBatchSize() {
+		return getConnectionConfiguration().getBatchSize();
 	}
 	
 	public Dialect getDialect() {
@@ -92,11 +104,7 @@ public class PersistenceContext {
 		return mappingStrategies;
 	}
 	
-	public Connection getCurrentConnection() {
-		return connectionProvider.getCurrentConnection();
-	}
-	
-	public Set<IPersister> getPersisters() {
+	public Set<IEntityPersister> getPersisters() {
 		// copy the Set because values() is backed by the Map and getPersisters() is not expected to permit such modifications
 		return new HashSet<>(persisterCache.values());
 	}
@@ -110,7 +118,7 @@ public class PersistenceContext {
 	 * @return never null
 	 * @throws IllegalArgumentException if the class is not mapped
 	 */
-	public <C, I> IPersister<C, I> getPersister(Class<C> clazz) {
+	public <C, I> IEntityPersister<C, I> getPersister(Class<C> clazz) {
 		return persisterCache.get(clazz);
 	}
 	
@@ -120,21 +128,17 @@ public class PersistenceContext {
 	 * @param persister any {@link Persister}
 	 * @param <C> type of persisted bean
 	 */
-	public <C> void addPersister(IPersister<C, ?> persister) {
-		IPersister<C, ?> existingPersister = persisterCache.get(persister.getMappingStrategy().getClassToPersist());
+	public <C> void addPersister(IEntityPersister<C, ?> persister) {
+		IEntityPersister<C, ?> existingPersister = persisterCache.get(persister.getClassToPersist());
 		if (existingPersister != null && existingPersister != persister) {
-			throw new IllegalArgumentException("Persister already exists for class " + Reflections.toString(persister.getMappingStrategy().getClassToPersist()));
+			throw new IllegalArgumentException("Persister already exists for class " + Reflections.toString(persister.getClassToPersist()));
 		}
 		
-		persisterCache.put(persister.getMappingStrategy().getClassToPersist(), persister);
+		persisterCache.put(persister.getClassToPersist(), persister);
 	}
 	
-	public int getJDBCBatchSize() {
-		return jdbcBatchSize;
-	}
-	
-	public void setJDBCBatchSize(int jdbcBatchSize) {
-		this.jdbcBatchSize = jdbcBatchSize;
+	public IConnectionConfiguration getConnectionConfiguration() {
+		return this.connectionConfiguration;
 	}
 	
 	/**
@@ -428,7 +432,7 @@ public class PersistenceContext {
 		public int execute(Map<? extends Column<T, Object>, Object> values) {
 			UpdateStatement<T> updateStatement = new UpdateCommandBuilder<>(this).toStatement(getDialect().getColumnBinderRegistry());
 			values.forEach(updateStatement::setValue);
-			try (WriteOperation<Integer> writeOperation = new WriteOperation<>(updateStatement, connectionProvider)) {
+			try (WriteOperation<Integer> writeOperation = new WriteOperation<>(updateStatement, getConnectionProvider())) {
 				writeOperation.setValues(updateStatement.getValues());
 				return writeOperation.execute();
 			}
@@ -455,7 +459,7 @@ public class PersistenceContext {
 		 */
 		public int execute() {
 			InsertStatement<T> insertStatement = new InsertCommandBuilder<>(this).toStatement(getDialect().getColumnBinderRegistry());
-			try (WriteOperation<Integer> writeOperation = new WriteOperation<>(insertStatement, connectionProvider)) {
+			try (WriteOperation<Integer> writeOperation = new WriteOperation<>(insertStatement, getConnectionProvider())) {
 				writeOperation.setValues(insertStatement.getValues());
 				return writeOperation.execute();
 			}
@@ -475,7 +479,7 @@ public class PersistenceContext {
 		 */
 		public int execute() {
 			PreparedSQL deleteStatement = new DeleteCommandBuilder<T>(this).toStatement(getDialect().getColumnBinderRegistry());
-			try (WriteOperation<Integer> writeOperation = new WriteOperation<>(deleteStatement, connectionProvider)) {
+			try (WriteOperation<Integer> writeOperation = new WriteOperation<>(deleteStatement, getConnectionProvider())) {
 				writeOperation.setValues(deleteStatement.getValues());
 				return writeOperation.execute();
 			}

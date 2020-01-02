@@ -598,12 +598,12 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements IFluentEnt
 	}
 	
 	@Override
-	public IPersister<C, I> build(PersistenceContext persistenceContext) {
+	public IEntityConfiguredPersister<C, I> build(PersistenceContext persistenceContext) {
 		return build(persistenceContext, null);
 	}
 	
 	@Override
-	public <T extends Table> IPersister<C, I> build(PersistenceContext persistenceContext, @javax.annotation.Nullable T targetTable) {
+	public IEntityConfiguredPersister<C, I> build(PersistenceContext persistenceContext, @javax.annotation.Nullable Table targetTable) {
 		return new PersisterBuilderImpl<>(this.getConfiguration()).build(persistenceContext, targetTable);
 	}
 	

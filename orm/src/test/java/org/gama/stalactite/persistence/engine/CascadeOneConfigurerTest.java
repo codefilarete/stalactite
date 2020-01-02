@@ -26,6 +26,7 @@ import org.gama.stalactite.persistence.id.manager.AlreadyAssignedIdentifierManag
 import org.gama.stalactite.persistence.id.manager.IdentifierInsertionManager;
 import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
 import org.gama.stalactite.persistence.sql.Dialect;
+import org.gama.stalactite.persistence.sql.IConnectionConfiguration.ConnectionConfigurationSupport;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.ForeignKey;
 import org.gama.stalactite.persistence.structure.Table;
@@ -123,7 +124,7 @@ class CascadeOneConfigurerTest {
 				new PersistenceContext(mock(ConnectionProvider.class), dialect),
 				new PersisterBuilderImpl<>(cityMappingConfiguration));
 		JoinedTablesPersister<Country, Identifier<Long>, Table> countryPersister = new JoinedTablesPersister<>(countryClassMappingStrategy, dialect,
-				mock(ConnectionProvider.class), 10);
+				new ConnectionConfigurationSupport(mock(ConnectionProvider.class), 10));
 		testInstance.appendCascade(countryCapitalRelation, countryPersister, ForeignKeyNamingStrategy.DEFAULT, ColumnNamingStrategy.JOIN_DEFAULT);
 		
 		// Then
@@ -220,7 +221,7 @@ class CascadeOneConfigurerTest {
 				new PersistenceContext(mock(ConnectionProvider.class), dialect),
 				new PersisterBuilderImpl<>(cityMappingConfiguration));
 		JoinedTablesPersister<Country, Identifier<Long>, Table> countryPersister = new JoinedTablesPersister<>(countryClassMappingStrategy, dialect,
-				mock(ConnectionProvider.class), 10);
+				new ConnectionConfigurationSupport(mock(ConnectionProvider.class), 10));
 		testInstance.appendCascade(countryCapitalRelation, countryPersister, ForeignKeyNamingStrategy.DEFAULT, ColumnNamingStrategy.JOIN_DEFAULT);
 		
 		assertEquals(Arrays.asSet("id", "countryId", "name"), cityTable.mapColumnsOnName().keySet());

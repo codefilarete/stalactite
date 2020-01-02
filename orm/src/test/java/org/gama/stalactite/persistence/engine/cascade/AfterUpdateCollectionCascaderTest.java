@@ -19,10 +19,10 @@ import org.gama.stalactite.persistence.id.manager.AlreadyAssignedIdentifierManag
 import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
 import org.gama.stalactite.persistence.mapping.IEntityMappingStrategy;
 import org.gama.stalactite.persistence.sql.Dialect;
+import org.gama.stalactite.persistence.sql.IConnectionConfiguration;
 import org.gama.stalactite.persistence.sql.dml.DMLGenerator;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
-import org.gama.stalactite.sql.ConnectionProvider;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -46,12 +46,12 @@ public class AfterUpdateCollectionCascaderTest extends AbstractCascaderTest {
 				mapping, identifier,
 				new AlreadyAssignedIdentifierManager<>(Long.class));
 		
-		Persister<Tata, Long, T> persisterStub = new Persister<Tata, Long, T>(mappingStrategyMock, mock(Dialect.class), null, 10) {
+		Persister<Tata, Long, T> persisterStub = new Persister<Tata, Long, T>(mappingStrategyMock, mock(Dialect.class), mock(IConnectionConfiguration.class)) {
 			
 			@Override
-			protected UpdateExecutor<Tata, Long, T> newUpdateExecutor(IEntityMappingStrategy<Tata, Long, T> mappingStrategy, ConnectionProvider connectionProvider, DMLGenerator dmlGenerator, Retryer writeOperationRetryer, int jdbcBatchSize, int inOperatorMaxSize) {
-				return new UpdateExecutor<Tata, Long, T>(mappingStrategy, connectionProvider, dmlGenerator,
-						writeOperationRetryer, jdbcBatchSize, inOperatorMaxSize) {
+			protected UpdateExecutor<Tata, Long, T> newUpdateExecutor(IEntityMappingStrategy<Tata, Long, T> mappingStrategy, IConnectionConfiguration connectionConfiguration, DMLGenerator dmlGenerator, Retryer writeOperationRetryer, int inOperatorMaxSize) {
+				return new UpdateExecutor<Tata, Long, T>(mappingStrategy, connectionConfiguration, dmlGenerator,
+						writeOperationRetryer, inOperatorMaxSize) {
 					
 					@Override
 					public int update(Iterable<? extends Duo<? extends Tata, ? extends Tata>> differencesIterable, boolean allColumnsStatement) {

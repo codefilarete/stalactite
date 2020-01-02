@@ -4,16 +4,13 @@ import javax.annotation.Nonnull;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 import org.danekja.java.util.function.serializable.SerializableBiConsumer;
 import org.danekja.java.util.function.serializable.SerializableFunction;
 import org.gama.lang.Duo;
 import org.gama.lang.Retryer;
 import org.gama.lang.collection.Iterables;
-import org.gama.lang.collection.Maps;
 import org.gama.lang.exception.NotImplementedException;
 import org.gama.stalactite.persistence.engine.listening.DeleteByIdListener;
 import org.gama.stalactite.persistence.engine.listening.DeleteListener;
@@ -25,6 +22,7 @@ import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
 import org.gama.stalactite.persistence.mapping.IEntityMappingStrategy;
 import org.gama.stalactite.persistence.mapping.SimpleIdMappingStrategy;
 import org.gama.stalactite.persistence.sql.Dialect;
+import org.gama.stalactite.persistence.sql.IConnectionConfiguration;
 import org.gama.stalactite.persistence.sql.dml.DMLGenerator;
 import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.query.model.AbstractRelationalOperator;
@@ -36,13 +34,12 @@ import org.gama.stalactite.sql.ConnectionProvider;
  * @author Guillaume Mary
  */
 @Nonnull
-public class Persister<C, I, T extends Table> implements IPersister<C, I> {
+public class Persister<C, I, T extends Table> implements IEntityPersister<C, I>, IConfiguredPersister<C, I> {
 	
 	private final IEntityMappingStrategy<C, I, T> mappingStrategy;
-	private final ConnectionProvider connectionProvider;
+	private final IConnectionConfiguration connectionProvider;
 	private final DMLGenerator dmlGenerator;
 	private final Retryer writeOperationRetryer;
-	private final int batchSize;
 	private final int inOperatorMaxSize;
 	private PersisterListener<C, I> persisterListener = new PersisterListener<>();
 	private final InsertExecutor<C, I, T> insertExecutor;
@@ -51,37 +48,35 @@ public class Persister<C, I, T extends Table> implements IPersister<C, I> {
 	private final ISelectExecutor<C, I> selectExecutor;
 	
 	public Persister(IEntityMappingStrategy<C, I, T> mappingStrategy, PersistenceContext persistenceContext) {
-		this(mappingStrategy, persistenceContext.getDialect(), persistenceContext.getConnectionProvider(), persistenceContext.getJDBCBatchSize());
+		this(mappingStrategy, persistenceContext.getDialect(), persistenceContext.getConnectionConfiguration());
 	}
 	
-	public Persister(IEntityMappingStrategy<C, I, T> mappingStrategy, Dialect dialect, ConnectionProvider connectionProvider, int jdbcBatchSize) {
+	public Persister(IEntityMappingStrategy<C, I, T> mappingStrategy, Dialect dialect, IConnectionConfiguration connectionConfiguration) {
 		this.mappingStrategy = mappingStrategy;
-		this.connectionProvider = connectionProvider;
+		this.connectionProvider = connectionConfiguration;
 		this.dmlGenerator = dialect.getDmlGenerator();
 		this.writeOperationRetryer = dialect.getWriteOperationRetryer();
-		this.batchSize = jdbcBatchSize;
 		this.inOperatorMaxSize = dialect.getInOperatorMaxSize();
 		this.insertExecutor = newInsertExecutor(mappingStrategy, connectionProvider, dmlGenerator,
-				writeOperationRetryer, jdbcBatchSize, inOperatorMaxSize);
+				writeOperationRetryer, inOperatorMaxSize);
 		this.updateExecutor = newUpdateExecutor(mappingStrategy, connectionProvider, dmlGenerator,
-				writeOperationRetryer, jdbcBatchSize, inOperatorMaxSize);
+				writeOperationRetryer, inOperatorMaxSize);
 		this.deleteExecutor = newDeleteExecutor(mappingStrategy, connectionProvider, dmlGenerator,
-				writeOperationRetryer, jdbcBatchSize, inOperatorMaxSize);
-		this.selectExecutor = newSelectExecutor(mappingStrategy, connectionProvider, dialect);
+				writeOperationRetryer, inOperatorMaxSize);
+		this.selectExecutor = newSelectExecutor(mappingStrategy, connectionProvider.getConnectionProvider(), dialect);
 		
 		// Transfering identifier manager InsertListerner to here
 		getPersisterListener().addInsertListener(
 				getMappingStrategy().getIdMappingStrategy().getIdentifierInsertionManager().getInsertListener());
 	}
 	
-	public Persister(ConnectionProvider connectionProvider, DMLGenerator dmlGenerator, Retryer writeOperationRetryer, int batchSize,
+	public Persister(IConnectionConfiguration connectionConfiguration, DMLGenerator dmlGenerator, Retryer writeOperationRetryer,
 					 int inOperatorMaxSize, IEntityMappingStrategy<C, I, T> mappingStrategy, InsertExecutor<C, I, T> insertExecutor,
 					 UpdateExecutor<C, I, T> updateExecutor, DeleteExecutor<C, I, T> deleteExecutor, ISelectExecutor<C, I> selectExecutor) {
 		this.mappingStrategy = mappingStrategy;
-		this.connectionProvider = connectionProvider;
+		this.connectionProvider = connectionConfiguration;
 		this.dmlGenerator = dmlGenerator;
 		this.writeOperationRetryer = writeOperationRetryer;
-		this.batchSize = batchSize;
 		this.inOperatorMaxSize = inOperatorMaxSize;
 		this.insertExecutor = insertExecutor;
 		this.updateExecutor = updateExecutor;
@@ -90,33 +85,30 @@ public class Persister<C, I, T extends Table> implements IPersister<C, I> {
 	}
 	
 	protected InsertExecutor<C, I, T> newInsertExecutor(IEntityMappingStrategy<C, I, T> mappingStrategy,
-														ConnectionProvider connectionProvider,
+														IConnectionConfiguration connectionConfiguration,
 														DMLGenerator dmlGenerator,
 														Retryer writeOperationRetryer,
-														int jdbcBatchSize,
 														int inOperatorMaxSize) {
-		return new InsertExecutor<>(mappingStrategy, connectionProvider, dmlGenerator,
-				writeOperationRetryer, jdbcBatchSize, inOperatorMaxSize);
+		return new InsertExecutor<>(mappingStrategy, connectionConfiguration, dmlGenerator,
+				writeOperationRetryer, inOperatorMaxSize);
 	}
 	
 	protected UpdateExecutor<C, I, T> newUpdateExecutor(IEntityMappingStrategy<C, I, T> mappingStrategy,
-													  ConnectionProvider connectionProvider,
+														IConnectionConfiguration connectionProvider,
 													  DMLGenerator dmlGenerator,
 													  Retryer writeOperationRetryer,
-													  int jdbcBatchSize,
 													  int inOperatorMaxSize) {
 		return new UpdateExecutor<>(mappingStrategy, connectionProvider, dmlGenerator,
-				writeOperationRetryer, jdbcBatchSize, inOperatorMaxSize);
+				writeOperationRetryer, inOperatorMaxSize);
 	}
 	
 	protected DeleteExecutor<C, I, T> newDeleteExecutor(IEntityMappingStrategy<C, I, T> mappingStrategy,
-															ConnectionProvider connectionProvider,
+														IConnectionConfiguration connectionConfiguration,
 															DMLGenerator dmlGenerator,
 															Retryer writeOperationRetryer,
-															int jdbcBatchSize,
 															int inOperatorMaxSize) {
-		return new DeleteExecutor<>(mappingStrategy, connectionProvider, dmlGenerator,
-				writeOperationRetryer, jdbcBatchSize, inOperatorMaxSize);
+		return new DeleteExecutor<>(mappingStrategy, connectionConfiguration, dmlGenerator,
+				writeOperationRetryer, inOperatorMaxSize);
 	}
 	
 	protected ISelectExecutor<C, I> newSelectExecutor(IEntityMappingStrategy<C, I, T> mappingStrategy,
@@ -126,7 +118,7 @@ public class Persister<C, I, T extends Table> implements IPersister<C, I> {
 	}
 	
 	public ConnectionProvider getConnectionProvider() {
-		return connectionProvider;
+		return connectionProvider.getConnectionProvider();
 	}
 	
 	public DMLGenerator getDmlGenerator() {
@@ -137,12 +129,13 @@ public class Persister<C, I, T extends Table> implements IPersister<C, I> {
 		return writeOperationRetryer;
 	}
 	
-	public int getBatchSize() {
-		return batchSize;
-	}
-	
 	public int getInOperatorMaxSize() {
 		return inOperatorMaxSize;
+	}
+	
+	@Override
+	public Class<C> getClassToPersist() {
+		return getMappingStrategy().getClassToPersist();
 	}
 	
 	@Override
@@ -178,6 +171,7 @@ public class Persister<C, I, T extends Table> implements IPersister<C, I> {
 	 * @return not null
 	 */
 	@Nonnull
+	@Override
 	public PersisterListener<C, I> getPersisterListener() {
 		return persisterListener;
 	}
@@ -209,34 +203,7 @@ public class Persister<C, I, T extends Table> implements IPersister<C, I> {
 	 */
 	@Override
 	public int persist(Iterable<C> entities) {
-		if (Iterables.isEmpty(entities)) {
-			return 0;
-		}
-		// determine insert or update operation
-		List<C> toInsert = new ArrayList<>(20);
-		List<C> toUpdate = new ArrayList<>(20);
-		for (C c : entities) {
-			if (isNew(c)) {
-				toInsert.add(c);
-			} else {
-				toUpdate.add(c);
-			}
-		}
-		int writtenRowCount = 0;
-		if (!toInsert.isEmpty()) {
-			writtenRowCount += insert(toInsert);
-		}
-		if (!toUpdate.isEmpty()) {
-			// creating couple of modified and unmodified entities
-			List<C> loadedEntities = select(toUpdate.stream().map(e -> getMappingStrategy().getId(e)).collect(Collectors.toList()));
-			Map<I, C> loadedEntitiesPerId = Iterables.map(loadedEntities, e -> getMappingStrategy().getId(e));
-			Map<I, C> modifiedEntitiesPerId = Iterables.map(toUpdate, e -> getMappingStrategy().getId(e));
-			Map<C, C> modifiedVSunmodified = Maps.innerJoin(modifiedEntitiesPerId, loadedEntitiesPerId);
-			List<Duo<C, C>> updateArg = new ArrayList<>();
-			modifiedVSunmodified.forEach((k, v) -> updateArg.add(new Duo<>(k , v)));
-			writtenRowCount += update(updateArg, true);
-		}
-		return writtenRowCount;
+		return IEntityPersister.persist(entities, this::isNew, this, this, this, getMappingStrategy()::getId);
 	}
 	
 	@Override
@@ -401,7 +368,8 @@ public class Persister<C, I, T extends Table> implements IPersister<C, I> {
 	 * @see ClassMappingStrategy#isNew(Object)
 	 * @see SimpleIdMappingStrategy.IsNewDeterminer
 	 */
-	private boolean isNew(C c) {
+	@Override
+	public boolean isNew(C c) {
 		return mappingStrategy.isNew(c);
 	}
 	

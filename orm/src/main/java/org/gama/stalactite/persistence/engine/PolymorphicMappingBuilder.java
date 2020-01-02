@@ -25,14 +25,15 @@ import org.gama.stalactite.persistence.engine.EntityMappingConfiguration.Inherit
 import org.gama.stalactite.persistence.engine.PolymorphismPolicy.JoinedTablesPolymorphism;
 import org.gama.stalactite.persistence.engine.PolymorphismPolicy.SingleTablePolymorphism;
 import org.gama.stalactite.persistence.engine.PolymorphismPolicy.TablePerClassPolymorphism;
+import org.gama.stalactite.persistence.engine.cascade.IJoinedTablesPersister;
 import org.gama.stalactite.persistence.engine.cascade.JoinedStrategiesSelect;
-import org.gama.stalactite.persistence.engine.cascade.JoinedStrategiesSelect.StrategyJoins;
 import org.gama.stalactite.persistence.engine.cascade.JoinedStrategiesSelectExecutor;
 import org.gama.stalactite.persistence.engine.cascade.JoinedTablesPersister;
 import org.gama.stalactite.persistence.mapping.IEntityMappingStrategy;
 import org.gama.stalactite.persistence.mapping.IMappingStrategy.UpwhereColumn;
 import org.gama.stalactite.persistence.query.IEntitySelectExecutor;
 import org.gama.stalactite.persistence.sql.Dialect;
+import org.gama.stalactite.persistence.sql.IConnectionConfiguration;
 import org.gama.stalactite.persistence.sql.dml.DMLGenerator;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
@@ -129,8 +130,8 @@ public class PolymorphicMappingBuilder<C, I> extends AbstractEntityMappingBuilde
 					}
 					
 					@Override
-					protected InsertExecutor<C, I, T> newInsertExecutor(IEntityMappingStrategy<C, I, T> mappingStrategy, ConnectionProvider connectionProvider,
-															   DMLGenerator dmlGenerator, Retryer writeOperationRetryer, int jdbcBatchSize,
+					protected InsertExecutor<C, I, T> newInsertExecutor(IEntityMappingStrategy<C, I, T> mappingStrategy, IConnectionConfiguration connectionProvider,
+															   DMLGenerator dmlGenerator, Retryer writeOperationRetryer,
 															   int inOperatorMaxSize) {
 						
 						Map<Class<? extends C>, InsertExecutor<C, I, T>> subclassInsertExecutors =
@@ -143,20 +144,20 @@ public class PolymorphicMappingBuilder<C, I> extends AbstractEntityMappingBuilde
 						
 						
 						return new PolymorphicInsertExecutor<>(mappingStrategy, connectionProvider, dmlGenerator,
-								writeOperationRetryer, jdbcBatchSize, inOperatorMaxSize,
+								writeOperationRetryer, inOperatorMaxSize,
 								subclassInsertExecutors);
 					}
 					
 					@Override
 					protected UpdateExecutor<C, I, T> newUpdateExecutor(IEntityMappingStrategy<C, I, T> mappingStrategy,
-																			ConnectionProvider connectionProvider, DMLGenerator dmlGenerator,
-																			Retryer writeOperationRetryer, int jdbcBatchSize,
+																		IConnectionConfiguration connectionProvider, DMLGenerator dmlGenerator,
+																			Retryer writeOperationRetryer,
 																			int inOperatorMaxSize) {
 						Map<Class<? extends C>, UpdateExecutor<C, I, T>> subclassUpdateExecutors =
 								Iterables.map(persisterPerSubclass.entrySet(), Entry::getKey, e -> e.getValue().getUpdateExecutor());
 						
 						return new PolymorphicUpdateExecutor<>(mappingStrategy, connectionProvider, dmlGenerator,
-								writeOperationRetryer, jdbcBatchSize, inOperatorMaxSize,
+								writeOperationRetryer, inOperatorMaxSize,
 								subclassUpdateExecutors);
 					}
 					
@@ -180,7 +181,7 @@ public class PolymorphicMappingBuilder<C, I> extends AbstractEntityMappingBuilde
 					}
 					
 					@Override
-					public <U, J, Z> String addPersister(String ownerStrategyName, Persister<U, J, ?> persister,
+					public <U, J, Z> String addPersister(String ownerStrategyName, IConfiguredPersister<U, J> persister,
 														 BeanRelationFixer<Z, U> beanRelationFixer, Column leftJoinColumn, Column rightJoinColumn,
 														 boolean isOuterJoin) {
 						return getSingleTablePolymorphismSelectExecutor().addRelation(ownerStrategyName, persister.getMappingStrategy(), beanRelationFixer,
@@ -192,11 +193,8 @@ public class PolymorphicMappingBuilder<C, I> extends AbstractEntityMappingBuilde
 					}
 					
 					@Override
-					public void addPersisterJoins(String joinName, JoinedTablesPersister<?, I, ?> sourcePersister) {
-						StrategyJoins sourceJoinsSubgraphRoot = sourcePersister.getJoinedStrategiesSelectExecutor().getJoinedStrategiesSelect().getJoinsRoot();
-						getSingleTablePolymorphismSelectExecutor().getSubEntitiesPersisters().values().forEach(select -> {
-							sourceJoinsSubgraphRoot.copyTo(select.getJoinedStrategiesSelectExecutor().getJoinedStrategiesSelect(), joinName);
-						});
+					public void addPersisterJoins(String joinName, IJoinedTablesPersister<?, ?> sourcePersister) {
+						getSingleTablePolymorphismSelectExecutor().getSubEntitiesPersisters().values().forEach(p -> p.addPersisterJoins(joinName, sourcePersister));
 					}
 					
 				};
@@ -318,8 +316,8 @@ public class PolymorphicMappingBuilder<C, I> extends AbstractEntityMappingBuilde
 					
 					@Override
 					protected InsertExecutor<C, I, T> newInsertExecutor(IEntityMappingStrategy<C, I, T> mappingStrategy,
-																		ConnectionProvider connectionProvider,
-																		DMLGenerator dmlGenerator, Retryer writeOperationRetryer, int jdbcBatchSize,
+																		IConnectionConfiguration connectionProvider,
+																		DMLGenerator dmlGenerator, Retryer writeOperationRetryer,
 																		int inOperatorMaxSize) {
 						
 						Map<Class<? extends C>, InsertExecutor<C, I, T>> subclassesInsertExecutors =
@@ -327,23 +325,23 @@ public class PolymorphicMappingBuilder<C, I> extends AbstractEntityMappingBuilde
 						
 						InsertExecutor<C, I, T> parentClassInsertExecutor = super.newInsertExecutor(mappingStrategy, connectionProvider,
 								dmlGenerator,
-								writeOperationRetryer, jdbcBatchSize, inOperatorMaxSize);
+								writeOperationRetryer, inOperatorMaxSize);
 						
 						return new SingleTablePolymorphicInsertExecutor<>(mappingStrategy, connectionProvider, dmlGenerator, writeOperationRetryer,
-								jdbcBatchSize, inOperatorMaxSize, subclassesInsertExecutors, parentClassInsertExecutor);
+								inOperatorMaxSize, subclassesInsertExecutors, parentClassInsertExecutor);
 					}
 					
 					@Override
 					protected UpdateExecutor<C, I, T> newUpdateExecutor(IEntityMappingStrategy<C, I, T> mappingStrategy,
-																		ConnectionProvider connectionProvider, DMLGenerator dmlGenerator,
-																		Retryer writeOperationRetryer, int jdbcBatchSize,
+																		IConnectionConfiguration connectionProvider, DMLGenerator dmlGenerator,
+																		Retryer writeOperationRetryer,
 																		int inOperatorMaxSize) {
 						Map<Class<? extends C>, UpdateExecutor<C, I, T>> subclassUpdateExecutors =
 								Iterables.map(persisterPerSubclass.entrySet(), Entry::getKey, e -> e.getValue().getUpdateExecutor());
 						
 						PolymorphicUpdateExecutor<C, I, T> a = new PolymorphicUpdateExecutor<>(mappingStrategy,
 								connectionProvider, dmlGenerator,
-								writeOperationRetryer, jdbcBatchSize, inOperatorMaxSize,
+								writeOperationRetryer, inOperatorMaxSize,
 								subclassUpdateExecutors);
 						
 						Map<Class<? extends C>, UpdateExecutor<C, I, T>> subclassUpdateExecutors2 =
@@ -351,7 +349,7 @@ public class PolymorphicMappingBuilder<C, I> extends AbstractEntityMappingBuilde
 						
 						return new PolymorphicUpdateExecutor<C, I, T>(mappingStrategy,
 								connectionProvider, dmlGenerator,
-								writeOperationRetryer, jdbcBatchSize, inOperatorMaxSize,
+								writeOperationRetryer, inOperatorMaxSize,
 								subclassUpdateExecutors2) {
 							@Override
 							public int update(Iterable differencesIterable, boolean allColumnsStatement) {
@@ -386,17 +384,18 @@ public class PolymorphicMappingBuilder<C, I> extends AbstractEntityMappingBuilde
 					
 					@Override
 					protected DeleteExecutor<C, I, T> newDeleteExecutor(IEntityMappingStrategy<C, I, T> mappingStrategy,
-																		ConnectionProvider connectionProvider, DMLGenerator dmlGenerator,
-																		Retryer writeOperationRetryer, int jdbcBatchSize, int inOperatorMaxSize) {
+																		IConnectionConfiguration connectionProvider,
+																		DMLGenerator dmlGenerator,
+																		Retryer writeOperationRetryer,
+																		int inOperatorMaxSize) {
 						Map<Class<? extends C>, DeleteExecutor<C, I, T>> subclassesDeleteExecutors =
 								Iterables.map(persisterPerSubclass.entrySet(), Entry::getKey, e -> e.getValue().getDeleteExecutor());
 						
 						DeleteExecutor<C, I, T> parentClassDeleteExecutor = super.newDeleteExecutor(mappingStrategy, connectionProvider,
-								dmlGenerator,
-								writeOperationRetryer, jdbcBatchSize, inOperatorMaxSize);
+								dmlGenerator, writeOperationRetryer, inOperatorMaxSize);
 						
 						return new SingleTablePolymorphicDeleteExecutor<>(mappingStrategy, connectionProvider, dmlGenerator, writeOperationRetryer,
-								jdbcBatchSize, inOperatorMaxSize, subclassesDeleteExecutors, parentClassDeleteExecutor);
+								inOperatorMaxSize, subclassesDeleteExecutors, parentClassDeleteExecutor);
 					}
 				};
 				persistenceContext.addPersister(result);
@@ -467,40 +466,45 @@ public class PolymorphicMappingBuilder<C, I> extends AbstractEntityMappingBuilde
 					}
 					
 					@Override
-					protected InsertExecutor<C, I, T> newInsertExecutor(IEntityMappingStrategy<C, I, T> mappingStrategy, ConnectionProvider connectionProvider,
-																		DMLGenerator dmlGenerator, Retryer writeOperationRetryer, int jdbcBatchSize,
+					protected InsertExecutor<C, I, T> newInsertExecutor(IEntityMappingStrategy<C, I, T> mappingStrategy,
+																		IConnectionConfiguration connectionProvider,
+																		DMLGenerator dmlGenerator,
+																		Retryer writeOperationRetryer,
 																		int inOperatorMaxSize) {
 						
 						Map<Class<? extends C>, InsertExecutor<C, I, T>> subclassInsertExecutors =
 								Iterables.map(persisterPerSubclass.entrySet(), Entry::getKey, e -> e.getValue().getInsertExecutor());
 						
 						return new PolymorphicInsertExecutor<>(mappingStrategy, connectionProvider, dmlGenerator,
-								writeOperationRetryer, jdbcBatchSize, inOperatorMaxSize,
+								writeOperationRetryer, inOperatorMaxSize,
 								subclassInsertExecutors);
 					}
 					
 					@Override
 					protected UpdateExecutor<C, I, T> newUpdateExecutor(IEntityMappingStrategy<C, I, T> mappingStrategy,
-																		ConnectionProvider connectionProvider, DMLGenerator dmlGenerator,
-																		Retryer writeOperationRetryer, int jdbcBatchSize,
+																		IConnectionConfiguration connectionProvider,
+																		DMLGenerator dmlGenerator,
+																		Retryer writeOperationRetryer,
 																		int inOperatorMaxSize) {
 						Map<Class<? extends C>, UpdateExecutor<C, I, T>> subclassUpdateExecutors =
 								Iterables.map(persisterPerSubclass.entrySet(), Entry::getKey, e -> e.getValue().getUpdateExecutor());
 						
 						return new PolymorphicUpdateExecutor<>(mappingStrategy, connectionProvider, dmlGenerator,
-								writeOperationRetryer, jdbcBatchSize, inOperatorMaxSize,
+								writeOperationRetryer, inOperatorMaxSize,
 								subclassUpdateExecutors);
 					}
 					
 					@Override
 					protected DeleteExecutor<C, I, T> newDeleteExecutor(IEntityMappingStrategy<C, I, T> mappingStrategy,
-																		ConnectionProvider connectionProvider, DMLGenerator dmlGenerator,
-																		Retryer writeOperationRetryer, int jdbcBatchSize, int inOperatorMaxSize) {
+																		IConnectionConfiguration connectionProvider,
+																		DMLGenerator dmlGenerator,
+																		Retryer writeOperationRetryer,
+																		int inOperatorMaxSize) {
 						Map<Class<? extends C>, DeleteExecutor<C, I, T>> subclassesDeleteExecutors =
 								Iterables.map(persisterPerSubclass.entrySet(), Entry::getKey, e -> e.getValue().getDeleteExecutor());
 						
 						return new PolymorphicDeleteExecutor<>(mappingStrategy, connectionProvider, dmlGenerator, writeOperationRetryer,
-								jdbcBatchSize, inOperatorMaxSize, subclassesDeleteExecutors);
+								inOperatorMaxSize, subclassesDeleteExecutors);
 					}
 					
 					@Override
@@ -530,13 +534,12 @@ public class PolymorphicMappingBuilder<C, I> extends AbstractEntityMappingBuilde
 		private final Map<Class<? extends C>, UpdateExecutor<C, I, T>> subclassUpdateExecutors;
 		
 		public PolymorphicUpdateExecutor(IEntityMappingStrategy<C, I, T> mappingStrategy,
-										 ConnectionProvider connectionProvider,
+										 IConnectionConfiguration connectionProvider,
 										 DMLGenerator dmlGenerator,
 										 Retryer writeOperationRetryer,
-										 int batchSize,
 										 int inOperatorMaxSize,
 										 Map<Class<? extends C>, UpdateExecutor<C, I, T>> subclassUpdateExecutors) {
-			super(mappingStrategy, connectionProvider, dmlGenerator, writeOperationRetryer, batchSize, inOperatorMaxSize);
+			super(mappingStrategy, connectionProvider, dmlGenerator, writeOperationRetryer, inOperatorMaxSize);
 			this.subclassUpdateExecutors = subclassUpdateExecutors;
 		}
 		
@@ -585,13 +588,12 @@ public class PolymorphicMappingBuilder<C, I> extends AbstractEntityMappingBuilde
 		private final Map<Class<? extends C>, InsertExecutor<C, I, T>> subclassInsertExecutors;
 		
 		public PolymorphicInsertExecutor(IEntityMappingStrategy<C, I, T> mappingStrategy,
-										 ConnectionProvider connectionProvider,
+										 IConnectionConfiguration connectionProvider,
 										 DMLGenerator dmlGenerator,
 										 Retryer writeOperationRetryer,
-										 int batchSize,
 										 int inOperatorMaxSize,
 										 Map<Class<? extends C>, InsertExecutor<C, I, T>> subclassInsertExecutors) {
-			super(mappingStrategy, connectionProvider, dmlGenerator, writeOperationRetryer, batchSize, inOperatorMaxSize);
+			super(mappingStrategy, connectionProvider, dmlGenerator, writeOperationRetryer, inOperatorMaxSize);
 			this.subclassInsertExecutors = subclassInsertExecutors;
 		}
 		
@@ -633,13 +635,12 @@ public class PolymorphicMappingBuilder<C, I> extends AbstractEntityMappingBuilde
 		private final Map<Class<? extends C>, DeleteExecutor<C, I, T>> subclassDeleteExecutors;
 		
 		public PolymorphicDeleteExecutor(IEntityMappingStrategy<C, I, T> mappingStrategy,
-										 ConnectionProvider connectionProvider,
+										 IConnectionConfiguration connectionProvider,
 										 DMLGenerator dmlGenerator,
 										 Retryer writeOperationRetryer,
-										 int batchSize,
 										 int inOperatorMaxSize,
 										 Map<Class<? extends C>, DeleteExecutor<C, I, T>> subclassDeleteExecutors) {
-			super(mappingStrategy, connectionProvider, dmlGenerator, writeOperationRetryer, batchSize, inOperatorMaxSize);
+			super(mappingStrategy, connectionProvider, dmlGenerator, writeOperationRetryer, inOperatorMaxSize);
 			this.subclassDeleteExecutors = subclassDeleteExecutors;
 		}
 		
@@ -670,11 +671,11 @@ public class PolymorphicMappingBuilder<C, I> extends AbstractEntityMappingBuilde
 	private static class SingleTablePolymorphicInsertExecutor<C, I, T extends Table> extends PolymorphicInsertExecutor<C, I, T> {
 		private final InsertExecutor<C, I, T> mainInsertExecutor;
 		
-		public SingleTablePolymorphicInsertExecutor(IEntityMappingStrategy<C, I, T> mappingStrategy, ConnectionProvider connectionProvider,
-													DMLGenerator dmlGenerator, Retryer writeOperationRetryer, int jdbcBatchSize, int inOperatorMaxSize,
+		public SingleTablePolymorphicInsertExecutor(IEntityMappingStrategy<C, I, T> mappingStrategy, IConnectionConfiguration connectionProvider,
+													DMLGenerator dmlGenerator, Retryer writeOperationRetryer, int inOperatorMaxSize,
 													Map<Class<? extends C>, InsertExecutor<C, I, T>> subclassesInsertExecutors,
 													InsertExecutor<C, I, T> parentClassInsertExecutor) {
-			super(mappingStrategy, connectionProvider, dmlGenerator, writeOperationRetryer, jdbcBatchSize, inOperatorMaxSize, subclassesInsertExecutors);
+			super(mappingStrategy, connectionProvider, dmlGenerator, writeOperationRetryer, inOperatorMaxSize, subclassesInsertExecutors);
 			this.mainInsertExecutor = parentClassInsertExecutor;
 		}
 		
@@ -691,11 +692,11 @@ public class PolymorphicMappingBuilder<C, I> extends AbstractEntityMappingBuilde
 	private static class SingleTablePolymorphicDeleteExecutor<C, I, T extends Table> extends PolymorphicDeleteExecutor<C, I, T> {
 		private final DeleteExecutor<C, I, T> mainDeleteExecutor;
 		
-		public SingleTablePolymorphicDeleteExecutor(IEntityMappingStrategy<C, I, T> mappingStrategy, ConnectionProvider connectionProvider,
-													DMLGenerator dmlGenerator, Retryer writeOperationRetryer, int batchSize, int inOperatorMaxSize,
+		public SingleTablePolymorphicDeleteExecutor(IEntityMappingStrategy<C, I, T> mappingStrategy, IConnectionConfiguration connectionProvider,
+													DMLGenerator dmlGenerator, Retryer writeOperationRetryer, int inOperatorMaxSize,
 													Map<Class<? extends C>, DeleteExecutor<C, I, T>> subclassDeleteExecutors,
 													DeleteExecutor<C, I, T> parentClassInsertExecutor) {
-			super(mappingStrategy, connectionProvider, dmlGenerator, writeOperationRetryer, batchSize, inOperatorMaxSize, subclassDeleteExecutors);
+			super(mappingStrategy, connectionProvider, dmlGenerator, writeOperationRetryer, inOperatorMaxSize, subclassDeleteExecutors);
 			this.mainDeleteExecutor = parentClassInsertExecutor;
 		}
 		

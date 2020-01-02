@@ -130,7 +130,7 @@ class FluentEntityMappingConfigurationSupportPolymorphismTest {
 	
 	@ParameterizedTest(name="{0}")
 	@MethodSource("polymorphicPersisters")
-	void crud(String testDisplayName, IPersister<AbstractVehicle, Identifier<Long>> persister, ConnectionProvider connectionProvider) throws SQLException {
+	void crud(String testDisplayName, IEntityPersister<AbstractVehicle, Identifier<Long>> persister, ConnectionProvider connectionProvider) throws SQLException {
 		Car dummyCar = new Car(1L);
 		dummyCar.setModel("Renault");
 		Truk dummyTruk = new Truk(2L);
@@ -167,7 +167,7 @@ class FluentEntityMappingConfigurationSupportPolymorphismTest {
 		
 		@Test
 		void oneSubClass() {
-			IPersister<AbstractVehicle, Identifier<Long>> abstractVehiclePersister = entityBuilder(AbstractVehicle.class, LONG_TYPE)
+			IEntityPersister<AbstractVehicle, Identifier<Long>> abstractVehiclePersister = entityBuilder(AbstractVehicle.class, LONG_TYPE)
 					// mapped super class defines id
 					.add(AbstractVehicle::getId).identifier(ALREADY_ASSIGNED)
 					.mapPolymorphism(PolymorphismPolicy.<AbstractVehicle, Identifier<Long>>singleTable()
@@ -182,7 +182,7 @@ class FluentEntityMappingConfigurationSupportPolymorphismTest {
 			assertEquals(Arrays.asHashSet("AbstractVehicle"), tables);
 			
 			// Subclasses are not present in context (because doing so they would be accessible but without wrong behavior since some are configured on parent's persister)
-			assertEquals(Arrays.asHashSet(AbstractVehicle.class), Iterables.collect(persistenceContext.getPersisters(), p -> p.getMappingStrategy().getClassToPersist(), HashSet::new));
+			assertEquals(Arrays.asHashSet(AbstractVehicle.class), Iterables.collect(persistenceContext.getPersisters(), IEntityPersister::getClassToPersist, HashSet::new));
 			
 			// DML tests
 			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
@@ -221,7 +221,7 @@ class FluentEntityMappingConfigurationSupportPolymorphismTest {
 		
 		@Test
 		void twoSubClasses() {
-			IPersister<AbstractVehicle, Identifier<Long>> abstractVehiclePersister = entityBuilder(AbstractVehicle.class, LONG_TYPE)
+			IEntityPersister<AbstractVehicle, Identifier<Long>> abstractVehiclePersister = entityBuilder(AbstractVehicle.class, LONG_TYPE)
 							// mapped super class defines id
 							.add(AbstractVehicle::getId).identifier(ALREADY_ASSIGNED)
 							.mapPolymorphism(PolymorphismPolicy.<AbstractVehicle, Identifier<Long>>singleTable()
@@ -239,7 +239,7 @@ class FluentEntityMappingConfigurationSupportPolymorphismTest {
 			assertEquals(Arrays.asHashSet("AbstractVehicle"), tables);
 			
 			// Subclasses are not present in context (because doing so they would be accessible but without wrong behavior since some are configured on parent's persister)
-			assertEquals(Arrays.asHashSet(AbstractVehicle.class), Iterables.collect(persistenceContext.getPersisters(), p -> p.getMappingStrategy().getClassToPersist(), HashSet::new));
+			assertEquals(Arrays.asHashSet(AbstractVehicle.class), Iterables.collect(persistenceContext.getPersisters(), IEntityPersister::getClassToPersist, HashSet::new));
 			
 			// DML tests
 			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
@@ -291,7 +291,7 @@ class FluentEntityMappingConfigurationSupportPolymorphismTest {
 		
 		@Test
 		void twoSubClasses_withCommonProperties() {
-			IPersister<Vehicle, Identifier<Long>> abstractVehiclePersister = entityBuilder(Vehicle.class, LONG_TYPE)
+			IEntityPersister<Vehicle, Identifier<Long>> abstractVehiclePersister = entityBuilder(Vehicle.class, LONG_TYPE)
 					// mapped super class defines id
 					.add(Vehicle::getId).identifier(ALREADY_ASSIGNED)
 					.add(Vehicle::getColor)
@@ -308,7 +308,7 @@ class FluentEntityMappingConfigurationSupportPolymorphismTest {
 			assertEquals(Arrays.asHashSet("Vehicle"), tables);
 			
 			// Subclasses are not present in context (because doing so they would be accessible but without wrong behavior since some are configured on parent's persister)
-			assertEquals(Arrays.asHashSet(Vehicle.class), Iterables.collect(persistenceContext.getPersisters(), p -> p.getMappingStrategy().getClassToPersist(), HashSet::new));
+			assertEquals(Arrays.asHashSet(Vehicle.class), Iterables.collect(persistenceContext.getPersisters(), IEntityPersister::getClassToPersist, HashSet::new));
 			
 			// DML tests
 			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
@@ -379,7 +379,7 @@ class FluentEntityMappingConfigurationSupportPolymorphismTest {
 		
 		@Test
 		void listenersAreNotified() {
-			IPersister<AbstractVehicle, Identifier<Long>> abstractVehiclePersister = entityBuilder(AbstractVehicle.class, LONG_TYPE)
+			IEntityPersister<AbstractVehicle, Identifier<Long>> abstractVehiclePersister = entityBuilder(AbstractVehicle.class, LONG_TYPE)
 					// mapped super class defines id
 					.add(AbstractVehicle::getId).identifier(ALREADY_ASSIGNED)
 					.mapPolymorphism(PolymorphismPolicy.<AbstractVehicle, Identifier<Long>>singleTable()
@@ -434,7 +434,7 @@ class FluentEntityMappingConfigurationSupportPolymorphismTest {
 		
 		@Test
 		void oneSubClass() {
-			IPersister<AbstractVehicle, Identifier<Long>> abstractVehiclePersister = entityBuilder(AbstractVehicle.class, LONG_TYPE)
+			IEntityPersister<AbstractVehicle, Identifier<Long>> abstractVehiclePersister = entityBuilder(AbstractVehicle.class, LONG_TYPE)
 					// mapped super class defines id
 					.add(AbstractVehicle::getId).identifier(ALREADY_ASSIGNED)
 					.mapPolymorphism(PolymorphismPolicy.<AbstractVehicle, Identifier<Long>>joinedTables()
@@ -449,7 +449,7 @@ class FluentEntityMappingConfigurationSupportPolymorphismTest {
 			assertEquals(Arrays.asHashSet("AbstractVehicle", "Car"), tables);
 			
 			// Subclasses are not present in context (because doing so they would be accessible but without wrong behavior since some are configured on parent's persister)
-			assertEquals(Arrays.asHashSet(AbstractVehicle.class), Iterables.collect(persistenceContext.getPersisters(), p -> p.getMappingStrategy().getClassToPersist(), HashSet::new));
+			assertEquals(Arrays.asHashSet(AbstractVehicle.class), Iterables.collect(persistenceContext.getPersisters(), IEntityPersister::getClassToPersist, HashSet::new));
 			
 			// DML tests
 			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
@@ -488,7 +488,7 @@ class FluentEntityMappingConfigurationSupportPolymorphismTest {
 		
 		@Test
 		void twoSubClasses() {
-			IPersister<AbstractVehicle, Identifier<Long>> abstractVehiclePersister = entityBuilder(AbstractVehicle.class, LONG_TYPE)
+			IEntityPersister<AbstractVehicle, Identifier<Long>> abstractVehiclePersister = entityBuilder(AbstractVehicle.class, LONG_TYPE)
 					// mapped super class defines id
 					.add(AbstractVehicle::getId).identifier(ALREADY_ASSIGNED)
 					.mapPolymorphism(PolymorphismPolicy.<AbstractVehicle, Identifier<Long>>joinedTables()
@@ -506,7 +506,7 @@ class FluentEntityMappingConfigurationSupportPolymorphismTest {
 			assertEquals(Arrays.asHashSet("AbstractVehicle", "Car", "Truk"), tables);
 			
 			// Subclasses are not present in context (because doing so they would be accessible but without wrong behavior since some are configured on parent's persister)
-			assertEquals(Arrays.asHashSet(AbstractVehicle.class), Iterables.collect(persistenceContext.getPersisters(), p -> p.getMappingStrategy().getClassToPersist(), HashSet::new));
+			assertEquals(Arrays.asHashSet(AbstractVehicle.class), Iterables.collect(persistenceContext.getPersisters(), IEntityPersister::getClassToPersist, HashSet::new));
 			
 			// DML tests
 			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
@@ -583,7 +583,7 @@ class FluentEntityMappingConfigurationSupportPolymorphismTest {
 		
 		@Test
 		void twoSubClasses_withCommonProperties() {
-			IPersister<Vehicle, Identifier<Long>> abstractVehiclePersister = entityBuilder(Vehicle.class, LONG_TYPE)
+			IEntityPersister<Vehicle, Identifier<Long>> abstractVehiclePersister = entityBuilder(Vehicle.class, LONG_TYPE)
 					// mapped super class defines id
 					.add(Vehicle::getId).identifier(ALREADY_ASSIGNED)
 					.add(Vehicle::getColor)
@@ -600,7 +600,7 @@ class FluentEntityMappingConfigurationSupportPolymorphismTest {
 			assertEquals(Arrays.asHashSet("Vehicle", "Car", "Truk"), tables);
 			
 			// Subclasses are not present in context (because doing so they would be accessible but without wrong behavior since some are configured on parent's persister)
-			assertEquals(Arrays.asHashSet(Vehicle.class), Iterables.collect(persistenceContext.getPersisters(), p -> p.getMappingStrategy().getClassToPersist(), HashSet::new));
+			assertEquals(Arrays.asHashSet(Vehicle.class), Iterables.collect(persistenceContext.getPersisters(), IEntityPersister::getClassToPersist, HashSet::new));
 			
 			// DML tests
 			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
@@ -677,7 +677,7 @@ class FluentEntityMappingConfigurationSupportPolymorphismTest {
 		
 		@Test
 		void listenersAreNotified() {
-			IPersister<AbstractVehicle, Identifier<Long>> abstractVehiclePersister = entityBuilder(AbstractVehicle.class, LONG_TYPE)
+			IEntityPersister<AbstractVehicle, Identifier<Long>> abstractVehiclePersister = entityBuilder(AbstractVehicle.class, LONG_TYPE)
 					// mapped super class defines id
 					.add(AbstractVehicle::getId).identifier(ALREADY_ASSIGNED)
 					.mapPolymorphism(PolymorphismPolicy.<AbstractVehicle, Identifier<Long>>joinedTables()
@@ -732,7 +732,7 @@ class FluentEntityMappingConfigurationSupportPolymorphismTest {
 		
 		@Test
 		void oneSubClass() {
-			IPersister<AbstractVehicle, Identifier<Long>> abstractVehiclePersister = entityBuilder(AbstractVehicle.class, LONG_TYPE)
+			IEntityPersister<AbstractVehicle, Identifier<Long>> abstractVehiclePersister = entityBuilder(AbstractVehicle.class, LONG_TYPE)
 					// mapped super class defines id
 					.add(AbstractVehicle::getId).identifier(ALREADY_ASSIGNED)
 					.mapPolymorphism(PolymorphismPolicy.<AbstractVehicle, Identifier<Long>>tablePerClass()
@@ -746,7 +746,7 @@ class FluentEntityMappingConfigurationSupportPolymorphismTest {
 			assertEquals(Arrays.asHashSet("Car"), tables);
 			
 			// Subclasses are not present in context (because doing so they would be accessible but without wrong behavior since some are configured on parent's persister)
-			assertEquals(Arrays.asHashSet(AbstractVehicle.class), Iterables.collect(persistenceContext.getPersisters(), p -> p.getMappingStrategy().getClassToPersist(), HashSet::new));
+			assertEquals(Arrays.asHashSet(AbstractVehicle.class), Iterables.collect(persistenceContext.getPersisters(), IEntityPersister::getClassToPersist, HashSet::new));
 			
 			// DML tests
 			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
@@ -785,7 +785,7 @@ class FluentEntityMappingConfigurationSupportPolymorphismTest {
 		
 		@Test
 		void twoSubClasses() {
-			IPersister<AbstractVehicle, Identifier<Long>> abstractVehiclePersister = entityBuilder(AbstractVehicle.class, LONG_TYPE)
+			IEntityPersister<AbstractVehicle, Identifier<Long>> abstractVehiclePersister = entityBuilder(AbstractVehicle.class, LONG_TYPE)
 					// mapped super class defines id
 					.add(AbstractVehicle::getId).identifier(ALREADY_ASSIGNED)
 					.mapPolymorphism(PolymorphismPolicy.<AbstractVehicle, Identifier<Long>>tablePerClass()
@@ -801,7 +801,7 @@ class FluentEntityMappingConfigurationSupportPolymorphismTest {
 			assertEquals(Arrays.asHashSet("Car", "Truk"), tables);
 			
 			// Subclasses are not present in context (because doing so they would be accessible but without wrong behavior since some are configured on parent's persister)
-			assertEquals(Arrays.asHashSet(AbstractVehicle.class), Iterables.collect(persistenceContext.getPersisters(), p -> p.getMappingStrategy().getClassToPersist(), HashSet::new));
+			assertEquals(Arrays.asHashSet(AbstractVehicle.class), Iterables.collect(persistenceContext.getPersisters(), IEntityPersister::getClassToPersist, HashSet::new));
 
 			// DML tests
 			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
@@ -863,7 +863,7 @@ class FluentEntityMappingConfigurationSupportPolymorphismTest {
 		
 		@Test
 		void twoSubClasses_withCommonProperties() {
-			IPersister<Vehicle, Identifier<Long>> abstractVehiclePersister = entityBuilder(Vehicle.class, LONG_TYPE)
+			IEntityPersister<Vehicle, Identifier<Long>> abstractVehiclePersister = entityBuilder(Vehicle.class, LONG_TYPE)
 					// mapped super class defines id
 					.add(Vehicle::getId).identifier(ALREADY_ASSIGNED)
 					.add(Vehicle::getColor)
@@ -879,7 +879,7 @@ class FluentEntityMappingConfigurationSupportPolymorphismTest {
 			assertEquals(Arrays.asHashSet("Car", "Truk"), tables);
 			
 			// Subclasses are not present in context (because doing so they would be accessible but without wrong behavior since some are configured on parent's persister)
-			assertEquals(Arrays.asHashSet(Vehicle.class), Iterables.collect(persistenceContext.getPersisters(), p -> p.getMappingStrategy().getClassToPersist(), HashSet::new));
+			assertEquals(Arrays.asHashSet(Vehicle.class), Iterables.collect(persistenceContext.getPersisters(), IEntityPersister::getClassToPersist, HashSet::new));
 
 			// DML tests
 			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
@@ -945,7 +945,7 @@ class FluentEntityMappingConfigurationSupportPolymorphismTest {
 		
 		@Test
 		void listenersAreNotified() {
-			IPersister<AbstractVehicle, Identifier<Long>> abstractVehiclePersister = entityBuilder(AbstractVehicle.class, LONG_TYPE)
+			IEntityPersister<AbstractVehicle, Identifier<Long>> abstractVehiclePersister = entityBuilder(AbstractVehicle.class, LONG_TYPE)
 					// mapped super class defines id
 					.add(AbstractVehicle::getId).identifier(ALREADY_ASSIGNED)
 					.mapPolymorphism(PolymorphismPolicy.<AbstractVehicle, Identifier<Long>>tablePerClass()

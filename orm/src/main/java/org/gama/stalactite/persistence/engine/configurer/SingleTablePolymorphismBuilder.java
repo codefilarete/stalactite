@@ -19,8 +19,8 @@ import org.gama.lang.trace.ModifiableInt;
 import org.gama.reflection.IReversibleAccessor;
 import org.gama.reflection.MethodReferenceDispatcher;
 import org.gama.stalactite.persistence.engine.ExecutableQuery;
+import org.gama.stalactite.persistence.engine.IEntityConfiguredPersister;
 import org.gama.stalactite.persistence.engine.IInsertExecutor;
-import org.gama.stalactite.persistence.engine.IPersister;
 import org.gama.stalactite.persistence.engine.IUpdateExecutor;
 import org.gama.stalactite.persistence.engine.PersistenceContext;
 import org.gama.stalactite.persistence.engine.PolymorphismPolicy.SingleTablePolymorphism;
@@ -38,6 +38,7 @@ import org.gama.stalactite.persistence.engine.configurer.PersisterBuilderImpl.Po
 import org.gama.stalactite.persistence.engine.listening.DeleteByIdListener;
 import org.gama.stalactite.persistence.engine.listening.DeleteListener;
 import org.gama.stalactite.persistence.engine.listening.InsertListener;
+import org.gama.stalactite.persistence.engine.listening.PersisterListener;
 import org.gama.stalactite.persistence.engine.listening.SelectListener;
 import org.gama.stalactite.persistence.engine.listening.UpdateListener;
 import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
@@ -115,7 +116,7 @@ class SingleTablePolymorphismBuilder<C, I, T extends Table, D> implements Polymo
 	}
 	
 	@Override
-	public IPersister<C, I> build(PersistenceContext persistenceContext) {
+	public IEntityConfiguredPersister<C, I> build(PersistenceContext persistenceContext) {
 		addDiscriminatorToSelect();
 		Map<Class<? extends C>, JoinedTablesPersister<C, I, T>> joinedTablesPersisters = buildSubEntitiesPersisters(persistenceContext);
 		// NB: persisters are not registered into PersistenceContext because it may break implicit polymorphism principle (persisters are then
@@ -124,10 +125,10 @@ class SingleTablePolymorphismBuilder<C, I, T extends Table, D> implements Polymo
 		return wrap(mainPersister, joinedTablesPersisters, persistenceContext.getConnectionProvider(), persistenceContext.getDialect());
 	}
 	
-	private IPersister<C, I> wrap(JoinedTablesPersister<C, I, T> mainPersister,
-								  Map<Class<? extends C>, JoinedTablesPersister<C, I, T>> subEntitiesPersisters,
-								  ConnectionProvider connectionProvider,
-								  Dialect dialect) {
+	private IEntityConfiguredPersister<C, I> wrap(JoinedTablesPersister<C, I, T> mainPersister,
+										Map<Class<? extends C>, JoinedTablesPersister<C, I, T>> subEntitiesPersisters,
+										ConnectionProvider connectionProvider,
+										Dialect dialect) {
 		Map<Class<? extends C>, IInsertExecutor<C>> subclassInsertExecutors =
 				Iterables.map(subEntitiesPersisters.entrySet(), Entry::getKey, e -> e.getValue().getInsertExecutor());
 		Map<Class<? extends C>, IUpdateExecutor<C>> subclassUpdateExecutors =
@@ -163,11 +164,16 @@ class SingleTablePolymorphismBuilder<C, I, T extends Table, D> implements Polymo
 		
 		EntityCriteriaSupport<C> criteriaSupport = new EntityCriteriaSupport<>(mainPersister.getMappingStrategy());
 		
-		return new PersisterListenerWrapper<>(new IPersister<C, I>() {
+		return new PersisterListenerWrapper<>(new IEntityConfiguredPersister<C, I>() {
 			
 			@Override
 			public Collection<Table> giveImpliedTables() {
 				return mainPersister.giveImpliedTables();
+			}
+			
+			@Override
+			public PersisterListener<C, I> getPersisterListener() {
+				return mainPersister.getPersisterListener();
 			}
 			
 			@Override
@@ -314,6 +320,16 @@ class SingleTablePolymorphismBuilder<C, I, T extends Table, D> implements Polymo
 			}
 			
 			@Override
+			public boolean isNew(C entity) {
+				return mainPersister.isNew(entity);
+			}
+			
+			@Override
+			public Class<C> getClassToPersist() {
+				return mainPersister.getClassToPersist();
+			}
+			
+			@Override
 			public void addInsertListener(InsertListener insertListener) {
 				subEntitiesPersisters.values().forEach(p -> p.addInsertListener(insertListener));
 			}
@@ -339,8 +355,8 @@ class SingleTablePolymorphismBuilder<C, I, T extends Table, D> implements Polymo
 			}
 			
 			@Override
-			public <T extends Table<T>> IEntityMappingStrategy<C, I, T> getMappingStrategy() {
-				return (IEntityMappingStrategy<C, I, T>) mainPersister.getMappingStrategy();
+			public IEntityMappingStrategy<C, I, ?> getMappingStrategy() {
+				return mainPersister.getMappingStrategy();
 			}
 		});
 	}

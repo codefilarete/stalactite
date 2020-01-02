@@ -12,6 +12,7 @@ import org.gama.stalactite.persistence.id.sequence.SequencePersister.Sequence;
 import org.gama.stalactite.persistence.id.sequence.SequencePersister.SequenceTable;
 import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
 import org.gama.stalactite.persistence.sql.Dialect;
+import org.gama.stalactite.persistence.sql.IConnectionConfiguration.ConnectionConfigurationSupport;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Database.Schema;
 import org.gama.stalactite.persistence.structure.Table;
@@ -40,7 +41,7 @@ public class SequencePersister extends Persister<Sequence, String, SequenceTable
 	public SequencePersister(SequenceStorageOptions storageOptions, Dialect dialect, SeparateTransactionExecutor separateTransactionExecutor, int jdbcBatchSize) {
 		// we reuse default PersistentContext
 		super(new SequencePersisterConfigurer().buildConfiguration(storageOptions),
-				dialect, separateTransactionExecutor, jdbcBatchSize);
+				dialect, new ConnectionConfigurationSupport(separateTransactionExecutor, jdbcBatchSize));
 	}
 	
 	public long reservePool(String sequenceName, int poolSize) {

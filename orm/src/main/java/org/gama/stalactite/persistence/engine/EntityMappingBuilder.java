@@ -183,7 +183,7 @@ class EntityMappingBuilder<C, I> extends AbstractEntityMappingBuilder<C, I> {
 	}
 	
 	protected <T extends Table> void registerPersister(JoinedTablesPersister<C, I, T> persister, PersistenceContext persistenceContext) {
-		IPersister<C, Object> existingPersister = persistenceContext.getPersister(persister.getMappingStrategy().getClassToPersist());
+		IEntityConfiguredPersister<C, Object> existingPersister = getPersister(persistenceContext, persister.getMappingStrategy().getClassToPersist());
 		if (existingPersister == null) {
 			persistenceContext.addPersister(persister);
 		} else {
@@ -199,6 +199,18 @@ class EntityMappingBuilder<C, I> extends AbstractEntityMappingBuilder<C, I> {
 				throw new IllegalArgumentException("Persister already exists for " + Reflections.toString(persister.getMappingStrategy().getClassToPersist()));
 			}
 		}
+	}
+	
+	/**
+	 * Shortcut for {@link PersistenceContext#getPersister(Class)} casted as a {@link IEntityConfiguredPersister} because we know that all of them
+	 * put by this instance are of this type
+	 * @param persistenceContext the enclosing {@link PersistenceContext}
+	 * @param entityClass the class whose persister must be retrieved
+	 * @param <C> entity type
+	 * @return the existing persister in {@link PersistenceContext}
+	 */
+	private static <C> IEntityConfiguredPersister<C, Object> getPersister(PersistenceContext persistenceContext, Class<C> entityClass) {
+		return (IEntityConfiguredPersister<C, Object>) persistenceContext.getPersister(entityClass);
 	}
 	
 	protected  <T extends Table> void configureRelations(PersistenceContext persistenceContext, JoinedTablesPersister<C, I, T> sourcePersister) {
@@ -436,13 +448,13 @@ class EntityMappingBuilder<C, I> extends AbstractEntityMappingBuilder<C, I> {
 		List<CascadeMany> oneToManys = configurationSupport.getOneToManys();
 		oneToManys.forEach((CascadeMany cascadeMany) -> {
 			EntityGraphNode entityGraphNode = target.registerRelation(cascadeMany.getCollectionProvider(),
-					persistenceContext.getPersister(cascadeMany.getTargetMappingConfiguration().getEntityType()).getMappingStrategy());
+					getPersister(persistenceContext, cascadeMany.getTargetMappingConfiguration().getEntityType()).getMappingStrategy());
 			registerRelations(cascadeMany.getTargetMappingConfiguration(), entityGraphNode, persistenceContext);
 		});
 		List<CascadeOne> oneToOnes = configurationSupport.getOneToOnes();
 		oneToOnes.forEach((CascadeOne cascadeOne) -> {
 			EntityGraphNode entityGraphNode = target.registerRelation(cascadeOne.getTargetProvider(),
-					persistenceContext.getPersister(cascadeOne.getTargetMappingConfiguration().getEntityType()).getMappingStrategy());
+					getPersister(persistenceContext, cascadeOne.getTargetMappingConfiguration().getEntityType()).getMappingStrategy());
 			registerRelations(cascadeOne.getTargetMappingConfiguration(), entityGraphNode, persistenceContext);
 		});
 	}

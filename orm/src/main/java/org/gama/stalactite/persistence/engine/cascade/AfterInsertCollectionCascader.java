@@ -6,7 +6,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.gama.lang.collection.Iterables;
-import org.gama.stalactite.persistence.engine.Persister;
+import org.gama.stalactite.persistence.engine.IEntityPersister;
 import org.gama.stalactite.persistence.engine.listening.InsertListener;
 
 /**
@@ -18,16 +18,16 @@ import org.gama.stalactite.persistence.engine.listening.InsertListener;
  */
 public abstract class AfterInsertCollectionCascader<TRIGGER, TARGET> implements InsertListener<TRIGGER> {
 	
-	private final Persister<TARGET, ?, ?> persister;
+	private final IEntityPersister<TARGET, ?> persister;
 	
 	/**
 	 * Simple constructor. Created instance must be added to PersisterListener afterward.
 	 *
 	 * @param persister
 	 */
-	public AfterInsertCollectionCascader(Persister<TARGET, ?, ?> persister) {
+	public AfterInsertCollectionCascader(IEntityPersister<TARGET, ?> persister) {
 		this.persister = persister;
-		this.persister.getPersisterListener().addInsertListener(new InsertListener<TARGET>() {
+		this.persister.addInsertListener(new InsertListener<TARGET>() {
 			@Override
 			public void afterInsert(Iterable<? extends TARGET> entities) {
 				postTargetInsert(entities);
@@ -35,7 +35,7 @@ public abstract class AfterInsertCollectionCascader<TRIGGER, TARGET> implements 
 		});
 	}
 	
-	public Persister<TARGET, ?, ?> getPersister() {
+	public IEntityPersister<TARGET, ?> getPersister() {
 		return persister;
 	}
 	

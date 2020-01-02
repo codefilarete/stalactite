@@ -1,22 +1,25 @@
 package org.gama.stalactite.persistence.engine;
 
-import java.util.Collection;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
+import java.util.function.Function;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
 import org.danekja.java.util.function.serializable.SerializableBiConsumer;
 import org.danekja.java.util.function.serializable.SerializableFunction;
 import org.gama.lang.Duo;
 import org.gama.lang.collection.Iterables;
+import org.gama.lang.collection.Maps;
 import org.gama.stalactite.persistence.engine.listening.IPersisterListener;
-import org.gama.stalactite.persistence.mapping.IEntityMappingStrategy;
-import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.query.model.AbstractRelationalOperator;
 
 /**
  * @author Guillaume Mary
  */
-public interface IPersister<C, I> extends IInsertExecutor<C>, IUpdateExecutor<C>, ISelectExecutor<C, I>, IDeleteExecutor<C, I>, IPersisterListener<C, I> {
+public interface IEntityPersister<C, I> extends IInsertExecutor<C>, IUpdateExecutor<C>, ISelectExecutor<C, I>, IDeleteExecutor<C, I>, IPersisterListener<C, I> {
 	
 	/**
 	 * Persists an instance either it is already persisted or not (insert or update).
@@ -37,6 +40,43 @@ public interface IPersister<C, I> extends IInsertExecutor<C>, IUpdateExecutor<C>
 	}
 	
 	int persist(Iterable<C> entities);
+	
+	
+	static <C, I> int persist(Iterable<C> entities,
+							   Predicate<C> isNewProvider,
+							   ISelectExecutor<C, I> selector,
+							   IUpdateExecutor<C> updater,
+							   IInsertExecutor<C> inserter,
+							   Function<C, I> idProvider) {
+		if (Iterables.isEmpty(entities)) {
+			return 0;
+		}
+		// determine insert or update operation
+		List<C> toInsert = new ArrayList<>(20);
+		List<C> toUpdate = new ArrayList<>(20);
+		for (C c : entities) {
+			if (isNewProvider.test(c)) {
+				toInsert.add(c);
+			} else {
+				toUpdate.add(c);
+			}
+		}
+		int writtenRowCount = 0;
+		if (!toInsert.isEmpty()) {
+			writtenRowCount += inserter.insert(toInsert);
+		}
+		if (!toUpdate.isEmpty()) {
+			// creating couple of modified and unmodified entities
+			List<C> loadedEntities = selector.select(toUpdate.stream().map(idProvider).collect(Collectors.toList()));
+			Map<I, C> loadedEntitiesPerId = Iterables.map(loadedEntities, idProvider);
+			Map<I, C> modifiedEntitiesPerId = Iterables.map(toUpdate, idProvider);
+			Map<C, C> modifiedVSunmodified = Maps.innerJoin(modifiedEntitiesPerId, loadedEntitiesPerId);
+			List<Duo<C, C>> updateArg = new ArrayList<>();
+			modifiedVSunmodified.forEach((k, v) -> updateArg.add(new Duo<>(k , v)));
+			writtenRowCount += updater.update(updateArg, true);
+		}
+		return writtenRowCount;
+	}
 	
 	default int insert(C entity) {
 		return insert(Collections.singletonList(entity));
@@ -109,9 +149,9 @@ public interface IPersister<C, I> extends IInsertExecutor<C>, IUpdateExecutor<C>
 	
 	List<C> selectAll();
 	
-	<T extends Table<T>> IEntityMappingStrategy<C, I, T> getMappingStrategy();
+	boolean isNew(C entity);
 	
-	Collection<Table> giveImpliedTables();
+	Class<C> getClassToPersist();
 	
 	interface ExecutableEntityQuery<C> extends EntityCriteria<C>, ExecutableQuery<C> {
 		

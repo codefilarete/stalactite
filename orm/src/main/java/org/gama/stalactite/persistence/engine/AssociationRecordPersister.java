@@ -2,7 +2,7 @@ package org.gama.stalactite.persistence.engine;
 
 import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
 import org.gama.stalactite.persistence.sql.Dialect;
-import org.gama.stalactite.sql.ConnectionProvider;
+import org.gama.stalactite.persistence.sql.IConnectionConfiguration;
 
 /**
  * Persister dedicated to record of association table (case of one-to-many association without owning column on target side).
@@ -16,9 +16,8 @@ public class AssociationRecordPersister<C extends AssociationRecord, T extends A
 	public AssociationRecordPersister(
 			ClassMappingStrategy<C, C, T> mappingStrategy,
 			Dialect dialect,
-			ConnectionProvider connectionProvider,
-			int jdbcBatchSize) {
-		super(mappingStrategy, dialect, connectionProvider, jdbcBatchSize);
+			IConnectionConfiguration connectionConfiguration) {
+		super(mappingStrategy, dialect, connectionConfiguration);
 	}
 	
 }

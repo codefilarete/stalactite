@@ -87,7 +87,6 @@ public class JoinedTablesPolymorphismSelectExecutor<C, I, T extends Table> imple
 		// Doing this in 2 phases
 		// - make a select with id + discriminator in select clause and ids in where to determine ids per subclass type
 		// - call the right subclass joinExecutor with dedicated ids
-		// TODO : (with which listener ?)
 		
 		Column<T, I> primaryKey = (Column<T, I>) Iterables.first(mainTable.getPrimaryKey().getColumns());
 		Query query = QueryEase.

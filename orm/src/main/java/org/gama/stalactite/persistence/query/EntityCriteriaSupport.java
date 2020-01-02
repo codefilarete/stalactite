@@ -20,7 +20,7 @@ import org.gama.reflection.MutatorByMethodReference;
 import org.gama.reflection.ValueAccessPoint;
 import org.gama.reflection.ValueAccessPointByMethodReference;
 import org.gama.reflection.ValueAccessPointMap;
-import org.gama.stalactite.persistence.engine.IPersister.EntityCriteria;
+import org.gama.stalactite.persistence.engine.IEntityPersister.EntityCriteria;
 import org.gama.stalactite.persistence.engine.RuntimeMappingException;
 import org.gama.stalactite.persistence.id.assembly.SimpleIdentifierAssembler;
 import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;

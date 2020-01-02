@@ -39,7 +39,8 @@ import org.gama.stalactite.persistence.engine.EntityMappingConfiguration;
 import org.gama.stalactite.persistence.engine.EntityMappingConfiguration.InheritanceConfiguration;
 import org.gama.stalactite.persistence.engine.EntityMappingConfigurationProvider;
 import org.gama.stalactite.persistence.engine.ForeignKeyNamingStrategy;
-import org.gama.stalactite.persistence.engine.IPersister;
+import org.gama.stalactite.persistence.engine.IConfiguredPersister;
+import org.gama.stalactite.persistence.engine.IEntityConfiguredPersister;
 import org.gama.stalactite.persistence.engine.MappingConfigurationException;
 import org.gama.stalactite.persistence.engine.NotYetSupportedOperationException;
 import org.gama.stalactite.persistence.engine.PersistenceContext;
@@ -156,12 +157,12 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 	}
 	
 	@Override
-	public IPersister<C, I> build(PersistenceContext persistenceContext) {
+	public IEntityConfiguredPersister<C, I> build(PersistenceContext persistenceContext) {
 		return build(persistenceContext, null);
 	}
 	
 	@Override
-	public <T extends Table> IPersister<C, I> build(PersistenceContext persistenceContext, @Nullable T table) {
+	public IEntityConfiguredPersister<C, I> build(PersistenceContext persistenceContext, @Nullable Table table) {
 		boolean isInitiator = ENTITY_CANDIDATES.get() == null;
 		
 		if (isInitiator) {
@@ -177,11 +178,11 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 		}
 	}
 	
-	private <T extends Table> IPersister<C, I> doBuild(PersistenceContext persistenceContext, @Nullable T table) {
+	private IEntityConfiguredPersister<C, I> doBuild(PersistenceContext persistenceContext, @Nullable Table table) {
 		init(persistenceContext.getDialect().getColumnBinderRegistry(), table);
 		
 		if (this.table == null) {
-			this.table = (T) new Table(tableNamingStrategy.giveName(this.entityMappingConfiguration.getEntityType()));
+			this.table = new Table(tableNamingStrategy.giveName(this.entityMappingConfiguration.getEntityType()));
 		}
 		
 		mapEntityConfigurationPerTable();
@@ -212,7 +213,7 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 		
 		// Creating main persister 
 		Mapping mainMapping = Iterables.first(inheritanceMappingPerTable.getMappings());
-		JoinedTablesPersister<C, I, T> mainPersister = buildMainPersister(identification, mainMapping, persistenceContext);
+		JoinedTablesPersister<C, I, Table> mainPersister = buildMainPersister(identification, mainMapping, persistenceContext);
 		ENTITY_CANDIDATES.get().add(mainPersister.getMappingStrategy().getClassToPersist());
 		
 		// registering relations on parent entities
@@ -222,16 +223,16 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 				registerRelationCascades(entityMappingConfiguration, persistenceContext, mainPersister)
 		);
 		
-		IPersister<C, I> result = mainPersister;
+		IEntityConfiguredPersister<C, I> result = mainPersister;
 		// polymorphism handling
 		PolymorphismPolicy polymorphismPolicy = this.entityMappingConfiguration.getPolymorphismPolicy();
 		if (polymorphismPolicy != null) {
-			PolymorphismBuilder<C, I, T> polymorphismBuilder = null;
+			PolymorphismBuilder<C, I, Table> polymorphismBuilder = null;
 			if (polymorphismPolicy instanceof SingleTablePolymorphism) {
 				polymorphismBuilder = new SingleTablePolymorphismBuilder<>((SingleTablePolymorphism<C, I, ?>) polymorphismPolicy,
 						identification, mainPersister, mainMapping, this.columnBinderRegistry, this.columnNameProvider);
 			} else if (polymorphismPolicy instanceof TablePerClassPolymorphism) {
-				polymorphismBuilder = new TablePerClassPolymorphismBuilder<C, I, T>((TablePerClassPolymorphism<C, I>) polymorphismPolicy,
+				polymorphismBuilder = new TablePerClassPolymorphismBuilder<C, I, Table>((TablePerClassPolymorphism<C, I>) polymorphismPolicy,
 						identification, mainPersister, mainMapping, this.columnBinderRegistry, this.columnNameProvider, this.tableNamingStrategy) {
 					@Override
 					void addPrimarykey(Identification identification, Table table) {
@@ -244,7 +245,7 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 					}
 				};
 			} else if (polymorphismPolicy instanceof JoinedTablesPolymorphism) {
-				polymorphismBuilder = new JoinedTablesPolymorphismBuilder<C, I, T>((JoinedTablesPolymorphism<C, I>) polymorphismPolicy,
+				polymorphismBuilder = new JoinedTablesPolymorphismBuilder<C, I, Table>((JoinedTablesPolymorphism<C, I>) polymorphismPolicy,
 						identification, mainPersister, mainMapping, this.columnBinderRegistry, this.columnNameProvider, this.tableNamingStrategy) {
 					@Override
 					void addPrimarykey(Identification identification, Table table) {
@@ -291,8 +292,8 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 	}
 	
 	private <T extends Table> void registerRelationCascades(EntityMappingConfiguration<C, I> entityMappingConfiguration,
-															  PersistenceContext persistenceContext,
-															  JoinedTablesPersister<C, I, T> sourcePersister) {
+															PersistenceContext persistenceContext,
+															JoinedTablesPersister<C, I, T> sourcePersister) {
 		for (CascadeOne<C, ?, ?> cascadeOne : entityMappingConfiguration.getOneToOnes()) {
 			CascadeOneConfigurer cascadeOneConfigurer = new CascadeOneConfigurer<>(persistenceContext, new PersisterBuilderImpl<>(cascadeOne.getTargetMappingConfiguration()));
 			cascadeOneConfigurer.appendCascade(cascadeOne, sourcePersister,
@@ -333,13 +334,13 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 		List<CascadeMany> oneToManys = configurationSupport.getOneToManys();
 		oneToManys.forEach((CascadeMany cascadeMany) -> {
 			EntityGraphNode entityGraphNode = target.registerRelation(cascadeMany.getCollectionProvider(),
-					persistenceContext.getPersister(cascadeMany.getTargetMappingConfiguration().getEntityType()).getMappingStrategy());
+					((IConfiguredPersister) persistenceContext.getPersister(cascadeMany.getTargetMappingConfiguration().getEntityType())).getMappingStrategy());
 			registerRelationsInGraph(cascadeMany.getTargetMappingConfiguration(), entityGraphNode, persistenceContext);
 		});
 		List<CascadeOne> oneToOnes = configurationSupport.getOneToOnes();
 		oneToOnes.forEach((CascadeOne cascadeOne) -> {
 			EntityGraphNode entityGraphNode = target.registerRelation(cascadeOne.getTargetProvider(),
-					persistenceContext.getPersister(cascadeOne.getTargetMappingConfiguration().getEntityType()).getMappingStrategy());
+					((IConfiguredPersister) persistenceContext.getPersister(cascadeOne.getTargetMappingConfiguration().getEntityType())).getMappingStrategy());
 			registerRelationsInGraph(cascadeOne.getTargetMappingConfiguration(), entityGraphNode, persistenceContext);
 		});
 	}
@@ -385,7 +386,7 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 	
 	interface PolymorphismBuilder<C, I, T extends Table> {
 		
-		IPersister<C, I> build(PersistenceContext persistenceContext);
+		IEntityConfiguredPersister<C, I> build(PersistenceContext persistenceContext);
 	}
 	
 	/**

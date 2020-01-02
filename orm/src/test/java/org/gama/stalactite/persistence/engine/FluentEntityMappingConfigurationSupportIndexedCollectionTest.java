@@ -82,7 +82,7 @@ class FluentEntityMappingConfigurationSupportIndexedCollectionTest {
 				.add(Choice::getName)
 				.add(Choice::getQuestion);
 		
-		IPersister<Question, Identifier<Long>> questionPersister = entityBuilder(Question.class, LONG_TYPE)
+		IEntityPersister<Question, Identifier<Long>> questionPersister = entityBuilder(Question.class, LONG_TYPE)
 				.add(Question::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.addOneToManyList(Question::getChoices, choiceMappingConfiguration).mappedBy(Choice::getQuestion).indexedBy(idx).cascading(ALL)
 				.build(persistenceContext);
@@ -115,7 +115,7 @@ class FluentEntityMappingConfigurationSupportIndexedCollectionTest {
 			Table choiceTable = updateTestData.getChoiceTable();
 			Column<Table, Identifier> id = updateTestData.getId();
 			Column<Table, Integer> idx = updateTestData.getIdx();
-			IPersister<Question, Identifier<Long>> questionPersister = updateTestData.getQuestionPersister();
+			IEntityPersister<Question, Identifier<Long>> questionPersister = updateTestData.getQuestionPersister();
 			Question newQuestion = updateTestData.getNewQuestion();
 			Choice choice1 = updateTestData.getChoice1();
 			Choice choice2 = updateTestData.getChoice2();
@@ -143,7 +143,7 @@ class FluentEntityMappingConfigurationSupportIndexedCollectionTest {
 			Table choiceTable = updateTestData.getChoiceTable();
 			Column<Table, Identifier> id = updateTestData.getId();
 			Column<Table, Integer> idx = updateTestData.getIdx();
-			IPersister<Question, Identifier<Long>> questionPersister = updateTestData.getQuestionPersister();
+			IEntityPersister<Question, Identifier<Long>> questionPersister = updateTestData.getQuestionPersister();
 			Question newQuestion = updateTestData.getNewQuestion();
 			
 			// creating a clone to test for no change
@@ -172,7 +172,7 @@ class FluentEntityMappingConfigurationSupportIndexedCollectionTest {
 			Table choiceTable = updateTestData.getChoiceTable();
 			Column<Table, Identifier> id = updateTestData.getId();
 			Column<Table, Integer> idx = updateTestData.getIdx();
-			IPersister<Question, Identifier<Long>> questionPersister = updateTestData.getQuestionPersister();
+			IEntityPersister<Question, Identifier<Long>> questionPersister = updateTestData.getQuestionPersister();
 			Question newQuestion = updateTestData.getNewQuestion();
 			Choice choice1 = updateTestData.getChoice1();
 			Choice choice2 = updateTestData.getChoice2();
@@ -201,7 +201,7 @@ class FluentEntityMappingConfigurationSupportIndexedCollectionTest {
 			Table choiceTable = updateTestData.getChoiceTable();
 			Column<Table, Identifier> id = updateTestData.getId();
 			Column<Table, Integer> idx = updateTestData.getIdx();
-			IPersister<Question, Identifier<Long>> questionPersister = updateTestData.getQuestionPersister();
+			IEntityPersister<Question, Identifier<Long>> questionPersister = updateTestData.getQuestionPersister();
 			Question newQuestion = updateTestData.getNewQuestion();
 			Choice choice1 = updateTestData.getChoice1();
 			Choice choice3 = updateTestData.getChoice3();
@@ -234,7 +234,7 @@ class FluentEntityMappingConfigurationSupportIndexedCollectionTest {
 			Table choiceTable = updateTestData.getChoiceTable();
 			Column<Table, Identifier> id = updateTestData.getId();
 			Column<Table, Integer> idx = updateTestData.getIdx();
-			IPersister<Question, Identifier<Long>> questionPersister = updateTestData.getQuestionPersister();
+			IEntityPersister<Question, Identifier<Long>> questionPersister = updateTestData.getQuestionPersister();
 			Question newQuestion = updateTestData.getNewQuestion();
 			Choice choice1 = updateTestData.getChoice1();
 			Choice choice3 = updateTestData.getChoice3();
@@ -270,7 +270,7 @@ class FluentEntityMappingConfigurationSupportIndexedCollectionTest {
 				.add(Choice::getName)
 				.add(Choice::getQuestion);
 		
-		IPersister<Question, Identifier<Long>> questionPersister = entityBuilder(Question.class, LONG_TYPE)
+		IEntityPersister<Question, Identifier<Long>> questionPersister = entityBuilder(Question.class, LONG_TYPE)
 				.add(Question::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.addOneToManyList(Question::getChoices, choiceMappingConfiguration).mappedBy(Choice::getQuestion).indexedBy(idx).cascading(ALL)
 				.build(persistenceContext);
@@ -295,7 +295,7 @@ class FluentEntityMappingConfigurationSupportIndexedCollectionTest {
 		
 		DuplicatesTestData duplicatesTestData = new DuplicatesTestData().build();
 		
-		IPersister<Question, Identifier<Long>> questionPersister = duplicatesTestData.getQuestionPersister();
+		IEntityPersister<Question, Identifier<Long>> questionPersister = duplicatesTestData.getQuestionPersister();
 		
 		Question newQuestion = new Question(1L);
 		Choice choice1 = new Choice(10L);
@@ -306,7 +306,7 @@ class FluentEntityMappingConfigurationSupportIndexedCollectionTest {
 		
 		assertTrue(choice1.getId().isPersisted());
 		
-		IPersister<Answer, Identifier<Long>> answerPersister = duplicatesTestData.getAnswerPersister();
+		IEntityPersister<Answer, Identifier<Long>> answerPersister = duplicatesTestData.getAnswerPersister();
 		Answer answer = new Answer(1L);
 		answer.takeChoices(Arrays.asList(choice1, choice2, choice3));
 		answerPersister.persist(answer);
@@ -357,7 +357,7 @@ class FluentEntityMappingConfigurationSupportIndexedCollectionTest {
 				.add(Choice::getName)
 				.add(Choice::setQuestionWithNoGetter);
 		
-		IPersister<Question, Identifier<Long>> persisterWithNonExistingSetter = entityBuilder(Question.class, LONG_TYPE)
+		IEntityPersister<Question, Identifier<Long>> persisterWithNonExistingSetter = entityBuilder(Question.class, LONG_TYPE)
 				.add(Question::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.addOneToManyList(Question::getChoices, choiceMappingConfiguration).indexedBy(idx).mappedBy(Choice::setQuestionWithNoGetter).cascading(ALL)
 				.build(persistenceContext);
@@ -389,7 +389,7 @@ class FluentEntityMappingConfigurationSupportIndexedCollectionTest {
 				.add(Choice::getName)
 				.add(Choice::getQuestion);
 		
-		IPersister<Question, Identifier<Long>> persister = entityBuilder(Question.class, LONG_TYPE)
+		IEntityPersister<Question, Identifier<Long>> persister = entityBuilder(Question.class, LONG_TYPE)
 				.add(Question::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.addOneToManyList(Question::getChoices, choiceMappingConfiguration).indexedBy(idx).mappedBy(Choice::setQuestion).cascading(ALL)
 				.build(persistenceContext);
@@ -437,8 +437,8 @@ class FluentEntityMappingConfigurationSupportIndexedCollectionTest {
 			
 			DuplicatesTestData duplicatesTestData = new DuplicatesTestData().build();
 			
-			IPersister<Question, Identifier<Long>> questionPersister = duplicatesTestData.getQuestionPersister();
-			IPersister<Answer, Identifier<Long>> answerPersister = duplicatesTestData.getAnswerPersister();
+			IEntityPersister<Question, Identifier<Long>> questionPersister = duplicatesTestData.getQuestionPersister();
+			IEntityPersister<Answer, Identifier<Long>> answerPersister = duplicatesTestData.getAnswerPersister();
 			Table answerChoicesTable = duplicatesTestData.getAnswerChoicesTable();
 			Column<Table, Identifier> answerChoicesTableId = duplicatesTestData.getAnswerChoicesTableId();
 			Column<Table, Integer> answerChoicesTableIdx = duplicatesTestData.getAnswerChoicesTableIdx();
@@ -472,8 +472,8 @@ class FluentEntityMappingConfigurationSupportIndexedCollectionTest {
 			
 			DuplicatesTestData duplicatesTestData = new DuplicatesTestData().build();
 			
-			IPersister<Question, Identifier<Long>> questionPersister = duplicatesTestData.getQuestionPersister();
-			IPersister<Answer, Identifier<Long>> answerPersister = duplicatesTestData.getAnswerPersister();
+			IEntityPersister<Question, Identifier<Long>> questionPersister = duplicatesTestData.getQuestionPersister();
+			IEntityPersister<Answer, Identifier<Long>> answerPersister = duplicatesTestData.getAnswerPersister();
 			
 			Question newQuestion = new Question(1L);
 			Choice choice1 = new Choice(10L);
@@ -504,7 +504,7 @@ class FluentEntityMappingConfigurationSupportIndexedCollectionTest {
 			
 			DuplicatesTestData duplicatesTestData = new DuplicatesTestData().build();
 			
-			IPersister<Question, Identifier<Long>> questionPersister = duplicatesTestData.getQuestionPersister();
+			IEntityPersister<Question, Identifier<Long>> questionPersister = duplicatesTestData.getQuestionPersister();
 			
 			Question newQuestion = new Question(1L);
 			Choice choice1 = new Choice(10L);
@@ -531,8 +531,8 @@ class FluentEntityMappingConfigurationSupportIndexedCollectionTest {
 			
 			DuplicatesTestData duplicatesTestData = new DuplicatesTestData().build();
 			
-			IPersister<Question, Identifier<Long>> questionPersister = duplicatesTestData.getQuestionPersister();
-			IPersister<Answer, Identifier<Long>> answerPersister = duplicatesTestData.getAnswerPersister();
+			IEntityPersister<Question, Identifier<Long>> questionPersister = duplicatesTestData.getQuestionPersister();
+			IEntityPersister<Answer, Identifier<Long>> answerPersister = duplicatesTestData.getAnswerPersister();
 			
 			Question newQuestion = new Question(1L);
 			Choice choice1 = new Choice(10L);
@@ -569,8 +569,8 @@ class FluentEntityMappingConfigurationSupportIndexedCollectionTest {
 			
 			DuplicatesTestData duplicatesTestData = new DuplicatesTestData().build();
 			
-			IPersister<Question, Identifier<Long>> questionPersister = duplicatesTestData.getQuestionPersister();
-			IPersister<Answer, Identifier<Long>> answerPersister = duplicatesTestData.getAnswerPersister();
+			IEntityPersister<Question, Identifier<Long>> questionPersister = duplicatesTestData.getQuestionPersister();
+			IEntityPersister<Answer, Identifier<Long>> answerPersister = duplicatesTestData.getAnswerPersister();
 			
 			Question newQuestion = new Question(1L);
 			Choice choice1 = new Choice(10L);
@@ -607,8 +607,8 @@ class FluentEntityMappingConfigurationSupportIndexedCollectionTest {
 			
 			DuplicatesTestData duplicatesTestData = new DuplicatesTestData().build();
 			
-			IPersister<Question, Identifier<Long>> questionPersister = duplicatesTestData.getQuestionPersister();
-			IPersister<Answer, Identifier<Long>> answerPersister = duplicatesTestData.getAnswerPersister();
+			IEntityPersister<Question, Identifier<Long>> questionPersister = duplicatesTestData.getQuestionPersister();
+			IEntityPersister<Answer, Identifier<Long>> answerPersister = duplicatesTestData.getAnswerPersister();
 			Table answerChoicesTable = duplicatesTestData.getAnswerChoicesTable();
 			Column<Table, Identifier> answerChoicesTableId = duplicatesTestData.getAnswerChoicesTableId();
 			Column<Table, Integer> answerChoicesTableIdx = duplicatesTestData.getAnswerChoicesTableIdx();
@@ -922,7 +922,7 @@ class FluentEntityMappingConfigurationSupportIndexedCollectionTest {
 		private Table choiceTable;
 		private Column<Table, Identifier> id;
 		private Column<Table, Integer> idx;
-		private IPersister<Question, Identifier<Long>> questionPersister;
+		private IEntityPersister<Question, Identifier<Long>> questionPersister;
 		private Question newQuestion;
 		private Choice choice1;
 		private Choice choice2;
@@ -940,7 +940,7 @@ class FluentEntityMappingConfigurationSupportIndexedCollectionTest {
 			return idx;
 		}
 		
-		public IPersister<Question, Identifier<Long>> getQuestionPersister() {
+		public IEntityPersister<Question, Identifier<Long>> getQuestionPersister() {
 			return questionPersister;
 		}
 		
@@ -1003,18 +1003,18 @@ class FluentEntityMappingConfigurationSupportIndexedCollectionTest {
 	
 	private class DuplicatesTestData {
 		
-		private IPersister<Question, Identifier<Long>> questionPersister;
-		private IPersister<Answer, Identifier<Long>> answerPersister;
+		private IEntityPersister<Question, Identifier<Long>> questionPersister;
+		private IEntityPersister<Answer, Identifier<Long>> answerPersister;
 		private Table answerChoicesTable;
 		private Column<Table, Identifier> answerChoicesTableId;
 		private Column<Table, Integer> answerChoicesTableIdx;
 		private Column<Table, Identifier> answerChoicesTableChoiceId;
 		
-		public IPersister<Question, Identifier<Long>> getQuestionPersister() {
+		public IEntityPersister<Question, Identifier<Long>> getQuestionPersister() {
 			return questionPersister;
 		}
 		
-		public IPersister<Answer, Identifier<Long>> getAnswerPersister() {
+		public IEntityPersister<Answer, Identifier<Long>> getAnswerPersister() {
 			return answerPersister;
 		}
 		

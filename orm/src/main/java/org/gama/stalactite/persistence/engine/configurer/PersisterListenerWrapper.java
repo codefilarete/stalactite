@@ -3,15 +3,13 @@ package org.gama.stalactite.persistence.engine.configurer;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
 
 import org.danekja.java.util.function.serializable.SerializableBiConsumer;
 import org.danekja.java.util.function.serializable.SerializableFunction;
 import org.gama.lang.Duo;
 import org.gama.lang.collection.Iterables;
-import org.gama.lang.collection.Maps;
-import org.gama.stalactite.persistence.engine.IPersister;
+import org.gama.stalactite.persistence.engine.IEntityConfiguredPersister;
+import org.gama.stalactite.persistence.engine.IEntityPersister;
 import org.gama.stalactite.persistence.engine.listening.DeleteByIdListener;
 import org.gama.stalactite.persistence.engine.listening.DeleteListener;
 import org.gama.stalactite.persistence.engine.listening.InsertListener;
@@ -25,45 +23,18 @@ import org.gama.stalactite.query.model.AbstractRelationalOperator;
 /**
  * @author Guillaume Mary
  */
-public class PersisterListenerWrapper<C, I> implements IPersister<C, I> {
+public class PersisterListenerWrapper<C, I> implements IEntityConfiguredPersister<C, I> {
 	
 	private final PersisterListener<C, I> persisterListener = new PersisterListener<>();
-	private final IPersister<C, I> surrogate;
+	private final IEntityConfiguredPersister<C, I> surrogate;
 	
-	public PersisterListenerWrapper(IPersister<C, I> surrogate) {
+	public PersisterListenerWrapper(IEntityConfiguredPersister<C, I> surrogate) {
 		this.surrogate = surrogate;
 	}
 	
 	@Override
 	public int persist(Iterable<C> entities) {
-		if (Iterables.isEmpty(entities)) {
-			return 0;
-		}
-		// determine insert or update operation
-		List<C> toInsert = new ArrayList<>(20);
-		List<C> toUpdate = new ArrayList<>(20);
-		for (C c : entities) {
-			if (surrogate.getMappingStrategy().isNew(c)) {
-				toInsert.add(c);
-			} else {
-				toUpdate.add(c);
-			}
-		}
-		int writtenRowCount = 0;
-		if (!toInsert.isEmpty()) {
-			writtenRowCount += insert(toInsert);
-		}
-		if (!toUpdate.isEmpty()) {
-			// creating couple of modified and unmodified entities
-			List<C> loadedEntities = select(toUpdate.stream().map(e -> getMappingStrategy().getId(e)).collect(Collectors.toList()));
-			Map<I, C> loadedEntitiesPerId = Iterables.map(loadedEntities, e -> getMappingStrategy().getId(e));
-			Map<I, C> modifiedEntitiesPerId = Iterables.map(toUpdate, e -> getMappingStrategy().getId(e));
-			Map<C, C> modifiedVSunmodified = Maps.innerJoin(modifiedEntitiesPerId, loadedEntitiesPerId);
-			List<Duo<C, C>> updateArg = new ArrayList<>();
-			modifiedVSunmodified.forEach((k, v) -> updateArg.add(new Duo<>(k , v)));
-			writtenRowCount += update(updateArg, true);
-		}
-		return writtenRowCount;
+		return IEntityPersister.persist(entities, this::isNew, this, this, this, getMappingStrategy()::getId);
 	}
 	
 	@Override
@@ -79,6 +50,16 @@ public class PersisterListenerWrapper<C, I> implements IPersister<C, I> {
 	@Override
 	public List<C> selectAll() {
 		return surrogate.selectAll();
+	}
+	
+	@Override
+	public boolean isNew(C entity) {
+		return surrogate.isNew(entity);
+	}
+	
+	@Override
+	public Class<C> getClassToPersist() {
+		return surrogate.getClassToPersist();
 	}
 	
 	@Override
@@ -107,13 +88,18 @@ public class PersisterListenerWrapper<C, I> implements IPersister<C, I> {
 	}
 	
 	@Override
-	public <T extends Table<T>> IEntityMappingStrategy<C, I, T> getMappingStrategy() {
+	public IEntityMappingStrategy<C, I, ?> getMappingStrategy() {
 		return this.surrogate.getMappingStrategy();
 	}
 	
 	@Override
 	public Collection<Table> giveImpliedTables() {
 		return this.surrogate.giveImpliedTables();
+	}
+	
+	@Override
+	public PersisterListener<C, I> getPersisterListener() {
+		return this.persisterListener;
 	}
 	
 	@Override

@@ -36,7 +36,7 @@ public class DDLDeployer {
 	 */
 	public static Collection<Table> collectTables(PersistenceContext persistenceContext) {
 		List<Table> result = new ArrayList<>(20);
-		persistenceContext.getPersisters().forEach(p -> result.addAll(p.giveImpliedTables()));
+		persistenceContext.getPersisters().forEach(p -> result.addAll(((IConfiguredPersister) p).giveImpliedTables()));
 		return result;
 	}
 	

@@ -12,168 +12,98 @@ import org.danekja.java.util.function.serializable.SerializableBiConsumer;
 import org.danekja.java.util.function.serializable.SerializableFunction;
 import org.gama.lang.Duo;
 import org.gama.lang.bean.Objects;
+import org.gama.lang.collection.Collections;
 import org.gama.lang.collection.Iterables;
+import org.gama.lang.exception.NotImplementedException;
 import org.gama.lang.function.Functions;
 import org.gama.lang.trace.ModifiableInt;
-import org.gama.reflection.IReversibleAccessor;
 import org.gama.reflection.MethodReferenceDispatcher;
+import org.gama.stalactite.persistence.engine.BeanRelationFixer;
 import org.gama.stalactite.persistence.engine.ExecutableQuery;
+import org.gama.stalactite.persistence.engine.IConfiguredPersister;
 import org.gama.stalactite.persistence.engine.IDeleteExecutor;
+import org.gama.stalactite.persistence.engine.IEntityConfiguredJoinedTablesPersister;
 import org.gama.stalactite.persistence.engine.IEntityConfiguredPersister;
 import org.gama.stalactite.persistence.engine.IInsertExecutor;
 import org.gama.stalactite.persistence.engine.ISelectExecutor;
 import org.gama.stalactite.persistence.engine.IUpdateExecutor;
-import org.gama.stalactite.persistence.engine.PersistenceContext;
-import org.gama.stalactite.persistence.engine.PolymorphismPolicy.TablePerClassPolymorphism;
-import org.gama.stalactite.persistence.engine.SubEntityMappingConfiguration;
-import org.gama.stalactite.persistence.engine.TableNamingStrategy;
-import org.gama.stalactite.persistence.engine.TablePerClassPolymorphicEntitySelectExecutor;
-import org.gama.stalactite.persistence.engine.TablePerClassPolymorphicSelectExecutor;
+import org.gama.stalactite.persistence.engine.JoinedTablesPolymorphismEntitySelectExecutor;
+import org.gama.stalactite.persistence.engine.JoinedTablesPolymorphismSelectExecutor;
+import org.gama.stalactite.persistence.engine.cascade.IJoinedTablesPersister;
 import org.gama.stalactite.persistence.engine.cascade.JoinedStrategiesSelect;
 import org.gama.stalactite.persistence.engine.cascade.JoinedTablesPersister;
 import org.gama.stalactite.persistence.engine.cascade.JoinedTablesPersister.CriteriaProvider;
 import org.gama.stalactite.persistence.engine.cascade.JoinedTablesPersister.RelationalExecutableEntityQuery;
-import org.gama.stalactite.persistence.engine.configurer.BeanMappingBuilder.ColumnNameProvider;
-import org.gama.stalactite.persistence.engine.configurer.PersisterBuilderImpl.Identification;
-import org.gama.stalactite.persistence.engine.configurer.PersisterBuilderImpl.MappingPerTable.Mapping;
-import org.gama.stalactite.persistence.engine.configurer.PersisterBuilderImpl.PolymorphismBuilder;
 import org.gama.stalactite.persistence.engine.listening.DeleteByIdListener;
 import org.gama.stalactite.persistence.engine.listening.DeleteListener;
 import org.gama.stalactite.persistence.engine.listening.InsertListener;
 import org.gama.stalactite.persistence.engine.listening.PersisterListener;
 import org.gama.stalactite.persistence.engine.listening.SelectListener;
 import org.gama.stalactite.persistence.engine.listening.UpdateListener;
-import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
 import org.gama.stalactite.persistence.mapping.IEntityMappingStrategy;
 import org.gama.stalactite.persistence.query.EntityCriteriaSupport;
 import org.gama.stalactite.persistence.query.RelationalEntityCriteria;
 import org.gama.stalactite.persistence.sql.Dialect;
-import org.gama.stalactite.persistence.sql.dml.binder.ColumnBinderRegistry;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.query.model.AbstractRelationalOperator;
 import org.gama.stalactite.sql.ConnectionProvider;
 
-import static org.gama.lang.Nullable.nullable;
-
 /**
+ * Class that wraps some other persisters and transfers its invokations to them.
+ * Used for polymorphism to dispatch method calls to sub-entities persisters.
+ * 
  * @author Guillaume Mary
  */
-abstract class TablePerClassPolymorphismBuilder<C, I, T extends Table> implements PolymorphismBuilder<C, I, T> {
+class PersisterDispatcher<C, I> implements IEntityConfiguredJoinedTablesPersister<C, I> {
 	
-	private final TablePerClassPolymorphism<C, I> polymorphismPolicy;
-	private final JoinedTablesPersister<C, I, T> mainPersister;
-	private final Mapping mainMapping;
-	private final Identification identification;
-	private final ColumnBinderRegistry columnBinderRegistry;
-	private final ColumnNameProvider columnNameProvider;
-	private final TableNamingStrategy tableNamingStrategy;
-	private final Set<Table> tables = new HashSet<>();
+	private final PersisterListenerWrapper<C, I> persisterListenerWrapper;
+	private final Map<Class<? extends C>, JoinedTablesPersister<C, I, ?>> subEntitiesPersisters;
 	
-	TablePerClassPolymorphismBuilder(TablePerClassPolymorphism<C, I> polymorphismPolicy,
-									 Identification identification,
-									 JoinedTablesPersister<C, I, T> mainPersister,
-									 Mapping mainMapping,
-									 ColumnBinderRegistry columnBinderRegistry,
-									 ColumnNameProvider columnNameProvider,
-									 TableNamingStrategy tableNamingStrategy) {
-		this.polymorphismPolicy = polymorphismPolicy;
-		this.identification = identification;
-		this.mainPersister = mainPersister;
-		this.mainMapping = mainMapping;
-		this.columnBinderRegistry = columnBinderRegistry;
-		this.columnNameProvider = columnNameProvider;
-		this.tableNamingStrategy = tableNamingStrategy;
-	}
-	
-	private Map<Class<? extends C>, JoinedTablesPersister<C, I, T>> buildSubEntitiesPersisters(PersistenceContext persistenceContext) {
-		Map<Class<? extends C>, JoinedTablesPersister<C, I, T>> subPersisterPerSubclass = new HashMap<>();
+	public PersisterDispatcher(JoinedTablesPersister<C, I, ?> mainPersister,
+							   Map<Class<? extends C>, JoinedTablesPersister<C, I, ?>> subEntitiesPersisters,
+							   ConnectionProvider connectionProvider,
+							   Dialect dialect) {
 		
-		this.tables.clear();
-		BeanMappingBuilder beanMappingBuilder = new BeanMappingBuilder();
-		for (SubEntityMappingConfiguration<? extends C, I> subConfiguration : polymorphismPolicy.getSubClasses()) {
-			Table subTable = nullable(polymorphismPolicy.giveTable(subConfiguration))
-					.getOr(() -> new Table(tableNamingStrategy.giveName(subConfiguration.getEntityType())));
-			tables.add(subTable);
-			Map<IReversibleAccessor, Column> subEntityPropertiesMapping = beanMappingBuilder.build(subConfiguration.getPropertiesMapping(), subTable,
-					this.columnBinderRegistry, this.columnNameProvider);
-			// in table-per-class polymorphism, main properties must be transfered to sub-entities ones, because CRUD operations are dipatched to them
-			// by a proxy and main persister is not so much used
-			Map<IReversibleAccessor, Column> projectedMainMapping = BeanMappingBuilder.projectColumns(mainMapping.getMapping(), subTable, (accessor, c) -> c.getName());
-			subEntityPropertiesMapping.putAll(projectedMainMapping);
-			addPrimarykey(identification, subTable);
-			Mapping subEntityMapping = new Mapping(subConfiguration, subTable, subEntityPropertiesMapping, false);
-			addIdentificationToMapping(identification, subEntityMapping);
-			ClassMappingStrategy<? extends C, I, Table> classMappingStrategy = PersisterBuilderImpl.createClassMappingStrategy(
-					false,
-					subTable,
-					subEntityMapping.getMapping(),
-					identification,
-					// TODO: no generated keys handler for now, should be taken on main strategy or brought by identification
-					null,
-					subConfiguration.getPropertiesMapping().getBeanType());
-			
-			JoinedTablesPersister subclassPersister = new JoinedTablesPersister(persistenceContext, classMappingStrategy);
-			subPersisterPerSubclass.put(subConfiguration.getEntityType(), subclassPersister);
-		}
-		
-		return subPersisterPerSubclass;
-	}
-	
-	abstract void addPrimarykey(Identification identification, Table table);
-	
-	abstract void addIdentificationToMapping(Identification identification, Mapping mapping);
-	
-	@Override
-	public IEntityConfiguredPersister<C, I> build(PersistenceContext persistenceContext) {
-		Map<Class<? extends C>, JoinedTablesPersister<C, I, T>> joinedTablesPersisters = buildSubEntitiesPersisters(persistenceContext);
-		// NB: persisters are not registered into PersistenceContext because it may break implicit polymorphism principle (persisters are then
-		// available by PersistenceContext.getPersister(..)) and it is one sure that they are perfect ones (all their features should be tested)
-		// joinedTablesPersisters.values().forEach(persistenceContext::addPersister);
-		return wrap(mainPersister, joinedTablesPersisters, persistenceContext.getConnectionProvider(), persistenceContext.getDialect());
-	}
-	
-	private IEntityConfiguredPersister<C, I> wrap(JoinedTablesPersister<C, I, T> mainPersister, Map<Class<? extends C>,
-			JoinedTablesPersister<C, I, T>> subEntitiesPersisters, ConnectionProvider connectionProvider, Dialect dialect) {
-		Set<Entry<Class<? extends C>, JoinedTablesPersister<C, I, T>>> entries = subEntitiesPersisters.entrySet();
+		this.subEntitiesPersisters = subEntitiesPersisters;
+		Set<Entry<Class<? extends C>, JoinedTablesPersister<C, I, ?>>> entries = this.subEntitiesPersisters.entrySet();
 		Map<Class<? extends C>, IInsertExecutor<C>> subclassInsertExecutors =
 				Iterables.map(entries, Entry::getKey, e -> e.getValue().getInsertExecutor());
 		Map<Class<? extends C>, IUpdateExecutor<C>> subclassUpdateExecutors =
 				Iterables.map(entries, Entry::getKey, e -> e.getValue().getUpdateExecutor());
+		Map<Class<? extends C>, ISelectExecutor<C, I>> subclassSelectExecutors =
+				Iterables.map(entries, Entry::getKey, e -> e.getValue().getSelectExecutor());
 		Map<Class<? extends C>, IDeleteExecutor<C, I>> subclassDeleteExecutors =
 				Iterables.map(entries, Entry::getKey, e -> e.getValue().getDeleteExecutor());
-		
-		Map<Class, Table> tablePerSubEntity = Iterables.map((Set) entries,
-				Entry::getKey,
-				Functions.<Entry<Class, JoinedTablesPersister>, JoinedTablesPersister, Table>chain(Entry::getValue, JoinedTablesPersister::getMainTable));
-		
-		
-		subEntitiesPersisters.forEach((type, persister) -> {
-			mainPersister.getJoinedStrategiesSelectExecutor().getJoinedStrategiesSelect().getJoinsRoot().projectTo(
+			
+			
+			
+		subEntitiesPersisters.forEach((type, persister) -> 
+			mainPersister.getJoinedStrategiesSelectExecutor().getJoinedStrategiesSelect().getJoinsRoot().copyTo(
 					persister.getJoinedStrategiesSelectExecutor().getJoinedStrategiesSelect(),
 					JoinedStrategiesSelect.FIRST_STRATEGY_NAME
-			);
-		});
+			)
+		);
 		
-		Map<Class<? extends C>, ISelectExecutor<C, I>> subEntitiesSelectors = Iterables.map(subEntitiesPersisters.entrySet(),
-				Entry::getKey,
-				Functions.chain(Entry::getValue, JoinedTablesPersister::getSelectExecutor));
-		TablePerClassPolymorphicSelectExecutor<C, I, T> selectExecutor = new TablePerClassPolymorphicSelectExecutor<>(
-				tablePerSubEntity,
-				subEntitiesSelectors,
-				mainPersister.getMainTable(), connectionProvider, dialect.getColumnBinderRegistry());
+		JoinedTablesPolymorphismSelectExecutor<C, I, ?> selectExecutor = new JoinedTablesPolymorphismSelectExecutor<>(
+				Iterables.map(subEntitiesPersisters.entrySet(),
+						Entry::getKey, Functions.chain(Entry<Class<? extends C>, JoinedTablesPersister<C, I, ?>>::getValue, JoinedTablesPersister::getMainTable)),
+				subclassSelectExecutors,
+				mainPersister.getMainTable(), connectionProvider, dialect);
 		
-		TablePerClassPolymorphicEntitySelectExecutor<C, I, T> entitySelectExecutor =
-				new TablePerClassPolymorphicEntitySelectExecutor<>(tablePerSubEntity, subEntitiesPersisters,
-						mainPersister.getMainTable(), connectionProvider, dialect.getColumnBinderRegistry());
+		JoinedTablesPolymorphismEntitySelectExecutor<C, I, ?> entitySelectExecutor =
+				new JoinedTablesPolymorphismEntitySelectExecutor(subEntitiesPersisters, subEntitiesPersisters, mainPersister.getMainTable(),
+						mainPersister.getJoinedStrategiesSelectExecutor().getJoinedStrategiesSelect(), connectionProvider, dialect);
 		
 		EntityCriteriaSupport<C> criteriaSupport = new EntityCriteriaSupport<>(mainPersister.getMappingStrategy());
 		
-		return new PersisterListenerWrapper<>(new IEntityConfiguredPersister<C, I>() {
+		List<Table> subTables = Iterables.collectToList(subEntitiesPersisters.values(), JoinedTablesPersister::getMainTable);
+		
+		this.persisterListenerWrapper = new PersisterListenerWrapper<>(new IEntityConfiguredPersister<C, I>() {
 			
 			@Override
 			public Collection<Table> giveImpliedTables() {
-				return TablePerClassPolymorphismBuilder.this.tables;
+				return Collections.cat(mainPersister.giveImpliedTables(), subTables);
 			}
 			
 			@Override
@@ -183,6 +113,7 @@ abstract class TablePerClassPolymorphismBuilder<C, I, T extends Table> implement
 			
 			@Override
 			public int insert(Iterable<? extends C> entities) {
+				mainPersister.insert(entities);
 				Map<Class, Set<C>> entitiesPerType = new HashMap<>();
 				for (C entity : entities) {
 					entitiesPerType.computeIfAbsent(entity.getClass(), cClass -> new HashSet<>()).add(entity);
@@ -251,7 +182,9 @@ abstract class TablePerClassPolymorphismBuilder<C, I, T extends Table> implement
 						deleteCount.increment(deleteExecutor.delete(subtypeEntities));
 					}
 				});
-				return deleteCount.getValue();
+				// NB: we use deleteExecutor not to trigger listener, because they should be triggered by wrapper, else we would try to delete twice
+				// related beans for instance
+				return mainPersister.getDeleteExecutor().delete(entities);
 			}
 			
 			@Override
@@ -267,7 +200,9 @@ abstract class TablePerClassPolymorphismBuilder<C, I, T extends Table> implement
 						deleteCount.increment(deleteExecutor.deleteById(subtypeEntities));
 					}
 				});
-				return deleteCount.getValue();
+				// NB: we use deleteExecutor not to trigger listener, because they should be triggered by wrapper, else we would try to delete twice
+				// related beans for instance
+				return mainPersister.getDeleteExecutor().deleteById(entities);
 			}
 			
 			@Override
@@ -362,5 +297,126 @@ abstract class TablePerClassPolymorphismBuilder<C, I, T extends Table> implement
 				return mainPersister.getMappingStrategy();
 			}
 		});
+	}
+	
+	@Override
+	public <U, J, Z> String addPersister(String ownerStrategyName, IConfiguredPersister<U, J> persister, BeanRelationFixer<Z, U> beanRelationFixer,
+										 Column leftJoinColumn, Column rightJoinColumn, boolean isOuterJoin) {
+		throw new NotImplementedException("Waiting for use case");
+	}
+	
+	@Override
+	public void addPersisterJoins(String joinName, IJoinedTablesPersister<?, ?> sourcePersister) {
+		this.subEntitiesPersisters.values().forEach(p -> p.addPersisterJoins(joinName, sourcePersister));
+	}
+	
+	@Override
+	public <I1, T extends Table, C1> void copyJoinsRootTo(JoinedStrategiesSelect<C1, I1, T> joinedStrategiesSelect, String joinName) {
+		this.subEntitiesPersisters.values().forEach(p -> p.copyJoinsRootTo(joinedStrategiesSelect, joinName));
+	}
+	
+	@Override
+	public JoinedStrategiesSelect<C, I, ?> getJoinedStrategiesSelect() {
+		throw new NotImplementedException("Waiting for use case");
+	}
+	
+	@Override
+	public IEntityMappingStrategy<C, I, ?> getMappingStrategy() {
+		return persisterListenerWrapper.getMappingStrategy();
+	}
+	
+	@Override
+	public Collection<Table> giveImpliedTables() {
+		return persisterListenerWrapper.giveImpliedTables();
+	}
+	
+	@Override
+	public PersisterListener<C, I> getPersisterListener() {
+		return persisterListenerWrapper.getPersisterListener();
+	}
+	
+	@Override
+	public int persist(Iterable<C> entities) {
+		return persisterListenerWrapper.persist(entities);
+	}
+	
+	@Override
+	public <O> ExecutableEntityQuery<C> selectWhere(SerializableFunction<C, O> getter, AbstractRelationalOperator<O> operator) {
+		return persisterListenerWrapper.selectWhere(getter, operator);
+	}
+	
+	@Override
+	public <O> ExecutableEntityQuery<C> selectWhere(SerializableBiConsumer<C, O> setter, AbstractRelationalOperator<O> operator) {
+		return persisterListenerWrapper.selectWhere(setter, operator);
+	}
+	
+	@Override
+	public List<C> selectAll() {
+		return persisterListenerWrapper.selectAll();
+	}
+	
+	@Override
+	public boolean isNew(C entity) {
+		return persisterListenerWrapper.isNew(entity);
+	}
+	
+	@Override
+	public Class<C> getClassToPersist() {
+		return persisterListenerWrapper.getClassToPersist();
+	}
+	
+	@Override
+	public int delete(Iterable<C> entities) {
+		return persisterListenerWrapper.delete(entities);
+	}
+	
+	@Override
+	public int deleteById(Iterable<C> entities) {
+		return persisterListenerWrapper.deleteById(entities);
+	}
+	
+	@Override
+	public int insert(Iterable<? extends C> entities) {
+		return persisterListenerWrapper.insert(entities);
+	}
+	
+	@Override
+	public List<C> select(Iterable<I> ids) {
+		return persisterListenerWrapper.select(ids);
+	}
+	
+	@Override
+	public int updateById(Iterable<C> entities) {
+		return persisterListenerWrapper.updateById(entities);
+	}
+	
+	@Override
+	public int update(Iterable<? extends Duo<? extends C, ? extends C>> differencesIterable, boolean allColumnsStatement) {
+		return persisterListenerWrapper.update(differencesIterable, allColumnsStatement);
+	}
+	
+	@Override
+	public void addInsertListener(InsertListener<C> insertListener) {
+		persisterListenerWrapper.addInsertListener(insertListener);
+	}
+	
+	@Override
+	public void addUpdateListener(UpdateListener<C> updateListener) {
+		persisterListenerWrapper.addUpdateListener(updateListener);
+	}
+	
+	@Override
+	public void addSelectListener(SelectListener<C, I> selectListener) {
+		persisterListenerWrapper.addSelectListener(selectListener);
+	}
+	
+	@Override
+	public void addDeleteListener(DeleteListener<C> deleteListener) {
+		persisterListenerWrapper.addDeleteListener(deleteListener);
+	}
+	
+	@Override
+	public void addDeleteByIdListener(DeleteByIdListener<C> deleteListener) {
+		persisterListenerWrapper.addDeleteByIdListener(deleteListener);
 	}
 }

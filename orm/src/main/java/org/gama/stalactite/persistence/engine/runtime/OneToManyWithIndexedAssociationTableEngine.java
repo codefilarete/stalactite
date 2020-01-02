@@ -9,9 +9,10 @@ import java.util.function.Function;
 import org.gama.lang.Duo;
 import org.gama.lang.collection.PairIterator;
 import org.gama.stalactite.persistence.engine.AssociationRecordPersister;
+import org.gama.stalactite.persistence.engine.IConfiguredPersister;
+import org.gama.stalactite.persistence.engine.IEntityConfiguredJoinedTablesPersister;
 import org.gama.stalactite.persistence.engine.IndexedAssociationRecord;
 import org.gama.stalactite.persistence.engine.IndexedAssociationTable;
-import org.gama.stalactite.persistence.engine.cascade.JoinedTablesPersister;
 import org.gama.stalactite.persistence.engine.runtime.OneToManyWithMappedAssociationEngine.TargetInstancesUpdateCascader;
 import org.gama.stalactite.persistence.id.diff.AbstractDiff;
 import org.gama.stalactite.persistence.id.diff.IndexedDiff;
@@ -26,8 +27,8 @@ import static org.gama.lang.collection.Iterables.minus;
 public class OneToManyWithIndexedAssociationTableEngine<SRC, TRGT, SRCID, TRGTID, C extends List<TRGT>>
 		extends AbstractOneToManyWithAssociationTableEngine<SRC, TRGT, SRCID, TRGTID, C, IndexedAssociationRecord, IndexedAssociationTable> {
 	
-	public OneToManyWithIndexedAssociationTableEngine(JoinedTablesPersister<SRC, SRCID, ?> joinedTablesPersister,
-													  JoinedTablesPersister<TRGT, TRGTID, ?> targetPersister,
+	public OneToManyWithIndexedAssociationTableEngine(IConfiguredPersister<SRC, SRCID> joinedTablesPersister,
+													  IEntityConfiguredJoinedTablesPersister<TRGT, TRGTID> targetPersister,
 													  ManyRelationDescriptor<SRC, TRGT, C> manyRelationDescriptor,
 													  AssociationRecordPersister<IndexedAssociationRecord, IndexedAssociationTable> associationPersister) {
 		super(joinedTablesPersister, targetPersister, manyRelationDescriptor, associationPersister);

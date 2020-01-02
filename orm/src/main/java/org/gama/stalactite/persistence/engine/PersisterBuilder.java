@@ -11,7 +11,7 @@ import org.gama.stalactite.persistence.structure.Table;
  */
 public interface PersisterBuilder<C, I>  {
 	
-	IPersister<C, I> build(PersistenceContext persistenceContext);
+	IEntityConfiguredPersister<C, I> build(PersistenceContext persistenceContext);
 	
-	<T extends Table> IPersister<C, I> build(PersistenceContext persistenceContext, T table);
+	IEntityConfiguredPersister<C, I> build(PersistenceContext persistenceContext, Table table);
 }

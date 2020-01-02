@@ -14,8 +14,8 @@ import org.gama.lang.Nullable;
 import org.gama.lang.Reflections;
 import org.gama.lang.ThreadLocals;
 import org.gama.lang.collection.Iterables;
+import org.gama.stalactite.persistence.engine.IEntityConfiguredJoinedTablesPersister;
 import org.gama.stalactite.persistence.engine.RuntimeMappingException;
-import org.gama.stalactite.persistence.engine.cascade.JoinedTablesPersister;
 import org.gama.stalactite.persistence.engine.listening.SelectListener;
 import org.gama.stalactite.persistence.id.diff.AbstractDiff;
 import org.gama.stalactite.persistence.id.diff.IndexedDiff;
@@ -40,9 +40,9 @@ public class OneToManyWithIndexedMappedAssociationEngine<SRC, TRGT, SRCID, TRGTI
 	/** Column that stores index value, owned by reverse side table (table of targetPersister) */
 	private final Column indexingColumn;
 	
-	public OneToManyWithIndexedMappedAssociationEngine(JoinedTablesPersister<TRGT, TRGTID, ?> targetPersister,
+	public OneToManyWithIndexedMappedAssociationEngine(IEntityConfiguredJoinedTablesPersister<TRGT, TRGTID> targetPersister,
 													   IndexedMappedManyRelationDescriptor<SRC, TRGT, C> manyRelationDefinition,
-													   JoinedTablesPersister<SRC, SRCID, ?> joinedTablesPersister,
+													   IEntityConfiguredJoinedTablesPersister<SRC, SRCID> joinedTablesPersister,
 													   Column indexingColumn) {
 		super(targetPersister, manyRelationDefinition, joinedTablesPersister);
 		this.indexingColumn = indexingColumn;
@@ -101,7 +101,7 @@ public class OneToManyWithIndexedMappedAssociationEngine<SRC, TRGT, SRCID, TRGTI
 				// Indexing column is not defined in targetPersister.getMappingStrategy().getRowTransformer() but is present in row
 				// because it was read from ResultSet
 				// So we get its alias from the object that managed id, and we simply read it from the row (but not from RowTransformer)
-				Map<Column, String> aliases = sourcePersister.getJoinedStrategiesSelectExecutor().getJoinedStrategiesSelect().getAliases();
+				Map<Column, String> aliases = sourcePersister.getJoinedStrategiesSelect().getAliases();
 				indexPerBean.put(bean, (int) row.get(aliases.get(indexingColumn)));
 			}
 		});
@@ -119,7 +119,7 @@ public class OneToManyWithIndexedMappedAssociationEngine<SRC, TRGT, SRCID, TRGTI
 	 */
 	private void addIndexInsertion() {
 		// we declare the indexing column as a silent one, then AfterInsertCollectionCascader will insert it
-		targetPersister.getInsertExecutor().getMappingStrategy().addSilentColumnInserter(indexingColumn, (Function<TRGT, Object>)
+		targetPersister.getMappingStrategy().addSilentColumnInserter(indexingColumn, (Function<TRGT, Object>)
 				target -> {
 					IndexedMappedManyRelationDescriptor<SRC, TRGT, C> manyRelationDefinition =
 							(IndexedMappedManyRelationDescriptor<SRC, TRGT, C>) this.manyRelationDefinition;

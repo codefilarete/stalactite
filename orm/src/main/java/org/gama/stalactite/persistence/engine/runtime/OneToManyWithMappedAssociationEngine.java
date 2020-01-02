@@ -13,14 +13,13 @@ import org.gama.lang.Nullable;
 import org.gama.lang.bean.Objects;
 import org.gama.lang.collection.Iterables;
 import org.gama.stalactite.persistence.engine.BeanRelationFixer;
-import org.gama.stalactite.persistence.engine.Persister;
+import org.gama.stalactite.persistence.engine.IConfiguredJoinedTablesPersister;
+import org.gama.stalactite.persistence.engine.IEntityConfiguredJoinedTablesPersister;
+import org.gama.stalactite.persistence.engine.IEntityPersister;
 import org.gama.stalactite.persistence.engine.cascade.AfterInsertCollectionCascader;
 import org.gama.stalactite.persistence.engine.cascade.AfterUpdateCollectionCascader;
 import org.gama.stalactite.persistence.engine.cascade.BeforeDeleteByIdCollectionCascader;
 import org.gama.stalactite.persistence.engine.cascade.BeforeDeleteCollectionCascader;
-import org.gama.stalactite.persistence.engine.cascade.JoinedStrategiesSelect;
-import org.gama.stalactite.persistence.engine.cascade.JoinedStrategiesSelect.StrategyJoins;
-import org.gama.stalactite.persistence.engine.cascade.JoinedTablesPersister;
 import org.gama.stalactite.persistence.engine.listening.SelectListener;
 import org.gama.stalactite.persistence.structure.Column;
 
@@ -40,15 +39,15 @@ public class OneToManyWithMappedAssociationEngine<SRC, TRGT, SRCID, TRGTID, C ex
 		 */
 	};
 	
-	protected final JoinedTablesPersister<SRC, SRCID, ?> sourcePersister;
+	protected final IEntityConfiguredJoinedTablesPersister<SRC, SRCID> sourcePersister;
 	
-	protected final JoinedTablesPersister<TRGT, TRGTID, ?> targetPersister;
+	protected final IEntityConfiguredJoinedTablesPersister<TRGT, TRGTID> targetPersister;
 	
 	protected final MappedManyRelationDescriptor<SRC, TRGT, C> manyRelationDefinition;
 	
-	public OneToManyWithMappedAssociationEngine(JoinedTablesPersister<TRGT, TRGTID, ?> targetPersister,
+	public OneToManyWithMappedAssociationEngine(IEntityConfiguredJoinedTablesPersister<TRGT, TRGTID> targetPersister,
 												MappedManyRelationDescriptor<SRC, TRGT, C> manyRelationDefinition,
-												JoinedTablesPersister<SRC, SRCID, ?> sourcePersister) {
+												IEntityConfiguredJoinedTablesPersister<SRC, SRCID> sourcePersister) {
 		this.targetPersister = targetPersister;
 		this.manyRelationDefinition = manyRelationDefinition;
 		this.sourcePersister = sourcePersister;
@@ -74,18 +73,16 @@ public class OneToManyWithMappedAssociationEngine<SRC, TRGT, SRCID, TRGTID, C ex
 	}
 	
 	static <SRC, TRGT, SRCID, TRGTID, C extends Collection<TRGT>> void addSubgraphSelect(String joinName,
-								   JoinedTablesPersister<SRC, SRCID, ?> sourcePersister,
-								   JoinedTablesPersister<TRGT, TRGTID, ?> targetPersister,
+																						 IEntityConfiguredJoinedTablesPersister<SRC, SRCID> sourcePersister,
+																						 IConfiguredJoinedTablesPersister<TRGT, TRGTID> targetPersister,
 								   final Function<SRC, C> targetProvider) {
 		// we add target subgraph joins to the one that was created 
-		StrategyJoins targetJoinsSubgraphRoot = targetPersister.getJoinedStrategiesSelectExecutor().getJoinedStrategiesSelect().getJoinsRoot();
-		JoinedStrategiesSelect sourceSelector = sourcePersister.getJoinedStrategiesSelectExecutor().getJoinedStrategiesSelect();
-		targetJoinsSubgraphRoot.copyTo(sourceSelector, joinName);
+		sourcePersister.addPersisterJoins(joinName, targetPersister);
 		
 		// we must trigger subgraph event on loading of our own graph, this is mainly for event that initializes thngs because given ids
 		// are not those of their entity
 		SelectListener targetSelectListener = targetPersister.getPersisterListener().getSelectListener();
-		sourcePersister.getPersisterListener().addSelectListener(new SelectListener<SRC, SRCID>() {
+		sourcePersister.addSelectListener(new SelectListener<SRC, SRCID>() {
 			@Override
 			public void beforeSelect(Iterable<SRCID> ids) {
 				// since ids are not those of its entities, we should not pass them as argument, this will only initialize things if needed
@@ -163,7 +160,7 @@ public class OneToManyWithMappedAssociationEngine<SRC, TRGT, SRCID, TRGTID, C ex
 		
 		private final Function<I, ? extends Collection<O>> collectionGetter;
 		
-		public TargetInstancesInsertCascader(Persister<O, J, ?> targetPersister, Function<I, ? extends Collection<O>> collectionGetter) {
+		public TargetInstancesInsertCascader(IEntityPersister<O, J> targetPersister, Function<I, ? extends Collection<O>> collectionGetter) {
 			super(targetPersister);
 			this.collectionGetter = collectionGetter;
 		}
@@ -178,7 +175,7 @@ public class OneToManyWithMappedAssociationEngine<SRC, TRGT, SRCID, TRGTID, C ex
 			Collection<O> targets = collectionGetter.apply(source);
 			// We only insert non-persisted instances (for logic and to prevent duplicate primary key error)
 			return Iterables.stream(targets)
-					.filter(getPersister().getMappingStrategy()::isNew)
+					.filter(getPersister()::isNew)
 					.collect(Collectors.toList());
 		}
 	}
@@ -187,7 +184,7 @@ public class OneToManyWithMappedAssociationEngine<SRC, TRGT, SRCID, TRGTID, C ex
 		
 		private final BiConsumer<Duo<? extends I, ? extends I>, Boolean> updateListener;
 		
-		public TargetInstancesUpdateCascader(Persister<O, ?, ?> targetPersister, BiConsumer<? extends Duo<? extends I, ? extends I>, Boolean> updateListener) {
+		public TargetInstancesUpdateCascader(IEntityPersister<O, ?> targetPersister, BiConsumer<? extends Duo<? extends I, ? extends I>, Boolean> updateListener) {
 			super(targetPersister);
 			this.updateListener = (BiConsumer<Duo<? extends I, ? extends I>, Boolean>) updateListener;
 		}
@@ -212,7 +209,7 @@ public class OneToManyWithMappedAssociationEngine<SRC, TRGT, SRCID, TRGTID, C ex
 		
 		private final Function<I, ? extends Collection<O>> collectionGetter;
 		
-		public DeleteTargetEntitiesBeforeDeleteCascader(Persister<O, ?, ?> targetPersister, Function<I, ? extends Collection<O>> collectionGetter) {
+		public DeleteTargetEntitiesBeforeDeleteCascader(IEntityPersister<O, ?> targetPersister, Function<I, ? extends Collection<O>> collectionGetter) {
 			super(targetPersister);
 			this.collectionGetter = collectionGetter;
 		}
@@ -227,7 +224,7 @@ public class OneToManyWithMappedAssociationEngine<SRC, TRGT, SRCID, TRGTID, C ex
 			Collection<O> targets = collectionGetter.apply(i);
 			// We only delete persisted instances (for logic and to prevent from non matching row count exception)
 			return stream(targets)
-					.filter(not(getPersister().getMappingStrategy()::isNew))
+					.filter(not(getPersister()::isNew))
 					.collect(Collectors.toList());
 		}
 	}
@@ -236,7 +233,7 @@ public class OneToManyWithMappedAssociationEngine<SRC, TRGT, SRCID, TRGTID, C ex
 		
 		private final Function<I, ? extends Collection<O>> collectionGetter;
 		
-		public DeleteByIdTargetEntitiesBeforeDeleteByIdCascader(Persister<O, ?, ?> targetPersister,
+		public DeleteByIdTargetEntitiesBeforeDeleteByIdCascader(IEntityPersister<O, ?> targetPersister,
 																Function<I, ? extends Collection<O>> collectionGetter) {
 			super(targetPersister);
 			this.collectionGetter = collectionGetter;
@@ -252,7 +249,7 @@ public class OneToManyWithMappedAssociationEngine<SRC, TRGT, SRCID, TRGTID, C ex
 			Collection<O> targets = collectionGetter.apply(i);
 			// We only delete persisted instances (for logic and to prevent from non matching row count exception)
 			return stream(targets)
-					.filter(not(getPersister().getMappingStrategy()::isNew))
+					.filter(not(getPersister()::isNew))
 					.collect(Collectors.toList());
 		}
 	}

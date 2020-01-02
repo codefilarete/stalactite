@@ -3,13 +3,14 @@ package org.gama.stalactite.persistence.engine.runtime;
 import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 
 import org.gama.lang.Duo;
-import org.gama.stalactite.persistence.engine.Persister;
+import org.gama.stalactite.persistence.engine.IEntityConfiguredPersister;
 import org.gama.stalactite.persistence.engine.listening.UpdateListener.UpdatePayload;
 import org.gama.stalactite.persistence.id.diff.AbstractDiff;
 import org.gama.stalactite.persistence.id.diff.CollectionDiffer;
@@ -21,14 +22,13 @@ import org.gama.stalactite.persistence.id.diff.CollectionDiffer;
  * 
  * @author Guillaume Mary
  */
-public class CollectionUpdater<I, O, C extends Collection<O>>
-		implements BiConsumer<Duo<I, I>, Boolean> {
+public class CollectionUpdater<I, O, C extends Collection<O>> implements BiConsumer<Duo<I, I>, Boolean> {
 	
 	private final CollectionDiffer differ;
 	
 	private final Function<I, C> collectionGetter;
 	private final BiConsumer<O, I> reverseSetter;
-	private final Persister<O, ?, ?> targetPersister;
+	private final IEntityConfiguredPersister<O, ?> targetPersister;
 	private final boolean shouldDeleteRemoved;
 	
 	/**
@@ -37,12 +37,12 @@ public class CollectionUpdater<I, O, C extends Collection<O>>
 	 * @param reverseSetter setter for applying source entity to target entities, give null if no reverse mapping exists
 	 * @param shouldDeleteRemoved true to delete orphans
 	 */
-	CollectionUpdater(Function<I, C> collectionGetter, Persister<O, ?, ?> targetPersister, @Nullable BiConsumer<O, I> reverseSetter, boolean shouldDeleteRemoved) {
+	CollectionUpdater(Function<I, C> collectionGetter, IEntityConfiguredPersister<O, ?> targetPersister, @Nullable BiConsumer<O, I> reverseSetter, boolean shouldDeleteRemoved) {
 		this.collectionGetter = collectionGetter;
 		this.reverseSetter = reverseSetter;
 		this.targetPersister = targetPersister;
 		this.shouldDeleteRemoved = shouldDeleteRemoved;
-		this.differ = new CollectionDiffer<>(targetPersister.getMappingStrategy().getIdMappingStrategy().getIdAccessor()::getId);
+		this.differ = new CollectionDiffer<>(targetPersister.getMappingStrategy()::getId);
 	}
 	
 	public CollectionDiffer getDiffer() {
@@ -124,7 +124,7 @@ public class CollectionUpdater<I, O, C extends Collection<O>>
 	
 	protected void onAddedTarget(UpdateContext updateContext, AbstractDiff<O> diff) {
 		// we insert only non persisted entities to prevent from a primary key conflict
-		if (targetPersister.getMappingStrategy().isNew(diff.getReplacingInstance())) {
+		if (targetPersister.isNew(diff.getReplacingInstance())) {
 			updateContext.getEntitiesToBeInserted().add(diff.getReplacingInstance());
 		}
 	}
@@ -136,7 +136,7 @@ public class CollectionUpdater<I, O, C extends Collection<O>>
 	protected void onRemovedTarget(UpdateContext updateContext, AbstractDiff<O> diff) {
 		// we delete only persisted entity to prevent from a not found record
 		if (shouldDeleteRemoved) {
-			if (!targetPersister.getMappingStrategy().isNew(diff.getSourceInstance())) {
+			if (!targetPersister.isNew(diff.getSourceInstance())) {
 				updateContext.getEntitiesToBeDeleted().add(diff.getSourceInstance());
 			}
 		} else // entity shouldn't be deleted, so we may have to update it
@@ -144,7 +144,7 @@ public class CollectionUpdater<I, O, C extends Collection<O>>
 				// we cut the link between target and source
 				// NB : we don't take versioning into account overall because we can't : how to do it since we miss the unmodified version ?
 				reverseSetter.accept(diff.getSourceInstance(), null);
-				targetPersister.updateById(diff.getSourceInstance());
+				targetPersister.updateById(Collections.singleton(diff.getSourceInstance()));
 			}
 	}
 	

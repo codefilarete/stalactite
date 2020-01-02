@@ -10,6 +10,8 @@ import org.gama.lang.Nullable;
 import org.gama.reflection.MethodReferenceDispatcher;
 import org.gama.stalactite.persistence.engine.BeanRelationFixer;
 import org.gama.stalactite.persistence.engine.ExecutableQuery;
+import org.gama.stalactite.persistence.engine.IConfiguredPersister;
+import org.gama.stalactite.persistence.engine.IEntityConfiguredJoinedTablesPersister;
 import org.gama.stalactite.persistence.engine.ISelectExecutor;
 import org.gama.stalactite.persistence.engine.PersistenceContext;
 import org.gama.stalactite.persistence.engine.Persister;
@@ -21,6 +23,7 @@ import org.gama.stalactite.persistence.query.EntitySelectExecutor;
 import org.gama.stalactite.persistence.query.IEntitySelectExecutor;
 import org.gama.stalactite.persistence.query.RelationalEntityCriteria;
 import org.gama.stalactite.persistence.sql.Dialect;
+import org.gama.stalactite.persistence.sql.IConnectionConfiguration;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.query.model.AbstractRelationalOperator;
@@ -32,7 +35,7 @@ import static java.util.Collections.emptyList;
 /**
  * Persister for entity with multiple joined tables with "foreign key = primary key".
  * A main table is defined by the {@link ClassMappingStrategy} passed to constructor. Complementary tables are defined
- * with {@link #addPersister(String, Persister, BeanRelationFixer, Column, Column, boolean)}.
+ * with {@link #addPersister(String, IConfiguredPersister, BeanRelationFixer, Column, Column, boolean)}.
  * Entity load is defined by a select that joins all tables, each {@link ClassMappingStrategy} is called to complete
  * entity loading.
  * 
@@ -41,7 +44,7 @@ import static java.util.Collections.emptyList;
  * @param <T> the main target table
  * @author Guillaume Mary
  */
-public class JoinedTablesPersister<C, I, T extends Table> extends Persister<C, I, T> {
+public class JoinedTablesPersister<C, I, T extends Table> extends Persister<C, I, T> implements IEntityConfiguredJoinedTablesPersister<C, I> {
 	
 	/** Support for {@link EntityCriteria} query execution */
 	private IEntitySelectExecutor<C> entitySelectExecutor;
@@ -49,11 +52,11 @@ public class JoinedTablesPersister<C, I, T extends Table> extends Persister<C, I
 	private final EntityCriteriaSupport<C> criteriaSupport;
 	
 	public JoinedTablesPersister(PersistenceContext persistenceContext, IEntityMappingStrategy<C, I, T> mainMappingStrategy) {
-		this(mainMappingStrategy, persistenceContext.getDialect(), persistenceContext.getConnectionProvider(), persistenceContext.getJDBCBatchSize());
+		this(mainMappingStrategy, persistenceContext.getDialect(), persistenceContext.getConnectionConfiguration());
 	}
 	
-	public JoinedTablesPersister(IEntityMappingStrategy<C, I, T> mainMappingStrategy, Dialect dialect, ConnectionProvider connectionProvider, int jdbcBatchSize) {
-		super(mainMappingStrategy, dialect, connectionProvider, jdbcBatchSize);
+	public JoinedTablesPersister(IEntityMappingStrategy<C, I, T> mainMappingStrategy, Dialect dialect, IConnectionConfiguration connectionConfiguration) {
+		super(mainMappingStrategy, dialect, connectionConfiguration);
 		this.criteriaSupport = new EntityCriteriaSupport<>(getMappingStrategy());
 		this.entitySelectExecutor = newEntitySelectExecutor(dialect);
 	}
@@ -76,6 +79,11 @@ public class JoinedTablesPersister<C, I, T extends Table> extends Persister<C, I
 		return (JoinedStrategiesSelectExecutor<C, I, T>) super.getSelectExecutor();
 	}
 	
+	@Override
+	public JoinedStrategiesSelect<C, I, ?> getJoinedStrategiesSelect() {
+		return getJoinedStrategiesSelectExecutor().getJoinedStrategiesSelect();
+	}
+	
 	/**
 	 * Adds a mapping strategy to be applied for persistence. It will be called after the main strategy
 	 * (passed to constructor), in order of the Collection, or in reverse order for delete actions to take into account
@@ -89,8 +97,9 @@ public class JoinedTablesPersister<C, I, T extends Table> extends Persister<C, I
 	 * @param isOuterJoin true to use a left outer join (optional relation)
 	 * @see JoinedStrategiesSelect#addRelationJoin(String, IEntityMappingStrategy, Column, Column, boolean, BeanRelationFixer)
 	 */
+	@Override
 	public <U, J, Z> String addPersister(String ownerStrategyName,
-										 Persister<U, J, ?> persister,
+										 IConfiguredPersister<U, J> persister,
 										 BeanRelationFixer<Z, U> beanRelationFixer,
 										 Column leftJoinColumn,
 										 Column rightJoinColumn,
@@ -113,7 +122,7 @@ public class JoinedTablesPersister<C, I, T extends Table> extends Persister<C, I
 	
 	/**
 	 * Gives the {@link ClassMappingStrategy} of a join node.
-	 * Node name must be known so one should have kept it from the {@link #addPersister(String, Persister, BeanRelationFixer, Column, Column, boolean)}
+	 * Node name must be known so one should have kept it from the {@link #addPersister(String, IConfiguredPersister, BeanRelationFixer, Column, Column, boolean)}
 	 * return, else, since node naming strategy is not exposed it is not recommanded to use this method out of any test or debug purpose. 
 	 * 
 	 * @param nodeName a name of a added strategy
@@ -192,9 +201,14 @@ public class JoinedTablesPersister<C, I, T extends Table> extends Persister<C, I
 		return criteriaSupport;
 	}
 	
-	public void addPersisterJoins(String joinName, JoinedTablesPersister<?, I, ?> sourcePersister) {
-		StrategyJoins sourceJoinsSubgraphRoot = sourcePersister.getJoinedStrategiesSelectExecutor().getJoinedStrategiesSelect().getJoinsRoot();
-		sourceJoinsSubgraphRoot.copyTo(getJoinedStrategiesSelectExecutor().getJoinedStrategiesSelect(), joinName);
+	@Override
+	public void addPersisterJoins(String joinName, IJoinedTablesPersister<?, ?> targetPersister) {
+		targetPersister.copyJoinsRootTo(getJoinedStrategiesSelectExecutor().getJoinedStrategiesSelect(), joinName);
+	}
+	
+	@Override
+	public <I1, T extends Table, C1> void copyJoinsRootTo(JoinedStrategiesSelect<C1, I1, T> joinedStrategiesSelect, String joinName) {
+		getJoinedStrategiesSelectExecutor().getJoinedStrategiesSelect().getJoinsRoot().copyTo(joinedStrategiesSelect, joinName);
 	}
 	
 	/**

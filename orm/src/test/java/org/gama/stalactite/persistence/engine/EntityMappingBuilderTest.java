@@ -10,7 +10,6 @@ import org.gama.reflection.IReversibleAccessor;
 import org.gama.reflection.MethodReferenceCapturer;
 import org.gama.stalactite.persistence.engine.CascadeOptions.RelationMode;
 import org.gama.stalactite.persistence.engine.ColumnOptions.IdentifierPolicy;
-import org.gama.stalactite.persistence.engine.cascade.JoinedTablesPersister;
 import org.gama.stalactite.persistence.engine.listening.SelectListener;
 import org.gama.stalactite.persistence.engine.model.City;
 import org.gama.stalactite.persistence.engine.model.Country;
@@ -140,7 +139,7 @@ class EntityMappingBuilderTest {
 		PersistenceContext persistenceContext = new PersistenceContext(new JdbcConnectionProvider(new HSQLDBInMemoryDataSource()), dialect);
 		
 		// creating a complex graph
-		IPersister<Country, Identifier> persister = entityBuilder(Country.class, Identifier.class)
+		IEntityPersister<Country, Identifier> persister = entityBuilder(Country.class, Identifier.class)
 				.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.add(Country::getName)
 				.addOneToOne(Country::getCapital,
@@ -204,7 +203,7 @@ class EntityMappingBuilderTest {
 		PersistenceContext persistenceContext = new PersistenceContext(new JdbcConnectionProvider(new HSQLDBInMemoryDataSource()), dialect);
 		
 		// creating a complex graph
-		IPersister<State, Identifier> persister = entityBuilder(State.class, Identifier.class)
+		IEntityPersister<State, Identifier> persister = entityBuilder(State.class, Identifier.class)
 				.add(State::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.add(State::getName)
 				.addOneToManySet(State::getCities, entityBuilder(City.class, Identifier.class)

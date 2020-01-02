@@ -16,9 +16,10 @@ import org.gama.stalactite.persistence.engine.AssociationRecord;
 import org.gama.stalactite.persistence.engine.AssociationRecordPersister;
 import org.gama.stalactite.persistence.engine.AssociationTable;
 import org.gama.stalactite.persistence.engine.BeanRelationFixer;
+import org.gama.stalactite.persistence.engine.IConfiguredPersister;
+import org.gama.stalactite.persistence.engine.IEntityConfiguredJoinedTablesPersister;
 import org.gama.stalactite.persistence.engine.Persister;
 import org.gama.stalactite.persistence.engine.cascade.AfterInsertCollectionCascader;
-import org.gama.stalactite.persistence.engine.cascade.JoinedTablesPersister;
 import org.gama.stalactite.persistence.engine.listening.DeleteByIdListener;
 import org.gama.stalactite.persistence.engine.listening.DeleteListener;
 import org.gama.stalactite.persistence.engine.listening.PersisterListener;
@@ -57,14 +58,14 @@ public abstract class AbstractOneToManyWithAssociationTableEngine<SRC, TRGT, SRC
 	
 	protected final PersisterListener<SRC, SRCID> persisterListener;
 	
-	protected final JoinedTablesPersister<SRC, SRCID, ?> joinedTablesPersister;
+	protected final IConfiguredPersister<SRC, SRCID> joinedTablesPersister;
 	
-	protected final JoinedTablesPersister<TRGT, TRGTID, ?> targetPersister;
+	protected final IEntityConfiguredJoinedTablesPersister<TRGT, TRGTID> targetPersister;
 	
 	protected final ManyRelationDescriptor<SRC, TRGT, C> manyRelationDescriptor;
 	
-	public AbstractOneToManyWithAssociationTableEngine(JoinedTablesPersister<SRC, SRCID, ?> joinedTablesPersister,
-													   JoinedTablesPersister<TRGT, TRGTID, ?> targetPersister,
+	public AbstractOneToManyWithAssociationTableEngine(IConfiguredPersister<SRC, SRCID> joinedTablesPersister,
+													   IEntityConfiguredJoinedTablesPersister<TRGT, TRGTID> targetPersister,
 													   ManyRelationDescriptor<SRC, TRGT, C> manyRelationDescriptor,
 													   AssociationRecordPersister<R, T> associationPersister) {
 		this.joinedTablesPersister = joinedTablesPersister;
@@ -74,7 +75,7 @@ public abstract class AbstractOneToManyWithAssociationTableEngine<SRC, TRGT, SRC
 		this.associationPersister = associationPersister;
 	}
 	
-	public void addSelectCascade(JoinedTablesPersister<SRC, SRCID, ?> sourcePersister) {
+	public void addSelectCascade(IEntityConfiguredJoinedTablesPersister<SRC, SRCID> sourcePersister) {
 		
 		// we must join on the association table and add in-memory reassociation
 		// Relation is kept on each row by the "relation fixer" passed to JoinedTablePersister below, because it seems more complex to read it

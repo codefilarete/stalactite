@@ -72,7 +72,7 @@ public class FluentEntityMappingConfigurationSupportToOneAndToManyMixTest {
 	@Test
 	void foreignKeyIsCreated() throws SQLException {
 		// mapping building thantks to fluent API
-		IPersister<Country, Identifier<Long>> countryPersister = MappingEase.entityBuilder(Country.class,
+		IConfiguredPersister<Country, Identifier<Long>> countryPersister = MappingEase.entityBuilder(Country.class,
 				Identifier.LONG_TYPE)
 				// setting a foreign key naming strategy to be tested
 				.foreignKeyNamingStrategy(ForeignKeyNamingStrategy.DEFAULT)
@@ -88,7 +88,7 @@ public class FluentEntityMappingConfigurationSupportToOneAndToManyMixTest {
 		
 		Connection currentConnection = persistenceContext.getCurrentConnection();
 		ResultSetIterator<JdbcForeignKey> fkPersonIterator = new ResultSetIterator<JdbcForeignKey>(currentConnection.getMetaData().getExportedKeys(null, null,
-				persistenceContext.getPersister(Person.class).getMappingStrategy().getTargetTable().getName().toUpperCase())) {
+				((IConfiguredPersister) persistenceContext.getPersister(Person.class)).getMappingStrategy().getTargetTable().getName().toUpperCase())) {
 			@Override
 			public JdbcForeignKey convert(ResultSet rs) throws SQLException {
 				return new JdbcForeignKey(
@@ -121,7 +121,7 @@ public class FluentEntityMappingConfigurationSupportToOneAndToManyMixTest {
 	@Test
 	public void testCascade_oneToOneAndOneToMany_CRUD() {
 		// mapping building thantks to fluent API
-		IPersister<Country, Identifier<Long>> countryPersister = MappingEase.entityBuilder(Country.class, Identifier.LONG_TYPE)
+		IEntityPersister<Country, Identifier<Long>> countryPersister = MappingEase.entityBuilder(Country.class, Identifier.LONG_TYPE)
 				.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.add(Country::getName)
 				.addOneToOne(Country::getPresident, personMappingConfiguration).cascading(ALL)
@@ -177,7 +177,7 @@ public class FluentEntityMappingConfigurationSupportToOneAndToManyMixTest {
 				.add(State::getName)
 				.add(State::getCountry);	// allow to declare the owner column of the relation
 		
-		IPersister<Country, Identifier<Long>> countryPersister = MappingEase.entityBuilder(Country.class, Identifier.LONG_TYPE)
+		IEntityPersister<Country, Identifier<Long>> countryPersister = MappingEase.entityBuilder(Country.class, Identifier.LONG_TYPE)
 				.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.add(Country::getName)
 				.add(Country::getDescription)

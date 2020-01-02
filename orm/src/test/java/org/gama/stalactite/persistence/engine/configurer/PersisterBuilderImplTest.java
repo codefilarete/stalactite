@@ -31,7 +31,7 @@ import org.gama.stalactite.persistence.engine.FluentEntityMappingConfigurationSu
 import org.gama.stalactite.persistence.engine.FluentEntityMappingConfigurationSupportInheritanceTest.Truk;
 import org.gama.stalactite.persistence.engine.FluentEntityMappingConfigurationSupportInheritanceTest.Vehicle;
 import org.gama.stalactite.persistence.engine.ForeignKeyNamingStrategy;
-import org.gama.stalactite.persistence.engine.IPersister;
+import org.gama.stalactite.persistence.engine.IEntityPersister;
 import org.gama.stalactite.persistence.engine.PersistenceContext;
 import org.gama.stalactite.persistence.engine.PolymorphismPolicy;
 import org.gama.stalactite.persistence.engine.TableNamingStrategy;
@@ -450,7 +450,7 @@ class PersisterBuilderImplTest {
 						);
 		
 		ConnectionProvider connectionProviderMock = mock(ConnectionProvider.class, withSettings().defaultAnswer(Answers.RETURNS_MOCKS));
-		IPersister<Car, Identifier> result = testInstance.build(new PersistenceContext(connectionProviderMock, DIALECT));
+		IEntityPersister<Car, Identifier> result = testInstance.build(new PersistenceContext(connectionProviderMock, DIALECT));
 		Car entity = new Car(1L);
 		entity.setModel("Renault");
 		entity.setColor(new Color(123));
@@ -479,7 +479,7 @@ class PersisterBuilderImplTest {
 		PreparedStatement preparedStatementMock = mock(PreparedStatement.class);
 		when(connectionMock.prepareStatement(sqlCaptor.capture())).thenReturn(preparedStatementMock);
 		when(preparedStatementMock.executeBatch()).thenReturn(new int[] { 1 });
-		IPersister<Car, Identifier> result = testInstance.build(new PersistenceContext(connectionProviderMock, DIALECT));
+		IEntityPersister<Car, Identifier> result = testInstance.build(new PersistenceContext(connectionProviderMock, DIALECT));
 		Car entity = new Car(1L);
 		entity.setModel("Renault");
 		entity.setColor(new Color(123));
@@ -511,7 +511,7 @@ class PersisterBuilderImplTest {
 		when(preparedStatementMock.executeBatch()).thenReturn(new int[] { 1 });
 		when(preparedStatementMock.executeQuery()).thenReturn(new InMemoryResultSet(Collections.emptyIterator()));
 		
-		IPersister<Car, Identifier> result = testInstance.build(new PersistenceContext(connectionProviderMock, DIALECT));
+		IEntityPersister<Car, Identifier> result = testInstance.build(new PersistenceContext(connectionProviderMock, DIALECT));
 		Car entity = new Car(1L);
 		entity.setModel("Renault");
 		entity.setColor(new Color(123));

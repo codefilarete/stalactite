@@ -48,7 +48,7 @@ public class FluentEntityMappingConfigurationSupportBeforeInsertIdentifierTest {
 	
 	@Test
 	void insert_basic() {
-		IPersister<Car, Long> carPersister = entityBuilder(Car.class, long.class)
+		IEntityPersister<Car, Long> carPersister = entityBuilder(Car.class, long.class)
 				.add(Car::getId).identifier(IdentifierPolicy.beforeInsert(longSequence))
 				.add(Car::getModel)
 				.build(persistenceContext);
@@ -76,7 +76,7 @@ public class FluentEntityMappingConfigurationSupportBeforeInsertIdentifierTest {
 	
 	@Test
 	void insert_oneToOne() {
-		IPersister<Car, Long> carPersister = entityBuilder(Car.class, long.class)
+		IEntityPersister<Car, Long> carPersister = entityBuilder(Car.class, long.class)
 				.add(Car::getId).identifier(IdentifierPolicy.beforeInsert(longSequence))
 				.add(Car::getModel)
 				.addOneToOne(Car::getEngine, entityBuilder(Engine.class, long.class)
@@ -110,7 +110,7 @@ public class FluentEntityMappingConfigurationSupportBeforeInsertIdentifierTest {
 	
 	@Test
 	void insert_oneToOne_ownedByReverseSide() {
-		IPersister<Car, Long> carPersister = entityBuilder(Car.class, long.class)
+		IEntityPersister<Car, Long> carPersister = entityBuilder(Car.class, long.class)
 				.add(Car::getId).identifier(IdentifierPolicy.beforeInsert(longSequence))
 				.add(Car::getModel)
 				.addOneToOne(Car::getEngine, entityBuilder(Engine.class, long.class)
@@ -155,12 +155,12 @@ public class FluentEntityMappingConfigurationSupportBeforeInsertIdentifierTest {
 				.mapInheritance(inheritanceConfiguration)
 				.getConfiguration();
 		
-		IPersister<Car, Long> carPersister = entityBuilder(Car.class, long.class)
+		IEntityPersister<Car, Long> carPersister = entityBuilder(Car.class, long.class)
 				.add(Car::getModel)
 				.mapInheritance(inheritanceConfiguration2)
 				.build(persistenceContext);
 		
-		assertEquals("Car", persistenceContext.getPersister(Car.class).getMappingStrategy().getTargetTable().getName());
+		assertEquals("Car", ((IConfiguredPersister) persistenceContext.getPersister(Car.class)).getMappingStrategy().getTargetTable().getName());
 		
 		// DML tests
 		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
@@ -193,14 +193,14 @@ public class FluentEntityMappingConfigurationSupportBeforeInsertIdentifierTest {
 				.mapInheritance(inheritanceConfiguration).withJoinedTable()
 				.getConfiguration();
 		
-		IPersister<Car, Long> carPersister = entityBuilder(Car.class, long.class)
+		IEntityPersister<Car, Long> carPersister = entityBuilder(Car.class, long.class)
 				.add(Car::getModel)
 				.mapInheritance(inheritanceConfiguration2).withJoinedTable()
 				.build(persistenceContext);
 		
 		assertEquals(Arrays.asHashSet("Car", "Vehicle", "AbstractVehicle"),
 				DDLDeployer.collectTables(persistenceContext).stream().map(Table::getName).collect(Collectors.toSet()));
-		assertEquals("Car", persistenceContext.getPersister(Car.class).getMappingStrategy().getTargetTable().getName());
+		assertEquals("Car", ((IConfiguredPersister) persistenceContext.getPersister(Car.class)).getMappingStrategy().getTargetTable().getName());
 		
 		// DML tests
 		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
