@@ -275,7 +275,7 @@ class EntityMappingBuilder<C, I> extends AbstractEntityMappingBuilder<C, I> {
 		}
 		
 		private final Function<Function<Column, Object>, C> entityFactory;
-		private final List<CascadeOne<C, ?, ?>> oneToOnes;
+		private final List<CascadeOne<C, Object, Object>> oneToOnes;
 		private final InheritanceInfo<C> inheritanceInfo;
 		/** Keep track of oneToOne properties to be removed of direct mapping */
 		private final ValueAccessPointSet oneToOnePropertiesOwnedByReverseSide;
@@ -283,7 +283,7 @@ class EntityMappingBuilder<C, I> extends AbstractEntityMappingBuilder<C, I> {
 		EntityDecoratedEmbeddableMappingBuilder(Function<Function<Column, Object>, C> entityFactory,
 												EmbeddableMappingConfiguration<C> propertiesMapping,
 												ColumnNameProvider columnNameProvider,
-												List<CascadeOne<C, ?, ?>> oneToOnes,
+												List<CascadeOne<C, Object, Object>> oneToOnes,
 												@javax.annotation.Nullable InheritanceInfo<C> inheritanceInfo) {
 			super(propertiesMapping, columnNameProvider);
 			this.entityFactory = entityFactory;

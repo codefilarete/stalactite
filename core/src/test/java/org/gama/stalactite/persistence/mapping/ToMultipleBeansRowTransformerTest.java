@@ -45,7 +45,7 @@ public class ToMultipleBeansRowTransformerTest {
 			}
 			
 			@Override
-			protected void assembly(Map<String, Object> rowAsObjects) {
+			protected void assemble(Map<String, Object> rowAsObjects) {
 				// final building for this row: we assemble objects. Simple case.
 				Toto toto = (Toto) rowAsObjects.get("toto.id");
 				Tata tata = (Tata) rowAsObjects.get("tata.id");

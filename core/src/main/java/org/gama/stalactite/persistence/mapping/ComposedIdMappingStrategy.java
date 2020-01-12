@@ -60,7 +60,7 @@ public class ComposedIdMappingStrategy<C, I> implements IdMappingStrategy<C, I> 
 		return id == null || identifierMarshaller.getColumnValues(id).values().stream().allMatch(o -> o == null || isDefaultPrimitiveValue(o));
 	}
 	
-	private static boolean isDefaultPrimitiveValue(Object o) {
+	public static boolean isDefaultPrimitiveValue(Object o) {
 		return Reflections.PRIMITIVE_DEFAULT_VALUES.get(o.getClass()) == o;
 	} 
 }

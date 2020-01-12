@@ -14,21 +14,22 @@ import org.gama.lang.collection.Iterables;
 import org.gama.lang.test.Assertions;
 import org.gama.stalactite.persistence.engine.CascadeOptions.RelationMode;
 import org.gama.stalactite.persistence.engine.ColumnOptions.IdentifierPolicy;
-import org.gama.stalactite.persistence.engine.FluentEntityMappingConfigurationSupportInheritanceTest.AbstractVehicle;
-import org.gama.stalactite.persistence.engine.FluentEntityMappingConfigurationSupportInheritanceTest.Car;
-import org.gama.stalactite.persistence.engine.FluentEntityMappingConfigurationSupportInheritanceTest.Color;
-import org.gama.stalactite.persistence.engine.FluentEntityMappingConfigurationSupportInheritanceTest.Engine;
-import org.gama.stalactite.persistence.engine.FluentEntityMappingConfigurationSupportInheritanceTest.Truk;
-import org.gama.stalactite.persistence.engine.FluentEntityMappingConfigurationSupportInheritanceTest.Vehicle;
 import org.gama.stalactite.persistence.engine.IFluentEntityMappingBuilder.IFluentMappingBuilderPropertyOptions;
 import org.gama.stalactite.persistence.engine.PersistenceContext.ExecutableSelect;
 import org.gama.stalactite.persistence.engine.listening.DeleteListener;
 import org.gama.stalactite.persistence.engine.listening.InsertListener;
 import org.gama.stalactite.persistence.engine.listening.SelectListener;
 import org.gama.stalactite.persistence.engine.listening.UpdateListener;
+import org.gama.stalactite.persistence.engine.model.AbstractVehicle;
+import org.gama.stalactite.persistence.engine.model.Car;
 import org.gama.stalactite.persistence.engine.model.City;
+import org.gama.stalactite.persistence.engine.model.Color;
 import org.gama.stalactite.persistence.engine.model.Country;
+import org.gama.stalactite.persistence.engine.model.Engine;
 import org.gama.stalactite.persistence.engine.model.Person;
+import org.gama.stalactite.persistence.engine.model.Timestamp;
+import org.gama.stalactite.persistence.engine.model.Truk;
+import org.gama.stalactite.persistence.engine.model.Vehicle;
 import org.gama.stalactite.persistence.id.Identified;
 import org.gama.stalactite.persistence.id.Identifier;
 import org.gama.stalactite.persistence.id.PersistedIdentifier;
@@ -49,6 +50,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.gama.stalactite.persistence.engine.ColumnOptions.IdentifierPolicy.ALREADY_ASSIGNED;
+import static org.gama.stalactite.persistence.engine.MappingEase.embeddableBuilder;
 import static org.gama.stalactite.persistence.engine.MappingEase.entityBuilder;
 import static org.gama.stalactite.persistence.engine.MappingEase.subentityBuilder;
 import static org.gama.stalactite.persistence.id.Identifier.LONG_TYPE;
@@ -56,6 +58,7 @@ import static org.gama.stalactite.persistence.id.Identifier.identifierBinder;
 import static org.gama.stalactite.sql.binder.DefaultParameterBinders.INTEGER_PRIMITIVE_BINDER;
 import static org.gama.stalactite.sql.binder.DefaultParameterBinders.LONG_PRIMITIVE_BINDER;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -1207,6 +1210,81 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 			abstractVehiclePersister.delete(dummyCar);
 			verify(deleteListenerMock).beforeDelete(Arrays.asList(dummyCar));
 			verify(deleteListenerMock).afterDelete(Arrays.asList(dummyCar));
+		}
+	}
+	
+	@Nested
+	class OneToPolymorphism {
+		
+		@Test
+		void oneToJoindTable_crud() {
+			IFluentEmbeddableMappingBuilder<Person> timestampedPersistentBeanMapping =
+					embeddableBuilder(Person.class)
+							.add(Person::getName)
+							.embed(Person::getTimestamp);
+			
+			IFluentEntityMappingBuilder<Vehicle, Identifier<Long>> mappingConfiguration =
+					entityBuilder(Vehicle.class, LONG_TYPE)
+							.add(Vehicle::getId).identifier(ALREADY_ASSIGNED)
+							.mapPolymorphism(PolymorphismPolicy.joinedTables()
+									.addSubClass(subentityBuilder(Truk.class))
+									.addSubClass(subentityBuilder(Car.class))
+							);
+			
+			IEntityPersister<Person, Identifier<Long>> testInstance = entityBuilder(Person.class, LONG_TYPE)
+					.add(Person::getId).identifier(ALREADY_ASSIGNED)
+					.addOneToOne(Person::getVehicle, mappingConfiguration).cascading(RelationMode.ALL_ORPHAN_REMOVAL)
+					.mapSuperClass(timestampedPersistentBeanMapping)
+					.build(persistenceContext);
+			
+			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+			ddlDeployer.deployDDL();
+			
+			// insert
+			Person person = new Person(1);
+			person.setVehicle(new Car(42L));
+			testInstance.insert(person);
+			Person loadedPerson = testInstance.select(person.getId());
+			assertEquals(person, loadedPerson);
+			
+			// updating embedded value
+			person.setTimestamp(new Timestamp());
+			testInstance.update(person, loadedPerson, true);
+			
+			loadedPerson = testInstance.select(person.getId());
+			assertEquals(person, loadedPerson);
+			
+			// updating one-to-one relation
+			person.setVehicle(new Truk(666L));
+			testInstance.update(person, loadedPerson, true);
+			
+			loadedPerson = testInstance.select(person.getId());
+			assertEquals(person, loadedPerson);
+			// checking for orphan removal (relation was marked as such)
+			assertNull(persistenceContext.getPersister(Vehicle.class).select(new PersistedIdentifier<>(42L)));
+			
+			// nullifying one-to-one relation
+			person.setVehicle(null);
+			testInstance.update(person, loadedPerson, true);
+			
+			loadedPerson = testInstance.select(person.getId());
+			assertEquals(person, loadedPerson);
+			// checking for orphan removal (relation was marked as such)
+			assertNull(persistenceContext.getPersister(Vehicle.class).select(new PersistedIdentifier<>(666L)));
+			
+			
+			// setting new one-to-one relation
+			person.setVehicle(new Truk(17L));
+			testInstance.update(person, loadedPerson, true);
+			
+			loadedPerson = testInstance.select(person.getId());
+			assertEquals(person, loadedPerson);
+			
+			// testing deletion
+			testInstance.delete(person);
+			assertNull(testInstance.select(person.getId()));
+			// checking for orphan removal (relation was marked as such)
+			assertNull(persistenceContext.getPersister(Vehicle.class).select(new PersistedIdentifier<>(17L)));
 		}
 	}
 	

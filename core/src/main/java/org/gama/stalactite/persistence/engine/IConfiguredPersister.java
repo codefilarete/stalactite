@@ -11,7 +11,7 @@ import org.gama.stalactite.persistence.structure.Table;
  */
 public interface IConfiguredPersister<C, I> {
 	
-	IEntityMappingStrategy<C, I, ?> getMappingStrategy();
+	<T extends Table> IEntityMappingStrategy<C, I, T> getMappingStrategy();
 	
 	Collection<Table> giveImpliedTables();
 	

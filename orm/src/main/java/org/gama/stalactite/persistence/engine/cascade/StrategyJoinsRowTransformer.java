@@ -11,14 +11,11 @@ import java.util.function.Supplier;
 
 import org.gama.lang.Nullable;
 import org.gama.lang.Reflections;
-import org.gama.stalactite.persistence.engine.cascade.JoinedStrategiesSelect.StrategyJoins;
-import org.gama.stalactite.persistence.engine.cascade.JoinedStrategiesSelect.StrategyJoins.MergeJoin;
-import org.gama.stalactite.persistence.engine.cascade.JoinedStrategiesSelect.StrategyJoins.RelationJoin;
+import org.gama.stalactite.persistence.engine.cascade.StrategyJoins.MergeJoin;
+import org.gama.stalactite.persistence.engine.cascade.StrategyJoins.RelationJoin;
 import org.gama.stalactite.persistence.mapping.AbstractTransformer;
 import org.gama.stalactite.persistence.mapping.ColumnedRow;
-import org.gama.stalactite.persistence.mapping.IEntityMappingStrategy;
 import org.gama.stalactite.persistence.structure.Column;
-import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.sql.result.Row;
 
 /**
@@ -38,14 +35,14 @@ public class StrategyJoinsRowTransformer<T> {
 	 */
 	public static final Function<Column, String> DEFAULT_ALIAS_PROVIDER = Column::getAlias;
 	
-	private final StrategyJoins<T> rootStrategyJoins;
+	private final StrategyJoins<T, ?> rootStrategyJoins;
 	private Function<Column, String> aliasProvider = DEFAULT_ALIAS_PROVIDER;
 	
-	public StrategyJoinsRowTransformer(StrategyJoins<T> rootStrategyJoins) {
+	public StrategyJoinsRowTransformer(StrategyJoins<T, ?> rootStrategyJoins) {
 		this.rootStrategyJoins = rootStrategyJoins;
 	}
 	
-	public StrategyJoinsRowTransformer(StrategyJoins<T> rootStrategyJoins, Function<Column, String> aliasProvider) {
+	public StrategyJoinsRowTransformer(StrategyJoins<T, ?> rootStrategyJoins, Function<Column, String> aliasProvider) {
 		this.rootStrategyJoins = rootStrategyJoins;
 		this.aliasProvider = aliasProvider;
 	}
@@ -96,55 +93,67 @@ public class StrategyJoinsRowTransformer<T> {
 		Queue<StrategyJoins> stack = new ArrayDeque<>();
 		stack.add(rootStrategyJoins);
 		// we use a local cache of bean tranformer because we'll ask a slide of them with aliasProvider which creates an instance at each invokation
-		Map<IEntityMappingStrategy, AbstractTransformer> beanTransformerCache = new HashMap<>();
+		Map<EntityInflater, AbstractTransformer> beanTransformerCache = new HashMap<>();
+		Object rowInstance = null;
 		while (!stack.isEmpty()) {
 			
 			// treating the current depth
-			StrategyJoins<Object> strategyJoins = stack.poll();
-			IEntityMappingStrategy<Object, Object, Table> leftStrategy = strategyJoins.getStrategy();
-			AbstractTransformer mainRowTransformer = beanTransformerCache.computeIfAbsent(leftStrategy, s -> s.copyTransformerWithAliases(columnedRow));
-			Object identifier = leftStrategy.getIdMappingStrategy().getIdentifierAssembler().assemble(row, columnedRow);
+			StrategyJoins<Object, ?> strategyJoins = stack.poll();
+			EntityInflater<Object, Object> leftStrategy = strategyJoins.getStrategy();
 			
-			Object rowInstance = entityCacheWrapper.computeIfAbsent(leftStrategy.getClassToPersist(), identifier, () -> {
-				Object newInstance = mainRowTransformer.transform(row);
-				if (strategyJoins == rootStrategyJoins) {
-					result.elseSet((T) newInstance);
-				}
-				return newInstance;
-			});
+			if (leftStrategy != null) {
+				AbstractTransformer mainRowTransformer = beanTransformerCache.computeIfAbsent(leftStrategy,
+						s -> s.copyTransformerWithAliases(columnedRow));
+				Object identifier = leftStrategy.giveIdentifier(row, columnedRow);
+				
+				rowInstance = entityCacheWrapper.computeIfAbsent(leftStrategy.getEntityType(), identifier, () -> {
+					Object newInstance = mainRowTransformer.transform(row);
+					if (strategyJoins == rootStrategyJoins) {
+						result.elseSet((T) newInstance);
+					}
+					return newInstance;
+				});
+			}
 			
 			// processing the direct relations
 			for (AbstractJoin join : strategyJoins.getJoins()) {
 				StrategyJoins subJoins = join.getStrategy();
-				IEntityMappingStrategy rightStrategy = subJoins.getStrategy();
-				AbstractTransformer rowTransformer = beanTransformerCache.computeIfAbsent(rightStrategy, s -> s.copyTransformerWithAliases(columnedRow));
-				if (join instanceof MergeJoin) {
-					rowTransformer.applyRowToBean(row, rowInstance);
+				if (join instanceof StrategyJoins.PassiveJoin) {
 					// Adds the right strategy for further processing if it has some more joins so they'll also be taken into account
 					if (!subJoins.getJoins().isEmpty()) {
 						stack.add(subJoins);
 					}
-				} else if (join instanceof RelationJoin) {
-					
-					Object rightIdentifier = rightStrategy.getIdMappingStrategy().getIdentifierAssembler().assemble(row, columnedRow);
-					
-					// primary key null means no entity => nothing to do
-					if (rightIdentifier != null) {
-						Object rightInstance = entityCacheWrapper.computeIfAbsent(rightStrategy.getClassToPersist(), rightIdentifier,
-								() -> rowTransformer.transform(row));
-						
-						((RelationJoin) join).getBeanRelationFixer().apply(rowInstance, rightInstance);
-						
+				} else {
+					EntityInflater rightStrategy = subJoins.getStrategy();
+					AbstractTransformer rowTransformer = beanTransformerCache.computeIfAbsent(rightStrategy, s -> s.copyTransformerWithAliases(columnedRow));
+					if (join instanceof MergeJoin) {
+						rowTransformer.applyRowToBean(row, rowInstance);
 						// Adds the right strategy for further processing if it has some more joins so they'll also be taken into account
 						if (!subJoins.getJoins().isEmpty()) {
 							stack.add(subJoins);
 						}
+					} else if (join instanceof RelationJoin) {
+						
+						Object rightIdentifier = rightStrategy.giveIdentifier(row, columnedRow);
+						
+						// primary key null means no entity => nothing to do
+						if (rightIdentifier != null) {
+							Object rightInstance = entityCacheWrapper.computeIfAbsent(rightStrategy.getEntityType(), rightIdentifier,
+									() -> rowTransformer.transform(row));
+							
+							((RelationJoin) join).getBeanRelationFixer().apply(rowInstance, rightInstance);
+							
+							// Adds the right strategy for further processing if it has some more joins so they'll also be taken into account
+							if (!subJoins.getJoins().isEmpty()) {
+								stack.add(subJoins);
+							}
+						}
+					} else {
+						// Developer made something wrong because other types than MergeJoin and RelationJoin are not expected
+						throw new IllegalArgumentException("Unexpected join type, only "
+								+ Reflections.toString(MergeJoin.class) + " and " + Reflections.toString(RelationJoin.class) + " are handled"
+								+ ", not " + Reflections.toString(join.getClass()));
 					}
-				} else {
-					// Developer made something wrong because other types than MergeJoin and RelationJoin are not expected
-					throw new IllegalArgumentException("Unexpected join type, only "
-							+ Reflections.toString(MergeJoin.class) + " and " + Reflections.toString(RelationJoin.class) + " are handled" 
-							+ ", not " + Reflections.toString(join.getClass()));
 				}
 			}
 		}
@@ -175,5 +184,21 @@ public class StrategyJoinsRowTransformer<T> {
 			Map<Object, Object> classInstanceCacheByIdentifier = entityCache.computeIfAbsent(clazz, k -> new HashMap<>());
 			return (C) classInstanceCacheByIdentifier.computeIfAbsent(identifier, k -> factory.get());
 		}
+	}
+	
+	/**
+	 * Constract to deserialize a database row to a bean
+	 * 
+	 * @param <E>
+	 * @param <I>
+	 */
+	public interface EntityInflater<E, I> {
+		
+		Class<E> getEntityType();
+		
+		I giveIdentifier(Row row, ColumnedRow columnedRow);
+		
+		AbstractTransformer copyTransformerWithAliases(ColumnedRow columnedRow);
+		
 	}
 }

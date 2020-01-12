@@ -13,8 +13,8 @@ import org.gama.lang.collection.Arrays;
 import org.gama.lang.collection.Iterables;
 import org.gama.lang.collection.Maps;
 import org.gama.stalactite.persistence.engine.BeanRelationFixer;
-import org.gama.stalactite.persistence.engine.cascade.JoinedStrategiesSelect.StrategyJoins;
-import org.gama.stalactite.persistence.engine.cascade.JoinedStrategiesSelect.StrategyJoins.RelationJoin;
+import org.gama.stalactite.persistence.engine.cascade.AbstractJoin.JoinType;
+import org.gama.stalactite.persistence.engine.cascade.StrategyJoins.RelationJoin;
 import org.gama.stalactite.persistence.id.assembly.IdentifierAssembler;
 import org.gama.stalactite.persistence.id.assembly.SimpleIdentifierAssembler;
 import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
@@ -85,7 +85,7 @@ public class StrategyJoinsRowTransformerTest {
 	 */
 	@Test
 	public void testTransform_with2strategies_oneToOne() {
-		StrategyJoins<Toto> rootStrategyJoins = new StrategyJoins<>(rootStrategy);
+		StrategyJoins<Toto, ?> rootStrategyJoins = new StrategyJoins<>(rootStrategy);
 		
 		// creating another strategy that will be joined to the root one (goal of this test)
 		ClassMappingStrategy<Tata, Long, Table> joinedStrategy = mock(ClassMappingStrategy.class);
@@ -102,7 +102,7 @@ public class StrategyJoinsRowTransformerTest {
 		fixIdentifierAssembler(joinedStrategy, tataColumnId);
 		
 		// completing the test case: adding the joined strategy
-		rootStrategyJoins.add(joinedStrategy, dummyJoinColumn, dummyJoinColumn, false, BeanRelationFixer.of(Toto::setOneToOne));
+		rootStrategyJoins.add(joinedStrategy, dummyJoinColumn, dummyJoinColumn, JoinType.INNER, BeanRelationFixer.of(Toto::setOneToOne));
 		
 		
 		// Telling mocks which instance to create
@@ -159,10 +159,10 @@ public class StrategyJoinsRowTransformerTest {
 		fixIdentifierAssembler(joinedStrategy2, titiColumnId);
 		
 		// completing the test case: adding the depth-1 strategy
-		RelationJoin joinedStrategy1Name = rootStrategyJoins.add(joinedStrategy1, dummyJoinColumn1, dummyJoinColumn1, false,
+		RelationJoin joinedStrategy1Name = rootStrategyJoins.add(joinedStrategy1, dummyJoinColumn1, dummyJoinColumn1, JoinType.INNER,
 				BeanRelationFixer.of(Toto::setOneToOne));
 		// completing the test case: adding the depth-2 strategy
-		joinedStrategy1Name.getStrategy().add(joinedStrategy2, dummyJoinColumn2, dummyJoinColumn2, false,
+		joinedStrategy1Name.getStrategy().add(joinedStrategy2, dummyJoinColumn2, dummyJoinColumn2, JoinType.INNER,
 				BeanRelationFixer.of(Tata::setOneToOne));
 		
 		// Telling mocks which instance to create
@@ -226,11 +226,9 @@ public class StrategyJoinsRowTransformerTest {
 		fixIdentifierAssembler(joinedStrategy2, titiColumnId);
 		
 		// completing the test case: adding the joined strategy
-		rootStrategyJoins.add(joinedStrategy1, dummyJoinColumn1, dummyJoinColumn1, false,
-				BeanRelationFixer.of(Toto::setOneToOne));
+		rootStrategyJoins.add(joinedStrategy1, dummyJoinColumn1, dummyJoinColumn1, JoinType.INNER, BeanRelationFixer.of(Toto::setOneToOne));
 		// completing the test case: adding the 2nd joined strategy
-		rootStrategyJoins.add(joinedStrategy2, dummyJoinColumn2, dummyJoinColumn2, false,
-				BeanRelationFixer.of(Toto::setOneToOneOther));
+		rootStrategyJoins.add(joinedStrategy2, dummyJoinColumn2, dummyJoinColumn2, JoinType.INNER, BeanRelationFixer.of(Toto::setOneToOneOther));
 		
 		// Telling mocks which instance to create
 		when(rootStrategy.copyTransformerWithAliases(any())).thenAnswer(new ToBeanRowTransformerAnswer<>(Toto.class, totoTable));
@@ -284,7 +282,7 @@ public class StrategyJoinsRowTransformerTest {
 		
 		// completing the test case: adding the joined strategy
 		rootStrategyJoins.add(joinedStrategy,
-				null, dummyJoinColumn, false,
+				null, dummyJoinColumn, JoinType.INNER,
 				BeanRelationFixer.of(Toto::setOneToMany, Toto::getOneToMany, ArrayList::new));
 		
 		// Telling mocks which instance to create
@@ -339,7 +337,7 @@ public class StrategyJoinsRowTransformerTest {
 		// adding IdentifierAssembler to the joined strategy
 		fixIdentifierAssembler(joinedStrategy, toto2ColumnId);
 		
-		rootStrategyJoins.add(joinedStrategy, null, toto2ColumnId, false, BeanRelationFixer.of(Toto::setSibling));
+		rootStrategyJoins.add(joinedStrategy, null, toto2ColumnId, JoinType.INNER, BeanRelationFixer.of(Toto::setSibling));
 		
 		
 		// Telling mocks which instance to create

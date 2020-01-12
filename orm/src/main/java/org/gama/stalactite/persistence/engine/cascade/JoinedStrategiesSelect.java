@@ -3,19 +3,18 @@ package org.gama.stalactite.persistence.engine.cascade;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.util.ArrayDeque;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Queue;
 import java.util.Set;
 import java.util.function.Function;
+import java.util.function.Supplier;
 
 import org.gama.lang.Strings;
-import org.gama.lang.collection.Iterables;
 import org.gama.stalactite.persistence.engine.BeanRelationFixer;
-import org.gama.stalactite.persistence.engine.cascade.JoinedStrategiesSelect.StrategyJoins.RelationJoin;
+import org.gama.stalactite.persistence.engine.cascade.AbstractJoin.JoinType;
+import org.gama.stalactite.persistence.engine.cascade.StrategyJoinsRowTransformer.EntityInflater;
 import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
 import org.gama.stalactite.persistence.mapping.IEntityMappingStrategy;
 import org.gama.stalactite.persistence.structure.Column;
@@ -24,7 +23,9 @@ import org.gama.stalactite.query.model.From;
 import org.gama.stalactite.query.model.Query;
 import org.gama.stalactite.sql.binder.ParameterBinder;
 import org.gama.stalactite.sql.binder.ParameterBinderProvider;
+import org.gama.stalactite.sql.result.Row;
 
+import static org.gama.stalactite.persistence.engine.cascade.AbstractJoin.JoinType.OUTER;
 import static org.gama.stalactite.query.model.From.AbstractJoin.JoinDirection.INNER_JOIN;
 import static org.gama.stalactite.query.model.From.AbstractJoin.JoinDirection.LEFT_OUTER_JOIN;
 
@@ -50,10 +51,10 @@ public class JoinedStrategiesSelect<C, I, T extends Table> {
 	/** Will give the {@link ParameterBinder} for the reading of the final select clause */
 	private final ParameterBinderProvider<Column> parameterBinderProvider;
 	/** The very first {@link ClassMappingStrategy} on which other strategies will be joined */
-	private final StrategyJoins<C> root;
+	private final StrategyJoins<C, T> root;
 	/**
 	 * A mapping between a name and join to help finding them when we want to join them with a new one
-	 * @see #addRelationJoin(String, IEntityMappingStrategy, Column, Column, boolean, BeanRelationFixer) 
+	 * @see #addRelationJoin(String, IEntityMappingStrategy, Column, Column, JoinType, BeanRelationFixer) 
 	 */
 	private final Map<String, AbstractJoin> strategyIndex = new HashMap<>();
 	/** The objet that will help to give names of strategies into the index (no impact on the generated SQL) */
@@ -91,14 +92,14 @@ public class JoinedStrategiesSelect<C, I, T extends Table> {
 	 * Give the root of all joins needed by the strategy to build its entity graph at load time and persist it.  
 	 * @return a {@link StrategyJoins} which is the root of the graph, which {@link ClassMappingStrategy} is the one given at construction time of this instance
 	 */
-	public StrategyJoins<C> getJoinsRoot() {
+	public StrategyJoins<C, T> getJoinsRoot() {
 		return root;
 	}
 	
 	
 	/**
 	 * Gives a particular node of the joins graph by its name. Joins graph name are given in return of
-	 * {@link #addRelationJoin(String, IEntityMappingStrategy, Column, Column, boolean, BeanRelationFixer)}.
+	 * {@link #addRelationJoin(String, IEntityMappingStrategy, Column, Column, JoinType, BeanRelationFixer)}.
 	 * Prefer usage of {@link #getJoinsRoot()} when retrieval of root is requested (to prevent exposing {@link #FIRST_STRATEGY_NAME})
 	 * 
 	 * @param leftStrategyName join node name to be given
@@ -112,7 +113,7 @@ public class JoinedStrategiesSelect<C, I, T extends Table> {
 	
 	/**
 	 * Gives a particular node of the joins graph by its name. Joins graph name are given in return of
-	 * {@link #addRelationJoin(String, IEntityMappingStrategy, Column, Column, boolean, BeanRelationFixer)}.
+	 * {@link #addRelationJoin(String, IEntityMappingStrategy, Column, Column, JoinType, BeanRelationFixer)}.
 	 * Prefer usage of {@link #getJoinsRoot()} when retrieval of root is requested (to prevent exposing {@link #FIRST_STRATEGY_NAME})
 	 * 
 	 * @param leftStrategyName join node name to be given
@@ -133,19 +134,15 @@ public class JoinedStrategiesSelect<C, I, T extends Table> {
 		
 		// initialization of the from clause with the very first table
 		From from = query.getFromSurrogate().add(root.getTable());
-		String tableAlias = columnAliasBuilder.buildAlias(root.getTable(), root.getTableAlias());
-		addColumnsToSelect(tableAlias, root.getStrategy().getSelectableColumns(), query);
+		addColumnsToSelect(root.getTableAlias(), root.getColumnsToSelect(), query);
 		
 		Queue<AbstractJoin> stack = new ArrayDeque<>(root.getJoins());
 		while (!stack.isEmpty()) {
 			AbstractJoin<?> join = stack.poll();
-			String joinTableAlias = columnAliasBuilder.buildAlias(join.getStrategy().getTable(), join.getStrategy().getTableAlias());
-			addColumnsToSelect(joinTableAlias, join.getStrategy().getStrategy().getSelectableColumns(), query);
+			addColumnsToSelect(join.getStrategy().getTableAlias(), join.getStrategy().getColumnsToSelect(), query);
 			Column leftJoinColumn = join.getLeftJoinColumn();
 			Column rightJoinColumn = join.getRightJoinColumn();
-			from.add(from.new ColumnJoin(leftJoinColumn, rightJoinColumn,
-					// NB: if join object is a merge one, sql join will be an inner one (see MergeJoin javadoc for explanation)
-					join instanceof StrategyJoins.RelationJoin && ((RelationJoin) join).isOuter() ? LEFT_OUTER_JOIN : INNER_JOIN));
+			from.add(from.new ColumnJoin(leftJoinColumn, rightJoinColumn, join.getJoinType() == OUTER ? LEFT_OUTER_JOIN : INNER_JOIN));
 			
 			stack.addAll(join.getStrategy().getJoins());
 		}
@@ -180,7 +177,7 @@ public class JoinedStrategiesSelect<C, I, T extends Table> {
 	 * @param strategy the strategy of the mapped bean. Used to give {@link Column}s and {@link org.gama.stalactite.persistence.mapping.IRowTransformer}
 	 * @param leftJoinColumn the {@link Column} (of previous strategy left table) to be joined with {@code rightJoinColumn}
 	 * @param rightJoinColumn the {@link Column} (of the strategy table) to be joined with {@code leftJoinColumn}
-	 * @param isOuterJoin says wether or not the join must be open
+	 * @param joinType says wether or not the join must be open
 	 * @param beanRelationFixer a function to fullfill relation between 2 strategies beans
 	 * @param <U> type of bean mapped by the given strategy
 	 * @param <T1> joined left table
@@ -192,10 +189,10 @@ public class JoinedStrategiesSelect<C, I, T extends Table> {
 																					  IEntityMappingStrategy<U, ID, T2> strategy,
 																					  Column<T1, ID> leftJoinColumn,
 																					  Column<T2, ID> rightJoinColumn,
-																					  boolean isOuterJoin,
+																					  JoinType joinType,
 																					  BeanRelationFixer beanRelationFixer) {
 		return addJoin(leftStrategyName, strategy,
-				owningNode -> owningNode.add(strategy, leftJoinColumn, rightJoinColumn, isOuterJoin, beanRelationFixer));
+				owningNode -> owningNode.add(strategy, leftJoinColumn, rightJoinColumn, joinType, beanRelationFixer));
 	}
 	
 	/**
@@ -208,8 +205,8 @@ public class JoinedStrategiesSelect<C, I, T extends Table> {
 	 * @param leftJoinColumn the {@link Column} (of previous strategy left table) to be joined with {@code rightJoinColumn}
 	 * @param rightJoinColumn the {@link Column} (of the strategy table) to be joined with {@code leftJoinColumn}
 	 * @param <U> type of bean mapped by the given strategy
-	 * @param <T1> joined left table
-	 * @param <T2> joined right table
+	 * @param <T1> left table type
+	 * @param <T2> right table type
 	 * @param <ID> type of joined values
 	 * @return the name of the created join, to be used as a key for other joins (through this method {@code leftStrategyName} argument)
 	 */
@@ -218,12 +215,60 @@ public class JoinedStrategiesSelect<C, I, T extends Table> {
 																				   Column<T1, ID> leftJoinColumn,
 																				   Column<T2, ID> rightJoinColumn) {
 		return addJoin(leftStrategyName, strategy,
-				owningNode -> owningNode.add(strategy, leftJoinColumn, rightJoinColumn));
+				owningNode -> owningNode.addMergeJoin(strategy, leftJoinColumn, rightJoinColumn));
+	}
+	
+	/**
+	 * Adds a merge join to this select : no bean will be created by given {@link EntityInflater}, only its
+	 * {@link org.gama.stalactite.persistence.mapping.AbstractTransformer#applyRowToBean(Row, Object)} will be used during bean graph loading process.
+	 *
+	 * @param leftStrategyName join name on which join must be created
+	 * @param strategy strategy to be used to load bean
+	 * @param columnsToSelect columns that must be added to final select
+	 * @param leftJoinColumn left join column, expected to be one of left strategy table
+	 * @param rightJoinColumn right join column
+	 * @param joinType type of join to create
+	 * @param <T1> left table type
+	 * @param <T2> right table type
+	 * @param <ID> type of joined values
+	 * @return the name of the created join, to be used as a key for other joins (through this method {@code leftStrategyName} argument)
+	 */
+	public <U, T1 extends Table<T1>, T2 extends Table<T2>, ID> String addMergeJoin(String leftStrategyName,
+																				   EntityInflater<U, ID> strategy,
+																				   Set<Column<Table, Object>> columnsToSelect,
+																				   Column<T1, ID> leftJoinColumn,
+																				   Column<T2, ID> rightJoinColumn,
+																				   JoinType joinType) {
+		return addJoin(leftStrategyName, strategy,
+				owningNode -> owningNode.addMergeJoin(strategy, columnsToSelect, leftJoinColumn, rightJoinColumn, joinType));
+	}
+	
+	/**
+	 * Adds a passive join to this select : this kind if join doesn't take part to bean construction, it aims only at adding an SQL join to
+	 * bean graph loading.
+	 * 
+	 * @param leftStrategyName join name on which join must be created
+	 * @param leftJoinColumn left join column, expected to be one of left strategy table
+	 * @param rightJoinColumn right join column
+	 * @param joinType type of join to create
+	 * @param columnsToSelect columns that must be added to final select
+	 * @param <T1> left table type
+	 * @param <T2> right table type
+	 * @param <ID> type of joined values
+	 * @return the name of the created join, to be used as a key for other joins (through this method {@code leftStrategyName} argument)
+	 */
+	public <T1 extends Table<T1>, T2 extends Table<T2>, ID> String addPassiveJoin(String leftStrategyName,
+																				     Column<T1, ID> leftJoinColumn,
+																				     Column<T2, ID> rightJoinColumn,
+																					 JoinType joinType,
+																					 Set<Column<Table, Object>> columnsToSelect) {
+		return addJoin(leftStrategyName, () -> "passive_" + leftJoinColumn + "_ " + rightJoinColumn,
+				owningNode -> owningNode.addPassiveJoin(leftJoinColumn, rightJoinColumn, joinType, columnsToSelect));
 	}
 	
 	/**
 	 * Adds a join to this select.
-	 * Not aimed at being public at first glance, made public to duplicate select tree (may be reviewed).
+	 * Not aimed at being public.
 	 *
 	 * @param leftStrategyName the name of a (previously) registered join. {@code leftJoinColumn} must be a {@link Column} of its left {@link Table}.
 	 * @param strategy the strategy of the mapped bean. Used to give {@link Column}s and
@@ -234,185 +279,37 @@ public class JoinedStrategiesSelect<C, I, T extends Table> {
 	 * @param <T2> joined right table
 	 * @param <ID> type of joined values
 	 */
-	public <U, T1 extends Table<T1>, T2 extends Table<T2>, ID> String addJoin(String leftStrategyName,
+	private <U, T1 extends Table<T1>, T2 extends Table<T2>, ID> String addJoin(String leftStrategyName,
 																			   IEntityMappingStrategy<U, ID, T2> strategy,
 																			   Function<StrategyJoins, AbstractJoin> joinFactory) {
+		return addJoin(leftStrategyName, () -> indexNamer.generateName(strategy), joinFactory);
+	}
+	
+	private <U, T1 extends Table<T1>, T2 extends Table<T2>, ID> String addJoin(String leftStrategyName,
+																			   EntityInflater<U, ID> strategy,
+																			   Function<StrategyJoins, AbstractJoin> joinFactory) {
+		return addJoin(leftStrategyName, () -> indexNamer.generateName(strategy), joinFactory);
+	}
+	
+	private String addJoin(String leftStrategyName, Supplier<String> joinNameProvider, Function<StrategyJoins, AbstractJoin> joinFactory) {
 		StrategyJoins owningNode = getStrategyJoins(leftStrategyName);
 		if (owningNode == null) {
 			throw new IllegalArgumentException("No strategy with name " + leftStrategyName + " exists to add a new strategy on");
 		}
 		AbstractJoin join = joinFactory.apply(owningNode);
-		String indexKey = indexNamer.generateName(strategy);
-		this.strategyIndex.put(indexKey, join);
-		return indexKey;
+		String joinName = joinNameProvider.get();
+		this.strategyIndex.put(joinName, join);
+		return joinName;
 	}
 	
-	private <T1 extends Table<T1>> void addColumnsToSelect(String tableAlias, Iterable<Column<T1, Object>> selectableColumns, Query query) {
+	private <T1 extends Table<T1>> void addColumnsToSelect(String tableAliasOverride, Iterable<Column<T1, Object>> selectableColumns, Query query) {
 		for (Column selectableColumn : selectableColumns) {
+			String tableAlias = columnAliasBuilder.buildAlias(selectableColumn.getTable(), tableAliasOverride);
 			String alias = columnAliasBuilder.buildAlias(tableAlias, selectableColumn);
 			query.select(selectableColumn, alias);
 			// we link the column alias to the binder so it will be easy to read the ResultSet
 			selectParameterBinders.put(alias, parameterBinderProvider.getBinder(selectableColumn));
 			aliases.put(selectableColumn, alias);
-		}
-	}
-	
-	/**
-	 * Joins of a strategy: owns the left part of the join, and "right parts" are represented by a collection of {@link RelationJoin}, ending up with a tree
-	 * of joins representing a relation graph.
-	 *
-	 * @param <E> the type of the entity mapped by the {@link ClassMappingStrategy}
-	 */
-	public static class StrategyJoins<E> {
-		/** The left part of the join */
-		private final IEntityMappingStrategy<E, ?, ? extends Table> strategy;
-		/** Joins */
-		private final List<AbstractJoin> joins = new ArrayList<>();
-		
-		private String tableAlias;
-		
-		StrategyJoins(IEntityMappingStrategy<E, ?, ? extends Table> strategy) {
-			this(strategy, strategy.getTargetTable().getAbsoluteName());
-		}
-		
-		StrategyJoins(IEntityMappingStrategy<E, ?, ? extends Table> strategy, String absoluteName) {
-			this.strategy = strategy;
-			this.tableAlias = absoluteName;
-		}
-		
-		public <T extends Table> IEntityMappingStrategy<E, Object, T> getStrategy() {
-			return (IEntityMappingStrategy<E, Object, T>) strategy;
-		}
-		
-		public List<AbstractJoin> getJoins() {
-			return joins;
-		}
-		
-		public Table getTable() {
-			return strategy.getTargetTable();
-		}
-		
-		public String getTableAlias() {
-			return tableAlias;
-		}
-		
-		/**
-		 * To use to force the table alias of the strategy table in the select statement
-		 * @param tableAlias not null, nor empty, sql compliant (none checked)
-		 */
-		public void setTableAlias(String tableAlias) {
-			this.tableAlias = tableAlias;
-		}
-		
-		/**
-		 * Creates a join between this strategy and the given one.
-		 * Method used for one-to-one and one-to-many (owned by reverse side) relations
-		 * 
-		 * @param strategy the new strategy on which to join
-		 * @param leftJoinColumn the column of the owned strategy table (no check done) on which the join will be made
-		 * @param rightJoinColumn the column of the new strategy table (no check done) on which the join will be made
-		 * @param isOuterJoin indicates if the join is an outer (left) one or not
-		 * @param beanRelationFixer will help to apply the instance of the new strategy on the owned one
-		 * @return the created join
-		 */
-		<U, T1 extends Table<T1>, T2 extends Table<T2>, ID> RelationJoin<U> add(IEntityMappingStrategy<U, ID, T2> strategy,
-																				Column<T1, ID> leftJoinColumn,
-																				Column<T2, ID> rightJoinColumn,
-																				boolean isOuterJoin,
-																				BeanRelationFixer beanRelationFixer) {
-			RelationJoin<U> join = new RelationJoin<>(strategy, leftJoinColumn, rightJoinColumn, isOuterJoin, beanRelationFixer);
-			this.joins.add(join);
-			return join;
-		}
-		
-		/**
-		 * Creates a join between this strategy and the given one.
-		 * Method used for inheritance cases to complete current strategy with given one
-		 *
-		 * @param strategy the new strategy on which to join
-		 * @param leftJoinColumn the column of the owned strategy table (no check done) on which the join will be made
-		 * @param rightJoinColumn the column of the new strategy table (no check done) on which the join will be made
-		 * @return the created join
-		 */
-		<U, T1 extends Table<T1>, T2 extends Table<T2>, ID> MergeJoin add(IEntityMappingStrategy<U, ID, T2> strategy,
-																		  Column<T1, ID> leftJoinColumn,
-																		  Column<T2, ID> rightJoinColumn) {
-			MergeJoin<U> join = new MergeJoin<>(strategy, leftJoinColumn, rightJoinColumn);
-			this.joins.add(join);
-			return join;
-		}
-		
-		/**
-		 * Copies this instance into given target at given join node name.
-		 * Used to plug this graph as a subgraph of a join node of the given target.
-		 * 
-		 * @param target the graph that will contain this subgraph after copy
-		 * @param targetJoinsNodeName join node target
-		 */
-		public void copyTo(JoinedStrategiesSelect target, String targetJoinsNodeName) {
-			target.getStrategyJoins(targetJoinsNodeName).joins.addAll(this.joins);
-		}
-		
-		/**
-		 * Almost the same as {@link #copyTo(JoinedStrategiesSelect, String)} but replaces left join columns (of this) by columns of
-		 * the targeted select table, this allows to copy current joins to another select table which is not the same as the current one. 
-		 *
-		 * @param target the graph that will contain this subgraph after copy
-		 * @param targetJoinsNodeName join node target
-		 */
-		public void projectTo(JoinedStrategiesSelect target, String targetJoinsNodeName) {
-			StrategyJoins targetJoins = target.getStrategyJoins(targetJoinsNodeName);
-			List<AbstractJoin> projectedJoins = Iterables.collectToList(this.joins, abstractJoin ->
-				abstractJoin.copyTo(targetJoins.getTable().getColumn(abstractJoin.getLeftJoinColumn().getName()))
-			);
-			targetJoins.joins.addAll(projectedJoins);
-		}
-		
-		/**
-		 * Specilization of an {@link AbstractJoin} for relation between beans such as one-to-one or one-to-many
-		 */
-		public static class RelationJoin<O> extends AbstractJoin<O> {
-			/** Indicates if the join must be an inner or (left) outer join */
-			private final boolean outer;
-			/** Relation fixer for instances of this strategy on owning strategy entities */
-			private final BeanRelationFixer beanRelationFixer;
-			
-			private RelationJoin(IEntityMappingStrategy<O, ?, ? extends Table> strategy, Column leftJoinColumn, Column rightJoinColumn, boolean outer, BeanRelationFixer beanRelationFixer) {
-				super(strategy, leftJoinColumn, rightJoinColumn);
-				this.outer = outer;
-				this.beanRelationFixer = beanRelationFixer;
-			}
-			
-			public boolean isOuter() {
-				return outer;
-			}
-			
-			public BeanRelationFixer getBeanRelationFixer() {
-				return beanRelationFixer;
-			}
-			
-			@Override
-			public AbstractJoin<O> copyTo(Column leftJoinColumn) {
-				return new RelationJoin(getStrategy().getStrategy(), leftJoinColumn, getRightJoinColumn(), isOuter(), getBeanRelationFixer());
-			}
-			
-		}
-		
-		/**
-		 * Specilization of an {@link AbstractJoin} for cases of inheritance/polymorphism by joined tables : not need to apply relationship setter.
-		 * Join will be done with inner kind one because its seems nonesense to have optional merge information in inheritance cases. 
-		 * By itself it indicates that its strategy table content must be merged with its parent {@link StrategyJoins}.
-		 */
-		public static class MergeJoin<O> extends AbstractJoin<O> {
-			
-			private MergeJoin(IEntityMappingStrategy<O, ?, ? extends Table> strategy, Column leftJoinColumn, Column rightJoinColumn) {
-				super(strategy, leftJoinColumn, rightJoinColumn);
-			}
-			
-			@Override
-			public AbstractJoin<O> copyTo(Column leftJoinColumn) {
-				return new MergeJoin<>(getStrategy().getStrategy(), leftJoinColumn, getRightJoinColumn());
-			}
 		}
 	}
 	
@@ -422,6 +319,10 @@ public class JoinedStrategiesSelect<C, I, T extends Table> {
 		
 		private String generateName(IEntityMappingStrategy classMappingStrategy) {
 			return classMappingStrategy.getTargetTable().getAbsoluteName() + aliasCount++;
+		}
+		
+		private String generateName(EntityInflater classMappingStrategy) {
+			return classMappingStrategy.getEntityType().getSimpleName() + aliasCount++;
 		}
 	}
 	

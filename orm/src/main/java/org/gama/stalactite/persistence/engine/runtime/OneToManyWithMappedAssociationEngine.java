@@ -30,7 +30,7 @@ import static org.gama.stalactite.persistence.engine.cascade.JoinedStrategiesSel
 /**
  * @author Guillaume Mary
  */
-public class OneToManyWithMappedAssociationEngine<SRC, TRGT, SRCID, TRGTID, C extends Collection<TRGT>> {
+public class OneToManyWithMappedAssociationEngine<SRC, TRGT, ID, C extends Collection<TRGT>> {
 	
 	/** Empty setter for applying source entity to target entity (reverse side) */
 	protected static final BiConsumer NOOP_REVERSE_SETTER = (o, i) -> {
@@ -39,22 +39,22 @@ public class OneToManyWithMappedAssociationEngine<SRC, TRGT, SRCID, TRGTID, C ex
 		 */
 	};
 	
-	protected final IEntityConfiguredJoinedTablesPersister<SRC, SRCID> sourcePersister;
+	protected final IEntityConfiguredJoinedTablesPersister<SRC, ID> sourcePersister;
 	
-	protected final IEntityConfiguredJoinedTablesPersister<TRGT, TRGTID> targetPersister;
+	protected final IEntityConfiguredJoinedTablesPersister<TRGT, ID> targetPersister;
 	
 	protected final MappedManyRelationDescriptor<SRC, TRGT, C> manyRelationDefinition;
 	
-	public OneToManyWithMappedAssociationEngine(IEntityConfiguredJoinedTablesPersister<TRGT, TRGTID> targetPersister,
+	public OneToManyWithMappedAssociationEngine(IEntityConfiguredJoinedTablesPersister<TRGT, ID> targetPersister,
 												MappedManyRelationDescriptor<SRC, TRGT, C> manyRelationDefinition,
-												IEntityConfiguredJoinedTablesPersister<SRC, SRCID> sourcePersister) {
+												IEntityConfiguredJoinedTablesPersister<SRC, ID> sourcePersister) {
 		this.targetPersister = targetPersister;
 		this.manyRelationDefinition = manyRelationDefinition;
 		this.sourcePersister = sourcePersister;
 	}
 	
 	public void addSelectCascade(Column sourcePrimaryKey,
-								 Column relationshipOwner    // foreign key on target table
+								 Column relationOwner    // foreign key on target table
 	) {
 		// configuring select for fetching relation
 		BeanRelationFixer<SRC, TRGT> relationFixer = BeanRelationFixer.of(
@@ -67,36 +67,44 @@ public class OneToManyWithMappedAssociationEngine<SRC, TRGT, SRCID, TRGTID, C ex
 				targetPersister,
 				relationFixer,
 				sourcePrimaryKey,
-				relationshipOwner,
-				relationshipOwner.isNullable()); // outer join for empty relation cases
-		addSubgraphSelect(createdJoinNodeName, sourcePersister, targetPersister, manyRelationDefinition.getCollectionGetter());
+				relationOwner,
+				relationOwner.isNullable()); // outer join for empty relation cases
+		Column targetPrimaryKey = (Column) Iterables.first(targetPersister.getMappingStrategy().getTargetTable().getPrimaryKey().getColumns());
+		addSubgraphSelect(createdJoinNodeName, sourcePersister, targetPersister, sourcePrimaryKey, targetPrimaryKey, relationFixer, manyRelationDefinition.getCollectionGetter());
 	}
 	
-	static <SRC, TRGT, SRCID, TRGTID, C extends Collection<TRGT>> void addSubgraphSelect(String joinName,
-																						 IEntityConfiguredJoinedTablesPersister<SRC, SRCID> sourcePersister,
-																						 IConfiguredJoinedTablesPersister<TRGT, TRGTID> targetPersister,
-								   final Function<SRC, C> targetProvider) {
-		// we add target subgraph joins to the one that was created 
-		sourcePersister.addPersisterJoins(joinName, targetPersister);
+	private static <SRC, TRGT, ID, C extends Collection<TRGT>> void addSubgraphSelect(String joinPoint, IEntityConfiguredJoinedTablesPersister<SRC, ID> sourcePersister,
+																			 IConfiguredJoinedTablesPersister<TRGT, ID> targetPersister,
+																			 Column leftColumn,
+																			 Column rightColumn,
+																			 BeanRelationFixer<SRC, TRGT> beanRelationFixer,
+																			 Function<SRC, C> targetProvider) {
+		// we add target subgraph joins to the one that was created
+//		targetPersister.joinWith(sourcePersister, leftColumn, rightColumn, beanRelationFixer);
+		targetPersister.copyJoinsRootTo(sourcePersister.getJoinedStrategiesSelect(), joinPoint);
+//		targetPersister.getJoinedStrategiesSelect().getJoinsRoot().copyTo(sourcePersister.getJoinedStrategiesSelect(), joinPoint);
 		
 		// we must trigger subgraph event on loading of our own graph, this is mainly for event that initializes thngs because given ids
 		// are not those of their entity
 		SelectListener targetSelectListener = targetPersister.getPersisterListener().getSelectListener();
-		sourcePersister.addSelectListener(new SelectListener<SRC, SRCID>() {
+		sourcePersister.addSelectListener(new SelectListener<SRC, ID>() {
 			@Override
-			public void beforeSelect(Iterable<SRCID> ids) {
+			public void beforeSelect(Iterable<ID> ids) {
 				// since ids are not those of its entities, we should not pass them as argument, this will only initialize things if needed
 				targetSelectListener.beforeSelect(Collections.emptyList());
 			}
 
 			@Override
 			public void afterSelect(Iterable<? extends SRC> result) {
-				Iterable collect = Iterables.stream(result).flatMap(src -> Nullable.nullable(targetProvider.apply(src)).map(Collection::stream).getOr(Stream.empty())).collect(Collectors.toSet());
+				Iterable collect = Iterables.stream(result).flatMap(src -> Nullable.nullable(targetProvider.apply(src))
+						.map(Collection::stream)
+						.getOr(Stream.empty()))
+						.collect(Collectors.toSet());
 				targetSelectListener.afterSelect(collect);
 			}
 
 			@Override
-			public void onError(Iterable<SRCID> ids, RuntimeException exception) {
+			public void onError(Iterable<ID> ids, RuntimeException exception) {
 				// since ids are not those of its entities, we should not pass them as argument
 				targetSelectListener.onError(Collections.emptyList(), exception);
 			}

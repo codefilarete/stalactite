@@ -60,7 +60,7 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements IFluentEnt
 	
 	private final MethodReferenceCapturer methodSpy;
 	
-	private final List<CascadeOne<C, ?, ?>> cascadeOnes = new ArrayList<>();
+	private final List<CascadeOne<C, Object, Object>> cascadeOnes = new ArrayList<>();
 	
 	private final List<CascadeMany<C, ?, ?, ? extends Collection>> cascadeManys = new ArrayList<>();
 	
@@ -142,7 +142,7 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements IFluentEnt
 	}
 	
 	@Override
-	public List<CascadeOne<C, ?, ?>> getOneToOnes() {
+	public List<CascadeOne<C, Object, Object>> getOneToOnes() {
 		return cascadeOnes;
 	}
 	
@@ -297,7 +297,7 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements IFluentEnt
 				// ... but we can't do it for mutator, so we use the most equivalent manner : a mutator based on setter method (fallback to property if not present)
 				mutatorByMethodReference);
 		CascadeOne<C, O, J> cascadeOne = new CascadeOne<>(propertyAccessor, mappingConfiguration.getConfiguration(), table);
-		this.cascadeOnes.add(cascadeOne);
+		this.cascadeOnes.add((CascadeOne<C, Object, Object>) cascadeOne);
 		// we declare the column on our side
 		return wrapForAdditionalOptions(cascadeOne);
 	}
@@ -314,7 +314,7 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements IFluentEnt
 				// ... but we can't do it for mutator, so we use the most equivalent manner : a mutator based on setter method (fallback to property if not present)
 				new AccessorByMethod<C, O>(captureMethod(getter)).toMutator());
 		CascadeOne<C, O, J> cascadeOne = new CascadeOne<>(propertyAccessor, mappingConfiguration.getConfiguration(), table);
-		this.cascadeOnes.add(cascadeOne);
+		this.cascadeOnes.add((CascadeOne<C, Object, Object>) cascadeOne);
 		// we declare the column on our side
 		return wrapForAdditionalOptions(cascadeOne);
 	}

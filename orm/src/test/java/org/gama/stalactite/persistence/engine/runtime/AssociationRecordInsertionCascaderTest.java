@@ -46,7 +46,7 @@ class AssociationRecordInsertionCascaderTest {
 				((Key) invocation.getArgument(0)).getId());
 		AssociationRecordPersister persisterStub =
 				new AssociationRecordPersister(classMappingStrategyMock, new Dialect(), new ConnectionConfigurationSupport(mock(ConnectionProvider.class), 1));
-		AssociationRecordInsertionCascader<Keyboard, Key, Identifier, Identifier, List<Key>> testInstance
+		AssociationRecordInsertionCascader<Keyboard, Key, Identifier, List<Key>> testInstance
 				= new AssociationRecordInsertionCascader<>(persisterStub, Keyboard::getKeys, classMappingStrategyMock, keyClassMappingStrategyMock);
 		
 		Keyboard inputData = new Keyboard(1L);

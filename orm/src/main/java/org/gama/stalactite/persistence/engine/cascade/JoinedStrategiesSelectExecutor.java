@@ -18,7 +18,7 @@ import org.gama.lang.collection.Iterables;
 import org.gama.stalactite.persistence.engine.BeanRelationFixer;
 import org.gama.stalactite.persistence.engine.JoinableSelectExecutor;
 import org.gama.stalactite.persistence.engine.SelectExecutor;
-import org.gama.stalactite.persistence.engine.cascade.JoinedStrategiesSelect.StrategyJoins;
+import org.gama.stalactite.persistence.engine.cascade.AbstractJoin.JoinType;
 import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
 import org.gama.stalactite.persistence.mapping.IEntityMappingStrategy;
 import org.gama.stalactite.persistence.sql.Dialect;
@@ -78,7 +78,7 @@ public class JoinedStrategiesSelectExecutor<C, I, T extends Table> extends Selec
 	}
 	
 	public JoinedStrategiesSelectExecutor(IEntityMappingStrategy<C, I, T> classMappingStrategy, Dialect dialect, ConnectionProvider connectionProvider,
-										  BiFunction<StrategyJoins<C> /* root strategy join */, Function<Column, String> /* alias provider */, StrategyJoinsRowTransformer<C>> rowTransformerFactory) {
+										  BiFunction<StrategyJoins<C, T> /* root strategy join */, Function<Column, String> /* alias provider */, StrategyJoinsRowTransformer<C>> rowTransformerFactory) {
 		super(classMappingStrategy, connectionProvider, dialect.getDmlGenerator(), dialect.getInOperatorMaxSize());
 		this.parameterBinderProvider = dialect.getColumnBinderRegistry();
 		this.joinedStrategiesSelect = new JoinedStrategiesSelect<>(classMappingStrategy, this.parameterBinderProvider);
@@ -106,7 +106,7 @@ public class JoinedStrategiesSelectExecutor<C, I, T extends Table> extends Selec
 	
 	/**
 	 * Adds an inner join to this executor.
-	 * Shorcut for {@link JoinedStrategiesSelect#addRelationJoin(String, IEntityMappingStrategy, Column, Column, boolean, BeanRelationFixer)}
+	 * Shorcut for {@link JoinedStrategiesSelect#addRelationJoin(String, IEntityMappingStrategy, Column, Column, JoinType, BeanRelationFixer)}
 	 *
 	 * @param leftStrategyName the name of a (previously) registered join. {@code leftJoinColumn} must be a {@link Column} of its left {@link Table}
 	 * @param strategy the strategy of the mapped bean. Used to give {@link Column}s and {@link org.gama.stalactite.persistence.mapping.IRowTransformer}
@@ -132,7 +132,7 @@ public class JoinedStrategiesSelectExecutor<C, I, T extends Table> extends Selec
 	
 	/**
 	 * Adds a join to this executor.
-	 * Shorcut for {@link JoinedStrategiesSelect#addRelationJoin(String, IEntityMappingStrategy, Column, Column, boolean, BeanRelationFixer)}
+	 * Shorcut for {@link JoinedStrategiesSelect#addRelationJoin(String, IEntityMappingStrategy, Column, Column, JoinType, BeanRelationFixer)}
 	 *
 	 * @param leftStrategyName the name of a (previously) registered join. {@code leftJoinColumn} must be a {@link Column} of its left {@link Table}
 	 * @param strategy the strategy of the mapped bean. Used to give {@link Column}s and {@link org.gama.stalactite.persistence.mapping.IRowTransformer}
@@ -153,9 +153,34 @@ public class JoinedStrategiesSelectExecutor<C, I, T extends Table> extends Selec
 			Column<T1, ID> leftJoinColumn,
 			Column<T2, ID> rightJoinColumn,
 			boolean isOuterJoin) {
-		return joinedStrategiesSelect.addRelationJoin(leftStrategyName, strategy, leftJoinColumn, rightJoinColumn, isOuterJoin, beanRelationFixer);
+		return joinedStrategiesSelect.addRelationJoin(leftStrategyName, strategy, leftJoinColumn, rightJoinColumn,
+				isOuterJoin ? JoinType.OUTER : JoinType.INNER, beanRelationFixer);
 	}
 	
+//	public <U, T1 extends Table<T1>, T2 extends Table<T2>, ID> String addRelation(
+//			String leftStrategyName,
+//			EntityUnflattener<U, ID> strategy,
+//			BeanRelationFixer beanRelationFixer,
+//			Column<T1, ID> leftJoinColumn,
+//			Column<T2, ID> rightJoinColumn,
+//			boolean isOuterJoin) {
+//		return joinedStrategiesSelect.addRelationJoin(leftStrategyName, strategy, leftJoinColumn, rightJoinColumn,
+//				isOuterJoin ? JoinType.OUTER : JoinType.INNER, beanRelationFixer);
+//	}
+	
+	/**
+	 * Adds a join which {@link Column}s will be added to final select. Data retrieved by those coumns will be populated onto final entity
+	 * 
+	 * @param leftStrategyName join node name onto which join must be added
+	 * @param strategy strategy used to apply data onto final bean
+	 * @param leftJoinColumn left join column, expected to be one of node table
+	 * @param rightJoinColumn right join column, expected to be one of strategy table
+	 * @param <U> entity type
+	 * @param <T1> left table type
+	 * @param <T2> right table type
+	 * @param <ID> entity identifier type
+	 * @return name of created join node (may be used by caller to add some more join on it)
+	 */
 	public <U, T1 extends Table<T1>, T2 extends Table<T2>, ID> String addComplementaryJoin(
 			String leftStrategyName,
 			IEntityMappingStrategy<U, ID, T2> strategy,

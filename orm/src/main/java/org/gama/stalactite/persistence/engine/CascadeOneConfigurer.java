@@ -36,7 +36,6 @@ import org.gama.stalactite.persistence.engine.cascade.BeforeDeleteSupport;
 import org.gama.stalactite.persistence.engine.cascade.BeforeInsertSupport;
 import org.gama.stalactite.persistence.engine.cascade.BeforeUpdateSupport;
 import org.gama.stalactite.persistence.engine.cascade.IJoinedTablesPersister;
-import org.gama.stalactite.persistence.engine.cascade.JoinedStrategiesSelect;
 import org.gama.stalactite.persistence.engine.cascade.JoinedTablesPersister;
 import org.gama.stalactite.persistence.engine.configurer.PersisterBuilderImpl;
 import org.gama.stalactite.persistence.engine.listening.DeleteListener;
@@ -68,11 +67,11 @@ import static org.gama.stalactite.persistence.engine.CascadeOptions.RelationMode
 public class CascadeOneConfigurer<SRC, TRGT, ID> {
 	
 	private final PersistenceContext persistenceContext;
-	private final PersisterBuilderImpl<TRGT, ID> persisterBuilder;
+	private final PersisterBuilderImpl<TRGT, ID> targetPersisterBuilder;
 	
-	public CascadeOneConfigurer(PersistenceContext persistenceContext, PersisterBuilderImpl<TRGT, ID> persisterBuilder) {
+	public CascadeOneConfigurer(PersistenceContext persistenceContext, PersisterBuilderImpl<TRGT, ID> targetPersisterBuilder) {
 		this.persistenceContext = persistenceContext;
-		this.persisterBuilder = persisterBuilder;
+		this.targetPersisterBuilder = targetPersisterBuilder;
 	}
 	
 	public <T extends Table<T>> void appendCascade(
@@ -83,9 +82,9 @@ public class CascadeOneConfigurer<SRC, TRGT, ID> {
 		
 		ConfigurerTemplate<SRC, TRGT, ID> configurer;
 		if (cascadeOne.isOwnedByReverseSide()) {
-			configurer = new RelationOwnedByTargetConfigurer<>(persistenceContext, persisterBuilder);
+			configurer = new RelationOwnedByTargetConfigurer<>(persistenceContext, targetPersisterBuilder);
 		} else {
-			configurer = new RelationOwnedBySourceConfigurer<>(persistenceContext, persisterBuilder);
+			configurer = new RelationOwnedBySourceConfigurer<>(persistenceContext, targetPersisterBuilder);
 		}
 		configurer.appendCascade(cascadeOne, sourcePersister, foreignKeyNamingStrategy, joinColumnNamingStrategy);
 	}
@@ -93,11 +92,11 @@ public class CascadeOneConfigurer<SRC, TRGT, ID> {
 	private abstract static class ConfigurerTemplate<SRC, TRGT, ID> {
 		
 		protected final PersistenceContext persistenceContext;
-		private final PersisterBuilder<TRGT, ID> persisterBuilder;
+		private final PersisterBuilderImpl<TRGT, ID> targetPersisterBuilder;
 		
-		protected ConfigurerTemplate(PersistenceContext persistenceContext, PersisterBuilder<TRGT, ID> persisterBuilder) {
+		protected ConfigurerTemplate(PersistenceContext persistenceContext, PersisterBuilderImpl<TRGT, ID> targetPersisterBuilder) {
 			this.persistenceContext = persistenceContext;
-			this.persisterBuilder = persisterBuilder;
+			this.targetPersisterBuilder = targetPersisterBuilder;
 		}
 		
 		protected IConfiguredPersister<TRGT, ID> appendCascade(
@@ -117,7 +116,7 @@ public class CascadeOneConfigurer<SRC, TRGT, ID> {
 			
 			IReversibleAccessor<SRC, TRGT> targetAccessor = cascadeOne.getTargetProvider();
 			
-			IEntityConfiguredPersister<TRGT, ID> targetPersister = persisterBuilder
+			IEntityConfiguredPersister<TRGT, ID> targetPersister = targetPersisterBuilder
 					// please note that even if no table is found in configuration, build(..) will create one
 					.build(persistenceContext, Nullable.nullable(cascadeOne.getTargetTable()).getOr(Nullable.nullable(cascadeOne.getReverseColumn()).map(Column::getTable).get()));
 			IEntityMappingStrategy<TRGT, ID, ?> targetMappingStrategy = targetPersister.getMappingStrategy();
@@ -184,22 +183,12 @@ public class CascadeOneConfigurer<SRC, TRGT, ID> {
 				Column leftColumn,
 				Column rightColumn,
 				BeanRelationFixer<SRC, TRGT> beanRelationFixer) {
-			// configuring select for fetching relation
-			String createdJoinNodeName = sourcePersister.addPersister(JoinedStrategiesSelect.FIRST_STRATEGY_NAME, targetPersister,
-					beanRelationFixer,
-					leftColumn, rightColumn, cascadeOne.isNullable());
-			addSubgraphSelect(createdJoinNodeName, sourcePersister, targetPersister, cascadeOne.getTargetProvider()::get);
-		}
-		
-		private <P extends IJoinedTablesPersister<SRC, ID> & IPersisterListener<SRC, ID>> void addSubgraphSelect(String joinName,
-																												 P sourcePersister,
-																												 IConfiguredJoinedTablesPersister<TRGT, ID> targetPersister,
-																												 Function<SRC, TRGT> targetProvider) {
-			// we add target subgraph joins to the one that was created
-			sourcePersister.addPersisterJoins(joinName, targetPersister);
 			
-			// we must trigger subgraph event on loading of our graph, this is mainly for event that initializes things because given ids
-			// are not those of their entity
+			// we add target subgraph joins to the one that was created
+			targetPersister.joinWith(sourcePersister, leftColumn, rightColumn, beanRelationFixer, cascadeOne.isNullable());
+			
+			// We trigger subgraph load event (via targetSelectListener) on loading of our graph.
+			// Done for instance for event consumers that initialize some things, because given ids of methods are those of source entity
 			SelectListener targetSelectListener = targetPersister.getPersisterListener().getSelectListener();
 			sourcePersister.addSelectListener(new SelectListener<SRC, ID>() {
 				@Override
@@ -210,7 +199,7 @@ public class CascadeOneConfigurer<SRC, TRGT, ID> {
 
 				@Override
 				public void afterSelect(Iterable<? extends SRC> result) {
-					Iterable collect = Iterables.collectToList(result, targetProvider);
+					Iterable collect = Iterables.collectToList(result, cascadeOne.getTargetProvider()::get);
 					targetSelectListener.afterSelect(collect);
 				}
 
@@ -226,8 +215,8 @@ public class CascadeOneConfigurer<SRC, TRGT, ID> {
 	
 	private static class RelationOwnedBySourceConfigurer<SRC, TRGT, ID> extends ConfigurerTemplate<SRC, TRGT, ID> {
 		
-		private RelationOwnedBySourceConfigurer(PersistenceContext persistenceContext, PersisterBuilder<TRGT, ID> persisterBuilder) {
-			super(persistenceContext, persisterBuilder);
+		private RelationOwnedBySourceConfigurer(PersistenceContext persistenceContext, PersisterBuilderImpl<TRGT, ID> targetPersisterBuilder) {
+			super(persistenceContext, targetPersisterBuilder);
 		}
 		
 		@Override
@@ -354,8 +343,8 @@ public class CascadeOneConfigurer<SRC, TRGT, ID> {
 		@SuppressWarnings("squid:S2259")
 		private Column rightColumn;
 		
-		private RelationOwnedByTargetConfigurer(PersistenceContext persistenceContext, PersisterBuilder<TRGT, ID> persisterBuilder) {
-			super(persistenceContext, persisterBuilder);
+		private RelationOwnedByTargetConfigurer(PersistenceContext persistenceContext, PersisterBuilderImpl<TRGT, ID> targetPersisterBuilder) {
+			super(persistenceContext, targetPersisterBuilder);
 		}
 		
 		@Override
@@ -606,21 +595,29 @@ public class CascadeOneConfigurer<SRC, TRGT, ID> {
 	
 	private static class OrphanRemovalOnUpdate<SRC, TRGT> implements UpdateListener<SRC> {
 		
-		private final IEntityPersister<TRGT, ?> targetPersister;
+		private final IEntityConfiguredPersister<TRGT, ?> targetPersister;
 		private final IAccessor<SRC, TRGT> targetAccessor;
+		private final IAccessor<TRGT, ?> targetIdAccessor;
 		
-		private OrphanRemovalOnUpdate(IEntityPersister<TRGT, ?> targetPersister, IAccessor<SRC, TRGT> targetAccessor) {
+		private OrphanRemovalOnUpdate(IEntityConfiguredPersister<TRGT, ?> targetPersister, IAccessor<SRC, TRGT> targetAccessor) {
 			this.targetPersister = targetPersister;
 			this.targetAccessor = targetAccessor;
+			this.targetIdAccessor = targetPersister.getMappingStrategy().getIdMappingStrategy().getIdAccessor()::getId;
 		}
 		
 		@Override
 		public void afterUpdate(Iterable<? extends Duo<? extends SRC, ? extends SRC>> payloads, boolean allColumnsStatement) {
-				List<TRGT> targetsToDeleteUpdate = Iterables.collect(payloads,
-						// targets of nullified relations don't need to be updated 
-						e -> getTarget(e.getLeft()) == null,
-						e -> getTarget(e.getRight()),
-						ArrayList::new);
+				List<TRGT> targetsToDeleteUpdate = new ArrayList<>();
+				payloads.forEach(duo -> {
+					TRGT newTarget = getTarget(duo.getLeft());
+					TRGT oldTarget = getTarget(duo.getRight());
+					// nullified relations and changed ones must be removed (orphan removal)
+					// TODO : one day we'll have to cover case of reused instance in same graph : one of the relation must handle it, not both,
+					//  "else a marked instance" system must be implemented
+					if (newTarget == null || (oldTarget != null && !targetIdAccessor.get(newTarget).equals(targetIdAccessor.get(oldTarget)))) {
+						targetsToDeleteUpdate.add(oldTarget);
+					}
+				});
 				targetPersister.delete(targetsToDeleteUpdate);
 		}
 		

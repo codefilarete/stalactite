@@ -121,7 +121,6 @@ class SingleTablePolymorphismBuilder<C, I, T extends Table, D> implements Polymo
 		Map<Class<? extends C>, JoinedTablesPersister<C, I, T>> joinedTablesPersisters = buildSubEntitiesPersisters(persistenceContext);
 		// NB: persisters are not registered into PersistenceContext because it may break implicit polymorphism principle (persisters are then
 		// available by PersistenceContext.getPersister(..)) and it is one sure that they are perfect ones (all their features should be tested)
-		// joinedTablesPersisters.values().forEach(persistenceContext::addPersister);
 		return wrap(mainPersister, joinedTablesPersisters, persistenceContext.getConnectionProvider(), persistenceContext.getDialect());
 	}
 	
@@ -139,12 +138,9 @@ class SingleTablePolymorphismBuilder<C, I, T extends Table, D> implements Polymo
 						c -> polymorphismPolicy.getDiscriminatorValue((Class<? extends C>) c.getClass()))
 		);
 		
-		subEntitiesPersisters.forEach((type, persister) -> {
-			mainPersister.getJoinedStrategiesSelectExecutor().getJoinedStrategiesSelect().getJoinsRoot().copyTo(
-					persister.getJoinedStrategiesSelectExecutor().getJoinedStrategiesSelect(),
-					JoinedStrategiesSelect.FIRST_STRATEGY_NAME
-			);
-		});
+		subEntitiesPersisters.forEach((type, persister) ->
+			mainPersister.copyJoinsRootTo(persister.getJoinedStrategiesSelect(), JoinedStrategiesSelect.FIRST_STRATEGY_NAME)
+		);
 		
 		SingleTablePolymorphismSelectExecutor<C, I, T, D> selectExecutor = new SingleTablePolymorphismSelectExecutor<>(
 				subEntitiesPersisters,

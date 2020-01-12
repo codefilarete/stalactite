@@ -3,19 +3,16 @@ package org.gama.stalactite.persistence.engine;
 import javax.sql.DataSource;
 import java.util.Collection;
 import java.util.List;
-import java.util.Objects;
 import java.util.stream.Collectors;
 
-import org.apache.commons.lang3.builder.EqualsBuilder;
-import org.apache.commons.lang3.builder.HashCodeBuilder;
-import org.apache.commons.lang3.builder.ToStringBuilder;
-import org.apache.commons.lang3.builder.ToStringStyle;
 import org.gama.lang.collection.Arrays;
 import org.gama.lang.collection.Iterables;
-import org.gama.stalactite.persistence.engine.model.Timestamp;
+import org.gama.stalactite.persistence.engine.model.AbstractVehicle;
+import org.gama.stalactite.persistence.engine.model.Car;
+import org.gama.stalactite.persistence.engine.model.Color;
+import org.gama.stalactite.persistence.engine.model.Vehicle;
 import org.gama.stalactite.persistence.id.Identified;
 import org.gama.stalactite.persistence.id.Identifier;
-import org.gama.stalactite.persistence.id.PersistableIdentifier;
 import org.gama.stalactite.persistence.id.PersistedIdentifier;
 import org.gama.stalactite.persistence.sql.HSQLDBDialect;
 import org.gama.stalactite.persistence.structure.Column;
@@ -275,7 +272,7 @@ public class FluentEntityMappingConfigurationSupportInheritanceTest {
 									.add(Vehicle::getColor).getConfiguration())
 							.build(persistenceContext));
 			
-			assertEquals("Identifier is not defined for o.g.s.p.e.FluentEntityMappingConfigurationSupportInheritanceTest$Car,"
+			assertEquals("Identifier is not defined for o.g.s.p.e.m.Car,"
 							+ " please add one throught o.g.s.p.e.ColumnOptions.identifier(o.g.s.p.e.ColumnOptions$IdentifierPolicy)",
 					thrownException.getMessage());
 		}
@@ -371,8 +368,8 @@ public class FluentEntityMappingConfigurationSupportInheritanceTest {
 							.add(Vehicle::getId).identifier(ALREADY_ASSIGNED)
 							.build(persistenceContext));
 			assertEquals("Defining an identifier while inheritance is used is not supported" 
-					+ " : o.g.s.p.e.FluentEntityMappingConfigurationSupportInheritanceTest$Vehicle defined identifier AbstractVehicle::getId" 
-					+ " while it inherits from o.g.s.p.e.FluentEntityMappingConfigurationSupportInheritanceTest$AbstractVehicle", thrownException.getMessage());
+					+ " : o.g.s.p.e.m.Vehicle defined identifier AbstractVehicle::getId" 
+					+ " while it inherits from o.g.s.p.e.m.AbstractVehicle", thrownException.getMessage());
 		}
 		
 		@Test
@@ -598,223 +595,4 @@ public class FluentEntityMappingConfigurationSupportInheritanceTest {
 		private final CarTable carTable = new CarTable("car");
 	}
 	
-	public static abstract class AbstractVehicle implements Identified<Long> {
-		
-		private Identifier<Long> id;
-		
-		private Timestamp timestamp;
-		
-		public AbstractVehicle() {
-		}
-		
-		private AbstractVehicle(Identifier<Long> id) {
-			this.id = id;
-		}
-		
-		@Override
-		public Identifier<Long> getId() {
-			return id;
-		}
-		
-		@Override
-		public boolean equals(Object o) {
-			return EqualsBuilder.reflectionEquals(this, o);
-		}
-		
-		@Override
-		public int hashCode() {
-			return HashCodeBuilder.reflectionHashCode(this);
-		}
-		
-		public Timestamp getTimestamp() {
-			return timestamp;
-		}
-		
-		public void setTimestamp(Timestamp timestamp) {
-			this.timestamp = timestamp;
-		}
-		
-		/**
-		 * Implemented for easier debug
-		 * @return a simple representation of this
-		 */
-		@Override
-		public String toString() {
-			return ToStringBuilder.reflectionToString(this, ToStringStyle.SHORT_PREFIX_STYLE);
-		}
-	}
-	
-	public static class Vehicle extends AbstractVehicle {
-		
-		private Color color;
-		
-		private Engine engine;
-		
-		public Vehicle(Long id) {
-			this(new PersistableIdentifier<>(id));
-		}
-		
-		public Vehicle(Identifier<Long> id) {
-			super(id);
-		}
-		
-		public Vehicle() {
-		}
-		
-		public Color getColor() {
-			return color;
-		}
-		
-		public void setColor(Color color) {
-			this.color = color;
-		}
-		
-		public Engine getEngine() {
-			return engine;
-		}
-		
-		public void setEngine(Engine engine) {
-			this.engine = engine;
-		}
-	}
-	
-	public static class Color {
-		
-		private int rgb;
-		
-		public Color() {
-		}
-		
-		public Color(int rgb) {
-			this.rgb = rgb;
-		}
-		
-		public int getRgb() {
-			return rgb;
-		}
-		
-		@Override
-		public boolean equals(Object o) {
-			if (this == o) return true;
-			if (o == null || getClass() != o.getClass()) return false;
-			Color color = (Color) o;
-			return rgb == color.rgb;
-		}
-		
-		@Override
-		public int hashCode() {
-			return Objects.hash(rgb);
-		}
-		
-		/**
-		 * Implemented for easier debug
-		 * @return a simple representation of this
-		 */
-		@Override
-		public String toString() {
-			return ToStringBuilder.reflectionToString(this, ToStringStyle.SHORT_PREFIX_STYLE);
-		}
-	}
-	
-	public static class Car extends Vehicle {
-		
-		private String model;
-		
-		public Car() {
-		}
-		
-		public Car(Long id) {
-			this(new PersistableIdentifier<>(id));
-		}
-		
-		public Car(Identifier<Long> id) {
-			super(id);
-		}
-		
-		public Car(Long id, String model) {
-			this(new PersistableIdentifier<>(id), model);
-		}
-		
-		public Car(Identifier<Long> id, String model) {
-			super(id);
-			setModel(model);
-		}
-		
-		public String getModel() {
-			return model;
-		}
-		
-		public void setModel(String model) {
-			this.model = model;
-		}
-		
-	}
-	
-	public static class Truk extends Vehicle {
-		
-		public Truk() {
-		}
-		
-		public Truk(Long id) {
-			this(new PersistableIdentifier<>(id));
-		}
-		
-		Truk(Identifier<Long> id) {
-			super(id);
-		}
-	}
-	
-	public static class Engine implements Identified<Long> {
-		
-		private Identifier<Long> id;
-		
-		private double displacement;
-		
-		public Engine() {
-		}
-		
-		public Engine(Long id) {
-			this.id = new PersistableIdentifier<>(id);
-		}
-		
-		public Engine(Identifier<Long> id) {
-			this.id = id;
-		}
-		
-		public Identifier<Long> getId() {
-			return id;
-		}
-		
-		public double getDisplacement() {
-			return displacement;
-		}
-		
-		public void setDisplacement(double displacement) {
-			this.displacement = displacement;
-		}
-		
-		@Override
-		public boolean equals(Object o) {
-			if (this == o) return true;
-			if (o == null || getClass() != o.getClass()) return false;
-			
-			Engine engine = (Engine) o;
-			
-			return Objects.equals(id, engine.id);
-		}
-		
-		@Override
-		public int hashCode() {
-			return id.hashCode();
-		}
-		
-		/**
-		 * Implemented for easier debug
-		 * @return a simple representation of this
-		 */
-		@Override
-		public String toString() {
-			return ToStringBuilder.reflectionToString(this, ToStringStyle.SHORT_PREFIX_STYLE);
-		}
-	}
 }

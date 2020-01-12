@@ -15,7 +15,7 @@ import org.gama.stalactite.persistence.engine.IEntityConfiguredJoinedTablesPersi
 import org.gama.stalactite.persistence.engine.ISelectExecutor;
 import org.gama.stalactite.persistence.engine.PersistenceContext;
 import org.gama.stalactite.persistence.engine.Persister;
-import org.gama.stalactite.persistence.engine.cascade.JoinedStrategiesSelect.StrategyJoins;
+import org.gama.stalactite.persistence.engine.cascade.StrategyJoinsRowTransformer.EntityInflater;
 import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
 import org.gama.stalactite.persistence.mapping.IEntityMappingStrategy;
 import org.gama.stalactite.persistence.query.EntityCriteriaSupport;
@@ -95,7 +95,7 @@ public class JoinedTablesPersister<C, I, T extends Table> extends Persister<C, I
 	 * @param leftJoinColumn the column of the owning strategy to be used for joining with the newly added one (mappingStrategy parameter)
 	 * @param rightJoinColumn the column of the newly added strategy to be used for joining with the owning one
 	 * @param isOuterJoin true to use a left outer join (optional relation)
-	 * @see JoinedStrategiesSelect#addRelationJoin(String, IEntityMappingStrategy, Column, Column, boolean, BeanRelationFixer)
+	 * @see JoinedStrategiesSelect#addRelationJoin(String, IEntityMappingStrategy, Column, Column, org.gama.stalactite.persistence.engine.cascade.AbstractJoin.JoinType, BeanRelationFixer)
 	 */
 	@Override
 	public <U, J, Z> String addPersister(String ownerStrategyName,
@@ -121,14 +121,14 @@ public class JoinedTablesPersister<C, I, T extends Table> extends Persister<C, I
 	}
 	
 	/**
-	 * Gives the {@link ClassMappingStrategy} of a join node.
+	 * Gives the {@link EntityInflater} of a join node.
 	 * Node name must be known so one should have kept it from the {@link #addPersister(String, IConfiguredPersister, BeanRelationFixer, Column, Column, boolean)}
 	 * return, else, since node naming strategy is not exposed it is not recommanded to use this method out of any test or debug purpose. 
 	 * 
 	 * @param nodeName a name of a added strategy
 	 * @return the {@link ClassMappingStrategy} behind a join node, null if not found
 	 */
-	public IEntityMappingStrategy giveJoinedStrategy(String nodeName) {
+	public EntityInflater giveJoinedStrategy(String nodeName) {
 		return Nullable.nullable(getJoinedStrategiesSelectExecutor().getJoinedStrategiesSelect().getStrategyJoins(nodeName)).map(StrategyJoins::getStrategy).get();
 	}
 	
@@ -202,13 +202,19 @@ public class JoinedTablesPersister<C, I, T extends Table> extends Persister<C, I
 	}
 	
 	@Override
-	public void addPersisterJoins(String joinName, IJoinedTablesPersister<?, ?> targetPersister) {
-		targetPersister.copyJoinsRootTo(getJoinedStrategiesSelectExecutor().getJoinedStrategiesSelect(), joinName);
+	public <SRC> void joinWith(IJoinedTablesPersister<SRC, I> sourcePersister,
+							   Column leftColumn, Column rightColumn, BeanRelationFixer<SRC, C> beanRelationFixer, boolean nullable) {
+		
+		String createdJoinNodeName = sourcePersister.addPersister(JoinedStrategiesSelect.FIRST_STRATEGY_NAME, this,
+				beanRelationFixer,
+				leftColumn, rightColumn, true);
+		
+		copyJoinsRootTo(sourcePersister.getJoinedStrategiesSelect(), createdJoinNodeName);
 	}
 	
 	@Override
-	public <I1, T extends Table, C1> void copyJoinsRootTo(JoinedStrategiesSelect<C1, I1, T> joinedStrategiesSelect, String joinName) {
-		getJoinedStrategiesSelectExecutor().getJoinedStrategiesSelect().getJoinsRoot().copyTo(joinedStrategiesSelect, joinName);
+	public <E, ID, T extends Table> void copyJoinsRootTo(JoinedStrategiesSelect<E, ID, T> joinedStrategiesSelect, String joinName) {
+		getJoinedStrategiesSelect().getJoinsRoot().copyTo(joinedStrategiesSelect, joinName);
 	}
 	
 	/**

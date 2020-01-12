@@ -25,11 +25,11 @@ import org.gama.reflection.PropertyAccessor;
 import org.gama.stalactite.persistence.engine.ColumnNamingStrategy;
 import org.gama.stalactite.persistence.engine.ColumnOptions.IdentifierPolicy;
 import org.gama.stalactite.persistence.engine.EntityMappingConfiguration;
-import org.gama.stalactite.persistence.engine.FluentEntityMappingConfigurationSupportInheritanceTest.AbstractVehicle;
-import org.gama.stalactite.persistence.engine.FluentEntityMappingConfigurationSupportInheritanceTest.Car;
-import org.gama.stalactite.persistence.engine.FluentEntityMappingConfigurationSupportInheritanceTest.Color;
-import org.gama.stalactite.persistence.engine.FluentEntityMappingConfigurationSupportInheritanceTest.Truk;
-import org.gama.stalactite.persistence.engine.FluentEntityMappingConfigurationSupportInheritanceTest.Vehicle;
+import org.gama.stalactite.persistence.engine.model.AbstractVehicle;
+import org.gama.stalactite.persistence.engine.model.Car;
+import org.gama.stalactite.persistence.engine.model.Color;
+import org.gama.stalactite.persistence.engine.model.Truk;
+import org.gama.stalactite.persistence.engine.model.Vehicle;
 import org.gama.stalactite.persistence.engine.ForeignKeyNamingStrategy;
 import org.gama.stalactite.persistence.engine.IEntityPersister;
 import org.gama.stalactite.persistence.engine.PersistenceContext;
@@ -485,7 +485,7 @@ class PersisterBuilderImplTest {
 		entity.setColor(new Color(123));
 		entity.setTimestamp(new Timestamp());
 		result.insert(entity);
-		assertEquals(Arrays.asList("insert into Car(modificationDate, id, color, model, creationDate) values (?, ?, ?, ?, ?)"), sqlCaptor.getAllValues());
+		assertEquals(Arrays.asList("insert into Car(model, color, id, modificationDate, creationDate) values (?, ?, ?, ?, ?)"), sqlCaptor.getAllValues());
 	}
 	
 	@Test
@@ -518,7 +518,7 @@ class PersisterBuilderImplTest {
 		entity.setTimestamp(new Timestamp());
 		result.insert(entity);
 		assertEquals(Arrays.asList(
-				"insert into AbstractVehicle(modificationDate, id, creationDate) values (?, ?, ?)",
+				"insert into AbstractVehicle(id, modificationDate, creationDate) values (?, ?, ?)",
 				"insert into Vehicle(color, id) values (?, ?)",
 				"insert into Car(model, id) values (?, ?)"), insertCaptor.getAllValues());
 		
@@ -536,7 +536,7 @@ class PersisterBuilderImplTest {
 		assertEquals(Arrays.asList(
 				// the expected select may change in future as we don't care about select order nor joins order, tested in case of huge regression
 				"select Car.model as Car_model, Car.id as Car_id," 
-						+ " AbstractVehicle.modificationDate as AbstractVehicle_modificationDate, AbstractVehicle.id as AbstractVehicle_id," 
+						+ " AbstractVehicle.id as AbstractVehicle_id, AbstractVehicle.modificationDate as AbstractVehicle_modificationDate," 
 						+ " AbstractVehicle.creationDate as AbstractVehicle_creationDate, Vehicle.color as Vehicle_color," 
 						+ " Vehicle.id as Vehicle_id" 
 						+ " from Car inner join AbstractVehicle on Car.id = AbstractVehicle.id" 

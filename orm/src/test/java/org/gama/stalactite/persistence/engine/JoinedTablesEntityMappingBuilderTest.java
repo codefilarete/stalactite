@@ -12,10 +12,10 @@ import org.gama.stalactite.sql.binder.NullAwareParameterBinder;
 import org.gama.stalactite.sql.test.HSQLDBInMemoryDataSource;
 import org.gama.stalactite.persistence.engine.CascadeOptions.RelationMode;
 import org.gama.stalactite.persistence.engine.ColumnOptions.IdentifierPolicy;
-import org.gama.stalactite.persistence.engine.FluentEntityMappingConfigurationSupportInheritanceTest.Car;
-import org.gama.stalactite.persistence.engine.FluentEntityMappingConfigurationSupportInheritanceTest.Color;
-import org.gama.stalactite.persistence.engine.FluentEntityMappingConfigurationSupportInheritanceTest.Engine;
-import org.gama.stalactite.persistence.engine.FluentEntityMappingConfigurationSupportInheritanceTest.Vehicle;
+import org.gama.stalactite.persistence.engine.model.Car;
+import org.gama.stalactite.persistence.engine.model.Color;
+import org.gama.stalactite.persistence.engine.model.Engine;
+import org.gama.stalactite.persistence.engine.model.Vehicle;
 import org.gama.stalactite.persistence.engine.IFluentEntityMappingBuilder.IFluentMappingBuilderPropertyOptions;
 import org.gama.stalactite.persistence.id.Identified;
 import org.gama.stalactite.persistence.id.Identifier;
@@ -191,8 +191,8 @@ class JoinedTablesEntityMappingBuilderTest {
 		MappingConfigurationException thrownException = assertThrows(MappingConfigurationException.class,
 				() -> testInstance.build(persistenceContext, inheritedTable));
 		assertEquals("Defining an identifier while inheritance is used is not supported" 
-				+ " : o.g.s.p.e.FluentEntityMappingConfigurationSupportInheritanceTest$Car defined identifier AbstractVehicle::getId" 
-				+ " while it inherits from o.g.s.p.e.FluentEntityMappingConfigurationSupportInheritanceTest$Vehicle", thrownException.getMessage());
+				+ " : o.g.s.p.e.m.Car defined identifier AbstractVehicle::getId" 
+				+ " while it inherits from o.g.s.p.e.m.Vehicle", thrownException.getMessage());
 	}
 	
 	@Test

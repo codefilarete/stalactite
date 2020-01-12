@@ -8,10 +8,11 @@ import java.util.List;
 import java.util.Map;
 
 import org.gama.lang.collection.Iterables;
-import org.gama.stalactite.sql.result.Row;
 import org.gama.stalactite.persistence.mapping.ColumnedRow;
+import org.gama.stalactite.persistence.mapping.ComposedIdMappingStrategy;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
+import org.gama.stalactite.sql.result.Row;
 
 /**
  * Describes the way a simple (single column) identifier is read and written to a database.
@@ -34,7 +35,8 @@ public class SimpleIdentifierAssembler<I> implements IdentifierAssembler<I> {
 	
 	@Override
 	public I assemble(@Nonnull Row row, @Nonnull ColumnedRow rowAliaser) {
-		return (I) rowAliaser.getValue(primaryKey, row);
+		Object value = rowAliaser.getValue(primaryKey, row);
+		return (I) (value == null || ComposedIdMappingStrategy.isDefaultPrimitiveValue(value) ? null : value);
 	}
 	
 	@Override

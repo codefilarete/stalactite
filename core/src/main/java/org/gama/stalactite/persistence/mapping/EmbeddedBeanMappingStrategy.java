@@ -2,6 +2,7 @@ package org.gama.stalactite.persistence.mapping;
 
 import javax.annotation.Nonnull;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
@@ -220,12 +221,20 @@ public class EmbeddedBeanMappingStrategy<C, T extends Table> implements IEmbedde
 	 */
 	private class EmbeddedBeanRowTransformer extends ToBeanRowTransformer<C> {
 		
-		public EmbeddedBeanRowTransformer(Class<C> clazz, Map<Column, IMutator> columnToMember) {
-			super(clazz, columnToMember);
-		}
-		
 		public EmbeddedBeanRowTransformer(Function<Function<Column, Object>, C> beanFactory, Map<Column, IMutator> columnToMember) {
 			super(beanFactory, columnToMember);
+		}
+		
+		/**
+		 * Constructor for private copy, see {@link #copyWithAliases(ColumnedRow)}
+		 * @param beanFactory method that creates instance
+		 * @param columnToMember mapping between database columns and bean properties
+		 * @param columnedRow mapping between {@link Column} and their alias in given row to {@link #transform(Row)} 
+		 * @param rowTransformerListeners listeners that need notification of bean creation
+		 */
+		private EmbeddedBeanRowTransformer(Function<Function<Column, Object>, C> beanFactory, Map<Column, IMutator> columnToMember,
+										   ColumnedRow columnedRow, Collection<TransformerListener<C>> rowTransformerListeners) {
+			super(beanFactory, columnToMember, columnedRow, rowTransformerListeners);
 		}
 		
 		@Override
@@ -235,6 +244,16 @@ public class EmbeddedBeanMappingStrategy<C, T extends Table> implements IEmbedde
 			if (!defaultValue) {
 				super.applyValueToBean(targetRowBean, columnFieldEntry, propertyValue);
 			}
+		}
+		
+		@Override
+		public EmbeddedBeanRowTransformer copyWithAliases(ColumnedRow columnedRow) {
+			return new EmbeddedBeanRowTransformer(beanFactory,
+					getColumnToMember(),
+					columnedRow,
+					// listeners are given to the new instance because they may be interested in transforming rows of this one
+					getRowTransformerListeners()
+			);
 		}
 	}
 	

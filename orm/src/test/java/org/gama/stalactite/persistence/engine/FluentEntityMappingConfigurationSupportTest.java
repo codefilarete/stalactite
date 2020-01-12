@@ -388,7 +388,7 @@ public class FluentEntityMappingConfigurationSupportTest {
 				// from Country
 				"id", "name",
 				// from Person
-				"presidentName", "presidentElectedAt",
+				"presidentName", "presidentElectedAt", "vehicle",
 				// from Country.timestamp
 				"countryCreatedAt"),
 				collect(countryTable.getColumns(), Column::getName, HashSet::new));
@@ -451,13 +451,15 @@ public class FluentEntityMappingConfigurationSupportTest {
 		// Testing ...
 		persister.insert(country);
 		
-		assertEquals("insert into countryTable(countryCreatedAt, id, name, presidentElectedAt, presidentName) values (?, ?, ?, ?, ?)",
+		assertEquals("insert into countryTable(countryCreatedAt, id, name, presidentElectedAt, presidentName, vehicle) values (?, ?, ?, ?, ?, ?)",
 				capturedSQL.toString());
-		assertEquals(Maps.asHashMap((Column) columnsByName.get("presidentName"), (Object) country.getPresident().getName())
+		assertEquals(Maps.forHashMap(Column.class, Object.class)
+				.add(columnsByName.get("presidentName"), country.getPresident().getName())
 				.add(columnsByName.get("presidentElectedAt"), country.getPresident().getTimestamp().getModificationDate())
 				.add(columnsByName.get("name"), country.getName())
 				.add(columnsByName.get("countryCreatedAt"), country.getTimestamp().getCreationDate())
 				.add(columnsByName.get("id"), country.getId())
+				.add(columnsByName.get("vehicle"), null)
 				, capturedValues);
 	}
 	
@@ -496,7 +498,7 @@ public class FluentEntityMappingConfigurationSupportTest {
 				// from Country
 				"id", "name",
 				// from Person
-				"presidentId", "version", "presidentName", "creationDate", "modificationDate",
+				"presidentId", "version", "presidentName", "creationDate", "modificationDate", "vehicle",
 				// from Country.timestamp
 				"createdAt", "modifiedAt"),
 				collect(countryTable.getColumns(), Column::getName, HashSet::new));

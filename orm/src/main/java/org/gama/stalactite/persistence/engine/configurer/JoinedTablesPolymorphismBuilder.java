@@ -11,7 +11,6 @@ import org.gama.lang.Duo;
 import org.gama.lang.collection.Iterables;
 import org.gama.reflection.IReversibleAccessor;
 import org.gama.stalactite.persistence.engine.IEntityConfiguredPersister;
-import org.gama.stalactite.persistence.engine.ISelectExecutor;
 import org.gama.stalactite.persistence.engine.IUpdateExecutor;
 import org.gama.stalactite.persistence.engine.PersistenceContext;
 import org.gama.stalactite.persistence.engine.PolymorphismPolicy.JoinedTablesPolymorphism;
@@ -26,11 +25,9 @@ import org.gama.stalactite.persistence.engine.configurer.PersisterBuilderImpl.Ma
 import org.gama.stalactite.persistence.engine.configurer.PersisterBuilderImpl.PolymorphismBuilder;
 import org.gama.stalactite.persistence.engine.listening.UpdateListener.UpdatePayload;
 import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
-import org.gama.stalactite.persistence.sql.Dialect;
 import org.gama.stalactite.persistence.sql.dml.binder.ColumnBinderRegistry;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
-import org.gama.stalactite.sql.ConnectionProvider;
 
 import static org.gama.lang.Nullable.nullable;
 
@@ -46,13 +43,11 @@ abstract class JoinedTablesPolymorphismBuilder<C, I, T extends Table> implements
 	private final Identification identification;
 	private final TableNamingStrategy tableNamingStrategy;
 	private final Set<Table> tables = new HashSet<>();
-	private Map<Class<? extends C>, ISelectExecutor<C, I>> subEntitiesSelectors;
-	private Map<Class<? extends C>, IUpdateExecutor<C>> subclassUpdateExecutors;
+	private Map<Class<? extends C>, IUpdateExecutor<C>> subEntitiesUpdaters;
 	
 	JoinedTablesPolymorphismBuilder(JoinedTablesPolymorphism<C, I> polymorphismPolicy,
 									Identification identification,
 									JoinedTablesPersister<C, I, T> mainPersister,
-									Mapping mainMapping,
 									ColumnBinderRegistry columnBinderRegistry,
 									ColumnNameProvider columnNameProvider,
 									TableNamingStrategy tableNamingStrategy) {
@@ -68,10 +63,8 @@ abstract class JoinedTablesPolymorphismBuilder<C, I, T extends Table> implements
 		Map<Class<? extends C>, JoinedTablesPersister<C, I, T>> persisterPerSubclass = new HashMap<>();
 		
 		BeanMappingBuilder beanMappingBuilder = new BeanMappingBuilder();
-		subEntitiesSelectors = new HashMap<>();
 		
-		
-		subclassUpdateExecutors = new HashMap<>();
+		subEntitiesUpdaters = new HashMap<>();
 		for (SubEntityMappingConfiguration<? extends C, I> subConfiguration : polymorphismPolicy.getSubClasses()) {
 			Table subTable = nullable(polymorphismPolicy.giveTable(subConfiguration))
 					.getOr(() -> new Table(tableNamingStrategy.giveName(subConfiguration.getEntityType())));
@@ -99,16 +92,23 @@ abstract class JoinedTablesPolymorphismBuilder<C, I, T extends Table> implements
 			Column entityPrimaryKey = (Column) Iterables.first(this.mainPersister.getMainTable().getPrimaryKey().getColumns());
 			subclassPersister.getJoinedStrategiesSelectExecutor().addComplementaryJoin(JoinedStrategiesSelect.FIRST_STRATEGY_NAME,
 					this.mainPersister.getMappingStrategy(), subEntityPrimaryKey, entityPrimaryKey);
-			subEntitiesSelectors.put(subConfiguration.getEntityType(), subclassPersister.getSelectExecutor());
 			
-			
-			subclassUpdateExecutors.put(subConfiguration.getEntityType(), new IUpdateExecutor<C>() {
+			// creating dedicated instance updator because default one only takes its declared properties into account
+			subEntitiesUpdaters.put(subConfiguration.getEntityType(), new IUpdateExecutor<C>() {
 				@Override
 				public int updateById(Iterable<C> entities) {
 					// TODO
 					return 0;
 				}
 				
+				/**
+				 * Overriden to take parent properties into account, because default sub entity persister takes only their declared properties
+				 * in difference computation and SQL update build.
+				 * 
+				 * @param differencesIterable an iteration of modifed vs unmodified instances
+				 * @param allColumnsStatement
+				 * @return number of row updated
+				 */
 				@Override
 				public int update(Iterable<? extends Duo<? extends C, ? extends C>> differencesIterable, boolean allColumnsStatement) {
 					List<UpdatePayload<C, Table>> updatePayloads = new ArrayList<>();
@@ -156,17 +156,12 @@ abstract class JoinedTablesPolymorphismBuilder<C, I, T extends Table> implements
 	
 	@Override
 	public IEntityConfiguredPersister<C, I> build(PersistenceContext persistenceContext) {
-		Map<Class<? extends C>, JoinedTablesPersister<C, I, T>> joinedTablesPersisters = buildSubEntitiesPersisters(persistenceContext);
+		Map<Class<? extends C>, JoinedTablesPersister<C, I, T>> subEntitiesPersisters = buildSubEntitiesPersisters(persistenceContext);
 		// NB: persisters are not registered into PersistenceContext because it may break implicit polymorphism principle (persisters are then
 		// available by PersistenceContext.getPersister(..)) and it is one sure that they are perfect ones (all their features should be tested)
-		// joinedTablesPersisters.values().forEach(persistenceContext::addPersister);
-		return wrap(mainPersister, joinedTablesPersisters, persistenceContext.getConnectionProvider(), persistenceContext.getDialect());
+		return new PersisterDispatcher(mainPersister, subEntitiesPersisters,
+				subEntitiesUpdaters,
+				persistenceContext.getConnectionProvider(), persistenceContext.getDialect());
 	}
 	
-	private IEntityConfiguredPersister<C, I> wrap(JoinedTablesPersister<C, I, T> mainPersister,
-										Map<Class<? extends C>, JoinedTablesPersister<C, I, T>> subEntitiesPersisters,
-										ConnectionProvider connectionProvider,
-										Dialect dialect) {
-		return new PersisterDispatcher(mainPersister, subEntitiesPersisters, connectionProvider, dialect);
-	}
 }

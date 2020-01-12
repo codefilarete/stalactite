@@ -999,6 +999,43 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 			}
 			
 			@Test
+			void relationChangedWithOrphanRemoval() {
+				IEntityPersister<Country, Identifier<Long>> countryPersister = MappingEase.entityBuilder(Country.class, Identifier.LONG_TYPE)
+						.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
+						.add(Country::getName)
+						.add(Country::getDescription)
+						.addOneToOne(Country::getPresident, personConfiguration).cascading(ALL_ORPHAN_REMOVAL)
+						.build(persistenceContext);
+				
+				DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+				ddlDeployer.deployDDL();
+				
+				LongProvider countryIdProvider = new LongProvider();
+				LongProvider personIdProvider = new LongProvider();
+				Country dummyCountry = new Country(countryIdProvider.giveNewIdentifier());
+				dummyCountry.setName("France");
+				dummyCountry.setDescription("Smelly cheese !");
+				Person president = new Person(personIdProvider.giveNewIdentifier());
+				president.setName("French president");
+				dummyCountry.setPresident(president);
+				countryPersister.insert(dummyCountry);
+				
+				// Removing president
+				Country persistedCountry = countryPersister.select(dummyCountry.getId());
+				Person newPresident = new Person(personIdProvider.giveNewIdentifier());
+				newPresident.setName("New French president");
+				persistedCountry.setPresident(newPresident);
+				countryPersister.update(persistedCountry, dummyCountry, true);
+				// Checking that president has changed
+				Country countryFromDB = countryPersister.select(dummyCountry.getId());
+				assertEquals(newPresident, countryFromDB.getPresident());
+				// previous president has been deleted
+				IEntityPersister<Person, Identifier<Long>> personPersister = persistenceContext.getPersister(Person.class);
+				Person previousPresident = personPersister.select(president.getId());
+				assertNull(previousPresident);
+			}
+			
+			@Test
 			void mandatory_withNullTarget_throwsException() {
 				IEntityPersister<Country, Identifier<Long>> countryPersister = MappingEase.entityBuilder(Country.class, Identifier.LONG_TYPE)
 						.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)

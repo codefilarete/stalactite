@@ -1,44 +1,39 @@
 package org.gama.stalactite.persistence.engine.model;
 
-import java.util.Date;
-
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
+import org.gama.stalactite.persistence.id.Identified;
+import org.gama.stalactite.persistence.id.Identifier;
 
 /**
  * @author Guillaume Mary
  */
-public class Timestamp {
+public abstract class AbstractVehicle implements Identified<Long> {
 	
-	private Date creationDate;
+	private Identifier<Long> id;
 	
-	private Date modificationDate;
+	private Timestamp timestamp;
 	
-	public Timestamp() {
-		this(new Date(), new Date());
+	public AbstractVehicle() {
 	}
 	
-	public Timestamp(Date creationDate, Date modificationDate) {
-		this.creationDate = creationDate;
-		this.modificationDate = modificationDate;
+	protected AbstractVehicle(Identifier<Long> id) {
+		this.id = id;
 	}
 	
-	public Date getCreationDate() {
-		return creationDate;
+	@Override
+	public Identifier<Long> getId() {
+		return id;
 	}
 	
-	public void setCreationDate(Date creationDate) {
-		this.creationDate = creationDate;
+	public Timestamp getTimestamp() {
+		return timestamp;
 	}
 	
-	public Date getModificationDate() {
-		return modificationDate;
-	}
-	
-	public void setModificationDate(Date modificationDate) {
-		this.modificationDate = modificationDate;
+	public void setTimestamp(Timestamp timestamp) {
+		this.timestamp = timestamp;
 	}
 	
 	@Override

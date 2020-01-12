@@ -26,8 +26,8 @@ import static org.gama.lang.collection.Iterables.collectToList;
 /**
  * @author Guillaume Mary
  */
-public class OneToManyWithIndexedMappedAssociationEngine<SRC, TRGT, SRCID, TRGTID, C extends List<TRGT>>
-		extends OneToManyWithMappedAssociationEngine<SRC, TRGT, SRCID, TRGTID, C> {
+public class OneToManyWithIndexedMappedAssociationEngine<SRC, TRGT, ID, C extends List<TRGT>>
+		extends OneToManyWithMappedAssociationEngine<SRC, TRGT, ID, C> {
 	
 	/**
 	 * Context for indexed mapped List. Will keep bean index (during insert, update and select) between "unrelated" methods/phases :
@@ -40,17 +40,17 @@ public class OneToManyWithIndexedMappedAssociationEngine<SRC, TRGT, SRCID, TRGTI
 	/** Column that stores index value, owned by reverse side table (table of targetPersister) */
 	private final Column indexingColumn;
 	
-	public OneToManyWithIndexedMappedAssociationEngine(IEntityConfiguredJoinedTablesPersister<TRGT, TRGTID> targetPersister,
+	public OneToManyWithIndexedMappedAssociationEngine(IEntityConfiguredJoinedTablesPersister<TRGT, ID> targetPersister,
 													   IndexedMappedManyRelationDescriptor<SRC, TRGT, C> manyRelationDefinition,
-													   IEntityConfiguredJoinedTablesPersister<SRC, SRCID> joinedTablesPersister,
+													   IEntityConfiguredJoinedTablesPersister<SRC, ID> joinedTablesPersister,
 													   Column indexingColumn) {
 		super(targetPersister, manyRelationDefinition, joinedTablesPersister);
 		this.indexingColumn = indexingColumn;
 	}
 	
 	@Override
-	public void addSelectCascade(Column sourcePrimaryKey, Column relationshipOwner) {
-		super.addSelectCascade(sourcePrimaryKey, relationshipOwner);
+	public void addSelectCascade(Column sourcePrimaryKey, Column relationOwner) {
+		super.addSelectCascade(sourcePrimaryKey, relationOwner);
 		addIndexSelection();
 	}
 	
@@ -63,9 +63,9 @@ public class OneToManyWithIndexedMappedAssociationEngine<SRC, TRGT, SRCID, TRGTI
 		// The latter is used because target List is already filled by the relationFixer
 		// If we use the former we must change the relation fixer and keep a temporary List. Seems little bit more complex.
 		// May be changed if any performance issue is noticed
-		sourcePersister.getPersisterListener().addSelectListener(new SelectListener<SRC, SRCID>() {
+		sourcePersister.getPersisterListener().addSelectListener(new SelectListener<SRC, ID>() {
 			@Override
-			public void beforeSelect(Iterable<SRCID> ids) {
+			public void beforeSelect(Iterable<ID> ids) {
 				updatableListIndex.set(new HashMap<>());
 			}
 			
@@ -83,7 +83,7 @@ public class OneToManyWithIndexedMappedAssociationEngine<SRC, TRGT, SRCID, TRGTI
 			}
 			
 			@Override
-			public void onError(Iterable<SRCID> ids, RuntimeException exception) {
+			public void onError(Iterable<ID> ids, RuntimeException exception) {
 				cleanContext();
 			}
 			

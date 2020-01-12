@@ -13,22 +13,22 @@ import org.gama.stalactite.persistence.mapping.IEntityMappingStrategy;
 /**
  * @author Guillaume Mary
  */
-public class OneToManyWithAssociationTableEngine<SRC, TRGT, SRCID, TRGTID, C extends Collection<TRGT>>
-		extends AbstractOneToManyWithAssociationTableEngine<SRC, TRGT, SRCID, TRGTID, C, AssociationRecord, AssociationTable> {
+public class OneToManyWithAssociationTableEngine<SRC, TRGT, ID, C extends Collection<TRGT>>
+		extends AbstractOneToManyWithAssociationTableEngine<SRC, TRGT, ID, C, AssociationRecord, AssociationTable> {
 	
-	public OneToManyWithAssociationTableEngine(IConfiguredPersister<SRC, SRCID> joinedTablesPersister,
-											   IEntityConfiguredJoinedTablesPersister<TRGT, TRGTID> targetPersister,
+	public OneToManyWithAssociationTableEngine(IConfiguredPersister<SRC, ID> joinedTablesPersister,
+											   IEntityConfiguredJoinedTablesPersister<TRGT, ID> targetPersister,
 											   ManyRelationDescriptor<SRC, TRGT, C> manyRelationDescriptor,
 											   AssociationRecordPersister<AssociationRecord, AssociationTable> associationPersister) {
 		super(joinedTablesPersister, targetPersister, manyRelationDescriptor, associationPersister);
 	}
 	
 	@Override
-	protected AssociationRecordInsertionCascader<SRC, TRGT, SRCID, TRGTID, C> newRecordInsertionCascader(
+	protected AssociationRecordInsertionCascader<SRC, TRGT, ID, C> newRecordInsertionCascader(
 			Function<SRC, C> collectionGetter,
 			AssociationRecordPersister<AssociationRecord, AssociationTable> associationPersister,
-			IEntityMappingStrategy<SRC, SRCID, ?> mappingStrategy,
-			IEntityMappingStrategy<TRGT, TRGTID, ?> targetStrategy) {
+			IEntityMappingStrategy<SRC, ID, ?> mappingStrategy,
+			IEntityMappingStrategy<TRGT, ID, ?> targetStrategy) {
 		return new AssociationRecordInsertionCascader<>(associationPersister, collectionGetter, mappingStrategy, targetStrategy);
 	}
 	

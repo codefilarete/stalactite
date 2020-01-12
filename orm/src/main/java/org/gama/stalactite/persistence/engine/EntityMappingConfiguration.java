@@ -32,7 +32,7 @@ public interface EntityMappingConfiguration<C, I> {
 	
 	EmbeddableMappingConfiguration<C> getPropertiesMapping();
 	
-	List<CascadeOne<C, ?, ?>> getOneToOnes();
+	List<CascadeOne<C, Object, Object>> getOneToOnes();
 	
 	List<CascadeMany<C, ?, ?, ? extends Collection>> getOneToManys();
 	

@@ -196,11 +196,11 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 			if (mapping.getMappingConfiguration() instanceof EntityMappingConfiguration) {
 				((EntityMappingConfiguration<C, I>) mapping.getMappingConfiguration()).getOneToOnes().forEach(cascadeOne -> {
 					if (!cascadeOne.isOwnedByReverseSide()) {
-						MemberDefinition memberDefinition = MemberDefinition.giveMemberDefinition(cascadeOne.getTargetProvider());
+						MemberDefinition targetProviderDefinition = MemberDefinition.giveMemberDefinition(cascadeOne.getTargetProvider());
 						mapping.getMapping().put(
 								cascadeOne.getTargetProvider(),
-								mapping.getTargetTable().addColumn(joinColumnNamingStrategy.giveName(memberDefinition),
-										memberDefinition.getMemberType()));
+								mapping.getTargetTable().addColumn(joinColumnNamingStrategy.giveName(targetProviderDefinition),
+										targetProviderDefinition.getMemberType()));
 					}
 				});
 			}
@@ -246,7 +246,7 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 				};
 			} else if (polymorphismPolicy instanceof JoinedTablesPolymorphism) {
 				polymorphismBuilder = new JoinedTablesPolymorphismBuilder<C, I, Table>((JoinedTablesPolymorphism<C, I>) polymorphismPolicy,
-						identification, mainPersister, mainMapping, this.columnBinderRegistry, this.columnNameProvider, this.tableNamingStrategy) {
+						identification, mainPersister, this.columnBinderRegistry, this.columnNameProvider, this.tableNamingStrategy) {
 					@Override
 					void addPrimarykey(Identification identification, Table table) {
 						PersisterBuilderImpl.this.addPrimarykeys(identification, Arrays.asSet(table));
@@ -264,7 +264,7 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 				};
 			}
 			result = polymorphismBuilder.build(persistenceContext);
-			// we transfert listeners by principle and in particular for StatefullIdentifier state change and relationship cascade triggering
+			// we transfert listeners by principle and in particular for StatefullIdentifier state change and relation cascade triggering
 			result.addInsertListener(mainPersister.getPersisterListener().getInsertListener());
 			result.addUpdateListener(mainPersister.getPersisterListener().getUpdateListener());
 			result.addSelectListener(mainPersister.getPersisterListener().getSelectListener());
