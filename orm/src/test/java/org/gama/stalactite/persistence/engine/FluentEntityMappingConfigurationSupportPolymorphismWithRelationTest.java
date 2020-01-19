@@ -28,8 +28,10 @@ import org.gama.stalactite.persistence.engine.model.Country;
 import org.gama.stalactite.persistence.engine.model.Engine;
 import org.gama.stalactite.persistence.engine.model.Person;
 import org.gama.stalactite.persistence.engine.model.Timestamp;
+import org.gama.stalactite.persistence.engine.model.Town;
 import org.gama.stalactite.persistence.engine.model.Truk;
 import org.gama.stalactite.persistence.engine.model.Vehicle;
+import org.gama.stalactite.persistence.engine.model.Village;
 import org.gama.stalactite.persistence.id.Identified;
 import org.gama.stalactite.persistence.id.Identifier;
 import org.gama.stalactite.persistence.id.PersistedIdentifier;
@@ -1214,16 +1216,16 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 	}
 	
 	@Nested
-	class OneToPolymorphism {
+	class OneToPolymorphicOne {
 		
 		@Test
-		void oneToJoindTable_crud() {
+		void oneToJoinedTable_crud() {
 			IFluentEmbeddableMappingBuilder<Person> timestampedPersistentBeanMapping =
 					embeddableBuilder(Person.class)
 							.add(Person::getName)
 							.embed(Person::getTimestamp);
 			
-			IFluentEntityMappingBuilder<Vehicle, Identifier<Long>> mappingConfiguration =
+			IFluentEntityMappingBuilder<Vehicle, Identifier<Long>> vehicleConfiguration =
 					entityBuilder(Vehicle.class, LONG_TYPE)
 							.add(Vehicle::getId).identifier(ALREADY_ASSIGNED)
 							.mapPolymorphism(PolymorphismPolicy.joinedTables()
@@ -1233,7 +1235,7 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 			
 			IEntityPersister<Person, Identifier<Long>> testInstance = entityBuilder(Person.class, LONG_TYPE)
 					.add(Person::getId).identifier(ALREADY_ASSIGNED)
-					.addOneToOne(Person::getVehicle, mappingConfiguration).cascading(RelationMode.ALL_ORPHAN_REMOVAL)
+					.addOneToOne(Person::getVehicle, vehicleConfiguration).cascading(RelationMode.ALL_ORPHAN_REMOVAL)
 					.mapSuperClass(timestampedPersistentBeanMapping)
 					.build(persistenceContext);
 			
@@ -1285,6 +1287,159 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 			assertNull(testInstance.select(person.getId()));
 			// checking for orphan removal (relation was marked as such)
 			assertNull(persistenceContext.getPersister(Vehicle.class).select(new PersistedIdentifier<>(17L)));
+		}
+		
+		@Test
+		void oneToJoinedTable_crud_ownedByReverseSide() {
+			IFluentEmbeddableMappingBuilder<Person> timestampedPersistentBeanMapping =
+					embeddableBuilder(Person.class)
+							.add(Person::getName)
+							.embed(Person::getTimestamp);
+			
+			IFluentEntityMappingBuilder<Vehicle, Identifier<Long>> vehicleConfiguration =
+					entityBuilder(Vehicle.class, LONG_TYPE)
+							.add(Vehicle::getId).identifier(ALREADY_ASSIGNED)
+							.mapPolymorphism(PolymorphismPolicy.joinedTables()
+									.addSubClass(subentityBuilder(Truk.class))
+									.addSubClass(subentityBuilder(Car.class))
+							);
+			
+			IEntityPersister<Person, Identifier<Long>> testInstance = entityBuilder(Person.class, LONG_TYPE)
+					.add(Person::getId).identifier(ALREADY_ASSIGNED)
+					.addOneToOne(Person::getVehicle, vehicleConfiguration).cascading(RelationMode.ALL_ORPHAN_REMOVAL).mappedBy(Vehicle::getOwner)
+					.mapSuperClass(timestampedPersistentBeanMapping)
+					.build(persistenceContext);
+			
+			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+			ddlDeployer.deployDDL();
+			
+			// insert
+			Person person = new Person(1);
+			person.setVehicle(new Car(42L));
+			testInstance.insert(person);
+			Person loadedPerson = testInstance.select(person.getId());
+			assertEquals(person, loadedPerson);
+			
+			// updating embedded value
+			person.setTimestamp(new Timestamp());
+			testInstance.update(person, loadedPerson, true);
+			
+			loadedPerson = testInstance.select(person.getId());
+			assertEquals(person, loadedPerson);
+			
+			// updating one-to-one relation
+			person.setVehicle(new Truk(666L));
+			testInstance.update(person, loadedPerson, true);
+			
+			loadedPerson = testInstance.select(person.getId());
+			assertEquals(person, loadedPerson);
+			// checking for orphan removal (relation was marked as such)
+			assertNull(persistenceContext.getPersister(Vehicle.class).select(new PersistedIdentifier<>(42L)));
+			
+			// nullifying one-to-one relation
+			person.setVehicle(null);
+			testInstance.update(person, loadedPerson, true);
+			
+			loadedPerson = testInstance.select(person.getId());
+			assertEquals(person, loadedPerson);
+			// checking for orphan removal (relation was marked as such)
+			assertNull(persistenceContext.getPersister(Vehicle.class).select(new PersistedIdentifier<>(666L)));
+			
+			
+			// setting new one-to-one relation
+			person.setVehicle(new Truk(17L));
+			testInstance.update(person, loadedPerson, true);
+			
+			loadedPerson = testInstance.select(person.getId());
+			assertEquals(person, loadedPerson);
+			
+			// testing deletion
+			testInstance.delete(person);
+			assertNull(testInstance.select(person.getId()));
+			// checking for orphan removal (relation was marked as such)
+			assertNull(persistenceContext.getPersister(Vehicle.class).select(new PersistedIdentifier<>(17L)));
+		}
+	}
+	
+	
+	
+	
+	@Nested
+	class OneToPolymorphicMany {
+		
+		@Test
+		void oneToJoinedTables_crud_withAssociationTable() {
+			
+			IFluentEmbeddableMappingBuilder<Country> timestampedPersistentBeanMapping =
+					embeddableBuilder(Country.class)
+							.add(Country::getName)
+							.embed(Country::getTimestamp);
+			
+			IFluentEntityMappingBuilder<City, Identifier<Long>> cityConfiguration =
+					entityBuilder(City.class, LONG_TYPE)
+							.add(City::getId).identifier(ALREADY_ASSIGNED)
+							.mapPolymorphism(PolymorphismPolicy.joinedTables()
+									.addSubClass(subentityBuilder(Village.class))
+									.addSubClass(subentityBuilder(Town.class))
+							);
+			
+			IEntityPersister<Country, Identifier<Long>> testInstance = entityBuilder(Country.class, LONG_TYPE)
+							.add(Country::getId).identifier(ALREADY_ASSIGNED)
+							.addOneToManySet(Country::getCities, cityConfiguration)
+								.cascading(RelationMode.ALL_ORPHAN_REMOVAL)
+							.mapSuperClass(timestampedPersistentBeanMapping)
+							.build(persistenceContext);
+			
+			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+			ddlDeployer.deployDDL();
+			
+			// insert
+			Country person = new Country(1L);
+			person.addCity(new Village(42L));
+			testInstance.insert(person);
+			Country loadedPerson = testInstance.select(person.getId());
+			assertEquals(person, loadedPerson);
+			// because City.equals() compares only with id, we must check that all properties are coorectly set too, done with toString() for printable results
+			assertEquals(person.getCities().toString(), loadedPerson.getCities().toString());
+		}
+		
+		@Test
+		void oneToJoinedTables_crud_ownedByReverseSide() {
+			
+			IFluentEmbeddableMappingBuilder<Country> timestampedPersistentBeanMapping =
+					embeddableBuilder(Country.class)
+							.add(Country::getName)
+							.embed(Country::getTimestamp);
+			
+			IFluentEntityMappingBuilder<City, Identifier<Long>> cityConfiguration =
+					entityBuilder(City.class, LONG_TYPE)
+							.add(City::getId).identifier(ALREADY_ASSIGNED)
+							.mapPolymorphism(PolymorphismPolicy.joinedTables()
+									.addSubClass(subentityBuilder(Village.class))
+									.addSubClass(subentityBuilder(Town.class))
+							);
+			
+			IEntityPersister<Country, Identifier<Long>> testInstance = entityBuilder(Country.class, LONG_TYPE)
+					.add(Country::getId).identifier(ALREADY_ASSIGNED)
+					.addOneToManySet(Country::getCities, cityConfiguration)
+						.mappedBy(City::getCountry)
+						.cascading(RelationMode.ALL_ORPHAN_REMOVAL)
+					.mapSuperClass(timestampedPersistentBeanMapping)
+					.build(persistenceContext);
+			
+			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+			ddlDeployer.deployDDL();
+			
+			// insert
+			Country person = new Country(1L);
+			person.addCity(new Village(42L));
+			testInstance.insert(person);
+			Country loadedPerson = testInstance.select(person.getId());
+			assertEquals(person, loadedPerson);
+			// because City.equals() compares only with id, we must check that all properties are coorectly set too, done with toString() for printable results
+			assertEquals(person.getCities().toString(), loadedPerson.getCities().toString());
+			
+//			assertTrue(EqualsBuilder.reflectionEquals(person, loadedPerson));
 		}
 	}
 	

@@ -142,6 +142,7 @@ public class CascadeManyConfigurer<SRC, TRGT, ID, C extends Collection<TRGT>> {
 		private final boolean orphanRemoval;
 		private final boolean writeAuthorized;
 		private final MemberDefinition memberDefinition;
+		private IMutator<TRGT, SRC> reversePropertySetter;
 		
 		private ManyAssociationConfiguration(CascadeMany<SRC, TRGT, ID, C> cascadeMany,
 											 IEntityConfiguredJoinedTablesPersister<SRC, ID> srcPersister,
@@ -230,7 +231,8 @@ public class CascadeManyConfigurer<SRC, TRGT, ID, C extends Collection<TRGT>> {
 			AbstractOneToManyWithAssociationTableEngine<SRC, TRGT, ID, C, ? extends AssociationRecord, ? extends AssociationTable> oneToManyWithAssociationTableEngine;
 			ManyRelationDescriptor<SRC, TRGT, C> manyRelationDescriptor = new ManyRelationDescriptor<>(
 					manyAssociationConfiguration.collectionGetter::get, manyAssociationConfiguration.setter::set,
-					manyAssociationConfiguration.giveCollectionFactory());
+					manyAssociationConfiguration.giveCollectionFactory(),
+					manyAssociationConfiguration.reversePropertySetter == null ? null : manyAssociationConfiguration.reversePropertySetter::set);
 			if (manyAssociationConfiguration.cascadeMany instanceof CascadeManyList) {
 				oneToManyWithAssociationTableEngine = configureIndexedAssociation(rightPrimaryKey, associationTableName, manyRelationDescriptor);
 			} else {
@@ -382,6 +384,7 @@ public class CascadeManyConfigurer<SRC, TRGT, ID, C extends Collection<TRGT>> {
 				targetMappingStrategy.addSilentColumnInserter(reverseColumn, targetIdSupplier);
 				targetMappingStrategy.addSilentColumnUpdater(reverseColumn, targetIdSupplier);
 			}
+			manyAssociationConfiguration.reversePropertySetter = reversePropertyAccessor;
 			
 			if (manyAssociationConfiguration.cascadeMany instanceof CascadeManyList) {
 				if (reverseGetter == null) {

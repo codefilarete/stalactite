@@ -65,7 +65,7 @@ import org.gama.stalactite.sql.result.Row;
  */
 public class PersisterDispatcher<C, I> implements IEntityConfiguredJoinedTablesPersister<C, I> {
 	
-	public static final ThreadLocal<Set<RelationIds<Object /* E */, Object /* target */, Object /* target identifier */ >>> DIFFERED_ENTITY_LOADER = new ThreadLocal<>();
+	private static final ThreadLocal<Set<RelationIds<Object /* E */, Object /* target */, Object /* target identifier */ >>> DIFFERED_ENTITY_LOADER = new ThreadLocal<>();
 	
 	private final PersisterListenerWrapper<C, I> persisterListenerWrapper;
 	private final Map<Class<? extends C>, ? extends IEntityConfiguredJoinedTablesPersister<C, I>> subEntitiesPersisters;
@@ -355,9 +355,29 @@ public class PersisterDispatcher<C, I> implements IEntityConfiguredJoinedTablesP
 		((IPersisterListener) sourcePersister).addSelectListener(new SecondPhaseOneToOneLoader<>(beanRelationFixer));
 	}
 	
+	public <SRC> void joinWithMany(IJoinedTablesPersister<SRC, I> sourcePersister,
+								   Column rightColumn, BeanRelationFixer<SRC, C> beanRelationFixer, String joinName) {
+		
+		// Subgraph loading is made in 2 phases (load ids, then entities in a second SQL request done by load listener)
+		this.subclassIdMappingStrategies.forEach((c, idMappingStrategy) -> {
+			Column subclassPrimaryKey = (Column) Iterables.first(this.tablePerSubEntity.get(c).getPrimaryKey().getColumns());
+			sourcePersister.getJoinedStrategiesSelect().addMergeJoin(joinName,
+					new FirstPhaseOneToOneLoader<C, I>(idMappingStrategy, subclassPrimaryKey, mainSelectExecutor, parentClass),
+					(Set) Arrays.asSet(subclassPrimaryKey),
+					rightColumn,
+					subclassPrimaryKey,
+					// since we don't know what kind of sub entity is present we must do an OUTER join between common truk and all sub tables
+					JoinType.OUTER);
+		});
+		
+		// adding second phase loader
+		((IPersisterListener) sourcePersister).addSelectListener(new SecondPhaseOneToOneLoader<>(beanRelationFixer));
+	}
+	
+	// for one-to-many cases
 	@Override
 	public <E, ID, T extends Table> void copyJoinsRootTo(JoinedStrategiesSelect<E, ID, T> joinedStrategiesSelect, String joinName) {
-		throw new NotImplementedException("Waiting for use case");
+		// nothing to do here, called by one-to-many engines, which actually call joinWithMany()
 	}
 	
 	@Override
@@ -498,13 +518,13 @@ public class PersisterDispatcher<C, I> implements IEntityConfiguredJoinedTablesP
 	
 	private static class FirstPhaseOneToOneLoader<E, ID> implements EntityInflater<E, ID> {
 		
-		private final Column<?, ID> rightColumn;
+		private final Column<Table, ID> rightColumn;
 		private final IdMappingStrategy<E, ID> idMappingStrategy;
 		private final JoinedTablesPolymorphismSelectExecutor<E, ID, ?> selectExecutor;
 		private final Class<E> mainType;
 		
 		public FirstPhaseOneToOneLoader(IdMappingStrategy<E, ID> subEntityIdMappingStrategy,
-										Column rightColumn,
+										Column<Table, ID> rightColumn,
 										JoinedTablesPolymorphismSelectExecutor<E, ID, ?> selectExecutor,
 										Class<E> mainType) {
 			this.rightColumn = rightColumn;
@@ -563,15 +583,16 @@ public class PersisterDispatcher<C, I> implements IEntityConfiguredJoinedTablesP
 		
 		@Override
 		public void afterSelect(Iterable<? extends SRC> result) {
-			doAfterSelect(result);
+			selectTargetEntities(result);
+			DIFFERED_ENTITY_LOADER.remove();
 		}
 		
 		/**
-		 * Only made to clarify types with TRGTID as parameter
-		 * @param result loaded source entities
+		 * Mainly created to clarify types with TRGTID as parameter
+		 * @param sourceEntities main entities, those that have the relation
 		 * @param <TRGTID> target identifier type
 		 */
-		private <TRGTID> void doAfterSelect(Iterable<? extends SRC> result) {
+		private <TRGTID> void selectTargetEntities(Iterable<? extends SRC> sourceEntities) {
 			Map<ISelectExecutor<TRGT, TRGTID>, Set<TRGTID>> selectsToExecute = new HashMap<>();
 			Map<ISelectExecutor<TRGT, TRGTID>, Function<TRGT, TRGTID>> idAccessors = new HashMap<>();
 			Map<SRC, TRGTID> targetIdPerSource = new HashMap<>();
@@ -584,11 +605,16 @@ public class PersisterDispatcher<C, I> implements IEntityConfiguredJoinedTablesP
 			
 			// we load target entities from their ids, and map them per their loader
 			Map<ISelectExecutor, List<TRGT>> targetsPerSelector = new HashMap<>();
-			selectsToExecute.forEach((selectExecutor, ids) -> targetsPerSelector.put(selectExecutor, selectExecutor.select(ids)));
+			selectsToExecute.forEach((selectExecutor, ids) -> {
+				ids.remove(null);	// selecting entities with null is non-sensence. Target Ids may be null if relation is nullified
+				if (!ids.isEmpty()) {	// this prevents from generating SQL "in ()" which is invalid
+					targetsPerSelector.put(selectExecutor, selectExecutor.select(ids));
+				}
+			});
 			// then we apply them onto their source entities, to remember which target applies to which source, we use target id
 			Map<TRGTID, TRGT> targetPerId = new HashMap<>();
 			targetsPerSelector.forEach((selector, loadedTargets) -> targetPerId.putAll(Iterables.map(loadedTargets, idAccessors.get(selector))));
-			result.forEach(src -> beanRelationFixer.apply(src, targetPerId.get(targetIdPerSource.get(src))));
+			sourceEntities.forEach(src -> beanRelationFixer.apply(src, targetPerId.get(targetIdPerSource.get(src))));
 		}
 		
 		@Override

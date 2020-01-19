@@ -157,17 +157,6 @@ public class JoinedStrategiesSelectExecutor<C, I, T extends Table> extends Selec
 				isOuterJoin ? JoinType.OUTER : JoinType.INNER, beanRelationFixer);
 	}
 	
-//	public <U, T1 extends Table<T1>, T2 extends Table<T2>, ID> String addRelation(
-//			String leftStrategyName,
-//			EntityUnflattener<U, ID> strategy,
-//			BeanRelationFixer beanRelationFixer,
-//			Column<T1, ID> leftJoinColumn,
-//			Column<T2, ID> rightJoinColumn,
-//			boolean isOuterJoin) {
-//		return joinedStrategiesSelect.addRelationJoin(leftStrategyName, strategy, leftJoinColumn, rightJoinColumn,
-//				isOuterJoin ? JoinType.OUTER : JoinType.INNER, beanRelationFixer);
-//	}
-	
 	/**
 	 * Adds a join which {@link Column}s will be added to final select. Data retrieved by those coumns will be populated onto final entity
 	 * 

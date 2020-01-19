@@ -325,11 +325,10 @@ public class CascadeOneConfigurer<SRC, TRGT, ID> {
 		private static final Function NULL_RETURNING_FUNCTION = trgt -> null;
 		
 		/**
-		 * Foreign key column value store, for update and delete cases : store column value per bean,
+		 * Foreign key column value store, for update and delete cases : stores column value per bean,
 		 * can be a nullifying function, or an id provider to the referenced source entity.
 		 * Implemented as a ThreadLocal because we can hardly cross layers and methods to pass such a value.
-		 * Cleaned post update or delete.
-		 * All targets are
+		 * Cleaned after update and delete.
 		 */
 		private final ThreadLocal<Map<TRGT, Function<TRGT, SRC>>> foreignKeyValueProvider = ThreadLocal.withInitial(HashMap::new);
 		
@@ -369,13 +368,15 @@ public class CascadeOneConfigurer<SRC, TRGT, ID> {
 				rightColumn = createOrUseReverseColumn(targetMappingStrategy, cascadeOne.getReverseColumn(), localReverseGetter, memberDefinition, joinColumnNamingStrategy);
 				registerEntityBinder(rightColumn, mappingStrategy, persistenceContext.getDialect());
 				
-				// we take advantage of forign key computing and presence of MemberDefinition to build relation fixer which is needed lately in determineRelationFixer(..) 
+				// we take advantage of foreign key computing and presence of MemberDefinition to build relation fixer which is needed lately in determineRelationFixer(..) 
 				IMutator<TRGT, SRC> targetIntoSourceFixer = Accessors.mutatorByMethod(memberDefinition.getDeclaringClass(), memberDefinition.getName());
-				beanRelationFixer = (target, input) -> {
-					// fixing target on source side
-					targetIntoSourceFixer.set(input, target);
-					// fixing source on target side
-					sourceIntoTargetFixer.set(target, input);
+				beanRelationFixer = (src, target) -> {
+					// fixing source on target
+					if (target != null) {	// prevent NullPointerException, actually means no linked entity (null relation), so nothing to do
+						targetIntoSourceFixer.set(target, src);
+					}
+					// fixing target on source
+					sourceIntoTargetFixer.set(src, target);
 				};
 				this.reverseGetter = cascadeOne.getReverseGetter();
 			} else if (cascadeOne.getReverseSetter() != null) {

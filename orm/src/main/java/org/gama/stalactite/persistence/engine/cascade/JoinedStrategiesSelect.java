@@ -190,7 +190,7 @@ public class JoinedStrategiesSelect<C, I, T extends Table> {
 																					  Column<T1, ID> leftJoinColumn,
 																					  Column<T2, ID> rightJoinColumn,
 																					  JoinType joinType,
-																					  BeanRelationFixer beanRelationFixer) {
+																					  BeanRelationFixer<U, C> beanRelationFixer) {
 		return addJoin(leftStrategyName, strategy,
 				owningNode -> owningNode.add(strategy, leftJoinColumn, rightJoinColumn, joinType, beanRelationFixer));
 	}

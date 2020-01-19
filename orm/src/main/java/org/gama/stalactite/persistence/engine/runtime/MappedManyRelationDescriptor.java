@@ -27,7 +27,7 @@ public class MappedManyRelationDescriptor<I, O, C extends Collection<O>> extends
 										BiConsumer<I, C> collectionSetter,
 										Supplier<C> collectionFactory,
 										@Nullable BiConsumer<O, I> reverseSetter) {
-		super(collectionGetter, collectionSetter, collectionFactory);
+		super(collectionGetter, collectionSetter, collectionFactory, reverseSetter);
 		this.reverseSetter = reverseSetter;
 	}
 	

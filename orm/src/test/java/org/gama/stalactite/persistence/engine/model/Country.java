@@ -7,8 +7,11 @@ import java.util.List;
 import java.util.Set;
 import java.util.function.Supplier;
 
+import org.apache.commons.lang3.builder.ToStringBuilder;
+import org.apache.commons.lang3.builder.ToStringStyle;
 import org.gama.stalactite.persistence.id.Identified;
 import org.gama.stalactite.persistence.id.Identifier;
+import org.gama.stalactite.persistence.id.PersistableIdentifier;
 
 /**
  * @author Guillaume Mary
@@ -42,6 +45,10 @@ public class Country extends AbstractCountry implements Identified<Long> {
 	public Country() {
 	}
 	
+	public Country(long id) {
+		this(new PersistableIdentifier<>(id));
+	}
+	
 	public Country(Identifier<Long> id) {
 		this.id = id;
 	}
@@ -60,7 +67,7 @@ public class Country extends AbstractCountry implements Identified<Long> {
 	@Override
 	public boolean equals(Object o) {
 		if (this == o) return true;
-		if (!(o instanceof Country)) return false;
+		if (o == null || !this.getClass().isAssignableFrom(o.getClass())) return false;
 		
 		Country country = (Country) o;
 		
@@ -173,8 +180,13 @@ public class Country extends AbstractCountry implements Identified<Long> {
 		this.timestamp = timestamp;
 	}
 	
+	/**
+	 * Implemented for easier debug
+	 *
+	 * @return a simple representation of this
+	 */
 	@Override
 	public String toString() {
-		return "Country{id=" + id + '}';
+		return ToStringBuilder.reflectionToString(this, ToStringStyle.SHORT_PREFIX_STYLE);
 	}
 }

@@ -12,6 +12,8 @@ public class Vehicle extends AbstractVehicle {
 	
 	private Engine engine;
 	
+	private Person owner;
+	
 	public Vehicle(Long id) {
 		this(new PersistableIdentifier<>(id));
 	}
@@ -37,5 +39,13 @@ public class Vehicle extends AbstractVehicle {
 	
 	public void setEngine(Engine engine) {
 		this.engine = engine;
+	}
+	
+	public Person getOwner() {
+		return owner;
+	}
+	
+	public void setOwner(Person owner) {
+		this.owner = owner;
 	}
 }

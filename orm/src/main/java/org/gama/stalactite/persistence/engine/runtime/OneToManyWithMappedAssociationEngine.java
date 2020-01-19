@@ -33,7 +33,7 @@ import static org.gama.stalactite.persistence.engine.cascade.JoinedStrategiesSel
 public class OneToManyWithMappedAssociationEngine<SRC, TRGT, ID, C extends Collection<TRGT>> {
 	
 	/** Empty setter for applying source entity to target entity (reverse side) */
-	protected static final BiConsumer NOOP_REVERSE_SETTER = (o, i) -> {
+	public static final BiConsumer NOOP_REVERSE_SETTER = (o, i) -> {
 		/* Having a reverse setter in one to many relation with intermediary table isn't possible (cascadeMany.getReverseSetter() is null)
 		 * because as soon as "mappedBy" is used (which fills reverseSetter), an intermediary table is not possible
 		 */
