@@ -4,6 +4,7 @@ import javax.sql.DataSource;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
@@ -251,7 +252,7 @@ class FluentEntityMappingConfigurationSupportOneToManyTest {
 				.add(Country::getName)
 				.add(Country::getDescription)
 				// no cascade
-				.addOneToManySet(Country::getCities, CITY_MAPPING_CONFIGURATION).mappedBy(City::setCountry).cascading(ALL)
+				.addOneToManySet(Country::getCities, CITY_MAPPING_CONFIGURATION).mappedBy(City::setCountry)
 				.build(persistenceContext);
 		
 		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
@@ -285,20 +286,26 @@ class FluentEntityMappingConfigurationSupportOneToManyTest {
 		Iterables.first(loadedCountry.getCities()).setName("touched Paris");
 		countryPersister.update(loadedCountry, dummyCountry, false);
 		
-		// city is left untouched because association is read only
+		// city is left untouched because association is ALL (not ALL_ORPHAN_REMOVAL)
 		assertEquals("Paris", persistenceContext.newQuery("select name from City where id = 1", String.class)
 				.mapKey(String::new, "name", String.class)
 				.execute()
 				.get(0));
 		
-		// delete throws integrity constraint because it doesn't delete target entity which own the relation
-//		Assertions.assertThrows(() -> countryPersister.delete(loadedCountry), hasExceptionInCauses(BatchUpdateException.class)
-//				.andProjection(hasMessage("integrity constraint violation: foreign key no action; FK_CITY_COUNTRYID_COUNTRY_ID table: CITY")));
-		
 		assertEquals("touched France", persistenceContext.newQuery("select name from Country where id = 42", String.class)
 				.mapKey(String::new, "name", String.class)
 				.execute()
 				.get(0));
+		
+		// testing delete
+		int rowCount = countryPersister.delete(loadedCountry);
+		assertEquals(1, rowCount);
+		
+		assertEquals(Collections.emptyList(), persistenceContext.newQuery("select name from Country where id = 42", String.class)
+				.mapKey(String::new, "name", String.class)
+				.execute());
+		
+		// city is left untouched because association is ALL (not ALL_ORPHAN_REMOVAL)
 		assertEquals("Paris", persistenceContext.newQuery("select name from City where id = 1", String.class)
 				.mapKey(String::new, "name", String.class)
 				.execute()
