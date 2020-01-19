@@ -340,12 +340,13 @@ public class PersisterDispatcher<C, I> implements IEntityConfiguredJoinedTablesP
 		// NB: here rightColumn is parent class primary key or reverse column that owns property (depending how one-to-one relation is mapped) 
 		String mainTableJoinName = sourcePersister.getJoinedStrategiesSelect().addPassiveJoin(JoinedStrategiesSelect.FIRST_STRATEGY_NAME,
 				leftColumn, rightColumn, nullable ? JoinType.OUTER : JoinType.INNER, (Set<Column<Table, Object>>) (Set) Arrays.asSet(rightColumn));
+		Column primaryKey = (Column ) Iterables.first(getMappingStrategy().getTargetTable().getPrimaryKey().getColumns());
 		this.subclassIdMappingStrategies.forEach((c, idMappingStrategy) -> {
 			Column subclassPrimaryKey = (Column) Iterables.first(this.tablePerSubEntity.get(c).getPrimaryKey().getColumns());
 			sourcePersister.getJoinedStrategiesSelect().addMergeJoin(mainTableJoinName,
-					new FirstPhaseOneToOneLoader<C, I>(idMappingStrategy, rightColumn, mainSelectExecutor, parentClass),
-					(Set) java.util.Collections.emptySet(),
-					rightColumn,
+					new FirstPhaseOneToOneLoader<C, I>(idMappingStrategy, subclassPrimaryKey, mainSelectExecutor, parentClass),
+					(Set) java.util.Collections.singleton(subclassPrimaryKey),
+					primaryKey,
 					subclassPrimaryKey,
 					// since we don't know what kind of sub entity is present we must do an OUTER join between common truk and all sub tables
 					JoinType.OUTER);
