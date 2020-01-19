@@ -176,7 +176,7 @@ public interface IFluentSubEntityMappingConfiguration<C, I> extends IFluentEmbed
 		IFluentMappingBuilderPropertyOptions<C, I> mandatory();
 	}
 	
-	interface IFluentMappingBuilderOneToOneOptions<C, I, T extends Table> extends IFluentSubEntityMappingConfiguration<C, I>, // OneToOneOptions<C, I, T> {
+	interface IFluentMappingBuilderOneToOneOptions<C, I, T extends Table> extends IFluentSubEntityMappingConfiguration<C, I>,
 			OneToOneOptions<IFluentMappingBuilderOneToOneOptions<C, I, T>, C, I, T> {
 		
 		/**
@@ -245,6 +245,9 @@ public interface IFluentSubEntityMappingConfiguration<C, I> extends IFluentEmbed
 		IFluentMappingBuilderOneToManyOptions<C, I, O, S> mappedBy(Column<Table, ?> reverseLink);
 		
 		@Override
+		IFluentMappingBuilderOneToManyOptions<C, I, O, S> reverselySetBy(SerializableBiConsumer<O, C> reverseLink);
+		
+		@Override
 		IFluentMappingBuilderOneToManyOptions<C, I, O, S> initializeWith(Supplier<S> collectionFactory);
 		
 		@Override
@@ -288,6 +291,9 @@ public interface IFluentSubEntityMappingConfiguration<C, I> extends IFluentEmbed
 		 */
 		@Override
 		IFluentMappingBuilderOneToManyListOptions<C, I, O, S> mappedBy(Column<Table, ?> reverseLink);
+		
+		@Override
+		IFluentMappingBuilderOneToManyListOptions<C, I, O, S> reverselySetBy(SerializableBiConsumer<O, C> reverseLink);
 		
 		@Override
 		IFluentMappingBuilderOneToManyListOptions<C, I, O, S> initializeWith(Supplier<S> collectionFactory);

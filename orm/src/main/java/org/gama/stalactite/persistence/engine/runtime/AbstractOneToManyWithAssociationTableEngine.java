@@ -12,6 +12,7 @@ import java.util.stream.Stream;
 
 import org.gama.lang.Duo;
 import org.gama.lang.Nullable;
+import org.gama.lang.bean.Objects;
 import org.gama.lang.collection.Iterables;
 import org.gama.stalactite.command.builder.DeleteCommandBuilder;
 import org.gama.stalactite.command.model.Delete;
@@ -42,6 +43,7 @@ import org.gama.stalactite.sql.dml.WriteOperation;
 
 import static org.gama.lang.collection.Iterables.collect;
 import static org.gama.stalactite.persistence.engine.cascade.JoinedStrategiesSelect.FIRST_STRATEGY_NAME;
+import static org.gama.stalactite.persistence.engine.runtime.OneToManyWithMappedAssociationEngine.NOOP_REVERSE_SETTER;
 
 /**
  * @author Guillaume Mary
@@ -83,7 +85,7 @@ public abstract class AbstractOneToManyWithAssociationTableEngine<SRC, TRGT, ID,
 				manyRelationDescriptor.getCollectionSetter(),
 				manyRelationDescriptor.getCollectionGetter(),
 				manyRelationDescriptor.getCollectionFactory(),
-				Nullable.nullable(manyRelationDescriptor.getReverseSetter()).getOr(OneToManyWithMappedAssociationEngine.NOOP_REVERSE_SETTER));
+				Objects.preventNull(manyRelationDescriptor.getReverseSetter(), NOOP_REVERSE_SETTER));
 		
 		
 		if (targetPersister instanceof PersisterDispatcher) {
@@ -135,62 +137,6 @@ public abstract class AbstractOneToManyWithAssociationTableEngine<SRC, TRGT, ID,
 				targetSelectListener.onError(Collections.emptyList(), exception);
 			}
 		});
-	}
-	
-	public String addSelectCascade2(IEntityConfiguredJoinedTablesPersister<SRC, ID> sourcePersister) {
-		
-		// we must join on the association table and add in-memory reassociation
-		String associationTableJoinNodeName = sourcePersister.getJoinedStrategiesSelect().addPassiveJoin(FIRST_STRATEGY_NAME,
-				associationPersister.getMainTable().getOneSidePrimaryKey(),
-				associationPersister.getMainTable().getOneSideKeyColumn(),
-				JoinType.OUTER, (Set) Collections.emptySet());
-			
-		// Note: reverse setter does nothing (NOOP) because there's no such a reverse setter in relation with association table
-		BeanRelationFixer<SRC, TRGT> beanRelationFixer = BeanRelationFixer.of(
-				manyRelationDescriptor.getCollectionSetter(),
-				manyRelationDescriptor.getCollectionGetter(),
-				manyRelationDescriptor.getCollectionFactory(),
-				OneToManyWithMappedAssociationEngine.NOOP_REVERSE_SETTER);
-		
-		// because subgraph loading is made in 2 phases (load ids, then entities in a second SQL request done by load listener) we add a passive join
-		// (we don't need to create bean nor fulfill properties in first phase) 
-		// NB: here rightColumn is parent class primary key or reverse column that owns property (depending how one-to-one relation is mapped) 
-		String createdJoinNodeName = sourcePersister.getJoinedStrategiesSelect().addPassiveJoin(associationTableJoinNodeName,
-				associationPersister.getMainTable().getManySideKeyColumn(),
-				associationPersister.getMainTable().getManySidePrimaryKey(),
-				JoinType.OUTER, (Set) Collections.emptySet());
-			
-		((PersisterDispatcher<TRGT, ID>) targetPersister).joinWithMany(sourcePersister,
-				associationPersister.getMainTable().getManySideKeyColumn(),
-				beanRelationFixer, createdJoinNodeName);
-		
-		// We trigger subgraph load event (via targetSelectListener) on loading of our graph.
-		// Done for instance for event consumers that initialize some things, because given ids of methods are those of source entity
-		SelectListener targetSelectListener = targetPersister.getPersisterListener().getSelectListener();
-		sourcePersister.addSelectListener(new SelectListener<SRC, ID>() {
-			@Override
-			public void beforeSelect(Iterable<ID> ids) {
-				// since ids are not those of its entities, we should not pass them as argument, this will only initialize things if needed
-				targetSelectListener.beforeSelect(Collections.emptyList());
-			}
-			
-			@Override
-			public void afterSelect(Iterable<? extends SRC> result) {
-				Iterable collect = Iterables.stream(result).flatMap(src -> Nullable.nullable(manyRelationDescriptor.getCollectionGetter().apply(src))
-						.map(Collection::stream)
-						.getOr(Stream.empty()))
-						.collect(Collectors.toSet());
-				targetSelectListener.afterSelect(collect);
-			}
-			
-			@Override
-			public void onError(Iterable<ID> ids, RuntimeException exception) {
-				// since ids are not those of its entities, we should not pass them as argument
-				targetSelectListener.onError(Collections.emptyList(), exception);
-			}
-		});
-		
-		return createdJoinNodeName;
 	}
 	
 	public void addInsertCascade(boolean maintainAssociationOnly) {

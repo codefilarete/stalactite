@@ -43,10 +43,10 @@ public class OneToManyWithMappedAssociationEngine<SRC, TRGT, ID, C extends Colle
 	
 	protected final IEntityConfiguredJoinedTablesPersister<TRGT, ID> targetPersister;
 	
-	protected final MappedManyRelationDescriptor<SRC, TRGT, C> manyRelationDefinition;
+	protected final ManyRelationDescriptor<SRC, TRGT, C> manyRelationDefinition;
 	
 	public OneToManyWithMappedAssociationEngine(IEntityConfiguredJoinedTablesPersister<TRGT, ID> targetPersister,
-												MappedManyRelationDescriptor<SRC, TRGT, C> manyRelationDefinition,
+												ManyRelationDescriptor<SRC, TRGT, C> manyRelationDefinition,
 												IEntityConfiguredJoinedTablesPersister<SRC, ID> sourcePersister) {
 		this.targetPersister = targetPersister;
 		this.manyRelationDefinition = manyRelationDefinition;

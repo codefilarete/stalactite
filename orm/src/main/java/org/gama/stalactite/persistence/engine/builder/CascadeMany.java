@@ -31,17 +31,13 @@ public class CascadeMany<SRC, TRGT, TRGTID, C extends Collection<TRGT>> {
 	
 	private final Table targetTable;
 	
-	/** The method that gets the "one" entity from the "many" entities, may be null */
-	private SerializableFunction<TRGT, SRC> reverseGetter;
-	
-	/** The method that sets the "one" entity onto the "many" entities, may be null */
-	private SerializableBiConsumer<TRGT, SRC> reverseSetter;
+	private final MappedByConfiguration mappedByConfiguration = new MappedByConfiguration();
 	
 	/**
-	 * The column that stores relation, may be null.
-	 * Its type is undetermined (not forced at SRC) because it can only be a reference, such as an id.
+	 * Source setter on target for bidirectionality (no consequence on database mapping).
+	 * Usefull only for cases of association table because this case doesn't set any reverse information hence such setter can't be deduced.
 	 */
-	private Column<Table, ?> reverseColumn;
+	private SerializableBiConsumer<TRGT, SRC> reverseLink;
 	
 	/** Default relation mode is {@link RelationMode#ALL} */
 	private RelationMode relationMode = RelationMode.ALL;
@@ -77,29 +73,38 @@ public class CascadeMany<SRC, TRGT, TRGTID, C extends Collection<TRGT>> {
 	
 	@Nullable
 	public SerializableFunction<TRGT, SRC> getReverseGetter() {
-		return reverseGetter;
+		return this.mappedByConfiguration.reverseGetter;
 	}
 	
 	public void setReverseGetter(SerializableFunction<TRGT, SRC> reverseGetter) {
-		this.reverseGetter = reverseGetter;
+		this.mappedByConfiguration.reverseGetter = reverseGetter;
 	}
 	
 	@Nullable
 	public SerializableBiConsumer<TRGT, SRC> getReverseSetter() {
-		return reverseSetter;
+		return this.mappedByConfiguration.reverseSetter;
 	}
 	
 	public void setReverseSetter(SerializableBiConsumer<TRGT, SRC> reverseSetter) {
-		this.reverseSetter = reverseSetter;
+		this.mappedByConfiguration.reverseSetter = reverseSetter;
 	}
 	
 	@Nullable
 	public <O> Column<Table, O> getReverseColumn() {
-		return (Column<Table, O>) reverseColumn;
+		return (Column<Table, O>) this.mappedByConfiguration.reverseColumn;
 	}
 	
 	public void setReverseColumn(Column<Table, ?> reverseColumn) {
-		this.reverseColumn = reverseColumn;
+		this.mappedByConfiguration.reverseColumn = reverseColumn;
+	}
+	
+	@Nullable
+	public SerializableBiConsumer<TRGT, SRC> getReverseLink() {
+		return reverseLink;
+	}
+	
+	public void setRegisteredBy(SerializableBiConsumer<TRGT, SRC> reverseLink) {
+		this.reverseLink = reverseLink;
 	}
 	
 	public RelationMode getRelationMode() {
@@ -115,7 +120,7 @@ public class CascadeMany<SRC, TRGT, TRGTID, C extends Collection<TRGT>> {
 	 * @return true if one of {@link #getReverseSetter()}, {@link #getReverseGetter()}, {@link #getReverseColumn()} is not null
 	 */
 	public boolean isOwnedByReverseSide() {
-		return getReverseSetter() != null || getReverseGetter() != null || getReverseColumn() != null;
+		return this.mappedByConfiguration.isNotEmpty();
 	}
 	
 	@Nullable
@@ -125,5 +130,48 @@ public class CascadeMany<SRC, TRGT, TRGTID, C extends Collection<TRGT>> {
 	
 	public void setCollectionFactory(Supplier<C> collectionFactory) {
 		this.collectionFactory = collectionFactory;
+	}
+	
+	private class MappedByConfiguration {
+		
+		/** The method that gets the "one" entity from the "many" entities, may be null */
+		private SerializableFunction<TRGT, SRC> reverseGetter;
+		
+		/** The method that sets the "one" entity onto the "many" entities, may be null */
+		private SerializableBiConsumer<TRGT, SRC> reverseSetter;
+		
+		/**
+		 * The column that stores relation, may be null.
+		 * Its type is undetermined (not forced at SRC) because it can only be a reference, such as an id.
+		 */
+		private Column<Table, ?> reverseColumn;
+		
+		public SerializableFunction<TRGT, SRC> getReverseGetter() {
+			return reverseGetter;
+		}
+		
+		public void setReverseGetter(SerializableFunction<TRGT, SRC> reverseGetter) {
+			this.reverseGetter = reverseGetter;
+		}
+		
+		public SerializableBiConsumer<TRGT, SRC> getReverseSetter() {
+			return reverseSetter;
+		}
+		
+		public void setReverseSetter(SerializableBiConsumer<TRGT, SRC> reverseSetter) {
+			this.reverseSetter = reverseSetter;
+		}
+		
+		public Column<Table, ?> getReverseColumn() {
+			return reverseColumn;
+		}
+		
+		public void setReverseColumn(Column<Table, ?> reverseColumn) {
+			this.reverseColumn = reverseColumn;
+		}
+		
+		public boolean isNotEmpty() {
+			return reverseSetter != null || reverseGetter != null || reverseColumn != null;
+		}
 	}
 }

@@ -1386,6 +1386,7 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 			IEntityPersister<Country, Identifier<Long>> testInstance = entityBuilder(Country.class, LONG_TYPE)
 							.add(Country::getId).identifier(ALREADY_ASSIGNED)
 							.addOneToManySet(Country::getCities, cityConfiguration)
+								.reverselySetBy(City::setCountry)	// necessary if you want bidirectionnality to be set in memory
 								.cascading(RelationMode.ALL_ORPHAN_REMOVAL)
 							.mapSuperClass(timestampedPersistentBeanMapping)
 							.build(persistenceContext);
@@ -1394,13 +1395,14 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 			ddlDeployer.deployDDL();
 			
 			// insert
-			Country person = new Country(1L);
-			person.addCity(new Village(42L));
-			testInstance.insert(person);
-			Country loadedPerson = testInstance.select(person.getId());
-			assertEquals(person, loadedPerson);
-			// because City.equals() compares only with id, we must check that all properties are coorectly set too, done with toString() for printable results
-			assertEquals(person.getCities().toString(), loadedPerson.getCities().toString());
+			Country country = new Country(1L);
+			Village myVillage = new Village(42L);
+			country.addCity(myVillage);
+			testInstance.insert(country);
+			Country loadedCountry = testInstance.select(country.getId());
+			assertEquals(country, loadedCountry);
+			// ensuring that reverse side is also set
+			assertEquals(Arrays.asHashSet(loadedCountry), Iterables.collect(loadedCountry.getCities(), City::getCountry, HashSet::new));
 		}
 		
 		@Test
@@ -1431,15 +1433,14 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 			ddlDeployer.deployDDL();
 			
 			// insert
-			Country person = new Country(1L);
-			person.addCity(new Village(42L));
-			testInstance.insert(person);
-			Country loadedPerson = testInstance.select(person.getId());
-			assertEquals(person, loadedPerson);
-			// because City.equals() compares only with id, we must check that all properties are coorectly set too, done with toString() for printable results
-			assertEquals(person.getCities().toString(), loadedPerson.getCities().toString());
-			
-//			assertTrue(EqualsBuilder.reflectionEquals(person, loadedPerson));
+			Country country = new Country(1L);
+			Village myVillage = new Village(42L);
+			country.addCity(myVillage);
+			testInstance.insert(country);
+			Country loadedCountry = testInstance.select(country.getId());
+			assertEquals(country, loadedCountry);
+			// ensuring that reverse side is also set
+			assertEquals(Arrays.asHashSet(loadedCountry), Iterables.collect(loadedCountry.getCities(), City::getCountry, HashSet::new));
 		}
 	}
 	

@@ -783,6 +783,12 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements IFluentEnt
 		}
 		
 		@Override
+		public OneToManyOptions<C, I, O, S> reverselySetBy(SerializableBiConsumer<O, C> reverseLink) {
+			cascadeMany.setRegisteredBy(reverseLink);
+			return null;	// we can return null because dispatcher will return proxy
+		}
+		
+		@Override
 		public IFluentMappingBuilderOneToManyOptions<C, I, O, S> initializeWith(Supplier<S> collectionFactory) {
 			cascadeMany.setCollectionFactory(collectionFactory);
 			return null;	// we can return null because dispatcher will return proxy

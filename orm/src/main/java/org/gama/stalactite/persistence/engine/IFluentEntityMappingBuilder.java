@@ -275,6 +275,9 @@ public interface IFluentEntityMappingBuilder<C, I> extends IFluentEmbeddableMapp
 		IFluentMappingBuilderOneToManyOptions<C, I, O, S> mappedBy(Column<Table, ?> reverseLink);
 		
 		@Override
+		IFluentMappingBuilderOneToManyOptions<C, I, O, S> reverselySetBy(SerializableBiConsumer<O, C> reverseLink);
+		
+		@Override
 		IFluentMappingBuilderOneToManyOptions<C, I, O, S> initializeWith(Supplier<S> collectionFactory);
 		
 		@Override
@@ -318,6 +321,9 @@ public interface IFluentEntityMappingBuilder<C, I> extends IFluentEmbeddableMapp
 		 */
 		@Override
 		IFluentMappingBuilderOneToManyListOptions<C, I, O, S> mappedBy(Column<Table, ?> reverseLink);
+		
+		@Override
+		IFluentMappingBuilderOneToManyListOptions<C, I, O, S> reverselySetBy(SerializableBiConsumer<O, C> reverseLink);
 		
 		@Override
 		IFluentMappingBuilderOneToManyListOptions<C, I, O, S> initializeWith(Supplier<S> collectionFactory);
