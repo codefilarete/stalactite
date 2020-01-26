@@ -21,7 +21,7 @@ import org.gama.stalactite.sql.result.Row;
 /**
  * Tranformer of a graph of joins to a graph of entities.
  * 
- * Non Thread-safe : contains a cache of bean being loaded.
+ * Non Thread-safe : contains a cache of beans being loaded.
  * 
  * @param <T> type of generated beans
  * @author Guillaume Mary
@@ -50,7 +50,7 @@ public class StrategyJoinsRowTransformer<T> {
 
 	/**
 	 * 
-	 * @return
+	 * @return the alias provider to be used to find {@link Column} values in rows of {@link #transform(Iterable, int, Map)} 
 	 */
 	public Function<Column, String> getAliasProvider() {
 		return aliasProvider;
@@ -66,11 +66,11 @@ public class StrategyJoinsRowTransformer<T> {
 	
 	/**
 	 * 
-	 * @param rows
-	 * @param resultSize
+	 * @param rows rows (coming from database select) to be read to build beans graph
+	 * @param resultSize expected reuslt size, only for resulting list optimization
 	 * @param entityCache used for filling relations by getting beans them from it instead of creating clones. Will be filled by newly created entity.
 	 * 					  Can be used to set a bigger cache coming from a wider scope. 
-	 * @return
+	 * @return a list of root beans, built from given rows by asking internal strategy joins to instanciate and complete them
 	 */
 	public List<T> transform(Iterable<Row> rows, int resultSize, Map<Class, Map<Object /* identifier */, Object /* entity */>> entityCache) {
 		List<T> result = new ArrayList<>(resultSize);
@@ -87,7 +87,7 @@ public class StrategyJoinsRowTransformer<T> {
 		return result;
 	}
 	
-	public Nullable<T> transform(EntityCacheWrapper entityCacheWrapper, Row row) {
+	private Nullable<T> transform(EntityCacheWrapper entityCacheWrapper, Row row) {
 		Nullable<T> result = Nullable.empty();
 		ColumnedRow columnedRow = new ColumnedRow(aliasProvider);
 		Queue<StrategyJoins> stack = new ArrayDeque<>();

@@ -596,26 +596,27 @@ public class PersisterDispatcher<C, I> implements IEntityConfiguredJoinedTablesP
 		private <TRGTID> void selectTargetEntities(Iterable<? extends SRC> sourceEntities) {
 			Map<ISelectExecutor<TRGT, TRGTID>, Set<TRGTID>> selectsToExecute = new HashMap<>();
 			Map<ISelectExecutor<TRGT, TRGTID>, Function<TRGT, TRGTID>> idAccessors = new HashMap<>();
-			Map<SRC, TRGTID> targetIdPerSource = new HashMap<>();
+			Map<SRC, Set<TRGTID>> targetIdPerSource = new HashMap<>();
 			Set<RelationIds<SRC, TRGT, TRGTID>> relationIds = (Set) PersisterDispatcher.DIFFERED_ENTITY_LOADER.get();
-			relationIds.forEach(r -> {
+			// we remove null targetIds (Target Ids may be null if relation is nullified) because
+			// - selecting entities with null id is non-sensence
+			// - it prevents from generating SQL "in ()" which is invalid
+			// - it prevents from NullPointerException when applying target to source
+			relationIds.stream().filter(r -> r.getTargetId() != null).forEach(r -> {
 				idAccessors.putIfAbsent(r.getSelectExecutor(), r.getIdAccessor());
-				targetIdPerSource.putIfAbsent(r.getSource(), r.getTargetId());
+				targetIdPerSource.computeIfAbsent(r.getSource(), k -> new HashSet<>()).add(r.getTargetId());
 				selectsToExecute.computeIfAbsent(r.getSelectExecutor(), k -> new HashSet<>()).add(r.getTargetId());
 			});
 			
 			// we load target entities from their ids, and map them per their loader
 			Map<ISelectExecutor, List<TRGT>> targetsPerSelector = new HashMap<>();
 			selectsToExecute.forEach((selectExecutor, ids) -> {
-				ids.remove(null);	// selecting entities with null is non-sensence. Target Ids may be null if relation is nullified
-				if (!ids.isEmpty()) {	// this prevents from generating SQL "in ()" which is invalid
-					targetsPerSelector.put(selectExecutor, selectExecutor.select(ids));
-				}
+				targetsPerSelector.put(selectExecutor, selectExecutor.select(ids));
 			});
 			// then we apply them onto their source entities, to remember which target applies to which source, we use target id
 			Map<TRGTID, TRGT> targetPerId = new HashMap<>();
 			targetsPerSelector.forEach((selector, loadedTargets) -> targetPerId.putAll(Iterables.map(loadedTargets, idAccessors.get(selector))));
-			sourceEntities.forEach(src -> beanRelationFixer.apply(src, targetPerId.get(targetIdPerSource.get(src))));
+			sourceEntities.forEach(src -> targetIdPerSource.get(src).forEach(targetId -> beanRelationFixer.apply(src, targetPerId.get(targetId))));
 		}
 		
 		@Override

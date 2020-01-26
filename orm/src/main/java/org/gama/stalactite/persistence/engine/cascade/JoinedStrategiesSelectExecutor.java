@@ -1,5 +1,6 @@
 package org.gama.stalactite.persistence.engine.cascade;
 
+import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.sql.ResultSet;
 import java.util.ArrayList;
@@ -180,6 +181,14 @@ public class JoinedStrategiesSelectExecutor<C, I, T extends Table> extends Selec
 	
 	@Override
 	public List<C> select(Iterable<I> ids) {
+//		return ThreadLocals.doWithThreadLocal(x, HashMap::new, (Supplier<List<C>>) () -> 
+//				doSelect(ids)
+//		);
+		return doSelect(ids);
+	}
+	
+	@Nonnull
+	private List<C> doSelect(Iterable<I> ids) {
 		// cutting ids into pieces, adjusting expected result size
 		List<List<I>> parcels = Collections.parcel(ids, blockSize);
 		List<C> result = new ArrayList<>(parcels.size() * blockSize);
@@ -232,8 +241,10 @@ public class JoinedStrategiesSelectExecutor<C, I, T extends Table> extends Selec
 		return result;
 	}
 	
+	private static final ThreadLocal<Map> x  = new ThreadLocal<>();
 	@Override
 	protected List<C> transform(Iterator<Row> rowIterator, int resultSize) {
+//		return strategyJoinsRowTransformer.transform(() -> rowIterator, resultSize, x.get());
 		return strategyJoinsRowTransformer.transform(() -> rowIterator, resultSize, new HashMap<>());
 	}
 	

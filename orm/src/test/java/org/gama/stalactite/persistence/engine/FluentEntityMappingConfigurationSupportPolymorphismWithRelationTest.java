@@ -1378,9 +1378,12 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 			IFluentEntityMappingBuilder<City, Identifier<Long>> cityConfiguration =
 					entityBuilder(City.class, LONG_TYPE)
 							.add(City::getId).identifier(ALREADY_ASSIGNED)
+							.add(City::getName)
 							.mapPolymorphism(PolymorphismPolicy.joinedTables()
-									.addSubClass(subentityBuilder(Village.class))
-									.addSubClass(subentityBuilder(Town.class))
+									.addSubClass(subentityBuilder(Village.class)
+										.add(Village::getBarCount))
+									.addSubClass(subentityBuilder(Town.class)
+										.add(Town::getDiscotecCount))
 							);
 			
 			IEntityPersister<Country, Identifier<Long>> testInstance = entityBuilder(Country.class, LONG_TYPE)
@@ -1396,12 +1399,29 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 			
 			// insert
 			Country country = new Country(1L);
-			Village myVillage = new Village(42L);
-			country.addCity(myVillage);
+			Village grenoble = new Village(42L);
+			grenoble.setName("Grenoble");
+			country.addCity(grenoble);
 			testInstance.insert(country);
+			
+			// testing select
 			Country loadedCountry = testInstance.select(country.getId());
 			assertEquals(country, loadedCountry);
 			// ensuring that reverse side is also set
+			assertEquals(Arrays.asHashSet(loadedCountry), Iterables.collect(loadedCountry.getCities(), City::getCountry, HashSet::new));
+			
+			// testing update and select of mixed type of City
+			Town lyon = new Town(17L);
+			lyon.setDiscotecCount(123);
+			lyon.setName("Lyon");
+			country.addCity(lyon);
+			grenoble.setBarCount(51);
+			testInstance.update(country, loadedCountry, true);
+			
+			loadedCountry = testInstance.select(country.getId());
+			// resulting select must contain Town and Village
+			assertEquals(Arrays.asHashSet(grenoble, lyon), loadedCountry.getCities());
+			// bidirectionality must be preserved
 			assertEquals(Arrays.asHashSet(loadedCountry), Iterables.collect(loadedCountry.getCities(), City::getCountry, HashSet::new));
 		}
 		
