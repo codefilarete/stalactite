@@ -93,12 +93,20 @@ abstract class JoinedTablesPolymorphismBuilder<C, I, T extends Table> implements
 			subclassPersister.getJoinedStrategiesSelectExecutor().addComplementaryJoin(JoinedStrategiesSelect.FIRST_STRATEGY_NAME,
 					this.mainPersister.getMappingStrategy(), subEntityPrimaryKey, entityPrimaryKey);
 			
-			// creating dedicated instance updator because default one only takes its declared properties into account
+			// creating dedicated instance updater because default one only takes its declared properties into account
 			subEntitiesUpdaters.put(subConfiguration.getEntityType(), new IUpdateExecutor<C>() {
+				
+				/**
+				 * Overriden to transfer {@link #updateById(Iterable)} to main persister and sub persisters
+				 * @param entities iterable of entities
+				 * @return
+				 */
 				@Override
 				public int updateById(Iterable<C> entities) {
-					// TODO
-					return 0;
+					int mainAffectedRowCount = mainPersister.updateById(entities);
+					int subAffectedRowCount = subclassPersister.updateById(entities);
+					// since we update without any versioning info (only by id) we return effective updated row count
+					return mainAffectedRowCount + subAffectedRowCount;
 				}
 				
 				/**

@@ -12,6 +12,7 @@ import java.util.function.Function;
 import org.danekja.java.util.function.serializable.SerializableBiConsumer;
 import org.danekja.java.util.function.serializable.SerializableFunction;
 import org.gama.lang.Duo;
+import org.gama.lang.Nullable;
 import org.gama.lang.bean.Objects;
 import org.gama.lang.collection.Arrays;
 import org.gama.lang.collection.Collections;
@@ -616,7 +617,8 @@ public class PersisterDispatcher<C, I> implements IEntityConfiguredJoinedTablesP
 			// then we apply them onto their source entities, to remember which target applies to which source, we use target id
 			Map<TRGTID, TRGT> targetPerId = new HashMap<>();
 			targetsPerSelector.forEach((selector, loadedTargets) -> targetPerId.putAll(Iterables.map(loadedTargets, idAccessors.get(selector))));
-			sourceEntities.forEach(src -> targetIdPerSource.get(src).forEach(targetId -> beanRelationFixer.apply(src, targetPerId.get(targetId))));
+			sourceEntities.forEach(src -> Nullable.nullable(targetIdPerSource.get(src))	// source may not have targetIds if relation if null
+					.invoke(s -> s.forEach(targetId -> beanRelationFixer.apply(src, targetPerId.get(targetId)))));
 		}
 		
 		@Override

@@ -181,9 +181,6 @@ public class JoinedStrategiesSelectExecutor<C, I, T extends Table> extends Selec
 	
 	@Override
 	public List<C> select(Iterable<I> ids) {
-//		return ThreadLocals.doWithThreadLocal(x, HashMap::new, (Supplier<List<C>>) () -> 
-//				doSelect(ids)
-//		);
 		return doSelect(ids);
 	}
 	
@@ -241,10 +238,8 @@ public class JoinedStrategiesSelectExecutor<C, I, T extends Table> extends Selec
 		return result;
 	}
 	
-	private static final ThreadLocal<Map> x  = new ThreadLocal<>();
 	@Override
 	protected List<C> transform(Iterator<Row> rowIterator, int resultSize) {
-//		return strategyJoinsRowTransformer.transform(() -> rowIterator, resultSize, x.get());
 		return strategyJoinsRowTransformer.transform(() -> rowIterator, resultSize, new HashMap<>());
 	}
 	

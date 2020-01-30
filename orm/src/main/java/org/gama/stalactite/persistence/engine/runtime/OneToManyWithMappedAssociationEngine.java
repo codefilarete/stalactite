@@ -3,6 +3,7 @@ package org.gama.stalactite.persistence.engine.runtime;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -13,13 +14,14 @@ import org.gama.lang.Nullable;
 import org.gama.lang.bean.Objects;
 import org.gama.lang.collection.Iterables;
 import org.gama.stalactite.persistence.engine.BeanRelationFixer;
-import org.gama.stalactite.persistence.engine.IConfiguredJoinedTablesPersister;
 import org.gama.stalactite.persistence.engine.IEntityConfiguredJoinedTablesPersister;
 import org.gama.stalactite.persistence.engine.IEntityPersister;
+import org.gama.stalactite.persistence.engine.cascade.AbstractJoin.JoinType;
 import org.gama.stalactite.persistence.engine.cascade.AfterInsertCollectionCascader;
 import org.gama.stalactite.persistence.engine.cascade.AfterUpdateCollectionCascader;
 import org.gama.stalactite.persistence.engine.cascade.BeforeDeleteByIdCollectionCascader;
 import org.gama.stalactite.persistence.engine.cascade.BeforeDeleteCollectionCascader;
+import org.gama.stalactite.persistence.engine.configurer.PersisterDispatcher;
 import org.gama.stalactite.persistence.engine.listening.SelectListener;
 import org.gama.stalactite.persistence.structure.Column;
 
@@ -63,26 +65,29 @@ public class OneToManyWithMappedAssociationEngine<SRC, TRGT, ID, C extends Colle
 				manyRelationDefinition.getCollectionFactory(),
 				Objects.preventNull(manyRelationDefinition.getReverseSetter(), NOOP_REVERSE_SETTER));
 		
-		String createdJoinNodeName = sourcePersister.addPersister(FIRST_STRATEGY_NAME,
-				targetPersister,
-				relationFixer,
-				sourcePrimaryKey,
-				relationOwner,
-				relationOwner.isNullable()); // outer join for empty relation cases
+		
 		Column targetPrimaryKey = (Column) Iterables.first(targetPersister.getMappingStrategy().getTargetTable().getPrimaryKey().getColumns());
-		addSubgraphSelect(createdJoinNodeName, sourcePersister, targetPersister, sourcePrimaryKey, targetPrimaryKey, relationFixer, manyRelationDefinition.getCollectionGetter());
-	}
-	
-	private static <SRC, TRGT, ID, C extends Collection<TRGT>> void addSubgraphSelect(String joinPoint, IEntityConfiguredJoinedTablesPersister<SRC, ID> sourcePersister,
-																			 IConfiguredJoinedTablesPersister<TRGT, ID> targetPersister,
-																			 Column leftColumn,
-																			 Column rightColumn,
-																			 BeanRelationFixer<SRC, TRGT> beanRelationFixer,
-																			 Function<SRC, C> targetProvider) {
 		// we add target subgraph joins to the one that was created
-//		targetPersister.joinWith(sourcePersister, leftColumn, rightColumn, beanRelationFixer);
-		targetPersister.copyJoinsRootTo(sourcePersister.getJoinedStrategiesSelect(), joinPoint);
-//		targetPersister.getJoinedStrategiesSelect().getJoinsRoot().copyTo(sourcePersister.getJoinedStrategiesSelect(), joinPoint);
+		if (targetPersister instanceof PersisterDispatcher) {
+			// because subgraph loading is made in 2 phases (load ids, then entities in a second SQL request done by load listener) we add a passive join
+			// (we don't need to create bean nor fulfill properties in first phase) 
+			// NB: here rightColumn is parent class primary key or reverse column that owns property (depending how one-to-one relation is mapped)
+			String createdJoinNodeName = sourcePersister.getJoinedStrategiesSelect().addPassiveJoin(FIRST_STRATEGY_NAME,
+					sourcePrimaryKey,
+					relationOwner,
+					JoinType.OUTER, (Set) Collections.emptySet());
+			
+			((PersisterDispatcher<TRGT, ID>) targetPersister).joinWithMany(sourcePersister, targetPrimaryKey, relationFixer, createdJoinNodeName);
+		} else {
+			String createdJoinNodeName = sourcePersister.addPersister(FIRST_STRATEGY_NAME,
+					targetPersister,
+					relationFixer,
+					sourcePrimaryKey,
+					relationOwner,
+					relationOwner.isNullable()); // outer join for empty relation cases
+			
+			targetPersister.copyJoinsRootTo(sourcePersister.getJoinedStrategiesSelect(), createdJoinNodeName);
+		}
 		
 		// we must trigger subgraph event on loading of our own graph, this is mainly for event that initializes thngs because given ids
 		// are not those of their entity
@@ -96,7 +101,7 @@ public class OneToManyWithMappedAssociationEngine<SRC, TRGT, ID, C extends Colle
 
 			@Override
 			public void afterSelect(Iterable<? extends SRC> result) {
-				Iterable collect = Iterables.stream(result).flatMap(src -> Nullable.nullable(targetProvider.apply(src))
+				Iterable collect = Iterables.stream(result).flatMap(src -> Nullable.nullable(manyRelationDefinition.getCollectionGetter().apply(src))
 						.map(Collection::stream)
 						.getOr(Stream.empty()))
 						.collect(Collectors.toSet());
