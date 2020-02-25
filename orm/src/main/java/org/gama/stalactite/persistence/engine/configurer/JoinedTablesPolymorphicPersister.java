@@ -63,8 +63,7 @@ import org.gama.stalactite.sql.result.Row;
  * 
  * @author Guillaume Mary
  */
-// TODO: rename this as JoinedTablesPolymorphicPersister 
-public class PersisterDispatcher<C, I> implements IEntityConfiguredJoinedTablesPersister<C, I>, PolymorphicPersister<C, I> {
+public class JoinedTablesPolymorphicPersister<C, I> implements IEntityConfiguredJoinedTablesPersister<C, I>, PolymorphicPersister<C, I> {
 	
 	private static final ThreadLocal<Set<RelationIds<Object /* E */, Object /* target */, Object /* target identifier */ >>> DIFFERED_ENTITY_LOADER = new ThreadLocal<>();
 	
@@ -81,11 +80,11 @@ public class PersisterDispatcher<C, I> implements IEntityConfiguredJoinedTablesP
 	private final Map<Class<? extends C>, Table> tablePerSubEntity;
 	private final Column<?, I> mainTablePrimaryKey;
 	
-	public PersisterDispatcher(JoinedTablesPersister<C, I, ?> parentPersister,
-							   Map<Class<? extends C>, JoinedTablesPersister<C, I, ?>> subEntitiesPersisters,
-							   Map<Class<? extends C>, IUpdateExecutor<C>> subclassUpdateExecutorsOverride,
-							   ConnectionProvider connectionProvider,
-							   Dialect dialect) {
+	public JoinedTablesPolymorphicPersister(JoinedTablesPersister<C, I, ?> parentPersister,
+											Map<Class<? extends C>, JoinedTablesPersister<C, I, ?>> subEntitiesPersisters,
+											Map<Class<? extends C>, IUpdateExecutor<C>> subclassUpdateExecutorsOverride,
+											ConnectionProvider connectionProvider,
+											Dialect dialect) {
 		this.parentClass = parentPersister.getClassToPersist();
 		this.mainTablePrimaryKey = (Column) Iterables.first(parentPersister.getMappingStrategy().getTargetTable().getPrimaryKey().getColumns());
 		
@@ -159,7 +158,7 @@ public class PersisterDispatcher<C, I> implements IEntityConfiguredJoinedTablesP
 					entitiesPerType.computeIfAbsent(entity.getClass(), cClass -> new HashSet<>()).add(entity);
 				}
 				ModifiableInt insertCount = new ModifiableInt();
-				PersisterDispatcher.this.subclassInsertExecutors.forEach((subclass, insertExecutor) -> {
+				JoinedTablesPolymorphicPersister.this.subclassInsertExecutors.forEach((subclass, insertExecutor) -> {
 					Set<C> subtypeEntities = entitiesPerType.get(subclass);
 					if (subtypeEntities != null) {
 						insertCount.increment(insertExecutor.insert(subtypeEntities));
@@ -176,7 +175,7 @@ public class PersisterDispatcher<C, I> implements IEntityConfiguredJoinedTablesP
 					entitiesPerType.computeIfAbsent(entity.getClass(), cClass -> new HashSet<>()).add(entity);
 				}
 				ModifiableInt updateCount = new ModifiableInt();
-				PersisterDispatcher.this.subclassUpdateExecutors.forEach((subclass, updateExecutor) -> {
+				JoinedTablesPolymorphicPersister.this.subclassUpdateExecutors.forEach((subclass, updateExecutor) -> {
 					Set<C> entitiesToUpdate = entitiesPerType.get(subclass);
 					if (entitiesToUpdate != null) {
 						updateCount.increment(updateExecutor.updateById(entitiesToUpdate));
@@ -194,7 +193,7 @@ public class PersisterDispatcher<C, I> implements IEntityConfiguredJoinedTablesP
 					entitiesPerType.computeIfAbsent(entity.getClass(), k -> new HashSet<>()).add(payload);
 				});
 				ModifiableInt updateCount = new ModifiableInt();
-				PersisterDispatcher.this.subclassUpdateExecutors.forEach((subclass, updateExecutor) -> {
+				JoinedTablesPolymorphicPersister.this.subclassUpdateExecutors.forEach((subclass, updateExecutor) -> {
 					Set<Duo<? extends C, ? extends C>> entitiesToUpdate = entitiesPerType.get(subclass);
 					if (entitiesToUpdate != null) {
 						updateCount.increment(updateExecutor.update(entitiesToUpdate, allColumnsStatement));
@@ -216,7 +215,7 @@ public class PersisterDispatcher<C, I> implements IEntityConfiguredJoinedTablesP
 					entitiesPerType.computeIfAbsent(entity.getClass(), cClass -> new HashSet<>()).add(entity);
 				}
 				ModifiableInt deleteCount = new ModifiableInt();
-				PersisterDispatcher.this.subclassDeleteExecutors.forEach((subclass, deleteExecutor) -> {
+				JoinedTablesPolymorphicPersister.this.subclassDeleteExecutors.forEach((subclass, deleteExecutor) -> {
 					Set<C> subtypeEntities = entitiesPerType.get(subclass);
 					if (subtypeEntities != null) {
 						deleteCount.increment(deleteExecutor.delete(subtypeEntities));
@@ -234,7 +233,7 @@ public class PersisterDispatcher<C, I> implements IEntityConfiguredJoinedTablesP
 					entitiesPerType.computeIfAbsent(entity.getClass(), cClass -> new HashSet<>()).add(entity);
 				}
 				ModifiableInt deleteCount = new ModifiableInt();
-				PersisterDispatcher.this.subclassDeleteExecutors.forEach((subclass, deleteExecutor) -> {
+				JoinedTablesPolymorphicPersister.this.subclassDeleteExecutors.forEach((subclass, deleteExecutor) -> {
 					Set<C> subtypeEntities = entitiesPerType.get(subclass);
 					if (subtypeEntities != null) {
 						deleteCount.increment(deleteExecutor.deleteById(subtypeEntities));
@@ -623,7 +622,7 @@ public class PersisterDispatcher<C, I> implements IEntityConfiguredJoinedTablesP
 			Map<ISelectExecutor<TRGT, TRGTID>, Set<TRGTID>> selectsToExecute = new HashMap<>();
 			Map<ISelectExecutor<TRGT, TRGTID>, Function<TRGT, TRGTID>> idAccessors = new HashMap<>();
 			Map<SRC, Set<TRGTID>> targetIdPerSource = new HashMap<>();
-			Set<RelationIds<SRC, TRGT, TRGTID>> relationIds = (Set) PersisterDispatcher.DIFFERED_ENTITY_LOADER.get();
+			Set<RelationIds<SRC, TRGT, TRGTID>> relationIds = (Set) JoinedTablesPolymorphicPersister.DIFFERED_ENTITY_LOADER.get();
 			// we remove null targetIds (Target Ids may be null if relation is nullified) because
 			// - selecting entities with null id is non-sensence
 			// - it prevents from generating SQL "in ()" which is invalid
