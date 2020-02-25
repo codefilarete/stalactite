@@ -1363,6 +1363,101 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 			// checking for orphan removal (relation was marked as such)
 			assertNull(persistenceContext.getPersister(Vehicle.class).select(new PersistedIdentifier<>(17L)));
 		}
+		
+		@Test
+		void oneToSingleTable_crud() {
+			IFluentEmbeddableMappingBuilder<Person> timestampedPersistentBeanMapping =
+					embeddableBuilder(Person.class)
+							.add(Person::getName)
+							.embed(Person::getTimestamp);
+			
+			IFluentEntityMappingBuilder<Vehicle, Identifier<Long>> vehicleConfiguration =
+					entityBuilder(Vehicle.class, LONG_TYPE)
+							.add(Vehicle::getId).identifier(ALREADY_ASSIGNED)
+							.add(Vehicle::getColor)
+							.mapPolymorphism(PolymorphismPolicy.singleTable()
+									.addSubClass(subentityBuilder(Truk.class), "T")
+									.addSubClass(subentityBuilder(Car.class), "C")
+							);
+			
+			IEntityPersister<Person, Identifier<Long>> testInstance = entityBuilder(Person.class, LONG_TYPE)
+					.add(Person::getId).identifier(ALREADY_ASSIGNED)
+					.addOneToOne(Person::getVehicle, vehicleConfiguration).cascading(RelationMode.ALL_ORPHAN_REMOVAL)
+					.mapSuperClass(timestampedPersistentBeanMapping)
+					.build(persistenceContext);
+			
+			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+			ddlDeployer.deployDDL();
+			
+			// insert
+			Person person = new Person(1);
+			Car car = new Car(42L);
+			car.setColor(new Color(17));
+			person.setVehicle(car);
+			testInstance.insert(person);
+			Person loadedPerson = testInstance.select(person.getId());
+			assertEquals(person, loadedPerson);
+			
+			// updating embedded value
+			person.setTimestamp(new Timestamp());
+			testInstance.update(person, loadedPerson, true);
+			
+			loadedPerson = testInstance.select(person.getId());
+			
+			
+			// we use a printer to compare our results because entities override equals() which only keep "id" into account
+			// which is far from sufficent for ou checking
+			// Note htat we don't us ObjectPrinterBuilder#printerFor because it take getCities() into account whereas its code is not ready for recursivity 
+			ObjectPrinter<Vehicle> vehiclePrinter = new ObjectPrinterBuilder<Vehicle>()
+					.addProperty(Vehicle::getId)
+					.addProperty(Vehicle::getClass)
+					.withPrinter(AbstractIdentifier.class, Functions.chain(AbstractIdentifier::getSurrogate, String::valueOf))
+					.build();
+			ObjectPrinter<Person> personPrinter = new ObjectPrinterBuilder<Person>()
+					.addProperty(Person::getId)
+					.addProperty(Person::getName)
+					.addProperty(Person::getTimestamp)
+					.withPrinter(AbstractIdentifier.class, Functions.chain(AbstractIdentifier::getSurrogate, String::valueOf))
+					.withPrinter(Vehicle.class, vehiclePrinter::toString)
+					.build();
+			
+			Assertions.assertEquals(person, loadedPerson, personPrinter::toString);
+			// ensuring that reverse side is also set
+			assertEquals(loadedPerson, loadedPerson.getVehicle().getOwner());
+			
+			// updating one-to-one relation
+			person.setVehicle(new Truk(666L));
+			testInstance.update(person, loadedPerson, true);
+			
+			loadedPerson = testInstance.select(person.getId());
+			Assertions.assertEquals(person, loadedPerson, personPrinter::toString);
+			// checking for orphan removal (relation was marked as such)
+			assertNull(persistenceContext.getPersister(Vehicle.class).select(new PersistedIdentifier<>(42L)));
+			
+			// nullifying one-to-one relation
+			person.setVehicle(null);
+			testInstance.update(person, loadedPerson, true);
+			
+			loadedPerson = testInstance.select(person.getId());
+			assertEquals(person, loadedPerson);
+			// checking for orphan removal (relation was marked as such)
+			assertNull(persistenceContext.getPersister(Vehicle.class).select(new PersistedIdentifier<>(666L)));
+			
+			
+			// setting new one-to-one relation
+			person.setVehicle(new Truk(17L));
+			testInstance.update(person, loadedPerson, true);
+			
+			loadedPerson = testInstance.select(person.getId());
+			assertEquals(person, loadedPerson);
+			
+			// testing deletion
+			testInstance.delete(person);
+			assertNull(testInstance.select(person.getId()));
+			// checking for orphan removal (relation was marked as such)
+			assertNull(persistenceContext.getPersister(Vehicle.class).select(new PersistedIdentifier<>(17L)));
+		}
+		
 	}
 	
 	
@@ -1462,11 +1557,9 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 							.add(City::getName)
 							.mapPolymorphism(PolymorphismPolicy.joinedTables()
 									.addSubClass(subentityBuilder(Village.class)
-											.add(Village::getBarCount)	// TODO: throws java.lang.RuntimeException: Error while applying o.g.s.p.e.m.Village::getBarCount() on instance of o.g.s.p.e.m.City
-											)
+											.add(Village::getBarCount))
 									.addSubClass(subentityBuilder(Town.class)
-											.add(Town::getDiscotecCount)
-											)
+											.add(Town::getDiscotecCount))
 							);
 			
 			IEntityPersister<Country, Identifier<Long>> testInstance = entityBuilder(Country.class, LONG_TYPE)
@@ -1530,6 +1623,181 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 			
 			// testing update : removal of a city, reversed column must be set to null
 			Country modifiedCountry = new Country(country.getId());
+			modifiedCountry.addCity(Iterables.first(country.getCities()));
+			
+			testInstance.update(modifiedCountry, country, false);
+			// there's only 1 relation in table
+			List<Long> cityCountryIds = persistenceContext.newQuery("select CountryId from City", Long.class)
+					.mapKey(i -> i, "CountryId", Long.class)
+					.execute();
+			assertEquals(Arrays.asSet(country.getId().getSurrogate(), null), new HashSet<>(cityCountryIds));
+			
+			// testing delete
+			testInstance.delete(modifiedCountry);
+			// Cities shouldn't be deleted (we didn't ask for delete orphan)
+			List<Long> cityIds = persistenceContext.newQuery("select id from city", Long.class)
+					.mapKey(i -> i, "id", Long.class)
+					.execute();
+			assertEquals(Arrays.asSet(grenoble.getId().getSurrogate(), lyon.getId().getSurrogate()), new HashSet<>(cityIds));
+		}
+		
+		@Test
+		void oneToSingleTable_crud_withAssociationTable() {
+			
+			IFluentEmbeddableMappingBuilder<Country> timestampedPersistentBeanMapping =
+					embeddableBuilder(Country.class)
+							.add(Country::getName)
+							.embed(Country::getTimestamp);
+			
+			IFluentEntityMappingBuilder<City, Identifier<Long>> cityConfiguration =
+					entityBuilder(City.class, LONG_TYPE)
+							.add(City::getId).identifier(ALREADY_ASSIGNED)
+							.add(City::getName)
+							.mapPolymorphism(PolymorphismPolicy.singleTable()
+									.addSubClass(subentityBuilder(Village.class)
+											.add(Village::getBarCount), "V")
+									.addSubClass(subentityBuilder(Town.class)
+											.add(Town::getDiscotecCount), "T")
+							);
+			
+			IEntityPersister<Country, Identifier<Long>> testInstance = entityBuilder(Country.class, LONG_TYPE)
+					.add(Country::getId).identifier(ALREADY_ASSIGNED)
+					.addOneToManySet(Country::getCities, cityConfiguration)
+						.reverselySetBy(City::setCountry)	// necessary if you want bidirectionnality to be set in memory
+						.cascading(RelationMode.ALL)
+					.mapSuperClass(timestampedPersistentBeanMapping)
+					.build(persistenceContext);
+			
+			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+			ddlDeployer.deployDDL();
+			
+			// insert
+			Country country = new Country(1L);
+			Village grenoble = new Village(42L);
+			grenoble.setName("Grenoble");
+			country.addCity(grenoble);
+			testInstance.insert(country);
+			
+			// testing select
+			Country loadedCountry = testInstance.select(country.getId());
+			assertEquals(country, loadedCountry);
+			// ensuring that reverse side is also set
+			assertEquals(Arrays.asHashSet(loadedCountry), Iterables.collect(loadedCountry.getCities(), City::getCountry, HashSet::new));
+			
+			// testing update and select of mixed type of City
+			Town lyon = new Town(17L);
+			lyon.setDiscotecCount(123);
+			lyon.setName("Lyon");
+			country.addCity(lyon);
+			grenoble.setBarCount(51);
+			testInstance.update(country, loadedCountry, true);
+			
+			loadedCountry = testInstance.select(country.getId());
+			// resulting select must contain Town and Village
+			assertEquals(Arrays.asHashSet(grenoble, lyon), loadedCountry.getCities());
+			// bidirectionality must be preserved
+			assertEquals(Arrays.asHashSet(loadedCountry), Iterables.collect(loadedCountry.getCities(), City::getCountry, HashSet::new));
+			
+			// testing update : removal of a city, reversed column must be set to null
+			Country modifiedCountry = new Country(country.getId());
+			modifiedCountry.addCity(Iterables.first(country.getCities()));
+			
+			testInstance.update(modifiedCountry, country, false);
+			// there's only 1 relation in table
+			List<Long> cityCountryIds = persistenceContext.newQuery("select Country_id from Country_cities", Long.class)
+					.mapKey(i -> i, "Country_id", Long.class)
+					.execute();
+			assertEquals(Arrays.asList(country.getId().getSurrogate()), cityCountryIds);
+			
+			// testing delete
+			testInstance.delete(modifiedCountry);
+			// Cities shouldn't be deleted (we didn't ask for delete orphan)
+			List<Long> cityIds = persistenceContext.newQuery("select id from city", Long.class)
+					.mapKey(i -> i, "id", Long.class)
+					.execute();
+			assertEquals(Arrays.asSet(grenoble.getId().getSurrogate(), lyon.getId().getSurrogate()), new HashSet<>(cityIds));
+		}
+		
+		@Test
+		void oneToSingleTable_crud_ownedByReverseSide() {
+			
+			IFluentEmbeddableMappingBuilder<Country> timestampedPersistentBeanMapping =
+					embeddableBuilder(Country.class)
+							.add(Country::getName)
+							.embed(Country::getTimestamp);
+			
+			IFluentEntityMappingBuilder<City, Identifier<Long>> cityConfiguration =
+					entityBuilder(City.class, LONG_TYPE)
+							.add(City::getId).identifier(ALREADY_ASSIGNED)
+							.add(City::getName)
+							.mapPolymorphism(PolymorphismPolicy.singleTable()
+									.addSubClass(subentityBuilder(Village.class)
+											.add(Village::getBarCount), "V")
+									.addSubClass(subentityBuilder(Town.class)
+											.add(Town::getDiscotecCount), "T")
+							);
+			
+			IEntityPersister<Country, Identifier<Long>> testInstance = entityBuilder(Country.class, LONG_TYPE)
+					.add(Country::getId).identifier(ALREADY_ASSIGNED)
+					.addOneToManySet(Country::getCities, cityConfiguration)
+					.mappedBy(City::getCountry)
+					.cascading(RelationMode.ALL)
+					.mapSuperClass(timestampedPersistentBeanMapping)
+					.build(persistenceContext);
+			
+			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+			ddlDeployer.deployDDL();
+			
+			// insert
+			Country country = new Country(1L);
+			Village grenoble = new Village(42L);
+			grenoble.setName("Grenoble");
+			country.addCity(grenoble);
+			testInstance.insert(country);
+			
+			// testing select
+			Country loadedCountry = testInstance.select(country.getId());
+			assertEquals(country, loadedCountry);
+			
+			// we use a printer to compare our results because entities override equals() which only keep "id" into account
+			// which is far from sufficent for ou checking
+			// Note htat we don't us ObjectPrinterBuilder#printerFor because it take getCities() into account whereas its code is not ready for recursivity 
+			ObjectPrinter<Country> countryPrinter = new ObjectPrinterBuilder<Country>()
+					.addProperty(Country::getId)
+					.addProperty(Country::getName)
+					.addProperty(Country::getTimestamp)
+					.withPrinter(AbstractIdentifier.class, Functions.chain(AbstractIdentifier::getSurrogate, String::valueOf))
+					.build();
+			ObjectPrinter<City> cityPrinter = new ObjectPrinterBuilder<City>()
+					.addProperty(City::getId)
+					.addProperty(Village::getBarCount)
+					.addProperty(Town::getDiscotecCount)
+					.addProperty(City::getName)
+					.addProperty(City::getCountry)
+					.withPrinter(AbstractIdentifier.class, Functions.chain(AbstractIdentifier::getSurrogate, String::valueOf))
+					.withPrinter(Country.class, countryPrinter::toString)
+					.build();
+			
+			Assertions.assertAllEquals(country.getCities(), loadedCountry.getCities(), cityPrinter::toString);
+			// ensuring that reverse side is also set
+			assertEquals(Arrays.asHashSet(loadedCountry), Iterables.collect(loadedCountry.getCities(), City::getCountry, HashSet::new));
+			
+			// testing update and select of mixed type of City
+			Town lyon = new Town(17L);
+			lyon.setDiscotecCount(123);
+			lyon.setName("Lyon");
+			country.addCity(lyon);
+			grenoble.setBarCount(51);
+			testInstance.update(country, loadedCountry, true);
+			
+			loadedCountry = testInstance.select(country.getId());
+			// resulting select must contain Town and Village
+			assertEquals(Arrays.asHashSet(grenoble, lyon), loadedCountry.getCities());
+			// bidirectionality must be preserved
+			assertEquals(Arrays.asHashSet(loadedCountry), Iterables.collect(loadedCountry.getCities(), City::getCountry, HashSet::new));
+			
+			// testing update : removal of a city, reversed column must be set to null
+			Country modifiedCountry = new Country(country.getId().getSurrogate());
 			modifiedCountry.addCity(Iterables.first(country.getCities()));
 			
 			testInstance.update(modifiedCountry, country, false);

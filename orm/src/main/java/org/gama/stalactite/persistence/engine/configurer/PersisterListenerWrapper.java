@@ -8,8 +8,12 @@ import org.danekja.java.util.function.serializable.SerializableBiConsumer;
 import org.danekja.java.util.function.serializable.SerializableFunction;
 import org.gama.lang.Duo;
 import org.gama.lang.collection.Iterables;
-import org.gama.stalactite.persistence.engine.IEntityConfiguredPersister;
+import org.gama.stalactite.persistence.engine.BeanRelationFixer;
+import org.gama.stalactite.persistence.engine.IConfiguredPersister;
+import org.gama.stalactite.persistence.engine.IEntityConfiguredJoinedTablesPersister;
 import org.gama.stalactite.persistence.engine.IEntityPersister;
+import org.gama.stalactite.persistence.engine.cascade.IJoinedTablesPersister;
+import org.gama.stalactite.persistence.engine.cascade.JoinedStrategiesSelect;
 import org.gama.stalactite.persistence.engine.listening.DeleteByIdListener;
 import org.gama.stalactite.persistence.engine.listening.DeleteListener;
 import org.gama.stalactite.persistence.engine.listening.InsertListener;
@@ -17,18 +21,19 @@ import org.gama.stalactite.persistence.engine.listening.PersisterListener;
 import org.gama.stalactite.persistence.engine.listening.SelectListener;
 import org.gama.stalactite.persistence.engine.listening.UpdateListener;
 import org.gama.stalactite.persistence.mapping.IEntityMappingStrategy;
+import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.query.model.AbstractRelationalOperator;
 
 /**
  * @author Guillaume Mary
  */
-public class PersisterListenerWrapper<C, I> implements IEntityConfiguredPersister<C, I> {
+public class PersisterListenerWrapper<C, I> implements IEntityConfiguredJoinedTablesPersister<C, I> {
 	
 	private final PersisterListener<C, I> persisterListener = new PersisterListener<>();
-	private final IEntityConfiguredPersister<C, I> surrogate;
+	private final IEntityConfiguredJoinedTablesPersister<C, I> surrogate;
 	
-	public PersisterListenerWrapper(IEntityConfiguredPersister<C, I> surrogate) {
+	public PersisterListenerWrapper(IEntityConfiguredJoinedTablesPersister<C, I> surrogate) {
 		this.surrogate = surrogate;
 	}
 	
@@ -154,5 +159,27 @@ public class PersisterListenerWrapper<C, I> implements IEntityConfiguredPersiste
 		} else {
 			return persisterListener.doWithUpdateListener(differencesIterable, allColumnsStatement, surrogate::update);
 		}
+	}
+	
+	@Override
+	public <U, J, Z> String addPersister(String ownerStrategyName, IConfiguredPersister<U, J> persister, BeanRelationFixer<Z, U> beanRelationFixer,
+										 Column leftJoinColumn, Column rightJoinColumn, boolean isOuterJoin) {
+		return surrogate.addPersister(ownerStrategyName, persister, beanRelationFixer, leftJoinColumn, rightJoinColumn, isOuterJoin);
+	}
+	
+	@Override
+	public <SRC> void joinAsOne(IJoinedTablesPersister<SRC, I> sourcePersister, Column leftColumn, Column rightColumn,
+								BeanRelationFixer<SRC, C> beanRelationFixer, boolean nullable) {
+		surrogate.joinAsOne(sourcePersister, leftColumn, rightColumn, beanRelationFixer, nullable);
+	}
+	
+	@Override
+	public JoinedStrategiesSelect<C, I, ?> getJoinedStrategiesSelect() {
+		return surrogate.getJoinedStrategiesSelect();
+	}
+	
+	@Override
+	public <E, ID, T extends Table> void copyJoinsRootTo(JoinedStrategiesSelect<E, ID, T> joinedStrategiesSelect, String joinName) {
+		surrogate.copyJoinsRootTo(joinedStrategiesSelect, joinName);
 	}
 }

@@ -17,8 +17,11 @@ import org.gama.lang.function.Functions;
 import org.gama.lang.trace.ModifiableInt;
 import org.gama.reflection.IReversibleAccessor;
 import org.gama.reflection.MethodReferenceDispatcher;
+import org.gama.stalactite.persistence.engine.BeanRelationFixer;
 import org.gama.stalactite.persistence.engine.ExecutableQuery;
+import org.gama.stalactite.persistence.engine.IConfiguredPersister;
 import org.gama.stalactite.persistence.engine.IDeleteExecutor;
+import org.gama.stalactite.persistence.engine.IEntityConfiguredJoinedTablesPersister;
 import org.gama.stalactite.persistence.engine.IEntityConfiguredPersister;
 import org.gama.stalactite.persistence.engine.IInsertExecutor;
 import org.gama.stalactite.persistence.engine.ISelectExecutor;
@@ -29,6 +32,7 @@ import org.gama.stalactite.persistence.engine.SubEntityMappingConfiguration;
 import org.gama.stalactite.persistence.engine.TableNamingStrategy;
 import org.gama.stalactite.persistence.engine.TablePerClassPolymorphicEntitySelectExecutor;
 import org.gama.stalactite.persistence.engine.TablePerClassPolymorphicSelectExecutor;
+import org.gama.stalactite.persistence.engine.cascade.IJoinedTablesPersister;
 import org.gama.stalactite.persistence.engine.cascade.JoinedStrategiesSelect;
 import org.gama.stalactite.persistence.engine.cascade.JoinedTablesPersister;
 import org.gama.stalactite.persistence.engine.cascade.JoinedTablesPersister.CriteriaProvider;
@@ -169,7 +173,32 @@ abstract class TablePerClassPolymorphismBuilder<C, I, T extends Table> implement
 		
 		EntityCriteriaSupport<C> criteriaSupport = new EntityCriteriaSupport<>(mainPersister.getMappingStrategy());
 		
-		return new PersisterListenerWrapper<>(new IEntityConfiguredPersister<C, I>() {
+		return new PersisterListenerWrapper<>(new IEntityConfiguredJoinedTablesPersister<C, I>() {
+			
+			@Override
+			public <U, J, Z> String addPersister(String ownerStrategyName, IConfiguredPersister<U, J> persister, BeanRelationFixer<Z, U> beanRelationFixer, Column leftJoinColumn, Column rightJoinColumn, boolean isOuterJoin) {
+				throw new UnsupportedOperationException();
+			}
+			
+			@Override
+			public <SRC> void joinAsOne(IJoinedTablesPersister<SRC, I> sourcePersister, Column leftColumn, Column rightColumn, BeanRelationFixer<SRC,
+					C> beanRelationFixer, boolean nullable) {
+				String createdJoinNodeName = sourcePersister.addPersister(JoinedStrategiesSelect.FIRST_STRATEGY_NAME, this,
+						beanRelationFixer,
+						leftColumn, rightColumn, true);
+				
+				copyJoinsRootTo(sourcePersister.getJoinedStrategiesSelect(), createdJoinNodeName);
+			}
+			
+			@Override
+			public JoinedStrategiesSelect<C, I, ?> getJoinedStrategiesSelect() {
+				return mainPersister.getJoinedStrategiesSelect();
+			}
+			
+			@Override
+			public <E, ID, T extends Table> void copyJoinsRootTo(JoinedStrategiesSelect<E, ID, T> joinedStrategiesSelect, String joinName) {
+				getJoinedStrategiesSelect().getJoinsRoot().copyTo(joinedStrategiesSelect, joinName);
+			}
 			
 			@Override
 			public Collection<Table> giveImpliedTables() {

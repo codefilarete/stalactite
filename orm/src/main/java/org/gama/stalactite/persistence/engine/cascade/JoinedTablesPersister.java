@@ -39,6 +39,9 @@ import static java.util.Collections.emptyList;
  * Entity load is defined by a select that joins all tables, each {@link ClassMappingStrategy} is called to complete
  * entity loading.
  * 
+ * In the orm module this class replace {@link Persister} in case of single table, because it has methods for join support whereas {@link Persister}
+ * doesn't.
+ * 
  * @param <C> the main class to be persisted
  * @param <I> the type of main class identifiers
  * @param <T> the main target table
@@ -201,9 +204,19 @@ public class JoinedTablesPersister<C, I, T extends Table> extends Persister<C, I
 		return criteriaSupport;
 	}
 	
+	/**
+	 * Implementation for simple one-to-one cases : we add our joins to given persister
+	 * 
+	 * @param sourcePersister source that needs this instance joins
+	 * @param leftColumn left part of the join, expected to be one of source table 
+	 * @param rightColumn right part of the join, expected to be one of current instance table
+	 * @param beanRelationFixer setter that fix relation ofthis instance onto source persister instance
+	 * @param nullable true for optional relation, makes an outer join, else should create a inner join
+	 * @param <SRC>
+	 */
 	@Override
-	public <SRC> void joinWith(IJoinedTablesPersister<SRC, I> sourcePersister,
-							   Column leftColumn, Column rightColumn, BeanRelationFixer<SRC, C> beanRelationFixer, boolean nullable) {
+	public <SRC> void joinAsOne(IJoinedTablesPersister<SRC, I> sourcePersister,
+								Column leftColumn, Column rightColumn, BeanRelationFixer<SRC, C> beanRelationFixer, boolean nullable) {
 		
 		String createdJoinNodeName = sourcePersister.addPersister(JoinedStrategiesSelect.FIRST_STRATEGY_NAME, this,
 				beanRelationFixer,

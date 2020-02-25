@@ -185,7 +185,7 @@ public class CascadeOneConfigurer<SRC, TRGT, ID> {
 				BeanRelationFixer<SRC, TRGT> beanRelationFixer) {
 			
 			// we add target subgraph joins to the one that was created
-			targetPersister.joinWith(sourcePersister, leftColumn, rightColumn, beanRelationFixer, cascadeOne.isNullable());
+			targetPersister.joinAsOne(sourcePersister, leftColumn, rightColumn, beanRelationFixer, cascadeOne.isNullable());
 			
 			// We trigger subgraph load event (via targetSelectListener) on loading of our graph.
 			// Done for instance for event consumers that initialize some things, because given ids of methods are those of source entity

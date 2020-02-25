@@ -11,8 +11,6 @@ import java.util.Map.Entry;
 import java.util.Set;
 
 import org.gama.lang.collection.Iterables;
-import org.gama.lang.function.Functions;
-import org.gama.stalactite.persistence.engine.cascade.JoinedTablesPersister;
 import org.gama.stalactite.persistence.mapping.ColumnedRow;
 import org.gama.stalactite.persistence.sql.Dialect;
 import org.gama.stalactite.persistence.structure.Column;
@@ -38,22 +36,6 @@ public class JoinedTablesPolymorphismSelectExecutor<C, I, T extends Table> imple
 	private final T mainTable;
 	private final ConnectionProvider connectionProvider;
 	private final Dialect dialect;
-	
-	public JoinedTablesPolymorphismSelectExecutor(Map<Class<? extends C>, JoinedTablesPersister<C, I, T>> persisterPerSubclass,
-												  Map<Class<? extends C>, JoinedTablesPersister<C, I, T>> persisterPerSubclass2,
-												  T mainTable,
-												  ConnectionProvider connectionProvider,
-												  Dialect dialect,
-												  boolean safeGuard) {
-		this.tablePerSubEntity = Iterables.map(persisterPerSubclass.entrySet(),
-				Entry::getKey, Functions.chain(Entry<Class<? extends C>, JoinedTablesPersister<C, I, T>>::getValue, JoinedTablesPersister::getMainTable));
-		this.subEntitiesSelectors = Iterables.map(persisterPerSubclass2.entrySet(),
-				Entry::getKey,
-				Functions.chain(Entry::getValue, JoinedTablesPersister::getSelectExecutor));
-		this.mainTable = mainTable;
-		this.connectionProvider = connectionProvider;
-		this.dialect = dialect;
-	}
 	
 	public JoinedTablesPolymorphismSelectExecutor(
 			Map<Class<? extends C>, Table> tablePerSubEntity,

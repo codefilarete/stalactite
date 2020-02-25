@@ -21,7 +21,7 @@ import org.gama.stalactite.persistence.engine.cascade.AfterInsertCollectionCasca
 import org.gama.stalactite.persistence.engine.cascade.AfterUpdateCollectionCascader;
 import org.gama.stalactite.persistence.engine.cascade.BeforeDeleteByIdCollectionCascader;
 import org.gama.stalactite.persistence.engine.cascade.BeforeDeleteCollectionCascader;
-import org.gama.stalactite.persistence.engine.configurer.PersisterDispatcher;
+import org.gama.stalactite.persistence.engine.configurer.PolymorphicPersister;
 import org.gama.stalactite.persistence.engine.listening.SelectListener;
 import org.gama.stalactite.persistence.structure.Column;
 
@@ -68,7 +68,7 @@ public class OneToManyWithMappedAssociationEngine<SRC, TRGT, ID, C extends Colle
 		
 		Column targetPrimaryKey = (Column) Iterables.first(targetPersister.getMappingStrategy().getTargetTable().getPrimaryKey().getColumns());
 		// we add target subgraph joins to the one that was created
-		if (targetPersister instanceof PersisterDispatcher) {
+		if (targetPersister instanceof PolymorphicPersister) {
 			// because subgraph loading is made in 2 phases (load ids, then entities in a second SQL request done by load listener) we add a passive join
 			// (we don't need to create bean nor fulfill properties in first phase) 
 			// NB: here rightColumn is parent class primary key or reverse column that owns property (depending how one-to-one relation is mapped)
@@ -77,7 +77,7 @@ public class OneToManyWithMappedAssociationEngine<SRC, TRGT, ID, C extends Colle
 					relationOwner,
 					JoinType.OUTER, (Set) Collections.emptySet());
 			
-			((PersisterDispatcher<TRGT, ID>) targetPersister).joinWithMany(sourcePersister, targetPrimaryKey, relationFixer, createdJoinNodeName);
+			((PolymorphicPersister<TRGT, ID>) targetPersister).joinAsMany(sourcePersister, sourcePrimaryKey, relationOwner, relationFixer, createdJoinNodeName);
 		} else {
 			String createdJoinNodeName = sourcePersister.addPersister(FIRST_STRATEGY_NAME,
 					targetPersister,
@@ -89,7 +89,7 @@ public class OneToManyWithMappedAssociationEngine<SRC, TRGT, ID, C extends Colle
 			targetPersister.copyJoinsRootTo(sourcePersister.getJoinedStrategiesSelect(), createdJoinNodeName);
 		}
 		
-		// we must trigger subgraph event on loading of our own graph, this is mainly for event that initializes thngs because given ids
+		// we must trigger subgraph event on loading of our own graph, this is mainly for event that initializes things because given ids
 		// are not those of their entity
 		SelectListener targetSelectListener = targetPersister.getPersisterListener().getSelectListener();
 		sourcePersister.addSelectListener(new SelectListener<SRC, ID>() {

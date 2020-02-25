@@ -16,15 +16,17 @@ public interface IJoinedTablesPersister<C, I> {
 								  boolean isOuterJoin);
 	
 	/**
-	 * Gives a copy of current joins to given persister
+	 * Called to join this instance with given persister. For this method, current instance is considered as the "right part" of the relation.
+	 * Made as such because polymorphic cases (which are instance of this interface) are the only one to know hom to join themselves with a caller.
+	 * 
 	 * @param sourcePersister source that needs this instance joins
 	 * @param leftColumn left part of the join, expected to be one of source table 
 	 * @param rightColumn right part of the join, expected to be one of current instance table
 	 * @param beanRelationFixer setter that fix relation ofthis instance onto source persister instance
 	 * @param nullable true for optional relation, makes an outer join, else should create a inner join
 	 */
-	<SRC> void joinWith(IJoinedTablesPersister<SRC, I> sourcePersister,
-						Column leftColumn, Column rightColumn, BeanRelationFixer<SRC, C> beanRelationFixer, boolean nullable);
+	<SRC> void joinAsOne(IJoinedTablesPersister<SRC, I> sourcePersister,
+						 Column leftColumn, Column rightColumn, BeanRelationFixer<SRC, C> beanRelationFixer, boolean nullable);
 	
 	JoinedStrategiesSelect<C, I, ?> getJoinedStrategiesSelect();
 	

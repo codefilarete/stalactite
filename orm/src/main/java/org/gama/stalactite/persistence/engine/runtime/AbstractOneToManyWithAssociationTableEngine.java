@@ -25,7 +25,7 @@ import org.gama.stalactite.persistence.engine.IEntityConfiguredJoinedTablesPersi
 import org.gama.stalactite.persistence.engine.Persister;
 import org.gama.stalactite.persistence.engine.cascade.AbstractJoin.JoinType;
 import org.gama.stalactite.persistence.engine.cascade.AfterInsertCollectionCascader;
-import org.gama.stalactite.persistence.engine.configurer.PersisterDispatcher;
+import org.gama.stalactite.persistence.engine.configurer.PolymorphicPersister;
 import org.gama.stalactite.persistence.engine.listening.DeleteByIdListener;
 import org.gama.stalactite.persistence.engine.listening.DeleteListener;
 import org.gama.stalactite.persistence.engine.listening.PersisterListener;
@@ -88,7 +88,7 @@ public abstract class AbstractOneToManyWithAssociationTableEngine<SRC, TRGT, ID,
 				Objects.preventNull(manyRelationDescriptor.getReverseSetter(), NOOP_REVERSE_SETTER));
 		
 		
-		if (targetPersister instanceof PersisterDispatcher) {
+		if (targetPersister instanceof PolymorphicPersister) {
 			// because subgraph loading is made in 2 phases (load ids, then entities in a second SQL request done by load listener) we add a passive join
 			// (we don't need to create bean nor fulfill properties in first phase) 
 			// NB: here rightColumn is parent class primary key or reverse column that owns property (depending how one-to-one relation is mapped) 
@@ -97,9 +97,8 @@ public abstract class AbstractOneToManyWithAssociationTableEngine<SRC, TRGT, ID,
 					associationPersister.getMainTable().getManySidePrimaryKey(),
 					JoinType.OUTER, (Set) Collections.emptySet());
 			
-			((PersisterDispatcher<TRGT, ID>) targetPersister).joinWithMany(sourcePersister,
-					associationPersister.getMainTable().getManySideKeyColumn(),
-					beanRelationFixer, createdJoinNodeName);
+			((PolymorphicPersister<TRGT, ID>) targetPersister).joinAsMany(sourcePersister, associationPersister.getMainTable().getManySideKeyColumn(),
+					associationPersister.getMainTable().getManySidePrimaryKey(), beanRelationFixer, createdJoinNodeName);
 		} else {
 			String createdJoinNodeName = sourcePersister.addPersister(associationTableJoinNodeName,
 					targetPersister,
