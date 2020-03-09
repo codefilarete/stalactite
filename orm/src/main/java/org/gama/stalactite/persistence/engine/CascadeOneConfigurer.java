@@ -176,12 +176,12 @@ public class CascadeOneConfigurer<SRC, TRGT, ID> {
 		/**
 		 * @return join key name added to in the {@link JoinedTablesPersister} 
 		 */
-		protected <T extends Table<T>, P extends IJoinedTablesPersister<SRC, ID> & IPersisterListener<SRC, ID>> void addSelectCascade(
+		protected <T1 extends Table<T1>, T2 extends Table<T2>, P extends IJoinedTablesPersister<SRC, ID> & IPersisterListener<SRC, ID>> void addSelectCascade(
 				CascadeOne<SRC, TRGT, ID> cascadeOne,
 				P sourcePersister,
 				IConfiguredJoinedTablesPersister<TRGT, ID> targetPersister,
-				Column leftColumn,
-				Column rightColumn,
+				Column<T1, ID> leftColumn,
+				Column<T2, ID> rightColumn,
 				BeanRelationFixer<SRC, TRGT> beanRelationFixer) {
 			
 			// we add target subgraph joins to the one that was created

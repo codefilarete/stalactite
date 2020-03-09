@@ -100,12 +100,12 @@ public abstract class AbstractOneToManyWithAssociationTableEngine<SRC, TRGT, ID,
 			((PolymorphicPersister<TRGT, ID>) targetPersister).joinAsMany(sourcePersister, associationPersister.getMainTable().getManySideKeyColumn(),
 					associationPersister.getMainTable().getManySidePrimaryKey(), beanRelationFixer, createdJoinNodeName);
 		} else {
-			String createdJoinNodeName = sourcePersister.addPersister(associationTableJoinNodeName,
-					targetPersister,
-					beanRelationFixer,
+			String createdJoinNodeName = sourcePersister.getJoinedStrategiesSelect().addRelationJoin(associationTableJoinNodeName,
+					(IEntityMappingStrategy) targetPersister.getMappingStrategy(),
 					associationPersister.getMainTable().getManySideKeyColumn(),
 					associationPersister.getMainTable().getManySidePrimaryKey(),
-					true);
+					JoinType.OUTER,
+					beanRelationFixer);
 			
 			// adding target subgraph select to source persister
 			targetPersister.copyJoinsRootTo(sourcePersister.getJoinedStrategiesSelect(), createdJoinNodeName);

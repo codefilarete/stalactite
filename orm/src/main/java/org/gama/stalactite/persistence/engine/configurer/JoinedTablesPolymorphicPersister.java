@@ -22,7 +22,6 @@ import org.gama.lang.trace.ModifiableInt;
 import org.gama.reflection.MethodReferenceDispatcher;
 import org.gama.stalactite.persistence.engine.BeanRelationFixer;
 import org.gama.stalactite.persistence.engine.ExecutableQuery;
-import org.gama.stalactite.persistence.engine.IConfiguredPersister;
 import org.gama.stalactite.persistence.engine.IDeleteExecutor;
 import org.gama.stalactite.persistence.engine.IEntityConfiguredJoinedTablesPersister;
 import org.gama.stalactite.persistence.engine.IInsertExecutor;
@@ -120,13 +119,11 @@ public class JoinedTablesPolymorphicPersister<C, I> implements IEntityConfigured
 		this.persisterListenerWrapper = new PersisterListenerWrapper<>(new IEntityConfiguredJoinedTablesPersister<C, I>() {
 			
 			@Override
-			public <U, J, Z> String addPersister(String ownerStrategyName, IConfiguredPersister<U, J> persister, BeanRelationFixer<Z, U> beanRelationFixer, Column leftJoinColumn, Column rightJoinColumn, boolean isOuterJoin) {
-				throw new UnsupportedOperationException();
-			}
-			
-			@Override
-			public <SRC> void joinAsOne(IJoinedTablesPersister<SRC, I> sourcePersister, Column leftColumn, Column rightColumn,
-										BeanRelationFixer<SRC, C> beanRelationFixer, boolean nullable) {
+			public <SRC, T1 extends Table, T2 extends Table> void joinAsOne(IJoinedTablesPersister<SRC, I> sourcePersister,
+																			Column<T1, I> leftColumn,
+																			Column<T2, I> rightColumn,
+																			BeanRelationFixer<SRC, C> beanRelationFixer,
+																			boolean nullable) {
 				throw new UnsupportedOperationException();
 			}
 			
@@ -338,12 +335,6 @@ public class JoinedTablesPolymorphicPersister<C, I> implements IEntityConfigured
 		});
 	}
 	
-	@Override
-	public <U, J, Z> String addPersister(String ownerStrategyName, IConfiguredPersister<U, J> persister, BeanRelationFixer<Z, U> beanRelationFixer,
-										 Column leftJoinColumn, Column rightJoinColumn, boolean isOuterJoin) {
-		throw new NotImplementedException("Waiting for use case");
-	}
-	
 	/**
 	 * Implementation made for one-to-one use case
 	 * 
@@ -355,8 +346,11 @@ public class JoinedTablesPolymorphicPersister<C, I> implements IEntityConfigured
 	 * @param <SRC>
 	 */
 	@Override
-	public <SRC> void joinAsOne(IJoinedTablesPersister<SRC, I> sourcePersister,
-								Column leftColumn, Column rightColumn, BeanRelationFixer<SRC, C> beanRelationFixer, boolean nullable) {
+	public <SRC, T1 extends Table, T2 extends Table> void joinAsOne(IJoinedTablesPersister<SRC, I> sourcePersister,
+																	Column<T1, I> leftColumn,
+																	Column<T2, I> rightColumn,
+																	BeanRelationFixer<SRC, C> beanRelationFixer,
+																	boolean nullable) {
 		
 		// because subgraph loading is made in 2 phases (load ids, then entities in a second SQL request done by load listener) we add a passive join
 		// (we don't need to create bean nor fulfill properties in first phase) 

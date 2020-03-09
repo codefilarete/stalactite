@@ -9,7 +9,6 @@ import org.danekja.java.util.function.serializable.SerializableFunction;
 import org.gama.lang.Duo;
 import org.gama.lang.collection.Iterables;
 import org.gama.stalactite.persistence.engine.BeanRelationFixer;
-import org.gama.stalactite.persistence.engine.IConfiguredPersister;
 import org.gama.stalactite.persistence.engine.IEntityConfiguredJoinedTablesPersister;
 import org.gama.stalactite.persistence.engine.IEntityPersister;
 import org.gama.stalactite.persistence.engine.cascade.IJoinedTablesPersister;
@@ -162,13 +161,7 @@ public class PersisterListenerWrapper<C, I> implements IEntityConfiguredJoinedTa
 	}
 	
 	@Override
-	public <U, J, Z> String addPersister(String ownerStrategyName, IConfiguredPersister<U, J> persister, BeanRelationFixer<Z, U> beanRelationFixer,
-										 Column leftJoinColumn, Column rightJoinColumn, boolean isOuterJoin) {
-		return surrogate.addPersister(ownerStrategyName, persister, beanRelationFixer, leftJoinColumn, rightJoinColumn, isOuterJoin);
-	}
-	
-	@Override
-	public <SRC> void joinAsOne(IJoinedTablesPersister<SRC, I> sourcePersister, Column leftColumn, Column rightColumn,
+	public <SRC, T1 extends Table, T2 extends Table> void joinAsOne(IJoinedTablesPersister<SRC, I> sourcePersister, Column<T1, I> leftColumn, Column<T2, I> rightColumn,
 								BeanRelationFixer<SRC, C> beanRelationFixer, boolean nullable) {
 		surrogate.joinAsOne(sourcePersister, leftColumn, rightColumn, beanRelationFixer, nullable);
 	}

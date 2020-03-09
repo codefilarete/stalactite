@@ -10,11 +10,11 @@ import org.gama.lang.Nullable;
 import org.gama.reflection.MethodReferenceDispatcher;
 import org.gama.stalactite.persistence.engine.BeanRelationFixer;
 import org.gama.stalactite.persistence.engine.ExecutableQuery;
-import org.gama.stalactite.persistence.engine.IConfiguredPersister;
 import org.gama.stalactite.persistence.engine.IEntityConfiguredJoinedTablesPersister;
 import org.gama.stalactite.persistence.engine.ISelectExecutor;
 import org.gama.stalactite.persistence.engine.PersistenceContext;
 import org.gama.stalactite.persistence.engine.Persister;
+import org.gama.stalactite.persistence.engine.cascade.AbstractJoin.JoinType;
 import org.gama.stalactite.persistence.engine.cascade.StrategyJoinsRowTransformer.EntityInflater;
 import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
 import org.gama.stalactite.persistence.mapping.IEntityMappingStrategy;
@@ -35,7 +35,7 @@ import static java.util.Collections.emptyList;
 /**
  * Persister for entity with multiple joined tables with "foreign key = primary key".
  * A main table is defined by the {@link ClassMappingStrategy} passed to constructor. Complementary tables are defined
- * with {@link #addPersister(String, IConfiguredPersister, BeanRelationFixer, Column, Column, boolean)}.
+ * with {@link JoinedStrategiesSelect#addRelationJoin(String, IEntityMappingStrategy, Column, Column, JoinType, BeanRelationFixer)}.
  * Entity load is defined by a select that joins all tables, each {@link ClassMappingStrategy} is called to complete
  * entity loading.
  * 
@@ -88,31 +88,6 @@ public class JoinedTablesPersister<C, I, T extends Table> extends Persister<C, I
 	}
 	
 	/**
-	 * Adds a mapping strategy to be applied for persistence. It will be called after the main strategy
-	 * (passed to constructor), in order of the Collection, or in reverse order for delete actions to take into account
-	 * potential foreign keys.
-	 * 
-	 * @param ownerStrategyName the name of the strategy on which the mappingStrategy parameter will be added
-	 * @param persister the {@link Persister} which strategy must be added
-	 * @param beanRelationFixer will help to fix the relation between instance at selection time
-	 * @param leftJoinColumn the column of the owning strategy to be used for joining with the newly added one (mappingStrategy parameter)
-	 * @param rightJoinColumn the column of the newly added strategy to be used for joining with the owning one
-	 * @param isOuterJoin true to use a left outer join (optional relation)
-	 * @see JoinedStrategiesSelect#addRelationJoin(String, IEntityMappingStrategy, Column, Column, org.gama.stalactite.persistence.engine.cascade.AbstractJoin.JoinType, BeanRelationFixer)
-	 */
-	@Override
-	public <U, J, Z> String addPersister(String ownerStrategyName,
-										 IConfiguredPersister<U, J> persister,
-										 BeanRelationFixer<Z, U> beanRelationFixer,
-										 Column leftJoinColumn,
-										 Column rightJoinColumn,
-										 boolean isOuterJoin) {
-		// We use our own select system since SelectListener is not aimed at joining table
-		return getJoinedStrategiesSelectExecutor().addRelation(ownerStrategyName, persister.getMappingStrategy(), beanRelationFixer,
-				leftJoinColumn, rightJoinColumn, isOuterJoin);
-	}
-	
-	/**
 	 * Overriden to implement a load by joining tables
 	 * 
 	 * @param ids entity identifiers
@@ -125,7 +100,7 @@ public class JoinedTablesPersister<C, I, T extends Table> extends Persister<C, I
 	
 	/**
 	 * Gives the {@link EntityInflater} of a join node.
-	 * Node name must be known so one should have kept it from the {@link #addPersister(String, IConfiguredPersister, BeanRelationFixer, Column, Column, boolean)}
+	 * Node name must be known so one should have kept it from the {@link JoinedStrategiesSelect#addRelationJoin(String, IEntityMappingStrategy, Column, Column, JoinType, BeanRelationFixer)}
 	 * return, else, since node naming strategy is not exposed it is not recommanded to use this method out of any test or debug purpose. 
 	 * 
 	 * @param nodeName a name of a added strategy
@@ -215,12 +190,14 @@ public class JoinedTablesPersister<C, I, T extends Table> extends Persister<C, I
 	 * @param <SRC>
 	 */
 	@Override
-	public <SRC> void joinAsOne(IJoinedTablesPersister<SRC, I> sourcePersister,
-								Column leftColumn, Column rightColumn, BeanRelationFixer<SRC, C> beanRelationFixer, boolean nullable) {
+	public <SRC, T1 extends Table, T2 extends Table> void joinAsOne(IJoinedTablesPersister<SRC, I> sourcePersister,
+								Column<T1, I> leftColumn, Column<T2, I> rightColumn, BeanRelationFixer<SRC, C> beanRelationFixer, boolean nullable) {
 		
-		String createdJoinNodeName = sourcePersister.addPersister(JoinedStrategiesSelect.FIRST_STRATEGY_NAME, this,
-				beanRelationFixer,
-				leftColumn, rightColumn, true);
+		// We use our own select system since SelectListener is not aimed at joining table
+		String createdJoinNodeName = sourcePersister.getJoinedStrategiesSelect().addRelationJoin(
+				JoinedStrategiesSelect.FIRST_STRATEGY_NAME, (IEntityMappingStrategy) this.getMappingStrategy(),
+				leftColumn, rightColumn, JoinType.OUTER, beanRelationFixer);
+		
 		
 		copyJoinsRootTo(sourcePersister.getJoinedStrategiesSelect(), createdJoinNodeName);
 	}

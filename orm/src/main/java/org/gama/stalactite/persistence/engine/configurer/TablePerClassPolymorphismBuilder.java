@@ -19,7 +19,6 @@ import org.gama.reflection.IReversibleAccessor;
 import org.gama.reflection.MethodReferenceDispatcher;
 import org.gama.stalactite.persistence.engine.BeanRelationFixer;
 import org.gama.stalactite.persistence.engine.ExecutableQuery;
-import org.gama.stalactite.persistence.engine.IConfiguredPersister;
 import org.gama.stalactite.persistence.engine.IDeleteExecutor;
 import org.gama.stalactite.persistence.engine.IEntityConfiguredJoinedTablesPersister;
 import org.gama.stalactite.persistence.engine.IEntityConfiguredPersister;
@@ -32,6 +31,7 @@ import org.gama.stalactite.persistence.engine.SubEntityMappingConfiguration;
 import org.gama.stalactite.persistence.engine.TableNamingStrategy;
 import org.gama.stalactite.persistence.engine.TablePerClassPolymorphicEntitySelectExecutor;
 import org.gama.stalactite.persistence.engine.TablePerClassPolymorphicSelectExecutor;
+import org.gama.stalactite.persistence.engine.cascade.AbstractJoin.JoinType;
 import org.gama.stalactite.persistence.engine.cascade.IJoinedTablesPersister;
 import org.gama.stalactite.persistence.engine.cascade.JoinedStrategiesSelect;
 import org.gama.stalactite.persistence.engine.cascade.JoinedTablesPersister;
@@ -176,16 +176,17 @@ abstract class TablePerClassPolymorphismBuilder<C, I, T extends Table> implement
 		return new PersisterListenerWrapper<>(new IEntityConfiguredJoinedTablesPersister<C, I>() {
 			
 			@Override
-			public <U, J, Z> String addPersister(String ownerStrategyName, IConfiguredPersister<U, J> persister, BeanRelationFixer<Z, U> beanRelationFixer, Column leftJoinColumn, Column rightJoinColumn, boolean isOuterJoin) {
-				throw new UnsupportedOperationException();
-			}
-			
-			@Override
-			public <SRC> void joinAsOne(IJoinedTablesPersister<SRC, I> sourcePersister, Column leftColumn, Column rightColumn, BeanRelationFixer<SRC,
-					C> beanRelationFixer, boolean nullable) {
-				String createdJoinNodeName = sourcePersister.addPersister(JoinedStrategiesSelect.FIRST_STRATEGY_NAME, this,
-						beanRelationFixer,
-						leftColumn, rightColumn, true);
+			public <SRC, T1 extends Table, T2 extends Table> void joinAsOne(IJoinedTablesPersister<SRC, I> sourcePersister,
+																			Column<T1, I> leftColumn,
+																			Column<T2, I> rightColumn,
+																			BeanRelationFixer<SRC, C> beanRelationFixer,
+																			boolean nullable) {
+				String createdJoinNodeName = sourcePersister.getJoinedStrategiesSelect().addRelationJoin(JoinedStrategiesSelect.FIRST_STRATEGY_NAME,
+						(IEntityMappingStrategy) this.getMappingStrategy(),
+						leftColumn,
+						rightColumn,
+						JoinType.OUTER,
+						beanRelationFixer);
 				
 				copyJoinsRootTo(sourcePersister.getJoinedStrategiesSelect(), createdJoinNodeName);
 			}

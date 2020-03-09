@@ -23,6 +23,7 @@ import org.gama.stalactite.persistence.engine.cascade.BeforeDeleteByIdCollection
 import org.gama.stalactite.persistence.engine.cascade.BeforeDeleteCollectionCascader;
 import org.gama.stalactite.persistence.engine.configurer.PolymorphicPersister;
 import org.gama.stalactite.persistence.engine.listening.SelectListener;
+import org.gama.stalactite.persistence.mapping.IEntityMappingStrategy;
 import org.gama.stalactite.persistence.structure.Column;
 
 import static org.gama.lang.bean.Objects.not;
@@ -66,7 +67,6 @@ public class OneToManyWithMappedAssociationEngine<SRC, TRGT, ID, C extends Colle
 				Objects.preventNull(manyRelationDefinition.getReverseSetter(), NOOP_REVERSE_SETTER));
 		
 		
-		Column targetPrimaryKey = (Column) Iterables.first(targetPersister.getMappingStrategy().getTargetTable().getPrimaryKey().getColumns());
 		// we add target subgraph joins to the one that was created
 		if (targetPersister instanceof PolymorphicPersister) {
 			// because subgraph loading is made in 2 phases (load ids, then entities in a second SQL request done by load listener) we add a passive join
@@ -79,12 +79,12 @@ public class OneToManyWithMappedAssociationEngine<SRC, TRGT, ID, C extends Colle
 			
 			((PolymorphicPersister<TRGT, ID>) targetPersister).joinAsMany(sourcePersister, sourcePrimaryKey, relationOwner, relationFixer, createdJoinNodeName);
 		} else {
-			String createdJoinNodeName = sourcePersister.addPersister(FIRST_STRATEGY_NAME,
-					targetPersister,
-					relationFixer,
+			String createdJoinNodeName = sourcePersister.getJoinedStrategiesSelect().addRelationJoin(FIRST_STRATEGY_NAME,
+					(IEntityMappingStrategy) targetPersister.getMappingStrategy(),
 					sourcePrimaryKey,
 					relationOwner,
-					relationOwner.isNullable()); // outer join for empty relation cases
+					relationOwner.isNullable() ? JoinType.OUTER : JoinType.INNER,	 // outer join for empty relation cases
+					relationFixer);
 			
 			targetPersister.copyJoinsRootTo(sourcePersister.getJoinedStrategiesSelect(), createdJoinNodeName);
 		}

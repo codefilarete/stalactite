@@ -1,7 +1,6 @@
 package org.gama.stalactite.persistence.engine.cascade;
 
 import org.gama.stalactite.persistence.engine.BeanRelationFixer;
-import org.gama.stalactite.persistence.engine.IConfiguredPersister;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
 
@@ -9,11 +8,6 @@ import org.gama.stalactite.persistence.structure.Table;
  * @author Guillaume Mary
  */
 public interface IJoinedTablesPersister<C, I> {
-	
-	<U, J, Z> String addPersister(String ownerStrategyName, IConfiguredPersister<U, J> persister, BeanRelationFixer<Z, U> beanRelationFixer,
-								  Column leftJoinColumn,
-								  Column rightJoinColumn,
-								  boolean isOuterJoin);
 	
 	/**
 	 * Called to join this instance with given persister. For this method, current instance is considered as the "right part" of the relation.
@@ -25,10 +19,10 @@ public interface IJoinedTablesPersister<C, I> {
 	 * @param beanRelationFixer setter that fix relation ofthis instance onto source persister instance
 	 * @param nullable true for optional relation, makes an outer join, else should create a inner join
 	 */
-	<SRC> void joinAsOne(IJoinedTablesPersister<SRC, I> sourcePersister,
-						 Column leftColumn, Column rightColumn, BeanRelationFixer<SRC, C> beanRelationFixer, boolean nullable);
+	<SRC, T1 extends Table, T2 extends Table> void joinAsOne(IJoinedTablesPersister<SRC, I> sourcePersister,
+						 Column<T1, I> leftColumn, Column<T2, I> rightColumn, BeanRelationFixer<SRC, C> beanRelationFixer, boolean nullable);
 	
-	JoinedStrategiesSelect<C, I, ?> getJoinedStrategiesSelect();
+	<T extends Table> JoinedStrategiesSelect<C, I, T> getJoinedStrategiesSelect();
 	
 	/**
 	 * Copies current instance joins root to given select

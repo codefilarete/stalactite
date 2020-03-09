@@ -23,7 +23,6 @@ import org.gama.lang.trace.ModifiableInt;
 import org.gama.reflection.MethodReferenceDispatcher;
 import org.gama.stalactite.persistence.engine.BeanRelationFixer;
 import org.gama.stalactite.persistence.engine.ExecutableQuery;
-import org.gama.stalactite.persistence.engine.IConfiguredPersister;
 import org.gama.stalactite.persistence.engine.IEntityConfiguredJoinedTablesPersister;
 import org.gama.stalactite.persistence.engine.IInsertExecutor;
 import org.gama.stalactite.persistence.engine.ISelectExecutor;
@@ -118,13 +117,11 @@ public class SingleTablePolymorphicPersister<C, I> implements IEntityConfiguredJ
 		this.persisterListenerWrapper = new PersisterListenerWrapper<>(new IEntityConfiguredJoinedTablesPersister<C, I>() {
 			
 			@Override
-			public <U, J, Z> String addPersister(String ownerStrategyName, IConfiguredPersister<U, J> persister, BeanRelationFixer<Z, U> beanRelationFixer, Column leftJoinColumn, Column rightJoinColumn, boolean isOuterJoin) {
-				throw new UnsupportedOperationException();
-			}
-			
-			@Override
-			public <SRC> void joinAsOne(IJoinedTablesPersister<SRC, I> sourcePersister, Column leftColumn, Column rightColumn,
-										BeanRelationFixer<SRC, C> beanRelationFixer, boolean nullable) {
+			public <SRC, T1 extends Table, T2 extends Table> void joinAsOne(IJoinedTablesPersister<SRC, I> sourcePersister,
+																			Column<T1, I> leftColumn,
+																			Column<T2, I> rightColumn,
+																			BeanRelationFixer<SRC, C> beanRelationFixer,
+																			boolean nullable) {
 				throw new UnsupportedOperationException();
 			}
 			
@@ -479,17 +476,12 @@ public class SingleTablePolymorphicPersister<C, I> implements IEntityConfiguredJ
 	}
 	
 	
-	
-	
-	
 	@Override
-	public <U, J, Z> String addPersister(String ownerStrategyName, IConfiguredPersister<U, J> persister, BeanRelationFixer<Z, U> beanRelationFixer, Column leftJoinColumn, Column rightJoinColumn, boolean isOuterJoin) {
-		throw new UnsupportedOperationException();
-	}
-	
-	@Override
-	public <SRC> void joinAsOne(IJoinedTablesPersister<SRC, I> sourcePersister, Column leftColumn, Column rightColumn, BeanRelationFixer<SRC,
-			C> beanRelationFixer, boolean nullable) {
+	public <SRC, T1 extends Table, T2 extends Table> void joinAsOne(IJoinedTablesPersister<SRC, I> sourcePersister,
+																	Column<T1, I> leftColumn,
+																	Column<T2, I> rightColumn,
+																	BeanRelationFixer<SRC, C> beanRelationFixer,
+																	boolean nullable) {
 		
 		// TODO: simplify query : it joins on target table as many as subentities which can be reduced to one join if FirstPhaseOneToOneLoader
 		//  can compute disciminatorValue 
