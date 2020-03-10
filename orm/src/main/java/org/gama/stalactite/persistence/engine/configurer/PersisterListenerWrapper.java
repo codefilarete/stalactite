@@ -162,8 +162,15 @@ public class PersisterListenerWrapper<C, I> implements IEntityConfiguredJoinedTa
 	
 	@Override
 	public <SRC, T1 extends Table, T2 extends Table> void joinAsOne(IJoinedTablesPersister<SRC, I> sourcePersister, Column<T1, I> leftColumn, Column<T2, I> rightColumn,
-								BeanRelationFixer<SRC, C> beanRelationFixer, boolean nullable) {
-		surrogate.joinAsOne(sourcePersister, leftColumn, rightColumn, beanRelationFixer, nullable);
+								BeanRelationFixer<SRC, C> beanRelationFixer, boolean optional) {
+		surrogate.joinAsOne(sourcePersister, leftColumn, rightColumn, beanRelationFixer, optional);
+	}
+	
+	@Override
+	public <SRC, T1 extends Table, T2 extends Table> void joinAsMany(IJoinedTablesPersister<SRC, I> sourcePersister, Column<T1, I> leftColumn,
+																	 Column<T2, I> rightColumn, BeanRelationFixer<SRC, C> beanRelationFixer,
+																	 String joinName, boolean optional) {
+		surrogate.joinAsMany(sourcePersister, leftColumn, rightColumn, beanRelationFixer, joinName, optional);
 	}
 	
 	@Override

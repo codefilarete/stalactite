@@ -181,24 +181,40 @@ public class JoinedTablesPersister<C, I, T extends Table> extends Persister<C, I
 	
 	/**
 	 * Implementation for simple one-to-one cases : we add our joins to given persister
-	 * 
-	 * @param sourcePersister source that needs this instance joins
-	 * @param leftColumn left part of the join, expected to be one of source table 
-	 * @param rightColumn right part of the join, expected to be one of current instance table
-	 * @param beanRelationFixer setter that fix relation ofthis instance onto source persister instance
-	 * @param nullable true for optional relation, makes an outer join, else should create a inner join
-	 * @param <SRC>
 	 */
 	@Override
 	public <SRC, T1 extends Table, T2 extends Table> void joinAsOne(IJoinedTablesPersister<SRC, I> sourcePersister,
-								Column<T1, I> leftColumn, Column<T2, I> rightColumn, BeanRelationFixer<SRC, C> beanRelationFixer, boolean nullable) {
+								Column<T1, I> leftColumn, Column<T2, I> rightColumn, BeanRelationFixer<SRC, C> beanRelationFixer, boolean optional) {
 		
 		// We use our own select system since SelectListener is not aimed at joining table
 		String createdJoinNodeName = sourcePersister.getJoinedStrategiesSelect().addRelationJoin(
-				JoinedStrategiesSelect.FIRST_STRATEGY_NAME, (IEntityMappingStrategy) this.getMappingStrategy(),
-				leftColumn, rightColumn, JoinType.OUTER, beanRelationFixer);
+				JoinedStrategiesSelect.FIRST_STRATEGY_NAME,
+				(IEntityMappingStrategy) this.getMappingStrategy(),
+				leftColumn,
+				rightColumn,
+				optional ? JoinType.OUTER : JoinType.INNER,
+				beanRelationFixer);
 		
+		copyJoinsRootTo(sourcePersister.getJoinedStrategiesSelect(), createdJoinNodeName);
+	}
+	
+	/**
+	 * Implementation for simple one-to-many cases : we add our joins to given persister
+	 */
+	@Override
+	public <SRC, T1 extends Table, T2 extends Table> void joinAsMany(IJoinedTablesPersister<SRC, I> sourcePersister,
+																	 Column<T1, I> leftColumn, Column<T2, I> rightColumn,
+																	 BeanRelationFixer<SRC, C> beanRelationFixer, String joinName, boolean optional) {
 		
+		String createdJoinNodeName = sourcePersister.getJoinedStrategiesSelect().addRelationJoin(
+				joinName,
+				(IEntityMappingStrategy) getMappingStrategy(),
+				leftColumn,
+				rightColumn,
+				optional ? JoinType.OUTER : JoinType.INNER,
+				beanRelationFixer);
+		
+		// adding our subgraph select to source persister
 		copyJoinsRootTo(sourcePersister.getJoinedStrategiesSelect(), createdJoinNodeName);
 	}
 	

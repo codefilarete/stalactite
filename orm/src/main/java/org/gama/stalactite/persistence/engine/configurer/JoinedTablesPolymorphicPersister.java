@@ -62,7 +62,7 @@ import org.gama.stalactite.sql.result.Row;
  * 
  * @author Guillaume Mary
  */
-public class JoinedTablesPolymorphicPersister<C, I> implements IEntityConfiguredJoinedTablesPersister<C, I>, PolymorphicPersister<C, I> {
+public class JoinedTablesPolymorphicPersister<C, I> implements IEntityConfiguredJoinedTablesPersister<C, I> {
 	
 	private static final ThreadLocal<Set<RelationIds<Object /* E */, Object /* target */, Object /* target identifier */ >>> DIFFERED_ENTITY_LOADER = new ThreadLocal<>();
 	
@@ -123,7 +123,15 @@ public class JoinedTablesPolymorphicPersister<C, I> implements IEntityConfigured
 																			Column<T1, I> leftColumn,
 																			Column<T2, I> rightColumn,
 																			BeanRelationFixer<SRC, C> beanRelationFixer,
-																			boolean nullable) {
+																			boolean optional) {
+				throw new UnsupportedOperationException();
+			}
+			
+			@Override
+			public <SRC, T1 extends Table, T2 extends Table> void joinAsMany(IJoinedTablesPersister<SRC, I> sourcePersister,
+																			 Column<T1, I> leftColumn, Column<T2, I> rightColumn,
+																			 BeanRelationFixer<SRC, C> beanRelationFixer, String joinName,
+																			 boolean optional) {
 				throw new UnsupportedOperationException();
 			}
 			
@@ -342,7 +350,7 @@ public class JoinedTablesPolymorphicPersister<C, I> implements IEntityConfigured
 	 * @param leftColumn left part of the join, expected to be one of source table 
 	 * @param rightColumn right part of the join, expected to be one of current instance table
 	 * @param beanRelationFixer setter that fix relation ofthis instance onto source persister instance
-	 * @param nullable true for optional relation, makes an outer join, else should create a inner join
+	 * @param optional true for optional relation, makes an outer join, else should create a inner join
 	 * @param <SRC>
 	 */
 	@Override
@@ -350,13 +358,13 @@ public class JoinedTablesPolymorphicPersister<C, I> implements IEntityConfigured
 																	Column<T1, I> leftColumn,
 																	Column<T2, I> rightColumn,
 																	BeanRelationFixer<SRC, C> beanRelationFixer,
-																	boolean nullable) {
+																	boolean optional) {
 		
 		// because subgraph loading is made in 2 phases (load ids, then entities in a second SQL request done by load listener) we add a passive join
 		// (we don't need to create bean nor fulfill properties in first phase) 
 		// NB: here rightColumn is parent class primary key or reverse column that owns property (depending how one-to-one relation is mapped) 
 		String mainTableJoinName = sourcePersister.getJoinedStrategiesSelect().addPassiveJoin(JoinedStrategiesSelect.FIRST_STRATEGY_NAME,
-				leftColumn, rightColumn, nullable ? JoinType.OUTER : JoinType.INNER, (Set<Column<Table, Object>>) (Set) Arrays.asSet(rightColumn));
+				leftColumn, rightColumn, optional ? JoinType.OUTER : JoinType.INNER, (Set<Column<Table, Object>>) (Set) Arrays.asSet(rightColumn));
 		Column primaryKey = (Column ) Iterables.first(getMappingStrategy().getTargetTable().getPrimaryKey().getColumns());
 		this.subclassIdMappingStrategies.forEach((c, idMappingStrategy) -> {
 			Column subclassPrimaryKey = (Column) Iterables.first(this.tablePerSubEntity.get(c).getPrimaryKey().getColumns());
@@ -374,14 +382,22 @@ public class JoinedTablesPolymorphicPersister<C, I> implements IEntityConfigured
 	}
 	
 	@Override
-	public <SRC> void joinAsMany(IJoinedTablesPersister<SRC, I> sourcePersister,
-								 Column sourcePrimaryKey, Column relationOwner, BeanRelationFixer<SRC, C> beanRelationFixer, String joinName) {
+	public <SRC, T1 extends Table, T2 extends Table> void joinAsMany(IJoinedTablesPersister<SRC, I> sourcePersister,
+																	 Column<T1, I> leftColumn,
+																	 Column<T2, I> rightColumn,
+																	 BeanRelationFixer<SRC, C> beanRelationFixer,
+																	 String joinName, boolean optional) {
 		
+		String createdJoinName = sourcePersister.getJoinedStrategiesSelect().addPassiveJoin(joinName,
+				leftColumn,
+				rightColumn,
+				JoinType.OUTER,
+				(Set) java.util.Collections.emptySet());
 		
 		// Subgraph loading is made in 2 phases (load ids, then entities in a second SQL request done by load listener)
 		this.subclassIdMappingStrategies.forEach((c, idMappingStrategy) -> {
 			Column subclassPrimaryKey = (Column) Iterables.first(this.tablePerSubEntity.get(c).getPrimaryKey().getColumns());
-			sourcePersister.getJoinedStrategiesSelect().addMergeJoin(joinName,
+			sourcePersister.getJoinedStrategiesSelect().addMergeJoin(createdJoinName,
 					new FirstPhaseOneToOneLoader<C, I>(idMappingStrategy, subclassPrimaryKey, mainSelectExecutor, parentClass),
 					(Set) Arrays.asSet(subclassPrimaryKey),
 					mainTablePrimaryKey,

@@ -25,7 +25,6 @@ import org.gama.stalactite.persistence.engine.IEntityConfiguredJoinedTablesPersi
 import org.gama.stalactite.persistence.engine.Persister;
 import org.gama.stalactite.persistence.engine.cascade.AbstractJoin.JoinType;
 import org.gama.stalactite.persistence.engine.cascade.AfterInsertCollectionCascader;
-import org.gama.stalactite.persistence.engine.configurer.PolymorphicPersister;
 import org.gama.stalactite.persistence.engine.listening.DeleteByIdListener;
 import org.gama.stalactite.persistence.engine.listening.DeleteListener;
 import org.gama.stalactite.persistence.engine.listening.PersisterListener;
@@ -74,42 +73,21 @@ public abstract class AbstractOneToManyWithAssociationTableEngine<SRC, TRGT, ID,
 	
 	public void addSelectCascade(IEntityConfiguredJoinedTablesPersister<SRC, ID> sourcePersister) {
 		
-		// we must join on the association table and add in-memory reassociation
+		// we join on the association table and add bean association in memory
 		String associationTableJoinNodeName = sourcePersister.getJoinedStrategiesSelect().addPassiveJoin(FIRST_STRATEGY_NAME,
 				associationPersister.getMainTable().getOneSidePrimaryKey(),
 				associationPersister.getMainTable().getOneSideKeyColumn(),
 				JoinType.OUTER, (Set) Collections.emptySet());
 		
-		// Note: reverse setter does nothing (NOOP) because there's no such a reverse setter in relation with association table
 		BeanRelationFixer<SRC, TRGT> beanRelationFixer = BeanRelationFixer.of(
 				manyRelationDescriptor.getCollectionSetter(),
 				manyRelationDescriptor.getCollectionGetter(),
 				manyRelationDescriptor.getCollectionFactory(),
 				Objects.preventNull(manyRelationDescriptor.getReverseSetter(), NOOP_REVERSE_SETTER));
 		
-		
-		if (targetPersister instanceof PolymorphicPersister) {
-			// because subgraph loading is made in 2 phases (load ids, then entities in a second SQL request done by load listener) we add a passive join
-			// (we don't need to create bean nor fulfill properties in first phase) 
-			// NB: here rightColumn is parent class primary key or reverse column that owns property (depending how one-to-one relation is mapped) 
-			String createdJoinNodeName = sourcePersister.getJoinedStrategiesSelect().addPassiveJoin(associationTableJoinNodeName,
-					associationPersister.getMainTable().getManySideKeyColumn(),
-					associationPersister.getMainTable().getManySidePrimaryKey(),
-					JoinType.OUTER, (Set) Collections.emptySet());
-			
-			((PolymorphicPersister<TRGT, ID>) targetPersister).joinAsMany(sourcePersister, associationPersister.getMainTable().getManySideKeyColumn(),
-					associationPersister.getMainTable().getManySidePrimaryKey(), beanRelationFixer, createdJoinNodeName);
-		} else {
-			String createdJoinNodeName = sourcePersister.getJoinedStrategiesSelect().addRelationJoin(associationTableJoinNodeName,
-					(IEntityMappingStrategy) targetPersister.getMappingStrategy(),
-					associationPersister.getMainTable().getManySideKeyColumn(),
-					associationPersister.getMainTable().getManySidePrimaryKey(),
-					JoinType.OUTER,
-					beanRelationFixer);
-			
-			// adding target subgraph select to source persister
-			targetPersister.copyJoinsRootTo(sourcePersister.getJoinedStrategiesSelect(), createdJoinNodeName);
-		}
+		// we add target subgraph joins to main persister
+		targetPersister.joinAsMany(sourcePersister, associationPersister.getMainTable().getManySideKeyColumn(),
+				associationPersister.getMainTable().getManySidePrimaryKey(), beanRelationFixer, associationTableJoinNodeName, true);
 		
 		// We trigger subgraph load event (via targetSelectListener) on loading of our graph.
 		// Done for instance for event consumers that initialize some things, because given ids of methods are those of source entity

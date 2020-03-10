@@ -180,7 +180,7 @@ abstract class TablePerClassPolymorphismBuilder<C, I, T extends Table> implement
 																			Column<T1, I> leftColumn,
 																			Column<T2, I> rightColumn,
 																			BeanRelationFixer<SRC, C> beanRelationFixer,
-																			boolean nullable) {
+																			boolean optional) {
 				String createdJoinNodeName = sourcePersister.getJoinedStrategiesSelect().addRelationJoin(JoinedStrategiesSelect.FIRST_STRATEGY_NAME,
 						(IEntityMappingStrategy) this.getMappingStrategy(),
 						leftColumn,
@@ -191,6 +191,14 @@ abstract class TablePerClassPolymorphismBuilder<C, I, T extends Table> implement
 				copyJoinsRootTo(sourcePersister.getJoinedStrategiesSelect(), createdJoinNodeName);
 			}
 			
+			@Override
+			public <SRC, T1 extends Table, T2 extends Table> void joinAsMany(IJoinedTablesPersister<SRC, I> sourcePersister,
+																			 Column<T1, I> leftColumn, Column<T2, I> rightColumn,
+																			 BeanRelationFixer<SRC, C> beanRelationFixer, String joinName,
+																			 boolean optional) {
+				throw new UnsupportedOperationException();
+				
+			}
 			@Override
 			public JoinedStrategiesSelect<C, I, ?> getJoinedStrategiesSelect() {
 				return mainPersister.getJoinedStrategiesSelect();

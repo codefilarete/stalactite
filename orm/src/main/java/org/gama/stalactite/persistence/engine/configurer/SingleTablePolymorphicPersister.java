@@ -1,6 +1,7 @@
 package org.gama.stalactite.persistence.engine.configurer;
 
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -60,7 +61,7 @@ import org.gama.stalactite.sql.result.Row;
 /**
  * @author Guillaume Mary
  */
-public class SingleTablePolymorphicPersister<C, I> implements IEntityConfiguredJoinedTablesPersister<C, I>, PolymorphicPersister<C, I> {
+public class SingleTablePolymorphicPersister<C, I> implements IEntityConfiguredJoinedTablesPersister<C, I> {
 	
 	private static final ThreadLocal<Set<RelationIds<Object /* E */, Object /* target */, Object /* target identifier */ >>> DIFFERED_ENTITY_LOADER = new ThreadLocal<>();
 	
@@ -121,7 +122,15 @@ public class SingleTablePolymorphicPersister<C, I> implements IEntityConfiguredJ
 																			Column<T1, I> leftColumn,
 																			Column<T2, I> rightColumn,
 																			BeanRelationFixer<SRC, C> beanRelationFixer,
-																			boolean nullable) {
+																			boolean optional) {
+				throw new UnsupportedOperationException();
+			}
+			
+			@Override
+			public <SRC, T1 extends Table, T2 extends Table> void joinAsMany(IJoinedTablesPersister<SRC, I> sourcePersister,
+																			 Column<T1, I> leftColumn, Column<T2, I> rightColumn,
+																			 BeanRelationFixer<SRC, C> beanRelationFixer, String joinName,
+																			 boolean optional) {
 				throw new UnsupportedOperationException();
 			}
 			
@@ -457,8 +466,18 @@ public class SingleTablePolymorphicPersister<C, I> implements IEntityConfiguredJ
 	}
 	
 	@Override
-	public <SRC> void joinAsMany(IJoinedTablesPersister<SRC, I> sourcePersister, Column leftColumn, Column rightColumn, BeanRelationFixer<SRC, C> beanRelationFixer,
-								 String joinName) {
+	public <SRC, T1 extends Table, T2 extends Table> void joinAsMany(IJoinedTablesPersister<SRC, I> sourcePersister,
+																	 Column<T1, I> leftColumn,
+																	 Column<T2, I> rightColumn,
+																	 BeanRelationFixer<SRC, C> beanRelationFixer,
+																	 String joinName, boolean optional) {
+		
+		sourcePersister.getJoinedStrategiesSelect().addPassiveJoin(joinName,
+				leftColumn,
+				rightColumn,
+				JoinType.OUTER,
+				(Set) Collections.emptySet());
+		
 		// TODO: simplify query : it joins on target table as many as subentities which can be reduced to one join if FirstPhaseOneToOneLoader
 		//  can compute disciminatorValue 
 		subEntitiesPersisters.forEach((c, subPersister) -> {
@@ -481,7 +500,7 @@ public class SingleTablePolymorphicPersister<C, I> implements IEntityConfiguredJ
 																	Column<T1, I> leftColumn,
 																	Column<T2, I> rightColumn,
 																	BeanRelationFixer<SRC, C> beanRelationFixer,
-																	boolean nullable) {
+																	boolean optional) {
 		
 		// TODO: simplify query : it joins on target table as many as subentities which can be reduced to one join if FirstPhaseOneToOneLoader
 		//  can compute disciminatorValue 
@@ -491,7 +510,7 @@ public class SingleTablePolymorphicPersister<C, I> implements IEntityConfiguredJ
 					new FirstPhaseOneToOneLoader(subPersister.getMappingStrategy().getIdMappingStrategy(), primaryKey, selectExecutor,
 							mainPersister.getClassToPersist(), discriminatorColumn, polymorphismPolicy.getDiscriminatorValue(c)),
 					(Set) Arrays.asHashSet(leftColumn, rightColumn, discriminatorColumn),
-					leftColumn, rightColumn, nullable ? JoinType.OUTER : JoinType.INNER);
+					leftColumn, rightColumn, optional ? JoinType.OUTER : JoinType.INNER);
 		});
 		
 		
