@@ -167,9 +167,8 @@ abstract class JoinedTablesPolymorphismBuilder<C, I, T extends Table> implements
 		Map<Class<? extends C>, JoinedTablesPersister<C, I, T>> subEntitiesPersisters = buildSubEntitiesPersisters(persistenceContext);
 		// NB: persisters are not registered into PersistenceContext because it may break implicit polymorphism principle (persisters are then
 		// available by PersistenceContext.getPersister(..)) and it is one sure that they are perfect ones (all their features should be tested)
-		return new JoinedTablesPolymorphicPersister(mainPersister, subEntitiesPersisters,
-				subEntitiesUpdaters,
-				persistenceContext.getConnectionProvider(), persistenceContext.getDialect());
+		return new PersisterListenerWrapper<>(new JoinedTablesPolymorphicPersister(
+				mainPersister, subEntitiesPersisters, subEntitiesUpdaters, persistenceContext.getConnectionProvider(), persistenceContext.getDialect()));
 	}
 	
 }

@@ -66,7 +66,6 @@ public class JoinedTablesPolymorphicPersister<C, I> implements IEntityConfigured
 	
 	private static final ThreadLocal<Set<RelationIds<Object /* E */, Object /* target */, Object /* target identifier */ >>> DIFFERED_ENTITY_LOADER = new ThreadLocal<>();
 	
-	private final PersisterListenerWrapper<C, I> persisterListenerWrapper;
 	private final Map<Class<? extends C>, ? extends IEntityConfiguredJoinedTablesPersister<C, I>> subEntitiesPersisters;
 	/** The wrapper around wub entities loaders, for 2-phases load  */
 	private final JoinedTablesPolymorphismSelectExecutor<C, I, ?> mainSelectExecutor;
@@ -78,13 +77,18 @@ public class JoinedTablesPolymorphicPersister<C, I> implements IEntityConfigured
 	private final Map<Class<? extends C>, IdMappingStrategy<C, I>> subclassIdMappingStrategies;
 	private final Map<Class<? extends C>, Table> tablePerSubEntity;
 	private final Column<?, I> mainTablePrimaryKey;
+	private final List<Table> subTables;
+	private final EntityCriteriaSupport<C> criteriaSupport;
+	private final JoinedTablesPolymorphismEntitySelectExecutor<C, I, ?> entitySelectExecutor;
+	private final JoinedTablesPersister<C, I, ?> parentPersister;
 	
 	public JoinedTablesPolymorphicPersister(JoinedTablesPersister<C, I, ?> parentPersister,
 											Map<Class<? extends C>, JoinedTablesPersister<C, I, ?>> subEntitiesPersisters,
 											Map<Class<? extends C>, IUpdateExecutor<C>> subclassUpdateExecutorsOverride,
 											ConnectionProvider connectionProvider,
 											Dialect dialect) {
-		this.parentClass = parentPersister.getClassToPersist();
+		this.parentPersister = parentPersister;
+		this.parentClass = this.parentPersister.getClassToPersist();
 		this.mainTablePrimaryKey = (Column) Iterables.first(parentPersister.getMappingStrategy().getTargetTable().getPrimaryKey().getColumns());
 		
 		this.subEntitiesPersisters = subEntitiesPersisters;
@@ -108,239 +112,208 @@ public class JoinedTablesPolymorphicPersister<C, I> implements IEntityConfigured
 				this.subclassSelectExecutors,
 				parentPersister.getMainTable(), connectionProvider, dialect);
 		
-		JoinedTablesPolymorphismEntitySelectExecutor<C, I, ?> entitySelectExecutor =
-				new JoinedTablesPolymorphismEntitySelectExecutor(subEntitiesPersisters, subEntitiesPersisters, parentPersister.getMainTable(),
-						parentPersister.getJoinedStrategiesSelectExecutor().getJoinedStrategiesSelect(), connectionProvider, dialect);
+		entitySelectExecutor = new JoinedTablesPolymorphismEntitySelectExecutor(subEntitiesPersisters, subEntitiesPersisters, parentPersister.getMainTable(),
+				parentPersister.getJoinedStrategiesSelectExecutor().getJoinedStrategiesSelect(), connectionProvider, dialect);
 		
-		EntityCriteriaSupport<C> criteriaSupport = new EntityCriteriaSupport<>(parentPersister.getMappingStrategy());
+		criteriaSupport = new EntityCriteriaSupport<>(parentPersister.getMappingStrategy());
 		
-		List<Table> subTables = Iterables.collectToList(subEntitiesPersisters.values(), p -> p.getMappingStrategy().getTargetTable());
-		
-		this.persisterListenerWrapper = new PersisterListenerWrapper<>(new IEntityConfiguredJoinedTablesPersister<C, I>() {
-			
-			@Override
-			public <SRC, T1 extends Table, T2 extends Table> void joinAsOne(IJoinedTablesPersister<SRC, I> sourcePersister,
-																			Column<T1, I> leftColumn,
-																			Column<T2, I> rightColumn,
-																			BeanRelationFixer<SRC, C> beanRelationFixer,
-																			boolean optional) {
-				throw new UnsupportedOperationException();
-			}
-			
-			@Override
-			public <SRC, T1 extends Table, T2 extends Table> void joinAsMany(IJoinedTablesPersister<SRC, I> sourcePersister,
-																			 Column<T1, I> leftColumn, Column<T2, I> rightColumn,
-																			 BeanRelationFixer<SRC, C> beanRelationFixer, String joinName,
-																			 boolean optional) {
-				throw new UnsupportedOperationException();
-			}
-			
-			@Override
-			public JoinedStrategiesSelect<C, I, ?> getJoinedStrategiesSelect() {
-				return parentPersister.getJoinedStrategiesSelect();
-			}
-			
-			@Override
-			public <E, ID, T extends Table> void copyJoinsRootTo(JoinedStrategiesSelect<E, ID, T> joinedStrategiesSelect, String joinName) {
-				getJoinedStrategiesSelect().getJoinsRoot().copyTo(joinedStrategiesSelect, joinName);
-			}
-			
-			@Override
-			public Collection<Table> giveImpliedTables() {
-				return Collections.cat(parentPersister.giveImpliedTables(), subTables);
-			}
-			
-			@Override
-			public PersisterListener<C, I> getPersisterListener() {
-				return parentPersister.getPersisterListener();
-			}
-			
-			@Override
-			public int insert(Iterable<? extends C> entities) {
-				parentPersister.insert(entities);
-				Map<Class, Set<C>> entitiesPerType = new HashMap<>();
-				for (C entity : entities) {
-					entitiesPerType.computeIfAbsent(entity.getClass(), cClass -> new HashSet<>()).add(entity);
-				}
-				ModifiableInt insertCount = new ModifiableInt();
-				JoinedTablesPolymorphicPersister.this.subclassInsertExecutors.forEach((subclass, insertExecutor) -> {
-					Set<C> subtypeEntities = entitiesPerType.get(subclass);
-					if (subtypeEntities != null) {
-						insertCount.increment(insertExecutor.insert(subtypeEntities));
-					}
-				});
-				
-				return insertCount.getValue();
-			}
-			
-			@Override
-			public int updateById(Iterable<C> entities) {
-				Map<Class, Set<C>> entitiesPerType = new HashMap<>();
-				for (C entity : entities) {
-					entitiesPerType.computeIfAbsent(entity.getClass(), cClass -> new HashSet<>()).add(entity);
-				}
-				ModifiableInt updateCount = new ModifiableInt();
-				JoinedTablesPolymorphicPersister.this.subclassUpdateExecutors.forEach((subclass, updateExecutor) -> {
-					Set<C> entitiesToUpdate = entitiesPerType.get(subclass);
-					if (entitiesToUpdate != null) {
-						updateCount.increment(updateExecutor.updateById(entitiesToUpdate));
-					}
-				});
-				
-				return updateCount.getValue();
-			}
-			
-			@Override
-			public int update(Iterable<? extends Duo<? extends C, ? extends C>> differencesIterable, boolean allColumnsStatement) {
-				Map<Class, Set<Duo<? extends C, ? extends C>>> entitiesPerType = new HashMap<>();
-				differencesIterable.forEach(payload -> {
-					C entity = Objects.preventNull(payload.getLeft(), payload.getRight());
-					entitiesPerType.computeIfAbsent(entity.getClass(), k -> new HashSet<>()).add(payload);
-				});
-				ModifiableInt updateCount = new ModifiableInt();
-				JoinedTablesPolymorphicPersister.this.subclassUpdateExecutors.forEach((subclass, updateExecutor) -> {
-					Set<Duo<? extends C, ? extends C>> entitiesToUpdate = entitiesPerType.get(subclass);
-					if (entitiesToUpdate != null) {
-						updateCount.increment(updateExecutor.update(entitiesToUpdate, allColumnsStatement));
-					}
-				});
-				
-				return updateCount.getValue();
-			}
-			
-			@Override
-			public List<C> select(Iterable<I> ids) {
-				return mainSelectExecutor.select(ids);
-			}
-			
-			@Override
-			public int delete(Iterable<C> entities) {
-				Map<Class, Set<C>> entitiesPerType = new HashMap<>();
-				for (C entity : entities) {
-					entitiesPerType.computeIfAbsent(entity.getClass(), cClass -> new HashSet<>()).add(entity);
-				}
-				ModifiableInt deleteCount = new ModifiableInt();
-				JoinedTablesPolymorphicPersister.this.subclassDeleteExecutors.forEach((subclass, deleteExecutor) -> {
-					Set<C> subtypeEntities = entitiesPerType.get(subclass);
-					if (subtypeEntities != null) {
-						deleteCount.increment(deleteExecutor.delete(subtypeEntities));
-					}
-				});
-				// NB: we use deleteExecutor not to trigger listener, because they should be triggered by wrapper, else we would try to delete twice
-				// related beans for instance
-				return parentPersister.getDeleteExecutor().delete(entities);
-			}
-			
-			@Override
-			public int deleteById(Iterable<C> entities) {
-				Map<Class, Set<C>> entitiesPerType = new HashMap<>();
-				for (C entity : entities) {
-					entitiesPerType.computeIfAbsent(entity.getClass(), cClass -> new HashSet<>()).add(entity);
-				}
-				ModifiableInt deleteCount = new ModifiableInt();
-				JoinedTablesPolymorphicPersister.this.subclassDeleteExecutors.forEach((subclass, deleteExecutor) -> {
-					Set<C> subtypeEntities = entitiesPerType.get(subclass);
-					if (subtypeEntities != null) {
-						deleteCount.increment(deleteExecutor.deleteById(subtypeEntities));
-					}
-				});
-				// NB: we use deleteExecutor not to trigger listener, because they should be triggered by wrapper, else we would try to delete twice
-				// related beans for instance
-				return parentPersister.getDeleteExecutor().deleteById(entities);
-			}
-			
-			@Override
-			public int persist(Iterable<C> entities) {
-				Map<Class, Set<C>> entitiesPerType = new HashMap<>();
-				for (C entity : entities) {
-					entitiesPerType.computeIfAbsent(entity.getClass(), cClass -> new HashSet<>()).add(entity);
-				}
-				ModifiableInt insertCount = new ModifiableInt();
-				subEntitiesPersisters.forEach((subclass, persister) -> {
-					Set<C> subtypeEntities = entitiesPerType.get(subclass);
-					if (subtypeEntities != null) {
-						insertCount.increment(persister.persist(subtypeEntities));
-					}
-				});
-				
-				return insertCount.getValue();
-			}
-			
-			@Override
-			public <O> ExecutableEntityQuery<C> selectWhere(SerializableFunction<C, O> getter, AbstractRelationalOperator<O> operator) {
-				EntityCriteriaSupport<C> localCriteriaSupport = newWhere();
-				localCriteriaSupport.and(getter, operator);
-				return wrapIntoExecutable(localCriteriaSupport);
-			}
-			
-			private RelationalExecutableEntityQuery<C> wrapIntoExecutable(EntityCriteriaSupport<C> localCriteriaSupport) {
-				MethodReferenceDispatcher methodDispatcher = new MethodReferenceDispatcher();
-				return methodDispatcher
-						.redirect((SerializableFunction<ExecutableQuery, List<C>>) ExecutableQuery::execute,
-								() -> entitySelectExecutor.loadGraph(localCriteriaSupport.getCriteria()))
-						.redirect(CriteriaProvider::getCriteria, localCriteriaSupport::getCriteria)
-						.redirect(RelationalEntityCriteria.class, localCriteriaSupport, true)
-						.build((Class<RelationalExecutableEntityQuery<C>>) (Class) RelationalExecutableEntityQuery.class);
-			}
-			
-			private EntityCriteriaSupport<C> newWhere() {
-				// we must clone the underlying support, else it would be modified for all subsequent invokations and criteria will aggregate
-				return new EntityCriteriaSupport<>(criteriaSupport);
-			}
-			
-			
-			@Override
-			public <O> ExecutableEntityQuery<C> selectWhere(SerializableBiConsumer<C, O> setter, AbstractRelationalOperator<O> operator) {
-				EntityCriteriaSupport<C> localCriteriaSupport = newWhere();
-				localCriteriaSupport.and(setter, operator);
-				return wrapIntoExecutable(localCriteriaSupport);
-			}
-			
-			@Override
-			public List<C> selectAll() {
-				return entitySelectExecutor.loadGraph(newWhere().getCriteria());
-			}
-			
-			@Override
-			public boolean isNew(C entity) {
-				return parentPersister.isNew(entity);
-			}
-			
-			@Override
-			public Class<C> getClassToPersist() {
-				return parentClass;
-			}
-			
-			@Override
-			public void addInsertListener(InsertListener insertListener) {
-				subEntitiesPersisters.values().forEach(p -> p.addInsertListener(insertListener));
-			}
-			
-			@Override
-			public void addUpdateListener(UpdateListener updateListener) {
-				subEntitiesPersisters.values().forEach(p -> p.addUpdateListener(updateListener));
-			}
-			
-			@Override
-			public void addSelectListener(SelectListener selectListener) {
-				subEntitiesPersisters.values().forEach(p -> p.addSelectListener(selectListener));
-			}
-			
-			@Override
-			public void addDeleteListener(DeleteListener deleteListener) {
-				subEntitiesPersisters.values().forEach(p -> p.addDeleteListener(deleteListener));
-			}
-			
-			@Override
-			public void addDeleteByIdListener(DeleteByIdListener deleteListener) {
-				subEntitiesPersisters.values().forEach(p -> p.addDeleteByIdListener(deleteListener));
-			}
-			
-			@Override
-			public IEntityMappingStrategy<C, I, ?> getMappingStrategy() {
-				return parentPersister.getMappingStrategy();
+		subTables = Iterables.collectToList(subEntitiesPersisters.values(), p -> p.getMappingStrategy().getTargetTable());
+	}
+	
+	@Override
+	public Collection<Table> giveImpliedTables() {
+		return Collections.cat(parentPersister.giveImpliedTables(), subTables);
+	}
+	
+	@Override
+	public PersisterListener<C, I> getPersisterListener() {
+		return parentPersister.getPersisterListener();
+	}
+	
+	@Override
+	public int insert(Iterable<? extends C> entities) {
+		parentPersister.insert(entities);
+		Map<Class, Set<C>> entitiesPerType = new HashMap<>();
+		for (C entity : entities) {
+			entitiesPerType.computeIfAbsent(entity.getClass(), cClass -> new HashSet<>()).add(entity);
+		}
+		ModifiableInt insertCount = new ModifiableInt();
+		this.subclassInsertExecutors.forEach((subclass, insertExecutor) -> {
+			Set<C> subtypeEntities = entitiesPerType.get(subclass);
+			if (subtypeEntities != null) {
+				insertCount.increment(insertExecutor.insert(subtypeEntities));
 			}
 		});
+		
+		return insertCount.getValue();
+	}
+	
+	@Override
+	public int updateById(Iterable<C> entities) {
+		Map<Class, Set<C>> entitiesPerType = new HashMap<>();
+		for (C entity : entities) {
+			entitiesPerType.computeIfAbsent(entity.getClass(), cClass -> new HashSet<>()).add(entity);
+		}
+		ModifiableInt updateCount = new ModifiableInt();
+		this.subclassUpdateExecutors.forEach((subclass, updateExecutor) -> {
+			Set<C> entitiesToUpdate = entitiesPerType.get(subclass);
+			if (entitiesToUpdate != null) {
+				updateCount.increment(updateExecutor.updateById(entitiesToUpdate));
+			}
+		});
+		
+		return updateCount.getValue();
+	}
+	
+	@Override
+	public int update(Iterable<? extends Duo<? extends C, ? extends C>> differencesIterable, boolean allColumnsStatement) {
+		Map<Class, Set<Duo<? extends C, ? extends C>>> entitiesPerType = new HashMap<>();
+		differencesIterable.forEach(payload -> {
+			C entity = Objects.preventNull(payload.getLeft(), payload.getRight());
+			entitiesPerType.computeIfAbsent(entity.getClass(), k -> new HashSet<>()).add(payload);
+		});
+		ModifiableInt updateCount = new ModifiableInt();
+		this.subclassUpdateExecutors.forEach((subclass, updateExecutor) -> {
+			Set<Duo<? extends C, ? extends C>> entitiesToUpdate = entitiesPerType.get(subclass);
+			if (entitiesToUpdate != null) {
+				updateCount.increment(updateExecutor.update(entitiesToUpdate, allColumnsStatement));
+			}
+		});
+		
+		return updateCount.getValue();
+	}
+	
+	@Override
+	public List<C> select(Iterable<I> ids) {
+		return mainSelectExecutor.select(ids);
+	}
+	
+	@Override
+	public int delete(Iterable<C> entities) {
+		Map<Class, Set<C>> entitiesPerType = new HashMap<>();
+		for (C entity : entities) {
+			entitiesPerType.computeIfAbsent(entity.getClass(), cClass -> new HashSet<>()).add(entity);
+		}
+		ModifiableInt deleteCount = new ModifiableInt();
+		this.subclassDeleteExecutors.forEach((subclass, deleteExecutor) -> {
+			Set<C> subtypeEntities = entitiesPerType.get(subclass);
+			if (subtypeEntities != null) {
+				deleteCount.increment(deleteExecutor.delete(subtypeEntities));
+			}
+		});
+		// NB: we use deleteExecutor not to trigger listener, because they should be triggered by wrapper, else we would try to delete twice
+		// related beans for instance
+		return parentPersister.getDeleteExecutor().delete(entities);
+	}
+	
+	@Override
+	public int deleteById(Iterable<C> entities) {
+		Map<Class, Set<C>> entitiesPerType = new HashMap<>();
+		for (C entity : entities) {
+			entitiesPerType.computeIfAbsent(entity.getClass(), cClass -> new HashSet<>()).add(entity);
+		}
+		ModifiableInt deleteCount = new ModifiableInt();
+		this.subclassDeleteExecutors.forEach((subclass, deleteExecutor) -> {
+			Set<C> subtypeEntities = entitiesPerType.get(subclass);
+			if (subtypeEntities != null) {
+				deleteCount.increment(deleteExecutor.deleteById(subtypeEntities));
+			}
+		});
+		// NB: we use deleteExecutor not to trigger listener, because they should be triggered by wrapper, else we would try to delete twice
+		// related beans for instance
+		return parentPersister.getDeleteExecutor().deleteById(entities);
+	}
+	
+	@Override
+	public int persist(Iterable<C> entities) {
+		Map<Class, Set<C>> entitiesPerType = new HashMap<>();
+		for (C entity : entities) {
+			entitiesPerType.computeIfAbsent(entity.getClass(), cClass -> new HashSet<>()).add(entity);
+		}
+		ModifiableInt insertCount = new ModifiableInt();
+		subEntitiesPersisters.forEach((subclass, persister) -> {
+			Set<C> subtypeEntities = entitiesPerType.get(subclass);
+			if (subtypeEntities != null) {
+				insertCount.increment(persister.persist(subtypeEntities));
+			}
+		});
+		
+		return insertCount.getValue();
+	}
+	
+	@Override
+	public <O> ExecutableEntityQuery<C> selectWhere(SerializableFunction<C, O> getter, AbstractRelationalOperator<O> operator) {
+		EntityCriteriaSupport<C> localCriteriaSupport = newWhere();
+		localCriteriaSupport.and(getter, operator);
+		return wrapIntoExecutable(localCriteriaSupport);
+	}
+	
+	private RelationalExecutableEntityQuery<C> wrapIntoExecutable(EntityCriteriaSupport<C> localCriteriaSupport) {
+		MethodReferenceDispatcher methodDispatcher = new MethodReferenceDispatcher();
+		return methodDispatcher
+				.redirect((SerializableFunction<ExecutableQuery, List<C>>) ExecutableQuery::execute,
+						() -> entitySelectExecutor.loadGraph(localCriteriaSupport.getCriteria()))
+				.redirect(CriteriaProvider::getCriteria, localCriteriaSupport::getCriteria)
+				.redirect(RelationalEntityCriteria.class, localCriteriaSupport, true)
+				.build((Class<RelationalExecutableEntityQuery<C>>) (Class) RelationalExecutableEntityQuery.class);
+	}
+	
+	private EntityCriteriaSupport<C> newWhere() {
+		// we must clone the underlying support, else it would be modified for all subsequent invokations and criteria will aggregate
+		return new EntityCriteriaSupport<>(criteriaSupport);
+	}
+	
+	
+	@Override
+	public <O> ExecutableEntityQuery<C> selectWhere(SerializableBiConsumer<C, O> setter, AbstractRelationalOperator<O> operator) {
+		EntityCriteriaSupport<C> localCriteriaSupport = newWhere();
+		localCriteriaSupport.and(setter, operator);
+		return wrapIntoExecutable(localCriteriaSupport);
+	}
+	
+	@Override
+	public List<C> selectAll() {
+		return entitySelectExecutor.loadGraph(newWhere().getCriteria());
+	}
+	
+	@Override
+	public boolean isNew(C entity) {
+		return parentPersister.isNew(entity);
+	}
+	
+	@Override
+	public Class<C> getClassToPersist() {
+		return parentClass;
+	}
+	
+	@Override
+	public void addInsertListener(InsertListener insertListener) {
+		subEntitiesPersisters.values().forEach(p -> p.addInsertListener(insertListener));
+	}
+	
+	@Override
+	public void addUpdateListener(UpdateListener updateListener) {
+		subEntitiesPersisters.values().forEach(p -> p.addUpdateListener(updateListener));
+	}
+	
+	@Override
+	public void addSelectListener(SelectListener selectListener) {
+		subEntitiesPersisters.values().forEach(p -> p.addSelectListener(selectListener));
+	}
+	
+	@Override
+	public void addDeleteListener(DeleteListener deleteListener) {
+		subEntitiesPersisters.values().forEach(p -> p.addDeleteListener(deleteListener));
+	}
+	
+	@Override
+	public void addDeleteByIdListener(DeleteByIdListener deleteListener) {
+		subEntitiesPersisters.values().forEach(p -> p.addDeleteByIdListener(deleteListener));
+	}
+	
+	@Override
+	public IEntityMappingStrategy<C, I, ?> getMappingStrategy() {
+		return parentPersister.getMappingStrategy();
 	}
 	
 	/**
@@ -412,113 +385,13 @@ public class JoinedTablesPolymorphicPersister<C, I> implements IEntityConfigured
 	
 	// for one-to-many cases
 	@Override
-	public <E, ID, T extends Table> void copyJoinsRootTo(JoinedStrategiesSelect<E, ID, T> joinedStrategiesSelect, String joinName) {
+	public <E, ID, TT extends Table> void copyJoinsRootTo(JoinedStrategiesSelect<E, ID, TT> joinedStrategiesSelect, String joinName) {
 		// nothing to do here, called by one-to-many engines, which actually call joinWithMany()
 	}
 	
 	@Override
 	public JoinedStrategiesSelect<C, I, ?> getJoinedStrategiesSelect() {
 		throw new NotImplementedException("Waiting for use case");
-	}
-	
-	@Override
-	public IEntityMappingStrategy<C, I, ?> getMappingStrategy() {
-		return persisterListenerWrapper.getMappingStrategy();
-	}
-	
-	@Override
-	public Collection<Table> giveImpliedTables() {
-		return persisterListenerWrapper.giveImpliedTables();
-	}
-	
-	@Override
-	public PersisterListener<C, I> getPersisterListener() {
-		return persisterListenerWrapper.getPersisterListener();
-	}
-	
-	@Override
-	public int persist(Iterable<C> entities) {
-		return persisterListenerWrapper.persist(entities);
-	}
-	
-	@Override
-	public <O> ExecutableEntityQuery<C> selectWhere(SerializableFunction<C, O> getter, AbstractRelationalOperator<O> operator) {
-		return persisterListenerWrapper.selectWhere(getter, operator);
-	}
-	
-	@Override
-	public <O> ExecutableEntityQuery<C> selectWhere(SerializableBiConsumer<C, O> setter, AbstractRelationalOperator<O> operator) {
-		return persisterListenerWrapper.selectWhere(setter, operator);
-	}
-	
-	@Override
-	public List<C> selectAll() {
-		return persisterListenerWrapper.selectAll();
-	}
-	
-	@Override
-	public boolean isNew(C entity) {
-		return persisterListenerWrapper.isNew(entity);
-	}
-	
-	@Override
-	public Class<C> getClassToPersist() {
-		return persisterListenerWrapper.getClassToPersist();
-	}
-	
-	@Override
-	public int delete(Iterable<C> entities) {
-		return persisterListenerWrapper.delete(entities);
-	}
-	
-	@Override
-	public int deleteById(Iterable<C> entities) {
-		return persisterListenerWrapper.deleteById(entities);
-	}
-	
-	@Override
-	public int insert(Iterable<? extends C> entities) {
-		return persisterListenerWrapper.insert(entities);
-	}
-	
-	@Override
-	public List<C> select(Iterable<I> ids) {
-		return persisterListenerWrapper.select(ids);
-	}
-	
-	@Override
-	public int updateById(Iterable<C> entities) {
-		return persisterListenerWrapper.updateById(entities);
-	}
-	
-	@Override
-	public int update(Iterable<? extends Duo<? extends C, ? extends C>> differencesIterable, boolean allColumnsStatement) {
-		return persisterListenerWrapper.update(differencesIterable, allColumnsStatement);
-	}
-	
-	@Override
-	public void addInsertListener(InsertListener<C> insertListener) {
-		persisterListenerWrapper.addInsertListener(insertListener);
-	}
-	
-	@Override
-	public void addUpdateListener(UpdateListener<C> updateListener) {
-		persisterListenerWrapper.addUpdateListener(updateListener);
-	}
-	
-	@Override
-	public void addSelectListener(SelectListener<C, I> selectListener) {
-		persisterListenerWrapper.addSelectListener(selectListener);
-	}
-	
-	@Override
-	public void addDeleteListener(DeleteListener<C> deleteListener) {
-		persisterListenerWrapper.addDeleteListener(deleteListener);
-	}
-	
-	@Override
-	public void addDeleteByIdListener(DeleteByIdListener<C> deleteListener) {
-		persisterListenerWrapper.addDeleteByIdListener(deleteListener);
 	}
 	
 	public static class RelationIds<SRC, TRGT, TRGTID> {

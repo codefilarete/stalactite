@@ -87,7 +87,8 @@ class SingleTablePolymorphismBuilder<C, I, T extends Table, D> implements Polymo
 		Map<Class<? extends C>, JoinedTablesPersister<C, I, T>> joinedTablesPersisters = buildSubEntitiesPersisters(persistenceContext);
 		// NB: persisters are not registered into PersistenceContext because it may break implicit polymorphism principle (persisters are then
 		// available by PersistenceContext.getPersister(..)) and it is one sure that they are perfect ones (all their features should be tested)
-		return new SingleTablePolymorphicPersister(mainPersister, joinedTablesPersisters, persistenceContext.getConnectionProvider(), persistenceContext.getDialect(), discriminatorColumn, polymorphismPolicy);
+		return new PersisterListenerWrapper<>(new SingleTablePolymorphicPersister(
+				mainPersister, joinedTablesPersisters, persistenceContext.getConnectionProvider(), persistenceContext.getDialect(), discriminatorColumn, polymorphismPolicy));
 	}
 	
 }

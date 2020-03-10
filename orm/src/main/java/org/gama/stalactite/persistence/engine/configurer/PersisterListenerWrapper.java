@@ -25,6 +25,10 @@ import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.query.model.AbstractRelationalOperator;
 
 /**
+ * Class for wrapping calls to {@link IEntityConfiguredJoinedTablesPersister#insert(Object)} and other update, delete, etc methods into
+ * {@link InsertListener#beforeInsert(Iterable)} and {@link InsertListener#afterInsert(Iterable)} (and corresponding methods for other methods),
+ * this is made throught an internal {@link PersisterListener}.
+ * 
  * @author Guillaume Mary
  */
 public class PersisterListenerWrapper<C, I> implements IEntityConfiguredJoinedTablesPersister<C, I> {
