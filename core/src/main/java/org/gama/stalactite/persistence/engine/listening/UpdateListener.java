@@ -74,15 +74,15 @@ public interface UpdateListener<C> {
 	 * @return arguments wrapped into an {@link UpdatePayload}, enhanced with updatable columns and values
 	 */
 	static <C, T extends Table<T>> Iterable<UpdatePayload<C, T>> computePayloads(Iterable<? extends Duo<? extends C, ? extends C>> entities,
-																			 boolean allColumns,
-																			 IMappingStrategy<C, T> mappingStrategy) {
-		return (Iterable<UpdatePayload<C, T>>) (Iterable) computePayloads(entities, allColumns,
-				(modified, unmodified, allColumns1) -> (Map<UpwhereColumn<Table>, Object>) (Map) mappingStrategy.getUpdateValues(modified, unmodified, allColumns1));
+																				 boolean allColumns,
+																				 IMappingStrategy<C, T> mappingStrategy) {
+		return (Iterable) computePayloads(entities, allColumns, (modified, unmodified, allColumnsLocal) ->
+				(Map) mappingStrategy.getUpdateValues(modified, unmodified, allColumnsLocal));
 	}
 	
 	static <C> Iterable<UpdatePayload<C, Table>> computePayloads(Iterable<? extends Duo<? extends C, ? extends C>> entities,
-																				 boolean allColumns,
-																				 UpdateValuesProvider<C> mappingStrategy) {
+																 boolean allColumns,
+																 UpdateValuesProvider<C> mappingStrategy) {
 		List<UpdatePayload<C, Table>> result = new ArrayList<>();
 		for (Duo<? extends C, ? extends C> next : entities) {
 			C modified = next.getLeft();
