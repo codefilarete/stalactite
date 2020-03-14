@@ -102,11 +102,12 @@ public class Table<SELF extends Table<SELF>> {
 	 *
 	 * @param name column name
 	 * @param javaType column type
-	 * @param size column type size
+	 * @param size column type size, null if type doesn't require any size ({@link #addColumn(String, Class)} should be prefered in this case)
+	 *             but let as such for column copy use case
 	 * @param <O> column type
 	 * @return the create column or the existing one
 	 */
-	public <O> Column<SELF, O> addColumn(String name, Class<O> javaType, int size) {
+	public <O> Column<SELF, O> addColumn(String name, Class<O> javaType, Integer size) {
 		return addertColumn(new Column<>((SELF) this, name, javaType, size));
 	}
 	
