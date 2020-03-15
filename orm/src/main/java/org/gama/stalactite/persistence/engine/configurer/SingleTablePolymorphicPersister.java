@@ -13,7 +13,6 @@ import java.util.function.Function;
 import org.danekja.java.util.function.serializable.SerializableBiConsumer;
 import org.danekja.java.util.function.serializable.SerializableFunction;
 import org.gama.lang.Duo;
-import org.gama.lang.Nullable;
 import org.gama.lang.Reflections;
 import org.gama.lang.StringAppender;
 import org.gama.lang.bean.Objects;
@@ -26,7 +25,6 @@ import org.gama.stalactite.persistence.engine.BeanRelationFixer;
 import org.gama.stalactite.persistence.engine.ExecutableQuery;
 import org.gama.stalactite.persistence.engine.IEntityConfiguredJoinedTablesPersister;
 import org.gama.stalactite.persistence.engine.IInsertExecutor;
-import org.gama.stalactite.persistence.engine.ISelectExecutor;
 import org.gama.stalactite.persistence.engine.IUpdateExecutor;
 import org.gama.stalactite.persistence.engine.PolymorphismPolicy.SingleTablePolymorphism;
 import org.gama.stalactite.persistence.engine.SingleTablePolymorphismEntitySelectExecutor;
@@ -37,7 +35,6 @@ import org.gama.stalactite.persistence.engine.cascade.JoinedStrategiesSelect;
 import org.gama.stalactite.persistence.engine.cascade.JoinedTablesPersister;
 import org.gama.stalactite.persistence.engine.cascade.JoinedTablesPersister.CriteriaProvider;
 import org.gama.stalactite.persistence.engine.cascade.JoinedTablesPersister.RelationalExecutableEntityQuery;
-import org.gama.stalactite.persistence.engine.cascade.StrategyJoinsRowTransformer.EntityInflater;
 import org.gama.stalactite.persistence.engine.listening.DeleteByIdListener;
 import org.gama.stalactite.persistence.engine.listening.DeleteListener;
 import org.gama.stalactite.persistence.engine.listening.IPersisterListener;
@@ -45,7 +42,6 @@ import org.gama.stalactite.persistence.engine.listening.InsertListener;
 import org.gama.stalactite.persistence.engine.listening.PersisterListener;
 import org.gama.stalactite.persistence.engine.listening.SelectListener;
 import org.gama.stalactite.persistence.engine.listening.UpdateListener;
-import org.gama.stalactite.persistence.mapping.AbstractTransformer;
 import org.gama.stalactite.persistence.mapping.ColumnedRow;
 import org.gama.stalactite.persistence.mapping.IEntityMappingStrategy;
 import org.gama.stalactite.persistence.mapping.IdMappingStrategy;
@@ -348,18 +344,19 @@ public class SingleTablePolymorphicPersister<C, I, T extends Table<T>, D> implem
 		
 		// TODO: simplify query : it joins on target table as many as subentities which can be reduced to one join if FirstPhaseOneToOneLoader
 		//  can compute disciminatorValue 
-		subEntitiesPersisters.forEach((c, subPersister) -> {
+		subEntitiesPersisters.forEach((subEntityType, subPersister) -> {
 			Column primaryKey = (Column ) Iterables.first(subPersister.getMainTable().getPrimaryKey().getColumns());
 			sourcePersister.getJoinedStrategiesSelect().addMergeJoin(JoinedStrategiesSelect.FIRST_STRATEGY_NAME,
-					new FirstPhaseOneToOneLoader(subPersister.getMappingStrategy().getIdMappingStrategy(), primaryKey, selectExecutor,
-							mainPersister.getClassToPersist(), discriminatorColumn, polymorphismPolicy.getDiscriminatorValue(c)),
+					new SingleTableFirstPhaseOneToOneLoader(subPersister.getMappingStrategy().getIdMappingStrategy(),
+							primaryKey, selectExecutor, mainPersister.getClassToPersist(), DIFFERED_ENTITY_LOADER,
+							subEntityType, discriminatorColumn),
 					(Set) Arrays.asHashSet(leftColumn, rightColumn, discriminatorColumn),
 					leftColumn, rightColumn, optional ? JoinType.OUTER : JoinType.INNER);
 		});
 		
 		
 		// adding second phase loader
-		((IPersisterListener) sourcePersister).addSelectListener(new SecondPhaseOneToOneLoader<>(beanRelationFixer));
+		((IPersisterListener) sourcePersister).addSelectListener(new SecondPhaseOneToOneLoader<>(beanRelationFixer, DIFFERED_ENTITY_LOADER));
 	}
 	
 	@Override
@@ -377,18 +374,18 @@ public class SingleTablePolymorphicPersister<C, I, T extends Table<T>, D> implem
 		
 		// TODO: simplify query : it joins on target table as many as subentities which can be reduced to one join if FirstPhaseOneToOneLoader
 		//  can compute disciminatorValue 
-		subEntitiesPersisters.forEach((c, subPersister) -> {
+		subEntitiesPersisters.forEach((subEntityType, subPersister) -> {
 			Column subclassPrimaryKey = (Column ) Iterables.first(subPersister.getMainTable().getPrimaryKey().getColumns());
 			sourcePersister.getJoinedStrategiesSelect().addMergeJoin(JoinedStrategiesSelect.FIRST_STRATEGY_NAME,
-					new FirstPhaseOneToOneLoader(subPersister.getMappingStrategy().getIdMappingStrategy(), subclassPrimaryKey, selectExecutor,
-							mainPersister.getClassToPersist(), discriminatorColumn, polymorphismPolicy.getDiscriminatorValue(c)),
+					new SingleTableFirstPhaseOneToOneLoader(subPersister.getMappingStrategy().getIdMappingStrategy(), subclassPrimaryKey, selectExecutor,
+							mainPersister.getClassToPersist(), DIFFERED_ENTITY_LOADER, subEntityType, discriminatorColumn),
 					(Set) Arrays.asHashSet(rightColumn, subclassPrimaryKey, discriminatorColumn),
 					leftColumn, subclassPrimaryKey, JoinType.OUTER);
 		});
 		
 		
 		// adding second phase loader
-		((IPersisterListener) sourcePersister).addSelectListener(new SecondPhaseOneToOneLoader<>(beanRelationFixer));	
+		((IPersisterListener) sourcePersister).addSelectListener(new SecondPhaseOneToOneLoader<>(beanRelationFixer, DIFFERED_ENTITY_LOADER));	
 	}
 	
 	@Override
@@ -401,125 +398,28 @@ public class SingleTablePolymorphicPersister<C, I, T extends Table<T>, D> implem
 		throw new UnsupportedOperationException();
 	}
 	
-	private static class FirstPhaseOneToOneLoader<E, ID, D> implements EntityInflater<E, ID> {
+	private class SingleTableFirstPhaseOneToOneLoader extends FirstPhaseOneToOneLoader {
+		private final Column<T, D> discriminatorColumn;
+		private final Class<? extends C> subEntityType;
 		
-		private final Column<Table, ID> primaryKeyColumn;
-		private final IdMappingStrategy<E, ID> idMappingStrategy;
-		private final ISelectExecutor<E, ID> selectExecutor;
-		private final Class<E> mainType;
-		private final Column<Table, D> discriminatorColumn;
-		private final Object discriminatorValue;
-		
-		public FirstPhaseOneToOneLoader(IdMappingStrategy<E, ID> subEntityIdMappingStrategy,
-										Column<Table, ID> primaryKeyColumn,
-										ISelectExecutor<E, ID> selectExecutor,
-										Class<E> mainType,
-										Column<Table, D> discriminatorColumn,
-										Object discriminatorValue) {
-			this.primaryKeyColumn = primaryKeyColumn;
-			this.idMappingStrategy = subEntityIdMappingStrategy;
-			this.selectExecutor = selectExecutor;
-			this.mainType = mainType;
+		private SingleTableFirstPhaseOneToOneLoader(IdMappingStrategy<C, I> subEntityIdMappingStrategy,
+													Column primaryKey,
+													SingleTablePolymorphismSelectExecutor<C, I, ?, Object> selectExecutor,
+													Class<C> mainType,
+													ThreadLocal<Set<RelationIds<Object, Object, Object>>> relationIdsHolder,
+													Class<? extends C> subEntityType,
+													Column<T, D> discriminatorColumn) {
+			super(subEntityIdMappingStrategy, primaryKey, selectExecutor, mainType, relationIdsHolder);
 			this.discriminatorColumn = discriminatorColumn;
-			this.discriminatorValue = discriminatorValue;
+			this.subEntityType = subEntityType;
 		}
 		
 		@Override
-		public Class<E> getEntityType() {
-			return mainType;
-		}
-		
-		@Override
-		public ID giveIdentifier(Row row, ColumnedRow columnedRow) {
-			return idMappingStrategy.getIdentifierAssembler().assemble(row, columnedRow);
-		}
-		
-		@Override
-		public AbstractTransformer<E> copyTransformerWithAliases(ColumnedRow columnedRow) {
-			return new AbstractTransformer<E>(null, columnedRow) {
-				
-				// this is not invoked
-				@Override
-				public AbstractTransformer<E> copyWithAliases(ColumnedRow columnedRow) {
-					throw new UnsupportedOperationException("this is not expected to be copied, row transformation algorithm as changed,"
-							+ " please fix it or fix this method");
-				}
-				
-				/**
-				 * Overriden to store data into {@link SingleTablePolymorphicPersister#DIFFERED_ENTITY_LOADER}, no property filling here.
-				 */
-				@Override
-				public void applyRowToBean(Row row, E bean) {
-					Set<RelationIds<Object, E, ID>> existingSet =  (Set) DIFFERED_ENTITY_LOADER.get();
-					D dtype = (D) columnedRow.getValue(discriminatorColumn, row);
-					if (discriminatorValue.equals(dtype)) {
-						existingSet.add(new RelationIds<>(selectExecutor,
-								idMappingStrategy.getIdAccessor()::getId, bean, (ID) getColumnedRow().getValue(primaryKeyColumn, row)));
-					}
-				}
-			};
-		}
-	}
-	
-	static class SecondPhaseOneToOneLoader<SRC, TRGT, ID> implements SelectListener<SRC, ID> {
-		
-		private final BeanRelationFixer<SRC, TRGT> beanRelationFixer;
-		
-		public SecondPhaseOneToOneLoader(BeanRelationFixer<SRC, TRGT> beanRelationFixer) {
-			this.beanRelationFixer = beanRelationFixer;
-		}
-		
-		@Override
-		public void beforeSelect(Iterable<ID> ids) {
-			Set<RelationIds<Object, Object, Object>> existingSet = DIFFERED_ENTITY_LOADER.get();
-			if (existingSet == null) {
-				existingSet = new HashSet<>();
-				DIFFERED_ENTITY_LOADER.set(existingSet);
+		protected void fillCurrentRelationIds(Row row, Object bean, ColumnedRow columnedRow) {
+			D dtype = (D) columnedRow.getValue(discriminatorColumn, row);
+			if (polymorphismPolicy.getDiscriminatorValue(subEntityType).equals(dtype)) {
+				super.fillCurrentRelationIds(row, bean, columnedRow);
 			}
 		}
-		
-		@Override
-		public void afterSelect(Iterable<? extends SRC> result) {
-			selectTargetEntities(result);
-			DIFFERED_ENTITY_LOADER.remove();
-		}
-		
-		/**
-		 * Mainly created to clarify types with TRGTID as parameter
-		 * @param sourceEntities main entities, those that have the relation
-		 * @param <TRGTID> target identifier type
-		 */
-		private <TRGTID> void selectTargetEntities(Iterable<? extends SRC> sourceEntities) {
-			Map<ISelectExecutor<TRGT, TRGTID>, Set<TRGTID>> selectsToExecute = new HashMap<>();
-			Map<ISelectExecutor<TRGT, TRGTID>, Function<TRGT, TRGTID>> idAccessors = new HashMap<>();
-			Map<SRC, Set<TRGTID>> targetIdPerSource = new HashMap<>();
-			Set<RelationIds<SRC, TRGT, TRGTID>> relationIds = (Set) DIFFERED_ENTITY_LOADER.get();
-			// we remove null targetIds (Target Ids may be null if relation is nullified) because
-			// - selecting entities with null id is non-sensence
-			// - it prevents from generating SQL "in ()" which is invalid
-			// - it prevents from NullPointerException when applying target to source
-			relationIds.stream().filter(r -> r.getTargetId() != null).forEach(r -> {
-				idAccessors.putIfAbsent(r.getSelectExecutor(), r.getIdAccessor());
-				targetIdPerSource.computeIfAbsent(r.getSource(), k -> new HashSet<>()).add(r.getTargetId());
-				selectsToExecute.computeIfAbsent(r.getSelectExecutor(), k -> new HashSet<>()).add(r.getTargetId());
-			});
-			
-			// we load target entities from their ids, and map them per their loader
-			Map<ISelectExecutor, List<TRGT>> targetsPerSelector = new HashMap<>();
-			selectsToExecute.forEach((selectExecutor, ids) -> {
-				targetsPerSelector.put(selectExecutor, selectExecutor.select(ids));
-			});
-			// then we apply them onto their source entities, to remember which target applies to which source, we use target id
-			Map<TRGTID, TRGT> targetPerId = new HashMap<>();
-			targetsPerSelector.forEach((selector, loadedTargets) -> targetPerId.putAll(Iterables.map(loadedTargets, idAccessors.get(selector))));
-			sourceEntities.forEach(src -> Nullable.nullable(targetIdPerSource.get(src))	// source may not have targetIds if relation if null
-					.invoke(s -> s.forEach(targetId -> beanRelationFixer.apply(src, targetPerId.get(targetId)))));
-		}
-		
-		@Override
-		public void onError(Iterable<ID> ids, RuntimeException exception) {
-			DIFFERED_ENTITY_LOADER.remove();
-		}
 	}
-	
 }
