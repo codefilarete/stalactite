@@ -43,7 +43,7 @@ public class TableTest {
 	}
 	
 	@Test
-	public void testFindColumn() {
+	public void findColumn() {
 		Table testInstance = new Table("toto");
 		// empty columns should throw any exception nor found anything
 		assertNull(testInstance.findColumn("xx"));
@@ -56,21 +56,21 @@ public class TableTest {
 	}
 	
 	@Test
-	public void testGetAbsoluteName() {
+	public void getAbsoluteName() {
 		Table testInstance = new Table("toto");
 		Column nameColumn = testInstance.addColumn("name", String.class);
 		assertEquals("toto.name", nameColumn.getAbsoluteName());
 	}
 	
 	@Test
-	public void testGetAlias() {
+	public void getAlias() {
 		Table testInstance = new Table("toto");
 		Column nameColumn = testInstance.addColumn("name", String.class);
 		assertEquals("toto_name", nameColumn.getAlias());
 	}
 	
 	@Test
-	public void testGetPrimaryKey() {
+	public void getPrimaryKey() {
 		Table testInstance = new Table("toto");
 		assertNull(testInstance.getPrimaryKey());
 		
@@ -86,7 +86,7 @@ public class TableTest {
 	}
 	
 	@Test
-	public void testGetColumnsPrimaryKey() {
+	public void getColumnsPrimaryKey() {
 		Table testInstance = new Table("toto");
 		assertNull(testInstance.getPrimaryKey());
 		
@@ -94,5 +94,37 @@ public class TableTest {
 		Column id = testInstance.addColumn("id", long.class).primaryKey();
 		assertEquals(Arrays.asSet(id), testInstance.getPrimaryKey().getColumns());
 		assertIterableEquals(Arrays.asList(dummyColumn), testInstance.getColumnsNoPrimaryKey());
+	}
+	
+	@Test
+	public void addForeignKey() {
+		Table testInstance1 = new Table("toto");
+		Column tataId = testInstance1.addColumn("tataId", Integer.class);
+		Table testInstance2 = new Table("tata");
+		Column id = testInstance2.addColumn("id", Integer.class);
+		
+		ForeignKey createdFK = testInstance1.addForeignKey("XX", tataId, id);
+		
+		assertEquals("XX", createdFK.getName());
+		assertEquals(Arrays.asSet(tataId), createdFK.getColumns());
+		assertEquals(testInstance1, createdFK.getTable());
+		assertEquals(Arrays.asSet(id), createdFK.getTargetColumns());
+		assertEquals(testInstance2, createdFK.getTargetTable());
+	}
+	
+	@Test
+	public void addForeignKey_withNamingFunction() {
+		Table<?> testInstance1 = new Table("toto");
+		Column tataId = testInstance1.addColumn("tataId", Integer.class);
+		Table testInstance2 = new Table("tata");
+		Column id = testInstance2.addColumn("id", Integer.class);
+		
+		ForeignKey createdFK = testInstance1.addForeignKey((c1, c2) -> c1.getName() + "_" + c2.getName(), tataId, id);
+		
+		assertEquals("tataId_id", createdFK.getName());
+		assertEquals(Arrays.asSet(tataId), createdFK.getColumns());
+		assertEquals(testInstance1, createdFK.getTable());
+		assertEquals(Arrays.asSet(id), createdFK.getTargetColumns());
+		assertEquals(testInstance2, createdFK.getTargetTable());
 	}
 }

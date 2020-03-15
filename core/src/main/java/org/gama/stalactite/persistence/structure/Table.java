@@ -8,6 +8,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 
 import org.gama.lang.Duo;
@@ -184,6 +185,11 @@ public class Table<SELF extends Table<SELF>> {
 	
 	public Set<ForeignKey<SELF, ?>> getForeignKeys() {
 		return Collections.unmodifiableSet(foreignKeys);
+	}
+	
+	public <T extends Table<T>, I> ForeignKey addForeignKey(BiFunction<Column, Column, String> namingFunction,
+															Column<SELF, I> column, Column<T, I> targetColumn) {
+		return this.addForeignKey(namingFunction.apply(column, targetColumn), column, targetColumn);
 	}
 	
 	public <T extends Table<T>, I> ForeignKey addForeignKey(String name, Column<SELF, I> column, Column<T, I> targetColumn) {
