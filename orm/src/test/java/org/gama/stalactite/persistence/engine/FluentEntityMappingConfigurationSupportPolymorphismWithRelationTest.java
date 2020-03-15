@@ -1,6 +1,8 @@
 package org.gama.stalactite.persistence.engine;
 
 import javax.sql.DataSource;
+import java.sql.Connection;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -44,6 +46,7 @@ import org.gama.stalactite.query.model.Operators;
 import org.gama.stalactite.sql.ConnectionProvider;
 import org.gama.stalactite.sql.binder.LambdaParameterBinder;
 import org.gama.stalactite.sql.binder.NullAwareParameterBinder;
+import org.gama.stalactite.sql.result.ResultSetIterator;
 import org.gama.stalactite.sql.test.HSQLDBInMemoryDataSource;
 import org.gama.stalactite.test.JdbcConnectionProvider;
 import org.gama.trace.ObjectPrinterBuilder;
@@ -1811,6 +1814,243 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 			testInstance.delete(modifiedCountry);
 			// Cities shouldn't be deleted (we didn't ask for delete orphan)
 			List<Long> cityIds = persistenceContext.newQuery("select id from city", Long.class)
+					.mapKey(i -> i, "id", Long.class)
+					.execute();
+			assertEquals(Arrays.asSet(grenoble.getId().getSurrogate(), lyon.getId().getSurrogate()), new HashSet<>(cityIds));
+		}
+		
+		@Test
+		void oneToTablePerClass_crud_withAssociationTable() {
+			
+			IFluentEmbeddableMappingBuilder<Country> timestampedPersistentBeanMapping =
+					embeddableBuilder(Country.class)
+							.add(Country::getName)
+							.embed(Country::getTimestamp);
+			
+			IFluentEntityMappingBuilder<City, Identifier<Long>> cityConfiguration =
+					entityBuilder(City.class, LONG_TYPE)
+							.add(City::getId).identifier(ALREADY_ASSIGNED)
+							.add(City::getName)
+							.mapPolymorphism(PolymorphismPolicy.tablePerClass()
+									.addSubClass(subentityBuilder(Village.class)
+											.add(Village::getBarCount))
+									.addSubClass(subentityBuilder(Town.class)
+											.add(Town::getDiscotecCount))
+							);
+			
+			IEntityPersister<Country, Identifier<Long>> testInstance = entityBuilder(Country.class, LONG_TYPE)
+					.add(Country::getId).identifier(ALREADY_ASSIGNED)
+					.addOneToManySet(Country::getCities, cityConfiguration)
+						.reverselySetBy(City::setCountry)	// necessary if you want bidirectionnality to be set in memory
+						.cascading(RelationMode.ALL)
+					.mapSuperClass(timestampedPersistentBeanMapping)
+					.build(persistenceContext);
+			
+			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+			ddlDeployer.deployDDL();
+			
+			// insert
+			Country country = new Country(1L);
+			Village grenoble = new Village(42L);
+			grenoble.setName("Grenoble");
+			country.addCity(grenoble);
+			testInstance.insert(country);
+			
+			// testing select
+			Country loadedCountry = testInstance.select(country.getId());
+			assertEquals(country, loadedCountry);
+			// ensuring that reverse side is also set
+			assertEquals(Arrays.asHashSet(loadedCountry), Iterables.collect(loadedCountry.getCities(), City::getCountry, HashSet::new));
+			
+			// testing update and select of mixed type of City
+			Town lyon = new Town(17L);
+			lyon.setDiscotecCount(123);
+			lyon.setName("Lyon");
+			country.addCity(lyon);
+			grenoble.setBarCount(51);
+			testInstance.update(country, loadedCountry, true);
+			
+			loadedCountry = testInstance.select(country.getId());
+			// resulting select must contain Town and Village
+			assertEquals(Arrays.asHashSet(grenoble, lyon), loadedCountry.getCities());
+			// bidirectionality must be preserved
+			assertEquals(Arrays.asHashSet(loadedCountry), Iterables.collect(loadedCountry.getCities(), City::getCountry, HashSet::new));
+			
+			// testing update : removal of a city, reversed column must be set to null
+			Country modifiedCountry = new Country(country.getId());
+			modifiedCountry.addCity(Iterables.first(country.getCities()));
+			
+			testInstance.update(modifiedCountry, country, false);
+			// there's only 1 relation in table
+			List<Long> cityCountryIds = persistenceContext.newQuery("select Country_id from Country_cities", Long.class)
+					.mapKey(i -> i, "Country_id", Long.class)
+					.execute();
+			assertEquals(Arrays.asList(country.getId().getSurrogate()), cityCountryIds);
+			
+			// testing delete
+			testInstance.delete(modifiedCountry);
+			// Cities shouldn't be deleted (we didn't ask for delete orphan)
+			List<Long> cityIds = persistenceContext.newQuery("select id from Town union all select id from Village", Long.class)
+					.mapKey(i -> i, "id", Long.class)
+					.execute();
+			assertEquals(Arrays.asSet(grenoble.getId().getSurrogate(), lyon.getId().getSurrogate()), new HashSet<>(cityIds));
+		}
+		
+		@Test
+		void oneToTablePerClass_crud_ownedByReverseSide_foreignKeysAreCreated() throws SQLException {
+			
+			IFluentEmbeddableMappingBuilder<Country> timestampedPersistentBeanMapping =
+					embeddableBuilder(Country.class)
+							.add(Country::getName)
+							.embed(Country::getTimestamp);
+			
+			IFluentEntityMappingBuilder<City, Identifier<Long>> cityConfiguration =
+					entityBuilder(City.class, LONG_TYPE)
+							.add(City::getId).identifier(ALREADY_ASSIGNED)
+							.add(City::getName)
+							.mapPolymorphism(PolymorphismPolicy.tablePerClass()
+									.addSubClass(subentityBuilder(Village.class)
+											.add(Village::getBarCount))
+									.addSubClass(subentityBuilder(Town.class)
+											.add(Town::getDiscotecCount))
+							);
+			
+			IEntityPersister<Country, Identifier<Long>> testInstance = entityBuilder(Country.class, LONG_TYPE)
+					.add(Country::getId).identifier(ALREADY_ASSIGNED)
+					.addOneToManySet(Country::getCities, cityConfiguration)
+					.mappedBy(City::getCountry)
+					.cascading(RelationMode.ALL)
+					.mapSuperClass(timestampedPersistentBeanMapping)
+					.build(persistenceContext);
+			
+			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+			ddlDeployer.deployDDL();
+			
+			Connection currentConnection = persistenceContext.getCurrentConnection();
+			ResultSetIterator<JdbcForeignKey> fkVillageIterator = new ResultSetIterator<JdbcForeignKey>(currentConnection.getMetaData()
+					.getImportedKeys(null, null, "VILLAGE")) {
+				@Override
+				public JdbcForeignKey convert(ResultSet rs) throws SQLException {
+					return new JdbcForeignKey(
+							rs.getString("FK_NAME"),
+							rs.getString("FKTABLE_NAME"), rs.getString("FKCOLUMN_NAME"),
+							rs.getString("PKTABLE_NAME"), rs.getString("PKCOLUMN_NAME")
+					);
+				}
+			};
+			JdbcForeignKey foundForeignKey = Iterables.first(fkVillageIterator);
+			JdbcForeignKey expectedForeignKey = new JdbcForeignKey("FK_VILLAGE_COUNTRYID_COUNTRY_ID", "VILLAGE", "COUNTRYID", "COUNTRY", "ID");
+			assertEquals(expectedForeignKey.getSignature(), foundForeignKey.getSignature());
+			
+			ResultSetIterator<JdbcForeignKey> fkTownIterator = new ResultSetIterator<JdbcForeignKey>(currentConnection.getMetaData()
+					.getImportedKeys(null, null, "TOWN")) {
+				@Override
+				public JdbcForeignKey convert(ResultSet rs) throws SQLException {
+					return new JdbcForeignKey(
+							rs.getString("FK_NAME"),
+							rs.getString("FKTABLE_NAME"), rs.getString("FKCOLUMN_NAME"),
+							rs.getString("PKTABLE_NAME"), rs.getString("PKCOLUMN_NAME")
+					);
+				}
+			};
+			foundForeignKey = Iterables.first(fkTownIterator);
+			expectedForeignKey = new JdbcForeignKey("FK_TOWN_COUNTRYID_COUNTRY_ID", "TOWN", "COUNTRYID", "COUNTRY", "ID");
+			assertEquals(expectedForeignKey.getSignature(), foundForeignKey.getSignature());
+		}
+			
+		@Test
+		void oneToTablePerClass_crud_ownedByReverseSide() {
+			
+			IFluentEmbeddableMappingBuilder<Country> timestampedPersistentBeanMapping =
+					embeddableBuilder(Country.class)
+							.add(Country::getName)
+							.embed(Country::getTimestamp);
+			
+			IFluentEntityMappingBuilder<City, Identifier<Long>> cityConfiguration =
+					entityBuilder(City.class, LONG_TYPE)
+							.add(City::getId).identifier(ALREADY_ASSIGNED)
+							.add(City::getName)
+							.mapPolymorphism(PolymorphismPolicy.tablePerClass()
+									.addSubClass(subentityBuilder(Village.class)
+											.add(Village::getBarCount))
+									.addSubClass(subentityBuilder(Town.class)
+											.add(Town::getDiscotecCount))
+							);
+			
+			IEntityPersister<Country, Identifier<Long>> testInstance = entityBuilder(Country.class, LONG_TYPE)
+					.add(Country::getId).identifier(ALREADY_ASSIGNED)
+					.addOneToManySet(Country::getCities, cityConfiguration)
+					.mappedBy(City::getCountry)
+					.cascading(RelationMode.ALL)
+					.mapSuperClass(timestampedPersistentBeanMapping)
+					.build(persistenceContext);
+			
+			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+			ddlDeployer.deployDDL();
+			
+			// insert
+			Country country = new Country(1L);
+			Village grenoble = new Village(42L);
+			grenoble.setName("Grenoble");
+			country.addCity(grenoble);
+			testInstance.insert(country);
+			
+			// testing select
+			Country loadedCountry = testInstance.select(country.getId());
+			assertEquals(country, loadedCountry);
+			
+			// we use a printer to compare our results because entities override equals() which only keep "id" into account
+			// which is far from sufficent for ou checking
+			// Note htat we don't us ObjectPrinterBuilder#printerFor because it take getCities() into account whereas its code is not ready for recursivity 
+			ObjectPrinter<Country> countryPrinter = new ObjectPrinterBuilder<Country>()
+					.addProperty(Country::getId)
+					.addProperty(Country::getName)
+					.addProperty(Country::getTimestamp)
+					.withPrinter(AbstractIdentifier.class, Functions.chain(AbstractIdentifier::getSurrogate, String::valueOf))
+					.build();
+			ObjectPrinter<City> cityPrinter = new ObjectPrinterBuilder<City>()
+					.addProperty(City::getId)
+					.addProperty(Village::getBarCount)
+					.addProperty(Town::getDiscotecCount)
+					.addProperty(City::getName)
+					.addProperty(City::getCountry)
+					.withPrinter(AbstractIdentifier.class, Functions.chain(AbstractIdentifier::getSurrogate, String::valueOf))
+					.withPrinter(Country.class, countryPrinter::toString)
+					.build();
+			
+			Assertions.assertAllEquals(country.getCities(), loadedCountry.getCities(), cityPrinter::toString);
+			// ensuring that reverse side is also set
+			assertEquals(Arrays.asHashSet(loadedCountry), Iterables.collect(loadedCountry.getCities(), City::getCountry, HashSet::new));
+			
+			// testing update and select of mixed type of City
+			Town lyon = new Town(17L);
+			lyon.setDiscotecCount(123);
+			lyon.setName("Lyon");
+			country.addCity(lyon);
+			grenoble.setBarCount(51);
+			testInstance.update(country, loadedCountry, true);
+			
+			loadedCountry = testInstance.select(country.getId());
+			// resulting select must contain Town and Village
+			assertEquals(Arrays.asHashSet(grenoble, lyon), loadedCountry.getCities());
+			// bidirectionality must be preserved
+			assertEquals(Arrays.asHashSet(loadedCountry), Iterables.collect(loadedCountry.getCities(), City::getCountry, HashSet::new));
+			
+			// testing update : removal of a city, reversed column must be set to null
+			Country modifiedCountry = new Country(country.getId().getSurrogate());
+			modifiedCountry.addCity(Iterables.first(country.getCities()));
+			
+			testInstance.update(modifiedCountry, country, false);
+			// there's only 1 relation in table
+			List<Long> cityCountryIds = persistenceContext.newQuery("select countryId from Town union all select countryId from Village", Long.class)
+					.mapKey(i -> i, "countryId", Long.class)
+					.execute();
+			assertEquals(Arrays.asSet(country.getId().getSurrogate(), null), new HashSet<>(cityCountryIds));
+			
+			// testing delete
+			testInstance.delete(modifiedCountry);
+			// Cities shouldn't be deleted (we didn't ask for delete orphan)
+			List<Long> cityIds = persistenceContext.newQuery("select id from Town union all select id from Village", Long.class)
 					.mapKey(i -> i, "id", Long.class)
 					.execute();
 			assertEquals(Arrays.asSet(grenoble.getId().getSurrogate(), lyon.getId().getSurrogate()), new HashSet<>(cityIds));

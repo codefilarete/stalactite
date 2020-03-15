@@ -519,6 +519,12 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 		});
 	}
 	
+	/**
+	 * Creates primary keys on given tables according to given identification
+	 * 
+	 * @param identification informations that allow to create primary keys
+	 * @param joinedTables target tables on which primary keys must be added
+	 */
 	void addPrimarykeys(Identification identification, Set<Table> joinedTables) {
 		Table pkTable = this.tableMap.get(identification.identificationDefiner);
 		if (pkTable == null) {

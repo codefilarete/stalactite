@@ -394,38 +394,7 @@ public class JoinedTablesPolymorphicPersister<C, I> implements IEntityConfigured
 		throw new NotImplementedException("Waiting for use case");
 	}
 	
-	public static class RelationIds<SRC, TRGT, TRGTID> {
-		private final ISelectExecutor<TRGT, TRGTID> selectExecutor;
-		private final Function<TRGT, TRGTID> idAccessor;
-		private final SRC source;
-		private final TRGTID targetId;
-		
-		
-		private RelationIds(ISelectExecutor<TRGT, TRGTID> selectExecutor, Function<TRGT, TRGTID> idAccessor, SRC source, TRGTID targetId) {
-			this.selectExecutor = selectExecutor;
-			this.idAccessor = idAccessor;
-			this.source = source;
-			this.targetId = targetId;
-		}
-		
-		public ISelectExecutor<TRGT, TRGTID> getSelectExecutor() {
-			return selectExecutor;
-		}
-		
-		public Function<TRGT, TRGTID> getIdAccessor() {
-			return idAccessor;
-		}
-		
-		public SRC getSource() {
-			return source;
-		}
-		
-		public TRGTID getTargetId() {
-			return targetId;
-		}
-	}
-	
-	static class FirstPhaseOneToOneLoader<E, ID> implements EntityInflater<E, ID> {
+	private static class FirstPhaseOneToOneLoader<E, ID> implements EntityInflater<E, ID> {
 		
 		private final Column<Table, ID> primaryKeyColumn;
 		private final IdMappingStrategy<E, ID> idMappingStrategy;

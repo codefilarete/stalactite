@@ -312,7 +312,7 @@ public class SingleTablePolymorphicPersister<C, I, T extends Table<T>, D> implem
 	/**
 	 * Overriden to capture {@link IEntityMappingStrategy#addSilentColumnInserter(Column, Function)} and
 	 * {@link IEntityMappingStrategy#addSilentColumnUpdater(Column, Function)} (see {@link org.gama.stalactite.persistence.engine.CascadeManyConfigurer})
-	 * Made to dispatch those methods subclass strategies since their persister are is charge of managing their entities (not the parent one).
+	 * Made to dispatch those methods subclass strategies since their persisters are in charge of managing their entities (not the parent one).
 	 *
 	 * Design question : one may think that's not a good design to override a getter, caller should invoke an intention-clear method on
 	 * ourselves (Persister) but the case is to add a silent Column insert/update which is not the goal of the Persister to know implementation
@@ -320,24 +320,46 @@ public class SingleTablePolymorphicPersister<C, I, T extends Table<T>, D> implem
 	 * {@link Column} actions.
 	 *
 	 * @param <T> table type
-	 * @return a enhanced version of our main persister mapping strategy which dispatches silent column insert/update to sub-entities ones
+	 * @return an enhanced version of our main persister mapping strategy which dispatches silent column insert/update to sub-entities ones
 	 */
 	@Override
 	public <T extends Table> IEntityMappingStrategy<C, I, T> getMappingStrategy() {
-		// TODO: This is not the cleanest implementation because we use MethodReferenceDispatcher which kind of overkill : use a dispatching
+		// TODO: This is not the cleanest implementation because we use MethodReferenceDispatcher which is kind of overkill : use a dispatching
 		//  interface
 		MethodReferenceDispatcher methodReferenceDispatcher = new MethodReferenceDispatcher();
-		IEntityMappingStrategy<C, I, T> result = methodReferenceDispatcher.redirect(
-				(SerializableTriConsumer<IEntityMappingStrategy<C, I, T>, Column<T, Object>, Function<C, Object>>)
-						IEntityMappingStrategy::addSilentColumnInserter,
-				(c, f) -> subEntitiesPersisters.values().forEach(p -> p.getMappingStrategy().addSilentColumnInserter((Column) c, f)))
-				.redirect(
-						(SerializableTriConsumer<IEntityMappingStrategy<C, I, T>, Column<T, Object>, Function<C, Object>>)
+		IEntityMappingStrategy<C, I, T> result = methodReferenceDispatcher
+				.redirect((SerializableTriConsumer<IEntityMappingStrategy<C, I, T>, Column<T, Object>, Function<C, Object>>)
+								IEntityMappingStrategy::addSilentColumnInserter,
+						(c, f) -> subEntitiesPersisters.values().forEach(p -> p.getMappingStrategy().addSilentColumnInserter((Column) c, f)))
+				.redirect((SerializableTriConsumer<IEntityMappingStrategy<C, I, T>, Column<T, Object>, Function<C, Object>>)
 								IEntityMappingStrategy::addSilentColumnUpdater,
 						(c, f) -> subEntitiesPersisters.values().forEach(p -> p.getMappingStrategy().addSilentColumnUpdater((Column) c, f)))
 				.fallbackOn(mainPersister.getMappingStrategy())
 				.build((Class<IEntityMappingStrategy<C, I, T>>) (Class) IEntityMappingStrategy.class);
 		return result;
+	}
+	
+	@Override
+	public <SRC, T1 extends Table, T2 extends Table> void joinAsOne(IJoinedTablesPersister<SRC, I> sourcePersister,
+																	Column<T1, I> leftColumn,
+																	Column<T2, I> rightColumn,
+																	BeanRelationFixer<SRC, C> beanRelationFixer,
+																	boolean optional) {
+		
+		// TODO: simplify query : it joins on target table as many as subentities which can be reduced to one join if FirstPhaseOneToOneLoader
+		//  can compute disciminatorValue 
+		subEntitiesPersisters.forEach((c, subPersister) -> {
+			Column primaryKey = (Column ) Iterables.first(subPersister.getMainTable().getPrimaryKey().getColumns());
+			sourcePersister.getJoinedStrategiesSelect().addMergeJoin(JoinedStrategiesSelect.FIRST_STRATEGY_NAME,
+					new FirstPhaseOneToOneLoader(subPersister.getMappingStrategy().getIdMappingStrategy(), primaryKey, selectExecutor,
+							mainPersister.getClassToPersist(), discriminatorColumn, polymorphismPolicy.getDiscriminatorValue(c)),
+					(Set) Arrays.asHashSet(leftColumn, rightColumn, discriminatorColumn),
+					leftColumn, rightColumn, optional ? JoinType.OUTER : JoinType.INNER);
+		});
+		
+		
+		// adding second phase loader
+		((IPersisterListener) sourcePersister).addSelectListener(new SecondPhaseOneToOneLoader<>(beanRelationFixer));
 	}
 	
 	@Override
@@ -369,30 +391,6 @@ public class SingleTablePolymorphicPersister<C, I, T extends Table<T>, D> implem
 		((IPersisterListener) sourcePersister).addSelectListener(new SecondPhaseOneToOneLoader<>(beanRelationFixer));	
 	}
 	
-	
-	@Override
-	public <SRC, T1 extends Table, T2 extends Table> void joinAsOne(IJoinedTablesPersister<SRC, I> sourcePersister,
-																	Column<T1, I> leftColumn,
-																	Column<T2, I> rightColumn,
-																	BeanRelationFixer<SRC, C> beanRelationFixer,
-																	boolean optional) {
-		
-		// TODO: simplify query : it joins on target table as many as subentities which can be reduced to one join if FirstPhaseOneToOneLoader
-		//  can compute disciminatorValue 
-		subEntitiesPersisters.forEach((c, subPersister) -> {
-			Column primaryKey = (Column ) Iterables.first(subPersister.getMainTable().getPrimaryKey().getColumns());
-			sourcePersister.getJoinedStrategiesSelect().addMergeJoin(JoinedStrategiesSelect.FIRST_STRATEGY_NAME,
-					new FirstPhaseOneToOneLoader(subPersister.getMappingStrategy().getIdMappingStrategy(), primaryKey, selectExecutor,
-							mainPersister.getClassToPersist(), discriminatorColumn, polymorphismPolicy.getDiscriminatorValue(c)),
-					(Set) Arrays.asHashSet(leftColumn, rightColumn, discriminatorColumn),
-					leftColumn, rightColumn, optional ? JoinType.OUTER : JoinType.INNER);
-		});
-		
-		
-		// adding second phase loader
-		((IPersisterListener) sourcePersister).addSelectListener(new SecondPhaseOneToOneLoader<>(beanRelationFixer));
-	}
-	
 	@Override
 	public JoinedStrategiesSelect<C, I, ?> getJoinedStrategiesSelect() {
 		throw new UnsupportedOperationException();
@@ -403,38 +401,7 @@ public class SingleTablePolymorphicPersister<C, I, T extends Table<T>, D> implem
 		throw new UnsupportedOperationException();
 	}
 	
-	public static class RelationIds<SRC, TRGT, TRGTID> {
-		private final ISelectExecutor<TRGT, TRGTID> selectExecutor;
-		private final Function<TRGT, TRGTID> idAccessor;
-		private final SRC source;
-		private final TRGTID targetId;
-		
-		
-		private RelationIds(ISelectExecutor<TRGT, TRGTID> selectExecutor, Function<TRGT, TRGTID> idAccessor, SRC source, TRGTID targetId) {
-			this.selectExecutor = selectExecutor;
-			this.idAccessor = idAccessor;
-			this.source = source;
-			this.targetId = targetId;
-		}
-		
-		public ISelectExecutor<TRGT, TRGTID> getSelectExecutor() {
-			return selectExecutor;
-		}
-		
-		public Function<TRGT, TRGTID> getIdAccessor() {
-			return idAccessor;
-		}
-		
-		public SRC getSource() {
-			return source;
-		}
-		
-		public TRGTID getTargetId() {
-			return targetId;
-		}
-	}
-	
-	static class FirstPhaseOneToOneLoader<E, ID, D> implements EntityInflater<E, ID> {
+	private static class FirstPhaseOneToOneLoader<E, ID, D> implements EntityInflater<E, ID> {
 		
 		private final Column<Table, ID> primaryKeyColumn;
 		private final IdMappingStrategy<E, ID> idMappingStrategy;
