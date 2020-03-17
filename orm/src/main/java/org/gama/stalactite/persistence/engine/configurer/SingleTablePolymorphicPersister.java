@@ -345,12 +345,12 @@ public class SingleTablePolymorphicPersister<C, I, T extends Table<T>, D> implem
 		// TODO: simplify query : it joins on target table as many as subentities which can be reduced to one join if FirstPhaseOneToOneLoader
 		//  can compute disciminatorValue 
 		subEntitiesPersisters.forEach((subEntityType, subPersister) -> {
-			Column primaryKey = (Column ) Iterables.first(subPersister.getMainTable().getPrimaryKey().getColumns());
+			Column subclassPrimaryKey = (Column ) Iterables.first(subPersister.getMainTable().getPrimaryKey().getColumns());
 			sourcePersister.getJoinedStrategiesSelect().addMergeJoin(JoinedStrategiesSelect.FIRST_STRATEGY_NAME,
 					new SingleTableFirstPhaseOneToOneLoader(subPersister.getMappingStrategy().getIdMappingStrategy(),
-							primaryKey, selectExecutor, mainPersister.getClassToPersist(), DIFFERED_ENTITY_LOADER,
+							subclassPrimaryKey, selectExecutor, mainPersister.getClassToPersist(), DIFFERED_ENTITY_LOADER,
 							subEntityType, discriminatorColumn),
-					(Set) Arrays.asHashSet(leftColumn, rightColumn, discriminatorColumn),
+					(Set) Arrays.asHashSet(subclassPrimaryKey, leftColumn, rightColumn, discriminatorColumn),
 					leftColumn, rightColumn, optional ? JoinType.OUTER : JoinType.INNER);
 		});
 		
@@ -377,8 +377,9 @@ public class SingleTablePolymorphicPersister<C, I, T extends Table<T>, D> implem
 		subEntitiesPersisters.forEach((subEntityType, subPersister) -> {
 			Column subclassPrimaryKey = (Column ) Iterables.first(subPersister.getMainTable().getPrimaryKey().getColumns());
 			sourcePersister.getJoinedStrategiesSelect().addMergeJoin(JoinedStrategiesSelect.FIRST_STRATEGY_NAME,
-					new SingleTableFirstPhaseOneToOneLoader(subPersister.getMappingStrategy().getIdMappingStrategy(), subclassPrimaryKey, selectExecutor,
-							mainPersister.getClassToPersist(), DIFFERED_ENTITY_LOADER, subEntityType, discriminatorColumn),
+					new SingleTableFirstPhaseOneToOneLoader(subPersister.getMappingStrategy().getIdMappingStrategy(),
+							subclassPrimaryKey, selectExecutor, mainPersister.getClassToPersist(), DIFFERED_ENTITY_LOADER,
+							subEntityType, discriminatorColumn),
 					(Set) Arrays.asHashSet(rightColumn, subclassPrimaryKey, discriminatorColumn),
 					leftColumn, subclassPrimaryKey, JoinType.OUTER);
 		});

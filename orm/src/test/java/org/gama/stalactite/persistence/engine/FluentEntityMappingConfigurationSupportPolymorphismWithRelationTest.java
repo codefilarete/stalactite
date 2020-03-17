@@ -1461,6 +1461,100 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 			assertNull(persistenceContext.getPersister(Vehicle.class).select(new PersistedIdentifier<>(17L)));
 		}
 		
+		@Test
+		void oneToSingleTable_crud_ownedByReverseSide() {
+			IFluentEmbeddableMappingBuilder<Person> timestampedPersistentBeanMapping =
+					embeddableBuilder(Person.class)
+							.add(Person::getName)
+							.embed(Person::getTimestamp);
+			
+			IFluentEntityMappingBuilder<Vehicle, Identifier<Long>> vehicleConfiguration =
+					entityBuilder(Vehicle.class, LONG_TYPE)
+							.add(Vehicle::getId).identifier(ALREADY_ASSIGNED)
+							.add(Vehicle::getColor)
+							.mapPolymorphism(PolymorphismPolicy.singleTable()
+									.addSubClass(subentityBuilder(Truk.class), "T")
+									.addSubClass(subentityBuilder(Car.class), "C")
+							);
+			
+			IEntityPersister<Person, Identifier<Long>> testInstance = entityBuilder(Person.class, LONG_TYPE)
+					.add(Person::getId).identifier(ALREADY_ASSIGNED)
+					.addOneToOne(Person::getVehicle, vehicleConfiguration).cascading(RelationMode.ALL_ORPHAN_REMOVAL).mappedBy(Vehicle::getOwner)
+					.mapSuperClass(timestampedPersistentBeanMapping)
+					.build(persistenceContext);
+			
+			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+			ddlDeployer.deployDDL();
+			
+			// insert
+			Person person = new Person(1);
+			Car car = new Car(42L);
+			car.setColor(new Color(17));
+			person.setVehicle(car);
+			testInstance.insert(person);
+			Person loadedPerson = testInstance.select(person.getId());
+			assertEquals(person, loadedPerson);
+			
+			// updating embedded value
+			person.setTimestamp(new Timestamp());
+			testInstance.update(person, loadedPerson, true);
+			
+			loadedPerson = testInstance.select(person.getId());
+			
+			
+			// we use a printer to compare our results because entities override equals() which only keep "id" into account
+			// which is far from sufficent for ou checking
+			// Note htat we don't us ObjectPrinterBuilder#printerFor because it take getCities() into account whereas its code is not ready for recursivity 
+			ObjectPrinter<Vehicle> vehiclePrinter = new ObjectPrinterBuilder<Vehicle>()
+					.addProperty(Vehicle::getId)
+					.addProperty(Vehicle::getClass)
+					.withPrinter(AbstractIdentifier.class, Functions.chain(AbstractIdentifier::getSurrogate, String::valueOf))
+					.build();
+			ObjectPrinter<Person> personPrinter = new ObjectPrinterBuilder<Person>()
+					.addProperty(Person::getId)
+					.addProperty(Person::getName)
+					.addProperty(Person::getTimestamp)
+					.withPrinter(AbstractIdentifier.class, Functions.chain(AbstractIdentifier::getSurrogate, String::valueOf))
+					.withPrinter(Vehicle.class, vehiclePrinter::toString)
+					.build();
+			
+			Assertions.assertEquals(person, loadedPerson, personPrinter::toString);
+			// ensuring that reverse side is also set
+			assertEquals(loadedPerson, loadedPerson.getVehicle().getOwner());
+			
+			// updating one-to-one relation
+			person.setVehicle(new Truk(666L));
+			testInstance.update(person, loadedPerson, true);
+			
+			loadedPerson = testInstance.select(person.getId());
+			Assertions.assertEquals(person, loadedPerson, personPrinter::toString);
+			// checking for orphan removal (relation was marked as such)
+			assertNull(persistenceContext.getPersister(Vehicle.class).select(new PersistedIdentifier<>(42L)));
+			
+			// nullifying one-to-one relation
+			person.setVehicle(null);
+			testInstance.update(person, loadedPerson, true);
+			
+			loadedPerson = testInstance.select(person.getId());
+			assertEquals(person, loadedPerson);
+			// checking for orphan removal (relation was marked as such)
+			assertNull(persistenceContext.getPersister(Vehicle.class).select(new PersistedIdentifier<>(666L)));
+			
+			
+			// setting new one-to-one relation
+			person.setVehicle(new Truk(17L));
+			testInstance.update(person, loadedPerson, true);
+			
+			loadedPerson = testInstance.select(person.getId());
+			assertEquals(person, loadedPerson);
+			
+			// testing deletion
+			testInstance.delete(person);
+			assertNull(testInstance.select(person.getId()));
+			// checking for orphan removal (relation was marked as such)
+			assertNull(persistenceContext.getPersister(Vehicle.class).select(new PersistedIdentifier<>(17L)));
+		}
+		
 	}
 	
 	
