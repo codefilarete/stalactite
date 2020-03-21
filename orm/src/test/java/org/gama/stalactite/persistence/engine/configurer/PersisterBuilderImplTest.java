@@ -25,11 +25,6 @@ import org.gama.reflection.PropertyAccessor;
 import org.gama.stalactite.persistence.engine.ColumnNamingStrategy;
 import org.gama.stalactite.persistence.engine.ColumnOptions.IdentifierPolicy;
 import org.gama.stalactite.persistence.engine.EntityMappingConfiguration;
-import org.gama.stalactite.persistence.engine.model.AbstractVehicle;
-import org.gama.stalactite.persistence.engine.model.Car;
-import org.gama.stalactite.persistence.engine.model.Color;
-import org.gama.stalactite.persistence.engine.model.Truk;
-import org.gama.stalactite.persistence.engine.model.Vehicle;
 import org.gama.stalactite.persistence.engine.ForeignKeyNamingStrategy;
 import org.gama.stalactite.persistence.engine.IEntityPersister;
 import org.gama.stalactite.persistence.engine.PersistenceContext;
@@ -37,7 +32,12 @@ import org.gama.stalactite.persistence.engine.PolymorphismPolicy;
 import org.gama.stalactite.persistence.engine.TableNamingStrategy;
 import org.gama.stalactite.persistence.engine.configurer.PersisterBuilderImpl.Identification;
 import org.gama.stalactite.persistence.engine.configurer.PersisterBuilderImpl.MappingPerTable;
+import org.gama.stalactite.persistence.engine.model.AbstractVehicle;
+import org.gama.stalactite.persistence.engine.model.Car;
+import org.gama.stalactite.persistence.engine.model.Color;
 import org.gama.stalactite.persistence.engine.model.Timestamp;
+import org.gama.stalactite.persistence.engine.model.Truk;
+import org.gama.stalactite.persistence.engine.model.Vehicle;
 import org.gama.stalactite.persistence.id.Identified;
 import org.gama.stalactite.persistence.id.Identifier;
 import org.gama.stalactite.persistence.sql.HSQLDBDialect;
@@ -92,6 +92,8 @@ class PersisterBuilderImplTest {
 		DIALECT.getJavaTypeToSqlTypeMapping().put(Identified.class, "int");
 		DIALECT.getColumnBinderRegistry().register(Color.class, new NullAwareParameterBinder<>(new LambdaParameterBinder<>(INTEGER_PRIMITIVE_BINDER, Color::new, Color::getRgb)));
 		DIALECT.getJavaTypeToSqlTypeMapping().put(Color.class, "int");
+		
+		DIALECT.getDmlGenerator().sortColumnsAlphabetically();	// for steady checks on SQL orders
 	}
 	
 	@BeforeEach
@@ -485,7 +487,7 @@ class PersisterBuilderImplTest {
 		entity.setColor(new Color(123));
 		entity.setTimestamp(new Timestamp());
 		result.insert(entity);
-		assertEquals(Arrays.asList("insert into Car(model, color, id, modificationDate, creationDate) values (?, ?, ?, ?, ?)"), sqlCaptor.getAllValues());
+		assertEquals(Arrays.asList("insert into Car(color, creationDate, id, model, modificationDate) values (?, ?, ?, ?, ?)"), sqlCaptor.getAllValues());
 	}
 	
 	@Test
@@ -518,9 +520,9 @@ class PersisterBuilderImplTest {
 		entity.setTimestamp(new Timestamp());
 		result.insert(entity);
 		assertEquals(Arrays.asList(
-				"insert into AbstractVehicle(id, modificationDate, creationDate) values (?, ?, ?)",
+				"insert into AbstractVehicle(creationDate, id, modificationDate) values (?, ?, ?)",
 				"insert into Vehicle(color, id) values (?, ?)",
-				"insert into Car(model, id) values (?, ?)"), insertCaptor.getAllValues());
+				"insert into Car(id, model) values (?, ?)"), insertCaptor.getAllValues());
 		
 		ArgumentCaptor<String> deleteCaptor = ArgumentCaptor.forClass(String.class);
 		when(connectionMock.prepareStatement(deleteCaptor.capture())).thenReturn(preparedStatementMock);
@@ -535,9 +537,13 @@ class PersisterBuilderImplTest {
 		result.select(entity.getId());
 		assertEquals(Arrays.asList(
 				// the expected select may change in future as we don't care about select order nor joins order, tested in case of huge regression
-				"select Car.model as Car_model, Car.id as Car_id," 
-						+ " AbstractVehicle.id as AbstractVehicle_id, AbstractVehicle.modificationDate as AbstractVehicle_modificationDate," 
-						+ " AbstractVehicle.creationDate as AbstractVehicle_creationDate, Vehicle.color as Vehicle_color," 
+				"select" 
+						+ " Car.model as Car_model," 
+						+ " Car.id as Car_id,"
+						+ " AbstractVehicle.modificationDate as AbstractVehicle_modificationDate,"
+						+ " AbstractVehicle.creationDate as AbstractVehicle_creationDate,"
+						+ " AbstractVehicle.id as AbstractVehicle_id," 
+						+ " Vehicle.color as Vehicle_color," 
 						+ " Vehicle.id as Vehicle_id" 
 						+ " from Car inner join AbstractVehicle on Car.id = AbstractVehicle.id" 
 						+ " inner join Vehicle on Car.id = Vehicle.id" 
