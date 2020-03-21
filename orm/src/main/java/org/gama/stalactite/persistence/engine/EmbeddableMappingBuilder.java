@@ -1,5 +1,6 @@
 package org.gama.stalactite.persistence.engine;
 
+import javax.annotation.Nullable;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
@@ -15,13 +16,14 @@ import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.BiFunction;
+import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import com.google.common.annotations.VisibleForTesting;
 import org.danekja.java.util.function.serializable.SerializableBiFunction;
 import org.danekja.java.util.function.serializable.SerializableFunction;
-import org.gama.lang.Nullable;
 import org.gama.lang.Reflections;
 import org.gama.lang.StringAppender;
 import org.gama.lang.bean.InstanceMethodIterator;
@@ -43,18 +45,18 @@ import org.gama.reflection.ValueAccessPointByMethod;
 import org.gama.reflection.ValueAccessPointComparator;
 import org.gama.reflection.ValueAccessPointMap;
 import org.gama.reflection.ValueAccessPointSet;
-import org.gama.stalactite.sql.dml.SQLStatement.BindingException;
 import org.gama.stalactite.persistence.engine.EmbeddableMappingConfiguration.Linkage;
 import org.gama.stalactite.persistence.engine.FluentEmbeddableMappingConfigurationSupport.AbstractInset;
 import org.gama.stalactite.persistence.engine.FluentEmbeddableMappingConfigurationSupport.ImportedInset;
 import org.gama.stalactite.persistence.engine.FluentEmbeddableMappingConfigurationSupport.Inset;
 import org.gama.stalactite.persistence.engine.IFluentEmbeddableMappingConfiguration.IFluentEmbeddableMappingConfigurationEmbedOptions;
 import org.gama.stalactite.persistence.mapping.EmbeddedBeanMappingStrategy;
-import org.gama.stalactite.persistence.mapping.IMappingStrategy;
 import org.gama.stalactite.persistence.sql.Dialect;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
+import org.gama.stalactite.sql.dml.SQLStatement.BindingException;
 
+import static org.gama.lang.Nullable.nullable;
 import static org.gama.lang.bean.Objects.not;
 import static org.gama.lang.bean.Objects.preventNull;
 import static org.gama.lang.collection.Iterables.collectToList;
@@ -76,9 +78,15 @@ class EmbeddableMappingBuilder<C> {
 	protected Table targetTable;
 	/** Result of {@link #build(Dialect, Table)}, shared between methods */
 	protected Map<IReversibleAccessor, Column> result;
+	protected ColumnNameProvider columnNameProvider;
 	
 	EmbeddableMappingBuilder(EmbeddableMappingConfiguration<C> mappingConfiguration) {
+		this(mappingConfiguration, new ColumnNameProvider(mappingConfiguration.getColumnNamingStrategy()));
+	}
+	
+	protected EmbeddableMappingBuilder(EmbeddableMappingConfiguration<C> mappingConfiguration, ColumnNameProvider columnNameProvider) {
 		this.mappingConfiguration = mappingConfiguration;
+		this.columnNameProvider = columnNameProvider;
 	}
 	
 	/**
@@ -86,7 +94,7 @@ class EmbeddableMappingBuilder<C> {
 	 *
 	 * @return a {@link Map} representing the definition of the mapping declared by the {@link EmbeddableMappingConfiguration}
 	 */
-	Map<IReversibleAccessor, Column> build(Dialect dialect, Table targetTable) {
+	public Map<IReversibleAccessor, Column> build(Dialect dialect, Table targetTable) {
 		this.result = new HashMap<>();
 		this.dialect = dialect;
 		this.targetTable = targetTable;
@@ -104,7 +112,7 @@ class EmbeddableMappingBuilder<C> {
 	}
 	
 	protected void includeInheritance() {
-		result.putAll(buildMappingFromInheritance());
+		result.putAll(giveMappingFromInheritance());
 	}
 	
 	protected void includeDirectMapping() {
@@ -112,26 +120,58 @@ class EmbeddableMappingBuilder<C> {
 	}
 	
 	protected void includeMapping(Linkage linkage) {
-		Column column = addLinkage(linkage);
-		ensureColumnBinding(linkage, column);
+		Column column = addColumnToTable(linkage);
+		ensureColumnBindingInRegistry(linkage, column);
 		result.put(linkage.getAccessor(), column);
 	}
+	
+	protected void assertMappingIsNotAlreadyDefined(Linkage linkage, String columnName) {
+		IReversibleAccessor propertyAccessor = linkage.getAccessor();
+		ValueAccessPointComparator valueAccessPointComparator = new ValueAccessPointComparator();
+		Predicate<Linkage> checker = ((Predicate<Linkage>) pawn -> {
+			IReversibleAccessor accessor = pawn.getAccessor();
+			if (valueAccessPointComparator.compare(accessor, propertyAccessor) == 0 && !columnName.equals(columnNameProvider.giveColumnName(pawn))) {
+				throw new MappingConfigurationException("Mapping is already defined by method " + MemberDefinition.toString(propertyAccessor));
+			}
+			return true;
+		}).and(pawn -> {
+			if (columnName != null && columnName.equals(columnNameProvider.giveColumnName(pawn))) {
+				throw new MappingConfigurationException("Column " + columnName + " of mapping " + MemberDefinition.toString(propertyAccessor)
+						+ " is already targetted by " + MemberDefinition.toString(pawn.getAccessor()));
+			}
+			return true;
+		});
+		forEachMappedConfiguration(configuration -> {
+			List<Linkage> propertiesMapping = configuration.getPropertiesMapping();
+			propertiesMapping.stream().filter(pawn -> !pawn.equals(linkage)).forEach(checker::test);
+			return false;
+		});
+	}
+	
 	
 	protected void includeEmbeddedMapping() {
 		result.putAll(buildEmbeddedMapping());
 	}
 	
-	protected Column addLinkage(Linkage linkage) {
-		Column addedColumn = targetTable.addColumn(giveColumnName(linkage), linkage.getColumnType());
+	protected Column addColumnToTable(Linkage linkage) {
+		String columnName = nullable(linkage.getColumnName()).getOr(() -> columnNameProvider.giveColumnName(linkage));
+		assertMappingIsNotAlreadyDefined(linkage, columnName);
+		Column addedColumn = targetTable.addColumn(columnName, linkage.getColumnType());
 		addedColumn.setNullable(linkage.isNullable());
 		return addedColumn;
 	}
 	
-	protected String giveColumnName(Linkage linkage) {
-		return linkage.getColumnName();
+	protected void forEachMappedConfiguration(Function<EmbeddableMappingConfiguration, Boolean> configurationConsumer) {
+		boolean stop = false;
+		EmbeddableMappingConfiguration pawn = this.mappingConfiguration;
+		// going up until no more mapped super class
+		while (!stop && pawn != null) {
+			stop = configurationConsumer.apply(pawn);
+			pawn = pawn.getMappedSuperClassConfiguration();
+		}
 	}
 	
-	protected void ensureColumnBinding(Linkage linkage, Column column) {
+	protected void ensureColumnBindingInRegistry(Linkage linkage, Column column) {
 		// assert that column binder is registered : it will throw en exception if the binder is not found
 		if (linkage.getParameterBinder() != null) {
 			dialect.getColumnBinderRegistry().register(column, linkage.getParameterBinder());
@@ -149,7 +189,12 @@ class EmbeddableMappingBuilder<C> {
 		}
 	}
 	
-	protected Map<IReversibleAccessor, Column> buildMappingFromInheritance() {
+	/**
+	 * Gives property mapping from mapped super class
+	 * 
+	 * @return the mapping between property accessor and their column in target table, may be empty if no mapped super class was configured, never null
+	 */
+	protected Map<IReversibleAccessor, Column> giveMappingFromInheritance() {
 		Map<IReversibleAccessor, Column> inheritanceResult = new HashMap<>();
 		if (mappingConfiguration.getMappedSuperClassConfiguration() != null) {
 			EmbeddableMappingBuilder<? super C> superMappingBuilder = new EmbeddableMappingBuilder<>(mappingConfiguration.getMappedSuperClassConfiguration());
@@ -160,17 +205,16 @@ class EmbeddableMappingBuilder<C> {
 	}
 	
 	/**
-	 * Collects mapping of given {@link EmbeddedBeanMappingStrategy} and created equivalent {@link Column} on the given target table.
+	 * Created equivalent {@link Column}s of those of given {@link Map} values on the given target table. May do nothing if columns already exist.
 	 *
-	 * @param mappingStrategy the source of mapping
+	 * @param propertyToColumn mapping between some property accessors and {@link Column}s from default target {@link Table} (the one given at {@link #build(Dialect, Table)} time)
 	 * @param localTargetTable the table on which columns must be added
-	 * @return a mapping between properties of {@link EmbeddedBeanMappingStrategy#getPropertyToColumn()} and their column in our
-	 * {@link #targetTable}
+	 * @return a mapping between properties of given {@link Map} keys and their column in given {@link Table}
 	 */
-	protected Map<IReversibleAccessor, Column> collectMapping(IMappingStrategy<? super C, ?> mappingStrategy,
-															  Table localTargetTable, BiFunction<IReversibleAccessor, Column, String> columnNameSupplier) {
+	protected Map<IReversibleAccessor, Column> projectColumns(Map<? extends IReversibleAccessor, ? extends Column> propertyToColumn,
+															  Table localTargetTable,
+															  BiFunction<IReversibleAccessor, Column, String> columnNameSupplier) {
 		Map<IReversibleAccessor, Column> localResult = new HashMap<>();
-		Map<? extends IReversibleAccessor<? super C, Object>, ? extends Column<?, Object>> propertyToColumn = mappingStrategy.getPropertyToColumn();
 		propertyToColumn.forEach((accessor, column) -> {
 			Column projectedColumn = localTargetTable.addColumn(columnNameSupplier.apply(accessor, column), column.getJavaType());
 			projectedColumn.setAutoGenerated(column.isAutoGenerated());
@@ -180,6 +224,11 @@ class EmbeddableMappingBuilder<C> {
 		return localResult;
 	}
 	
+	/**
+	 * Builds embedded beans mapping
+	 * 
+	 * @return embedded beans accessor mapped to their column
+	 */
 	private Map<IReversibleAccessor, Column> buildEmbeddedMapping() {
 		Map<String, Column<Table, Object>> columnsPerName = targetTable.mapColumnsOnName();
 		Map<IReversibleAccessor, Column> toReturn = new HashMap<>();
@@ -243,7 +292,7 @@ class EmbeddableMappingBuilder<C> {
 							+ new StringAppender().ccat(conflicts, System.lineSeparator()));
 				}
 				
-				collectMapping(embeddedBeanMappingStrategy, targetTable, (a, c) -> overridenColumnNames.getOrDefault(a, c.getName()));
+				projectColumns(embeddedBeanMappingStrategy.getPropertyToColumn(), targetTable, (a, c) -> overridenColumnNames.getOrDefault(a, c.getName()));
 				
 				Set<ValueAccessPoint> embeddedBeanMappingRegistry = new ValueAccessPointSet(embeddedBeanMapping.keySet());
 				overridenColumnNames.forEach((valueAccessPoint, nameOverride) -> {
@@ -274,7 +323,7 @@ class EmbeddableMappingBuilder<C> {
 					Column targetColumn = findColumn(valueAccessPoint, memberDefinition.getName(), columnsPerName, refinedInset);
 					if (targetColumn == null) {
 						// Column isn't declared in table => we create one from field informations
-						String columnName = mappingConfiguration.getColumnNamingStrategy().giveName(memberDefinition);
+						String columnName = columnNameProvider.giveColumnName(memberDefinition);
 						String overridenName = overridenColumnNames.get(valueAccessPoint);
 						if (overridenName != null) {
 							columnName = overridenName;
@@ -299,8 +348,7 @@ class EmbeddableMappingBuilder<C> {
 						}
 					}
 					
-					String chainDescription = inset.getAccessor() + " > " + memberDefinition.toString();
-					AccessorChain chain = getAccessorChain(rootAccessors, valueAccessPoint, chainDescription);
+					AccessorChain chain = newAccessorChain(rootAccessors, valueAccessPoint);
 					toReturn.put(chain, targetColumn);
 				});
 			}
@@ -309,9 +357,10 @@ class EmbeddableMappingBuilder<C> {
 		return toReturn;
 	}
 	
-	private AccessorChain getAccessorChain(List<ValueAccessPoint> rootAccessors, ValueAccessPointByMethod terminalAccessor, String chainDescription) {
+	@VisibleForTesting
+	static AccessorChain newAccessorChain(List<ValueAccessPoint> rootAccessors, ValueAccessPointByMethod terminalAccessor) {
 		// we must clone rootAccessors to prevent from accessor mixing
-		rootAccessors = new ArrayList<>(rootAccessors);
+		List<ValueAccessPoint> finalAccessors = new ArrayList<>(rootAccessors);
 		IAccessor accessor;
 		if (terminalAccessor instanceof IAccessor) {
 			accessor = (IAccessor) terminalAccessor;
@@ -321,22 +370,17 @@ class EmbeddableMappingBuilder<C> {
 			// Something has change in ValueAccessPoint hierarchy, it should be fixed (grave)
 			throw new IllegalArgumentException(Reflections.toString(terminalAccessor.getClass()) + " is unknown from chain creation algorithm");
 		}
-		rootAccessors.add(accessor);
+		finalAccessors.add(accessor);
 		// we create a chain that
 		// - returns null when beans are not instanciated, so null will be inserted/updated in embedded columns
 		// - initializes values when its mutator will be used, so bean will create its embedded properties on select
 		// (voluntary dissimetric behavior)
-		return new AccessorChain(rootAccessors) {
+		return new AccessorChain(finalAccessors) {
 			@Override
 			public AccessorChainMutator toMutator() {
 				AccessorChainMutator toReturn = super.toMutator();
 				toReturn.setNullValueHandler(AccessorChain.INITIALIZE_VALUE);
 				return toReturn;
-			}
-			
-			@Override
-			public String toString() {
-				return chainDescription;
 			}
 		}.setNullValueHandler(AccessorChain.RETURN_NULL);
 	}
@@ -377,7 +421,7 @@ class EmbeddableMappingBuilder<C> {
 				// NB: stream is sorted to get a consistent result over executions because MethodIterator doesn't always return methods in same
 				// order, probably because JVM doesn't provide methods in a steady order over executions too. Mainly done for unit test checking.
 				stream(() -> methodIterator).sorted(Comparator.comparing(Reflections::toString)).forEach(m ->
-					Nullable.nullable((ValueAccessPoint) Reflections.onJavaBeanPropertyWrapperNameGeneric(m.getName(), m,
+					nullable((ValueAccessPoint) Reflections.onJavaBeanPropertyWrapperNameGeneric(m.getName(), m,
 							AccessorByMethod::new,
 							MutatorByMethod::new,
 							AccessorByMethod::new,
@@ -438,6 +482,24 @@ class EmbeddableMappingBuilder<C> {
 			Inset result = this.current;
 			current = current.getParent();
 			return result;
+		}
+	}
+	
+	static class ColumnNameProvider {
+		
+		private final ColumnNamingStrategy columnNamingStrategy;
+		
+		ColumnNameProvider(@Nullable ColumnNamingStrategy columnNamingStrategy) {
+			this.columnNamingStrategy = nullable(columnNamingStrategy).getOr(ColumnNamingStrategy.DEFAULT);
+		}
+		
+		protected String giveColumnName(Linkage linkage) {
+			return nullable(linkage.getColumnName())
+					.getOr(() -> giveColumnName(MemberDefinition.giveMemberDefinition(linkage.getAccessor())));
+		}
+		
+		protected String giveColumnName(MemberDefinition memberDefinition) {
+			return columnNamingStrategy.giveName(memberDefinition);
 		}
 	}
 }

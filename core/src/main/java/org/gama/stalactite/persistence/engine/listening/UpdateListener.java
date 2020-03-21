@@ -14,11 +14,11 @@ import org.gama.stalactite.persistence.structure.Table;
  */
 public interface UpdateListener<C> {
 	
-	default void beforeUpdate(Iterable<UpdatePayload<? extends C, ?>> payloads, boolean allColumnsStatement) {
+	default void beforeUpdate(Iterable<? extends Duo<? extends C, ? extends C>> payloads, boolean allColumnsStatement) {
 		
 	}
 	
-	default void afterUpdate(Iterable<UpdatePayload<? extends C, ?>> entities, boolean allColumnsStatement) {
+	default void afterUpdate(Iterable<? extends Duo<? extends C, ? extends C>> entities, boolean allColumnsStatement) {
 		
 	}
 	
@@ -74,18 +74,29 @@ public interface UpdateListener<C> {
 	 * @return arguments wrapped into an {@link UpdatePayload}, enhanced with updatable columns and values
 	 */
 	static <C, T extends Table<T>> Iterable<UpdatePayload<C, T>> computePayloads(Iterable<? extends Duo<? extends C, ? extends C>> entities,
-																			 boolean allColumns,
-																			 IMappingStrategy<C, T> mappingStrategy) {
-		List<UpdatePayload<C, T>> result = new ArrayList<>();
+																				 boolean allColumns,
+																				 IMappingStrategy<C, T> mappingStrategy) {
+		return (Iterable) computePayloads(entities, allColumns, (modified, unmodified, allColumnsLocal) ->
+				(Map) mappingStrategy.getUpdateValues(modified, unmodified, allColumnsLocal));
+	}
+	
+	static <C> Iterable<UpdatePayload<C, Table>> computePayloads(Iterable<? extends Duo<? extends C, ? extends C>> entities,
+																 boolean allColumns,
+																 UpdateValuesProvider<C> mappingStrategy) {
+		List<UpdatePayload<C, Table>> result = new ArrayList<>();
 		for (Duo<? extends C, ? extends C> next : entities) {
 			C modified = next.getLeft();
 			C unmodified = next.getRight();
 			// finding differences between modified instances and unmodified ones
-			Map<UpwhereColumn<T>, Object> updateValues = mappingStrategy.getUpdateValues(modified, unmodified, allColumns);
-			UpdatePayload<C, T> payload = new UpdatePayload<>(next, updateValues);
+			Map<UpwhereColumn<Table>, Object> updateValues = mappingStrategy.getUpdateValues(modified, unmodified, allColumns);
+			UpdatePayload<C, Table> payload = new UpdatePayload<>(next, updateValues);
 			result.add(payload);
 		}
 		return result;
+	}
+	
+	interface UpdateValuesProvider<C> {
+		Map<UpwhereColumn<Table>, Object> getUpdateValues(C modified, C unmodified, boolean allColumns);
 	}
 	
 }

@@ -15,8 +15,8 @@ import org.gama.stalactite.sql.binder.LambdaParameterBinder;
 import org.gama.stalactite.sql.binder.NullAwareParameterBinder;
 import org.gama.stalactite.sql.binder.ParameterBinder;
 import org.gama.stalactite.sql.result.Row;
-import org.gama.stalactite.persistence.engine.FluentEntityMappingConfigurationSupportInheritanceTest.Car;
-import org.gama.stalactite.persistence.engine.FluentEntityMappingConfigurationSupportInheritanceTest.Color;
+import org.gama.stalactite.persistence.engine.model.Car;
+import org.gama.stalactite.persistence.engine.model.Color;
 import org.gama.stalactite.persistence.engine.IFluentEmbeddableMappingBuilder.IFluentEmbeddableMappingBuilderEmbedOptions;
 import org.gama.stalactite.persistence.engine.IFluentEmbeddableMappingBuilder.IFluentEmbeddableMappingBuilderEmbeddableOptions;
 import org.gama.stalactite.persistence.engine.model.Country;
@@ -123,7 +123,7 @@ class FluentEmbeddableMappingConfigurationSupportTest {
 	@Test
 	void add_mappingDefinedTwiceByMethod_throwsException() {
 		Table<?> countryTable = new Table<>("countryTable");
-		assertEquals("Mapping is already defined by method Country::getName",
+		assertEquals("Column name of mapping Country::getName is already targetted by o.g.s.p.e.m.Country.getName()",
 				assertThrows(MappingConfigurationException.class, () -> MappingEase.embeddableBuilder(Country.class)
 						.add(Country::getName)
 						.add(Country::setName)
@@ -134,7 +134,7 @@ class FluentEmbeddableMappingConfigurationSupportTest {
 	@Test
 	void add_mappingDefinedTwiceByColumn_throwsException() {
 		Table<?> countryTable = new Table<>("countryTable");
-		assertEquals("Mapping is already defined for column xyz",
+		assertEquals("Column xyz of mapping Country::getName is already targetted by o.g.s.p.e.m.Country.getDescription()",
 				assertThrows(MappingConfigurationException.class, () -> MappingEase.embeddableBuilder(Country.class)
 						.add(Country::getName, "xyz")
 						.add(Country::setDescription, "xyz")
@@ -220,8 +220,8 @@ class FluentEmbeddableMappingConfigurationSupportTest {
 		
 		// insert value should contain embedded bean values (Timestamp)
 		Map<Column<Table<?>, Object>, Object> insertValues = personMappingStrategy.getInsertValues(person);
-		assertEquals(Maps
-						.asHashMap(columnsByName.get("name"), (Object) person.getName())
+		assertEquals(Maps.forHashMap(Column.class, Object.class)
+						.add(columnsByName.get("name"), person.getName())
 						.add(modifiedAtColumn, person.getTimestamp().getModificationDate())
 						.add(createdAtColumn, person.getTimestamp().getCreationDate())
 				, insertValues);
@@ -261,7 +261,7 @@ class FluentEmbeddableMappingConfigurationSupportTest {
 	}
 	
 	@Test
-	void testEmbed_inheritance_embeddedParentColumnsMustBeAdded() {
+	void testEmbed_insertAndSelect_withNullEmbeddable_nullValueMustBeLoaded() {
 		EmbeddedBeanMappingStrategy<Car, Table> carMappingStrategy = MappingEase.embeddableBuilder(Car.class)
 				.add(Car::getColor)
 				.add(Car::getModel)
@@ -426,7 +426,7 @@ class FluentEmbeddableMappingConfigurationSupportTest {
 				// from Country
 				"name",
 				// from Person
-				"id", "version", "presidentName", "creationDate", "modificationDate",
+				"id", "version", "presidentName", "creationDate", "modificationDate", "vehicle",
 				// from Country.timestamp
 				"createdAt", "modifiedAt"),
 				collect(countryTable.getColumns(), Column::getName, HashSet::new));
@@ -450,7 +450,7 @@ class FluentEmbeddableMappingConfigurationSupportTest {
 				// from Country
 				"name",
 				// from Person
-				"id", "presidentName", "version",
+				"id", "presidentName", "version", "vehicle",
 				// from Person.timestamp
 				"createdAt", "modificationDate"),
 				collect(countryTable.getColumns(), Column::getName, HashSet::new));

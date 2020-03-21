@@ -1,13 +1,12 @@
 package org.gama.stalactite.persistence.structure;
 
-import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.Map.Entry;
-import java.util.Set;
 
 import org.gama.lang.collection.Arrays;
 import org.gama.lang.collection.Iterables;
+import org.gama.lang.collection.KeepOrderSet;
 
 import static org.gama.lang.collection.Iterables.pair;
 
@@ -16,7 +15,7 @@ import static org.gama.lang.collection.Iterables.pair;
  * 
  * @author Guillaume Mary
  */
-public class ForeignKey<T extends Table, U extends Table> {
+public class ForeignKey<T extends Table<T>, U extends Table<U>> {
 	
 	private final T table;
 	private final String name;
@@ -43,16 +42,16 @@ public class ForeignKey<T extends Table, U extends Table> {
 		this.columns = columns;
 	}
 	
-	public Set<Column<T, Object>> getColumns() {
-		return (Set<Column<T, Object>>) (Set) columns.keySet();
+	public KeepOrderSet<Column<T, Object>> getColumns() {
+		return new KeepOrderSet<>(columns.keySet().toArray(new Column[0]));
 	}
 	
 	public String getName() {
 		return name;
 	}
 	
-	public Collection<Column<U, Object>> getTargetColumns() {
-		return (Collection<Column<U, Object>>) (Collection) columns.values();
+	public KeepOrderSet<Column<U, Object>> getTargetColumns() {
+		return new KeepOrderSet<>(columns.values().toArray(new Column[0]));
 	}
 	
 	public T getTable() {

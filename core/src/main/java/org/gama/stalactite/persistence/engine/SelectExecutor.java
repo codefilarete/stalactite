@@ -10,6 +10,12 @@ import java.util.Set;
 import com.google.common.annotations.VisibleForTesting;
 import org.gama.lang.collection.Collections;
 import org.gama.lang.collection.Iterables;
+import org.gama.stalactite.persistence.mapping.IEntityMappingStrategy;
+import org.gama.stalactite.persistence.sql.dml.ColumnParameterizedSelect;
+import org.gama.stalactite.persistence.sql.dml.DMLGenerator;
+import org.gama.stalactite.persistence.structure.Column;
+import org.gama.stalactite.persistence.structure.PrimaryKey;
+import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.sql.ConnectionProvider;
 import org.gama.stalactite.sql.SimpleConnectionProvider;
 import org.gama.stalactite.sql.dml.ReadOperation;
@@ -17,23 +23,17 @@ import org.gama.stalactite.sql.dml.SQLExecutionException;
 import org.gama.stalactite.sql.dml.SQLOperation.SQLOperationListener;
 import org.gama.stalactite.sql.result.Row;
 import org.gama.stalactite.sql.result.RowIterator;
-import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
-import org.gama.stalactite.persistence.sql.dml.ColumnParameterizedSelect;
-import org.gama.stalactite.persistence.sql.dml.DMLGenerator;
-import org.gama.stalactite.persistence.structure.Column;
-import org.gama.stalactite.persistence.structure.PrimaryKey;
-import org.gama.stalactite.persistence.structure.Table;
 
 /**
  * Class dedicated to select statement execution
  * 
  * @author Guillaume Mary
  */
-public class SelectExecutor<C, I, T extends Table> extends DMLExecutor<C, I, T> {
+public class SelectExecutor<C, I, T extends Table> extends DMLExecutor<C, I, T> implements ISelectExecutor<C, I> {
 	
 	private SQLOperationListener<Column<T, Object>> operationListener;
 	
-	public SelectExecutor(ClassMappingStrategy<C, I, T> mappingStrategy, ConnectionProvider connectionProvider, DMLGenerator dmlGenerator, int inOperatorMaxSize) {
+	public SelectExecutor(IEntityMappingStrategy<C, I, T> mappingStrategy, ConnectionProvider connectionProvider, DMLGenerator dmlGenerator, int inOperatorMaxSize) {
 		super(mappingStrategy, connectionProvider, dmlGenerator, inOperatorMaxSize);
 	}
 	
@@ -41,6 +41,7 @@ public class SelectExecutor<C, I, T extends Table> extends DMLExecutor<C, I, T> 
 		this.operationListener = operationListener;
 	}
 	
+	@Override
 	public List<C> select(Iterable<I> ids) {
 		int blockSize = getInOperatorMaxSize();
 		List<List<I>> parcels = Collections.parcel(ids, blockSize);
@@ -89,7 +90,7 @@ public class SelectExecutor<C, I, T extends Table> extends DMLExecutor<C, I, T> 
 			closeableOperation.setValues(primaryKeyValues);
 			return transform(closeableOperation, primaryKeyValues.size());
 		} catch (RuntimeException e) {
-			throw new SQLExecutionException(e);
+			throw new SQLExecutionException(operation.getSqlStatement().getSQL(), e);
 		}
 	}
 	

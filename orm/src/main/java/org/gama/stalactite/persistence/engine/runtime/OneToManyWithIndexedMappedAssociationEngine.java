@@ -14,10 +14,9 @@ import org.gama.lang.Nullable;
 import org.gama.lang.Reflections;
 import org.gama.lang.ThreadLocals;
 import org.gama.lang.collection.Iterables;
+import org.gama.stalactite.persistence.engine.IEntityConfiguredJoinedTablesPersister;
 import org.gama.stalactite.persistence.engine.RuntimeMappingException;
-import org.gama.stalactite.persistence.engine.cascade.JoinedTablesPersister;
 import org.gama.stalactite.persistence.engine.listening.SelectListener;
-import org.gama.stalactite.persistence.engine.listening.UpdateListener.UpdatePayload;
 import org.gama.stalactite.persistence.id.diff.AbstractDiff;
 import org.gama.stalactite.persistence.id.diff.IndexedDiff;
 import org.gama.stalactite.persistence.structure.Column;
@@ -27,8 +26,8 @@ import static org.gama.lang.collection.Iterables.collectToList;
 /**
  * @author Guillaume Mary
  */
-public class OneToManyWithIndexedMappedAssociationEngine<SRC, TRGT, SRCID, TRGTID, C extends List<TRGT>>
-		extends OneToManyWithMappedAssociationEngine<SRC, TRGT, SRCID, TRGTID, C> {
+public class OneToManyWithIndexedMappedAssociationEngine<SRC, TRGT, ID, C extends List<TRGT>>
+		extends OneToManyWithMappedAssociationEngine<SRC, TRGT, ID, C> {
 	
 	/**
 	 * Context for indexed mapped List. Will keep bean index (during insert, update and select) between "unrelated" methods/phases :
@@ -41,31 +40,32 @@ public class OneToManyWithIndexedMappedAssociationEngine<SRC, TRGT, SRCID, TRGTI
 	/** Column that stores index value, owned by reverse side table (table of targetPersister) */
 	private final Column indexingColumn;
 	
-	public OneToManyWithIndexedMappedAssociationEngine(JoinedTablesPersister<TRGT, TRGTID, ?> targetPersister,
+	public OneToManyWithIndexedMappedAssociationEngine(IEntityConfiguredJoinedTablesPersister<TRGT, ID> targetPersister,
 													   IndexedMappedManyRelationDescriptor<SRC, TRGT, C> manyRelationDefinition,
-													   JoinedTablesPersister<SRC, SRCID, ?> joinedTablesPersister,
+													   IEntityConfiguredJoinedTablesPersister<SRC, ID> joinedTablesPersister,
 													   Column indexingColumn) {
 		super(targetPersister, manyRelationDefinition, joinedTablesPersister);
 		this.indexingColumn = indexingColumn;
 	}
 	
 	@Override
-	public void addSelectCascade(Column sourcePrimaryKey, Column relationshipOwner) {
-		super.addSelectCascade(sourcePrimaryKey, relationshipOwner);
+	public void addSelectCascade(Column sourcePrimaryKey, Column relationOwner) {
+		super.addSelectCascade(sourcePrimaryKey, relationOwner);
 		addIndexSelection();
 	}
 	
 	private void addIndexSelection() {
-		targetPersister.getSelectExecutor().getMappingStrategy().addSilentColumnSelecter(indexingColumn);
+		// NB: should be "targetPersister.getSelectExecutor().getMappingStrategy().." but can't be due to interface ISelectExecutor
+		targetPersister.getMappingStrategy().addSilentColumnToSelect(indexingColumn);
 		// Implementation note: 2 possiblities
 		// - keep object indexes and put sorted beans in a temporary List, then add them all to the target List
 		// - keep object indexes and sort the target List throught a comparator of indexes
 		// The latter is used because target List is already filled by the relationFixer
 		// If we use the former we must change the relation fixer and keep a temporary List. Seems little bit more complex.
 		// May be changed if any performance issue is noticed
-		sourcePersister.getPersisterListener().addSelectListener(new SelectListener<SRC, SRCID>() {
+		sourcePersister.getPersisterListener().addSelectListener(new SelectListener<SRC, ID>() {
 			@Override
-			public void beforeSelect(Iterable<SRCID> ids) {
+			public void beforeSelect(Iterable<ID> ids) {
 				updatableListIndex.set(new HashMap<>());
 			}
 			
@@ -83,7 +83,7 @@ public class OneToManyWithIndexedMappedAssociationEngine<SRC, TRGT, SRCID, TRGTI
 			}
 			
 			@Override
-			public void onError(Iterable<SRCID> ids, RuntimeException exception) {
+			public void onError(Iterable<ID> ids, RuntimeException exception) {
 				cleanContext();
 			}
 			
@@ -93,7 +93,7 @@ public class OneToManyWithIndexedMappedAssociationEngine<SRC, TRGT, SRCID, TRGTI
 		});
 		// Adding a transformer listener to keep track of the index column read from ResultSet/Row
 		// We place it into a ThreadLocal, then the select listener will use it to reorder loaded beans
-		targetPersister.getMappingStrategy().getRowTransformer().addTransformerListener((bean, row) -> {
+		targetPersister.getMappingStrategy().addTransformerListener((bean, row) -> {
 			Map<TRGT, Integer> indexPerBean = updatableListIndex.get();
 			// indexPerBean may not be present because its mecanism was added on persisterListener which is the one of the source bean
 			// so in case of entity loading from its own persister (targetPersister) ThreadLocal is not available
@@ -101,7 +101,7 @@ public class OneToManyWithIndexedMappedAssociationEngine<SRC, TRGT, SRCID, TRGTI
 				// Indexing column is not defined in targetPersister.getMappingStrategy().getRowTransformer() but is present in row
 				// because it was read from ResultSet
 				// So we get its alias from the object that managed id, and we simply read it from the row (but not from RowTransformer)
-				Map<Column, String> aliases = sourcePersister.getJoinedStrategiesSelectExecutor().getJoinedStrategiesSelect().getAliases();
+				Map<Column, String> aliases = sourcePersister.getJoinedStrategiesSelect().getAliases();
 				indexPerBean.put(bean, (int) row.get(aliases.get(indexingColumn)));
 			}
 		});
@@ -119,7 +119,7 @@ public class OneToManyWithIndexedMappedAssociationEngine<SRC, TRGT, SRCID, TRGTI
 	 */
 	private void addIndexInsertion() {
 		// we declare the indexing column as a silent one, then AfterInsertCollectionCascader will insert it
-		targetPersister.getInsertExecutor().getMappingStrategy().addSilentColumnInserter(indexingColumn, (Function<TRGT, Object>)
+		targetPersister.getMappingStrategy().addSilentColumnInserter(indexingColumn, (Function<TRGT, Object>)
 				target -> {
 					IndexedMappedManyRelationDescriptor<SRC, TRGT, C> manyRelationDefinition =
 							(IndexedMappedManyRelationDescriptor<SRC, TRGT, C>) this.manyRelationDefinition;
@@ -141,7 +141,7 @@ public class OneToManyWithIndexedMappedAssociationEngine<SRC, TRGT, SRCID, TRGTI
 				// Thread safe by updatableListIndex access
 				(Function<TRGT, Object>) target -> Nullable.nullable(updatableListIndex.get()).map(m -> m.get(target)).get());
 		
-		BiConsumer<UpdatePayload<? extends SRC, ?>, Boolean> updateListener = new CollectionUpdater<SRC, TRGT, C>(
+		BiConsumer<Duo<SRC, SRC>, Boolean> updateListener = new CollectionUpdater<SRC, TRGT, C>(
 				manyRelationDefinition.getCollectionGetter(),
 				targetPersister,
 				manyRelationDefinition.getReverseSetter(),
@@ -153,7 +153,7 @@ public class OneToManyWithIndexedMappedAssociationEngine<SRC, TRGT, SRCID, TRGTI
 			}
 			
 			@Override
-			protected UpdateContext newUpdateContext(UpdatePayload<? extends SRC, ?> updatePayload) {
+			protected UpdateContext newUpdateContext(Duo<SRC, SRC> updatePayload) {
 				return new IndexedMappedAssociationUpdateContext(updatePayload);
 			}
 			
@@ -183,7 +183,7 @@ public class OneToManyWithIndexedMappedAssociationEngine<SRC, TRGT, SRCID, TRGTI
 				/** New indexes per entity */
 				private final Map<TRGT, Integer> indexUpdates = new HashMap<>();
 				
-				public IndexedMappedAssociationUpdateContext(UpdatePayload<? extends SRC, ?> updatePayload) {
+				public IndexedMappedAssociationUpdateContext(Duo<SRC, SRC> updatePayload) {
 					super(updatePayload);
 				}
 				

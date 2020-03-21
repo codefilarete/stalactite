@@ -6,26 +6,30 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.gama.lang.Duo;
 import org.gama.lang.Retryer;
 import org.gama.lang.collection.ArrayIterator;
 import org.gama.lang.collection.Iterables;
 import org.gama.lang.collection.ReadOnlyIterator;
 import org.gama.lang.collection.ValueFactoryHashMap;
 import org.gama.lang.function.Predicates;
+import org.gama.stalactite.persistence.engine.InsertExecutor.VersioningStrategyRollbackListener;
+import org.gama.stalactite.persistence.engine.RowCountManager.RowCounter;
+import org.gama.stalactite.persistence.engine.listening.UpdateListener;
+import org.gama.stalactite.persistence.engine.listening.UpdateListener.UpdatePayload;
+import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
+import org.gama.stalactite.persistence.mapping.IEntityMappingStrategy;
+import org.gama.stalactite.persistence.mapping.IMappingStrategy.UpwhereColumn;
+import org.gama.stalactite.persistence.sql.IConnectionConfiguration;
+import org.gama.stalactite.persistence.sql.dml.DMLGenerator;
+import org.gama.stalactite.persistence.sql.dml.PreparedUpdate;
+import org.gama.stalactite.persistence.structure.Column;
+import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.sql.ConnectionProvider;
 import org.gama.stalactite.sql.RollbackObserver;
 import org.gama.stalactite.sql.dml.SQLOperation.SQLOperationListener;
 import org.gama.stalactite.sql.dml.SQLStatement;
 import org.gama.stalactite.sql.dml.WriteOperation;
-import org.gama.stalactite.persistence.engine.InsertExecutor.VersioningStrategyRollbackListener;
-import org.gama.stalactite.persistence.engine.RowCountManager.RowCounter;
-import org.gama.stalactite.persistence.engine.listening.UpdateListener.UpdatePayload;
-import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
-import org.gama.stalactite.persistence.mapping.IMappingStrategy.UpwhereColumn;
-import org.gama.stalactite.persistence.sql.dml.DMLGenerator;
-import org.gama.stalactite.persistence.sql.dml.PreparedUpdate;
-import org.gama.stalactite.persistence.structure.Column;
-import org.gama.stalactite.persistence.structure.Table;
 
 import static org.gama.stalactite.persistence.engine.RowCountManager.THROWING_ROW_COUNT_MANAGER;
 
@@ -34,7 +38,7 @@ import static org.gama.stalactite.persistence.engine.RowCountManager.THROWING_RO
  * 
  * @author Guillaume Mary
  */
-public class UpdateExecutor<C, I, T extends Table> extends WriteExecutor<C, I, T> {
+public class UpdateExecutor<C, I, T extends Table> extends WriteExecutor<C, I, T> implements IUpdateExecutor<C> {
 	
 	/** Entity lock manager, default is no operation as soon as a {@link VersioningStrategy} is given */
 	private OptimisticLockManager<T> optimisticLockManager = OptimisticLockManager.NOOP_OPTIMISTIC_LOCK_MANAGER;
@@ -43,10 +47,10 @@ public class UpdateExecutor<C, I, T extends Table> extends WriteExecutor<C, I, T
 	
 	private SQLOperationListener<UpwhereColumn<T>> operationListener;
 	
-	public UpdateExecutor(ClassMappingStrategy<C, I, T> mappingStrategy, ConnectionProvider connectionProvider,
+	public UpdateExecutor(IEntityMappingStrategy<C, I, T> mappingStrategy, IConnectionConfiguration connectionConfiguration,
 						  DMLGenerator dmlGenerator, Retryer writeOperationRetryer,
-						  int batchSize, int inOperatorMaxSize) {
-		super(mappingStrategy, connectionProvider, dmlGenerator, writeOperationRetryer, batchSize, inOperatorMaxSize);
+						  int inOperatorMaxSize) {
+		super(mappingStrategy, connectionConfiguration, dmlGenerator, writeOperationRetryer, inOperatorMaxSize);
 	}
 	
 	public void setRowCountManager(RowCountManager rowCountManager) {
@@ -56,8 +60,7 @@ public class UpdateExecutor<C, I, T extends Table> extends WriteExecutor<C, I, T
 	public void setVersioningStrategy(VersioningStrategy versioningStrategy) {
 		// we could have put the column as an attribute of the VersioningStrategy but, by making the column more dynamic, the strategy can be
 		// shared as long as PropertyAccessor is reusable over entities (wraps a common method)
-		Column<T, Object> versionColumn = getMappingStrategy().getMainMappingStrategy()
-				.getPropertyToColumn().get(versioningStrategy.getVersionAccessor());
+		Column<T, Object> versionColumn = getMappingStrategy().getPropertyToColumn().get(versioningStrategy.getVersionAccessor());
 		setOptimisticLockManager(new RevertOnRollbackMVCC(versioningStrategy, versionColumn, getConnectionProvider()));
 		setRowCountManager(THROWING_ROW_COUNT_MANAGER);
 	}
@@ -82,6 +85,7 @@ public class UpdateExecutor<C, I, T extends Table> extends WriteExecutor<C, I, T
 	 * 
 	 * @param entities iterable of entities
 	 */
+	@Override
 	public int updateById(Iterable<C> entities) {
 		Set<Column<T, Object>> columnsToUpdate = getMappingStrategy().getUpdatableColumns();
 		if (columnsToUpdate.isEmpty()) {
@@ -98,6 +102,37 @@ public class UpdateExecutor<C, I, T extends Table> extends WriteExecutor<C, I, T
 				writeOperation.addBatch(updateValues);
 			}
 			return jdbcBatchingIterator.getUpdatedRowCount();
+		}
+	}
+	
+	@Override
+	public int update(Iterable<? extends Duo<? extends C, ? extends C>> differencesIterable, boolean allColumnsStatement) {
+		Iterable<UpdatePayload<C, T>> updatePayloads = computePayloads(differencesIterable, allColumnsStatement);
+		if (Iterables.isEmpty(updatePayloads)) {
+			// nothing to update => we return immediatly without any call to listeners
+			return 0;
+		} else {
+			return updateDifferences(updatePayloads, allColumnsStatement);
+		}
+		
+	}
+	
+	/**
+	 * Computes entities payload
+	 *
+	 * @param differencesIterable entities to persist
+	 * @return persistence payloads of entities
+	 */
+	protected Iterable<UpdatePayload<C, T>> computePayloads(Iterable<? extends Duo<? extends C, ? extends C>> differencesIterable, boolean allColumnsStatement) {
+		return UpdateListener.computePayloads(differencesIterable, allColumnsStatement, getMappingStrategy());
+	}
+	
+	// can't be named "update" due to naming conflict with the one with Iterable<Duo>
+	public int updateDifferences(Iterable<UpdatePayload<C, T>> updatePayloads, boolean allColumnsStatement) {
+		if (allColumnsStatement) {
+			return updateMappedColumns(updatePayloads);
+		} else {
+			return updateVariousColumns(updatePayloads);
 		}
 	}
 	
@@ -138,7 +173,7 @@ public class UpdateExecutor<C, I, T extends Table> extends WriteExecutor<C, I, T
 		// we ask the strategy to lookup for updatable columns (not taken directly on mapping strategy target table)
 		Set<Column<T, Object>> columnsToUpdate = getMappingStrategy().getUpdatableColumns();
 		if (columnsToUpdate.isEmpty()) {
-			// nothing to update, this prevent from a NPE in buildUpdate(..) due to lack of any (first) element
+			// nothing to update, this prevent from a NPE in buildUpdate(..) due to lack of any element
 			return 0;
 		} else {
 			// we update only entities that have values to be modified

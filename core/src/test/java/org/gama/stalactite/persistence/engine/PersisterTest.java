@@ -4,18 +4,15 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.function.BiPredicate;
-import java.util.function.Predicate;
+import java.util.function.Function;
 
 import org.gama.lang.Duo;
-import org.gama.lang.Retryer;
 import org.gama.lang.collection.Arrays;
 import org.gama.lang.collection.Iterables;
 import org.gama.lang.collection.Maps;
 import org.gama.lang.test.Assertions;
 import org.gama.reflection.Accessors;
 import org.gama.reflection.IReversibleAccessor;
-import org.gama.stalactite.sql.ConnectionProvider;
 import org.gama.stalactite.persistence.engine.PersisterDatabaseTest.Toto;
 import org.gama.stalactite.persistence.engine.PersisterDatabaseTest.TotoTable;
 import org.gama.stalactite.persistence.engine.listening.DeleteByIdListener;
@@ -23,21 +20,18 @@ import org.gama.stalactite.persistence.engine.listening.DeleteListener;
 import org.gama.stalactite.persistence.engine.listening.InsertListener;
 import org.gama.stalactite.persistence.engine.listening.UpdateByIdListener;
 import org.gama.stalactite.persistence.engine.listening.UpdateListener;
-import org.gama.stalactite.persistence.engine.listening.UpdateListener.UpdatePayload;
 import org.gama.stalactite.persistence.id.manager.AlreadyAssignedIdentifierManager;
 import org.gama.stalactite.persistence.id.manager.IdentifierInsertionManager;
 import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
-import org.gama.stalactite.persistence.mapping.IMappingStrategy.UpwhereColumn;
-import org.gama.stalactite.persistence.sql.dml.DMLGenerator;
-import org.gama.stalactite.persistence.sql.dml.binder.ColumnBinderRegistry;
+import org.gama.stalactite.persistence.sql.Dialect;
+import org.gama.stalactite.persistence.sql.IConnectionConfiguration.ConnectionConfigurationSupport;
 import org.gama.stalactite.persistence.structure.Column;
-import org.gama.stalactite.persistence.structure.Table;
+import org.gama.stalactite.sql.ConnectionProvider;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.ArgumentMatchers;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.clearInvocations;
 import static org.mockito.Mockito.mock;
@@ -63,8 +57,8 @@ class PersisterTest {
 		ClassMappingStrategy<Toto, Long, TotoTable> classMappingStrategy = new ClassMappingStrategy<>(Toto.class, totoTable,
 				mapping, identifier,
 				identifierInsertionManagerMock);
-		Persister<Toto, Long, TotoTable> testInstance = new Persister<Toto, Long, TotoTable>(classMappingStrategy,
-				mock(ConnectionProvider.class), new DMLGenerator(new ColumnBinderRegistry()), Retryer.NO_RETRY, 0, 0) {
+		Persister<Toto, Long, TotoTable> testInstance = new Persister<Toto, Long, TotoTable>(classMappingStrategy, new Dialect(),
+				new ConnectionConfigurationSupport(mock(ConnectionProvider.class), 0)) {
 			/** Overriden to prevent from building real world SQL statement because ConnectionProvider is mocked */
 			@Override
 			protected int doInsert(Iterable entities) {
@@ -96,8 +90,8 @@ class PersisterTest {
 		ClassMappingStrategy<Toto, Integer, TotoTable> classMappingStrategy = new ClassMappingStrategy<>(Toto.class, totoTable,
 				mapping, identifier,
 				identifierInsertionManagerMock);
-		Persister<Toto, Integer, TotoTable> testInstance = new Persister<Toto, Integer, TotoTable>(classMappingStrategy,
-				mock(ConnectionProvider.class), new DMLGenerator(new ColumnBinderRegistry()), Retryer.NO_RETRY, 0, 0) {
+		Persister<Toto, Integer, TotoTable> testInstance = new Persister<Toto, Integer, TotoTable>(classMappingStrategy, new Dialect(),
+				new ConnectionConfigurationSupport(mock(ConnectionProvider.class), 0)) {
 			/** Overriden to prevent from building real world SQL statement because ConnectionProvider is mocked */
 			@Override
 			protected int doInsert(Iterable entities) {
@@ -106,7 +100,7 @@ class PersisterTest {
 			
 			/** Overriden to prevent from building real world SQL statement because ConnectionProvider is mocked */
 			@Override
-			protected int doUpdate(Iterable<UpdatePayload<Toto, TotoTable>> entities, boolean allColumnsStatement) {
+			protected int doUpdate(Iterable<? extends Duo<? extends Toto, ? extends Toto>> entities, boolean allColumnsStatement) {
 				return ((Collection) entities).size();
 			}
 			
@@ -141,12 +135,14 @@ class PersisterTest {
 		// On persist of a already persisted instance (with id), "rough update" chain must be invoked
 		rowCount = testInstance.persist(persisted);
 		assertEquals(1, rowCount);
-		ArgumentCaptor<Iterable<UpdatePayload>> updateArgCaptor = ArgumentCaptor.forClass(Iterable.class);
+		ArgumentCaptor<Iterable<Duo>> updateArgCaptor = ArgumentCaptor.forClass(Iterable.class);
 		verify(updateListener).beforeUpdate(updateArgCaptor.capture(), eq(true));
-		Assertions.assertAllEquals(Arrays.asList(new Duo<>(persisted, new Toto(1, null, null))), Iterables.collectToList(updateArgCaptor.getValue(), UpdatePayload::getEntities),
+		Assertions.assertAllEquals(Arrays.asList(new Duo<>(persisted, new Toto(1, null, null))), Iterables.collectToList(updateArgCaptor.getValue(),
+				Function.identity()),
 				Objects::toString, Objects::toString);
 		verify(updateListener).afterUpdate(updateArgCaptor.capture(), eq(true));
-		Assertions.assertAllEquals(Arrays.asList(new Duo<>(persisted, new Toto(1, null, null))), Iterables.collectToList(updateArgCaptor.getValue(), UpdatePayload::getEntities),
+		Assertions.assertAllEquals(Arrays.asList(new Duo<>(persisted, new Toto(1, null, null))), Iterables.collectToList(updateArgCaptor.getValue(),
+				Function.identity()),
 				Objects::toString, Objects::toString);
 		
 		clearInvocations(insertListener, identifierManagerInsertListenerMock, updateListener);
@@ -158,10 +154,12 @@ class PersisterTest {
 		verify(identifierManagerInsertListenerMock).beforeInsert(eq(Arrays.asList(unPersisted)));
 		verify(identifierManagerInsertListenerMock).afterInsert(eq(Arrays.asList(unPersisted)));
 		verify(updateListener).beforeUpdate(updateArgCaptor.capture(), eq(true));
-		Assertions.assertAllEquals(Arrays.asList(new Duo<>(persisted, new Toto(1, null, null))), Iterables.collectToList(updateArgCaptor.getValue(), UpdatePayload::getEntities),
+		Assertions.assertAllEquals(Arrays.asList(new Duo<>(persisted, new Toto(1, null, null))), Iterables.collectToList(updateArgCaptor.getValue(),
+				Function.identity()),
 				Objects::toString, Objects::toString);
 		verify(updateListener).afterUpdate(updateArgCaptor.capture(), eq(true));
-		Assertions.assertAllEquals(Arrays.asList(new Duo<>(persisted, new Toto(1, null, null))), Iterables.collectToList(updateArgCaptor.getValue(), UpdatePayload::getEntities),
+		Assertions.assertAllEquals(Arrays.asList(new Duo<>(persisted, new Toto(1, null, null))), Iterables.collectToList(updateArgCaptor.getValue(),
+				Function.identity()),
 				Objects::toString, Objects::toString);
 	}
 	
@@ -179,8 +177,8 @@ class PersisterTest {
 		ClassMappingStrategy<Toto, Long, TotoTable> classMappingStrategy = new ClassMappingStrategy<>(Toto.class, totoTable,
 				mapping, identifier,
 				identifierInsertionManagerMock);
-		Persister<Toto, Long, TotoTable> testInstance = new Persister<Toto, Long, TotoTable>(classMappingStrategy,
-				mock(ConnectionProvider.class), new DMLGenerator(new ColumnBinderRegistry()), Retryer.NO_RETRY, 0, 0) {
+		Persister<Toto, Long, TotoTable> testInstance = new Persister<Toto, Long, TotoTable>(classMappingStrategy, new Dialect(),
+				new ConnectionConfigurationSupport(mock(ConnectionProvider.class), 0)) {
 			/** Overriden to prevent from building real world SQL statement because ConnectionProvider is mocked */
 			@Override
 			protected int doInsert(Iterable entities) {
@@ -221,11 +219,11 @@ class PersisterTest {
 		ClassMappingStrategy<Toto, Long, TotoTable> classMappingStrategy = new ClassMappingStrategy<>(Toto.class, totoTable,
 				mapping, identifier,
 				new AlreadyAssignedIdentifierManager<>(Long.class));
-		Persister<Toto, Long, TotoTable> testInstance = new Persister<Toto, Long, TotoTable>(classMappingStrategy,
-				mock(ConnectionProvider.class), new DMLGenerator(new ColumnBinderRegistry()), Retryer.NO_RETRY, 0, 0) {
+		Persister<Toto, Long, TotoTable> testInstance = new Persister<Toto, Long, TotoTable>(classMappingStrategy, new Dialect(),
+				new ConnectionConfigurationSupport(mock(ConnectionProvider.class), 0)) {
 			/** Overriden to prevent from building real world SQL statement because ConnectionProvider is mocked */
 			@Override
-			protected int doUpdate(Iterable<UpdatePayload<Toto, TotoTable>> entities, boolean allColumnsStatement) {
+			protected int doUpdate(Iterable<? extends Duo<? extends Toto, ? extends Toto>> entities, boolean allColumnsStatement) {
 				return ((Collection) entities).size();
 			}
 		};
@@ -244,34 +242,12 @@ class PersisterTest {
 		
 		// On update of an already persisted instance (with id), "rough update" chain must be invoked
 		testInstance.update(modified, original, false);
-		UpdatePayload<Toto, TotoTable> expectedPayload = new UpdatePayload<Toto, TotoTable>(
-				new Duo<>(modified, original),
-				(Map) Maps.asMap(new UpwhereColumn<>(columnB, true), -2)
-					.add(new UpwhereColumn<>(primaryKey, false), 1));
-		PayloadPredicate<Toto, TotoTable> payloadPredicate = new PayloadPredicate<>(expectedPayload);
-		ArgumentCaptor<Iterable<UpdatePayload<Toto, TotoTable>>> listenerArgumentCaptor = ArgumentCaptor.forClass(Iterable.class);
+		Duo<Toto, Toto> expectedPayload = new Duo<>(modified, original);
+		ArgumentCaptor<Iterable<Duo<Toto, TotoTable>>> listenerArgumentCaptor = ArgumentCaptor.forClass(Iterable.class);
 		verify(updateListener).beforeUpdate(listenerArgumentCaptor.capture(), eq(false));
-		assertTrue(payloadPredicate.test(Iterables.first(listenerArgumentCaptor.getValue())));
+		assertEquals(expectedPayload, Iterables.first(listenerArgumentCaptor.getValue()));
 		verify(updateListener).afterUpdate(listenerArgumentCaptor.capture(), eq(false));
-		assertTrue(payloadPredicate.test(Iterables.first(listenerArgumentCaptor.getValue())));
-	}
-	
-	private static class PayloadPredicate<A, B extends Table<B>> implements Predicate<UpdatePayload<A, B>> {
-		
-		static final BiPredicate<UpdatePayload<?, ?>, UpdatePayload<?, ?>> UPDATE_PAYLOAD_TESTER =
-				(p1, p2) -> p1.getValues().equals(p2.getValues()) && p1.getEntities().equals(p2.getEntities());
-	
-		
-		private final UpdatePayload<A, B> expectedPayload;
-		
-		private PayloadPredicate(UpdatePayload<A, B> expectedPayload) {
-			this.expectedPayload = expectedPayload;
-		}
-		
-		@Override
-		public boolean test(UpdatePayload<A, B> elem) {
-			return UPDATE_PAYLOAD_TESTER.test(elem, expectedPayload);
-		}
+		assertEquals(expectedPayload, Iterables.first(listenerArgumentCaptor.getValue()));
 	}
 	
 	@Test
@@ -288,8 +264,8 @@ class PersisterTest {
 		ClassMappingStrategy<Toto, Long, TotoTable> classMappingStrategy = new ClassMappingStrategy<>(Toto.class, totoTable,
 				mapping, identifier,
 				new AlreadyAssignedIdentifierManager<>(Long.class));
-		Persister<Toto, Long, TotoTable> testInstance = new Persister<Toto, Long, TotoTable>(classMappingStrategy,
-				mock(ConnectionProvider.class), new DMLGenerator(new ColumnBinderRegistry()), Retryer.NO_RETRY, 0, 0) {
+		Persister<Toto, Long, TotoTable> testInstance = new Persister<Toto, Long, TotoTable>(classMappingStrategy, new Dialect(),
+				new ConnectionConfigurationSupport(mock(ConnectionProvider.class), 0)) {
 			/** Overriden to prevent from building real world SQL statement because ConnectionProvider is mocked */
 			@Override
 			protected int doUpdateById(Iterable entities) {
@@ -328,8 +304,8 @@ class PersisterTest {
 		ClassMappingStrategy<Toto, Long, TotoTable> classMappingStrategy = new ClassMappingStrategy<>(Toto.class, totoTable,
 				mapping, identifier,
 				new AlreadyAssignedIdentifierManager<>(Long.class));
-		Persister<Toto, Long, TotoTable> testInstance = new Persister<Toto, Long, TotoTable>(classMappingStrategy,
-				mock(ConnectionProvider.class), new DMLGenerator(new ColumnBinderRegistry()), Retryer.NO_RETRY, 0, 0) {
+		Persister<Toto, Long, TotoTable> testInstance = new Persister<Toto, Long, TotoTable>(classMappingStrategy, new Dialect(),
+				new ConnectionConfigurationSupport(mock(ConnectionProvider.class), 0)) {
 			/** Overriden to prevent from building real world SQL statement because ConnectionProvider is mocked */
 			@Override
 			protected int doDelete(Iterable entities) {
@@ -367,8 +343,8 @@ class PersisterTest {
 		ClassMappingStrategy<Toto, Long, TotoTable> classMappingStrategy = new ClassMappingStrategy<>(Toto.class, totoTable,
 				mapping, identifier,
 				new AlreadyAssignedIdentifierManager<>(Long.class));
-		Persister<Toto, Long, TotoTable> testInstance = new Persister<Toto, Long, TotoTable>(classMappingStrategy,
-				mock(ConnectionProvider.class), new DMLGenerator(new ColumnBinderRegistry()), Retryer.NO_RETRY, 0, 0) {
+		Persister<Toto, Long, TotoTable> testInstance = new Persister<Toto, Long, TotoTable>(classMappingStrategy, new Dialect(),
+				new ConnectionConfigurationSupport(mock(ConnectionProvider.class), 0)) {
 			/** Overriden to prevent from building real world SQL statement because ConnectionProvider is mocked */
 			@Override
 			protected int doDeleteById(Iterable entities) {

@@ -1,6 +1,7 @@
 package org.gama.stalactite.persistence.mapping;
 
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
@@ -15,9 +16,9 @@ import org.gama.lang.collection.Arrays;
 import org.gama.lang.exception.NotImplementedException;
 import org.gama.lang.function.Predicates;
 import org.gama.reflection.IReversibleAccessor;
-import org.gama.stalactite.sql.result.Row;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
+import org.gama.stalactite.sql.result.Row;
 
 /**
  * A mapping strategy to persist a {@link ZonedDateTime} : requires 2 columns, one for the date-time part, another for the timezone.
@@ -38,6 +39,7 @@ public class ZonedDateTimeMappingStrategy<T extends Table> implements IEmbeddedB
 	private final UpwhereColumn<T> dateTimeUpdateColumn;
 	private final UpwhereColumn<T> zoneUpdateColumn;
 	private final Set<Column<T, ?>> columns;
+	private final ZonedDateTimeToBeanRowTransformer zonedDateTimeRowTransformer;
 	
 	/**
 	 * Build a EmbeddedBeanMappingStrategy from a mapping between Field and Column.
@@ -62,6 +64,7 @@ public class ZonedDateTimeMappingStrategy<T extends Table> implements IEmbeddedB
 		this.dateTimeUpdateColumn = new UpwhereColumn<>(dateTimeColumn, true);
 		this.zoneUpdateColumn = new UpwhereColumn<>(zoneColumn, true);
 		this.columns = Collections.unmodifiableSet(Arrays.asHashSet(dateTimeColumn, zoneColumn));
+		this.zonedDateTimeRowTransformer = new ZonedDateTimeToBeanRowTransformer();
 	}
 	
 	@Nonnull
@@ -102,7 +105,7 @@ public class ZonedDateTimeMappingStrategy<T extends Table> implements IEmbeddedB
 			toReturn.put(dateTimeUpdateColumn, null);
 			toReturn.put(zoneUpdateColumn, null);
 		}
-
+		
 		// adding complementary columns if necessary
 		if (!toReturn.isEmpty() && allColumns) {
 			for (Entry<Column<T, ?>, Object> unmodifiedField : unmodifiedColumns.entrySet()) {
@@ -112,19 +115,57 @@ public class ZonedDateTimeMappingStrategy<T extends Table> implements IEmbeddedB
 		return toReturn;
 	}
 	
-	
 	@Override
 	public ZonedDateTime transform(Row row) {
-		if (row.get(dateTimeColumn.getName()) == null || row.get(zoneColumn.getName()) == null) {
-			return null;
-		} else {
-			return ZonedDateTime.of((LocalDateTime) row.get(dateTimeColumn.getName()), (ZoneId) row.get(zoneColumn.getName()));
-		}
+		return zonedDateTimeRowTransformer.transform(row);
 	}
 	
 	@Override
 	public Map<IReversibleAccessor<ZonedDateTime, Object>, Column<T, Object>> getPropertyToColumn() {
-		throw new NotImplementedException(Reflections.toString(ZonedDateTimeMappingStrategy.class) + " can't export a mapping between some accessors and their columns" 
+		throw new NotImplementedException(Reflections.toString(ZonedDateTimeMappingStrategy.class) + " can't export a mapping between some accessors and their columns"
 				+ " because properties of " + Reflections.toString(ZonedDateTime.class) + " can't be set");
+	}
+	
+	@Override
+	public ZonedDateTimeToBeanRowTransformer copyTransformerWithAliases(ColumnedRow columnedRow) {
+		return this.zonedDateTimeRowTransformer.copyWithAliases(columnedRow);
+	}
+	
+	@Nullable
+	private ZonedDateTime buildZonedDateTime(ColumnedRow columnedRow, Row row) {
+		return buildZonedDateTime(columnedRow.getValue(dateTimeColumn, row), columnedRow.getValue(zoneColumn, row));
+	}
+	
+	@Nullable
+	private ZonedDateTime buildZonedDateTime(LocalDateTime dateTimeColumnName, ZoneId zoneColumnName) {
+		if (dateTimeColumnName == null || zoneColumnName == null) {
+			return null;
+		} else {
+			return ZonedDateTime.of(dateTimeColumnName, zoneColumnName);
+		}
+	}
+	
+	class ZonedDateTimeToBeanRowTransformer extends ToBeanRowTransformer<ZonedDateTime> {
+		
+		public ZonedDateTimeToBeanRowTransformer() {
+			super(ZonedDateTime.class, Collections.emptyMap());
+		}
+		
+		@Nullable
+		@Override
+		public ZonedDateTime newBeanInstance(Row row) {
+			return buildZonedDateTime(new ColumnedRow(), row);
+		}
+		
+		@Override
+		public ZonedDateTimeToBeanRowTransformer copyWithAliases(ColumnedRow columnedRow) {
+			return new ZonedDateTimeToBeanRowTransformer() {
+				@Nullable
+				@Override
+				public ZonedDateTime newBeanInstance(Row row) {
+					return buildZonedDateTime(columnedRow, row);
+				}
+			};
+		}
 	}
 }

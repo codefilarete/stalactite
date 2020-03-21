@@ -8,6 +8,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 
 import org.gama.lang.Duo;
@@ -81,11 +82,33 @@ public class Table<SELF extends Table<SELF>> {
 		return result;
 	}
 	
+	/**
+	 * Adds a column to this table.
+	 * May do nothing if a column already exists with same name and type.
+	 * Will throw an exception if a column with same name but with different type already exists.
+	 * 
+	 * @param name column name
+	 * @param javaType column type
+	 * @param <O> column type
+	 * @return the create column or the existing one
+	 */
 	public <O> Column<SELF, O> addColumn(String name, Class<O> javaType) {
 		return addertColumn(new Column<>((SELF) this, name, javaType));
 	}
 	
-	public <O> Column<SELF, O> addColumn(String name, Class<O> javaType, int size) {
+	/**
+	 * Adds a column to this table.
+	 * May do nothing if a column already exists with same name, size and type.
+	 * Will throw an exception if a column with same name but with different type or size already exists.
+	 *
+	 * @param name column name
+	 * @param javaType column type
+	 * @param size column type size, null if type doesn't require any size ({@link #addColumn(String, Class)} should be prefered in this case)
+	 *             but let as such for column copy use case
+	 * @param <O> column type
+	 * @return the create column or the existing one
+	 */
+	public <O> Column<SELF, O> addColumn(String name, Class<O> javaType, Integer size) {
 		return addertColumn(new Column<>((SELF) this, name, javaType, size));
 	}
 	
@@ -160,8 +183,13 @@ public class Table<SELF extends Table<SELF>> {
 		return newIndex;
 	}
 	
-	public Set<ForeignKey<SELF, Table>> getForeignKeys() {
-		return (Set<ForeignKey<SELF, Table>>) (Set) Collections.unmodifiableSet(foreignKeys);
+	public Set<ForeignKey<SELF, ?>> getForeignKeys() {
+		return Collections.unmodifiableSet(foreignKeys);
+	}
+	
+	public <T extends Table<T>, I> ForeignKey addForeignKey(BiFunction<Column, Column, String> namingFunction,
+															Column<SELF, I> column, Column<T, I> targetColumn) {
+		return this.addForeignKey(namingFunction.apply(column, targetColumn), column, targetColumn);
 	}
 	
 	public <T extends Table<T>, I> ForeignKey addForeignKey(String name, Column<SELF, I> column, Column<T, I> targetColumn) {

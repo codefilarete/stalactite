@@ -2,69 +2,66 @@ package org.gama.stalactite.persistence.engine.runtime;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashMap;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
-import org.gama.stalactite.sql.dml.PreparedSQL;
-import org.gama.stalactite.sql.dml.WriteOperation;
+import org.gama.lang.Duo;
+import org.gama.lang.Nullable;
+import org.gama.lang.bean.Objects;
+import org.gama.lang.collection.Iterables;
 import org.gama.stalactite.command.builder.DeleteCommandBuilder;
 import org.gama.stalactite.command.model.Delete;
 import org.gama.stalactite.persistence.engine.AssociationRecord;
 import org.gama.stalactite.persistence.engine.AssociationRecordPersister;
 import org.gama.stalactite.persistence.engine.AssociationTable;
 import org.gama.stalactite.persistence.engine.BeanRelationFixer;
+import org.gama.stalactite.persistence.engine.IConfiguredPersister;
+import org.gama.stalactite.persistence.engine.IEntityConfiguredJoinedTablesPersister;
 import org.gama.stalactite.persistence.engine.Persister;
+import org.gama.stalactite.persistence.engine.cascade.AbstractJoin.JoinType;
 import org.gama.stalactite.persistence.engine.cascade.AfterInsertCollectionCascader;
-import org.gama.stalactite.persistence.engine.cascade.JoinedTablesPersister;
 import org.gama.stalactite.persistence.engine.listening.DeleteByIdListener;
 import org.gama.stalactite.persistence.engine.listening.DeleteListener;
 import org.gama.stalactite.persistence.engine.listening.PersisterListener;
 import org.gama.stalactite.persistence.engine.listening.SelectListener;
-import org.gama.stalactite.persistence.engine.listening.UpdateListener.UpdatePayload;
 import org.gama.stalactite.persistence.engine.runtime.OneToManyWithMappedAssociationEngine.DeleteByIdTargetEntitiesBeforeDeleteByIdCascader;
 import org.gama.stalactite.persistence.engine.runtime.OneToManyWithMappedAssociationEngine.DeleteTargetEntitiesBeforeDeleteCascader;
 import org.gama.stalactite.persistence.engine.runtime.OneToManyWithMappedAssociationEngine.TargetInstancesInsertCascader;
 import org.gama.stalactite.persistence.engine.runtime.OneToManyWithMappedAssociationEngine.TargetInstancesUpdateCascader;
 import org.gama.stalactite.persistence.id.diff.AbstractDiff;
-import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
+import org.gama.stalactite.persistence.mapping.IEntityMappingStrategy;
 import org.gama.stalactite.persistence.sql.dml.binder.ColumnBinderRegistry;
 import org.gama.stalactite.query.model.Operators;
+import org.gama.stalactite.sql.dml.PreparedSQL;
+import org.gama.stalactite.sql.dml.WriteOperation;
 
 import static org.gama.lang.collection.Iterables.collect;
 import static org.gama.stalactite.persistence.engine.cascade.JoinedStrategiesSelect.FIRST_STRATEGY_NAME;
-import static org.gama.stalactite.persistence.engine.runtime.OneToManyWithMappedAssociationEngine.addSubgraphSelect;
+import static org.gama.stalactite.persistence.engine.runtime.OneToManyWithMappedAssociationEngine.NOOP_REVERSE_SETTER;
 
 /**
  * @author Guillaume Mary
  */
-public abstract class AbstractOneToManyWithAssociationTableEngine<SRC, TRGT, SRCID, TRGTID, C extends Collection<TRGT>,
+public abstract class AbstractOneToManyWithAssociationTableEngine<SRC, TRGT, ID, C extends Collection<TRGT>,
 		R extends AssociationRecord, T extends AssociationTable> {
-	
-	/**
-	 * Mapping between source entity and records, temporary to the select phase.
-	 */
-	private final ThreadLocal<Map<SRC, List<R>>> leftAssociations = new ThreadLocal<>();
-	/**
-	 * Mapping between record and target entity, temporary to the select phase.
-	 */
-	private final ThreadLocal<Map<R, TRGT>> rightAssociations = new ThreadLocal<>();
 	
 	protected final AssociationRecordPersister<R, T> associationPersister;
 	
-	protected final PersisterListener<SRC, SRCID> persisterListener;
+	protected final PersisterListener<SRC, ID> persisterListener;
 	
-	protected final JoinedTablesPersister<SRC, SRCID, ?> joinedTablesPersister;
+	protected final IConfiguredPersister<SRC, ID> joinedTablesPersister;
 	
-	protected final JoinedTablesPersister<TRGT, TRGTID, ?> targetPersister;
+	protected final IEntityConfiguredJoinedTablesPersister<TRGT, ID> targetPersister;
 	
 	protected final ManyRelationDescriptor<SRC, TRGT, C> manyRelationDescriptor;
 	
-	public AbstractOneToManyWithAssociationTableEngine(JoinedTablesPersister<SRC, SRCID, ?> joinedTablesPersister,
-													   JoinedTablesPersister<TRGT, TRGTID, ?> targetPersister,
+	public AbstractOneToManyWithAssociationTableEngine(IConfiguredPersister<SRC, ID> joinedTablesPersister,
+													   IEntityConfiguredJoinedTablesPersister<TRGT, ID> targetPersister,
 													   ManyRelationDescriptor<SRC, TRGT, C> manyRelationDescriptor,
 													   AssociationRecordPersister<R, T> associationPersister) {
 		this.joinedTablesPersister = joinedTablesPersister;
@@ -74,77 +71,47 @@ public abstract class AbstractOneToManyWithAssociationTableEngine<SRC, TRGT, SRC
 		this.associationPersister = associationPersister;
 	}
 	
-	public void addSelectCascade(JoinedTablesPersister<SRC, SRCID, ?> sourcePersister) {
+	public void addSelectCascade(IEntityConfiguredJoinedTablesPersister<SRC, ID> sourcePersister) {
 		
-		// we must join on the association table and add in-memory reassociation
-		// Relation is kept on each row by the "relation fixer" passed to JoinedTablePersister below, because it seems more complex to read it
-		// from the Row (as for use case without association table, addTransformerListener(..)) due to the need to create an equivalent
-		// structure to AssociationRecord
-		// Relation will be fixed after all rows read (SelectListener.afterSelect)
-		addRelationReadOnSelect();
-		// adding association table join
-		String associationTableJoinNodeName = sourcePersister.addPersister(FIRST_STRATEGY_NAME,
-				associationPersister,
-				(BeanRelationFixer<SRC, R>)
-						// implementation to keep track of the relation, further usage is in afterSelect
-						(sourceEntity, record) -> leftAssociations.get().computeIfAbsent(sourceEntity, k -> new ArrayList<>()).add(record),
+		// we join on the association table and add bean association in memory
+		String associationTableJoinNodeName = sourcePersister.getJoinedStrategiesSelect().addPassiveJoin(FIRST_STRATEGY_NAME,
 				associationPersister.getMainTable().getOneSidePrimaryKey(),
 				associationPersister.getMainTable().getOneSideKeyColumn(),
-				true);
-		// adding target table join
-		String createdJoinNodeName = sourcePersister.addPersister(associationTableJoinNodeName,
-				targetPersister,
-				(BeanRelationFixer<R, TRGT>)
-						// implementation to keep track of the relation, further usage is in afterSelect
-						(record, targetEntity) -> rightAssociations.get().put(record, targetEntity),
-				associationPersister.getMainTable().getManySideKeyColumn(),
-				associationPersister.getMainTable().getManySidePrimaryKey(),
-				true);
+				JoinType.OUTER, (Set) Collections.emptySet());
 		
-		addSubgraphSelect(createdJoinNodeName, sourcePersister, targetPersister, manyRelationDescriptor.getCollectionGetter());
-	}
-	
-	private void addRelationReadOnSelect() {
-		// Note: reverse setter does nothing (NOOP) because there's no such a reverse setter in relationship with association table
 		BeanRelationFixer<SRC, TRGT> beanRelationFixer = BeanRelationFixer.of(
 				manyRelationDescriptor.getCollectionSetter(),
 				manyRelationDescriptor.getCollectionGetter(),
 				manyRelationDescriptor.getCollectionFactory(),
-				OneToManyWithMappedAssociationEngine.NOOP_REVERSE_SETTER);
-		persisterListener.addSelectListener(new SelectListener<SRC, SRCID>() {
+				Objects.preventNull(manyRelationDescriptor.getReverseSetter(), NOOP_REVERSE_SETTER));
+		
+		// we add target subgraph joins to main persister
+		targetPersister.joinAsMany(sourcePersister, associationPersister.getMainTable().getManySideKeyColumn(),
+				associationPersister.getMainTable().getManySidePrimaryKey(), beanRelationFixer, associationTableJoinNodeName, true);
+		
+		// We trigger subgraph load event (via targetSelectListener) on loading of our graph.
+		// Done for instance for event consumers that initialize some things, because given ids of methods are those of source entity
+		SelectListener targetSelectListener = targetPersister.getPersisterListener().getSelectListener();
+		sourcePersister.addSelectListener(new SelectListener<SRC, ID>() {
 			@Override
-			public void beforeSelect(Iterable<SRCID> ids) {
-				// initializing relation storage, see cleanContext() for deregistration
-				leftAssociations.set(new HashMap<>());
-				rightAssociations.set(new HashMap<>());
+			public void beforeSelect(Iterable<ID> ids) {
+				// since ids are not those of its entities, we should not pass them as argument, this will only initialize things if needed
+				targetSelectListener.beforeSelect(Collections.emptyList());
 			}
 			
-			/**
-			 * Implementation that assembles source and target beans from ThreadLocal elements thanks to the {@link BeanRelationFixer}
-			 * @param result new created beans
-			 */
 			@Override
 			public void afterSelect(Iterable<? extends SRC> result) {
-				try {
-					result.forEach(bean -> {
-						List<R> associationRecords = leftAssociations.get().get(bean);
-						if (associationRecords != null) {
-							associationRecords.forEach(r -> beanRelationFixer.apply(bean, rightAssociations.get().get(r)));
-						} // else : no related bean found in database, nothing to do, collection is empty
-					});
-				} finally {
-					cleanContext();
-				}
+				Iterable collect = Iterables.stream(result).flatMap(src -> Nullable.nullable(manyRelationDescriptor.getCollectionGetter().apply(src))
+						.map(Collection::stream)
+						.getOr(Stream.empty()))
+						.collect(Collectors.toSet());
+				targetSelectListener.afterSelect(collect);
 			}
 			
 			@Override
-			public void onError(Iterable<SRCID> ids, RuntimeException exception) {
-				cleanContext();
-			}
-			
-			private void cleanContext() {
-				leftAssociations.remove();
-				rightAssociations.remove();
+			public void onError(Iterable<ID> ids, RuntimeException exception) {
+				// since ids are not those of its entities, we should not pass them as argument
+				targetSelectListener.onError(Collections.emptyList(), exception);
 			}
 		});
 	}
@@ -169,14 +136,14 @@ public abstract class AbstractOneToManyWithAssociationTableEngine<SRC, TRGT, SRC
 		CollectionUpdater<SRC, TRGT, C> updateListener = new CollectionUpdater<SRC, TRGT, C>(manyRelationDescriptor.getCollectionGetter(), targetPersister, null, shouldDeleteRemoved) {
 			
 			@Override
-			protected AssociationTableUpdateContext newUpdateContext(UpdatePayload<? extends SRC, ?> updatePayload) {
+			protected AssociationTableUpdateContext newUpdateContext(Duo<SRC, SRC> updatePayload) {
 				return new AssociationTableUpdateContext(updatePayload);
 			}
 			
 			@Override
 			protected void onAddedTarget(UpdateContext updateContext, AbstractDiff<TRGT> diff) {
 				super.onAddedTarget(updateContext, diff);
-				R associationRecord = newRecord(updateContext.getPayload().getEntities().getLeft(), diff.getReplacingInstance(), 0);
+				R associationRecord = newRecord(updateContext.getPayload().getLeft(), diff.getReplacingInstance(), 0);
 				((AssociationTableUpdateContext) updateContext).getAssociationRecordstoBeInserted().add(associationRecord);
 			}
 			
@@ -184,7 +151,7 @@ public abstract class AbstractOneToManyWithAssociationTableEngine<SRC, TRGT, SRC
 			protected void onRemovedTarget(UpdateContext updateContext, AbstractDiff<TRGT> diff) {
 				super.onRemovedTarget(updateContext, diff);
 				
-				R associationRecord = newRecord(updateContext.getPayload().getEntities().getLeft(), diff.getSourceInstance(), 0);
+				R associationRecord = newRecord(updateContext.getPayload().getLeft(), diff.getSourceInstance(), 0);
 				((AssociationTableUpdateContext) updateContext).getAssociationRecordstoBeDeleted().add(associationRecord);
 			}
 			
@@ -207,7 +174,7 @@ public abstract class AbstractOneToManyWithAssociationTableEngine<SRC, TRGT, SRC
 				private final List<R> associationRecordstoBeInserted = new ArrayList<>();
 				private final List<R> associationRecordstoBeDeleted = new ArrayList<>();
 				
-				public AssociationTableUpdateContext(UpdatePayload<? extends SRC, ?> updatePayload) {
+				public AssociationTableUpdateContext(Duo<SRC, SRC> updatePayload) {
 					super(updatePayload);
 				}
 				
@@ -266,7 +233,7 @@ public abstract class AbstractOneToManyWithAssociationTableEngine<SRC, TRGT, SRC
 				// entities, only their id)
 				// We do it thanks to a SQL delete order ... not very coherent with beforeDelete(..) !
 				Delete<AssociationTable> delete = new Delete<>(associationPersister.getMainTable());
-				Set<SRCID> identifiers = collect(entities, this::castId, HashSet::new);
+				Set<ID> identifiers = collect(entities, this::castId, HashSet::new);
 				delete.where(associationPersister.getMainTable().getOneSideKeyColumn(), Operators.in(identifiers));
 				
 				PreparedSQL deleteStatement = new DeleteCommandBuilder<>(delete).toStatement(columnBinderRegistry);
@@ -276,7 +243,7 @@ public abstract class AbstractOneToManyWithAssociationTableEngine<SRC, TRGT, SRC
 				}
 			}
 			
-			private SRCID castId(SRC e) {
+			private ID castId(SRC e) {
 				return joinedTablesPersister.getMappingStrategy().getId(e);
 			}
 		});
@@ -291,8 +258,8 @@ public abstract class AbstractOneToManyWithAssociationTableEngine<SRC, TRGT, SRC
 	
 	protected abstract AfterInsertCollectionCascader<SRC, R> newRecordInsertionCascader(Function<SRC, C> collectionGetter,
 																						AssociationRecordPersister<R, T> associationPersister,
-																						ClassMappingStrategy<SRC, SRCID, ?> mappingStrategy,
-																						ClassMappingStrategy<TRGT, TRGTID, ?> strategy);
+																						IEntityMappingStrategy<SRC, ID, ?> mappingStrategy,
+																						IEntityMappingStrategy<TRGT, ID, ?> strategy);
 	
 	protected abstract R newRecord(SRC e, TRGT target, int index);
 }

@@ -86,7 +86,9 @@ public class ExpandableSQL {
 
 		public static final String SQL_PARAMETER_MARK = "?";
 		
-		public static final String SQL_PARAMETER_MARK_1 = SQL_PARAMETER_MARK + ", ";
+		public static final String SQL_PARAMETER_SEPARATOR = ", ";
+		
+		public static final String SQL_PARAMETER_MARK_1 = SQL_PARAMETER_MARK + SQL_PARAMETER_SEPARATOR;
 		
 		public static final String SQL_PARAMETER_MARK_10 =
 				SQL_PARAMETER_MARK_1 + SQL_PARAMETER_MARK_1 +

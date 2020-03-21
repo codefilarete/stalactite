@@ -7,14 +7,16 @@ import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
+import java.util.function.BiFunction;
+import java.util.function.Function;
 
 import org.gama.lang.Reflections;
 import org.gama.lang.collection.Collections;
 import org.gama.lang.function.Predicates;
 import org.gama.reflection.IReversibleAccessor;
-import org.gama.stalactite.sql.result.Row;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
+import org.gama.stalactite.sql.result.Row;
 
 /**
  * A class that "roughly" persists a Map of {@link Column}s, without any bean class.
@@ -37,17 +39,8 @@ public abstract class ColumnedMapMappingStrategy<C extends Map<K, V>, K, V, T ex
 	public ColumnedMapMappingStrategy(T targetTable, Set<Column<T, Object>> columns, Class<C> rowClass) {
 		this.targetTable = targetTable;
 		this.columns = columns;
-		this.rowTransformer = new ToMapRowTransformer<C>(rowClass) {
-			/** We bind conversion on MapMappingStrategy conversion methods */
-			@Override
-			protected void applyRowToBean(Row row, C map) {
-				for (Column column : getColumns()) {
-					String columnName = column.getName();
-					K key = getKey(column);
-					map.put(key, toMapValue(key, row.get(columnName)));
-				}
-			}
-		};
+		// We bind conversion on MapMappingStrategy conversion methods */
+		this.rowTransformer = new LocalToMapRowTransformer<C, K, V>(rowClass, (Set) getColumns(), this::getKey, this::toMapValue);
 	}
 	
 	public T getTargetTable() {
@@ -175,8 +168,54 @@ public abstract class ColumnedMapMappingStrategy<C extends Map<K, V>, K, V, T ex
 	}
 	
 	@Override
+	public AbstractTransformer<C> copyTransformerWithAliases(ColumnedRow columnedRow) {
+		return this.rowTransformer.copyWithAliases(columnedRow);
+	}
+	
+	@Override
 	public Map<IReversibleAccessor<C, Object>, Column<T, Object>> getPropertyToColumn() {
 		throw new UnsupportedOperationException(Reflections.toString(ColumnedMapMappingStrategy.class) + " can't export a mapping between some accessors and their columns");
 	}
 	
+	private static class LocalToMapRowTransformer<M extends Map<K, V>, K, V> extends ToMapRowTransformer<M> {
+		
+		private final Iterable<Column> columns;
+		private final Function<Column, K> keyProvider;
+		private final BiFunction<K /* key */, Object /* row value */, V> databaseValueConverter;
+		
+		private LocalToMapRowTransformer(Class<M> persistedClass,
+										 Iterable<Column> columns,
+										 Function<Column, K> keyProvider,
+										 BiFunction<K /* key */, Object /* row value */, V> databaseValueConverter) {
+			super(persistedClass);
+			this.columns = columns;
+			this.keyProvider = keyProvider;
+			this.databaseValueConverter = databaseValueConverter;
+		}
+		
+		private LocalToMapRowTransformer(Function<Function<Column, Object>, M> beanFactory,
+										 ColumnedRow columnedRow,
+										 Iterable<Column> columns, Function<Column, K> keyProvider,
+										 BiFunction<K /* key */, Object /* row value */, V> databaseValueConverter) {
+			super(beanFactory, columnedRow);
+			this.columns = columns;
+			this.keyProvider = keyProvider;
+			this.databaseValueConverter = databaseValueConverter;
+		}
+		
+		@Override
+		public AbstractTransformer<M> copyWithAliases(ColumnedRow columnedRow) {
+			return new LocalToMapRowTransformer<>(this.beanFactory, columnedRow, this.columns, this.keyProvider, this.databaseValueConverter);
+		}
+		
+		/** We bind conversion on {@link ColumnedCollectionMappingStrategy} conversion methods */
+		@Override
+		public void applyRowToBean(Row row, M map) {
+			for (Column column : this.columns) {
+				K key = keyProvider.apply(column);
+				V value = (V) getColumnedRow().getValue(column, row);
+				map.put(key, databaseValueConverter.apply(key, value));
+			}
+		}
+	}
 }

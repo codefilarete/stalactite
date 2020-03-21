@@ -7,24 +7,24 @@ import java.util.stream.Collectors;
 import org.gama.stalactite.persistence.engine.AssociationRecord;
 import org.gama.stalactite.persistence.engine.AssociationRecordPersister;
 import org.gama.stalactite.persistence.engine.cascade.AfterInsertCollectionCascader;
-import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
+import org.gama.stalactite.persistence.mapping.IEntityMappingStrategy;
 
 import static org.gama.lang.collection.Iterables.stream;
 
 /**
  * @author Guillaume Mary
  */
-class AssociationRecordInsertionCascader<SRC, TRGT, SRCID, TRGTID, C extends Collection<TRGT>>
+class AssociationRecordInsertionCascader<SRC, TRGT, ID, C extends Collection<TRGT>>
 		extends AfterInsertCollectionCascader<SRC, AssociationRecord> {
 	
 	private final Function<SRC, C> collectionGetter;
-	private final ClassMappingStrategy<SRC, SRCID, ?> mappingStrategy;
-	private final ClassMappingStrategy<TRGT, TRGTID, ?> targetStrategy;
+	private final IEntityMappingStrategy<SRC, ID, ?> mappingStrategy;
+	private final IEntityMappingStrategy<TRGT, ID, ?> targetStrategy;
 	
 	public AssociationRecordInsertionCascader(AssociationRecordPersister<AssociationRecord, ?> persister,
 											  Function<SRC, C> collectionGetter,
-											  ClassMappingStrategy<SRC, SRCID, ?> mappingStrategy,
-											  ClassMappingStrategy<TRGT, TRGTID, ?> targetStrategy) {
+											  IEntityMappingStrategy<SRC, ID, ?> mappingStrategy,
+											  IEntityMappingStrategy<TRGT, ID, ?> targetStrategy) {
 		super(persister);
 		this.collectionGetter = collectionGetter;
 		this.mappingStrategy = mappingStrategy;

@@ -32,9 +32,9 @@ public class AfterUpdateSupport<TRIGGER, TARGET> implements UpdateListener<TRIGG
 	}
 	
 	@Override
-	public void afterUpdate(Iterable<UpdatePayload<? extends TRIGGER, ?>> entities, boolean allColumnsStatement) {
+	public void afterUpdate(Iterable<? extends Duo<? extends TRIGGER, ? extends TRIGGER>> entities, boolean allColumnsStatement) {
 		afterUpdateAction.accept(Iterables.stream(entities)
-						.map(e -> new Duo<>(targetProvider.apply(e.getEntities().getLeft()), targetProvider.apply(e.getEntities().getRight())))
+						.map(e -> new Duo<>(targetProvider.apply(e.getLeft()), targetProvider.apply(e.getRight())))
 						.filter(targetFilter).collect(Collectors.toList()),
 				allColumnsStatement);
 	}

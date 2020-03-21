@@ -11,7 +11,7 @@ import java.util.function.Supplier;
  * 
  * @author Guillaume Mary
  */
-public class IndexedMappedManyRelationDescriptor<I, O, C extends Collection<O>> extends MappedManyRelationDescriptor<I, O, C> {
+public class IndexedMappedManyRelationDescriptor<I, O, C extends Collection<O>> extends ManyRelationDescriptor<I, O, C> {
 	
 	/** Getter for getting source entity from reverse side (target entity) */
 	private final Function<O, I> reverseGetter;

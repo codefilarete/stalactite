@@ -12,18 +12,19 @@ import org.gama.lang.collection.Maps;
 import org.gama.lang.collection.PairIterator;
 import org.gama.reflection.AccessorByField;
 import org.gama.reflection.Accessors;
-import org.gama.stalactite.sql.ConnectionProvider;
-import org.gama.stalactite.sql.dml.SQLOperation.SQLOperationListener;
-import org.gama.stalactite.sql.dml.SQLStatement;
 import org.gama.stalactite.persistence.engine.listening.UpdateListener;
 import org.gama.stalactite.persistence.engine.listening.UpdateListener.UpdatePayload;
 import org.gama.stalactite.persistence.id.manager.AlreadyAssignedIdentifierManager;
 import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
 import org.gama.stalactite.persistence.mapping.IMappingStrategy.UpwhereColumn;
+import org.gama.stalactite.persistence.sql.IConnectionConfiguration.ConnectionConfigurationSupport;
 import org.gama.stalactite.persistence.sql.dml.DMLGenerator;
 import org.gama.stalactite.persistence.sql.dml.binder.ColumnBinderRegistry;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
+import org.gama.stalactite.sql.ConnectionProvider;
+import org.gama.stalactite.sql.dml.SQLOperation.SQLOperationListener;
+import org.gama.stalactite.sql.dml.SQLStatement;
 import org.gama.stalactite.test.PairSetList;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -51,7 +52,8 @@ public class UpdateExecutorTest extends AbstractDMLExecutorTest {
 	public void setUp() throws SQLException {
 		dataSet = new DataSet();
 		DMLGenerator dmlGenerator = new DMLGenerator(dataSet.dialect.getColumnBinderRegistry(), new DMLGenerator.CaseSensitiveSorter());
-		testInstance = new UpdateExecutor<>(dataSet.persistenceConfiguration.classMappingStrategy, dataSet.transactionManager, dmlGenerator, Retryer.NO_RETRY, 3, 3);
+		testInstance = new UpdateExecutor<>(dataSet.persistenceConfiguration.classMappingStrategy,
+				new ConnectionConfigurationSupport(dataSet.transactionManager, 3), dmlGenerator, Retryer.NO_RETRY, 3);
 	}
 	
 	@Test
@@ -118,7 +120,7 @@ public class UpdateExecutorTest extends AbstractDMLExecutorTest {
 		ClassMappingStrategy<SimpleEntity, Long, T> simpleEntityPersistenceMapping = new ClassMappingStrategy<SimpleEntity, Long, T>
 				(SimpleEntity.class, table, (Map) Maps.asMap(idAccessor, id), idAccessor, AlreadyAssignedIdentifierManager.INSTANCE);
 		UpdateExecutor<SimpleEntity, Long, T> testInstance = new UpdateExecutor<SimpleEntity, Long, T>(
-				simpleEntityPersistenceMapping, mock(ConnectionProvider.class), new DMLGenerator(new ColumnBinderRegistry()), Retryer.NO_RETRY, 3, 4);
+				simpleEntityPersistenceMapping, new ConnectionConfigurationSupport(mock(ConnectionProvider.class), 4), new DMLGenerator(new ColumnBinderRegistry()), Retryer.NO_RETRY, 4);
 		
 		assertEquals(0, testInstance.updateById(Arrays.asList(new SimpleEntity())));
 	}
@@ -243,7 +245,7 @@ public class UpdateExecutorTest extends AbstractDMLExecutorTest {
 		ClassMappingStrategy<SimpleEntity, Long, T> simpleEntityPersistenceMapping = new ClassMappingStrategy<SimpleEntity, Long, T>
 				(SimpleEntity.class, table, (Map) Maps.asMap(idAccessor, id), idAccessor, AlreadyAssignedIdentifierManager.INSTANCE);
 		UpdateExecutor<SimpleEntity, Long, T> testInstance = new UpdateExecutor<>(
-				simpleEntityPersistenceMapping, mock(ConnectionProvider.class), new DMLGenerator(new ColumnBinderRegistry()), Retryer.NO_RETRY, 3, 4);
+				simpleEntityPersistenceMapping, new ConnectionConfigurationSupport(mock(ConnectionProvider.class), 4), new DMLGenerator(new ColumnBinderRegistry()), Retryer.NO_RETRY, 4);
 		
 		
 		Iterable<UpdatePayload<SimpleEntity, T>> updatePayloads = UpdateListener.computePayloads(Arrays.asList(new Duo<>(new SimpleEntity(), 

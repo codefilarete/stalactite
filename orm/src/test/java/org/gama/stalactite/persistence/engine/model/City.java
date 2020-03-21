@@ -2,8 +2,11 @@ package org.gama.stalactite.persistence.engine.model;
 
 import java.util.Set;
 
+import org.apache.commons.lang3.builder.ToStringBuilder;
+import org.apache.commons.lang3.builder.ToStringStyle;
 import org.gama.stalactite.persistence.id.Identified;
 import org.gama.stalactite.persistence.id.Identifier;
+import org.gama.stalactite.persistence.id.PersistableIdentifier;
 
 /**
  * @author Guillaume Mary
@@ -21,6 +24,10 @@ public class City implements Identified<Long> {
 	private State state;
 	
 	public City() {
+	}
+	
+	public City(long id) {
+		this(new PersistableIdentifier<>(id));
 	}
 	
 	public City(Identifier<Long> id) {
@@ -41,7 +48,9 @@ public class City implements Identified<Long> {
 	@Override
 	public boolean equals(Object o) {
 		if (this == o) return true;
-		if (!(o instanceof City)) return false;
+		if (o == null || !this.getClass().isAssignableFrom(o.getClass())) {
+			return false;
+		}
 		
 		City city = (City) o;
 		
@@ -90,8 +99,13 @@ public class City implements Identified<Long> {
 		this.state = state;
 	}
 	
+	/**
+	 * Implemented for easier debug
+	 *
+	 * @return a simple representation of this
+	 */
 	@Override
 	public String toString() {
-		return "City{id=" + id + '}';
+		return ToStringBuilder.reflectionToString(this, ToStringStyle.SHORT_PREFIX_STYLE);
 	}
 }

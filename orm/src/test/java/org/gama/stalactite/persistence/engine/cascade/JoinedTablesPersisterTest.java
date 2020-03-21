@@ -18,6 +18,8 @@ import org.gama.lang.collection.Arrays;
 import org.gama.lang.collection.Maps;
 import org.gama.reflection.Accessors;
 import org.gama.reflection.PropertyAccessor;
+import org.gama.stalactite.persistence.engine.cascade.AbstractJoin.JoinType;
+import org.gama.stalactite.persistence.sql.IConnectionConfiguration.ConnectionConfigurationSupport;
 import org.gama.stalactite.sql.binder.ParameterBinder;
 import org.gama.stalactite.sql.result.InMemoryResultSet;
 import org.gama.stalactite.persistence.engine.InMemoryCounterIdentifierGenerator;
@@ -165,11 +167,12 @@ public class JoinedTablesPersisterTest {
 		DataSource dataSource = mock(DataSource.class);
 		when(dataSource.getConnection()).thenReturn(connection);
 		transactionManager.setDataSource(dataSource);
-		testInstance = new JoinedTablesPersister<>(totoClassMappingStrategy_ontoTable1, dialect, transactionManager, 3);
+		testInstance = new JoinedTablesPersister<>(totoClassMappingStrategy_ontoTable1, dialect, new ConnectionConfigurationSupport(transactionManager, 3));
 		// we add a copier onto a another table
-		persister2 = new Persister<>(totoClassMappingStrategy2_ontoTable2, dialect, () -> connection, 3);
-		testInstance.addPersister(JoinedStrategiesSelect.FIRST_STRATEGY_NAME, persister2,
-				Toto::merge, leftJoinColumn, rightJoinColumn, false);
+		persister2 = new Persister<>(totoClassMappingStrategy2_ontoTable2, dialect, new ConnectionConfigurationSupport(() -> connection, 3));
+		testInstance.getJoinedStrategiesSelect().addRelationJoin(JoinedStrategiesSelect.FIRST_STRATEGY_NAME,
+				persister2.getMappingStrategy(),
+				leftJoinColumn, rightJoinColumn, JoinType.INNER, Toto::merge);
 		testInstance.getPersisterListener().addInsertListener(new InsertListener<Toto>() {
 			@Override
 			public void afterInsert(Iterable<? extends Toto> entities) {

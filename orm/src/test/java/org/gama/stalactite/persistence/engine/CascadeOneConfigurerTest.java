@@ -15,12 +15,9 @@ import org.gama.reflection.Accessors;
 import org.gama.reflection.IReversibleAccessor;
 import org.gama.reflection.MutatorByMethodReference;
 import org.gama.reflection.PropertyAccessor;
-import org.gama.stalactite.sql.ConnectionProvider;
-import org.gama.stalactite.sql.binder.DefaultParameterBinders;
-import org.gama.stalactite.sql.binder.ParameterBinder;
 import org.gama.stalactite.persistence.engine.ColumnOptions.IdentifierPolicy;
-import org.gama.stalactite.persistence.engine.FluentEntityMappingConfigurationSupport.EntityLinkageByColumnName;
 import org.gama.stalactite.persistence.engine.cascade.JoinedTablesPersister;
+import org.gama.stalactite.persistence.engine.configurer.PersisterBuilderImpl;
 import org.gama.stalactite.persistence.engine.model.City;
 import org.gama.stalactite.persistence.engine.model.Country;
 import org.gama.stalactite.persistence.id.Identifier;
@@ -29,9 +26,13 @@ import org.gama.stalactite.persistence.id.manager.AlreadyAssignedIdentifierManag
 import org.gama.stalactite.persistence.id.manager.IdentifierInsertionManager;
 import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
 import org.gama.stalactite.persistence.sql.Dialect;
+import org.gama.stalactite.persistence.sql.IConnectionConfiguration.ConnectionConfigurationSupport;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.ForeignKey;
 import org.gama.stalactite.persistence.structure.Table;
+import org.gama.stalactite.sql.ConnectionProvider;
+import org.gama.stalactite.sql.binder.DefaultParameterBinders;
+import org.gama.stalactite.sql.binder.ParameterBinder;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -39,6 +40,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.CALLS_REAL_METHODS;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -88,7 +90,7 @@ class CascadeOneConfigurerTest {
 		);
 		EmbeddableMappingConfiguration<City> cityPropertiesMapping = mock(EmbeddableMappingConfiguration.class);
 		// declaring mapping
-		when(cityPropertiesMapping.getClassToPersist()).thenReturn(City.class);
+		when(cityPropertiesMapping.getBeanType()).thenReturn(City.class);
 		when(cityPropertiesMapping.getPropertiesMapping()).thenReturn(Arrays.asList(identifierLinkage, nameLinkage));
 		// preventing NullPointerException
 		when(cityPropertiesMapping.getInsets()).thenReturn(Collections.emptyList());
@@ -96,6 +98,7 @@ class CascadeOneConfigurerTest {
 		
 		EntityMappingConfiguration<City, Identifier<Long>> cityMappingConfiguration = mock(EntityMappingConfiguration.class);
 		// declaring mapping
+		when(cityMappingConfiguration.getEntityType()).thenReturn(City.class);
 		when(cityMappingConfiguration.getPropertiesMapping()).thenReturn(cityPropertiesMapping);
 		// preventing NullPointerException
 		when(cityMappingConfiguration.getTableNamingStrategy()).thenReturn(TableNamingStrategy.DEFAULT);
@@ -103,6 +106,7 @@ class CascadeOneConfigurerTest {
 		when(cityMappingConfiguration.getIdentifierPolicy()).thenReturn(IdentifierPolicy.ALREADY_ASSIGNED);
 		when(cityMappingConfiguration.getOneToOnes()).thenReturn(Collections.emptyList());
 		when(cityMappingConfiguration.getOneToManys()).thenReturn(Collections.emptyList());
+		when(cityMappingConfiguration.inheritanceIterable()).thenAnswer(CALLS_REAL_METHODS);
 		
 
 		// defining Country -> City relation through capital property
@@ -116,9 +120,11 @@ class CascadeOneConfigurerTest {
 		dialect.getJavaTypeToSqlTypeMapping().put(Identifier.class, "int");
 		
 		// When
-		CascadeOneConfigurer<Country, City, Identifier<Long>> testInstance = new CascadeOneConfigurer<>(new PersistenceContext(mock(ConnectionProvider.class), dialect));
+		CascadeOneConfigurer<Country, City, Identifier<Long>> testInstance = new CascadeOneConfigurer<>(
+				new PersistenceContext(mock(ConnectionProvider.class), dialect),
+				new PersisterBuilderImpl<>(cityMappingConfiguration));
 		JoinedTablesPersister<Country, Identifier<Long>, Table> countryPersister = new JoinedTablesPersister<>(countryClassMappingStrategy, dialect,
-				mock(ConnectionProvider.class), 10);
+				new ConnectionConfigurationSupport(mock(ConnectionProvider.class), 10));
 		testInstance.appendCascade(countryCapitalRelation, countryPersister, ForeignKeyNamingStrategy.DEFAULT, ColumnNamingStrategy.JOIN_DEFAULT);
 		
 		// Then
@@ -193,13 +199,15 @@ class CascadeOneConfigurerTest {
 		
 		EntityMappingConfiguration<City, Identifier<Long>> cityMappingConfiguration = mock(EntityMappingConfiguration.class);
 		// declaring mapping
+		when(cityMappingConfiguration.getEntityType()).thenReturn(City.class);
 		when(cityMappingConfiguration.getPropertiesMapping()).thenReturn(cityPropertiesMapping);
 		// preventing NullPointerException
 		when(cityMappingConfiguration.getTableNamingStrategy()).thenReturn(TableNamingStrategy.DEFAULT);
 		when(cityMappingConfiguration.getIdentifierAccessor()).thenReturn(cityIdentifierAccessorByMethodReference);
 		when(cityMappingConfiguration.getIdentifierPolicy()).thenReturn(IdentifierPolicy.ALREADY_ASSIGNED);
-		when(cityMappingConfiguration.getOneToOnes()).thenReturn(Collections.emptyList());		
-		when(cityMappingConfiguration.getOneToManys()).thenReturn(Collections.emptyList());		
+		when(cityMappingConfiguration.getOneToOnes()).thenReturn(Collections.emptyList());
+		when(cityMappingConfiguration.getOneToManys()).thenReturn(Collections.emptyList());
+		when(cityMappingConfiguration.inheritanceIterable()).thenAnswer(CALLS_REAL_METHODS);
 		
 		CascadeOne<Country, City, Identifier<Long>> countryCapitalRelation = new CascadeOne<>(capitalAccessPoint, cityMappingConfiguration, cityTable);
 		countryCapitalRelation.setReverseColumn(cityTableCountryColumn);
@@ -209,9 +217,11 @@ class CascadeOneConfigurerTest {
 		dialect.getColumnBinderRegistry().register((Class) Identifier.class, Identifier.identifierBinder(DefaultParameterBinders.LONG_PRIMITIVE_BINDER));
 		dialect.getJavaTypeToSqlTypeMapping().put(Identifier.class, "int");
 		
-		CascadeOneConfigurer<Country, City, Identifier<Long>> testInstance = new CascadeOneConfigurer<>(new PersistenceContext(mock(ConnectionProvider.class), dialect));
+		CascadeOneConfigurer<Country, City, Identifier<Long>> testInstance = new CascadeOneConfigurer<>(
+				new PersistenceContext(mock(ConnectionProvider.class), dialect),
+				new PersisterBuilderImpl<>(cityMappingConfiguration));
 		JoinedTablesPersister<Country, Identifier<Long>, Table> countryPersister = new JoinedTablesPersister<>(countryClassMappingStrategy, dialect,
-				mock(ConnectionProvider.class), 10);
+				new ConnectionConfigurationSupport(mock(ConnectionProvider.class), 10));
 		testInstance.appendCascade(countryCapitalRelation, countryPersister, ForeignKeyNamingStrategy.DEFAULT, ColumnNamingStrategy.JOIN_DEFAULT);
 		
 		assertEquals(Arrays.asSet("id", "countryId", "name"), cityTable.mapColumnsOnName().keySet());

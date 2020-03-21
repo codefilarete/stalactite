@@ -4,7 +4,7 @@ import java.util.Collection;
 import java.util.stream.Collectors;
 
 import org.gama.lang.collection.Iterables;
-import org.gama.stalactite.persistence.engine.Persister;
+import org.gama.stalactite.persistence.engine.IEntityPersister;
 import org.gama.stalactite.persistence.engine.listening.DeleteListener;
 
 /**
@@ -16,15 +16,15 @@ import org.gama.stalactite.persistence.engine.listening.DeleteListener;
  */
 public abstract class BeforeDeleteCollectionCascader<TRIGGER, TARGET> implements DeleteListener<TRIGGER> {
 	
-	private final Persister<TARGET, ?, ?> persister;
+	private final IEntityPersister<TARGET, ?> persister;
 	
 	/**
 	 * Simple constructor. Created instance must be added to PersisterListener afterward.
 	 * @param persister
 	 */
-	public BeforeDeleteCollectionCascader(Persister<TARGET, ?, ?> persister) {
+	public BeforeDeleteCollectionCascader(IEntityPersister<TARGET, ?> persister) {
 		this.persister = persister;
-		this.persister.getPersisterListener().addDeleteListener(new DeleteListener<TARGET>() {
+		this.persister.addDeleteListener(new DeleteListener<TARGET>() {
 			@Override
 			public void afterDelete(Iterable<TARGET> entities) {
 				postTargetDelete(entities);
@@ -32,7 +32,7 @@ public abstract class BeforeDeleteCollectionCascader<TRIGGER, TARGET> implements
 		});
 	}
 	
-	public Persister<TARGET, ?, ?> getPersister() {
+	public IEntityPersister<TARGET, ?> getPersister() {
 		return persister;
 	}
 	

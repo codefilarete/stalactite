@@ -37,8 +37,8 @@ public class FluentEntityMappingConfigurationSupportVersioningTest {
 	
 	private static final HSQLDBDialect DIALECT = new HSQLDBDialect();
 	private DataSource dataSource = new HSQLDBInMemoryDataSource();
-	private Persister<Person, Identifier<Long>, ?> personPersister;
-	private Persister<City, Identifier<Long>, ?> cityPersister;
+	private IEntityPersister<Person, Identifier<Long>> personPersister;
+	private IEntityPersister<City, Identifier<Long>> cityPersister;
 	private PersistenceContext persistenceContext;
 	
 	@BeforeAll
@@ -104,7 +104,7 @@ public class FluentEntityMappingConfigurationSupportVersioningTest {
 		ConnectionProvider connectionProvider = new TransactionObserverConnectionProvider(surrogateConnectionProvider);
 		persistenceContext = new PersistenceContext(connectionProvider, DIALECT);
 		// mapping building thantks to fluent API
-		Persister<Country, Identifier<Long>, ?> countryPersister = MappingEase.entityBuilder(Country.class,
+		IEntityPersister<Country, Identifier<Long>> countryPersister = MappingEase.entityBuilder(Country.class,
 				Identifier.LONG_TYPE)
 				// setting a foreign key naming strategy to be tested
 				.foreignKeyNamingStrategy(ForeignKeyNamingStrategy.DEFAULT)
@@ -151,7 +151,7 @@ public class FluentEntityMappingConfigurationSupportVersioningTest {
 		persistenceContext = new PersistenceContext(connectionProvider, DIALECT);
 		// mapping building thantks to fluent API
 		List<LocalDateTime> nowHistory = new ArrayList<>();
-		Persister<Country, Identifier<Long>, ?> countryPersister = MappingEase.entityBuilder(Country.class,
+		IEntityPersister<Country, Identifier<Long>> countryPersister = MappingEase.entityBuilder(Country.class,
 				Identifier.LONG_TYPE)
 				// setting a foreign key naming strategy to be tested
 				.foreignKeyNamingStrategy(ForeignKeyNamingStrategy.DEFAULT)
@@ -203,8 +203,8 @@ public class FluentEntityMappingConfigurationSupportVersioningTest {
 		JdbcConnectionProvider surrogateConnectionProvider = new JdbcConnectionProvider(dataSource);
 		ConnectionProvider connectionProvider = new TransactionObserverConnectionProvider(surrogateConnectionProvider);
 		persistenceContext = new PersistenceContext(connectionProvider, DIALECT);
-		// mapping building thantks to fluent API
-		Persister<Country, Identifier<Long>, ?> countryPersister = MappingEase.entityBuilder(Country.class,
+		// mapping building thanks to fluent API
+		IEntityPersister<Country, Identifier<Long>> countryPersister = MappingEase.entityBuilder(Country.class,
 				Identifier.LONG_TYPE)
 				// setting a foreign key naming strategy to be tested
 				.foreignKeyNamingStrategy(ForeignKeyNamingStrategy.DEFAULT)

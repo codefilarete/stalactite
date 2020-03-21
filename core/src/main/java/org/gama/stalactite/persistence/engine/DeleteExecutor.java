@@ -9,33 +9,33 @@ import java.util.Set;
 import org.gama.lang.Retryer;
 import org.gama.lang.collection.Collections;
 import org.gama.lang.collection.Iterables;
-import org.gama.stalactite.sql.ConnectionProvider;
-import org.gama.stalactite.sql.dml.SQLOperation.SQLOperationListener;
-import org.gama.stalactite.sql.dml.SQLStatement;
-import org.gama.stalactite.sql.dml.WriteOperation;
 import org.gama.stalactite.persistence.engine.RowCountManager.RowCounter;
 import org.gama.stalactite.persistence.id.assembly.IdentifierAssembler;
-import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
+import org.gama.stalactite.persistence.mapping.IEntityMappingStrategy;
+import org.gama.stalactite.persistence.sql.IConnectionConfiguration;
 import org.gama.stalactite.persistence.sql.dml.ColumnParameterizedSQL;
 import org.gama.stalactite.persistence.sql.dml.DMLGenerator;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
+import org.gama.stalactite.sql.dml.SQLOperation.SQLOperationListener;
+import org.gama.stalactite.sql.dml.SQLStatement;
+import org.gama.stalactite.sql.dml.WriteOperation;
 
 /**
  * Class dedicated to delete statement execution
  * 
  * @author Guillaume Mary
  */
-public class DeleteExecutor<C, I, T extends Table> extends WriteExecutor<C, I, T> {
+public class DeleteExecutor<C, I, T extends Table> extends WriteExecutor<C, I, T> implements IDeleteExecutor<C, I> {
 	
 	private RowCountManager rowCountManager = RowCountManager.THROWING_ROW_COUNT_MANAGER;
 	
 	private SQLOperationListener<Column<T, Object>> operationListener;
 	
-	public DeleteExecutor(ClassMappingStrategy<C, I, T> mappingStrategy, ConnectionProvider connectionProvider,
+	public DeleteExecutor(IEntityMappingStrategy<C, I, T> mappingStrategy, IConnectionConfiguration connectionConfiguration,
 						  DMLGenerator dmlGenerator, Retryer writeOperationRetryer,
-						  int batchSize, int inOperatorMaxSize) {
-		super(mappingStrategy, connectionProvider, dmlGenerator, writeOperationRetryer, batchSize, inOperatorMaxSize);
+						  int inOperatorMaxSize) {
+		super(mappingStrategy, connectionConfiguration, dmlGenerator, writeOperationRetryer, inOperatorMaxSize);
 	}
 	
 	public void setRowCountManager(RowCountManager rowCountManager) {
@@ -60,6 +60,7 @@ public class DeleteExecutor<C, I, T extends Table> extends WriteExecutor<C, I, T
 	 * @return deleted row count
 	 * @throws StaleObjectExcepion if deleted row count differs from entities count
 	 */
+	@Override
 	public int delete(Iterable<C> entities) {
 		ColumnParameterizedSQL<T> deleteStatement = getDmlGenerator().buildDelete(getMappingStrategy().getTargetTable(), getMappingStrategy().getVersionedKeys());
 		WriteOperation<Column<T, Object>> writeOperation = newWriteOperation(deleteStatement, new CurrentConnectionProvider());
@@ -83,6 +84,7 @@ public class DeleteExecutor<C, I, T extends Table> extends WriteExecutor<C, I, T
 	 * @param entities entites to be deleted
 	 * @return deleted row count
 	 */
+	@Override
 	public int deleteById(Iterable<C> entities) {
 		// get ids before passing them to deleteFromId
 		List<I> ids = new ArrayList<>();
@@ -101,6 +103,7 @@ public class DeleteExecutor<C, I, T extends Table> extends WriteExecutor<C, I, T
 	 * @param ids entities identifiers
 	 * @return deleted row count
 	 */
+//	@Override
 	public int deleteFromId(Iterable<I> ids) {
 		int blockSize = getInOperatorMaxSize();
 		List<List<I>> parcels = Collections.parcel(ids, blockSize);

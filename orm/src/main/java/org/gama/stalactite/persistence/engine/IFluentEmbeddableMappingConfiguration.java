@@ -6,9 +6,12 @@ import org.gama.reflection.AccessorChain;
 import org.gama.stalactite.persistence.structure.Table;
 
 /**
+ * An interface describing a fluent way to declare the persistence mapping of a class as an embedded bean.
+ *
  * @param <C> type that owns method  
  * 
  * @author Guillaume Mary
+ * @see IFluentEmbeddableMappingBuilder
  */
 public interface IFluentEmbeddableMappingConfiguration<C> {
 	

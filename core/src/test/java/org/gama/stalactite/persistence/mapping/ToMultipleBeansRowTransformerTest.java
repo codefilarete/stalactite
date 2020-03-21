@@ -45,7 +45,7 @@ public class ToMultipleBeansRowTransformerTest {
 			}
 			
 			@Override
-			protected void assembly(Map<String, Object> rowAsObjects) {
+			protected void assemble(Map<String, Object> rowAsObjects) {
 				// final building for this row: we assemble objects. Simple case.
 				Toto toto = (Toto) rowAsObjects.get("toto.id");
 				Tata tata = (Tata) rowAsObjects.get("tata.id");
@@ -149,10 +149,15 @@ public class ToMultipleBeansRowTransformerTest {
 		private final String idColumn;
 		private final String nameColumn;
 		
-		public ToEntityRowTransformer(Class<E> clazz, String idColumn, String nameColumn) throws NoSuchMethodException {
+		public ToEntityRowTransformer(Class<E> clazz, String idColumn, String nameColumn) {
 			super(clazz);
 			this.idColumn = idColumn;
 			this.nameColumn = nameColumn;
+		}
+		
+		@Override
+		public AbstractTransformer<E> copyWithAliases(ColumnedRow columnedRow) {
+			return null;
 		}
 		
 		@Override

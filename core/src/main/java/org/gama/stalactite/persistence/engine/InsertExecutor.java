@@ -11,6 +11,13 @@ import java.util.Set;
 import org.gama.lang.Retryer;
 import org.gama.lang.StringAppender;
 import org.gama.lang.collection.Iterables;
+import org.gama.stalactite.persistence.id.manager.IdentifierInsertionManager;
+import org.gama.stalactite.persistence.mapping.IEntityMappingStrategy;
+import org.gama.stalactite.persistence.sql.IConnectionConfiguration;
+import org.gama.stalactite.persistence.sql.dml.ColumnParameterizedSQL;
+import org.gama.stalactite.persistence.sql.dml.DMLGenerator;
+import org.gama.stalactite.persistence.structure.Column;
+import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.sql.ConnectionProvider;
 import org.gama.stalactite.sql.RollbackListener;
 import org.gama.stalactite.sql.RollbackObserver;
@@ -18,19 +25,13 @@ import org.gama.stalactite.sql.dml.SQLOperation.SQLOperationListener;
 import org.gama.stalactite.sql.dml.SQLStatement;
 import org.gama.stalactite.sql.dml.SQLStatement.BindingException;
 import org.gama.stalactite.sql.dml.WriteOperation;
-import org.gama.stalactite.persistence.id.manager.IdentifierInsertionManager;
-import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
-import org.gama.stalactite.persistence.sql.dml.ColumnParameterizedSQL;
-import org.gama.stalactite.persistence.sql.dml.DMLGenerator;
-import org.gama.stalactite.persistence.structure.Column;
-import org.gama.stalactite.persistence.structure.Table;
 
 /**
  * Dedicated class to insert statement execution
  *
  * @author Guillaume Mary
  */
-public class InsertExecutor<C, I, T extends Table> extends WriteExecutor<C, I, T> {
+public class InsertExecutor<C, I, T extends Table> extends WriteExecutor<C, I, T> implements IInsertExecutor<C> {
 	
 	/** Entity lock manager, default is no operation as soon as a {@link VersioningStrategy} is given */
 	private OptimisticLockManager optimisticLockManager = OptimisticLockManager.NOOP_OPTIMISTIC_LOCK_MANAGER;
@@ -39,17 +40,17 @@ public class InsertExecutor<C, I, T extends Table> extends WriteExecutor<C, I, T
 	
 	private SQLOperationListener<Column<T, Object>> operationListener;
 	
-	public InsertExecutor(ClassMappingStrategy<C, I, T> mappingStrategy, ConnectionProvider connectionProvider,
+	public InsertExecutor(IEntityMappingStrategy<C, I, T> mappingStrategy, IConnectionConfiguration connectionConfiguration,
 						  DMLGenerator dmlGenerator, Retryer writeOperationRetryer,
-						  int batchSize, int inOperatorMaxSize) {
-		super(mappingStrategy, connectionProvider, dmlGenerator, writeOperationRetryer, batchSize, inOperatorMaxSize);
+						  int inOperatorMaxSize) {
+		super(mappingStrategy, connectionConfiguration, dmlGenerator, writeOperationRetryer, inOperatorMaxSize);
 		this.identifierInsertionManager = mappingStrategy.getIdMappingStrategy().getIdentifierInsertionManager();
 	}
 	
 	public void setVersioningStrategy(VersioningStrategy versioningStrategy) {
 		// we could have put the column as an attribute of the VersioningStrategy but, by making the column more dynamic, the strategy can be
 		// shared as long as PropertyAccessor is reusable over entities (wraps a common method)
-		Column versionColumn = getMappingStrategy().getMainMappingStrategy().getPropertyToColumn().get(versioningStrategy.getVersionAccessor());
+		Column versionColumn = getMappingStrategy().getPropertyToColumn().get(versioningStrategy.getVersionAccessor());
 		setOptimisticLockManager(new RevertOnRollbackMVCC(versioningStrategy, versionColumn, getConnectionProvider()));
 	}
 	
@@ -73,6 +74,7 @@ public class InsertExecutor<C, I, T extends Table> extends WriteExecutor<C, I, T
 		return writeOperation;
 	}
 	
+	@Override
 	public int insert(Iterable<? extends C> entities) {
 		Set<Column<T, Object>> columns = getMappingStrategy().getInsertableColumns();
 		ColumnParameterizedSQL<T> insertStatement = getDmlGenerator().buildInsert(columns);

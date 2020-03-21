@@ -52,8 +52,6 @@ public class AssociationTable<SELF extends AssociationTable<SELF>> extends Table
 		this.manySidePrimaryKey = manySidePrimaryKey;
 		this.oneSideKeyColumn = addColumn(namingStrategy.giveOneSideColumnName(oneSidePrimaryKey), oneSidePrimaryKey.getJavaType()).primaryKey();
 		this.manySideKeyColumn = addColumn(namingStrategy.giveManySideColumnName(manySidePrimaryKey), manySidePrimaryKey.getJavaType()).primaryKey();
-		addForeignKey(foreignKeyNamingStrategy.giveName(oneSideKeyColumn, oneSidePrimaryKey), oneSideKeyColumn, oneSidePrimaryKey);
-		addForeignKey(foreignKeyNamingStrategy.giveName(manySideKeyColumn, manySidePrimaryKey), manySideKeyColumn, manySidePrimaryKey);
 		this.primaryKey = new PrimaryKey<>(oneSideKeyColumn, manySideKeyColumn);
 	}
 	

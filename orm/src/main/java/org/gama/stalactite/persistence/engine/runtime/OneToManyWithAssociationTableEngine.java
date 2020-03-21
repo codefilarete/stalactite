@@ -6,28 +6,29 @@ import java.util.function.Function;
 import org.gama.stalactite.persistence.engine.AssociationRecord;
 import org.gama.stalactite.persistence.engine.AssociationRecordPersister;
 import org.gama.stalactite.persistence.engine.AssociationTable;
-import org.gama.stalactite.persistence.engine.cascade.JoinedTablesPersister;
-import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
+import org.gama.stalactite.persistence.engine.IConfiguredPersister;
+import org.gama.stalactite.persistence.engine.IEntityConfiguredJoinedTablesPersister;
+import org.gama.stalactite.persistence.mapping.IEntityMappingStrategy;
 
 /**
  * @author Guillaume Mary
  */
-public class OneToManyWithAssociationTableEngine<SRC, TRGT, SRCID, TRGTID, C extends Collection<TRGT>>
-		extends AbstractOneToManyWithAssociationTableEngine<SRC, TRGT, SRCID, TRGTID, C, AssociationRecord, AssociationTable> {
+public class OneToManyWithAssociationTableEngine<SRC, TRGT, ID, C extends Collection<TRGT>>
+		extends AbstractOneToManyWithAssociationTableEngine<SRC, TRGT, ID, C, AssociationRecord, AssociationTable> {
 	
-	public OneToManyWithAssociationTableEngine(JoinedTablesPersister<SRC, SRCID, ?> joinedTablesPersister,
-											   JoinedTablesPersister<TRGT, TRGTID, ?> targetPersister,
+	public OneToManyWithAssociationTableEngine(IConfiguredPersister<SRC, ID> joinedTablesPersister,
+											   IEntityConfiguredJoinedTablesPersister<TRGT, ID> targetPersister,
 											   ManyRelationDescriptor<SRC, TRGT, C> manyRelationDescriptor,
 											   AssociationRecordPersister<AssociationRecord, AssociationTable> associationPersister) {
 		super(joinedTablesPersister, targetPersister, manyRelationDescriptor, associationPersister);
 	}
 	
 	@Override
-	protected AssociationRecordInsertionCascader<SRC, TRGT, SRCID, TRGTID, C> newRecordInsertionCascader(
+	protected AssociationRecordInsertionCascader<SRC, TRGT, ID, C> newRecordInsertionCascader(
 			Function<SRC, C> collectionGetter,
 			AssociationRecordPersister<AssociationRecord, AssociationTable> associationPersister,
-			ClassMappingStrategy<SRC, SRCID, ?> mappingStrategy,
-			ClassMappingStrategy<TRGT, TRGTID, ?> targetStrategy) {
+			IEntityMappingStrategy<SRC, ID, ?> mappingStrategy,
+			IEntityMappingStrategy<TRGT, ID, ?> targetStrategy) {
 		return new AssociationRecordInsertionCascader<>(associationPersister, collectionGetter, mappingStrategy, targetStrategy);
 	}
 	

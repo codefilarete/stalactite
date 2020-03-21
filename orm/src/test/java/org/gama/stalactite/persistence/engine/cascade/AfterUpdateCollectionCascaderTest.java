@@ -2,21 +2,25 @@ package org.gama.stalactite.persistence.engine.cascade;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
 
 import org.gama.lang.Duo;
+import org.gama.lang.Retryer;
 import org.gama.lang.collection.Arrays;
 import org.gama.lang.collection.Iterables;
 import org.gama.lang.collection.Maps;
 import org.gama.reflection.Accessors;
 import org.gama.reflection.IReversibleAccessor;
 import org.gama.stalactite.persistence.engine.Persister;
-import org.gama.stalactite.persistence.engine.listening.UpdateListener.UpdatePayload;
+import org.gama.stalactite.persistence.engine.UpdateExecutor;
 import org.gama.stalactite.persistence.id.manager.AlreadyAssignedIdentifierManager;
 import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
+import org.gama.stalactite.persistence.mapping.IEntityMappingStrategy;
 import org.gama.stalactite.persistence.sql.Dialect;
+import org.gama.stalactite.persistence.sql.IConnectionConfiguration;
+import org.gama.stalactite.persistence.sql.dml.DMLGenerator;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
 import org.junit.jupiter.api.Test;
@@ -42,12 +46,19 @@ public class AfterUpdateCollectionCascaderTest extends AbstractCascaderTest {
 				mapping, identifier,
 				new AlreadyAssignedIdentifierManager<>(Long.class));
 		
-		Persister<Tata, Long, T> persisterStub = new Persister<Tata, Long, T>(mappingStrategyMock, mock(Dialect.class), null, 10) {
+		Persister<Tata, Long, T> persisterStub = new Persister<Tata, Long, T>(mappingStrategyMock, mock(Dialect.class), mock(IConnectionConfiguration.class)) {
 			
 			@Override
-			protected int doUpdate(Iterable<UpdatePayload<Tata, T>> updatePayloads, boolean allColumnsStatement) {
-				// Overriden to do no action, because default super action is complex to mock
-				return 0;
+			protected UpdateExecutor<Tata, Long, T> newUpdateExecutor(IEntityMappingStrategy<Tata, Long, T> mappingStrategy, IConnectionConfiguration connectionConfiguration, DMLGenerator dmlGenerator, Retryer writeOperationRetryer, int inOperatorMaxSize) {
+				return new UpdateExecutor<Tata, Long, T>(mappingStrategy, connectionConfiguration, dmlGenerator,
+						writeOperationRetryer, inOperatorMaxSize) {
+					
+					@Override
+					public int update(Iterable<? extends Duo<? extends Tata, ? extends Tata>> differencesIterable, boolean allColumnsStatement) {
+						// Overriden to do no action, because default super action is complex to mock
+						return 0;
+					}
+				};
 			}
 		};
 		
@@ -57,9 +68,9 @@ public class AfterUpdateCollectionCascaderTest extends AbstractCascaderTest {
 		AfterUpdateCollectionCascader<Toto, Tata> testInstance = new AfterUpdateCollectionCascader<Toto, Tata>(persisterStub) {
 			
 			@Override
-			protected void postTargetUpdate(Iterable<UpdatePayload<? extends Tata, ?>> entities) {
+			protected void postTargetUpdate(Iterable<? extends Duo<? extends Tata, ? extends Tata>> entities) {
 				actions.add("postTargetUpdate");
-				triggeredTarget.addAll(Iterables.collectToList(entities, UpdatePayload::getEntities));
+				triggeredTarget.addAll(Iterables.collectToList(entities, Function.identity()));
 			}
 			
 			@Override
@@ -76,8 +87,8 @@ public class AfterUpdateCollectionCascaderTest extends AbstractCascaderTest {
 		Toto triggeringInstance2_modified = new Toto(new Tata().setName("y").setId(tataId));
 		// we give some instance with modifications (on name), so they'll be detected has modified (see Tata's strategy). Thus postTargetUpdate will be triggered
 		testInstance.afterUpdate(Arrays.asList(
-				new UpdatePayload<>(new Duo<>(triggeringInstance1_modified, triggeringInstance1), new HashMap<>()),
-				new UpdatePayload<>(new Duo<>(triggeringInstance2_modified, triggeringInstance2), new HashMap<>())), true);
+				new Duo<>(triggeringInstance1_modified, triggeringInstance1),
+				new Duo<>(triggeringInstance2_modified, triggeringInstance2)), true);
 		
 		// check actions are done in good order
 		assertEquals(Arrays.asList("getTargets", "getTargets", "postTargetUpdate"), actions);

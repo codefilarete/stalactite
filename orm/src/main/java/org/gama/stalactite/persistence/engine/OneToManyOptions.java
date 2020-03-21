@@ -52,6 +52,16 @@ public interface OneToManyOptions<C, I, O, S extends Collection<O>>
 	OneToManyOptions<C, I, O, S> mappedBy(Column<Table, ?> reverseLink);
 	
 	/**
+	 * Defines setter of current entity on target entity, for bidirectionality fix in memory (it has no consequence on database mapping).
+	 * Has only interest for mapping with association table because in such case {@link #mappedBy(SerializableFunction)} methods are not used hence
+	 * reverse setter can't be deduced. If used with owned association it would have no consequence and is not taken into account.
+	 * 
+	 * @param reverseLink opposite owner of the relation
+	 * @return the global mapping configurer
+	 */
+	OneToManyOptions<C, I, O, S> reverselySetBy(SerializableBiConsumer<O, C> reverseLink);
+	
+	/**
 	 * Defines the collection factory to be used at load time to initialize property if it is null.
 	 * Usefull for cases where property is lazily initialized in bean.
 	 * 

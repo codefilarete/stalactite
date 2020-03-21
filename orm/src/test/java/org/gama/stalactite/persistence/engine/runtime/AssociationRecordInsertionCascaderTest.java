@@ -4,11 +4,8 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
-import org.gama.lang.Retryer;
 import org.gama.lang.StringAppender;
 import org.gama.lang.collection.Arrays;
-import org.gama.stalactite.sql.ConnectionProvider;
-import org.gama.stalactite.sql.binder.ParameterBinderIndex;
 import org.gama.stalactite.persistence.engine.AssociationRecord;
 import org.gama.stalactite.persistence.engine.AssociationRecordPersister;
 import org.gama.stalactite.persistence.id.Identified;
@@ -17,7 +14,9 @@ import org.gama.stalactite.persistence.id.PersistableIdentifier;
 import org.gama.stalactite.persistence.id.manager.IdentifierInsertionManager;
 import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
 import org.gama.stalactite.persistence.mapping.IdMappingStrategy;
-import org.gama.stalactite.persistence.sql.dml.DMLGenerator;
+import org.gama.stalactite.persistence.sql.Dialect;
+import org.gama.stalactite.persistence.sql.IConnectionConfiguration.ConnectionConfigurationSupport;
+import org.gama.stalactite.sql.ConnectionProvider;
 import org.junit.jupiter.api.Test;
 import org.mockito.stubbing.Answer;
 
@@ -46,9 +45,8 @@ class AssociationRecordInsertionCascaderTest {
 		when(keyClassMappingStrategyMock.getId(any(Key.class))).thenAnswer((Answer<Identifier<Long>>) invocation ->
 				((Key) invocation.getArgument(0)).getId());
 		AssociationRecordPersister persisterStub =
-				new AssociationRecordPersister(classMappingStrategyMock, mock(ConnectionProvider.class),
-				new DMLGenerator(mock(ParameterBinderIndex.class)), Retryer.NO_RETRY, 1, 1);
-		AssociationRecordInsertionCascader<Keyboard, Key, Identifier, Identifier, List<Key>> testInstance
+				new AssociationRecordPersister(classMappingStrategyMock, new Dialect(), new ConnectionConfigurationSupport(mock(ConnectionProvider.class), 1));
+		AssociationRecordInsertionCascader<Keyboard, Key, Identifier, List<Key>> testInstance
 				= new AssociationRecordInsertionCascader<>(persisterStub, Keyboard::getKeys, classMappingStrategyMock, keyClassMappingStrategyMock);
 		
 		Keyboard inputData = new Keyboard(1L);

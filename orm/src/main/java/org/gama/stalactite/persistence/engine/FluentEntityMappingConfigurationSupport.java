@@ -6,7 +6,7 @@ import java.util.Collection;
 import java.util.Date;
 import java.util.List;
 import java.util.Set;
-import java.util.TreeSet;
+import java.util.function.Function;
 import java.util.function.Supplier;
 
 import org.danekja.java.util.function.serializable.SerializableBiConsumer;
@@ -14,7 +14,6 @@ import org.danekja.java.util.function.serializable.SerializableBiFunction;
 import org.danekja.java.util.function.serializable.SerializableFunction;
 import org.gama.lang.Nullable;
 import org.gama.lang.Reflections;
-import org.gama.lang.collection.Iterables;
 import org.gama.lang.exception.NotImplementedException;
 import org.gama.lang.function.Serie;
 import org.gama.lang.reflect.MethodDispatcher;
@@ -32,22 +31,21 @@ import org.gama.reflection.ValueAccessPointByMethodReference;
 import org.gama.reflection.ValueAccessPointMap;
 import org.gama.stalactite.persistence.engine.AbstractVersioningStrategy.VersioningStrategySupport;
 import org.gama.stalactite.persistence.engine.ColumnOptions.IdentifierPolicy;
-import org.gama.stalactite.persistence.engine.EmbeddableMappingConfiguration.Linkage;
 import org.gama.stalactite.persistence.engine.FluentEmbeddableMappingConfigurationSupport.AbstractLinkage;
 import org.gama.stalactite.persistence.engine.FluentEmbeddableMappingConfigurationSupport.Inset;
-import org.gama.stalactite.persistence.engine.FluentEmbeddableMappingConfigurationSupport.LinkageByColumnName;
 import org.gama.stalactite.persistence.engine.IFluentEmbeddableMappingBuilder.IFluentEmbeddableMappingBuilderEmbedOptions;
 import org.gama.stalactite.persistence.engine.IFluentEmbeddableMappingBuilder.IFluentEmbeddableMappingBuilderEnumOptions;
 import org.gama.stalactite.persistence.engine.builder.CascadeMany;
 import org.gama.stalactite.persistence.engine.builder.CascadeManyList;
-import org.gama.stalactite.persistence.engine.cascade.JoinedTablesPersister;
+import org.gama.stalactite.persistence.engine.configurer.PersisterBuilderImpl;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
 
 import static org.gama.lang.Reflections.propertyName;
-import static org.gama.reflection.MemberDefinition.giveMemberDefinition;
 
 /**
+ * A class that stores configuration made throught a {@link IFluentEntityMappingBuilder}
+ * 
  * @author Guillaume Mary
  */
 public class FluentEntityMappingConfigurationSupport<C, I> implements IFluentEntityMappingBuilder<C, I>, EntityMappingConfiguration<C, I> {
@@ -62,7 +60,7 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements IFluentEnt
 	
 	private final MethodReferenceCapturer methodSpy;
 	
-	private final List<CascadeOne<C, ?, ?>> cascadeOnes = new ArrayList<>();
+	private final List<CascadeOne<C, Object, Object>> cascadeOnes = new ArrayList<>();
 	
 	private final List<CascadeMany<C, ?, ?, ? extends Collection>> cascadeManys = new ArrayList<>();
 	
@@ -76,11 +74,9 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements IFluentEnt
 	
 	private OptimisticLockOption optimisticLockOption;
 	
-	private EntityMappingConfiguration<? super C, I> inheritanceConfiguration;
+	private InheritanceConfigurationSupport<? super C, I> inheritanceConfiguration;
 	
-	private boolean joinTable = false;
-	
-	private Table targetParentTable;
+	private PolymorphismPolicy polymorphismPolicy;
 	
 	/**
 	 * Creates a builder to map the given class for persistence
@@ -97,8 +93,14 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements IFluentEnt
 	}
 	
 	@Override
-	public Class<C> getPersistedClass() {
+	public Class<C> getEntityType() {
 		return persistedClass;
+	}
+	
+	@Override
+	public Function<Function<Column, Object>, C> getEntityFactory() {
+		// for now (until reason to expose this to user) instanciation type is the same as entity one
+		return row -> Reflections.newInstance(getEntityType());
 	}
 	
 	@Override
@@ -140,7 +142,7 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements IFluentEnt
 	}
 	
 	@Override
-	public List<CascadeOne<C, ?, ?>> getOneToOnes() {
+	public List<CascadeOne<C, Object, Object>> getOneToOnes() {
 		return cascadeOnes;
 	}
 	
@@ -150,18 +152,8 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements IFluentEnt
 	}
 	
 	@Override
-	public EntityMappingConfiguration<? super C, I> getInheritanceConfiguration() {
+	public InheritanceConfiguration<? super C, I> getInheritanceConfiguration() {
 		return inheritanceConfiguration;
-	}
-	
-	@Override
-	public boolean isJoinTable() {
-		return this.joinTable;
-	}
-	
-	@Override
-	public Table getInheritanceTable() {
-		return targetParentTable;
 	}
 	
 	@Override
@@ -177,6 +169,11 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements IFluentEnt
 	@Override
 	public EntityMappingConfiguration<C, I> getConfiguration() {
 		return this;
+	}
+	
+	@Override
+	public PolymorphismPolicy getPolymorphismPolicy() {
+		return polymorphismPolicy;
 	}
 	
 	@Override
@@ -258,12 +255,12 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements IFluentEnt
 	
 	@Override
 	public IFluentMappingBuilderInheritanceOptions<C, I> mapInheritance(EntityMappingConfiguration<? super C, I> mappingConfiguration) {
-		inheritanceConfiguration = mappingConfiguration;
+		inheritanceConfiguration = new InheritanceConfigurationSupport<>(mappingConfiguration);
 		return new MethodReferenceDispatcher()
 				.redirect((SerializableFunction<InheritanceOptions, InheritanceOptions>) InheritanceOptions::withJoinedTable,
-						() -> this.joinTable = true)
+						() -> this.inheritanceConfiguration.joinTable = true)
 				.redirect((SerializableBiFunction<InheritanceOptions, Table, InheritanceOptions>) InheritanceOptions::withJoinedTable,
-						t -> { this.joinTable = true; this.targetParentTable = t;})
+						t -> { this.inheritanceConfiguration.joinTable = true; this.inheritanceConfiguration.table = t;})
 				.fallbackOn(this)
 				.build((Class<IFluentMappingBuilderInheritanceOptions<C, I>>) (Class) IFluentMappingBuilderInheritanceOptions.class);
 	}
@@ -300,9 +297,8 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements IFluentEnt
 				// ... but we can't do it for mutator, so we use the most equivalent manner : a mutator based on setter method (fallback to property if not present)
 				mutatorByMethodReference);
 		CascadeOne<C, O, J> cascadeOne = new CascadeOne<>(propertyAccessor, mappingConfiguration.getConfiguration(), table);
-		this.cascadeOnes.add(cascadeOne);
+		this.cascadeOnes.add((CascadeOne<C, Object, Object>) cascadeOne);
 		// we declare the column on our side
-		propertiesMappingConfigurationSurrogate.addMapping(propertyAccessor, giveMemberDefinition(mutatorByMethodReference), null);
 		return wrapForAdditionalOptions(cascadeOne);
 	}
 	
@@ -318,42 +314,41 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements IFluentEnt
 				// ... but we can't do it for mutator, so we use the most equivalent manner : a mutator based on setter method (fallback to property if not present)
 				new AccessorByMethod<C, O>(captureMethod(getter)).toMutator());
 		CascadeOne<C, O, J> cascadeOne = new CascadeOne<>(propertyAccessor, mappingConfiguration.getConfiguration(), table);
-		this.cascadeOnes.add(cascadeOne);
+		this.cascadeOnes.add((CascadeOne<C, Object, Object>) cascadeOne);
 		// we declare the column on our side
-		propertiesMappingConfigurationSurrogate.addMapping(propertyAccessor, giveMemberDefinition(accessorByMethodReference), null);
 		return wrapForAdditionalOptions(cascadeOne);
 	}
 	
 	private <O, J, T extends Table> IFluentMappingBuilderOneToOneOptions<C, I, T> wrapForAdditionalOptions(final CascadeOne<C, O, J> cascadeOne) {
 		// then we return an object that allows fluent settings over our OneToOne cascade instance
 		return new MethodDispatcher()
-				.redirect(OneToOneOptions.class, new OneToOneOptions<C, I, T>() {
+				.redirect(OneToOneOptions.class, new OneToOneOptions() {
 					@Override
-					public IFluentMappingBuilderOneToOneOptions<C, I, T> cascading(RelationMode relationMode) {
+					public OneToOneOptions cascading(RelationMode relationMode) {
 						cascadeOne.setRelationMode(relationMode);
 						return null;	// we can return null because dispatcher will return proxy
 					}
 					
 					@Override
-					public IFluentMappingBuilderOneToOneOptions<C, I, T> mandatory() {
+					public OneToOneOptions mandatory() {
 						cascadeOne.setNullable(false);
 						return null;	// we can return null because dispatcher will return proxy
 					}
 					
 					@Override
-					public IFluentMappingBuilderOneToOneOptions<C, I, T> mappedBy(SerializableFunction reverseLink) {
+					public OneToOneOptions mappedBy(SerializableFunction reverseLink) {
 						cascadeOne.setReverseGetter(reverseLink);
 						return null;	// we can return null because dispatcher will return proxy
 					}
 					
 					@Override
-					public IFluentMappingBuilderOneToOneOptions<C, I, T> mappedBy(SerializableBiConsumer reverseLink) {
+					public OneToOneOptions mappedBy(SerializableBiConsumer reverseLink) {
 						cascadeOne.setReverseSetter(reverseLink);
 						return null;	// we can return null because dispatcher will return proxy
 					}
 					
 					@Override
-					public IFluentMappingBuilderOneToOneOptions<C, I, T> mappedBy(Column<T, C> reverseLink) {
+					public OneToOneOptions mappedBy(Column reverseLink) {
 						cascadeOne.setReverseColumn(reverseLink);
 						return null;	// we can return null because dispatcher will return proxy
 					}
@@ -457,8 +452,8 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements IFluentEnt
 		return new MethodDispatcher()
 				.redirect(OneToManyOptions.class, new OneToManyOptionsSupport<>(cascadeMany), true)	// true to allow "return null" in implemented methods
 				.redirect(IndexableCollectionOptions.class, orderingColumn -> {
-						cascadeMany.setIndexingColumn(orderingColumn);
-						return null;
+					cascadeMany.setIndexingColumn(orderingColumn);
+					return null;
 				}, true)	// true to allow "return null" in implemented methods
 				.fallbackOn(this)
 				.build((Class<IFluentMappingBuilderOneToManyListOptions<C, I, O, S>>) (Class) IFluentMappingBuilderOneToManyListOptions.class);
@@ -476,13 +471,13 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements IFluentEnt
 	
 	@Override
 	public <O> IFluentMappingBuilderEmbeddableOptions<C, I, O> embed(SerializableFunction<C, O> getter,
-																				EmbeddedBeanMappingStrategyBuilder<O> embeddableMappingBuilder) {
+																	 EmbeddedBeanMappingStrategyBuilder<O> embeddableMappingBuilder) {
 		return null;
 	}
 	
 	@Override
 	public <O> IFluentMappingBuilderEmbeddableOptions<C, I, O> embed(SerializableBiConsumer<C, O> getter,
-																				EmbeddedBeanMappingStrategyBuilder<O> embeddableMappingBuilder) {
+																	 EmbeddedBeanMappingStrategyBuilder<O> embeddableMappingBuilder) {
 		return null;
 	}
 	
@@ -597,98 +592,19 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements IFluentEnt
 	}
 	
 	@Override
-	public JoinedTablesPersister<C, I, Table> build(PersistenceContext persistenceContext) {
+	public IFluentEntityMappingBuilder<C, I> mapPolymorphism(PolymorphismPolicy polymorphismPolicy) {
+		this.polymorphismPolicy = polymorphismPolicy;
+		return this;
+	}
+	
+	@Override
+	public IEntityConfiguredPersister<C, I> build(PersistenceContext persistenceContext) {
 		return build(persistenceContext, null);
 	}
 	
 	@Override
-	public <T extends Table> JoinedTablesPersister<C, I, T> build(PersistenceContext persistenceContext, @javax.annotation.Nullable T targetTable) {
-		if (inheritanceConfiguration != null && propertiesMappingConfigurationSurrogate.getMappedSuperClassConfiguration() != null) {
-			throw new MappingConfigurationException("Mapped super class and inheritance are not supported when they are combined, please remove one of them");
-		}
-		
-		if (inheritanceConfiguration != null && isJoinTable()) {
-			return new JoinedTablesEntityMappingBuilder<>(this, methodSpy)
-					.build(persistenceContext, targetTable);
-		} else {
-			return new EntityMappingBuilder<>(this, methodSpy)
-					.build(persistenceContext, targetTable);
-		}
-	}
-	
-	/**
-	 * Specialized version of {@link Linkage} for entity use case
-	 * 
-	 * @param <T>
-	 */
-	interface EntityLinkage<T> extends Linkage<T> {
-		
-		boolean isPrimaryKey();
-	}
-	
-	static class EntityLinkageByColumnName<T>  extends LinkageByColumnName<T> implements EntityLinkage<T> {
-		
-		private boolean primaryKey;
-		
-		/**
-		 * Constructor
-		 * 
-		 * @param accessor a {@link IReversibleAccessor}
-		 * @param columnType the Java type of the column, will be converted to sql type thanks to {@link org.gama.stalactite.persistence.sql.ddl.JavaTypeToSqlTypeMapping}
-		 * @param columnName an override of the default name that will be generated
-		 */
-		<O> EntityLinkageByColumnName(IReversibleAccessor<T, O> accessor, Class<O> columnType, String columnName) {
-			super(accessor, columnType, columnName);
-		}
-		
-		public boolean isPrimaryKey() {
-			return primaryKey;
-		}
-		
-		public void primaryKey() {
-			this.primaryKey = true;
-		}
-	}
-	
-	static class EntityLinkageByColumn<T> extends AbstractLinkage<T> implements EntityLinkage<T> {
-		
-		private final IReversibleAccessor<T, ?> function;
-		private final Column column;
-		
-		/**
-		 * Constructor with mandatory objects
-		 * 
-		 * @param propertyAccessor a {@link IReversibleAccessor}
-		 * @param column an override of the default column that would have been generated
-		 */
-		EntityLinkageByColumn(IReversibleAccessor<T, ?> propertyAccessor, Column column) {
-			this.function = propertyAccessor;
-			this.column = column;
-		}
-		
-		@Override
-		public <I> IReversibleAccessor<T, I> getAccessor() {
-			return (IReversibleAccessor<T, I>) function;
-		}
-		
-		@Override
-		public String getColumnName() {
-			return column.getName();
-		}
-		
-		@Override
-		public Class<?> getColumnType() {
-			return column.getJavaType();
-		}
-		
-		@Override
-		public boolean isPrimaryKey() {
-			return column.isPrimaryKey();
-		}
-		
-		public Column getColumn() {
-			return column;
-		}
+	public IEntityConfiguredPersister<C, I> build(PersistenceContext persistenceContext, @javax.annotation.Nullable Table targetTable) {
+		return new PersisterBuilderImpl<>(this.getConfiguration()).build(persistenceContext, targetTable);
 	}
 	
 	/**
@@ -736,17 +652,6 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements IFluentEnt
 			return new EntityLinkageByColumnName<>(accessor, returnType, linkName);
 		}
 		
-		@Override
-		protected String giveLinkageName(MemberDefinition memberDefinition) {
-			// MemberDefinition computation could be done statically, but it must be done dynamically because giveLinkageName(..) is used along fluent API invokation
-			TreeSet<MemberDefinition> memberDefinitions = Iterables.collect(entityConfigurationSupport.cascadeOnes, cascadeOne -> giveMemberDefinition(cascadeOne.getTargetProvider()), TreeSet::new);
-			if (memberDefinitions.contains(memberDefinition)) {
-				return entityConfigurationSupport.joinColumnNamingStrategy.giveName(memberDefinition);
-			} else {
-				return super.giveLinkageName(memberDefinition);
-			}
-		}
-		
 		<E> AbstractLinkage<C> addMapping(SerializableBiConsumer<C, E> setter, Column column) {
 			return addMapping(Accessors.mutator(setter), column);
 		}
@@ -761,7 +666,6 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements IFluentEnt
 		 * @return a new Column added to the target table, throws an exception if already mapped
 		 */
 		AbstractLinkage<C> addMapping(IReversibleAccessor<C, ?> propertyAccessor, Column column) {
-			assertMappingIsNotAlreadyDefined(column.getName(), propertyAccessor);
 			EntityLinkageByColumn<C> newLinkage = new EntityLinkageByColumn<>(propertyAccessor, column);
 			mapping.add(newLinkage);
 			return newLinkage;
@@ -811,7 +715,7 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements IFluentEnt
 	 * @param <SRC> the owner type
 	 * @param <TRGT> the target type
 	 */
-	static class OverridableColumnInset<SRC, TRGT> extends Inset<SRC, TRGT> {
+	public static class OverridableColumnInset<SRC, TRGT> extends Inset<SRC, TRGT> {
 		
 		private final ValueAccessPointMap<Column> overridenColumns = new ValueAccessPointMap<>();
 		
@@ -827,7 +731,7 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements IFluentEnt
 			this.overridenColumns.put(new AccessorByMethodReference(methodRef), column);
 		}
 		
-		ValueAccessPointMap<Column> getOverridenColumns() {
+		public ValueAccessPointMap<Column> getOverridenColumns() {
 			return overridenColumns;
 		}
 	}
@@ -851,7 +755,7 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements IFluentEnt
 	/**
 	 * A small class for one-to-many options storage into a {@link CascadeMany}. Acts as a wrapper over it.
 	 */
-	private static class OneToManyOptionsSupport<C, I, O, S extends Collection<O>>
+	static class OneToManyOptionsSupport<C, I, O, S extends Collection<O>>
 			implements OneToManyOptions<C, I, O, S> {
 		
 		private final CascadeMany<C, O, I, S> cascadeMany;
@@ -879,6 +783,12 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements IFluentEnt
 		}
 		
 		@Override
+		public OneToManyOptions<C, I, O, S> reverselySetBy(SerializableBiConsumer<O, C> reverseLink) {
+			cascadeMany.setRegisteredBy(reverseLink);
+			return null;	// we can return null because dispatcher will return proxy
+		}
+		
+		@Override
 		public IFluentMappingBuilderOneToManyOptions<C, I, O, S> initializeWith(Supplier<S> collectionFactory) {
 			cascadeMany.setCollectionFactory(collectionFactory);
 			return null;	// we can return null because dispatcher will return proxy
@@ -891,4 +801,37 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements IFluentEnt
 		}
 	}
 	
+	/**
+	 * Stores informations of {@link InheritanceConfiguration}
+	 * 
+	 * @param <E> entity type
+	 * @param <I> identifier type
+	 */
+	static class InheritanceConfigurationSupport<E, I> implements InheritanceConfiguration<E, I> {
+		
+		private final EntityMappingConfiguration<E, I> configuration;
+		
+		private boolean joinTable = false;
+		
+		private Table table;
+		
+		InheritanceConfigurationSupport(EntityMappingConfiguration<E, I> configuration) {
+			this.configuration = configuration;
+		}
+		
+		@Override
+		public EntityMappingConfiguration<E, I> getConfiguration() {
+			return configuration;
+		}
+		
+		@Override
+		public boolean isJoinTable() {
+			return this.joinTable;
+		}
+		
+		@Override
+		public Table getTable() {
+			return this.table;
+		}
+	}
 }

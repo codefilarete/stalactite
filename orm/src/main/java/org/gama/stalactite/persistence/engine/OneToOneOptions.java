@@ -2,17 +2,16 @@ package org.gama.stalactite.persistence.engine;
 
 import org.danekja.java.util.function.serializable.SerializableBiConsumer;
 import org.danekja.java.util.function.serializable.SerializableFunction;
-import org.gama.stalactite.persistence.engine.IFluentEntityMappingBuilder.IFluentMappingBuilderOneToOneOptions;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
 
 /**
  * @author Guillaume Mary
  */
-public interface OneToOneOptions<C, I, T extends Table> extends CascadeOptions<IFluentMappingBuilderOneToOneOptions<C, I, T>> {
+public interface OneToOneOptions<SELF extends OneToOneOptions<SELF, C, I, T>, C, I, T extends Table> extends CascadeOptions<SELF> {
 	
 	/** Marks the relation as mandatory. Hence joins will be inner ones and a checking for non null value will be done before insert and update */
-	IFluentMappingBuilderOneToOneOptions<C, I, T> mandatory();
+	SELF mandatory();
 	
 	/**
 	 * Defines the bidirectional relationship.
@@ -25,7 +24,7 @@ public interface OneToOneOptions<C, I, T extends Table> extends CascadeOptions<I
 	 * @param <O> owner type
 	 * @return the global mapping configurer
 	 */
-	<O> IFluentMappingBuilderOneToOneOptions<C, I, T> mappedBy(SerializableBiConsumer<O, C> reverseLink);
+	<O> SELF mappedBy(SerializableBiConsumer<O, C> reverseLink);
 	
 	/**
 	 * Defines the bidirectional relationship.
@@ -38,7 +37,7 @@ public interface OneToOneOptions<C, I, T extends Table> extends CascadeOptions<I
 	 * @param <O> owner type
 	 * @return the global mapping configurer
 	 */
-	<O> IFluentMappingBuilderOneToOneOptions<C, I, T> mappedBy(SerializableFunction<O, C> reverseLink);
+	<O> SELF mappedBy(SerializableFunction<O, C> reverseLink);
 	
 	/**
 	 * Defines reverse side owner.
@@ -51,5 +50,5 @@ public interface OneToOneOptions<C, I, T extends Table> extends CascadeOptions<I
 	 * @param reverseLink opposite owner of the relation
 	 * @return the global mapping configurer
 	 */
-	IFluentMappingBuilderOneToOneOptions<C, I, T> mappedBy(Column<T, C> reverseLink);
+	SELF mappedBy(Column<T, C> reverseLink);
 }

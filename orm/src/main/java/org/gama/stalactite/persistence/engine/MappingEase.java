@@ -25,6 +25,10 @@ public final class MappingEase {
 		return new FluentEntityMappingConfigurationSupport<>(classToPersist);
 	}
 	
+	public static <T, I> IFluentSubEntityMappingConfiguration<T, Object> subentityBuilder(Class<T> classToPersist) {
+		return new FluentSubEntityMappingConfigurationSupport<>(classToPersist);
+	}
+	
 	/**
 	 * Starts a {@link IFluentEmbeddableMappingBuilder} for a given class.
 	 *

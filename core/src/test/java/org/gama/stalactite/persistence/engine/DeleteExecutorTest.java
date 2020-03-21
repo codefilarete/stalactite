@@ -6,11 +6,12 @@ import java.util.Map;
 import org.gama.lang.Retryer;
 import org.gama.lang.collection.Arrays;
 import org.gama.lang.collection.Maps;
-import org.gama.stalactite.sql.dml.SQLOperation.SQLOperationListener;
-import org.gama.stalactite.sql.dml.SQLStatement;
+import org.gama.stalactite.persistence.sql.IConnectionConfiguration.ConnectionConfigurationSupport;
 import org.gama.stalactite.persistence.sql.dml.DMLGenerator;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
+import org.gama.stalactite.sql.dml.SQLOperation.SQLOperationListener;
+import org.gama.stalactite.sql.dml.SQLStatement;
 import org.gama.stalactite.test.PairSetList;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -32,7 +33,8 @@ public class DeleteExecutorTest extends AbstractDMLExecutorTest {
 	public void setUp() throws SQLException {
 		dataSet = new DataSet();
 		DMLGenerator dmlGenerator = new DMLGenerator(dataSet.dialect.getColumnBinderRegistry(), new DMLGenerator.CaseSensitiveSorter());
-		testInstance = new DeleteExecutor<>(dataSet.persistenceConfiguration.classMappingStrategy, dataSet.transactionManager, dmlGenerator, Retryer.NO_RETRY, 3, 3);
+		testInstance = new DeleteExecutor<>(dataSet.persistenceConfiguration.classMappingStrategy,
+				new ConnectionConfigurationSupport(dataSet.transactionManager, 3), dmlGenerator, Retryer.NO_RETRY, 3);
 	}
 	
 	@Test
@@ -152,7 +154,8 @@ public class DeleteExecutorTest extends AbstractDMLExecutorTest {
 	public void testDeleteById_composedId_multiple_lastBlockContainsOneValue() throws Exception {
 		DataSetWithComposedId dataSet = new DataSetWithComposedId();
 		DMLGenerator dmlGenerator = new DMLGenerator(dataSet.dialect.getColumnBinderRegistry(), new DMLGenerator.CaseSensitiveSorter());
-		DeleteExecutor<Toto, Toto, Table>testInstance = new DeleteExecutor<>(dataSet.persistenceConfiguration.classMappingStrategy, dataSet.transactionManager, dmlGenerator, Retryer.NO_RETRY, 3, 3);
+		DeleteExecutor<Toto, Toto, Table>testInstance = new DeleteExecutor<>(dataSet.persistenceConfiguration.classMappingStrategy,
+				new ConnectionConfigurationSupport(dataSet.transactionManager, 3), dmlGenerator, Retryer.NO_RETRY, 3);
 		
 		testInstance.deleteById(Arrays.asList(
 				new Toto(1, 17, 23), new Toto(2, 29, 31), new Toto(3, 37, 41),
@@ -174,7 +177,8 @@ public class DeleteExecutorTest extends AbstractDMLExecutorTest {
 	public void testDeleteById_composedId_multiple_lastBlockContainsMultipleValue() throws Exception {
 		DataSetWithComposedId dataSet = new DataSetWithComposedId();
 		DMLGenerator dmlGenerator = new DMLGenerator(dataSet.dialect.getColumnBinderRegistry(), new DMLGenerator.CaseSensitiveSorter());
-		DeleteExecutor<Toto, Toto, Table>testInstance = new DeleteExecutor<>(dataSet.persistenceConfiguration.classMappingStrategy, dataSet.transactionManager, dmlGenerator, Retryer.NO_RETRY, 3, 3);
+		DeleteExecutor<Toto, Toto, Table>testInstance = new DeleteExecutor<>(dataSet.persistenceConfiguration.classMappingStrategy,
+				new ConnectionConfigurationSupport(dataSet.transactionManager, 3), dmlGenerator, Retryer.NO_RETRY, 3);
 		
 		testInstance.deleteById(Arrays.asList(
 				new Toto(1, 17, 23), new Toto(2, 29, 31), new Toto(3, 37, 41),
@@ -196,7 +200,8 @@ public class DeleteExecutorTest extends AbstractDMLExecutorTest {
 	public void testDeleteById_composedId_multiple_lastBlockSizeIsInOperatorSize() throws Exception {
 		DataSetWithComposedId dataSet = new DataSetWithComposedId();
 		DMLGenerator dmlGenerator = new DMLGenerator(dataSet.dialect.getColumnBinderRegistry(), new DMLGenerator.CaseSensitiveSorter());
-		DeleteExecutor<Toto, Toto, Table>testInstance = new DeleteExecutor<>(dataSet.persistenceConfiguration.classMappingStrategy, dataSet.transactionManager, dmlGenerator, Retryer.NO_RETRY, 3, 3);
+		DeleteExecutor<Toto, Toto, Table>testInstance = new DeleteExecutor<>(dataSet.persistenceConfiguration.classMappingStrategy,
+				new ConnectionConfigurationSupport(dataSet.transactionManager, 3), dmlGenerator, Retryer.NO_RETRY, 3);
 		
 		testInstance.deleteById(Arrays.asList(
 				new Toto(1, 17, 23), new Toto(2, 29, 31), new Toto(3, 37, 41),

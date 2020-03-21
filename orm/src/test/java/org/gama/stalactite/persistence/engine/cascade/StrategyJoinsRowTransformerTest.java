@@ -3,6 +3,7 @@ package org.gama.stalactite.persistence.engine.cascade;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
@@ -11,23 +12,27 @@ import java.util.stream.Collectors;
 import org.gama.lang.collection.Arrays;
 import org.gama.lang.collection.Iterables;
 import org.gama.lang.collection.Maps;
-import org.gama.stalactite.sql.result.Row;
 import org.gama.stalactite.persistence.engine.BeanRelationFixer;
-import org.gama.stalactite.persistence.engine.cascade.JoinedStrategiesSelect.StrategyJoins;
-import org.gama.stalactite.persistence.engine.cascade.JoinedStrategiesSelect.StrategyJoins.Join;
+import org.gama.stalactite.persistence.engine.cascade.AbstractJoin.JoinType;
+import org.gama.stalactite.persistence.engine.cascade.StrategyJoins.RelationJoin;
 import org.gama.stalactite.persistence.id.assembly.IdentifierAssembler;
 import org.gama.stalactite.persistence.id.assembly.SimpleIdentifierAssembler;
 import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
+import org.gama.stalactite.persistence.mapping.ColumnedRow;
 import org.gama.stalactite.persistence.mapping.IdMappingStrategy;
 import org.gama.stalactite.persistence.mapping.ToBeanRowTransformer;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
+import org.gama.stalactite.sql.result.Row;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.invocation.InvocationOnMock;
+import org.mockito.stubbing.Answer;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -59,14 +64,14 @@ public class StrategyJoinsRowTransformerTest {
 	
 	@Test
 	public void testTransform_with1strategy() {
-		when(rootStrategy.getRowTransformer()).thenReturn(new ToBeanRowTransformer<>(Toto.class, totoTable, false));
+		when(rootStrategy.copyTransformerWithAliases(any())).thenAnswer(new ToBeanRowTransformerAnswer<>(Toto.class, totoTable));
 		
 		StrategyJoinsRowTransformer testInstance = new StrategyJoinsRowTransformer(new StrategyJoins<>(rootStrategy));
 		Row row1 = buildRow(
 				Maps.asMap(totoColumnId, (Object) 1L)
 						.add(totoColumnName, "toto"),
 				testInstance.getAliasProvider());
-		List result = testInstance.transform(Arrays.asList(row1), 1);
+		List result = testInstance.transform(Arrays.asList(row1), 1, new HashMap<>());
 		
 		Object firstObject = Iterables.first(result);
 		assertNotNull(firstObject);
@@ -80,7 +85,7 @@ public class StrategyJoinsRowTransformerTest {
 	 */
 	@Test
 	public void testTransform_with2strategies_oneToOne() {
-		StrategyJoins<Toto> rootStrategyJoins = new StrategyJoins<>(rootStrategy);
+		StrategyJoins<Toto, ?> rootStrategyJoins = new StrategyJoins<>(rootStrategy);
 		
 		// creating another strategy that will be joined to the root one (goal of this test)
 		ClassMappingStrategy<Tata, Long, Table> joinedStrategy = mock(ClassMappingStrategy.class);
@@ -97,12 +102,12 @@ public class StrategyJoinsRowTransformerTest {
 		fixIdentifierAssembler(joinedStrategy, tataColumnId);
 		
 		// completing the test case: adding the joined strategy
-		rootStrategyJoins.add(joinedStrategy, dummyJoinColumn, dummyJoinColumn, false, BeanRelationFixer.of(Toto::setOneToOne));
+		rootStrategyJoins.add(joinedStrategy, dummyJoinColumn, dummyJoinColumn, JoinType.INNER, BeanRelationFixer.of(Toto::setOneToOne));
 		
 		
 		// Telling mocks which instance to create
-		when(rootStrategy.getRowTransformer()).thenReturn(new ToBeanRowTransformer<>(Toto.class, totoTable, false));
-		when(joinedStrategy.getRowTransformer()).thenReturn(new ToBeanRowTransformer<>(Tata.class, tataTable, false));
+		when(rootStrategy.copyTransformerWithAliases(any())).thenAnswer(new ToBeanRowTransformerAnswer<>(Toto.class, totoTable));
+		when(joinedStrategy.copyTransformerWithAliases(any())).thenAnswer(new ToBeanRowTransformerAnswer<>(Tata.class, tataTable));
 		
 		StrategyJoinsRowTransformer<Toto> testInstance = new StrategyJoinsRowTransformer<>(rootStrategyJoins);
 		Row row1 = buildRow(
@@ -111,7 +116,7 @@ public class StrategyJoinsRowTransformerTest {
 						.add(tataColumnId, 1L)
 						.add(tataColumnFirstName, "tata"),
 				testInstance.getAliasProvider());
-		List result = testInstance.transform(Arrays.asList(row1), 1);
+		List result = testInstance.transform(Arrays.asList(row1), 1, new HashMap<>());
 		
 		Object firstObject = Iterables.first(result);
 		assertNotNull(firstObject);
@@ -154,16 +159,16 @@ public class StrategyJoinsRowTransformerTest {
 		fixIdentifierAssembler(joinedStrategy2, titiColumnId);
 		
 		// completing the test case: adding the depth-1 strategy
-		Join joinedStrategy1Name = rootStrategyJoins.add(joinedStrategy1, dummyJoinColumn1, dummyJoinColumn1, false,
+		RelationJoin joinedStrategy1Name = rootStrategyJoins.add(joinedStrategy1, dummyJoinColumn1, dummyJoinColumn1, JoinType.INNER,
 				BeanRelationFixer.of(Toto::setOneToOne));
 		// completing the test case: adding the depth-2 strategy
-		joinedStrategy1Name.getStrategy().add(joinedStrategy2, dummyJoinColumn2, dummyJoinColumn2, false,
+		joinedStrategy1Name.getStrategy().add(joinedStrategy2, dummyJoinColumn2, dummyJoinColumn2, JoinType.INNER,
 				BeanRelationFixer.of(Tata::setOneToOne));
 		
 		// Telling mocks which instance to create
-		when(rootStrategy.getRowTransformer()).thenReturn(new ToBeanRowTransformer<>(Toto.class, totoTable, false));
-		when(joinedStrategy1.getRowTransformer()).thenReturn(new ToBeanRowTransformer<>(Tata.class, tataTable, false));
-		when(joinedStrategy2.getRowTransformer()).thenReturn(new ToBeanRowTransformer<>(Titi.class, titiTable, false));
+		when(rootStrategy.copyTransformerWithAliases(any())).thenAnswer(new ToBeanRowTransformerAnswer<>(Toto.class, totoTable));
+		when(joinedStrategy1.copyTransformerWithAliases(any())).thenAnswer(new ToBeanRowTransformerAnswer<>(Tata.class, tataTable));
+		when(joinedStrategy2.copyTransformerWithAliases(any())).thenAnswer(new ToBeanRowTransformerAnswer<>(Titi.class, titiTable));
 		
 		StrategyJoinsRowTransformer testInstance = new StrategyJoinsRowTransformer(rootStrategyJoins);
 		Row row = buildRow(
@@ -174,7 +179,7 @@ public class StrategyJoinsRowTransformerTest {
 						.add(titiColumnId, 1L)
 						.add(titiColumnLastName, "titi"),
 				testInstance.getAliasProvider());
-		List result = testInstance.transform(Arrays.asList(row), 1);
+		List result = testInstance.transform(Arrays.asList(row), 1, new HashMap<>());
 		
 		Object firstObject = Iterables.first(result);
 		assertNotNull(firstObject);
@@ -221,16 +226,14 @@ public class StrategyJoinsRowTransformerTest {
 		fixIdentifierAssembler(joinedStrategy2, titiColumnId);
 		
 		// completing the test case: adding the joined strategy
-		rootStrategyJoins.add(joinedStrategy1, dummyJoinColumn1, dummyJoinColumn1, false,
-				BeanRelationFixer.of(Toto::setOneToOne));
+		rootStrategyJoins.add(joinedStrategy1, dummyJoinColumn1, dummyJoinColumn1, JoinType.INNER, BeanRelationFixer.of(Toto::setOneToOne));
 		// completing the test case: adding the 2nd joined strategy
-		rootStrategyJoins.add(joinedStrategy2, dummyJoinColumn2, dummyJoinColumn2, false,
-				BeanRelationFixer.of(Toto::setOneToOneOther));
+		rootStrategyJoins.add(joinedStrategy2, dummyJoinColumn2, dummyJoinColumn2, JoinType.INNER, BeanRelationFixer.of(Toto::setOneToOneOther));
 		
 		// Telling mocks which instance to create
-		when(rootStrategy.getRowTransformer()).thenReturn(new ToBeanRowTransformer<>(Toto.class, totoTable, false));
-		when(joinedStrategy1.getRowTransformer()).thenReturn(new ToBeanRowTransformer<>(Tata.class, tataTable, false));
-		when(joinedStrategy2.getRowTransformer()).thenReturn(new ToBeanRowTransformer<>(Titi.class, titiTable, false));
+		when(rootStrategy.copyTransformerWithAliases(any())).thenAnswer(new ToBeanRowTransformerAnswer<>(Toto.class, totoTable));
+		when(joinedStrategy1.copyTransformerWithAliases(any())).thenAnswer(new ToBeanRowTransformerAnswer<>(Tata.class, tataTable));
+		when(joinedStrategy2.copyTransformerWithAliases(any())).thenAnswer(new ToBeanRowTransformerAnswer<>(Titi.class, titiTable));
 		
 		StrategyJoinsRowTransformer testInstance = new StrategyJoinsRowTransformer(rootStrategyJoins);
 		Row row = buildRow(
@@ -241,7 +244,7 @@ public class StrategyJoinsRowTransformerTest {
 						.add(titiColumnId, 1L)
 						.add(titiColumnLastName, "titi"),
 				testInstance.getAliasProvider());
-		List result = testInstance.transform(Arrays.asList(row), 1);
+		List result = testInstance.transform(Arrays.asList(row), 1, new HashMap<>());
 		
 		Object firstObject = Iterables.first(result);
 		assertNotNull(firstObject);
@@ -279,12 +282,12 @@ public class StrategyJoinsRowTransformerTest {
 		
 		// completing the test case: adding the joined strategy
 		rootStrategyJoins.add(joinedStrategy,
-				null, dummyJoinColumn, false,
+				null, dummyJoinColumn, JoinType.INNER,
 				BeanRelationFixer.of(Toto::setOneToMany, Toto::getOneToMany, ArrayList::new));
 		
 		// Telling mocks which instance to create
-		when(rootStrategy.getRowTransformer()).thenReturn(new ToBeanRowTransformer<>(Toto.class, totoTable, false));
-		when(joinedStrategy.getRowTransformer()).thenReturn(new ToBeanRowTransformer<>(Tata.class, tataTable, false));
+		when(rootStrategy.copyTransformerWithAliases(any())).thenAnswer(new ToBeanRowTransformerAnswer<>(Toto.class, totoTable));
+		when(joinedStrategy.copyTransformerWithAliases(any())).thenAnswer(new ToBeanRowTransformerAnswer<>(Tata.class, tataTable));
 		
 		StrategyJoinsRowTransformer testInstance = new StrategyJoinsRowTransformer(rootStrategyJoins);
 		
@@ -300,7 +303,7 @@ public class StrategyJoinsRowTransformerTest {
 						.add(tataColumnId, 2L)
 						.add(tataColumnFirstName, "tata2"),
 				testInstance.getAliasProvider());
-		List<Toto> result = testInstance.transform(Arrays.asList(row1, row2), 1);
+		List<Toto> result = testInstance.transform(Arrays.asList(row1, row2), 1, new HashMap<>());
 		
 		assertEquals(1, result.size());
 		Toto firstResult = Iterables.first(result);
@@ -334,22 +337,23 @@ public class StrategyJoinsRowTransformerTest {
 		// adding IdentifierAssembler to the joined strategy
 		fixIdentifierAssembler(joinedStrategy, toto2ColumnId);
 		
-		rootStrategyJoins.add(joinedStrategy, null, toto2ColumnId, false, BeanRelationFixer.of(Toto::setSibling));
+		rootStrategyJoins.add(joinedStrategy, null, toto2ColumnId, JoinType.INNER, BeanRelationFixer.of(Toto::setSibling));
 		
 		
 		// Telling mocks which instance to create
-		when(rootStrategy.getRowTransformer()).thenReturn(new ToBeanRowTransformer<>(Toto.class, totoTable, false));
-		when(joinedStrategy.getRowTransformer()).thenReturn(new ToBeanRowTransformer<>(Toto.class, totoTable2, false));
+		when(rootStrategy.copyTransformerWithAliases(any())).thenAnswer(new ToBeanRowTransformerAnswer<>(Toto.class, totoTable));
+		when(joinedStrategy.copyTransformerWithAliases(any())).thenAnswer(new ToBeanRowTransformerAnswer<>(Toto.class, totoTable2));
 		
 		StrategyJoinsRowTransformer<Toto> testInstance = new StrategyJoinsRowTransformer<>(rootStrategyJoins);
 		
 		Function<Column, String> aliasGenerator = c -> (c.getTable() == totoTable ? "table1_" : "table2_") + c.getName();
 		// we give the aliases to our test instance
 		Comparator<Column> columnComparator = (c1, c2) -> aliasGenerator.apply(c1).compareToIgnoreCase(aliasGenerator.apply(c2));
-		testInstance.setAliases(Maps.asComparingMap(columnComparator, totoColumnId, aliasGenerator.apply(totoColumnId))
+		Map<Column, String> aliases = Maps.asComparingMap(columnComparator, totoColumnId, aliasGenerator.apply(totoColumnId))
 				.add(totoColumnName, aliasGenerator.apply(totoColumnName))
 				.add(toto2ColumnId, aliasGenerator.apply(toto2ColumnId))
-				.add(toto2ColumnName, aliasGenerator.apply(toto2ColumnName)));
+				.add(toto2ColumnName, aliasGenerator.apply(toto2ColumnName));
+		testInstance.setAliasProvider(aliases::get);
 		// the row must math the aliases given to the instance
 		Row row = buildRow(
 				Maps.asComparingMap(columnComparator, totoColumnId, (Object) 1L)
@@ -360,7 +364,7 @@ public class StrategyJoinsRowTransformerTest {
 		);
 		
 		// executing the test
-		List<Toto> result = testInstance.transform(Arrays.asList(row), 1);
+		List<Toto> result = testInstance.transform(Arrays.asList(row), 1, new HashMap<>());
 		
 		// checking
 		assertEquals(1, result.size());
@@ -440,5 +444,21 @@ public class StrategyJoinsRowTransformerTest {
 	public static class Titi {
 		private Long id;
 		private String lastName;
+	}
+	
+	private static class ToBeanRowTransformerAnswer<C> implements Answer<ToBeanRowTransformer<C>> {
+		
+		private final Class<C> instanceClass;
+		private final Table table;
+		
+		private ToBeanRowTransformerAnswer(Class<C> instanceClass,  Table table) {
+			this.instanceClass = instanceClass;
+			this.table = table;
+		}
+		
+		@Override
+		public ToBeanRowTransformer<C> answer(InvocationOnMock invocation) {
+			return new ToBeanRowTransformer<>(instanceClass, table, false).copyWithAliases((ColumnedRow) invocation.getArguments()[0]);
+		}
 	}
 }

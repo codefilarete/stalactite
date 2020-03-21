@@ -21,7 +21,7 @@ import org.gama.stalactite.persistence.structure.Table;
  * @see MappingEase#entityBuilder(Class, Class)
  * @see #build(PersistenceContext)
  */
-public interface IFluentEntityMappingBuilder<C, I> extends IFluentEmbeddableMappingConfiguration<C>, PersisterBuilder<C, I> {
+public interface IFluentEntityMappingBuilder<C, I> extends IFluentEmbeddableMappingConfiguration<C>, PersisterBuilder<C, I>, EntityMappingConfigurationProvider<C, I> {
 	
 	/* Overwritting methods signature to return a type that aggregates options of this class */
 	
@@ -52,12 +52,18 @@ public interface IFluentEntityMappingBuilder<C, I> extends IFluentEmbeddableMapp
 	IFluentEntityMappingBuilder<C, I> columnNamingStrategy(ColumnNamingStrategy columnNamingStrategy);
 	
 	/**
-	 * Declares the inherited mapping. Id policy must be defined in the given strategy.
+	 * Declares the inherited mapping.
+	 * Id policy must be defined in the given strategy, not by current configuration : if id policy is also / only defined by the current builder,
+	 * an exception will be thrown at build time.
 	 * 
 	 * @param mappingConfiguration a mapping configuration of a super type of the current mapped type
 	 * @return a enhanced version of {@code this} so one can add set options to the relationship or add mapping to {@code this}
 	 */
 	IFluentMappingBuilderInheritanceOptions<C, I> mapInheritance(EntityMappingConfiguration<? super C, I> mappingConfiguration);
+	
+	default IFluentMappingBuilderInheritanceOptions<C, I> mapInheritance(EntityMappingConfigurationProvider<? super C, I> mappingConfigurationProvider) {
+		return this.mapInheritance(mappingConfigurationProvider.getConfiguration());
+	}
 	
 	/**
 	 * Declares the mapping of a super class.
@@ -66,6 +72,10 @@ public interface IFluentEntityMappingBuilder<C, I> extends IFluentEmbeddableMapp
 	 * @return a enhanced version of {@code this} so one can add set options to the relationship or add mapping to {@code this}
 	 */
 	IFluentEntityMappingBuilder<C, I> mapSuperClass(EmbeddableMappingConfiguration<? super C> superMappingConfiguration);
+	
+	default IFluentEntityMappingBuilder<C, I> mapSuperClass(EmbeddableMappingConfigurationProvider<? super C> superMappingConfigurationProvider) {
+		return this.mapSuperClass(superMappingConfigurationProvider.getConfiguration());
+	}
 	
 	/**
 	 * Declares a direct relationship between current entity and some of type {@code O}.
@@ -185,6 +195,8 @@ public interface IFluentEntityMappingBuilder<C, I> extends IFluentEmbeddableMapp
 	
 	<V> IFluentEntityMappingBuilder<C, I> versionedBy(SerializableFunction<C, V> getter, Serie<V> sequence);
 	
+	IFluentEntityMappingBuilder<C, I> mapPolymorphism(PolymorphismPolicy polymorphismPolicy);
+	
 	interface IFluentMappingBuilderPropertyOptions<C, I> extends IFluentEntityMappingBuilder<C, I>, IFluentEmbeddableMappingConfigurationPropertyOptions<C>, ColumnOptions<C, I> {
 		
 		@Override
@@ -194,7 +206,8 @@ public interface IFluentEntityMappingBuilder<C, I> extends IFluentEmbeddableMapp
 		IFluentMappingBuilderPropertyOptions<C, I> mandatory();
 	}
 	
-	interface IFluentMappingBuilderOneToOneOptions<C, I, T extends Table> extends IFluentEntityMappingBuilder<C, I>, OneToOneOptions<C, I, T> {
+	interface IFluentMappingBuilderOneToOneOptions<C, I, T extends Table> extends IFluentEntityMappingBuilder<C, I>,
+			OneToOneOptions<IFluentMappingBuilderOneToOneOptions<C, I, T>, C, I, T> {
 		
 		/**
 		 * {@inheritDoc}
@@ -262,6 +275,9 @@ public interface IFluentEntityMappingBuilder<C, I> extends IFluentEmbeddableMapp
 		IFluentMappingBuilderOneToManyOptions<C, I, O, S> mappedBy(Column<Table, ?> reverseLink);
 		
 		@Override
+		IFluentMappingBuilderOneToManyOptions<C, I, O, S> reverselySetBy(SerializableBiConsumer<O, C> reverseLink);
+		
+		@Override
 		IFluentMappingBuilderOneToManyOptions<C, I, O, S> initializeWith(Supplier<S> collectionFactory);
 		
 		@Override
@@ -305,6 +321,9 @@ public interface IFluentEntityMappingBuilder<C, I> extends IFluentEmbeddableMapp
 		 */
 		@Override
 		IFluentMappingBuilderOneToManyListOptions<C, I, O, S> mappedBy(Column<Table, ?> reverseLink);
+		
+		@Override
+		IFluentMappingBuilderOneToManyListOptions<C, I, O, S> reverselySetBy(SerializableBiConsumer<O, C> reverseLink);
 		
 		@Override
 		IFluentMappingBuilderOneToManyListOptions<C, I, O, S> initializeWith(Supplier<S> collectionFactory);

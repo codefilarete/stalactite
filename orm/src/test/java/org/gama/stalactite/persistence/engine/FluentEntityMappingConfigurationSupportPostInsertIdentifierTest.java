@@ -36,7 +36,7 @@ public class FluentEntityMappingConfigurationSupportPostInsertIdentifierTest {
 	
 	@Test
 	void insert_basic() {
-		Persister<Car, Long, ?> carPersister = MappingEase.entityBuilder(Car.class, long.class)
+		IEntityPersister<Car, Long> carPersister = MappingEase.entityBuilder(Car.class, long.class)
 				.add(Car::getId).identifier(IdentifierPolicy.AFTER_INSERT)
 				.add(Car::getModel)
 				.build(persistenceContext);
@@ -64,7 +64,7 @@ public class FluentEntityMappingConfigurationSupportPostInsertIdentifierTest {
 	
 	@Test
 	void insert_oneToOne() {
-		Persister<Car, Long, ?> carPersister = entityBuilder(Car.class, long.class)
+		IEntityPersister<Car, Long> carPersister = entityBuilder(Car.class, long.class)
 				.add(Car::getId).identifier(IdentifierPolicy.AFTER_INSERT)
 				.add(Car::getModel)
 				.addOneToOne(Car::getEngine, entityBuilder(Engine.class, long.class)
@@ -108,13 +108,14 @@ public class FluentEntityMappingConfigurationSupportPostInsertIdentifierTest {
 				.mapInheritance(inheritanceConfiguration)
 				.getConfiguration();
 		
-		Persister<Car, Long, ?> carPersister = MappingEase
+		IEntityPersister<Car, Long> carPersister = MappingEase
 				.entityBuilder(Car.class, long.class)
 				.add(Car::getModel)
 				.mapInheritance(inheritanceConfiguration2)
 				.build(persistenceContext);
 		
-		assertEquals("Car", persistenceContext.getPersister(Vehicle.class).getMainTable().getName());
+		// by default inheritance is single_table one, to comply with default JPA inheritance strategy
+		assertEquals("Car", ((IConfiguredPersister) persistenceContext.getPersister(Vehicle.class)).getMappingStrategy().getTargetTable().getName());
 		
 		// DML tests
 		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
@@ -149,7 +150,7 @@ public class FluentEntityMappingConfigurationSupportPostInsertIdentifierTest {
 				.mapInheritance(inheritanceConfiguration).withJoinedTable()
 				.getConfiguration();
 		
-		Persister<Car, Long, ?> carPersister = MappingEase
+		IEntityPersister<Car, Long> carPersister = MappingEase
 				.entityBuilder(Car.class, long.class)
 				.add(Car::getModel)
 				.mapInheritance(inheritanceConfiguration2).withJoinedTable()
@@ -157,15 +158,15 @@ public class FluentEntityMappingConfigurationSupportPostInsertIdentifierTest {
 		
 		assertEquals(Arrays.asHashSet("Car", "Vehicle", "AbstractVehicle"),
 				DDLDeployer.collectTables(persistenceContext).stream().map(Table::getName).collect(Collectors.toSet()));
-		assertEquals("AbstractVehicle", persistenceContext.getPersister(AbstractVehicle.class).getMainTable().getName());
-		assertEquals("Vehicle", persistenceContext.getPersister(Vehicle.class).getMainTable().getName());
-		assertEquals("Car", persistenceContext.getPersister(Car.class).getMainTable().getName());
+		assertEquals("AbstractVehicle", ((IConfiguredPersister) persistenceContext.getPersister(AbstractVehicle.class)).getMappingStrategy().getTargetTable().getName());
+		assertEquals("Vehicle", ((IConfiguredPersister) persistenceContext.getPersister(Vehicle.class)).getMappingStrategy().getTargetTable().getName());
+		assertEquals("Car", ((IConfiguredPersister) persistenceContext.getPersister(Car.class)).getMappingStrategy().getTargetTable().getName());
 		
 		// DML tests
 		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
 		ddlDeployer.deployDDL();
 		
-		Car dummyCar = new Car(1L);
+		Car dummyCar = new Car(null);
 		dummyCar.setModel("Renault");
 		
 		// insert test

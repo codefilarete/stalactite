@@ -20,9 +20,11 @@ import org.gama.reflection.MutatorByMethodReference;
 import org.gama.reflection.ValueAccessPoint;
 import org.gama.reflection.ValueAccessPointByMethodReference;
 import org.gama.reflection.ValueAccessPointMap;
+import org.gama.stalactite.persistence.engine.IEntityPersister.EntityCriteria;
 import org.gama.stalactite.persistence.engine.RuntimeMappingException;
 import org.gama.stalactite.persistence.id.assembly.SimpleIdentifierAssembler;
 import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
+import org.gama.stalactite.persistence.mapping.IEntityMappingStrategy;
 import org.gama.stalactite.persistence.mapping.IdMappingStrategy;
 import org.gama.stalactite.persistence.mapping.SimpleIdMappingStrategy;
 import org.gama.stalactite.persistence.structure.Column;
@@ -36,7 +38,7 @@ import org.gama.stalactite.query.model.CriteriaChain;
  * @author Guillaume Mary
  * @see #registerRelation(ValueAccessPoint, ClassMappingStrategy) 
  */
-public class EntityCriteriaSupport<C> implements EntityCriteria<C> {
+public class EntityCriteriaSupport<C> implements RelationalEntityCriteria<C> {
 	
 	/** Delegate of the query : targets of the API methods */
 	private Criteria criteria = new Criteria();
@@ -44,17 +46,17 @@ public class EntityCriteriaSupport<C> implements EntityCriteria<C> {
 	/** Root of the property-mapping graph representation. Must be constructed with {@link #registerRelation(ValueAccessPoint, ClassMappingStrategy)} */
 	private final EntityGraphNode rootConfiguration;
 	
-	public <O> EntityCriteriaSupport(ClassMappingStrategy<C, ?, ?> mappingStrategy, SerializableFunction<C, O> getter, AbstractRelationalOperator<O> operator) {
+	public <O> EntityCriteriaSupport(IEntityMappingStrategy<C, ?, ?> mappingStrategy, SerializableFunction<C, O> getter, AbstractRelationalOperator<O> operator) {
 		this(mappingStrategy);
 		add(null, getter, operator);
 	}
 	
-	public <O> EntityCriteriaSupport(ClassMappingStrategy<C, ?, ?> mappingStrategy, SerializableBiConsumer<C, O> setter, AbstractRelationalOperator<O> operator) {
+	public <O> EntityCriteriaSupport(IEntityMappingStrategy<C, ?, ?> mappingStrategy, SerializableBiConsumer<C, O> setter, AbstractRelationalOperator<O> operator) {
 		this(mappingStrategy);
 		add(null, setter, operator);
 	}
 	
-	public EntityCriteriaSupport(ClassMappingStrategy<C, ?, ?> mappingStrategy) {
+	public EntityCriteriaSupport(IEntityMappingStrategy<C, ?, ?> mappingStrategy) {
 		this.rootConfiguration = new EntityGraphNode(mappingStrategy);
 	}
 	
@@ -150,7 +152,7 @@ public class EntityCriteriaSupport<C> implements EntityCriteria<C> {
 		private final Map<ValueAccessPoint, EntityGraphNode> relations = new ValueAccessPointMap<>();
 		
 		@VisibleForTesting
-		EntityGraphNode(ClassMappingStrategy<?, ?, ?> mappingStrategy) {
+		EntityGraphNode(IEntityMappingStrategy<?, ?, ?> mappingStrategy) {
 			propertyToColumn.putAll(mappingStrategy.getPropertyToColumn());
 			// we add the identifier and primary key because they are not in the property mapping 
 			IdMappingStrategy<?, ?> idMappingStrategy = mappingStrategy.getIdMappingStrategy();
@@ -158,7 +160,7 @@ public class EntityCriteriaSupport<C> implements EntityCriteria<C> {
 				Column primaryKey = ((SimpleIdentifierAssembler) idMappingStrategy.getIdentifierAssembler()).getColumn();
 				propertyToColumn.put(((SimpleIdMappingStrategy<?, ?>) idMappingStrategy).getIdAccessor().getIdAccessor(), primaryKey);
 			}
-			mappingStrategy.getMappingStrategies().forEach((k, v) ->
+			mappingStrategy.getEmbeddedBeanStrategies().forEach((k, v) ->
 					v.getPropertyToColumn().forEach((p, c) ->
 							propertyToColumn.put(new AccessorChain<>(k, p), c)
 					)
@@ -172,7 +174,7 @@ public class EntityCriteriaSupport<C> implements EntityCriteria<C> {
 		 * @param mappingStrategy a {@link ClassMappingStrategy}
 		 * @return a new {@link EntityGraphNode} containing
 		 */
-		public EntityGraphNode registerRelation(ValueAccessPoint relationProvider, ClassMappingStrategy<?, ?, ?> mappingStrategy) {
+		public EntityGraphNode registerRelation(ValueAccessPoint relationProvider, IEntityMappingStrategy<?, ?, ?> mappingStrategy) {
 			EntityGraphNode graphNode = new EntityGraphNode(mappingStrategy);
 			// the relation may already be present as a simple property because mapping strategy needs its column for insertion for example, but we
 			// won't need it anymore. Note that it should be removed when propertyToColumn is populated but we don't have the relation information
@@ -211,7 +213,7 @@ public class EntityCriteriaSupport<C> implements EntityCriteria<C> {
 				return embeddedColumn;
 			}
 			
-			Column column = getRelationColumn(accessPoints);
+			Column column = giveRelationColumn(accessPoints);
 			if (column != null) {
 				return column;
 			} else {
@@ -223,7 +225,7 @@ public class EntityCriteriaSupport<C> implements EntityCriteria<C> {
 			return this.propertyToColumn.get(toAccessorChain(accessPoints));
 		}
 		
-		private Column getRelationColumn(ValueAccessPointByMethodReference... accessPoints) {
+		private Column giveRelationColumn(ValueAccessPointByMethodReference... accessPoints) {
 			Deque<ValueAccessPoint> stack = new ArrayDeque<>();
 			stack.addAll(Arrays.asList(accessPoints));
 			EntityGraphNode currentNode = this;

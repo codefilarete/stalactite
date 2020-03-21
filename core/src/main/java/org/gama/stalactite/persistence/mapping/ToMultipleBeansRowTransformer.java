@@ -7,14 +7,15 @@ import java.util.Map.Entry;
 import org.gama.stalactite.sql.result.Row;
 
 /**
- * Class for transforming columns into multiple beans.
- * Some columns are given as markers for identifying entity. For each of these columns, a {@link IRowTransformer} must
- * be given (see constructor) which will be called to give an object (from the row)).
- * Before {@link IRowTransformer} is called, ask to a "cached instance" is done to see if an already existing one
- * should be reused. Usefull to construct an object graph (see {@link #assembly(Map)}. Cache is not part of this
- * class and must be implemented outside of it.
+ * Class for transforming a {@link Row} into multiple beans.
+ * Some columns are given as markers of bean identifier. For each of these columns, a {@link IRowTransformer} must
+ * be given (see constructor), which will be asked to tranform given row as a bean. Hence multiple beans can be created from the row.
+ * Finally, {@link #assemble(Map)} is called to finalize construction or assemble beans.
+ * 
+ * Before asking {@link IRowTransformer} for new bean, a check for a cached instance is done (through {@link #getCachedInstance(String, Object)})
+ * so one can reuse a bean to complete it : this is made to construct an object graph from several rows.
+ * Cache is not part of this class and must be implemented outside of it.
  * If the identifier (the value of a marked column) is null then {@link IRowTransformer} is not called.
- * Finally, for each row, {@link #assembly(Map)} is called to finalize construction of the transformed objects.
  *
  * @author Guillaume Mary
  */
@@ -56,7 +57,7 @@ public abstract class ToMultipleBeansRowTransformer<T> implements IRowTransforme
 			}
 		}
 		// ask for complementary actions
-		assembly(tranformedRow);
+		assemble(tranformedRow);
 		// we return the first object built, should be the same type as class generic types
 		return (T) tranformedRow.get(keyToReturn);
 	}
@@ -65,6 +66,6 @@ public abstract class ToMultipleBeansRowTransformer<T> implements IRowTransforme
 	
 	protected abstract void onNewObject(String key, Object o);
 	
-	protected abstract void assembly(Map<String, Object> rowAsObjects);
+	protected abstract void assemble(Map<String, Object> rowAsObjects);
 	
 }

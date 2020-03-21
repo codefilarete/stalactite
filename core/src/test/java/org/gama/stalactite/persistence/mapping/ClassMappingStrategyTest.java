@@ -7,6 +7,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Function;
 
 import org.gama.lang.Reflections;
 import org.gama.lang.collection.Arrays;
@@ -139,6 +140,11 @@ public class ClassMappingStrategyTest {
 			protected String toMapValue(String key, Object s) {
 				return s.toString();
 			}
+			
+			@Override
+			public AbstractTransformer<Map<String, String>> copyTransformerWithAliases(ColumnedRow columnedRow) {
+				return null;
+			}
 		});
 		
 		columnMapOnName = targetTable.mapColumnsOnName();
@@ -175,7 +181,7 @@ public class ClassMappingStrategyTest {
 	public static Object[][] testGetUpdateValues_diffOnly() {
 		setUpClass();
 		return new Object[][] {
-				{ new Toto(1, 2, 3), new Toto(1, 5, 6), Maps.asMap(colB, 2).add(colC, 3)}, 
+				{ new Toto(1, 2, 3), new Toto(1, 5, 6), Maps.asMap(colB, 2).add(colC, 3)},
 				{ new Toto(1, 2, 3), new Toto(1, null, null), Maps.asMap(colB, 2).add(colC, 3) },
 				{ new Toto(1, 2, 3), new Toto(1, 2, 42), Maps.asMap(colC, 3) },
 				{ new Toto(1, null, null), new Toto(1, 2, 3), Maps.asMap(colB, null).add(colC, null) },
@@ -256,11 +262,11 @@ public class ClassMappingStrategyTest {
 	public void testBeanKeyIsPresent() {
 		PropertyAccessor<Toto, Integer> identifierAccesor = Accessors.propertyAccessor(persistentFieldHarverster.getField("a"));
 		assertThrows(IllegalArgumentException.class, () -> new ClassMappingStrategy<>(Toto.class,
-				targetTable,
-				Maps.asMap(Accessors.propertyAccessor(Toto.class, "b"), colB),
-				// identifier is not present in previous statement so it leads to the expected exception
-				identifierAccesor,
-				new AlreadyAssignedIdentifierManager<>(Integer.class)),
+						targetTable,
+						Maps.asMap(Accessors.propertyAccessor(Toto.class, "b"), colB),
+						// identifier is not present in previous statement so it leads to the expected exception
+						identifierAccesor,
+						new AlreadyAssignedIdentifierManager<>(Integer.class)),
 				"Bean identifier '" + identifierAccesor + "' must have its matching column in the mapping");
 	}
 	
