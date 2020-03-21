@@ -97,7 +97,7 @@ public class TablePerClassPolymorphicSelectExecutor<C, I, T extends Table> imple
 					select(primaryKey, pkAlias)
 					.add("'"+ discriminatorValue +"' as " + discriminatorAlias)
 					.from(subEntityTable)
-					.where(primaryKey, Operators.in(ids)).getSelectQuery();
+					.where(primaryKey, Operators.in(ids)).getQuery();
 			SQLQueryBuilder sqlQueryBuilder = new SQLQueryBuilder(query);
 			PreparedSQL preparedSQL = sqlQueryBuilder.toPreparedSQL(columnBinderRegistry);
 			queries.add(preparedSQL);

@@ -312,7 +312,7 @@ public class PersistenceContext {
 												  Consumer<SelectMapping<C>> selectMapping,
 												  Consumer<CriteriaChain> where) {
 		Constructor constructor = new MethodReferenceCapturer().findConstructor(factory);
-		Query query = QueryEase.select(column).from(column.getTable()).getSelectQuery();
+		Query query = QueryEase.select(column).from(column.getTable()).getQuery();
 		where.accept(query.getWhere());
 		SelectMapping<C> selectMappingSupport = new SelectMapping<>();
 		selectMapping.accept(selectMappingSupport);
@@ -342,7 +342,7 @@ public class PersistenceContext {
 												  Consumer<SelectMapping<C>> selectMapping,
 												  Consumer<CriteriaChain> where) {
 		Constructor constructor = new MethodReferenceCapturer().findConstructor(factory);
-		Query query = QueryEase.select(column1,column2).from(column1.getTable()).getSelectQuery();
+		Query query = QueryEase.select(column1,column2).from(column1.getTable()).getQuery();
 		where.accept(query.getWhere());
 		SelectMapping<C> selectMappingSupport = new SelectMapping<>();
 		selectMapping.accept(selectMappingSupport);

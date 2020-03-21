@@ -74,7 +74,7 @@ public class JoinedTablesPolymorphismSelectExecutor<C, I, T extends Table> imple
 		Query query = QueryEase.
 				select(primaryKey, primaryKey.getAlias())
 				.from(mainTable)
-				.where(primaryKey, Operators.in(ids)).getSelectQuery();
+				.where(primaryKey, Operators.in(ids)).getQuery();
 		tablePerSubEntity.values().forEach(subTable -> {
 			Column subclassPrimaryKey = Iterables.first(
 					(Set<Column>) subTable.getPrimaryKey().getColumns());

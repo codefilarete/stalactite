@@ -97,7 +97,7 @@ class FluentEntityMappingConfigurationSupportIndexedCollectionTest {
 				new Choice(30L)));
 		questionPersister.insert(newQuestion);
 		
-		List<Result> persistedChoices = persistenceContext.newQuery(select(id, idx).from(choiceTable).getSelectQuery().orderBy(id), Result.class)
+		List<Result> persistedChoices = persistenceContext.newQuery(select(id, idx).from(choiceTable).orderBy(id), Result.class)
 				.mapKey(Result::new, id)
 				.map(idx, (SerializableBiConsumer<Result, Integer>) Result::setIdx)
 				.execute();
@@ -127,7 +127,7 @@ class FluentEntityMappingConfigurationSupportIndexedCollectionTest {
 			modifiedQuestion.setChoices(Arrays.asList(choice2, choice1, choice3));
 			
 			questionPersister.update(modifiedQuestion, newQuestion, true);
-			List<Result> persistedChoices = persistenceContext.newQuery(select(id, idx).from(choiceTable).getSelectQuery().orderBy(id), Result.class)
+			List<Result> persistedChoices = persistenceContext.newQuery(select(id, idx).from(choiceTable).orderBy(id), Result.class)
 					.mapKey(Result::new, id)
 					.map(idx, (SerializableBiConsumer<Result, Integer>) Result::setIdx)
 					.execute();
@@ -157,7 +157,7 @@ class FluentEntityMappingConfigurationSupportIndexedCollectionTest {
 			questionPersister.update(modifiedQuestion, newQuestion, true);
 			// No change on List so no call to listener
 			verifyNoMoreInteractions(updateListener);
-			List<Result> persistedChoices = persistenceContext.newQuery(select(id, idx).from(choiceTable).getSelectQuery().orderBy(id), Result.class)
+			List<Result> persistedChoices = persistenceContext.newQuery(select(id, idx).from(choiceTable).orderBy(id), Result.class)
 					.mapKey(Result::new, id)
 					.map(idx, (SerializableBiConsumer<Result, Integer>) Result::setIdx)
 					.execute();
@@ -185,7 +185,7 @@ class FluentEntityMappingConfigurationSupportIndexedCollectionTest {
 			modifiedQuestion.setChoices(Arrays.asList(choice3, choice4, choice2, choice1));
 			
 			questionPersister.update(modifiedQuestion, newQuestion, true);
-			List<Result> persistedChoices = persistenceContext.newQuery(select(id, idx).from(choiceTable).getSelectQuery().orderBy(id), Result.class)
+			List<Result> persistedChoices = persistenceContext.newQuery(select(id, idx).from(choiceTable).orderBy(id), Result.class)
 					.mapKey(Result::new, id)
 					.map(idx, (SerializableBiConsumer<Result, Integer>) Result::setIdx)
 					.execute();
@@ -214,7 +214,7 @@ class FluentEntityMappingConfigurationSupportIndexedCollectionTest {
 			modifiedQuestion.setChoices(Arrays.asList(choice3Copy, choice1Copy));
 			
 			questionPersister.update(modifiedQuestion, newQuestion, true);
-			List<Result> persistedChoices = persistenceContext.newQuery(select(id, idx).from(choiceTable).getSelectQuery().orderBy(id), Result.class)
+			List<Result> persistedChoices = persistenceContext.newQuery(select(id, idx).from(choiceTable).orderBy(id), Result.class)
 					.mapKey(Result::new, id)
 					.map(idx, (SerializableBiConsumer<Result, Integer>) Result::setIdx)
 					.execute();
@@ -245,7 +245,7 @@ class FluentEntityMappingConfigurationSupportIndexedCollectionTest {
 			modifiedQuestion.setChoices(Arrays.asList(choice3, choice1));
 			
 			questionPersister.update(modifiedQuestion, newQuestion, true);
-			List<Result> persistedChoices = persistenceContext.newQuery(select(id, idx).from(choiceTable).getSelectQuery().orderBy(id), Result.class)
+			List<Result> persistedChoices = persistenceContext.newQuery(select(id, idx).from(choiceTable).orderBy(id), Result.class)
 					.mapKey(Result::new, id)
 					.map(idx, (SerializableBiConsumer<Result, Integer>) Result::setIdx)
 					.execute();
@@ -457,7 +457,7 @@ class FluentEntityMappingConfigurationSupportIndexedCollectionTest {
 			
 			ExecutableSelect<RawAnswer> query = persistenceContext.newQuery(
 					select(answerChoicesTableId, answerChoicesTableIdx, answerChoicesTableChoiceId)
-							.from(answerChoicesTable).getSelectQuery().orderBy(answerChoicesTableIdx), RawAnswer.class);
+							.from(answerChoicesTable).orderBy(answerChoicesTableIdx), RawAnswer.class);
 			List<RawAnswer> persistedChoices = query
 					.mapKey(RawAnswer::new, answerChoicesTableId, answerChoicesTableIdx, answerChoicesTableChoiceId)
 					.execute();
@@ -588,7 +588,7 @@ class FluentEntityMappingConfigurationSupportIndexedCollectionTest {
 			assertEquals(1, deletedAnswerCount);
 			
 			Table answerChoicesTable = duplicatesTestData.getAnswerChoicesTable();
-			List<Long> persistedChoices = persistenceContext.newQuery(select("count(*) as c").from(answerChoicesTable).getSelectQuery(), Long.class)
+			List<Long> persistedChoices = persistenceContext.newQuery(select("count(*) as c").from(answerChoicesTable).getQuery(), Long.class)
 					.mapKey(SerializableFunction.identity(), "c", long.class)
 					.execute();
 			assertEquals((Long) 0L, persistedChoices.get(0));
@@ -640,7 +640,7 @@ class FluentEntityMappingConfigurationSupportIndexedCollectionTest {
 			
 			ExecutableSelect<RawAnswer> query = persistenceContext.newQuery(
 					select(answerChoicesTableId, answerChoicesTableIdx, answerChoicesTableChoiceId)
-							.from(answerChoicesTable).getSelectQuery().orderBy(answerChoicesTableIdx), RawAnswer.class);
+							.from(answerChoicesTable).orderBy(answerChoicesTableIdx), RawAnswer.class);
 			List<RawAnswer> persistedChoices = query
 					.mapKey(RawAnswer::new, answerChoicesTableId, answerChoicesTableIdx, answerChoicesTableChoiceId)
 					.execute();
@@ -655,7 +655,7 @@ class FluentEntityMappingConfigurationSupportIndexedCollectionTest {
 			
 			query = persistenceContext.newQuery(
 					select(answerChoicesTableId, answerChoicesTableIdx, answerChoicesTableChoiceId)
-							.from(answerChoicesTable).getSelectQuery().orderBy(answerChoicesTableIdx), RawAnswer.class);
+							.from(answerChoicesTable).orderBy(answerChoicesTableIdx), RawAnswer.class);
 			persistedChoices = query
 					.mapKey(RawAnswer::new, answerChoicesTableId, answerChoicesTableIdx, answerChoicesTableChoiceId)
 					.execute();
@@ -990,7 +990,7 @@ class FluentEntityMappingConfigurationSupportIndexedCollectionTest {
 			// creating initial state
 			questionPersister.insert(newQuestion);
 			
-			List<Result> persistedChoices = persistenceContext.newQuery(select(id, idx).from(choiceTable).getSelectQuery().orderBy(id), Result.class)
+			List<Result> persistedChoices = persistenceContext.newQuery(select(id, idx).from(choiceTable).orderBy(id), Result.class)
 					.mapKey(Result::new, id)
 					.map(idx, (SerializableBiConsumer<Result, Integer>) Result::setIdx)
 					.execute();

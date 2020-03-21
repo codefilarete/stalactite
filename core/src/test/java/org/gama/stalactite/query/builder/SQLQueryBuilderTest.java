@@ -107,7 +107,7 @@ public class SQLQueryBuilderTest {
 	@ParameterizedTest
 	@MethodSource("testToSQL_data")
 	public void testToSQL(QueryProvider queryProvider, String expected) {
-		SQLQueryBuilder testInstance = new SQLQueryBuilder(queryProvider.getSelectQuery());
+		SQLQueryBuilder testInstance = new SQLQueryBuilder(queryProvider.getQuery());
 		assertEquals(expected, testInstance.toSQL());
 	}
 	

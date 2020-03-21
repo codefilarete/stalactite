@@ -99,7 +99,7 @@ public class TablePerClassPolymorphicEntitySelectExecutor<C, I, T extends Table>
 					select(primaryKey, pkAlias)
 					.add("'"+ discriminatorValue +"' as " + discriminatorAlias)
 					.from(subEntityTable)
-					.getSelectQuery();
+					.getQuery();
 			
 			Where projectedWhere = new Where();
 			for(AbstractCriterion c : ((CriteriaChain<?>) where)) {

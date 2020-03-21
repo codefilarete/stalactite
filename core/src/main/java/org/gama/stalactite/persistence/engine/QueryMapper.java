@@ -20,6 +20,9 @@ import org.gama.lang.collection.KeepOrderSet;
 import org.gama.lang.function.SerializableTriFunction;
 import org.gama.lang.function.ThrowingConverter;
 import org.gama.reflection.MethodReferenceCapturer;
+import org.gama.stalactite.persistence.sql.dml.binder.ColumnBinderRegistry;
+import org.gama.stalactite.persistence.structure.Table;
+import org.gama.stalactite.query.builder.SQLBuilder;
 import org.gama.stalactite.sql.ConnectionProvider;
 import org.gama.stalactite.sql.binder.ParameterBinder;
 import org.gama.stalactite.sql.dml.ReadOperation;
@@ -29,9 +32,6 @@ import org.gama.stalactite.sql.result.ResultSetConverterSupport;
 import org.gama.stalactite.sql.result.ResultSetRowAssembler;
 import org.gama.stalactite.sql.result.ResultSetRowConverter;
 import org.gama.stalactite.sql.result.SingleColumnReader;
-import org.gama.stalactite.persistence.sql.dml.binder.ColumnBinderRegistry;
-import org.gama.stalactite.persistence.structure.Table;
-import org.gama.stalactite.query.builder.SQLBuilder;
 
 import static org.gama.stalactite.sql.binder.NullAwareParameterBinder.ALWAYS_SET_NULL_INSTANCE;
 

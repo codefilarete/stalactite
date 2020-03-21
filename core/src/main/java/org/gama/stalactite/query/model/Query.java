@@ -44,6 +44,8 @@ public class Query implements FromAware, WhereAware, HavingAware, OrderByAware, 
 		this.from = new MethodDispatcher()
 				.redirect(JoinChain.class, fromSurrogate, true)
 				.redirect(WhereAware.class, this)
+				.redirect(GroupByAware.class, this)
+				.redirect(OrderByAware.class, this)
 				.redirect(LimitAware.class, this)
 				.redirect(QueryProvider.class, this)
 				.build(FluentFrom.class);
@@ -238,7 +240,7 @@ public class Query implements FromAware, WhereAware, HavingAware, OrderByAware, 
 	}
 	
 	@Override
-	public Query getSelectQuery() {
+	public Query getQuery() {
 		return this;
 	}
 	
@@ -291,7 +293,7 @@ public class Query implements FromAware, WhereAware, HavingAware, OrderByAware, 
 		
 	}
 	
-	public interface FluentFrom extends JoinChain<FluentFrom>, WhereAware, LimitAware, QueryProvider {
+	public interface FluentFrom extends JoinChain<FluentFrom>, WhereAware, GroupByAware, OrderByAware, LimitAware, QueryProvider {
 		
 	}
 	

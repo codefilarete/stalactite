@@ -32,12 +32,12 @@ public class SQLQueryBuilder implements SQLBuilder, PreparedSQLBuilder {
 	private final WhereBuilder havingBuilder;
 	
 	/**
-	 * Constructor to be combined with result of {@link Query} methods for a short writing, because it avoids calling {@link QueryProvider#getSelectQuery()} 
+	 * Constructor to be combined with result of {@link Query} methods for a short writing, because it avoids calling {@link QueryProvider#getQuery()} 
 	 * 
 	 * @param query a {@link QueryProvider}
 	 */
 	public SQLQueryBuilder(QueryProvider query) {
-		this(query.getSelectQuery());
+		this(query.getQuery());
 	}
 	
 	/**
