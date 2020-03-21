@@ -10,6 +10,7 @@ import org.gama.lang.collection.Arrays;
 import org.gama.lang.collection.Iterables;
 import org.gama.lang.collection.Maps;
 import org.gama.lang.exception.Exceptions;
+import org.gama.stalactite.sql.ConnectionProvider;
 import org.gama.stalactite.sql.result.InMemoryResultSet;
 import org.gama.stalactite.persistence.sql.dml.binder.ColumnBinderRegistry;
 import org.gama.stalactite.persistence.structure.Column;
@@ -32,7 +33,10 @@ import static org.mockito.Mockito.when;
  */
 public class QueryMapperTest {
 	
-	public static Object[][] testNewQuery() {
+	/**
+	 * @return a {@link QueryMapper} as first argument and expected {@link Toto} built bean instance as second
+	 */
+	public static Object[][] queryMapperAPI_basicUsage() {
 		ColumnBinderRegistry columnBinderRegistry = new ColumnBinderRegistry();
 		Table totoTable = new Table<>("Toto");
 		Column<Table, Long> id = totoTable.addColumn("id", Long.class).primaryKey();
@@ -45,6 +49,7 @@ public class QueryMapperTest {
 		);
 		
 		String dummySql = "never executed statement";
+		// we use different ways of mapping the same thing
 		return new Object[][] {
 				{	// default API: constructor with 1 arg, column name, column type
 					new QueryMapper<>(Toto.class, dummySql, columnBinderRegistry)
@@ -94,8 +99,8 @@ public class QueryMapperTest {
 	}
 	
 	@ParameterizedTest
-	@MethodSource("testNewQuery")
-	public void testNewQuery(QueryMapper<Toto> queryMapper, List<Toto> expected) {
+	@MethodSource("queryMapperAPI_basicUsage")
+	public void queryMapperAPI_basicUsage(QueryMapper<Toto> queryMapper, List<Toto> expected) {
 		List<Map<String, Object>> resultSetData = Arrays.asList(
 				Maps.asHashMap("id", (Object) 42L).add("name", "coucou").add("active", true),
 				Maps.asHashMap("id", (Object) 43L).add("name", "hello").add("active", false)
@@ -106,7 +111,7 @@ public class QueryMapperTest {
 		assertEquals(expected.toString(), result.toString());
 	}
 	
-	public static Object[][] testNewQuery_withConverter() {
+	public static Object[][] queryMapperAPI_basicUsageWithConverter() {
 		ColumnBinderRegistry columnBinderRegistry = new ColumnBinderRegistry();
 		Table toto = new Table<>("Toto");
 		Column<Table, Long> id = toto.addColumn("id", Long.class).primaryKey();
@@ -126,7 +131,7 @@ public class QueryMapperTest {
 	}
 	
 	@ParameterizedTest
-	@MethodSource("testNewQuery_withConverter")
+	@MethodSource("queryMapperAPI_basicUsageWithConverter")
 	public void testNewQuery_withConverter(QueryMapper<Toto> queryMapper) {
 		List<Map<String, Object>> resultSetData = Arrays.asList(
 				Maps.asHashMap("id", (Object) 42L).add("name", "ghoeihvoih").add("active", false),
@@ -142,6 +147,13 @@ public class QueryMapperTest {
 		assertEquals(expected.toString(), result.toString());
 	}
 	
+	/**
+	 * Invokes {@link QueryMapper#execute(ConnectionProvider)} with given parameters, made only mutualize code
+	 * 
+	 * @param queryMapper query to execute
+	 * @param resultSetData data to be returned by connection statement
+	 * @return bean instances created by {@link QueryMapper#execute(ConnectionProvider)} 
+	 */
 	private List<Toto> invokeExecuteWithData(QueryMapper<Toto> queryMapper, List<Map<String, Object>> resultSetData) {
 		// creation of a Connection that will give our test case data
 		Connection connectionMock = mock(Connection.class);
@@ -158,7 +170,7 @@ public class QueryMapperTest {
 	}
 	
 	@Test
-	public void testWithParameter() throws SQLException {
+	public void execute_instanceHasParameter() throws SQLException {
 		ColumnBinderRegistry columnBinderRegistry = new ColumnBinderRegistry();
 		// NB: SQL String is there only for clarification but is never executed
 		QueryMapper<Toto> queryMapper = new QueryMapper<>(Toto.class, "select id, name from Toto where id in (:id)", columnBinderRegistry)
@@ -191,7 +203,7 @@ public class QueryMapperTest {
 	}
 	
 	@Test
-	public void testWithAssembler() {
+	public void execute_instanceHasAssembler() {
 		ColumnBinderRegistry columnBinderRegistry = new ColumnBinderRegistry();
 		QueryMapper<Toto> queryMapper = new QueryMapper<>(Toto.class, "select id, name from Toto", columnBinderRegistry)
 				.mapKey(Toto::new, "id", Toto::setId)
