@@ -1,6 +1,7 @@
 package org.gama.stalactite.sql.result;
 
-import org.gama.lang.function.ThrowingFunction;
+import java.util.function.Function;
+
 import org.gama.lang.trace.ModifiableInt;
 import org.junit.jupiter.api.Test;
 
@@ -15,7 +16,7 @@ class SimpleBeanCacheTest {
 	void testComputeIfAbsent() {
 		SimpleBeanCache testInstance = new SimpleBeanCache();
 		ModifiableInt factoryCallCounter = new ModifiableInt();
-		ThrowingFunction<Integer, String, RuntimeException> capturingFactory = key -> {
+		Function<Integer, String> capturingFactory = key -> {
 			factoryCallCounter.increment();
 			return "hello " + key;
 		};
@@ -36,7 +37,7 @@ class SimpleBeanCacheTest {
 	void testComputeIfAbsent_ArrayAsKeySafety() {
 		SimpleBeanCache testInstance = new SimpleBeanCache();
 		ModifiableInt factoryCallCounter = new ModifiableInt();
-		ThrowingFunction<Object[], String, RuntimeException> capturingFactory = key -> {
+		Function<Object[], String> capturingFactory = key -> {
 			factoryCallCounter.increment();
 			return "hello";
 		};

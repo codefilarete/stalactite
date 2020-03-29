@@ -4,14 +4,13 @@ import javax.annotation.Nonnull;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
-
-import org.gama.lang.function.ThrowingFunction;
+import java.util.function.Function;
 
 /**
  * Simple class to ease access or creation to entity from the cache.
  * A cache organized per bean class, then per bean identifier.
  *
- * @see #computeIfAbsent(Class, Object, ThrowingFunction)
+ * @see #computeIfAbsent(Class, Object, Function)
  */
 public final class SimpleBeanCache {
 	
@@ -34,7 +33,7 @@ public final class SimpleBeanCache {
 	}
 	
 	/**
-	 * Main class that tries to retrieve an entity by its class and identifier or instanciates it and put it into the cache
+	 * Main method that tries to retrieve an entity by its class and identifier or instanciates it and put it into the cache
 	 *
 	 * @param clazz the type of the entity
 	 * @param identifier the identifier of the entity (Long, String, ...),
@@ -42,7 +41,7 @@ public final class SimpleBeanCache {
 	 * @param factory the "method" that will be called to create the entity when the entity is not in the cache
 	 * @return the existing instance in the cache or a new object
 	 */
-	public <E extends Throwable, C, I> C computeIfAbsent(Class<C> clazz, @Nonnull I identifier, ThrowingFunction<I, C, E> factory) throws E {
+	public <E extends Throwable, C, I> C computeIfAbsent(Class<C> clazz, @Nonnull I identifier, Function<I, C> factory) throws E {
 		BeanKey key;
 		if (identifier.getClass().isArray()) {
 			// NB: we must cast into Object[] to avoid the JVM to wrap the identifier into an array of Object due to varargs constructor
@@ -66,9 +65,12 @@ public final class SimpleBeanCache {
 	private static class BeanKey {
 		
 		private final Object[] keys;
+		/** array hashCode, introduced for optimization: prevent from computing it at each hashCode() method call */
+		private final int hashCode;
 		
 		private BeanKey(Object ... keys) {
 			this.keys = keys;
+			this.hashCode = Arrays.hashCode(keys);;
 		}
 		
 		@Override
@@ -81,7 +83,7 @@ public final class SimpleBeanCache {
 		
 		@Override
 		public int hashCode() {
-			return Arrays.hashCode(keys);
+			return hashCode;
 		}
 	}
 }

@@ -21,12 +21,12 @@ public class InMemoryResultSet extends NoopResultSet {
 	
 	private Map<String, Object> currentRow;
 	
-	public InMemoryResultSet(Iterable<Map<String, Object>> data) {
+	public InMemoryResultSet(Iterable<? extends Map<? extends String, ? extends Object>> data) {
 		this(data.iterator());
 	}
 	
-	public InMemoryResultSet(Iterator<Map<String, Object>> data) {
-		this.data = data;
+	public InMemoryResultSet(Iterator<? extends Map<? extends String, ? extends Object>> data) {
+		this.data = (Iterator<Map<String, Object>>) data;
 	}
 	
 	@Override

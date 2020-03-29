@@ -2,13 +2,16 @@ package org.gama.stalactite.sql.result;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.function.Function;
+
+import org.gama.lang.exception.NotImplementedException;
 
 /**
- * Basic contract to assemble
+ * Basic contract to complete a bean from a {@link ResultSet} row.
  * 
  * @author Guillaume Mary
  */
-public interface ResultSetRowAssembler<T> {
+public interface ResultSetRowAssembler<T> extends CopiableForAnotherQuery<T> {
 	
 	/**
 	 * Expected to read columns from given {@link ResultSet} which is positioned on a row (not before first read, neither after last) 
@@ -18,4 +21,11 @@ public interface ResultSetRowAssembler<T> {
 	 * @throws SQLException this returned by {@link ResultSet} read
 	 */
 	void assemble(T rootBean, ResultSet resultSet) throws SQLException;
+	
+	/**
+	 * Overriden for return type cast.
+	 */
+	default ResultSetRowAssembler<T> copyWithAliases(Function<String, String> columnMapping) {
+		throw new NotImplementedException("This instance doesn't support copy, please implement it if you wish to reuse its mapping for another query");
+	}
 }

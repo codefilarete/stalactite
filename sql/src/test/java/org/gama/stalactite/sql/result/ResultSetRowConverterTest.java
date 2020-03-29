@@ -2,6 +2,7 @@ package org.gama.stalactite.sql.result;
 
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 
 import org.gama.lang.bean.Objects;
@@ -21,7 +22,7 @@ import static org.junit.jupiter.api.Assertions.assertNotSame;
 public class ResultSetRowConverterTest {
 	
 	@Test
-	public void testConvert_basicUseCase() throws SQLException {
+	public void testTransform_basicUseCase() throws SQLException {
 		// Binding column "vehicleType" to the constructor of Car
 		ResultSetRowConverter<String, Car> testInstance = new ResultSetRowConverter<>(Car.class, "vehicleType", STRING_READER, Car::new);
 		// Adding a column to fill the bean
@@ -35,48 +36,48 @@ public class ResultSetRowConverterTest {
 		));
 		
 		resultSet.next();
-		Car vehicle1 = testInstance.convert(resultSet);
+		Car vehicle1 = testInstance.transform(resultSet);
 		assertEquals("bicycle", vehicle1.getName());
 		assertEquals(2, vehicle1.getWheelCount());
 		resultSet.next();
-		Car vehicle2 = testInstance.convert(resultSet);
+		Car vehicle2 = testInstance.transform(resultSet);
 		assertEquals("moto", vehicle2.getName());
 		assertEquals(2, vehicle2.getWheelCount());
 		resultSet.next();
-		Car vehicle3 = testInstance.convert(resultSet);
+		Car vehicle3 = testInstance.transform(resultSet);
 		assertEquals("car", vehicle3.getName());
 		assertEquals(4, vehicle3.getWheelCount());
 		resultSet.next();
-		Car vehicle4 = testInstance.convert(resultSet);
+		Car vehicle4 = testInstance.transform(resultSet);
 		assertEquals("car", vehicle4.getName());
 		// vehicle3 and vehicle4 shouldn't be the same despite their identical name
 		assertNotSame(vehicle4, vehicle3);
 	}
 	
 	@Test
-	public void testConvert_basicUseCase2() throws SQLException {
+	public void testTransform_basicUseCase_complexConsumer() throws SQLException {
 		// The default ModifiableInt that takes its value from "a". Reinstanciated on each row.
 		ResultSetRowConverter<Integer, ModifiableInt> testInstance = new ResultSetRowConverter<>(ModifiableInt.class, "a", INTEGER_READER, ModifiableInt::new);
 		// The secondary that will increment the same ModifiableInt by column "b" value
 		testInstance.add(new ColumnConsumer<>("b", INTEGER_READER, (t, i) -> t.increment(Objects.preventNull(i, 0))));
 		
 		InMemoryResultSet resultSet = new InMemoryResultSet(Arrays.asList(
-				Maps.asMap("a", (Object) 42).add("b", 1),
-				Maps.asMap("a", (Object) 666).add("b", null)
+				Maps.forHashMap(String.class, Object.class).add("a", 42).add("b", 1),
+				Maps.forHashMap(String.class, Object.class).add("a", 666).add("b", null)
 		));
 		
 		resultSet.next();
-		assertEquals(43, testInstance.convert(resultSet).getValue());
+		assertEquals(43, testInstance.transform(resultSet).getValue());
 		resultSet.next();
 		// no change on this one because "b" column is null on the row and we took null into account during incrementation
-		assertEquals(666, testInstance.convert(resultSet).getValue());
+		assertEquals(666, testInstance.transform(resultSet).getValue());
 	}
 	
 	/**
 	 * A test based on an {@link ModifiableInt} that would take its value from a {@link java.sql.ResultSet}
 	 */
 	@Test
-	public void testConvert_shareInstanceOverRows() throws SQLException {
+	public void testTransform_shareInstanceOverRows() throws SQLException {
 		// The default ModifiableInt that takes its value from "a". Shared over rows (class attribute)
 		ModifiableInt sharedInstance = new ModifiableInt(0);
 		ResultSetRowConverter<Integer, ModifiableInt> testInstance = new ResultSetRowConverter<>(ModifiableInt.class, "a", INTEGER_READER, i -> {
@@ -84,18 +85,18 @@ public class ResultSetRowConverterTest {
 			return sharedInstance;
 		});
 		// The secondary that will increment the same ModifiableInt by column "b" value
-		testInstance.add(new ColumnConsumer<>("b", INTEGER_READER, (t, i) -> sharedInstance.increment(Objects.preventNull(i, 0))));
+		testInstance.add(new ColumnConsumer<>("b", INTEGER_READER, (t, i) -> t.increment(Objects.preventNull(i, 0))));
 		
 		InMemoryResultSet resultSet = new InMemoryResultSet(Arrays.asList(
-				Maps.asMap("a", (Object) 42).add("b", 1),
-				Maps.asMap("a", (Object) 666).add("b", null)
+				Maps.forHashMap(String.class, Object.class).add("a", 42).add("b", 1),
+				Maps.forHashMap(String.class, Object.class).add("a", 666).add("b", null)
 		));
 		
 		resultSet.next();
-		assertEquals(43, testInstance.convert(resultSet).getValue());
+		assertEquals(43, testInstance.transform(resultSet).getValue());
 		resultSet.next();
 		// no change on this one because "b" column is null on the row and we took null into account during incrementation
-		assertEquals(709, testInstance.convert(resultSet).getValue());
+		assertEquals(709, testInstance.transform(resultSet).getValue());
 	}
 	
 	
@@ -111,15 +112,15 @@ public class ResultSetRowConverterTest {
 		assertNotSame(sourceInstance, testInstance);
 		
 		InMemoryResultSet resultSet = new InMemoryResultSet(Arrays.asList(
-				Maps.asMap("x", (Object) 42).add("y", 1),
-				Maps.asMap("x", (Object) 666).add("y", null)
+				Maps.forHashMap(String.class, Object.class).add("x", 42).add("y", 1),
+				Maps.forHashMap(String.class, Object.class).add("x", 666).add("y", null)
 		));
 		
 		resultSet.next();
-		assertEquals(43, testInstance.convert(resultSet).getValue());
+		assertEquals(43, testInstance.transform(resultSet).getValue());
 		resultSet.next();
 		// no change on this one because "b" column is null on the row and we took null into account during incrementation
-		assertEquals(666, testInstance.convert(resultSet).getValue());
+		assertEquals(666, testInstance.transform(resultSet).getValue());
 	}
 	
 	@Test
@@ -131,11 +132,11 @@ public class ResultSetRowConverterTest {
 		testInstance.add(new ColumnConsumer<>("wheels", INTEGER_READER, Car::setWheelCount));
 		
 		InMemoryResultSet resultSet = new InMemoryResultSet(Arrays.asList(
-				Maps.asMap("name", (Object) "peugeot").add("wheels", 4).add("color", "red")
+				Maps.forHashMap(String.class, Object.class).add("name", "peugeot").add("wheels", 4).add("color", "red")
 		));
 		
 		resultSet.next();
-		Car result = testInstance.convert(resultSet);
+		Car result = testInstance.transform(resultSet);
 		assertEquals("peugeot", result.getName());
 		assertEquals(4, result.getWheelCount());
 		assertEquals("red", result.getColor());
@@ -149,13 +150,13 @@ public class ResultSetRowConverterTest {
 		testInstance.add("address2", STRING_READER, Person::getAddresses, Person::setAddresses, ArrayList::new);
 		
 		InMemoryResultSet resultSet = new InMemoryResultSet(Arrays.asList(
-				Maps.asMap("name", (Object) "paul").add("address1", "rue Vaudirard").add("address2", "rue Menon")
+				Maps.forHashMap(String.class, String.class).add("name", "paul").add("address1", "rue Vaugirard").add("address2", "rue Menon")
 		));
 		
 		resultSet.next();
-		Person result = testInstance.convert(resultSet);
+		Person result = testInstance.transform(resultSet);
 		assertEquals("paul", result.getName());
-		assertEquals(Arrays.asList("rue Vaudirard", "rue Menon"), result.getAddresses());
+		assertEquals(Arrays.asSet("rue Vaugirard", "rue Menon"), new HashSet<>(result.getAddresses()));
 	}
 	
 	private static class Vehicle {

@@ -8,6 +8,7 @@ import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
+import org.gama.lang.exception.NotImplementedException;
 import org.gama.stalactite.sql.binder.ResultSetReader;
 
 /**
@@ -15,7 +16,7 @@ import org.gama.stalactite.sql.binder.ResultSetReader;
  * @param <C> the type of beans
  * @author Guillaume Mary
  */
-public interface ResultSetConverter<I, C> {
+public interface ResultSetConverter<I, C> extends CopiableForAnotherQuery<C> {
 	
 	/**
 	 * Defines a complementary column that will be mapped on a bean property.
@@ -49,8 +50,11 @@ public interface ResultSetConverter<I, C> {
 	 * @param <V> the type of the read value, must be compatible with the bean property input
 	 * @param <U> the collection type
 	 */
-	default <V, U extends Collection<V>> void add(String columnName, ResultSetReader<V> reader,
-												  Function<C, U> collectionAccessor, BiConsumer<C, U> collectionMutator, Supplier<U> collectionFactory) {
+	default <V, U extends Collection<V>> void add(String columnName,
+												  ResultSetReader<V> reader,
+												  Function<C, U> collectionAccessor,
+												  BiConsumer<C, U> collectionMutator,
+												  Supplier<U> collectionFactory) {
 		add(new ColumnConsumer<>(columnName, reader, (c, v) -> {
 			U collection = collectionAccessor.apply(c);
 			if (collection == null) {
@@ -70,9 +74,9 @@ public interface ResultSetConverter<I, C> {
 	 * @throws SQLException due to {@link ResultSet} reading
 	 */
 	C transform(ResultSet resultSet) throws SQLException;
-	
+
 	/**
-	 * Clones this for another type of bean.
+	 * Clones this instance for another type of bean.
 	 * Usefull to map a bean inheriting from another because it avoids redeclaration of common column mapping. Then after cloning this, all that's
 	 * left is to register specific columns of the inheritant bean.
 	 * 
@@ -84,19 +88,15 @@ public interface ResultSetConverter<I, C> {
 	<T extends C> ResultSetConverter<I, T> copyFor(Class<T> beanType, Function<I, T> beanFactory);
 	
 	/**
-	 * Makes a copy of this instance with column translation.
-	 * Made to reuse this instance on another kind of {@link ResultSet} on which column differs by their column names.
-	 * 
-	 * @param columnMapping a {@link Function} that gives a new column name for each one declared with {@link #add(String, ResultSetReader, BiConsumer)}.
-	 * 						Can be implemented with a switch/case, a prefix/suffix concatenation, etc
-	 * @return a new instance, kind of clone of this
+	 * Overriden for return type cast.
 	 */
-	ResultSetConverter<I, C> copyWithAliases(Function<String, String> columnMapping);
+	@Override
+	default ResultSetConverter<I, C> copyWithAliases(Function<String, String> columnMapping) {
+		throw new NotImplementedException("This instance doesn't support copy, please implement it if you wish to reuse its mapping for another query");
+	}
 	
 	/**
-	 * Same as {@link #copyWithAliases(Function)} but with a concrete mapping through a {@link Map}
-	 * @param columnMapping the mapping between column names declared by {@link #add(String, ResultSetReader, BiConsumer)} and new ones
-	 * @return a new instance, kind of clone of this
+	 * Overriden for return type cast.
 	 */
 	default ResultSetConverter<I, C> copyWithAliases(Map<String, String> columnMapping) {
 		return copyWithAliases(columnMapping::get);

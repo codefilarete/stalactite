@@ -1,7 +1,6 @@
 package org.gama.stalactite.sql.result;
 
 import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 
@@ -19,17 +18,17 @@ import org.gama.stalactite.sql.binder.ResultSetReader;
 public class ColumnConsumer<C, I> implements ResultSetRowAssembler<C> {
 	
 	private final ColumnReader<I> reader;
-	private final BiConsumer<C, I> consumer;
+	private final BiConsumer<C, I> propertySetter;
 	
 	/**
 	 * General constructor which accept {@link SingleColumnReader} or {@link MultipleColumnsReader} 
 	 * 
 	 * @param reader any {@link SingleColumnReader} or {@link MultipleColumnsReader}
-	 * @param consumer a consumer that can create a bean from its identifier
+	 * @param propertySetter a consumer that is expected to set a property of a bean with value given by reader
 	 */
-	public ColumnConsumer(ColumnReader<I> reader, BiConsumer<C, I> consumer) {
+	public ColumnConsumer(ColumnReader<I> reader, BiConsumer<C, I> propertySetter) {
 		this.reader = reader;
-		this.consumer = consumer;
+		this.propertySetter = propertySetter;
 	}
 	
 	/**
@@ -37,10 +36,10 @@ public class ColumnConsumer<C, I> implements ResultSetRowAssembler<C> {
 	 * 
 	 * @param columnName the column name to be read
 	 * @param reader column type reader
-	 * @param consumer a consumer that can create a bean from its identifier
+	 * @param propertySetter a consumer that is expected to set a property of a bean with value given by reader
 	 */
-	public ColumnConsumer(String columnName, ResultSetReader<I> reader, BiConsumer<C, I> consumer) {
-		this(new SingleColumnReader<>(columnName, reader), consumer);
+	public ColumnConsumer(String columnName, ResultSetReader<I> reader, BiConsumer<C, I> propertySetter) {
+		this(new SingleColumnReader<>(columnName, reader), propertySetter);
 	}
 	
 	/**
@@ -53,8 +52,8 @@ public class ColumnConsumer<C, I> implements ResultSetRowAssembler<C> {
 	/**
 	 * @return the given consumer at construction time
 	 */
-	public BiConsumer<C, I> getConsumer() {
-		return consumer;
+	public BiConsumer<C, I> getPropertySetter() {
+		return propertySetter;
 	}
 	
 	/**
@@ -62,22 +61,14 @@ public class ColumnConsumer<C, I> implements ResultSetRowAssembler<C> {
 	 * 
 	 * @param instance a bean, not null
 	 * @param resultSet the source of data
-	 * @throws SQLException in case of error during {@link ResultSet} read
 	 */
 	@Override
-	public void assemble(C instance, ResultSet resultSet) throws SQLException {
-		consumer.accept(instance, reader.read(resultSet));
+	public void assemble(C instance, ResultSet resultSet) {
+		propertySetter.accept(instance, reader.read(resultSet));
 	}
 	
-	/**
-	 * Makes a copy of this instance with column translation.
-	 * Made to reuse this instance on another kind of {@link ResultSet} on which column differs by their column names.
-	 *
-	 * @param columnMapping a {@link Function} that gives a new column name for a asked one
-	 * 						Can be implemented with a switch/case, a prefix/suffix concatenation, etc
-	 * @return a new instance, kind of clone of this
-	 */
+	@Override
 	public ColumnConsumer<C, I> copyWithAliases(Function<String, String> columnMapping) {
-		return new ColumnConsumer<>(reader.copyWithAliases(columnMapping), consumer);
+		return new ColumnConsumer<>(reader.copyWithAliases(columnMapping), propertySetter);
 	}
 }

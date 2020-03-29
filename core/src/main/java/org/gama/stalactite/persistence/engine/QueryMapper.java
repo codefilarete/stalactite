@@ -1,14 +1,14 @@
 package org.gama.stalactite.persistence.engine;
 
+import java.lang.reflect.Executable;
 import java.lang.reflect.Method;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.BiConsumer;
 import java.util.function.Function;
-import java.util.function.Supplier;
 
 import org.danekja.java.util.function.serializable.SerializableBiConsumer;
 import org.danekja.java.util.function.serializable.SerializableBiFunction;
@@ -16,7 +16,6 @@ import org.danekja.java.util.function.serializable.SerializableFunction;
 import org.danekja.java.util.function.serializable.SerializableSupplier;
 import org.gama.lang.collection.Arrays;
 import org.gama.lang.collection.Iterables;
-import org.gama.lang.collection.KeepOrderSet;
 import org.gama.lang.function.SerializableTriFunction;
 import org.gama.lang.function.ThrowingConverter;
 import org.gama.reflection.MethodReferenceCapturer;
@@ -28,10 +27,10 @@ import org.gama.stalactite.sql.binder.ParameterBinder;
 import org.gama.stalactite.sql.dml.ReadOperation;
 import org.gama.stalactite.sql.dml.StringParamedSQL;
 import org.gama.stalactite.sql.result.MultipleColumnsReader;
-import org.gama.stalactite.sql.result.ResultSetConverterSupport;
 import org.gama.stalactite.sql.result.ResultSetRowAssembler;
 import org.gama.stalactite.sql.result.ResultSetRowConverter;
 import org.gama.stalactite.sql.result.SingleColumnReader;
+import org.gama.stalactite.sql.result.WholeResultSetConverter;
 
 import static org.gama.stalactite.sql.binder.NullAwareParameterBinder.ALWAYS_SET_NULL_INSTANCE;
 
@@ -57,14 +56,6 @@ public class QueryMapper<C> implements MappableQuery<C> {
 	/** The sql provider */
 	private final SQLBuilder sql;
 	
-	/** The definition of root bean instanciation */
-	private BeanCreationDefinition<?, C> beanCreationDefinition;
-	
-	/** Mappings between selected columns and bean property setter */
-	private final List<ColumnMapping> columnMappings = new ArrayList<>();
-	
-	private final List<ResultSetRowAssembler<C>> rawMappers = new ArrayList<>();
-	
 	/** The registry of {@link ParameterBinder}s, for column reading as well as sql argument setting */
 	private final ColumnBinderRegistry columnBinderRegistry;
 	
@@ -73,6 +64,9 @@ public class QueryMapper<C> implements MappableQuery<C> {
 	
 	/** SQL argument values (for where clause, or anywhere else) */
 	private final Map<String, Object> sqlArguments = new HashMap<>();
+	
+	/** Delegate for {@link java.sql.ResultSet} transformation, will get all the mapping configuration */
+	private WholeResultSetConverter<?, C> rootTransformer;
 	
 	/**
 	 * Simple constructor
@@ -136,7 +130,43 @@ public class QueryMapper<C> implements MappableQuery<C> {
 	 */
 	@Override
 	public <I> QueryMapper<C> mapKey(SerializableFunction<I, C> factory, String columnName, Class<I> columnType) {
-		this.beanCreationDefinition = new BeanCreationDefinition<>(factory, columnName, columnType);
+		this.rootTransformer = buildSingleColumnKeyTransformer(new ColumnDefinition<>(columnName, columnType), factory);
+		return this;
+	}
+	
+	public <I> QueryMapper<C> mapKey(SerializableFunction<I, C> factory, String columnName) {
+		MethodReferenceCapturer methodReferenceCapturer = new MethodReferenceCapturer();
+		// Looking for column type (necessary to know how to read ResultSet) by looking to first argument of given function
+		// (which can be either a constructor or a method factory) 
+		Executable executable = methodReferenceCapturer.findExecutable(factory);
+		this.rootTransformer = buildSingleColumnKeyTransformer(new ColumnDefinition<>(columnName, (Class<I>) executable.getParameterTypes()[0]), factory);
+		return this;
+	}
+	
+	public <I, J> QueryMapper<C> mapKey(SerializableBiFunction<I, J, C> factory, String column1, String column2) {
+		MethodReferenceCapturer methodReferenceCapturer = new MethodReferenceCapturer();
+		// Looking for column type (necessary to know how to read ResultSet) by looking to first argument of given function
+		// (which can be either a constructor or a method factory) 
+		Executable executable = methodReferenceCapturer.findExecutable(factory);
+		SerializableFunction<Object[], C> constructorInvokation = args -> (C) factory.apply((I) args[0], (J) args[1]);
+		this.rootTransformer = buildComposedKeyTransformer(Arrays.asSet(
+				new ColumnDefinition<>(column1, executable.getParameterTypes()[0]),
+				new ColumnDefinition<>(column2, executable.getParameterTypes()[1])),
+				constructorInvokation);
+		return this;
+	}
+	
+	public <I, J, K> QueryMapper<C> mapKey(SerializableTriFunction<I, J, K, C> factory, String column1, String column2, String column3) {
+		MethodReferenceCapturer methodReferenceCapturer = new MethodReferenceCapturer();
+		Executable executable = methodReferenceCapturer.findExecutable(factory);
+		// Looking for column type (necessary to know how to read ResultSet) by looking to first argument of given function
+		// (which can be either a constructor or a method factory) 
+		SerializableFunction<Object[], C> constructorInvokation = args -> (C) factory.apply((I) args[0], (J) args[1], (K) args[2]);
+		this.rootTransformer = buildComposedKeyTransformer(Arrays.asSet(
+				new ColumnDefinition<>(column1, executable.getParameterTypes()[0]),
+				new ColumnDefinition<>(column2, executable.getParameterTypes()[1]),
+				new ColumnDefinition<>(column3, executable.getParameterTypes()[2])),
+				constructorInvokation);
 		return this;
 	}
 	
@@ -154,10 +184,11 @@ public class QueryMapper<C> implements MappableQuery<C> {
 	@Override
 	public <I, J> QueryMapper<C> mapKey(SerializableBiFunction<I, J, C> factory, String column1Name, Class<I> column1Type,
 										String column2Name, Class<J> column2Type) {
-		SerializableFunction<Object[], C> biArgsConstructorInvokation = args -> (C) factory.apply((I) args[0], (J) args[1]);
-		this.beanCreationDefinition = new BeanCreationDefinition<>(biArgsConstructorInvokation,
-				column1Name, column1Type,
-				column2Name, column2Type);
+		SerializableFunction<Object[], C> constructorInvokation = args -> (C) factory.apply((I) args[0], (J) args[1]);
+		this.rootTransformer = buildComposedKeyTransformer(Arrays.asSet(
+				new ColumnDefinition<>(column1Name, column1Type),
+				new ColumnDefinition<>(column2Name, column2Type)),
+				constructorInvokation);
 		return this;
 	}
 	
@@ -178,11 +209,12 @@ public class QueryMapper<C> implements MappableQuery<C> {
 	public <I, J, K> QueryMapper<C> mapKey(SerializableTriFunction<I, J, K, C> factory, String column1Name, Class<I> column1Type,
 										   String column2Name, Class<J> column2Type,
 										   String column3Name, Class<K> column3Type) {
-		SerializableFunction<Object[], C> triArgsConstructorInvokation = args -> (C) factory.apply((I) args[0], (J) args[1], (K) args[2]);
-		this.beanCreationDefinition = new BeanCreationDefinition<>(triArgsConstructorInvokation,
-				column1Name, column1Type,
-				column2Name, column2Type,
-				column3Name, column3Type);
+		SerializableFunction<Object[], C> constructorInvokation = args -> (C) factory.apply((I) args[0], (J) args[1], (K) args[2]);
+		this.rootTransformer = buildComposedKeyTransformer(Arrays.asSet(
+				new ColumnDefinition<>(column1Name, column1Type),
+				new ColumnDefinition<>(column2Name, column2Type),
+				new ColumnDefinition<>(column3Name, column3Type)),
+				constructorInvokation);
 		return this;
 	}
 	
@@ -197,7 +229,7 @@ public class QueryMapper<C> implements MappableQuery<C> {
 	@Override
 	public <I> QueryMapper<C> mapKey(SerializableFunction<I, C> factory,
 									 org.gama.stalactite.persistence.structure.Column<? extends Table, I> column) {
-		this.beanCreationDefinition = new BeanCreationDefinition<>(factory, column);
+		this.rootTransformer = buildSingleColumnKeyTransformer(new ColumnWrapper<>(column), factory);
 		return this;
 	}
 	
@@ -215,8 +247,11 @@ public class QueryMapper<C> implements MappableQuery<C> {
 										org.gama.stalactite.persistence.structure.Column<? extends Table, I> column1,
 										org.gama.stalactite.persistence.structure.Column<? extends Table, J> column2
 	) {
-		SerializableFunction<Object[], C> biArgsConstructorInvokation = args -> (C) factory.apply((I) args[0], (J) args[1]);
-		this.beanCreationDefinition = new BeanCreationDefinition<>(biArgsConstructorInvokation, Arrays.asSet(column1, column2));
+		SerializableFunction<Object[], C> constructorInvokation = args -> (C) factory.apply((I) args[0], (J) args[1]);
+		this.rootTransformer = buildComposedKeyTransformer(Arrays.asSet(
+				new ColumnWrapper<>(column1),
+				new ColumnWrapper<>(column2)),
+				constructorInvokation);
 		return this;
 	}
 	
@@ -236,8 +271,12 @@ public class QueryMapper<C> implements MappableQuery<C> {
 										   org.gama.stalactite.persistence.structure.Column<? extends Table, J> column2,
 										   org.gama.stalactite.persistence.structure.Column<? extends Table, K> column3
 	) {
-		SerializableFunction<Object[], C> triArgsConstructorInvokation = args -> (C) factory.apply((I) args[0], (J) args[1], (K) args[2]);
-		this.beanCreationDefinition = new BeanCreationDefinition<>(triArgsConstructorInvokation, Arrays.asSet(column1, column2, column3));
+		SerializableFunction<Object[], C> constructorInvokation = args -> (C) factory.apply((I) args[0], (J) args[1], (K) args[2]);
+		this.rootTransformer = buildComposedKeyTransformer(Arrays.asSet(
+				new ColumnWrapper<>(column1),
+				new ColumnWrapper<>(column2),
+				new ColumnWrapper<>(column3)),
+				constructorInvokation);
 		return this;
 	}
 	
@@ -253,7 +292,7 @@ public class QueryMapper<C> implements MappableQuery<C> {
 	 */
 	@Override
 	public <I> QueryMapper<C> mapKey(SerializableSupplier<C> javaBeanCtor, String columnName, SerializableBiConsumer<C, I> keySetter) {
-		this.beanCreationDefinition = new BeanCreationDefinition<>(i -> javaBeanCtor.get(), columnName, giveColumnType(keySetter));
+		mapKey(i -> javaBeanCtor.get(), columnName, giveColumnType(keySetter));
 		map(columnName, keySetter);
 		return this;
 	}
@@ -371,12 +410,18 @@ public class QueryMapper<C> implements MappableQuery<C> {
 	}
 	
 	private <I> void add(ColumnMapping<C, I> columnMapping) {
-		this.columnMappings.add(columnMapping);
+		rootTransformer.add(columnMapping.getColumn().getName(), columnMapping.getColumn().getBinder(), columnMapping.getSetter());
 	}
 	
 	@Override
 	public QueryMapper<C> add(ResultSetRowAssembler<C> assembler) {
-		rawMappers.add(assembler);
+		rootTransformer.add(assembler);
+		return this;
+	}
+	
+	@Override
+	public <E> QueryMapper<C> map(BiConsumer<C, E> combiner, ResultSetRowConverter<?, E> rowConverter) {
+		rootTransformer.add(rowConverter, combiner);
 		return this;
 	}
 	
@@ -389,44 +434,22 @@ public class QueryMapper<C> implements MappableQuery<C> {
 	 * @return a {@link List} filled by the instances built
 	 */
 	public List<C> execute(ConnectionProvider connectionProvider) {
-		if (beanCreationDefinition == null) {
+		if (rootTransformer == null) {
 			throw new IllegalArgumentException("Bean creation is not defined, use mapKey(..)");
 		}
-		ResultSetConverterSupport<?, C> transformer = buildTransformer();
-		
 		StringParamedSQL parameterizedSQL = new StringParamedSQL(this.sql.toSQL().toString(), sqlParameterBinders);
 		try (ReadOperation<String> readOperation = new ReadOperation<>(parameterizedSQL, connectionProvider)) {
 			readOperation.setValues(sqlArguments);
 			
-			return transformer.convert(readOperation.execute());
+			return rootTransformer.transformAll(readOperation.execute());
 		}
 	}
 	
-	private ResultSetConverterSupport<?, C> buildTransformer() {
-		// creating ResultSetConverter
-		ResultSetConverterSupport<?, C> transformer;
-		Set<Column> columns = beanCreationDefinition.getColumns();
-		if (columns.size() == 1) {
-			transformer = buildSingleColumnKeyTransformer((Column<Object>) Iterables.first(columns));
-		} else {
-			transformer = buildComposedKeyTransformer(columns);
-		}
-		// adding complementary properties to transformer
-		for (ColumnMapping<C, Object> columnMapping : columnMappings) {
-			ParameterBinder parameterBinder = columnMapping.getColumn().getBinder();
-			transformer.add(columnMapping.getColumn().getName(), parameterBinder, columnMapping.getSetter());
-		}
-		rawMappers.forEach(transformer::add);
-		return transformer;
+	private <I> WholeResultSetConverter<I, C> buildSingleColumnKeyTransformer(Column<I> keyColumn, SerializableFunction<I, C> beanFactory) {
+		return new WholeResultSetConverter<>(rootBeanType, keyColumn.getName(), keyColumn.getBinder(), beanFactory);
 	}
 	
-	private ResultSetConverterSupport<?, C> buildSingleColumnKeyTransformer(Column<Object> keyColumn) {
-		ParameterBinder<Object> idParameterBinder = keyColumn.getBinder();
-		return new ResultSetConverterSupport<>(rootBeanType, keyColumn.getName(), idParameterBinder,
-				(SerializableFunction<Object, C>) beanCreationDefinition.getFactory());
-	}
-	
-	private ResultSetConverterSupport<?, C> buildComposedKeyTransformer(Set<Column> columns) {
+	private WholeResultSetConverter<Object[], C> buildComposedKeyTransformer(Set<Column> columns, Function<Object[], C> beanFactory) {
 		Set<SingleColumnReader> columnReaders = Iterables.collect(columns, c -> {
 			ParameterBinder reader = c.getBinder();
 			return new SingleColumnReader<>(c.getName(), reader);
@@ -440,13 +463,12 @@ public class QueryMapper<C> implements MappableQuery<C> {
 			}
 			return contructorArgs;
 		});
-		Function<Object[], C> beanFactory = (Function<Object[], C>) beanCreationDefinition.getFactory();
 		
 		ResultSetRowConverter<Object[], C> resultSetRowConverter = new ResultSetRowConverter<>(
 				rootBeanType,
 				multipleColumnsReader,
 				beanFactory);
-		return new ResultSetConverterSupport<>(resultSetRowConverter);
+		return new WholeResultSetConverter<>(resultSetRowConverter);
 	}
 	
 	private <I> Class<I> giveColumnType(SerializableBiConsumer<C, I> setter) {
@@ -456,12 +478,14 @@ public class QueryMapper<C> implements MappableQuery<C> {
 	}
 	
 	/**
-	 * Sets a value for a SQL parameter. Not for Collection/Iterable value : see {@link #set(String, Iterable, Class)} dedicated method for it.
-	 * No already-existing argument name checking is done, so you can overwrite/redefine an existing value. This lets you reexecute a QueryConverter with
-	 * different parameters.
+	 * Sets a value for a SQL parameter. Not to be used with Collection/Iterable value : see {@link #set(String, Iterable, Class)} dedicated method for it.
+	 * No check for "already set" argument is done, so one can overwrite/redefine an existing value. This lets one reexecutes a
+	 * {@link QueryMapper} with different parameters.
 	 *
 	 * @param paramName the name of the SQL parameter to be set
-	 * @param value the value of the parameter
+	 * @param value the value of the parameter, null is authorized but since type can't be know in this case {@link java.sql.PreparedStatement#setObject(int, Object)}
+	 * 				will be used, so prefer {@link #set(String, Object, Class)} if your database driver doesn't support well setObject(..),
+	 * 			    see	{@link org.gama.stalactite.sql.binder.NullAwareParameterBinder#ALWAYS_SET_NULL_INSTANCE}
 	 * @return this
 	 * @see #set(String, Iterable, Class)
 	 */
@@ -471,8 +495,8 @@ public class QueryMapper<C> implements MappableQuery<C> {
 	
 	/**
 	 * Sets a value for a SQL parameter. Not for Collection/Iterable value : see {@link #set(String, Iterable, Class)} dedicated method for it.
-	 * No already-existing argument name checking is done, so you can overwrite/redefine an existing value. This lets you reexecute a QueryConverter with
-	 * different parameters.
+	 * No check for "already set" argument is done, so one can overwrite/redefine an existing value. This lets one reexecutes a
+	 * {@link QueryMapper} with different parameters.
 	 *
 	 * @param paramName the name of the SQL parameter to be set
 	 * @param value the value of the parameter
@@ -481,7 +505,7 @@ public class QueryMapper<C> implements MappableQuery<C> {
 	 * @see #set(String, Iterable, Class)
 	 */
 	public <O> QueryMapper<C> set(String paramName, O value, Class<? super O> valueType) {
-		sqlParameterBinders.put(paramName, value == null ? ALWAYS_SET_NULL_INSTANCE : columnBinderRegistry.getBinder(valueType));
+		this.sqlParameterBinders.put(paramName, value == null ? ALWAYS_SET_NULL_INSTANCE : columnBinderRegistry.getBinder(valueType));
 		this.sqlArguments.put(paramName, value);
 		return this;
 	}
@@ -489,8 +513,8 @@ public class QueryMapper<C> implements MappableQuery<C> {
 	/**
 	 * Sets a value for a Collection/Iterable SQL argument. Must be distinguished from {@link #set(String, Object)} because real {@link Iterable}
 	 * content type guessing can be difficult (or at least not accurate) and can lead to {@link Iterable} consumption.
-	 * No already-existing argument name checking is done, so you can overwrite/redefine an existing value. This lets you reexecute a QueryConverter with
-	 * different parameters.
+	 * No check for "already set" argument is done, so one can overwrite/redefine an existing value. This lets one reexecutes a
+	 * {@link QueryMapper} with different parameters.
 	 *
 	 * @param paramName the name of the SQL parameter to be set
 	 * @param value the value of the parameter
@@ -514,13 +538,13 @@ public class QueryMapper<C> implements MappableQuery<C> {
 		ParameterBinder<T> getBinder();
 	}
 	
-	private class StatementParameter<T> implements QueryMapper.Column<T> {
+	private class ColumnDefinition<T> implements QueryMapper.Column<T> {
 		
 		private final String name;
 		
 		private final Class<T> valueType;
 		
-		private StatementParameter(String name, Class<T> valueType) {
+		private ColumnDefinition(String name, Class<T> valueType) {
 			this.name = name;
 			this.valueType = valueType;
 		}
@@ -552,64 +576,8 @@ public class QueryMapper<C> implements MappableQuery<C> {
 	}
 	
 	/**
-	 * An internal class defining the way to instanciate a bean from a selected column
-	 * @param <O> the bean type that will be created
-	 * @param <I> the column value type which is also the input type of the bean factory
-	 */
-	private class BeanCreationDefinition<I, O> {
-		
-		private final KeepOrderSet<Column> columns = new KeepOrderSet<>();
-		
-		private final SerializableFunction<I, O> factory;
-		
-		/**
-		 * Constructor for bean identified by a single column (not composed primary key)
-		 * 
-		 * @param factory bean factory, a constructor reference for instance (with single parameter)
-		 * @param columnName name of the column that contains bean key
-		 * @param columnType column type, must be the same as factory input
-		 */
-		public BeanCreationDefinition(SerializableFunction<I, O> factory, String columnName, Class<I> columnType) {
-			this.columns.add(new StatementParameter<>(columnName, columnType));
-			this.factory = factory;
-		}
-		
-		public BeanCreationDefinition(SerializableFunction<I, O> factory, String column1Name, Class column1Type,
-										  String column2Name, Class column2Type) {
-			this(factory, column1Name, column1Type);
-			this.columns.add(new StatementParameter<>(column2Name, column2Type));
-		}
-		
-		public BeanCreationDefinition(SerializableFunction<I, O> factory, String column1Name, Class column1Type,
-									  String column2Name, Class column2Type,
-									  String column3Name, Class column3Type) {
-			this(factory, column1Name, column1Type, column2Name, column2Type);
-			this.columns.add(new StatementParameter<>(column3Name, column3Type));
-		}
-
-		public BeanCreationDefinition(SerializableFunction<I, O> factory, org.gama.stalactite.persistence.structure.Column<?, I> column) {
-			this.columns.add(new ColumnWrapper<>(column));
-			this.factory = factory;
-		}
-		
-		public BeanCreationDefinition(SerializableFunction<I, O> factory, Set<org.gama.stalactite.persistence.structure.Column> columns
-		) {
-			this.columns.addAll(Iterables.collect(columns, ColumnWrapper::new, (Supplier<Set<Column>>) KeepOrderSet::new));
-			this.factory = factory;
-		}
-		
-		public Set<QueryMapper.Column> getColumns() {
-			return columns;
-		}
-		
-		public SerializableFunction<I, O> getFactory() {
-			return factory;
-		}
-		
-	}
-	
-	/**
-	 * An internal class defining the way to map a result column to a bean "property" (more precisely a setter or whatever would take the value as input)
+	 * An internal class defining the way to map a result column to a bean "property" (more precisely a setter or whatever which takes the value as input)
+	 * 
 	 * @param <T> the bean type that supports the setter
 	 * @param <I> the column value type which is also the input type of the property setter
 	 */
@@ -620,7 +588,7 @@ public class QueryMapper<C> implements MappableQuery<C> {
 		private final SerializableBiConsumer<T, I> setter;
 		
 		public ColumnMapping(String columnName, SerializableBiConsumer<T, I> setter, Class<I> columnType) {
-			this.column = new StatementParameter<>(columnName, columnType);
+			this.column = new ColumnDefinition<>(columnName, columnType);
 			this.setter = setter;
 		}
 		

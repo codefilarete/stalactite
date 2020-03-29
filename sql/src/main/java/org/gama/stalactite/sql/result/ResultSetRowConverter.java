@@ -1,30 +1,29 @@
 package org.gama.stalactite.sql.result;
 
 import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Function;
 
-import org.gama.lang.function.ThrowingConverter;
 import org.gama.stalactite.sql.binder.ResultSetReader;
+
+import static org.gama.lang.Nullable.nullable;
 
 /**
  * A class aimed at creating flat (no graph) beans from a {@link ResultSet} row.
  * Will read a main/root column that determines if a bean can be created from it (is null ?), then applies some more "bean filler" that are
  * defined with {@link ColumnConsumer}.
  * Instances of this class can be reused over multiple {@link ResultSet} (supposed to have same columns).
- * They can also be adapt to other {@link ResultSet}s that haven't the exact same column names by duplicating them with {@link #copyWithAliases(Function)}.
- * Moreover they can also be cloned to another type of bean which uses the same column names with {@link #copyFor(Class, Function)}
+ * They can also be adapted to other {@link ResultSet}s that haven't the exact same column names by duplicating them with {@link #copyWithAliases(Function)}.
+ * Moreover they can also be cloned to another type of bean which uses the same column names with {@link #copyFor(Class, Function)}.
  * 
  * @param <I> the type of the bean key (Input)
  * @param <C> the type of the bean
  *     
  * @author Guillaume Mary
  */
-public class ResultSetRowConverter<I, C>
-		implements ResultSetConverter<I, C>, ThrowingConverter<ResultSet, C, SQLException>, ResultSetRowAssembler<C> {
+public class ResultSetRowConverter<I, C> implements ResultSetConverter<I, C>, ResultSetRowAssembler<C> {
 	
 	private final ColumnReader<I> reader;
 	
@@ -32,7 +31,7 @@ public class ResultSetRowConverter<I, C>
 	
 	private final Class<C> beanType;
 	
-	private final List<ColumnConsumer<C, Object>> consumers = new ArrayList<>();
+	private final Set<ColumnConsumer<C, Object>> consumers = new HashSet<>();
 	
 	/**
 	 * Constructor focused on simple cases where beans are built only from one column key.
@@ -78,7 +77,7 @@ public class ResultSetRowConverter<I, C>
 	 * 
 	 * @return not null
 	 */
-	public List<ColumnConsumer<C, Object>> getConsumers() {
+	public Set<ColumnConsumer<C, Object>> getConsumers() {
 		return consumers;
 	}
 	
@@ -96,7 +95,7 @@ public class ResultSetRowConverter<I, C>
 	@Override
 	public <T extends C> ResultSetRowConverter<I, T> copyFor(Class<T> beanType, Function<I, T> beanFactory) {
 		ResultSetRowConverter<I, T> result = new ResultSetRowConverter<>(beanType, this.reader, beanFactory);
-		result.consumers.addAll((List) this.consumers);
+		result.consumers.addAll((Set) this.consumers);
 		return result;
 	}
 	
@@ -109,32 +108,29 @@ public class ResultSetRowConverter<I, C>
 	
 	@Override	// for adhoc return type
 	public ResultSetRowConverter<I, C> copyWithAliases(Map<String, String> columnMapping) {
+		// equivalent to super.copyWithAlias(..) but because inteface default method can't be invoked we have to copy/paste its code ;(
 		return copyWithAliases(columnMapping::get);
 	}
 	
 	/**
-	 * Implemented to create and fill a bean from a {@link ResultSet}
-	 * 
-	 * @param resultSet the {@link ResultSet} positioned at a row to be read
-	 * @return the bean returned by the bean factory given at construction time. Can be null if bean key is.
-	 * 
-	 * @throws SQLException in case of {@link ResultSet} read problem
+	 * Converts the current {@link ResultSet} row into a bean.
+	 * Depending on implementation of factory, it may return a brand new instance or a cached one (if the bean key is already known for instance).
+	 * Consumers will be applied to instance returned by the factory, as a consequence if bean comes from a cache it will be completed again, this may
+	 * do some extra work in case of simple property.
+	 *
+	 * @param resultSet not null
+	 * @return an instance of T, newly created or not according to implementation
 	 */
 	@Override
-	public C convert(ResultSet resultSet) throws SQLException {
-		return transform(resultSet);
+	public C transform(ResultSet resultSet) {
+		return nullable(readBeanKey(resultSet))
+				.map(this::giveRootInstance)
+				.invoke(b -> assemble(b, resultSet))
+				.get();
 	}
 	
-	@Override
-	public C transform(ResultSet resultSet) throws SQLException {
-		I beanKey = reader.read(resultSet);
-		if (beanKey == null) {
-			return null;
-		} else {
-			C rowInstance = giveRootInstance(beanKey);
-			assemble(rowInstance, resultSet);
-			return rowInstance;
-		}
+	protected I readBeanKey(ResultSet resultSet) {
+		return reader.read(resultSet);
 	}
 	
 	protected C giveRootInstance(I beanKey) {
@@ -142,14 +138,13 @@ public class ResultSetRowConverter<I, C>
 	}
 	
 	/**
-	 * Implementation that applies all {@link ColumnConsumer} to the given {@link ResultSet} 
-	 * 
+	 * Implementation that applies all {@link ColumnConsumer} to the given {@link ResultSet}
+	 *
 	 * @param rootBean the bean built for the row
 	 * @param input any {@link ResultSet} positioned at row that must be read
-	 * @throws SQLException in case of error while reading the {@link ResultSet}
 	 */
 	@Override
-	public void assemble(C rootBean, ResultSet input) throws SQLException {
+	public void assemble(C rootBean, ResultSet input) {
 		for (ColumnConsumer<C, ?> consumer : consumers) {
 			consumer.assemble(rootBean, input);
 		}

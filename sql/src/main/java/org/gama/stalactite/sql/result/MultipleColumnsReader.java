@@ -12,10 +12,11 @@ import org.gama.lang.collection.Iterables;
 import org.gama.stalactite.sql.dml.SQLExecutionException;
 
 /**
- * Reader of a multiple columns (by their name) from a {@link java.sql.ResultSet}.
+ * Reader of several columns (by their name) from a {@link java.sql.ResultSet}.
  * Based on a collection of {@link SingleColumnReader}s.
  * 
  * @author Guillaume Mary
+ * @param <C> 
  */
 public class MultipleColumnsReader<C> implements ColumnReader<C> {
 	

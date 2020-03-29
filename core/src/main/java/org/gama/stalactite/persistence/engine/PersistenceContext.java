@@ -8,6 +8,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
 import org.danekja.java.util.function.serializable.SerializableBiConsumer;
@@ -43,6 +44,7 @@ import org.gama.stalactite.sql.ConnectionProvider;
 import org.gama.stalactite.sql.dml.PreparedSQL;
 import org.gama.stalactite.sql.dml.WriteOperation;
 import org.gama.stalactite.sql.result.ResultSetRowAssembler;
+import org.gama.stalactite.sql.result.ResultSetRowConverter;
 
 /**
  * Entry point for persistence in a database. Mix of configuration (Transaction, Dialect, ...) and registry for {@link Persister}s.
@@ -175,7 +177,7 @@ public class PersistenceContext {
 	 * Should be chained with {@link ExecutableSelect} mapping methods and obviously with its {@link ExecutableQuery#execute()}
 	 * method with {@link #getConnectionProvider()} as argument (for instance)
 	 * 
-	 * @param sql the sql to execute to populate beans
+	 * @param sql the SQL to execute to populate beans
 	 * @param beanType type of created beans, used for returned type marker
 	 * @param <C> type of created beans
 	 * @return a new {@link ExecutableSelect} that must be configured and executed
@@ -184,11 +186,20 @@ public class PersistenceContext {
 		return newQuery(() -> sql, beanType);
 	}
 	
+	/**
+	 * Same as {@link #newQuery(CharSequence, Class)} with an {@link SQLBuilder} as argument to be more flexible : final SQL will be built just
+	 * before execution.
+	 * 
+	 * @param sql the builder of SQL to be called for final SQL
+	 * @param beanType type of created beans, used for returned type marker
+	 * @param <C> type of created beans
+	 * @return a new {@link ExecutableSelect} that must be configured and executed
+	 */
 	public <C> ExecutableSelect<C> newQuery(SQLBuilder sql, Class<C> beanType) {
-		return wrapIntoExecutable(newConvertibleQuery(sql, beanType));
+		return wrapIntoExecutable(newTransformableQuery(sql, beanType));
 	}
 	
-	private <C> QueryMapper<C> newConvertibleQuery(SQLBuilder sql, Class<C> beanType) {
+	private <C> QueryMapper<C> newTransformableQuery(SQLBuilder sql, Class<C> beanType) {
 		return new QueryMapper<>(beanType, sql, getDialect().getColumnBinderRegistry());
 	}
 	
@@ -316,7 +327,7 @@ public class PersistenceContext {
 		where.accept(query.getWhere());
 		SelectMapping<C> selectMappingSupport = new SelectMapping<>();
 		selectMapping.accept(selectMappingSupport);
-		QueryMapper<C> queryMapper = newConvertibleQuery(new SQLQueryBuilder(query), ((Class<C>) constructor.getDeclaringClass()));
+		QueryMapper<C> queryMapper = newTransformableQuery(new SQLQueryBuilder(query), ((Class<C>) constructor.getDeclaringClass()));
 		queryMapper.mapKey(factory, column);
 		selectMappingSupport.appendTo(query, queryMapper);
 		return execute(queryMapper);
@@ -346,7 +357,7 @@ public class PersistenceContext {
 		where.accept(query.getWhere());
 		SelectMapping<C> selectMappingSupport = new SelectMapping<>();
 		selectMapping.accept(selectMappingSupport);
-		QueryMapper<C> queryMapper = newConvertibleQuery(new SQLQueryBuilder(query), ((Class<C>) constructor.getDeclaringClass()));
+		QueryMapper<C> queryMapper = newTransformableQuery(new SQLQueryBuilder(query), ((Class<C>) constructor.getDeclaringClass()));
 		queryMapper.mapKey(factory, column1, column2);
 		selectMappingSupport.appendTo(query, queryMapper);
 		return execute(queryMapper);
@@ -540,6 +551,9 @@ public class PersistenceContext {
 		
 		@Override
 		<I, J, E extends RuntimeException> ExecutableSelect<C> map(Column<? extends Table, I> column, SerializableBiConsumer<C, J> setter, ThrowingConverter<I, J, E> converter);
+		
+		@Override
+		<E> ExecutableSelect<C> map(BiConsumer<C, E> combiner, ResultSetRowConverter<?, E> rowConverter);
 		
 		@Override
 		ExecutableSelect<C> add(ResultSetRowAssembler<C> assembler);

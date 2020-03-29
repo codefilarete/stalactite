@@ -1,14 +1,17 @@
 package org.gama.stalactite.persistence.engine;
 
+import java.util.function.BiConsumer;
+
 import org.danekja.java.util.function.serializable.SerializableBiConsumer;
 import org.danekja.java.util.function.serializable.SerializableBiFunction;
 import org.danekja.java.util.function.serializable.SerializableFunction;
 import org.danekja.java.util.function.serializable.SerializableSupplier;
 import org.gama.lang.function.SerializableTriFunction;
 import org.gama.lang.function.ThrowingConverter;
-import org.gama.stalactite.sql.result.ResultSetRowAssembler;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
+import org.gama.stalactite.sql.result.ResultSetRowAssembler;
+import org.gama.stalactite.sql.result.ResultSetRowConverter;
 
 /**
  * Contract to define mapping and execution of some SQL select
@@ -200,6 +203,25 @@ public interface MappableQuery<C> {
 	<I, J, E extends RuntimeException> MappableQuery<C> map(Column<? extends Table, I> column, SerializableBiConsumer<C, J> setter, ThrowingConverter<I, J, E> converter);
 	
 	/**
+	 * Associates beans created by this instance and the ones created by another converter with setter (represented as a {@link BiConsumer}).
+	 * This allows to create bean graphs.
+	 *
+	 * @param combiner setter (on beans created by this instance) to fix beans created by given converter
+	 * @param rowConverter creator of other beans from a {@link java.sql.ResultSet}
+	 * @param <O> type of beans created by given converter
+	 * @return this
+	 */
+	<O> MappableQuery<C> map(BiConsumer<C, O> combiner, ResultSetRowConverter<?, O> rowConverter);
+	
+	/**
+	 * Adds a low level {@link java.sql.ResultSet} transfomer, for cases where mapping methods are unsufficient.
+	 *
+	 * @param assembler a low-level {@link java.sql.ResultSet} transformer
+	 * @return this
+	 */
+	MappableQuery<C> add(ResultSetRowAssembler<C> assembler);
+	
+	/**
 	 * Sets a value for the given parameter
 	 * 
 	 * @param paramName name of the parameter in the sql
@@ -227,12 +249,4 @@ public interface MappableQuery<C> {
 	 * @return this
 	 */
 	<O> MappableQuery<C> set(String paramName, Iterable<O> value, Class<? super O> valueType);
-	
-	/**
-	 * Adds a low level {@link java.sql.ResultSet} transfomer, for cases where mapping methods are unsufficient.
-	 * 
-	 * @param assembler a low-level {@link java.sql.ResultSet} transformer
-	 * @return this
-	 */
-	MappableQuery<C> add(ResultSetRowAssembler<C> assembler);
 }
