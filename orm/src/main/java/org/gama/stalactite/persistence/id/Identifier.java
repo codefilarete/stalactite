@@ -32,7 +32,7 @@ public interface Identifier<T> extends StatefullIdentifier<T> {
 	static <I> ParameterBinder<StatefullIdentifier<I>> identifierBinder(ParameterBinder<I> parameterBinder) {
 		return new NullAwareParameterBinder<>(new ParameterBinder<StatefullIdentifier<I>>() {
 			@Override
-			public StatefullIdentifier<I> get(ResultSet resultSet, String columnName) throws SQLException {
+			public StatefullIdentifier<I> doGet(ResultSet resultSet, String columnName) {
 				return new PersistedIdentifier<>(parameterBinder.get(resultSet, columnName));
 			}
 			

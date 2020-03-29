@@ -50,7 +50,7 @@ public class ComplexTypeBinder<C> implements ParameterBinder<C> {
 	}
 	
 	@Override
-	public C get(ResultSet resultSet, String columnName) throws SQLException {
+	public C doGet(ResultSet resultSet, String columnName) {
 		return convertingBinder.get(resultSet, columnName);
 	}
 }

@@ -18,10 +18,13 @@ public class RowIteratorTest {
 	public void testConvert() {
 		RowIterator testInstance = new RowIterator(null,
 				Maps.asMap("toto", DefaultResultSetReaders.INTEGER_READER));
-		assertEquals("Can't read column toto because ResultSet contains unexpected type j.l.String", assertThrows(BindingException.class, () -> {
+		Exception thrownException = assertThrows(BindingException.class, () -> {
 			InMemoryResultSet rs = new InMemoryResultSet(asList(Maps.asMap("toto", "string value")));
 			rs.next();
 			testInstance.convert(rs);
-		}).getMessage());
+		});
+		assertEquals("Error while reading column 'toto' : trying to read 'string value' as java.lang.Integer but was java.lang.String", thrownException.getMessage());
+		assertEquals(ClassCastException.class, thrownException.getCause().getClass());
+		assertEquals("java.lang.String cannot be cast to java.lang.Integer", thrownException.getCause().getMessage());
 	}
 }

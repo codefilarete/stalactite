@@ -6,7 +6,6 @@ import java.util.Comparator;
 import java.util.Map;
 import java.util.TreeSet;
 
-import org.gama.lang.Reflections;
 import org.gama.stalactite.sql.binder.ParameterBinder;
 import org.gama.stalactite.sql.binder.ParameterBinderIndex;
 import org.gama.stalactite.sql.binder.ResultSetReader;
@@ -66,13 +65,7 @@ public class RowIterator extends ResultSetIterator<Row> {
 		Row toReturn = new Row();
 		for (Decoder columnEntry : decoders) {
 			String columnName = columnEntry.getColumnName();
-			Object columnValue;
-			try {
-				columnValue = columnEntry.getReader().get(rs, columnName);
-			} catch (ClassCastException e) {
-				throw new BindingException("Can't read column " + columnName
-						+ " because ResultSet contains unexpected type " + Reflections.toString(rs.getObject(columnName).getClass()), e);
-			}
+			Object columnValue = columnEntry.getReader().get(rs, columnName);
 			toReturn.put(columnName, columnValue);
 		}
 		return toReturn;

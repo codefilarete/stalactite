@@ -135,7 +135,7 @@ public class JoinedTablesPersisterTest {
 		dialect.setInOperatorMaxSize(3);
 		dialect.getColumnBinderRegistry().register(Identifier.class, new ParameterBinder<Identifier>() {
 			@Override
-			public Identifier get(ResultSet resultSet, String columnName) throws SQLException {
+			public Identifier doGet(ResultSet resultSet, String columnName) throws SQLException {
 				return new PersistedIdentifier<>(resultSet.getObject(columnName));
 			}
 			

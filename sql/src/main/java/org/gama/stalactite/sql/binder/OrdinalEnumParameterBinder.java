@@ -25,7 +25,7 @@ public class OrdinalEnumParameterBinder<E extends Enum<E>> extends AbstractEnumP
 	}
 	
 	@Override
-	public E get(ResultSet resultSet, String columnName) throws SQLException {
+	public E doGet(ResultSet resultSet, String columnName) throws SQLException {
 		return enumPerOrdinal.get(resultSet.getInt(columnName));
 	}
 	

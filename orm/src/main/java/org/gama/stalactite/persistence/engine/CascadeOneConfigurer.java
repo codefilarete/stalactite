@@ -670,7 +670,7 @@ public class CascadeOneConfigurer<SRC, TRGT, ID> {
 				 * Hence this implementation returns null
 				 */
 				@Override
-				public E get(ResultSet resultSet, String columnName) {
+				public E doGet(ResultSet resultSet, String columnName) {
 					return null;
 				}
 			});

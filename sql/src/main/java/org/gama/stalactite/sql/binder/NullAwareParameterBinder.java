@@ -21,7 +21,7 @@ public class NullAwareParameterBinder<T> implements ParameterBinder<T> {
 		}
 		
 		@Override
-		public Object get(ResultSet resultSet, String columnName) {
+		public Object doGet(ResultSet resultSet, String columnName) {
 			throw new UnsupportedOperationException("This code should never be called because it's only aimed at writing parameters, not reading");
 		}
 	};
@@ -41,7 +41,7 @@ public class NullAwareParameterBinder<T> implements ParameterBinder<T> {
 	}
 	
 	@Override
-	public T get(ResultSet resultSet, String columnName) throws SQLException {
+	public T doGet(ResultSet resultSet, String columnName) throws SQLException {
 		return nullAwareResultSetReader.get(resultSet, columnName);
 	}
 	

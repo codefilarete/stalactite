@@ -2,7 +2,6 @@ package org.gama.stalactite.sql.result;
 
 import javax.annotation.Nonnull;
 import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.util.function.Function;
 
 import org.gama.stalactite.sql.binder.ResultSetReader;
@@ -32,7 +31,7 @@ public class SingleColumnReader<C> implements ColumnReader<C> {
 	}
 	
 	@Override
-	public C read(@Nonnull ResultSet resultSet) throws SQLException {
+	public C read(@Nonnull ResultSet resultSet) {
 		return reader.get(resultSet, columnName);
 	}
 	

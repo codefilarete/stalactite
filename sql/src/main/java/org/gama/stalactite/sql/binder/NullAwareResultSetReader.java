@@ -17,7 +17,7 @@ public class NullAwareResultSetReader<T> implements ResultSetReader<T> {
 	}
 	
 	@Override
-	public T get(ResultSet resultSet, String columnName) throws SQLException {
+	public T doGet(ResultSet resultSet, String columnName) throws SQLException {
 		if (!isNull(columnName, resultSet)) {
 			return getNotNull(columnName, resultSet);
 		} else {
@@ -26,7 +26,7 @@ public class NullAwareResultSetReader<T> implements ResultSetReader<T> {
 	}
 	
 	/**
-	 * Say if a column is null.
+	 * Says if a column is null.
 	 *
 	 * This implementation is done with getObject(columnName) == null. Not sure that all JDBC driver supports it. Official way is to use
 	 * {@link ResultSet#wasNull()} but it needs column to be read before. Thought this is more expensive than testing getObject().
@@ -38,7 +38,7 @@ public class NullAwareResultSetReader<T> implements ResultSetReader<T> {
 		return resultSet.getObject(columnName) == null;
 	}
 	
-	public T getNotNull(String columnName, ResultSet resultSet) throws SQLException {
+	public T getNotNull(String columnName, ResultSet resultSet) {
 		return surrogate.get(resultSet, columnName);
 	}
 	

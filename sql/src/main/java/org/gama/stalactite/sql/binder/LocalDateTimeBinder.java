@@ -14,7 +14,7 @@ import java.time.LocalDateTime;
 public class LocalDateTimeBinder implements ParameterBinder<LocalDateTime> {
 	
 	@Override
-	public LocalDateTime get(ResultSet resultSet, String columnName) throws SQLException {
+	public LocalDateTime doGet(ResultSet resultSet, String columnName) throws SQLException {
 		return resultSet.getTimestamp(columnName).toLocalDateTime();
 	}
 	

@@ -2,7 +2,6 @@ package org.gama.stalactite.sql.result;
 
 import javax.annotation.Nonnull;
 import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.util.function.Function;
 
 /**
@@ -19,9 +18,8 @@ public interface ColumnReader<C> {
 	 * Reads current {@link ResultSet} row to generate a bean
 	 * @param resultSet a {@link ResultSet} positioned at a row (started, not closed)
 	 * @return a bean
-	 * @throws SQLException in case of error while reading the {@link ResultSet}
 	 */
-	C read(@Nonnull ResultSet resultSet) throws SQLException;
+	C read(@Nonnull ResultSet resultSet);
 	
 	ColumnReader<C> copyWithAliases(Function<String, String> columnMapping);
 }

@@ -41,7 +41,7 @@ public class LambdaParameterBinder<T> implements ParameterBinder<T> {
 	}
 	
 	@Override
-	public T get(ResultSet resultSet, String columnName) throws SQLException {
+	public T doGet(ResultSet resultSet, String columnName) {
 		return resultSetReader.get(resultSet, columnName);
 	}
 	

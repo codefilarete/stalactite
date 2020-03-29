@@ -146,4 +146,9 @@ public interface DefaultResultSetReaders {
 	 */
 	ResultSetReader<LocalDateTime> LOCALDATETIME_READER = new NullAwareResultSetReader<>(new LocalDateTimeBinder());
 	
+	/**
+	 * {@link ResultSetReader} for {@link Object}
+	 */
+	ResultSetReader<Object> OBJECT_READER = ResultSet::getObject;
+	
 }

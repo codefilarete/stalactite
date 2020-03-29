@@ -18,7 +18,7 @@ public class UUIDParameterBinder implements ParameterBinder<UUID> {
 	}
 	
 	@Override
-	public UUID get(ResultSet resultSet, String columnName) throws SQLException {
+	public UUID doGet(ResultSet resultSet, String columnName) throws SQLException {
 		return UUID.fromString(resultSet.getString(columnName));
 	}
 }

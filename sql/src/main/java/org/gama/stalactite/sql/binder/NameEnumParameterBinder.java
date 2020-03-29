@@ -16,7 +16,7 @@ public class NameEnumParameterBinder<E extends Enum<E>> extends AbstractEnumPara
 	}
 	
 	@Override
-	public E get(ResultSet resultSet, String columnName) throws SQLException {
+	public E doGet(ResultSet resultSet, String columnName) throws SQLException {
 		return Enum.valueOf(enumType, resultSet.getString(columnName));
 	}
 	

@@ -5,6 +5,7 @@ import java.sql.SQLException;
 import org.gama.lang.collection.Arrays;
 import org.gama.lang.collection.Maps;
 import org.gama.lang.trace.ModifiableInt;
+import org.gama.stalactite.sql.dml.SQLStatement.BindingException;
 import org.junit.jupiter.api.Test;
 
 import static org.gama.stalactite.sql.binder.DefaultResultSetReaders.INTEGER_READER;
@@ -50,8 +51,10 @@ public class ColumnConsumerTest {
 		));
 		
 		resultSet.next();
-		assertEquals("Column doesn't exist : a",
-				assertThrows(SQLException.class, () -> srcInstance.assemble(targetInstance, resultSet)).getMessage());
+		Exception thrownException = assertThrows(BindingException.class, () -> srcInstance.assemble(targetInstance, resultSet));
+		assertEquals("Error while reading column 'a'", thrownException.getMessage());
+		assertEquals(SQLException.class, thrownException.getCause().getClass());
+		assertEquals("Column doesn't exist : a", thrownException.getCause().getMessage());
 		
 		testInstance.assemble(targetInstance, resultSet);
 		assertEquals(42, targetInstance.getValue());

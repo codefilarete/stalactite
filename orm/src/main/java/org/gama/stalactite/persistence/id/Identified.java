@@ -29,7 +29,7 @@ public interface Identified<I> {
 	static <I> ParameterBinder<Identified<I>> identifiedBinder(ParameterBinder<I> parameterBinder) {
 		return new NullAwareParameterBinder<>(new ParameterBinder<Identified<I>>() {
 			@Override
-			public Identified<I> get(ResultSet resultSet, String columnName) {
+			public Identified<I> doGet(ResultSet resultSet, String columnName) {
 				// we can't instantiate the right Identified because we don't have its class, moreover we should fill the instance properties
 				// but we don't have the material to do it, hence the select decoding process is done differenly elsewhere in
 				// StrategyJoinsRowTransformer, so we can return anything here 
