@@ -80,11 +80,12 @@ public class WholeResultSetTransformer<I, C> implements ResultSetTransformer<I, 
 	}
 	
 	/**
-	 * Special constructor made for cloning, no reason to expose it outside
-	 * @param rootConverter
+	 * Special constructor aimed at defining root transformer when other constructors are unsufficient
+	 * 
+	 * @param rootTransformer trasnformer that will create graph root-beans from {@link ResultSet}
 	 */
-	public WholeResultSetTransformer(ResultSetRowTransformer<I, C> rootConverter) {
-		this.rootConverter = rootConverter;
+	public WholeResultSetTransformer(ResultSetRowTransformer<I, C> rootTransformer) {
+		this.rootConverter = rootTransformer;
 	}
 	
 	/**
