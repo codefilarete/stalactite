@@ -119,21 +119,7 @@ public class QueryMapper<C> implements MappableQuery<C> {
 		this.methodReferenceCapturer = methodReferenceCapturer;
 	}
 	
-	/**
-	 * Defines the key column and the way to create the bean : a constructor with the key as parameter.
-	 *
-	 * @param <I> the type of the column, which is also that of the factory argument
-	 * @param factory the factory function that will instanciate new beans (with key as single argument)
-	 * @param columnName the key column name
-	 * @param columnType the type of the column, which is also that of the factory argument
-	 * @return this
-	 */
 	@Override
-	public <I> QueryMapper<C> mapKey(SerializableFunction<I, C> factory, String columnName, Class<I> columnType) {
-		this.rootTransformer = buildSingleColumnKeyTransformer(new ColumnDefinition<>(columnName, columnType), factory);
-		return this;
-	}
-	
 	public <I> QueryMapper<C> mapKey(SerializableFunction<I, C> factory, String columnName) {
 		MethodReferenceCapturer methodReferenceCapturer = new MethodReferenceCapturer();
 		// Looking for column type (necessary to know how to read ResultSet) by looking to first argument of given function
@@ -143,6 +129,7 @@ public class QueryMapper<C> implements MappableQuery<C> {
 		return this;
 	}
 	
+	@Override
 	public <I, J> QueryMapper<C> mapKey(SerializableBiFunction<I, J, C> factory, String column1, String column2) {
 		MethodReferenceCapturer methodReferenceCapturer = new MethodReferenceCapturer();
 		// Looking for column type (necessary to know how to read ResultSet) by looking to first argument of given function
@@ -156,6 +143,7 @@ public class QueryMapper<C> implements MappableQuery<C> {
 		return this;
 	}
 	
+	@Override
 	public <I, J, K> QueryMapper<C> mapKey(SerializableTriFunction<I, J, K, C> factory, String column1, String column2, String column3) {
 		MethodReferenceCapturer methodReferenceCapturer = new MethodReferenceCapturer();
 		Executable executable = methodReferenceCapturer.findExecutable(factory);
@@ -167,6 +155,21 @@ public class QueryMapper<C> implements MappableQuery<C> {
 				new ColumnDefinition<>(column2, executable.getParameterTypes()[1]),
 				new ColumnDefinition<>(column3, executable.getParameterTypes()[2])),
 				constructorInvokation);
+		return this;
+	}
+	
+	/**
+	 * Defines the key column and the way to create the bean : a constructor with the key as parameter.
+	 *
+	 * @param <I> the type of the column, which is also that of the factory argument
+	 * @param factory the factory function that will instanciate new beans (with key as single argument)
+	 * @param columnName the key column name
+	 * @param columnType the type of the column, which is also that of the factory argument
+	 * @return this
+	 */
+	@Override
+	public <I> QueryMapper<C> mapKey(SerializableFunction<I, C> factory, String columnName, Class<I> columnType) {
+		this.rootTransformer = buildSingleColumnKeyTransformer(new ColumnDefinition<>(columnName, columnType), factory);
 		return this;
 	}
 	

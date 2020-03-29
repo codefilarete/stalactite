@@ -504,6 +504,15 @@ public class PersistenceContext {
 	public interface ExecutableSelect<C> extends MappableQuery<C>, ExecutableQuery<C> {
 		
 		@Override
+		<I> ExecutableSelect<C> mapKey(SerializableFunction<I, C> javaBeanCtor, String columnName);
+		
+		@Override
+		<I, J> ExecutableSelect<C> mapKey(SerializableBiFunction<I, J, C> javaBeanCtor, String columnName1, String columnName2);
+		
+		@Override
+		<I, J, K> ExecutableSelect<C> mapKey(SerializableTriFunction<I, J, K, C> javaBeanCtor, String columnName1, String columnName2, String columnName3);
+		
+		@Override
 		<I> ExecutableSelect<C> mapKey(SerializableFunction<I, C> factory, String columnName, Class<I> columnType);
 		
 		@Override

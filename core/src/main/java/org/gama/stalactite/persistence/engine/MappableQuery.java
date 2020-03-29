@@ -21,6 +21,39 @@ import org.gama.stalactite.sql.result.ResultSetRowTransformer;
 public interface MappableQuery<C> {
 	
 	/**
+	 * Declares root bean constructor and key of {@link java.sql.ResultSet}. Column type will be deduced from given constructor.
+	 *
+	 * @param javaBeanCtor bean constructor that will take column value as parameter
+	 * @param columnName column containing identifier value
+	 * @param <I> identifier type
+	 * @return an instance that allows method chaining
+	 */
+	<I> MappableQuery<C> mapKey(SerializableFunction<I, C> javaBeanCtor, String columnName);
+	
+	/**
+	 * Declares root bean constructor and key of {@link java.sql.ResultSet}. Column type will be deduced from given constructor.
+	 *
+	 * @param javaBeanCtor bean constructor that will take column value as parameter
+	 * @param columnName1 column containing first identifier value
+	 * @param columnName2 column containing second identifier value
+	 * @param <I> identifier type
+	 * @return an instance that allows method chaining
+	 */
+	<I, J> MappableQuery<C> mapKey(SerializableBiFunction<I, J, C> javaBeanCtor, String columnName1, String columnName2);
+	
+	/**
+	 * Declares root bean constructor and key of {@link java.sql.ResultSet}. Column type will be deduced from given constructor.
+	 *
+	 * @param javaBeanCtor bean constructor that will take column value as parameter
+	 * @param columnName1 column containing first identifier value
+	 * @param columnName2 column containing second identifier value
+	 * @param columnName3 column containing third identifier value
+	 * @param <I> identifier type
+	 * @return an instance that allows method chaining
+	 */
+	<I, J, K> MappableQuery<C> mapKey(SerializableTriFunction<I, J, K, C> javaBeanCtor, String columnName1, String columnName2, String columnName3);
+	
+	/**
 	 * Declares root bean constructor and key of {@link java.sql.ResultSet}
 	 * 
 	 * @param javaBeanCtor bean constructor that will take column value as parameter
@@ -44,7 +77,9 @@ public interface MappableQuery<C> {
 	 * @param <J> second identifier type
 	 * @return an instance that allows method chaining
 	 */
-	<I, J> MappableQuery<C> mapKey(SerializableBiFunction<I, J, C> javaBeanCtor, String column1Name, Class<I> column1Type, String column2Name, Class<J> column2Type);
+	<I, J> MappableQuery<C> mapKey(SerializableBiFunction<I, J, C> javaBeanCtor,
+								   String column1Name, Class<I> column1Type,
+								   String column2Name, Class<J> column2Type);
 	
 	/**
 	 * Equivalent of {@link #mapKey(SerializableFunction, String, Class)} with a 3-args constructor
@@ -62,7 +97,8 @@ public interface MappableQuery<C> {
 	 * @param <K> third identifier type
 	 * @return an instance that allows method chaining
 	 */
-	<I, J, K> MappableQuery<C> mapKey(SerializableTriFunction<I, J, K, C> javaBeanCtor, String column1Name, Class<I> column1Type,
+	<I, J, K> MappableQuery<C> mapKey(SerializableTriFunction<I, J, K, C> javaBeanCtor,
+									  String column1Name, Class<I> column1Type,
 									  String column2Name, Class<J> column2Type,
 									  String column3Name, Class<K> column3Type);
 	
