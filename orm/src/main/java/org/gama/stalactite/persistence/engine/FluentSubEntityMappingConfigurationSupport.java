@@ -15,7 +15,7 @@ import org.gama.reflection.AccessorByMethod;
 import org.gama.reflection.AccessorByMethodReference;
 import org.gama.reflection.Accessors;
 import org.gama.reflection.IReversibleAccessor;
-import org.gama.reflection.MemberDefinition;
+import org.gama.reflection.AccessorDefinition;
 import org.gama.reflection.MethodReferenceCapturer;
 import org.gama.reflection.MutatorByMethod;
 import org.gama.reflection.MutatorByMethodReference;
@@ -32,7 +32,7 @@ import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
 
 import static org.gama.lang.Reflections.propertyName;
-import static org.gama.reflection.MemberDefinition.giveMemberDefinition;
+import static org.gama.reflection.AccessorDefinition.giveDefinition;
 
 /**
  * A class that stores configuration made throught a {@link IFluentSubEntityMappingConfiguration}
@@ -204,7 +204,7 @@ public class FluentSubEntityMappingConfigurationSupport<C, I> implements IFluent
 		CascadeOne<C, O, J> cascadeOne = new CascadeOne<>(propertyAccessor, mappingConfiguration.getConfiguration(), table);
 		this.cascadeOnes.add(cascadeOne);
 		// we declare the column on our side
-		propertiesMappingConfigurationSurrogate.addMapping(propertyAccessor, giveMemberDefinition(mutatorByMethodReference), null);
+		propertiesMappingConfigurationSurrogate.addMapping(propertyAccessor, giveDefinition(mutatorByMethodReference), null);
 		return wrapForAdditionalOptions(cascadeOne);
 	}
 	
@@ -222,7 +222,7 @@ public class FluentSubEntityMappingConfigurationSupport<C, I> implements IFluent
 		CascadeOne<C, O, J> cascadeOne = new CascadeOne<>(propertyAccessor, mappingConfiguration.getConfiguration(), table);
 		this.cascadeOnes.add(cascadeOne);
 		// we declare the column on our side
-		propertiesMappingConfigurationSurrogate.addMapping(propertyAccessor, giveMemberDefinition(accessorByMethodReference), null);
+		propertiesMappingConfigurationSurrogate.addMapping(propertyAccessor, giveDefinition(accessorByMethodReference), null);
 		return wrapForAdditionalOptions(cascadeOne);
 	}
 	
@@ -491,7 +491,7 @@ public class FluentSubEntityMappingConfigurationSupport<C, I> implements IFluent
 		}
 		
 		/**
-		 * Equivalent of {@link #addMapping(IReversibleAccessor, MemberDefinition, String)} with a {@link Column}
+		 * Equivalent of {@link #addMapping(IReversibleAccessor, AccessorDefinition, String)} with a {@link Column}
 		 * 
 		 * @return a new Column added to the target table, throws an exception if already mapped
 		 */

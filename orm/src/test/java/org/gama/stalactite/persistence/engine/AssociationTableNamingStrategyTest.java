@@ -3,7 +3,7 @@ package org.gama.stalactite.persistence.engine;
 import java.util.HashSet;
 import java.util.Set;
 
-import org.gama.reflection.MemberDefinition;
+import org.gama.reflection.AccessorDefinition;
 import org.gama.stalactite.persistence.engine.AssociationTableNamingStrategy.DefaultAssociationTableNamingStrategy;
 import org.gama.stalactite.persistence.engine.model.City;
 import org.gama.stalactite.persistence.structure.Column;
@@ -28,8 +28,8 @@ class AssociationTableNamingStrategyTest {
 		
 		DefaultAssociationTableNamingStrategy testInstance = new DefaultAssociationTableNamingStrategy();
 		
-		assertEquals("CountryTable_cities", testInstance.giveName(new MemberDefinition(Country.class, "getCities", Set.class), countryPK, countryFK));
-		assertEquals("CountryTable_CityTables", testInstance.giveName(new MemberDefinition(Country.class, "giveCities", Set.class), countryPK, countryFK));
+		assertEquals("CountryTable_cities", testInstance.giveName(new AccessorDefinition(Country.class, "getCities", Set.class), countryPK, countryFK));
+		assertEquals("CountryTable_CityTables", testInstance.giveName(new AccessorDefinition(Country.class, "giveCities", Set.class), countryPK, countryFK));
 		
 	}
 	

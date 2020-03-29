@@ -14,9 +14,9 @@ import java.util.function.Function;
 
 import org.gama.lang.Reflections;
 import org.gama.reflection.AccessorChain;
+import org.gama.reflection.AccessorDefinition;
 import org.gama.reflection.IReversibleAccessor;
 import org.gama.reflection.IReversibleMutator;
-import org.gama.reflection.MemberDefinition;
 import org.gama.reflection.PropertyAccessor;
 import org.gama.stalactite.persistence.id.assembly.SimpleIdentifierAssembler;
 import org.gama.stalactite.persistence.id.manager.IdentifierInsertionManager;
@@ -98,10 +98,10 @@ public class ClassMappingStrategy<C, I, T extends Table> implements IEntityMappi
 		// identifierAccessor must be the same instance as those stored in propertyToColumn for Map.remove method used in foreach()
 		Column<T, I> identifierColumn = (Column<T, I>) propertyToColumn.get(identifierProperty);
 		if (identifierColumn == null) {
-			throw new IllegalArgumentException("Bean identifier '" + MemberDefinition.toString(identifierProperty) + "' must have its matching column in the mapping");
+			throw new IllegalArgumentException("Bean identifier '" + AccessorDefinition.toString(identifierProperty) + "' must have its matching column in the mapping");
 		}
 		if (!identifierColumn.isPrimaryKey()) {
-			throw new UnsupportedOperationException("Accessor '" + MemberDefinition.toString(identifierProperty)
+			throw new UnsupportedOperationException("Accessor '" + AccessorDefinition.toString(identifierProperty)
 					+ "' is declared as identifier but mapped column " + identifierColumn.toString() + " is not the primary key of table");
 		}
 		this.idMappingStrategy = new SimpleIdMappingStrategy<>(identifierProperty, identifierInsertionManager, new SimpleIdentifierAssembler<>(identifierColumn));

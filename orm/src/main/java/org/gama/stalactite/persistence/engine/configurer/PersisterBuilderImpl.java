@@ -21,8 +21,8 @@ import org.gama.lang.collection.Iterables;
 import org.gama.lang.collection.KeepOrderSet;
 import org.gama.lang.function.Functions;
 import org.gama.lang.function.Hanger.Holder;
+import org.gama.reflection.AccessorDefinition;
 import org.gama.reflection.IReversibleAccessor;
-import org.gama.reflection.MemberDefinition;
 import org.gama.reflection.MethodReferenceCapturer;
 import org.gama.reflection.ValueAccessPointSet;
 import org.gama.stalactite.persistence.engine.AssociationTableNamingStrategy;
@@ -142,7 +142,7 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 			@Override
 			protected String giveColumnName(Linkage linkage) {
 				if (ENTITY_CANDIDATES.get().contains(linkage.getColumnType())) {
-					return joinColumnNamingStrategy.giveName(MemberDefinition.giveMemberDefinition(linkage.getAccessor()));
+					return joinColumnNamingStrategy.giveName(AccessorDefinition.giveDefinition(linkage.getAccessor()));
 				} else {
 					return super.giveColumnName(linkage);
 				}
@@ -196,7 +196,7 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 			if (mapping.getMappingConfiguration() instanceof EntityMappingConfiguration) {
 				((EntityMappingConfiguration<C, I>) mapping.getMappingConfiguration()).getOneToOnes().forEach(cascadeOne -> {
 					if (!cascadeOne.isOwnedByReverseSide()) {
-						MemberDefinition targetProviderDefinition = MemberDefinition.giveMemberDefinition(cascadeOne.getTargetProvider());
+						AccessorDefinition targetProviderDefinition = AccessorDefinition.giveDefinition(cascadeOne.getTargetProvider());
 						mapping.getMapping().put(
 								cascadeOne.getTargetProvider(),
 								mapping.getTargetTable().addColumn(joinColumnNamingStrategy.giveName(targetProviderDefinition),
@@ -534,8 +534,8 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 					+ " in [" + new StringAppender().ccat(Iterables.collectToList(joinedTables, Table::getAbsoluteName), ", ") + "]");
 		}
 		
-		MemberDefinition memberDefinition = MemberDefinition.giveMemberDefinition(identification.getIdAccessor());
-		Column primaryKey = pkTable.addColumn(columnNamingStrategy.giveName(memberDefinition), memberDefinition.getMemberType());
+		AccessorDefinition accessorDefinition = AccessorDefinition.giveDefinition(identification.getIdAccessor());
+		Column primaryKey = pkTable.addColumn(columnNamingStrategy.giveName(accessorDefinition), accessorDefinition.getMemberType());
 		primaryKey.setNullable(false);	// may not be necessary because of primary key, let for principle
 		primaryKey.primaryKey();
 		if (identification.getIdentifierPolicy() == AFTER_INSERT) {
@@ -543,7 +543,7 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 		}
 		final Column[] previousPk = { primaryKey };
 		joinedTables.stream().filter(not(primaryKey.getTable()::equals)).forEach(t -> {
-			Column newColumn = t.addColumn(columnNamingStrategy.giveName(memberDefinition), memberDefinition.getMemberType());
+			Column newColumn = t.addColumn(columnNamingStrategy.giveName(accessorDefinition), accessorDefinition.getMemberType());
 			newColumn.setNullable(false);	// may not be necessary because of primary key, let for principle
 			newColumn.primaryKey();
 			previousPk[0] = newColumn;
@@ -600,7 +600,7 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 				ValueAccessPointSet localMapping = new ValueAccessPointSet(currentColumnMap.keySet());
 				propertiesMapping.keySet().forEach(propertyAccessor -> {
 					if (localMapping.contains(propertyAccessor)) {
-						throw new MappingConfigurationException(MemberDefinition.toString(propertyAccessor) + " is mapped twice");
+						throw new MappingConfigurationException(AccessorDefinition.toString(propertyAccessor) + " is mapped twice");
 					}
 				});
 				currentColumnMap.putAll(propertiesMapping);
@@ -702,7 +702,7 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 		}
 		if (entityMappingConfiguration.getIdentifierAccessor() != null && entityMappingConfiguration.getInheritanceConfiguration() != null) {
 			throw new MappingConfigurationException("Defining an identifier while inheritance is used is not supported : "
-					+ Reflections.toString(entityMappingConfiguration.getEntityType()) + " defined identifier " + MemberDefinition.toString(entityMappingConfiguration.getIdentifierAccessor())
+					+ Reflections.toString(entityMappingConfiguration.getEntityType()) + " defined identifier " + AccessorDefinition.toString(entityMappingConfiguration.getIdentifierAccessor())
 					+ " while it inherits from " + Reflections.toString(entityMappingConfiguration.getInheritanceConfiguration().getConfiguration().getEntityType()));
 		}
 		
@@ -748,7 +748,7 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 		Column primaryKey = (Column) Iterables.first(targetTable.getPrimaryKey().getColumns());
 		IdentifierPolicy identifierPolicy = identification.getIdentificationDefiner().getIdentifierPolicy();
 		IReversibleAccessor idAccessor = identification.getIdAccessor();
-		MemberDefinition idDefinition = MemberDefinition.giveMemberDefinition(idAccessor);
+		AccessorDefinition idDefinition = AccessorDefinition.giveDefinition(idAccessor);
 		Class identifierType = idDefinition.getMemberType();
 		if (isIdentifyingConfiguration) {
 			if (identifierPolicy == AFTER_INSERT) {

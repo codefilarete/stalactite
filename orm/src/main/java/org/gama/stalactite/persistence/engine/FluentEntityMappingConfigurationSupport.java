@@ -19,9 +19,9 @@ import org.gama.lang.function.Serie;
 import org.gama.lang.reflect.MethodDispatcher;
 import org.gama.reflection.AccessorByMethod;
 import org.gama.reflection.AccessorByMethodReference;
+import org.gama.reflection.AccessorDefinition;
 import org.gama.reflection.Accessors;
 import org.gama.reflection.IReversibleAccessor;
-import org.gama.reflection.MemberDefinition;
 import org.gama.reflection.MethodReferenceCapturer;
 import org.gama.reflection.MethodReferenceDispatcher;
 import org.gama.reflection.MutatorByMethod;
@@ -661,7 +661,7 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements IFluentEnt
 		}
 		
 		/**
-		 * Equivalent of {@link #addMapping(IReversibleAccessor, MemberDefinition, String)} with a {@link Column}
+		 * Equivalent of {@link #addMapping(IReversibleAccessor, AccessorDefinition, String)} with a {@link Column}
 		 * 
 		 * @return a new Column added to the target table, throws an exception if already mapped
 		 */
@@ -678,7 +678,7 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements IFluentEnt
 						public ColumnOptions identifier(IdentifierPolicy identifierPolicy) {
 							// Please note that we don't check for any id presence in inheritance since this will override parent one (see final build()) 
 							if (entityConfigurationSupport.identifierAccessor != null) {
-								throw new IllegalArgumentException("Identifier is already defined by " + MemberDefinition.toString(entityConfigurationSupport.identifierAccessor));
+								throw new IllegalArgumentException("Identifier is already defined by " + AccessorDefinition.toString(entityConfigurationSupport.identifierAccessor));
 							}
 							entityConfigurationSupport.identifierAccessor = newMapping.getAccessor();
 							entityConfigurationSupport.identifierPolicy = identifierPolicy;

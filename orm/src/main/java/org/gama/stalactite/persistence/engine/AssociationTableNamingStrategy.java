@@ -4,7 +4,7 @@ import javax.annotation.Nonnull;
 
 import org.gama.lang.Reflections;
 import org.gama.lang.Strings;
-import org.gama.reflection.MemberDefinition;
+import org.gama.reflection.AccessorDefinition;
 import org.gama.stalactite.persistence.structure.Column;
 
 import static org.gama.lang.Reflections.GET_SET_PREFIX_REMOVER;
@@ -19,12 +19,12 @@ public interface AssociationTableNamingStrategy {
 	
 	/**
 	 * Gives association table name
-	 * @param memberDefinition a representation of the method (getter or setter) that gives the collection to be persisted
+	 * @param accessorDefinition a representation of the method (getter or setter) that gives the collection to be persisted
 	 * @param source column that maps "one" side (on source table)
 	 * @param target column that maps "many" side (on target table)
 	 * @return table name for association table
 	 */
-	String giveName(@Nonnull MemberDefinition memberDefinition, @Nonnull Column source, @Nonnull Column target);
+	String giveName(@Nonnull AccessorDefinition accessorDefinition, @Nonnull Column source, @Nonnull Column target);
 	
 	String giveOneSideColumnName(@Nonnull Column source);
 	
@@ -46,7 +46,7 @@ public interface AssociationTableNamingStrategy {
 	class DefaultAssociationTableNamingStrategy implements AssociationTableNamingStrategy {
 		
 		@Override
-		public String giveName(@Nonnull MemberDefinition accessor, @Nonnull Column source, @Nonnull Column target) {
+		public String giveName(@Nonnull AccessorDefinition accessor, @Nonnull Column source, @Nonnull Column target) {
 			String suffix = Reflections.onJavaBeanPropertyWrapperNameGeneric(accessor.getName(), accessor.getName(),
 					GET_SET_PREFIX_REMOVER.andThen(Strings::uncapitalize),
 					GET_SET_PREFIX_REMOVER.andThen(Strings::uncapitalize),

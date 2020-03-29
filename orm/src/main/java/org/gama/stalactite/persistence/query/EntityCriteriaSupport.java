@@ -14,8 +14,8 @@ import org.gama.lang.collection.Arrays;
 import org.gama.reflection.AccessorByMethod;
 import org.gama.reflection.AccessorByMethodReference;
 import org.gama.reflection.AccessorChain;
+import org.gama.reflection.AccessorDefinition;
 import org.gama.reflection.IAccessor;
-import org.gama.reflection.MemberDefinition;
 import org.gama.reflection.MutatorByMethodReference;
 import org.gama.reflection.ValueAccessPoint;
 import org.gama.reflection.ValueAccessPointByMethodReference;
@@ -130,7 +130,7 @@ public class EntityCriteriaSupport<C> implements RelationalEntityCriteria<C> {
 	private Column getColumn(ValueAccessPointByMethodReference ... methodReferences) {
 		Column column = rootConfiguration.getColumn(methodReferences);
 		if (column == null) {
-			throw new IllegalArgumentException("No column found for " + MemberDefinition.toString(Arrays.asList(methodReferences)));
+			throw new IllegalArgumentException("No column found for " + AccessorDefinition.toString(Arrays.asList(methodReferences)));
 		}
 		return column;
 	}
@@ -217,7 +217,7 @@ public class EntityCriteriaSupport<C> implements RelationalEntityCriteria<C> {
 			if (column != null) {
 				return column;
 			} else {
-				throw new RuntimeMappingException("Column for " + MemberDefinition.toString(Arrays.asList(accessPoints)) + " was not found");
+				throw new RuntimeMappingException("Column for " + AccessorDefinition.toString(Arrays.asList(accessPoints)) + " was not found");
 			}
 		}
 		

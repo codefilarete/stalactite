@@ -16,9 +16,9 @@ import org.gama.lang.reflect.MethodDispatcher;
 import org.gama.reflection.AccessorByMethod;
 import org.gama.reflection.AccessorByMethodReference;
 import org.gama.reflection.AccessorChain;
+import org.gama.reflection.AccessorDefinition;
 import org.gama.reflection.Accessors;
 import org.gama.reflection.IReversibleAccessor;
-import org.gama.reflection.MemberDefinition;
 import org.gama.reflection.MethodReferenceCapturer;
 import org.gama.reflection.MethodReferenceDispatcher;
 import org.gama.reflection.MutatorByMethod;
@@ -166,16 +166,16 @@ public class FluentEmbeddableMappingConfigurationSupport<C> implements IFluentEm
 	
 	<E> AbstractLinkage<C> addMapping(SerializableBiConsumer<C, E> setter, @Nullable String columnName) {
 		IReversibleAccessor<C, E> mutator = Accessors.mutator(setter);
-		return addMapping(mutator, MemberDefinition.giveMemberDefinition(mutator), columnName);
+		return addMapping(mutator, AccessorDefinition.giveDefinition(mutator), columnName);
 	}
 	
 	<E> AbstractLinkage<C> addMapping(SerializableFunction<C, E> getter, @Nullable String columnName) {
 		IReversibleAccessor<C, E> accessor = Accessors.accessor(getter);
-		return addMapping(accessor, MemberDefinition.giveMemberDefinition(accessor), columnName);
+		return addMapping(accessor, AccessorDefinition.giveDefinition(accessor), columnName);
 	}
 	
-	AbstractLinkage<C> addMapping(IReversibleAccessor<C, ?> propertyAccessor, MemberDefinition memberDefinition, @Nullable String columnName) {
-		AbstractLinkage<C> linkage = newLinkage(propertyAccessor, memberDefinition.getMemberType(), columnName);
+	AbstractLinkage<C> addMapping(IReversibleAccessor<C, ?> propertyAccessor, AccessorDefinition accessorDefinition, @Nullable String columnName) {
+		AbstractLinkage<C> linkage = newLinkage(propertyAccessor, accessorDefinition.getMemberType(), columnName);
 		this.mapping.add(linkage);
 		return linkage;
 	}

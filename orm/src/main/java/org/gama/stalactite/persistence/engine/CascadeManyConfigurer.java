@@ -21,10 +21,10 @@ import org.gama.lang.collection.Arrays;
 import org.gama.lang.collection.Iterables;
 import org.gama.reflection.AccessorByMember;
 import org.gama.reflection.AccessorByMethod;
+import org.gama.reflection.AccessorDefinition;
 import org.gama.reflection.Accessors;
 import org.gama.reflection.IMutator;
 import org.gama.reflection.IReversibleAccessor;
-import org.gama.reflection.MemberDefinition;
 import org.gama.reflection.MethodReferenceCapturer;
 import org.gama.reflection.MutatorByMethod;
 import org.gama.reflection.PropertyAccessor;
@@ -142,7 +142,7 @@ public class CascadeManyConfigurer<SRC, TRGT, ID, C extends Collection<TRGT>> {
 		private final IMutator<SRC, C> setter;
 		private final boolean orphanRemoval;
 		private final boolean writeAuthorized;
-		private final MemberDefinition memberDefinition;
+		private final AccessorDefinition accessorDefinition;
 		private IMutator<TRGT, SRC> reversePropertySetter;
 		
 		private ManyAssociationConfiguration(CascadeMany<SRC, TRGT, ID, C> cascadeMany,
@@ -161,9 +161,9 @@ public class CascadeManyConfigurer<SRC, TRGT, ID, C extends Collection<TRGT>> {
 			this.joinColumnNamingStrategy = joinColumnNamingStrategy;
 			this.collectionGetter = cascadeMany.getCollectionProvider();
 			this.setter = collectionGetter.toMutator();
-			// we don't use MemberDefinition.giveMemberDefinition(..) because it gives a cross-member definition, loosing get/set for example,
+			// we don't use AccessorDefinition.giveMemberDefinition(..) because it gives a cross-member definition, loosing get/set for example,
 			// whereas we need this information to build better association table name
-			this.memberDefinition = new MemberDefinition(
+			this.accessorDefinition = new AccessorDefinition(
 					cascadeMany.getMethodReference().getDeclaringClass(),
 					cascadeMany.getMethodReference().getMethodName(),
 					cascadeMany.getMethodReference().getPropertyType());
@@ -189,12 +189,12 @@ public class CascadeManyConfigurer<SRC, TRGT, ID, C extends Collection<TRGT>> {
 		 * @return a concrete and instanciable type compatible with acccessor input type
 		 */
 		protected Class<C> giveInstanciationType() {
-			if (List.class.equals(memberDefinition.getMemberType())) {
+			if (List.class.equals(accessorDefinition.getMemberType())) {
 				return (Class) ArrayList.class;
-			} else if (Set.class.equals(memberDefinition.getMemberType())) {
+			} else if (Set.class.equals(accessorDefinition.getMemberType())) {
 				return (Class) HashSet.class;
 			} else {
-				return memberDefinition.getMemberType();
+				return accessorDefinition.getMemberType();
 			}
 		}
 	}
@@ -227,7 +227,7 @@ public class CascadeManyConfigurer<SRC, TRGT, ID, C extends Collection<TRGT>> {
 			Table<?> rightTable = manyAssociationConfiguration.targetPersister.getMappingStrategy().getTargetTable();
 			Column rightPrimaryKey = first(rightTable.getPrimaryKey().getColumns());
 			
-			String associationTableName = associationTableNamingStrategy.giveName(manyAssociationConfiguration.memberDefinition,
+			String associationTableName = associationTableNamingStrategy.giveName(manyAssociationConfiguration.accessorDefinition,
 					manyAssociationConfiguration.leftPrimaryKey, rightPrimaryKey);
 			AbstractOneToManyWithAssociationTableEngine<SRC, TRGT, ID, C, ? extends AssociationRecord, ? extends AssociationTable> oneToManyWithAssociationTableEngine;
 			ManyRelationDescriptor<SRC, TRGT, C> manyRelationDescriptor = new ManyRelationDescriptor<>(
@@ -281,7 +281,7 @@ public class CascadeManyConfigurer<SRC, TRGT, ID, C extends Collection<TRGT>> {
 			
 			if (((CascadeManyList) manyAssociationConfiguration.cascadeMany).getIndexingColumn() != null) {
 				throw new UnsupportedOperationException("Indexing column is defined without owner : relation is only declared by "
-						+ MemberDefinition.toString(manyAssociationConfiguration.collectionGetter));
+						+ AccessorDefinition.toString(manyAssociationConfiguration.collectionGetter));
 			}
 			
 			// NB: index column is part of the primary key
@@ -363,7 +363,7 @@ public class CascadeManyConfigurer<SRC, TRGT, ID, C extends Collection<TRGT>> {
 					// no column found for reverse side owner, we create it
 					PrimaryKey<?> primaryKey = sourceMappingStrategy.getTargetTable().getPrimaryKey();
 					reverseColumn = targetMappingStrategy.getTargetTable().addColumn(
-							manyAssociationConfiguration.joinColumnNamingStrategy.giveName(MemberDefinition.giveMemberDefinition(reversePropertyAccessor)),
+							manyAssociationConfiguration.joinColumnNamingStrategy.giveName(AccessorDefinition.giveDefinition(reversePropertyAccessor)),
 							Iterables.first(primaryKey.getColumns()).getJavaType());
 					// column can be null if we don't remove orphans
 					reverseColumn.setNullable(!allowOrphanRemoval);

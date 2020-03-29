@@ -6,7 +6,7 @@ import java.util.Set;
 
 import org.gama.lang.Reflections;
 import org.gama.lang.collection.Iterables;
-import org.gama.reflection.MemberDefinition;
+import org.gama.reflection.AccessorDefinition;
 import org.gama.reflection.MethodReferenceCapturer;
 import org.gama.reflection.MethodReferenceDispatcher;
 import org.gama.stalactite.persistence.engine.EmbeddableMappingBuilder.ColumnNameProvider;
@@ -69,7 +69,7 @@ public abstract class AbstractEntityMappingBuilder<C, I> {
 			@Override
 			protected String giveColumnName(Linkage linkage) {
 				if (ENTITY_CANDIDATES.get().contains(linkage.getColumnType())) {
-					return configurationSupport.getJoinColumnNamingStrategy().giveName(MemberDefinition.giveMemberDefinition(linkage.getAccessor()));
+					return configurationSupport.getJoinColumnNamingStrategy().giveName(AccessorDefinition.giveDefinition(linkage.getAccessor()));
 				} else {
 					return super.giveColumnName(linkage);
 				}
@@ -119,7 +119,7 @@ public abstract class AbstractEntityMappingBuilder<C, I> {
 					// TODO : check for removal of this condition when subclasses will be defined with EmbeddableConfiguration, not EntityConfiguration
 					&& configurationSupport.getInheritanceConfiguration().getConfiguration().getPolymorphismPolicy() == null) {
 				throw new MappingConfigurationException("Defining an identifier while inheritance is used is not supported : "
-						+ Reflections.toString(configurationSupport.getEntityType()) + " defined identifier " + MemberDefinition.toString(configurationSupport.getIdentifierAccessor())
+						+ Reflections.toString(configurationSupport.getEntityType()) + " defined identifier " + AccessorDefinition.toString(configurationSupport.getIdentifierAccessor())
 						+ " while it inherits from " + Reflections.toString(configurationSupport.getInheritanceConfiguration().getConfiguration().getEntityType()));
 			}
 			

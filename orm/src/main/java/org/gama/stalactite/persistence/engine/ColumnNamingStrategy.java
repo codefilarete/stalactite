@@ -2,7 +2,7 @@ package org.gama.stalactite.persistence.engine;
 
 import org.gama.lang.Reflections;
 import org.gama.lang.Strings;
-import org.gama.reflection.MemberDefinition;
+import org.gama.reflection.AccessorDefinition;
 
 import static org.gama.lang.Reflections.GET_SET_PREFIX_REMOVER;
 import static org.gama.lang.Reflections.IS_PREFIX_REMOVER;
@@ -15,9 +15,9 @@ public interface ColumnNamingStrategy {
 	/**
 	 * Expected to generate a name for the given method definition that maps a property to a column
 	 * 
-	 * @param memberDefinition a representation of the method (getter or setter) that gives the property to be persisted
+	 * @param accessorDefinition a representation of the method (getter or setter) that gives the property to be persisted
 	 */
-	String giveName(MemberDefinition memberDefinition);
+	String giveName(AccessorDefinition accessorDefinition);
 	
 	String DEFAULT_JOIN_COLUMN_SUFFIX = "Id";
 	

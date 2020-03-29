@@ -33,11 +33,11 @@ import org.gama.lang.function.SerializableTriFunction;
 import org.gama.reflection.AccessorByMethod;
 import org.gama.reflection.AccessorChain;
 import org.gama.reflection.AccessorChainMutator;
+import org.gama.reflection.AccessorDefinition;
 import org.gama.reflection.IAccessor;
 import org.gama.reflection.IMutator;
 import org.gama.reflection.IReversibleAccessor;
 import org.gama.reflection.IReversibleMutator;
-import org.gama.reflection.MemberDefinition;
 import org.gama.reflection.MethodReferences;
 import org.gama.reflection.MutatorByMethod;
 import org.gama.reflection.ValueAccessPoint;
@@ -237,8 +237,8 @@ class BeanMappingBuilder {
 						
 						@Override
 						public String toString() {
-							return "Embeddable definition '" + MemberDefinition.toString(embeddableBeanProperty)
-									+ "' vs entity definition '" + MemberDefinition.toString(entityProperty)
+							return "Embeddable definition '" + AccessorDefinition.toString(embeddableBeanProperty)
+									+ "' vs entity definition '" + AccessorDefinition.toString(entityProperty)
 									+ "' on column name '" + columnName + "'";
 						}
 					}
@@ -257,13 +257,13 @@ class BeanMappingBuilder {
 				Set<ValueAccessPoint> embeddedBeanMappingRegistry = new ValueAccessPointSet(embeddedBeanMapping.keySet());
 				overridenColumnNames.forEach((valueAccessPoint, nameOverride) -> {
 					if (embeddedBeanMappingRegistry.contains(valueAccessPoint)) {
-						MemberDefinition memberDefinition = MemberDefinition.giveMemberDefinition(valueAccessPoint);
-						Column addedColumn = targetTable.addColumn(nameOverride, memberDefinition.getMemberType());
+						AccessorDefinition accessorDefinition = AccessorDefinition.giveDefinition(valueAccessPoint);
+						Column addedColumn = targetTable.addColumn(nameOverride, accessorDefinition.getMemberType());
 						// adding the newly created column to our index for next iterations because it may conflicts with mapping of other iterations
 						columnsPerName.put(nameOverride, addedColumn);
 					} else {
 						// Case : property is not mapped by embeddable strategy, so overriding it has no purpose
-						String methodSignature = MemberDefinition.toString(valueAccessPoint);
+						String methodSignature = AccessorDefinition.toString(valueAccessPoint);
 						throw new MappingConfigurationException(methodSignature + " is not mapped by embeddable strategy,"
 								+ " so its column name override '" + nameOverride + "' can't apply");
 					}
@@ -278,17 +278,17 @@ class BeanMappingBuilder {
 				// we add properties of the embedded bean
 				Stream<ValueAccessPointByMethod> getterAndSetterStream = giveMappableMethodStream(refinedInset, innerEmbeddedBeanRegistry);
 				getterAndSetterStream.forEach(valueAccessPoint -> {
-					MemberDefinition memberDefinition = MemberDefinition.giveMemberDefinition(valueAccessPoint);
+					AccessorDefinition accessorDefinition = AccessorDefinition.giveDefinition(valueAccessPoint);
 					// looking for the targeted column
-					Column targetColumn = findColumn(valueAccessPoint, memberDefinition.getName(), columnsPerName, refinedInset);
+					Column targetColumn = findColumn(valueAccessPoint, accessorDefinition.getName(), columnsPerName, refinedInset);
 					if (targetColumn == null) {
 						// Column isn't declared in table => we create one from field informations
-						String columnName = columnNameProvider.giveColumnName(memberDefinition);
+						String columnName = columnNameProvider.giveColumnName(accessorDefinition);
 						String overridenName = overridenColumnNames.get(valueAccessPoint);
 						if (overridenName != null) {
 							columnName = overridenName;
 						}
-						targetColumn = targetTable.addColumn(columnName, memberDefinition.getMemberType());
+						targetColumn = targetTable.addColumn(columnName, accessorDefinition.getMemberType());
 						// adding the newly created column to our index for next iterations because it may conflicts with mapping of other iterations
 						columnsPerName.put(columnName, targetColumn);
 					} else {
@@ -300,8 +300,8 @@ class BeanMappingBuilder {
 							Method currentMethod = inset.getInsetAccessor();
 							String currentMethodReference = toMethodReferenceString(currentMethod);
 							throw new MappingConfigurationException("Error while mapping "
-									+ currentMethodReference + " : " + memberDefinition.toString()
-									+ " conflicts with " + MemberDefinition.toString(existingMapping.getKey()) + " because they use same column" +
+									+ currentMethodReference + " : " + accessorDefinition.toString()
+									+ " conflicts with " + AccessorDefinition.toString(existingMapping.getKey()) + " because they use same column" +
 									", override one of their name to avoid the conflict" +
 									", see " + MethodReferences.toMethodReferenceString(
 									(SerializableTriFunction<EmbedOptions, SerializableFunction, String, EmbedOptions>) EmbedOptions::overrideName));
@@ -400,7 +400,7 @@ class BeanMappingBuilder {
 							currentMethodReference + " conflicts with " + conflictingDeclaration + " while embedding a " + Reflections.toString(inset.getEmbeddedClass())
 									+ ", column names should be overriden : "
 									+ minus(expectedOverridenFields, overridenFields, new ValueAccessPointComparator())
-									.stream().map(MemberDefinition::toString).collect(Collectors.joining(", ")));
+									.stream().map(AccessorDefinition::toString).collect(Collectors.joining(", ")));
 				}
 			}
 		}
@@ -467,11 +467,11 @@ class BeanMappingBuilder {
 		
 		protected String giveColumnName(Linkage linkage) {
 			return nullable(linkage.getColumnName())
-					.getOr(() -> giveColumnName(MemberDefinition.giveMemberDefinition(linkage.getAccessor())));
+					.getOr(() -> giveColumnName(AccessorDefinition.giveDefinition(linkage.getAccessor())));
 		}
 		
-		protected String giveColumnName(MemberDefinition memberDefinition) {
-			return columnNamingStrategy.giveName(memberDefinition);
+		protected String giveColumnName(AccessorDefinition accessorDefinition) {
+			return columnNamingStrategy.giveName(accessorDefinition);
 		}
 	}
 	
@@ -491,10 +491,10 @@ class BeanMappingBuilder {
 		public void accept(Linkage pawn) {
 			IReversibleAccessor accessor = pawn.getAccessor();
 			if (columnName.equals(columnNameProvider.giveColumnName(pawn))) {
-				throw new MappingConfigurationException("Column " + columnName + " of mapping " + MemberDefinition.toString(propertyAccessor)
-						+ " is already targetted by " + MemberDefinition.toString(pawn.getAccessor()));
+				throw new MappingConfigurationException("Column " + columnName + " of mapping " + AccessorDefinition.toString(propertyAccessor)
+						+ " is already targetted by " + AccessorDefinition.toString(pawn.getAccessor()));
 			} else if (valueAccessPointComparator.compare(accessor, propertyAccessor) == 0) {
-					throw new MappingConfigurationException("Mapping is already defined by method " + MemberDefinition.toString(propertyAccessor));
+					throw new MappingConfigurationException("Mapping is already defined by method " + AccessorDefinition.toString(propertyAccessor));
 			}
 		}
 	}

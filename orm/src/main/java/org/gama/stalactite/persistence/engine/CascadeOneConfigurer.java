@@ -20,11 +20,11 @@ import org.gama.lang.ThreadLocals;
 import org.gama.lang.collection.Iterables;
 import org.gama.lang.function.Predicates;
 import org.gama.reflection.AccessorByMethodReference;
+import org.gama.reflection.AccessorDefinition;
 import org.gama.reflection.Accessors;
 import org.gama.reflection.IAccessor;
 import org.gama.reflection.IMutator;
 import org.gama.reflection.IReversibleAccessor;
-import org.gama.reflection.MemberDefinition;
 import org.gama.reflection.ValueAccessPoint;
 import org.gama.reflection.ValueAccessPointMap;
 import org.gama.stalactite.persistence.engine.CascadeOptions.RelationMode;
@@ -363,13 +363,13 @@ public class CascadeOneConfigurer<SRC, TRGT, ID> {
 			IMutator<SRC, TRGT> sourceIntoTargetFixer = targetAccessor.toMutator();
 			if (cascadeOne.getReverseGetter() != null) {
 				AccessorByMethodReference<TRGT, SRC> localReverseGetter = Accessors.accessorByMethodReference(cascadeOne.getReverseGetter());
-				MemberDefinition memberDefinition = MemberDefinition.giveMemberDefinition(localReverseGetter);
+				AccessorDefinition accessorDefinition = AccessorDefinition.giveDefinition(localReverseGetter);
 				// we add a column for reverse mapping if one is not already declared
-				rightColumn = createOrUseReverseColumn(targetMappingStrategy, cascadeOne.getReverseColumn(), localReverseGetter, memberDefinition, joinColumnNamingStrategy);
+				rightColumn = createOrUseReverseColumn(targetMappingStrategy, cascadeOne.getReverseColumn(), localReverseGetter, accessorDefinition, joinColumnNamingStrategy);
 				registerEntityBinder(rightColumn, mappingStrategy, persistenceContext.getDialect());
 				
-				// we take advantage of foreign key computing and presence of MemberDefinition to build relation fixer which is needed lately in determineRelationFixer(..) 
-				IMutator<TRGT, SRC> targetIntoSourceFixer = Accessors.mutatorByMethod(memberDefinition.getDeclaringClass(), memberDefinition.getName());
+				// we take advantage of foreign key computing and presence of AccessorDefinition to build relation fixer which is needed lately in determineRelationFixer(..) 
+				IMutator<TRGT, SRC> targetIntoSourceFixer = Accessors.mutatorByMethod(accessorDefinition.getDeclaringClass(), accessorDefinition.getName());
 				beanRelationFixer = (src, target) -> {
 					// fixing source on target
 					if (target != null) {	// prevent NullPointerException, actually means no linked entity (null relation), so nothing to do
@@ -381,14 +381,14 @@ public class CascadeOneConfigurer<SRC, TRGT, ID> {
 				this.reverseGetter = cascadeOne.getReverseGetter();
 			} else if (cascadeOne.getReverseSetter() != null) {
 				ValueAccessPoint reverseSetter = Accessors.mutatorByMethodReference(cascadeOne.getReverseSetter());
-				MemberDefinition memberDefinition = MemberDefinition.giveMemberDefinition(reverseSetter);
+				AccessorDefinition accessorDefinition = AccessorDefinition.giveDefinition(reverseSetter);
 				// we add a column for reverse mapping if one is not already declared
-				rightColumn = createOrUseReverseColumn(targetMappingStrategy, cascadeOne.getReverseColumn(), reverseSetter, memberDefinition,
+				rightColumn = createOrUseReverseColumn(targetMappingStrategy, cascadeOne.getReverseColumn(), reverseSetter, accessorDefinition,
 						joinColumnNamingStrategy);
 				registerEntityBinder(rightColumn, mappingStrategy, persistenceContext.getDialect());
 				
-				IAccessor<TRGT, SRC> accessor = Accessors.accessor(memberDefinition.getDeclaringClass(), memberDefinition.getName());
-				// we take advantage of forign key computing and presence of MemberDefinition to build relation fixer which is needed lately in determineRelationFixer(..) 
+				IAccessor<TRGT, SRC> accessor = Accessors.accessor(accessorDefinition.getDeclaringClass(), accessorDefinition.getName());
+				// we take advantage of forign key computing and presence of AccessorDefinition to build relation fixer which is needed lately in determineRelationFixer(..) 
 				beanRelationFixer = (target, input) -> {
 					// fixing target on source side
 					cascadeOne.getReverseSetter().accept(input, target);
@@ -407,14 +407,14 @@ public class CascadeOneConfigurer<SRC, TRGT, ID> {
 		}
 		
 		private Column createOrUseReverseColumn(IEntityMappingStrategy<TRGT, ID, ?> targetMappingStrategy, Column reverseColumn,
-												ValueAccessPoint reverseGetter, MemberDefinition memberDefinition,
+												ValueAccessPoint reverseGetter, AccessorDefinition accessorDefinition,
 												ColumnNamingStrategy joinColumnNamingStrategy) {
 			if (reverseColumn == null) {
 				// no reverse column was given, so we look for the one mapped under the reverse getter
 				reverseColumn = targetMappingStrategy.getPropertyToColumn().get(reverseGetter);
 				if (reverseColumn == null) {
 					// no column is defined under the getter, then we have to create one
-					reverseColumn = targetMappingStrategy.getTargetTable().addColumn(joinColumnNamingStrategy.giveName(memberDefinition), memberDefinition.getMemberType());
+					reverseColumn = targetMappingStrategy.getTargetTable().addColumn(joinColumnNamingStrategy.giveName(accessorDefinition), accessorDefinition.getMemberType());
 				}
 			}
 			return reverseColumn;
@@ -591,7 +591,7 @@ public class CascadeOneConfigurer<SRC, TRGT, ID> {
 	
 	public static RuntimeMappingException newRuntimeMappingException(Object pawn, ValueAccessPoint accessor) {
 		return new RuntimeMappingException("Non null value expected for relation "
-				+ MemberDefinition.toString(accessor) + " on object " + pawn);
+				+ AccessorDefinition.toString(accessor) + " on object " + pawn);
 	}
 	
 	private static class OrphanRemovalOnUpdate<SRC, TRGT> implements UpdateListener<SRC> {
@@ -642,13 +642,13 @@ public class CascadeOneConfigurer<SRC, TRGT, ID> {
 		IdMappingStrategy<TRGT, ID> targetIdMappingStrategy = mappingStrategy.getIdMappingStrategy();
 		Column targetPrimaryKey = ((SimpleIdentifierAssembler) targetIdMappingStrategy.getIdentifierAssembler()).getColumn();
 		IReversibleAccessor targetIdAccessor = ((SinglePropertyIdAccessor) targetIdMappingStrategy.getIdAccessor()).getIdAccessor();
-		MemberDefinition memberDefinition = MemberDefinition.giveMemberDefinition(targetIdAccessor);
+		AccessorDefinition accessorDefinition = AccessorDefinition.giveDefinition(targetIdAccessor);
 		
 		// Binding sql column type
 		String targetPrimaryKeySqlTypeName = dialect.getJavaTypeToSqlTypeMapping().getTypeName(targetPrimaryKey);
 		dialect.getJavaTypeToSqlTypeMapping().put(owningColumn, targetPrimaryKeySqlTypeName);
 		// Binding entity type : binder will get entity identifier
-		ParameterBinder ownerBinder = dialect.getColumnBinderRegistry().getBinder(memberDefinition.getMemberType());
+		ParameterBinder ownerBinder = dialect.getColumnBinderRegistry().getBinder(accessorDefinition.getMemberType());
 		dialect.getColumnBinderRegistry().register(owningColumn, new EntityBinder<>(ownerBinder, targetIdAccessor));
 	}
 	
