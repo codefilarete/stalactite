@@ -1,5 +1,6 @@
 package org.gama.stalactite.sql.result;
 
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
@@ -14,8 +15,8 @@ import org.gama.lang.collection.Iterables;
 import org.gama.lang.collection.Maps;
 import org.gama.lang.function.Functions;
 import org.gama.lang.function.ThrowingRunnable;
+import org.gama.stalactite.sql.result.ResultSetRowTransformerTest.Person;
 import org.gama.stalactite.sql.result.WholeResultSetTransformerTest.WingInner.FeatherInner;
-import org.gama.stalactite.sql.result.ResultSetRowConverterTest.Person;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -241,7 +242,7 @@ public class WholeResultSetTransformerTest {
 	
 	@ParameterizedTest
 	@MethodSource("testTransform_withReuse")
-	public void testTransform_withReuse(ResultSetTransformer featherColorTestInstance) {
+	public void transform_copyWithAliases(ResultSetTransformer<String, FeatherColor> featherColorTestInstance) {
 		String chickenInstanciationColumnName = "chickenName";
 		String leftFeatherColorColumnName = "leftFeatherColor";
 		String rightFeatherColorColumnName = "rightFeatherColor";
@@ -257,26 +258,57 @@ public class WholeResultSetTransformerTest {
 				chicken.getRightWing().add(new Feather(color));
 			}
 		};
+		
+		Map<String, String> leftColumnMapping = Maps.forHashMap(String.class, String.class)
+				.add("featherColor", leftFeatherColorColumnName);
+		Map<String, String> rightColumnMapping = Maps.forHashMap(String.class, String.class)
+				.add("featherColor", rightFeatherColorColumnName);
 		if (featherColorTestInstance instanceof ResultSetRowTransformer) {
 			// we reuse the FeatherColor transformer for the left wing
-			testInstance.add(leftChickenFeatherColorCombiner, (ResultSetRowTransformer) featherColorTestInstance.copyWithAliases(Maps.asMap("featherColor", leftFeatherColorColumnName)));
+			testInstance.add(leftChickenFeatherColorCombiner, (ResultSetRowTransformer) featherColorTestInstance.copyWithAliases(leftColumnMapping));
 			// we reuse the FeatherColor transformer for the right wing
-			testInstance.add(rightChickenFeatherColorCombiner, (ResultSetRowTransformer) featherColorTestInstance.copyWithAliases(Maps.asMap("featherColor", rightFeatherColorColumnName)));
+			testInstance.add(rightChickenFeatherColorCombiner, (ResultSetRowTransformer) featherColorTestInstance.copyWithAliases(rightColumnMapping));
 		} else if (featherColorTestInstance instanceof WholeResultSetTransformer) {
 			// we reuse the FeatherColor transformer for the left wing
-			testInstance.add(leftChickenFeatherColorCombiner, (WholeResultSetTransformer) featherColorTestInstance.copyWithAliases(Maps.asMap("featherColor", leftFeatherColorColumnName)));
+			testInstance.add(leftChickenFeatherColorCombiner, (WholeResultSetTransformer) featherColorTestInstance.copyWithAliases(leftColumnMapping));
 			// we reuse the FeatherColor transformer for the right wing
-			testInstance.add(rightChickenFeatherColorCombiner, (WholeResultSetTransformer) featherColorTestInstance.copyWithAliases(Maps.asMap("featherColor", rightFeatherColorColumnName)));
+			testInstance.add(rightChickenFeatherColorCombiner, (WholeResultSetTransformer) featherColorTestInstance.copyWithAliases(rightColumnMapping));
 		}
+		
+		String sneakyFeatherColorColumnName = "sneakyFeatherColor";
+		ResultSetRowAssembler<Chicken> rawAssembler = new ResultSetRowAssembler<Chicken>() {
+			@Override
+			public void assemble(Chicken rootBean, ResultSet resultSet) throws SQLException {
+				rootBean.addLeftFeather(new FeatherColor(resultSet.getString(sneakyFeatherColorColumnName)));
+			}
+			
+			@Override
+			public ResultSetRowAssembler<Chicken> copyWithAliases(Function<String, String> columnMapping) {
+				return (rootBean, resultSet) -> rootBean.addLeftFeather(new FeatherColor(resultSet.getString(columnMapping.apply(sneakyFeatherColorColumnName))));
+			}
+		};
+		testInstance.add(rawAssembler);
+		
+		Function<String, String> translatingColumnFunction = (String s) -> "_" + s + "_";
+		testInstance = testInstance.copyWithAliases(translatingColumnFunction);
 		
 		// a ResultSet that retrieves all the feathers of a unique Chicken
 		InMemoryResultSet resultSet = new InMemoryResultSet(Arrays.asList(
 				Maps.forHashMap(String.class, Object.class)
-						.add(chickenInstanciationColumnName, "rooster").add(rightFeatherColorColumnName, null).add(leftFeatherColorColumnName, "red"),
+						.add(translatingColumnFunction.apply(chickenInstanciationColumnName), "rooster")
+						.add(translatingColumnFunction.apply(rightFeatherColorColumnName), null)
+						.add(translatingColumnFunction.apply(leftFeatherColorColumnName), "red")
+						.add(translatingColumnFunction.apply(sneakyFeatherColorColumnName), "pink"),
 				Maps.forHashMap(String.class, Object.class)
-						.add(chickenInstanciationColumnName, "rooster").add(rightFeatherColorColumnName, null).add(leftFeatherColorColumnName, "black"),
+						.add(translatingColumnFunction.apply(chickenInstanciationColumnName), "rooster")
+						.add(translatingColumnFunction.apply(rightFeatherColorColumnName), null)
+						.add(translatingColumnFunction.apply(leftFeatherColorColumnName), "black")
+						.add(translatingColumnFunction.apply(sneakyFeatherColorColumnName), "pink"),
 				Maps.forHashMap(String.class, Object.class)
-						.add(chickenInstanciationColumnName, "rooster").add(rightFeatherColorColumnName, "black").add(leftFeatherColorColumnName, null)
+						.add(translatingColumnFunction.apply(chickenInstanciationColumnName), "rooster")
+						.add(translatingColumnFunction.apply(rightFeatherColorColumnName), "black")
+						.add(translatingColumnFunction.apply(leftFeatherColorColumnName), null)
+						.add(translatingColumnFunction.apply(sneakyFeatherColorColumnName), "pink")
 		));
 		
 		List<Chicken> result = testInstance.transformAll(resultSet);
@@ -288,8 +320,8 @@ public class WholeResultSetTransformerTest {
 		
 		Chicken rooster = result.get(0);
 		assertEquals("rooster", rooster.getName());
-		// Two colors on left : red and black
-		assertEquals(Arrays.asList("red", "black"), rooster.getLeftWing().getFeathers().stream()
+		// Colors on left : red, black and pink put by dummy row transformer
+		assertEquals(Arrays.asList("red", "pink", "black", "pink", "pink"), rooster.getLeftWing().getFeathers().stream()
 				.map(Functions.link(Feather::getColor, FeatherColor::getName)).collect(Collectors.toList()));
 		// One color on right : black
 		assertEquals(Arrays.asList("black"), rooster.getRightWing().getFeathers().stream()
@@ -303,7 +335,7 @@ public class WholeResultSetTransformerTest {
 	}
 	
 	@Test
-	public void testCopyFor() {
+	public void copyFor() {
 		String chickenInstanciationColumnName = "chickenName";
 		String leftFeatherColorColumnName = "leftFeatherColor";
 		String rightFeatherColorColumnName = "rightFeatherColor";
@@ -319,6 +351,10 @@ public class WholeResultSetTransformerTest {
 				chicken.getRightWing().add(new Feather(color));
 			}
 		});
+		
+		// we add a dummy assembler to ensure that they are also taken into account by copyFor(..)
+		ResultSetRowAssembler<Chicken> rawAssembler = (rootBean, resultSet) -> rootBean.addLeftFeather(new FeatherColor("pink"));
+		testInstance.add(rawAssembler);
 		
 		WholeResultSetTransformer<String, Rooster> testInstanceCopy = testInstance.copyFor(Rooster.class, Rooster::new);
 		testInstanceCopy.add("chicks", INTEGER_PRIMITIVE_READER, Rooster::setChickCount);
@@ -342,8 +378,8 @@ public class WholeResultSetTransformerTest {
 		Rooster rooster = result.get(0);
 		assertEquals("rooster", rooster.getName());
 		assertEquals(3, rooster.getChickCount());
-		// Two colors on left : red and black
-		assertEquals(Arrays.asList("red", "black"), rooster.getLeftWing().getFeathers().stream()
+		// Colors on left : red, black, and as many as were added by 
+		assertEquals(Arrays.asList("red", "pink", "black", "pink", "pink"), rooster.getLeftWing().getFeathers().stream()
 				.map(Functions.link(Feather::getColor, FeatherColor::getName)).collect(Collectors.toList()));
 		// One color on right : black
 		assertEquals(Arrays.asList("black"), rooster.getRightWing().getFeathers().stream()
@@ -357,7 +393,7 @@ public class WholeResultSetTransformerTest {
 	}
 	
 	@Test
-	public void testAddCollection() {
+	public void exampleWithCollection() {
 		WholeResultSetTransformer<String, Person> testInstance = new WholeResultSetTransformer<>(Person.class, "name", STRING_READER, Person::new);
 		
 		testInstance.add("address", STRING_READER, Person::getAddresses, Person::setAddresses, ArrayList::new);

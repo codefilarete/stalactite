@@ -179,7 +179,6 @@ public class WholeResultSetTransformer<I, C> implements ResultSetTransformer<I, 
 	
 	/**
 	 * Adds a very generic way to assemble {@link ResultSet} rows to a root bean.
-	 * ARGUMENT IS NOT TAKEN INTO ACCOUNT BY {@link #copyFor(Class, Function)} neither {@link #copyWithAliases(Function)} nor {@link #copyWithAliases(Map)}
 	 * 
 	 * @param assembler a generic combiner of a root bean and each {@link ResultSet} row 
 	 * @return this
@@ -197,11 +196,7 @@ public class WholeResultSetTransformer<I, C> implements ResultSetTransformer<I, 
 		);
 		// Making the copy
 		WholeResultSetTransformer<I, T> result = new WholeResultSetTransformer<>(rootConverterCopy);
-		this.combiners.forEach(c -> {
-			if (c instanceof Relation) {
-				result.combiners.add(new Relation<>(((Relation) c).relationFixer, ((Relation) c).transformer));
-			}
-		});
+		result.combiners.addAll(this.combiners);
 		return result;
 	}
 	
@@ -212,9 +207,7 @@ public class WholeResultSetTransformer<I, C> implements ResultSetTransformer<I, 
 		ResultSetRowTransformer<I, C> rootConverterCopy = this.rootConverter.copyWithAliases(columnMapping);
 		WholeResultSetTransformer<I, C> result = new WholeResultSetTransformer<>(rootConverterCopy);
 		this.combiners.forEach(c -> {
-			if (c instanceof Relation) {
-				result.combiners.add(new Relation<>(((Relation) c).relationFixer, ((Relation) c).transformer.copyWithAliases(columnMapping)));
-			}
+			result.combiners.add(c.copyWithAliases(columnMapping));
 		});
 		return result;
 	}

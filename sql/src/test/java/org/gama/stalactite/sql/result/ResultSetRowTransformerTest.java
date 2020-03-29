@@ -4,6 +4,7 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.function.Function;
 
 import org.gama.lang.bean.Objects;
 import org.gama.lang.collection.Arrays;
@@ -19,7 +20,7 @@ import static org.junit.jupiter.api.Assertions.assertNotSame;
 /**
  * @author Guillaume Mary
  */
-public class ResultSetRowConverterTest {
+public class ResultSetRowTransformerTest {
 	
 	@Test
 	public void testTransform_basicUseCase() throws SQLException {
@@ -124,7 +125,7 @@ public class ResultSetRowConverterTest {
 	}
 	
 	@Test
-	public void testCopyFor() throws SQLException {
+	public void copyFor() throws SQLException {
 		ResultSetRowTransformer<String, Vehicle> sourceInstance = new ResultSetRowTransformer<>(Vehicle.class, "name", STRING_READER, Vehicle::new);
 		sourceInstance.add(new ColumnConsumer<>("color", STRING_READER, Vehicle::setColor));
 		
@@ -143,11 +144,29 @@ public class ResultSetRowConverterTest {
 	}
 	
 	@Test
-	public void testAddCollection() throws SQLException {
+	public void exampleWithCollection() throws SQLException {
 		ResultSetRowTransformer<String, Person> testInstance = new ResultSetRowTransformer<>(Person.class, "name", STRING_READER, Person::new);
 		
 		testInstance.add("address1", STRING_READER, Person::getAddresses, Person::setAddresses, ArrayList::new);
 		testInstance.add("address2", STRING_READER, Person::getAddresses, Person::setAddresses, ArrayList::new);
+		
+		InMemoryResultSet resultSet = new InMemoryResultSet(Arrays.asList(
+				Maps.forHashMap(String.class, String.class).add("name", "paul").add("address1", "rue Vaugirard").add("address2", "rue Menon")
+		));
+		
+		resultSet.next();
+		Person result = testInstance.transform(resultSet);
+		assertEquals("paul", result.getName());
+		assertEquals(Arrays.asSet("rue Vaugirard", "rue Menon"), new HashSet<>(result.getAddresses()));
+	}
+	
+	@Test
+	public void relation() throws SQLException {
+		ResultSetRowTransformer<String, Person> testInstance = new ResultSetRowTransformer<>(Person.class, "name", STRING_READER, Person::new);
+		
+		ResultSetRowTransformer<String, String> addressTransformer = new ResultSetRowTransformer<>(String.class, "address1", STRING_READER, Function.identity());
+		testInstance.add(Person::addAddress, addressTransformer);
+		testInstance.add(Person::addAddress, addressTransformer.copyWithAliases(s -> "address2"));
 		
 		InMemoryResultSet resultSet = new InMemoryResultSet(Arrays.asList(
 				Maps.forHashMap(String.class, String.class).add("name", "paul").add("address1", "rue Vaugirard").add("address2", "rue Menon")
@@ -219,6 +238,10 @@ public class ResultSetRowConverterTest {
 		
 		public void setAddresses(List<String> addresses) {
 			this.addresses = addresses;
+		}
+		
+		public void addAddress(String address) {
+			this.addresses.add(address);
 		}
 	}
 }
