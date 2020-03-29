@@ -17,7 +17,7 @@ import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.sql.ConnectionProvider;
 import org.gama.stalactite.sql.binder.DefaultResultSetReaders;
 import org.gama.stalactite.sql.result.InMemoryResultSet;
-import org.gama.stalactite.sql.result.ResultSetRowConverter;
+import org.gama.stalactite.sql.result.ResultSetRowTransformer;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -266,7 +266,7 @@ public class QueryMapperTest {
 		QueryMapper<Toto> queryMapper = new QueryMapper<>(Toto.class, "Whatever SQL ... it not executed", columnBinderRegistry)
 				.mapKey(Toto::new, "id", Toto::setId)
 				.map("name", Toto::setName)
-				.map(Toto::setTata, new ResultSetRowConverter<>(Tata.class, "tataName", DefaultResultSetReaders.STRING_READER, Tata::new));
+				.map(Toto::setTata, new ResultSetRowTransformer<>(Tata.class, "tataName", DefaultResultSetReaders.STRING_READER, Tata::new));
 		
 		List<Map<String, Object>> resultSetData = Arrays.asList(
 				Maps.asHashMap("id", (Object) 42L).add("name", "John").add("tataName", "you"),

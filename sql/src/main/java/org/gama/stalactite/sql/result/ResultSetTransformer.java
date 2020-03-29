@@ -16,7 +16,7 @@ import org.gama.stalactite.sql.binder.ResultSetReader;
  * @param <C> the type of beans
  * @author Guillaume Mary
  */
-public interface ResultSetConverter<I, C> extends CopiableForAnotherQuery<C> {
+public interface ResultSetTransformer<I, C> extends CopiableForAnotherQuery<C> {
 	
 	/**
 	 * Defines a complementary column that will be mapped on a bean property.
@@ -85,20 +85,20 @@ public interface ResultSetConverter<I, C> extends CopiableForAnotherQuery<C> {
 	 * @param <T> the target bean type
 	 * @return a new instance, kind of clone of this but for another type
 	 */
-	<T extends C> ResultSetConverter<I, T> copyFor(Class<T> beanType, Function<I, T> beanFactory);
+	<T extends C> ResultSetTransformer<I, T> copyFor(Class<T> beanType, Function<I, T> beanFactory);
 	
 	/**
 	 * Overriden for return type cast.
 	 */
 	@Override
-	default ResultSetConverter<I, C> copyWithAliases(Function<String, String> columnMapping) {
+	default ResultSetTransformer<I, C> copyWithAliases(Function<String, String> columnMapping) {
 		throw new NotImplementedException("This instance doesn't support copy, please implement it if you wish to reuse its mapping for another query");
 	}
 	
 	/**
 	 * Overriden for return type cast.
 	 */
-	default ResultSetConverter<I, C> copyWithAliases(Map<String, String> columnMapping) {
+	default ResultSetTransformer<I, C> copyWithAliases(Map<String, String> columnMapping) {
 		return copyWithAliases(columnMapping::get);
 	}
 }

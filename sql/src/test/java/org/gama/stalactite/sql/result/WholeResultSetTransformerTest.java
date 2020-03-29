@@ -14,7 +14,7 @@ import org.gama.lang.collection.Iterables;
 import org.gama.lang.collection.Maps;
 import org.gama.lang.function.Functions;
 import org.gama.lang.function.ThrowingRunnable;
-import org.gama.stalactite.sql.result.WholeResultSetConverterTest.WingInner.FeatherInner;
+import org.gama.stalactite.sql.result.WholeResultSetTransformerTest.WingInner.FeatherInner;
 import org.gama.stalactite.sql.result.ResultSetRowConverterTest.Person;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -28,13 +28,13 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 /**
  * @author Guillaume Mary
  */
-public class WholeResultSetConverterTest {
+public class WholeResultSetTransformerTest {
 	
 	@Test
 	public void testTranform() throws SQLException {
 		String chickenInstanciationColumnName = "chickenName";
 		String leftFeatherColorColumnName = "leftFeatherColor";
-		WholeResultSetConverter<String, Chicken> testInstance = new WholeResultSetConverter<>(
+		WholeResultSetTransformer<String, Chicken> testInstance = new WholeResultSetTransformer<>(
 				Chicken.class, chickenInstanciationColumnName, STRING_READER, Chicken::new);
 		testInstance.add(leftFeatherColorColumnName, STRING_READER,
 				(chicken, colorName) -> chicken.getLeftWing().add(new Feather(new FeatherColor(colorName)))
@@ -52,8 +52,8 @@ public class WholeResultSetConverterTest {
 						.add(leftFeatherColorColumnName, "black")
 		));
 		
-		// we must simulate bean caching done by WholeResultSetConverter.convert(..), otherwise we get NullPointerException
-		ThreadLocals.doWithThreadLocal(WholeResultSetConverter.CURRENT_BEAN_CACHE, SimpleBeanCache::new, (ThrowingRunnable<SQLException>) () -> {
+		// we must simulate bean caching done by WholeResultSetTransformer.convert(..), otherwise we get NullPointerException
+		ThreadLocals.doWithThreadLocal(WholeResultSetTransformer.CURRENT_BEAN_CACHE, SimpleBeanCache::new, (ThrowingRunnable<SQLException>) () -> {
 			// from first row, a new instance of Chicken is created named "rooster", it has 1 red feather
 			resultSet.next();
 			Chicken result = testInstance.transform(resultSet);
@@ -76,7 +76,7 @@ public class WholeResultSetConverterTest {
 		String chickenInstanciationColumnName = "chickenName";
 		String leftFeatherColorColumnName = "leftFeatherColor";
 		String rightFeatherColorColumnName = "rightFeatherColor";
-		WholeResultSetConverter<String, Chicken> testInstance = new WholeResultSetConverter<>(Chicken.class, chickenInstanciationColumnName, STRING_READER, Chicken::new);
+		WholeResultSetTransformer<String, Chicken> testInstance = new WholeResultSetTransformer<>(Chicken.class, chickenInstanciationColumnName, STRING_READER, Chicken::new);
 		testInstance.add(leftFeatherColorColumnName, STRING_READER, FeatherColor.class, FeatherColor::new, (chicken, color) -> {
 			if (color != null) {	// prevent addition of Feather with a null color
 				chicken.getLeftWing().add(new Feather(color));
@@ -102,8 +102,8 @@ public class WholeResultSetConverterTest {
 						.add(rightFeatherColorColumnName, "black").add(leftFeatherColorColumnName, null)
 		));
 		
-		// we must simulate bean caching done by WholeResultSetConverter.convert(..), otherwise we get NullPointerException
-		ThreadLocals.doWithThreadLocal(WholeResultSetConverter.CURRENT_BEAN_CACHE, SimpleBeanCache::new, (ThrowingRunnable<SQLException>) () -> {
+		// we must simulate bean caching done by WholeResultSetTransformer.convert(..), otherwise we get NullPointerException
+		ThreadLocals.doWithThreadLocal(WholeResultSetTransformer.CURRENT_BEAN_CACHE, SimpleBeanCache::new, (ThrowingRunnable<SQLException>) () -> {
 			// from first row, a new instance of Chicken is created named "rooster", it has 1 red feather on left wing
 			resultSet.next();
 			Chicken result = testInstance.transform(resultSet);
@@ -142,7 +142,7 @@ public class WholeResultSetConverterTest {
 	public void testTranform_withInnerClass() throws SQLException {
 		String wingInstanciationColumnName = "wingName";
 		String leftFeatherColorColumnName = "featherColor";
-		WholeResultSetConverter<String, WingInner> testInstance = new WholeResultSetConverter<>(WingInner.class, wingInstanciationColumnName, STRING_READER, WingInner::new);
+		WholeResultSetTransformer<String, WingInner> testInstance = new WholeResultSetTransformer<>(WingInner.class, wingInstanciationColumnName, STRING_READER, WingInner::new);
 		testInstance.add(leftFeatherColorColumnName, STRING_READER,
 				// Simply instanciate the inner class as usual
 				// No need to be added to the wing instance because the constructor does it
@@ -159,8 +159,8 @@ public class WholeResultSetConverterTest {
 						.add(leftFeatherColorColumnName, "black")
 		));
 		
-		// we must simulate bean caching done by WholeResultSetConverter.convert(..), otherwise we get NullPointerException
-		ThreadLocals.doWithThreadLocal(WholeResultSetConverter.CURRENT_BEAN_CACHE, SimpleBeanCache::new, (ThrowingRunnable<SQLException>) () -> {
+		// we must simulate bean caching done by WholeResultSetTransformer.convert(..), otherwise we get NullPointerException
+		ThreadLocals.doWithThreadLocal(WholeResultSetTransformer.CURRENT_BEAN_CACHE, SimpleBeanCache::new, (ThrowingRunnable<SQLException>) () -> {
 			// from first row, a new instance of Chicken is created named "rooster", it has 1 red feather
 			resultSet.next();
 			WingInner result = testInstance.transform(resultSet);
@@ -186,7 +186,7 @@ public class WholeResultSetConverterTest {
 		String chickenInstanciationColumnName = "chickenName";
 		String leftFeatherColorColumnName = "leftFeatherColor";
 		String rightFeatherColorColumnName = "rightFeatherColor";
-		WholeResultSetConverter<String, Chicken> testInstance = new WholeResultSetConverter<>(Chicken.class, chickenInstanciationColumnName, STRING_READER, Chicken::new);
+		WholeResultSetTransformer<String, Chicken> testInstance = new WholeResultSetTransformer<>(Chicken.class, chickenInstanciationColumnName, STRING_READER, Chicken::new);
 		testInstance.add(leftFeatherColorColumnName, STRING_READER, FeatherColor.class, FeatherColor::new, (chicken, color) -> {
 			if (color != null) {	// prevent addition of Feather with a null color
 				chicken.getLeftWing().add(new Feather(color));
@@ -234,18 +234,18 @@ public class WholeResultSetConverterTest {
 	
 	public static Object[][] testTransform_withReuse() {
 		return new Object[][] {
-				new Object[] { new ResultSetRowConverter<>(FeatherColor.class, "featherColor", STRING_READER, FeatherColor::new) },
-				new Object[] { new WholeResultSetConverter<>(FeatherColor.class, "featherColor", STRING_READER, FeatherColor::new) }
+				new Object[] { new ResultSetRowTransformer<>(FeatherColor.class, "featherColor", STRING_READER, FeatherColor::new) },
+				new Object[] { new WholeResultSetTransformer<>(FeatherColor.class, "featherColor", STRING_READER, FeatherColor::new) }
 		};
 	}
 	
 	@ParameterizedTest
 	@MethodSource("testTransform_withReuse")
-	public void testTransform_withReuse(ResultSetConverter featherColorTestInstance) {
+	public void testTransform_withReuse(ResultSetTransformer featherColorTestInstance) {
 		String chickenInstanciationColumnName = "chickenName";
 		String leftFeatherColorColumnName = "leftFeatherColor";
 		String rightFeatherColorColumnName = "rightFeatherColor";
-		WholeResultSetConverter<String, Chicken> testInstance = new WholeResultSetConverter<>(Chicken.class, chickenInstanciationColumnName, STRING_READER, Chicken::new);
+		WholeResultSetTransformer<String, Chicken> testInstance = new WholeResultSetTransformer<>(Chicken.class, chickenInstanciationColumnName, STRING_READER, Chicken::new);
 		
 		BiConsumer<Chicken, FeatherColor> leftChickenFeatherColorCombiner = (chicken, color) -> {
 			if (color != null) {    // prevent addition of Feather with a null color
@@ -257,16 +257,16 @@ public class WholeResultSetConverterTest {
 				chicken.getRightWing().add(new Feather(color));
 			}
 		};
-		if (featherColorTestInstance instanceof ResultSetRowConverter) {
+		if (featherColorTestInstance instanceof ResultSetRowTransformer) {
 			// we reuse the FeatherColor transformer for the left wing
-			testInstance.add((ResultSetRowConverter) featherColorTestInstance.copyWithAliases(Maps.asMap("featherColor", leftFeatherColorColumnName)), leftChickenFeatherColorCombiner);
+			testInstance.add(leftChickenFeatherColorCombiner, (ResultSetRowTransformer) featherColorTestInstance.copyWithAliases(Maps.asMap("featherColor", leftFeatherColorColumnName)));
 			// we reuse the FeatherColor transformer for the right wing
-			testInstance.add((ResultSetRowConverter) featherColorTestInstance.copyWithAliases(Maps.asMap("featherColor", rightFeatherColorColumnName)), rightChickenFeatherColorCombiner);
-		} else if (featherColorTestInstance instanceof WholeResultSetConverter) {
+			testInstance.add(rightChickenFeatherColorCombiner, (ResultSetRowTransformer) featherColorTestInstance.copyWithAliases(Maps.asMap("featherColor", rightFeatherColorColumnName)));
+		} else if (featherColorTestInstance instanceof WholeResultSetTransformer) {
 			// we reuse the FeatherColor transformer for the left wing
-			testInstance.add((WholeResultSetConverter) featherColorTestInstance.copyWithAliases(Maps.asMap("featherColor", leftFeatherColorColumnName)), leftChickenFeatherColorCombiner);
+			testInstance.add(leftChickenFeatherColorCombiner, (WholeResultSetTransformer) featherColorTestInstance.copyWithAliases(Maps.asMap("featherColor", leftFeatherColorColumnName)));
 			// we reuse the FeatherColor transformer for the right wing
-			testInstance.add((WholeResultSetConverter) featherColorTestInstance.copyWithAliases(Maps.asMap("featherColor", rightFeatherColorColumnName)), rightChickenFeatherColorCombiner);
+			testInstance.add(rightChickenFeatherColorCombiner, (WholeResultSetTransformer) featherColorTestInstance.copyWithAliases(Maps.asMap("featherColor", rightFeatherColorColumnName)));
 		}
 		
 		// a ResultSet that retrieves all the feathers of a unique Chicken
@@ -307,7 +307,7 @@ public class WholeResultSetConverterTest {
 		String chickenInstanciationColumnName = "chickenName";
 		String leftFeatherColorColumnName = "leftFeatherColor";
 		String rightFeatherColorColumnName = "rightFeatherColor";
-		WholeResultSetConverter<String, Chicken> testInstance = new WholeResultSetConverter<>(Chicken.class, chickenInstanciationColumnName, STRING_READER, Chicken::new);
+		WholeResultSetTransformer<String, Chicken> testInstance = new WholeResultSetTransformer<>(Chicken.class, chickenInstanciationColumnName, STRING_READER, Chicken::new);
 		testInstance.add(leftFeatherColorColumnName, STRING_READER, FeatherColor.class, FeatherColor::new, (chicken, color) -> {
 			if (color != null) {	// prevent addition of Feather with a null color
 				chicken.getLeftWing().add(new Feather(color));
@@ -320,7 +320,7 @@ public class WholeResultSetConverterTest {
 			}
 		});
 		
-		WholeResultSetConverter<String, Rooster> testInstanceCopy = testInstance.copyFor(Rooster.class, Rooster::new);
+		WholeResultSetTransformer<String, Rooster> testInstanceCopy = testInstance.copyFor(Rooster.class, Rooster::new);
 		testInstanceCopy.add("chicks", INTEGER_PRIMITIVE_READER, Rooster::setChickCount);
 		
 		InMemoryResultSet resultSet = new InMemoryResultSet(Arrays.asList(
@@ -358,7 +358,7 @@ public class WholeResultSetConverterTest {
 	
 	@Test
 	public void testAddCollection() {
-		WholeResultSetConverter<String, Person> testInstance = new WholeResultSetConverter<>(Person.class, "name", STRING_READER, Person::new);
+		WholeResultSetTransformer<String, Person> testInstance = new WholeResultSetTransformer<>(Person.class, "name", STRING_READER, Person::new);
 		
 		testInstance.add("address", STRING_READER, Person::getAddresses, Person::setAddresses, ArrayList::new);
 		

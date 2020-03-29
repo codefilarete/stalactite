@@ -23,7 +23,7 @@ import static org.gama.lang.Nullable.nullable;
  *     
  * @author Guillaume Mary
  */
-public class ResultSetRowConverter<I, C> implements ResultSetConverter<I, C>, ResultSetRowAssembler<C> {
+public class ResultSetRowTransformer<I, C> implements ResultSetTransformer<I, C>, ResultSetRowAssembler<C> {
 	
 	private final ColumnReader<I> reader;
 	
@@ -35,13 +35,13 @@ public class ResultSetRowConverter<I, C> implements ResultSetConverter<I, C>, Re
 	
 	/**
 	 * Constructor focused on simple cases where beans are built only from one column key.
-	 * Prefer {@link #ResultSetRowConverter(Class, ColumnReader, Function)} for more general purpose cases (multiple columns key)
+	 * Prefer {@link #ResultSetRowTransformer(Class, ColumnReader, Function)} for more general purpose cases (multiple columns key)
 	 * 
 	 * @param columnName the name of the column that contains bean key
 	 * @param reader object to ease column reading, indicates column type
 	 * @param beanFactory the bean creator, bean key will be passed as argument. Not called if bean key is null (no instanciation needed)
 	 */
-	public ResultSetRowConverter(Class<C> beanType, String columnName, ResultSetReader<I> reader, Function<I, C> beanFactory) {
+	public ResultSetRowTransformer(Class<C> beanType, String columnName, ResultSetReader<I> reader, Function<I, C> beanFactory) {
 		this.beanType = beanType;
 		this.reader = new SingleColumnReader<>(columnName, reader);
 		this.beanFactory = beanFactory;
@@ -54,7 +54,7 @@ public class ResultSetRowConverter<I, C> implements ResultSetConverter<I, C>, Re
 	 * @param reader object to ease column reading, indicates column type
 	 * @param beanFactory the bean creator, bean key will be passed as argument. Not called if bean key is null (no instanciation needed)
 	 */
-	public ResultSetRowConverter(Class<C> beanType, ColumnReader<I> reader, Function<I, C> beanFactory) {
+	public ResultSetRowTransformer(Class<C> beanType, ColumnReader<I> reader, Function<I, C> beanFactory) {
 		this.beanType = beanType;
 		this.reader = reader;
 		this.beanFactory = beanFactory;
@@ -93,21 +93,21 @@ public class ResultSetRowConverter<I, C> implements ResultSetConverter<I, C>, Re
 	}
 	
 	@Override
-	public <T extends C> ResultSetRowConverter<I, T> copyFor(Class<T> beanType, Function<I, T> beanFactory) {
-		ResultSetRowConverter<I, T> result = new ResultSetRowConverter<>(beanType, this.reader, beanFactory);
+	public <T extends C> ResultSetRowTransformer<I, T> copyFor(Class<T> beanType, Function<I, T> beanFactory) {
+		ResultSetRowTransformer<I, T> result = new ResultSetRowTransformer<>(beanType, this.reader, beanFactory);
 		result.consumers.addAll((Set) this.consumers);
 		return result;
 	}
 	
 	@Override
-	public ResultSetRowConverter<I, C> copyWithAliases(Function<String, String> columnMapping) {
-		ResultSetRowConverter<I, C> result = new ResultSetRowConverter<>(this.beanType, reader.copyWithAliases(columnMapping), this.beanFactory);
+	public ResultSetRowTransformer<I, C> copyWithAliases(Function<String, String> columnMapping) {
+		ResultSetRowTransformer<I, C> result = new ResultSetRowTransformer<>(this.beanType, reader.copyWithAliases(columnMapping), this.beanFactory);
 		this.consumers.forEach(c -> result.add(c.copyWithAliases(columnMapping)));
 		return result;
 	}
 	
 	@Override	// for adhoc return type
-	public ResultSetRowConverter<I, C> copyWithAliases(Map<String, String> columnMapping) {
+	public ResultSetRowTransformer<I, C> copyWithAliases(Map<String, String> columnMapping) {
 		// equivalent to super.copyWithAlias(..) but because inteface default method can't be invoked we have to copy/paste its code ;(
 		return copyWithAliases(columnMapping::get);
 	}

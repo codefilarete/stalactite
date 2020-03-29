@@ -32,20 +32,20 @@ import org.gama.stalactite.sql.binder.ResultSetReader;
  * @see #add(String, ResultSetReader, BiConsumer)
  * @see #add(String, ResultSetReader, Class, SerializableFunction, BiConsumer)
  */
-public class WholeResultSetConverter<I, C> implements ResultSetConverter<I, C> {//}, ThrowingConverter<ResultSet, List<C>, SQLException> {
+public class WholeResultSetTransformer<I, C> implements ResultSetTransformer<I, C> {
 	
 	/**
 	 * Per-Thread caches for created beans during {@link ResultSet} iteration.
-	 * Created as a {@link ThreadLocal} to share it between all {@link WholeResultSetConverter}s that are implied in the bean graph creation :
+	 * Created as a {@link ThreadLocal} to share it between all {@link WholeResultSetTransformer}s that are implied in the bean graph creation :
 	 * first approach was to use an instance variable and initialize it on all instances before {@link ResultSet} iteration and release it after,
 	 * but this design had several drawbacks:
 	 * - non-thread-safe usage of instances (implying synchronization during whole iteration !)
-	 * - instances piped with {@link #add(ResultSetRowConverter, BiConsumer)} were impossible to wire to the bean cache without cloning them to a
-	 * {@link WholeResultSetConverter}
+	 * - instances piped with {@link #add(BiConsumer, ResultSetRowTransformer)} were impossible to wire to the bean cache without cloning them to a
+	 * {@link WholeResultSetTransformer}
 	 */
 	static final ThreadLocal<SimpleBeanCache> CURRENT_BEAN_CACHE = new ThreadLocal<>();
 	
-	private final ResultSetRowConverter<I, C> rootConverter;
+	private final ResultSetRowTransformer<I, C> rootConverter;
 	
 	/** The list of relations that will assemble objects */
 	private final List<ResultSetRowAssembler> combiners = new ArrayList<>();
@@ -58,8 +58,8 @@ public class WholeResultSetConverter<I, C> implements ResultSetConverter<I, C> {
 	 * @param reader object to ease column reading, indicates column type
 	 * @param beanFactory the bean creator, bean key will be passed as argument. Not called if bean key is null (no instanciation needed)
 	 */
-	public WholeResultSetConverter(Class<C> rootType, String columnName, ResultSetReader<I> reader, SerializableFunction<I, C> beanFactory) {
-		this(new ResultSetRowConverter<>(rootType, columnName, reader, new CachingBeanFactory<>(beanFactory, rootType)));
+	public WholeResultSetTransformer(Class<C> rootType, String columnName, ResultSetReader<I> reader, SerializableFunction<I, C> beanFactory) {
+		this(new ResultSetRowTransformer<>(rootType, columnName, reader, new CachingBeanFactory<>(beanFactory, rootType)));
 	}
 	
 	/**
@@ -71,7 +71,7 @@ public class WholeResultSetConverter<I, C> implements ResultSetConverter<I, C> {
 	 * @param beanFactory the bean constructor. Not called if bean key is null (no instanciation needed)
 	 * @param setter setter for bean key
 	 */
-	public WholeResultSetConverter(Class<C> rootType, String columnName, ResultSetReader<I> reader, Supplier<C> beanFactory, BiConsumer<C, I> setter) {
+	public WholeResultSetTransformer(Class<C> rootType, String columnName, ResultSetReader<I> reader, Supplier<C> beanFactory, BiConsumer<C, I> setter) {
 		this(rootType, columnName, reader, i -> {
 			C newInstance = beanFactory.get();
 			setter.accept(newInstance, i);
@@ -83,7 +83,7 @@ public class WholeResultSetConverter<I, C> implements ResultSetConverter<I, C> {
 	 * Special constructor made for cloning, no reason to expose it outside
 	 * @param rootConverter
 	 */
-	public WholeResultSetConverter(ResultSetRowConverter<I, C> rootConverter) {
+	public WholeResultSetTransformer(ResultSetRowTransformer<I, C> rootConverter) {
 		this.rootConverter = rootConverter;
 	}
 	
@@ -112,9 +112,9 @@ public class WholeResultSetConverter<I, C> implements ResultSetConverter<I, C> {
 	 * @return this
 	 * @see #add(String, ResultSetReader, Class, BiConsumer) 
 	 */
-	public <K, V> WholeResultSetConverter<I, C> add(String columnName, ResultSetReader<K> reader, Class<V> beanType, SerializableFunction<K, V> beanFactory, BiConsumer<C, V> combiner) {
-		ResultSetRowConverter<K, V> relatedBeanCreator = new ResultSetRowConverter<>(beanType, columnName, reader, beanFactory);
-		add(relatedBeanCreator, combiner);
+	public <K, V> WholeResultSetTransformer<I, C> add(String columnName, ResultSetReader<K> reader, Class<V> beanType, SerializableFunction<K, V> beanFactory, BiConsumer<C, V> combiner) {
+		ResultSetRowTransformer<K, V> relatedBeanCreator = new ResultSetRowTransformer<>(beanType, columnName, reader, beanFactory);
+		add(combiner, relatedBeanCreator);
 		return this;
 	}
 	
@@ -134,7 +134,7 @@ public class WholeResultSetConverter<I, C> implements ResultSetConverter<I, C> {
 	 * 
 	 * @return this
 	 */
-	public <K, V> WholeResultSetConverter<I, C> add(String columnName, ResultSetReader<K> reader, Class<V> beanType, BiConsumer<C, V> combiner) {
+	public <K, V> WholeResultSetTransformer<I, C> add(String columnName, ResultSetReader<K> reader, Class<V> beanType, BiConsumer<C, V> combiner) {
 		add(columnName, reader, beanType, v -> Reflections.newInstance(beanType), combiner);
 		return this;
 	}
@@ -143,34 +143,32 @@ public class WholeResultSetConverter<I, C> implements ResultSetConverter<I, C> {
 	 * Combines this transformer with another one through a bean relation, hence a bean graph is created.
 	 * Be aware that modifying relatedBeanCreator after will also affect this.
 	 * 
-	 * @param relatedBeanCreator the manager of the other beans
-	 * @param combiner the wire between instances of this transformer and those of the given one
 	 * @param <K> the type of the other bean keys
 	 * @param <V> the type of the other beans
+	 * @param combiner the wire between instances of this transformer and those of the given one
+	 * @param relatedBeanCreator the manager of the other beans
 	 * @return this
 	 */
-	public <K, V> WholeResultSetConverter<I, C> add(WholeResultSetConverter<K, V> relatedBeanCreator, BiConsumer<C, V> combiner) {
+	public <K, V> WholeResultSetTransformer<I, C> add(BiConsumer<C, V> combiner, WholeResultSetTransformer<K, V> relatedBeanCreator) {
 		combiners.add(new Relation<>(combiner, relatedBeanCreator));
-//		combiners.add(new Relation<>(combiner, relatedBeanCreator));
 		return this;
 	}
 	
 	/**
 	 * Combines this transformer with another one through a bean relation, hence a bean graph is created.
 	 * Be aware that a copy of relatedBeanCreator is made to make it uses cache of beans during {@link ResultSet} iteration.
-//	 * This is different from the other add(..) method that doesn't needs cloning of the relatedBeanCreator.
 	 * Hence, modifying relatedBeanCreator after won't affect this.
 	 * 
-	 * @param relatedBeanCreator the manager of the other beans
-	 * @param combiner the wire between instances of this transformer and those of the given one
 	 * @param <K> the type of the other bean keys
 	 * @param <V> the type of the other beans
+	 * @param combiner the wire between instances of this transformer and those of the given one
+	 * @param relatedBeanCreator the manager of the other beans
 	 * @return this
 	 */
-	public <K, V> WholeResultSetConverter<I, C> add(ResultSetRowConverter<K, V> relatedBeanCreator, BiConsumer<C, V> combiner) {
+	public <K, V> WholeResultSetTransformer<I, C> add(BiConsumer<C, V> combiner, ResultSetRowTransformer<K, V> relatedBeanCreator) {
 		Class<V> beanType = relatedBeanCreator.getBeanType();
-		// ResultSetRowConverter doesn't have a cache system, so we decorate its factory with a cache checking
-		ResultSetRowConverter<K, V> relatedBeanCreatorCopy = relatedBeanCreator.copyFor(beanType,
+		// ResultSetRowTransformer doesn't have a cache system, so we decorate its factory with a cache checking
+		ResultSetRowTransformer<K, V> relatedBeanCreatorCopy = relatedBeanCreator.copyFor(beanType,
 				beanKey -> computeInstanceIfCacheMiss(beanType, beanKey, relatedBeanCreator.getBeanFactory())
 		);
 		relatedBeanCreatorCopy.getConsumers().addAll(relatedBeanCreator.getConsumers());
@@ -185,19 +183,19 @@ public class WholeResultSetConverter<I, C> implements ResultSetConverter<I, C> {
 	 * @param assembler a generic combiner of a root bean and each {@link ResultSet} row 
 	 * @return this
 	 */
-	public WholeResultSetConverter<I, C> add(ResultSetRowAssembler<C> assembler) {
+	public WholeResultSetTransformer<I, C> add(ResultSetRowAssembler<C> assembler) {
 		this.combiners.add(assembler);
 		return this;
 	}
 	
 	@Override
-	public <T extends C> WholeResultSetConverter<I, T> copyFor(Class<T> beanType, Function<I, T> beanFactory) {
-		// ResultSetRowConverter doesn't have a cache system, so we decorate its factory with a cache checking
-		ResultSetRowConverter<I, T> rootConverterCopy = this.rootConverter.copyFor(beanType,
+	public <T extends C> WholeResultSetTransformer<I, T> copyFor(Class<T> beanType, Function<I, T> beanFactory) {
+		// ResultSetRowTransformer doesn't have a cache system, so we decorate its factory with a cache checking
+		ResultSetRowTransformer<I, T> rootConverterCopy = this.rootConverter.copyFor(beanType,
 				beanKey -> computeInstanceIfCacheMiss(beanType, beanKey, beanFactory)
 		);
 		// Making the copy
-		WholeResultSetConverter<I, T> result = new WholeResultSetConverter<>(rootConverterCopy);
+		WholeResultSetTransformer<I, T> result = new WholeResultSetTransformer<>(rootConverterCopy);
 		this.combiners.forEach(c -> {
 			if (c instanceof Relation) {
 				result.combiners.add(new Relation<>(((Relation) c).relationFixer, ((Relation) c).transformer));
@@ -207,11 +205,11 @@ public class WholeResultSetConverter<I, C> implements ResultSetConverter<I, C> {
 	}
 	
 	@Override
-	public WholeResultSetConverter<I, C> copyWithAliases(Function<String, String> columnMapping) {
+	public WholeResultSetTransformer<I, C> copyWithAliases(Function<String, String> columnMapping) {
 		// NB: rootConverter can be cloned without a cache checking bean factory because it already has it due to previous assignements
 		// (follow rootConverter assignements to be sure)
-		ResultSetRowConverter<I, C> rootConverterCopy = this.rootConverter.copyWithAliases(columnMapping);
-		WholeResultSetConverter<I, C> result = new WholeResultSetConverter<>(rootConverterCopy);
+		ResultSetRowTransformer<I, C> rootConverterCopy = this.rootConverter.copyWithAliases(columnMapping);
+		WholeResultSetTransformer<I, C> result = new WholeResultSetTransformer<>(rootConverterCopy);
 		this.combiners.forEach(c -> {
 			if (c instanceof Relation) {
 				result.combiners.add(new Relation<>(((Relation) c).relationFixer, ((Relation) c).transformer.copyWithAliases(columnMapping)));
@@ -221,7 +219,7 @@ public class WholeResultSetConverter<I, C> implements ResultSetConverter<I, C> {
 	}
 	
 	@Override	// for adhoc return type
-	public WholeResultSetConverter<I, C> copyWithAliases(Map<String, String> columnMapping) {
+	public WholeResultSetTransformer<I, C> copyWithAliases(Map<String, String> columnMapping) {
 		return copyWithAliases(columnMapping::get);
 	}
 	
@@ -253,7 +251,7 @@ public class WholeResultSetConverter<I, C> implements ResultSetConverter<I, C> {
 	/**
 	 * A small class that will check some cache for any presence of a bean behind a key, returning it or instanciating a new one if no bean is found.
 	 * This class uses {@link #computeInstanceIfCacheMiss(Class, Object, Function)}, which is based on {@link #CURRENT_BEAN_CACHE}.
-	 * Thus this class can hardly be used outside of {@link WholeResultSetConverter}, and overall {@link #doWithBeanCache(Supplier)}
+	 * Thus this class can hardly be used outside of {@link WholeResultSetTransformer}, and overall {@link #doWithBeanCache(Supplier)}
 	 * 
 	 * @param <I> key type
 	 * @param <C> bean type
@@ -304,9 +302,9 @@ public class WholeResultSetConverter<I, C> implements ResultSetConverter<I, C> {
 		
 		private final BiConsumer<K, V> relationFixer;
 		
-		private final ResultSetConverter<?, V> transformer;
+		private final ResultSetTransformer<?, V> transformer;
 		
-		public Relation(BiConsumer<K, V> relationFixer, ResultSetConverter<?, V> transformer) {
+		public Relation(BiConsumer<K, V> relationFixer, ResultSetTransformer<?, V> transformer) {
 			this.relationFixer = relationFixer;
 			this.transformer = transformer;
 		}

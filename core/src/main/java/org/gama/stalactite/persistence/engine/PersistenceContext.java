@@ -44,7 +44,7 @@ import org.gama.stalactite.sql.ConnectionProvider;
 import org.gama.stalactite.sql.dml.PreparedSQL;
 import org.gama.stalactite.sql.dml.WriteOperation;
 import org.gama.stalactite.sql.result.ResultSetRowAssembler;
-import org.gama.stalactite.sql.result.ResultSetRowConverter;
+import org.gama.stalactite.sql.result.ResultSetRowTransformer;
 
 /**
  * Entry point for persistence in a database. Mix of configuration (Transaction, Dialect, ...) and registry for {@link Persister}s.
@@ -553,7 +553,7 @@ public class PersistenceContext {
 		<I, J, E extends RuntimeException> ExecutableSelect<C> map(Column<? extends Table, I> column, SerializableBiConsumer<C, J> setter, ThrowingConverter<I, J, E> converter);
 		
 		@Override
-		<E> ExecutableSelect<C> map(BiConsumer<C, E> combiner, ResultSetRowConverter<?, E> rowConverter);
+		<E> ExecutableSelect<C> map(BiConsumer<C, E> combiner, ResultSetRowTransformer<?, E> rowTransformer);
 		
 		@Override
 		ExecutableSelect<C> add(ResultSetRowAssembler<C> assembler);

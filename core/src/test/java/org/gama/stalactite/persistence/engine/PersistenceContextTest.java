@@ -20,7 +20,7 @@ import org.gama.stalactite.sql.binder.DefaultParameterBinders;
 import org.gama.stalactite.sql.binder.DefaultResultSetReaders;
 import org.gama.stalactite.sql.binder.LambdaParameterBinder;
 import org.gama.stalactite.sql.binder.NullAwareParameterBinder;
-import org.gama.stalactite.sql.result.ResultSetRowConverter;
+import org.gama.stalactite.sql.result.ResultSetRowTransformer;
 import org.gama.stalactite.sql.test.HSQLDBInMemoryDataSource;
 import org.junit.jupiter.api.Test;
 
@@ -219,7 +219,7 @@ public class PersistenceContextTest {
 		
 		List<Toto> records = testInstance.newQuery(QueryEase.select(id, name).add(tataName, "tataName").from(totoTable).innerJoin(id, totoId), Toto.class)
 				.mapKey(Toto::new, id, name)
-				.map(Toto::setTata, new ResultSetRowConverter<>(Tata.class, "tataName", DefaultResultSetReaders.STRING_READER, Tata::new))
+				.map(Toto::setTata, new ResultSetRowTransformer<>(Tata.class, "tataName", DefaultResultSetReaders.STRING_READER, Tata::new))
 				.execute();
 		Toto expectedToto1 = new Toto(1, "Hello");
 		expectedToto1.setTata(new Tata("World"));

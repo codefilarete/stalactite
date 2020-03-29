@@ -24,7 +24,7 @@ public class ResultSetRowConverterTest {
 	@Test
 	public void testTransform_basicUseCase() throws SQLException {
 		// Binding column "vehicleType" to the constructor of Car
-		ResultSetRowConverter<String, Car> testInstance = new ResultSetRowConverter<>(Car.class, "vehicleType", STRING_READER, Car::new);
+		ResultSetRowTransformer<String, Car> testInstance = new ResultSetRowTransformer<>(Car.class, "vehicleType", STRING_READER, Car::new);
 		// Adding a column to fill the bean
 		testInstance.add("wheels", INTEGER_READER, Car::setWheelCount);
 		
@@ -57,7 +57,7 @@ public class ResultSetRowConverterTest {
 	@Test
 	public void testTransform_basicUseCase_complexConsumer() throws SQLException {
 		// The default ModifiableInt that takes its value from "a". Reinstanciated on each row.
-		ResultSetRowConverter<Integer, ModifiableInt> testInstance = new ResultSetRowConverter<>(ModifiableInt.class, "a", INTEGER_READER, ModifiableInt::new);
+		ResultSetRowTransformer<Integer, ModifiableInt> testInstance = new ResultSetRowTransformer<>(ModifiableInt.class, "a", INTEGER_READER, ModifiableInt::new);
 		// The secondary that will increment the same ModifiableInt by column "b" value
 		testInstance.add(new ColumnConsumer<>("b", INTEGER_READER, (t, i) -> t.increment(Objects.preventNull(i, 0))));
 		
@@ -80,7 +80,7 @@ public class ResultSetRowConverterTest {
 	public void testTransform_shareInstanceOverRows() throws SQLException {
 		// The default ModifiableInt that takes its value from "a". Shared over rows (class attribute)
 		ModifiableInt sharedInstance = new ModifiableInt(0);
-		ResultSetRowConverter<Integer, ModifiableInt> testInstance = new ResultSetRowConverter<>(ModifiableInt.class, "a", INTEGER_READER, i -> {
+		ResultSetRowTransformer<Integer, ModifiableInt> testInstance = new ResultSetRowTransformer<>(ModifiableInt.class, "a", INTEGER_READER, i -> {
 			sharedInstance.increment(i);
 			return sharedInstance;
 		});
@@ -102,11 +102,11 @@ public class ResultSetRowConverterTest {
 	
 	@Test
 	public void testCopyWithAliases() throws SQLException {
-		ResultSetRowConverter<Integer, ModifiableInt> sourceInstance = new ResultSetRowConverter<>(ModifiableInt.class, "a", INTEGER_READER, ModifiableInt::new);
+		ResultSetRowTransformer<Integer, ModifiableInt> sourceInstance = new ResultSetRowTransformer<>(ModifiableInt.class, "a", INTEGER_READER, ModifiableInt::new);
 		sourceInstance.add(new ColumnConsumer<>("b", INTEGER_READER, (t, i) -> t.increment(Objects.preventNull(i, 0))));
 		
 		// we're making our copy with column "a" is now "x", and column "b" is now "y"
-		ResultSetRowConverter<Integer, ModifiableInt> testInstance = sourceInstance.copyWithAliases(Maps.asHashMap("a", "x").add("b", "y"));
+		ResultSetRowTransformer<Integer, ModifiableInt> testInstance = sourceInstance.copyWithAliases(Maps.asHashMap("a", "x").add("b", "y"));
 		
 		// of course ....
 		assertNotSame(sourceInstance, testInstance);
@@ -125,10 +125,10 @@ public class ResultSetRowConverterTest {
 	
 	@Test
 	public void testCopyFor() throws SQLException {
-		ResultSetRowConverter<String, Vehicle> sourceInstance = new ResultSetRowConverter<>(Vehicle.class, "name", STRING_READER, Vehicle::new);
+		ResultSetRowTransformer<String, Vehicle> sourceInstance = new ResultSetRowTransformer<>(Vehicle.class, "name", STRING_READER, Vehicle::new);
 		sourceInstance.add(new ColumnConsumer<>("color", STRING_READER, Vehicle::setColor));
 		
-		ResultSetRowConverter<String, Car> testInstance = sourceInstance.copyFor(Car.class, Car::new);
+		ResultSetRowTransformer<String, Car> testInstance = sourceInstance.copyFor(Car.class, Car::new);
 		testInstance.add(new ColumnConsumer<>("wheels", INTEGER_READER, Car::setWheelCount));
 		
 		InMemoryResultSet resultSet = new InMemoryResultSet(Arrays.asList(
@@ -144,7 +144,7 @@ public class ResultSetRowConverterTest {
 	
 	@Test
 	public void testAddCollection() throws SQLException {
-		ResultSetRowConverter<String, Person> testInstance = new ResultSetRowConverter<>(Person.class, "name", STRING_READER, Person::new);
+		ResultSetRowTransformer<String, Person> testInstance = new ResultSetRowTransformer<>(Person.class, "name", STRING_READER, Person::new);
 		
 		testInstance.add("address1", STRING_READER, Person::getAddresses, Person::setAddresses, ArrayList::new);
 		testInstance.add("address2", STRING_READER, Person::getAddresses, Person::setAddresses, ArrayList::new);

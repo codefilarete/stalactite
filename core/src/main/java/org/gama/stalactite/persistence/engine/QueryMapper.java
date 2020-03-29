@@ -28,9 +28,9 @@ import org.gama.stalactite.sql.dml.ReadOperation;
 import org.gama.stalactite.sql.dml.StringParamedSQL;
 import org.gama.stalactite.sql.result.MultipleColumnsReader;
 import org.gama.stalactite.sql.result.ResultSetRowAssembler;
-import org.gama.stalactite.sql.result.ResultSetRowConverter;
+import org.gama.stalactite.sql.result.ResultSetRowTransformer;
 import org.gama.stalactite.sql.result.SingleColumnReader;
-import org.gama.stalactite.sql.result.WholeResultSetConverter;
+import org.gama.stalactite.sql.result.WholeResultSetTransformer;
 
 import static org.gama.stalactite.sql.binder.NullAwareParameterBinder.ALWAYS_SET_NULL_INSTANCE;
 
@@ -66,7 +66,7 @@ public class QueryMapper<C> implements MappableQuery<C> {
 	private final Map<String, Object> sqlArguments = new HashMap<>();
 	
 	/** Delegate for {@link java.sql.ResultSet} transformation, will get all the mapping configuration */
-	private WholeResultSetConverter<?, C> rootTransformer;
+	private WholeResultSetTransformer<?, C> rootTransformer;
 	
 	/**
 	 * Simple constructor
@@ -420,8 +420,8 @@ public class QueryMapper<C> implements MappableQuery<C> {
 	}
 	
 	@Override
-	public <E> QueryMapper<C> map(BiConsumer<C, E> combiner, ResultSetRowConverter<?, E> rowConverter) {
-		rootTransformer.add(rowConverter, combiner);
+	public <E> QueryMapper<C> map(BiConsumer<C, E> combiner, ResultSetRowTransformer<?, E> rowTransformer) {
+		rootTransformer.add(combiner, rowTransformer);
 		return this;
 	}
 	
@@ -445,11 +445,11 @@ public class QueryMapper<C> implements MappableQuery<C> {
 		}
 	}
 	
-	private <I> WholeResultSetConverter<I, C> buildSingleColumnKeyTransformer(Column<I> keyColumn, SerializableFunction<I, C> beanFactory) {
-		return new WholeResultSetConverter<>(rootBeanType, keyColumn.getName(), keyColumn.getBinder(), beanFactory);
+	private <I> WholeResultSetTransformer<I, C> buildSingleColumnKeyTransformer(Column<I> keyColumn, SerializableFunction<I, C> beanFactory) {
+		return new WholeResultSetTransformer<>(rootBeanType, keyColumn.getName(), keyColumn.getBinder(), beanFactory);
 	}
 	
-	private WholeResultSetConverter<Object[], C> buildComposedKeyTransformer(Set<Column> columns, Function<Object[], C> beanFactory) {
+	private WholeResultSetTransformer<Object[], C> buildComposedKeyTransformer(Set<Column> columns, Function<Object[], C> beanFactory) {
 		Set<SingleColumnReader> columnReaders = Iterables.collect(columns, c -> {
 			ParameterBinder reader = c.getBinder();
 			return new SingleColumnReader<>(c.getName(), reader);
@@ -464,11 +464,11 @@ public class QueryMapper<C> implements MappableQuery<C> {
 			return contructorArgs;
 		});
 		
-		ResultSetRowConverter<Object[], C> resultSetRowConverter = new ResultSetRowConverter<>(
+		ResultSetRowTransformer<Object[], C> resultSetRowConverter = new ResultSetRowTransformer<>(
 				rootBeanType,
 				multipleColumnsReader,
 				beanFactory);
-		return new WholeResultSetConverter<>(resultSetRowConverter);
+		return new WholeResultSetTransformer<>(resultSetRowConverter);
 	}
 	
 	private <I> Class<I> giveColumnType(SerializableBiConsumer<C, I> setter) {

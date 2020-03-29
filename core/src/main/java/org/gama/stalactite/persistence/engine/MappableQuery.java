@@ -11,7 +11,7 @@ import org.gama.lang.function.ThrowingConverter;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.sql.result.ResultSetRowAssembler;
-import org.gama.stalactite.sql.result.ResultSetRowConverter;
+import org.gama.stalactite.sql.result.ResultSetRowTransformer;
 
 /**
  * Contract to define mapping and execution of some SQL select
@@ -207,11 +207,11 @@ public interface MappableQuery<C> {
 	 * This allows to create bean graphs.
 	 *
 	 * @param combiner setter (on beans created by this instance) to fix beans created by given converter
-	 * @param rowConverter creator of other beans from a {@link java.sql.ResultSet}
+	 * @param rowTransformer creator of other beans from a {@link java.sql.ResultSet}
 	 * @param <O> type of beans created by given converter
 	 * @return this
 	 */
-	<O> MappableQuery<C> map(BiConsumer<C, O> combiner, ResultSetRowConverter<?, O> rowConverter);
+	<O> MappableQuery<C> map(BiConsumer<C, O> combiner, ResultSetRowTransformer<?, O> rowTransformer);
 	
 	/**
 	 * Adds a low level {@link java.sql.ResultSet} transfomer, for cases where mapping methods are unsufficient.
