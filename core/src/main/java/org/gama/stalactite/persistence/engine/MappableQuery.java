@@ -6,8 +6,8 @@ import org.danekja.java.util.function.serializable.SerializableBiConsumer;
 import org.danekja.java.util.function.serializable.SerializableBiFunction;
 import org.danekja.java.util.function.serializable.SerializableFunction;
 import org.danekja.java.util.function.serializable.SerializableSupplier;
+import org.gama.lang.function.Converter;
 import org.gama.lang.function.SerializableTriFunction;
-import org.gama.lang.function.ThrowingConverter;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.sql.result.ResultSetRowAssembler;
@@ -54,7 +54,20 @@ public interface MappableQuery<C> {
 	<I, J, K> MappableQuery<C> mapKey(SerializableTriFunction<I, J, K, C> javaBeanCtor, String columnName1, String columnName2, String columnName3);
 	
 	/**
-	 * Declares root bean constructor and key of {@link java.sql.ResultSet}
+	 * Declares root bean constructor and key of {@link java.sql.ResultSet}.
+	 * Doesn't have same name as other key definer due to conflict with {@link #mapKey(SerializableFunction, String, Class)} and entities that have
+	 * both a no-arg constructor and a one-arg constructor.
+	 *
+	 * @param javaBeanCtor no-arg bean constructor
+	 * @param columnName column containing identifier value
+	 * @param columnType identifier type
+	 * @param <I> identifier type
+	 * @return an instance that allows method chaining
+	 */
+	<I> MappableQuery<C> mapKeyNoArg(SerializableSupplier<C> javaBeanCtor, String columnName, Class<I> columnType);
+	
+	/**
+	 * Declares root bean constructor and key of {@link java.sql.ResultSet}.
 	 * 
 	 * @param javaBeanCtor bean constructor that will take column value as parameter
 	 * @param columnName column containing identifier value
@@ -146,30 +159,6 @@ public interface MappableQuery<C> {
 	);
 	
 	/**
-	 * Equivalent of {@link #mapKey(SerializableFunction, String, Class)} with a no-args bean constructor.
-	 * Declares root bean constructor and key of {@link java.sql.ResultSet}
-	 *
-	 * @param javaBeanCtor no-args bean constructor
-	 * @param columnName column containing identifier value
-	 * @param keySetter setter of key value on bean
-	 * @param <I> first identifier type
-	 * @return an instance that allows method chaining
-	 */
-	<I> MappableQuery<C> mapKey(SerializableSupplier<C> javaBeanCtor, String columnName, SerializableBiConsumer<C, I> keySetter);
-	
-	/**
-	 * Equivalent of {@link #mapKey(SerializableSupplier, Column, SerializableBiConsumer)} with {@link Column} argument.
-	 * Declares root bean constructor and key of {@link java.sql.ResultSet}
-	 *
-	 * @param javaBeanCtor no-args bean constructor
-	 * @param column column containing identifier value
-	 * @param keySetter setter of key value on bean
-	 * @param <I> first identifier type
-	 * @return an instance that allows method chaining
-	 */
-	<I> MappableQuery<C> mapKey(SerializableSupplier<C> javaBeanCtor, Column<? extends Table, I> column, SerializableBiConsumer<C, I> keySetter);
-	
-	/**
 	 * Maps a column to a bean property
 	 * 
 	 * @param columnName column name that will fill the property
@@ -177,7 +166,7 @@ public interface MappableQuery<C> {
 	 * @param columnType column and value type
 	 * @param <I> column and value type
 	 * @return an instance that allows method chaining
-	 * @see #map(String, SerializableBiConsumer, ThrowingConverter) 
+	 * @see #map(String, SerializableBiConsumer, Converter) 
 	 */
 	<I> MappableQuery<C> map(String columnName, SerializableBiConsumer<C, I> setter, Class<I> columnType);
 	
@@ -191,9 +180,9 @@ public interface MappableQuery<C> {
 	 * @param converter value converter
 	 * @param <I> column and value type
 	 * @return an instance that allows method chaining
-	 * @see #map(String, SerializableBiConsumer, ThrowingConverter)
+	 * @see #map(String, SerializableBiConsumer, Converter)
 	 */
-	<I, J, E extends RuntimeException> MappableQuery<C> map(String columnName, SerializableBiConsumer<C, J> setter, Class<I> columnType, ThrowingConverter<I, J, E> converter);
+	<I, J> MappableQuery<C> map(String columnName, SerializableBiConsumer<C, J> setter, Class<I> columnType, Converter<I, J> converter);
 	
 	/**
 	 * Equivalent of {@link #map(String, SerializableBiConsumer, Class)} without ensuring column type argument : it will be deduced from setter.
@@ -207,8 +196,8 @@ public interface MappableQuery<C> {
 	<I> MappableQuery<C> map(String columnName, SerializableBiConsumer<C, I> setter);
 	
 	/**
-	 * Equivalent of {@link #map(String, SerializableBiConsumer, Class, ThrowingConverter)} without ensuring column type argument : it will be deduced from setter.
-	 * Prefer {@link #map(String, SerializableBiConsumer, Class, ThrowingConverter)} to ensure value reading from {@link java.sql.ResultSet}
+	 * Equivalent of {@link #map(String, SerializableBiConsumer, Class, Converter)} without ensuring column type argument : it will be deduced from setter.
+	 * Prefer {@link #map(String, SerializableBiConsumer, Class, Converter)} to ensure value reading from {@link java.sql.ResultSet}
 	 *
 	 * @param columnName column name that will fill the property
 	 * @param setter property setter
@@ -216,7 +205,7 @@ public interface MappableQuery<C> {
 	 * @param <I> column and value type
 	 * @return an instance that allows method chaining
 	 */
-	<I, E extends RuntimeException> MappableQuery<C> map(String columnName, SerializableBiConsumer<C, I> setter, ThrowingConverter<I, I, E> converter);
+	<I, J> MappableQuery<C> map(String columnName, SerializableBiConsumer<C, J> setter, Converter<I, J> converter);
 	
 	/**
 	 * Equivalent of {@link #map(String, SerializableBiConsumer)} with column argument.
@@ -229,14 +218,14 @@ public interface MappableQuery<C> {
 	<I> MappableQuery<C> map(Column<? extends Table, I> column, SerializableBiConsumer<C, I> setter);
 	
 	/**
-	 * Equivalent of {@link #map(String, SerializableBiConsumer, ThrowingConverter)} with column argument.
+	 * Equivalent of {@link #map(String, SerializableBiConsumer, Converter)} with column argument.
 	 *
 	 * @param column column name that will fill the property
 	 * @param setter property setter
 	 * @param <I> column and value type
 	 * @return an instance that allows method chaining
 	 */
-	<I, J, E extends RuntimeException> MappableQuery<C> map(Column<? extends Table, I> column, SerializableBiConsumer<C, J> setter, ThrowingConverter<I, J, E> converter);
+	<I, J> MappableQuery<C> map(Column<? extends Table, I> column, SerializableBiConsumer<C, J> setter, Converter<I, J> converter);
 	
 	/**
 	 * Associates beans created by this instance and the ones created by another converter with setter (represented as a {@link BiConsumer}).

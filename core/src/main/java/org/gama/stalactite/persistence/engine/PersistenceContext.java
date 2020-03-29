@@ -16,8 +16,8 @@ import org.danekja.java.util.function.serializable.SerializableBiFunction;
 import org.danekja.java.util.function.serializable.SerializableFunction;
 import org.danekja.java.util.function.serializable.SerializableSupplier;
 import org.gama.lang.Reflections;
+import org.gama.lang.function.Converter;
 import org.gama.lang.function.SerializableTriFunction;
-import org.gama.lang.function.ThrowingConverter;
 import org.gama.reflection.MethodReferenceCapturer;
 import org.gama.reflection.MethodReferenceDispatcher;
 import org.gama.stalactite.command.builder.DeleteCommandBuilder;
@@ -513,6 +513,9 @@ public class PersistenceContext {
 		<I, J, K> ExecutableSelect<C> mapKey(SerializableTriFunction<I, J, K, C> javaBeanCtor, String columnName1, String columnName2, String columnName3);
 		
 		@Override
+		<I> ExecutableSelect<C> mapKeyNoArg(SerializableSupplier<C> javaBeanCtor, String columnName, Class<I> columnType);
+		
+		@Override
 		<I> ExecutableSelect<C> mapKey(SerializableFunction<I, C> factory, String columnName, Class<I> columnType);
 		
 		@Override
@@ -538,28 +541,22 @@ public class PersistenceContext {
 		);
 		
 		@Override
-		<I> ExecutableSelect<C> mapKey(SerializableSupplier<C> javaBeanCtor, String columnName, SerializableBiConsumer<C, I> keySetter);
-		
-		@Override
-		<I> ExecutableSelect<C> mapKey(SerializableSupplier<C> javaBeanCtor, Column<? extends Table, I> column, SerializableBiConsumer<C, I> keySetter);
-		
-		@Override
 		<I> ExecutableSelect<C> map(String columnName, SerializableBiConsumer<C, I> setter, Class<I> columnType);
 		
 		@Override
-		<I, J, E extends RuntimeException> ExecutableSelect<C> map(String columnName, SerializableBiConsumer<C, J> setter, Class<I> columnType, ThrowingConverter<I, J, E> converter);
+		<I, J> ExecutableSelect<C> map(String columnName, SerializableBiConsumer<C, J> setter, Class<I> columnType, Converter<I, J> converter);
 		
 		@Override
 		<I> ExecutableSelect<C> map(String columnName, SerializableBiConsumer<C, I> setter);
 		
 		@Override
-		<I, E extends RuntimeException> ExecutableSelect<C> map(String columnName, SerializableBiConsumer<C, I> setter, ThrowingConverter<I, I, E> converter);
+		<I, J> ExecutableSelect<C> map(String columnName, SerializableBiConsumer<C, J> setter, Converter<I, J> converter);
 		
 		@Override
 		<I> ExecutableSelect<C> map(Column<? extends Table, I> column, SerializableBiConsumer<C, I> setter);
 		
 		@Override
-		<I, J, E extends RuntimeException> ExecutableSelect<C> map(Column<? extends Table, I> column, SerializableBiConsumer<C, J> setter, ThrowingConverter<I, J, E> converter);
+		<I, J> ExecutableSelect<C> map(Column<? extends Table, I> column, SerializableBiConsumer<C, J> setter, Converter<I, J> converter);
 		
 		@Override
 		<E> ExecutableSelect<C> map(BiConsumer<C, E> combiner, ResultSetRowTransformer<?, E> rowTransformer);
