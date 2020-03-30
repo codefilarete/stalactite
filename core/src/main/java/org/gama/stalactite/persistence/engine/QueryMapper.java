@@ -31,6 +31,7 @@ import org.gama.stalactite.sql.result.ResultSetRowAssembler;
 import org.gama.stalactite.sql.result.ResultSetRowTransformer;
 import org.gama.stalactite.sql.result.SingleColumnReader;
 import org.gama.stalactite.sql.result.WholeResultSetTransformer;
+import org.gama.stalactite.sql.result.WholeResultSetTransformer.AssemblyPolicy;
 
 import static org.gama.stalactite.sql.binder.NullAwareParameterBinder.ALWAYS_SET_NULL_INSTANCE;
 
@@ -390,15 +391,21 @@ public class QueryMapper<C> implements MappableQuery<C> {
 		rootTransformer.add(columnMapping.getColumn().getName(), columnMapping.getColumn().getBinder(), columnMapping.getSetter());
 	}
 	
+	/** Overriden to adapt return type */
 	@Override
 	public QueryMapper<C> add(ResultSetRowAssembler<C> assembler) {
-		rootTransformer.add(assembler);
+		return add(assembler, AssemblyPolicy.ON_EACH_ROW);
+	}
+	
+	@Override
+	public QueryMapper<C> add(ResultSetRowAssembler<C> assembler, AssemblyPolicy assemblyPolicy) {
+		rootTransformer.add(assembler, assemblyPolicy);
 		return this;
 	}
 	
 	@Override
-	public <E> QueryMapper<C> map(BiConsumer<C, E> combiner, ResultSetRowTransformer<?, E> rowTransformer) {
-		rootTransformer.add(combiner, rowTransformer);
+	public <K, V> QueryMapper<C> map(BiConsumer<C, V> combiner, ResultSetRowTransformer<K, V> relatedBeanCreator) {
+		rootTransformer.add(combiner, relatedBeanCreator);
 		return this;
 	}
 	

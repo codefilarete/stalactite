@@ -3,9 +3,11 @@ package org.gama.stalactite.sql.result;
 import javax.annotation.Nonnull;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -15,8 +17,11 @@ import org.danekja.java.util.function.serializable.SerializableFunction;
 import org.gama.lang.Reflections;
 import org.gama.lang.ThreadLocals;
 import org.gama.lang.collection.Iterables;
+import org.gama.lang.collection.KeepOrderSet;
 import org.gama.reflection.MethodReferenceCapturer;
 import org.gama.stalactite.sql.binder.ResultSetReader;
+
+import static org.gama.stalactite.sql.result.WholeResultSetTransformer.AssemblyPolicy.ON_EACH_ROW;
 
 /**
  * A class aimed at transforming a whole {@link ResultSet} into a graph of objects.
@@ -45,10 +50,12 @@ public class WholeResultSetTransformer<I, C> implements ResultSetTransformer<I, 
 	 */
 	static final ThreadLocal<SimpleBeanCache> CURRENT_BEAN_CACHE = new ThreadLocal<>();
 	
+	static final ThreadLocal<Set<TreatedRelation>> CURRENT_TREATED_ASSEMBLERS = ThreadLocal.withInitial(HashSet::new);
+	
 	private final ResultSetRowTransformer<I, C> rootConverter;
 	
 	/** The list of relations that will assemble objects */
-	private final List<ResultSetRowAssembler> combiners = new ArrayList<>();
+	private final KeepOrderSet<Assembler<C>> assemblers = new KeepOrderSet<>();
 	
 	/**
 	 * Constructor with root bean instanciation parameters
@@ -95,8 +102,9 @@ public class WholeResultSetTransformer<I, C> implements ResultSetTransformer<I, 
 	 * @param columnConsumer the object that will do the reading and mapping
 	 */
 	@Override
-	public void add(ColumnConsumer<C, ?> columnConsumer) {
+	public <O> WholeResultSetTransformer<I, C> add(ColumnConsumer<C, O> columnConsumer) {
 		rootConverter.add(columnConsumer);
+		return this;
 	}
 	
 	/**
@@ -113,7 +121,8 @@ public class WholeResultSetTransformer<I, C> implements ResultSetTransformer<I, 
 	 * @return this
 	 * @see #add(String, ResultSetReader, Class, BiConsumer) 
 	 */
-	public <K, V> WholeResultSetTransformer<I, C> add(String columnName, ResultSetReader<K> reader, Class<V> beanType, SerializableFunction<K, V> beanFactory, BiConsumer<C, V> combiner) {
+	public <K, V> WholeResultSetTransformer<I, C> add(String columnName, ResultSetReader<K> reader, Class<V> beanType,
+													  SerializableFunction<K, V> beanFactory, BiConsumer<C, V> combiner) {
 		ResultSetRowTransformer<K, V> relatedBeanCreator = new ResultSetRowTransformer<>(beanType, columnName, reader, beanFactory);
 		add(combiner, relatedBeanCreator);
 		return this;
@@ -121,8 +130,8 @@ public class WholeResultSetTransformer<I, C> implements ResultSetTransformer<I, 
 	
 	/**
 	 * Adds a bean relation to the main/root object.
-	 * It is a simplified version of {@link #add(String, ResultSetReader, Class, SerializableFunction, BiConsumer)} where the factory is the default constructor
-	 * of the given type.
+	 * It is a simplified version of {@link #add(String, ResultSetReader, Class, SerializableFunction, BiConsumer)} where the factory is the
+	 * default constructor of the given type.
 	 * Be aware that the factory doesn't take the column (bean key) value as a parameter, if no default constructor exists please prefer
 	 * {@link #add(String, ResultSetReader, Class, SerializableFunction, BiConsumer)} or {@link #add(String, ResultSetReader, BiConsumer)}
 	 * 
@@ -141,22 +150,7 @@ public class WholeResultSetTransformer<I, C> implements ResultSetTransformer<I, 
 	}
 	
 	/**
-	 * Combines this transformer with another one through a bean relation, hence a bean graph is created.
-	 * Be aware that modifying relatedBeanCreator after will also affect this.
-	 * 
-	 * @param <K> the type of the other bean keys
-	 * @param <V> the type of the other beans
-	 * @param combiner the wire between instances of this transformer and those of the given one
-	 * @param relatedBeanCreator the manager of the other beans
-	 * @return this
-	 */
-	public <K, V> WholeResultSetTransformer<I, C> add(BiConsumer<C, V> combiner, WholeResultSetTransformer<K, V> relatedBeanCreator) {
-		combiners.add(new Relation<>(combiner, relatedBeanCreator));
-		return this;
-	}
-	
-	/**
-	 * Combines this transformer with another one through a bean relation, hence a bean graph is created.
+	 * Combines this transformer with another one through a bean relation, creating a bean graph.
 	 * Be aware that a copy of relatedBeanCreator is made to make it uses cache of beans during {@link ResultSet} iteration.
 	 * Hence, modifying relatedBeanCreator after won't affect this.
 	 * 
@@ -166,37 +160,67 @@ public class WholeResultSetTransformer<I, C> implements ResultSetTransformer<I, 
 	 * @param relatedBeanCreator the manager of the other beans
 	 * @return this
 	 */
+	@Override
 	public <K, V> WholeResultSetTransformer<I, C> add(BiConsumer<C, V> combiner, ResultSetRowTransformer<K, V> relatedBeanCreator) {
-		Class<V> beanType = relatedBeanCreator.getBeanType();
+		return add(combiner, relatedBeanCreator, ON_EACH_ROW);
+	}
+	
+	/**
+	 * Combines this transformer with another one through a bean relation, hence a bean graph is created.
+	 * Be aware that a copy of relatedBeanCreator is made to make it uses cache of beans during {@link ResultSet} iteration.
+	 * Hence, modifying relatedBeanCreator after won't affect this.
+	 *
+	 * @param <K> the type of the other bean keys
+	 * @param <V> the type of the other beans
+	 * @param combiner the wire between instances of this transformer and those of the given one
+	 * @param relatedBeanCreator the manager of the other beans
+	 * @return this
+	 */
+	public <K, V> WholeResultSetTransformer<I, C> add(BiConsumer<C, V> combiner, ResultSetRowTransformer<K, V> relatedBeanCreator, AssemblyPolicy assemblyPolicy) {
 		// ResultSetRowTransformer doesn't have a cache system, so we decorate its factory with a cache checking
-		ResultSetRowTransformer<K, V> relatedBeanCreatorCopy = relatedBeanCreator.copyFor(beanType,
-				beanKey -> computeInstanceIfCacheMiss(beanType, beanKey, relatedBeanCreator.getBeanFactory())
-		);
+		ResultSetRowTransformer<K, V> relatedBeanCreatorCopy = relatedBeanCreator.copyFor(relatedBeanCreator.getBeanType(), relatedBeanCreator.getBeanFactory(),
+				WholeResultSetTransformer::computeInstanceIfCacheMiss);
 		relatedBeanCreatorCopy.getConsumers().addAll(relatedBeanCreator.getConsumers());
-		this.combiners.add(new Relation<>(combiner, relatedBeanCreatorCopy));
-		return this;
+		return add(new Relation<>(combiner, relatedBeanCreatorCopy), assemblyPolicy);
 	}
 	
 	/**
 	 * Adds a very generic way to assemble {@link ResultSet} rows to a root bean.
+	 * Be aware that any bean created by given assembler won't participate in current instance cache, if this is required then one should implement
+	 * its own cache.
+	 * Assembly will occurs on each row ({@link ResultSetRowAssembler#assemble(Object, ResultSet)} will be call for each {@link ResultSet} row)
 	 * 
 	 * @param assembler a generic combiner of a root bean and each {@link ResultSet} row 
 	 * @return this
+	 * @see #add(ResultSetRowAssembler, AssemblyPolicy)
 	 */
 	public WholeResultSetTransformer<I, C> add(ResultSetRowAssembler<C> assembler) {
-		this.combiners.add(assembler);
+		return add(assembler, ON_EACH_ROW);
+	}
+	
+	/**
+	 * Adds a very generic way to assemble {@link ResultSet} rows to a root bean.
+	 * Be aware that any bean created by given assembler won't participate in current instance cache, if this is required then one should implement
+	 * its own cache.
+	 *
+	 * @param assembler a generic combiner of a root bean and each {@link ResultSet} row
+	 * @param assemblyPolicy policy to decide if given assemble shall be invoked on each row or not
+	 * @return this
+	 */
+	public WholeResultSetTransformer<I, C> add(ResultSetRowAssembler<C> assembler, AssemblyPolicy assemblyPolicy) {
+		this.assemblers.add(new Assembler<>(assembler, assemblyPolicy));
 		return this;
 	}
 	
 	@Override
 	public <T extends C> WholeResultSetTransformer<I, T> copyFor(Class<T> beanType, Function<I, T> beanFactory) {
 		// ResultSetRowTransformer doesn't have a cache system, so we decorate its factory with a cache checking
-		ResultSetRowTransformer<I, T> rootConverterCopy = this.rootConverter.copyFor(beanType,
-				beanKey -> computeInstanceIfCacheMiss(beanType, beanKey, beanFactory)
-		);
+		ResultSetRowTransformer<I, T> rootConverterCopy = this.rootConverter.copyFor(beanType, beanFactory,
+				WholeResultSetTransformer::computeInstanceIfCacheMiss);
 		// Making the copy
 		WholeResultSetTransformer<I, T> result = new WholeResultSetTransformer<>(rootConverterCopy);
-		result.combiners.addAll(this.combiners);
+		// Note: combiners can't be copied except if they were ResultSetRowTransfomer which they are not, at least by their type, but 
+		result.assemblers.addAll((Collection) this.assemblers);
 		return result;
 	}
 	
@@ -206,9 +230,9 @@ public class WholeResultSetTransformer<I, C> implements ResultSetTransformer<I, 
 		// (follow rootConverter assignements to be sure)
 		ResultSetRowTransformer<I, C> rootConverterCopy = this.rootConverter.copyWithAliases(columnMapping);
 		WholeResultSetTransformer<I, C> result = new WholeResultSetTransformer<>(rootConverterCopy);
-		this.combiners.forEach(c -> {
-			result.combiners.add(c.copyWithAliases(columnMapping));
-		});
+		this.assemblers.forEach(assembler ->
+				result.add(assembler.getResultSetRowAssembler().copyWithAliases(columnMapping), assembler.getPolicy())
+		);
 		return result;
 	}
 	
@@ -229,15 +253,39 @@ public class WholeResultSetTransformer<I, C> implements ResultSetTransformer<I, 
 	}
 	
 	private <O> O doWithBeanCache(Supplier<O> callable) {
-		return ThreadLocals.doWithThreadLocal(CURRENT_BEAN_CACHE, SimpleBeanCache::new, callable);
+		return ThreadLocals.doWithThreadLocal(CURRENT_BEAN_CACHE, SimpleBeanCache::new,
+				(Supplier<O>) () -> ThreadLocals.doWithThreadLocal(CURRENT_TREATED_ASSEMBLERS, HashSet::new, callable));
 	}
 	
+	/**
+	 * <strong>This method is not expected to be called from outside but is public to respect interface implementation</strong>
+	 * Note that it uses an internal {@link ThreadLocal} to ensure {@link AssemblyPolicy#ONCE_PER_BEAN}
+	 * 
+	 * @param resultSet not null
+	 * @return current row root bean
+	 * @throws SQLException if an error occurs while reading given {@link ResultSet}
+	 */
 	@Override
 	public C transform(ResultSet resultSet) throws SQLException {
 		// Can it be possible to have a null root bean ? if such we should add a if-null prevention. But what's the case ?
 		C currentRowBean = rootConverter.transform(resultSet);
-		for (ResultSetRowAssembler combiner : this.combiners) {
-			combiner.assemble(currentRowBean, resultSet);
+		// Not made with stream because it doesn't handle well checked Exception
+		for (Assembler<C> entry : this.assemblers) {
+			ResultSetRowAssembler<C> rowAssembler = entry.getResultSetRowAssembler();
+			switch (entry.getPolicy()) {
+				case ON_EACH_ROW:
+					rowAssembler.assemble(currentRowBean, resultSet);
+					break;
+				case ONCE_PER_BEAN:
+					// we check if relation has already been treated for current bean : the key to be checked is a TreatedRelation
+					TreatedRelation<C> treatedRelation = new TreatedRelation<>(currentRowBean, rowAssembler);
+					Set<TreatedRelation> treatedRelations = CURRENT_TREATED_ASSEMBLERS.get();
+					if (!treatedRelations.contains(treatedRelation)) {
+						rowAssembler.assemble(currentRowBean, resultSet);
+						treatedRelations.add(treatedRelation);
+					}
+					break;
+			}
 		}
 		return currentRowBean;
 	}
@@ -296,15 +344,15 @@ public class WholeResultSetTransformer<I, C> implements ResultSetTransformer<I, 
 		
 		private final BiConsumer<K, V> relationFixer;
 		
-		private final ResultSetTransformer<?, V> transformer;
+		private final ResultSetRowTransformer<?, V> transformer;
 		
-		public Relation(BiConsumer<K, V> relationFixer, ResultSetTransformer<?, V> transformer) {
+		public Relation(BiConsumer<K, V> relationFixer, ResultSetRowTransformer<?, V> transformer) {
 			this.relationFixer = relationFixer;
 			this.transformer = transformer;
 		}
 		
 		@Override
-		public void assemble(@Nonnull K bean, ResultSet resultSet) throws SQLException {
+		public void assemble(@Nonnull K bean, ResultSet resultSet) {
 			// getting the bean
 			V value = transformer.transform(resultSet);
 			// applying it to the setter
@@ -315,5 +363,96 @@ public class WholeResultSetTransformer<I, C> implements ResultSetTransformer<I, 
 		public Relation<K, V> copyWithAliases(Function<String, String> columnMapping) {
 			return new Relation<>(relationFixer, transformer.copyWithAliases(columnMapping));
 		}
+	}
+	
+	private static class Assembler<O> {
+		
+		private final ResultSetRowAssembler<O> resultSetRowAssembler;
+		
+		private final AssemblyPolicy policy;
+		
+		private Assembler(ResultSetRowAssembler<O> resultSetRowAssembler, AssemblyPolicy policy) {
+			this.resultSetRowAssembler = resultSetRowAssembler;
+			this.policy = policy;
+		}
+		
+		public ResultSetRowAssembler<O> getResultSetRowAssembler() {
+			return resultSetRowAssembler;
+		}
+		
+		public AssemblyPolicy getPolicy() {
+			return policy;
+		}
+		
+		/**
+		 * Implementation to avoid collision in Set, based on {@link ResultSetRowAssembler} only because we don't want to assemble beans twice
+		 * because their relation differ in {@link AssemblyPolicy}, there one can't sepcify twice same combiner with different policies.
+		 */
+		@Override
+		public boolean equals(Object o) {
+			if (this == o) return true;
+			if (o == null || getClass() != o.getClass()) return false;
+			
+			Assembler assembler = (Assembler) o;
+			return resultSetRowAssembler.equals(assembler.resultSetRowAssembler);
+		}
+		
+		/**
+		 * Implementation to avoid collision in Set, based on {@link ResultSetRowAssembler} only because we don't want to assemble beans twice
+		 * because their relation differ in {@link AssemblyPolicy}, there one can't sepcify twice same combiner with different policies.
+		 */
+		@Override
+		public int hashCode() {
+			return resultSetRowAssembler.hashCode();
+		}
+	}
+	
+	/**
+	 * A small class that stores a relation between a root bean ad an assembler. It acts as a key in {@link HashSet} to mark a relation as treated
+	 * to prevent the relation to be applied multiple times whereas it shouldn't, according to the {@link AssemblyPolicy#ONCE_PER_BEAN} strategy.
+	 * 
+	 * @param <K> root bean type
+	 */
+	private static class TreatedRelation<K> {
+		
+		private final K rootBean;
+		
+		private final ResultSetRowAssembler<K> assembler;
+		
+		private TreatedRelation(K rootBean, ResultSetRowAssembler<K> assembler) {
+			this.rootBean = rootBean;
+			this.assembler = assembler;
+		}
+		
+		/** Implementation to avoid collision in Set */
+		@Override
+		public boolean equals(Object o) {
+			if (this == o) return true;
+			if (o == null || getClass() != o.getClass()) return false;
+			
+			TreatedRelation<?> that = (TreatedRelation<?>) o;
+			
+			if (!rootBean.equals(that.rootBean)) return false;
+			return assembler.equals(that.assembler);
+		}
+		
+		/** Implementation to avoid collision in Set */
+		@Override
+		public int hashCode() {
+			int result = rootBean.hashCode();
+			result = 31 * result + assembler.hashCode();
+			return result;
+		}
+	}
+	
+	/**
+	 * Policy introduced to specify if assembly shall be done for each row of a {@link ResultSet} (case of {@link java.util.Collection}
+	 * to be filled for instance) or only once per root bean (simple setter case)
+	 */
+	public enum AssemblyPolicy {
+		/** Specifies that assembly shall be done on each row of a {@link ResultSet} ({@link java.util.Collection} case) */
+		ON_EACH_ROW,
+		/** Specifies that assembly shall be done once (and only onnce) per root bean (setter case) */
+		ONCE_PER_BEAN
 	}
 }

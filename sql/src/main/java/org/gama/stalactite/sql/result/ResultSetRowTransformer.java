@@ -1,7 +1,6 @@
 package org.gama.stalactite.sql.result;
 
 import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -10,8 +9,8 @@ import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 
+import org.gama.lang.function.TriFunction;
 import org.gama.stalactite.sql.binder.ResultSetReader;
-import org.gama.stalactite.sql.dml.SQLStatement.BindingException;
 
 import static org.gama.lang.Nullable.nullable;
 
@@ -38,7 +37,7 @@ public class ResultSetRowTransformer<I, C> implements ResultSetTransformer<I, C>
 	
 	private final Set<ColumnConsumer<C, Object>> consumers = new HashSet<>();
 	
-	private final Map<BiConsumer<C, Object>, ResultSetTransformer<Object, Object>> relations = new HashMap<>();
+	private final Map<BiConsumer<C, Object>, ResultSetRowTransformer<Object, Object>> relations = new HashMap<>();
 	
 	/**
 	 * Constructor focused on simple cases where beans are built only from one column key.
@@ -88,36 +87,47 @@ public class ResultSetRowTransformer<I, C> implements ResultSetTransformer<I, C>
 		return consumers;
 	}
 	
+	public Map<BiConsumer<C, Object>, ResultSetRowTransformer<Object, Object>> getRelations() {
+		return relations;
+	}
+	
 	/**
 	 * Defines a complementary column that will be mapped on a bean property.
 	 * Null values will be passed to the consumer, hence the property mapper must be "null-value proof".
 	 * 
 	 * @param columnConsumer the object that will do reading and mapping
+	 * @return this
 	 */
 	@Override
-	public void add(ColumnConsumer<C, ?> columnConsumer) {
+	public <O> ResultSetRowTransformer<I, C> add(ColumnConsumer<C, O> columnConsumer) {
 		this.consumers.add((ColumnConsumer<C, Object>) columnConsumer);
+		return this;
 	}
 	
-	/**
-	 * Will combine bean created by this instance with the one created by relatedBeanCreator thanks to giben combiner
-	 * <strong>This method can't be put in {@link ResultSetTransformer} because it will force {@link WholeResultSetTransformer} to implement it
-	 * whereas it as a similar method {@link WholeResultSetTransformer#add(BiConsumer, ResultSetRowTransformer)}
-	 * which signature is not compatible with this one but which feature is the same</strong>
-	 * 
-	 * @param combiner the assciative function between bean created by this instance and the one created by given transformer
-	 * @param relatedBeanCreator creattor of another type of bean that will be combine with the one creted by this instance
-	 * @param <K> other bean type
-	 * @param <V> other bean key type
-	 */
-	public <K, V> void add(BiConsumer<C, V> combiner, ResultSetTransformer<K, V> relatedBeanCreator) {
-		this.relations.put((BiConsumer) combiner, (ResultSetTransformer) relatedBeanCreator);
+	@Override
+	public <K, V> ResultSetRowTransformer<I, C> add(BiConsumer<C, V> combiner, ResultSetRowTransformer<K, V> relatedBeanCreator) {
+		this.relations.put((BiConsumer) combiner, (ResultSetRowTransformer) relatedBeanCreator);
+		return this;
 	}
 	
 	@Override
 	public <T extends C> ResultSetRowTransformer<I, T> copyFor(Class<T> beanType, Function<I, T> beanFactory) {
 		ResultSetRowTransformer<I, T> result = new ResultSetRowTransformer<>(beanType, this.reader, beanFactory);
 		result.consumers.addAll((Set) this.consumers);
+		this.relations.forEach((consumer, transformer) ->
+				result.relations.put((BiConsumer) consumer, transformer.copyFor(transformer.beanType, transformer.beanFactory)));
+		return result;
+	}
+	
+	public <T extends C, K1 extends Class, K2, V> ResultSetRowTransformer<I, T> copyFor(Class<T> beanType,
+																						Function<I, T> beanFactory,
+																						TriFunction<K1, K2, Function<K2, V>, V> beforeFactory) {
+		ResultSetRowTransformer<I, T> result = new ResultSetRowTransformer<>(beanType, this.reader,
+				beanKey -> (T) beforeFactory.apply((K1) beanType, (K2) beanKey, (Function) beanFactory));
+		result.consumers.addAll((Set) this.consumers);
+		this.relations.forEach((consumer, transformer) ->
+				result.relations.put((BiConsumer) consumer, transformer.copyFor(transformer.beanType,
+						beanKey -> beforeFactory.apply((K1) transformer.beanType, (K2) beanKey, (Function) transformer.beanFactory))));
 		return result;
 	}
 	
@@ -174,13 +184,8 @@ public class ResultSetRowTransformer<I, C> implements ResultSetTransformer<I, C>
 		}
 		
 		// we set related beans
-		for (Entry<BiConsumer<C, Object>, ResultSetTransformer<Object, Object>> entry : relations.entrySet()) {
-			Object relatedBean = null;
-			try {
-				relatedBean = entry.getValue().transform(input);
-			} catch (SQLException e) {
-				throw new BindingException("Error while trying to transform SQL result as bean", e);
-			}
+		for (Entry<BiConsumer<C, Object>, ResultSetRowTransformer<Object, Object>> entry : relations.entrySet()) {
+			Object relatedBean = entry.getValue().transform(input);
 			entry.getKey().accept(rootBean, relatedBean);
 		}
 	}

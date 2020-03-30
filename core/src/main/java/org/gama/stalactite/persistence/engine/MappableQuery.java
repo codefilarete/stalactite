@@ -1,5 +1,6 @@
 package org.gama.stalactite.persistence.engine;
 
+import java.sql.ResultSet;
 import java.util.function.BiConsumer;
 
 import org.danekja.java.util.function.serializable.SerializableBiConsumer;
@@ -12,6 +13,7 @@ import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.sql.result.ResultSetRowAssembler;
 import org.gama.stalactite.sql.result.ResultSetRowTransformer;
+import org.gama.stalactite.sql.result.WholeResultSetTransformer.AssemblyPolicy;
 
 /**
  * Contract to define mapping and execution of some SQL select
@@ -232,19 +234,33 @@ public interface MappableQuery<C> {
 	 * This allows to create bean graphs.
 	 *
 	 * @param combiner setter (on beans created by this instance) to fix beans created by given converter
-	 * @param rowTransformer creator of other beans from a {@link java.sql.ResultSet}
-	 * @param <O> type of beans created by given converter
+	 * @param relatedBeanCreator creator of other beans from a {@link java.sql.ResultSet}
+	 * @param <V> type of beans created by given converter
 	 * @return this
 	 */
-	<O> MappableQuery<C> map(BiConsumer<C, O> combiner, ResultSetRowTransformer<?, O> rowTransformer);
+	<K, V> MappableQuery<C> map(BiConsumer<C, V> combiner, ResultSetRowTransformer<K, V> relatedBeanCreator);
 	
 	/**
 	 * Adds a low level {@link java.sql.ResultSet} transfomer, for cases where mapping methods are unsufficient.
+	 * Assembly will occurs on each row ({@link ResultSetRowAssembler#assemble(Object, ResultSet)} will be call for each {@link ResultSet} row)
 	 *
 	 * @param assembler a low-level {@link java.sql.ResultSet} transformer
 	 * @return this
 	 */
-	MappableQuery<C> add(ResultSetRowAssembler<C> assembler);
+	default MappableQuery<C> add(ResultSetRowAssembler<C> assembler) {
+		return add(assembler, AssemblyPolicy.ON_EACH_ROW);
+	}
+	
+	/**
+	 * Adds a low level {@link java.sql.ResultSet} transfomer, for cases where mapping methods are unsufficient.
+	 * Be aware that any bean created by given assembler won't participate in cache, if this is required then one should implement
+	 * its own cache.
+	 *
+	 * @param assembler a generic combiner of a root bean and each {@link java.sql.ResultSet} row
+	 * @param assemblyPolicy policy to decide if given assemble shall be invoked on each row or not
+	 * @return this
+	 */
+	MappableQuery<C> add(ResultSetRowAssembler<C> assembler, AssemblyPolicy assemblyPolicy);
 	
 	/**
 	 * Sets a value for the given parameter

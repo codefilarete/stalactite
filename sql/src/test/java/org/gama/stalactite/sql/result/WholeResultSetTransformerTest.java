@@ -15,7 +15,9 @@ import org.gama.lang.collection.Iterables;
 import org.gama.lang.collection.Maps;
 import org.gama.lang.function.Functions;
 import org.gama.lang.function.ThrowingRunnable;
+import org.gama.lang.trace.ModifiableInt;
 import org.gama.stalactite.sql.result.ResultSetRowTransformerTest.Person;
+import org.gama.stalactite.sql.result.WholeResultSetTransformer.AssemblyPolicy;
 import org.gama.stalactite.sql.result.WholeResultSetTransformerTest.WingInner.FeatherInner;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -236,7 +238,6 @@ public class WholeResultSetTransformerTest {
 	public static Object[][] testTransform_withReuse() {
 		return new Object[][] {
 				new Object[] { new ResultSetRowTransformer<>(FeatherColor.class, "featherColor", STRING_READER, FeatherColor::new) },
-				new Object[] { new WholeResultSetTransformer<>(FeatherColor.class, "featherColor", STRING_READER, FeatherColor::new) }
 		};
 	}
 	
@@ -268,11 +269,6 @@ public class WholeResultSetTransformerTest {
 			testInstance.add(leftChickenFeatherColorCombiner, (ResultSetRowTransformer) featherColorTestInstance.copyWithAliases(leftColumnMapping));
 			// we reuse the FeatherColor transformer for the right wing
 			testInstance.add(rightChickenFeatherColorCombiner, (ResultSetRowTransformer) featherColorTestInstance.copyWithAliases(rightColumnMapping));
-		} else if (featherColorTestInstance instanceof WholeResultSetTransformer) {
-			// we reuse the FeatherColor transformer for the left wing
-			testInstance.add(leftChickenFeatherColorCombiner, (WholeResultSetTransformer) featherColorTestInstance.copyWithAliases(leftColumnMapping));
-			// we reuse the FeatherColor transformer for the right wing
-			testInstance.add(rightChickenFeatherColorCombiner, (WholeResultSetTransformer) featherColorTestInstance.copyWithAliases(rightColumnMapping));
 		}
 		
 		String sneakyFeatherColorColumnName = "sneakyFeatherColor";
@@ -353,8 +349,14 @@ public class WholeResultSetTransformerTest {
 		});
 		
 		// we add a dummy assembler to ensure that they are also taken into account by copyFor(..)
-		ResultSetRowAssembler<Chicken> rawAssembler = (rootBean, resultSet) -> rootBean.addLeftFeather(new FeatherColor("pink"));
-		testInstance.add(rawAssembler);
+		testInstance.add((rootBean, resultSet) -> rootBean.addLeftFeather(new FeatherColor("pink")), AssemblyPolicy.ON_EACH_ROW);
+		testInstance.add((rootBean, resultSet) -> rootBean.addLeftFeather(new FeatherColor("yellow")), AssemblyPolicy.ONCE_PER_BEAN);
+		
+		ModifiableInt headCreationCounter = new ModifiableInt();
+		testInstance.add(Chicken::setHead, new ResultSetRowTransformer<>(Head.class, chickenInstanciationColumnName, STRING_READER, s -> {
+			headCreationCounter.increment();	// this will be done once because of cache put by WholeResultSetTransformer
+			return new Head();
+		}));
 		
 		WholeResultSetTransformer<String, Rooster> testInstanceCopy = testInstance.copyFor(Rooster.class, Rooster::new);
 		testInstanceCopy.add("chicks", INTEGER_PRIMITIVE_READER, Rooster::setChickCount);
@@ -374,12 +376,13 @@ public class WholeResultSetTransformerTest {
 		// ... but they should be all the same
 		assertSame(result.get(0), result.get(1));
 		assertSame(result.get(0), result.get(2));
+		assertEquals(1, headCreationCounter.getValue());
 		
 		Rooster rooster = result.get(0);
 		assertEquals("rooster", rooster.getName());
 		assertEquals(3, rooster.getChickCount());
 		// Colors on left : red, black, and as many as were added by 
-		assertEquals(Arrays.asList("red", "pink", "black", "pink", "pink"), rooster.getLeftWing().getFeathers().stream()
+		assertEquals(Arrays.asList("red", "pink", "yellow", "black", "pink", "pink"), rooster.getLeftWing().getFeathers().stream()
 				.map(Functions.link(Feather::getColor, FeatherColor::getName)).collect(Collectors.toList()));
 		// One color on right : black
 		assertEquals(Arrays.asList("black"), rooster.getRightWing().getFeathers().stream()
@@ -390,6 +393,44 @@ public class WholeResultSetTransformerTest {
 		Map<String, FeatherColor> leftWingFeatherColors = Iterables.map(rooster.getLeftWing().getFeathers(), colorNameAccessor, Feather::getColor);
 		Map<String, FeatherColor> rightWingFeatherColors = Iterables.map(rooster.getRightWing().getFeathers(), colorNameAccessor, Feather::getColor);
 		assertSame(leftWingFeatherColors.get("black"), rightWingFeatherColors.get("black"));
+	}
+	
+	@Test
+	public void assemblyStrategy() {
+		String chickenInstanciationColumnName = "chickenName";
+		WholeResultSetTransformer<String, Chicken> testInstance = new WholeResultSetTransformer<>(Chicken.class, chickenInstanciationColumnName, STRING_READER, Chicken::new);
+		// we add a dummy assembler to ensure that they are also taken into account by copyFor(..)
+		testInstance.add((rootBean, resultSet) -> rootBean.addLeftFeather(new FeatherColor("pink")), AssemblyPolicy.ON_EACH_ROW);
+		testInstance.add((rootBean, resultSet) -> rootBean.addLeftFeather(new FeatherColor("yellow")), AssemblyPolicy.ONCE_PER_BEAN);
+		
+		ModifiableInt headCreationCounter = new ModifiableInt();
+		testInstance.add(Chicken::setHead, new ResultSetRowTransformer<>(Head.class, chickenInstanciationColumnName, STRING_READER, s -> {
+			headCreationCounter.increment();
+			return new Head();
+		}));
+		
+		InMemoryResultSet resultSet = new InMemoryResultSet(Arrays.asList(
+				Maps.forHashMap(String.class, Object.class)
+						.add(chickenInstanciationColumnName, "rooster"),
+				Maps.forHashMap(String.class, Object.class)
+						.add(chickenInstanciationColumnName, "rooster"),
+				Maps.forHashMap(String.class, Object.class)
+						.add(chickenInstanciationColumnName, "rooster")
+		));
+		
+		List<Chicken> result = testInstance.transformAll(resultSet);
+		// 3 chickens because of 3 rows in ResultSet
+		assertEquals(3, result.size());
+		// ... but they should be all the same
+		assertSame(result.get(0), result.get(1));
+		assertSame(result.get(0), result.get(2));
+		assertEquals(1, headCreationCounter.getValue());
+		
+		Chicken rooster = result.get(0);
+		assertEquals("rooster", rooster.getName());
+		// Colors on left : red, black, and as many as were added by 
+		assertEquals(Arrays.asList("pink", "yellow", "pink", "pink"), rooster.getLeftWing().getFeathers().stream()
+				.map(Functions.link(Feather::getColor, FeatherColor::getName)).collect(Collectors.toList()));
 	}
 	
 	@Test
@@ -418,6 +459,8 @@ public class WholeResultSetTransformerTest {
 		
 		private Wing rightWing = new Wing();
 		
+		private Head head;
+		
 		public Chicken(String name) {
 			this.name = name;
 		}
@@ -436,6 +479,15 @@ public class WholeResultSetTransformerTest {
 		
 		public Wing getRightWing() {
 			return rightWing;
+		}
+		
+		public Head getHead() {
+			return head;
+		}
+		
+		public Chicken setHead(Head head) {
+			this.head = head;
+			return this;
 		}
 	}
 	
@@ -498,6 +550,11 @@ public class WholeResultSetTransformerTest {
 					"name='" + name + '\'' +
 					'}';
 		}
+	}
+	
+	private static class Head {
+		
+		
 	}
 	
 	public static class WingInner {

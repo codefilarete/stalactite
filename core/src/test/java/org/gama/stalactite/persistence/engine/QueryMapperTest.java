@@ -11,6 +11,7 @@ import org.gama.lang.collection.Arrays;
 import org.gama.lang.collection.Iterables;
 import org.gama.lang.collection.Maps;
 import org.gama.lang.exception.Exceptions;
+import org.gama.lang.trace.ModifiableInt;
 import org.gama.stalactite.persistence.sql.dml.binder.ColumnBinderRegistry;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
@@ -18,6 +19,7 @@ import org.gama.stalactite.sql.ConnectionProvider;
 import org.gama.stalactite.sql.binder.DefaultResultSetReaders;
 import org.gama.stalactite.sql.result.InMemoryResultSet;
 import org.gama.stalactite.sql.result.ResultSetRowTransformer;
+import org.gama.stalactite.sql.result.WholeResultSetTransformer.AssemblyPolicy;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -253,20 +255,47 @@ public class QueryMapperTest {
 	@Test
 	public void execute_instanceHasAssembler() {
 		ColumnBinderRegistry columnBinderRegistry = new ColumnBinderRegistry();
+		ModifiableInt assemblerCounter = new ModifiableInt();
 		QueryMapper<Toto> queryMapper = new QueryMapper<>(Toto.class, "Whatever SQL ... it not executed", columnBinderRegistry)
 				.mapKey(Toto::new, "id", long.class)
-				.add((rootBean, resultSet) -> rootBean.setName(resultSet.getString("name")));
+				.add((rootBean, resultSet) -> rootBean.setName(resultSet.getString("name") + assemblerCounter.increment()));
 		
 		List<Map<String, Object>> resultSetData = Arrays.asList(
 				Maps.asHashMap("id", (Object) 42L).add("name", "ghoeihvoih"),
-				Maps.asHashMap("id", (Object) 43L).add("name", "oziuoie")
+				Maps.asHashMap("id", (Object) 43L).add("name", "oziuoie"),
+				Maps.asHashMap("id", (Object) 42L).add("name", "ghoeihvoih")
 		);
 		
 		List<Toto> result = invokeExecuteWithData(queryMapper, resultSetData);
 		
 		List<Toto> expected = Arrays.asList(
-				new Toto(42, "ghoeihvoih", false),
-				new Toto(43, "oziuoie", false)
+				new Toto(42, "ghoeihvoih3", false),	// counter is expected to be run on each row : last overwrites previous
+				new Toto(43, "oziuoie2", false),
+				new Toto(42, "ghoeihvoih3", false)
+		);
+		assertEquals(expected.toString(), result.toString());
+	}
+	
+	@Test
+	public void execute_instanceHasAssembler_thatRunOnce() {
+		ColumnBinderRegistry columnBinderRegistry = new ColumnBinderRegistry();
+		ModifiableInt assemblerCounter = new ModifiableInt();
+		QueryMapper<Toto> queryMapper = new QueryMapper<>(Toto.class, "Whatever SQL ... it not executed", columnBinderRegistry)
+				.mapKey(Toto::new, "id", long.class)
+				.add((rootBean, resultSet) -> rootBean.setName(resultSet.getString("name") + assemblerCounter.increment()), AssemblyPolicy.ONCE_PER_BEAN);
+		
+		List<Map<String, Object>> resultSetData = Arrays.asList(
+				Maps.asHashMap("id", (Object) 42L).add("name", "ghoeihvoih"),
+				Maps.asHashMap("id", (Object) 43L).add("name", "oziuoie"),
+				Maps.asHashMap("id", (Object) 42L).add("name", "ghoeihvoih")
+		);
+		
+		List<Toto> result = invokeExecuteWithData(queryMapper, resultSetData);
+		
+		List<Toto> expected = Arrays.asList(
+				new Toto(42, "ghoeihvoih1", false),	// counter is expected to be run once per bean : first survives to next
+				new Toto(43, "oziuoie2", false),
+				new Toto(42, "ghoeihvoih1", false)
 		);
 		assertEquals(expected.toString(), result.toString());
 	}

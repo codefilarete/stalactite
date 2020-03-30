@@ -41,7 +41,7 @@ public final class SimpleBeanCache {
 	 * @param factory the "method" that will be called to create the entity when the entity is not in the cache
 	 * @return the existing instance in the cache or a new object
 	 */
-	public <E extends Throwable, C, I> C computeIfAbsent(Class<C> clazz, @Nonnull I identifier, Function<I, C> factory) throws E {
+	public <C, I> C computeIfAbsent(Class<C> clazz, @Nonnull I identifier, Function<I, C> factory) {
 		BeanKey key;
 		if (identifier.getClass().isArray()) {
 			// NB: we must cast into Object[] to avoid the JVM to wrap the identifier into an array of Object due to varargs constructor

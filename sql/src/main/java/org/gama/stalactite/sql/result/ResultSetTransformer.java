@@ -24,7 +24,7 @@ public interface ResultSetTransformer<I, C> extends CopiableForAnotherQuery<C> {
 	 *
 	 * @param columnConsumer the object that will do the reading and mapping
 	 */
-	void add(ColumnConsumer<C, ?> columnConsumer);
+	<O> ResultSetTransformer<I, C> add(ColumnConsumer<C, O> columnConsumer);
 	
 	/**
 	 * Detailed version of {@link #add(ColumnConsumer)}
@@ -86,6 +86,17 @@ public interface ResultSetTransformer<I, C> extends CopiableForAnotherQuery<C> {
 	 * @return a new instance, kind of clone of this but for another type
 	 */
 	<T extends C> ResultSetTransformer<I, T> copyFor(Class<T> beanType, Function<I, T> beanFactory);
+	
+	/**
+	 * Will combine bean created by this instance with the one created by relatedBeanCreator thanks to given combiner.
+	 *
+	 * @param combiner the assciative function between bean created by this instance and the one created by given transformer
+	 * @param relatedBeanCreator creattor of another type of bean that will be combine with the one creted by this instance
+	 * @param <K> other bean type
+	 * @param <V> other bean key type
+	 * @return this
+	 */
+	<K, V> ResultSetTransformer<I, C> add(BiConsumer<C, V> combiner, ResultSetRowTransformer<K, V> relatedBeanCreator);
 	
 	/**
 	 * Overriden for return type cast.
