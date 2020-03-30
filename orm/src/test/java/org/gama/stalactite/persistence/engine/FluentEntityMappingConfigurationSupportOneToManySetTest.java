@@ -66,7 +66,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 /**
  * @author Guillaume Mary
  */
-class FluentEntityMappingConfigurationSupportOneToManyTest {
+class FluentEntityMappingConfigurationSupportOneToManySetTest {
 	
 	private static final HSQLDBDialect DIALECT = new HSQLDBDialect();
 	private static IFluentMappingBuilderPropertyOptions<City, Identifier<Long>> CITY_MAPPING_CONFIGURATION;

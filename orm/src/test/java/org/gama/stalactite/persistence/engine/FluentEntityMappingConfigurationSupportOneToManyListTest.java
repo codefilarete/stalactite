@@ -52,7 +52,7 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 /**
  * @author Guillaume Mary
  */
-class FluentEntityMappingConfigurationSupportIndexedCollectionTest {
+class FluentEntityMappingConfigurationSupportOneToManyListTest {
 	
 	private static final Dialect DIALECT = new HSQLDBDialect();
 	private final DataSource dataSource = new HSQLDBInMemoryDataSource();
@@ -333,7 +333,7 @@ class FluentEntityMappingConfigurationSupportIndexedCollectionTest {
 				.add(Choice::getQuestion);
 		
 		assertEquals("Missing indexing column : relation is mapped by " +
-						"o.g.s.p.e.FluentEntityMappingConfigurationSupportIndexedCollectionTest$Choice.getQuestion() " +
+						"o.g.s.p.e.FluentEntityMappingConfigurationSupportOneToManyListTest$Choice.getQuestion() " +
 						"but no indexing property is defined",
 				assertThrows(UnsupportedOperationException.class, () ->
 						entityBuilder(Question.class, LONG_TYPE)
@@ -370,9 +370,9 @@ class FluentEntityMappingConfigurationSupportIndexedCollectionTest {
 		question.addChoice(choice);
 		
 		Assertions.assertThrows(() -> persisterWithNonExistingSetter.insert(question), Assertions.hasExceptionInCauses(RuntimeMappingException.class)
-				.andProjection(Assertions.hasMessage("Can't get index : " + choice.toString() + " is not associated with a o.g.s.p.e.FluentEntityMappingConfigurationSupportIndexedCollectionTest$Question : "
+				.andProjection(Assertions.hasMessage("Can't get index : " + choice.toString() + " is not associated with a o.g.s.p.e.FluentEntityMappingConfigurationSupportOneToManyListTest$Question : "
 				+ "accessor for field" +
-				" o.g.s.p.e.FluentEntityMappingConfigurationSupportIndexedCollectionTest$Choice.questionWithNoGetter returned null")));
+				" o.g.s.p.e.FluentEntityMappingConfigurationSupportOneToManyListTest$Choice.questionWithNoGetter returned null")));
 	}
 		
 	@Test
@@ -401,8 +401,8 @@ class FluentEntityMappingConfigurationSupportIndexedCollectionTest {
 		question.getChoices().add(new Choice(4L));
 		
 		Assertions.assertThrows(() -> persister.insert(question), Assertions.hasExceptionInCauses(RuntimeMappingException.class)
-				.andProjection(Assertions.hasMessage("Can't get index : Choice{id=4, question=null, name='null'} is not associated with a o.g.s.p.e.FluentEntityMappingConfigurationSupportIndexedCollectionTest$Question : "
-						+ "o.g.s.p.e.FluentEntityMappingConfigurationSupportIndexedCollectionTest$Choice.getQuestion() returned null")));
+				.andProjection(Assertions.hasMessage("Can't get index : Choice{id=4, question=null, name='null'} is not associated with a o.g.s.p.e.FluentEntityMappingConfigurationSupportOneToManyListTest$Question : "
+						+ "o.g.s.p.e.FluentEntityMappingConfigurationSupportOneToManyListTest$Choice.getQuestion() returned null")));
 	}
 		
 	@Test
