@@ -76,7 +76,7 @@ public interface IFluentEmbeddableMappingConfiguration<C> {
 	<O> IFluentEmbeddableMappingConfigurationEmbeddableOptions<C, O> embed(SerializableFunction<C, O> getter, 
 																		EmbeddedBeanMappingStrategyBuilder<O> embeddableMappingBuilder);
 	
-	<O> IFluentEmbeddableMappingConfigurationEmbeddableOptions<C, O> embed(SerializableBiConsumer<C, O> getter,
+	<O> IFluentEmbeddableMappingConfigurationEmbeddableOptions<C, O> embed(SerializableBiConsumer<C, O> setter,
 																		EmbeddedBeanMappingStrategyBuilder<O> embeddableMappingBuilder);
 	
 	/**

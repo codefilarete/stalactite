@@ -1,6 +1,7 @@
 package org.gama.stalactite.persistence.engine;
 
 import java.lang.reflect.Constructor;
+import java.lang.reflect.Executable;
 import java.sql.Connection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -221,7 +222,7 @@ public class PersistenceContext {
 	 * @see #newQuery(SQLBuilder, Class) 
 	 */
 	public <C, I, T extends Table> List<C> select(SerializableFunction<I, C> factory, Column<T, I> column) {
-		Constructor constructor = new MethodReferenceCapturer().findConstructor(factory);
+		Executable constructor = new MethodReferenceCapturer().findExecutable(factory);
 		return newQuery(QueryEase
 				.select(column).from(column.getTable()), ((Class<C>) constructor.getDeclaringClass()))
 				.mapKey(factory, column)

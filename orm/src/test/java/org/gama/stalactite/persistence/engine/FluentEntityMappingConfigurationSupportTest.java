@@ -15,6 +15,7 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+import org.gama.lang.Dates;
 import org.gama.lang.Duo;
 import org.gama.lang.InvocationHandlerSupport;
 import org.gama.lang.collection.Arrays;
@@ -257,7 +258,7 @@ public class FluentEntityMappingConfigurationSupportTest {
 	}
 	
 	@Test
-	public void testEmbed_definedByGetter() {
+	public void embed_definedByGetter() {
 		Table toto = new Table("Toto");
 		MappingEase.entityBuilder(Toto.class, StatefullIdentifier.class)
 				.add(Toto::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
@@ -270,7 +271,7 @@ public class FluentEntityMappingConfigurationSupportTest {
 	}
 	
 	@Test
-	public void testEmbed_definedBySetter() {
+	public void embed_definedBySetter() {
 		Table toto = new Table("Toto");
 		MappingEase.entityBuilder(Toto.class, StatefullIdentifier.class)
 				.add(Toto::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
@@ -283,7 +284,7 @@ public class FluentEntityMappingConfigurationSupportTest {
 	}
 	
 	@Test
-	public void testEmbed_withOverridenColumnName() {
+	public void embed_withOverridenColumnName() {
 		Table toto = new Table("Toto");
 		MappingEase.entityBuilder(Toto.class, StatefullIdentifier.class)
 				.add(Toto::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
@@ -309,7 +310,7 @@ public class FluentEntityMappingConfigurationSupportTest {
 	}
 	
 	@Test
-	public void testEmbed_withOverridenColumn() {
+	public void embed_withOverridenColumn() {
 		Table targetTable = new Table("Toto");
 		Column<Table, Date> createdAt = targetTable.addColumn("createdAt", Date.class);
 		Column<Table, Date> modifiedAt = targetTable.addColumn("modifiedAt", Date.class);
@@ -336,7 +337,7 @@ public class FluentEntityMappingConfigurationSupportTest {
 	}
 	
 	@Test
-	public void testEmbed_withSomeExcludedProperty() {
+	public void embed_withSomeExcludedProperty() {
 		Table targetTable = new Table("Toto");
 		Column<Table, Date> modifiedAt = targetTable.addColumn("modifiedAt", Date.class);
 		
@@ -504,6 +505,44 @@ public class FluentEntityMappingConfigurationSupportTest {
 				collect(countryTable.getColumns(), Column::getName, HashSet::new));
 	}
 	
+	@Test
+	public void embed_reusingDefinition() {
+		Table totoTable = new Table("Toto");
+		Column<Table, Identifier> idColumn = totoTable.addColumn("id", StatefullIdentifier.class);
+		Column<Table, Date> creationDate = totoTable.addColumn("creationDate", Date.class);
+		Column<Table, Date> modificationDate = totoTable.addColumn("modificationDate", Date.class);
+		dialect.getColumnBinderRegistry().register(idColumn, Identifier.identifierBinder(DefaultParameterBinders.UUID_PARAMETER_BINDER));
+		dialect.getJavaTypeToSqlTypeMapping().put(idColumn, "VARCHAR(255)");
+		
+		// embeddeable mapping to be reused
+		EmbeddedBeanMappingStrategyBuilder<Timestamp> timestampMapping = MappingEase.embeddableBuilder(Timestamp.class)
+				.add(Timestamp::getCreationDate)
+				.add(Timestamp::getModificationDate);
+		
+		IEntityPersister<Toto, StatefullIdentifier> persister = MappingEase.entityBuilder(Toto.class, StatefullIdentifier.class)
+				.add(Toto::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
+				.add(Toto::getName)
+				.embed(Toto::getTimestamp, timestampMapping)
+				.build(persistenceContext);
+		
+		// column should be correctly created
+		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+		ddlDeployer.deployDDL();
+		
+		Toto toto = new Toto();
+		toto.setId(new PersistableIdentifier<>(UUID.randomUUID()));
+		// this partial instanciation of Timestamp let us test its partial load too
+		toto.setTimestamp(new Timestamp(Dates.nowAsDate(), null));
+		persister.insert(toto);
+		
+		// Is everything fine in database ?
+		List<Timestamp> select = persistenceContext.select(Timestamp::new, creationDate, modificationDate);
+		assertEquals(toto.getTimestamp(), select.get(0));
+		
+		// Is loading is fine too ?
+		Toto loadedToto = persister.select(toto.getId());
+		assertEquals(toto.getTimestamp(), loadedToto.getTimestamp());
+	}
 	
 	@Test
 	public void build_withEnum_byDefault_nameIsUsed() {

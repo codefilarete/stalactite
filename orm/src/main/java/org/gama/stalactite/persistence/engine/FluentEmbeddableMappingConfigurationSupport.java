@@ -263,8 +263,8 @@ public class FluentEmbeddableMappingConfigurationSupport<C> implements IFluentEm
 	}
 	
 	@Override
-	public <O> IFluentEmbeddableMappingBuilderEmbeddableOptions<C, O> embed(SerializableBiConsumer<C, O> getter, EmbeddedBeanMappingStrategyBuilder<O> embeddableMappingBuilder) {
-		ImportedInset<C, O> importedInset = new ImportedInset<>(getter, this, embeddableMappingBuilder);
+	public <O> IFluentEmbeddableMappingBuilderEmbeddableOptions<C, O> embed(SerializableBiConsumer<C, O> setter, EmbeddedBeanMappingStrategyBuilder<O> embeddableMappingBuilder) {
+		ImportedInset<C, O> importedInset = new ImportedInset<>(setter, this, embeddableMappingBuilder);
 		return addImportedInset(importedInset);
 	}
 	
@@ -446,25 +446,26 @@ public class FluentEmbeddableMappingConfigurationSupport<C> implements IFluentEm
 	
 	public abstract static class AbstractInset<SRC, TRGT> {
 		private final Class<TRGT> embeddedClass;
-		private final PropertyAccessor<SRC, TRGT> accessor;
 		private final Method insetAccessor;
+		/** Equivalent of {@link #insetAccessor} as a {@link PropertyAccessor}  */
+		private final PropertyAccessor<SRC, TRGT> accessor;
 		
 		protected AbstractInset(SerializableBiConsumer<SRC, TRGT> targetSetter, LambdaMethodUnsheller lambdaMethodUnsheller) {
 			this.insetAccessor = lambdaMethodUnsheller.captureLambdaMethod(targetSetter);
 			this.accessor = new PropertyAccessor<>(
-					(AccessorByMethod<SRC, TRGT>) new MutatorByMethod<>(insetAccessor).toAccessor(),
+					new MutatorByMethod<SRC, TRGT>(insetAccessor).toAccessor(),
 					new MutatorByMethodReference<>(targetSetter));
 			// looking for the target type because its necessary to find its persister (and other objects)
-			this.embeddedClass = (Class<TRGT>) Reflections.javaBeanTargetType(getInsetAccessor());
+			this.embeddedClass = Reflections.javaBeanTargetType(getInsetAccessor());
 		}
 		
 		protected AbstractInset(SerializableFunction<SRC, TRGT> targetGetter, LambdaMethodUnsheller lambdaMethodUnsheller) {
 			this.insetAccessor = lambdaMethodUnsheller.captureLambdaMethod(targetGetter);
 			this.accessor = new PropertyAccessor<>(
 					new AccessorByMethodReference<>(targetGetter),
-					((AccessorByMethod<SRC, TRGT>) new AccessorByMethod<>(insetAccessor)).toMutator());
+					new AccessorByMethod<SRC, TRGT>(insetAccessor).toMutator());
 			// looking for the target type because its necessary to find its persister (and other objects)
-			this.embeddedClass = (Class<TRGT>) Reflections.javaBeanTargetType(getInsetAccessor());
+			this.embeddedClass = Reflections.javaBeanTargetType(getInsetAccessor());
 		}
 		
 		public PropertyAccessor<SRC, TRGT> getAccessor() {
@@ -484,6 +485,15 @@ public class FluentEmbeddableMappingConfigurationSupport<C> implements IFluentEm
 		public abstract ValueAccessPointMap<String> getOverridenColumnNames();
 	}
 	
+	/**
+	 * Information storage of embedded mapping defined externally by an {@link EmbeddedBeanMappingStrategyBuilder},
+	 * see {@link #embed(SerializableFunction, EmbeddedBeanMappingStrategyBuilder)}
+	 * 
+	 * @param <SRC>
+	 * @param <TRGT>
+	 * @see #embed(SerializableFunction, EmbeddedBeanMappingStrategyBuilder)}
+	 * @see #embed(SerializableBiConsumer, EmbeddedBeanMappingStrategyBuilder)}
+	 */
 	public static class ImportedInset<SRC, TRGT> extends AbstractInset<SRC, TRGT> implements LambdaMethodUnsheller {
 		
 		private final EmbeddedBeanMappingStrategyBuilder<TRGT> beanMappingBuilder;

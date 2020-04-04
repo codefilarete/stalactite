@@ -383,7 +383,7 @@ public class FluentSubEntityMappingConfigurationSupport<C, I> implements IFluent
 	}
 	
 	@Override
-	public <O> IFluentMappingBuilderEmbeddableOptions<C, I, O> embed(SerializableBiConsumer<C, O> getter,
+	public <O> IFluentMappingBuilderEmbeddableOptions<C, I, O> embed(SerializableBiConsumer<C, O> setter,
 																	 EmbeddedBeanMappingStrategyBuilder<O> embeddableMappingBuilder) {
 		return null;
 	}

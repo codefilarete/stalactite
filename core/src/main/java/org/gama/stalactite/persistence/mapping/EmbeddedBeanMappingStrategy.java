@@ -17,7 +17,9 @@ import org.gama.lang.Duo;
 import org.gama.lang.Reflections;
 import org.gama.lang.collection.Iterables;
 import org.gama.lang.function.Predicates;
+import org.gama.reflection.AccessorChainMutator;
 import org.gama.reflection.Accessors;
+import org.gama.reflection.IAccessor;
 import org.gama.reflection.IMutator;
 import org.gama.reflection.IReversibleAccessor;
 import org.gama.stalactite.persistence.structure.Column;
@@ -238,11 +240,55 @@ public class EmbeddedBeanMappingStrategy<C, T extends Table> implements IEmbedde
 		}
 		
 		@Override
-		protected void applyValueToBean(C targetRowBean, Entry<Column, IMutator> columnFieldEntry, Object propertyValue) {
-			boolean defaultValue = EmbeddedBeanMappingStrategy.this.defaultValueDeterminer.isDefaultValue(
-					new Duo<>(columnFieldEntry.getKey(), columnFieldEntry.getValue()), propertyValue);
-			if (!defaultValue) {
-				super.applyValueToBean(targetRowBean, columnFieldEntry, propertyValue);
+		public void applyRowToBean(Row values, C targetRowBean) {
+			// Algorithm is a little but complex due to embedded beans into this embedded one and the fact that we may not instanciate them
+			// if all of their attributes has default values in current row : because instanciation is done silently by AccessorChainMutator
+			// (the object that let us set embedded bean attributes) we have to check the need of their invokation before ... their invokation.
+			// Therefore we keep a boolean indicating if their values are default ones (if true its means that bean shouldn't be instanciated)
+			// per accessor to this bean. Example : with the mappings "Person::getTimestamp, Timestamp::setCreationDate" and
+			// "Person::getTimestamp, Timestamp::setModificationDate", then we keep a boolean per "Person::getTimestamp" saying that if one of
+			// creationDate and modificationDate is not null then we should instanciate Timestamp, if both are null then not. 
+			Map<Entry<Column, IMutator>, Object> beanValues = new HashMap<>();
+			Map<IAccessor, MutableBoolean> valuesAreDefaultOnes = new HashMap<>();
+			for (Entry<Column, IMutator> columnFieldEntry : getColumnToMember().entrySet()) {
+				Object propertyValue = getColumnedRow().getValue(columnFieldEntry.getKey(), values);
+				beanValues.put(columnFieldEntry, propertyValue);
+				boolean valueIsDefault = EmbeddedBeanMappingStrategy.this.defaultValueDeterminer.isDefaultValue(
+						new Duo<>(columnFieldEntry.getKey(), columnFieldEntry.getValue()), propertyValue);
+				if (columnFieldEntry.getValue() instanceof AccessorChainMutator) {
+					IAccessor valuesAreDefaultOnesKey = (IAccessor) ((AccessorChainMutator) columnFieldEntry.getValue()).getAccessors().get(0);
+					MutableBoolean mutableBoolean = valuesAreDefaultOnes.computeIfAbsent(valuesAreDefaultOnesKey, k -> new MutableBoolean(true));
+					mutableBoolean.and(valueIsDefault);
+				}
+			}
+			// we apply values only if one of them is not a default one, because if all values are default one there's no reason that we create the bean
+			beanValues.forEach((mapping, value) -> {
+				if (mapping.getValue() instanceof AccessorChainMutator) {
+					IAccessor valuesAreDefaultOnesKey = (IAccessor) ((AccessorChainMutator) mapping.getValue()).getAccessors().get(0);
+					boolean valueIsDefault = valuesAreDefaultOnes.get(valuesAreDefaultOnesKey).value();
+					if (!valueIsDefault) {
+						applyValueToBean(targetRowBean, mapping, value);
+					}
+				} else {
+					applyValueToBean(targetRowBean, mapping, value);
+				}
+			});
+		}
+		
+		private class MutableBoolean {
+			
+			private boolean value;
+			
+			private MutableBoolean(boolean value) {
+				this.value = value;
+			}
+			
+			public boolean value() {
+				return value;
+			}
+			
+			public void and(boolean otherValue) {
+				this.value &= otherValue;
 			}
 		}
 		

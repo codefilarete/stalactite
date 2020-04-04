@@ -29,6 +29,7 @@ import org.gama.lang.StringAppender;
 import org.gama.lang.bean.InstanceMethodIterator;
 import org.gama.lang.bean.MethodIterator;
 import org.gama.lang.collection.Iterables;
+import org.gama.lang.exception.NotImplementedException;
 import org.gama.lang.function.SerializableTriFunction;
 import org.gama.reflection.AccessorByMethod;
 import org.gama.reflection.AccessorChain;
@@ -51,6 +52,7 @@ import org.gama.stalactite.persistence.engine.EmbeddableMappingConfiguration;
 import org.gama.stalactite.persistence.engine.EmbeddableMappingConfiguration.Linkage;
 import org.gama.stalactite.persistence.engine.FluentEmbeddableMappingConfigurationSupport;
 import org.gama.stalactite.persistence.engine.FluentEmbeddableMappingConfigurationSupport.AbstractInset;
+import org.gama.stalactite.persistence.engine.FluentEmbeddableMappingConfigurationSupport.ImportedInset;
 import org.gama.stalactite.persistence.engine.FluentEmbeddableMappingConfigurationSupport.Inset;
 import org.gama.stalactite.persistence.engine.FluentEntityMappingConfigurationSupport.OverridableColumnInset;
 import org.gama.stalactite.persistence.engine.IFluentEmbeddableMappingConfiguration;
@@ -102,7 +104,7 @@ class BeanMappingBuilder {
 		this.result = new HashMap<>();
 		// converting direct mapping
 		includeDirectMapping();
-		// adding embeddable (no particular thinking about order compared to previous inherited & class mapping) 
+		// adding embeddable (no particular thought about order compared to previous direct mapping) 
 		includeEmbeddedMapping();
 		return result;
 	}
@@ -204,9 +206,10 @@ class BeanMappingBuilder {
 			ValueAccessPointMap<String> overridenColumnNames = inset.getOverridenColumnNames();
 			
 			if (inset instanceof FluentEmbeddableMappingConfigurationSupport.ImportedInset) {
-				Table pawnTable = new Table("pawnTable");
-				
-				Map<IReversibleAccessor, Column> embeddedBeanMapping = build(mappingConfiguration, pawnTable, columnBinderRegistry, columnNameProvider);
+				// we go deeper to extract mapping of given inset
+				BeanMappingBuilder diggingBuilder = new BeanMappingBuilder();
+				Map<IReversibleAccessor, Column> embeddedBeanMapping = diggingBuilder.build(
+						((ImportedInset<?, ?>) inset).getBeanMappingBuilder().getConfiguration(), targetTable, columnBinderRegistry, columnNameProvider);
 				
 				// looking for conflicting columns between those expected by embeddable bean and those of the entity
 				Map<ValueAccessPoint, Column> intermediaryResult = new ValueAccessPointMap<>();
@@ -268,7 +271,9 @@ class BeanMappingBuilder {
 								+ " so its column name override '" + nameOverride + "' can't apply");
 					}
 				});
-				toReturn.putAll(embeddedBeanMapping);
+				embeddedBeanMapping.forEach((accessor, column) -> {
+					toReturn.put(newAccessorChain(Collections.singletonList(inset.getAccessor()), accessor), column);
+				});
 			} else if (inset instanceof Inset) {
 				Inset refinedInset = (Inset) inset;
 				
@@ -328,7 +333,7 @@ class BeanMappingBuilder {
 			accessor = ((IReversibleMutator) terminalAccessor).toAccessor();
 		} else {
 			// Something has change in ValueAccessPoint hierarchy, it should be fixed (grave)
-			throw new IllegalArgumentException(Reflections.toString(terminalAccessor.getClass()) + " is unknown from chain creation algorithm");
+			throw new NotImplementedException(Reflections.toString(terminalAccessor.getClass()) + " is unknown from chain creation algorithm");
 		}
 		finalAccessors.add(accessor);
 		// we create a chain that
@@ -336,11 +341,12 @@ class BeanMappingBuilder {
 		// - initializes values when its mutator will be used, so bean will create its embedded properties on select
 		// (voluntary dissimetric behavior)
 		return new AccessorChain(finalAccessors) {
+			
+			private final AccessorChainMutator mutator = (AccessorChainMutator) super.toMutator().setNullValueHandler(AccessorChain.INITIALIZE_VALUE);
+			
 			@Override
 			public AccessorChainMutator toMutator() {
-				AccessorChainMutator toReturn = super.toMutator();
-				toReturn.setNullValueHandler(AccessorChain.INITIALIZE_VALUE);
-				return toReturn;
+				return mutator;
 			}
 		}.setNullValueHandler(AccessorChain.RETURN_NULL);
 	}

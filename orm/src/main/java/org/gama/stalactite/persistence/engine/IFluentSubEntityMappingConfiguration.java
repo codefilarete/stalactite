@@ -168,7 +168,7 @@ public interface IFluentSubEntityMappingConfiguration<C, I> extends IFluentEmbed
 	<O> IFluentMappingBuilderEmbeddableOptions<C, I, O> embed(SerializableFunction<C, O> getter, EmbeddedBeanMappingStrategyBuilder<O> embeddableMappingBuilder);
 	
 	@Override
-	<O> IFluentMappingBuilderEmbeddableOptions<C, I, O> embed(SerializableBiConsumer<C, O> getter, EmbeddedBeanMappingStrategyBuilder<O> embeddableMappingBuilder);
+	<O> IFluentMappingBuilderEmbeddableOptions<C, I, O> embed(SerializableBiConsumer<C, O> setter, EmbeddedBeanMappingStrategyBuilder<O> embeddableMappingBuilder);
 	
 	interface IFluentMappingBuilderPropertyOptions<C, I> extends IFluentSubEntityMappingConfiguration<C, I>, IFluentEmbeddableMappingConfigurationPropertyOptions<C>, PropertyOptions {
 		

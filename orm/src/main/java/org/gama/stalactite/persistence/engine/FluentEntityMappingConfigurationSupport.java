@@ -34,6 +34,7 @@ import org.gama.stalactite.persistence.engine.ColumnOptions.IdentifierPolicy;
 import org.gama.stalactite.persistence.engine.FluentEmbeddableMappingConfigurationSupport.AbstractLinkage;
 import org.gama.stalactite.persistence.engine.FluentEmbeddableMappingConfigurationSupport.Inset;
 import org.gama.stalactite.persistence.engine.IFluentEmbeddableMappingBuilder.IFluentEmbeddableMappingBuilderEmbedOptions;
+import org.gama.stalactite.persistence.engine.IFluentEmbeddableMappingBuilder.IFluentEmbeddableMappingBuilderEmbeddableOptions;
 import org.gama.stalactite.persistence.engine.IFluentEmbeddableMappingBuilder.IFluentEmbeddableMappingBuilderEnumOptions;
 import org.gama.stalactite.persistence.engine.builder.CascadeMany;
 import org.gama.stalactite.persistence.engine.builder.CascadeManyList;
@@ -472,13 +473,32 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements IFluentEnt
 	@Override
 	public <O> IFluentMappingBuilderEmbeddableOptions<C, I, O> embed(SerializableFunction<C, O> getter,
 																	 EmbeddedBeanMappingStrategyBuilder<O> embeddableMappingBuilder) {
-		return null;
+		return embed(propertiesMappingConfigurationSurrogate.embed(getter, embeddableMappingBuilder));
 	}
 	
 	@Override
-	public <O> IFluentMappingBuilderEmbeddableOptions<C, I, O> embed(SerializableBiConsumer<C, O> getter,
+	public <O> IFluentMappingBuilderEmbeddableOptions<C, I, O> embed(SerializableBiConsumer<C, O> setter,
 																	 EmbeddedBeanMappingStrategyBuilder<O> embeddableMappingBuilder) {
-		return null;
+		return embed(propertiesMappingConfigurationSurrogate.embed(setter, embeddableMappingBuilder));
+	}
+	
+	private <O> IFluentMappingBuilderEmbeddableOptions<C, I, O> embed(IFluentEmbeddableMappingBuilderEmbeddableOptions<C, O> support) {
+		return new MethodDispatcher()
+				.redirect(EmbeddingOptions.class, new EmbeddingOptions() {
+					@Override
+					public EmbeddingOptions overrideName(SerializableBiConsumer function, String columnName) {
+						support.overrideName(function, columnName);
+						return null;
+					}
+					
+					@Override
+					public EmbeddingOptions overrideName(SerializableFunction function, String columnName) {
+						support.overrideName(function, columnName);
+						return null;
+					}
+				}, true)
+				.fallbackOn(this)
+				.build((Class<IFluentMappingBuilderEmbeddableOptions<C, I, O>>) (Class) IFluentMappingBuilderEmbeddableOptions.class);
 	}
 	
 	private <O> IFluentMappingBuilderEmbedOptions<C, I, O> embed(IFluentEmbeddableMappingBuilderEmbedOptions<C, O> embedSupport) {
