@@ -46,6 +46,7 @@ import org.gama.stalactite.sql.dml.SQLStatement.BindingException;
 import org.gama.stalactite.sql.test.HSQLDBInMemoryDataSource;
 import org.gama.stalactite.test.JdbcConnectionProvider;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 import static org.gama.lang.collection.Iterables.collect;
@@ -212,7 +213,7 @@ public class FluentEntityMappingConfigurationSupportTest {
 	
 	@Test
 	public void add_mappingDefinedTwiceByMethod_throwsException() {
-		assertEquals("Column name of mapping Toto::getName is already targetted by o.g.s.p.e.FluentEntityMappingConfigurationSupportTest$Toto.getName()",
+		assertEquals("Mapping is already defined by method Toto::getName",
 				assertThrows(MappingConfigurationException.class, () -> MappingEase.entityBuilder(Toto.class, StatefullIdentifier.class)
 						.add(Toto::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 						.add(Toto::getName)
@@ -223,7 +224,7 @@ public class FluentEntityMappingConfigurationSupportTest {
 	
 	@Test
 	public void add_mappingDefinedTwiceByColumn_throwsException() {
-		assertEquals("Column xyz of mapping Toto::getName is already targetted by Toto::getFirstName",
+		assertEquals("Column 'xyz' of mapping 'Toto::getName' is already targetted by 'Toto::getFirstName'",
 				assertThrows(MappingConfigurationException.class, () -> MappingEase.entityBuilder(Toto.class, StatefullIdentifier.class)
 						.add(Toto::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 						.add(Toto::getName, "xyz")
@@ -310,6 +311,26 @@ public class FluentEntityMappingConfigurationSupportTest {
 	}
 	
 	@Test
+	public void embed_withOverridenColumnName_nameAlreadyExists_throwsException() {
+		Table totoTable = new Table("Toto");
+		Column<Table, Identifier> idColumn = totoTable.addColumn("id", StatefullIdentifier.class);
+		dialect.getColumnBinderRegistry().register(idColumn, Identifier.identifierBinder(DefaultParameterBinders.UUID_PARAMETER_BINDER));
+		dialect.getJavaTypeToSqlTypeMapping().put(idColumn, "VARCHAR(255)");
+		
+		MappingConfigurationException thrownException = assertThrows(MappingConfigurationException.class,
+				() -> MappingEase.entityBuilder(Toto.class, StatefullIdentifier.class)
+						.add(Toto::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
+						.add(Toto::getName)
+						.embed(Toto::getTimestamp)
+						.overrideName(Timestamp::getCreationDate, "modificationDate")
+						.build(persistenceContext));
+		assertEquals("Error while mapping Toto::getTimestamp :"
+						+ " o.g.s.p.e.m.Timestamp.creationDate conflicts with Toto::getTimestamp > o.g.s.p.e.m.Timestamp.getModificationDate()"
+						+ " because they use same column, override one of their name to avoid the conflict, see EmbedOptions::overrideName",
+				thrownException.getMessage());
+	}
+	
+	@Test
 	public void embed_withOverridenColumn() {
 		Table targetTable = new Table("Toto");
 		Column<Table, Date> createdAt = targetTable.addColumn("createdAt", Date.class);
@@ -363,7 +384,7 @@ public class FluentEntityMappingConfigurationSupportTest {
 	}
 	
 	@Test
-	public void build_innerEmbed_withSomeExcludedProperty() throws SQLException {
+	public void innerEmbed_withSomeExcludedProperty() throws SQLException {
 		Table<?> countryTable = new Table<>("countryTable");
 		
 		IFluentMappingBuilderEmbedOptions<Country, StatefullIdentifier, Timestamp> mappingBuilder = MappingEase
@@ -378,7 +399,7 @@ public class FluentEntityMappingConfigurationSupportTest {
 					.innerEmbed(Person::getTimestamp)
 						.exclude(Timestamp::getCreationDate)
 						.overrideName(Timestamp::getModificationDate, "presidentElectedAt")
-				// this embed will conflict with Country one because its type is already mapped with no override
+				// this embed will conflict with Person one because its type is already mapped with no override
 				.embed(Country::getTimestamp)
 					.exclude(Timestamp::getModificationDate)
 					.overrideName(Timestamp::getCreationDate, "countryCreatedAt");
@@ -465,7 +486,7 @@ public class FluentEntityMappingConfigurationSupportTest {
 	}
 	
 	@Test
-	public void build_innerEmbed_withTwiceSameInnerEmbeddableName() {
+	public void innerEmbed_withTwiceSameInnerEmbeddableName() {
 		Table<?> countryTable = new Table<>("countryTable");
 		IFluentMappingBuilderEmbedOptions<Country, StatefullIdentifier, Timestamp> mappingBuilder = MappingEase.entityBuilder(Country.class,
 				StatefullIdentifier.class)
@@ -505,47 +526,216 @@ public class FluentEntityMappingConfigurationSupportTest {
 				collect(countryTable.getColumns(), Column::getName, HashSet::new));
 	}
 	
-	@Test
-	public void embed_reusingDefinition() {
-		Table totoTable = new Table("Toto");
-		Column<Table, Identifier> idColumn = totoTable.addColumn("id", StatefullIdentifier.class);
-		Column<Table, Date> creationDate = totoTable.addColumn("creationDate", Date.class);
-		Column<Table, Date> modificationDate = totoTable.addColumn("modificationDate", Date.class);
-		dialect.getColumnBinderRegistry().register(idColumn, Identifier.identifierBinder(DefaultParameterBinders.UUID_PARAMETER_BINDER));
-		dialect.getJavaTypeToSqlTypeMapping().put(idColumn, "VARCHAR(255)");
+	@Nested
+	class EmbedWithExternalEmbbededBean {
 		
-		// embeddeable mapping to be reused
-		EmbeddedBeanMappingStrategyBuilder<Timestamp> timestampMapping = MappingEase.embeddableBuilder(Timestamp.class)
-				.add(Timestamp::getCreationDate)
-				.add(Timestamp::getModificationDate);
+		@Test
+		public void simpleCase() {
+			Table totoTable = new Table("Toto");
+			Column<Table, Identifier> idColumn = totoTable.addColumn("id", StatefullIdentifier.class);
+			Column<Table, Date> creationDate = totoTable.addColumn("creationDate", Date.class);
+			Column<Table, Date> modificationDate = totoTable.addColumn("modificationDate", Date.class);
+			dialect.getColumnBinderRegistry().register(idColumn, Identifier.identifierBinder(DefaultParameterBinders.UUID_PARAMETER_BINDER));
+			dialect.getJavaTypeToSqlTypeMapping().put(idColumn, "VARCHAR(255)");
+			
+			// embeddeable mapping to be reused
+			EmbeddedBeanMappingStrategyBuilder<Timestamp> timestampMapping = MappingEase.embeddableBuilder(Timestamp.class)
+					.add(Timestamp::getCreationDate)
+					.add(Timestamp::getModificationDate);
+			
+			IEntityPersister<Toto, StatefullIdentifier> persister = MappingEase.entityBuilder(Toto.class, StatefullIdentifier.class)
+					.add(Toto::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
+					.add(Toto::getName)
+					.embed(Toto::getTimestamp, timestampMapping)
+					.build(persistenceContext);
+			
+			// column should be correctly created
+			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+			ddlDeployer.deployDDL();
+			
+			Toto toto = new Toto();
+			toto.setId(new PersistableIdentifier<>(UUID.randomUUID()));
+			// this partial instanciation of Timestamp let us test its partial load too
+			toto.setTimestamp(new Timestamp(Dates.nowAsDate(), null));
+			persister.insert(toto);
+			
+			// Is everything fine in database ?
+			List<Timestamp> select = persistenceContext.select(Timestamp::new, creationDate, modificationDate);
+			assertEquals(toto.getTimestamp(), select.get(0));
+			
+			// Is loading is fine too ?
+			Toto loadedToto = persister.select(toto.getId());
+			assertEquals(toto.getTimestamp(), loadedToto.getTimestamp());
+		}
 		
-		IEntityPersister<Toto, StatefullIdentifier> persister = MappingEase.entityBuilder(Toto.class, StatefullIdentifier.class)
-				.add(Toto::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
-				.add(Toto::getName)
-				.embed(Toto::getTimestamp, timestampMapping)
-				.build(persistenceContext);
+		@Test
+		public void overrideName() {
+			Table totoTable = new Table("Toto");
+			Column<Table, Identifier> idColumn = totoTable.addColumn("id", StatefullIdentifier.class);
+			Column<Table, Date> creationDate = totoTable.addColumn("createdAt", Date.class);
+			Column<Table, Date> modificationDate = totoTable.addColumn("modificationDate", Date.class);
+			dialect.getColumnBinderRegistry().register(idColumn, Identifier.identifierBinder(DefaultParameterBinders.UUID_PARAMETER_BINDER));
+			dialect.getJavaTypeToSqlTypeMapping().put(idColumn, "VARCHAR(255)");
+			
+			EmbeddedBeanMappingStrategyBuilder<Timestamp> timestampMapping = MappingEase.embeddableBuilder(Timestamp.class)
+					.add(Timestamp::getCreationDate)
+					.add(Timestamp::getModificationDate);
+			
+			IEntityPersister<Toto, StatefullIdentifier> persister = MappingEase.entityBuilder(Toto.class, StatefullIdentifier.class)
+					.add(Toto::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
+					.add(Toto::getName)
+					.embed(Toto::getTimestamp, timestampMapping)
+						.overrideName(Timestamp::getCreationDate, "createdAt")
+					.build(persistenceContext);
+			
+			Map<String, Column> columnsByName = totoTable.mapColumnsOnName();
+			
+			// columns with getter name must be absent (hard to test: can be absent for many reasons !)
+			assertNull(columnsByName.get("creationDate"));
+			
+			// column should be correctly created
+			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+			ddlDeployer.deployDDL();
+			
+			Toto toto = new Toto();
+			toto.setId(new PersistableIdentifier<>(UUID.randomUUID()));
+			// this partial instanciation of Timestamp let us test its partial load too
+			toto.setTimestamp(new Timestamp(Dates.nowAsDate(), null));
+			persister.insert(toto);
+			
+			// Is everything fine in database ?
+			List<Timestamp> select = persistenceContext.select(Timestamp::new, creationDate, modificationDate);
+			assertEquals(toto.getTimestamp(), select.get(0));
+			
+			// Is loading is fine too ?
+			Toto loadedToto = persister.select(toto.getId());
+			assertEquals(toto.getTimestamp(), loadedToto.getTimestamp());
+		}
 		
-		// column should be correctly created
-		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
-		ddlDeployer.deployDDL();
+		@Test
+		public void overrideName_nameAlreadyExists_throwsException() {
+			Table totoTable = new Table("Toto");
+			Column<Table, Identifier> idColumn = totoTable.addColumn("id", StatefullIdentifier.class);
+			dialect.getColumnBinderRegistry().register(idColumn, Identifier.identifierBinder(DefaultParameterBinders.UUID_PARAMETER_BINDER));
+			dialect.getJavaTypeToSqlTypeMapping().put(idColumn, "VARCHAR(255)");
+			
+			// embeddeable mapping to be reused
+			EmbeddedBeanMappingStrategyBuilder<Timestamp> timestampMapping = MappingEase.embeddableBuilder(Timestamp.class)
+					.add(Timestamp::getCreationDate)
+					.add(Timestamp::getModificationDate);
+			
+			MappingConfigurationException thrownException = assertThrows(MappingConfigurationException.class,
+					() -> MappingEase.entityBuilder(Toto.class, StatefullIdentifier.class)
+							.add(Toto::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
+							.add(Toto::getName)
+							.embed(Toto::getTimestamp, timestampMapping)
+								.overrideName(Timestamp::getCreationDate, "modificationDate")
+							.build(persistenceContext));
+			assertEquals("Column 'modificationDate' of mapping 'Timestamp::getCreationDate' is already targetted by 'Timestamp::getModificationDate'",
+					thrownException.getMessage());
+		}
 		
-		Toto toto = new Toto();
-		toto.setId(new PersistableIdentifier<>(UUID.randomUUID()));
-		// this partial instanciation of Timestamp let us test its partial load too
-		toto.setTimestamp(new Timestamp(Dates.nowAsDate(), null));
-		persister.insert(toto);
+		@Test
+		public void overrideName_nameIsAlreadyOverriden_nameIsOverwritten() {
+			Table totoTable = new Table("Toto");
+			Column<Table, Identifier> idColumn = totoTable.addColumn("id", StatefullIdentifier.class);
+			Column<Table, Date> creationDate = totoTable.addColumn("createdAt", Date.class);
+			Column<Table, Date> modificationDate = totoTable.addColumn("modificationDate", Date.class);
+			dialect.getColumnBinderRegistry().register(idColumn, Identifier.identifierBinder(DefaultParameterBinders.UUID_PARAMETER_BINDER));
+			dialect.getJavaTypeToSqlTypeMapping().put(idColumn, "VARCHAR(255)");
+			
+			// embeddeable mapping to be reused
+			EmbeddedBeanMappingStrategyBuilder<Timestamp> timestampMapping = MappingEase.embeddableBuilder(Timestamp.class)
+					.add(Timestamp::getCreationDate, "creation")
+					.add(Timestamp::getModificationDate);
+			
+			IEntityPersister<Toto, StatefullIdentifier> persister = MappingEase.entityBuilder(Toto.class, StatefullIdentifier.class)
+					.add(Toto::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
+					.add(Toto::getName)
+					.embed(Toto::getTimestamp, timestampMapping)
+						.overrideName(Timestamp::getCreationDate, "createdAt")
+					.build(persistenceContext);
+			
+			// column should be correctly created
+			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+			ddlDeployer.deployDDL();
+			
+			Toto toto = new Toto();
+			toto.setId(new PersistableIdentifier<>(UUID.randomUUID()));
+			// this partial instanciation of Timestamp let us test its partial load too
+			toto.setTimestamp(new Timestamp(Dates.nowAsDate(), null));
+			persister.insert(toto);
+			
+			// Is everything fine in database ?
+			List<Timestamp> select = persistenceContext.select(Timestamp::new, creationDate, modificationDate);
+			assertEquals(toto.getTimestamp(), select.get(0));
+			
+			// Is loading is fine too ?
+			Toto loadedToto = persister.select(toto.getId());
+			assertEquals(toto.getTimestamp(), loadedToto.getTimestamp());
+		}
 		
-		// Is everything fine in database ?
-		List<Timestamp> select = persistenceContext.select(Timestamp::new, creationDate, modificationDate);
-		assertEquals(toto.getTimestamp(), select.get(0));
+		@Test
+		public void build_withMappingDefinedTwice_throwsException() {
+			Table totoTable = new Table("Toto");
+			Column<Table, Identifier> idColumn = totoTable.addColumn("id", StatefullIdentifier.class);
+			Column<Table, Date> creationDate = totoTable.addColumn("creation", Date.class);
+			Column<Table, Date> modificationDate = totoTable.addColumn("modificationDate", Date.class);
+			dialect.getColumnBinderRegistry().register(idColumn, Identifier.identifierBinder(DefaultParameterBinders.UUID_PARAMETER_BINDER));
+			dialect.getJavaTypeToSqlTypeMapping().put(idColumn, "VARCHAR(255)");
+			
+			// embeddeable mapping to be reused
+			EmbeddedBeanMappingStrategyBuilder<Timestamp> timestampMapping = MappingEase.embeddableBuilder(Timestamp.class)
+					.add(Timestamp::getCreationDate)
+					.add(Timestamp::getModificationDate)
+					.add(Timestamp::setModificationDate);
+			
+			MappingConfigurationException thrownException = assertThrows(MappingConfigurationException.class,
+					() -> MappingEase.entityBuilder(Toto.class, StatefullIdentifier.class)
+					.add(Toto::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
+					.add(Toto::getName)
+					.embed(Toto::getTimestamp, timestampMapping)
+					.build(persistenceContext));
+			
+			assertEquals("Mapping is already defined by method Timestamp::getModificationDate", thrownException.getMessage());
+		}
 		
-		// Is loading is fine too ?
-		Toto loadedToto = persister.select(toto.getId());
-		assertEquals(toto.getTimestamp(), loadedToto.getTimestamp());
+		@Test
+		public void excludeProperty() {
+			Table totoTable = new Table("Toto");
+			Column<Table, Identifier> idColumn = totoTable.addColumn("id", StatefullIdentifier.class);
+			dialect.getColumnBinderRegistry().register(idColumn, Identifier.identifierBinder(DefaultParameterBinders.UUID_PARAMETER_BINDER));
+			dialect.getJavaTypeToSqlTypeMapping().put(idColumn, "VARCHAR(255)");
+			
+			IEntityPersister<Toto, StatefullIdentifier> persister = MappingEase.entityBuilder(Toto.class, StatefullIdentifier.class)
+					.add(Toto::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
+					.add(Toto::getName)
+					.embed(Toto::getTimestamp)
+						.exclude(Timestamp::getCreationDate)
+					.build(persistenceContext);
+			
+			Map map = totoTable.mapColumnsOnName();
+			assertNull(map.get("creationDate"));
+			
+			// column should be correctly created
+			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+			ddlDeployer.deployDDL();
+			
+			Toto toto = new Toto();
+			toto.setId(new PersistableIdentifier<>(UUID.randomUUID()));
+			// this partial instanciation of Timestamp let us test its partial load too
+			toto.setTimestamp(new Timestamp(Dates.nowAsDate(), null));
+			persister.insert(toto);
+			
+			// Is loading is fine too ?
+			Toto loadedToto = persister.select(toto.getId());
+			// timestamp is expected to be null because all columns in database are null, which proves that creationDate is not taken into account
+			assertNull(loadedToto.getTimestamp());
+		}
 	}
 	
 	@Test
-	public void build_withEnum_byDefault_nameIsUsed() {
+	public void withEnum_byDefault_nameIsUsed() {
 		IEntityConfiguredPersister<PersonWithGender, Identifier<Long>> personPersister = MappingEase.entityBuilder(PersonWithGender.class, Identifier.LONG_TYPE)
 				.add(Person::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.add(Person::getName)
@@ -608,7 +798,7 @@ public class FluentEntityMappingConfigurationSupportTest {
 	}
 	
 	@Test
-	public void build_withEnum_mappedWithOrdinal() {
+	public void withEnum_mappedWithOrdinal() {
 		IEntityConfiguredPersister<PersonWithGender, Identifier<Long>> personPersister = MappingEase.entityBuilder(PersonWithGender.class, Identifier.LONG_TYPE)
 				.add(Person::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.add(Person::getName)
@@ -633,7 +823,7 @@ public class FluentEntityMappingConfigurationSupportTest {
 	}
 	
 	@Test
-	public void build_withEnum_columnMappedWithOrdinal() {
+	public void withEnum_columnMappedWithOrdinal() {
 		Table personTable = new Table<>("PersonWithGender");
 		Column<Table, Gender> genderColumn = personTable.addColumn("gender", Gender.class);
 		

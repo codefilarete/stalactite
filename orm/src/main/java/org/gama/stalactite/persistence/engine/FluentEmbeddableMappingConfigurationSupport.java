@@ -408,11 +408,12 @@ public class FluentEmbeddableMappingConfigurationSupport<C> implements IFluentEm
 	 * 
 	 * @param <T> property owner type
 	 */
-	static class LinkageByColumnName<T> extends AbstractLinkage<T> {
+	public static class LinkageByColumnName<T> extends AbstractLinkage<T> {
 		
 		private final IReversibleAccessor<T, ?> function;
 		private final Class<?> columnType;
 		/** Column name override if not default */
+		@Nullable
 		private final String columnName;
 		
 		/**
@@ -422,7 +423,7 @@ public class FluentEmbeddableMappingConfigurationSupport<C> implements IFluentEm
 		 * @param columnType the Java type of the column, will be converted to sql type thanks to {@link org.gama.stalactite.persistence.sql.ddl.JavaTypeToSqlTypeMapping}
 		 * @param columnName an override of the default name that will be generated
 		 */
-		<O> LinkageByColumnName(IReversibleAccessor<T, O> accessor, Class<O> columnType, @Nullable String columnName) {
+		public <O> LinkageByColumnName(IReversibleAccessor<T, O> accessor, Class<O> columnType, @Nullable String columnName) {
 			this.function = accessor;
 			this.columnType = columnType;
 			this.columnName = columnName;
@@ -434,6 +435,7 @@ public class FluentEmbeddableMappingConfigurationSupport<C> implements IFluentEm
 		}
 		
 		@Override
+		@Nullable
 		public String getColumnName() {
 			return columnName;
 		}
@@ -449,6 +451,7 @@ public class FluentEmbeddableMappingConfigurationSupport<C> implements IFluentEm
 		private final Method insetAccessor;
 		/** Equivalent of {@link #insetAccessor} as a {@link PropertyAccessor}  */
 		private final PropertyAccessor<SRC, TRGT> accessor;
+		private final ValueAccessPointMap<String> overridenColumnNames = new ValueAccessPointMap<>();
 		
 		protected AbstractInset(SerializableBiConsumer<SRC, TRGT> targetSetter, LambdaMethodUnsheller lambdaMethodUnsheller) {
 			this.insetAccessor = lambdaMethodUnsheller.captureLambdaMethod(targetSetter);
@@ -468,10 +471,16 @@ public class FluentEmbeddableMappingConfigurationSupport<C> implements IFluentEm
 			this.embeddedClass = Reflections.javaBeanTargetType(getInsetAccessor());
 		}
 		
+		/**
+		 * Equivalent of {@link #insetAccessor} as a {@link PropertyAccessor}
+		 */
 		public PropertyAccessor<SRC, TRGT> getAccessor() {
 			return accessor;
 		}
 		
+		/**
+		 * Equivalent of given getter or setter at construction time as a {@link Method}
+		 */
 		public Method getInsetAccessor() {
 			return insetAccessor;
 		}
@@ -482,7 +491,22 @@ public class FluentEmbeddableMappingConfigurationSupport<C> implements IFluentEm
 		
 		public abstract ValueAccessPointSet getExcludedProperties();
 		
-		public abstract ValueAccessPointMap<String> getOverridenColumnNames();
+		public ValueAccessPointMap<String> getOverridenColumnNames() {
+			return this.overridenColumnNames;
+		}
+		
+		public void overrideName(SerializableFunction methodRef, String columnName) {
+			this.overridenColumnNames.put(new AccessorByMethodReference(methodRef), columnName);
+		}
+		
+		public void overrideName(SerializableBiConsumer methodRef, String columnName) {
+			this.overridenColumnNames.put(new MutatorByMethodReference(methodRef), columnName);
+		}
+		
+		public void overrideName(AccessorChain accessorChain, String columnName) {
+			this.overridenColumnNames.put(accessorChain, columnName);
+		}
+		
 	}
 	
 	/**
@@ -497,7 +521,6 @@ public class FluentEmbeddableMappingConfigurationSupport<C> implements IFluentEm
 	public static class ImportedInset<SRC, TRGT> extends AbstractInset<SRC, TRGT> implements LambdaMethodUnsheller {
 		
 		private final EmbeddedBeanMappingStrategyBuilder<TRGT> beanMappingBuilder;
-		private final ValueAccessPointMap<String> overridenColumnNames = new ValueAccessPointMap<>();
 		private final LambdaMethodUnsheller lambdaMethodUnsheller;
 		
 		ImportedInset(SerializableBiConsumer<SRC, TRGT> targetSetter, LambdaMethodUnsheller lambdaMethodUnsheller,
@@ -518,18 +541,6 @@ public class FluentEmbeddableMappingConfigurationSupport<C> implements IFluentEm
 			return beanMappingBuilder;
 		}
 		
-		public void overrideName(SerializableFunction methodRef, String columnName) {
-			this.overridenColumnNames.put(new AccessorByMethodReference(methodRef), columnName);
-		}
-		
-		public void overrideName(SerializableBiConsumer methodRef, String columnName) {
-			this.overridenColumnNames.put(new MutatorByMethodReference(methodRef), columnName);
-		}
-		
-		public void overrideName(AccessorChain accessorChain, String columnName) {
-			this.overridenColumnNames.put(accessorChain, columnName);
-		}
-		
 		@Override
 		public Method captureLambdaMethod(SerializableFunction getter) {
 			return this.lambdaMethodUnsheller.captureLambdaMethod(getter);
@@ -544,11 +555,6 @@ public class FluentEmbeddableMappingConfigurationSupport<C> implements IFluentEm
 		public ValueAccessPointSet getExcludedProperties() {
 			return new ValueAccessPointSet();
 		}
-		
-		@Override
-		public ValueAccessPointMap<String> getOverridenColumnNames() {
-			return overridenColumnNames;
-		}
 	}
 	
 	/**
@@ -558,7 +564,6 @@ public class FluentEmbeddableMappingConfigurationSupport<C> implements IFluentEm
 	 * @param <TRGT> the target type
 	 */
 	public static class Inset<SRC, TRGT> extends AbstractInset<SRC, TRGT> implements LambdaMethodUnsheller {
-		private final ValueAccessPointMap<String> overridenColumnNames = new ValueAccessPointMap<>();
 		private final ValueAccessPointSet excludedProperties = new ValueAccessPointSet();
 		private final LambdaMethodUnsheller lambdaMethodUnsheller;
 		/** For inner embedded inset : indicates parent embeddable */
@@ -572,10 +577,6 @@ public class FluentEmbeddableMappingConfigurationSupport<C> implements IFluentEm
 		Inset(SerializableFunction<SRC, TRGT> targetGetter, LambdaMethodUnsheller lambdaMethodUnsheller) {
 			super(targetGetter, lambdaMethodUnsheller);
 			this.lambdaMethodUnsheller = lambdaMethodUnsheller;
-		}
-		
-		public void overrideName(SerializableFunction methodRef, String columnName) {
-			this.overridenColumnNames.put(new AccessorByMethodReference(methodRef), columnName);
 		}
 		
 		public void exclude(SerializableBiConsumer methodRef) {
@@ -602,11 +603,6 @@ public class FluentEmbeddableMappingConfigurationSupport<C> implements IFluentEm
 		
 		public void setParent(Inset parent) {
 			this.parent = parent;
-		}
-		
-		@Override
-		public ValueAccessPointMap<String> getOverridenColumnNames() {
-			return overridenColumnNames;
 		}
 		
 		@Override

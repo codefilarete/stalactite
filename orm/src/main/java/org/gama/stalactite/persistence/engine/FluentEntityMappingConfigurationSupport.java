@@ -486,15 +486,15 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements IFluentEnt
 		return new MethodDispatcher()
 				.redirect(EmbeddingOptions.class, new EmbeddingOptions() {
 					@Override
-					public EmbeddingOptions overrideName(SerializableBiConsumer function, String columnName) {
-						support.overrideName(function, columnName);
-						return null;
+					public EmbeddingOptions overrideName(SerializableBiConsumer setter, String columnName) {
+						support.overrideName(setter, columnName);
+						return null;	// we can return null because dispatcher will return proxy
 					}
 					
 					@Override
-					public EmbeddingOptions overrideName(SerializableFunction function, String columnName) {
-						support.overrideName(function, columnName);
-						return null;
+					public EmbeddingOptions overrideName(SerializableFunction getter, String columnName) {
+						support.overrideName(getter, columnName);
+						return null;	// we can return null because dispatcher will return proxy
 					}
 				}, true)
 				.fallbackOn(this)
