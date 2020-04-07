@@ -50,6 +50,7 @@ import org.gama.stalactite.persistence.engine.ColumnNamingStrategy;
 import org.gama.stalactite.persistence.engine.EmbedOptions;
 import org.gama.stalactite.persistence.engine.EmbeddableMappingConfiguration;
 import org.gama.stalactite.persistence.engine.EmbeddableMappingConfiguration.Linkage;
+import org.gama.stalactite.persistence.engine.FluentEmbeddableMappingConfigurationSupport;
 import org.gama.stalactite.persistence.engine.FluentEmbeddableMappingConfigurationSupport.AbstractInset;
 import org.gama.stalactite.persistence.engine.FluentEmbeddableMappingConfigurationSupport.ImportedInset;
 import org.gama.stalactite.persistence.engine.FluentEmbeddableMappingConfigurationSupport.Inset;
@@ -105,7 +106,7 @@ class BeanMappingBuilder {
 		this.targetTable = targetTable;
 		this.result = new HashMap<>();
 		// converting direct mapping
-		includeDirectMapping(this.mappingConfiguration, null, new ValueAccessPointMap<>());
+		includeDirectMapping(this.mappingConfiguration, null, new ValueAccessPointMap<>(), new ValueAccessPointMap<>(), new ValueAccessPointSet());
 		// adding embeddable (no particular thought about order compared to previous direct mapping) 
 		includeEmbeddedMapping();
 		return result;
@@ -116,14 +117,20 @@ class BeanMappingBuilder {
 	}
 	
 	protected void includeDirectMapping(EmbeddableMappingConfiguration<?> givenConfiguration, @Nullable ValueAccessPoint accessorPrefix,
-										ValueAccessPointMap<String> overridenColumnNames) {
-		givenConfiguration.getPropertiesMapping().forEach(linkage -> includeMapping(linkage, givenConfiguration, accessorPrefix, overridenColumnNames.get(linkage.getAccessor())));
+										ValueAccessPointMap<String> overridenColumnNames, ValueAccessPointMap<Column> overridenColumns,
+										ValueAccessPointSet excludedProperties) {
+		givenConfiguration.getPropertiesMapping().stream()
+				.filter(linkage -> !excludedProperties.contains(linkage.getAccessor()))
+				.forEach(linkage -> includeMapping(linkage, givenConfiguration, accessorPrefix,
+						overridenColumnNames.get(linkage.getAccessor()),
+						overridenColumns.get(linkage.getAccessor())));
 	}
 	
-	protected void includeMapping(Linkage linkage, EmbeddableMappingConfiguration<?> mappingConfiguration, @Nullable ValueAccessPoint accessorPrefix, String overridenColumnName) {
-		String columnName = determineColumnName(linkage, overridenColumnName);
+	protected void includeMapping(Linkage linkage, EmbeddableMappingConfiguration<?> mappingConfiguration, @Nullable ValueAccessPoint accessorPrefix,
+								  String overridenColumnName, Column overridenColumn) {
+		String columnName = nullable(overridenColumn).map(Column::getName).getOr(() -> determineColumnName(linkage, overridenColumnName));
 		assertMappingIsNotAlreadyDefinedByInheritance(linkage, columnName, mappingConfiguration);
-		Column column = addColumnToTable(linkage, columnName);
+		Column column = nullable(overridenColumn).getOr(() -> addColumnToTable(linkage, columnName));
 		ensureColumnBindingInRegistry(linkage, column);
 		IReversibleAccessor accessor;
 		if (accessorPrefix != null) {
@@ -231,6 +238,7 @@ class BeanMappingBuilder {
 							if (targetColumn == null) {
 								String columnName = determineColumnName(linkage, inset.getOverridenColumnNames().get(valueAccessPoint));
 								targetColumn = addColumnToTable(linkage, columnName);
+								ensureColumnBindingInRegistry(linkage, targetColumn);
 							}
 							// checking that column is not already mapped by a previous definition
 							Column finalTargetColumn = targetColumn;
@@ -251,9 +259,10 @@ class BeanMappingBuilder {
 							AccessorChain chain = newAccessorChain(rootAccessors, valueAccessPoint);
 							result.put(chain, targetColumn);
 						});
-			} else if (inset instanceof ImportedInset) {
+			} else if (inset instanceof FluentEmbeddableMappingConfigurationSupport.ImportedInset) {
 				EmbeddableMappingConfiguration<?> configuration = ((ImportedInset) inset).getBeanMappingBuilder().getConfiguration();
-				includeDirectMapping(configuration, inset.getAccessor(), inset.getOverridenColumnNames());
+				includeDirectMapping(configuration, inset.getAccessor(), inset.getOverridenColumnNames(), ((ImportedInset<?, ?>) inset).getOverridenColumns(),
+						inset.getExcludedProperties());
 				stack.addAll(configuration.getInsets());
 			}
 			treatedInsets.add(inset);

@@ -13,9 +13,9 @@ import org.gama.lang.Reflections;
 import org.gama.lang.reflect.MethodDispatcher;
 import org.gama.reflection.AccessorByMethod;
 import org.gama.reflection.AccessorByMethodReference;
+import org.gama.reflection.AccessorDefinition;
 import org.gama.reflection.Accessors;
 import org.gama.reflection.IReversibleAccessor;
-import org.gama.reflection.AccessorDefinition;
 import org.gama.reflection.MethodReferenceCapturer;
 import org.gama.reflection.MutatorByMethod;
 import org.gama.reflection.MutatorByMethodReference;
@@ -377,14 +377,14 @@ public class FluentSubEntityMappingConfigurationSupport<C, I> implements IFluent
 	}
 	
 	@Override
-	public <O> IFluentMappingBuilderEmbeddableOptions<C, I, O> embed(SerializableFunction<C, O> getter,
-																	 EmbeddedBeanMappingStrategyBuilder<O> embeddableMappingBuilder) {
+	public <O> IFluentMappingBuilderEmbeddableMappingConfigurationImportedEmbedOptions<C, I, O> embed(SerializableFunction<C, O> getter,
+																									  EmbeddedBeanMappingStrategyBuilder<O> embeddableMappingBuilder) {
 		return null;
 	}
 	
 	@Override
-	public <O> IFluentMappingBuilderEmbeddableOptions<C, I, O> embed(SerializableBiConsumer<C, O> setter,
-																	 EmbeddedBeanMappingStrategyBuilder<O> embeddableMappingBuilder) {
+	public <O> IFluentMappingBuilderEmbeddableMappingConfigurationImportedEmbedOptions<C, I, O> embed(SerializableBiConsumer<C, O> setter,
+																									  EmbeddedBeanMappingStrategyBuilder<O> embeddableMappingBuilder) {
 		return null;
 	}
 	
@@ -393,20 +393,26 @@ public class FluentSubEntityMappingConfigurationSupport<C, I> implements IFluent
 				.redirect(EmbedWithColumnOptions.class, new EmbedWithColumnOptions() {
 					
 					@Override
-					public EmbedOptions innerEmbed(SerializableBiConsumer setter) {
+					public EmbedWithColumnOptions innerEmbed(SerializableBiConsumer setter) {
 						embedSupport.innerEmbed(setter);
 						return null;	// we can return null because dispatcher will return proxy
 					}
 					
 					@Override
-					public EmbedOptions innerEmbed(SerializableFunction getter) {
+					public EmbedWithColumnOptions innerEmbed(SerializableFunction getter) {
 						embedSupport.innerEmbed(getter);
 						return null;	// we can return null because dispatcher will return proxy
 					}
 					
 					@Override
-					public EmbedOptions overrideName(SerializableFunction function, String columnName) {
-						embedSupport.overrideName(function, columnName);
+					public EmbedWithColumnOptions overrideName(SerializableFunction getter, String columnName) {
+						embedSupport.overrideName(getter, columnName);
+						return null;	// we can return null because dispatcher will return proxy
+					}
+					
+					@Override
+					public EmbedWithColumnOptions overrideName(SerializableBiConsumer setter, String columnName) {
+						embedSupport.overrideName(setter, columnName);
 						return null;	// we can return null because dispatcher will return proxy
 					}
 					
@@ -424,7 +430,7 @@ public class FluentSubEntityMappingConfigurationSupport<C, I> implements IFluent
 					
 					@Override
 					public EmbedWithColumnOptions override(SerializableFunction function, Column targetColumn) {
-						propertiesMappingConfigurationSurrogate.currentInset().override(function, targetColumn);
+						((OverridableColumnInset) propertiesMappingConfigurationSurrogate.currentInset()).override(function, targetColumn);
 						return null;	// we can return null because dispatcher will return proxy
 					}
 				}, true)
@@ -466,15 +472,6 @@ public class FluentSubEntityMappingConfigurationSupport<C, I> implements IFluent
 		protected <O> Inset<C, O> newInset(SerializableFunction<C, O> getter) {
 			this.currentInset = new OverridableColumnInset<>(getter, this);
 			return (Inset<C, O>) currentInset;
-		}
-		
-		/**
-		 *  
-		 * @return the last {@link Inset} built by {@link #newInset(SerializableFunction)} or {@link #newInset(SerializableBiConsumer)}
-		 */
-		@Override
-		protected OverridableColumnInset<C, ?> currentInset() {
-			return currentInset;
 		}
 		
 		@Override

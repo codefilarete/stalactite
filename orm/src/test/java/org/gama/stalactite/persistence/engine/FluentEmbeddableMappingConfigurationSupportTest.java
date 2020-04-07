@@ -18,7 +18,7 @@ import org.gama.stalactite.sql.result.Row;
 import org.gama.stalactite.persistence.engine.model.Car;
 import org.gama.stalactite.persistence.engine.model.Color;
 import org.gama.stalactite.persistence.engine.IFluentEmbeddableMappingBuilder.IFluentEmbeddableMappingBuilderEmbedOptions;
-import org.gama.stalactite.persistence.engine.IFluentEmbeddableMappingBuilder.IFluentEmbeddableMappingBuilderEmbeddableOptions;
+import org.gama.stalactite.persistence.engine.IFluentEmbeddableMappingBuilder.IFluentEmbeddableMappingBuilderEmbeddableMappingConfigurationImportedEmbedOptions;
 import org.gama.stalactite.persistence.engine.model.Country;
 import org.gama.stalactite.persistence.engine.model.Gender;
 import org.gama.stalactite.persistence.engine.model.Person;
@@ -574,7 +574,7 @@ class FluentEmbeddableMappingConfigurationSupportTest {
 				.add(Person::getName);
 		
 		Table<?> countryTable = new Table<>("countryTable");
-		IFluentEmbeddableMappingBuilderEmbeddableOptions<Country, Person> entityMappingBuilder = MappingEase.embeddableBuilder(Country.class)
+		IFluentEmbeddableMappingBuilderEmbeddableMappingConfigurationImportedEmbedOptions<Country, Person> entityMappingBuilder = MappingEase.embeddableBuilder(Country.class)
 				.add(Country::getName)
 				.embed(Country::getPresident, personMappingBuilder);
 		
@@ -593,7 +593,7 @@ class FluentEmbeddableMappingConfigurationSupportTest {
 				.add(Person::getName, "myName");
 		
 		Table<?> countryTable = new Table<>("countryTable");
-		IFluentEmbeddableMappingBuilderEmbeddableOptions<Country, Person> entityMappingBuilder = MappingEase.embeddableBuilder(Country.class)
+		IFluentEmbeddableMappingBuilderEmbeddableMappingConfigurationImportedEmbedOptions<Country, Person> entityMappingBuilder = MappingEase.embeddableBuilder(Country.class)
 				.add(Country::getName, "myName")
 				.embed(Country::getPresident, personMappingBuilder);
 		
@@ -612,7 +612,7 @@ class FluentEmbeddableMappingConfigurationSupportTest {
 				.add(MyPerson::getName, "myName");
 		
 		Table<?> countryTable = new Table<>("countryTable");
-		IFluentEmbeddableMappingBuilderEmbeddableOptions<MyCountry, MyPerson> entityMappingBuilder = MappingEase.embeddableBuilder(MyCountry.class)
+		IFluentEmbeddableMappingBuilderEmbeddableMappingConfigurationImportedEmbedOptions<MyCountry, MyPerson> entityMappingBuilder = MappingEase.embeddableBuilder(MyCountry.class)
 				.add(MyCountry::getMyName)
 				.embed(MyCountry::getPresident, personMappingBuilder);
 		
@@ -631,7 +631,7 @@ class FluentEmbeddableMappingConfigurationSupportTest {
 				.add(MyPerson::getMyName);
 		
 		Table<?> countryTable = new Table<>("countryTable");
-		IFluentEmbeddableMappingBuilderEmbeddableOptions<MyCountry, MyPerson> entityMappingBuilder = MappingEase.embeddableBuilder(MyCountry.class)
+		IFluentEmbeddableMappingBuilderEmbeddableMappingConfigurationImportedEmbedOptions<MyCountry, MyPerson> entityMappingBuilder = MappingEase.embeddableBuilder(MyCountry.class)
 				.add(Country::getName, "myName")
 				.embed(MyCountry::getPresident, personMappingBuilder);
 		
@@ -649,7 +649,7 @@ class FluentEmbeddableMappingConfigurationSupportTest {
 				.add(Person::getName);
 		
 		Table<?> countryTable = new Table<>("countryTable");
-		IFluentEmbeddableMappingBuilderEmbeddableOptions<Country, Person> entityMappingBuilder =
+		IFluentEmbeddableMappingBuilderEmbeddableMappingConfigurationImportedEmbedOptions<Country, Person> entityMappingBuilder =
 				MappingEase.embeddableBuilder(Country.class)
 				.add(Country::getName)
 				.embed(Country::getPresident, personMappingBuilder)
@@ -741,7 +741,7 @@ class FluentEmbeddableMappingConfigurationSupportTest {
 				.embed(Person::getTimestamp);
 		
 		Table<?> countryTable = new Table<>("countryTable");
-		IFluentEmbeddableMappingBuilderEmbeddableOptions<Country, Person> mappingBuilder = MappingEase.embeddableBuilder(Country.class)
+		IFluentEmbeddableMappingBuilderEmbeddableMappingConfigurationImportedEmbedOptions<Country, Person> mappingBuilder = MappingEase.embeddableBuilder(Country.class)
 				.add(Country::getName)
 				.embed(Country::getTimestamp)
 				.embed(Country::getPresident, personMappingBuilder);
@@ -764,7 +764,7 @@ class FluentEmbeddableMappingConfigurationSupportTest {
 				.overrideName(Timestamp::getCreationDate, "createdAt");
 		
 		Table<?> countryTable = new Table<>("countryTable");
-		IFluentEmbeddableMappingBuilderEmbeddableOptions<Country, Person> mappingBuilder = MappingEase.embeddableBuilder(Country.class)
+		IFluentEmbeddableMappingBuilderEmbeddableMappingConfigurationImportedEmbedOptions<Country, Person> mappingBuilder = MappingEase.embeddableBuilder(Country.class)
 				.add(Country::getName)
 				.embed(Country::getTimestamp)
 				.embed(Country::getPresident, personMappingBuilder);
@@ -784,7 +784,7 @@ class FluentEmbeddableMappingConfigurationSupportTest {
 				.exclude(Timestamp::getCreationDate);
 		
 		Table<?> countryTable = new Table<>("countryTable");
-		IFluentEmbeddableMappingBuilderEmbeddableOptions<Country, Person> mappingBuilder = MappingEase.embeddableBuilder(Country.class)
+		IFluentEmbeddableMappingBuilderEmbeddableMappingConfigurationImportedEmbedOptions<Country, Person> mappingBuilder = MappingEase.embeddableBuilder(Country.class)
 				.add(Country::getName)
 				.embed(Country::getTimestamp)
 				.embed(Country::getPresident, personMappingBuilder);

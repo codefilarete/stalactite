@@ -679,8 +679,6 @@ public class FluentEntityMappingConfigurationSupportTest {
 		public void build_withMappingDefinedTwice_throwsException() {
 			Table totoTable = new Table("Toto");
 			Column<Table, Identifier> idColumn = totoTable.addColumn("id", StatefullIdentifier.class);
-			Column<Table, Date> creationDate = totoTable.addColumn("creation", Date.class);
-			Column<Table, Date> modificationDate = totoTable.addColumn("modificationDate", Date.class);
 			dialect.getColumnBinderRegistry().register(idColumn, Identifier.identifierBinder(DefaultParameterBinders.UUID_PARAMETER_BINDER));
 			dialect.getJavaTypeToSqlTypeMapping().put(idColumn, "VARCHAR(255)");
 			
@@ -701,16 +699,21 @@ public class FluentEntityMappingConfigurationSupportTest {
 		}
 		
 		@Test
-		public void excludeProperty() {
+		public void exclude() {
 			Table totoTable = new Table("Toto");
 			Column<Table, Identifier> idColumn = totoTable.addColumn("id", StatefullIdentifier.class);
 			dialect.getColumnBinderRegistry().register(idColumn, Identifier.identifierBinder(DefaultParameterBinders.UUID_PARAMETER_BINDER));
 			dialect.getJavaTypeToSqlTypeMapping().put(idColumn, "VARCHAR(255)");
 			
+			// embeddeable mapping to be reused
+			EmbeddedBeanMappingStrategyBuilder<Timestamp> timestampMapping = MappingEase.embeddableBuilder(Timestamp.class)
+					.add(Timestamp::getCreationDate, "creation")
+					.add(Timestamp::getModificationDate);
+			
 			IEntityPersister<Toto, StatefullIdentifier> persister = MappingEase.entityBuilder(Toto.class, StatefullIdentifier.class)
 					.add(Toto::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 					.add(Toto::getName)
-					.embed(Toto::getTimestamp)
+					.embed(Toto::getTimestamp, timestampMapping)
 						.exclude(Timestamp::getCreationDate)
 					.build(persistenceContext);
 			
@@ -731,6 +734,49 @@ public class FluentEntityMappingConfigurationSupportTest {
 			Toto loadedToto = persister.select(toto.getId());
 			// timestamp is expected to be null because all columns in database are null, which proves that creationDate is not taken into account
 			assertNull(loadedToto.getTimestamp());
+		}
+		
+		@Test
+		public void overrideColumn() {
+			Table totoTable = new Table("Toto");
+			Column<Table, Identifier> idColumn = totoTable.addColumn("id", Identifier.class);
+			Column<Table, Date> creationDate = totoTable.addColumn("createdAt", Date.class);
+			Column<Table, Date> modificationDate = totoTable.addColumn("modificationDate", Date.class);
+			dialect.getColumnBinderRegistry().register(idColumn, Identifier.identifierBinder(DefaultParameterBinders.UUID_PARAMETER_BINDER));
+			dialect.getJavaTypeToSqlTypeMapping().put(idColumn, "VARCHAR(255)");
+			
+			// embeddeable mapping to be reused
+			EmbeddedBeanMappingStrategyBuilder<Timestamp> timestampMapping = MappingEase.embeddableBuilder(Timestamp.class)
+					.add(Timestamp::getCreationDate, "creation")
+					.add(Timestamp::getModificationDate);
+			
+			IEntityPersister<Toto, StatefullIdentifier> persister = MappingEase.entityBuilder(Toto.class, StatefullIdentifier.class)
+					.add(Toto::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
+					.add(Toto::getName)
+					.embed(Toto::getTimestamp, timestampMapping)
+						.override(Timestamp::getCreationDate, creationDate)
+					.build(persistenceContext, totoTable);
+			
+			Map map = totoTable.mapColumnsOnName();
+			assertNull(map.get("creationDate"));
+			
+			/// column should be correctly created
+			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+			ddlDeployer.deployDDL();
+			
+			Toto toto = new Toto();
+			toto.setId(new PersistableIdentifier<>(UUID.randomUUID()));
+			// this partial instanciation of Timestamp let us test its partial load too
+			toto.setTimestamp(new Timestamp(Dates.nowAsDate(), null));
+			persister.insert(toto);
+			
+			// Is everything fine in database ?
+			List<Timestamp> select = persistenceContext.select(Timestamp::new, creationDate, modificationDate);
+			assertEquals(toto.getTimestamp(), select.get(0));
+			
+			// Is loading is fine too ?
+			Toto loadedToto = persister.select(toto.getId());
+			assertEquals(toto.getTimestamp(), loadedToto.getTimestamp());
 		}
 	}
 	

@@ -1,16 +1,18 @@
 package org.gama.stalactite.persistence.engine;
 
-import org.danekja.java.util.function.serializable.SerializableBiConsumer;
 import org.danekja.java.util.function.serializable.SerializableFunction;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
 
 /**
- * Contract for configuring embedded object
+ * Adds the possibility to override a property throught its {@link Column} to an {@link EmbedOptions}.
+ * Only available on entity configurations (those inheriting from {@link IFluentEntityMappingBuilder}), not on embeddable ones (those inherting from
+ * {@link IFluentEmbeddableMappingBuilder}) because the latter can be reused on different tables, hence letting the possibilty to override a
+ * {@link Column} doesn't make sense.
  * 
  * @author Guillaume Mary
  */
-public interface EmbedWithColumnOptions<T> extends EmbedOptions<T> {
+public interface EmbedWithColumnOptions<C> extends EmbedOptions<C> {
 	
 	/**
 	 * Overrides embedding with an existing target column
@@ -20,10 +22,6 @@ public interface EmbedWithColumnOptions<T> extends EmbedOptions<T> {
 	 * @param <IN> input of the function (type of the embedded element)
 	 * @return a mapping configurer, specialized for embedded elements
 	 */
-	<IN> EmbedWithColumnOptions<T> override(SerializableFunction<T, IN> function, Column<Table, IN> targetColumn);
-	
-	<IN> EmbedWithColumnOptions<T> exclude(SerializableFunction<T, IN> getter);
-	
-	<IN> EmbedWithColumnOptions<T> exclude(SerializableBiConsumer<T, IN> setter);
+	<IN> EmbedWithColumnOptions<C> override(SerializableFunction<C, IN> function, Column<Table, IN> targetColumn);
 	
 }

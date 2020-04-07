@@ -73,11 +73,11 @@ public interface IFluentEmbeddableMappingConfiguration<C> {
 
 	<O> IFluentEmbeddableMappingConfigurationEmbedOptions<C, O> embed(SerializableFunction<C, O> getter);
 	
-	<O> IFluentEmbeddableMappingConfigurationEmbeddableOptions<C, O> embed(SerializableFunction<C, O> getter, 
-																		EmbeddedBeanMappingStrategyBuilder<O> embeddableMappingBuilder);
+	<O> IFluentEmbeddableMappingConfigurationImportedEmbedOptions<C, O> embed(SerializableFunction<C, O> getter,
+																			  EmbeddedBeanMappingStrategyBuilder<O> embeddableMappingBuilder);
 	
-	<O> IFluentEmbeddableMappingConfigurationEmbeddableOptions<C, O> embed(SerializableBiConsumer<C, O> setter,
-																		EmbeddedBeanMappingStrategyBuilder<O> embeddableMappingBuilder);
+	<O> IFluentEmbeddableMappingConfigurationImportedEmbedOptions<C, O> embed(SerializableBiConsumer<C, O> setter,
+																			  EmbeddedBeanMappingStrategyBuilder<O> embeddableMappingBuilder);
 	
 	/**
 	 * Change default column naming strategy, which is {@link ColumnNamingStrategy#DEFAULT}, by the given one.
@@ -99,13 +99,16 @@ public interface IFluentEmbeddableMappingConfiguration<C> {
 		/**
 		 * Overrides embedding with an existing column
 		 *
-		 * @param function the getter as a method reference
+		 * @param getter the getter as a method reference
 		 * @param columnName a column name that's the target of the getter (will be added to the {@link Table} if not exists)
 		 * @param <IN> input of the function (type of the embedded element)
 		 * @return a mapping configurer, specialized for embedded elements
 		 */
 		@Override
-		<IN> IFluentEmbeddableMappingConfigurationEmbedOptions<C, O> overrideName(SerializableFunction<O, IN> function, String columnName);
+		<IN> IFluentEmbeddableMappingConfigurationEmbedOptions<C, O> overrideName(SerializableFunction<O, IN> getter, String columnName);
+		
+		@Override
+		<IN> IFluentEmbeddableMappingConfigurationEmbedOptions<C, O> overrideName(SerializableBiConsumer<O, IN> setter, String columnName);
 		
 		/**
 		 * Adds a complex-typed property as embedded into this embedded
@@ -141,16 +144,22 @@ public interface IFluentEmbeddableMappingConfiguration<C> {
 	 * @see #embed(SerializableFunction, EmbeddedBeanMappingStrategyBuilder)  
 	 * @see #embed(SerializableBiConsumer, EmbeddedBeanMappingStrategyBuilder)   
 	 */
-	interface IFluentEmbeddableMappingConfigurationEmbeddableOptions<C, O>
-			extends IFluentEmbeddableMappingConfiguration<C>, EmbeddingOptions<O> {
+	interface IFluentEmbeddableMappingConfigurationImportedEmbedOptions<C, O>
+			extends IFluentEmbeddableMappingConfiguration<C>, ImportedEmbedOptions<O> {
 		
 		@Override
-		<IN> IFluentEmbeddableMappingConfigurationEmbeddableOptions<C, O> overrideName(SerializableFunction<O, IN> function, String columnName);
+		<IN> IFluentEmbeddableMappingConfigurationImportedEmbedOptions<C, O> overrideName(SerializableFunction<O, IN> function, String columnName);
 		
 		@Override
-		<IN> IFluentEmbeddableMappingConfigurationEmbeddableOptions<C, O> overrideName(SerializableBiConsumer<O, IN> function, String columnName);
+		<IN> IFluentEmbeddableMappingConfigurationImportedEmbedOptions<C, O> overrideName(SerializableBiConsumer<O, IN> function, String columnName);
 		
-		<IN> IFluentEmbeddableMappingConfigurationEmbeddableOptions<C, O> overrideName(AccessorChain<O, IN> chain, String columnName);
+		<IN> IFluentEmbeddableMappingConfigurationImportedEmbedOptions<C, O> overrideName(AccessorChain<O, IN> chain, String columnName);
+		
+		@Override
+		<IN> IFluentEmbeddableMappingConfigurationImportedEmbedOptions<C, O> exclude(SerializableBiConsumer<O, IN> setter);
+		
+		@Override
+		<IN> IFluentEmbeddableMappingConfigurationImportedEmbedOptions<C, O> exclude(SerializableFunction<O, IN> getter);
 	}
 	
 	interface IFluentEmbeddableMappingConfigurationEnumOptions<C> extends IFluentEmbeddableMappingConfiguration<C>, EnumOptions {
