@@ -14,6 +14,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.TreeSet;
 import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -1097,7 +1098,37 @@ public class FluentEntityMappingConfigurationSupportTest {
 		}
 		
 		@Test
-		public void foreignKey_isPresent() {
+		public void withCollectionFactory() {
+			IEntityConfiguredPersister<Person, Identifier<Long>> personPersister = MappingEase.entityBuilder(Person.class, Identifier.LONG_TYPE)
+					.add(Person::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
+					.add(Person::getName)
+					.addCollection(Person::getNicknames, String.class)
+						.withCollectionFactory(() -> new TreeSet<>(String.CASE_INSENSITIVE_ORDER.reversed()))
+					.build(persistenceContext);
+			
+			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+			ddlDeployer.deployDDL();
+			
+			Person person = new Person(new PersistableIdentifier<>(1L));
+			person.setName("toto");
+			person.initNicknames();
+			person.addNickname("d");
+			person.addNickname("a");
+			person.addNickname("c");
+			person.addNickname("b");
+			
+			// because nickNames is initialized with HashSet we get this order
+			assertEquals(Arrays.asSet("a", "b", "c", "d"), person.getNicknames());
+			
+			personPersister.insert(person);
+			
+			Person loadedPerson = personPersister.select(person.getId());
+			// because nickNames is initialized with TreeSet with reversed order we get this order
+			Assertions.assertAllEquals(Arrays.asSet("d", "c", "b", "a"), loadedPerson.getNicknames());
+		}
+		
+		@Test
+		public void foreignKeyIsPresent() {
 			MappingEase.entityBuilder(Person.class, Identifier.LONG_TYPE)
 					.add(Person::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 					.add(Person::getName)
@@ -1121,7 +1152,140 @@ public class FluentEntityMappingConfigurationSupportTest {
 					Arrays.asHashSet(new ForeignKey("FK_Person_nicknames_id_Person_id", nickNamesTable.getColumn("id"), personTable.getColumn("id"))),
 					nickNamesTable.getForeignKeys(),
 					fkPrinter);
+		}
+		
+		
+		@Test
+		public void mappedBy() {
+			MappingEase.entityBuilder(Person.class, Identifier.LONG_TYPE)
+					.add(Person::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
+					.add(Person::getName)
+					.addCollection(Person::getNicknames, String.class)
+						.mappedBy("identifier")
+					.build(persistenceContext);
 			
+			Collection<Table> tables = DDLDeployer.collectTables(persistenceContext);
+			Map<String, Table> tablePerName = Iterables.map(tables, Table::getName);
+			Table personTable = tablePerName.get("Person");
+			Table nickNamesTable = tablePerName.get("Person_nicknames");
+			assertNotNull(nickNamesTable);
+			
+			Function<Column, String> columnPrinter = ToStringBuilder.of(", ",
+					Column::getAbsoluteName,
+					chain(Column::getJavaType, (Function<Class, String>) Reflections::toString));
+			Function<ForeignKey, String> fkPrinter = ToStringBuilder.of(", ",
+					ForeignKey::getName,
+					link(ForeignKey::getColumns, ToStringBuilder.asSeveral(columnPrinter)),
+					link(ForeignKey::getTargetColumns, ToStringBuilder.asSeveral(columnPrinter)));
+			
+			Assertions.assertAllEquals(
+					Arrays.asHashSet(new ForeignKey("FK_Person_nicknames_identifier_Person_id", nickNamesTable.getColumn("identifier"), personTable.getColumn("id"))),
+					nickNamesTable.getForeignKeys(),
+					fkPrinter);
+		}
+		
+		@Test
+		public void withTableNaming() {
+			MappingEase.entityBuilder(Person.class, Identifier.LONG_TYPE)
+					.add(Person::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
+					.add(Person::getName)
+					.addCollection(Person::getNicknames, String.class)
+						.withTableNaming(accessorDefinition -> "Toto")
+					.build(persistenceContext);
+			
+			Collection<Table> tables = DDLDeployer.collectTables(persistenceContext);
+			Map<String, Table> tablePerName = Iterables.map(tables, Table::getName);
+			Table personTable = tablePerName.get("Person");
+			Table nickNamesTable = tablePerName.get("Toto");
+			assertNotNull(nickNamesTable);
+			
+			Function<Column, String> columnPrinter = ToStringBuilder.of(", ",
+					Column::getAbsoluteName,
+					chain(Column::getJavaType, (Function<Class, String>) Reflections::toString));
+			Function<ForeignKey, String> fkPrinter = ToStringBuilder.of(", ",
+					ForeignKey::getName,
+					link(ForeignKey::getColumns, ToStringBuilder.asSeveral(columnPrinter)),
+					link(ForeignKey::getTargetColumns, ToStringBuilder.asSeveral(columnPrinter)));
+			
+			Assertions.assertAllEquals(
+					Arrays.asHashSet(new ForeignKey("FK_Toto_id_Person_id", nickNamesTable.getColumn("id"), personTable.getColumn("id"))),
+					nickNamesTable.getForeignKeys(),
+					fkPrinter);
+		}
+		
+		@Test
+		public void withTable() {
+			Table nickNamesTable = new Table("Toto");
+			
+			MappingEase.entityBuilder(Person.class, Identifier.LONG_TYPE)
+					.add(Person::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
+					.add(Person::getName)
+					.addCollection(Person::getNicknames, String.class)
+						.withTable(nickNamesTable)
+					.build(persistenceContext);
+			
+			Collection<Table> tables = DDLDeployer.collectTables(persistenceContext);
+			Map<String, Table> tablePerName = Iterables.map(tables, Table::getName);
+			Table personTable = tablePerName.get("Person");
+			
+			Function<Column, String> columnPrinter = ToStringBuilder.of(", ",
+					Column::getAbsoluteName,
+					chain(Column::getJavaType, (Function<Class, String>) Reflections::toString));
+			Function<ForeignKey, String> fkPrinter = ToStringBuilder.of(", ",
+					ForeignKey::getName,
+					link(ForeignKey::getColumns, ToStringBuilder.asSeveral(columnPrinter)),
+					link(ForeignKey::getTargetColumns, ToStringBuilder.asSeveral(columnPrinter)));
+			
+			Assertions.assertAllEquals(
+					Arrays.asHashSet(new ForeignKey("FK_Toto_id_Person_id", nickNamesTable.getColumn("id"), personTable.getColumn("id"))),
+					nickNamesTable.getForeignKeys(),
+					fkPrinter);
+		}
+		
+		@Test
+		public void withTableName() {
+			MappingEase.entityBuilder(Person.class, Identifier.LONG_TYPE)
+					.add(Person::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
+					.add(Person::getName)
+					.addCollection(Person::getNicknames, String.class)
+						.withTable("Toto")
+					.build(persistenceContext);
+			
+			Collection<Table> tables = DDLDeployer.collectTables(persistenceContext);
+			Map<String, Table> tablePerName = Iterables.map(tables, Table::getName);
+			Table personTable = tablePerName.get("Person");
+			Table nickNamesTable = tablePerName.get("Toto");
+			assertNotNull(nickNamesTable);
+			
+			Function<Column, String> columnPrinter = ToStringBuilder.of(", ",
+					Column::getAbsoluteName,
+					chain(Column::getJavaType, (Function<Class, String>) Reflections::toString));
+			Function<ForeignKey, String> fkPrinter = ToStringBuilder.of(", ",
+					ForeignKey::getName,
+					link(ForeignKey::getColumns, ToStringBuilder.asSeveral(columnPrinter)),
+					link(ForeignKey::getTargetColumns, ToStringBuilder.asSeveral(columnPrinter)));
+			
+			Assertions.assertAllEquals(
+					Arrays.asHashSet(new ForeignKey("FK_Toto_id_Person_id", nickNamesTable.getColumn("id"), personTable.getColumn("id"))),
+					nickNamesTable.getForeignKeys(),
+					fkPrinter);
+		}
+		
+		@Test
+		public void overrideName() {
+			MappingEase.entityBuilder(Person.class, Identifier.LONG_TYPE)
+					.add(Person::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
+					.add(Person::getName)
+					.addCollection(Person::getNicknames, String.class)
+						.overrideName(Person::getNicknames, "toto")
+					.build(persistenceContext);
+			
+			Collection<Table> tables = DDLDeployer.collectTables(persistenceContext);
+			Map<String, Table> tablePerName = Iterables.map(tables, Table::getName);
+			Table personTable = tablePerName.get("Person");
+			Table nickNamesTable = tablePerName.get("Person_nicknames");
+			
+			assertEquals(Arrays.asHashSet("id", "toto"), nickNamesTable.mapColumnsOnName().keySet());
 		}
 	}
 	

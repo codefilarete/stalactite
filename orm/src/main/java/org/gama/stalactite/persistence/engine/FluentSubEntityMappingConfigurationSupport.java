@@ -439,8 +439,8 @@ public class FluentSubEntityMappingConfigurationSupport<C, I> implements IFluent
 	}
 	
 	@Override
-	public IFluentSubEntityMappingConfiguration<C, I> columnNamingStrategy(ColumnNamingStrategy columnNamingStrategy) {
-		this.propertiesMappingConfigurationSurrogate.columnNamingStrategy(columnNamingStrategy);
+	public IFluentSubEntityMappingConfiguration<C, I> withColumnNaming(ColumnNamingStrategy columnNamingStrategy) {
+		this.propertiesMappingConfigurationSurrogate.withColumnNaming(columnNamingStrategy);
 		return this;
 	}
 	

@@ -152,7 +152,7 @@ public class FluentEntityMappingConfigurationSupportInheritanceTest {
 		void columnNamingStrategyChanged() {
 			IEntityPersister<Car, Identifier<Long>> carPersister = entityBuilder(Car.class, LONG_TYPE)
 					.add(Car::getModel)
-					.columnNamingStrategy(accessor -> ColumnNamingStrategy.DEFAULT.giveName(accessor) + "_col")
+					.withColumnNaming(accessor -> ColumnNamingStrategy.DEFAULT.giveName(accessor) + "_col")
 					// concrete class defines id
 					.add(Car::getId).identifier(ALREADY_ASSIGNED)
 					.mapSuperClass(MappingEase
@@ -192,7 +192,7 @@ public class FluentEntityMappingConfigurationSupportInheritanceTest {
 					.mapSuperClass(MappingEase
 							.embeddableBuilder(Vehicle.class)
 							.add(Vehicle::getColor)
-							.columnNamingStrategy(accessor -> ColumnNamingStrategy.DEFAULT.giveName(accessor) + "_supercol")
+							.withColumnNaming(accessor -> ColumnNamingStrategy.DEFAULT.giveName(accessor) + "_supercol")
 							.getConfiguration())
 					.build(persistenceContext);
 			
@@ -230,7 +230,7 @@ public class FluentEntityMappingConfigurationSupportInheritanceTest {
 			};
 			IEntityPersister<Car, Identifier<Long>> carPersister = entityBuilder(Car.class, LONG_TYPE)
 					.add(Car::getModel)
-					.columnNamingStrategy(columnNamingStrategy)
+					.withColumnNaming(columnNamingStrategy)
 					// concrete class defines id
 					.add(Car::getId).identifier(ALREADY_ASSIGNED)
 					.mapSuperClass(MappingEase

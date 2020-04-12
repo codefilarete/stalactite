@@ -49,11 +49,11 @@ public interface IFluentEntityMappingBuilder<C, I> extends IFluentEmbeddableMapp
 	
 	<E extends Enum<E>> IFluentMappingBuilderEnumOptions<C, I> addEnum(SerializableFunction<C, E> getter, Column<? extends Table, E> column);
 	
-	<O, S extends Collection<O>> IFluentMappingBuilderCollectionOptions<C, I> addCollection(SerializableFunction<C, S> getter, Class<O> componentType);
+	<O, S extends Collection<O>> IFluentMappingBuilderElementCollectionOptions<C, I, O, S> addCollection(SerializableFunction<C, S> getter, Class<O> componentType);
 	
-	<O, S extends Collection<O>> IFluentMappingBuilderCollectionOptions<C, I> addCollection(SerializableBiConsumer<C, S> setter, Class<O> componentType);
+	<O, S extends Collection<O>> IFluentMappingBuilderElementCollectionOptions<C, I, O, S> addCollection(SerializableBiConsumer<C, S> setter, Class<O> componentType);
 	
-	IFluentEntityMappingBuilder<C, I> columnNamingStrategy(ColumnNamingStrategy columnNamingStrategy);
+	IFluentEntityMappingBuilder<C, I> withColumnNaming(ColumnNamingStrategy columnNamingStrategy);
 	
 	/**
 	 * Declares the inherited mapping.
@@ -189,11 +189,11 @@ public interface IFluentEntityMappingBuilder<C, I> extends IFluentEmbeddableMapp
 	@Override
 	<O> IFluentMappingBuilderEmbeddableMappingConfigurationImportedEmbedOptions<C, I, O> embed(SerializableBiConsumer<C, O> setter, EmbeddedBeanMappingStrategyBuilder<O> embeddableMappingBuilder);
 	
-	IFluentEntityMappingBuilder<C, I> foreignKeyNamingStrategy(ForeignKeyNamingStrategy foreignKeyNamingStrategy);
+	IFluentEntityMappingBuilder<C, I> withForeignKeyNaming(ForeignKeyNamingStrategy foreignKeyNamingStrategy);
 	
-	IFluentEntityMappingBuilder<C, I> joinColumnNamingStrategy(ColumnNamingStrategy columnNamingStrategy);
+	IFluentEntityMappingBuilder<C, I> withJoinColumnNaming(ColumnNamingStrategy columnNamingStrategy);
 	
-	IFluentEntityMappingBuilder<C, I> associationTableNamingStrategy(AssociationTableNamingStrategy associationTableNamingStrategy);
+	IFluentEntityMappingBuilder<C, I> withAssociationTableNaming(AssociationTableNamingStrategy associationTableNamingStrategy);
 	
 	<V> IFluentEntityMappingBuilder<C, I> versionedBy(SerializableFunction<C, V> getter);
 	
@@ -437,20 +437,32 @@ public interface IFluentEntityMappingBuilder<C, I> extends IFluentEmbeddableMapp
 		
 	}
 	
-	interface IFluentMappingBuilderCollectionOptions<C, I>
-			extends IFluentEntityMappingBuilder<C, I>, CollectionOptions<C> {
+	interface IFluentMappingBuilderElementCollectionOptions<C, I, O, S extends Collection<O>>
+			extends IFluentEntityMappingBuilder<C, I>, ElementCollectionOptions<C, O, S> {
 		
-		<IN> CollectionOptions<C> overrideName(SerializableFunction<C, IN> getter, String columnName);
+		@Override
+		<IN> IFluentMappingBuilderElementCollectionOptions<C, I, O, S> overrideName(SerializableFunction<C, IN> getter, String columnName);
 		
-		<IN> CollectionOptions<C> overrideName(SerializableBiConsumer<C, IN> setter, String columnName);
+		@Override
+		<IN> IFluentMappingBuilderElementCollectionOptions<C, I, O, S> overrideName(SerializableBiConsumer<C, IN> setter, String columnName);
+		
+		@Override
+		IFluentMappingBuilderElementCollectionOptions<C, I, O, S> withCollectionFactory(Supplier<? extends S> collectionFactory);
+		
+		//	
+//	<IN> ElementCollectionOptions<C> override(SerializableFunction<C, IN> function, Column<Table, IN> targetColumn);
 //	
-//	<IN> CollectionOptions<C> override(SerializableFunction<C, IN> function, Column<Table, IN> targetColumn);
-//	
-//	<IN> CollectionOptions<C> joinOnTable(String name);
-//	
-//	<IN> CollectionOptions<C> joinOnTable(Table table);
-//	
-//	<I, T extends Table> CollectionOptions<C> joinOnTable(T table, Column<T, I> reverseColumn);
-//	
+		@Override
+		IFluentMappingBuilderElementCollectionOptions<C, I, O, S> mappedBy(String name);
+		
+		@Override
+		IFluentMappingBuilderElementCollectionOptions<C, I, O, S> withTable(Table table);
+
+		@Override
+		IFluentMappingBuilderElementCollectionOptions<C, I, O, S> withTable(String tableName);
+		
+		@Override
+		IFluentMappingBuilderElementCollectionOptions<C, I, O, S> withTableNaming(ElementCollectionTableNamingStrategy tableNamingStrategy);
+		
 	}
 }

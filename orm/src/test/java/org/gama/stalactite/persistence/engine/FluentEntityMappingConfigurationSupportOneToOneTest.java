@@ -248,7 +248,7 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 	void foreignKeyIsCreated() throws SQLException {
 		MappingEase.entityBuilder(Country.class, Identifier.LONG_TYPE)
 				// setting a foreign key naming strategy to be tested
-				.foreignKeyNamingStrategy(ForeignKeyNamingStrategy.DEFAULT)
+				.withForeignKeyNaming(ForeignKeyNamingStrategy.DEFAULT)
 				.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.add(Country::getName)
 				.add(Country::getDescription)
@@ -279,7 +279,7 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 	void foreignKeyIsCreated_relationOwnedByTargetSide() throws SQLException {
 		IConfiguredPersister<Country, Identifier<Long>> countryPersister = MappingEase.entityBuilder(Country.class, Identifier.LONG_TYPE)
 				// setting a foreign key naming strategy to be tested
-				.foreignKeyNamingStrategy(ForeignKeyNamingStrategy.DEFAULT)
+				.withForeignKeyNaming(ForeignKeyNamingStrategy.DEFAULT)
 				.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.add(Country::getName)
 				.add(Country::getDescription)
@@ -316,7 +316,7 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 		
 		IConfiguredPersister<Country, Identifier<Long>> countryPersister = MappingEase.entityBuilder(Country.class, Identifier.LONG_TYPE)
 				// setting a foreign key naming strategy to be tested
-				.foreignKeyNamingStrategy(ForeignKeyNamingStrategy.DEFAULT)
+				.withForeignKeyNaming(ForeignKeyNamingStrategy.DEFAULT)
 				.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.add(Country::getName)
 				.add(Country::getDescription)
@@ -357,7 +357,7 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 		
 		IConfiguredPersister<Country, Identifier<Long>> countryPersister = MappingEase.entityBuilder(Country.class, Identifier.LONG_TYPE)
 				// setting a foreign key naming strategy to be tested
-				.foreignKeyNamingStrategy(ForeignKeyNamingStrategy.DEFAULT)
+				.withForeignKeyNaming(ForeignKeyNamingStrategy.DEFAULT)
 				.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.add(Country::getName)
 				.add(Country::getDescription)
@@ -394,7 +394,7 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 		
 		IConfiguredPersister<Country, Identifier<Long>> countryPersister = MappingEase.entityBuilder(Country.class, Identifier.LONG_TYPE)
 				// setting a foreign key naming strategy to be tested
-				.foreignKeyNamingStrategy(ForeignKeyNamingStrategy.DEFAULT)
+				.withForeignKeyNaming(ForeignKeyNamingStrategy.DEFAULT)
 				.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.add(Country::getName)
 				.add(Country::getDescription)

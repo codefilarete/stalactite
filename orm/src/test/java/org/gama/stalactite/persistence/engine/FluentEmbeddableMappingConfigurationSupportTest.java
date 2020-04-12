@@ -84,7 +84,7 @@ class FluentEmbeddableMappingConfigurationSupportTest {
 	void add_withoutName_withNamingStrategy_namingStrategyIsTaken_exceptIfColumnNameIsOverriden() {
 		Table<?> countryTable = new Table<>("countryTable");
 		EmbeddedBeanMappingStrategy<Country, Table> mappingStrategy = MappingEase.embeddableBuilder(Country.class)
-				.columnNamingStrategy(accessor -> ColumnNamingStrategy.DEFAULT.giveName(accessor) + "_col")
+				.withColumnNaming(accessor -> ColumnNamingStrategy.DEFAULT.giveName(accessor) + "_col")
 				.add(Country::getName)
 				.add(Country::getDescription, "descriptionColumn")
 				.build(dialect, countryTable);
@@ -384,7 +384,7 @@ class FluentEmbeddableMappingConfigurationSupportTest {
 	void testBuild_embed() {
 		Table<?> countryTable = new Table<>("countryTable");
 		IFluentEmbeddableMappingBuilderEmbedOptions<Country, Timestamp> mappingBuilder = MappingEase.embeddableBuilder(Country.class)
-				.columnNamingStrategy(accessor -> ColumnNamingStrategy.DEFAULT.giveName(accessor) + "_col")
+				.withColumnNaming(accessor -> ColumnNamingStrategy.DEFAULT.giveName(accessor) + "_col")
 				.embed(Country::getTimestamp);
 		EmbeddedBeanMappingStrategy<Country, ? extends Table<?>> mappingStrategy = mappingBuilder.build(dialect, countryTable);
 		

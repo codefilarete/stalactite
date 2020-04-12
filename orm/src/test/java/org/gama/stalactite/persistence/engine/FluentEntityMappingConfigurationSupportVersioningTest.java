@@ -76,7 +76,7 @@ public class FluentEntityMappingConfigurationSupportVersioningTest {
 		assertThrows(UnsupportedOperationException.class, () -> MappingEase.entityBuilder(Country.class,
 				Identifier.LONG_TYPE)
 				// setting a foreign key naming strategy to be tested
-				.foreignKeyNamingStrategy(ForeignKeyNamingStrategy.DEFAULT)
+				.withForeignKeyNaming(ForeignKeyNamingStrategy.DEFAULT)
 				.versionedBy(Country::getVersion, new IntegerSerie())
 				.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.add(Country::getName)
@@ -90,7 +90,7 @@ public class FluentEntityMappingConfigurationSupportVersioningTest {
 		assertThrows(UnsupportedOperationException.class, () -> MappingEase.entityBuilder(Country.class,
 				Identifier.LONG_TYPE)
 				// setting a foreign key naming strategy to be tested
-				.foreignKeyNamingStrategy(ForeignKeyNamingStrategy.DEFAULT)
+				.withForeignKeyNaming(ForeignKeyNamingStrategy.DEFAULT)
 				.versionedBy(Country::getName)
 				.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.add(Country::getName)
@@ -107,7 +107,7 @@ public class FluentEntityMappingConfigurationSupportVersioningTest {
 		IEntityPersister<Country, Identifier<Long>> countryPersister = MappingEase.entityBuilder(Country.class,
 				Identifier.LONG_TYPE)
 				// setting a foreign key naming strategy to be tested
-				.foreignKeyNamingStrategy(ForeignKeyNamingStrategy.DEFAULT)
+				.withForeignKeyNaming(ForeignKeyNamingStrategy.DEFAULT)
 				.versionedBy(Country::getVersion, new IntegerSerie())
 				.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.add(Country::getName)
@@ -154,7 +154,7 @@ public class FluentEntityMappingConfigurationSupportVersioningTest {
 		IEntityPersister<Country, Identifier<Long>> countryPersister = MappingEase.entityBuilder(Country.class,
 				Identifier.LONG_TYPE)
 				// setting a foreign key naming strategy to be tested
-				.foreignKeyNamingStrategy(ForeignKeyNamingStrategy.DEFAULT)
+				.withForeignKeyNaming(ForeignKeyNamingStrategy.DEFAULT)
 				.versionedBy(Country::getModificationDate, new NowSerie() {
 					@Override
 					public LocalDateTime next(LocalDateTime input) {
@@ -207,7 +207,7 @@ public class FluentEntityMappingConfigurationSupportVersioningTest {
 		IEntityPersister<Country, Identifier<Long>> countryPersister = MappingEase.entityBuilder(Country.class,
 				Identifier.LONG_TYPE)
 				// setting a foreign key naming strategy to be tested
-				.foreignKeyNamingStrategy(ForeignKeyNamingStrategy.DEFAULT)
+				.withForeignKeyNaming(ForeignKeyNamingStrategy.DEFAULT)
 				.versionedBy(Country::getVersion, new IntegerSerie())
 				.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.add(Country::getName)

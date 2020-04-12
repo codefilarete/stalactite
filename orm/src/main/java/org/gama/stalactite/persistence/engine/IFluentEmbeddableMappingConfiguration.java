@@ -22,7 +22,7 @@ public interface IFluentEmbeddableMappingConfiguration<C> {
 	 * @param setter a Method Reference to a setter
 	 * @param <O> setter return type / property type to be mapped
 	 * @return this
-	 * @see #columnNamingStrategy(ColumnNamingStrategy) 
+	 * @see #withColumnNaming(ColumnNamingStrategy) 
 	 */
 	<O> IFluentEmbeddableMappingConfigurationPropertyOptions<C> add(SerializableBiConsumer<C, O> setter);
 	
@@ -32,7 +32,7 @@ public interface IFluentEmbeddableMappingConfiguration<C> {
 	 * @param getter a Method Reference to a getter
 	 * @param <O> getter input type / property type to be mapped
 	 * @return this
-	 * @see #columnNamingStrategy(ColumnNamingStrategy)
+	 * @see #withColumnNaming(ColumnNamingStrategy)
 	 */
 	<O> IFluentEmbeddableMappingConfigurationPropertyOptions<C> add(SerializableFunction<C, O> getter);
 	
@@ -86,7 +86,7 @@ public interface IFluentEmbeddableMappingConfiguration<C> {
 	 * @param columnNamingStrategy a new {@link ColumnNamingStrategy} (non null)
 	 * @return this
 	 */
-	IFluentEmbeddableMappingConfiguration<C> columnNamingStrategy(ColumnNamingStrategy columnNamingStrategy);
+	IFluentEmbeddableMappingConfiguration<C> withColumnNaming(ColumnNamingStrategy columnNamingStrategy);
 	
 	/**
 	 * A mashup that allows to come back to the "main" options as well as continue configuration of an embedded bean.

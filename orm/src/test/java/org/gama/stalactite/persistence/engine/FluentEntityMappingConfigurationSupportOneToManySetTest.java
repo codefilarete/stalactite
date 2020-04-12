@@ -101,7 +101,7 @@ class FluentEntityMappingConfigurationSupportOneToManySetTest {
 		IEntityPersister<Country, Identifier<Long>> countryPersister = MappingEase.entityBuilder(Country.class,
 				Identifier.LONG_TYPE)
 				// setting a foreign key naming strategy to be tested
-				.foreignKeyNamingStrategy(ForeignKeyNamingStrategy.DEFAULT)
+				.withForeignKeyNaming(ForeignKeyNamingStrategy.DEFAULT)
 				.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.add(Country::getName)
 				.add(Country::getDescription)

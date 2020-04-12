@@ -54,7 +54,7 @@ import org.gama.stalactite.persistence.engine.SubEntityMappingConfiguration;
 import org.gama.stalactite.persistence.engine.TableNamingStrategy;
 import org.gama.stalactite.persistence.engine.VersioningStrategy;
 import org.gama.stalactite.persistence.engine.builder.CascadeMany;
-import org.gama.stalactite.persistence.engine.builder.CollectionLinkage;
+import org.gama.stalactite.persistence.engine.builder.ElementCollectionLinkage;
 import org.gama.stalactite.persistence.engine.cascade.AfterDeleteByIdSupport;
 import org.gama.stalactite.persistence.engine.cascade.AfterDeleteSupport;
 import org.gama.stalactite.persistence.engine.cascade.AfterUpdateSupport;
@@ -312,7 +312,7 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 		registerRelationsInGraph(entityMappingConfiguration, sourcePersister.getCriteriaSupport().getRootConfiguration(), persistenceContext);
 		
 		// taking element collections into account
-		for (CollectionLinkage<C, ?, ? extends Collection> elementCollection : entityMappingConfiguration.getElementCollections()) {
+		for (ElementCollectionLinkage<C, ?, ? extends Collection> elementCollection : entityMappingConfiguration.getElementCollections()) {
 			ElementCollectionCascadeConfigurer elementCollectionCascadeConfigurer = new ElementCollectionCascadeConfigurer(persistenceContext);
 			elementCollectionCascadeConfigurer.appendCascade(elementCollection, sourcePersister, foreignKeyNamingStrategy, columnNamingStrategy,
 					elementCollection.getTableNamingStrategy());

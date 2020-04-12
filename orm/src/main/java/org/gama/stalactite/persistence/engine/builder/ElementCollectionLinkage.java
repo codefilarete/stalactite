@@ -1,7 +1,6 @@
 package org.gama.stalactite.persistence.engine.builder;
 
 import java.util.Collection;
-import java.util.Map;
 import java.util.function.Supplier;
 
 import org.danekja.java.util.function.serializable.SerializableBiConsumer;
@@ -26,7 +25,7 @@ import static org.gama.lang.Reflections.propertyName;
  * 
  * @author Guillaume Mary
  */
-public class CollectionLinkage<SRC, TRGT, C extends Collection<TRGT>> {
+public class ElementCollectionLinkage<SRC, TRGT, C extends Collection<TRGT>> {
 	
 	/** The method that gives the entities from the "root" entity */
 	private final IReversibleAccessor<SRC, C> collectionProvider;
@@ -35,20 +34,17 @@ public class CollectionLinkage<SRC, TRGT, C extends Collection<TRGT>> {
 	private Supplier<C> collectionFactory;
 	
 	private Table targetTable;
-	private Column<Table, TRGT> foreignKeyColumn;
-	private Map<IReversibleAccessor, String> columnNames;
+	private String targetTableName;
+	private Column<Table, TRGT> reverseColumn;
+	private String reverseColumnName;
 	
 //	private final Class<TRGT> embeddedClass;
-//	private final Class<C> collectionType;
-//	private final Method insetAccessor;
-//	/** Equivalent of {@link #insetAccessor} as a {@link PropertyAccessor}  */
-//	private final PropertyAccessor<SRC, TRGT> accessor;
 	private final ValueAccessPointMap<String> overridenColumnNames = new ValueAccessPointMap<>();
 	private final ValueAccessPointSet excludedProperties = new ValueAccessPointSet();
 	private ElementCollectionTableNamingStrategy tableNamingStrategy = ElementCollectionTableNamingStrategy.DEFAULT;
 	
-	public CollectionLinkage(SerializableBiConsumer<SRC, C> setter, Class<TRGT> componentType, LambdaMethodUnsheller lambdaMethodUnsheller) {
-		MutatorByMethodReference<SRC, C> setterReference = Accessors.mutatorByMethodReference((SerializableBiConsumer<SRC, C>) setter);
+	public ElementCollectionLinkage(SerializableBiConsumer<SRC, C> setter, Class<TRGT> componentType, LambdaMethodUnsheller lambdaMethodUnsheller) {
+		MutatorByMethodReference<SRC, C> setterReference = Accessors.mutatorByMethodReference(setter);
 		this.collectionProvider = new PropertyAccessor<>(
 				Accessors.accessor(setterReference.getDeclaringClass(), propertyName(setterReference.getMethodName())),
 				setterReference
@@ -56,8 +52,8 @@ public class CollectionLinkage<SRC, TRGT, C extends Collection<TRGT>> {
 		this.componentType = componentType;
 	}
 	
-	public CollectionLinkage(SerializableFunction<SRC, C> getter, Class<TRGT> componentType, LambdaMethodUnsheller lambdaMethodUnsheller) {
-		AccessorByMethodReference<SRC, C> getterReference = Accessors.accessorByMethodReference((SerializableFunction<SRC, C>) getter);
+	public ElementCollectionLinkage(SerializableFunction<SRC, C> getter, Class<TRGT> componentType, LambdaMethodUnsheller lambdaMethodUnsheller) {
+		AccessorByMethodReference<SRC, C> getterReference = Accessors.accessorByMethodReference(getter);
 		this.collectionProvider = new PropertyAccessor<>(
 				// we keep close to user demand : we keep its method reference ...
 				getterReference,
@@ -74,24 +70,20 @@ public class CollectionLinkage<SRC, TRGT, C extends Collection<TRGT>> {
 		return collectionFactory;
 	}
 	
+	public ElementCollectionLinkage<SRC, TRGT, C> setCollectionFactory(Supplier<? extends C> collectionFactory) {
+		this.collectionFactory = (Supplier<C>) collectionFactory;
+		return this;
+	}
+	
 	public ElementCollectionTableNamingStrategy getTableNamingStrategy() {
 		return tableNamingStrategy;
 	}
 	
-	//	/**
-//	 * Equivalent of {@link #insetAccessor} as a {@link PropertyAccessor}
-//	 */
-//	public PropertyAccessor<SRC, TRGT> getAccessor() {
-//		return accessor;
-//	}
-//	
-//	/**
-//	 * Equivalent of given getter or setter at construction time as a {@link Method}
-//	 */
-//	public Method getInsetAccessor() {
-//		return insetAccessor;
-//	}
-//	
+	public ElementCollectionLinkage<SRC, TRGT, C> setTableNamingStrategy(ElementCollectionTableNamingStrategy tableNamingStrategy) {
+		this.tableNamingStrategy = tableNamingStrategy;
+		return this;
+	}
+
 //	public Class<TRGT> getEmbeddedClass() {
 //		return embeddedClass;
 //	}
@@ -99,10 +91,10 @@ public class CollectionLinkage<SRC, TRGT, C extends Collection<TRGT>> {
 //	public ValueAccessPointSet getExcludedProperties() {
 //		return this.excludedProperties;
 //	}
-//	
-//	public ValueAccessPointMap<String> getOverridenColumnNames() {
-//		return this.overridenColumnNames;
-//	}
+
+	public ValueAccessPointMap<String> getOverridenColumnNames() {
+		return this.overridenColumnNames;
+	}
 	
 	public void overrideName(SerializableFunction methodRef, String columnName) {
 		this.overridenColumnNames.put(new AccessorByMethodReference(methodRef), columnName);
@@ -120,12 +112,30 @@ public class CollectionLinkage<SRC, TRGT, C extends Collection<TRGT>> {
 		this.targetTable = targetTable;
 	}
 	
-	public Column<Table, TRGT> getForeignKeyColumn() {
-		return foreignKeyColumn;
+	public String getTargetTableName() {
+		return targetTableName;
 	}
 	
-	public void setForeignKeyColumn(Column<Table, TRGT> foreignKeyColumn) {
-		this.foreignKeyColumn = foreignKeyColumn;
+	public ElementCollectionLinkage<SRC, TRGT, C> setTargetTableName(String targetTableName) {
+		this.targetTableName = targetTableName;
+		return this;
+	}
+	
+	public Column<Table, TRGT> getReverseColumn() {
+		return reverseColumn;
+	}
+	
+	public void setReverseColumn(Column<Table, TRGT> reverseColumn) {
+		this.reverseColumn = reverseColumn;
+	}
+	
+	public String getReverseColumnName() {
+		return reverseColumnName;
+	}
+	
+	public ElementCollectionLinkage<SRC, TRGT, C> setReverseColumnName(String reverseColumnName) {
+		this.reverseColumnName = reverseColumnName;
+		return this;
 	}
 	
 	public Class<TRGT> getComponentType() {

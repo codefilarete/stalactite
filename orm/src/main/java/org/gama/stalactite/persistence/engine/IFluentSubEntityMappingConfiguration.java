@@ -60,7 +60,7 @@ public interface IFluentSubEntityMappingConfiguration<C, I> extends IFluentEmbed
 	
 	<E extends Enum<E>> IFluentMappingBuilderEnumOptions<C, I> addEnum(SerializableFunction<C, E> getter, Column<? extends Table, E> column);
 	
-	IFluentSubEntityMappingConfiguration<C, I> columnNamingStrategy(ColumnNamingStrategy columnNamingStrategy);
+	IFluentSubEntityMappingConfiguration<C, I> withColumnNaming(ColumnNamingStrategy columnNamingStrategy);
 	
 	/**
 	 * Declares a direct relationship between current entity and some of type {@code O}.

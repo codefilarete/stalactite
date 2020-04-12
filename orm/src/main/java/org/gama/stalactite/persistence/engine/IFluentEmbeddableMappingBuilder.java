@@ -41,7 +41,7 @@ public interface IFluentEmbeddableMappingBuilder<C> extends IFluentEmbeddableMap
 	
 	<O> IFluentEmbeddableMappingBuilderEmbeddableMappingConfigurationImportedEmbedOptions<C, O> embed(SerializableBiConsumer<C, O> setter, EmbeddedBeanMappingStrategyBuilder<O> embeddableMappingBuilder);
 	
-	IFluentEmbeddableMappingBuilder<C> columnNamingStrategy(ColumnNamingStrategy columnNamingStrategy);
+	IFluentEmbeddableMappingBuilder<C> withColumnNaming(ColumnNamingStrategy columnNamingStrategy);
 	
 	/**
 	 * Crossover between {@link IFluentEmbeddableMappingConfigurationEmbedOptions} (refines its return types) and {@link IFluentEmbeddableMappingBuilder}

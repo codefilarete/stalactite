@@ -9,7 +9,7 @@ import org.gama.lang.collection.ReadOnlyIterator;
 import org.gama.reflection.IReversibleAccessor;
 import org.gama.stalactite.persistence.engine.ColumnOptions.IdentifierPolicy;
 import org.gama.stalactite.persistence.engine.builder.CascadeMany;
-import org.gama.stalactite.persistence.engine.builder.CollectionLinkage;
+import org.gama.stalactite.persistence.engine.builder.ElementCollectionLinkage;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
 
@@ -37,7 +37,7 @@ public interface EntityMappingConfiguration<C, I> {
 	
 	List<CascadeMany<C, ?, ?, ? extends Collection>> getOneToManys();
 	
-	List<CollectionLinkage<C, ?, ? extends Collection>> getElementCollections();
+	List<ElementCollectionLinkage<C, ?, ? extends Collection>> getElementCollections();
 		
 	VersioningStrategy getOptimisticLockOption();
 	

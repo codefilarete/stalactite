@@ -111,7 +111,7 @@ public class FluentEmbeddableMappingConfigurationSupport<C> implements IFluentEm
 	}
 	
 	@Override
-	public FluentEmbeddableMappingConfigurationSupport<C> columnNamingStrategy(ColumnNamingStrategy columnNamingStrategy) {
+	public FluentEmbeddableMappingConfigurationSupport<C> withColumnNaming(ColumnNamingStrategy columnNamingStrategy) {
 		this.columnNamingStrategy = columnNamingStrategy;
 		return this;
 	}

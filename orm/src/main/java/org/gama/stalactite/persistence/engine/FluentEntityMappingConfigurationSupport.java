@@ -39,7 +39,7 @@ import org.gama.stalactite.persistence.engine.IFluentEmbeddableMappingBuilder.IF
 import org.gama.stalactite.persistence.engine.IFluentEmbeddableMappingBuilder.IFluentEmbeddableMappingBuilderEnumOptions;
 import org.gama.stalactite.persistence.engine.builder.CascadeMany;
 import org.gama.stalactite.persistence.engine.builder.CascadeManyList;
-import org.gama.stalactite.persistence.engine.builder.CollectionLinkage;
+import org.gama.stalactite.persistence.engine.builder.ElementCollectionLinkage;
 import org.gama.stalactite.persistence.engine.configurer.PersisterBuilderImpl;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
@@ -67,7 +67,7 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements IFluentEnt
 	
 	private final List<CascadeMany<C, ?, ?, ? extends Collection>> cascadeManys = new ArrayList<>();
 	
-	private final List<CollectionLinkage<C, ?, ? extends Collection>> elementCollections = new ArrayList<>();
+	private final List<ElementCollectionLinkage<C, ?, ? extends Collection>> elementCollections = new ArrayList<>();
 	
 	private final EntityDecoratedEmbeddableConfigurationSupport<C, I> propertiesMappingConfigurationSurrogate;
 	
@@ -157,7 +157,7 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements IFluentEnt
 	}
 	
 	@Override
-	public List<CollectionLinkage<C, ?, ? extends Collection>> getElementCollections() {
+	public List<ElementCollectionLinkage<C, ?, ? extends Collection>> getElementCollections() {
 		return elementCollections;
 	}
 	
@@ -264,47 +264,111 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements IFluentEnt
 	}
 	
 	@Override
-	public <O, S extends Collection<O>> IFluentMappingBuilderCollectionOptions<C, I> addCollection(SerializableFunction<C, S> getter,
-																								   Class<O> componentType) {
-		CollectionLinkage<C, O, S> collectionLinkage = new CollectionLinkage<>(getter, componentType, propertiesMappingConfigurationSurrogate);
-		elementCollections.add(collectionLinkage);
+	public <O, S extends Collection<O>> IFluentMappingBuilderElementCollectionOptions<C, I, O, S> addCollection(SerializableFunction<C, S> getter,
+																										  Class<O> componentType) {
+		ElementCollectionLinkage<C, O, S> elementCollectionLinkage = new ElementCollectionLinkage<>(getter, componentType, propertiesMappingConfigurationSurrogate);
+		elementCollections.add(elementCollectionLinkage);
 		return new MethodDispatcher()
-				.redirect(CollectionOptions.class, new CollectionOptions() {
+				.redirect(ElementCollectionOptions.class, new ElementCollectionOptions<C, O, S>() {
 					
 					@Override
-					public CollectionOptions overrideName(SerializableBiConsumer setter, String columnName) {
+					public ElementCollectionOptions<C, O, S> overrideName(SerializableBiConsumer setter, String columnName) {
+						elementCollectionLinkage.overrideName(setter, columnName);
 						return null;
 					}
 					
 					@Override
-					public CollectionOptions overrideName(SerializableFunction getter, String columnName) {
+					public ElementCollectionOptions<C, O, S> overrideName(SerializableFunction getter, String columnName) {
+						elementCollectionLinkage.overrideName(getter, columnName);
+						return null;
+					}
+					
+					@Override
+					public ElementCollectionOptions<C, O, S> withCollectionFactory(Supplier<? extends S> collectionFactory) {
+						elementCollectionLinkage.setCollectionFactory(collectionFactory);
+						return null;
+					}
+					
+					@Override
+					public IFluentMappingBuilderElementCollectionOptions<C, I, O, S> mappedBy(String name) {
+						elementCollectionLinkage.setReverseColumnName(name);
+						return null;
+					}
+					
+					@Override
+					public ElementCollectionOptions<C, O, S> withTable(Table table) {
+						elementCollectionLinkage.setTargetTable(table);
+						return null;
+					}
+					
+					@Override
+					public ElementCollectionOptions<C, O, S> withTable(String tableName) {
+						elementCollectionLinkage.setTargetTableName(tableName);
+						return null;
+					}
+					
+					@Override
+					public ElementCollectionOptions<C, O, S> withTableNaming(ElementCollectionTableNamingStrategy tableNamingStrategy) {
+						elementCollectionLinkage.setTableNamingStrategy(tableNamingStrategy);
 						return null;
 					}
 				}, true)
 				.fallbackOn(this)
-				.build((Class<IFluentMappingBuilderCollectionOptions<C, I>>) (Class) IFluentMappingBuilderCollectionOptions.class);
+				.build((Class<IFluentMappingBuilderElementCollectionOptions<C, I, O, S>>) (Class) IFluentMappingBuilderElementCollectionOptions.class);
 	}
 	
 	@Override
-	public <O, S extends Collection<O>> IFluentMappingBuilderCollectionOptions<C, I> addCollection(SerializableBiConsumer<C, S> setter,
-																								   Class<O> componentType) {
-		CollectionLinkage<C, O, S> collectionLinkage = new CollectionLinkage<>(setter, componentType, propertiesMappingConfigurationSurrogate);
-		elementCollections.add(collectionLinkage);
+	public <O, S extends Collection<O>> IFluentMappingBuilderElementCollectionOptions<C, I, O, S> addCollection(SerializableBiConsumer<C, S> setter,
+																										  Class<O> componentType) {
+		ElementCollectionLinkage<C, O, S> elementCollectionLinkage = new ElementCollectionLinkage<>(setter, componentType, propertiesMappingConfigurationSurrogate);
+		elementCollections.add(elementCollectionLinkage);
 		return new MethodDispatcher()
-				.redirect(CollectionOptions.class, new CollectionOptions() {
+				.redirect(ElementCollectionOptions.class, new ElementCollectionOptions<C, O, S>() {
 					
 					@Override
-					public CollectionOptions overrideName(SerializableBiConsumer setter, String columnName) {
+					public ElementCollectionOptions<C, O, S> overrideName(SerializableBiConsumer setter, String columnName) {
+						elementCollectionLinkage.overrideName(setter, columnName);
 						return null;
 					}
 					
 					@Override
-					public CollectionOptions overrideName(SerializableFunction getter, String columnName) {
+					public ElementCollectionOptions<C, O, S> overrideName(SerializableFunction getter, String columnName) {
+						elementCollectionLinkage.overrideName(getter, columnName);
+						return null;
+					}
+					
+					@Override
+					public ElementCollectionOptions<C, O, S> withCollectionFactory(Supplier<? extends S> collectionFactory) {
+						elementCollectionLinkage.setCollectionFactory(collectionFactory);
+						return null;	
+					}
+					
+					@Override
+					public IFluentMappingBuilderElementCollectionOptions<C, I, O, S> mappedBy(String name) {
+						elementCollectionLinkage.setReverseColumnName(name);
+						return null;
+					}
+					
+					@Override
+					public ElementCollectionOptions<C, O, S> withTable(Table table) {
+						elementCollectionLinkage.setTargetTable(table);
+						return null;
+					}
+					
+					@Override
+					public ElementCollectionOptions<C, O, S> withTable(String tableName) {
+						elementCollectionLinkage.setTargetTableName(tableName);
+						return null;
+					}
+					
+					@Override
+					public ElementCollectionOptions<C, O, S> withTableNaming(ElementCollectionTableNamingStrategy tableNamingStrategy) {
+						elementCollectionLinkage.setTableNamingStrategy(tableNamingStrategy);
 						return null;
 					}
 				}, true)
 				.fallbackOn(this)
-				.build((Class<IFluentMappingBuilderCollectionOptions<C, I>>) (Class) IFluentMappingBuilderCollectionOptions.class);
+				.build((Class<IFluentMappingBuilderElementCollectionOptions<C, I, O, S>>) (Class) IFluentMappingBuilderElementCollectionOptions.class);
 	}
 	
 	@Override
@@ -623,25 +687,25 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements IFluentEnt
 	}
 	
 	@Override
-	public IFluentEntityMappingBuilder<C, I> foreignKeyNamingStrategy(ForeignKeyNamingStrategy foreignKeyNamingStrategy) {
+	public IFluentEntityMappingBuilder<C, I> withForeignKeyNaming(ForeignKeyNamingStrategy foreignKeyNamingStrategy) {
 		this.foreignKeyNamingStrategy = foreignKeyNamingStrategy;
 		return this;
 	}
 	
 	@Override
-	public IFluentEntityMappingBuilder<C, I> columnNamingStrategy(ColumnNamingStrategy columnNamingStrategy) {
-		this.propertiesMappingConfigurationSurrogate.columnNamingStrategy(columnNamingStrategy);
+	public IFluentEntityMappingBuilder<C, I> withColumnNaming(ColumnNamingStrategy columnNamingStrategy) {
+		this.propertiesMappingConfigurationSurrogate.withColumnNaming(columnNamingStrategy);
 		return this;
 	}
 	
 	@Override
-	public IFluentEntityMappingBuilder<C, I> joinColumnNamingStrategy(ColumnNamingStrategy columnNamingStrategy) {
+	public IFluentEntityMappingBuilder<C, I> withJoinColumnNaming(ColumnNamingStrategy columnNamingStrategy) {
 		this.joinColumnNamingStrategy = columnNamingStrategy;
 		return this;
 	}
 	
 	@Override
-	public IFluentEntityMappingBuilder<C, I> associationTableNamingStrategy(AssociationTableNamingStrategy associationTableNamingStrategy) {
+	public IFluentEntityMappingBuilder<C, I> withAssociationTableNaming(AssociationTableNamingStrategy associationTableNamingStrategy) {
 		this.associationTableNamingStrategy = associationTableNamingStrategy;
 		return this;
 	}
