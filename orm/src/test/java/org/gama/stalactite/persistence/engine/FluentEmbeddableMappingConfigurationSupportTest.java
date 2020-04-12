@@ -400,6 +400,7 @@ class FluentEmbeddableMappingConfigurationSupportTest {
 				.add(Country::getName)
 				.embed(Country::getPresident)
 					.exclude(Person::getCountry)
+					.exclude(Person::getNicknames)
 					.overrideName(Person::getName, "presidentName")
 					.innerEmbed(Person::getTimestamp)
 				// this embed will conflict with Country one because its type is already mapped with no override
@@ -439,6 +440,7 @@ class FluentEmbeddableMappingConfigurationSupportTest {
 				.add(Country::getName)
 				.embed(Country::getPresident)
 					.exclude(Person::getCountry)
+					.exclude(Person::getNicknames)
 					.overrideName(Person::getName, "presidentName")
 					.innerEmbed(Person::getTimestamp)
 						.overrideName(Timestamp::getCreationDate, "createdAt")

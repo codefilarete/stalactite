@@ -188,7 +188,7 @@ public class JoinedTablesPersister<C, I, T extends Table> extends Persister<C, I
 		
 		// We use our own select system since SelectListener is not aimed at joining table
 		String createdJoinNodeName = sourcePersister.getJoinedStrategiesSelect().addRelationJoin(
-				JoinedStrategiesSelect.FIRST_STRATEGY_NAME,
+				JoinedStrategiesSelect.ROOT_STRATEGY_NAME,
 				(IEntityMappingStrategy) this.getMappingStrategy(),
 				leftColumn,
 				rightColumn,
@@ -202,8 +202,8 @@ public class JoinedTablesPersister<C, I, T extends Table> extends Persister<C, I
 	 * Implementation for simple one-to-many cases : we add our joins to given persister
 	 */
 	@Override
-	public <SRC, T1 extends Table, T2 extends Table> void joinAsMany(IJoinedTablesPersister<SRC, I> sourcePersister,
-																	 Column<T1, I> leftColumn, Column<T2, I> rightColumn,
+	public <SRC, T1 extends Table, T2 extends Table, J> void joinAsMany(IJoinedTablesPersister<SRC, J> sourcePersister,
+																	 Column<T1, J> leftColumn, Column<T2, J> rightColumn,
 																	 BeanRelationFixer<SRC, C> beanRelationFixer, String joinName, boolean optional) {
 		
 		String createdJoinNodeName = sourcePersister.getJoinedStrategiesSelect().addRelationJoin(

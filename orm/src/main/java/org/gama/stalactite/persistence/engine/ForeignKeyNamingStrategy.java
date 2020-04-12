@@ -16,7 +16,7 @@ public interface ForeignKeyNamingStrategy {
 	
 	String DEFAULT_FOREIGNKEY_PREFIX = "FK_";
 	
-	String giveName(Column<?, ?> src, Column<?, ?> target);
+	String giveName(Column src, Column target);
 	
 	/**
 	 * Composed of a prefix, source table name, source column name, target column name.

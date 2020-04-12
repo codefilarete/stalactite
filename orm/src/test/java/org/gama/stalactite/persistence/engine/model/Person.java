@@ -1,5 +1,8 @@
 package org.gama.stalactite.persistence.engine.model;
 
+import java.util.HashSet;
+import java.util.Set;
+
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.apache.commons.lang3.builder.ToStringBuilder;
@@ -24,6 +27,8 @@ public class Person implements Identified<Long> {
 	private Country country;
 	
 	private Vehicle vehicle;
+	
+	private Set<String> nicknames;
 	
 	public Person() {
 	}
@@ -78,6 +83,18 @@ public class Person implements Identified<Long> {
 		if (vehicle != null) {
 			vehicle.setOwner(this);
 		}
+	}
+	
+	public Set<String> getNicknames() {
+		return nicknames;
+	}
+	
+	public void initNicknames() {
+		this.nicknames = new HashSet<>();
+	}
+	
+	public void addNickname(String nickname) {
+		this.nicknames.add(nickname);
 	}
 	
 	@Override

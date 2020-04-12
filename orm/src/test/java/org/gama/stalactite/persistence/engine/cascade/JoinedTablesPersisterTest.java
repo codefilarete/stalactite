@@ -170,7 +170,7 @@ public class JoinedTablesPersisterTest {
 		testInstance = new JoinedTablesPersister<>(totoClassMappingStrategy_ontoTable1, dialect, new ConnectionConfigurationSupport(transactionManager, 3));
 		// we add a copier onto a another table
 		persister2 = new Persister<>(totoClassMappingStrategy2_ontoTable2, dialect, new ConnectionConfigurationSupport(() -> connection, 3));
-		testInstance.getJoinedStrategiesSelect().addRelationJoin(JoinedStrategiesSelect.FIRST_STRATEGY_NAME,
+		testInstance.getJoinedStrategiesSelect().addRelationJoin(JoinedStrategiesSelect.ROOT_STRATEGY_NAME,
 				persister2.getMappingStrategy(),
 				leftJoinColumn, rightJoinColumn, JoinType.INNER, Toto::merge);
 		testInstance.getPersisterListener().addInsertListener(new InsertListener<Toto>() {

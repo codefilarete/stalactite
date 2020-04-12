@@ -34,15 +34,16 @@ public interface IJoinedTablesPersister<C, I> {
 	 * @param rightColumn right part of the join, expected to be one of current instance table
 	 * @param beanRelationFixer setter that fix relation ofthis instance onto source persister instance
 	 * @param joinName parent join node name on which join must be added,
-	 * 					not always {@link JoinedStrategiesSelect#FIRST_STRATEGY_NAME} in particular in one-to-many with association table
+	 * 					not always {@link JoinedStrategiesSelect#ROOT_STRATEGY_NAME} in particular in one-to-many with association table
 	 * @param optional true for optional relation, makes an outer join, else should create a inner join
 	 * @param <SRC> source entity type
 	 * @param <T1> left table type
 	 * @param <T2> right table type
+	 * @param <J> source persister identifier type, therefore also join columns type
 	 */
-	<SRC, T1 extends Table, T2 extends Table> void joinAsMany(IJoinedTablesPersister<SRC, I> sourcePersister,
-															  Column<T1, I> leftColumn,
-															  Column<T2, I> rightColumn,
+	<SRC, T1 extends Table, T2 extends Table, J> void joinAsMany(IJoinedTablesPersister<SRC, J> sourcePersister,
+															  Column<T1, J> leftColumn,
+															  Column<T2, J> rightColumn,
 															  BeanRelationFixer<SRC, C> beanRelationFixer,
 															  String joinName,
 															  boolean optional);

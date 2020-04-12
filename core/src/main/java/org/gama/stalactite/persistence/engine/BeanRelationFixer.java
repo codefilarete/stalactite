@@ -1,11 +1,16 @@
 package org.gama.stalactite.persistence.engine;
 
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
 import org.gama.lang.Reflections;
+import org.gama.lang.function.TriConsumer;
 
 /**
  * An interface aimed at abstracting the way how relations between 2 beans are filled : implementation should handle one-to-one relationship
@@ -18,7 +23,7 @@ import org.gama.lang.Reflections;
  * @see #of(BiConsumer)
  */
 @FunctionalInterface
-public interface BeanRelationFixer<S, I> {
+public interface BeanRelationFixer<E, I> {
 	
 	/**
 	 * Main method that fills the relation
@@ -26,7 +31,7 @@ public interface BeanRelationFixer<S, I> {
 	 * @param target the owner of the relation
 	 * @param input the objet to be writen/added into the relation
 	 */
-	void apply(S target, I input);
+	void apply(E target, I input);
 	
 	/**
 	 * Shortcut to create a {@link BeanRelationFixer} for a one-to-one relation.
@@ -34,7 +39,7 @@ public interface BeanRelationFixer<S, I> {
 	 * @param setter the method that fixes the relation
 	 * @return a {@link BeanRelationFixer} mapped to {@link BiConsumer#accept(Object, Object)}
 	 */
-	static <S, I> BeanRelationFixer<S, I> of(BiConsumer<S, I> setter) {
+	static <E, I> BeanRelationFixer<E, I> of(BiConsumer<E, I> setter) {
 		return of(setter, (a, b) -> { /* no bi-directional relation, nothing to do */ });
 	}
 	
@@ -44,12 +49,33 @@ public interface BeanRelationFixer<S, I> {
 	 * @param setter the method that fixes the relation
 	 * @return a {@link BeanRelationFixer} mapped to {@link BiConsumer#accept(Object, Object)}
 	 */
-	static <S, I> BeanRelationFixer<S, I> of(BiConsumer<S, I> setter, BiConsumer<I, S> reverseSetter) {
+	static <E, I> BeanRelationFixer<E, I> of(BiConsumer<E, I> setter, BiConsumer<I, E> reverseSetter) {
 		return (s, i) -> {
 			setter.accept(s, i);
 			// bidirectional assignment
 			reverseSetter.accept(i, s);
 		};
+	}
+	
+	/**
+	 * Returns a {@link Supplier} of concrete instance for given collection type : for {@link List} and {@link Set} types it repectively
+	 * returns an {@link ArrayList} instance and an {@link HashSet} instance, for any other case collectionType is expected to be concrete therefore
+	 * it will try to instanciate it.
+	 * 
+	 * @param collectionType expected to be one of List.class or Set.class or a concrete type
+	 * @return a {@link Supplier} of a concrete {@link Collection} compatible with given collectionType
+	 */
+	static <C extends Collection> Supplier<C> giveCollectionFactory(Class<C> collectionType) {
+		Class<? extends C> concreteType;
+		if (List.class.equals(collectionType)) {
+			concreteType = (Class) ArrayList.class;
+		} else if (Set.class.equals(collectionType)) {
+			concreteType = (Class) HashSet.class;
+		} else {
+			// given type is expected to be concrete, we'll instanciate it
+			concreteType = collectionType;
+		}
+		return () -> Reflections.newInstance(concreteType);
 	}
 	
 	/**
@@ -60,7 +86,7 @@ public interface BeanRelationFixer<S, I> {
 	 * @param concreteCollectionType the Class that will be instanciated to fill the relation if it is null
 	 * @return a {@link BeanRelationFixer} that will add the input to the Collection and create if the getter returns null
 	 */
-	static <S, I, C extends Collection<I>> BeanRelationFixer<S, I> of(BiConsumer<S, C> setter, Function<S, C> getter,
+	static <E, I, C extends Collection<I>> BeanRelationFixer<E, I> of(BiConsumer<E, C> setter, Function<E, C> getter,
 																	  Class<? extends C> concreteCollectionType) {
 		return of(setter, getter, () -> Reflections.newInstance(concreteCollectionType));
 	}
@@ -73,7 +99,7 @@ public interface BeanRelationFixer<S, I> {
 	 * @param collectionFactory a supplier of an instance to fill the relation if it is null
 	 * @return a {@link BeanRelationFixer} that will add the input to the Collection and create if the getter returns null
 	 */
-	static <S, I, C extends Collection<I>> BeanRelationFixer<S, I> of(BiConsumer<S, C> setter, Function<S, C> getter, Supplier<C> collectionFactory) {
+	static <E, I, C extends Collection<I>> BeanRelationFixer<E, I> of(BiConsumer<E, C> setter, Function<E, C> getter, Supplier<C> collectionFactory) {
 		return of(setter, getter, collectionFactory, (a, b) -> { /* no bi-directional relation, nothing to do */ });
 	}
 	
@@ -85,14 +111,14 @@ public interface BeanRelationFixer<S, I> {
 	 * @param concreteCollectionType the Class that will be instanciated to fill the relation if it is null
 	 * @return a {@link BeanRelationFixer} that will add the input to the Collection and create if the getter returns null
 	 */
-	static <S, I, C extends Collection<I>> BeanRelationFixer<S, I> of(BiConsumer<S, C> setter, Function<S, C> getter,
+	static <E, I, C extends Collection<I>> BeanRelationFixer<E, I> of(BiConsumer<E, C> setter, Function<E, C> getter,
 																	  Class<? extends C> concreteCollectionType,
-																	  BiConsumer<I, S> reverseSetter) {
+																	  BiConsumer<I, E> reverseSetter) {
 		return of(setter, getter, () -> Reflections.newInstance(concreteCollectionType), reverseSetter);
 	}
 	
 	/**
-	 * Shortcut to create a {@link BeanRelationFixer} for a bidirectionnal one-to-many relation where the attribute is a {@link Collection}
+	 * Shortcut to create a {@link BeanRelationFixer} for a bidirectionnal relation where the attribute is a {@link Collection}
 	 *
 	 * @param setter the method that sets the {@link Collection} onto the target bean
 	 * @param getter the method that gets the {@link Collection} from the target bean
@@ -100,8 +126,26 @@ public interface BeanRelationFixer<S, I> {
 	 * @param reverseSetter the setter for the other side of the relation
 	 * @return a {@link BeanRelationFixer} that will add the input to the Collection and create if the getter returns null
 	 */
-	static <S, I, C extends Collection<I>> BeanRelationFixer<S, I> of(BiConsumer<S, C> setter, Function<S, C> getter, Supplier<C> collectionFactory,
-																	  BiConsumer<I, S> reverseSetter) {
+	static <E, I, C extends Collection<I>> BeanRelationFixer<E, I> of(BiConsumer<E, C> setter, Function<E, C> getter, Supplier<C> collectionFactory,
+																	  BiConsumer<I, E> reverseSetter) {
+		return ofAdapter(setter, getter, collectionFactory, (target, input, collection) -> {
+			collection.add(input);
+			// bidirectional assignment
+			reverseSetter.accept(input, target);
+		});
+	}
+	
+	/**
+	 * Shortcut to create a {@link BeanRelationFixer} for a relation where the attribute is a {@link Collection}
+	 *
+	 * @param setter the method that sets the {@link Collection} onto the target bean
+	 * @param getter the method that gets the {@link Collection} from the target bean
+	 * @param collectionFactory a supplier of an instance to fill the relation if it is null
+	 * @param adapter the final method that will be applied to bean, input and collection, expected to have at least a collection add, with eventual input adaptation
+	 * @return a {@link BeanRelationFixer} that will add the input to the Collection and create if the getter returns null
+	 */
+	static <E, I, C extends Collection<?>> BeanRelationFixer<E, I> ofAdapter(BiConsumer<E, C> setter, Function<E, C> getter, Supplier<C> collectionFactory,
+																	  TriConsumer<E, I, C> adapter) {
 		return (target, input) -> {
 			C collection = getter.apply(target);
 			if (collection == null) {
@@ -109,9 +153,7 @@ public interface BeanRelationFixer<S, I> {
 				collection = collectionFactory.get();
 				setter.accept(target, collection);
 			}
-			collection.add(input);
-			// bidirectional assignment
-			reverseSetter.accept(input, target);
+			adapter.accept(target, input, collection);
 		};
 	}
 }

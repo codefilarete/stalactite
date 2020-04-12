@@ -78,7 +78,7 @@ import static org.mockito.Mockito.withSettings;
 /**
  * @author Guillaume Mary
  */
-class PersisterBuilderImplTest {
+public class PersisterBuilderImplTest {
 	
 	private static final HSQLDBDialect DIALECT = new HSQLDBDialect();
 	private final DataSource dataSource = new HSQLDBInMemoryDataSource();

@@ -95,7 +95,7 @@ public class JoinedTablesPolymorphicPersister<C, I> implements IEntityConfigured
 		
 		// sub entities persisters will be used to select sub entities but at this point they lacks subgraph loading, so we add it (from their parent)
 		subEntitiesPersisters.forEach((type, persister) -> 
-			parentPersister.copyJoinsRootTo(persister.getJoinedStrategiesSelect(), JoinedStrategiesSelect.FIRST_STRATEGY_NAME)
+			parentPersister.copyJoinsRootTo(persister.getJoinedStrategiesSelect(), JoinedStrategiesSelect.ROOT_STRATEGY_NAME)
 		);
 		
 		this.tablePerSubEntity = Iterables.map(this.subEntitiesPersisters.entrySet(),
@@ -330,7 +330,7 @@ public class JoinedTablesPolymorphicPersister<C, I> implements IEntityConfigured
 		// because subgraph loading is made in 2 phases (load ids, then entities in a second SQL request done by load listener) we add a passive join
 		// (we don't need to create bean nor fulfill properties in first phase) 
 		// NB: here rightColumn is parent class primary key or reverse column that owns property (depending how one-to-one relation is mapped) 
-		String mainTableJoinName = sourcePersister.getJoinedStrategiesSelect().addPassiveJoin(JoinedStrategiesSelect.FIRST_STRATEGY_NAME,
+		String mainTableJoinName = sourcePersister.getJoinedStrategiesSelect().addPassiveJoin(JoinedStrategiesSelect.ROOT_STRATEGY_NAME,
 				leftColumn, rightColumn, optional ? JoinType.OUTER : JoinType.INNER, (Set<Column<Table, Object>>) (Set) Arrays.asSet(rightColumn));
 		Column primaryKey = (Column ) Iterables.first(getMappingStrategy().getTargetTable().getPrimaryKey().getColumns());
 		this.subclassIdMappingStrategies.forEach((c, idMappingStrategy) -> {
@@ -349,11 +349,10 @@ public class JoinedTablesPolymorphicPersister<C, I> implements IEntityConfigured
 	}
 	
 	@Override
-	public <SRC, T1 extends Table, T2 extends Table> void joinAsMany(IJoinedTablesPersister<SRC, I> sourcePersister,
-																	 Column<T1, I> leftColumn,
-																	 Column<T2, I> rightColumn,
-																	 BeanRelationFixer<SRC, C> beanRelationFixer,
-																	 String joinName, boolean optional) {
+	public <SRC, T1 extends Table, T2 extends Table, J> void joinAsMany(IJoinedTablesPersister<SRC, J> sourcePersister,
+																		Column<T1, J> leftColumn, Column<T2, J> rightColumn,
+																		BeanRelationFixer<SRC, C> beanRelationFixer, String joinName,
+																		boolean optional) {
 		
 		String createdJoinName = sourcePersister.getJoinedStrategiesSelect().addPassiveJoin(joinName,
 				leftColumn,

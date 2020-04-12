@@ -12,7 +12,7 @@ import org.danekja.java.util.function.serializable.SerializableFunction;
  * 
  * @author Guillaume Mary
  */
-interface LambdaMethodUnsheller {
+public interface LambdaMethodUnsheller {
 	
 	Method captureLambdaMethod(SerializableFunction getter);
 	

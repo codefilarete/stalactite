@@ -39,6 +39,7 @@ import org.gama.stalactite.persistence.engine.IFluentEmbeddableMappingBuilder.IF
 import org.gama.stalactite.persistence.engine.IFluentEmbeddableMappingBuilder.IFluentEmbeddableMappingBuilderEnumOptions;
 import org.gama.stalactite.persistence.engine.builder.CascadeMany;
 import org.gama.stalactite.persistence.engine.builder.CascadeManyList;
+import org.gama.stalactite.persistence.engine.builder.CollectionLinkage;
 import org.gama.stalactite.persistence.engine.configurer.PersisterBuilderImpl;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
@@ -65,6 +66,8 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements IFluentEnt
 	private final List<CascadeOne<C, Object, Object>> cascadeOnes = new ArrayList<>();
 	
 	private final List<CascadeMany<C, ?, ?, ? extends Collection>> cascadeManys = new ArrayList<>();
+	
+	private final List<CollectionLinkage<C, ?, ? extends Collection>> elementCollections = new ArrayList<>();
 	
 	private final EntityDecoratedEmbeddableConfigurationSupport<C, I> propertiesMappingConfigurationSurrogate;
 	
@@ -151,6 +154,11 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements IFluentEnt
 	@Override
 	public List<CascadeMany<C, ?, ?, ? extends Collection>> getOneToManys() {
 		return cascadeManys;
+	}
+	
+	@Override
+	public List<CollectionLinkage<C, ?, ? extends Collection>> getElementCollections() {
+		return elementCollections;
 	}
 	
 	@Override
@@ -253,6 +261,50 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements IFluentEnt
 				.redirect(EnumOptions.class, enumOptionsHandler, true)
 				.fallbackOn(this)
 				.build((Class<IFluentMappingBuilderEnumOptions<C, I>>) (Class) IFluentMappingBuilderEnumOptions.class);
+	}
+	
+	@Override
+	public <O, S extends Collection<O>> IFluentMappingBuilderCollectionOptions<C, I> addCollection(SerializableFunction<C, S> getter,
+																								   Class<O> componentType) {
+		CollectionLinkage<C, O, S> collectionLinkage = new CollectionLinkage<>(getter, componentType, propertiesMappingConfigurationSurrogate);
+		elementCollections.add(collectionLinkage);
+		return new MethodDispatcher()
+				.redirect(CollectionOptions.class, new CollectionOptions() {
+					
+					@Override
+					public CollectionOptions overrideName(SerializableBiConsumer setter, String columnName) {
+						return null;
+					}
+					
+					@Override
+					public CollectionOptions overrideName(SerializableFunction getter, String columnName) {
+						return null;
+					}
+				}, true)
+				.fallbackOn(this)
+				.build((Class<IFluentMappingBuilderCollectionOptions<C, I>>) (Class) IFluentMappingBuilderCollectionOptions.class);
+	}
+	
+	@Override
+	public <O, S extends Collection<O>> IFluentMappingBuilderCollectionOptions<C, I> addCollection(SerializableBiConsumer<C, S> setter,
+																								   Class<O> componentType) {
+		CollectionLinkage<C, O, S> collectionLinkage = new CollectionLinkage<>(setter, componentType, propertiesMappingConfigurationSurrogate);
+		elementCollections.add(collectionLinkage);
+		return new MethodDispatcher()
+				.redirect(CollectionOptions.class, new CollectionOptions() {
+					
+					@Override
+					public CollectionOptions overrideName(SerializableBiConsumer setter, String columnName) {
+						return null;
+					}
+					
+					@Override
+					public CollectionOptions overrideName(SerializableFunction getter, String columnName) {
+						return null;
+					}
+				}, true)
+				.fallbackOn(this)
+				.build((Class<IFluentMappingBuilderCollectionOptions<C, I>>) (Class) IFluentMappingBuilderCollectionOptions.class);
 	}
 	
 	@Override

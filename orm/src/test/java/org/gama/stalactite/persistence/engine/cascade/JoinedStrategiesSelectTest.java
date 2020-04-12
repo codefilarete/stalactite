@@ -119,7 +119,7 @@ public class JoinedStrategiesSelectTest {
 										   Column leftJoinColumn, Column rightJoinColumn,
 										   String expected) {
 		JoinedStrategiesSelect testInstance = new JoinedStrategiesSelect(rootMappingStrategy, c -> mock(ParameterBinder.class));
-		testInstance.addRelationJoin(JoinedStrategiesSelect.FIRST_STRATEGY_NAME, classMappingStrategy, leftJoinColumn, rightJoinColumn, INNER, null);
+		testInstance.addRelationJoin(JoinedStrategiesSelect.ROOT_STRATEGY_NAME, classMappingStrategy, leftJoinColumn, rightJoinColumn, INNER, null);
 		SQLQueryBuilder SQLQueryBuilder = new SQLQueryBuilder(testInstance.buildSelectQuery());
 		assertEquals(expected, SQLQueryBuilder.toSQL());
 	}
@@ -145,7 +145,7 @@ public class JoinedStrategiesSelectTest {
 		Column tutuNameColumn = tutuTable.addColumn("name", String.class);
 		
 		JoinedStrategiesSelect testInstance = new JoinedStrategiesSelect(totoMappingMock, c -> mock(ParameterBinder.class));
-		String tataAddKey = testInstance.addRelationJoin(JoinedStrategiesSelect.FIRST_STRATEGY_NAME, tataMappingMock, totoPrimaryKey, tataPrimaryKey, INNER, null);
+		String tataAddKey = testInstance.addRelationJoin(JoinedStrategiesSelect.ROOT_STRATEGY_NAME, tataMappingMock, totoPrimaryKey, tataPrimaryKey, INNER, null);
 		testInstance.addRelationJoin(tataAddKey, tutuMappingMock, tataPrimaryKey, tutuPrimaryKey, INNER, null);
 		SQLQueryBuilder SQLQueryBuilder = new SQLQueryBuilder(testInstance.buildSelectQuery());
 		assertEquals("select"
@@ -188,7 +188,7 @@ public class JoinedStrategiesSelectTest {
 		Column tutuNameColumn = tutuTable.addColumn("name", String.class);
 		
 		JoinedStrategiesSelect testInstance = new JoinedStrategiesSelect(totoMappingMock, c -> mock(ParameterBinder.class));
-		String tataAddKey = testInstance.addRelationJoin(JoinedStrategiesSelect.FIRST_STRATEGY_NAME, tataMappingMock, tataId, tataPrimaryKey, INNER, null);
+		String tataAddKey = testInstance.addRelationJoin(JoinedStrategiesSelect.ROOT_STRATEGY_NAME, tataMappingMock, tataId, tataPrimaryKey, INNER, null);
 		testInstance.addRelationJoin(tataAddKey, tutuMappingMock, tutuId, tutuPrimaryKey, OUTER, null);
 		SQLQueryBuilder SQLQueryBuilder = new SQLQueryBuilder(testInstance.buildSelectQuery());
 		assertEquals("select"
@@ -237,9 +237,9 @@ public class JoinedStrategiesSelectTest {
 		Column titiNameColumn = titiTable.addColumn("name", String.class);
 		
 		JoinedStrategiesSelect testInstance = new JoinedStrategiesSelect(totoMappingMock, c -> mock(ParameterBinder.class));
-		String tataAddKey = testInstance.addRelationJoin(JoinedStrategiesSelect.FIRST_STRATEGY_NAME, tataMappingMock, totoPrimaryKey, tataPrimaryKey, INNER, null);
+		String tataAddKey = testInstance.addRelationJoin(JoinedStrategiesSelect.ROOT_STRATEGY_NAME, tataMappingMock, totoPrimaryKey, tataPrimaryKey, INNER, null);
 		String tutuAddKey = testInstance.addRelationJoin(tataAddKey, tutuMappingMock, tataPrimaryKey, tutuPrimaryKey, INNER, null);
-		String titiAddKey = testInstance.addRelationJoin(JoinedStrategiesSelect.FIRST_STRATEGY_NAME, titiMappingMock, totoPrimaryKey, titiPrimaryKey, INNER, null);
+		String titiAddKey = testInstance.addRelationJoin(JoinedStrategiesSelect.ROOT_STRATEGY_NAME, titiMappingMock, totoPrimaryKey, titiPrimaryKey, INNER, null);
 		SQLQueryBuilder SQLQueryBuilder = new SQLQueryBuilder(testInstance.buildSelectQuery());
 		assertEquals("select"
 						+ " Toto.id as Toto_id, Toto.name as Toto_name"
@@ -281,9 +281,9 @@ public class JoinedStrategiesSelectTest {
 		Column titiPrimaryKey = titiTable.addColumn("id", long.class);
 		
 		JoinedStrategiesSelect testInstance = new JoinedStrategiesSelect(totoMappingMock, c -> mock(ParameterBinder.class));
-		String tataAddKey = testInstance.addRelationJoin(JoinedStrategiesSelect.FIRST_STRATEGY_NAME, tataMappingMock, totoPrimaryKey, tataPrimaryKey, INNER, null);
+		String tataAddKey = testInstance.addRelationJoin(JoinedStrategiesSelect.ROOT_STRATEGY_NAME, tataMappingMock, totoPrimaryKey, tataPrimaryKey, INNER, null);
 		String tutuAddKey = testInstance.addRelationJoin(tataAddKey, tutuMappingMock, tataPrimaryKey, tutuPrimaryKey, INNER, null);
-		String titiAddKey = testInstance.addRelationJoin(JoinedStrategiesSelect.FIRST_STRATEGY_NAME, titiMappingMock, totoPrimaryKey, titiPrimaryKey, INNER, null);
+		String titiAddKey = testInstance.addRelationJoin(JoinedStrategiesSelect.ROOT_STRATEGY_NAME, titiMappingMock, totoPrimaryKey, titiPrimaryKey, INNER, null);
 		
 		assertEquals(Arrays.asHashSet(totoTable, tataTable, tutuTable, titiTable), testInstance.giveTables());
 	}
@@ -315,13 +315,13 @@ public class JoinedStrategiesSelectTest {
 		Column titiNameColumn = titiTable.addColumn("name", String.class);
 		
 		JoinedStrategiesSelect testInstance1 = new JoinedStrategiesSelect(totoMappingMock, c -> mock(ParameterBinder.class));
-		String tataAddKey = testInstance1.addRelationJoin(JoinedStrategiesSelect.FIRST_STRATEGY_NAME, tataMappingMock, totoPrimaryKey, tataPrimaryKey, INNER, null);
+		String tataAddKey = testInstance1.addRelationJoin(JoinedStrategiesSelect.ROOT_STRATEGY_NAME, tataMappingMock, totoPrimaryKey, tataPrimaryKey, INNER, null);
 		String tutuAddKey = testInstance1.addRelationJoin(tataAddKey, tutuMappingMock, tataPrimaryKey, tutuPrimaryKey, INNER, null);
 		
 		JoinedStrategiesSelect testInstance2 = new JoinedStrategiesSelect(tataMappingMock, c -> mock(ParameterBinder.class));
-		String titiAddKey = testInstance2.addRelationJoin(JoinedStrategiesSelect.FIRST_STRATEGY_NAME, titiMappingMock, tataPrimaryKey, titiPrimaryKey, INNER, null);
+		String titiAddKey = testInstance2.addRelationJoin(JoinedStrategiesSelect.ROOT_STRATEGY_NAME, titiMappingMock, tataPrimaryKey, titiPrimaryKey, INNER, null);
 		
-		testInstance2.getStrategyJoins(JoinedStrategiesSelect.FIRST_STRATEGY_NAME).copyTo(testInstance1, tataAddKey);
+		testInstance2.getStrategyJoins(JoinedStrategiesSelect.ROOT_STRATEGY_NAME).copyTo(testInstance1, tataAddKey);
 		
 		SQLQueryBuilder SQLQueryBuilder = new SQLQueryBuilder(testInstance1.buildSelectQuery());
 		assertEquals("select"

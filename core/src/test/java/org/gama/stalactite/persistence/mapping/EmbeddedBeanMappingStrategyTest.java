@@ -178,14 +178,17 @@ public class EmbeddedBeanMappingStrategyTest {
 				.add(propertyAccessor(Toto.class, "b"), colB)
 				.add(propertyAccessor(Toto.class, "c"), colC);
 		EmbeddedBeanMappingStrategy testInstance = new EmbeddedBeanMappingStrategy<Toto, Table>(Toto.class, targetTable, (Map) classMapping);
-		// primary key shall no be written by this class
-		assertFalse(testInstance.getPropertyToColumn().containsValue(colA));
+		// primary key shall not be written by this class
+		assertTrue(testInstance.getInsertableColumns().contains(colA));
+		assertFalse(testInstance.getUpdatableColumns().contains(colA));
 		assertTrue(testInstance.getRowTransformer().getColumnToMember().containsKey(colA));
-		// generated keys shall no be written by this class
-		assertFalse(testInstance.getPropertyToColumn().containsValue(colB));
+		// generated keys shall not be written by this class
+		assertFalse(testInstance.getInsertableColumns().contains(colB));
+		assertFalse(testInstance.getUpdatableColumns().contains(colB));
 		assertTrue(testInstance.getRowTransformer().getColumnToMember().containsKey(colB));
 		// standard columns shall be written by this class
-		assertTrue(testInstance.getPropertyToColumn().containsValue(colC));
+		assertTrue(testInstance.getInsertableColumns().contains(colC));
+		assertTrue(testInstance.getUpdatableColumns().contains(colC));
 		assertTrue(testInstance.getRowTransformer().getColumnToMember().containsKey(colC));
 	}
 	

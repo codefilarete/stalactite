@@ -87,7 +87,7 @@ public class TablePerClassPolymorphismPersister<C, I, T extends Table<T>> implem
 		this.subEntitiesPersisters.forEach((type, persister) ->
 				mainPersister.getJoinedStrategiesSelectExecutor().getJoinedStrategiesSelect().getJoinsRoot().projectTo(
 				persister.getJoinedStrategiesSelectExecutor().getJoinedStrategiesSelect(),
-				JoinedStrategiesSelect.FIRST_STRATEGY_NAME
+				JoinedStrategiesSelect.ROOT_STRATEGY_NAME
 		));
 		
 		Map<Class<? extends C>, ISelectExecutor<C, I>> subEntitiesSelectors = Iterables.map(subEntitiesPersisters.entrySet(),
@@ -333,7 +333,7 @@ public class TablePerClassPolymorphismPersister<C, I, T extends Table<T>> implem
 																	Column<T2, I> rightColumn,
 																	BeanRelationFixer<SRC, C> beanRelationFixer,
 																	boolean optional) {
-		String createdJoinNodeName = sourcePersister.getJoinedStrategiesSelect().addRelationJoin(JoinedStrategiesSelect.FIRST_STRATEGY_NAME,
+		String createdJoinNodeName = sourcePersister.getJoinedStrategiesSelect().addRelationJoin(JoinedStrategiesSelect.ROOT_STRATEGY_NAME,
 				(IEntityMappingStrategy) this.getMappingStrategy(),
 				leftColumn,
 				rightColumn,
@@ -344,8 +344,8 @@ public class TablePerClassPolymorphismPersister<C, I, T extends Table<T>> implem
 	}
 	
 	@Override
-	public <SRC, T1 extends Table, T2 extends Table> void joinAsMany(IJoinedTablesPersister<SRC, I> sourcePersister,
-																	 Column<T1, I> leftColumn, Column<T2, I> rightColumn,
+	public <SRC, T1 extends Table, T2 extends Table, J> void joinAsMany(IJoinedTablesPersister<SRC, J> sourcePersister,
+																	 Column<T1, J> leftColumn, Column<T2, J> rightColumn,
 																	 BeanRelationFixer<SRC, C> beanRelationFixer, String joinName,
 																	 boolean optional) {
 		// TODO: simplify query : it joins on target table as many as subentities which can be reduced to one join if FirstPhaseOneToOneLoader
@@ -361,7 +361,7 @@ public class TablePerClassPolymorphismPersister<C, I, T extends Table<T>> implem
 		} else {
 			// join is made on a foreign key => case of relation owned by reverse side
 			subEntitiesPersisters.forEach((c, subPersister) -> {
-				Column<T, I> column = subPersister.getMainTable().addColumn(rightColumn.getName(), rightColumn.getJavaType());
+				Column<T, J> column = subPersister.getMainTable().addColumn(rightColumn.getName(), rightColumn.getJavaType());
 				joinColumnPerSubPersister.put(subPersister, column);
 			});
 		}

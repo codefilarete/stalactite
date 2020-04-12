@@ -3,10 +3,7 @@ package org.gama.stalactite.persistence.engine;
 import javax.annotation.Nullable;
 import java.lang.reflect.Member;
 import java.lang.reflect.Method;
-import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
@@ -179,23 +176,9 @@ public class CascadeManyConfigurer<SRC, TRGT, ID, C extends Collection<TRGT>> {
 		protected Supplier<C> giveCollectionFactory() {
 			Supplier<C> collectionFactory = cascadeMany.getCollectionFactory();
 			if (collectionFactory == null) {
-				collectionFactory = () -> Reflections.newInstance(giveInstanciationType());
+				collectionFactory = BeanRelationFixer.giveCollectionFactory((Class<C>) accessorDefinition.getMemberType());
 			}
 			return collectionFactory;
-		}
-		
-		/**
-		 * Expected to give concrete class to be instanciated.
-		 * @return a concrete and instanciable type compatible with acccessor input type
-		 */
-		protected Class<C> giveInstanciationType() {
-			if (List.class.equals(accessorDefinition.getMemberType())) {
-				return (Class) ArrayList.class;
-			} else if (Set.class.equals(accessorDefinition.getMemberType())) {
-				return (Class) HashSet.class;
-			} else {
-				return accessorDefinition.getMemberType();
-			}
 		}
 	}
 	

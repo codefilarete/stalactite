@@ -49,6 +49,10 @@ public interface IFluentEntityMappingBuilder<C, I> extends IFluentEmbeddableMapp
 	
 	<E extends Enum<E>> IFluentMappingBuilderEnumOptions<C, I> addEnum(SerializableFunction<C, E> getter, Column<? extends Table, E> column);
 	
+	<O, S extends Collection<O>> IFluentMappingBuilderCollectionOptions<C, I> addCollection(SerializableFunction<C, S> getter, Class<O> componentType);
+	
+	<O, S extends Collection<O>> IFluentMappingBuilderCollectionOptions<C, I> addCollection(SerializableBiConsumer<C, S> setter, Class<O> componentType);
+	
 	IFluentEntityMappingBuilder<C, I> columnNamingStrategy(ColumnNamingStrategy columnNamingStrategy);
 	
 	/**
@@ -410,8 +414,7 @@ public interface IFluentEntityMappingBuilder<C, I> extends IFluentEmbeddableMapp
 	}
 	
 	interface IFluentMappingBuilderEnumOptions<C, I>
-			extends IFluentEntityMappingBuilder<C, I>,
-			IFluentEmbeddableMappingConfigurationEnumOptions<C> {
+			extends IFluentEntityMappingBuilder<C, I>, IFluentEmbeddableMappingConfigurationEnumOptions<C> {
 		
 		@Override
 		IFluentMappingBuilderEnumOptions<C, I> byName();
@@ -424,8 +427,7 @@ public interface IFluentEntityMappingBuilder<C, I> extends IFluentEmbeddableMapp
 	}
 	
 	interface IFluentMappingBuilderInheritanceOptions<C, I>
-			extends IFluentEntityMappingBuilder<C, I>,
-			InheritanceOptions {
+			extends IFluentEntityMappingBuilder<C, I>, InheritanceOptions {
 		
 		@Override
 		IFluentMappingBuilderInheritanceOptions<C, I> withJoinedTable();
@@ -433,5 +435,22 @@ public interface IFluentEntityMappingBuilder<C, I> extends IFluentEmbeddableMapp
 		@Override
 		IFluentMappingBuilderInheritanceOptions<C, I> withJoinedTable(Table parentTable);
 		
+	}
+	
+	interface IFluentMappingBuilderCollectionOptions<C, I>
+			extends IFluentEntityMappingBuilder<C, I>, CollectionOptions<C> {
+		
+		<IN> CollectionOptions<C> overrideName(SerializableFunction<C, IN> getter, String columnName);
+		
+		<IN> CollectionOptions<C> overrideName(SerializableBiConsumer<C, IN> setter, String columnName);
+//	
+//	<IN> CollectionOptions<C> override(SerializableFunction<C, IN> function, Column<Table, IN> targetColumn);
+//	
+//	<IN> CollectionOptions<C> joinOnTable(String name);
+//	
+//	<IN> CollectionOptions<C> joinOnTable(Table table);
+//	
+//	<I, T extends Table> CollectionOptions<C> joinOnTable(T table, Column<T, I> reverseColumn);
+//	
 	}
 }

@@ -90,7 +90,7 @@ public class SingleTablePolymorphicPersister<C, I, T extends Table<T>, D> implem
 		);
 		
 		subEntitiesPersisters.forEach((type, persister) ->
-				mainPersister.copyJoinsRootTo(persister.getJoinedStrategiesSelect(), JoinedStrategiesSelect.FIRST_STRATEGY_NAME)
+				mainPersister.copyJoinsRootTo(persister.getJoinedStrategiesSelect(), JoinedStrategiesSelect.ROOT_STRATEGY_NAME)
 		);
 		
 		this.selectExecutor = new SingleTablePolymorphismSelectExecutor(
@@ -346,7 +346,7 @@ public class SingleTablePolymorphicPersister<C, I, T extends Table<T>, D> implem
 		//  can compute disciminatorValue 
 		subEntitiesPersisters.forEach((subEntityType, subPersister) -> {
 			Column subclassPrimaryKey = (Column ) Iterables.first(subPersister.getMainTable().getPrimaryKey().getColumns());
-			sourcePersister.getJoinedStrategiesSelect().addMergeJoin(JoinedStrategiesSelect.FIRST_STRATEGY_NAME,
+			sourcePersister.getJoinedStrategiesSelect().addMergeJoin(JoinedStrategiesSelect.ROOT_STRATEGY_NAME,
 					new SingleTableFirstPhaseOneToOneLoader(subPersister.getMappingStrategy().getIdMappingStrategy(),
 							subclassPrimaryKey, selectExecutor, mainPersister.getClassToPersist(), DIFFERED_ENTITY_LOADER,
 							subEntityType, discriminatorColumn),
@@ -360,11 +360,10 @@ public class SingleTablePolymorphicPersister<C, I, T extends Table<T>, D> implem
 	}
 	
 	@Override
-	public <SRC, T1 extends Table, T2 extends Table> void joinAsMany(IJoinedTablesPersister<SRC, I> sourcePersister,
-																	 Column<T1, I> leftColumn,
-																	 Column<T2, I> rightColumn,
-																	 BeanRelationFixer<SRC, C> beanRelationFixer,
-																	 String joinName, boolean optional) {
+	public <SRC, T1 extends Table, T2 extends Table, J> void joinAsMany(IJoinedTablesPersister<SRC, J> sourcePersister,
+																		Column<T1, J> leftColumn, Column<T2, J> rightColumn,
+																		BeanRelationFixer<SRC, C> beanRelationFixer, String joinName,
+																		boolean optional) {
 		
 		sourcePersister.getJoinedStrategiesSelect().addPassiveJoin(joinName,
 				leftColumn,
@@ -376,7 +375,7 @@ public class SingleTablePolymorphicPersister<C, I, T extends Table<T>, D> implem
 		//  can compute disciminatorValue 
 		subEntitiesPersisters.forEach((subEntityType, subPersister) -> {
 			Column subclassPrimaryKey = (Column ) Iterables.first(subPersister.getMainTable().getPrimaryKey().getColumns());
-			sourcePersister.getJoinedStrategiesSelect().addMergeJoin(JoinedStrategiesSelect.FIRST_STRATEGY_NAME,
+			sourcePersister.getJoinedStrategiesSelect().addMergeJoin(JoinedStrategiesSelect.ROOT_STRATEGY_NAME,
 					new SingleTableFirstPhaseOneToOneLoader(subPersister.getMappingStrategy().getIdMappingStrategy(),
 							subclassPrimaryKey, selectExecutor, mainPersister.getClassToPersist(), DIFFERED_ENTITY_LOADER,
 							subEntityType, discriminatorColumn),

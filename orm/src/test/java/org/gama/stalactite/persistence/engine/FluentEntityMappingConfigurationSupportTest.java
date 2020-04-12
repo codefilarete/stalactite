@@ -7,23 +7,30 @@ import java.sql.SQLException;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import org.gama.lang.Dates;
 import org.gama.lang.Duo;
 import org.gama.lang.InvocationHandlerSupport;
+import org.gama.lang.Reflections;
 import org.gama.lang.collection.Arrays;
+import org.gama.lang.collection.Iterables;
 import org.gama.lang.collection.Maps;
+import org.gama.lang.test.Assertions;
 import org.gama.stalactite.persistence.engine.ColumnOptions.IdentifierPolicy;
 import org.gama.stalactite.persistence.engine.IFluentEntityMappingBuilder.IFluentMappingBuilderEmbedOptions;
 import org.gama.stalactite.persistence.engine.IFluentEntityMappingBuilder.IFluentMappingBuilderPropertyOptions;
 import org.gama.stalactite.persistence.engine.cascade.JoinedTablesPersister;
+import org.gama.stalactite.persistence.engine.configurer.PersisterBuilderImplTest.ToStringBuilder;
 import org.gama.stalactite.persistence.engine.model.City;
 import org.gama.stalactite.persistence.engine.model.Country;
 import org.gama.stalactite.persistence.engine.model.Gender;
@@ -36,6 +43,7 @@ import org.gama.stalactite.persistence.id.PersistableIdentifier;
 import org.gama.stalactite.persistence.id.manager.StatefullIdentifier;
 import org.gama.stalactite.persistence.sql.HSQLDBDialect;
 import org.gama.stalactite.persistence.structure.Column;
+import org.gama.stalactite.persistence.structure.ForeignKey;
 import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.sql.ConnectionProvider;
 import org.gama.stalactite.sql.SimpleConnectionProvider;
@@ -50,6 +58,8 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 import static org.gama.lang.collection.Iterables.collect;
+import static org.gama.lang.function.Functions.chain;
+import static org.gama.lang.function.Functions.link;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -395,6 +405,7 @@ public class FluentEntityMappingConfigurationSupportTest {
 					.exclude(Person::getId)
 					.exclude(Person::getVersion)
 					.exclude(Person::getCountry)
+					.exclude(Person::getNicknames)
 					.overrideName(Person::getName, "presidentName")
 					.innerEmbed(Person::getTimestamp)
 						.exclude(Timestamp::getCreationDate)
@@ -494,6 +505,7 @@ public class FluentEntityMappingConfigurationSupportTest {
 				.add(Country::getName)
 				.embed(Country::getPresident)
 					.exclude(Person::getCountry)
+					.exclude(Person::getNicknames)
 					.overrideName(Person::getId, "presidentId")
 					.overrideName(Person::getName, "presidentName")
 					.innerEmbed(Person::getTimestamp)
@@ -801,7 +813,8 @@ public class FluentEntityMappingConfigurationSupportTest {
 		personPersister.insert(person);
 		
 		// checking that name was used
-		List<String> result = persistenceContext.newQuery("select * from PersonWithGender", String.class).mapKey(String::new, "gender", String.class)
+		List<String> result = persistenceContext.newQuery("select * from PersonWithGender", String.class)
+				.mapKey(String::new, "gender", String.class)
 				.execute();
 		assertEquals(Arrays.asList("FEMALE"), result);
 	}
@@ -863,7 +876,8 @@ public class FluentEntityMappingConfigurationSupportTest {
 		personPersister.insert(person);
 		
 		// checking that ordinal was used
-		List<Integer> result = persistenceContext.newQuery("select * from PersonWithGender", Integer.class).mapKey(Integer::valueOf, "gender", String.class)
+		List<Integer> result = persistenceContext.newQuery("select * from PersonWithGender", Integer.class)
+				.mapKey(Integer::valueOf, "gender", String.class)
 				.execute();
 		assertEquals(Arrays.asList(person.getGender().ordinal()), result);
 	}
@@ -890,7 +904,8 @@ public class FluentEntityMappingConfigurationSupportTest {
 		personPersister.insert(person);
 		
 		// checking that ordinal was used
-		List<Integer> result = persistenceContext.newQuery("select * from PersonWithGender", Integer.class).mapKey(Integer::valueOf, "gender", String.class)
+		List<Integer> result = persistenceContext.newQuery("select * from PersonWithGender", Integer.class)
+				.mapKey(Integer::valueOf, "gender", String.class)
 				.execute();
 		assertEquals(Arrays.asList(person.getGender().ordinal()), result);
 	}
@@ -912,9 +927,12 @@ public class FluentEntityMappingConfigurationSupportTest {
 		
 		PersonWithGender person = new PersonWithGender(new PersistableIdentifier<>(1L));
 		person.setName(null);
-		person.setGender(null);
+		person.setGender(Gender.FEMALE);
 		
 		personPersister.insert(person);
+		
+		PersonWithGender loadedPerson = personPersister.select(person.getId());
+		assertEquals(Gender.FEMALE, loadedPerson.getGender());
 	}
 	
 	@Test
@@ -937,6 +955,9 @@ public class FluentEntityMappingConfigurationSupportTest {
 		person.setGender(null);
 		
 		personPersister.insert(person);
+		
+		PersonWithGender loadedPerson = personPersister.select(person.getId());
+		assertEquals(null, loadedPerson.getGender());
 	}
 	
 	@Test
@@ -960,11 +981,148 @@ public class FluentEntityMappingConfigurationSupportTest {
 		
 		personPersister.insert(person);
 		
-		Identifier<Long> id = person.getId();
-		System.out.println(id.isPersisted());
-		PersonWithGender updatedPerson = new PersonWithGender(id);
+		PersonWithGender updatedPerson = new PersonWithGender(person.getId());
 		int updatedRowCount = personPersister.update(updatedPerson, person, true);
 		assertEquals(1, updatedRowCount);
+		PersonWithGender loadedPerson = personPersister.select(person.getId());
+		assertEquals(null, loadedPerson.getGender());
+	}
+	
+	@Nested
+	class CollectionOfElements {
+		
+		@Test
+		public void insert() {
+			IEntityConfiguredPersister<Person, Identifier<Long>> personPersister = MappingEase.entityBuilder(Person.class, Identifier.LONG_TYPE)
+					.add(Person::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
+					.add(Person::getName)
+					.addCollection(Person::getNicknames, String.class)
+					.build(persistenceContext);
+			
+			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+			ddlDeployer.deployDDL();
+			
+			Person person = new Person(new PersistableIdentifier<>(1L));
+			person.setName("toto");
+			person.initNicknames();
+			person.addNickname("tonton");
+			
+			personPersister.insert(person);
+			
+			Person loadedPerson = personPersister.select(person.getId());
+			assertEquals(Arrays.asSet("tonton"), loadedPerson.getNicknames());
+		}
+		
+		@Test
+		public void update_withNewObject() {
+			IEntityConfiguredPersister<Person, Identifier<Long>> personPersister = MappingEase.entityBuilder(Person.class, Identifier.LONG_TYPE)
+					.add(Person::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
+					.add(Person::getName)
+					.addCollection(Person::getNicknames, String.class)
+					.build(persistenceContext);
+			
+			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+			ddlDeployer.deployDDL();
+			
+			Person person = new Person(new PersistableIdentifier<>(1L));
+			person.setName("toto");
+			person.initNicknames();
+			person.addNickname("tonton");
+			person.addNickname("tintin");
+			
+			personPersister.insert(person);
+			
+			Person loadedPerson = personPersister.select(person.getId());
+			assertEquals(Arrays.asSet("tintin", "tonton"), loadedPerson.getNicknames());
+			
+			
+			loadedPerson.addNickname("toutou");
+			personPersister.update(loadedPerson, person, true);
+			loadedPerson = personPersister.select(person.getId());
+			assertEquals(Arrays.asSet("tintin", "tonton", "toutou"), loadedPerson.getNicknames());
+		}
+		
+		@Test
+		public void update_objectRemoval() {
+			IEntityConfiguredPersister<Person, Identifier<Long>> personPersister = MappingEase.entityBuilder(Person.class, Identifier.LONG_TYPE)
+					.add(Person::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
+					.add(Person::getName)
+					.addCollection(Person::getNicknames, String.class)
+					.build(persistenceContext);
+			
+			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+			ddlDeployer.deployDDL();
+			
+			Person person = new Person(new PersistableIdentifier<>(1L));
+			person.setName("toto");
+			person.initNicknames();
+			person.addNickname("tonton");
+			person.addNickname("tintin");
+			
+			personPersister.insert(person);
+			
+			Person loadedPerson = personPersister.select(person.getId());
+			
+			person.getNicknames().remove("tintin");
+			personPersister.update(person, loadedPerson, true);
+			loadedPerson = personPersister.select(person.getId());
+			assertEquals(Arrays.asSet("tonton"), loadedPerson.getNicknames());
+		}
+		
+		@Test
+		public void delete() {
+			IEntityConfiguredPersister<Person, Identifier<Long>> personPersister = MappingEase.entityBuilder(Person.class, Identifier.LONG_TYPE)
+					.add(Person::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
+					.add(Person::getName)
+					.addCollection(Person::getNicknames, String.class)
+					.build(persistenceContext);
+			
+			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+			ddlDeployer.deployDDL();
+			
+			Person person = new Person(new PersistableIdentifier<>(1L));
+			person.setName("toto");
+			person.initNicknames();
+			person.addNickname("tonton");
+			person.addNickname("tintin");
+			
+			personPersister.insert(person);
+			
+			Person loadedPerson = personPersister.select(person.getId());
+			personPersister.delete(loadedPerson);
+			List<String> remainingNickNames = persistenceContext.newQuery("select nickNames from Person_nicknames", String.class)
+					.mapKey(String::new, "nickNames", String.class)
+					.execute();
+			assertEquals(Collections.emptyList(), remainingNickNames);
+		}
+		
+		@Test
+		public void foreignKey_isPresent() {
+			MappingEase.entityBuilder(Person.class, Identifier.LONG_TYPE)
+					.add(Person::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
+					.add(Person::getName)
+					.addCollection(Person::getNicknames, String.class)
+					.build(persistenceContext);
+			
+			Collection<Table> tables = DDLDeployer.collectTables(persistenceContext);
+			Map<String, Table> tablePerName = Iterables.map(tables, Table::getName);
+			Table personTable = tablePerName.get("Person");
+			Table nickNamesTable = tablePerName.get("Person_nicknames");
+			
+			Function<Column, String> columnPrinter = ToStringBuilder.of(", ",
+					Column::getAbsoluteName,
+					chain(Column::getJavaType, (Function<Class, String>) Reflections::toString));
+			Function<ForeignKey, String> fkPrinter = ToStringBuilder.of(", ",
+					ForeignKey::getName,
+					link(ForeignKey::getColumns, ToStringBuilder.asSeveral(columnPrinter)),
+					link(ForeignKey::getTargetColumns, ToStringBuilder.asSeveral(columnPrinter)));
+			
+			Assertions.assertAllEquals(
+					Arrays.asHashSet(new ForeignKey("FK_Person_nicknames_id_Person_id", nickNamesTable.getColumn("id"), personTable.getColumn("id"))),
+					nickNamesTable.getForeignKeys(),
+					fkPrinter);
+			
+		}
 	}
 	
 	/**

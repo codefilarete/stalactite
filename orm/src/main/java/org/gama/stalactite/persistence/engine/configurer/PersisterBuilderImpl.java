@@ -54,6 +54,7 @@ import org.gama.stalactite.persistence.engine.SubEntityMappingConfiguration;
 import org.gama.stalactite.persistence.engine.TableNamingStrategy;
 import org.gama.stalactite.persistence.engine.VersioningStrategy;
 import org.gama.stalactite.persistence.engine.builder.CascadeMany;
+import org.gama.stalactite.persistence.engine.builder.CollectionLinkage;
 import org.gama.stalactite.persistence.engine.cascade.AfterDeleteByIdSupport;
 import org.gama.stalactite.persistence.engine.cascade.AfterDeleteSupport;
 import org.gama.stalactite.persistence.engine.cascade.AfterUpdateSupport;
@@ -218,10 +219,11 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 		
 		// registering relations on parent entities
 		// WARN : this MUST BE DONE BEFORE POLYMORPHISM HANDLING because it needs them to create adhoc joins on sub entities tables 
-		inheritanceMappingPerTable.getMappings().stream().map(Mapping::getMappingConfiguration)
-				.filter(EntityMappingConfiguration.class::isInstance).map(EntityMappingConfiguration.class::cast).forEach(entityMappingConfiguration ->
-				registerRelationCascades(entityMappingConfiguration, persistenceContext, mainPersister)
-		);
+		inheritanceMappingPerTable.getMappings().stream()
+				.map(Mapping::getMappingConfiguration)
+				.filter(EntityMappingConfiguration.class::isInstance)
+				.map(EntityMappingConfiguration.class::cast)
+				.forEach(entityMappingConfiguration -> registerRelationCascades(entityMappingConfiguration, persistenceContext, mainPersister));
 		
 		IEntityConfiguredPersister<C, I> result = mainPersister;
 		// polymorphism handling
@@ -308,6 +310,13 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 					this.associationTableNamingStrategy);
 		}
 		registerRelationsInGraph(entityMappingConfiguration, sourcePersister.getCriteriaSupport().getRootConfiguration(), persistenceContext);
+		
+		// taking element collections into account
+		for (CollectionLinkage<C, ?, ? extends Collection> elementCollection : entityMappingConfiguration.getElementCollections()) {
+			ElementCollectionCascadeConfigurer elementCollectionCascadeConfigurer = new ElementCollectionCascadeConfigurer(persistenceContext);
+			elementCollectionCascadeConfigurer.appendCascade(elementCollection, sourcePersister, foreignKeyNamingStrategy, columnNamingStrategy,
+					elementCollection.getTableNamingStrategy());
+		}
 	}
 	
 	private <T extends Table> void handleVersioningStrategy(JoinedTablesPersister<C, I, T> result) {
@@ -366,7 +375,7 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 			parentPersisters.add(currentPersister);
 			// a join is necessary to select entity, only if target table changes
 			if (!currentPersister.getMainTable().equals(currentTable.get())) {
-				mainPersister.getJoinedStrategiesSelectExecutor().addComplementaryJoin(JoinedStrategiesSelect.FIRST_STRATEGY_NAME, currentMappingStrategy,
+				mainPersister.getJoinedStrategiesSelectExecutor().addComplementaryJoin(JoinedStrategiesSelect.ROOT_STRATEGY_NAME, currentMappingStrategy,
 					superclassPK, subclassPK);
 				currentTable.set(currentPersister.getMainTable());
 			}

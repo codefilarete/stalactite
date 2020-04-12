@@ -64,7 +64,7 @@ public class OneToManyWithMappedAssociationEngine<SRC, TRGT, ID, C extends Colle
 		
 		
 		// we add target subgraph joins to main persister
-		targetPersister.joinAsMany(sourcePersister, sourcePrimaryKey, relationOwner, relationFixer, JoinedStrategiesSelect.FIRST_STRATEGY_NAME, relationOwner.isNullable());
+		targetPersister.joinAsMany(sourcePersister, sourcePrimaryKey, relationOwner, relationFixer, JoinedStrategiesSelect.ROOT_STRATEGY_NAME, relationOwner.isNullable());
 		
 		// we must trigger subgraph event on loading of our own graph, this is mainly for event that initializes things because given ids
 		// are not those of their entity
@@ -94,7 +94,7 @@ public class OneToManyWithMappedAssociationEngine<SRC, TRGT, ID, C extends Colle
 	}
 	
 	public void addInsertCascade() {
-		sourcePersister.getPersisterListener().addInsertListener(
+		sourcePersister.addInsertListener(
 				new OneToManyWithMappedAssociationEngine.TargetInstancesInsertCascader<>(targetPersister, manyRelationDefinition.getCollectionGetter()));
 	}
 	
@@ -104,23 +104,23 @@ public class OneToManyWithMappedAssociationEngine<SRC, TRGT, ID, C extends Colle
 				targetPersister,
 				manyRelationDefinition.getReverseSetter(),
 				shouldDeleteRemoved);
-		sourcePersister.getPersisterListener().addUpdateListener(
+		sourcePersister.addUpdateListener(
 				new OneToManyWithMappedAssociationEngine.TargetInstancesUpdateCascader<>(targetPersister, updateListener));
 	}
 	
 	public void addDeleteCascade(boolean deleteTargetEntities) {
 		if (deleteTargetEntities) {
 			// adding deletion of many-side entities
-			sourcePersister.getPersisterListener().addDeleteListener(
+			sourcePersister.addDeleteListener(
 					new DeleteTargetEntitiesBeforeDeleteCascader<>(targetPersister, manyRelationDefinition.getCollectionGetter()));
 			// we add the deleteById event since we suppose that if delete is required then there's no reason that rough delete is not
-			sourcePersister.getPersisterListener().addDeleteByIdListener(
+			sourcePersister.addDeleteByIdListener(
 					new DeleteByIdTargetEntitiesBeforeDeleteByIdCascader<>(targetPersister, manyRelationDefinition.getCollectionGetter()));
 		} else // entity shouldn't be deleted, so we may have to update it
 			if (manyRelationDefinition.getReverseSetter() != null) {
 				// we cut the link between target and source
 				// NB : we don't take versioning into account overall because we can't : how to do it since we miss the unmodified version ?
-				sourcePersister.getPersisterListener().addDeleteListener(new BeforeDeleteCollectionCascader<SRC, TRGT>(targetPersister) {
+				sourcePersister.addDeleteListener(new BeforeDeleteCollectionCascader<SRC, TRGT>(targetPersister) {
 					
 					@Override
 					protected void postTargetDelete(Iterable<TRGT> entities) {
@@ -146,7 +146,7 @@ public class OneToManyWithMappedAssociationEngine<SRC, TRGT, ID, C extends Colle
 			}
 	}
 	
-	static class TargetInstancesInsertCascader<I, O, J> extends AfterInsertCollectionCascader<I, O> {
+	public static class TargetInstancesInsertCascader<I, O, J> extends AfterInsertCollectionCascader<I, O> {
 		
 		private final Function<I, ? extends Collection<O>> collectionGetter;
 		
@@ -170,7 +170,7 @@ public class OneToManyWithMappedAssociationEngine<SRC, TRGT, ID, C extends Colle
 		}
 	}
 	
-	static class TargetInstancesUpdateCascader<I, O> extends AfterUpdateCollectionCascader<I, O> {
+	public static class TargetInstancesUpdateCascader<I, O> extends AfterUpdateCollectionCascader<I, O> {
 		
 		private final BiConsumer<Duo<? extends I, ? extends I>, Boolean> updateListener;
 		
@@ -195,7 +195,7 @@ public class OneToManyWithMappedAssociationEngine<SRC, TRGT, ID, C extends Colle
 		}
 	}
 	
-	static class DeleteTargetEntitiesBeforeDeleteCascader<I, O> extends BeforeDeleteCollectionCascader<I, O> {
+	public static class DeleteTargetEntitiesBeforeDeleteCascader<I, O> extends BeforeDeleteCollectionCascader<I, O> {
 		
 		private final Function<I, ? extends Collection<O>> collectionGetter;
 		

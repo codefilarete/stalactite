@@ -1,7 +1,10 @@
 package org.gama.stalactite.persistence.engine;
 
 import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
 
 import org.gama.lang.collection.Arrays;
 import org.gama.lang.collection.Iterables;
@@ -15,7 +18,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 public class BeanRelationFixerTest {
 	
 	@Test
-	public void testOf_oneToOne() {
+	public void of_setter() {
 		BeanRelationFixer<DummyTarget, String> testInstance = BeanRelationFixer.of(DummyTarget::setProp1);
 		DummyTarget target = new DummyTarget();
 		String input = "toto";
@@ -24,16 +27,7 @@ public class BeanRelationFixerTest {
 	}
 	
 	@Test
-	public void testOf_oneToMany() {
-		BeanRelationFixer<DummyTarget, Integer> testInstance = BeanRelationFixer.of(DummyTarget::setProp2, DummyTarget::getProp2, ArrayList::new);
-		DummyTarget target = new DummyTarget();
-		testInstance.apply(target, 2);
-		testInstance.apply(target, 5);
-		assertEquals(Arrays.asList(2, 5), target.getProp2());
-	}
-	
-	@Test
-	public void testOf_oneToOne_bidirectionnal() {
+	public void of_setter_getter() {
 		BeanRelationFixer<Country, President> testInstance = BeanRelationFixer.of(Country::setPresident, President::setCountry);
 		Country target = new Country();
 		President president = new President();
@@ -43,13 +37,29 @@ public class BeanRelationFixerTest {
 	}
 	
 	@Test
-	public void testOf_oneToMany_bidirectionnal() {
+	public void of_setter_getter_collection() {
+		BeanRelationFixer<DummyTarget, Integer> testInstance = BeanRelationFixer.of(DummyTarget::setProp2, DummyTarget::getProp2, ArrayList::new);
+		DummyTarget target = new DummyTarget();
+		testInstance.apply(target, 2);
+		testInstance.apply(target, 5);
+		assertEquals(Arrays.asList(2, 5), target.getProp2());
+	}
+	
+	@Test
+	public void of_setter_getter_collection_bidirectional() {
 		BeanRelationFixer<Country, City> testInstance = BeanRelationFixer.of(Country::setCities, Country::getCities, ArrayList::new, City::setCountry);
 		Country target = new Country();
 		City city = new City();
 		testInstance.apply(target, city);
 		assertEquals(city, Iterables.first(target.getCities()));
 		assertEquals(target, city.getCountry());
+	}
+	
+	@Test
+	public void giveCollectionFactory() {
+		assertEquals(ArrayList.class, BeanRelationFixer.giveCollectionFactory(List.class).get().getClass());
+		assertEquals(HashSet.class, BeanRelationFixer.giveCollectionFactory(Set.class).get().getClass());
+		assertEquals(LinkedHashSet.class, BeanRelationFixer.giveCollectionFactory(LinkedHashSet.class).get().getClass());
 	}
 	
 	

@@ -90,7 +90,7 @@ abstract class JoinedTablesPolymorphismBuilder<C, I, T extends Table> implements
 			// Adding join with parent table to select
 			Column subEntityPrimaryKey = (Column) Iterables.first(subTable.getPrimaryKey().getColumns());
 			Column entityPrimaryKey = (Column) Iterables.first(this.mainPersister.getMainTable().getPrimaryKey().getColumns());
-			subclassPersister.getJoinedStrategiesSelectExecutor().addComplementaryJoin(JoinedStrategiesSelect.FIRST_STRATEGY_NAME,
+			subclassPersister.getJoinedStrategiesSelectExecutor().addComplementaryJoin(JoinedStrategiesSelect.ROOT_STRATEGY_NAME,
 					this.mainPersister.getMappingStrategy(), subEntityPrimaryKey, entityPrimaryKey);
 			
 			// creating dedicated instance updater because default one only takes its declared properties into account

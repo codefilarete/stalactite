@@ -42,7 +42,7 @@ import org.gama.stalactite.sql.binder.ParameterBinderIndex.ParameterBinderIndexF
 import org.gama.stalactite.sql.dml.ReadOperation;
 import org.gama.stalactite.sql.result.Row;
 
-import static org.gama.stalactite.persistence.engine.cascade.JoinedStrategiesSelect.FIRST_STRATEGY_NAME;
+import static org.gama.stalactite.persistence.engine.cascade.JoinedStrategiesSelect.ROOT_STRATEGY_NAME;
 
 /**
  * Class aimed at executing a SQL select statement from multiple joined {@link ClassMappingStrategy}.
@@ -71,7 +71,7 @@ public class JoinedStrategiesSelectExecutor<C, I, T extends Table> extends Selec
 		// NB: in the condition, table and columns are from the main strategy, so there's no need to use aliases
 		this.whereClauseDMLNameProvider = new WhereClauseDMLNameProvider(classMappingStrategy.getTargetTable(), classMappingStrategy.getTargetTable().getAbsoluteName());
 
-		this.strategyJoinsRowTransformer = new StrategyJoinsRowTransformer<>(joinedStrategiesSelect.getStrategyJoins(FIRST_STRATEGY_NAME));
+		this.strategyJoinsRowTransformer = new StrategyJoinsRowTransformer<>(joinedStrategiesSelect.getStrategyJoins(ROOT_STRATEGY_NAME));
 		// aliases are computed on select build (done by JoinedStrategiesSelect) so we take it with a very dynamic alias provider by using
 		// a Function on JoinedStrategiesSelect
 		this.strategyJoinsRowTransformer.setAliasProvider(this.joinedStrategiesSelect::getAlias);
@@ -90,7 +90,7 @@ public class JoinedStrategiesSelectExecutor<C, I, T extends Table> extends Selec
 		
 		// aliases are computed on select build (done by JoinedStrategiesSelect) so we take it with a very dynamic alias provider by using
 		// a Function on JoinedStrategiesSelect
-		this.strategyJoinsRowTransformer = rowTransformerFactory.apply(joinedStrategiesSelect.getStrategyJoins(FIRST_STRATEGY_NAME), this.joinedStrategiesSelect::getAlias);
+		this.strategyJoinsRowTransformer = rowTransformerFactory.apply(joinedStrategiesSelect.getStrategyJoins(ROOT_STRATEGY_NAME), this.joinedStrategiesSelect::getAlias);
 	}
 	
 	public JoinedStrategiesSelect<C, I, T> getJoinedStrategiesSelect() {

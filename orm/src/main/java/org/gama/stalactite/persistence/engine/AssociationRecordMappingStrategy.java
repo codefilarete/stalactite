@@ -18,9 +18,10 @@ import org.gama.stalactite.persistence.structure.Column;
 class AssociationRecordMappingStrategy extends ClassMappingStrategy<AssociationRecord, AssociationRecord, AssociationTable> {
 	
 	public AssociationRecordMappingStrategy(AssociationTable targetTable) {
-		super(AssociationRecord.class, targetTable, Maps
-						.asMap(AssociationRecord.LEFT_ACCESSOR, targetTable.getOneSideKeyColumn())
-						.add((IReversibleAccessor) AssociationRecord.RIGHT_ACCESSOR, targetTable.getManySideKeyColumn())
+		super(AssociationRecord.class, targetTable, (Map) Maps
+						.forHashMap(IReversibleAccessor.class, Column.class)
+						.add(AssociationRecord.LEFT_ACCESSOR, targetTable.getOneSideKeyColumn())
+						.add(AssociationRecord.RIGHT_ACCESSOR, targetTable.getManySideKeyColumn())
 				,
 				new ComposedIdMappingStrategy<>(new IdAccessor<AssociationRecord, AssociationRecord>() {
 					@Override
