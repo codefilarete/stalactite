@@ -13,7 +13,6 @@ import org.gama.reflection.MutatorByMethodReference;
 import org.gama.reflection.PropertyAccessor;
 import org.gama.reflection.ValueAccessPointMap;
 import org.gama.reflection.ValueAccessPointSet;
-import org.gama.stalactite.persistence.engine.ElementCollectionTableNamingStrategy;
 import org.gama.stalactite.persistence.engine.LambdaMethodUnsheller;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
@@ -41,7 +40,6 @@ public class ElementCollectionLinkage<SRC, TRGT, C extends Collection<TRGT>> {
 //	private final Class<TRGT> embeddedClass;
 	private final ValueAccessPointMap<String> overridenColumnNames = new ValueAccessPointMap<>();
 	private final ValueAccessPointSet excludedProperties = new ValueAccessPointSet();
-	private ElementCollectionTableNamingStrategy tableNamingStrategy = ElementCollectionTableNamingStrategy.DEFAULT;
 	
 	public ElementCollectionLinkage(SerializableBiConsumer<SRC, C> setter, Class<TRGT> componentType, LambdaMethodUnsheller lambdaMethodUnsheller) {
 		MutatorByMethodReference<SRC, C> setterReference = Accessors.mutatorByMethodReference(setter);
@@ -72,15 +70,6 @@ public class ElementCollectionLinkage<SRC, TRGT, C extends Collection<TRGT>> {
 	
 	public ElementCollectionLinkage<SRC, TRGT, C> setCollectionFactory(Supplier<? extends C> collectionFactory) {
 		this.collectionFactory = (Supplier<C>) collectionFactory;
-		return this;
-	}
-	
-	public ElementCollectionTableNamingStrategy getTableNamingStrategy() {
-		return tableNamingStrategy;
-	}
-	
-	public ElementCollectionLinkage<SRC, TRGT, C> setTableNamingStrategy(ElementCollectionTableNamingStrategy tableNamingStrategy) {
-		this.tableNamingStrategy = tableNamingStrategy;
 		return this;
 	}
 

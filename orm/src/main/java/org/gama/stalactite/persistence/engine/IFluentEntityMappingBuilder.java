@@ -55,6 +55,8 @@ public interface IFluentEntityMappingBuilder<C, I> extends IFluentEmbeddableMapp
 	
 	IFluentEntityMappingBuilder<C, I> withColumnNaming(ColumnNamingStrategy columnNamingStrategy);
 	
+	IFluentEntityMappingBuilder<C, I> withElementCollectionTableNaming(ElementCollectionTableNamingStrategy tableNamingStrategy);
+	
 	/**
 	 * Declares the inherited mapping.
 	 * Id policy must be defined in the given strategy, not by current configuration : if id policy is also / only defined by the current builder,
@@ -460,9 +462,5 @@ public interface IFluentEntityMappingBuilder<C, I> extends IFluentEmbeddableMapp
 
 		@Override
 		IFluentMappingBuilderElementCollectionOptions<C, I, O, S> withTable(String tableName);
-		
-		@Override
-		IFluentMappingBuilderElementCollectionOptions<C, I, O, S> withTableNaming(ElementCollectionTableNamingStrategy tableNamingStrategy);
-		
 	}
 }

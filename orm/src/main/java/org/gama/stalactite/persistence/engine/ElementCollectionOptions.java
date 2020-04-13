@@ -26,6 +26,4 @@ public interface ElementCollectionOptions<C, O, S extends Collection<O>> {
 	
 	ElementCollectionOptions<C, O, S> withTable(String tableName);
 	
-	ElementCollectionOptions<C, O, S> withTableNaming(ElementCollectionTableNamingStrategy tableNamingStrategy);
-	
 }

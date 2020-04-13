@@ -33,6 +33,7 @@ import org.gama.stalactite.persistence.engine.ColumnNamingStrategy;
 import org.gama.stalactite.persistence.engine.ColumnOptions;
 import org.gama.stalactite.persistence.engine.ColumnOptions.BeforeInsertIdentifierPolicy;
 import org.gama.stalactite.persistence.engine.ColumnOptions.IdentifierPolicy;
+import org.gama.stalactite.persistence.engine.ElementCollectionTableNamingStrategy;
 import org.gama.stalactite.persistence.engine.EmbeddableMappingConfiguration;
 import org.gama.stalactite.persistence.engine.EmbeddableMappingConfiguration.Linkage;
 import org.gama.stalactite.persistence.engine.EntityMappingConfiguration;
@@ -107,6 +108,7 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 	private final Map<EntityMappingConfiguration, Table> tableMap = new HashMap<>();
 	private ColumnNamingStrategy columnNamingStrategy;
 	private ForeignKeyNamingStrategy foreignKeyNamingStrategy;
+	private ElementCollectionTableNamingStrategy elementCollectionTableNamingStrategy;
 	private ColumnNamingStrategy joinColumnNamingStrategy;
 	private AssociationTableNamingStrategy associationTableNamingStrategy;
 	private ColumnNameProvider columnNameProvider;
@@ -128,6 +130,11 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 	
 	PersisterBuilderImpl<C, I> setTable(Table table) {
 		this.table = table;
+		return this;
+	}
+	
+	public PersisterBuilderImpl<C, I> setElementCollectionTableNamingStrategy(ElementCollectionTableNamingStrategy tableNamingStrategy) {
+		this.elementCollectionTableNamingStrategy = tableNamingStrategy;
 		return this;
 	}
 	
@@ -181,10 +188,6 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 	
 	private IEntityConfiguredPersister<C, I> doBuild(PersistenceContext persistenceContext, @Nullable Table table) {
 		init(persistenceContext.getDialect().getColumnBinderRegistry(), table);
-		
-		if (this.table == null) {
-			this.table = new Table(tableNamingStrategy.giveName(this.entityMappingConfiguration.getEntityType()));
-		}
 		
 		mapEntityConfigurationPerTable();
 		
@@ -315,7 +318,7 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 		for (ElementCollectionLinkage<C, ?, ? extends Collection> elementCollection : entityMappingConfiguration.getElementCollections()) {
 			ElementCollectionCascadeConfigurer elementCollectionCascadeConfigurer = new ElementCollectionCascadeConfigurer(persistenceContext);
 			elementCollectionCascadeConfigurer.appendCascade(elementCollection, sourcePersister, foreignKeyNamingStrategy, columnNamingStrategy,
-					elementCollection.getTableNamingStrategy());
+					elementCollectionTableNamingStrategy);
 		}
 	}
 	
@@ -463,7 +466,7 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 	}
 	
 	/**
-	 * Made only for testing purpose : initialize the build process without running it as the opposit of {@link #build(PersistenceContext, Table)}
+	 * Sets some attributes according to given arguments and entity configuration.
 	 *
 	 * @param columnBinderRegistry registry used to declare columns binding
 	 * @param table optional target table of the main mapping
@@ -472,14 +475,16 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 	@VisibleForTesting
 	<T extends Table> void init(ColumnBinderRegistry columnBinderRegistry, @Nullable T table) {
 		this.columnBinderRegistry = columnBinderRegistry;
-		this.table = table;
+		
 		org.gama.lang.Nullable<TableNamingStrategy> optionalTableNamingStrategy = org.gama.lang.Nullable.empty();
 		visitInheritedEntityMappingConfigurations(entityMappingConfiguration -> {
 			if (entityMappingConfiguration.getTableNamingStrategy() != null && !optionalTableNamingStrategy.isPresent()) {
 				optionalTableNamingStrategy.set(entityMappingConfiguration.getTableNamingStrategy());
 			}
 		});
-		tableNamingStrategy = optionalTableNamingStrategy.getOr(TableNamingStrategy.DEFAULT);
+		this.tableNamingStrategy = optionalTableNamingStrategy.getOr(TableNamingStrategy.DEFAULT);
+		
+		this.table = nullable(table).getOr(() -> (T) new Table(tableNamingStrategy.giveName(this.entityMappingConfiguration.getEntityType())));
 		
 		// When a ColumnNamingStrategy is defined on mapping, it must be applied to super classes too
 		org.gama.lang.Nullable<ColumnNamingStrategy> optionalColumnNamingStrategy = org.gama.lang.Nullable.empty();
@@ -502,7 +507,7 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 				optionalForeignKeyNamingStrategy.set(entityMappingConfiguration.getForeignKeyNamingStrategy());
 			}
 		});
-		foreignKeyNamingStrategy = optionalForeignKeyNamingStrategy.getOr(ForeignKeyNamingStrategy.DEFAULT);
+		this.foreignKeyNamingStrategy = optionalForeignKeyNamingStrategy.getOr(ForeignKeyNamingStrategy.DEFAULT);
 		
 		org.gama.lang.Nullable<ColumnNamingStrategy> optionalJoinColumnNamingStrategy = org.gama.lang.Nullable.empty();
 		visitInheritedEntityMappingConfigurations(entityMappingConfiguration -> {
@@ -510,7 +515,7 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 				optionalJoinColumnNamingStrategy.set(entityMappingConfiguration.getJoinColumnNamingStrategy());
 			}
 		});
-		joinColumnNamingStrategy = optionalJoinColumnNamingStrategy.getOr(ColumnNamingStrategy.JOIN_DEFAULT);
+		this.joinColumnNamingStrategy = optionalJoinColumnNamingStrategy.getOr(ColumnNamingStrategy.JOIN_DEFAULT);
 		
 		org.gama.lang.Nullable<AssociationTableNamingStrategy> optionalAssociationTableNamingStrategy = org.gama.lang.Nullable.empty();
 		visitInheritedEntityMappingConfigurations(entityMappingConfiguration -> {
@@ -518,7 +523,15 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 				optionalAssociationTableNamingStrategy.set(entityMappingConfiguration.getAssociationTableNamingStrategy());
 			}
 		});
-		associationTableNamingStrategy = optionalAssociationTableNamingStrategy.getOr(AssociationTableNamingStrategy.DEFAULT);
+		this.associationTableNamingStrategy = optionalAssociationTableNamingStrategy.getOr(AssociationTableNamingStrategy.DEFAULT);
+		
+		org.gama.lang.Nullable<ElementCollectionTableNamingStrategy> optionalElementCollectionTableNamingStrategy = org.gama.lang.Nullable.empty();
+		visitInheritedEntityMappingConfigurations(entityMappingConfiguration -> {
+			if (entityMappingConfiguration.getElementCollectionTableNamingStrategy() != null && !optionalElementCollectionTableNamingStrategy.isPresent()) {
+				optionalElementCollectionTableNamingStrategy.set(entityMappingConfiguration.getElementCollectionTableNamingStrategy());
+			}
+		});
+		this.elementCollectionTableNamingStrategy = optionalElementCollectionTableNamingStrategy.getOr(ElementCollectionTableNamingStrategy.DEFAULT);
 	}
 	
 	void addIdentificationToMapping(Identification identification, Iterable<Mapping> mappings) {

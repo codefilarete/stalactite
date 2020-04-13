@@ -77,6 +77,8 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements IFluentEnt
 	
 	private AssociationTableNamingStrategy associationTableNamingStrategy = AssociationTableNamingStrategy.DEFAULT;
 	
+	private ElementCollectionTableNamingStrategy elementCollectionTableNamingStrategy = ElementCollectionTableNamingStrategy.DEFAULT;
+	
 	private OptimisticLockOption optimisticLockOption;
 	
 	private InheritanceConfigurationSupport<? super C, I> inheritanceConfiguration;
@@ -174,6 +176,11 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements IFluentEnt
 	@Override
 	public AssociationTableNamingStrategy getAssociationTableNamingStrategy() {
 		return this.associationTableNamingStrategy;
+	}
+	
+	@Override
+	public ElementCollectionTableNamingStrategy getElementCollectionTableNamingStrategy() {
+		return this.elementCollectionTableNamingStrategy;
 	}
 	
 	@Override
@@ -306,12 +313,6 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements IFluentEnt
 						elementCollectionLinkage.setTargetTableName(tableName);
 						return null;
 					}
-					
-					@Override
-					public ElementCollectionOptions<C, O, S> withTableNaming(ElementCollectionTableNamingStrategy tableNamingStrategy) {
-						elementCollectionLinkage.setTableNamingStrategy(tableNamingStrategy);
-						return null;
-					}
 				}, true)
 				.fallbackOn(this)
 				.build((Class<IFluentMappingBuilderElementCollectionOptions<C, I, O, S>>) (Class) IFluentMappingBuilderElementCollectionOptions.class);
@@ -358,12 +359,6 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements IFluentEnt
 					@Override
 					public ElementCollectionOptions<C, O, S> withTable(String tableName) {
 						elementCollectionLinkage.setTargetTableName(tableName);
-						return null;
-					}
-					
-					@Override
-					public ElementCollectionOptions<C, O, S> withTableNaming(ElementCollectionTableNamingStrategy tableNamingStrategy) {
-						elementCollectionLinkage.setTableNamingStrategy(tableNamingStrategy);
 						return null;
 					}
 				}, true)
@@ -684,6 +679,12 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements IFluentEnt
 				}, true)
 				.fallbackOn(this)
 				.build((Class<IFluentMappingBuilderEmbedOptions<C, I, O>>) (Class) IFluentMappingBuilderEmbedOptions.class);
+	}
+	
+	@Override
+	public IFluentEntityMappingBuilder<C, I> withElementCollectionTableNaming(ElementCollectionTableNamingStrategy tableNamingStrategy) {
+		this.elementCollectionTableNamingStrategy = tableNamingStrategy;
+		return this;
 	}
 	
 	@Override

@@ -50,6 +50,8 @@ public interface EntityMappingConfiguration<C, I> {
 	
 	AssociationTableNamingStrategy getAssociationTableNamingStrategy();
 	
+	ElementCollectionTableNamingStrategy getElementCollectionTableNamingStrategy();
+	
 	ColumnNamingStrategy getJoinColumnNamingStrategy();
 	
 	PolymorphismPolicy getPolymorphismPolicy();

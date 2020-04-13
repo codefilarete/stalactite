@@ -1189,8 +1189,8 @@ public class FluentEntityMappingConfigurationSupportTest {
 			MappingEase.entityBuilder(Person.class, Identifier.LONG_TYPE)
 					.add(Person::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 					.add(Person::getName)
+					.withElementCollectionTableNaming(accessorDefinition -> "Toto")
 					.addCollection(Person::getNicknames, String.class)
-						.withTableNaming(accessorDefinition -> "Toto")
 					.build(persistenceContext);
 			
 			Collection<Table> tables = DDLDeployer.collectTables(persistenceContext);
