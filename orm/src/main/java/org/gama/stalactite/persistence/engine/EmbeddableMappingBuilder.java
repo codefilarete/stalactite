@@ -29,13 +29,12 @@ import org.gama.lang.StringAppender;
 import org.gama.lang.bean.InstanceMethodIterator;
 import org.gama.lang.bean.MethodIterator;
 import org.gama.lang.collection.Iterables;
+import org.gama.lang.exception.NotImplementedException;
 import org.gama.lang.function.SerializableTriFunction;
 import org.gama.reflection.AccessorByMethod;
 import org.gama.reflection.AccessorChain;
-import org.gama.reflection.AccessorChainMutator;
 import org.gama.reflection.AccessorDefinition;
 import org.gama.reflection.IAccessor;
-import org.gama.reflection.IMutator;
 import org.gama.reflection.IReversibleAccessor;
 import org.gama.reflection.IReversibleMutator;
 import org.gama.reflection.MethodReferences;
@@ -360,29 +359,20 @@ class EmbeddableMappingBuilder<C> {
 	@VisibleForTesting
 	static AccessorChain newAccessorChain(List<ValueAccessPoint> rootAccessors, ValueAccessPointByMethod terminalAccessor) {
 		// we must clone rootAccessors to prevent from accessor mixing
-		List<ValueAccessPoint> finalAccessors = new ArrayList<>(rootAccessors);
-		IAccessor accessor;
-		if (terminalAccessor instanceof IAccessor) {
-			accessor = (IAccessor) terminalAccessor;
-		} else if (terminalAccessor instanceof IMutator) {
-			accessor = ((IReversibleMutator) terminalAccessor).toAccessor();
-		} else {
-			// Something has change in ValueAccessPoint hierarchy, it should be fixed (grave)
-			throw new IllegalArgumentException(Reflections.toString(terminalAccessor.getClass()) + " is unknown from chain creation algorithm");
-		}
-		finalAccessors.add(accessor);
-		// we create a chain that
-		// - returns null when beans are not instanciated, so null will be inserted/updated in embedded columns
-		// - initializes values when its mutator will be used, so bean will create its embedded properties on select
-		// (voluntary dissimetric behavior)
-		return new AccessorChain(finalAccessors) {
-			@Override
-			public AccessorChainMutator toMutator() {
-				AccessorChainMutator toReturn = super.toMutator();
-				toReturn.setNullValueHandler(AccessorChain.INITIALIZE_VALUE);
-				return toReturn;
+		List<ValueAccessPoint> accessorsTmp = new ArrayList<>(rootAccessors);
+		accessorsTmp.add(terminalAccessor);
+		List<IAccessor> finalAccessors = new ArrayList<>();
+		accessorsTmp.forEach(valueAccessPoint -> {
+			if (valueAccessPoint instanceof IAccessor) {
+				finalAccessors.add((IAccessor) valueAccessPoint);
+			} else if (valueAccessPoint instanceof IReversibleMutator) {
+				finalAccessors.add(((IReversibleMutator) valueAccessPoint).toAccessor());
+			} else {
+				// Something has change in ValueAccessPoint hierarchy, it should be fixed (grave)
+				throw new NotImplementedException(Reflections.toString(valueAccessPoint.getClass()) + " is unknown from chain creation algorithm");
 			}
-		}.setNullValueHandler(AccessorChain.RETURN_NULL);
+		});
+		return AccessorChain.forModel(finalAccessors);
 	}
 	
 	private Stream<ValueAccessPointByMethod> giveMappableMethodStream(Inset<C, ?> inset, Set<ValueAccessPoint> innerEmbeddableRegistry) {

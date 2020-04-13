@@ -2,6 +2,7 @@ package org.gama.stalactite.persistence.engine.configurer;
 
 import javax.annotation.Nonnull;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
@@ -10,8 +11,11 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 
 import org.gama.lang.Duo;
+import org.gama.lang.collection.Arrays;
 import org.gama.lang.collection.Iterables;
 import org.gama.lang.collection.Maps;
+import org.gama.reflection.AccessorChain;
+import org.gama.reflection.AccessorChain.ValueInitializerOnNullValue;
 import org.gama.reflection.AccessorDefinition;
 import org.gama.reflection.Accessors;
 import org.gama.reflection.IAccessor;
@@ -20,6 +24,8 @@ import org.gama.reflection.PropertyAccessor;
 import org.gama.stalactite.persistence.engine.BeanRelationFixer;
 import org.gama.stalactite.persistence.engine.ColumnNamingStrategy;
 import org.gama.stalactite.persistence.engine.ElementCollectionTableNamingStrategy;
+import org.gama.stalactite.persistence.engine.EmbeddableMappingConfiguration;
+import org.gama.stalactite.persistence.engine.EmbeddableMappingConfigurationProvider;
 import org.gama.stalactite.persistence.engine.ForeignKeyNamingStrategy;
 import org.gama.stalactite.persistence.engine.IEntityConfiguredJoinedTablesPersister;
 import org.gama.stalactite.persistence.engine.IEntityPersister;
@@ -27,6 +33,7 @@ import org.gama.stalactite.persistence.engine.PersistenceContext;
 import org.gama.stalactite.persistence.engine.builder.ElementCollectionLinkage;
 import org.gama.stalactite.persistence.engine.cascade.IJoinedTablesPersister;
 import org.gama.stalactite.persistence.engine.cascade.JoinedTablesPersister;
+import org.gama.stalactite.persistence.engine.configurer.BeanMappingBuilder.ColumnNameProvider;
 import org.gama.stalactite.persistence.engine.runtime.CollectionUpdater;
 import org.gama.stalactite.persistence.engine.runtime.OneToManyWithMappedAssociationEngine.DeleteTargetEntitiesBeforeDeleteCascader;
 import org.gama.stalactite.persistence.engine.runtime.OneToManyWithMappedAssociationEngine.TargetInstancesInsertCascader;
@@ -38,10 +45,13 @@ import org.gama.stalactite.persistence.id.diff.AbstractDiff;
 import org.gama.stalactite.persistence.id.manager.AlreadyAssignedIdentifierManager;
 import org.gama.stalactite.persistence.id.manager.StatefullIdentifier;
 import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
+import org.gama.stalactite.persistence.mapping.ColumnedRow;
 import org.gama.stalactite.persistence.mapping.ComposedIdMappingStrategy;
+import org.gama.stalactite.persistence.mapping.EmbeddedBeanMappingStrategy;
 import org.gama.stalactite.persistence.mapping.IdAccessor;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
+import org.gama.stalactite.sql.result.Row;
 
 import static org.gama.lang.Nullable.nullable;
 import static org.gama.lang.bean.Objects.preventNull;
@@ -71,20 +81,52 @@ public class ElementCollectionCascadeConfigurer<SRC, TRGT, ID, C extends Collect
 		String tableName = nullable(linkage.getTargetTableName()).getOr(() -> tableNamingStrategy.giveName(collectionProviderDefinition));
 		Table<?> targetTable = nullable(linkage.getTargetTable()).getOr(() -> new Table(tableName));
 		
-		String reverseColumnName = nullable(linkage.getReverseColumnName()).getOr(() -> 
+		String reverseColumnName = nullable(linkage.getReverseColumnName()).getOr(() ->
 				columnNamingStrategy.giveName(new AccessorDefinition(ElementRecord.class, "getId", StatefullIdentifier.class)));
 		Column reverseColumn = nullable(linkage.getReverseColumn()).getOr(() -> targetTable.addColumn(reverseColumnName, sourcePK.getJavaType()));
 		registerColumnBinder(reverseColumn, sourcePK);	// because sourcePk binder might have been overloaded by column so we need to adjust to it
 		
 		reverseColumn.primaryKey();
-		String columnName = nullable(linkage.getOverridenColumnNames().get(linkage.getCollectionProvider()))
-				.getOr(() -> columnNamingStrategy.giveName(collectionProviderDefinition));
-		Column<Table, TRGT> elementColumn = (Column<Table, TRGT>) targetTable.addColumn(columnName, linkage.getComponentType());
-		elementColumn.primaryKey();
-		targetTable.addForeignKey(foreignKeyNamingStrategy::giveName, reverseColumn, sourcePK);
 		
-		ClassMappingStrategy<ElementRecord, ElementRecord, Table> wrapperStrategy = new ElementRecordMappingStrategy(targetTable, reverseColumn, elementColumn);
-		
+		EmbeddableMappingConfiguration<TRGT> embeddableConfiguration =
+				nullable(linkage.getEmbeddableConfigurationProvider()).map(EmbeddableMappingConfigurationProvider::getConfiguration).get();
+		ClassMappingStrategy<ElementRecord, ElementRecord, Table> wrapperStrategy;
+		if (embeddableConfiguration == null) {
+			String columnName = nullable(linkage.getOverridenColumnNames().get(linkage.getCollectionProvider()))
+					.getOr(() -> columnNamingStrategy.giveName(collectionProviderDefinition));
+			Column<Table, TRGT> elementColumn = (Column<Table, TRGT>) targetTable.addColumn(columnName, linkage.getComponentType());
+			elementColumn.primaryKey();
+			targetTable.addForeignKey(foreignKeyNamingStrategy::giveName, reverseColumn, sourcePK);
+			
+			wrapperStrategy = new ElementRecordMappingStrategy(targetTable, reverseColumn, elementColumn);
+		} else {
+			BeanMappingBuilder x = new BeanMappingBuilder();
+			Map<IReversibleAccessor, Column> columnMap = x.build(embeddableConfiguration, targetTable,
+					persistenceContext.getDialect().getColumnBinderRegistry(), new ColumnNameProvider(columnNamingStrategy));
+			
+			Map<IReversibleAccessor, Column> projectedColumnMap = new HashMap<>();
+			columnMap.forEach((k, v) -> {
+				
+				AccessorChain accessorChain = AccessorChain.forModel(Arrays.asList(ElementRecord.ELEMENT_ACCESSOR, k), (accessor, valueType) -> {
+					if (accessor == ElementRecord.ELEMENT_ACCESSOR) {
+						// on getElement(), bean type can't be dedueced by reflection due to generic type erasure : default mecanism returns Object
+						// so we have to specify our bean type, else a simple Object is instanciated which throws a ClassCastException further
+						return embeddableConfiguration.getBeanType();
+					} else {
+						// default mecanism
+						return ValueInitializerOnNullValue.giveValueType(accessor, valueType);
+					}
+				});
+				
+				projectedColumnMap.put(accessorChain, v);
+				v.primaryKey();
+			});
+			
+			EmbeddedBeanMappingStrategy<ElementRecord, Table> dd = new EmbeddedBeanMappingStrategy<>(ElementRecord.class,
+					targetTable, (Map) projectedColumnMap);
+			wrapperStrategy = new ElementRecordMappingStrategy(targetTable, reverseColumn, dd);
+		}
+			
 		// Note that table will be added to schema thanks to select cascade because join is added to source persister
 		JoinedTablesPersister<ElementRecord, ElementRecord, Table> wrapperPersister = new JoinedTablesPersister<>(persistenceContext, wrapperStrategy);
 		
@@ -203,6 +245,14 @@ public class ElementCollectionCascadeConfigurer<SRC, TRGT, ID, C extends Collect
 					new ElementRecordIdMappingStrategy(targetTable, idColumn, elementColumn));
 		}
 		
+		private ElementRecordMappingStrategy(Table targetTable, Column idColumn, EmbeddedBeanMappingStrategy<ElementRecord, Table> embeddableMapping) {
+			super(ElementRecord.class, targetTable, (Map) Maps.putAll(Maps
+							.forHashMap(IReversibleAccessor.class, Column.class)
+							.add(ElementRecord.IDENTIFIER_ACCESSOR, idColumn),
+							embeddableMapping.getPropertyToColumn()),
+					new ElementRecordIdMappingStrategy(targetTable, idColumn, embeddableMapping));
+		}
+		
 		/**
 		 * {@link org.gama.stalactite.persistence.mapping.IdMappingStrategy} for {@link ElementRecord} : a composed id made of
 		 * {@link ElementRecord#getIdentifier()} and {@link ElementRecord#getElement()}
@@ -212,6 +262,12 @@ public class ElementCollectionCascadeConfigurer<SRC, TRGT, ID, C extends Collect
 				super(new ElementRecordIdAccessor(),
 						new AlreadyAssignedIdentifierManager<>(ElementRecord.class),
 						new ElementRecordIdentifierAssembler(targetTable, idColumn, elementColumn));
+			}
+			
+			public ElementRecordIdMappingStrategy(Table targetTable, Column idColumn, EmbeddedBeanMappingStrategy<ElementRecord, Table> elementColumn) {
+				super(new ElementRecordIdAccessor(),
+						new AlreadyAssignedIdentifierManager<>(ElementRecord.class),
+						new ElementRecordIdentifierAssembler2(targetTable, idColumn, elementColumn));
 			}
 			
 			/**
@@ -266,6 +322,41 @@ public class ElementCollectionCascadeConfigurer<SRC, TRGT, ID, C extends Collect
 				public Map<Column, Object> getColumnValues(@Nonnull ElementRecord id) {
 					return Maps.asMap(idColumn, id.getIdentifier())
 							.add(elementColumn, id.getElement());
+				}
+			}
+			
+			private static class ElementRecordIdentifierAssembler2 extends ComposedIdentifierAssembler<ElementRecord> {
+				
+				private final Column idColumn;
+				private final EmbeddedBeanMappingStrategy<ElementRecord, Table> elementColumn;
+				
+				private ElementRecordIdentifierAssembler2(Table targetTable, Column idColumn, EmbeddedBeanMappingStrategy<ElementRecord, Table> elementColumn) {
+					super(targetTable);
+					this.idColumn = idColumn;
+					this.elementColumn = elementColumn;
+				}
+				
+				@Override
+				public ElementRecord assemble(@Nonnull Row row, @Nonnull ColumnedRow rowAliaser) {
+					Object leftValue = rowAliaser.getValue(idColumn, row);
+					Object rightValue = elementColumn.getRowTransformer().copyWithAliases(rowAliaser).transform(row);
+					// we should not return an id if any (both expected in fact) value is null
+					if (leftValue == null || rightValue == null) {
+						return null;
+					} else {
+						return new ElementRecord(new PersistedIdentifier(leftValue), rightValue);
+					}
+				}
+				
+				@Override
+				protected ElementRecord assemble(Map<Column, Object> primaryKeyElements) {
+					// never called
+					return null;
+				}
+				
+				@Override
+				public Map<Column, Object> getColumnValues(@Nonnull ElementRecord id) {
+					return Maps.putAll(Maps.asMap(idColumn, id.getIdentifier()), elementColumn.getInsertValues(id));
 				}
 			}
 		}

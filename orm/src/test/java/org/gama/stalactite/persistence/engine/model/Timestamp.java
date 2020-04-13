@@ -1,5 +1,7 @@
 package org.gama.stalactite.persistence.engine.model;
 
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.Date;
 
 import org.apache.commons.lang3.builder.EqualsBuilder;
@@ -23,6 +25,11 @@ public class Timestamp {
 	public Timestamp(Date creationDate, Date modificationDate) {
 		this.creationDate = creationDate;
 		this.modificationDate = modificationDate;
+	}
+	
+	public Timestamp(LocalDateTime creationDate, LocalDateTime modificationDate) {
+		this.creationDate = Date.from(creationDate.atZone(ZoneId.systemDefault()).toInstant());
+		this.modificationDate = Date.from(modificationDate.atZone(ZoneId.systemDefault()).toInstant());
 	}
 	
 	public Date getCreationDate() {

@@ -273,7 +273,8 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements IFluentEnt
 	@Override
 	public <O, S extends Collection<O>> IFluentMappingBuilderElementCollectionOptions<C, I, O, S> addCollection(SerializableFunction<C, S> getter,
 																										  Class<O> componentType) {
-		ElementCollectionLinkage<C, O, S> elementCollectionLinkage = new ElementCollectionLinkage<>(getter, componentType, propertiesMappingConfigurationSurrogate);
+		ElementCollectionLinkage<C, O, S> elementCollectionLinkage = new ElementCollectionLinkage<>(getter, componentType,
+				propertiesMappingConfigurationSurrogate, null);
 		elementCollections.add(elementCollectionLinkage);
 		return new MethodDispatcher()
 				.redirect(ElementCollectionOptions.class, new ElementCollectionOptions<C, O, S>() {
@@ -342,6 +343,57 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements IFluentEnt
 					public ElementCollectionOptions<C, O, S> withCollectionFactory(Supplier<? extends S> collectionFactory) {
 						elementCollectionLinkage.setCollectionFactory(collectionFactory);
 						return null;	
+					}
+					
+					@Override
+					public IFluentMappingBuilderElementCollectionOptions<C, I, O, S> mappedBy(String name) {
+						elementCollectionLinkage.setReverseColumnName(name);
+						return null;
+					}
+					
+					@Override
+					public ElementCollectionOptions<C, O, S> withTable(Table table) {
+						elementCollectionLinkage.setTargetTable(table);
+						return null;
+					}
+					
+					@Override
+					public ElementCollectionOptions<C, O, S> withTable(String tableName) {
+						elementCollectionLinkage.setTargetTableName(tableName);
+						return null;
+					}
+				}, true)
+				.fallbackOn(this)
+				.build((Class<IFluentMappingBuilderElementCollectionOptions<C, I, O, S>>) (Class) IFluentMappingBuilderElementCollectionOptions.class);
+	}
+	
+	@Override
+	public <O, S extends Collection<O>> IFluentMappingBuilderElementCollectionOptions<C, I, O, S> addCollection(SerializableFunction<C, S> getter,
+																												Class<O> componentType,
+																												EmbeddableMappingConfigurationProvider<O> embeddableConfiguration) {
+		ElementCollectionLinkage<C, O, S> elementCollectionLinkage = new ElementCollectionLinkage<>(getter, componentType,
+				propertiesMappingConfigurationSurrogate,
+				embeddableConfiguration);
+		elementCollections.add(elementCollectionLinkage);
+		return new MethodDispatcher()
+				.redirect(ElementCollectionOptions.class, new ElementCollectionOptions<C, O, S>() {
+					
+					@Override
+					public ElementCollectionOptions<C, O, S> overrideName(SerializableBiConsumer setter, String columnName) {
+						elementCollectionLinkage.overrideName(setter, columnName);
+						return null;
+					}
+					
+					@Override
+					public ElementCollectionOptions<C, O, S> overrideName(SerializableFunction getter, String columnName) {
+						elementCollectionLinkage.overrideName(getter, columnName);
+						return null;
+					}
+					
+					@Override
+					public ElementCollectionOptions<C, O, S> withCollectionFactory(Supplier<? extends S> collectionFactory) {
+						elementCollectionLinkage.setCollectionFactory(collectionFactory);
+						return null;
 					}
 					
 					@Override

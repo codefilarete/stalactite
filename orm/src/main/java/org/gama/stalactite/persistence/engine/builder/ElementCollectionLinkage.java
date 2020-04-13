@@ -1,5 +1,6 @@
 package org.gama.stalactite.persistence.engine.builder;
 
+import javax.annotation.Nullable;
 import java.util.Collection;
 import java.util.function.Supplier;
 
@@ -13,6 +14,7 @@ import org.gama.reflection.MutatorByMethodReference;
 import org.gama.reflection.PropertyAccessor;
 import org.gama.reflection.ValueAccessPointMap;
 import org.gama.reflection.ValueAccessPointSet;
+import org.gama.stalactite.persistence.engine.EmbeddableMappingConfigurationProvider;
 import org.gama.stalactite.persistence.engine.LambdaMethodUnsheller;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
@@ -29,6 +31,7 @@ public class ElementCollectionLinkage<SRC, TRGT, C extends Collection<TRGT>> {
 	/** The method that gives the entities from the "root" entity */
 	private final IReversibleAccessor<SRC, C> collectionProvider;
 	private final Class<TRGT> componentType;
+	private final EmbeddableMappingConfigurationProvider<TRGT> embeddableConfigurationProvider;
 	/** Optional provider of collection instance to be used if collection value is null */
 	private Supplier<C> collectionFactory;
 	
@@ -37,7 +40,6 @@ public class ElementCollectionLinkage<SRC, TRGT, C extends Collection<TRGT>> {
 	private Column<Table, TRGT> reverseColumn;
 	private String reverseColumnName;
 	
-//	private final Class<TRGT> embeddedClass;
 	private final ValueAccessPointMap<String> overridenColumnNames = new ValueAccessPointMap<>();
 	private final ValueAccessPointSet excludedProperties = new ValueAccessPointSet();
 	
@@ -48,9 +50,12 @@ public class ElementCollectionLinkage<SRC, TRGT, C extends Collection<TRGT>> {
 				setterReference
 		);
 		this.componentType = componentType;
+		this.embeddableConfigurationProvider = null;
 	}
 	
-	public ElementCollectionLinkage(SerializableFunction<SRC, C> getter, Class<TRGT> componentType, LambdaMethodUnsheller lambdaMethodUnsheller) {
+	public ElementCollectionLinkage(SerializableFunction<SRC, C> getter, Class<TRGT> componentType,
+									LambdaMethodUnsheller lambdaMethodUnsheller,
+									@Nullable EmbeddableMappingConfigurationProvider<TRGT> embeddableConfigurationProvider) {
 		AccessorByMethodReference<SRC, C> getterReference = Accessors.accessorByMethodReference(getter);
 		this.collectionProvider = new PropertyAccessor<>(
 				// we keep close to user demand : we keep its method reference ...
@@ -58,6 +63,7 @@ public class ElementCollectionLinkage<SRC, TRGT, C extends Collection<TRGT>> {
 				// ... but we can't do it for mutator, so we use the most equivalent manner : a mutator based on setter method (fallback to property if not present)
 				new AccessorByMethod<SRC, C>(lambdaMethodUnsheller.captureLambdaMethod(getter)).toMutator());
 		this.componentType = componentType;
+		this.embeddableConfigurationProvider = embeddableConfigurationProvider;
 	}
 	
 	public IReversibleAccessor<SRC, C> getCollectionProvider() {
@@ -73,10 +79,6 @@ public class ElementCollectionLinkage<SRC, TRGT, C extends Collection<TRGT>> {
 		return this;
 	}
 
-//	public Class<TRGT> getEmbeddedClass() {
-//		return embeddedClass;
-//	}
-//	
 //	public ValueAccessPointSet getExcludedProperties() {
 //		return this.excludedProperties;
 //	}
@@ -129,5 +131,9 @@ public class ElementCollectionLinkage<SRC, TRGT, C extends Collection<TRGT>> {
 	
 	public Class<TRGT> getComponentType() {
 		return componentType;
+	}
+	
+	public EmbeddableMappingConfigurationProvider<TRGT> getEmbeddableConfigurationProvider() {
+		return embeddableConfigurationProvider;
 	}
 }

@@ -27,7 +27,6 @@ import org.gama.lang.Reflections;
 import org.gama.lang.collection.Arrays;
 import org.gama.lang.collection.Iterables;
 import org.gama.lang.collection.Maps;
-import org.gama.lang.test.Assertions;
 import org.gama.stalactite.persistence.engine.ColumnOptions.IdentifierPolicy;
 import org.gama.stalactite.persistence.engine.IFluentEntityMappingBuilder.IFluentMappingBuilderEmbedOptions;
 import org.gama.stalactite.persistence.engine.IFluentEntityMappingBuilder.IFluentMappingBuilderPropertyOptions;
@@ -62,6 +61,7 @@ import org.junit.jupiter.api.Test;
 import static org.gama.lang.collection.Iterables.collect;
 import static org.gama.lang.function.Functions.chain;
 import static org.gama.lang.function.Functions.link;
+import static org.gama.lang.test.Assertions.assertAllEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -1125,7 +1125,7 @@ public class FluentEntityMappingConfigurationSupportTest {
 			
 			Person loadedPerson = personPersister.select(person.getId());
 			// because nickNames is initialized with TreeSet with reversed order we get this order
-			Assertions.assertAllEquals(Arrays.asSet("d", "c", "b", "a"), loadedPerson.getNicknames());
+			assertAllEquals(Arrays.asSet("d", "c", "b", "a"), loadedPerson.getNicknames());
 		}
 		
 		@Test
@@ -1149,7 +1149,7 @@ public class FluentEntityMappingConfigurationSupportTest {
 					link(ForeignKey::getColumns, ToStringBuilder.asSeveral(columnPrinter)),
 					link(ForeignKey::getTargetColumns, ToStringBuilder.asSeveral(columnPrinter)));
 			
-			Assertions.assertAllEquals(
+			assertAllEquals(
 					Arrays.asHashSet(new ForeignKey("FK_Person_nicknames_id_Person_id", nickNamesTable.getColumn("id"), personTable.getColumn("id"))),
 					nickNamesTable.getForeignKeys(),
 					fkPrinter);
@@ -1179,7 +1179,7 @@ public class FluentEntityMappingConfigurationSupportTest {
 					link(ForeignKey::getColumns, ToStringBuilder.asSeveral(columnPrinter)),
 					link(ForeignKey::getTargetColumns, ToStringBuilder.asSeveral(columnPrinter)));
 			
-			Assertions.assertAllEquals(
+			assertAllEquals(
 					Arrays.asHashSet(new ForeignKey("FK_Person_nicknames_identifier_Person_id", nickNamesTable.getColumn("identifier"), personTable.getColumn("id"))),
 					nickNamesTable.getForeignKeys(),
 					fkPrinter);
@@ -1208,7 +1208,7 @@ public class FluentEntityMappingConfigurationSupportTest {
 					link(ForeignKey::getColumns, ToStringBuilder.asSeveral(columnPrinter)),
 					link(ForeignKey::getTargetColumns, ToStringBuilder.asSeveral(columnPrinter)));
 			
-			Assertions.assertAllEquals(
+			assertAllEquals(
 					Arrays.asHashSet(new ForeignKey("FK_Toto_id_Person_id", nickNamesTable.getColumn("id"), personTable.getColumn("id"))),
 					nickNamesTable.getForeignKeys(),
 					fkPrinter);
@@ -1237,7 +1237,7 @@ public class FluentEntityMappingConfigurationSupportTest {
 					link(ForeignKey::getColumns, ToStringBuilder.asSeveral(columnPrinter)),
 					link(ForeignKey::getTargetColumns, ToStringBuilder.asSeveral(columnPrinter)));
 			
-			Assertions.assertAllEquals(
+			assertAllEquals(
 					Arrays.asHashSet(new ForeignKey("FK_Toto_id_Person_id", nickNamesTable.getColumn("id"), personTable.getColumn("id"))),
 					nickNamesTable.getForeignKeys(),
 					fkPrinter);
@@ -1266,7 +1266,7 @@ public class FluentEntityMappingConfigurationSupportTest {
 					link(ForeignKey::getColumns, ToStringBuilder.asSeveral(columnPrinter)),
 					link(ForeignKey::getTargetColumns, ToStringBuilder.asSeveral(columnPrinter)));
 			
-			Assertions.assertAllEquals(
+			assertAllEquals(
 					Arrays.asHashSet(new ForeignKey("FK_Toto_id_Person_id", nickNamesTable.getColumn("id"), personTable.getColumn("id"))),
 					nickNamesTable.getForeignKeys(),
 					fkPrinter);
@@ -1315,6 +1315,37 @@ public class FluentEntityMappingConfigurationSupportTest {
 			
 			Toto loadedPerson = personPersister.select(person.getId());
 			assertEquals(Arrays.asSet(State.DONE, State.IN_PROGRESS), loadedPerson.getPossibleStates());
+		}
+		
+		@Test
+		public void crudComplexType() {
+			Table totoTable = new Table("Toto");
+			Column idColumn = totoTable.addColumn("id", StatefullIdentifier.class);
+			dialect.getColumnBinderRegistry().register(idColumn, Identifier.identifierBinder(DefaultParameterBinders.UUID_PARAMETER_BINDER));
+			dialect.getJavaTypeToSqlTypeMapping().put(idColumn, "VARCHAR(255)");
+			
+			IEntityConfiguredPersister<Toto, StatefullIdentifier> personPersister = MappingEase.entityBuilder(Toto.class, StatefullIdentifier.class)
+					.add(Toto::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
+					.add(Toto::getName)
+					.addCollection(Toto::getTimes, Timestamp.class, MappingEase.embeddableBuilder(Timestamp.class)
+						.add(Timestamp::getCreationDate)
+						.add(Timestamp::getModificationDate))
+					.build(persistenceContext);
+			
+			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+			ddlDeployer.deployDDL();
+			
+			Toto person = new Toto();
+			person.setName("toto");
+			Timestamp timestamp1 = new Timestamp(LocalDateTime.now().plusDays(1), LocalDateTime.now().plusDays(1));
+			Timestamp timestamp2 = new Timestamp(LocalDateTime.now().plusDays(2), LocalDateTime.now().plusDays(2));
+			person.getTimes().add(timestamp1);
+			person.getTimes().add(timestamp2);
+			
+			personPersister.insert(person);
+			
+			Toto loadedPerson = personPersister.select(person.getId());
+			assertEquals(Arrays.asSet(timestamp1, timestamp2), loadedPerson.getTimes());
 		}
 	}
 	
@@ -1461,6 +1492,8 @@ public class FluentEntityMappingConfigurationSupportTest {
 		
 		private Set<State> possibleStates = new HashSet<>();
 		
+		private Set<Timestamp> times = new HashSet<>();
+		
 		public Toto() {
 			id = new PersistableIdentifier<>(UUID.randomUUID());
 		}
@@ -1522,6 +1555,14 @@ public class FluentEntityMappingConfigurationSupportTest {
 		
 		public void setPossibleStates(Set<State> possibleStates) {
 			this.possibleStates = possibleStates;
+		}
+		
+		public Set<Timestamp> getTimes() {
+			return times;
+		}
+		
+		public void setTimes(Set<Timestamp> times) {
+			this.times = times;
 		}
 	}
 	
