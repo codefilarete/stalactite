@@ -53,7 +53,10 @@ public interface IFluentEntityMappingBuilder<C, I> extends IFluentEmbeddableMapp
 	
 	<O, S extends Collection<O>> IFluentMappingBuilderElementCollectionOptions<C, I, O, S> addCollection(SerializableBiConsumer<C, S> setter, Class<O> componentType);
 	
-	<O, S extends Collection<O>> IFluentMappingBuilderElementCollectionOptions<C, I, O, S> addCollection(SerializableFunction<C, S> getter, Class<O> componentType,
+	<O, S extends Collection<O>> IFluentMappingBuilderElementCollectionImportEmbedOptions<C, I, O, S> addCollection(SerializableFunction<C, S> getter, Class<O> componentType,
+																										 EmbeddableMappingConfigurationProvider<O> embeddableConfiguration);
+	
+	<O, S extends Collection<O>> IFluentMappingBuilderElementCollectionImportEmbedOptions<C, I, O, S> addCollection(SerializableBiConsumer<C, S> setter, Class<O> componentType,
 																										 EmbeddableMappingConfigurationProvider<O> embeddableConfiguration);
 	
 	IFluentEntityMappingBuilder<C, I> withColumnNaming(ColumnNamingStrategy columnNamingStrategy);
@@ -446,17 +449,10 @@ public interface IFluentEntityMappingBuilder<C, I> extends IFluentEmbeddableMapp
 			extends IFluentEntityMappingBuilder<C, I>, ElementCollectionOptions<C, O, S> {
 		
 		@Override
-		<IN> IFluentMappingBuilderElementCollectionOptions<C, I, O, S> overrideName(SerializableFunction<C, IN> getter, String columnName);
-		
-		@Override
-		<IN> IFluentMappingBuilderElementCollectionOptions<C, I, O, S> overrideName(SerializableBiConsumer<C, IN> setter, String columnName);
-		
-		@Override
 		IFluentMappingBuilderElementCollectionOptions<C, I, O, S> withCollectionFactory(Supplier<? extends S> collectionFactory);
 		
-		//	
-//	<IN> ElementCollectionOptions<C> override(SerializableFunction<C, IN> function, Column<Table, IN> targetColumn);
-//	
+		IFluentMappingBuilderElementCollectionOptions<C, I, O, S> override(String columnName);
+
 		@Override
 		IFluentMappingBuilderElementCollectionOptions<C, I, O, S> mappedBy(String name);
 		
@@ -465,5 +461,25 @@ public interface IFluentEntityMappingBuilder<C, I> extends IFluentEmbeddableMapp
 
 		@Override
 		IFluentMappingBuilderElementCollectionOptions<C, I, O, S> withTable(String tableName);
+	}
+	
+	interface IFluentMappingBuilderElementCollectionImportEmbedOptions<C, I, O, S extends Collection<O>>
+			extends IFluentEntityMappingBuilder<C, I>, ElementCollectionOptions<C, O, S> {
+		
+		<IN> IFluentMappingBuilderElementCollectionImportEmbedOptions<C, I, O, S> overrideName(SerializableFunction<O, IN> getter, String columnName);
+		
+		<IN> IFluentMappingBuilderElementCollectionImportEmbedOptions<C, I, O, S> overrideName(SerializableBiConsumer<O, IN> setter, String columnName);
+		
+		@Override
+		IFluentMappingBuilderElementCollectionImportEmbedOptions<C, I, O, S> withCollectionFactory(Supplier<? extends S> collectionFactory);
+		
+		@Override
+		IFluentMappingBuilderElementCollectionImportEmbedOptions<C, I, O, S> mappedBy(String name);
+		
+		@Override
+		IFluentMappingBuilderElementCollectionImportEmbedOptions<C, I, O, S> withTable(Table table);
+
+		@Override
+		IFluentMappingBuilderElementCollectionImportEmbedOptions<C, I, O, S> withTable(String tableName);
 	}
 }

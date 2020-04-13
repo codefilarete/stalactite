@@ -25,6 +25,7 @@ import org.gama.stalactite.persistence.engine.BeanRelationFixer;
 import org.gama.stalactite.persistence.engine.ColumnNamingStrategy;
 import org.gama.stalactite.persistence.engine.ElementCollectionTableNamingStrategy;
 import org.gama.stalactite.persistence.engine.EmbeddableMappingConfiguration;
+import org.gama.stalactite.persistence.engine.EmbeddableMappingConfiguration.Linkage;
 import org.gama.stalactite.persistence.engine.EmbeddableMappingConfigurationProvider;
 import org.gama.stalactite.persistence.engine.ForeignKeyNamingStrategy;
 import org.gama.stalactite.persistence.engine.IEntityConfiguredJoinedTablesPersister;
@@ -92,7 +93,7 @@ public class ElementCollectionCascadeConfigurer<SRC, TRGT, ID, C extends Collect
 				nullable(linkage.getEmbeddableConfigurationProvider()).map(EmbeddableMappingConfigurationProvider::getConfiguration).get();
 		ClassMappingStrategy<ElementRecord, ElementRecord, Table> wrapperStrategy;
 		if (embeddableConfiguration == null) {
-			String columnName = nullable(linkage.getOverridenColumnNames().get(linkage.getCollectionProvider()))
+			String columnName = nullable(linkage.getElementColumnName())
 					.getOr(() -> columnNamingStrategy.giveName(collectionProviderDefinition));
 			Column<Table, TRGT> elementColumn = (Column<Table, TRGT>) targetTable.addColumn(columnName, linkage.getComponentType());
 			elementColumn.primaryKey();
@@ -100,9 +101,15 @@ public class ElementCollectionCascadeConfigurer<SRC, TRGT, ID, C extends Collect
 			
 			wrapperStrategy = new ElementRecordMappingStrategy(targetTable, reverseColumn, elementColumn);
 		} else {
-			BeanMappingBuilder x = new BeanMappingBuilder();
-			Map<IReversibleAccessor, Column> columnMap = x.build(embeddableConfiguration, targetTable,
-					persistenceContext.getDialect().getColumnBinderRegistry(), new ColumnNameProvider(columnNamingStrategy));
+			BeanMappingBuilder elementCollectionMappingBuilder = new BeanMappingBuilder();
+			Map<IReversibleAccessor, Column> columnMap = elementCollectionMappingBuilder.build(embeddableConfiguration, targetTable,
+					persistenceContext.getDialect().getColumnBinderRegistry(), new ColumnNameProvider(columnNamingStrategy) {
+						@Override
+						protected String giveColumnName(Linkage pawn) {
+							return nullable(linkage.getOverridenColumnNames().get(pawn.getAccessor()))
+									.getOr(() -> super.giveColumnName(pawn));
+						}
+					});
 			
 			Map<IReversibleAccessor, Column> projectedColumnMap = new HashMap<>();
 			columnMap.forEach((k, v) -> {

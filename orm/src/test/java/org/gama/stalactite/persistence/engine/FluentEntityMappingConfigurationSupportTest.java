@@ -1273,12 +1273,12 @@ public class FluentEntityMappingConfigurationSupportTest {
 		}
 		
 		@Test
-		public void overrideName() {
+		public void overrideColumnName() {
 			MappingEase.entityBuilder(Person.class, Identifier.LONG_TYPE)
 					.add(Person::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 					.add(Person::getName)
 					.addCollection(Person::getNicknames, String.class)
-						.overrideName(Person::getNicknames, "toto")
+						.override("toto")
 					.build(persistenceContext);
 			
 			Collection<Table> tables = DDLDeployer.collectTables(persistenceContext);
@@ -1334,6 +1334,44 @@ public class FluentEntityMappingConfigurationSupportTest {
 			
 			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
 			ddlDeployer.deployDDL();
+			
+			Toto person = new Toto();
+			person.setName("toto");
+			Timestamp timestamp1 = new Timestamp(LocalDateTime.now().plusDays(1), LocalDateTime.now().plusDays(1));
+			Timestamp timestamp2 = new Timestamp(LocalDateTime.now().plusDays(2), LocalDateTime.now().plusDays(2));
+			person.getTimes().add(timestamp1);
+			person.getTimes().add(timestamp2);
+			
+			personPersister.insert(person);
+			
+			Toto loadedPerson = personPersister.select(person.getId());
+			assertEquals(Arrays.asSet(timestamp1, timestamp2), loadedPerson.getTimes());
+		}
+		
+		@Test
+		public void crudComplexType_overrideColumnName() {
+			Table totoTable = new Table("toto");
+			Column idColumn = totoTable.addColumn("id", StatefullIdentifier.class);
+			dialect.getColumnBinderRegistry().register(idColumn, Identifier.identifierBinder(DefaultParameterBinders.UUID_PARAMETER_BINDER));
+			dialect.getJavaTypeToSqlTypeMapping().put(idColumn, "VARCHAR(255)");
+			
+			IEntityConfiguredPersister<Toto, StatefullIdentifier> personPersister = MappingEase.entityBuilder(Toto.class, StatefullIdentifier.class)
+					.add(Toto::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
+					.add(Toto::getName)
+					.addCollection(Toto::getTimes, Timestamp.class, MappingEase.embeddableBuilder(Timestamp.class)
+						.add(Timestamp::getCreationDate)
+						.add(Timestamp::getModificationDate))
+					.overrideName(Timestamp::getCreationDate, "createdAt")
+					.build(persistenceContext);
+			
+			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+			ddlDeployer.deployDDL();
+			
+			Collection<Table> tables = DDLDeployer.collectTables(persistenceContext);
+			Map<String, Table> tablePerName = Iterables.map(tables, Table::getName);
+			Table totoTimesTable = tablePerName.get("Toto_times");
+			Map<String, Column> timesTableColumn = totoTimesTable.mapColumnsOnName();
+			assertNotNull(timesTableColumn.get("createdAt"));
 			
 			Toto person = new Toto();
 			person.setName("toto");

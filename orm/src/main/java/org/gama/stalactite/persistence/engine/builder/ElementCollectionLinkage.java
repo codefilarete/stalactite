@@ -13,7 +13,6 @@ import org.gama.reflection.IReversibleAccessor;
 import org.gama.reflection.MutatorByMethodReference;
 import org.gama.reflection.PropertyAccessor;
 import org.gama.reflection.ValueAccessPointMap;
-import org.gama.reflection.ValueAccessPointSet;
 import org.gama.stalactite.persistence.engine.EmbeddableMappingConfigurationProvider;
 import org.gama.stalactite.persistence.engine.LambdaMethodUnsheller;
 import org.gama.stalactite.persistence.structure.Column;
@@ -31,7 +30,6 @@ public class ElementCollectionLinkage<SRC, TRGT, C extends Collection<TRGT>> {
 	/** The method that gives the entities from the "root" entity */
 	private final IReversibleAccessor<SRC, C> collectionProvider;
 	private final Class<TRGT> componentType;
-	private final EmbeddableMappingConfigurationProvider<TRGT> embeddableConfigurationProvider;
 	/** Optional provider of collection instance to be used if collection value is null */
 	private Supplier<C> collectionFactory;
 	
@@ -40,20 +38,40 @@ public class ElementCollectionLinkage<SRC, TRGT, C extends Collection<TRGT>> {
 	private Column<Table, TRGT> reverseColumn;
 	private String reverseColumnName;
 	
-	private final ValueAccessPointMap<String> overridenColumnNames = new ValueAccessPointMap<>();
-	private final ValueAccessPointSet excludedProperties = new ValueAccessPointSet();
+	/** Element column name override, used in simple case : {@link EmbeddableMappingConfigurationProvider} null, aka not when element is a complex type */
+	private String elementColumnName;
 	
-	public ElementCollectionLinkage(SerializableBiConsumer<SRC, C> setter, Class<TRGT> componentType, LambdaMethodUnsheller lambdaMethodUnsheller) {
+	/** Complext type mapping, optional */
+	private final EmbeddableMappingConfigurationProvider<TRGT> embeddableConfigurationProvider;
+	
+	/** Complext type mapping override, to be used when {@link EmbeddableMappingConfigurationProvider} is not null */
+	private final ValueAccessPointMap<String> overridenColumnNames = new ValueAccessPointMap<>();
+	
+	/**
+	 * @param setter collection accessor
+	 * @param componentType element type in collection
+	 * @param embeddableConfigurationProvider complex type mapping, null when element is a simple type (String, Integer, ...)
+	 */
+	public ElementCollectionLinkage(SerializableBiConsumer<SRC, C> setter,
+									Class<TRGT> componentType,
+									@Nullable EmbeddableMappingConfigurationProvider<TRGT> embeddableConfigurationProvider) {
 		MutatorByMethodReference<SRC, C> setterReference = Accessors.mutatorByMethodReference(setter);
 		this.collectionProvider = new PropertyAccessor<>(
 				Accessors.accessor(setterReference.getDeclaringClass(), propertyName(setterReference.getMethodName())),
 				setterReference
 		);
 		this.componentType = componentType;
-		this.embeddableConfigurationProvider = null;
+		this.embeddableConfigurationProvider = embeddableConfigurationProvider;
 	}
 	
-	public ElementCollectionLinkage(SerializableFunction<SRC, C> getter, Class<TRGT> componentType,
+	/**
+	 * @param getter collection accessor
+	 * @param componentType element type in collection
+	 * @param lambdaMethodUnsheller engine to capture getter method reference
+	 * @param embeddableConfigurationProvider complex type mapping, null when element is a simple type (String, Integer, ...)
+	 */
+	public ElementCollectionLinkage(SerializableFunction<SRC, C> getter,
+									Class<TRGT> componentType,
 									LambdaMethodUnsheller lambdaMethodUnsheller,
 									@Nullable EmbeddableMappingConfigurationProvider<TRGT> embeddableConfigurationProvider) {
 		AccessorByMethodReference<SRC, C> getterReference = Accessors.accessorByMethodReference(getter);
@@ -78,10 +96,6 @@ public class ElementCollectionLinkage<SRC, TRGT, C extends Collection<TRGT>> {
 		this.collectionFactory = (Supplier<C>) collectionFactory;
 		return this;
 	}
-
-//	public ValueAccessPointSet getExcludedProperties() {
-//		return this.excludedProperties;
-//	}
 
 	public ValueAccessPointMap<String> getOverridenColumnNames() {
 		return this.overridenColumnNames;
@@ -135,5 +149,13 @@ public class ElementCollectionLinkage<SRC, TRGT, C extends Collection<TRGT>> {
 	
 	public EmbeddableMappingConfigurationProvider<TRGT> getEmbeddableConfigurationProvider() {
 		return embeddableConfigurationProvider;
+	}
+	
+	public void overrideColumnName(String columnName) {
+		this.elementColumnName = columnName;
+	}
+	
+	public String getElementColumnName() {
+		return elementColumnName;
 	}
 }
