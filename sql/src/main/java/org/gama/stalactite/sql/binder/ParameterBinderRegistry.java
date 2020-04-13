@@ -89,6 +89,7 @@ public class ParameterBinderRegistry {
 		register(Blob.class, DefaultParameterBinders.BLOB_BINDER);
 		register(URL.class, DefaultParameterBinders.URL_BINDER);
 		register(ZoneId.class, DefaultParameterBinders.ZONEID_BINDER);
+		// Note that enum types are registered dynamically
 	}
 	
 	/**
@@ -107,6 +108,9 @@ public class ParameterBinderRegistry {
 	}
 	
 	private <T> ParameterBinder<T> lookupForBinder(Class<T> clazz) {
+		if (clazz.isEnum()) {
+			return bindersPerType.computeIfAbsent(clazz, k -> new NullAwareParameterBinder<>(new OrdinalEnumParameterBinder(k)));
+		}
 		Set<Class> assignableType = new HashSet<>();
 		InterfaceIterator interfaceIterator = new InterfaceIterator(clazz);
 		Iterables.copy(interfaceIterator, assignableType);

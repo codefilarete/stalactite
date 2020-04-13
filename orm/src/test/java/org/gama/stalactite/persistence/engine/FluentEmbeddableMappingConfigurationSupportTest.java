@@ -856,7 +856,7 @@ class FluentEmbeddableMappingConfigurationSupportTest {
 		// by default, gender will be mapped on its name
 		PreparedStatement mock = mock(PreparedStatement.class);
 		genderColumnBinder.set(mock, 1, person.getGender());
-		verify(mock).setString(1, "FEMALE");
+		verify(mock).setInt(1, 1);
 	}
 		
 	@Test

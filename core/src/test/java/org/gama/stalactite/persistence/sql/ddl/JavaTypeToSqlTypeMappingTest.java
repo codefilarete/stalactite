@@ -1,5 +1,7 @@
 package org.gama.stalactite.persistence.sql.ddl;
 
+import java.util.concurrent.TimeUnit;
+
 import org.gama.stalactite.sql.dml.SQLStatement.BindingException;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
@@ -37,6 +39,7 @@ public class JavaTypeToSqlTypeMappingTest {
 		testInstance.put(CharSequence.class, "VARCHAR");
 		testInstance.put(String.class, "VARCHAR(255)");
 		testInstance.put(String.class, 10, "CHAR($l)");
+		testInstance.put(Enum.class, "myEnumType");	// a entry for Enum must be registered for make enum types work 
 		return new Object[][] {
 				{ testInstance, String.class, null, "VARCHAR(255)" },
 				{ testInstance, String.class, 5, "CHAR(5)" },
@@ -47,6 +50,8 @@ public class JavaTypeToSqlTypeMappingTest {
 				// testing interface inheritance
 				{ testInstance, StringBuilder.class, null, "VARCHAR" },
 				{ testInstance, StringBuilder.class, 20, "VARCHAR" },
+				// testing enum
+				{ testInstance, TimeUnit.class, null, "myEnumType" },
 		};
 	}
 	

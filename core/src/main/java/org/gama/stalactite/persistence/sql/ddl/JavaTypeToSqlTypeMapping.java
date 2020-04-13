@@ -141,13 +141,17 @@ public class JavaTypeToSqlTypeMapping {
 	private String getTypeName(Class javaType) {
 		String type = defaultJavaTypeToSQLType.get(javaType);
 		if (type == null) {
-			InterfaceIterator interfaceIterator = new InterfaceIterator(javaType);
-			Stream<String> stream = Iterables.stream(interfaceIterator).map(defaultJavaTypeToSQLType::get);
-			type = stream.filter(Objects::nonNull).findFirst().orElse(null);
-			if (type != null) {
-				return type;
+			if (javaType.isEnum()) {
+				type = defaultJavaTypeToSQLType.get(Enum.class);
 			} else {
-				throw new BindingException("No sql type defined for " + javaType);
+				InterfaceIterator interfaceIterator = new InterfaceIterator(javaType);
+				Stream<String> stream = Iterables.stream(interfaceIterator).map(defaultJavaTypeToSQLType::get);
+				type = stream.filter(Objects::nonNull).findFirst().orElse(null);
+				if (type != null) {
+					return type;
+				} else {
+					throw new BindingException("No sql type defined for " + javaType);
+				}
 			}
 		}
 		return type;

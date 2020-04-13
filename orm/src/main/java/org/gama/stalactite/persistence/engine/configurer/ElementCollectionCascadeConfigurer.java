@@ -74,6 +74,8 @@ public class ElementCollectionCascadeConfigurer<SRC, TRGT, ID, C extends Collect
 		String reverseColumnName = nullable(linkage.getReverseColumnName()).getOr(() -> 
 				columnNamingStrategy.giveName(new AccessorDefinition(ElementRecord.class, "getId", StatefullIdentifier.class)));
 		Column reverseColumn = nullable(linkage.getReverseColumn()).getOr(() -> targetTable.addColumn(reverseColumnName, sourcePK.getJavaType()));
+		registerColumnBinder(reverseColumn, sourcePK);	// because sourcePk binder might have been overloaded by column so we need to adjust to it
+		
 		reverseColumn.primaryKey();
 		String columnName = nullable(linkage.getOverridenColumnNames().get(linkage.getCollectionProvider()))
 				.getOr(() -> columnNamingStrategy.giveName(collectionProviderDefinition));
@@ -103,6 +105,11 @@ public class ElementCollectionCascadeConfigurer<SRC, TRGT, ID, C extends Collect
 		addSelectCascade(sourcePersister, wrapperPersister, sourcePK, reverseColumn,
 				linkage.getCollectionProvider().toMutator()::set, collectionAccessor::get,
 				collectionFactory);
+	}
+	
+	private void registerColumnBinder(Column reverseColumn, Column sourcePK) {
+		persistenceContext.getDialect().getColumnBinderRegistry().register(reverseColumn, persistenceContext.getDialect().getColumnBinderRegistry().getBinder(sourcePK));
+		persistenceContext.getDialect().getJavaTypeToSqlTypeMapping().put(reverseColumn, persistenceContext.getDialect().getJavaTypeToSqlTypeMapping().getTypeName(sourcePK));
 	}
 	
 	private void addInsertCascade(IEntityConfiguredJoinedTablesPersister<SRC, ID> sourcePersister,

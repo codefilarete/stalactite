@@ -1,12 +1,18 @@
 package org.gama.stalactite.sql.binder;
 
 import java.io.Serializable;
+import java.sql.SQLException;
+import java.util.concurrent.TimeUnit;
 
+import org.gama.lang.collection.Arrays;
+import org.gama.lang.collection.Maps;
 import org.gama.stalactite.sql.dml.SQLStatement.BindingException;
+import org.gama.stalactite.sql.result.InMemoryResultSet;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -39,6 +45,28 @@ class ParameterBinderRegistryTest {
 		testInstance.register(CharSequence.class, expectedBinder);
 		assertEquals(expectedBinder, testInstance.getBinder(StringBuilder.class));
 		assertTrue(testInstance.getBindersPerType().keySet().contains(StringBuilder.class));
+	}
+	
+	@Test
+	void getBinder_findCompliantBinder_enum() throws SQLException {
+		ParameterBinderRegistry testInstance = new ParameterBinderRegistry();
+		// just to be sure that nobody corrupted this test by adding TimeUnit in the default registry
+		assertFalse(testInstance.getBindersPerType().keySet().contains(TimeUnit.class));
+		
+		// because enum binders are dynamically produced we don't have to register it nor can't check their presence by reference checking
+		// so we ask to read some data and see if it's an enum
+		ParameterBinder<TimeUnit> timeUnitBinder = testInstance.getBinder(TimeUnit.class);
+		InMemoryResultSet fakeResultSet = new InMemoryResultSet(Arrays.asList(
+				Maps.forHashMap(String.class, Object.class)
+				.add("X", TimeUnit.SECONDS.ordinal()),	// we store our enum value eas ordinal because default binder is an ordinal one
+				Maps.forHashMap(String.class, Object.class)
+				.add("X", null)	// check for null
+		));
+		fakeResultSet.next();	// we have to "start" the ResultSet
+		assertEquals(TimeUnit.SECONDS, timeUnitBinder.get(fakeResultSet, "X"));
+		fakeResultSet.next();
+		assertNull(timeUnitBinder.get(fakeResultSet, "X"));
+		assertTrue(testInstance.getBindersPerType().keySet().contains(TimeUnit.class));
 	}
 	
 	@Test

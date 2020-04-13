@@ -14,6 +14,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.TreeSet;
 import java.util.UUID;
 import java.util.function.Function;
@@ -794,7 +795,7 @@ public class FluentEntityMappingConfigurationSupportTest {
 	}
 	
 	@Test
-	public void withEnum_byDefault_nameIsUsed() {
+	public void withEnum_byDefault_ordinalIsUsed() {
 		IEntityConfiguredPersister<PersonWithGender, Identifier<Long>> personPersister = MappingEase.entityBuilder(PersonWithGender.class, Identifier.LONG_TYPE)
 				.add(Person::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
 				.add(Person::getName)
@@ -814,10 +815,10 @@ public class FluentEntityMappingConfigurationSupportTest {
 		personPersister.insert(person);
 		
 		// checking that name was used
-		List<String> result = persistenceContext.newQuery("select * from PersonWithGender", String.class)
-				.mapKey(String::new, "gender", String.class)
+		List<Integer> result = persistenceContext.newQuery("select * from PersonWithGender", Integer.class)
+				.mapKey(Integer::new, "gender", Integer.class)
 				.execute();
-		assertEquals(Arrays.asList("FEMALE"), result);
+		assertEquals(Arrays.asList(1), result);
 	}
 	
 	@Test
@@ -1287,6 +1288,34 @@ public class FluentEntityMappingConfigurationSupportTest {
 			
 			assertEquals(Arrays.asHashSet("id", "toto"), nickNamesTable.mapColumnsOnName().keySet());
 		}
+		
+		
+		@Test
+		public void crudEnum() {
+			Table totoTable = new Table("Toto");
+			Column idColumn = totoTable.addColumn("id", StatefullIdentifier.class);
+			dialect.getColumnBinderRegistry().register(idColumn, Identifier.identifierBinder(DefaultParameterBinders.UUID_PARAMETER_BINDER));
+			dialect.getJavaTypeToSqlTypeMapping().put(idColumn, "VARCHAR(255)");
+			
+			IEntityConfiguredPersister<Toto, StatefullIdentifier> personPersister = MappingEase.entityBuilder(Toto.class, StatefullIdentifier.class)
+					.add(Toto::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
+					.add(Toto::getName)
+					.addCollection(Toto::getPossibleStates, State.class)
+					.build(persistenceContext);
+			
+			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+			ddlDeployer.deployDDL();
+			
+			Toto person = new Toto();
+			person.setName("toto");
+			person.getPossibleStates().add(State.DONE);
+			person.getPossibleStates().add(State.IN_PROGRESS);
+			
+			personPersister.insert(person);
+			
+			Toto loadedPerson = personPersister.select(person.getId());
+			assertEquals(Arrays.asSet(State.DONE, State.IN_PROGRESS), loadedPerson.getPossibleStates());
+		}
 	}
 	
 	/**
@@ -1430,6 +1459,8 @@ public class FluentEntityMappingConfigurationSupportTest {
 		
 		private Timestamp timestamp;
 		
+		private Set<State> possibleStates = new HashSet<>();
+		
 		public Toto() {
 			id = new PersistableIdentifier<>(UUID.randomUUID());
 		}
@@ -1484,6 +1515,20 @@ public class FluentEntityMappingConfigurationSupportTest {
 		public void setTimestamp(Timestamp timestamp) {
 			this.timestamp = timestamp;
 		}
+		
+		public Set<State> getPossibleStates() {
+			return possibleStates;
+		}
+		
+		public void setPossibleStates(Set<State> possibleStates) {
+			this.possibleStates = possibleStates;
+		}
+	}
+	
+	private enum State {
+		TODO,
+		IN_PROGRESS,
+		DONE
 	}
 	
 }

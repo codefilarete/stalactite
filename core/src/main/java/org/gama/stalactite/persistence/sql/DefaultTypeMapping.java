@@ -46,5 +46,7 @@ public class DefaultTypeMapping extends JavaTypeToSqlTypeMapping {
 		put(String.class, 16383, "varchar($l)");
 		// 35 chars because the largest timezone found is "America/Argentina/ComodRivadavia" (with ZoneId.getAvailableZoneIds())
 		put(ZoneId.class, "varchar(35)");
+		// necessary entry for Enum, "integer" because Enum are stored by their ordinal by default, see ParameterBinderRegistry.lookupForBinder(Class)
+		put(Enum.class, "integer");
 	}
 }
