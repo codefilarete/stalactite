@@ -58,7 +58,7 @@ public class ColumnBinderRegistry extends ParameterBinderRegistry implements Par
 			return columnBinder != null ? columnBinder : getBinder(column.getJavaType());
 		} catch (UnsupportedOperationException e) {
 			InterfaceIterator interfaceIterator = new InterfaceIterator(column.getJavaType());
-			Stream<ParameterBinder> stream = Iterables.stream(interfaceIterator).map(iface -> getBindersPerType().get(iface));
+			Stream<ParameterBinder> stream = Iterables.stream(interfaceIterator).map(this::getBinder);
 			columnBinder = stream.filter(Objects::nonNull).findFirst().orElse(null);
 			if (columnBinder != null) {
 				return columnBinder;

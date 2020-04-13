@@ -552,6 +552,7 @@ public class PersisterBuilderImplTest {
 	
 	public static class ToStringBuilder<E> {
 		
+		@SafeVarargs
 		public static <E> Function<E, String> of(String separator, Function<E, String> ... properties) {
 			ToStringBuilder<E> result = new ToStringBuilder<>(separator);
 			for (Function<E, String> property : properties) {

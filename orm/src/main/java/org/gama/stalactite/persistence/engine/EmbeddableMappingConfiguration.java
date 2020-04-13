@@ -51,7 +51,7 @@ public interface EmbeddableMappingConfiguration<C> {
 	}
 	
 	/**
-	 * Small constract for defining property configuration storage
+	 * Small contract for defining property configuration storage
 	 * 
 	 * @param <C> property owner type
 	 */

@@ -21,11 +21,11 @@ import org.gama.stalactite.sql.result.Row;
  * 
  * @author Guillaume Mary
  */
-public class ToBeanRowTransformer<T> extends AbstractTransformer<T> {
+public class ToBeanRowTransformer<C> extends AbstractTransformer<C> {
 	
 	private final Map<Column, IMutator> columnToMember;
 	
-	private final Collection<TransformerListener<T>> rowTransformerListeners = new ArrayList<>();
+	private final Collection<TransformerListener<C>> rowTransformerListeners = new ArrayList<>();
 	
 	/**
 	 * A constructor that maps all fields of a class by name
@@ -35,7 +35,7 @@ public class ToBeanRowTransformer<T> extends AbstractTransformer<T> {
 	 * @param warnOnMissingColumn indicates if an Exception must be thrown when no {@link Column} in the {@link Table} can be found for a field
 	 * (matching name)
 	 */
-	public ToBeanRowTransformer(Class<T> clazz, Table table, boolean warnOnMissingColumn) {
+	public ToBeanRowTransformer(Class<C> clazz, Table table, boolean warnOnMissingColumn) {
 		this(clazz, new HashMap<>(10));
 		Map<String, Column> columnPerName = table.mapColumnsOnName();
 		FieldIterator fieldIterator = new FieldIterator(clazz);
@@ -57,7 +57,7 @@ public class ToBeanRowTransformer<T> extends AbstractTransformer<T> {
 	 * @param clazz the constructor to be used to instanciate a new bean
 	 * @param columnToMember the mapping between key in rows and helper that fixes values of the bean
 	 */
-	public ToBeanRowTransformer(Class<T> clazz, Map<Column, IMutator> columnToMember) {
+	public ToBeanRowTransformer(Class<C> clazz, Map<Column, IMutator> columnToMember) {
 		super(clazz);
 		this.columnToMember = columnToMember;
 	}
@@ -67,13 +67,13 @@ public class ToBeanRowTransformer<T> extends AbstractTransformer<T> {
 	 * @param beanFactory factory to be used to instanciate a new bean
 	 * @param columnToMember the mapping between key in rows and helper that fixes values of the bean
 	 */
-	public ToBeanRowTransformer(Function<Function<Column, Object>, T> beanFactory, Map<Column, IMutator> columnToMember) {
+	public ToBeanRowTransformer(Function<Function<Column, Object>, C> beanFactory, Map<Column, IMutator> columnToMember) {
 		super(beanFactory, new ColumnedRow());
 		this.columnToMember = columnToMember;
 	}
 	
-	protected ToBeanRowTransformer(Function<Function<Column, Object>, T> beanFactory, Map<Column, IMutator> columnToMember,
-								   ColumnedRow columnedRow, Collection<TransformerListener<T>> rowTransformerListeners) {
+	protected ToBeanRowTransformer(Function<Function<Column, Object>, C> beanFactory, Map<Column, IMutator> columnToMember,
+								   ColumnedRow columnedRow, Collection<TransformerListener<C>> rowTransformerListeners) {
 		super(beanFactory, columnedRow);
 		this.columnToMember = columnToMember;
 		this.rowTransformerListeners.addAll(rowTransformerListeners);
@@ -83,27 +83,27 @@ public class ToBeanRowTransformer<T> extends AbstractTransformer<T> {
 		return columnToMember;
 	}
 	
-	public Collection<TransformerListener<T>> getRowTransformerListeners() {
+	public Collection<TransformerListener<C>> getRowTransformerListeners() {
 		return rowTransformerListeners;
 	}
 	
 	/** Overriden to invoke tranformation listeners */
 	@Override
-	public T transform(Row row) {
-		T bean = super.transform(row);
+	public C transform(Row row) {
+		C bean = super.transform(row);
 		this.rowTransformerListeners.forEach(listener -> listener.onTransform(bean, row));
 		return bean;
 	}
 	
 	@Override
-	public void applyRowToBean(Row source, T targetRowBean) {
+	public void applyRowToBean(Row source, C targetRowBean) {
 		for (Entry<Column, IMutator> columnFieldEntry : columnToMember.entrySet()) {
 			Object propertyValue = getColumnedRow().getValue(columnFieldEntry.getKey(), source);
 			applyValueToBean(targetRowBean, columnFieldEntry, propertyValue);
 		}
 	}
 	
-	protected void applyValueToBean(T targetRowBean, Entry<Column, IMutator> columnFieldEntry, Object propertyValue) {
+	protected void applyValueToBean(C targetRowBean, Entry<Column, IMutator> columnFieldEntry, Object propertyValue) {
 		columnFieldEntry.getValue().set(targetRowBean, propertyValue);
 	}
 	
@@ -115,7 +115,7 @@ public class ToBeanRowTransformer<T> extends AbstractTransformer<T> {
 	 * @param columnedRow a wrapper that gives {@link Row} values by {@link Column}.
 	 * @return a new instance of {@link ToBeanRowTransformer} which read keys are those given by the function
 	 */
-	public ToBeanRowTransformer<T> copyWithAliases(ColumnedRow columnedRow) {
+	public ToBeanRowTransformer<C> copyWithAliases(ColumnedRow columnedRow) {
 		return new ToBeanRowTransformer<>(beanFactory,
 				new HashMap<>(this.columnToMember),
 				columnedRow,
@@ -124,7 +124,7 @@ public class ToBeanRowTransformer<T> extends AbstractTransformer<T> {
 		);
 	}
 	
-	public void addTransformerListener(TransformerListener<T> listener) {
+	public void addTransformerListener(TransformerListener<C> listener) {
 		this.rowTransformerListeners.add(listener);
 	}
 	

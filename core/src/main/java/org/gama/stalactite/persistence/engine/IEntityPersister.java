@@ -170,7 +170,7 @@ public interface IEntityPersister<C, I> extends IInsertExecutor<C>, IUpdateExecu
 		 * @param operator operator of the criteria (will be the condition on the matching column)
 		 * @param <O> getter return type, also criteria value
 		 * @return this
-		 * @throws org.gama.stalactite.persistence.engine.RuntimeMappingException if column matching getter was not found
+		 * @throws IllegalArgumentException if column matching getter was not found
 		 */
 		<O> EntityCriteria<C> and(SerializableFunction<C, O> getter, AbstractRelationalOperator<O> operator);
 		
@@ -181,7 +181,7 @@ public interface IEntityPersister<C, I> extends IInsertExecutor<C>, IUpdateExecu
 		 * @param operator operator of the criteria (will be the condition on the matching column)
 		 * @param <O> getter return type, also criteria value
 		 * @return this
-		 * @throws org.gama.stalactite.persistence.engine.RuntimeMappingException if column matching setter was not found
+		 * @throws IllegalArgumentException if column matching setter was not found
 		 */
 		<O> EntityCriteria<C> and(SerializableBiConsumer<C, O> setter, AbstractRelationalOperator<O> operator);
 		
@@ -192,7 +192,7 @@ public interface IEntityPersister<C, I> extends IInsertExecutor<C>, IUpdateExecu
 		 * @param operator operator of the criteria (will be the condition on the matching column)
 		 * @param <O> getter return type, also criteria value
 		 * @return this
-		 * @throws org.gama.stalactite.persistence.engine.RuntimeMappingException if column matching getter was not found
+		 * @throws IllegalArgumentException if column matching getter was not found
 		 */
 		<O> EntityCriteria<C> or(SerializableFunction<C, O> getter, AbstractRelationalOperator<O> operator);
 		
@@ -203,7 +203,7 @@ public interface IEntityPersister<C, I> extends IInsertExecutor<C>, IUpdateExecu
 		 * @param operator operator of the criteria (will be the condition on the matching column)
 		 * @param <O> getter return type, also criteria value
 		 * @return this
-		 * @throws org.gama.stalactite.persistence.engine.RuntimeMappingException if column matching setter was not found
+		 * @throws IllegalArgumentException if column matching setter was not found
 		 */
 		<O> EntityCriteria<C> or(SerializableBiConsumer<C, O> setter, AbstractRelationalOperator<O> operator);
 		
@@ -216,7 +216,7 @@ public interface IEntityPersister<C, I> extends IInsertExecutor<C>, IUpdateExecu
 		 * @param <A> embedded bean type
 		 * @param <B> embbeded bean property type, also criteria value
 		 * @return this
-		 * @throws org.gama.stalactite.persistence.engine.RuntimeMappingException if column matching getter was not found
+		 * @throws IllegalArgumentException if column matching getter was not found
 		 */
 		<A, B> EntityCriteria<C> and(SerializableFunction<C, A> getter1, SerializableFunction<A, B> getter2, AbstractRelationalOperator<B> operator);
 	}

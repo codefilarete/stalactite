@@ -51,12 +51,12 @@ public class CollectionDiffer<I> {
 		
 		Set<Diff<I>> result = new HashSet<>();
 		
-		for (Entry<C, I> id : beforeMappedOnIdentifier.entrySet()) {
-			I afterId = afterMappedOnIdentifier.get(id.getKey());
+		for (Entry<C, I> entry : beforeMappedOnIdentifier.entrySet()) {
+			I afterId = afterMappedOnIdentifier.get(entry.getKey());
 			if (afterId != null) {
-				result.add(new Diff<>(HELD, id.getValue(), afterId));
+				result.add(new Diff<>(HELD, entry.getValue(), afterId));
 			} else {
-				result.add(new Diff<>(REMOVED, id.getValue(), null));
+				result.add(new Diff<>(REMOVED, entry.getValue(), null));
 			}
 		}
 		afterMappedOnIdentifier.keySet().removeAll(beforeMappedOnIdentifier.keySet());

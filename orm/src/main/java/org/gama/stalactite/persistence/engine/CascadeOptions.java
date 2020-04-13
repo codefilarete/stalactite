@@ -5,7 +5,7 @@ package org.gama.stalactite.persistence.engine;
  * 
  * @author Guillaume Mary
  */
-public interface CascadeOptions<SELF> {
+public interface CascadeOptions {
 	
 	/**
 	 * Specifies relationship maintenance mode.
@@ -13,7 +13,7 @@ public interface CascadeOptions<SELF> {
 	 * @param relationMode any {@link RelationMode}
 	 * @return the global mapping configurer
 	 */
-	SELF cascading(RelationMode relationMode);
+	CascadeOptions cascading(RelationMode relationMode);
 	
 	enum RelationMode {
 		/**

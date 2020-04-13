@@ -219,7 +219,10 @@ public interface IFluentEntityMappingBuilder<C, I> extends IFluentEmbeddableMapp
 	}
 	
 	interface IFluentMappingBuilderOneToOneOptions<C, I, T extends Table> extends IFluentEntityMappingBuilder<C, I>,
-			OneToOneOptions<IFluentMappingBuilderOneToOneOptions<C, I, T>, C, I, T> {
+			OneToOneOptions<C, I, T> {
+		
+		@Override
+		IFluentMappingBuilderOneToOneOptions<C, I, T> mandatory();
 		
 		/**
 		 * {@inheritDoc}

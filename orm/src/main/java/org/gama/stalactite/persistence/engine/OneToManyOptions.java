@@ -11,8 +11,7 @@ import org.gama.stalactite.persistence.structure.Table;
 /**
  * @author Guillaume Mary
  */
-public interface OneToManyOptions<C, I, O, S extends Collection<O>>
-	extends CascadeOptions<OneToManyOptions<C, I, O, S>> {
+public interface OneToManyOptions<C, I, O, S extends Collection<O>> extends CascadeOptions {
 	
 	/**
 	 * Defines the bidirectional relationship.

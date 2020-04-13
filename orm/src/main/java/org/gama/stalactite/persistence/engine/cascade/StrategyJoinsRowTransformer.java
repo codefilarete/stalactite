@@ -23,10 +23,10 @@ import org.gama.stalactite.sql.result.Row;
  * 
  * Non Thread-safe : contains a cache of beans being loaded.
  * 
- * @param <T> type of generated beans
+ * @param <C> type of generated beans
  * @author Guillaume Mary
  */
-public class StrategyJoinsRowTransformer<T> {
+public class StrategyJoinsRowTransformer<C> {
 	
 	/**
 	 * Default alias provider between strategy columns and their names in {@link java.sql.ResultSet}
@@ -35,14 +35,14 @@ public class StrategyJoinsRowTransformer<T> {
 	 */
 	public static final Function<Column, String> DEFAULT_ALIAS_PROVIDER = Column::getAlias;
 	
-	private final StrategyJoins<T, ?> rootStrategyJoins;
+	private final StrategyJoins<C, ?> rootStrategyJoins;
 	private Function<Column, String> aliasProvider = DEFAULT_ALIAS_PROVIDER;
 	
-	public StrategyJoinsRowTransformer(StrategyJoins<T, ?> rootStrategyJoins) {
+	public StrategyJoinsRowTransformer(StrategyJoins<C, ?> rootStrategyJoins) {
 		this.rootStrategyJoins = rootStrategyJoins;
 	}
 	
-	public StrategyJoinsRowTransformer(StrategyJoins<T, ?> rootStrategyJoins, Function<Column, String> aliasProvider) {
+	public StrategyJoinsRowTransformer(StrategyJoins<C, ?> rootStrategyJoins, Function<Column, String> aliasProvider) {
 		this.rootStrategyJoins = rootStrategyJoins;
 		this.aliasProvider = aliasProvider;
 	}
@@ -72,8 +72,8 @@ public class StrategyJoinsRowTransformer<T> {
 	 * 					  Can be used to set a bigger cache coming from a wider scope. 
 	 * @return a list of root beans, built from given rows by asking internal strategy joins to instanciate and complete them
 	 */
-	public List<T> transform(Iterable<Row> rows, int resultSize, Map<Class, Map<Object /* identifier */, Object /* entity */>> entityCache) {
-		List<T> result = new ArrayList<>(resultSize);
+	public List<C> transform(Iterable<Row> rows, int resultSize, Map<Class, Map<Object /* identifier */, Object /* entity */>> entityCache) {
+		List<C> result = new ArrayList<>(resultSize);
 		EntityCacheWrapper entityCacheWrapper = new EntityCacheWrapper(entityCache);
 		
 		for (Row row : rows) {
@@ -81,14 +81,14 @@ public class StrategyJoinsRowTransformer<T> {
 			// We start by the root of the hierarchy.
 			// We process the entity of the current depth, then process the direct relations, add those relations to the depth iterator
 			
-			Nullable<T> newInstance = transform(entityCacheWrapper, row);
+			Nullable<C> newInstance = transform(entityCacheWrapper, row);
 			newInstance.invoke(result::add);
 		}
 		return result;
 	}
 	
-	private Nullable<T> transform(EntityCacheWrapper entityCacheWrapper, Row row) {
-		Nullable<T> result = Nullable.empty();
+	private Nullable<C> transform(EntityCacheWrapper entityCacheWrapper, Row row) {
+		Nullable<C> result = Nullable.empty();
 		ColumnedRow columnedRow = new ColumnedRow(aliasProvider);
 		Queue<StrategyJoins> stack = new ArrayDeque<>();
 		stack.add(rootStrategyJoins);
@@ -109,7 +109,7 @@ public class StrategyJoinsRowTransformer<T> {
 				rowInstance = entityCacheWrapper.computeIfAbsent(leftStrategy.getEntityType(), identifier, () -> {
 					Object newInstance = mainRowTransformer.transform(row);
 					if (strategyJoins == rootStrategyJoins) {
-						result.elseSet((T) newInstance);
+						result.elseSet((C) newInstance);
 					}
 					return newInstance;
 				});

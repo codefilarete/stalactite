@@ -13,7 +13,7 @@ import java.util.Map;
  */
 public class OrdinalEnumParameterBinder<E extends Enum<E>> extends AbstractEnumParameterBinder<E> {
 	
-	/** Samll index to optimize search of enum per ordinal when reading {@link ResultSet} */
+	/** Small index to optimize search of enum per ordinal when reading {@link ResultSet} */
 	private final Map<Integer, E> enumPerOrdinal;
 	
 	public OrdinalEnumParameterBinder(Class<E> enumType) {

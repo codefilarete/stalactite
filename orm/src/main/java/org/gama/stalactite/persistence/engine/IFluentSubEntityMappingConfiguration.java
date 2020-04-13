@@ -177,7 +177,7 @@ public interface IFluentSubEntityMappingConfiguration<C, I> extends IFluentEmbed
 	}
 	
 	interface IFluentMappingBuilderOneToOneOptions<C, I, T extends Table> extends IFluentSubEntityMappingConfiguration<C, I>,
-			OneToOneOptions<IFluentMappingBuilderOneToOneOptions<C, I, T>, C, I, T> {
+			OneToOneOptions<C, I, T> {
 		
 		/**
 		 * {@inheritDoc}

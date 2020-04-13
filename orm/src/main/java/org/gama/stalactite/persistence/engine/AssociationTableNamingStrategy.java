@@ -26,10 +26,10 @@ public interface AssociationTableNamingStrategy {
 	 */
 	String giveName(@Nonnull AccessorDefinition accessorDefinition, @Nonnull Column source, @Nonnull Column target);
 	
-	String giveOneSideColumnName(@Nonnull Column source);
+	String giveOneSideColumnName(@Nonnull Column column);
 	
-	default String giveManySideColumnName(@Nonnull Column source) {
-		return giveOneSideColumnName(source);
+	default String giveManySideColumnName(@Nonnull Column column) {
+		return giveOneSideColumnName(column);
 	}
 	
 	AssociationTableNamingStrategy DEFAULT = new DefaultAssociationTableNamingStrategy();
@@ -56,8 +56,8 @@ public interface AssociationTableNamingStrategy {
 		}
 		
 		@Override
-		public String giveOneSideColumnName(@Nonnull Column source) {
-			return source.getTable().getName() + "_" + source.getName();
+		public String giveOneSideColumnName(@Nonnull Column column) {
+			return column.getTable().getName() + "_" + column.getName();
 		}
 	}
 }
