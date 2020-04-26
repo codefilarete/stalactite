@@ -18,13 +18,14 @@ import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.sql.result.Row;
 
 /**
- * Joins of a strategy: owns the left part of the join, and "right parts" are represented by a collection of {@link RelationJoin}, ending up with a tree
+ * Joins of a strategy: owns the left part of the join, and "right parts" are represented by a collection of {@link AbstractJoin}, ending up with a tree
  * of joins representing a relation graph.
  *
  * @param <E> the type of the entity mapped by the {@link ClassMappingStrategy}
  */
 public class StrategyJoins<E, D extends Table> {
-	/** The left part of the join */
+	/** The left part of the join, nullable in case of passive join (such as association table) */
+	@Nullable
 	private final EntityInflater<E, ?> strategy;
 	private final D table;
 	private final Set<Column<D, Object>> columnsToSelect;
@@ -59,13 +60,17 @@ public class StrategyJoins<E, D extends Table> {
 		}, strategy.getTargetTable(), strategy.getSelectableColumns(), tableAlias);
 	}
 	
-	StrategyJoins(EntityInflater<E, ?> strategy, D table, Set<Column<D, Object>> columnsToSelect, @Nullable String tableAlias) {
+	StrategyJoins(@Nullable EntityInflater<E, ?> strategy, D table, Set<Column<D, Object>> columnsToSelect, @Nullable String tableAlias) {
 		this.strategy = strategy;
 		this.table = table;
 		this.columnsToSelect = columnsToSelect;
 		this.tableAlias = tableAlias;
 	}
 	
+	/**
+	 * @return the left part of the join, nullable in case of passive join (such as association table)
+	 */
+	@Nullable
 	public <I> EntityInflater<E, I> getStrategy() {
 		return (EntityInflater<E, I>) strategy;
 	}
@@ -88,7 +93,7 @@ public class StrategyJoins<E, D extends Table> {
 	}
 	
 	/**
-	 * To use to force the table alias of the strategy table in the select statement
+	 * Forces the table alias of the strategy table in the select statement
 	 * @param tableAlias must be sql compliant (none checked)
 	 */
 	public void setTableAlias(@Nullable String tableAlias) {

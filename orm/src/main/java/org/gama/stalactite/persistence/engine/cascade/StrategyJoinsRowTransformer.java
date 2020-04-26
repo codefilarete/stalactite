@@ -101,7 +101,7 @@ public class StrategyJoinsRowTransformer<C> {
 			StrategyJoins<Object, ?> strategyJoins = stack.poll();
 			EntityInflater<Object, Object> leftStrategy = strategyJoins.getStrategy();
 			
-			if (leftStrategy != null) {
+			if (leftStrategy != null) {	// null when join is passive
 				AbstractTransformer mainRowTransformer = beanTransformerCache.computeIfAbsent(leftStrategy,
 						s -> s.copyTransformerWithAliases(columnedRow));
 				Object identifier = leftStrategy.giveIdentifier(row, columnedRow);
