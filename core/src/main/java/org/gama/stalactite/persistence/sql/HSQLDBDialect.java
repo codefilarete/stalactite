@@ -1,13 +1,18 @@
 package org.gama.stalactite.persistence.sql;
 
+import javax.annotation.Nonnull;
 import java.util.Collections;
+import java.util.Map;
+import java.util.Set;
 
-import org.gama.stalactite.persistence.sql.MySQLDialect.MySQLDMLNameProvier;
+import org.gama.lang.collection.Arrays;
 import org.gama.stalactite.persistence.sql.ddl.DDLAppender;
 import org.gama.stalactite.persistence.sql.ddl.DDLTableGenerator;
 import org.gama.stalactite.persistence.sql.ddl.JavaTypeToSqlTypeMapping;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.PrimaryKey;
+import org.gama.stalactite.persistence.structure.Table;
+import org.gama.stalactite.query.builder.DMLNameProvider;
 
 /**
  * @author Guillaume Mary
@@ -35,7 +40,7 @@ public class HSQLDBDialect extends Dialect {
 	public static class HSQLDBDDLTableGenerator extends DDLTableGenerator {
 		
 		public HSQLDBDDLTableGenerator(JavaTypeToSqlTypeMapping typeMapping) {
-			super(typeMapping, new MySQLDMLNameProvier(Collections.emptyMap()));
+			super(typeMapping, new HSQLDBDMLNameProvier(Collections.emptyMap()));
 		}
 		
 		@Override
@@ -55,4 +60,32 @@ public class HSQLDBDialect extends Dialect {
 					.cat(")");
 		}
 	}
+	
+	
+	public static class HSQLDBDMLNameProvier extends DMLNameProvider {
+		
+		/** HSQLDB keywords to be escape. TODO: to be completed */
+		public static final Set<String> KEYWORDS = Collections.unmodifiableSet(Arrays.asTreeSet(String.CASE_INSENSITIVE_ORDER));
+		
+		public HSQLDBDMLNameProvier(Map<Table, String> tableAliases) {
+			super(tableAliases);
+		}
+		
+		@Override
+		public String getSimpleName(@Nonnull Column column) {
+			if (KEYWORDS.contains(column.getName())) {
+				return "`" + column.getName() + "`";
+			}
+			return super.getSimpleName(column);
+		}
+		
+		@Override
+		public String getSimpleName(Table table) {
+			if (KEYWORDS.contains(table.getName())) {
+				return "`" + super.getSimpleName(table) + "`";
+			}
+			return super.getSimpleName(table);
+		}
+	}
+	
 }
