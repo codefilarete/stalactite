@@ -208,7 +208,7 @@ public class UpdateExecutor<C, I, T extends Table> extends WriteExecutor<C, I, T
 	 * @throws IllegalArgumentException
 	 */
 	private Iterable<UpdatePayload<C, T>> collectAndAssertNonNullValues(ReadOnlyIterator<UpdatePayload<C, T>> updatePayloads) {
-		List<UpdatePayload<C, T>> result = new ArrayList<>();
+		List<UpdatePayload<C, T>> result = new ArrayList<>(getBatchSize());	// we set a list size as a small performance improvement to prevent too many list extend
 		updatePayloads.forEachRemaining(payload -> {
 			if (!payload.getValues().isEmpty()) {
 				payload.getValues().forEach((k, v) -> {
