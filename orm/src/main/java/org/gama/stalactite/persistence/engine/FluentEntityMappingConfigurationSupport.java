@@ -7,6 +7,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.Set;
 import java.util.function.BiConsumer;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
@@ -18,6 +19,7 @@ import org.gama.lang.Reflections;
 import org.gama.lang.exception.NotImplementedException;
 import org.gama.lang.function.SerializableTriFunction;
 import org.gama.lang.function.Serie;
+import org.gama.lang.function.TriFunction;
 import org.gama.lang.reflect.MethodDispatcher;
 import org.gama.reflection.AccessorByMethod;
 import org.gama.reflection.AccessorByMethodReference;
@@ -87,6 +89,8 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements IFluentEnt
 	
 	private PolymorphismPolicy polymorphismPolicy;
 	
+	private Function<Function<Column, Object>, C> entityFactory;
+	
 	/**
 	 * Creates a builder to map the given class for persistence
 	 *
@@ -108,8 +112,7 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements IFluentEnt
 	
 	@Override
 	public Function<Function<Column, Object>, C> getEntityFactory() {
-		// for now (until reason to expose this to user) instanciation type is the same as entity one
-		return row -> Reflections.newInstance(getEntityType());
+		return this.entityFactory;
 	}
 	
 	@Override
@@ -518,14 +521,14 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements IFluentEnt
 	@Override
 	public <O, J, S extends List<O>> IFluentMappingBuilderOneToManyListOptions<C, I, O, S> addOneToManyList(
 			SerializableFunction<C, S> getter,
-			EntityMappingConfigurationProvider<O, J> mappingConfiguration) {
+			EntityMappingConfigurationProvider<? extends O, J> mappingConfiguration) {
 		return addOneToManyList(getter, mappingConfiguration, null);
 	}
 		
 	@Override
 	public <O, J, S extends List<O>, T extends Table> IFluentMappingBuilderOneToManyListOptions<C, I, O, S> addOneToManyList(
 			SerializableFunction<C, S> getter,
-			EntityMappingConfigurationProvider<O, J> mappingConfiguration,
+			EntityMappingConfigurationProvider<? extends O, J> mappingConfiguration,
 			@javax.annotation.Nullable T table) {
 		
 		AccessorByMethodReference<C, S> getterReference = Accessors.accessorByMethodReference(getter);
@@ -554,7 +557,7 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements IFluentEnt
 	private <O, J, S extends List<O>, T extends Table> IFluentMappingBuilderOneToManyListOptions<C, I, O, S> addOneToManyList(
 			IReversibleAccessor<C, S> propertyAccessor,
 			ValueAccessPointByMethodReference methodReference,
-			EntityMappingConfigurationProvider<O, J> mappingConfiguration,
+			EntityMappingConfigurationProvider<? extends O, J> mappingConfiguration,
 			@javax.annotation.Nullable T table) {
 		CascadeManyList<C, O, J, ? extends List<O>> cascadeMany = new CascadeManyList<>(propertyAccessor, methodReference, mappingConfiguration.getConfiguration(), table);
 		this.cascadeManys.add(cascadeMany);
@@ -675,6 +678,35 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements IFluentEnt
 				}, true)
 				.fallbackOn(this)
 				.build((Class<IFluentMappingBuilderEmbedOptions<C, I, O>>) (Class) IFluentMappingBuilderEmbedOptions.class);
+	}
+	
+	@Override
+	public <X> IFluentEntityMappingBuilder<C, I> useConstructor(Function<X, C> factory, Column<? extends Table, X> input) {
+		this.entityFactory = row -> factory.apply((X) row.apply(input));
+		return this;
+	}
+	
+	@Override
+	public <X, Y> IFluentEntityMappingBuilder<C, I> useConstructor(BiFunction<X, Y, C> factory,
+																   Column<? extends Table, X> input1,
+																   Column<? extends Table, Y> input2) {
+		this.entityFactory = row -> factory.apply((X) row.apply(input1), (Y) row.apply(input2));
+		return this;
+	}
+	
+	@Override
+	public <X, Y, Z> IFluentEntityMappingBuilder<C, I> useConstructor(TriFunction<X, Y, Z, C> factory,
+																	  Column<? extends Table, X> input1,
+																	  Column<? extends Table, Y> input2,
+																	  Column<? extends Table, Z> input3) {
+		this.entityFactory = row -> factory.apply((X) row.apply(input1), (Y) row.apply(input2), (Z) row.apply(input3));
+		return this;
+	}
+	
+	@Override
+	public IFluentEntityMappingBuilder<C, I> useConstructor(Function<? extends Function<? extends Column, ? extends Object>, C> factory) {
+		this.entityFactory = (SerializableFunction<Function<Column, Object>, C>) factory;
+		return this;
 	}
 	
 	@Override
@@ -849,6 +881,12 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements IFluentEnt
 						@Override
 						public ColumnOptions mandatory() {
 							newMapping.setNullable(false);
+							return null;
+						}
+						
+						@Override
+						public PropertyOptions setByConstructor() {
+							newMapping.setByConstructor();
 							return null;
 						}
 					}, true)

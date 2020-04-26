@@ -8,7 +8,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.BiConsumer;
-import java.util.function.Function;
 
 import org.danekja.java.util.function.serializable.SerializableBiConsumer;
 import org.danekja.java.util.function.serializable.SerializableBiFunction;
@@ -433,7 +432,7 @@ public class QueryMapper<C> implements MappableQuery<C> {
 		return new WholeResultSetTransformer<>(rootBeanType, keyColumn.getName(), keyColumn.getBinder(), beanFactory);
 	}
 	
-	private WholeResultSetTransformer<Object[], C> buildComposedKeyTransformer(Set<Column> columns, Function<Object[], C> beanFactory) {
+	private WholeResultSetTransformer<Object[], C> buildComposedKeyTransformer(Set<Column> columns, SerializableFunction<Object[], C> beanFactory) {
 		Set<SingleColumnReader> columnReaders = Iterables.collect(columns, c -> {
 			ParameterBinder reader = c.getBinder();
 			return new SingleColumnReader<>(c.getName(), reader);

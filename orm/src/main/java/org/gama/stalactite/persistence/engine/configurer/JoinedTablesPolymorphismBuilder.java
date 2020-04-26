@@ -10,6 +10,7 @@ import java.util.Set;
 import org.gama.lang.Duo;
 import org.gama.lang.collection.Iterables;
 import org.gama.reflection.IReversibleAccessor;
+import org.gama.reflection.ValueAccessPointSet;
 import org.gama.stalactite.persistence.engine.IEntityConfiguredPersister;
 import org.gama.stalactite.persistence.engine.IUpdateExecutor;
 import org.gama.stalactite.persistence.engine.PersistenceContext;
@@ -79,10 +80,12 @@ abstract class JoinedTablesPolymorphismBuilder<C, I, T extends Table> implements
 					false,
 					subTable,
 					subEntityPropertiesMapping,
+					new ValueAccessPointSet(),	// TODO: implement properties set by constructor feature in joined-tables polymorphism
 					identification,
 					// TODO: no generated keys handler for now, should be taken on main strategy or brought by identification
 					null,
-					subConfiguration.getPropertiesMapping().getBeanType());
+					subConfiguration.getPropertiesMapping().getBeanType(),
+					null);
 			
 			JoinedTablesPersister subclassPersister = new JoinedTablesPersister(persistenceContext, classMappingStrategy);
 			persisterPerSubclass.put(subConfiguration.getEntityType(), subclassPersister);

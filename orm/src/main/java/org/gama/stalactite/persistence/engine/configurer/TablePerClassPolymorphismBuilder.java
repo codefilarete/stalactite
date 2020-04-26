@@ -6,6 +6,7 @@ import java.util.Map;
 import java.util.Set;
 
 import org.gama.reflection.IReversibleAccessor;
+import org.gama.reflection.ValueAccessPointSet;
 import org.gama.stalactite.persistence.engine.IEntityConfiguredPersister;
 import org.gama.stalactite.persistence.engine.PersistenceContext;
 import org.gama.stalactite.persistence.engine.PolymorphismPolicy.TablePerClassPolymorphism;
@@ -75,10 +76,12 @@ abstract class TablePerClassPolymorphismBuilder<C, I, T extends Table> implement
 					false,
 					subTable,
 					subEntityMapping.getMapping(),
+					new ValueAccessPointSet(),	// TODO: implement properties set by constructor feature in table-per-class polymorphism 
 					identification,
 					// TODO: no generated keys handler for now, should be taken on main strategy or brought by identification
 					null,
-					subConfiguration.getPropertiesMapping().getBeanType());
+					subConfiguration.getPropertiesMapping().getBeanType(),
+					null);
 			
 			JoinedTablesPersister subclassPersister = new JoinedTablesPersister(persistenceContext, classMappingStrategy);
 			subPersisterPerSubclass.put(subConfiguration.getEntityType(), subclassPersister);

@@ -3,11 +3,14 @@ package org.gama.stalactite.persistence.engine;
 import java.util.Collection;
 import java.util.List;
 import java.util.Set;
+import java.util.function.BiFunction;
+import java.util.function.Function;
 import java.util.function.Supplier;
 
 import org.danekja.java.util.function.serializable.SerializableBiConsumer;
 import org.danekja.java.util.function.serializable.SerializableFunction;
 import org.gama.lang.function.Serie;
+import org.gama.lang.function.TriFunction;
 import org.gama.reflection.AccessorChain;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
@@ -62,6 +65,71 @@ public interface IFluentEntityMappingBuilder<C, I> extends IFluentEmbeddableMapp
 	IFluentEntityMappingBuilder<C, I> withColumnNaming(ColumnNamingStrategy columnNamingStrategy);
 	
 	IFluentEntityMappingBuilder<C, I> withElementCollectionTableNaming(ElementCollectionTableNamingStrategy tableNamingStrategy);
+	
+	/**
+	 * Indicates a constructor to used instead of a default no-arg one (for Select feature).
+	 * Can by necessary for some entities that doesn't expose their default constructor to fulfill some business rules.
+	 * <br/><br/>
+	 * this method is expected to be used in conjunction with {@link PropertyOptions#setByConstructor()} which declares
+	 * that the property is already set by constructor so there's no reason to set it again.
+	 * 
+	 * @param factory the constructor to use (can also be a method factory, not a pure class constructor)
+	 * @param input the column to read in {@link java.sql.ResultSet} and make its value given as factory first argument
+	 * @param <X> constructor first argument type
+	 */
+	<X> IFluentEntityMappingBuilder<C, I> useConstructor(Function<X, C> factory, Column<? extends Table, X> input);
+	
+	/**
+	 * Indicates a constructor to used instead of a default no-arg one (for Select feature).
+	 * Can by necessary for some entities that doesn't expose their default constructor to fulfill some business rules.
+	 * <br/><br/>
+	 * this method is expected to be used in conjunction with {@link PropertyOptions#setByConstructor()} which declares
+	 * that the property is already set by constructor so there's no reason to set it again.
+	 *
+	 * @param factory the constructor to use (can also be a method factory, not a pure class constructor)
+	 * @param input1 the column to read in {@link java.sql.ResultSet} and make its value given as factory first argument
+	 * @param input2 the column to read in {@link java.sql.ResultSet} and make its value given as factory second argument
+	 * @param <X> constructor first argument type
+	 * @param <Y> constructor second argument type
+	 */
+	<X, Y> IFluentEntityMappingBuilder<C, I> useConstructor(BiFunction<X, Y, C> factory,
+															Column<? extends Table, X> input1,
+															Column<? extends Table, Y> input2);
+	
+	/**
+	 * Indicates a constructor to used instead of a default no-arg one (for Select feature).
+	 * Can by necessary for some entities that doesn't expose their default constructor to fulfill some business rules.
+	 * <br/><br/>
+	 * this method is expected to be used in conjunction with {@link PropertyOptions#setByConstructor()} which declares
+	 * that the property is already set by constructor so there's no reason to set it again.
+	 *
+	 * @param factory the constructor to use (can also be a method factory, not a pure class constructor)
+	 * @param input1 the column to read in {@link java.sql.ResultSet} and make its value given as factory first argument
+	 * @param input2 the column to read in {@link java.sql.ResultSet} and make its value given as factory second argument
+	 * @param input3 the column to read in {@link java.sql.ResultSet} and make its value given as factory third argument
+	 * @param <X> constructor first argument type
+	 * @param <Y> constructor second argument type
+	 * @param <Z> constructor third argument type
+	 */
+	<X, Y, Z> IFluentEntityMappingBuilder<C, I> useConstructor(TriFunction<X, Y, Z, C> factory,
+															   Column<? extends Table, X> input1,
+															   Column<? extends Table, Y> input2,
+															   Column<? extends Table, Z> input3);
+	
+	/**
+	 * Indicates a constructor to used instead of a default no-arg one (for Select feature).
+	 * Can by necessary for some entities that doesn't expose their default constructor to fulfill some business rules.
+	 * This method is an extended version of {@link #useConstructor(TriFunction, Column, Column, Column)}
+	 * where factory must accept a <pre>Function<? extends Column, ? extends Object></pre> as unique argument (be aware that as a consequence its
+	 * code will depend on {@link Column}) which represent a kind of {@link java.sql.ResultSet} so one can fulfill any property of its instance
+	 * as one wants.
+	 * <br/><br/>
+	 * this method is expected to be used in conjunction with {@link PropertyOptions#setByConstructor()} which declares
+	 * that the property is already set by constructor so there's no reason to set it again.
+	 *
+	 * @param factory the constructor to use (can also be a method factory, not a pure class constructor)
+	 */
+	IFluentEntityMappingBuilder<C, I> useConstructor(Function<? extends Function<? extends Column, ? extends Object>, C> factory);
 	
 	/**
 	 * Declares the inherited mapping.
@@ -175,11 +243,11 @@ public interface IFluentEntityMappingBuilder<C, I> extends IFluentEmbeddableMapp
 	 */
 	<O, J, S extends List<O>>
 	IFluentMappingBuilderOneToManyListOptions<C, I, O, S>
-	addOneToManyList(SerializableFunction<C, S> getter, EntityMappingConfigurationProvider<O, J> mappingConfiguration);
+	addOneToManyList(SerializableFunction<C, S> getter, EntityMappingConfigurationProvider<? extends O, J> mappingConfiguration);
 	
 	<O, J, S extends List<O>, T extends Table>
 	IFluentMappingBuilderOneToManyListOptions<C, I, O, S>
-	addOneToManyList(SerializableFunction<C, S> getter, EntityMappingConfigurationProvider<O, J> mappingConfiguration, @javax.annotation.Nullable T table);
+	addOneToManyList(SerializableFunction<C, S> getter, EntityMappingConfigurationProvider<? extends O, J> mappingConfiguration, @javax.annotation.Nullable T table);
 	
 	<O, J, S extends List<O>, T extends Table>
 	IFluentMappingBuilderOneToManyListOptions<C, I, O, S>
@@ -216,6 +284,9 @@ public interface IFluentEntityMappingBuilder<C, I> extends IFluentEmbeddableMapp
 		
 		@Override
 		IFluentMappingBuilderPropertyOptions<C, I> mandatory();
+		
+		@Override
+		IFluentMappingBuilderPropertyOptions<C, I> setByConstructor();
 	}
 	
 	interface IFluentMappingBuilderOneToOneOptions<C, I, T extends Table> extends IFluentEntityMappingBuilder<C, I>,

@@ -67,5 +67,8 @@ public interface EmbeddableMappingConfiguration<C> {
 		ParameterBinder getParameterBinder();
 		
 		boolean isNullable();
+		
+		/** Indicates if this property is managed by entity constructor (information coming from user) */
+		boolean isSetByConstructor();
 	}
 }

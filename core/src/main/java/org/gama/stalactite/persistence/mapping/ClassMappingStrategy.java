@@ -18,6 +18,7 @@ import org.gama.reflection.AccessorDefinition;
 import org.gama.reflection.IReversibleAccessor;
 import org.gama.reflection.IReversibleMutator;
 import org.gama.reflection.PropertyAccessor;
+import org.gama.reflection.ValueAccessPoint;
 import org.gama.stalactite.persistence.id.assembly.SimpleIdentifierAssembler;
 import org.gama.stalactite.persistence.id.manager.IdentifierInsertionManager;
 import org.gama.stalactite.persistence.mapping.ToBeanRowTransformer.TransformerListener;
@@ -240,6 +241,11 @@ public class ClassMappingStrategy<C, I, T extends Table> implements IEntityMappi
 		mainMappingStrategy.addSilentColumnUpdater(column, valueProvider);
 		// we must register it as an insertable column so we'll generate the right SQL order
 		updatableColumns.add((Column<T, Object>) column);
+	}
+	
+	@Override
+	public void addPropertySetByConstructor(ValueAccessPoint accessor) {
+		mainMappingStrategy.addPropertySetByConstructor(accessor);
 	}
 	
 	@Override

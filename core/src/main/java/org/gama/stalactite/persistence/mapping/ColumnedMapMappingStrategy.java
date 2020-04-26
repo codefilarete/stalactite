@@ -14,6 +14,7 @@ import org.gama.lang.Reflections;
 import org.gama.lang.collection.Collections;
 import org.gama.lang.function.Predicates;
 import org.gama.reflection.IReversibleAccessor;
+import org.gama.reflection.ValueAccessPoint;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.sql.result.Row;
@@ -51,6 +52,11 @@ public abstract class ColumnedMapMappingStrategy<C extends Map<K, V>, K, V, T ex
 	@Override
 	public Set<Column<T, Object>> getColumns() {
 		return columns;
+	}
+	
+	@Override
+	public void addPropertySetByConstructor(ValueAccessPoint accessor) {
+		// this class doesn't support bean factory so it can't support properties set by constructor
 	}
 	
 	protected String getColumnName(String columnsPrefix, int i) {

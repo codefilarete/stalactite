@@ -29,7 +29,7 @@ import static org.gama.stalactite.sql.result.WholeResultSetTransformer.AssemblyP
  * unstacked/applied in order of declaration.
  * Instances of this class can be reused over multiple {@link ResultSet} (supposed to have same columns) and are thread-safe for iteration.
  * They can also be adapt to other {@link ResultSet}s that haven't the exact same column names by duplicating them with {@link #copyWithAliases(Function)}.
- * Moreover they can also be cloned to another type of bean which uses the same column names with {@link #copyFor(Class, Function)}.
+ * Moreover they can also be cloned to another type of bean which uses the same column names with {@link #copyFor(Class, SerializableFunction)}.
  * 
  * @param <C> assembled bean type
  * @param <I> bean identifier type
@@ -52,10 +52,12 @@ public class WholeResultSetTransformer<I, C> implements ResultSetTransformer<I, 
 	
 	static final ThreadLocal<Set<TreatedRelation>> CURRENT_TREATED_ASSEMBLERS = ThreadLocal.withInitial(HashSet::new);
 	
-	private final ResultSetRowTransformer<I, C> rootConverter;
+	private final CachingResultSetRowTransformer<I, C> rootConverter;
 	
 	/** The list of relations that will assemble objects */
 	private final KeepOrderSet<Assembler<C>> assemblers = new KeepOrderSet<>();
+	/** Raw consumers, not linked to any beans, will be run on each row, if someone expect it to be run once per bean, then attach it to root converter */
+	private final Set<ColumnConsumer<C, Object>> consumers = new HashSet<>();
 	
 	/**
 	 * Constructor with root bean instanciation parameters
@@ -66,7 +68,7 @@ public class WholeResultSetTransformer<I, C> implements ResultSetTransformer<I, 
 	 * @param beanFactory the bean creator, bean key will be passed as argument. Not called if bean key is null (no instanciation needed)
 	 */
 	public WholeResultSetTransformer(Class<C> rootType, String columnName, ResultSetReader<I> reader, SerializableFunction<I, C> beanFactory) {
-		this(new ResultSetRowTransformer<>(rootType, columnName, reader, new CachingBeanFactory<>(beanFactory, rootType)));
+		this(new ResultSetRowTransformer<>(rootType, columnName, reader, beanFactory));
 	}
 	
 	/**
@@ -92,18 +94,19 @@ public class WholeResultSetTransformer<I, C> implements ResultSetTransformer<I, 
 	 * @param rootTransformer trasnformer that will create graph root-beans from {@link ResultSet}
 	 */
 	public WholeResultSetTransformer(ResultSetRowTransformer<I, C> rootTransformer) {
-		this.rootConverter = rootTransformer;
+		this.rootConverter = new CachingResultSetRowTransformer<>(rootTransformer);
 	}
 	
 	/**
 	 * Defines a complementary column that will be mapped on a bean property.
 	 * Null values will be passed to the consumer, hence the property mapper must be "null-value proof".
+	 * Those consumers will be run on each row, if this behavior is not expected then one can attach it to root converter. 
 	 * 
 	 * @param columnConsumer the object that will do the reading and mapping
 	 */
 	@Override
 	public <O> WholeResultSetTransformer<I, C> add(ColumnConsumer<C, O> columnConsumer) {
-		rootConverter.add(columnConsumer);
+		consumers.add((ColumnConsumer<C, Object>) columnConsumer);
 		return this;
 	}
 	
@@ -177,10 +180,7 @@ public class WholeResultSetTransformer<I, C> implements ResultSetTransformer<I, 
 	 * @return this
 	 */
 	public <K, V> WholeResultSetTransformer<I, C> add(BiConsumer<C, V> combiner, ResultSetRowTransformer<K, V> relatedBeanCreator, AssemblyPolicy assemblyPolicy) {
-		// ResultSetRowTransformer doesn't have a cache system, so we decorate its factory with a cache checking
-		ResultSetRowTransformer<K, V> relatedBeanCreatorCopy = relatedBeanCreator.copyFor(relatedBeanCreator.getBeanType(), relatedBeanCreator.getBeanFactory(),
-				WholeResultSetTransformer::computeInstanceIfCacheMiss);
-		relatedBeanCreatorCopy.getConsumers().addAll(relatedBeanCreator.getConsumers());
+		CachingResultSetRowTransformer<K, V> relatedBeanCreatorCopy = new CachingResultSetRowTransformer<>(relatedBeanCreator);
 		return add(new Relation<>(combiner, relatedBeanCreatorCopy), assemblyPolicy);
 	}
 	
@@ -213,14 +213,14 @@ public class WholeResultSetTransformer<I, C> implements ResultSetTransformer<I, 
 	}
 	
 	@Override
-	public <T extends C> WholeResultSetTransformer<I, T> copyFor(Class<T> beanType, Function<I, T> beanFactory) {
+	public <T extends C> WholeResultSetTransformer<I, T> copyFor(Class<T> beanType, SerializableFunction<I, T> beanFactory) {
 		// ResultSetRowTransformer doesn't have a cache system, so we decorate its factory with a cache checking
-		ResultSetRowTransformer<I, T> rootConverterCopy = this.rootConverter.copyFor(beanType, beanFactory,
-				WholeResultSetTransformer::computeInstanceIfCacheMiss);
+		ResultSetRowTransformer<I, T> newRootConverter = this.rootConverter.transformer.copyFor(beanType, beanFactory);
 		// Making the copy
-		WholeResultSetTransformer<I, T> result = new WholeResultSetTransformer<>(rootConverterCopy);
+		WholeResultSetTransformer<I, T> result = new WholeResultSetTransformer<>(newRootConverter);
 		// Note: combiners can't be copied except if they were ResultSetRowTransfomer which they are not, at least by their type, but 
 		result.assemblers.addAll((Collection) this.assemblers);
+		result.consumers.addAll((Collection) this.consumers);
 		return result;
 	}
 	
@@ -228,10 +228,13 @@ public class WholeResultSetTransformer<I, C> implements ResultSetTransformer<I, 
 	public WholeResultSetTransformer<I, C> copyWithAliases(Function<String, String> columnMapping) {
 		// NB: rootConverter can be cloned without a cache checking bean factory because it already has it due to previous assignements
 		// (follow rootConverter assignements to be sure)
-		ResultSetRowTransformer<I, C> rootConverterCopy = this.rootConverter.copyWithAliases(columnMapping);
+		ResultSetRowTransformer<I, C> rootConverterCopy = this.rootConverter.transformer.copyWithAliases(columnMapping);
 		WholeResultSetTransformer<I, C> result = new WholeResultSetTransformer<>(rootConverterCopy);
 		this.assemblers.forEach(assembler ->
 				result.add(assembler.getResultSetRowAssembler().copyWithAliases(columnMapping), assembler.getPolicy())
+		);
+		this.consumers.forEach(assembler ->
+				result.add(assembler.copyWithAliases(columnMapping))
 		);
 		return result;
 	}
@@ -287,51 +290,8 @@ public class WholeResultSetTransformer<I, C> implements ResultSetTransformer<I, 
 					break;
 			}
 		}
+		this.consumers.forEach(c -> c.assemble(currentRowBean, resultSet));
 		return currentRowBean;
-	}
-	
-	/**
-	 * A small class that will check some cache for any presence of a bean behind a key, returning it or instanciating a new one if no bean is found.
-	 * This class uses {@link #computeInstanceIfCacheMiss(Class, Object, Function)}, which is based on {@link #CURRENT_BEAN_CACHE}.
-	 * Thus this class can hardly be used outside of {@link WholeResultSetTransformer}, and overall {@link #doWithBeanCache(Supplier)}
-	 * 
-	 * @param <I> key type
-	 * @param <C> bean type
-	 */
-	public static class CachingBeanFactory<I, C> implements Function<I, C> {
-		
-		private final SerializableFunction<I, C> beanFactory;
-		
-		private final Class<C> rootType;
-		
-		CachingBeanFactory(SerializableFunction<I, C> beanFactory, Class<C> rootType) {
-			this.beanFactory = beanFactory;
-			this.rootType = rootType;
-		}
-		
-		@Override
-		public C apply(I key) {
-			return computeInstanceIfCacheMiss(rootType, key, id -> {
-				try {
-					return beanFactory.apply(id);
-				} catch (ClassCastException cce) {
-					// Trying to give a more accurate reason that the default one
-					// Put into places for rare cases of misusage by wrapping code that loses reader and bean factory types,
-					// ending with a constructor input type error
-					MethodReferenceCapturer methodReferenceCapturer = new MethodReferenceCapturer();
-					throw new ClassCastException("Can't apply " + id + " on constructor "
-							+ Reflections.toString(methodReferenceCapturer.findConstructor(beanFactory)) + " : " + cce.getMessage());
-				}
-			});
-		}
-	}
-	
-	/**
-	 * Made to expose bean cache checking 
-	 */
-	private static <C, K> C computeInstanceIfCacheMiss(Class<C> instanceType, K beanKey, Function<K, C> factory) {
-		// we don't call the cache if the bean key is null
-		return beanKey == null ? null : CURRENT_BEAN_CACHE.get().computeIfAbsent(instanceType, beanKey, factory);
 	}
 	
 	/**
@@ -344,9 +304,9 @@ public class WholeResultSetTransformer<I, C> implements ResultSetTransformer<I, 
 		
 		private final BiConsumer<K, V> relationFixer;
 		
-		private final ResultSetRowTransformer<?, V> transformer;
+		private final CachingResultSetRowTransformer<?, V> transformer;
 		
-		public Relation(BiConsumer<K, V> relationFixer, ResultSetRowTransformer<?, V> transformer) {
+		public Relation(BiConsumer<K, V> relationFixer, CachingResultSetRowTransformer<?, V> transformer) {
 			this.relationFixer = relationFixer;
 			this.transformer = transformer;
 		}
@@ -361,7 +321,7 @@ public class WholeResultSetTransformer<I, C> implements ResultSetTransformer<I, 
 
 		@Override
 		public Relation<K, V> copyWithAliases(Function<String, String> columnMapping) {
-			return new Relation<>(relationFixer, transformer.copyWithAliases(columnMapping));
+			return new Relation<>(relationFixer, new CachingResultSetRowTransformer<>(transformer.transformer.copyWithAliases(columnMapping)));
 		}
 	}
 	
@@ -454,5 +414,33 @@ public class WholeResultSetTransformer<I, C> implements ResultSetTransformer<I, 
 		ON_EACH_ROW,
 		/** Specifies that assembly shall be done once (and only onnce) per root bean (setter case) */
 		ONCE_PER_BEAN
+	}
+	
+	/**
+	 * Cache system over a {@link ResultSetRowTransformer} because it doesn't have some.
+	 * This class decorates its factory with a cache checking.
+	 */
+	private static class CachingResultSetRowTransformer<I, C> {
+		
+		private final ResultSetRowTransformer<I, C> transformer;
+		
+		private CachingResultSetRowTransformer(ResultSetRowTransformer<I, C> transformer) {
+			this.transformer = transformer;
+		}
+		
+		public C transform(ResultSet resultSet) {
+			I beanKey = transformer.getBeanFactory().readBeanKey(resultSet);
+			try {
+				// we don't call the cache if the bean key is null
+				return beanKey == null ? null : CURRENT_BEAN_CACHE.get().computeIfAbsent(transformer.getBeanType(), beanKey, i -> transformer.transform(resultSet));
+			} catch (ClassCastException cce) {
+				// Trying to give a more accurate reason that the default one
+				// Put into places for rare cases of misusage by wrapping code that loses reader and bean factory types,
+				// ending with a constructor input type error
+				MethodReferenceCapturer methodReferenceCapturer = new MethodReferenceCapturer();
+				throw new ClassCastException("Can't apply " + beanKey + " on constructor "
+						+ Reflections.toString(methodReferenceCapturer.findExecutable(transformer.getBeanFactory().getFactory())) + " : " + cce.getMessage());
+			}
+		}
 	}
 }

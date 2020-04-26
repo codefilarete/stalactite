@@ -34,7 +34,7 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 public class WholeResultSetTransformerTest {
 	
 	@Test
-	public void testTranform() throws SQLException {
+	public void testTransform() throws SQLException {
 		String chickenInstanciationColumnName = "chickenName";
 		String leftFeatherColorColumnName = "leftFeatherColor";
 		WholeResultSetTransformer<String, Chicken> testInstance = new WholeResultSetTransformer<>(
@@ -75,7 +75,7 @@ public class WholeResultSetTransformerTest {
 	}
 	
 	@Test
-	public void testTranform_shareBeanInstances() throws SQLException {
+	public void testTransform_shareBeanInstances() throws SQLException {
 		String chickenInstanciationColumnName = "chickenName";
 		String leftFeatherColorColumnName = "leftFeatherColor";
 		String rightFeatherColorColumnName = "rightFeatherColor";
@@ -142,7 +142,7 @@ public class WholeResultSetTransformerTest {
 	 * WingInner has inner instances of FeatherInner, they are automatically added to they enclosing WingInner instance through their constructor. 
 	 */
 	@Test
-	public void testTranform_withInnerClass() throws SQLException {
+	public void testTransform_withInnerClass() throws SQLException {
 		String wingInstanciationColumnName = "wingName";
 		String leftFeatherColorColumnName = "featherColor";
 		WholeResultSetTransformer<String, WingInner> testInstance = new WholeResultSetTransformer<>(WingInner.class, wingInstanciationColumnName, STRING_READER, WingInner::new);
@@ -182,10 +182,10 @@ public class WholeResultSetTransformerTest {
 	}
 	
 	/**
-	 * Same test as {@link #testTranform_shareBeanInstances()} but with the convert(..) method
+	 * Same test as {@link #testTransform_shareBeanInstances()} but with the convert(..) method
 	 */
 	@Test
-	public void testTransform() {
+	public void testTransformAll() {
 		String chickenInstanciationColumnName = "chickenName";
 		String leftFeatherColorColumnName = "leftFeatherColor";
 		String rightFeatherColorColumnName = "rightFeatherColor";

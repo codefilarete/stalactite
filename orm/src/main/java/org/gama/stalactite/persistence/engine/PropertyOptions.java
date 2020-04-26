@@ -10,4 +10,6 @@ public interface PropertyOptions {
 	/** Marks the property as mandatory. Note that using this method on an identifier one as no purpose because identifiers are already madatory. */
 	PropertyOptions mandatory();
 	
+	PropertyOptions setByConstructor();
+	
 }

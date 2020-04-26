@@ -166,9 +166,18 @@ public class FluentEmbeddableMappingConfigurationSupport<C> implements IFluentEm
 	
 	IFluentEmbeddableMappingBuilderPropertyOptions<C> addPropertyOptions(AbstractLinkage<C> linkage) {
 		return new MethodReferenceDispatcher()
-				.redirect(PropertyOptions.class, () -> {
-					linkage.setNullable(false);
-					return null;	// we can return null because dispatcher will return proxy
+				.redirect(PropertyOptions.class, new PropertyOptions() {
+					@Override
+					public PropertyOptions mandatory() {
+						linkage.setNullable(false);
+						return null;	// we can return null because dispatcher will return proxy
+					}
+					
+					@Override
+					public PropertyOptions setByConstructor() {
+						linkage.setByConstructor();
+						return null;
+					}
 				}, true)
 				.fallbackOn(this)
 				.build((Class<IFluentEmbeddableMappingBuilderPropertyOptions<C>>) (Class) IFluentEmbeddableMappingBuilderPropertyOptions.class);
@@ -242,6 +251,12 @@ public class FluentEmbeddableMappingConfigurationSupport<C> implements IFluentEm
 					public EnumOptions mandatory() {
 						linkage.setNullable(false);
 						return null;	// we can return null because dispatcher will return proxy
+					}
+					
+					@Override
+					public PropertyOptions setByConstructor() {
+						linkage.setByConstructor();
+						return null;
 					}
 				}, true)
 				.fallbackOn(this)
@@ -411,6 +426,8 @@ public class FluentEmbeddableMappingConfigurationSupport<C> implements IFluentEm
 		
 		private boolean nullable = true;
 		
+		private boolean setByConstructor = false;
+		
 		public void setParameterBinder(ParameterBinder parameterBinder) {
 			this.parameterBinder = parameterBinder;
 		}
@@ -427,6 +444,15 @@ public class FluentEmbeddableMappingConfigurationSupport<C> implements IFluentEm
 		
 		public void setNullable(boolean nullable) {
 			this.nullable = nullable;
+		}
+		
+		public void setByConstructor() {
+			this.setByConstructor = true;
+		}
+		
+		@Override
+		public boolean isSetByConstructor() {
+			return setByConstructor;
 		}
 	}
 	

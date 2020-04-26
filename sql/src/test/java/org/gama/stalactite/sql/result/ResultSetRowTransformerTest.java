@@ -4,8 +4,8 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
-import java.util.function.Function;
 
+import org.danekja.java.util.function.serializable.SerializableFunction;
 import org.gama.lang.bean.Objects;
 import org.gama.lang.collection.Arrays;
 import org.gama.lang.collection.Maps;
@@ -164,7 +164,7 @@ public class ResultSetRowTransformerTest {
 	public void relation() throws SQLException {
 		ResultSetRowTransformer<String, Person> testInstance = new ResultSetRowTransformer<>(Person.class, "name", STRING_READER, Person::new);
 		
-		ResultSetRowTransformer<String, String> addressTransformer = new ResultSetRowTransformer<>(String.class, "address1", STRING_READER, Function.identity());
+		ResultSetRowTransformer<String, String> addressTransformer = new ResultSetRowTransformer<>(String.class, "address1", STRING_READER, SerializableFunction.identity());
 		testInstance.add(Person::addAddress, addressTransformer);
 		testInstance.add(Person::addAddress, addressTransformer.copyWithAliases(s -> "address2"));
 		

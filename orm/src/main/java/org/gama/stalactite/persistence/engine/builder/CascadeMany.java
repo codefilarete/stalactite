@@ -47,10 +47,10 @@ public class CascadeMany<SRC, TRGT, TRGTID, C extends Collection<TRGT>> {
 	
 	public <T extends Table> CascadeMany(IReversibleAccessor<SRC, C> collectionProvider,
 										 ValueAccessPointByMethodReference methodReference,
-										 EntityMappingConfiguration<TRGT, TRGTID> targetMappingConfiguration, T targetTable) {
+										 EntityMappingConfiguration<? extends TRGT, TRGTID> targetMappingConfiguration, T targetTable) {
 		this.collectionProvider = collectionProvider;
 		this.methodReference = methodReference;
-		this.targetMappingConfiguration = targetMappingConfiguration;
+		this.targetMappingConfiguration = (EntityMappingConfiguration<TRGT, TRGTID>) targetMappingConfiguration;
 		this.targetTable = targetTable;
 	}
 	

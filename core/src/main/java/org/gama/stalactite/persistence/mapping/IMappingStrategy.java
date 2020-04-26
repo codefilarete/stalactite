@@ -9,6 +9,7 @@ import java.util.Set;
 import java.util.function.Function;
 
 import org.gama.reflection.IReversibleAccessor;
+import org.gama.reflection.ValueAccessPoint;
 import org.gama.stalactite.persistence.mapping.ToBeanRowTransformer.TransformerListener;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
@@ -92,6 +93,8 @@ public interface IMappingStrategy<C, T extends Table> {
 	default <O> void addSilentColumnUpdater(Column<T, O> column, Function<C, O> valueProvider) {
 		// does nothing by default
 	}
+	
+	void addPropertySetByConstructor(ValueAccessPoint accessor);
 	
 	Map<IReversibleAccessor<C, Object>, Column<T, Object>> getPropertyToColumn();
 	

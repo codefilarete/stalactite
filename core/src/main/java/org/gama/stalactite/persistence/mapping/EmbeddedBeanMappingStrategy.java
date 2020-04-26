@@ -22,6 +22,8 @@ import org.gama.reflection.Accessors;
 import org.gama.reflection.IAccessor;
 import org.gama.reflection.IMutator;
 import org.gama.reflection.IReversibleAccessor;
+import org.gama.reflection.ValueAccessPoint;
+import org.gama.reflection.ValueAccessPointSet;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.sql.result.Row;
@@ -67,6 +69,8 @@ public class EmbeddedBeanMappingStrategy<C, T extends Table> implements IEmbedde
 	 * Those are for update time.
 	 */
 	private final List<Duo<Column<T, ?>, Function<C, ?>>> silentUpdatedColumns = new ArrayList<>();
+	
+	private final ValueAccessPointSet propertiesSetByConstructor = new ValueAccessPointSet();
 	
 	/**
 	 * Build a EmbeddedBeanMappingStrategy from a mapping between Field and Column.
@@ -173,6 +177,11 @@ public class EmbeddedBeanMappingStrategy<C, T extends Table> implements IEmbedde
 	@Override
 	public <O> void addSilentColumnUpdater(Column<T, O> column, Function<C, O> valueProvider) {
 		silentUpdatedColumns.add(new Duo<>(column, valueProvider));
+	}
+	
+	@Override
+	public void addPropertySetByConstructor(ValueAccessPoint accessor) {
+		this.propertiesSetByConstructor.add(accessor);
 	}
 	
 	@Nonnull
@@ -285,6 +294,14 @@ public class EmbeddedBeanMappingStrategy<C, T extends Table> implements IEmbedde
 					applyValueToBean(targetRowBean, mapping, value);
 				}
 			});
+		}
+		
+		@Override
+		protected void applyValueToBean(C targetRowBean, Entry<Column, IMutator> columnFieldEntry, Object propertyValue) {
+			// we skip properties set as defined by constructor
+			if (!propertiesSetByConstructor.contains(columnFieldEntry.getValue())) {
+				super.applyValueToBean(targetRowBean, columnFieldEntry, propertyValue);
+			}
 		}
 		
 		private class MutableBoolean {

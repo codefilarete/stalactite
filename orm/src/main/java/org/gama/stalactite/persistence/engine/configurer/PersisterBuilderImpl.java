@@ -1,6 +1,7 @@
 package org.gama.stalactite.persistence.engine.configurer;
 
 import javax.annotation.Nullable;
+import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
 import java.util.Collection;
 import java.util.HashMap;
@@ -371,8 +372,11 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 					identification.getIdentificationDefiner().getPropertiesMapping() == mapping.giveEmbeddableConfiguration(),
 					mapping.targetTable,
 					mapping.mapping,
+					mapping.propertiesSetByConstructor,
 					identification,
-					persistenceContext.getDialect()::buildGeneratedKeysReader, mapping.giveEmbeddableConfiguration().getBeanType());
+					persistenceContext.getDialect()::buildGeneratedKeysReader,
+					mapping.giveEmbeddableConfiguration().getBeanType(),
+					null);
 			
 			JoinedTablesPersister<C, I, Table> currentPersister = new JoinedTablesPersister<>(persistenceContext, currentMappingStrategy);
 			parentPersisters.add(currentPersister);
@@ -387,12 +391,16 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 	}
 	
 	private <T extends Table> JoinedTablesPersister<C, I, T> buildMainPersister(Identification identification, Mapping mapping, PersistenceContext persistenceContext) {
+		EntityMappingConfiguration entityMappingConfiguration = (EntityMappingConfiguration) mapping.mappingConfiguration;
 		ClassMappingStrategy<C, I, T> parentMappingStrategy = createClassMappingStrategy(
-				identification.getIdentificationDefiner().getPropertiesMapping() == ((EntityMappingConfiguration) mapping.mappingConfiguration).getPropertiesMapping(),
+				identification.getIdentificationDefiner().getPropertiesMapping() == entityMappingConfiguration.getPropertiesMapping(),
 				mapping.targetTable,
 				mapping.mapping,
+				mapping.propertiesSetByConstructor,
 				identification,
-				persistenceContext.getDialect()::buildGeneratedKeysReader, ((EntityMappingConfiguration) mapping.mappingConfiguration).getPropertiesMapping().getBeanType());
+				persistenceContext.getDialect()::buildGeneratedKeysReader,
+				entityMappingConfiguration.getEntityType(),
+				entityMappingConfiguration.getEntityFactory());
 		return (JoinedTablesPersister<C, I, T>) new JoinedTablesPersister(persistenceContext, parentMappingStrategy);
 	}
 	
@@ -617,8 +625,10 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 			@Override
 			public void accept(EmbeddableMappingConfiguration embeddableMappingConfiguration) {
 				Map<IReversibleAccessor, Column> propertiesMapping = beanMappingBuilder.build(
-						embeddableMappingConfiguration, this.currentTable,
-						PersisterBuilderImpl.this.columnBinderRegistry, columnNameProvider);
+						embeddableMappingConfiguration,
+						this.currentTable,
+						PersisterBuilderImpl.this.columnBinderRegistry,
+						columnNameProvider);
 				ValueAccessPointSet localMapping = new ValueAccessPointSet(currentColumnMap.keySet());
 				propertiesMapping.keySet().forEach(propertyAccessor -> {
 					if (localMapping.contains(propertyAccessor)) {
@@ -632,6 +642,8 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 					currentMapping = result.add(embeddableMappingConfiguration, this.currentTable, currentColumnMap, this.mappedSuperClass);
 					currentMapping.getMapping().putAll(currentColumnMap);
 				}
+				((List<Linkage>) embeddableMappingConfiguration.getPropertiesMapping()).stream()
+						.filter(Linkage::isSetByConstructor).map(Linkage::getAccessor).forEach(currentMapping.propertiesSetByConstructor::add);
 			}
 			
 			public void accept(EntityMappingConfiguration entityMappingConfiguration) {
@@ -761,9 +773,12 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 			boolean isIdentifyingConfiguration,
 			T targetTable,
 			Map<? extends IReversibleAccessor, Column> mapping,
+			ValueAccessPointSet propertiesSetByConstructor,
 			Identification identification,
 			GeneratedKeysReaderBuilder generatedKeysReaderBuilder,
-			Class<X> beanType) {
+			Class<X> beanType,
+			@Nullable Function<Function<Column, Object>, X> beanFactory) {
+
 		// Child class insertion manager is always an "Already assigned" one because parent manages it for her
 		IdentifierInsertionManager<X, I> identifierInsertionManager = null;
 		
@@ -796,7 +811,29 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 		SimpleIdMappingStrategy<X, I> simpleIdMappingStrategy = new SimpleIdMappingStrategy<>(idAccessor, identifierInsertionManager,
 				new SimpleIdentifierAssembler<>(primaryKey));
 		
-		return new ClassMappingStrategy<X, I, T>(beanType, targetTable, (Map) mapping, simpleIdMappingStrategy, c -> Reflections.newInstance(beanType));
+		if (beanFactory == null) {
+			Constructor<X> constructorById = Reflections.findConstructor(beanType, idDefinition.getMemberType());
+			if (constructorById == null) {
+				Constructor<X> defaultConstructor = Reflections.findConstructor(beanType);
+				if (defaultConstructor == null) {
+					// we'll lately throw an exception (we could do it now) but the lack of constructor may be due to an abstract class in heritance
+					// path which currently won't be instanciated at runtime (because its concrete subclass will be) so there's no reason to throw
+					// the exception now
+					beanFactory = c -> {
+						throw new MappingConfigurationException("Entity class " + Reflections.toString(beanType) + " doesn't have a compatible accessible constructor,"
+							+ " please implement a no-arg constructor or " + Reflections.toString(idDefinition.getMemberType()) + "-arg constructor");
+					};
+				} else {
+					beanFactory = c -> Reflections.newInstance(defaultConstructor);
+				}
+			} else {
+				beanFactory = c -> Reflections.newInstance(constructorById, c.apply(simpleIdMappingStrategy.getIdentifierAssembler().getColumn()));
+			}
+		}
+		
+		ClassMappingStrategy<X, I, T> result = new ClassMappingStrategy<X, I, T>(beanType, targetTable, (Map) mapping, simpleIdMappingStrategy, beanFactory);
+		propertiesSetByConstructor.forEach(result::addPropertySetByConstructor);
+		return result;
 	}
 	
 	/**
@@ -874,6 +911,7 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 			private final Object /* EntityMappingConfiguration, EmbeddableMappingConfiguration, SubEntityMappingConfiguration */ mappingConfiguration;
 			private final Table targetTable;
 			private final Map<IReversibleAccessor, Column> mapping;
+			private final ValueAccessPointSet propertiesSetByConstructor = new ValueAccessPointSet();
 			private final boolean mappedSuperClass;
 			
 			Mapping(Object mappingConfiguration, Table targetTable, Map<IReversibleAccessor, Column> mapping, boolean mappedSuperClass) {

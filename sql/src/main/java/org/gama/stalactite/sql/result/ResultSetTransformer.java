@@ -8,12 +8,13 @@ import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
+import org.danekja.java.util.function.serializable.SerializableFunction;
 import org.gama.lang.exception.NotImplementedException;
 import org.gama.stalactite.sql.binder.ResultSetReader;
 
 /**
  * @param <I> the type of bean keys (input)
- * @param <C> the type of beans
+ * @param <C> produced bean type
  * @author Guillaume Mary
  */
 public interface ResultSetTransformer<I, C> extends CopiableForAnotherQuery<C> {
@@ -85,7 +86,7 @@ public interface ResultSetTransformer<I, C> extends CopiableForAnotherQuery<C> {
 	 * @param <T> the target bean type
 	 * @return a new instance, kind of clone of this but for another type
 	 */
-	<T extends C> ResultSetTransformer<I, T> copyFor(Class<T> beanType, Function<I, T> beanFactory);
+	<T extends C> ResultSetTransformer<I, T> copyFor(Class<T> beanType, SerializableFunction<I, T> beanFactory);
 	
 	/**
 	 * Will combine bean created by this instance with the one created by relatedBeanCreator thanks to given combiner.

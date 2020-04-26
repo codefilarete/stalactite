@@ -21,6 +21,7 @@ import org.gama.lang.collection.PairIterator.InfiniteIterator;
 import org.gama.lang.collection.PairIterator.UntilBothIterator;
 import org.gama.lang.function.Predicates;
 import org.gama.reflection.IReversibleAccessor;
+import org.gama.reflection.ValueAccessPoint;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.sql.result.Row;
@@ -64,6 +65,11 @@ public class ColumnedCollectionMappingStrategy<C extends Collection<O>, O, T ext
 	@Override
 	public Set<Column<T, Object>> getColumns() {
 		return columns;
+	}
+	
+	@Override
+	public void addPropertySetByConstructor(ValueAccessPoint accessor) {
+		// this class doesn't support bean factory so it can't support properties set by constructor
 	}
 	
 	@Nonnull

@@ -9,7 +9,8 @@ import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 
-import org.gama.lang.function.TriFunction;
+import org.danekja.java.util.function.serializable.SerializableFunction;
+import org.gama.lang.bean.Factory;
 import org.gama.stalactite.sql.binder.ResultSetReader;
 
 import static org.gama.lang.Nullable.nullable;
@@ -29,9 +30,7 @@ import static org.gama.lang.Nullable.nullable;
  */
 public class ResultSetRowTransformer<I, C> implements ResultSetTransformer<I, C>, ResultSetRowAssembler<C> {
 	
-	private final ColumnReader<I> reader;
-	
-	private final Function<I, C> beanFactory;
+	private final BeanFactory<I, C> beanFactory;
 	
 	private final Class<C> beanType;
 	
@@ -41,16 +40,15 @@ public class ResultSetRowTransformer<I, C> implements ResultSetTransformer<I, C>
 	
 	/**
 	 * Constructor focused on simple cases where beans are built only from one column key.
-	 * Prefer {@link #ResultSetRowTransformer(Class, ColumnReader, Function)} for more general purpose cases (multiple columns key)
+	 * Prefer {@link #ResultSetRowTransformer(Class, ColumnReader, SerializableFunction)} for more general purpose cases (multiple columns key)
 	 * 
 	 * @param columnName the name of the column that contains bean key
 	 * @param reader object to ease column reading, indicates column type
 	 * @param beanFactory the bean creator, bean key will be passed as argument. Not called if bean key is null (no instanciation needed)
 	 */
-	public ResultSetRowTransformer(Class<C> beanType, String columnName, ResultSetReader<I> reader, Function<I, C> beanFactory) {
+	public ResultSetRowTransformer(Class<C> beanType, String columnName, ResultSetReader<I> reader, SerializableFunction<I, C> beanFactory) {
 		this.beanType = beanType;
-		this.reader = new SingleColumnReader<>(columnName, reader);
-		this.beanFactory = beanFactory;
+		this.beanFactory = new BeanFactory<>(new SingleColumnReader<>(columnName, reader), beanFactory);
 	}
 	
 	/**
@@ -60,9 +58,13 @@ public class ResultSetRowTransformer<I, C> implements ResultSetTransformer<I, C>
 	 * @param reader object to ease column reading, indicates column type
 	 * @param beanFactory the bean creator, bean key will be passed as argument. Not called if bean key is null (no instanciation needed)
 	 */
-	public ResultSetRowTransformer(Class<C> beanType, ColumnReader<I> reader, Function<I, C> beanFactory) {
+	public ResultSetRowTransformer(Class<C> beanType, ColumnReader<I> reader, SerializableFunction<I, C> beanFactory) {
 		this.beanType = beanType;
-		this.reader = reader;
+		this.beanFactory = new BeanFactory<>(reader, beanFactory);
+	}
+	
+	public ResultSetRowTransformer(Class<C> beanType, BeanFactory<I, C> beanFactory) {
+		this.beanType = beanType;
 		this.beanFactory = beanFactory;
 	}
 	
@@ -70,11 +72,7 @@ public class ResultSetRowTransformer<I, C> implements ResultSetTransformer<I, C>
 		return beanType;
 	}
 	
-	public ColumnReader<I> getReader() {
-		return reader;
-	}
-	
-	public Function<I, C> getBeanFactory() {
+	public BeanFactory<I, C> getBeanFactory() {
 		return beanFactory;
 	}
 	
@@ -111,29 +109,17 @@ public class ResultSetRowTransformer<I, C> implements ResultSetTransformer<I, C>
 	}
 	
 	@Override
-	public <T extends C> ResultSetRowTransformer<I, T> copyFor(Class<T> beanType, Function<I, T> beanFactory) {
-		ResultSetRowTransformer<I, T> result = new ResultSetRowTransformer<>(beanType, this.reader, beanFactory);
+	public <T extends C> ResultSetRowTransformer<I, T> copyFor(Class<T> beanType, SerializableFunction<I, T> beanFactory) {
+		ResultSetRowTransformer<I, T> result = new ResultSetRowTransformer<>(beanType, this.beanFactory.copyFor(beanFactory));
 		result.consumers.addAll((Set) this.consumers);
 		this.relations.forEach((consumer, transformer) ->
-				result.relations.put((BiConsumer) consumer, transformer.copyFor(transformer.beanType, transformer.beanFactory)));
-		return result;
-	}
-	
-	public <T extends C, K1 extends Class, K2, V> ResultSetRowTransformer<I, T> copyFor(Class<T> beanType,
-																						Function<I, T> beanFactory,
-																						TriFunction<K1, K2, Function<K2, V>, V> beforeFactory) {
-		ResultSetRowTransformer<I, T> result = new ResultSetRowTransformer<>(beanType, this.reader,
-				beanKey -> (T) beforeFactory.apply((K1) beanType, (K2) beanKey, (Function) beanFactory));
-		result.consumers.addAll((Set) this.consumers);
-		this.relations.forEach((consumer, transformer) ->
-				result.relations.put((BiConsumer) consumer, transformer.copyFor(transformer.beanType,
-						beanKey -> beforeFactory.apply((K1) transformer.beanType, (K2) beanKey, (Function) transformer.beanFactory))));
+				result.relations.put((BiConsumer) consumer, transformer.copyFor(transformer.beanType, transformer.beanFactory.factory)));
 		return result;
 	}
 	
 	@Override
 	public ResultSetRowTransformer<I, C> copyWithAliases(Function<String, String> columnMapping) {
-		ResultSetRowTransformer<I, C> result = new ResultSetRowTransformer<>(this.beanType, reader.copyWithAliases(columnMapping), this.beanFactory);
+		ResultSetRowTransformer<I, C> result = new ResultSetRowTransformer<>(this.beanType, this.beanFactory.copyWithAliases(columnMapping));
 		this.consumers.forEach(c -> result.add(c.copyWithAliases(columnMapping)));
 		this.relations.forEach((consumer, transformer) -> result.add(consumer, transformer.copyWithAliases(columnMapping)));
 		return result;
@@ -156,18 +142,9 @@ public class ResultSetRowTransformer<I, C> implements ResultSetTransformer<I, C>
 	 */
 	@Override
 	public C transform(ResultSet resultSet) {
-		return nullable(readBeanKey(resultSet))
-				.map(this::giveRootInstance)
+		return nullable(this.beanFactory.createInstance(resultSet))
 				.invoke(b -> assemble(b, resultSet))
 				.get();
-	}
-	
-	protected I readBeanKey(ResultSet resultSet) {
-		return reader.read(resultSet);
-	}
-	
-	protected C giveRootInstance(I beanKey) {
-		return beanFactory.apply(beanKey);
 	}
 	
 	/**
@@ -187,6 +164,59 @@ public class ResultSetRowTransformer<I, C> implements ResultSetTransformer<I, C>
 		for (Entry<BiConsumer<C, Object>, ResultSetRowTransformer<Object, Object>> entry : relations.entrySet()) {
 			Object relatedBean = entry.getValue().transform(input);
 			entry.getKey().accept(rootBean, relatedBean);
+		}
+	}
+	
+	/**
+	 * An abstraction of a one-arg constructor that can instanciate a bean from a {@link ResultSet}
+	 * 
+	 * @param <I> constructor input type (also column type)
+	 * @param <C> bean type
+	 */
+	public static class BeanFactory<I, C> implements Factory<ResultSet, C>, CopiableForAnotherQuery<C> {
+		
+		/** {@link ResultSet} reader */
+		private final ColumnReader<I> reader;
+		
+		/** one-arg bean constructor */
+		private final SerializableFunction<I, C> factory;
+		
+		
+		public BeanFactory(ColumnReader<I> reader, SerializableFunction<I, C> factory) {
+			this.reader = reader;
+			this.factory = factory;
+		}
+		
+		public SerializableFunction<I, C> getFactory() {
+			return factory;
+		}
+		
+		@Override
+		public C createInstance(ResultSet resultSet) {
+			return nullable(readBeanKey(resultSet)).map(this::newInstance).get();
+		}
+		
+		protected I readBeanKey(ResultSet resultSet) {
+			return reader.read(resultSet);
+		}
+		
+		protected C newInstance(I beanKey) {
+			return factory.apply(beanKey);
+		}
+		
+		@Override
+		public BeanFactory<I, C> copyWithAliases(Function<String, String> columnMapping) {
+			return new BeanFactory<>(reader.copyWithAliases(columnMapping), this.factory);
+		}
+		
+		/**
+		 * Used to copy this instance for a subclass of its bean type, required for inheritance implementation.
+		 * @param beanFactory subclass one-arg constructor
+		 * @param <T> subclass type
+		 * @return a new {@link BeanFactory} for a subclass bean which read same column as this instance
+		 */
+		public <T extends C> BeanFactory<I, T> copyFor(SerializableFunction<I, T> beanFactory) {
+			return new BeanFactory<>(this.reader, beanFactory);
 		}
 	}
 }

@@ -4,6 +4,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.gama.reflection.IReversibleAccessor;
+import org.gama.reflection.ValueAccessPointSet;
 import org.gama.stalactite.persistence.engine.IEntityConfiguredPersister;
 import org.gama.stalactite.persistence.engine.PersistenceContext;
 import org.gama.stalactite.persistence.engine.PolymorphismPolicy.SingleTablePolymorphism;
@@ -60,10 +61,12 @@ class SingleTablePolymorphismBuilder<C, I, T extends Table, D> implements Polymo
 					false,
 					(T) mainPersister.getMainTable(),
 					subEntityPropertiesMapping,
+					new ValueAccessPointSet(),	// TODO: implement properties set by constructor feature in single-table polymorphism
 					identification,
 					// TODO: no generated keys handler for now, should be taken on main strategy or brought by identification
 					null,
-					subConfiguration.getPropertiesMapping().getBeanType());
+					subConfiguration.getPropertiesMapping().getBeanType(),
+					null);
 			
 			// no primary key to add nor foreign key since table is the same as main one (single table strategy)
 			JoinedTablesPersister subclassPersister = new JoinedTablesPersister(persistenceContext, classMappingStrategy);

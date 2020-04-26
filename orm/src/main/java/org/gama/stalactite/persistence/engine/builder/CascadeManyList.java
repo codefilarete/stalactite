@@ -20,7 +20,8 @@ public class CascadeManyList<SRC, TRGT, TRGTID, C extends List<TRGT>> extends Ca
 	
 	private Column indexingColumn;
 	
-	public <T extends Table> CascadeManyList(IReversibleAccessor<SRC, C> collectionProvider, ValueAccessPointByMethodReference methodReference, EntityMappingConfiguration<TRGT, TRGTID> targetMappingConfiguration, T targetTable) {
+	public <T extends Table> CascadeManyList(IReversibleAccessor<SRC, C> collectionProvider, ValueAccessPointByMethodReference methodReference,
+											 EntityMappingConfiguration<? extends TRGT, TRGTID> targetMappingConfiguration, T targetTable) {
 		super(collectionProvider, methodReference, targetMappingConfiguration, targetTable);
 	}
 	

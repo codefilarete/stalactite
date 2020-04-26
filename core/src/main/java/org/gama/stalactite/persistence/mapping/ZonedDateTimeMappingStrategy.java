@@ -16,6 +16,7 @@ import org.gama.lang.collection.Arrays;
 import org.gama.lang.exception.NotImplementedException;
 import org.gama.lang.function.Predicates;
 import org.gama.reflection.IReversibleAccessor;
+import org.gama.reflection.ValueAccessPoint;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.sql.result.Row;
@@ -71,6 +72,11 @@ public class ZonedDateTimeMappingStrategy<T extends Table> implements IEmbeddedB
 	@Override
 	public Set<Column<T, Object>> getColumns() {
 		return (Set) columns;
+	}
+	
+	@Override
+	public void addPropertySetByConstructor(ValueAccessPoint accessor) {
+		// this class doesn't support bean factory so it can't support properties set by constructor
 	}
 	
 	@Nonnull

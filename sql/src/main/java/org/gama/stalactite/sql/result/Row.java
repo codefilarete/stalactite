@@ -1,6 +1,5 @@
 package org.gama.stalactite.sql.result;
 
-import java.util.Map;
 import java.util.TreeMap;
 
 /**
@@ -40,7 +39,4 @@ public class Row {
 		return content.get(key);
 	}
 
-	public Map<String, Object> getContent() {
-		return content;
-	}
 }

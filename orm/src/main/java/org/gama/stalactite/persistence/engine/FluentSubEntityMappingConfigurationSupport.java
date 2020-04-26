@@ -500,9 +500,18 @@ public class FluentSubEntityMappingConfigurationSupport<C, I> implements IFluent
 		
 		private IFluentMappingBuilderPropertyOptions<C, I> wrapForAdditionalOptions(AbstractLinkage<C> newMapping) {
 			return new MethodDispatcher()
-					.redirect(PropertyOptions.class, () -> {
-						newMapping.setNullable(false);
-						return null;
+					.redirect(PropertyOptions.class, new PropertyOptions() {
+						@Override
+						public PropertyOptions mandatory() {
+							newMapping.setNullable(false);
+							return null;
+						}
+						
+						@Override
+						public PropertyOptions setByConstructor() {
+							newMapping.setByConstructor();
+							return null;
+						}
 					}, true)
 					.fallbackOn(entityConfigurationSupport)
 					.build((Class<IFluentMappingBuilderPropertyOptions<C, I>>) (Class) IFluentMappingBuilderPropertyOptions.class);
