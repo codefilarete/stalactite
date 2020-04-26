@@ -1,7 +1,5 @@
 package org.gama.stalactite.persistence.engine;
 
-import java.util.Map;
-
 import org.gama.lang.collection.Maps;
 import org.gama.stalactite.persistence.engine.RowCountManager.RowCounter;
 import org.gama.stalactite.persistence.mapping.IMappingStrategy.UpwhereColumn;
@@ -23,21 +21,21 @@ class RowCountManagerTest {
 		Column colB = toto.addColumn("b", int.class);
 		
 		RowCounter testInstance = new RowCounter();
-		testInstance.add((Map) Maps.asMap(colA, 1).add(colB, 2));
-		testInstance.add((Map) Maps.asMap(colA, 2).add(colB, 4));
-		THROWING_ROW_COUNT_MANAGER.checkRowCount(testInstance, 2);
+		testInstance.add(Maps.forHashMap(Column.class, Object.class).add(colA, 1).add(colB, 2));
+		testInstance.add(Maps.forHashMap(Column.class, Object.class).add(colA, 2).add(colB, 4));
+		THROWING_ROW_COUNT_MANAGER.checkRowCount(2, testInstance);
 		
-		// we add a duplicate, so row count should remain the same
-		testInstance.add((Map) Maps.asMap(colA, 2).add(colB, 4));
-		THROWING_ROW_COUNT_MANAGER.checkRowCount(testInstance, 2);
+		// we add a duplicate, row count should take it into account
+		testInstance.add(Maps.forHashMap(Column.class, Object.class).add(colA, 2).add(colB, 4));
+		THROWING_ROW_COUNT_MANAGER.checkRowCount(3, testInstance);
 		
 		// same with UpWhereColumn
 		testInstance = new RowCounter();
-		testInstance.add((Map) Maps.asMap(new UpwhereColumn<>(colA, true), 1).add(new UpwhereColumn<>(colB, true), 2));
-		testInstance.add((Map) Maps.asMap(new UpwhereColumn<>(colA, true), 2).add(new UpwhereColumn<>(colB, true), 4));
-		THROWING_ROW_COUNT_MANAGER.checkRowCount(testInstance, 2);
+		testInstance.add(Maps.forHashMap(UpwhereColumn.class, Object.class).add(new UpwhereColumn<>(colA, true), 1).add(new UpwhereColumn<>(colB, true), 2));
+		testInstance.add(Maps.forHashMap(UpwhereColumn.class, Object.class).add(new UpwhereColumn<>(colA, true), 2).add(new UpwhereColumn<>(colB, true), 4));
+		THROWING_ROW_COUNT_MANAGER.checkRowCount(2, testInstance);
 		
-		testInstance.add((Map) Maps.asMap(new UpwhereColumn<>(colA, true), 2).add(new UpwhereColumn<>(colB, true), 4));
-		THROWING_ROW_COUNT_MANAGER.checkRowCount(testInstance, 2);
+		testInstance.add(Maps.forHashMap(UpwhereColumn.class, Object.class).add(new UpwhereColumn<>(colA, true), 2).add(new UpwhereColumn<>(colB, true), 4));
+		THROWING_ROW_COUNT_MANAGER.checkRowCount(3, testInstance);
 	}
 }

@@ -1,6 +1,7 @@
 package org.gama.stalactite.persistence.engine;
 
-import java.util.LinkedHashSet;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -12,17 +13,17 @@ import java.util.Map;
 public interface RowCountManager {
 	
 	/** {@link RowCountManager} that will do nothing during check, created for testing purpose */
-	RowCountManager NOOP_ROW_COUNT_MANAGER = (expectedRowCount, rowCount) -> { /* Nothing is done */ };
+	RowCountManager NOOP_ROW_COUNT_MANAGER = (rowCount, expectedRowCount) -> { /* Nothing is done */ };
 	
 	/** {@link RowCountManager} that will throw a {@link StaleObjectExcepion} during check if expected and effective row count doesn't match */
-	RowCountManager THROWING_ROW_COUNT_MANAGER = (expectedRowCount, rowCount) -> {
-		if (expectedRowCount.size() != rowCount) {
+	RowCountManager THROWING_ROW_COUNT_MANAGER = (expectedRowCount, rowCounter) -> {
+		if (rowCounter.size() != expectedRowCount) {
 			// row count miss => we throw an exception
-			throw new StaleObjectExcepion(expectedRowCount.size(), rowCount);
+			throw new StaleObjectExcepion(expectedRowCount, rowCounter.size());
 		}
 	};
 	
-	void checkRowCount(RowCounter expectedRowCount, int rowCount);
+	void checkRowCount(int expectedRowCount, RowCounter rowCounter);
 	
 	/** A basic register for row update or delete */
 	class RowCounter {
@@ -33,7 +34,7 @@ public interface RowCountManager {
 		 * This storage should not keep duplicates because it is used for update and delete orders, and database will not update nor delete twice
 		 * some records in the same transaction for same values (well ... it depends on transaction isolation, but we left it as this)
 		 */
-		private final LinkedHashSet<Map<? /* UpwhereColumn or Column */, Object>> rowValues = new LinkedHashSet<>();
+		private final List<Map<? /* UpwhereColumn or Column */, Object>> rowValues = new ArrayList<>(100);
 		
 		public void add(Map<? /* UpwhereColumn or Column */, Object> updateValues) {
 			this.rowValues.add(updateValues);
