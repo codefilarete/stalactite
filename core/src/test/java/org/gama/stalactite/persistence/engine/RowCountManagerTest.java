@@ -23,19 +23,19 @@ class RowCountManagerTest {
 		RowCounter testInstance = new RowCounter();
 		testInstance.add(Maps.forHashMap(Column.class, Object.class).add(colA, 1).add(colB, 2));
 		testInstance.add(Maps.forHashMap(Column.class, Object.class).add(colA, 2).add(colB, 4));
-		THROWING_ROW_COUNT_MANAGER.checkRowCount(2, testInstance);
+		THROWING_ROW_COUNT_MANAGER.checkRowCount(testInstance, 2);
 		
 		// we add a duplicate, row count should take it into account
 		testInstance.add(Maps.forHashMap(Column.class, Object.class).add(colA, 2).add(colB, 4));
-		THROWING_ROW_COUNT_MANAGER.checkRowCount(3, testInstance);
+		THROWING_ROW_COUNT_MANAGER.checkRowCount(testInstance, 3);
 		
 		// same with UpWhereColumn
 		testInstance = new RowCounter();
 		testInstance.add(Maps.forHashMap(UpwhereColumn.class, Object.class).add(new UpwhereColumn<>(colA, true), 1).add(new UpwhereColumn<>(colB, true), 2));
 		testInstance.add(Maps.forHashMap(UpwhereColumn.class, Object.class).add(new UpwhereColumn<>(colA, true), 2).add(new UpwhereColumn<>(colB, true), 4));
-		THROWING_ROW_COUNT_MANAGER.checkRowCount(2, testInstance);
+		THROWING_ROW_COUNT_MANAGER.checkRowCount(testInstance, 2);
 		
 		testInstance.add(Maps.forHashMap(UpwhereColumn.class, Object.class).add(new UpwhereColumn<>(colA, true), 2).add(new UpwhereColumn<>(colB, true), 4));
-		THROWING_ROW_COUNT_MANAGER.checkRowCount(3, testInstance);
+		THROWING_ROW_COUNT_MANAGER.checkRowCount(testInstance, 3);
 	}
 }

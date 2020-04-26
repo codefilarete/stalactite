@@ -13,17 +13,17 @@ import java.util.Map;
 public interface RowCountManager {
 	
 	/** {@link RowCountManager} that will do nothing during check, created for testing purpose */
-	RowCountManager NOOP_ROW_COUNT_MANAGER = (rowCount, expectedRowCount) -> { /* Nothing is done */ };
+	RowCountManager NOOP_ROW_COUNT_MANAGER = (rowCounter, effectiveRowCount) -> { /* Nothing is done */ };
 	
 	/** {@link RowCountManager} that will throw a {@link StaleObjectExcepion} during check if expected and effective row count doesn't match */
-	RowCountManager THROWING_ROW_COUNT_MANAGER = (expectedRowCount, rowCounter) -> {
-		if (rowCounter.size() != expectedRowCount) {
+	RowCountManager THROWING_ROW_COUNT_MANAGER = (rowCounter, effectiveRowCount) -> {
+		if (rowCounter.size() != effectiveRowCount) {
 			// row count miss => we throw an exception
-			throw new StaleObjectExcepion(expectedRowCount, rowCounter.size());
+			throw new StaleObjectExcepion(rowCounter.size(), effectiveRowCount);
 		}
 	};
 	
-	void checkRowCount(int expectedRowCount, RowCounter rowCounter);
+	void checkRowCount(RowCounter rowCounter, int effectiveRowCount);
 	
 	/** A basic register for row update or delete */
 	class RowCounter {
