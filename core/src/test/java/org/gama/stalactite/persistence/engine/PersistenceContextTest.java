@@ -1,6 +1,7 @@
 package org.gama.stalactite.persistence.engine;
 
 import java.sql.Connection;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -23,10 +24,13 @@ import org.gama.stalactite.sql.binder.NullAwareParameterBinder;
 import org.gama.stalactite.sql.result.ResultSetRowTransformer;
 import org.gama.stalactite.sql.test.HSQLDBInMemoryDataSource;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 
 import static org.gama.lang.function.Functions.chain;
 import static org.gama.stalactite.query.model.Operators.eq;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 /**
  * @author Guillaume Mary
@@ -34,7 +38,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 public class PersistenceContextTest {
 	
 	@Test
-	public void insert_Update_Delete() throws SQLException {
+	void insert_Update_Delete() throws SQLException {
 		HSQLDBInMemoryDataSource hsqldbInMemoryDataSource = new HSQLDBInMemoryDataSource();
 		Connection connection = hsqldbInMemoryDataSource.getConnection();
 		PersistenceContext testInstance = new PersistenceContext(new SimpleConnectionProvider(connection), new HSQLDBDialect());
@@ -74,9 +78,28 @@ public class PersistenceContextTest {
 		assertEquals(1, delete.execute());
 	}
 	
+	@Test
+	void delete_update_withWhere() throws SQLException {
+		Connection connection = mock(Connection.class);
+		ArgumentCaptor<String> sqlCaptor = ArgumentCaptor.forClass(String.class);
+		PreparedStatement preparedStatementMock = mock(PreparedStatement.class);
+		when(connection.prepareStatement(sqlCaptor.capture())).thenReturn(preparedStatementMock);
+		PersistenceContext testInstance = new PersistenceContext(new SimpleConnectionProvider(connection), new HSQLDBDialect());
+		Table totoTable = new Table("toto");
+		Column<Table, Long> id = totoTable.addColumn("id", long.class);
+		Column<Table, String> name = totoTable.addColumn("name", String.class);
+		
+		testInstance.delete(totoTable).where(id, eq(12L)).and(name, eq("42")).execute();
+		testInstance.update(totoTable).set(id, 6L).where(id, eq(12L)).and(name, eq("42")).execute();
+		
+		assertEquals(Arrays.asList(
+				"delete from toto where id = ? and name = ?",
+				"update toto set id = ? where id = ? and name = ?"), sqlCaptor.getAllValues());
+	}
+	
 	
 	@Test
-	public void select() throws SQLException {
+	void select() throws SQLException {
 		HSQLDBInMemoryDataSource hsqldbInMemoryDataSource = new HSQLDBInMemoryDataSource();
 		Connection connection = hsqldbInMemoryDataSource.getConnection();
 		PersistenceContext testInstance = new PersistenceContext(new SimpleConnectionProvider(connection), new HSQLDBDialect());
@@ -113,7 +136,7 @@ public class PersistenceContextTest {
 	}
 	
 	@Test
-	public void select_columnTypeIsRegisteredInDialect() throws SQLException {
+	void select_columnTypeIsRegisteredInDialect() throws SQLException {
 		HSQLDBInMemoryDataSource hsqldbInMemoryDataSource = new HSQLDBInMemoryDataSource();
 		Connection connection = hsqldbInMemoryDataSource.getConnection();
 		HSQLDBDialect dialect = new HSQLDBDialect();
@@ -142,7 +165,7 @@ public class PersistenceContextTest {
 	}
 	
 	@Test
-	public void select_columnIsRegisteredInDialect_butNotItsType() throws SQLException {
+	void select_columnIsRegisteredInDialect_butNotItsType() throws SQLException {
 		HSQLDBInMemoryDataSource hsqldbInMemoryDataSource = new HSQLDBInMemoryDataSource();
 		Connection connection = hsqldbInMemoryDataSource.getConnection();
 		HSQLDBDialect dialect = new HSQLDBDialect();
@@ -171,7 +194,7 @@ public class PersistenceContextTest {
 	}
 	
 	@Test
-	public void newQuery() throws SQLException {
+	void newQuery() throws SQLException {
 		HSQLDBInMemoryDataSource hsqldbInMemoryDataSource = new HSQLDBInMemoryDataSource();
 		Connection connection = hsqldbInMemoryDataSource.getConnection();
 		HSQLDBDialect dialect = new HSQLDBDialect();
@@ -195,7 +218,7 @@ public class PersistenceContextTest {
 	}
 	
 	@Test
-	public void newQuery_withRelation() throws SQLException {
+	void newQuery_withRelation() throws SQLException {
 		HSQLDBInMemoryDataSource hsqldbInMemoryDataSource = new HSQLDBInMemoryDataSource();
 		Connection connection = hsqldbInMemoryDataSource.getConnection();
 		HSQLDBDialect dialect = new HSQLDBDialect();

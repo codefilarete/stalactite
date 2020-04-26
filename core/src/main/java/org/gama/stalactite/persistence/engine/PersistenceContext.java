@@ -3,7 +3,6 @@ package org.gama.stalactite.persistence.engine;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Executable;
 import java.sql.Connection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -37,6 +36,7 @@ import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.query.builder.SQLBuilder;
 import org.gama.stalactite.query.builder.SQLQueryBuilder;
+import org.gama.stalactite.query.model.AbstractRelationalOperator;
 import org.gama.stalactite.query.model.CriteriaChain;
 import org.gama.stalactite.query.model.Query;
 import org.gama.stalactite.query.model.QueryEase;
@@ -429,26 +429,34 @@ public class PersistenceContext {
 		}
 		
 		/**
-		 * Executes this update statement. To be used when update has no parameters on where clause, else use {@link #execute(Map)}
+		 * Executes this update statement with given values
 		 * 
 		 * @return the updated row count
 		 */
 		public int execute() {
-			return execute(Collections.emptyMap());
-		}
-		
-		/**
-		 * Executes this update statement with given values.
-		 *
-		 * @return the updated row count
-		 */
-		public int execute(Map<? extends Column<T, Object>, Object> values) {
 			UpdateStatement<T> updateStatement = new UpdateCommandBuilder<>(this).toStatement(getDialect().getColumnBinderRegistry());
-			values.forEach(updateStatement::setValue);
 			try (WriteOperation<Integer> writeOperation = new WriteOperation<>(updateStatement, getConnectionProvider())) {
 				writeOperation.setValues(updateStatement.getValues());
 				return writeOperation.execute();
 			}
+		}
+		
+		@Override
+		public ExecutableCriteria where(Column column, String condition) {
+			CriteriaChain where = super.where(column, condition);
+			return new MethodReferenceDispatcher()
+					.redirect(ExecutableSQL::execute, this::execute)
+					.redirect(CriteriaChain.class, where, true)
+					.fallbackOn(this).build(ExecutableCriteria.class);
+		}
+		
+		@Override
+		public ExecutableCriteria where(Column column, AbstractRelationalOperator condition) {
+			CriteriaChain where = super.where(column, condition);
+			return new MethodReferenceDispatcher()
+					.redirect(ExecutableSQL::execute, this::execute)
+					.redirect(CriteriaChain.class, where, true)
+					.fallbackOn(this).build(ExecutableCriteria.class);
 		}
 	}
 	
@@ -497,6 +505,33 @@ public class PersistenceContext {
 				return writeOperation.execute();
 			}
 		}
+		
+		@Override
+		public ExecutableCriteria where(Column column, String condition) {
+			CriteriaChain where = super.where(column, condition);
+			return new MethodReferenceDispatcher()
+					.redirect(ExecutableSQL::execute, this::execute)
+					.redirect(CriteriaChain.class, where, true)
+					.fallbackOn(this).build(ExecutableCriteria.class);
+		}
+		
+		@Override
+		public ExecutableCriteria where(Column column, AbstractRelationalOperator condition) {
+			CriteriaChain where = super.where(column, condition);
+			return new MethodReferenceDispatcher()
+					.redirect(ExecutableSQL::execute, this::execute)
+					.redirect(CriteriaChain.class, where, true)
+					.fallbackOn(this).build(ExecutableCriteria.class);
+		}
+	}
+	
+	public interface ExecutableSQL {
+		
+		int execute();
+	}
+	
+	public interface ExecutableCriteria extends CriteriaChain<ExecutableCriteria>, ExecutableSQL {
+		
 	}
 	
 	/**
