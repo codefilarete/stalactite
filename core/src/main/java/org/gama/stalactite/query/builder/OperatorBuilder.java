@@ -228,7 +228,7 @@ public class OperatorBuilder {
 		
 		@Override
 		public StringAppenderWrapper cat(String s, String... ss) {
-			surrogate.cat(s).cat((Object[]) ss);
+			surrogate.cat(s).cat(ss);
 			return this;
 		}
 		
