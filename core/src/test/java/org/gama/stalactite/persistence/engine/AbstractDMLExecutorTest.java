@@ -163,7 +163,7 @@ public abstract class AbstractDMLExecutorTest {
 									Toto.class,
 									toto,
 									(Map) mappedClass.persistentFieldHarverster.getFieldToColumn(),
-									new ComposedIdMappingStrategy<>(idAccessor, new AlreadyAssignedIdentifierManager<>(Toto.class),
+									new ComposedIdMappingStrategy<>(idAccessor, new AlreadyAssignedIdentifierManager<>(Toto.class, c -> {}, c -> false),
 											new ComposedIdentifierAssembler<Toto>(toto.getPrimaryKey().getColumns()) {
 												@Override
 												protected Toto assemble(Map<Column, Object> primaryKeyElements) {
@@ -232,7 +232,7 @@ public abstract class AbstractDMLExecutorTest {
 									Tata.class,
 									tata,
 									Maps.asMap(Accessors.accessorByField(Tata.class, "c"), colC),
-									new ComposedIdMappingStrategy<>(idAccessor, new AlreadyAssignedIdentifierManager<>(ComposedId.class),
+									new ComposedIdMappingStrategy<>(idAccessor, new AlreadyAssignedIdentifierManager<>(ComposedId.class, c -> {}, c -> false),
 											new ComposedIdentifierAssembler<ComposedId>(tata.getPrimaryKey().getColumns()) {
 												@Override
 												protected ComposedId assemble(Map<Column, Object> primaryKeyElements) {

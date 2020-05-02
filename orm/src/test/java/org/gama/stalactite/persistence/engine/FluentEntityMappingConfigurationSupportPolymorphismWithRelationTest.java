@@ -16,7 +16,6 @@ import org.gama.lang.collection.Iterables;
 import org.gama.lang.function.Functions;
 import org.gama.lang.test.Assertions;
 import org.gama.stalactite.persistence.engine.CascadeOptions.RelationMode;
-import org.gama.stalactite.persistence.engine.ColumnOptions.IdentifierPolicy;
 import org.gama.stalactite.persistence.engine.IFluentEntityMappingBuilder.IFluentMappingBuilderPropertyOptions;
 import org.gama.stalactite.persistence.engine.PersistenceContext.ExecutableSelect;
 import org.gama.stalactite.persistence.engine.listening.DeleteListener;
@@ -38,7 +37,9 @@ import org.gama.stalactite.persistence.engine.model.Village;
 import org.gama.stalactite.persistence.id.AbstractIdentifier;
 import org.gama.stalactite.persistence.id.Identified;
 import org.gama.stalactite.persistence.id.Identifier;
+import org.gama.stalactite.persistence.id.PersistableIdentifier;
 import org.gama.stalactite.persistence.id.PersistedIdentifier;
+import org.gama.stalactite.persistence.id.StatefullIdentifierAlreadyAssignedIdentifierPolicy;
 import org.gama.stalactite.persistence.id.provider.LongProvider;
 import org.gama.stalactite.persistence.sql.HSQLDBDialect;
 import org.gama.stalactite.persistence.structure.Table;
@@ -58,12 +59,12 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
-import static org.gama.stalactite.persistence.engine.ColumnOptions.IdentifierPolicy.ALREADY_ASSIGNED;
 import static org.gama.stalactite.persistence.engine.MappingEase.embeddableBuilder;
 import static org.gama.stalactite.persistence.engine.MappingEase.entityBuilder;
 import static org.gama.stalactite.persistence.engine.MappingEase.subentityBuilder;
 import static org.gama.stalactite.persistence.id.Identifier.LONG_TYPE;
 import static org.gama.stalactite.persistence.id.Identifier.identifierBinder;
+import static org.gama.stalactite.persistence.id.StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED;
 import static org.gama.stalactite.sql.binder.DefaultParameterBinders.INTEGER_PRIMITIVE_BINDER;
 import static org.gama.stalactite.sql.binder.DefaultParameterBinders.LONG_PRIMITIVE_BINDER;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -193,19 +194,19 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 		
 		IFluentMappingBuilderPropertyOptions<Person, Identifier<Long>> personMappingBuilder = MappingEase.entityBuilder(Person.class,
 				Identifier.LONG_TYPE)
-				.add(Person::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
+				.add(Person::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 				.add(Person::getName);
 		
 		IFluentMappingBuilderPropertyOptions<City, Identifier<Long>> cityMappingBuilder = MappingEase.entityBuilder(City.class,
 				Identifier.LONG_TYPE)
-				.add(City::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
+				.add(City::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 				.add(City::getName)
 				.add(City::getCountry);
 		
 		Object[][] result = new Object[][] {
 				{	"single table",
 						entityBuilder(Country.class, Identifier.LONG_TYPE)
-								.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
+								.add(Country::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 								.add(Country::getName)
 								.add(Country::getDescription)
 								.addOneToOne(Country::getPresident, personMappingBuilder)
@@ -213,11 +214,11 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 								.mapPolymorphism(PolymorphismPolicy.<Republic, Identifier<Long>>singleTable()
 										.addSubClass(subentityBuilder(Republic.class)
 												.add(Republic::getDeputeCount), "Republic"))
-								.build(persistenceContext1),
-						persistenceContext1 },
+								.build(persistenceContext1)
+				},
 				{	"joined tables",
 						entityBuilder(Country.class, Identifier.LONG_TYPE)
-								.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
+								.add(Country::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 								.add(Country::getName)
 								.add(Country::getDescription)
 								.addOneToOne(Country::getPresident, personMappingBuilder)
@@ -225,8 +226,8 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 								.mapPolymorphism(PolymorphismPolicy.<Republic, Identifier<Long>>joinedTables()
 										.addSubClass(subentityBuilder(Republic.class)
 												.add(Republic::getDeputeCount)))
-								.build(persistenceContext2),
-						persistenceContext2 },
+								.build(persistenceContext2)
+				},
 				// Not implementable : one-to-many with mappedby targeting a table-per-class polymorphism is not implemented due to fk constraint, how to ? forget foreign key ?
 //				{	"table per class",
 //						entityBuilder(Country.class, Identifier.LONG_TYPE)
@@ -238,8 +239,8 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 //								.mapPolymorphism(PolymorphismPolicy.<Republic, Identifier<Long>>tablePerClass()
 //										.addSubClass(subentityBuilder(Republic.class)
 //												.add(Republic::getDeputeCount)))
-//								.build(persistenceContext3),
-//						persistenceContext3 },
+//								.build(persistenceContext3)
+//				 },
 		};
 		new DDLDeployer(persistenceContext1).deployDDL();
 		new DDLDeployer(persistenceContext2).deployDDL();
@@ -249,9 +250,9 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 	
 	@ParameterizedTest(name="{0}")
 	@MethodSource("polymorphicPersistersOneToMany")
-	void crudOneToMany(String testDisplayName, IEntityPersister<Country, Identifier<Long>> countryPersister, PersistenceContext connectionProvider) throws SQLException {
+	void crudOneToMany(String testDisplayName, IEntityPersister<Country, Identifier<Long>> countryPersister) {
 		LongProvider countryIdProvider = new LongProvider();
-		Republic dummyCountry = new Republic(countryIdProvider.giveNewIdentifier());
+		Republic dummyCountry = new Republic(new PersistableIdentifier<>(countryIdProvider.giveNewIdentifier()));
 		dummyCountry.setDeputeCount(250);
 		dummyCountry.setName("France");
 		

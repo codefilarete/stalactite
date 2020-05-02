@@ -15,10 +15,10 @@ import org.gama.lang.collection.Arrays;
 import org.gama.lang.collection.Iterables;
 import org.gama.lang.function.Predicates;
 import org.gama.lang.test.Assertions;
+import org.gama.stalactite.persistence.id.StatefullIdentifierAlreadyAssignedIdentifierPolicy;
 import org.gama.stalactite.sql.ConnectionProvider;
 import org.gama.stalactite.sql.binder.DefaultParameterBinders;
 import org.gama.stalactite.sql.test.HSQLDBInMemoryDataSource;
-import org.gama.stalactite.persistence.engine.ColumnOptions.IdentifierPolicy;
 import org.gama.stalactite.persistence.engine.IFluentEntityMappingBuilder.IFluentMappingBuilderPropertyOptions;
 import org.gama.stalactite.persistence.engine.PersistenceContext.ExecutableSelect;
 import org.gama.stalactite.persistence.engine.listening.UpdateListener;
@@ -78,12 +78,12 @@ class FluentEntityMappingConfigurationSupportOneToManyListTest {
 		Column<Table, Integer> idx = choiceTable.addColumn("idx", int.class);
 		
 		IFluentMappingBuilderPropertyOptions<Choice, Identifier<Long>> choiceMappingConfiguration = entityBuilder(Choice.class, LONG_TYPE)
-				.add(Choice::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
+				.add(Choice::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 				.add(Choice::getName)
 				.add(Choice::getQuestion);
 		
 		IEntityPersister<Question, Identifier<Long>> questionPersister = entityBuilder(Question.class, LONG_TYPE)
-				.add(Question::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
+				.add(Question::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 				.addOneToManyList(Question::getChoices, choiceMappingConfiguration).mappedBy(Choice::getQuestion).indexedBy(idx).cascading(ALL)
 				.build(persistenceContext);
 		
@@ -266,12 +266,12 @@ class FluentEntityMappingConfigurationSupportOneToManyListTest {
 		Column<Table, Integer> idx = choiceTable.addColumn("idx", int.class);
 		
 		IFluentMappingBuilderPropertyOptions<Choice, Identifier<Long>> choiceMappingConfiguration = entityBuilder(Choice.class, LONG_TYPE)
-				.add(Choice::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
+				.add(Choice::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 				.add(Choice::getName)
 				.add(Choice::getQuestion);
 		
 		IEntityPersister<Question, Identifier<Long>> questionPersister = entityBuilder(Question.class, LONG_TYPE)
-				.add(Question::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
+				.add(Question::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 				.addOneToManyList(Question::getChoices, choiceMappingConfiguration).mappedBy(Choice::getQuestion).indexedBy(idx).cascading(ALL)
 				.build(persistenceContext);
 		
@@ -328,7 +328,7 @@ class FluentEntityMappingConfigurationSupportOneToManyListTest {
 		persistenceContext = new PersistenceContext(connectionProvider, DIALECT);
 		
 		IFluentMappingBuilderPropertyOptions<Choice, Identifier<Long>> choiceMappingConfiguration = entityBuilder(Choice.class, LONG_TYPE)
-				.add(Choice::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
+				.add(Choice::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 				.add(Choice::getName)
 				.add(Choice::getQuestion);
 		
@@ -337,7 +337,7 @@ class FluentEntityMappingConfigurationSupportOneToManyListTest {
 						"but no indexing property is defined",
 				assertThrows(UnsupportedOperationException.class, () ->
 						entityBuilder(Question.class, LONG_TYPE)
-								.add(Question::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
+								.add(Question::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 								// in next statement there's no call to indexedBy(), so configuration will fail because it requires it
 								.addOneToManyList(Question::getChoices, choiceMappingConfiguration).mappedBy(Choice::getQuestion)
 								.build(persistenceContext)).getMessage());
@@ -353,12 +353,12 @@ class FluentEntityMappingConfigurationSupportOneToManyListTest {
 		Column<Table, Integer> idx = choiceTable.addColumn("idx", int.class);
 		
 		IFluentMappingBuilderPropertyOptions<Choice, Identifier<Long>> choiceMappingConfiguration = entityBuilder(Choice.class, LONG_TYPE)
-				.add(Choice::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
+				.add(Choice::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 				.add(Choice::getName)
 				.add(Choice::setQuestionWithNoGetter);
 		
 		IEntityPersister<Question, Identifier<Long>> persisterWithNonExistingSetter = entityBuilder(Question.class, LONG_TYPE)
-				.add(Question::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
+				.add(Question::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 				.addOneToManyList(Question::getChoices, choiceMappingConfiguration).indexedBy(idx).mappedBy(Choice::setQuestionWithNoGetter).cascading(ALL)
 				.build(persistenceContext);
 		
@@ -385,12 +385,12 @@ class FluentEntityMappingConfigurationSupportOneToManyListTest {
 		Column<Table, Integer> idx = choiceTable.addColumn("idx", int.class);
 		
 		IFluentMappingBuilderPropertyOptions<Choice, Identifier<Long>> choiceMappingConfiguration = entityBuilder(Choice.class, LONG_TYPE)
-				.add(Choice::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
+				.add(Choice::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 				.add(Choice::getName)
 				.add(Choice::getQuestion);
 		
 		IEntityPersister<Question, Identifier<Long>> persister = entityBuilder(Question.class, LONG_TYPE)
-				.add(Question::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
+				.add(Question::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 				.addOneToManyList(Question::getChoices, choiceMappingConfiguration).indexedBy(idx).mappedBy(Choice::setQuestion).cascading(ALL)
 				.build(persistenceContext);
 		
@@ -415,14 +415,14 @@ class FluentEntityMappingConfigurationSupportOneToManyListTest {
 		Column<Table, Integer> idx = choiceTable.addColumn("idx", int.class);
 		
 		IFluentMappingBuilderPropertyOptions<Choice, Identifier<Long>> choiceMappingConfiguration = entityBuilder(Choice.class, LONG_TYPE)
-				.add(Choice::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
+				.add(Choice::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 				.add(Choice::getName)
 				.add(Choice::getQuestion);
 		
 		assertEquals("Indexing column is defined without owner : relation is only declared by Question::getChoices",
 				assertThrows(UnsupportedOperationException.class, () ->
 				entityBuilder(Question.class, LONG_TYPE)
-						.add(Question::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
+						.add(Question::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 						// in next statement there's no call to indexedBy(), so configuration will fail because it requires it
 						.addOneToManyList(Question::getChoices, choiceMappingConfiguration).indexedBy(idx)
 						.build(persistenceContext)).getMessage());
@@ -969,12 +969,12 @@ class FluentEntityMappingConfigurationSupportOneToManyListTest {
 			idx = choiceTable.addColumn("idx", int.class);
 			
 			IFluentMappingBuilderPropertyOptions<Choice, Identifier<Long>> choiceMappingConfiguration = entityBuilder(Choice.class, LONG_TYPE)
-					.add(Choice::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
+					.add(Choice::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 					.add(Choice::getName)
 					.add(Choice::getQuestion);
 			
 			questionPersister = entityBuilder(Question.class, LONG_TYPE)
-					.add(Question::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
+					.add(Question::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 					.addOneToManyList(Question::getChoices, choiceMappingConfiguration).mappedBy(Choice::getQuestion).indexedBy(idx)
 					.cascading(ALL_ORPHAN_REMOVAL)
 					.build(persistenceContext);
@@ -1041,12 +1041,12 @@ class FluentEntityMappingConfigurationSupportOneToManyListTest {
 			Column<Table, Integer> idx = choiceTable.addColumn("idx", int.class);
 			
 			IFluentMappingBuilderPropertyOptions<Choice, Identifier<Long>> choiceMappingConfiguration = entityBuilder(Choice.class, LONG_TYPE)
-					.add(Choice::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
+					.add(Choice::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 					.add(Choice::getName)
 					.add(Choice::getQuestion);
 			
 			questionPersister = entityBuilder(Question.class, LONG_TYPE)
-					.add(Question::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
+					.add(Question::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 					.addOneToManyList(Question::getChoices, choiceMappingConfiguration).mappedBy(Choice::getQuestion).indexedBy(idx)
 					.cascading(ALL)
 					.build(persistenceContext);
@@ -1056,11 +1056,11 @@ class FluentEntityMappingConfigurationSupportOneToManyListTest {
 			// mapping. For instance there's no need of Question relationship mapping.
 			// BE AWARE THAT mapping Choice a second time is a bad practise
 			IFluentMappingBuilderPropertyOptions<AnswerChoice, Identifier<Long>> answerChoiceMappingConfiguration = entityBuilder(AnswerChoice.class, LONG_TYPE)
-					.add(AnswerChoice::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
+					.add(AnswerChoice::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 					.add(AnswerChoice::getName);
 			
 			answerPersister = entityBuilder(Answer.class, LONG_TYPE)
-					.add(Answer::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
+					.add(Answer::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 					.addOneToManyList(Answer::getChoices, answerChoiceMappingConfiguration, choiceTable).cascading(ALL)
 					.build(persistenceContext);
 			

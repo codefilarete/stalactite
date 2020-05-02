@@ -299,7 +299,8 @@ public class JoinedStrategiesSelectExecutorTest {
 				Maps.asMap((IReversibleAccessor) Accessors.accessorByMethodReference(Toto::getId1, Toto::setId1), (Column) id1)
 						.add(Accessors.accessorByMethodReference(Toto::getId2, Toto::setId2), id2)
 						.add(Accessors.accessorByMethodReference(Toto::getName, Toto::setName), name),
-				new ComposedIdMappingStrategy<>(idAccessor, new AlreadyAssignedIdentifierManager<>(Toto.class), new ComposedIdentifierAssembler<Toto>(targetTable) {
+				new ComposedIdMappingStrategy<>(idAccessor, new AlreadyAssignedIdentifierManager<>(Toto.class, c -> {}, c -> false)
+						, new ComposedIdentifierAssembler<Toto>(targetTable) {
 					@Override
 					protected Toto assemble(Map<Column, Object> primaryKeyElements) {
 						return new Toto((long) primaryKeyElements.get(id1), (long) primaryKeyElements.get(id2));

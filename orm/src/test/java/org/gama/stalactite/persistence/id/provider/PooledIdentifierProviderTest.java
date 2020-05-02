@@ -10,7 +10,6 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 import org.gama.lang.collection.Arrays;
-import org.gama.stalactite.persistence.id.PersistableIdentifier;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -76,10 +75,10 @@ public class PooledIdentifierProviderTest {
 			// poorly implemented thread consumption at fixed rate
 			while (true) {
 				try {
-					PersistableIdentifier<Long> data = testInstance.giveNewIdentifier();
+					long data = testInstance.giveNewIdentifier();
 					// we sync to prevent ConcurrentModificationException that happen sometimes
 					synchronized (bagToFill) {
-						bagToFill.add(data.getSurrogate());
+						bagToFill.add(data);
 					}
 					Thread.sleep(50);
 				} catch (InterruptedException e) {

@@ -27,7 +27,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
-import static org.gama.stalactite.persistence.engine.ColumnOptions.IdentifierPolicy.ALREADY_ASSIGNED;
+import static org.gama.stalactite.persistence.id.StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED;
 import static org.gama.stalactite.persistence.engine.MappingEase.entityBuilder;
 import static org.gama.stalactite.persistence.id.Identifier.LONG_TYPE;
 import static org.gama.stalactite.persistence.id.Identifier.identifierBinder;
@@ -368,7 +368,7 @@ public class FluentEntityMappingConfigurationSupportInheritanceTest {
 							.add(Vehicle::getId).identifier(ALREADY_ASSIGNED)
 							.build(persistenceContext));
 			assertEquals("Defining an identifier while inheritance is used is not supported" 
-					+ " : o.g.s.p.e.m.Vehicle defined identifier AbstractVehicle::getId" 
+					+ " : o.g.s.p.e.m.Vehicle defines identifier AbstractVehicle::getId" 
 					+ " while it inherits from o.g.s.p.e.m.AbstractVehicle", thrownException.getMessage());
 		}
 		
@@ -477,7 +477,7 @@ public class FluentEntityMappingConfigurationSupportInheritanceTest {
 					.mapInheritance(inheritanceConfiguration);
 			MappingConfigurationException thrownException = assertThrows(MappingConfigurationException.class,
 					() -> mappingBuilder.build(persistenceContext));
-			assertEquals("Mapped super class and inheritance are not supported when they are combined, please remove one of them", thrownException.getMessage());
+			assertEquals("Combination of mapped super class and inheritance is not supported, please remove one of them", thrownException.getMessage());
 		}
 		
 		@Test

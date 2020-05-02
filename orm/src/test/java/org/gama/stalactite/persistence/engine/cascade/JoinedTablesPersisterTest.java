@@ -125,7 +125,8 @@ public class JoinedTablesPersisterTest {
 		totoClassMappingStrategy_ontoTable1 = new ClassMappingStrategy<>(Toto.class, totoClassTable1,
 				totoClassMapping1, identifierAccessor, beforeInsertIdentifierManager);
 		totoClassMappingStrategy2_ontoTable2 = new ClassMappingStrategy<>(Toto.class, totoClassTable2,
-				totoClassMapping2, identifierAccessor, AlreadyAssignedIdentifierManager.INSTANCE);
+				totoClassMapping2, identifierAccessor, new AlreadyAssignedIdentifierManager<>((Class<StatefullIdentifier<Integer>>) (Class) StatefullIdentifier.class,
+				c -> c.getId().setPersisted(), c -> c.getId().isPersisted()));
 		
 		JavaTypeToSqlTypeMapping simpleTypeMapping = new JavaTypeToSqlTypeMapping();
 		simpleTypeMapping.put(Identifier.class, "int");

@@ -1,12 +1,9 @@
 package org.gama.stalactite.persistence.id;
 
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-
+import org.gama.stalactite.persistence.id.manager.StatefullIdentifier;
+import org.gama.stalactite.sql.binder.LambdaParameterBinder;
 import org.gama.stalactite.sql.binder.NullAwareParameterBinder;
 import org.gama.stalactite.sql.binder.ParameterBinder;
-import org.gama.stalactite.persistence.id.manager.StatefullIdentifier;
 
 /**
  * Equivalent of {@link StatefullIdentifier} for a more end-user usage.
@@ -30,16 +27,6 @@ public interface Identifier<T> extends StatefullIdentifier<T> {
 	 * @see org.gama.stalactite.sql.binder.DefaultParameterBinders
 	 */
 	static <I> ParameterBinder<StatefullIdentifier<I>> identifierBinder(ParameterBinder<I> parameterBinder) {
-		return new NullAwareParameterBinder<>(new ParameterBinder<StatefullIdentifier<I>>() {
-			@Override
-			public StatefullIdentifier<I> doGet(ResultSet resultSet, String columnName) {
-				return new PersistedIdentifier<>(parameterBinder.get(resultSet, columnName));
-			}
-			
-			@Override
-			public void set(PreparedStatement statement, int valueIndex, StatefullIdentifier<I> value) throws SQLException {
-				parameterBinder.set(statement, valueIndex, value.getSurrogate());
-			}
-		});
+		return new NullAwareParameterBinder<>(new LambdaParameterBinder<>(parameterBinder, PersistedIdentifier::new, StatefullIdentifier::getSurrogate));
 	}
 }

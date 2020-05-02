@@ -9,11 +9,12 @@ import java.util.List;
 
 import org.gama.lang.collection.Arrays;
 import org.gama.lang.collection.Iterables;
+import org.gama.stalactite.persistence.id.PersistableIdentifier;
+import org.gama.stalactite.persistence.id.StatefullIdentifierAlreadyAssignedIdentifierPolicy;
 import org.gama.stalactite.sql.binder.DefaultParameterBinders;
 import org.gama.stalactite.sql.result.ResultSetIterator;
 import org.gama.stalactite.sql.test.HSQLDBInMemoryDataSource;
 import org.gama.stalactite.persistence.engine.CascadeOptions.RelationMode;
-import org.gama.stalactite.persistence.engine.ColumnOptions.IdentifierPolicy;
 import org.gama.stalactite.persistence.engine.IFluentEntityMappingBuilder.IFluentMappingBuilderPropertyOptions;
 import org.gama.stalactite.persistence.engine.model.City;
 import org.gama.stalactite.persistence.engine.model.Country;
@@ -57,13 +58,13 @@ public class FluentEntityMappingConfigurationSupportToOneAndToManyMixTest {
 		
 		IFluentMappingBuilderPropertyOptions<Person, Identifier<Long>> personMappingBuilder = MappingEase.entityBuilder(Person.class,
 				Identifier.LONG_TYPE)
-				.add(Person::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
+				.add(Person::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 				.add(Person::getName);
 		personMappingConfiguration = personMappingBuilder;
 		
 		IFluentMappingBuilderPropertyOptions<City, Identifier<Long>> cityMappingBuilder = MappingEase.entityBuilder(City.class,
 				Identifier.LONG_TYPE)
-				.add(City::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
+				.add(City::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 				.add(City::getName)
 				.add(City::getCountry);
 		cityMappingConfiguration = cityMappingBuilder;
@@ -76,7 +77,7 @@ public class FluentEntityMappingConfigurationSupportToOneAndToManyMixTest {
 				Identifier.LONG_TYPE)
 				// setting a foreign key naming strategy to be tested
 				.withForeignKeyNaming(ForeignKeyNamingStrategy.DEFAULT)
-				.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
+				.add(Country::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 				.add(Country::getName)
 				.add(Country::getDescription)
 				.addOneToOne(Country::getPresident, personMappingConfiguration)
@@ -122,7 +123,7 @@ public class FluentEntityMappingConfigurationSupportToOneAndToManyMixTest {
 	public void testCascade_oneToOneAndOneToMany_CRUD() {
 		// mapping building thantks to fluent API
 		IEntityPersister<Country, Identifier<Long>> countryPersister = MappingEase.entityBuilder(Country.class, Identifier.LONG_TYPE)
-				.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
+				.add(Country::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 				.add(Country::getName)
 				.addOneToOne(Country::getPresident, personMappingConfiguration).cascading(ALL)
 				.addOneToManySet(Country::getCities, cityMappingConfiguration).cascading(ALL)
@@ -173,12 +174,12 @@ public class FluentEntityMappingConfigurationSupportToOneAndToManyMixTest {
 	public void testCascade_multipleOneToMany_update() {
 		IFluentMappingBuilderPropertyOptions<State, Identifier<Long>> stateMappingBuilder = MappingEase.entityBuilder(State.class,
 				Identifier.LONG_TYPE)
-				.add(State::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
+				.add(State::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 				.add(State::getName)
 				.add(State::getCountry);	// allow to declare the owner column of the relation
 		
 		IEntityPersister<Country, Identifier<Long>> countryPersister = MappingEase.entityBuilder(Country.class, Identifier.LONG_TYPE)
-				.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
+				.add(Country::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 				.add(Country::getName)
 				.add(Country::getDescription)
 				.addOneToManySet(Country::getCities, cityMappingConfiguration).mappedBy(City::setCountry).cascading(ALL_ORPHAN_REMOVAL)
@@ -201,10 +202,10 @@ public class FluentEntityMappingConfigurationSupportToOneAndToManyMixTest {
 		dummyCountry.addCity(lyon);
 		
 		LongProvider stateIdProvider = new LongProvider();
-		State isere = new State(stateIdProvider.giveNewIdentifier());
+		State isere = new State(new PersistableIdentifier<>(stateIdProvider.giveNewIdentifier()));
 		isere.setName("Isere");
 		dummyCountry.addState(isere);
-		State ain = new State(stateIdProvider.giveNewIdentifier());
+		State ain = new State(new PersistableIdentifier<>(stateIdProvider.giveNewIdentifier()));
 		ain.setName("ain");
 		dummyCountry.addState(ain);
 		
@@ -219,7 +220,7 @@ public class FluentEntityMappingConfigurationSupportToOneAndToManyMixTest {
 		Iterables.first(persistedCountry.getCities()).setName("changed");
 		
 		persistedCountry.getStates().remove(ain);
-		State ardeche = new State(cityIdProvider.giveNewIdentifier());
+		State ardeche = new State(new PersistableIdentifier<>(cityIdProvider.giveNewIdentifier()));
 		ardeche.setName("ardeche");
 		persistedCountry.addState(ardeche);
 		Iterables.first(persistedCountry.getStates()).setName("changed");

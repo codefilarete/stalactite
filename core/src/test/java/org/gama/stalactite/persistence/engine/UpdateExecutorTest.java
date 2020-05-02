@@ -118,7 +118,7 @@ public class UpdateExecutorTest extends AbstractDMLExecutorTest {
 		Column<?, Long> id = table.addColumn("id", long.class).primaryKey();
 		AccessorByField<SimpleEntity, Long> idAccessor = Accessors.accessorByField(SimpleEntity.class, "id");
 		ClassMappingStrategy<SimpleEntity, Long, T> simpleEntityPersistenceMapping = new ClassMappingStrategy<SimpleEntity, Long, T>
-				(SimpleEntity.class, table, (Map) Maps.asMap(idAccessor, id), idAccessor, AlreadyAssignedIdentifierManager.INSTANCE);
+				(SimpleEntity.class, table, (Map) Maps.asMap(idAccessor, id), idAccessor, new AlreadyAssignedIdentifierManager<>(long.class, c -> {}, c -> true));
 		UpdateExecutor<SimpleEntity, Long, T> testInstance = new UpdateExecutor<SimpleEntity, Long, T>(
 				simpleEntityPersistenceMapping, new ConnectionConfigurationSupport(mock(ConnectionProvider.class), 4), new DMLGenerator(new ColumnBinderRegistry()), Retryer.NO_RETRY, 4);
 		
@@ -243,7 +243,7 @@ public class UpdateExecutorTest extends AbstractDMLExecutorTest {
 		Column<?, Long> id = table.addColumn("id", long.class).primaryKey();
 		AccessorByField<SimpleEntity, Long> idAccessor = Accessors.accessorByField(SimpleEntity.class, "id");
 		ClassMappingStrategy<SimpleEntity, Long, T> simpleEntityPersistenceMapping = new ClassMappingStrategy<SimpleEntity, Long, T>
-				(SimpleEntity.class, table, (Map) Maps.asMap(idAccessor, id), idAccessor, AlreadyAssignedIdentifierManager.INSTANCE);
+				(SimpleEntity.class, table, (Map) Maps.asMap(idAccessor, id), idAccessor, new AlreadyAssignedIdentifierManager<>(long.class, c -> {}, c -> false));
 		UpdateExecutor<SimpleEntity, Long, T> testInstance = new UpdateExecutor<>(
 				simpleEntityPersistenceMapping, new ConnectionConfigurationSupport(mock(ConnectionProvider.class), 4), new DMLGenerator(new ColumnBinderRegistry()), Retryer.NO_RETRY, 4);
 		

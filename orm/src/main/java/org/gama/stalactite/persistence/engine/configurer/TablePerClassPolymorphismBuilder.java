@@ -78,8 +78,6 @@ abstract class TablePerClassPolymorphismBuilder<C, I, T extends Table> implement
 					subEntityMapping.getMapping(),
 					new ValueAccessPointSet(),	// TODO: implement properties set by constructor feature in table-per-class polymorphism 
 					identification,
-					// TODO: no generated keys handler for now, should be taken on main strategy or brought by identification
-					null,
 					subConfiguration.getPropertiesMapping().getBeanType(),
 					null);
 			

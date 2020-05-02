@@ -1,11 +1,12 @@
 package org.gama.stalactite.persistence.mapping;
 
 import javax.annotation.Nonnull;
+import java.util.function.Function;
 
 import org.gama.reflection.IReversibleAccessor;
 import org.gama.stalactite.persistence.id.assembly.SimpleIdentifierAssembler;
+import org.gama.stalactite.persistence.id.manager.AlreadyAssignedIdentifierManager;
 import org.gama.stalactite.persistence.id.manager.IdentifierInsertionManager;
-import org.gama.stalactite.persistence.id.manager.StatefullIdentifier;
 
 /**
  * Entry point for single value (hence single-column primary key), as opposed to composed, about entity identifier mapping.
@@ -37,8 +38,8 @@ public class SimpleIdMappingStrategy<C, I> implements IdMappingStrategy<C, I> {
 		this.idAccessor = idAccessor;
 		this.identifierInsertionManager = identifierInsertionManager;
 		this.identifierMarshaller = identifierMarshaller;
-		if (StatefullIdentifier.class.isAssignableFrom(identifierInsertionManager.getIdentifierType())) {
-			this.isNewDeterminer = new StatefullIdDeterminer();
+		if (identifierInsertionManager instanceof AlreadyAssignedIdentifierManager) {
+			this.isNewDeterminer = new AlreadyAssignedIdDeterminer(((AlreadyAssignedIdentifierManager<C, I>) identifierInsertionManager).getIsPersistedFunction());
 		} else if (identifierInsertionManager.getIdentifierType().isPrimitive()) {
 			this.isNewDeterminer = new PrimitiveIdDeterminer();
 		} else {
@@ -107,13 +108,19 @@ public class SimpleIdMappingStrategy<C, I> implements IdMappingStrategy<C, I> {
 	}
 	
 	/**
-	 * For case where the identifier is a {@link StatefullIdentifier}
+	 * For case where the identifier is already assigned : we have to delegate determination to a function
 	 */
-	private class StatefullIdDeterminer implements IsNewDeterminer<C> {
+	private class AlreadyAssignedIdDeterminer implements IsNewDeterminer<C> {
+		
+		private final Function<C, Boolean> isPersistedFunction;
+		
+		private AlreadyAssignedIdDeterminer(Function<C, Boolean> isPersistedFunction) {
+			this.isPersistedFunction = isPersistedFunction;
+		}
 		
 		@Override
 		public boolean isNew(C entity) {
-			return !((StatefullIdentifier) idAccessor.getId(entity)).isPersisted();
+			return !isPersistedFunction.apply(entity);
 		}
 	}
 }

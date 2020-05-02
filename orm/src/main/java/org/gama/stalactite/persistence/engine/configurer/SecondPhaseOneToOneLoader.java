@@ -8,6 +8,7 @@ import java.util.Set;
 import java.util.function.Function;
 
 import org.gama.lang.Nullable;
+import org.gama.lang.Reflections;
 import org.gama.lang.collection.Iterables;
 import org.gama.stalactite.persistence.engine.BeanRelationFixer;
 import org.gama.stalactite.persistence.engine.ISelectExecutor;
@@ -56,7 +57,7 @@ class SecondPhaseOneToOneLoader<SRC, TRGT, ID> implements SelectListener<SRC, ID
 		// - selecting entities with null id is non-sensence
 		// - it prevents from generating SQL "in ()" which is invalid
 		// - it prevents from NullPointerException when applying target to source
-		relationIds.stream().filter(r -> r.getTargetId() != null).forEach(r -> {
+		relationIds.stream().filter(r -> !isDefaultValue(r.getTargetId())).forEach(r -> {
 			idAccessors.putIfAbsent(r.getSelectExecutor(), r.getIdAccessor());
 			targetIdPerSource.computeIfAbsent(r.getSource(), k -> new HashSet<>()).add(r.getTargetId());
 			selectsToExecute.computeIfAbsent(r.getSelectExecutor(), k -> new HashSet<>()).add(r.getTargetId());
@@ -64,14 +65,16 @@ class SecondPhaseOneToOneLoader<SRC, TRGT, ID> implements SelectListener<SRC, ID
 		
 		// we load target entities from their ids, and map them per their loader
 		Map<ISelectExecutor, List<TRGT>> targetsPerSelector = new HashMap<>();
-		selectsToExecute.forEach((selectExecutor, ids) -> {
-			targetsPerSelector.put(selectExecutor, selectExecutor.select(ids));
-		});
+		selectsToExecute.forEach((selectExecutor, ids) -> targetsPerSelector.put(selectExecutor, selectExecutor.select(ids)));
 		// then we apply them onto their source entities, to remember which target applies to which source, we use target id
 		Map<TRGTID, TRGT> targetPerId = new HashMap<>();
 		targetsPerSelector.forEach((selector, loadedTargets) -> targetPerId.putAll(Iterables.map(loadedTargets, idAccessors.get(selector))));
 		sourceEntities.forEach(src -> Nullable.nullable(targetIdPerSource.get(src))    // source may not have targetIds if relation if null
 				.invoke(s -> s.forEach(targetId -> beanRelationFixer.apply(src, targetPerId.get(targetId)))));
+	}
+	
+	private boolean isDefaultValue(Object value) {
+		return value == null || Reflections.PRIMITIVE_DEFAULT_VALUES.get(value.getClass()) == value;
 	}
 	
 	@Override

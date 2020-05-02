@@ -9,11 +9,11 @@ import java.util.List;
 import org.gama.lang.function.Serie.IntegerSerie;
 import org.gama.lang.function.Serie.NowSerie;
 import org.gama.lang.test.Assertions;
+import org.gama.stalactite.persistence.id.StatefullIdentifierAlreadyAssignedIdentifierPolicy;
 import org.gama.stalactite.sql.ConnectionProvider;
 import org.gama.stalactite.sql.TransactionObserverConnectionProvider;
 import org.gama.stalactite.sql.binder.DefaultParameterBinders;
 import org.gama.stalactite.sql.test.HSQLDBInMemoryDataSource;
-import org.gama.stalactite.persistence.engine.ColumnOptions.IdentifierPolicy;
 import org.gama.stalactite.persistence.engine.IFluentEntityMappingBuilder.IFluentMappingBuilderPropertyOptions;
 import org.gama.stalactite.persistence.engine.model.City;
 import org.gama.stalactite.persistence.engine.model.Country;
@@ -58,13 +58,13 @@ public class FluentEntityMappingConfigurationSupportVersioningTest {
 		
 		IFluentMappingBuilderPropertyOptions<Person, Identifier<Long>> personMappingBuilder = MappingEase.entityBuilder(Person.class,
 				Identifier.LONG_TYPE)
-				.add(Person::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
+				.add(Person::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 				.add(Person::getName);
 		personPersister = personMappingBuilder.build(persistenceContext);
 		
 		IFluentMappingBuilderPropertyOptions<City, Identifier<Long>> cityMappingBuilder = MappingEase.entityBuilder(City.class,
 				Identifier.LONG_TYPE)
-				.add(City::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
+				.add(City::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 				.add(City::getName)
 				.add(City::getCountry);
 		cityPersister = cityMappingBuilder.build(persistenceContext);
@@ -78,7 +78,7 @@ public class FluentEntityMappingConfigurationSupportVersioningTest {
 				// setting a foreign key naming strategy to be tested
 				.withForeignKeyNaming(ForeignKeyNamingStrategy.DEFAULT)
 				.versionedBy(Country::getVersion, new IntegerSerie())
-				.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
+				.add(Country::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 				.add(Country::getName)
 				.add(Country::getDescription)
 				.build(persistenceContext));
@@ -92,7 +92,7 @@ public class FluentEntityMappingConfigurationSupportVersioningTest {
 				// setting a foreign key naming strategy to be tested
 				.withForeignKeyNaming(ForeignKeyNamingStrategy.DEFAULT)
 				.versionedBy(Country::getName)
-				.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
+				.add(Country::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 				.add(Country::getName)
 				.add(Country::getDescription)
 				.build(persistenceContext));
@@ -109,7 +109,7 @@ public class FluentEntityMappingConfigurationSupportVersioningTest {
 				// setting a foreign key naming strategy to be tested
 				.withForeignKeyNaming(ForeignKeyNamingStrategy.DEFAULT)
 				.versionedBy(Country::getVersion, new IntegerSerie())
-				.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
+				.add(Country::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 				.add(Country::getName)
 				.add(Country::getDescription)
 				.build(persistenceContext);
@@ -163,7 +163,7 @@ public class FluentEntityMappingConfigurationSupportVersioningTest {
 						return now;
 					}
 				})
-				.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
+				.add(Country::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 				.add(Country::getName)
 				.add(Country::getDescription)
 				.build(persistenceContext);
@@ -209,7 +209,7 @@ public class FluentEntityMappingConfigurationSupportVersioningTest {
 				// setting a foreign key naming strategy to be tested
 				.withForeignKeyNaming(ForeignKeyNamingStrategy.DEFAULT)
 				.versionedBy(Country::getVersion, new IntegerSerie())
-				.add(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
+				.add(Country::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 				.add(Country::getName)
 				.add(Country::getDescription)
 				.build(persistenceContext);

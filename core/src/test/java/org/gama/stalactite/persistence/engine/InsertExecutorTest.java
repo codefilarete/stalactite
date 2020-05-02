@@ -136,7 +136,7 @@ public class InsertExecutorTest extends AbstractDMLExecutorTest {
 				.add(PropertyAccessor.fromMethodReference(VersionnedToto::getA, VersionnedToto::setA), pk);
 		testInstance = new InsertExecutor<>(new ClassMappingStrategy<VersionnedToto, Integer, Table>(VersionnedToto.class, totoTable, (Map) mapping,
 				PropertyAccessor.fromMethodReference(VersionnedToto::getA, VersionnedToto::setA),
-				new AlreadyAssignedIdentifierManager<>(Integer.class)),
+				new AlreadyAssignedIdentifierManager<>(Integer.class, c -> {}, c -> false)),
 				new ConnectionConfigurationSupport(connectionProvider, 3), dmlGenerator, Retryer.NO_RETRY, 3);
 		
 		PropertyAccessor<VersionnedToto, Long> versioningAttributeAccessor = PropertyAccessor.fromMethodReference(VersionnedToto::getVersion, VersionnedToto::setVersion);

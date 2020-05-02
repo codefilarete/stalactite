@@ -2,8 +2,6 @@ package org.gama.stalactite.persistence.id.provider;
 
 import java.util.function.Supplier;
 
-import org.gama.stalactite.persistence.id.PersistableIdentifier;
-
 /**
  * Implementation based on {@link Supplier}
  * 
@@ -18,7 +16,7 @@ public class IdentifierSupplier<T> implements IdentifierProvider<T> {
 	}
 	
 	@Override
-	public final PersistableIdentifier<T> giveNewIdentifier() {
-		return new PersistableIdentifier<>(surrogateSupplier.get());
+	public final T giveNewIdentifier() {
+		return surrogateSupplier.get();
 	}
 }

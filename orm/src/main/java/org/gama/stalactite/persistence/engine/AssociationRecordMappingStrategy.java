@@ -34,7 +34,7 @@ class AssociationRecordMappingStrategy extends ClassMappingStrategy<AssociationR
 						associationRecord.setLeft(identifier.getLeft());
 						associationRecord.setRight(identifier.getRight());
 					}
-				}, new AlreadyAssignedIdentifierManager<>(AssociationRecord.class), new ComposedIdentifierAssembler<AssociationRecord>(targetTable) {
+				}, new AlreadyAssignedIdentifierManager<>(AssociationRecord.class, c -> {}, c -> false), new ComposedIdentifierAssembler<AssociationRecord>(targetTable) {
 					@Override
 					protected AssociationRecord assemble(Map<Column, Object> primaryKeyElements) {
 						Object leftValue = primaryKeyElements.get(targetTable.getOneSideKeyColumn());

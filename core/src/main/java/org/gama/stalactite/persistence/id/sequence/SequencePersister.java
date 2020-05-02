@@ -3,7 +3,6 @@ package org.gama.stalactite.persistence.id.sequence;
 import java.util.Map;
 
 import org.gama.lang.collection.Maps;
-import org.gama.reflection.Accessors;
 import org.gama.reflection.PropertyAccessor;
 import org.gama.stalactite.persistence.engine.Persister;
 import org.gama.stalactite.persistence.engine.SeparateTransactionExecutor;
@@ -64,8 +63,10 @@ public class SequencePersister extends Persister<Sequence, String, SequenceTable
 		}
 		
 		public Map<PropertyAccessor<Sequence, Object>, Column<SequenceTable, Object>> getPooledSequenceFieldMapping() {
-			return Maps.asMap(Sequence.SEQUENCE_NAME_FIELD, sequenceNameColumn)
-						.add((PropertyAccessor) Sequence.VALUE_FIELD, (Column) nextValColumn);
+			return (Map) Maps
+					.forHashMap(PropertyAccessor.class, Column.class)
+					.add(Sequence.SEQUENCE_NAME_FIELD, sequenceNameColumn)
+					.add(Sequence.VALUE_FIELD, nextValColumn);
 		}
 	}
 	
@@ -79,8 +80,8 @@ public class SequencePersister extends Persister<Sequence, String, SequenceTable
 		
 		
 		static {
-			SEQUENCE_NAME_FIELD = Accessors.propertyAccessor(Sequence.class, "sequenceName");
-			VALUE_FIELD = Accessors.propertyAccessor(Sequence.class, "step");
+			SEQUENCE_NAME_FIELD = PropertyAccessor.fromMethodReference(Sequence::getSequenceName, Sequence::setSequenceName);
+			VALUE_FIELD = PropertyAccessor.fromMethodReference(Sequence::getStep, Sequence::setStep);
 		}
 		
 		private String sequenceName;
@@ -103,6 +104,10 @@ public class SequencePersister extends Persister<Sequence, String, SequenceTable
 		
 		public String getSequenceName() {
 			return sequenceName;
+		}
+		
+		public void setSequenceName(String sequenceName) {
+			this.sequenceName = sequenceName;
 		}
 	}
 	
@@ -153,7 +158,9 @@ public class SequencePersister extends Persister<Sequence, String, SequenceTable
 					sequenceTable,
 					sequenceTable.getPooledSequenceFieldMapping(),
 					Sequence.SEQUENCE_NAME_FIELD,
-					new AlreadyAssignedIdentifierManager<>(String.class));
+					// Setting a "Noop" identifier manager because we use a insert(..), updateById(..) and select(..) for simple case
+					// (no complex graph nor chain of code on persisted instance)
+					new AlreadyAssignedIdentifierManager<>(String.class, c -> {}, c -> true));
 		}
 	}
 }

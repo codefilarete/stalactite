@@ -46,7 +46,7 @@ public class ComplexTypeBinderTest {
 				persistentFieldHarverster.mapFields(Toto.class, targetTable),
 				Accessors.propertyAccessor(persistentFieldHarverster.getField("id")),
 				// Basic mapping to prevent NullPointerException, even if it's not the goal of our test
-				new AlreadyAssignedIdentifierManager<>(Integer.class));
+				new AlreadyAssignedIdentifierManager<>(Integer.class, c -> {}, c -> false));
 		
 		// Creating our test instance : will persist List<String> as a String (stupid case)
 		ComplexTypeBinder<List<String>> testInstance = new ComplexTypeBinder<>(DefaultParameterBinders.STRING_BINDER,

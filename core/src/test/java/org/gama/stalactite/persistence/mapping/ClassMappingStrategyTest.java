@@ -7,7 +7,6 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.function.Function;
 
 import org.gama.lang.Reflections;
 import org.gama.lang.collection.Arrays;
@@ -74,13 +73,13 @@ public class ClassMappingStrategyTest {
 	public static void setUpTestInstance() {
 		// instance to test
 		// The basic mapping will be altered to add special mapping for field "myListField" (a Collection) and "myMapField" (a Map)
-		testInstance = new ClassMappingStrategy<Toto, Integer, Table>(
+		testInstance = new ClassMappingStrategy<>(
 				Toto.class,
 				targetTable,
 				(Map<IReversibleAccessor<Toto, Object>, Column<Table, Object>>) classMapping,
 				Accessors.propertyAccessor(persistentFieldHarverster.getField("a")),
 				// Basic mapping to prevent NullPointerException, even if it's not the goal of our test
-				new AlreadyAssignedIdentifierManager<>(Integer.class));
+				new AlreadyAssignedIdentifierManager<>(Integer.class, c -> {}, c -> false));
 		
 		
 		// Additionnal mapping: the list is mapped to 2 additionnal columns
@@ -266,7 +265,7 @@ public class ClassMappingStrategyTest {
 						Maps.asMap(Accessors.propertyAccessor(Toto.class, "b"), colB),
 						// identifier is not present in previous statement so it leads to the expected exception
 						identifierAccesor,
-						new AlreadyAssignedIdentifierManager<>(Integer.class)),
+						new AlreadyAssignedIdentifierManager<>(Integer.class, c -> {}, c -> false)),
 				"Bean identifier '" + identifierAccesor + "' must have its matching column in the mapping");
 	}
 	

@@ -11,6 +11,7 @@ import org.gama.stalactite.persistence.engine.IEntityPersister.EntityCriteria;
 import org.gama.stalactite.persistence.engine.MappingEase;
 import org.gama.stalactite.persistence.engine.PersistenceContext;
 import org.gama.stalactite.persistence.engine.RuntimeMappingException;
+import org.gama.stalactite.persistence.id.StatefullIdentifierAlreadyAssignedIdentifierPolicy;
 import org.gama.stalactite.persistence.engine.model.City;
 import org.gama.stalactite.persistence.engine.model.Country;
 import org.gama.stalactite.persistence.id.Identified;
@@ -48,7 +49,7 @@ class EntityCriteriaSupportTest {
 				.add(Country::getId).identifier(IdentifierPolicy.AFTER_INSERT)
 				.add(Country::getName)
 				.addOneToOne(Country::getCapital, MappingEase.entityBuilder(City.class, long.class)
-						.add(City::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
+						.add(City::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 						.add(City::getName))
 				.build(new PersistenceContext(mock(ConnectionProvider.class), dialect));
 		
@@ -108,7 +109,7 @@ class EntityCriteriaSupportTest {
 				.add(Country::getId).identifier(IdentifierPolicy.AFTER_INSERT)
 				.add(Country::getName)
 				.addOneToOne(Country::getCapital, MappingEase.entityBuilder(City.class, long.class)
-						.add(City::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
+						.add(City::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 						.add(City::getName), cityTable)
 				.build(dummyPersistenceContext, countryTable)
 				.getMappingStrategy();
@@ -134,7 +135,7 @@ class EntityCriteriaSupportTest {
 				.add(Country::getId).identifier(IdentifierPolicy.AFTER_INSERT)
 				.add(Country::getName)
 				.addOneToManySet(Country::getCities, MappingEase.entityBuilder(City.class, long.class)
-						.add(City::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
+						.add(City::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 						.add(City::getName), cityTable
 				)
 				.build(dummyPersistenceContext, countryTable)

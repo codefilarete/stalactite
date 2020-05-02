@@ -38,7 +38,7 @@ class IndexedAssociationRecordMappingStrategy extends ClassMappingStrategy<Index
 						associationRecord.setRight(identifier.getRight());
 						associationRecord.setIndex(identifier.getIndex());
 					}
-				}, new AlreadyAssignedIdentifierManager<>(IndexedAssociationRecord.class), new ComposedIdentifierAssembler<IndexedAssociationRecord>(targetTable) {
+				}, new AlreadyAssignedIdentifierManager<>(IndexedAssociationRecord.class, c -> {}, c -> false), new ComposedIdentifierAssembler<IndexedAssociationRecord>(targetTable) {
 					@Override
 					protected IndexedAssociationRecord assemble(Map<Column, Object> primaryKeyElements) {
 						return new IndexedAssociationRecord(

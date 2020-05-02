@@ -44,7 +44,7 @@ public class AfterUpdateCollectionCascaderTest extends AbstractCascaderTest {
 		Map<? extends IReversibleAccessor<Tata, Object>, Column<T, Object>> mapping = (Map) Maps.asMap(identifier, (Column) primaryKey).add(propName, nameColumn);
 		ClassMappingStrategy<Tata, Long, T> mappingStrategyMock = new ClassMappingStrategy<>(Tata.class, tataTable,
 				mapping, identifier,
-				new AlreadyAssignedIdentifierManager<>(Long.class));
+				new AlreadyAssignedIdentifierManager<>(Long.class, c -> {}, c -> false));
 		
 		Persister<Tata, Long, T> persisterStub = new Persister<Tata, Long, T>(mappingStrategyMock, mock(Dialect.class), mock(IConnectionConfiguration.class)) {
 			

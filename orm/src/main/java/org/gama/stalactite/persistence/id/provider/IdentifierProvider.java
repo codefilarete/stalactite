@@ -1,10 +1,8 @@
 package org.gama.stalactite.persistence.id.provider;
 
-import org.gama.stalactite.persistence.id.PersistableIdentifier;
-
 /**
- * Interface for giving a {@link PersistableIdentifier} that is not already used (unique), and so can be inserted in database without
- * breaking unicity constraint.
+ * Interface for giving an identifier that is not already used (a unique value), and so can be inserted in database without
+ * breaking unicity constraint. Unicity is expected to be at least in the context of current instance but can be wider.
  * 
  * Expected to be thread-safe. If it's not the case, mention it.
  * 
@@ -13,6 +11,6 @@ import org.gama.stalactite.persistence.id.PersistableIdentifier;
 @FunctionalInterface
 public interface IdentifierProvider<T> {
 	
-	PersistableIdentifier<T> giveNewIdentifier();
+	T giveNewIdentifier();
 	
 }

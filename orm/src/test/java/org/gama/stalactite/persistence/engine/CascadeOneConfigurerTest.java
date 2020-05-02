@@ -15,13 +15,13 @@ import org.gama.reflection.Accessors;
 import org.gama.reflection.IReversibleAccessor;
 import org.gama.reflection.MutatorByMethodReference;
 import org.gama.reflection.PropertyAccessor;
-import org.gama.stalactite.persistence.engine.ColumnOptions.IdentifierPolicy;
 import org.gama.stalactite.persistence.engine.cascade.JoinedTablesPersister;
 import org.gama.stalactite.persistence.engine.configurer.PersisterBuilderImpl;
 import org.gama.stalactite.persistence.engine.model.City;
 import org.gama.stalactite.persistence.engine.model.Country;
 import org.gama.stalactite.persistence.id.Identifier;
 import org.gama.stalactite.persistence.id.PersistableIdentifier;
+import org.gama.stalactite.persistence.id.StatefullIdentifierAlreadyAssignedIdentifierPolicy;
 import org.gama.stalactite.persistence.id.manager.AlreadyAssignedIdentifierManager;
 import org.gama.stalactite.persistence.id.manager.IdentifierInsertionManager;
 import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
@@ -67,7 +67,8 @@ class CascadeOneConfigurerTest {
 				Accessors.mutatorByField(Country.class, "id")
 		);
 		ClassMappingStrategy<Country, Identifier<Long>, Table> countryClassMappingStrategy = new ClassMappingStrategy<Country, Identifier<Long>, Table>(Country.class, countryTable,
-				(Map) countryMapping, countryIdentifierAccessorByMethodReference, (IdentifierInsertionManager) new AlreadyAssignedIdentifierManager<Country, Identifier>(Identifier.class));
+				(Map) countryMapping, countryIdentifierAccessorByMethodReference,
+				(IdentifierInsertionManager) new AlreadyAssignedIdentifierManager<Country, Identifier>(Identifier.class, c -> {}, c -> false));
 		
 		EntityLinkageByColumnName identifierLinkage = new EntityLinkageByColumnName<>(
 				new PropertyAccessor<>(new AccessorByMethodReference<>(City::getId), Accessors.mutatorByField(City.class, "id")),
@@ -103,7 +104,7 @@ class CascadeOneConfigurerTest {
 		// preventing NullPointerException
 		when(cityMappingConfiguration.getTableNamingStrategy()).thenReturn(TableNamingStrategy.DEFAULT);
 		when(cityMappingConfiguration.getIdentifierAccessor()).thenReturn(cityIdentifierAccessorByMethodReference);
-		when(cityMappingConfiguration.getIdentifierPolicy()).thenReturn(IdentifierPolicy.ALREADY_ASSIGNED);
+		when(cityMappingConfiguration.getIdentifierPolicy()).thenReturn(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED);
 		when(cityMappingConfiguration.getOneToOnes()).thenReturn(Collections.emptyList());
 		when(cityMappingConfiguration.getOneToManys()).thenReturn(Collections.emptyList());
 		when(cityMappingConfiguration.inheritanceIterable()).thenAnswer(CALLS_REAL_METHODS);
@@ -165,7 +166,8 @@ class CascadeOneConfigurerTest {
 				Accessors.mutatorByField(Country.class, "id")
 		);
 		ClassMappingStrategy<Country, Identifier<Long>, Table> countryClassMappingStrategy = new ClassMappingStrategy<Country, Identifier<Long>, Table>(Country.class, countryTable,
-				(Map) countryMapping, countryIdentifierAccessorByMethodReference, (IdentifierInsertionManager) new AlreadyAssignedIdentifierManager<Country, Identifier>(Identifier.class));
+				(Map) countryMapping, countryIdentifierAccessorByMethodReference,
+				(IdentifierInsertionManager) new AlreadyAssignedIdentifierManager<Country, Identifier>(Identifier.class, c -> {}, c -> false));
 		
 		// defining City mapping
 		Table<?> cityTable = new Table<>("city");
@@ -204,7 +206,7 @@ class CascadeOneConfigurerTest {
 		// preventing NullPointerException
 		when(cityMappingConfiguration.getTableNamingStrategy()).thenReturn(TableNamingStrategy.DEFAULT);
 		when(cityMappingConfiguration.getIdentifierAccessor()).thenReturn(cityIdentifierAccessorByMethodReference);
-		when(cityMappingConfiguration.getIdentifierPolicy()).thenReturn(IdentifierPolicy.ALREADY_ASSIGNED);
+		when(cityMappingConfiguration.getIdentifierPolicy()).thenReturn(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED);
 		when(cityMappingConfiguration.getOneToOnes()).thenReturn(Collections.emptyList());
 		when(cityMappingConfiguration.getOneToManys()).thenReturn(Collections.emptyList());
 		when(cityMappingConfiguration.inheritanceIterable()).thenAnswer(CALLS_REAL_METHODS);

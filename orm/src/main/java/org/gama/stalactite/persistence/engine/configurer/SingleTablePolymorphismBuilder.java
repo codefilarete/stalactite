@@ -63,8 +63,6 @@ class SingleTablePolymorphismBuilder<C, I, T extends Table, D> implements Polymo
 					subEntityPropertiesMapping,
 					new ValueAccessPointSet(),	// TODO: implement properties set by constructor feature in single-table polymorphism
 					identification,
-					// TODO: no generated keys handler for now, should be taken on main strategy or brought by identification
-					null,
 					subConfiguration.getPropertiesMapping().getBeanType(),
 					null);
 			

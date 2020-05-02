@@ -9,6 +9,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -32,6 +33,7 @@ import org.gama.stalactite.persistence.engine.CascadeOne;
 import org.gama.stalactite.persistence.engine.CascadeOneConfigurer;
 import org.gama.stalactite.persistence.engine.ColumnNamingStrategy;
 import org.gama.stalactite.persistence.engine.ColumnOptions;
+import org.gama.stalactite.persistence.engine.ColumnOptions.AlreadyAssignedIdentifierPolicy;
 import org.gama.stalactite.persistence.engine.ColumnOptions.BeforeInsertIdentifierPolicy;
 import org.gama.stalactite.persistence.engine.ColumnOptions.IdentifierPolicy;
 import org.gama.stalactite.persistence.engine.ElementCollectionTableNamingStrategy;
@@ -44,7 +46,6 @@ import org.gama.stalactite.persistence.engine.ForeignKeyNamingStrategy;
 import org.gama.stalactite.persistence.engine.IConfiguredPersister;
 import org.gama.stalactite.persistence.engine.IEntityConfiguredPersister;
 import org.gama.stalactite.persistence.engine.MappingConfigurationException;
-import org.gama.stalactite.persistence.engine.NotYetSupportedOperationException;
 import org.gama.stalactite.persistence.engine.PersistenceContext;
 import org.gama.stalactite.persistence.engine.Persister;
 import org.gama.stalactite.persistence.engine.PersisterBuilder;
@@ -66,9 +67,8 @@ import org.gama.stalactite.persistence.engine.cascade.JoinedTablesPersister;
 import org.gama.stalactite.persistence.engine.configurer.BeanMappingBuilder.ColumnNameProvider;
 import org.gama.stalactite.persistence.engine.configurer.PersisterBuilderImpl.MappingPerTable.Mapping;
 import org.gama.stalactite.persistence.engine.listening.PersisterListener;
+import org.gama.stalactite.persistence.engine.listening.SelectListener;
 import org.gama.stalactite.persistence.engine.listening.UpdateByIdListener;
-import org.gama.stalactite.persistence.id.Identified;
-import org.gama.stalactite.persistence.id.Identifier;
 import org.gama.stalactite.persistence.id.assembly.SimpleIdentifierAssembler;
 import org.gama.stalactite.persistence.id.manager.AlreadyAssignedIdentifierManager;
 import org.gama.stalactite.persistence.id.manager.BeforeInsertIdentifierManager;
@@ -78,6 +78,7 @@ import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
 import org.gama.stalactite.persistence.mapping.SimpleIdMappingStrategy;
 import org.gama.stalactite.persistence.mapping.SinglePropertyIdAccessor;
 import org.gama.stalactite.persistence.query.EntityCriteriaSupport.EntityGraphNode;
+import org.gama.stalactite.persistence.sql.Dialect;
 import org.gama.stalactite.persistence.sql.dml.binder.ColumnBinderRegistry;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
@@ -215,6 +216,8 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 		addPrimarykeys(identification, inheritanceMappingPerTable.giveTables());
 		addForeignKeys(identification, inheritanceMappingPerTable.giveTables());
 		addIdentificationToMapping(identification, inheritanceMappingPerTable.getMappings());
+		// determining insertion manager must be done AFTER primary key addition, else it would fall into NullPointerException
+		determineIdentifierManager(identification, persistenceContext.getDialect(), inheritanceMappingPerTable, identification.getIdAccessor());
 		
 		// Creating main persister 
 		Mapping mainMapping = Iterables.first(inheritanceMappingPerTable.getMappings());
@@ -278,7 +281,17 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 			result.addDeleteByIdListener(mainPersister.getPersisterListener().getDeleteByIdListener());
 		}
 		
-		
+		// when identifier policy is already-assigned one, we must ensure that entity is marked as persisted when it comes back from database
+		// because user may forgot to / can't mark it as such
+		if (entityMappingConfiguration.getIdentifierPolicy() instanceof ColumnOptions.AlreadyAssignedIdentifierPolicy) {
+			Consumer<C> asPersistedMarker = ((AlreadyAssignedIdentifierPolicy<C, I>) entityMappingConfiguration.getIdentifierPolicy()).getMarkAsPersistedFunction();
+			result.addSelectListener(new SelectListener<C, I>() {
+				@Override
+				public void afterSelect(Iterable<? extends C> result) {
+					Iterables.filter(result, Objects::nonNull).forEach(asPersistedMarker);
+				}
+			});
+		}
 		
 		// parent persister must be kept in ascending order for further treatments
 		Iterator<Mapping> mappings = Iterables.filter(Iterables.reverseIterator(inheritanceMappingPerTable.getMappings().asSet()),
@@ -374,7 +387,6 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 					mapping.mapping,
 					mapping.propertiesSetByConstructor,
 					identification,
-					persistenceContext.getDialect()::buildGeneratedKeysReader,
 					mapping.giveEmbeddableConfiguration().getBeanType(),
 					null);
 			
@@ -398,7 +410,6 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 				mapping.mapping,
 				mapping.propertiesSetByConstructor,
 				identification,
-				persistenceContext.getDialect()::buildGeneratedKeysReader,
 				entityMappingConfiguration.getEntityType(),
 				entityMappingConfiguration.getEntityFactory());
 		return (JoinedTablesPersister<C, I, T>) new JoinedTablesPersister(persistenceContext, parentMappingStrategy);
@@ -678,6 +689,18 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 		return result;
 	}
 	
+	/**
+	 * Visits parent {@link EntityMappingConfiguration} of current entity mapping configuration (including itself), this is an optional operation
+	 * because current configuration may not have a direct entity ancestor.
+	 * Then visits mapped super classes as {@link EmbeddableMappingConfiguration} of the last visited {@link EntityMappingConfiguration}, optional
+	 * operation too.
+	 * This is because inheritance tree can only have 2 paths :
+	 * - first an optional inheritance from some other entity
+	 * - then an optional inheritance from some mapped sur class
+	 * 
+	 * @param entityConfigurationConsumer
+	 * @param mappedSuperClassConfigurationConsumer
+	 */
 	void visitInheritedEmbeddableMappingConfigurations(Consumer<EntityMappingConfiguration> entityConfigurationConsumer,
 													   Consumer<EmbeddableMappingConfiguration> mappedSuperClassConfigurationConsumer) {
 		// iterating over mapping from inheritance
@@ -729,37 +752,91 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 	 * @return a couple that defines identification of the mapping
 	 * @throws UnsupportedOperationException when identifiation was not found, because it doesn't make sense to have an entity without identification
 	 */
-	@VisibleForTesting
-	<T extends Table<?>> Identification determineIdentification() {
+	private <T extends Table<?>> Identification determineIdentification() {
 		if (entityMappingConfiguration.getInheritanceConfiguration() != null && entityMappingConfiguration.getPropertiesMapping().getMappedSuperClassConfiguration() != null) {
-			throw new MappingConfigurationException("Mapped super class and inheritance are not supported when they are combined, please remove one of them");
+			throw new MappingConfigurationException("Combination of mapped super class and inheritance is not supported, please remove one of them");
 		}
 		if (entityMappingConfiguration.getIdentifierAccessor() != null && entityMappingConfiguration.getInheritanceConfiguration() != null) {
 			throw new MappingConfigurationException("Defining an identifier while inheritance is used is not supported : "
-					+ Reflections.toString(entityMappingConfiguration.getEntityType()) + " defined identifier " + AccessorDefinition.toString(entityMappingConfiguration.getIdentifierAccessor())
+					+ Reflections.toString(entityMappingConfiguration.getEntityType()) + " defines identifier "
+					+ AccessorDefinition.toString(entityMappingConfiguration.getIdentifierAccessor())
 					+ " while it inherits from " + Reflections.toString(entityMappingConfiguration.getInheritanceConfiguration().getConfiguration().getEntityType()));
 		}
 		
 		// if mappedSuperClass is used, then identifier is expected to be declared on the configuration
 		// because mappedSuperClass can't define it (it is an EmbeddableMappingConfiguration)
-		EntityMappingConfiguration<? super C, I> configurationDefiningIdentification;
-		if (entityMappingConfiguration.getPropertiesMapping().getMappedSuperClassConfiguration() != null) {
-			if (entityMappingConfiguration.getIdentifierPolicy() == null) {
-				// no ClassMappingStratey in hierarchy, so we can't get an identifier from it => impossible
-				throw newMissingIdentificationException();
-			} else {
-				// NB: identifierAccessor is expected to be non null since policy can't be declared without it
-				configurationDefiningIdentification = entityMappingConfiguration;
+		final Holder<EntityMappingConfiguration<? super C, I>> configurationDefiningIdentification = new Holder<>();
+		// hierarchy must be scanned to find the very first configuration that defines identification
+		visitInheritedEntityMappingConfigurations(entityConfiguration -> {
+			if (entityConfiguration.getIdentifierPolicy() != null) {
+				if (configurationDefiningIdentification.get() != null) {
+					throw new UnsupportedOperationException("Identifier policy is defined twice in hierachy : first by "
+							+ Reflections.toString(configurationDefiningIdentification.get().getEntityType())
+							+ ", then by " + Reflections.toString(entityConfiguration.getEntityType()));
+				} else {
+					configurationDefiningIdentification.set(entityConfiguration);
+				}
 			}
-		} else {
-			// hierarchy must be scanned to find the very first configuration that defines identification
-			configurationDefiningIdentification = Iterables.last(entityMappingConfiguration.inheritanceIterable());
-			if (configurationDefiningIdentification.getIdentifierPolicy() == null) {
-				// no ClassMappingStratey in hierarchy, so we can't get an identifier from it => impossible
-				throw newMissingIdentificationException();
-			}
+		});
+		EntityMappingConfiguration<? super C, I> foundConfiguration = configurationDefiningIdentification.get();
+		if (foundConfiguration == null) {
+			throw newMissingIdentificationException();
 		}
-		return new Identification(configurationDefiningIdentification);
+		return new Identification(foundConfiguration);
+	}
+	
+	/**
+	 * Determines {@link IdentifierInsertionManager} for current configuration as weel as its whole inheritance configuration.
+	 * The result is set in given {@link Identification}. Could have been done on a separatate object but it would have complexified some method
+	 * signature, and {@link Identification} is a good place for it.
+	 * 
+	 * @param identification given to know expected policy, and to set result in it
+	 * @param dialect necessary for generated keys handling for after-insert policy
+	 * @param mappingPerTable necessary to get table and primary key to be read in after-insert policy
+	 * @param idAccessor id accessor to get and set identifier on entity (except for already-assigned strategy)
+	 * @param <X> entity type that defines identifier manager, used as internal, may be C or one of its ancestor
+	 */
+	private <X> void determineIdentifierManager(
+			Identification identification,
+			Dialect dialect,
+			MappingPerTable mappingPerTable,
+			IReversibleAccessor idAccessor) {
+		IdentifierInsertionManager<X, I> identifierInsertionManager = null;
+		IdentifierPolicy identifierPolicy = identification.getIdentifierPolicy();
+		AccessorDefinition idDefinition = AccessorDefinition.giveDefinition(idAccessor);
+		Class<I> identifierType = idDefinition.getMemberType();
+		if (identifierPolicy == AFTER_INSERT) {
+			// with identifier set by database generated key, identifier must be retrieved as soon as possible which means by the very first
+			// persister, which is current one, which is the first in order of mappings
+			Table targetTable = Iterables.first(mappingPerTable.getMappings()).targetTable;
+			Column primaryKey = (Column) Iterables.first(targetTable.getPrimaryKey().getColumns());
+			GeneratedKeysReaderBuilder generatedKeysReaderBuilder = dialect::buildGeneratedKeysReader;
+			identifierInsertionManager = new JDBCGeneratedKeysIdentifierManager<>(
+					new SinglePropertyIdAccessor<>(idAccessor),
+					generatedKeysReaderBuilder.buildGeneratedKeysReader(primaryKey.getName(), primaryKey.getJavaType()),
+					primaryKey.getJavaType()
+			);
+		} else if (identifierPolicy instanceof ColumnOptions.BeforeInsertIdentifierPolicy) {
+			identifierInsertionManager = new BeforeInsertIdentifierManager<>(
+					new SinglePropertyIdAccessor<>(idAccessor), ((BeforeInsertIdentifierPolicy<I>) identifierPolicy).getIdentifierProvider(), identifierType);
+		} else if (identifierPolicy instanceof ColumnOptions.AlreadyAssignedIdentifierPolicy) {
+			AlreadyAssignedIdentifierPolicy<X, I> alreadyAssignedPolicy = (AlreadyAssignedIdentifierPolicy<X, I>) identifierPolicy;
+			identifierInsertionManager = new AlreadyAssignedIdentifierManager<>(
+					identifierType,
+					alreadyAssignedPolicy.getMarkAsPersistedFunction(),
+					alreadyAssignedPolicy.getIsPersistedFunction());
+		}
+		
+		// Treating configuration that are not the identifying one : they get an already-assigned identifier manager
+		Function<X, Boolean> isPersistedFunction;
+		if (!identifierType.isPrimitive()) {
+			isPersistedFunction = c -> idAccessor.get(c) != null;
+		} else {
+			isPersistedFunction = c ->  Reflections.PRIMITIVE_DEFAULT_VALUES.get(identifierType) == idAccessor.get(c);
+		}
+		AlreadyAssignedIdentifierManager<X, I> fallbackMappingIdentifierManager = new AlreadyAssignedIdentifierManager<>(identifierType, c -> {}, isPersistedFunction);
+		identification.insertionManager = (IdentifierInsertionManager<Object, Object>) identifierInsertionManager;
+		identification.fallbackInsertionManager = (AlreadyAssignedIdentifierManager<Object, Object>) fallbackMappingIdentifierManager;
 	}
 	
 	private UnsupportedOperationException newMissingIdentificationException() {
@@ -769,45 +846,36 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 				+ ", please add one throught " + Reflections.toString(identifierSetter));
 	}
 	
+	/**
+	 * 
+	 * @param isIdentifyingConfiguration
+	 * @param targetTable
+	 * @param mapping
+	 * @param propertiesSetByConstructor
+	 * @param identification
+	 * @param beanType
+	 * @param beanFactory optional, if null default beantype constructor will be used
+	 * @param <X>
+	 * @param <I>
+	 * @param <T>
+	 * @return
+	 */
 	static <X, I, T extends Table> ClassMappingStrategy<X, I, T> createClassMappingStrategy(
 			boolean isIdentifyingConfiguration,
 			T targetTable,
 			Map<? extends IReversibleAccessor, Column> mapping,
 			ValueAccessPointSet propertiesSetByConstructor,
 			Identification identification,
-			GeneratedKeysReaderBuilder generatedKeysReaderBuilder,
 			Class<X> beanType,
 			@Nullable Function<Function<Column, Object>, X> beanFactory) {
 
-		// Child class insertion manager is always an "Already assigned" one because parent manages it for her
-		IdentifierInsertionManager<X, I> identifierInsertionManager = null;
-		
 		Column primaryKey = (Column) Iterables.first(targetTable.getPrimaryKey().getColumns());
-		IdentifierPolicy identifierPolicy = identification.getIdentificationDefiner().getIdentifierPolicy();
 		IReversibleAccessor idAccessor = identification.getIdAccessor();
 		AccessorDefinition idDefinition = AccessorDefinition.giveDefinition(idAccessor);
-		Class identifierType = idDefinition.getMemberType();
-		if (isIdentifyingConfiguration) {
-			if (identifierPolicy == AFTER_INSERT) {
-				identifierInsertionManager = new JDBCGeneratedKeysIdentifierManager<>(
-						new SinglePropertyIdAccessor<>(idAccessor),
-						generatedKeysReaderBuilder.buildGeneratedKeysReader(primaryKey.getName(), primaryKey.getJavaType()),
-						primaryKey.getJavaType()
-				);
-			} else if (identifierPolicy instanceof ColumnOptions.BeforeInsertIdentifierPolicy) {
-				identifierInsertionManager = new BeforeInsertIdentifierManager<>(
-						new SinglePropertyIdAccessor<>(idAccessor), ((BeforeInsertIdentifierPolicy<I>) identifierPolicy).getIdentifierProvider(), identifierType);
-			} else if (identifierPolicy == IdentifierPolicy.ALREADY_ASSIGNED) {
-				if (Identified.class.isAssignableFrom(idDefinition.getDeclaringClass()) && Identifier.class.isAssignableFrom(identifierType)) {
-					identifierInsertionManager = new IdentifiedIdentifierManager<>(identifierType);
-				} else {
-					throw new NotYetSupportedOperationException(
-							"Already-assigned identifier policy is only supported with entities that implement " + Reflections.toString(Identified.class));
-				}
-			}
-		} else {
-			identifierInsertionManager = new AlreadyAssignedIdentifierManager<>(identifierType);
-		}
+		// Child class insertion manager is always an "Already assigned" one because parent manages it for her
+		IdentifierInsertionManager<X, I> identifierInsertionManager = (IdentifierInsertionManager<X, I>) (isIdentifyingConfiguration
+				? identification.insertionManager
+				: identification.fallbackInsertionManager);
 		SimpleIdMappingStrategy<X, I> simpleIdMappingStrategy = new SimpleIdMappingStrategy<>(idAccessor, identifierInsertionManager,
 				new SimpleIdentifierAssembler<>(primaryKey));
 		
@@ -836,28 +904,16 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 		return result;
 	}
 	
-	/**
-	 * Identifier manager dedicated to {@link Identified} entities
-	 * @param <C> entity type
-	 * @param <I> identifier type
-	 */
-	private static class IdentifiedIdentifierManager<C, I> extends AlreadyAssignedIdentifierManager<C, I> {
-		public IdentifiedIdentifierManager(Class<I> identifierType) {
-			super(identifierType);
-		}
-		
-		@Override
-		public void setPersistedFlag(C e) {
-			((Identified) e).getId().setPersisted();
-		}
-	}
-	
-	
 	static class Identification {
 		
 		private final IReversibleAccessor idAccessor;
 		private final IdentifierPolicy identifierPolicy;
 		private final EntityMappingConfiguration identificationDefiner;
+		
+		/** Insertion manager for {@link ClassMappingStrategy} that owns identifier policy */
+		public IdentifierInsertionManager<Object, Object> insertionManager;
+		/** Insertion manager for {@link ClassMappingStrategy} that doesn't own identifier policy : they get an already-assigned one */
+		public AlreadyAssignedIdentifierManager<Object, Object> fallbackInsertionManager;
 		
 		
 		public Identification(EntityMappingConfiguration identificationDefiner) {

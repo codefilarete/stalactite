@@ -82,8 +82,6 @@ abstract class JoinedTablesPolymorphismBuilder<C, I, T extends Table> implements
 					subEntityPropertiesMapping,
 					new ValueAccessPointSet(),	// TODO: implement properties set by constructor feature in joined-tables polymorphism
 					identification,
-					// TODO: no generated keys handler for now, should be taken on main strategy or brought by identification
-					null,
 					subConfiguration.getPropertiesMapping().getBeanType(),
 					null);
 			

@@ -7,16 +7,15 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 import org.gama.lang.collection.Arrays;
-import org.gama.stalactite.sql.test.HSQLDBInMemoryDataSource;
 import org.gama.stalactite.persistence.engine.DDLDeployer;
 import org.gama.stalactite.persistence.engine.PersistenceContext;
 import org.gama.stalactite.persistence.engine.SeparateTransactionExecutor;
-import org.gama.stalactite.persistence.id.PersistableIdentifier;
 import org.gama.stalactite.persistence.id.sequence.PooledHiLoSequence;
 import org.gama.stalactite.persistence.id.sequence.PooledHiLoSequenceOptions;
 import org.gama.stalactite.persistence.id.sequence.SequenceStorageOptions;
 import org.gama.stalactite.persistence.sql.Dialect;
 import org.gama.stalactite.persistence.sql.ddl.JavaTypeToSqlTypeMapping;
+import org.gama.stalactite.sql.test.HSQLDBInMemoryDataSource;
 import org.gama.stalactite.test.JdbcConnectionProvider;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -60,8 +59,8 @@ public class PooledSequenceIdentifierProviderTest {
 		List<Long> expectedGeneration = new ArrayList<>();
 		// we start at 0 since the sequence will do so since the database is empty
 		for (int i = 0; i < 15; i++) {
-			PersistableIdentifier<Long> persistableIdentifier = testInstance.giveNewIdentifier();
-			generated.add(persistableIdentifier.getSurrogate());
+			long persistableIdentifier = testInstance.giveNewIdentifier();
+			generated.add(persistableIdentifier);
 			expectedGeneration.add((long) i);
 		}
 		

@@ -17,7 +17,6 @@ import org.gama.lang.collection.Maps;
 import org.gama.reflection.AccessorChain;
 import org.gama.reflection.AccessorChain.ValueInitializerOnNullValue;
 import org.gama.reflection.AccessorDefinition;
-import org.gama.reflection.Accessors;
 import org.gama.reflection.IAccessor;
 import org.gama.reflection.IReversibleAccessor;
 import org.gama.reflection.PropertyAccessor;
@@ -267,13 +266,13 @@ public class ElementCollectionCascadeConfigurer<SRC, TRGT, ID, C extends Collect
 		private static class ElementRecordIdMappingStrategy extends ComposedIdMappingStrategy<ElementRecord, ElementRecord> {
 			public ElementRecordIdMappingStrategy(Table targetTable, Column idColumn, Column elementColumn) {
 				super(new ElementRecordIdAccessor(),
-						new AlreadyAssignedIdentifierManager<>(ElementRecord.class),
+						new AlreadyAssignedIdentifierManager<>(ElementRecord.class, c -> {}, c -> false),
 						new ElementRecordIdentifierAssembler(targetTable, idColumn, elementColumn));
 			}
 			
 			public ElementRecordIdMappingStrategy(Table targetTable, Column idColumn, EmbeddedBeanMappingStrategy<ElementRecord, Table> elementColumn) {
 				super(new ElementRecordIdAccessor(),
-						new AlreadyAssignedIdentifierManager<>(ElementRecord.class),
+						new AlreadyAssignedIdentifierManager<>(ElementRecord.class, c -> {}, c -> false),
 						new ElementRecordIdentifierAssembler2(targetTable, idColumn, elementColumn));
 			}
 			
@@ -377,13 +376,13 @@ public class ElementCollectionCascadeConfigurer<SRC, TRGT, ID, C extends Collect
 	 */
 	private static class ElementRecord<TRGT, ID> {
 		
-		private static final PropertyAccessor<ElementRecord<Object, Object>, Object> IDENTIFIER_ACCESSOR = new PropertyAccessor<>(
-				Accessors.accessorByMethodReference(ElementRecord::getIdentifier),
-				Accessors.mutatorByMethodReference(ElementRecord::setIdentifier));
+		private static final PropertyAccessor<ElementRecord<Object, Object>, Object> IDENTIFIER_ACCESSOR = PropertyAccessor.fromMethodReference(
+				ElementRecord::getIdentifier,
+				ElementRecord::setIdentifier);
 		
-		private static final PropertyAccessor<ElementRecord<Object, Object>, Object> ELEMENT_ACCESSOR = new PropertyAccessor<>(
-				Accessors.accessorByMethodReference(ElementRecord::getElement),
-				Accessors.mutatorByMethodReference(ElementRecord::setElement));
+		private static final PropertyAccessor<ElementRecord<Object, Object>, Object> ELEMENT_ACCESSOR = PropertyAccessor.fromMethodReference(
+				ElementRecord::getElement,
+				ElementRecord::setElement);
 		
 		
 		private StatefullIdentifier<ID> identifier;

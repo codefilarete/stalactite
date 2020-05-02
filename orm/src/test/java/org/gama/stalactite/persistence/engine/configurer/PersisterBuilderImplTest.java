@@ -29,6 +29,7 @@ import org.gama.stalactite.persistence.engine.ForeignKeyNamingStrategy;
 import org.gama.stalactite.persistence.engine.IEntityPersister;
 import org.gama.stalactite.persistence.engine.PersistenceContext;
 import org.gama.stalactite.persistence.engine.PolymorphismPolicy;
+import org.gama.stalactite.persistence.id.StatefullIdentifierAlreadyAssignedIdentifierPolicy;
 import org.gama.stalactite.persistence.engine.TableNamingStrategy;
 import org.gama.stalactite.persistence.engine.configurer.PersisterBuilderImpl.Identification;
 import org.gama.stalactite.persistence.engine.configurer.PersisterBuilderImpl.MappingPerTable;
@@ -110,7 +111,7 @@ public class PersisterBuilderImplTest {
 	void collectEmbeddedMappingFromInheritance_fromMappedSuperClasses() {
 		PersisterBuilderImpl testInstance = new PersisterBuilderImpl(
 				entityBuilder(Car.class, Identifier.class)
-						.add(Car::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
+						.add(Car::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 						.add(Car::getModel)
 						.mapSuperClass(embeddableBuilder(AbstractVehicle.class)
 								.embed(AbstractVehicle::getTimestamp)
@@ -153,7 +154,7 @@ public class PersisterBuilderImplTest {
 				entityBuilder(Car.class, Identifier.class)
 						.add(Car::getModel)
 						.mapInheritance(entityBuilder(AbstractVehicle.class, Identifier.class)
-								.add(AbstractVehicle::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
+								.add(AbstractVehicle::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 								.embed(AbstractVehicle::getTimestamp)
 						)
 		);
@@ -200,7 +201,7 @@ public class PersisterBuilderImplTest {
 						.mapInheritance(entityBuilder(Vehicle.class, Identifier.class)
 								.embed(Vehicle::getColor)
 								.mapInheritance(entityBuilder(AbstractVehicle.class, Identifier.class)
-										.add(AbstractVehicle::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
+										.add(AbstractVehicle::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 										.embed(AbstractVehicle::getTimestamp))
 								// AbstractVehicle class doesn't get a Table, for testing purpose
 								.withJoinedTable())
@@ -271,7 +272,7 @@ public class PersisterBuilderImplTest {
 	void collectEmbeddedMappingFromInheritance_withoutHierarchy() {
 		PersisterBuilderImpl testInstance = new PersisterBuilderImpl(
 				entityBuilder(Car.class, Identifier.class)
-						.add(Car::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
+						.add(Car::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 						.add(Car::getModel)
 						.embed(AbstractVehicle::getTimestamp)
 						);
@@ -311,7 +312,7 @@ public class PersisterBuilderImplTest {
 		Table dummyCarTable = new Table("dummyCarTable");
 		PersisterBuilderImpl testInstance = new PersisterBuilderImpl(
 				entityBuilder(Car.class, Identifier.class)
-						.add(AbstractVehicle::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
+						.add(AbstractVehicle::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 						.embed(AbstractVehicle::getTimestamp)
 						.mapPolymorphism(PolymorphismPolicy.joinedTables()
 								.addSubClass(subentityBuilder(Car.class)
@@ -447,7 +448,7 @@ public class PersisterBuilderImplTest {
 				entityBuilder(Car.class, Identifier.class)
 						.add(Car::getModel)
 								.add(Vehicle::getColor)
-										.add(AbstractVehicle::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
+										.add(AbstractVehicle::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 										.embed(AbstractVehicle::getTimestamp)
 						);
 		
@@ -468,7 +469,7 @@ public class PersisterBuilderImplTest {
 						.mapInheritance(entityBuilder(Vehicle.class, Identifier.class)
 								.add(Vehicle::getColor)
 								.mapInheritance(entityBuilder(AbstractVehicle.class, Identifier.class)
-										.add(AbstractVehicle::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
+										.add(AbstractVehicle::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 										.embed(AbstractVehicle::getTimestamp)
 								)
 								)
@@ -498,7 +499,7 @@ public class PersisterBuilderImplTest {
 						.mapInheritance(entityBuilder(Vehicle.class, Identifier.class)
 								.add(Vehicle::getColor)
 								.mapInheritance(entityBuilder(AbstractVehicle.class, Identifier.class)
-										.add(AbstractVehicle::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
+										.add(AbstractVehicle::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 										.embed(AbstractVehicle::getTimestamp)
 								).withJoinedTable()
 								).withJoinedTable()
