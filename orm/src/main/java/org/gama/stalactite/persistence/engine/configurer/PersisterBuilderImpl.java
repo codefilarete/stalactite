@@ -21,6 +21,7 @@ import org.gama.lang.StringAppender;
 import org.gama.lang.collection.Arrays;
 import org.gama.lang.collection.Iterables;
 import org.gama.lang.collection.KeepOrderSet;
+import org.gama.lang.exception.NotImplementedException;
 import org.gama.lang.function.Functions;
 import org.gama.lang.function.Hanger.Holder;
 import org.gama.reflection.AccessorDefinition;
@@ -236,7 +237,7 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 		// polymorphism handling
 		PolymorphismPolicy polymorphismPolicy = this.entityMappingConfiguration.getPolymorphismPolicy();
 		if (polymorphismPolicy != null) {
-			PolymorphismBuilder<C, I, Table> polymorphismBuilder = null;
+			PolymorphismBuilder<C, I, Table> polymorphismBuilder;
 			if (polymorphismPolicy instanceof SingleTablePolymorphism) {
 				polymorphismBuilder = new SingleTablePolymorphismBuilder<>((SingleTablePolymorphism<C, I, ?>) polymorphismPolicy,
 						identification, mainPersister, mainMapping, this.columnBinderRegistry, this.columnNameProvider);
@@ -271,6 +272,9 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 						PersisterBuilderImpl.this.addIdentificationToMapping(identification, Arrays.asSet(mapping));
 					}
 				};
+			} else {
+				// this exception is more to satisfy Sonar than for real case
+				throw new NotImplementedException("Given policy is not implemented : " + polymorphismPolicy);
 			}
 			result = polymorphismBuilder.build(persistenceContext);
 			// we transfert listeners by principle and in particular for StatefullIdentifier state change and relation cascade triggering
@@ -403,16 +407,16 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 	}
 	
 	private <T extends Table> JoinedTablesPersister<C, I, T> buildMainPersister(Identification identification, Mapping mapping, PersistenceContext persistenceContext) {
-		EntityMappingConfiguration entityMappingConfiguration = (EntityMappingConfiguration) mapping.mappingConfiguration;
+		EntityMappingConfiguration mainMappingConfiguration = (EntityMappingConfiguration) mapping.mappingConfiguration;
 		ClassMappingStrategy<C, I, T> parentMappingStrategy = createClassMappingStrategy(
-				identification.getIdentificationDefiner().getPropertiesMapping() == entityMappingConfiguration.getPropertiesMapping(),
+				identification.getIdentificationDefiner().getPropertiesMapping() == mainMappingConfiguration.getPropertiesMapping(),
 				mapping.targetTable,
 				mapping.mapping,
 				mapping.propertiesSetByConstructor,
 				identification,
-				entityMappingConfiguration.getEntityType(),
-				entityMappingConfiguration.getEntityFactory());
-		return (JoinedTablesPersister<C, I, T>) new JoinedTablesPersister(persistenceContext, parentMappingStrategy);
+				mainMappingConfiguration.getEntityType(),
+				mainMappingConfiguration.getEntityFactory());
+		return new JoinedTablesPersister<>(persistenceContext, parentMappingStrategy);
 	}
 	
 	interface PolymorphismBuilder<C, I, T extends Table> {
@@ -473,12 +477,10 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 				InheritanceConfiguration inheritanceConfiguration = entityMappingConfiguration.getInheritanceConfiguration();
 				boolean changeTable = nullable(inheritanceConfiguration)
 						.map(InheritanceConfiguration::isJoinTable).getOr(false);
-				Table table;
 				tableMap.put(entityMappingConfiguration, currentTable);
 				if (changeTable) {
-					table = nullable(inheritanceConfiguration.getTable())
+					currentTable = nullable(inheritanceConfiguration.getTable())
 							.getOr(() -> new Table(tableNamingStrategy.giveName(inheritanceConfiguration.getConfiguration().getEntityType())));
-					currentTable = table;
 				}
 			}
 		});
@@ -496,9 +498,9 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 		this.columnBinderRegistry = columnBinderRegistry;
 		
 		org.gama.lang.Nullable<TableNamingStrategy> optionalTableNamingStrategy = org.gama.lang.Nullable.empty();
-		visitInheritedEntityMappingConfigurations(entityMappingConfiguration -> {
-			if (entityMappingConfiguration.getTableNamingStrategy() != null && !optionalTableNamingStrategy.isPresent()) {
-				optionalTableNamingStrategy.set(entityMappingConfiguration.getTableNamingStrategy());
+		visitInheritedEntityMappingConfigurations(configuration -> {
+			if (configuration.getTableNamingStrategy() != null && !optionalTableNamingStrategy.isPresent()) {
+				optionalTableNamingStrategy.set(configuration.getTableNamingStrategy());
 			}
 		});
 		this.tableNamingStrategy = optionalTableNamingStrategy.getOr(TableNamingStrategy.DEFAULT);
@@ -521,33 +523,33 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 		setColumnNamingStrategy(optionalColumnNamingStrategy.getOr(ColumnNamingStrategy.DEFAULT));
 		
 		org.gama.lang.Nullable<ForeignKeyNamingStrategy> optionalForeignKeyNamingStrategy = org.gama.lang.Nullable.empty();
-		visitInheritedEntityMappingConfigurations(entityMappingConfiguration -> {
-			if (entityMappingConfiguration.getForeignKeyNamingStrategy() != null && !optionalForeignKeyNamingStrategy.isPresent()) {
-				optionalForeignKeyNamingStrategy.set(entityMappingConfiguration.getForeignKeyNamingStrategy());
+		visitInheritedEntityMappingConfigurations(configuration -> {
+			if (configuration.getForeignKeyNamingStrategy() != null && !optionalForeignKeyNamingStrategy.isPresent()) {
+				optionalForeignKeyNamingStrategy.set(configuration.getForeignKeyNamingStrategy());
 			}
 		});
 		this.foreignKeyNamingStrategy = optionalForeignKeyNamingStrategy.getOr(ForeignKeyNamingStrategy.DEFAULT);
 		
 		org.gama.lang.Nullable<ColumnNamingStrategy> optionalJoinColumnNamingStrategy = org.gama.lang.Nullable.empty();
-		visitInheritedEntityMappingConfigurations(entityMappingConfiguration -> {
-			if (entityMappingConfiguration.getJoinColumnNamingStrategy() != null && !optionalJoinColumnNamingStrategy.isPresent()) {
-				optionalJoinColumnNamingStrategy.set(entityMappingConfiguration.getJoinColumnNamingStrategy());
+		visitInheritedEntityMappingConfigurations(configuration -> {
+			if (configuration.getJoinColumnNamingStrategy() != null && !optionalJoinColumnNamingStrategy.isPresent()) {
+				optionalJoinColumnNamingStrategy.set(configuration.getJoinColumnNamingStrategy());
 			}
 		});
 		this.joinColumnNamingStrategy = optionalJoinColumnNamingStrategy.getOr(ColumnNamingStrategy.JOIN_DEFAULT);
 		
 		org.gama.lang.Nullable<AssociationTableNamingStrategy> optionalAssociationTableNamingStrategy = org.gama.lang.Nullable.empty();
-		visitInheritedEntityMappingConfigurations(entityMappingConfiguration -> {
-			if (entityMappingConfiguration.getAssociationTableNamingStrategy() != null && !optionalAssociationTableNamingStrategy.isPresent()) {
-				optionalAssociationTableNamingStrategy.set(entityMappingConfiguration.getAssociationTableNamingStrategy());
+		visitInheritedEntityMappingConfigurations(configuration -> {
+			if (configuration.getAssociationTableNamingStrategy() != null && !optionalAssociationTableNamingStrategy.isPresent()) {
+				optionalAssociationTableNamingStrategy.set(configuration.getAssociationTableNamingStrategy());
 			}
 		});
 		this.associationTableNamingStrategy = optionalAssociationTableNamingStrategy.getOr(AssociationTableNamingStrategy.DEFAULT);
 		
 		org.gama.lang.Nullable<ElementCollectionTableNamingStrategy> optionalElementCollectionTableNamingStrategy = org.gama.lang.Nullable.empty();
-		visitInheritedEntityMappingConfigurations(entityMappingConfiguration -> {
-			if (entityMappingConfiguration.getElementCollectionTableNamingStrategy() != null && !optionalElementCollectionTableNamingStrategy.isPresent()) {
-				optionalElementCollectionTableNamingStrategy.set(entityMappingConfiguration.getElementCollectionTableNamingStrategy());
+		visitInheritedEntityMappingConfigurations(configuration -> {
+			if (configuration.getElementCollectionTableNamingStrategy() != null && !optionalElementCollectionTableNamingStrategy.isPresent()) {
+				optionalElementCollectionTableNamingStrategy.set(configuration.getElementCollectionTableNamingStrategy());
 			}
 		});
 		this.elementCollectionTableNamingStrategy = optionalElementCollectionTableNamingStrategy.getOr(ElementCollectionTableNamingStrategy.DEFAULT);
@@ -752,7 +754,7 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 	 * @return a couple that defines identification of the mapping
 	 * @throws UnsupportedOperationException when identifiation was not found, because it doesn't make sense to have an entity without identification
 	 */
-	private <T extends Table<?>> Identification determineIdentification() {
+	private Identification determineIdentification() {
 		if (entityMappingConfiguration.getInheritanceConfiguration() != null && entityMappingConfiguration.getPropertiesMapping().getMappedSuperClassConfiguration() != null) {
 			throw new MappingConfigurationException("Combination of mapped super class and inheritance is not supported, please remove one of them");
 		}
@@ -911,9 +913,9 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 		private final EntityMappingConfiguration identificationDefiner;
 		
 		/** Insertion manager for {@link ClassMappingStrategy} that owns identifier policy */
-		public IdentifierInsertionManager<Object, Object> insertionManager;
+		private IdentifierInsertionManager<Object, Object> insertionManager;
 		/** Insertion manager for {@link ClassMappingStrategy} that doesn't own identifier policy : they get an already-assigned one */
-		public AlreadyAssignedIdentifierManager<Object, Object> fallbackInsertionManager;
+		private AlreadyAssignedIdentifierManager<Object, Object> fallbackInsertionManager;
 		
 		
 		public Identification(EntityMappingConfiguration identificationDefiner) {

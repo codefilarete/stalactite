@@ -74,6 +74,7 @@ public class SelectExecutor<C, I, T extends Table> extends DMLExecutor<C, I, T> 
 		return result;
 	}
 	
+	@SuppressWarnings("java:S2095")	// ReadOperation is close at execution time and is not used in this method
 	private ReadOperation<Column<T, Object>> newReadOperation(T targetTable, Set<Column<T, Object>> columnsToRead, int blockSize,
 												   ConnectionProvider connectionProvider) {
 		PrimaryKey<T> primaryKey = targetTable.getPrimaryKey();
