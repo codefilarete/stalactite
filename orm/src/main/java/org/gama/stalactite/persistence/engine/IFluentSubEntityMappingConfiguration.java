@@ -60,6 +60,16 @@ public interface IFluentSubEntityMappingConfiguration<C, I> extends IFluentEmbed
 	
 	<E extends Enum<E>> IFluentMappingBuilderEnumOptions<C, I> addEnum(SerializableFunction<C, E> getter, Column<? extends Table, E> column);
 	
+	<O, S extends Collection<O>> IFluentSubEntityMappingBuilderElementCollectionOptions<C, I, O, S> addCollection(SerializableFunction<C, S> getter, Class<O> componentType);
+	
+	<O, S extends Collection<O>> IFluentSubEntityMappingBuilderElementCollectionOptions<C, I, O, S> addCollection(SerializableBiConsumer<C, S> setter, Class<O> componentType);
+	
+	<O, S extends Collection<O>> IFluentSubEntityMappingBuilderElementCollectionImportEmbedOptions<C, I, O, S> addCollection(SerializableFunction<C, S> getter, Class<O> componentType,
+																															 EmbeddableMappingConfigurationProvider<O> embeddableConfiguration);
+	
+	<O, S extends Collection<O>> IFluentSubEntityMappingBuilderElementCollectionImportEmbedOptions<C, I, O, S> addCollection(SerializableBiConsumer<C, S> setter, Class<O> componentType,
+																															 EmbeddableMappingConfigurationProvider<O> embeddableConfiguration);
+	
 	IFluentSubEntityMappingConfiguration<C, I> withColumnNaming(ColumnNamingStrategy columnNamingStrategy);
 	
 	/**
@@ -389,6 +399,44 @@ public interface IFluentSubEntityMappingConfiguration<C, I> extends IFluentEmbed
 		
 		@Override
 		IFluentMappingBuilderEnumOptions<C, I> mandatory();
+	}
+	
+	interface IFluentSubEntityMappingBuilderElementCollectionOptions<C, I, O, S extends Collection<O>>
+			extends IFluentSubEntityMappingConfiguration<C, I>, ElementCollectionOptions<C, O, S> {
+		
+		@Override
+		IFluentSubEntityMappingBuilderElementCollectionOptions<C, I, O, S> withCollectionFactory(Supplier<? extends S> collectionFactory);
+		
+		IFluentSubEntityMappingBuilderElementCollectionOptions<C, I, O, S> override(String columnName);
+		
+		@Override
+		IFluentSubEntityMappingBuilderElementCollectionOptions<C, I, O, S> mappedBy(String name);
+		
+		@Override
+		IFluentSubEntityMappingBuilderElementCollectionOptions<C, I, O, S> withTable(Table table);
+		
+		@Override
+		IFluentSubEntityMappingBuilderElementCollectionOptions<C, I, O, S> withTable(String tableName);
+	}
+	
+	interface IFluentSubEntityMappingBuilderElementCollectionImportEmbedOptions<C, I, O, S extends Collection<O>>
+			extends IFluentSubEntityMappingConfiguration<C, I>, ElementCollectionOptions<C, O, S> {
+		
+		<IN> IFluentSubEntityMappingBuilderElementCollectionImportEmbedOptions<C, I, O, S> overrideName(SerializableFunction<O, IN> getter, String columnName);
+		
+		<IN> IFluentSubEntityMappingBuilderElementCollectionImportEmbedOptions<C, I, O, S> overrideName(SerializableBiConsumer<O, IN> setter, String columnName);
+		
+		@Override
+		IFluentSubEntityMappingBuilderElementCollectionImportEmbedOptions<C, I, O, S> withCollectionFactory(Supplier<? extends S> collectionFactory);
+		
+		@Override
+		IFluentSubEntityMappingBuilderElementCollectionImportEmbedOptions<C, I, O, S> mappedBy(String name);
+		
+		@Override
+		IFluentSubEntityMappingBuilderElementCollectionImportEmbedOptions<C, I, O, S> withTable(Table table);
+		
+		@Override
+		IFluentSubEntityMappingBuilderElementCollectionImportEmbedOptions<C, I, O, S> withTable(String tableName);
 	}
 	
 }

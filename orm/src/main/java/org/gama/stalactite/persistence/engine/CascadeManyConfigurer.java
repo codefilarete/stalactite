@@ -34,6 +34,7 @@ import org.gama.stalactite.persistence.engine.configurer.PersisterBuilderImpl;
 import org.gama.stalactite.persistence.engine.runtime.AbstractOneToManyWithAssociationTableEngine;
 import org.gama.stalactite.persistence.engine.runtime.IndexedMappedManyRelationDescriptor;
 import org.gama.stalactite.persistence.engine.runtime.ManyRelationDescriptor;
+import org.gama.stalactite.persistence.engine.runtime.MappedManyRelationDescriptor;
 import org.gama.stalactite.persistence.engine.runtime.OneToManyWithAssociationTableEngine;
 import org.gama.stalactite.persistence.engine.runtime.OneToManyWithIndexedAssociationTableEngine;
 import org.gama.stalactite.persistence.engine.runtime.OneToManyWithIndexedMappedAssociationEngine;
@@ -419,10 +420,11 @@ public class CascadeManyConfigurer<SRC, TRGT, ID, C extends Collection<TRGT>> {
 			
 			// we have a direct relation : relation is owned by target table as a foreign key
 			OneToManyWithMappedAssociationEngine<SRC, TRGT, ID, C> mappedAssociationEngine;
+			BiConsumer<TRGT, SRC> reverseSetterAsConsumer = reversePropertyAccessor == null ? null : reversePropertyAccessor::set;
 			if (manyAssociationConfiguration.cascadeMany instanceof CascadeManyList) {
-				mappedAssociationEngine = configureIndexedAssociation(getterSignature, reversePropertyAccessor == null ? null : reversePropertyAccessor::set, reverseGetter);
+				mappedAssociationEngine = configureIndexedAssociation(getterSignature, reverseSetterAsConsumer, reverseGetter, reverseColumn);
 			} else {
-				mappedAssociationEngine = configureNonIndexedAssociation(reversePropertyAccessor == null ? null : reversePropertyAccessor::set);
+				mappedAssociationEngine = configureNonIndexedAssociation(reverseSetterAsConsumer, reverseColumn);
 			}
 			mappedAssociationEngine.addSelectCascade(manyAssociationConfiguration.leftPrimaryKey, reverseColumn);
 			if (manyAssociationConfiguration.writeAuthorized) {
@@ -432,11 +434,12 @@ public class CascadeManyConfigurer<SRC, TRGT, ID, C extends Collection<TRGT>> {
 			}
 		}
 		
-		private OneToManyWithMappedAssociationEngine<SRC, TRGT, ID, C> configureNonIndexedAssociation(@Nullable BiConsumer<TRGT, SRC> reverseSetter) {
+		private OneToManyWithMappedAssociationEngine<SRC, TRGT, ID, C> configureNonIndexedAssociation(@Nullable BiConsumer<TRGT, SRC> reverseSetter,
+																									  Column reverseColumn) {
 			OneToManyWithMappedAssociationEngine<SRC, TRGT, ID, C> mappedAssociationEngine;
-			ManyRelationDescriptor<SRC, TRGT, C> manyRelationDefinition = new ManyRelationDescriptor<>(
+			MappedManyRelationDescriptor<SRC, TRGT, C> manyRelationDefinition = new MappedManyRelationDescriptor<>(
 					manyAssociationConfiguration.collectionGetter::get, manyAssociationConfiguration.setter::set,
-					manyAssociationConfiguration.giveCollectionFactory(), reverseSetter);
+					manyAssociationConfiguration.giveCollectionFactory(), reverseSetter, reverseColumn);
 			mappedAssociationEngine = new OneToManyWithMappedAssociationEngine<>(
 					manyAssociationConfiguration.targetPersister,
 					manyRelationDefinition,
@@ -445,12 +448,13 @@ public class CascadeManyConfigurer<SRC, TRGT, ID, C extends Collection<TRGT>> {
 		}
 		
 		private OneToManyWithMappedAssociationEngine<SRC, TRGT, ID, C> configureIndexedAssociation(String getterSignature,
-																											  @Nullable BiConsumer<TRGT, SRC> reverseSetter,
-																											  SerializableFunction<TRGT, SRC> reverseGetter) {
+																								   @Nullable BiConsumer<TRGT, SRC> reverseSetter,
+																								   SerializableFunction<TRGT, SRC> reverseGetter,
+																								   Column reverseColumn) {
 			OneToManyWithMappedAssociationEngine<SRC, TRGT, ID, C> mappedAssociationEngine;
 			IndexedMappedManyRelationDescriptor<SRC, TRGT, C> manyRelationDefinition = new IndexedMappedManyRelationDescriptor<>(
 					manyAssociationConfiguration.collectionGetter::get, manyAssociationConfiguration.setter::set,
-					manyAssociationConfiguration.giveCollectionFactory(), reverseSetter, reverseGetter, getterSignature);
+					manyAssociationConfiguration.giveCollectionFactory(), reverseSetter, reverseColumn, reverseGetter, getterSignature);
 			mappedAssociationEngine = (OneToManyWithMappedAssociationEngine) new OneToManyWithIndexedMappedAssociationEngine<>(
 					manyAssociationConfiguration.targetPersister,
 					(IndexedMappedManyRelationDescriptor) manyRelationDefinition,

@@ -5,11 +5,15 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Set;
+import java.util.function.BiConsumer;
 import java.util.function.Function;
+import java.util.function.Supplier;
 
 import org.danekja.java.util.function.serializable.SerializableBiConsumer;
+import org.danekja.java.util.function.serializable.SerializableBiFunction;
 import org.danekja.java.util.function.serializable.SerializableFunction;
 import org.gama.lang.Reflections;
+import org.gama.lang.function.SerializableTriFunction;
 import org.gama.lang.reflect.MethodDispatcher;
 import org.gama.reflection.AccessorByMethod;
 import org.gama.reflection.AccessorByMethodReference;
@@ -17,6 +21,7 @@ import org.gama.reflection.AccessorDefinition;
 import org.gama.reflection.Accessors;
 import org.gama.reflection.IReversibleAccessor;
 import org.gama.reflection.MethodReferenceCapturer;
+import org.gama.reflection.MethodReferenceDispatcher;
 import org.gama.reflection.MutatorByMethod;
 import org.gama.reflection.MutatorByMethodReference;
 import org.gama.reflection.PropertyAccessor;
@@ -28,11 +33,11 @@ import org.gama.stalactite.persistence.engine.IFluentEmbeddableMappingBuilder.IF
 import org.gama.stalactite.persistence.engine.IFluentEmbeddableMappingBuilder.IFluentEmbeddableMappingBuilderEnumOptions;
 import org.gama.stalactite.persistence.engine.builder.CascadeMany;
 import org.gama.stalactite.persistence.engine.builder.CascadeManyList;
+import org.gama.stalactite.persistence.engine.builder.ElementCollectionLinkage;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
 
 import static org.gama.lang.Reflections.propertyName;
-import static org.gama.reflection.AccessorDefinition.giveDefinition;
 
 /**
  * A class that stores configuration made throught a {@link IFluentSubEntityMappingConfiguration}
@@ -48,6 +53,8 @@ public class FluentSubEntityMappingConfigurationSupport<C, I> implements IFluent
 	private final List<CascadeOne<C, ?, ?>> cascadeOnes = new ArrayList<>();
 	
 	private final List<CascadeMany<C, ?, ?, ? extends Collection>> cascadeManys = new ArrayList<>();
+	
+	private final List<ElementCollectionLinkage<C, ?, ? extends Collection>> elementCollections = new ArrayList<>();
 	
 	private final SubEntityDecoratedEmbeddableConfigurationSupport<C, I> propertiesMappingConfigurationSurrogate;
 	
@@ -97,6 +104,11 @@ public class FluentSubEntityMappingConfigurationSupport<C, I> implements IFluent
 	@Override
 	public List<CascadeMany<C, ?, ?, ? extends Collection>> getOneToManys() {
 		return cascadeManys;
+	}
+	
+	@Override
+	public List<ElementCollectionLinkage<C, ?, ? extends Collection>> getElementCollections() {
+		return elementCollections;
 	}
 	
 	@Override
@@ -177,6 +189,96 @@ public class FluentSubEntityMappingConfigurationSupport<C, I> implements IFluent
 	}
 	
 	@Override
+	public <O, S extends Collection<O>> IFluentSubEntityMappingBuilderElementCollectionOptions<C, I, O, S> addCollection(SerializableFunction<C, S> getter,
+																														 Class<O> componentType) {
+		ElementCollectionLinkage<C, O, S> elementCollectionLinkage = new ElementCollectionLinkage<>(getter, componentType,
+				propertiesMappingConfigurationSurrogate, null);
+		elementCollections.add(elementCollectionLinkage);
+		return new MethodReferenceDispatcher()
+				.redirect((SerializableBiFunction<IFluentSubEntityMappingBuilderElementCollectionOptions, String, IFluentSubEntityMappingBuilderElementCollectionOptions>)
+								IFluentSubEntityMappingBuilderElementCollectionOptions::override,
+						elementCollectionLinkage::overrideColumnName)
+				.redirect(ElementCollectionOptions.class, wrapAsOptions(elementCollectionLinkage), true)
+				.fallbackOn(this)
+				.build((Class<IFluentSubEntityMappingBuilderElementCollectionOptions<C, I, O, S>>) (Class) IFluentSubEntityMappingBuilderElementCollectionOptions.class);
+	}
+	
+	@Override
+	public <O, S extends Collection<O>> IFluentSubEntityMappingBuilderElementCollectionOptions<C, I, O, S> addCollection(SerializableBiConsumer<C, S> setter,
+																														 Class<O> componentType) {
+		ElementCollectionLinkage<C, O, S> elementCollectionLinkage = new ElementCollectionLinkage<>(setter, componentType, null);
+		elementCollections.add(elementCollectionLinkage);
+		return new MethodReferenceDispatcher()
+				.redirect((SerializableBiFunction<IFluentSubEntityMappingBuilderElementCollectionOptions, String, IFluentSubEntityMappingBuilderElementCollectionOptions>)
+								IFluentSubEntityMappingBuilderElementCollectionOptions::override,
+						elementCollectionLinkage::overrideColumnName)
+				.redirect(ElementCollectionOptions.class, wrapAsOptions(elementCollectionLinkage), true)
+				.fallbackOn(this)
+				.build((Class<IFluentSubEntityMappingBuilderElementCollectionOptions<C, I, O, S>>) (Class) IFluentSubEntityMappingBuilderElementCollectionOptions.class);
+	}
+	
+	@Override
+	public <O, S extends Collection<O>> IFluentSubEntityMappingBuilderElementCollectionImportEmbedOptions<C, I, O, S> addCollection(SerializableFunction<C, S> getter,
+																																	Class<O> componentType,
+																																	EmbeddableMappingConfigurationProvider<O> embeddableConfiguration) {
+		ElementCollectionLinkage<C, O, S> elementCollectionLinkage = new ElementCollectionLinkage<>(getter, componentType,
+				propertiesMappingConfigurationSurrogate,
+				embeddableConfiguration);
+		elementCollections.add(elementCollectionLinkage);
+		return new MethodReferenceDispatcher()
+				.redirect((SerializableTriFunction<IFluentSubEntityMappingBuilderElementCollectionImportEmbedOptions, SerializableFunction, String, IFluentSubEntityMappingBuilderElementCollectionImportEmbedOptions>)
+								IFluentSubEntityMappingBuilderElementCollectionImportEmbedOptions::overrideName,
+						(BiConsumer<SerializableFunction, String>) elementCollectionLinkage::overrideName)
+				.redirect(ElementCollectionOptions.class, wrapAsOptions(elementCollectionLinkage), true)
+				.fallbackOn(this)
+				.build((Class<IFluentSubEntityMappingBuilderElementCollectionImportEmbedOptions<C, I, O, S>>) (Class) IFluentSubEntityMappingBuilderElementCollectionImportEmbedOptions.class);
+	}
+	
+	@Override
+	public <O, S extends Collection<O>> IFluentSubEntityMappingBuilderElementCollectionImportEmbedOptions<C, I, O, S> addCollection(SerializableBiConsumer<C, S> setter,
+																																	Class<O> componentType,
+																																	EmbeddableMappingConfigurationProvider<O> embeddableConfiguration) {
+		ElementCollectionLinkage<C, O, S> elementCollectionLinkage = new ElementCollectionLinkage<>(setter, componentType, embeddableConfiguration);
+		elementCollections.add(elementCollectionLinkage);
+		return new MethodReferenceDispatcher()
+				.redirect((SerializableTriFunction<IFluentSubEntityMappingBuilderElementCollectionImportEmbedOptions, SerializableFunction, String, IFluentSubEntityMappingBuilderElementCollectionImportEmbedOptions>)
+								IFluentSubEntityMappingBuilderElementCollectionImportEmbedOptions::overrideName,
+						(BiConsumer<SerializableFunction, String>) elementCollectionLinkage::overrideName)
+				.redirect(ElementCollectionOptions.class, wrapAsOptions(elementCollectionLinkage), true)
+				.fallbackOn(this)
+				.build((Class<IFluentSubEntityMappingBuilderElementCollectionImportEmbedOptions<C, I, O, S>>) (Class) IFluentSubEntityMappingBuilderElementCollectionImportEmbedOptions.class);
+	}
+	
+	private <O, S extends Collection<O>> ElementCollectionOptions<C, O, S> wrapAsOptions(ElementCollectionLinkage<C, O, S> elementCollectionLinkage) {
+		return new ElementCollectionOptions<C, O, S>() {
+			
+			@Override
+			public ElementCollectionOptions<C, O, S> withCollectionFactory(Supplier<? extends S> collectionFactory) {
+				elementCollectionLinkage.setCollectionFactory(collectionFactory);
+				return null;
+			}
+			
+			@Override
+			public IFluentSubEntityMappingBuilderElementCollectionOptions<C, I, O, S> mappedBy(String name) {
+				elementCollectionLinkage.setReverseColumnName(name);
+				return null;
+			}
+			
+			@Override
+			public ElementCollectionOptions<C, O, S> withTable(Table table) {
+				elementCollectionLinkage.setTargetTable(table);
+				return null;
+			}
+			
+			@Override
+			public ElementCollectionOptions<C, O, S> withTable(String tableName) {
+				elementCollectionLinkage.setTargetTableName(tableName);
+				return null;
+			}
+		};
+	}
+	
+	@Override
 	public <O, J, T extends Table> IFluentMappingBuilderOneToOneOptions<C, I, T> addOneToOne(
 			SerializableFunction<C, O> getter,
 			EntityMappingConfigurationProvider<O, J> mappingConfiguration) {
@@ -203,8 +305,6 @@ public class FluentSubEntityMappingConfigurationSupport<C, I> implements IFluent
 				mutatorByMethodReference);
 		CascadeOne<C, O, J> cascadeOne = new CascadeOne<>(propertyAccessor, mappingConfiguration.getConfiguration(), table);
 		this.cascadeOnes.add(cascadeOne);
-		// we declare the column on our side
-		propertiesMappingConfigurationSurrogate.addMapping(propertyAccessor, giveDefinition(mutatorByMethodReference), null);
 		return wrapForAdditionalOptions(cascadeOne);
 	}
 	
@@ -221,8 +321,6 @@ public class FluentSubEntityMappingConfigurationSupport<C, I> implements IFluent
 				new AccessorByMethod<C, O>(captureMethod(getter)).toMutator());
 		CascadeOne<C, O, J> cascadeOne = new CascadeOne<>(propertyAccessor, mappingConfiguration.getConfiguration(), table);
 		this.cascadeOnes.add(cascadeOne);
-		// we declare the column on our side
-		propertiesMappingConfigurationSurrogate.addMapping(propertyAccessor, giveDefinition(accessorByMethodReference), null);
 		return wrapForAdditionalOptions(cascadeOne);
 	}
 	

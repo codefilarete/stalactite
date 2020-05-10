@@ -101,7 +101,7 @@ public class CascadeOne<SRC, TRGT, TRGTID> {
 	 * Indicates if relation is owned by target entities table
 	 * @return true if one of {@link #getReverseSetter()}, {@link #getReverseGetter()}, {@link #getReverseColumn()} is not null
 	 */
-	public boolean isOwnedByReverseSide() {
+	public boolean isRelationOwnedByTarget() {
 		return getReverseSetter() != null || getReverseGetter() != null || getReverseColumn() != null;
 	}
 }

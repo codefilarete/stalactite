@@ -101,6 +101,8 @@ public class OneToManyWithIndexedMappedAssociationEngine<SRC, TRGT, ID, C extend
 				// Indexing column is not defined in targetPersister.getMappingStrategy().getRowTransformer() but is present in row
 				// because it was read from ResultSet
 				// So we get its alias from the object that managed id, and we simply read it from the row (but not from RowTransformer)
+				// <!> Please note that aliases variable can't be put outside of this loop because aliases are computed lately / lazily when
+				// columns are added to select by JoinedStrategySeelct.addColumnsToSelect(..), putting this out is too early
 				Map<Column, String> aliases = sourcePersister.getJoinedStrategiesSelect().getAliases();
 				indexPerBean.put(bean, (int) row.get(aliases.get(indexingColumn)));
 			}
@@ -145,7 +147,9 @@ public class OneToManyWithIndexedMappedAssociationEngine<SRC, TRGT, ID, C extend
 				manyRelationDefinition.getCollectionGetter(),
 				targetPersister,
 				manyRelationDefinition.getReverseSetter(),
-				shouldDeleteRemoved) {
+				shouldDeleteRemoved,
+				targetPersister.getMappingStrategy()::getId,
+				((MappedManyRelationDescriptor) manyRelationDefinition).getReverseColumn()) {
 			
 			@Override
 			protected Set<? extends AbstractDiff<TRGT>> diff(Collection<TRGT> modified, Collection<TRGT> unmodified) {

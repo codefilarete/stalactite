@@ -24,6 +24,8 @@ import org.gama.stalactite.persistence.engine.listening.SelectListener;
 import org.gama.stalactite.persistence.engine.listening.UpdateListener;
 import org.gama.stalactite.persistence.engine.model.AbstractVehicle;
 import org.gama.stalactite.persistence.engine.model.Car;
+import org.gama.stalactite.persistence.engine.model.Car.Radio;
+import org.gama.stalactite.persistence.engine.model.Car.Wheel;
 import org.gama.stalactite.persistence.engine.model.City;
 import org.gama.stalactite.persistence.engine.model.Color;
 import org.gama.stalactite.persistence.engine.model.Country;
@@ -42,6 +44,7 @@ import org.gama.stalactite.persistence.id.PersistedIdentifier;
 import org.gama.stalactite.persistence.id.StatefullIdentifierAlreadyAssignedIdentifierPolicy;
 import org.gama.stalactite.persistence.id.provider.LongProvider;
 import org.gama.stalactite.persistence.sql.HSQLDBDialect;
+import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.query.model.Operators;
 import org.gama.stalactite.sql.ConnectionProvider;
@@ -59,6 +62,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
+import static org.gama.lang.test.Assertions.assertAllEquals;
+import static org.gama.stalactite.persistence.engine.ColumnOptions.IdentifierPolicy.alreadyAssigned;
 import static org.gama.stalactite.persistence.engine.MappingEase.embeddableBuilder;
 import static org.gama.stalactite.persistence.engine.MappingEase.entityBuilder;
 import static org.gama.stalactite.persistence.engine.MappingEase.subentityBuilder;
@@ -102,7 +107,7 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 	}
 	
 	
-	static Object[][] polymorphicPersistersOneToOne() {
+	static Object[][] polymorphicOneToOne_data() {
 		PersistenceContext persistenceContext1 = new PersistenceContext(new JdbcConnectionProvider(new HSQLDBInMemoryDataSource()), DIALECT);
 		PersistenceContext persistenceContext2 = new PersistenceContext(new JdbcConnectionProvider(new HSQLDBInMemoryDataSource()), DIALECT);
 		PersistenceContext persistenceContext3 = new PersistenceContext(new JdbcConnectionProvider(new HSQLDBInMemoryDataSource()), DIALECT);
@@ -152,8 +157,8 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 	
 	
 	@ParameterizedTest(name="{0}")
-	@MethodSource("polymorphicPersistersOneToOne")
-	void crudOneToOne(String testDisplayName, IEntityPersister<AbstractVehicle, Identifier<Long>> persister, ConnectionProvider connectionProvider) throws SQLException {
+	@MethodSource("polymorphicOneToOne_data")
+	void crudPolymorphicOneToOne(String testDisplayName, IEntityPersister<AbstractVehicle, Identifier<Long>> persister, ConnectionProvider connectionProvider) throws SQLException {
 		Car dummyCar = new Car(1L);
 		dummyCar.setModel("Renault");
 		dummyCar.setEngine(new Engine(100L));
@@ -187,7 +192,7 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 		assertEquals(Arrays.asSet(dummyCarModfied, dummyTrukModfied), new HashSet<>(persister.select(Arrays.asSet(dummyCar.getId(), dummyTruk.getId()))));
 	}
 	
-	static Object[][] polymorphicPersistersOneToMany() {
+	static Object[][] polymorphism_trunkHasOneToMany_data() {
 		PersistenceContext persistenceContext1 = new PersistenceContext(new JdbcConnectionProvider(new HSQLDBInMemoryDataSource()), DIALECT);
 		PersistenceContext persistenceContext2 = new PersistenceContext(new JdbcConnectionProvider(new HSQLDBInMemoryDataSource()), DIALECT);
 		PersistenceContext persistenceContext3 = new PersistenceContext(new JdbcConnectionProvider(new HSQLDBInMemoryDataSource()), DIALECT);
@@ -249,8 +254,8 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 	}
 	
 	@ParameterizedTest(name="{0}")
-	@MethodSource("polymorphicPersistersOneToMany")
-	void crudOneToMany(String testDisplayName, IEntityPersister<Country, Identifier<Long>> countryPersister) {
+	@MethodSource("polymorphism_trunkHasOneToMany_data")
+	void crud_polymorphism_trunkHasOneToMany(String testDisplayName, IEntityPersister<Country, Identifier<Long>> countryPersister) {
 		LongProvider countryIdProvider = new LongProvider();
 		Republic dummyCountry = new Republic(new PersistableIdentifier<>(countryIdProvider.giveNewIdentifier()));
 		dummyCountry.setDeputeCount(250);
@@ -290,9 +295,300 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 		assertTrue(Iterables.first(persistedCountry.getCities()).getId().isPersisted());
 	}
 	
+	static Object[][] polymorphism_subClassHasOneToOne_data() {
+		PersistenceContext persistenceContext1 = new PersistenceContext(new JdbcConnectionProvider(new HSQLDBInMemoryDataSource()), DIALECT);
+		PersistenceContext persistenceContext2 = new PersistenceContext(new JdbcConnectionProvider(new HSQLDBInMemoryDataSource()), DIALECT);
+		PersistenceContext persistenceContext3 = new PersistenceContext(new JdbcConnectionProvider(new HSQLDBInMemoryDataSource()), DIALECT);
+		Object[][] result = new Object[][] {
+//				{	"single table",
+//					entityBuilder(Vehicle.class, LONG_TYPE)
+//						.add(Vehicle::getId).identifier(ALREADY_ASSIGNED)
+//						.addOneToOne(Vehicle::getEngine, entityBuilder(Engine.class, LONG_TYPE)
+//								.add(Engine::getId).identifier(ALREADY_ASSIGNED))
+//						.mapPolymorphism(PolymorphismPolicy.<AbstractVehicle, Identifier<Long>>singleTable()
+//								.addSubClass(subentityBuilder(Car.class)
+//										.add(Car::getModel), "CAR")
+//								.addSubClass(subentityBuilder(Truk.class)
+//										.add(Truk::getColor), "TRUK"))
+//						.build(persistenceContext1),
+//						persistenceContext1.getConnectionProvider() },
+				{	"joined tables",
+						entityBuilder(Vehicle.class, LONG_TYPE)
+								.add(Vehicle::getId).identifier(ALREADY_ASSIGNED)
+								.mapPolymorphism(PolymorphismPolicy.<AbstractVehicle, Identifier<Long>>joinedTables()
+										.addSubClass(subentityBuilder(Car.class)
+												.add(Car::getModel)
+												.addOneToOne(Car::getRadio, entityBuilder(Radio.class, String.class)
+														// please note that we use an already-assigned policy because it requires entities to be mark
+														// as persisted after select, so we test also select listener of relation
+														.add(Radio::getSerialNumber).identifier(alreadyAssigned(Radio::markAsPersisted, Radio::isPersisted))
+														.add(Radio::getModel)).mappedBy(Radio::getCar))
+										.addSubClass(subentityBuilder(Truk.class)
+												.add(Truk::getColor)))
+								.build(persistenceContext2),
+						persistenceContext2.getConnectionProvider() },
+//				{	"table per class",
+//					entityBuilder(Vehicle.class, LONG_TYPE)
+//						.add(Vehicle::getId).identifier(ALREADY_ASSIGNED)
+//							.addOneToOne(Vehicle::getEngine, entityBuilder(Engine.class, LONG_TYPE)
+//									.add(Engine::getId).identifier(ALREADY_ASSIGNED))
+//						.mapPolymorphism(PolymorphismPolicy.<AbstractVehicle, Identifier<Long>>tablePerClass()
+//								.addSubClass(subentityBuilder(Car.class)
+//										.add(Car::getModel))
+//								.addSubClass(subentityBuilder(Truk.class)
+//										.add(Truk::getColor)))
+//						.build(persistenceContext3),
+//						persistenceContext3.getConnectionProvider() },
+		};
+		new DDLDeployer(persistenceContext1).deployDDL();
+		new DDLDeployer(persistenceContext2).deployDDL();
+		new DDLDeployer(persistenceContext3).deployDDL();
+		return result;
+	}
+	
+	
+	@ParameterizedTest(name="{0}")
+	@MethodSource("polymorphism_subClassHasOneToOne_data")
+	void crud_polymorphism_subClassHasOneToOne(String testDisplayName, IEntityPersister<AbstractVehicle, Identifier<Long>> persister, ConnectionProvider connectionProvider) throws SQLException {
+		Car dummyCar = new Car(1L);
+		dummyCar.setModel("Renault");
+		dummyCar.setRadio(new Radio("XYZ-ABC-01"));
+		Truk dummyTruk = new Truk(2L);
+		dummyTruk.setColor(new Color(42));
+		
+		// insert test
+		persister.insert(Arrays.asList(dummyCar, dummyTruk));
+		
+		Car dummyCarModfied = new Car(1L);
+		dummyCarModfied.setModel("Peugeot");
+		dummyCarModfied.setRadio(new Radio("XYZ-ABC-02"));
+		Truk dummyTrukModfied = new Truk(2L);
+		dummyTrukModfied.setColor(new Color(99));
+		
+		persister.update(dummyCarModfied, dummyCar, true);
+		
+		persister.update(dummyTrukModfied, dummyTruk, true);
+		
+		connectionProvider.getCurrentConnection().commit();
+		assertEquals(1, persister.delete(dummyCarModfied));
+		assertEquals(1, persister.delete(dummyTrukModfied));
+		connectionProvider.getCurrentConnection().rollback();
+		
+		assertEquals(2, persister.delete(Arrays.asList(dummyCarModfied, dummyTrukModfied)));
+		
+		connectionProvider.getCurrentConnection().rollback();
+		
+		assertEquals(dummyTrukModfied, persister.select(dummyTruk.getId()));
+		AbstractVehicle selectedCar = persister.select(dummyCar.getId());
+		assertEquals(dummyCarModfied, selectedCar);
+		assertTrue(((Car) selectedCar).getRadio().isPersisted());	// testing afterSelect listener of sub entities relations 
+		assertEquals(dummyCarModfied.getRadio(), ((Car) selectedCar).getRadio());
+		assertEquals(Arrays.asSet(dummyCarModfied, dummyTrukModfied), new HashSet<>(persister.select(Arrays.asSet(dummyCar.getId(), dummyTruk.getId()))));
+	}
+	
+	static Object[][] polymorphism_subClassHasOneToMany_data() {
+		PersistenceContext persistenceContext1 = new PersistenceContext(new JdbcConnectionProvider(new HSQLDBInMemoryDataSource()), DIALECT);
+		PersistenceContext persistenceContext2 = new PersistenceContext(new JdbcConnectionProvider(new HSQLDBInMemoryDataSource()), DIALECT);
+		PersistenceContext persistenceContext3 = new PersistenceContext(new JdbcConnectionProvider(new HSQLDBInMemoryDataSource()), DIALECT);
+		PersistenceContext persistenceContext4 = new PersistenceContext(new JdbcConnectionProvider(new HSQLDBInMemoryDataSource()), DIALECT);
+		Table wheelTable = new Table("Wheel");
+		Column<Table, Integer> indexColumn = wheelTable.addColumn("idx", Integer.class);
+		Object[][] result = new Object[][] {
+//				{	"single table",
+//					entityBuilder(Vehicle.class, LONG_TYPE)
+//						.add(Vehicle::getId).identifier(ALREADY_ASSIGNED)
+//						.addOneToOne(Vehicle::getEngine, entityBuilder(Engine.class, LONG_TYPE)
+//								.add(Engine::getId).identifier(ALREADY_ASSIGNED))
+//						.mapPolymorphism(PolymorphismPolicy.<AbstractVehicle, Identifier<Long>>singleTable()
+//								.addSubClass(subentityBuilder(Car.class)
+//										.add(Car::getModel), "CAR")
+//								.addSubClass(subentityBuilder(Truk.class)
+//										.add(Truk::getColor), "TRUK"))
+//						.build(persistenceContext1),
+//						persistenceContext1.getConnectionProvider() },
+				{	"joined tables / one-to-many with association table",
+						entityBuilder(Vehicle.class, LONG_TYPE)
+								.add(Vehicle::getId).identifier(ALREADY_ASSIGNED)
+								.mapPolymorphism(PolymorphismPolicy.<AbstractVehicle, Identifier<Long>>joinedTables()
+										.addSubClass(subentityBuilder(Car.class)
+												.add(Car::getModel)
+												.addOneToManyList(Car::getWheels, entityBuilder(Wheel.class, String.class)
+														// please note that we use an already-assigned policy because it requires entities to be mark
+														// as persisted after select, so we test also select listener of relation
+														.add(Wheel::getSerialNumber).identifier(alreadyAssigned(Wheel::markAsPersisted, Wheel::isPersisted))
+														.add(Wheel::getModel)).reverselySetBy(Wheel::setCar))
+										.addSubClass(subentityBuilder(Truk.class)
+												.add(Truk::getColor)))
+								.build(persistenceContext2),
+						persistenceContext2.getConnectionProvider() },
+				{	"joined tables / one-to-many with mapped association",
+						entityBuilder(Vehicle.class, LONG_TYPE)
+								.add(Vehicle::getId).identifier(ALREADY_ASSIGNED)
+								.mapPolymorphism(PolymorphismPolicy.<AbstractVehicle, Identifier<Long>>joinedTables()
+										.addSubClass(subentityBuilder(Car.class)
+												.add(Car::getModel)
+												.addOneToManyList(Car::getWheels, entityBuilder(Wheel.class, String.class)
+														// please note that we use an already-assigned policy because it requires entities to be mark
+														// as persisted after select, so we test also select listener of relation
+														.add(Wheel::getSerialNumber).identifier(alreadyAssigned(Wheel::markAsPersisted, Wheel::isPersisted))
+														.add(Wheel::getModel)).indexedBy(indexColumn).mappedBy(Wheel::setCar))
+										.addSubClass(subentityBuilder(Truk.class)
+												.add(Truk::getColor)))
+								.build(persistenceContext3),
+						persistenceContext3.getConnectionProvider() },
+//				{	"table per class",
+//					entityBuilder(Vehicle.class, LONG_TYPE)
+//						.add(Vehicle::getId).identifier(ALREADY_ASSIGNED)
+//							.addOneToOne(Vehicle::getEngine, entityBuilder(Engine.class, LONG_TYPE)
+//									.add(Engine::getId).identifier(ALREADY_ASSIGNED))
+//						.mapPolymorphism(PolymorphismPolicy.<AbstractVehicle, Identifier<Long>>tablePerClass()
+//								.addSubClass(subentityBuilder(Car.class)
+//										.add(Car::getModel))
+//								.addSubClass(subentityBuilder(Truk.class)
+//										.add(Truk::getColor)))
+//						.build(persistenceContext4),
+//						persistenceContext4.getConnectionProvider() },
+		};
+		new DDLDeployer(persistenceContext1).deployDDL();
+		new DDLDeployer(persistenceContext2).deployDDL();
+		new DDLDeployer(persistenceContext3).deployDDL();
+		new DDLDeployer(persistenceContext4).deployDDL();
+		return result;
+	}
+	
+	
+	@ParameterizedTest(name="{0}")
+	@MethodSource("polymorphism_subClassHasOneToMany_data")
+	void crud_polymorphism_subClassHasOneToMany(String testDisplayName, IEntityPersister<AbstractVehicle, Identifier<Long>> persister, ConnectionProvider connectionProvider) throws SQLException {
+		Car dummyCar = new Car(1L);
+		dummyCar.setModel("Renault");
+		dummyCar.addWheel(new Wheel("XYZ-ABC-01"));
+		Truk dummyTruk = new Truk(2L);
+		dummyTruk.setColor(new Color(42));
+		
+		// insert test
+		persister.insert(Arrays.asList(dummyCar, dummyTruk));
+		
+		Car dummyCarModfied = new Car(1L);
+		dummyCarModfied.setModel("Peugeot");
+		dummyCarModfied.addWheel(new Wheel("XYZ-ABC-02"));
+		Truk dummyTrukModfied = new Truk(2L);
+		dummyTrukModfied.setColor(new Color(99));
+		
+		persister.update(dummyCarModfied, dummyCar, true);
+		
+		persister.update(dummyTrukModfied, dummyTruk, true);
+		
+		connectionProvider.getCurrentConnection().commit();
+		assertEquals(1, persister.delete(dummyCarModfied));
+		assertEquals(1, persister.delete(dummyTrukModfied));
+		connectionProvider.getCurrentConnection().rollback();
+		
+		assertEquals(2, persister.delete(Arrays.asList(dummyCarModfied, dummyTrukModfied)));
+		
+		connectionProvider.getCurrentConnection().rollback();
+		
+		assertEquals(dummyTrukModfied, persister.select(dummyTruk.getId()));
+		AbstractVehicle selectedCar = persister.select(dummyCar.getId());
+		dummyCarModfied.getWheels().forEach(w -> w.setCar(dummyCarModfied));	// this is done only for equality check of reverse setting, because deletion set it to null (which must be fixed, bug see CollecctionUpdater)
+		assertEquals(dummyCarModfied, selectedCar);
+		// testing afterSelect listener of sub entities relations
+		((Car) selectedCar).getWheels().forEach(wheel -> assertTrue(wheel.isPersisted()));
+			 
+		assertAllEquals(dummyCarModfied.getWheels(), ((Car) selectedCar).getWheels());
+		assertEquals(Arrays.asSet(dummyCarModfied, dummyTrukModfied), new HashSet<>(persister.select(Arrays.asSet(dummyCar.getId(), dummyTruk.getId()))));
+	}
+	
+	static Object[][] polymorphism_subClassHasElementCollection_data() {
+		PersistenceContext persistenceContext1 = new PersistenceContext(new JdbcConnectionProvider(new HSQLDBInMemoryDataSource()), DIALECT);
+		PersistenceContext persistenceContext2 = new PersistenceContext(new JdbcConnectionProvider(new HSQLDBInMemoryDataSource()), DIALECT);
+		PersistenceContext persistenceContext3 = new PersistenceContext(new JdbcConnectionProvider(new HSQLDBInMemoryDataSource()), DIALECT);
+		Object[][] result = new Object[][] {
+//				{	"single table",
+//					entityBuilder(Vehicle.class, LONG_TYPE)
+//						.add(Vehicle::getId).identifier(ALREADY_ASSIGNED)
+//						.addOneToOne(Vehicle::getEngine, entityBuilder(Engine.class, LONG_TYPE)
+//								.add(Engine::getId).identifier(ALREADY_ASSIGNED))
+//						.mapPolymorphism(PolymorphismPolicy.<AbstractVehicle, Identifier<Long>>singleTable()
+//								.addSubClass(subentityBuilder(Car.class)
+//										.add(Car::getModel), "CAR")
+//								.addSubClass(subentityBuilder(Truk.class)
+//										.add(Truk::getColor), "TRUK"))
+//						.build(persistenceContext1),
+//						persistenceContext1.getConnectionProvider() },
+				{	"joined tables / one-to-many with association table",
+						entityBuilder(Vehicle.class, LONG_TYPE)
+								.add(Vehicle::getId).identifier(ALREADY_ASSIGNED)
+								.mapPolymorphism(PolymorphismPolicy.<AbstractVehicle, Identifier<Long>>joinedTables()
+										.addSubClass(subentityBuilder(Car.class)
+												.add(Car::getModel)
+												.addCollection(Car::getPlates, String.class))
+										.addSubClass(subentityBuilder(Truk.class)
+												.add(Truk::getColor)))
+								.build(persistenceContext2),
+						persistenceContext2.getConnectionProvider() },
+//				{	"table per class",
+//					entityBuilder(Vehicle.class, LONG_TYPE)
+//						.add(Vehicle::getId).identifier(ALREADY_ASSIGNED)
+//							.addOneToOne(Vehicle::getEngine, entityBuilder(Engine.class, LONG_TYPE)
+//									.add(Engine::getId).identifier(ALREADY_ASSIGNED))
+//						.mapPolymorphism(PolymorphismPolicy.<AbstractVehicle, Identifier<Long>>tablePerClass()
+//								.addSubClass(subentityBuilder(Car.class)
+//										.add(Car::getModel))
+//								.addSubClass(subentityBuilder(Truk.class)
+//										.add(Truk::getColor)))
+//						.build(persistenceContext3),
+//						persistenceContext3.getConnectionProvider() },
+		};
+		new DDLDeployer(persistenceContext1).deployDDL();
+		new DDLDeployer(persistenceContext2).deployDDL();
+		new DDLDeployer(persistenceContext3).deployDDL();
+		return result;
+	}
+	
+	
+	@ParameterizedTest(name="{0}")
+	@MethodSource("polymorphism_subClassHasElementCollection_data")
+	void crud_polymorphism_subClassHasElementCollection(String testDisplayName, IEntityPersister<AbstractVehicle, Identifier<Long>> persister, ConnectionProvider connectionProvider) throws SQLException {
+		Car dummyCar = new Car(1L);
+		dummyCar.setModel("Renault");
+		dummyCar.addPlate("XYZ-ABC-01");
+		Truk dummyTruk = new Truk(2L);
+		dummyTruk.setColor(new Color(42));
+		
+		// insert test
+		persister.insert(Arrays.asList(dummyCar, dummyTruk));
+		
+		Car dummyCarModfied = new Car(1L);
+		dummyCarModfied.setModel("Peugeot");
+		dummyCarModfied.addPlate("XYZ-ABC-02");
+		Truk dummyTrukModfied = new Truk(2L);
+		dummyTrukModfied.setColor(new Color(99));
+		
+		persister.update(dummyCarModfied, dummyCar, true);
+		
+		persister.update(dummyTrukModfied, dummyTruk, true);
+		
+		connectionProvider.getCurrentConnection().commit();
+		assertEquals(1, persister.delete(dummyCarModfied));
+		// nothing to delete because all was deleted by cascade
+		assertEquals(0, connectionProvider.getCurrentConnection().prepareStatement("delete from Car_plates").executeUpdate());
+		assertEquals(1, persister.delete(dummyTrukModfied));
+		connectionProvider.getCurrentConnection().rollback();
+		
+		assertEquals(2, persister.delete(Arrays.asList(dummyCarModfied, dummyTrukModfied)));
+		
+		connectionProvider.getCurrentConnection().rollback();
+		
+		assertEquals(dummyTrukModfied, persister.select(dummyTruk.getId()));
+		AbstractVehicle selectedCar = persister.select(dummyCar.getId());
+		assertEquals(dummyCarModfied, selectedCar);
+		assertAllEquals(Arrays.asList("XYZ-ABC-02"), ((Car) selectedCar).getPlates());
+		assertEquals(Arrays.asSet(dummyCarModfied, dummyTrukModfied), new HashSet<>(persister.select(Arrays.asSet(dummyCar.getId(), dummyTruk.getId()))));
+	}
 	
 	@Nested
-	class SingleTable {
+	class OneToSingleTableOne {
 		
 		@Test
 		void oneSubClass() {
@@ -505,10 +801,10 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 			assertEquals(dummyTruk, loadedVehicle);
 			
 			List<? extends Vehicle> loadedVehicles = abstractVehiclePersister.selectWhere(Vehicle::getColor, Operators.eq(new Color(42))).execute();
-			Assertions.assertAllEquals(Arrays.asHashSet(dummyTruk), new HashSet<>(loadedVehicles));
+			assertAllEquals(Arrays.asHashSet(dummyTruk), new HashSet<>(loadedVehicles));
 			
 			loadedVehicles = abstractVehiclePersister.selectWhere(Vehicle::getColor, Operators.eq(new Color(256))).execute();
-			Assertions.assertAllEquals(Arrays.asHashSet(dummyCar), new HashSet<>(loadedVehicles));
+			assertAllEquals(Arrays.asHashSet(dummyCar), new HashSet<>(loadedVehicles));
 			
 			// delete test
 			abstractVehiclePersister.delete(Arrays.asList(dummyCar, dummyTruk));
@@ -590,7 +886,7 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 	}
 	
 	@Nested
-	class JoinedTables {
+	class OneToJoinedTablesOne {
 		
 		@Test
 		void oneSubClass() {
@@ -836,10 +1132,10 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 			assertEquals(dummyTruk, loadedVehicle);
 			
 			List<? extends Vehicle> loadedVehicles = abstractVehiclePersister.selectWhere(Vehicle::getColor, Operators.eq(new Color(42))).execute();
-			Assertions.assertAllEquals(Arrays.asHashSet(dummyTruk), new HashSet<>(loadedVehicles));
+			assertAllEquals(Arrays.asHashSet(dummyTruk), new HashSet<>(loadedVehicles));
 			
 			loadedVehicles = abstractVehiclePersister.selectWhere(Vehicle::getColor, Operators.eq(new Color(256))).execute();
-			Assertions.assertAllEquals(Arrays.asHashSet(dummyCar), new HashSet<>(loadedVehicles));
+			assertAllEquals(Arrays.asHashSet(dummyCar), new HashSet<>(loadedVehicles));
 			
 			// delete test
 			abstractVehiclePersister.delete(Arrays.asList(dummyCar, dummyTruk));
@@ -921,7 +1217,7 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 	}
 	
 	@Nested
-	class TablePerClass {
+	class OneToTablePerClassOne {
 		
 		@Test
 		void oneSubClass() {
@@ -1050,7 +1346,7 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 			assertEquals(dummyTruk, loadedVehicle);
 
 			List<? extends AbstractVehicle> loadedVehicles = abstractVehiclePersister.selectAll();
-			Assertions.assertAllEquals(Arrays.asHashSet(dummyCar, dummyTruk), new HashSet<>(loadedVehicles));
+			assertAllEquals(Arrays.asHashSet(dummyCar, dummyTruk), new HashSet<>(loadedVehicles));
 
 			// delete test
 			abstractVehiclePersister.delete(Arrays.asList(dummyCar, dummyTruk));
@@ -1139,10 +1435,10 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 			assertEquals(dummyTruk, loadedVehicle);
 
 			List<? extends Vehicle> loadedVehicles = abstractVehiclePersister.selectWhere(Vehicle::getColor, Operators.eq(new Color(42))).execute();
-			Assertions.assertAllEquals(Arrays.asHashSet(dummyTruk), new HashSet<>(loadedVehicles));
+			assertAllEquals(Arrays.asHashSet(dummyTruk), new HashSet<>(loadedVehicles));
 
 			loadedVehicles = abstractVehiclePersister.selectWhere(Vehicle::getColor, Operators.eq(new Color(666))).execute();
-			Assertions.assertAllEquals(Arrays.asHashSet(dummyCar), new HashSet<>(loadedVehicles));
+			assertAllEquals(Arrays.asHashSet(dummyCar), new HashSet<>(loadedVehicles));
 
 			// delete test
 			abstractVehiclePersister.delete(Arrays.asList(dummyCar, dummyTruk));
@@ -1701,7 +1997,7 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 					.withPrinter(Country.class, countryPrinter::toString)
 					.build();
 			
-			Assertions.assertAllEquals(country.getCities(), loadedCountry.getCities(), cityPrinter::toString);
+			assertAllEquals(country.getCities(), loadedCountry.getCities(), cityPrinter::toString);
 			// ensuring that reverse side is also set
 			assertEquals(Arrays.asHashSet(loadedCountry), Iterables.collect(loadedCountry.getCities(), City::getCountry, HashSet::new));
 			
@@ -1876,7 +2172,7 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 					.withPrinter(Country.class, countryPrinter::toString)
 					.build();
 			
-			Assertions.assertAllEquals(country.getCities(), loadedCountry.getCities(), cityPrinter::toString);
+			assertAllEquals(country.getCities(), loadedCountry.getCities(), cityPrinter::toString);
 			// ensuring that reverse side is also set
 			assertEquals(Arrays.asHashSet(loadedCountry), Iterables.collect(loadedCountry.getCities(), City::getCountry, HashSet::new));
 			
@@ -2113,7 +2409,7 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 					.withPrinter(Country.class, countryPrinter::toString)
 					.build();
 			
-			Assertions.assertAllEquals(country.getCities(), loadedCountry.getCities(), cityPrinter::toString);
+			assertAllEquals(country.getCities(), loadedCountry.getCities(), cityPrinter::toString);
 			// ensuring that reverse side is also set
 			assertEquals(Arrays.asHashSet(loadedCountry), Iterables.collect(loadedCountry.getCities(), City::getCountry, HashSet::new));
 			

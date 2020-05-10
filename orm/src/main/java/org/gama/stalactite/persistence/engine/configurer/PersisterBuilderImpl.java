@@ -54,7 +54,6 @@ import org.gama.stalactite.persistence.engine.PolymorphismPolicy;
 import org.gama.stalactite.persistence.engine.PolymorphismPolicy.JoinedTablesPolymorphism;
 import org.gama.stalactite.persistence.engine.PolymorphismPolicy.SingleTablePolymorphism;
 import org.gama.stalactite.persistence.engine.PolymorphismPolicy.TablePerClassPolymorphism;
-import org.gama.stalactite.persistence.engine.SubEntityMappingConfiguration;
 import org.gama.stalactite.persistence.engine.TableNamingStrategy;
 import org.gama.stalactite.persistence.engine.VersioningStrategy;
 import org.gama.stalactite.persistence.engine.builder.CascadeMany;
@@ -202,7 +201,7 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 		inheritanceMappingPerTable.getMappings().forEach(mapping -> {
 			if (mapping.getMappingConfiguration() instanceof EntityMappingConfiguration) {
 				((EntityMappingConfiguration<C, I>) mapping.getMappingConfiguration()).getOneToOnes().forEach(cascadeOne -> {
-					if (!cascadeOne.isOwnedByReverseSide()) {
+					if (!cascadeOne.isRelationOwnedByTarget()) {
 						AccessorDefinition targetProviderDefinition = AccessorDefinition.giveDefinition(cascadeOne.getTargetProvider());
 						mapping.getMapping().put(
 								cascadeOne.getTargetProvider(),
@@ -256,7 +255,9 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 				};
 			} else if (polymorphismPolicy instanceof JoinedTablesPolymorphism) {
 				polymorphismBuilder = new JoinedTablesPolymorphismBuilder<C, I, Table>((JoinedTablesPolymorphism<C, I>) polymorphismPolicy,
-						identification, mainPersister, this.columnBinderRegistry, this.columnNameProvider, this.tableNamingStrategy) {
+						identification, mainPersister, this.columnBinderRegistry, this.columnNameProvider, this.tableNamingStrategy,
+						this.columnNamingStrategy, this.foreignKeyNamingStrategy, this.elementCollectionTableNamingStrategy, this.joinColumnNamingStrategy,
+						this.associationTableNamingStrategy) {
 					@Override
 					void addPrimarykey(Identification identification, Table table) {
 						PersisterBuilderImpl.this.addPrimarykeys(identification, Arrays.asSet(table));
@@ -277,7 +278,7 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 				throw new NotImplementedException("Given policy is not implemented : " + polymorphismPolicy);
 			}
 			result = polymorphismBuilder.build(persistenceContext);
-			// we transfert listeners by principle and in particular for StatefullIdentifier state change and relation cascade triggering
+			// we transfert listeners by principle and in particular for already-assigned mark-as-persisted mecanism and relation cascade triggering
 			result.addInsertListener(mainPersister.getPersisterListener().getInsertListener());
 			result.addUpdateListener(mainPersister.getPersisterListener().getUpdateListener());
 			result.addSelectListener(mainPersister.getPersisterListener().getSelectListener());
@@ -720,32 +721,6 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 	void visitInheritedEntityMappingConfigurations(Consumer<EntityMappingConfiguration> configurationConsumer) {
 		// iterating over mapping from inheritance
 		entityMappingConfiguration.inheritanceIterable().forEach(configurationConsumer);
-	}
-	
-	@VisibleForTesting
-	MappingPerTable collectEmbeddedMappingFromSubEntities() {
-		MappingPerTable result = new MappingPerTable();
-		BeanMappingBuilder beanMappingBuilder = new BeanMappingBuilder();
-		PolymorphismPolicy polymorphismPolicy = entityMappingConfiguration.getPolymorphismPolicy();
-		if (polymorphismPolicy != null) {
-			if (polymorphismPolicy instanceof SingleTablePolymorphism) {
-				Collection<? extends SubEntityMappingConfiguration<?, ?>> subClasses = ((SingleTablePolymorphism<?, ?, ?>) polymorphismPolicy).getSubClasses();
-				subClasses.forEach(o -> result.add(o, this.table, beanMappingBuilder.build(o.getPropertiesMapping(),
-						this.table, this.columnBinderRegistry, columnNameProvider), false));
-			} else if (polymorphismPolicy instanceof TablePerClassPolymorphism) {
-				Collection<? extends SubEntityMappingConfiguration<?, ?>> subClasses = ((TablePerClassPolymorphism<?, ?>) polymorphismPolicy).getSubClasses();
-				subClasses.forEach(o -> result.add(o, this.table, beanMappingBuilder.build(o.getPropertiesMapping(),
-						this.table, this.columnBinderRegistry, columnNameProvider), false));
-			} else if (polymorphismPolicy instanceof JoinedTablesPolymorphism) {
-				JoinedTablesPolymorphism<?, ?> joinedTablesPolymorphismPolicy = (JoinedTablesPolymorphism<?, ?>) polymorphismPolicy;
-				Collection<? extends SubEntityMappingConfiguration<?, ?>> subClasses = joinedTablesPolymorphismPolicy.getSubClasses();
-				subClasses.forEach(o -> {
-					Table table = nullable(joinedTablesPolymorphismPolicy.giveTable(o)).getOr(() -> new Table(tableNamingStrategy.giveName(o.getEntityType())));
-					result.add(o, table, beanMappingBuilder.build(o.getPropertiesMapping(), table, this.columnBinderRegistry, columnNameProvider), false);
-				});
-			}
-		}
-		return result;
 	}
 	
 	/**

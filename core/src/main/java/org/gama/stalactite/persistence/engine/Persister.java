@@ -68,6 +68,8 @@ public class Persister<C, I, T extends Table> implements IEntityPersister<C, I>,
 		// Transfering identifier manager InsertListerner to here
 		getPersisterListener().addInsertListener(
 				getMappingStrategy().getIdMappingStrategy().getIdentifierInsertionManager().getInsertListener());
+		getPersisterListener().addSelectListener(
+				getMappingStrategy().getIdMappingStrategy().getIdentifierInsertionManager().getSelectListener());
 	}
 	
 	public Persister(IConnectionConfiguration connectionConfiguration, DMLGenerator dmlGenerator, Retryer writeOperationRetryer,

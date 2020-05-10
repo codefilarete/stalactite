@@ -96,16 +96,17 @@ public class OneToManyWithIndexedAssociationTableEngine<SRC, TRGT, ID, C extends
 			
 			@Override
 			protected void insertTargets(UpdateContext updateContext) {
-				// we insert association records before targets to satisfy integrity constraint
-				associationPersister.insert(((AssociationTableUpdateContext) updateContext).getAssociationRecordstoBeInserted());
+				// we insert targets before association records to satisfy integrity constraint
 				super.insertTargets(updateContext);
+				associationPersister.insert(((AssociationTableUpdateContext) updateContext).getAssociationRecordstoBeInserted());
 				
 			}
 			
 			@Override
 			protected void deleteTargets(UpdateContext updateContext) {
-				super.deleteTargets(updateContext);
+				// we delete association records before targets to satisfy integrity constraint
 				associationPersister.delete(((AssociationTableUpdateContext) updateContext).getAssociationRecordstoBeDeleted());
+				super.deleteTargets(updateContext);
 			}
 			
 			class AssociationTableUpdateContext extends UpdateContext {

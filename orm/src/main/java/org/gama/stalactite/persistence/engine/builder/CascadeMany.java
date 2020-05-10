@@ -108,7 +108,7 @@ public class CascadeMany<SRC, TRGT, TRGTID, C extends Collection<TRGT>> {
 		return reverseLink;
 	}
 	
-	public void setRegisteredBy(SerializableBiConsumer<TRGT, SRC> reverseLink) {
+	public void setReverseLink(SerializableBiConsumer<TRGT, SRC> reverseLink) {
 		this.reverseLink = reverseLink;
 	}
 	

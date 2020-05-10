@@ -3,6 +3,7 @@ package org.gama.stalactite.persistence.id.manager;
 import java.util.function.Consumer;
 
 import org.gama.lang.function.Sequence;
+import org.gama.stalactite.persistence.engine.listening.SelectListener;
 import org.gama.stalactite.sql.dml.WriteOperation;
 import org.gama.stalactite.persistence.engine.WriteExecutor.JDBCBatchingIterator;
 import org.gama.stalactite.persistence.engine.listening.InsertListener;
@@ -16,6 +17,9 @@ import org.gama.stalactite.persistence.structure.Table;
  * @author Guillaume Mary
  */
 public class BeforeInsertIdentifierManager<T, I> implements IdentifierInsertionManager<T, I> {
+	
+	private static final InsertListener NOOP_INSERT_LISTENER = new InsertListener() {};
+	private static final SelectListener NOOP_SELECT_LISTENER = new SelectListener() {};
 	
 	private final Class<I> identifierType;
 	
@@ -38,7 +42,12 @@ public class BeforeInsertIdentifierManager<T, I> implements IdentifierInsertionM
 	
 	@Override
 	public InsertListener<T> getInsertListener() {
-		return new InsertListener<T>() {};
+		return NOOP_INSERT_LISTENER;
+	}
+	
+	@Override
+	public SelectListener<T, I> getSelectListener() {
+		return NOOP_SELECT_LISTENER;
 	}
 	
 	/**

@@ -11,13 +11,14 @@ import java.util.function.BiConsumer;
 import org.gama.lang.Duo;
 import org.gama.lang.collection.PairIterator;
 import org.gama.lang.exception.Exceptions;
-import org.gama.stalactite.sql.dml.GeneratedKeysReader;
-import org.gama.stalactite.sql.dml.WriteOperation;
 import org.gama.stalactite.persistence.engine.WriteExecutor.JDBCBatchingIterator;
 import org.gama.stalactite.persistence.engine.listening.InsertListener;
+import org.gama.stalactite.persistence.engine.listening.SelectListener;
 import org.gama.stalactite.persistence.mapping.IdAccessor;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
+import org.gama.stalactite.sql.dml.GeneratedKeysReader;
+import org.gama.stalactite.sql.dml.WriteOperation;
 
 /**
  * Identifier manager that gets its values from {@link PreparedStatement#getGeneratedKeys()} (available after insert SQL statement). 
@@ -27,6 +28,7 @@ import org.gama.stalactite.persistence.structure.Table;
 public class JDBCGeneratedKeysIdentifierManager<T, I> implements IdentifierInsertionManager<T, I> {
 	
 	private static final InsertListener NOOP_INSERT_LISTENER = new InsertListener() {};
+	private static final SelectListener NOOP_SELECT_LISTENER = new SelectListener() {};
 	
 	private final Class<I> identifierType;
 	
@@ -58,6 +60,11 @@ public class JDBCGeneratedKeysIdentifierManager<T, I> implements IdentifierInser
 	@Override
 	public InsertListener<T> getInsertListener() {
 		return NOOP_INSERT_LISTENER;
+	}
+	
+	@Override
+	public SelectListener<T, I> getSelectListener() {
+		return NOOP_SELECT_LISTENER;
 	}
 	
 	/**

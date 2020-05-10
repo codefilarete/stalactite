@@ -58,6 +58,8 @@ import static org.gama.lang.bean.Objects.preventNull;
 import static org.gama.stalactite.persistence.engine.cascade.JoinedStrategiesSelect.ROOT_STRATEGY_NAME;
 
 /**
+ * Class that configures element-collection mapping
+ * 
  * @author Guillaume Mary
  */
 public class ElementCollectionCascadeConfigurer<SRC, TRGT, ID, C extends Collection<TRGT>> {

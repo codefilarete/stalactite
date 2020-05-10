@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.function.Function;
 
 import org.gama.stalactite.persistence.engine.builder.CascadeMany;
+import org.gama.stalactite.persistence.engine.builder.ElementCollectionLinkage;
 import org.gama.stalactite.persistence.structure.Column;
 
 /**
@@ -25,5 +26,7 @@ public interface SubEntityMappingConfiguration<C, I> {
 	List<CascadeOne<C, ?, ?>> getOneToOnes();
 	
 	List<CascadeMany<C, ?, ?, ? extends Collection>> getOneToManys();
+	
+	List<ElementCollectionLinkage<C, ?, ? extends Collection>> getElementCollections();
 	
 }

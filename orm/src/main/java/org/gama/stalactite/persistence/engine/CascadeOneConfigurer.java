@@ -81,7 +81,7 @@ public class CascadeOneConfigurer<SRC, TRGT, ID> {
 			ColumnNamingStrategy joinColumnNamingStrategy) {
 		
 		ConfigurerTemplate<SRC, TRGT, ID> configurer;
-		if (cascadeOne.isOwnedByReverseSide()) {
+		if (cascadeOne.isRelationOwnedByTarget()) {
 			configurer = new RelationOwnedByTargetConfigurer<>(persistenceContext, targetPersisterBuilder);
 		} else {
 			configurer = new RelationOwnedBySourceConfigurer<>(persistenceContext, targetPersisterBuilder);
@@ -199,7 +199,9 @@ public class CascadeOneConfigurer<SRC, TRGT, ID> {
 
 				@Override
 				public void afterSelect(Iterable<? extends SRC> result) {
-					Iterable collect = Iterables.collectToList(result, cascadeOne.getTargetProvider()::get);
+					List collect = Iterables.collectToList(result, cascadeOne.getTargetProvider()::get);
+					// NB: entity can be null when loading relation, we skip nulls to prevent a NPE
+					collect.removeIf(java.util.Objects::isNull);
 					targetSelectListener.afterSelect(collect);
 				}
 
@@ -478,6 +480,18 @@ public class CascadeOneConfigurer<SRC, TRGT, ID> {
 										return true;
 									} else {
 										// "HELD"
+										
+										// Nullifying reverse column of detached target : this is made in case of dev who didn't nullify reverse property
+										// of old target when new target was set, by doing so we avoid old target to still point to source entity
+										// in databse through the foreign key, which throw constraint exception when source is deleted 
+										if (reverseGetter.apply(targetOfUnmodified) != null	// reverse property isn't nullify
+											&& !targetPersister.getMappingStrategy().isNew(targetOfUnmodified)	// this is for safety, not sure of any use case
+											// Was target entity reassigned to another source ? if true we should not nullify column because it will
+											// be maintained by targets update, nullifying it would add an extra-useless SQL order
+											&& !targetPersister.getMappingStrategy().getId(targetOfUnmodified).equals(targetPersister.getMappingStrategy().getId(targetOfModified))
+										) {
+											foreignKeyValueProvider.get().put(targetOfUnmodified, NULL_RETURNING_FUNCTION);
+										}
 										return targetOfModified != null;
 										// is an optimisation of :
 										// - if targetOfModified != null && targetOfUnmodified != null

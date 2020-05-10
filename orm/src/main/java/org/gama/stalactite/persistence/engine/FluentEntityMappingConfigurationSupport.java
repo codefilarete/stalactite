@@ -410,7 +410,6 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements IFluentEnt
 				mutatorByMethodReference);
 		CascadeOne<C, O, J> cascadeOne = new CascadeOne<>(propertyAccessor, mappingConfiguration.getConfiguration(), table);
 		this.cascadeOnes.add((CascadeOne<C, Object, Object>) cascadeOne);
-		// we declare the column on our side
 		return wrapForAdditionalOptions(cascadeOne);
 	}
 	
@@ -427,7 +426,6 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements IFluentEnt
 				new AccessorByMethod<C, O>(captureMethod(getter)).toMutator());
 		CascadeOne<C, O, J> cascadeOne = new CascadeOne<>(propertyAccessor, mappingConfiguration.getConfiguration(), table);
 		this.cascadeOnes.add((CascadeOne<C, Object, Object>) cascadeOne);
-		// we declare the column on our side
 		return wrapForAdditionalOptions(cascadeOne);
 	}
 	
@@ -970,7 +968,7 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements IFluentEnt
 		
 		@Override
 		public OneToManyOptions<C, I, O, S> reverselySetBy(SerializableBiConsumer<O, C> reverseLink) {
-			cascadeMany.setRegisteredBy(reverseLink);
+			cascadeMany.setReverseLink(reverseLink);
 			return null;	// we can return null because dispatcher will return proxy
 		}
 		

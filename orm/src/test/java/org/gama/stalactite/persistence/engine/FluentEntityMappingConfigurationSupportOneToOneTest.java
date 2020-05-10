@@ -8,18 +8,15 @@ import java.sql.SQLException;
 import java.util.HashSet;
 import java.util.List;
 
+import org.danekja.java.util.function.serializable.SerializableFunction;
 import org.gama.lang.collection.Arrays;
 import org.gama.lang.collection.Iterables;
 import org.gama.lang.collection.Maps;
 import org.gama.lang.test.Assertions;
-import org.gama.stalactite.persistence.id.StatefullIdentifierAlreadyAssignedIdentifierPolicy;
-import org.gama.stalactite.sql.binder.DefaultParameterBinders;
-import org.gama.stalactite.sql.result.ResultSetIterator;
-import org.gama.stalactite.sql.result.RowIterator;
-import org.gama.stalactite.sql.test.HSQLDBInMemoryDataSource;
 import org.gama.stalactite.persistence.engine.CascadeOptions.RelationMode;
 import org.gama.stalactite.persistence.engine.IFluentEntityMappingBuilder.IFluentMappingBuilderOneToOneOptions;
 import org.gama.stalactite.persistence.engine.IFluentEntityMappingBuilder.IFluentMappingBuilderPropertyOptions;
+import org.gama.stalactite.persistence.engine.PersistenceContext.ExecutableSelect;
 import org.gama.stalactite.persistence.engine.model.City;
 import org.gama.stalactite.persistence.engine.model.Country;
 import org.gama.stalactite.persistence.engine.model.Person;
@@ -27,10 +24,15 @@ import org.gama.stalactite.persistence.id.Identified;
 import org.gama.stalactite.persistence.id.Identifier;
 import org.gama.stalactite.persistence.id.PersistableIdentifier;
 import org.gama.stalactite.persistence.id.PersistedIdentifier;
+import org.gama.stalactite.persistence.id.StatefullIdentifierAlreadyAssignedIdentifierPolicy;
 import org.gama.stalactite.persistence.id.provider.LongProvider;
 import org.gama.stalactite.persistence.sql.HSQLDBDialect;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
+import org.gama.stalactite.sql.binder.DefaultParameterBinders;
+import org.gama.stalactite.sql.result.ResultSetIterator;
+import org.gama.stalactite.sql.result.RowIterator;
+import org.gama.stalactite.sql.test.HSQLDBInMemoryDataSource;
 import org.gama.stalactite.test.JdbcConnectionProvider;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
@@ -924,6 +926,67 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 				// and original one was left untouched
 				IEntityPersister<Person, Identifier<Long>> personPersister = persistenceContext.getPersister(Person.class);
 				assertEquals("French president renamed", personPersister.select(originalPresident.getId()).getName());
+			}
+			
+			@Test
+			void relationChanged_relationIsOwnedByTarget() {
+				IEntityPersister<Country, Identifier<Long>> countryPersister = MappingEase.entityBuilder(Country.class, Identifier.LONG_TYPE)
+						.add(Country::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+						.add(Country::getName)
+						.add(Country::getDescription)
+						.addOneToOne(Country::getPresident, personConfiguration).cascading(ALL).mappedBy(Person::getCountry)
+						.build(persistenceContext);
+				
+				DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+				ddlDeployer.deployDDL();
+				
+				LongProvider countryIdProvider = new LongProvider();
+				LongProvider personIdProvider = new LongProvider();
+				Country dummyCountry = new Country(countryIdProvider.giveNewIdentifier());
+				dummyCountry.setName("France");
+				dummyCountry.setDescription("Smelly cheese !");
+				Person originalPresident = new Person(personIdProvider.giveNewIdentifier());
+				originalPresident.setName("French president");
+				dummyCountry.setPresident(originalPresident);
+				originalPresident.setCountry(dummyCountry);	// maintaining reverse relation in memory (as it must be), else column has not value which results in an NPE
+				countryPersister.insert(dummyCountry);
+				
+				// Changing president's name to see what happens when we save it to the database
+				Country persistedCountry = countryPersister.select(dummyCountry.getId());
+				persistedCountry.getPresident().setName("French president renamed");
+				countryPersister.update(persistedCountry, dummyCountry, true);
+				// Checking that changing president's name is pushed to the database when we save the country
+				Country countryFromDB = countryPersister.select(dummyCountry.getId());
+				assertEquals("French president renamed", countryFromDB.getPresident().getName());
+				assertTrue(persistedCountry.getPresident().getId().isPersisted());
+				
+				// Changing president
+				Person newPresident = new Person(personIdProvider.giveNewIdentifier());
+				newPresident.setName("new French president");
+				persistedCountry.setPresident(newPresident);
+				newPresident.setCountry(dummyCountry);	// maintaining reverse relation in memory (as it must be), else column has not value which results in an NPE
+				countryPersister.update(persistedCountry, countryFromDB, true);
+				// Checking that president has changed
+				countryFromDB = countryPersister.select(dummyCountry.getId());
+				assertEquals("new French president", countryFromDB.getPresident().getName());
+				assertEquals(newPresident.getId(), countryFromDB.getPresident().getId());
+				// and original one was left untouched
+				IEntityPersister<Person, Identifier<Long>> personPersister = persistenceContext.getPersister(Person.class);
+				assertEquals("French president renamed", personPersister.select(originalPresident.getId()).getName());
+				
+				// checking reverse side column value ...
+				// ... must be null for old president
+				ExecutableSelect<Long> countryIdQuery = persistenceContext.newQuery("select countryId from Person where id = :personId", Long.class)
+						.mapKey(SerializableFunction.identity(), "countryId", Long.class);
+				List<Long> originalPresidentCountryId = countryIdQuery
+						.set("personId", originalPresident.getId())
+						.execute();
+				assertNull(originalPresidentCountryId.get(0));
+				// ... and not null for new president
+				List<Long> newPresidentCountryId = countryIdQuery
+						.set("personId", newPresident.getId())
+						.execute();
+				assertEquals(newPresidentCountryId.get(0), dummyCountry.getId().getSurrogate());
 			}
 			
 			@Test

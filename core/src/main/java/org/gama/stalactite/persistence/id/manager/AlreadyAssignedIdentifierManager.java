@@ -5,6 +5,7 @@ import java.util.function.Function;
 
 import org.gama.stalactite.persistence.engine.WriteExecutor.JDBCBatchingIterator;
 import org.gama.stalactite.persistence.engine.listening.InsertListener;
+import org.gama.stalactite.persistence.engine.listening.SelectListener;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.sql.dml.WriteOperation;
@@ -26,6 +27,8 @@ public class AlreadyAssignedIdentifierManager<C, I> implements IdentifierInserti
 	private final Class<I> identifierType;
 	
 	private final SetPersistedFlagAfterInsertListener setPersistedFlagAfterInsertListener = new SetPersistedFlagAfterInsertListener();
+	
+	private final SetPersistedFlagAfterSelectListener setPersistedFlagAfterSelectListener = new SetPersistedFlagAfterSelectListener();
 	
 	/** The {@link Consumer} that allows instances to be marked as persisted */
 	private final Consumer<C> markAsPersistedFunction;
@@ -60,22 +63,43 @@ public class AlreadyAssignedIdentifierManager<C, I> implements IdentifierInserti
 		return this.setPersistedFlagAfterInsertListener;
 	}
 	
+	@Override
+	public SelectListener<C, I> getSelectListener() {
+		return this.setPersistedFlagAfterSelectListener;
+	}
+	
 	public void setPersistedFlag(C e) {
 		if (markAsPersistedFunction != null ) {
 			markAsPersistedFunction.accept(e);
 		}
 	}
 	
-	public class SetPersistedFlagAfterInsertListener implements InsertListener<C> {
+	private class SetPersistedFlagAfterInsertListener implements InsertListener<C> {
 		
 		@Override
 		public void afterInsert(Iterable<? extends C> entities) {
-			for (C e : entities) {
-				setPersistedFlag(e);
-			}
+			markAsPersisted(entities);
 		}
-	
 	}
 	
+	private class SetPersistedFlagAfterSelectListener implements SelectListener<C, I> {
+		
+		@Override
+		public void afterSelect(Iterable<? extends C> entities) {
+			markAsPersisted(entities);
+		}
+	}
+	
+	/**
+	 * Massive version of {@link #setPersistedFlag(Object)}, made to avoid code duplicate between {@link SetPersistedFlagAfterInsertListener}
+	 * and {@link SetPersistedFlagAfterSelectListener}
+	 * 
+	 * @param entities entities to be marked as persisted
+	 */
+	private void markAsPersisted(Iterable<? extends C> entities) {
+		for (C e : entities) {
+			setPersistedFlag(e);
+		}
+	}
 	
 }

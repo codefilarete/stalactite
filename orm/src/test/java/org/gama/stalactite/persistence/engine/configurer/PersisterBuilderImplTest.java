@@ -28,8 +28,6 @@ import org.gama.stalactite.persistence.engine.EntityMappingConfiguration;
 import org.gama.stalactite.persistence.engine.ForeignKeyNamingStrategy;
 import org.gama.stalactite.persistence.engine.IEntityPersister;
 import org.gama.stalactite.persistence.engine.PersistenceContext;
-import org.gama.stalactite.persistence.engine.PolymorphismPolicy;
-import org.gama.stalactite.persistence.id.StatefullIdentifierAlreadyAssignedIdentifierPolicy;
 import org.gama.stalactite.persistence.engine.TableNamingStrategy;
 import org.gama.stalactite.persistence.engine.configurer.PersisterBuilderImpl.Identification;
 import org.gama.stalactite.persistence.engine.configurer.PersisterBuilderImpl.MappingPerTable;
@@ -37,10 +35,10 @@ import org.gama.stalactite.persistence.engine.model.AbstractVehicle;
 import org.gama.stalactite.persistence.engine.model.Car;
 import org.gama.stalactite.persistence.engine.model.Color;
 import org.gama.stalactite.persistence.engine.model.Timestamp;
-import org.gama.stalactite.persistence.engine.model.Truk;
 import org.gama.stalactite.persistence.engine.model.Vehicle;
 import org.gama.stalactite.persistence.id.Identified;
 import org.gama.stalactite.persistence.id.Identifier;
+import org.gama.stalactite.persistence.id.StatefullIdentifierAlreadyAssignedIdentifierPolicy;
 import org.gama.stalactite.persistence.sql.HSQLDBDialect;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.ForeignKey;
@@ -68,7 +66,6 @@ import static org.gama.reflection.Accessors.mutatorByField;
 import static org.gama.reflection.Accessors.mutatorByMethodReference;
 import static org.gama.stalactite.persistence.engine.MappingEase.embeddableBuilder;
 import static org.gama.stalactite.persistence.engine.MappingEase.entityBuilder;
-import static org.gama.stalactite.persistence.engine.MappingEase.subentityBuilder;
 import static org.gama.stalactite.persistence.id.Identifier.identifierBinder;
 import static org.gama.stalactite.sql.binder.DefaultParameterBinders.INTEGER_PRIMITIVE_BINDER;
 import static org.gama.stalactite.sql.binder.DefaultParameterBinders.LONG_PRIMITIVE_BINDER;
@@ -305,54 +302,6 @@ public class PersisterBuilderImplTest {
 		actual.sort((e1, e2) -> String.CASE_INSENSITIVE_ORDER.compare(e1.toString(), e2.toString()));
 		// Objects are similar but not equals so we compare them throught their footprint (truely comparing them is quite hard)
 		assertAllEquals(expected, actual, Object::toString);
-	}
-	
-	@Test
-	void collectEmbeddedMappingFromSubEntities() {
-		Table dummyCarTable = new Table("dummyCarTable");
-		PersisterBuilderImpl testInstance = new PersisterBuilderImpl(
-				entityBuilder(Car.class, Identifier.class)
-						.add(AbstractVehicle::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
-						.embed(AbstractVehicle::getTimestamp)
-						.mapPolymorphism(PolymorphismPolicy.joinedTables()
-								.addSubClass(subentityBuilder(Car.class)
-									.add(Car::getModel), dummyCarTable)
-								.addSubClass(subentityBuilder(Truk.class)
-									.add(Truk::getEngine))
-						));
-		
-		Table dummyTable = new Table("dummyTable");
-		testInstance.setColumnBinderRegistry(DIALECT.getColumnBinderRegistry())
-				.setColumnNamingStrategy(ColumnNamingStrategy.DEFAULT)
-				.setTableNamingStrategy(TableNamingStrategy.DEFAULT)
-				.setTable(dummyTable);
-		
-		MappingPerTable mappingFromSubEntities = testInstance.collectEmbeddedMappingFromSubEntities();
-		Table trukTable = Iterables.find(mappingFromSubEntities.giveTables(), t -> "Truk".equals(t.getName()));
-		
-		// NB: containsOnly() doesn't work : returns false whereas result is good
-		// (probably due to ValueAccessPoint Comparator not used by containsOnly() method)
-		ArrayList<Entry<IReversibleAccessor, Column>> expected = new ArrayList<>(Maps
-				.forHashMap(IReversibleAccessor.class, Column.class)
-				.add(new PropertyAccessor<>(accessorByMethodReference(Car::getModel), mutatorByField(Car.class, "model")),
-						dummyCarTable.getColumn("model"))
-				.entrySet());
-		expected.sort((e1, e2) -> String.CASE_INSENSITIVE_ORDER.compare(e1.toString(), e2.toString()));
-		ArrayList<Entry<IReversibleAccessor, Column>> actual = new ArrayList<>(mappingFromSubEntities.giveMapping(dummyCarTable).entrySet());
-		actual.sort((e1, e2) -> String.CASE_INSENSITIVE_ORDER.compare(e1.toString(), e2.toString()));
-		// Objects are similar but not equals so we compare them throught their footprint (truely comparing them is quite hard)
-		assertAllEquals(expected, actual, Object::toString);
-		
-		ArrayList<Entry<IReversibleAccessor, Column>> expected2 = new ArrayList<>(Maps
-				.forHashMap(IReversibleAccessor.class, Column.class)
-				.add(new PropertyAccessor<>(accessorByMethodReference(Truk::getEngine), mutatorByField(Truk.class, "engine")),
-						trukTable.getColumn("engine"))
-				.entrySet());
-		expected2.sort((e1, e2) -> String.CASE_INSENSITIVE_ORDER.compare(e1.toString(), e2.toString()));
-		ArrayList<Entry<IReversibleAccessor, Column>> actual2 = new ArrayList<>(mappingFromSubEntities.giveMapping(trukTable).entrySet());
-		actual2.sort((e1, e2) -> String.CASE_INSENSITIVE_ORDER.compare(e1.toString(), e2.toString()));
-		// Objects are similar but not equals so we compare them throught their footprint (truely comparing them is quite hard)
-		assertAllEquals(expected2, actual2, Object::toString);
 	}
 	
 	@Test

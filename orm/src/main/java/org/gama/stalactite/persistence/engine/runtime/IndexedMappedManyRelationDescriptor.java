@@ -6,12 +6,14 @@ import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
+import org.gama.stalactite.persistence.structure.Column;
+
 /**
  * Container to store information of a one-to-many indexed mapped relation (by a column on the reverse side)
  * 
  * @author Guillaume Mary
  */
-public class IndexedMappedManyRelationDescriptor<I, O, C extends Collection<O>> extends ManyRelationDescriptor<I, O, C> {
+public class IndexedMappedManyRelationDescriptor<I, O, C extends Collection<O>> extends MappedManyRelationDescriptor<I, O, C> {
 	
 	/** Getter for getting source entity from reverse side (target entity) */
 	private final Function<O, I> reverseGetter;
@@ -38,9 +40,10 @@ public class IndexedMappedManyRelationDescriptor<I, O, C extends Collection<O>> 
 											   BiConsumer<I, C> collectionSetter,
 											   Supplier<C> collectionFactory,
 											   @Nullable BiConsumer<O, I> reverseSetter,
+											   Column reverseColumn,
 											   Function<O, I> reverseGetter,
 											   String reverseGetterSignature) {
-		super(collectionGetter, collectionSetter, collectionFactory, reverseSetter);
+		super(collectionGetter, collectionSetter, collectionFactory, reverseSetter, reverseColumn);
 		this.reverseGetter = reverseGetter;
 		this.reverseGetterSignature = reverseGetterSignature;
 	}
