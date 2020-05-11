@@ -1,14 +1,25 @@
 package org.gama.stalactite.persistence.engine.configurer;
 
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
 import org.gama.reflection.IReversibleAccessor;
 import org.gama.reflection.ValueAccessPointSet;
+import org.gama.stalactite.persistence.engine.AssociationTableNamingStrategy;
+import org.gama.stalactite.persistence.engine.CascadeManyConfigurer;
+import org.gama.stalactite.persistence.engine.CascadeOne;
+import org.gama.stalactite.persistence.engine.CascadeOneConfigurer;
+import org.gama.stalactite.persistence.engine.ColumnNamingStrategy;
+import org.gama.stalactite.persistence.engine.ElementCollectionTableNamingStrategy;
+import org.gama.stalactite.persistence.engine.ForeignKeyNamingStrategy;
+import org.gama.stalactite.persistence.engine.IEntityConfiguredJoinedTablesPersister;
 import org.gama.stalactite.persistence.engine.IEntityConfiguredPersister;
 import org.gama.stalactite.persistence.engine.PersistenceContext;
 import org.gama.stalactite.persistence.engine.PolymorphismPolicy.SingleTablePolymorphism;
 import org.gama.stalactite.persistence.engine.SubEntityMappingConfiguration;
+import org.gama.stalactite.persistence.engine.builder.CascadeMany;
+import org.gama.stalactite.persistence.engine.builder.ElementCollectionLinkage;
 import org.gama.stalactite.persistence.engine.cascade.JoinedTablesPersister;
 import org.gama.stalactite.persistence.engine.configurer.BeanMappingBuilder.ColumnNameProvider;
 import org.gama.stalactite.persistence.engine.configurer.PersisterBuilderImpl.Identification;
@@ -29,15 +40,26 @@ class SingleTablePolymorphismBuilder<C, I, T extends Table, D> implements Polymo
 	private final Mapping mainMapping;
 	private final ColumnBinderRegistry columnBinderRegistry;
 	private final ColumnNameProvider columnNameProvider;
+	
+	private final ColumnNamingStrategy columnNamingStrategy;
+	private final ForeignKeyNamingStrategy foreignKeyNamingStrategy;
+	private final ElementCollectionTableNamingStrategy elementCollectionTableNamingStrategy;
+	private final ColumnNamingStrategy joinColumnNamingStrategy;
+	private final AssociationTableNamingStrategy associationTableNamingStrategy;
+	
 	private final Identification identification;
-	private Column<T, D> discriminatorColumn;
 	
 	SingleTablePolymorphismBuilder(SingleTablePolymorphism<C, I, D> polymorphismPolicy,
 								   Identification identification,
 								   JoinedTablesPersister<C, I, T> mainPersister,
 								   Mapping mainMapping,
 								   ColumnBinderRegistry columnBinderRegistry,
-								   ColumnNameProvider columnNameProvider
+								   ColumnNameProvider columnNameProvider,
+								   ColumnNamingStrategy columnNamingStrategy,
+								   ForeignKeyNamingStrategy foreignKeyNamingStrategy,
+								   ElementCollectionTableNamingStrategy elementCollectionTableNamingStrategy,
+								   ColumnNamingStrategy joinColumnNamingStrategy,
+								   AssociationTableNamingStrategy associationTableNamingStrategy
 	) {
 		this.polymorphismPolicy = polymorphismPolicy;
 		this.identification = identification;
@@ -45,9 +67,15 @@ class SingleTablePolymorphismBuilder<C, I, T extends Table, D> implements Polymo
 		this.mainMapping = mainMapping;
 		this.columnBinderRegistry = columnBinderRegistry;
 		this.columnNameProvider = columnNameProvider;
+		this.columnNamingStrategy = columnNamingStrategy;
+		this.foreignKeyNamingStrategy = foreignKeyNamingStrategy;
+		this.elementCollectionTableNamingStrategy = elementCollectionTableNamingStrategy;
+		this.joinColumnNamingStrategy = joinColumnNamingStrategy;
+		this.associationTableNamingStrategy = associationTableNamingStrategy;
 	}
 	
-	private Map<Class<? extends C>, JoinedTablesPersister<C, I, T>> buildSubEntitiesPersisters(PersistenceContext persistenceContext) {
+	@Override
+	public IEntityConfiguredPersister<C, I> build(PersistenceContext persistenceContext) {
 		Map<Class<? extends C>, JoinedTablesPersister<C, I, T>> persisterPerSubclass = new HashMap<>();
 		
 		BeanMappingBuilder beanMappingBuilder = new BeanMappingBuilder();
@@ -72,24 +100,58 @@ class SingleTablePolymorphismBuilder<C, I, T extends Table, D> implements Polymo
 			persisterPerSubclass.put(subConfiguration.getEntityType(), subclassPersister);
 		}
 		
-		return persisterPerSubclass;
-	}
-	
-	private void addDiscriminatorToSelect() {
-		this.discriminatorColumn = mainPersister.getMainTable().addColumn(
-				polymorphismPolicy.getDiscriminatorColumn(),
-				polymorphismPolicy.getDiscrimintorType());
-		this.discriminatorColumn.setNullable(false);
-	}
-	
-	@Override
-	public IEntityConfiguredPersister<C, I> build(PersistenceContext persistenceContext) {
-		addDiscriminatorToSelect();
-		Map<Class<? extends C>, JoinedTablesPersister<C, I, T>> joinedTablesPersisters = buildSubEntitiesPersisters(persistenceContext);
+		Column<T, D> discriminatorColumn = createDiscriminatorToSelect();
 		// NB: persisters are not registered into PersistenceContext because it may break implicit polymorphism principle (persisters are then
 		// available by PersistenceContext.getPersister(..)) and it is one sure that they are perfect ones (all their features should be tested)
-		return new PersisterListenerWrapper<>(new SingleTablePolymorphicPersister(
-				mainPersister, joinedTablesPersisters, persistenceContext.getConnectionProvider(), persistenceContext.getDialect(), discriminatorColumn, polymorphismPolicy));
+		SingleTablePolymorphicPersister<C, I, ?, ?> surrogate = new SingleTablePolymorphicPersister(
+				mainPersister, persisterPerSubclass, persistenceContext.getConnectionProvider(), persistenceContext.getDialect(),
+				discriminatorColumn, polymorphismPolicy);
+		PersisterListenerWrapper<C, I> result = new PersisterListenerWrapper<>(surrogate);
+		
+		for (SubEntityMappingConfiguration<? extends C, I> subConfiguration : polymorphismPolicy.getSubClasses()) {
+			JoinedTablesPersister<C, I, T> subEntityPersister = persisterPerSubclass.get(subConfiguration.getEntityType());
+			
+			// We register relation of sub class persister to take into account its specific one-to-ones, one-to-manys and element collection mapping
+			registerRelationCascades(subConfiguration, persistenceContext, subEntityPersister);
+		}
+		
+		return result;
+		
+	}
+	
+	private Column<T, D> createDiscriminatorToSelect() {
+		Column<T, D> result = mainPersister.getMainTable().addColumn(
+				polymorphismPolicy.getDiscriminatorColumn(),
+				polymorphismPolicy.getDiscrimintorType());
+		result.setNullable(false);
+		return result;
+	}
+	
+	private <D extends C> void registerRelationCascades(SubEntityMappingConfiguration<D, I> entityMappingConfiguration,
+														PersistenceContext persistenceContext,
+														IEntityConfiguredJoinedTablesPersister<C, I> sourcePersister) {
+		for (CascadeOne<D, ?, ?> cascadeOne : entityMappingConfiguration.getOneToOnes()) {
+			CascadeOneConfigurer cascadeOneConfigurer = new CascadeOneConfigurer<>(persistenceContext, new PersisterBuilderImpl<>(cascadeOne.getTargetMappingConfiguration()));
+			cascadeOneConfigurer.appendCascade(cascadeOne, sourcePersister,
+					this.foreignKeyNamingStrategy,
+					this.joinColumnNamingStrategy);
+		}
+		for (CascadeMany<D, ?, ?, ? extends Collection> cascadeMany : entityMappingConfiguration.getOneToManys()) {
+			CascadeManyConfigurer cascadeManyConfigurer = new CascadeManyConfigurer<>(persistenceContext, new PersisterBuilderImpl<>(cascadeMany.getTargetMappingConfiguration()));
+			cascadeManyConfigurer.appendCascade(cascadeMany, sourcePersister,
+					this.foreignKeyNamingStrategy,
+					this.joinColumnNamingStrategy,
+					this.associationTableNamingStrategy);
+		}
+		// Please not that as a difference with PersisterBuilderImpl, we don't need to register relation in select because polymorphic selection
+		// is made in two phases, see JoinedTablesPolymorphismEntitySelectExecutor (instanciated in JoinedTablesPolymorphicPersister)
+		
+		// taking element collections into account
+		for (ElementCollectionLinkage<D, ?, ? extends Collection> elementCollection : entityMappingConfiguration.getElementCollections()) {
+			ElementCollectionCascadeConfigurer elementCollectionCascadeConfigurer = new ElementCollectionCascadeConfigurer(persistenceContext);
+			elementCollectionCascadeConfigurer.appendCascade(elementCollection, sourcePersister, foreignKeyNamingStrategy, columnNamingStrategy,
+					elementCollectionTableNamingStrategy);
+		}
 	}
 	
 }

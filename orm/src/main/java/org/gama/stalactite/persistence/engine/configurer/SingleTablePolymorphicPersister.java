@@ -6,9 +6,9 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Set;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import org.danekja.java.util.function.serializable.SerializableBiConsumer;
 import org.danekja.java.util.function.serializable.SerializableFunction;
@@ -24,8 +24,6 @@ import org.gama.reflection.MethodReferenceDispatcher;
 import org.gama.stalactite.persistence.engine.BeanRelationFixer;
 import org.gama.stalactite.persistence.engine.ExecutableQuery;
 import org.gama.stalactite.persistence.engine.IEntityConfiguredJoinedTablesPersister;
-import org.gama.stalactite.persistence.engine.IInsertExecutor;
-import org.gama.stalactite.persistence.engine.IUpdateExecutor;
 import org.gama.stalactite.persistence.engine.PolymorphismPolicy.SingleTablePolymorphism;
 import org.gama.stalactite.persistence.engine.SingleTablePolymorphismEntitySelectExecutor;
 import org.gama.stalactite.persistence.engine.SingleTablePolymorphismSelectExecutor;
@@ -68,8 +66,6 @@ public class SingleTablePolymorphicPersister<C, I, T extends Table<T>, D> implem
 	private final SingleTablePolymorphism<C, I, Object> polymorphismPolicy;
 	private final SingleTablePolymorphismEntitySelectExecutor<C, I, T, D> entitySelectExecutor;
 	private final EntityCriteriaSupport<C> criteriaSupport;
-	private final Map<Class<? extends C>, IInsertExecutor<C>> subclassInsertExecutors;
-	private final Map<Class<? extends C>, IUpdateExecutor<C>> subclassUpdateExecutors;
 	
 	public SingleTablePolymorphicPersister(JoinedTablesPersister<C, I, T> mainPersister,
 															 Map<Class<? extends C>, JoinedTablesPersister<C, I, ?>> subEntitiesPersisters,
@@ -80,8 +76,6 @@ public class SingleTablePolymorphicPersister<C, I, T extends Table<T>, D> implem
 		this.mainPersister = mainPersister;
 		this.discriminatorColumn = discriminatorColumn;
 		this.polymorphismPolicy = (SingleTablePolymorphism<C, I, Object>) polymorphismPolicy;
-		this.subclassInsertExecutors = Iterables.map(subEntitiesPersisters.entrySet(), Entry::getKey, e -> e.getValue().getInsertExecutor());
-		this.subclassUpdateExecutors = Iterables.map(subEntitiesPersisters.entrySet(), Entry::getKey, e -> e.getValue().getUpdateExecutor());
 		
 		this.subEntitiesPersisters = subEntitiesPersisters;
 		this.subEntitiesPersisters.values().forEach(subclassPersister ->
@@ -114,7 +108,11 @@ public class SingleTablePolymorphicPersister<C, I, T extends Table<T>, D> implem
 	
 	@Override
 	public Collection<Table> giveImpliedTables() {
-		return mainPersister.giveImpliedTables();
+		// Implied tables are those of sub entities.
+		// Note that doing this lately (not in constructor) garanties that it is uptodate because sub entities may have relations which are configured
+		// out of constructor by caller
+		Set<Table> subTables = subEntitiesPersisters.values().stream().flatMap(p -> p.giveImpliedTables().stream()).collect(Collectors.toSet());
+		return org.gama.lang.collection.Collections.cat(mainPersister.giveImpliedTables(), subTables);
 	}
 	
 	@Override
@@ -131,7 +129,7 @@ public class SingleTablePolymorphicPersister<C, I, T extends Table<T>, D> implem
 		
 		// We "warn" user if he didn't give some configured instances (such as main type entities, only sub types are expected)
 		Set<Class> entitiesTypes = new HashSet<>(entitiesPerType.keySet());
-		entitiesTypes.removeAll(subclassInsertExecutors.keySet());
+		entitiesTypes.removeAll(subEntitiesPersisters.keySet());
 		if (!entitiesTypes.isEmpty()) {
 			StringAppender classNameAppender = new StringAppender() {
 				@Override
@@ -148,7 +146,8 @@ public class SingleTablePolymorphicPersister<C, I, T extends Table<T>, D> implem
 		}
 		
 		ModifiableInt insertCount = new ModifiableInt();
-		subclassInsertExecutors.forEach((subclass, insertExecutor) -> {
+		// We invoke persisters (not InsertExecutor to trigger event listeners which is necessary for cascade)
+		subEntitiesPersisters.forEach((subclass, insertExecutor) -> {
 			Set<C> subtypeEntities = entitiesPerType.get(subclass);
 			if (subtypeEntities != null) {
 				insertCount.increment(insertExecutor.insert(subtypeEntities));
@@ -165,7 +164,8 @@ public class SingleTablePolymorphicPersister<C, I, T extends Table<T>, D> implem
 			entitiesPerType.computeIfAbsent(entity.getClass(), cClass -> new HashSet<>()).add(entity);
 		}
 		ModifiableInt updateCount = new ModifiableInt();
-		subclassUpdateExecutors.forEach((subclass, updateExecutor) -> {
+		// We invoke persisters (not UpdateExecutor to trigger event listeners which is necessary for cascade)
+		subEntitiesPersisters.forEach((subclass, updateExecutor) -> {
 			Set<C> entitiesToUpdate = entitiesPerType.get(subclass);
 			if (entitiesToUpdate != null) {
 				updateCount.increment(updateExecutor.updateById(entitiesToUpdate));
@@ -183,7 +183,8 @@ public class SingleTablePolymorphicPersister<C, I, T extends Table<T>, D> implem
 			entitiesPerType.computeIfAbsent(entity.getClass(), k -> new HashSet<>()).add(payload);
 		});
 		ModifiableInt updateCount = new ModifiableInt();
-		subclassUpdateExecutors.forEach((subclass, updateExecutor) -> {
+		// We invoke persisters (not UpdateExecutor to trigger event listeners which is necessary for cascade)
+		subEntitiesPersisters.forEach((subclass, updateExecutor) -> {
 			Set<Duo<? extends C, ? extends C>> entitiesToUpdate = entitiesPerType.get(subclass);
 			if (entitiesToUpdate != null) {
 				updateCount.increment(updateExecutor.update(entitiesToUpdate, allColumnsStatement));
@@ -200,17 +201,59 @@ public class SingleTablePolymorphicPersister<C, I, T extends Table<T>, D> implem
 	
 	@Override
 	public int delete(Iterable<C> entities) {
+		Map<Class, Set<C>> entitiesPerType = new HashMap<>();
+		for (C entity : entities) {
+			entitiesPerType.computeIfAbsent(entity.getClass(), cClass -> new HashSet<>()).add(entity);
+		}
+		// we trigger delete listener of each subtype because main persister won't
+		this.subEntitiesPersisters.forEach((subclass, persister) -> {
+			Set<C> subtypeEntities = entitiesPerType.get(subclass);
+			if (subtypeEntities != null) {
+				persister.getPersisterListener().getDeleteListener().beforeDelete(subtypeEntities);
+			}
+		});
 		// deleting throught main entity is suffiscient because subentities tables is also main entity one
 		// NB: we use deleteExecutor not to trigger listener, because they should be triggered by wrapper, else we would try to delete twice
 		// related beans for instance
-		return mainPersister.getDeleteExecutor().delete(entities);
+		int deleteCount = mainPersister.getDeleteExecutor().delete(entities);
+		
+		// we trigger delete listener of each subtype because main persister won't
+		this.subEntitiesPersisters.forEach((subclass, persister) -> {
+			Set<C> subtypeEntities = entitiesPerType.get(subclass);
+			if (subtypeEntities != null) {
+				persister.getPersisterListener().getDeleteListener().afterDelete(subtypeEntities);
+			}
+		});
+		
+		return deleteCount;
 	}
 	
 	@Override
 	public int deleteById(Iterable<C> entities) {
+		Map<Class, Set<C>> entitiesPerType = new HashMap<>();
+		for (C entity : entities) {
+			entitiesPerType.computeIfAbsent(entity.getClass(), cClass -> new HashSet<>()).add(entity);
+		}
+		// we trigger delete listener of each subtype because main persister won't
+		this.subEntitiesPersisters.forEach((subclass, persister) -> {
+			Set<C> subtypeEntities = entitiesPerType.get(subclass);
+			if (subtypeEntities != null) {
+				persister.getPersisterListener().getDeleteByIdListener().beforeDeleteById(subtypeEntities);
+			}
+		});
 		// NB: we use deleteExecutor not to trigger listener, because they should be triggered by wrapper, else we would try to delete twice
 		// related beans for instance
-		return mainPersister.getDeleteExecutor().deleteById(entities);
+		int deleteCount = mainPersister.getDeleteExecutor().deleteById(entities);
+		
+		// we trigger delete listener of each subtype because main persister won't
+		this.subEntitiesPersisters.forEach((subclass, persister) -> {
+			Set<C> subtypeEntities = entitiesPerType.get(subclass);
+			if (subtypeEntities != null) {
+				persister.getPersisterListener().getDeleteByIdListener().afterDeleteById(subtypeEntities);
+			}
+		});
+		
+		return deleteCount;
 	}
 	
 	@Override
@@ -277,31 +320,26 @@ public class SingleTablePolymorphicPersister<C, I, T extends Table<T>, D> implem
 	
 	@Override
 	public void addInsertListener(InsertListener insertListener) {
-//		mainPersister.addInsertListener(insertListener);
 		subEntitiesPersisters.values().forEach(p -> p.addInsertListener(insertListener));
 	}
 	
 	@Override
 	public void addUpdateListener(UpdateListener updateListener) {
-//		mainPersister.addUpdateListener(updateListener);
 		subEntitiesPersisters.values().forEach(p -> p.addUpdateListener(updateListener));
 	}
 	
 	@Override
 	public void addSelectListener(SelectListener selectListener) {
-//		mainPersister.addSelectListener(selectListener);
 		subEntitiesPersisters.values().forEach(p -> p.addSelectListener(selectListener));
 	}
 	
 	@Override
 	public void addDeleteListener(DeleteListener deleteListener) {
-//		mainPersister.addDeleteListener(deleteListener);
 		subEntitiesPersisters.values().forEach(p -> p.addDeleteListener(deleteListener));
 	}
 	
 	@Override
 	public void addDeleteByIdListener(DeleteByIdListener deleteListener) {
-//		mainPersister.addDeleteByIdListener(deleteListener);
 		subEntitiesPersisters.values().forEach(p -> p.addDeleteByIdListener(deleteListener));
 	}
 	

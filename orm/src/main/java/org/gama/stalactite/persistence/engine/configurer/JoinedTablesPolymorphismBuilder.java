@@ -18,7 +18,6 @@ import org.gama.stalactite.persistence.engine.ElementCollectionTableNamingStrate
 import org.gama.stalactite.persistence.engine.ForeignKeyNamingStrategy;
 import org.gama.stalactite.persistence.engine.IEntityConfiguredJoinedTablesPersister;
 import org.gama.stalactite.persistence.engine.IEntityConfiguredPersister;
-import org.gama.stalactite.persistence.engine.IUpdateExecutor;
 import org.gama.stalactite.persistence.engine.PersistenceContext;
 import org.gama.stalactite.persistence.engine.PolymorphismPolicy.JoinedTablesPolymorphism;
 import org.gama.stalactite.persistence.engine.SubEntityMappingConfiguration;
@@ -50,21 +49,21 @@ abstract class JoinedTablesPolymorphismBuilder<C, I, T extends Table> implements
 	private final Identification identification;
 	private final TableNamingStrategy tableNamingStrategy;
 	
-	private ColumnNamingStrategy columnNamingStrategy;
-	private ForeignKeyNamingStrategy foreignKeyNamingStrategy;
-	private ElementCollectionTableNamingStrategy elementCollectionTableNamingStrategy;
-	private ColumnNamingStrategy joinColumnNamingStrategy;
-	private AssociationTableNamingStrategy associationTableNamingStrategy;
+	private final ColumnNamingStrategy columnNamingStrategy;
+	private final ForeignKeyNamingStrategy foreignKeyNamingStrategy;
+	private final ElementCollectionTableNamingStrategy elementCollectionTableNamingStrategy;
+	private final ColumnNamingStrategy joinColumnNamingStrategy;
+	private final AssociationTableNamingStrategy associationTableNamingStrategy;
 	
 	private final Set<Table> tables = new HashSet<>();
-	private Map<Class<? extends C>, IUpdateExecutor<C>> subEntitiesUpdaters;
 	
 	JoinedTablesPolymorphismBuilder(JoinedTablesPolymorphism<C, I> polymorphismPolicy,
 									Identification identification,
 									JoinedTablesPersister<C, I, T> mainPersister,
 									ColumnBinderRegistry columnBinderRegistry,
 									ColumnNameProvider columnNameProvider,
-									TableNamingStrategy tableNamingStrategy, ColumnNamingStrategy columnNamingStrategy,
+									TableNamingStrategy tableNamingStrategy,
+									ColumnNamingStrategy columnNamingStrategy,
 									ForeignKeyNamingStrategy foreignKeyNamingStrategy,
 									ElementCollectionTableNamingStrategy elementCollectionTableNamingStrategy,
 									ColumnNamingStrategy joinColumnNamingStrategy,
@@ -88,7 +87,6 @@ abstract class JoinedTablesPolymorphismBuilder<C, I, T extends Table> implements
 		
 		BeanMappingBuilder beanMappingBuilder = new BeanMappingBuilder();
 		
-		subEntitiesUpdaters = new HashMap<>();
 		for (SubEntityMappingConfiguration<? extends C, I> subConfiguration : polymorphismPolicy.getSubClasses()) {
 			Table subTable = nullable(polymorphismPolicy.giveTable(subConfiguration))
 					.getOr(() -> new Table(tableNamingStrategy.giveName(subConfiguration.getEntityType())));
@@ -120,7 +118,7 @@ abstract class JoinedTablesPolymorphismBuilder<C, I, T extends Table> implements
 					this.mainPersister.getMappingStrategy(), subEntityPrimaryKey, entityPrimaryKey);
 		}
 		
-		JoinedTablesPolymorphicPersister surrogate = new JoinedTablesPolymorphicPersister(
+		JoinedTablesPolymorphicPersister<C, I> surrogate = new JoinedTablesPolymorphicPersister(
 				mainPersister, persisterPerSubclass, persistenceContext.getConnectionProvider(),
 				persistenceContext.getDialect());
 		PersisterListenerWrapper<C, I> result = new PersisterListenerWrapper<>(surrogate);

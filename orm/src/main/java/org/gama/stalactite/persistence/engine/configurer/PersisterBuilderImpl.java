@@ -239,7 +239,9 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 			PolymorphismBuilder<C, I, Table> polymorphismBuilder;
 			if (polymorphismPolicy instanceof SingleTablePolymorphism) {
 				polymorphismBuilder = new SingleTablePolymorphismBuilder<>((SingleTablePolymorphism<C, I, ?>) polymorphismPolicy,
-						identification, mainPersister, mainMapping, this.columnBinderRegistry, this.columnNameProvider);
+						identification, mainPersister, mainMapping, this.columnBinderRegistry, this.columnNameProvider,
+						this.columnNamingStrategy, this.foreignKeyNamingStrategy, this.elementCollectionTableNamingStrategy, this.joinColumnNamingStrategy,
+						this.associationTableNamingStrategy);
 			} else if (polymorphismPolicy instanceof TablePerClassPolymorphism) {
 				polymorphismBuilder = new TablePerClassPolymorphismBuilder<C, I, Table>((TablePerClassPolymorphism<C, I>) polymorphismPolicy,
 						identification, mainPersister, mainMapping, this.columnBinderRegistry, this.columnNameProvider, this.tableNamingStrategy) {
