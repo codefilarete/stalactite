@@ -268,9 +268,9 @@ public class DDLTableGeneratorTest {
 		String generatedCreateIndex = testInstance.generateCreateForeignKey(foreignKey);
 		assertEquals("alter table Toto add constraint FK1 foreign key(A) references Titi(A)", generatedCreateIndex);
 		
-		foreignKey = toto.addForeignKey("FK1", Arrays.asList(colA, colB), Arrays.asList(colA2, colB2));
+		foreignKey = toto.addForeignKey("FK2", Arrays.asList(colA, colB), Arrays.asList(colA2, colB2));
 		generatedCreateIndex = testInstance.generateCreateForeignKey(foreignKey);
-		assertEquals("alter table Toto add constraint FK1 foreign key(A, B) references Titi(A, B)", generatedCreateIndex);
+		assertEquals("alter table Toto add constraint FK2 foreign key(A, B) references Titi(A, B)", generatedCreateIndex);
 
 		// test with a non default DMLNameProvider
 		DMLNameProvider dmlNameProvider = new DMLNameProvider(Collections.emptyMap()) {
@@ -284,7 +284,7 @@ public class DDLTableGeneratorTest {
 		};
 		testInstance = new DDLTableGenerator(null, dmlNameProvider);
 		generatedCreateIndex = testInstance.generateCreateForeignKey(foreignKey);
-		assertEquals("alter table Toto add constraint FK1 foreign key('key', B) references Titi('key', B)", generatedCreateIndex);
+		assertEquals("alter table Toto add constraint FK2 foreign key('key', B) references Titi('key', B)", generatedCreateIndex);
 	}
 	
 	@Test

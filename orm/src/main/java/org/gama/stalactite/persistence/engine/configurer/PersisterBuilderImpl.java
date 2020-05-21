@@ -46,6 +46,7 @@ import org.gama.stalactite.persistence.engine.EntityMappingConfigurationProvider
 import org.gama.stalactite.persistence.engine.ForeignKeyNamingStrategy;
 import org.gama.stalactite.persistence.engine.IConfiguredPersister;
 import org.gama.stalactite.persistence.engine.IEntityConfiguredPersister;
+import org.gama.stalactite.persistence.engine.IEntityPersister;
 import org.gama.stalactite.persistence.engine.MappingConfigurationException;
 import org.gama.stalactite.persistence.engine.PersistenceContext;
 import org.gama.stalactite.persistence.engine.Persister;
@@ -180,6 +181,10 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 		}
 		
 		try {
+			IEntityPersister<C, Object> existingPersister = persistenceContext.getPersister(this.entityMappingConfiguration.getEntityType());
+			if (existingPersister != null) {
+				return (IEntityConfiguredPersister<C, I>) existingPersister;
+			}
 			return doBuild(persistenceContext, table);
 		} finally {
 			if (isInitiator) {

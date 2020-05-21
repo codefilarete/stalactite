@@ -7,7 +7,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import org.danekja.java.util.function.serializable.SerializableBiConsumer;
@@ -18,7 +17,6 @@ import org.gama.lang.StringAppender;
 import org.gama.lang.bean.Objects;
 import org.gama.lang.collection.Arrays;
 import org.gama.lang.collection.Iterables;
-import org.gama.lang.function.SerializableTriConsumer;
 import org.gama.lang.trace.ModifiableInt;
 import org.gama.reflection.MethodReferenceDispatcher;
 import org.gama.stalactite.persistence.engine.BeanRelationFixer;
@@ -42,6 +40,7 @@ import org.gama.stalactite.persistence.engine.listening.SelectListener;
 import org.gama.stalactite.persistence.engine.listening.UpdateListener;
 import org.gama.stalactite.persistence.mapping.ColumnedRow;
 import org.gama.stalactite.persistence.mapping.IEntityMappingStrategy;
+import org.gama.stalactite.persistence.mapping.IMappingStrategy.ShadowColumnValueProvider;
 import org.gama.stalactite.persistence.mapping.IdMappingStrategy;
 import org.gama.stalactite.persistence.query.EntityCriteriaSupport;
 import org.gama.stalactite.persistence.query.RelationalEntityCriteria;
@@ -60,7 +59,7 @@ public class SingleTablePolymorphicPersister<C, I, T extends Table<T>, D> implem
 	private static final ThreadLocal<Set<RelationIds<Object /* E */, Object /* target */, Object /* target identifier */ >>> DIFFERED_ENTITY_LOADER = new ThreadLocal<>();
 	
 	private final SingleTablePolymorphismSelectExecutor<C, I, ?, Object> selectExecutor;
-	private final Map<Class<? extends C>, JoinedTablesPersister<C, I, ?>> subEntitiesPersisters;
+	private final Map<Class<? extends C>, JoinedTablesPersister<C, I, T>> subEntitiesPersisters;
 	private final JoinedTablesPersister<C, I, T> mainPersister;
 	private final Column<T, D> discriminatorColumn;
 	private final SingleTablePolymorphism<C, I, Object> polymorphismPolicy;
@@ -68,7 +67,7 @@ public class SingleTablePolymorphicPersister<C, I, T extends Table<T>, D> implem
 	private final EntityCriteriaSupport<C> criteriaSupport;
 	
 	public SingleTablePolymorphicPersister(JoinedTablesPersister<C, I, T> mainPersister,
-															 Map<Class<? extends C>, JoinedTablesPersister<C, I, ?>> subEntitiesPersisters,
+															 Map<Class<? extends C>, JoinedTablesPersister<C, I, T>> subEntitiesPersisters,
 															 ConnectionProvider connectionProvider,
 															 Dialect dialect,
 															 Column<T, D> discriminatorColumn,
@@ -78,10 +77,9 @@ public class SingleTablePolymorphicPersister<C, I, T extends Table<T>, D> implem
 		this.polymorphismPolicy = (SingleTablePolymorphism<C, I, Object>) polymorphismPolicy;
 		
 		this.subEntitiesPersisters = subEntitiesPersisters;
-		this.subEntitiesPersisters.values().forEach(subclassPersister ->
-				subclassPersister.getMappingStrategy().addSilentColumnInserter((Column) discriminatorColumn,
-						c -> polymorphismPolicy.getDiscriminatorValue((Class<? extends C>) c.getClass()))
-		);
+		ShadowColumnValueProvider<C, D, T> discriminatorValueProvider = new ShadowColumnValueProvider<>(discriminatorColumn,
+				c -> polymorphismPolicy.getDiscriminatorValue((Class<? extends C>) c.getClass()));
+		this.subEntitiesPersisters.values().forEach(subclassPersister -> subclassPersister.getMappingStrategy().addShadowColumnInsert(discriminatorValueProvider));
 		
 		subEntitiesPersisters.forEach((type, persister) ->
 				mainPersister.copyJoinsRootTo(persister.getJoinedStrategiesSelect(), JoinedStrategiesSelect.ROOT_STRATEGY_NAME)
@@ -344,8 +342,8 @@ public class SingleTablePolymorphicPersister<C, I, T extends Table<T>, D> implem
 	}
 	
 	/**
-	 * Overriden to capture {@link IEntityMappingStrategy#addSilentColumnInserter(Column, Function)} and
-	 * {@link IEntityMappingStrategy#addSilentColumnUpdater(Column, Function)} (see {@link org.gama.stalactite.persistence.engine.CascadeManyConfigurer})
+	 * Overriden to capture {@link IEntityMappingStrategy#addShadowColumnInsert(ShadowColumnValueProvider)} and
+	 * {@link IEntityMappingStrategy#addShadowColumnUpdate(ShadowColumnValueProvider)} (see {@link org.gama.stalactite.persistence.engine.CascadeManyConfigurer})
 	 * Made to dispatch those methods subclass strategies since their persisters are in charge of managing their entities (not the parent one).
 	 *
 	 * Design question : one may think that's not a good design to override a getter, caller should invoke an intention-clear method on
@@ -353,21 +351,20 @@ public class SingleTablePolymorphicPersister<C, I, T extends Table<T>, D> implem
 	 * detail : they are to manage cascades and coordinate their mapping strategies. {@link IEntityMappingStrategy} are in charge of knowing
 	 * {@link Column} actions.
 	 *
-	 * @param <T> table type
 	 * @return an enhanced version of our main persister mapping strategy which dispatches silent column insert/update to sub-entities ones
 	 */
 	@Override
-	public <T extends Table> IEntityMappingStrategy<C, I, T> getMappingStrategy() {
+	public IEntityMappingStrategy<C, I, T> getMappingStrategy() {
 		// TODO: This is not the cleanest implementation because we use MethodReferenceDispatcher which is kind of overkill : use a dispatching
 		//  interface
 		MethodReferenceDispatcher methodReferenceDispatcher = new MethodReferenceDispatcher();
 		IEntityMappingStrategy<C, I, T> result = methodReferenceDispatcher
-				.redirect((SerializableTriConsumer<IEntityMappingStrategy<C, I, T>, Column<T, Object>, Function<C, Object>>)
-								IEntityMappingStrategy::addSilentColumnInserter,
-						(c, f) -> subEntitiesPersisters.values().forEach(p -> p.getMappingStrategy().addSilentColumnInserter((Column) c, f)))
-				.redirect((SerializableTriConsumer<IEntityMappingStrategy<C, I, T>, Column<T, Object>, Function<C, Object>>)
-								IEntityMappingStrategy::addSilentColumnUpdater,
-						(c, f) -> subEntitiesPersisters.values().forEach(p -> p.getMappingStrategy().addSilentColumnUpdater((Column) c, f)))
+				.redirect((SerializableBiConsumer<IEntityMappingStrategy<C, I, T>, ShadowColumnValueProvider<C, Object, T>>)
+								IEntityMappingStrategy::addShadowColumnInsert,
+						provider -> subEntitiesPersisters.values().forEach(p -> p.getMappingStrategy().addShadowColumnInsert(provider)))
+				.redirect((SerializableBiConsumer<IEntityMappingStrategy<C, I, T>, ShadowColumnValueProvider<C, Object, T>>)
+								IEntityMappingStrategy::addShadowColumnUpdate,
+						provider -> subEntitiesPersisters.values().forEach(p -> p.getMappingStrategy().addShadowColumnUpdate(provider)))
 				.fallbackOn(mainPersister.getMappingStrategy())
 				.build((Class<IEntityMappingStrategy<C, I, T>>) (Class) IEntityMappingStrategy.class);
 		return result;
@@ -383,7 +380,7 @@ public class SingleTablePolymorphicPersister<C, I, T extends Table<T>, D> implem
 		// TODO: simplify query : it joins on target table as many as subentities which can be reduced to one join if FirstPhaseOneToOneLoader
 		//  can compute disciminatorValue 
 		subEntitiesPersisters.forEach((subEntityType, subPersister) -> {
-			Column subclassPrimaryKey = (Column ) Iterables.first(subPersister.getMainTable().getPrimaryKey().getColumns());
+			Column subclassPrimaryKey = Iterables.first(subPersister.getMainTable().getPrimaryKey().getColumns());
 			sourcePersister.getJoinedStrategiesSelect().addMergeJoin(JoinedStrategiesSelect.ROOT_STRATEGY_NAME,
 					new SingleTableFirstPhaseOneToOneLoader(subPersister.getMappingStrategy().getIdMappingStrategy(),
 							subclassPrimaryKey, selectExecutor, mainPersister.getClassToPersist(), DIFFERED_ENTITY_LOADER,
@@ -412,7 +409,7 @@ public class SingleTablePolymorphicPersister<C, I, T extends Table<T>, D> implem
 		// TODO: simplify query : it joins on target table as many as subentities which can be reduced to one join if FirstPhaseOneToOneLoader
 		//  can compute disciminatorValue 
 		subEntitiesPersisters.forEach((subEntityType, subPersister) -> {
-			Column subclassPrimaryKey = (Column ) Iterables.first(subPersister.getMainTable().getPrimaryKey().getColumns());
+			Column subclassPrimaryKey = Iterables.first(subPersister.getMainTable().getPrimaryKey().getColumns());
 			sourcePersister.getJoinedStrategiesSelect().addMergeJoin(JoinedStrategiesSelect.ROOT_STRATEGY_NAME,
 					new SingleTableFirstPhaseOneToOneLoader(subPersister.getMappingStrategy().getIdMappingStrategy(),
 							subclassPrimaryKey, selectExecutor, mainPersister.getClassToPersist(), DIFFERED_ENTITY_LOADER,

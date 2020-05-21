@@ -11,6 +11,7 @@ import java.util.function.BiConsumer;
 import java.util.function.Function;
 
 import org.gama.lang.Duo;
+import org.gama.lang.collection.Iterables;
 import org.gama.stalactite.persistence.engine.IEntityConfiguredPersister;
 import org.gama.stalactite.persistence.engine.IEntityPersister;
 import org.gama.stalactite.persistence.engine.listening.UpdateListener.UpdatePayload;
@@ -133,10 +134,10 @@ public class CollectionUpdater<I, O, C extends Collection<O>> implements BiConsu
 	 * @param allColumnsStatement indicates if all (mapped) columns of entities must be in statement, else only modified ones will be updated
 	 */
 	protected void updateTargets(UpdateContext updateContext, boolean allColumnsStatement) {
-		for (AbstractDiff diff : updateContext.getEntitiesToBeUpdated()) {
-			// NB: update will only be done if necessary by target persister
-			targetPersister.update((O) diff.getReplacingInstance(), (O) diff.getSourceInstance(), allColumnsStatement);
-		}
+		List<Duo<O, O>> updateInput = Iterables.collectToList(updateContext.getEntitiesToBeUpdated(),
+				(AbstractDiff diff) -> new Duo<>((O) diff.getReplacingInstance(), (O) diff.getSourceInstance()));
+		// NB: update will only be done if necessary by target persister
+		targetPersister.update(updateInput, allColumnsStatement);
 	}
 	
 	/**

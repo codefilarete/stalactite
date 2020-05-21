@@ -67,11 +67,10 @@ public interface IMappingStrategy<C, T extends Table> {
 	 * 
 	 * This method might have no purpose for many classes implementing {@link IMappingStrategy}.
 	 * 
-	 * @param column the column to update
-	 * @param valueProvider a {@link Function} for providing column value, incoming instance will be passed to it as input
+	 * @param valueProvider the column value provider
 	 * @param <O> Java type of the column value 
 	 */
-	default <O> void addSilentColumnInserter(Column<T, O> column, Function<C, O> valueProvider) {
+	default <O> void addShadowColumnInsert(ShadowColumnValueProvider<C, O, T> valueProvider) {
 		// does nothing by default
 	}
 	
@@ -85,12 +84,23 @@ public interface IMappingStrategy<C, T extends Table> {
 	 * be a feature.
 	 * 
 	 * This method might have no purpose for many classes implementing {@link IMappingStrategy}.
-	 * 
-	 * @param column the column to update
-	 * @param valueProvider a {@link Function} for providing column value, incoming instance will be passed to it as input
+	 *
+	 * @param valueProvider the column value provider
 	 * @param <O> Java type of the column value 
 	 */
-	default <O> void addSilentColumnUpdater(Column<T, O> column, Function<C, O> valueProvider) {
+	default <O> void addShadowColumnUpdate(ShadowColumnValueProvider<C, O, T> valueProvider) {
+		// does nothing by default
+	}
+	
+	/**
+	 * Adds a column to select. This column is not expected to be already mapped to a bean property of the &lt;T&gt; class.
+	 *
+	 * This method might have no purpose for many classes implementing {@link IMappingStrategy}.
+	 *
+	 * @param column the column to be read
+	 * @param <O> Java type of the column value 
+	 */
+	default <O> void addShadowColumnSelect(Column<T, O> column) {
 		// does nothing by default
 	}
 	
@@ -208,6 +218,54 @@ public interface IMappingStrategy<C, T extends Table> {
 		@Override
 		public String toString() {
 			return column.getAbsoluteName() + (update ? " (U)" : " (W)");
+		}
+	}
+	
+	/**
+	 * Contract to provide a value of a "non official" {@link Column} of a mapping strategy at insert and update time : those columns are not
+	 * expected to be one of those mapped for properties but can be discriminator, list index, etc...
+	 * <br/>
+	 * An instance may reject to provide a value in some circumstances by overriding {@link #accept(Object)} (which returns true by default).
+	 * 
+	 * Reader my be interested in getting {@link Column} value in select phase, then he may use {@link IMappingStrategy#addShadowColumnSelect(Column)}
+	 * 
+	 * @param <C> bean type to read value from
+	 * @param <V> value type
+	 * @param <T> table type
+	 * @see #giveValue(Object) 
+	 * @see #accept(Object)
+	 */
+	class ShadowColumnValueProvider<C, V, T extends Table> {
+		
+		private final Column<T, V> column;
+		
+		private final Function<C, V> valueProvider;
+		
+		/**
+		 * Default and only constructor, with mandatory parameters
+		 * 
+		 * @param column the {@link Column} to give a value for 
+		 * @param valueProvider the {@link Function} that can get a value from a bean (which is the one to be inserted / updated)
+		 */
+		public ShadowColumnValueProvider(Column<T, V> column, Function<C, V> valueProvider) {
+			this.column = column;
+			this.valueProvider = valueProvider;
+		}
+		
+		public Column<T, V> getColumn() {
+			return column;
+		}
+		
+		public Function<C, V> getValueProvider() {
+			return valueProvider;
+		}
+		
+		public boolean accept(C entity) {
+			return true;
+		}
+		
+		public V giveValue(C entity) {
+			return valueProvider.apply(entity);
 		}
 	}
 }

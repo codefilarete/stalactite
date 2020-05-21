@@ -3,7 +3,6 @@ package org.gama.stalactite.persistence.engine;
 import javax.annotation.Nonnull;
 import java.util.Map;
 import java.util.Set;
-import java.util.function.Function;
 
 import org.gama.lang.collection.Arrays;
 import org.gama.lang.collection.Maps;
@@ -57,8 +56,10 @@ class IndexedAssociationRecordMappingStrategy extends ClassMappingStrategy<Index
 				}));
 		// because main mapping forbids to update primary key (see EmbeddedBeanMappingStrategy), but index is part of it and will be updated,
 		// we need to add it to the mapping
-		getMainMappingStrategy().addSilentColumnInserter((Column) targetTable.getIndexColumn(), (Function<IndexedAssociationRecord, Object>) IndexedAssociationRecord.INDEX_ACCESSOR::get);
-		getMainMappingStrategy().addSilentColumnUpdater((Column) targetTable.getIndexColumn(), (Function<IndexedAssociationRecord, Object>) IndexedAssociationRecord.INDEX_ACCESSOR::get);
+		ShadowColumnValueProvider<IndexedAssociationRecord, Integer, IndexedAssociationTable> indexValueProvider =
+				new ShadowColumnValueProvider<>(targetTable.getIndexColumn(), IndexedAssociationRecord.INDEX_ACCESSOR::get);
+		getMainMappingStrategy().addShadowColumnInsert(indexValueProvider);
+		getMainMappingStrategy().addShadowColumnUpdate(indexValueProvider);
 	}
 	
 	@Override

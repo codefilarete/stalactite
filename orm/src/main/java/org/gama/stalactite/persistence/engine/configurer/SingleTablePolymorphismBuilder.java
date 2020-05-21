@@ -103,7 +103,7 @@ class SingleTablePolymorphismBuilder<C, I, T extends Table, D> implements Polymo
 		Column<T, D> discriminatorColumn = createDiscriminatorToSelect();
 		// NB: persisters are not registered into PersistenceContext because it may break implicit polymorphism principle (persisters are then
 		// available by PersistenceContext.getPersister(..)) and it is one sure that they are perfect ones (all their features should be tested)
-		SingleTablePolymorphicPersister<C, I, ?, ?> surrogate = new SingleTablePolymorphicPersister(
+		SingleTablePolymorphicPersister<C, I, ?, ?> surrogate = new SingleTablePolymorphicPersister<>(
 				mainPersister, persisterPerSubclass, persistenceContext.getConnectionProvider(), persistenceContext.getDialect(),
 				discriminatorColumn, polymorphismPolicy);
 		PersisterListenerWrapper<C, I> result = new PersisterListenerWrapper<>(surrogate);

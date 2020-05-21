@@ -841,7 +841,7 @@ class FluentEntityMappingConfigurationSupportPolymorphismTest {
 			assertEquals(dummyTruk, loadedVehicle);
 
 			List<? extends AbstractVehicle> loadedVehicles = abstractVehiclePersister.selectAll();
-			Assertions.assertAllEquals(Arrays.asHashSet(dummyTruk, dummyCar), new HashSet<>(loadedVehicles));
+			assertEquals(Arrays.asHashSet(dummyTruk, dummyCar), new HashSet<>(loadedVehicles));
 
 			// delete test
 			abstractVehiclePersister.delete(Arrays.asList(dummyCar, dummyTruk));

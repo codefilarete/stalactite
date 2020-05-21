@@ -1,5 +1,6 @@
 package org.gama.stalactite.persistence.engine.runtime;
 
+import javax.annotation.Nullable;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -10,7 +11,6 @@ import java.util.function.BiConsumer;
 import java.util.function.Function;
 
 import org.gama.lang.Duo;
-import org.gama.lang.Nullable;
 import org.gama.lang.Reflections;
 import org.gama.lang.ThreadLocals;
 import org.gama.lang.collection.Iterables;
@@ -19,9 +19,9 @@ import org.gama.stalactite.persistence.engine.RuntimeMappingException;
 import org.gama.stalactite.persistence.engine.listening.SelectListener;
 import org.gama.stalactite.persistence.id.diff.AbstractDiff;
 import org.gama.stalactite.persistence.id.diff.IndexedDiff;
+import org.gama.stalactite.persistence.mapping.IMappingStrategy.ShadowColumnValueProvider;
 import org.gama.stalactite.persistence.structure.Column;
-
-import static org.gama.lang.collection.Iterables.collectToList;
+import org.gama.stalactite.persistence.structure.Table;
 
 /**
  * @author Guillaume Mary
@@ -30,21 +30,21 @@ public class OneToManyWithIndexedMappedAssociationEngine<SRC, TRGT, ID, C extend
 		extends OneToManyWithMappedAssociationEngine<SRC, TRGT, ID, C> {
 	
 	/**
-	 * Context for indexed mapped List. Will keep bean index (during insert, update and select) between "unrelated" methods/phases :
-	 * indexes must be computed then applied into SQL order (and vice-versa for select), but this particular feature crosses over layers (entities
-	 * and SQL) which is not implemented. In such circumstances, ThreadLocal comes to the rescue.
-	 * Could be static, but would lack the O typing, which leads to some generics errors, so left non static (acceptable small overhead)
+	 * Context for indexed mapped List. Will keep bean index during select between "unrelated" methods/phases :
+	 * index column must be added to SQL select, read from ResultSet and order applied to sort final List, but this particular feature crosses over
+	 * layers (entities and SQL) which is not implemented. In such circumstances, ThreadLocal comes to the rescue.
+	 * Could be static, but would lack the TRGT typing, which leads to some generics errors, so left non static (acceptable small overhead)
 	 */
-	private final ThreadLocal<Map<TRGT, Integer>> updatableListIndex = new ThreadLocal<>();
+	private final ThreadLocal<Map<TRGT, Integer>> selectedIndexes = new ThreadLocal<>();
 	
 	/** Column that stores index value, owned by reverse side table (table of targetPersister) */
 	private final Column indexingColumn;
 	
 	public OneToManyWithIndexedMappedAssociationEngine(IEntityConfiguredJoinedTablesPersister<TRGT, ID> targetPersister,
 													   IndexedMappedManyRelationDescriptor<SRC, TRGT, C> manyRelationDefinition,
-													   IEntityConfiguredJoinedTablesPersister<SRC, ID> joinedTablesPersister,
+													   IEntityConfiguredJoinedTablesPersister<SRC, ID> sourcePersister,
 													   Column indexingColumn) {
-		super(targetPersister, manyRelationDefinition, joinedTablesPersister);
+		super(targetPersister, manyRelationDefinition, sourcePersister);
 		this.indexingColumn = indexingColumn;
 	}
 	
@@ -56,7 +56,7 @@ public class OneToManyWithIndexedMappedAssociationEngine<SRC, TRGT, ID, C extend
 	
 	private void addIndexSelection() {
 		// NB: should be "targetPersister.getSelectExecutor().getMappingStrategy().." but can't be due to interface ISelectExecutor
-		targetPersister.getMappingStrategy().addSilentColumnToSelect(indexingColumn);
+		targetPersister.getMappingStrategy().addShadowColumnSelect(indexingColumn);
 		// Implementation note: 2 possiblities
 		// - keep object indexes and put sorted beans in a temporary List, then add them all to the target List
 		// - keep object indexes and sort the target List throught a comparator of indexes
@@ -66,7 +66,7 @@ public class OneToManyWithIndexedMappedAssociationEngine<SRC, TRGT, ID, C extend
 		sourcePersister.getPersisterListener().addSelectListener(new SelectListener<SRC, ID>() {
 			@Override
 			public void beforeSelect(Iterable<ID> ids) {
-				updatableListIndex.set(new HashMap<>());
+				selectedIndexes.set(new HashMap<>());
 			}
 			
 			@Override
@@ -75,7 +75,7 @@ public class OneToManyWithIndexedMappedAssociationEngine<SRC, TRGT, ID, C extend
 					// reordering List element according to read indexes during the transforming phase (see below)
 					result.forEach(src -> {
 						List<TRGT> apply = manyRelationDefinition.getCollectionGetter().apply(src);
-						apply.sort(Comparator.comparingInt(target -> updatableListIndex.get().get(target)));
+						apply.sort(Comparator.comparingInt(target -> selectedIndexes.get().get(target)));
 					});
 				} finally {
 					cleanContext();
@@ -88,23 +88,19 @@ public class OneToManyWithIndexedMappedAssociationEngine<SRC, TRGT, ID, C extend
 			}
 			
 			private void cleanContext() {
-				updatableListIndex.remove();
+				selectedIndexes.remove();
 			}
 		});
 		// Adding a transformer listener to keep track of the index column read from ResultSet/Row
 		// We place it into a ThreadLocal, then the select listener will use it to reorder loaded beans
-		targetPersister.getMappingStrategy().addTransformerListener((bean, row) -> {
-			Map<TRGT, Integer> indexPerBean = updatableListIndex.get();
+		targetPersister.getMappingStrategy().addTransformerListener((bean, rowValueProvider) -> {
+			Map<TRGT, Integer> indexPerBean = selectedIndexes.get();
 			// indexPerBean may not be present because its mecanism was added on persisterListener which is the one of the source bean
 			// so in case of entity loading from its own persister (targetPersister) ThreadLocal is not available
 			if (indexPerBean != null) {
 				// Indexing column is not defined in targetPersister.getMappingStrategy().getRowTransformer() but is present in row
 				// because it was read from ResultSet
-				// So we get its alias from the object that managed id, and we simply read it from the row (but not from RowTransformer)
-				// <!> Please note that aliases variable can't be put outside of this loop because aliases are computed lately / lazily when
-				// columns are added to select by JoinedStrategySeelct.addColumnsToSelect(..), putting this out is too early
-				Map<Column, String> aliases = sourcePersister.getJoinedStrategiesSelect().getAliases();
-				indexPerBean.put(bean, (int) row.get(aliases.get(indexingColumn)));
+				indexPerBean.put(bean, (int) rowValueProvider.apply(indexingColumn));
 			}
 		});
 	}
@@ -121,81 +117,166 @@ public class OneToManyWithIndexedMappedAssociationEngine<SRC, TRGT, ID, C extend
 	 */
 	private void addIndexInsertion() {
 		// we declare the indexing column as a silent one, then AfterInsertCollectionCascader will insert it
-		targetPersister.getMappingStrategy().addSilentColumnInserter(indexingColumn, (Function<TRGT, Object>)
-				target -> {
-					IndexedMappedManyRelationDescriptor<SRC, TRGT, C> manyRelationDefinition =
-							(IndexedMappedManyRelationDescriptor<SRC, TRGT, C>) this.manyRelationDefinition;
-					SRC source = manyRelationDefinition.getReverseGetter().apply(target);
-					if (source == null) {
-						throw new RuntimeMappingException("Can't get index : " + target + " is not associated with a "
-								+ Reflections.toString(sourcePersister.getMappingStrategy().getClassToPersist()) + " : "
-								// NB: we let Mutator print itself because it has a self defined toString()
-								+ manyRelationDefinition.getReverseGetterSignature() + " returned null");
-					}
-					return this.manyRelationDefinition.getCollectionGetter().apply(source).indexOf(target);
-				});
+		IndexedMappedManyRelationDescriptor<SRC, TRGT, C> manyRelationDefinition =
+				(IndexedMappedManyRelationDescriptor<SRC, TRGT, C>) this.manyRelationDefinition;
+		Function<SRC, C> collectionGetter = this.manyRelationDefinition.getCollectionGetter();
+		targetPersister.getMappingStrategy().addShadowColumnInsert(new ShadowColumnValueProvider<TRGT, Object, Table>(indexingColumn, target -> {
+			SRC source = manyRelationDefinition.getReverseGetter().apply(target);
+			if (source == null) {
+				throw new RuntimeMappingException("Can't get index : " + target + " is not associated with a "
+						+ Reflections.toString(sourcePersister.getMappingStrategy().getClassToPersist()) + " : "
+						// NB: we let Mutator print itself because it has a self defined toString()
+						+ manyRelationDefinition.getReverseGetterSignature() + " returned null");
+			}
+			return collectionGetter.apply(source).indexOf(target);
+		}) {
+			@Override
+			public boolean accept(TRGT entity) {
+				SRC sourceEntity = manyRelationDefinition.getReverseGetter().apply(entity);
+				return 
+						// Source entity can be null if target was removed from the collection, then an SQL update is required to set its reference
+						// column to null as well as its indexing column
+						sourceEntity == null
+						// Case of polymorphic inheritance with an abstract one-to-many relation redefined on each subclass (think to
+						// AbstractQuestion and addOneToManyList(AbstractQuestion::getChoices, ..) declared for single and multiple choice question):
+						// we get several source persister which are quite the same at a slighlty difference on collection getter : due to JVM
+						// serialization of method reference, it keeps original generic type somewhere in the serialized form of method reference
+						// (SerializedLambda.instantiatedMethodType), then applying this concrete class (when looking for target entity index in
+						// collection) and not the abstract one, which produces a ClassCastException. As a consequence we must check that
+						// collection getter matches given entity (which is done through source persister, because there's no mean to do it
+						// with collection getter.
+						|| sourcePersister.getMappingStrategy().getClassToPersist().isInstance(sourceEntity);
+			}
+		});
 	}
 	
 	@Override
 	public void addUpdateCascade(boolean shouldDeleteRemoved) {
-		
-		targetPersister.getMappingStrategy().addSilentColumnUpdater(indexingColumn,
-				// Thread safe by updatableListIndex access
-				(Function<TRGT, Object>) target -> Nullable.nullable(updatableListIndex.get()).map(m -> m.get(target)).get());
-		
-		BiConsumer<Duo<SRC, SRC>, Boolean> updateListener = new CollectionUpdater<SRC, TRGT, C>(
-				manyRelationDefinition.getCollectionGetter(),
-				targetPersister,
-				manyRelationDefinition.getReverseSetter(),
+		BiConsumer<Duo<SRC, SRC>, Boolean> updateListener = new ListCollectionUpdater<>(
+				this.manyRelationDefinition.getCollectionGetter(),
+				this.targetPersister,
+				this.manyRelationDefinition.getReverseSetter(),
 				shouldDeleteRemoved,
-				targetPersister.getMappingStrategy()::getId,
-				((MappedManyRelationDescriptor) manyRelationDefinition).getReverseColumn()) {
-			
-			@Override
-			protected Set<? extends AbstractDiff<TRGT>> diff(Collection<TRGT> modified, Collection<TRGT> unmodified) {
-				return getDiffer().diffList((List<TRGT>) unmodified, (List<TRGT>) modified);
-			}
-			
-			@Override
-			protected UpdateContext newUpdateContext(Duo<SRC, SRC> updatePayload) {
-				return new IndexedMappedAssociationUpdateContext(updatePayload);
-			}
-			
-			@Override
-			protected void onHeldTarget(UpdateContext updateContext, AbstractDiff<TRGT> diff) {
-				super.onHeldTarget(updateContext, diff);
-				Set<Integer> minus = Iterables.minus(((IndexedDiff<TRGT>) diff).getReplacerIndexes(), ((IndexedDiff<TRGT>) diff).getSourceIndexes());
-				Integer index = Iterables.first(minus);
-				if (index != null) {
-					((IndexedMappedAssociationUpdateContext) updateContext).getIndexUpdates().put(diff.getReplacingInstance(), index);
-				}
-			}
-			
-			@Override
-			protected void updateTargets(UpdateContext updateContext, boolean allColumnsStatement) {
-				// we ask for entities update, code seems weird because we pass a Duo of same instance which should update nothing because
-				// entities are stricly equal, but in fact this update() invokation triggers the "silent column" update, which is the index column
-				ThreadLocals.doWithThreadLocal(updatableListIndex, ((IndexedMappedAssociationUpdateContext) updateContext)::getIndexUpdates,
-						(Runnable) () -> {
-							List<Duo<? extends TRGT, ? extends TRGT>> entities = collectToList(updatableListIndex.get().keySet(), target -> new Duo<>(target, target));
-							targetPersister.update(entities, false);
-						});
-			}
-			
-			class IndexedMappedAssociationUpdateContext extends UpdateContext {
-				
-				/** New indexes per entity */
-				private final Map<TRGT, Integer> indexUpdates = new HashMap<>();
-				
-				public IndexedMappedAssociationUpdateContext(Duo<SRC, SRC> updatePayload) {
-					super(updatePayload);
-				}
-				
-				public Map<TRGT, Integer> getIndexUpdates() {
-					return indexUpdates;
-				}
-			}
-		};
+				this.targetPersister.getMappingStrategy()::getId,
+				((MappedManyRelationDescriptor) this.manyRelationDefinition).getReverseColumn(),
+				this.indexingColumn);
 		sourcePersister.getPersisterListener().addUpdateListener(new TargetInstancesUpdateCascader<>(targetPersister, updateListener));
+	}
+	
+	private static class ListCollectionUpdater<SRC, TRGT, ID, C extends List<TRGT>> extends CollectionUpdater<SRC, TRGT, C> {
+		
+		/**
+		 * Context for indexed mapped List. Will keep bean index during insert between "unrelated" methods/phases :
+		 * indexes must be computed then applied into SQL order, but this particular feature crosses over layers (entities
+		 * and SQL) which is not implemented. In such circumstances, ThreadLocal comes to the rescue.
+		 * Could be static, but would lack the TRGT typing, which leads to some generics errors, so left non static (acceptable small overhead)
+		 */
+		private final ThreadLocal<Map<TRGT, Integer>> updatableListIndex = new ThreadLocal<>();
+		
+		/**
+		 * Context for indexed mapped List. Will keep bean index during update between "unrelated" methods/phases :
+		 * indexes must be computed then applied into SQL order, but this particular feature crosses over layers (entities
+		 * and SQL) which is not implemented. In such circumstances, ThreadLocal comes to the rescue.
+		 * Could be static, but would lack the TRGT typing, which leads to some generics errors, so left non static (acceptable small overhead)
+		 */
+		private final ThreadLocal<Map<TRGT, Integer>> insertableListIndex = new ThreadLocal<>();
+		private final Column indexingColumn;
+		
+		private ListCollectionUpdater(Function<SRC, C> collectionGetter,
+									 IEntityConfiguredJoinedTablesPersister<TRGT, ID> targetPersister,
+									 @Nullable BiConsumer<TRGT, SRC> reverseSetter,
+									 boolean shouldDeleteRemoved,
+									 Function<TRGT, ?> idProvider,
+									 Column reverseColumn,
+									 Column indexingColumn) {
+			super(collectionGetter, targetPersister, reverseSetter, shouldDeleteRemoved, idProvider, reverseColumn);
+			this.indexingColumn = indexingColumn;
+			addShadowIndexInsert(targetPersister);
+			addShadowIndexUpdate(targetPersister);
+			
+		}
+		
+		private void addShadowIndexUpdate(IEntityConfiguredJoinedTablesPersister<TRGT, ID> targetPersister) {
+			targetPersister.getMappingStrategy().addShadowColumnUpdate(new ShadowColumnValueProvider<TRGT, Object, Table>(indexingColumn,
+					// Thread safe by updatableListIndex access
+					target -> updatableListIndex.get().get(target)) {
+				@Override
+				public boolean accept(Object entity) {
+					return updatableListIndex.get() != null && updatableListIndex.get().containsKey(entity);
+				}
+			});
+		}
+		
+		private void addShadowIndexInsert(IEntityConfiguredJoinedTablesPersister<TRGT, ID> targetPersister) {
+			// adding index insert/update to strategy
+			targetPersister.getMappingStrategy().addShadowColumnInsert(new ShadowColumnValueProvider<TRGT, Object, Table>(indexingColumn,
+					// Thread safe by updatableListIndex access
+					target -> insertableListIndex.get().get(target)) {
+				@Override
+				public boolean accept(Object entity) {
+					return insertableListIndex.get() != null && insertableListIndex.get().containsKey(entity);
+				}
+			});
+		}
+		
+		@Override
+		protected Set<? extends AbstractDiff<TRGT>> diff(Collection<TRGT> modified, Collection<TRGT> unmodified) {
+			return getDiffer().diffList((List<TRGT>) unmodified, (List<TRGT>) modified);
+		}
+		
+		@Override
+		protected UpdateContext newUpdateContext(Duo<SRC, SRC> updatePayload) {
+			return new IndexedMappedAssociationUpdateContext(updatePayload);
+		}
+		
+		@Override
+		protected void onAddedTarget(UpdateContext updateContext, AbstractDiff<TRGT> diff) {
+			super.onAddedTarget(updateContext, diff);
+			addNewIndexToContext((IndexedDiff<TRGT>) diff, (IndexedMappedAssociationUpdateContext) updateContext);
+		}
+		
+		@Override
+		protected void onHeldTarget(UpdateContext updateContext, AbstractDiff<TRGT> diff) {
+			super.onHeldTarget(updateContext, diff);
+			addNewIndexToContext((IndexedDiff<TRGT>) diff, (IndexedMappedAssociationUpdateContext) updateContext);
+		}
+		
+		private void addNewIndexToContext(IndexedDiff<TRGT> diff, IndexedMappedAssociationUpdateContext updateContext) {
+			Set<Integer> minus = Iterables.minus(diff.getReplacerIndexes(), diff.getSourceIndexes());
+			Integer index = Iterables.first(minus);
+			if (index != null) {
+				updateContext.getIndexUpdates().put(diff.getReplacingInstance(), index);
+			}
+		}
+		
+		@Override
+		protected void insertTargets(UpdateContext updateContext) {
+			// we ask for entities insert as super does but we surround it by a ThreadLocal to fulfill List indexes which is required by
+			// the shadow column inserter (List indexes are given by default CollectionUpdater algorithm)
+			ThreadLocals.doWithThreadLocal(insertableListIndex, ((IndexedMappedAssociationUpdateContext) updateContext)::getIndexUpdates,
+					(Runnable) () -> super.insertTargets(updateContext));
+		}
+		
+		@Override
+		protected void updateTargets(UpdateContext updateContext, boolean allColumnsStatement) {
+			// we ask for entities update as super does but we surround it by a ThreadLocal to fulfill List indexes which is required by
+			// the shadow column updater (List indexes are given by default CollectionUpdater algorithm)
+			ThreadLocals.doWithThreadLocal(updatableListIndex, ((IndexedMappedAssociationUpdateContext) updateContext)::getIndexUpdates,
+					(Runnable) () -> super.updateTargets(updateContext, allColumnsStatement));
+		}
+		
+		class IndexedMappedAssociationUpdateContext extends UpdateContext {
+			
+			/** New indexes per entity */
+			private final Map<TRGT, Integer> indexUpdates = new HashMap<>();
+			
+			public IndexedMappedAssociationUpdateContext(Duo<SRC, SRC> updatePayload) {
+				super(updatePayload);
+			}
+			
+			public Map<TRGT, Integer> getIndexUpdates() {
+				return indexUpdates;
+			}
+		}
 	}
 }

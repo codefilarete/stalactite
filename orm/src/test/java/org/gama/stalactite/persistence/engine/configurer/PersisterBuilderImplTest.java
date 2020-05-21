@@ -69,6 +69,7 @@ import static org.gama.stalactite.persistence.engine.MappingEase.entityBuilder;
 import static org.gama.stalactite.persistence.id.Identifier.identifierBinder;
 import static org.gama.stalactite.sql.binder.DefaultParameterBinders.INTEGER_PRIMITIVE_BINDER;
 import static org.gama.stalactite.sql.binder.DefaultParameterBinders.LONG_PRIMITIVE_BINDER;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.withSettings;
@@ -392,26 +393,48 @@ public class PersisterBuilderImplTest {
 	}
 	
 	@Test
-	void build_singleTable_singleClass() {
+	void build_returnsAlreadyExisintgPersister() {
 		PersisterBuilderImpl testInstance = new PersisterBuilderImpl(
 				entityBuilder(Car.class, Identifier.class)
 						.add(Car::getModel)
-								.add(Vehicle::getColor)
-										.add(AbstractVehicle::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
-										.embed(AbstractVehicle::getTimestamp)
-						);
+						.add(Vehicle::getColor)
+						.add(AbstractVehicle::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+						.embed(AbstractVehicle::getTimestamp)
+		);
 		
 		ConnectionProvider connectionProviderMock = mock(ConnectionProvider.class, withSettings().defaultAnswer(Answers.RETURNS_MOCKS));
+		PersistenceContext persistenceContext = new PersistenceContext(connectionProviderMock, DIALECT);
+		assertSame(testInstance.build(persistenceContext), testInstance.build(persistenceContext));
+	}
+	
+	@Test
+	void build_singleTable_singleClass() throws SQLException {
+		PersisterBuilderImpl testInstance = new PersisterBuilderImpl(
+				entityBuilder(Car.class, Identifier.class)
+						.add(Car::getModel)
+						.add(Vehicle::getColor)
+						.add(AbstractVehicle::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+						.embed(AbstractVehicle::getTimestamp)
+		);
+		
+		ConnectionProvider connectionProviderMock = mock(ConnectionProvider.class, withSettings().defaultAnswer(Answers.RETURNS_MOCKS));
+		Connection connectionMock = mock(Connection.class);
+		when(connectionProviderMock.getCurrentConnection()).thenReturn(connectionMock);
+		ArgumentCaptor<String> sqlCaptor = ArgumentCaptor.forClass(String.class);
+		PreparedStatement preparedStatementMock = mock(PreparedStatement.class);
+		when(connectionMock.prepareStatement(sqlCaptor.capture())).thenReturn(preparedStatementMock);
+		when(preparedStatementMock.executeBatch()).thenReturn(new int[] { 1 });
 		IEntityPersister<Car, Identifier> result = testInstance.build(new PersistenceContext(connectionProviderMock, DIALECT));
 		Car entity = new Car(1L);
 		entity.setModel("Renault");
 		entity.setColor(new Color(123));
 		entity.setTimestamp(new Timestamp());
 		result.insert(entity);
+		assertEquals(Arrays.asList("insert into Car(color, creationDate, id, model, modificationDate) values (?, ?, ?, ?, ?)"), sqlCaptor.getAllValues());
 	}
 	
 	@Test
-	void build_singleTable_multipleClasses() throws SQLException {
+	void build_singleTable_withInheritance() throws SQLException {
 		PersisterBuilderImpl testInstance = new PersisterBuilderImpl(
 				entityBuilder(Car.class, Identifier.class)
 						.add(Car::getModel)
@@ -421,8 +444,8 @@ public class PersisterBuilderImplTest {
 										.add(AbstractVehicle::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 										.embed(AbstractVehicle::getTimestamp)
 								)
-								)
-						);
+						)
+		);
 		
 		ConnectionProvider connectionProviderMock = mock(ConnectionProvider.class, withSettings().defaultAnswer(Answers.RETURNS_MOCKS));
 		Connection connectionMock = mock(Connection.class);
@@ -451,8 +474,8 @@ public class PersisterBuilderImplTest {
 										.add(AbstractVehicle::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 										.embed(AbstractVehicle::getTimestamp)
 								).withJoinedTable()
-								).withJoinedTable()
-						);
+						).withJoinedTable()
+		);
 		
 		ConnectionProvider connectionProviderMock = mock(ConnectionProvider.class, withSettings().defaultAnswer(Answers.RETURNS_MOCKS));
 		Connection connectionMock = mock(Connection.class);

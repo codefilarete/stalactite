@@ -33,8 +33,6 @@ public interface IEntityMappingStrategy<C, I, T extends Table> extends IMappingS
 	
 	Set<Column<T, Object>> getUpdatableColumns();
 	
-	<O> void addSilentColumnToSelect(Column<T, O> column);
-	
 	Iterable<Column<T, Object>> getVersionedKeys();
 	
 	Map<Column<T, Object>, Object> getVersionedKeyValues(C c);

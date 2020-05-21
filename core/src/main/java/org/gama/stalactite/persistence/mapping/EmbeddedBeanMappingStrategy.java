@@ -62,13 +62,13 @@ public class EmbeddedBeanMappingStrategy<C, T extends Table> implements IEmbedde
 	 * Columns (and their value provider) which are not officially mapped by a bean property.
 	 * Those are for insertion time.
 	 */
-	private final List<Duo<Column<T, ?>, Function<C, ?>>> silentInsertedColumns = new ArrayList<>();
+	private final List<ShadowColumnValueProvider<C, Object, T>> shadowColumnsForInsert = new ArrayList<>();
 	
 	/**
 	 * Columns (and their value provider) which are not officially mapped by a bean property.
 	 * Those are for update time.
 	 */
-	private final List<Duo<Column<T, ?>, Function<C, ?>>> silentUpdatedColumns = new ArrayList<>();
+	private final List<ShadowColumnValueProvider<C, Object, T>> shadowColumnsForUpdate = new ArrayList<>();
 	
 	private final ValueAccessPointSet propertiesSetByConstructor = new ValueAccessPointSet();
 	
@@ -170,13 +170,18 @@ public class EmbeddedBeanMappingStrategy<C, T extends Table> implements IEmbedde
 	}
 	
 	@Override
-	public <O> void addSilentColumnInserter(Column<T, O> column, Function<C, O> valueProvider) {
-		silentInsertedColumns.add(new Duo<>(column, valueProvider));
+	public <O> void addShadowColumnInsert(ShadowColumnValueProvider<C, O, T> valueProvider) {
+		shadowColumnsForInsert.add((ShadowColumnValueProvider<C, Object, T>) valueProvider);
 	}
 	
 	@Override
-	public <O> void addSilentColumnUpdater(Column<T, O> column, Function<C, O> valueProvider) {
-		silentUpdatedColumns.add(new Duo<>(column, valueProvider));
+	public <O> void addShadowColumnUpdate(ShadowColumnValueProvider<C, O, T> valueProvider) {
+		shadowColumnsForUpdate.add((ShadowColumnValueProvider<C, Object, T>) valueProvider);
+	}
+	
+	@Override
+	public <O> void addShadowColumnSelect(Column<T, O> column) {
+		columns.add((Column<T, Object>) column);
 	}
 	
 	@Override
@@ -189,7 +194,11 @@ public class EmbeddedBeanMappingStrategy<C, T extends Table> implements IEmbedde
 	public Map<Column<T, Object>, Object> getInsertValues(C c) {
 		Map<Column<T, Object>, Object> result = new HashMap<>();
 		insertableProperties.forEach((prop, value) -> result.put(value, prop.get(c)));
-		silentInsertedColumns.forEach(columnFunctionDuo -> result.put((Column<T, Object>) columnFunctionDuo.getLeft(), columnFunctionDuo.getRight().apply(c)));
+		shadowColumnsForInsert.forEach(shadowColumnValueProvider -> {
+			if (shadowColumnValueProvider.accept(c)) {
+				result.put(shadowColumnValueProvider.getColumn(), shadowColumnValueProvider.giveValue(c));
+			}
+		});
 		return result;
 	}
 	
@@ -220,9 +229,10 @@ public class EmbeddedBeanMappingStrategy<C, T extends Table> implements IEmbedde
 			}
 		}
 		// getting values for silent columns
-		silentUpdatedColumns.forEach(columnFunctionDuo -> {
-			Object modifiedValue = columnFunctionDuo.getRight().apply(modified);
-			modifiedFields.put(new UpwhereColumn<>(columnFunctionDuo.getLeft(), true), modifiedValue);
+		shadowColumnsForUpdate.forEach(shadowColumnValueProvider -> {
+			if (shadowColumnValueProvider.accept(modified)) {
+				modifiedFields.put(new UpwhereColumn<>(shadowColumnValueProvider.getColumn(), true), shadowColumnValueProvider.giveValue(modified));
+			}
 		});
 		return modifiedFields;
 	}

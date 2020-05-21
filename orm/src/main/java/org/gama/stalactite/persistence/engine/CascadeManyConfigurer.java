@@ -27,7 +27,6 @@ import org.gama.reflection.MutatorByMethod;
 import org.gama.reflection.PropertyAccessor;
 import org.gama.reflection.ValueAccessPointMap;
 import org.gama.stalactite.persistence.engine.CascadeOptions.RelationMode;
-import org.gama.stalactite.persistence.engine.PolymorphismPolicy.TablePerClassPolymorphism;
 import org.gama.stalactite.persistence.engine.builder.CascadeMany;
 import org.gama.stalactite.persistence.engine.builder.CascadeManyList;
 import org.gama.stalactite.persistence.engine.configurer.PersisterBuilderImpl;
@@ -40,6 +39,7 @@ import org.gama.stalactite.persistence.engine.runtime.OneToManyWithIndexedAssoci
 import org.gama.stalactite.persistence.engine.runtime.OneToManyWithIndexedMappedAssociationEngine;
 import org.gama.stalactite.persistence.engine.runtime.OneToManyWithMappedAssociationEngine;
 import org.gama.stalactite.persistence.mapping.IEntityMappingStrategy;
+import org.gama.stalactite.persistence.mapping.IMappingStrategy.ShadowColumnValueProvider;
 import org.gama.stalactite.persistence.mapping.IdAccessor;
 import org.gama.stalactite.persistence.sql.Dialect;
 import org.gama.stalactite.persistence.sql.IConnectionConfiguration;
@@ -66,10 +66,25 @@ public class CascadeManyConfigurer<SRC, TRGT, ID, C extends Collection<TRGT>> {
 	
 	private final PersistenceContext persistenceContext;
 	private final PersisterBuilderImpl<TRGT, ID> persisterBuilder;
+	private Column<?, ID> sourcePrimaryKey;
 	
 	public CascadeManyConfigurer(PersistenceContext persistenceContext, PersisterBuilderImpl<TRGT, ID> persisterBuilder) {
 		this.persistenceContext = persistenceContext;
 		this.persisterBuilder = persisterBuilder;
+	}
+	
+	/**
+	 * Sets source primary key. Necessary for foreign key creation in case of inheritance and many relation defined for each subclass :
+	 * by default a foreign key will be created from target entity table to subclass source primary key which will create several one pointing
+	 * to different table, hence when inserting target entity the column owning relation should point to each subclass table, which is not possible,
+	 * throwing a foreign key violation.
+	 * 
+	 * @param sourcePrimaryKey column to which the foreign key from column that owns relation must point to
+	 * @return this
+	 */
+	public CascadeManyConfigurer<SRC, TRGT, ID, C> setSourcePrimaryKey(Column<?, ID> sourcePrimaryKey) {
+		this.sourcePrimaryKey = sourcePrimaryKey;
+		return this;
 	}
 	
 	public <T extends Table<T>> void appendCascade(CascadeMany<SRC, TRGT, ID, C> cascadeMany,
@@ -77,29 +92,11 @@ public class CascadeManyConfigurer<SRC, TRGT, ID, C extends Collection<TRGT>> {
 												   ForeignKeyNamingStrategy foreignKeyNamingStrategy,
 												   ColumnNamingStrategy joinColumnNamingStrategy,
 												   AssociationTableNamingStrategy associationTableNamingStrategy) {
-		Table reverseTable = nullable(cascadeMany.getReverseColumn()).map(Column::getTable).get();
-		Table indexingTable = nullable((Column<?, ?>) (cascadeMany instanceof CascadeManyList ? ((CascadeManyList) cascadeMany).getIndexingColumn() : null)).map(Column::getTable).get();
-		Set<Table> availableTables = Arrays.asHashSet(cascadeMany.getTargetTable(), reverseTable, indexingTable);
-		availableTables.remove(null);
-		if (availableTables.size() > 1) {
-			throw new MappingConfigurationException("Different tables used for configuring mapping : " + new StringAppender() {
-				@Override
-				public StringAppender cat(Object table) {
-					return super.cat(((Table) table).getName());
-				}
-			}.ccat(availableTables, ", "));
-		}
-		
-		// please note that even if no table is found in configuration, build(..) will create one
-		Table targetTable = nullable(cascadeMany.getTargetTable()).elseSet(reverseTable).elseSet(indexingTable).get();
+		Table targetTable = determineTargetTable(cascadeMany);
 		IEntityConfiguredJoinedTablesPersister<TRGT, ID> targetPersister = (IEntityConfiguredJoinedTablesPersister<TRGT, ID>) this.persisterBuilder
 				.build(persistenceContext, targetTable);
 		
-		// finding joined columns: left one is primary key. Right one is given by the target strategy through the property accessor
-		if (sourcePersister.getMappingStrategy().getTargetTable().getPrimaryKey().getColumns().size() > 1) {
-			throw new NotYetSupportedOperationException("Joining tables on a composed primary key is not (yet) supported");
-		}
-		Column leftPrimaryKey = (Column) first(sourcePersister.getMappingStrategy().getTargetTable().getPrimaryKey().getColumns());
+		Column leftPrimaryKey = nullable(sourcePrimaryKey).getOr(() -> lookupSourcePrimaryKey(sourcePersister));
 		
 		RelationMode maintenanceMode = cascadeMany.getRelationMode();
 		// selection is always present (else configuration is nonsense !)
@@ -123,6 +120,32 @@ public class CascadeManyConfigurer<SRC, TRGT, ID, C extends Collection<TRGT>> {
 					persistenceContext.getConnectionConfiguration())
 					.configure();
 		}
+	}
+	
+	private Table determineTargetTable(CascadeMany<SRC, TRGT, ID, C> cascadeMany) {
+		Table reverseTable = nullable(cascadeMany.getReverseColumn()).map(Column::getTable).get();
+		Table indexingTable = nullable((Column<?, ?>) (cascadeMany instanceof CascadeManyList ? ((CascadeManyList) cascadeMany).getIndexingColumn() : null)).map(Column::getTable).get();
+		Set<Table> availableTables = Arrays.asHashSet(cascadeMany.getTargetTable(), reverseTable, indexingTable);
+		availableTables.remove(null);
+		if (availableTables.size() > 1) {
+			throw new MappingConfigurationException("Different tables used for configuring mapping : " + new StringAppender() {
+				@Override
+				public StringAppender cat(Object table) {
+					return super.cat(((Table) table).getName());
+				}
+			}.ccat(availableTables, ", "));
+		}
+		
+		// please note that even if no table is found in configuration, build(..) will create one
+		return nullable(cascadeMany.getTargetTable()).elseSet(reverseTable).elseSet(indexingTable).get();
+	}
+	
+	protected Column lookupSourcePrimaryKey(IEntityConfiguredJoinedTablesPersister<SRC, ID> sourcePersister) {
+		// finding joined columns: left one is primary key. Right one is given by the target strategy through the property accessor
+		if (sourcePersister.getMappingStrategy().getTargetTable().getPrimaryKey().getColumns().size() > 1) {
+			throw new NotYetSupportedOperationException("Joining tables on a composed primary key is not (yet) supported");
+		}
+		return (Column) first(sourcePersister.getMappingStrategy().getTargetTable().getPrimaryKey().getColumns());
 	}
 	
 	/**
@@ -278,7 +301,7 @@ public class CascadeManyConfigurer<SRC, TRGT, ID, C extends Collection<TRGT>> {
 			
 			intermediaryTable.addForeignKey(manyAssociationConfiguration.foreignKeyNamingStrategy::giveName,
 					intermediaryTable.getOneSideKeyColumn(), manyAssociationConfiguration.leftPrimaryKey);
-			if (!(manyAssociationConfiguration.cascadeMany.getTargetMappingConfiguration().getPolymorphismPolicy() instanceof TablePerClassPolymorphism)) {
+			if (!(manyAssociationConfiguration.cascadeMany.isTargetTablePerClassPolymorphic())) {
 				intermediaryTable.addForeignKey(manyAssociationConfiguration.foreignKeyNamingStrategy.giveName(intermediaryTable.getManySideKeyColumn(), rightPrimaryKey),
 						intermediaryTable.getManySideKeyColumn(), rightPrimaryKey);
 			}
@@ -312,7 +335,7 @@ public class CascadeManyConfigurer<SRC, TRGT, ID, C extends Collection<TRGT>> {
 		
 		private void configure() {
 			// We're looking for the foreign key (for necessary join) and for getter/setter required to manage the relation 
-			Column reverseColumn = manyAssociationConfiguration.cascadeMany.getReverseColumn();
+			Column<Table, ID> reverseColumn = manyAssociationConfiguration.cascadeMany.getReverseColumn();
 			Method reverseMethod = null;
 			String getterSignature = null;
 			// Setter for applying source entity to reverse side (target entities)
@@ -338,9 +361,9 @@ public class CascadeManyConfigurer<SRC, TRGT, ID, C extends Collection<TRGT>> {
 				reversePropertyAccessor = accessor(reverseMethod);
 				// Since reverse property accessor may not be declared the same way that it is present in ClassMappingStrategy
 				// we must use a ValueAccessPointMap which allows to compare different ValueAccessPoints
-				IEntityMappingStrategy<TRGT, ID, ?> targetMappingStrategy = manyAssociationConfiguration.targetPersister.getMappingStrategy();
+				IEntityMappingStrategy<TRGT, ID, Table> targetMappingStrategy = manyAssociationConfiguration.targetPersister.getMappingStrategy();
 				ValueAccessPointMap<? extends Column<?, Object>> accessPointMap = new ValueAccessPointMap<>(targetMappingStrategy.getPropertyToColumn());
-				reverseColumn = accessPointMap.get(reversePropertyAccessor);
+				reverseColumn = (Column<Table, ID>) accessPointMap.get(reversePropertyAccessor);
 				// we didn't find an existing matching column by its property (relation is not bidirectional), so we create it
 				if (reverseColumn == null) {
 					IEntityMappingStrategy<SRC, ID, ?> sourceMappingStrategy = manyAssociationConfiguration.srcPersister.getMappingStrategy();
@@ -355,14 +378,15 @@ public class CascadeManyConfigurer<SRC, TRGT, ID, C extends Collection<TRGT>> {
 					SerializableFunction<TRGT, SRC> finalReverseGetter = reverseGetter;
 					IdAccessor<SRC, ID> idAccessor = sourceMappingStrategy.getIdMappingStrategy().getIdAccessor();
 					Function<TRGT, ID> targetIdSupplier = trgt -> nullable(finalReverseGetter.apply(trgt)).map(idAccessor::getId).getOr((ID) null);
-					targetMappingStrategy.addSilentColumnInserter(reverseColumn, targetIdSupplier);
-					targetMappingStrategy.addSilentColumnUpdater(reverseColumn, targetIdSupplier);
+					ShadowColumnValueProvider<TRGT, ID, Table> targetIdValueProvider = new ShadowColumnValueProvider<>(reverseColumn, targetIdSupplier);
+					targetMappingStrategy.addShadowColumnInsert(targetIdValueProvider);
+					targetMappingStrategy.addShadowColumnUpdate(targetIdValueProvider);
 				} // else = bidirectional relation with matching column, property and column will be maintained through it so we have nothing to do here
 				  // (user code is expected to maintain bidirectionality aka when adding an entity to its collection also set parent value)
 			} else {
 				// Since reverse property accessor may not be declared the same way that it is present in ClassMappingStrategy
 				// we must use a ValueAccessPointMap which allows to compare different ValueAccessPoints
-				IEntityMappingStrategy<TRGT, ID, ?> targetMappingStrategy = manyAssociationConfiguration.targetPersister.getMappingStrategy();
+				IEntityMappingStrategy<TRGT, ID, Table> targetMappingStrategy = manyAssociationConfiguration.targetPersister.getMappingStrategy();
 				IEntityMappingStrategy<SRC, ID, ?> sourceMappingStrategy = manyAssociationConfiguration.srcPersister.getMappingStrategy();
 				
 				// Reverse side is surely defined by reverse method (because CascadeManyWithMappedAssociationConfigurer is invoked only
@@ -384,8 +408,9 @@ public class CascadeManyConfigurer<SRC, TRGT, ID, C extends Collection<TRGT>> {
 				
 				IdAccessor<SRC, ID> idAccessor = sourceMappingStrategy.getIdMappingStrategy().getIdAccessor();
 				Function<TRGT, ID> targetIdSupplier = trgt -> nullable(finalReverseGetter.apply(trgt)).map(idAccessor::getId).getOr((ID) null);
-				targetMappingStrategy.addSilentColumnInserter(reverseColumn, targetIdSupplier);
-				targetMappingStrategy.addSilentColumnUpdater(reverseColumn, targetIdSupplier);
+				ShadowColumnValueProvider<TRGT, ID, Table> targetIdValueProvider = new ShadowColumnValueProvider<>(reverseColumn, targetIdSupplier);
+				targetMappingStrategy.addShadowColumnInsert(targetIdValueProvider);
+				targetMappingStrategy.addShadowColumnUpdate(targetIdValueProvider);
 			}
 			manyAssociationConfiguration.reversePropertySetter = reversePropertyAccessor;
 			

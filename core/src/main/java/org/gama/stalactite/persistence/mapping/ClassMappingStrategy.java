@@ -228,19 +228,19 @@ public class ClassMappingStrategy<C, I, T extends Table> implements IEntityMappi
 	}
 	
 	@Override
-	public <O> void addSilentColumnInserter(Column<T, O> column, Function<C, O> valueProvider) {
+	public <O> void addShadowColumnInsert(ShadowColumnValueProvider<C, O, T> valueProvider) {
 		// we delegate value computation to the default mapping strategy
-		mainMappingStrategy.addSilentColumnInserter(column, valueProvider);
+		mainMappingStrategy.addShadowColumnInsert(valueProvider);
 		// we must register it as an insertable column so we'll generate the right SQL order
-		insertableColumns.add((Column<T, Object>) column);
+		insertableColumns.add((Column<T, Object>) valueProvider.getColumn());
 	}
 	
 	@Override
-	public <O> void addSilentColumnUpdater(Column<T, O> column, Function<C, O> valueProvider) {
+	public <O> void addShadowColumnUpdate(ShadowColumnValueProvider<C, O, T> valueProvider) {
 		// we delegate value computation to the default mapping strategy
-		mainMappingStrategy.addSilentColumnUpdater(column, valueProvider);
+		mainMappingStrategy.addShadowColumnUpdate(valueProvider);
 		// we must register it as an insertable column so we'll generate the right SQL order
-		updatableColumns.add((Column<T, Object>) column);
+		updatableColumns.add((Column<T, Object>) valueProvider.getColumn());
 	}
 	
 	@Override
@@ -249,9 +249,9 @@ public class ClassMappingStrategy<C, I, T extends Table> implements IEntityMappi
 	}
 	
 	@Override
-	public <O> void addSilentColumnToSelect(Column<T, O> column) {
-		// we must register it as an insertable column so we'll generate the right SQL order
-		selectableColumns.add((Column<T, Object>) column);
+	public <O> void addShadowColumnSelect(Column<T, O> column) {
+		mainMappingStrategy.addShadowColumnSelect(column);
+		fillSelectableColumns();
 	}
 	
 	/**

@@ -18,7 +18,7 @@ public class TableTest {
 	@Test
 	public void addColumn_alreadyExists_returnsExistingOne() {
 		Table testInstance = new Table("toto");
-		// empty columns should throw any exception nor found anything
+		// empty table shouldn't throw any exception nor found anything
 		Column xxColumn = testInstance.addColumn("xx", String.class);
 		
 		// same column with same type doesn't has any consequence
@@ -29,17 +29,44 @@ public class TableTest {
 	@Test
 	public void addColumn_alreadyExistsWithDifferentType_throwsException() {
 		Table testInstance = new Table("toto");
-		// empty columns should throw any exception nor found anything
+		// empty table shouldn't throw any exception nor found anything
 		testInstance.addColumn("xx", String.class);
 		
-		// same column with same type doesn't has any consequence
-		testInstance.addColumn("xx", String.class);
 		// same column with other type throws exception
 		IllegalArgumentException thrownException = assertThrows(IllegalArgumentException.class, () -> testInstance.addColumn("xx", Integer.class));
 		assertEquals("Trying to add a column that already exists with a different type : toto.xx j.l.String vs j.l.Integer", thrownException.getMessage());
 		// same column with other type throws exception
 		thrownException = assertThrows(IllegalArgumentException.class, () -> testInstance.addColumn("xx", String.class, 12));
 		assertEquals("Trying to add a column that already exists with a different type : toto.xx j.l.String vs j.l.String(12)", thrownException.getMessage());
+	}
+	
+	@Test
+	public void addForeignKey_alreadyExists_returnsExistingOne() {
+		Table testInstance = new Table("toto");
+		Column xColumn = testInstance.addColumn("x", String.class);
+		Table referencedInstance = new Table("tata");
+		Column yColumn = referencedInstance.addColumn("y", String.class);
+		// empty table shouldn't throw any exception nor found anything
+		ForeignKey fk = testInstance.addForeignKey("dummy FK name", xColumn, yColumn);
+		
+		// same column with same type doesn't has any consequence
+		ForeignKey newFK = testInstance.addForeignKey("dummy FK name", xColumn, yColumn);
+		assertSame(fk, newFK);
+	}
+	
+	@Test
+	public void addForeignKey_alreadyExistsWithDifferentType_throwsException() {
+		Table testInstance = new Table("toto");
+		Column xColumn = testInstance.addColumn("x", String.class);
+		Column xxColumn = testInstance.addColumn("xx", String.class);
+		Table referencedInstance = new Table("tata");
+		Column yColumn = referencedInstance.addColumn("y", String.class);
+		// empty table shouldn't throw any exception nor found anything
+		testInstance.addForeignKey("dummy FK name", xColumn, yColumn);
+		
+		// same column with other type throws exception
+		IllegalArgumentException thrownException = assertThrows(IllegalArgumentException.class, () -> testInstance.addForeignKey("dummy FK name", xxColumn, yColumn));
+		assertEquals("Trying to add a foreign key that already exists with different columns : dummy FK name toto.x -> tata.y vs toto.xx -> tata.y", thrownException.getMessage());
 	}
 	
 	@Test

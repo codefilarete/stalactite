@@ -3,6 +3,7 @@ package org.gama.stalactite.persistence.engine.cascade;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.util.ArrayDeque;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -78,10 +79,11 @@ public class JoinedStrategiesSelect<C, I, T extends Table> {
 	}
 	
 	/**
-	 * @return the generated aliases by {@link Column} during the {@link #addColumnsToSelect(String, Iterable, Query)} phase
+	 * @return the generated aliases by {@link Column} during the {@link #addColumnsToSelect(String, Iterable, Query)} phase,
+	 * 	unmodifiable because is not expected to be altered outside of this class
 	 */
 	public Map<Column, String> getAliases() {
-		return aliases;
+		return Collections.unmodifiableMap(aliases);
 	}
 	
 	public String getAlias(Column column) {

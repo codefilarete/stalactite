@@ -7,7 +7,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import org.danekja.java.util.function.serializable.SerializableBiConsumer;
@@ -17,7 +16,6 @@ import org.gama.lang.bean.Objects;
 import org.gama.lang.collection.Arrays;
 import org.gama.lang.collection.Iterables;
 import org.gama.lang.function.Functions;
-import org.gama.lang.function.SerializableTriConsumer;
 import org.gama.lang.trace.ModifiableInt;
 import org.gama.reflection.MethodReferenceDispatcher;
 import org.gama.stalactite.persistence.engine.BeanRelationFixer;
@@ -43,6 +41,7 @@ import org.gama.stalactite.persistence.engine.listening.PersisterListener;
 import org.gama.stalactite.persistence.engine.listening.SelectListener;
 import org.gama.stalactite.persistence.engine.listening.UpdateListener;
 import org.gama.stalactite.persistence.mapping.IEntityMappingStrategy;
+import org.gama.stalactite.persistence.mapping.IMappingStrategy.ShadowColumnValueProvider;
 import org.gama.stalactite.persistence.query.EntityCriteriaSupport;
 import org.gama.stalactite.persistence.query.RelationalEntityCriteria;
 import org.gama.stalactite.persistence.sql.Dialect;
@@ -292,8 +291,8 @@ public class TablePerClassPolymorphismPersister<C, I, T extends Table<T>> implem
 	}
 	
 	/**
-	 * Overriden to capture {@link IEntityMappingStrategy#addSilentColumnInserter(Column, Function)} and
-	 * {@link IEntityMappingStrategy#addSilentColumnUpdater(Column, Function)} (see {@link org.gama.stalactite.persistence.engine.CascadeManyConfigurer})
+	 * Overriden to capture {@link IEntityMappingStrategy#addShadowColumnInsert(ShadowColumnValueProvider)} and
+	 * {@link IEntityMappingStrategy#addShadowColumnUpdate(ShadowColumnValueProvider)} (see {@link org.gama.stalactite.persistence.engine.CascadeManyConfigurer})
 	 * Made to dispatch those methods subclass strategies since their persisters are in charge of managing their entities (not the parent one).
 	 *
 	 * Design question : one may think that's not a good design to override a getter, caller should invoke an intention-clear method on
@@ -301,26 +300,27 @@ public class TablePerClassPolymorphismPersister<C, I, T extends Table<T>> implem
 	 * detail : they are to manage cascades and coordinate their mapping strategies. {@link IEntityMappingStrategy} are in charge of knowing
 	 * {@link Column} actions.
 	 *
-	 * @param <T> table type
 	 * @return an enhanced version of our main persister mapping strategy which dispatches silent column insert/update to sub-entities ones
 	 */
 	@Override
-	public <T extends Table> IEntityMappingStrategy<C, I, T> getMappingStrategy() {
+	public IEntityMappingStrategy<C, I, T> getMappingStrategy() {
 		// TODO: This is not the cleanest implementation because we use MethodReferenceDispatcher which is kind of overkill : use a dispatching
 		//  interface
 		MethodReferenceDispatcher methodReferenceDispatcher = new MethodReferenceDispatcher();
 		IEntityMappingStrategy<C, I, T> result = methodReferenceDispatcher
-				.redirect((SerializableTriConsumer<IEntityMappingStrategy<C, I, T>, Column<T, Object>, Function<C, Object>>)
-								IEntityMappingStrategy::addSilentColumnInserter,
-						(c, f) -> subEntitiesPersisters.values().forEach(p -> {
+				.redirect((SerializableBiConsumer<IEntityMappingStrategy<C, I, T>, ShadowColumnValueProvider<C, Object, T>>)
+								IEntityMappingStrategy::addShadowColumnInsert,
+						provider -> subEntitiesPersisters.values().forEach(p -> {
+							Column<T, Object> c = provider.getColumn();
 							Column projectedColumn = p.getMainTable().addColumn(c.getName(), c.getJavaType(), c.getSize());
-							p.getMappingStrategy().addSilentColumnInserter(projectedColumn, f);
+							p.getMappingStrategy().addShadowColumnInsert(new ShadowColumnValueProvider<>(projectedColumn, provider.getValueProvider()));
 						}))
-				.redirect((SerializableTriConsumer<IEntityMappingStrategy<C, I, T>, Column<T, Object>, Function<C, Object>>)
-								IEntityMappingStrategy::addSilentColumnUpdater,
-						(c, f) -> subEntitiesPersisters.values().forEach(p -> {
+				.redirect((SerializableBiConsumer<IEntityMappingStrategy<C, I, T>, ShadowColumnValueProvider<C, Object, T>>)
+								IEntityMappingStrategy::addShadowColumnUpdate,
+						provider -> subEntitiesPersisters.values().forEach(p -> {
+							Column<T, Object> c = provider.getColumn();
 							Column projectedColumn = p.getMainTable().addColumn(c.getName(), c.getJavaType(), c.getSize());
-							p.getMappingStrategy().addSilentColumnUpdater(projectedColumn, f);
+							p.getMappingStrategy().addShadowColumnUpdate(new ShadowColumnValueProvider<>(projectedColumn, provider.getValueProvider()));
 						}))
 				.fallbackOn(mainPersister.getMappingStrategy())
 				.build((Class<IEntityMappingStrategy<C, I, T>>) (Class) IEntityMappingStrategy.class);

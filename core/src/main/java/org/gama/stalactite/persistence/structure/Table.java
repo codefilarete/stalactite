@@ -13,6 +13,7 @@ import java.util.function.Function;
 
 import org.gama.lang.Duo;
 import org.gama.lang.Reflections;
+import org.gama.lang.StringAppender;
 import org.gama.lang.collection.Arrays;
 import org.gama.lang.collection.Iterables;
 import org.gama.lang.collection.KeepOrderSet;
@@ -90,7 +91,7 @@ public class Table<SELF extends Table<SELF>> {
 	 * @param name column name
 	 * @param javaType column type
 	 * @param <O> column type
-	 * @return the create column or the existing one
+	 * @return the created column or the existing one
 	 */
 	public <O> Column<SELF, O> addColumn(String name, Class<O> javaType) {
 		return addertColumn(new Column<>((SELF) this, name, javaType));
@@ -106,14 +107,14 @@ public class Table<SELF extends Table<SELF>> {
 	 * @param size column type size, null if type doesn't require any size ({@link #addColumn(String, Class)} should be prefered in this case)
 	 *             but let as such for column copy use case
 	 * @param <O> column type
-	 * @return the create column or the existing one
+	 * @return the created column or the existing one
 	 */
 	public <O> Column<SELF, O> addColumn(String name, Class<O> javaType, Integer size) {
 		return addertColumn(new Column<>((SELF) this, name, javaType, size));
 	}
 	
 	/**
-	 * Add with presence assertion (add + assert = addert, poor naming)
+	 * Adds with presence assertion (add + assert = addert, poor naming)
 	 * 
 	 * @param column the column to be added
 	 * @param <O> column type
@@ -192,16 +193,58 @@ public class Table<SELF extends Table<SELF>> {
 		return this.addForeignKey(namingFunction.apply(column, targetColumn), column, targetColumn);
 	}
 	
+	/**
+	 * Adds a foreign key to this table.
+	 * May do nothing if a foreign key already exists with same name and columns.
+	 * Will throw an exception if a foreign key with same name but with different columns already exists.
+	 *
+	 * @param name column name
+	 * @param column source column
+	 * @param targetColumn referenced column
+	 * @param <T> referenced table type
+	 * @return the created foreign key or the existing one
+	 */
 	public <T extends Table<T>, I> ForeignKey addForeignKey(String name, Column<SELF, I> column, Column<T, I> targetColumn) {
-		ForeignKey<SELF, T> newForeignKey = new ForeignKey<>(name, column, targetColumn);
-		this.foreignKeys.add(newForeignKey);
-		return newForeignKey;
+		return addForeignKey(name, Collections.<Column<SELF, ?>>singletonList(column), Collections.<Column<T, ?>>singletonList(targetColumn));
 	}
 	
-	public <T extends Table<T>> ForeignKey addForeignKey(String name, List<Column<SELF, Object>> columns, List<Column<T, Object>> targetColumns) {
-		ForeignKey<SELF, T> newForeignKey = new ForeignKey<>(name, new LinkedHashSet<>(columns), new LinkedHashSet<>(targetColumns));
-		this.foreignKeys.add(newForeignKey);
-		return newForeignKey;
+	/**
+	 * Adds a foreign key to this table.
+	 * May do nothing if a foreign key already exists with same name and columns.
+	 * Will throw an exception if a foreign key with same name but with different columns already exists.
+	 *
+	 * @param name column name
+	 * @param columns source columns
+	 * @param targetColumns referenced columns
+	 * @param <T> referenced table type
+	 * @return the created foreign key or the existing one
+	 */
+	public <T extends Table<T>> ForeignKey addForeignKey(String name, List<? extends Column<SELF, ?>> columns, List<? extends Column<T, ?>> targetColumns) {
+		return addertForeignKey(new ForeignKey<>(name, new LinkedHashSet<>(columns), new LinkedHashSet<>(targetColumns)));
+	}
+	
+	/**
+	 * Adds with presence assertion (add + assert = addert, poor naming)
+	 *
+	 * @param foreignKey the column to be added
+	 * @param <T> target table type
+	 * @return given column
+	 */
+	private <T extends Table<T>> ForeignKey<SELF, T> addertForeignKey(ForeignKey<SELF, T> foreignKey) {
+		ForeignKey<SELF, T> existingForeignKey = (ForeignKey<SELF, T>) Iterables.find(this.foreignKeys, fk -> fk.getName().equals(foreignKey.getName()));
+		if (existingForeignKey != null
+				&& (!existingForeignKey.getColumns().equals(foreignKey.getColumns())
+				|| !existingForeignKey.getTargetColumns().equals(foreignKey.getTargetColumns()))
+		) {
+			throw new IllegalArgumentException("Trying to add a foreign key that already exists with different columns : "
+					+ foreignKey.getName() + " " + toString(existingForeignKey) + " vs " + toString(foreignKey));
+		}
+		if (existingForeignKey == null) {
+			this.foreignKeys.add(foreignKey);
+			return foreignKey;
+		} else {
+			return existingForeignKey;
+		}
 	}
 	
 	/**
@@ -232,7 +275,25 @@ public class Table<SELF extends Table<SELF>> {
 		return hashCode;
 	}
 	
-	private String toString(Column column) {
+	private static String toString(Column column) {
 		return Reflections.toString(column.getJavaType()) + (column.getSize() != null ? "(" + column.getSize() + ")" : "");
+	}
+	
+	private static String toString(ForeignKey column) {
+		StringAppender result = new StringAppender() {
+			@Override
+			public StringAppender cat(Object s) {
+				if (s instanceof Column) {
+					return super.cat(((Column) s).getAbsoluteName());
+				} else {
+					return super.cat(s);
+				}
+			}
+		};
+		result
+				.ccat(column.getColumns(), ", ")
+				.cat(" -> ")
+				.ccat(column.getTargetColumns(), ", ");
+		return result.toString();
 	}
 }

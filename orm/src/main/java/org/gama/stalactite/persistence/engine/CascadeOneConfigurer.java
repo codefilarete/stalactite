@@ -15,7 +15,6 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import org.gama.lang.Duo;
-import org.gama.lang.Nullable;
 import org.gama.lang.ThreadLocals;
 import org.gama.lang.collection.Iterables;
 import org.gama.lang.function.Predicates;
@@ -45,6 +44,7 @@ import org.gama.stalactite.persistence.engine.listening.SelectListener;
 import org.gama.stalactite.persistence.engine.listening.UpdateListener;
 import org.gama.stalactite.persistence.id.assembly.SimpleIdentifierAssembler;
 import org.gama.stalactite.persistence.mapping.IEntityMappingStrategy;
+import org.gama.stalactite.persistence.mapping.IMappingStrategy.ShadowColumnValueProvider;
 import org.gama.stalactite.persistence.mapping.IdMappingStrategy;
 import org.gama.stalactite.persistence.mapping.SinglePropertyIdAccessor;
 import org.gama.stalactite.persistence.sql.Dialect;
@@ -53,6 +53,7 @@ import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.sql.binder.NullAwareParameterBinder;
 import org.gama.stalactite.sql.binder.ParameterBinder;
 
+import static org.gama.lang.Nullable.nullable;
 import static org.gama.lang.function.Predicates.not;
 import static org.gama.stalactite.persistence.engine.CascadeOptions.RelationMode.ALL_ORPHAN_REMOVAL;
 import static org.gama.stalactite.persistence.engine.CascadeOptions.RelationMode.ASSOCIATION_ONLY;
@@ -118,7 +119,7 @@ public class CascadeOneConfigurer<SRC, TRGT, ID> {
 			
 			IEntityConfiguredPersister<TRGT, ID> targetPersister = targetPersisterBuilder
 					// please note that even if no table is found in configuration, build(..) will create one
-					.build(persistenceContext, Nullable.nullable(cascadeOne.getTargetTable()).getOr(Nullable.nullable(cascadeOne.getReverseColumn()).map(Column::getTable).get()));
+					.build(persistenceContext, nullable(cascadeOne.getTargetTable()).getOr(nullable(cascadeOne.getReverseColumn()).map(Column::getTable).get()));
 			IEntityMappingStrategy<TRGT, ID, ?> targetMappingStrategy = targetPersister.getMappingStrategy();
 			
 			// Finding joined columns
@@ -160,7 +161,7 @@ public class CascadeOneConfigurer<SRC, TRGT, ID> {
 		@SuppressWarnings("squid:S1172")	// argument targetPersister is used by subclasses
 		protected void addInsertCascade(CascadeOne<SRC, TRGT, ID> cascadeOne,
 										IEntityConfiguredPersister<TRGT, ID> targetPersister,
-										IPersisterListener<SRC, ID> srcPersisterListener) {
+										IEntityConfiguredJoinedTablesPersister<SRC, ID> srcPersisterListener) {
 			// if cascade is mandatory, then adding nullability checking before insert
 			if (!cascadeOne.isNullable()) {
 				srcPersisterListener.addInsertListener(new MandatoryRelationCheckingBeforeInsertListener<>(cascadeOne.getTargetProvider()));
@@ -168,7 +169,7 @@ public class CascadeOneConfigurer<SRC, TRGT, ID> {
 		}
 		
 		protected abstract void addUpdateCascade(CascadeOne<SRC, TRGT, ID> cascadeOne, IEntityConfiguredPersister<TRGT, ID> targetPersister,
-												 IPersisterListener<SRC, ID> srcPersisterListener, boolean orphanRemoval);
+												 IEntityConfiguredJoinedTablesPersister<SRC, ID> srcPersisterListener, boolean orphanRemoval);
 		
 		protected abstract void addDeleteCascade(CascadeOne<SRC, TRGT, ID> cascadeOne, IEntityConfiguredPersister<TRGT, ID> targetPersister,
 												 IPersisterListener<SRC, ID> srcPersisterListener, boolean orphanRemoval);
@@ -257,7 +258,7 @@ public class CascadeOneConfigurer<SRC, TRGT, ID> {
 		@Override
 		protected void addInsertCascade(CascadeOne<SRC, TRGT, ID> cascadeOne,
 										IEntityConfiguredPersister<TRGT, ID> targetPersister,
-										IPersisterListener<SRC, ID> srcPersisterListener) {
+										IEntityConfiguredJoinedTablesPersister<SRC, ID> srcPersisterListener) {
 			super.addInsertCascade(cascadeOne, targetPersister, srcPersisterListener);
 			// adding cascade treatment: before source insert, target is inserted to comply with foreign key constraint
 			srcPersisterListener.addInsertListener(new BeforeInsertSupport<>(targetPersister::persist, cascadeOne.getTargetProvider()::get, Objects::nonNull));
@@ -266,7 +267,7 @@ public class CascadeOneConfigurer<SRC, TRGT, ID> {
 		@Override
 		protected void addUpdateCascade(CascadeOne<SRC, TRGT, ID> cascadeOne,
 										IEntityConfiguredPersister<TRGT, ID> targetPersister,
-										IPersisterListener<SRC, ID> srcPersisterListener,
+										IEntityConfiguredJoinedTablesPersister<SRC, ID> srcPersisterListener,
 										boolean orphanRemoval) {
 			// if cascade is mandatory, then adding nullability checking before insert
 			if (!cascadeOne.isNullable()) {
@@ -342,7 +343,7 @@ public class CascadeOneConfigurer<SRC, TRGT, ID> {
 		// but shouldn't be kept, bad design but couldn't find another solution
 		private Function<TRGT, SRC> reverseGetter;
 		@SuppressWarnings("squid:S2259")
-		private Column rightColumn;
+		private Column<Table, SRC> rightColumn;
 		
 		private RelationOwnedByTargetConfigurer(PersistenceContext persistenceContext, PersisterBuilderImpl<TRGT, ID> targetPersisterBuilder) {
 			super(persistenceContext, targetPersisterBuilder);
@@ -430,17 +431,17 @@ public class CascadeOneConfigurer<SRC, TRGT, ID> {
 		@Override
 		protected void addInsertCascade(CascadeOne<SRC, TRGT, ID> cascadeOne,
 										IEntityConfiguredPersister<TRGT, ID> targetPersister,
-										IPersisterListener<SRC, ID> srcPersisterListener) {
+										IEntityConfiguredJoinedTablesPersister<SRC, ID> srcPersisterListener) {
 			super.addInsertCascade(cascadeOne, targetPersister, srcPersisterListener);
 			// adding cascade treatment: after source insert, target is inserted to comply with foreign key constraint
 			srcPersisterListener.addInsertListener(new AfterInsertSupport<>(targetPersister::persist, cascadeOne.getTargetProvider()::get, Objects::nonNull));
-			targetPersister.getMappingStrategy().addSilentColumnInserter(rightColumn, this.reverseGetter);
+			targetPersister.getMappingStrategy().addShadowColumnInsert(new ShadowColumnValueProvider<>(rightColumn, this.reverseGetter));
 		}
 		
 		@Override
 		protected void addUpdateCascade(CascadeOne<SRC, TRGT, ID> cascadeOne,
 										IEntityConfiguredPersister<TRGT, ID> targetPersister,
-										IPersisterListener<SRC, ID> srcPersisterListener,
+										IEntityConfiguredJoinedTablesPersister<SRC, ID> srcPersisterListener,
 										boolean orphanRemoval) {
 			// if cascade is mandatory, then adding nullability checking before insert
 			if (!cascadeOne.isNullable()) {
@@ -456,8 +457,8 @@ public class CascadeOneConfigurer<SRC, TRGT, ID> {
 					Predicates.predicate(Duo::getLeft, Predicates.<TRGT>predicate(Objects::nonNull).and(targetPersister.getMappingStrategy()::isNew))
 			));
 			
-			targetPersister.getMappingStrategy().addSilentColumnUpdater(rightColumn, trgt ->
-					foreignKeyValueProvider.get().getOrDefault(trgt, reverseGetter).apply(trgt));
+			targetPersister.getMappingStrategy().addShadowColumnUpdate(new ShadowColumnValueProvider<>(rightColumn, (TRGT trgt) ->
+					foreignKeyValueProvider.get().getOrDefault(trgt, reverseGetter).apply(trgt)));
 			
 			// - after source update, target is updated too
 			srcPersisterListener.addUpdateListener(new UpdateListener<SRC>() {

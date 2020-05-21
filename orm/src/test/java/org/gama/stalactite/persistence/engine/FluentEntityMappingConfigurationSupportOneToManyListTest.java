@@ -11,14 +11,11 @@ import java.util.Objects;
 
 import org.danekja.java.util.function.serializable.SerializableBiConsumer;
 import org.danekja.java.util.function.serializable.SerializableFunction;
+import org.gama.lang.Duo;
 import org.gama.lang.collection.Arrays;
 import org.gama.lang.collection.Iterables;
 import org.gama.lang.function.Predicates;
 import org.gama.lang.test.Assertions;
-import org.gama.stalactite.persistence.id.StatefullIdentifierAlreadyAssignedIdentifierPolicy;
-import org.gama.stalactite.sql.ConnectionProvider;
-import org.gama.stalactite.sql.binder.DefaultParameterBinders;
-import org.gama.stalactite.sql.test.HSQLDBInMemoryDataSource;
 import org.gama.stalactite.persistence.engine.IFluentEntityMappingBuilder.IFluentMappingBuilderPropertyOptions;
 import org.gama.stalactite.persistence.engine.PersistenceContext.ExecutableSelect;
 import org.gama.stalactite.persistence.engine.listening.UpdateListener;
@@ -26,11 +23,15 @@ import org.gama.stalactite.persistence.id.Identified;
 import org.gama.stalactite.persistence.id.Identifier;
 import org.gama.stalactite.persistence.id.PersistableIdentifier;
 import org.gama.stalactite.persistence.id.PersistedIdentifier;
+import org.gama.stalactite.persistence.id.StatefullIdentifierAlreadyAssignedIdentifierPolicy;
 import org.gama.stalactite.persistence.id.manager.StatefullIdentifier;
 import org.gama.stalactite.persistence.sql.Dialect;
 import org.gama.stalactite.persistence.sql.HSQLDBDialect;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
+import org.gama.stalactite.sql.ConnectionProvider;
+import org.gama.stalactite.sql.binder.DefaultParameterBinders;
+import org.gama.stalactite.sql.test.HSQLDBInMemoryDataSource;
 import org.gama.stalactite.test.JdbcConnectionProvider;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Nested;
@@ -47,7 +48,9 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.verify;
 
 /**
  * @author Guillaume Mary
@@ -156,7 +159,9 @@ class FluentEntityMappingConfigurationSupportOneToManyListTest {
 			
 			questionPersister.update(modifiedQuestion, newQuestion, true);
 			// No change on List so no call to listener
-			verifyNoMoreInteractions(updateListener);
+			verify(updateListener).beforeUpdate(argThat(argument ->
+					Iterables.collect(argument, Duo::getLeft, HashSet::new).equals(new HashSet<>(modifiedQuestion.getChoices()))
+					&& Iterables.collect(argument, Duo::getRight, HashSet::new).equals(new HashSet<>(newQuestion.getChoices()))), eq(true));
 			List<Result> persistedChoices = persistenceContext.newQuery(select(id, idx).from(choiceTable).orderBy(id), Result.class)
 					.mapKey(Result::new, id)
 					.map(idx, (SerializableBiConsumer<Result, Integer>) Result::setIdx)

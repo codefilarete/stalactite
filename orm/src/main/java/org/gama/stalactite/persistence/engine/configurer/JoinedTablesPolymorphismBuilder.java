@@ -143,7 +143,9 @@ abstract class JoinedTablesPolymorphismBuilder<C, I, T extends Table> implements
 					this.joinColumnNamingStrategy);
 		}
 		for (CascadeMany<D, ?, ?, ? extends Collection> cascadeMany : entityMappingConfiguration.getOneToManys()) {
-			CascadeManyConfigurer cascadeManyConfigurer = new CascadeManyConfigurer<>(persistenceContext, new PersisterBuilderImpl<>(cascadeMany.getTargetMappingConfiguration()));
+			CascadeManyConfigurer cascadeManyConfigurer = new CascadeManyConfigurer<>(persistenceContext, new PersisterBuilderImpl<>(cascadeMany.getTargetMappingConfiguration()))
+					// we must give primary key else reverse foreign key will target subclass table, which creates 2 fk in case of reuse of target persister
+					.setSourcePrimaryKey((Column) Iterables.first(mainPersister.getMainTable().getPrimaryKey().getColumns()));
 			cascadeManyConfigurer.appendCascade(cascadeMany, sourcePersister,
 					this.foreignKeyNamingStrategy,
 					this.joinColumnNamingStrategy,

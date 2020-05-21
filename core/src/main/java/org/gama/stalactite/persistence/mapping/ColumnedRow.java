@@ -51,7 +51,7 @@ public class ColumnedRow {
 			return (O) row.get(columnAlias);
 		} else {
 			// we raise an exception (instead of returning null) because we think current usage is wrong
-			throw new IllegalArgumentException("Column " + column + " is not mapped");
+			throw new IllegalArgumentException("Column " + column + " has no matching alias in result set");
 		}
 	}
 }
