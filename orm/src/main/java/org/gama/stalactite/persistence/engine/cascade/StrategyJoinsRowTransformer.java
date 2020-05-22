@@ -77,21 +77,20 @@ public class StrategyJoinsRowTransformer<C> {
 		EntityCacheWrapper entityCacheWrapper = new EntityCacheWrapper(entityCache);
 		
 		for (Row row : rows) {
-			// Algorithm : we iterate depth by depth the tree structure of the joins
-			// We start by the root of the hierarchy.
-			// We process the entity of the current depth, then process the direct relations, add those relations to the depth iterator
-			
-			Nullable<C> newInstance = transform(entityCacheWrapper, row);
+			Nullable<C> newInstance = transform(row, entityCacheWrapper);
 			newInstance.invoke(result::add);
 		}
 		return result;
 	}
 	
-	private Nullable<C> transform(EntityCacheWrapper entityCacheWrapper, Row row) {
+	private Nullable<C> transform(Row row, EntityCacheWrapper entityCacheWrapper) {
+		// Algorithm : we iterate depth by depth the tree structure of the joins
+		// We start by the root of the hierarchy.
+		// We process the entity of the current depth, then process the direct relations, add those relations to the depth iterator
 		Nullable<C> result = Nullable.empty();
 		ColumnedRow columnedRow = new ColumnedRow(aliasProvider);
-		Queue<StrategyJoins> stack = new ArrayDeque<>();
-		stack.add(rootStrategyJoins);
+		Queue<StrategyJoins<Object, ?>> stack = new ArrayDeque<>();
+		stack.add((StrategyJoins<Object, ?>) rootStrategyJoins);
 		// we use a local cache of bean tranformer because we'll ask a slide of them with aliasProvider which creates an instance at each invokation
 		Map<EntityInflater, AbstractTransformer> beanTransformerCache = new HashMap<>();
 		Object rowInstance = null;

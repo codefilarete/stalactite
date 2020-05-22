@@ -1,6 +1,5 @@
 package org.gama.stalactite.persistence.mapping;
 
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
@@ -24,8 +23,6 @@ import org.gama.stalactite.sql.result.Row;
 public class ToBeanRowTransformer<C> extends AbstractTransformer<C> {
 	
 	private final Map<Column, IMutator> columnToMember;
-	
-	private final Collection<TransformerListener<C>> rowTransformerListeners = new ArrayList<>();
 	
 	/**
 	 * A constructor that maps all fields of a class by name
@@ -74,25 +71,12 @@ public class ToBeanRowTransformer<C> extends AbstractTransformer<C> {
 	
 	protected ToBeanRowTransformer(Function<Function<Column, Object>, C> beanFactory, Map<Column, IMutator> columnToMember,
 								   ColumnedRow columnedRow, Collection<TransformerListener<C>> rowTransformerListeners) {
-		super(beanFactory, columnedRow);
+		super(beanFactory, columnedRow, rowTransformerListeners);
 		this.columnToMember = columnToMember;
-		this.rowTransformerListeners.addAll(rowTransformerListeners);
 	}
 	
 	public Map<Column, IMutator> getColumnToMember() {
 		return columnToMember;
-	}
-	
-	public Collection<TransformerListener<C>> getRowTransformerListeners() {
-		return rowTransformerListeners;
-	}
-	
-	/** Overriden to invoke tranformation listeners */
-	@Override
-	public C transform(Row row) {
-		C bean = super.transform(row);
-		this.rowTransformerListeners.forEach(listener -> listener.onTransform(bean, c-> getColumnedRow().getValue(c, row)));
-		return bean;
 	}
 	
 	@Override
@@ -120,32 +104,7 @@ public class ToBeanRowTransformer<C> extends AbstractTransformer<C> {
 				new HashMap<>(this.columnToMember),
 				columnedRow,
 				// listeners are given to the new instance because they may be interested in transforming rows of this one
-				rowTransformerListeners
+				getRowTransformerListeners()
 		);
-	}
-	
-	public void addTransformerListener(TransformerListener<C> listener) {
-		this.rowTransformerListeners.add(listener);
-	}
-	
-	/**
-	 * Small interface which instances will be invoked after row transformation, such as one can add any post-treatment to the bean row
-	 * @param <C> the row bean
-	 */
-	@FunctionalInterface
-	public interface TransformerListener<C> {
-		
-		/**
-		 * Method invoked for each read row after all transformations made by a {@link ToBeanRowTransformer} on a bean, so the bean is considered
-		 * "complete".
-		 * 
-		 * @param c current row bean, may be dfferent from row to row depending on bean instanciation policy of bean factory given
-		 * 		to {@link ToBeanRowTransformer} at construction time 
-		 * @param rowValueProvider a function that let one read a value from current row without exposing internal mecanism of row reading.
-		 *  Input is a {@link Column} because it is safer than a simple column name because {@link ToBeanRowTransformer} can be copied with
-		 *  different aliases making mistach when value is read from name.
-		 */
-		void onTransform(C c, Function<Column, Object> rowValueProvider);
-		
 	}
 }

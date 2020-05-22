@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -11,8 +12,10 @@ import java.util.stream.Collectors;
 import org.danekja.java.util.function.serializable.SerializableBiConsumer;
 import org.danekja.java.util.function.serializable.SerializableFunction;
 import org.gama.lang.Duo;
+import org.gama.lang.Experimental;
 import org.gama.lang.collection.Iterables;
 import org.gama.lang.collection.Maps;
+import org.gama.lang.collection.PairIterator;
 import org.gama.stalactite.persistence.engine.listening.IPersisterListener;
 import org.gama.stalactite.query.model.AbstractRelationalOperator;
 
@@ -97,6 +100,40 @@ public interface IEntityPersister<C, I> extends IInsertExecutor<C>, IUpdateExecu
 	}
 	
 	/**
+	 * Updates given entity in database according to following mecanism : it selects the existing data in database, then compares it with given
+	 * entity in memory, and then updates database if necessary (nothing if no change was made).
+	 *
+	 * @param entity the entity to be updated
+	 * @return the number of updated rows : 1 if entity needed to be updated, 0 if not
+	 */
+	@Experimental
+	default int update(C entity) {
+		return update(entity, select(getId(entity)), true);
+	}
+	
+	/**
+	 * Updates given entities in database according to following mecanism : it selects the existing data in database, then compares it with given
+	 * entities in memory, and then updates database if necessary (nothing if no change was made).
+	 * To be used for CRUD use case.
+	 *
+	 * @param entities the entities to be updated
+	 * @return the number of updated rows : 0 if no entities were updated, maximum is number of given entities 
+	 */
+	@Experimental
+	default int update(Iterable<C> entities) {
+		List<I> ids = Iterables.collect(entities, this::getId, ArrayList::new);
+		return update(() -> new PairIterator<>(entities, select(ids)), true);
+	}
+	
+	@Experimental
+	default int update(I id, Consumer<C> entityConsumer) {
+		C unmodified = select(id);
+		C modified = select(id);
+		entityConsumer.accept(modified);
+		return update(modified, unmodified, true);
+	}
+	
+	/**
 	 * Deletes instances.
 	 * Takes optimistic lock into account.
 	 *
@@ -150,6 +187,8 @@ public interface IEntityPersister<C, I> extends IInsertExecutor<C>, IUpdateExecu
 	List<C> selectAll();
 	
 	boolean isNew(C entity);
+	
+	I getId(C entity);
 	
 	Class<C> getClassToPersist();
 	

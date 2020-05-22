@@ -376,6 +376,11 @@ public class Persister<C, I, T extends Table> implements IEntityPersister<C, I>,
 	}
 	
 	@Override
+	public I getId(C entity) {
+		return mappingStrategy.getId(entity);
+	}
+	
+	@Override
 	public List<C> select(Iterable<I> ids) {
 		if (Iterables.isEmpty(ids)) {
 			return new ArrayList<>();
