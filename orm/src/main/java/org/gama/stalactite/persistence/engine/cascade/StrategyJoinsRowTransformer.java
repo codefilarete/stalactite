@@ -9,6 +9,7 @@ import java.util.Queue;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
+import com.google.common.annotations.VisibleForTesting;
 import org.gama.lang.Nullable;
 import org.gama.lang.Reflections;
 import org.gama.stalactite.persistence.engine.cascade.StrategyJoins.MergeJoin;
@@ -28,40 +29,35 @@ import org.gama.stalactite.sql.result.Row;
  */
 public class StrategyJoinsRowTransformer<C> {
 	
-	/**
-	 * Default alias provider between strategy columns and their names in {@link java.sql.ResultSet}
-	 * Used when transforming {@link Row} to beans.
-	 * By default it is {@link Column#getAlias()} (which is hardly used at runtime because of joined columns naming strategy)
-	 */
-	public static final Function<Column, String> DEFAULT_ALIAS_PROVIDER = Column::getAlias;
-	
 	private final StrategyJoins<C, ?> rootStrategyJoins;
-	private Function<Column, String> aliasProvider = DEFAULT_ALIAS_PROVIDER;
 	
-	public StrategyJoinsRowTransformer(StrategyJoins<C, ?> rootStrategyJoins) {
-		this.rootStrategyJoins = rootStrategyJoins;
-	}
-	
-	public StrategyJoinsRowTransformer(StrategyJoins<C, ?> rootStrategyJoins, Function<Column, String> aliasProvider) {
-		this.rootStrategyJoins = rootStrategyJoins;
-		this.aliasProvider = aliasProvider;
-	}
-	
-
 	/**
+	 * Alias provider between strategy columns and their names in {@link java.sql.ResultSet}. Used when transforming {@link Row} to beans.
+	 */
+	private final ColumnedRow columnedRow;
+	
+	/**
+	 * Constructor that links the instance to given {@link JoinedStrategiesSelect}
 	 * 
-	 * @return the alias provider to be used to find {@link Column} values in rows of {@link #transform(Iterable, int, Map)} 
+	 * @param joinedStrategiesSelect the associated select maintener
 	 */
-	public Function<Column, String> getAliasProvider() {
-		return aliasProvider;
+	public StrategyJoinsRowTransformer(JoinedStrategiesSelect<C, ?, ?> joinedStrategiesSelect) {
+		// aliases are computed on select build (done by JoinedStrategiesSelect) so we take it with a very dynamic alias provider by using
+		// a Function on JoinedStrategiesSelect
+		this(joinedStrategiesSelect.getJoinsRoot(), joinedStrategiesSelect::getAlias);
+	}
+	
+	@VisibleForTesting
+	protected StrategyJoinsRowTransformer(StrategyJoins<C, ?> rootStrategyJoins, Function<Column, String> aliasProvider) {
+		this.rootStrategyJoins = rootStrategyJoins;
+		this.columnedRow = new ColumnedRow(aliasProvider);
 	}
 	
 	/**
-	 * Changes the alias provider (default is {@link Column#getAlias()}) by giving the map between {@link Column} and their alias.
-	 * @param aliasProvider mapper between {@link Column} and their alias in the Rows of {@link #transform(Iterable, int, Map)}
+	 * @return the alias provider to use to find {@link Column} values in rows of {@link #transform(Iterable, int, Map)}
 	 */
-	public void setAliasProvider(Function<Column, String> aliasProvider) {
-		this.aliasProvider = aliasProvider;
+	public ColumnedRow getColumnedRow() {
+		return columnedRow;
 	}
 	
 	/**
@@ -73,26 +69,29 @@ public class StrategyJoinsRowTransformer<C> {
 	 * @return a list of root beans, built from given rows by asking internal strategy joins to instanciate and complete them
 	 */
 	public List<C> transform(Iterable<Row> rows, int resultSize, Map<Class, Map<Object /* identifier */, Object /* entity */>> entityCache) {
-		List<C> result = new ArrayList<>(resultSize);
 		EntityCacheWrapper entityCacheWrapper = new EntityCacheWrapper(entityCache);
+		TransformerCache beanTransformerCache = new TransformerCacheWrapper(new HashMap<>());
 		
+		return transform(rows, resultSize, entityCacheWrapper, beanTransformerCache);
+	}
+	
+	private List<C> transform(Iterable<Row> rows, int resultSize, EntityCacheWrapper entityCacheWrapper, TransformerCache beanTransformerCache) {
+		List<C> result = new ArrayList<>(resultSize);
 		for (Row row : rows) {
-			Nullable<C> newInstance = transform(row, entityCacheWrapper);
+			Nullable<C> newInstance = transform(row, entityCacheWrapper, beanTransformerCache);
 			newInstance.invoke(result::add);
 		}
 		return result;
 	}
 	
-	private Nullable<C> transform(Row row, EntityCacheWrapper entityCacheWrapper) {
+	private Nullable<C> transform(Row row, EntityCacheWrapper entityCacheWrapper, TransformerCache beanTransformerCache) {
 		// Algorithm : we iterate depth by depth the tree structure of the joins
 		// We start by the root of the hierarchy.
 		// We process the entity of the current depth, then process the direct relations, add those relations to the depth iterator
 		Nullable<C> result = Nullable.empty();
-		ColumnedRow columnedRow = new ColumnedRow(aliasProvider);
 		Queue<StrategyJoins<Object, ?>> stack = new ArrayDeque<>();
 		stack.add((StrategyJoins<Object, ?>) rootStrategyJoins);
 		// we use a local cache of bean tranformer because we'll ask a slide of them with aliasProvider which creates an instance at each invokation
-		Map<EntityInflater, AbstractTransformer> beanTransformerCache = new HashMap<>();
 		Object rowInstance = null;
 		while (!stack.isEmpty()) {
 			
@@ -101,8 +100,7 @@ public class StrategyJoinsRowTransformer<C> {
 			EntityInflater<Object, Object> leftStrategy = strategyJoins.getStrategy();
 			
 			if (leftStrategy != null) {	// null when join is passive
-				AbstractTransformer mainRowTransformer = beanTransformerCache.computeIfAbsent(leftStrategy,
-						s -> s.copyTransformerWithAliases(columnedRow));
+				AbstractTransformer mainRowTransformer = beanTransformerCache.computeIfAbsent(leftStrategy, columnedRow);
 				Object identifier = leftStrategy.giveIdentifier(row, columnedRow);
 				
 				rowInstance = entityCacheWrapper.computeIfAbsent(leftStrategy.getEntityType(), identifier, () -> {
@@ -124,7 +122,7 @@ public class StrategyJoinsRowTransformer<C> {
 					}
 				} else {
 					EntityInflater rightStrategy = subJoins.getStrategy();
-					AbstractTransformer rowTransformer = beanTransformerCache.computeIfAbsent(rightStrategy, s -> s.copyTransformerWithAliases(columnedRow));
+					AbstractTransformer rowTransformer = beanTransformerCache.computeIfAbsent(rightStrategy, columnedRow);
 					if (join instanceof MergeJoin) {
 						rowTransformer.applyRowToBean(row, rowInstance);
 						// Adds the right strategy for further processing if it has some more joins so they'll also be taken into account
@@ -172,7 +170,7 @@ public class StrategyJoinsRowTransformer<C> {
 		}
 		
 		/**
-		 * Main class that tries to retrieve an entity by its class and identifier or instanciates it and put it into the cache
+		 * Main method that tries to retrieve an entity by its class and identifier or instanciates it and put it into the cache
 		 * 
 		 * @param clazz the type of the entity
 		 * @param identifier the identifier of the entity (Long, String, ...)
@@ -182,6 +180,36 @@ public class StrategyJoinsRowTransformer<C> {
 		public <C> C computeIfAbsent(Class<C> clazz, Object identifier, Supplier<C> factory) {
 			Map<Object, Object> classInstanceCacheByIdentifier = entityCache.computeIfAbsent(clazz, k -> new HashMap<>());
 			return (C) classInstanceCacheByIdentifier.computeIfAbsent(identifier, k -> factory.get());
+		}
+	}
+	
+	@FunctionalInterface
+	public interface TransformerCache {
+		
+		<C> AbstractTransformer<C> computeIfAbsent(EntityInflater<C, ?> entityInflater, ColumnedRow columnedRow);
+	}
+	
+	/**
+	 * Simple class to ease access or creation to entity from the cache
+	 * @see #computeIfAbsent(EntityInflater, ColumnedRow)  
+	 */
+	public static final class TransformerCacheWrapper implements TransformerCache {
+		
+		private final Map<EntityInflater, AbstractTransformer> entityCache;
+		
+		public TransformerCacheWrapper(Map<EntityInflater, AbstractTransformer> entityCache) {
+			this.entityCache = entityCache;
+		}
+		
+		/**
+		 * Main method that tries to retrieve an entity by its class and identifier or instanciates it and put it into the cache
+		 * 
+		 * @param entityInflater the type of the entity
+		 * @param columnedRow the identifier of the entity (Long, String, ...)
+		 * @return the existing instance in the cache or a new object
+		 */
+		public <C> AbstractTransformer<C> computeIfAbsent(EntityInflater<C, ?> entityInflater, ColumnedRow columnedRow) {
+			return entityCache.computeIfAbsent(entityInflater, inflater -> inflater.copyTransformerWithAliases(columnedRow));
 		}
 	}
 	

@@ -23,7 +23,6 @@ import org.gama.stalactite.sql.dml.SQLExecutionException;
 import org.gama.stalactite.sql.result.Row;
 import org.gama.stalactite.sql.result.RowIterator;
 
-import static org.gama.stalactite.persistence.engine.cascade.JoinedStrategiesSelect.ROOT_STRATEGY_NAME;
 import static org.gama.stalactite.query.model.Operators.in;
 
 /**
@@ -52,7 +51,7 @@ public class EntitySelectExecutor<C, I, T extends Table> implements IEntitySelec
 	public EntitySelectExecutor(JoinedStrategiesSelect<C, I, T> joinedStrategiesSelect,
 								ConnectionProvider connectionProvider,
 								ColumnBinderRegistry columnBinderRegistry) {
-		this(joinedStrategiesSelect, connectionProvider, columnBinderRegistry, new StrategyJoinsRowTransformer<>(joinedStrategiesSelect.getStrategyJoins(ROOT_STRATEGY_NAME)));
+		this(joinedStrategiesSelect, connectionProvider, columnBinderRegistry, new StrategyJoinsRowTransformer<>(joinedStrategiesSelect));
 	}
 	
 	public EntitySelectExecutor(JoinedStrategiesSelect<C, I, T> joinedStrategiesSelect,
@@ -63,7 +62,6 @@ public class EntitySelectExecutor<C, I, T extends Table> implements IEntitySelec
 		this.connectionProvider = connectionProvider;
 		this.parameterBinderProvider = columnBinderRegistry;
 		this.rowTransformer = rowTransformer;
-		this.rowTransformer.setAliasProvider(this.joinedStrategiesSelect::getAlias);
 	}
 	
 	/**

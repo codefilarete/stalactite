@@ -66,11 +66,12 @@ public class StrategyJoinsRowTransformerTest {
 	public void testTransform_with1strategy() {
 		when(rootStrategy.copyTransformerWithAliases(any())).thenAnswer(new ToBeanRowTransformerAnswer<>(Toto.class, totoTable));
 		
-		StrategyJoinsRowTransformer testInstance = new StrategyJoinsRowTransformer(new StrategyJoins<>(rootStrategy));
+		Function<Column, String> aliasProvider = Column::getAlias;
+		StrategyJoinsRowTransformer<Toto> testInstance = new StrategyJoinsRowTransformer<>(new StrategyJoins<>(rootStrategy), aliasProvider);
 		Row row1 = buildRow(
 				Maps.asMap(totoColumnId, (Object) 1L)
 						.add(totoColumnName, "toto"),
-				testInstance.getAliasProvider());
+				aliasProvider);
 		List result = testInstance.transform(Arrays.asList(row1), 1, new HashMap<>());
 		
 		Object firstObject = Iterables.first(result);
@@ -109,13 +110,14 @@ public class StrategyJoinsRowTransformerTest {
 		when(rootStrategy.copyTransformerWithAliases(any())).thenAnswer(new ToBeanRowTransformerAnswer<>(Toto.class, totoTable));
 		when(joinedStrategy.copyTransformerWithAliases(any())).thenAnswer(new ToBeanRowTransformerAnswer<>(Tata.class, tataTable));
 		
-		StrategyJoinsRowTransformer<Toto> testInstance = new StrategyJoinsRowTransformer<>(rootStrategyJoins);
+		Function<Column, String> aliasProvider = Column::getAlias;
+		StrategyJoinsRowTransformer<Toto> testInstance = new StrategyJoinsRowTransformer<>(rootStrategyJoins, aliasProvider);
 		Row row1 = buildRow(
 				Maps.asMap(totoColumnId, (Object) 1L)
 						.add(totoColumnName, "toto")
 						.add(tataColumnId, 1L)
 						.add(tataColumnFirstName, "tata"),
-				testInstance.getAliasProvider());
+				aliasProvider);
 		List result = testInstance.transform(Arrays.asList(row1), 1, new HashMap<>());
 		
 		Object firstObject = Iterables.first(result);
@@ -170,7 +172,8 @@ public class StrategyJoinsRowTransformerTest {
 		when(joinedStrategy1.copyTransformerWithAliases(any())).thenAnswer(new ToBeanRowTransformerAnswer<>(Tata.class, tataTable));
 		when(joinedStrategy2.copyTransformerWithAliases(any())).thenAnswer(new ToBeanRowTransformerAnswer<>(Titi.class, titiTable));
 		
-		StrategyJoinsRowTransformer testInstance = new StrategyJoinsRowTransformer(rootStrategyJoins);
+		Function<Column, String> aliasProvider = Column::getAlias;
+		StrategyJoinsRowTransformer<Toto> testInstance = new StrategyJoinsRowTransformer<>(rootStrategyJoins, aliasProvider);
 		Row row = buildRow(
 				Maps.asMap(totoColumnId, (Object) 1L)
 						.add(totoColumnName, "toto")
@@ -178,7 +181,7 @@ public class StrategyJoinsRowTransformerTest {
 						.add(tataColumnFirstName, "tata")
 						.add(titiColumnId, 1L)
 						.add(titiColumnLastName, "titi"),
-				testInstance.getAliasProvider());
+				aliasProvider);
 		List result = testInstance.transform(Arrays.asList(row), 1, new HashMap<>());
 		
 		Object firstObject = Iterables.first(result);
@@ -235,7 +238,8 @@ public class StrategyJoinsRowTransformerTest {
 		when(joinedStrategy1.copyTransformerWithAliases(any())).thenAnswer(new ToBeanRowTransformerAnswer<>(Tata.class, tataTable));
 		when(joinedStrategy2.copyTransformerWithAliases(any())).thenAnswer(new ToBeanRowTransformerAnswer<>(Titi.class, titiTable));
 		
-		StrategyJoinsRowTransformer testInstance = new StrategyJoinsRowTransformer(rootStrategyJoins);
+		Function<Column, String> aliasProvider = Column::getAlias;
+		StrategyJoinsRowTransformer<Toto> testInstance = new StrategyJoinsRowTransformer<>(rootStrategyJoins, aliasProvider);
 		Row row = buildRow(
 				Maps.asMap(totoColumnId, (Object) 1L)
 						.add(totoColumnName, "toto")
@@ -243,7 +247,7 @@ public class StrategyJoinsRowTransformerTest {
 						.add(tataColumnFirstName, "tata")
 						.add(titiColumnId, 1L)
 						.add(titiColumnLastName, "titi"),
-				testInstance.getAliasProvider());
+				aliasProvider);
 		List result = testInstance.transform(Arrays.asList(row), 1, new HashMap<>());
 		
 		Object firstObject = Iterables.first(result);
@@ -289,20 +293,21 @@ public class StrategyJoinsRowTransformerTest {
 		when(rootStrategy.copyTransformerWithAliases(any())).thenAnswer(new ToBeanRowTransformerAnswer<>(Toto.class, totoTable));
 		when(joinedStrategy.copyTransformerWithAliases(any())).thenAnswer(new ToBeanRowTransformerAnswer<>(Tata.class, tataTable));
 		
-		StrategyJoinsRowTransformer testInstance = new StrategyJoinsRowTransformer(rootStrategyJoins);
+		Function<Column, String> aliasProvider = Column::getAlias;
+		StrategyJoinsRowTransformer<Toto> testInstance = new StrategyJoinsRowTransformer<>(rootStrategyJoins, aliasProvider);
 		
 		Row row1 = buildRow(
 				Maps.asMap(totoColumnId, (Object) 1L)
 						.add(totoColumnName, "toto")
 						.add(tataColumnId, 1L)
 						.add(tataColumnFirstName, "tata1"),
-				testInstance.getAliasProvider());
+				aliasProvider);
 		Row row2 = buildRow(
 				Maps.asMap(totoColumnId, (Object) 1L)
 						.add(totoColumnName, "we don't care")
 						.add(tataColumnId, 2L)
 						.add(tataColumnFirstName, "tata2"),
-				testInstance.getAliasProvider());
+				aliasProvider);
 		List<Toto> result = testInstance.transform(Arrays.asList(row1, row2), 1, new HashMap<>());
 		
 		assertEquals(1, result.size());
@@ -344,16 +349,14 @@ public class StrategyJoinsRowTransformerTest {
 		when(rootStrategy.copyTransformerWithAliases(any())).thenAnswer(new ToBeanRowTransformerAnswer<>(Toto.class, totoTable));
 		when(joinedStrategy.copyTransformerWithAliases(any())).thenAnswer(new ToBeanRowTransformerAnswer<>(Toto.class, totoTable2));
 		
-		StrategyJoinsRowTransformer<Toto> testInstance = new StrategyJoinsRowTransformer<>(rootStrategyJoins);
-		
-		Function<Column, String> aliasGenerator = c -> (c.getTable() == totoTable ? "table1_" : "table2_") + c.getName();
 		// we give the aliases to our test instance
+		Function<Column, String> aliasGenerator = c -> (c.getTable() == totoTable ? "table1_" : "table2_") + c.getName();
 		Comparator<Column> columnComparator = (c1, c2) -> aliasGenerator.apply(c1).compareToIgnoreCase(aliasGenerator.apply(c2));
 		Map<Column, String> aliases = Maps.asComparingMap(columnComparator, totoColumnId, aliasGenerator.apply(totoColumnId))
 				.add(totoColumnName, aliasGenerator.apply(totoColumnName))
 				.add(toto2ColumnId, aliasGenerator.apply(toto2ColumnId))
 				.add(toto2ColumnName, aliasGenerator.apply(toto2ColumnName));
-		testInstance.setAliasProvider(aliases::get);
+		StrategyJoinsRowTransformer<Toto> testInstance = new StrategyJoinsRowTransformer<>(rootStrategyJoins, aliases::get);
 		// the row must math the aliases given to the instance
 		Row row = buildRow(
 				Maps.asComparingMap(columnComparator, totoColumnId, (Object) 1L)
