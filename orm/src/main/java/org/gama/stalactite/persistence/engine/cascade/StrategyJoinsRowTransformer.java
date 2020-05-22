@@ -12,7 +12,9 @@ import java.util.function.Supplier;
 import com.google.common.annotations.VisibleForTesting;
 import org.gama.lang.Nullable;
 import org.gama.lang.Reflections;
+import org.gama.stalactite.persistence.engine.BeanRelationFixer;
 import org.gama.stalactite.persistence.engine.cascade.StrategyJoins.MergeJoin;
+import org.gama.stalactite.persistence.engine.cascade.StrategyJoins.PassiveJoin;
 import org.gama.stalactite.persistence.engine.cascade.StrategyJoins.RelationJoin;
 import org.gama.stalactite.persistence.mapping.AbstractTransformer;
 import org.gama.stalactite.persistence.mapping.ColumnedRow;
@@ -96,65 +98,82 @@ public class StrategyJoinsRowTransformer<C> {
 		while (!stack.isEmpty()) {
 			
 			// treating the current depth
-			StrategyJoins<Object, ?> strategyJoins = stack.poll();
-			EntityInflater<Object, Object> leftStrategy = strategyJoins.getStrategy();
+			StrategyJoins<Object, ?> currentMainStrategy = stack.poll();
 			
-			if (leftStrategy != null) {	// null when join is passive
-				AbstractTransformer mainRowTransformer = beanTransformerCache.computeIfAbsent(leftStrategy, columnedRow);
-				Object identifier = leftStrategy.giveIdentifier(row, columnedRow);
-				
-				rowInstance = entityCacheWrapper.computeIfAbsent(leftStrategy.getEntityType(), identifier, () -> {
-					Object newInstance = mainRowTransformer.transform(row);
-					if (strategyJoins == rootStrategyJoins) {
-						result.elseSet((C) newInstance);
-					}
-					return newInstance;
-				});
+			if (currentMainStrategy.getStrategy() != null) {	// null when join is passive
+				rowInstance = giveRowInstance(row, currentMainStrategy, entityCacheWrapper, beanTransformerCache, result);
 			}
 			
 			// processing the direct relations
-			for (AbstractJoin join : strategyJoins.getJoins()) {
+			for (AbstractJoin join : currentMainStrategy.getJoins()) {
 				StrategyJoins subJoins = join.getStrategy();
-				if (join instanceof StrategyJoins.PassiveJoin) {
+				if (join instanceof PassiveJoin) {
 					// Adds the right strategy for further processing if it has some more joins so they'll also be taken into account
-					if (!subJoins.getJoins().isEmpty()) {
-						stack.add(subJoins);
+					addJoinsToStack(subJoins, stack);
+				} else if (join instanceof MergeJoin) {
+					AbstractTransformer rowTransformer = beanTransformerCache.computeIfAbsent(subJoins.getStrategy(), columnedRow);
+					rowTransformer.applyRowToBean(row, rowInstance);
+					// Adds the right strategy for further processing if it has some more joins so they'll also be taken into account
+					addJoinsToStack(subJoins, stack);
+				} else if (join instanceof RelationJoin) {
+					boolean relationApplied = applyRelatedBean(row, rowInstance, ((RelationJoin) join).getBeanRelationFixer(),
+							subJoins.getStrategy(),
+							entityCacheWrapper, beanTransformerCache);
+					// Adds the right strategy for further processing if it has some more joins so they'll also be taken into account
+					if (relationApplied) {
+						addJoinsToStack(subJoins, stack);
 					}
 				} else {
-					EntityInflater rightStrategy = subJoins.getStrategy();
-					AbstractTransformer rowTransformer = beanTransformerCache.computeIfAbsent(rightStrategy, columnedRow);
-					if (join instanceof MergeJoin) {
-						rowTransformer.applyRowToBean(row, rowInstance);
-						// Adds the right strategy for further processing if it has some more joins so they'll also be taken into account
-						if (!subJoins.getJoins().isEmpty()) {
-							stack.add(subJoins);
-						}
-					} else if (join instanceof RelationJoin) {
-						
-						Object rightIdentifier = rightStrategy.giveIdentifier(row, columnedRow);
-						
-						// primary key null means no entity => nothing to do
-						if (rightIdentifier != null) {
-							Object rightInstance = entityCacheWrapper.computeIfAbsent(rightStrategy.getEntityType(), rightIdentifier,
-									() -> rowTransformer.transform(row));
-							
-							((RelationJoin) join).getBeanRelationFixer().apply(rowInstance, rightInstance);
-							
-							// Adds the right strategy for further processing if it has some more joins so they'll also be taken into account
-							if (!subJoins.getJoins().isEmpty()) {
-								stack.add(subJoins);
-							}
-						}
-					} else {
-						// Developer made something wrong because other types than MergeJoin and RelationJoin are not expected
-						throw new IllegalArgumentException("Unexpected join type, only "
-								+ Reflections.toString(MergeJoin.class) + " and " + Reflections.toString(RelationJoin.class) + " are handled"
-								+ ", not " + Reflections.toString(join.getClass()));
-					}
+					// Developer made something wrong because other types than MergeJoin and RelationJoin are not expected
+					throw new IllegalArgumentException("Unexpected join type, only "
+							+ Reflections.toString(MergeJoin.class) + " and " + Reflections.toString(RelationJoin.class) + " are handled"
+							+ ", not " + Reflections.toString(join.getClass()));
 				}
 			}
 		}
 		return result;
+	}
+	
+	private void addJoinsToStack(StrategyJoins joins, Queue<StrategyJoins<Object, ?>> stack) {
+		if (!joins.getJoins().isEmpty()) {
+			stack.add(joins);
+		}
+	}
+	
+	private Object giveRowInstance(Row row,
+								   StrategyJoins<Object, ?> strategyJoins,
+								   EntityCacheWrapper entityCacheWrapper,
+								   TransformerCache beanTransformerCache,
+								   Nullable<C> rootBeanHolder) {
+		EntityInflater<Object, Object> entityInflater = strategyJoins.getStrategy();
+		AbstractTransformer rowTransformer = beanTransformerCache.computeIfAbsent(entityInflater, columnedRow);
+		Object identifier = entityInflater.giveIdentifier(row, columnedRow);
+		return entityCacheWrapper.computeIfAbsent(entityInflater.getEntityType(), identifier, () -> {
+				Object newInstance = rowTransformer.transform(row);
+				if (strategyJoins == rootStrategyJoins) {
+					rootBeanHolder.elseSet((C) newInstance);
+				}
+				return newInstance;
+			});
+	}
+	
+	private boolean applyRelatedBean(Row row,
+									 Object rowInstance,
+									 BeanRelationFixer beanRelationFixer,
+									 EntityInflater entityInflater,
+									 EntityCacheWrapper entityCacheWrapper,
+									 TransformerCache beanTransformerCache) {
+		Object rightIdentifier = entityInflater.giveIdentifier(row, columnedRow);
+		// primary key null means no entity => nothing to do
+		if (rightIdentifier != null) {
+			AbstractTransformer rowTransformer = beanTransformerCache.computeIfAbsent(entityInflater, columnedRow);
+			Object rightInstance = entityCacheWrapper.computeIfAbsent(entityInflater.getEntityType(), rightIdentifier,
+					() -> rowTransformer.transform(row));
+			
+			beanRelationFixer.apply(rowInstance, rightInstance);
+			return true;
+		}
+		return false;
 	}
 	
 	/**
