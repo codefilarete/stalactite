@@ -12,6 +12,7 @@ import java.util.function.Supplier;
 import com.google.common.annotations.VisibleForTesting;
 import org.gama.lang.Nullable;
 import org.gama.lang.Reflections;
+import org.gama.lang.ThreadLocals;
 import org.gama.stalactite.persistence.engine.BeanRelationFixer;
 import org.gama.stalactite.persistence.engine.cascade.EntityMappingStrategyTree.MergeJoin;
 import org.gama.stalactite.persistence.engine.cascade.EntityMappingStrategyTree.PassiveJoin;
@@ -24,12 +25,14 @@ import org.gama.stalactite.sql.result.Row;
 /**
  * Tranformer of a graph of joins to a graph of entities.
  * 
- * Non Thread-safe : contains a cache of beans being loaded.
- * 
  * @param <C> type of generated beans
  * @author Guillaume Mary
  */
 public class EntityMappingStrategyTreeRowTransformer<C> {
+	
+	public static final ThreadLocal<EntityCache> CURRENT_ENTITY_CACHE = new ThreadLocal<>();
+	
+	public static final ThreadLocal<TransformerCache> TRANSFORMER_CACHE = new ThreadLocal<>();
 	
 	private final EntityMappingStrategyTree<C, ?> rootEntityMappingStrategyTree;
 	
@@ -56,7 +59,7 @@ public class EntityMappingStrategyTreeRowTransformer<C> {
 	}
 	
 	/**
-	 * @return the alias provider to find {@link Column} values in rows of {@link #transform(Iterable, int, Map)}
+	 * @return the alias provider to find {@link Column} values in rows of {@link #transform(Iterable, int)}
 	 */
 	public ColumnedRow getColumnedRow() {
 		return columnedRow;
@@ -66,27 +69,26 @@ public class EntityMappingStrategyTreeRowTransformer<C> {
 	 * 
 	 * @param rows rows (coming from database select) to be read to build beans graph
 	 * @param resultSize expected reuslt size, only for resulting list optimization
-	 * @param entityCache used for filling relations by getting beans them from it instead of creating clones. Will be filled by newly created entity.
-	 * 					  Can be used to set a bigger cache coming from a wider scope. 
 	 * @return a list of root beans, built from given rows by asking internal strategy joins to instanciate and complete them
 	 */
-	public List<C> transform(Iterable<Row> rows, int resultSize, Map<Class, Map<Object /* identifier */, Object /* entity */>> entityCache) {
-		EntityCacheWrapper entityCacheWrapper = new EntityCacheWrapper(entityCache);
-		TransformerCache beanTransformerCache = new TransformerCacheWrapper(new HashMap<>());
-		
-		return transform(rows, resultSize, entityCacheWrapper, beanTransformerCache);
+	public List<C> transform(Iterable<Row> rows, int resultSize) {
+		return ThreadLocals.doWithThreadLocal(CURRENT_ENTITY_CACHE, BasicEntityCache::new, (Function<EntityCache, List<C>>) entityCache ->
+			ThreadLocals.doWithThreadLocal(TRANSFORMER_CACHE, BasicTransformerCache::new, (Function<TransformerCache, List<C>>) transformerCache ->
+				transform(rows, resultSize, entityCache, transformerCache)
+			)
+		);
 	}
 	
-	private List<C> transform(Iterable<Row> rows, int resultSize, EntityCacheWrapper entityCacheWrapper, TransformerCache beanTransformerCache) {
+	private List<C> transform(Iterable<Row> rows, int resultSize, EntityCache entityCache, TransformerCache transformerCache) {
 		List<C> result = new ArrayList<>(resultSize);
 		for (Row row : rows) {
-			Nullable<C> newInstance = transform(row, entityCacheWrapper, beanTransformerCache);
+			Nullable<C> newInstance = transform(row, entityCache, transformerCache);
 			newInstance.invoke(result::add);
 		}
 		return result;
 	}
 	
-	private Nullable<C> transform(Row row, EntityCacheWrapper entityCacheWrapper, TransformerCache beanTransformerCache) {
+	private Nullable<C> transform(Row row, EntityCache entityCache, TransformerCache beanTransformerCache) {
 		// Algorithm : we iterate depth by depth the tree structure of the joins
 		// We start by the root of the hierarchy.
 		// We process the entity of the current depth, then process the direct relations, add those relations to the depth iterator
@@ -101,7 +103,7 @@ public class EntityMappingStrategyTreeRowTransformer<C> {
 			EntityMappingStrategyTree<Object, ?> currentMainStrategy = stack.poll();
 			
 			if (currentMainStrategy.getStrategy() != null) {	// null when join is passive
-				rowInstance = giveRowInstance(row, currentMainStrategy, entityCacheWrapper, beanTransformerCache, result);
+				rowInstance = giveRowInstance(row, currentMainStrategy, entityCache, beanTransformerCache, result);
 			}
 			
 			// processing the direct relations
@@ -118,7 +120,7 @@ public class EntityMappingStrategyTreeRowTransformer<C> {
 				} else if (join instanceof RelationJoin) {
 					boolean relationApplied = applyRelatedBean(row, rowInstance, ((RelationJoin) join).getBeanRelationFixer(),
 							subJoins.getStrategy(),
-							entityCacheWrapper, beanTransformerCache);
+							entityCache, beanTransformerCache);
 					// Adds the right strategy for further processing if it has some more joins so they'll also be taken into account
 					if (relationApplied) {
 						addJoinsToStack(subJoins, stack);
@@ -142,13 +144,13 @@ public class EntityMappingStrategyTreeRowTransformer<C> {
 	
 	private Object giveRowInstance(Row row,
 								   EntityMappingStrategyTree<Object, ?> entityMappingStrategyTree,
-								   EntityCacheWrapper entityCacheWrapper,
+								   EntityCache entityCache,
 								   TransformerCache beanTransformerCache,
 								   Nullable<C> rootBeanHolder) {
 		EntityInflater<Object, Object> entityInflater = entityMappingStrategyTree.getStrategy();
 		AbstractTransformer rowTransformer = beanTransformerCache.computeIfAbsent(entityInflater, columnedRow);
 		Object identifier = entityInflater.giveIdentifier(row, columnedRow);
-		return entityCacheWrapper.computeIfAbsent(entityInflater.getEntityType(), identifier, () -> {
+		return entityCache.computeIfAbsent(entityInflater.getEntityType(), identifier, () -> {
 				Object newInstance = rowTransformer.transform(row);
 				if (entityMappingStrategyTree == rootEntityMappingStrategyTree) {
 					rootBeanHolder.elseSet((C) newInstance);
@@ -161,13 +163,13 @@ public class EntityMappingStrategyTreeRowTransformer<C> {
 									 Object rowInstance,
 									 BeanRelationFixer beanRelationFixer,
 									 EntityInflater entityInflater,
-									 EntityCacheWrapper entityCacheWrapper,
+									 EntityCache entityCache,
 									 TransformerCache beanTransformerCache) {
 		Object rightIdentifier = entityInflater.giveIdentifier(row, columnedRow);
 		// primary key null means no entity => nothing to do
 		if (rightIdentifier != null) {
 			AbstractTransformer rowTransformer = beanTransformerCache.computeIfAbsent(entityInflater, columnedRow);
-			Object rightInstance = entityCacheWrapper.computeIfAbsent(entityInflater.getEntityType(), rightIdentifier,
+			Object rightInstance = entityCache.computeIfAbsent(entityInflater.getEntityType(), rightIdentifier,
 					() -> rowTransformer.transform(row));
 			
 			beanRelationFixer.apply(rowInstance, rightInstance);
@@ -176,26 +178,29 @@ public class EntityMappingStrategyTreeRowTransformer<C> {
 		return false;
 	}
 	
-	/**
-	 * Simple class to ease access or creation to entity from the cache
-	 * @see #computeIfAbsent(Class, Object, Supplier) 
-	 */
-	public static final class EntityCacheWrapper {
-		
-		private final Map<Class, Map<Object, Object>> entityCache;
-		
-		public EntityCacheWrapper(Map<Class, Map<Object, Object>> entityCache) {
-			this.entityCache = entityCache;
-		}
+	@FunctionalInterface
+	public interface EntityCache {
 		
 		/**
-		 * Main method that tries to retrieve an entity by its class and identifier or instanciates it and put it into the cache
-		 * 
+		 * Expected to retrieve an entity by its class and identifier from cache or instanciates it and put it into the cache
+		 *
 		 * @param clazz the type of the entity
 		 * @param identifier the identifier of the entity (Long, String, ...)
 		 * @param factory the "method" that will be called to create the entity when the entity is not in the cache
 		 * @return the existing instance in the cache or a new object
 		 */
+		<C> C computeIfAbsent(Class<C> clazz, Object identifier, Supplier<C> factory);
+		
+	}
+	
+	/**
+	 * Simple class to ease access or creation to entity from the cache
+	 * @see #computeIfAbsent(Class, Object, Supplier) 
+	 */
+	private static final class BasicEntityCache implements EntityCache {
+		
+		private final Map<Class, Map<Object, Object>> entityCache = new HashMap<>();
+		
 		public <C> C computeIfAbsent(Class<C> clazz, Object identifier, Supplier<C> factory) {
 			Map<Object, Object> classInstanceCacheByIdentifier = entityCache.computeIfAbsent(clazz, k -> new HashMap<>());
 			return (C) classInstanceCacheByIdentifier.computeIfAbsent(identifier, k -> factory.get());
@@ -219,13 +224,9 @@ public class EntityMappingStrategyTreeRowTransformer<C> {
 	 * Simple class to ease access or creation to entity from the cache
 	 * @see #computeIfAbsent(EntityInflater, ColumnedRow)  
 	 */
-	public static final class TransformerCacheWrapper implements TransformerCache {
+	private static final class BasicTransformerCache implements TransformerCache {
 		
-		private final Map<EntityInflater, AbstractTransformer> entityCache;
-		
-		public TransformerCacheWrapper(Map<EntityInflater, AbstractTransformer> entityCache) {
-			this.entityCache = entityCache;
-		}
+		private final Map<EntityInflater, AbstractTransformer> entityCache = new HashMap<>();
 		
 		public <C> AbstractTransformer<C> computeIfAbsent(EntityInflater<C, ?> entityInflater, ColumnedRow columnedRow) {
 			return entityCache.computeIfAbsent(entityInflater, inflater -> inflater.copyTransformerWithAliases(columnedRow));

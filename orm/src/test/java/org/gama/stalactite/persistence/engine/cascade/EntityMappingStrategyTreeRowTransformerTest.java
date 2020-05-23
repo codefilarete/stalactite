@@ -3,7 +3,6 @@ package org.gama.stalactite.persistence.engine.cascade;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
@@ -72,7 +71,7 @@ public class EntityMappingStrategyTreeRowTransformerTest {
 				Maps.asMap(totoColumnId, (Object) 1L)
 						.add(totoColumnName, "toto"),
 				aliasProvider);
-		List result = testInstance.transform(Arrays.asList(row1), 1, new HashMap<>());
+		List result = testInstance.transform(Arrays.asList(row1), 1);
 		
 		Object firstObject = Iterables.first(result);
 		assertNotNull(firstObject);
@@ -118,7 +117,7 @@ public class EntityMappingStrategyTreeRowTransformerTest {
 						.add(tataColumnId, 1L)
 						.add(tataColumnFirstName, "tata"),
 				aliasProvider);
-		List result = testInstance.transform(Arrays.asList(row1), 1, new HashMap<>());
+		List result = testInstance.transform(Arrays.asList(row1), 1);
 		
 		Object firstObject = Iterables.first(result);
 		assertNotNull(firstObject);
@@ -182,7 +181,7 @@ public class EntityMappingStrategyTreeRowTransformerTest {
 						.add(titiColumnId, 1L)
 						.add(titiColumnLastName, "titi"),
 				aliasProvider);
-		List result = testInstance.transform(Arrays.asList(row), 1, new HashMap<>());
+		List result = testInstance.transform(Arrays.asList(row), 1);
 		
 		Object firstObject = Iterables.first(result);
 		assertNotNull(firstObject);
@@ -248,7 +247,7 @@ public class EntityMappingStrategyTreeRowTransformerTest {
 						.add(titiColumnId, 1L)
 						.add(titiColumnLastName, "titi"),
 				aliasProvider);
-		List result = testInstance.transform(Arrays.asList(row), 1, new HashMap<>());
+		List result = testInstance.transform(Arrays.asList(row), 1);
 		
 		Object firstObject = Iterables.first(result);
 		assertNotNull(firstObject);
@@ -308,7 +307,7 @@ public class EntityMappingStrategyTreeRowTransformerTest {
 						.add(tataColumnId, 2L)
 						.add(tataColumnFirstName, "tata2"),
 				aliasProvider);
-		List<Toto> result = testInstance.transform(Arrays.asList(row1, row2), 1, new HashMap<>());
+		List<Toto> result = testInstance.transform(Arrays.asList(row1, row2), 1);
 		
 		assertEquals(1, result.size());
 		Toto firstResult = Iterables.first(result);
@@ -367,7 +366,7 @@ public class EntityMappingStrategyTreeRowTransformerTest {
 		);
 		
 		// executing the test
-		List<Toto> result = testInstance.transform(Arrays.asList(row), 1, new HashMap<>());
+		List<Toto> result = testInstance.transform(Arrays.asList(row), 1);
 		
 		// checking
 		assertEquals(1, result.size());

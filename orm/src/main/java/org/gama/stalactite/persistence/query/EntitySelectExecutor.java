@@ -2,7 +2,6 @@ package org.gama.stalactite.persistence.query;
 
 import java.sql.ResultSet;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 
@@ -149,6 +148,6 @@ public class EntitySelectExecutor<C, I, T extends Table> implements IEntitySelec
 	}
 	
 	protected List<C> transform(Iterator<Row> rowIterator) {
-		return this.rowTransformer.transform(() -> rowIterator, 50, new HashMap<>());
+		return this.rowTransformer.transform(() -> rowIterator, 50);
 	}
 }

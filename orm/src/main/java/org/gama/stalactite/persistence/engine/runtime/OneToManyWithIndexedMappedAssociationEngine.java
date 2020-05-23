@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 import java.util.function.Function;
 
 import org.gama.lang.Duo;
@@ -171,7 +172,7 @@ public class OneToManyWithIndexedMappedAssociationEngine<SRC, TRGT, ID, C extend
 		 * and SQL) which is not implemented. In such circumstances, ThreadLocal comes to the rescue.
 		 * Could be static, but would lack the TRGT typing, which leads to some generics errors, so left non static (acceptable small overhead)
 		 */
-		private final ThreadLocal<Map<TRGT, Integer>> updatableListIndex = new ThreadLocal<>();
+		private final ThreadLocal<Map<TRGT, Integer>> currentUpdatableListIndex = new ThreadLocal<>();
 		
 		/**
 		 * Context for indexed mapped List. Will keep bean index during update between "unrelated" methods/phases :
@@ -179,7 +180,7 @@ public class OneToManyWithIndexedMappedAssociationEngine<SRC, TRGT, ID, C extend
 		 * and SQL) which is not implemented. In such circumstances, ThreadLocal comes to the rescue.
 		 * Could be static, but would lack the TRGT typing, which leads to some generics errors, so left non static (acceptable small overhead)
 		 */
-		private final ThreadLocal<Map<TRGT, Integer>> insertableListIndex = new ThreadLocal<>();
+		private final ThreadLocal<Map<TRGT, Integer>> currentInsertableListIndex = new ThreadLocal<>();
 		private final Column indexingColumn;
 		
 		private ListCollectionUpdater(Function<SRC, C> collectionGetter,
@@ -199,10 +200,10 @@ public class OneToManyWithIndexedMappedAssociationEngine<SRC, TRGT, ID, C extend
 		private void addShadowIndexUpdate(IEntityConfiguredJoinedTablesPersister<TRGT, ID> targetPersister) {
 			targetPersister.getMappingStrategy().addShadowColumnUpdate(new ShadowColumnValueProvider<TRGT, Object, Table>(indexingColumn,
 					// Thread safe by updatableListIndex access
-					target -> updatableListIndex.get().get(target)) {
+					target -> currentUpdatableListIndex.get().get(target)) {
 				@Override
 				public boolean accept(Object entity) {
-					return updatableListIndex.get() != null && updatableListIndex.get().containsKey(entity);
+					return currentUpdatableListIndex.get() != null && currentUpdatableListIndex.get().containsKey(entity);
 				}
 			});
 		}
@@ -211,10 +212,10 @@ public class OneToManyWithIndexedMappedAssociationEngine<SRC, TRGT, ID, C extend
 			// adding index insert/update to strategy
 			targetPersister.getMappingStrategy().addShadowColumnInsert(new ShadowColumnValueProvider<TRGT, Object, Table>(indexingColumn,
 					// Thread safe by updatableListIndex access
-					target -> insertableListIndex.get().get(target)) {
+					target -> currentInsertableListIndex.get().get(target)) {
 				@Override
 				public boolean accept(Object entity) {
-					return insertableListIndex.get() != null && insertableListIndex.get().containsKey(entity);
+					return currentInsertableListIndex.get() != null && currentInsertableListIndex.get().containsKey(entity);
 				}
 			});
 		}
@@ -253,7 +254,7 @@ public class OneToManyWithIndexedMappedAssociationEngine<SRC, TRGT, ID, C extend
 		protected void insertTargets(UpdateContext updateContext) {
 			// we ask for entities insert as super does but we surround it by a ThreadLocal to fulfill List indexes which is required by
 			// the shadow column inserter (List indexes are given by default CollectionUpdater algorithm)
-			ThreadLocals.doWithThreadLocal(insertableListIndex, ((IndexedMappedAssociationUpdateContext) updateContext)::getIndexUpdates,
+			ThreadLocals.doWithThreadLocal(currentInsertableListIndex, ((IndexedMappedAssociationUpdateContext) updateContext)::getIndexUpdates,
 					(Runnable) () -> super.insertTargets(updateContext));
 		}
 		
@@ -261,7 +262,7 @@ public class OneToManyWithIndexedMappedAssociationEngine<SRC, TRGT, ID, C extend
 		protected void updateTargets(UpdateContext updateContext, boolean allColumnsStatement) {
 			// we ask for entities update as super does but we surround it by a ThreadLocal to fulfill List indexes which is required by
 			// the shadow column updater (List indexes are given by default CollectionUpdater algorithm)
-			ThreadLocals.doWithThreadLocal(updatableListIndex, ((IndexedMappedAssociationUpdateContext) updateContext)::getIndexUpdates,
+			ThreadLocals.doWithThreadLocal(currentUpdatableListIndex, ((IndexedMappedAssociationUpdateContext) updateContext)::getIndexUpdates,
 					(Runnable) () -> super.updateTargets(updateContext, allColumnsStatement));
 		}
 		

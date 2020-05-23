@@ -4,7 +4,6 @@ import javax.annotation.Nullable;
 import java.sql.ResultSet;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -217,7 +216,7 @@ public class EntityMappingStrategyTreeSelectExecutor<C, I, T extends Table> exte
 	
 	@Override
 	protected List<C> transform(Iterator<Row> rowIterator, int resultSize) {
-		return rowTransformer.transform(() -> rowIterator, resultSize, new HashMap<>());
+		return rowTransformer.transform(() -> rowIterator, resultSize);
 	}
 	
 	private static class WhereClauseDMLNameProvider extends DMLNameProvider {

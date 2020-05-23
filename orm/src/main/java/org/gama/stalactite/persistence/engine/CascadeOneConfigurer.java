@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -334,7 +335,7 @@ public class CascadeOneConfigurer<SRC, TRGT, ID> {
 		 * Implemented as a ThreadLocal because we can hardly cross layers and methods to pass such a value.
 		 * Cleaned after update and delete.
 		 */
-		private final ThreadLocal<Map<TRGT, Function<TRGT, SRC>>> foreignKeyValueProvider = ThreadLocal.withInitial(HashMap::new);
+		private final ThreadLocal<Map<TRGT, Function<TRGT, SRC>>> currentForeignKeyValueProvider = ThreadLocal.withInitial(HashMap::new);
 		
 		// Fixes relation between source and target at load time, stored as an instance field to pass it from creating method to consuming method
 		// but shouldn't be kept, bad design but couldn't find another solution
@@ -459,14 +460,14 @@ public class CascadeOneConfigurer<SRC, TRGT, ID> {
 			));
 			
 			targetPersister.getMappingStrategy().addShadowColumnUpdate(new ShadowColumnValueProvider<>(rightColumn, (TRGT trgt) ->
-					foreignKeyValueProvider.get().getOrDefault(trgt, reverseGetter).apply(trgt)));
+					currentForeignKeyValueProvider.get().getOrDefault(trgt, reverseGetter).apply(trgt)));
 			
 			// - after source update, target is updated too
 			srcPersisterListener.addUpdateListener(new UpdateListener<SRC>() {
 				
 				@Override
 				public void afterUpdate(Iterable<? extends Duo<? extends SRC, ? extends SRC>> payloads, boolean allColumnsStatement) {
-					ThreadLocals.doWithThreadLocal(foreignKeyValueProvider, HashMap::new, (Runnable) () -> {
+					ThreadLocals.doWithThreadLocal(currentForeignKeyValueProvider, HashMap::new, (Consumer<Map<TRGT, Function<TRGT,SRC>>>) fkValueProvider -> {
 						List<Duo<TRGT, TRGT>> targetsToUpdate = Iterables.collect(payloads,
 								e -> {
 									TRGT targetOfModified = getTarget(e.getLeft());
@@ -474,7 +475,7 @@ public class CascadeOneConfigurer<SRC, TRGT, ID> {
 									if (targetOfModified == null && targetOfUnmodified != null) {
 										// "REMOVED"
 										// relation is nullified : relation column should be nullified too
-										foreignKeyValueProvider.get().put(targetOfUnmodified, NULL_RETURNING_FUNCTION);
+										fkValueProvider.put(targetOfUnmodified, NULL_RETURNING_FUNCTION);
 										return false;
 									} else if (targetOfModified != null && targetOfUnmodified == null) {
 										// "ADDED"
@@ -492,7 +493,7 @@ public class CascadeOneConfigurer<SRC, TRGT, ID> {
 											// be maintained by targets update, nullifying it would add an extra-useless SQL order
 											&& !targetPersister.getMappingStrategy().getId(targetOfUnmodified).equals(targetPersister.getMappingStrategy().getId(targetOfModified))
 										) {
-											foreignKeyValueProvider.get().put(targetOfUnmodified, NULL_RETURNING_FUNCTION);
+											fkValueProvider.put(targetOfUnmodified, NULL_RETURNING_FUNCTION);
 										}
 										return targetOfModified != null;
 										// is an optimisation of :
@@ -505,7 +506,7 @@ public class CascadeOneConfigurer<SRC, TRGT, ID> {
 								e -> getTargets(e.getLeft(), e.getRight()),
 								ArrayList::new);
 						targetPersister.update(targetsToUpdate, allColumnsStatement);
-						targetPersister.updateById(foreignKeyValueProvider.get().keySet());
+						targetPersister.updateById(currentForeignKeyValueProvider.get().keySet());
 					});
 				}
 				
@@ -550,9 +551,9 @@ public class CascadeOneConfigurer<SRC, TRGT, ID> {
 			
 			@Override
 			public void beforeDelete(Iterable<SRC> entities) {
-				ThreadLocals.doWithThreadLocal(foreignKeyValueProvider, HashMap::new, (Runnable) () ->
+				ThreadLocals.doWithThreadLocal(currentForeignKeyValueProvider, HashMap::new, (Consumer<Map<TRGT, Function<TRGT,SRC>>>) fkValueProvider ->
 					this.targetPersister.updateById(Iterables.stream(entities).map(this::getTarget).filter(Objects::nonNull).peek(trgt ->
-							foreignKeyValueProvider.get().put(trgt, (Function<TRGT, SRC>) NULL_RETURNING_FUNCTION))
+							fkValueProvider.put(trgt, (Function<TRGT, SRC>) NULL_RETURNING_FUNCTION))
 							.collect(Collectors.toList())
 					)
 				);
