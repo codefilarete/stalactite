@@ -205,6 +205,13 @@ public class EntityMappingStrategyTreeRowTransformer<C> {
 	@FunctionalInterface
 	public interface TransformerCache {
 		
+		/**
+		 * Expected to retrieve an {@link AbstractTransformer} by its {@link EntityInflater} from cache or instanciates it and put it into the cache
+		 *
+		 * @param entityInflater the {@link EntityInflater} owning {@link AbstractTransformer}
+		 * @param columnedRow the necessary {@link ColumnedRow} that contains aliases to be used by resulting {@link AbstractTransformer}
+		 * @return the existing instance in the cache or a new object
+		 */
 		<C> AbstractTransformer<C> computeIfAbsent(EntityInflater<C, ?> entityInflater, ColumnedRow columnedRow);
 	}
 	
@@ -220,13 +227,6 @@ public class EntityMappingStrategyTreeRowTransformer<C> {
 			this.entityCache = entityCache;
 		}
 		
-		/**
-		 * Main method that tries to retrieve an entity by its class and identifier or instanciates it and put it into the cache
-		 * 
-		 * @param entityInflater the type of the entity
-		 * @param columnedRow the identifier of the entity (Long, String, ...)
-		 * @return the existing instance in the cache or a new object
-		 */
 		public <C> AbstractTransformer<C> computeIfAbsent(EntityInflater<C, ?> entityInflater, ColumnedRow columnedRow) {
 			return entityCache.computeIfAbsent(entityInflater, inflater -> inflater.copyTransformerWithAliases(columnedRow));
 		}
