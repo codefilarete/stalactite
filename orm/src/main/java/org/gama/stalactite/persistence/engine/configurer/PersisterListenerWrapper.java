@@ -11,8 +11,8 @@ import org.gama.lang.collection.Iterables;
 import org.gama.stalactite.persistence.engine.BeanRelationFixer;
 import org.gama.stalactite.persistence.engine.IEntityConfiguredJoinedTablesPersister;
 import org.gama.stalactite.persistence.engine.IEntityPersister;
+import org.gama.stalactite.persistence.engine.cascade.EntityMappingStrategyTreeSelectBuilder;
 import org.gama.stalactite.persistence.engine.cascade.IJoinedTablesPersister;
-import org.gama.stalactite.persistence.engine.cascade.JoinedStrategiesSelect;
 import org.gama.stalactite.persistence.engine.listening.DeleteByIdListener;
 import org.gama.stalactite.persistence.engine.listening.DeleteListener;
 import org.gama.stalactite.persistence.engine.listening.InsertListener;
@@ -179,12 +179,12 @@ public class PersisterListenerWrapper<C, I> implements IEntityConfiguredJoinedTa
 	}
 	
 	@Override
-	public JoinedStrategiesSelect<C, I, ?> getJoinedStrategiesSelect() {
-		return surrogate.getJoinedStrategiesSelect();
+	public EntityMappingStrategyTreeSelectBuilder<C, I, ?> getEntityMappingStrategyTreeSelectBuilder() {
+		return surrogate.getEntityMappingStrategyTreeSelectBuilder();
 	}
 	
 	@Override
-	public <E, ID, T extends Table> void copyJoinsRootTo(JoinedStrategiesSelect<E, ID, T> joinedStrategiesSelect, String joinName) {
-		surrogate.copyJoinsRootTo(joinedStrategiesSelect, joinName);
+	public <E, ID, T extends Table> void copyJoinsRootTo(EntityMappingStrategyTreeSelectBuilder<E, ID, T> entityMappingStrategyTreeSelectBuilder, String joinName) {
+		surrogate.copyJoinsRootTo(entityMappingStrategyTreeSelectBuilder, joinName);
 	}
 }

@@ -103,7 +103,7 @@ public class SingleTablePolymorphismSelectExecutor<C, I, T extends Table, D>
 																				  boolean isOuterJoin) {
 		Set<String> joinNames = new HashSet<>();
 		subEntitiesPersisters.forEach((entityClass, persister) -> {
-			String joinName = persister.getJoinedStrategiesSelectExecutor().addRelation(leftStrategyName, strategy, beanRelationFixer,
+			String joinName = persister.getEntityMappingStrategyTreeSelectExecutor().addRelation(leftStrategyName, strategy, beanRelationFixer,
 					leftJoinColumn, rightJoinColumn, isOuterJoin);
 			joinNames.add(joinName);
 		});
@@ -124,7 +124,7 @@ public class SingleTablePolymorphismSelectExecutor<C, I, T extends Table, D>
 																						   Column<T2, ID> rightJoinColumn) {
 		Set<String> joinNames = new HashSet<>();
 		subEntitiesPersisters.forEach((entityClass, persister) -> {
-			String joinName = persister.getJoinedStrategiesSelectExecutor().addComplementaryJoin(leftStrategyName, strategy,
+			String joinName = persister.getEntityMappingStrategyTreeSelectExecutor().addComplementaryJoin(leftStrategyName, strategy,
 					leftJoinColumn, rightJoinColumn);
 			joinNames.add(joinName);
 		});

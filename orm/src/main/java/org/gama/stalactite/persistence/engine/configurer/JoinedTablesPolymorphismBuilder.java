@@ -24,7 +24,7 @@ import org.gama.stalactite.persistence.engine.SubEntityMappingConfiguration;
 import org.gama.stalactite.persistence.engine.TableNamingStrategy;
 import org.gama.stalactite.persistence.engine.builder.CascadeMany;
 import org.gama.stalactite.persistence.engine.builder.ElementCollectionLinkage;
-import org.gama.stalactite.persistence.engine.cascade.JoinedStrategiesSelect;
+import org.gama.stalactite.persistence.engine.cascade.EntityMappingStrategyTreeSelectBuilder;
 import org.gama.stalactite.persistence.engine.cascade.JoinedTablesPersister;
 import org.gama.stalactite.persistence.engine.configurer.BeanMappingBuilder.ColumnNameProvider;
 import org.gama.stalactite.persistence.engine.configurer.PersisterBuilderImpl.Identification;
@@ -114,7 +114,7 @@ abstract class JoinedTablesPolymorphismBuilder<C, I, T extends Table> implements
 			// Adding join with parent table to select
 			Column subEntityPrimaryKey = (Column) Iterables.first(subTable.getPrimaryKey().getColumns());
 			Column entityPrimaryKey = (Column) Iterables.first(this.mainPersister.getMainTable().getPrimaryKey().getColumns());
-			subclassPersister.getJoinedStrategiesSelectExecutor().addComplementaryJoin(JoinedStrategiesSelect.ROOT_STRATEGY_NAME,
+			subclassPersister.getEntityMappingStrategyTreeSelectExecutor().addComplementaryJoin(EntityMappingStrategyTreeSelectBuilder.ROOT_STRATEGY_NAME,
 					this.mainPersister.getMappingStrategy(), subEntityPrimaryKey, entityPrimaryKey);
 		}
 		

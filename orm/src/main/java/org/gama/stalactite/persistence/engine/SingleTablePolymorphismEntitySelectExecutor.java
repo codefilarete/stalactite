@@ -12,7 +12,7 @@ import org.gama.lang.Duo;
 import org.gama.lang.collection.Iterables;
 import org.gama.lang.collection.Maps;
 import org.gama.stalactite.persistence.engine.PolymorphismPolicy.SingleTablePolymorphism;
-import org.gama.stalactite.persistence.engine.cascade.JoinedStrategiesSelect;
+import org.gama.stalactite.persistence.engine.cascade.EntityMappingStrategyTreeSelectBuilder;
 import org.gama.stalactite.persistence.engine.cascade.JoinedTablesPersister;
 import org.gama.stalactite.persistence.query.IEntitySelectExecutor;
 import org.gama.stalactite.persistence.sql.Dialect;
@@ -38,20 +38,20 @@ public class SingleTablePolymorphismEntitySelectExecutor<C, I, T extends Table, 
 	private final Map<Class<? extends C>, JoinedTablesPersister<C, I, T>> persisterPerSubclass;
 	private final Column discriminatorColumn;
 	private final SingleTablePolymorphism polymorphismPolicy;
-	private final JoinedStrategiesSelect<C, I, T> mainJoinedStrategiesSelect;
+	private final EntityMappingStrategyTreeSelectBuilder<C, I, T> mainEntityMappingStrategyTreeSelectBuilder;
 	private final ConnectionProvider connectionProvider;
 	private final Dialect dialect;
 	
 	public SingleTablePolymorphismEntitySelectExecutor(Map<Class<? extends C>, JoinedTablesPersister<C, I, T>> persisterPerSubclass,
 												Column<T, D> discriminatorColumn,
 												SingleTablePolymorphism polymorphismPolicy,
-												JoinedStrategiesSelect<C, I, T> mainJoinedStrategiesSelect,
+												EntityMappingStrategyTreeSelectBuilder<C, I, T> mainEntityMappingStrategyTreeSelectBuilder,
 												ConnectionProvider connectionProvider,
 												Dialect dialect) {
 		this.persisterPerSubclass = persisterPerSubclass;
 		this.discriminatorColumn = discriminatorColumn;
 		this.polymorphismPolicy = polymorphismPolicy;
-		this.mainJoinedStrategiesSelect = mainJoinedStrategiesSelect;
+		this.mainEntityMappingStrategyTreeSelectBuilder = mainEntityMappingStrategyTreeSelectBuilder;
 		this.connectionProvider = connectionProvider;
 		this.dialect = dialect;
 	}
@@ -63,12 +63,12 @@ public class SingleTablePolymorphismEntitySelectExecutor<C, I, T extends Table, 
 	
 	@Override
 	public List<C> loadGraph(CriteriaChain where) {
-		Query query = mainJoinedStrategiesSelect.buildSelectQuery();
+		Query query = mainEntityMappingStrategyTreeSelectBuilder.buildSelectQuery();
 		
 		SQLQueryBuilder sqlQueryBuilder = IEntitySelectExecutor.createQueryBuilder(where, query);
 		
 		// selecting ids and their discriminator
-		Column<T, I> pk = (Column<T, I>) Iterables.first(mainJoinedStrategiesSelect.getJoinsRoot().getTable().getPrimaryKey().getColumns());
+		Column<T, I> pk = (Column<T, I>) Iterables.first(mainEntityMappingStrategyTreeSelectBuilder.getRoot().getTable().getPrimaryKey().getColumns());
 		query.select(pk, PRIMARY_KEY_ALIAS);
 		query.select(discriminatorColumn, DISCRIMINATOR_ALIAS);
 		List<Duo<I, D>> ids = readIds(sqlQueryBuilder, pk);

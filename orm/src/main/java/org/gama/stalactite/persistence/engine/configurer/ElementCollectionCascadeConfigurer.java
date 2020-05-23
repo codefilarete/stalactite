@@ -55,7 +55,7 @@ import org.gama.stalactite.sql.result.Row;
 
 import static org.gama.lang.Nullable.nullable;
 import static org.gama.lang.bean.Objects.preventNull;
-import static org.gama.stalactite.persistence.engine.cascade.JoinedStrategiesSelect.ROOT_STRATEGY_NAME;
+import static org.gama.stalactite.persistence.engine.cascade.EntityMappingStrategyTreeSelectBuilder.ROOT_STRATEGY_NAME;
 
 /**
  * Class that configures element-collection mapping

@@ -63,7 +63,7 @@ import org.gama.stalactite.persistence.engine.cascade.AfterDeleteByIdSupport;
 import org.gama.stalactite.persistence.engine.cascade.AfterDeleteSupport;
 import org.gama.stalactite.persistence.engine.cascade.AfterUpdateSupport;
 import org.gama.stalactite.persistence.engine.cascade.BeforeInsertSupport;
-import org.gama.stalactite.persistence.engine.cascade.JoinedStrategiesSelect;
+import org.gama.stalactite.persistence.engine.cascade.EntityMappingStrategyTreeSelectBuilder;
 import org.gama.stalactite.persistence.engine.cascade.JoinedTablesPersister;
 import org.gama.stalactite.persistence.engine.configurer.BeanMappingBuilder.ColumnNameProvider;
 import org.gama.stalactite.persistence.engine.configurer.PersisterBuilderImpl.MappingPerTable.Mapping;
@@ -406,7 +406,7 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 			parentPersisters.add(currentPersister);
 			// a join is necessary to select entity, only if target table changes
 			if (!currentPersister.getMainTable().equals(currentTable.get())) {
-				mainPersister.getJoinedStrategiesSelectExecutor().addComplementaryJoin(JoinedStrategiesSelect.ROOT_STRATEGY_NAME, currentMappingStrategy,
+				mainPersister.getEntityMappingStrategyTreeSelectExecutor().addComplementaryJoin(EntityMappingStrategyTreeSelectBuilder.ROOT_STRATEGY_NAME, currentMappingStrategy,
 					superclassPK, subclassPK);
 				currentTable.set(currentPersister.getMainTable());
 			}

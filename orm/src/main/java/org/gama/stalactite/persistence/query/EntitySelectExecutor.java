@@ -8,8 +8,9 @@ import java.util.List;
 
 import org.gama.lang.collection.Iterables;
 import org.gama.lang.collection.Maps;
-import org.gama.stalactite.persistence.engine.cascade.JoinedStrategiesSelect;
-import org.gama.stalactite.persistence.engine.cascade.StrategyJoinsRowTransformer;
+import org.gama.stalactite.persistence.engine.cascade.EntityMappingStrategyTreeRowTransformer;
+import org.gama.stalactite.persistence.engine.cascade.EntityMappingStrategyTreeSelectBuilder;
+import org.gama.stalactite.persistence.engine.cascade.EntityMappingStrategyTreeSelectExecutor;
 import org.gama.stalactite.persistence.sql.dml.binder.ColumnBinderRegistry;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
@@ -28,8 +29,8 @@ import static org.gama.stalactite.query.model.Operators.in;
 /**
  * Class for loading an entity graph which is selected by criteria on bean properties coming from {@link EntityCriteriaSupport}.
  * 
- * Implemented as a light version of {@link org.gama.stalactite.persistence.engine.cascade.JoinedStrategiesSelectExecutor} focused on {@link EntityCriteriaSupport},
- * hence it is based on {@link JoinedStrategiesSelect} to build the bean graph.
+ * Implemented as a light version of {@link EntityMappingStrategyTreeSelectExecutor} focused on {@link EntityCriteriaSupport},
+ * hence it is based on {@link EntityMappingStrategyTreeSelectBuilder} to build the bean graph.
  * 
  * @author Guillaume Mary
  * @see #loadGraph(CriteriaChain)
@@ -42,23 +43,23 @@ public class EntitySelectExecutor<C, I, T extends Table> implements IEntitySelec
 	private final ConnectionProvider connectionProvider;
 	
 	/** Surrogate for joining strategies, will help to build the SQL */
-	private final JoinedStrategiesSelect<C, I, T> joinedStrategiesSelect;
+	private final EntityMappingStrategyTreeSelectBuilder<C, I, T> entityMappingStrategyTreeSelectBuilder;
 	
 	private final ColumnBinderRegistry parameterBinderProvider;
 	
-	private final StrategyJoinsRowTransformer<C> rowTransformer;
+	private final EntityMappingStrategyTreeRowTransformer<C> rowTransformer;
 	
-	public EntitySelectExecutor(JoinedStrategiesSelect<C, I, T> joinedStrategiesSelect,
+	public EntitySelectExecutor(EntityMappingStrategyTreeSelectBuilder<C, I, T> entityMappingStrategyTreeSelectBuilder,
 								ConnectionProvider connectionProvider,
 								ColumnBinderRegistry columnBinderRegistry) {
-		this(joinedStrategiesSelect, connectionProvider, columnBinderRegistry, new StrategyJoinsRowTransformer<>(joinedStrategiesSelect));
+		this(entityMappingStrategyTreeSelectBuilder, connectionProvider, columnBinderRegistry, new EntityMappingStrategyTreeRowTransformer<>(entityMappingStrategyTreeSelectBuilder));
 	}
 	
-	public EntitySelectExecutor(JoinedStrategiesSelect<C, I, T> joinedStrategiesSelect,
+	public EntitySelectExecutor(EntityMappingStrategyTreeSelectBuilder<C, I, T> entityMappingStrategyTreeSelectBuilder,
 								ConnectionProvider connectionProvider,
 								ColumnBinderRegistry columnBinderRegistry,
-								StrategyJoinsRowTransformer<C> rowTransformer) {
-		this.joinedStrategiesSelect = joinedStrategiesSelect;
+								EntityMappingStrategyTreeRowTransformer<C> rowTransformer) {
+		this.entityMappingStrategyTreeSelectBuilder = entityMappingStrategyTreeSelectBuilder;
 		this.connectionProvider = connectionProvider;
 		this.parameterBinderProvider = columnBinderRegistry;
 		this.rowTransformer = rowTransformer;
@@ -73,7 +74,7 @@ public class EntitySelectExecutor<C, I, T extends Table> implements IEntitySelec
 	 * @return beans loaded from rows selected by given criteria
 	 */
 	public List<C> loadSelection(CriteriaChain where) {
-		SQLQueryBuilder sqlQueryBuilder = IEntitySelectExecutor.createQueryBuilder(where, joinedStrategiesSelect.buildSelectQuery());
+		SQLQueryBuilder sqlQueryBuilder = IEntitySelectExecutor.createQueryBuilder(where, entityMappingStrategyTreeSelectBuilder.buildSelectQuery());
 		PreparedSQL preparedSQL = sqlQueryBuilder.toPreparedSQL(parameterBinderProvider);
 		return execute(preparedSQL);
 	}
@@ -90,13 +91,13 @@ public class EntitySelectExecutor<C, I, T extends Table> implements IEntitySelec
 	 * @return root beans of aggregates that match criteria
 	 */
 	public List<C> loadGraph(CriteriaChain where) {
-		Query query = joinedStrategiesSelect.buildSelectQuery();
+		Query query = entityMappingStrategyTreeSelectBuilder.buildSelectQuery();
 		
 		SQLQueryBuilder sqlQueryBuilder = IEntitySelectExecutor.createQueryBuilder(where, query);
 		
 		// First phase : selecting ids (made by clearing selected elements for performance issue)
 		List<Object> columns = query.getSelectSurrogate().clear();
-		Column<T, I> pk = (Column<T, I>) Iterables.first(joinedStrategiesSelect.getJoinsRoot().getTable().getPrimaryKey().getColumns());
+		Column<T, I> pk = (Column<T, I>) Iterables.first(entityMappingStrategyTreeSelectBuilder.getRoot().getTable().getPrimaryKey().getColumns());
 		query.select(pk, PRIMARY_KEY_ALIAS);
 		List<I> ids = readIds(sqlQueryBuilder, pk);
 		
@@ -143,7 +144,7 @@ public class EntitySelectExecutor<C, I, T extends Table> implements IEntitySelec
 	protected List<C> transform(ReadOperation<Integer> closeableOperation) {
 		ResultSet resultSet = closeableOperation.execute();
 		// NB: we give the same ParametersBinders of those given at ColumnParameterizedSelect since the row iterator is expected to read column from it
-		RowIterator rowIterator = new RowIterator(resultSet, joinedStrategiesSelect.getSelectParameterBinders());
+		RowIterator rowIterator = new RowIterator(resultSet, entityMappingStrategyTreeSelectBuilder.getSelectParameterBinders());
 		return transform(rowIterator);
 	}
 	

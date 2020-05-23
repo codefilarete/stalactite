@@ -14,8 +14,8 @@ import org.gama.stalactite.persistence.engine.IEntityConfiguredJoinedTablesPersi
 import org.gama.stalactite.persistence.engine.ISelectExecutor;
 import org.gama.stalactite.persistence.engine.PersistenceContext;
 import org.gama.stalactite.persistence.engine.Persister;
-import org.gama.stalactite.persistence.engine.cascade.AbstractJoin.JoinType;
-import org.gama.stalactite.persistence.engine.cascade.StrategyJoinsRowTransformer.EntityInflater;
+import org.gama.stalactite.persistence.engine.cascade.EntityMappingStrategyTreeJoinPoint.JoinType;
+import org.gama.stalactite.persistence.engine.cascade.EntityMappingStrategyTreeRowTransformer.EntityInflater;
 import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
 import org.gama.stalactite.persistence.mapping.IEntityMappingStrategy;
 import org.gama.stalactite.persistence.query.EntityCriteriaSupport;
@@ -35,7 +35,7 @@ import static java.util.Collections.emptyList;
 /**
  * Persister for entity with multiple joined tables with "foreign key = primary key".
  * A main table is defined by the {@link ClassMappingStrategy} passed to constructor. Complementary tables are defined
- * with {@link JoinedStrategiesSelect#addRelationJoin(String, IEntityMappingStrategy, Column, Column, JoinType, BeanRelationFixer)}.
+ * with {@link EntityMappingStrategyTreeSelectBuilder#addRelationJoin(String, IEntityMappingStrategy, Column, Column, JoinType, BeanRelationFixer)}.
  * Entity load is defined by a select that joins all tables, each {@link ClassMappingStrategy} is called to complete
  * entity loading.
  * 
@@ -67,24 +67,24 @@ public class JoinedTablesPersister<C, I, T extends Table> extends Persister<C, I
 	@Override
 	protected ISelectExecutor<C, I> newSelectExecutor(IEntityMappingStrategy<C, I, T> mappingStrategy, ConnectionProvider connectionProvider,
 													  Dialect dialect) {
-		return new JoinedStrategiesSelectExecutor<>(mappingStrategy, dialect, connectionProvider);
+		return new EntityMappingStrategyTreeSelectExecutor<>(mappingStrategy, dialect, connectionProvider);
 	}
 	
 	protected IEntitySelectExecutor<C> newEntitySelectExecutor(Dialect dialect) {
-		return new EntitySelectExecutor<>(getJoinedStrategiesSelectExecutor().getJoinedStrategiesSelect(), getConnectionProvider(), dialect.getColumnBinderRegistry());
+		return new EntitySelectExecutor<>(getEntityMappingStrategyTreeSelectExecutor().getEntityMappingStrategyTreeSelectBuilder(), getConnectionProvider(), dialect.getColumnBinderRegistry());
 	}
 	
 	/**
-	 * Gives access to the select executor for further manipulations on {@link JoinedStrategiesSelect} for advanced usage
-	 * @return parent {@link org.gama.stalactite.persistence.engine.ISelectExecutor} casted as a {@link JoinedStrategiesSelectExecutor}
+	 * Gives access to the select executor for further manipulations on {@link EntityMappingStrategyTreeSelectBuilder} for advanced usage
+	 * @return parent {@link org.gama.stalactite.persistence.engine.ISelectExecutor} casted as a {@link EntityMappingStrategyTreeSelectExecutor}
 	 */
-	public JoinedStrategiesSelectExecutor<C, I, T> getJoinedStrategiesSelectExecutor() {
-		return (JoinedStrategiesSelectExecutor<C, I, T>) super.getSelectExecutor();
+	public EntityMappingStrategyTreeSelectExecutor<C, I, T> getEntityMappingStrategyTreeSelectExecutor() {
+		return (EntityMappingStrategyTreeSelectExecutor<C, I, T>) super.getSelectExecutor();
 	}
 	
 	@Override
-	public JoinedStrategiesSelect<C, I, ?> getJoinedStrategiesSelect() {
-		return getJoinedStrategiesSelectExecutor().getJoinedStrategiesSelect();
+	public EntityMappingStrategyTreeSelectBuilder<C, I, ?> getEntityMappingStrategyTreeSelectBuilder() {
+		return getEntityMappingStrategyTreeSelectExecutor().getEntityMappingStrategyTreeSelectBuilder();
 	}
 	
 	/**
@@ -100,19 +100,21 @@ public class JoinedTablesPersister<C, I, T extends Table> extends Persister<C, I
 	
 	/**
 	 * Gives the {@link EntityInflater} of a join node.
-	 * Node name must be known so one should have kept it from the {@link JoinedStrategiesSelect#addRelationJoin(String, IEntityMappingStrategy, Column, Column, JoinType, BeanRelationFixer)}
+	 * Node name must be known so one should have kept it from the
+	 * {@link EntityMappingStrategyTreeSelectBuilder#addRelationJoin(String, IEntityMappingStrategy, Column, Column, JoinType, BeanRelationFixer)}
 	 * return, else, since node naming strategy is not exposed it is not recommanded to use this method out of any test or debug purpose. 
 	 * 
 	 * @param nodeName a name of a added strategy
 	 * @return the {@link ClassMappingStrategy} behind a join node, null if not found
 	 */
 	public EntityInflater giveJoinedStrategy(String nodeName) {
-		return Nullable.nullable(getJoinedStrategiesSelectExecutor().getJoinedStrategiesSelect().getStrategyJoins(nodeName)).map(StrategyJoins::getStrategy).get();
+		return Nullable.nullable(getEntityMappingStrategyTreeSelectExecutor().getEntityMappingStrategyTreeSelectBuilder().getTree(nodeName))
+				.map(EntityMappingStrategyTree::getStrategy).get();
 	}
 	
 	@Override
 	public Set<Table> giveImpliedTables() {
-		return getJoinedStrategiesSelectExecutor().getJoinedStrategiesSelect().giveTables();
+		return getEntityMappingStrategyTreeSelectExecutor().getEntityMappingStrategyTreeSelectBuilder().giveTables();
 	}
 	
 	private EntityCriteriaSupport<C> newWhere() {
@@ -187,15 +189,15 @@ public class JoinedTablesPersister<C, I, T extends Table> extends Persister<C, I
 								Column<T1, I> leftColumn, Column<T2, I> rightColumn, BeanRelationFixer<SRC, C> beanRelationFixer, boolean optional) {
 		
 		// We use our own select system since SelectListener is not aimed at joining table
-		String createdJoinNodeName = sourcePersister.getJoinedStrategiesSelect().addRelationJoin(
-				JoinedStrategiesSelect.ROOT_STRATEGY_NAME,
+		String createdJoinNodeName = sourcePersister.getEntityMappingStrategyTreeSelectBuilder().addRelationJoin(
+				EntityMappingStrategyTreeSelectBuilder.ROOT_STRATEGY_NAME,
 				(IEntityMappingStrategy) this.getMappingStrategy(),
 				leftColumn,
 				rightColumn,
 				optional ? JoinType.OUTER : JoinType.INNER,
 				beanRelationFixer);
 		
-		copyJoinsRootTo(sourcePersister.getJoinedStrategiesSelect(), createdJoinNodeName);
+		copyJoinsRootTo(sourcePersister.getEntityMappingStrategyTreeSelectBuilder(), createdJoinNodeName);
 	}
 	
 	/**
@@ -206,7 +208,7 @@ public class JoinedTablesPersister<C, I, T extends Table> extends Persister<C, I
 																	 Column<T1, J> leftColumn, Column<T2, J> rightColumn,
 																	 BeanRelationFixer<SRC, C> beanRelationFixer, String joinName, boolean optional) {
 		
-		String createdJoinNodeName = sourcePersister.getJoinedStrategiesSelect().addRelationJoin(
+		String createdJoinNodeName = sourcePersister.getEntityMappingStrategyTreeSelectBuilder().addRelationJoin(
 				joinName,
 				(IEntityMappingStrategy) getMappingStrategy(),
 				leftColumn,
@@ -215,12 +217,12 @@ public class JoinedTablesPersister<C, I, T extends Table> extends Persister<C, I
 				beanRelationFixer);
 		
 		// adding our subgraph select to source persister
-		copyJoinsRootTo(sourcePersister.getJoinedStrategiesSelect(), createdJoinNodeName);
+		copyJoinsRootTo(sourcePersister.getEntityMappingStrategyTreeSelectBuilder(), createdJoinNodeName);
 	}
 	
 	@Override
-	public <E, ID, T extends Table> void copyJoinsRootTo(JoinedStrategiesSelect<E, ID, T> joinedStrategiesSelect, String joinName) {
-		getJoinedStrategiesSelect().getJoinsRoot().copyTo(joinedStrategiesSelect, joinName);
+	public <E, ID, T extends Table> void copyJoinsRootTo(EntityMappingStrategyTreeSelectBuilder<E, ID, T> entityMappingStrategyTreeSelectBuilder, String joinName) {
+		getEntityMappingStrategyTreeSelectBuilder().getRoot().copyTo(entityMappingStrategyTreeSelectBuilder, joinName);
 	}
 	
 	/**

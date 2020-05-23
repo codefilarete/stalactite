@@ -25,9 +25,9 @@ import org.gama.stalactite.persistence.engine.IEntityConfiguredJoinedTablesPersi
 import org.gama.stalactite.persistence.engine.PolymorphismPolicy.SingleTablePolymorphism;
 import org.gama.stalactite.persistence.engine.SingleTablePolymorphismEntitySelectExecutor;
 import org.gama.stalactite.persistence.engine.SingleTablePolymorphismSelectExecutor;
-import org.gama.stalactite.persistence.engine.cascade.AbstractJoin.JoinType;
+import org.gama.stalactite.persistence.engine.cascade.EntityMappingStrategyTreeJoinPoint.JoinType;
+import org.gama.stalactite.persistence.engine.cascade.EntityMappingStrategyTreeSelectBuilder;
 import org.gama.stalactite.persistence.engine.cascade.IJoinedTablesPersister;
-import org.gama.stalactite.persistence.engine.cascade.JoinedStrategiesSelect;
 import org.gama.stalactite.persistence.engine.cascade.JoinedTablesPersister;
 import org.gama.stalactite.persistence.engine.cascade.JoinedTablesPersister.CriteriaProvider;
 import org.gama.stalactite.persistence.engine.cascade.JoinedTablesPersister.RelationalExecutableEntityQuery;
@@ -82,7 +82,7 @@ public class SingleTablePolymorphicPersister<C, I, T extends Table<T>, D> implem
 		this.subEntitiesPersisters.values().forEach(subclassPersister -> subclassPersister.getMappingStrategy().addShadowColumnInsert(discriminatorValueProvider));
 		
 		subEntitiesPersisters.forEach((type, persister) ->
-				mainPersister.copyJoinsRootTo(persister.getJoinedStrategiesSelect(), JoinedStrategiesSelect.ROOT_STRATEGY_NAME)
+				mainPersister.copyJoinsRootTo(persister.getEntityMappingStrategyTreeSelectBuilder(), EntityMappingStrategyTreeSelectBuilder.ROOT_STRATEGY_NAME)
 		);
 		
 		this.selectExecutor = new SingleTablePolymorphismSelectExecutor(
@@ -97,7 +97,7 @@ public class SingleTablePolymorphicPersister<C, I, T extends Table<T>, D> implem
 				subEntitiesPersisters,
 				discriminatorColumn,
 				polymorphismPolicy,
-				mainPersister.getJoinedStrategiesSelectExecutor().getJoinedStrategiesSelect(),
+				mainPersister.getEntityMappingStrategyTreeSelectExecutor().getEntityMappingStrategyTreeSelectBuilder(),
 				connectionProvider,
 				dialect);
 		
@@ -381,7 +381,7 @@ public class SingleTablePolymorphicPersister<C, I, T extends Table<T>, D> implem
 		//  can compute disciminatorValue 
 		subEntitiesPersisters.forEach((subEntityType, subPersister) -> {
 			Column subclassPrimaryKey = Iterables.first(subPersister.getMainTable().getPrimaryKey().getColumns());
-			sourcePersister.getJoinedStrategiesSelect().addMergeJoin(JoinedStrategiesSelect.ROOT_STRATEGY_NAME,
+			sourcePersister.getEntityMappingStrategyTreeSelectBuilder().addMergeJoin(EntityMappingStrategyTreeSelectBuilder.ROOT_STRATEGY_NAME,
 					new SingleTableFirstPhaseOneToOneLoader(subPersister.getMappingStrategy().getIdMappingStrategy(),
 							subclassPrimaryKey, selectExecutor, mainPersister.getClassToPersist(), DIFFERED_ENTITY_LOADER,
 							subEntityType, discriminatorColumn),
@@ -400,7 +400,7 @@ public class SingleTablePolymorphicPersister<C, I, T extends Table<T>, D> implem
 																		BeanRelationFixer<SRC, C> beanRelationFixer, String joinName,
 																		boolean optional) {
 		
-		sourcePersister.getJoinedStrategiesSelect().addPassiveJoin(joinName,
+		sourcePersister.getEntityMappingStrategyTreeSelectBuilder().addPassiveJoin(joinName,
 				leftColumn,
 				rightColumn,
 				JoinType.OUTER,
@@ -410,7 +410,7 @@ public class SingleTablePolymorphicPersister<C, I, T extends Table<T>, D> implem
 		//  can compute disciminatorValue 
 		subEntitiesPersisters.forEach((subEntityType, subPersister) -> {
 			Column subclassPrimaryKey = Iterables.first(subPersister.getMainTable().getPrimaryKey().getColumns());
-			sourcePersister.getJoinedStrategiesSelect().addMergeJoin(JoinedStrategiesSelect.ROOT_STRATEGY_NAME,
+			sourcePersister.getEntityMappingStrategyTreeSelectBuilder().addMergeJoin(EntityMappingStrategyTreeSelectBuilder.ROOT_STRATEGY_NAME,
 					new SingleTableFirstPhaseOneToOneLoader(subPersister.getMappingStrategy().getIdMappingStrategy(),
 							subclassPrimaryKey, selectExecutor, mainPersister.getClassToPersist(), DIFFERED_ENTITY_LOADER,
 							subEntityType, discriminatorColumn),
@@ -424,12 +424,12 @@ public class SingleTablePolymorphicPersister<C, I, T extends Table<T>, D> implem
 	}
 	
 	@Override
-	public JoinedStrategiesSelect<C, I, ?> getJoinedStrategiesSelect() {
+	public EntityMappingStrategyTreeSelectBuilder<C, I, ?> getEntityMappingStrategyTreeSelectBuilder() {
 		throw new UnsupportedOperationException();
 	}
 	
 	@Override
-	public <E, ID, TT extends Table> void copyJoinsRootTo(JoinedStrategiesSelect<E, ID, TT> joinedStrategiesSelect, String joinName) {
+	public <E, ID, TT extends Table> void copyJoinsRootTo(EntityMappingStrategyTreeSelectBuilder<E, ID, TT> entityMappingStrategyTreeSelectBuilder, String joinName) {
 		throw new UnsupportedOperationException();
 	}
 	

@@ -34,7 +34,7 @@ public interface IJoinedTablesPersister<C, I> {
 	 * @param rightColumn right part of the join, expected to be one of current instance table
 	 * @param beanRelationFixer setter that fix relation ofthis instance onto source persister instance
 	 * @param joinName parent join node name on which join must be added,
-	 * 					not always {@link JoinedStrategiesSelect#ROOT_STRATEGY_NAME} in particular in one-to-many with association table
+	 * 					not always {@link EntityMappingStrategyTreeSelectBuilder#ROOT_STRATEGY_NAME} in particular in one-to-many with association table
 	 * @param optional true for optional relation, makes an outer join, else should create a inner join
 	 * @param <SRC> source entity type
 	 * @param <T1> left table type
@@ -48,17 +48,17 @@ public interface IJoinedTablesPersister<C, I> {
 															  String joinName,
 															  boolean optional);
 	
-	<T extends Table> JoinedStrategiesSelect<C, I, T> getJoinedStrategiesSelect();
+	<T extends Table> EntityMappingStrategyTreeSelectBuilder<C, I, T> getEntityMappingStrategyTreeSelectBuilder();
 	
 	/**
 	 * Copies current instance joins root to given select
 	 * 
-	 * @param joinedStrategiesSelect target of the copy
+	 * @param entityMappingStrategyTreeSelectBuilder target of the copy
 	 * @param joinName name of target select join on which joins of thisinstance must be copied
 	 * @param <E> target select entity type
 	 * @param <ID> identifier tyoe
 	 * @param <T> table type
 	 */
-	<E, ID, T extends Table> void copyJoinsRootTo(JoinedStrategiesSelect<E, ID, T> joinedStrategiesSelect, String joinName);
+	<E, ID, T extends Table> void copyJoinsRootTo(EntityMappingStrategyTreeSelectBuilder<E, ID, T> entityMappingStrategyTreeSelectBuilder, String joinName);
 	
 }

@@ -24,9 +24,9 @@ import org.gama.stalactite.persistence.engine.IEntityConfiguredJoinedTablesPersi
 import org.gama.stalactite.persistence.engine.ISelectExecutor;
 import org.gama.stalactite.persistence.engine.JoinedTablesPolymorphismEntitySelectExecutor;
 import org.gama.stalactite.persistence.engine.JoinedTablesPolymorphismSelectExecutor;
-import org.gama.stalactite.persistence.engine.cascade.AbstractJoin.JoinType;
+import org.gama.stalactite.persistence.engine.cascade.EntityMappingStrategyTreeJoinPoint.JoinType;
 import org.gama.stalactite.persistence.engine.cascade.IJoinedTablesPersister;
-import org.gama.stalactite.persistence.engine.cascade.JoinedStrategiesSelect;
+import org.gama.stalactite.persistence.engine.cascade.EntityMappingStrategyTreeSelectBuilder;
 import org.gama.stalactite.persistence.engine.cascade.JoinedTablesPersister;
 import org.gama.stalactite.persistence.engine.cascade.JoinedTablesPersister.CriteriaProvider;
 import org.gama.stalactite.persistence.engine.cascade.JoinedTablesPersister.RelationalExecutableEntityQuery;
@@ -84,7 +84,7 @@ public class JoinedTablesPolymorphicPersister<C, I> implements IEntityConfigured
 		
 		// sub entities persisters will be used to select sub entities but at this point they lacks subgraph loading, so we add it (from their parent)
 		subEntitiesPersisters.forEach((type, persister) -> 
-			parentPersister.copyJoinsRootTo(persister.getJoinedStrategiesSelect(), JoinedStrategiesSelect.ROOT_STRATEGY_NAME)
+			parentPersister.copyJoinsRootTo(persister.getEntityMappingStrategyTreeSelectBuilder(), EntityMappingStrategyTreeSelectBuilder.ROOT_STRATEGY_NAME)
 		);
 		
 		this.tablePerSubEntityType = Iterables.map(this.subEntitiesPersisters.entrySet(),
@@ -96,7 +96,7 @@ public class JoinedTablesPolymorphicPersister<C, I> implements IEntityConfigured
 				parentPersister.getMainTable(), connectionProvider, dialect);
 		
 		this.entitySelectExecutor = new JoinedTablesPolymorphismEntitySelectExecutor(subEntitiesPersisters, subEntitiesPersisters, parentPersister.getMainTable(),
-				parentPersister.getJoinedStrategiesSelectExecutor().getJoinedStrategiesSelect(), connectionProvider, dialect);
+				parentPersister.getEntityMappingStrategyTreeSelectExecutor().getEntityMappingStrategyTreeSelectBuilder(), connectionProvider, dialect);
 		
 		this.criteriaSupport = new EntityCriteriaSupport<>(parentPersister.getMappingStrategy());
 	}
@@ -368,12 +368,12 @@ public class JoinedTablesPolymorphicPersister<C, I> implements IEntityConfigured
 		// because subgraph loading is made in 2 phases (load ids, then entities in a second SQL request done by load listener) we add a passive join
 		// (we don't need to create bean nor fulfill properties in first phase) 
 		// NB: here rightColumn is parent class primary key or reverse column that owns property (depending how one-to-one relation is mapped) 
-		String mainTableJoinName = sourcePersister.getJoinedStrategiesSelect().addPassiveJoin(JoinedStrategiesSelect.ROOT_STRATEGY_NAME,
+		String mainTableJoinName = sourcePersister.getEntityMappingStrategyTreeSelectBuilder().addPassiveJoin(EntityMappingStrategyTreeSelectBuilder.ROOT_STRATEGY_NAME,
 				leftColumn, rightColumn, optional ? JoinType.OUTER : JoinType.INNER, (Set<Column<Table, Object>>) (Set) Arrays.asSet(rightColumn));
 		Column primaryKey = (Column ) Iterables.first(getMappingStrategy().getTargetTable().getPrimaryKey().getColumns());
 		this.subclassIdMappingStrategies.forEach((c, idMappingStrategy) -> {
 			Column subclassPrimaryKey = (Column) Iterables.first(this.tablePerSubEntityType.get(c).getPrimaryKey().getColumns());
-			sourcePersister.getJoinedStrategiesSelect().addMergeJoin(mainTableJoinName,
+			sourcePersister.getEntityMappingStrategyTreeSelectBuilder().addMergeJoin(mainTableJoinName,
 					new FirstPhaseOneToOneLoader<C, I>(idMappingStrategy, subclassPrimaryKey, mainSelectExecutor, parentClass, DIFFERED_ENTITY_LOADER),
 					(Set) java.util.Collections.singleton(subclassPrimaryKey),
 					primaryKey,
@@ -392,7 +392,7 @@ public class JoinedTablesPolymorphicPersister<C, I> implements IEntityConfigured
 																		BeanRelationFixer<SRC, C> beanRelationFixer, String joinName,
 																		boolean optional) {
 		
-		String createdJoinName = sourcePersister.getJoinedStrategiesSelect().addPassiveJoin(joinName,
+		String createdJoinName = sourcePersister.getEntityMappingStrategyTreeSelectBuilder().addPassiveJoin(joinName,
 				leftColumn,
 				rightColumn,
 				JoinType.OUTER,
@@ -401,7 +401,7 @@ public class JoinedTablesPolymorphicPersister<C, I> implements IEntityConfigured
 		// Subgraph loading is made in 2 phases (load ids, then entities in a second SQL request done by load listener)
 		this.subclassIdMappingStrategies.forEach((c, idMappingStrategy) -> {
 			Column subclassPrimaryKey = (Column) Iterables.first(this.tablePerSubEntityType.get(c).getPrimaryKey().getColumns());
-			sourcePersister.getJoinedStrategiesSelect().addMergeJoin(createdJoinName,
+			sourcePersister.getEntityMappingStrategyTreeSelectBuilder().addMergeJoin(createdJoinName,
 					new FirstPhaseOneToOneLoader<C, I>(idMappingStrategy, subclassPrimaryKey, mainSelectExecutor, parentClass, DIFFERED_ENTITY_LOADER),
 					(Set) Arrays.asSet(subclassPrimaryKey),
 					mainTablePrimaryKey,
@@ -416,13 +416,13 @@ public class JoinedTablesPolymorphicPersister<C, I> implements IEntityConfigured
 	
 	// for one-to-many cases
 	@Override
-	public <E, ID, TT extends Table> void copyJoinsRootTo(JoinedStrategiesSelect<E, ID, TT> joinedStrategiesSelect, String joinName) {
+	public <E, ID, TT extends Table> void copyJoinsRootTo(EntityMappingStrategyTreeSelectBuilder<E, ID, TT> entityMappingStrategyTreeSelectBuilder, String joinName) {
 		// nothing to do here, called by one-to-many engines, which actually call joinWithMany()
 	}
 	
 	@Override
-	public JoinedStrategiesSelect<C, I, ?> getJoinedStrategiesSelect() {
-		return parentPersister.getJoinedStrategiesSelect();
+	public EntityMappingStrategyTreeSelectBuilder<C, I, ?> getEntityMappingStrategyTreeSelectBuilder() {
+		return parentPersister.getEntityMappingStrategyTreeSelectBuilder();
 	}
 	
 }

@@ -67,7 +67,7 @@ import static org.mockito.Mockito.when;
 /**
  * @author Guillaume Mary
  */
-public class JoinedStrategiesSelectExecutorTest {
+public class EntityMappingStrategyTreeSelectExecutorTest {
 	
 	public static Object[][] selectData() {
 		Table tableWith1ColumnedPK = new Table("Toto");
@@ -108,7 +108,7 @@ public class JoinedStrategiesSelectExecutorTest {
 	@MethodSource("selectData")
 	public void testSelect(Table targetTable, List<String> expectedSql, PairSetList<Integer, Integer> expectedParameters) throws SQLException {
 		ClassMappingStrategy<Object, Object, Table> classMappingStrategy = JoinedStrategiesSelectTest.buildMappingStrategyMock(targetTable);
-		// mocking to prevent NPE from JoinedStrategiesSelectExecutor constructor
+		// mocking to prevent NPE from EntityMappingStrategyTreeSelectExecutor constructor
 		IdMappingStrategy idMappingStrategyMock = mock(IdMappingStrategy.class);
 		when(classMappingStrategy.getIdMappingStrategy()).thenReturn(idMappingStrategyMock);
 		IdentifierAssembler t;
@@ -139,7 +139,7 @@ public class JoinedStrategiesSelectExecutorTest {
 		
 		JdbcArgCaptor jdbcArgCaptor = new JdbcArgCaptor();
 		ConnectionProvider connectionProvider = new SimpleConnectionProvider(jdbcArgCaptor.connection);
-		JoinedStrategiesSelectExecutor testInstance = new JoinedStrategiesSelectExecutor<>(classMappingStrategy, dialect, connectionProvider);
+		EntityMappingStrategyTreeSelectExecutor testInstance = new EntityMappingStrategyTreeSelectExecutor<>(classMappingStrategy, dialect, connectionProvider);
 		
 		List<Integer> inputValues = Arrays.asList(11, 13, 17, 23);
 		testInstance.select(inputValues);
@@ -172,7 +172,7 @@ public class JoinedStrategiesSelectExecutorTest {
 		Table dummyTable = new Table("dummyTable");
 		Column dummyPK = dummyTable.addColumn("dummyPK", Integer.class).primaryKey();
 		ClassMappingStrategy<Object, Object, Table> classMappingStrategy = JoinedStrategiesSelectTest.buildMappingStrategyMock(dummyTable);
-		// mocking to prevent NPE from JoinedStrategiesSelectExecutor constructor
+		// mocking to prevent NPE from EntityMappingStrategyTreeSelectExecutor constructor
 		IdMappingStrategy idMappingStrategyMock = mock(IdMappingStrategy.class);
 		when(classMappingStrategy.getIdMappingStrategy()).thenReturn(idMappingStrategyMock);
 		when(idMappingStrategyMock.getIdentifierAssembler()).thenReturn(new SimpleIdentifierAssembler(dummyPK));
@@ -184,7 +184,7 @@ public class JoinedStrategiesSelectExecutorTest {
 		JdbcArgCaptor jdbcArgCaptor = new JdbcArgCaptor();
 		ConnectionProvider connectionProvider = new SimpleConnectionProvider(jdbcArgCaptor.connection);
 		
-		JoinedStrategiesSelectExecutor testInstance = new JoinedStrategiesSelectExecutor<>(classMappingStrategy, dialect, connectionProvider);
+		EntityMappingStrategyTreeSelectExecutor testInstance = new EntityMappingStrategyTreeSelectExecutor<>(classMappingStrategy, dialect, connectionProvider);
 		testInstance.select(Arrays.asList(11, 13));
 		
 		// one query because in operator is bounded to 3 values
@@ -202,7 +202,7 @@ public class JoinedStrategiesSelectExecutorTest {
 	@Test
 	public void testSelect_emptyArgument() {
 		ClassMappingStrategy<Object, Object, Table> classMappingStrategy = JoinedStrategiesSelectTest.buildMappingStrategyMock(new Table("dummyTable"));
-		// mocking to prevent NPE from JoinedStrategiesSelectExecutor constructor
+		// mocking to prevent NPE from EntityMappingStrategyTreeSelectExecutor constructor
 		IdMappingStrategy idMappingStrategyMock = mock(IdMappingStrategy.class);
 		when(classMappingStrategy.getIdMappingStrategy()).thenReturn(idMappingStrategyMock);
 		
@@ -210,9 +210,13 @@ public class JoinedStrategiesSelectExecutorTest {
 		Dialect dialect = new Dialect();
 		// we set a in operator size to test overflow
 		dialect.setInOperatorMaxSize(3);
-		JoinedStrategiesSelectExecutor testInstance = new JoinedStrategiesSelectExecutor(classMappingStrategy, dialect, mock(ConnectionProvider.class)) {
+		EntityMappingStrategyTreeSelectExecutor<Object, Object, Table> testInstance = new EntityMappingStrategyTreeSelectExecutor<Object, Object, Table>(
+				classMappingStrategy, dialect, mock(ConnectionProvider.class)) {
 			@Override
-			List execute(ConnectionProvider connectionProvider, String sql, Collection idsParcels, Map inOperatorValueIndexes) {
+			List<Object> execute(ConnectionProvider connectionProvider,
+								 String sql,
+								 Collection<? extends List<Object>> idsParcels,
+								 Map<Column<Table, Object>, int[]> inOperatorValueIndexes) {
 				capturedSQL.add(sql);
 				return Collections.emptyList();
 			}
@@ -227,7 +231,7 @@ public class JoinedStrategiesSelectExecutorTest {
 		Column id = targetTable.addColumn("id", long.class).primaryKey();
 		
 		ClassMappingStrategy<Object, Object, Table> classMappingStrategy = JoinedStrategiesSelectTest.buildMappingStrategyMock(targetTable);
-		// mocking to prevent NPE from JoinedStrategiesSelectExecutor constructor
+		// mocking to prevent NPE from EntityMappingStrategyTreeSelectExecutor constructor
 		IdMappingStrategy idMappingStrategyMock = mock(IdMappingStrategy.class);
 		when(classMappingStrategy.getIdMappingStrategy()).thenReturn(idMappingStrategyMock);
 		
@@ -243,7 +247,7 @@ public class JoinedStrategiesSelectExecutorTest {
 		when(readOperationMock.getSqlStatement()).thenReturn(new ColumnParameterizedSelect("", new HashMap<>(), new HashMap<>(), new HashMap<>()));
 		
 		// we're going to check if values are correctly passed to the underlying ReadOperation
-		JoinedStrategiesSelectExecutor testInstance = new JoinedStrategiesSelectExecutor<>(classMappingStrategy, new Dialect(), mock(ConnectionProvider.class));
+		EntityMappingStrategyTreeSelectExecutor testInstance = new EntityMappingStrategyTreeSelectExecutor<>(classMappingStrategy, new Dialect(), mock(ConnectionProvider.class));
 		ArgumentCaptor<Map> capturedValues = ArgumentCaptor.forClass(Map.class);
 		testInstance.execute(readOperationMock, Arrays.asList(1, 2));
 		
@@ -314,7 +318,7 @@ public class JoinedStrategiesSelectExecutorTest {
 		);
 		
 		// Checking that selected entities by their id are those expected
-		JoinedStrategiesSelectExecutor<Toto, Toto, ?> testInstance = new JoinedStrategiesSelectExecutor<>(classMappingStrategy, new Dialect(), connectionProvider);
+		EntityMappingStrategyTreeSelectExecutor<Toto, Toto, ?> testInstance = new EntityMappingStrategyTreeSelectExecutor<>(classMappingStrategy, new Dialect(), connectionProvider);
 		List<Toto> select = testInstance.select(Arrays.asList(new Toto(100, 1)));
 		assertEquals(Arrays.asList(entity1).toString(), select.toString());
 		

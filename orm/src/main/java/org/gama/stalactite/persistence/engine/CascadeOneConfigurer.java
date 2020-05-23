@@ -34,6 +34,7 @@ import org.gama.stalactite.persistence.engine.cascade.BeforeDeleteByIdSupport;
 import org.gama.stalactite.persistence.engine.cascade.BeforeDeleteSupport;
 import org.gama.stalactite.persistence.engine.cascade.BeforeInsertSupport;
 import org.gama.stalactite.persistence.engine.cascade.BeforeUpdateSupport;
+import org.gama.stalactite.persistence.engine.cascade.EntityMappingStrategyTreeRowTransformer;
 import org.gama.stalactite.persistence.engine.cascade.IJoinedTablesPersister;
 import org.gama.stalactite.persistence.engine.cascade.JoinedTablesPersister;
 import org.gama.stalactite.persistence.engine.configurer.PersisterBuilderImpl;
@@ -681,7 +682,7 @@ public class CascadeOneConfigurer<SRC, TRGT, ID> {
 				
 				/**
 				 * This is never used because it should return an entity which can't be build here.
-				 * It will be by {@link org.gama.stalactite.persistence.engine.cascade.StrategyJoinsRowTransformer}
+				 * It will be by {@link EntityMappingStrategyTreeRowTransformer}
 				 * Hence this implementation returns null
 				 */
 				@Override

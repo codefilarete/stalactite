@@ -7,8 +7,8 @@ import java.util.Set;
 
 import org.gama.lang.collection.Iterables;
 import org.gama.stalactite.persistence.engine.BeanRelationFixer;
-import org.gama.stalactite.persistence.engine.cascade.AbstractJoin.JoinType;
-import org.gama.stalactite.persistence.engine.cascade.StrategyJoinsRowTransformer.EntityInflater;
+import org.gama.stalactite.persistence.engine.cascade.EntityMappingStrategyTreeJoinPoint.JoinType;
+import org.gama.stalactite.persistence.engine.cascade.EntityMappingStrategyTreeRowTransformer.EntityInflater;
 import org.gama.stalactite.persistence.mapping.AbstractTransformer;
 import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
 import org.gama.stalactite.persistence.mapping.ColumnedRow;
@@ -18,49 +18,48 @@ import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.sql.result.Row;
 
 /**
- * Joins of a strategy: owns the left part of the join, and "right parts" are represented by a collection of {@link AbstractJoin}, ending up with a tree
- * of joins representing a relation graph.
+ * Combination of {@link IEntityMappingStrategy} as a tree formed by joins of a strategies: owns the left part of the join, and "right parts"
+ * are represented by a collection of {@link EntityMappingStrategyTreeJoinPoint}, ending up with a tree of joins representing a relation graph.
  *
  * @param <E> the type of the entity mapped by the {@link ClassMappingStrategy}
  */
-public class StrategyJoins<E, D extends Table> {
+public class EntityMappingStrategyTree<E, D extends Table> {
 	/** The left part of the join, nullable in case of passive join (such as association table) */
 	@Nullable
 	private final EntityInflater<E, ?> strategy;
 	private final D table;
 	private final Set<Column<D, Object>> columnsToSelect;
 	/** Joins */
-	private final List<AbstractJoin> joins = new ArrayList<>();
+	private final List<EntityMappingStrategyTreeJoinPoint> joins = new ArrayList<>();
 	
 	@Nullable
-	// TODO: seems to be always null => to be removed ?
 	private String tableAlias;
 	
-	StrategyJoins(IEntityMappingStrategy<E, ?, D> strategy) {
-		this(strategy, null);
+	EntityMappingStrategyTree(IEntityMappingStrategy<E, ?, D> root) {
+		this(root, null);
 	}
 	
-	StrategyJoins(IEntityMappingStrategy<E, ?, D> strategy, String tableAlias) {
+	EntityMappingStrategyTree(IEntityMappingStrategy<E, ?, D> root, String tableAlias) {
 		this(new EntityInflater<E, Object>() {
 			
 			@Override
 			public Class<E> getEntityType() {
-				return strategy.getClassToPersist();
+				return root.getClassToPersist();
 			}
 			
 			@Override
 			public Object giveIdentifier(Row row, ColumnedRow columnedRow) {
-				return strategy.getIdMappingStrategy().getIdentifierAssembler().assemble(row, columnedRow);
+				return root.getIdMappingStrategy().getIdentifierAssembler().assemble(row, columnedRow);
 			}
 			
 			@Override
 			public AbstractTransformer copyTransformerWithAliases(ColumnedRow columnedRow) {
-				return strategy.copyTransformerWithAliases(columnedRow);
+				return root.copyTransformerWithAliases(columnedRow);
 			}
-		}, strategy.getTargetTable(), strategy.getSelectableColumns(), tableAlias);
+		}, root.getTargetTable(), root.getSelectableColumns(), tableAlias);
 	}
 	
-	StrategyJoins(@Nullable EntityInflater<E, ?> strategy, D table, Set<Column<D, Object>> columnsToSelect, @Nullable String tableAlias) {
+	EntityMappingStrategyTree(@Nullable EntityInflater<E, ?> strategy, D table, Set<Column<D, Object>> columnsToSelect, @Nullable String tableAlias) {
 		this.strategy = strategy;
 		this.table = table;
 		this.columnsToSelect = columnsToSelect;
@@ -75,7 +74,7 @@ public class StrategyJoins<E, D extends Table> {
 		return (EntityInflater<E, I>) strategy;
 	}
 	
-	public List<AbstractJoin> getJoins() {
+	public List<EntityMappingStrategyTreeJoinPoint> getJoins() {
 		return joins;
 	}
 	
@@ -175,39 +174,39 @@ public class StrategyJoins<E, D extends Table> {
 	 * @param target the graph that will contain this subgraph after copy
 	 * @param targetJoinsNodeName join node target
 	 */
-	public void copyTo(JoinedStrategiesSelect target, String targetJoinsNodeName) {
-		target.getStrategyJoins(targetJoinsNodeName).joins.addAll(this.joins);
+	public void copyTo(EntityMappingStrategyTreeSelectBuilder target, String targetJoinsNodeName) {
+		target.getTree(targetJoinsNodeName).joins.addAll(this.joins);
 	}
 	
 	/**
-	 * Almost the same as {@link #copyTo(JoinedStrategiesSelect, String)} but replaces left join columns (of this) by columns of
+	 * Almost the same as {@link #copyTo(EntityMappingStrategyTreeSelectBuilder, String)} but replaces left join columns (of this) by columns of
 	 * the targeted select table, this allows to copy current joins to another select table which is not the same as the current one. 
 	 *
 	 * @param target the graph that will contain this subgraph after copy
 	 * @param targetJoinsNodeName join node target
 	 */
-	public void projectTo(JoinedStrategiesSelect target, String targetJoinsNodeName) {
-		StrategyJoins targetJoins = target.getStrategyJoins(targetJoinsNodeName);
-		List<AbstractJoin> projectedJoins = Iterables.collectToList(this.joins, abstractJoin ->
+	public void projectTo(EntityMappingStrategyTreeSelectBuilder target, String targetJoinsNodeName) {
+		EntityMappingStrategyTree targetJoins = target.getTree(targetJoinsNodeName);
+		List<EntityMappingStrategyTreeJoinPoint> projectedJoins = Iterables.collectToList(this.joins, abstractJoin ->
 			abstractJoin.copyTo(targetJoins.getTable().getColumn(abstractJoin.getLeftJoinColumn().getName()))
 		);
 		targetJoins.joins.addAll(projectedJoins);
 	}
 	
 	/**
-	 * Specilization of an {@link AbstractJoin} for relation between beans such as one-to-one or one-to-many
+	 * Specilization of an {@link EntityMappingStrategyTreeJoinPoint} for relation between beans such as one-to-one or one-to-many
 	 */
-	public static class RelationJoin<O> extends AbstractJoin<O> {
+	public static class RelationJoin<O> extends EntityMappingStrategyTreeJoinPoint<O> {
 		/** Relation fixer for instances of this strategy on owning strategy entities */
 		private final BeanRelationFixer beanRelationFixer;
 		
-		private RelationJoin(StrategyJoins<O, ?> strategy, Column leftJoinColumn, Column rightJoinColumn, JoinType joinType, BeanRelationFixer beanRelationFixer) {
+		private RelationJoin(EntityMappingStrategyTree<O, ?> strategy, Column leftJoinColumn, Column rightJoinColumn, JoinType joinType, BeanRelationFixer beanRelationFixer) {
 			super(strategy, leftJoinColumn, rightJoinColumn, joinType);
 			this.beanRelationFixer = beanRelationFixer;
 		}
 		
 		private RelationJoin(EntityInflater<O, ?> strategy, Set<Column<Table, Object>> columnsToSelect, Column leftJoinColumn, Column rightJoinColumn, JoinType joinType, BeanRelationFixer beanRelationFixer) {
-			super(new StrategyJoins<>(strategy, leftJoinColumn.getTable(), columnsToSelect, null), leftJoinColumn, rightJoinColumn, joinType);
+			super(new EntityMappingStrategyTree<>(strategy, leftJoinColumn.getTable(), columnsToSelect, null), leftJoinColumn, rightJoinColumn, joinType);
 			this.beanRelationFixer = beanRelationFixer;
 		}
 		
@@ -221,41 +220,41 @@ public class StrategyJoins<E, D extends Table> {
 		}
 		
 		@Override
-		public AbstractJoin<O> copyTo(Column leftJoinColumn) {
+		public EntityMappingStrategyTreeJoinPoint<O> copyTo(Column leftJoinColumn) {
 			return new RelationJoin(super.getStrategy(), leftJoinColumn, getRightJoinColumn(), getJoinType(), getBeanRelationFixer());
 		}
 		
 	}
 	
 	/**
-	 * Specilization of an {@link AbstractJoin} for cases of inheritance/polymorphism by joined tables : not need to apply relationship setter.
+	 * Specilization of an {@link EntityMappingStrategyTreeJoinPoint} for cases of inheritance/polymorphism by joined tables : not need to apply relationship setter.
 	 * Join will be done with inner kind one because its seems nonesense to have optional merge information in inheritance cases. 
-	 * By itself it indicates that its strategy table content must be merged with its parent {@link StrategyJoins}.
+	 * By itself it indicates that its strategy table content must be merged with its parent {@link EntityMappingStrategyTree}.
 	 */
-	public static class MergeJoin<O> extends AbstractJoin<O> {
+	public static class MergeJoin<O> extends EntityMappingStrategyTreeJoinPoint<O> {
 		
 		private MergeJoin(IEntityMappingStrategy<O, ?, ? extends Table> strategy, Column leftJoinColumn, Column rightJoinColumn) {
 			super(strategy, leftJoinColumn, rightJoinColumn);
 		}
 		
 		private MergeJoin(EntityInflater<O, ?> strategy, Set<Column<Table, Object>> columnsToSelect, Column leftJoinColumn, Column rightJoinColumn, JoinType joinType) {
-			super(new StrategyJoins<>(strategy, leftJoinColumn.getTable(), columnsToSelect, null), leftJoinColumn, rightJoinColumn, joinType);
+			super(new EntityMappingStrategyTree<>(strategy, leftJoinColumn.getTable(), columnsToSelect, null), leftJoinColumn, rightJoinColumn, joinType);
 		}
 		
 		@Override
-		public AbstractJoin<O> copyTo(Column leftJoinColumn) {
+		public EntityMappingStrategyTreeJoinPoint<O> copyTo(Column leftJoinColumn) {
 			return new MergeJoin<>(super.getStrategy().getStrategy(), super.getStrategy().getColumnsToSelect(), leftJoinColumn, getRightJoinColumn(), getJoinType());
 		}
 	}
 	
-	public static class PassiveJoin<O> extends AbstractJoin<O> {
+	public static class PassiveJoin<O> extends EntityMappingStrategyTreeJoinPoint<O> {
 		
 		private PassiveJoin(Column leftJoinColumn, Column rightJoinColumn, JoinType joinType, Set<Column<Table, Object>> columnsToSelect) {
-			super(new StrategyJoins<>(null, rightJoinColumn.getTable(), columnsToSelect, null), leftJoinColumn, rightJoinColumn, joinType);
+			super(new EntityMappingStrategyTree<>(null, rightJoinColumn.getTable(), columnsToSelect, null), leftJoinColumn, rightJoinColumn, joinType);
 		}
 		
 		@Override
-		public AbstractJoin<O> copyTo(Column leftJoinColumn) {
+		public EntityMappingStrategyTreeJoinPoint<O> copyTo(Column leftJoinColumn) {
 			return new PassiveJoin<>(leftJoinColumn, getRightJoinColumn(), getJoinType(), super.getStrategy().getColumnsToSelect());
 		}
 	}

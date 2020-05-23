@@ -13,9 +13,9 @@ import com.google.common.annotations.VisibleForTesting;
 import org.gama.lang.Nullable;
 import org.gama.lang.Reflections;
 import org.gama.stalactite.persistence.engine.BeanRelationFixer;
-import org.gama.stalactite.persistence.engine.cascade.StrategyJoins.MergeJoin;
-import org.gama.stalactite.persistence.engine.cascade.StrategyJoins.PassiveJoin;
-import org.gama.stalactite.persistence.engine.cascade.StrategyJoins.RelationJoin;
+import org.gama.stalactite.persistence.engine.cascade.EntityMappingStrategyTree.MergeJoin;
+import org.gama.stalactite.persistence.engine.cascade.EntityMappingStrategyTree.PassiveJoin;
+import org.gama.stalactite.persistence.engine.cascade.EntityMappingStrategyTree.RelationJoin;
 import org.gama.stalactite.persistence.mapping.AbstractTransformer;
 import org.gama.stalactite.persistence.mapping.ColumnedRow;
 import org.gama.stalactite.persistence.structure.Column;
@@ -29,9 +29,9 @@ import org.gama.stalactite.sql.result.Row;
  * @param <C> type of generated beans
  * @author Guillaume Mary
  */
-public class StrategyJoinsRowTransformer<C> {
+public class EntityMappingStrategyTreeRowTransformer<C> {
 	
-	private final StrategyJoins<C, ?> rootStrategyJoins;
+	private final EntityMappingStrategyTree<C, ?> rootEntityMappingStrategyTree;
 	
 	/**
 	 * Alias provider between strategy columns and their names in {@link java.sql.ResultSet}. Used when transforming {@link Row} to beans.
@@ -39,24 +39,24 @@ public class StrategyJoinsRowTransformer<C> {
 	private final ColumnedRow columnedRow;
 	
 	/**
-	 * Constructor that links the instance to given {@link JoinedStrategiesSelect}
+	 * Constructor that links the instance to given {@link EntityMappingStrategyTreeSelectBuilder}
 	 * 
-	 * @param joinedStrategiesSelect the associated select maintener
+	 * @param entityMappingStrategyTreeSelectBuilder the associated select maintener
 	 */
-	public StrategyJoinsRowTransformer(JoinedStrategiesSelect<C, ?, ?> joinedStrategiesSelect) {
-		// aliases are computed on select build (done by JoinedStrategiesSelect) so we take it with a very dynamic alias provider by using
-		// a Function on JoinedStrategiesSelect
-		this(joinedStrategiesSelect.getJoinsRoot(), joinedStrategiesSelect::getAlias);
+	public EntityMappingStrategyTreeRowTransformer(EntityMappingStrategyTreeSelectBuilder<C, ?, ?> entityMappingStrategyTreeSelectBuilder) {
+		// aliases are computed on select build (done by EntityMappingStrategyTreeSelectBuilder) so we take it with a very dynamic alias provider by using
+		// a Function on EntityMappingStrategyTreeSelectBuilder
+		this(entityMappingStrategyTreeSelectBuilder.getRoot(), entityMappingStrategyTreeSelectBuilder::getAlias);
 	}
 	
 	@VisibleForTesting
-	protected StrategyJoinsRowTransformer(StrategyJoins<C, ?> rootStrategyJoins, Function<Column, String> aliasProvider) {
-		this.rootStrategyJoins = rootStrategyJoins;
+	protected EntityMappingStrategyTreeRowTransformer(EntityMappingStrategyTree<C, ?> rootEntityMappingStrategyTree, Function<Column, String> aliasProvider) {
+		this.rootEntityMappingStrategyTree = rootEntityMappingStrategyTree;
 		this.columnedRow = new ColumnedRow(aliasProvider);
 	}
 	
 	/**
-	 * @return the alias provider to use to find {@link Column} values in rows of {@link #transform(Iterable, int, Map)}
+	 * @return the alias provider to find {@link Column} values in rows of {@link #transform(Iterable, int, Map)}
 	 */
 	public ColumnedRow getColumnedRow() {
 		return columnedRow;
@@ -91,22 +91,22 @@ public class StrategyJoinsRowTransformer<C> {
 		// We start by the root of the hierarchy.
 		// We process the entity of the current depth, then process the direct relations, add those relations to the depth iterator
 		Nullable<C> result = Nullable.empty();
-		Queue<StrategyJoins<Object, ?>> stack = new ArrayDeque<>();
-		stack.add((StrategyJoins<Object, ?>) rootStrategyJoins);
+		Queue<EntityMappingStrategyTree<Object, ?>> stack = new ArrayDeque<>();
+		stack.add((EntityMappingStrategyTree<Object, ?>) rootEntityMappingStrategyTree);
 		// we use a local cache of bean tranformer because we'll ask a slide of them with aliasProvider which creates an instance at each invokation
 		Object rowInstance = null;
 		while (!stack.isEmpty()) {
 			
 			// treating the current depth
-			StrategyJoins<Object, ?> currentMainStrategy = stack.poll();
+			EntityMappingStrategyTree<Object, ?> currentMainStrategy = stack.poll();
 			
 			if (currentMainStrategy.getStrategy() != null) {	// null when join is passive
 				rowInstance = giveRowInstance(row, currentMainStrategy, entityCacheWrapper, beanTransformerCache, result);
 			}
 			
 			// processing the direct relations
-			for (AbstractJoin join : currentMainStrategy.getJoins()) {
-				StrategyJoins subJoins = join.getStrategy();
+			for (EntityMappingStrategyTreeJoinPoint join : currentMainStrategy.getJoins()) {
+				EntityMappingStrategyTree subJoins = join.getStrategy();
 				if (join instanceof PassiveJoin) {
 					// Adds the right strategy for further processing if it has some more joins so they'll also be taken into account
 					addJoinsToStack(subJoins, stack);
@@ -134,23 +134,23 @@ public class StrategyJoinsRowTransformer<C> {
 		return result;
 	}
 	
-	private void addJoinsToStack(StrategyJoins joins, Queue<StrategyJoins<Object, ?>> stack) {
+	private void addJoinsToStack(EntityMappingStrategyTree joins, Queue<EntityMappingStrategyTree<Object, ?>> stack) {
 		if (!joins.getJoins().isEmpty()) {
 			stack.add(joins);
 		}
 	}
 	
 	private Object giveRowInstance(Row row,
-								   StrategyJoins<Object, ?> strategyJoins,
+								   EntityMappingStrategyTree<Object, ?> entityMappingStrategyTree,
 								   EntityCacheWrapper entityCacheWrapper,
 								   TransformerCache beanTransformerCache,
 								   Nullable<C> rootBeanHolder) {
-		EntityInflater<Object, Object> entityInflater = strategyJoins.getStrategy();
+		EntityInflater<Object, Object> entityInflater = entityMappingStrategyTree.getStrategy();
 		AbstractTransformer rowTransformer = beanTransformerCache.computeIfAbsent(entityInflater, columnedRow);
 		Object identifier = entityInflater.giveIdentifier(row, columnedRow);
 		return entityCacheWrapper.computeIfAbsent(entityInflater.getEntityType(), identifier, () -> {
 				Object newInstance = rowTransformer.transform(row);
-				if (strategyJoins == rootStrategyJoins) {
+				if (entityMappingStrategyTree == rootEntityMappingStrategyTree) {
 					rootBeanHolder.elseSet((C) newInstance);
 				}
 				return newInstance;

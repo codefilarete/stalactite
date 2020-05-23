@@ -13,8 +13,8 @@ import org.gama.lang.collection.Arrays;
 import org.gama.lang.collection.Iterables;
 import org.gama.lang.collection.Maps;
 import org.gama.stalactite.persistence.engine.BeanRelationFixer;
-import org.gama.stalactite.persistence.engine.cascade.AbstractJoin.JoinType;
-import org.gama.stalactite.persistence.engine.cascade.StrategyJoins.RelationJoin;
+import org.gama.stalactite.persistence.engine.cascade.EntityMappingStrategyTreeJoinPoint.JoinType;
+import org.gama.stalactite.persistence.engine.cascade.EntityMappingStrategyTree.RelationJoin;
 import org.gama.stalactite.persistence.id.assembly.IdentifierAssembler;
 import org.gama.stalactite.persistence.id.assembly.SimpleIdentifierAssembler;
 import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
@@ -39,7 +39,7 @@ import static org.mockito.Mockito.when;
 /**
  * @author Guillaume Mary
  */
-public class StrategyJoinsRowTransformerTest {
+public class EntityMappingStrategyTreeRowTransformerTest {
 	
 	private ClassMappingStrategy<Toto, Long, Table> rootStrategy;
 	private Table totoTable;
@@ -67,7 +67,7 @@ public class StrategyJoinsRowTransformerTest {
 		when(rootStrategy.copyTransformerWithAliases(any())).thenAnswer(new ToBeanRowTransformerAnswer<>(Toto.class, totoTable));
 		
 		Function<Column, String> aliasProvider = Column::getAlias;
-		StrategyJoinsRowTransformer<Toto> testInstance = new StrategyJoinsRowTransformer<>(new StrategyJoins<>(rootStrategy), aliasProvider);
+		EntityMappingStrategyTreeRowTransformer<Toto> testInstance = new EntityMappingStrategyTreeRowTransformer<>(new EntityMappingStrategyTree<>(rootStrategy), aliasProvider);
 		Row row1 = buildRow(
 				Maps.asMap(totoColumnId, (Object) 1L)
 						.add(totoColumnName, "toto"),
@@ -86,7 +86,7 @@ public class StrategyJoinsRowTransformerTest {
 	 */
 	@Test
 	public void testTransform_with2strategies_oneToOne() {
-		StrategyJoins<Toto, ?> rootStrategyJoins = new StrategyJoins<>(rootStrategy);
+		EntityMappingStrategyTree<Toto, ?> rootEntityMappingStrategyTree = new EntityMappingStrategyTree<>(rootStrategy);
 		
 		// creating another strategy that will be joined to the root one (goal of this test)
 		ClassMappingStrategy<Tata, Long, Table> joinedStrategy = mock(ClassMappingStrategy.class);
@@ -103,7 +103,7 @@ public class StrategyJoinsRowTransformerTest {
 		fixIdentifierAssembler(joinedStrategy, tataColumnId);
 		
 		// completing the test case: adding the joined strategy
-		rootStrategyJoins.add(joinedStrategy, dummyJoinColumn, dummyJoinColumn, JoinType.INNER, BeanRelationFixer.of(Toto::setOneToOne));
+		rootEntityMappingStrategyTree.add(joinedStrategy, dummyJoinColumn, dummyJoinColumn, JoinType.INNER, BeanRelationFixer.of(Toto::setOneToOne));
 		
 		
 		// Telling mocks which instance to create
@@ -111,7 +111,7 @@ public class StrategyJoinsRowTransformerTest {
 		when(joinedStrategy.copyTransformerWithAliases(any())).thenAnswer(new ToBeanRowTransformerAnswer<>(Tata.class, tataTable));
 		
 		Function<Column, String> aliasProvider = Column::getAlias;
-		StrategyJoinsRowTransformer<Toto> testInstance = new StrategyJoinsRowTransformer<>(rootStrategyJoins, aliasProvider);
+		EntityMappingStrategyTreeRowTransformer<Toto> testInstance = new EntityMappingStrategyTreeRowTransformer<>(rootEntityMappingStrategyTree, aliasProvider);
 		Row row1 = buildRow(
 				Maps.asMap(totoColumnId, (Object) 1L)
 						.add(totoColumnName, "toto")
@@ -135,7 +135,7 @@ public class StrategyJoinsRowTransformerTest {
 	 */
 	@Test
 	public void testTransform_with3strategies_deep() {
-		StrategyJoins rootStrategyJoins = new StrategyJoins<>(rootStrategy);
+		EntityMappingStrategyTree rootEntityMappingStrategyTree = new EntityMappingStrategyTree<>(rootStrategy);
 		
 		ClassMappingStrategy joinedStrategy1 = mock(ClassMappingStrategy.class);
 		when(joinedStrategy1.getClassToPersist()).thenReturn(Tata.class);
@@ -161,7 +161,7 @@ public class StrategyJoinsRowTransformerTest {
 		fixIdentifierAssembler(joinedStrategy2, titiColumnId);
 		
 		// completing the test case: adding the depth-1 strategy
-		RelationJoin joinedStrategy1Name = rootStrategyJoins.add(joinedStrategy1, dummyJoinColumn1, dummyJoinColumn1, JoinType.INNER,
+		RelationJoin joinedStrategy1Name = rootEntityMappingStrategyTree.add(joinedStrategy1, dummyJoinColumn1, dummyJoinColumn1, JoinType.INNER,
 				BeanRelationFixer.of(Toto::setOneToOne));
 		// completing the test case: adding the depth-2 strategy
 		joinedStrategy1Name.getStrategy().add(joinedStrategy2, dummyJoinColumn2, dummyJoinColumn2, JoinType.INNER,
@@ -173,7 +173,7 @@ public class StrategyJoinsRowTransformerTest {
 		when(joinedStrategy2.copyTransformerWithAliases(any())).thenAnswer(new ToBeanRowTransformerAnswer<>(Titi.class, titiTable));
 		
 		Function<Column, String> aliasProvider = Column::getAlias;
-		StrategyJoinsRowTransformer<Toto> testInstance = new StrategyJoinsRowTransformer<>(rootStrategyJoins, aliasProvider);
+		EntityMappingStrategyTreeRowTransformer<Toto> testInstance = new EntityMappingStrategyTreeRowTransformer<>(rootEntityMappingStrategyTree, aliasProvider);
 		Row row = buildRow(
 				Maps.asMap(totoColumnId, (Object) 1L)
 						.add(totoColumnName, "toto")
@@ -203,7 +203,7 @@ public class StrategyJoinsRowTransformerTest {
 	 */
 	@Test
 	public void testTransform_with3strategies_flat() {
-		StrategyJoins rootStrategyJoins = new StrategyJoins<>(rootStrategy);
+		EntityMappingStrategyTree rootEntityMappingStrategyTree = new EntityMappingStrategyTree<>(rootStrategy);
 		
 		ClassMappingStrategy joinedStrategy1 = mock(ClassMappingStrategy.class);
 		when(joinedStrategy1.getClassToPersist()).thenReturn(Tata.class);
@@ -229,9 +229,9 @@ public class StrategyJoinsRowTransformerTest {
 		fixIdentifierAssembler(joinedStrategy2, titiColumnId);
 		
 		// completing the test case: adding the joined strategy
-		rootStrategyJoins.add(joinedStrategy1, dummyJoinColumn1, dummyJoinColumn1, JoinType.INNER, BeanRelationFixer.of(Toto::setOneToOne));
+		rootEntityMappingStrategyTree.add(joinedStrategy1, dummyJoinColumn1, dummyJoinColumn1, JoinType.INNER, BeanRelationFixer.of(Toto::setOneToOne));
 		// completing the test case: adding the 2nd joined strategy
-		rootStrategyJoins.add(joinedStrategy2, dummyJoinColumn2, dummyJoinColumn2, JoinType.INNER, BeanRelationFixer.of(Toto::setOneToOneOther));
+		rootEntityMappingStrategyTree.add(joinedStrategy2, dummyJoinColumn2, dummyJoinColumn2, JoinType.INNER, BeanRelationFixer.of(Toto::setOneToOneOther));
 		
 		// Telling mocks which instance to create
 		when(rootStrategy.copyTransformerWithAliases(any())).thenAnswer(new ToBeanRowTransformerAnswer<>(Toto.class, totoTable));
@@ -239,7 +239,7 @@ public class StrategyJoinsRowTransformerTest {
 		when(joinedStrategy2.copyTransformerWithAliases(any())).thenAnswer(new ToBeanRowTransformerAnswer<>(Titi.class, titiTable));
 		
 		Function<Column, String> aliasProvider = Column::getAlias;
-		StrategyJoinsRowTransformer<Toto> testInstance = new StrategyJoinsRowTransformer<>(rootStrategyJoins, aliasProvider);
+		EntityMappingStrategyTreeRowTransformer<Toto> testInstance = new EntityMappingStrategyTreeRowTransformer<>(rootEntityMappingStrategyTree, aliasProvider);
 		Row row = buildRow(
 				Maps.asMap(totoColumnId, (Object) 1L)
 						.add(totoColumnName, "toto")
@@ -269,7 +269,7 @@ public class StrategyJoinsRowTransformerTest {
 	 */
 	@Test
 	public void testTransform_with2strategies_oneToMany() {
-		StrategyJoins rootStrategyJoins = new StrategyJoins<>(rootStrategy);
+		EntityMappingStrategyTree rootEntityMappingStrategyTree = new EntityMappingStrategyTree<>(rootStrategy);
 		
 		ClassMappingStrategy joinedStrategy = mock(ClassMappingStrategy.class);
 		when(joinedStrategy.getClassToPersist()).thenReturn(Tata.class);
@@ -285,7 +285,7 @@ public class StrategyJoinsRowTransformerTest {
 		fixIdentifierAssembler(joinedStrategy, tataColumnId);
 		
 		// completing the test case: adding the joined strategy
-		rootStrategyJoins.add(joinedStrategy,
+		rootEntityMappingStrategyTree.add(joinedStrategy,
 				null, dummyJoinColumn, JoinType.INNER,
 				BeanRelationFixer.of(Toto::setOneToMany, Toto::getOneToMany, ArrayList::new));
 		
@@ -294,7 +294,7 @@ public class StrategyJoinsRowTransformerTest {
 		when(joinedStrategy.copyTransformerWithAliases(any())).thenAnswer(new ToBeanRowTransformerAnswer<>(Tata.class, tataTable));
 		
 		Function<Column, String> aliasProvider = Column::getAlias;
-		StrategyJoinsRowTransformer<Toto> testInstance = new StrategyJoinsRowTransformer<>(rootStrategyJoins, aliasProvider);
+		EntityMappingStrategyTreeRowTransformer<Toto> testInstance = new EntityMappingStrategyTreeRowTransformer<>(rootEntityMappingStrategyTree, aliasProvider);
 		
 		Row row1 = buildRow(
 				Maps.asMap(totoColumnId, (Object) 1L)
@@ -330,7 +330,7 @@ public class StrategyJoinsRowTransformerTest {
 	@Test
 	public void testTransform_withTwiceSameStrategies_oneToOne() {
 		
-		StrategyJoins rootStrategyJoins = new StrategyJoins<>(rootStrategy);
+		EntityMappingStrategyTree rootEntityMappingStrategyTree = new EntityMappingStrategyTree<>(rootStrategy);
 		
 		// completing the test case: adding the joined strategy
 		Table totoTable2 = new Table("toto");
@@ -342,7 +342,7 @@ public class StrategyJoinsRowTransformerTest {
 		// adding IdentifierAssembler to the joined strategy
 		fixIdentifierAssembler(joinedStrategy, toto2ColumnId);
 		
-		rootStrategyJoins.add(joinedStrategy, null, toto2ColumnId, JoinType.INNER, BeanRelationFixer.of(Toto::setSibling));
+		rootEntityMappingStrategyTree.add(joinedStrategy, null, toto2ColumnId, JoinType.INNER, BeanRelationFixer.of(Toto::setSibling));
 		
 		
 		// Telling mocks which instance to create
@@ -356,7 +356,7 @@ public class StrategyJoinsRowTransformerTest {
 				.add(totoColumnName, aliasGenerator.apply(totoColumnName))
 				.add(toto2ColumnId, aliasGenerator.apply(toto2ColumnId))
 				.add(toto2ColumnName, aliasGenerator.apply(toto2ColumnName));
-		StrategyJoinsRowTransformer<Toto> testInstance = new StrategyJoinsRowTransformer<>(rootStrategyJoins, aliases::get);
+		EntityMappingStrategyTreeRowTransformer<Toto> testInstance = new EntityMappingStrategyTreeRowTransformer<>(rootEntityMappingStrategyTree, aliases::get);
 		// the row must math the aliases given to the instance
 		Row row = buildRow(
 				Maps.asComparingMap(columnComparator, totoColumnId, (Object) 1L)
