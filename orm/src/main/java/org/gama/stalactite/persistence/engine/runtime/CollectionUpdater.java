@@ -4,7 +4,6 @@ import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.function.BiConsumer;
@@ -27,17 +26,6 @@ import org.gama.stalactite.persistence.structure.Column;
  * @author Guillaume Mary
  */
 public class CollectionUpdater<I, O, C extends Collection<O>> implements BiConsumer<Duo<I, I>, Boolean> {
-	
-	/**
-	 * Foreign key column value store, for update and delete cases : stores column value per bean,
-	 * can be a nullifying function, or an id provider to the referenced source entity.
-	 * Implemented as a ThreadLocal because we can hardly cross layers and methods to pass such a value.
-	 * Cleaned after update and delete.
-	 */
-	private final ThreadLocal<Set<O>> foreignKeyValueProvider = ThreadLocal.withInitial(HashSet::new);
-//	private final ThreadLocal<Map<O, Function<O, I>>> foreignKeyValueProvider = ThreadLocal.withInitial(HashMap::new);
-	
-	private static final Function NULL_RETURNING_FUNCTION = trgt -> null;
 	
 	private final CollectionDiffer differ;
 	
@@ -130,7 +118,7 @@ public class CollectionUpdater<I, O, C extends Collection<O>> implements BiConsu
 	
 	/**
 	 * Updates collection entities
-	 *  @param updateContext context created by {@link #newUpdateContext(Duo)}
+	 * @param updateContext context created by {@link #newUpdateContext(Duo)}
 	 * @param allColumnsStatement indicates if all (mapped) columns of entities must be in statement, else only modified ones will be updated
 	 */
 	protected void updateTargets(UpdateContext updateContext, boolean allColumnsStatement) {

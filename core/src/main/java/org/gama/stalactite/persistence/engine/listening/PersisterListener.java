@@ -10,9 +10,15 @@ import org.gama.lang.function.ThrowingExecutable;
 import org.gama.stalactite.persistence.structure.Table;
 
 /**
- * Simple class that centralize persistence event listening. Delegates listening to encapsulated instance.
+ * Simple class that centralizes persistence event listener registration as well as execution of some code wrapped between event triggering.
  * 
  * @author Guillaume Mary
+ * @see #doWithInsertListener(Iterable, ThrowingExecutable)
+ * @see #doWithUpdateListener(Iterable, boolean, BiFunction)
+ * @see #doWithUpdateByIdListener(Iterable, ThrowingExecutable)
+ * @see #doWithDeleteListener(Iterable, ThrowingExecutable)
+ * @see #doWithDeleteByIdListener(Iterable, ThrowingExecutable)
+ * @see #doWithSelectListener(Iterable, ThrowingExecutable)
  */
 public class PersisterListener<C, I> implements IPersisterListener<C, I> {
 	

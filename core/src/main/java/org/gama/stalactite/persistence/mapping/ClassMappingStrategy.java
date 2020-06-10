@@ -178,7 +178,9 @@ public class ClassMappingStrategy<C, I, T extends Table> implements IEntityMappi
 	}
 	
 	/**
-	 * Implentation which returns all properties mapping, even embedded ones 
+	 * Implementation which returns all properties mapping, even embedded ones.
+	 * Result is built dynamically.
+	 * 
 	 * @return all properties mapping, even embedded ones
 	 */
 	@Override

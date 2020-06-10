@@ -57,8 +57,7 @@ import static org.gama.stalactite.persistence.engine.CascadeOptions.RelationMode
 /**
  * @param <SRC> type of input (left/source entities)
  * @param <TRGT> type of output (right/target entities)
- * @param <ID> identifier type of source entities
- * @param <ID> identifier type of target entities
+ * @param <ID> identifier type of source and target entities
  * @param <C> collection type of the relation
  * @author Guillaume Mary
  */
@@ -164,7 +163,6 @@ public class CascadeManyConfigurer<SRC, TRGT, ID, C extends Collection<TRGT>> {
 		private final boolean orphanRemoval;
 		private final boolean writeAuthorized;
 		private final AccessorDefinition accessorDefinition;
-		private IMutator<TRGT, SRC> reversePropertySetter;
 		
 		private ManyAssociationConfiguration(CascadeMany<SRC, TRGT, ID, C> cascadeMany,
 											 IEntityConfiguredJoinedTablesPersister<SRC, ID> srcPersister,
@@ -339,7 +337,7 @@ public class CascadeManyConfigurer<SRC, TRGT, ID, C extends Collection<TRGT>> {
 			Method reverseMethod = null;
 			String getterSignature = null;
 			// Setter for applying source entity to reverse side (target entities)
-			SerializableBiConsumer<TRGT, SRC> reverseSetter = null;
+			SerializableBiConsumer<TRGT, SRC> reverseSetter;
 			SerializableFunction<TRGT, SRC> reverseGetter = null;
 			PropertyAccessor<TRGT, SRC> reversePropertyAccessor = null;
 			if (reverseColumn == null) {
@@ -412,7 +410,6 @@ public class CascadeManyConfigurer<SRC, TRGT, ID, C extends Collection<TRGT>> {
 				targetMappingStrategy.addShadowColumnInsert(targetIdValueProvider);
 				targetMappingStrategy.addShadowColumnUpdate(targetIdValueProvider);
 			}
-			manyAssociationConfiguration.reversePropertySetter = reversePropertyAccessor;
 			
 			if (manyAssociationConfiguration.cascadeMany instanceof CascadeManyList) {
 				if (reverseGetter == null) {
