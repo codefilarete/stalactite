@@ -1,6 +1,7 @@
 package org.gama.stalactite.query.model;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -46,6 +47,21 @@ public class Select implements Iterable<Object /* String, Column or AliasedColum
 			add(new AliasedColumn(aliasedColumn.getKey(), aliasedColumn.getValue()));
 		}
 		return this;
+	}
+	
+	/**
+	 * Gives column aliases : works for {@link Column} declared through {@link #add(Column, String)} and {@link #add(Map)}.
+	 * 
+	 * @return {@link Column} aliases of this instance, an empty {@link Map} if no {@link Column} was added to this instance
+	 */
+	public Map<Column, String> giveColumnAliases() {
+		Map<Column, String> aliases = new HashMap<>();
+		for (Object column : columns) {
+			if (column instanceof AliasedColumn) {
+				aliases.put(((AliasedColumn) column).getColumn(), ((AliasedColumn) column).getAlias());
+			}
+		}
+		return aliases;
 	}
 	
 	public boolean isDistinct() {

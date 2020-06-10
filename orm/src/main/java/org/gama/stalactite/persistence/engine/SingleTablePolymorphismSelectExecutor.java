@@ -18,6 +18,7 @@ import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.query.builder.SQLQueryBuilder;
 import org.gama.stalactite.query.model.Operators;
+import org.gama.stalactite.query.model.Query;
 import org.gama.stalactite.query.model.QueryEase;
 import org.gama.stalactite.sql.ConnectionProvider;
 import org.gama.stalactite.sql.binder.ResultSetReader;
@@ -64,21 +65,22 @@ public class SingleTablePolymorphismSelectExecutor<C, I, T extends Table, D>
 		// TODO : (with which listener ?)
 		
 		Column<T, I> primaryKey = (Column<T, I>) Iterables.first(table.getPrimaryKey().getColumns());
-		Set<Column<T, ?>> columns = new HashSet<>(table.getPrimaryKey().getColumns());
-		columns.add(discriminatorColumn);
-		SQLQueryBuilder sqlQueryBuilder = new SQLQueryBuilder(QueryEase.
-				select(primaryKey, discriminatorColumn)
+		Query query = QueryEase.
+				select(primaryKey, primaryKey.getAlias())
+				.add(discriminatorColumn, discriminatorColumn.getAlias())
 				.from(table)
-				.where(primaryKey, Operators.in(ids)));
+				.where(primaryKey, Operators.in(ids)).getQuery();
+		SQLQueryBuilder sqlQueryBuilder = new SQLQueryBuilder(query);
 		PreparedSQL preparedSQL = sqlQueryBuilder.toPreparedSQL(dialect.getColumnBinderRegistry());
+		Map<Column, String> aliases = query.getSelectSurrogate().giveColumnAliases();
 		Map<Class, Set<I>> idsPerSubclass = new HashMap<>();
 		try(ReadOperation readOperation = new ReadOperation<>(preparedSQL, connectionProvider)) {
 			ResultSet resultSet = readOperation.execute();
-			Map<String, ResultSetReader> aliases = new HashMap<>();
-			columns.forEach(c -> aliases.put(c.getName(), dialect.getColumnBinderRegistry().getBinder(c)));
+			Map<String, ResultSetReader> readers = new HashMap<>();
+			aliases.forEach((c, as) -> readers.put(as, dialect.getColumnBinderRegistry().getBinder(c)));
 			
-			RowIterator resultSetIterator = new RowIterator(resultSet, aliases);
-			ColumnedRow columnedRow = new ColumnedRow(Column::getName);
+			RowIterator resultSetIterator = new RowIterator(resultSet, readers);
+			ColumnedRow columnedRow = new ColumnedRow(aliases::get);
 			resultSetIterator.forEachRemaining(row -> {
 				D dtype = (D) columnedRow.getValue(discriminatorColumn, row);
 				Class<? extends C> entitySubclass = polymorphismPolicy.getClass(dtype);

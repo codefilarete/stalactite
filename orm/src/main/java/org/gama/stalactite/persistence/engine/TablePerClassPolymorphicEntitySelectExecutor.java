@@ -87,10 +87,10 @@ public class TablePerClassPolymorphicEntitySelectExecutor<C, I, T extends Table>
 		Map<String, Class> discriminatorValues = new HashMap<>();
 		String discriminatorAlias = "Y";
 		String pkAlias = "PK";
-		Map<String, ResultSetReader> aliases = new HashMap<>();
-		aliases.put(discriminatorAlias, columnBinderRegistry.getBinder(String.class));
+		Map<String, ResultSetReader> readers = new HashMap<>();
+		readers.put(discriminatorAlias, columnBinderRegistry.getBinder(String.class));
 		ParameterBinder pkBinder = columnBinderRegistry.getBinder((Column) Iterables.first(mainTable.getPrimaryKey().getColumns()));
-		aliases.put(pkAlias, pkBinder);
+		readers.put(pkAlias, pkBinder);
 		tablePerSubConfiguration.forEach((subEntityType, subEntityTable) -> {
 			Column<T, I> primaryKey = (Column<T, I>) Iterables.first(subEntityTable.getPrimaryKey().getColumns());
 			String discriminatorValue = subEntityType.getSimpleName();
@@ -144,13 +144,12 @@ public class TablePerClassPolymorphicEntitySelectExecutor<C, I, T extends Table>
 		Map<Class, Set<I>> idsPerSubclass = new HashMap<>();
 		try (ReadOperation readOperation = new ReadOperation<>(preparedSQL, connectionProvider)) {
 			ResultSet resultSet = readOperation.execute();
-			RowIterator resultSetIterator = new RowIterator(resultSet, aliases);
+			RowIterator resultSetIterator = new RowIterator(resultSet, readers);
 			resultSetIterator.forEachRemaining(row -> {
 				
-				// looking for entity type on row : we read each subclass PK and check for nullity. The non-null one is the 
-				// right one
+				// looking for entity type on row : we read each subclass PK and check for nullity. The non-null one is the good one
 				String discriminatorValue = (String) row.get(discriminatorAlias);
-				// NB: we trim bacause some database (as HSQLDB) adds some padding in order that all values get same length
+				// NB: we trim because some database (as HSQLDB) adds some padding in order that all values get same length
 				Class<? extends C> entitySubclass = discriminatorValues.get(discriminatorValue.trim());
 				
 				// adding identifier to subclass' ids

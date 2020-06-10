@@ -19,7 +19,6 @@ import org.gama.stalactite.query.builder.SQLQueryBuilder;
 import org.gama.stalactite.query.model.Operators;
 import org.gama.stalactite.query.model.Query;
 import org.gama.stalactite.query.model.QueryEase;
-import org.gama.stalactite.query.model.Select.AliasedColumn;
 import org.gama.stalactite.sql.ConnectionProvider;
 import org.gama.stalactite.sql.binder.ResultSetReader;
 import org.gama.stalactite.sql.dml.PreparedSQL;
@@ -76,30 +75,25 @@ public class JoinedTablesPolymorphismSelectExecutor<C, I, T extends Table> imple
 				.from(mainTable)
 				.where(primaryKey, Operators.in(ids)).getQuery();
 		tablePerSubEntity.values().forEach(subTable -> {
-			Column subclassPrimaryKey = Iterables.first(
-					(Set<Column>) subTable.getPrimaryKey().getColumns());
+			Column subclassPrimaryKey = Iterables.first((Set<Column>) subTable.getPrimaryKey().getColumns());
 			query.select(subclassPrimaryKey, subclassPrimaryKey.getAlias());
 			query.getFrom().leftOuterJoin(primaryKey, subclassPrimaryKey);
 		});
 		SQLQueryBuilder sqlQueryBuilder = new SQLQueryBuilder(query);
+		Map<Column, String> aliases = query.getSelectSurrogate().giveColumnAliases();
 		PreparedSQL preparedSQL = sqlQueryBuilder.toPreparedSQL(dialect.getColumnBinderRegistry());
 		Map<Class, Set<I>> idsPerSubclass = new HashMap<>();
 		try (ReadOperation readOperation = new ReadOperation<>(preparedSQL, connectionProvider)) {
 			ResultSet resultSet = readOperation.execute();
-			Map<String, ResultSetReader> aliases = new HashMap<>();
-			Iterables.stream(query.getSelectSurrogate())
-					.map(AliasedColumn.class::cast).map(AliasedColumn::getColumn)
-					.forEach(c -> aliases.put(c.getAlias(), dialect.getColumnBinderRegistry().getBinder(c)));
+			Map<String, ResultSetReader> readers = new HashMap<>();
+			aliases.forEach((c, as) -> readers.put(as, dialect.getColumnBinderRegistry().getBinder(c)));
 			
-			RowIterator resultSetIterator = new RowIterator(resultSet, aliases);
-			ColumnedRow columnedRow = new ColumnedRow(Column::getAlias);
+			RowIterator resultSetIterator = new RowIterator(resultSet, readers);
+			ColumnedRow columnedRow = new ColumnedRow(aliases::get);
 			resultSetIterator.forEachRemaining(row -> {
 				
-				// looking for entity type on row : we read each subclass PK and check for nullity. The non-null one is the 
-				// right one
-				Class<? extends C> entitySubclass;
-				Set<Entry<Class<? extends C>, Table>> entries = tablePerSubEntity.entrySet();
-				Entry<Class<? extends C>, Table> subclassEntityOnRow = Iterables.find(entries,
+				// looking for entity type on row : we read each subclass PK and check for nullity. The non-null one is the good one
+				Entry<Class<? extends C>, Table> subclassEntityOnRow = Iterables.find(tablePerSubEntity.entrySet(),
 						e -> {
 							boolean isPKEmpty = true;
 							Iterator<Column> columnIt = e.getValue().getPrimaryKey().getColumns().iterator();
@@ -109,9 +103,9 @@ public class JoinedTablesPolymorphismSelectExecutor<C, I, T extends Table> imple
 							}
 							return isPKEmpty;
 						});
-				entitySubclass = subclassEntityOnRow.getKey();
+				Class<? extends C> entitySubclass = subclassEntityOnRow.getKey();
 				
-				// adding identifier to subclass' ids
+				// adding identifier to subclass ids
 				idsPerSubclass.computeIfAbsent(entitySubclass, k -> new HashSet<>())
 						.add((I) columnedRow.getValue(primaryKey, row));
 			});
