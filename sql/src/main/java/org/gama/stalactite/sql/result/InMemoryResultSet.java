@@ -11,7 +11,7 @@ import java.util.Iterator;
 import java.util.Map;
 
 /**
- * A {@link java.sql.ResultSet} implementation based on a in-memory structure that is filled at construction time
+ * A {@link java.sql.ResultSet} implementation based on an in-memory structure that is filled at construction time
  * 
  * @author Guillaume Mary
  */

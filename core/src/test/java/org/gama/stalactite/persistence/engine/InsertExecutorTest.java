@@ -26,7 +26,7 @@ import org.gama.stalactite.persistence.sql.dml.DMLGenerator;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.sql.ConnectionProvider;
-import org.gama.stalactite.sql.TransactionObserverConnectionProvider;
+import org.gama.stalactite.sql.TransactionAwareConnectionProvider;
 import org.gama.stalactite.sql.dml.SQLOperation.SQLOperationListener;
 import org.gama.stalactite.sql.dml.SQLStatement;
 import org.gama.stalactite.sql.dml.SQLStatement.BindingException;
@@ -126,7 +126,7 @@ public class InsertExecutorTest extends AbstractDMLExecutorTest {
 		ConnectionProvider connectionProviderMock = mock(ConnectionProvider.class);
 		when(connectionProviderMock.getCurrentConnection()).thenReturn(connection);
 		
-		ConnectionProvider connectionProvider = new TransactionObserverConnectionProvider(connectionProviderMock);
+		ConnectionProvider connectionProvider = new TransactionAwareConnectionProvider(connectionProviderMock);
 		
 		Table totoTable = new Table("toto");
 		Column pk = totoTable.addColumn("id", Integer.class).primaryKey();

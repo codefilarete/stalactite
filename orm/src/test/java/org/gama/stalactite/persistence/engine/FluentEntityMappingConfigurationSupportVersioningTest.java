@@ -11,7 +11,7 @@ import org.gama.lang.function.Serie.NowSerie;
 import org.gama.lang.test.Assertions;
 import org.gama.stalactite.persistence.id.StatefullIdentifierAlreadyAssignedIdentifierPolicy;
 import org.gama.stalactite.sql.ConnectionProvider;
-import org.gama.stalactite.sql.TransactionObserverConnectionProvider;
+import org.gama.stalactite.sql.TransactionAwareConnectionProvider;
 import org.gama.stalactite.sql.binder.DefaultParameterBinders;
 import org.gama.stalactite.sql.test.HSQLDBInMemoryDataSource;
 import org.gama.stalactite.persistence.engine.IFluentEntityMappingBuilder.IFluentMappingBuilderPropertyOptions;
@@ -71,20 +71,6 @@ public class FluentEntityMappingConfigurationSupportVersioningTest {
 	}
 	
 	@Test
-	public void testBuild_connectionProviderIsNotRollbackObserver_throwsException() {
-		PersistenceContext persistenceContext = new PersistenceContext(new JdbcConnectionProvider(dataSource), DIALECT);
-		assertThrows(UnsupportedOperationException.class, () -> MappingEase.entityBuilder(Country.class,
-				Identifier.LONG_TYPE)
-				// setting a foreign key naming strategy to be tested
-				.withForeignKeyNaming(ForeignKeyNamingStrategy.DEFAULT)
-				.versionedBy(Country::getVersion, new IntegerSerie())
-				.add(Country::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
-				.add(Country::getName)
-				.add(Country::getDescription)
-				.build(persistenceContext));
-	}
-	
-	@Test
 	public void testBuild_versionedPropertyIsOfUnsupportedType_throwsException() {
 		PersistenceContext persistenceContext = new PersistenceContext(new JdbcConnectionProvider(dataSource), DIALECT);
 		assertThrows(UnsupportedOperationException.class, () -> MappingEase.entityBuilder(Country.class,
@@ -101,7 +87,7 @@ public class FluentEntityMappingConfigurationSupportVersioningTest {
 	@Test
 	public void testUpdate_versionIsUpgraded_integerVersion() throws SQLException {
 		JdbcConnectionProvider surrogateConnectionProvider = new JdbcConnectionProvider(dataSource);
-		ConnectionProvider connectionProvider = new TransactionObserverConnectionProvider(surrogateConnectionProvider);
+		ConnectionProvider connectionProvider = new TransactionAwareConnectionProvider(surrogateConnectionProvider);
 		persistenceContext = new PersistenceContext(connectionProvider, DIALECT);
 		// mapping building thantks to fluent API
 		IEntityPersister<Country, Identifier<Long>> countryPersister = MappingEase.entityBuilder(Country.class,
@@ -147,7 +133,7 @@ public class FluentEntityMappingConfigurationSupportVersioningTest {
 	@Test
 	public void testUpdate_versionIsUpgraded_dateVersion() throws SQLException {
 		JdbcConnectionProvider surrogateConnectionProvider = new JdbcConnectionProvider(dataSource);
-		ConnectionProvider connectionProvider = new TransactionObserverConnectionProvider(surrogateConnectionProvider);
+		ConnectionProvider connectionProvider = new TransactionAwareConnectionProvider(surrogateConnectionProvider);
 		persistenceContext = new PersistenceContext(connectionProvider, DIALECT);
 		// mapping building thantks to fluent API
 		List<LocalDateTime> nowHistory = new ArrayList<>();
@@ -201,8 +187,8 @@ public class FluentEntityMappingConfigurationSupportVersioningTest {
 	@Test
 	public void testUpdate_entityIsOutOfSync_databaseIsNotUpdated() throws SQLException {
 		JdbcConnectionProvider surrogateConnectionProvider = new JdbcConnectionProvider(dataSource);
-		ConnectionProvider connectionProvider = new TransactionObserverConnectionProvider(surrogateConnectionProvider);
-		persistenceContext = new PersistenceContext(connectionProvider, DIALECT);
+		persistenceContext = new PersistenceContext(surrogateConnectionProvider, DIALECT);
+		ConnectionProvider connectionProvider = persistenceContext.getConnectionProvider();
 		// mapping building thanks to fluent API
 		IEntityPersister<Country, Identifier<Long>> countryPersister = MappingEase.entityBuilder(Country.class,
 				Identifier.LONG_TYPE)

@@ -63,12 +63,19 @@ import static org.gama.stalactite.persistence.engine.CascadeOptions.RelationMode
  */
 public class CascadeManyConfigurer<SRC, TRGT, ID, C extends Collection<TRGT>> {
 	
-	private final PersistenceContext persistenceContext;
+	private final Dialect dialect;
+	private final IConnectionConfiguration connectionConfiguration;
+	private final PersisterRegistry persisterRegistry;
 	private final PersisterBuilderImpl<TRGT, ID> persisterBuilder;
 	private Column<?, ID> sourcePrimaryKey;
 	
-	public CascadeManyConfigurer(PersistenceContext persistenceContext, PersisterBuilderImpl<TRGT, ID> persisterBuilder) {
-		this.persistenceContext = persistenceContext;
+	public CascadeManyConfigurer(Dialect dialect,
+								 IConnectionConfiguration connectionConfiguration,
+								 PersisterRegistry persisterRegistry,
+								 PersisterBuilderImpl<TRGT, ID> persisterBuilder) {
+		this.dialect = dialect;
+		this.connectionConfiguration = connectionConfiguration;
+		this.persisterRegistry = persisterRegistry;
 		this.persisterBuilder = persisterBuilder;
 	}
 	
@@ -92,8 +99,8 @@ public class CascadeManyConfigurer<SRC, TRGT, ID, C extends Collection<TRGT>> {
 												   ColumnNamingStrategy joinColumnNamingStrategy,
 												   AssociationTableNamingStrategy associationTableNamingStrategy) {
 		Table targetTable = determineTargetTable(cascadeMany);
-		IEntityConfiguredJoinedTablesPersister<TRGT, ID> targetPersister = (IEntityConfiguredJoinedTablesPersister<TRGT, ID>) this.persisterBuilder
-				.build(persistenceContext, targetTable);
+		IEntityConfiguredJoinedTablesPersister<TRGT, ID> targetPersister = this.persisterBuilder
+				.build(dialect, connectionConfiguration, persisterRegistry, targetTable);
 		
 		Column leftPrimaryKey = nullable(sourcePrimaryKey).getOr(() -> lookupSourcePrimaryKey(sourcePersister));
 		
@@ -114,9 +121,9 @@ public class CascadeManyConfigurer<SRC, TRGT, ID, C extends Collection<TRGT>> {
 		} else {
 			new CascadeManyWithAssociationTableConfigurer<>(manyAssociationConfiguration,
 					associationTableNamingStrategy,
-					persistenceContext.getDialect(),
+					dialect,
 					maintenanceMode == ASSOCIATION_ONLY,
-					persistenceContext.getConnectionConfiguration())
+					connectionConfiguration)
 					.configure();
 		}
 	}

@@ -12,12 +12,12 @@ import static org.mockito.ArgumentMatchers.any;
 /**
  * @author Guillaume Mary
  */
-public class TransactionObserverConnectionProviderTest {
+public class TransactionAwareConnectionProviderTest {
 	
 	@Test
 	public void test_whenCommitIsCalled_commitMethodsAreInvoked() throws SQLException {
 		HSQLDBInMemoryDataSource inMemoryDataSource = new HSQLDBInMemoryDataSource();
-		TransactionObserverConnectionProvider testInstance = new TransactionObserverConnectionProvider(new SimpleConnectionProvider(inMemoryDataSource.getConnection()));
+		TransactionAwareConnectionProvider testInstance = new TransactionAwareConnectionProvider(new SimpleConnectionProvider(inMemoryDataSource.getConnection()));
 		
 		CommitListener commitListenerMock = Mockito.mock(CommitListener.class);
 		testInstance.addCommitListener(commitListenerMock);
@@ -30,7 +30,7 @@ public class TransactionObserverConnectionProviderTest {
 	@Test
 	public void test_whenRollbackIsCalled_rollbackMethodsAreInvoked() throws SQLException {
 		HSQLDBInMemoryDataSource inMemoryDataSource = new HSQLDBInMemoryDataSource();
-		TransactionObserverConnectionProvider testInstance = new TransactionObserverConnectionProvider(new SimpleConnectionProvider(inMemoryDataSource.getConnection()));
+		TransactionAwareConnectionProvider testInstance = new TransactionAwareConnectionProvider(new SimpleConnectionProvider(inMemoryDataSource.getConnection()));
 		
 		RollbackListener rollbackListenerMock = Mockito.mock(RollbackListener.class);
 		testInstance.addRollbackListener(rollbackListenerMock);
@@ -45,7 +45,7 @@ public class TransactionObserverConnectionProviderTest {
 	@Test
 	public void test_whenRollbackSavepointIsCalled_rollbackSavepointMethodsAreInvoked() throws SQLException {
 		HSQLDBInMemoryDataSource inMemoryDataSource = new HSQLDBInMemoryDataSource();
-		TransactionObserverConnectionProvider testInstance = new TransactionObserverConnectionProvider(new SimpleConnectionProvider(inMemoryDataSource.getConnection()));
+		TransactionAwareConnectionProvider testInstance = new TransactionAwareConnectionProvider(new SimpleConnectionProvider(inMemoryDataSource.getConnection()));
 		
 		RollbackListener rollbackListenerMock = Mockito.mock(RollbackListener.class);
 		testInstance.addRollbackListener(rollbackListenerMock);

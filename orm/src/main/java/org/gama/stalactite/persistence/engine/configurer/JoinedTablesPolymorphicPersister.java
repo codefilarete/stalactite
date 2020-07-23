@@ -25,11 +25,10 @@ import org.gama.stalactite.persistence.engine.ISelectExecutor;
 import org.gama.stalactite.persistence.engine.JoinedTablesPolymorphismEntitySelectExecutor;
 import org.gama.stalactite.persistence.engine.JoinedTablesPolymorphismSelectExecutor;
 import org.gama.stalactite.persistence.engine.cascade.EntityMappingStrategyTreeJoinPoint.JoinType;
-import org.gama.stalactite.persistence.engine.cascade.IJoinedTablesPersister;
 import org.gama.stalactite.persistence.engine.cascade.EntityMappingStrategyTreeSelectBuilder;
+import org.gama.stalactite.persistence.engine.cascade.IJoinedTablesPersister;
 import org.gama.stalactite.persistence.engine.cascade.JoinedTablesPersister;
 import org.gama.stalactite.persistence.engine.cascade.JoinedTablesPersister.CriteriaProvider;
-import org.gama.stalactite.persistence.engine.cascade.JoinedTablesPersister.RelationalExecutableEntityQuery;
 import org.gama.stalactite.persistence.engine.listening.DeleteByIdListener;
 import org.gama.stalactite.persistence.engine.listening.DeleteListener;
 import org.gama.stalactite.persistence.engine.listening.IPersisterListener;
@@ -58,7 +57,7 @@ public class JoinedTablesPolymorphicPersister<C, I> implements IEntityConfigured
 	private static final ThreadLocal<Set<RelationIds<Object /* E */, Object /* target */, Object /* target identifier */ >>> DIFFERED_ENTITY_LOADER = new ThreadLocal<>();
 	
 	private final Map<Class<? extends C>, ? extends IEntityConfiguredJoinedTablesPersister<C, I>> subEntitiesPersisters;
-	/** The wrapper around wub entities loaders, for 2-phases load  */
+	/** The wrapper around sub entities loaders, for 2-phases load  */
 	private final JoinedTablesPolymorphismSelectExecutor<C, I, ?> mainSelectExecutor;
 	private final Class<C> parentClass;
 	private final Map<Class<? extends C>, IdMappingStrategy<C, I>> subclassIdMappingStrategies;
@@ -200,6 +199,10 @@ public class JoinedTablesPolymorphicPersister<C, I> implements IEntityConfigured
 	
 	@Override
 	public List<C> select(Iterable<I> ids) {
+		subEntitiesPersisters.forEach((subclass, subEntityPersister) -> {
+			subEntityPersister.getPersisterListener().getSelectListener().beforeSelect(ids);
+		});
+		
 		List<C> result = mainSelectExecutor.select(ids);
 		
 		// Then we call sub entities afterSelect listeners else they are not invoked. Done in particular for relation on sub entities that have
@@ -274,7 +277,7 @@ public class JoinedTablesPolymorphicPersister<C, I> implements IEntityConfigured
 	}
 	
 	@Override
-	public <O> ExecutableEntityQuery<C> selectWhere(SerializableFunction<C, O> getter, AbstractRelationalOperator<O> operator) {
+	public <O> RelationalExecutableEntityQuery<C> selectWhere(SerializableFunction<C, O> getter, AbstractRelationalOperator<O> operator) {
 		EntityCriteriaSupport<C> localCriteriaSupport = newWhere();
 		localCriteriaSupport.and(getter, operator);
 		return wrapIntoExecutable(localCriteriaSupport);

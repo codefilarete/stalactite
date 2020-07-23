@@ -150,6 +150,6 @@ public class OneToManyWithIndexedAssociationTableEngine<SRC, TRGT, ID, C extends
 	
 	@Override
 	protected IndexedAssociationRecord newRecord(SRC e, TRGT target, int index) {
-		return new IndexedAssociationRecord(joinedTablesPersister.getMappingStrategy().getId(e), targetPersister.getMappingStrategy().getId(target), index);
+		return new IndexedAssociationRecord(sourcePersister.getMappingStrategy().getId(e), targetPersister.getMappingStrategy().getId(target), index);
 	}
 }

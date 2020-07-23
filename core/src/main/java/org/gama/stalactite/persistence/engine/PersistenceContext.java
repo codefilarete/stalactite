@@ -2,7 +2,6 @@ package org.gama.stalactite.persistence.engine;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Executable;
-import java.sql.Connection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -15,6 +14,7 @@ import org.danekja.java.util.function.serializable.SerializableBiConsumer;
 import org.danekja.java.util.function.serializable.SerializableBiFunction;
 import org.danekja.java.util.function.serializable.SerializableFunction;
 import org.danekja.java.util.function.serializable.SerializableSupplier;
+import org.gama.lang.Nullable;
 import org.gama.lang.Reflections;
 import org.gama.lang.function.Converter;
 import org.gama.lang.function.SerializableTriFunction;
@@ -42,6 +42,7 @@ import org.gama.stalactite.query.model.Query;
 import org.gama.stalactite.query.model.QueryEase;
 import org.gama.stalactite.query.model.QueryProvider;
 import org.gama.stalactite.sql.ConnectionProvider;
+import org.gama.stalactite.sql.TransactionAwareConnectionProvider;
 import org.gama.stalactite.sql.dml.PreparedSQL;
 import org.gama.stalactite.sql.dml.WriteOperation;
 import org.gama.stalactite.sql.result.ResultSetRowAssembler;
@@ -53,11 +54,11 @@ import org.gama.stalactite.sql.result.WholeResultSetTransformer.AssemblyPolicy;
  *
  * @author Guillaume Mary
  */
-public class PersistenceContext {
+public class PersistenceContext implements PersisterRegistry {
 	
 	private final Map<Class<?>, IEntityPersister> persisterCache = new HashMap<>();
 	private final Dialect dialect;
-	private final IConnectionConfiguration connectionConfiguration;
+	private final TransactionAwareConnectionConfiguration connectionConfiguration;
 	private final Map<Class, ClassMappingStrategy> mappingStrategies = new HashMap<>(50);
 	
 	public PersistenceContext(ConnectionProvider connectionProvider, Dialect dialect) {
@@ -65,16 +66,12 @@ public class PersistenceContext {
 	}
 	
 	public PersistenceContext(IConnectionConfiguration connectionConfiguration, Dialect dialect) {
-		this.connectionConfiguration = connectionConfiguration;
+		this.connectionConfiguration = new TransactionAwareConnectionConfiguration(connectionConfiguration);
 		this.dialect = dialect;
 	}
 	
 	public ConnectionProvider getConnectionProvider() {
 		return connectionConfiguration.getConnectionProvider();
-	}
-	
-	public Connection getCurrentConnection() {
-		return getConnectionProvider().getCurrentConnection();
 	}
 	
 	public int getJDBCBatchSize() {
@@ -90,7 +87,7 @@ public class PersistenceContext {
 	}
 	
 	/**
-	 * Add a persistence configuration to this instance
+	 * Adds a persistence configuration to this instance
 	 * 
 	 * @param classMappingStrategy the persistence configuration
 	 * @param <C> the entity type that is configured for persistence
@@ -104,10 +101,6 @@ public class PersistenceContext {
 		return persister;
 	}
 	
-	public Map<Class, ClassMappingStrategy> getMappingStrategies() {
-		return mappingStrategies;
-	}
-	
 	public Set<IEntityPersister> getPersisters() {
 		// copy the Set because values() is backed by the Map and getPersisters() is not expected to permit such modifications
 		return new HashSet<>(persisterCache.values());
@@ -119,7 +112,7 @@ public class PersistenceContext {
 	 * 
 	 * @param clazz the class for which the {@link Persister} must be given
 	 * @param <C> the type of the persisted entity
-	 * @return never null
+	 * @return null if class has no persister registered
 	 * @throws IllegalArgumentException if the class is not mapped
 	 */
 	public <C, I> IEntityPersister<C, I> getPersister(Class<C> clazz) {
@@ -148,7 +141,6 @@ public class PersistenceContext {
 	/**
 	 * Creates a {@link ExecutableSelect} from a {@link QueryProvider}, so it helps to build beans from a {@link Query}.
 	 * Should be chained with {@link QueryMapper} mapping methods and obviously with its {@link ExecutableQuery#execute()}
-	 * method with {@link #getConnectionProvider()} as argument (for instance)
 	 * 
 	 * @param queryProvider the query provider to give the {@link Query} execute to populate beans
 	 * @param beanType type of created beans, used for returned type marker
@@ -163,7 +155,6 @@ public class PersistenceContext {
 	/**
 	 * Creates a {@link ExecutableSelect} from a {@link Query} in order to build beans from the {@link Query}.
 	 * Should be chained with {@link MappableQuery} mapping methods and obviously with its {@link ExecutableQuery#execute()}
-	 * method with {@link #getConnectionProvider()} as argument (for instance)
 	 * 
 	 * @param query the query to execute to populate beans
 	 * @param beanType type of created beans, used for returned type marker
@@ -177,7 +168,6 @@ public class PersistenceContext {
 	/**
 	 * Creates a {@link ExecutableSelect} from some SQL in order to build beans from the SQL.
 	 * Should be chained with {@link ExecutableSelect} mapping methods and obviously with its {@link ExecutableQuery#execute()}
-	 * method with {@link #getConnectionProvider()} as argument (for instance)
 	 * 
 	 * @param sql the SQL to execute to populate beans
 	 * @param beanType type of created beans, used for returned type marker
@@ -612,4 +602,56 @@ public class PersistenceContext {
 		@Override
 		<O> ExecutableSelect<C> set(String paramName, Iterable<O> value, Class<? super O> valueType);
 	}
+	
+	/**
+	 * Bridge between {@link ConnectionProvider}, {@link IConnectionConfiguration}, {@link org.gama.stalactite.sql.TransactionObserver}
+	 * and {@link SeparateTransactionExecutor} so one can notify {@link PersistenceContext} from commit and rollback as well as maintain internal
+	 * mecanisms such as :
+	 * - creating a separate transaction to manage HiLo Sequence
+	 * - revert entity version on transaction rollback (when versioning is active)
+	 */
+	private static class TransactionAwareConnectionConfiguration extends TransactionAwareConnectionProvider
+			implements IConnectionConfiguration,
+			SeparateTransactionExecutor	// for org.gama.stalactite.persistence.id.sequence.PooledHiLoSequence
+	{
+		
+		private final IConnectionConfiguration connectionConfiguration;
+		
+		private final Nullable<SeparateTransactionExecutor> separateTransactionExecutor;
+		
+		private TransactionAwareConnectionConfiguration(IConnectionConfiguration connectionConfiguration) {
+			super(connectionConfiguration.getConnectionProvider());
+			this.connectionConfiguration = connectionConfiguration;
+			// We'll be a real SeparateTransactionExecutor if given ConnectionProvider is one, else an exception will be thrown
+			// at runtime when requiring-feature is invoked 
+			if (connectionConfiguration.getConnectionProvider() instanceof SeparateTransactionExecutor) {
+				this.separateTransactionExecutor = Nullable.nullable((SeparateTransactionExecutor) connectionConfiguration.getConnectionProvider());
+			} else {
+				this.separateTransactionExecutor = Nullable.empty();
+			}
+		}
+		
+		@Override
+		public ConnectionProvider getConnectionProvider() {
+			// because we gave delegate instance at construction time we return ourselves, hence returning instance we'll benefit from transaction
+			// management throught TransactionObserver
+			return this;
+		}
+		
+		@Override
+		public int getBatchSize() {
+			// we simply delegate information to ConnectionConfiguration instance
+			return connectionConfiguration.getBatchSize();
+		}
+		
+		@Override
+		public void executeInNewTransaction(JdbcOperation jdbcOperation) {
+			separateTransactionExecutor
+					.invoke(executor -> executor.executeInNewTransaction(jdbcOperation))
+					// in fact we're not really a SeparateTransactionExecutor because given ConnectionProvider is not one
+					.elseThrow(new RuntimeException("Can't execute operation in separate transaction"
+							+ " because connection provider doesn't implement " + Reflections.toString(SeparateTransactionExecutor.class)));
+		}
+	}
+	
 }

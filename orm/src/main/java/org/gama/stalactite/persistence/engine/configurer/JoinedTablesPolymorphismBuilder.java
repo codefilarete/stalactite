@@ -17,8 +17,7 @@ import org.gama.stalactite.persistence.engine.ColumnNamingStrategy;
 import org.gama.stalactite.persistence.engine.ElementCollectionTableNamingStrategy;
 import org.gama.stalactite.persistence.engine.ForeignKeyNamingStrategy;
 import org.gama.stalactite.persistence.engine.IEntityConfiguredJoinedTablesPersister;
-import org.gama.stalactite.persistence.engine.IEntityConfiguredPersister;
-import org.gama.stalactite.persistence.engine.PersistenceContext;
+import org.gama.stalactite.persistence.engine.PersisterRegistry;
 import org.gama.stalactite.persistence.engine.PolymorphismPolicy.JoinedTablesPolymorphism;
 import org.gama.stalactite.persistence.engine.SubEntityMappingConfiguration;
 import org.gama.stalactite.persistence.engine.TableNamingStrategy;
@@ -31,6 +30,8 @@ import org.gama.stalactite.persistence.engine.configurer.PersisterBuilderImpl.Id
 import org.gama.stalactite.persistence.engine.configurer.PersisterBuilderImpl.MappingPerTable.Mapping;
 import org.gama.stalactite.persistence.engine.configurer.PersisterBuilderImpl.PolymorphismBuilder;
 import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
+import org.gama.stalactite.persistence.sql.Dialect;
+import org.gama.stalactite.persistence.sql.IConnectionConfiguration;
 import org.gama.stalactite.persistence.sql.dml.binder.ColumnBinderRegistry;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
@@ -82,7 +83,7 @@ abstract class JoinedTablesPolymorphismBuilder<C, I, T extends Table> implements
 	}
 	
 	@Override
-	public IEntityConfiguredPersister<C, I> build(PersistenceContext persistenceContext) {
+	public IEntityConfiguredJoinedTablesPersister<C, I> build(Dialect dialect, IConnectionConfiguration connectionConfiguration, PersisterRegistry persisterRegistry) {
 		Map<Class<? extends C>, JoinedTablesPersister<C, I, T>> persisterPerSubclass = new HashMap<>();
 		
 		BeanMappingBuilder beanMappingBuilder = new BeanMappingBuilder();
@@ -108,7 +109,7 @@ abstract class JoinedTablesPolymorphismBuilder<C, I, T extends Table> implements
 			
 			// NB: persisters are not registered into PersistenceContext because it may break implicit polymorphism principle (persisters are then
 			// available by PersistenceContext.getPersister(..)) and it is not sure that they are perfect ones (all their features should be tested)
-			JoinedTablesPersister subclassPersister = new JoinedTablesPersister(persistenceContext, classMappingStrategy);
+			JoinedTablesPersister subclassPersister = new JoinedTablesPersister(classMappingStrategy, dialect, connectionConfiguration);
 			persisterPerSubclass.put(subConfiguration.getEntityType(), subclassPersister);
 			
 			// Adding join with parent table to select
@@ -119,31 +120,33 @@ abstract class JoinedTablesPolymorphismBuilder<C, I, T extends Table> implements
 		}
 		
 		JoinedTablesPolymorphicPersister<C, I> surrogate = new JoinedTablesPolymorphicPersister(
-				mainPersister, persisterPerSubclass, persistenceContext.getConnectionProvider(),
-				persistenceContext.getDialect());
+				mainPersister, persisterPerSubclass, connectionConfiguration.getConnectionProvider(),
+				dialect);
 		PersisterListenerWrapper<C, I> result = new PersisterListenerWrapper<>(surrogate);
 		
 		for (SubEntityMappingConfiguration<? extends C, I> subConfiguration : polymorphismPolicy.getSubClasses()) {
 			JoinedTablesPersister<C, I, T> subEntityPersister = persisterPerSubclass.get(subConfiguration.getEntityType());
 			
 			// We register relation of sub class persister to take into account its specific one-to-ones, one-to-manys and element collection mapping
-			registerRelationCascades(subConfiguration, persistenceContext, subEntityPersister);
+			registerRelationCascades(subConfiguration, dialect, connectionConfiguration, persisterRegistry, subEntityPersister);
 		}
 		
 		return result;
 	}
 	
 	private <D extends C> void registerRelationCascades(SubEntityMappingConfiguration<D, I> entityMappingConfiguration,
-										  PersistenceContext persistenceContext,
-										  IEntityConfiguredJoinedTablesPersister<C, I> sourcePersister) {
+														Dialect dialect,
+														IConnectionConfiguration connectionConfiguration,
+														PersisterRegistry persisterRegistry,
+										  				IEntityConfiguredJoinedTablesPersister<C, I> sourcePersister) {
 		for (CascadeOne<D, ?, ?> cascadeOne : entityMappingConfiguration.getOneToOnes()) {
-			CascadeOneConfigurer cascadeOneConfigurer = new CascadeOneConfigurer<>(persistenceContext, new PersisterBuilderImpl<>(cascadeOne.getTargetMappingConfiguration()));
-			cascadeOneConfigurer.appendCascade(cascadeOne, sourcePersister,
-					this.foreignKeyNamingStrategy,
-					this.joinColumnNamingStrategy);
+			CascadeOneConfigurer cascadeOneConfigurer = new CascadeOneConfigurer<>(dialect, connectionConfiguration, persisterRegistry,
+					new PersisterBuilderImpl<>(cascadeOne.getTargetMappingConfiguration()));
+			cascadeOneConfigurer.appendCascade(cascadeOne, sourcePersister, this.foreignKeyNamingStrategy, this.joinColumnNamingStrategy);
 		}
 		for (CascadeMany<D, ?, ?, ? extends Collection> cascadeMany : entityMappingConfiguration.getOneToManys()) {
-			CascadeManyConfigurer cascadeManyConfigurer = new CascadeManyConfigurer<>(persistenceContext, new PersisterBuilderImpl<>(cascadeMany.getTargetMappingConfiguration()))
+			CascadeManyConfigurer cascadeManyConfigurer = new CascadeManyConfigurer<>(dialect, connectionConfiguration, persisterRegistry,
+					new PersisterBuilderImpl<>(cascadeMany.getTargetMappingConfiguration()))
 					// we must give primary key else reverse foreign key will target subclass table, which creates 2 fk in case of reuse of target persister
 					.setSourcePrimaryKey((Column) Iterables.first(mainPersister.getMainTable().getPrimaryKey().getColumns()));
 			cascadeManyConfigurer.appendCascade(cascadeMany, sourcePersister,
@@ -156,7 +159,7 @@ abstract class JoinedTablesPolymorphismBuilder<C, I, T extends Table> implements
 		
 		// taking element collections into account
 		for (ElementCollectionLinkage<D, ?, ? extends Collection> elementCollection : entityMappingConfiguration.getElementCollections()) {
-			ElementCollectionCascadeConfigurer elementCollectionCascadeConfigurer = new ElementCollectionCascadeConfigurer(persistenceContext);
+			ElementCollectionCascadeConfigurer elementCollectionCascadeConfigurer = new ElementCollectionCascadeConfigurer(dialect, connectionConfiguration);
 			elementCollectionCascadeConfigurer.appendCascade(elementCollection, sourcePersister, foreignKeyNamingStrategy, columnNamingStrategy,
 					elementCollectionTableNamingStrategy);
 		}

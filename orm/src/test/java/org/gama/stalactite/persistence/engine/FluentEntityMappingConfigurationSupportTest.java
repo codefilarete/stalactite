@@ -37,6 +37,7 @@ import org.gama.stalactite.persistence.engine.model.Gender;
 import org.gama.stalactite.persistence.engine.model.Person;
 import org.gama.stalactite.persistence.engine.model.PersonWithGender;
 import org.gama.stalactite.persistence.engine.model.Timestamp;
+import org.gama.stalactite.persistence.engine.runtime.PersisterWrapper;
 import org.gama.stalactite.persistence.id.Identified;
 import org.gama.stalactite.persistence.id.Identifier;
 import org.gama.stalactite.persistence.id.PersistableIdentifier;
@@ -253,13 +254,13 @@ public class FluentEntityMappingConfigurationSupportTest {
 	
 	@Test
 	public void add_mandatory_columnConstraintIsAdded() throws SQLException {
-		JoinedTablesPersister<Toto, StatefullIdentifier, Table> totoPersister = (JoinedTablesPersister<Toto, StatefullIdentifier, Table>)
+		IEntityConfiguredJoinedTablesPersister<Toto, StatefullIdentifier> totoPersister = (IEntityConfiguredJoinedTablesPersister<Toto, StatefullIdentifier>)
 				MappingEase.entityBuilder(Toto.class, StatefullIdentifier.class)
 				.add(Toto::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 				.add(Toto::getName).mandatory()
 				.build(persistenceContext);
 		
-		assertFalse(totoPersister.getMainTable().getColumn("name").isNullable());
+		assertFalse(totoPersister.getMappingStrategy().getTargetTable().getColumn("name").isNullable());
 	}
 	
 	@Test
@@ -567,7 +568,7 @@ public class FluentEntityMappingConfigurationSupportTest {
 		when(connectionMock.prepareStatement(anyString())).thenReturn(statementMock);
 		
 		StringBuilder capturedSQL = new StringBuilder();
-		((JoinedTablesPersister) persister).getInsertExecutor().setOperationListener(new SQLOperationListener<Column<Table, Object>>() {
+		((JoinedTablesPersister) (((PersisterWrapper) persister).getSurrogate())).getInsertExecutor().setOperationListener(new SQLOperationListener<Column<Table, Object>>() {
 			@Override
 			public void onValuesSet(Map<Column<Table, Object>, ?> values) {
 				capturedValues.putAll(values);

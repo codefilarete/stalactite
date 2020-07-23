@@ -30,7 +30,6 @@ import org.gama.stalactite.persistence.engine.cascade.EntityMappingStrategyTreeS
 import org.gama.stalactite.persistence.engine.cascade.IJoinedTablesPersister;
 import org.gama.stalactite.persistence.engine.cascade.JoinedTablesPersister;
 import org.gama.stalactite.persistence.engine.cascade.JoinedTablesPersister.CriteriaProvider;
-import org.gama.stalactite.persistence.engine.cascade.JoinedTablesPersister.RelationalExecutableEntityQuery;
 import org.gama.stalactite.persistence.engine.listening.DeleteByIdListener;
 import org.gama.stalactite.persistence.engine.listening.DeleteListener;
 import org.gama.stalactite.persistence.engine.listening.IPersisterListener;
@@ -67,11 +66,11 @@ public class SingleTablePolymorphicPersister<C, I, T extends Table<T>, D> implem
 	private final EntityCriteriaSupport<C> criteriaSupport;
 	
 	public SingleTablePolymorphicPersister(JoinedTablesPersister<C, I, T> mainPersister,
-															 Map<Class<? extends C>, JoinedTablesPersister<C, I, T>> subEntitiesPersisters,
-															 ConnectionProvider connectionProvider,
-															 Dialect dialect,
-															 Column<T, D> discriminatorColumn,
-															 SingleTablePolymorphism<C, I, D> polymorphismPolicy) {
+										   Map<Class<? extends C>, JoinedTablesPersister<C, I, T>> subEntitiesPersisters,
+										   ConnectionProvider connectionProvider,
+										   Dialect dialect,
+										   Column<T, D> discriminatorColumn,
+										   SingleTablePolymorphism<C, I, D> polymorphismPolicy) {
 		this.mainPersister = mainPersister;
 		this.discriminatorColumn = discriminatorColumn;
 		this.polymorphismPolicy = (SingleTablePolymorphism<C, I, Object>) polymorphismPolicy;
@@ -272,7 +271,7 @@ public class SingleTablePolymorphicPersister<C, I, T extends Table<T>, D> implem
 	}
 	
 	@Override
-	public <O> ExecutableEntityQuery<C> selectWhere(SerializableFunction<C, O> getter, AbstractRelationalOperator<O> operator) {
+	public <O> RelationalExecutableEntityQuery<C> selectWhere(SerializableFunction<C, O> getter, AbstractRelationalOperator<O> operator) {
 		EntityCriteriaSupport<C> localCriteriaSupport = newWhere();
 		localCriteriaSupport.and(getter, operator);
 		return wrapIntoExecutable(localCriteriaSupport);

@@ -2,7 +2,7 @@ package org.gama.stalactite.sql.result;
 
 import java.lang.reflect.Array;
 import java.lang.reflect.Method;
-import java.sql.ResultSet;
+import java.sql.PreparedStatement;
 
 import org.gama.lang.Reflections;
 import org.gama.lang.bean.MethodIterator;
@@ -14,12 +14,12 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 /**
  * @author Guillaume Mary
  */
-public class NoopResultSetTest {
+class NoopPreparedStatementTest {
 	
 	@Test
 	public void allMethodsReturnDefaultValue() {
-		ResultSet testInstance = new NoopResultSet();
-		MethodIterator methodIterator = new MethodIterator(NoopResultSet.class, Object.class);
+		PreparedStatement testInstance = new NoopPreparedStatement();
+		MethodIterator methodIterator = new MethodIterator(NoopPreparedStatement.class, Object.class);
 		Iterable<Method> methods = () -> methodIterator;
 		int methodCount = 0;
 		for (Method method : methods) {
@@ -52,7 +52,6 @@ public class NoopResultSetTest {
 			}
 		}
 		// checking that iteration over methods really worked
-		assertEquals(191, methodCount);
+		assertEquals(99, methodCount);
 	}
-	
 }

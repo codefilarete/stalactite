@@ -29,7 +29,6 @@ import org.gama.stalactite.persistence.engine.EmbeddableMappingConfigurationProv
 import org.gama.stalactite.persistence.engine.ForeignKeyNamingStrategy;
 import org.gama.stalactite.persistence.engine.IEntityConfiguredJoinedTablesPersister;
 import org.gama.stalactite.persistence.engine.IEntityPersister;
-import org.gama.stalactite.persistence.engine.PersistenceContext;
 import org.gama.stalactite.persistence.engine.builder.ElementCollectionLinkage;
 import org.gama.stalactite.persistence.engine.cascade.IJoinedTablesPersister;
 import org.gama.stalactite.persistence.engine.cascade.JoinedTablesPersister;
@@ -49,6 +48,8 @@ import org.gama.stalactite.persistence.mapping.ColumnedRow;
 import org.gama.stalactite.persistence.mapping.ComposedIdMappingStrategy;
 import org.gama.stalactite.persistence.mapping.EmbeddedBeanMappingStrategy;
 import org.gama.stalactite.persistence.mapping.IdAccessor;
+import org.gama.stalactite.persistence.sql.Dialect;
+import org.gama.stalactite.persistence.sql.IConnectionConfiguration;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.sql.result.Row;
@@ -64,10 +65,12 @@ import static org.gama.stalactite.persistence.engine.cascade.EntityMappingStrate
  */
 public class ElementCollectionCascadeConfigurer<SRC, TRGT, ID, C extends Collection<TRGT>> {
 	
-	private final PersistenceContext persistenceContext;
+	private final Dialect dialect;
+	private final IConnectionConfiguration connectionConfiguration;
 	
-	public ElementCollectionCascadeConfigurer(PersistenceContext persistenceContext) {
-		this.persistenceContext = persistenceContext;
+	public ElementCollectionCascadeConfigurer(Dialect dialect, IConnectionConfiguration connectionConfiguration) {
+		this.dialect = dialect;
+		this.connectionConfiguration = connectionConfiguration;
 	}
 	
 	public <T extends Table<T>> void appendCascade(ElementCollectionLinkage<SRC, TRGT, C> linkage,
@@ -104,7 +107,7 @@ public class ElementCollectionCascadeConfigurer<SRC, TRGT, ID, C extends Collect
 		} else {
 			BeanMappingBuilder elementCollectionMappingBuilder = new BeanMappingBuilder();
 			Map<IReversibleAccessor, Column> columnMap = elementCollectionMappingBuilder.build(embeddableConfiguration, targetTable,
-					persistenceContext.getDialect().getColumnBinderRegistry(), new ColumnNameProvider(columnNamingStrategy) {
+					dialect.getColumnBinderRegistry(), new ColumnNameProvider(columnNamingStrategy) {
 						@Override
 						protected String giveColumnName(Linkage pawn) {
 							return nullable(linkage.getOverridenColumnNames().get(pawn.getAccessor()))
@@ -136,7 +139,7 @@ public class ElementCollectionCascadeConfigurer<SRC, TRGT, ID, C extends Collect
 		}
 			
 		// Note that table will be added to schema thanks to select cascade because join is added to source persister
-		JoinedTablesPersister<ElementRecord, ElementRecord, Table> wrapperPersister = new JoinedTablesPersister<>(persistenceContext, wrapperStrategy);
+		JoinedTablesPersister<ElementRecord, ElementRecord, Table> wrapperPersister = new JoinedTablesPersister<>(wrapperStrategy, dialect, connectionConfiguration);
 		
 		// insert management
 		IAccessor<SRC, C> collectionAccessor = linkage.getCollectionProvider();
@@ -158,8 +161,8 @@ public class ElementCollectionCascadeConfigurer<SRC, TRGT, ID, C extends Collect
 	}
 	
 	private void registerColumnBinder(Column reverseColumn, Column sourcePK) {
-		persistenceContext.getDialect().getColumnBinderRegistry().register(reverseColumn, persistenceContext.getDialect().getColumnBinderRegistry().getBinder(sourcePK));
-		persistenceContext.getDialect().getJavaTypeToSqlTypeMapping().put(reverseColumn, persistenceContext.getDialect().getJavaTypeToSqlTypeMapping().getTypeName(sourcePK));
+		dialect.getColumnBinderRegistry().register(reverseColumn, dialect.getColumnBinderRegistry().getBinder(sourcePK));
+		dialect.getJavaTypeToSqlTypeMapping().put(reverseColumn, dialect.getJavaTypeToSqlTypeMapping().getTypeName(sourcePK));
 	}
 	
 	private void addInsertCascade(IEntityConfiguredJoinedTablesPersister<SRC, ID> sourcePersister,

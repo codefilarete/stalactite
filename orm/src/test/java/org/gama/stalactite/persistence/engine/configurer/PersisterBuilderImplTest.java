@@ -18,6 +18,7 @@ import org.gama.lang.collection.Arrays;
 import org.gama.lang.collection.Iterables;
 import org.gama.lang.collection.KeepOrderSet;
 import org.gama.lang.collection.Maps;
+import org.gama.lang.function.Serie.IntegerSerie;
 import org.gama.lang.test.Assertions;
 import org.gama.reflection.AccessorChain;
 import org.gama.reflection.IReversibleAccessor;
@@ -34,12 +35,14 @@ import org.gama.stalactite.persistence.engine.configurer.PersisterBuilderImpl.Ma
 import org.gama.stalactite.persistence.engine.model.AbstractVehicle;
 import org.gama.stalactite.persistence.engine.model.Car;
 import org.gama.stalactite.persistence.engine.model.Color;
+import org.gama.stalactite.persistence.engine.model.Country;
 import org.gama.stalactite.persistence.engine.model.Timestamp;
 import org.gama.stalactite.persistence.engine.model.Vehicle;
 import org.gama.stalactite.persistence.id.Identified;
 import org.gama.stalactite.persistence.id.Identifier;
 import org.gama.stalactite.persistence.id.StatefullIdentifierAlreadyAssignedIdentifierPolicy;
 import org.gama.stalactite.persistence.sql.HSQLDBDialect;
+import org.gama.stalactite.persistence.sql.IConnectionConfiguration.ConnectionConfigurationSupport;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.ForeignKey;
 import org.gama.stalactite.persistence.structure.Table;
@@ -48,6 +51,7 @@ import org.gama.stalactite.sql.binder.LambdaParameterBinder;
 import org.gama.stalactite.sql.binder.NullAwareParameterBinder;
 import org.gama.stalactite.sql.result.InMemoryResultSet;
 import org.gama.stalactite.sql.test.HSQLDBInMemoryDataSource;
+import org.gama.stalactite.test.JdbcConnectionProvider;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -70,6 +74,7 @@ import static org.gama.stalactite.persistence.id.Identifier.identifierBinder;
 import static org.gama.stalactite.sql.binder.DefaultParameterBinders.INTEGER_PRIMITIVE_BINDER;
 import static org.gama.stalactite.sql.binder.DefaultParameterBinders.LONG_PRIMITIVE_BINDER;
 import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.withSettings;
@@ -103,6 +108,23 @@ public class PersisterBuilderImplTest {
 	@AfterEach
 	void removeEntityCandidates() {
 		PersisterBuilderImpl.ENTITY_CANDIDATES.remove();
+	}
+	
+	@Test
+	void build_connectionProviderIsNotRollbackObserver_throwsException() {
+		PersistenceContext persistenceContext = new PersistenceContext(new JdbcConnectionProvider(dataSource), DIALECT);
+		PersisterBuilderImpl testInstance = new PersisterBuilderImpl(entityBuilder(Country.class, Identifier.LONG_TYPE)
+				// setting a foreign key naming strategy to be tested
+				.withForeignKeyNaming(ForeignKeyNamingStrategy.DEFAULT)
+				.versionedBy(Country::getVersion, new IntegerSerie())
+				.add(Country::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+				.add(Country::getName)
+				.add(Country::getDescription));
+		assertThrows(UnsupportedOperationException.class, () -> testInstance.build(
+				DIALECT,
+				new ConnectionConfigurationSupport(new JdbcConnectionProvider(dataSource), 10),
+				persistenceContext,
+				null));
 	}
 	
 	@Test

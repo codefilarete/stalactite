@@ -1,8 +1,18 @@
 package org.gama.stalactite.persistence.engine.cascade;
 
+import java.util.Collection;
+
+import org.danekja.java.util.function.serializable.SerializableBiConsumer;
+import org.danekja.java.util.function.serializable.SerializableFunction;
 import org.gama.stalactite.persistence.engine.BeanRelationFixer;
+import org.gama.stalactite.persistence.engine.ExecutableQuery;
+import org.gama.stalactite.persistence.engine.IEntityPersister.EntityCriteria;
+import org.gama.stalactite.persistence.engine.IEntityPersister.ExecutableEntityQuery;
+import org.gama.stalactite.persistence.engine.cascade.JoinedTablesPersister.CriteriaProvider;
+import org.gama.stalactite.persistence.query.RelationalEntityCriteria;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
+import org.gama.stalactite.query.model.AbstractRelationalOperator;
 
 /**
  * @author Guillaume Mary
@@ -61,4 +71,35 @@ public interface IJoinedTablesPersister<C, I> {
 	 */
 	<E, ID, T extends Table> void copyJoinsRootTo(EntityMappingStrategyTreeSelectBuilder<E, ID, T> entityMappingStrategyTreeSelectBuilder, String joinName);
 	
+	/**
+	 * Creates a query which criteria target mapped properties.
+	 * <strong>As for now aggregate result is truncated to entities returned by SQL selection : for example, if criteria on collection is used,
+	 * only entities returned by SQL criteria will be loaded. This does not respect aggregate principle and should be enhanced in future.</strong>
+	 *
+	 * @param <O> value type returned by property accessor
+	 * @param getter a property accessor
+	 * @param operator criteria for the property
+	 * @return a {@link EntityCriteria} enhance to be executed through {@link ExecutableQuery#execute()}
+	 */
+	<O> RelationalExecutableEntityQuery<C> selectWhere(SerializableFunction<C, O> getter, AbstractRelationalOperator<O> operator);
+	
+	/**
+	 * Mashup between {@link EntityCriteria} and {@link ExecutableQuery} to make an {@link EntityCriteria} executable
+	 * @param <C> type of object returned by query execution
+	 */
+	interface RelationalExecutableEntityQuery<C> extends ExecutableEntityQuery<C>, CriteriaProvider, RelationalEntityCriteria<C> {
+		
+		<O> RelationalExecutableEntityQuery<C> and(SerializableFunction<C, O> getter, AbstractRelationalOperator<O> operator);
+		
+		<O> RelationalExecutableEntityQuery<C> and(SerializableBiConsumer<C, O> setter, AbstractRelationalOperator<O> operator);
+		
+		<O> RelationalExecutableEntityQuery<C> or(SerializableFunction<C, O> getter, AbstractRelationalOperator<O> operator);
+		
+		<O> RelationalExecutableEntityQuery<C> or(SerializableBiConsumer<C, O> setter, AbstractRelationalOperator<O> operator);
+		
+		<A, B> RelationalExecutableEntityQuery<C> and(SerializableFunction<C, A> getter1, SerializableFunction<A, B> getter2, AbstractRelationalOperator<B> operator);
+		
+		<S extends Collection<A>, A, B> RelationalExecutableEntityQuery<C> andMany(SerializableFunction<C, S> getter1, SerializableFunction<A, B> getter2, AbstractRelationalOperator<B> operator);
+		
+	}
 }

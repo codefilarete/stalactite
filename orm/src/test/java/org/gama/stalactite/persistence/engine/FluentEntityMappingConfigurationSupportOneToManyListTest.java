@@ -57,6 +57,8 @@ import static org.mockito.Mockito.verify;
  */
 class FluentEntityMappingConfigurationSupportOneToManyListTest {
 	
+//	private static final Dialect DIALECT = new MySQLDialect();
+//	private final DataSource dataSource = new MySQLDataSource("test", "dev", "dev");
 	private static final Dialect DIALECT = new HSQLDBDialect();
 	private final DataSource dataSource = new HSQLDBInMemoryDataSource();
 	private final ConnectionProvider connectionProvider = new JdbcConnectionProvider(dataSource);
@@ -262,7 +264,7 @@ class FluentEntityMappingConfigurationSupportOneToManyListTest {
 	}
 	
 	@Test
-	void oneToManyList_select() {
+	void oneToManyList_select() throws SQLException {
 		persistenceContext = new PersistenceContext(connectionProvider, DIALECT);
 		
 		Table choiceTable = new Table("Choice");
@@ -291,6 +293,7 @@ class FluentEntityMappingConfigurationSupportOneToManyListTest {
 		questionPersister.insert(newQuestion);
 		
 		Question select = questionPersister.select(new PersistedIdentifier<>(1L));
+		connectionProvider.getCurrentConnection().commit();
 		assertEquals(Arrays.asSet(10L, 20L, 30L), Iterables.collect(select.getChoices(), chain(Choice::getId, StatefullIdentifier::getSurrogate), HashSet::new));
 	}
 	
@@ -319,12 +322,12 @@ class FluentEntityMappingConfigurationSupportOneToManyListTest {
 		answerPersister.delete(answer);
 		
 		ResultSet resultSet;
-		resultSet = persistenceContext.getCurrentConnection().createStatement().executeQuery("select id from Answer");
+		resultSet = persistenceContext.getConnectionProvider().getCurrentConnection().createStatement().executeQuery("select id from Answer");
 		assertFalse(resultSet.next());
-		resultSet = persistenceContext.getCurrentConnection().createStatement().executeQuery("select * from Answer_Choices");
+		resultSet = persistenceContext.getConnectionProvider().getCurrentConnection().createStatement().executeQuery("select * from Answer_Choices");
 		assertFalse(resultSet.next());
 		// NB: target entities are not deleted with ASSOCIATION_ONLY cascading
-		resultSet = persistenceContext.getCurrentConnection().createStatement().executeQuery("select id from Choice");
+		resultSet = persistenceContext.getConnectionProvider().getCurrentConnection().createStatement().executeQuery("select id from Choice");
 		assertTrue(resultSet.next());
 	}
 	

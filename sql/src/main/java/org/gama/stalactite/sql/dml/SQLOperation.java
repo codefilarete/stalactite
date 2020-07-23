@@ -34,7 +34,8 @@ import org.slf4j.LoggerFactory;
  */
 public abstract class SQLOperation<ParamType> implements AutoCloseable {
 	
-	protected static final Logger LOGGER = LoggerFactory.getLogger(SQLOperation.class);
+	/** Made public for internal project usage, not aimed at being used outside */
+	public static final Logger LOGGER = LoggerFactory.getLogger(SQLOperation.class);
 	
 	/** Listener that does nothing, made to prevent from not-null-matching if */
 	public static final SQLOperationListener NOOP_LISTENER = new SQLOperationListener() {
@@ -107,7 +108,7 @@ public abstract class SQLOperation<ParamType> implements AutoCloseable {
 	 */
 	protected void ensureStatement() throws SQLException {
 		Connection connection = this.connectionProvider.getCurrentConnection();
-		if (this.preparedStatement == null || this.preparedStatement.getConnection() != connection) {
+		if (this.preparedStatement == null) {
 			prepareStatement(connection);
 		}
 	}

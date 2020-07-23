@@ -125,6 +125,15 @@ public interface IEntityPersister<C, I> extends IInsertExecutor<C>, IUpdateExecu
 		return update(() -> new PairIterator<>(entities, select(ids)), true);
 	}
 	
+	/**
+	 * Helping method for "Command Design Pattern" so one can apply modifications to the entity loaded by its id without any concern of loading it.
+	 * This implementation will load twice same entity and call {@link #update(Object, Object, boolean)} afterward.
+	 * Subclasses may override this behavior to enhance loading or change its algorithm (by using {@link #updateById(Iterable)} for instance)
+	 * 
+	 * @param id key of entity to be modified 
+	 * @param entityConsumer businness code expected to modify its given entity
+	 * @return number of root entities updated (1 or 0)
+	 */
 	@Experimental
 	default int update(I id, Consumer<C> entityConsumer) {
 		C unmodified = select(id);

@@ -37,7 +37,6 @@ import org.gama.stalactite.persistence.engine.cascade.BeforeInsertSupport;
 import org.gama.stalactite.persistence.engine.cascade.BeforeUpdateSupport;
 import org.gama.stalactite.persistence.engine.cascade.EntityMappingStrategyTreeRowTransformer;
 import org.gama.stalactite.persistence.engine.cascade.IJoinedTablesPersister;
-import org.gama.stalactite.persistence.engine.cascade.JoinedTablesPersister;
 import org.gama.stalactite.persistence.engine.configurer.PersisterBuilderImpl;
 import org.gama.stalactite.persistence.engine.listening.DeleteListener;
 import org.gama.stalactite.persistence.engine.listening.IPersisterListener;
@@ -50,6 +49,7 @@ import org.gama.stalactite.persistence.mapping.IMappingStrategy.ShadowColumnValu
 import org.gama.stalactite.persistence.mapping.IdMappingStrategy;
 import org.gama.stalactite.persistence.mapping.SinglePropertyIdAccessor;
 import org.gama.stalactite.persistence.sql.Dialect;
+import org.gama.stalactite.persistence.sql.IConnectionConfiguration;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.sql.binder.NullAwareParameterBinder;
@@ -69,11 +69,18 @@ import static org.gama.stalactite.persistence.engine.CascadeOptions.RelationMode
  */
 public class CascadeOneConfigurer<SRC, TRGT, ID> {
 	
-	private final PersistenceContext persistenceContext;
+	private final Dialect dialect;
+	private final IConnectionConfiguration connectionConfiguration;
+	private final PersisterRegistry persisterRegistry;
 	private final PersisterBuilderImpl<TRGT, ID> targetPersisterBuilder;
 	
-	public CascadeOneConfigurer(PersistenceContext persistenceContext, PersisterBuilderImpl<TRGT, ID> targetPersisterBuilder) {
-		this.persistenceContext = persistenceContext;
+	public CascadeOneConfigurer(Dialect dialect,
+								IConnectionConfiguration connectionConfiguration,
+								PersisterRegistry persisterRegistry,
+								PersisterBuilderImpl<TRGT, ID> targetPersisterBuilder) {
+		this.dialect = dialect;
+		this.connectionConfiguration = connectionConfiguration;
+		this.persisterRegistry = persisterRegistry;
 		this.targetPersisterBuilder = targetPersisterBuilder;
 	}
 	
@@ -85,20 +92,27 @@ public class CascadeOneConfigurer<SRC, TRGT, ID> {
 		
 		ConfigurerTemplate<SRC, TRGT, ID> configurer;
 		if (cascadeOne.isRelationOwnedByTarget()) {
-			configurer = new RelationOwnedByTargetConfigurer<>(persistenceContext, targetPersisterBuilder);
+			configurer = new RelationOwnedByTargetConfigurer<>(dialect, connectionConfiguration, persisterRegistry, targetPersisterBuilder);
 		} else {
-			configurer = new RelationOwnedBySourceConfigurer<>(persistenceContext, targetPersisterBuilder);
+			configurer = new RelationOwnedBySourceConfigurer<>(dialect, connectionConfiguration, persisterRegistry, targetPersisterBuilder);
 		}
 		configurer.appendCascade(cascadeOne, sourcePersister, foreignKeyNamingStrategy, joinColumnNamingStrategy);
 	}
 	
 	private abstract static class ConfigurerTemplate<SRC, TRGT, ID> {
 		
-		protected final PersistenceContext persistenceContext;
+		protected final Dialect dialect;
+		protected final IConnectionConfiguration connectionConfiguration;
+		private final PersisterRegistry persisterRegistry;
 		private final PersisterBuilderImpl<TRGT, ID> targetPersisterBuilder;
 		
-		protected ConfigurerTemplate(PersistenceContext persistenceContext, PersisterBuilderImpl<TRGT, ID> targetPersisterBuilder) {
-			this.persistenceContext = persistenceContext;
+		protected ConfigurerTemplate(Dialect dialect,
+									 IConnectionConfiguration connectionConfiguration,
+									 PersisterRegistry persisterRegistry,
+									 PersisterBuilderImpl<TRGT, ID> targetPersisterBuilder) {
+			this.dialect = dialect;
+			this.connectionConfiguration = connectionConfiguration;
+			this.persisterRegistry = persisterRegistry;
 			this.targetPersisterBuilder = targetPersisterBuilder;
 		}
 		
@@ -121,7 +135,8 @@ public class CascadeOneConfigurer<SRC, TRGT, ID> {
 			
 			IEntityConfiguredPersister<TRGT, ID> targetPersister = targetPersisterBuilder
 					// please note that even if no table is found in configuration, build(..) will create one
-					.build(persistenceContext, nullable(cascadeOne.getTargetTable()).getOr(nullable(cascadeOne.getReverseColumn()).map(Column::getTable).get()));
+					.build(dialect, connectionConfiguration, persisterRegistry, 
+							nullable(cascadeOne.getTargetTable()).getOr(nullable(cascadeOne.getReverseColumn()).map(Column::getTable).get()));
 			IEntityMappingStrategy<TRGT, ID, ?> targetMappingStrategy = targetPersister.getMappingStrategy();
 			
 			// Finding joined columns
@@ -176,9 +191,6 @@ public class CascadeOneConfigurer<SRC, TRGT, ID> {
 		protected abstract void addDeleteCascade(CascadeOne<SRC, TRGT, ID> cascadeOne, IEntityConfiguredPersister<TRGT, ID> targetPersister,
 												 IPersisterListener<SRC, ID> srcPersisterListener, boolean orphanRemoval);
 		
-		/**
-		 * @return join key name added to in the {@link JoinedTablesPersister} 
-		 */
 		protected <T1 extends Table<T1>, T2 extends Table<T2>, P extends IJoinedTablesPersister<SRC, ID> & IPersisterListener<SRC, ID>> void addSelectCascade(
 				CascadeOne<SRC, TRGT, ID> cascadeOne,
 				P sourcePersister,
@@ -220,8 +232,11 @@ public class CascadeOneConfigurer<SRC, TRGT, ID> {
 	
 	private static class RelationOwnedBySourceConfigurer<SRC, TRGT, ID> extends ConfigurerTemplate<SRC, TRGT, ID> {
 		
-		private RelationOwnedBySourceConfigurer(PersistenceContext persistenceContext, PersisterBuilderImpl<TRGT, ID> targetPersisterBuilder) {
-			super(persistenceContext, targetPersisterBuilder);
+		private RelationOwnedBySourceConfigurer(Dialect dialect,
+												IConnectionConfiguration connectionConfiguration,
+												PersisterRegistry persisterRegistry,
+												PersisterBuilderImpl<TRGT, ID> targetPersisterBuilder) {
+			super(dialect, connectionConfiguration, persisterRegistry, targetPersisterBuilder);
 		}
 		
 		@Override
@@ -233,7 +248,7 @@ public class CascadeOneConfigurer<SRC, TRGT, ID> {
 			Column owningColumn = sourcePersister.getMappingStrategy().getPropertyToColumn().get(cascadeOne.getTargetProvider());
 			// we have to register a parameter binder for target entity so inserts & updates can get value from the property, without it, engine
 			// tries to find a binder for target entity which doesn't exist 
-			registerEntityBinder(owningColumn, targetPersister.getMappingStrategy(), persistenceContext.getDialect());
+			registerEntityBinder(owningColumn, targetPersister.getMappingStrategy(), dialect);
 			
 			return targetPersister;
 		}
@@ -347,8 +362,11 @@ public class CascadeOneConfigurer<SRC, TRGT, ID> {
 		@SuppressWarnings("squid:S2259")
 		private Column<Table, SRC> rightColumn;
 		
-		private RelationOwnedByTargetConfigurer(PersistenceContext persistenceContext, PersisterBuilderImpl<TRGT, ID> targetPersisterBuilder) {
-			super(persistenceContext, targetPersisterBuilder);
+		private RelationOwnedByTargetConfigurer(Dialect dialect,
+												IConnectionConfiguration connectionConfiguration,
+												PersisterRegistry persisterRegistry,
+												PersisterBuilderImpl<TRGT, ID> targetPersisterBuilder) {
+			super(dialect, connectionConfiguration, persisterRegistry, targetPersisterBuilder);
 		}
 		
 		@Override
@@ -371,7 +389,7 @@ public class CascadeOneConfigurer<SRC, TRGT, ID> {
 				AccessorDefinition accessorDefinition = AccessorDefinition.giveDefinition(localReverseGetter);
 				// we add a column for reverse mapping if one is not already declared
 				rightColumn = createOrUseReverseColumn(targetMappingStrategy, cascadeOne.getReverseColumn(), localReverseGetter, accessorDefinition, joinColumnNamingStrategy);
-				registerEntityBinder(rightColumn, mappingStrategy, persistenceContext.getDialect());
+				registerEntityBinder(rightColumn, mappingStrategy, dialect);
 				
 				// we take advantage of foreign key computing and presence of AccessorDefinition to build relation fixer which is needed lately in determineRelationFixer(..) 
 				IMutator<TRGT, SRC> targetIntoSourceFixer = Accessors.mutatorByMethod(accessorDefinition.getDeclaringClass(), accessorDefinition.getName());
@@ -390,7 +408,7 @@ public class CascadeOneConfigurer<SRC, TRGT, ID> {
 				// we add a column for reverse mapping if one is not already declared
 				rightColumn = createOrUseReverseColumn(targetMappingStrategy, cascadeOne.getReverseColumn(), reverseSetter, accessorDefinition,
 						joinColumnNamingStrategy);
-				registerEntityBinder(rightColumn, mappingStrategy, persistenceContext.getDialect());
+				registerEntityBinder(rightColumn, mappingStrategy, dialect);
 				
 				IAccessor<TRGT, SRC> accessor = Accessors.accessor(accessorDefinition.getDeclaringClass(), accessorDefinition.getName());
 				// we take advantage of forign key computing and presence of AccessorDefinition to build relation fixer which is needed lately in determineRelationFixer(..) 

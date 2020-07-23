@@ -7,8 +7,8 @@ import java.util.Set;
 
 import org.gama.reflection.IReversibleAccessor;
 import org.gama.reflection.ValueAccessPointSet;
-import org.gama.stalactite.persistence.engine.IEntityConfiguredPersister;
-import org.gama.stalactite.persistence.engine.PersistenceContext;
+import org.gama.stalactite.persistence.engine.IEntityConfiguredJoinedTablesPersister;
+import org.gama.stalactite.persistence.engine.PersisterRegistry;
 import org.gama.stalactite.persistence.engine.PolymorphismPolicy.TablePerClassPolymorphism;
 import org.gama.stalactite.persistence.engine.SubEntityMappingConfiguration;
 import org.gama.stalactite.persistence.engine.TableNamingStrategy;
@@ -18,6 +18,8 @@ import org.gama.stalactite.persistence.engine.configurer.PersisterBuilderImpl.Id
 import org.gama.stalactite.persistence.engine.configurer.PersisterBuilderImpl.MappingPerTable.Mapping;
 import org.gama.stalactite.persistence.engine.configurer.PersisterBuilderImpl.PolymorphismBuilder;
 import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
+import org.gama.stalactite.persistence.sql.Dialect;
+import org.gama.stalactite.persistence.sql.IConnectionConfiguration;
 import org.gama.stalactite.persistence.sql.dml.binder.ColumnBinderRegistry;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
@@ -54,7 +56,7 @@ abstract class TablePerClassPolymorphismBuilder<C, I, T extends Table> implement
 		this.tableNamingStrategy = tableNamingStrategy;
 	}
 	
-	private Map<Class<? extends C>, JoinedTablesPersister<C, I, T>> buildSubEntitiesPersisters(PersistenceContext persistenceContext) {
+	private Map<Class<? extends C>, JoinedTablesPersister<C, I, T>> buildSubEntitiesPersisters(Dialect dialect, IConnectionConfiguration connectionConfiguration) {
 		Map<Class<? extends C>, JoinedTablesPersister<C, I, T>> subPersisterPerSubclass = new HashMap<>();
 		
 		this.tables.clear();
@@ -81,7 +83,7 @@ abstract class TablePerClassPolymorphismBuilder<C, I, T extends Table> implement
 					subConfiguration.getPropertiesMapping().getBeanType(),
 					null);
 			
-			JoinedTablesPersister subclassPersister = new JoinedTablesPersister(persistenceContext, classMappingStrategy);
+			JoinedTablesPersister subclassPersister = new JoinedTablesPersister(classMappingStrategy, dialect, connectionConfiguration);
 			subPersisterPerSubclass.put(subConfiguration.getEntityType(), subclassPersister);
 		}
 		
@@ -93,13 +95,13 @@ abstract class TablePerClassPolymorphismBuilder<C, I, T extends Table> implement
 	abstract void addIdentificationToMapping(Identification identification, Mapping mapping);
 	
 	@Override
-	public IEntityConfiguredPersister<C, I> build(PersistenceContext persistenceContext) {
-		Map<Class<? extends C>, JoinedTablesPersister<C, I, T>> joinedTablesPersisters = buildSubEntitiesPersisters(persistenceContext);
+	public IEntityConfiguredJoinedTablesPersister<C, I> build(Dialect dialect, IConnectionConfiguration connectionConfiguration, PersisterRegistry persisterRegistry) {
+		Map<Class<? extends C>, JoinedTablesPersister<C, I, T>> joinedTablesPersisters = buildSubEntitiesPersisters(dialect, connectionConfiguration);
 		// NB: persisters are not registered into PersistenceContext because it may break implicit polymorphism principle (persisters are then
 		// available by PersistenceContext.getPersister(..)) and it is one sure that they are perfect ones (all their features should be tested)
 		// joinedTablesPersisters.values().forEach(persistenceContext::addPersister);
 		return new PersisterListenerWrapper<>(new TablePerClassPolymorphismPersister<>(
-				mainPersister, joinedTablesPersisters, persistenceContext.getConnectionProvider(), persistenceContext.getDialect()));
+				mainPersister, joinedTablesPersisters, connectionConfiguration.getConnectionProvider(), dialect));
 	}
 	
 }

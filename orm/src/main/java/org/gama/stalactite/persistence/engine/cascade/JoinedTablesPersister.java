@@ -1,21 +1,30 @@
 package org.gama.stalactite.persistence.engine.cascade;
 
-import java.util.Collection;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
 import org.danekja.java.util.function.serializable.SerializableBiConsumer;
 import org.danekja.java.util.function.serializable.SerializableFunction;
-import org.gama.lang.Nullable;
+import org.gama.lang.Duo;
+import org.gama.lang.collection.Iterables;
 import org.gama.reflection.MethodReferenceDispatcher;
 import org.gama.stalactite.persistence.engine.BeanRelationFixer;
+import org.gama.stalactite.persistence.engine.DeleteExecutor;
 import org.gama.stalactite.persistence.engine.ExecutableQuery;
 import org.gama.stalactite.persistence.engine.IEntityConfiguredJoinedTablesPersister;
 import org.gama.stalactite.persistence.engine.ISelectExecutor;
+import org.gama.stalactite.persistence.engine.InsertExecutor;
 import org.gama.stalactite.persistence.engine.PersistenceContext;
 import org.gama.stalactite.persistence.engine.Persister;
+import org.gama.stalactite.persistence.engine.UpdateExecutor;
 import org.gama.stalactite.persistence.engine.cascade.EntityMappingStrategyTreeJoinPoint.JoinType;
-import org.gama.stalactite.persistence.engine.cascade.EntityMappingStrategyTreeRowTransformer.EntityInflater;
+import org.gama.stalactite.persistence.engine.listening.DeleteByIdListener;
+import org.gama.stalactite.persistence.engine.listening.DeleteListener;
+import org.gama.stalactite.persistence.engine.listening.InsertListener;
+import org.gama.stalactite.persistence.engine.listening.PersisterListener;
+import org.gama.stalactite.persistence.engine.listening.SelectListener;
+import org.gama.stalactite.persistence.engine.listening.UpdateListener;
 import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
 import org.gama.stalactite.persistence.mapping.IEntityMappingStrategy;
 import org.gama.stalactite.persistence.query.EntityCriteriaSupport;
@@ -33,9 +42,12 @@ import org.gama.stalactite.sql.ConnectionProvider;
 import static java.util.Collections.emptyList;
 
 /**
- * Persister for entity with multiple joined tables with "foreign key = primary key".
- * A main table is defined by the {@link ClassMappingStrategy} passed to constructor. Complementary tables are defined
- * with {@link EntityMappingStrategyTreeSelectBuilder#addRelationJoin(String, IEntityMappingStrategy, Column, Column, JoinType, BeanRelationFixer)}.
+ * Persister that registers relations of entities joined on "foreign key = primary key".
+ * This does not handle inheritance nor entities mapped on several tables, it focuses on select part : a main table is defined by the
+ * {@link ClassMappingStrategy} passed to constructor and then it can be added to some other {@link IJoinedTablesPersister} thanks to
+ * {@link #joinAsMany(IJoinedTablesPersister, Column, Column, BeanRelationFixer, String, boolean)} and
+ * {@link #joinAsOne(IJoinedTablesPersister, Column, Column, BeanRelationFixer, boolean)}.
+ * 
  * Entity load is defined by a select that joins all tables, each {@link ClassMappingStrategy} is called to complete
  * entity loading.
  * 
@@ -47,31 +59,35 @@ import static java.util.Collections.emptyList;
  * @param <T> the main target table
  * @author Guillaume Mary
  */
-public class JoinedTablesPersister<C, I, T extends Table> extends Persister<C, I, T> implements IEntityConfiguredJoinedTablesPersister<C, I> {
+public class JoinedTablesPersister<C, I, T extends Table> implements IEntityConfiguredJoinedTablesPersister<C, I> {
 	
+	private final Persister<C, I, T> persister;
 	/** Support for {@link EntityCriteria} query execution */
-	private IEntitySelectExecutor<C> entitySelectExecutor;
+	private final IEntitySelectExecutor<C> entitySelectExecutor;
 	/** Support for defining Entity criteria on {@link #newWhere()} */
 	private final EntityCriteriaSupport<C> criteriaSupport;
+	private final EntityMappingStrategyTreeSelectExecutor<C, I, T> selectGraphExecutor;
 	
 	public JoinedTablesPersister(PersistenceContext persistenceContext, IEntityMappingStrategy<C, I, T> mainMappingStrategy) {
 		this(mainMappingStrategy, persistenceContext.getDialect(), persistenceContext.getConnectionConfiguration());
 	}
 	
 	public JoinedTablesPersister(IEntityMappingStrategy<C, I, T> mainMappingStrategy, Dialect dialect, IConnectionConfiguration connectionConfiguration) {
-		super(mainMappingStrategy, dialect, connectionConfiguration);
+		this.persister = new Persister<>(mainMappingStrategy, dialect, connectionConfiguration);
 		this.criteriaSupport = new EntityCriteriaSupport<>(getMappingStrategy());
+		this.selectGraphExecutor = newSelectExecutor(mainMappingStrategy, connectionConfiguration.getConnectionProvider(), dialect);
 		this.entitySelectExecutor = newEntitySelectExecutor(dialect);
 	}
 	
-	@Override
-	protected ISelectExecutor<C, I> newSelectExecutor(IEntityMappingStrategy<C, I, T> mappingStrategy, ConnectionProvider connectionProvider,
-													  Dialect dialect) {
+	protected EntityMappingStrategyTreeSelectExecutor<C, I, T> newSelectExecutor(IEntityMappingStrategy<C, I, T> mappingStrategy,
+																				 ConnectionProvider connectionProvider,
+													  							 Dialect dialect) {
 		return new EntityMappingStrategyTreeSelectExecutor<>(mappingStrategy, dialect, connectionProvider);
 	}
 	
 	protected IEntitySelectExecutor<C> newEntitySelectExecutor(Dialect dialect) {
-		return new EntitySelectExecutor<>(getEntityMappingStrategyTreeSelectExecutor().getEntityMappingStrategyTreeSelectBuilder(), getConnectionProvider(), dialect.getColumnBinderRegistry());
+		return new EntitySelectExecutor<>(getEntityMappingStrategyTreeSelectExecutor().getEntityMappingStrategyTreeSelectBuilder(),
+				persister.getConnectionProvider(), dialect.getColumnBinderRegistry());
 	}
 	
 	/**
@@ -79,12 +95,41 @@ public class JoinedTablesPersister<C, I, T extends Table> extends Persister<C, I
 	 * @return parent {@link org.gama.stalactite.persistence.engine.ISelectExecutor} casted as a {@link EntityMappingStrategyTreeSelectExecutor}
 	 */
 	public EntityMappingStrategyTreeSelectExecutor<C, I, T> getEntityMappingStrategyTreeSelectExecutor() {
-		return (EntityMappingStrategyTreeSelectExecutor<C, I, T>) super.getSelectExecutor();
+		return this.selectGraphExecutor;
+	}
+	
+	public T getMainTable() {
+		return this.persister.getMainTable();
+	}
+	
+	public InsertExecutor<C, I, T> getInsertExecutor() {
+		return persister.getInsertExecutor();
+	}
+	
+	public UpdateExecutor<C, I, T> getUpdateExecutor() {
+		return persister.getUpdateExecutor();
+	}
+	
+	public ISelectExecutor<C, I> getSelectExecutor() {
+		return this.selectGraphExecutor;
+	}
+	
+	public DeleteExecutor<C, I, T> getDeleteExecutor() {
+		return persister.getDeleteExecutor();
 	}
 	
 	@Override
 	public EntityMappingStrategyTreeSelectBuilder<C, I, ?> getEntityMappingStrategyTreeSelectBuilder() {
 		return getEntityMappingStrategyTreeSelectExecutor().getEntityMappingStrategyTreeSelectBuilder();
+	}
+	
+	@Override
+	public List<C> select(Iterable<I> ids) {
+		if (Iterables.isEmpty(ids)) {
+			return new ArrayList<>();
+		} else {
+			return getPersisterListener().doWithSelectListener(ids, () -> doSelect(ids));
+		}
 	}
 	
 	/**
@@ -93,23 +138,13 @@ public class JoinedTablesPersister<C, I, T extends Table> extends Persister<C, I
 	 * @param ids entity identifiers
 	 * @return a List of loaded entities corresponding to identifiers passed as parameter
 	 */
-	@Override
 	protected List<C> doSelect(Iterable<I> ids) {
-		return getSelectExecutor().select(ids);
+		return selectGraphExecutor.select(ids);
 	}
 	
-	/**
-	 * Gives the {@link EntityInflater} of a join node.
-	 * Node name must be known so one should have kept it from the
-	 * {@link EntityMappingStrategyTreeSelectBuilder#addRelationJoin(String, IEntityMappingStrategy, Column, Column, JoinType, BeanRelationFixer)}
-	 * return, else, since node naming strategy is not exposed it is not recommanded to use this method out of any test or debug purpose. 
-	 * 
-	 * @param nodeName a name of a added strategy
-	 * @return the {@link ClassMappingStrategy} behind a join node, null if not found
-	 */
-	public EntityInflater giveJoinedStrategy(String nodeName) {
-		return Nullable.nullable(getEntityMappingStrategyTreeSelectExecutor().getEntityMappingStrategyTreeSelectBuilder().getTree(nodeName))
-				.map(EntityMappingStrategyTree::getStrategy).get();
+	@Override
+	public IEntityMappingStrategy<C, I, T> getMappingStrategy() {
+		return persister.getMappingStrategy();
 	}
 	
 	@Override
@@ -117,9 +152,19 @@ public class JoinedTablesPersister<C, I, T extends Table> extends Persister<C, I
 		return getEntityMappingStrategyTreeSelectExecutor().getEntityMappingStrategyTreeSelectBuilder().giveTables();
 	}
 	
+	@Override
+	public PersisterListener<C, I> getPersisterListener() {
+		return persister.getPersisterListener();
+	}
+	
 	private EntityCriteriaSupport<C> newWhere() {
 		// we must clone the underlying support, else it would be modified for all subsequent invokations and criteria will aggregate
 		return new EntityCriteriaSupport<>(criteriaSupport);
+	}
+	
+	@Override
+	public int persist(Iterable<C> entities) {
+		return persister.persist(entities);
 	}
 	
 	/**
@@ -127,9 +172,9 @@ public class JoinedTablesPersister<C, I, T extends Table> extends Persister<C, I
 	 * <strong>As for now aggregate result is truncated to entities returned by SQL selection : for example, if criteria on collection is used,
 	 * only entities returned by SQL criteria will be loaded. This does not respect aggregate principle and should be enhanced in future.</strong>
 	 * 
+	 * @param <O> value type returned by property accessor
 	 * @param getter a property accessor
 	 * @param operator criteria for the property
-	 * @param <O> value type returned by property accessor
 	 * @return a {@link EntityCriteria} enhance to be executed through {@link ExecutableQuery#execute()}
 	 */
 	@Override
@@ -171,10 +216,21 @@ public class JoinedTablesPersister<C, I, T extends Table> extends Persister<C, I
 	 * 
 	 * @return all instance found in database
 	 */
+	@Override
 	public List<C> selectAll() {
 		return getPersisterListener().doWithSelectListener(emptyList(), () ->
 				entitySelectExecutor.loadGraph(newWhere().getCriteria())
 		);
+	}
+	
+	@Override
+	public boolean isNew(C entity) {
+		return persister.isNew(entity);
+	}
+	
+	@Override
+	public Class<C> getClassToPersist() {
+		return persister.getClassToPersist();
 	}
 	
 	public EntityCriteriaSupport<C> getCriteriaSupport() {
@@ -225,24 +281,54 @@ public class JoinedTablesPersister<C, I, T extends Table> extends Persister<C, I
 		getEntityMappingStrategyTreeSelectBuilder().getRoot().copyTo(entityMappingStrategyTreeSelectBuilder, joinName);
 	}
 	
-	/**
-	 * Mashup between {@link EntityCriteria} and {@link ExecutableQuery} to make an {@link EntityCriteria} executable
-	 * @param <C> type of object returned by query execution
-	 */
-	public interface RelationalExecutableEntityQuery<C> extends ExecutableEntityQuery<C>, CriteriaProvider, RelationalEntityCriteria<C> {
-		
-		<O> RelationalExecutableEntityQuery<C> and(SerializableFunction<C, O> getter, AbstractRelationalOperator<O> operator);
-		
-		<O> RelationalExecutableEntityQuery<C> and(SerializableBiConsumer<C, O> setter, AbstractRelationalOperator<O> operator);
-		
-		<O> RelationalExecutableEntityQuery<C> or(SerializableFunction<C, O> getter, AbstractRelationalOperator<O> operator);
-		
-		<O> RelationalExecutableEntityQuery<C> or(SerializableBiConsumer<C, O> setter, AbstractRelationalOperator<O> operator);
-		
-		<A, B> RelationalExecutableEntityQuery<C> and(SerializableFunction<C, A> getter1, SerializableFunction<A, B> getter2, AbstractRelationalOperator<B> operator);
-		
-		<S extends Collection<A>, A, B> RelationalExecutableEntityQuery<C> andMany(SerializableFunction<C, S> getter1, SerializableFunction<A, B> getter2, AbstractRelationalOperator<B> operator);
-		
+	@Override
+	public int delete(Iterable<C> entities) {
+		return persister.delete(entities);
+	}
+	
+	@Override
+	public int deleteById(Iterable<C> entities) {
+		return persister.deleteById(entities);
+	}
+	
+	@Override
+	public int insert(Iterable<? extends C> entities) {
+		return persister.insert(entities);
+	}
+	
+	@Override
+	public int updateById(Iterable<C> entities) {
+		return persister.updateById(entities);
+	}
+	
+	@Override
+	public int update(Iterable<? extends Duo<? extends C, ? extends C>> differencesIterable, boolean allColumnsStatement) {
+		return persister.update(differencesIterable, allColumnsStatement);
+	}
+	
+	@Override
+	public void addInsertListener(InsertListener<C> insertListener) {
+		persister.addInsertListener(insertListener);
+	}
+	
+	@Override
+	public void addUpdateListener(UpdateListener<C> updateListener) {
+		persister.addUpdateListener(updateListener);
+	}
+	
+	@Override
+	public void addSelectListener(SelectListener<C, I> selectListener) {
+		persister.addSelectListener(selectListener);
+	}
+	
+	@Override
+	public void addDeleteListener(DeleteListener<C> deleteListener) {
+		persister.addDeleteListener(deleteListener);
+	}
+	
+	@Override
+	public void addDeleteByIdListener(DeleteByIdListener<C> deleteListener) {
+		persister.addDeleteByIdListener(deleteListener);
 	}
 	
 	/**

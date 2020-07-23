@@ -14,15 +14,16 @@ import org.gama.lang.collection.Iterables;
 import org.gama.lang.collection.Maps;
 import org.gama.lang.exception.Exceptions;
 import org.gama.stalactite.persistence.engine.DDLDeployer;
+import org.gama.stalactite.persistence.engine.IEntityConfiguredJoinedTablesPersister;
 import org.gama.stalactite.persistence.engine.IEntityPersister.EntityCriteria;
 import org.gama.stalactite.persistence.engine.IEntityPersister.ExecutableEntityQuery;
 import org.gama.stalactite.persistence.engine.PersistenceContext;
 import org.gama.stalactite.persistence.engine.cascade.EntityMappingStrategyTreeSelectBuilder;
-import org.gama.stalactite.persistence.engine.cascade.JoinedTablesPersister;
 import org.gama.stalactite.persistence.engine.cascade.JoinedTablesPersister.CriteriaProvider;
 import org.gama.stalactite.persistence.engine.model.City;
 import org.gama.stalactite.persistence.engine.model.Country;
 import org.gama.stalactite.persistence.engine.model.Timestamp;
+import org.gama.stalactite.persistence.engine.runtime.OptimizedUpdatePersister;
 import org.gama.stalactite.persistence.id.Identified;
 import org.gama.stalactite.persistence.id.Identifier;
 import org.gama.stalactite.persistence.id.PersistedIdentifier;
@@ -93,14 +94,14 @@ class EntitySelectExecutorTest {
 				Maps.asMap("Country_name", (Object) "France").add("Country_id", 12L)
 		));
 		
-		JoinedTablesPersister<Country, Identifier, Table> persister = (JoinedTablesPersister<Country, Identifier, Table>) entityBuilder(Country.class, Identifier.class)
+		IEntityConfiguredJoinedTablesPersister<Country, Identifier> persister = (IEntityConfiguredJoinedTablesPersister<Country, Identifier>) entityBuilder(Country.class, Identifier.class)
 				.add(Country::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 				.add(Country::getName)
 				.build(new PersistenceContext(connectionProviderMock, dialect));
 		
 		ColumnBinderRegistry columnBinderRegistry = dialect.getColumnBinderRegistry();
 		EntityMappingStrategyTreeSelectBuilder<Country, Identifier, Table> entityMappingStrategyTreeSelectBuilder =
-				persister.getEntityMappingStrategyTreeSelectExecutor().getEntityMappingStrategyTreeSelectBuilder();
+				persister.getEntityMappingStrategyTreeSelectBuilder();
 		EntitySelectExecutor<Country, Identifier, Table> testInstance = new EntitySelectExecutor<>(entityMappingStrategyTreeSelectBuilder, connectionProviderMock, columnBinderRegistry);
 		
 		EntityCriteriaSupport<Country> countryEntityCriteriaSupport = new EntityCriteriaSupport<>(persister.getMappingStrategy(), Country::getName, eq(""))
@@ -123,7 +124,7 @@ class EntitySelectExecutorTest {
 						.add("Country_creationDate", new java.sql.Timestamp(0)).add("Country_modificationDate", new java.sql.Timestamp(0))
 		));
 		
-		JoinedTablesPersister<Country, Identifier, Table> persister = (JoinedTablesPersister<Country, Identifier, Table>) entityBuilder(Country.class, Identifier.class)
+		IEntityConfiguredJoinedTablesPersister<Country, Identifier> persister = (IEntityConfiguredJoinedTablesPersister<Country, Identifier>) entityBuilder(Country.class, Identifier.class)
 				.add(Country::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 				.add(Country::getName)
 				.embed(Country::getTimestamp)
@@ -131,7 +132,7 @@ class EntitySelectExecutorTest {
 		
 		ColumnBinderRegistry columnBinderRegistry = dialect.getColumnBinderRegistry();
 		EntityMappingStrategyTreeSelectBuilder<Country, Identifier, Table> entityMappingStrategyTreeSelectBuilder =
-				persister.getEntityMappingStrategyTreeSelectExecutor().getEntityMappingStrategyTreeSelectBuilder();
+				persister.getEntityMappingStrategyTreeSelectBuilder();
 		EntitySelectExecutor<Country, Identifier, Table> testInstance = new EntitySelectExecutor<>(entityMappingStrategyTreeSelectBuilder, connectionProviderMock, columnBinderRegistry);
 		
 		EntityCriteriaSupport<Country> countryEntityCriteriaSupport = new EntityCriteriaSupport<>(persister.getMappingStrategy(), Country::getName, eq(""))
@@ -163,7 +164,7 @@ class EntitySelectExecutorTest {
 						.add("City_id", 42L).add("City_name", "Paris")
 		));
 		
-		JoinedTablesPersister<Country, Identifier, Table> persister = (JoinedTablesPersister<Country, Identifier, Table>) entityBuilder(Country.class, Identifier.class)
+		IEntityConfiguredJoinedTablesPersister<Country, Identifier> persister = (IEntityConfiguredJoinedTablesPersister<Country, Identifier>) entityBuilder(Country.class, Identifier.class)
 			.add(Country::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 			.add(Country::getName)
 			.addOneToOne(Country::getCapital,
@@ -174,7 +175,7 @@ class EntitySelectExecutorTest {
 		
 		ColumnBinderRegistry columnBinderRegistry = dialect.getColumnBinderRegistry();
 		EntityMappingStrategyTreeSelectBuilder<Country, Identifier, Table> entityMappingStrategyTreeSelectBuilder =
-				persister.getEntityMappingStrategyTreeSelectExecutor().getEntityMappingStrategyTreeSelectBuilder();
+				persister.getEntityMappingStrategyTreeSelectBuilder();
 		EntitySelectExecutor<Country, Identifier, Table> testInstance = new EntitySelectExecutor<>(entityMappingStrategyTreeSelectBuilder, connectionProviderMock, columnBinderRegistry);
 		
 		EntityCriteria<Country> countryEntityCriteriaSupport = persister
@@ -214,7 +215,7 @@ class EntitySelectExecutorTest {
 						.add("City_id", 44L).add("City_name", "Grenoble")
 		));
 		
-		JoinedTablesPersister<Country, Identifier, Table> persister = (JoinedTablesPersister<Country, Identifier, Table>) entityBuilder(Country.class, Identifier.class)
+		IEntityConfiguredJoinedTablesPersister<Country, Identifier> persister = (IEntityConfiguredJoinedTablesPersister<Country, Identifier>) entityBuilder(Country.class, Identifier.class)
 		.add(Country::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 		.add(Country::getName)
 		.addOneToManySet(Country::getCities, entityBuilder(City.class, Identifier.class)
@@ -224,7 +225,7 @@ class EntitySelectExecutorTest {
 		
 		ColumnBinderRegistry columnBinderRegistry = dialect.getColumnBinderRegistry();
 		EntityMappingStrategyTreeSelectBuilder<Country, Identifier, Table> entityMappingStrategyTreeSelectBuilder =
-				persister.getEntityMappingStrategyTreeSelectExecutor().getEntityMappingStrategyTreeSelectBuilder();
+				persister.getEntityMappingStrategyTreeSelectBuilder();
 		EntitySelectExecutor<Country, Identifier, Table> testInstance = new EntitySelectExecutor<>(entityMappingStrategyTreeSelectBuilder, connectionProviderMock, columnBinderRegistry);
 		
 		// actually we don't care about criteria since data is hardly tied to the connection (see createConnectionProvider(..))
@@ -272,14 +273,14 @@ class EntitySelectExecutorTest {
 		dialect.getJavaTypeToSqlTypeMapping().put(Identifier.class, "bigint");
 		
 		PersistenceContext persistenceContext = new PersistenceContext(connectionProvider, dialect);
-		JoinedTablesPersister<Country, Identifier, Table> persister = (JoinedTablesPersister<Country, Identifier, Table>) entityBuilder(Country.class, Identifier.class)
-		.add(Country::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
-		.add(Country::getName)
-		.addOneToManySet(Country::getCities, entityBuilder(City.class, Identifier.class)
-				.add(City::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
-				.add(City::getName))
-				.mappedBy(City::getCountry)
-		.build(persistenceContext);
+		OptimizedUpdatePersister<Country, Identifier> persister = (OptimizedUpdatePersister<Country, Identifier>) entityBuilder(Country.class, Identifier.class)
+			.add(Country::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+			.add(Country::getName)
+			.addOneToManySet(Country::getCities, entityBuilder(City.class, Identifier.class)
+					.add(City::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+					.add(City::getName))
+					.mappedBy(City::getCountry)
+			.build(persistenceContext);
 		
 		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
 		ddlDeployer.deployDDL();
@@ -292,13 +293,14 @@ class EntitySelectExecutorTest {
 		
 		ColumnBinderRegistry columnBinderRegistry = dialect.getColumnBinderRegistry();
 		EntityMappingStrategyTreeSelectBuilder<Country, Identifier, Table> entityMappingStrategyTreeSelectBuilder =
-				persister.getEntityMappingStrategyTreeSelectExecutor().getEntityMappingStrategyTreeSelectBuilder();
+				persister.getSurrogate().getEntityMappingStrategyTreeSelectBuilder();
 		EntitySelectExecutor<Country, Identifier, Table> testInstance = new EntitySelectExecutor<>(entityMappingStrategyTreeSelectBuilder, connectionProvider, columnBinderRegistry);
 		
 		// Criteria tied to data formerly persisted
 		EntityCriteria<Country> countryEntityCriteriaSupport =
 				persister.selectWhere(Country::getName, eq("France"))
-				.andMany(Country::getCities, City::getName, eq("Grenoble"));
+				.andMany(Country::getCities, City::getName, eq("Grenoble"))
+				;
 		
 		
 		Country expectedCountry = new Country(new PersistedIdentifier<>(12L));
@@ -333,7 +335,7 @@ class EntitySelectExecutorTest {
 		dialect.getJavaTypeToSqlTypeMapping().put(Identifier.class, "bigint");
 		
 		PersistenceContext persistenceContext = new PersistenceContext(connectionProvider, dialect);
-		JoinedTablesPersister<Country, Identifier, Table> persister = (JoinedTablesPersister<Country, Identifier, Table>) entityBuilder(Country.class, Identifier.class)
+		IEntityConfiguredJoinedTablesPersister<Country, Identifier> persister = (IEntityConfiguredJoinedTablesPersister<Country, Identifier>) entityBuilder(Country.class, Identifier.class)
 				.add(Country::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 				.add(Country::getName)
 				.addOneToManySet(Country::getCities, entityBuilder(City.class, Identifier.class)
@@ -344,11 +346,6 @@ class EntitySelectExecutorTest {
 		
 		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
 		ddlDeployer.deployDDL();
-		
-		ColumnBinderRegistry columnBinderRegistry = dialect.getColumnBinderRegistry();
-		EntityMappingStrategyTreeSelectBuilder<Country, Identifier, Table> entityMappingStrategyTreeSelectBuilder =
-				persister.getEntityMappingStrategyTreeSelectExecutor().getEntityMappingStrategyTreeSelectBuilder();
-		EntitySelectExecutor<Country, Identifier, Table> testInstance = new EntitySelectExecutor<>(entityMappingStrategyTreeSelectBuilder, connectionProvider, columnBinderRegistry);
 		
 		// this won't retrieve any result since database is empty
 		ExecutableEntityQuery<Country> countryEntityCriteriaSupport = persister.selectWhere(Country::getName, eq("France"))
