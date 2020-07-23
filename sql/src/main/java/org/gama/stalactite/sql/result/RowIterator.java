@@ -6,7 +6,6 @@ import java.util.Comparator;
 import java.util.Map;
 import java.util.TreeSet;
 
-import org.gama.stalactite.sql.binder.ParameterBinder;
 import org.gama.stalactite.sql.binder.ParameterBinderIndex;
 import org.gama.stalactite.sql.binder.ResultSetReader;
 import org.gama.stalactite.sql.dml.SQLStatement.BindingException;
@@ -24,9 +23,9 @@ public class RowIterator extends ResultSetIterator<Row> {
 	/**
 	 * Constructs an instance without {@link ResultSet} : it shall be set further with {@link #setResultSet(ResultSet)}.
 	 *
-	 * @param columnNameBinders columns and associated {@link ParameterBinder} to use for {@link ResultSet} reading
+	 * @param columnNameBinders columns and associated {@link ResultSetReader} to use for {@link ResultSet} reading
 	 */
-	public RowIterator(Map<String, ParameterBinder> columnNameBinders) {
+	public RowIterator(Map<String, ? extends ResultSetReader> columnNameBinders) {
 		this(null, columnNameBinders);
 	}
 	
@@ -34,7 +33,7 @@ public class RowIterator extends ResultSetIterator<Row> {
 	 * Constructs an instance that will iterate over the given {@link ResultSet}. It can be changed with {@link #setResultSet(ResultSet)}.
 	 *
 	 * @param rs a ResultSet to wrap into an {@link java.util.Iterator}
-	 * @param columnNameBinders column names and associated {@link ParameterBinder} to use for {@link ResultSet} reading
+	 * @param columnNameBinders column names and associated {@link ResultSetReader} to use for {@link ResultSet} reading
 	 */
 	public RowIterator(ResultSet rs, Map<String, ? extends ResultSetReader> columnNameBinders) {
 		super(rs);
@@ -45,9 +44,9 @@ public class RowIterator extends ResultSetIterator<Row> {
 	 * Constructs an instance that will iterate over the given {@link ResultSet}. It can be changed with {@link #setResultSet(ResultSet)}.
 	 * 
 	 * @param rs a ResultSet to wrap into an {@link java.util.Iterator}
-	 * @param columnNameBinders object to extract column names and associated {@link ParameterBinder} to use for <t>ResultSet</t> reading
+	 * @param columnNameBinders object to extract column names and associated {@link ResultSetReader} to use for <t>ResultSet</t> reading
 	 */
-	public RowIterator(ResultSet rs, ParameterBinderIndex<String, ? extends ParameterBinder> columnNameBinders) {
+	public RowIterator(ResultSet rs, ParameterBinderIndex<String, ? extends ResultSetReader> columnNameBinders) {
 		super(rs);
 		decoders = Decoder.decoders(columnNameBinders.all());
 	}
