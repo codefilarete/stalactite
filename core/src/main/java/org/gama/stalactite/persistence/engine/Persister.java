@@ -37,7 +37,7 @@ import org.gama.stalactite.sql.ConnectionProvider;
 public class Persister<C, I, T extends Table> implements IEntityPersister<C, I>, IConfiguredPersister<C, I> {
 	
 	private final IEntityMappingStrategy<C, I, T> mappingStrategy;
-	private final IConnectionConfiguration connectionProvider;
+	private final IConnectionConfiguration connectionConfiguration;
 	private final DMLGenerator dmlGenerator;
 	private final Retryer writeOperationRetryer;
 	private final int inOperatorMaxSize;
@@ -53,17 +53,17 @@ public class Persister<C, I, T extends Table> implements IEntityPersister<C, I>,
 	
 	public Persister(IEntityMappingStrategy<C, I, T> mappingStrategy, Dialect dialect, IConnectionConfiguration connectionConfiguration) {
 		this.mappingStrategy = mappingStrategy;
-		this.connectionProvider = connectionConfiguration;
+		this.connectionConfiguration = connectionConfiguration;
 		this.dmlGenerator = dialect.getDmlGenerator();
 		this.writeOperationRetryer = dialect.getWriteOperationRetryer();
 		this.inOperatorMaxSize = dialect.getInOperatorMaxSize();
-		this.insertExecutor = newInsertExecutor(mappingStrategy, connectionProvider, dmlGenerator,
+		this.insertExecutor = newInsertExecutor(mappingStrategy, this.connectionConfiguration, dmlGenerator,
 				writeOperationRetryer, inOperatorMaxSize);
-		this.updateExecutor = newUpdateExecutor(mappingStrategy, connectionProvider, dmlGenerator,
+		this.updateExecutor = newUpdateExecutor(mappingStrategy, this.connectionConfiguration, dmlGenerator,
 				writeOperationRetryer, inOperatorMaxSize);
-		this.deleteExecutor = newDeleteExecutor(mappingStrategy, connectionProvider, dmlGenerator,
+		this.deleteExecutor = newDeleteExecutor(mappingStrategy, this.connectionConfiguration, dmlGenerator,
 				writeOperationRetryer, inOperatorMaxSize);
-		this.selectExecutor = newSelectExecutor(mappingStrategy, connectionProvider.getConnectionProvider(), dialect);
+		this.selectExecutor = newSelectExecutor(mappingStrategy, this.connectionConfiguration.getConnectionProvider(), dialect);
 		
 		// Transfering identifier manager InsertListerner to here
 		getPersisterListener().addInsertListener(
@@ -76,7 +76,7 @@ public class Persister<C, I, T extends Table> implements IEntityPersister<C, I>,
 					 int inOperatorMaxSize, IEntityMappingStrategy<C, I, T> mappingStrategy, InsertExecutor<C, I, T> insertExecutor,
 					 UpdateExecutor<C, I, T> updateExecutor, DeleteExecutor<C, I, T> deleteExecutor, ISelectExecutor<C, I> selectExecutor) {
 		this.mappingStrategy = mappingStrategy;
-		this.connectionProvider = connectionConfiguration;
+		this.connectionConfiguration = connectionConfiguration;
 		this.dmlGenerator = dmlGenerator;
 		this.writeOperationRetryer = writeOperationRetryer;
 		this.inOperatorMaxSize = inOperatorMaxSize;
@@ -120,7 +120,7 @@ public class Persister<C, I, T extends Table> implements IEntityPersister<C, I>,
 	}
 	
 	public ConnectionProvider getConnectionProvider() {
-		return connectionProvider.getConnectionProvider();
+		return connectionConfiguration.getConnectionProvider();
 	}
 	
 	public DMLGenerator getDmlGenerator() {
