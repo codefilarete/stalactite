@@ -20,10 +20,13 @@ public interface OneToManyOptions<C, I, O, S extends Collection<O>> extends Casc
 	 * If the relationship is already defined throught {@link #mappedBy(Column)} or {@link #mappedBy(SerializableFunction)} then there's no
 	 * guaranty about which one will be taken first. Algorithm is defined in {@link CascadeManyConfigurer}.
 	 * 
+	 * Signature note : given consumer accepts "? super C" to allow given method to return an abstraction of current mapping definition, especially
+	 * in case of inheritance where current mapping is made of inheritance and target entities only maps it as an upper (ancestor) class
+	 * 
 	 * @param reverseLink opposite owner of the relation (setter)
 	 * @return the global mapping configurer
 	 */
-	OneToManyOptions<C, I, O, S> mappedBy(SerializableBiConsumer<O, C> reverseLink);
+	OneToManyOptions<C, I, O, S> mappedBy(SerializableBiConsumer<O, ? super C> reverseLink);
 	
 	/**
 	 * Defines the bidirectional relationship.
@@ -31,11 +34,15 @@ public interface OneToManyOptions<C, I, O, S extends Collection<O>> extends Casc
 	 *
 	 * If the relationship is already defined throught {@link #mappedBy(Column)} or {@link #mappedBy(SerializableBiConsumer)} then there's no
 	 * guaranty about which one will be taken first. Algorithm is defined in {@link CascadeManyConfigurer}.
+	 *
+	 *
+	 * Signature note : given function accepts "? super C" to allow given method to return an abstraction of current mapping definition, especially
+	 * in case of inheritance where current mapping is made of inheritance and target entities only maps it as an upper (ancestor) 
 	 * 
 	 * @param reverseLink opposite owner of the relation (getter)
 	 * @return the global mapping configurer
 	 */
-	OneToManyOptions<C, I, O, S> mappedBy(SerializableFunction<O, C> reverseLink);
+	OneToManyOptions<C, I, O, S> mappedBy(SerializableFunction<O, ? super C> reverseLink);
 	
 	/**
 	 * Defines reverse side owner.

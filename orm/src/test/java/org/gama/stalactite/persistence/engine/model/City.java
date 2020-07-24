@@ -79,6 +79,10 @@ public class City implements Identified<Long> {
 		return country;
 	}
 	
+	public AbstractCountry getAbstractCountry() {
+		return country;
+	}
+	
 	public void setCountry(Country country) {
 		this.country = country;
 	}

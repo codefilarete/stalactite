@@ -949,13 +949,13 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements IFluentEnt
 		}
 		
 		@Override
-		public IFluentMappingBuilderOneToManyOptions<C, I, O, S> mappedBy(SerializableBiConsumer<O, C> reverseLink) {
+		public IFluentMappingBuilderOneToManyOptions<C, I, O, S> mappedBy(SerializableBiConsumer<O, ? super C> reverseLink) {
 			cascadeMany.setReverseSetter(reverseLink);
 			return null;	// we can return null because dispatcher will return proxy
 		}
 		
 		@Override
-		public IFluentMappingBuilderOneToManyOptions<C, I, O, S> mappedBy(SerializableFunction<O, C> reverseLink) {
+		public IFluentMappingBuilderOneToManyOptions<C, I, O, S> mappedBy(SerializableFunction<O, ? super C> reverseLink) {
 			cascadeMany.setReverseGetter(reverseLink);
 			return null;	// we can return null because dispatcher will return proxy
 		}

@@ -20,6 +20,7 @@ import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import org.danekja.java.util.function.serializable.SerializableFunction;
 import org.gama.lang.Dates;
 import org.gama.lang.Duo;
 import org.gama.lang.InvocationHandlerSupport;
@@ -31,6 +32,7 @@ import org.gama.stalactite.persistence.engine.IFluentEntityMappingBuilder.IFluen
 import org.gama.stalactite.persistence.engine.IFluentEntityMappingBuilder.IFluentMappingBuilderPropertyOptions;
 import org.gama.stalactite.persistence.engine.cascade.JoinedTablesPersister;
 import org.gama.stalactite.persistence.engine.configurer.PersisterBuilderImplTest.ToStringBuilder;
+import org.gama.stalactite.persistence.engine.model.AbstractCountry;
 import org.gama.stalactite.persistence.engine.model.City;
 import org.gama.stalactite.persistence.engine.model.Country;
 import org.gama.stalactite.persistence.engine.model.Gender;
@@ -1535,6 +1537,8 @@ public class FluentEntityMappingConfigurationSupportTest {
 					// embed with setter
 					.embed(Country::setTimestamp)
 					.addOneToManySet(Country::getCities, MappingEase.entityBuilder(City.class, long.class))
+						// testing mappedBy with inheritance
+						.mappedBy((SerializableFunction<City, AbstractCountry>) City::getAbstractCountry)
 					.add(Country::getDescription, "xx")
 					.add(Country::getDummyProperty, "dd")
 					.build(persistenceContext);

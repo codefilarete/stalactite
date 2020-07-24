@@ -234,7 +234,7 @@ public interface IFluentSubEntityMappingConfiguration<C, I> extends IFluentEmbed
 		 * @return the global mapping configurer
 		 */
 		@Override
-		IFluentMappingBuilderOneToManyOptions<C, I, O, S> mappedBy(SerializableBiConsumer<O, C> reverseLink);
+		IFluentMappingBuilderOneToManyOptions<C, I, O, S> mappedBy(SerializableBiConsumer<O, ? super C> reverseLink);
 		
 		/**
 		 * Declaration overriden to adapt return type to this class.
@@ -243,7 +243,7 @@ public interface IFluentSubEntityMappingConfiguration<C, I> extends IFluentEmbed
 		 * @return the global mapping configurer
 		 */
 		@Override
-		IFluentMappingBuilderOneToManyOptions<C, I, O, S> mappedBy(SerializableFunction<O, C> reverseLink);
+		IFluentMappingBuilderOneToManyOptions<C, I, O, S> mappedBy(SerializableFunction<O, ? super C> reverseLink);
 		
 		/**
 		 * Declaration overriden to adapt return type to this class.
@@ -282,7 +282,7 @@ public interface IFluentSubEntityMappingConfiguration<C, I> extends IFluentEmbed
 		 * @return the global mapping configurer
 		 */
 		@Override
-		IFluentMappingBuilderOneToManyListOptions<C, I, O, S> mappedBy(SerializableBiConsumer<O, C> reverseLink);
+		IFluentMappingBuilderOneToManyListOptions<C, I, O, S> mappedBy(SerializableBiConsumer<O, ? super C> reverseLink);
 		
 		/**
 		 * Declaration overriden to adapt return type to this class.
@@ -291,7 +291,7 @@ public interface IFluentSubEntityMappingConfiguration<C, I> extends IFluentEmbed
 		 * @return the global mapping configurer
 		 */
 		@Override
-		IFluentMappingBuilderOneToManyListOptions<C, I, O, S> mappedBy(SerializableFunction<O, C> reverseLink);
+		IFluentMappingBuilderOneToManyListOptions<C, I, O, S> mappedBy(SerializableFunction<O, ? super C> reverseLink);
 		
 		/**
 		 * Declaration overriden to adapt return type to this class.

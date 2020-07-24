@@ -81,8 +81,8 @@ public class CascadeMany<SRC, TRGT, TRGTID, C extends Collection<TRGT>> {
 		return this.mappedByConfiguration.reverseGetter;
 	}
 	
-	public void setReverseGetter(SerializableFunction<TRGT, SRC> reverseGetter) {
-		this.mappedByConfiguration.reverseGetter = reverseGetter;
+	public void setReverseGetter(SerializableFunction<TRGT, ? super SRC> reverseGetter) {
+		this.mappedByConfiguration.reverseGetter = (SerializableFunction<TRGT, SRC>) reverseGetter;
 	}
 	
 	@Nullable
@@ -90,8 +90,8 @@ public class CascadeMany<SRC, TRGT, TRGTID, C extends Collection<TRGT>> {
 		return this.mappedByConfiguration.reverseSetter;
 	}
 	
-	public void setReverseSetter(SerializableBiConsumer<TRGT, SRC> reverseSetter) {
-		this.mappedByConfiguration.reverseSetter = reverseSetter;
+	public void setReverseSetter(SerializableBiConsumer<TRGT, ? super SRC> reverseSetter) {
+		this.mappedByConfiguration.reverseSetter = (SerializableBiConsumer<TRGT, SRC>) reverseSetter;
 	}
 	
 	@Nullable
