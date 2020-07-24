@@ -16,11 +16,11 @@ import org.gama.stalactite.persistence.mapping.IEntityMappingStrategy;
 public class OneToManyWithAssociationTableEngine<SRC, TRGT, ID, C extends Collection<TRGT>>
 		extends AbstractOneToManyWithAssociationTableEngine<SRC, TRGT, ID, C, AssociationRecord, AssociationTable> {
 	
-	public OneToManyWithAssociationTableEngine(IConfiguredPersister<SRC, ID> joinedTablesPersister,
+	public OneToManyWithAssociationTableEngine(IConfiguredPersister<SRC, ID> sourcePersister,
 											   IEntityConfiguredJoinedTablesPersister<TRGT, ID> targetPersister,
 											   ManyRelationDescriptor<SRC, TRGT, C> manyRelationDescriptor,
 											   AssociationRecordPersister<AssociationRecord, AssociationTable> associationPersister) {
-		super(joinedTablesPersister, targetPersister, manyRelationDescriptor, associationPersister);
+		super(sourcePersister, targetPersister, manyRelationDescriptor, associationPersister);
 	}
 	
 	@Override
@@ -34,6 +34,6 @@ public class OneToManyWithAssociationTableEngine<SRC, TRGT, ID, C extends Collec
 	
 	@Override
 	protected AssociationRecord newRecord(SRC e, TRGT target, int index) {
-		return new AssociationRecord(joinedTablesPersister.getMappingStrategy().getId(e), targetPersister.getMappingStrategy().getId(target));
+		return new AssociationRecord(sourcePersister.getMappingStrategy().getId(e), targetPersister.getMappingStrategy().getId(target));
 	}
 }

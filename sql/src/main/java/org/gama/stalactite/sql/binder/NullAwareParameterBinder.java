@@ -41,7 +41,7 @@ public class NullAwareParameterBinder<T> implements ParameterBinder<T> {
 	}
 	
 	@Override
-	public T doGet(ResultSet resultSet, String columnName) throws SQLException {
+	public T doGet(ResultSet resultSet, String columnName) {
 		return nullAwareResultSetReader.get(resultSet, columnName);
 	}
 	

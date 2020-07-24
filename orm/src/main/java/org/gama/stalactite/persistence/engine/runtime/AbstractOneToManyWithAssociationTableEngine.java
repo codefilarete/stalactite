@@ -54,18 +54,18 @@ public abstract class AbstractOneToManyWithAssociationTableEngine<SRC, TRGT, ID,
 	
 	protected final PersisterListener<SRC, ID> persisterListener;
 	
-	protected final IConfiguredPersister<SRC, ID> joinedTablesPersister;
+	protected final IConfiguredPersister<SRC, ID> sourcePersister;
 	
 	protected final IEntityConfiguredJoinedTablesPersister<TRGT, ID> targetPersister;
 	
 	protected final ManyRelationDescriptor<SRC, TRGT, C> manyRelationDescriptor;
 	
-	public AbstractOneToManyWithAssociationTableEngine(IConfiguredPersister<SRC, ID> joinedTablesPersister,
+	public AbstractOneToManyWithAssociationTableEngine(IConfiguredPersister<SRC, ID> sourcePersister,
 													   IEntityConfiguredJoinedTablesPersister<TRGT, ID> targetPersister,
 													   ManyRelationDescriptor<SRC, TRGT, C> manyRelationDescriptor,
 													   AssociationRecordPersister<R, T> associationPersister) {
-		this.joinedTablesPersister = joinedTablesPersister;
-		this.persisterListener = joinedTablesPersister.getPersisterListener();
+		this.sourcePersister = sourcePersister;
+		this.persisterListener = sourcePersister.getPersisterListener();
 		this.targetPersister = targetPersister;
 		this.manyRelationDescriptor = manyRelationDescriptor;
 		this.associationPersister = associationPersister;
@@ -125,7 +125,7 @@ public abstract class AbstractOneToManyWithAssociationTableEngine<SRC, TRGT, ID,
 		persisterListener.addInsertListener(newRecordInsertionCascader(
 				manyRelationDescriptor.getCollectionGetter(),
 				associationPersister,
-				joinedTablesPersister.getMappingStrategy(),
+				sourcePersister.getMappingStrategy(),
 				targetPersister.getMappingStrategy()));
 	}
 	
@@ -244,7 +244,7 @@ public abstract class AbstractOneToManyWithAssociationTableEngine<SRC, TRGT, ID,
 			}
 			
 			private ID castId(SRC e) {
-				return joinedTablesPersister.getMappingStrategy().getId(e);
+				return sourcePersister.getMappingStrategy().getId(e);
 			}
 		});
 		
