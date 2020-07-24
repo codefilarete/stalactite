@@ -87,7 +87,7 @@ public class FluentEntityMappingConfigurationSupportToOneAndToManyMixTest {
 		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
 		ddlDeployer.deployDDL();
 		
-		Connection currentConnection = persistenceContext.getCurrentConnection();
+		Connection currentConnection = persistenceContext.getConnectionProvider().getCurrentConnection();
 		ResultSetIterator<JdbcForeignKey> fkPersonIterator = new ResultSetIterator<JdbcForeignKey>(currentConnection.getMetaData().getExportedKeys(null, null,
 				((IConfiguredPersister) persistenceContext.getPersister(Person.class)).getMappingStrategy().getTargetTable().getName().toUpperCase())) {
 			@Override

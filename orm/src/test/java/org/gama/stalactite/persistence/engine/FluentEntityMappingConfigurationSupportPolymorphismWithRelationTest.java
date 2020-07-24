@@ -2392,7 +2392,7 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
 			ddlDeployer.deployDDL();
 			
-			Connection currentConnection = persistenceContext.getCurrentConnection();
+			Connection currentConnection = persistenceContext.getConnectionProvider().getCurrentConnection();
 			ResultSetIterator<JdbcForeignKey> fkVillageIterator = new ResultSetIterator<JdbcForeignKey>(currentConnection.getMetaData()
 					.getImportedKeys(null, null, "VILLAGE")) {
 				@Override

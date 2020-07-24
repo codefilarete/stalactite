@@ -76,6 +76,8 @@ import static org.gama.stalactite.sql.binder.DefaultParameterBinders.LONG_PRIMIT
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.withSettings;
 
@@ -543,6 +545,47 @@ public class PersisterBuilderImplTest {
 						+ " from Car inner join AbstractVehicle on Car.id = AbstractVehicle.id" 
 						+ " inner join Vehicle on Car.id = Vehicle.id" 
 						+ " where Car.id in (?)"), selectCaptor.getAllValues());
+	}
+	
+	@Test
+	void build_createsAnInstanceThatDoesntRequiresTwoSelectsOnItsUpdateMethod() throws SQLException {
+		PersisterBuilderImpl testInstance = new PersisterBuilderImpl(
+				entityBuilder(Car.class, Identifier.class)
+						.add(Car::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+				.add(Car::getModel));
+		ConnectionProvider connectionProviderMock = mock(ConnectionProvider.class, withSettings().defaultAnswer(Answers.RETURNS_MOCKS));
+		Connection connectionMock = mock(Connection.class);
+		when(connectionProviderMock.getCurrentConnection()).thenReturn(connectionMock);
+		ArgumentCaptor<String> insertCaptor = ArgumentCaptor.forClass(String.class);
+		PreparedStatement preparedStatementMock = mock(PreparedStatement.class);
+		when(connectionMock.prepareStatement(insertCaptor.capture())).thenReturn(preparedStatementMock);
+		when(preparedStatementMock.executeBatch()).thenReturn(new int[] { 1 });
+		when(preparedStatementMock.executeQuery()).thenReturn(new InMemoryResultSet(Arrays.asList(Maps.forHashMap(String.class, Object.class)
+				.add("Car_id", 1L)
+				.add("Car_model", "Renault"))));
+		
+		IEntityPersister<Car, Identifier> result = testInstance.build(new PersistenceContext(connectionProviderMock, DIALECT));
+		Car dummyCar = new Car(1L);
+		dummyCar.setModel("Renault");
+		
+		result.insert(dummyCar);
+		
+		// this should execute a SQL select only once thanks to cache
+		result.update(dummyCar.getId(), vehicle -> vehicle.setModel("Peugeot"));
+		
+		// only 1 select was done whereas entity was updated
+		assertEquals(Arrays.asList(
+				"insert into Car(id, model) values (?, ?)",
+				"select Car.model as Car_model, Car.id as Car_id from Car where Car.id in (?)",
+				"update Car set model = ? where id = ?"
+				), insertCaptor.getAllValues());
+		ArgumentCaptor<Integer> valueIndexCaptor = ArgumentCaptor.forClass(int.class);
+		ArgumentCaptor<String> valueCaptor = ArgumentCaptor.forClass(String.class);
+		verify(preparedStatementMock, times(2)).setString(valueIndexCaptor.capture(), valueCaptor.capture());
+		assertEquals(Arrays.asList("Renault", "Peugeot"), valueCaptor.getAllValues());
+		
+		verify(preparedStatementMock).executeQuery();
+		
 	}
 	
 	public static class ToStringBuilder<E> {
