@@ -4,6 +4,7 @@ import java.util.Map;
 import java.util.Set;
 
 import org.gama.reflection.IReversibleAccessor;
+import org.gama.stalactite.persistence.engine.runtime.Persister;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
 
@@ -19,7 +20,7 @@ public interface IEntityMappingStrategy<C, I, T extends Table> extends IMappingS
 	Class<C> getClassToPersist();
 	
 	/**
-	 * Necessary to distinguish insert or update action on {@link org.gama.stalactite.persistence.engine.Persister#persist(Object)} call
+	 * Necessary to distinguish insert or update action on {@link Persister#persist(Object)} call
 	 * @param c an instance of C
 	 * @return true if the instance is not persisted, false if not (a row for its identifier already exists in the targeted table)
 	 */

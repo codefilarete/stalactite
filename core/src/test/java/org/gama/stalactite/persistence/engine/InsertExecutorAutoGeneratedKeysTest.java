@@ -12,6 +12,7 @@ import org.gama.lang.Retryer;
 import org.gama.lang.collection.Arrays;
 import org.gama.lang.collection.Iterables;
 import org.gama.lang.trace.ModifiableInt;
+import org.gama.stalactite.persistence.engine.runtime.InsertExecutor;
 import org.gama.stalactite.persistence.id.manager.JDBCGeneratedKeysIdentifierManager;
 import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
 import org.gama.stalactite.persistence.mapping.SinglePropertyIdAccessor;

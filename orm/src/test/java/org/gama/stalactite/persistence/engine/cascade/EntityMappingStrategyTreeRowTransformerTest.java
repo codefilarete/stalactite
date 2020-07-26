@@ -11,7 +11,7 @@ import java.util.stream.Collectors;
 import org.gama.lang.collection.Arrays;
 import org.gama.lang.collection.Iterables;
 import org.gama.lang.collection.Maps;
-import org.gama.stalactite.persistence.engine.BeanRelationFixer;
+import org.gama.stalactite.persistence.engine.runtime.BeanRelationFixer;
 import org.gama.stalactite.persistence.engine.cascade.EntityMappingStrategyTreeJoinPoint.JoinType;
 import org.gama.stalactite.persistence.engine.cascade.EntityMappingStrategyTree.RelationJoin;
 import org.gama.stalactite.persistence.id.assembly.IdentifierAssembler;

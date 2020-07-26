@@ -9,6 +9,7 @@ import java.util.List;
 
 import org.gama.lang.collection.Arrays;
 import org.gama.lang.collection.Iterables;
+import org.gama.stalactite.persistence.engine.runtime.IConfiguredPersister;
 import org.gama.stalactite.persistence.id.PersistableIdentifier;
 import org.gama.stalactite.persistence.id.StatefullIdentifierAlreadyAssignedIdentifierPolicy;
 import org.gama.stalactite.sql.binder.DefaultParameterBinders;

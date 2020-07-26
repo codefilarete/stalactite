@@ -1,5 +1,7 @@
 package org.gama.stalactite.persistence.engine;
 
+import org.gama.stalactite.persistence.engine.runtime.Persister;
+
 /**
  * Contract for {@link Persister} registry.
  * Made to avoid passing {@link PersistenceContext} to {@link org.gama.stalactite.persistence.engine.configurer.PersisterBuilderImpl}

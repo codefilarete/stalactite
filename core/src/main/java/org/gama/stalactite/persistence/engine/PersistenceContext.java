@@ -28,6 +28,7 @@ import org.gama.stalactite.command.builder.UpdateCommandBuilder.UpdateStatement;
 import org.gama.stalactite.command.model.Delete;
 import org.gama.stalactite.command.model.Insert;
 import org.gama.stalactite.command.model.Update;
+import org.gama.stalactite.persistence.engine.runtime.Persister;
 import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
 import org.gama.stalactite.persistence.sql.Dialect;
 import org.gama.stalactite.persistence.sql.IConnectionConfiguration;

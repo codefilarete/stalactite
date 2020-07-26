@@ -10,7 +10,7 @@ import java.util.function.Function;
 import org.gama.lang.Nullable;
 import org.gama.lang.Reflections;
 import org.gama.lang.collection.Iterables;
-import org.gama.stalactite.persistence.engine.BeanRelationFixer;
+import org.gama.stalactite.persistence.engine.runtime.BeanRelationFixer;
 import org.gama.stalactite.persistence.engine.ISelectExecutor;
 import org.gama.stalactite.persistence.engine.listening.SelectListener;
 

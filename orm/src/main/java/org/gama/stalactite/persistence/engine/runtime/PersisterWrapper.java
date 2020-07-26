@@ -7,7 +7,6 @@ import java.util.function.Consumer;
 import org.danekja.java.util.function.serializable.SerializableBiConsumer;
 import org.danekja.java.util.function.serializable.SerializableFunction;
 import org.gama.lang.Duo;
-import org.gama.stalactite.persistence.engine.BeanRelationFixer;
 import org.gama.stalactite.persistence.engine.IEntityConfiguredJoinedTablesPersister;
 import org.gama.stalactite.persistence.engine.IEntityPersister;
 import org.gama.stalactite.persistence.engine.cascade.EntityMappingStrategyTreeSelectBuilder;

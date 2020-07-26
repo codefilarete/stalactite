@@ -10,6 +10,7 @@ import java.util.stream.Collectors;
 import org.gama.lang.collection.Arrays;
 import org.gama.lang.collection.Maps;
 import org.gama.reflection.AccessorChain;
+import org.gama.stalactite.persistence.engine.configurer.FluentEmbeddableMappingConfigurationSupport;
 import org.gama.stalactite.sql.binder.DefaultParameterBinders;
 import org.gama.stalactite.sql.binder.LambdaParameterBinder;
 import org.gama.stalactite.sql.binder.NullAwareParameterBinder;

@@ -1,5 +1,8 @@
 package org.gama.stalactite.persistence.engine;
 
+import org.gama.stalactite.persistence.engine.configurer.FluentEmbeddableMappingConfigurationSupport;
+import org.gama.stalactite.persistence.engine.configurer.FluentEntityMappingConfigurationSupport;
+import org.gama.stalactite.persistence.engine.configurer.FluentSubEntityMappingConfigurationSupport;
 import org.gama.stalactite.persistence.mapping.EmbeddedBeanMappingStrategy;
 import org.gama.stalactite.persistence.sql.Dialect;
 

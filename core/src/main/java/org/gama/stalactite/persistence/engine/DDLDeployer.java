@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
+import org.gama.stalactite.persistence.engine.runtime.IConfiguredPersister;
 import org.gama.stalactite.sql.ConnectionProvider;
 import org.gama.stalactite.sql.dml.SQLExecutionException;
 import org.gama.stalactite.persistence.sql.Dialect;

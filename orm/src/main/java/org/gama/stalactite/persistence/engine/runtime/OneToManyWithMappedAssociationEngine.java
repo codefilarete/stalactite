@@ -12,7 +12,6 @@ import org.gama.lang.Duo;
 import org.gama.lang.Nullable;
 import org.gama.lang.bean.Objects;
 import org.gama.lang.collection.Iterables;
-import org.gama.stalactite.persistence.engine.BeanRelationFixer;
 import org.gama.stalactite.persistence.engine.IEntityConfiguredJoinedTablesPersister;
 import org.gama.stalactite.persistence.engine.IEntityPersister;
 import org.gama.stalactite.persistence.engine.cascade.AfterInsertCollectionCascader;

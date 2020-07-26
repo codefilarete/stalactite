@@ -8,8 +8,9 @@ import org.gama.lang.Nullable;
 import org.gama.lang.collection.ReadOnlyIterator;
 import org.gama.reflection.IReversibleAccessor;
 import org.gama.stalactite.persistence.engine.ColumnOptions.IdentifierPolicy;
-import org.gama.stalactite.persistence.engine.builder.CascadeMany;
-import org.gama.stalactite.persistence.engine.builder.ElementCollectionLinkage;
+import org.gama.stalactite.persistence.engine.configurer.CascadeMany;
+import org.gama.stalactite.persistence.engine.configurer.ElementCollectionLinkage;
+import org.gama.stalactite.persistence.engine.configurer.CascadeOne;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
 

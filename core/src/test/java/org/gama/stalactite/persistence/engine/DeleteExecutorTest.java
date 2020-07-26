@@ -6,6 +6,7 @@ import java.util.Map;
 import org.gama.lang.Retryer;
 import org.gama.lang.collection.Arrays;
 import org.gama.lang.collection.Maps;
+import org.gama.stalactite.persistence.engine.runtime.DeleteExecutor;
 import org.gama.stalactite.persistence.sql.IConnectionConfiguration.ConnectionConfigurationSupport;
 import org.gama.stalactite.persistence.sql.dml.DMLGenerator;
 import org.gama.stalactite.persistence.structure.Column;

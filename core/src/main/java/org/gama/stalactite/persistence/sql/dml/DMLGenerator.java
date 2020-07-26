@@ -14,7 +14,7 @@ import org.gama.lang.collection.Iterables;
 import org.gama.lang.trace.ModifiableInt;
 import org.gama.stalactite.sql.binder.ParameterBinder;
 import org.gama.stalactite.sql.binder.ParameterBinderIndex;
-import org.gama.stalactite.persistence.engine.DMLExecutor;
+import org.gama.stalactite.persistence.engine.runtime.DMLExecutor;
 import org.gama.stalactite.persistence.mapping.IMappingStrategy.UpwhereColumn;
 import org.gama.stalactite.persistence.sql.ddl.DDLAppender;
 import org.gama.stalactite.persistence.structure.Column;

@@ -8,11 +8,7 @@ import java.util.function.Function;
 
 import org.gama.lang.Duo;
 import org.gama.lang.collection.PairIterator;
-import org.gama.stalactite.persistence.engine.AssociationRecordPersister;
-import org.gama.stalactite.persistence.engine.IConfiguredPersister;
 import org.gama.stalactite.persistence.engine.IEntityConfiguredJoinedTablesPersister;
-import org.gama.stalactite.persistence.engine.IndexedAssociationRecord;
-import org.gama.stalactite.persistence.engine.IndexedAssociationTable;
 import org.gama.stalactite.persistence.engine.runtime.OneToManyWithMappedAssociationEngine.TargetInstancesUpdateCascader;
 import org.gama.stalactite.persistence.id.diff.AbstractDiff;
 import org.gama.stalactite.persistence.id.diff.IndexedDiff;

@@ -6,7 +6,7 @@ import java.util.List;
 import java.util.Set;
 
 import org.gama.lang.collection.Iterables;
-import org.gama.stalactite.persistence.engine.BeanRelationFixer;
+import org.gama.stalactite.persistence.engine.runtime.BeanRelationFixer;
 import org.gama.stalactite.persistence.engine.cascade.EntityMappingStrategyTreeJoinPoint.JoinType;
 import org.gama.stalactite.persistence.engine.cascade.EntityMappingStrategyTreeRowTransformer.EntityInflater;
 import org.gama.stalactite.persistence.mapping.AbstractTransformer;

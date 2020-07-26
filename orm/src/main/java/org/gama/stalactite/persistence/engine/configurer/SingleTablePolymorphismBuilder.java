@@ -7,9 +7,6 @@ import java.util.Map;
 import org.gama.reflection.IReversibleAccessor;
 import org.gama.reflection.ValueAccessPointSet;
 import org.gama.stalactite.persistence.engine.AssociationTableNamingStrategy;
-import org.gama.stalactite.persistence.engine.CascadeManyConfigurer;
-import org.gama.stalactite.persistence.engine.CascadeOne;
-import org.gama.stalactite.persistence.engine.CascadeOneConfigurer;
 import org.gama.stalactite.persistence.engine.ColumnNamingStrategy;
 import org.gama.stalactite.persistence.engine.ElementCollectionTableNamingStrategy;
 import org.gama.stalactite.persistence.engine.ForeignKeyNamingStrategy;
@@ -17,8 +14,6 @@ import org.gama.stalactite.persistence.engine.IEntityConfiguredJoinedTablesPersi
 import org.gama.stalactite.persistence.engine.PersisterRegistry;
 import org.gama.stalactite.persistence.engine.PolymorphismPolicy.SingleTablePolymorphism;
 import org.gama.stalactite.persistence.engine.SubEntityMappingConfiguration;
-import org.gama.stalactite.persistence.engine.builder.CascadeMany;
-import org.gama.stalactite.persistence.engine.builder.ElementCollectionLinkage;
 import org.gama.stalactite.persistence.engine.cascade.JoinedTablesPersister;
 import org.gama.stalactite.persistence.engine.configurer.BeanMappingBuilder.ColumnNameProvider;
 import org.gama.stalactite.persistence.engine.configurer.PersisterBuilderImpl.Identification;

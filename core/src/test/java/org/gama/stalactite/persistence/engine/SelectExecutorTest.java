@@ -12,6 +12,7 @@ import java.util.Set;
 import org.gama.lang.collection.Arrays;
 import org.gama.lang.collection.Iterables;
 import org.gama.lang.collection.Maps;
+import org.gama.stalactite.persistence.engine.runtime.SelectExecutor;
 import org.gama.stalactite.sql.dml.SQLOperation.SQLOperationListener;
 import org.gama.stalactite.sql.dml.SQLStatement;
 import org.gama.stalactite.sql.test.HSQLDBInMemoryDataSource;

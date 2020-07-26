@@ -20,6 +20,7 @@ import org.gama.lang.function.ThrowingSupplier;
 import org.gama.lang.test.Assertions;
 import org.gama.stalactite.persistence.engine.CascadeOptions.RelationMode;
 import org.gama.stalactite.persistence.engine.IFluentEntityMappingBuilder.IFluentMappingBuilderPropertyOptions;
+import org.gama.stalactite.persistence.engine.runtime.IConfiguredPersister;
 import org.gama.stalactite.persistence.engine.model.City;
 import org.gama.stalactite.persistence.engine.model.Country;
 import org.gama.stalactite.persistence.engine.model.State;

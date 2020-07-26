@@ -13,6 +13,7 @@ import org.gama.lang.collection.Iterables;
 import org.gama.lang.collection.Maps;
 import org.gama.reflection.Accessors;
 import org.gama.reflection.PropertyAccessor;
+import org.gama.stalactite.persistence.engine.runtime.Persister;
 import org.gama.stalactite.persistence.id.manager.BeforeInsertIdentifierManager;
 import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
 import org.gama.stalactite.persistence.mapping.PersistentFieldHarverster;

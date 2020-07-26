@@ -17,7 +17,7 @@ import org.gama.stalactite.sql.result.RowIterator;
 import org.gama.stalactite.sql.test.HSQLDBInMemoryDataSource;
 import org.gama.stalactite.persistence.engine.DDLDeployer;
 import org.gama.stalactite.persistence.engine.PersistenceContext;
-import org.gama.stalactite.persistence.engine.Persister;
+import org.gama.stalactite.persistence.engine.runtime.Persister;
 import org.gama.stalactite.persistence.id.manager.AlreadyAssignedIdentifierManager;
 import org.gama.stalactite.persistence.sql.HSQLDBDialect;
 import org.gama.stalactite.persistence.structure.Column;

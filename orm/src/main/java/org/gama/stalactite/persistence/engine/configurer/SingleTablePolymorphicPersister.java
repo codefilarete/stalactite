@@ -19,12 +19,12 @@ import org.gama.lang.collection.Arrays;
 import org.gama.lang.collection.Iterables;
 import org.gama.lang.trace.ModifiableInt;
 import org.gama.reflection.MethodReferenceDispatcher;
-import org.gama.stalactite.persistence.engine.BeanRelationFixer;
+import org.gama.stalactite.persistence.engine.runtime.BeanRelationFixer;
 import org.gama.stalactite.persistence.engine.ExecutableQuery;
 import org.gama.stalactite.persistence.engine.IEntityConfiguredJoinedTablesPersister;
 import org.gama.stalactite.persistence.engine.PolymorphismPolicy.SingleTablePolymorphism;
 import org.gama.stalactite.persistence.engine.SingleTablePolymorphismEntitySelectExecutor;
-import org.gama.stalactite.persistence.engine.SingleTablePolymorphismSelectExecutor;
+import org.gama.stalactite.persistence.engine.runtime.SingleTablePolymorphismSelectExecutor;
 import org.gama.stalactite.persistence.engine.cascade.EntityMappingStrategyTreeJoinPoint.JoinType;
 import org.gama.stalactite.persistence.engine.cascade.EntityMappingStrategyTreeSelectBuilder;
 import org.gama.stalactite.persistence.engine.cascade.IJoinedTablesPersister;
@@ -342,7 +342,7 @@ public class SingleTablePolymorphicPersister<C, I, T extends Table<T>, D> implem
 	
 	/**
 	 * Overriden to capture {@link IEntityMappingStrategy#addShadowColumnInsert(ShadowColumnValueProvider)} and
-	 * {@link IEntityMappingStrategy#addShadowColumnUpdate(ShadowColumnValueProvider)} (see {@link org.gama.stalactite.persistence.engine.CascadeManyConfigurer})
+	 * {@link IEntityMappingStrategy#addShadowColumnUpdate(ShadowColumnValueProvider)} (see {@link CascadeManyConfigurer})
 	 * Made to dispatch those methods subclass strategies since their persisters are in charge of managing their entities (not the parent one).
 	 *
 	 * Design question : one may think that's not a good design to override a getter, caller should invoke an intention-clear method on

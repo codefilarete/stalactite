@@ -6,8 +6,6 @@ import java.util.List;
 import java.util.function.Function;
 
 import org.gama.lang.trace.ModifiableInt;
-import org.gama.stalactite.persistence.engine.AssociationRecordPersister;
-import org.gama.stalactite.persistence.engine.IndexedAssociationRecord;
 import org.gama.stalactite.persistence.engine.cascade.AfterInsertCollectionCascader;
 import org.gama.stalactite.persistence.mapping.IEntityMappingStrategy;
 

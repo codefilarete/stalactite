@@ -6,7 +6,7 @@ import java.util.List;
 
 import org.gama.lang.collection.ReadOnlyIterator;
 import org.gama.reflection.IReversibleAccessor;
-import org.gama.stalactite.persistence.engine.FluentEmbeddableMappingConfigurationSupport.AbstractInset;
+import org.gama.stalactite.persistence.engine.configurer.FluentEmbeddableMappingConfigurationSupport.AbstractInset;
 import org.gama.stalactite.sql.binder.ParameterBinder;
 
 /**

@@ -7,6 +7,7 @@ import java.util.stream.Collectors;
 
 import org.gama.lang.collection.Arrays;
 import org.gama.lang.collection.Iterables;
+import org.gama.stalactite.persistence.engine.runtime.IEntityConfiguredPersister;
 import org.gama.stalactite.persistence.engine.model.AbstractVehicle;
 import org.gama.stalactite.persistence.engine.model.Car;
 import org.gama.stalactite.persistence.engine.model.Color;

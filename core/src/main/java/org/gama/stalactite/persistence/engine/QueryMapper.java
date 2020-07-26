@@ -18,6 +18,7 @@ import org.gama.lang.collection.Iterables;
 import org.gama.lang.function.Converter;
 import org.gama.lang.function.SerializableTriFunction;
 import org.gama.reflection.MethodReferenceCapturer;
+import org.gama.stalactite.persistence.engine.runtime.Persister;
 import org.gama.stalactite.persistence.sql.dml.binder.ColumnBinderRegistry;
 import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.query.builder.SQLBuilder;

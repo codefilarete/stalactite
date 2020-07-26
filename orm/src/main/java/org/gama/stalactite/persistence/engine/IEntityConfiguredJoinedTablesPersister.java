@@ -1,5 +1,7 @@
 package org.gama.stalactite.persistence.engine;
 
+import org.gama.stalactite.persistence.engine.runtime.IEntityConfiguredPersister;
+
 /**
  * @author Guillaume Mary
  */

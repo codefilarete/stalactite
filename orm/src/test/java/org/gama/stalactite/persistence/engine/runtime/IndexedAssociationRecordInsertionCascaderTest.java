@@ -5,8 +5,6 @@ import java.util.List;
 
 import org.gama.lang.StringAppender;
 import org.gama.lang.collection.Arrays;
-import org.gama.stalactite.persistence.engine.AssociationRecordPersister;
-import org.gama.stalactite.persistence.engine.IndexedAssociationRecord;
 import org.gama.stalactite.persistence.engine.runtime.AssociationRecordInsertionCascaderTest.Key;
 import org.gama.stalactite.persistence.engine.runtime.AssociationRecordInsertionCascaderTest.Keyboard;
 import org.gama.stalactite.persistence.id.Identifier;

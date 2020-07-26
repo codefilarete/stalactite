@@ -18,7 +18,7 @@ import org.gama.lang.collection.Iterables;
 import org.gama.lang.function.Functions;
 import org.gama.lang.trace.ModifiableInt;
 import org.gama.reflection.MethodReferenceDispatcher;
-import org.gama.stalactite.persistence.engine.BeanRelationFixer;
+import org.gama.stalactite.persistence.engine.runtime.BeanRelationFixer;
 import org.gama.stalactite.persistence.engine.ExecutableQuery;
 import org.gama.stalactite.persistence.engine.IDeleteExecutor;
 import org.gama.stalactite.persistence.engine.IEntityConfiguredJoinedTablesPersister;
@@ -291,7 +291,7 @@ public class TablePerClassPolymorphismPersister<C, I, T extends Table<T>> implem
 	
 	/**
 	 * Overriden to capture {@link IEntityMappingStrategy#addShadowColumnInsert(ShadowColumnValueProvider)} and
-	 * {@link IEntityMappingStrategy#addShadowColumnUpdate(ShadowColumnValueProvider)} (see {@link org.gama.stalactite.persistence.engine.CascadeManyConfigurer})
+	 * {@link IEntityMappingStrategy#addShadowColumnUpdate(ShadowColumnValueProvider)} (see {@link CascadeManyConfigurer})
 	 * Made to dispatch those methods subclass strategies since their persisters are in charge of managing their entities (not the parent one).
 	 *
 	 * Design question : one may think that's not a good design to override a getter, caller should invoke an intention-clear method on

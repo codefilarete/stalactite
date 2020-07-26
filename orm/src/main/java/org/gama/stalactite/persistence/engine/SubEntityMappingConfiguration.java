@@ -4,8 +4,9 @@ import java.util.Collection;
 import java.util.List;
 import java.util.function.Function;
 
-import org.gama.stalactite.persistence.engine.builder.CascadeMany;
-import org.gama.stalactite.persistence.engine.builder.ElementCollectionLinkage;
+import org.gama.stalactite.persistence.engine.configurer.CascadeMany;
+import org.gama.stalactite.persistence.engine.configurer.ElementCollectionLinkage;
+import org.gama.stalactite.persistence.engine.configurer.CascadeOne;
 import org.gama.stalactite.persistence.structure.Column;
 
 /**

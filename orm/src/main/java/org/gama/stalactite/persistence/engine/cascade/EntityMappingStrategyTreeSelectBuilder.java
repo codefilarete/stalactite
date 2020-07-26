@@ -13,7 +13,7 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 
 import org.gama.lang.Strings;
-import org.gama.stalactite.persistence.engine.BeanRelationFixer;
+import org.gama.stalactite.persistence.engine.runtime.BeanRelationFixer;
 import org.gama.stalactite.persistence.engine.cascade.EntityMappingStrategyTreeJoinPoint.JoinType;
 import org.gama.stalactite.persistence.engine.cascade.EntityMappingStrategyTreeRowTransformer.EntityInflater;
 import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;

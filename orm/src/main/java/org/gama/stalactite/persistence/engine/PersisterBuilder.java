@@ -1,5 +1,7 @@
 package org.gama.stalactite.persistence.engine;
 
+import org.gama.stalactite.persistence.engine.runtime.IEntityConfiguredPersister;
+import org.gama.stalactite.persistence.engine.runtime.Persister;
 import org.gama.stalactite.persistence.structure.Table;
 
 /**

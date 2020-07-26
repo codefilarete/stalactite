@@ -23,7 +23,7 @@ import org.gama.stalactite.persistence.sql.IConnectionConfiguration.ConnectionCo
 import org.gama.stalactite.sql.binder.ParameterBinder;
 import org.gama.stalactite.sql.result.InMemoryResultSet;
 import org.gama.stalactite.persistence.engine.InMemoryCounterIdentifierGenerator;
-import org.gama.stalactite.persistence.engine.Persister;
+import org.gama.stalactite.persistence.engine.runtime.Persister;
 import org.gama.stalactite.persistence.engine.RowCountManager;
 import org.gama.stalactite.persistence.engine.listening.DeleteByIdListener;
 import org.gama.stalactite.persistence.engine.listening.DeleteListener;

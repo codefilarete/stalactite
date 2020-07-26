@@ -10,6 +10,7 @@ import org.gama.lang.collection.Arrays;
 import org.gama.lang.function.Sequence;
 import org.gama.lang.trace.ModifiableInt;
 import org.gama.stalactite.persistence.engine.ColumnOptions.IdentifierPolicy;
+import org.gama.stalactite.persistence.engine.runtime.IConfiguredPersister;
 import org.gama.stalactite.persistence.engine.model.Timestamp;
 import org.gama.stalactite.persistence.sql.HSQLDBDialect;
 import org.gama.stalactite.persistence.structure.Table;

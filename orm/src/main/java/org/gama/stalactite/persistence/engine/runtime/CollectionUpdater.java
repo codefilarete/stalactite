@@ -11,7 +11,6 @@ import java.util.function.Function;
 
 import org.gama.lang.Duo;
 import org.gama.lang.collection.Iterables;
-import org.gama.stalactite.persistence.engine.IEntityConfiguredPersister;
 import org.gama.stalactite.persistence.engine.IEntityPersister;
 import org.gama.stalactite.persistence.engine.listening.UpdateListener.UpdatePayload;
 import org.gama.stalactite.persistence.id.diff.AbstractDiff;

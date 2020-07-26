@@ -16,6 +16,7 @@ import org.gama.reflection.Accessors;
 import org.gama.reflection.IReversibleAccessor;
 import org.gama.stalactite.persistence.engine.PersisterDatabaseTest.Toto;
 import org.gama.stalactite.persistence.engine.PersisterDatabaseTest.TotoTable;
+import org.gama.stalactite.persistence.engine.runtime.Persister;
 import org.gama.stalactite.persistence.engine.listening.DeleteByIdListener;
 import org.gama.stalactite.persistence.engine.listening.DeleteListener;
 import org.gama.stalactite.persistence.engine.listening.InsertListener;

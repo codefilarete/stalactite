@@ -2,6 +2,7 @@ package org.gama.stalactite.persistence.engine;
 
 import org.danekja.java.util.function.serializable.SerializableBiConsumer;
 import org.danekja.java.util.function.serializable.SerializableFunction;
+import org.gama.stalactite.persistence.engine.configurer.CascadeManyConfigurer;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
 

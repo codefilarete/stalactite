@@ -13,7 +13,7 @@ import com.google.common.annotations.VisibleForTesting;
 import org.gama.lang.Nullable;
 import org.gama.lang.Reflections;
 import org.gama.lang.ThreadLocals;
-import org.gama.stalactite.persistence.engine.BeanRelationFixer;
+import org.gama.stalactite.persistence.engine.runtime.BeanRelationFixer;
 import org.gama.stalactite.persistence.engine.cascade.EntityMappingStrategyTree.MergeJoin;
 import org.gama.stalactite.persistence.engine.cascade.EntityMappingStrategyTree.PassiveJoin;
 import org.gama.stalactite.persistence.engine.cascade.EntityMappingStrategyTree.RelationJoin;

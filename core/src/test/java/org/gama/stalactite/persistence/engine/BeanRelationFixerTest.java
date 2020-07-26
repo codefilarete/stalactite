@@ -8,6 +8,7 @@ import java.util.Set;
 
 import org.gama.lang.collection.Arrays;
 import org.gama.lang.collection.Iterables;
+import org.gama.stalactite.persistence.engine.runtime.BeanRelationFixer;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;

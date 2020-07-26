@@ -6,7 +6,7 @@ import org.gama.lang.collection.ValueFactoryMap;
 import org.gama.lang.test.Assertions;
 import org.gama.reflection.AccessorByMethodReference;
 import org.gama.stalactite.persistence.engine.ColumnOptions.IdentifierPolicy;
-import org.gama.stalactite.persistence.engine.IEntityConfiguredPersister;
+import org.gama.stalactite.persistence.engine.runtime.IEntityConfiguredPersister;
 import org.gama.stalactite.persistence.engine.IEntityPersister.EntityCriteria;
 import org.gama.stalactite.persistence.engine.MappingEase;
 import org.gama.stalactite.persistence.engine.PersistenceContext;

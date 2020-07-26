@@ -4,8 +4,6 @@ import java.util.Collection;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import org.gama.stalactite.persistence.engine.AssociationRecord;
-import org.gama.stalactite.persistence.engine.AssociationRecordPersister;
 import org.gama.stalactite.persistence.engine.cascade.AfterInsertCollectionCascader;
 import org.gama.stalactite.persistence.mapping.IEntityMappingStrategy;
 

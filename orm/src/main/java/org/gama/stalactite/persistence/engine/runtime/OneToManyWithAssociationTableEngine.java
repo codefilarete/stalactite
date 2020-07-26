@@ -3,10 +3,6 @@ package org.gama.stalactite.persistence.engine.runtime;
 import java.util.Collection;
 import java.util.function.Function;
 
-import org.gama.stalactite.persistence.engine.AssociationRecord;
-import org.gama.stalactite.persistence.engine.AssociationRecordPersister;
-import org.gama.stalactite.persistence.engine.AssociationTable;
-import org.gama.stalactite.persistence.engine.IConfiguredPersister;
 import org.gama.stalactite.persistence.engine.IEntityConfiguredJoinedTablesPersister;
 import org.gama.stalactite.persistence.mapping.IEntityMappingStrategy;
 

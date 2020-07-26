@@ -11,7 +11,7 @@ import java.util.function.BiConsumer;
 import org.gama.lang.Duo;
 import org.gama.lang.collection.PairIterator;
 import org.gama.lang.exception.Exceptions;
-import org.gama.stalactite.persistence.engine.WriteExecutor.JDBCBatchingIterator;
+import org.gama.stalactite.persistence.engine.runtime.WriteExecutor.JDBCBatchingIterator;
 import org.gama.stalactite.persistence.engine.listening.InsertListener;
 import org.gama.stalactite.persistence.engine.listening.SelectListener;
 import org.gama.stalactite.persistence.mapping.IdAccessor;

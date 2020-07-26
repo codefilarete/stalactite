@@ -2,12 +2,14 @@ package org.gama.stalactite.persistence.id.manager;
 
 import javax.annotation.Nonnull;
 
+import org.gama.stalactite.persistence.engine.runtime.Persister;
+
 /**
  * A marker for identifier that are wrapped into a simple class.
  * The surrogate will be persisted, not the whole instances of this class.
  * 
  * Mainly introduced to manage {@link AlreadyAssignedIdentifierManager} and the need to determine if an instance is persisted or not
- * (see {@link org.gama.stalactite.persistence.engine.Persister#persist(Object)}.
+ * (see {@link Persister#persist(Object)}.
  * 
  * @param <T> the real type of the identifier
  * @author Guillaume Mary
