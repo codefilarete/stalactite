@@ -1,4 +1,4 @@
-package org.gama.stalactite.persistence.engine.configurer;
+package org.gama.stalactite.persistence.engine.runtime;
 
 import java.util.Collection;
 import java.util.HashMap;
@@ -18,17 +18,10 @@ import org.gama.lang.collection.Collections;
 import org.gama.lang.collection.Iterables;
 import org.gama.lang.trace.ModifiableInt;
 import org.gama.reflection.MethodReferenceDispatcher;
-import org.gama.stalactite.persistence.engine.runtime.BeanRelationFixer;
 import org.gama.stalactite.persistence.engine.ExecutableQuery;
-import org.gama.stalactite.persistence.engine.IEntityConfiguredJoinedTablesPersister;
 import org.gama.stalactite.persistence.engine.ISelectExecutor;
-import org.gama.stalactite.persistence.engine.JoinedTablesPolymorphismEntitySelectExecutor;
-import org.gama.stalactite.persistence.engine.JoinedTablesPolymorphismSelectExecutor;
-import org.gama.stalactite.persistence.engine.cascade.EntityMappingStrategyTreeJoinPoint.JoinType;
-import org.gama.stalactite.persistence.engine.cascade.EntityMappingStrategyTreeSelectBuilder;
-import org.gama.stalactite.persistence.engine.cascade.IJoinedTablesPersister;
-import org.gama.stalactite.persistence.engine.cascade.JoinedTablesPersister;
-import org.gama.stalactite.persistence.engine.cascade.JoinedTablesPersister.CriteriaProvider;
+import org.gama.stalactite.persistence.engine.runtime.EntityMappingStrategyTreeJoinPoint.JoinType;
+import org.gama.stalactite.persistence.engine.runtime.JoinedTablesPersister.CriteriaProvider;
 import org.gama.stalactite.persistence.engine.listening.DeleteByIdListener;
 import org.gama.stalactite.persistence.engine.listening.DeleteListener;
 import org.gama.stalactite.persistence.engine.listening.IPersisterListener;

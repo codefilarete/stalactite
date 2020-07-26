@@ -1,4 +1,4 @@
-package org.gama.stalactite.persistence.engine.configurer;
+package org.gama.stalactite.persistence.engine.runtime;
 
 import java.util.function.Function;
 
@@ -7,7 +7,7 @@ import org.gama.stalactite.persistence.engine.ISelectExecutor;
 /**
  * @author Guillaume Mary
  */
-public class RelationIds<SRC, TRGT, TRGTID> {
+class RelationIds<SRC, TRGT, TRGTID> {
 	private final ISelectExecutor<TRGT, TRGTID> selectExecutor;
 	private final Function<TRGT, TRGTID> idAccessor;
 	private final SRC source;

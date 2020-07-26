@@ -7,9 +7,9 @@ import java.util.List;
 
 import org.gama.lang.collection.Iterables;
 import org.gama.lang.collection.Maps;
-import org.gama.stalactite.persistence.engine.cascade.EntityMappingStrategyTreeRowTransformer;
-import org.gama.stalactite.persistence.engine.cascade.EntityMappingStrategyTreeSelectBuilder;
-import org.gama.stalactite.persistence.engine.cascade.EntityMappingStrategyTreeSelectExecutor;
+import org.gama.stalactite.persistence.engine.runtime.EntityMappingStrategyTreeRowTransformer;
+import org.gama.stalactite.persistence.engine.runtime.EntityMappingStrategyTreeSelectBuilder;
+import org.gama.stalactite.persistence.engine.runtime.EntityMappingStrategyTreeSelectExecutor;
 import org.gama.stalactite.persistence.sql.dml.binder.ColumnBinderRegistry;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;

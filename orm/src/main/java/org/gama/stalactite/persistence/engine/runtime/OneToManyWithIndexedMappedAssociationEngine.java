@@ -15,7 +15,6 @@ import org.gama.lang.Duo;
 import org.gama.lang.Reflections;
 import org.gama.lang.ThreadLocals;
 import org.gama.lang.collection.Iterables;
-import org.gama.stalactite.persistence.engine.IEntityConfiguredJoinedTablesPersister;
 import org.gama.stalactite.persistence.engine.RuntimeMappingException;
 import org.gama.stalactite.persistence.engine.listening.SelectListener;
 import org.gama.stalactite.persistence.id.diff.AbstractDiff;

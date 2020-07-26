@@ -16,8 +16,7 @@ import org.gama.lang.bean.Objects;
 import org.gama.lang.collection.Iterables;
 import org.gama.stalactite.command.builder.DeleteCommandBuilder;
 import org.gama.stalactite.command.model.Delete;
-import org.gama.stalactite.persistence.engine.IEntityConfiguredJoinedTablesPersister;
-import org.gama.stalactite.persistence.engine.cascade.EntityMappingStrategyTreeJoinPoint.JoinType;
+import org.gama.stalactite.persistence.engine.runtime.EntityMappingStrategyTreeJoinPoint.JoinType;
 import org.gama.stalactite.persistence.engine.cascade.AfterInsertCollectionCascader;
 import org.gama.stalactite.persistence.engine.listening.DeleteByIdListener;
 import org.gama.stalactite.persistence.engine.listening.DeleteListener;
@@ -35,7 +34,7 @@ import org.gama.stalactite.sql.dml.PreparedSQL;
 import org.gama.stalactite.sql.dml.WriteOperation;
 
 import static org.gama.lang.collection.Iterables.collect;
-import static org.gama.stalactite.persistence.engine.cascade.EntityMappingStrategyTreeSelectBuilder.ROOT_STRATEGY_NAME;
+import static org.gama.stalactite.persistence.engine.runtime.EntityMappingStrategyTreeSelectBuilder.ROOT_STRATEGY_NAME;
 import static org.gama.stalactite.persistence.engine.runtime.OneToManyWithMappedAssociationEngine.NOOP_REVERSE_SETTER;
 
 /**

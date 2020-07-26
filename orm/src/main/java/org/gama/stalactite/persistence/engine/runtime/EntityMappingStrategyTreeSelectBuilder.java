@@ -1,4 +1,4 @@
-package org.gama.stalactite.persistence.engine.cascade;
+package org.gama.stalactite.persistence.engine.runtime;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -13,9 +13,8 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 
 import org.gama.lang.Strings;
-import org.gama.stalactite.persistence.engine.runtime.BeanRelationFixer;
-import org.gama.stalactite.persistence.engine.cascade.EntityMappingStrategyTreeJoinPoint.JoinType;
-import org.gama.stalactite.persistence.engine.cascade.EntityMappingStrategyTreeRowTransformer.EntityInflater;
+import org.gama.stalactite.persistence.engine.runtime.EntityMappingStrategyTreeJoinPoint.JoinType;
+import org.gama.stalactite.persistence.engine.runtime.EntityMappingStrategyTreeRowTransformer.EntityInflater;
 import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
 import org.gama.stalactite.persistence.mapping.IEntityMappingStrategy;
 import org.gama.stalactite.persistence.structure.Column;
@@ -26,7 +25,7 @@ import org.gama.stalactite.sql.binder.ParameterBinder;
 import org.gama.stalactite.sql.binder.ParameterBinderProvider;
 import org.gama.stalactite.sql.result.Row;
 
-import static org.gama.stalactite.persistence.engine.cascade.EntityMappingStrategyTreeJoinPoint.JoinType.OUTER;
+import static org.gama.stalactite.persistence.engine.runtime.EntityMappingStrategyTreeJoinPoint.JoinType.OUTER;
 import static org.gama.stalactite.query.model.From.AbstractJoin.JoinDirection.INNER_JOIN;
 import static org.gama.stalactite.query.model.From.AbstractJoin.JoinDirection.LEFT_OUTER_JOIN;
 

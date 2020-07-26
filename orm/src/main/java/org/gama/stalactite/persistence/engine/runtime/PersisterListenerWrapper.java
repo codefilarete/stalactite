@@ -1,18 +1,16 @@
-package org.gama.stalactite.persistence.engine.configurer;
+package org.gama.stalactite.persistence.engine.runtime;
 
 import java.util.ArrayList;
 import java.util.List;
 
 import org.gama.lang.Duo;
 import org.gama.lang.collection.Iterables;
-import org.gama.stalactite.persistence.engine.IEntityConfiguredJoinedTablesPersister;
 import org.gama.stalactite.persistence.engine.listening.DeleteByIdListener;
 import org.gama.stalactite.persistence.engine.listening.DeleteListener;
 import org.gama.stalactite.persistence.engine.listening.InsertListener;
 import org.gama.stalactite.persistence.engine.listening.PersisterListener;
 import org.gama.stalactite.persistence.engine.listening.SelectListener;
 import org.gama.stalactite.persistence.engine.listening.UpdateListener;
-import org.gama.stalactite.persistence.engine.runtime.PersisterWrapper;
 
 /**
  * Class for wrapping calls to {@link IEntityConfiguredJoinedTablesPersister#insert(Object)} and other update, delete, etc methods into

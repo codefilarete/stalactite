@@ -1,4 +1,4 @@
-package org.gama.stalactite.persistence.engine.configurer;
+package org.gama.stalactite.persistence.engine.runtime;
 
 import java.util.HashMap;
 import java.util.HashSet;
@@ -10,7 +10,6 @@ import java.util.function.Function;
 import org.gama.lang.Nullable;
 import org.gama.lang.Reflections;
 import org.gama.lang.collection.Iterables;
-import org.gama.stalactite.persistence.engine.runtime.BeanRelationFixer;
 import org.gama.stalactite.persistence.engine.ISelectExecutor;
 import org.gama.stalactite.persistence.engine.listening.SelectListener;
 

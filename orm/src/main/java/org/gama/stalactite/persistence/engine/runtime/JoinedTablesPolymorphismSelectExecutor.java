@@ -1,4 +1,4 @@
-package org.gama.stalactite.persistence.engine;
+package org.gama.stalactite.persistence.engine.runtime;
 
 import java.sql.ResultSet;
 import java.util.ArrayList;
@@ -11,6 +11,7 @@ import java.util.Map.Entry;
 import java.util.Set;
 
 import org.gama.lang.collection.Iterables;
+import org.gama.stalactite.persistence.engine.ISelectExecutor;
 import org.gama.stalactite.persistence.mapping.ColumnedRow;
 import org.gama.stalactite.persistence.sql.Dialect;
 import org.gama.stalactite.persistence.structure.Column;

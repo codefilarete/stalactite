@@ -1,10 +1,10 @@
-package org.gama.stalactite.persistence.engine.cascade;
+package org.gama.stalactite.persistence.engine.runtime;
 
 import org.gama.stalactite.persistence.mapping.IEntityMappingStrategy;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
 
-import static org.gama.stalactite.persistence.engine.cascade.EntityMappingStrategyTreeJoinPoint.JoinType.INNER;
+import static org.gama.stalactite.persistence.engine.runtime.EntityMappingStrategyTreeJoinPoint.JoinType.INNER;
 
 /**
  * The "right part" of a join between between 2 {@link IEntityMappingStrategy}s

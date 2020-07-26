@@ -1,4 +1,4 @@
-package org.gama.stalactite.persistence.engine.cascade;
+package org.gama.stalactite.persistence.engine.runtime;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -13,10 +13,9 @@ import com.google.common.annotations.VisibleForTesting;
 import org.gama.lang.Nullable;
 import org.gama.lang.Reflections;
 import org.gama.lang.ThreadLocals;
-import org.gama.stalactite.persistence.engine.runtime.BeanRelationFixer;
-import org.gama.stalactite.persistence.engine.cascade.EntityMappingStrategyTree.MergeJoin;
-import org.gama.stalactite.persistence.engine.cascade.EntityMappingStrategyTree.PassiveJoin;
-import org.gama.stalactite.persistence.engine.cascade.EntityMappingStrategyTree.RelationJoin;
+import org.gama.stalactite.persistence.engine.runtime.EntityMappingStrategyTree.MergeJoin;
+import org.gama.stalactite.persistence.engine.runtime.EntityMappingStrategyTree.PassiveJoin;
+import org.gama.stalactite.persistence.engine.runtime.EntityMappingStrategyTree.RelationJoin;
 import org.gama.stalactite.persistence.mapping.AbstractTransformer;
 import org.gama.stalactite.persistence.mapping.ColumnedRow;
 import org.gama.stalactite.persistence.structure.Column;

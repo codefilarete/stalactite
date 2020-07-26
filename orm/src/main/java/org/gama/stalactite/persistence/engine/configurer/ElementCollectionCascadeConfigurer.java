@@ -27,10 +27,10 @@ import org.gama.stalactite.persistence.engine.EmbeddableMappingConfiguration;
 import org.gama.stalactite.persistence.engine.EmbeddableMappingConfiguration.Linkage;
 import org.gama.stalactite.persistence.engine.EmbeddableMappingConfigurationProvider;
 import org.gama.stalactite.persistence.engine.ForeignKeyNamingStrategy;
-import org.gama.stalactite.persistence.engine.IEntityConfiguredJoinedTablesPersister;
+import org.gama.stalactite.persistence.engine.runtime.IEntityConfiguredJoinedTablesPersister;
 import org.gama.stalactite.persistence.engine.IEntityPersister;
-import org.gama.stalactite.persistence.engine.cascade.IJoinedTablesPersister;
-import org.gama.stalactite.persistence.engine.cascade.JoinedTablesPersister;
+import org.gama.stalactite.persistence.engine.runtime.IJoinedTablesPersister;
+import org.gama.stalactite.persistence.engine.runtime.JoinedTablesPersister;
 import org.gama.stalactite.persistence.engine.configurer.BeanMappingBuilder.ColumnNameProvider;
 import org.gama.stalactite.persistence.engine.runtime.CollectionUpdater;
 import org.gama.stalactite.persistence.engine.runtime.OneToManyWithMappedAssociationEngine.DeleteTargetEntitiesBeforeDeleteCascader;
@@ -55,7 +55,7 @@ import org.gama.stalactite.sql.result.Row;
 
 import static org.gama.lang.Nullable.nullable;
 import static org.gama.lang.bean.Objects.preventNull;
-import static org.gama.stalactite.persistence.engine.cascade.EntityMappingStrategyTreeSelectBuilder.ROOT_STRATEGY_NAME;
+import static org.gama.stalactite.persistence.engine.runtime.EntityMappingStrategyTreeSelectBuilder.ROOT_STRATEGY_NAME;
 
 /**
  * Class that configures element-collection mapping

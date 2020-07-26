@@ -4,7 +4,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
-import org.gama.stalactite.persistence.engine.cascade.EntityMappingStrategyTreeRowTransformer;
+import org.gama.stalactite.persistence.engine.runtime.EntityMappingStrategyTreeRowTransformer;
 import org.gama.stalactite.sql.binder.NullAwareParameterBinder;
 import org.gama.stalactite.sql.binder.ParameterBinder;
 

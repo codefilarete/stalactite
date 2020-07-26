@@ -36,7 +36,6 @@ import org.gama.lang.function.Hanger.Holder;
 import org.gama.lang.function.ThrowingTriConsumer;
 import org.gama.lang.sql.ConnectionWrapper;
 import org.gama.lang.sql.ResultSetWrapper;
-import org.gama.stalactite.persistence.engine.IEntityConfiguredJoinedTablesPersister;
 import org.gama.stalactite.persistence.engine.NotYetSupportedOperationException;
 import org.gama.stalactite.persistence.sql.IConnectionConfiguration;
 import org.gama.stalactite.persistence.sql.IConnectionConfiguration.ConnectionConfigurationSupport;
