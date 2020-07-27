@@ -38,7 +38,7 @@ import org.gama.stalactite.sql.ConnectionProvider;
  * @author Guillaume Mary
  */
 @Nonnull
-public class Persister<C, I, T extends Table> implements IEntityPersister<C, I>, IConfiguredPersister<C, I> {
+public class Persister<C, I, T extends Table> implements IConfiguredPersister<C, I> {
 	
 	private final IEntityMappingStrategy<C, I, T> mappingStrategy;
 	private final IConnectionConfiguration connectionConfiguration;
@@ -208,7 +208,7 @@ public class Persister<C, I, T extends Table> implements IEntityPersister<C, I>,
 	 * @return number of rows inserted and updated (relation-less counter) (maximum is argument size, may be 0 if no modifications were found between memory and database)
 	 */
 	@Override
-	public int persist(Iterable<C> entities) {
+	public int persist(Iterable<? extends C> entities) {
 		return IEntityPersister.persist(entities, this::isNew, this, this, this, getMappingStrategy()::getId);
 	}
 	
@@ -272,16 +272,6 @@ public class Persister<C, I, T extends Table> implements IEntityPersister<C, I>,
 	
 	protected int doInsert(Iterable<? extends C> entities) {
 		return insertExecutor.insert(entities);
-	}
-	
-	/**
-	 * Updates roughly given entity: no differences are computed, only update statements (full column) are applied.
-	 *
-	 * @param entity an entity
-	 * @return number of rows updated (relation-less counter) (maximum is 1, may be 0 if row wasn't found in database)
-	 */
-	public int updateById(C entity) {
-		return updateById(Collections.singletonList(entity));
 	}
 	
 	/**

@@ -45,7 +45,7 @@ import org.gama.stalactite.sql.ConnectionProvider;
  * 
  * @author Guillaume Mary
  */
-public class JoinedTablesPolymorphicPersister<C, I> implements IEntityConfiguredJoinedTablesPersister<C, I> {
+public class JoinedTablesPolymorphicPersister<C, I> implements IEntityConfiguredJoinedTablesPersister<C, I>, PolymorphicPersister<C> {
 	
 	private static final ThreadLocal<Set<RelationIds<Object /* E */, Object /* target */, Object /* target identifier */ >>> DIFFERED_ENTITY_LOADER = new ThreadLocal<>();
 	
@@ -91,6 +91,11 @@ public class JoinedTablesPolymorphicPersister<C, I> implements IEntityConfigured
 				parentPersister.getEntityMappingStrategyTreeSelectExecutor().getEntityMappingStrategyTreeSelectBuilder(), connectionProvider, dialect);
 		
 		this.criteriaSupport = new EntityCriteriaSupport<>(parentPersister.getMappingStrategy());
+	}
+	
+	@Override
+	public Set<Class<? extends C>> getSupportedEntityTypes() {
+		return this.subEntitiesPersisters.keySet();
 	}
 	
 	@Override
@@ -192,9 +197,8 @@ public class JoinedTablesPolymorphicPersister<C, I> implements IEntityConfigured
 	
 	@Override
 	public List<C> select(Iterable<I> ids) {
-		subEntitiesPersisters.forEach((subclass, subEntityPersister) -> {
-			subEntityPersister.getPersisterListener().getSelectListener().beforeSelect(ids);
-		});
+		subEntitiesPersisters.forEach((subclass, subEntityPersister) -> 
+				subEntityPersister.getPersisterListener().getSelectListener().beforeSelect(ids));
 		
 		List<C> result = mainSelectExecutor.select(ids);
 		
@@ -253,7 +257,7 @@ public class JoinedTablesPolymorphicPersister<C, I> implements IEntityConfigured
 	}
 	
 	@Override
-	public int persist(Iterable<C> entities) {
+	public int persist(Iterable<? extends C> entities) {
 		Map<Class, Set<C>> entitiesPerType = new HashMap<>();
 		for (C entity : entities) {
 			entitiesPerType.computeIfAbsent(entity.getClass(), cClass -> new HashSet<>()).add(entity);

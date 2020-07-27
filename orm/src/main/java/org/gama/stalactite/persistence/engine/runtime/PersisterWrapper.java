@@ -37,9 +37,21 @@ public class PersisterWrapper<C, I> implements IEntityConfiguredJoinedTablesPers
 		return surrogate;
 	}
 	
+	/**
+	 * Gets the last (in depth) delegate of this potential chain of wrapper
+	 * @return at least the delegate of this instance
+	 */
+	public IEntityConfiguredJoinedTablesPersister<C, I> getDeepestSurrogate() {
+		IEntityConfiguredJoinedTablesPersister<C, I> result = this;
+		while(result instanceof PersisterWrapper && ((PersisterWrapper<C, I>) result).getSurrogate() != null) {
+			result = ((PersisterWrapper<C, I>) result).getSurrogate();
+		}
+		return result;
+	}
+	
 	@Override
-	public int persist(Iterable<C> entities) {
-		return IEntityPersister.persist(entities, this::isNew, this, this, this, getMappingStrategy()::getId);
+	public int persist(Iterable<? extends C> entities) {
+		return IEntityPersister.persist(entities, this::isNew, this, this, this, this::getId);
 	}
 	
 	@Override

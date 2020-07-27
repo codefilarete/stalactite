@@ -47,7 +47,7 @@ import org.gama.stalactite.sql.result.Row;
 /**
  * @author Guillaume Mary
  */
-public class SingleTablePolymorphicPersister<C, I, T extends Table<T>, D> implements IEntityConfiguredJoinedTablesPersister<C, I> {
+public class SingleTablePolymorphicPersister<C, I, T extends Table<T>, D> implements IEntityConfiguredJoinedTablesPersister<C, I>, PolymorphicPersister<C> {
 	
 	private static final ThreadLocal<Set<RelationIds<Object /* E */, Object /* target */, Object /* target identifier */ >>> DIFFERED_ENTITY_LOADER = new ThreadLocal<>();
 	
@@ -95,6 +95,11 @@ public class SingleTablePolymorphicPersister<C, I, T extends Table<T>, D> implem
 				dialect);
 		
 		this.criteriaSupport = new EntityCriteriaSupport<>(mainPersister.getMappingStrategy());
+	}
+	
+	@Override
+	public Set<Class<? extends C>> getSupportedEntityTypes() {
+		return this.subEntitiesPersisters.keySet();
 	}
 	
 	@Override
@@ -248,7 +253,7 @@ public class SingleTablePolymorphicPersister<C, I, T extends Table<T>, D> implem
 	}
 	
 	@Override
-	public int persist(Iterable<C> entities) {
+	public int persist(Iterable<? extends C> entities) {
 		Map<Class, Set<C>> entitiesPerType = new HashMap<>();
 		for (C entity : entities) {
 			entitiesPerType.computeIfAbsent(entity.getClass(), cClass -> new HashSet<>()).add(entity);

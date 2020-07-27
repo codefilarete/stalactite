@@ -157,7 +157,7 @@ public class JoinedTablesPersister<C, I, T extends Table> implements IEntityConf
 	}
 	
 	@Override
-	public int persist(Iterable<C> entities) {
+	public int persist(Iterable<? extends C> entities) {
 		return persister.persist(entities);
 	}
 	

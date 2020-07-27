@@ -573,7 +573,7 @@ public class FluentEntityMappingConfigurationSupportTest {
 		when(connectionMock.prepareStatement(anyString())).thenReturn(statementMock);
 		
 		StringBuilder capturedSQL = new StringBuilder();
-		((JoinedTablesPersister) (((PersisterWrapper) persister).getSurrogate())).getInsertExecutor().setOperationListener(new SQLOperationListener<Column<Table, Object>>() {
+		((JoinedTablesPersister) (((PersisterWrapper) persister).getDeepestSurrogate())).getInsertExecutor().setOperationListener(new SQLOperationListener<Column<Table, Object>>() {
 			@Override
 			public void onValuesSet(Map<Column<Table, Object>, ?> values) {
 				capturedValues.putAll(values);

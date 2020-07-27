@@ -41,9 +41,6 @@ import org.gama.stalactite.persistence.engine.EntityMappingConfiguration;
 import org.gama.stalactite.persistence.engine.EntityMappingConfiguration.InheritanceConfiguration;
 import org.gama.stalactite.persistence.engine.EntityMappingConfigurationProvider;
 import org.gama.stalactite.persistence.engine.ForeignKeyNamingStrategy;
-import org.gama.stalactite.persistence.engine.runtime.IConfiguredPersister;
-import org.gama.stalactite.persistence.engine.runtime.IEntityConfiguredJoinedTablesPersister;
-import org.gama.stalactite.persistence.engine.runtime.IEntityConfiguredPersister;
 import org.gama.stalactite.persistence.engine.IEntityPersister;
 import org.gama.stalactite.persistence.engine.MappingConfigurationException;
 import org.gama.stalactite.persistence.engine.PersistenceContext;
@@ -59,13 +56,17 @@ import org.gama.stalactite.persistence.engine.cascade.AfterDeleteByIdSupport;
 import org.gama.stalactite.persistence.engine.cascade.AfterDeleteSupport;
 import org.gama.stalactite.persistence.engine.cascade.AfterUpdateSupport;
 import org.gama.stalactite.persistence.engine.cascade.BeforeInsertSupport;
-import org.gama.stalactite.persistence.engine.runtime.EntityMappingStrategyTreeSelectBuilder;
-import org.gama.stalactite.persistence.engine.runtime.JoinedTablesPersister;
 import org.gama.stalactite.persistence.engine.configurer.BeanMappingBuilder.ColumnNameProvider;
 import org.gama.stalactite.persistence.engine.configurer.PersisterBuilderImpl.MappingPerTable.Mapping;
 import org.gama.stalactite.persistence.engine.listening.PersisterListener;
 import org.gama.stalactite.persistence.engine.listening.SelectListener;
 import org.gama.stalactite.persistence.engine.listening.UpdateByIdListener;
+import org.gama.stalactite.persistence.engine.runtime.EntityIsManagedByPersisterAsserter;
+import org.gama.stalactite.persistence.engine.runtime.EntityMappingStrategyTreeSelectBuilder;
+import org.gama.stalactite.persistence.engine.runtime.IConfiguredPersister;
+import org.gama.stalactite.persistence.engine.runtime.IEntityConfiguredJoinedTablesPersister;
+import org.gama.stalactite.persistence.engine.runtime.IEntityConfiguredPersister;
+import org.gama.stalactite.persistence.engine.runtime.JoinedTablesPersister;
 import org.gama.stalactite.persistence.engine.runtime.OptimizedUpdatePersister;
 import org.gama.stalactite.persistence.id.assembly.SimpleIdentifierAssembler;
 import org.gama.stalactite.persistence.id.manager.AlreadyAssignedIdentifierManager;
@@ -342,7 +343,13 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 		
 		handleVersioningStrategy(mainPersister);
 		
-		OptimizedUpdatePersister<C, I> optimizedPersister = new OptimizedUpdatePersister<>(result);
+		// we wrap final result with some transversal features
+		// NB: Order of wrap is important due to invokation of instance methods with code like "this.doSomething(..)" in particular with OptimizedUpdatePersister
+		// which internaly calls update(C, C, boolean) on update(id, Consumer): the latter method is not listened by EntityIsManagedByPersisterAsserter
+		// (because it has no purpose since entity is not given as argument) but update(C, C, boolean) is and should be, that is not the case if
+		// EntityIsManagedByPersisterAsserter is done first since OptimizedUpdatePersister invokes itself with "this.update(C, C, boolean)"
+		OptimizedUpdatePersister<C, I> optimizedPersister = new OptimizedUpdatePersister<>(
+				new EntityIsManagedByPersisterAsserter<>(result));
 		persisterRegistry.addPersister(optimizedPersister);
 		parentPersisters.forEach(persisterRegistry::addPersister);
 		

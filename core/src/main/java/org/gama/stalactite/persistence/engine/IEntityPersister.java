@@ -42,10 +42,10 @@ public interface IEntityPersister<C, I> extends IInsertExecutor<C>, IUpdateExecu
 		return persist(Collections.singleton(entity));
 	}
 	
-	int persist(Iterable<C> entities);
+	int persist(Iterable<? extends C> entities);
 	
 	
-	static <C, I> int persist(Iterable<C> entities,
+	static <C, I> int persist(Iterable<? extends C> entities,
 							   Predicate<C> isNewProvider,
 							   ISelectExecutor<C, I> selector,
 							   IUpdateExecutor<C> updater,
