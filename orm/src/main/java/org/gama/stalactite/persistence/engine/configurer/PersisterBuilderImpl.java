@@ -267,7 +267,7 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 		
 		IEntityConfiguredJoinedTablesPersister<C, I> result = mainPersister;
 		// polymorphism handling
-		PolymorphismPolicy polymorphismPolicy = this.entityMappingConfiguration.getPolymorphismPolicy();
+		PolymorphismPolicy<C, I> polymorphismPolicy = this.entityMappingConfiguration.getPolymorphismPolicy();
 		if (polymorphismPolicy != null) {
 			PolymorphismBuilder<C, I, Table> polymorphismBuilder;
 			if (polymorphismPolicy instanceof SingleTablePolymorphism) {
@@ -278,7 +278,10 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 						this.associationTableNamingStrategy);
 			} else if (polymorphismPolicy instanceof TablePerClassPolymorphism) {
 				polymorphismBuilder = new TablePerClassPolymorphismBuilder<C, I, Table>((TablePerClassPolymorphism<C, I>) polymorphismPolicy,
-						identification, mainPersister, mainMapping, this.columnBinderRegistry, this.columnNameProvider, this.tableNamingStrategy) {
+						identification, mainPersister, mainMapping, this.columnBinderRegistry, this.columnNameProvider, this.tableNamingStrategy,
+						this.columnNamingStrategy, this.foreignKeyNamingStrategy, this.elementCollectionTableNamingStrategy,
+						this.joinColumnNamingStrategy, this.indexColumnNamingStrategy,
+						this.associationTableNamingStrategy) {
 					@Override
 					void addPrimarykey(Identification identification, Table table) {
 						PersisterBuilderImpl.this.addPrimarykeys(identification, Arrays.asSet(table));
@@ -481,31 +484,6 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 	interface PolymorphismBuilder<C, I, T extends Table> {
 		
 		IEntityConfiguredJoinedTablesPersister<C, I> build(Dialect dialect, IConnectionConfiguration connectionConfiguration, PersisterRegistry persisterRegistry);
-		
-		/**
-		 * Asserts that all given arguments are null, or all equals
-		 * 
-		 * @param table1 any table, null accepted (that's the purpose of the method)
-		 * @param table2 any table, null accepted (that's the purpose of the method)
-		 */
-		default void assertAllAreEqual(Table table1, Table table2) {
-			Set<Table> availableTables = Arrays.asHashSet(table1, table2);
-			availableTables.remove(null);
-			if (availableTables.size() > 1) {
-				class TableAppender extends StringAppender {
-					@Override
-					public StringAppender cat(Object o) {
-						if (o instanceof Table) {
-							return super.cat(((Table) o).getName());
-						} else {
-							return super.cat(o);
-						}
-					}
-				}
-				throw new MappingConfigurationException("Table declared in inheritance is different from given one in embeddable properties override : "
-						+ new TableAppender().ccat(availableTables, ", "));
-			}
-		}
 	}
 	
 	/**

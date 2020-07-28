@@ -1,7 +1,6 @@
 package org.gama.stalactite.persistence.engine;
 
 import javax.annotation.Nullable;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -14,7 +13,7 @@ import org.gama.stalactite.persistence.structure.Table;
 /**
  * @author Guillaume Mary
  */
-public interface PolymorphismPolicy {
+public interface PolymorphismPolicy<C, I> {
 	
 	static <C, I> TablePerClassPolymorphism<C, I> tablePerClass() {
 		return new TablePerClassPolymorphism<>();
@@ -37,6 +36,8 @@ public interface PolymorphismPolicy {
 	static <C, I> SingleTablePolymorphism<C, I, String> singleTable(String discriminatorColumnName) {
 		return new SingleTablePolymorphism<>(discriminatorColumnName, String.class);
 	}
+	
+	Set<SubEntityMappingConfiguration<? extends C, I>> getSubClasses();
 	
 	class TablePerClassPolymorphism<C, I> implements PolymorphismPolicy {
 		
@@ -122,8 +123,8 @@ public interface PolymorphismPolicy {
 			return Iterables.find(subClasses.entrySet(), e -> e.getValue().getEntityType().equals(instanceType)).getKey();
 		}
 		
-		public Collection<SubEntityMappingConfiguration<? extends C, I>> getSubClasses() {
-			return this.subClasses.values();
+		public Set<SubEntityMappingConfiguration<? extends C, I>> getSubClasses() {
+			return new HashSet<>(this.subClasses.values());
 		}
 	}
 }

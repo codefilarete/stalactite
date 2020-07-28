@@ -110,7 +110,7 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements IFluentEnt
 	
 	private InheritanceConfigurationSupport<? super C, I> inheritanceConfiguration;
 	
-	private PolymorphismPolicy polymorphismPolicy;
+	private PolymorphismPolicy<C, I> polymorphismPolicy;
 	
 	private Function<Function<Column, Object>, C> entityFactory;
 	
@@ -222,7 +222,7 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements IFluentEnt
 	}
 	
 	@Override
-	public PolymorphismPolicy getPolymorphismPolicy() {
+	public PolymorphismPolicy<C, I> getPolymorphismPolicy() {
 		return polymorphismPolicy;
 	}
 	

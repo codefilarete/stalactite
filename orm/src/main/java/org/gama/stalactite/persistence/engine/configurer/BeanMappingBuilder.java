@@ -220,7 +220,7 @@ class BeanMappingBuilder {
 	}
 	
 	/**
-	 * Created equivalent {@link Column}s of those of given {@link Map} values on the given target table. May do nothing if columns already exist.
+	 * Creates equivalent {@link Column}s of those of given {@link Map} values on the given target table. May do nothing if columns already exist.
 	 *
 	 * @param propertyToColumn mapping between some property accessors and {@link Column}s from default target {@link Table}
 	 * 							(the one given at {@link #build(EmbeddableMappingConfiguration, Table, ColumnBinderRegistry, ColumnNameProvider)}

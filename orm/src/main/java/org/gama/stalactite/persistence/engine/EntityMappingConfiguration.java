@@ -61,7 +61,7 @@ public interface EntityMappingConfiguration<C, I> {
 	 */
 	ColumnNamingStrategy getIndexColumnNamingStrategy();
 	
-	PolymorphismPolicy getPolymorphismPolicy();
+	PolymorphismPolicy<C, I> getPolymorphismPolicy();
 	
 	/**
 	 * @return an iterable for all inheritance configurations, including this
