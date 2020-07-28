@@ -10,15 +10,15 @@ import org.gama.stalactite.persistence.engine.AssociationTableNamingStrategy;
 import org.gama.stalactite.persistence.engine.ColumnNamingStrategy;
 import org.gama.stalactite.persistence.engine.ElementCollectionTableNamingStrategy;
 import org.gama.stalactite.persistence.engine.ForeignKeyNamingStrategy;
-import org.gama.stalactite.persistence.engine.runtime.IEntityConfiguredJoinedTablesPersister;
 import org.gama.stalactite.persistence.engine.PersisterRegistry;
 import org.gama.stalactite.persistence.engine.PolymorphismPolicy.SingleTablePolymorphism;
 import org.gama.stalactite.persistence.engine.SubEntityMappingConfiguration;
-import org.gama.stalactite.persistence.engine.runtime.JoinedTablesPersister;
 import org.gama.stalactite.persistence.engine.configurer.BeanMappingBuilder.ColumnNameProvider;
 import org.gama.stalactite.persistence.engine.configurer.PersisterBuilderImpl.Identification;
 import org.gama.stalactite.persistence.engine.configurer.PersisterBuilderImpl.MappingPerTable.Mapping;
 import org.gama.stalactite.persistence.engine.configurer.PersisterBuilderImpl.PolymorphismBuilder;
+import org.gama.stalactite.persistence.engine.runtime.IEntityConfiguredJoinedTablesPersister;
+import org.gama.stalactite.persistence.engine.runtime.JoinedTablesPersister;
 import org.gama.stalactite.persistence.engine.runtime.PersisterListenerWrapper;
 import org.gama.stalactite.persistence.engine.runtime.SingleTablePolymorphicPersister;
 import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
@@ -78,6 +78,14 @@ class SingleTablePolymorphismBuilder<C, I, T extends Table, D> implements Polymo
 		
 		BeanMappingBuilder beanMappingBuilder = new BeanMappingBuilder();
 		for (SubEntityMappingConfiguration<? extends C, I> subConfiguration : polymorphismPolicy.getSubClasses()) {
+			// first we'll use table of columns defined in embedded override
+			// then the one defined by inheritance
+			// if both are null we'll create a new one
+			Table tableDefinedByColumnOverride = BeanMappingBuilder.giveTargetTable(subConfiguration.getPropertiesMapping());
+			Table tableDefinedByInheritanceConfiguration = mainPersister.getMainTable();
+			
+			assertAllAreEqual(tableDefinedByColumnOverride, tableDefinedByInheritanceConfiguration);
+			
 			Map<IReversibleAccessor, Column> subEntityPropertiesMapping = beanMappingBuilder.build(subConfiguration.getPropertiesMapping(), mainPersister.getMainTable(),
 					this.columnBinderRegistry, this.columnNameProvider);
 			// in single-table polymorphism, main properties must be given to sub-entities ones, because CRUD operations are dipatched to them
@@ -114,7 +122,6 @@ class SingleTablePolymorphismBuilder<C, I, T extends Table, D> implements Polymo
 		}
 		
 		return result;
-		
 	}
 	
 	private Column<T, D> createDiscriminatorToSelect() {

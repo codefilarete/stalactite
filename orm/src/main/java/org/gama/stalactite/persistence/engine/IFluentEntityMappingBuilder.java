@@ -452,7 +452,7 @@ public interface IFluentEntityMappingBuilder<C, I> extends IFluentEmbeddableMapp
 		 * @return a mapping configurer, specialized for embedded elements
 		 */
 		@Override
-		<IN> IFluentMappingBuilderEmbedOptions<C, I, O> override(SerializableFunction<O, IN> function, Column<Table, IN> targetColumn);
+		<IN> IFluentMappingBuilderEmbedOptions<C, I, O> override(SerializableFunction<O, IN> function, Column<? extends Table, IN> targetColumn);
 		
 		@Override
 		<IN> IFluentMappingBuilderEmbedOptions<C, I, IN> innerEmbed(SerializableFunction<O, IN> getter);
@@ -486,7 +486,7 @@ public interface IFluentEntityMappingBuilder<C, I> extends IFluentEmbeddableMapp
 		<IN> IFluentMappingBuilderEmbeddableMappingConfigurationImportedEmbedOptions<C, I, O> overrideName(AccessorChain<O, IN> chain, String columnName);
 		
 		@Override
-		<IN> IFluentMappingBuilderEmbeddableMappingConfigurationImportedEmbedOptions<C, I, O> override(SerializableFunction<O, IN> function, Column<Table, IN> targetColumn);
+		<IN> IFluentMappingBuilderEmbeddableMappingConfigurationImportedEmbedOptions<C, I, O> override(SerializableFunction<O, IN> function, Column<? extends Table, IN> targetColumn);
 		
 		@Override
 		<IN> IFluentMappingBuilderEmbeddableMappingConfigurationImportedEmbedOptions<C, I, O> exclude(SerializableBiConsumer<O, IN> setter);

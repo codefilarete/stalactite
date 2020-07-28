@@ -558,7 +558,6 @@ public class FluentSubEntityMappingConfigurationSupport<C, I> implements IFluent
 	static class SubEntityDecoratedEmbeddableConfigurationSupport<C, I> extends FluentEmbeddableMappingConfigurationSupport<C> {
 		
 		private final FluentSubEntityMappingConfigurationSupport<C, I> entityConfigurationSupport;
-		private OverridableColumnInset<C, ?> currentInset;
 		
 		/**
 		 * Creates a builder to map the given class for persistence

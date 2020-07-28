@@ -1,22 +1,20 @@
 package org.gama.stalactite.persistence.engine.configurer;
 
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
-import java.util.Set;
 
 import org.gama.reflection.IReversibleAccessor;
 import org.gama.reflection.ValueAccessPointSet;
-import org.gama.stalactite.persistence.engine.runtime.IEntityConfiguredJoinedTablesPersister;
 import org.gama.stalactite.persistence.engine.PersisterRegistry;
 import org.gama.stalactite.persistence.engine.PolymorphismPolicy.TablePerClassPolymorphism;
 import org.gama.stalactite.persistence.engine.SubEntityMappingConfiguration;
 import org.gama.stalactite.persistence.engine.TableNamingStrategy;
-import org.gama.stalactite.persistence.engine.runtime.JoinedTablesPersister;
 import org.gama.stalactite.persistence.engine.configurer.BeanMappingBuilder.ColumnNameProvider;
 import org.gama.stalactite.persistence.engine.configurer.PersisterBuilderImpl.Identification;
 import org.gama.stalactite.persistence.engine.configurer.PersisterBuilderImpl.MappingPerTable.Mapping;
 import org.gama.stalactite.persistence.engine.configurer.PersisterBuilderImpl.PolymorphismBuilder;
+import org.gama.stalactite.persistence.engine.runtime.IEntityConfiguredJoinedTablesPersister;
+import org.gama.stalactite.persistence.engine.runtime.JoinedTablesPersister;
 import org.gama.stalactite.persistence.engine.runtime.PersisterListenerWrapper;
 import org.gama.stalactite.persistence.engine.runtime.TablePerClassPolymorphismPersister;
 import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
@@ -40,7 +38,6 @@ abstract class TablePerClassPolymorphismBuilder<C, I, T extends Table> implement
 	private final ColumnBinderRegistry columnBinderRegistry;
 	private final ColumnNameProvider columnNameProvider;
 	private final TableNamingStrategy tableNamingStrategy;
-	private final Set<Table> tables = new HashSet<>();
 	
 	TablePerClassPolymorphismBuilder(TablePerClassPolymorphism<C, I> polymorphismPolicy,
 									 Identification identification,
@@ -61,12 +58,20 @@ abstract class TablePerClassPolymorphismBuilder<C, I, T extends Table> implement
 	private Map<Class<? extends C>, JoinedTablesPersister<C, I, T>> buildSubEntitiesPersisters(Dialect dialect, IConnectionConfiguration connectionConfiguration) {
 		Map<Class<? extends C>, JoinedTablesPersister<C, I, T>> subPersisterPerSubclass = new HashMap<>();
 		
-		this.tables.clear();
 		BeanMappingBuilder beanMappingBuilder = new BeanMappingBuilder();
 		for (SubEntityMappingConfiguration<? extends C, I> subConfiguration : polymorphismPolicy.getSubClasses()) {
-			Table subTable = nullable(polymorphismPolicy.giveTable(subConfiguration))
+			// first we'll use table of columns defined in embedded override
+			// then the one defined by inheritance
+			// if both are null we'll create a new one
+			Table tableDefinedByColumnOverride = BeanMappingBuilder.giveTargetTable(subConfiguration.getPropertiesMapping());
+			Table tableDefinedByInheritanceConfiguration = polymorphismPolicy.giveTable(subConfiguration);
+			
+			assertAllAreEqual(tableDefinedByColumnOverride, tableDefinedByInheritanceConfiguration);
+			
+			Table subTable = nullable(tableDefinedByColumnOverride)
+					.elseSet(tableDefinedByInheritanceConfiguration)
 					.getOr(() -> new Table(tableNamingStrategy.giveName(subConfiguration.getEntityType())));
-			tables.add(subTable);
+			
 			Map<IReversibleAccessor, Column> subEntityPropertiesMapping = beanMappingBuilder.build(subConfiguration.getPropertiesMapping(), subTable,
 					this.columnBinderRegistry, this.columnNameProvider);
 			// in table-per-class polymorphism, main properties must be transfered to sub-entities ones, because CRUD operations are dipatched to them

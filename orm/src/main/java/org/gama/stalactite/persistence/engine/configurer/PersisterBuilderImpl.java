@@ -477,6 +477,31 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 	interface PolymorphismBuilder<C, I, T extends Table> {
 		
 		IEntityConfiguredJoinedTablesPersister<C, I> build(Dialect dialect, IConnectionConfiguration connectionConfiguration, PersisterRegistry persisterRegistry);
+		
+		/**
+		 * Asserts that all given arguments are null, or all equals
+		 * 
+		 * @param table1 any table, null accepted (that's the purpose of the method)
+		 * @param table2 any table, null accepted (that's the purpose of the method)
+		 */
+		default void assertAllAreEqual(Table table1, Table table2) {
+			Set<Table> availableTables = Arrays.asHashSet(table1, table2);
+			availableTables.remove(null);
+			if (availableTables.size() > 1) {
+				class TableAppender extends StringAppender {
+					@Override
+					public StringAppender cat(Object o) {
+						if (o instanceof Table) {
+							return super.cat(((Table) o).getName());
+						} else {
+							return super.cat(o);
+						}
+					}
+				}
+				throw new MappingConfigurationException("Table declared in inheritance is different from given one in embeddable properties override : "
+						+ new TableAppender().ccat(availableTables, ", "));
+			}
+		}
 	}
 	
 	/**

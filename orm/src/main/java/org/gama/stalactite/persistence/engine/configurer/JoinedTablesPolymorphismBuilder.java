@@ -2,9 +2,7 @@ package org.gama.stalactite.persistence.engine.configurer;
 
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
-import java.util.Set;
 
 import org.gama.lang.collection.Iterables;
 import org.gama.reflection.IReversibleAccessor;
@@ -13,17 +11,17 @@ import org.gama.stalactite.persistence.engine.AssociationTableNamingStrategy;
 import org.gama.stalactite.persistence.engine.ColumnNamingStrategy;
 import org.gama.stalactite.persistence.engine.ElementCollectionTableNamingStrategy;
 import org.gama.stalactite.persistence.engine.ForeignKeyNamingStrategy;
-import org.gama.stalactite.persistence.engine.runtime.IEntityConfiguredJoinedTablesPersister;
 import org.gama.stalactite.persistence.engine.PersisterRegistry;
 import org.gama.stalactite.persistence.engine.PolymorphismPolicy.JoinedTablesPolymorphism;
 import org.gama.stalactite.persistence.engine.SubEntityMappingConfiguration;
 import org.gama.stalactite.persistence.engine.TableNamingStrategy;
-import org.gama.stalactite.persistence.engine.runtime.EntityMappingStrategyTreeSelectBuilder;
-import org.gama.stalactite.persistence.engine.runtime.JoinedTablesPersister;
 import org.gama.stalactite.persistence.engine.configurer.BeanMappingBuilder.ColumnNameProvider;
 import org.gama.stalactite.persistence.engine.configurer.PersisterBuilderImpl.Identification;
 import org.gama.stalactite.persistence.engine.configurer.PersisterBuilderImpl.MappingPerTable.Mapping;
 import org.gama.stalactite.persistence.engine.configurer.PersisterBuilderImpl.PolymorphismBuilder;
+import org.gama.stalactite.persistence.engine.runtime.EntityMappingStrategyTreeSelectBuilder;
+import org.gama.stalactite.persistence.engine.runtime.IEntityConfiguredJoinedTablesPersister;
+import org.gama.stalactite.persistence.engine.runtime.JoinedTablesPersister;
 import org.gama.stalactite.persistence.engine.runtime.JoinedTablesPolymorphicPersister;
 import org.gama.stalactite.persistence.engine.runtime.PersisterListenerWrapper;
 import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
@@ -52,8 +50,6 @@ abstract class JoinedTablesPolymorphismBuilder<C, I, T extends Table> implements
 	private final ElementCollectionTableNamingStrategy elementCollectionTableNamingStrategy;
 	private final ColumnNamingStrategy joinColumnNamingStrategy;
 	private final AssociationTableNamingStrategy associationTableNamingStrategy;
-	
-	private final Set<Table> tables = new HashSet<>();
 	
 	JoinedTablesPolymorphismBuilder(JoinedTablesPolymorphism<C, I> polymorphismPolicy,
 									Identification identification,
@@ -84,11 +80,19 @@ abstract class JoinedTablesPolymorphismBuilder<C, I, T extends Table> implements
 		Map<Class<? extends C>, JoinedTablesPersister<C, I, T>> persisterPerSubclass = new HashMap<>();
 		
 		BeanMappingBuilder beanMappingBuilder = new BeanMappingBuilder();
-		
 		for (SubEntityMappingConfiguration<? extends C, I> subConfiguration : polymorphismPolicy.getSubClasses()) {
-			Table subTable = nullable(polymorphismPolicy.giveTable(subConfiguration))
+			// first we'll use table of columns defined in embedded override
+			// then the one defined by inheritance
+			// if both are null we'll create a new one
+			Table tableDefinedByColumnOverride = BeanMappingBuilder.giveTargetTable(subConfiguration.getPropertiesMapping());
+			Table tableDefinedByInheritanceConfiguration = polymorphismPolicy.giveTable(subConfiguration);
+			
+			assertAllAreEqual(tableDefinedByColumnOverride, tableDefinedByInheritanceConfiguration);
+			
+			Table subTable = nullable(tableDefinedByColumnOverride)
+					.elseSet(tableDefinedByInheritanceConfiguration)
 					.getOr(() -> new Table(tableNamingStrategy.giveName(subConfiguration.getEntityType())));
-			tables.add(subTable);
+			
 			Map<IReversibleAccessor, Column> subEntityPropertiesMapping = beanMappingBuilder.build(subConfiguration.getPropertiesMapping(), subTable,
 					this.columnBinderRegistry, this.columnNameProvider);
 			addPrimarykey(identification, subTable);

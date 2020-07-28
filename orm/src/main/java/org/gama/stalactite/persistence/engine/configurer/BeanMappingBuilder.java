@@ -30,6 +30,7 @@ import org.gama.lang.bean.InstanceMethodIterator;
 import org.gama.lang.bean.MethodIterator;
 import org.gama.lang.collection.Iterables;
 import org.gama.lang.exception.NotImplementedException;
+import org.gama.lang.function.Hanger.Holder;
 import org.gama.lang.function.SerializableTriFunction;
 import org.gama.reflection.AccessorByMethod;
 import org.gama.reflection.AccessorChain;
@@ -48,14 +49,14 @@ import org.gama.stalactite.persistence.engine.ColumnNamingStrategy;
 import org.gama.stalactite.persistence.engine.EmbedOptions;
 import org.gama.stalactite.persistence.engine.EmbeddableMappingConfiguration;
 import org.gama.stalactite.persistence.engine.EmbeddableMappingConfiguration.Linkage;
+import org.gama.stalactite.persistence.engine.IFluentEmbeddableMappingConfiguration;
+import org.gama.stalactite.persistence.engine.IFluentEmbeddableMappingConfiguration.IFluentEmbeddableMappingConfigurationEmbedOptions;
+import org.gama.stalactite.persistence.engine.MappingConfigurationException;
 import org.gama.stalactite.persistence.engine.configurer.FluentEmbeddableMappingConfigurationSupport.AbstractInset;
 import org.gama.stalactite.persistence.engine.configurer.FluentEmbeddableMappingConfigurationSupport.ImportedInset;
 import org.gama.stalactite.persistence.engine.configurer.FluentEmbeddableMappingConfigurationSupport.Inset;
 import org.gama.stalactite.persistence.engine.configurer.FluentEmbeddableMappingConfigurationSupport.LinkageByColumnName;
 import org.gama.stalactite.persistence.engine.configurer.FluentEntityMappingConfigurationSupport.OverridableColumnInset;
-import org.gama.stalactite.persistence.engine.IFluentEmbeddableMappingConfiguration;
-import org.gama.stalactite.persistence.engine.IFluentEmbeddableMappingConfiguration.IFluentEmbeddableMappingConfigurationEmbedOptions;
-import org.gama.stalactite.persistence.engine.MappingConfigurationException;
 import org.gama.stalactite.persistence.sql.dml.binder.ColumnBinderRegistry;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
@@ -82,6 +83,49 @@ import static org.gama.reflection.MethodReferences.toMethodReferenceString;
  * @see #build(EmbeddableMappingConfiguration, Table, ColumnBinderRegistry, ColumnNameProvider)    
  */
 class BeanMappingBuilder {
+	
+	/**
+	 * Iterates over configuration to look for any property defining a {@link Column} to use, its table would be the one to be used by builder.
+	 * Throws an exception if several different tables are found during iteration.
+	 * 
+	 * @param mappingConfiguration the configuration to look up for any oerriding {@link Column}
+	 * @return null if no {@link Table} was found (meaning that builder is free to create one)
+	 */
+	@VisibleForTesting
+	static Table giveTargetTable(EmbeddableMappingConfiguration<?> mappingConfiguration) {
+		Holder<Table> result = new Holder<>();
+		
+		Set<ValueAccessPoint> innerEmbeddedBeanRegistry = new ValueAccessPointSet();
+		mappingConfiguration.getInsets().stream().filter(Inset.class::isInstance).map(Inset.class::cast)
+				.forEach(i -> innerEmbeddedBeanRegistry.add(i.getAccessor()));
+		
+		// algorithm close to the one of includeEmbeddedMapping(..)
+		Queue<AbstractInset> stack = new ArrayDeque<>(mappingConfiguration.getInsets());
+		while (!stack.isEmpty()) {
+			AbstractInset<?, ?> inset = stack.poll();
+			if (inset instanceof OverridableColumnInset) {
+				((OverridableColumnInset<?, ?>) inset).getOverridenColumns().forEach((valueAccessPoint, targetColumn) ->
+					assertHolderIsFilledWithTargetTable(result, valueAccessPoint, targetColumn)
+				);
+			} else if (inset instanceof FluentEmbeddableMappingConfigurationSupport.ImportedInset) {
+				((ImportedInset<?, ?>) inset).getOverridenColumns().forEach((valueAccessPoint, targetColumn) ->
+					assertHolderIsFilledWithTargetTable(result, valueAccessPoint, targetColumn)
+				);
+				EmbeddableMappingConfiguration<?> configuration = ((ImportedInset) inset).getBeanMappingBuilder().getConfiguration();
+				stack.addAll(configuration.getInsets());
+			}
+		}
+		return result.get();
+	}
+	
+	private static void assertHolderIsFilledWithTargetTable(Holder<Table> result, ValueAccessPoint valueAccessPoint, Column targetColumn) {
+		if (targetColumn != null) {
+			if (result.get() != null && result.get() != targetColumn.getTable()) {
+				throw new MappingConfigurationException("Property override doesn't target main table : " + valueAccessPoint);
+			}
+			result.set(targetColumn.getTable());
+		}
+	}
 	
 	private EmbeddableMappingConfiguration<?> mappingConfiguration;
 	private Table targetTable;
