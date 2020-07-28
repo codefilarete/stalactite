@@ -29,7 +29,7 @@ public class CascadeManyList<SRC, TRGT, TRGTID, C extends List<TRGT>> extends Ca
 		this.indexingColumn = indexingColumn;
 	}
 	
-	public Column getIndexingColumn() {
+	public <T extends Table, O extends Object> Column<T, O> getIndexingColumn() {
 		return indexingColumn;
 	}
 }

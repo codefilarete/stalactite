@@ -32,4 +32,9 @@ public interface ColumnNamingStrategy {
 	 */
 	ColumnNamingStrategy JOIN_DEFAULT = accessor -> DEFAULT.giveName(accessor) + DEFAULT_JOIN_COLUMN_SUFFIX;
 	
+	/**
+	 * Default naming for index column in one-to-many {@link java.util.List} association
+	 */
+	ColumnNamingStrategy INDEX_DEFAULT = accessor -> "idx";
+	
 }

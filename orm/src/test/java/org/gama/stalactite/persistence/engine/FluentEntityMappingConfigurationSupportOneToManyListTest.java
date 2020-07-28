@@ -332,26 +332,6 @@ class FluentEntityMappingConfigurationSupportOneToManyListTest {
 	}
 	
 	@Test
-	void oneToManyList_withOwnerButWithoutIndexedBy_throwsException() {
-		persistenceContext = new PersistenceContext(connectionProvider, DIALECT);
-		
-		IFluentMappingBuilderPropertyOptions<Choice, Identifier<Long>> choiceMappingConfiguration = entityBuilder(Choice.class, LONG_TYPE)
-				.add(Choice::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
-				.add(Choice::getName)
-				.add(Choice::getQuestion);
-		
-		assertEquals("Missing indexing column : relation is mapped by " +
-						"o.g.s.p.e.FluentEntityMappingConfigurationSupportOneToManyListTest$Choice.getQuestion() " +
-						"but no indexing property is defined",
-				assertThrows(UnsupportedOperationException.class, () ->
-						entityBuilder(Question.class, LONG_TYPE)
-								.add(Question::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
-								// in next statement there's no call to indexedBy(), so configuration will fail because it requires it
-								.addOneToManyList(Question::getChoices, choiceMappingConfiguration).mappedBy(Choice::getQuestion)
-								.build(persistenceContext)).getMessage());
-	}
-	
-	@Test
 	void oneToManyList_insert_mappedByNonExistingGetter_throwsException() {
 		persistenceContext = new PersistenceContext(connectionProvider, DIALECT);
 		

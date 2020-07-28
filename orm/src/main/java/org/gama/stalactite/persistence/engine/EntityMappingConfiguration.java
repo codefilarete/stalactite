@@ -55,6 +55,12 @@ public interface EntityMappingConfiguration<C, I> {
 	
 	ColumnNamingStrategy getJoinColumnNamingStrategy();
 	
+	/**
+	 * Gives {@link ColumnNamingStrategy} for index column of one-to-many {@link List} association
+	 * @return maybe null, {@link ColumnNamingStrategy#INDEX_DEFAULT} will be used instead
+	 */
+	ColumnNamingStrategy getIndexColumnNamingStrategy();
+	
 	PolymorphismPolicy getPolymorphismPolicy();
 	
 	/**

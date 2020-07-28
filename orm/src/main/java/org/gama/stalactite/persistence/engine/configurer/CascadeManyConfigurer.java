@@ -107,6 +107,7 @@ public class CascadeManyConfigurer<SRC, TRGT, ID, C extends Collection<TRGT>> {
 												   IEntityConfiguredJoinedTablesPersister<SRC, ID> sourcePersister,
 												   ForeignKeyNamingStrategy foreignKeyNamingStrategy,
 												   ColumnNamingStrategy joinColumnNamingStrategy,
+												   ColumnNamingStrategy indexColumnNamingStrategy,
 												   AssociationTableNamingStrategy associationTableNamingStrategy) {
 		Table targetTable = determineTargetTable(cascadeMany);
 		IEntityConfiguredJoinedTablesPersister<TRGT, ID> targetPersister = this.persisterBuilder
@@ -120,7 +121,8 @@ public class CascadeManyConfigurer<SRC, TRGT, ID, C extends Collection<TRGT>> {
 		boolean writeAuthorized = maintenanceMode != READ_ONLY;
 		
 		ManyAssociationConfiguration<SRC, TRGT, ID, C> manyAssociationConfiguration = new ManyAssociationConfiguration<>(cascadeMany,
-				sourcePersister, targetPersister, leftPrimaryKey, foreignKeyNamingStrategy, joinColumnNamingStrategy,
+				sourcePersister, targetPersister, leftPrimaryKey,
+				foreignKeyNamingStrategy, joinColumnNamingStrategy, indexColumnNamingStrategy,
 				orphanRemoval, writeAuthorized);
 		if (cascadeMany.isOwnedByReverseSide()) {
 			// case : reverse property is defined through one of the setter, getter or column on the reverse side
@@ -140,19 +142,26 @@ public class CascadeManyConfigurer<SRC, TRGT, ID, C extends Collection<TRGT>> {
 	
 	private Table determineTargetTable(CascadeMany<SRC, TRGT, ID, C> cascadeMany) {
 		Table reverseTable = nullable(cascadeMany.getReverseColumn()).map(Column::getTable).get();
-		Table indexingTable = nullable((Column<?, ?>) (cascadeMany instanceof CascadeManyList ? ((CascadeManyList) cascadeMany).getIndexingColumn() : null)).map(Column::getTable).get();
+		Table indexingTable = cascadeMany instanceof CascadeManyList
+				? nullable(((CascadeManyList<?, ?, ?, ?>) cascadeMany).getIndexingColumn()).map(Column::getTable).get()
+				: null;
 		Set<Table> availableTables = Arrays.asHashSet(cascadeMany.getTargetTable(), reverseTable, indexingTable);
 		availableTables.remove(null);
 		if (availableTables.size() > 1) {
-			throw new MappingConfigurationException("Different tables used for configuring mapping : " + new StringAppender() {
+			class TableAppender extends StringAppender {
 				@Override
-				public StringAppender cat(Object table) {
-					return super.cat(((Table) table).getName());
+				public StringAppender cat(Object o) {
+					if (o instanceof Table) {
+						return super.cat(((Table) o).getName());
+					} else {
+						return super.cat(o);
+					}
 				}
-			}.ccat(availableTables, ", "));
+			}
+			throw new MappingConfigurationException("Different tables used for configuring mapping : " + new TableAppender().ccat(availableTables, ", "));
 		}
 		
-		// please note that even if no table is found in configuration, build(..) will create one
+		// NB: even if no table is found in configuration, build(..) will create one
 		return nullable(cascadeMany.getTargetTable()).elseSet(reverseTable).elseSet(indexingTable).get();
 	}
 	
@@ -175,6 +184,7 @@ public class CascadeManyConfigurer<SRC, TRGT, ID, C extends Collection<TRGT>> {
 		private final Column leftPrimaryKey;
 		private final ForeignKeyNamingStrategy foreignKeyNamingStrategy;
 		private final ColumnNamingStrategy joinColumnNamingStrategy;
+		private final ColumnNamingStrategy indexColumnNamingStrategy;
 		private final IReversibleAccessor<SRC, C> collectionGetter;
 		private final IMutator<SRC, C> setter;
 		private final boolean orphanRemoval;
@@ -187,6 +197,7 @@ public class CascadeManyConfigurer<SRC, TRGT, ID, C extends Collection<TRGT>> {
 											 Column leftPrimaryKey,
 											 ForeignKeyNamingStrategy foreignKeyNamingStrategy,
 											 ColumnNamingStrategy joinColumnNamingStrategy,
+											 ColumnNamingStrategy indexColumnNamingStrategy,
 											 boolean orphanRemoval,
 											 boolean writeAuthorized) {
 			this.cascadeMany = cascadeMany;
@@ -195,6 +206,7 @@ public class CascadeManyConfigurer<SRC, TRGT, ID, C extends Collection<TRGT>> {
 			this.leftPrimaryKey = leftPrimaryKey;
 			this.foreignKeyNamingStrategy = foreignKeyNamingStrategy;
 			this.joinColumnNamingStrategy = joinColumnNamingStrategy;
+			this.indexColumnNamingStrategy = indexColumnNamingStrategy;
 			this.collectionGetter = cascadeMany.getCollectionProvider();
 			this.setter = collectionGetter.toMutator();
 			// we don't use AccessorDefinition.giveMemberDefinition(..) because it gives a cross-member definition, loosing get/set for example,
@@ -434,12 +446,6 @@ public class CascadeManyConfigurer<SRC, TRGT, ID, C extends Collection<TRGT>> {
 							+ (reverseMethod != null ? Reflections.toString(reverseMethod) : manyAssociationConfiguration.cascadeMany.getReverseColumn())
 							+ " but no indexing property is defined");
 				}
-				
-				if (((CascadeManyList) manyAssociationConfiguration.cascadeMany).getIndexingColumn() == null) {
-					throw new UnsupportedOperationException("Missing indexing column : relation is mapped by "
-							+ (reverseMethod != null ? Reflections.toString(reverseMethod) : manyAssociationConfiguration.cascadeMany.getReverseColumn())
-							+ " but no indexing property is defined");
-				}
 			}
 			
 			// adding foreign key constraint
@@ -461,7 +467,8 @@ public class CascadeManyConfigurer<SRC, TRGT, ID, C extends Collection<TRGT>> {
 			OneToManyWithMappedAssociationEngine<SRC, TRGT, ID, C> mappedAssociationEngine;
 			BiConsumer<TRGT, SRC> reverseSetterAsConsumer = reversePropertyAccessor == null ? null : reversePropertyAccessor::set;
 			if (manyAssociationConfiguration.cascadeMany instanceof CascadeManyList) {
-				mappedAssociationEngine = configureIndexedAssociation(getterSignature, reverseSetterAsConsumer, reverseGetter, reverseColumn);
+				mappedAssociationEngine = configureIndexedAssociation(getterSignature, reverseSetterAsConsumer, reverseGetter, reverseColumn,
+						((CascadeManyList) manyAssociationConfiguration.cascadeMany).getIndexingColumn());
 			} else {
 				mappedAssociationEngine = configureNonIndexedAssociation(reverseSetterAsConsumer, reverseColumn);
 			}
@@ -489,7 +496,11 @@ public class CascadeManyConfigurer<SRC, TRGT, ID, C extends Collection<TRGT>> {
 		private OneToManyWithMappedAssociationEngine<SRC, TRGT, ID, C> configureIndexedAssociation(String getterSignature,
 																								   @Nullable BiConsumer<TRGT, SRC> reverseSetter,
 																								   SerializableFunction<TRGT, SRC> reverseGetter,
-																								   Column reverseColumn) {
+																								   Column reverseColumn,
+																								   @Nullable Column<? extends Table, Integer> indexingColumn) {
+			if (indexingColumn == null) {
+				indexingColumn = manyAssociationConfiguration.targetPersister.getMappingStrategy().getTargetTable().addColumn("idx", int.class);
+			}
 			OneToManyWithMappedAssociationEngine<SRC, TRGT, ID, C> mappedAssociationEngine;
 			IndexedMappedManyRelationDescriptor<SRC, TRGT, C> manyRelationDefinition = new IndexedMappedManyRelationDescriptor<>(
 					manyAssociationConfiguration.collectionGetter::get, manyAssociationConfiguration.setter::set,
@@ -498,7 +509,7 @@ public class CascadeManyConfigurer<SRC, TRGT, ID, C extends Collection<TRGT>> {
 					manyAssociationConfiguration.targetPersister,
 					(IndexedMappedManyRelationDescriptor) manyRelationDefinition,
 					manyAssociationConfiguration.srcPersister,
-					((CascadeManyList) manyAssociationConfiguration.cascadeMany).getIndexingColumn()
+					indexingColumn
 			);
 			return mappedAssociationEngine;
 		}

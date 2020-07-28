@@ -49,6 +49,7 @@ abstract class JoinedTablesPolymorphismBuilder<C, I, T extends Table> implements
 	private final ForeignKeyNamingStrategy foreignKeyNamingStrategy;
 	private final ElementCollectionTableNamingStrategy elementCollectionTableNamingStrategy;
 	private final ColumnNamingStrategy joinColumnNamingStrategy;
+	private final ColumnNamingStrategy indexColumnNamingStrategy;
 	private final AssociationTableNamingStrategy associationTableNamingStrategy;
 	
 	JoinedTablesPolymorphismBuilder(JoinedTablesPolymorphism<C, I> polymorphismPolicy,
@@ -61,6 +62,7 @@ abstract class JoinedTablesPolymorphismBuilder<C, I, T extends Table> implements
 									ForeignKeyNamingStrategy foreignKeyNamingStrategy,
 									ElementCollectionTableNamingStrategy elementCollectionTableNamingStrategy,
 									ColumnNamingStrategy joinColumnNamingStrategy,
+									ColumnNamingStrategy indexColumnNamingStrategy,
 									AssociationTableNamingStrategy associationTableNamingStrategy) {
 		this.polymorphismPolicy = polymorphismPolicy;
 		this.identification = identification;
@@ -72,6 +74,7 @@ abstract class JoinedTablesPolymorphismBuilder<C, I, T extends Table> implements
 		this.foreignKeyNamingStrategy = foreignKeyNamingStrategy;
 		this.elementCollectionTableNamingStrategy = elementCollectionTableNamingStrategy;
 		this.joinColumnNamingStrategy = joinColumnNamingStrategy;
+		this.indexColumnNamingStrategy = indexColumnNamingStrategy;
 		this.associationTableNamingStrategy = associationTableNamingStrategy;
 	}
 	
@@ -153,6 +156,7 @@ abstract class JoinedTablesPolymorphismBuilder<C, I, T extends Table> implements
 			cascadeManyConfigurer.appendCascade(cascadeMany, sourcePersister,
 					this.foreignKeyNamingStrategy,
 					this.joinColumnNamingStrategy,
+					this.indexColumnNamingStrategy,
 					this.associationTableNamingStrategy);
 		}
 		// Please not that as a difference with PersisterBuilderImpl, we don't need to register relation in select because polymorphic selection

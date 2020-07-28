@@ -112,6 +112,7 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 	private ForeignKeyNamingStrategy foreignKeyNamingStrategy;
 	private ElementCollectionTableNamingStrategy elementCollectionTableNamingStrategy;
 	private ColumnNamingStrategy joinColumnNamingStrategy;
+	private ColumnNamingStrategy indexColumnNamingStrategy;
 	private AssociationTableNamingStrategy associationTableNamingStrategy;
 	private ColumnNameProvider columnNameProvider;
 	
@@ -272,7 +273,8 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 			if (polymorphismPolicy instanceof SingleTablePolymorphism) {
 				polymorphismBuilder = new SingleTablePolymorphismBuilder<>((SingleTablePolymorphism<C, I, ?>) polymorphismPolicy,
 						identification, mainPersister, mainMapping, this.columnBinderRegistry, this.columnNameProvider,
-						this.columnNamingStrategy, this.foreignKeyNamingStrategy, this.elementCollectionTableNamingStrategy, this.joinColumnNamingStrategy,
+						this.columnNamingStrategy, this.foreignKeyNamingStrategy, this.elementCollectionTableNamingStrategy,
+						this.joinColumnNamingStrategy, this.indexColumnNamingStrategy,
 						this.associationTableNamingStrategy);
 			} else if (polymorphismPolicy instanceof TablePerClassPolymorphism) {
 				polymorphismBuilder = new TablePerClassPolymorphismBuilder<C, I, Table>((TablePerClassPolymorphism<C, I>) polymorphismPolicy,
@@ -290,7 +292,8 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 			} else if (polymorphismPolicy instanceof JoinedTablesPolymorphism) {
 				polymorphismBuilder = new JoinedTablesPolymorphismBuilder<C, I, Table>((JoinedTablesPolymorphism<C, I>) polymorphismPolicy,
 						identification, mainPersister, this.columnBinderRegistry, this.columnNameProvider, this.tableNamingStrategy,
-						this.columnNamingStrategy, this.foreignKeyNamingStrategy, this.elementCollectionTableNamingStrategy, this.joinColumnNamingStrategy,
+						this.columnNamingStrategy, this.foreignKeyNamingStrategy, this.elementCollectionTableNamingStrategy,
+						this.joinColumnNamingStrategy, this.indexColumnNamingStrategy,
 						this.associationTableNamingStrategy) {
 					@Override
 					void addPrimarykey(Identification identification, Table table) {
@@ -379,6 +382,7 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 			cascadeManyConfigurer.appendCascade(cascadeMany, sourcePersister,
 					this.foreignKeyNamingStrategy,
 					this.joinColumnNamingStrategy,
+					this.indexColumnNamingStrategy,
 					this.associationTableNamingStrategy);
 		}
 		registerRelationsInGraph(entityMappingConfiguration, sourcePersister.getCriteriaSupport().getRootConfiguration(), persisterRegistry);
@@ -618,6 +622,14 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 			}
 		});
 		this.joinColumnNamingStrategy = optionalJoinColumnNamingStrategy.getOr(ColumnNamingStrategy.JOIN_DEFAULT);
+		
+		org.gama.lang.Nullable<ColumnNamingStrategy> optionalIndexColumnNamingStrategy = org.gama.lang.Nullable.empty();
+		visitInheritedEntityMappingConfigurations(configuration -> {
+			if (configuration.getIndexColumnNamingStrategy() != null && !optionalIndexColumnNamingStrategy.isPresent()) {
+				optionalIndexColumnNamingStrategy.set(configuration.getIndexColumnNamingStrategy());
+			}
+		});
+		this.indexColumnNamingStrategy = optionalIndexColumnNamingStrategy.getOr(ColumnNamingStrategy.INDEX_DEFAULT);
 		
 		org.gama.lang.Nullable<AssociationTableNamingStrategy> optionalAssociationTableNamingStrategy = org.gama.lang.Nullable.empty();
 		visitInheritedEntityMappingConfigurations(configuration -> {

@@ -100,6 +100,8 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements IFluentEnt
 	
 	private ColumnNamingStrategy joinColumnNamingStrategy = ColumnNamingStrategy.JOIN_DEFAULT;
 	
+	private ColumnNamingStrategy indexColumnNamingStrategy;
+	
 	private AssociationTableNamingStrategy associationTableNamingStrategy = AssociationTableNamingStrategy.DEFAULT;
 	
 	private ElementCollectionTableNamingStrategy elementCollectionTableNamingStrategy = ElementCollectionTableNamingStrategy.DEFAULT;
@@ -144,6 +146,11 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements IFluentEnt
 	@Override
 	public ColumnNamingStrategy getJoinColumnNamingStrategy() {
 		return joinColumnNamingStrategy;
+	}
+	
+	@Override
+	public ColumnNamingStrategy getIndexColumnNamingStrategy() {
+		return indexColumnNamingStrategy;
 	}
 	
 	private Method captureMethod(SerializableFunction getter) {
@@ -749,6 +756,12 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements IFluentEnt
 	@Override
 	public IFluentEntityMappingBuilder<C, I> withJoinColumnNaming(ColumnNamingStrategy columnNamingStrategy) {
 		this.joinColumnNamingStrategy = columnNamingStrategy;
+		return this;
+	}
+	
+	@Override
+	public IFluentEntityMappingBuilder<C, I> withIndexColumnNamingStrategy(ColumnNamingStrategy columnNamingStrategy) {
+		this.indexColumnNamingStrategy = columnNamingStrategy;
 		return this;
 	}
 	

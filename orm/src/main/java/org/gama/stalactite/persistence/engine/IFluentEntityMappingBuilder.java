@@ -269,6 +269,13 @@ public interface IFluentEntityMappingBuilder<C, I> extends IFluentEmbeddableMapp
 	
 	IFluentEntityMappingBuilder<C, I> withJoinColumnNaming(ColumnNamingStrategy columnNamingStrategy);
 	
+	/**
+	 * Sets {@link ColumnNamingStrategy} for index column of one-to-many {@link List} association
+	 * @param columnNamingStrategy maybe null, {@link ColumnNamingStrategy#INDEX_DEFAULT} will be used instead
+	 * @return this
+	 */
+	IFluentEntityMappingBuilder<C, I> withIndexColumnNamingStrategy(ColumnNamingStrategy columnNamingStrategy);
+	
 	IFluentEntityMappingBuilder<C, I> withAssociationTableNaming(AssociationTableNamingStrategy associationTableNamingStrategy);
 	
 	<V> IFluentEntityMappingBuilder<C, I> versionedBy(SerializableFunction<C, V> getter);
