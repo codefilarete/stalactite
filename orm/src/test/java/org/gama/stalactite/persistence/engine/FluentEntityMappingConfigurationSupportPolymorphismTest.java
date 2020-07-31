@@ -295,7 +295,7 @@ class FluentEntityMappingConfigurationSupportPolymorphismTest {
 					// mapped super class defines id
 					.add(Vehicle::getId).identifier(ALREADY_ASSIGNED)
 					.add(Vehicle::getColor)
-					.mapPolymorphism(PolymorphismPolicy.<AbstractVehicle, Identifier<Long>>singleTable()
+					.mapPolymorphism(PolymorphismPolicy.<Vehicle, Identifier<Long>>singleTable()
 							.addSubClass(subentityBuilder(Car.class)
 									.add(Car::getId)
 									.add(Car::getModel), "CAR")
@@ -587,7 +587,7 @@ class FluentEntityMappingConfigurationSupportPolymorphismTest {
 					// mapped super class defines id
 					.add(Vehicle::getId).identifier(ALREADY_ASSIGNED)
 					.add(Vehicle::getColor)
-					.mapPolymorphism(PolymorphismPolicy.<AbstractVehicle, Identifier<Long>>joinedTables()
+					.mapPolymorphism(PolymorphismPolicy.<Vehicle, Identifier<Long>>joinedTables()
 							.addSubClass(subentityBuilder(Car.class)
 									.add(Car::getId)
 									.add(Car::getModel))
@@ -867,7 +867,7 @@ class FluentEntityMappingConfigurationSupportPolymorphismTest {
 					// mapped super class defines id
 					.add(Vehicle::getId).identifier(ALREADY_ASSIGNED)
 					.add(Vehicle::getColor)
-					.mapPolymorphism(PolymorphismPolicy.<AbstractVehicle, Identifier<Long>>tablePerClass()
+					.mapPolymorphism(PolymorphismPolicy.<Vehicle, Identifier<Long>>tablePerClass()
 							.addSubClass(subentityBuilder(Car.class)
 									.add(Car::getModel))
 							.addSubClass(subentityBuilder(Truk.class)

@@ -39,7 +39,7 @@ public interface PolymorphismPolicy<C, I> {
 	
 	Set<SubEntityMappingConfiguration<? extends C, I>> getSubClasses();
 	
-	class TablePerClassPolymorphism<C, I> implements PolymorphismPolicy {
+	class TablePerClassPolymorphism<C, I> implements PolymorphismPolicy<C, I> {
 		
 		private final Set<Duo<SubEntityMappingConfiguration<? extends C, I>, Table /* Nullable */>> subClasses = new HashSet<>();
 		
@@ -63,7 +63,7 @@ public interface PolymorphismPolicy<C, I> {
 		}
 	}
 	
-	class JoinedTablesPolymorphism<C, I> implements PolymorphismPolicy {
+	class JoinedTablesPolymorphism<C, I> implements PolymorphismPolicy<C, I> {
 		
 		private final Set<Duo<SubEntityMappingConfiguration<? extends C, I>, Table /* Nullable */>> subClasses = new HashSet<>();
 		
@@ -87,7 +87,7 @@ public interface PolymorphismPolicy<C, I> {
 		}
 	}
 	
-	class SingleTablePolymorphism<C, I, D> implements PolymorphismPolicy {
+	class SingleTablePolymorphism<C, I, D> implements PolymorphismPolicy<C, I> {
 		
 		private final String discriminatorColumn;
 		
