@@ -110,7 +110,7 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements IFluentEnt
 	
 	private InheritanceConfigurationSupport<? super C, I> inheritanceConfiguration;
 	
-	private PolymorphismPolicy<C, I> polymorphismPolicy;
+	private PolymorphismPolicy<C> polymorphismPolicy;
 	
 	private Function<Function<Column, Object>, C> entityFactory;
 	
@@ -222,7 +222,7 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements IFluentEnt
 	}
 	
 	@Override
-	public PolymorphismPolicy<C, I> getPolymorphismPolicy() {
+	public PolymorphismPolicy<C> getPolymorphismPolicy() {
 		return polymorphismPolicy;
 	}
 	
@@ -547,14 +547,14 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements IFluentEnt
 	@Override
 	public <O, J, S extends List<O>> IFluentMappingBuilderOneToManyListOptions<C, I, O, S> addOneToManyList(
 			SerializableFunction<C, S> getter,
-			EntityMappingConfigurationProvider<? extends O, J> mappingConfiguration) {
+			EntityMappingConfigurationProvider<O, J> mappingConfiguration) {
 		return addOneToManyList(getter, mappingConfiguration, null);
 	}
 		
 	@Override
 	public <O, J, S extends List<O>, T extends Table> IFluentMappingBuilderOneToManyListOptions<C, I, O, S> addOneToManyList(
 			SerializableFunction<C, S> getter,
-			EntityMappingConfigurationProvider<? extends O, J> mappingConfiguration,
+			EntityMappingConfigurationProvider<O, J> mappingConfiguration,
 			@javax.annotation.Nullable T table) {
 		
 		AccessorByMethodReference<C, S> getterReference = Accessors.accessorByMethodReference(getter);
@@ -814,7 +814,7 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements IFluentEnt
 	}
 	
 	@Override
-	public IFluentEntityMappingBuilder<C, I> mapPolymorphism(PolymorphismPolicy polymorphismPolicy) {
+	public IFluentEntityMappingBuilder<C, I> mapPolymorphism(PolymorphismPolicy<C> polymorphismPolicy) {
 		this.polymorphismPolicy = polymorphismPolicy;
 		return this;
 	}

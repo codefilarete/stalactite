@@ -76,17 +76,17 @@ public class CascadeManyConfigurer<SRC, TRGT, ID, C extends Collection<TRGT>> {
 	private final Dialect dialect;
 	private final IConnectionConfiguration connectionConfiguration;
 	private final PersisterRegistry persisterRegistry;
-	private final PersisterBuilderImpl<TRGT, ID> persisterBuilder;
+	private final PersisterBuilderImpl<TRGT, ID> targetPersisterBuilder;
 	private Column<?, ID> sourcePrimaryKey;
 	
 	public CascadeManyConfigurer(Dialect dialect,
 								 IConnectionConfiguration connectionConfiguration,
 								 PersisterRegistry persisterRegistry,
-								 PersisterBuilderImpl<TRGT, ID> persisterBuilder) {
+								 PersisterBuilderImpl<TRGT, ID> targetPersisterBuilder) {
 		this.dialect = dialect;
 		this.connectionConfiguration = connectionConfiguration;
 		this.persisterRegistry = persisterRegistry;
-		this.persisterBuilder = persisterBuilder;
+		this.targetPersisterBuilder = targetPersisterBuilder;
 	}
 	
 	/**
@@ -110,7 +110,7 @@ public class CascadeManyConfigurer<SRC, TRGT, ID, C extends Collection<TRGT>> {
 												   ColumnNamingStrategy indexColumnNamingStrategy,
 												   AssociationTableNamingStrategy associationTableNamingStrategy) {
 		Table targetTable = determineTargetTable(cascadeMany);
-		IEntityConfiguredJoinedTablesPersister<TRGT, ID> targetPersister = this.persisterBuilder
+		IEntityConfiguredJoinedTablesPersister<TRGT, ID> targetPersister = this.targetPersisterBuilder
 				.build(dialect, connectionConfiguration, persisterRegistry, targetTable);
 		
 		Column leftPrimaryKey = nullable(sourcePrimaryKey).getOr(() -> lookupSourcePrimaryKey(sourcePersister));
@@ -499,7 +499,8 @@ public class CascadeManyConfigurer<SRC, TRGT, ID, C extends Collection<TRGT>> {
 																								   Column reverseColumn,
 																								   @Nullable Column<? extends Table, Integer> indexingColumn) {
 			if (indexingColumn == null) {
-				indexingColumn = manyAssociationConfiguration.targetPersister.getMappingStrategy().getTargetTable().addColumn("idx", int.class);
+				String indexingColumnName = manyAssociationConfiguration.indexColumnNamingStrategy.giveName(manyAssociationConfiguration.accessorDefinition);
+				indexingColumn = manyAssociationConfiguration.targetPersister.getMappingStrategy().getTargetTable().addColumn(indexingColumnName, int.class);
 			}
 			OneToManyWithMappedAssociationEngine<SRC, TRGT, ID, C> mappedAssociationEngine;
 			IndexedMappedManyRelationDescriptor<SRC, TRGT, C> manyRelationDefinition = new IndexedMappedManyRelationDescriptor<>(

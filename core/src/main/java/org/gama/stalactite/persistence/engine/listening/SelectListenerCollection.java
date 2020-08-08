@@ -28,4 +28,17 @@ public class SelectListenerCollection<T, I> implements SelectListener<T, I> {
 	public void add(SelectListener<T, I> selectListener) {
 		this.selectListeners.add(selectListener);
 	}
+	
+	/**
+	 * Move internal listeners to given instance.
+	 * Usefull to agregate listeners into a single instance.
+	 * Please note that as this method is named "move" it means that listeners of current instance will be cleared.
+	 *
+	 * @param selectListener the target listener on which the one of current instance must be moved to.
+	 */
+	public void moveTo(SelectListenerCollection<T, I> selectListener) {
+		selectListener.selectListeners.addAll(this.selectListeners);
+		this.selectListeners.clear();
+	}
+	
 }

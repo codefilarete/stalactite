@@ -19,7 +19,7 @@ import org.gama.stalactite.persistence.structure.Table;
  * @author Guillaume Mary
  * @see MappingEase#entityBuilder(Class, Class)
  */
-public interface IFluentSubEntityMappingConfiguration<C, I> extends IFluentEmbeddableMappingConfiguration<C>, SubEntityMappingConfiguration<C, I> {
+public interface IFluentSubEntityMappingConfiguration<C, I> extends IFluentEmbeddableMappingConfiguration<C>, SubEntityMappingConfiguration<C> {
 	
 	/**
 	 * Always throws an exception since mapped super class is not supported in polymorphism definition.
@@ -180,10 +180,15 @@ public interface IFluentSubEntityMappingConfiguration<C, I> extends IFluentEmbed
 	@Override
 	<O> IFluentMappingBuilderEmbeddableMappingConfigurationImportedEmbedOptions<C, I, O> embed(SerializableBiConsumer<C, O> setter, EmbeddedBeanMappingStrategyBuilder<O> embeddableMappingBuilder);
 	
+	IFluentSubEntityMappingConfiguration<C, I> mapPolymorphism(PolymorphismPolicy<C> polymorphismPolicy);
+	
 	interface IFluentMappingBuilderPropertyOptions<C, I> extends IFluentSubEntityMappingConfiguration<C, I>, IFluentEmbeddableMappingConfigurationPropertyOptions<C>, PropertyOptions {
 		
 		@Override
 		IFluentMappingBuilderPropertyOptions<C, I> mandatory();
+		
+		@Override
+		IFluentMappingBuilderPropertyOptions<C, I> setByConstructor();
 	}
 	
 	interface IFluentMappingBuilderOneToOneOptions<C, I, T extends Table> extends IFluentSubEntityMappingConfiguration<C, I>,

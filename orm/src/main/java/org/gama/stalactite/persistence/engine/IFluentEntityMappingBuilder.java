@@ -243,11 +243,11 @@ public interface IFluentEntityMappingBuilder<C, I> extends IFluentEmbeddableMapp
 	 */
 	<O, J, S extends List<O>>
 	IFluentMappingBuilderOneToManyListOptions<C, I, O, S>
-	addOneToManyList(SerializableFunction<C, S> getter, EntityMappingConfigurationProvider<? extends O, J> mappingConfiguration);
+	addOneToManyList(SerializableFunction<C, S> getter, EntityMappingConfigurationProvider<O, J> mappingConfiguration);
 	
 	<O, J, S extends List<O>, T extends Table>
 	IFluentMappingBuilderOneToManyListOptions<C, I, O, S>
-	addOneToManyList(SerializableFunction<C, S> getter, EntityMappingConfigurationProvider<? extends O, J> mappingConfiguration, @javax.annotation.Nullable T table);
+	addOneToManyList(SerializableFunction<C, S> getter, EntityMappingConfigurationProvider<O, J> mappingConfiguration, @javax.annotation.Nullable T table);
 	
 	<O, J, S extends List<O>, T extends Table>
 	IFluentMappingBuilderOneToManyListOptions<C, I, O, S>
@@ -282,7 +282,7 @@ public interface IFluentEntityMappingBuilder<C, I> extends IFluentEmbeddableMapp
 	
 	<V> IFluentEntityMappingBuilder<C, I> versionedBy(SerializableFunction<C, V> getter, Serie<V> sequence);
 	
-	IFluentEntityMappingBuilder<C, I> mapPolymorphism(PolymorphismPolicy<C, I> polymorphismPolicy);
+	IFluentEntityMappingBuilder<C, I> mapPolymorphism(PolymorphismPolicy<C> polymorphismPolicy);
 	
 	interface IFluentMappingBuilderPropertyOptions<C, I> extends IFluentEntityMappingBuilder<C, I>, IFluentEmbeddableMappingConfigurationPropertyOptions<C>, ColumnOptions<C, I> {
 		

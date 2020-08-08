@@ -28,4 +28,16 @@ public class InsertListenerCollection<T> implements InsertListener<T> {
 	public void add(InsertListener<T> insertListener) {
 		this.insertListeners.add(insertListener);
 	}
+	
+	/**
+	 * Move internal listeners to given instance.
+	 * Usefull to agregate listeners into a single instance.
+	 * Please note that as this method is named "move" it means that listeners of current instance will be cleared.
+	 *
+	 * @param insertListener the target listener on which the one of current instance must be moved to.
+	 */
+	public void moveTo(InsertListenerCollection<T> insertListener) {
+		insertListener.insertListeners.addAll(this.insertListeners);
+		this.insertListeners.clear();
+	}
 }

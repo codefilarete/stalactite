@@ -18,14 +18,12 @@ import org.gama.lang.collection.Iterables;
 import org.gama.lang.function.Functions;
 import org.gama.lang.trace.ModifiableInt;
 import org.gama.reflection.MethodReferenceDispatcher;
-import org.gama.stalactite.persistence.engine.configurer.CascadeManyConfigurer;
 import org.gama.stalactite.persistence.engine.ExecutableQuery;
 import org.gama.stalactite.persistence.engine.IDeleteExecutor;
 import org.gama.stalactite.persistence.engine.IInsertExecutor;
 import org.gama.stalactite.persistence.engine.ISelectExecutor;
 import org.gama.stalactite.persistence.engine.IUpdateExecutor;
-import org.gama.stalactite.persistence.engine.runtime.EntityMappingStrategyTreeJoinPoint.JoinType;
-import org.gama.stalactite.persistence.engine.runtime.JoinedTablesPersister.CriteriaProvider;
+import org.gama.stalactite.persistence.engine.configurer.CascadeManyConfigurer;
 import org.gama.stalactite.persistence.engine.listening.DeleteByIdListener;
 import org.gama.stalactite.persistence.engine.listening.DeleteListener;
 import org.gama.stalactite.persistence.engine.listening.IPersisterListener;
@@ -33,6 +31,8 @@ import org.gama.stalactite.persistence.engine.listening.InsertListener;
 import org.gama.stalactite.persistence.engine.listening.PersisterListener;
 import org.gama.stalactite.persistence.engine.listening.SelectListener;
 import org.gama.stalactite.persistence.engine.listening.UpdateListener;
+import org.gama.stalactite.persistence.engine.runtime.EntityMappingStrategyTreeJoinPoint.JoinType;
+import org.gama.stalactite.persistence.engine.runtime.JoinedTablesPersister.CriteriaProvider;
 import org.gama.stalactite.persistence.mapping.IEntityMappingStrategy;
 import org.gama.stalactite.persistence.mapping.IMappingStrategy.ShadowColumnValueProvider;
 import org.gama.stalactite.persistence.query.EntityCriteriaSupport;
@@ -56,11 +56,10 @@ public class TablePerClassPolymorphismPersister<C, I, T extends Table<T>> implem
 	private final Map<Class<? extends C>, IInsertExecutor<C>> subclassInsertExecutors;
 	private final Map<Class<? extends C>, IUpdateExecutor<C>> subclassUpdateExecutors;
 	private final Map<Class<? extends C>, IDeleteExecutor<C, I>> subclassDeleteExecutors;
-	@javax.annotation.Nonnull
-	private final JoinedTablesPersister<C, I, T> mainPersister;
+	private final IEntityConfiguredJoinedTablesPersister<C, I> mainPersister;
 	private final Map<Class<? extends C>, JoinedTablesPersister<C, I, T>> subEntitiesPersisters;
 	
-	public TablePerClassPolymorphismPersister(JoinedTablesPersister<C, I, T> mainPersister,
+	public TablePerClassPolymorphismPersister(IEntityConfiguredJoinedTablesPersister<C, I> mainPersister,
 											  Map<Class<? extends C>, JoinedTablesPersister<C, I, T>> subEntitiesPersisters,
 											  ConnectionProvider connectionProvider,
 											  Dialect dialect) {
@@ -77,7 +76,7 @@ public class TablePerClassPolymorphismPersister<C, I, T extends Table<T>> implem
 		
 		this.subEntitiesPersisters = subEntitiesPersisters;
 		this.subEntitiesPersisters.forEach((type, persister) ->
-				mainPersister.getEntityMappingStrategyTreeSelectExecutor().getEntityMappingStrategyTreeSelectBuilder().getRoot().projectTo(
+				mainPersister.getEntityMappingStrategyTreeSelectBuilder().getRoot().projectTo(
 				persister.getEntityMappingStrategyTreeSelectExecutor().getEntityMappingStrategyTreeSelectBuilder(),
 				EntityMappingStrategyTreeSelectBuilder.ROOT_STRATEGY_NAME
 		));
@@ -88,10 +87,10 @@ public class TablePerClassPolymorphismPersister<C, I, T extends Table<T>> implem
 		this.selectExecutor = new TablePerClassPolymorphicSelectExecutor<>(
 				tablePerSubEntity,
 				subEntitiesSelectors,
-				mainPersister.getMainTable(), connectionProvider, dialect.getColumnBinderRegistry());
+				(T) mainPersister.getMappingStrategy().getTargetTable(), connectionProvider, dialect.getColumnBinderRegistry());
 		
 		this.entitySelectExecutor = new TablePerClassPolymorphicEntitySelectExecutor<>(tablePerSubEntity, subEntitiesPersisters,
-				mainPersister.getMainTable(), connectionProvider, dialect.getColumnBinderRegistry());
+				(T) mainPersister.getMappingStrategy().getTargetTable(), connectionProvider, dialect.getColumnBinderRegistry());
 		
 		this.criteriaSupport = new EntityCriteriaSupport<>(mainPersister.getMappingStrategy());
 	}
@@ -348,7 +347,7 @@ public class TablePerClassPolymorphismPersister<C, I, T extends Table<T>> implem
 																	 boolean optional) {
 		// TODO: simplify query : it joins on target table as many as subentities which can be reduced to one join if FirstPhaseOneToOneLoader
 		//  can compute disciminatorValue 
-		Column<T, Object> mainTablePK = Iterables.first(mainPersister.getMainTable().getPrimaryKey().getColumns());
+		Column<T, Object> mainTablePK = Iterables.first(((T) mainPersister.getMappingStrategy().getTargetTable()).getPrimaryKey().getColumns());
 		Map<JoinedTablesPersister, Column> joinColumnPerSubPersister = new HashMap<>();
 		if (rightColumn.equals(mainTablePK)) {
 			// join is made on primary key => case is association table

@@ -29,7 +29,7 @@ public class EntityIsManagedByPersisterAsserter<C, I> extends PersisterWrapper<C
 		if (getDeepestSurrogate() instanceof PolymorphicPersister) {
 			Set<Class<? extends C>> supportedEntityTypes = ((PolymorphicPersister<C>) getDeepestSurrogate()).getSupportedEntityTypes();
 			asserter = entity -> 
-					nullable(Iterables.find(supportedEntityTypes, cClass -> cClass.equals(entity.getClass())))
+					nullable(Iterables.find(supportedEntityTypes, cClass -> true))//cClass.equals(entity.getClass())))
 					.<UnsupportedOperationException>elseThrow(() -> newAssertException(entity));
 		} else {
 			asserter = entity -> {

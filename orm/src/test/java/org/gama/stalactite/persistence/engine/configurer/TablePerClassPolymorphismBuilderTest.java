@@ -5,7 +5,6 @@ import org.gama.stalactite.persistence.engine.IFluentEntityMappingBuilder;
 import org.gama.stalactite.persistence.engine.MappingConfigurationException;
 import org.gama.stalactite.persistence.engine.PersistenceContext;
 import org.gama.stalactite.persistence.engine.PolymorphismPolicy;
-import org.gama.stalactite.persistence.engine.model.AbstractVehicle;
 import org.gama.stalactite.persistence.engine.model.Car;
 import org.gama.stalactite.persistence.engine.model.Color;
 import org.gama.stalactite.persistence.engine.model.Vehicle;
@@ -44,7 +43,7 @@ class TablePerClassPolymorphismBuilderTest {
 		
 		IFluentEntityMappingBuilder<Vehicle, Identifier<Long>> configuration = entityBuilder(Vehicle.class, LONG_TYPE)
 				.add(Vehicle::getId).identifier(ALREADY_ASSIGNED)
-				.mapPolymorphism(PolymorphismPolicy.<AbstractVehicle, Identifier<Long>>tablePerClass()
+				.mapPolymorphism(PolymorphismPolicy.<Vehicle>tablePerClass()
 						.addSubClass(subentityBuilder(Car.class)
 								.add(Car::getModel)
 								.embed(Vehicle::getColor).override(Color::getRgb, colorTable), new Table("TargetTable")));

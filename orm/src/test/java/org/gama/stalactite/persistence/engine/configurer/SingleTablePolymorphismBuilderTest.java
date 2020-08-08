@@ -44,7 +44,7 @@ class SingleTablePolymorphismBuilderTest {
 		
 		IFluentEntityMappingBuilder<Vehicle, Identifier<Long>> configuration = entityBuilder(Vehicle.class, LONG_TYPE)
 				.add(Vehicle::getId).identifier(ALREADY_ASSIGNED)
-				.mapPolymorphism(PolymorphismPolicy.<AbstractVehicle, Identifier<Long>>singleTable()
+				.mapPolymorphism(PolymorphismPolicy.<AbstractVehicle>singleTable()
 						.addSubClass(subentityBuilder(Car.class)
 								.add(Car::getModel)
 								.embed(Vehicle::getColor).override(Color::getRgb, colorTable), "CAR"));

@@ -66,13 +66,25 @@ public class Car extends Vehicle {
 		this.plates.add(plateNumber);
 	}
 	
-	public static class Radio {
+	public static abstract class AbstractRadio {
+		private Car car;
+		
+		public Car getCar() {
+			return car;
+		}
+		
+		public void setCar(Car car) {
+			this.car = car;
+		}
+		
+		
+	}
+	
+	public static class Radio extends AbstractRadio {
 		
 		private String serialNumber;
 		
 		private String model;
-		
-		private Car car;
 		
 		private boolean persisted;
 		
@@ -94,14 +106,6 @@ public class Car extends Vehicle {
 		public Radio setModel(String model) {
 			this.model = model;
 			return this;
-		}
-		
-		public Car getCar() {
-			return car;
-		}
-		
-		public void setCar(Car car) {
-			this.car = car;
 		}
 		
 		public boolean isPersisted() {

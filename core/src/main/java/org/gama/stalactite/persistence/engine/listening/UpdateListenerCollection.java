@@ -30,4 +30,17 @@ public class UpdateListenerCollection<E> implements UpdateListener<E> {
 	public void add(UpdateListener<E> updateListener) {
 		this.updateListeners.add(updateListener);
 	}
+	
+	/**
+	 * Move internal listeners to given instance.
+	 * Usefull to agregate listeners into a single instance.
+	 * Please note that as this method is named "move" it means that listeners of current instance will be cleared.
+	 *
+	 * @param updateListener the target listener on which the one of current instance must be moved to.
+	 */
+	public void moveTo(UpdateListenerCollection<E> updateListener) {
+		updateListener.updateListeners.addAll(this.updateListeners);
+		this.updateListeners.clear();
+	}
+	
 }

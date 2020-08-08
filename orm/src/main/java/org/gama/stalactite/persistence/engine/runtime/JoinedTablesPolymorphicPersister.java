@@ -16,12 +16,13 @@ import org.gama.lang.bean.Objects;
 import org.gama.lang.collection.Arrays;
 import org.gama.lang.collection.Collections;
 import org.gama.lang.collection.Iterables;
+import org.gama.lang.exception.NotImplementedException;
 import org.gama.lang.trace.ModifiableInt;
 import org.gama.reflection.MethodReferenceDispatcher;
 import org.gama.stalactite.persistence.engine.ExecutableQuery;
+import org.gama.stalactite.persistence.engine.IEntityPersister;
 import org.gama.stalactite.persistence.engine.ISelectExecutor;
-import org.gama.stalactite.persistence.engine.runtime.EntityMappingStrategyTreeJoinPoint.JoinType;
-import org.gama.stalactite.persistence.engine.runtime.JoinedTablesPersister.CriteriaProvider;
+import org.gama.stalactite.persistence.engine.IUpdateExecutor;
 import org.gama.stalactite.persistence.engine.listening.DeleteByIdListener;
 import org.gama.stalactite.persistence.engine.listening.DeleteListener;
 import org.gama.stalactite.persistence.engine.listening.IPersisterListener;
@@ -29,6 +30,8 @@ import org.gama.stalactite.persistence.engine.listening.InsertListener;
 import org.gama.stalactite.persistence.engine.listening.PersisterListener;
 import org.gama.stalactite.persistence.engine.listening.SelectListener;
 import org.gama.stalactite.persistence.engine.listening.UpdateListener;
+import org.gama.stalactite.persistence.engine.runtime.EntityMappingStrategyTreeJoinPoint.JoinType;
+import org.gama.stalactite.persistence.engine.runtime.JoinedTablesPersister.CriteriaProvider;
 import org.gama.stalactite.persistence.mapping.IEntityMappingStrategy;
 import org.gama.stalactite.persistence.mapping.IdMappingStrategy;
 import org.gama.stalactite.persistence.query.EntityCriteriaSupport;
@@ -49,7 +52,7 @@ public class JoinedTablesPolymorphicPersister<C, I> implements IEntityConfigured
 	
 	private static final ThreadLocal<Set<RelationIds<Object /* E */, Object /* target */, Object /* target identifier */ >>> DIFFERED_ENTITY_LOADER = new ThreadLocal<>();
 	
-	private final Map<Class<? extends C>, ? extends IEntityConfiguredJoinedTablesPersister<C, I>> subEntitiesPersisters;
+	private final Map<Class<? extends C>, IEntityConfiguredJoinedTablesPersister<C, I>> subEntitiesPersisters;
 	/** The wrapper around sub entities loaders, for 2-phases load  */
 	private final JoinedTablesPolymorphismSelectExecutor<C, I, ?> mainSelectExecutor;
 	private final Class<C> parentClass;
@@ -58,10 +61,10 @@ public class JoinedTablesPolymorphicPersister<C, I> implements IEntityConfigured
 	private final Column<?, I> mainTablePrimaryKey;
 	private final EntityCriteriaSupport<C> criteriaSupport;
 	private final JoinedTablesPolymorphismEntitySelectExecutor<C, I, ?> entitySelectExecutor;
-	private final JoinedTablesPersister<C, I, ?> parentPersister;
+	private final IEntityConfiguredJoinedTablesPersister<C, I> parentPersister;
 	
-	public JoinedTablesPolymorphicPersister(JoinedTablesPersister<C, I, ?> parentPersister,
-											Map<Class<? extends C>, JoinedTablesPersister<C, I, ?>> subEntitiesPersisters,
+	public JoinedTablesPolymorphicPersister(IEntityConfiguredJoinedTablesPersister<C, I> parentPersister,
+											Map<Class<? extends C>, IEntityConfiguredJoinedTablesPersister<C, I>> subEntitiesPersisters,
 											ConnectionProvider connectionProvider,
 											Dialect dialect) {
 		this.parentPersister = parentPersister;
@@ -69,9 +72,9 @@ public class JoinedTablesPolymorphicPersister<C, I> implements IEntityConfigured
 		this.mainTablePrimaryKey = (Column) Iterables.first(parentPersister.getMappingStrategy().getTargetTable().getPrimaryKey().getColumns());
 		
 		this.subEntitiesPersisters = subEntitiesPersisters;
-		Set<Entry<Class<? extends C>, JoinedTablesPersister<C, I, ?>>> subPersisterPerSubEntityType = subEntitiesPersisters.entrySet();
+		Set<Entry<Class<? extends C>, IEntityConfiguredJoinedTablesPersister<C, I>>> subPersisterPerSubEntityType = subEntitiesPersisters.entrySet();
 		Map<Class<? extends C>, ISelectExecutor<C, I>> subclassSelectExecutors = Iterables.map(subPersisterPerSubEntityType, Entry::getKey,
-				e -> e.getValue().getSelectExecutor());
+				Entry::getValue);
 		this.subclassIdMappingStrategies = Iterables.map(subPersisterPerSubEntityType, Entry::getKey, e -> e.getValue().getMappingStrategy().getIdMappingStrategy());
 		
 		// sub entities persisters will be used to select sub entities but at this point they lacks subgraph loading, so we add it (from their parent)
@@ -85,10 +88,11 @@ public class JoinedTablesPolymorphicPersister<C, I> implements IEntityConfigured
 		this.mainSelectExecutor = new JoinedTablesPolymorphismSelectExecutor<>(
 				tablePerSubEntityType,
 				subclassSelectExecutors,
-				parentPersister.getMainTable(), connectionProvider, dialect);
+				parentPersister.getMappingStrategy().getTargetTable(), connectionProvider, dialect);
 		
-		this.entitySelectExecutor = new JoinedTablesPolymorphismEntitySelectExecutor(subEntitiesPersisters, subEntitiesPersisters, parentPersister.getMainTable(),
-				parentPersister.getEntityMappingStrategyTreeSelectExecutor().getEntityMappingStrategyTreeSelectBuilder(), connectionProvider, dialect);
+		this.entitySelectExecutor = new JoinedTablesPolymorphismEntitySelectExecutor(subEntitiesPersisters, subEntitiesPersisters,
+				parentPersister.getMappingStrategy().getTargetTable(),
+				parentPersister.getEntityMappingStrategyTreeSelectBuilder(), connectionProvider, dialect);
 		
 		this.criteriaSupport = new EntityCriteriaSupport<>(parentPersister.getMappingStrategy());
 	}
@@ -115,18 +119,11 @@ public class JoinedTablesPolymorphicPersister<C, I> implements IEntityConfigured
 	@Override
 	public int insert(Iterable<? extends C> entities) {
 		parentPersister.insert(entities);
-		Map<Class, Set<C>> entitiesPerType = new HashMap<>();
-		for (C entity : entities) {
-			entitiesPerType.computeIfAbsent(entity.getClass(), cClass -> new HashSet<>()).add(entity);
-		}
+		
 		ModifiableInt insertCount = new ModifiableInt();
-		// We invoke persisters (not InsertExecutor to trigger event listeners which is necessary for cascade)
-		this.subEntitiesPersisters.forEach((subclass, persister) -> {
-			Set<C> subtypeEntities = entitiesPerType.get(subclass);
-			if (subtypeEntities != null) {
-				insertCount.increment(persister.insert(subtypeEntities));
-			}
-		});
+		Map<IEntityPersister<C, I>, Set<C>> entitiesPerType = computeEntitiesPerPersister((Iterable) entities);
+		
+		entitiesPerType.forEach((insertExecutor, adhocEntities) -> insertCount.increment(insertExecutor.insert(adhocEntities)));
 		
 		return insertCount.getValue();
 	}
@@ -137,18 +134,10 @@ public class JoinedTablesPolymorphicPersister<C, I> implements IEntityConfigured
 		int mainRowCount = parentPersister.updateById(entities);
 		mainUpdateCount.increment(mainRowCount);
 		
-		Map<Class, Set<C>> entitiesPerType = new HashMap<>();
-		for (C entity : entities) {
-			entitiesPerType.computeIfAbsent(entity.getClass(), cClass -> new HashSet<>()).add(entity);
-		}
 		ModifiableInt subEntitiesUpdateCount = new ModifiableInt();
-		// We invoke persisters (not UpdateExecutor to trigger event listeners which is necessary for cascade)
-		this.subEntitiesPersisters.forEach((subclass, updateExecutor) -> {
-			Set<C> entitiesToUpdate = entitiesPerType.get(subclass);
-			if (entitiesToUpdate != null) {
-				subEntitiesUpdateCount.increment(updateExecutor.updateById(entitiesToUpdate));
-			}
-		});
+		Map<IEntityPersister<C, I>, Set<C>> entitiesPerType = computeEntitiesPerPersister(entities);
+		
+		entitiesPerType.forEach((updateExecutor, adhocEntities) -> subEntitiesUpdateCount.increment(updateExecutor.updateById(adhocEntities)));
 		
 		// RowCount is either 0 or number of rows updated. In the first case result might be number of rows updated by sub entities.
 		// In second case we don't need to change it because sub entities updated row count will also be either 0 or total entities count  
@@ -167,21 +156,21 @@ public class JoinedTablesPolymorphicPersister<C, I> implements IEntityConfigured
 		ModifiableInt mainUpdateCount = new ModifiableInt();
 		int mainRowCount = parentPersister.update(differencesIterable, allColumnsStatement);
 		mainUpdateCount.increment(mainRowCount);
-		Map<Class, Set<Duo<? extends C, ? extends C>>> entitiesPerType = new HashMap<>();
-		differencesIterable.forEach(payload -> {
-			C entity = Objects.preventNull(payload.getLeft(), payload.getRight());
-			entitiesPerType.computeIfAbsent(entity.getClass(), k -> new HashSet<>()).add(payload);
-		});
-		
 		
 		ModifiableInt subEntitiesUpdateCount = new ModifiableInt();
-		// We invoke persisters (not UpdateExecutor to trigger event listeners which is necessary for cascade)
-		this.subEntitiesPersisters.forEach((subclass, updateExecutor) -> {
-			Set<Duo<? extends C, ? extends C>> entitiesToUpdate = entitiesPerType.get(subclass);
-			if (entitiesToUpdate != null) {
-				subEntitiesUpdateCount.increment(updateExecutor.update(entitiesToUpdate, allColumnsStatement));
-			}
-		});
+		Map<IUpdateExecutor<C>, Set<Duo<? extends C, ? extends C>>> entitiesPerType = new HashMap<>();
+		differencesIterable.forEach(payload ->
+			this.subEntitiesPersisters.values().forEach(persister -> {
+				C entity = Objects.preventNull(payload.getLeft(), payload.getRight());
+				if (persister.getClassToPersist().isInstance(entity)) {
+					entitiesPerType.computeIfAbsent(persister, p -> new HashSet<>()).add(payload);
+				}
+			})
+		);
+		
+		entitiesPerType.forEach((updateExecutor, adhocEntities) ->
+			subEntitiesUpdateCount.increment(updateExecutor.update(adhocEntities, allColumnsStatement))
+		);
 		
 		// RowCount is either 0 or number of rows updated. In the first case result might be number of rows updated by sub entities.
 		// In second case we don't need to change it because sub entities updated row count will also be either 0 or total entities count  
@@ -220,57 +209,44 @@ public class JoinedTablesPolymorphicPersister<C, I> implements IEntityConfigured
 	
 	@Override
 	public int delete(Iterable<C> entities) {
-		Map<Class, Set<C>> entitiesPerType = new HashMap<>();
-		for (C entity : entities) {
-			entitiesPerType.computeIfAbsent(entity.getClass(), cClass -> new HashSet<>()).add(entity);
-		}
 		ModifiableInt deleteCount = new ModifiableInt();
-		// We invoke persisters (not DeleteExecutor to trigger event listeners which is necessary for cascade)
-		this.subEntitiesPersisters.forEach((subclass, persister) -> {
-			Set<C> subtypeEntities = entitiesPerType.get(subclass);
-			if (subtypeEntities != null) {
-				deleteCount.increment(persister.delete(subtypeEntities));
-			}
-		});
-		// NB: we use deleteExecutor not to trigger listener, because they should be triggered by wrapper, else we would try to delete twice
-		// related beans for instance
-		return parentPersister.getDeleteExecutor().delete(entities);
+		Map<IEntityPersister<C, I>, Set<C>> entitiesPerType = computeEntitiesPerPersister(entities);
+		
+		entitiesPerType.forEach((deleteExecutor, adhocEntities) ->
+			deleteCount.increment(deleteExecutor.delete(adhocEntities))
+		);
+		
+		return parentPersister.delete(entities);
 	}
 	
 	@Override
 	public int deleteById(Iterable<C> entities) {
-		Map<Class, Set<C>> entitiesPerType = new HashMap<>();
-		for (C entity : entities) {
-			entitiesPerType.computeIfAbsent(entity.getClass(), cClass -> new HashSet<>()).add(entity);
-		}
 		ModifiableInt deleteCount = new ModifiableInt();
-		// We invoke persisters (not DeleteExecutor to trigger event listeners which is necessary for cascade)
-		this.subEntitiesPersisters.forEach((subclass, persister) -> {
-			Set<C> subtypeEntities = entitiesPerType.get(subclass);
-			if (subtypeEntities != null) {
-				deleteCount.increment(persister.deleteById(subtypeEntities));
-			}
-		});
-		// NB: we use deleteExecutor not to trigger listener, because they should be triggered by wrapper, else we would try to delete twice
-		// related beans for instance
-		return parentPersister.getDeleteExecutor().deleteById(entities);
+		Map<IEntityPersister<C, I>, Set<C>> entitiesPerType = computeEntitiesPerPersister(entities);
+		
+		entitiesPerType.forEach((deleteExecutor, adhocEntities) -> 
+				deleteCount.increment(deleteExecutor.deleteById(adhocEntities))
+		);
+		
+		return parentPersister.deleteById(entities);
 	}
 	
 	@Override
 	public int persist(Iterable<? extends C> entities) {
-		Map<Class, Set<C>> entitiesPerType = new HashMap<>();
-		for (C entity : entities) {
-			entitiesPerType.computeIfAbsent(entity.getClass(), cClass -> new HashSet<>()).add(entity);
-		}
-		ModifiableInt insertCount = new ModifiableInt();
-		this.subEntitiesPersisters.forEach((subclass, persister) -> {
-			Set<C> subtypeEntities = entitiesPerType.get(subclass);
-			if (subtypeEntities != null) {
-				insertCount.increment(persister.persist(subtypeEntities));
-			}
-		});
-		
-		return insertCount.getValue();
+		// This class doesn't need to implement this method because it is better handled by wrapper, especially in triggering event
+		throw new NotImplementedException("This class doesn't need to implement this method because it is handle by wrapper");
+	}
+	
+	private Map<IEntityPersister<C, I>, Set<C>> computeEntitiesPerPersister(Iterable<C> entities) {
+		Map<IEntityPersister<C, I>, Set<C>> entitiesPerType = new HashMap<>();
+		entities.forEach(entity ->
+				this.subEntitiesPersisters.values().forEach(persister -> {
+					if (persister.getClassToPersist().isInstance(entity)) {
+						entitiesPerType.computeIfAbsent(persister, p -> new HashSet<>()).add(entity);
+					}
+				})
+		);
+		return entitiesPerType;
 	}
 	
 	@Override

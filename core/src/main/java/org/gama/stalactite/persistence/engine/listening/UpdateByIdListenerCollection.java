@@ -28,4 +28,17 @@ public class UpdateByIdListenerCollection<T> implements UpdateByIdListener<T> {
 	public void add(UpdateByIdListener<T> updateByIdListener) {
 		this.updateByIdListeners.add(updateByIdListener);
 	}
+	
+	/**
+	 * Move internal listeners to given instance.
+	 * Usefull to agregate listeners into a single instance.
+	 * Please note that as this method is named "move" it means that listeners of current instance will be cleared.
+	 *
+	 * @param updateByIdListener the target listener on which the one of current instance must be moved to.
+	 */
+	public void moveTo(UpdateByIdListenerCollection<T> updateByIdListener) {
+		updateByIdListener.updateByIdListeners.addAll(this.updateByIdListeners);
+		this.updateByIdListeners.clear();
+	}
+	
 }

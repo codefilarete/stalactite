@@ -33,14 +33,14 @@ public class SingleTablePolymorphismEntitySelectExecutor<C, I, T extends Table, 
 	private static final String DISCRIMINATOR_ALIAS = "DISCRIMINATOR";
 	private static final String PRIMARY_KEY_ALIAS = "PK";
 	
-	private final Map<Class<? extends C>, JoinedTablesPersister<C, I, T>> persisterPerSubclass;
+	private final Map<Class<? extends C>, IEntityConfiguredJoinedTablesPersister<C, I>> persisterPerSubclass;
 	private final Column discriminatorColumn;
 	private final SingleTablePolymorphism polymorphismPolicy;
 	private final EntityMappingStrategyTreeSelectBuilder<C, I, T> mainEntityMappingStrategyTreeSelectBuilder;
 	private final ConnectionProvider connectionProvider;
 	private final Dialect dialect;
 	
-	public SingleTablePolymorphismEntitySelectExecutor(Map<Class<? extends C>, JoinedTablesPersister<C, I, T>> persisterPerSubclass,
+	public SingleTablePolymorphismEntitySelectExecutor(Map<Class<? extends C>, IEntityConfiguredJoinedTablesPersister<C, I>> persisterPerSubclass,
 												Column<T, D> discriminatorColumn,
 												SingleTablePolymorphism polymorphismPolicy,
 												EntityMappingStrategyTreeSelectBuilder<C, I, T> mainEntityMappingStrategyTreeSelectBuilder,

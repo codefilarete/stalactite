@@ -34,16 +34,17 @@ import org.gama.stalactite.persistence.engine.EmbeddableMappingConfigurationProv
 import org.gama.stalactite.persistence.engine.EmbeddedBeanMappingStrategyBuilder;
 import org.gama.stalactite.persistence.engine.EntityMappingConfigurationProvider;
 import org.gama.stalactite.persistence.engine.EnumOptions;
+import org.gama.stalactite.persistence.engine.IFluentEmbeddableMappingBuilder.IFluentEmbeddableMappingBuilderEmbedOptions;
+import org.gama.stalactite.persistence.engine.IFluentEmbeddableMappingBuilder.IFluentEmbeddableMappingBuilderEnumOptions;
 import org.gama.stalactite.persistence.engine.IFluentSubEntityMappingConfiguration;
 import org.gama.stalactite.persistence.engine.IndexableCollectionOptions;
 import org.gama.stalactite.persistence.engine.OneToManyOptions;
 import org.gama.stalactite.persistence.engine.OneToOneOptions;
+import org.gama.stalactite.persistence.engine.PolymorphismPolicy;
 import org.gama.stalactite.persistence.engine.PropertyOptions;
 import org.gama.stalactite.persistence.engine.configurer.FluentEmbeddableMappingConfigurationSupport.AbstractLinkage;
 import org.gama.stalactite.persistence.engine.configurer.FluentEntityMappingConfigurationSupport.OneToManyOptionsSupport;
 import org.gama.stalactite.persistence.engine.configurer.FluentEntityMappingConfigurationSupport.OverridableColumnInset;
-import org.gama.stalactite.persistence.engine.IFluentEmbeddableMappingBuilder.IFluentEmbeddableMappingBuilderEmbedOptions;
-import org.gama.stalactite.persistence.engine.IFluentEmbeddableMappingBuilder.IFluentEmbeddableMappingBuilderEnumOptions;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
 
@@ -67,6 +68,8 @@ public class FluentSubEntityMappingConfigurationSupport<C, I> implements IFluent
 	private final List<ElementCollectionLinkage<C, ?, ? extends Collection>> elementCollections = new ArrayList<>();
 	
 	private final SubEntityDecoratedEmbeddableConfigurationSupport<C, I> propertiesMappingConfigurationSurrogate;
+	
+	private PolymorphismPolicy<C> polymorphismPolicy;
 	
 	/**
 	 * Creates a builder to map the given class for persistence
@@ -119,6 +122,11 @@ public class FluentSubEntityMappingConfigurationSupport<C, I> implements IFluent
 	@Override
 	public List<ElementCollectionLinkage<C, ?, ? extends Collection>> getElementCollections() {
 		return elementCollections;
+	}
+	
+	@Override
+	public PolymorphismPolicy<C> getPolymorphismPolicy() {
+		return polymorphismPolicy;
 	}
 	
 	@Override
@@ -494,6 +502,12 @@ public class FluentSubEntityMappingConfigurationSupport<C, I> implements IFluent
 	public <O> IFluentMappingBuilderEmbeddableMappingConfigurationImportedEmbedOptions<C, I, O> embed(SerializableBiConsumer<C, O> setter,
 																									  EmbeddedBeanMappingStrategyBuilder<O> embeddableMappingBuilder) {
 		return null;
+	}
+	
+	@Override
+	public IFluentSubEntityMappingConfiguration<C, I> mapPolymorphism(PolymorphismPolicy<C> polymorphismPolicy) {
+		this.polymorphismPolicy = polymorphismPolicy;
+		return this;
 	}
 	
 	private <O> IFluentMappingBuilderEmbedOptions<C, I, O> embed(IFluentEmbeddableMappingBuilderEmbedOptions<C, O> embedSupport) {

@@ -3,7 +3,10 @@ package org.gama.stalactite.persistence.engine.configurer;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.gama.lang.Reflections;
+import org.gama.lang.collection.Arrays;
 import org.gama.lang.collection.Iterables;
+import org.gama.lang.exception.NotImplementedException;
 import org.gama.reflection.IReversibleAccessor;
 import org.gama.reflection.ValueAccessPointSet;
 import org.gama.stalactite.persistence.engine.AssociationTableNamingStrategy;
@@ -11,6 +14,7 @@ import org.gama.stalactite.persistence.engine.ColumnNamingStrategy;
 import org.gama.stalactite.persistence.engine.ElementCollectionTableNamingStrategy;
 import org.gama.stalactite.persistence.engine.ForeignKeyNamingStrategy;
 import org.gama.stalactite.persistence.engine.PersisterRegistry;
+import org.gama.stalactite.persistence.engine.PolymorphismPolicy;
 import org.gama.stalactite.persistence.engine.PolymorphismPolicy.JoinedTablesPolymorphism;
 import org.gama.stalactite.persistence.engine.SubEntityMappingConfiguration;
 import org.gama.stalactite.persistence.engine.TableNamingStrategy;
@@ -21,12 +25,13 @@ import org.gama.stalactite.persistence.engine.runtime.EntityMappingStrategyTreeS
 import org.gama.stalactite.persistence.engine.runtime.IEntityConfiguredJoinedTablesPersister;
 import org.gama.stalactite.persistence.engine.runtime.JoinedTablesPersister;
 import org.gama.stalactite.persistence.engine.runtime.JoinedTablesPolymorphicPersister;
-import org.gama.stalactite.persistence.engine.runtime.PersisterListenerWrapper;
 import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
+import org.gama.stalactite.persistence.mapping.IEntityMappingStrategy;
 import org.gama.stalactite.persistence.sql.Dialect;
 import org.gama.stalactite.persistence.sql.IConnectionConfiguration;
 import org.gama.stalactite.persistence.sql.dml.binder.ColumnBinderRegistry;
 import org.gama.stalactite.persistence.structure.Column;
+import org.gama.stalactite.persistence.structure.PrimaryKey;
 import org.gama.stalactite.persistence.structure.Table;
 
 import static org.gama.lang.Nullable.nullable;
@@ -34,14 +39,14 @@ import static org.gama.lang.Nullable.nullable;
 /**
  * @author Guillaume Mary
  */
-abstract class JoinedTablesPolymorphismBuilder<C, I, T extends Table> extends AbstractPolymorphicPersisterBuilder<C, I, T> {
+class JoinedTablesPolymorphismBuilder<C, I, T extends Table> extends AbstractPolymorphicPersisterBuilder<C, I, T> {
 	
-	private final JoinedTablesPolymorphism<C, I> polymorphismPolicy;
-	private final TableNamingStrategy tableNamingStrategy;
+	private final JoinedTablesPolymorphism<C> joinedTablesPolymorphism;
+	private final PrimaryKey mainTablePrimaryKey;
 	
-	JoinedTablesPolymorphismBuilder(JoinedTablesPolymorphism<C, I> polymorphismPolicy,
+	JoinedTablesPolymorphismBuilder(JoinedTablesPolymorphism<C> polymorphismPolicy,
 									Identification identification,
-									JoinedTablesPersister<C, I, T> mainPersister,
+									IEntityConfiguredJoinedTablesPersister<C, I> mainPersister,
 									ColumnBinderRegistry columnBinderRegistry,
 									ColumnNameProvider columnNameProvider,
 									TableNamingStrategy tableNamingStrategy,
@@ -52,22 +57,24 @@ abstract class JoinedTablesPolymorphismBuilder<C, I, T extends Table> extends Ab
 									ColumnNamingStrategy indexColumnNamingStrategy,
 									AssociationTableNamingStrategy associationTableNamingStrategy) {
 		super(polymorphismPolicy, identification, mainPersister, columnBinderRegistry, columnNameProvider, columnNamingStrategy, foreignKeyNamingStrategy,
-				elementCollectionTableNamingStrategy, joinColumnNamingStrategy, indexColumnNamingStrategy, associationTableNamingStrategy);
-		this.polymorphismPolicy = polymorphismPolicy;
-		this.tableNamingStrategy = tableNamingStrategy;
+				elementCollectionTableNamingStrategy, joinColumnNamingStrategy, indexColumnNamingStrategy, associationTableNamingStrategy, tableNamingStrategy);
+		this.joinedTablesPolymorphism = polymorphismPolicy;
+		this.mainTablePrimaryKey = this.mainPersister.getMappingStrategy().getTargetTable().getPrimaryKey();
 	}
 	
 	@Override
 	public IEntityConfiguredJoinedTablesPersister<C, I> build(Dialect dialect, IConnectionConfiguration connectionConfiguration, PersisterRegistry persisterRegistry) {
-		Map<Class<? extends C>, JoinedTablesPersister<C, I, T>> persisterPerSubclass = new HashMap<>();
+		Map<Class<? extends C>, IEntityConfiguredJoinedTablesPersister<C, I>> persisterPerSubclass = new HashMap<>();
 		
 		BeanMappingBuilder beanMappingBuilder = new BeanMappingBuilder();
-		for (SubEntityMappingConfiguration<? extends C, I> subConfiguration : polymorphismPolicy.getSubClasses()) {
+		for (SubEntityMappingConfiguration<? extends C> subConfiguration : joinedTablesPolymorphism.getSubClasses()) {
+			IEntityConfiguredJoinedTablesPersister<? extends C, I> subclassPersister;
+			
 			// first we'll use table of columns defined in embedded override
 			// then the one defined by inheritance
 			// if both are null we'll create a new one
 			Table tableDefinedByColumnOverride = BeanMappingBuilder.giveTargetTable(subConfiguration.getPropertiesMapping());
-			Table tableDefinedByInheritanceConfiguration = polymorphismPolicy.giveTable(subConfiguration);
+			Table tableDefinedByInheritanceConfiguration = joinedTablesPolymorphism.giveTable(subConfiguration);
 			
 			assertAllAreEqual(tableDefinedByColumnOverride, tableDefinedByInheritanceConfiguration);
 			
@@ -77,8 +84,8 @@ abstract class JoinedTablesPolymorphismBuilder<C, I, T extends Table> extends Ab
 			
 			Map<IReversibleAccessor, Column> subEntityPropertiesMapping = beanMappingBuilder.build(subConfiguration.getPropertiesMapping(), subTable,
 					this.columnBinderRegistry, this.columnNameProvider);
-			addPrimarykey(identification, subTable);
-			addForeignKey(identification, subTable);
+			addPrimarykey(subTable);
+			addForeignKey(subTable);
 			Mapping subEntityMapping = new Mapping(subConfiguration, subTable, subEntityPropertiesMapping, false);
 			addIdentificationToMapping(identification, subEntityMapping);
 			ClassMappingStrategy<? extends C, I, Table> classMappingStrategy = PersisterBuilderImpl.createClassMappingStrategy(
@@ -92,34 +99,44 @@ abstract class JoinedTablesPolymorphismBuilder<C, I, T extends Table> extends Ab
 			
 			// NB: persisters are not registered into PersistenceContext because it may break implicit polymorphism principle (persisters are then
 			// available by PersistenceContext.getPersister(..)) and it is not sure that they are perfect ones (all their features should be tested)
-			JoinedTablesPersister subclassPersister = new JoinedTablesPersister(classMappingStrategy, dialect, connectionConfiguration);
-			persisterPerSubclass.put(subConfiguration.getEntityType(), subclassPersister);
+			subclassPersister = new JoinedTablesPersister(classMappingStrategy, dialect, connectionConfiguration);
 			
 			// Adding join with parent table to select
-			Column subEntityPrimaryKey = (Column) Iterables.first(subTable.getPrimaryKey().getColumns());
-			Column entityPrimaryKey = (Column) Iterables.first(this.mainPersister.getMainTable().getPrimaryKey().getColumns());
-			subclassPersister.getEntityMappingStrategyTreeSelectExecutor().addComplementaryJoin(EntityMappingStrategyTreeSelectBuilder.ROOT_STRATEGY_NAME,
-					this.mainPersister.getMappingStrategy(), subEntityPrimaryKey, entityPrimaryKey);
+			Column subEntityPrimaryKey = (Column) Iterables.first(subclassPersister.getMappingStrategy().getTargetTable().getPrimaryKey().getColumns());
+			Column entityPrimaryKey = (Column) Iterables.first(this.mainTablePrimaryKey.getColumns());
+			subclassPersister.getEntityMappingStrategyTreeSelectBuilder().addMergeJoin(EntityMappingStrategyTreeSelectBuilder.ROOT_STRATEGY_NAME,
+					(IEntityMappingStrategy<C, I, Table>) this.mainPersister.getMappingStrategy(), subEntityPrimaryKey, entityPrimaryKey);
+			
+			persisterPerSubclass.put(subConfiguration.getEntityType(), (IEntityConfiguredJoinedTablesPersister<C, I>) subclassPersister);
 		}
+		
+		registerCascades(persisterPerSubclass, dialect, connectionConfiguration, persisterRegistry);
 		
 		JoinedTablesPolymorphicPersister<C, I> surrogate = new JoinedTablesPolymorphicPersister(
 				mainPersister, persisterPerSubclass, connectionConfiguration.getConnectionProvider(),
 				dialect);
-		PersisterListenerWrapper<C, I> result = new PersisterListenerWrapper<>(surrogate);
-		
-		for (SubEntityMappingConfiguration<? extends C, I> subConfiguration : polymorphismPolicy.getSubClasses()) {
-			JoinedTablesPersister<C, I, T> subEntityPersister = persisterPerSubclass.get(subConfiguration.getEntityType());
-			
-			// We register relation of sub class persister to take into account its specific one-to-ones, one-to-manys and element collection mapping
-			registerRelationCascades(subConfiguration, dialect, connectionConfiguration, persisterRegistry, subEntityPersister);
-		}
-		
-		return result;
+		return surrogate;
 	}
 	
-	abstract void addPrimarykey(Identification identification, Table table);
+	@Override
+	protected void assertSubPolymorphismIsSupported(PolymorphismPolicy<? extends C> subPolymorphismPolicy) {
+		// Everything else than joined-tables and single-table is not implemented (meaning table-per-class)
+		// Written as a negative condition to explicitly say what we support
+		if (!(subPolymorphismPolicy instanceof JoinedTablesPolymorphism
+				|| subPolymorphismPolicy instanceof PolymorphismPolicy.SingleTablePolymorphism)) {
+			throw new NotImplementedException("Combining joined-tables polymorphism policy with " + Reflections.toString(subPolymorphismPolicy.getClass()));
+		}
+	}
 	
-	abstract void addForeignKey(Identification identification, Table table);
+	private void addPrimarykey(Table table) {
+		PersisterBuilderImpl.propagatePrimarykey(this.mainTablePrimaryKey, Arrays.asSet(table));
+	}
 	
-	abstract void addIdentificationToMapping(Identification identification, Mapping mapping);
+	private void addForeignKey(Table table) {
+		PersisterBuilderImpl.applyForeignKeys(this.mainTablePrimaryKey, this.foreignKeyNamingStrategy, Arrays.asSet(table));
+	}
+	
+	private void addIdentificationToMapping(Identification identification, Mapping mapping) {
+		PersisterBuilderImpl.addIdentificationToMapping(identification, Arrays.asSet(mapping));
+	}
 }

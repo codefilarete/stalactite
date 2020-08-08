@@ -13,71 +13,74 @@ import org.gama.stalactite.persistence.structure.Table;
 /**
  * @author Guillaume Mary
  */
-public interface PolymorphismPolicy<C, I> {
+public interface PolymorphismPolicy<C> {
 	
-	static <C, I> TablePerClassPolymorphism<C, I> tablePerClass() {
+	static <C> TablePerClassPolymorphism<C> tablePerClass() {
 		return new TablePerClassPolymorphism<>();
 	}
 	
-	static <C, I> JoinedTablesPolymorphism<C, I> joinedTables() {
+	static <C> JoinedTablesPolymorphism<C> joinedTables() {
+		return new JoinedTablesPolymorphism<>();
+	}
+	
+	static <C> JoinedTablesPolymorphism<C> joinedTables(Class<? extends C> c) {
 		return new JoinedTablesPolymorphism<>();
 	}
 	
 	/**
 	 * Creates a single-table polymorphism configuration with a default discriminating column names "DTYPE" of {@link String} type
 	 * @param <C> entity type
-	 * @param <I> identifier type
 	 * @return a new {@link SingleTablePolymorphism} with "DTYPE" as String discriminator column
 	 */
-	static <C, I> SingleTablePolymorphism<C, I, String> singleTable() {
+	static <C> SingleTablePolymorphism<C, String> singleTable() {
 		return singleTable("DTYPE");
 	}
 	
-	static <C, I> SingleTablePolymorphism<C, I, String> singleTable(String discriminatorColumnName) {
+	static <C> SingleTablePolymorphism<C, String> singleTable(String discriminatorColumnName) {
 		return new SingleTablePolymorphism<>(discriminatorColumnName, String.class);
 	}
 	
-	Set<SubEntityMappingConfiguration<? extends C, I>> getSubClasses();
+	Set<SubEntityMappingConfiguration<? extends C>> getSubClasses();
 	
-	class TablePerClassPolymorphism<C, I> implements PolymorphismPolicy<C, I> {
+	class TablePerClassPolymorphism<C> implements PolymorphismPolicy<C> {
 		
-		private final Set<Duo<SubEntityMappingConfiguration<? extends C, I>, Table /* Nullable */>> subClasses = new HashSet<>();
+		private final Set<Duo<SubEntityMappingConfiguration<? extends C>, Table /* Nullable */>> subClasses = new HashSet<>();
 		
-		public TablePerClassPolymorphism<C, I> addSubClass(SubEntityMappingConfiguration<? extends C, Object> entityMappingConfigurationProvider) {
+		public TablePerClassPolymorphism<C> addSubClass(SubEntityMappingConfiguration<? extends C> entityMappingConfigurationProvider) {
 			addSubClass(entityMappingConfigurationProvider, null);
 			return this;
 		}
 		
-		public TablePerClassPolymorphism<C, I> addSubClass(SubEntityMappingConfiguration<? extends C, Object> entityMappingConfigurationProvider, @Nullable Table table) {
-			subClasses.add(new Duo<>((SubEntityMappingConfiguration<? extends C, I>) entityMappingConfigurationProvider, table));
+		public TablePerClassPolymorphism<C> addSubClass(SubEntityMappingConfiguration<? extends C> entityMappingConfigurationProvider, @Nullable Table table) {
+			subClasses.add(new Duo<>((SubEntityMappingConfiguration<? extends C>) entityMappingConfigurationProvider, table));
 			return this;
 		}
 		
-		public Set<SubEntityMappingConfiguration<? extends C, I>> getSubClasses() {
+		public Set<SubEntityMappingConfiguration<? extends C>> getSubClasses() {
 			return Iterables.collect(subClasses, Duo::getLeft, HashSet::new);
 		}
 		
 		@Nullable
-		public Table giveTable(SubEntityMappingConfiguration<? extends C, I> key) {
+		public Table giveTable(SubEntityMappingConfiguration<? extends C> key) {
 			return Iterables.find(subClasses, duo -> duo.getLeft().equals(key)).getRight();
 		}
 	}
 	
-	class JoinedTablesPolymorphism<C, I> implements PolymorphismPolicy<C, I> {
+	class JoinedTablesPolymorphism<C> implements PolymorphismPolicy<C> {
 		
-		private final Set<Duo<SubEntityMappingConfiguration<? extends C, I>, Table /* Nullable */>> subClasses = new HashSet<>();
+		private final Set<Duo<SubEntityMappingConfiguration<? extends C>, Table /* Nullable */>> subClasses = new HashSet<>();
 		
-		public JoinedTablesPolymorphism<C, I> addSubClass(SubEntityMappingConfiguration<? extends C, Object> entityMappingConfigurationProvider) {
+		public JoinedTablesPolymorphism<C> addSubClass(SubEntityMappingConfiguration<? extends C> entityMappingConfigurationProvider) {
 			addSubClass(entityMappingConfigurationProvider, null);
 			return this;
 		}
 		
-		public JoinedTablesPolymorphism<C, I> addSubClass(SubEntityMappingConfiguration<? extends C, Object> entityMappingConfigurationProvider, @Nullable Table table) {
-			subClasses.add(new Duo<>((SubEntityMappingConfiguration<? extends C, I>) entityMappingConfigurationProvider, table));
+		public JoinedTablesPolymorphism<C> addSubClass(SubEntityMappingConfiguration<? extends C> entityMappingConfigurationProvider, @Nullable Table table) {
+			subClasses.add(new Duo<>(entityMappingConfigurationProvider, table));
 			return this;
 		}
 		
-		public Set<SubEntityMappingConfiguration<? extends C, I>> getSubClasses() {
+		public Set<SubEntityMappingConfiguration<? extends C>> getSubClasses() {
 			return Iterables.collect(subClasses, Duo::getLeft, HashSet::new);
 		}
 		
@@ -87,13 +90,13 @@ public interface PolymorphismPolicy<C, I> {
 		}
 	}
 	
-	class SingleTablePolymorphism<C, I, D> implements PolymorphismPolicy<C, I> {
+	class SingleTablePolymorphism<C, D> implements PolymorphismPolicy<C> {
 		
 		private final String discriminatorColumn;
 		
 		private final Class<D> discriminatorType;
 		
-		private final Map<D, SubEntityMappingConfiguration<? extends C, I>> subClasses = new HashMap<>();
+		private final Map<D, SubEntityMappingConfiguration<? extends C>> subClasses = new HashMap<>();
 		
 		public SingleTablePolymorphism(String discriminatorColumn, Class<D> discriminatorType) {
 			this.discriminatorColumn = discriminatorColumn;
@@ -108,10 +111,8 @@ public interface PolymorphismPolicy<C, I> {
 			return discriminatorType;
 		}
 		
-		// Please note that we accept sub-entity mapping configuration with <Object> as identifier whereas we expect I, this is only done for
-		// fluent write reason and compatibility with MappingEase.subentityBuilder(..) method result signature
-		public <E extends C> SingleTablePolymorphism<C, I, D> addSubClass(SubEntityMappingConfiguration<E, Object> entityMappingConfiguration, D discriminatorValue) {
-			subClasses.put(discriminatorValue, (SubEntityMappingConfiguration<? extends C, I>) entityMappingConfiguration);
+		public SingleTablePolymorphism<C, D> addSubClass(SubEntityMappingConfiguration<? extends C> entityMappingConfiguration, D discriminatorValue) {
+			subClasses.put(discriminatorValue, entityMappingConfiguration);
 			return this;
 		}
 		
@@ -120,10 +121,10 @@ public interface PolymorphismPolicy<C, I> {
 		}
 		
 		public D getDiscriminatorValue(Class<? extends C> instanceType) {
-			return Iterables.find(subClasses.entrySet(), e -> e.getValue().getEntityType().equals(instanceType)).getKey();
+			return Iterables.find(subClasses.entrySet(), e -> e.getValue().getEntityType().isAssignableFrom(instanceType)).getKey();
 		}
 		
-		public Set<SubEntityMappingConfiguration<? extends C, I>> getSubClasses() {
+		public Set<SubEntityMappingConfiguration<? extends C>> getSubClasses() {
 			return new HashSet<>(this.subClasses.values());
 		}
 	}

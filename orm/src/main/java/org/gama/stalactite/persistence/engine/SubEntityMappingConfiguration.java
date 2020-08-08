@@ -15,7 +15,7 @@ import org.gama.stalactite.persistence.structure.Column;
  * 
  * @author Guillaume Mary
  */
-public interface SubEntityMappingConfiguration<C, I> {
+public interface SubEntityMappingConfiguration<C> {
 	
 	Class<C> getEntityType();
 	
@@ -30,4 +30,5 @@ public interface SubEntityMappingConfiguration<C, I> {
 	
 	List<ElementCollectionLinkage<C, ?, ? extends Collection>> getElementCollections();
 	
+	PolymorphismPolicy<C> getPolymorphismPolicy();
 }

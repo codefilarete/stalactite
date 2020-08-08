@@ -11,16 +11,16 @@ import org.gama.lang.Duo;
 import org.gama.lang.collection.Arrays;
 import org.gama.lang.collection.Iterables;
 import org.gama.lang.test.Assertions;
-import org.gama.stalactite.persistence.engine.model.AbstractVehicle;
-import org.gama.stalactite.persistence.engine.model.Car;
-import org.gama.stalactite.persistence.engine.model.Color;
-import org.gama.stalactite.persistence.engine.model.Truk;
-import org.gama.stalactite.persistence.engine.model.Vehicle;
 import org.gama.stalactite.persistence.engine.PersistenceContext.ExecutableSelect;
 import org.gama.stalactite.persistence.engine.listening.DeleteListener;
 import org.gama.stalactite.persistence.engine.listening.InsertListener;
 import org.gama.stalactite.persistence.engine.listening.SelectListener;
 import org.gama.stalactite.persistence.engine.listening.UpdateListener;
+import org.gama.stalactite.persistence.engine.model.AbstractVehicle;
+import org.gama.stalactite.persistence.engine.model.Car;
+import org.gama.stalactite.persistence.engine.model.Color;
+import org.gama.stalactite.persistence.engine.model.Truk;
+import org.gama.stalactite.persistence.engine.model.Vehicle;
 import org.gama.stalactite.persistence.id.Identified;
 import org.gama.stalactite.persistence.id.Identifier;
 import org.gama.stalactite.persistence.id.PersistedIdentifier;
@@ -39,11 +39,11 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
-import static org.gama.stalactite.persistence.id.StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED;
 import static org.gama.stalactite.persistence.engine.MappingEase.entityBuilder;
 import static org.gama.stalactite.persistence.engine.MappingEase.subentityBuilder;
 import static org.gama.stalactite.persistence.id.Identifier.LONG_TYPE;
 import static org.gama.stalactite.persistence.id.Identifier.identifierBinder;
+import static org.gama.stalactite.persistence.id.StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED;
 import static org.gama.stalactite.sql.binder.DefaultParameterBinders.INTEGER_PRIMITIVE_BINDER;
 import static org.gama.stalactite.sql.binder.DefaultParameterBinders.LONG_PRIMITIVE_BINDER;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -87,7 +87,7 @@ class FluentEntityMappingConfigurationSupportPolymorphismTest {
 				{	"single table",
 					entityBuilder(AbstractVehicle.class, LONG_TYPE)
 						.add(AbstractVehicle::getId).identifier(ALREADY_ASSIGNED)
-						.mapPolymorphism(PolymorphismPolicy.<AbstractVehicle, Identifier<Long>>singleTable()
+						.mapPolymorphism(PolymorphismPolicy.<AbstractVehicle>singleTable()
 								.addSubClass(subentityBuilder(Car.class)
 										.add(Car::getId)
 										.add(Car::getModel), "CAR")
@@ -99,7 +99,7 @@ class FluentEntityMappingConfigurationSupportPolymorphismTest {
 				{	"joined tables",
 					entityBuilder(AbstractVehicle.class, LONG_TYPE)
 						.add(AbstractVehicle::getId).identifier(ALREADY_ASSIGNED)
-						.mapPolymorphism(PolymorphismPolicy.<AbstractVehicle, Identifier<Long>>joinedTables()
+						.mapPolymorphism(PolymorphismPolicy.<AbstractVehicle>joinedTables()
 								.addSubClass(subentityBuilder(Car.class)
 										.add(Car::getId)
 										.add(Car::getModel))
@@ -111,7 +111,7 @@ class FluentEntityMappingConfigurationSupportPolymorphismTest {
 				{	"table per class",
 					entityBuilder(AbstractVehicle.class, LONG_TYPE)
 						.add(AbstractVehicle::getId).identifier(ALREADY_ASSIGNED)
-						.mapPolymorphism(PolymorphismPolicy.<AbstractVehicle, Identifier<Long>>tablePerClass()
+						.mapPolymorphism(PolymorphismPolicy.<AbstractVehicle>tablePerClass()
 								.addSubClass(subentityBuilder(Car.class)
 										.add(Car::getId)
 										.add(Car::getModel))
@@ -170,11 +170,11 @@ class FluentEntityMappingConfigurationSupportPolymorphismTest {
 			IEntityPersister<AbstractVehicle, Identifier<Long>> abstractVehiclePersister = entityBuilder(AbstractVehicle.class, LONG_TYPE)
 					// mapped super class defines id
 					.add(AbstractVehicle::getId).identifier(ALREADY_ASSIGNED)
-					.mapPolymorphism(PolymorphismPolicy.<AbstractVehicle, Identifier<Long>>singleTable()
+					.mapPolymorphism(PolymorphismPolicy.<AbstractVehicle>singleTable()
 							.addSubClass(subentityBuilder(Car.class)
-					.add(Car::getId)
-					.add(Car::getModel)
-					.add(Car::getColor), "CAR"))
+								.add(Car::getId)
+								.add(Car::getModel)
+								.add(Car::getColor), "CAR"))
 					.build(persistenceContext);
 			
 			// Schema contains only one table : parent class one
@@ -224,7 +224,7 @@ class FluentEntityMappingConfigurationSupportPolymorphismTest {
 			IEntityPersister<AbstractVehicle, Identifier<Long>> abstractVehiclePersister = entityBuilder(AbstractVehicle.class, LONG_TYPE)
 							// mapped super class defines id
 							.add(AbstractVehicle::getId).identifier(ALREADY_ASSIGNED)
-							.mapPolymorphism(PolymorphismPolicy.<AbstractVehicle, Identifier<Long>>singleTable()
+							.mapPolymorphism(PolymorphismPolicy.<AbstractVehicle>singleTable()
 									.addSubClass(subentityBuilder(Car.class)
 											.add(Car::getId)
 											.add(Car::getModel)
@@ -295,7 +295,7 @@ class FluentEntityMappingConfigurationSupportPolymorphismTest {
 					// mapped super class defines id
 					.add(Vehicle::getId).identifier(ALREADY_ASSIGNED)
 					.add(Vehicle::getColor)
-					.mapPolymorphism(PolymorphismPolicy.<Vehicle, Identifier<Long>>singleTable()
+					.mapPolymorphism(PolymorphismPolicy.<Vehicle>singleTable()
 							.addSubClass(subentityBuilder(Car.class)
 									.add(Car::getId)
 									.add(Car::getModel), "CAR")
@@ -382,7 +382,7 @@ class FluentEntityMappingConfigurationSupportPolymorphismTest {
 			IEntityPersister<AbstractVehicle, Identifier<Long>> abstractVehiclePersister = entityBuilder(AbstractVehicle.class, LONG_TYPE)
 					// mapped super class defines id
 					.add(AbstractVehicle::getId).identifier(ALREADY_ASSIGNED)
-					.mapPolymorphism(PolymorphismPolicy.<AbstractVehicle, Identifier<Long>>singleTable()
+					.mapPolymorphism(PolymorphismPolicy.<AbstractVehicle>singleTable()
 							.addSubClass(subentityBuilder(Car.class)
 									.add(Car::getId)
 									.add(Car::getModel)
@@ -437,7 +437,7 @@ class FluentEntityMappingConfigurationSupportPolymorphismTest {
 			IEntityPersister<AbstractVehicle, Identifier<Long>> abstractVehiclePersister = entityBuilder(AbstractVehicle.class, LONG_TYPE)
 					// mapped super class defines id
 					.add(AbstractVehicle::getId).identifier(ALREADY_ASSIGNED)
-					.mapPolymorphism(PolymorphismPolicy.<AbstractVehicle, Identifier<Long>>joinedTables()
+					.mapPolymorphism(PolymorphismPolicy.<AbstractVehicle>joinedTables()
 							.addSubClass(subentityBuilder(Car.class)
 									.add(Car::getId)
 									.add(Car::getModel)
@@ -491,7 +491,7 @@ class FluentEntityMappingConfigurationSupportPolymorphismTest {
 			IEntityPersister<AbstractVehicle, Identifier<Long>> abstractVehiclePersister = entityBuilder(AbstractVehicle.class, LONG_TYPE)
 					// mapped super class defines id
 					.add(AbstractVehicle::getId).identifier(ALREADY_ASSIGNED)
-					.mapPolymorphism(PolymorphismPolicy.<AbstractVehicle, Identifier<Long>>joinedTables()
+					.mapPolymorphism(PolymorphismPolicy.<AbstractVehicle>joinedTables()
 							.addSubClass(subentityBuilder(Car.class)
 									.add(Car::getId)
 									.add(Car::getModel)
@@ -587,7 +587,7 @@ class FluentEntityMappingConfigurationSupportPolymorphismTest {
 					// mapped super class defines id
 					.add(Vehicle::getId).identifier(ALREADY_ASSIGNED)
 					.add(Vehicle::getColor)
-					.mapPolymorphism(PolymorphismPolicy.<Vehicle, Identifier<Long>>joinedTables()
+					.mapPolymorphism(PolymorphismPolicy.<Vehicle>joinedTables()
 							.addSubClass(subentityBuilder(Car.class)
 									.add(Car::getId)
 									.add(Car::getModel))
@@ -680,7 +680,7 @@ class FluentEntityMappingConfigurationSupportPolymorphismTest {
 			IEntityPersister<AbstractVehicle, Identifier<Long>> abstractVehiclePersister = entityBuilder(AbstractVehicle.class, LONG_TYPE)
 					// mapped super class defines id
 					.add(AbstractVehicle::getId).identifier(ALREADY_ASSIGNED)
-					.mapPolymorphism(PolymorphismPolicy.<AbstractVehicle, Identifier<Long>>joinedTables()
+					.mapPolymorphism(PolymorphismPolicy.<AbstractVehicle>joinedTables()
 							.addSubClass(subentityBuilder(Car.class)
 									.add(Car::getId)
 									.add(Car::getModel)
@@ -735,7 +735,7 @@ class FluentEntityMappingConfigurationSupportPolymorphismTest {
 			IEntityPersister<AbstractVehicle, Identifier<Long>> abstractVehiclePersister = entityBuilder(AbstractVehicle.class, LONG_TYPE)
 					// mapped super class defines id
 					.add(AbstractVehicle::getId).identifier(ALREADY_ASSIGNED)
-					.mapPolymorphism(PolymorphismPolicy.<AbstractVehicle, Identifier<Long>>tablePerClass()
+					.mapPolymorphism(PolymorphismPolicy.<AbstractVehicle>tablePerClass()
 							.addSubClass(subentityBuilder(Car.class)
 									.add(Car::getModel)
 									.add(Car::getColor)))
@@ -788,7 +788,7 @@ class FluentEntityMappingConfigurationSupportPolymorphismTest {
 			IEntityPersister<AbstractVehicle, Identifier<Long>> abstractVehiclePersister = entityBuilder(AbstractVehicle.class, LONG_TYPE)
 					// mapped super class defines id
 					.add(AbstractVehicle::getId).identifier(ALREADY_ASSIGNED)
-					.mapPolymorphism(PolymorphismPolicy.<AbstractVehicle, Identifier<Long>>tablePerClass()
+					.mapPolymorphism(PolymorphismPolicy.<AbstractVehicle>tablePerClass()
 							.addSubClass(subentityBuilder(Car.class)
 									.add(Car::getModel)
 									.add(Car::getColor))
@@ -867,7 +867,7 @@ class FluentEntityMappingConfigurationSupportPolymorphismTest {
 					// mapped super class defines id
 					.add(Vehicle::getId).identifier(ALREADY_ASSIGNED)
 					.add(Vehicle::getColor)
-					.mapPolymorphism(PolymorphismPolicy.<Vehicle, Identifier<Long>>tablePerClass()
+					.mapPolymorphism(PolymorphismPolicy.<Vehicle>tablePerClass()
 							.addSubClass(subentityBuilder(Car.class)
 									.add(Car::getModel))
 							.addSubClass(subentityBuilder(Truk.class)
@@ -919,7 +919,6 @@ class FluentEntityMappingConfigurationSupportPolymorphismTest {
 			assertEquals(dummyTruk, loadedVehicle);
 
 			List<? extends Vehicle> loadedVehicles = abstractVehiclePersister.selectWhere(Vehicle::getColor, Operators.eq(new Color(42))).execute();
-//			List<? extends Vehicle> loadedVehicles = abstractVehiclePersister.selectWhere(Vehicle::getColor, Operators.eq(new Color(42))).execute();
 			Assertions.assertAllEquals(Arrays.asHashSet(dummyTruk), new HashSet<>(loadedVehicles));
 
 			loadedVehicles = abstractVehiclePersister.selectWhere(Vehicle::getColor, Operators.eq(new Color(666))).execute();
@@ -948,7 +947,7 @@ class FluentEntityMappingConfigurationSupportPolymorphismTest {
 			IEntityPersister<AbstractVehicle, Identifier<Long>> abstractVehiclePersister = entityBuilder(AbstractVehicle.class, LONG_TYPE)
 					// mapped super class defines id
 					.add(AbstractVehicle::getId).identifier(ALREADY_ASSIGNED)
-					.mapPolymorphism(PolymorphismPolicy.<AbstractVehicle, Identifier<Long>>tablePerClass()
+					.mapPolymorphism(PolymorphismPolicy.<AbstractVehicle>tablePerClass()
 							.addSubClass(subentityBuilder(Car.class)
 									.add(Car::getId)
 									.add(Car::getModel)
@@ -994,4 +993,34 @@ class FluentEntityMappingConfigurationSupportPolymorphismTest {
 			verify(deleteListenerMock).afterDelete(Arrays.asList(dummyCar));
 		}
 	}
+	
+	static class ElectricCar extends Car {
+		
+		private ElectricPlug plug;
+		
+		ElectricCar() {
+			super();
+		}
+		
+		ElectricCar(long id) {
+			super(id);
+		}
+		
+		public ElectricPlug getPlug() {
+			return plug;
+		}
+		
+		public ElectricCar setPlug(ElectricPlug plug) {
+			this.plug = plug;
+			return this;
+		}
+	}
+	
+	enum ElectricPlug {
+		Type1,
+		Type2,
+		CCS,
+		CHAdeMo
+	}
+	
 }

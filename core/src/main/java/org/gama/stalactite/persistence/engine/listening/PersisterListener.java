@@ -22,12 +22,12 @@ import org.gama.stalactite.persistence.structure.Table;
  */
 public class PersisterListener<C, I> implements IPersisterListener<C, I> {
 	
-	private InsertListenerCollection<C> insertListener = new InsertListenerCollection<>();
-	private UpdateByIdListenerCollection<C> updateByIdListener = new UpdateByIdListenerCollection<>();
-	private UpdateListenerCollection<C> updateListener = new UpdateListenerCollection<>();
-	private DeleteListenerCollection<C> deleteListener = new DeleteListenerCollection<>();
-	private DeleteByIdListenerCollection<C> deleteByIdListener = new DeleteByIdListenerCollection<>();
-	private SelectListenerCollection<C, I> selectListener = new SelectListenerCollection<>();
+	private final InsertListenerCollection<C> insertListener = new InsertListenerCollection<>();
+	private final UpdateByIdListenerCollection<C> updateByIdListener = new UpdateByIdListenerCollection<>();
+	private final UpdateListenerCollection<C> updateListener = new UpdateListenerCollection<>();
+	private final DeleteListenerCollection<C> deleteListener = new DeleteListenerCollection<>();
+	private final DeleteByIdListenerCollection<C> deleteByIdListener = new DeleteByIdListenerCollection<>();
+	private final SelectListenerCollection<C, I> selectListener = new SelectListenerCollection<>();
 	
 	public InsertListenerCollection<C> getInsertListener() {
 		return insertListener;
@@ -146,5 +146,21 @@ public class PersisterListener<C, I> implements IPersisterListener<C, I> {
 			errorHandler.accept(entities, e);
 			throw e;
 		}
+	}
+	
+	/**
+	 * Move internal listeners to given instance.
+	 * Usefull to agregate listeners into a single instance.
+	 * Please note that as this method is named "move" it means that listeners of current instance will be cleared.
+	 * 
+	 * @param persisterListener the target listener on which the one of current instance must be moved to.
+	 */
+	public void moveTo(PersisterListener<C, I> persisterListener) {
+		this.insertListener.moveTo(persisterListener.insertListener);
+		this.updateByIdListener.moveTo(persisterListener.updateByIdListener);
+		this.updateListener.moveTo(persisterListener.updateListener);
+		this.deleteListener.moveTo(persisterListener.deleteListener);
+		this.deleteByIdListener.moveTo(persisterListener.deleteByIdListener);
+		this.selectListener.moveTo(persisterListener.selectListener);
 	}
 }

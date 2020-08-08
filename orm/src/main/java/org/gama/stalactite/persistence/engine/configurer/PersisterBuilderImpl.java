@@ -3,7 +3,9 @@ package org.gama.stalactite.persistence.engine.configurer;
 import javax.annotation.Nullable;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -17,11 +19,8 @@ import java.util.function.Function;
 import com.google.common.annotations.VisibleForTesting;
 import org.danekja.java.util.function.serializable.SerializableBiFunction;
 import org.gama.lang.Reflections;
-import org.gama.lang.StringAppender;
-import org.gama.lang.collection.Arrays;
 import org.gama.lang.collection.Iterables;
 import org.gama.lang.collection.KeepOrderSet;
-import org.gama.lang.exception.NotImplementedException;
 import org.gama.lang.function.Functions;
 import org.gama.lang.function.Hanger.Holder;
 import org.gama.reflection.AccessorDefinition;
@@ -47,9 +46,6 @@ import org.gama.stalactite.persistence.engine.PersistenceContext;
 import org.gama.stalactite.persistence.engine.PersisterBuilder;
 import org.gama.stalactite.persistence.engine.PersisterRegistry;
 import org.gama.stalactite.persistence.engine.PolymorphismPolicy;
-import org.gama.stalactite.persistence.engine.PolymorphismPolicy.JoinedTablesPolymorphism;
-import org.gama.stalactite.persistence.engine.PolymorphismPolicy.SingleTablePolymorphism;
-import org.gama.stalactite.persistence.engine.PolymorphismPolicy.TablePerClassPolymorphism;
 import org.gama.stalactite.persistence.engine.TableNamingStrategy;
 import org.gama.stalactite.persistence.engine.VersioningStrategy;
 import org.gama.stalactite.persistence.engine.cascade.AfterDeleteByIdSupport;
@@ -81,11 +77,11 @@ import org.gama.stalactite.persistence.sql.Dialect;
 import org.gama.stalactite.persistence.sql.IConnectionConfiguration;
 import org.gama.stalactite.persistence.sql.dml.binder.ColumnBinderRegistry;
 import org.gama.stalactite.persistence.structure.Column;
+import org.gama.stalactite.persistence.structure.PrimaryKey;
 import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.sql.dml.GeneratedKeysReader;
 
 import static org.gama.lang.Nullable.nullable;
-import static org.gama.lang.function.Predicates.not;
 import static org.gama.stalactite.persistence.engine.ColumnOptions.IdentifierPolicy.AFTER_INSERT;
 
 /**
@@ -246,8 +242,13 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 		});
 		
 		// add primary key and foreign key to all tables
-		addPrimarykeys(identification, inheritanceMappingPerTable.giveTables());
-		addForeignKeys(identification, inheritanceMappingPerTable.giveTables());
+		PrimaryKey primaryKey = addIdentifyingPrimarykey(identification);
+		Set<Table> inheritanceTables = inheritanceMappingPerTable.giveTables();
+		inheritanceTables.remove(primaryKey.getTable());	// not necessary thanks to addColumn & addPrimaryKey tolerance to duplicates, left for clarity
+		propagatePrimarykey(primaryKey, inheritanceTables);
+		List<Table> tables = new ArrayList<>(inheritanceTables);
+		Collections.reverse(tables);
+		applyForeignKeys(primaryKey, new KeepOrderSet<>(tables) );
 		addIdentificationToMapping(identification, inheritanceMappingPerTable.getMappings());
 		// determining insertion manager must be done AFTER primary key addition, else it would fall into NullPointerException
 		determineIdentifierManager(identification, inheritanceMappingPerTable, identification.getIdAccessor(), generatedKeysReaderBuilder);
@@ -267,63 +268,14 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 		
 		IEntityConfiguredJoinedTablesPersister<C, I> result = mainPersister;
 		// polymorphism handling
-		PolymorphismPolicy<C, I> polymorphismPolicy = this.entityMappingConfiguration.getPolymorphismPolicy();
+		PolymorphismPolicy<C> polymorphismPolicy = this.entityMappingConfiguration.getPolymorphismPolicy();
 		if (polymorphismPolicy != null) {
-			PolymorphismBuilder<C, I, Table> polymorphismBuilder;
-			if (polymorphismPolicy instanceof SingleTablePolymorphism) {
-				polymorphismBuilder = new SingleTablePolymorphismBuilder<>((SingleTablePolymorphism<C, I, ?>) polymorphismPolicy,
-						identification, mainPersister, mainMapping, this.columnBinderRegistry, this.columnNameProvider,
-						this.columnNamingStrategy, this.foreignKeyNamingStrategy, this.elementCollectionTableNamingStrategy,
-						this.joinColumnNamingStrategy, this.indexColumnNamingStrategy,
-						this.associationTableNamingStrategy);
-			} else if (polymorphismPolicy instanceof TablePerClassPolymorphism) {
-				polymorphismBuilder = new TablePerClassPolymorphismBuilder<C, I, Table>((TablePerClassPolymorphism<C, I>) polymorphismPolicy,
-						identification, mainPersister, mainMapping, this.columnBinderRegistry, this.columnNameProvider, this.tableNamingStrategy,
-						this.columnNamingStrategy, this.foreignKeyNamingStrategy, this.elementCollectionTableNamingStrategy,
-						this.joinColumnNamingStrategy, this.indexColumnNamingStrategy,
-						this.associationTableNamingStrategy) {
-					@Override
-					void addPrimarykey(Identification identification, Table table) {
-						PersisterBuilderImpl.this.addPrimarykeys(identification, Arrays.asSet(table));
-					}
-					
-					@Override
-					void addIdentificationToMapping(Identification identification, Mapping mapping) {
-						PersisterBuilderImpl.this.addIdentificationToMapping(identification, Arrays.asSet(mapping));
-					}
-				};
-			} else if (polymorphismPolicy instanceof JoinedTablesPolymorphism) {
-				polymorphismBuilder = new JoinedTablesPolymorphismBuilder<C, I, Table>((JoinedTablesPolymorphism<C, I>) polymorphismPolicy,
-						identification, mainPersister, this.columnBinderRegistry, this.columnNameProvider, this.tableNamingStrategy,
-						this.columnNamingStrategy, this.foreignKeyNamingStrategy, this.elementCollectionTableNamingStrategy,
-						this.joinColumnNamingStrategy, this.indexColumnNamingStrategy,
-						this.associationTableNamingStrategy) {
-					@Override
-					void addPrimarykey(Identification identification, Table table) {
-						PersisterBuilderImpl.this.addPrimarykeys(identification, Arrays.asSet(table));
-					}
-					
-					@Override
-					void addForeignKey(Identification identification, Table table) {
-						PersisterBuilderImpl.this.addForeignKeys(identification, Arrays.asSet(table));
-					}
-					
-					@Override
-					void addIdentificationToMapping(Identification identification, Mapping mapping) {
-						PersisterBuilderImpl.this.addIdentificationToMapping(identification, Arrays.asSet(mapping));
-					}
-				};
-			} else {
-				// this exception is more to satisfy Sonar than for real case
-				throw new NotImplementedException("Given policy is not implemented : " + polymorphismPolicy);
-			}
-			result = polymorphismBuilder.build(dialect, connectionConfiguration, persisterRegistry);
-			// we transfert listeners by principle and in particular for already-assigned mark-as-persisted mecanism and relation cascade triggering
-			result.addInsertListener(mainPersister.getPersisterListener().getInsertListener());
-			result.addUpdateListener(mainPersister.getPersisterListener().getUpdateListener());
-			result.addSelectListener(mainPersister.getPersisterListener().getSelectListener());
-			result.addDeleteListener(mainPersister.getPersisterListener().getDeleteListener());
-			result.addDeleteByIdListener(mainPersister.getPersisterListener().getDeleteByIdListener());
+			PolymorphismPersisterBuilder<C, I, Table> polymorphismPersisterBuilder = new PolymorphismPersisterBuilder<>(
+					polymorphismPolicy, identification, mainPersister, this.columnBinderRegistry, this.columnNameProvider,
+					this.columnNamingStrategy, this.foreignKeyNamingStrategy, this.elementCollectionTableNamingStrategy,
+					this.joinColumnNamingStrategy, this.indexColumnNamingStrategy,
+					this.associationTableNamingStrategy, mainMapping.getMapping(), this.tableNamingStrategy);
+			result = polymorphismPersisterBuilder.build(dialect, connectionConfiguration, persisterRegistry);
 		}
 		
 		// when identifier policy is already-assigned one, we must ensure that entity is marked as persisted when it comes back from database
@@ -481,8 +433,21 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 		return new JoinedTablesPersister<>(parentMappingStrategy, dialect, connectionConfiguration);
 	}
 	
+	/**
+	 * Wide contract for {@link IEntityConfiguredJoinedTablesPersister} builders.
+	 * @param <C> persisted entity type
+	 * @param <I> identifier type
+	 * @param <T> table type
+	 */
 	interface PolymorphismBuilder<C, I, T extends Table> {
 		
+		/**
+		 *
+		 * @param dialect the {@link Dialect} use for type binding
+		 * @param connectionConfiguration the connection configuration 
+		 * @param persisterRegistry {@link PersisterRegistry} used to check for already defined persister
+		 * @return a persister
+		 */
 		IEntityConfiguredJoinedTablesPersister<C, I> build(Dialect dialect, IConnectionConfiguration connectionConfiguration, PersisterRegistry persisterRegistry);
 	}
 	
@@ -626,28 +591,49 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 		this.elementCollectionTableNamingStrategy = optionalElementCollectionTableNamingStrategy.getOr(ElementCollectionTableNamingStrategy.DEFAULT);
 	}
 	
-	void addIdentificationToMapping(Identification identification, Iterable<Mapping> mappings) {
-		mappings.forEach(mapping -> {
-			Column primaryKey = (Column) Iterables.first(mapping.getTargetTable().getPrimaryKey().getColumns());
-			mapping.getMapping().put(identification.getIdAccessor(), primaryKey);
-		});
+	static void addIdentificationToMapping(Identification identification, Iterable<Mapping> mappings) {
+		mappings.forEach(mapping -> mapping.addIdentifier(identification.getIdAccessor()));
 	}
 	
 	/**
-	 * Creates primary keys on given tables according to given identification
-	 * 
-	 * @param identification informations that allow to create primary keys
-	 * @param joinedTables target tables on which primary keys must be added
+	 * Creates primary keys on given tables with name and type of given primary key.
+	 * Needs {@link this#table} to be defined.
+	 *
+	 * @param tables target tables on which primary keys must be added
+	 * @param primaryKey
 	 */
-	void addPrimarykeys(Identification identification, Set<Table> joinedTables) {
+	@VisibleForTesting
+	static void propagatePrimarykey(PrimaryKey primaryKey, Set<Table> tables) {
+		Column pkColumn = (Column) Iterables.first(primaryKey.getColumns());
+		Holder<Column> previousPk = new Holder<>(pkColumn);
+		tables.forEach(t -> {
+			Column newColumn = t.addColumn(pkColumn.getName(), pkColumn.getJavaType());
+			newColumn.setNullable(false);	// may not be necessary because of primary key, let for principle
+			newColumn.primaryKey();
+			previousPk.set(newColumn);
+		});
+	}
+	
+	static void applyForeignKeys(PrimaryKey primaryKey, ForeignKeyNamingStrategy foreignKeyNamingStrategy, Set<Table> tables) {
+		Column pkColumn = (Column) Iterables.first(primaryKey.getColumns());
+		Holder<Column> previousPk = new Holder<>(pkColumn);
+		tables.forEach(t -> {
+			Column currentPrimaryKey = (Column) Iterables.first(t.getPrimaryKey().getColumns());
+			t.addForeignKey(foreignKeyNamingStrategy.giveName(currentPrimaryKey, previousPk.get()), currentPrimaryKey, previousPk.get());
+			previousPk.set(currentPrimaryKey);
+		});
+	}
+	
+	
+	/**
+	 * Creates primary key on table owning identification
+	 * 
+	 * @param identification informations that allow to create primary key
+	 * @return the created {@link PrimaryKey}
+	 */
+	@VisibleForTesting
+	PrimaryKey addIdentifyingPrimarykey(Identification identification) {
 		Table pkTable = this.tableMap.get(identification.identificationDefiner);
-		if (pkTable == null) {
-			// Should not happen except during this class development
-			throw new IllegalArgumentException("Table for primary key wasn't found in given tables : looking for "
-					+ this.tableNamingStrategy.giveName(identification.identificationDefiner.getEntityType())
-					+ " in [" + new StringAppender().ccat(Iterables.collectToList(joinedTables, Table::getAbsoluteName), ", ") + "]");
-		}
-		
 		AccessorDefinition accessorDefinition = AccessorDefinition.giveDefinition(identification.getIdAccessor());
 		Column primaryKey = pkTable.addColumn(columnNamingStrategy.giveName(accessorDefinition), accessorDefinition.getMemberType());
 		primaryKey.setNullable(false);	// may not be necessary because of primary key, let for principle
@@ -655,33 +641,19 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 		if (identification.getIdentifierPolicy() == AFTER_INSERT) {
 			primaryKey.autoGenerated();
 		}
-		final Column[] previousPk = { primaryKey };
-		joinedTables.stream().filter(not(primaryKey.getTable()::equals)).forEach(t -> {
-			Column newColumn = t.addColumn(columnNamingStrategy.giveName(accessorDefinition), accessorDefinition.getMemberType());
-			newColumn.setNullable(false);	// may not be necessary because of primary key, let for principle
-			newColumn.primaryKey();
-			previousPk[0] = newColumn;
-		});
-		
+		return pkTable.getPrimaryKey();
 	}
 	
-	void addForeignKeys(Identification identification, Set<Table> joinedTables) {
-		Table pkTable = this.tableMap.get(identification.identificationDefiner);
-		if (pkTable == null) {
-			// Should not happen except during this class development
-			throw new IllegalArgumentException("Table for primary key wasn't found in given tables : looking for "
-					+ this.tableNamingStrategy.giveName(identification.identificationDefiner.getEntityType())
-					+ " in [" + new StringAppender().ccat(Iterables.collectToList(joinedTables, Table::getAbsoluteName), ", ") + "]");
-		}
-
-		Column primaryKey = (Column) Iterables.first(pkTable.getPrimaryKey().getColumns());
-		final Column[] previousPk = { primaryKey };
-		joinedTables.stream().filter(not(primaryKey.getTable()::equals)).forEach(t -> {
-			Column currentPrimaryKey = (Column) Iterables.first(t.getPrimaryKey().getColumns());
-			t.addForeignKey(foreignKeyNamingStrategy.giveName(currentPrimaryKey, previousPk[0]), currentPrimaryKey, previousPk[0]);
-			previousPk[0] = currentPrimaryKey;
-		});
-		
+	/**
+	 * Creates foreign keys between given tables primary keys.
+	 * Needs {@link this#table} to be defined.
+	 *
+	 * @param primaryKey initial primary key on which the very first table primary key must points to
+	 * @param tables target tables on which foreign keys must be added, <strong>order matters</strong>
+	 */
+	@VisibleForTesting
+	void applyForeignKeys(PrimaryKey primaryKey, Set<Table> tables) {
+		applyForeignKeys(primaryKey, this.foreignKeyNamingStrategy, tables);
 	}
 	
 	/**
@@ -767,9 +739,9 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 	 * because current configuration may not have a direct entity ancestor.
 	 * Then visits mapped super classes as {@link EmbeddableMappingConfiguration} of the last visited {@link EntityMappingConfiguration}, optional
 	 * operation too.
-	 * This is because inheritance tree can only have 2 paths :
+	 * This is because inheritance can only have 2 paths :
 	 * - first an optional inheritance from some other entity
-	 * - then an optional inheritance from some mapped sur class
+	 * - then an optional inheritance from some mapped super class
 	 * 
 	 * @param entityConfigurationConsumer
 	 * @param mappedSuperClassConfigurationConsumer
@@ -1001,8 +973,11 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 			return foundMapping.mapping;
 		}
 		
-		Set<Table> giveTables() {
-			return Iterables.collect(this.mappings, Mapping::getTargetTable, HashSet::new);
+		/**
+		 * @return tables found during inheritance iteration (hence in "ascending" order)
+		 */
+		KeepOrderSet<Table> giveTables() {
+			return Iterables.collect(this.mappings, Mapping::getTargetTable, KeepOrderSet::new);
 		}
 		
 		public KeepOrderSet<Mapping> getMappings() {
@@ -1045,6 +1020,11 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 			
 			public Map<IReversibleAccessor, Column> getMapping() {
 				return mapping;
+			}
+			
+			void addIdentifier(IReversibleAccessor identifierAccessor) {
+				Column primaryKey = (Column) Iterables.first(getTargetTable().getPrimaryKey().getColumns());
+				getMapping().put(identifierAccessor, primaryKey);
 			}
 		}
 	}

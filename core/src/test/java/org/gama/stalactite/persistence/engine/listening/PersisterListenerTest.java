@@ -1,10 +1,13 @@
 package org.gama.stalactite.persistence.engine.listening;
 
 import java.util.ArrayList;
+import java.util.List;
 
 import org.gama.lang.Duo;
+import org.gama.lang.collection.Arrays;
 import org.gama.stalactite.persistence.engine.listening.UpdateListener.UpdatePayload;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
@@ -13,6 +16,7 @@ import static org.mockito.ArgumentMatchers.anyIterable;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 /**
@@ -201,4 +205,70 @@ public class PersisterListenerTest {
 		verify(listenerMock, never()).afterDeleteById(anyIterable());
 	}
 	
+	@Test
+	public void moveTo() {
+		PersisterListener testInstance = new PersisterListener();
+		PersisterListener targetInstance = new PersisterListener();
+		
+		InsertListener expectedInsertListener = Mockito.mock(InsertListener.class);
+		UpdateListener expectedUpdateListener = Mockito.mock(UpdateListener.class);
+		UpdateByIdListener expectedUpdateByIdListener = Mockito.mock(UpdateByIdListener.class);
+		DeleteListener expectedDeleteListener = Mockito.mock(DeleteListener.class);
+		DeleteByIdListener expectedDeleteByIdListener = Mockito.mock(DeleteByIdListener.class);
+		SelectListener expectedSelectListener = Mockito.mock(SelectListener.class);
+		testInstance.addInsertListener(expectedInsertListener);
+		testInstance.addUpdateListener(expectedUpdateListener);
+		testInstance.addUpdateByIdListener(expectedUpdateByIdListener);
+		testInstance.addDeleteListener(expectedDeleteListener);
+		testInstance.addDeleteByIdListener(expectedDeleteByIdListener);
+		testInstance.addSelectListener(expectedSelectListener);
+		
+		testInstance.moveTo(targetInstance);
+		
+		// event listeners must not be invoked when original instance trigger events
+		List<Object> entities = Arrays.asList(new Object());
+		testInstance.doWithInsertListener(entities, () -> 1);
+		Mockito.verify(expectedInsertListener, times(0)).beforeInsert(eq(entities));
+		Mockito.verify(expectedInsertListener, times(0)).afterInsert(eq(entities));
+		List<Duo<Object, Object>> updatableEntities = Arrays.asList(new Duo<>(new Object(), new Object()));
+		testInstance.doWithUpdateListener(updatableEntities, true, (d, b) -> Void.class);
+		Mockito.verify(expectedUpdateListener, times(0)).beforeUpdate(eq(updatableEntities), eq(true));
+		Mockito.verify(expectedUpdateListener, times(0)).afterUpdate(eq(updatableEntities), eq(true));
+		testInstance.doWithUpdateByIdListener(entities, () -> 1);
+		Mockito.verify(expectedUpdateByIdListener, times(0)).beforeUpdateById(eq(entities));
+		Mockito.verify(expectedUpdateByIdListener, times(0)).afterUpdateById(eq(entities));
+		testInstance.doWithDeleteListener(entities, () -> 1);
+		Mockito.verify(expectedDeleteListener, times(0)).beforeDelete(eq(entities));
+		Mockito.verify(expectedDeleteListener, times(0)).afterDelete(eq(entities));
+		testInstance.doWithDeleteByIdListener(entities, () -> 1);
+		Mockito.verify(expectedDeleteByIdListener, times(0)).beforeDeleteById(eq(entities));
+		Mockito.verify(expectedDeleteByIdListener, times(0)).afterDeleteById(eq(entities));
+		List<Object> entitiesIds = Arrays.asList(new Object());
+		List loadedEntities = new ArrayList();
+		testInstance.doWithSelectListener(entitiesIds, () -> loadedEntities);
+		Mockito.verify(expectedSelectListener, times(0)).beforeSelect(eq(entitiesIds));
+		Mockito.verify(expectedSelectListener, times(0)).afterSelect(eq(loadedEntities));
+		
+		// event listeners must be invoked when target instance trigger events
+		targetInstance.doWithInsertListener(entities, () -> 1);
+		Mockito.verify(expectedInsertListener).beforeInsert(eq(entities));
+		Mockito.verify(expectedInsertListener).afterInsert(eq(entities));
+		targetInstance.doWithUpdateListener(updatableEntities, true, (d, b) -> Void.class);
+		Mockito.verify(expectedUpdateListener).beforeUpdate(eq(updatableEntities), eq(true));
+		Mockito.verify(expectedUpdateListener).afterUpdate(eq(updatableEntities), eq(true));
+		targetInstance.doWithUpdateByIdListener(entities, () -> 1);
+		Mockito.verify(expectedUpdateByIdListener).beforeUpdateById(eq(entities));
+		Mockito.verify(expectedUpdateByIdListener).afterUpdateById(eq(entities));
+		targetInstance.doWithDeleteListener(entities, () -> 1);
+		Mockito.verify(expectedDeleteListener).beforeDelete(eq(entities));
+		Mockito.verify(expectedDeleteListener).afterDelete(eq(entities));
+		targetInstance.doWithDeleteByIdListener(entities, () -> 1);
+		Mockito.verify(expectedDeleteByIdListener).beforeDeleteById(eq(entities));
+		Mockito.verify(expectedDeleteByIdListener).afterDeleteById(eq(entities));
+		targetInstance.doWithSelectListener(entitiesIds, () -> loadedEntities);
+		Mockito.verify(expectedSelectListener).beforeSelect(eq(entitiesIds));
+		Mockito.verify(expectedSelectListener).afterSelect(eq(loadedEntities));
+		
+
+	}
 }

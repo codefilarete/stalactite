@@ -44,7 +44,7 @@ class JoinedTablesPolymorphismBuilderTest {
 		
 		IFluentEntityMappingBuilder<Vehicle, Identifier<Long>> configuration = entityBuilder(Vehicle.class, LONG_TYPE)
 				.add(Vehicle::getId).identifier(ALREADY_ASSIGNED)
-				.mapPolymorphism(PolymorphismPolicy.<AbstractVehicle, Identifier<Long>>joinedTables()
+				.mapPolymorphism(PolymorphismPolicy.<AbstractVehicle>joinedTables()
 						.addSubClass(subentityBuilder(Car.class)
 								.add(Car::getModel)
 								.embed(Vehicle::getColor).override(Color::getRgb, colorTable), new Table("TargetTable")));
