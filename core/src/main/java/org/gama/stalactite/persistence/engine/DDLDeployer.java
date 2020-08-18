@@ -85,9 +85,7 @@ public class DDLDeployer {
 	}
 	
 	public void deployDDL() {
-		for (String sql : getCreationScripts()) {
-			execute(sql);
-		}
+		execute(getCreationScripts());
 	}
 	
 	public List<String> getCreationScripts() {
@@ -95,21 +93,22 @@ public class DDLDeployer {
 	}
 	
 	public void dropDDL() {
-		for (String sql : getDropScripts()) {
-			execute(sql);
-		}
+		execute(getDropScripts());
 	}
 	
 	public List<String> getDropScripts() {
 		return getDdlGenerator().getDropScripts();
 	}
 	
-	protected void execute(String sql) {
-		try (Statement statement = getCurrentConnection().createStatement()) {
-			LOGGER.debug(sql);
-			statement.execute(sql);
-		} catch (SQLException t) {
-			throw new SQLExecutionException(sql, t);
+	protected void execute(List<String> sqls) {
+		Connection currentConnection = getCurrentConnection();
+		for (String sql : sqls) {
+			try (Statement statement = currentConnection.createStatement()) {
+				LOGGER.debug(sql);
+				statement.execute(sql);
+			} catch (SQLException t) {
+				throw new SQLExecutionException(sql, t);
+			}
 		}
 	}
 	
