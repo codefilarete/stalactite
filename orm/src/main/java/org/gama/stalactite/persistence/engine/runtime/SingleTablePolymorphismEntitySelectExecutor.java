@@ -71,12 +71,12 @@ public class SingleTablePolymorphismEntitySelectExecutor<C, I, T extends Table, 
 		query.select(discriminatorColumn, DISCRIMINATOR_ALIAS);
 		List<Duo<I, D>> ids = readIds(sqlQueryBuilder, pk);
 		
-		Map<Class, Set<I>> xx = new HashMap<>();
-		ids.forEach(id -> xx.computeIfAbsent(polymorphismPolicy.getClass(id.getRight()), k -> new HashSet<>()).add(id.getLeft()));
+		Map<Class, Set<I>> idsPerSubclass = new HashMap<>();
+		ids.forEach(id -> idsPerSubclass.computeIfAbsent(polymorphismPolicy.getClass(id.getRight()), k -> new HashSet<>()).add(id.getLeft()));
 		
 		List<C> result = new ArrayList<>();
 		
-		xx.forEach((k, v) -> result.addAll(persisterPerSubclass.get(k).select(v)));
+		idsPerSubclass.forEach((k, v) -> result.addAll(persisterPerSubclass.get(k).select(v)));
 		return result;
 	}
 	

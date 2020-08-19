@@ -365,7 +365,7 @@ class FluentEmbeddableMappingConfigurationSupportTest {
 		row.put(modifiedAtColumn.getName(), person.getTimestamp().getCreationDate());
 		
 		Person loadedPerson = personMappingStrategy.transform(row);
-		// we compare without with a round of 100ms because time laps between instanciation and database load
+		// we compare with a round of 100ms because time laps between instanciation and database load
 		assertEquals(person.getTimestamp().getCreationDate().getTime() / 100, loadedPerson.getTimestamp().getCreationDate().getTime() / 100);
 	}
 	

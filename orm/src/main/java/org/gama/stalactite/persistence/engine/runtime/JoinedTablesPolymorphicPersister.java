@@ -53,7 +53,7 @@ public class JoinedTablesPolymorphicPersister<C, I> implements IEntityConfigured
 	private static final ThreadLocal<Set<RelationIds<Object /* E */, Object /* target */, Object /* target identifier */ >>> DIFFERED_ENTITY_LOADER = new ThreadLocal<>();
 	
 	private final Map<Class<? extends C>, IEntityConfiguredJoinedTablesPersister<C, I>> subEntitiesPersisters;
-	/** The wrapper around sub entities loaders, for 2-phases load  */
+	/** The wrapper around sub entities loaders, for 2-phases load */
 	private final JoinedTablesPolymorphismSelectExecutor<C, I, ?> mainSelectExecutor;
 	private final Class<C> parentClass;
 	private final Map<Class<? extends C>, IdMappingStrategy<C, I>> subclassIdMappingStrategies;
@@ -61,15 +61,15 @@ public class JoinedTablesPolymorphicPersister<C, I> implements IEntityConfigured
 	private final Column<?, I> mainTablePrimaryKey;
 	private final EntityCriteriaSupport<C> criteriaSupport;
 	private final JoinedTablesPolymorphismEntitySelectExecutor<C, I, ?> entitySelectExecutor;
-	private final IEntityConfiguredJoinedTablesPersister<C, I> parentPersister;
+	private final IEntityConfiguredJoinedTablesPersister<C, I> mainPersister;
 	
-	public JoinedTablesPolymorphicPersister(IEntityConfiguredJoinedTablesPersister<C, I> parentPersister,
+	public JoinedTablesPolymorphicPersister(IEntityConfiguredJoinedTablesPersister<C, I> mainPersister,
 											Map<Class<? extends C>, IEntityConfiguredJoinedTablesPersister<C, I>> subEntitiesPersisters,
 											ConnectionProvider connectionProvider,
 											Dialect dialect) {
-		this.parentPersister = parentPersister;
-		this.parentClass = this.parentPersister.getClassToPersist();
-		this.mainTablePrimaryKey = (Column) Iterables.first(parentPersister.getMappingStrategy().getTargetTable().getPrimaryKey().getColumns());
+		this.mainPersister = mainPersister;
+		this.parentClass = this.mainPersister.getClassToPersist();
+		this.mainTablePrimaryKey = (Column) Iterables.first(mainPersister.getMappingStrategy().getTargetTable().getPrimaryKey().getColumns());
 		
 		this.subEntitiesPersisters = subEntitiesPersisters;
 		Set<Entry<Class<? extends C>, IEntityConfiguredJoinedTablesPersister<C, I>>> subPersisterPerSubEntityType = subEntitiesPersisters.entrySet();
@@ -78,8 +78,9 @@ public class JoinedTablesPolymorphicPersister<C, I> implements IEntityConfigured
 		this.subclassIdMappingStrategies = Iterables.map(subPersisterPerSubEntityType, Entry::getKey, e -> e.getValue().getMappingStrategy().getIdMappingStrategy());
 		
 		// sub entities persisters will be used to select sub entities but at this point they lacks subgraph loading, so we add it (from their parent)
-		subEntitiesPersisters.forEach((type, persister) -> 
-			parentPersister.copyJoinsRootTo(persister.getEntityMappingStrategyTreeSelectBuilder(), EntityMappingStrategyTreeSelectBuilder.ROOT_STRATEGY_NAME)
+		subEntitiesPersisters.forEach((type, persister) ->
+				mainPersister.copyJoinsRootTo(persister.getEntityMappingStrategyTreeSelectBuilder(),
+						EntityMappingStrategyTreeSelectBuilder.ROOT_STRATEGY_NAME)
 		);
 		
 		this.tablePerSubEntityType = Iterables.map(this.subEntitiesPersisters.entrySet(),
@@ -88,13 +89,13 @@ public class JoinedTablesPolymorphicPersister<C, I> implements IEntityConfigured
 		this.mainSelectExecutor = new JoinedTablesPolymorphismSelectExecutor<>(
 				tablePerSubEntityType,
 				subclassSelectExecutors,
-				parentPersister.getMappingStrategy().getTargetTable(), connectionProvider, dialect);
+				mainPersister.getMappingStrategy().getTargetTable(), connectionProvider, dialect);
 		
 		this.entitySelectExecutor = new JoinedTablesPolymorphismEntitySelectExecutor(subEntitiesPersisters, subEntitiesPersisters,
-				parentPersister.getMappingStrategy().getTargetTable(),
-				parentPersister.getEntityMappingStrategyTreeSelectBuilder(), connectionProvider, dialect);
+				mainPersister.getMappingStrategy().getTargetTable(),
+				mainPersister.getEntityMappingStrategyTreeSelectBuilder(), connectionProvider, dialect);
 		
-		this.criteriaSupport = new EntityCriteriaSupport<>(parentPersister.getMappingStrategy());
+		this.criteriaSupport = new EntityCriteriaSupport<>(mainPersister.getMappingStrategy());
 	}
 	
 	@Override
@@ -105,20 +106,20 @@ public class JoinedTablesPolymorphicPersister<C, I> implements IEntityConfigured
 	@Override
 	public Collection<Table> giveImpliedTables() {
 		// Implied tables are those of sub entities.
-		// Note that doing this lately (not in constructor) garanties that it is uptodate because sub entities may have relations which are configured
-		// out of constructor by caller
+		// Note that doing this lately (not in constructor) garanties that it is uptodate because sub entities may have relations which are
+		// configured out of constructor by caller
 		List<Table> subTables = subEntitiesPersisters.values().stream().flatMap(p -> p.giveImpliedTables().stream()).collect(Collectors.toList());
-		return Collections.cat(parentPersister.giveImpliedTables(), subTables);
+		return Collections.cat(mainPersister.giveImpliedTables(), subTables);
 	}
 	
 	@Override
 	public PersisterListener<C, I> getPersisterListener() {
-		return parentPersister.getPersisterListener();
+		return mainPersister.getPersisterListener();
 	}
 	
 	@Override
 	public int insert(Iterable<? extends C> entities) {
-		parentPersister.insert(entities);
+		mainPersister.insert(entities);
 		
 		ModifiableInt insertCount = new ModifiableInt();
 		Map<IEntityPersister<C, I>, Set<C>> entitiesPerType = computeEntitiesPerPersister((Iterable) entities);
@@ -131,7 +132,7 @@ public class JoinedTablesPolymorphicPersister<C, I> implements IEntityConfigured
 	@Override
 	public int updateById(Iterable<C> entities) {
 		ModifiableInt mainUpdateCount = new ModifiableInt();
-		int mainRowCount = parentPersister.updateById(entities);
+		int mainRowCount = mainPersister.updateById(entities);
 		mainUpdateCount.increment(mainRowCount);
 		
 		ModifiableInt subEntitiesUpdateCount = new ModifiableInt();
@@ -154,22 +155,22 @@ public class JoinedTablesPolymorphicPersister<C, I> implements IEntityConfigured
 	@Override
 	public int update(Iterable<? extends Duo<? extends C, ? extends C>> differencesIterable, boolean allColumnsStatement) {
 		ModifiableInt mainUpdateCount = new ModifiableInt();
-		int mainRowCount = parentPersister.update(differencesIterable, allColumnsStatement);
+		int mainRowCount = mainPersister.update(differencesIterable, allColumnsStatement);
 		mainUpdateCount.increment(mainRowCount);
 		
 		ModifiableInt subEntitiesUpdateCount = new ModifiableInt();
 		Map<IUpdateExecutor<C>, Set<Duo<? extends C, ? extends C>>> entitiesPerType = new HashMap<>();
 		differencesIterable.forEach(payload ->
-			this.subEntitiesPersisters.values().forEach(persister -> {
-				C entity = Objects.preventNull(payload.getLeft(), payload.getRight());
-				if (persister.getClassToPersist().isInstance(entity)) {
-					entitiesPerType.computeIfAbsent(persister, p -> new HashSet<>()).add(payload);
-				}
-			})
+				this.subEntitiesPersisters.values().forEach(persister -> {
+					C entity = Objects.preventNull(payload.getLeft(), payload.getRight());
+					if (persister.getClassToPersist().isInstance(entity)) {
+						entitiesPerType.computeIfAbsent(persister, p -> new HashSet<>()).add(payload);
+					}
+				})
 		);
 		
 		entitiesPerType.forEach((updateExecutor, adhocEntities) ->
-			subEntitiesUpdateCount.increment(updateExecutor.update(adhocEntities, allColumnsStatement))
+				subEntitiesUpdateCount.increment(updateExecutor.update(adhocEntities, allColumnsStatement))
 		);
 		
 		// RowCount is either 0 or number of rows updated. In the first case result might be number of rows updated by sub entities.
@@ -186,13 +187,14 @@ public class JoinedTablesPolymorphicPersister<C, I> implements IEntityConfigured
 	
 	@Override
 	public List<C> select(Iterable<I> ids) {
-		subEntitiesPersisters.forEach((subclass, subEntityPersister) -> 
+		subEntitiesPersisters.forEach((subclass, subEntityPersister) ->
 				subEntityPersister.getPersisterListener().getSelectListener().beforeSelect(ids));
 		
 		List<C> result = mainSelectExecutor.select(ids);
 		
 		// Then we call sub entities afterSelect listeners else they are not invoked. Done in particular for relation on sub entities that have
-		// an already-assigned identifier which requires to mark entities as persisted (to prevent them from trying to be inserted wherease they already are)
+		// an already-assigned identifier which requires to mark entities as persisted (to prevent them from trying to be inserted wherease they 
+		// already are)
 		Map<Class, Set<C>> entitiesPerType = new HashMap<>();
 		for (C entity : result) {
 			entitiesPerType.computeIfAbsent(entity.getClass(), cClass -> new HashSet<>()).add(entity);
@@ -213,10 +215,10 @@ public class JoinedTablesPolymorphicPersister<C, I> implements IEntityConfigured
 		Map<IEntityPersister<C, I>, Set<C>> entitiesPerType = computeEntitiesPerPersister(entities);
 		
 		entitiesPerType.forEach((deleteExecutor, adhocEntities) ->
-			deleteCount.increment(deleteExecutor.delete(adhocEntities))
+				deleteCount.increment(deleteExecutor.delete(adhocEntities))
 		);
 		
-		return parentPersister.delete(entities);
+		return mainPersister.delete(entities);
 	}
 	
 	@Override
@@ -228,7 +230,7 @@ public class JoinedTablesPolymorphicPersister<C, I> implements IEntityConfigured
 				deleteCount.increment(deleteExecutor.deleteById(adhocEntities))
 		);
 		
-		return parentPersister.deleteById(entities);
+		return mainPersister.deleteById(entities);
 	}
 	
 	@Override
@@ -286,7 +288,7 @@ public class JoinedTablesPolymorphicPersister<C, I> implements IEntityConfigured
 	
 	@Override
 	public boolean isNew(C entity) {
-		return parentPersister.isNew(entity);
+		return mainPersister.isNew(entity);
 	}
 	
 	@Override
@@ -328,7 +330,7 @@ public class JoinedTablesPolymorphicPersister<C, I> implements IEntityConfigured
 	 * Implementation made for one-to-one use case
 	 * 
 	 * @param sourcePersister source that needs this instance joins
-	 * @param leftColumn left part of the join, expected to be one of source table 
+	 * @param leftColumn left part of the join, expected to be one of source table
 	 * @param rightColumn right part of the join, expected to be one of current instance table
 	 * @param beanRelationFixer setter that fix relation ofthis instance onto source persister instance
 	 * @param optional true for optional relation, makes an outer join, else should create a inner join
@@ -346,7 +348,7 @@ public class JoinedTablesPolymorphicPersister<C, I> implements IEntityConfigured
 		// NB: here rightColumn is parent class primary key or reverse column that owns property (depending how one-to-one relation is mapped) 
 		String mainTableJoinName = sourcePersister.getEntityMappingStrategyTreeSelectBuilder().addPassiveJoin(EntityMappingStrategyTreeSelectBuilder.ROOT_STRATEGY_NAME,
 				leftColumn, rightColumn, optional ? JoinType.OUTER : JoinType.INNER, (Set<Column<Table, Object>>) (Set) Arrays.asSet(rightColumn));
-		Column primaryKey = (Column ) Iterables.first(getMappingStrategy().getTargetTable().getPrimaryKey().getColumns());
+		Column primaryKey = (Column) Iterables.first(getMappingStrategy().getTargetTable().getPrimaryKey().getColumns());
 		this.subclassIdMappingStrategies.forEach((c, idMappingStrategy) -> {
 			Column subclassPrimaryKey = (Column) Iterables.first(this.tablePerSubEntityType.get(c).getPrimaryKey().getColumns());
 			sourcePersister.getEntityMappingStrategyTreeSelectBuilder().addMergeJoin(mainTableJoinName,
@@ -398,7 +400,7 @@ public class JoinedTablesPolymorphicPersister<C, I> implements IEntityConfigured
 	
 	@Override
 	public EntityMappingStrategyTreeSelectBuilder<C, I, ?> getEntityMappingStrategyTreeSelectBuilder() {
-		return parentPersister.getEntityMappingStrategyTreeSelectBuilder();
+		return mainPersister.getEntityMappingStrategyTreeSelectBuilder();
 	}
 	
 }

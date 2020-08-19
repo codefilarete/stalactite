@@ -406,7 +406,7 @@ public class SingleTablePolymorphicPersister<C, I, T extends Table<T>, D> implem
 		
 		@Override
 		protected void fillCurrentRelationIds(Row row, Object bean, ColumnedRow columnedRow) {
-			D dtype = (D) columnedRow.getValue(discriminatorColumn, row);
+			D dtype = columnedRow.getValue(discriminatorColumn, row);
 			if (polymorphismPolicy.getDiscriminatorValue(subEntityType).equals(dtype)) {
 				super.fillCurrentRelationIds(row, bean, columnedRow);
 			}

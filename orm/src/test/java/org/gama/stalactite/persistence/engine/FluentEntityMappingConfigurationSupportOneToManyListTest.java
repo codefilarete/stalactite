@@ -57,8 +57,6 @@ import static org.mockito.Mockito.verify;
  */
 class FluentEntityMappingConfigurationSupportOneToManyListTest {
 	
-//	private static final Dialect DIALECT = new MySQLDialect();
-//	private final DataSource dataSource = new MySQLDataSource("test", "dev", "dev");
 	private static final Dialect DIALECT = new HSQLDBDialect();
 	private final DataSource dataSource = new HSQLDBInMemoryDataSource();
 	private final ConnectionProvider connectionProvider = new JdbcConnectionProvider(dataSource);
