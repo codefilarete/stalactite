@@ -127,7 +127,8 @@ abstract class AbstractPolymorphicPersisterBuilder<C, I, T extends Table> implem
 	
 	private void registerPolymorphismCascades(Map<Class<? extends C>, IEntityConfiguredJoinedTablesPersister<C, I>> persisterPerSubclass,
 											  Dialect dialect,
-											  IConnectionConfiguration connectionConfiguration, PersisterRegistry persisterRegistry,
+											  IConnectionConfiguration connectionConfiguration,
+											  PersisterRegistry persisterRegistry,
 											  SubEntityMappingConfiguration<? extends C> subConfiguration,
 											  IEntityConfiguredJoinedTablesPersister<C, I> subEntityPersister) {
 		assertSubPolymorphismIsSupported(subConfiguration.getPolymorphismPolicy());

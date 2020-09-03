@@ -78,13 +78,12 @@ public class OptimizedUpdatePersister<C, I> extends PersisterWrapper<C, I> {
 		// NB : we use a Set to avoid error thrown by Proxy.newProxyInstance when an interface is present several time
 		Set<Class> interfaces = new HashSet<>(Iterables.copy(new InterfaceIterator(new ClassIterator(delegate.getClass(), null))));
 		ConnectionProvider connectionProvider = (ConnectionProvider) Proxy.newProxyInstance(delegate.getClass().getClassLoader(), interfaces.toArray(new Class[0]),
-						(proxy, method, args) -> {
-							if (!method.getName().equals("getCurrentConnection")) {
-								return method.invoke(delegate, args);
-							}
-							return cachingQueryConnectionProvider.getCurrentConnection();
-						})
-				;
+				(proxy, method, args) -> {
+					if (!method.getName().equals("getCurrentConnection")) {
+						return method.invoke(delegate, args);
+					}
+					return cachingQueryConnectionProvider.getCurrentConnection();
+				});
 		return new ConnectionConfigurationSupport(connectionProvider, connectionConfiguration.getBatchSize());
 	}
 	

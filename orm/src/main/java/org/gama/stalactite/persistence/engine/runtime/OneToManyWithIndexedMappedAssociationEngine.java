@@ -144,7 +144,7 @@ public class OneToManyWithIndexedMappedAssociationEngine<SRC, TRGT, ID, C extend
 						// (SerializedLambda.instantiatedMethodType), then applying this concrete class (when looking for target entity index in
 						// collection) and not the abstract one, which produces a ClassCastException. As a consequence we must check that
 						// collection getter matches given entity (which is done through source persister, because there's no mean to do it
-						// with collection getter.
+						// with collection getter).
 						|| sourcePersister.getMappingStrategy().getClassToPersist().isInstance(sourceEntity);
 			}
 		});

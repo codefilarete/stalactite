@@ -201,12 +201,17 @@ public interface IEntityPersister<C, I> extends IInsertExecutor<C>, IUpdateExecu
 	
 	Class<C> getClassToPersist();
 	
+	/**
+	 * Mashup between {@link EntityCriteria} and {@link ExecutableQuery} to make an {@link EntityCriteria} executable
+	 * @param <C> type of object returned by query execution
+	 */
 	interface ExecutableEntityQuery<C> extends EntityCriteria<C>, ExecutableQuery<C> {
 		
 	}
 	
 	/**
-	 * Mashup between {@link EntityCriteria} and {@link ExecutableQuery} to make an {@link EntityCriteria} executable
+	 * Contract that allows to create some query criteria based on property accessors
+	 * 
 	 * @param <C> type of object returned by query execution
 	 */
 	interface EntityCriteria<C> {
