@@ -1,5 +1,6 @@
 package org.gama.stalactite.persistence.engine.runtime;
 
+import java.util.Objects;
 import java.util.function.Function;
 
 import org.gama.stalactite.persistence.engine.ISelectExecutor;
@@ -35,5 +36,31 @@ class RelationIds<SRC, TRGT, TRGTID> {
 	
 	public TRGTID getTargetId() {
 		return targetId;
+	}
+	
+	/**
+	 * Implemented to stabilize {@link RelationIds} in sets to have steady orders of SQL statements
+	 */
+	@Override
+	public boolean equals(Object o) {
+		if (this == o) return true;
+		if (!(o instanceof RelationIds)) return false;
+		
+		RelationIds<?, ?, ?> that = (RelationIds<?, ?, ?>) o;
+		
+		if (!selectExecutor.equals(that.selectExecutor)) return false;
+		if (!Objects.equals(source, that.source)) return false;
+		return Objects.equals(targetId, that.targetId);
+	}
+	
+	/**
+	 * Implemented to stabilize {@link RelationIds} in sets to have steady orders of SQL statements
+	 */
+	@Override
+	public int hashCode() {
+		int result = selectExecutor.hashCode();
+		result = 31 * result + (source != null ? source.hashCode() : 0);
+		result = 31 * result + (targetId != null ? targetId.hashCode() : 0);
+		return result;
 	}
 }

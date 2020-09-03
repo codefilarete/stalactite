@@ -16,6 +16,7 @@ import org.gama.lang.bean.Objects;
 import org.gama.lang.collection.Arrays;
 import org.gama.lang.collection.Collections;
 import org.gama.lang.collection.Iterables;
+import org.gama.lang.collection.KeepOrderMap;
 import org.gama.lang.exception.NotImplementedException;
 import org.gama.lang.trace.ModifiableInt;
 import org.gama.reflection.MethodReferenceDispatcher;
@@ -32,6 +33,7 @@ import org.gama.stalactite.persistence.engine.listening.SelectListener;
 import org.gama.stalactite.persistence.engine.listening.UpdateListener;
 import org.gama.stalactite.persistence.engine.runtime.EntityMappingStrategyTreeJoinPoint.JoinType;
 import org.gama.stalactite.persistence.engine.runtime.JoinedTablesPersister.CriteriaProvider;
+import org.gama.stalactite.persistence.mapping.AbstractTransformer.TransformerListener;
 import org.gama.stalactite.persistence.mapping.IEntityMappingStrategy;
 import org.gama.stalactite.persistence.mapping.IdMappingStrategy;
 import org.gama.stalactite.persistence.query.EntityCriteriaSupport;
@@ -240,7 +242,7 @@ public class JoinedTablesPolymorphicPersister<C, I> implements IEntityConfigured
 	}
 	
 	private Map<IEntityPersister<C, I>, Set<C>> computeEntitiesPerPersister(Iterable<C> entities) {
-		Map<IEntityPersister<C, I>, Set<C>> entitiesPerType = new HashMap<>();
+		Map<IEntityPersister<C, I>, Set<C>> entitiesPerType = new KeepOrderMap<>();
 		entities.forEach(entity ->
 				this.subEntitiesPersisters.values().forEach(persister -> {
 					if (persister.getClassToPersist().isInstance(entity)) {

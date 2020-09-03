@@ -1,6 +1,7 @@
 package org.gama.stalactite.persistence.id.diff;
 
 import javax.annotation.Nonnull;
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -12,8 +13,9 @@ import java.util.function.Function;
 
 import org.gama.lang.Duo;
 import org.gama.lang.collection.Iterables;
+import org.gama.lang.collection.KeepOrderMap;
+import org.gama.lang.collection.KeepOrderSet;
 import org.gama.lang.collection.PairIterator.UntilBothIterator;
-import org.gama.lang.collection.ValueFactoryHashMap;
 import org.gama.lang.function.Predicates;
 import org.gama.lang.trace.ModifiableInt;
 import org.gama.stalactite.persistence.id.Identified;
@@ -45,11 +47,11 @@ public class CollectionDiffer<I> {
 	 * @return a set of differences between the 2 sets, never null, empty if the 2 sets are empty. If no modification, all instances will be
 	 * {@link State#HELD}.
 	 */
-	public <C> Set<Diff<I>> diffSet(Set<I> before, Set<I> after) {
-		Map<C, I> beforeMappedOnIdentifier = Iterables.map(before, (Function<I, C>) idProvider, Function.identity());
-		Map<C, I> afterMappedOnIdentifier = Iterables.map(after, (Function<I, C>) idProvider, Function.identity());
+	public <C> KeepOrderSet<Diff<I>> diffSet(Set<I> before, Set<I> after) {
+		Map<C, I> beforeMappedOnIdentifier = Iterables.map(before, (Function<I, C>) idProvider, Function.identity(), KeepOrderMap::new);
+		Map<C, I> afterMappedOnIdentifier = Iterables.map(after, (Function<I, C>) idProvider, Function.identity(), KeepOrderMap::new);
 		
-		Set<Diff<I>> result = new HashSet<>();
+		KeepOrderSet<Diff<I>> result = new KeepOrderSet<>();
 		
 		for (Entry<C, I> entry : beforeMappedOnIdentifier.entrySet()) {
 			I afterId = afterMappedOnIdentifier.get(entry.getKey());
@@ -74,23 +76,23 @@ public class CollectionDiffer<I> {
 	 * @return a set of differences between the 2 sets, never null, empty if the 2 sets are empty. If no modification, all instances will be
 	 * {@link State#HELD}.
 	 */
-	public Set<IndexedDiff<I>> diffList(List<I> before, List<I> after) {
+	public KeepOrderSet<IndexedDiff<I>> diffList(List<I> before, List<I> after) {
 		// building Map of indexes per object
-		Map<I, Set<Integer>> beforeIndexes = new ValueFactoryHashMap<>(k -> new HashSet<>());
-		Map<I, Set<Integer>> afterIndexes = new ValueFactoryHashMap<>(k -> new HashSet<>());
+		Map<I, Set<Integer>> beforeIndexes = new KeepOrderMap<>();
+		Map<I, Set<Integer>> afterIndexes = new KeepOrderMap<>();
 		ModifiableInt beforeIndex = new ModifiableInt(-1);	// because indexes should start at 0 as List does
-		before.forEach(o -> beforeIndexes.get(o).add(beforeIndex.increment()));
+		before.forEach(o -> beforeIndexes.computeIfAbsent(o, k -> new HashSet<>()).add(beforeIndex.increment()));
 		ModifiableInt afterIndex = new ModifiableInt(-1);		// because indexes should start at 0 as List does
-		after.forEach(o -> afterIndexes.get(o).add(afterIndex.increment()));
+		after.forEach(o -> afterIndexes.computeIfAbsent(o, k -> new HashSet<>()).add(afterIndex.increment()));
 		
-		Set<IndexedDiff<I>> result = new HashSet<>();
+		KeepOrderSet<IndexedDiff<I>> result = new KeepOrderSet<>();
 		
 		// Removed instances are found with a simple minus
 		Set<I> removeds = Iterables.minus(beforeIndexes.keySet(), afterIndexes.keySet());
 		removeds.forEach(i -> result.add(new IndexedDiff<>(REMOVED, i, null, beforeIndexes.get(i), new HashSet<>())));
 		
 		// Added instances are found with a simple minus (reverse order of removed)
-		Set<I> addeds = Iterables.minus(afterIndexes.keySet(), beforeIndexes.keySet());
+		Set<I> addeds = Iterables.minus(afterIndexes.keySet(), beforeIndexes.keySet(), (Function<Collection<I>, KeepOrderSet<I>>) KeepOrderSet::new);
 		addeds.forEach(i -> result.add(new IndexedDiff<>(ADDED, null, i, new HashSet<>(), afterIndexes.get(i))));
 		
 		// There are several cases for "held" instances (those existing on both sides)

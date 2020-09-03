@@ -15,12 +15,12 @@ import org.gama.lang.Duo;
 import org.gama.lang.bean.Objects;
 import org.gama.lang.collection.Arrays;
 import org.gama.lang.collection.Iterables;
+import org.gama.lang.collection.KeepOrderMap;
 import org.gama.lang.exception.NotImplementedException;
 import org.gama.lang.trace.ModifiableInt;
 import org.gama.reflection.MethodReferenceDispatcher;
 import org.gama.stalactite.persistence.engine.ExecutableQuery;
-import org.gama.stalactite.persistence.engine.IDeleteExecutor;
-import org.gama.stalactite.persistence.engine.IInsertExecutor;
+import org.gama.stalactite.persistence.engine.IEntityPersister;
 import org.gama.stalactite.persistence.engine.IUpdateExecutor;
 import org.gama.stalactite.persistence.engine.PolymorphismPolicy.SingleTablePolymorphism;
 import org.gama.stalactite.persistence.engine.configurer.CascadeManyConfigurer;
@@ -33,6 +33,7 @@ import org.gama.stalactite.persistence.engine.listening.SelectListener;
 import org.gama.stalactite.persistence.engine.listening.UpdateListener;
 import org.gama.stalactite.persistence.engine.runtime.EntityMappingStrategyTreeJoinPoint.JoinType;
 import org.gama.stalactite.persistence.engine.runtime.JoinedTablesPersister.CriteriaProvider;
+import org.gama.stalactite.persistence.mapping.AbstractTransformer.TransformerListener;
 import org.gama.stalactite.persistence.mapping.ColumnedRow;
 import org.gama.stalactite.persistence.mapping.IEntityMappingStrategy;
 import org.gama.stalactite.persistence.mapping.IMappingStrategy.ShadowColumnValueProvider;
@@ -121,14 +122,7 @@ public class SingleTablePolymorphicPersister<C, I, T extends Table<T>, D> implem
 	
 	@Override
 	public int insert(Iterable<? extends C> entities) {
-		Map<IInsertExecutor<C>, Set<C>> entitiesPerType = new HashMap<>();
-		entities.forEach(entity ->
-				this.subEntitiesPersisters.values().forEach(persister -> {
-					if (persister.getClassToPersist().isInstance(entity)) {
-						entitiesPerType.computeIfAbsent(persister, p -> new HashSet<>()).add(entity);
-					}
-				})
-		);
+		Map<IEntityPersister<C, I>, Set<C>> entitiesPerType = computeEntitiesPerPersister(entities);
 		
 		ModifiableInt insertCount = new ModifiableInt();
 		entitiesPerType.forEach((insertExecutor, cs) -> insertCount.increment(insertExecutor.insert(cs)));
@@ -138,14 +132,7 @@ public class SingleTablePolymorphicPersister<C, I, T extends Table<T>, D> implem
 	
 	@Override
 	public int updateById(Iterable<C> entities) {
-		Map<IUpdateExecutor<C>, Set<C>> entitiesPerType = new HashMap<>();
-		entities.forEach(entity ->
-				this.subEntitiesPersisters.values().forEach(persister -> {
-					if (persister.getClassToPersist().isInstance(entity)) {
-						entitiesPerType.computeIfAbsent(persister, p -> new HashSet<>()).add(entity);
-					}
-				})
-		);
+		Map<IEntityPersister<C, I>, Set<C>> entitiesPerType = computeEntitiesPerPersister(entities);
 		
 		ModifiableInt insertCount = new ModifiableInt();
 		entitiesPerType.forEach((updateExecutor, cs) -> insertCount.increment(updateExecutor.updateById(cs)));
@@ -180,14 +167,7 @@ public class SingleTablePolymorphicPersister<C, I, T extends Table<T>, D> implem
 	
 	@Override
 	public int delete(Iterable<C> entities) {
-		Map<IDeleteExecutor<C, I>, Set<C>> entitiesPerType = new HashMap<>();
-		entities.forEach(entity ->
-				this.subEntitiesPersisters.values().forEach(persister -> {
-					if (persister.getClassToPersist().isInstance(entity)) {
-						entitiesPerType.computeIfAbsent(persister, p -> new HashSet<>()).add(entity);
-					}
-				})
-		);
+		Map<IEntityPersister<C, I>, Set<C>> entitiesPerType = computeEntitiesPerPersister(entities);
 		
 		ModifiableInt deleteCount = new ModifiableInt();
 		// We could think that deleting throught main persister would be suffiscient because we are in a single-table hence only table is touched
@@ -201,14 +181,7 @@ public class SingleTablePolymorphicPersister<C, I, T extends Table<T>, D> implem
 	
 	@Override
 	public int deleteById(Iterable<C> entities) {
-		Map<IDeleteExecutor<C, I>, Set<C>> entitiesPerType = new HashMap<>();
-		entities.forEach(entity ->
-				this.subEntitiesPersisters.values().forEach(persister -> {
-					if (persister.getClassToPersist().isInstance(entity)) {
-						entitiesPerType.computeIfAbsent(persister, p -> new HashSet<>()).add(entity);
-					}
-				})
-		);
+		Map<IEntityPersister<C, I>, Set<C>> entitiesPerType = computeEntitiesPerPersister(entities);
 		
 		ModifiableInt deleteCount = new ModifiableInt();
 		// We could think that deleting throught main persister would be suffiscient because we are in a single-table hence only table is touched
@@ -218,6 +191,18 @@ public class SingleTablePolymorphicPersister<C, I, T extends Table<T>, D> implem
 		entitiesPerType.forEach((deleteExecutor, adhocEntities) -> deleteCount.increment(deleteExecutor.deleteById(adhocEntities)));
 		
 		return deleteCount.getValue();
+	}
+	
+	private Map<IEntityPersister<C, I>, Set<C>> computeEntitiesPerPersister(Iterable<? extends C> entities) {
+		Map<IEntityPersister<C, I>, Set<C>> entitiesPerType = new KeepOrderMap<>();
+		entities.forEach(entity ->
+				this.subEntitiesPersisters.values().forEach(persister -> {
+					if (persister.getClassToPersist().isInstance(entity)) {
+						entitiesPerType.computeIfAbsent(persister, p -> new HashSet<>()).add(entity);
+					}
+				})
+		);
+		return entitiesPerType;
 	}
 	
 	@Override
