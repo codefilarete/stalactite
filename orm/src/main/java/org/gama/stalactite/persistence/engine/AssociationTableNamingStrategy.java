@@ -2,13 +2,11 @@ package org.gama.stalactite.persistence.engine;
 
 import javax.annotation.Nonnull;
 
+import org.gama.lang.Duo;
 import org.gama.lang.Reflections;
 import org.gama.lang.Strings;
 import org.gama.reflection.AccessorDefinition;
 import org.gama.stalactite.persistence.structure.Column;
-
-import static org.gama.lang.Reflections.GET_SET_PREFIX_REMOVER;
-import static org.gama.lang.Reflections.IS_PREFIX_REMOVER;
 
 /**
  * Contract for giving a name to an association table (one-to-many cases)
@@ -26,11 +24,7 @@ public interface AssociationTableNamingStrategy {
 	 */
 	String giveName(@Nonnull AccessorDefinition accessorDefinition, @Nonnull Column source, @Nonnull Column target);
 	
-	String giveOneSideColumnName(@Nonnull Column column);
-	
-	default String giveManySideColumnName(@Nonnull Column column) {
-		return giveOneSideColumnName(column);
-	}
+	Duo<String, String> giveColumnNames(@Nonnull AccessorDefinition accessorDefinition, @Nonnull Column leftPrimaryKey, @Nonnull Column rightPrimaryKey);
 	
 	AssociationTableNamingStrategy DEFAULT = new DefaultAssociationTableNamingStrategy();
 	
@@ -47,17 +41,28 @@ public interface AssociationTableNamingStrategy {
 		
 		@Override
 		public String giveName(@Nonnull AccessorDefinition accessor, @Nonnull Column source, @Nonnull Column target) {
-			String suffix = Reflections.onJavaBeanPropertyWrapperNameGeneric(accessor.getName(), accessor.getName(),
-					GET_SET_PREFIX_REMOVER.andThen(Strings::uncapitalize),
-					GET_SET_PREFIX_REMOVER.andThen(Strings::uncapitalize),
-					IS_PREFIX_REMOVER.andThen(Strings::uncapitalize),
-					s -> target.getTable().getName() + "s");
-			return source.getTable().getName() + "_" + suffix;
+			return accessor.getDeclaringClass().getSimpleName() + "_" + accessor.getName();
 		}
 		
 		@Override
-		public String giveOneSideColumnName(@Nonnull Column column) {
-			return column.getTable().getName() + "_" + column.getName();
+		public Duo<String, String> giveColumnNames(@Nonnull AccessorDefinition accessorDefinition, @Nonnull Column leftPrimaryKey, @Nonnull Column rightPrimaryKey) {
+			String oneSideColumnName = leftPrimaryKey.getTable().getName() + "_" + leftPrimaryKey.getName();
+			String manySideColumnName = rightPrimaryKey.getTable().getName() + "_" + rightPrimaryKey.getName();
+			if (manySideColumnName.equalsIgnoreCase(oneSideColumnName)) {
+				String propertyName = accessorDefinition.getName();
+				// removing ending "s" if present, for good english if project speaks english (not a strong rule, could be removed, overall because
+				// the strategy can be replaced by whatever needed)
+				if (propertyName.endsWith("s")) {
+					propertyName = Strings.cutTail(propertyName, 1).toString();
+				}
+				manySideColumnName = propertyName + "_" + rightPrimaryKey.getName();
+				
+				if (manySideColumnName.equalsIgnoreCase(oneSideColumnName)) {
+					throw new MappingConfigurationException("Identical column names in association table of collection "
+							+ Reflections.toString(accessorDefinition.getDeclaringClass()) + "." + accessorDefinition.getName());
+				}
+			}
+			return new Duo<>(oneSideColumnName, manySideColumnName);
 		}
 	}
 }

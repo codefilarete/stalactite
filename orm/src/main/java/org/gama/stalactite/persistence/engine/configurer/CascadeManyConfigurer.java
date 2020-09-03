@@ -189,6 +189,10 @@ public class CascadeManyConfigurer<SRC, TRGT, ID, C extends Collection<TRGT>> {
 		private final IMutator<SRC, C> setter;
 		private final boolean orphanRemoval;
 		private final boolean writeAuthorized;
+		/**
+		 * Equivalent as cascadeMany.getMethodReference() but used for table and colum naming only.
+		 * Collection access will be done through {@link #collectionGetter} and {@link #giveCollectionFactory()}
+		 */
 		private final AccessorDefinition accessorDefinition;
 		
 		private ManyAssociationConfiguration(CascadeMany<SRC, TRGT, ID, C> cascadeMany,
@@ -213,8 +217,10 @@ public class CascadeManyConfigurer<SRC, TRGT, ID, C extends Collection<TRGT>> {
 			// whereas we need this information to build better association table name
 			this.accessorDefinition = new AccessorDefinition(
 					cascadeMany.getMethodReference().getDeclaringClass(),
-					cascadeMany.getMethodReference().getMethodName(),
-					cascadeMany.getMethodReference().getPropertyType());
+					AccessorDefinition.giveDefinition(cascadeMany.getMethodReference()).getName(),
+					// we prefer target persister type to method reference member type because the latter only get's collection type which is not
+					// an interesting information for table / column naming
+					targetPersister.getClassToPersist());
 			this.orphanRemoval = orphanRemoval;
 			this.writeAuthorized = writeAuthorized;
 		}
@@ -227,7 +233,7 @@ public class CascadeManyConfigurer<SRC, TRGT, ID, C extends Collection<TRGT>> {
 		protected Supplier<C> giveCollectionFactory() {
 			Supplier<C> collectionFactory = cascadeMany.getCollectionFactory();
 			if (collectionFactory == null) {
-				collectionFactory = BeanRelationFixer.giveCollectionFactory((Class<C>) accessorDefinition.getMemberType());
+				collectionFactory = BeanRelationFixer.giveCollectionFactory((Class<C>) cascadeMany.getMethodReference().getPropertyType());
 			}
 			return collectionFactory;
 		}
@@ -289,8 +295,10 @@ public class CascadeManyConfigurer<SRC, TRGT, ID, C extends Collection<TRGT>> {
 					associationTableName,
 					manyAssociationConfiguration.leftPrimaryKey,
 					rightPrimaryKey,
+					manyAssociationConfiguration.accessorDefinition,
 					associationTableNamingStrategy,
-					manyAssociationConfiguration.foreignKeyNamingStrategy);
+					manyAssociationConfiguration.foreignKeyNamingStrategy
+			);
 			
 			intermediaryTable.addForeignKey((BiFunction<Column, Column, String>) manyAssociationConfiguration.foreignKeyNamingStrategy::giveName,
 					intermediaryTable.getOneSideKeyColumn(), manyAssociationConfiguration.leftPrimaryKey);
@@ -323,6 +331,7 @@ public class CascadeManyConfigurer<SRC, TRGT, ID, C extends Collection<TRGT>> {
 					associationTableName,
 					manyAssociationConfiguration.leftPrimaryKey,
 					rightPrimaryKey,
+					manyAssociationConfiguration.accessorDefinition,
 					associationTableNamingStrategy,
 					manyAssociationConfiguration.foreignKeyNamingStrategy);
 			

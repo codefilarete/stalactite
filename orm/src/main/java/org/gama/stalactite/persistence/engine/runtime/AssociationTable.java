@@ -2,6 +2,8 @@ package org.gama.stalactite.persistence.engine.runtime;
 
 import javax.annotation.Nonnull;
 
+import org.gama.lang.Duo;
+import org.gama.reflection.AccessorDefinition;
 import org.gama.stalactite.persistence.engine.AssociationTableNamingStrategy;
 import org.gama.stalactite.persistence.engine.ForeignKeyNamingStrategy;
 import org.gama.stalactite.persistence.structure.Column;
@@ -47,13 +49,15 @@ public class AssociationTable<SELF extends AssociationTable<SELF>> extends Table
 							String name,
 							Column oneSidePrimaryKey,
 							Column manySidePrimaryKey,
+							AccessorDefinition accessorDefinition,
 							AssociationTableNamingStrategy namingStrategy,
 							ForeignKeyNamingStrategy foreignKeyNamingStrategy) {
 		super(schema, name);
 		this.oneSidePrimaryKey = oneSidePrimaryKey;
 		this.manySidePrimaryKey = manySidePrimaryKey;
-		this.oneSideKeyColumn = addColumn(namingStrategy.giveOneSideColumnName(oneSidePrimaryKey), oneSidePrimaryKey.getJavaType()).primaryKey();
-		this.manySideKeyColumn = addColumn(namingStrategy.giveManySideColumnName(manySidePrimaryKey), manySidePrimaryKey.getJavaType()).primaryKey();
+		Duo<String, String> columnNames = namingStrategy.giveColumnNames(accessorDefinition, oneSidePrimaryKey, manySidePrimaryKey);
+		this.oneSideKeyColumn = addColumn(columnNames.getLeft(), oneSidePrimaryKey.getJavaType()).primaryKey();
+		this.manySideKeyColumn = addColumn(columnNames.getRight(), manySidePrimaryKey.getJavaType()).primaryKey();
 		this.primaryKey = new PrimaryKey<>(oneSideKeyColumn, manySideKeyColumn);
 	}
 	

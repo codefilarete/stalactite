@@ -1,5 +1,6 @@
 package org.gama.stalactite.persistence.engine.runtime;
 
+import org.gama.reflection.AccessorDefinition;
 import org.gama.stalactite.persistence.engine.AssociationTableNamingStrategy;
 import org.gama.stalactite.persistence.engine.ForeignKeyNamingStrategy;
 import org.gama.stalactite.persistence.structure.Column;
@@ -16,9 +17,10 @@ public class IndexedAssociationTable extends AssociationTable<IndexedAssociation
 								   String name,
 								   Column oneSidePrimaryKey,
 								   Column manySidePrimaryKey,
+								   AccessorDefinition accessorDefinition,
 								   AssociationTableNamingStrategy namingStrategy,
 								   ForeignKeyNamingStrategy foreignKeyNamingStrategy) {
-		super(schema, name, oneSidePrimaryKey, manySidePrimaryKey, namingStrategy, foreignKeyNamingStrategy);
+		super(schema, name, oneSidePrimaryKey, manySidePrimaryKey, accessorDefinition, namingStrategy, foreignKeyNamingStrategy);
 		this.indexColumn = addColumn("idx", int.class).primaryKey();
 		getPrimaryKey().addColumn(indexColumn);
 	}
