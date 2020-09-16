@@ -8,7 +8,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.BiConsumer;
-import java.util.function.Consumer;
 import java.util.function.Function;
 
 import org.gama.lang.Duo;
@@ -35,7 +34,7 @@ public class OneToManyWithIndexedMappedAssociationEngine<SRC, TRGT, ID, C extend
 	 * layers (entities and SQL) which is not implemented. In such circumstances, ThreadLocal comes to the rescue.
 	 * Could be static, but would lack the TRGT typing, which leads to some generics errors, so left non static (acceptable small overhead)
 	 */
-	private final ThreadLocal<Map<TRGT, Integer>> selectedIndexes = new ThreadLocal<>();
+	private final ThreadLocal<IdentityMap<TRGT, Integer>> currentSelectedIndexes = new ThreadLocal<>();
 	
 	/** Column that stores index value, owned by reverse side table (table of targetPersister) */
 	private final Column indexingColumn;
@@ -66,7 +65,7 @@ public class OneToManyWithIndexedMappedAssociationEngine<SRC, TRGT, ID, C extend
 		sourcePersister.getPersisterListener().addSelectListener(new SelectListener<SRC, ID>() {
 			@Override
 			public void beforeSelect(Iterable<ID> ids) {
-				selectedIndexes.set(new HashMap<>());
+				currentSelectedIndexes.set(new IdentityMap<>());
 			}
 			
 			@Override
@@ -75,7 +74,7 @@ public class OneToManyWithIndexedMappedAssociationEngine<SRC, TRGT, ID, C extend
 					// reordering List element according to read indexes during the transforming phase (see below)
 					result.forEach(src -> {
 						List<TRGT> apply = manyRelationDefinition.getCollectionGetter().apply(src);
-						apply.sort(Comparator.comparingInt(target -> selectedIndexes.get().get(target)));
+						apply.sort(Comparator.comparingInt(target -> currentSelectedIndexes.get().get(target)));
 					});
 				} finally {
 					cleanContext();
@@ -88,13 +87,13 @@ public class OneToManyWithIndexedMappedAssociationEngine<SRC, TRGT, ID, C extend
 			}
 			
 			private void cleanContext() {
-				selectedIndexes.remove();
+				currentSelectedIndexes.remove();
 			}
 		});
 		// Adding a transformer listener to keep track of the index column read from ResultSet/Row
 		// We place it into a ThreadLocal, then the select listener will use it to reorder loaded beans
 		targetPersister.getMappingStrategy().addTransformerListener((bean, rowValueProvider) -> {
-			Map<TRGT, Integer> indexPerBean = selectedIndexes.get();
+			IdentityMap<TRGT, Integer> indexPerBean = currentSelectedIndexes.get();
 			// indexPerBean may not be present because its mecanism was added on persisterListener which is the one of the source bean
 			// so in case of entity loading from its own persister (targetPersister) ThreadLocal is not available
 			if (indexPerBean != null) {
@@ -277,6 +276,26 @@ public class OneToManyWithIndexedMappedAssociationEngine<SRC, TRGT, ID, C extend
 			public Map<TRGT, Integer> getIndexUpdates() {
 				return indexUpdates;
 			}
+		}
+	}
+	
+	/**
+	 * Map based on identity hashCode as key to avoid loss of bean in classical Map due to change in their hashCode when its computation is based
+	 * on not yet totally filled attributes, such as collection.
+	 * 
+	 * @param <K> key type
+	 * @param <V> value type
+	 */
+	private static class IdentityMap<K, V> {
+		
+		private final Map<Integer, V> delegate = new HashMap<>();
+		
+		private void put(K key, V value) {
+			this.delegate.put(System.identityHashCode(key), value);
+		}
+		
+		private V get(K key) {
+			return this.delegate.get(System.identityHashCode(key));
 		}
 	}
 }
