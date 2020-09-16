@@ -16,11 +16,11 @@ import org.gama.stalactite.sql.result.Row;
  */
 class FirstPhaseOneToOneLoader<E, ID> implements EntityInflater<E, ID> {
 	
-	private final Column<Table, ID> primaryKey;
-	private final IdMappingStrategy<E, ID> idMappingStrategy;
+	protected final Column<Table, ID> primaryKey;
+	protected final IdMappingStrategy<E, ID> idMappingStrategy;
 	private final ISelectExecutor<E, ID> selectExecutor;
 	private final Class<E> mainType;
-	private final ThreadLocal<Set<RelationIds<Object, Object, Object>>> relationIdsHolder;
+	protected final ThreadLocal<Set<RelationIds<Object, Object, Object>>> relationIdsHolder;
 	
 	public FirstPhaseOneToOneLoader(IdMappingStrategy<E, ID> subEntityIdMappingStrategy,
 									Column<Table, ID> primaryKey,
@@ -64,7 +64,6 @@ class FirstPhaseOneToOneLoader<E, ID> implements EntityInflater<E, ID> {
 	
 	protected void fillCurrentRelationIds(Row row, E bean, ColumnedRow columnedRow) {
 		Set<RelationIds<Object, E, ID>> relationIds = (Set) relationIdsHolder.get();
-		relationIds.add(new RelationIds<>(selectExecutor,
-				idMappingStrategy.getIdAccessor()::getId, bean, (ID) columnedRow.getValue(primaryKey, row)));
+		relationIds.add(new RelationIds<>(selectExecutor, idMappingStrategy.getIdAccessor()::getId, bean, (ID) columnedRow.getValue(primaryKey, row)));
 	}
 }

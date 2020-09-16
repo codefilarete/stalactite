@@ -7,6 +7,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import org.danekja.java.util.function.serializable.SerializableBiConsumer;
@@ -21,6 +22,7 @@ import org.gama.lang.trace.ModifiableInt;
 import org.gama.reflection.MethodReferenceDispatcher;
 import org.gama.stalactite.persistence.engine.ExecutableQuery;
 import org.gama.stalactite.persistence.engine.IEntityPersister;
+import org.gama.stalactite.persistence.engine.ISelectExecutor;
 import org.gama.stalactite.persistence.engine.IUpdateExecutor;
 import org.gama.stalactite.persistence.engine.PolymorphismPolicy.SingleTablePolymorphism;
 import org.gama.stalactite.persistence.engine.configurer.CascadeManyConfigurer;
@@ -320,17 +322,13 @@ public class SingleTablePolymorphicPersister<C, I, T extends Table<T>, D> implem
 																	BeanRelationFixer<SRC, C> beanRelationFixer,
 																	boolean optional) {
 		
-		// TODO: simplify query : it joins on target table as many as subentities which can be reduced to one join if FirstPhaseOneToOneLoader
-		//  can compute disciminatorValue 
-		subEntitiesPersisters.forEach((subEntityType, subPersister) -> {
-			Column subclassPrimaryKey = (Column) Iterables.first(subPersister.getMappingStrategy().getTargetTable().getPrimaryKey().getColumns());
-			sourcePersister.getEntityMappingStrategyTreeSelectBuilder().addMergeJoin(EntityMappingStrategyTreeSelectBuilder.ROOT_STRATEGY_NAME,
-					new SingleTableFirstPhaseOneToOneLoader(subPersister.getMappingStrategy().getIdMappingStrategy(),
-							subclassPrimaryKey, selectExecutor, mainPersister.getClassToPersist(), DIFFERED_ENTITY_LOADER,
-							subEntityType, discriminatorColumn),
-					(Set) Arrays.asHashSet(subclassPrimaryKey, leftColumn, rightColumn, discriminatorColumn),
-					leftColumn, rightColumn, optional ? JoinType.OUTER : JoinType.INNER);
-		});
+		Column subclassPrimaryKey = (Column) Iterables.first(mainPersister.getMappingStrategy().getTargetTable().getPrimaryKey().getColumns());
+		sourcePersister.getEntityMappingStrategyTreeSelectBuilder().addMergeJoin(EntityMappingStrategyTreeSelectBuilder.ROOT_STRATEGY_NAME,
+				new SingleTableFirstPhaseOneToOneLoader(mainPersister.getMappingStrategy().getIdMappingStrategy(),
+						subclassPrimaryKey, selectExecutor, mainPersister.getClassToPersist(), DIFFERED_ENTITY_LOADER,
+						discriminatorColumn, subEntitiesPersisters::get),
+				(Set) Arrays.asHashSet(subclassPrimaryKey, leftColumn, rightColumn, discriminatorColumn),
+				leftColumn, rightColumn, optional ? JoinType.OUTER : JoinType.INNER);
 		
 		
 		// adding second phase loader
@@ -349,17 +347,13 @@ public class SingleTablePolymorphicPersister<C, I, T extends Table<T>, D> implem
 				JoinType.OUTER,
 				(Set) Collections.emptySet());
 		
-		// TODO: simplify query : it joins on target table as many as subentities which can be reduced to one join if FirstPhaseOneToOneLoader
-		//  can compute disciminatorValue 
-		subEntitiesPersisters.forEach((subEntityType, subPersister) -> {
-			Column subclassPrimaryKey = (Column) Iterables.first(subPersister.getMappingStrategy().getTargetTable().getPrimaryKey().getColumns());
-			sourcePersister.getEntityMappingStrategyTreeSelectBuilder().addMergeJoin(EntityMappingStrategyTreeSelectBuilder.ROOT_STRATEGY_NAME,
-					new SingleTableFirstPhaseOneToOneLoader(subPersister.getMappingStrategy().getIdMappingStrategy(),
-							subclassPrimaryKey, selectExecutor, mainPersister.getClassToPersist(), DIFFERED_ENTITY_LOADER,
-							subEntityType, discriminatorColumn),
-					(Set) Arrays.asHashSet(rightColumn, subclassPrimaryKey, discriminatorColumn),
-					leftColumn, subclassPrimaryKey, JoinType.OUTER);
-		});
+		Column subclassPrimaryKey = (Column) Iterables.first(mainPersister.getMappingStrategy().getTargetTable().getPrimaryKey().getColumns());
+		sourcePersister.getEntityMappingStrategyTreeSelectBuilder().addMergeJoin(EntityMappingStrategyTreeSelectBuilder.ROOT_STRATEGY_NAME,
+				new SingleTableFirstPhaseOneToOneLoader(mainPersister.getMappingStrategy().getIdMappingStrategy(),
+						subclassPrimaryKey, selectExecutor, mainPersister.getClassToPersist(), DIFFERED_ENTITY_LOADER,
+						discriminatorColumn, subEntitiesPersisters::get),
+				(Set) Arrays.asHashSet(subclassPrimaryKey, leftColumn, rightColumn, discriminatorColumn),
+				leftColumn, rightColumn, JoinType.OUTER);
 		
 		
 		// adding second phase loader
@@ -378,26 +372,36 @@ public class SingleTablePolymorphicPersister<C, I, T extends Table<T>, D> implem
 	
 	private class SingleTableFirstPhaseOneToOneLoader extends FirstPhaseOneToOneLoader {
 		private final Column<T, D> discriminatorColumn;
-		private final Class<? extends C> subEntityType;
+		private final Function<Class, ISelectExecutor> subtypeSelectors;
+		private final Set<D> discriminatorValues;
 		
 		private SingleTableFirstPhaseOneToOneLoader(IdMappingStrategy<C, I> subEntityIdMappingStrategy,
 													Column primaryKey,
 													SingleTablePolymorphismSelectExecutor<C, I, T, D> selectExecutor,
 													Class<C> mainType,
 													ThreadLocal<Set<RelationIds<Object, Object, Object>>> relationIdsHolder,
-													Class<? extends C> subEntityType,
-													Column<T, D> discriminatorColumn) {
+													Column<T, D> discriminatorColumn, Function<Class, ISelectExecutor> subtypeSelectors) {
+			// Note that selectExecutor won't be used because we dynamically lookup for it in fillCurrentRelationIds
 			super(subEntityIdMappingStrategy, primaryKey, selectExecutor, mainType, relationIdsHolder);
 			this.discriminatorColumn = discriminatorColumn;
-			this.subEntityType = subEntityType;
+			this.subtypeSelectors = subtypeSelectors;
+			this.discriminatorValues = Iterables.collect(polymorphismPolicy.getSubClasses(), conf -> polymorphismPolicy.getDiscriminatorValue(conf.getEntityType()), HashSet::new);
 		}
 		
 		@Override
 		protected void fillCurrentRelationIds(Row row, Object bean, ColumnedRow columnedRow) {
-			D dtype = columnedRow.getValue(discriminatorColumn, row);
-			if (polymorphismPolicy.getDiscriminatorValue(subEntityType).equals(dtype)) {
-				super.fillCurrentRelationIds(row, bean, columnedRow);
+			D discriminator = columnedRow.getValue(discriminatorColumn, row);
+			// we avoid NPE on polymorphismPolicy.getClass(discriminator) caused by null discriminator in case of empty relation
+			// by only treating known discriminator values (prefered way to check against null because type can be primitive one)
+			if (discriminatorValues.contains(discriminator)) {
+				Set<RelationIds<Object, C, I>> relationIds = (Set) relationIdsHolder.get();
+				relationIds.add(new RelationIds(giveSelector(discriminator),
+						idMappingStrategy.getIdAccessor()::getId, bean, (I) columnedRow.getValue(primaryKey, row)));
 			}
+		}
+		
+		private ISelectExecutor giveSelector(D discriminator) {
+			return subtypeSelectors.apply(polymorphismPolicy.getClass(discriminator));
 		}
 	}
 }
