@@ -194,7 +194,7 @@ abstract class AbstractPolymorphicPersisterBuilder<C, I, T extends Table> implem
 					this.indexColumnNamingStrategy,
 					this.associationTableNamingStrategy);
 		}
-		// Please not that as a difference with PersisterBuilderImpl, we don't need to register relation in select because polymorphic selection
+		// Please note that as a difference with PersisterBuilderImpl, we don't need to register relation in select because polymorphic selection
 		// is made in two phases, see JoinedTablesPolymorphismEntitySelectExecutor (instanciated in JoinedTablesPolymorphicPersister)
 		
 		// taking element collections into account

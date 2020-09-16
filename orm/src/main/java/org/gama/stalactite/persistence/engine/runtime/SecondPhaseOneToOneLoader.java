@@ -69,7 +69,7 @@ class SecondPhaseOneToOneLoader<SRC, TRGT, ID> implements SelectListener<SRC, ID
 		Map<TRGTID, TRGT> targetPerId = new HashMap<>();
 		targetsPerSelector.forEach((selector, loadedTargets) -> targetPerId.putAll(Iterables.map(loadedTargets, idAccessors.get(selector))));
 		sourceEntities.forEach(src -> Nullable.nullable(targetIdPerSource.get(src))    // source may not have targetIds if relation if null
-				.invoke(s -> s.forEach(targetId -> beanRelationFixer.apply(src, targetPerId.get(targetId)))));
+				.invoke(targetIds -> targetIds.forEach(targetId -> beanRelationFixer.apply(src, targetPerId.get(targetId)))));
 	}
 	
 	private boolean isDefaultValue(Object value) {

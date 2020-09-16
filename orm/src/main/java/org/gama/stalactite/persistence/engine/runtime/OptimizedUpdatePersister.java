@@ -65,7 +65,7 @@ public class OptimizedUpdatePersister<C, I> extends PersisterWrapper<C, I> {
 	/**
 	 * Creates a new {@link IConnectionConfiguration} from given one and wraps its {@link ConnectionProvider} with one that caches select queries
 	 * on demand of {@link OptimizedUpdatePersister} instances.
-	 * Hence given {@link IConnectionConfiguration} should not be used anymore.
+	 * Hence given {@link IConnectionConfiguration} should not be used anymore by caller.
 	 * 
 	 * @param connectionConfiguration the configuration to be wrapped with cache over its {@link ConnectionProvider}
 	 * @return a new {@link IConnectionConfiguration} with enhanced {@link ConnectionProvider}

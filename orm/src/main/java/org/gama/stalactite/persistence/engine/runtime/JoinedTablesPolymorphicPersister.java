@@ -323,9 +323,26 @@ public class JoinedTablesPolymorphicPersister<C, I> implements IEntityConfigured
 		subEntitiesPersisters.values().forEach(p -> p.addDeleteByIdListener(deleteListener));
 	}
 	
+	/**
+	 * Implementation that captures {@link IEntityMappingStrategy#addTransformerListener(TransformerListener)}
+	 * Made to dispatch those methods subclass strategies since their persisters are in charge of managing their entities (not the parent one).
+	 * <p>
+	 * Design question : one may think that's not a good design to override a getter, caller should invoke an intention-clear method on
+	 * ourselves (Persister) but the case is to add a transformer which is not the goal of the Persister to know implementation
+	 * detail : they are to manage cascades and coordinate their mapping strategies. {@link IEntityMappingStrategy} are in charge of knowing
+	 * {@link Column} actions.
+	 *
+	 * @return an enhanced version of our main persister mapping strategy which dispatches transformer listeners to sub-entities ones
+	 */
 	@Override
 	public <T extends Table> IEntityMappingStrategy<C, I, T> getMappingStrategy() {
-		return (IEntityMappingStrategy<C, I, T>) parentPersister.getMappingStrategy();
+		return new EntityMappingStrategyWrapper<C, I, T>(mainPersister.getMappingStrategy()) {
+			@Override
+			public void addTransformerListener(TransformerListener<C> listener) {
+				super.addTransformerListener(listener);
+				subEntitiesPersisters.values().forEach(persister -> persister.getMappingStrategy().addTransformerListener(listener));
+			}
+		};
 	}
 	
 	/**

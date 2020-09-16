@@ -295,19 +295,22 @@ public class SingleTablePolymorphicPersister<C, I, T extends Table<T>, D> implem
 	 */
 	@Override
 	public IEntityMappingStrategy<C, I, T> getMappingStrategy() {
-		// TODO: This is not the cleanest implementation because we use MethodReferenceDispatcher which is kind of overkill : use a dispatching
-		//  interface
-		MethodReferenceDispatcher methodReferenceDispatcher = new MethodReferenceDispatcher();
-		IEntityMappingStrategy<C, I, T> result = methodReferenceDispatcher
-				.redirect((SerializableBiConsumer<IEntityMappingStrategy<C, I, T>, ShadowColumnValueProvider<C, Object, T>>)
-								IEntityMappingStrategy::addShadowColumnInsert,
-						provider -> subEntitiesPersisters.values().forEach(p -> ((IEntityMappingStrategy) p.getMappingStrategy()).addShadowColumnInsert(provider)))
-				.redirect((SerializableBiConsumer<IEntityMappingStrategy<C, I, T>, ShadowColumnValueProvider<C, Object, T>>)
-								IEntityMappingStrategy::addShadowColumnUpdate,
-						provider -> subEntitiesPersisters.values().forEach(p -> ((IEntityMappingStrategy) p.getMappingStrategy()).addShadowColumnUpdate(provider)))
-				.fallbackOn(mainPersister.getMappingStrategy())
-				.build((Class<IEntityMappingStrategy<C, I, T>>) (Class) IEntityMappingStrategy.class);
-		return result;
+		return new EntityMappingStrategyWrapper<C, I, T>(mainPersister.getMappingStrategy()) {
+			@Override
+			public void addTransformerListener(TransformerListener<C> listener) {
+				subEntitiesPersisters.values().forEach(persister -> persister.getMappingStrategy().addTransformerListener(listener));
+			}
+			
+			@Override
+			public <O> void addShadowColumnInsert(ShadowColumnValueProvider<C, O, T> provider) {
+				subEntitiesPersisters.values().forEach(p -> ((IEntityMappingStrategy) p.getMappingStrategy()).addShadowColumnInsert(provider));
+			}
+			
+			@Override
+			public <O> void addShadowColumnUpdate(ShadowColumnValueProvider<C, O, T> provider) {
+				subEntitiesPersisters.values().forEach(p -> ((IEntityMappingStrategy) p.getMappingStrategy()).addShadowColumnUpdate(provider));
+			}
+		};
 	}
 	
 	@Override

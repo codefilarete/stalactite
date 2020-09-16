@@ -35,6 +35,7 @@ import org.gama.stalactite.persistence.engine.listening.SelectListener;
 import org.gama.stalactite.persistence.engine.listening.UpdateListener;
 import org.gama.stalactite.persistence.engine.runtime.EntityMappingStrategyTreeJoinPoint.JoinType;
 import org.gama.stalactite.persistence.engine.runtime.JoinedTablesPersister.CriteriaProvider;
+import org.gama.stalactite.persistence.mapping.AbstractTransformer.TransformerListener;
 import org.gama.stalactite.persistence.mapping.IEntityMappingStrategy;
 import org.gama.stalactite.persistence.mapping.IMappingStrategy.ShadowColumnValueProvider;
 import org.gama.stalactite.persistence.query.EntityCriteriaSupport;
@@ -282,27 +283,30 @@ public class TablePerClassPolymorphismPersister<C, I, T extends Table<T>> implem
 	 */
 	@Override
 	public IEntityMappingStrategy<C, I, T> getMappingStrategy() {
-		// TODO: This is not the cleanest implementation because we use MethodReferenceDispatcher which is kind of overkill : use a dispatching
-		//  interface
-		MethodReferenceDispatcher methodReferenceDispatcher = new MethodReferenceDispatcher();
-		IEntityMappingStrategy<C, I, T> result = methodReferenceDispatcher
-				.redirect((SerializableBiConsumer<IEntityMappingStrategy<C, I, T>, ShadowColumnValueProvider<C, Object, T>>)
-								IEntityMappingStrategy::addShadowColumnInsert,
-						provider -> subEntitiesPersisters.values().forEach(p -> {
-							Column<T, Object> c = provider.getColumn();
-							Column projectedColumn = p.getMainTable().addColumn(c.getName(), c.getJavaType(), c.getSize());
-							p.getMappingStrategy().addShadowColumnInsert(new ShadowColumnValueProvider<>(projectedColumn, provider.getValueProvider()));
-						}))
-				.redirect((SerializableBiConsumer<IEntityMappingStrategy<C, I, T>, ShadowColumnValueProvider<C, Object, T>>)
-								IEntityMappingStrategy::addShadowColumnUpdate,
-						provider -> subEntitiesPersisters.values().forEach(p -> {
-							Column<T, Object> c = provider.getColumn();
-							Column projectedColumn = p.getMainTable().addColumn(c.getName(), c.getJavaType(), c.getSize());
-							p.getMappingStrategy().addShadowColumnUpdate(new ShadowColumnValueProvider<>(projectedColumn, provider.getValueProvider()));
-						}))
-				.fallbackOn(mainPersister.getMappingStrategy())
-				.build((Class<IEntityMappingStrategy<C, I, T>>) (Class) IEntityMappingStrategy.class);
-		return result;
+		return new EntityMappingStrategyWrapper<C, I, T>(mainPersister.getMappingStrategy()) {
+			@Override
+			public void addTransformerListener(TransformerListener<C> listener) {
+				subEntitiesPersisters.values().forEach(persister -> persister.getMappingStrategy().addTransformerListener(listener));
+			}
+			
+			@Override
+			public <O> void addShadowColumnInsert(ShadowColumnValueProvider<C, O, T> provider) {
+				subEntitiesPersisters.values().forEach(p -> {
+					Column<T, O> c = provider.getColumn();
+					Column projectedColumn = p.getMainTable().addColumn(c.getName(), c.getJavaType(), c.getSize());
+					p.getMappingStrategy().addShadowColumnInsert(new ShadowColumnValueProvider<>(projectedColumn, provider.getValueProvider()));
+				});
+			}
+			
+			@Override
+			public <O> void addShadowColumnUpdate(ShadowColumnValueProvider<C, O, T> provider) {
+				subEntitiesPersisters.values().forEach(p -> {
+					Column<T, O> c = provider.getColumn();
+					Column projectedColumn = p.getMainTable().addColumn(c.getName(), c.getJavaType(), c.getSize());
+					p.getMappingStrategy().addShadowColumnUpdate(new ShadowColumnValueProvider<>(projectedColumn, provider.getValueProvider()));
+				});
+			}
+		};
 	}
 	
 	@Override

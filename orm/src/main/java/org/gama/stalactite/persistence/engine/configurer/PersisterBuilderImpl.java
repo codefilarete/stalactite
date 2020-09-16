@@ -363,8 +363,9 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 	}
 	
 	/**
-	 * Adds one-to-one and one-to-many graph node to the given root. Used for select by entity properties because without this it could not load
-	 * whole entity graph
+	 * Declares one-to-one and one-to-many graph properties as criteria of {@link org.gama.stalactite.persistence.engine.IEntityPersister.EntityCriteria}.
+	 * Made by registering these relations to given node. Necessary operation without which entity graph could not be loaded.
+	 * <strong>Requires that one-to-one and one-to-many target persisters to be already present in given {@link PersisterRegistry}</strong>
 	 *
 	 * @param configurationSupport entity mapping configuration which relations must be registered onto target
 	 * @param target the node on which to add sub graph elements
@@ -421,15 +422,15 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 																				Mapping mapping,
 																				Dialect dialect,
 																				IConnectionConfiguration connectionConfiguration) {
-		EntityMappingConfiguration mainMappingConfiguration = (EntityMappingConfiguration) mapping.mappingConfiguration;
+		EntityMappingConfiguration mappingConfiguration = (EntityMappingConfiguration) mapping.mappingConfiguration;
 		ClassMappingStrategy<C, I, T> parentMappingStrategy = createClassMappingStrategy(
-				identification.getIdentificationDefiner().getPropertiesMapping() == mainMappingConfiguration.getPropertiesMapping(),
+				identification.getIdentificationDefiner().getPropertiesMapping() == mappingConfiguration.getPropertiesMapping(),
 				mapping.targetTable,
 				mapping.mapping,
 				mapping.propertiesSetByConstructor,
 				identification,
-				mainMappingConfiguration.getEntityType(),
-				mainMappingConfiguration.getEntityFactory());
+				mappingConfiguration.getEntityType(),
+				mappingConfiguration.getEntityFactory());
 		return new JoinedTablesPersister<>(parentMappingStrategy, dialect, connectionConfiguration);
 	}
 	
