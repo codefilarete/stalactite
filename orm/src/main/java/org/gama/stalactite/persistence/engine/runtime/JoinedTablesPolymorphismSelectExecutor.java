@@ -26,6 +26,8 @@ import org.gama.stalactite.sql.dml.PreparedSQL;
 import org.gama.stalactite.sql.dml.ReadOperation;
 import org.gama.stalactite.sql.result.RowIterator;
 
+import static org.gama.stalactite.persistence.engine.runtime.SecondPhaseOneToOneLoader.isDefaultValue;
+
 /**
  * @author Guillaume Mary
  */
@@ -100,7 +102,7 @@ public class JoinedTablesPolymorphismSelectExecutor<C, I, T extends Table> imple
 							Iterator<Column> columnIt = e.getValue().getPrimaryKey().getColumns().iterator();
 							while (isPKEmpty && columnIt.hasNext()) {
 								Column column = columnIt.next();
-								isPKEmpty = columnedRow.getValue(column, row) != null;
+								isPKEmpty = !isDefaultValue(columnedRow.getValue(column, row));
 							}
 							return isPKEmpty;
 						});

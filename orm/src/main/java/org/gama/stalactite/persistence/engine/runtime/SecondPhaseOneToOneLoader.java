@@ -72,7 +72,7 @@ class SecondPhaseOneToOneLoader<SRC, TRGT, ID> implements SelectListener<SRC, ID
 				.invoke(targetIds -> targetIds.forEach(targetId -> beanRelationFixer.apply(src, targetPerId.get(targetId)))));
 	}
 	
-	private boolean isDefaultValue(Object value) {
+	static boolean isDefaultValue(Object value) {
 		return value == null || Reflections.PRIMITIVE_DEFAULT_VALUES.get(value.getClass()) == value;
 	}
 	
