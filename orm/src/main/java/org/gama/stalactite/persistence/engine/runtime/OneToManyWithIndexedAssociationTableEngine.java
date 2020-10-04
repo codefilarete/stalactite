@@ -19,11 +19,11 @@ import static org.gama.lang.collection.Iterables.minus;
 /**
  * @author Guillaume Mary
  */
-public class OneToManyWithIndexedAssociationTableEngine<SRC, TRGT, ID, C extends List<TRGT>>
-		extends AbstractOneToManyWithAssociationTableEngine<SRC, TRGT, ID, C, IndexedAssociationRecord, IndexedAssociationTable> {
+public class OneToManyWithIndexedAssociationTableEngine<SRC, TRGT, SRCID, TRGTID, C extends List<TRGT>>
+		extends AbstractOneToManyWithAssociationTableEngine<SRC, TRGT, SRCID, TRGTID, C, IndexedAssociationRecord, IndexedAssociationTable> {
 	
-	public OneToManyWithIndexedAssociationTableEngine(IConfiguredPersister<SRC, ID> joinedTablesPersister,
-													  IEntityConfiguredJoinedTablesPersister<TRGT, ID> targetPersister,
+	public OneToManyWithIndexedAssociationTableEngine(IConfiguredPersister<SRC, SRCID> joinedTablesPersister,
+													  IEntityConfiguredJoinedTablesPersister<TRGT, TRGTID> targetPersister,
 													  ManyRelationDescriptor<SRC, TRGT, C> manyRelationDescriptor,
 													  AssociationRecordPersister<IndexedAssociationRecord, IndexedAssociationTable> associationPersister) {
 		super(joinedTablesPersister, targetPersister, manyRelationDescriptor, associationPersister);
@@ -135,11 +135,11 @@ public class OneToManyWithIndexedAssociationTableEngine<SRC, TRGT, ID, C extends
 	}
 	
 	@Override
-	protected IndexedAssociationRecordInsertionCascader<SRC, TRGT, ID, ID, C> newRecordInsertionCascader(
+	protected IndexedAssociationRecordInsertionCascader<SRC, TRGT, SRCID, TRGTID, C> newRecordInsertionCascader(
 			Function<SRC, C> collectionGetter,
 			AssociationRecordPersister<IndexedAssociationRecord, IndexedAssociationTable> associationPersister,
-			IEntityMappingStrategy<SRC, ID, ?> mappingStrategy,
-			IEntityMappingStrategy<TRGT, ID, ?> targetStrategy) {
+			IEntityMappingStrategy<SRC, SRCID, ?> mappingStrategy,
+			IEntityMappingStrategy<TRGT, TRGTID, ?> targetStrategy) {
 		return new IndexedAssociationRecordInsertionCascader<>(associationPersister, collectionGetter, mappingStrategy, targetStrategy);
 	}
 	

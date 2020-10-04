@@ -26,7 +26,7 @@ import static org.gama.lang.collection.Iterables.stream;
 /**
  * @author Guillaume Mary
  */
-public class OneToManyWithMappedAssociationEngine<SRC, TRGT, ID, C extends Collection<TRGT>> {
+public class OneToManyWithMappedAssociationEngine<SRC, TRGT, SRCID, TRGTID, C extends Collection<TRGT>> {
 	
 	/** Empty setter for applying source entity to target entity (reverse side) */
 	public static final BiConsumer NOOP_REVERSE_SETTER = (o, i) -> {
@@ -35,15 +35,15 @@ public class OneToManyWithMappedAssociationEngine<SRC, TRGT, ID, C extends Colle
 		 */
 	};
 	
-	protected final IEntityConfiguredJoinedTablesPersister<SRC, ID> sourcePersister;
+	protected final IEntityConfiguredJoinedTablesPersister<SRC, SRCID> sourcePersister;
 	
-	protected final IEntityConfiguredJoinedTablesPersister<TRGT, ID> targetPersister;
+	protected final IEntityConfiguredJoinedTablesPersister<TRGT, TRGTID> targetPersister;
 	
 	protected final ManyRelationDescriptor<SRC, TRGT, C> manyRelationDefinition;
 	
-	public OneToManyWithMappedAssociationEngine(IEntityConfiguredJoinedTablesPersister<TRGT, ID> targetPersister,
+	public OneToManyWithMappedAssociationEngine(IEntityConfiguredJoinedTablesPersister<TRGT, TRGTID> targetPersister,
 												ManyRelationDescriptor<SRC, TRGT, C> manyRelationDefinition,
-												IEntityConfiguredJoinedTablesPersister<SRC, ID> sourcePersister) {
+												IEntityConfiguredJoinedTablesPersister<SRC, SRCID> sourcePersister) {
 		this.targetPersister = targetPersister;
 		this.manyRelationDefinition = manyRelationDefinition;
 		this.sourcePersister = sourcePersister;
@@ -66,9 +66,9 @@ public class OneToManyWithMappedAssociationEngine<SRC, TRGT, ID, C extends Colle
 		// we must trigger subgraph event on loading of our own graph, this is mainly for event that initializes things because given ids
 		// are not those of their entity
 		SelectListener targetSelectListener = targetPersister.getPersisterListener().getSelectListener();
-		sourcePersister.addSelectListener(new SelectListener<SRC, ID>() {
+		sourcePersister.addSelectListener(new SelectListener<SRC, SRCID>() {
 			@Override
-			public void beforeSelect(Iterable<ID> ids) {
+			public void beforeSelect(Iterable<SRCID> ids) {
 				// since ids are not those of its entities, we should not pass them as argument, this will only initialize things if needed
 				targetSelectListener.beforeSelect(Collections.emptyList());
 			}
@@ -83,7 +83,7 @@ public class OneToManyWithMappedAssociationEngine<SRC, TRGT, ID, C extends Colle
 			}
 
 			@Override
-			public void onError(Iterable<ID> ids, RuntimeException exception) {
+			public void onError(Iterable<SRCID> ids, RuntimeException exception) {
 				// since ids are not those of its entities, we should not pass them as argument
 				targetSelectListener.onError(Collections.emptyList(), exception);
 			}

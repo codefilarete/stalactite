@@ -74,20 +74,20 @@ import static org.gama.stalactite.persistence.engine.CascadeOptions.RelationMode
 /**
  * @param <SRC> type of input (left/source entities)
  * @param <TRGT> type of output (right/target entities)
- * @param <ID> identifier type of target entities
+ * @param <SRCID> identifier type of target entities
  * @author Guillaume Mary
  */
-public class CascadeOneConfigurer<SRC, TRGT, ID> {
+public class CascadeOneConfigurer<SRC, TRGT, SRCID, TRGTID> {
 	
 	private final Dialect dialect;
 	private final IConnectionConfiguration connectionConfiguration;
 	private final PersisterRegistry persisterRegistry;
-	private final PersisterBuilderImpl<TRGT, ID> targetPersisterBuilder;
+	private final PersisterBuilderImpl<TRGT, TRGTID> targetPersisterBuilder;
 	
 	public CascadeOneConfigurer(Dialect dialect,
 								IConnectionConfiguration connectionConfiguration,
 								PersisterRegistry persisterRegistry,
-								PersisterBuilderImpl<TRGT, ID> targetPersisterBuilder) {
+								PersisterBuilderImpl<TRGT, TRGTID> targetPersisterBuilder) {
 		this.dialect = dialect;
 		this.connectionConfiguration = connectionConfiguration;
 		this.persisterRegistry = persisterRegistry;
@@ -95,12 +95,12 @@ public class CascadeOneConfigurer<SRC, TRGT, ID> {
 	}
 	
 	public <T extends Table<T>> void appendCascade(
-			CascadeOne<SRC, TRGT, ID> cascadeOne,
-			IEntityConfiguredJoinedTablesPersister<SRC, ID> sourcePersister,
+			CascadeOne<SRC, TRGT, TRGTID> cascadeOne,
+			IEntityConfiguredJoinedTablesPersister<SRC, SRCID> sourcePersister,
 			ForeignKeyNamingStrategy foreignKeyNamingStrategy,
 			ColumnNamingStrategy joinColumnNamingStrategy) {
 		
-		ConfigurerTemplate<SRC, TRGT, ID> configurer;
+		ConfigurerTemplate<SRC, TRGT, SRCID, TRGTID> configurer;
 		if (cascadeOne.isRelationOwnedByTarget()) {
 			configurer = new RelationOwnedByTargetConfigurer<>(dialect, connectionConfiguration, persisterRegistry, targetPersisterBuilder);
 		} else {
@@ -109,26 +109,26 @@ public class CascadeOneConfigurer<SRC, TRGT, ID> {
 		configurer.appendCascade(cascadeOne, sourcePersister, foreignKeyNamingStrategy, joinColumnNamingStrategy);
 	}
 	
-	private abstract static class ConfigurerTemplate<SRC, TRGT, ID> {
+	private abstract static class ConfigurerTemplate<SRC, TRGT, SRCID, TRGTID> {
 		
 		protected final Dialect dialect;
 		protected final IConnectionConfiguration connectionConfiguration;
 		private final PersisterRegistry persisterRegistry;
-		private final PersisterBuilderImpl<TRGT, ID> targetPersisterBuilder;
+		private final PersisterBuilderImpl<TRGT, TRGTID> targetPersisterBuilder;
 		
 		protected ConfigurerTemplate(Dialect dialect,
 									 IConnectionConfiguration connectionConfiguration,
 									 PersisterRegistry persisterRegistry,
-									 PersisterBuilderImpl<TRGT, ID> targetPersisterBuilder) {
+									 PersisterBuilderImpl<TRGT, TRGTID> targetPersisterBuilder) {
 			this.dialect = dialect;
 			this.connectionConfiguration = connectionConfiguration;
 			this.persisterRegistry = persisterRegistry;
 			this.targetPersisterBuilder = targetPersisterBuilder;
 		}
 		
-		protected IConfiguredPersister<TRGT, ID> appendCascade(
-				CascadeOne<SRC, TRGT, ID> cascadeOne,
-				IEntityConfiguredJoinedTablesPersister<SRC, ID> sourcePersister,
+		protected IConfiguredPersister<TRGT, TRGTID> appendCascade(
+				CascadeOne<SRC, TRGT, TRGTID> cascadeOne,
+				IEntityConfiguredJoinedTablesPersister<SRC, SRCID> sourcePersister,
 				ForeignKeyNamingStrategy foreignKeyNamingStrategy,
 				ColumnNamingStrategy joinColumnNamingStrategy) {
 			
@@ -136,18 +136,18 @@ public class CascadeOneConfigurer<SRC, TRGT, ID> {
 			if (maintenanceMode == ASSOCIATION_ONLY) {
 				throw new MappingConfigurationException(ASSOCIATION_ONLY + " is only relevent for one-to-many association");
 			}
-			IEntityMappingStrategy<SRC, ID, ?> mappingStrategy = sourcePersister.getMappingStrategy();
+			IEntityMappingStrategy<SRC, SRCID, ?> mappingStrategy = sourcePersister.getMappingStrategy();
 			if (mappingStrategy.getTargetTable().getPrimaryKey().getColumns().size() > 1) {
 				throw new NotYetSupportedOperationException("Joining tables on a composed primary key is not (yet) supported");
 			}
 			
 			IReversibleAccessor<SRC, TRGT> targetAccessor = cascadeOne.getTargetProvider();
 			
-			IEntityConfiguredPersister<TRGT, ID> targetPersister = targetPersisterBuilder
+			IEntityConfiguredPersister<TRGT, TRGTID> targetPersister = targetPersisterBuilder
 					// please note that even if no table is found in configuration, build(..) will create one
 					.build(dialect, connectionConfiguration, persisterRegistry, 
 							nullable(cascadeOne.getTargetTable()).getOr(nullable(cascadeOne.getReverseColumn()).map(Column::getTable).get()));
-			IEntityMappingStrategy<TRGT, ID, ?> targetMappingStrategy = targetPersister.getMappingStrategy();
+			IEntityMappingStrategy<TRGT, TRGTID, ?> targetMappingStrategy = targetPersister.getMappingStrategy();
 			
 			// Finding joined columns
 			Duo<Column, Column> foreignKeyColumns = determineForeignKeyColumns(cascadeOne, mappingStrategy, targetAccessor,
@@ -158,7 +158,7 @@ public class CascadeOneConfigurer<SRC, TRGT, ID> {
 			
 			// selection is always present (else configuration is nonsense !)
 			BeanRelationFixer<SRC, TRGT> beanRelationFixer = determineRelationFixer(targetAccessor);
-			addSelectCascade(cascadeOne, sourcePersister, (IEntityConfiguredJoinedTablesPersister<TRGT, ID>) targetPersister, leftColumn, rightColumn, beanRelationFixer);
+			addSelectCascade(cascadeOne, sourcePersister, (IEntityConfiguredJoinedTablesPersister<TRGT, SRCID>) targetPersister, leftColumn, rightColumn, beanRelationFixer);
 			
 			// additionnal cascade
 			boolean orphanRemoval = maintenanceMode == ALL_ORPHAN_REMOVAL;
@@ -178,35 +178,35 @@ public class CascadeOneConfigurer<SRC, TRGT, ID> {
 			return BeanRelationFixer.of(targetSetter::set);
 		}
 		
-		protected abstract Duo<Column, Column> determineForeignKeyColumns(CascadeOne<SRC, TRGT, ID> cascadeOne,
-																							   IEntityMappingStrategy<SRC, ID, ?> mappingStrategy,
+		protected abstract Duo<Column, Column> determineForeignKeyColumns(CascadeOne<SRC, TRGT, TRGTID> cascadeOne,
+																							   IEntityMappingStrategy<SRC, SRCID, ?> mappingStrategy,
 																							   IReversibleAccessor<SRC, TRGT> targetAccessor,
-																							   IEntityMappingStrategy<TRGT, ID, ?> targetMappingStrategy,
+																							   IEntityMappingStrategy<TRGT, TRGTID, ?> targetMappingStrategy,
 																							   ForeignKeyNamingStrategy foreignKeyNamingStrategy,
 																							   ColumnNamingStrategy joinColumnNamingStrategy);
 		
 		@SuppressWarnings("squid:S1172")	// argument targetPersister is used by subclasses
-		protected void addInsertCascade(CascadeOne<SRC, TRGT, ID> cascadeOne,
-										IEntityConfiguredPersister<TRGT, ID> targetPersister,
-										IEntityConfiguredJoinedTablesPersister<SRC, ID> srcPersisterListener) {
+		protected void addInsertCascade(CascadeOne<SRC, TRGT, TRGTID> cascadeOne,
+										IEntityConfiguredPersister<TRGT, TRGTID> targetPersister,
+										IEntityConfiguredJoinedTablesPersister<SRC, SRCID> srcPersisterListener) {
 			// if cascade is mandatory, then adding nullability checking before insert
 			if (!cascadeOne.isNullable()) {
 				srcPersisterListener.addInsertListener(new MandatoryRelationCheckingBeforeInsertListener<>(cascadeOne.getTargetProvider()));
 			}
 		}
 		
-		protected abstract void addUpdateCascade(CascadeOne<SRC, TRGT, ID> cascadeOne, IEntityConfiguredPersister<TRGT, ID> targetPersister,
-												 IEntityConfiguredJoinedTablesPersister<SRC, ID> srcPersisterListener, boolean orphanRemoval);
+		protected abstract void addUpdateCascade(CascadeOne<SRC, TRGT, TRGTID> cascadeOne, IEntityConfiguredPersister<TRGT, TRGTID> targetPersister,
+												 IEntityConfiguredJoinedTablesPersister<SRC, SRCID> srcPersisterListener, boolean orphanRemoval);
 		
-		protected abstract void addDeleteCascade(CascadeOne<SRC, TRGT, ID> cascadeOne, IEntityConfiguredPersister<TRGT, ID> targetPersister,
-												 IPersisterListener<SRC, ID> srcPersisterListener, boolean orphanRemoval);
+		protected abstract void addDeleteCascade(CascadeOne<SRC, TRGT, TRGTID> cascadeOne, IEntityConfiguredPersister<TRGT, TRGTID> targetPersister,
+												 IPersisterListener<SRC, SRCID> srcPersisterListener, boolean orphanRemoval);
 		
-		protected <T1 extends Table<T1>, T2 extends Table<T2>, P extends IJoinedTablesPersister<SRC, ID> & IPersisterListener<SRC, ID>> void addSelectCascade(
-				CascadeOne<SRC, TRGT, ID> cascadeOne,
+		protected <T1 extends Table<T1>, T2 extends Table<T2>, P extends IJoinedTablesPersister<SRC, SRCID> & IPersisterListener<SRC, SRCID>> void addSelectCascade(
+				CascadeOne<SRC, TRGT, TRGTID> cascadeOne,
 				P sourcePersister,
-				IConfiguredJoinedTablesPersister<TRGT, ID> targetPersister,
-				Column<T1, ID> leftColumn,
-				Column<T2, ID> rightColumn,
+				IConfiguredJoinedTablesPersister<TRGT, SRCID> targetPersister,
+				Column<T1, SRCID> leftColumn,
+				Column<T2, SRCID> rightColumn,
 				BeanRelationFixer<SRC, TRGT> beanRelationFixer) {
 			
 			// we add target subgraph joins to the one that was created
@@ -215,9 +215,9 @@ public class CascadeOneConfigurer<SRC, TRGT, ID> {
 			// We trigger subgraph load event (via targetSelectListener) on loading of our graph.
 			// Done for instance for event consumers that initialize some things, because given ids of methods are those of source entity
 			SelectListener targetSelectListener = targetPersister.getPersisterListener().getSelectListener();
-			sourcePersister.addSelectListener(new SelectListener<SRC, ID>() {
+			sourcePersister.addSelectListener(new SelectListener<SRC, SRCID>() {
 				@Override
-				public void beforeSelect(Iterable<ID> ids) {
+				public void beforeSelect(Iterable<SRCID> ids) {
 					// since ids are not those of its entities, we should not pass them as argument, this will only initialize things if needed
 					targetSelectListener.beforeSelect(Collections.emptyList());
 				}
@@ -231,7 +231,7 @@ public class CascadeOneConfigurer<SRC, TRGT, ID> {
 				}
 
 				@Override
-				public void onError(Iterable<ID> ids, RuntimeException exception) {
+				public void onError(Iterable<SRCID> ids, RuntimeException exception) {
 					// since ids are not those of its entities, we should not pass them as argument
 					targetSelectListener.onError(Collections.emptyList(), exception);
 				}
@@ -240,21 +240,21 @@ public class CascadeOneConfigurer<SRC, TRGT, ID> {
 		
 	}
 	
-	private static class RelationOwnedBySourceConfigurer<SRC, TRGT, ID> extends ConfigurerTemplate<SRC, TRGT, ID> {
+	private static class RelationOwnedBySourceConfigurer<SRC, TRGT, SRCID, TRGTID> extends ConfigurerTemplate<SRC, TRGT, SRCID, TRGTID> {
 		
 		private RelationOwnedBySourceConfigurer(Dialect dialect,
 												IConnectionConfiguration connectionConfiguration,
 												PersisterRegistry persisterRegistry,
-												PersisterBuilderImpl<TRGT, ID> targetPersisterBuilder) {
+												PersisterBuilderImpl<TRGT, TRGTID> targetPersisterBuilder) {
 			super(dialect, connectionConfiguration, persisterRegistry, targetPersisterBuilder);
 		}
 		
 		@Override
-		protected IConfiguredPersister<TRGT, ID> appendCascade(CascadeOne<SRC, TRGT, ID> cascadeOne,
-															   IEntityConfiguredJoinedTablesPersister<SRC, ID> sourcePersister,
-															   ForeignKeyNamingStrategy foreignKeyNamingStrategy,
-															   ColumnNamingStrategy joinColumnNamingStrategy) {
-			IConfiguredPersister<TRGT, ID> targetPersister = super.appendCascade(cascadeOne, sourcePersister, foreignKeyNamingStrategy, joinColumnNamingStrategy);
+		protected IConfiguredPersister<TRGT, TRGTID> appendCascade(CascadeOne<SRC, TRGT, TRGTID> cascadeOne,
+																  IEntityConfiguredJoinedTablesPersister<SRC, SRCID> sourcePersister,
+																  ForeignKeyNamingStrategy foreignKeyNamingStrategy,
+																  ColumnNamingStrategy joinColumnNamingStrategy) {
+			IConfiguredPersister<TRGT, TRGTID> targetPersister = super.appendCascade(cascadeOne, sourcePersister, foreignKeyNamingStrategy, joinColumnNamingStrategy);
 			Column owningColumn = sourcePersister.getMappingStrategy().getPropertyToColumn().get(cascadeOne.getTargetProvider());
 			// we have to register a parameter binder for target entity so inserts & updates can get value from the property, without it, engine
 			// tries to find a binder for target entity which doesn't exist 
@@ -264,17 +264,17 @@ public class CascadeOneConfigurer<SRC, TRGT, ID> {
 		}
 				
 		@Override
-		protected Duo<Column, Column> determineForeignKeyColumns(CascadeOne<SRC, TRGT, ID> cascadeOne,
-																					  IEntityMappingStrategy<SRC, ID, ?> srcMappingStrategy,
+		protected Duo<Column, Column> determineForeignKeyColumns(CascadeOne<SRC, TRGT, TRGTID> cascadeOne,
+																					  IEntityMappingStrategy<SRC, SRCID, ?> srcMappingStrategy,
 																					  IReversibleAccessor<SRC, TRGT> targetAccessor,
-																					  IEntityMappingStrategy<TRGT, ID, ?> targetMappingStrategy,
+																					  IEntityMappingStrategy<TRGT, TRGTID, ?> targetMappingStrategy,
 																					  ForeignKeyNamingStrategy foreignKeyNamingStrategy,
 																					  ColumnNamingStrategy joinColumnNamingStrategy) {
 			// targetAccessor may not be the one that was declared in propertyToColumn, so we need to wrap them into a more flexible search structure : ValueAccessPointMap
-			Column<Table, ID> leftColumn = (Column<Table, ID>) new ValueAccessPointMap<Column>(srcMappingStrategy.getPropertyToColumn()).get(targetAccessor);
+			Column<Table, SRCID> leftColumn = (Column<Table, SRCID>) new ValueAccessPointMap<Column>(srcMappingStrategy.getPropertyToColumn()).get(targetAccessor);
 			// According to the nullable option, we specify the ddl schema option
 			leftColumn.nullable(cascadeOne.isNullable());
-			Column<?, ID> rightColumn = (Column<?, ID>) Iterables.first((Set<Column<?, Object>>) targetMappingStrategy.getTargetTable().getPrimaryKey().getColumns());
+			Column<?, SRCID> rightColumn = (Column<?, SRCID>) Iterables.first((Set<Column<?, Object>>) targetMappingStrategy.getTargetTable().getPrimaryKey().getColumns());
 			
 			// adding foreign key constraint
 			String foreignKeyName = foreignKeyNamingStrategy.giveName(leftColumn, rightColumn);
@@ -283,18 +283,18 @@ public class CascadeOneConfigurer<SRC, TRGT, ID> {
 		}
 		
 		@Override
-		protected void addInsertCascade(CascadeOne<SRC, TRGT, ID> cascadeOne,
-										IEntityConfiguredPersister<TRGT, ID> targetPersister,
-										IEntityConfiguredJoinedTablesPersister<SRC, ID> srcPersisterListener) {
+		protected void addInsertCascade(CascadeOne<SRC, TRGT, TRGTID> cascadeOne,
+										IEntityConfiguredPersister<TRGT, TRGTID> targetPersister,
+										IEntityConfiguredJoinedTablesPersister<SRC, SRCID> srcPersisterListener) {
 			super.addInsertCascade(cascadeOne, targetPersister, srcPersisterListener);
 			// adding cascade treatment: before source insert, target is inserted to comply with foreign key constraint
 			srcPersisterListener.addInsertListener(new BeforeInsertSupport<>(targetPersister::persist, cascadeOne.getTargetProvider()::get, Objects::nonNull));
 		}
 		
 		@Override
-		protected void addUpdateCascade(CascadeOne<SRC, TRGT, ID> cascadeOne,
-										IEntityConfiguredPersister<TRGT, ID> targetPersister,
-										IEntityConfiguredJoinedTablesPersister<SRC, ID> srcPersisterListener,
+		protected void addUpdateCascade(CascadeOne<SRC, TRGT, TRGTID> cascadeOne,
+										IEntityConfiguredPersister<TRGT, TRGTID> targetPersister,
+										IEntityConfiguredJoinedTablesPersister<SRC, SRCID> srcPersisterListener,
 										boolean orphanRemoval) {
 			// if cascade is mandatory, then adding nullability checking before insert
 			if (!cascadeOne.isNullable()) {
@@ -336,9 +336,9 @@ public class CascadeOneConfigurer<SRC, TRGT, ID> {
 		}
 		
 		@Override
-		protected void addDeleteCascade(CascadeOne<SRC, TRGT, ID> cascadeOne,
-										IEntityConfiguredPersister<TRGT, ID> targetPersister,
-										IPersisterListener<SRC, ID> srcPersisterListener, boolean orphanRemoval) {
+		protected void addDeleteCascade(CascadeOne<SRC, TRGT, TRGTID> cascadeOne,
+										IEntityConfiguredPersister<TRGT, TRGTID> targetPersister,
+										IPersisterListener<SRC, SRCID> srcPersisterListener, boolean orphanRemoval) {
 			if (orphanRemoval) {
 				// adding cascade treatment: target is deleted after source deletion (because of foreign key constraint)
 				Predicate<TRGT> deletionPredicate = ((Predicate<TRGT>) Objects::nonNull).and(not(targetPersister.getMappingStrategy().getIdMappingStrategy()::isNew));
@@ -350,7 +350,7 @@ public class CascadeOneConfigurer<SRC, TRGT, ID> {
 	}
 	
 	
-	private static class RelationOwnedByTargetConfigurer<SRC, TRGT, ID> extends ConfigurerTemplate<SRC, TRGT, ID> {
+	private static class RelationOwnedByTargetConfigurer<SRC, TRGT, SRCID, TRGTID> extends ConfigurerTemplate<SRC, TRGT, SRCID, TRGTID> {
 		
 		private static final Function NULL_RETURNING_FUNCTION = trgt -> null;
 		
@@ -375,20 +375,20 @@ public class CascadeOneConfigurer<SRC, TRGT, ID> {
 		private RelationOwnedByTargetConfigurer(Dialect dialect,
 												IConnectionConfiguration connectionConfiguration,
 												PersisterRegistry persisterRegistry,
-												PersisterBuilderImpl<TRGT, ID> targetPersisterBuilder) {
+												PersisterBuilderImpl<TRGT, TRGTID> targetPersisterBuilder) {
 			super(dialect, connectionConfiguration, persisterRegistry, targetPersisterBuilder);
 		}
 		
 		@Override
-		protected Duo<Column, Column> determineForeignKeyColumns(CascadeOne<SRC, TRGT, ID> cascadeOne,
-																					  IEntityMappingStrategy<SRC, ID, ?> mappingStrategy,
+		protected Duo<Column, Column> determineForeignKeyColumns(CascadeOne<SRC, TRGT, TRGTID> cascadeOne,
+																					  IEntityMappingStrategy<SRC, SRCID, ?> mappingStrategy,
 																					  IReversibleAccessor<SRC, TRGT> targetAccessor,
-																					  IEntityMappingStrategy<TRGT, ID, ?> targetMappingStrategy,
+																					  IEntityMappingStrategy<TRGT, TRGTID, ?> targetMappingStrategy,
 																					  ForeignKeyNamingStrategy foreignKeyNamingStrategy,
 																					  ColumnNamingStrategy joinColumnNamingStrategy) {
 			
 			// left column is always left table primary key
-			Column<Table, ID> leftColumn = (Column<Table, ID>) Iterables.first(mappingStrategy.getTargetTable().getPrimaryKey().getColumns());
+			Column<Table, SRCID> leftColumn = (Column<Table, SRCID>) Iterables.first(mappingStrategy.getTargetTable().getPrimaryKey().getColumns());
 			// right column depends on relation owner
 			if (cascadeOne.getReverseColumn() != null) {
 				rightColumn = cascadeOne.getReverseColumn();
@@ -439,7 +439,7 @@ public class CascadeOneConfigurer<SRC, TRGT, ID> {
 			return new Duo<>(leftColumn, rightColumn);
 		}
 		
-		private Column createOrUseReverseColumn(IEntityMappingStrategy<TRGT, ID, ?> targetMappingStrategy, Column reverseColumn,
+		private Column createOrUseReverseColumn(IEntityMappingStrategy<TRGT, TRGTID, ?> targetMappingStrategy, Column reverseColumn,
 												ValueAccessPoint reverseGetter, AccessorDefinition accessorDefinition,
 												ColumnNamingStrategy joinColumnNamingStrategy) {
 			if (reverseColumn == null) {
@@ -459,9 +459,9 @@ public class CascadeOneConfigurer<SRC, TRGT, ID> {
 		}
 		
 		@Override
-		protected void addInsertCascade(CascadeOne<SRC, TRGT, ID> cascadeOne,
-										IEntityConfiguredPersister<TRGT, ID> targetPersister,
-										IEntityConfiguredJoinedTablesPersister<SRC, ID> srcPersisterListener) {
+		protected void addInsertCascade(CascadeOne<SRC, TRGT, TRGTID> cascadeOne,
+										IEntityConfiguredPersister<TRGT, TRGTID> targetPersister,
+										IEntityConfiguredJoinedTablesPersister<SRC, SRCID> srcPersisterListener) {
 			super.addInsertCascade(cascadeOne, targetPersister, srcPersisterListener);
 			// adding cascade treatment: after source insert, target is inserted to comply with foreign key constraint
 			srcPersisterListener.addInsertListener(new AfterInsertSupport<>(targetPersister::persist, cascadeOne.getTargetProvider()::get, Objects::nonNull));
@@ -469,9 +469,9 @@ public class CascadeOneConfigurer<SRC, TRGT, ID> {
 		}
 		
 		@Override
-		protected void addUpdateCascade(CascadeOne<SRC, TRGT, ID> cascadeOne,
-										IEntityConfiguredPersister<TRGT, ID> targetPersister,
-										IEntityConfiguredJoinedTablesPersister<SRC, ID> srcPersisterListener,
+		protected void addUpdateCascade(CascadeOne<SRC, TRGT, TRGTID> cascadeOne,
+										IEntityConfiguredPersister<TRGT, TRGTID> targetPersister,
+										IEntityConfiguredJoinedTablesPersister<SRC, SRCID> srcPersisterListener,
 										boolean orphanRemoval) {
 			// if cascade is mandatory, then adding nullability checking before insert
 			if (!cascadeOne.isNullable()) {
@@ -552,9 +552,9 @@ public class CascadeOneConfigurer<SRC, TRGT, ID> {
 		}
 		
 		@Override
-		protected void addDeleteCascade(CascadeOne<SRC, TRGT, ID> cascadeOne,
-										IEntityConfiguredPersister<TRGT, ID> targetPersister,
-										IPersisterListener<SRC, ID> srcPersisterListener, boolean deleteTargetEntities) {
+		protected void addDeleteCascade(CascadeOne<SRC, TRGT, TRGTID> cascadeOne,
+										IEntityConfiguredPersister<TRGT, TRGTID> targetPersister,
+										IPersisterListener<SRC, SRCID> srcPersisterListener, boolean deleteTargetEntities) {
 			if (deleteTargetEntities) {
 				// adding cascade treatment: target is deleted before source deletion (because of foreign key constraint)
 				Predicate<TRGT> deletionPredicate = ((Predicate<TRGT>) Objects::nonNull).and(not(targetPersister.getMappingStrategy().getIdMappingStrategy()::isNew));
@@ -569,10 +569,10 @@ public class CascadeOneConfigurer<SRC, TRGT, ID> {
 		
 		private class NullifyRelationColumnBeforeDelete implements DeleteListener<SRC> {
 			
-			private final CascadeOne<SRC, TRGT, ID> cascadeOne;
-			private final IEntityConfiguredPersister<TRGT, ID> targetPersister;
+			private final CascadeOne<SRC, TRGT, TRGTID> cascadeOne;
+			private final IEntityConfiguredPersister<TRGT, TRGTID> targetPersister;
 			
-			private NullifyRelationColumnBeforeDelete(CascadeOne<SRC, TRGT, ID> cascadeOne, IEntityConfiguredPersister<TRGT, ID> targetPersister) {
+			private NullifyRelationColumnBeforeDelete(CascadeOne<SRC, TRGT, TRGTID> cascadeOne, IEntityConfiguredPersister<TRGT, TRGTID> targetPersister) {
 				this.cascadeOne = cascadeOne;
 				this.targetPersister = targetPersister;
 			}

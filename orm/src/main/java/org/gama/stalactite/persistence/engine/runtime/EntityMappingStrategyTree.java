@@ -52,7 +52,7 @@ public class EntityMappingStrategyTree<E, D extends Table> {
 			}
 			
 			@Override
-			public AbstractTransformer copyTransformerWithAliases(ColumnedRow columnedRow) {
+			public AbstractTransformer<E> copyTransformerWithAliases(ColumnedRow columnedRow) {
 				return root.copyTransformerWithAliases(columnedRow);
 			}
 		}, root.getTargetTable(), root.getSelectableColumns(), tableAlias);

@@ -141,16 +141,16 @@ public class EntityMappingStrategyTreeRowTransformer<C> {
 		}
 	}
 	
-	private Object giveRowInstance(Row row,
-								   EntityMappingStrategyTree<Object, ?> entityMappingStrategyTree,
-								   EntityCache entityCache,
-								   TransformerCache beanTransformerCache,
-								   Nullable<C> rootBeanHolder) {
-		EntityInflater<Object, Object> entityInflater = entityMappingStrategyTree.getStrategy();
-		AbstractTransformer rowTransformer = beanTransformerCache.computeIfAbsent(entityInflater, columnedRow);
+	private <E> E giveRowInstance(Row row,
+								  EntityMappingStrategyTree<E, ?> entityMappingStrategyTree,
+								  EntityCache entityCache,
+								  TransformerCache beanTransformerCache,
+								  Nullable<C> rootBeanHolder) {
+		EntityInflater<E, ?> entityInflater = entityMappingStrategyTree.getStrategy();
+		AbstractTransformer<E> rowTransformer = beanTransformerCache.computeIfAbsent(entityInflater, columnedRow);
 		Object identifier = entityInflater.giveIdentifier(row, columnedRow);
 		return entityCache.computeIfAbsent(entityInflater.getEntityType(), identifier, () -> {
-				Object newInstance = rowTransformer.transform(row);
+				E newInstance = rowTransformer.transform(row);
 				if (entityMappingStrategyTree == rootEntityMappingStrategyTree) {
 					rootBeanHolder.elseSet((C) newInstance);
 				}
@@ -244,7 +244,7 @@ public class EntityMappingStrategyTreeRowTransformer<C> {
 		
 		I giveIdentifier(Row row, ColumnedRow columnedRow);
 		
-		AbstractTransformer copyTransformerWithAliases(ColumnedRow columnedRow);
+		AbstractTransformer<E> copyTransformerWithAliases(ColumnedRow columnedRow);
 		
 	}
 }

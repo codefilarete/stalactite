@@ -40,21 +40,21 @@ import static org.gama.stalactite.persistence.engine.runtime.OneToManyWithMapped
 /**
  * @author Guillaume Mary
  */
-public abstract class AbstractOneToManyWithAssociationTableEngine<SRC, TRGT, ID, C extends Collection<TRGT>,
+public abstract class AbstractOneToManyWithAssociationTableEngine<SRC, TRGT, SRCID, TRGTID, C extends Collection<TRGT>,
 		R extends AssociationRecord, T extends AssociationTable> {
 	
 	protected final AssociationRecordPersister<R, T> associationPersister;
 	
-	protected final PersisterListener<SRC, ID> persisterListener;
+	protected final PersisterListener<SRC, SRCID> persisterListener;
 	
-	protected final IConfiguredPersister<SRC, ID> sourcePersister;
+	protected final IConfiguredPersister<SRC, SRCID> sourcePersister;
 	
-	protected final IEntityConfiguredJoinedTablesPersister<TRGT, ID> targetPersister;
+	protected final IEntityConfiguredJoinedTablesPersister<TRGT, TRGTID> targetPersister;
 	
 	protected final ManyRelationDescriptor<SRC, TRGT, C> manyRelationDescriptor;
 	
-	public AbstractOneToManyWithAssociationTableEngine(IConfiguredPersister<SRC, ID> sourcePersister,
-													   IEntityConfiguredJoinedTablesPersister<TRGT, ID> targetPersister,
+	public AbstractOneToManyWithAssociationTableEngine(IConfiguredPersister<SRC, SRCID> sourcePersister,
+													   IEntityConfiguredJoinedTablesPersister<TRGT, TRGTID> targetPersister,
 													   ManyRelationDescriptor<SRC, TRGT, C> manyRelationDescriptor,
 													   AssociationRecordPersister<R, T> associationPersister) {
 		this.sourcePersister = sourcePersister;
@@ -64,7 +64,7 @@ public abstract class AbstractOneToManyWithAssociationTableEngine<SRC, TRGT, ID,
 		this.associationPersister = associationPersister;
 	}
 	
-	public void addSelectCascade(IEntityConfiguredJoinedTablesPersister<SRC, ID> sourcePersister) {
+	public void addSelectCascade(IEntityConfiguredJoinedTablesPersister<SRC, SRCID> sourcePersister) {
 		
 		// we join on the association table and add bean association in memory
 		String associationTableJoinNodeName = sourcePersister.getEntityMappingStrategyTreeSelectBuilder().addPassiveJoin(ROOT_STRATEGY_NAME,
@@ -85,9 +85,9 @@ public abstract class AbstractOneToManyWithAssociationTableEngine<SRC, TRGT, ID,
 		// We trigger subgraph load event (via targetSelectListener) on loading of our graph.
 		// Done for instance for event consumers that initialize some things, because given ids of methods are those of source entity
 		SelectListener targetSelectListener = targetPersister.getPersisterListener().getSelectListener();
-		sourcePersister.addSelectListener(new SelectListener<SRC, ID>() {
+		sourcePersister.addSelectListener(new SelectListener<SRC, SRCID>() {
 			@Override
-			public void beforeSelect(Iterable<ID> ids) {
+			public void beforeSelect(Iterable<SRCID> ids) {
 				// since ids are not those of its entities, we should not pass them as argument, this will only initialize things if needed
 				targetSelectListener.beforeSelect(Collections.emptyList());
 			}
@@ -102,7 +102,7 @@ public abstract class AbstractOneToManyWithAssociationTableEngine<SRC, TRGT, ID,
 			}
 			
 			@Override
-			public void onError(Iterable<ID> ids, RuntimeException exception) {
+			public void onError(Iterable<SRCID> ids, RuntimeException exception) {
 				// since ids are not those of its entities, we should not pass them as argument
 				targetSelectListener.onError(Collections.emptyList(), exception);
 			}
@@ -226,7 +226,7 @@ public abstract class AbstractOneToManyWithAssociationTableEngine<SRC, TRGT, ID,
 				// entities, only their id)
 				// We do it thanks to a SQL delete order ... not very coherent with beforeDelete(..) !
 				Delete<AssociationTable> delete = new Delete<>(associationPersister.getMainTable());
-				Set<ID> identifiers = collect(entities, this::castId, HashSet::new);
+				Set<SRCID> identifiers = collect(entities, this::castId, HashSet::new);
 				delete.where(associationPersister.getMainTable().getOneSideKeyColumn(), Operators.in(identifiers));
 				
 				PreparedSQL deleteStatement = new DeleteCommandBuilder<>(delete).toStatement(columnBinderRegistry);
@@ -236,7 +236,7 @@ public abstract class AbstractOneToManyWithAssociationTableEngine<SRC, TRGT, ID,
 				}
 			}
 			
-			private ID castId(SRC e) {
+			private SRCID castId(SRC e) {
 				return sourcePersister.getMappingStrategy().getId(e);
 			}
 		});
@@ -251,8 +251,8 @@ public abstract class AbstractOneToManyWithAssociationTableEngine<SRC, TRGT, ID,
 	
 	protected abstract AfterInsertCollectionCascader<SRC, R> newRecordInsertionCascader(Function<SRC, C> collectionGetter,
 																						AssociationRecordPersister<R, T> associationPersister,
-																						IEntityMappingStrategy<SRC, ID, ?> mappingStrategy,
-																						IEntityMappingStrategy<TRGT, ID, ?> strategy);
+																						IEntityMappingStrategy<SRC, SRCID, ?> mappingStrategy,
+																						IEntityMappingStrategy<TRGT, TRGTID, ?> strategy);
 	
 	protected abstract R newRecord(SRC e, TRGT target, int index);
 }

@@ -12,17 +12,17 @@ import static org.gama.lang.collection.Iterables.stream;
 /**
  * @author Guillaume Mary
  */
-class AssociationRecordInsertionCascader<SRC, TRGT, ID, C extends Collection<TRGT>>
+class AssociationRecordInsertionCascader<SRC, TRGT, SRCID, TRGTID, C extends Collection<TRGT>>
 		extends AfterInsertCollectionCascader<SRC, AssociationRecord> {
 	
 	private final Function<SRC, C> collectionGetter;
-	private final IEntityMappingStrategy<SRC, ID, ?> mappingStrategy;
-	private final IEntityMappingStrategy<TRGT, ID, ?> targetStrategy;
+	private final IEntityMappingStrategy<SRC, SRCID, ?> mappingStrategy;
+	private final IEntityMappingStrategy<TRGT, TRGTID, ?> targetStrategy;
 	
 	public AssociationRecordInsertionCascader(AssociationRecordPersister<AssociationRecord, ?> persister,
 											  Function<SRC, C> collectionGetter,
-											  IEntityMappingStrategy<SRC, ID, ?> mappingStrategy,
-											  IEntityMappingStrategy<TRGT, ID, ?> targetStrategy) {
+											  IEntityMappingStrategy<SRC, SRCID, ?> mappingStrategy,
+											  IEntityMappingStrategy<TRGT, TRGTID, ?> targetStrategy) {
 		super(persister);
 		this.collectionGetter = collectionGetter;
 		this.mappingStrategy = mappingStrategy;

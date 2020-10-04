@@ -25,8 +25,8 @@ import org.gama.stalactite.persistence.structure.Table;
 /**
  * @author Guillaume Mary
  */
-public class OneToManyWithIndexedMappedAssociationEngine<SRC, TRGT, ID, C extends List<TRGT>>
-		extends OneToManyWithMappedAssociationEngine<SRC, TRGT, ID, C> {
+public class OneToManyWithIndexedMappedAssociationEngine<SRC, TRGT, SRCID, TRGTID, C extends List<TRGT>>
+		extends OneToManyWithMappedAssociationEngine<SRC, TRGT, SRCID, TRGTID, C> {
 	
 	/**
 	 * Context for indexed mapped List. Will keep bean index during select between "unrelated" methods/phases :
@@ -39,9 +39,9 @@ public class OneToManyWithIndexedMappedAssociationEngine<SRC, TRGT, ID, C extend
 	/** Column that stores index value, owned by reverse side table (table of targetPersister) */
 	private final Column indexingColumn;
 	
-	public OneToManyWithIndexedMappedAssociationEngine(IEntityConfiguredJoinedTablesPersister<TRGT, ID> targetPersister,
+	public OneToManyWithIndexedMappedAssociationEngine(IEntityConfiguredJoinedTablesPersister<TRGT, TRGTID> targetPersister,
 													   IndexedMappedManyRelationDescriptor<SRC, TRGT, C> manyRelationDefinition,
-													   IEntityConfiguredJoinedTablesPersister<SRC, ID> sourcePersister,
+													   IEntityConfiguredJoinedTablesPersister<SRC, SRCID> sourcePersister,
 													   Column indexingColumn) {
 		super(targetPersister, manyRelationDefinition, sourcePersister);
 		this.indexingColumn = indexingColumn;
@@ -62,9 +62,9 @@ public class OneToManyWithIndexedMappedAssociationEngine<SRC, TRGT, ID, C extend
 		// The latter is used because target List is already filled by the relationFixer
 		// If we use the former we must change the relation fixer and keep a temporary List. Seems little bit more complex.
 		// May be changed if any performance issue is noticed
-		sourcePersister.getPersisterListener().addSelectListener(new SelectListener<SRC, ID>() {
+		sourcePersister.getPersisterListener().addSelectListener(new SelectListener<SRC, SRCID>() {
 			@Override
-			public void beforeSelect(Iterable<ID> ids) {
+			public void beforeSelect(Iterable<SRCID> ids) {
 				currentSelectedIndexes.set(new IdentityMap<>());
 			}
 			
@@ -82,7 +82,7 @@ public class OneToManyWithIndexedMappedAssociationEngine<SRC, TRGT, ID, C extend
 			}
 			
 			@Override
-			public void onError(Iterable<ID> ids, RuntimeException exception) {
+			public void onError(Iterable<SRCID> ids, RuntimeException exception) {
 				cleanContext();
 			}
 			
