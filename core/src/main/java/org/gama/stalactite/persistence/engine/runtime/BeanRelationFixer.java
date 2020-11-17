@@ -17,6 +17,9 @@ import org.gama.lang.function.TriConsumer;
  * as well as one-to-many relationship.
  * Since implemenations are quite simple, they are done through all "of" static methods in this interface.
  * 
+ * @param <E> bean type on which relation must be applied to
+ * @param <I> relation input type 
+ *     
  * @author Guillaume Mary
  * @see #of(BiConsumer, Function, Class)
  * @see #of(BiConsumer, Function, Supplier)

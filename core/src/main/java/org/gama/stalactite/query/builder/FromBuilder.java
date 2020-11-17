@@ -90,7 +90,7 @@ public class FromBuilder implements SQLBuilder {
 	}
 	
 	private static String toString(AliasedTable table) {
-		return table.getTable().getAbsoluteName() + " as " + table.getAlias();
+		return table.getTable().getAbsoluteName() + " (alias = " + table.getAlias() + ")";
 	}
 	
 	/**

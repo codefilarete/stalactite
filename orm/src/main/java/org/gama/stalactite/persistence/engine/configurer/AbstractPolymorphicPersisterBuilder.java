@@ -140,7 +140,7 @@ abstract class AbstractPolymorphicPersisterBuilder<C, I, T extends Table> implem
 	abstract void assertSubPolymorphismIsSupported(PolymorphismPolicy<? extends C> subPolymorphismPolicy);
 	
 	/**
-	 * Creates a polymorphic persister for an already-polymorphic one.
+	 * Creates a polymorphic persister for an already-polymorphic case (this class) : used when main persister subclasses are also polymorphic.
 	 *
 	 * @param subPersister a sub class persister of our main persister
 	 * @param subPolymorphismPolicy the sub persister {@link PolymorphismPolicy}
@@ -166,7 +166,7 @@ abstract class AbstractPolymorphicPersisterBuilder<C, I, T extends Table> implem
 				joinColumnNamingStrategy,
 				indexColumnNamingStrategy,
 				associationTableNamingStrategy,
-				mappingStrategy.getPropertyToColumn(),
+				subPersister.getMappingStrategy().getPropertyToColumn(),
 				tableNamingStrategy);
 		return polymorphismPersisterBuilder.build(dialect, connectionConfiguration, persisterRegistry);
 	}

@@ -159,7 +159,7 @@ public class ZonedDateTimeMappingStrategy<T extends Table> implements IEmbeddedB
 		
 		@Nullable
 		@Override
-		public ZonedDateTime newBeanInstance(Row row) {
+		protected ZonedDateTime newBeanInstance(Row row) {
 			return buildZonedDateTime(new ColumnedRow(), row);
 		}
 		
@@ -168,7 +168,7 @@ public class ZonedDateTimeMappingStrategy<T extends Table> implements IEmbeddedB
 			return new ZonedDateTimeToBeanRowTransformer() {
 				@Nullable
 				@Override
-				public ZonedDateTime newBeanInstance(Row row) {
+				protected ZonedDateTime newBeanInstance(Row row) {
 					return buildZonedDateTime(columnedRow, row);
 				}
 			};

@@ -372,17 +372,17 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 	 * @param persisterRegistry a per-entity {@link org.gama.stalactite.persistence.mapping.IEntityMappingStrategy} registry 
 	 */
 	private void registerRelationsInGraph(EntityMappingConfiguration configurationSupport, EntityGraphNode target, PersisterRegistry persisterRegistry) {
-		List<CascadeMany> oneToManys = configurationSupport.getOneToManys();
-		oneToManys.forEach((CascadeMany cascadeMany) -> {
-			EntityGraphNode entityGraphNode = target.registerRelation(cascadeMany.getCollectionProvider(),
-					((IConfiguredPersister) persisterRegistry.getPersister(cascadeMany.getTargetMappingConfiguration().getEntityType())).getMappingStrategy());
-			registerRelationsInGraph(cascadeMany.getTargetMappingConfiguration(), entityGraphNode, persisterRegistry);
-		});
 		List<CascadeOne> oneToOnes = configurationSupport.getOneToOnes();
 		oneToOnes.forEach((CascadeOne cascadeOne) -> {
 			EntityGraphNode entityGraphNode = target.registerRelation(cascadeOne.getTargetProvider(),
 					((IConfiguredPersister) persisterRegistry.getPersister(cascadeOne.getTargetMappingConfiguration().getEntityType())).getMappingStrategy());
 			registerRelationsInGraph(cascadeOne.getTargetMappingConfiguration(), entityGraphNode, persisterRegistry);
+		});
+		List<CascadeMany> oneToManys = configurationSupport.getOneToManys();
+		oneToManys.forEach((CascadeMany cascadeMany) -> {
+			EntityGraphNode entityGraphNode = target.registerRelation(cascadeMany.getCollectionProvider(),
+					((IConfiguredPersister) persisterRegistry.getPersister(cascadeMany.getTargetMappingConfiguration().getEntityType())).getMappingStrategy());
+			registerRelationsInGraph(cascadeMany.getTargetMappingConfiguration(), entityGraphNode, persisterRegistry);
 		});
 	}
 	

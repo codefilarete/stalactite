@@ -74,7 +74,7 @@ public abstract class AbstractTransformer<C> implements IRowTransformer<C> {
 	 * @param row current {@link java.sql.ResultSet} row, may be used to defined which bean to instanciate
 	 * @return a new instance of bean C
 	 */
-	public C newBeanInstance(Row row) {
+	protected C newBeanInstance(Row row) {
 		return (C) beanFactory.apply(c -> this.columnedRow.getValue(c, row));
 	}
 }
