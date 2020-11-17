@@ -98,7 +98,7 @@ class FluentEntityMappingConfigurationSupportOneToManySetTest {
 	
 	@Test
 	void mappedBy_foreignKeyIsCreated() throws SQLException {
-		// mapping building thantks to fluent API
+		// mapping building thanks to fluent API
 		IEntityPersister<Country, Identifier<Long>> countryPersister = MappingEase.entityBuilder(Country.class,
 				Identifier.LONG_TYPE)
 				// setting a foreign key naming strategy to be tested
@@ -519,7 +519,7 @@ class FluentEntityMappingConfigurationSupportOneToManySetTest {
 		
 		@Test
 		void testCascade_readOnly_reverseSideIsNotMapped() throws SQLException {
-			// mapping building thantks to fluent API
+			// mapping building thanks to fluent API
 			IEntityPersister<Country, Identifier<Long>> countryPersister = MappingEase.entityBuilder(Country.class, Identifier.LONG_TYPE)
 					.add(Country::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 					.add(Country::getName)
@@ -597,7 +597,7 @@ class FluentEntityMappingConfigurationSupportOneToManySetTest {
 		
 		@Test
 		void update_noMappedBy_associationTableIsMaintained() {
-			// mapping building thantks to fluent API
+			// mapping building thanks to fluent API
 			IEntityPersister<Country, Identifier<Long>> countryPersister = MappingEase.entityBuilder(Country.class, Identifier.LONG_TYPE)
 					.add(Country::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 					.add(Country::getName)
@@ -1232,7 +1232,7 @@ class FluentEntityMappingConfigurationSupportOneToManySetTest {
 			
 			// this is a configuration safeguard, thus we ensure that configuration matches test below
 			assertNull(((OptimizedUpdatePersister<Country, Identifier<Long>>) countryPersister).getSurrogate()
-					.getEntityMappingStrategyTreeSelectBuilder().getTree("Country_Citys0"));
+					.getEntityJoinTree().getJoin("Country_Citys0"));
 			
 			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
 			ddlDeployer.deployDDL();

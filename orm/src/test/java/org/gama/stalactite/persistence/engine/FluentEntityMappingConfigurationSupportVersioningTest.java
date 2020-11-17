@@ -89,7 +89,7 @@ public class FluentEntityMappingConfigurationSupportVersioningTest {
 		JdbcConnectionProvider surrogateConnectionProvider = new JdbcConnectionProvider(dataSource);
 		ConnectionProvider connectionProvider = new TransactionAwareConnectionProvider(surrogateConnectionProvider);
 		persistenceContext = new PersistenceContext(connectionProvider, DIALECT);
-		// mapping building thantks to fluent API
+		// mapping building thanks to fluent API
 		IEntityPersister<Country, Identifier<Long>> countryPersister = MappingEase.entityBuilder(Country.class,
 				Identifier.LONG_TYPE)
 				// setting a foreign key naming strategy to be tested
@@ -135,7 +135,7 @@ public class FluentEntityMappingConfigurationSupportVersioningTest {
 		JdbcConnectionProvider surrogateConnectionProvider = new JdbcConnectionProvider(dataSource);
 		ConnectionProvider connectionProvider = new TransactionAwareConnectionProvider(surrogateConnectionProvider);
 		persistenceContext = new PersistenceContext(connectionProvider, DIALECT);
-		// mapping building thantks to fluent API
+		// mapping building thanks to fluent API
 		List<LocalDateTime> nowHistory = new ArrayList<>();
 		IEntityPersister<Country, Identifier<Long>> countryPersister = MappingEase.entityBuilder(Country.class,
 				Identifier.LONG_TYPE)

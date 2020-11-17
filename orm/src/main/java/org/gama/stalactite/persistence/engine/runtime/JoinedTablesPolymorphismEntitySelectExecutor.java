@@ -11,6 +11,8 @@ import java.util.Map.Entry;
 import java.util.Set;
 
 import org.gama.lang.collection.Iterables;
+import org.gama.stalactite.persistence.engine.runtime.load.EntityJoinTree;
+import org.gama.stalactite.persistence.engine.runtime.load.EntityTreeQueryBuilder;
 import org.gama.stalactite.persistence.mapping.ColumnedRow;
 import org.gama.stalactite.persistence.query.IEntitySelectExecutor;
 import org.gama.stalactite.persistence.sql.Dialect;
@@ -35,20 +37,20 @@ public class JoinedTablesPolymorphismEntitySelectExecutor<C, I, T extends Table>
 	private final Map<Class<? extends C>, JoinedTablesPersister<C, I, T>> persisterPerSubclass;
 	private final Map<Class<? extends C>, JoinedTablesPersister<C, I, T>> persisterPerSubclass2;
 	private final T mainTable;
-	private final EntityMappingStrategyTreeSelectBuilder<C, I, T> entityMappingStrategyTreeSelectBuilder;
+	private final EntityJoinTree<C, I> entityJoinTree;
 	private final ConnectionProvider connectionProvider;
 	private final Dialect dialect;
 	
 	public JoinedTablesPolymorphismEntitySelectExecutor(Map<Class<? extends C>, JoinedTablesPersister<C, I, T>> persisterPerSubclass,
 														Map<Class<? extends C>, JoinedTablesPersister<C, I, T>> persisterPerSubclass2,
 													   T mainTable,
-													   EntityMappingStrategyTreeSelectBuilder<C, I, T> entityMappingStrategyTreeSelectBuilder,
+													   EntityJoinTree<C, I> entityJoinTree,
 													   ConnectionProvider connectionProvider,
 													   Dialect dialect) {
 		this.persisterPerSubclass = persisterPerSubclass;
 		this.persisterPerSubclass2 = persisterPerSubclass2;
 		this.mainTable = mainTable;
-		this.entityMappingStrategyTreeSelectBuilder = entityMappingStrategyTreeSelectBuilder;
+		this.entityJoinTree = entityJoinTree;
 		this.connectionProvider = connectionProvider;
 		this.dialect = dialect;
 	}
@@ -60,7 +62,7 @@ public class JoinedTablesPolymorphismEntitySelectExecutor<C, I, T extends Table>
 	
 	@Override
 	public List<C> loadGraph(CriteriaChain where) {
-		Query query = entityMappingStrategyTreeSelectBuilder.buildSelectQuery();
+		Query query = new EntityTreeQueryBuilder<>(entityJoinTree).buildSelectQuery(dialect.getColumnBinderRegistry()).getQuery();
 		
 		Column<T, I> primaryKey = (Column<T, I>) Iterables.first(mainTable.getPrimaryKey().getColumns());
 		persisterPerSubclass.values().forEach(subclassPersister -> {

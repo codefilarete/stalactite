@@ -20,7 +20,6 @@ import org.gama.stalactite.persistence.engine.configurer.BeanMappingBuilder.Colu
 import org.gama.stalactite.persistence.engine.configurer.PersisterBuilderImpl.Identification;
 import org.gama.stalactite.persistence.engine.configurer.PersisterBuilderImpl.PolymorphismBuilder;
 import org.gama.stalactite.persistence.engine.runtime.IEntityConfiguredJoinedTablesPersister;
-import org.gama.stalactite.persistence.mapping.IEntityMappingStrategy;
 import org.gama.stalactite.persistence.sql.Dialect;
 import org.gama.stalactite.persistence.sql.IConnectionConfiguration;
 import org.gama.stalactite.persistence.sql.dml.binder.ColumnBinderRegistry;
@@ -154,7 +153,6 @@ abstract class AbstractPolymorphicPersisterBuilder<C, I, T extends Table> implem
 																								Dialect dialect,
 																								IConnectionConfiguration connectionConfiguration,
 																								PersisterRegistry persisterRegistry) {
-		IEntityMappingStrategy<C, I, T> mappingStrategy = subPersister.getMappingStrategy();
 		// we only have to call a polymmoprhic builder with given methods arguments, and same configuration values as this instance
 		PolymorphismPersisterBuilder<? extends C, I, T> polymorphismPersisterBuilder = new PolymorphismPersisterBuilder(
 				subPolymorphismPolicy,

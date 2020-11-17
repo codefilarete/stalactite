@@ -1,4 +1,4 @@
-package org.gama.stalactite.persistence.engine;
+package org.gama.stalactite.persistence.engine.runtime;
 
 import javax.sql.DataSource;
 import java.sql.ResultSet;

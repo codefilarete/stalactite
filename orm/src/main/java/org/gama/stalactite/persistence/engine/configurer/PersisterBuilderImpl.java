@@ -58,12 +58,12 @@ import org.gama.stalactite.persistence.engine.listening.PersisterListener;
 import org.gama.stalactite.persistence.engine.listening.SelectListener;
 import org.gama.stalactite.persistence.engine.listening.UpdateByIdListener;
 import org.gama.stalactite.persistence.engine.runtime.EntityIsManagedByPersisterAsserter;
-import org.gama.stalactite.persistence.engine.runtime.EntityMappingStrategyTreeSelectBuilder;
 import org.gama.stalactite.persistence.engine.runtime.IConfiguredPersister;
 import org.gama.stalactite.persistence.engine.runtime.IEntityConfiguredJoinedTablesPersister;
 import org.gama.stalactite.persistence.engine.runtime.IEntityConfiguredPersister;
 import org.gama.stalactite.persistence.engine.runtime.JoinedTablesPersister;
 import org.gama.stalactite.persistence.engine.runtime.OptimizedUpdatePersister;
+import org.gama.stalactite.persistence.engine.runtime.load.EntityJoinTree;
 import org.gama.stalactite.persistence.id.assembly.SimpleIdentifierAssembler;
 import org.gama.stalactite.persistence.id.manager.AlreadyAssignedIdentifierManager;
 import org.gama.stalactite.persistence.id.manager.BeforeInsertIdentifierManager;
@@ -410,7 +410,7 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 			parentPersisters.add(currentPersister);
 			// a join is necessary to select entity, only if target table changes
 			if (!currentPersister.getMainTable().equals(currentTable.get())) {
-				mainPersister.getEntityMappingStrategyTreeSelectExecutor().addComplementaryJoin(EntityMappingStrategyTreeSelectBuilder.ROOT_STRATEGY_NAME, currentMappingStrategy,
+				mainPersister.getEntityMappingStrategyTreeSelectExecutor().addComplementaryJoin(EntityJoinTree.ROOT_STRATEGY_NAME, currentMappingStrategy,
 					superclassPK, subclassPK);
 				currentTable.set(currentPersister.getMainTable());
 			}

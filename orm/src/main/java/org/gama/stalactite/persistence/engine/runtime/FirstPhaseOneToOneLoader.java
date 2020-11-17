@@ -2,8 +2,9 @@ package org.gama.stalactite.persistence.engine.runtime;
 
 import java.util.Set;
 
+import org.gama.lang.collection.Arrays;
 import org.gama.stalactite.persistence.engine.ISelectExecutor;
-import org.gama.stalactite.persistence.engine.runtime.EntityMappingStrategyTreeRowTransformer.EntityInflater;
+import org.gama.stalactite.persistence.engine.runtime.load.EntityJoinTree.EntityMerger;
 import org.gama.stalactite.persistence.mapping.AbstractTransformer;
 import org.gama.stalactite.persistence.mapping.ColumnedRow;
 import org.gama.stalactite.persistence.mapping.IdMappingStrategy;
@@ -14,34 +15,21 @@ import org.gama.stalactite.sql.result.Row;
 /**
  * @author Guillaume Mary
  */
-class FirstPhaseOneToOneLoader<E, ID> implements EntityInflater<E, ID> {
+class FirstPhaseOneToOneLoader<E, ID, T extends Table> implements EntityMerger<E, T> {
 	
 	protected final Column<Table, ID> primaryKey;
 	protected final IdMappingStrategy<E, ID> idMappingStrategy;
 	private final ISelectExecutor<E, ID> selectExecutor;
-	private final Class<E> mainType;
 	protected final ThreadLocal<Set<RelationIds<Object, Object, Object>>> relationIdsHolder;
 	
 	public FirstPhaseOneToOneLoader(IdMappingStrategy<E, ID> subEntityIdMappingStrategy,
 									Column<Table, ID> primaryKey,
 									ISelectExecutor<E, ID> selectExecutor,
-									Class<E> mainType,
 									ThreadLocal<Set<RelationIds<Object, Object, Object>>> relationIdsHolder) {
 		this.primaryKey = primaryKey;
 		this.idMappingStrategy = subEntityIdMappingStrategy;
 		this.selectExecutor = selectExecutor;
-		this.mainType = mainType;
 		this.relationIdsHolder = relationIdsHolder;
-	}
-	
-	@Override
-	public Class<E> getEntityType() {
-		return mainType;
-	}
-	
-	@Override
-	public ID giveIdentifier(Row row, ColumnedRow columnedRow) {
-		return idMappingStrategy.getIdentifierAssembler().assemble(row, columnedRow);
 	}
 	
 	@Override
@@ -51,8 +39,8 @@ class FirstPhaseOneToOneLoader<E, ID> implements EntityInflater<E, ID> {
 			// this is not invoked
 			@Override
 			public AbstractTransformer<E> copyWithAliases(ColumnedRow columnedRow) {
-				throw new UnsupportedOperationException("this is not expected to be copied, row transformation algorithm as changed,"
-						+ " please fix it or fix this method");
+				throw new UnsupportedOperationException("this instance is not expected to be copied :"
+						+ " row transformation algorithm as changed, please fix it or fix this method");
 			}
 			
 			@Override
@@ -60,6 +48,11 @@ class FirstPhaseOneToOneLoader<E, ID> implements EntityInflater<E, ID> {
 				fillCurrentRelationIds(row, bean, columnedRow);
 			}
 		};
+	}
+	
+	@Override
+	public Set<Column<T, Object>> getSelectableColumns() {
+		return (Set) Arrays.asHashSet(primaryKey);
 	}
 	
 	protected void fillCurrentRelationIds(Row row, E bean, ColumnedRow columnedRow) {

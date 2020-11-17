@@ -1,10 +1,10 @@
-package org.gama.stalactite.persistence.engine.runtime;
+package org.gama.stalactite.persistence.engine.runtime.load;
 
 import java.util.Map;
 
-import org.gama.lang.collection.Arrays;
 import org.gama.lang.collection.Maps;
-import org.gama.stalactite.persistence.engine.runtime.EntityMappingStrategyTreeSelectBuilder;
+import org.gama.stalactite.persistence.engine.runtime.load.EntityJoinTree.EntityInflater.EntityMappingStrategyAdapter;
+import org.gama.stalactite.persistence.engine.runtime.load.EntityTreeQueryBuilder.EntityTreeQuery;
 import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
@@ -14,17 +14,16 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
-import static org.gama.stalactite.persistence.engine.runtime.EntityMappingStrategyTreeJoinPoint.JoinType.INNER;
-import static org.gama.stalactite.persistence.engine.runtime.EntityMappingStrategyTreeJoinPoint.JoinType.OUTER;
+import static org.gama.stalactite.persistence.engine.runtime.load.EntityJoinTree.JoinType.INNER;
+import static org.gama.stalactite.persistence.engine.runtime.load.EntityJoinTree.JoinType.OUTER;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 /**
  * @author Guillaume Mary
  */
-public class JoinedStrategiesSelectTest {
+class EntityTreeQueryBuilderTest {
 	
 	static ClassMappingStrategy buildMappingStrategyMock(String tableName) {
 		return buildMappingStrategyMock(new Table(tableName));
@@ -55,21 +54,12 @@ public class JoinedStrategiesSelectTest {
 	@MethodSource("testToSQL_singleStrategyData")
 	public void testToSQL_singleStrategy(Table table, String expected, Map<Column, String> expectedAliases) {
 		ClassMappingStrategy mappingStrategyMock = buildMappingStrategyMock(table);
-		EntityMappingStrategyTreeSelectBuilder testInstance = new EntityMappingStrategyTreeSelectBuilder<>(mappingStrategyMock, c -> mock(ParameterBinder.class));
-		SQLQueryBuilder SQLQueryBuilder = new SQLQueryBuilder(testInstance.buildSelectQuery());
+		EntityJoinTree entityJoinTree = new EntityJoinTree(new JoinRoot(new EntityMappingStrategyAdapter(mappingStrategyMock), table));
+		EntityTreeQueryBuilder testInstance = new EntityTreeQueryBuilder(entityJoinTree);
+		EntityTreeQuery treeQuery = testInstance.buildSelectQuery(c -> mock(ParameterBinder.class));
+		SQLQueryBuilder SQLQueryBuilder = new SQLQueryBuilder(treeQuery.getQuery());
 		assertEquals(expected, SQLQueryBuilder.toSQL());
-		assertEquals(expectedAliases, testInstance.getAliases());
-	}
-	
-	@Test
-	public void testAdd_targetStrategyDoesntExist_throwsException() {
-		ClassMappingStrategy mappingStrategyMock = buildMappingStrategyMock(new Table("toto"));
-		EntityMappingStrategyTreeSelectBuilder testInstance = new EntityMappingStrategyTreeSelectBuilder<>(mappingStrategyMock, c -> mock(ParameterBinder.class));
-		IllegalArgumentException thrownException = assertThrows(IllegalArgumentException.class, () -> {
-			// we don't care about other arguments (null passed) because existing strategy name is checked first
-			testInstance.addRelationJoin("XX", null, null, null, OUTER, null);
-		});
-		assertEquals("No strategy with name XX exists to add a new strategy on", thrownException.getMessage());
+		assertEquals(expectedAliases, treeQuery.getColumnAliases());
 	}
 	
 	private static Object[] inheritance_tablePerClass_2Classes_testData() {
@@ -119,9 +109,10 @@ public class JoinedStrategiesSelectTest {
 	public void testToSQL_multipleStrategy(ClassMappingStrategy rootMappingStrategy, ClassMappingStrategy classMappingStrategy,
 										   Column leftJoinColumn, Column rightJoinColumn,
 										   String expected) {
-		EntityMappingStrategyTreeSelectBuilder testInstance = new EntityMappingStrategyTreeSelectBuilder(rootMappingStrategy, c -> mock(ParameterBinder.class));
-		testInstance.addRelationJoin(EntityMappingStrategyTreeSelectBuilder.ROOT_STRATEGY_NAME, classMappingStrategy, leftJoinColumn, rightJoinColumn, INNER, null);
-		SQLQueryBuilder SQLQueryBuilder = new SQLQueryBuilder(testInstance.buildSelectQuery());
+		EntityJoinTree entityJoinTree = new EntityJoinTree(new JoinRoot(new EntityMappingStrategyAdapter(rootMappingStrategy), rootMappingStrategy.getTargetTable()));
+		EntityTreeQueryBuilder testInstance = new EntityTreeQueryBuilder(entityJoinTree);
+		entityJoinTree.addRelationJoin(EntityJoinTree.ROOT_STRATEGY_NAME, new EntityMappingStrategyAdapter(classMappingStrategy), leftJoinColumn, rightJoinColumn, INNER, null);
+		SQLQueryBuilder SQLQueryBuilder = new SQLQueryBuilder(testInstance.buildSelectQuery(c -> mock(ParameterBinder.class)).getQuery());
 		assertEquals(expected, SQLQueryBuilder.toSQL());
 	}
 	
@@ -145,10 +136,12 @@ public class JoinedStrategiesSelectTest {
 		// column for "noise" in select
 		Column tutuNameColumn = tutuTable.addColumn("name", String.class);
 		
-		EntityMappingStrategyTreeSelectBuilder testInstance = new EntityMappingStrategyTreeSelectBuilder(totoMappingMock, c -> mock(ParameterBinder.class));
-		String tataAddKey = testInstance.addRelationJoin(EntityMappingStrategyTreeSelectBuilder.ROOT_STRATEGY_NAME, tataMappingMock, totoPrimaryKey, tataPrimaryKey, INNER, null);
-		testInstance.addRelationJoin(tataAddKey, tutuMappingMock, tataPrimaryKey, tutuPrimaryKey, INNER, null);
-		SQLQueryBuilder SQLQueryBuilder = new SQLQueryBuilder(testInstance.buildSelectQuery());
+		EntityJoinTree entityJoinTree = new EntityJoinTree(new JoinRoot(new EntityMappingStrategyAdapter(totoMappingMock), totoMappingMock.getTargetTable()));
+		String tataAddKey = entityJoinTree.addRelationJoin(EntityJoinTree.ROOT_STRATEGY_NAME, new EntityMappingStrategyAdapter(tataMappingMock), totoPrimaryKey, tataPrimaryKey, INNER, null);
+		entityJoinTree.addRelationJoin(tataAddKey, new EntityMappingStrategyAdapter(tutuMappingMock), tataPrimaryKey, tutuPrimaryKey, INNER, null);
+		EntityTreeQueryBuilder testInstance = new EntityTreeQueryBuilder(entityJoinTree);
+		EntityTreeQuery entityTreeQuery = testInstance.buildSelectQuery(c -> mock(ParameterBinder.class));
+		SQLQueryBuilder SQLQueryBuilder = new SQLQueryBuilder(entityTreeQuery.getQuery());
 		assertEquals("select"
 						+ " Toto.id as Toto_id, Toto.name as Toto_name"
 						+ ", Tata.id as Tata_id, Tata.name as Tata_name"
@@ -158,12 +151,12 @@ public class JoinedStrategiesSelectTest {
 						+ " inner join Tutu on Tata.id = Tutu.id"
 				, SQLQueryBuilder.toSQL());
 		assertEquals(Maps.asMap(totoPrimaryKey, "Toto_id")
-				.add(totoNameColumn, "Toto_name")
-				.add(tataPrimaryKey, "Tata_id")
-				.add(tataNameColumn, "Tata_name")
-				.add(tutuPrimaryKey, "Tutu_id")
-				.add(tutuNameColumn, "Tutu_name"),
-				testInstance.getAliases());
+						.add(totoNameColumn, "Toto_name")
+						.add(tataPrimaryKey, "Tata_id")
+						.add(tataNameColumn, "Tata_name")
+						.add(tutuPrimaryKey, "Tutu_id")
+						.add(tutuNameColumn, "Tutu_name"),
+				entityTreeQuery.getColumnAliases());
 	}
 	
 	@Test
@@ -188,10 +181,13 @@ public class JoinedStrategiesSelectTest {
 		// column for "noise" in select
 		Column tutuNameColumn = tutuTable.addColumn("name", String.class);
 		
-		EntityMappingStrategyTreeSelectBuilder testInstance = new EntityMappingStrategyTreeSelectBuilder(totoMappingMock, c -> mock(ParameterBinder.class));
-		String tataAddKey = testInstance.addRelationJoin(EntityMappingStrategyTreeSelectBuilder.ROOT_STRATEGY_NAME, tataMappingMock, tataId, tataPrimaryKey, INNER, null);
-		testInstance.addRelationJoin(tataAddKey, tutuMappingMock, tutuId, tutuPrimaryKey, OUTER, null);
-		SQLQueryBuilder SQLQueryBuilder = new SQLQueryBuilder(testInstance.buildSelectQuery());
+		EntityJoinTree entityJoinTree = new EntityJoinTree(new JoinRoot(new EntityMappingStrategyAdapter(totoMappingMock), totoMappingMock.getTargetTable()));
+		String tataAddKey = entityJoinTree.addRelationJoin(EntityJoinTree.ROOT_STRATEGY_NAME, new EntityMappingStrategyAdapter(tataMappingMock), tataId, tataPrimaryKey, INNER, null);
+		entityJoinTree.addRelationJoin(tataAddKey, new EntityMappingStrategyAdapter(tutuMappingMock), tutuId, tutuPrimaryKey, OUTER, null);
+		EntityTreeQueryBuilder testInstance = new EntityTreeQueryBuilder(entityJoinTree);
+		
+		EntityTreeQuery entityTreeQuery = testInstance.buildSelectQuery(c -> mock(ParameterBinder.class));
+		SQLQueryBuilder SQLQueryBuilder = new SQLQueryBuilder(entityTreeQuery.getQuery());
 		assertEquals("select"
 						+ " Toto.id as Toto_id, Toto.name as Toto_name, Toto.tataId as Toto_tataId, Toto.tutuId as Toto_tutuId"
 						+ ", Tata.id as Tata_id, Tata.name as Tata_name"
@@ -208,7 +204,7 @@ public class JoinedStrategiesSelectTest {
 						.add(tataNameColumn, "Tata_name")
 						.add(tutuPrimaryKey, "Tutu_id")
 						.add(tutuNameColumn, "Tutu_name"),
-				testInstance.getAliases());
+				entityTreeQuery.getColumnAliases());
 	}
 	
 	@Test
@@ -237,11 +233,14 @@ public class JoinedStrategiesSelectTest {
 		// column for "noise" in select
 		Column titiNameColumn = titiTable.addColumn("name", String.class);
 		
-		EntityMappingStrategyTreeSelectBuilder testInstance = new EntityMappingStrategyTreeSelectBuilder(totoMappingMock, c -> mock(ParameterBinder.class));
-		String tataAddKey = testInstance.addRelationJoin(EntityMappingStrategyTreeSelectBuilder.ROOT_STRATEGY_NAME, tataMappingMock, totoPrimaryKey, tataPrimaryKey, INNER, null);
-		String tutuAddKey = testInstance.addRelationJoin(tataAddKey, tutuMappingMock, tataPrimaryKey, tutuPrimaryKey, INNER, null);
-		String titiAddKey = testInstance.addRelationJoin(EntityMappingStrategyTreeSelectBuilder.ROOT_STRATEGY_NAME, titiMappingMock, totoPrimaryKey, titiPrimaryKey, INNER, null);
-		SQLQueryBuilder SQLQueryBuilder = new SQLQueryBuilder(testInstance.buildSelectQuery());
+		EntityJoinTree entityJoinTree = new EntityJoinTree(new JoinRoot(new EntityMappingStrategyAdapter(totoMappingMock), totoMappingMock.getTargetTable()));
+		String tataAddKey = entityJoinTree.addRelationJoin(EntityJoinTree.ROOT_STRATEGY_NAME, new EntityMappingStrategyAdapter(tataMappingMock), totoPrimaryKey, tataPrimaryKey, INNER, null);
+		String tutuAddKey = entityJoinTree.addRelationJoin(tataAddKey, new EntityMappingStrategyAdapter(tutuMappingMock), tataPrimaryKey, tutuPrimaryKey, INNER, null);
+		String titiAddKey = entityJoinTree.addRelationJoin(EntityJoinTree.ROOT_STRATEGY_NAME, new EntityMappingStrategyAdapter(titiMappingMock), totoPrimaryKey, titiPrimaryKey, INNER, null);
+		EntityTreeQueryBuilder testInstance = new EntityTreeQueryBuilder(entityJoinTree);
+		
+		EntityTreeQuery entityTreeQuery = testInstance.buildSelectQuery(c -> mock(ParameterBinder.class));
+		SQLQueryBuilder SQLQueryBuilder = new SQLQueryBuilder(entityTreeQuery.getQuery());
 		assertEquals("select"
 						+ " Toto.id as Toto_id, Toto.name as Toto_name"
 						+ ", Tata.id as Tata_id, Tata.name as Tata_name"
@@ -260,89 +259,7 @@ public class JoinedStrategiesSelectTest {
 						.add(tutuNameColumn, "Tutu_name")
 						.add(titiPrimaryKey, "Titi_id")
 						.add(titiNameColumn, "Titi_name"),
-				testInstance.getAliases());
+				entityTreeQuery.getColumnAliases());
 	}
 	
-	@Test
-	public void giveTables() {
-		ClassMappingStrategy totoMappingMock = buildMappingStrategyMock("Toto");
-		Table totoTable = totoMappingMock.getTargetTable();
-		Column totoPrimaryKey = totoTable.addColumn("id", long.class);
-		
-		ClassMappingStrategy tataMappingMock = buildMappingStrategyMock("Tata");
-		Table tataTable = tataMappingMock.getTargetTable();
-		Column tataPrimaryKey = tataTable.addColumn("id", long.class);
-		
-		ClassMappingStrategy tutuMappingMock = buildMappingStrategyMock("Tutu");
-		Table tutuTable = tutuMappingMock.getTargetTable();
-		Column tutuPrimaryKey = tutuTable.addColumn("id", long.class);
-		
-		ClassMappingStrategy titiMappingMock = buildMappingStrategyMock("Titi");
-		Table titiTable = titiMappingMock.getTargetTable();
-		Column titiPrimaryKey = titiTable.addColumn("id", long.class);
-		
-		EntityMappingStrategyTreeSelectBuilder testInstance = new EntityMappingStrategyTreeSelectBuilder(totoMappingMock, c -> mock(ParameterBinder.class));
-		String tataAddKey = testInstance.addRelationJoin(EntityMappingStrategyTreeSelectBuilder.ROOT_STRATEGY_NAME, tataMappingMock, totoPrimaryKey, tataPrimaryKey, INNER, null);
-		String tutuAddKey = testInstance.addRelationJoin(tataAddKey, tutuMappingMock, tataPrimaryKey, tutuPrimaryKey, INNER, null);
-		String titiAddKey = testInstance.addRelationJoin(EntityMappingStrategyTreeSelectBuilder.ROOT_STRATEGY_NAME, titiMappingMock, totoPrimaryKey, titiPrimaryKey, INNER, null);
-		
-		assertEquals(Arrays.asHashSet(totoTable, tataTable, tutuTable, titiTable), testInstance.giveTables());
-	}
-	
-	@Test
-	public void testCopyTo() {
-		ClassMappingStrategy totoMappingMock = buildMappingStrategyMock("Toto");
-		Table totoTable = totoMappingMock.getTargetTable();
-		Column totoPrimaryKey = totoTable.addColumn("id", long.class);
-		// column for "noise" in select
-		Column totoNameColumn = totoTable.addColumn("name", String.class);
-		
-		ClassMappingStrategy tataMappingMock = buildMappingStrategyMock("Tata");
-		Table tataTable = tataMappingMock.getTargetTable();
-		Column tataPrimaryKey = tataTable.addColumn("id", long.class);
-		// column for "noise" in select
-		Column tataNameColumn = tataTable.addColumn("name", String.class);
-		
-		ClassMappingStrategy tutuMappingMock = buildMappingStrategyMock("Tutu");
-		Table tutuTable = tutuMappingMock.getTargetTable();
-		Column tutuPrimaryKey = tutuTable.addColumn("id", long.class);
-		// column for "noise" in select
-		Column tutuNameColumn = tutuTable.addColumn("name", String.class);
-		
-		ClassMappingStrategy titiMappingMock = buildMappingStrategyMock("Titi");
-		Table titiTable = titiMappingMock.getTargetTable();
-		Column titiPrimaryKey = titiTable.addColumn("id", long.class);
-		// column for "noise" in select
-		Column titiNameColumn = titiTable.addColumn("name", String.class);
-		
-		EntityMappingStrategyTreeSelectBuilder testInstance1 = new EntityMappingStrategyTreeSelectBuilder(totoMappingMock, c -> mock(ParameterBinder.class));
-		String tataAddKey = testInstance1.addRelationJoin(EntityMappingStrategyTreeSelectBuilder.ROOT_STRATEGY_NAME, tataMappingMock, totoPrimaryKey, tataPrimaryKey, INNER, null);
-		String tutuAddKey = testInstance1.addRelationJoin(tataAddKey, tutuMappingMock, tataPrimaryKey, tutuPrimaryKey, INNER, null);
-		
-		EntityMappingStrategyTreeSelectBuilder testInstance2 = new EntityMappingStrategyTreeSelectBuilder(tataMappingMock, c -> mock(ParameterBinder.class));
-		String titiAddKey = testInstance2.addRelationJoin(EntityMappingStrategyTreeSelectBuilder.ROOT_STRATEGY_NAME, titiMappingMock, tataPrimaryKey, titiPrimaryKey, INNER, null);
-		
-		testInstance2.getTree(EntityMappingStrategyTreeSelectBuilder.ROOT_STRATEGY_NAME).copyTo(testInstance1, tataAddKey);
-		
-		SQLQueryBuilder SQLQueryBuilder = new SQLQueryBuilder(testInstance1.buildSelectQuery());
-		assertEquals("select"
-						+ " Toto.id as Toto_id, Toto.name as Toto_name"
-						+ ", Tata.id as Tata_id, Tata.name as Tata_name"
-						+ ", Tutu.id as Tutu_id, Tutu.name as Tutu_name"
-						+ ", Titi.id as Titi_id, Titi.name as Titi_name"
-						+ " from Toto"
-						+ " inner join Tata on Toto.id = Tata.id"
-						+ " inner join Tutu on Tata.id = Tutu.id"
-						+ " inner join Titi on Tata.id = Titi.id"
-				, SQLQueryBuilder.toSQL());
-		assertEquals(Maps.asMap(totoPrimaryKey, "Toto_id")
-						.add(totoNameColumn, "Toto_name")
-						.add(tataPrimaryKey, "Tata_id")
-						.add(tataNameColumn, "Tata_name")
-						.add(tutuPrimaryKey, "Tutu_id")
-						.add(tutuNameColumn, "Tutu_name")
-						.add(titiPrimaryKey, "Titi_id")
-						.add(titiNameColumn, "Titi_name"),
-				testInstance1.getAliases());
-	}
 }

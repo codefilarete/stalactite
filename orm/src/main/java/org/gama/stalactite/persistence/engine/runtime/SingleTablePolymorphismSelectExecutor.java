@@ -12,7 +12,9 @@ import org.gama.lang.collection.Iterables;
 import org.gama.stalactite.persistence.engine.ISelectExecutor;
 import org.gama.stalactite.persistence.engine.JoinableSelectExecutor;
 import org.gama.stalactite.persistence.engine.PolymorphismPolicy.SingleTablePolymorphism;
-import org.gama.stalactite.persistence.engine.runtime.EntityMappingStrategyTreeJoinPoint.JoinType;
+import org.gama.stalactite.persistence.engine.runtime.load.EntityJoinTree.EntityInflater.EntityMappingStrategyAdapter;
+import org.gama.stalactite.persistence.engine.runtime.load.EntityJoinTree.EntityMerger.EntityMergerAdapter;
+import org.gama.stalactite.persistence.engine.runtime.load.EntityJoinTree.JoinType;
 import org.gama.stalactite.persistence.mapping.ColumnedRow;
 import org.gama.stalactite.persistence.mapping.IEntityMappingStrategy;
 import org.gama.stalactite.persistence.sql.Dialect;
@@ -107,7 +109,7 @@ public class SingleTablePolymorphismSelectExecutor<C, I, T extends Table, D>
 																				  boolean isOuterJoin) {
 		Set<String> joinNames = new HashSet<>();
 		subEntitiesPersisters.forEach((entityClass, persister) -> {
-			String joinName = persister.getEntityMappingStrategyTreeSelectBuilder().addRelationJoin(leftStrategyName, strategy,
+			String joinName = persister.getEntityJoinTree().addRelationJoin(leftStrategyName, new EntityMappingStrategyAdapter<>(strategy),
 					leftJoinColumn, rightJoinColumn, isOuterJoin ? JoinType.OUTER : JoinType.INNER, beanRelationFixer);
 			joinNames.add(joinName);
 		});
@@ -128,7 +130,7 @@ public class SingleTablePolymorphismSelectExecutor<C, I, T extends Table, D>
 																						   Column<T2, ID> rightJoinColumn) {
 		Set<String> joinNames = new HashSet<>();
 		subEntitiesPersisters.forEach((entityClass, persister) -> {
-			String joinName = persister.getEntityMappingStrategyTreeSelectBuilder().addMergeJoin(leftStrategyName, strategy,
+			String joinName = persister.getEntityJoinTree().addMergeJoin(leftStrategyName, new EntityMergerAdapter<>(strategy),
 					leftJoinColumn, rightJoinColumn);
 			joinNames.add(joinName);
 		});

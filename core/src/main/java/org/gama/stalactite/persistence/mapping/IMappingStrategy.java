@@ -10,7 +10,7 @@ import java.util.function.Function;
 
 import org.gama.reflection.IReversibleAccessor;
 import org.gama.reflection.ValueAccessPoint;
-import org.gama.stalactite.persistence.mapping.AbstractTransformer.TransformerListener;
+import org.gama.stalactite.persistence.mapping.IRowTransformer.TransformerListener;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.sql.result.Row;

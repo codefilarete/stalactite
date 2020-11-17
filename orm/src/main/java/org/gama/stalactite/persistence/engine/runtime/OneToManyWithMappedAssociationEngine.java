@@ -18,6 +18,7 @@ import org.gama.stalactite.persistence.engine.cascade.AfterUpdateCollectionCasca
 import org.gama.stalactite.persistence.engine.cascade.BeforeDeleteByIdCollectionCascader;
 import org.gama.stalactite.persistence.engine.cascade.BeforeDeleteCollectionCascader;
 import org.gama.stalactite.persistence.engine.listening.SelectListener;
+import org.gama.stalactite.persistence.engine.runtime.load.EntityJoinTree;
 import org.gama.stalactite.persistence.structure.Column;
 
 import static org.gama.lang.bean.Objects.not;
@@ -61,7 +62,7 @@ public class OneToManyWithMappedAssociationEngine<SRC, TRGT, SRCID, TRGTID, C ex
 		
 		
 		// we add target subgraph joins to main persister
-		targetPersister.joinAsMany(sourcePersister, sourcePrimaryKey, relationOwner, relationFixer, EntityMappingStrategyTreeSelectBuilder.ROOT_STRATEGY_NAME, relationOwner.isNullable());
+		targetPersister.joinAsMany(sourcePersister, sourcePrimaryKey, relationOwner, relationFixer, EntityJoinTree.ROOT_STRATEGY_NAME, relationOwner.isNullable());
 		
 		// we must trigger subgraph event on loading of our own graph, this is mainly for event that initializes things because given ids
 		// are not those of their entity

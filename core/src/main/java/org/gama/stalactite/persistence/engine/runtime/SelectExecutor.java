@@ -61,15 +61,16 @@ public class SelectExecutor<C, I, T extends Table> extends DMLExecutor<C, I, T> 
 			// So we can apply the same read operation to all the firsts packets
 			T targetTable = getMappingStrategy().getTargetTable();
 			Set<Column<T, Object>> columnsToRead = getMappingStrategy().getSelectableColumns();
+			InternalExecutor executor = new InternalExecutor();
 			if (!parcels.isEmpty()) {
 				ReadOperation<Column<T, Object>> defaultReadOperation = newReadOperation(targetTable, columnsToRead, blockSize, localConnectionProvider);
-				parcels.forEach(parcel -> result.addAll(execute(defaultReadOperation, parcel)));
+				parcels.forEach(parcel -> result.addAll(executor.execute(defaultReadOperation, parcel)));
 			}
 			
 			// last packet treatment (packet size may be different)
 			if (!lastParcel.isEmpty()) {
 				ReadOperation<Column<T, Object>> lastReadOperation = newReadOperation(targetTable, columnsToRead, lastBlockSize, localConnectionProvider);
-				result.addAll(execute(lastReadOperation, lastParcel));
+				result.addAll(executor.execute(lastReadOperation, lastParcel));
 			}
 		}
 		return result;
@@ -85,25 +86,33 @@ public class SelectExecutor<C, I, T extends Table> extends DMLExecutor<C, I, T> 
 		return readOperation;
 	}
 	
+	/**
+	 * Small class that focuses on operation execution and entity loading.
+	 * Kind of method group serving same purpose, made non static for simplicity.
+	 */
 	@VisibleForTesting
-	public List<C> execute(ReadOperation<Column<T, Object>> operation, List<I> ids) {
-		Map<Column<T, Object>, Object> primaryKeyValues = getMappingStrategy().getIdMappingStrategy().getIdentifierAssembler().getColumnValues(ids);
-		try (ReadOperation<Column<T, Object>> closeableOperation = operation) {
-			closeableOperation.setValues(primaryKeyValues);
-			return transform(closeableOperation, primaryKeyValues.size());
-		} catch (RuntimeException e) {
-			throw new SQLExecutionException(operation.getSqlStatement().getSQL(), e);
+	class InternalExecutor {
+		
+		@VisibleForTesting
+		List<C> execute(ReadOperation<Column<T, Object>> operation, List<I> ids) {
+			Map<Column<T, Object>, Object> primaryKeyValues = getMappingStrategy().getIdMappingStrategy().getIdentifierAssembler().getColumnValues(ids);
+			try (ReadOperation<Column<T, Object>> closeableOperation = operation) {
+				closeableOperation.setValues(primaryKeyValues);
+				return transform(closeableOperation, primaryKeyValues.size());
+			} catch (RuntimeException e) {
+				throw new SQLExecutionException(operation.getSqlStatement().getSQL(), e);
+			}
 		}
-	}
-	
-	protected List<C> transform(ReadOperation<Column<T, Object>> closeableOperation, int size) {
-		ResultSet resultSet = closeableOperation.execute();
-		// NB: we give the same ParametersBinders of those given at ColumnParameterizedSelect since the row iterator is expected to read column from it
-		RowIterator rowIterator = new RowIterator(resultSet, ((ColumnParameterizedSelect) closeableOperation.getSqlStatement()).getSelectParameterBinders());
-		return transform(rowIterator, size);
-	}
-	
-	protected List<C> transform(Iterator<Row> rowIterator, int resultSize) {
-		return Iterables.collect(() -> rowIterator, getMappingStrategy()::transform, () -> new ArrayList<>(resultSize));
+		
+		protected List<C> transform(ReadOperation<Column<T, Object>> closeableOperation, int size) {
+			ResultSet resultSet = closeableOperation.execute();
+			// NB: we give the same ParametersBinders of those given at ColumnParameterizedSelect since the row iterator is expected to read column from it
+			RowIterator rowIterator = new RowIterator(resultSet, ((ColumnParameterizedSelect) closeableOperation.getSqlStatement()).getSelectParameterBinders());
+			return transform(rowIterator, size);
+		}
+		
+		protected List<C> transform(Iterator<Row> rowIterator, int resultSize) {
+			return Iterables.collect(() -> rowIterator, getMappingStrategy()::transform, () -> new ArrayList<>(resultSize));
+		}
 	}
 }

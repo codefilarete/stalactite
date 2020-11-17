@@ -10,7 +10,6 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -25,13 +24,8 @@ import org.gama.lang.collection.PairIterator;
 import org.gama.lang.exception.NotImplementedException;
 import org.gama.reflection.Accessors;
 import org.gama.reflection.IReversibleAccessor;
-import org.gama.stalactite.sql.ConnectionProvider;
-import org.gama.stalactite.sql.SimpleConnectionProvider;
-import org.gama.stalactite.sql.dml.ReadOperation;
-import org.gama.stalactite.sql.result.InMemoryResultSet;
-import org.gama.stalactite.sql.test.HSQLDBInMemoryDataSource;
-import org.gama.stalactite.sql.test.MariaDBEmbeddableDataSource;
 import org.gama.stalactite.persistence.engine.DDLDeployer;
+import org.gama.stalactite.persistence.engine.runtime.load.EntityTreeQueryBuilder;
 import org.gama.stalactite.persistence.id.assembly.ComposedIdentifierAssembler;
 import org.gama.stalactite.persistence.id.assembly.IdentifierAssembler;
 import org.gama.stalactite.persistence.id.assembly.SimpleIdentifierAssembler;
@@ -44,9 +38,12 @@ import org.gama.stalactite.persistence.mapping.SinglePropertyIdAccessor;
 import org.gama.stalactite.persistence.sql.Dialect;
 import org.gama.stalactite.persistence.sql.HSQLDBDialect.HSQLDBTypeMapping;
 import org.gama.stalactite.persistence.sql.ddl.JavaTypeToSqlTypeMapping;
-import org.gama.stalactite.persistence.sql.dml.ColumnParameterizedSelect;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
+import org.gama.stalactite.sql.ConnectionProvider;
+import org.gama.stalactite.sql.SimpleConnectionProvider;
+import org.gama.stalactite.sql.test.HSQLDBInMemoryDataSource;
+import org.gama.stalactite.sql.test.MariaDBEmbeddableDataSource;
 import org.gama.stalactite.test.JdbcConnectionProvider;
 import org.gama.stalactite.test.PairSetList;
 import org.junit.jupiter.api.Test;
@@ -58,7 +55,6 @@ import static org.gama.stalactite.test.PairSetList.pairSetList;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.anyInt;
-import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -68,6 +64,14 @@ import static org.mockito.Mockito.when;
  * @author Guillaume Mary
  */
 public class EntityMappingStrategyTreeSelectExecutorTest {
+	
+	static ClassMappingStrategy buildMappingStrategyMock(Table table) {
+		ClassMappingStrategy mappingStrategyMock = mock(ClassMappingStrategy.class);
+		when(mappingStrategyMock.getTargetTable()).thenReturn(table);
+		// the selected columns are plugged on the table ones
+		when(mappingStrategyMock.getSelectableColumns()).thenAnswer(invocation -> table.getColumns());
+		return mappingStrategyMock;
+	}
 	
 	public static Object[][] selectData() {
 		Table tableWith1ColumnedPK = new Table("Toto");
@@ -107,7 +111,7 @@ public class EntityMappingStrategyTreeSelectExecutorTest {
 	@ParameterizedTest
 	@MethodSource("selectData")
 	public void testSelect(Table targetTable, List<String> expectedSql, PairSetList<Integer, Integer> expectedParameters) throws SQLException {
-		ClassMappingStrategy<Object, Object, Table> classMappingStrategy = JoinedStrategiesSelectTest.buildMappingStrategyMock(targetTable);
+		ClassMappingStrategy<Object, Object, Table> classMappingStrategy = buildMappingStrategyMock(targetTable);
 		// mocking to prevent NPE from EntityMappingStrategyTreeSelectExecutor constructor
 		IdMappingStrategy idMappingStrategyMock = mock(IdMappingStrategy.class);
 		when(classMappingStrategy.getIdMappingStrategy()).thenReturn(idMappingStrategyMock);
@@ -171,7 +175,7 @@ public class EntityMappingStrategyTreeSelectExecutorTest {
 	public void testSelect_argumentWithOneBlock() throws SQLException {
 		Table dummyTable = new Table("dummyTable");
 		Column dummyPK = dummyTable.addColumn("dummyPK", Integer.class).primaryKey();
-		ClassMappingStrategy<Object, Object, Table> classMappingStrategy = JoinedStrategiesSelectTest.buildMappingStrategyMock(dummyTable);
+		ClassMappingStrategy<Object, Object, Table> classMappingStrategy = buildMappingStrategyMock(dummyTable);
 		// mocking to prevent NPE from EntityMappingStrategyTreeSelectExecutor constructor
 		IdMappingStrategy idMappingStrategyMock = mock(IdMappingStrategy.class);
 		when(classMappingStrategy.getIdMappingStrategy()).thenReturn(idMappingStrategyMock);
@@ -201,7 +205,7 @@ public class EntityMappingStrategyTreeSelectExecutorTest {
 	
 	@Test
 	public void testSelect_emptyArgument() {
-		ClassMappingStrategy<Object, Object, Table> classMappingStrategy = JoinedStrategiesSelectTest.buildMappingStrategyMock(new Table("dummyTable"));
+		ClassMappingStrategy<Object, Object, Table> classMappingStrategy = buildMappingStrategyMock(new Table("dummyTable"));
 		// mocking to prevent NPE from EntityMappingStrategyTreeSelectExecutor constructor
 		IdMappingStrategy idMappingStrategyMock = mock(IdMappingStrategy.class);
 		when(classMappingStrategy.getIdMappingStrategy()).thenReturn(idMappingStrategyMock);
@@ -212,47 +216,23 @@ public class EntityMappingStrategyTreeSelectExecutorTest {
 		dialect.setInOperatorMaxSize(3);
 		EntityMappingStrategyTreeSelectExecutor<Object, Object, Table> testInstance = new EntityMappingStrategyTreeSelectExecutor<Object, Object, Table>(
 				classMappingStrategy, dialect, mock(ConnectionProvider.class)) {
+			
 			@Override
-			List<Object> execute(ConnectionProvider connectionProvider,
-								 String sql,
-								 Collection<? extends List<Object>> idsParcels,
-								 Map<Column<Table, Object>, int[]> inOperatorValueIndexes) {
-				capturedSQL.add(sql);
-				return Collections.emptyList();
+			InternalExecutor newInternalExecutor() {
+				return new InternalExecutor(
+						new EntityTreeQueryBuilder<>(this.getEntityJoinTree()).buildSelectQuery(this.getParameterBinderProvider()),
+						this.getConnectionProvider()) {
+					@Override
+					List<Object> execute(String sql, Collection<? extends List<Object>> idsParcels,
+										 Map<Column<Table, Object>, int[]> inOperatorValueIndexes) {
+						capturedSQL.add(sql);
+						return Collections.emptyList();
+					}
+				};
 			}
 		};
 		testInstance.select(Arrays.asList());
 		assertTrue(capturedSQL.isEmpty());
-	}
-	
-	@Test
-	public void testExecute() {
-		Table targetTable = new Table("Toto");
-		Column id = targetTable.addColumn("id", long.class).primaryKey();
-		
-		ClassMappingStrategy<Object, Object, Table> classMappingStrategy = JoinedStrategiesSelectTest.buildMappingStrategyMock(targetTable);
-		// mocking to prevent NPE from EntityMappingStrategyTreeSelectExecutor constructor
-		IdMappingStrategy idMappingStrategyMock = mock(IdMappingStrategy.class);
-		when(classMappingStrategy.getIdMappingStrategy()).thenReturn(idMappingStrategyMock);
-		
-		// mocking to provide entity values
-		IdentifierAssembler identifierAssemblerMock = mock(IdentifierAssembler.class);
-		when(idMappingStrategyMock.getIdentifierAssembler()).thenReturn(identifierAssemblerMock);
-		Map<Column<Table, Object>, Object> idValuesPerEntity = Maps.asMap(id, Arrays.asList(10, 20));
-		when(identifierAssemblerMock.getColumnValues(anyList())).thenReturn(idValuesPerEntity);
-		
-		// mocking ResultSet transformation because we don't care about it in this test
-		ReadOperation readOperationMock = mock(ReadOperation.class);
-		when(readOperationMock.execute()).thenReturn(new InMemoryResultSet(Collections.emptyList()));
-		when(readOperationMock.getSqlStatement()).thenReturn(new ColumnParameterizedSelect("", new HashMap<>(), new HashMap<>(), new HashMap<>()));
-		
-		// we're going to check if values are correctly passed to the underlying ReadOperation
-		EntityMappingStrategyTreeSelectExecutor testInstance = new EntityMappingStrategyTreeSelectExecutor<>(classMappingStrategy, new Dialect(), mock(ConnectionProvider.class));
-		ArgumentCaptor<Map> capturedValues = ArgumentCaptor.forClass(Map.class);
-		testInstance.execute(readOperationMock, Arrays.asList(1, 2));
-		
-		verify(readOperationMock).setValues(capturedValues.capture());
-		assertEquals(Maps.asMap(id, Arrays.asList(10, 20)), capturedValues.getValue());
 	}
 	
 	public static Object[][] datasources() {

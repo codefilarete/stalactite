@@ -73,7 +73,7 @@ public class FluentEntityMappingConfigurationSupportToOneAndToManyMixTest {
 	
 	@Test
 	void foreignKeyIsCreated() throws SQLException {
-		// mapping building thantks to fluent API
+		// mapping building thanks to fluent API
 		IConfiguredPersister<Country, Identifier<Long>> countryPersister = MappingEase.entityBuilder(Country.class,
 				Identifier.LONG_TYPE)
 				// setting a foreign key naming strategy to be tested
@@ -122,7 +122,7 @@ public class FluentEntityMappingConfigurationSupportToOneAndToManyMixTest {
 	
 	@Test
 	public void testCascade_oneToOneAndOneToMany_CRUD() {
-		// mapping building thantks to fluent API
+		// mapping building thanks to fluent API
 		IEntityPersister<Country, Identifier<Long>> countryPersister = MappingEase.entityBuilder(Country.class, Identifier.LONG_TYPE)
 				.add(Country::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 				.add(Country::getName)

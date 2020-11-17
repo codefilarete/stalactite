@@ -31,10 +31,11 @@ import org.gama.stalactite.persistence.engine.listening.InsertListener;
 import org.gama.stalactite.persistence.engine.listening.PersisterListener;
 import org.gama.stalactite.persistence.engine.listening.SelectListener;
 import org.gama.stalactite.persistence.engine.listening.UpdateListener;
-import org.gama.stalactite.persistence.engine.runtime.EntityMappingStrategyTreeJoinPoint.JoinType;
 import org.gama.stalactite.persistence.engine.runtime.JoinedTablesPersister.CriteriaProvider;
-import org.gama.stalactite.persistence.mapping.AbstractTransformer.TransformerListener;
+import org.gama.stalactite.persistence.engine.runtime.load.EntityJoinTree;
+import org.gama.stalactite.persistence.engine.runtime.load.EntityJoinTree.JoinType;
 import org.gama.stalactite.persistence.mapping.IEntityMappingStrategy;
+import org.gama.stalactite.persistence.mapping.IRowTransformer.TransformerListener;
 import org.gama.stalactite.persistence.mapping.IdMappingStrategy;
 import org.gama.stalactite.persistence.query.EntityCriteriaSupport;
 import org.gama.stalactite.persistence.query.RelationalEntityCriteria;
@@ -81,8 +82,9 @@ public class JoinedTablesPolymorphicPersister<C, I> implements IEntityConfigured
 		
 		// sub entities persisters will be used to select sub entities but at this point they lacks subgraph loading, so we add it (from their parent)
 		subEntitiesPersisters.forEach((type, persister) ->
-				mainPersister.copyJoinsRootTo(persister.getEntityMappingStrategyTreeSelectBuilder(),
-						EntityMappingStrategyTreeSelectBuilder.ROOT_STRATEGY_NAME)
+				// NB: we can't use copyRootJoinsTo(..) because persister is composed of one join to parent table (the one of mainPersister),
+				// since there's no manner to find it cleanly we have to use get(0), dirty thing ...
+				mainPersister.getEntityJoinTree().projectTo(persister.getEntityJoinTree().getRoot().getJoins().get(0))
 		);
 		
 		this.tablePerSubEntityType = Iterables.map(this.subEntitiesPersisters.entrySet(),
@@ -95,7 +97,7 @@ public class JoinedTablesPolymorphicPersister<C, I> implements IEntityConfigured
 		
 		this.entitySelectExecutor = new JoinedTablesPolymorphismEntitySelectExecutor(subEntitiesPersisters, subEntitiesPersisters,
 				mainPersister.getMappingStrategy().getTargetTable(),
-				mainPersister.getEntityMappingStrategyTreeSelectBuilder(), connectionProvider, dialect);
+				mainPersister.getEntityJoinTree(), connectionProvider, dialect);
 		
 		this.criteriaSupport = new EntityCriteriaSupport<>(mainPersister.getMappingStrategy());
 	}
@@ -356,23 +358,23 @@ public class JoinedTablesPolymorphicPersister<C, I> implements IEntityConfigured
 	 * @param <SRC>
 	 */
 	@Override
-	public <SRC, T1 extends Table, T2 extends Table> void joinAsOne(IJoinedTablesPersister<SRC, I> sourcePersister,
-																	Column<T1, I> leftColumn,
-																	Column<T2, I> rightColumn,
-																	BeanRelationFixer<SRC, C> beanRelationFixer,
-																	boolean optional) {
+	public <SRC, T1 extends Table, T2 extends Table, SRCID, JID> void joinAsOne(IJoinedTablesPersister<SRC, SRCID> sourcePersister,
+																				Column<T1, JID> leftColumn,
+																				Column<T2, JID> rightColumn,
+																				BeanRelationFixer<SRC, C> beanRelationFixer,
+																				boolean optional) {
 		
 		// because subgraph loading is made in 2 phases (load ids, then entities in a second SQL request done by load listener) we add a passive join
 		// (we don't need to create bean nor fulfill properties in first phase) 
 		// NB: here rightColumn is parent class primary key or reverse column that owns property (depending how one-to-one relation is mapped) 
-		String mainTableJoinName = sourcePersister.getEntityMappingStrategyTreeSelectBuilder().addPassiveJoin(EntityMappingStrategyTreeSelectBuilder.ROOT_STRATEGY_NAME,
-				leftColumn, rightColumn, optional ? JoinType.OUTER : JoinType.INNER, (Set<Column<Table, Object>>) (Set) Arrays.asSet(rightColumn));
+		String mainTableJoinName = sourcePersister.getEntityJoinTree().addPassiveJoin(EntityJoinTree.ROOT_STRATEGY_NAME,
+				leftColumn, rightColumn, optional ? JoinType.OUTER : JoinType.INNER, (Set<Column<T2, Object>>) (Set) Arrays.asSet(rightColumn));
 		Column primaryKey = (Column) Iterables.first(getMappingStrategy().getTargetTable().getPrimaryKey().getColumns());
 		this.subclassIdMappingStrategies.forEach((c, idMappingStrategy) -> {
 			Column subclassPrimaryKey = (Column) Iterables.first(this.tablePerSubEntityType.get(c).getPrimaryKey().getColumns());
-			sourcePersister.getEntityMappingStrategyTreeSelectBuilder().addMergeJoin(mainTableJoinName,
-					new FirstPhaseOneToOneLoader<C, I>(idMappingStrategy, subclassPrimaryKey, mainSelectExecutor, parentClass, DIFFERED_ENTITY_LOADER),
-					(Set) java.util.Collections.singleton(subclassPrimaryKey),
+			sourcePersister.getEntityJoinTree().addMergeJoin(mainTableJoinName,
+					new FirstPhaseOneToOneLoader<C, I, T2>(idMappingStrategy, subclassPrimaryKey, mainSelectExecutor,
+							DIFFERED_ENTITY_LOADER),
 					primaryKey,
 					subclassPrimaryKey,
 					// since we don't know what kind of sub entity is present we must do an OUTER join between common truk and all sub tables
@@ -384,23 +386,25 @@ public class JoinedTablesPolymorphicPersister<C, I> implements IEntityConfigured
 	}
 	
 	@Override
-	public <SRC, T1 extends Table, T2 extends Table, J> void joinAsMany(IJoinedTablesPersister<SRC, J> sourcePersister,
-																		Column<T1, J> leftColumn, Column<T2, J> rightColumn,
-																		BeanRelationFixer<SRC, C> beanRelationFixer, String joinName,
-																		boolean optional) {
+	public <SRC, T1 extends Table, T2 extends Table, SRCID> void joinAsMany(IJoinedTablesPersister<SRC, SRCID> sourcePersister,
+																			Column<T1, ?> leftColumn,
+																			Column<T2, ?> rightColumn,
+																			BeanRelationFixer<SRC, C> beanRelationFixer,
+																			String joinName,
+																			boolean optional) {
 		
-		String createdJoinName = sourcePersister.getEntityMappingStrategyTreeSelectBuilder().addPassiveJoin(joinName,
-				leftColumn,
-				rightColumn,
+		String createdJoinName = sourcePersister.getEntityJoinTree().addPassiveJoin(joinName,
+				(Column) leftColumn,
+				(Column) rightColumn,
 				JoinType.OUTER,
 				(Set) java.util.Collections.emptySet());
 		
 		// Subgraph loading is made in 2 phases (load ids, then entities in a second SQL request done by load listener)
 		this.subclassIdMappingStrategies.forEach((c, idMappingStrategy) -> {
 			Column subclassPrimaryKey = (Column) Iterables.first(this.tablePerSubEntityType.get(c).getPrimaryKey().getColumns());
-			sourcePersister.getEntityMappingStrategyTreeSelectBuilder().addMergeJoin(createdJoinName,
-					new FirstPhaseOneToOneLoader<C, I>(idMappingStrategy, subclassPrimaryKey, mainSelectExecutor, parentClass, DIFFERED_ENTITY_LOADER),
-					(Set) Arrays.asSet(subclassPrimaryKey),
+			sourcePersister.getEntityJoinTree().addMergeJoin(createdJoinName,
+					new FirstPhaseOneToOneLoader<C, I, T2>(idMappingStrategy, subclassPrimaryKey, mainSelectExecutor,
+							DIFFERED_ENTITY_LOADER),
 					mainTablePrimaryKey,
 					subclassPrimaryKey,
 					// since we don't know what kind of sub entity is present we must do an OUTER join between common truk and all sub tables
@@ -413,13 +417,13 @@ public class JoinedTablesPolymorphicPersister<C, I> implements IEntityConfigured
 	
 	// for one-to-many cases
 	@Override
-	public <E, ID, TT extends Table> void copyJoinsRootTo(EntityMappingStrategyTreeSelectBuilder<E, ID, TT> entityMappingStrategyTreeSelectBuilder, String joinName) {
+	public <E, ID> void copyRootJoinsTo(EntityJoinTree<E, ID> entityJoinTree, String joinName) {
 		// nothing to do here, called by one-to-many engines, which actually call joinWithMany()
 	}
 	
 	@Override
-	public EntityMappingStrategyTreeSelectBuilder<C, I, ?> getEntityMappingStrategyTreeSelectBuilder() {
-		return mainPersister.getEntityMappingStrategyTreeSelectBuilder();
+	public EntityJoinTree<C, I> getEntityJoinTree() {
+		return mainPersister.getEntityJoinTree();
 	}
 	
 }

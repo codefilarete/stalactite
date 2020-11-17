@@ -1,4 +1,4 @@
-package org.gama.stalactite.persistence.engine;
+package org.gama.stalactite.persistence.engine.runtime;
 
 import java.sql.SQLException;
 import java.util.Collections;
@@ -12,7 +12,8 @@ import org.gama.lang.collection.Maps;
 import org.gama.lang.collection.PairIterator;
 import org.gama.reflection.AccessorByField;
 import org.gama.reflection.Accessors;
-import org.gama.stalactite.persistence.engine.runtime.UpdateExecutor;
+import org.gama.stalactite.persistence.engine.RowCountManager;
+import org.gama.stalactite.persistence.engine.StaleObjectExcepion;
 import org.gama.stalactite.persistence.engine.listening.UpdateListener;
 import org.gama.stalactite.persistence.engine.listening.UpdateListener.UpdatePayload;
 import org.gama.stalactite.persistence.id.manager.AlreadyAssignedIdentifierManager;

@@ -36,6 +36,7 @@ import org.gama.stalactite.persistence.engine.runtime.CollectionUpdater;
 import org.gama.stalactite.persistence.engine.runtime.OneToManyWithMappedAssociationEngine.DeleteTargetEntitiesBeforeDeleteCascader;
 import org.gama.stalactite.persistence.engine.runtime.OneToManyWithMappedAssociationEngine.TargetInstancesInsertCascader;
 import org.gama.stalactite.persistence.engine.runtime.OneToManyWithMappedAssociationEngine.TargetInstancesUpdateCascader;
+import org.gama.stalactite.persistence.engine.runtime.load.EntityJoinTree;
 import org.gama.stalactite.persistence.id.PersistableIdentifier;
 import org.gama.stalactite.persistence.id.PersistedIdentifier;
 import org.gama.stalactite.persistence.id.assembly.ComposedIdentifierAssembler;
@@ -55,7 +56,6 @@ import org.gama.stalactite.sql.result.Row;
 
 import static org.gama.lang.Nullable.nullable;
 import static org.gama.lang.bean.Objects.preventNull;
-import static org.gama.stalactite.persistence.engine.runtime.EntityMappingStrategyTreeSelectBuilder.ROOT_STRATEGY_NAME;
 
 /**
  * Class that configures element-collection mapping
@@ -72,7 +72,7 @@ public class ElementCollectionCascadeConfigurer<SRC, TRGT, ID, C extends Collect
 		this.connectionConfiguration = connectionConfiguration;
 	}
 	
-	public <T extends Table<T>> void appendCascade(ElementCollectionLinkage<SRC, TRGT, C> linkage,
+	public <T extends Table, TARGET_TABLE extends Table<?>> void appendCascade(ElementCollectionLinkage<SRC, TRGT, C> linkage,
 												   IEntityConfiguredJoinedTablesPersister<SRC, ID> sourcePersister,
 												   ForeignKeyNamingStrategy foreignKeyNamingStrategy,
 												   ColumnNamingStrategy columnNamingStrategy,
@@ -80,29 +80,30 @@ public class ElementCollectionCascadeConfigurer<SRC, TRGT, ID, C extends Collect
 		
 		AccessorDefinition collectionProviderDefinition = AccessorDefinition.giveDefinition(linkage.getCollectionProvider());
 		// schema configuration
-		Column sourcePK = Iterables.first((Set<Column>) sourcePersister.getMappingStrategy().getTargetTable().getPrimaryKey().getColumns());
+		Column<T, ID> sourcePK = Iterables.first((Set<Column>) sourcePersister.getMappingStrategy().getTargetTable().getPrimaryKey().getColumns());
 		
 		String tableName = nullable(linkage.getTargetTableName()).getOr(() -> tableNamingStrategy.giveName(collectionProviderDefinition));
-		Table<?> targetTable = nullable(linkage.getTargetTable()).getOr(() -> new Table(tableName));
+		TARGET_TABLE targetTable = (TARGET_TABLE) nullable(linkage.getTargetTable()).getOr(() -> new Table(tableName));
 		
 		String reverseColumnName = nullable(linkage.getReverseColumnName()).getOr(() ->
 				columnNamingStrategy.giveName(new AccessorDefinition(ElementRecord.class, "getId", StatefullIdentifier.class)));
-		Column reverseColumn = nullable(linkage.getReverseColumn()).getOr(() -> targetTable.addColumn(reverseColumnName, sourcePK.getJavaType()));
+		Column<TARGET_TABLE, ID> reverseColumn = (Column<TARGET_TABLE, ID>) nullable(linkage.getReverseColumn())
+				.getOr(() -> (Column) targetTable.addColumn(reverseColumnName, sourcePK.getJavaType()));
 		registerColumnBinder(reverseColumn, sourcePK);	// because sourcePk binder might have been overloaded by column so we need to adjust to it
 		
 		reverseColumn.primaryKey();
 		
 		EmbeddableMappingConfiguration<TRGT> embeddableConfiguration =
 				nullable(linkage.getEmbeddableConfigurationProvider()).map(EmbeddableMappingConfigurationProvider::getConfiguration).get();
-		ClassMappingStrategy<ElementRecord, ElementRecord, Table> wrapperStrategy;
+		ClassMappingStrategy<ElementRecord, ElementRecord, Table> elementRecordStrategy;
 		if (embeddableConfiguration == null) {
 			String columnName = nullable(linkage.getElementColumnName())
 					.getOr(() -> columnNamingStrategy.giveName(collectionProviderDefinition));
 			Column<Table, TRGT> elementColumn = (Column<Table, TRGT>) targetTable.addColumn(columnName, linkage.getComponentType());
 			elementColumn.primaryKey();
-			targetTable.addForeignKey(foreignKeyNamingStrategy::giveName, reverseColumn, sourcePK);
+			targetTable.addForeignKey(foreignKeyNamingStrategy::giveName, (Column) reverseColumn, (Column) sourcePK);
 			
-			wrapperStrategy = new ElementRecordMappingStrategy(targetTable, reverseColumn, elementColumn);
+			elementRecordStrategy = new ElementRecordMappingStrategy(targetTable, reverseColumn, elementColumn);
 		} else {
 			BeanMappingBuilder elementCollectionMappingBuilder = new BeanMappingBuilder();
 			Map<IReversibleAccessor, Column> columnMap = elementCollectionMappingBuilder.build(embeddableConfiguration, targetTable,
@@ -134,27 +135,27 @@ public class ElementCollectionCascadeConfigurer<SRC, TRGT, ID, C extends Collect
 			
 			EmbeddedBeanMappingStrategy<ElementRecord, Table> dd = new EmbeddedBeanMappingStrategy<>(ElementRecord.class,
 					targetTable, (Map) projectedColumnMap);
-			wrapperStrategy = new ElementRecordMappingStrategy(targetTable, reverseColumn, dd);
+			elementRecordStrategy = new ElementRecordMappingStrategy(targetTable, reverseColumn, dd);
 		}
 			
 		// Note that table will be added to schema thanks to select cascade because join is added to source persister
-		JoinedTablesPersister<ElementRecord, ElementRecord, Table> wrapperPersister = new JoinedTablesPersister<>(wrapperStrategy, dialect, connectionConfiguration);
+		JoinedTablesPersister<ElementRecord, ElementRecord, Table> elementRecordPersister = new JoinedTablesPersister<>(elementRecordStrategy, dialect, connectionConfiguration);
 		
 		// insert management
 		IAccessor<SRC, C> collectionAccessor = linkage.getCollectionProvider();
-		addInsertCascade(sourcePersister, wrapperPersister, collectionAccessor);
+		addInsertCascade(sourcePersister, elementRecordPersister, collectionAccessor);
 		
 		// update management
-		addUpdateCascade(sourcePersister, wrapperPersister, collectionAccessor);
+		addUpdateCascade(sourcePersister, elementRecordPersister, collectionAccessor);
 		
 		// delete management (we provided persisted instances so they are perceived as deletable)
-		addDeleteCascade(sourcePersister, wrapperPersister, collectionAccessor);
+		addDeleteCascade(sourcePersister, elementRecordPersister, collectionAccessor);
 		
 		// select management
 		Supplier<C> collectionFactory = preventNull(
 				linkage.getCollectionFactory(),
 				BeanRelationFixer.giveCollectionFactory((Class<C>) collectionProviderDefinition.getMemberType()));
-		addSelectCascade(sourcePersister, wrapperPersister, sourcePK, reverseColumn,
+		addSelectCascade(sourcePersister, elementRecordPersister, sourcePK, reverseColumn,
 				linkage.getCollectionProvider().toMutator()::set, collectionAccessor::get,
 				collectionFactory);
 	}
@@ -215,23 +216,23 @@ public class ElementCollectionCascadeConfigurer<SRC, TRGT, ID, C extends Collect
 		sourcePersister.addDeleteListener(new DeleteTargetEntitiesBeforeDeleteCascader<>(wrapperPersister, collectionProviderAsPersistedInstances));
 	}
 	
-	private void addSelectCascade(IEntityConfiguredJoinedTablesPersister<SRC, ID> sourcePersister,
-								  IJoinedTablesPersister<ElementRecord, ElementRecord> wrapperPersister,
+	private <T extends Table> void addSelectCascade(IEntityConfiguredJoinedTablesPersister<SRC, ID> sourcePersister,
+								  IJoinedTablesPersister<ElementRecord, ElementRecord> elementRecordPersister,
 								  Column sourcePK,
-								  Column primaryKey,
+								  Column elementRecordToSourceForeignKey,
 								  BiConsumer<SRC, C> collectionSetter,
 								  Function<SRC, C> collectionGetter,
 								  Supplier<C> collectionFactory) {
 		// a particular collection fixer that gets raw values (elements) from ElementRecord
-		// because wrapperPersister manages ElementRecord, so it gives them as input of the relation,
+		// because elementRecordPersister manages ElementRecord, so it gives them as input of the relation,
 		// hence an adaption is needed to "convert" it
-		BeanRelationFixer<SRC, ElementRecord> srcElementWrapperAsEntityBeanRelationFixer = BeanRelationFixer.ofAdapter(
+		BeanRelationFixer<SRC, ElementRecord> relationFixer = BeanRelationFixer.ofAdapter(
 				collectionSetter,
 				collectionGetter,
 				collectionFactory,
 				(bean, input, collection) -> collection.add((TRGT) input.getElement()));	// element value is taken from ElementRecord
 		
-		wrapperPersister.joinAsMany(sourcePersister, sourcePK, primaryKey, srcElementWrapperAsEntityBeanRelationFixer, ROOT_STRATEGY_NAME, true);
+		elementRecordPersister.joinAsMany(sourcePersister, sourcePK, elementRecordToSourceForeignKey, relationFixer, EntityJoinTree.ROOT_STRATEGY_NAME, true);
 	}
 	
 	private Function<SRC, Collection<ElementRecord>> collectionProvider(IAccessor<SRC, C> collectionAccessor,

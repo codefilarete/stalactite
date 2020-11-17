@@ -1,9 +1,11 @@
-package org.gama.stalactite.persistence.engine;
+package org.gama.stalactite.persistence.engine.runtime;
 
 import javax.sql.DataSource;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -12,14 +14,22 @@ import java.util.Set;
 import org.gama.lang.collection.Arrays;
 import org.gama.lang.collection.Iterables;
 import org.gama.lang.collection.Maps;
-import org.gama.stalactite.persistence.engine.runtime.SelectExecutor;
-import org.gama.stalactite.sql.dml.SQLOperation.SQLOperationListener;
-import org.gama.stalactite.sql.dml.SQLStatement;
-import org.gama.stalactite.sql.test.HSQLDBInMemoryDataSource;
-import org.gama.stalactite.sql.test.MariaDBEmbeddableDataSource;
+import org.gama.stalactite.persistence.engine.DDLDeployer;
+import org.gama.stalactite.persistence.id.assembly.IdentifierAssembler;
+import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
+import org.gama.stalactite.persistence.mapping.IdMappingStrategy;
+import org.gama.stalactite.persistence.sql.Dialect;
+import org.gama.stalactite.persistence.sql.dml.ColumnParameterizedSelect;
 import org.gama.stalactite.persistence.sql.dml.DMLGenerator;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
+import org.gama.stalactite.sql.ConnectionProvider;
+import org.gama.stalactite.sql.dml.ReadOperation;
+import org.gama.stalactite.sql.dml.SQLOperation.SQLOperationListener;
+import org.gama.stalactite.sql.dml.SQLStatement;
+import org.gama.stalactite.sql.result.InMemoryResultSet;
+import org.gama.stalactite.sql.test.HSQLDBInMemoryDataSource;
+import org.gama.stalactite.sql.test.MariaDBEmbeddableDataSource;
 import org.gama.stalactite.test.PairSetList;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -30,6 +40,7 @@ import org.mockito.ArgumentCaptor;
 import static org.gama.stalactite.test.PairSetList.pairSetList;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -329,6 +340,40 @@ public class SelectExecutorTest extends AbstractDMLExecutorTest {
 				new Toto(3, 30, 300),
 				new Toto(4, 40, 400));
 		assertEquals(expectedResult.toString(), totos.toString());
+	}
+	
+	@Test
+	public void testExecute() {
+		Table targetTable = new Table("Toto");
+		Column id = targetTable.addColumn("id", long.class).primaryKey();
+		
+		ClassMappingStrategy mappingStrategyMock = mock(ClassMappingStrategy.class);
+		when(mappingStrategyMock.getTargetTable()).thenReturn(targetTable);
+		// the selected columns are plugged on the table ones
+		when(mappingStrategyMock.getSelectableColumns()).thenAnswer(invocation -> targetTable.getColumns());
+		
+		// mocking to prevent NPE from EntityMappingStrategyTreeSelectExecutor constructor
+		IdMappingStrategy idMappingStrategyMock = mock(IdMappingStrategy.class);
+		when(mappingStrategyMock.getIdMappingStrategy()).thenReturn(idMappingStrategyMock);
+		
+		// mocking to provide entity values
+		IdentifierAssembler identifierAssemblerMock = mock(IdentifierAssembler.class);
+		when(idMappingStrategyMock.getIdentifierAssembler()).thenReturn(identifierAssemblerMock);
+		Map<Column<Table, Object>, Object> idValuesPerEntity = Maps.asMap(id, Arrays.asList(10, 20));
+		when(identifierAssemblerMock.getColumnValues(anyList())).thenReturn(idValuesPerEntity);
+		
+		// mocking ResultSet transformation because we don't care about it in this test
+		ReadOperation readOperationMock = mock(ReadOperation.class);
+		when(readOperationMock.execute()).thenReturn(new InMemoryResultSet(Collections.emptyList()));
+		when(readOperationMock.getSqlStatement()).thenReturn(new ColumnParameterizedSelect("", new HashMap<>(), new HashMap<>(), new HashMap<>()));
+		
+		// we're going to check if values are correctly passed to the underlying ReadOperation
+		SelectExecutor<Toto, Integer, Table> testInstance = new SelectExecutor<>(mappingStrategyMock, mock(ConnectionProvider.class), new Dialect().getDmlGenerator(), 3);
+		ArgumentCaptor<Map> capturedValues = ArgumentCaptor.forClass(Map.class);
+		testInstance.new InternalExecutor().execute(readOperationMock, Arrays.asList(1, 2));
+		
+		verify(readOperationMock).setValues(capturedValues.capture());
+		assertEquals(Maps.asMap(id, Arrays.asList(10, 20)), capturedValues.getValue());
 	}
 	
 }

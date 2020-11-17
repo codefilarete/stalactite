@@ -30,8 +30,6 @@ import org.gama.reflection.ValueAccessPointMap;
 import org.gama.stalactite.persistence.engine.CascadeOptions.RelationMode;
 import org.gama.stalactite.persistence.engine.ColumnNamingStrategy;
 import org.gama.stalactite.persistence.engine.ForeignKeyNamingStrategy;
-import org.gama.stalactite.persistence.engine.runtime.IConfiguredJoinedTablesPersister;
-import org.gama.stalactite.persistence.engine.runtime.IEntityConfiguredJoinedTablesPersister;
 import org.gama.stalactite.persistence.engine.MappingConfigurationException;
 import org.gama.stalactite.persistence.engine.NotYetSupportedOperationException;
 import org.gama.stalactite.persistence.engine.PersisterRegistry;
@@ -43,16 +41,17 @@ import org.gama.stalactite.persistence.engine.cascade.BeforeDeleteByIdSupport;
 import org.gama.stalactite.persistence.engine.cascade.BeforeDeleteSupport;
 import org.gama.stalactite.persistence.engine.cascade.BeforeInsertSupport;
 import org.gama.stalactite.persistence.engine.cascade.BeforeUpdateSupport;
-import org.gama.stalactite.persistence.engine.runtime.EntityMappingStrategyTreeRowTransformer;
-import org.gama.stalactite.persistence.engine.runtime.IJoinedTablesPersister;
-import org.gama.stalactite.persistence.engine.runtime.BeanRelationFixer;
-import org.gama.stalactite.persistence.engine.runtime.IConfiguredPersister;
-import org.gama.stalactite.persistence.engine.runtime.IEntityConfiguredPersister;
 import org.gama.stalactite.persistence.engine.listening.DeleteListener;
 import org.gama.stalactite.persistence.engine.listening.IPersisterListener;
 import org.gama.stalactite.persistence.engine.listening.InsertListener;
 import org.gama.stalactite.persistence.engine.listening.SelectListener;
 import org.gama.stalactite.persistence.engine.listening.UpdateListener;
+import org.gama.stalactite.persistence.engine.runtime.BeanRelationFixer;
+import org.gama.stalactite.persistence.engine.runtime.IConfiguredJoinedTablesPersister;
+import org.gama.stalactite.persistence.engine.runtime.IConfiguredPersister;
+import org.gama.stalactite.persistence.engine.runtime.IEntityConfiguredJoinedTablesPersister;
+import org.gama.stalactite.persistence.engine.runtime.IEntityConfiguredPersister;
+import org.gama.stalactite.persistence.engine.runtime.IJoinedTablesPersister;
 import org.gama.stalactite.persistence.id.assembly.SimpleIdentifierAssembler;
 import org.gama.stalactite.persistence.mapping.IEntityMappingStrategy;
 import org.gama.stalactite.persistence.mapping.IMappingStrategy.ShadowColumnValueProvider;
@@ -158,7 +157,7 @@ public class CascadeOneConfigurer<SRC, TRGT, SRCID, TRGTID> {
 			
 			// selection is always present (else configuration is nonsense !)
 			BeanRelationFixer<SRC, TRGT> beanRelationFixer = determineRelationFixer(targetAccessor);
-			addSelectCascade(cascadeOne, sourcePersister, (IEntityConfiguredJoinedTablesPersister<TRGT, SRCID>) targetPersister, leftColumn, rightColumn, beanRelationFixer);
+			addSelectCascade(cascadeOne, sourcePersister, (IEntityConfiguredJoinedTablesPersister<TRGT, TRGTID>) targetPersister, leftColumn, rightColumn, beanRelationFixer);
 			
 			// additionnal cascade
 			boolean orphanRemoval = maintenanceMode == ALL_ORPHAN_REMOVAL;
@@ -201,12 +200,17 @@ public class CascadeOneConfigurer<SRC, TRGT, SRCID, TRGTID> {
 		protected abstract void addDeleteCascade(CascadeOne<SRC, TRGT, TRGTID> cascadeOne, IEntityConfiguredPersister<TRGT, TRGTID> targetPersister,
 												 IPersisterListener<SRC, SRCID> srcPersisterListener, boolean orphanRemoval);
 		
-		protected <T1 extends Table<T1>, T2 extends Table<T2>, P extends IJoinedTablesPersister<SRC, SRCID> & IPersisterListener<SRC, SRCID>> void addSelectCascade(
+		protected <
+				T1 extends Table<T1>,
+				T2 extends Table<T2>,
+				P extends IJoinedTablesPersister<SRC, SRCID> & IPersisterListener<SRC, SRCID>,
+				J>
+		void addSelectCascade(
 				CascadeOne<SRC, TRGT, TRGTID> cascadeOne,
 				P sourcePersister,
-				IConfiguredJoinedTablesPersister<TRGT, SRCID> targetPersister,
-				Column<T1, SRCID> leftColumn,
-				Column<T2, SRCID> rightColumn,
+				IConfiguredJoinedTablesPersister<TRGT, TRGTID> targetPersister,
+				Column<T1, J> leftColumn,
+				Column<T2, J> rightColumn,
 				BeanRelationFixer<SRC, TRGT> beanRelationFixer) {
 			
 			// we add target subgraph joins to the one that was created
@@ -711,7 +715,7 @@ public class CascadeOneConfigurer<SRC, TRGT, SRCID, TRGTID> {
 				
 				/**
 				 * This is never used because it should return an entity which can't be build here.
-				 * It will be by {@link EntityMappingStrategyTreeRowTransformer}
+				 * It will be by {@link org.gama.stalactite.persistence.engine.runtime.load.EntityTreeInflater}
 				 * Hence this implementation returns null
 				 */
 				@Override

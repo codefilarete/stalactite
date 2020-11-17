@@ -4,7 +4,6 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
-import org.gama.stalactite.persistence.engine.runtime.EntityMappingStrategyTreeRowTransformer;
 import org.gama.stalactite.sql.binder.NullAwareParameterBinder;
 import org.gama.stalactite.sql.binder.ParameterBinder;
 
@@ -19,7 +18,7 @@ public interface Identified<I> {
 	 * Gives a {@link ParameterBinder} for a general {@link Identified} to be declared in a {@link org.gama.stalactite.sql.binder.ParameterBinderRegistry}
 	 * for SQL write operation purpose : it will use the surrogate id as a value for the {@link PreparedStatement}.
 	 * The returned {@link ParameterBinder} has no purpose for selection because it doesn't know how to build a fullfilled instance. Even if
-	 * it is called, the result is ignored by {@link EntityMappingStrategyTreeRowTransformer} which cleanly handle
+	 * it is called, the result is ignored by {@link org.gama.stalactite.persistence.engine.runtime.load.EntityTreeInflater} which cleanly handle
 	 * instanciation and filling of the target.
 	 * 
 	 * @param parameterBinder the surrogate {@link ParameterBinder} (can be for primitive type because null is already handled by this method result)
@@ -33,7 +32,7 @@ public interface Identified<I> {
 			public Identified<I> doGet(ResultSet resultSet, String columnName) {
 				// we can't instantiate the right Identified because we don't have its class, moreover we should fill the instance properties
 				// but we don't have the material to do it, hence the select decoding process is done differenly elsewhere in
-				// EntityMappingStrategyTreeRowTransformer, so we can return anything here 
+				// EntityTreeInflater, so we can return anything here 
 				return null;
 			}
 			

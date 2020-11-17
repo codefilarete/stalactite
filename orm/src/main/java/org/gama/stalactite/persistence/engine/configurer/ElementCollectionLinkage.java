@@ -34,7 +34,7 @@ public class ElementCollectionLinkage<SRC, TRGT, C extends Collection<TRGT>> {
 	
 	private Table targetTable;
 	private String targetTableName;
-	private Column<Table, TRGT> reverseColumn;
+	private Column<Table, ?> reverseColumn;
 	private String reverseColumnName;
 	
 	/** Element column name override, used in simple case : {@link EmbeddableMappingConfigurationProvider} null, aka not when element is a complex type */
@@ -125,11 +125,11 @@ public class ElementCollectionLinkage<SRC, TRGT, C extends Collection<TRGT>> {
 		return this;
 	}
 	
-	public Column<Table, TRGT> getReverseColumn() {
-		return reverseColumn;
+	public <I> Column<Table, I> getReverseColumn() {
+		return (Column<Table, I>) reverseColumn;
 	}
 	
-	public void setReverseColumn(Column<Table, TRGT> reverseColumn) {
+	public void setReverseColumn(Column<Table, ?> reverseColumn) {
 		this.reverseColumn = reverseColumn;
 	}
 	

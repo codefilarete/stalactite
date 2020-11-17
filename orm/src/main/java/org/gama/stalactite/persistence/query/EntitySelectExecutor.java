@@ -7,9 +7,10 @@ import java.util.List;
 
 import org.gama.lang.collection.Iterables;
 import org.gama.lang.collection.Maps;
-import org.gama.stalactite.persistence.engine.runtime.EntityMappingStrategyTreeRowTransformer;
-import org.gama.stalactite.persistence.engine.runtime.EntityMappingStrategyTreeSelectBuilder;
 import org.gama.stalactite.persistence.engine.runtime.EntityMappingStrategyTreeSelectExecutor;
+import org.gama.stalactite.persistence.engine.runtime.load.EntityJoinTree;
+import org.gama.stalactite.persistence.engine.runtime.load.EntityTreeQueryBuilder;
+import org.gama.stalactite.persistence.engine.runtime.load.EntityTreeQueryBuilder.EntityTreeQuery;
 import org.gama.stalactite.persistence.sql.dml.binder.ColumnBinderRegistry;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
@@ -29,7 +30,7 @@ import static org.gama.stalactite.query.model.Operators.in;
  * Class for loading an entity graph which is selected by criteria on bean properties coming from {@link EntityCriteriaSupport}.
  * 
  * Implemented as a light version of {@link EntityMappingStrategyTreeSelectExecutor} focused on {@link EntityCriteriaSupport},
- * hence it is based on {@link EntityMappingStrategyTreeSelectBuilder} to build the bean graph.
+ * hence it is based on {@link EntityJoinTree} to build the bean graph.
  * 
  * @author Guillaume Mary
  * @see #loadGraph(CriteriaChain)
@@ -41,27 +42,16 @@ public class EntitySelectExecutor<C, I, T extends Table> implements IEntitySelec
 	
 	private final ConnectionProvider connectionProvider;
 	
-	/** Surrogate for joining strategies, will help to build the SQL */
-	private final EntityMappingStrategyTreeSelectBuilder<C, I, T> entityMappingStrategyTreeSelectBuilder;
-	
 	private final ColumnBinderRegistry parameterBinderProvider;
 	
-	private final EntityMappingStrategyTreeRowTransformer<C> rowTransformer;
+	private final EntityJoinTree<C, I> entityJoinTree;
 	
-	public EntitySelectExecutor(EntityMappingStrategyTreeSelectBuilder<C, I, T> entityMappingStrategyTreeSelectBuilder,
+	public EntitySelectExecutor(EntityJoinTree<C, I> entityJoinTree,
 								ConnectionProvider connectionProvider,
 								ColumnBinderRegistry columnBinderRegistry) {
-		this(entityMappingStrategyTreeSelectBuilder, connectionProvider, columnBinderRegistry, new EntityMappingStrategyTreeRowTransformer<>(entityMappingStrategyTreeSelectBuilder));
-	}
-	
-	public EntitySelectExecutor(EntityMappingStrategyTreeSelectBuilder<C, I, T> entityMappingStrategyTreeSelectBuilder,
-								ConnectionProvider connectionProvider,
-								ColumnBinderRegistry columnBinderRegistry,
-								EntityMappingStrategyTreeRowTransformer<C> rowTransformer) {
-		this.entityMappingStrategyTreeSelectBuilder = entityMappingStrategyTreeSelectBuilder;
+		this.entityJoinTree = entityJoinTree;
 		this.connectionProvider = connectionProvider;
 		this.parameterBinderProvider = columnBinderRegistry;
-		this.rowTransformer = rowTransformer;
 	}
 	
 	/**
@@ -73,9 +63,10 @@ public class EntitySelectExecutor<C, I, T extends Table> implements IEntitySelec
 	 * @return beans loaded from rows selected by given criteria
 	 */
 	public List<C> loadSelection(CriteriaChain where) {
-		SQLQueryBuilder sqlQueryBuilder = IEntitySelectExecutor.createQueryBuilder(where, entityMappingStrategyTreeSelectBuilder.buildSelectQuery());
+		EntityTreeQuery<C> entityTreeQuery = new EntityTreeQueryBuilder<>(this.entityJoinTree).buildSelectQuery(parameterBinderProvider);
+		SQLQueryBuilder sqlQueryBuilder = IEntitySelectExecutor.createQueryBuilder(where, entityTreeQuery.getQuery());
 		PreparedSQL preparedSQL = sqlQueryBuilder.toPreparedSQL(parameterBinderProvider);
-		return execute(preparedSQL);
+		return new InternalExecutor(entityTreeQuery).execute(preparedSQL);
 	}
 	
 	/**
@@ -90,13 +81,14 @@ public class EntitySelectExecutor<C, I, T extends Table> implements IEntitySelec
 	 * @return root beans of aggregates that match criteria
 	 */
 	public List<C> loadGraph(CriteriaChain where) {
-		Query query = entityMappingStrategyTreeSelectBuilder.buildSelectQuery();
+		EntityTreeQuery<C> entityTreeQuery = new EntityTreeQueryBuilder<>(this.entityJoinTree).buildSelectQuery(parameterBinderProvider);
+		Query query = entityTreeQuery.getQuery();
 		
 		SQLQueryBuilder sqlQueryBuilder = IEntitySelectExecutor.createQueryBuilder(where, query);
 		
 		// First phase : selecting ids (made by clearing selected elements for performance issue)
 		List<Object> columns = query.getSelectSurrogate().clear();
-		Column<T, I> pk = (Column<T, I>) Iterables.first(entityMappingStrategyTreeSelectBuilder.getRoot().getTable().getPrimaryKey().getColumns());
+		Column<T, I> pk = (Column<T, I>) Iterables.first(entityJoinTree.getRoot().getTable().getPrimaryKey().getColumns());
 		query.select(pk, PRIMARY_KEY_ALIAS);
 		List<I> ids = readIds(sqlQueryBuilder, pk);
 		
@@ -111,7 +103,7 @@ public class EntitySelectExecutor<C, I, T extends Table> implements IEntitySelec
 			query.where(pk, in(ids));
 			
 			PreparedSQL preparedSQL = sqlQueryBuilder.toPreparedSQL(parameterBinderProvider);
-			return execute(preparedSQL);
+			return new InternalExecutor(entityTreeQuery).execute(preparedSQL);
 		}
 	}
 	
@@ -126,28 +118,40 @@ public class EntitySelectExecutor<C, I, T extends Table> implements IEntitySelec
 		}
 	}
 	
-	public List<C> execute(PreparedSQL query) {
-		try (ReadOperation<Integer> readOperation = new ReadOperation<>(query, connectionProvider)) {
-			return execute(readOperation);
+	/**
+	 * Small class to avoid passing {@link EntityTreeQuery} as argument to all methods
+	 */
+	private class InternalExecutor {
+		
+		private final EntityTreeQuery<C> entityTreeQuery;
+		
+		private InternalExecutor(EntityTreeQuery<C> entityTreeQuery) {
+			this.entityTreeQuery = entityTreeQuery;
 		}
-	}
-	
-	private List<C> execute(ReadOperation<Integer> operation) {
-		try (ReadOperation<Integer> closeableOperation = operation) {
-			return transform(closeableOperation);
-		} catch (RuntimeException e) {
-			throw new SQLExecutionException(operation.getSqlStatement().getSQL(), e);
+		
+		protected List<C> execute(PreparedSQL query) {
+			try (ReadOperation<Integer> readOperation = new ReadOperation<>(query, connectionProvider)) {
+				return execute(readOperation);
+			}
 		}
-	}
-	
-	protected List<C> transform(ReadOperation<Integer> closeableOperation) {
-		ResultSet resultSet = closeableOperation.execute();
-		// NB: we give the same ParametersBinders of those given at ColumnParameterizedSelect since the row iterator is expected to read column from it
-		RowIterator rowIterator = new RowIterator(resultSet, entityMappingStrategyTreeSelectBuilder.getSelectParameterBinders());
-		return transform(rowIterator);
-	}
-	
-	protected List<C> transform(Iterator<Row> rowIterator) {
-		return this.rowTransformer.transform(() -> rowIterator, 50);
+		
+		private List<C> execute(ReadOperation<Integer> operation) {
+			try (ReadOperation<Integer> closeableOperation = operation) {
+				return transform(closeableOperation);
+			} catch (RuntimeException e) {
+				throw new SQLExecutionException(operation.getSqlStatement().getSQL(), e);
+			}
+		}
+		
+		protected List<C> transform(ReadOperation<Integer> closeableOperation) {
+			ResultSet resultSet = closeableOperation.execute();
+			// NB: we give the same ParametersBinders of those given at ColumnParameterizedSelect since the row iterator is expected to read column from it
+			RowIterator rowIterator = new RowIterator(resultSet, entityTreeQuery.getSelectParameterBinders());
+			return transform(rowIterator);
+		}
+		
+		protected List<C> transform(Iterator<Row> rowIterator) {
+			return this.entityTreeQuery.toInflater().transform(() -> rowIterator, 50);
+		}
 	}
 }

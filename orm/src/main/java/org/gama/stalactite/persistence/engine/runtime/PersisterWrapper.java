@@ -14,6 +14,7 @@ import org.gama.stalactite.persistence.engine.listening.InsertListener;
 import org.gama.stalactite.persistence.engine.listening.PersisterListener;
 import org.gama.stalactite.persistence.engine.listening.SelectListener;
 import org.gama.stalactite.persistence.engine.listening.UpdateListener;
+import org.gama.stalactite.persistence.engine.runtime.load.EntityJoinTree;
 import org.gama.stalactite.persistence.mapping.IEntityMappingStrategy;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
@@ -155,26 +156,31 @@ public class PersisterWrapper<C, I> implements IEntityConfiguredJoinedTablesPers
 	}
 	
 	@Override
-	public <SRC, T1 extends Table, T2 extends Table> void joinAsOne(IJoinedTablesPersister<SRC, I> sourcePersister, Column<T1, I> leftColumn, Column<T2, I> rightColumn,
-								BeanRelationFixer<SRC, C> beanRelationFixer, boolean optional) {
+	public <SRC, T1 extends Table, T2 extends Table, SRCID, JID> void joinAsOne(IJoinedTablesPersister<SRC, SRCID> sourcePersister,
+																				Column<T1, JID> leftColumn,
+																				Column<T2, JID> rightColumn,
+																				BeanRelationFixer<SRC, C> beanRelationFixer,
+																				boolean optional) {
 		surrogate.joinAsOne(sourcePersister, leftColumn, rightColumn, beanRelationFixer, optional);
 	}
 	
 	@Override
-	public <SRC, T1 extends Table, T2 extends Table, J> void joinAsMany(IJoinedTablesPersister<SRC, J> sourcePersister,
-																		Column<T1, J> leftColumn, Column<T2, J> rightColumn,
-																		BeanRelationFixer<SRC, C> beanRelationFixer, String joinName,
-																		boolean optional) {
+	public <SRC, T1 extends Table, T2 extends Table, SRCID> void joinAsMany(IJoinedTablesPersister<SRC, SRCID> sourcePersister,
+																			Column<T1, ?> leftColumn,
+																			Column<T2, ?> rightColumn,
+																			BeanRelationFixer<SRC, C> beanRelationFixer,
+																			String joinName,
+																			boolean optional) {
 		surrogate.joinAsMany(sourcePersister, leftColumn, rightColumn, beanRelationFixer, joinName, optional);
 	}
 	
 	@Override
-	public EntityMappingStrategyTreeSelectBuilder<C, I, ?> getEntityMappingStrategyTreeSelectBuilder() {
-		return surrogate.getEntityMappingStrategyTreeSelectBuilder();
+	public EntityJoinTree<C, I> getEntityJoinTree() {
+		return surrogate.getEntityJoinTree();
 	}
 	
 	@Override
-	public <E, ID, T extends Table> void copyJoinsRootTo(EntityMappingStrategyTreeSelectBuilder<E, ID, T> entityMappingStrategyTreeSelectBuilder, String joinName) {
-		surrogate.copyJoinsRootTo(entityMappingStrategyTreeSelectBuilder, joinName);
+	public <E, ID> void copyRootJoinsTo(EntityJoinTree<E, ID> entityJoinTree, String joinName) {
+		surrogate.copyRootJoinsTo(entityJoinTree, joinName);
 	}
 }
