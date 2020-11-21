@@ -53,7 +53,7 @@ class AssociationTableNamingStrategyTest {
 			Column cyclingModelIdColumn = cyclingModelTable.addColumn("id", long.class);
 			Duo<String, String> columnNames = testInstance.giveColumnNames(accessorDefinition, cyclingModelIdColumn, cyclingModelIdColumn);
 			// please note that ending "s" was removed, not a strong rule, could be removed if too "intrusive"
-			assertEquals(new Duo<>("CyclingModelTable_id", "cyclingModel_id"), columnNames);
+			assertEquals(new Duo<>("cyclingModelTable_id", "cyclingModel_id"), columnNames);
 		}
 		
 		@Test

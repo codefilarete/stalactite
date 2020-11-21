@@ -46,8 +46,8 @@ public interface AssociationTableNamingStrategy {
 		
 		@Override
 		public Duo<String, String> giveColumnNames(@Nonnull AccessorDefinition accessorDefinition, @Nonnull Column leftPrimaryKey, @Nonnull Column rightPrimaryKey) {
-			String oneSideColumnName = leftPrimaryKey.getTable().getName() + "_" + leftPrimaryKey.getName();
-			String manySideColumnName = rightPrimaryKey.getTable().getName() + "_" + rightPrimaryKey.getName();
+			String oneSideColumnName = Strings.uncapitalize(leftPrimaryKey.getTable().getName()) + "_" + leftPrimaryKey.getName();
+			String manySideColumnName = Strings.uncapitalize(rightPrimaryKey.getTable().getName()) + "_" + rightPrimaryKey.getName();
 			if (manySideColumnName.equalsIgnoreCase(oneSideColumnName)) {
 				String propertyName = accessorDefinition.getName();
 				// removing ending "s" if present, for good english if project speaks english (not a strong rule, could be removed, overall because
