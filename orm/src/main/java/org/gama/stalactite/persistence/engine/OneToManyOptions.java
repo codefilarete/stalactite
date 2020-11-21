@@ -59,9 +59,10 @@ public interface OneToManyOptions<C, I, O, S extends Collection<O>> extends Casc
 	OneToManyOptions<C, I, O, S> mappedBy(Column<Table, ?> reverseLink);
 	
 	/**
-	 * Defines setter of current entity on target entity, for bidirectionality fix in memory (it has no consequence on database mapping).
-	 * Has only interest for mapping with association table because in such case {@link #mappedBy(SerializableFunction)} methods are not used hence
-	 * reverse setter can't be deduced. If used with owned association it would have no consequence and is not taken into account.
+	 * Defines setter of current entity on target entity. Equivalent of {@link #mappedBy(SerializableFunction)} for relation mapped with an
+	 * association table because in such case {@link #mappedBy(SerializableFunction)} is not used, hence reverse setter can't be deduced.
+	 * This method has no consequence on database mapping since it only interacts in memory.
+	 * If used with owned association it would have no consequence and won't be taken into account.
 	 * 
 	 * @param reverseLink opposite owner of the relation
 	 * @return the global mapping configurer
