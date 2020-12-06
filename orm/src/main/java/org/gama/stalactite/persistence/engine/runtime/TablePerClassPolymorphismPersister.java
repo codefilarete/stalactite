@@ -57,7 +57,7 @@ public class TablePerClassPolymorphismPersister<C, I, T extends Table<T>> implem
 	private final TablePerClassPolymorphicSelectExecutor<C, I, T> selectExecutor;
 	private final Map<Class<? extends C>, IUpdateExecutor<C>> subclassUpdateExecutors;
 	private final IEntityConfiguredJoinedTablesPersister<C, I> mainPersister;
-	private final Map<Class<? extends C>, JoinedTablesPersister<C, I, T>> subEntitiesPersisters;
+	private final Map<Class<? extends C>, ? extends IEntityConfiguredJoinedTablesPersister<C, I>> subEntitiesPersisters;
 	
 	public TablePerClassPolymorphismPersister(IEntityConfiguredJoinedTablesPersister<C, I> mainPersister,
 											  Map<Class<? extends C>, JoinedTablesPersister<C, I, T>> subEntitiesPersisters,
@@ -93,13 +93,26 @@ public class TablePerClassPolymorphismPersister<C, I, T extends Table<T>> implem
 	
 	@Override
 	public Set<Class<? extends C>> getSupportedEntityTypes() {
-		return this.subEntitiesPersisters.keySet();
+		// Note that this implementation can't be tested yet because we don't yet support table-per-class polymorphism
+		// combined with other polymoprhism types. It has only been implemented in order to not forget this behavior for the day of the polymorphism
+		// combination has come
+		Set<Class<? extends C>> result = new HashSet<>();
+		this.subEntitiesPersisters.forEach((c, p) -> {
+			if (p instanceof PolymorphicPersister) {
+				result.addAll((Collection) ((PolymorphicPersister<?>) p).getSupportedEntityTypes());
+			} else if (p instanceof PersisterWrapper && ((PersisterWrapper<C, I>) p).getDeepestSurrogate() instanceof PolymorphicPersister) {
+				result.addAll(((PolymorphicPersister) ((PersisterWrapper) p).getDeepestSurrogate()).getSupportedEntityTypes());
+			} else {
+				result.add(c);
+			}
+		});
+		return result;
 	}
 	
 	@Override
 	public Collection<Table> giveImpliedTables() {
 		// in table-per-class main persister table does not participate in database schema : only sub entities persisters do
-		return this.subEntitiesPersisters.values().stream().map(JoinedTablesPersister::getMappingStrategy).map(IEntityMappingStrategy::getTargetTable).collect(Collectors.toList());
+		return this.subEntitiesPersisters.values().stream().map(IConfiguredPersister::getMappingStrategy).map(IEntityMappingStrategy::getTargetTable).collect(Collectors.toList());
 	}
 	
 	@Override
@@ -286,7 +299,7 @@ public class TablePerClassPolymorphismPersister<C, I, T extends Table<T>> implem
 			public <O> void addShadowColumnInsert(ShadowColumnValueProvider<C, O, T> provider) {
 				subEntitiesPersisters.values().forEach(p -> {
 					Column<T, O> c = provider.getColumn();
-					Column projectedColumn = p.getMainTable().addColumn(c.getName(), c.getJavaType(), c.getSize());
+					Column projectedColumn = p.getMappingStrategy().getTargetTable().addColumn(c.getName(), c.getJavaType(), c.getSize());
 					p.getMappingStrategy().addShadowColumnInsert(new ShadowColumnValueProvider<>(projectedColumn, provider.getValueProvider()));
 				});
 			}
@@ -295,7 +308,7 @@ public class TablePerClassPolymorphismPersister<C, I, T extends Table<T>> implem
 			public <O> void addShadowColumnUpdate(ShadowColumnValueProvider<C, O, T> provider) {
 				subEntitiesPersisters.values().forEach(p -> {
 					Column<T, O> c = provider.getColumn();
-					Column projectedColumn = p.getMainTable().addColumn(c.getName(), c.getJavaType(), c.getSize());
+					Column projectedColumn = p.getMappingStrategy().getTargetTable().addColumn(c.getName(), c.getJavaType(), c.getSize());
 					p.getMappingStrategy().addShadowColumnUpdate(new ShadowColumnValueProvider<>(projectedColumn, provider.getValueProvider()));
 				});
 			}
@@ -328,23 +341,23 @@ public class TablePerClassPolymorphismPersister<C, I, T extends Table<T>> implem
 		// TODO: simplify query : it joins on target table as many as subentities which can be reduced to one join if FirstPhaseOneToOneLoader
 		//  can compute disciminatorValue 
 		Column<T, Object> mainTablePK = Iterables.first(((T) mainPersister.getMappingStrategy().getTargetTable()).getPrimaryKey().getColumns());
-		Map<JoinedTablesPersister, Column> joinColumnPerSubPersister = new HashMap<>();
+		Map<IEntityConfiguredJoinedTablesPersister, Column> joinColumnPerSubPersister = new HashMap<>();
 		if (rightColumn.equals(mainTablePK)) {
 			// join is made on primary key => case is association table
 			subEntitiesPersisters.forEach((c, subPersister) -> {
-				Column<T, Object> column = Iterables.first(subPersister.getMainTable().getPrimaryKey().getColumns());
+				Column<T, Object> column = Iterables.first((Set<Column>) subPersister.getMappingStrategy().getTargetTable().getPrimaryKey().getColumns());
 				joinColumnPerSubPersister.put(subPersister, column);
 			});
 		} else {
 			// join is made on a foreign key => case of relation owned by reverse side
 			subEntitiesPersisters.forEach((c, subPersister) -> {
-				Column<T, ?> column = subPersister.getMainTable().addColumn(rightColumn.getName(), rightColumn.getJavaType());
+				Column<T, ?> column = subPersister.getMappingStrategy().getTargetTable().addColumn(rightColumn.getName(), rightColumn.getJavaType());
 				joinColumnPerSubPersister.put(subPersister, column);
 			});
 		}
 		
 		subEntitiesPersisters.forEach((c, subPersister) -> {
-			Column subclassPrimaryKey = Iterables.first(subPersister.getMainTable().getPrimaryKey().getColumns());
+			Column subclassPrimaryKey = Iterables.first((Set<Column>) subPersister.getMappingStrategy().getTargetTable().getPrimaryKey().getColumns());
 			sourcePersister.getEntityJoinTree().addMergeJoin(joinName,
 					new FirstPhaseOneToOneLoader<>(subPersister.getMappingStrategy().getIdMappingStrategy(), subclassPrimaryKey, selectExecutor,
 							DIFFERED_ENTITY_LOADER),

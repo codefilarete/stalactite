@@ -1,14 +1,15 @@
 package org.gama.stalactite.persistence.engine.runtime;
 
+import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
 import com.google.common.annotations.VisibleForTesting;
 import org.gama.lang.Duo;
 import org.gama.lang.Reflections;
 import org.gama.lang.collection.Iterables;
-
-import static org.gama.lang.Nullable.nullable;
 
 /**
  * Persister which checks that given instances can be persisted by itself, throws exception if that's not the case.
@@ -28,9 +29,11 @@ public class EntityIsManagedByPersisterAsserter<C, I> extends PersisterWrapper<C
 		super(surrogate);
 		if (getDeepestSurrogate() instanceof PolymorphicPersister) {
 			Set<Class<? extends C>> supportedEntityTypes = ((PolymorphicPersister<C>) getDeepestSurrogate()).getSupportedEntityTypes();
-			asserter = entity -> 
-					nullable(Iterables.find(supportedEntityTypes, cClass -> true))//cClass.equals(entity.getClass())))
-					.<UnsupportedOperationException>elseThrow(() -> newAssertException(entity));
+			asserter = entity -> {
+				if (!supportedEntityTypes.contains(entity.getClass())) {
+					throw newAssertException(entity);
+				}
+			};
 		} else {
 			asserter = entity -> {
 				if (!getClassToPersist().equals(entity.getClass()))

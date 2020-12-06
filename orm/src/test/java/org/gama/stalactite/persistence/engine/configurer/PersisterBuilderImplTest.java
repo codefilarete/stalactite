@@ -656,6 +656,68 @@ public class PersisterBuilderImplTest {
 						hasMessage("Persister of o.g.s.p.e.m.AbstractVehicle is not configured to persist o.g.s.p.e.m.Vehicle")));
 	}
 	
+	@Test
+	void build_withPolymorphismJoinedTables_resultAssertsThatPersisterManageGivenEntities() {
+		PersisterBuilderImpl testInstance = new PersisterBuilderImpl(
+				entityBuilder(AbstractVehicle.class, Identifier.class)
+						.add(AbstractVehicle::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+						.embed(AbstractVehicle::getTimestamp)
+						.mapPolymorphism(PolymorphismPolicy.<AbstractVehicle>joinedTables()
+							.addSubClass(subentityBuilder(Vehicle.class, Identifier.class)))
+		);
+		ConnectionProvider connectionProviderMock = mock(ConnectionProvider.class, withSettings().defaultAnswer(Answers.RETURNS_MOCKS));
+		IEntityPersister<AbstractVehicle, Identifier> result = testInstance.build(new PersistenceContext(connectionProviderMock, DIALECT));
+		Assertions.assertThrows(() -> result.persist(new Car(42L)),
+				hasExceptionInCauses(UnsupportedOperationException.class).andProjection(
+						hasMessage("Persister of o.g.s.p.e.m.AbstractVehicle is not configured to persist o.g.s.p.e.m.Car")));
+		Assertions.assertThrows(() -> result.insert(new Car(42L)),
+				hasExceptionInCauses(UnsupportedOperationException.class).andProjection(
+						hasMessage("Persister of o.g.s.p.e.m.AbstractVehicle is not configured to persist o.g.s.p.e.m.Car")));
+		Assertions.assertThrows(() -> result.update(new Car(42L)),
+				hasExceptionInCauses(UnsupportedOperationException.class).andProjection(
+						hasMessage("Persister of o.g.s.p.e.m.AbstractVehicle is not configured to persist o.g.s.p.e.m.Car")));
+		Assertions.assertThrows(() -> result.updateById(new Car(42L)),
+				hasExceptionInCauses(UnsupportedOperationException.class).andProjection(
+						hasMessage("Persister of o.g.s.p.e.m.AbstractVehicle is not configured to persist o.g.s.p.e.m.Car")));
+		Assertions.assertThrows(() -> result.delete(new Car(42L)),
+				hasExceptionInCauses(UnsupportedOperationException.class).andProjection(
+						hasMessage("Persister of o.g.s.p.e.m.AbstractVehicle is not configured to persist o.g.s.p.e.m.Car")));
+		Assertions.assertThrows(() -> result.deleteById(new Car(42L)),
+				hasExceptionInCauses(UnsupportedOperationException.class).andProjection(
+						hasMessage("Persister of o.g.s.p.e.m.AbstractVehicle is not configured to persist o.g.s.p.e.m.Car")));
+	}
+	
+	@Test
+	void build_withPolymorphismSingleTable_resultAssertsThatPersisterManageGivenEntities() {
+		PersisterBuilderImpl testInstance = new PersisterBuilderImpl(
+				entityBuilder(AbstractVehicle.class, Identifier.class)
+						.add(AbstractVehicle::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+						.embed(AbstractVehicle::getTimestamp)
+						.mapPolymorphism(PolymorphismPolicy.<AbstractVehicle>singleTable()
+								.addSubClass(subentityBuilder(Vehicle.class, Identifier.class), "Vehicle"))
+		);
+		ConnectionProvider connectionProviderMock = mock(ConnectionProvider.class, withSettings().defaultAnswer(Answers.RETURNS_MOCKS));
+		IEntityPersister<AbstractVehicle, Identifier> result = testInstance.build(new PersistenceContext(connectionProviderMock, DIALECT));
+		Assertions.assertThrows(() -> result.persist(new Car(42L)),
+				hasExceptionInCauses(UnsupportedOperationException.class).andProjection(
+						hasMessage("Persister of o.g.s.p.e.m.AbstractVehicle is not configured to persist o.g.s.p.e.m.Car")));
+		Assertions.assertThrows(() -> result.insert(new Car(42L)),
+				hasExceptionInCauses(UnsupportedOperationException.class).andProjection(
+						hasMessage("Persister of o.g.s.p.e.m.AbstractVehicle is not configured to persist o.g.s.p.e.m.Car")));
+		Assertions.assertThrows(() -> result.update(new Car(42L)),
+				hasExceptionInCauses(UnsupportedOperationException.class).andProjection(
+						hasMessage("Persister of o.g.s.p.e.m.AbstractVehicle is not configured to persist o.g.s.p.e.m.Car")));
+		Assertions.assertThrows(() -> result.updateById(new Car(42L)),
+				hasExceptionInCauses(UnsupportedOperationException.class).andProjection(
+						hasMessage("Persister of o.g.s.p.e.m.AbstractVehicle is not configured to persist o.g.s.p.e.m.Car")));
+		Assertions.assertThrows(() -> result.delete(new Car(42L)),
+				hasExceptionInCauses(UnsupportedOperationException.class).andProjection(
+						hasMessage("Persister of o.g.s.p.e.m.AbstractVehicle is not configured to persist o.g.s.p.e.m.Car")));
+		Assertions.assertThrows(() -> result.deleteById(new Car(42L)),
+				hasExceptionInCauses(UnsupportedOperationException.class).andProjection(
+						hasMessage("Persister of o.g.s.p.e.m.AbstractVehicle is not configured to persist o.g.s.p.e.m.Car")));
+	}
+	
 	public static class ToStringBuilder<E> {
 		
 		@SafeVarargs

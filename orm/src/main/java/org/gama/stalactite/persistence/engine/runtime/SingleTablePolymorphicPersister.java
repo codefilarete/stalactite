@@ -106,7 +106,17 @@ public class SingleTablePolymorphicPersister<C, I, T extends Table<T>, D> implem
 	
 	@Override
 	public Set<Class<? extends C>> getSupportedEntityTypes() {
-		return this.subEntitiesPersisters.keySet();
+		Set<Class<? extends C>> result = new HashSet<>();
+		this.subEntitiesPersisters.forEach((c, p) -> {
+			if (p instanceof PolymorphicPersister) {
+				result.addAll((Collection) ((PolymorphicPersister<?>) p).getSupportedEntityTypes());
+			} else if (p instanceof PersisterWrapper && ((PersisterWrapper<C, I>) p).getDeepestSurrogate() instanceof PolymorphicPersister) {
+				result.addAll(((PolymorphicPersister) ((PersisterWrapper) p).getDeepestSurrogate()).getSupportedEntityTypes());
+			} else {
+				result.add(c);
+			}
+		});
+		return result;
 	}
 	
 	@Override
