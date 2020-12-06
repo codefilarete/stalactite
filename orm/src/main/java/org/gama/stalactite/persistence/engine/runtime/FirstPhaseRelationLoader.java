@@ -15,14 +15,14 @@ import org.gama.stalactite.sql.result.Row;
 /**
  * @author Guillaume Mary
  */
-class FirstPhaseOneToOneLoader<E, ID, T extends Table> implements EntityMerger<E, T> {
+class FirstPhaseRelationLoader<E, ID, T extends Table> implements EntityMerger<E, T> {
 	
 	protected final Column<Table, ID> primaryKey;
 	protected final IdMappingStrategy<E, ID> idMappingStrategy;
 	private final ISelectExecutor<E, ID> selectExecutor;
 	protected final ThreadLocal<Set<RelationIds<Object, Object, Object>>> relationIdsHolder;
 	
-	public FirstPhaseOneToOneLoader(IdMappingStrategy<E, ID> subEntityIdMappingStrategy,
+	public FirstPhaseRelationLoader(IdMappingStrategy<E, ID> subEntityIdMappingStrategy,
 									Column<Table, ID> primaryKey,
 									ISelectExecutor<E, ID> selectExecutor,
 									ThreadLocal<Set<RelationIds<Object, Object, Object>>> relationIdsHolder) {

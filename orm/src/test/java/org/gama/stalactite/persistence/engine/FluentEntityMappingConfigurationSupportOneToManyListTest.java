@@ -194,7 +194,7 @@ class FluentEntityMappingConfigurationSupportOneToManyListTest {
 					.mapKey(Result::new, id)
 					.map(idx, (SerializableBiConsumer<Result, Integer>) Result::setIdx)
 					.execute();
-			// id should left unmodified
+			// id should be left unmodified
 			assertEquals(Arrays.asList(10L, 20L, 30L, 40L), Iterables.collectToList(persistedChoices, Result::getId));
 			// but indexes must reflect modifications
 			assertEquals(Arrays.asList(3, 2, 0, 1), Iterables.collectToList(persistedChoices, Result::getIdx));

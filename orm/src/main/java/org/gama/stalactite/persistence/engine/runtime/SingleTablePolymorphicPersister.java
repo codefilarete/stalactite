@@ -335,7 +335,7 @@ public class SingleTablePolymorphicPersister<C, I, T extends Table<T>, D> implem
 		
 		Column subclassPrimaryKey = (Column) Iterables.first(mainPersister.getMappingStrategy().getTargetTable().getPrimaryKey().getColumns());
 		sourcePersister.getEntityJoinTree().addMergeJoin(EntityJoinTree.ROOT_STRATEGY_NAME,
-				new SingleTableFirstPhaseOneToOneLoader(mainPersister.getMappingStrategy().getIdMappingStrategy(),
+				new SingleTableFirstPhaseRelationLoader(mainPersister.getMappingStrategy().getIdMappingStrategy(),
 						subclassPrimaryKey, selectExecutor,
 						DIFFERED_ENTITY_LOADER,
 						discriminatorColumn, subEntitiesPersisters::get),
@@ -343,7 +343,7 @@ public class SingleTablePolymorphicPersister<C, I, T extends Table<T>, D> implem
 		
 		
 		// adding second phase loader
-		((IPersisterListener) sourcePersister).addSelectListener(new SecondPhaseOneToOneLoader<>(beanRelationFixer, DIFFERED_ENTITY_LOADER));
+		((IPersisterListener) sourcePersister).addSelectListener(new SecondPhaseRelationLoader<>(beanRelationFixer, DIFFERED_ENTITY_LOADER));
 	}
 	
 	@Override
@@ -362,7 +362,7 @@ public class SingleTablePolymorphicPersister<C, I, T extends Table<T>, D> implem
 		
 		Column subclassPrimaryKey = (Column) Iterables.first(mainPersister.getMappingStrategy().getTargetTable().getPrimaryKey().getColumns());
 		sourcePersister.getEntityJoinTree().addMergeJoin(EntityJoinTree.ROOT_STRATEGY_NAME,
-				new SingleTableFirstPhaseOneToOneLoader(mainPersister.getMappingStrategy().getIdMappingStrategy(),
+				new SingleTableFirstPhaseRelationLoader(mainPersister.getMappingStrategy().getIdMappingStrategy(),
 						subclassPrimaryKey, selectExecutor,
 						DIFFERED_ENTITY_LOADER,
 						discriminatorColumn, subEntitiesPersisters::get),
@@ -370,7 +370,7 @@ public class SingleTablePolymorphicPersister<C, I, T extends Table<T>, D> implem
 		
 		
 		// adding second phase loader
-		((IPersisterListener) sourcePersister).addSelectListener(new SecondPhaseOneToOneLoader<>(beanRelationFixer, DIFFERED_ENTITY_LOADER));	
+		((IPersisterListener) sourcePersister).addSelectListener(new SecondPhaseRelationLoader<>(beanRelationFixer, DIFFERED_ENTITY_LOADER));	
 	}
 	
 	@Override
@@ -383,12 +383,12 @@ public class SingleTablePolymorphicPersister<C, I, T extends Table<T>, D> implem
 		throw new UnsupportedOperationException();
 	}
 	
-	private class SingleTableFirstPhaseOneToOneLoader extends FirstPhaseOneToOneLoader {
+	private class SingleTableFirstPhaseRelationLoader extends FirstPhaseRelationLoader {
 		private final Column<T, D> discriminatorColumn;
 		private final Function<Class, ISelectExecutor> subtypeSelectors;
 		private final Set<D> discriminatorValues;
 		
-		private SingleTableFirstPhaseOneToOneLoader(IdMappingStrategy<C, I> subEntityIdMappingStrategy,
+		private SingleTableFirstPhaseRelationLoader(IdMappingStrategy<C, I> subEntityIdMappingStrategy,
 													Column primaryKey,
 													SingleTablePolymorphismSelectExecutor<C, I, T, D> selectExecutor,
 													ThreadLocal<Set<RelationIds<Object, Object, Object>>> relationIdsHolder,

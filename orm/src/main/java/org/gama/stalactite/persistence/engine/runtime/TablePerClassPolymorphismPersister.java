@@ -338,7 +338,7 @@ public class TablePerClassPolymorphismPersister<C, I, T extends Table<T>> implem
 																			BeanRelationFixer<SRC, C> beanRelationFixer,
 																			String joinName,
 																			boolean optional) {
-		// TODO: simplify query : it joins on target table as many as subentities which can be reduced to one join if FirstPhaseOneToOneLoader
+		// TODO: simplify query : it joins on target table as many as subentities which can be reduced to one join if FirstPhaseRelationLoader
 		//  can compute disciminatorValue 
 		Column<T, Object> mainTablePK = Iterables.first(((T) mainPersister.getMappingStrategy().getTargetTable()).getPrimaryKey().getColumns());
 		Map<IEntityConfiguredJoinedTablesPersister, Column> joinColumnPerSubPersister = new HashMap<>();
@@ -359,13 +359,13 @@ public class TablePerClassPolymorphismPersister<C, I, T extends Table<T>> implem
 		subEntitiesPersisters.forEach((c, subPersister) -> {
 			Column subclassPrimaryKey = Iterables.first((Set<Column>) subPersister.getMappingStrategy().getTargetTable().getPrimaryKey().getColumns());
 			sourcePersister.getEntityJoinTree().addMergeJoin(joinName,
-					new FirstPhaseOneToOneLoader<>(subPersister.getMappingStrategy().getIdMappingStrategy(), subclassPrimaryKey, selectExecutor,
+					new FirstPhaseRelationLoader<>(subPersister.getMappingStrategy().getIdMappingStrategy(), subclassPrimaryKey, selectExecutor,
 							DIFFERED_ENTITY_LOADER),
 					leftColumn, joinColumnPerSubPersister.get(subPersister), JoinType.OUTER);
 		});
 		
 		// adding second phase loader
-		((IPersisterListener) sourcePersister).addSelectListener(new SecondPhaseOneToOneLoader<>(beanRelationFixer, DIFFERED_ENTITY_LOADER));
+		((IPersisterListener) sourcePersister).addSelectListener(new SecondPhaseRelationLoader<>(beanRelationFixer, DIFFERED_ENTITY_LOADER));
 	}
 	
 	@Override

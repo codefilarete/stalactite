@@ -157,7 +157,6 @@ public class OneToManyWithIndexedMappedAssociationEngine<SRC, TRGT, SRCID, TRGTI
 				this.manyRelationDefinition.getReverseSetter(),
 				shouldDeleteRemoved,
 				this.targetPersister.getMappingStrategy()::getId,
-				((MappedManyRelationDescriptor) this.manyRelationDefinition).getReverseColumn(),
 				this.indexingColumn);
 		sourcePersister.getPersisterListener().addUpdateListener(new TargetInstancesUpdateCascader<>(targetPersister, updateListener));
 	}
@@ -186,9 +185,8 @@ public class OneToManyWithIndexedMappedAssociationEngine<SRC, TRGT, SRCID, TRGTI
 									 @Nullable BiConsumer<TRGT, SRC> reverseSetter,
 									 boolean shouldDeleteRemoved,
 									 Function<TRGT, ?> idProvider,
-									 Column reverseColumn,
 									 Column indexingColumn) {
-			super(collectionGetter, targetPersister, reverseSetter, shouldDeleteRemoved, idProvider, reverseColumn);
+			super(collectionGetter, targetPersister, reverseSetter, shouldDeleteRemoved, idProvider);
 			this.indexingColumn = indexingColumn;
 			addShadowIndexInsert(targetPersister);
 			addShadowIndexUpdate(targetPersister);

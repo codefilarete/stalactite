@@ -383,7 +383,7 @@ public class JoinedTablesPolymorphicPersister<C, I> implements IEntityConfigured
 		this.subclassIdMappingStrategies.forEach((c, idMappingStrategy) -> {
 			Column subclassPrimaryKey = (Column) Iterables.first(this.tablePerSubEntityType.get(c).getPrimaryKey().getColumns());
 			sourcePersister.getEntityJoinTree().addMergeJoin(mainTableJoinName,
-					new FirstPhaseOneToOneLoader<C, I, T2>(idMappingStrategy, subclassPrimaryKey, mainSelectExecutor,
+					new FirstPhaseRelationLoader<C, I, T2>(idMappingStrategy, subclassPrimaryKey, mainSelectExecutor,
 							DIFFERED_ENTITY_LOADER),
 					primaryKey,
 					subclassPrimaryKey,
@@ -392,7 +392,7 @@ public class JoinedTablesPolymorphicPersister<C, I> implements IEntityConfigured
 		});
 		
 		// adding second phase loader
-		((IPersisterListener) sourcePersister).addSelectListener(new SecondPhaseOneToOneLoader<>(beanRelationFixer, DIFFERED_ENTITY_LOADER));
+		((IPersisterListener) sourcePersister).addSelectListener(new SecondPhaseRelationLoader<>(beanRelationFixer, DIFFERED_ENTITY_LOADER));
 	}
 	
 	@Override
@@ -413,7 +413,7 @@ public class JoinedTablesPolymorphicPersister<C, I> implements IEntityConfigured
 		this.subclassIdMappingStrategies.forEach((c, idMappingStrategy) -> {
 			Column subclassPrimaryKey = (Column) Iterables.first(this.tablePerSubEntityType.get(c).getPrimaryKey().getColumns());
 			sourcePersister.getEntityJoinTree().addMergeJoin(createdJoinName,
-					new FirstPhaseOneToOneLoader<C, I, T2>(idMappingStrategy, subclassPrimaryKey, mainSelectExecutor,
+					new FirstPhaseRelationLoader<C, I, T2>(idMappingStrategy, subclassPrimaryKey, mainSelectExecutor,
 							DIFFERED_ENTITY_LOADER),
 					mainTablePrimaryKey,
 					subclassPrimaryKey,
@@ -422,7 +422,7 @@ public class JoinedTablesPolymorphicPersister<C, I> implements IEntityConfigured
 		});
 		
 		// adding second phase loader
-		((IPersisterListener) sourcePersister).addSelectListener(new SecondPhaseOneToOneLoader<>(beanRelationFixer, DIFFERED_ENTITY_LOADER));
+		((IPersisterListener) sourcePersister).addSelectListener(new SecondPhaseRelationLoader<>(beanRelationFixer, DIFFERED_ENTITY_LOADER));
 	}
 	
 	// for one-to-many cases

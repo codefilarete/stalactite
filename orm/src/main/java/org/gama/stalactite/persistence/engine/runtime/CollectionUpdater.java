@@ -32,7 +32,6 @@ public class CollectionUpdater<I, O, C extends Collection<O>> implements BiConsu
 	private final BiConsumer<O, I> reverseSetter;
 	private final IEntityPersister<O, ?> targetPersister;
 	private final boolean shouldDeleteRemoved;
-	private Column relationOwningColumn;
 	
 	/**
 	 * Default and simple use case constructor.
@@ -51,12 +50,13 @@ public class CollectionUpdater<I, O, C extends Collection<O>> implements BiConsu
 	}
 	
 	/**
-	 * Constructor that let one defines id policy : in some cases default policy (based on
+	 * Constructor that lets one defines id policy : in some cases default policy (based on
 	 * {@link org.gama.stalactite.persistence.mapping.IdAccessor#getId(Object)}) is not sufficient, such as when {@link Collection} contains "value type".
 	 * 
 	 * @param collectionGetter getter for collection from source entity
 	 * @param targetPersister target entities persister
-	 * @param reverseSetter setter for applying source entity to target entities, give null if no reverse mapping exists
+	 * @param reverseSetter setter for applying source entity to target entities (used by {@link #onRemovedTarget(UpdateContext, AbstractDiff)} to 
+	 * 						nullify relation), null accepted if no reverse mapping exists
 	 * @param shouldDeleteRemoved true to delete orphans
 	 * @param idProvider expected to provide identifier of target beans, identifier are used to store them on it (in HashMap)
 	 */
@@ -70,20 +70,6 @@ public class CollectionUpdater<I, O, C extends Collection<O>> implements BiConsu
 		this.targetPersister = targetPersister;
 		this.shouldDeleteRemoved = shouldDeleteRemoved;
 		this.differ = new CollectionDiffer<>(idProvider);
-	}
-	
-	public CollectionUpdater(Function<I, C> collectionGetter,
-							 IEntityConfiguredPersister<O, ?> targetPersister,
-							 @Nullable BiConsumer<O, I> reverseSetter,
-							 boolean shouldDeleteRemoved,
-							 Function<O, ?> idProvider,
-							 Column relationOwningColumn) {
-		this.collectionGetter = collectionGetter;
-		this.reverseSetter = reverseSetter;
-		this.targetPersister = targetPersister;
-		this.shouldDeleteRemoved = shouldDeleteRemoved;
-		this.differ = new CollectionDiffer<>(idProvider);
-		this.relationOwningColumn = relationOwningColumn;
 	}
 	
 	public CollectionDiffer getDiffer() {
@@ -153,7 +139,8 @@ public class CollectionUpdater<I, O, C extends Collection<O>> implements BiConsu
 	}
 	
 	/**
-	 * Methods asked to give a new {@link UpdateContext}, this instance will be passed to entry point methods of Insert, Update and Delete actions.
+	 * Methods asked to give a new {@link UpdateContext}. The returned instance will be passed to methods
+	 * {@link #onAddedTarget(UpdateContext, AbstractDiff)}, {@link #onHeldTarget(UpdateContext, AbstractDiff)} and {@link #onRemovedTarget(UpdateContext, AbstractDiff)}.
 	 * Can be overriden to return a subtype and richer {@link UpdateContext}.
 	 * 
 	 * @param updatePayload instance given to {@link #accept(Duo, Boolean)}

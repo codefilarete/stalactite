@@ -16,12 +16,12 @@ import org.gama.stalactite.persistence.engine.listening.SelectListener;
 /**
  * @author Guillaume Mary
  */
-class SecondPhaseOneToOneLoader<SRC, TRGT, ID> implements SelectListener<SRC, ID> {
+class SecondPhaseRelationLoader<SRC, TRGT, ID> implements SelectListener<SRC, ID> {
 	
 	private final BeanRelationFixer<SRC, TRGT> beanRelationFixer;
 	private final ThreadLocal<Set<RelationIds<Object, Object, Object>>> relationIdsHolder;
 	
-	public SecondPhaseOneToOneLoader(BeanRelationFixer<SRC, TRGT> beanRelationFixer, ThreadLocal<Set<RelationIds<Object, Object, Object>>> relationIdsHolder) {
+	public SecondPhaseRelationLoader(BeanRelationFixer<SRC, TRGT> beanRelationFixer, ThreadLocal<Set<RelationIds<Object, Object, Object>>> relationIdsHolder) {
 		this.beanRelationFixer = beanRelationFixer;
 		this.relationIdsHolder = relationIdsHolder;
 	}

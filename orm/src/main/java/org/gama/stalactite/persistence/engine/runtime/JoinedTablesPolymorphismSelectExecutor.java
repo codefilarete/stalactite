@@ -26,7 +26,7 @@ import org.gama.stalactite.sql.dml.PreparedSQL;
 import org.gama.stalactite.sql.dml.ReadOperation;
 import org.gama.stalactite.sql.result.RowIterator;
 
-import static org.gama.stalactite.persistence.engine.runtime.SecondPhaseOneToOneLoader.isDefaultValue;
+import static org.gama.stalactite.persistence.engine.runtime.SecondPhaseRelationLoader.isDefaultValue;
 
 /**
  * @author Guillaume Mary

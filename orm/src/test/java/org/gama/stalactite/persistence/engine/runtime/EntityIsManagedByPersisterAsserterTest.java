@@ -24,7 +24,7 @@ import static org.mockito.Mockito.withSettings;
  */
 class EntityIsManagedByPersisterAsserterTest {
 	
-	public static Object[][] assertionIsInvoked() throws NoSuchMethodException {
+	public static Object[][] assertMethodIsInvoked() throws NoSuchMethodException {
 		Class<IEntityPersister> persisterInterface = IEntityPersister.class;
 		return new Object[][] {
 				{ persisterInterface.getMethod("persist", Object.class),
@@ -78,8 +78,8 @@ class EntityIsManagedByPersisterAsserterTest {
 	}
 	
 	@ParameterizedTest
-	@MethodSource("assertionIsInvoked")
-	void assertionIsInvoked_withPolymorphicPersisterAtInit(Method invokedMethod, Object[] args) throws InvocationTargetException, IllegalAccessException {
+	@MethodSource("assertMethodIsInvoked")
+	void assertMethodIsInvoked_withPolymorphicPersisterAtInit(Method invokedMethod, Object[] args) throws InvocationTargetException, IllegalAccessException {
 		IEntityConfiguredJoinedTablesPersister surrogateMock = mock(IEntityConfiguredJoinedTablesPersister.class, withSettings().extraInterfaces(PolymorphicPersister.class));
 		when(((PolymorphicPersister) surrogateMock).getSupportedEntityTypes()).thenReturn(Arrays.asSet(Vehicle.class));
 		when(surrogateMock.getId(args[0])).thenReturn(42L);
