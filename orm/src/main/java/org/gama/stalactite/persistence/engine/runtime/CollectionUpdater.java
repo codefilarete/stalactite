@@ -15,7 +15,6 @@ import org.gama.stalactite.persistence.engine.IEntityPersister;
 import org.gama.stalactite.persistence.engine.listening.UpdateListener.UpdatePayload;
 import org.gama.stalactite.persistence.id.diff.AbstractDiff;
 import org.gama.stalactite.persistence.id.diff.CollectionDiffer;
-import org.gama.stalactite.persistence.structure.Column;
 
 /**
  * Class aimed at making the difference of entities of an {@link UpdatePayload} and updating, inserting or deleting them according to difference

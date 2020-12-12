@@ -3,17 +3,17 @@ package org.gama.stalactite.persistence.engine.listening;
 /**
  * @author Guillaume Mary
  */
-public interface DeleteListener<T> {
+public interface DeleteListener<C> {
 	
-	default void beforeDelete(Iterable<T> entities) {
+	default void beforeDelete(Iterable<C> entities) {
 		
 	}
 	
-	default void afterDelete(Iterable<T> entities) {
+	default void afterDelete(Iterable<C> entities) {
 		
 	}
 	
-	default void onError(Iterable<T> entities, RuntimeException runtimeException) {
+	default void onError(Iterable<C> entities, RuntimeException runtimeException) {
 		
 	}
 	

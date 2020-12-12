@@ -118,6 +118,7 @@ public interface IFluentEmbeddableMappingConfiguration<C> {
 		 * @param <IN> input of the function (type of the embedded element)
 		 * @return a mapping configurer, specialized for embedded elements
 		 */
+		@Override
 		<IN> IFluentEmbeddableMappingConfigurationEmbedOptions<C, IN> innerEmbed(SerializableFunction<O, IN> getter);
 		
 		/**
@@ -128,10 +129,13 @@ public interface IFluentEmbeddableMappingConfiguration<C> {
 		 * @param <IN> input of the function (type of the embedded element)
 		 * @return a mapping configurer, specialized for embedded elements
 		 */
+		@Override
 		<IN> IFluentEmbeddableMappingConfigurationEmbedOptions<C, IN> innerEmbed(SerializableBiConsumer<O, IN> setter);
 		
+		@Override
 		<IN> IFluentEmbeddableMappingConfigurationEmbedOptions<C, O> exclude(SerializableFunction<O, IN> getter);
 		
+		@Override
 		<IN> IFluentEmbeddableMappingConfigurationEmbedOptions<C, O> exclude(SerializableBiConsumer<O, IN> setter);
 		
 	}
