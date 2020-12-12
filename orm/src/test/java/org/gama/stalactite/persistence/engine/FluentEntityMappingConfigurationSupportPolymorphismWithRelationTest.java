@@ -37,7 +37,6 @@ import org.gama.stalactite.persistence.engine.model.Vehicle;
 import org.gama.stalactite.persistence.engine.model.Vehicle.Wheel;
 import org.gama.stalactite.persistence.engine.model.Village;
 import org.gama.stalactite.persistence.id.AbstractIdentifier;
-import org.gama.stalactite.persistence.id.Identified;
 import org.gama.stalactite.persistence.id.Identifier;
 import org.gama.stalactite.persistence.id.PersistableIdentifier;
 import org.gama.stalactite.persistence.id.PersistedIdentifier;
@@ -95,8 +94,6 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 		// binder creation for our identifier
 		DIALECT.getColumnBinderRegistry().register((Class) Identifier.class, identifierBinder(LONG_PRIMITIVE_BINDER));
 		DIALECT.getJavaTypeToSqlTypeMapping().put(Identifier.class, "int");
-		DIALECT.getColumnBinderRegistry().register((Class) Identified.class, Identified.identifiedBinder(LONG_PRIMITIVE_BINDER));
-		DIALECT.getJavaTypeToSqlTypeMapping().put(Identified.class, "int");
 		DIALECT.getColumnBinderRegistry().register(Color.class, new NullAwareParameterBinder<>(new LambdaParameterBinder<>(INTEGER_PRIMITIVE_BINDER, Color::new, Color::getRgb)));
 		DIALECT.getJavaTypeToSqlTypeMapping().put(Color.class, "int");
 	}
@@ -205,8 +202,7 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 		IFluentMappingBuilderPropertyOptions<City, Identifier<Long>> cityMappingBuilder = MappingEase.entityBuilder(City.class,
 				Identifier.LONG_TYPE)
 				.add(City::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
-				.add(City::getName)
-				.add(City::getCountry);
+				.add(City::getName);
 		
 		Object[][] result = new Object[][] {
 				{	"single table",

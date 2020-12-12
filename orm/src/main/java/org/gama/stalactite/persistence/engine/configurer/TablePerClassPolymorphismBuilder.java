@@ -23,6 +23,7 @@ import org.gama.stalactite.persistence.engine.runtime.IEntityConfiguredJoinedTab
 import org.gama.stalactite.persistence.engine.runtime.JoinedTablesPersister;
 import org.gama.stalactite.persistence.engine.runtime.TablePerClassPolymorphismPersister;
 import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
+import org.gama.stalactite.persistence.mapping.IMappingStrategy.ShadowColumnValueProvider;
 import org.gama.stalactite.persistence.sql.Dialect;
 import org.gama.stalactite.persistence.sql.IConnectionConfiguration;
 import org.gama.stalactite.persistence.sql.dml.binder.ColumnBinderRegistry;
@@ -93,6 +94,16 @@ class TablePerClassPolymorphismBuilder<C, I, T extends Table> extends AbstractPo
 					identification,
 					subConfiguration.getPropertiesMapping().getBeanType(),
 					null);
+			
+			// we need to copy also shadow columns, made in particular for one-to-one owned by source side because foreign key is maintained through it
+			((ClassMappingStrategy<C, I, T>) mainPersister.getMappingStrategy()).getShadowColumnsForInsert().forEach(columnValueProvider -> {
+				Column projectedColumn = subTable.addColumn(columnValueProvider.getColumn().getName(), columnValueProvider.getColumn().getJavaType());
+				classMappingStrategy.addShadowColumnInsert(new ShadowColumnValueProvider<>(projectedColumn, columnValueProvider.getValueProvider()));
+			});
+			((ClassMappingStrategy<C, I, T>) mainPersister.getMappingStrategy()).getShadowColumnsForUpdate().forEach(columnValueProvider -> {
+				Column projectedColumn = subTable.addColumn(columnValueProvider.getColumn().getName(), columnValueProvider.getColumn().getJavaType());
+				classMappingStrategy.addShadowColumnUpdate(new ShadowColumnValueProvider<>(projectedColumn, columnValueProvider.getValueProvider()));
+			});
 			
 			JoinedTablesPersister subclassPersister = new JoinedTablesPersister(classMappingStrategy, dialect, connectionConfiguration);
 			persisterPerSubclass.put(subConfiguration.getEntityType(), subclassPersister);

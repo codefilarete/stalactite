@@ -4,6 +4,7 @@ import javax.annotation.Nullable;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -265,7 +266,7 @@ public class OneToManyWithIndexedMappedAssociationEngine<SRC, TRGT, SRCID, TRGTI
 		class IndexedMappedAssociationUpdateContext extends UpdateContext {
 			
 			/** New indexes per entity */
-			private final Map<TRGT, Integer> indexUpdates = new HashMap<>();
+			private final Map<TRGT, Integer> indexUpdates = new IdentityHashMap<>();
 			
 			public IndexedMappedAssociationUpdateContext(Duo<SRC, SRC> updatePayload) {
 				super(updatePayload);

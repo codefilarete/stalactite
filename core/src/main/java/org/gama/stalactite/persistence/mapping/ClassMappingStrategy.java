@@ -3,6 +3,7 @@ package org.gama.stalactite.persistence.mapping;
 import javax.annotation.Nonnull;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -223,6 +224,19 @@ public class ClassMappingStrategy<C, I, T extends Table> implements IEntityMappi
 	@Override
 	public IdMappingStrategy<C, I> getIdMappingStrategy() {
 		return idMappingStrategy;
+	}
+	
+	public Collection<ShadowColumnValueProvider<C, Object, T>> getShadowColumnsForInsert() {
+		return Collections.unmodifiableCollection(this.mainMappingStrategy.getShadowColumnsForInsert());
+	}
+	
+	public Collection<ShadowColumnValueProvider<C, Object, T>> getShadowColumnsForUpdate() {
+		return Collections.unmodifiableCollection(this.mainMappingStrategy.getShadowColumnsForUpdate());
+	}
+	
+	public void addShadowColumns(ClassMappingStrategy<C, I, T> classMappingStrategy) {
+		classMappingStrategy.mainMappingStrategy.getShadowColumnsForInsert().forEach(this::addShadowColumnInsert);
+		classMappingStrategy.mainMappingStrategy.getShadowColumnsForUpdate().forEach(this::addShadowColumnUpdate);
 	}
 	
 	public void addVersionedColumn(IReversibleAccessor propertyAccessor, Column<T, Object> column) {

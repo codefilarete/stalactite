@@ -51,5 +51,5 @@ public interface OneToOneOptions<C, I, T extends Table> extends CascadeOptions {
 	 * @param reverseLink opposite owner of the relation
 	 * @return the global mapping configurer
 	 */
-	OneToOneOptions<C, I, T> mappedBy(Column<T, C> reverseLink);
+	OneToOneOptions<C, I, T> mappedBy(Column<T, I> reverseLink);
 }

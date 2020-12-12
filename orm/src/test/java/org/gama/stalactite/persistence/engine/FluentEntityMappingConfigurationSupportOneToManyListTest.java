@@ -67,8 +67,6 @@ class FluentEntityMappingConfigurationSupportOneToManyListTest {
 		// binder creation for our identifier
 		DIALECT.getColumnBinderRegistry().register((Class) Identifier.class, Identifier.identifierBinder(DefaultParameterBinders.LONG_PRIMITIVE_BINDER));
 		DIALECT.getJavaTypeToSqlTypeMapping().put(Identifier.class, "int");
-		DIALECT.getColumnBinderRegistry().register((Class) Identified.class, Identified.identifiedBinder(DefaultParameterBinders.LONG_PRIMITIVE_BINDER));
-		DIALECT.getJavaTypeToSqlTypeMapping().put(Identified.class, "int");
 	}
 	
 	@Test
@@ -82,8 +80,7 @@ class FluentEntityMappingConfigurationSupportOneToManyListTest {
 		
 		IFluentMappingBuilderPropertyOptions<Choice, Identifier<Long>> choiceMappingConfiguration = entityBuilder(Choice.class, LONG_TYPE)
 				.add(Choice::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
-				.add(Choice::getName)
-				.add(Choice::getQuestion);
+				.add(Choice::getName);
 		
 		IEntityPersister<Question, Identifier<Long>> questionPersister = entityBuilder(Question.class, LONG_TYPE)
 				.add(Question::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
@@ -120,14 +117,14 @@ class FluentEntityMappingConfigurationSupportOneToManyListTest {
 			Column<Table, Integer> idx = updateTestData.getIdx();
 			IEntityPersister<Question, Identifier<Long>> questionPersister = updateTestData.getQuestionPersister();
 			Question newQuestion = updateTestData.getNewQuestion();
-			Choice choice1 = updateTestData.getChoice1();
-			Choice choice2 = updateTestData.getChoice2();
-			Choice choice3 = updateTestData.getChoice3();
+			Choice choice1Clone = new Choice(updateTestData.getChoice1().getId());
+			Choice choice2Clone = new Choice(updateTestData.getChoice2().getId());
+			Choice choice3Clone = new Choice(updateTestData.getChoice3().getId());
 			
 			// creating a clone to test instance swapping
 			Question modifiedQuestion = new Question(newQuestion.getId().getSurrogate());
 			// little swap between 2 elements
-			modifiedQuestion.setChoices(Arrays.asList(choice2, choice1, choice3));
+			modifiedQuestion.setChoices(Arrays.asList(choice2Clone, choice1Clone, choice3Clone));
 			
 			questionPersister.update(modifiedQuestion, newQuestion, true);
 			List<Result> persistedChoices = persistenceContext.newQuery(select(id, idx).from(choiceTable).orderBy(id), Result.class)
@@ -179,15 +176,15 @@ class FluentEntityMappingConfigurationSupportOneToManyListTest {
 			Column<Table, Integer> idx = updateTestData.getIdx();
 			IEntityPersister<Question, Identifier<Long>> questionPersister = updateTestData.getQuestionPersister();
 			Question newQuestion = updateTestData.getNewQuestion();
-			Choice choice1 = updateTestData.getChoice1();
-			Choice choice2 = updateTestData.getChoice2();
-			Choice choice3 = updateTestData.getChoice3();
+			Choice choice1Clone = new Choice(updateTestData.getChoice1().getId());
+			Choice choice2Clone = new Choice(updateTestData.getChoice2().getId());
+			Choice choice3Clone = new Choice(updateTestData.getChoice3().getId());
 			Choice choice4 = new Choice(40L);
 			
 			// creating a clone to test instance swaping
 			Question modifiedQuestion = new Question(newQuestion.getId().getSurrogate());
 			// addition of an element and little swap
-			modifiedQuestion.setChoices(Arrays.asList(choice3, choice4, choice2, choice1));
+			modifiedQuestion.setChoices(Arrays.asList(choice3Clone, choice4, choice2Clone, choice1Clone));
 			
 			questionPersister.update(modifiedQuestion, newQuestion, true);
 			List<Result> persistedChoices = persistenceContext.newQuery(select(id, idx).from(choiceTable).orderBy(id), Result.class)
@@ -241,13 +238,13 @@ class FluentEntityMappingConfigurationSupportOneToManyListTest {
 			Column<Table, Integer> idx = updateTestData.getIdx();
 			IEntityPersister<Question, Identifier<Long>> questionPersister = updateTestData.getQuestionPersister();
 			Question newQuestion = updateTestData.getNewQuestion();
-			Choice choice1 = updateTestData.getChoice1();
-			Choice choice3 = updateTestData.getChoice3();
+			Choice choice1Clone = new Choice(updateTestData.getChoice1().getId());
+			Choice choice3Clone = new Choice(updateTestData.getChoice3().getId());
 			
 			// creating a clone to test instance swaping
 			Question modifiedQuestion = new Question(newQuestion.getId().getSurrogate());
 			// little swap between 2 elements
-			modifiedQuestion.setChoices(Arrays.asList(choice3, choice1));
+			modifiedQuestion.setChoices(Arrays.asList(choice3Clone, choice1Clone));
 			
 			questionPersister.update(modifiedQuestion, newQuestion, true);
 			List<Result> persistedChoices = persistenceContext.newQuery(select(id, idx).from(choiceTable).orderBy(id), Result.class)
@@ -272,8 +269,7 @@ class FluentEntityMappingConfigurationSupportOneToManyListTest {
 		
 		IFluentMappingBuilderPropertyOptions<Choice, Identifier<Long>> choiceMappingConfiguration = entityBuilder(Choice.class, LONG_TYPE)
 				.add(Choice::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
-				.add(Choice::getName)
-				.add(Choice::getQuestion);
+				.add(Choice::getName);
 		
 		IEntityPersister<Question, Identifier<Long>> questionPersister = entityBuilder(Question.class, LONG_TYPE)
 				.add(Question::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
@@ -340,8 +336,7 @@ class FluentEntityMappingConfigurationSupportOneToManyListTest {
 		
 		IFluentMappingBuilderPropertyOptions<Choice, Identifier<Long>> choiceMappingConfiguration = entityBuilder(Choice.class, LONG_TYPE)
 				.add(Choice::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
-				.add(Choice::getName)
-				.add(Choice::setQuestionWithNoGetter);
+				.add(Choice::getName);
 		
 		IEntityPersister<Question, Identifier<Long>> persisterWithNonExistingSetter = entityBuilder(Question.class, LONG_TYPE)
 				.add(Question::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
@@ -372,8 +367,7 @@ class FluentEntityMappingConfigurationSupportOneToManyListTest {
 		
 		IFluentMappingBuilderPropertyOptions<Choice, Identifier<Long>> choiceMappingConfiguration = entityBuilder(Choice.class, LONG_TYPE)
 				.add(Choice::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
-				.add(Choice::getName)
-				.add(Choice::getQuestion);
+				.add(Choice::getName);
 		
 		IEntityPersister<Question, Identifier<Long>> persister = entityBuilder(Question.class, LONG_TYPE)
 				.add(Question::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
@@ -402,8 +396,7 @@ class FluentEntityMappingConfigurationSupportOneToManyListTest {
 		
 		IFluentMappingBuilderPropertyOptions<Choice, Identifier<Long>> choiceMappingConfiguration = entityBuilder(Choice.class, LONG_TYPE)
 				.add(Choice::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
-				.add(Choice::getName)
-				.add(Choice::getQuestion);
+				.add(Choice::getName);
 		
 		assertEquals("Indexing column is defined without owner : relation is only declared by Question::getChoices",
 				assertThrows(UnsupportedOperationException.class, () ->
@@ -956,8 +949,7 @@ class FluentEntityMappingConfigurationSupportOneToManyListTest {
 			
 			IFluentMappingBuilderPropertyOptions<Choice, Identifier<Long>> choiceMappingConfiguration = entityBuilder(Choice.class, LONG_TYPE)
 					.add(Choice::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
-					.add(Choice::getName)
-					.add(Choice::getQuestion);
+					.add(Choice::getName);
 			
 			questionPersister = entityBuilder(Question.class, LONG_TYPE)
 					.add(Question::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
@@ -1028,8 +1020,7 @@ class FluentEntityMappingConfigurationSupportOneToManyListTest {
 			
 			IFluentMappingBuilderPropertyOptions<Choice, Identifier<Long>> choiceMappingConfiguration = entityBuilder(Choice.class, LONG_TYPE)
 					.add(Choice::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
-					.add(Choice::getName)
-					.add(Choice::getQuestion);
+					.add(Choice::getName);
 			
 			questionPersister = entityBuilder(Question.class, LONG_TYPE)
 					.add(Question::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)

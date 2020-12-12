@@ -9,19 +9,15 @@ import java.util.List;
 import org.gama.lang.function.Serie.IntegerSerie;
 import org.gama.lang.function.Serie.NowSerie;
 import org.gama.lang.test.Assertions;
+import org.gama.stalactite.persistence.engine.model.Country;
+import org.gama.stalactite.persistence.id.Identifier;
 import org.gama.stalactite.persistence.id.StatefullIdentifierAlreadyAssignedIdentifierPolicy;
+import org.gama.stalactite.persistence.id.provider.LongProvider;
+import org.gama.stalactite.persistence.sql.HSQLDBDialect;
 import org.gama.stalactite.sql.ConnectionProvider;
 import org.gama.stalactite.sql.TransactionAwareConnectionProvider;
 import org.gama.stalactite.sql.binder.DefaultParameterBinders;
 import org.gama.stalactite.sql.test.HSQLDBInMemoryDataSource;
-import org.gama.stalactite.persistence.engine.IFluentEntityMappingBuilder.IFluentMappingBuilderPropertyOptions;
-import org.gama.stalactite.persistence.engine.model.City;
-import org.gama.stalactite.persistence.engine.model.Country;
-import org.gama.stalactite.persistence.engine.model.Person;
-import org.gama.stalactite.persistence.id.Identified;
-import org.gama.stalactite.persistence.id.Identifier;
-import org.gama.stalactite.persistence.id.provider.LongProvider;
-import org.gama.stalactite.persistence.sql.HSQLDBDialect;
 import org.gama.stalactite.test.JdbcConnectionProvider;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -37,8 +33,6 @@ public class FluentEntityMappingConfigurationSupportVersioningTest {
 	
 	private static final HSQLDBDialect DIALECT = new HSQLDBDialect();
 	private DataSource dataSource = new HSQLDBInMemoryDataSource();
-	private IEntityPersister<Person, Identifier<Long>> personPersister;
-	private IEntityPersister<City, Identifier<Long>> cityPersister;
 	private PersistenceContext persistenceContext;
 	
 	@BeforeAll
@@ -47,27 +41,11 @@ public class FluentEntityMappingConfigurationSupportVersioningTest {
 		DIALECT.getColumnBinderRegistry().register((Class) Identifier.class, Identifier.identifierBinder(DefaultParameterBinders
 				.LONG_PRIMITIVE_BINDER));
 		DIALECT.getJavaTypeToSqlTypeMapping().put(Identifier.class, "int");
-		DIALECT.getColumnBinderRegistry().register((Class) Identified.class, Identified.identifiedBinder(DefaultParameterBinders
-				.LONG_PRIMITIVE_BINDER));
-		DIALECT.getJavaTypeToSqlTypeMapping().put(Identified.class, "int");
 	}
 	
 	@BeforeEach
 	public void initTest() {
 		persistenceContext = new PersistenceContext(new JdbcConnectionProvider(dataSource), DIALECT);
-		
-		IFluentMappingBuilderPropertyOptions<Person, Identifier<Long>> personMappingBuilder = MappingEase.entityBuilder(Person.class,
-				Identifier.LONG_TYPE)
-				.add(Person::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
-				.add(Person::getName);
-		personPersister = personMappingBuilder.build(persistenceContext);
-		
-		IFluentMappingBuilderPropertyOptions<City, Identifier<Long>> cityMappingBuilder = MappingEase.entityBuilder(City.class,
-				Identifier.LONG_TYPE)
-				.add(City::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
-				.add(City::getName)
-				.add(City::getCountry);
-		cityPersister = cityMappingBuilder.build(persistenceContext);
 	}
 	
 	@Test

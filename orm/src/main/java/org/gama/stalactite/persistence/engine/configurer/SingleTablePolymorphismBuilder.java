@@ -82,6 +82,8 @@ class SingleTablePolymorphismBuilder<C, I, T extends Table, D> extends AbstractP
 					identification,
 					subConfiguration.getPropertiesMapping().getBeanType(),
 					null);
+			// we need to copy also shadow columns, made in particular for one-to-one owned by source side because foreign key is maintained through it
+			classMappingStrategy.addShadowColumns((ClassMappingStrategy) mainPersister.getMappingStrategy());
 			
 			// no primary key to add nor foreign key since table is the same as main one (single table strategy)
 			JoinedTablesPersister subclassPersister = new JoinedTablesPersister(classMappingStrategy, dialect, connectionConfiguration);

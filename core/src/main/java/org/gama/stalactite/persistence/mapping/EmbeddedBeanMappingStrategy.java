@@ -184,6 +184,14 @@ public class EmbeddedBeanMappingStrategy<C, T extends Table> implements IEmbedde
 		columns.add((Column<T, Object>) column);
 	}
 	
+	Collection<ShadowColumnValueProvider<C, Object, T>> getShadowColumnsForInsert() {
+		return Collections.unmodifiableCollection(shadowColumnsForInsert);
+	}
+	
+	Collection<ShadowColumnValueProvider<C, Object, T>> getShadowColumnsForUpdate() {
+		return Collections.unmodifiableCollection(shadowColumnsForUpdate);
+	}
+	
 	@Override
 	public void addPropertySetByConstructor(ValueAccessPoint accessor) {
 		this.propertiesSetByConstructor.add(accessor);
@@ -222,18 +230,31 @@ public class EmbeddedBeanMappingStrategy<C, T extends Table> implements IEmbedde
 			}
 		});
 		
+		// getting values for silent columns
+		shadowColumnsForUpdate.forEach(shadowColumnValueProvider -> {
+			if (shadowColumnValueProvider.accept(modified)) {
+
+				Object modifiedValue = shadowColumnValueProvider.giveValue(modified);
+				Object unmodifiedValue = unmodified == null ? null : shadowColumnValueProvider.giveValue(unmodified);
+				
+				if (!Predicates.equalOrNull(modifiedValue, unmodifiedValue)
+						// OR is here to take cases where getUpdateValues(..) gets only "modified" parameter (such as for updateById) and
+						// some modified properties are null, without this OR such properties won't be updated (set to null)
+						// and, overall, if they are all null, modifiedFields is empty then causing a statement without values 
+						|| unmodified == null) {
+					modifiedFields.put(new UpwhereColumn<>(shadowColumnValueProvider.getColumn(), true), modifiedValue);
+				} else {
+					unmodifiedColumns.put(shadowColumnValueProvider.getColumn(), modifiedValue);
+				}
+			}
+		});
+		
 		// adding complementary columns if necessary
 		if (!modifiedFields.isEmpty() && allColumns) {
 			for (Entry<Column<T, Object>, Object> unmodifiedField : unmodifiedColumns.entrySet()) {
 				modifiedFields.put(new UpwhereColumn<>(unmodifiedField.getKey(), true), unmodifiedField.getValue());
 			}
 		}
-		// getting values for silent columns
-		shadowColumnsForUpdate.forEach(shadowColumnValueProvider -> {
-			if (shadowColumnValueProvider.accept(modified)) {
-				modifiedFields.put(new UpwhereColumn<>(shadowColumnValueProvider.getColumn(), true), shadowColumnValueProvider.giveValue(modified));
-			}
-		});
 		return modifiedFields;
 	}
 	

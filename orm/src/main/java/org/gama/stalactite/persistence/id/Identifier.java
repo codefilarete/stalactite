@@ -17,7 +17,7 @@ import org.gama.stalactite.sql.binder.ParameterBinder;
 public interface Identifier<T> extends StatefullIdentifier<T> {
 	
 	/** A simple constant to help referencing a {@link Identifier} which surrogate is a {@link Long} */
-	Class<Identifier<Long>> LONG_TYPE = (Class<Identifier<Long>>) (Class) PersistedIdentifier.class;
+	Class<Identifier<Long>> LONG_TYPE = (Class<Identifier<Long>>) (Class) Identifier.class;
 	
 	/**
 	 * Gives a {@link ParameterBinder} for a generic {@link Identifier}

@@ -96,8 +96,6 @@ public class FluentEntityMappingConfigurationSupportTest {
 		// binder creation for our identifier
 		dialect.getColumnBinderRegistry().register((Class) Identifier.class, Identifier.identifierBinder(DefaultParameterBinders.LONG_PRIMITIVE_BINDER));
 		dialect.getJavaTypeToSqlTypeMapping().put(Identifier.class, "int");
-		dialect.getColumnBinderRegistry().register((Class) Identified.class, Identified.identifiedBinder(DefaultParameterBinders.LONG_PRIMITIVE_BINDER));
-		dialect.getJavaTypeToSqlTypeMapping().put(Identified.class, "int");
 		
 		persistenceContext = new PersistenceContext(new JdbcConnectionProvider(dataSource), dialect);
 	}

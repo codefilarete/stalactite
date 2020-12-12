@@ -7,6 +7,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import org.danekja.java.util.function.serializable.SerializableFunction;
 import org.gama.lang.collection.Arrays;
@@ -17,10 +18,10 @@ import org.gama.stalactite.persistence.engine.CascadeOptions.RelationMode;
 import org.gama.stalactite.persistence.engine.IFluentEntityMappingBuilder.IFluentMappingBuilderOneToOneOptions;
 import org.gama.stalactite.persistence.engine.IFluentEntityMappingBuilder.IFluentMappingBuilderPropertyOptions;
 import org.gama.stalactite.persistence.engine.PersistenceContext.ExecutableSelect;
-import org.gama.stalactite.persistence.engine.runtime.IConfiguredPersister;
 import org.gama.stalactite.persistence.engine.model.City;
 import org.gama.stalactite.persistence.engine.model.Country;
 import org.gama.stalactite.persistence.engine.model.Person;
+import org.gama.stalactite.persistence.engine.runtime.IConfiguredPersister;
 import org.gama.stalactite.persistence.id.Identified;
 import org.gama.stalactite.persistence.id.Identifier;
 import org.gama.stalactite.persistence.id.PersistableIdentifier;
@@ -29,6 +30,7 @@ import org.gama.stalactite.persistence.id.StatefullIdentifierAlreadyAssignedIden
 import org.gama.stalactite.persistence.id.provider.LongProvider;
 import org.gama.stalactite.persistence.sql.HSQLDBDialect;
 import org.gama.stalactite.persistence.structure.Column;
+import org.gama.stalactite.persistence.structure.ForeignKey;
 import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.sql.binder.DefaultParameterBinders;
 import org.gama.stalactite.sql.result.ResultSetIterator;
@@ -66,8 +68,6 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 	public void initTest() {
 		dialect.getColumnBinderRegistry().register((Class) Identifier.class, Identifier.identifierBinder(DefaultParameterBinders.LONG_PRIMITIVE_BINDER));
 		dialect.getJavaTypeToSqlTypeMapping().put(Identifier.class, "int");
-		dialect.getColumnBinderRegistry().register((Class) Identified.class, Identified.identifiedBinder(DefaultParameterBinders.LONG_PRIMITIVE_BINDER));
-		dialect.getJavaTypeToSqlTypeMapping().put(Identified.class, "int");
 		persistenceContext = new PersistenceContext(new JdbcConnectionProvider(dataSource), dialect);
 		
 		IFluentMappingBuilderPropertyOptions<Person, Identifier<Long>> personMappingBuilder = MappingEase.entityBuilder(Person.class, Identifier.LONG_TYPE)
@@ -81,127 +81,240 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 		cityConfiguration = cityMappingBuilder;
 	}
 	
-	@Test
-	public void cascade_associationOnly_throwsException() {
-		IFluentMappingBuilderOneToOneOptions<Country, Identifier<Long>, ?> mappingBuilder = MappingEase.entityBuilder(Country.class, Identifier.LONG_TYPE)
-				.add(Country::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
-				.add(Country::getName)
-				.add(Country::getDescription)
-				// no cascade
-				.addOneToOne(Country::getPresident, personConfiguration).cascading(ASSOCIATION_ONLY);
+	@Nested
+	class CascadeDeclaration {
 		
-		Assertions.assertThrows(() -> mappingBuilder.build(persistenceContext), Assertions.hasExceptionInCauses(MappingConfigurationException.class)
-				.andProjection(Assertions.hasMessage(RelationMode.ASSOCIATION_ONLY + " is only relevent for one-to-many association")));
-	}
-	
-	@Test
-	public void cascade_none_defaultIsAll_getter() {
-		IEntityPersister<Country, Identifier<Long>> countryPersister = MappingEase.entityBuilder(Country.class, Identifier.LONG_TYPE)
-				.add(Country::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
-				.add(Country::getName)
-				.add(Country::getDescription)
-				// no cascade
-				.addOneToOne(Country::getPresident, personConfiguration)
-				.build(persistenceContext);
+		@Test
+		void associationOnly_throwsException() {
+			IFluentMappingBuilderOneToOneOptions<Country, Identifier<Long>, ?> mappingBuilder = MappingEase.entityBuilder(Country.class, Identifier.LONG_TYPE)
+					.add(Country::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+					.add(Country::getName)
+					.add(Country::getDescription)
+					// no cascade
+					.addOneToOne(Country::getPresident, personConfiguration).cascading(ASSOCIATION_ONLY);
+			
+			Assertions.assertThrows(() -> mappingBuilder.build(persistenceContext), Assertions.hasExceptionInCauses(MappingConfigurationException.class)
+					.andProjection(Assertions.hasMessage(RelationMode.ASSOCIATION_ONLY + " is only relevent for one-to-many association")));
+		}
 		
-		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
-		ddlDeployer.deployDDL();
+		@Test
+		void notDefined_defaultIsAll_getter() {
+			IEntityPersister<Country, Identifier<Long>> countryPersister = MappingEase.entityBuilder(Country.class, Identifier.LONG_TYPE)
+					.add(Country::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+					.add(Country::getName)
+					.add(Country::getDescription)
+					// no cascade
+					.addOneToOne(Country::getPresident, personConfiguration)
+					.build(persistenceContext);
+			
+			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+			ddlDeployer.deployDDL();
+			
+			Country country = new Country(new PersistableIdentifier<>(42L));
+			country.setPresident(new Person(new PersistableIdentifier<>(666L)));
+			countryPersister.insert(country);
+			
+			Country selectedCountry = countryPersister.select(new PersistedIdentifier<>(42L));
+			assertEquals(42L, selectedCountry.getId().getSurrogate());
+			assertEquals(666L, selectedCountry.getPresident().getId().getSurrogate());
+			
+			countryPersister.delete(selectedCountry);
+			
+			assertEquals(null, countryPersister.select(new PersistedIdentifier<>(42L)));
+			// orphan was'nt removed because cascade is ALL, not ALL_ORPHAN_REMOVAL
+			assertEquals(666L, persistenceContext.getPersister(Person.class).select(new PersistedIdentifier<>(666L)).getId().getSurrogate());
+		}
 		
-		Country country = new Country(new PersistableIdentifier<>(42L));
-		country.setPresident(new Person(new PersistableIdentifier<>(666L)));
-		countryPersister.insert(country);
+		@Test
+		void readOnly_getter() throws SQLException {
+			IEntityPersister<Country, Identifier<Long>> countryPersister = MappingEase.entityBuilder(Country.class, Identifier.LONG_TYPE)
+					.add(Country::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+					.add(Country::getName)
+					.add(Country::getDescription)
+					// no cascade
+					.addOneToOne(Country::getPresident, personConfiguration).cascading(READ_ONLY)
+					.build(persistenceContext);
+			
+			assert_cascade_readOnly(countryPersister);
+		}
 		
-		Country selectedCountry = countryPersister.select(new PersistedIdentifier<>(42L));
-		assertEquals(42L, selectedCountry.getId().getSurrogate());
-		assertEquals(666L, selectedCountry.getPresident().getId().getSurrogate());
+		@Test
+		void readOnly_setter() throws SQLException {
+			IEntityPersister<Country, Identifier<Long>> countryPersister = MappingEase.entityBuilder(Country.class, Identifier.LONG_TYPE)
+					.add(Country::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+					.add(Country::getName)
+					.add(Country::getDescription)
+					// no cascade
+					.addOneToOne(Country::setPresident, personConfiguration).cascading(READ_ONLY)
+					.build(persistenceContext);
+			
+			assert_cascade_readOnly(countryPersister);
+		}
 		
-		countryPersister.delete(selectedCountry);
+		private void assert_cascade_readOnly(IEntityPersister<Country, Identifier<Long>> countryPersister) throws SQLException {
+			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+			ddlDeployer.deployDDL();
+			
+			Country dummyCountry = new Country(new PersistableIdentifier<>(42L));
+			dummyCountry.setName("France");
+			dummyCountry.setDescription("Smelly cheese !");
+			Person person = new Person(new PersistableIdentifier<>(1L));
+			person.setName("French president");
+			dummyCountry.setPresident(person);
+			
+			// insert throws integrity constraint because it doesn't save target entity
+			Assertions.assertThrows(() -> countryPersister.insert(dummyCountry), Assertions.hasExceptionInCauses(BatchUpdateException.class)
+					.andProjection(Assertions.hasMessage("integrity constraint violation: foreign key no parent; FK_COUNTRY_PRESIDENTID_PERSON_ID table: COUNTRY")));
+			
+			persistenceContext.getConnectionProvider().getCurrentConnection().prepareStatement("insert into Person(id, name) values (1, 'French president')").execute();
+			persistenceContext.getConnectionProvider().getCurrentConnection().prepareStatement("insert into Country(id, name, presidentId) values (42, 'France', 1)").execute();
+			
+			// select selects entity and relation
+			Country loadedCountry = countryPersister.select(new PersistedIdentifier<>(42L));
+			assertEquals("France", loadedCountry.getName());
+			assertEquals("French president", loadedCountry.getPresident().getName());
+			
+			loadedCountry.setName("touched France");
+			loadedCountry.getPresident().setName("touched french president");
+			countryPersister.update(loadedCountry, dummyCountry, false);
+			
+			// president is left untouched because association is read only
+			assertEquals("French president", persistenceContext.newQuery("select name from Person where id = 1", String.class)
+					.mapKey(String::new, "name", String.class)
+					.execute()
+					.get(0));
+			
+			// deletion has no action on target
+			countryPersister.delete(loadedCountry);
+			assertTrue(persistenceContext.newQuery("select name from Country", String.class)
+					.mapKey(String::new, "name", String.class)
+					.execute()
+					.isEmpty());
+			assertEquals("French president", persistenceContext.newQuery("select name from Person where id = 1", String.class)
+					.mapKey(String::new, "name", String.class)
+					.execute()
+					.get(0));
+		}
 		
-		assertEquals(null, countryPersister.select(new PersistedIdentifier<>(42L)));
-		// orphan was'nt removed because cascade is ALL, not ALL_ORPHAN_REMOVAL
-		assertEquals(666L, persistenceContext.getPersister(Person.class).select(new PersistedIdentifier<>(666L)).getId().getSurrogate());
-	}
-	
-	@Test
-	public void cascade_readOnly_getter() throws SQLException {
-		IEntityPersister<Country, Identifier<Long>> countryPersister = MappingEase.entityBuilder(Country.class, Identifier.LONG_TYPE)
-				.add(Country::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
-				.add(Country::getName)
-				.add(Country::getDescription)
-				// no cascade
-				.addOneToOne(Country::getPresident, personConfiguration).cascading(READ_ONLY)
-				.build(persistenceContext);
+		@Test
+		void readOnly_getter_ownedByTarget() throws SQLException {
+			IEntityPersister<Country, Identifier<Long>> countryPersister = MappingEase.entityBuilder(Country.class, Identifier.LONG_TYPE)
+					.add(Country::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+					.add(Country::getName)
+					.add(Country::getDescription)
+					// no cascade
+					.addOneToOne(Country::getPresident, personConfiguration).cascading(READ_ONLY).mappedBy(Person::getCountry)
+					.build(persistenceContext);
+			
+			assert_cascade_readOnly_ownByTarget(countryPersister);
+		}
 		
-		assert_cascade_readOnly(countryPersister);
-	}
-	
-	@Test
-	public void cascade_readOnly_setter() throws SQLException {
-		IEntityPersister<Country, Identifier<Long>> countryPersister = MappingEase.entityBuilder(Country.class, Identifier.LONG_TYPE)
-				.add(Country::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
-				.add(Country::getName)
-				.add(Country::getDescription)
-				// no cascade
-				.addOneToOne(Country::setPresident, personConfiguration).cascading(READ_ONLY)
-				.build(persistenceContext);
+		private void assert_cascade_readOnly_ownByTarget(IEntityPersister<Country, Identifier<Long>> countryPersister) throws SQLException {
+			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+			ddlDeployer.deployDDL();
+			
+			Country dummyCountry = new Country(new PersistableIdentifier<>(42L));
+			dummyCountry.setName("France");
+			dummyCountry.setDescription("Smelly cheese !");
+			Person person = new Person(new PersistableIdentifier<>(1L));
+			person.setName("French president");
+			dummyCountry.setPresident(person);
+			
+			// person must be persisted before usage because cascade is marked as READ_ONLY
+			persistenceContext.getPersister(Person.class).insert(person);
+			
+			// insert doesn't throw integrity constraint and will update foreign key in Person table making relation available on load
+			countryPersister.insert(dummyCountry);
+			
+			// select selects entity and relation
+			Country loadedCountry = countryPersister.select(new PersistedIdentifier<>(42L));
+			assertEquals("France", loadedCountry.getName());
+			assertEquals("French president", loadedCountry.getPresident().getName());
+			
+			loadedCountry.setName("touched France");
+			loadedCountry.getPresident().setName("touched french president");
+			countryPersister.update(loadedCountry, dummyCountry, false);
+			
+			// president is left untouched because association is read only
+			assertEquals("French president", persistenceContext.newQuery("select name from Person where id = 1", String.class)
+					.mapKey(String::new, "name", String.class)
+					.execute()
+					.get(0));
+			
+			// Changing country persident to check foreign key modification
+			Person newPerson = new Person(new PersistableIdentifier<>(2L));
+			newPerson.setName("New French president");
+			// person must be persisted before usage because cascade is marked as READ_ONLY
+			persistenceContext.getPersister(Person.class).insert(newPerson);
+			
+			dummyCountry.setPresident(newPerson);
+			countryPersister.update(dummyCountry, loadedCountry, true);
+			
+			
+			assertEquals("New French president", countryPersister.select(new PersistedIdentifier<>(42L)).getPresident().getName());
+			
+			// deletion doesn't throws integrity constraint and nullify foreign key
+			countryPersister.delete(dummyCountry);
+			
+			assertTrue(persistenceContext.newQuery("select name from Country", String.class)
+					.mapKey(String::new, "name", String.class)
+					.execute()
+					.isEmpty());
+			Assertions.assertAllEquals(Arrays.asList("French president", "New French president"), persistenceContext.newQuery("select name from Person", String.class)
+					.mapKey(String::new, "name", String.class)
+					.execute());
+			assertEquals("New French president", persistenceContext.newQuery("select name from Person where id = 2", String.class)
+					.mapKey(String::new, "name", String.class)
+					.execute()
+					.get(0));
+		}
 		
-		assert_cascade_readOnly(countryPersister);
-	}
-	
-	private void assert_cascade_readOnly(IEntityPersister<Country, Identifier<Long>> countryPersister) throws SQLException {
-		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
-		ddlDeployer.deployDDL();
-		
-		Country dummyCountry = new Country(new PersistableIdentifier<>(42L));
-		dummyCountry.setName("France");
-		dummyCountry.setDescription("Smelly cheese !");
-		Person person = new Person(new PersistableIdentifier<>(1L));
-		person.setName("French president");
-		dummyCountry.setPresident(person);
-		
-		// insert throws integrity constraint because it doesn't save target entity
-		Assertions.assertThrows(() -> countryPersister.insert(dummyCountry), Assertions.hasExceptionInCauses(BatchUpdateException.class)
-				.andProjection(Assertions.hasMessage("integrity constraint violation: foreign key no parent; FK_COUNTRY_PRESIDENTID_PERSON_ID table: COUNTRY")));
-		
-		persistenceContext.getConnectionProvider().getCurrentConnection().prepareStatement("insert into Person(id, name) values (1, 'French president')").execute();
-		persistenceContext.getConnectionProvider().getCurrentConnection().prepareStatement("insert into Country(id, name, presidentId) values (42, 'France', 1)").execute();
-		
-		// select selects entity and relationship
-		Country loadedCountry = countryPersister.select(new PersistedIdentifier<>(42L));
-		assertEquals("France", loadedCountry.getName());
-		assertEquals("French president", loadedCountry.getPresident().getName());
-		
-		loadedCountry.setName("touched France");
-		loadedCountry.getPresident().setName("touched french president");
-		countryPersister.update(loadedCountry, dummyCountry, false);
-		
-		// president is left untouched because association is read only
-		assertEquals("French president", persistenceContext.newQuery("select name from Person where id = 1", String.class)
-				.mapKey(String::new, "name", String.class)
-				.execute()
-				.get(0));
-		
-		// deletion has no action on target
-		countryPersister.delete(loadedCountry);
-		assertTrue(persistenceContext.newQuery("select name from Country", String.class)
-				.mapKey(String::new, "name", String.class)
-				.execute()
-				.isEmpty());
-		assertEquals("French president", persistenceContext.newQuery("select name from Person where id = 1", String.class)
-				.mapKey(String::new, "name", String.class)
-				.execute()
-				.get(0));
+		@Test
+		void cascade_deleteWithOrphanRemoval() throws SQLException {
+			IEntityPersister<Country, Identifier<Long>> countryPersister = MappingEase.entityBuilder(Country.class, Identifier.LONG_TYPE)
+					.add(Country::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+					.add(Country::getDescription)
+					.addOneToOne(Country::getPresident, personConfiguration).cascading(ALL_ORPHAN_REMOVAL)
+					.build(persistenceContext);
+			
+			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+			ddlDeployer.deployDDL();
+			
+			persistenceContext.getConnectionProvider().getCurrentConnection().createStatement().executeUpdate("insert into Person(id) values (42), (666)");
+			persistenceContext.getConnectionProvider().getCurrentConnection().createStatement().executeUpdate("insert into Country(id, presidentId) values (100, 42), (200, 666)");
+			
+			Country persistedCountry = countryPersister.select(new PersistedIdentifier<>(100L));
+			countryPersister.delete(persistedCountry);
+			ResultSet resultSet;
+			// Checking that we deleted what we wanted
+			resultSet = persistenceContext.getConnectionProvider().getCurrentConnection().createStatement().executeQuery("select id from Country where id = 100");
+			assertFalse(resultSet.next());
+			resultSet = persistenceContext.getConnectionProvider().getCurrentConnection().createStatement().executeQuery("select id from Person where id = 42");
+			assertFalse(resultSet.next());
+			// but we did'nt delete everything !
+			resultSet = persistenceContext.getConnectionProvider().getCurrentConnection().createStatement().executeQuery("select id from Country where id = 200");
+			assertTrue(resultSet.next());
+			resultSet = persistenceContext.getConnectionProvider().getCurrentConnection().createStatement().executeQuery("select id from Person where id = 666");
+			assertTrue(resultSet.next());
+		}
 	}
 	
 	/**
-	 * Thanks to the registering of Identified instances into the ColumnBinderRegistry (cf test preparation) it's possible to have a light relation
+	 * Thanks to the registering of Identified instances into the ColumnBinderRegistry it's possible to have a light relation
 	 * between 2 mappings: kind of OneToOne without any cascade, just column of the relation is inserted/updated.
 	 * Not really an expected feature since it looks like a OneToOne with insert+update cascade (on insert, already persisted instance are not inserted again)
-	 * 
-	 * @throws SQLException
 	 */
 	@Test
 	public void lightOneToOne_relationIsPersisted() throws SQLException {
+		// we redifine th eDialcet to avoid polluting the instance one with some more mapping that is only the purpose of this test (avoid side effect)
+		HSQLDBDialect dialect = new HSQLDBDialect();
+		dialect.getColumnBinderRegistry().register((Class) Identifier.class, Identifier.identifierBinder(DefaultParameterBinders.LONG_PRIMITIVE_BINDER));
+		dialect.getJavaTypeToSqlTypeMapping().put(Identifier.class, "int");
+		dialect.getColumnBinderRegistry().register((Class) Person.class, Identified.identifiedBinder(DefaultParameterBinders.LONG_PRIMITIVE_BINDER));
+		dialect.getJavaTypeToSqlTypeMapping().put(Person.class, "int");
+		
+		PersistenceContext persistenceContext = new PersistenceContext(new JdbcConnectionProvider(dataSource), dialect);
+		
 		IEntityPersister<Country, Identifier<Long>> countryPersister = MappingEase.entityBuilder(Country.class, Identifier.LONG_TYPE)
 				.add(Country::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 				.add(Country::getName)
@@ -246,214 +359,190 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 		assertEquals(1, resultSetIterator.next().get("countryCount"));
 	}
 	
-	
-	@Test
-	void foreignKeyIsCreated() throws SQLException {
-		MappingEase.entityBuilder(Country.class, Identifier.LONG_TYPE)
-				// setting a foreign key naming strategy to be tested
-				.withForeignKeyNaming(ForeignKeyNamingStrategy.DEFAULT)
-				.add(Country::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
-				.add(Country::getName)
-				.add(Country::getDescription)
-				.addOneToOne(Country::getCapital, cityConfiguration)
-				.build(persistenceContext);
+	@Nested
+	class ForeignKeyCreation {
 		
-		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
-		ddlDeployer.deployDDL();
+		@Test
+		void relationOwnedBySource() throws SQLException {
+			MappingEase.entityBuilder(Country.class, Identifier.LONG_TYPE)
+					// setting a foreign key naming strategy to be tested
+					.withForeignKeyNaming(ForeignKeyNamingStrategy.DEFAULT)
+					.add(Country::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+					.add(Country::getName)
+					.add(Country::getDescription)
+					.addOneToOne(Country::getCapital, cityConfiguration)
+					.build(persistenceContext);
+			
+			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+			ddlDeployer.deployDDL();
+			
+			Connection currentConnection = persistenceContext.getConnectionProvider().getCurrentConnection();
+			ResultSetIterator<JdbcForeignKey> fkPersonIterator = new ResultSetIterator<JdbcForeignKey>(currentConnection.getMetaData().getExportedKeys(null, null,
+					((IConfiguredPersister) persistenceContext.getPersister(City.class)).getMappingStrategy().getTargetTable().getName().toUpperCase())) {
+				@Override
+				public JdbcForeignKey convert(ResultSet rs) throws SQLException {
+					return new JdbcForeignKey(
+							rs.getString("FK_NAME"),
+							rs.getString("FKTABLE_NAME"), rs.getString("FKCOLUMN_NAME"),
+							rs.getString("PKTABLE_NAME"), rs.getString("PKCOLUMN_NAME")
+					);
+				}
+			};
+			JdbcForeignKey foundForeignKey = Iterables.first(fkPersonIterator);
+			JdbcForeignKey expectedForeignKey = new JdbcForeignKey("FK_COUNTRY_CAPITALID_CITY_ID", "COUNTRY", "CAPITALID", "CITY", "ID");
+			assertEquals(expectedForeignKey.getSignature(), foundForeignKey.getSignature());
+		}
 		
-		Connection currentConnection = persistenceContext.getConnectionProvider().getCurrentConnection();
-		ResultSetIterator<JdbcForeignKey> fkPersonIterator = new ResultSetIterator<JdbcForeignKey>(currentConnection.getMetaData().getExportedKeys(null, null,
-				((IConfiguredPersister) persistenceContext.getPersister(City.class)).getMappingStrategy().getTargetTable().getName().toUpperCase())) {
-			@Override
-			public JdbcForeignKey convert(ResultSet rs) throws SQLException {
-				return new JdbcForeignKey(
-						rs.getString("FK_NAME"),
-						rs.getString("FKTABLE_NAME"), rs.getString("FKCOLUMN_NAME"),
-						rs.getString("PKTABLE_NAME"), rs.getString("PKCOLUMN_NAME")
-				);
-			}
-		};
-		JdbcForeignKey foundForeignKey = Iterables.first(fkPersonIterator);
-		JdbcForeignKey expectedForeignKey = new JdbcForeignKey("FK_COUNTRY_CAPITALID_CITY_ID", "COUNTRY", "CAPITALID", "CITY", "ID");
-		assertEquals(expectedForeignKey.getSignature(), foundForeignKey.getSignature());
+		@Test
+		void relationOwnedByTargetSide() throws SQLException {
+			IConfiguredPersister<Country, Identifier<Long>> countryPersister = MappingEase.entityBuilder(Country.class, Identifier.LONG_TYPE)
+					// setting a foreign key naming strategy to be tested
+					.withForeignKeyNaming(ForeignKeyNamingStrategy.DEFAULT)
+					.add(Country::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+					.add(Country::getName)
+					.add(Country::getDescription)
+					.addOneToOne(Country::getCapital, cityConfiguration).mappedBy(City::getCountry)
+					.build(persistenceContext);
+			
+			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+			ddlDeployer.deployDDL();
+			
+			Connection currentConnection = persistenceContext.getConnectionProvider().getCurrentConnection();
+			ResultSetIterator<JdbcForeignKey> fkPersonIterator = new ResultSetIterator<JdbcForeignKey>(currentConnection.getMetaData().getExportedKeys(null, null,
+					countryPersister.getMappingStrategy().getTargetTable().getName().toUpperCase())) {
+				@Override
+				public JdbcForeignKey convert(ResultSet rs) throws SQLException {
+					return new JdbcForeignKey(
+							rs.getString("FK_NAME"),
+							rs.getString("FKTABLE_NAME"), rs.getString("FKCOLUMN_NAME"),
+							rs.getString("PKTABLE_NAME"), rs.getString("PKCOLUMN_NAME")
+					);
+				}
+			};
+			JdbcForeignKey foundForeignKey = Iterables.first(fkPersonIterator);
+			JdbcForeignKey expectedForeignKey = new JdbcForeignKey("FK_CITY_COUNTRYID_COUNTRY_ID", "CITY", "COUNTRYID", "COUNTRY", "ID");
+			assertEquals(expectedForeignKey.getSignature(), foundForeignKey.getSignature());
+		}
+		
+		@Test
+		void relationIsDefinedByColumnOnTargetSide() throws SQLException {
+			IFluentMappingBuilderPropertyOptions<City, Identifier<Long>> cityMappingBuilder = MappingEase.entityBuilder(City.class, Identifier.LONG_TYPE)
+					.add(City::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+					.add(City::getName);
+			Table cityTable = new Table("city");
+			Column<Table, Identifier<Long>> stateColumn = cityTable.addColumn("state", Identifier.LONG_TYPE);
+			
+			IConfiguredPersister<Country, Identifier<Long>> countryPersister = MappingEase.entityBuilder(Country.class, Identifier.LONG_TYPE)
+					// setting a foreign key naming strategy to be tested
+					.withForeignKeyNaming(ForeignKeyNamingStrategy.DEFAULT)
+					.add(Country::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+					.add(Country::getName)
+					.add(Country::getDescription)
+					.addOneToOne(Country::getCapital, cityMappingBuilder).mappedBy(stateColumn)
+					.build(persistenceContext);
+			
+			// ensuring that the foreign key is present on table, hence testing that cityTable was used, not a clone created by build(..) 
+			JdbcForeignKey expectedForeignKey = new JdbcForeignKey("FK_city_state_Country_id", "city", "state", "Country", "id");
+			Assertions.assertAllEquals(
+					Arrays.asHashSet(expectedForeignKey),
+					Iterables.collect((Set<ForeignKey<? extends Table, ?>>) cityTable.getForeignKeys(), JdbcForeignKey::new, HashSet::new),
+					JdbcForeignKey::getSignature);
+			
+			// ensuring that the foreign key is also deployed
+			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+			ddlDeployer.deployDDL();
+			
+			Connection currentConnection = persistenceContext.getConnectionProvider().getCurrentConnection();
+			ResultSetIterator<JdbcForeignKey> fkPersonIterator = new ResultSetIterator<JdbcForeignKey>(currentConnection.getMetaData().getExportedKeys(null, null,
+					countryPersister.getMappingStrategy().getTargetTable().getName().toUpperCase())) {
+				@Override
+				public JdbcForeignKey convert(ResultSet rs) throws SQLException {
+					return new JdbcForeignKey(
+							rs.getString("FK_NAME"),
+							rs.getString("FKTABLE_NAME"), rs.getString("FKCOLUMN_NAME"),
+							rs.getString("PKTABLE_NAME"), rs.getString("PKCOLUMN_NAME")
+					);
+				}
+			};
+			JdbcForeignKey foundForeignKey = Iterables.first(fkPersonIterator);
+			Assertions.assertEquals(expectedForeignKey.getSignature(), foundForeignKey.getSignature(), String.CASE_INSENSITIVE_ORDER);
+		}
+		
+		@Test
+		void relationIsDefinedByColumnOnTargetSideAndReverseAccessorIsUsed_columnOverrideIsUsed() throws SQLException {
+			IFluentMappingBuilderPropertyOptions<City, Identifier<Long>> cityMappingBuilder = MappingEase.entityBuilder(City.class, Identifier.LONG_TYPE)
+					.add(City::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+					.add(City::getName);
+			Table cityTable = new Table("city");
+			Column<Table, Identifier<Long>> stateColumn = cityTable.addColumn("state", Identifier.LONG_TYPE);
+			
+			IConfiguredPersister<Country, Identifier<Long>> countryPersister = MappingEase.entityBuilder(Country.class, Identifier.LONG_TYPE)
+					// setting a foreign key naming strategy to be tested
+					.withForeignKeyNaming(ForeignKeyNamingStrategy.DEFAULT)
+					.add(Country::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+					.add(Country::getName)
+					.add(Country::getDescription)
+					.addOneToOne(Country::getCapital, cityMappingBuilder).mappedBy(stateColumn).mappedBy(City::getCountry)
+					.build(persistenceContext);
+			
+			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+			ddlDeployer.deployDDL();
+			
+			Connection currentConnection = persistenceContext.getConnectionProvider().getCurrentConnection();
+			ResultSetIterator<JdbcForeignKey> fkPersonIterator = new ResultSetIterator<JdbcForeignKey>(currentConnection.getMetaData().getExportedKeys(null, null,
+					countryPersister.getMappingStrategy().getTargetTable().getName().toUpperCase())) {
+				@Override
+				public JdbcForeignKey convert(ResultSet rs) throws SQLException {
+					return new JdbcForeignKey(
+							rs.getString("FK_NAME"),
+							rs.getString("FKTABLE_NAME"), rs.getString("FKCOLUMN_NAME"),
+							rs.getString("PKTABLE_NAME"), rs.getString("PKCOLUMN_NAME")
+					);
+				}
+			};
+			JdbcForeignKey foundForeignKey = Iterables.first(fkPersonIterator);
+			JdbcForeignKey expectedForeignKey = new JdbcForeignKey("FK_CITY_STATE_COUNTRY_ID", "CITY", "STATE", "COUNTRY", "ID");
+			assertEquals(expectedForeignKey.getSignature(), foundForeignKey.getSignature());
+		}
+		
+		@Test
+		void relationIsDefinedByColumnOnTargetSideAndReverseMutatorIsUsed_columnOverrideIsUsed() throws SQLException {
+			IFluentMappingBuilderPropertyOptions<City, Identifier<Long>> cityMappingBuilder = MappingEase.entityBuilder(City.class, Identifier.LONG_TYPE)
+					.add(City::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+					.add(City::getName);
+			Table cityTable = new Table("city");
+			Column<Table, Identifier<Long>> stateColumn = cityTable.addColumn("state", Identifier.LONG_TYPE);
+			
+			IConfiguredPersister<Country, Identifier<Long>> countryPersister = MappingEase.entityBuilder(Country.class, Identifier.LONG_TYPE)
+					// setting a foreign key naming strategy to be tested
+					.withForeignKeyNaming(ForeignKeyNamingStrategy.DEFAULT)
+					.add(Country::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+					.add(Country::getName)
+					.add(Country::getDescription)
+					.addOneToOne(Country::getCapital, cityMappingBuilder).mappedBy(stateColumn).mappedBy(City::setCountry)
+					.build(persistenceContext);
+			
+			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+			ddlDeployer.deployDDL();
+			
+			Connection currentConnection = persistenceContext.getConnectionProvider().getCurrentConnection();
+			ResultSetIterator<JdbcForeignKey> fkPersonIterator = new ResultSetIterator<JdbcForeignKey>(currentConnection.getMetaData().getExportedKeys(null, null,
+					countryPersister.getMappingStrategy().getTargetTable().getName().toUpperCase())) {
+				@Override
+				public JdbcForeignKey convert(ResultSet rs) throws SQLException {
+					return new JdbcForeignKey(
+							rs.getString("FK_NAME"),
+							rs.getString("FKTABLE_NAME"), rs.getString("FKCOLUMN_NAME"),
+							rs.getString("PKTABLE_NAME"), rs.getString("PKCOLUMN_NAME")
+					);
+				}
+			};
+			JdbcForeignKey foundForeignKey = Iterables.first(fkPersonIterator);
+			JdbcForeignKey expectedForeignKey = new JdbcForeignKey("FK_CITY_STATE_COUNTRY_ID", "CITY", "STATE", "COUNTRY", "ID");
+			assertEquals(expectedForeignKey.getSignature(), foundForeignKey.getSignature());
+		}
 	}
 	
-	@Test
-	void foreignKeyIsCreated_relationOwnedByTargetSide() throws SQLException {
-		IConfiguredPersister<Country, Identifier<Long>> countryPersister = MappingEase.entityBuilder(Country.class, Identifier.LONG_TYPE)
-				// setting a foreign key naming strategy to be tested
-				.withForeignKeyNaming(ForeignKeyNamingStrategy.DEFAULT)
-				.add(Country::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
-				.add(Country::getName)
-				.add(Country::getDescription)
-				.addOneToOne(Country::getCapital, cityConfiguration).mappedBy(City::getCountry)
-				.build(persistenceContext);
-		
-		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
-		ddlDeployer.deployDDL();
-		
-		Connection currentConnection = persistenceContext.getConnectionProvider().getCurrentConnection();
-		ResultSetIterator<JdbcForeignKey> fkPersonIterator = new ResultSetIterator<JdbcForeignKey>(currentConnection.getMetaData().getExportedKeys(null, null,
-				countryPersister.getMappingStrategy().getTargetTable().getName().toUpperCase())) {
-			@Override
-			public JdbcForeignKey convert(ResultSet rs) throws SQLException {
-				return new JdbcForeignKey(
-						rs.getString("FK_NAME"),
-						rs.getString("FKTABLE_NAME"), rs.getString("FKCOLUMN_NAME"),
-						rs.getString("PKTABLE_NAME"), rs.getString("PKCOLUMN_NAME")
-				);
-			}
-		};
-		JdbcForeignKey foundForeignKey = Iterables.first(fkPersonIterator);
-		JdbcForeignKey expectedForeignKey = new JdbcForeignKey("FK_CITY_COUNTRYID_COUNTRY_ID", "CITY", "COUNTRYID", "COUNTRY", "ID");
-		assertEquals(expectedForeignKey.getSignature(), foundForeignKey.getSignature());
-	}
-	
-	@Test
-	void foreignKeyIsCreated_relationIsDefinedByColumnOnTargetSide() throws SQLException {
-		IFluentMappingBuilderPropertyOptions<City, Identifier<Long>> cityMappingBuilder = MappingEase.entityBuilder(City.class, Identifier.LONG_TYPE)
-				.add(City::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
-				.add(City::getName);
-		Table<?> cityTable = new Table("city");
-		Column<Table, Country> stateColumn = (Column<Table, Country>) cityTable.addColumn("state", Country.class);
-		
-		IConfiguredPersister<Country, Identifier<Long>> countryPersister = MappingEase.entityBuilder(Country.class, Identifier.LONG_TYPE)
-				// setting a foreign key naming strategy to be tested
-				.withForeignKeyNaming(ForeignKeyNamingStrategy.DEFAULT)
-				.add(Country::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
-				.add(Country::getName)
-				.add(Country::getDescription)
-				.addOneToOne(Country::getCapital, cityMappingBuilder).mappedBy(stateColumn)
-				.build(persistenceContext);
-		
-		// ensuring that the foreign key is present on table, hence testing that cityTable was used, not a clone created by build(..) 
-		JdbcForeignKey expectedForeignKey = new JdbcForeignKey("FK_city_state_Country_id", "city", "state", "Country", "id");
-		Assertions.assertAllEquals(Arrays.asHashSet(expectedForeignKey), Iterables.collect(cityTable.getForeignKeys(), JdbcForeignKey::new, HashSet::new), JdbcForeignKey::getSignature);
-		
-		// ensuring that the foreign key is also deployed
-		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
-		ddlDeployer.deployDDL();
-		
-		Connection currentConnection = persistenceContext.getConnectionProvider().getCurrentConnection();
-		ResultSetIterator<JdbcForeignKey> fkPersonIterator = new ResultSetIterator<JdbcForeignKey>(currentConnection.getMetaData().getExportedKeys(null, null,
-				countryPersister.getMappingStrategy().getTargetTable().getName().toUpperCase())) {
-			@Override
-			public JdbcForeignKey convert(ResultSet rs) throws SQLException {
-				return new JdbcForeignKey(
-						rs.getString("FK_NAME"),
-						rs.getString("FKTABLE_NAME"), rs.getString("FKCOLUMN_NAME"),
-						rs.getString("PKTABLE_NAME"), rs.getString("PKCOLUMN_NAME")
-				);
-			}
-		};
-		JdbcForeignKey foundForeignKey = Iterables.first(fkPersonIterator);
-		Assertions.assertEquals(expectedForeignKey.getSignature(), foundForeignKey.getSignature(), String.CASE_INSENSITIVE_ORDER);
-	}
-	
-	@Test
-	void foreignKeyIsCreated_relationIsDefinedByColumnOnTargetSideAndReverseAccessorIsUsed_columnOverrideIsUsed() throws SQLException {
-		IFluentMappingBuilderPropertyOptions<City, Identifier<Long>> cityMappingBuilder = MappingEase.entityBuilder(City.class, Identifier.LONG_TYPE)
-				.add(City::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
-				.add(City::getName);
-		Table cityTable = new Table("city");
-		Column<Table, Country> stateColumn = cityTable.addColumn("state", Country.class);
-		
-		IConfiguredPersister<Country, Identifier<Long>> countryPersister = MappingEase.entityBuilder(Country.class, Identifier.LONG_TYPE)
-				// setting a foreign key naming strategy to be tested
-				.withForeignKeyNaming(ForeignKeyNamingStrategy.DEFAULT)
-				.add(Country::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
-				.add(Country::getName)
-				.add(Country::getDescription)
-				.addOneToOne(Country::getCapital, cityMappingBuilder).mappedBy(stateColumn).mappedBy(City::getCountry)
-				.build(persistenceContext);
-		
-		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
-		ddlDeployer.deployDDL();
-		
-		Connection currentConnection = persistenceContext.getConnectionProvider().getCurrentConnection();
-		ResultSetIterator<JdbcForeignKey> fkPersonIterator = new ResultSetIterator<JdbcForeignKey>(currentConnection.getMetaData().getExportedKeys(null, null,
-				countryPersister.getMappingStrategy().getTargetTable().getName().toUpperCase())) {
-			@Override
-			public JdbcForeignKey convert(ResultSet rs) throws SQLException {
-				return new JdbcForeignKey(
-						rs.getString("FK_NAME"),
-						rs.getString("FKTABLE_NAME"), rs.getString("FKCOLUMN_NAME"),
-						rs.getString("PKTABLE_NAME"), rs.getString("PKCOLUMN_NAME")
-				);
-			}
-		};
-		JdbcForeignKey foundForeignKey = Iterables.first(fkPersonIterator);
-		JdbcForeignKey expectedForeignKey = new JdbcForeignKey("FK_CITY_STATE_COUNTRY_ID", "CITY", "STATE", "COUNTRY", "ID");
-		assertEquals(expectedForeignKey.getSignature(), foundForeignKey.getSignature());
-	}
-	
-	@Test
-	void foreignKeyIsCreated_relationIsDefinedByColumnOnTargetSideAndReverseMutatorIsUsed_columnOverrideIsUsed() throws SQLException {
-		IFluentMappingBuilderPropertyOptions<City, Identifier<Long>> cityMappingBuilder = MappingEase.entityBuilder(City.class, Identifier.LONG_TYPE)
-				.add(City::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
-				.add(City::getName);
-		Table cityTable = new Table("city");
-		Column<Table, Country> stateColumn = cityTable.addColumn("state", Country.class);
-		
-		IConfiguredPersister<Country, Identifier<Long>> countryPersister = MappingEase.entityBuilder(Country.class, Identifier.LONG_TYPE)
-				// setting a foreign key naming strategy to be tested
-				.withForeignKeyNaming(ForeignKeyNamingStrategy.DEFAULT)
-				.add(Country::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
-				.add(Country::getName)
-				.add(Country::getDescription)
-				.addOneToOne(Country::getCapital, cityMappingBuilder).mappedBy(stateColumn).mappedBy(City::setCountry)
-				.build(persistenceContext);
-		
-		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
-		ddlDeployer.deployDDL();
-		
-		Connection currentConnection = persistenceContext.getConnectionProvider().getCurrentConnection();
-		ResultSetIterator<JdbcForeignKey> fkPersonIterator = new ResultSetIterator<JdbcForeignKey>(currentConnection.getMetaData().getExportedKeys(null, null,
-				countryPersister.getMappingStrategy().getTargetTable().getName().toUpperCase())) {
-			@Override
-			public JdbcForeignKey convert(ResultSet rs) throws SQLException {
-				return new JdbcForeignKey(
-						rs.getString("FK_NAME"),
-						rs.getString("FKTABLE_NAME"), rs.getString("FKCOLUMN_NAME"),
-						rs.getString("PKTABLE_NAME"), rs.getString("PKCOLUMN_NAME")
-				);
-			}
-		};
-		JdbcForeignKey foundForeignKey = Iterables.first(fkPersonIterator);
-		JdbcForeignKey expectedForeignKey = new JdbcForeignKey("FK_CITY_STATE_COUNTRY_ID", "CITY", "STATE", "COUNTRY", "ID");
-		assertEquals(expectedForeignKey.getSignature(), foundForeignKey.getSignature());
-	}
-	
-	
-	
-	@Test
-	void cascade_deleteWithOrphanRemoval() throws SQLException {
-		IEntityPersister<Country, Identifier<Long>> countryPersister = MappingEase.entityBuilder(Country.class, Identifier.LONG_TYPE)
-				.add(Country::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
-				.add(Country::getDescription)
-				.addOneToOne(Country::getPresident, personConfiguration).cascading(ALL_ORPHAN_REMOVAL)
-				.build(persistenceContext);
-		
-		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
-		ddlDeployer.deployDDL();
-		
-		persistenceContext.getConnectionProvider().getCurrentConnection().createStatement().executeUpdate("insert into Person(id) values (42), (666)");
-		persistenceContext.getConnectionProvider().getCurrentConnection().createStatement().executeUpdate("insert into Country(id, presidentId) values (100, 42), (200, 666)");
-		
-		Country persistedCountry = countryPersister.select(new PersistedIdentifier<>(100L));
-		countryPersister.delete(persistedCountry);
-		ResultSet resultSet;
-		// Checking that we deleted what we wanted
-		resultSet = persistenceContext.getConnectionProvider().getCurrentConnection().createStatement().executeQuery("select id from Country where id = 100");
-		assertFalse(resultSet.next());
-		resultSet = persistenceContext.getConnectionProvider().getCurrentConnection().createStatement().executeQuery("select id from Person where id = 42");
-		assertFalse(resultSet.next());
-		// but we did'nt delete everything !
-		resultSet = persistenceContext.getConnectionProvider().getCurrentConnection().createStatement().executeQuery("select id from Country where id = 200");
-		assertTrue(resultSet.next());
-		resultSet = persistenceContext.getConnectionProvider().getCurrentConnection().createStatement().executeQuery("select id from Person where id = 666");
-		assertTrue(resultSet.next());
-	}
 	
 	@Test
 	void multiple_oneToOne() throws SQLException {
@@ -652,6 +741,25 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 			checkCascadeAll(countryPersister);
 		}
 		
+		@Test
+		void ownedByReverseSideColumn() {
+			Table cityTable = new Table("City");
+			Column countryId = cityTable.addColumn("countryId", Identifier.LONG_TYPE);
+			
+			
+			EntityMappingConfigurationProvider<City, Identifier<Long>> cityConfigurer = MappingEase.entityBuilder(City.class, Identifier.LONG_TYPE)
+					.add(City::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+					.add(City::getName);
+			
+			IEntityPersister<Country, Identifier<Long>> countryPersister = MappingEase.entityBuilder(Country.class, Identifier.LONG_TYPE)
+					.add(Country::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+					.add(Country::getDescription)
+					.addOneToOne(Country::getCapital, cityConfigurer).cascading(ALL).mappedBy(countryId)
+					.build(persistenceContext);
+			
+			checkCascadeAll(countryPersister);
+		}
+		
 		/**
 		 * Common tests of cascade-all with different owner definition.
 		 * Should have been done with a @ParameterizedTest but can't be done in such a way due to database commit between tests and cityPersister
@@ -707,6 +815,7 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 			assertEquals("Lyon", cityPersister.select(lyon.getId()).getName());
 			
 			// testing update cascade
+			referentCountry = countryPersister.select(referentCountry.getId());
 			modifiedCountry.getCapital().setName("Lyon renamed");
 			countryPersister.update(modifiedCountry, referentCountry, false);
 			modifiedCountry = countryPersister.select(referentCountry.getId());
@@ -868,7 +977,7 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 				person.setCountry(dummyCountry);
 				countryPersister.insert(dummyCountry);
 				
-				// Creating a new country with the same president (!) and changing president
+				// Creating a new country with the same president (!) and modifying president
 				person.setName("Me !!");
 				Country dummyCountry2 = new Country(countryIdProvider.giveNewIdentifier());
 				dummyCountry2.setName("France 2");
@@ -879,7 +988,7 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 				// Checking that president is modified
 				Country persistedCountry = countryPersister.select(dummyCountry2.getId());
 				assertEquals("Me !!", persistedCountry.getPresident().getName());
-				// ... and we still a 2 countries (no deletion was done)
+				// ... and we still have 2 countries (no deletion was done)
 				List<Long> countryCount = persistenceContext.newQuery("select count(*) as countryCount from Country", Long.class)
 						.mapKey(Long::new, "countryCount", Long.class)
 						.execute();
@@ -891,7 +1000,7 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 		class Update {
 			
 			@Test
-			void relationChanged() {
+			void relationChanged_relationIsOwnedBySource() {
 				IEntityPersister<Country, Identifier<Long>> countryPersister = MappingEase.entityBuilder(Country.class, Identifier.LONG_TYPE)
 						.add(Country::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 						.add(Country::getName)
@@ -997,7 +1106,7 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 			}
 			
 			@Test
-			void relationNullified() {
+			void relationNullified_relationIsOwnedBySource() {
 				IEntityPersister<Country, Identifier<Long>> countryPersister = MappingEase.entityBuilder(Country.class, Identifier.LONG_TYPE)
 						.add(Country::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 						.add(Country::getName)
@@ -1069,7 +1178,7 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 			}
 			
 			@Test
-			void relationChangedWithOrphanRemoval() {
+			void relationChanged_relationIsOwnedBySource_withOrphanRemoval() {
 				IEntityPersister<Country, Identifier<Long>> countryPersister = MappingEase.entityBuilder(Country.class, Identifier.LONG_TYPE)
 						.add(Country::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 						.add(Country::getName)

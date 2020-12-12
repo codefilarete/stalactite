@@ -60,7 +60,7 @@ class EntityIsManagedByPersisterAsserterTest {
 	
 	@ParameterizedTest
 	@MethodSource
-	void assertionIsInvoked(Method invokedMethod, Object[] args) throws InvocationTargetException, IllegalAccessException {
+	void assertMethodIsInvoked(Method invokedMethod, Object[] args) throws InvocationTargetException, IllegalAccessException {
 		IEntityConfiguredJoinedTablesPersister surrogateMock = mock(IEntityConfiguredJoinedTablesPersister.class);
 		when(surrogateMock.getClassToPersist()).thenReturn(Vehicle.class);
 		when(surrogateMock.getId(args[0])).thenReturn(42L);

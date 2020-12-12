@@ -226,21 +226,6 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 		
 		// collecting mapping from inheritance
 		MappingPerTable inheritanceMappingPerTable = collectEmbeddedMappingFromInheritance();
-		// TODO: check if this can be done just before cascade ones addition
-		inheritanceMappingPerTable.getMappings().forEach(mapping -> {
-			if (mapping.getMappingConfiguration() instanceof EntityMappingConfiguration) {
-				((EntityMappingConfiguration<C, I>) mapping.getMappingConfiguration()).getOneToOnes().forEach(cascadeOne -> {
-					if (!cascadeOne.isRelationOwnedByTarget()) {
-						AccessorDefinition targetProviderDefinition = AccessorDefinition.giveDefinition(cascadeOne.getTargetProvider());
-						mapping.getMapping().put(
-								cascadeOne.getTargetProvider(),
-								mapping.getTargetTable().addColumn(joinColumnNamingStrategy.giveName(targetProviderDefinition),
-										targetProviderDefinition.getMemberType()));
-					}
-				});
-			}
-		});
-		
 		// add primary key and foreign key to all tables
 		PrimaryKey primaryKey = addIdentifyingPrimarykey(identification);
 		Set<Table> inheritanceTables = inheritanceMappingPerTable.giveTables();

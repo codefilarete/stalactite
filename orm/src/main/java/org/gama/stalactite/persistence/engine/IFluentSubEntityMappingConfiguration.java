@@ -224,7 +224,7 @@ public interface IFluentSubEntityMappingConfiguration<C, I> extends IFluentEmbed
 		 * @return the global mapping configurer
 		 */
 		@Override
-		IFluentMappingBuilderOneToOneOptions<C, I, T> mappedBy(Column<T, C> reverseLink);
+		IFluentMappingBuilderOneToOneOptions<C, I, T> mappedBy(Column<T, I> reverseLink);
 		
 		@Override
 		IFluentMappingBuilderOneToOneOptions<C, I, T> cascading(RelationMode relationMode);

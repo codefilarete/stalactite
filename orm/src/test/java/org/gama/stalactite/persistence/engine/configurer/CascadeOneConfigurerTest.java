@@ -21,11 +21,12 @@ import org.gama.stalactite.persistence.engine.EntityMappingConfiguration;
 import org.gama.stalactite.persistence.engine.ForeignKeyNamingStrategy;
 import org.gama.stalactite.persistence.engine.PersisterRegistry;
 import org.gama.stalactite.persistence.engine.TableNamingStrategy;
-import org.gama.stalactite.persistence.engine.runtime.JoinedTablesPersister;
 import org.gama.stalactite.persistence.engine.model.City;
 import org.gama.stalactite.persistence.engine.model.Country;
+import org.gama.stalactite.persistence.engine.runtime.JoinedTablesPersister;
 import org.gama.stalactite.persistence.id.Identifier;
 import org.gama.stalactite.persistence.id.PersistableIdentifier;
+import org.gama.stalactite.persistence.id.PersistedIdentifier;
 import org.gama.stalactite.persistence.id.StatefullIdentifierAlreadyAssignedIdentifierPolicy;
 import org.gama.stalactite.persistence.id.manager.AlreadyAssignedIdentifierManager;
 import org.gama.stalactite.persistence.id.manager.IdentifierInsertionManager;
@@ -43,7 +44,6 @@ import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.CALLS_REAL_METHODS;
@@ -63,7 +63,7 @@ class CascadeOneConfigurerTest {
 		Table<?> countryTable = new Table<>("country");
 		Column countryTableIdColumn = countryTable.addColumn("id", long.class).primaryKey();
 		Column countryTableNameColumn = countryTable.addColumn("name", String.class);
-		Column countryTableCapitalColumn = countryTable.addColumn("capitalId", long.class);
+		Column countryTableCapitalColumn = countryTable.addColumn("capitalId", Identifier.LONG_TYPE);
 		Map<IReversibleAccessor, Column> countryMapping = Maps
 				.asMap((IReversibleAccessor) new PropertyAccessor<>(new AccessorByMethodReference<>(Country::getId), Accessors.mutatorByField(Country.class, "id")), countryTableIdColumn)
 				.add(new PropertyAccessor<>(new AccessorByMethodReference<>(Country::getName), new MutatorByMethodReference<>(Country::setName)), countryTableNameColumn)
@@ -143,19 +143,20 @@ class CascadeOneConfigurerTest {
 		assertEquals(Arrays.asSet("id", "name"), cityTable.mapColumnsOnName().keySet());
 		assertEquals(Arrays.asSet(), Iterables.collect(cityTable.getForeignKeys(), ForeignKey::getName, HashSet::new));
 		
-		// City must have a binder due to relation owned by source throught Country::getCapital
-		// This binder must only set value on PreparedStatement and doesn't read because it can't created a consistent City from values read from Country table
-		ParameterBinder<City> cityParameterBinder = dialect.getColumnBinderRegistry().getBinder(countryTableCapitalColumn);
+		// Additional checking on foreign key binder : it must have a binder due to relation owned by source throught Country::getCapital
+		ParameterBinder<Identifier> cityParameterBinder = dialect.getColumnBinderRegistry().getBinder(countryTableCapitalColumn);
 		assertNotNull(cityParameterBinder);
+		
 		PreparedStatement preparedStatementMock = mock(PreparedStatement.class);
-		cityParameterBinder.set(preparedStatementMock, 1, new City(new PersistableIdentifier<>(4L)));
+		cityParameterBinder.set(preparedStatementMock, 1, new PersistableIdentifier<>(4L));
 		verify(preparedStatementMock).setLong(eq(1), eq(4L));
+		
 		ResultSet resultSetMock = mock(ResultSet.class);
-		// because City ParameterBinder is a NullAwareParameterBinder that wraps the interestic one, we must mimic a non null value in ResultSet
+		// because City ParameterBinder is a NullAwareParameterBinder that wraps the interesting one, we must mimic a non null value in ResultSet
 		// to make underlying binder being called
 		when(resultSetMock.getObject(anyString())).thenReturn(new Object());
-		when(resultSetMock.wasNull()).thenReturn(false);
-		assertNull(cityParameterBinder.get(resultSetMock, "whateverColumn"));
+		when(resultSetMock.getLong(anyString())).thenReturn(42L);
+		assertEquals(new PersistedIdentifier<>(42L), cityParameterBinder.get(resultSetMock, "whateverColumn"));
 	}
 	
 	@Test
